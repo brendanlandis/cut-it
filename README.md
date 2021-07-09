@@ -54,6 +54,7 @@ The first filter in the "pedal chain", and the bottom-most group of controls. Th
         C4  - delete all samples
 
 and, with shift engaged:
+
         E4  - record sample 2
     D#4     - record sample 1
         D4  - record sample 3

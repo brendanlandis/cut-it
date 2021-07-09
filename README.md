@@ -44,7 +44,7 @@ The first filter in the "pedal chain", and the bottom-most group of controls. Th
 - knob3: playback speed
     - knob3 + shift: playback pitch
 - knob4: tempo of playhead movement in BPM (0 = playhead does not move, 100 = playhead skips around randomly at the rate of 256th notes)
-    - knob4 + shift: tempo of playhead movement in BPM (0 = no movement, 100 = idk hella fast)
+    - knob4 + shift: tempo of playhead movement in BPM (0 = no movement, 100 = idk hella fast)[^1]
 
 #### buttons
         E4  - engage sample mode[^1]

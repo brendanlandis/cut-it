@@ -2,7 +2,7 @@
 
 A cutup / harsh noise patch for the (older) Organelle. It's in the early design stages and mostly not built out yet.
 
-The idea is, with a single audio input that might not have too much variation, this patch should be able to create stressful sounding, fast tempo music, ala cut up harsh noise.
+The idea is, with a single audio input that might not have too much variation, this patch should be able to create stressful sounding, fast tempo music, ala [cut up harsh noise](https://trianglerecords.bandcamp.com/album/hard-panning-the-ultimate-contemporary-cut-up-harsh-noise-international-compilation).
 
 It takes MIDI clock info via USB. There are multiple parts of the patch that can do their thing either by tempo divisions based on that MIDI clock (quarter notes, eighth notes, etc.), or by milliseconds. Different parts of the patch can use different time units independently if you want (e.g. 1/8th note sample shuffling and 30ms tremolo), making for some potentially pretty freaky shit.
 

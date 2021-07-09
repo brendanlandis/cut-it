@@ -32,8 +32,8 @@ This lower-left-most button also functions as a "shift" button, allowing access 
 ### chop
 The first filter in the "pedal chain", and the bottom-most group of controls. There are a couple concepts behind this filter:
 
-1. In its default state, Chop will record and play back a single sample at a time. The knobs can be used to mangle the playback of the sample in some fun ways.
-2. However, Chop has
+1. In its default state, Chop revolves around the recording and playback of a single sample at a time. The knobs can be used to mangle the playback of the sample in some fun ways. Pressing D#4 engages sample mode, which acts as a kind of loop pedal, using whichever sample was played or recorded last. If there are no samples recorded, it will start recording one for the length specified by knob2 ("grain size"). Once the sample is recorded, sample mode will engage.
+2. Chop is also equipped with Chop mode, which, when engaged, will start randomly shuffling between the live sound going into the Organelle, and up to four recorded samples. If no recorded samples are present, it'll start recording samples one at a time, for the length specified by knob2 ("grain size"). Once each sample is recorded, chop mode will engage.
 
 #### knobs
 
@@ -44,11 +44,11 @@ The first filter in the "pedal chain", and the bottom-most group of controls. Th
 - knob3: playback speed
     - knob3 + shift: playback pitch
 - knob4: tempo of playhead movement in BPM (0 = playhead does not move, 100 = playhead skips around randomly at the rate of 256th notes)
-    - knob4 + shift: tempo of playhead movement in BPM (0 = no movement, 100 = idk hella fast)[^1]
+    - knob4 + shift: tempo of playhead movement in BPM (0 = no movement, 100 = idk hella fast)
 
 #### buttons
-        E4  - engage sample mode[^1]
-    D#4     - engage chop mode[^2]
+        E4  - engage sample mode
+    D#4     - engage chop mode
         D4  - stop either sample mode or chop mode
     C#4     - shift / make knobs start controlling sample / chop stuff
         C4  - delete all samples
@@ -60,10 +60,6 @@ and, with shift engaged:
         D4  - record sample 3
     C#4     - still shift, duh
         C4  - record sample 4
-
-[^1]: Sample mode, when engaged, acts as a kind of loop pedal, using whichever sample was played or recorded last. If there are no samples recorded, it will start recording one for the length specified by knob2 ("grain size"). Once the sample is recorded, sample mode will engage.
-
-[^2]: Chop mode, when engaged, will start randomly shuffling between the live sound going into the Organelle, and any of the four recorded samples. If no recorded samples are present, it'll start recording samples one at a time, for the length specified by knob2 ("grain size"). Once each sample is recorded, chop mode will engage.
 
 
 

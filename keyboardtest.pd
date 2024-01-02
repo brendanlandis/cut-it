@@ -1,11 +1,11 @@
 #N canvas 1309 56 390 628 12;
 #X obj 73 197 mtof;
-#X floatatom 73 219 5 0 0 0 - - -;
+#X floatatom 73 219 5 0 0 0 - - - 0;
 #X obj 73 263 osc~;
 #X obj 73 288 *~;
 #X obj 145 176 sel 0;
-#X floatatom 73 176 5 0 0 0 - - -;
-#X floatatom 177 198 5 0 0 0 - - -;
+#X floatatom 73 176 5 0 0 0 - - - 0;
+#X floatatom 177 198 5 0 0 0 - - - 0;
 #X obj 177 219 / 127;
 #X msg 177 241 \$1 10;
 #X obj 177 263 line~;

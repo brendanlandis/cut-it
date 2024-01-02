@@ -43,6 +43,7 @@ The first filter in the chain, and the right-most group of controls. There are a
         F5  - shift
 
 and, with shift engaged:
+
         B5  - delete all samples
     A#5     - record or delete sample 1
         A5  - record or delete sample 2
@@ -58,6 +59,7 @@ and, with shift engaged:
     - knob4: tempo of playhead movement in BPM (0 = playhead does not move, 100 = playhead skips around randomly at the rate of 256th notes)
 
 and, with shift engaged:
+
     - shift + knob1:
     - shift + knob2:
     - shift + knob3: 
@@ -75,6 +77,7 @@ The second filter in the chain, utilizing buttons C5-E5.
         C5  - shift
         
 and, with shift engaged:
+
         E5  - 
     D#5     - 
         D5  - 
@@ -88,6 +91,7 @@ and, with shift engaged:
     - knob4: 
 
 and, with shift engaged:
+
     - shift + knob1:
     - shift + knob2:
     - shift + knob3: 
@@ -107,6 +111,7 @@ The third filter in the chain, utilizing buttons F4-B5.
         F4  - shift
         
 and, with shift engaged:
+
         B5  - 
     A#5     - 
         A5  - 
@@ -122,6 +127,7 @@ and, with shift engaged:
     - knob4: 
 
 and, with shift engaged:
+
     - shift + knob1:
     - shift + knob2:
     - shift + knob3: 
@@ -139,6 +145,7 @@ The last filter in the chain, utilizing buttons C4-E5.
         C4  - shift
         
 and, with shift engaged:
+
         E5  - 
     D#5     - 
         D4  - 
@@ -152,6 +159,7 @@ and, with shift engaged:
     - knob4: 
 
 and, with shift engaged:
+
     - shift + knob1:
     - shift + knob2:
     - shift + knob3: 

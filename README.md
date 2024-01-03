@@ -31,13 +31,13 @@ The knobs also control different stuff for each of the filters, and the display 
 The first filter in the chain, and the right-most group of controls. There are a couple concepts behind this filter:
 
 1. In its first state ("Loop Mode"), Sampler revolves around the recording and playback of a single sample at a time. The knobs can be used to mangle the playback of the sample in some fun ways. Pressing D#4 engages Loop Mode, which acts as a kind of loop pedal, using whichever sample was played or recorded last. If there are no samples recorded, it will start recording one for the length specified by knob2 ("grain size"). Once the sample is recorded, Sample Mode will engage.
-2. Chop is also equipped with Chop mode, which, when engaged, will start randomly shuffling between the live sound going into the Organelle, and up to four recorded samples. If no recorded samples are present, it'll start recording samples one at a time, for the length specified by knob2 ("Grain Size"). Once each sample is recorded, Chop Mode will engage.
+2. Sampler is also equipped with Chop mode, which, when engaged, will start randomly shuffling between the live sound going into the Organelle, and up to four recorded samples. If no recorded samples are present, it'll start recording samples one at a time, for the length specified by knob2 ("Grain Size"). Once each sample is recorded, Chop Mode will engage.
 
 #### buttons
         B5  - loop mode on/off
     A#5     - chop mode on/off
         A5  - record new sample (will iterate through five slots until full, then overwrite a random sample)
-    G#5     - in loop mode, change which sample is playing. in chop mode, hold on current sample until button is lifted
+    G#5     - loop mode: change which sample is playing / chop mode: hold on current sample until button is lifted
         G5  - 
     F#5     - reverse play direction of current sample
         F5  - shift
@@ -53,27 +53,31 @@ and, with shift engaged:
         F5  - shift
 
 #### knobs
-    - knob1: loop mode: playhead start position / chop mode: 
+    - knob1: playhead start position
     - knob2: grain size (percentage of sample to play [while recording a sample, this knob specifies how long to record for - max 5 seconds])
     - knob3: playback speed of current sample
     - knob4: tempo of playhead movement in BPM (0 = playhead does not move, 100 = playhead skips around randomly at the rate of 256th notes. In loop mode, playhead stays on one sample. In chop mode, playhead shuffles between samples.)
 
 and, with shift engaged:
 
-    - shift + knob1:
-    - shift + knob2:
+    - shift + knob1: 
+    - shift + knob2: 
     - shift + knob3: playback speed of all samples
     - shift + knob4: tempo of playhead movement in MS (0 = no movement, 100 = idk hella fast)
 
 
 ### chop shop (filter & pitch)
-The second filter in the chain, utilizing buttons C5-E5.
+The second filter in the chain, utilizing buttons C5-E5. The idea behind this filter is to take what's been loaded into the sampler (several instances of audio that's likely very samey), and bend it into shapes that feel different. It can do this by applying dramatic EQ filters, shifts in speed of sample playback, and gain.
+
+Each time a new sample is triggered, Chop Shop determines how much to filter it.
+
+Another idea behind Chop Shop is to choatically alter the playback of Sampler. Chop Shop controls drunkenness (how close Sampler stays on the beat, whether that's specified in BPM or MS) and sputter (whether a small pause appears between sample playback, and how long that pause can be).
 
 #### buttons
         E5  - chop shop on/off
-    D#5     - 
-        D5  - 
-    C#5     - 
+    D#5     - 'hi' preset
+        D5  - 'med' preset
+    C#5     - 'lo' preset
         C5  - shift
         
 and, with shift engaged:
@@ -85,15 +89,15 @@ and, with shift engaged:
         C5  - shift
 
 #### knobs
-    - knob1: 
-    - knob2: 
-    - knob3: 
-    - knob4: 
+    - knob1: rate of change (0: never changes. 100: changes each time a sample is triggered)
+    - knob2: contrast (changes pitch, EQ, and gain/dist. 0: not much variation. 100: great variation.)
+    - knob3: playback drunkenness (0: sober. 100: blackout)
+    - knob4: playback sputter (0: no pauses. 100: pause each transition, maybe the samples start skipping too)
 
 and, with shift engaged:
 
-    - shift + knob1:
-    - shift + knob2:
+    - shift + knob1: 
+    - shift + knob2: band pass average EQ range (0: 20Hz. 100: 20k)
     - shift + knob3: 
     - shift + knob4: 
 

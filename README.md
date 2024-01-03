@@ -22,7 +22,7 @@ The filters and their controls are, from right to left:
 - F4-B5 - tremolo
 - C4-E4 - reverb / freeze
 
-The knobs also control different stuff for each of the filters, and the display will give status of what's happening with whichever filter is "selected". You can select a filter by pressing the "on/off" or "shift" buttons for that filter (see diagrams below).
+The knobs also control different stuff for each of the filters, and the display will give the status of what's happening with whichever filter is "selected". You can select a filter by pressing the "on/off" or "shift" buttons for that filter (see diagrams below).
 
 
 ## nitty gritty controls
@@ -49,20 +49,20 @@ and, with shift engaged:
         A5  - record or delete sample 2
     G#5     - record or delete sample 3
         G5  - record or delete sample 4
-    F#5     - record or delete sample 5
+    F#5     - 
         F5  - shift
 
 #### knobs
-    - knob1: playhead start position
+    - knob1: loop mode: playhead start position / chop mode: 
     - knob2: grain size (percentage of sample to play [while recording a sample, this knob specifies how long to record for - max 5 seconds])
-    - knob3: playback speed
-    - knob4: tempo of playhead movement in BPM (0 = playhead does not move, 100 = playhead skips around randomly at the rate of 256th notes)
+    - knob3: playback speed of current sample
+    - knob4: tempo of playhead movement in BPM (0 = playhead does not move, 100 = playhead skips around randomly at the rate of 256th notes. In loop mode, playhead stays on one sample. In chop mode, playhead shuffles between samples.)
 
 and, with shift engaged:
 
     - shift + knob1:
     - shift + knob2:
-    - shift + knob3: 
+    - shift + knob3: playback speed of all samples
     - shift + knob4: tempo of playhead movement in MS (0 = no movement, 100 = idk hella fast)
 
 

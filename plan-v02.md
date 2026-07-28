@@ -114,17 +114,34 @@ not `Cut It`; and `enc` is `1`/`0` for up/down, not `±1` — as are `aux` and `
 **Done when:** ✅ `main-dev.pd` opens on the Mac with no errors, the stub's knobs produce
 values, and `./deploy.sh` alone puts a running patch on the device.
 
-### Phase 1 — Audio path
+### Phase 1 — Audio path ✅ **done**
 
-`main.pd` audio section
+`u_root` audio chain, `u_level`, `g_levels`
 
-`adc~ 1` and `adc~ 2` straight to `dac~`, with `/oled/vumeter` fed from both.
+`[r~ inL]` / `[r~ inR]` straight through to `[throw~ outL]` / `[throw~ outR]`, with a
+`u_level` tap on each input reporting onto the `disp` bus, and `g_levels` drawing both at 24px.
 
 Deliberately first: it proves the whole signal chain — including the TRS Y-cable split, once
 that cable arrives — with no DSP to blame.
 
-**Done when:** audio in is audible at the output, drums and fx are independently visible on the
-meter. Covers [plan-tests.md](plan-tests.md) items 11–12.
+**Three corrections to what this phase originally said**, all read off the device:
+
+- **Not `adc~`/`dac~`.** `mother.pd` owns the sound card. `dac~` from a patch bypasses the
+  volume knob and the limiter — see *Audio I/O* in [plan-conventions.md](plan-conventions.md).
+- **Not `/oled/vumeter`.** mother already drives it, from `inL`, `inR` and the post-volume
+  outputs. And it lives in the info bar, which is now off by decision — see
+  [plan-display.md](plan-display.md).
+- **`gShowInfoBar 3 0` moved out of Phase 2 into here**, because it must go out on every redraw
+  rather than once at init, which makes it the display's job and not startup's.
+
+**Also established here, cheaply, because Phase 3 depends on both:** the `disp` bus, and the
+rule that exactly one abstraction owns `oscOut` and `screenLine*`. `g_levels` is a placeholder
+with the right *interface* — Phase 3 replaces its insides with the arbiter.
+
+**Done when:** ✅ audio in is audible at the output and the volume knob controls it; both input
+levels are on the OLED and read the 18–19 noise floor at rest. Covers
+[plan-tests.md](plan-tests.md) item 11 through the real patch. Items 12–13 stay blocked on the
+TRS Y-cable.
 
 ### Phase 2 — Startup sequencing
 
@@ -137,7 +154,10 @@ abstraction owns the ordered startup:
 2. wait for ALSA
 3. Launchpad → Programmer Mode by SysEx
 4. clear the Launchpad grid — **LED state survives mode switches**
-5. `gShowInfoBar 3 0`, clear the OLED, draw the home screen
+
+*(`gShowInfoBar` is deliberately not on this list — it moved to Phase 1. mother restores the
+info bar after every patch load, so it has to be re-sent on each redraw, which makes it the
+display's business rather than startup's.)*
 
 **Each stage reports to the OLED as it completes.** With no console, that is the boot
 diagnostic — a patch stuck at stage 3 tells you the Launchpad never answered.
@@ -150,7 +170,11 @@ Programmer Mode means power-cycling the Launchpad.
 
 ### Phase 3 — Display and errors
 
-`g_oled`, `u_err`
+`g_oled` (replaces `g_levels`), `u_err`
+
+**`g_levels` from Phase 1 is the thing being replaced.** Its interface is already right —
+consume `disp`, own `oscOut` and `screenLine*`, redraw on a fixed clock — so this phase swaps
+the insides for the arbiter and deletes the file. Nothing upstream changes.
 
 The arbiter described in [plan-display.md](plan-display.md): layers with priority and TTL,
 `home` < `param` < `modal` < `err`; rate-limited to ~20 Hz **with a guaranteed trailing edge**;

@@ -1,5 +1,5 @@
-#N canvas 40 40 780 400 12;
-#X text 20 20 Cut It -- entry point on the Mac. Open THIS \, not main.pd \, when working off-device. u_mother-stub impersonates mother.pd: knobs and keys in \, screen and OSC out.;
-#X obj 20 110 u_mother-stub;
-#X obj 20 165 u_root;
-#X text 20 210 The Organelle never loads this file -- mother.pd loads main.pd by name. So u_mother-stub is never instantiated on hardware \, and the four physical knobs keep sole ownership of knob1 to knob4.;
+#N canvas 40 40 660 380 12;
+#X text 20 20 Cut It -- entry point on the Mac. Open THIS \, not main.pd \, when working off-device. u_mother-stub impersonates mother.pd: knobs and keys in \, audio both ways \, screen and OSC out., f 52;
+#X obj 20 140 u_mother-stub;
+#X obj 20 195 u_root;
+#X text 20 240 The Organelle never loads this file -- mother.pd loads main.pd by name. So u_mother-stub is never instantiated on hardware \, where its s~ and catch~ names would collide with mother's own., f 52;

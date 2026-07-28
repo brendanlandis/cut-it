@@ -208,6 +208,64 @@ the parameter, not throughout the patch.
 
 ---
 
+## Audio I/O — never `adc~`, never `dac~`
+
+**`mother.pd` owns the sound card.** A patch that reaches for `adc~` or `dac~` is going around
+it. The interface is four names:
+
+| Patch uses | Carries |
+|---|---|
+| `[r~ inL]` `[r~ inR]` | the two inputs — `inL` is the **tip**, `inR` the ring |
+| `[throw~ outL]` `[throw~ outR]` | everything the patch wants heard |
+
+✅ Read off the device from `mother.pd`'s `pd audioIO`, and cross-checked against **every**
+stock effect in `/sdcard/Patches/Effects/` — they all use exactly this.
+
+```
+mother:  [adc~] ─→ [s~ inL] [s~ inR]
+patch:   [r~ inL] [r~ inR] ─→ … ─→ [throw~ outL] [throw~ outR]
+mother:  [catch~ outL/outR] ─→ [*~ vol²] ← [lop~ 5] ─→ [clip~ -1 1] ─→ [dac~]
+```
+
+**`adc~` in a patch happens to work; `dac~` is a real bug.** The output path applies the volume
+knob (a **square law**, smoothed at 5 Hz) and a `clip~ -1 1` limiter. Writing to `dac~` bypasses
+both — the volume knob stops working and the patch can clip the converter. `throw~`/`catch~`
+also sums, so several stages can feed the output without a mixer.
+
+**mother enables DSP.** `pd init` fires `; pd dsp 1` 200 ms after load. A patch must not.
+
+**mother drives the VU meter**, from `inL`, `inR` and the *post-volume* outputs, via
+`/oled/vumeter`. A patch never sends it. See [plan-display.md](plan-display.md) for why the
+info bar is turned off anyway.
+
+---
+
+## The display bus, and who owns the screen
+
+**Exactly one abstraction may send on `oscOut` and `screenLine1`–`5`.** Today that is
+`g_levels`; from Phase 3 it is `g_oled`. Everything else asks for a display by sending to
+`disp` and does not know or care how it is drawn.
+
+**The `disp` message is `<name> <value> [unit]`, with the name as the *selector*.**
+
+That last clause is not pedantry — it is the difference between working and silently doing
+nothing:
+
+> `[route in-l]` matches a message whose **selector** is `in-l`. It does **not** match a `list`
+> message whose first element is `in-l`. `[list prepend in-l]` produces the second kind, so a
+> sender must finish with **`[list trim]`** to turn it into the first. Without it `route`
+> rejects every message out of its rightmost outlet, which is usually connected to nothing, and
+> the display just shows zero.
+
+This cost a debugging round trip in Phase 1. A message box typed `in-l 42 dB` has the right
+shape already; anything built with `[list …]` does not.
+
+**Rate limiting belongs to the display, not the caller.** Senders push whenever they have
+something to say; the display redraws on its own clock. `u_level` samples at 10 Hz, `g_levels`
+draws at 10 Hz, and neither number is the other's business.
+
+---
+
 ## Instancing: `[clone]`
 
 Use `[clone]` for anything needing N copies — sample slots, voices, per-stage duplicates — before
@@ -311,7 +369,35 @@ Neither needs a cable. See [plan-display.md](plan-display.md) for addresses and 
 
 **What the check cannot catch** is runtime behaviour — wrong message types, silent OSC
 failures, logic errors. That is what the error bus below and the PdParty remote console are
-for.
+for — and the run-it-yourself trick immediately below, which is better than both.
+
+### There IS a console — launch the patch by hand ✅
+
+"The Organelle has no Pd console" is true only of the **menu-launched** patch, whose stdout goes
+to tty1. Launch it yourself over SSH and you get the real thing:
+
+```sh
+ssh root@organelle.local
+  killall pd; sleep 1
+  cd /tmp/patch
+  nohup pd -nogui -rt -audiobuf 6 -path /root/Pd/externals \
+      -path "/sdcard/Patches/!/Cut It" \
+      /root/fw_dir/mother.pd main.pd /tmp/diag.pd > /tmp/diag.txt 2>&1 &
+  sleep 6; killall pd
+  cat /tmp/diag.txt
+```
+
+Loading `mother.pd` alongside `main.pd` gives the patch its real environment — `inL`/`inR` carry
+live audio, `oscOut` reaches the display. A third patch (`diag.pd`) can tap any bus with
+`[print]` without touching the deployed files: `[r disp] → [print DISP]`, `[r oscOut] →
+[print OSCOUT]`.
+
+Restore normal operation with `./deploy.sh`, which reloads and relaunches through the menu path.
+
+**This found the `[list trim]` bug in Phase 1** — a `disp` message that `route` silently
+rejected, showing as a plausible-looking zero on the OLED. Nothing else in the toolkit would
+have caught it. Expect `error: /tmp/patch/knobs.txt: can't open` in the output; that is mother
+looking for the optional knob-label file and is harmless.
 
 ## Errors must reach the OLED
 
@@ -358,6 +444,8 @@ effort. Don't tidy and change behaviour in the same commit.
 | **Unmediated fan-out** | Undefined order in practice |
 | **`[value]` / `[v]` for anything but the allowlist** | Global mutable state |
 | **Copying a subpatch to reuse it** | Two codebases, silent divergence |
+| **`adc~` / `dac~` in a deployed patch** | `mother.pd` owns the sound card; `dac~` bypasses the volume knob and the limiter — see *Audio I/O* |
+| **`oscOut` / `screenLine*` outside the display abstraction** | Two writers, one screen |
 | **Saving from plugdata** | Corrupts the file format for Pd 0.49 — see [CLAUDE.md](CLAUDE.md) |
 | **Objects newer than Pd 0.49** | The device can never be upgraded — see [CLAUDE.md](CLAUDE.md) |
 

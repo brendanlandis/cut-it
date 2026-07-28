@@ -131,6 +131,12 @@ So: **one stereo input jack, two mono output jacks.** This asymmetry is why the 
 required — the 404's two discrete mono outputs have to merge into the Organelle's single input
 jack — while the output side needs only two ordinary patch cables.
 
+**A patch never touches `adc~` or `dac~`.** ✅ `mother.pd` owns the sound card and hands the
+patch `[r~ inL]` / `[r~ inR]`, taking its output back through `[throw~ outL]` / `[throw~ outR]`
+— then applying the volume knob (a square law, smoothed at 5 Hz) and a `clip~ -1 1` limiter
+before `dac~`. Writing to `dac~` from a patch bypasses both. Full detail and the reasoning are
+in [plan-conventions.md](plan-conventions.md) under *Audio I/O*.
+
 **The input split is verified on hardware.** ✅ `adc~ 1` is the **tip**, `adc~ 2` is the
 **ring**, and they are genuinely independent — a mono TS cable drives the tip to the 90s on
 `env~`'s scale while the ring stays at the 18–19 noise floor. Measured with

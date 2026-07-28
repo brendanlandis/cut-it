@@ -154,6 +154,10 @@ input jack**, and the cable is what merges two mono outs into it. Nothing substi
       −82 dBFS), which sets a sensible gate threshold around 25–30; and a **passive bass
       reaches the 90s**, so input gain is ample and headroom is fine for instrument-level
       sources.
+
+      **Re-confirmed through the v0.2 patch** (Phase 1, `u_level` + `g_levels`): both channels
+      report 18–19 at rest, reproducing the diagnostic's numbers in the real signal path rather
+      than a test patch.
 - [ ] **12. 404 pan split.** Pan one sample MONO Left and another MONO Right; confirm they
       arrive on separate Organelle inputs. Tests the 404's *internal* per-sample routing, which
       discrete output jacks do not guarantee.

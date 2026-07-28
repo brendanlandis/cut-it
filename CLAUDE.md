@@ -48,7 +48,9 @@ they are not reproducible from reading the existing patch — most of it predate
 Cut It/              the deployable patch — folder name is what appears in the Organelle menu
   main.pd              device entry point; mother.pd loads this by name. Instantiates u_root
   main-dev.pd          Mac entry point; adds u_mother-stub. The device never loads it
-  u_root.pd            the actual root — every phase hangs its abstraction here
+  u_root.pd            the actual root — the audio chain, and where every phase hangs its work
+  u_level.pd           signal → a named level on the disp bus
+  g_levels.pd          the Phase 1 display; sole owner of oscOut and screenLine* (→ g_oled)
   u_mother-stub.pd     impersonates mother.pd off-device, so the patch runs with no hardware
 deploy.sh            check → scp → reload → load, in one command (there is no rsync on the device)
 tools/               diagnostic patches — working references for every verified technique
@@ -78,10 +80,15 @@ whole loop** — syntax check, copy, reload the patch list, load the patch — w
 interaction. Full details, paths and the `mother`/Pd launch line are in
 [plan-hardware.md](plan-hardware.md) under *The device itself*.
 
-**There is no Pd console** — Pd runs `-nogui` and errors go to tty1, which VNC will not show.
-Assume nothing reports itself unless the patch reports it. **`deploy.sh` syntax-checks in local
-Pd 0.49 and refuses to deploy on any output**, so the rule is now automatic rather than
-remembered — see *Development workflow* in [plan-conventions.md](plan-conventions.md).
+**The menu-launched patch has no console** — Pd runs `-nogui` and errors go to tty1, which VNC
+will not show. **But you can launch the patch yourself over SSH and get a real console**,
+including `[print]` taps on any bus, by loading `mother.pd` and `main.pd` together with output
+redirected to a file. This is the highest-value debugging tool on the project and it found a
+silent bug in Phase 1 — see *There IS a console* in [plan-conventions.md](plan-conventions.md).
+
+Still assume nothing reports itself unless the patch reports it. **`deploy.sh` syntax-checks in
+local Pd 0.49 and refuses to deploy on any output**, so that rule is automatic rather than
+remembered.
 
 **Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac:
 `u_mother-stub` fakes the knobs, keys, aux and encoder, and previews whatever the patch writes

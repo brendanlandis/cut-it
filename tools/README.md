@@ -17,6 +17,25 @@ All authored by hand in Pd 0.49 format. Do not open them in plugdata — see
 | `lp-modes.pd` | Lights three pads static / flashing / pulsing — the device's three LED animation modes. |
 | `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
 
+## `pd-layout-check.py`
+
+Not a patch — a static check on `.pd` files:
+
+```sh
+python3 tools/pd-layout-check.py "Cut It"/*.pd
+```
+
+Reports overlapping boxes, **connections drawn through unrelated boxes**, and content that
+extends past the saved canvas size. Exits non-zero on any of them.
+
+Layout is the only structural documentation Pd has, and the failure it was written for is
+specific: a comment placed between the logic and a message column gets cords drawn straight
+through it, which is invisible until you open the patch. Box sizes are estimated from the text
+rather than measured, so it is a smell detector, not a renderer.
+
+The diagnostic patches above predate it and do not pass — they are working references, not
+examples of layout.
+
 ## Organelle patches
 
 These three **are** Organelle patches — they load `mother.pd` and run from the device menu,
@@ -74,5 +93,17 @@ Stop with `killall pd`.
   script — Pd message boxes and shell quoting do not mix well.
 - **Syntax-check before deploying.** Pd 0.49-1 is installed on the Mac — the same version the
   Organelle runs. `pd -nogui -noaudio -send "pd quit" main.pd` prints nothing if the patch
-  parsed and every object instantiated. On a device with no console this is the only cheap way
-  to catch a typo'd object name.
+  parsed and every object instantiated. `deploy.sh` now does this automatically and refuses to
+  copy on any output.
+- **There IS a console — launch the patch by hand.** Only the *menu-launched* patch loses its
+  stdout to tty1. Running `pd -nogui /root/fw_dir/mother.pd main.pd /tmp/diag.pd` over SSH with
+  output redirected gives a real console, live audio on `inL`/`inR`, and lets a throwaway
+  `diag.pd` tap any bus with `[print]` without editing the deployed patch. See *Development
+  workflow* in [../plan-conventions.md](../plan-conventions.md).
+- **`[route]` with symbol arguments matches the SELECTOR, not a list's first element.**
+  `[list prepend foo]` produces `list foo …`, which `route foo` rejects — out of the rightmost
+  outlet, which is usually connected to nothing. Finish with `[list trim]`. A message box typed
+  `foo 42` is already the right shape; anything assembled with `[list …]` is not.
+- **`sendtyped` typetags must match the argument count exactly**, or mrpeach `packOSC` drops the
+  message with an error. Mixed tags work: `iiiiisi` sends five ints, a label and a value in one
+  `gPrintln`.

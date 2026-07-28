@@ -69,8 +69,24 @@ Every command takes **screen number as its first argument**. 📄 from `main.cpp
 `gCharacter` select among them. The 21-chars-per-line measurement is the 8px font; larger
 sizes give proportionally fewer.
 
-**`gPrintln` concatenates mixed atoms** — symbols, floats and ints — separated by spaces. 📄
-So a Pd message box can interpolate values directly with no formatting work.
+**`gPrintln` concatenates mixed atoms** — symbols, floats and ints — separated by spaces. ✅
+Read from the handler: only arguments 0–4 (screen, x, y, height, colour) are required to be
+ints; everything after is `strcat`'d. So a label and a value go in one message.
+
+**The typetag must match the argument count exactly.** ✅ `oscOut` reaches the display through
+mrpeach `[packOSC]`, which validates and, on a mismatch, **drops the message with an error you
+cannot see**: *"Tags count 5 doesn't match argument count 6"*. Verified against the real
+`packOSC` on the device:
+
+| Message | Result |
+|---|---|
+| `sendtyped /oled/gPrintln iiiiii 3 6 6 24 1 42` | ✅ packs |
+| `sendtyped /oled/gPrintln iiiiisi 3 4 2 24 1 L 42` | ✅ packs — label plus value |
+| `sendtyped /oled/gPrintln iiiiisss 3 4 54 8 1 cut it v0.2` | ✅ packs — three symbols |
+| `sendtyped /oled/gPrintln iiiii 3 6 34 24 1 99` | ❌ error, message dropped |
+
+Count the atoms after the address and make the typetag the same length. Every space in a
+message box is another atom.
 
 ### Four screen buffers
 
@@ -103,8 +119,27 @@ There is **no Pd console on this device**, so each of these fails with no output
    display. ✅
 4. **`mother` repaints after patch load** and restores the info bar. A `gShowInfoBar` sent once
    on `loadbang` gets undone. ✅ Send it on **every redraw**, not at init.
-5. **The info bar overlaps the drawing area.** Until it is turned off, the usable region is
-   smaller than 128×64 and anything drawn in the top rows is obscured. ✅
+5. **The info bar is the top 8 pixel rows of the 64.** ✅ Read from `OledScreen::drawInfoBar` —
+   it clears and owns `pix_buf[0…127]`, one byte per column, so exactly 8 rows. Anything drawn
+   there is obscured until it is turned off.
+
+### The info bar, and why it is off
+
+**`gShowInfoBar` is the VU meter toggle** — `main.cpp` says so in a one-line comment next to
+the declaration. In those 8 rows mother draws **four 11-segment meters** (in L/R, out L/R) plus
+battery/power and wifi, and it drives them itself from `/oled/vumeter`. ✅
+
+**A patch must never send `/oled/vumeter`.** mother computes it in `pd audioIO` from `adc~` and
+the post-volume output and sends it every analysis window. A patch sending it would simply
+fight.
+
+**Project decision: the info bar is off.** `g_*` owns all 128×64. The four meters are only 11
+segments each and Cut It shows its own input levels far more legibly at 24px; battery and wifi
+are not worth a permanent eighth of the screen on a device that mostly runs on mains. The cost
+is that nothing shows signal presence when the display is doing something else — accepted.
+
+`gShowInfoBar 3 0` therefore goes out on **every** redraw from the display abstraction, per
+trap 4 above. It is not an init-time concern and does not belong in `u_init`.
 
 ### Cosmetic notes
 

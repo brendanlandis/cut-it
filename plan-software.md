@@ -6,7 +6,8 @@ Companion to [plan-hardware.md](plan-hardware.md), which covers the physical rig
 signal flow, and verified device behaviour. The rule of thumb: **if it describes what the
 hardware does, it's in the rig plan; if it describes what we decided to build, it's here.**
 
-See also [README.md](<! v0.1 plans/README.md>) for musical intent and the control layout, and
+See also [plan-midi.md](plan-midi.md) for the MIDI message reference,
+[README.md](<! v0.1 plans/README.md>) for musical intent and the v0.1 control layout, and
 [CLAUDE.md](CLAUDE.md) for the hard constraints on writing Pd for this device.
 
 ---
@@ -129,7 +130,7 @@ feedback path. Revisit later if wanted; it needs no rewiring beyond one cable fr
 
 ### Tempo is freely modulable, but propagates unevenly
 Because the Organelle *generates* the clock, tempo is just a float in the patch.
-[midiclock.pd](midiclock.pd) already has the plumbing (`r tempo` → `tempo $1 permin` →
+[Cut It/midiclock.pd](<Cut It/midiclock.pd>) already has the plumbing (`r tempo` → `tempo $1 permin` →
 `metro`). Route any CC to `s tempo` and a nanoKONTROL knob becomes tempo control. Tap
 tempo, an LFO, a pad — all the same.
 

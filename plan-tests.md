@@ -7,7 +7,8 @@ Most of this needs scratch patches only — no Cut It code. Diagnostic patches l
 [tools/](tools/). Companion to [plan-hardware.md](plan-hardware.md), which explains *why* each of these
 matters.
 
-**Status:** Sessions 1, 2 and 4 substantially done. Session 3 blocked on the TRS Y-cable.
+**Status:** Sessions 2 and 4 complete. Session 1 done bar the full-load power check.
+Session 3 blocked on the TRS Y-cable.
 
 ---
 
@@ -164,6 +165,33 @@ LINE IN R-only variant.
       **No LED Mode setting exists** for the mk1, confirming it has no host-controllable LEDs.
       All visible state must live on the Launchpad.
 
+- [x] **16. Transport buttons reassigned as the master mode control.** ✅ Six buttons moved off
+      their factory assignment to **CC 41–46**, in physical order, on the nano's **channel 2**
+      — arriving as **Pd channel 18** while the control groups stay on 17. Assign Type
+      *Control Change*, Button Behavior *Momentary*.
+
+      This extends the `div 10` idiom: 4 = transport, `mod 10` = which button. And a single
+      `[route 18]` isolates every mode change before any CC decoding, so a mode switch can
+      never be confused with a performance control.
+
+      **Verified by decoding the raw stream off the wire**, not just trusting the editor:
+
+      | Checked | Result |
+      |---|---|
+      | Six transport buttons | CC 41, 42, 43, 44, 45, 46 — in order, no gaps |
+      | Transport channel | 2 → Pd channel 18 |
+      | Control group channel | 1 → Pd channel 17 (slider 1 = CC 1, knob 1 = CC 11) |
+      | Button behaviour | 127 press / 0 release throughout |
+      | SysEx / MMC | **none in the stream** — nothing emits MMC |
+      | Slider and knob range | full 0–127, *Upper Value* not clipped |
+
+      Rationale for the change is in [plan-midi.md](plan-midi.md) under *Recommendation*. The
+      factory assignment was overwritten before it was ever read, so what these buttons
+      shipped with is now unknown — it stopped mattering, but it is not a finding.
+
+      **The scene file is device-resident state with no backup.** REC + STOP + SCENE held at
+      power-on wipes it. Export it from Kontrol Editor and commit it here.
+
 ---
 
 ## Deliberately skipped for now
@@ -176,13 +204,18 @@ Not unimportant — just not blocking UI/UX decisions.
 | Ground loops | Deal with hum if and when you hear it |
 | 404 round-trip latency | Perform-time tuning; needs a working patch first |
 | CPU headroom | Not a real risk at this scale |
-| Full nanoKONTROL CC map | Catalogue it when mapping controls |
 
 ---
 
 ## What's actually left
 
-1. **Item 4** — patch self-wiring its `aconnect` calls. The last structural unknown.
-2. **Session 3** — audio topology, once the Y-cable arrives.
-3. **Item 15** — Korg editor, which gates the momentary-buttons decision.
-4. **Items 5 and 8b** — power under full load, and flashing/pulsing LED states.
+1. **Session 3** — audio topology, once the Y-cable arrives. Items 11–13. The only remaining
+   test that could still force a redesign.
+2. **Item 5** — power under full load. Never tested with three controllers plus the wifi
+   dongle at once, because of the cable shortage.
+
+Everything else in Sessions 1, 2 and 4 has passed. The full MIDI picture — every message each
+device accepts and transmits — is catalogued in [plan-midi.md](plan-midi.md), which also
+carries the remaining message-level unknowns, chief among them the **SP-404 pad note range**
+(verified 47+*n* here, but Roland's chart says 35–51 — sweep all 16 pads before writing
+sequencing code against it).

@@ -144,7 +144,8 @@ which is what we want — the 404 runs off its own adapter and costs the hub not
 ## Device capabilities
 
 What each box can actually do, verified on hardware. What to *build* with it lives in
-[plan-software.md](plan-software.md).
+[plan-software.md](plan-software.md); the message-by-message detail — every CC, note and
+SysEx each device accepts and transmits — lives in [plan-midi.md](plan-midi.md).
 
 ### Launchpad Pro MK3 — a genuine blank slate
 

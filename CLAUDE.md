@@ -39,6 +39,7 @@ Cut It/            the deployable patch — folder name is what appears in the O
 deploy.sh          scp-based deploy (there is no rsync on the device)
 plan-hardware.md   the physical rig — wiring, MIDI/audio/power, verified device behaviour
 plan-software.md   how the instrument works — architecture, timing model, decisions
+plan-midi.md       every MIDI message each device accepts and transmits, and how Pd sees it
 plan-tests.md      ordered hardware checks to run before UI/UX work
 ! v0.1 plans/      the original v0.1 material, kept for reference
   README.md          musical intent, filter chain, button/knob map

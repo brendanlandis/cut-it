@@ -14,6 +14,8 @@ All authored by hand in Pd 0.49 format. Do not open them in plugdata — see
 | `midi-drive.pd` | Sweeps notes 47–62 on channel 33 to trigger SP-404 pads, and monitors incoming. |
 | `lp-monitor.pd` | Puts the Launchpad in Programmer Mode, echoes pad presses back as LEDs, prints velocity and polyphonic aftertouch. |
 | `lp-flicker.pd` | Fills the Launchpad with random monochrome noise via per-pad RGB SysEx. Press any pad to toggle grey ↔ blue. Demo, but a working reference for RGB SysEx and `until` loops. |
+| `lp-modes.pd` | Lights three pads static / flashing / pulsing — the device's three LED animation modes. |
+| `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
 
 ## Running one
 
@@ -50,3 +52,8 @@ Stop with `killall pd`.
   grid; the patch has to clear it.
 - **Velocity indexes a 128-entry colour palette, not brightness.** For real greyscale or
   arbitrary colour, use the per-pad RGB SysEx: `F0 00 20 29 02 0E 03 03 <pad> <r> <g> <b> F7`.
+- **LED animation is free.** Static / flashing / pulsing are MIDI channels 1 / 2 / 3, animated
+  by the device — no `[metro]` in Pd. Flashing alternates the ch1 and ch2 colours, so send
+  both. Pulsing ramps toward zero, so use a bright palette index or it reads as weak.
+- **A patch can wire its own `aconnect` calls** via `[shell]`, but put the commands in a shell
+  script — Pd message boxes and shell quoting do not mix well.

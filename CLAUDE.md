@@ -37,7 +37,8 @@ the actual device before relying on them.
 ```
 Cut It/            the deployable patch — folder name is what appears in the Organelle menu
 deploy.sh          scp-based deploy (there is no rsync on the device)
-rig-plan.md        hardware architecture, wiring, MIDI/audio/power, design decisions
+rig-plan.md        the physical rig — wiring, MIDI/audio/power, verified device behaviour
+design-notes.md    how the instrument works — architecture, timing model, decisions
 pre-flight-tests.md  ordered hardware checks to run before UI/UX work
 README.md          musical intent, filter chain, button/knob map
 ```
@@ -106,7 +107,7 @@ removing an abstraction, or a stale `.pd` will shadow the new one.
 
 ## Architecture decisions already made
 
-Full reasoning in [rig-plan.md](rig-plan.md). The load-bearing ones:
+Full reasoning in [design-notes.md](design-notes.md). The load-bearing ones:
 
 - **Grain timing must be audio-domain.** Pd's message clock is quantised to a 64-sample
   block (~1.45ms), which is ~20% of a 256th note at 120 BPM. Drive grain clocks from
@@ -124,9 +125,14 @@ Full reasoning in [rig-plan.md](rig-plan.md). The load-bearing ones:
 ## Verified vs assumed
 
 `rig-plan.md` has an *Open questions* section listing what is still untested on hardware, and
-`pre-flight-tests.md` is the ordered checklist. **Do not treat those as settled facts.** The
-most consequential unknown is whether Pd on this device can drive the Launchpad's Programmer
-Mode over SysEx — the entire UI plan depends on it.
+`pre-flight-tests.md` is the ordered checklist with results. **Do not treat open items as
+settled facts.**
+
+The two tests that could have forced a redesign have both **passed**: Pd can drive the
+Launchpad's Programmer Mode over SysEx (LEDs, velocity, polyphonic aftertouch), and Pd's
+per-device channel offsets work with multiple controllers at once. What remains is
+cable-blocked — the audio topology (Session 3) and full-rig power draw — plus the
+[tools/](tools/) patches, which are working references for the techniques involved.
 
 
 ## Working notes

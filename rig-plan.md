@@ -57,16 +57,25 @@ flatten everything into one stream and throw that away.
 `MAXMIDIINDEV` is 16 in Pd (verified in both 0.49 and 0.53 source), so four devices is
 nowhere near the limit.
 
-**Setup task:** Pd only opens the MIDI devices it is told to at launch. The Organelle's Pd
-startup flags will need `-midiindev 1,2,3,4` and matching `-midioutdev`.
+**Done:** Pd only opens the MIDI devices it is told to at launch, and it reads that from
+`/root/.pdsettings`, not command-line flags — mother passes none. The device is configured for
+**4 in / 4 out** with `midiapi: 1` (which forces ALSA MIDI; without it Pd falls back to OSS
+and the Launchpad's three ports collapse into one). Verified surviving a cold boot. Backup at
+`/root/.pdsettings.bak`.
+
+**Devices are wired to Pd's ports with `aconnect`, by name** — and the patch does this itself
+at load time via `[shell]`, because mother's `alsaconnect.sh` only connects one device. See
+`tools/wire.sh`.
 
 **Direction:** the Organelle is clock master. Disable clock-out on every other device —
 particularly the 404's "MIDI Sync Out", which will otherwise echo clock back and create a
 loop.
 
-Note that under the compose/perform split (below), nothing external runs its own sequencer
-during a performance, so outgoing MIDI clock is close to decorative. Keep sending it, but
-nothing critical should depend on it.
+**Keep sending clock — it is not decorative.** An earlier draft of this plan claimed it was,
+on the grounds that nothing external runs its own sequencer during a performance. That was
+wrong: the 404's **BPM SYNC time-stretch follows its tempo**, and the only way it learns the
+tempo is by measuring incoming clock intervals. Stop the clock and it stretches to a stale
+local value. See *Time-stretch* in [design-notes.md](design-notes.md).
 
 **The Launchpad runs over USB.** Its TRS MIDI jacks go unused, and the three TRS→DIN
 adapters in its box aren't needed here. USB gives it its own 16-channel block, keeps
@@ -132,11 +141,10 @@ and fx each get their own 3-band EQ and one-knob compressor.
 not guarantee operation through hubs. A USB-A→C cable from the hub carries **data only**,
 which is what we want — the 404 runs off its own adapter and costs the hub nothing.
 
+## Device capabilities
 
-## Control surfaces
-
-The two controllers have very different capabilities, and the difference should drive which
-functions live where.
+What each box can actually do, verified on hardware. What to *build* with it lives in
+[design-notes.md](design-notes.md).
 
 ### Launchpad Pro MK3 — a genuine blank slate
 
@@ -168,60 +176,6 @@ not a hack. In it:
 
 Unit is a **MK3** (MK3 announced Jan 2020; a 09/2020 build date rules out MK1). Use the MK3
 reference — SysEx headers and side-button note numbers differ from MK1.
-
-### Launchpad — three tiers, and you only build the top one
-
-Programmer Mode is all-or-nothing: entering it disables every built-in mode. But **Pd can
-switch layouts by SysEx** (header `F0 00 20 29 02 0E`, with a layout-select command and a
-separate Programmer/Live switch), so modes are something you flip between, not something you
-choose once.
-
-| Tier | What | Work | LED control |
-|---|---|---|---|
-| **Built-in** (Note, Chord, Sequencer, Projects) | Novation's, fully featured | **None** | Device owns them |
-| **Custom Modes** — 8 slots, built in Novation Components | Drag-and-drop widgets: scaled keyboards, drum grids, virtual faders. Pads send Note / CC / Program Change | Moderate, no code | Limited — one "on" colour per mode, per-pad "off" colours |
-| **Programmer Mode** | Everything from scratch | Most | Full dynamic RGB |
-
-**Do not rebuild these.** Note mode's scale tables, root selection and isomorphic layout
-maths are genuinely fiddly in Pd and Novation's are good. Chord mode is worse to replicate.
-The Sequencer is 4 tracks × 32 steps × 8-note poly with pattern chaining — a substantial
-project on its own, and it is already the compose-time authoring tool. Projects handles
-save/recall of that sequencer data.
-
-**The tier 2/3 boundary is dynamic colour.** Custom Modes allow only one "on" colour per
-mode, so static colour-coding works but "empty / loaded / queued / playing" as four distinct
-states does not. The pattern launcher needs Programmer Mode; a plain CC grid or a scaled
-keyboard does not.
-
-Novation Components needs a computer (web app over WebMIDI, or standalone) — you cannot
-author Custom Modes from the Organelle, but once written they persist on the device.
-
-**Risk:** entering Programmer Mode *by SysEx* locks out the Settings menu until Pd sends a
-SysEx selecting another layout. If Pd dies mid-set you are power-cycling the Launchpad. Bind
-a "return to Live mode" message somewhere reachable.
-
-### Grid idioms worth stealing
-
-The conventions grid controllers have converged on, and what each maps to here:
-
-| Idiom | What it is | Use for Cut It |
-|---|---|---|
-| **Clip launching** (Session) | Columns = tracks, rows = scenes. Blinks when queued, solid when playing. Right column fires a whole row | **The pattern launcher.** Columns = destinations (404 drums, Volca, internal), rows = variations. Inherits the queued/playing visual convention free |
-| **Drum rack** | 4×4 quadrants of velocity-sensitive trigger pads | **Four filter quadrants**, arranged right-to-left to match the signal chain. 16 pads per filter vs the 5–7 keys currently on the Organelle keyboard |
-| **Isomorphic note layout** | Fixed interval per row, scale-locked | Playing the Volca — use built-in Note mode, don't rebuild |
-| **Step sequencing** | Row = track, column = step | Compose-time authoring — use built-in Sequencer |
-| **Column-as-fader** | Press higher = higher value. 8 steps of resolution | Coarse parameter control if the nano runs out |
-| **X/Y pad** | Pad coordinates set two parameters at once | **Chop Shop's drunkenness + sputter.** A 4×4 block = 16 positions over both. Slapping a corner is a different gesture than turning two knobs |
-| **Radio buttons** | A row as exclusive mode select, lit | Filter selection |
-| **Pure display** | Grid as output only | Playhead position, which sample slots are filled |
-
-**Pressure is the forgotten input.** Grain size, chop intensity, filter depth — any of these
-can ride pad pressure while held. Costs no panel space and is the most expressive control on
-the rig.
-
-The README says the controls *"will take some practice and memorization."* The RGB grid is
-the direct antidote to half of that: which filters are on, which of the five sample slots are
-filled, which pattern is queued, where the playhead is — all visible rather than memorised.
 
 ### nanoKONTROL (mk1) — visible position, no host LEDs
 
@@ -256,10 +210,25 @@ device switches locally and Pd has no idea. Assign **distinct CC numbers per sce
 infers the active scene from which CCs arrive. Do that and scene switching self-announces;
 don't, and it is the unlabelled-knob problem in a worse form.
 
-**Risk:** Korg Kontrol Editor is 2008-era software and you need it for the momentary setting
-and CC assignments. Verify it runs on your machine before committing — legacy Korg editors
-have been rough on recent macOS. If it won't run, the nano is stuck with whatever is
-currently written to it.
+**Configured and verified on hardware.** Editor version **2.4.0** is required — Korg's 2.5.0
+dropped first-generation nanoKONTROL support, and it's available from the "previous versions"
+list on the [KONTROL EDITOR download page](https://www.korg.com/us/support/download/software/1/133/1355/).
+
+| Control | CC | Pd decode |
+|---|---|---|
+| Sliders 1–9 | 1–9 | `div 10` = 0 |
+| Knobs 1–9 | 11–19 | `div 10` = 1 |
+| Buttons, top row 1–9 | 21–29 | `div 10` = 2 |
+| Buttons, bottom row 1–9 | 31–39 | `div 10` = 3 |
+
+`cc mod 10` gives the channel number in every case — the same addressing idiom as the
+Launchpad's `r*10+c` grid, so one decode pattern covers both surfaces.
+
+All buttons are **momentary**, verified sending 127 on press and 0 on release. Pd owns all
+toggle state. Arrives on **Pd channel 17** (device 2).
+
+**No LED Mode setting exists** on the mk1 — confirmed in the editor, not just inferred. All
+visible state has to live on the Launchpad.
 
 ### BeatStep retired
 
@@ -271,59 +240,6 @@ It does have host-controllable pad LEDs (red, on/off) which the nanoKONTROL mk1 
 one axis where it wins. But the Launchpad covers every state-display need in the rig, and
 visible knob position plus a bank of faders is worth more here than a second grid of red
 lights.
-
-### Division of labour
-
-Nothing overlaps:
-
-- **Launchpad** — pads, grid state, and compose-time sequencing. Anything needing state you
-  can see.
-- **nanoKONTROL** — continuous control, with position visible on the panel. Momentary
-  buttons only.
-- **Organelle keyboard** — note entry at compose time; filter control at perform time.
-
-
-## Design decisions and their consequences
-
-### Drums and fx split across the 404's L/R
-Per-sample pan on the 404 runs from MONO(Left) through to MONO(Right). Hard-pan drum
-samples left and fx samples right and you get two independent mono streams out of one
-stereo pair.
-
-- **Master FX break this.** BUS 3/4 are master effects applied to the whole mix and will
-  bleed across the split. Use per-sample BUS 1/2 effects only.
-- **Both channels are mono.** Stereo samples fold down. Acceptable; a future "stereo mode"
-  in the patch could drop drums and process fx in stereo instead.
-
-### Mic goes into the 404, and bleeds into both channels
-The 404's MIC/GUITAR IN is a mono input and sums to **both** outputs. There is no pan
-control for the external input. So live vocals appear on the drums channel as well as the
-fx channel.
-
-This is accepted deliberately — the alternative was splitting the mic through the mixer's
-FX send, which is more cables and more unlabelled knob state to get wrong mid-set.
-
-Consequences:
-- **Upside:** the vocal arrives dry via the drums path and mangled via the fx path at the
-  same time. That is the standard dry/wet vocal setup, for free.
-- **Watch:** the vocal will also be captured into any drums-channel sampler. Sing while
-  Cut It grabs a drum buffer and your voice is baked into it. Handle at capture time — a
-  "don't record into drum buffers" toggle, or just don't arm drum capture while the mic is
-  hot. Cheap now, annoying to retrofit.
-- Once a vocal is **sampled** to a pad it behaves like any other sample and can be panned
-  hard right. Only live passthrough bleeds.
-
-### No routing depends on a knob position
-Deliberate. The 404's per-sample pans are saved with the project and recall. Cables carry
-the signal paths. The mixer's knobs only set levels — and a wrong level is audible
-immediately rather than failing silently.
-
-The remaining hidden state is all on the 404 (ExtIn monitoring, bus assignments, input FX),
-which lives in menus. **Build a pre-set checklist for that box specifically.**
-
-### Organelle audio back into the 404 — dropped
-Considered and dropped for now. Would have used the mixer's FX send as a variable-gain
-feedback path. Revisit later if wanted; it needs no rewiring beyond one cable from FX SEND.
 
 ### SP-404 MIDI — verified working, both directions
 Confirmed on hardware, no settings changes required. The 404's factory MIDI config is
@@ -351,176 +267,61 @@ note-offs.
 visually identical and extremely common; two were tried before one worked. If the device does
 not appear in `lsusb`, suspect the cable before anything else.
 
-### Tempo is freely modulable, but propagates unevenly
-Because the Organelle *generates* the clock, tempo is just a float in the patch.
-[midiclock.pd](midiclock.pd) already has the plumbing (`r tempo` → `tempo $1 permin` →
-`metro`). Route any CC to `s tempo` and a nanoKONTROL knob becomes tempo control. Tap
-tempo, an LFO, a pad — all the same.
 
-**But MIDI clock has no tempo message.** You change the *rate* of the 24 PPQN pulse stream,
-and slaved devices infer tempo by measuring pulse intervals, most averaging over several
-pulses. So:
-
-- Gradual changes track fine everywhere.
-- Instant jumps take several pulses to propagate; large ones can make the 404 or Volca
-  stutter or briefly drop sync.
-
-**Consequence: internal and external timing diverge under fast modulation.** The Organelle's
-own grain clocks are `phasor~`-based — changing frequency is instant and glitch-free, phase
-simply continues. Slaved gear lags several pulses behind. Modulate tempo quickly and the
-Organelle is somewhere the 404 hasn't reached yet.
-
-For this instrument that is arguably a feature — controlled drift between sampler and drums
-is a real effect. But know which you are building:
-
-- **Tempo knob** — gradual, everything follows.
-- **Per-grain tempo chaos** — Organelle-only, external gear will not follow.
-
-Keep changes gradual, or quantise them to bar boundaries, when tight sync matters.
-
-**Related limitation:** Pd sends MIDI on block boundaries, so outgoing clock carries ~1.45ms
-of jitter — about 7% of a pulse interval at 120 BPM. Most gear averages it away. If the
-Volca ever feels loose against the Organelle's internal timing, that is why, and it is not
-readily fixable in vanilla Pd.
-
-**Largely moot under the compose/perform split.** If nothing external runs its own sequencer
-during a performance, there is nothing to propagate to and tempo is completely free. This
-section matters mainly at compose time, where quantise-on-capture handles it anyway.
-
-### Timing rides in note events, not in clock
-MIDI clock's weakness is structural: it transmits a *rate* the receiver must infer by
-measuring intervals. A note-on needs no inferring — it is an event at a moment.
-
-So **Pd sequences everything.** Drive note-outs from the same `phasor~` that drives the grain
-clocks, and the 404 never needs to know the tempo at all. Drum timing becomes exactly as
-accurate as internal timing, including tempo modulation that provably cannot work over clock.
-
-| Approach | Tempo behaviour |
-|---|---|
-| **Pd sequences, sends notes** | Tight. Modulate as violently as you like |
-| **Device sequencers synced to clock** | Must infer tempo. Lag and drift under modulation |
-
-Pd's note output still carries the ~1.45ms block quantisation, so this is not sample
-accurate. But it is fixed absolute jitter rather than compounding inference lag, and it is
-inaudible at trigger rates. The fastest timing — grain chopping — never leaves the Organelle
-anyway, since it happens to audio already captured.
-
-### Author on hardware, commit to Pd
-Device sequencers stay useful as *authoring* tools. Record their MIDI output into Pd, then
-play it back from Pd's clock.
-
-Vanilla Pd has `seq` for this (records raw MIDI with timestamps, reads/writes MIDI files),
-but a custom recorder on `text` is probably better — it lets you store note, velocity, step
-and source separately, and edit them afterward.
-
-**Quantise on capture.** The device sequencer runs off the slightly-loose MIDI clock while
-authoring, but that does not matter: you are capturing *which step*, not exact microtiming.
-Snap incoming events to the grid on the way in and the sloppy authoring clock becomes
-irrelevant. Playback is then Pd's timing.
-
-| Source | Capturable? | Notes |
-|---|---|---|
-| **Launchpad** | ✅ | 4 tracks, 32 steps, 8-note poly. Built-in Sequencer mode |
-| **Organelle keyboard** | ✅ | Free-played note entry |
-| **SP-404MK2** | ✅ | `SEQ Note Out: On` in the device's MIDI settings makes the pattern sequencer transmit notes. `PAD Note Out: On` transmits pad presses. Both verified arriving in Pd |
-| **Volca FM** | ❌ | **MIDI IN only — no MIDI out at all.** Its sequencer output cannot be captured. The FM2 added MIDI out; the original did not have it |
-
-Author Volca parts on the Launchpad and have Pd play them into the Volca — which is what the
-plan does anyway. You just don't get its own step buttons as an authoring surface.
-
-**The upside:** once a pattern lives in Pd it stops being locked inside a device. It becomes
-data, subject to the same drunkenness, sputter and chop parameters as everything else. A
-captured loop played back at a wandering tempo with random step-skipping is a more
-interesting object than the device sequencer could produce alone.
-
-### Compose time and perform time are separate modes
-Sequences get built and saved *before* a performance; the performance refers back to them.
-This dissolves three problems at once:
-
-- **The Launchpad mode conflict evaporates.** Authoring uses Note/Chord/Sequencer; performance
-  uses Programmer Mode. They never coexist, so no mid-set SysEx flipping.
-- **Tempo propagation stops mattering** — see above.
-- **The 404's murky MIDI out becomes low-stakes.** A stray continuous C is an offline
-  annoyance you filter on capture, not a live failure.
-
-**What it forces: the patch needs explicit compose and perform modes.** Both the Launchpad
-*and* the Organelle's own keyboard are double-booked — the keyboard is four filter groups
-during performance and a note-entry surface during composition. Design this in from the
-start; it is much easier than retrofitting once the filter logic exists.
-
-**Three storage decisions worth making early:**
-
-1. **Normalise to one device-agnostic event format.** Sources have wildly different shapes
-   (Launchpad 4×32 at 8-note poly, keyboard free-played). Capture everything as
-   `time, note, velocity, duration` and nothing downstream cares what authored it.
-2. **Decouple capture source from playback destination.** Channel offsets tell you what a
-   pattern was recorded *from*; that should not determine where it plays *to*. Bake it in and
-   you have permanently made something "a Launchpad pattern".
-3. **Store as plain text files in the repo.** `text define` + `text write` in vanilla Pd. The
-   payoff is patterns that are git-diffable and editable in a text editor alongside the patch.
-
-
-## Patch development notes
-
-- **Organelle 1 runs Pd 0.49.** Develop in **vanilla Pd 0.49**, not the latest.
-- **OS history for Organelle 1:** OS 4.0 brought Organelle M features back to the original and
-  is what updated its Pd to 0.49 (before that it was on 0.46 under OS 3.x). **4.1 is the last
-  version for Organelle 1** — 4.2 is M/S only, and OS v5 supports M/S/S2 only. **This unit
-  reports OS 4.0**, so 4.1 is available as an upgrade if ever needed.
-- Pd is 0.49 on every Organelle-1-compatible OS from 4.0 onward, so the target doesn't move.
-- **Do not save Organelle-bound patches from plugdata.** plugdata is based on Pd 0.55+ and
-  writes hex iemgui colours (`#fcfcfc`) that Pd 0.49 cannot parse. The `cut-it 2` working
-  copy already has `main.pd` rewritten into this format — revert it before use on hardware.
-- Nothing in the patch currently needs anything newer than Pd 0.43, so 0.49 costs nothing.
-- **Grain timing must be audio-domain.** At 256th notes (~7.8ms at 120 BPM) Pd's message
-  clock is quantised to a 64-sample block (~1.45ms), which is ~20% jitter per grain. Drive
-  grain clocks from `phasor~` and envelopes from `vline~`, not `metro`/`line~`.
-- **MIDI clock is 24 PPQN** — a pulse every 20.8ms at 120 BPM, coarser than a 256th note.
-  You cannot count pulses to get there. Estimate tempo from the clock, run a free-wheeling
-  audio-domain oscillator at the derived frequency, and resync phase per beat or bar.
-- BPM-mode and MS-mode are a *units* choice, not two clock engines. Normalise both to Hz
-  (`bpm/60 × subdivisions` or `1000/ms`) and feed one `phasor~`.
+---
 
 
 ## Open questions to verify on the hardware
 
-1. **Organelle's actual Pd version** — `pd -version` on the device, or via the Pd console.
-2. **Pd startup flags** — where the Organelle OS sets them, to add `-midiindev`.
-3. **USB enumeration stability.** Pd assigns device numbers in enumeration order and the
-   channel offsets follow. If order shifts between reboots, every `route` silently rotates.
-   Either pin with udev rules or have the patch identify devices by message signature.
-   Test this early.
-4. **How the 404 places external input in the stereo field — and whether it can be pinned
-   to one side.** This is the load-bearing unknown for the whole drums/fx split. The claim
-   that a mono input sums to both sides comes from user documentation, not Roland's spec
-   sheet, and nothing I could find documents whether it can be constrained.
+### Resolved
 
-   One test session answers it. Monitor the 404's L and R outputs separately (headphones,
-   or the mixer with one channel at a time), play a sample panned hard MONO(Left), and:
+| Question | Answer |
+|---|---|
+| Organelle's Pd version | **Pd 0.49.0**, compiled Oct 9 2018. OS 4.0. |
+| Where Pd's startup flags live | **`/root/.pdsettings`** — mother passes no `-noprefs` and no MIDI flags. Already edited to 4 in / 4 out with `midiapi: 1`. |
+| USB enumeration stability | **Moot.** Devices are wired with `aconnect` **by name**, so client renumbering is harmless — demonstrated live when client 28 changed from Launchpad to SP-404 mid-session. No udev rules needed. |
+| Does the 404 transmit its own pad presses? | **Yes**, `PAD Note Out: On`. Verified arriving in Pd on channel 33. |
+| Does Korg Kontrol Editor run? | **Yes, version 2.4.0** — 2.5.0 dropped first-generation nanoKONTROL support. Nano is configured and written. |
 
-   - **a.** Feed the **MIC/GUITAR IN**. Does the mic appear on the L output alongside the
-     drum sample? Expected: yes, it sums to both. If it doesn't, the accepted bleed
-     compromise is unnecessary and the design gets simpler.
-   - **b.** Look for **any pan or routing control for the external input** — input FX
-     settings, bus assignment, anything that shifts it off centre.
-   - **c.** Feed **LINE IN R only**, nothing in L/MONO. Does the signal stay on the right,
-     or sum to both? Its partner jack being labelled L/MONO is suggestive but not
-     conclusive. A "stays right" result opens up the mic → mixer preamp → LINE IN R path,
-     which would give hard-panned live vocals through the 404's input FX.
+Details in [pre-flight-tests.md](pre-flight-tests.md) and *Device capabilities* above.
 
-   Outcome (a) confirms the plan as written. Outcomes (b) or (c) would be upgrades, not
-   requirements — the rig works either way.
+### Still open
 
-5. **Does the 404's pattern playback emit MIDI notes?** It has MIDI out and can sequence
-   external gear, but whether pattern playback transmits note data for its own pads is
-   undocumented, and there are reports of a stray continuous C-note when external input is
-   on. Determines whether the 404 is usable as a compose-time authoring surface. Low stakes
-   — filter the stray note on capture if needed.
+**1. How the 404 places external input in the stereo field — and whether it can be pinned to
+one side.** The load-bearing unknown for the drums/fx split, and the only substantial one
+left. The claim that a mono input sums to both sides comes from user documentation, not
+Roland's spec sheet, and nothing documents whether it can be constrained.
 
-6. **Does Korg Kontrol Editor still run on your machine?** Needed to set the nanoKONTROL's
-   buttons to momentary and assign per-scene CCs. 2008-era software; legacy Korg editors
-   have been rough on recent macOS. If it won't run, the nano is stuck with whatever is
-   currently written to it.
+One session answers it. Monitor the 404's L and R outputs separately (headphones, or the
+mixer one channel at a time), play a sample panned hard MONO(Left), and:
+
+- **a.** Feed the **MIC/GUITAR IN**. Does the mic appear on the L output alongside the drum
+  sample? Expected: yes, it sums to both. If it doesn't, the accepted bleed compromise is
+  unnecessary and the design gets simpler.
+- **b.** Look for **any pan or routing control for the external input** — input FX settings,
+  bus assignment, anything that shifts it off centre.
+- **c.** Feed **LINE IN R only**, nothing in L/MONO. Does the signal stay on the right, or sum
+  to both? Its partner jack being labelled L/MONO is suggestive but not conclusive. A "stays
+  right" result opens up the mic → mixer preamp → LINE IN R path, giving hard-panned live
+  vocals through the 404's input FX.
+
+Outcome (a) confirms the plan as written. Outcomes (b) or (c) would be upgrades, not
+requirements — the rig works either way. This is Session 3 in the pre-flight list and needs
+the TRS Y-cable.
+
+**2. Does the 404's *pattern playback* transmit notes?** Partially answered: `SEQ Note Out`
+is **On** in the device settings, which is the setting that governs it, and pad presses
+demonstrably transmit. But no pattern has actually been run and captured. Low stakes —
+determines whether the 404 works as a compose-time authoring surface alongside the Launchpad,
+and there are scattered reports of a stray continuous C-note when external input is on, which
+would need filtering on capture.
+
+**3. How do you see Pd's error output?** Unsolved, and it will bite during the rewrite. Pd is
+launched with `-nogui`, so there is no console; errors go to stdout on tty1, which VNC will
+not show either. Running Pd manually over SSH works for diagnostics (see [tools/](tools/)) but
+not for patches loaded normally through the Organelle's menu. Options not yet explored:
+redirecting mother's output to a file, reading tty1 remotely, or having the patch report
+errors to the OLED.
 
 
 ## Gear

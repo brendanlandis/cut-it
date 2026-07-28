@@ -50,19 +50,22 @@ matters.
 
       Not yet done: all four devices connected at once. Blocked on cables.
 
-- [ ] **4. Can the patch wire its own MIDI connections at load time?** ⚠️ **The real
-      remaining risk in this session.** mother's `alsaconnect.sh` connects only *one* device —
-      it predates multi-controller setups — so Cut It has to issue its own `aconnect` calls.
+- [x] **4. Can the patch wire its own MIDI connections at load time?** ✅ **Yes, via
+      `[shell]`.** Necessary because mother's `alsaconnect.sh` connects only *one* device — it
+      predates multi-controller setups.
 
-      `shell.pd_linux` is present in `/root/Pd/externals`, so `[shell]` should be able to run
-      them from inside the patch. Untested. Two constraints already known:
+      `shell.pd_linux` is in `/root/Pd/externals` and loads fine. The working pattern is
+      `[loadbang] → [del 1500] → [sh /tmp/wire.sh( → [shell]`, with the `aconnect` calls in a
+      **shell script** rather than a Pd message box — that sidesteps Pd's quoting rules around
+      quotes and colons entirely. Reference implementation: `tools/self-wire.pd` and
+      `tools/wire.sh`.
+
+      Verified wiring all connections from a cold Pd launch with nothing pre-connected.
+
+      Two constraints, both load-bearing:
 
       - Connect **by name**, never by client number.
       - **Delay it.** ALSA connections do not exist when `loadbang` fires — see Session 2.
-
-      If `[shell]` turns out to be unusable, the fallback is overriding `alsaconnect.sh` via
-      the `/sdcard/Firmware/scripts` path, which is heavier (it also wants a `mother` binary
-      alongside it).
 
 - [ ] **5. Watch for brownouts** with the full rig connected. Never yet tested with three
       controllers plus the wifi dongle simultaneously — only ever two at a time, because of
@@ -84,9 +87,15 @@ Launchpad-as-display concept would have collapsed. It works.
 - [x] **8. Light a pad.** ✅ 64 pads individually addressable. Velocity indexes a **128-entry
       colour palette, not brightness**. For arbitrary colour use per-pad RGB SysEx:
       `F0 00 20 29 02 0E 03 03 <pad> <r> <g> <b> F7` — see `tools/lp-flicker.pd`.
-- [ ] **8b. Flashing and pulsing.** Static / flashing / pulsing are MIDI channels 1 / 2 / 3.
-      Untested. Worth knowing before designing state colours — a blinking "queued" state costs
-      one message instead of timing logic in Pd.
+- [x] **8b. Flashing and pulsing.** ✅ All three lighting modes work, animated by the device
+      itself — no `[metro]` needed in Pd. Static / flashing / pulsing are MIDI channels
+      **1 / 2 / 3**, so `[noteout 1]`, `[noteout 2]`, `[noteout 3]`.
+
+      **Flashing alternates the channel-1 and channel-2 colours** for that pad, so send both:
+      ch1 sets one colour, ch2 the other. Pulsing takes a single ch3 colour.
+
+      **Pick bright palette indices for pulsing** — it ramps brightness toward zero, so it
+      spends real time dim and a mid-brightness colour reads as weak. See `tools/lp-modes.pd`.
 - [x] **9. Read pressure.** ✅ Polyphonic aftertouch working, per-pad, simultaneous — two held
       pads reported independent values. **Requires enabling on the device:** hold `Setup`,
       press the **third Track Select button**, choose *Polyphonic Aftertouch*. Default is
@@ -129,10 +138,31 @@ LINE IN R-only variant.
 - [x] **14. Plug it in and print the CCs.** ✅ Class compliant, enumerates as ALSA card 4,
       arrives on Pd channel 17. A fader sends CC 2. Full 18-control map not yet catalogued,
       but the question is answered.
-- [ ] **15. Does Korg Kontrol Editor run on your machine?** Needed to set buttons to momentary
-      and assign per-scene CCs. 2008-era software. If it will not run, the nano is stuck with
-      its current assignments and toggle-mode buttons, which changes the control mapping
-      approach.
+- [x] **15. Korg Kontrol Editor — runs, and the nano is configured.** ✅
+
+      **Use version 2.4.0**, not the current release. Korg's 2.5.0 removed support for the
+      first-generation nanoKONTROL ("Remove nanoKEY, nanoPAD, nanoKONTROL"). 2.4.0 is the last
+      version that sees it, and it runs on macOS 26. Get it from the *"Click here for previous
+      versions"* section of the
+      [KORG KONTROL EDITOR download page](https://www.korg.com/us/support/download/software/1/133/1355/).
+      Don't go below 2.0.9 — earlier releases predate Catalina's 64-bit requirement.
+
+      **Configured and written to the device:**
+
+      | Control | CC |
+      |---|---|
+      | Sliders 1–9 | 1–9 |
+      | Knobs 1–9 | 11–19 |
+      | Buttons, top row 1–9 | 21–29 |
+      | Buttons, bottom row 1–9 | 31–39 |
+
+      All buttons set to **momentary** — verified sending 127 on press, 0 on release, so Pd
+      owns all toggle state. Decode in Pd with `cc div 10` for control type (0=slider, 1=knob,
+      2=top button, 3=bottom button) and `cc mod 10` for channel number — the same idiom as
+      the Launchpad's `r*10+c` grid.
+
+      **No LED Mode setting exists** for the mk1, confirming it has no host-controllable LEDs.
+      All visible state must live on the Launchpad.
 
 ---
 

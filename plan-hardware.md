@@ -141,6 +141,73 @@ and fx each get their own 3-band EQ and one-knob compressor.
 not guarantee operation through hubs. A USB-A→C cable from the hub carries **data only**,
 which is what we want — the 404 runs off its own adapter and costs the hub nothing.
 
+## The device itself
+
+```sh
+ssh root@organelle.local        # 192.168.1.15, password: organelle
+```
+
+| | |
+|---|---|
+| Home | `/root` (not `/home/music`) |
+| Patches | `/sdcard/Patches/` — factory set lives here |
+| User patches | `/sdcard/Patches/!/` — `!` sorts to the top of the menu |
+| Pd config | `/root/.pdsettings` |
+| Externals | `/root/Pd/externals` |
+| Scripts | `/root/fw_dir/scripts/` |
+| Extra libs | `/sdcard/PdExtraLibs` — already on Pd's search path |
+| Transfer | **`scp` only — no rsync installed** |
+
+Hardware is **i.MX-based** (`imx-spdif`, `imx-hdmi-soc`, `usb-ci_hdrc` in the ALSA card list),
+armv7. 495 MB RAM, 3.3 GB free on `/sdcard`.
+
+**The root filesystem is mounted read-only.** Run `/root/fw_dir/scripts/remount-rw.sh` before
+writing to `/root`, and `remount-ro.sh` after. `/sdcard` and `/usbdrive` are writable.
+
+**`/root/.pdsettings` is device-resident state with no off-device backup.** It holds the
+`midiapi: 1` and 4-in/4-out configuration that the whole MIDI topology depends on, and
+`/root/.pdsettings.bak` sits on the same card. Pull a copy into this repo. ⬜ not yet done.
+
+### How Pd is launched
+
+Pd is launched by the `mother` binary, not a shell script:
+
+```
+/usr/bin/pd -rt -nogui -audiobuf 6 -path /sdcard/PdExtraLibs /root/fw_dir/mother.pd main.pd
+```
+
+No `-noprefs` and no MIDI flags, so **`/root/.pdsettings` governs MIDI** and editing it is the
+way to add devices. Note `-audiobuf 6` on the command line overrides `audiobuf: 4` in
+`.pdsettings` — command-line flags win.
+
+**`-nogui` means there is no Pd console.** Patch errors go to stdout on tty1, so VNC will not
+show them either. This is why error reporting to the OLED is treated as an architecture
+requirement rather than a debugging convenience — see [plan-conventions.md](plan-conventions.md).
+
+### MIDI: OSS vs ALSA
+
+Out of the box, Pd here runs on **OSS MIDI**, not ALSA — `.pdsettings` has `flags: -alsamidi`
+but **no `midiapi:` line**, and the `flags:` preference is not applied under `-nogui`. Under
+OSS, devices appear as `/dev/midiN` where N tracks the ALSA card number, one node per card —
+so the Launchpad's three separate ports collapse into one and Programmer Mode may be
+unreachable.
+
+ALSA MIDI *does* work on this build (`pd -alsamidi` registers a `Pure Data` client with in/out
+ports). The fix is adding `midiapi: 1` to `/root/.pdsettings`. Under ALSA, Pd creates its own
+virtual ports and hardware is wired to them with `aconnect` **by name**, which also solves
+USB-enumeration-order drift across reboots.
+
+### Deploying
+
+Deploy with `./deploy.sh`, then press **Storage → Reload** on the device. Because there is no
+rsync, locally-deleted files linger remotely — use `./deploy.sh --clean` after renaming or
+removing an abstraction, or a stale `.pd` will shadow the new one.
+
+Patch storage falls back from `/usbdrive` to `/sdcard` based on whether `/usbdrive` is
+*mounted*, not whether it holds patches. An empty mounted USB drive yields an empty patch
+menu; Storage → Eject unmounts it without physical removal.
+
+
 ## Device capabilities
 
 What each box can actually do, verified on hardware. What to *build* with it lives in

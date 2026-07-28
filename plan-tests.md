@@ -10,6 +10,16 @@ matters.
 **Status:** Sessions 2 and 4 complete. Session 1 done bar the full-load power check.
 Session 3 blocked on the TRS Y-cable.
 
+**The two tests that could have forced a redesign have both passed:** Pd can drive the
+Launchpad's Programmer Mode over SysEx (LEDs, velocity, polyphonic aftertouch), and Pd's
+per-device channel offsets work with multiple controllers at once. What remains is
+cable-blocked — the audio topology and full-rig power draw.
+
+**Do not treat open items as settled facts.** [plan-hardware.md](plan-hardware.md) has an
+*Open questions* section, [plan-midi.md](plan-midi.md) has its own, and this file is the
+ordered checklist with results. The [tools/](tools/) patches are working references for every
+technique verified here.
+
 ---
 
 ## Session 1 — Does the plumbing exist?
@@ -45,7 +55,8 @@ Session 3 blocked on the TRS Y-cable.
       `[route]` on the channel outlet separates devices.
 
       Required getting Pd onto ALSA MIDI first — see *MIDI: OSS vs ALSA* in
-      [CLAUDE.md](CLAUDE.md). Devices are wired to Pd's ports with `aconnect` **by name**;
+      [plan-hardware.md](plan-hardware.md). Devices are wired to Pd's ports by name with
+      `aconnect`;
       client numbers shift as devices come and go (28 was the Launchpad, then became the
       SP-404), so never hardcode them.
 

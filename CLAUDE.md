@@ -4,15 +4,19 @@ A cut-up / harsh noise instrument patch for the **original Critter & Guitari Org
 (a.k.a. Organelle 1 — *not* the M, S, or S2). Pure Data.
 
 Early design stage. Most of it is not built yet, and a rewrite from scratch is on the table.
-See [README.md](<! v0.1 plans/README.md>) for the musical intent and control layout.
 
 
 ## Hard constraints — read before writing any Pd
 
-**Target is Pd vanilla 0.49.** Verified on the device: `Pd-0.49.0, compiled Oct 9 2018`.
-The Organelle 1 runs OS 4.0, which is the release that brought its Pd up from 0.46. OS 4.1
-is the last version for this hardware; 4.2 and OS 5 are M/S/S2 only. Do not suggest objects
-newer than 0.49.
+**Target is Pd vanilla 0.49, permanently.** Verified on the device:
+`Pd-0.49.0, compiled Oct 9 2018`. The Organelle 1 runs OS 4.0.
+
+**OS 4.0 is the end of the line for this hardware — there is no upgrade and the Pd target
+cannot move.** 4.1 was Organelle M only; 4.2 / 4.4 / OS 5 are M/S/S2. Confirmed three ways: the
+official Organelle 1 manual names `OG1-4.0` as the current release, C&G staff state "OS 4.0 is
+the highest version currently available for the Organelle 1", and on C&G's own image host only
+`OG1-v4.0.img.zip` exists — `OG1-v4.1`, `4.2`, `4.4` and `5.0` all 404. **Do not suggest
+objects newer than 0.49.**
 
 **Never save an Organelle-bound patch from plugdata.** plugdata is built on Pd 0.55+ and
 rewrites `.pd` files into a newer format — iemgui colours become hex (`#fcfcfc` instead of
@@ -20,122 +24,60 @@ rewrites `.pd` files into a newer format — iemgui colours become hex (`#fcfcfc
 happened once in this repo. Edit with **vanilla Pd 0.49** for anything that ships to hardware.
 
 **Vanilla by default.** The Organelle ships neither ELSE nor cyclone. Bundling them is
-*possible* — the device is **armv7** and armv7 builds exist — but current ELSE requires
-Pd 0.56+, so you would need a ~2019-vintage release. Pd 0.49 also expects the `.pd_linux`
+*possible* — the device is **armv7** and armv7 builds exist — but current ELSE requires Pd
+0.56+, so you would need a ~2019-vintage release. Pd 0.49 also expects the `.pd_linux`
 extension, not the newer `.l_arm` naming. Pure-Pd abstractions can simply be dropped in the
-patch folder with no such concerns. Prefer vanilla unless there is a specific object worth
-the dependency.
+patch folder with no such concerns. Prefer vanilla unless there is a specific object worth the
+dependency.
 
 **The `critterandguitari/Organelle_OS` GitHub repo targets CM3/CM4 hardware — that is the
 Organelle M and S2, not this device.** Its paths are wrong here (it uses `/home/music`, an
 `audioinjector-pi-soundcard`). The mechanisms are the same lineage, but verify paths against
 the actual device before relying on them.
 
+**Read [plan-conventions.md](plan-conventions.md) before writing or reviewing any Pd in this
+repo.** It carries the naming scheme, the `$0` rule, the global-send allowlist, `[trigger]`
+discipline and the banned-constructs list. Those are project decisions, not suggestions, and
+they are not reproducible from reading the existing patch — most of it predates them.
+
 
 ## Layout
 
 ```
-Cut It/            the deployable patch — folder name is what appears in the Organelle menu
-deploy.sh          scp-based deploy (there is no rsync on the device)
-plan-hardware.md   the physical rig — wiring, MIDI/audio/power, verified device behaviour
-plan-software.md   how the instrument works — architecture, timing model, decisions
-plan-midi.md       every MIDI message each device accepts and transmits, and how Pd sees it
-plan-tests.md      ordered hardware checks to run before UI/UX work
-! v0.1 plans/      the original v0.1 material, kept for reference
-  README.md          musical intent, filter chain, button/knob map
-  *.jpg              hand-drawn rig and signal-flow diagrams
+Cut It/              the deployable patch — folder name is what appears in the Organelle menu
+deploy.sh            scp-based deploy (there is no rsync on the device)
+tools/               diagnostic patches — working references for every verified technique
+plan-conventions.md  how the Pd is written — naming, $0, trigger discipline, banned constructs
+plan-hardware.md     the rig, and the device itself — wiring, power, SSH, paths, how Pd launches
+plan-software.md     how the instrument works — architecture, timing model, decisions
+plan-midi.md         every MIDI message each device accepts and transmits, and how Pd sees it
+plan-tests.md        ordered hardware checks, with results
+! v0.1 plans/        the original v0.1 material, kept for reference
+  README.md            musical intent, filter chain, button/knob map
+  *.jpg                hand-drawn rig and signal-flow diagrams
 ```
+
+Planning docs are named `plan-<topic>.md`. Links to paths containing spaces use the
+angle-bracket form: `[README.md](<! v0.1 plans/README.md>)`.
 
 An Organelle patch is a **folder** containing `main.pd` (the entry point) plus its
 abstractions, optionally `knobs.txt` (OLED knob labels) and audio assets.
 
+**Working on the device:** `ssh root@organelle.local` (password `organelle`). The root
+filesystem is read-only — `remount-rw.sh` before writing to `/root`. Deploy with `./deploy.sh`,
+then Storage → Reload. Full details, paths and the `mother`/Pd launch line are in
+[plan-hardware.md](plan-hardware.md) under *The device itself*.
 
-## The device
-
-```sh
-ssh root@organelle.local        # 192.168.1.15, password: organelle
-```
-
-| | |
-|---|---|
-| Home | `/root` (not `/home/music`) |
-| Patches | `/sdcard/Patches/` — factory set lives here |
-| User patches | `/sdcard/Patches/!/` — `!` sorts to the top of the menu |
-| Pd config | `/root/.pdsettings` |
-| Externals | `/root/Pd/externals` |
-| Scripts | `/root/fw_dir/scripts/` |
-| Extra libs | `/sdcard/PdExtraLibs` — already on Pd's search path |
-| Transfer | **`scp` only — no rsync installed** |
-
-**The root filesystem is mounted read-only.** Run `/root/fw_dir/scripts/remount-rw.sh`
-before writing to `/root`, and `remount-ro.sh` after. `/sdcard` and `/usbdrive` are writable.
-
-Pd is launched by the `mother` binary, not a shell script. The actual invocation is:
-
-```
-/usr/bin/pd -rt -nogui -audiobuf 6 -path /sdcard/PdExtraLibs /root/fw_dir/mother.pd main.pd
-```
-
-No `-noprefs` and no MIDI flags, so **`/root/.pdsettings` governs MIDI** and editing it is
-the way to add devices. Note `-audiobuf 6` on the command line overrides the `audiobuf: 4`
-in `.pdsettings` — command-line flags win.
-
-`-nogui` means there is **no Pd console**. Patch errors go to stdout on tty1, so VNC will not
-show them. Getting error output somewhere visible is an unsolved part of the workflow.
-
-### MIDI: OSS vs ALSA
-
-The hardware is **i.MX-based** (`imx-spdif`, `imx-hdmi-soc`, `usb-ci_hdrc` in the ALSA card
-list), armv7. 495MB RAM, 3.3GB free on `/sdcard`.
-
-Out of the box, Pd here runs on **OSS MIDI**, not ALSA — `.pdsettings` has `flags: -alsamidi`
-but **no `midiapi:` line**, and the `flags:` preference is not applied under `-nogui`. Under
-OSS, devices appear as `/dev/midiN` where N tracks the ALSA card number, one node per card —
-so the Launchpad's three separate ports collapse into one and Programmer Mode may be
-unreachable.
-
-ALSA MIDI *does* work on this build (`pd -alsamidi` registers a `Pure Data` client with
-in/out ports). The fix is adding `midiapi: 1` to `/root/.pdsettings`. Under ALSA, Pd creates
-its own virtual ports and hardware is wired to them with `aconnect` **by name**, which also
-solves USB-enumeration-order drift across reboots.
-
-Patch storage falls back from `/usbdrive` to `/sdcard` based on whether `/usbdrive` is
-*mounted*, not whether it holds patches. An empty mounted USB drive yields an empty patch
-menu; Storage → Eject unmounts it without physical removal.
-
-Deploy with `./deploy.sh`, then press **Storage → Reload** on the device. Because there is no
-rsync, locally-deleted files linger remotely — use `./deploy.sh --clean` after renaming or
-removing an abstraction, or a stale `.pd` will shadow the new one.
-
-
-## Architecture decisions already made
-
-Full reasoning in [plan-software.md](plan-software.md). The load-bearing ones:
-
-- **Grain timing must be audio-domain.** Pd's message clock is quantised to a 64-sample
-  block (~1.45ms), which is ~20% of a 256th note at 120 BPM. Drive grain clocks from
-  `phasor~` and envelopes from `vline~` — never `metro` / `line~` for anything at grain rate.
-- **Pd sequences everything.** Timing rides in note events, not MIDI clock. No external
-  device runs its own sequencer during a performance.
-- **Two independent input channels.** `adc~ 1` = drums, `adc~ 2` = fx, arriving from the
-  SP-404's hard-panned L/R via a TRS Y-cable into the Organelle's single stereo input jack.
-  Note the v0.1 README still describes a single serial chain over one input — that predates
-  this decision and has not been reconciled.
-- **Compose mode and perform mode are separate.** Both the Launchpad and the Organelle's own
-  keyboard serve different roles in each, so this shapes the top level of the patch.
+**There is no Pd console** — Pd runs `-nogui` and errors go to tty1, which VNC will not show.
+Assume nothing reports itself unless the patch reports it.
 
 
 ## Verified vs assumed
 
-`plan-hardware.md` has an *Open questions* section listing what is still untested on hardware,
-and `plan-tests.md` is the ordered checklist with results. **Do not treat open items as
-settled facts.**
-
-The two tests that could have forced a redesign have both **passed**: Pd can drive the
-Launchpad's Programmer Mode over SysEx (LEDs, velocity, polyphonic aftertouch), and Pd's
-per-device channel offsets work with multiple controllers at once. What remains is
-cable-blocked — the audio topology (Session 3) and full-rig power draw — plus the
-[tools/](tools/) patches, which are working references for the techniques involved.
+Every plan doc marks claims ✅ verified on this hardware / 📄 manufacturer documentation /
+⬜ unknown. **Do not treat 📄 or ⬜ items as settled facts.** [plan-tests.md](plan-tests.md) is
+the ordered checklist with results; [plan-hardware.md](plan-hardware.md) and
+[plan-midi.md](plan-midi.md) each carry their own open questions.
 
 
 ## Working notes
@@ -144,4 +86,6 @@ cable-blocked — the audio topology (Session 3) and full-rig power draw — plu
   evidence that the targets are what you claim — then ask. Verifying privately is not enough.
 - When a fact matters (a Pd version, a device capability, a file format), check it against the
   device or the source rather than inferring from documentation. Several claims in this
-  project's history turned out wrong that way.
+  project's history turned out wrong that way — including two corrected in these files.
+- Configuration that lives only on a device is one accident from being lost. The nanoKONTROL
+  scene and `/root/.pdsettings` both need copies in this repo; neither has one yet.

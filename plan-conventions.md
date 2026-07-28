@@ -200,6 +200,38 @@ and `all` broadcasts. Each instance still gets its own `$0`.
 
 ---
 
+## Development workflow
+
+Two devices, neither with a usable console, both reachable over the network.
+
+```
+edit in repo  →  syntax check on the Mac  →  push to device  →  reload
+```
+
+**Syntax-check before every deploy.** Pd 0.49-1 is installed locally, the same version the
+Organelle runs:
+
+```sh
+/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd \
+    -nogui -noaudio -send "pd quit" path/to/main.pd
+```
+
+Silence means it parsed and every object instantiated. This catches the entire class of
+load-time errors — misspelled objects, malformed iemgui lines, bad connections — that would
+otherwise vanish into tty1 on a device with no console. **It costs a second and it is not
+optional.**
+
+| Target | Deploy |
+|---|---|
+| Organelle | `scp` to `/sdcard/Patches/!/<name>/main.pd`, then Storage → Reload |
+| iPhone (PdParty) | `curl -T <file> http://<phone>:9000/<scene>/_main.pd` over WebDAV |
+
+Neither needs a cable. See [plan-display.md](plan-display.md) for addresses and ports.
+
+**What the check cannot catch** is runtime behaviour — wrong message types, silent OSC
+failures, logic errors. That is what the error bus below and the PdParty remote console are
+for.
+
 ## Errors must reach the OLED
 
 **The Organelle runs Pd with `-nogui`. There is no console.** Patch errors go to stdout on

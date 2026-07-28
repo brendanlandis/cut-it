@@ -1,0 +1,40 @@
+#N canvas 60 60 448 207 10;
+#X obj 4 4 cnv 15 440 58 \$0-name-out \$0-name-in READY 10 38 0 28 -233017
+-66577 0;
+#X obj 4 66 nbx 4 84 -1e+37 1e+37 0 0 \$0-big-out \$0-big-in empty 0
+-12 0 56 -262144 -1 -1 0 256;
+#X obj 4 156 cnv 15 440 34 \$0-link-out \$0-link-in NO-LINK 10 22 0
+14 -233017 -66577 0;
+#N canvas 520 120 520 420 guts 0;
+#X obj 12 12 r #osc-in;
+#X obj 12 42 t a b;
+#X obj 12 72 route cutit;
+#X obj 12 102 route param hb;
+#X obj 12 132 list;
+#X obj 12 162 unpack s f;
+#X obj 12 192 list prepend label;
+#X obj 12 222 list trim;
+#X obj 12 252 s \$0-name-in;
+#X obj 190 192 s \$0-big-in;
+#X obj 300 72 del 1500;
+#X msg 300 102 label NO-LINK;
+#X obj 300 162 s \$0-link-in;
+#X msg 410 132 label ok;
+#X text 12 292 Canvas is 448x207 \, exactly half of the iPhone 11's
+896x414 landscape points \, so PdParty scales everything 2x with no
+letterboxing. Font sizes here are half their on-screen size.;
+#X connect 0 0 1 0;
+#X connect 1 0 2 0;
+#X connect 1 1 10 0;
+#X connect 1 1 13 0;
+#X connect 2 0 3 0;
+#X connect 3 0 4 0;
+#X connect 4 0 5 0;
+#X connect 5 0 6 0;
+#X connect 5 1 9 0;
+#X connect 6 0 7 0;
+#X connect 7 0 8 0;
+#X connect 10 0 11 0;
+#X connect 11 0 12 0;
+#X connect 13 0 12 0;
+#X restore 4 194 pd guts;

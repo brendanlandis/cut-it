@@ -47,11 +47,13 @@ they are not reproducible from reading the existing patch — most of it predate
 Cut It/              the deployable patch — folder name is what appears in the Organelle menu
 deploy.sh            scp-based deploy (there is no rsync on the device)
 tools/               diagnostic patches — working references for every verified technique
-plan-conventions.md  how the Pd is written — naming, $0, trigger discipline, banned constructs
+plan-conventions.md  how the Pd is written — naming, $0, trigger discipline, dev workflow
 plan-hardware.md     the rig, and the device itself — wiring, power, SSH, paths, how Pd launches
 plan-software.md     how the instrument works — architecture, timing model, decisions
 plan-midi.md         every MIDI message each device accepts and transmits, and how Pd sees it
+plan-display.md      visual feedback — the OLED graphics API, the Launchpad's limits, PdParty
 plan-tests.md        ordered hardware checks, with results
+device/              backups of config that lives only on hardware
 ! v0.1 plans/        the original v0.1 material, kept for reference
   README.md            musical intent, filter chain, button/knob map
   *.jpg                hand-drawn rig and signal-flow diagrams
@@ -69,7 +71,10 @@ then Storage → Reload. Full details, paths and the `mother`/Pd launch line are
 [plan-hardware.md](plan-hardware.md) under *The device itself*.
 
 **There is no Pd console** — Pd runs `-nogui` and errors go to tty1, which VNC will not show.
-Assume nothing reports itself unless the patch reports it.
+Assume nothing reports itself unless the patch reports it. **Syntax-check every patch in local
+Pd 0.49 before deploying** — see *Development workflow* in
+[plan-conventions.md](plan-conventions.md). It catches load-time errors that would otherwise
+be invisible.
 
 
 ## Verified vs assumed

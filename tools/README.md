@@ -17,6 +17,20 @@ All authored by hand in Pd 0.49 format. Do not open them in plugdata — see
 | `lp-modes.pd` | Lights three pads static / flashing / pulsing — the device's three LED animation modes. |
 | `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
 
+## Organelle patches
+
+These three **are** Organelle patches — they load `mother.pd` and run from the device menu,
+unlike everything above. Deploy with `scp` to `/sdcard/Patches/!/<name>/main.pd`.
+
+| Patch | What it proves |
+|---|---|
+| `oled-probe/` | The OLED **graphics** API is reachable from a patch via `[s oscOut]`. Measures the font (21 chars, monospace, 8px) and redraws live from knob 1. |
+| `osc-bridge/` | Bidirectional OSC between Organelle and an iPhone running PdParty. Sends a heartbeat and `knob1`; draws whatever arrives on `/cutit/fader` big on the OLED. |
+| `status-display/` | The performance status protocol: four knobs sending **named parameters** (`chop-size`, `grain`, `speed`, `drunk`) plus a heartbeat. |
+| `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection. **Not** an Organelle patch: deploy over WebDAV with `curl -T http://<phone>:9000/CutItRemote/_main.pd`. |
+
+Findings from all three are written up in [../plan-display.md](../plan-display.md).
+
 ## Running one
 
 ```sh
@@ -57,3 +71,7 @@ Stop with `killall pd`.
   both. Pulsing ramps toward zero, so use a bright palette index or it reads as weak.
 - **A patch can wire its own `aconnect` calls** via `[shell]`, but put the commands in a shell
   script — Pd message boxes and shell quoting do not mix well.
+- **Syntax-check before deploying.** Pd 0.49-1 is installed on the Mac — the same version the
+  Organelle runs. `pd -nogui -noaudio -send "pd quit" main.pd` prints nothing if the patch
+  parsed and every object instantiated. On a device with no console this is the only cheap way
+  to catch a typo'd object name.

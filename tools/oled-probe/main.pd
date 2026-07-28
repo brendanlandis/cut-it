@@ -1,0 +1,45 @@
+#N canvas 40 40 900 620 12;
+#X obj 30 30 loadbang;
+#X obj 30 60 del 800;
+#X obj 30 90 t b b;
+#X msg 130 120 sendtyped /oled/gShowInfoBar ii 3 0;
+#X msg 30 150 sendtyped /oled/gFlip i 3;
+#X obj 30 560 s oscOut;
+#X obj 430 30 r knob1;
+#X obj 430 60 * 120;
+#X obj 430 90 i;
+#X obj 430 120 t f f f f f;
+#X msg 430 170 sendtyped /oled/gClear ii 3 1;
+#X msg 430 200 sendtyped /oled/gBox iiiiii 3 0 0 127 63 1;
+#X msg 430 230 sendtyped /oled/gPrintln iiiiii 3 4 6 24 1 \$1;
+#X msg 430 260 sendtyped /oled/gFillArea iiiiii 3 4 44 \$1 8 1;
+#X msg 430 290 sendtyped /oled/gFlip i 3;
+#X text 30 340 Proves a PATCH can reach the OLED graphics API through
+[s oscOut] \, which is the path the real instrument must use. Direct
+UDP to port 4001 is not the same path.;
+#X text 30 410 Screen 3 = PATCH. The arg is the enum index PLUS ONE:
+AUX=1 \, MENU=2 \, PATCH=3 \, ALERT=4. Sending 1 draws to an invisible
+buffer.;
+#X text 30 470 sendtyped forces int typetags. Every handler checks
+isInt() and silently ignores the message otherwise \, so plain float
+sends fail with no error and no console.;
+#X text 430 320 Turn knob 1: big number + bar \, redrawn per change.;
+#X connect 0 0 1 0;
+#X connect 1 0 2 0;
+#X connect 2 1 3 0;
+#X connect 2 0 4 0;
+#X connect 3 0 5 0;
+#X connect 4 0 5 0;
+#X connect 6 0 7 0;
+#X connect 7 0 8 0;
+#X connect 8 0 9 0;
+#X connect 9 4 10 0;
+#X connect 9 3 11 0;
+#X connect 9 2 12 0;
+#X connect 9 1 13 0;
+#X connect 9 0 14 0;
+#X connect 10 0 5 0;
+#X connect 11 0 5 0;
+#X connect 12 0 5 0;
+#X connect 13 0 5 0;
+#X connect 14 0 5 0;

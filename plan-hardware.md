@@ -1,7 +1,7 @@
 # Cut It — Rig Plan
 
-Hardware setup plan for the Cut It instrument. Companion to [README.md](README.md), which
-covers the Pd patch itself.
+Hardware setup plan for the Cut It instrument. Companion to
+[README.md](<! v0.1 plans/README.md>), which covers the Pd patch itself.
 
 Target hardware: **Organelle 1** (the original, not M/S/S2).
 
@@ -75,7 +75,7 @@ loop.
 on the grounds that nothing external runs its own sequencer during a performance. That was
 wrong: the 404's **BPM SYNC time-stretch follows its tempo**, and the only way it learns the
 tempo is by measuring incoming clock intervals. Stop the clock and it stretches to a stale
-local value. See *Time-stretch* in [design-notes.md](design-notes.md).
+local value. See *Time-stretch* in [plan-software.md](plan-software.md).
 
 **The Launchpad runs over USB.** Its TRS MIDI jacks go unused, and the three TRS→DIN
 adapters in its box aren't needed here. USB gives it its own 16-channel block, keeps
@@ -144,7 +144,7 @@ which is what we want — the 404 runs off its own adapter and costs the hub not
 ## Device capabilities
 
 What each box can actually do, verified on hardware. What to *build* with it lives in
-[design-notes.md](design-notes.md).
+[plan-software.md](plan-software.md).
 
 ### Launchpad Pro MK3 — a genuine blank slate
 
@@ -283,7 +283,7 @@ not appear in `lsusb`, suspect the cable before anything else.
 | Does the 404 transmit its own pad presses? | **Yes**, `PAD Note Out: On`. Verified arriving in Pd on channel 33. |
 | Does Korg Kontrol Editor run? | **Yes, version 2.4.0** — 2.5.0 dropped first-generation nanoKONTROL support. Nano is configured and written. |
 
-Details in [pre-flight-tests.md](pre-flight-tests.md) and *Device capabilities* above.
+Details in [plan-tests.md](plan-tests.md) and *Device capabilities* above.
 
 ### Still open
 

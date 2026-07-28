@@ -4,7 +4,7 @@ Things to verify on the hardware **before** starting UI/UX design or the patch r
 Ordered by what would force a redesign if it fails.
 
 Most of this needs scratch patches only — no Cut It code. Diagnostic patches live in
-[tools/](tools/). Companion to [rig-plan.md](rig-plan.md), which explains *why* each of these
+[tools/](tools/). Companion to [plan-hardware.md](plan-hardware.md), which explains *why* each of these
 matters.
 
 **Status:** Sessions 1, 2 and 4 substantially done. Session 3 blocked on the TRS Y-cable.
@@ -128,7 +128,7 @@ item nothing substitutes for. Needs no USB at all.
       to the **L output alone**. Expected: the mic is audible there too (it sums to both). If
       it isn't, the accepted bleed compromise is unnecessary and the design gets simpler.
 
-See [rig-plan.md](rig-plan.md) open question 4 for the fuller version, including the
+See [plan-hardware.md](plan-hardware.md) open question 4 for the fuller version, including the
 LINE IN R-only variant.
 
 ---

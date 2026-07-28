@@ -4,7 +4,7 @@ A cut-up / harsh noise instrument patch for the **original Critter & Guitari Org
 (a.k.a. Organelle 1 — *not* the M, S, or S2). Pure Data.
 
 Early design stage. Most of it is not built yet, and a rewrite from scratch is on the table.
-See [README.md](README.md) for the musical intent and control layout.
+See [README.md](<! v0.1 plans/README.md>) for the musical intent and control layout.
 
 
 ## Hard constraints — read before writing any Pd
@@ -37,10 +37,12 @@ the actual device before relying on them.
 ```
 Cut It/            the deployable patch — folder name is what appears in the Organelle menu
 deploy.sh          scp-based deploy (there is no rsync on the device)
-rig-plan.md        the physical rig — wiring, MIDI/audio/power, verified device behaviour
-design-notes.md    how the instrument works — architecture, timing model, decisions
-pre-flight-tests.md  ordered hardware checks to run before UI/UX work
-README.md          musical intent, filter chain, button/knob map
+plan-hardware.md   the physical rig — wiring, MIDI/audio/power, verified device behaviour
+plan-software.md   how the instrument works — architecture, timing model, decisions
+plan-tests.md      ordered hardware checks to run before UI/UX work
+! v0.1 plans/      the original v0.1 material, kept for reference
+  README.md          musical intent, filter chain, button/knob map
+  *.jpg              hand-drawn rig and signal-flow diagrams
 ```
 
 An Organelle patch is a **folder** containing `main.pd` (the entry point) plus its
@@ -107,7 +109,7 @@ removing an abstraction, or a stale `.pd` will shadow the new one.
 
 ## Architecture decisions already made
 
-Full reasoning in [design-notes.md](design-notes.md). The load-bearing ones:
+Full reasoning in [plan-software.md](plan-software.md). The load-bearing ones:
 
 - **Grain timing must be audio-domain.** Pd's message clock is quantised to a 64-sample
   block (~1.45ms), which is ~20% of a 256th note at 120 BPM. Drive grain clocks from
@@ -116,16 +118,16 @@ Full reasoning in [design-notes.md](design-notes.md). The load-bearing ones:
   device runs its own sequencer during a performance.
 - **Two independent input channels.** `adc~ 1` = drums, `adc~ 2` = fx, arriving from the
   SP-404's hard-panned L/R via a TRS Y-cable into the Organelle's single stereo input jack.
-  Note the README still describes a single serial chain over one input — that predates this
-  decision and has not been reconciled.
+  Note the v0.1 README still describes a single serial chain over one input — that predates
+  this decision and has not been reconciled.
 - **Compose mode and perform mode are separate.** Both the Launchpad and the Organelle's own
   keyboard serve different roles in each, so this shapes the top level of the patch.
 
 
 ## Verified vs assumed
 
-`rig-plan.md` has an *Open questions* section listing what is still untested on hardware, and
-`pre-flight-tests.md` is the ordered checklist with results. **Do not treat open items as
+`plan-hardware.md` has an *Open questions* section listing what is still untested on hardware,
+and `plan-tests.md` is the ordered checklist with results. **Do not treat open items as
 settled facts.**
 
 The two tests that could have forced a redesign have both **passed**: Pd can drive the

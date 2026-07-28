@@ -2,11 +2,11 @@
 
 How the instrument works: architecture, timing model, and the decisions behind them.
 
-Companion to [rig-plan.md](rig-plan.md), which covers the physical rig — boxes, cables,
+Companion to [plan-hardware.md](plan-hardware.md), which covers the physical rig — boxes, cables,
 signal flow, and verified device behaviour. The rule of thumb: **if it describes what the
 hardware does, it's in the rig plan; if it describes what we decided to build, it's here.**
 
-See also [README.md](README.md) for musical intent and the control layout, and
+See also [README.md](<! v0.1 plans/README.md>) for musical intent and the control layout, and
 [CLAUDE.md](CLAUDE.md) for the hard constraints on writing Pd for this device.
 
 ---
@@ -226,7 +226,7 @@ files onto the Organelle. Noted rather than designed around, since it is a narro
 it first appears.
 
 **Consequence for the rig:** MIDI clock must keep flowing, because it is how the 404 learns
-tempo. See the correction in [rig-plan.md](rig-plan.md) under *Signal flow — MIDI*.
+tempo. See the correction in [plan-hardware.md](plan-hardware.md) under *Signal flow — MIDI*.
 
 ### Author on hardware, commit to Pd
 Device sequencers stay useful as *authoring* tools. Record their MIDI output into Pd, then

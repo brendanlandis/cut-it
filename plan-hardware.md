@@ -384,6 +384,12 @@ determines whether the 404 works as a compose-time authoring surface alongside t
 and there are scattered reports of a stray continuous C-note when external input is on, which
 would need filtering on capture.
 
+**Deferred: the footswitch and expression pedal.** `mother.pd` exposes `fs` / `fsRaw` /
+`footSwitchPolarity` and `exp` / `expRaw` / `expOverride` on the 1/4" pedal jack — a
+sustain-style switch or an expression pedal, one or the other, not both. Deliberately **not
+used in v0.2**; noted so it isn't rediscovered as news. It remains the obvious control to reach
+for when both hands are busy.
+
 **3. How do you see Pd's error output?** Unsolved, and it will bite during the rewrite. Pd is
 launched with `-nogui`, so there is no console; errors go to stdout on tty1, which VNC will
 not show either. Running Pd manually over SSH works for diagnostics (see [tools/](tools/)) but

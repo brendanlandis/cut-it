@@ -85,6 +85,12 @@ like a dead API — this cost a debugging round trip.
 `ALERT` is a separate buffer worth reserving for the error path: errors can preempt without
 destroying the performance display, then restore.
 
+**Which buffer is *shown* is switched with `/oled/setscreen <n>`.** ✅ Seen in
+`save-patch.sh`, which flips to the AUX screen to display "Saving…" and back to PATCH
+afterwards. There are matching `/oled/aux/clear` and `/oled/aux/line/N` commands. So the
+alert path is: draw into a spare buffer, `setscreen` to it, `setscreen 3` to return — the
+performance display underneath is never disturbed.
+
 ### Five traps, every one silent
 
 There is **no Pd console on this device**, so each of these fails with no output at all.

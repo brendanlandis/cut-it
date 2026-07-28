@@ -194,6 +194,21 @@ and `all` broadcasts. Each instance still gets its own `$0`.
 - **Patterns and presets are plain text files** in the patch folder, via `[text define]` +
   `[text write]`. Git-diffable and editable outside Pd. This was already decided in
   [plan-software.md](plan-software.md) and stands.
+- **Use the Organelle's own save mechanism to deliver them.** ✅ Read off the device — the
+  System menu's **Save** and **Save New** run `save-patch.sh`, which:
+
+  1. sends OSC `/saveState 1` to Pd on port 4000 — arriving in the patch as `[r saveState]`
+  2. **sleeps 0.5 s** to let the patch write whatever it wants into **`/tmp/state/`**
+  3. `cp -r /tmp/state/* /tmp/patch` — everything written lands in the patch folder
+
+  On load the patch folder is copied to `/tmp/patch/`, so **write to `/tmp/state/`, read from
+  `/tmp/patch/`**. `mother.pd` already uses this for the four knob positions
+  (`knobs.txt`); anything the patch adds rides along for free.
+
+  **Save New duplicates the entire patch folder** under a numbered name and reloads it, so
+  preset variants become separate menu entries at no cost.
+
+  The 0.5 s budget is the constraint: state writing must be prompt and must not block.
 - **Capture everything in one device-agnostic event format** — `time, note, velocity, duration` —
   so nothing downstream cares whether a pattern came from the Launchpad, the keyboard or the
   404.

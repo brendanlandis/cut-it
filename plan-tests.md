@@ -129,18 +129,43 @@ Launchpad-as-display concept would have collapsed. It works.
 
 ## Session 3 — Audio topology
 
-⬜ **Untouched. Blocked on the TRS Y-cable** (1× 1/4" TRS → 2× 1/4" TS), the one shopping-list
-item nothing substitutes for. Needs no USB at all.
+**Item 11 passed.** ⬜ Items 12 and 13 remain blocked on the TRS Y-cable (1× 1/4" TRS →
+2× 1/4" TS). Needs no USB at all.
 
-- [ ] **11. Y-cable → two independent channels.** Feed a tone into one side only; confirm
-      `adc~ 1` and `adc~ 2` are genuinely separate. Foundational to the whole drums/fx split.
+**The source side is not in question.** The SP-404MKII has **discrete L and R jacks on both
+line in and line out**, so two independent signals demonstrably leave the box. The Y-cable is
+still required, because the constraint is at the other end: **the Organelle has a single TRS
+input jack**, and the cable is what merges two mono outs into it. Nothing substitutes for it.
+
+- [x] **11. TRS input → two independent channels.** ✅ **PASSED.** Measured with
+      `tools/audio-probe/`, which puts `env~` levels for both channels on the OLED. A passive
+      bass through an ordinary mono TS cable:
+
+      | Condition | `adc~ 1` (tip) | `adc~ 2` (ring) |
+      |---|---|---|
+      | Cable unplugged | 18–19 | 18–19 |
+      | Plugged, strings muted | mid-20s | 18–19 |
+      | Playing | **90s** | **18–19** |
+
+      The ring never leaves the noise floor while the tip swings ~70 dB. **The channels are
+      independent and `adc~ 1` is the tip** — the assumption the whole drums/fx split rests on.
+
+      Two useful by-products: the **noise floor is ~18–19** on `env~`'s 0–100 dB scale (about
+      −82 dBFS), which sets a sensible gate threshold around 25–30; and a **passive bass
+      reaches the 90s**, so input gain is ample and headroom is fine for instrument-level
+      sources.
 - [ ] **12. 404 pan split.** Pan one sample MONO Left and another MONO Right; confirm they
-      arrive on separate Organelle inputs.
+      arrive on separate Organelle inputs. Tests the 404's *internal* per-sample routing, which
+      discrete output jacks do not guarantee.
 - [ ] **13. Mic bleed test.** Mic into MIC/GUITAR IN, play a sample panned hard left, listen
       to the **L output alone**. Expected: the mic is audible there too (it sums to both). If
       it isn't, the accepted bleed compromise is unnecessary and the design gets simpler.
 
-See [plan-hardware.md](plan-hardware.md) open question 4 for the fuller version, including the
+      **This is the one that could still change the design** — it is about how the 404 places
+      *external input* in the stereo field, which is internal routing and unrelated to the jacks
+      on the back.
+
+See [plan-hardware.md](plan-hardware.md) open question 1 for the fuller version, including the
 LINE IN R-only variant.
 
 ---
@@ -205,6 +230,47 @@ LINE IN R-only variant.
 
 ---
 
+## Session 5 — Organelle as its own access point
+
+⬜ **Not attempted.** Gates whether the PdParty status display is stage-worthy or
+development-only. Everything else about the phone link is already verified — see
+[plan-display.md](plan-display.md).
+
+**Why it matters:** the display currently rides the house wifi. In a venue that is either
+absent, congested, or full of other people's phones. An Organelle-hosted AP with one client a
+metre away removes the venue from the equation entirely.
+
+**What's already known:** `hostapd` and `dnsmasq` are installed, `wlan0` exists, and `iw list`
+reports **AP** among supported interface modes. ✅ The dongle is a Ralink RT5370, a
+well-supported hostapd chipset.
+
+- [ ] **17. Bring up an AP on `wlan0` and join it from the iPhone.** Confirm the phone gets an
+      address from `dnsmasq` and the status display still updates.
+- [ ] **18. Check it in airplane mode** — cellular off, wifi manually re-enabled.
+- [ ] **19. Judge the link quality.** Watch the heartbeat for gaps over a few minutes. This is
+      the actual question: is it steady enough to trust mid-set?
+- [ ] **20. Decide whether it survives a reboot** — and whether you *want* it to. Persisting it
+      means the Organelle no longer joins the house network, which costs the `scp`/`ssh`
+      workflow.
+
+### Read this before starting
+
+**Bringing up an AP on `wlan0` disconnects the Organelle from the network — including SSH.**
+There is no console on this device, so a bad configuration could mean HDMI and a keyboard to
+recover.
+
+**Mitigation: persist nothing.** Run `hostapd` and `dnsmasq` from `/tmp`, never
+`remount-rw.sh`, and a power cycle restores normal client wifi. Under those conditions the
+worst case is a reboot.
+
+Because SSH drops the moment the AP comes up, the test has to run **unattended from a script**
+— start the AP, hold it for a fixed period, then exit — rather than interactively.
+
+**A second wifi dongle would remove the risk entirely** (client on one, AP on the other) at the
+cost of a USB port and some hub current. Worth considering if this turns into a fight.
+
+---
+
 ## Deliberately skipped for now
 
 Not unimportant — just not blocking UI/UX decisions.
@@ -224,6 +290,8 @@ Not unimportant — just not blocking UI/UX decisions.
    test that could still force a redesign.
 2. **Item 5** — power under full load. Never tested with three controllers plus the wifi
    dongle at once, because of the cable shortage.
+3. **Session 5** — Organelle as an access point. Doesn't block the v0.2 build; does block
+   trusting the phone display on stage.
 
 Everything else in Sessions 1, 2 and 4 has passed. The full MIDI picture — every message each
 device accepts and transmits — is catalogued in [plan-midi.md](plan-midi.md), which also

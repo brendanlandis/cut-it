@@ -122,6 +122,24 @@ the cost of the hub current, which is what the powered hub is for.
 Organelle L/R go to the two **mono** channels (1 and 2) rather than a stereo pair, so drums
 and fx each get their own 3-band EQ and one-knob compressor.
 
+**The Organelle's jack complement**, quoted from the official Organelle 1 manual: 📄
+
+> The single `In`(put) `LR` port is a 1/4" TRS (stereo) jack.
+> The `L`(eft) and `R`(ight) `Out`(put) ports are both 1/4" TS (mono) jacks.
+
+So: **one stereo input jack, two mono output jacks.** This asymmetry is why the TRS Y-cable is
+required — the 404's two discrete mono outputs have to merge into the Organelle's single input
+jack — while the output side needs only two ordinary patch cables.
+
+**The input split is verified on hardware.** ✅ `adc~ 1` is the **tip**, `adc~ 2` is the
+**ring**, and they are genuinely independent — a mono TS cable drives the tip to the 90s on
+`env~`'s scale while the ring stays at the 18–19 noise floor. Measured with
+`tools/audio-probe/`; full numbers in [plan-tests.md](plan-tests.md) item 11.
+
+Two numbers worth remembering: the **input noise floor is ~18–19** on `env~`'s 0–100 dB scale
+(≈ −82 dBFS), so a noise gate belongs around 25–30; and a **passive bass reaches the 90s**, so
+there is ample gain and headroom for instrument-level sources.
+
 
 ## Signal flow — power
 
@@ -359,6 +377,12 @@ Details in [plan-tests.md](plan-tests.md) and *Device capabilities* above.
 one side.** The load-bearing unknown for the drums/fx split, and the only substantial one
 left. The claim that a mono input sums to both sides comes from user documentation, not
 Roland's spec sheet, and nothing documents whether it can be constrained.
+
+**Not answered by the 404's discrete L/R jacks.** It has separate L and R connectors on both
+line in and line out, so two independent signals certainly *leave* the box — but this question
+is about internal routing of the external input, which the connectors say nothing about. The
+Y-cable is also still required regardless: the constraint is the **Organelle's single TRS input
+jack**, not the 404's outputs.
 
 One session answers it. Monitor the 404's L and R outputs separately (headphones, or the
 mixer one channel at a time), play a sample panned hard MONO(Left), and:

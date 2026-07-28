@@ -3,7 +3,8 @@
 A cut-up / harsh noise instrument patch for the **original Critter & Guitari Organelle**
 (a.k.a. Organelle 1 — *not* the M, S, or S2). Pure Data.
 
-Early design stage. Most of it is not built yet, and a rewrite from scratch is on the table.
+Being rewritten from scratch as **v0.2**. The build sequence is [plan-v02.md](plan-v02.md);
+v0.1 is superseded and kept only for reference.
 
 
 ## Hard constraints — read before writing any Pd
@@ -47,6 +48,7 @@ they are not reproducible from reading the existing patch — most of it predate
 Cut It/              the deployable patch — folder name is what appears in the Organelle menu
 deploy.sh            scp-based deploy (there is no rsync on the device)
 tools/               diagnostic patches — working references for every verified technique
+plan-v02.md          the current build plan — infrastructure phases, in order
 plan-conventions.md  how the Pd is written — naming, $0, trigger discipline, dev workflow
 plan-hardware.md     the rig, and the device itself — wiring, power, SSH, paths, how Pd launches
 plan-software.md     how the instrument works — architecture, timing model, decisions

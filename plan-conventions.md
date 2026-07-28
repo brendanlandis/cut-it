@@ -114,8 +114,15 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 | `clock` | beat bang | `u_tempo` |
 | `start` / `stop` | transport | nano transport |
 | `panic` | all-notes-off, clear all state | any |
-| `err` | error and status reporting → OLED | any |
-| `screenLine1`…`screenLine4` | OLED text | owned by `mother.pd` — not ours to rename |
+| `err` | error and status reporting | any → `u_err` |
+| `disp` | display requests: `<name> <value> [unit]` | any → `g_oled` |
+
+**Owned by `mother.pd`** — not ours to rename, and reserved:
+
+| Direction | Names |
+|---|---|
+| To the patch | `knob1`–`knob4` (+`Raw`/`Override`), `notes`, `notesRaw`, `enc`, `encbut`, `aux`, `auxRaw`, `vol`, `exp`, `fs`, `midiCh`, `midiInGate`, `midiOutCh`, `midiOutGate`, `saveState`, `recallState`, `oscIn` |
+| From the patch | `screenLine1`–`screenLine5`, `led`, `goHome`, `oscOut` |
 
 Everything else is `$0-`, or a wire.
 

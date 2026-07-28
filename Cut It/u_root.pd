@@ -1,0 +1,14 @@
+#N canvas 40 40 780 460 12;
+#X text 20 20 u_root -- the actual root of Cut It. main.pd (on the device) and main-dev.pd (on the Mac) both instantiate this and nothing else \, which is what stops the two entry points drifting.;
+#X text 20 90 creation args: none;
+#X text 20 110 inlets: none;
+#X text 20 130 outlets: none;
+#X text 20 165 Every later phase hangs its abstraction here. Phase 0 is empty apart from the sign of life below.;
+#X obj 20 240 loadbang;
+#X obj 20 270 del 500;
+#X msg 20 300 cut it v0.2;
+#X obj 20 330 s screenLine1;
+#X text 210 265 mother repaints the PATCH screen after loading a patch \, so this delay is doing real work. If the OLED comes up blank \, raise it.;
+#X connect 5 0 6 0;
+#X connect 6 0 7 0;
+#X connect 7 0 8 0;

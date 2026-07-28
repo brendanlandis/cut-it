@@ -5,8 +5,9 @@ state. **No musical DSP.** When this is done, Cut It makes no interesting sound 
 audio through, knows what every control is doing, and can tell you about it. The four filter
 stages are built on top of this, afterwards.
 
-v0.1 is not being extended. It is kept for reference in
-[! v0.1 plans/](<! v0.1 plans/README.md>) and superseded here.
+v0.1 is not being extended. Its plans are kept in [! v0.1 plans/](<! v0.1 plans/README.md>) and
+the patch itself in [! v0.1 plans/patch/](<! v0.1 plans/patch/README.md>) — **reference for
+intent, not code to lift.** All of it predates the conventions; assume it is naive.
 
 Read [plan-conventions.md](plan-conventions.md) first — naming, `$0`, `[trigger]` discipline
 and the global allowlist are assumed throughout.
@@ -88,17 +89,30 @@ that is genuinely expensive to retrofit.
 Each phase is independently testable and leaves the patch in a working state. **Phases 0 and 1
 require no hardware**, which matters because the Organelle is not always on the desk.
 
-### Phase 0 — Skeleton and the off-device shim
+### Phase 0 — Skeleton and the off-device shim ✅ **done**
 
-`main.pd`, `u_mother-stub`
+`main.pd`, `main-dev.pd`, `u_root`, `u_mother-stub`, `deploy.sh`
 
 The patch must run in vanilla Pd 0.49 on the Mac, where `mother.pd` does not exist. Without
 this, every iteration costs a deploy cycle.
 
-`u_mother-stub` provides `knob1`–`knob4`, `notes`, `aux`, `enc` as GUI controls and swallows
-`screenLine*` / `oscOut`, printing them instead. Loaded only when `mother.pd` is absent.
+`u_mother-stub` provides `knob1`–`knob4`, `vol`, `notes`, `aux`, `enc` and `encbut` as GUI
+controls, and previews `screenLine1`–`5` and `oscOut` (`gPrintln` text and `gClear`; anything
+else prints). It is the **one sanctioned exception** to the reserved-name rule in
+[plan-conventions.md](plan-conventions.md). `main-dev.pd` instantiates it; `main.pd` does not,
+so the device never sees it.
 
-**Done when:** `main.pd` opens on the Mac with no errors and the stub's knobs produce values.
+Two entry points, both thin, with all content in `u_root` — that is what stops them drifting.
+
+`deploy.sh` closes the loop: **syntax check → scp → reload → load**, no physical interaction.
+The check is blocking and gates on *output*, since Pd exits 0 even on load errors.
+
+**Two things this phase corrected**, both read out of `/root/Organelle_UI/` on the device:
+`/loadPatch` resolves against the current patch directory, so the argument must be `!/Cut It`,
+not `Cut It`; and `enc` is `1`/`0` for up/down, not `±1` — as are `aux` and `encbut`.
+
+**Done when:** ✅ `main-dev.pd` opens on the Mac with no errors, the stub's knobs produce
+values, and `./deploy.sh` alone puts a running patch on the device.
 
 ### Phase 1 — Audio path
 
@@ -167,16 +181,25 @@ transport buttons change `mode` visibly.
 
 ### Phase 5 — Clock and transport
 
-`u_tempo`
+`u_tempo`, `c_clock`
 
-Rebuild of v0.1's `midiclock.pd` to convention. Owns `tempo`, `clock`, `start`/`stop`; emits
-MIDI realtime (248/250/251/252).
+A **rewrite**, not a port. v0.1's `midiclock.pd` is archived in
+[! v0.1 plans/patch/](<! v0.1 plans/patch/README.md>) and is worth reading for *which MIDI
+realtime bytes went where*, nothing more — it predates every convention in this project.
+
+`u_tempo` owns `tempo`, `clock`, `start`/`stop`; emits MIDI realtime (248/250/251/252).
 
 **Audio-domain from the start** — `phasor~`-derived, with the message-rate clock only for
 things that genuinely tolerate it. Normalise BPM and ms to Hz at the edge.
 
-**Done when:** tempo is settable from the nano, the 404 follows, and grain-rate timing derives
-from `phasor~` rather than `metro`.
+**`u_tempo` is a master reference, not the clock.** Cut It runs poly-tempo — see *Poly-tempo*
+in [plan-conventions.md](plan-conventions.md). Build `c_clock` as a separately instantiable
+abstraction in this phase, owning its own rate and time signature and optionally slaved to
+master by a ratio. **Do not build a clock singleton**; retrofitting once Phases 6–8 depend on
+one is the expensive mistake this plan is trying to avoid.
+
+**Done when:** tempo is settable from the nano, the 404 follows, grain-rate timing derives from
+`phasor~` rather than `metro`, and two `c_clock` instances run at different rates at once.
 
 ### Phase 6 — Launchpad
 
@@ -215,6 +238,14 @@ Hooks `[r saveState]`, writes to `/tmp/state/` within the **0.5 s budget**, read
 `/tmp/patch/` on load. Plain text via `[text]`, git-diffable.
 
 Gets Save and Save New from the Organelle's own menu for free.
+
+⚠️ **Save New is broken for patches in a category folder, and `deploy.sh` makes it worse.**
+`save-new-patch.sh` derives the name with `ls /tmp/curpatchname`, and mother records whatever
+name it was given. A `deploy.sh` load passes `!/Cut It`, so that becomes `/tmp/curpatchname/!/Cut It`
+and the script reads back `!` — Save New then creates a folder called `! 2`. Selecting the
+patch from the menu leaves the correct `Cut It`. Plain Save is unaffected; it works off the
+`/tmp/patch` symlink. **Verify this phase against a menu-selected patch, not a deploy-loaded
+one**, and decide then whether to have `deploy.sh` repair `/tmp/curpatchname`.
 
 **Done when:** control state survives Save → reload, and Save New produces a working variant in
 the patch menu.

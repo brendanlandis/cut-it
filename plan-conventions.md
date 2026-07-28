@@ -110,12 +110,15 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 | Name | Carries | Source |
 |---|---|---|
 | `mode` | compose / perform, and sub-mode | nano transport, Pd ch 18 |
-| `tempo` | BPM, as a float | `u_tempo` |
-| `clock` | beat bang | `u_tempo` |
+| `tempo` | **master reference** BPM, as a float | `u_tempo` |
+| `clock` | **master reference** beat bang | `u_tempo` |
 | `start` / `stop` | transport | nano transport |
 | `panic` | all-notes-off, clear all state | any |
 | `err` | error and status reporting | any → `u_err` |
 | `disp` | display requests: `<name> <value> [unit]` | any → `g_oled` |
+
+**`tempo` and `clock` are the master reference, not "the clock".** See *Poly-tempo* below —
+this distinction is load-bearing and easy to lose.
 
 **Owned by `mother.pd`** — not ours to rename, and reserved:
 
@@ -124,7 +127,38 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 | To the patch | `knob1`–`knob4` (+`Raw`/`Override`), `notes`, `notesRaw`, `enc`, `encbut`, `aux`, `auxRaw`, `vol`, `exp`, `fs`, `midiCh`, `midiInGate`, `midiOutCh`, `midiOutGate`, `saveState`, `recallState`, `oscIn` |
 | From the patch | `screenLine1`–`screenLine5`, `led`, `goHome`, `oscOut` |
 
+**One abstraction is allowed to send on the `mother.pd` names: `u_mother-stub`.** It exists to
+impersonate `mother.pd` when the patch runs on the Mac, where `mother.pd` does not exist, so
+sending on reserved names *is* its function. It is instantiated by `main-dev.pd` only —
+`main.pd` never touches it, so the hardware never sees a second source for `knob1`–`knob4`.
+**This is the only exception, and adding another is a change to this file.**
+
 Everything else is `$0-`, or a wire.
+
+### Poly-tempo
+
+Cut It runs **multiple simultaneous tempi**. Sequencers and samplers may deviate from master —
+a different BPM, or ms-based timing instead of beat-based — and different parts of a drum
+sequence may run different time signatures. The allowlist above must not be read as implying
+one tempo and one beat.
+
+- **`tempo` and `clock` are the master reference**: what MIDI clock out is derived from, and
+  what parts *may* choose to follow. Nothing is obliged to.
+- **Timing is per-instance.** Each grain clock, sequencer and sampler owns a `c_clock` instance
+  with its own rate, optionally slaved to master by a ratio. **Nothing downstream may assume
+  the global `clock` is its clock.**
+- **Time signature is a `c_clock` concern** — bar length, accent pattern — not a global.
+- *Normalise BPM and ms to Hz at the edge, feed one `phasor~`* generalises cleanly: N clocks is
+  N `phasor~` objects, and ms-based versus beat-based parts stop being a special case.
+
+**MIDI clock carries exactly one tempo**, so the SP-404 and Volca always follow master.
+Poly-tempo is internal-only for anything leaving the box — which reinforces rather than
+contradicts the "Pd sequences everything, timing rides in note events" decision in
+[plan-software.md](plan-software.md).
+
+**The risk this heads off:** Phase 5 building `u_tempo` as *the* clock singleton. It must be a
+master reference **plus** a `c_clock` abstraction that can be instantiated many times.
+Retrofitting that once Phases 6–8 depend on a single clock would be expensive.
 
 ---
 
@@ -226,11 +260,29 @@ and `all` broadcasts. Each instance still gets its own `$0`.
 
 Two devices, neither with a usable console, both reachable over the network.
 
+**Most work happens on the Mac, with the Organelle switched off.** Open `Cut It/main-dev.pd` in
+Pd 0.49: `u_mother-stub` supplies `knob1`–`knob4`, `vol`, `notes`, `aux`, `enc` and `encbut` as
+GUI controls, and previews everything the patch writes to `screenLine1`–`5` and `oscOut`. It
+shows *what* is drawn, not *where* — pixel-accurate OLED rendering is deliberately out of
+scope. Reach for the hardware when the thing you are testing is the hardware.
+
+### `./deploy.sh` — the whole loop, one command
+
 ```
-edit in repo  →  syntax check on the Mac  →  push to device  →  reload
+edit in repo  →  syntax check  →  scp  →  reload patch list  →  load the patch
 ```
 
-**Syntax-check before every deploy.** Pd 0.49-1 is installed locally, the same version the
+No walking to the device, no Storage → Reload, no selecting from the menu.
+
+| Env | Effect |
+|---|---|
+| `--clean` | wipe the remote copy first |
+| `NOCHECK=1` | skip the syntax check |
+| `NORELOAD=1` | skip refreshing the patch list |
+| `NOLOAD=1` | push but leave the running patch alone |
+| `HOST=` `DEST=` `PD=` | target, destination, Pd binary |
+
+**The syntax check is built in and blocking.** Pd 0.49-1 on the Mac is the same version the
 Organelle runs:
 
 ```sh
@@ -238,14 +290,21 @@ Organelle runs:
     -nogui -noaudio -send "pd quit" path/to/main.pd
 ```
 
-Silence means it parsed and every object instantiated. This catches the entire class of
-load-time errors — misspelled objects, malformed iemgui lines, bad connections — that would
-otherwise vanish into tty1 on a device with no console. **It costs a second and it is not
-optional.**
+Silence means it parsed and every object instantiated. **Pd exits 0 even when objects fail to
+create, so the gate is output, not exit status** — `deploy.sh` captures stdout and stderr and
+refuses to copy anything if either is non-empty. This catches the entire class of load-time
+errors — misspelled objects, malformed iemgui lines, bad connections — that would otherwise
+vanish into tty1 on a device with no console.
+
+**The load step needs the category folder in the name.** `mother`'s `/loadPatch` resolves
+against its *current* patch directory (`MainMenu::runPatch` builds `getPatchDir() + "/" + arg`),
+and `/reload` resets that to the default — `/usbdrive/Patches` if it exists, else
+`/sdcard/Patches`. Since the patch lives in `/sdcard/Patches/!`, the argument is `!/Cut It`.
+A bare `Cut It` loads nothing, silently. `deploy.sh` derives this from `DEST`.
 
 | Target | Deploy |
 |---|---|
-| Organelle | `scp` to `/sdcard/Patches/!/<name>/main.pd`, then Storage → Reload |
+| Organelle | `./deploy.sh` |
 | iPhone (PdParty) | `curl -T <file> http://<phone>:9000/<scene>/_main.pd` over WebDAV |
 
 Neither needs a cable. See [plan-display.md](plan-display.md) for addresses and ports.

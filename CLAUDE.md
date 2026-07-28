@@ -46,7 +46,11 @@ they are not reproducible from reading the existing patch — most of it predate
 
 ```
 Cut It/              the deployable patch — folder name is what appears in the Organelle menu
-deploy.sh            scp-based deploy (there is no rsync on the device)
+  main.pd              device entry point; mother.pd loads this by name. Instantiates u_root
+  main-dev.pd          Mac entry point; adds u_mother-stub. The device never loads it
+  u_root.pd            the actual root — every phase hangs its abstraction here
+  u_mother-stub.pd     impersonates mother.pd off-device, so the patch runs with no hardware
+deploy.sh            check → scp → reload → load, in one command (there is no rsync on the device)
 tools/               diagnostic patches — working references for every verified technique
 plan-v02.md          the current build plan — infrastructure phases, in order
 plan-conventions.md  how the Pd is written — naming, $0, trigger discipline, dev workflow
@@ -59,6 +63,7 @@ device/              backups of config that lives only on hardware
 ! v0.1 plans/        the original v0.1 material, kept for reference
   README.md            musical intent, filter chain, button/knob map
   *.jpg                hand-drawn rig and signal-flow diagrams
+  patch/               the v0.1 patch itself — reference for intent, NOT code to lift
 ```
 
 Planning docs are named `plan-<topic>.md`. Links to paths containing spaces use the
@@ -68,15 +73,19 @@ An Organelle patch is a **folder** containing `main.pd` (the entry point) plus i
 abstractions, optionally `knobs.txt` (OLED knob labels) and audio assets.
 
 **Working on the device:** `ssh root@organelle.local` (password `organelle`). The root
-filesystem is read-only — `remount-rw.sh` before writing to `/root`. Deploy with `./deploy.sh`,
-then Storage → Reload. Full details, paths and the `mother`/Pd launch line are in
+filesystem is read-only — `remount-rw.sh` before writing to `/root`. **`./deploy.sh` does the
+whole loop** — syntax check, copy, reload the patch list, load the patch — with no physical
+interaction. Full details, paths and the `mother`/Pd launch line are in
 [plan-hardware.md](plan-hardware.md) under *The device itself*.
 
 **There is no Pd console** — Pd runs `-nogui` and errors go to tty1, which VNC will not show.
-Assume nothing reports itself unless the patch reports it. **Syntax-check every patch in local
-Pd 0.49 before deploying** — see *Development workflow* in
-[plan-conventions.md](plan-conventions.md). It catches load-time errors that would otherwise
-be invisible.
+Assume nothing reports itself unless the patch reports it. **`deploy.sh` syntax-checks in local
+Pd 0.49 and refuses to deploy on any output**, so the rule is now automatic rather than
+remembered — see *Development workflow* in [plan-conventions.md](plan-conventions.md).
+
+**Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac:
+`u_mother-stub` fakes the knobs, keys, aux and encoder, and previews whatever the patch writes
+to `screenLine1`–`5` and `oscOut`. Most work should never need the Organelle powered on.
 
 
 ## Verified vs assumed

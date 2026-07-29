@@ -24,10 +24,26 @@ CW, LH = 7.0, 18.0
 
 def _size(kind, rest, fw):
     first = rest.split(' ')[0]
-    if kind == 'floatatom':      return 45, 22
-    if first == 'hsl':           return 138, 23
-    if first == 'hradio':        return 53, 23
-    if first in ('bng', 'tgl'):  return 23, 23
+    # atom boxes: "<width> <lo> <hi> <labelpos> <label> <recv> <send>", width in chars
+    if kind in ('floatatom', 'symbolatom'):
+        try:               return int(rest.split()[0]) * CW + 10, 22
+        except Exception:  return 45, 22
+    # cnv: "cnv <selectable_size> <width> <height> <send> <recv> <label> ..."
+    if first == 'cnv':
+        try:               return int(rest.split()[2]), int(rest.split()[3])
+        except Exception:  return 100, 60
+    # iemguis carry their own dimensions -- read them rather than guessing, or a
+    # 25-cell hradio reports the footprint of a 3-cell one and its neighbours look clear
+    a = rest.split()
+    def _n(i, d):
+        try:    return int(float(a[i]))
+        except Exception: return d
+    if first == 'hsl':           return _n(1, 128) + 10, _n(2, 15) + 8
+    if first == 'vsl':           return _n(1, 15) + 8,   _n(2, 128) + 10
+    if first == 'hradio':        return _n(1, 15) * _n(4, 8) + 4, _n(1, 15) + 8
+    if first == 'vradio':        return _n(1, 15) + 8,   _n(1, 15) * _n(4, 8) + 4
+    if first == 'vu':            return _n(1, 15) + 18,  _n(2, 120) + 28
+    if first in ('bng', 'tgl'):  return _n(1, 15) + 8,   _n(1, 15) + 8
     if fw:
         words, lines, cur = rest.split(), 1, 0
         for wd in words:
@@ -65,7 +81,10 @@ def parse(path):
         c = re.match(r'#X connect (\d+) (\d+) (\d+) (\d+)$', ln)
         if c:
             cur['conns'].append(tuple(int(g) for g in c.groups())); continue
-        m = re.match(r'#X (obj|msg|text|floatatom) (-?\d+) (-?\d+) ?(.*)$', ln)
+        # symbolatom IS a box in Pd's index. Leaving it out of this regex does not
+        # merely skip it -- it shifts every later box number, so #X connect lines
+        # get resolved against the wrong objects and the report is quietly fiction.
+        m = re.match(r'#X (obj|msg|text|floatatom|symbolatom) (-?\d+) (-?\d+) ?(.*)$', ln)
         if not m: continue
         kind, x, y, rest = m.group(1), int(m.group(2)), int(m.group(3)), m.group(4)
         fw = None

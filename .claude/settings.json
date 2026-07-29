@@ -3,7 +3,20 @@
     "allow": [
       "Bash(/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio -path mac-stubs -send \"pd quit\" \"Cut It/u_oled-preview.pd\")",
       "Bash(awk '{print $NF}')",
-      "Bash(awk '{print}')"
+      "Bash(awk '{print}')",
+      "Bash(/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio -verbose t-join.pd)",
+      "Bash(pkill -f t-join.pd)",
+      "Bash(python3 /private/tmp/claude-501/-Users-brendan-Sites-cut-it/2982fcf6-b29a-44a4-b912-65e9f54b9fcd/scratchpad/gen_panel.py 'Cut It/u_mother-stub.pd')",
+      "Bash(python3 tools/pd-layout-check.py \"Cut It/u_mother-stub.pd\")",
+      "Bash(/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio -path mac-stubs -send \"pd quit\" \"Cut It/main-dev.pd\")",
+      "Read(//Users/brendan/Desktop/**)",
+      "Bash(ssh -o ConnectTimeout=8 -o BatchMode=yes root@organelle.local 'echo \"--- deployed patch folder ---\"; ls -la \"/sdcard/Patches/!/Cut It\" 2>/dev/null || echo \"\\(patch folder not found\\)\"; echo \"--- pd processes ---\"; ps ax | grep \"[p]d \" | head -3')",
+      "Bash(ssh -o ConnectTimeout=8 root@organelle.local 'echo \"=== how hard is the patch working? ===\"; ps -o pid,etime,time,pcpu,comm -p 494 2>/dev/null || ps ax -o pid,etime,time,pcpu,comm | grep \" 494 \"; echo; echo \"=== load average ===\"; cat /proc/loadavg; echo; echo \"=== is the patch talking to the display? \\(OSC to mother, port 4001\\) ===\"; cat /proc/net/udp | awk \"NR==1 || /:0FA1|:0FA2|:0FA3/ {print}\" | head -5')",
+      "Bash(ssh -o ConnectTimeout=10 root@organelle.local 'echo \"=== UDP packets out, sampled 4s apart ===\"; a=$\\(cat /proc/net/snmp | awk \"/^Udp:/ && NR%2==0 {print \\\\$5}\"\\); sleep 4; b=$\\(cat /proc/net/snmp | awk \"/^Udp:/ && NR%2==0 {print \\\\$5}\"\\); echo \"  delta over 4s: $\\(\\(b-a\\)\\) datagrams  =  $\\(\\( \\(b-a\\)/4 \\)\\) per second\"; echo; echo \"=== framebuffer? ===\"; ls -l /dev/fb* 2>/dev/null || echo \"  no /dev/fb* -- the OLED is driven by the mother binary, not a Linux fb\"')",
+      "Bash(ssh -o ConnectTimeout=10 root@organelle.local 'for n in 0 1; do echo \"=== fb$n ===\"; echo -n \"  name: \"; cat /sys/class/graphics/fb$n/name 2>/dev/null || echo \"?\"; echo -n \"  size: \"; cat /sys/class/graphics/fb$n/virtual_size 2>/dev/null || echo \"?\"; echo -n \"  bpp:  \"; cat /sys/class/graphics/fb$n/bits_per_pixel 2>/dev/null || echo \"?\"; echo -n \"  stride: \"; cat /sys/class/graphics/fb$n/stride 2>/dev/null || echo \"?\"; done')",
+      "Bash(ssh -o ConnectTimeout=10 root@organelle.local 'echo \"=== what the RUNNING pd actually loaded \\(/tmp/patch\\) ===\"; cd /tmp/patch 2>/dev/null && for f in main.pd u_root.pd g_oled.pd u_err.pd u_init.pd; do printf \"%-14s %s\\\\n\" \"$f\" \"$\\(md5sum $f 2>/dev/null | cut -d\" \" -f1\\)\"; done; echo; echo \"=== when was /tmp/patch populated vs pd started ===\"; stat -c \"%y  %n\" /tmp/patch/g_oled.pd 2>/dev/null; ps -o lstart= -p 494 2>/dev/null')",
+      "Bash(ssh -o ConnectTimeout=10 root@organelle.local 'echo \"=== /tmp/patch ===\"; ls -ld /tmp/patch; readlink -f /tmp/patch; echo; echo \"=== contents ===\"; ls /tmp/patch/ 2>&1 | head; echo; echo \"=== checksums of what is RUNNING ===\"; for f in main.pd u_root.pd g_oled.pd u_err.pd u_init.pd; do printf \"%-14s %s\\\\n\" \"$f\" \"$\\(md5sum /tmp/patch/$f 2>&1 | cut -d\" \" -f1\\)\"; done')",
+      "Bash(ssh -o ConnectTimeout=10 root@organelle.local*)"
     ]
   }
 }

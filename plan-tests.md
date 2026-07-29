@@ -223,12 +223,39 @@ No hardware needed, and it is repeatable in seconds — the pattern is worth reu
 - [x] **20. Rate limiting and the trailing edge.** ✅ 877 `disp` messages in five seconds
       produced exactly **51 frames**, the drawn value advancing by 20 each frame. No coalescing
       logic exists — layers hold state, so the last value written is what the next frame draws.
-- [ ] **21. The same on hardware.** ⬜ **Not yet run.** `./deploy.sh --clean` (the `--clean` is
-      required — no rsync, so a plain deploy leaves the deleted `g_levels.pd` behind), then the
-      by-hand console from [plan-conventions.md](plan-conventions.md) with `[r disp]` and
-      `[r oscOut]` taps. **The open question is throughput**: the home frame is 10 OSC messages
-      at 10 Hz, against 6 for the Phase 1 display. If the device struggles, the metro period is
-      one number in `g_oled`.
+- [ ] **20b. The modal safety TTL.** ⬜ **Never run, on either machine.** Click `mod` on the
+      panel and then do *not* click `modx`; after 30 s the screen should return to the meters
+      on its own. It is the insurance against a lost `modal-off` covering the display forever
+      on a device with no console, and "by construction" is not the same as tested.
+- [x] **21. Deployed, and the throughput question is answered.** ✅ **Measured on the running
+      device over SSH, without disturbing the patch.**
+
+      | Evidence | Reading |
+      |---|---|
+      | All seven shipped files, md5 vs local | **identical** |
+      | `pd` process | up 3 h 16 m, **8.2 % CPU**, load average 0.16 |
+      | UDP datagrams out | **110 / second** |
+      | Socket to `127.0.0.1:4001` | established — the display path is live |
+
+      **110 datagrams/s is the proof it is Phase 3 and that it keeps up.** The home frame is 10
+      OSC messages at 10 Hz; Phase 1's `g_levels` drew 6, so ~60/s. Anything less than ~100
+      would mean either the old display or dropped frames. At 8.2 % CPU the device is nowhere
+      near struggling, so the metro period does not need touching.
+
+      **It also clears the biggest unknown in the phase.** `packOSC` drops a message with a
+      mismatched typetag *before* `udpsend`, so a bad tag would show up as a missing datagram.
+      Getting the full rate means the **runtime typetag builder in `pd text-out` is producing
+      tags the real `packOSC` accepts** — which the Mac could never demonstrate, having no
+      `packOSC` at all.
+
+- [ ] **21b. Look at the OLED.** ⬜ The one thing still unobserved. Everything above proves the
+      messages are *formatted correctly and reaching mother at the right rate*; none of it
+      proves mother *draws* them. Boot modals, meters, a parameter readout and an alert, on the
+      actual screen. Five seconds of looking.
+
+      Also worth a `./deploy.sh --clean` first: the device still carries `u_oled-preview.pd` and
+      a pre-panel `u_mother-stub.pd`. Both are inert — `main.pd` instantiates neither — but they
+      are stale.
 - [ ] **22. Does the ALERT buffer work?** ⬜ A throwaway patch that draws into buffer 4,
       `gFlip 4`, `setscreen 4`, waits, `setscreen 3`. Only `setscreen` itself is documented.
       If it works, `draw-alert` drops from ~70 messages/second to about five per alert; if it

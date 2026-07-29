@@ -54,8 +54,10 @@ Cut It/              the deployable patch — folder name is what appears in the
   u_err.pd             the err bus; filters by mode, forwards to disp. Never draws
   g_oled.pd            the display arbiter — home < param < modal < alert, each with a TTL.
                        Sole owner of oscOut and screenLine*
-  u_mother-stub.pd     impersonates mother.pd off-device, so the patch runs with no hardware
-  u_oled-preview.pd    shows what the patch draws, one box per screen line (Mac only)
+  u_mother-stub.pd     impersonates mother.pd off-device AND is the dev panel — the whole
+                       front face (screen, knobs, encoder, volume, keys) laid out like the
+                       device and rendered inline on main-dev.pd via graph-on-parent.
+                       No cords: every control binds by its iemgui send name. Mac only
   wire.sh              aconnect calls, run by u_init via [shell]
 mac-stubs/           stand-ins for device-only externals, for the local syntax check. NOT deployed
 deploy.sh            check → scp → reload → load, in one command (there is no rsync on the device)
@@ -96,9 +98,14 @@ Still assume nothing reports itself unless the patch reports it. **`deploy.sh` s
 local Pd 0.49 and refuses to deploy on any output**, so that rule is automatic rather than
 remembered.
 
-**Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac:
-`u_mother-stub` fakes the knobs, keys, aux and encoder, and previews whatever the patch writes
-to `screenLine1`–`5` and `oscOut`. Most work should never need the Organelle powered on.
+**Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and
+the whole instrument is *there* — `u_mother-stub` draws the front panel inline, fakes the knobs,
+keys, aux and encoder, and previews whatever the patch writes to `oscOut`. Most work should
+never need the Organelle powered on.
+
+**Nothing has to be caught live.** The panel's `open-screen-log` button opens a running history
+of every `disp` message except the level reports, stamped with the frame number — so a boot
+sequence that finishes in four seconds can be read afterwards instead of watched.
 
 
 ## Verified vs assumed

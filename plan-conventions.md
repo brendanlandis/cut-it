@@ -183,6 +183,29 @@ the other end.
 The failure mode to avoid is a patch where any control can affect anything, with no visible
 path. That is unrestricted global mutable state with extra steps.
 
+### GUI binding is the one carve-out ✅
+
+**Every iemgui carries `send` and `receive` symbols in its creation arguments, and a control
+surface is allowed to use them instead of a wire.** A slider whose `send` is `knob1` needs no
+cord and no `[s knob1]` object.
+
+*(judgment call)* The rule above protects patch **logic**. A control binding to the name it
+represents is not action-at-a-distance — the name *is* the control's meaning, and it is visible
+in the object's properties dialog. Forcing wires onto a panel produces a diagram nobody can
+read, which is the very thing the rule exists to prevent.
+
+Two limits stay hard:
+
+- **Nothing in the signal or control path may do this.** A `[t]` between two processing stages
+  is still a wire. This applies to GUI objects binding to their own name, and to nothing else.
+- The names in question are `mother.pd`'s reserved ones, so it lives inside `u_mother-stub` —
+  still the one sanctioned exception, unchanged.
+
+The payoff is not tidiness. **Graph-on-parent renders iemguis and atom boxes and nothing
+else** — no message boxes, no object boxes, no comments — so removing the cords is exactly what
+lets `u_mother-stub`'s panel appear inline on `main-dev.pd`. ✅ `$0` expands in iemgui `send` and
+`receive` names, verified in 0.49 with two instances of a test abstraction rather than assumed.
+
 ---
 
 ## `[trigger]` on every fan-out

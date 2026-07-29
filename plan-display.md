@@ -367,6 +367,32 @@ message instead of two ticks, and it reads as a zone.
 24px text is ~18 px per character so the value needs the full width anyway. Intent is kept —
 the meters never vanish.
 
+### Seeing it off-device
+
+`u_mother-stub` is the Organelle's front panel: **AUX → knobs 1–4 → OLED → selector encoder →
+volume**, keys underneath, in that order because that is the order on the real face
+([manual](https://docs.critterandguitari.com/Organelle/og1/)). It renders **inline on
+`main-dev.pd`** through graph-on-parent, so opening the entry point shows the instrument rather
+than a door to it.
+
+The eight screen rows are `cnv` objects whose **label** is the drawn text. That forces one thing
+worth knowing: a label is a *single symbol*, so `pd oled-decode` joins each row's words into one
+atom (`[list fromsymbol]` → append 32 → `[list tosymbol]`, looped) before it can be shown. Bars
+render as 21 fixed-width characters, `=` then `-`, so the two channels can be compared at a
+glance.
+
+**The screen log** — `open-screen-log` on the panel — records every `disp` message except
+`in-l`/`in-r`, stamped with the frame number:
+
+```
+ 0  modal booting      31  modal-off
+11  modal wiring       31  boot v0.2-ready
+26  modal launchpad    46  chop-size 43 %
+```
+
+Gaps read directly as tenths of a second (11, 15, 5 = u_init's 1500/1500/500 ms). This exists
+because the boot sequence finishes before you can get to the window.
+
 ### What made it work
 
 - **Rate limiting needed no code.** Layers hold state, not draw calls, so the last value written

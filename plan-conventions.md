@@ -55,7 +55,7 @@ cleanly onto this rig's structure:
 | `e_` | Effects and filters — the signal chain | `e_chop`, `e_pitch`, `e_trem`, `e_verb` |
 | `m_` | Mapping: device events → parameters | `m_launchpad`, `m_nano`, `m_keys` |
 | `c_` | Control data generation | `c_grainclock`, `c_drunk`, `c_sputter` |
-| `g_` | Display and GUI | `g_grid`, `g_oled`, `g_err` |
+| `g_` | Display and GUI | `g_grid`, `g_oled` |
 | `u_` | Utilities | `u_scale`, `u_tempo`, `u_err` |
 | `s_` | Sound sources | *(unused — Cut It generates no sound of its own)* |
 
@@ -251,11 +251,36 @@ info bar is turned off anyway.
 
 ## The display bus, and who owns the screen
 
-**Exactly one abstraction may send on `oscOut` and `screenLine1`–`5`.** Today that is
-`g_levels`; from Phase 3 it is `g_oled`. Everything else asks for a display by sending to
-`disp` and does not know or care how it is drawn.
+**Exactly one abstraction may send on `oscOut` and `screenLine1`–`5`.** ✅ That is `g_oled`.
+Everything else asks for a display by sending to `disp` and does not know or care how it is
+drawn — **including `u_err`, which filters and forwards onto `disp` rather than drawing.**
+[plan-v02.md](plan-v02.md) originally had `u_err` writing to the ALERT buffer itself; where the
+two disagreed, this rule won. Two writers, one screen.
 
 **The `disp` message is `<name> <value> [unit]`, with the name as the *selector*.**
+
+### The reserved names, and where a parameter comes from
+
+`g_oled` routes six selectors. **Everything else is, by definition, a parameter** — there is no
+registration step, and `m_nano` in Phase 4 needs no change to the display to show a new control.
+
+| Selector | Carries | Layer |
+|---|---|---|
+| `in-l` `in-r` | `<dB>` from `u_level` | home |
+| `boot` | one symbol, the footer status | home |
+| `modal` | one symbol — sticky until cleared | modal |
+| `modal-off` | nothing | clears modal |
+| `alert` | `<level> <source> <text>` — only `u_err` sends this | alert |
+| *anything else* | `<value> [unit]` | param |
+
+*(judgment call)* Reserved-names-plus-fallthrough was chosen over tagging each message with its
+layer, because plan-display.md's settled contract is that callers "send semantics, never
+layout". The cost is that a mistyped `disp` name becomes a nonsense parameter on screen rather
+than an error — which is the better failure, since you can see it.
+
+**`modal` and `alert` text is ONE symbol**, and error text is ≤ 21 characters. `gPrintln` does
+not wrap, 16px fits about ten characters across 128 px, and a message box has a fixed typetag.
+Write `launchpad-silent`, not `launchpad silent`.
 
 That last clause is not pedantry — it is the difference between working and silently doing
 nothing:
@@ -269,22 +294,40 @@ nothing:
 This cost a debugging round trip in Phase 1. A message box typed `in-l 42 dB` has the right
 shape already; anything built with `[list …]` does not.
 
-**And the mirror image, on the receiving side:** when `route` matches and the *remainder is a
-single symbol*, it emits that symbol as a **selector**, not as a `symbol` message. Feeding that
-straight into `[symbol]` fails with `inlet: expected 'symbol' but got 'wiring'`. Convert it
-with **`[list append]`**, which turns a bare selector back into a proper `symbol` message.
+**And the mirror image, on the receiving side.** ✅ Measured in Pd 0.49 while building Phase 3,
+and it is **wider than this document previously claimed**. The old wording said the trap applied
+when "the remainder is a single symbol". The real rule:
+
+> When `route` matches, **the remainder is emitted as a message, not as a list, whenever its
+> first atom is a symbol** — that symbol becomes the *selector* and the rest become its
+> arguments. So `boot v0.2-ready` arrives as selector `v0.2-ready`, and
+> `alert warn u_init x` arrives as selector `warn` with two arguments. Only a remainder
+> starting with a **float** — `in-l 43 dB` — is really a list.
+
+Feeding that to `[symbol]` fails with `inlet: expected 'symbol' but got 'wiring'`; feeding it to
+`[trigger]` fails with `trigger: can only convert 's' to 'b' or 'a'`. **`[list append]` converts
+it back into a list**, which is why every branch out of `g_oled`'s `route` begins with one.
 
 | You have | You get | Fix |
 |---|---|---|
 | `[list prepend foo]` → `route foo` | no match, silent | `[list trim]` before sending |
-| `route foo` → `[symbol]` | `expected 'symbol'` error | `[list append]` after route |
+| `route foo` → `[symbol]` / `[t l l]` | `expected 'symbol'` / `can only convert 's'` | `[list append]` after route |
+| `[list split n]` on exactly *n* atoms | right outlet **never fires** — the old value stays | write the field unconditionally first |
 
-Both are the same underlying fact — Pd distinguishes a message's selector from its arguments,
-and the `list` objects are how you move an atom across that boundary.
+The first two are the same underlying fact: Pd distinguishes a message's selector from its
+arguments, and the `list` objects move an atom across that boundary. **The third is a different
+and nastier one** — a silent non-event rather than a wrong value. It is what makes
+`chop-size 43 %` followed by `grain 12` draw as `grain 12 %` unless the unit is cleared before
+it is set. Any field that is optional must be cleared on every message, not written on some.
 
 **Rate limiting belongs to the display, not the caller.** Senders push whenever they have
-something to say; the display redraws on its own clock. `u_level` samples at 10 Hz, `g_levels`
+something to say; the display redraws on its own clock. `u_level` samples at 10 Hz, `g_oled`
 draws at 10 Hz, and neither number is the other's business.
+
+✅ And because every layer holds **state** rather than a queue of draw calls, this needs no
+coalescing logic at all: the last value written is what the next frame draws. Measured — 877
+`disp` messages in five seconds produced exactly 51 frames, with the drawn value advancing by 20
+each time. The guaranteed trailing edge plan-display.md asks for falls out for free.
 
 ---
 
@@ -437,10 +480,16 @@ inconvenience.** Build `u_err` / `g_err` as part of the first infrastructure pas
 is anything to debug:
 
 - Any abstraction reports via `[s err]` as **`<level> <source> <text>`** — level is `warn` or
-  `fail`, source is a symbol naming the abstraction.
+  `fail`, source is a symbol naming the abstraction, text is **one symbol of ≤ 21 characters**.
+  Use a **message box**, which already carries the level as its selector; anything built with
+  `[list prepend]` needs `[list trim]`.
 - **`u_err` decides what reaches the screen by consulting `mode`:** compose shows everything,
   perform shows only `fail`. Same bus, same callers — the filtering is one place. Defaults to
-  verbose, since nothing drives `mode` before Phase 4.
+  verbose, since nothing drives `mode` before Phase 4. ✅ Verified both ways.
+- **`u_err` never draws.** It forwards onto `disp` as `alert <level> <source> <text>` and
+  `g_oled` decides what an error looks like — see *The display bus* above.
+- **The bus is unfiltered; only the screen is filtered.** `u_err` carries an unconditional
+  `[print err]`, so the by-hand SSH console sees every error raised even in perform mode.
 - Errors **time out**; they are never modal. A stuck error covering the display mid-set is
   worse than a missed warning, and the bus keeps it recoverable either way.
 - It costs almost nothing early and is painful to retrofit across every abstraction later.

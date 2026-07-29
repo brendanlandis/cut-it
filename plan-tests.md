@@ -199,6 +199,44 @@ LINE IN R-only variant.
 
 ---
 
+## Session 3c — Display arbiter and error bus (Phase 3)
+
+Everything here except item 20 was run **headless in Pd 0.49 on the Mac** against the real
+`main-dev.pd`, by tapping `oscOut` with `[print]` and driving the buses from a throwaway patch.
+No hardware needed, and it is repeatable in seconds — the pattern is worth reusing for Phase 4.
+
+- [x] **15. Cold start says something.** ✅ Before any bus traffic the home screen draws
+      `L 0` / `R 0` and `cut-it v0.2`. Without the defaults every line would be text-less, and
+      `pd text-out` correctly refuses those — a blank screen indistinguishable from a dead patch.
+- [x] **16. Boot stages are modals.** ✅ `booting` → `wiring` → `launchpad` at 16px, then
+      `modal-off` hands over to the meters with `v0.2-ready` in the footer.
+- [x] **17. Parameter readout, and no stale unit.** ✅ `chop-size 43 %` draws with typetag
+      `iiiiiss`; `grain 12` sent 200 ms later draws `iiiiis` with **no inherited `%`**. It
+      decayed back to home exactly 12 frames after the second message — the TTL follows the
+      last message, not the first.
+- [x] **18. Priority and restore.** ✅ A modal outranks a parameter fired underneath it; an
+      alert preempts the modal; when the alert's TTL expires **the modal is still there**; then
+      `modal-off` returns to home.
+- [x] **19. The mode filter.** ✅ `warn` reaches the screen in compose. After `perform`, the
+      same warning is printed by `u_err` but never drawn, while `fail` still draws. Returning
+      to compose restores it. The bus is unfiltered; only the screen is filtered.
+- [x] **20. Rate limiting and the trailing edge.** ✅ 877 `disp` messages in five seconds
+      produced exactly **51 frames**, the drawn value advancing by 20 each frame. No coalescing
+      logic exists — layers hold state, so the last value written is what the next frame draws.
+- [ ] **21. The same on hardware.** ⬜ **Not yet run.** `./deploy.sh --clean` (the `--clean` is
+      required — no rsync, so a plain deploy leaves the deleted `g_levels.pd` behind), then the
+      by-hand console from [plan-conventions.md](plan-conventions.md) with `[r disp]` and
+      `[r oscOut]` taps. **The open question is throughput**: the home frame is 10 OSC messages
+      at 10 Hz, against 6 for the Phase 1 display. If the device struggles, the metro period is
+      one number in `g_oled`.
+- [ ] **22. Does the ALERT buffer work?** ⬜ A throwaway patch that draws into buffer 4,
+      `gFlip 4`, `setscreen 4`, waits, `setscreen 3`. Only `setscreen` itself is documented.
+      If it works, `draw-alert` drops from ~70 messages/second to about five per alert; if it
+      does not, the current screen-3 approach was the right call anyway. Record either result
+      in [plan-display.md](plan-display.md) — it is the last ⬜ in the OLED section.
+
+---
+
 ## Session 4 — nanoKONTROL
 
 - [x] **14. Plug it in and print the CCs.** ✅ Class compliant, enumerates as ALSA card 4,

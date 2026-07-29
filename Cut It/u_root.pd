@@ -1,4 +1,4 @@
-#N canvas 40 40 1200 860 12;
+#N canvas 40 40 1340 860 12;
 #X text 20 20 u_root -- the actual root of Cut It. main.pd (on the device) and main-dev.pd (on the Mac) both instantiate this and nothing else \, which is what stops the two entry points drifting., f 58;
 #X text 20 110 creation args: none. inlets: none. outlets: none., f 58;
 #X text 20 145 THE AUDIO PATH IS WIRES \, ON PURPOSE. The four stages go in the gap below \, right to left \, so the chain stays something you can read off the canvas instead of tracing through send names., f 58;
@@ -8,14 +8,16 @@
 #X obj 330 580 throw~ outR;
 #X obj 170 360 u_level in-l;
 #X obj 480 360 u_level in-r;
-#X text 70 440 Phase 3+: e_chop \, e_pitch \, e_trem \, e_verb go in this gap., f 30;
+#X text 70 440 v0.3: e_chop \, e_pitch \, e_trem \, e_verb go in this gap., f 30;
 #X text 650 300 L = drums \, R = fx: the SP-404's hard-panned outputs arriving through the TRS Y-cable. adc~ 1 is the tip \, verified -- plan-tests.md item 11., f 34;
 #X obj 650 430 u_init;
 #X text 650 470 owns startup order \, MIDI wiring and the safe exit. No inlets or outlets: it talks on disp \, panic and quitting., f 34;
-#X obj 650 580 g_levels;
-#X text 650 620 owns the OLED. Anything wanting to display something sends to disp -- nothing else touches oscOut or screenLine., f 34;
+#X obj 650 580 g_oled;
+#X text 650 620 owns the OLED -- four layers \, each with a priority and a time to live. Everything else asks by sending to disp., f 34;
 #X text 20 700 adc~ and dac~ appear NOWHERE in this patch \, and must not. mother.pd owns both -- it publishes the inputs on inL / inR and collects the output from outL / outR \, then applies the volume knob and a limiter. A patch that writes to dac~ silently bypasses both. See plan-conventions.md \, Audio I/O., f 58;
 #X text 650 730 The level taps are a SIGNAL fan-out \, which needs no trigger: signal connections all run every block \, so there is no firing order to get wrong. The trigger rule is about messages., f 34;
+#X obj 1000 430 u_err;
+#X text 1000 470 the error bus. Anything raising a problem sends level \, source and text to err \; this decides what the mode lets through and forwards it to disp. It never draws -- g_oled owns the screen., f 34;
 #X connect 3 0 4 0;
 #X connect 3 0 7 0;
 #X connect 5 0 6 0;

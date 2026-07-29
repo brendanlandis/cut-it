@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio -path mac-stubs -send \"pd quit\" \"Cut It/u_oled-preview.pd\")",
+      "Bash(awk '{print $NF}')",
+      "Bash(awk '{print}')"
+    ]
+  }
+}

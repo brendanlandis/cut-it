@@ -51,7 +51,9 @@ Cut It/              the deployable patch — folder name is what appears in the
   u_root.pd            the actual root — the audio chain, and where every phase hangs its work
   u_init.pd            ordered startup: MIDI wiring, Launchpad mode, panic and safe exit
   u_level.pd           signal → a named level on the disp bus
-  g_levels.pd          the Phase 1 display; sole owner of oscOut and screenLine* (→ g_oled)
+  u_err.pd             the err bus; filters by mode, forwards to disp. Never draws
+  g_oled.pd            the display arbiter — home < param < modal < alert, each with a TTL.
+                       Sole owner of oscOut and screenLine*
   u_mother-stub.pd     impersonates mother.pd off-device, so the patch runs with no hardware
   u_oled-preview.pd    shows what the patch draws, one box per screen line (Mac only)
   wire.sh              aconnect calls, run by u_init via [shell]

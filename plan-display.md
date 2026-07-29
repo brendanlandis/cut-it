@@ -107,8 +107,9 @@ AUX = 1     MENU = 2     PATCH = 3     ALERT = 4
 ✅ **Draw to screen 3.** Sending screen 1 writes to an undisplayed buffer and looks exactly
 like a dead API — this cost a debugging round trip.
 
-`ALERT` is a separate buffer worth reserving for the error path: errors can preempt without
-destroying the performance display, then restore.
+`ALERT` is a separate buffer worth reserving for the error path — but ⬜ **drawing into it has
+never been tested**, and Phase 3 deliberately does not rely on it. See *The ALERT buffer is
+still unverified* below.
 
 **Which buffer is *shown* is switched with `/oled/setscreen <n>`.** ✅ Seen in
 `save-patch.sh`, which flips to the AUX screen to display "Saving…" and back to PATCH
@@ -322,28 +323,77 @@ thing distinguishing "idle" from "dead".
 
 ---
 
-## The display framework, sketched
+## The display framework — built ✅
 
-Not yet built. The requirement: most knob turns, fader moves and button presses want the
-screen for the duration they are moving, which means many sources contending for one surface.
+`g_oled`, Phase 3. Most knob turns, fader moves and button presses want the screen for the
+duration they are moving, so many sources contend for one surface. **It is an arbiter, not a
+print function.**
 
-**It is an arbiter, not a print function.**
+### Four layers, one winner per frame
 
-- **Layers with priority and TTL.** `home` (persistent — mode, tempo, transport) < `param`
-  (transient, ~700 ms after last change) < `modal` (sticky — "recording slot 3…") < `err`.
-- **Errors get the ALERT buffer**, so they preempt without destroying what was on screen.
-- **Rate limiting with a guaranteed trailing edge.** A fader sweep is ~40 messages/sec and each
-  redraw is several OSC messages to `mother`. Coalesce to ~20 Hz — but always emit the final
-  value, or the display sticks on a stale mid-sweep number, which is worse than not updating.
-- **Single owner.** Only `g_oled` ever talks to `oscOut` or `screenLine*`. Everything else
-  sends semantic data — `[s disp]` with `chop-size 43 %` — and the framework formats and
-  places it. Requires a new entry on the global allowlist in
-  [plan-conventions.md](plan-conventions.md).
-- **Big fonts for the active parameter.** 24px is readable at arm's length; 8px is for context
-  around it. This is the main reason the graphics API matters more than the text lines.
+| Layer | Pri | Raised by | Cleared by | Draws |
+|---|---|---|---|---|
+| `home` | 0 | always active | never | two meters, 8px readouts, gate marks, footer |
+| `param` | 1 | any unreserved `disp` selector | `[del 1200]` | name 8px, value 24px, meters shrunk |
+| `modal` | 2 | `disp` → `modal <word>` | `modal-off`, or a 30 s safety TTL | word 16px + shrunk meters |
+| `alert` | 3 | `disp` → `alert …`, from `u_err` only | 2 s `warn`, 4 s `fail` | border, level 16px, source and text 8px |
+
+Priority is a `[select 1]` cascade rather than arithmetic, so it reads top to bottom in exactly
+priority order. TTL is one retriggered `[delay]` per layer, so a moving control keeps `param`
+alive and the screen clears 1.2 s after your hands stop rather than after they start.
+
+### Geometry, as built
+
+```
+home                              param                    alert
++------------------------+  +------------------------+  +------------------------+
+| L 43            y=0  8 |  | chop-size       y=0  8 |  |+----------------------+|
+| ==========      y=10 12|  |                        |  || fail        y=6   16 ||
+|      |==|       y=23  3|  |  43 %           y=12 24|  ||                      ||
+| R 19            y=27 8 |  |                        |  || u_init      y=30   8 ||
+| ===             y=37 12|  |                        |  || launchpad-x y=44   8 ||
+|      |==|       y=50  3|  | =========       y=48  5|  |+----------------------+|
+| v0.2-ready      y=54  8|  | ====            y=56  5|  +------------------------+
++------------------------+  +------------------------+
+```
+
+`env~`'s 0–100 maps to pixels as `× 1.28`, clipped to 1–128 — a zero-width `gFillArea` is
+untested and silence is the common case. The gate marks are **one `gBox` per meter** spanning
+the measured noise floor (18–19 → x 23) to the top of the gate window (25–30 → x 38): one
+message instead of two ticks, and it reads as a zone.
+
+**Deviation from the original sketch:** a moving knob shrinks the meters into a **full-width
+5 px bottom strip**, not a corner. A corner meter at 128×64 is ~40 px wide and 4 px tall, and
+24px text is ~18 px per character so the value needs the full width anyway. Intent is kept —
+the meters never vanish.
+
+### What made it work
+
+- **Rate limiting needed no code.** Layers hold state, not draw calls, so the last value written
+  is what the next frame draws. ✅ 877 `disp` messages in five seconds → exactly 51 frames, the
+  value advancing 20 per frame. The guaranteed trailing edge is free.
+- **One text renderer builds its own typetag.** Every line on the screen goes through
+  `pd text-out`, which counts the words and picks `iiiiis` … `iiiiissss` to match. Hand-typed
+  typetags are the single most repeated silent failure in this API; this makes an arity mistake
+  impossible rather than merely unlikely. Values are stringified with `[makefilename %g]`
+  because packOSC will not accept a float under an `s` tag.
+- **Single owner, enforced.** Only `g_oled` sends on `oscOut`. `u_err` forwards onto `disp`.
 
 **The same arbiter shape applies to `g_grid`** on the Launchpad — playhead, slot state, mode
 and meters all contend for the same 64 pads. Build the pattern once, instantiate it twice.
+
+### The ALERT buffer is still unverified ⬜
+
+Phase 3 draws alerts to **screen 3, the buffer already on show**, as the top-priority layer.
+Drawing into buffer 4 and `setscreen`-ing to it was the original plan, but its stated benefit —
+"the performance display underneath is never disturbed" — does not exist here: `g_oled` clears
+and rebuilds screen 3 from stored state ten times a second, so there is nothing to preserve and
+restore is automatic on the next frame.
+
+Only `setscreen` itself is documented (from `save-patch.sh`). **Drawing into buffer 4 and
+flipping it is inferred and has never been tested**, and if the inference is wrong the alert is
+invisible with no console to say so. Probing it is a follow-up: if it works, `draw-alert` drops
+from ~70 messages/second while an alert is up to about five per alert.
 
 ---
 

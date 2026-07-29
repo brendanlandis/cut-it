@@ -183,18 +183,40 @@ Programmer Mode means power-cycling the Launchpad.
 
 **Done when:** cold boot to a working home screen with nothing pre-connected, repeatably.
 
-### Phase 3 — Display and errors
+### Phase 3 — Display and errors ✅ **done (Mac); hardware run outstanding**
 
 `g_oled` (replaces `g_levels`), `u_err`
+
+**Verified headless in Pd 0.49 on the Mac**, driving the real `main-dev.pd`: boot stages draw as
+16px modals and hand over to the meters with `v0.2-ready` in the footer; a parameter with a unit
+and one without draw correctly and decay after exactly 12 frames; an alert preempts a modal and
+the modal is still there when the alert expires; `warn` reaches the screen in compose and does
+not in perform, while `[print err]` shows it in both; and 877 `disp` messages in five seconds
+produce exactly 51 frames. **What has not happened yet is a deploy** — the message shapes are
+verified, the device's reaction to ~100 OSC messages a second is not.
+
+**Three things this phase corrected:**
+
+- **`u_err` does not draw.** This section used to say it writes to the ALERT buffer, which
+  contradicts *Banned* in [plan-conventions.md](plan-conventions.md) — two writers, one screen.
+  It filters and forwards onto `disp`; `g_oled` renders.
+- **The alert draws to screen 3**, not the ALERT buffer. Nothing underneath needs preserving
+  when the frame is rebuilt from state ten times a second, and buffer 4 remains ⬜ untested.
+  See [plan-display.md](plan-display.md).
+- **`route`'s remainder trap is wider than documented** — any remainder whose first atom is a
+  symbol arrives as a selector, not just a lone symbol. And `[list split n]` on exactly *n*
+  atoms silently never fires its right outlet, which is what would have made `grain 12` draw as
+  `grain 12 %`. Both are now in [plan-conventions.md](plan-conventions.md).
 
 The arbiter described in [plan-display.md](plan-display.md): layers with priority and TTL,
 `home` < `param` < `modal` < `err`; sole owner of `oscOut` and `screenLine*`. Callers send
 semantics, never layout — `[s disp]` with `chop-size 43 %`. **Big fonts for the active
 parameter**: 24px is readable at arm's length, 8px is context.
 
-**`g_levels` from Phase 1 is what is being replaced.** Its interface is already right — consume
-`disp`, own the screen, redraw on a fixed clock — so this phase swaps the insides and deletes
-the file. Nothing upstream changes.
+**`g_levels` from Phase 1 was what got replaced.** Its interface was already right — consume
+`disp`, own the screen, redraw on a fixed clock — so this phase swapped the insides and deleted
+the file. Nothing upstream changed. ⚠️ **Deploy this phase with `./deploy.sh --clean`**: there
+is no rsync on the device, so a plain deploy would leave `g_levels.pd` behind.
 
 #### Layout decisions, settled
 
@@ -224,16 +246,21 @@ Errors **time out** rather than waiting to be dismissed; a stuck error covering 
 mid-set is the worse failure. They stay recoverable on the bus for the by-hand console and, in
 Phase 7, the phone.
 
-`u_err` draws to the **ALERT buffer** via `/oled/setscreen` — argument is enum+1, so
-`setscreen 4` shows ALERT and `setscreen 3` returns — the same trick `save-patch.sh` uses. The
-performance display underneath is never disturbed.
+`u_err` **forwards onto `disp`** as `alert <level> <source> <text>`; `g_oled` owns the drawing,
+because [plan-conventions.md](plan-conventions.md) allows exactly one sender on `oscOut`. The
+alert is the top-priority layer on the ordinary patch screen — the ALERT buffer is ⬜ untested
+and buys nothing under a state-driven redraw.
+
+**The bus is unfiltered; only the screen is filtered.** `u_err` prints every error
+unconditionally, so the by-hand SSH console sees warnings even in perform mode.
 
 **This does not catch Pd's own runtime errors.** Those still go to tty1; the answer for those
 is the by-hand console in [plan-conventions.md](plan-conventions.md).
 
-**Done when:** two sources competing for the display resolve by priority, a parameter readout
+**Done when:** ✅ two sources competing for the display resolve by priority, a parameter readout
 decays back to the meters after ~1.2 s, an error preempts and restores what was underneath, and
-bus traffic far above the redraw rate still draws at the fixed rate.
+bus traffic far above the redraw rate still draws at the fixed rate. **Outstanding:** the same
+on hardware, via `./deploy.sh --clean`.
 
 ### Phase 4 — nanoKONTROL
 

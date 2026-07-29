@@ -114,7 +114,7 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 | `clock` | **master reference** beat bang | `u_tempo` |
 | `start` / `stop` | transport | nano transport |
 | `panic` | all-notes-off, clear all state | any |
-| `err` | error and status reporting | any → `u_err` |
+| `err` | `<level> <source> <text>`, level ∈ `warn` `fail` | any → `u_err` |
 | `disp` | display requests: `<name> <value> [unit]` | any → `g_oled` |
 
 **`tempo` and `clock` are the master reference, not "the clock".** See *Poly-tempo* below —
@@ -436,8 +436,13 @@ mode for a wrong message is to print and continue.
 inconvenience.** Build `u_err` / `g_err` as part of the first infrastructure pass, before there
 is anything to debug:
 
-- Any abstraction reports via `[s err]` with a symbol identifying itself and the condition.
-- A single `g_err` owns one OLED line and displays the most recent message.
+- Any abstraction reports via `[s err]` as **`<level> <source> <text>`** — level is `warn` or
+  `fail`, source is a symbol naming the abstraction.
+- **`u_err` decides what reaches the screen by consulting `mode`:** compose shows everything,
+  perform shows only `fail`. Same bus, same callers — the filtering is one place. Defaults to
+  verbose, since nothing drives `mode` before Phase 4.
+- Errors **time out**; they are never modal. A stuck error covering the display mid-set is
+  worse than a missed warning, and the bus keeps it recoverable either way.
 - It costs almost nothing early and is painful to retrofit across every abstraction later.
 
 This does not catch Pd's *own* runtime errors — those still go to tty1. It catches the ones we

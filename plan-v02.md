@@ -187,27 +187,53 @@ Programmer Mode means power-cycling the Launchpad.
 
 `g_oled` (replaces `g_levels`), `u_err`
 
-**Levels should become meters, not numbers** — asked for during Phase 1 verification. A
-`gFillArea` bar per channel maps `env~`'s 0–100 straight onto the 128px width. See
-[plan-display.md](plan-display.md).
-
-**`g_levels` from Phase 1 is the thing being replaced.** Its interface is already right —
-consume `disp`, own `oscOut` and `screenLine*`, redraw on a fixed clock — so this phase swaps
-the insides for the arbiter and deletes the file. Nothing upstream changes.
-
 The arbiter described in [plan-display.md](plan-display.md): layers with priority and TTL,
-`home` < `param` < `modal` < `err`; rate-limited to ~20 Hz **with a guaranteed trailing edge**;
-sole owner of `oscOut` and `screenLine*`.
+`home` < `param` < `modal` < `err`; sole owner of `oscOut` and `screenLine*`. Callers send
+semantics, never layout — `[s disp]` with `chop-size 43 %`. **Big fonts for the active
+parameter**: 24px is readable at arm's length, 8px is context.
 
-Callers send semantics, not layout — `[s disp]` with `chop-size 43 %`.
+**`g_levels` from Phase 1 is what is being replaced.** Its interface is already right — consume
+`disp`, own the screen, redraw on a fixed clock — so this phase swaps the insides and deletes
+the file. Nothing upstream changes.
 
-`u_err` owns `[r err]`, formats, and routes to the ALERT buffer via `/oled/setscreen`, so an
-error never destroys what was on screen.
+#### Layout decisions, settled
 
-**Big fonts for the active parameter** — 24px is readable at arm's length, 8px is context.
+- **The home screen is the two level meters.** `gFillArea` bars, not numbers: `env~`'s 0–100
+  maps straight onto 128 px. Keep a small 8px numeric readout so the meters stay calibratable,
+  and draw the two measured reference marks — noise floor **18–19**, gate threshold **25–30**
+  (item 11).
+- **A moving knob shrinks the meters into a corner** and gives the parameter the rest of the
+  screen at 24px. The meters never disappear entirely — signal presence is always visible.
+- **A parameter readout lingers ~1.2 s** after the last change, then the meters expand back.
+  One number, expected to be tuned by living with it.
+
+#### Errors follow the mode, not a severity guess
+
+**Two error behaviours, chosen by the existing `mode` bus** rather than a new concept:
+
+| `mode` | Shows |
+|---|---|
+| compose | **verbose** — every error reaches the screen |
+| perform | **quiet** — only failures; warnings stay on the bus |
+
+This is why `err` carries a level: **`<level> <source> <text>`**, level ∈ `warn` `fail`.
+`u_err` routes on it and consults `[r mode]`. Nothing drives `mode` until Phase 4, so
+**default to verbose** — during development that is the useful default, and it degrades safely.
+
+Errors **time out** rather than waiting to be dismissed; a stuck error covering the display
+mid-set is the worse failure. They stay recoverable on the bus for the by-hand console and, in
+Phase 7, the phone.
+
+`u_err` draws to the **ALERT buffer** via `/oled/setscreen` — argument is enum+1, so
+`setscreen 4` shows ALERT and `setscreen 3` returns — the same trick `save-patch.sh` uses. The
+performance display underneath is never disturbed.
+
+**This does not catch Pd's own runtime errors.** Those still go to tty1; the answer for those
+is the by-hand console in [plan-conventions.md](plan-conventions.md).
 
 **Done when:** two sources competing for the display resolve by priority, a parameter readout
-decays back to home, and an error preempts and restores.
+decays back to the meters after ~1.2 s, an error preempts and restores what was underneath, and
+bus traffic far above the redraw rate still draws at the fixed rate.
 
 ### Phase 4 — nanoKONTROL
 

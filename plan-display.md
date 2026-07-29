@@ -65,11 +65,14 @@ Every command takes **screen number as its first argument**. 📄 from `main.cpp
 | `gFrame` | 1024-byte **blob** — whole framebuffer, `memcpy`'d |
 | `gFlip` | *(none)* — pushes to the display |
 
-**Levels want meters, not numbers.** ⬜ Requested during Phase 1 verification: two 24px numbers
+**Levels want meters, not numbers.** ✅ Decided for Phase 3. Requested during Phase 1
+verification: two 24px numbers
 are legible but read as data rather than as a signal. A horizontal bar per channel via
 `gFillArea` is one extra message each and maps `env~`'s 0–100 scale straight onto 0–128 pixels,
 with the noise floor (18–19) and a sensible gate threshold (25–30) as fixed reference marks.
-Belongs in Phase 3, where the layout is actually designed rather than placeholder.
+Settled for Phase 3: **meters are the home screen**; a moving knob shrinks them into a corner
+and takes the rest of the screen at 24px for ~1.2 s, then they expand back. The meters never
+vanish entirely, so signal presence is always readable.
 
 **Fonts: 8, 16, 24, 32 px.** The `height` argument of `gPrintln` and the `size` argument of
 `gCharacter` select among them. The 21-chars-per-line measurement is the 8px font; larger

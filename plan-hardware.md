@@ -165,6 +165,76 @@ there is ample gain and headroom for instrument-level sources.
 not guarantee operation through hubs. A USB-A→C cable from the hub carries **data only**,
 which is what we want — the 404 runs off its own adapter and costs the hub nothing.
 
+### ⚠️ Booting with the Launchpad attached hangs the Organelle
+
+✅ **Root-caused on this hardware.** Not power, and not the hub — swapping hubs, ports and
+cables changed nothing, because none of those were the cause.
+
+**The Launchpad Pro MK3 presents a USB mass-storage interface** alongside its two audio/MIDI
+interfaces — a 192 KiB, **write-protected**, vfat volume labelled `LAUNCHPAD`:
+
+```
+scsi 0:0:0:0: Direct-Access  Novation  Onboarding Drive
+sd 0:0:0:0: [sda] 384 512-byte logical blocks: (196 kB/192 KiB)
+sd 0:0:0:0: [sda] Write Protect is on
+```
+
+That is enough to break boot, in four steps:
+
+1. `mount.sh` takes **the last** `/dev/sd*` — `devices=(/dev/sd*)`, `DEVICE="${devices[-1]}"`.
+   With the Launchpad attached that is `/dev/sda1`, the onboarding drive.
+2. `blkid` reports `ID_FS_TYPE=vfat`, so the script mounts it on **`/usbdrive`**. It succeeds —
+   this is not a failure path, which is why nothing errors.
+3. `AppData::getDefaultUserDir()` returns `/usbdrive` whenever `/usbdrive` is in
+   `/proc/mounts`. So **`USER_DIR` becomes the Launchpad's read-only drive.**
+4. `wifi_control.py` line 4 is
+   `log_file = os.getenv("USER_DIR", "/usbdrive") + "/wifi_log.txt"` — it opens a log for
+   **writing** in `USER_DIR`. On a write-protected volume that fails, the script dies, and the
+   UI sits on "loading…" forever.
+
+**Every observation fits:** independent of which hub, port or cable; broken when the Launchpad
+is present at boot; fine when it is hot-plugged afterwards, because `mount.sh` has already run.
+
+**Beware the wider blast radius.** `USER_DIR` is not only wifi — `start-ap.sh` reads
+`$USER_DIR/ap.txt`, and the System menu's save paths hang off it. Anything that writes under
+`USER_DIR` is broken while that volume is mounted. `mount.sh` also runs on **every Reload**
+(`MainMenu::reload()` → `execScript("mount.sh")`), which `deploy.sh` triggers — so this can
+appear mid-session, not only at boot.
+
+**Half of it is already fixed in the repo.** `deploy.sh` now sends **`/reloadNoRemount`**
+instead of running `reload.sh`. `reload.sh` sends `/reload`, which runs `mount.sh` — so every
+deploy was remounting that volume and moving `USER_DIR` onto it. `/reloadNoRemount` refreshes
+the patch list and resets the patch directory without touching mounts, which is all a deploy
+needs since the files go to `/sdcard`. ✅ Verified: `/usbdrive` stays clear through a full
+deploy and `/tmp/user_dir` stays `/sdcard`.
+
+**The boot case is fixed too** — the guard below is now installed on the device, with the
+factory version kept at `/root/fw_dir/scripts/mount.sh.orig` and in
+[device/](device/). ✅ **Verified by cold boot with the Launchpad attached**: boots normally,
+wifi connects, `/usbdrive` stays unmounted and `USER_DIR` stays `/sdcard`, with `/dev/sda1`
+still present and `ro=1` — so `mount.sh` saw the volume and declined it. Loading the patch then
+wires the Launchpad both directions with no manual step.
+
+**Workaround, proven:** boot with the Launchpad unplugged, then plug it in and run
+`./deploy.sh` so `u_init` re-runs and wires it. If `/usbdrive` does get mounted, `umount
+/usbdrive` clears it — no reboot needed.
+
+**Fix, one line in `mount.sh`** (backed up at [device/mount.sh](device/mount.sh)) — refuse
+write-protected volumes, since the whole point of `USER_DIR` is writing to it:
+
+```sh
+BASE=$(basename "$DEVICE" | sed 's/[0-9]*$//')
+if [ "$(cat /sys/block/$BASE/ro 2>/dev/null)" = "1" ]; then
+    echo "skipping write-protected device $DEVICE"; exit 1
+fi
+```
+
+The rootfs is read-only: `remount-rw.sh` before, `remount-ro.sh` after.
+
+**Worth trying first:** Novation Components may be able to disable the onboarding drive on the
+device itself. ⬜ Unverified — if it works it is the cleaner fix, since it changes nothing on
+the Organelle.
+
 ## The device itself
 
 ```sh

@@ -143,9 +143,24 @@ levels are on the OLED and read the 18–19 noise floor at rest. Covers
 [plan-tests.md](plan-tests.md) item 11 through the real patch. Items 12–13 stay blocked on the
 TRS Y-cable.
 
-### Phase 2 — Startup sequencing
+### Phase 2 — Startup sequencing ✅ **done**
 
-`u_init`
+`u_init`, `wire.sh`
+
+**Verified end to end on hardware.** `[shell]` runs `wire.sh` from the patch; `aconnect -l`
+shows both directions wired (`28:0 → 128:0` for pads in, `128:4 → 28:0` for LEDs and SysEx
+out); and captured pad presses come back as **`r*10+c`** — 64, 65, 34, 24, 43, 63 — which is
+the Programmer Mode layout and nothing else. Velocity is live (5 to 127). The OLED status line
+tracks each stage.
+
+**Getting there cost a hardware lesson, not a code one.** The Launchpad would not configure
+behind three chained USB hubs (`can't set config #1, error -32`) and the same topology wedged
+the wifi dongle at boot. Plugged directly into the Organelle it works first time. Full evidence
+in [plan-hardware.md](plan-hardware.md); tracked as Session 3b in
+[plan-tests.md](plan-tests.md).
+
+`quitting` turned out to already exist — `mother.pd` sends it and gives the patch **100 ms**
+before quitting Pd. Pd 0.49 has no `closebang`, so that is the only shutdown hook there is.
 
 `loadbang` fires before ALSA connections exist. Rather than scattering `[del]` objects, one
 abstraction owns the ordered startup:
@@ -171,6 +186,10 @@ Programmer Mode means power-cycling the Launchpad.
 ### Phase 3 — Display and errors
 
 `g_oled` (replaces `g_levels`), `u_err`
+
+**Levels should become meters, not numbers** — asked for during Phase 1 verification. A
+`gFillArea` bar per channel maps `env~`'s 0–100 straight onto the 128px width. See
+[plan-display.md](plan-display.md).
 
 **`g_levels` from Phase 1 is the thing being replaced.** Its interface is already right —
 consume `disp`, own `oscOut` and `screenLine*`, redraw on a fixed clock — so this phase swaps

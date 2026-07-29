@@ -35,8 +35,12 @@ fi
 #
 # Pd exits 0 even when objects fail to create, so the gate is OUTPUT, not exit
 # status. Silence means every object instantiated.
+#
+# -path mac-stubs supplies do-nothing stand-ins for externals that exist only
+# on the Organelle (currently [shell]). That folder is NOT deployed, so on the
+# device the real externals win — see mac-stubs/shell.pd.
 check_patch() {
-    out=$("$PD" -nogui -noaudio -send "pd quit" "$1" 2>&1) || true
+    out=$("$PD" -nogui -noaudio -path mac-stubs -send "pd quit" "$1" 2>&1) || true
     if [ -n "$out" ]; then
         echo "syntax check FAILED: $1" >&2
         echo "$out" >&2
@@ -70,18 +74,22 @@ echo "deployed:"
 ssh "$HOST" "ls -la '$DEST/$PATCH'"
 
 # --- Reloading -------------------------------------------------------------
-# Refresh the Organelle's patch list. Equivalent to Storage -> Reload on the
-# device, and to the refresh button in the web Patch Manager.
+# Refresh the Organelle's patch list, and reset mother's current patch
+# directory to the default — which the load step below depends on.
 #
-# This also resets mother's current patch directory to the default, which the
-# load step below depends on.
+# /reloadNoRemount, NOT reload.sh. reload.sh sends /reload, which additionally
+# runs mount.sh, and mount.sh mounts the LAST /dev/sd* on /usbdrive. With a
+# Launchpad attached that is its 192 KiB write-protected onboarding drive, and
+# mounting it moves USER_DIR onto a read-only volume — which breaks wifi
+# config, Save, Save New and AP mode until it is unmounted. See
+# plan-hardware.md. Nothing here needs a remount: the files went to /sdcard.
 if [ "${NORELOAD:-}" = "1" ]; then
     echo
     echo "skipped reload (NORELOAD=1) — press Storage -> Reload on the device"
 else
     echo
     echo "reloading patch list ..."
-    ssh "$HOST" "/root/fw_dir/scripts/reload.sh" || {
+    ssh "$HOST" "oscsend localhost 4001 /reloadNoRemount i 1" || {
         echo "reload failed — press Storage -> Reload on the device instead" >&2
     }
 fi

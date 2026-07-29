@@ -104,6 +104,15 @@ Stop with `killall pd`.
   `[list prepend foo]` produces `list foo …`, which `route foo` rejects — out of the rightmost
   outlet, which is usually connected to nothing. Finish with `[list trim]`. A message box typed
   `foo 42` is already the right shape; anything assembled with `[list …]` is not.
+- **`route` emits a lone remaining symbol as a SELECTOR, not a `symbol` message.** Feeding it
+  to `[symbol]` errors with `inlet: expected 'symbol' but got 'wiring'`. `[list append]`
+  converts it back. This is the mirror of the `[list trim]` rule above — same underlying fact.
+- **`route` passes the matched message's ARGUMENTS on, and they are rarely what you want next.**
+  `route /oled/gClear` emits `ii 3 1` — the typetag and its args. Feeding that to a float inlet
+  prints `float: no method for 'ii'` on every message, which at a 10 Hz redraw is an endless
+  console scroll. Put `[t b]` in between when you only care that the message happened.
+- **`quitting` is the only shutdown hook.** `mother.pd` sends it and gives the patch 100 ms.
+  Pd 0.49 has no `closebang` or `initbang` — both fail to create.
 - **`sendtyped` typetags must match the argument count exactly**, or mrpeach `packOSC` drops the
   message with an error. Mixed tags work: `iiiiisi` sends five ints, a label and a value in one
   `gPrintln`.

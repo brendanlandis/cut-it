@@ -124,8 +124,17 @@ this distinction is load-bearing and easy to lose.
 
 | Direction | Names |
 |---|---|
-| To the patch | `knob1`–`knob4` (+`Raw`/`Override`), `notes`, `notesRaw`, `enc`, `encbut`, `aux`, `auxRaw`, `vol`, `exp`, `fs`, `midiCh`, `midiInGate`, `midiOutCh`, `midiOutGate`, `saveState`, `recallState`, `oscIn` |
-| From the patch | `screenLine1`–`screenLine5`, `led`, `goHome`, `oscOut` |
+| To the patch | `knob1`–`knob4` (+`Raw`/`Override`), `notes`, `notesRaw`, `enc`, `encbut`, `aux`, `auxRaw`, `vol`, `exp`/`expRaw`/`expOverride`, `fs`/`fsRaw`, `midiCh`, `midiInGate`, `midiOutCh`, `midiOutGate`, `saveState`, `recallState`, `oscIn`, **`quitting`** |
+| From the patch | `screenLine1`–`screenLine5`, `led`, `goHome`, `oscIn`, `oscOut`, `enableSubMenu`, `footSwitchPolarity` |
+
+✅ Enumerated from `mother.pd` itself rather than from documentation — every `[s]` and `[r]` in
+the file.
+
+**`quitting` is the shutdown hook, and it is the only one.** `mother.pd` sends it on
+`/quitpd`, then waits **100 ms** before `; pd quit`. `killpatch.sh` then SIGTERMs after 120 ms.
+That is the entire budget for putting hardware back in a sane state — enough for a nine-byte
+SysEx, not for anything clever. **Pd 0.49 has no `closebang`** (checked: `closebang` and
+`initbang` both fail to create), so `[r quitting]` is it.
 
 **One abstraction is allowed to send on the `mother.pd` names: `u_mother-stub`.** It exists to
 impersonate `mother.pd` when the patch runs on the Mac, where `mother.pd` does not exist, so
@@ -260,6 +269,19 @@ nothing:
 This cost a debugging round trip in Phase 1. A message box typed `in-l 42 dB` has the right
 shape already; anything built with `[list …]` does not.
 
+**And the mirror image, on the receiving side:** when `route` matches and the *remainder is a
+single symbol*, it emits that symbol as a **selector**, not as a `symbol` message. Feeding that
+straight into `[symbol]` fails with `inlet: expected 'symbol' but got 'wiring'`. Convert it
+with **`[list append]`**, which turns a bare selector back into a proper `symbol` message.
+
+| You have | You get | Fix |
+|---|---|---|
+| `[list prepend foo]` → `route foo` | no match, silent | `[list trim]` before sending |
+| `route foo` → `[symbol]` | `expected 'symbol'` error | `[list append]` after route |
+
+Both are the same underlying fact — Pd distinguishes a message's selector from its arguments,
+and the `list` objects are how you move an atom across that boundary.
+
 **Rate limiting belongs to the display, not the caller.** Senders push whenever they have
 something to say; the display redraws on its own clock. `u_level` samples at 10 Hz, `g_levels`
 draws at 10 Hz, and neither number is the other's business.
@@ -336,7 +358,7 @@ No walking to the device, no Storage → Reload, no selecting from the menu.
 |---|---|
 | `--clean` | wipe the remote copy first |
 | `NOCHECK=1` | skip the syntax check |
-| `NORELOAD=1` | skip refreshing the patch list |
+| `NORELOAD=1` | skip refreshing the patch list (which uses `/reloadNoRemount` — see below) |
 | `NOLOAD=1` | push but leave the running patch alone |
 | `HOST=` `DEST=` `PD=` | target, destination, Pd binary |
 
@@ -353,6 +375,11 @@ create, so the gate is output, not exit status** — `deploy.sh` captures stdout
 refuses to copy anything if either is non-empty. This catches the entire class of load-time
 errors — misspelled objects, malformed iemgui lines, bad connections — that would otherwise
 vanish into tty1 on a device with no console.
+
+**Refresh with `/reloadNoRemount`, never `reload.sh`.** `reload.sh` sends `/reload`, which also
+runs `mount.sh`, which mounts the last `/dev/sd*` on `/usbdrive`. With a Launchpad attached that
+is its write-protected onboarding drive, and mounting it moves `USER_DIR` onto a read-only
+volume — breaking wifi config, Save and Save New. See [plan-hardware.md](plan-hardware.md).
 
 **The load step needs the category folder in the name.** `mother`'s `/loadPatch` resolves
 against its *current* patch directory (`MainMenu::runPatch` builds `getPatchDir() + "/" + arg`),

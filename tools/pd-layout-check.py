@@ -22,13 +22,49 @@ renderer.
 import re, sys
 CW, LH = 7.0, 18.0
 
+def _size(kind, rest, fw):
+    first = rest.split(' ')[0]
+    if kind == 'floatatom':      return 45, 22
+    if first == 'hsl':           return 138, 23
+    if first == 'hradio':        return 53, 23
+    if first in ('bng', 'tgl'):  return 23, 23
+    if fw:
+        words, lines, cur = rest.split(), 1, 0
+        for wd in words:
+            if cur and cur + 1 + len(wd) > fw: lines += 1; cur = len(wd)
+            else: cur += (1 if cur else 0) + len(wd)
+        return fw*CW + 10, lines*LH + 8
+    return len(rest)*CW + 10, 22
+
 def parse(path):
-    boxes, conns = [], []
+    """Return [(label, boxes, conns), ...] -- one context per canvas.
+
+    Subpatches are their own coordinate space. A [pd name] box appears in the
+    PARENT at the coordinates on its #X restore line, and its contents are
+    checked separately."""
+    root = {'label': path, 'boxes': [], 'conns': []}
+    ctxs, stack = [root], [root]
+    depth = 0
     for ln in open(path):
         ln = ln.rstrip('\n').rstrip(';')
+        if ln.startswith('#N canvas'):
+            depth += 1
+            if depth > 1:
+                sub = {'label': None, 'boxes': [], 'conns': []}
+                ctxs.append(sub); stack.append(sub)
+            continue
+        cur = stack[-1]
+        r = re.match(r'#X restore (-?\d+) (-?\d+) (.*)$', ln)
+        if r and len(stack) > 1:
+            sub = stack.pop(); depth -= 1
+            sub['label'] = f"{path} [{r.group(3)}]"
+            x, y, txt = int(r.group(1)), int(r.group(2)), r.group(3)
+            w, h = _size('obj', txt, None)
+            stack[-1]['boxes'].append({'k':'obj','x':x,'y':y,'w':w,'h':h,'t':txt[:40]})
+            continue
         c = re.match(r'#X connect (\d+) (\d+) (\d+) (\d+)$', ln)
         if c:
-            conns.append(tuple(int(g) for g in c.groups())); continue
+            cur['conns'].append(tuple(int(g) for g in c.groups())); continue
         m = re.match(r'#X (obj|msg|text|floatatom) (-?\d+) (-?\d+) ?(.*)$', ln)
         if not m: continue
         kind, x, y, rest = m.group(1), int(m.group(2)), int(m.group(3)), m.group(4)
@@ -36,20 +72,9 @@ def parse(path):
         fm = re.search(r',\s*f (\d+)$', rest)
         if fm: fw = int(fm.group(1)); rest = rest[:fm.start()]
         rest = rest.replace('\\,', ',')
-        first = rest.split(' ')[0]
-        if kind == 'floatatom':   w, h = 45, 22
-        elif first == 'hsl':      w, h = 138, 23
-        elif first == 'hradio':   w, h = 53, 23
-        elif first in ('bng','tgl'): w, h = 23, 23
-        elif fw:
-            words, lines, cur = rest.split(), 1, 0
-            for wd in words:
-                if cur and cur + 1 + len(wd) > fw: lines += 1; cur = len(wd)
-                else: cur += (1 if cur else 0) + len(wd)
-            w, h = fw*CW + 10, lines*LH + 8
-        else: w, h = len(rest)*CW + 10, 22
-        boxes.append({'k':kind,'x':x,'y':y,'w':w,'h':h,'t':rest[:40]})
-    return boxes, conns
+        w, h = _size(kind, rest, fw)
+        cur['boxes'].append({'k':kind,'x':x,'y':y,'w':w,'h':h,'t':rest[:40]})
+    return ctxs
 
 def seg_rect(p, q, r):
     # does segment p-q intersect axis-aligned rect r (x,y,w,h)?
@@ -76,38 +101,53 @@ def seg_rect(p, q, r):
     return False
 
 def check(path):
-    boxes, conns = parse(path)
-    probs = []
-    hit = lambda a,b: not (a['x']+a['w']<=b['x'] or b['x']+b['w']<=a['x']
-                        or a['y']+a['h']<=b['y'] or b['y']+b['h']<=a['y'])
-    for i in range(len(boxes)):
-        for j in range(i+1, len(boxes)):
-            if hit(boxes[i], boxes[j]):
-                probs.append(f"BOX/BOX  {boxes[i]['k']}@({boxes[i]['x']},{boxes[i]['y']}) '{boxes[i]['t']}'\n"
-                             f"      vs {boxes[j]['k']}@({boxes[j]['x']},{boxes[j]['y']}) '{boxes[j]['t']}'")
-    nout, nin = {}, {}
-    for s,so,d,di in conns:
-        nout[s] = max(nout.get(s,0), so); nin[d] = max(nin.get(d,0), di)
-    for s,so,d,di in conns:
-        if s >= len(boxes) or d >= len(boxes): 
-            probs.append(f"BAD CONNECT {s} {so} {d} {di}"); continue
-        a, b = boxes[s], boxes[d]
-        ax = a['x'] + 7 + (so * (a['w']-14) / max(1, nout.get(s,0)))
-        bx = b['x'] + 7 + (di * (b['w']-14) / max(1, nin.get(d,0)))
-        p, q = (ax, a['y']+a['h']), (bx, b['y'])
-        for k, r in enumerate(boxes):
-            if k in (s,d): continue
-            if seg_rect(p, q, r):
-                probs.append(f"CORD/BOX cord {s}:{so} -> {d}:{di} crosses "
-                             f"{r['k']}@({r['x']},{r['y']}) '{r['t']}'")
-    mx = max(b['x']+b['w'] for b in boxes); my = max(b['y']+b['h'] for b in boxes)
-    cm = re.match(r'#N canvas \d+ \d+ (\d+) (\d+)', open(path).readline())
-    cw, ch = int(cm.group(1)), int(cm.group(2))
-    fits = mx <= cw and my <= ch
-    print(f"{path:22} {len(boxes):3} boxes {len(conns):3} cords  {len(probs)} problems  "
-          f"extent {mx:.0f}x{my:.0f} canvas {cw}x{ch}{'' if fits else '  <-- TOO SMALL'}")
-    for p_ in probs: print("   ", p_.replace("\n", "\n    "))
-    return not probs and fits
+    ctxs = parse(path)
+    allok = True
+    for ci, ctx in enumerate(ctxs):
+        boxes, conns, label = ctx['boxes'], ctx['conns'], ctx['label']
+        if not boxes: continue
+        probs = []
+        hit = lambda a,b: not (a['x']+a['w']<=b['x'] or b['x']+b['w']<=a['x']
+                            or a['y']+a['h']<=b['y'] or b['y']+b['h']<=a['y'])
+        for i in range(len(boxes)):
+            for j in range(i+1, len(boxes)):
+                if hit(boxes[i], boxes[j]):
+                    probs.append(f"BOX/BOX  {boxes[i]['k']}@({boxes[i]['x']},{boxes[i]['y']}) '{boxes[i]['t']}'\n"
+                                 f"      vs {boxes[j]['k']}@({boxes[j]['x']},{boxes[j]['y']}) '{boxes[j]['t']}'")
+        nout, nin = {}, {}
+        for s_,so,d,di in conns:
+            nout[s_] = max(nout.get(s_,0), so); nin[d] = max(nin.get(d,0), di)
+        for s_,so,d,di in conns:
+            if s_ >= len(boxes) or d >= len(boxes):
+                probs.append(f"BAD CONNECT {s_} {so} {d} {di} (only {len(boxes)} boxes)"); continue
+            a, b = boxes[s_], boxes[d]
+            if a['k'] == 'text' or b['k'] == 'text':
+                probs.append(f"CONNECT/COMMENT cord {s_}:{so} -> {d}:{di} touches a comment "
+                             f"-- indices are probably off by one "
+                             f"({a['k']} '{a['t'][:24]}' -> {b['k']} '{b['t'][:24]}')")
+                continue
+            ax = a['x'] + 7 + (so * (a['w']-14) / max(1, nout.get(s_,0)))
+            bx = b['x'] + 7 + (di * (b['w']-14) / max(1, nin.get(d,0)))
+            p, q = (ax, a['y']+a['h']), (bx, b['y'])
+            for k, r in enumerate(boxes):
+                if k in (s_,d): continue
+                if seg_rect(p, q, r):
+                    probs.append(f"CORD/BOX cord {s_}:{so} -> {d}:{di} crosses "
+                                 f"{r['k']}@({r['x']},{r['y']}) '{r['t']}'")
+        mx = max(b['x']+b['w'] for b in boxes); my = max(b['y']+b['h'] for b in boxes)
+        fits = True
+        if ci == 0:
+            cm = re.match(r'#N canvas \d+ \d+ (\d+) (\d+)', open(path).readline())
+            cw, ch = int(cm.group(1)), int(cm.group(2))
+            fits = mx <= cw and my <= ch
+            size = f"extent {mx:.0f}x{my:.0f} canvas {cw}x{ch}"
+        else:
+            size = f"extent {mx:.0f}x{my:.0f}"
+        if probs or not fits: allok = False
+        print(f"{label:34} {len(boxes):3} boxes {len(conns):3} cords  {len(probs)} problems  "
+              f"{size}{'' if fits else '  <-- TOO SMALL'}")
+        for p_ in probs: print("   ", p_.replace("\n", "\n    "))
+    return allok
 
 ok = all([check(f) for f in sys.argv[1:]])
 sys.exit(0 if ok else 1)

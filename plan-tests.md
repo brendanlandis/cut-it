@@ -7,7 +7,7 @@ Most of this needs scratch patches only — no Cut It code. Diagnostic patches l
 [tools/](tools/). Companion to [plan-hardware.md](plan-hardware.md), which explains *why* each of these
 matters.
 
-**Status:** Sessions 2 and 4 complete. Session 1 done bar the full-load power check.
+**Status:** Sessions 2, 3b and 4 complete. Session 1 done bar the full-load power check.
 Session 3 blocked on the TRS Y-cable.
 
 **The two tests that could have forced a redesign have both passed:** Pd can drive the
@@ -171,6 +171,31 @@ input jack**, and the cable is what merges two mono outs into it. Nothing substi
 
 See [plan-hardware.md](plan-hardware.md) open question 1 for the fuller version, including the
 LINE IN R-only variant.
+
+---
+
+## Session 3b — USB topology ⚠️ blocking Phase 2 verification
+
+- [x] **13a. Launchpad configures at all.** ✅ **PASSED — plugged directly.** Behind three
+      chained hubs it enumerated and then failed with `can't set config #1, error -32`, so no
+      ALSA client was created. Connected straight to the Organelle it configures immediately
+      and appears as `client 28`. The hub chain was the whole problem; full evidence in
+      [plan-hardware.md](plan-hardware.md).
+- [x] **13c. Programmer Mode through the real patch.** ✅ `u_init` wires and initialises it at
+      boot with no manual steps. Captured pads read **`r*10+c`** (64, 65, 34, 24, 43, 63),
+      which is the Programmer Mode layout, with live velocity 5–127.
+- [x] **13b. Why booting with the Launchpad wedges the UI.** ✅ **ROOT-CAUSED — not power, not
+      the hub.** The Launchpad exposes a 192 KiB write-protected vfat volume ("Novation
+      Onboarding Drive"). `mount.sh` picks the last `/dev/sd*`, mounts it on `/usbdrive`,
+      `getDefaultUserDir()` then returns `/usbdrive`, and `wifi_control.py` dies trying to open
+      a log for writing there. Full chain in [plan-hardware.md](plan-hardware.md).
+- [x] **13d. `mount.sh` guard applied.** ✅ Installed on the device; factory version kept at
+      `/root/fw_dir/scripts/mount.sh.orig` and in [device/](device/). Verified that a full
+      `/reload` with the Launchpad attached mounts nothing and leaves `USER_DIR` as `/sdcard`.
+- [x] **13e. Cold boot with the Launchpad attached.** ✅ **PASSED.** Boots normally, wifi
+      connects, `/usbdrive` stays unmounted and `USER_DIR` stays `/sdcard` — `/dev/sda1` is
+      still present with `ro=1`, so `mount.sh` saw the volume and declined it. Loading the
+      patch then wires the Launchpad both directions with no manual step. **Session 3b closed.**
 
 ---
 

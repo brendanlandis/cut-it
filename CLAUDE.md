@@ -49,11 +49,15 @@ Cut It/              the deployable patch — folder name is what appears in the
   main.pd              device entry point; mother.pd loads this by name. Instantiates u_root
   main-dev.pd          Mac entry point; adds u_mother-stub. The device never loads it
   u_root.pd            the actual root — the audio chain, and where every phase hangs its work
+  u_init.pd            ordered startup: MIDI wiring, Launchpad mode, panic and safe exit
   u_level.pd           signal → a named level on the disp bus
   g_levels.pd          the Phase 1 display; sole owner of oscOut and screenLine* (→ g_oled)
   u_mother-stub.pd     impersonates mother.pd off-device, so the patch runs with no hardware
+  u_oled-preview.pd    shows what the patch draws, one box per screen line (Mac only)
+  wire.sh              aconnect calls, run by u_init via [shell]
+mac-stubs/           stand-ins for device-only externals, for the local syntax check. NOT deployed
 deploy.sh            check → scp → reload → load, in one command (there is no rsync on the device)
-tools/               diagnostic patches — working references for every verified technique
+tools/               diagnostic patches, plus pd-layout-check.py
 plan-v02.md          the current build plan — infrastructure phases, in order
 plan-conventions.md  how the Pd is written — naming, $0, trigger discipline, dev workflow
 plan-hardware.md     the rig, and the device itself — wiring, power, SSH, paths, how Pd launches
@@ -111,4 +115,6 @@ the ordered checklist with results; [plan-hardware.md](plan-hardware.md) and
   device or the source rather than inferring from documentation. Several claims in this
   project's history turned out wrong that way — including two corrected in these files.
 - Configuration that lives only on a device is one accident from being lost. The nanoKONTROL
-  scene and `/root/.pdsettings` both need copies in this repo; neither has one yet.
+  scene and `/root/.pdsettings` are both backed up in [device/](device/) — verified current
+  against the hardware. `.pdsettings` is load-bearing: `path1: /root/Pd/externals` is what makes
+  `[shell]`, `packOSC` and `routeOSC` resolve in the menu-launched patch.

@@ -183,17 +183,23 @@ Programmer Mode means power-cycling the Launchpad.
 
 **Done when:** cold boot to a working home screen with nothing pre-connected, repeatably.
 
-### Phase 3 — Display and errors ✅ **done (Mac); hardware run outstanding**
+### Phase 3 — Display and errors ✅ **done, verified on hardware**
 
 `g_oled` (replaces `g_levels`), `u_err`
 
-**Verified headless in Pd 0.49 on the Mac**, driving the real `main-dev.pd`: boot stages draw as
-16px modals and hand over to the meters with `v0.2-ready` in the footer; a parameter with a unit
-and one without draw correctly and decay after exactly 12 frames; an alert preempts a modal and
-the modal is still there when the alert expires; `warn` reaches the screen in compose and does
-not in perform, while `[print err]` shows it in both; and 877 `disp` messages in five seconds
-produce exactly 51 frames. **What has not happened yet is a deploy** — the message shapes are
-verified, the device's reaction to ~100 OSC messages a second is not.
+**Verified on the Organelle**, all fourteen steps of `tools/phase3-bench.pd`: boot stages draw
+as 16px modals and hand over to the meters with `v0.2-ready` in the footer; a parameter with a
+unit and one without both draw correctly, the second with no `%` inherited from the first; a
+modal outranks a parameter; an alert preempts the modal and the modal is still there when it
+expires; `warn` is suppressed in perform while `fail` still draws, and the filter releases on
+compose; a stuck modal clears itself after 30 s.
+
+**Throughput is not a problem.** Measured on the running device: **110 UDP datagrams a second**
+— the home frame is 10 OSC messages at 10 Hz, against 6 for Phase 1 — at **8.2 % CPU** and a
+load average of 0.16. That also clears the phase's biggest unknown: `packOSC` drops a
+mismatched typetag *before* `udpsend`, so a full datagram rate proves the **runtime typetag
+builder produces tags the real `packOSC` accepts**, which the Mac could never demonstrate
+having no `packOSC` at all.
 
 **Three things this phase corrected:**
 

@@ -223,10 +223,10 @@ No hardware needed, and it is repeatable in seconds — the pattern is worth reu
 - [x] **20. Rate limiting and the trailing edge.** ✅ 877 `disp` messages in five seconds
       produced exactly **51 frames**, the drawn value advancing by 20 each frame. No coalescing
       logic exists — layers hold state, so the last value written is what the next frame draws.
-- [ ] **20b. The modal safety TTL.** ⬜ **Never run, on either machine.** Click `mod` on the
-      panel and then do *not* click `modx`; after 30 s the screen should return to the meters
-      on its own. It is the insurance against a lost `modal-off` covering the display forever
-      on a device with no console, and "by construction" is not the same as tested.
+- [x] **20b. The modal safety TTL.** ✅ **Mac.** A modal set and never cleared gives up after
+      30 s and the meters return. The insurance against a lost `modal-off` covering the
+      display forever on a console-less device. Still ⬜ on the Organelle — step 15 of
+      `tools/phase3-bench.pd` covers it.
 - [x] **21. Deployed, and the throughput question is answered.** ✅ **Measured on the running
       device over SSH, without disturbing the patch.**
 
@@ -248,19 +248,38 @@ No hardware needed, and it is repeatable in seconds — the pattern is worth reu
       tags the real `packOSC` accepts** — which the Mac could never demonstrate, having no
       `packOSC` at all.
 
-- [ ] **21b. Look at the OLED.** ⬜ The one thing still unobserved. Everything above proves the
-      messages are *formatted correctly and reaching mother at the right rate*; none of it
-      proves mother *draws* them. Boot modals, meters, a parameter readout and an alert, on the
-      actual screen. Five seconds of looking.
+- [x] **21b. The OLED draws it.** ✅ **Seen on the device.** Home shows both level meters
+      hovering at **17–21** — the measured noise floor is 18–19, so the scaling is right — with
+      the gate-zone `gBox` marks sitting under the silence range of each bar, and `v0.2-ready`
+      in the footer. A cold boot shows `booting` → `wiring` → `launchpad` and then hands over
+      to the meters.
 
-      Also worth a `./deploy.sh --clean` first: the device still carries `u_oled-preview.pd` and
-      a pre-panel `u_mother-stub.pd`. Both are inert — `main.pd` instantiates neither — but they
-      are stale.
-- [ ] **22. Does the ALERT buffer work?** ⬜ A throwaway patch that draws into buffer 4,
-      `gFlip 4`, `setscreen 4`, waits, `setscreen 3`. Only `setscreen` itself is documented.
-      If it works, `draw-alert` drops from ~70 messages/second to about five per alert; if it
-      does not, the current screen-3 approach was the right call anyway. Record either result
-      in [plan-display.md](plan-display.md) — it is the last ⬜ in the OLED section.
+      **That closes the whole home-and-modal path on hardware**: text, `gFillArea` bars, `gBox`
+      marks, the footer, the modal layer and `gFlip` all render correctly through the real
+      `packOSC`.
+
+- [x] **21c. Every layer, on the device.** ✅ **All fourteen steps of `tools/phase3-bench.pd`
+      passed on hardware.** Param with a unit and without (no `%` inherited), the modal
+      outranking a parameter, an alert preempting the modal and the modal surviving underneath,
+      `warn` suppressed in perform while `fail` still draws, the filter releasing on compose,
+      `modal-off`, and the 30 s safety timeout clearing a stuck modal unaided.
+
+      **Phase 3 is verified end to end on the Organelle.**
+
+      ⚠️ **The run also found a bug in the bench, not the patch.** Steps 07, 08 and 10 read as
+      failures — the screen showed home where the script said "still recording". Cause: step 04
+      set the modal at t=36 s, the safety TTL is **30 s**, and steps are 10 s apart, so it
+      expired exactly as step 07 fired. The tests themselves all passed; only the expected
+      *background* was wrong. **Every step now re-asserts the modal**, so no step depends on the
+      pacing of the ones before it. Worth remembering when writing any timed test against a
+      layer that expires.
+- [ ] **22. Does the ALERT buffer work?** ⬜ `tools/alert-buffer-probe.pd` — draws into buffer
+      4, `gFlip 4`, `setscreen 4`, waits six seconds, `setscreen 3`. Only `setscreen` itself is
+      documented; drawing into buffer 4 and flipping it is inferred. If `BUFFER-4` appears and
+      then the meters return, `draw-alert` could move there and drop from ~70 messages/second
+      to about five per alert. If the screen blanks or never changes, screen 3 was the right
+      call anyway. Record either result in [plan-display.md](plan-display.md) — it is the last
+      ⬜ in the OLED section.
 
 ---
 

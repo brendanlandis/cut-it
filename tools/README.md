@@ -17,6 +17,18 @@ All authored by hand in Pd 0.49 format. Do not open them in plugdata — see
 | `lp-modes.pd` | Lights three pads static / flashing / pulsing — the device's three LED animation modes. |
 | `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
 
+## Phase 3 — testing the display on hardware
+
+These three load **alongside** a running `mother.pd` + `main.pd` (see *Running one* below).
+None of them touches the deployed patch: they only read `oscOut` or push onto `disp`, `err`
+and `mode`, exactly as a controller would.
+
+| Patch | What it does |
+|---|---|
+| `phase3-bench.pd` | **The acceptance run, self-driving.** Fourteen steps, 10 s apart, ~3 minutes. Each prints what it is sending and a **PASS IF** line *before* the screen moves — including the steps whose correct result is that nothing happens, which are otherwise impossible to mark off. Run it in the **foreground** and watch the OLED. |
+| `phase3-diag.pd` | Counts rather than dumps. `FRAMES` and `MESSAGES` are cumulative totals printed once a second, so the rate is the gap between lines — expect +10 and +100. Printing every OSC message instead would slow down the thing being measured. |
+| `alert-buffer-probe.pd` | Answers the last ⬜ in [plan-display.md](../plan-display.md): draws into the ALERT buffer (screen 4), `setscreen 4`, waits, `setscreen 3`. Only `setscreen` itself is documented; drawing into buffer 4 is inferred. |
+
 ## `pd-layout-check.py`
 
 Not a patch — a static check on `.pd` files:

@@ -2,12 +2,12 @@
 
 How the instrument works: architecture, timing model, and the decisions behind them.
 
-Companion to [plan-hardware.md](plan-hardware.md), which covers the physical rig — boxes, cables,
+Companion to [ref-hardware.md](ref-hardware.md), which covers the physical rig — boxes, cables,
 signal flow, and verified device behaviour. The rule of thumb: **if it describes what the
 hardware does, it's in the rig plan; if it describes what we decided to build, it's here.**
 
-See also [plan-midi.md](plan-midi.md) for the MIDI message reference,
-[plan-conventions.md](plan-conventions.md) for how the Pd is actually written,
+See also [ref-midi.md](ref-midi.md) for the MIDI message reference,
+[ref-conventions.md](ref-conventions.md) for how the Pd is actually written,
 [README.md](<! v0.1 plans/README.md>) for musical intent and the v0.1 control layout, and
 [CLAUDE.md](CLAUDE.md) for the hard constraints on writing Pd for this device.
 
@@ -22,10 +22,10 @@ The four that shape everything else. Reasoning for each is further down this fil
   envelopes from `vline~` — never `metro` / `line~` at grain rate.
 - **Pd sequences everything.** Timing rides in note events, not MIDI clock. No external device
   runs its own sequencer during a performance.
-- **Two independent input channels.** `adc~ 1` = drums, `adc~ 2` = fx, arriving from the
-  SP-404's hard-panned L/R via a TRS Y-cable into the Organelle's single stereo input jack.
-  The v0.1 README still describes a single serial chain over one input — that predates this
-  decision and has not been reconciled.
+- **Two independent input channels.** `inL` = drums (the tip), `inR` = fx (the ring), arriving
+  from the SP-404's hard-panned L/R via a TRS Y-cable into the Organelle's single stereo input
+  jack. ✅ Verified. A patch never touches `adc~` — `mother.pd` owns the sound card. The v0.1
+  README still describes a single serial chain over one input; that predates this decision.
 - **Compose mode and perform mode are separate.** Both the Launchpad and the Organelle's own
   keyboard serve different roles in each, so this shapes the top level of the patch.
 
@@ -148,10 +148,10 @@ feedback path. Revisit later if wanted; it needs no rewiring beyond one cable fr
 ## Timing and tempo
 
 ### Tempo is freely modulable, but propagates unevenly
-Because the Organelle *generates* the clock, tempo is just a float in the patch.
-[Cut It/midiclock.pd](<Cut It/midiclock.pd>) already has the plumbing (`r tempo` → `tempo $1 permin` →
-`metro`). Route any CC to `s tempo` and a nanoKONTROL knob becomes tempo control. Tap
-tempo, an LFO, a pad — all the same.
+Because the Organelle *generates* the clock, tempo is just a float in the patch. Route any CC
+to `s tempo` and a nanoKONTROL knob becomes tempo control; tap tempo, an LFO, a pad — all the
+same. (v0.1's `midiclock.pd` did this with `r tempo` → `tempo $1 permin` → `metro`. Phase 5
+rewrites it audio-domain — it is reference for intent, not code to lift.)
 
 **But MIDI clock has no tempo message.** You change the *rate* of the 24 PPQN pulse stream,
 and slaved devices infer tempo by measuring pulse intervals, most averaging over several
@@ -246,7 +246,7 @@ files onto the Organelle. Noted rather than designed around, since it is a narro
 it first appears.
 
 **Consequence for the rig:** MIDI clock must keep flowing, because it is how the 404 learns
-tempo. See the correction in [plan-hardware.md](plan-hardware.md) under *Signal flow — MIDI*.
+tempo. See the correction in [ref-hardware.md](ref-hardware.md) under *Signal flow — MIDI*.
 
 ### Author on hardware, commit to Pd
 Device sequencers stay useful as *authoring* tools. Record their MIDI output into Pd, then
@@ -306,33 +306,14 @@ start; it is much easier than retrofitting once the filter logic exists.
 ---
 
 
-## Patch development notes
+### Deriving grain timing from a 24 PPQN clock
 
-- **Organelle 1 runs Pd 0.49.** Develop in **vanilla Pd 0.49**, not the latest.
-- **OS history for Organelle 1:** OS 4.0 brought Organelle M features back to the original and
-  is what updated its Pd to 0.49 (before that it was on 0.46 under OS 3.x). **4.0 is the last
-  version for Organelle 1, full stop** — 4.1 was Organelle M only, and 4.2 / 4.4 / OS 5 are
-  M/S/S2. This unit reports OS 4.0 and is therefore **already as current as it can be; there
-  is no firmware upgrade to take.**
+**MIDI clock is 24 PPQN** — a pulse every 20.8 ms at 120 BPM, coarser than a 256th note. You
+cannot count pulses to get there. Estimate tempo from the clock, run a free-wheeling
+audio-domain oscillator at the derived frequency, and resync phase per beat or bar.
 
-  Verified July 2026 three ways: the official Organelle 1 manual's update chapter names
-  `OG1-4.0` as the current release; C&G staff state "OS 4.0 is the highest version currently
-  available for the Organelle 1"; and on C&G's own disk-image host only `OG1-v4.0.img.zip`
-  resolves, with `OG1-v4.1`, `4.2`, `4.4` and `5.0` all returning 404.
+---
 
-  *An earlier draft of this file claimed 4.1 was available for Organelle 1 as an upgrade. That
-  was wrong.*
-- Pd is therefore permanently 0.49.0 on this device. The target cannot move, and no future OS
-  will move it.
-- **Do not save Organelle-bound patches from plugdata.** plugdata is based on Pd 0.55+ and
-  writes hex iemgui colours (`#fcfcfc`) that Pd 0.49 cannot parse. The `cut-it 2` working
-  copy already has `main.pd` rewritten into this format — revert it before use on hardware.
-- Nothing in the patch currently needs anything newer than Pd 0.43, so 0.49 costs nothing.
-- **Grain timing must be audio-domain.** At 256th notes (~7.8ms at 120 BPM) Pd's message
-  clock is quantised to a 64-sample block (~1.45ms), which is ~20% jitter per grain. Drive
-  grain clocks from `phasor~` and envelopes from `vline~`, not `metro`/`line~`.
-- **MIDI clock is 24 PPQN** — a pulse every 20.8ms at 120 BPM, coarser than a 256th note.
-  You cannot count pulses to get there. Estimate tempo from the clock, run a free-wheeling
-  audio-domain oscillator at the derived frequency, and resync phase per beat or bar.
-- BPM-mode and MS-mode are a *units* choice, not two clock engines. Normalise both to Hz
-  (`bpm/60 × subdivisions` or `1000/ms`) and feed one `phasor~`.
+The hard constraints on writing Pd for this device — the permanently-0.49 target, the plugdata
+hazard, vanilla-only — are in [CLAUDE.md](CLAUDE.md). How the Pd is actually written is in
+[ref-conventions.md](ref-conventions.md).

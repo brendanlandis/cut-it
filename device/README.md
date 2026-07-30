@@ -32,7 +32,7 @@ factory.
 That is the whole change, and it is what the entire MIDI topology depends on. Without
 `midiapi: 1` Pd falls back to OSS, where the Launchpad's three ports collapse into one and
 Programmer Mode may be unreachable. See *MIDI: OSS vs ALSA* in
-[plan-hardware.md](../plan-hardware.md).
+[ref-hardware.md](../ref-hardware.md).
 
 ## The `mount.sh` change
 
@@ -40,7 +40,7 @@ Programmer Mode may be unreachable. See *MIDI: OSS vs ALSA* in
 MIDI interfaces. `mount.sh` takes the *last* `/dev/sd*` and mounts it on `/usbdrive`;
 `AppData::getDefaultUserDir()` then makes that read-only volume `USER_DIR`, and
 `wifi_control.py` dies opening a log for writing there — hanging the UI at boot. Full chain in
-[plan-hardware.md](../plan-hardware.md).
+[ref-hardware.md](../ref-hardware.md).
 
 **The change** — refuse write-protected volumes, since `USER_DIR` exists to be written to:
 
@@ -67,5 +67,5 @@ rootfs remounted rw, or scp `mount.sh.orig` from this folder.
 that happens, load `korg nano kontrol.nktrl_set` in Kontrol Editor 2.4.0 and write it back.
 2.5.0 will not see the device — it dropped first-generation nanoKONTROL support.
 
-The expected result is documented in [plan-midi.md](../plan-midi.md); verify against it after
+The expected result is documented in [ref-midi.md](../ref-midi.md); verify against it after
 any restore, ideally by decoding the raw stream rather than trusting the editor.

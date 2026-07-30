@@ -4,8 +4,8 @@ Every channel through which the instrument can show a human what it is doing: th
 OLED, the Launchpad's grid, and an iPhone running PdParty. What each can actually do, verified
 on hardware, and the traps that cost time getting there.
 
-Companion to [plan-hardware.md](plan-hardware.md) (the rig), [plan-midi.md](plan-midi.md) (the
-wire format) and [plan-conventions.md](plan-conventions.md) (how the Pd is written).
+Companion to [ref-hardware.md](ref-hardware.md) (the rig), [ref-midi.md](ref-midi.md) (the
+wire format) and [ref-conventions.md](ref-conventions.md) (how the Pd is written).
 
 **Confidence markers:** ✅ verified on this hardware · 📄 from source or documentation ·
 ⬜ unknown.
@@ -64,15 +64,6 @@ Every command takes **screen number as its first argument**. 📄 from `main.cpp
 | `gWaveform` | 128-byte **blob** — draws 127 connected lines |
 | `gFrame` | 1024-byte **blob** — whole framebuffer, `memcpy`'d |
 | `gFlip` | *(none)* — pushes to the display |
-
-**Levels want meters, not numbers.** ✅ Decided for Phase 3. Requested during Phase 1
-verification: two 24px numbers
-are legible but read as data rather than as a signal. A horizontal bar per channel via
-`gFillArea` is one extra message each and maps `env~`'s 0–100 scale straight onto 0–128 pixels,
-with the noise floor (18–19) and a sensible gate threshold (25–30) as fixed reference marks.
-Settled for Phase 3: **meters are the home screen**; a moving knob shrinks them into a corner
-and takes the rest of the screen at 24px for ~1.2 s, then they expand back. The meters never
-vanish entirely, so signal presence is always readable.
 
 **Fonts: 8, 16, 24, 32 px.** The `height` argument of `gPrintln` and the `size` argument of
 `gCharacter` select among them. The 21-chars-per-line measurement is the 8px font; larger
@@ -172,7 +163,7 @@ read, and it would consume the entire surface. **Not a text channel.** Treat the
 96 RGB pixels of spatial state: which slots are filled, which pattern is queued, where the
 playhead is, which filter is selected.
 
-Its LED details are in [plan-midi.md](plan-midi.md).
+Its LED details are in [ref-midi.md](ref-midi.md).
 
 ---
 
@@ -308,18 +299,9 @@ different things in different modes without the display lying.
 **The heartbeat must keep flowing even when nothing is happening**, because it is the only
 thing distinguishing "idle" from "dead".
 
-### Still to do
-
-- **Rate limiting.** Every CC change currently sends a packet; a fast fader sweep will flood.
-  Needs coalescing to ~20 Hz with a **guaranteed trailing edge**, or the display sticks on a
-  stale mid-sweep value.
-- **Organelle as its own access point** — `hostapd` and `dnsmasq` are installed and the chip
-  supports AP mode, but this has never been configured. ⬜ It is what removes the venue-WiFi
-  dependency, and it is the last thing standing between this and being stage-worthy.
-- **Phone hardening** — Auto-Lock Never (already set ✅), Do Not Disturb, Guided Access.
-- **Cosmetic:** the value is an `nbx`, which draws box chrome around the number. A `cnv` label
-  fed through `[makefilename %g]` would be pure text. Dynamic labels are proven ✅, so this is
-  straightforward whenever it matters.
+⬜ **The link is not yet stage-worthy**, on four counts — no rate limiting on the wire, no
+Organelle-hosted access point, phone hardening unfinished, and the value drawn as an `nbx` with
+box chrome. All four are tracked in [plan-v02.md](plan-v02.md) under *Open questions*.
 
 ---
 
@@ -408,7 +390,7 @@ because the boot sequence finishes before you can get to the window.
 **The same arbiter shape applies to `g_grid`** on the Launchpad — playhead, slot state, mode
 and meters all contend for the same 64 pads. Build the pattern once, instantiate it twice.
 
-### The ALERT buffer is still unverified ⬜
+### The ALERT buffer is unverified ⬜, and unused by choice
 
 Phase 3 draws alerts to **screen 3, the buffer already on show**, as the top-priority layer.
 Drawing into buffer 4 and `setscreen`-ing to it was the original plan, but its stated benefit —
@@ -416,21 +398,19 @@ Drawing into buffer 4 and `setscreen`-ing to it was the original plan, but its s
 and rebuilds screen 3 from stored state ten times a second, so there is nothing to preserve and
 restore is automatic on the next frame.
 
-Only `setscreen` itself is documented (from `save-patch.sh`). **Drawing into buffer 4 and
-flipping it is inferred and has never been tested**, and if the inference is wrong the alert is
-invisible with no console to say so. Probing it is a follow-up: if it works, `draw-alert` drops
-from ~70 messages/second while an alert is up to about five per alert.
+Only `setscreen` itself is documented (from `save-patch.sh`); **drawing into buffer 4 and
+flipping it is inferred and has never been tested.** Two reasons not to adopt it even if the
+probe passes: an alert is a 2–4 second event costing ~70 messages/second against a home screen
+that sustains the same rate continuously, so there is nothing to optimise; and buffer switching
+is **edge-triggered**, where every other layer is state-driven — a lost `setscreen 3` strands
+the display on a stale alert, on a device with no console, whereas a dropped frame today
+self-corrects 100 ms later.
 
 ---
 
 ## Reference patches
 
-In [tools/](tools/). Unlike the other diagnostics, `oled-probe` and `osc-bridge` **are**
-Organelle patches — they load `mother.pd` and run from the device menu.
-
-| Patch | Proves |
-|---|---|
-| `oled-probe/` | Graphics API reachable from a patch via `[s oscOut]`; font measurement; live knob-driven redraw |
-| `osc-bridge/` | Bidirectional OSC between Organelle and phone, with received values drawn on the OLED |
-| `status-display/` | **The performance protocol.** Four knobs sending named parameters plus a heartbeat |
-| `pdparty-scene/CutItRemote/` | The phone side — landscape layout, big text, dynamic labels, link-loss detection |
+Every claim above has a working reference in [tools/](tools/) — `oled-probe/` for the graphics
+API and font measurement, `osc-bridge/` and `status-display/` for the phone protocol,
+`pdparty-scene/CutItRemote/` for the phone side. What each proves and how to run it is in
+[tools/README.md](tools/README.md).

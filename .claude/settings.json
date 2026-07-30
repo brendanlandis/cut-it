@@ -19,7 +19,8 @@
       "Bash(python3 tools/pd-layout-check.py tools/phase3-bench.pd)",
       "Bash(nohup sh -c '/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio -path mac-stubs -path \"Cut It\" \"Cut It/main-dev.pd\" tools/phase3-bench.pd > /private/tmp/claude-501/-Users-brendan-Sites-cut-it/2982fcf6-b29a-44a4-b912-65e9f54b9fcd/scratchpad/b3.txt 2>&1 & echo $! > /private/tmp/claude-501/-Users-brendan-Sites-cut-it/2982fcf6-b29a-44a4-b912-65e9f54b9fcd/scratchpad/b3.pid')",
       "Bash(pkill -f \"phase3-bench.pd\")",
-      "Bash(nohup sh -c '/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio -path mac-stubs -path \"Cut It\" \"Cut It/main-dev.pd\" tools/phase3-bench.pd /private/tmp/claude-501/-Users-brendan-Sites-cut-it/2982fcf6-b29a-44a4-b912-65e9f54b9fcd/scratchpad/tap.pd > /private/tmp/claude-501/-Users-brendan-Sites-cut-it/2982fcf6-b29a-44a4-b912-65e9f54b9fcd/scratchpad/b5.txt 2>&1')"
+      "Bash(nohup sh -c '/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio -path mac-stubs -path \"Cut It\" \"Cut It/main-dev.pd\" tools/phase3-bench.pd /private/tmp/claude-501/-Users-brendan-Sites-cut-it/2982fcf6-b29a-44a4-b912-65e9f54b9fcd/scratchpad/tap.pd > /private/tmp/claude-501/-Users-brendan-Sites-cut-it/2982fcf6-b29a-44a4-b912-65e9f54b9fcd/scratchpad/b5.txt 2>&1')",
+      "Bash(bash -n deploy.sh)"
     ]
   }
 }

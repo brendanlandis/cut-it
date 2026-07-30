@@ -36,7 +36,7 @@ Organelle M and S2, not this device.** Its paths are wrong here (it uses `/home/
 `audioinjector-pi-soundcard`). The mechanisms are the same lineage, but verify paths against
 the actual device before relying on them.
 
-**Read [plan-conventions.md](plan-conventions.md) before writing or reviewing any Pd in this
+**Read [ref-conventions.md](ref-conventions.md) before writing or reviewing any Pd in this
 repo.** It carries the naming scheme, the `$0` rule, the global-send allowlist, `[trigger]`
 discipline and the banned-constructs list. Those are project decisions, not suggestions, and
 they are not reproducible from reading the existing patch — most of it predates them.
@@ -62,13 +62,13 @@ Cut It/              the deployable patch — folder name is what appears in the
 mac-stubs/           stand-ins for device-only externals, for the local syntax check. NOT deployed
 deploy.sh            check → scp → reload → load, in one command (there is no rsync on the device)
 tools/               diagnostic patches, plus pd-layout-check.py
-plan-v02.md          the current build plan — infrastructure phases, in order
-plan-conventions.md  how the Pd is written — naming, $0, trigger discipline, dev workflow
-plan-hardware.md     the rig, and the device itself — wiring, power, SSH, paths, how Pd launches
-plan-software.md     how the instrument works — architecture, timing model, decisions
-plan-midi.md         every MIDI message each device accepts and transmits, and how Pd sees it
-plan-display.md      visual feedback — the OLED graphics API, the Launchpad's limits, PdParty
+plan-v02.md          the build plan — phases in order, and EVERY open question in the project
 plan-tests.md        ordered hardware checks, with results
+ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow
+ref-hardware.md      the rig and the device — wiring, power, SSH, paths, how Pd launches
+ref-software.md      how the instrument works — architecture, timing model, decisions
+ref-midi.md          every MIDI message each device accepts and transmits, and how Pd sees it
+ref-display.md       visual feedback — the OLED graphics API, the Launchpad's limits, PdParty
 device/              backups of config that lives only on hardware
 ! v0.1 plans/        the original v0.1 material, kept for reference
   README.md            musical intent, filter chain, button/knob map
@@ -76,8 +76,15 @@ device/              backups of config that lives only on hardware
   patch/               the v0.1 patch itself — reference for intent, NOT code to lift
 ```
 
-Planning docs are named `plan-<topic>.md`. Links to paths containing spaces use the
-angle-bracket form: `[README.md](<! v0.1 plans/README.md>)`.
+**`ref-` states what is; `plan-` states what's open.** A `ref-` doc describes the rig, the
+device, the message formats and the rules, and marks anything uncertain ⬜ — but it carries no
+plans. **Every unresolved question, recommendation and purchase lives in
+[plan-v02.md](plan-v02.md)** (or [plan-tests.md](plan-tests.md), for hardware checks). Keep it
+that way when editing: if you find yourself writing "we should…" in a `ref-` doc, it belongs in
+a `plan-` doc.
+
+Links to paths containing spaces use the angle-bracket form:
+`[README.md](<! v0.1 plans/README.md>)`.
 
 An Organelle patch is a **folder** containing `main.pd` (the entry point) plus its
 abstractions, optionally `knobs.txt` (OLED knob labels) and audio assets.
@@ -86,13 +93,13 @@ abstractions, optionally `knobs.txt` (OLED knob labels) and audio assets.
 filesystem is read-only — `remount-rw.sh` before writing to `/root`. **`./deploy.sh` does the
 whole loop** — syntax check, copy, reload the patch list, load the patch — with no physical
 interaction. Full details, paths and the `mother`/Pd launch line are in
-[plan-hardware.md](plan-hardware.md) under *The device itself*.
+[ref-hardware.md](ref-hardware.md) under *The device itself*.
 
 **The menu-launched patch has no console** — Pd runs `-nogui` and errors go to tty1, which VNC
 will not show. **But you can launch the patch yourself over SSH and get a real console**,
 including `[print]` taps on any bus, by loading `mother.pd` and `main.pd` together with output
 redirected to a file. This is the highest-value debugging tool on the project and it found a
-silent bug in Phase 1 — see *There IS a console* in [plan-conventions.md](plan-conventions.md).
+silent bug in Phase 1 — see *There IS a console* in [ref-conventions.md](ref-conventions.md).
 
 Still assume nothing reports itself unless the patch reports it. **`deploy.sh` syntax-checks in
 local Pd 0.49 and refuses to deploy on any output**, so that rule is automatic rather than
@@ -112,8 +119,8 @@ sequence that finishes in four seconds can be read afterwards instead of watched
 
 Every plan doc marks claims ✅ verified on this hardware / 📄 manufacturer documentation /
 ⬜ unknown. **Do not treat 📄 or ⬜ items as settled facts.** [plan-tests.md](plan-tests.md) is
-the ordered checklist with results; [plan-hardware.md](plan-hardware.md) and
-[plan-midi.md](plan-midi.md) each carry their own open questions.
+the ordered checklist with results; [ref-hardware.md](ref-hardware.md) and
+[ref-midi.md](ref-midi.md) each carry their own open questions.
 
 
 ## Working notes

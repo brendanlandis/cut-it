@@ -3,8 +3,8 @@
 Every MIDI message that moves in this rig: what each device accepts, what each device
 transmits, and how it lands in Pd.
 
-Companion to [plan-hardware.md](plan-hardware.md) (the boxes and cables),
-[plan-software.md](plan-software.md) (what we decided to build) and
+Companion to [ref-hardware.md](ref-hardware.md) (the boxes and cables),
+[ref-software.md](ref-software.md) (what we decided to build) and
 [plan-tests.md](plan-tests.md) (how the verified claims were verified).
 
 **Confidence markers** are used throughout, and they matter — several claims in this
@@ -58,8 +58,8 @@ one decode pattern covers both:
 - **Launchpad grid:** note `r*10+c`, rows and columns both 1–8, so notes 11–88. ✅
 - **nanoKONTROL:** CC `kind*10 + channel`, kinds 0–3. ✅
 
-This was deliberate, and the transport buttons should extend it — see
-[Recommendation](#recommendation-change-the-transport-ccs) at the end.
+This was deliberate, and the transport buttons extend it — `div 10` = **4** means transport.
+See *Transport buttons* under the nanoKONTROL below.
 
 ---
 
@@ -76,23 +76,24 @@ controllers.
 
 ### mother.pd interface
 
-Confirmed by use in this repo's existing patches: ✅
+✅ **The full name list is enumerated from `/root/fw_dir/mother.pd` itself** — every `[s]` and
+`[r]` in the file — and lives in [ref-conventions.md](ref-conventions.md) under *The global
+name allowlist*, because those names are reserved rather than merely documented. In summary:
+`notes`, `knob1`–`knob4`, `enc`, `encbut`, `aux`, `vol`, `exp`, `fs`, the MIDI-gate names and
+`quitting` come **in**; `screenLine1`–`5`, `led`, `goHome`, `oscOut` and `enableSubMenu` go
+**out**.
 
-| Direction | Name | Carries |
-|---|---|---|
-| `[r notes]` | in | Keyboard note events |
-| `[r knob1]` … `[r knob4]` | in | The four knobs |
-| `[s screenLine1]` … `[s screenLine4]` | out | OLED text lines |
+Two things that surprise people: **`enc`, `aux` and `encbut` send `1`/`0`, not `±1`** ✅, and
+`quitting` is the only shutdown hook — Pd 0.49 has no `closebang`.
 
-Other names exist in `mother.pd` (volume, expression pedal, encoder, encoder button, aux
-button, aux LED) but are not used by any patch here and are **not yet confirmed against this
-device's firmware**. ⬜ Read `/root/fw_dir/mother.pd` before relying on any of them —
-Organelle 1 and Organelle M differ, and the public `Organelle_OS` repo documents the M.
+Organelle 1 and Organelle M differ here, and the public `Organelle_OS` repo documents the M, so
+that enumeration is the authority rather than the repo.
 
 ### MIDI out from Pd
 
-Raw System Real-Time bytes go straight out `[midiout]` as decimal floats. Already implemented
-in [Cut It/midiclock.pd](<Cut It/midiclock.pd>): ✅
+Raw System Real-Time bytes go straight out `[midiout]` as decimal floats ✅ — demonstrated in
+v0.1's `midiclock.pd`, archived in [! v0.1 plans/patch/](<! v0.1 plans/patch/README.md>).
+**Reference for which byte went where, not code to lift**; `u_tempo` is a rewrite in Phase 5.
 
 | Message | Decimal | Hex |
 |---|---|---|
@@ -108,7 +109,7 @@ Clock is **24 PPQN** — 24 pulses per quarter note, one every 20.8 ms at 120 BP
 
 **Clock is not decorative.** It is how the 404 learns tempo for BPM SYNC time-stretch, and
 how the Launchpad paces its own LED flash and pulse animations. Stop sending it and both
-fall back to stale values. See *Time-stretch* in [plan-software.md](plan-software.md).
+fall back to stale values. See *Time-stretch* in [ref-software.md](ref-software.md).
 
 **Outgoing MIDI carries ~1.45 ms of jitter** because Pd emits on 64-sample block boundaries —
 about 7% of a pulse interval at 120 BPM. Most gear averages it out. Not fixable in vanilla Pd.
@@ -282,12 +283,47 @@ Four scenes, switched locally by the SCENE button. **This is hidden state** — 
 switches and Pd is not told. If scenes are ever used, assign **distinct CC numbers per scene**
 so Pd infers the active scene from which CCs arrive. Currently only scene 1 is configured. ⬜
 
-### Transport buttons — the master mode control
+### Transport buttons — the master mode control ✅ adopted and verified
 
-Six buttons: **REW, PLAY, FF, LOOP, STOP, REC**, reassigned to CC 41–46 on the nano's channel
-2 and **verified on the wire** ✅. Reasoning in
-[Recommendation](#recommendation-change-the-transport-ccs); this is what the editor exposes,
-kept for when the scene is rebuilt.
+Six buttons, reassigned in physical reading order and **verified on the wire**:
+
+| Position | Label | CC |
+|---|---|---|
+| 1st–6th | REW · PLAY · FF · LOOP · STOP · REC | **41 · 42 · 43 · 44 · 45 · 46** |
+
+All six: Assign Type **Control Change**, Button Behavior **Momentary**, Transport MIDI Channel
+**2** → arriving as **Pd channel 18**. The control groups stay on the nano's channel 1 → Pd
+channel 17. Korg's manual lists the buttons in that order, suggesting a 3×2 block — worth
+confirming against the panel if the scene is ever rebuilt.
+
+**Why they were moved.** Four reasons, kept because they are the argument for not undoing it:
+
+1. **The factory assignment might have been MMC, and MMC is SysEx.** Reading it needs
+   `[sysexin]` plus a byte-matching state machine, where `[ctlin]` hands you value, controller
+   and channel already split. One control needing a SysEx parser is a wart on the most
+   important control in the instrument.
+2. **MMC has no release event** — Korg's manual is explicit that Button Behavior is unavailable
+   when Assign Type is MMC. The whole nano configuration rests on *momentary only, Pd owns all
+   state*, precisely because the mk1 has no host LEDs and device-side state silently desyncs.
+3. **The existing decode idiom extends for free**: `div 10` = 4 means transport, `mod 10` says
+   which button.
+4. **Its own channel means `[route 18]` isolates every mode change** before any CC decoding, so
+   a mode switch can never be confused with a performance control even if the CC map is revised
+   later. It costs nothing — channel 18 is already inside device 2's block.
+
+**The factory assignment was never captured** ⬜ — the buttons were reconfigured before anything
+read what they shipped with, so whether they defaulted to MMC or CC is unknowable without a
+factory reset. Reason 1 stayed a risk rather than a finding; don't read it as evidence about
+the default.
+
+**The CC numbers collide numerically with the Volca FM's parameter CCs (40–50).** Harmless: the
+Volca is device 4 on channel 49+, the nano is device 2, and Pd separates by channel long before
+a CC number is examined.
+
+**Honour STOP and PLAY.** Six buttons is more than a compose/perform toggle needs, but they
+have an obvious meaning that a performer's hands will assume under pressure — spending them on
+arbitrary modes is a trap. Suggested split, a UX decision rather than a MIDI one: **PLAY/STOP**
+drive the clock, **REC** arms capture, **LOOP/REW/FF** select mode.
 
 Per-button, Korg Kontrol Editor exposes: 📄
 
@@ -299,11 +335,6 @@ Per-button, Korg Kontrol Editor exposes: 📄
 | MMC Command | Stop, Play, Deferred Play, Fast Forward, Rewind, Record Strobe, Record Exit, Record Pause, Pause, Eject, Chase, Command Error Reset, MMC Reset |
 | MMC Device ID | 0–127 (127 = all devices) |
 | **Transport MIDI Channel** | 1–16, **or** "Scene MIDI Channel" — *set independently of the control groups* |
-
-**The factory assignment was never captured** — the buttons were reconfigured before anything
-read what they shipped with, so whether they defaulted to MMC or to CC is now unknowable
-without a factory reset. ⬜ It no longer matters, but don't let the recommendation below be
-read as evidence about the default.
 
 ---
 
@@ -346,10 +377,10 @@ the CC list exposes is what you get.
 **No Song Position Pointer.** 📄 Combined with the above, **clock ticks are the only channel
 through which the 404 can learn tempo**, so BPM SYNC always infers it from pulse intervals and
 always lags by several pulses. That lag is structural — no message exists that would skip the
-inference. This is the whole reason [plan-software.md](plan-software.md) concludes that Pd
+inference. This is the whole reason [ref-software.md](ref-software.md) concludes that Pd
 should sequence the 404 with note events rather than let it follow clock.
 
-### Note-range discrepancy — resolve before building ⬜
+### Note-range discrepancy ⬜ — do not build on either number
 
 The repo's hardware finding and Roland's chart disagree:
 
@@ -358,9 +389,9 @@ The repo's hardware finding and Roland's chart disagree:
 - **Roland's chart:** MIDI mode A note range is **35–51**. 📄 Sixteen pads starting at 48 would
   run to 63, well outside that.
 
-One of these is wrong, or "MIDI mode A" means something narrower than assumed. Sweep all 16
-pads with [tools/midi-drive.pd](tools/midi-drive.pd) and record the real range before any
-sequencing code depends on it.
+One of these is wrong, or "MIDI mode A" means something narrower than assumed. Resolving it is
+tracked in [plan-v02.md](plan-v02.md) — it is the unknown that can silently corrupt work, since
+sequencing code written against the wrong range looks correct and triggers the wrong pads.
 
 ### Relevant device settings, all already correct ✅
 
@@ -421,105 +452,7 @@ the only SysEx it understands.
 
 ---
 
-## Recommendation: change the transport CCs
-
-**Adopted, configured and verified on the wire.** ✅ The settings are in *Concrete settings*
-below; the reasoning is kept here because it is the argument for keeping them this way.
-
-**Yes — change them, and do it before writing any mode-switching code.** Four reasons, in
-descending order of how much they will hurt.
-
-**1. The factory assignment might have been MMC, and MMC is SysEx.** A transport strip exists
-to drive a DAW, and MMC is what DAWs expect — though the factory default was overwritten
-before anyone read it, so this stayed a risk rather than a finding. MMC messages are
-`F0 7F <deviceID> 06 <command> F7` — to read them, Pd needs `[sysexin]` and a byte-matching
-state machine, versus `[ctlin]` handing you value, controller and channel already split. Every
-other control in this rig decodes through `ctlin` or `notein`. One control needing a SysEx
-parser is a wart on the most important control in the instrument.
-
-**2. MMC has no release event.** Korg's manual is explicit: Button Behavior cannot be set when
-Assign Type is MMC — a command goes out on each press, and nothing comes back on release. The
-whole nanoKONTROL configuration was built on *momentary buttons only, Pd owns all state*,
-precisely because the mk1 has no host-controllable LEDs and device-side state can silently
-desync. MMC breaks that rule for the master mode selector, which is the worst possible place
-to break it.
-
-**3. The existing decode idiom extends for free.** Assign CC **41–46** and `div 10` = 4 means
-"transport", `mod 10` = 1–6 says which button. One `[div 10]` / `[mod 10]` pair then covers
-every control on the surface:
-
-| `div 10` | Kind |
-|---|---|
-| 0 | Slider |
-| 1 | Knob |
-| 2 | Button, top row |
-| 3 | Button, bottom row |
-| **4** | **Transport** |
-
-Number them **by physical position on the panel, in reading order** (top-left to
-bottom-right) — the whole reason this controller was chosen over the BeatStep is that physical
-position is legible, and the CC numbers should read the same way.
-
-**4. Put them on their own MIDI channel.** *Transport MIDI Channel* is a separate setting from
-the control groups' channel, so the transport can transmit on the nano's channel 2 while
-everything else stays on channel 1 — arriving in Pd as **channel 18** against **channel 17**.
-Then `[route 18]` isolates every mode change before any CC decoding happens, and a mode switch
-can never be confused with a performance control even if the CC map is revised later. It costs
-nothing: channel 18 is already inside device 2's block.
-
-### Concrete settings
-
-In Korg Kontrol Editor. Assign the CC numbers by physical position; Korg's manual lists the
-buttons as REW, PLAY, FF, LOOP, STOP, REC, which suggests a 3×2 block — confirm against the
-panel.
-
-| Position | Likely label | CC |
-|---|---|---|
-| 1st | REW | **41** |
-| 2nd | PLAY | **42** |
-| 3rd | FF | **43** |
-| 4th | LOOP | **44** |
-| 5th | STOP | **45** |
-| 6th | REC | **46** |
-
-All six share the rest:
-
-| Setting | Value |
-|---|---|
-| Assign Type | **Control Change** |
-| Button Behavior | **Momentary** |
-| Transport MIDI Channel | **2** — the nano's own channel number, arriving as **Pd channel 18** |
-
-The control groups stay on the nano's channel 1 → Pd channel 17. Only the transport moves.
-
-Then **re-export the scene file and commit it to this repo.** The nano's configuration is
-device-resident state with no backup, and REC + STOP + SCENE at power-on wipes it.
-
-### Two caveats
-
-**The CC numbers collide numerically with the Volca FM's parameter CCs** (40–50). Harmless,
-and not a reason to change the plan: the Volca is device 4 on channel 49+, the nano is device 2
-on channels 17/18, and Pd separates by channel long before a CC number is examined.
-
-**Honour STOP and PLAY.** Six buttons is more than a compose/perform toggle needs, but
-[Cut It/midiclock.pd](<Cut It/midiclock.pd>) already listens on `r start`, and STOP/PLAY have
-an obvious meaning that a performer's hands will assume under pressure. Spending them on
-arbitrary modes is a trap. Suggested split, though the allocation is a UX decision, not a
-MIDI one: **PLAY/STOP** drive the clock, **REC** arms capture, **LOOP/REW/FF** select mode.
-
----
-
-## Open questions
-
-| # | Question | Blocked on |
-|---|---|---|
-| 1 | ~~What do the transport buttons transmit?~~ | **Resolved** — CC 41–46 on Pd channel 18, momentary, no SysEx. Verified on the wire. ✅ |
-| 2 | SP-404 pad note range — 47+*n* or 35–51? | Sweeping all 16 pads on hardware |
-| 3 | Do the Launchpad's perimeter CC numbers match the documented layout? | 10 min with `tools/lp-monitor.pd` |
-| 4 | Does the 404's *pattern playback* actually transmit notes? | Running a pattern and capturing |
-| 5 | Do flashing/pulsing LEDs track a *modulated* tempo, or only a steady one? | A patch that sweeps tempo |
-| 6 | Full `mother.pd` message list for Organelle 1 | Reading `/root/fw_dir/mother.pd` on the device |
-| 7 | ~~Does `[sysexin]` work on this Pd build over ALSA?~~ | **Moot** — nothing in the rig transmits SysEx *to* Pd now. Pd only ever *sends* SysEx, to the Launchpad, which works. ✅ |
-
-Question 2 is the one that can silently corrupt work: sequencing code written against the
-wrong pad note range will look correct and trigger the wrong pads.
+Anything above marked ⬜ is unresolved, and the work to resolve it is in
+[plan-v02.md](plan-v02.md) under *Open questions*. One note that belongs nowhere else:
+**`[sysexin]` on this Pd build is moot** — nothing in the rig transmits SysEx *to* Pd. Pd only
+ever sends it, to the Launchpad, which works ✅.

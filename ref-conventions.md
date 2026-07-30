@@ -7,9 +7,29 @@ rules that keep a Pd project legible past a few hundred objects.
 *(judgment call)* with the reasoning, so it can be overruled deliberately rather than drifted
 away from.
 
-Companion to [plan-software.md](plan-software.md) (what the instrument does),
-[plan-hardware.md](plan-hardware.md) (the rig) and [plan-midi.md](plan-midi.md) (the wire
+Companion to [ref-software.md](ref-software.md) (what the instrument does),
+[ref-hardware.md](ref-hardware.md) (the rig) and [ref-midi.md](ref-midi.md) (the wire
 format). Hard constraints — Pd version, plugdata, vanilla-only — are in [CLAUDE.md](CLAUDE.md).
+
+## The rules, in one screen
+
+If you read nothing else here, read this. Each links to its reasoning below.
+
+| Rule | |
+|---|---|
+| **`$0-` every send, receive, table and array name** inside an abstraction | [→](#0--mandatory) |
+| **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `err` `disp`, plus mother's own | [→](#the-global-name-allowlist) |
+| **`[trigger]` on every fan-out**, even when the current order happens to work | [→](#trigger-on-every-fan-out) |
+| **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out | [→](#audio-io--never-adc-never-dac) |
+| **Only `g_oled` sends on `oscOut` / `screenLine*`.** Everything else asks via `disp` | [→](#the-display-bus-and-who-owns-the-screen) |
+| **Finish assembled messages with `[list trim]`**, and `[list append]` after a `route` | [→](#three-traps-around-route-every-one-silent) |
+| **Clear optional fields on every message** — `[list split n]` on exactly *n* atoms never fires | [→](#three-traps-around-route-every-one-silent) |
+| **Grain timing is audio-domain** — `phasor~` and `vline~`, never `metro` / `line~` | [→](#timing-and-the-two-domains) |
+| **Report failures on `[s err]`** as `<level> <source> <text>`, text one symbol ≤ 21 chars | [→](#errors-must-reach-the-oled--built) |
+| **No dynamic patching, no `[value]`, no copied subpatches** | [→](#banned) |
+
+Prefixes: `e_` effects · `m_` device mapping · `c_` control generation · `g_` display ·
+`u_` utilities.
 
 ---
 
@@ -163,11 +183,10 @@ one tempo and one beat.
 **MIDI clock carries exactly one tempo**, so the SP-404 and Volca always follow master.
 Poly-tempo is internal-only for anything leaving the box — which reinforces rather than
 contradicts the "Pd sequences everything, timing rides in note events" decision in
-[plan-software.md](plan-software.md).
+[ref-software.md](ref-software.md).
 
-**The risk this heads off:** Phase 5 building `u_tempo` as *the* clock singleton. It must be a
-master reference **plus** a `c_clock` abstraction that can be instantiated many times.
-Retrofitting that once Phases 6–8 depend on a single clock would be expensive.
+**So `u_tempo` must be a master reference *plus* an instantiable `c_clock`, never a singleton.**
+The cost of getting that wrong is tracked as a risk in [plan-v02.md](plan-v02.md).
 
 ---
 
@@ -267,7 +286,7 @@ also sums, so several stages can feed the output without a mixer.
 **mother enables DSP.** `pd init` fires `; pd dsp 1` 200 ms after load. A patch must not.
 
 **mother drives the VU meter**, from `inL`, `inR` and the *post-volume* outputs, via
-`/oled/vumeter`. A patch never sends it. See [plan-display.md](plan-display.md) for why the
+`/oled/vumeter`. A patch never sends it. See [ref-display.md](ref-display.md) for why the
 info bar is turned off anyway.
 
 ---
@@ -297,7 +316,7 @@ registration step, and `m_nano` in Phase 4 needs no change to the display to sho
 | *anything else* | `<value> [unit]` | param |
 
 *(judgment call)* Reserved-names-plus-fallthrough was chosen over tagging each message with its
-layer, because plan-display.md's settled contract is that callers "send semantics, never
+layer, because ref-display.md's settled contract is that callers "send semantics, never
 layout". The cost is that a mistyped `disp` name becomes a nonsense parameter on screen rather
 than an error — which is the better failure, since you can see it.
 
@@ -305,31 +324,11 @@ than an error — which is the better failure, since you can see it.
 not wrap, 16px fits about ten characters across 128 px, and a message box has a fixed typetag.
 Write `launchpad-silent`, not `launchpad silent`.
 
-That last clause is not pedantry — it is the difference between working and silently doing
-nothing:
+### Three traps around `route`, every one silent ✅
 
-> `[route in-l]` matches a message whose **selector** is `in-l`. It does **not** match a `list`
-> message whose first element is `in-l`. `[list prepend in-l]` produces the second kind, so a
-> sender must finish with **`[list trim]`** to turn it into the first. Without it `route`
-> rejects every message out of its rightmost outlet, which is usually connected to nothing, and
-> the display just shows zero.
-
-This cost a debugging round trip in Phase 1. A message box typed `in-l 42 dB` has the right
-shape already; anything built with `[list …]` does not.
-
-**And the mirror image, on the receiving side.** ✅ Measured in Pd 0.49 while building Phase 3,
-and it is **wider than this document previously claimed**. The old wording said the trap applied
-when "the remainder is a single symbol". The real rule:
-
-> When `route` matches, **the remainder is emitted as a message, not as a list, whenever its
-> first atom is a symbol** — that symbol becomes the *selector* and the rest become its
-> arguments. So `boot v0.2-ready` arrives as selector `v0.2-ready`, and
-> `alert warn u_init x` arrives as selector `warn` with two arguments. Only a remainder
-> starting with a **float** — `in-l 43 dB` — is really a list.
-
-Feeding that to `[symbol]` fails with `inlet: expected 'symbol' but got 'wiring'`; feeding it to
-`[trigger]` fails with `trigger: can only convert 's' to 'b' or 'a'`. **`[list append]` converts
-it back into a list**, which is why every branch out of `g_oled`'s `route` begins with one.
+All three cost real debugging time on this project. The first two are the same underlying
+fact — Pd distinguishes a message's **selector** from its **arguments**, and the `list` objects
+move an atom across that boundary.
 
 | You have | You get | Fix |
 |---|---|---|
@@ -337,20 +336,29 @@ it back into a list**, which is why every branch out of `g_oled`'s `route` begin
 | `route foo` → `[symbol]` / `[t l l]` | `expected 'symbol'` / `can only convert 's'` | `[list append]` after route |
 | `[list split n]` on exactly *n* atoms | right outlet **never fires** — the old value stays | write the field unconditionally first |
 
-The first two are the same underlying fact: Pd distinguishes a message's selector from its
-arguments, and the `list` objects move an atom across that boundary. **The third is a different
-and nastier one** — a silent non-event rather than a wrong value. It is what makes
-`chop-size 43 %` followed by `grain 12` draw as `grain 12 %` unless the unit is cleared before
-it is set. Any field that is optional must be cleared on every message, not written on some.
+**1 — sending.** `[route in-l]` matches a message whose *selector* is `in-l`; it does not match
+a `list` whose first element is. `[list prepend in-l]` produces the second kind, so finish with
+`[list trim]`. Without it every message leaves `route`'s rightmost outlet, usually into nothing,
+and the display just shows zero. A message box typed `in-l 42 dB` is already the right shape;
+anything assembled with `[list …]` is not.
+
+**2 — receiving.** Measured in 0.49, and **wider than this document once claimed** — the old
+wording said the trap applied only when the remainder was a single symbol. The real rule: when
+`route` matches, **the remainder is emitted as a message whenever its first atom is a symbol**,
+that symbol becoming the selector. So `boot v0.2-ready` arrives as selector `v0.2-ready`, and
+`alert warn u_init x` as selector `warn` with two arguments; only a remainder starting with a
+**float** is really a list. This is why every branch out of `g_oled`'s `route` begins with
+`[list append]`.
+
+**3 — the nasty one**, because it is a silent non-event rather than a wrong value. It is what
+makes `chop-size 43 %` followed by `grain 12` draw as `grain 12 %`. **Any optional field must
+be cleared on every message, not written on some.**
 
 **Rate limiting belongs to the display, not the caller.** Senders push whenever they have
-something to say; the display redraws on its own clock. `u_level` samples at 10 Hz, `g_oled`
-draws at 10 Hz, and neither number is the other's business.
-
-✅ And because every layer holds **state** rather than a queue of draw calls, this needs no
-coalescing logic at all: the last value written is what the next frame draws. Measured — 877
-`disp` messages in five seconds produced exactly 51 frames, with the drawn value advancing by 20
-each time. The guaranteed trailing edge plan-display.md asks for falls out for free.
+something to say; the display redraws on its own clock. ✅ And because every layer holds
+**state** rather than a queue of draw calls, this needs no coalescing logic at all — 877 `disp`
+messages in five seconds produced exactly 51 frames, the drawn value advancing by 20 each time.
+The guaranteed trailing edge falls out for free.
 
 ---
 
@@ -380,7 +388,7 @@ and `all` broadcasts. Each instance still gets its own `$0`.
   do not let it talk you out of using it.
 - **Patterns and presets are plain text files** in the patch folder, via `[text define]` +
   `[text write]`. Git-diffable and editable outside Pd. This was already decided in
-  [plan-software.md](plan-software.md) and stands.
+  [ref-software.md](ref-software.md) and stands.
 - **Use the Organelle's own save mechanism to deliver them.** ✅ Read off the device — the
   System menu's **Save** and **Save New** run `save-patch.sh`, which:
 
@@ -445,7 +453,7 @@ vanish into tty1 on a device with no console.
 **Refresh with `/reloadNoRemount`, never `reload.sh`.** `reload.sh` sends `/reload`, which also
 runs `mount.sh`, which mounts the last `/dev/sd*` on `/usbdrive`. With a Launchpad attached that
 is its write-protected onboarding drive, and mounting it moves `USER_DIR` onto a read-only
-volume — breaking wifi config, Save and Save New. See [plan-hardware.md](plan-hardware.md).
+volume — breaking wifi config, Save and Save New. See [ref-hardware.md](ref-hardware.md).
 
 **The load step needs the category folder in the name.** `mother`'s `/loadPatch` resolves
 against its *current* patch directory (`MainMenu::runPatch` builds `getPatchDir() + "/" + arg`),
@@ -458,7 +466,7 @@ A bare `Cut It` loads nothing, silently. `deploy.sh` derives this from `DEST`.
 | Organelle | `./deploy.sh` |
 | iPhone (PdParty) | `curl -T <file> http://<phone>:9000/<scene>/_main.pd` over WebDAV |
 
-Neither needs a cable. See [plan-display.md](plan-display.md) for addresses and ports.
+Neither needs a cable. See [ref-display.md](ref-display.md) for addresses and ports.
 
 **What the check cannot catch** is runtime behaviour — wrong message types, silent OSC
 failures, logic errors. That is what the error bus below and the PdParty remote console are
@@ -492,33 +500,28 @@ rejected, showing as a plausible-looking zero on the OLED. Nothing else in the t
 have caught it. Expect `error: /tmp/patch/knobs.txt: can't open` in the output; that is mother
 looking for the optional knob-label file and is harmless.
 
-## Errors must reach the OLED
+## Errors must reach the OLED ✅ built
 
-**The Organelle runs Pd with `-nogui`. There is no console.** Patch errors go to stdout on
-tty1, which VNC does not show. An error you cannot see is a silent failure, and Pd's failure
-mode for a wrong message is to print and continue.
+**The Organelle runs Pd with `-nogui`, so an error you cannot see is a silent failure** — and
+Pd's failure mode for a wrong message is to print and continue. `u_err` was built in the first
+infrastructure pass rather than retrofitted *(judgment call: an architecture requirement, not a
+debugging convenience)*.
 
-*(judgment call)* **This is treated as an architecture requirement, not a debugging
-inconvenience.** Build `u_err` / `g_err` as part of the first infrastructure pass, before there
-is anything to debug:
-
-- Any abstraction reports via `[s err]` as **`<level> <source> <text>`** — level is `warn` or
-  `fail`, source is a symbol naming the abstraction, text is **one symbol of ≤ 21 characters**.
-  Use a **message box**, which already carries the level as its selector; anything built with
+- Any abstraction reports via `[s err]` as **`<level> <source> <text>`** — level `warn` or
+  `fail`, source a symbol naming the abstraction, text **one symbol of ≤ 21 characters**. Use a
+  **message box**, which already carries the level as its selector; anything built with
   `[list prepend]` needs `[list trim]`.
-- **`u_err` decides what reaches the screen by consulting `mode`:** compose shows everything,
-  perform shows only `fail`. Same bus, same callers — the filtering is one place. Defaults to
-  verbose, since nothing drives `mode` before Phase 4. ✅ Verified both ways.
-- **`u_err` never draws.** It forwards onto `disp` as `alert <level> <source> <text>` and
-  `g_oled` decides what an error looks like — see *The display bus* above.
-- **The bus is unfiltered; only the screen is filtered.** `u_err` carries an unconditional
-  `[print err]`, so the by-hand SSH console sees every error raised even in perform mode.
+- **`u_err` filters by `mode`** — compose shows everything, perform only `fail`. One place, same
+  bus, same callers. Defaults to verbose since nothing drives `mode` before Phase 4. ✅
+- **`u_err` never draws.** It forwards onto `disp` as `alert <level> <source> <text>`; `g_oled`
+  decides what an error looks like — see *The display bus* above.
+- **The bus is unfiltered; only the screen is filtered.** An unconditional `[print err]` means
+  the by-hand SSH console sees every error raised, even in perform mode.
 - Errors **time out**; they are never modal. A stuck error covering the display mid-set is
-  worse than a missed warning, and the bus keeps it recoverable either way.
-- It costs almost nothing early and is painful to retrofit across every abstraction later.
+  worse than a missed warning.
 
 This does not catch Pd's *own* runtime errors — those still go to tty1. It catches the ones we
-raise, which is the majority of what will actually go wrong.
+raise, which is most of what actually goes wrong.
 
 ---
 
@@ -555,35 +558,14 @@ effort. Don't tidy and change behaviour in the same commit.
 
 ---
 
-## Proposed abstraction boundaries
+## Where the abstractions go
 
-A starting decomposition, following the above. Not yet built — revise freely as the rewrite
-proceeds, but keep the shape.
+The decomposition that follows from all of the above — which abstraction exists, what each
+holds, and the order they get built in — is [plan-v02.md](plan-v02.md)'s *Architecture* and
+build phases.
 
-```
-main.pd                 entry point; wiring only, no logic
-  u_wire                aconnect calls via [shell] at load (see tools/self-wire.pd)
-  u_tempo               tempo → clock, MIDI clock out, start/stop
-  u_err                 error bus → OLED
-
-  m_nano                Pd ch 17/18 → parameters and mode
-  m_launchpad           Pd ch 1 → pads, pressure; owns Programmer Mode SysEx
-  m_404                 Pd ch 33 → pad/pattern capture
-  m_keys                Organelle keyboard → notes or filter control, by mode
-
-  e_chop                sampler / chop            ┐
-  e_pitch               filter and pitch          │ the four stages,
-  e_trem                tremolo                   │ right to left
-  e_verb                reverb / freeze           ┘
-
-  c_grainclock          phasor~-derived grain timing
-  c_drunk               drunkenness / sputter modulation
-
-  g_grid                Launchpad LED state
-  g_oled                OLED display
-```
-
-The `m_` layer is the load-bearing idea: **device mapping is separated from everything it
-controls.** Nothing in `e_*` knows a nanoKONTROL exists. That is what makes the compose/perform
-mode split tractable, since the same surfaces mean different things in each mode — and it is
-the one boundary that is genuinely expensive to retrofit.
+The one boundary worth restating here, because it constrains how everything else may be
+written: **the `m_` layer separates device mapping from everything it controls.** Nothing in
+`e_*` may know that a nanoKONTROL exists. That is what makes the compose/perform split
+tractable — the same surfaces mean different things in each mode — and it is the one boundary
+that is genuinely expensive to retrofit.

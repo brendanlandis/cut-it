@@ -27,7 +27,7 @@ and `mode`, exactly as a controller would.
 |---|---|
 | `phase3-bench.pd` | **The acceptance run, self-driving.** Fourteen steps, 10 s apart, ~3 minutes. Each prints what it is sending and a **PASS IF** line *before* the screen moves — including the steps whose correct result is that nothing happens, which are otherwise impossible to mark off. Run it in the **foreground** and watch the OLED. |
 | `phase3-diag.pd` | Counts rather than dumps. `FRAMES` and `MESSAGES` are cumulative totals printed once a second, so the rate is the gap between lines — expect +10 and +100. Printing every OSC message instead would slow down the thing being measured. |
-| `alert-buffer-probe.pd` | Answers the last ⬜ in [plan-display.md](../plan-display.md): draws into the ALERT buffer (screen 4), `setscreen 4`, waits, `setscreen 3`. Only `setscreen` itself is documented; drawing into buffer 4 is inferred. |
+| `alert-buffer-probe.pd` | Answers the last ⬜ in [ref-display.md](../ref-display.md): draws into the ALERT buffer (screen 4), `setscreen 4`, waits, `setscreen 3`. Only `setscreen` itself is documented; drawing into buffer 4 is inferred. |
 
 ## `pd-layout-check.py`
 
@@ -61,7 +61,7 @@ unlike everything above. Deploy with `scp` to `/sdcard/Patches/!/<name>/main.pd`
 | `audio-probe/` | `env~` levels for `adc~ 1` and `adc~ 2` drawn large on the OLED. Used to verify the TRS input split; still the quickest way to check what is arriving at the inputs. |
 | `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection. **Not** an Organelle patch: deploy over WebDAV with `curl -T http://<phone>:9000/CutItRemote/_main.pd`. |
 
-Findings from all three are written up in [../plan-display.md](../plan-display.md).
+Findings from all three are written up in [../ref-display.md](../ref-display.md).
 
 ## Running one
 
@@ -83,48 +83,25 @@ Stop with `killall pd`.
 
 ## Things these patches taught us
 
+Findings specific to working *in this folder*. The Launchpad's own behaviour — palette,
+animation modes, LED state, `polytouchin` ordering — is catalogued in
+[../ref-midi.md](../ref-midi.md). Pd message-discipline traps (`[list trim]`, `route`'s
+selector rules, `sendtyped` arity, `quitting`) are in
+[../ref-conventions.md](../ref-conventions.md), and the OSC ones in
+[../ref-display.md](../ref-display.md).
+
 - **`loadbang` fires before ALSA connections exist.** Initialisation SysEx sent on `loadbang`
-  goes nowhere. Use `[loadbang] → [del 2000]` or longer.
+  goes nowhere. Use `[loadbang] → [del 2000]` or longer. Repeated here because every patch in
+  this folder has to obey it.
 - **`aconnect` by name, never by client number.** Client 28 was the Launchpad, then became the
   SP-404 when devices were swapped. Names are stable, numbers are not.
 - **`amidi` and Pd cannot both hold a port.** Once ALSA seq has subscribed a device,
-  `amidi -p hw:x,y,z` fails with "Device or resource busy". Use `aseqdump` instead, which
-  coexists.
+  `amidi -p hw:x,y,z` fails with "Device or resource busy". Use `aseqdump`, which coexists.
 - **`[random]` takes a bang, not a float.** Feeding it a float errors once per event, which at
   grid-refresh rates produced 2,500 errors/sec.
-- **`polytouchin` emits note before value**, so wiring it straight to `[noteout]` lights a pad
-  with the previous event's pressure.
-- **Launchpad LED state survives mode switches.** Entering Programmer Mode does not blank the
-  grid; the patch has to clear it.
-- **Velocity indexes a 128-entry colour palette, not brightness.** For real greyscale or
-  arbitrary colour, use the per-pad RGB SysEx: `F0 00 20 29 02 0E 03 03 <pad> <r> <g> <b> F7`.
-- **LED animation is free.** Static / flashing / pulsing are MIDI channels 1 / 2 / 3, animated
-  by the device — no `[metro]` in Pd. Flashing alternates the ch1 and ch2 colours, so send
-  both. Pulsing ramps toward zero, so use a bright palette index or it reads as weak.
 - **A patch can wire its own `aconnect` calls** via `[shell]`, but put the commands in a shell
   script — Pd message boxes and shell quoting do not mix well.
-- **Syntax-check before deploying.** Pd 0.49-1 is installed on the Mac — the same version the
-  Organelle runs. `pd -nogui -noaudio -send "pd quit" main.pd` prints nothing if the patch
-  parsed and every object instantiated. `deploy.sh` now does this automatically and refuses to
-  copy on any output.
-- **There IS a console — launch the patch by hand.** Only the *menu-launched* patch loses its
-  stdout to tty1. Running `pd -nogui /root/fw_dir/mother.pd main.pd /tmp/diag.pd` over SSH with
-  output redirected gives a real console, live audio on `inL`/`inR`, and lets a throwaway
-  `diag.pd` tap any bus with `[print]` without editing the deployed patch. See *Development
-  workflow* in [../plan-conventions.md](../plan-conventions.md).
-- **`[route]` with symbol arguments matches the SELECTOR, not a list's first element.**
-  `[list prepend foo]` produces `list foo …`, which `route foo` rejects — out of the rightmost
-  outlet, which is usually connected to nothing. Finish with `[list trim]`. A message box typed
-  `foo 42` is already the right shape; anything assembled with `[list …]` is not.
-- **`route` emits a lone remaining symbol as a SELECTOR, not a `symbol` message.** Feeding it
-  to `[symbol]` errors with `inlet: expected 'symbol' but got 'wiring'`. `[list append]`
-  converts it back. This is the mirror of the `[list trim]` rule above — same underlying fact.
 - **`route` passes the matched message's ARGUMENTS on, and they are rarely what you want next.**
   `route /oled/gClear` emits `ii 3 1` — the typetag and its args. Feeding that to a float inlet
   prints `float: no method for 'ii'` on every message, which at a 10 Hz redraw is an endless
   console scroll. Put `[t b]` in between when you only care that the message happened.
-- **`quitting` is the only shutdown hook.** `mother.pd` sends it and gives the patch 100 ms.
-  Pd 0.49 has no `closebang` or `initbang` — both fail to create.
-- **`sendtyped` typetags must match the argument count exactly**, or mrpeach `packOSC` drops the
-  message with an error. Mixed tags work: `iiiiisi` sends five ints, a label and a value in one
-  `gPrintln`.

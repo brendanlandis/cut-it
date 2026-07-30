@@ -75,7 +75,7 @@ loop.
 on the grounds that nothing external runs its own sequencer during a performance. That was
 wrong: the 404's **BPM SYNC time-stretch follows its tempo**, and the only way it learns the
 tempo is by measuring incoming clock intervals. Stop the clock and it stretches to a stale
-local value. See *Time-stretch* in [plan-software.md](plan-software.md).
+local value. See *Time-stretch* in [ref-software.md](ref-software.md).
 
 **The Launchpad runs over USB.** Its TRS MIDI jacks go unused, and the three TRS→DIN
 adapters in its box aren't needed here. USB gives it its own 16-channel block, keeps
@@ -135,7 +135,7 @@ jack — while the output side needs only two ordinary patch cables.
 patch `[r~ inL]` / `[r~ inR]`, taking its output back through `[throw~ outL]` / `[throw~ outR]`
 — then applying the volume knob (a square law, smoothed at 5 Hz) and a `clip~ -1 1` limiter
 before `dac~`. Writing to `dac~` from a patch bypasses both. Full detail and the reasoning are
-in [plan-conventions.md](plan-conventions.md) under *Audio I/O*.
+in [ref-conventions.md](ref-conventions.md) under *Audio I/O*.
 
 **The input split is verified on hardware.** ✅ `adc~ 1` is the **tip**, `adc~ 2` is the
 **ring**, and they are genuinely independent — a mono TS cable drives the tip to the 90s on
@@ -165,62 +165,34 @@ there is ample gain and headroom for instrument-level sources.
 not guarantee operation through hubs. A USB-A→C cable from the hub carries **data only**,
 which is what we want — the 404 runs off its own adapter and costs the hub nothing.
 
-### ⚠️ Booting with the Launchpad attached hangs the Organelle
+### Booting with the Launchpad attached ✅ root-caused and fixed
 
-✅ **Root-caused on this hardware.** Not power, and not the hub — swapping hubs, ports and
-cables changed nothing, because none of those were the cause.
+It used to hang the Organelle on "loading…" forever. Not power, and not the hub — swapping
+hubs, ports and cables changed nothing, because none of those was the cause.
 
-**The Launchpad Pro MK3 presents a USB mass-storage interface** alongside its two audio/MIDI
-interfaces — a 192 KiB, **write-protected**, vfat volume labelled `LAUNCHPAD`:
+**The Launchpad Pro MK3 presents a USB mass-storage interface** alongside its audio/MIDI ones:
+a 192 KiB **write-protected** vfat volume, Novation's "Onboarding Drive". That is enough to
+break boot, in four steps:
 
-```
-scsi 0:0:0:0: Direct-Access  Novation  Onboarding Drive
-sd 0:0:0:0: [sda] 384 512-byte logical blocks: (196 kB/192 KiB)
-sd 0:0:0:0: [sda] Write Protect is on
-```
+1. `mount.sh` takes **the last** `/dev/sd*` — with the Launchpad attached that is `/dev/sda1`.
+2. `blkid` reports vfat, so the script mounts it on **`/usbdrive`**. It *succeeds* — this is not
+   a failure path, which is why nothing errors.
+3. `AppData::getDefaultUserDir()` returns `/usbdrive` whenever it is in `/proc/mounts`, so
+   **`USER_DIR` becomes the Launchpad's read-only drive.**
+4. `wifi_control.py` opens `$USER_DIR/wifi_log.txt` for **writing**. On a write-protected volume
+   that fails, the script dies, and the UI never finishes loading.
 
-That is enough to break boot, in four steps:
-
-1. `mount.sh` takes **the last** `/dev/sd*` — `devices=(/dev/sd*)`, `DEVICE="${devices[-1]}"`.
-   With the Launchpad attached that is `/dev/sda1`, the onboarding drive.
-2. `blkid` reports `ID_FS_TYPE=vfat`, so the script mounts it on **`/usbdrive`**. It succeeds —
-   this is not a failure path, which is why nothing errors.
-3. `AppData::getDefaultUserDir()` returns `/usbdrive` whenever `/usbdrive` is in
-   `/proc/mounts`. So **`USER_DIR` becomes the Launchpad's read-only drive.**
-4. `wifi_control.py` line 4 is
-   `log_file = os.getenv("USER_DIR", "/usbdrive") + "/wifi_log.txt"` — it opens a log for
-   **writing** in `USER_DIR`. On a write-protected volume that fails, the script dies, and the
-   UI sits on "loading…" forever.
-
-**Every observation fits:** independent of which hub, port or cable; broken when the Launchpad
-is present at boot; fine when it is hot-plugged afterwards, because `mount.sh` has already run.
+**Every observation fits:** independent of hub, port and cable; broken when the Launchpad is
+present at boot; fine when hot-plugged afterwards, because `mount.sh` has already run.
 
 **Beware the wider blast radius.** `USER_DIR` is not only wifi — `start-ap.sh` reads
-`$USER_DIR/ap.txt`, and the System menu's save paths hang off it. Anything that writes under
-`USER_DIR` is broken while that volume is mounted. `mount.sh` also runs on **every Reload**
-(`MainMenu::reload()` → `execScript("mount.sh")`), which `deploy.sh` triggers — so this can
-appear mid-session, not only at boot.
+`$USER_DIR/ap.txt` and the System menu's save paths hang off it. And `mount.sh` runs on **every
+Reload**, so this can appear mid-session, not just at boot. That is why `deploy.sh` sends
+**`/reloadNoRemount`** rather than running `reload.sh`, which would trigger it on every single
+deploy. ✅ Verified: `/usbdrive` stays clear through a full deploy.
 
-**Half of it is already fixed in the repo.** `deploy.sh` now sends **`/reloadNoRemount`**
-instead of running `reload.sh`. `reload.sh` sends `/reload`, which runs `mount.sh` — so every
-deploy was remounting that volume and moving `USER_DIR` onto it. `/reloadNoRemount` refreshes
-the patch list and resets the patch directory without touching mounts, which is all a deploy
-needs since the files go to `/sdcard`. ✅ Verified: `/usbdrive` stays clear through a full
-deploy and `/tmp/user_dir` stays `/sdcard`.
-
-**The boot case is fixed too** — the guard below is now installed on the device, with the
-factory version kept at `/root/fw_dir/scripts/mount.sh.orig` and in
-[device/](device/). ✅ **Verified by cold boot with the Launchpad attached**: boots normally,
-wifi connects, `/usbdrive` stays unmounted and `USER_DIR` stays `/sdcard`, with `/dev/sda1`
-still present and `ro=1` — so `mount.sh` saw the volume and declined it. Loading the patch then
-wires the Launchpad both directions with no manual step.
-
-**Workaround, proven:** boot with the Launchpad unplugged, then plug it in and run
-`./deploy.sh` so `u_init` re-runs and wires it. If `/usbdrive` does get mounted, `umount
-/usbdrive` clears it — no reboot needed.
-
-**Fix, one line in `mount.sh`** (backed up at [device/mount.sh](device/mount.sh)) — refuse
-write-protected volumes, since the whole point of `USER_DIR` is writing to it:
+**The fix is one guard in `mount.sh`** — refuse write-protected volumes, since the whole point
+of `USER_DIR` is writing to it:
 
 ```sh
 BASE=$(basename "$DEVICE" | sed 's/[0-9]*$//')
@@ -229,11 +201,14 @@ if [ "$(cat /sys/block/$BASE/ro 2>/dev/null)" = "1" ]; then
 fi
 ```
 
-The rootfs is read-only: `remount-rw.sh` before, `remount-ro.sh` after.
+✅ Installed, and **verified by cold boot with the Launchpad attached**: boots normally, wifi
+connects, `/usbdrive` stays unmounted. Factory version kept at
+`/root/fw_dir/scripts/mount.sh.orig` and in [device/](device/). The rootfs is read-only, so
+`remount-rw.sh` before and `remount-ro.sh` after.
 
-**Worth trying first:** Novation Components may be able to disable the onboarding drive on the
-device itself. ⬜ Unverified — if it works it is the cleaner fix, since it changes nothing on
-the Organelle.
+**If it ever recurs:** `umount /usbdrive` clears it, no reboot needed. ⬜ Novation Components
+may also be able to disable the onboarding drive on the Launchpad itself — untried, and the
+cleaner fix if it works, since it changes nothing on the Organelle.
 
 ## The device itself
 
@@ -258,9 +233,10 @@ armv7. 495 MB RAM, 3.3 GB free on `/sdcard`.
 **The root filesystem is mounted read-only.** Run `/root/fw_dir/scripts/remount-rw.sh` before
 writing to `/root`, and `remount-ro.sh` after. `/sdcard` and `/usbdrive` are writable.
 
-**`/root/.pdsettings` is device-resident state with no off-device backup.** It holds the
-`midiapi: 1` and 4-in/4-out configuration that the whole MIDI topology depends on, and
-`/root/.pdsettings.bak` sits on the same card. Pull a copy into this repo. ⬜ not yet done.
+**`/root/.pdsettings` is load-bearing device-resident state.** It holds the `midiapi: 1` and
+4-in/4-out configuration the whole MIDI topology depends on, plus `path1: /root/Pd/externals`,
+which is what makes `[shell]`, `packOSC` and `routeOSC` resolve in the menu-launched patch.
+✅ Backed up in [device/](device/), verified current against the hardware.
 
 ### How Pd is launched
 
@@ -276,7 +252,7 @@ way to add devices. Note `-audiobuf 6` on the command line overrides `audiobuf: 
 
 **`-nogui` means there is no Pd console.** Patch errors go to stdout on tty1, so VNC will not
 show them either. This is why error reporting to the OLED is treated as an architecture
-requirement rather than a debugging convenience — see [plan-conventions.md](plan-conventions.md).
+requirement rather than a debugging convenience — see [ref-conventions.md](ref-conventions.md).
 
 ### MIDI: OSS vs ALSA
 
@@ -293,9 +269,11 @@ USB-enumeration-order drift across reboots.
 
 ### Deploying
 
-Deploy with `./deploy.sh`, then press **Storage → Reload** on the device. Because there is no
-rsync, locally-deleted files linger remotely — use `./deploy.sh --clean` after renaming or
-removing an abstraction, or a stale `.pd` will shadow the new one.
+`./deploy.sh` does the whole loop — syntax check, copy, reload the patch list, load the patch —
+with no physical interaction. Flags and the reasoning are in
+[ref-conventions.md](ref-conventions.md). Because there is **no rsync**, locally-deleted files
+linger remotely: use `./deploy.sh --clean` after renaming or removing an abstraction, or a stale
+`.pd` will shadow the new one.
 
 Patch storage falls back from `/usbdrive` to `/sdcard` based on whether `/usbdrive` is
 *mounted*, not whether it holds patches. An empty mounted USB drive yields an empty patch
@@ -305,8 +283,8 @@ menu; Storage → Eject unmounts it without physical removal.
 ## Device capabilities
 
 What each box can actually do, verified on hardware. What to *build* with it lives in
-[plan-software.md](plan-software.md); the message-by-message detail — every CC, note and
-SysEx each device accepts and transmits — lives in [plan-midi.md](plan-midi.md).
+[ref-software.md](ref-software.md); the message-by-message detail — every CC, note and
+SysEx each device accepts and transmits — lives in [ref-midi.md](ref-midi.md).
 
 ### Launchpad Pro MK3 — a genuine blank slate
 
@@ -372,25 +350,10 @@ device switches locally and Pd has no idea. Assign **distinct CC numbers per sce
 infers the active scene from which CCs arrive. Do that and scene switching self-announces;
 don't, and it is the unlabelled-knob problem in a worse form.
 
-**Configured and verified on hardware.** Editor version **2.4.0** is required — Korg's 2.5.0
-dropped first-generation nanoKONTROL support, and it's available from the "previous versions"
-list on the [KONTROL EDITOR download page](https://www.korg.com/us/support/download/software/1/133/1355/).
-
-| Control | CC | Pd decode |
-|---|---|---|
-| Sliders 1–9 | 1–9 | `div 10` = 0 |
-| Knobs 1–9 | 11–19 | `div 10` = 1 |
-| Buttons, top row 1–9 | 21–29 | `div 10` = 2 |
-| Buttons, bottom row 1–9 | 31–39 | `div 10` = 3 |
-
-`cc mod 10` gives the channel number in every case — the same addressing idiom as the
-Launchpad's `r*10+c` grid, so one decode pattern covers both surfaces.
-
-All buttons are **momentary**, verified sending 127 on press and 0 on release. Pd owns all
-toggle state. Arrives on **Pd channel 17** (device 2).
-
-**No LED Mode setting exists** on the mk1 — confirmed in the editor, not just inferred. All
-visible state has to live on the Launchpad.
+**Configured and verified on hardware**, with Korg Kontrol Editor **2.4.0** — 2.5.0 dropped
+first-generation nanoKONTROL support. Arrives on **Pd channel 17** (device 2), transport on 18.
+The CC map and decode idiom are in [ref-midi.md](ref-midi.md); the scene file is backed up in
+[device/](device/).
 
 ### BeatStep retired
 
@@ -404,26 +367,13 @@ visible knob position plus a bank of faders is worth more here than a second gri
 lights.
 
 ### SP-404 MIDI — verified working, both directions
-Confirmed on hardware, no settings changes required. The 404's factory MIDI config is
-already correct for this rig.
+Confirmed on hardware with **no settings changes required** — the 404's factory MIDI config is
+already correct for this rig. Arrives on **Pd channel 33** (device 3). The full message map and
+the device settings that matter are in [ref-midi.md](ref-midi.md).
 
-**Receive (404 → Pd):** pad presses and knob moves arrive on **Pd channel 33** (device 3).
-Pads transmit notes, CTRL knobs transmit CC 16 and 17.
-
-**Send (Pd → 404):** `[noteout 33]` triggers pads. **Pad *n* on bank A = note 47 + *n***
-(pad 1 = 48, pad 2 = 49), established empirically. Velocity 100 works; `[makenote]` handles
-note-offs.
-
-**Relevant device settings, all already correct:**
-
-| Setting | Value | Why |
-|---|---|---|
-| MIDI Sync Out | Off | No clock echoed back to the Organelle |
-| Soft Through | Off | No MIDI echo loop |
-| USB-MIDI Thru | Off | Same |
-| PAD Note Out | On | Pads transmit |
-| SEQ Note Out | On | Pattern sequencer transmits — enables compose-time capture |
-| MIDI Mode | A | Bank A receives on MIDI channel 1 |
+⬜ **One unresolved discrepancy:** pad *n* on bank A was measured here as note 47 + *n*, but
+Roland's chart says the mode-A range is 35–51. Only pads 1 and 2 were checked. Sweep all
+sixteen before writing sequencing code against it — see [ref-midi.md](ref-midi.md).
 
 **Cable warning:** the 404 needs a genuine **data** USB cable. Charge-only USB-A→C cables are
 visually identical and extremely common; two were tried before one worked. If the device does
@@ -433,69 +383,11 @@ not appear in `lsusb`, suspect the cable before anything else.
 ---
 
 
-## Open questions to verify on the hardware
+### The pedal jack
 
-### Resolved
-
-| Question | Answer |
-|---|---|
-| Organelle's Pd version | **Pd 0.49.0**, compiled Oct 9 2018. OS 4.0. |
-| Where Pd's startup flags live | **`/root/.pdsettings`** — mother passes no `-noprefs` and no MIDI flags. Already edited to 4 in / 4 out with `midiapi: 1`. |
-| USB enumeration stability | **Moot.** Devices are wired with `aconnect` **by name**, so client renumbering is harmless — demonstrated live when client 28 changed from Launchpad to SP-404 mid-session. No udev rules needed. |
-| Does the 404 transmit its own pad presses? | **Yes**, `PAD Note Out: On`. Verified arriving in Pd on channel 33. |
-| Does Korg Kontrol Editor run? | **Yes, version 2.4.0** — 2.5.0 dropped first-generation nanoKONTROL support. Nano is configured and written. |
-
-Details in [plan-tests.md](plan-tests.md) and *Device capabilities* above.
-
-### Still open
-
-**1. How the 404 places external input in the stereo field — and whether it can be pinned to
-one side.** The load-bearing unknown for the drums/fx split, and the only substantial one
-left. The claim that a mono input sums to both sides comes from user documentation, not
-Roland's spec sheet, and nothing documents whether it can be constrained.
-
-**Not answered by the 404's discrete L/R jacks.** It has separate L and R connectors on both
-line in and line out, so two independent signals certainly *leave* the box — but this question
-is about internal routing of the external input, which the connectors say nothing about. The
-Y-cable is also still required regardless: the constraint is the **Organelle's single TRS input
-jack**, not the 404's outputs.
-
-One session answers it. Monitor the 404's L and R outputs separately (headphones, or the
-mixer one channel at a time), play a sample panned hard MONO(Left), and:
-
-- **a.** Feed the **MIC/GUITAR IN**. Does the mic appear on the L output alongside the drum
-  sample? Expected: yes, it sums to both. If it doesn't, the accepted bleed compromise is
-  unnecessary and the design gets simpler.
-- **b.** Look for **any pan or routing control for the external input** — input FX settings,
-  bus assignment, anything that shifts it off centre.
-- **c.** Feed **LINE IN R only**, nothing in L/MONO. Does the signal stay on the right, or sum
-  to both? Its partner jack being labelled L/MONO is suggestive but not conclusive. A "stays
-  right" result opens up the mic → mixer preamp → LINE IN R path, giving hard-panned live
-  vocals through the 404's input FX.
-
-Outcome (a) confirms the plan as written. Outcomes (b) or (c) would be upgrades, not
-requirements — the rig works either way. This is Session 3 in the pre-flight list and needs
-the TRS Y-cable.
-
-**2. Does the 404's *pattern playback* transmit notes?** Partially answered: `SEQ Note Out`
-is **On** in the device settings, which is the setting that governs it, and pad presses
-demonstrably transmit. But no pattern has actually been run and captured. Low stakes —
-determines whether the 404 works as a compose-time authoring surface alongside the Launchpad,
-and there are scattered reports of a stray continuous C-note when external input is on, which
-would need filtering on capture.
-
-**Deferred: the footswitch and expression pedal.** `mother.pd` exposes `fs` / `fsRaw` /
-`footSwitchPolarity` and `exp` / `expRaw` / `expOverride` on the 1/4" pedal jack — a
-sustain-style switch or an expression pedal, one or the other, not both. Deliberately **not
-used in v0.2**; noted so it isn't rediscovered as news. It remains the obvious control to reach
-for when both hands are busy.
-
-**3. How do you see Pd's error output?** Unsolved, and it will bite during the rewrite. Pd is
-launched with `-nogui`, so there is no console; errors go to stdout on tty1, which VNC will
-not show either. Running Pd manually over SSH works for diagnostics (see [tools/](tools/)) but
-not for patches loaded normally through the Organelle's menu. Options not yet explored:
-redirecting mother's output to a file, reading tty1 remotely, or having the patch report
-errors to the OLED.
+`mother.pd` exposes `fs` / `fsRaw` / `footSwitchPolarity` and `exp` / `expRaw` / `expOverride`
+on the 1/4" pedal jack — a sustain-style switch **or** an expression pedal, one or the other,
+not both. Deliberately unused in v0.2, and recorded here so it isn't rediscovered as news.
 
 
 ## Gear
@@ -522,44 +414,22 @@ downstream of the MIDI interface and fan out to four destinations. For now only 
 FM needs DIN, so a 1×1 interface is enough.
 
 
-## Shopping list
+## Cabling
 
-Power supplies are all assumed covered. Everything below is either a box you don't own or a
-cable to dig for first.
+What physically connects to what. **What is still to buy is in [plan-v02.md](plan-v02.md)**
+under *Still to acquire*; power supplies are all covered.
 
-### Definitely buy — hardware you don't have
+| Cable | Connects |
+|---|---|
+| **1/4" TRS male → 2× 1/4" TS male** ("insert cable") | 404 OUT L/R → the Organelle's single stereo input. ⚠️ The critical cable in the rig — nothing else does this job |
+| **USB-A → USB-C** | Hub → SP-404MK2, **data only**. The 404 ships without one |
+| **2× 1/4" TS** | Organelle OUT L/R → mixer ch1/ch2 |
+| **3.5mm TRS → 2× 1/4" TS** | Volca FM → mixer ch3/4. Its output runs hot — start with channel gain low |
+| **XLR female → 1/4" TRS** | Mic → 404 MIC/GUITAR IN. The 404 has no XLR, so a plain mic cable won't do it; an adapter on a normal one works |
+| **2× 1/4" TS** | Mixer MAIN OUT → PA |
 
-| # | Item | Notes |
-|---|---|---|
-| 1 | **Powered USB hub**, 4+ USB-A ports, own PSU | Not optional. The Launchpad Pro MK3 is a real power draw; bus-powering it plus the other USB devices off the Organelle will brown out, and it presents as intermittent MIDI dropouts rather than an obvious failure. |
-| 2 | **Class-compliant USB→DIN MIDI interface** | For the Volca FM. Roland UM-ONE mk2 (set to the class-compliant "TAB" position), iConnectivity mio, or similar. |
-| 3 | **Dynamic microphone** | SM58 or equivalent. Dynamic rather than condenser — better SPL handling and far better feedback behaviour, and you're building a rig where a mic feeds a processor that feeds the PA. |
+**Already in the box, don't buy:** the Launchpad ships with USB-C→USB-A *and* USB-C→USB-C
+cables, a power adapter and 3× TRS-minijack→DIN MIDI adapters; the nanoKONTROL is bus-powered
+over its own cable; the 404 has its PSD adapter.
 
-### Cables — check the cable box first
-
-Most of these are ordinary. Item 4 is the one you probably don't already have.
-
-| # | Cable | For | Likely already own? |
-|---|---|---|---|
-| 4 | **1/4" TRS male → 2× 1/4" TS male** ("insert cable") | 404 OUT L/R → Organelle's single stereo input | ⚠️ **Unlikely.** The critical cable in the whole rig — nothing else does this job. |
-| 5 | **USB-A → USB-C** | Hub → SP-404MK2 (data only) | Probably. The 404 ships with no USB cable, but these are everywhere now. |
-| 6 | **2× 1/4" TS patch cables** | Organelle OUT L/R → mixer ch1/ch2 | Probably |
-| 7 | **3.5mm TRS → 2× 1/4" TS** | Volca FM → mixer ch3/4 | Maybe. Volca's output runs hot — start with channel gain low. |
-| 8 | **XLR female → 1/4" TRS** | Mic → 404 MIC/GUITAR IN | Maybe. The 404 has no XLR, so a plain mic cable won't do it. An XLR→1/4" adapter on a normal mic cable also works. |
-| 9 | **2× 1/4" TS** | Mixer MAIN OUT → PA | Probably. Length to suit the venue. |
-
-### Already in the box with gear you own — don't buy
-- **Launchpad Pro MK3**: USB-C→USB-A *and* USB-C→USB-C cables, a USB-A power adapter, and
-  3× TRS-minijack→DIN MIDI adapters.
-- **nanoKONTROL**: bus-powered over its own USB cable — check which connector the mk1 uses
-  before assuming you have a spare.
-- **SP-404MK2**: PSD AC adapter (but no USB cable — see item 5).
-
-### Optional / probably eventually
-- **MeeBlip cubit duo** — replaces item 2 *and* your original cubit in one box (USB MIDI
-  interface + 4-port thru, switchable, class compliant, tight timing). Worth it if you
-  expect to add more DIN synths; overkill for one Volca.
-- **Ground loop isolator** — five separately-powered devices tied together by unbalanced
-  cables makes 50/60Hz hum likely. Don't buy pre-emptively, but know this is the cause if it
-  appears, rather than chasing a "bad cable".
-- **Cable labels or tape.** With this many identical 1/4" cables, worth the ten minutes.
+**Label the cables.** With this many identical 1/4" jacks it is worth the ten minutes.

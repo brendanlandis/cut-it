@@ -9,7 +9,7 @@ v0.1 is not being extended. Its plans are kept in [! v0.1 plans/](<! v0.1 plans/
 the patch itself in [! v0.1 plans/patch/](<! v0.1 plans/patch/README.md>) — **reference for
 intent, not code to lift.** All of it predates the conventions; assume it is naive.
 
-Read [plan-conventions.md](plan-conventions.md) first — naming, `$0`, `[trigger]` discipline
+Read [ref-conventions.md](ref-conventions.md) first — naming, `$0`, `[trigger]` discipline
 and the global allowlist are assumed throughout.
 
 ---
@@ -39,8 +39,8 @@ Not starting from nothing. These are verified and have working reference impleme
 | Launchpad Programmer Mode, LEDs, velocity, poly aftertouch | `tools/lp-monitor.pd`, `lp-modes.pd` |
 | OLED graphics API from a patch | `tools/oled-probe/` |
 | Bidirectional OSC to the phone, named-parameter protocol | `tools/status-display/`, `tools/pdparty-scene/` |
-| nanoKONTROL full CC map incl. transport on Pd ch 18 | [plan-midi.md](plan-midi.md) |
-| Deploy + syntax check workflow | [plan-conventions.md](plan-conventions.md) |
+| nanoKONTROL full CC map incl. transport on Pd ch 18 | [ref-midi.md](ref-midi.md) |
+| Deploy + syntax check workflow | [ref-conventions.md](ref-conventions.md) |
 
 **The job is turning these into abstractions that obey the conventions**, not discovering
 whether they work.
@@ -93,76 +93,49 @@ require no hardware**, which matters because the Organelle is not always on the 
 
 `main.pd`, `main-dev.pd`, `u_root`, `u_mother-stub`, `deploy.sh`
 
-The patch must run in vanilla Pd 0.49 on the Mac, where `mother.pd` does not exist. Without
-this, every iteration costs a deploy cycle.
-
-`u_mother-stub` provides `knob1`–`knob4`, `vol`, `notes`, `aux`, `enc` and `encbut` as GUI
-controls, and previews `screenLine1`–`5` and `oscOut` (`gPrintln` text and `gClear`; anything
-else prints). It is the **one sanctioned exception** to the reserved-name rule in
-[plan-conventions.md](plan-conventions.md). `main-dev.pd` instantiates it; `main.pd` does not,
-so the device never sees it.
-
-Two entry points, both thin, with all content in `u_root` — that is what stops them drifting.
+Two thin entry points with all content in `u_root` — that is what stops them drifting.
+`main-dev.pd` instantiates `u_mother-stub`, the Mac-only stand-in for `mother.pd` and the
+**one sanctioned exception** to the reserved-name rule; `main.pd` does not, so the device never
+sees it. It has since grown into the full dev panel — see *Seeing it off-device* in
+[ref-display.md](ref-display.md).
 
 `deploy.sh` closes the loop: **syntax check → scp → reload → load**, no physical interaction.
 The check is blocking and gates on *output*, since Pd exits 0 even on load errors.
 
-**Two things this phase corrected**, both read out of `/root/Organelle_UI/` on the device:
-`/loadPatch` resolves against the current patch directory, so the argument must be `!/Cut It`,
-not `Cut It`; and `enc` is `1`/`0` for up/down, not `±1` — as are `aux` and `encbut`.
-
-**Done when:** ✅ `main-dev.pd` opens on the Mac with no errors, the stub's knobs produce
-values, and `./deploy.sh` alone puts a running patch on the device.
+**Two corrections, both read out of `/root/Organelle_UI/`:** `/loadPatch` resolves against the
+current patch directory, so the argument must be `!/Cut It`, not `Cut It`; and `enc` is `1`/`0`
+for up/down, not `±1` — as are `aux` and `encbut`.
 
 ### Phase 1 — Audio path ✅ **done**
 
 `u_root` audio chain, `u_level`, `g_levels`
 
 `[r~ inL]` / `[r~ inR]` straight through to `[throw~ outL]` / `[throw~ outR]`, with a
-`u_level` tap on each input reporting onto the `disp` bus, and `g_levels` drawing both at 24px.
+`u_level` tap on each input reporting onto the `disp` bus. Deliberately first: it proves the
+whole signal chain with no DSP to blame. Also established here because Phase 3 depends on both:
+the `disp` bus, and the rule that exactly one abstraction owns `oscOut` and `screenLine*`.
 
-Deliberately first: it proves the whole signal chain — including the TRS Y-cable split, once
-that cable arrives — with no DSP to blame.
+**Three corrections, all read off the device:**
 
-**Three corrections to what this phase originally said**, all read off the device:
-
-- **Not `adc~`/`dac~`.** `mother.pd` owns the sound card. `dac~` from a patch bypasses the
-  volume knob and the limiter — see *Audio I/O* in [plan-conventions.md](plan-conventions.md).
-- **Not `/oled/vumeter`.** mother already drives it, from `inL`, `inR` and the post-volume
-  outputs. And it lives in the info bar, which is now off by decision — see
-  [plan-display.md](plan-display.md).
+- **Not `adc~`/`dac~`.** `mother.pd` owns the sound card — see *Audio I/O* in
+  [ref-conventions.md](ref-conventions.md).
+- **Not `/oled/vumeter`.** mother already drives it, and it lives in the info bar, which is now
+  off by decision — see [ref-display.md](ref-display.md).
 - **`gShowInfoBar 3 0` moved out of Phase 2 into here**, because it must go out on every redraw
   rather than once at init, which makes it the display's job and not startup's.
 
-**Also established here, cheaply, because Phase 3 depends on both:** the `disp` bus, and the
-rule that exactly one abstraction owns `oscOut` and `screenLine*`. `g_levels` is a placeholder
-with the right *interface* — Phase 3 replaces its insides with the arbiter.
-
-**Done when:** ✅ audio in is audible at the output and the volume knob controls it; both input
-levels are on the OLED and read the 18–19 noise floor at rest. Covers
-[plan-tests.md](plan-tests.md) item 11 through the real patch. Items 12–13 stay blocked on the
-TRS Y-cable.
+**Done when:** ✅ audio is audible and the volume knob controls it; both levels on the OLED read
+the 18–19 noise floor at rest. Covers [plan-tests.md](plan-tests.md) item 11 through the real
+patch; items 12–13 stay blocked on the TRS Y-cable.
 
 ### Phase 2 — Startup sequencing ✅ **done**
 
 `u_init`, `wire.sh`
 
-**Verified end to end on hardware.** `[shell]` runs `wire.sh` from the patch; `aconnect -l`
-shows both directions wired (`28:0 → 128:0` for pads in, `128:4 → 28:0` for LEDs and SysEx
-out); and captured pad presses come back as **`r*10+c`** — 64, 65, 34, 24, 43, 63 — which is
-the Programmer Mode layout and nothing else. Velocity is live (5 to 127). The OLED status line
-tracks each stage.
+**Verified end to end on hardware** — `[shell]` runs `wire.sh`, `aconnect -l` shows both
+directions wired, and captured pads read `r*10+c` with live velocity.
 
-**Getting there cost a hardware lesson, not a code one.** The Launchpad would not configure
-behind three chained USB hubs (`can't set config #1, error -32`) and the same topology wedged
-the wifi dongle at boot. Plugged directly into the Organelle it works first time. Full evidence
-in [plan-hardware.md](plan-hardware.md); tracked as Session 3b in
-[plan-tests.md](plan-tests.md).
-
-`quitting` turned out to already exist — `mother.pd` sends it and gives the patch **100 ms**
-before quitting Pd. Pd 0.49 has no `closebang`, so that is the only shutdown hook there is.
-
-`loadbang` fires before ALSA connections exist. Rather than scattering `[del]` objects, one
+`loadbang` fires before ALSA connections exist, so rather than scattering `[del]` objects one
 abstraction owns the ordered startup:
 
 1. wire `aconnect` via `[shell]` (pattern from `tools/wire.sh`)
@@ -170,74 +143,64 @@ abstraction owns the ordered startup:
 3. Launchpad → Programmer Mode by SysEx
 4. clear the Launchpad grid — **LED state survives mode switches**
 
-*(`gShowInfoBar` is deliberately not on this list — it moved to Phase 1. mother restores the
-info bar after every patch load, so it has to be re-sent on each redraw, which makes it the
-display's business rather than startup's.)*
+*(`gShowInfoBar` is deliberately not on this list — it moved to Phase 1, because mother
+restores the info bar after every patch load, so it must be re-sent on each redraw.)*
 
 **Each stage reports to the OLED as it completes.** With no console, that is the boot
 diagnostic — a patch stuck at stage 3 tells you the Launchpad never answered.
 
 **Also here: panic / safe exit.** `[r panic]` returns the Launchpad to Live mode and clears
-everything. Bind it somewhere reachable and fire it on `quitting`; without it, a crash in
+everything, fired on `quitting` — which `mother.pd` sends, giving the patch **100 ms**. Pd 0.49
+has no `closebang`, so that is the only shutdown hook there is. Without it, a crash in
 Programmer Mode means power-cycling the Launchpad.
 
-**Done when:** cold boot to a working home screen with nothing pre-connected, repeatably.
+**The lesson here was hardware, not code.** The Launchpad would not configure behind three
+chained USB hubs (`can't set config #1, error -32`) and the same topology wedged the wifi
+dongle at boot; plugged directly in, it works first time. Evidence in
+[ref-hardware.md](ref-hardware.md), tracked as Session 3b in [plan-tests.md](plan-tests.md).
 
 ### Phase 3 — Display and errors ✅ **done, verified on hardware**
 
 `g_oled` (replaces `g_levels`), `u_err`
 
-**Verified on the Organelle**, all fourteen steps of `tools/phase3-bench.pd`: boot stages draw
-as 16px modals and hand over to the meters with `v0.2-ready` in the footer; a parameter with a
-unit and one without both draw correctly, the second with no `%` inherited from the first; a
-modal outranks a parameter; an alert preempts the modal and the modal is still there when it
-expires; `warn` is suppressed in perform while `fail` still draws, and the filter releases on
-compose; a stuck modal clears itself after 30 s.
+The arbiter: layers with priority and TTL, `home` < `param` < `modal` < `alert`, sole owner of
+`oscOut` and `screenLine*`. Callers send semantics, never layout — `[s disp]` with
+`chop-size 43 %`. Full description and geometry in [ref-display.md](ref-display.md).
 
-**Throughput is not a problem.** Measured on the running device: **110 UDP datagrams a second**
-— the home frame is 10 OSC messages at 10 Hz, against 6 for Phase 1 — at **8.2 % CPU** and a
-load average of 0.16. That also clears the phase's biggest unknown: `packOSC` drops a
-mismatched typetag *before* `udpsend`, so a full datagram rate proves the **runtime typetag
-builder produces tags the real `packOSC` accepts**, which the Mac could never demonstrate
-having no `packOSC` at all.
+**Verified on the Organelle**, all fourteen steps of `tools/phase3-bench.pd` — every layer, the
+priority order, the mode filter and the 30 s safety TTL. Details in
+[plan-tests.md](plan-tests.md) items 21–21c.
 
-**Three things this phase corrected:**
+**Throughput is not a problem:** **110 UDP datagrams a second** at **8.2 % CPU**, load 0.16.
+That also clears the phase's biggest unknown — `packOSC` drops a mismatched typetag *before*
+`udpsend`, so a full datagram rate proves the **runtime typetag builder produces tags the real
+`packOSC` accepts**, which the Mac could never demonstrate having no `packOSC` at all.
+
+**Three corrections**, all now in [ref-conventions.md](ref-conventions.md):
 
 - **`u_err` does not draw.** This section used to say it writes to the ALERT buffer, which
-  contradicts *Banned* in [plan-conventions.md](plan-conventions.md) — two writers, one screen.
-  It filters and forwards onto `disp`; `g_oled` renders.
+  contradicts *Banned* — two writers, one screen. It filters and forwards onto `disp`.
 - **The alert draws to screen 3**, not the ALERT buffer. Nothing underneath needs preserving
-  when the frame is rebuilt from state ten times a second, and buffer 4 remains ⬜ untested.
-  See [plan-display.md](plan-display.md).
+  when the frame is rebuilt from state ten times a second; buffer 4 remains ⬜ untested.
 - **`route`'s remainder trap is wider than documented** — any remainder whose first atom is a
   symbol arrives as a selector, not just a lone symbol. And `[list split n]` on exactly *n*
   atoms silently never fires its right outlet, which is what would have made `grain 12` draw as
-  `grain 12 %`. Both are now in [plan-conventions.md](plan-conventions.md).
+  `grain 12 %`.
 
-The arbiter described in [plan-display.md](plan-display.md): layers with priority and TTL,
-`home` < `param` < `modal` < `err`; sole owner of `oscOut` and `screenLine*`. Callers send
-semantics, never layout — `[s disp]` with `chop-size 43 %`. **Big fonts for the active
-parameter**: 24px is readable at arm's length, 8px is context.
-
-**`g_levels` from Phase 1 was what got replaced.** Its interface was already right — consume
-`disp`, own the screen, redraw on a fixed clock — so this phase swapped the insides and deleted
-the file. Nothing upstream changed. ⚠️ **Deploy this phase with `./deploy.sh --clean`**: there
-is no rsync on the device, so a plain deploy would leave `g_levels.pd` behind.
+⚠️ **Deploy this phase with `./deploy.sh --clean`** — there is no rsync on the device, so a
+plain deploy would leave the deleted `g_levels.pd` behind to shadow the new display.
 
 #### Layout decisions, settled
 
-- **The home screen is the two level meters.** `gFillArea` bars, not numbers: `env~`'s 0–100
-  maps straight onto 128 px. Keep a small 8px numeric readout so the meters stay calibratable,
-  and draw the two measured reference marks — noise floor **18–19**, gate threshold **25–30**
-  (item 11).
-- **A moving knob shrinks the meters into a corner** and gives the parameter the rest of the
-  screen at 24px. The meters never disappear entirely — signal presence is always visible.
-- **A parameter readout lingers ~1.2 s** after the last change, then the meters expand back.
-  One number, expected to be tuned by living with it.
+- **The home screen is the two level meters** — `gFillArea` bars, not numbers, with a small 8px
+  readout so they stay calibratable and the measured reference marks drawn in: noise floor
+  **18–19**, gate threshold **25–30**.
+- **A moving knob shrinks the meters** and gives the parameter the rest of the screen at 24px,
+  readable at arm's length. The meters never vanish — signal presence is always visible.
+- **A parameter readout lingers ~1.2 s**, then the meters expand back. Expected to be tuned by
+  living with it.
 
 #### Errors follow the mode, not a severity guess
-
-**Two error behaviours, chosen by the existing `mode` bus** rather than a new concept:
 
 | `mode` | Shows |
 |---|---|
@@ -245,28 +208,12 @@ is no rsync on the device, so a plain deploy would leave `g_levels.pd` behind.
 | perform | **quiet** — only failures; warnings stay on the bus |
 
 This is why `err` carries a level: **`<level> <source> <text>`**, level ∈ `warn` `fail`.
-`u_err` routes on it and consults `[r mode]`. Nothing drives `mode` until Phase 4, so
-**default to verbose** — during development that is the useful default, and it degrades safely.
+Nothing drives `mode` until Phase 4, so **default to verbose** — it degrades safely.
 
 Errors **time out** rather than waiting to be dismissed; a stuck error covering the display
-mid-set is the worse failure. They stay recoverable on the bus for the by-hand console and, in
-Phase 7, the phone.
-
-`u_err` **forwards onto `disp`** as `alert <level> <source> <text>`; `g_oled` owns the drawing,
-because [plan-conventions.md](plan-conventions.md) allows exactly one sender on `oscOut`. The
-alert is the top-priority layer on the ordinary patch screen — the ALERT buffer is ⬜ untested
-and buys nothing under a state-driven redraw.
-
-**The bus is unfiltered; only the screen is filtered.** `u_err` prints every error
-unconditionally, so the by-hand SSH console sees warnings even in perform mode.
-
-**This does not catch Pd's own runtime errors.** Those still go to tty1; the answer for those
-is the by-hand console in [plan-conventions.md](plan-conventions.md).
-
-**Done when:** ✅ two sources competing for the display resolve by priority, a parameter readout
-decays back to the meters after ~1.2 s, an error preempts and restores what was underneath, and
-bus traffic far above the redraw rate still draws at the fixed rate. **Outstanding:** the same
-on hardware, via `./deploy.sh --clean`.
+mid-set is the worse failure. **The bus is unfiltered; only the screen is filtered**, so the
+by-hand console sees warnings even in perform mode. This does not catch Pd's *own* runtime
+errors — those still go to tty1.
 
 ### Phase 4 — nanoKONTROL
 
@@ -295,7 +242,7 @@ realtime bytes went where*, nothing more — it predates every convention in thi
 things that genuinely tolerate it. Normalise BPM and ms to Hz at the edge.
 
 **`u_tempo` is a master reference, not the clock.** Cut It runs poly-tempo — see *Poly-tempo*
-in [plan-conventions.md](plan-conventions.md). Build `c_clock` as a separately instantiable
+in [ref-conventions.md](ref-conventions.md). Build `c_clock` as a separately instantiable
 abstraction in this phase, owning its own rate and time signature and optionally slaved to
 master by a ratio. **Do not build a clock singleton**; retrofitting once Phases 6–8 depend on
 one is the expensive mistake this plan is trying to avoid.
@@ -354,32 +301,93 @@ the patch menu.
 
 ---
 
-## Deferred to v0.3+
+## Open questions
+
+**Every unresolved question in the project lives here or in [plan-tests.md](plan-tests.md).**
+The `ref-*` documents state what is known and mark uncertainty with ⬜, but they carry no plans —
+when something there is unverified, the work to resolve it is listed below.
+
+### Blocking a v0.2 phase
+
+| Question | Blocks | Where it stands |
+|---|---|---|
+| **SP-404 pad note range** — measured 47+*n* here, Roland's chart says 35–51 | Phase 5, and v0.3's `m_404` | Only pads 1 and 2 were ever checked. **This is the one that silently corrupts work** — sequencing code written against the wrong range looks correct and triggers the wrong pads. Sweep all 16 with `tools/midi-drive.pd` |
+| **Launchpad perimeter CC numbers** | Phase 6 | Documented 📄, never confirmed on this unit. Ten minutes with `tools/lp-monitor.pd` |
+| **Do flashing / pulsing LEDs track a *modulated* tempo?** | Phase 6 | The modes work ✅; tracking a sweeping tempo is ⬜. Needs a patch that sweeps tempo |
+| **Full-load power** | Phase 6 | Never run with three controllers plus the wifi dongle — the cable shortage. Presents as intermittent MIDI dropouts rather than an obvious failure, so if Phase 6 produces flaky Launchpad behaviour, **suspect the hub before the code**. [plan-tests.md](plan-tests.md) item 5 |
+| **Save New in a category folder** | Phase 8 | ⚠️ Already diagnosed — see the Phase 8 note above. Verify against a menu-selected patch, not a deploy-loaded one |
+
+### The last thing that could force a redesign
+
+**How the 404 places external input in the stereo field.** ✅ The Organelle's own TRS split is
+verified — `adc~ 1` is the tip and the channels are independent — but the 404's *internal*
+routing of its external input is not, and no cable will answer it. Blocked on the TRS Y-cable;
+procedure in [plan-tests.md](plan-tests.md) Session 3, items 12–13.
+
+### Not blocking anything, but worth knowing
+
+| Question | Where it stands |
+|---|---|
+| **Does the ALERT buffer work?** | Phase 3 deliberately does not rely on it, and the arbiter is *better off* not switching buffers — a lost `setscreen 3` would strand the display, where the fixed-clock redraw self-corrects. `tools/alert-buffer-probe.pd` answers it in two minutes; [plan-tests.md](plan-tests.md) item 22 |
+| **Can Pd emit an OSC blob?** | Gates `gWaveform` and `gFrame` — so it gates ever drawing the captured buffer, which is what would stop playhead placement being blind. Untested ⬜ |
+| **Does the 404's *pattern playback* transmit notes?** | `SEQ Note Out` is On and pad presses transmit, but no pattern has been captured. Determines whether the 404 is a compose-time authoring surface. Watch for the reported stray continuous C |
+| **Can Novation Components disable the onboarding drive?** | A cleaner fix than the `mount.sh` guard, since it changes nothing on the Organelle. Untried |
+
+### Stage-readiness — the phone link
+
+Everything about the PdParty display works ✅ except what makes it trustworthy in a venue.
+Phase 7 or later:
+
+- **Organelle as its own access point.** `hostapd` and `dnsmasq` are installed and the chip
+  supports AP mode ✅, but it has never been configured ⬜. It removes the venue-WiFi dependency
+  and is the last thing between the phone display and being stage-worthy.
+  [plan-tests.md](plan-tests.md) Session 5 — read its warning first, since bringing up an AP
+  drops SSH.
+- **Rate limiting on the wire.** Every CC change currently sends a packet, so a fast fader sweep
+  floods. Needs coalescing to ~20 Hz with a guaranteed trailing edge. The OLED gets this free
+  because layers hold state; the phone link does not.
+- **Phone hardening.** Auto-Lock Never ✅; Do Not Disturb and Guided Access still to set.
+- **Cosmetic.** The value is an `nbx`, which draws box chrome around the number; a `cnv` label
+  through `[makefilename %g]` would be pure text. Dynamic labels are proven ✅.
+
+### Still to acquire
+
+| Item | For |
+|---|---|
+| **1/4" TRS male → 2× 1/4" TS male** (insert cable) | ⚠️ **The critical cable in the rig** — nothing else merges the 404's two outs into the Organelle's single input jack. Blocks Session 3 |
+| **Class-compliant USB→DIN MIDI interface** | The Volca FM. Roland UM-ONE mk2 in its class-compliant "TAB" position, iConnectivity mio, or similar |
+| **Dynamic microphone** | Dynamic rather than condenser — better SPL handling and far better feedback behaviour in a rig where a mic feeds a processor that feeds the PA |
+
+Ordinary cables — USB-A→C for the 404, TS patch cables, 3.5mm TRS→2× TS for the Volca,
+XLR→1/4" for the mic — are probably already in the box; the full list is in
+[ref-hardware.md](ref-hardware.md). **Optional:** a *MeeBlip cubit duo* replaces the MIDI
+interface and the original cubit in one box, worth it only if more DIN synths arrive. Don't buy
+a ground-loop isolator pre-emptively — but know it is the cause if hum appears, rather than
+chasing a bad cable.
+
+### Deliberately deferred
 
 | Deferred | Why |
 |---|---|
-| **The four filter stages** | This plan is the floor they stand on |
-| **Footswitch / expression pedal** | Deliberate — see [plan-hardware.md](plan-hardware.md) |
-| **SP-404 and Volca mapping** | `m_404` and the DIN interface; the interface isn't bought |
+| **The four filter stages** | v0.3 — this plan is the floor they stand on |
+| **Footswitch / expression pedal** | `mother.pd` exposes `fs` and `exp` on the pedal jack, one or the other, not both. Noted so it isn't rediscovered as news; it stays the obvious control to reach for when both hands are busy |
+| **SP-404 and Volca mapping** | `m_404` and the DIN interface, which isn't bought |
 | **Compose-mode capture** | Needs the mode system working first |
-| **`gWaveform` display** | Blocked on whether Pd can emit an OSC blob — untested |
-| **Organelle as access point** | [plan-tests.md](plan-tests.md) Session 5 |
+| **nanoKONTROL scenes** | Four scenes exist but switch locally, so Pd is never told — hidden state. If they are ever used, assign **distinct CC numbers per scene** so Pd infers the active one from which CCs arrive |
+| **A pre-set checklist for the 404** | Its hidden menu state — ExtIn monitoring, bus assignments, input FX — is the remaining "wrong knob" risk in the rig |
 
 ---
 
 ## Risks
 
-**The audio topology is partly unproven.** The 404 has discrete L/R jacks, so two independent
-signals certainly leave it. What remains unverified is the **Organelle's** TRS input splitting
-into `adc~ 1` / `adc~ 2` (low risk, and partly testable with an ordinary mono cable — see
-[plan-tests.md](plan-tests.md) item 11) and, more importantly, **how the 404 routes external
-input internally**. That last one could still change the design and no cable will answer it.
-Phase 1 is built to surface all of it early.
+**The `m_` layer is the one boundary that is genuinely expensive to retrofit.** If `e_chop` ever
+learns that a nanoKONTROL exists, that is permanent.
 
-**Full-load power is untested.** Three controllers plus the wifi dongle have never run at once.
-It presents as intermittent MIDI dropouts, not an obvious failure — so if Phase 6 produces
-flaky Launchpad behaviour, suspect the hub before the code.
+**The display arbiter was the piece most likely to be wrong first time** — contention, TTL and
+rate limiting are easy to describe and fiddly to tune. Built early (Phase 3) precisely so there
+was time to live with it; now verified on hardware.
 
-**The display arbiter is the piece most likely to be wrong first time.** Contention, TTL and
-rate limiting are easy to describe and fiddly to tune. Build it early (Phase 3) precisely so
-there is time to live with it.
+**Timing is architectural.** Grain clocks must be audio-domain from the first line, and
+`u_tempo` must be a master reference *plus* an instantiable `c_clock`, not a singleton.
+Retrofitting either once Phases 6–8 depend on them is the expensive mistake this plan exists to
+avoid.

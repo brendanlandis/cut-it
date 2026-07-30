@@ -1,5 +1,5 @@
 #N canvas 20 20 1500 1120 12;
-#X text 20 20 phase3-diag -- load this ALONGSIDE mother.pd and main.pd to get a real console for the display arbiter. It does not touch the deployed patch and it draws nothing. See plan-conventions.md \, There IS a console., f 58;
+#X text 20 20 phase3-diag -- load this ALONGSIDE mother.pd and main.pd to get a real console for the display arbiter. It does not touch the deployed patch and it draws nothing. See ref-conventions.md \, There IS a console., f 58;
 #X text 20 110 IT COUNTS RATHER THAN DUMPS. The home frame is ten OSC messages at 10 Hz \; printing every one of them over SSH would slow down the thing being measured. FRAMES and MESSAGES are cumulative totals printed once a second \, so the per-second rate is the difference between consecutive lines -- FRAMES should climb by 10 and MESSAGES by about 100., f 58;
 #X obj 20 250 r disp;
 #X obj 20 290 print DISP;

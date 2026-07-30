@@ -17,6 +17,7 @@ wire format) and [ref-conventions.md](ref-conventions.md) (how the Pd is written
 | Channel | Plain English? | Verdict |
 |---|---|---|
 | **Organelle OLED** | ✅ yes | The primary performance surface. 128×64 graphics, not five text lines. |
+| **Organelle aux LED** | ❌ no | One RGB LED, **seven colours and off**. ✅ The only state display that isn't a screen — see *The aux button LED*. |
 | **Launchpad Pro MK3** | ❌ no | 96 RGB LEDs. Spatial state only — see *No text on the Launchpad*. |
 | **iPhone / PdParty** | ✅ yes | Unlimited size and colour, over WiFi. Development and diagnostics, **not** performance. |
 | **nanoKONTROL** | ❌ none | No host-controllable LEDs on the mk1. Confirmed in Kontrol Editor. ✅ |
@@ -149,6 +150,49 @@ trap 4 above. It is not an init-time concern and does not belong in `u_init`.
 - `gWaveform` and `gFrame` need OSC **blobs**, and whether Pd can produce one through `oscOut`
   is ⬜ **untested**. If it can, drawing the captured buffer becomes possible and choosing a
   playhead position in fresh audio stops being blind. Test before designing around it.
+
+---
+
+## The aux button LED — the only state display that isn't a screen
+
+The leftmost button on the front panel, and the one piece of visible state the OLED does not own.
+✅ **Read off the device** — `mother.pd`'s `pd LED` subpatch and the `mother` binary's symbol
+table — then swept by eye on the hardware.
+
+**`[s led]` takes one number, 0–7.** `mother.pd` applies `[% 8]`, so any float is legal and 8 wraps
+back to off. It reaches `SerialMCU::setLED(unsigned)`, i.e. the same front-panel microcontroller and
+the same serial link as the OLED.
+
+| `led` | Colour |
+|---|---|
+| 0 | off |
+| 1 | red |
+| 2 | yellow |
+| 3 | green |
+| 4 | light blue (cyan) |
+| 5 | dark blue |
+| 6 | pink (magenta) |
+| 7 | white |
+
+**Seven colours and off — this is a full RGB LED, not an indicator lamp.** ✅ Verified by sweeping all
+eight and reading the button.
+
+**`mother.pd` permutes the value on the way out**, and knowing why makes the table above make sense.
+It maps patch-facing `0…7` to hardware `0,4,5,1,3,2,6,7`, and the *hardware* value is a **3-bit RGB
+bitmask**: bit 0 = green, bit 1 = blue, bit 2 = red. So raw 1/2/4 are the primaries and 3/5/6/7 are
+their mixes. mother is reordering that bitmask into spectrum order so patch authors get
+`red → yellow → green → cyan → blue → magenta → white` instead of a bit pattern.
+
+**Design against the patch-facing numbers.** They are the sensible ordering, they are what `[s led]`
+takes, and they are stable. The bitmask is only interesting if you ever want to compose a colour from
+components — and that needs the raw path, which is `oscOut`, which belongs to `g_oled`.
+
+**mother already sets `led 0` on `quitting`**, so a safe exit needs no LED handling of its own. ✅
+
+⚠️ **There is an undocumented `/led/flash`** — `flashLED(OSCMessage&)` is in the `mother` binary, and
+`mother.pd` does not expose it at all. Reaching it means sending raw OSC to `oscOut`. **Deliberately
+unused:** only one abstraction may send on `oscOut`, so adopting flash would put a second writer on
+that name — the same trade the ALERT buffer lost below. Recorded so it isn't rediscovered as news.
 
 ---
 
@@ -316,7 +360,7 @@ print function.**
 | Layer | Pri | Raised by | Cleared by | Draws |
 |---|---|---|---|---|
 | `home` | 0 | always active | never | two meters, 8px readouts, gate marks, footer |
-| `param` | 1 | any unreserved `disp` selector | `[del 1200]` | an **MRU list of up to five**, newest first — see *Several at once* |
+| `param` | 1 | any unreserved `disp` selector | `[del 1200]` | **up to five rows that hold their positions** — see *Several at once* |
 | `modal` | 2 | `disp` → `modal <word>` | `modal-off`, or a 30 s safety TTL | word 16px + shrunk meters |
 | `alert` | 3 | `disp` → `alert …`, from `u_err` only | 2 s `warn`, 4 s `fail` | border, level 16px, source and text 8px |
 
@@ -352,8 +396,9 @@ With 18 continuous controls, moving two faders together is ordinary use, so the 
 
 **Rows are stable.** A control already on screen is updated **in place** — only its value changes —
 and a new one is appended below. A **sixth is refused** until a row frees up. ⚠️ An earlier version
-pushed the most-recently-moved to the front, which is what plan-v02.md asked for and was **wrong in
-the hand**: two faders moving together swapped places several times a second and were unreadable.
+pushed the most-recently-moved to the front, which is what the Phase 4 plan asked for and was
+**wrong in the hand** ([ref-build-log.md](ref-build-log.md)): two faders moving together swapped
+places several times a second and were unreadable.
 The cost of stability is honest — move nine faders and you see the five you touched first, not the
 five most recent — and it is the right trade, because a display you cannot read is worth nothing.
 

@@ -27,7 +27,8 @@ Two numbering schemes cover the whole rig. Learn these and everything else is de
 Pd namespaces each MIDI input device into its own block of 16 channels. Device *n* occupies
 channels `(n-1)*16+1` through `n*16`. `notein`'s right outlet and `ctlin`'s third outlet
 report the channel, so **the device a message came from is free information** — no merge box,
-no SysEx device IDs, no guessing.
+no SysEx device IDs, no guessing. **This file owns the addressing model**;
+[ref-hardware.md](ref-hardware.md) covers the physical side of the same arrangement.
 
 ✅ **"Device *n*" means Pd's INPUT SLOT, not the device's position in the system MIDI list.**
 Measured both ways: the nanoKONTROL showed as system device 1, then as device 2 once an audio
@@ -38,10 +39,8 @@ to fill slot 1; it does not change the channel. This is why `m_nano` takes the b
 argument, and why `main.pd` passes 17 while `main-dev.pd` passes 1.
 
 ✅ **`ctlin` fires channel, then controller, then value** — right to left, and *measured* rather
-than assumed, because this repo has been bitten here before by `polytouchin`. Proof: `pack` is
-triggered by the value, and the very first event of a session already carries the correct
-controller and channel, which cannot happen unless both were stored first. Cold stores behind
-`ctlin` are therefore safe.
+than assumed, because this repo has been bitten here before by `polytouchin`. **Cold stores behind
+`ctlin` are therefore safe.** The evidence is [plan-tests.md](plan-tests.md) item 23.
 
 | Pd device | Hardware | Channel block | Device's own ch. 1 lands on | |
 |---|---|---|---|---|
@@ -302,57 +301,44 @@ Four scenes, switched locally by the SCENE button. **This is hidden state** — 
 switches and Pd is not told. If scenes are ever used, assign **distinct CC numbers per scene**
 so Pd infers the active scene from which CCs arrive. Currently only scene 1 is configured. ⬜
 
-### Transport buttons ✅ reassigned, and now ordinary CC
+### Transport buttons — reassigned, and ordinary CC ✅
 
-⚠️ **They are no longer a mode control.** Phase 4 briefly made LOOP toggle `mode` and PLAY/STOP
-drive the clock; playing with it settled that the row is better spent on **scene selection**, so
-all six now get ordinary momentary-CC treatment — `xport-1`…`xport-6` on press, no toggle, no
-transport meaning. The CC numbers and channel below are unchanged and still correct; only what Pd
-does with them changed. Reason 4 in the list further down — that a separate channel isolates mode
-changes — no longer applies, and `m_nano` decodes both channels through one path because CC 41–46
-give `div 10` = 4, folding the row in as a fifth control kind.
-
-### Why they were moved there in the first place ✅ verified
-
-Six buttons, reassigned in physical reading order and **verified on the wire**:
+Six buttons moved off their factory assignment, in physical reading order, **verified on the wire**:
 
 | Position | Label | CC |
 |---|---|---|
 | 1st–6th | REW · PLAY · FF · LOOP · STOP · REC | **41 · 42 · 43 · 44 · 45 · 46** |
 
-All six: Assign Type **Control Change**, Button Behavior **Momentary**, Transport MIDI Channel
-**2** → arriving as **Pd channel 18**. The control groups stay on the nano's channel 1 → Pd
-channel 17. Korg's manual lists the buttons in that order, suggesting a 3×2 block — worth
-confirming against the panel if the scene is ever rebuilt.
+All six: Assign Type **Control Change**, Button Behavior **Momentary**, Transport MIDI Channel **2**
+→ arriving as **Pd channel 18**. The control groups stay on the nano's channel 1 → Pd channel 17.
 
-**Why they were moved.** Four reasons, kept because they are the argument for not undoing it:
+**They carry no transport meaning.** `m_nano` treats all six as ordinary momentary buttons —
+`xport-1`…`xport-6` on press, no toggle — because the row is earmarked for **scene selection**, which
+makes "play" and "loop" lies. Named by physical position, like every other control on the surface.
+The reassignment was decided by playing with it; the reasoning is in
+[ref-build-log.md](ref-build-log.md).
 
-1. **The factory assignment might have been MMC, and MMC is SysEx.** Reading it needs
-   `[sysexin]` plus a byte-matching state machine, where `[ctlin]` hands you value, controller
-   and channel already split. One control needing a SysEx parser is a wart on the most
-   important control in the instrument.
-2. **MMC has no release event** — Korg's manual is explicit that Button Behavior is unavailable
-   when Assign Type is MMC. The whole nano configuration rests on *momentary only, Pd owns all
-   state*, precisely because the mk1 has no host LEDs and device-side state silently desyncs.
-3. **The existing decode idiom extends for free**: `div 10` = 4 means transport, `mod 10` says
-   which button.
-4. **Its own channel means `[route 18]` isolates every mode change** before any CC decoding, so
-   a mode switch can never be confused with a performance control even if the CC map is revised
-   later. It costs nothing — channel 18 is already inside device 2's block.
+**One consequence for the decode:** since CC 41–46 give `div 10` = 4, `m_nano` folds the row in as a
+**fifth control kind** and reads both channels through one path. So a separate channel no longer
+isolates anything — it is inherited configuration, harmless, and not worth reflashing the device to
+undo.
 
-**The factory assignment was never captured** ⬜ — the buttons were reconfigured before anything
-read what they shipped with, so whether they defaulted to MMC or CC is unknowable without a
-factory reset. Reason 1 stayed a risk rather than a finding; don't read it as evidence about
-the default.
+**Why they were moved off the factory map at all.** Two reasons that still hold:
 
-**The CC numbers collide numerically with the Volca FM's parameter CCs (40–50).** Harmless: the
-Volca is device 4 on channel 49+, the nano is device 2, and Pd separates by channel long before
-a CC number is examined.
+1. **The factory assignment might have been MMC, and MMC is SysEx.** Reading it needs `[sysexin]`
+   plus a byte-matching state machine, where `[ctlin]` hands you value, controller and channel
+   already split.
+2. **MMC has no release event** — Korg's manual is explicit that Button Behavior is unavailable when
+   Assign Type is MMC. The whole nano configuration rests on *momentary only, Pd owns all state*,
+   because the mk1 has no host LEDs and device-side state silently desyncs.
 
-**Honour STOP and PLAY.** Six buttons is more than a compose/perform toggle needs, but they
-have an obvious meaning that a performer's hands will assume under pressure — spending them on
-arbitrary modes is a trap. Suggested split, a UX decision rather than a MIDI one: **PLAY/STOP**
-drive the clock, **REC** arms capture, **LOOP/REW/FF** select mode.
+⬜ **The factory assignment was never captured** — the buttons were reconfigured before anything read
+what they shipped with, so whether they defaulted to MMC or CC is unknowable without a factory reset.
+Reason 1 stayed a risk rather than a finding; don't read it as evidence about the default.
+
+**The CC numbers collide numerically with the Volca FM's parameter CCs (40–50).** Harmless: the Volca
+is device 4 on channel 49+, the nano is device 2, and Pd separates by channel long before a CC number
+is examined.
 
 Per-button, Korg Kontrol Editor exposes: 📄
 

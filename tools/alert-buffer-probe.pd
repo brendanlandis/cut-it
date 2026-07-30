@@ -1,5 +1,5 @@
 #N canvas 20 20 2520 1100 12;
-#X text 20 20 alert-buffer-probe -- answers the last unknown in plan-display.md: can a patch draw into the ALERT buffer (screen 4) and show it with setscreen? Only setscreen itself is documented \, from save-patch.sh. Drawing into buffer 4 and flipping it has never been tested., f 90;
+#X text 20 20 alert-buffer-probe -- ANSWERED \, and kept as the re-check. A patch CAN draw into the ALERT buffer (screen 4) \, gFlip it \, and switch to it and back with setscreen. All of it works. g_oled still draws everything to screen 3 anyway -- see ref-display.md for why writable is not the same as safe., f 90;
 #X text 20 110 Load it as a third patch after mother.pd and main.pd. It leaves the running patch alone: g_oled keeps drawing to screen 3 throughout \, and this only changes which buffer is SHOWN., f 90;
 #X obj 20 210 loadbang;
 #X obj 20 260 del 4000;
@@ -14,7 +14,7 @@
 #X obj 1400 710 print PROBE;
 #X msg 620 760 sendtyped /oled/setscreen i 3;
 #X obj 620 800 s oscOut;
-#X text 20 870 WHAT THE RESULT MEANS. If BUFFER-4 appears for six seconds and then the meters come back \, buffer 4 works -- and g_oled's alert layer could move there \, dropping from about 70 messages a second while an alert is up to five per alert. If the screen goes blank or never changes \, the inference was wrong and drawing alerts on screen 3 was the right call. Either way record it in plan-display.md: it is the last unknown in the OLED section., f 90;
+#X text 20 870 WHAT IT SHOWED. BUFFER-4 appeared for six seconds and the live meters came back after it \, so writing \, flipping and switching an off-screen buffer all work. The alert layer did NOT move there. There was nothing to optimise -- g_oled rebuilds screen 3 from state ten times a second \, so nothing underneath needs preserving -- and switching is edge-triggered where every layer is state-driven \, so one lost setscreen strands the display on a device with no console. A dropped frame today self-corrects in 100 ms., f 90;
 #X connect 2 0 3 0;
 #X connect 3 0 4 0;
 #X connect 4 2 5 0;

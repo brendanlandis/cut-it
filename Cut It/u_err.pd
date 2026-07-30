@@ -2,7 +2,7 @@
 #X text 20 20 u_err -- the error bus. Any abstraction reports a problem with [s err] and a message box: <level> <source> <text> \, where level is warn or fail. u_err decides what reaches the screen \; g_oled decides what it looks like., f 58;
 #X text 20 110 creation args: none. inlets: none. outlets: none., f 58;
 #X declare -path ../mac-stubs;
-#X text 20 150 U_ERR DOES NOT DRAW. plan-conventions.md allows exactly one abstraction to send on oscOut \, and that is g_oled \, so this forwards onto disp as alert <level> <source> <text> instead. plan-v02.md says u_err draws to the ALERT buffer \; where the two disagree the convention wins -- two writers \, one screen., f 58;
+#X text 20 150 U_ERR DOES NOT DRAW. ref-conventions.md allows exactly one abstraction to send on oscOut \, and that is g_oled \, so this forwards onto disp as alert <level> <source> <text> instead. plan-v02.md says u_err draws to the ALERT buffer \; where the two disagree the convention wins -- two writers \, one screen., f 58;
 #X obj 20 300 r err;
 #X obj 20 340 t a a a;
 #X obj 20 400 route warn fail;
@@ -22,7 +22,7 @@
 #X msg 700 270 1;
 #X msg 800 270 0;
 #X obj 700 320 s \$0-verbose;
-#X text 20 700 THE BUS IS UNFILTERED \; ONLY THE SCREEN IS FILTERED. The print fires on every error whatever the mode \, so the by-hand SSH console in plan-conventions.md sees everything even when the OLED is deliberately showing nothing., f 46;
+#X text 20 700 THE BUS IS UNFILTERED \; ONLY THE SCREEN IS FILTERED. The print fires on every error whatever the mode \, so the by-hand SSH console in ref-conventions.md sees everything even when the OLED is deliberately showing nothing., f 46;
 #X text 20 820 route \, not select. mode arrives as a bare selector -- compose \, not symbol compose -- and select has no method for that. Same underlying fact as the list trim trap: Pd distinguishes a message's selector from its arguments., f 46;
 #X text 20 940 A level that is neither warn nor fail falls out of the reject outlet and is printed rather than displayed. Swallowing it silently would be the exact failure this file exists to prevent., f 46;
 #X text 480 700 DEFAULTS TO VERBOSE. Nothing drives mode until Phase 4 \, and while developing \, seeing every warning is the useful default. It degrades safely -- the worst case is an error you did not need., f 46;

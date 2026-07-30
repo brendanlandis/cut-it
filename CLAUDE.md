@@ -69,8 +69,10 @@ mac-stubs/           stand-ins for device-only externals, for the local syntax c
 deploy.sh            check → scp → reload → load, in one command (there is no rsync on the device)
 tools/fetch-errors.sh  pulls the error log back off the device and summarises it
 tools/               diagnostic patches, plus pd-layout-check.py
-plan-v02.md          the build plan — phases in order, and EVERY open question in the project
+plan-v02.md          the build plan — the phases still to come, and EVERY open question
 plan-tests.md        ordered hardware checks, with results
+plan-phase5-brief.md transient — the onboarding brief for whoever builds Phase 5. Delete on landing
+ref-build-log.md     Phases 0-4 as built: outcomes, and every correction they produced
 ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow
 ref-hardware.md      the rig and the device — wiring, power, SSH, paths, how Pd launches
 ref-software.md      how the instrument works — architecture, timing model, decisions
@@ -89,6 +91,12 @@ plans. **Every unresolved question, recommendation and purchase lives in
 [plan-v02.md](plan-v02.md)** (or [plan-tests.md](plan-tests.md), for hardware checks). Keep it
 that way when editing: if you find yourself writing "we should…" in a `ref-` doc, it belongs in
 a `plan-` doc.
+
+**Finished work moves to [ref-build-log.md](ref-build-log.md)** rather than staying in the plan as
+a plan. That file is a `ref-` because completed corrections are facts. When a phase lands, its
+section leaves `plan-v02.md`; **superseded designs get replaced, not annotated.** Phase 4 changed
+its own design twice and recorded both reversals beside the text they overruled, which left the
+plan holding the current design and two dead ones at once.
 
 Links to paths containing spaces use the angle-bracket form:
 `[README.md](<! v0.1 plans/README.md>)`.

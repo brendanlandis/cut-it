@@ -49,10 +49,11 @@ Everything is USB. The Organelle is a USB host; all four devices are class compl
                                                      └───────────────┘
 ```
 
-**Why no MIDI merge box.** Pd namespaces multiple MIDI input devices by channel: device 1
-gets channels 1–16, device 2 gets 17–32, and so on. `notein`'s right outlet and `ctlin`'s
-channel outlet tell you which device a message came from, for free. A merge box would
-flatten everything into one stream and throw that away.
+**Why no MIDI merge box.** Pd namespaces each input device into its own block of 16 channels, so
+which device a message came from is free information. A merge box would flatten everything into one
+stream and throw that away. **The addressing model, and the trap that "device *n*" means Pd's input
+slot rather than the system MIDI list, are in [ref-midi.md](ref-midi.md)** — that file owns the wire
+format; this one owns the boxes and cables.
 
 `MAXMIDIINDEV` is 16 in Pd (verified in both 0.49 and 0.53 source), so four devices is
 nowhere near the limit.
@@ -339,21 +340,20 @@ brand here, so the usual reason to avoid absolute controllers mostly does not ap
 **No host-controllable LEDs.** External LED mode is a nanoKONTROL2-only feature; on the mk1
 the button LEDs reflect local state only and Pd cannot drive them.
 
-**Therefore: set every button to momentary** in Korg Kontrol Editor, and let Pd own all
-toggle state, displayed on the Launchpad. A toggle button with no host LED control keeps its
-own state, and that state can silently desync from Pd's — exactly the invisible-failure mode
-the FX-send routing was rejected over. Momentary buttons are pure events with no state to
-desync.
+**Therefore: every button is momentary**, and Pd owns all toggle state. A toggle button with no host
+LED control keeps its own state, and that state can silently desync from Pd's — exactly the
+invisible-failure mode the FX-send routing was rejected over. Momentary buttons are pure events with
+nothing to desync. **This is the reason the device is configured the way it is**, which is why it is
+here rather than in [ref-midi.md](ref-midi.md) — that file has the CC map, the transport
+reassignment and the Kontrol Editor settings.
 
 **On the four scenes:** useful for multiplying control count, but they are hidden state — the
 device switches locally and Pd has no idea. Assign **distinct CC numbers per scene** so Pd
 infers the active scene from which CCs arrive. Do that and scene switching self-announces;
 don't, and it is the unlabelled-knob problem in a worse form.
 
-**Configured and verified on hardware**, with Korg Kontrol Editor **2.4.0** — 2.5.0 dropped
-first-generation nanoKONTROL support. Arrives on **Pd channel 17** (device 2), transport on 18.
-The CC map and decode idiom are in [ref-midi.md](ref-midi.md); the scene file is backed up in
-[device/](device/).
+✅ Configured and verified on hardware. Arrives on **Pd channel 17**, transport on 18. The scene
+file — device-resident state that a factory reset wipes — is backed up in [device/](device/).
 
 ### BeatStep retired
 

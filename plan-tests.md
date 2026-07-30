@@ -10,6 +10,11 @@ matters.
 **Status:** Sessions 2, 3b, 3c, 4, 4b and 4c complete. Session 1 done bar the full-load power check.
 Session 3 blocked on the TRS Y-cable; Session 5 not attempted.
 
+⚠️ **Item numbers are unique across the whole file and other documents cite them by bare number**
+("item 21c", "item 31"). Sessions 4 and 5 were renumbered to 40–42 and 43–46 to remove a collision
+with Session 3c's 15–22; items 11, 21, 21c, 23 and 31 were left alone because they are cited
+elsewhere. **Never reuse a number** — add at the end, or suffix (`21b`, `21c`).
+
 **The two tests that could have forced a redesign have both passed:** Pd can drive the
 Launchpad's Programmer Mode over SysEx (LEDs, velocity, polyphonic aftertouch), and Pd's
 per-device channel offsets work with multiple controllers at once. What remains is
@@ -218,9 +223,9 @@ No hardware needed, and it is repeatable in seconds — the pattern is worth reu
 
 ## Session 4 — nanoKONTROL
 
-- [x] **14. Plug it in and print the CCs.** ✅ Class compliant, enumerates as ALSA card 4,
+- [x] **40. Plug it in and print the CCs.** ✅ Class compliant, enumerates as ALSA card 4,
       arrives on Pd channel 17.
-- [x] **15. Korg Kontrol Editor — runs, and the nano is configured.** ✅ **Use version 2.4.0**,
+- [x] **41. Korg Kontrol Editor — runs, and the nano is configured.** ✅ **Use version 2.4.0**,
       not the current release: Korg's 2.5.0 removed support for the first-generation
       nanoKONTROL, and 2.4.0 is the last version that sees it. It runs on macOS 26; get it from
       the *"previous versions"* section of the
@@ -230,10 +235,15 @@ No hardware needed, and it is repeatable in seconds — the pattern is worth reu
       The full CC map is written to the device and catalogued in [ref-midi.md](ref-midi.md).
       All buttons are **momentary**, so Pd owns all toggle state, and **no LED Mode setting
       exists** on the mk1 — all visible state must live on the Launchpad.
-- [x] **16. Transport buttons reassigned as the master mode control.** ✅ Six buttons moved to
+- [x] **42. Transport buttons reassigned off the factory map.** ✅ Six buttons moved to
       **CC 41–46**, in physical order, on the nano's **channel 2** — arriving as **Pd channel
-      18** while the control groups stay on 17, so a single `[route 18]` isolates every mode
-      change before any CC decoding.
+      18** while the control groups stay on 17.
+
+      ⚠️ **They were reassigned as a mode control and are no longer used that way.** Phase 4 settled
+      that the row is better spent on scene selection, so all six now get ordinary momentary-CC
+      treatment and `m_nano` reads both channels through one path. The CC numbers and the channel
+      below are unchanged and still correct — see item 38b and
+      [ref-build-log.md](ref-build-log.md).
 
       **Verified by decoding the raw stream off the wire**, not just trusting the editor: all
       six in order with no gaps, momentary 127/0 throughout, control groups on 17, full 0–127
@@ -282,7 +292,7 @@ seconds — the pattern Session 3c established.
       the check quits at load and never sees it, while the by-hand SSH console — the only place
       it is useful — still gets it. **Any new `[print]` in a deployed abstraction needs the same
       treatment.**
-- [x] **27. The `text` objects the MRU display and the error log depend on.** ✅ All ten `text`
+- [x] **27. The `text` objects the multi-parameter display and the error log depend on.** ✅ All ten `text`
       methods are present in the local Pd 0.49-1 binary, and three behaviours were measured
       rather than assumed:
 
@@ -342,7 +352,7 @@ seconds — the pattern Session 3c established.
       The control side was already correct because its reject goes through `[t b b b]` first.
       **The lesson generalises: a reject outlet carries a value, not a bang, and any `[f]` behind
       one needs a trigger in front of it.**
-- [x] **32. `text get`'s field semantics — the one that shapes the MRU display.** ✅ Measured:
+- [x] **32. `text get`'s field semantics — the one that shapes the multi-parameter display.** ✅ Measured:
 
       | Form | Behaviour |
       |---|---|
@@ -351,7 +361,7 @@ seconds — the pattern Session 3c established.
       | `text get <name> 1 3` on a line with only 2 fields | ⚠️ **`error: text get: field request (1 3) out of range`**, and it prints |
 
       **So the display cannot use a fixed field request**, because a parameter with no unit has one
-      field fewer than one with a unit. The MRU draw path fetches the whole line and strips the
+      field fewer than one with a unit. The draw path fetches the whole line and strips the
       frame stamp with `[list split 1]` instead — always safe here, since every stored line has at
       least three atoms and `list split` only fails to fire its right outlet when the list is
       *exactly* the split length.
@@ -399,15 +409,23 @@ the on-device controller sweep is still outstanding; everything that does not ne
       fact killed. Fixed with `pgrep -nx pd`. Verified: `pgrep pd` → `48`, `pgrep -x pd` → empty.
 - [x] **37. The deployed patch is healthy with the rewritten display.** ✅ **117 UDP
       datagrams/second** at **5.3 % CPU**, load 0.31, socket established to `127.0.0.1:4001` — in
-      line with the 110/s item 21 measured for the home frame, so the MRU rewrite costs nothing
+      line with the 110/s item 21 measured for the home frame, so the display rewrite costs nothing
       noticeable and the real `packOSC` still accepts every typetag the runtime builder produces.
 
 ### Still outstanding on hardware
 
-- [ ] **38. The nanoKONTROL sweep on the device**, where it is Pd input slot 2 and the channel is
-      **17**. `wire.sh` has connected it since Phase 2, so if it is silent check `aconnect -l`
-      before suspecting the patch. Steps 15–17 of `tools/phase4-bench.pd` are written for exactly
-      this.
+- [x] **38. The nanoKONTROL on the device**, where it is Pd input slot 2 and the channel is **17**.
+      ✅ **The transport row was read on the hardware and is correct** — pressing a transport key
+      displays its own name and a `1`, exactly like every other button, with no toggle and no footer
+      change. That is the change Phase 4 finished on, and it works through the real `[ctlin]` at
+      channel 17.
+
+      ⬜ **The remaining 36 controls have not been swept on the device.** Low risk rather than
+      untested: all 21 decode branches were verified exhaustively off-device with a `[ctlin]`
+      stand-in (item 31), and the only thing the device adds is the channel offset, which the
+      transport keys just exercised. Steps 15–17 of `tools/phase4-bench.pd` remain written for it —
+      worth doing opportunistically, not worth blocking on. If a control is silent, check
+      `aconnect -l` before suspecting the patch.
 - [x] **38b. Everything re-run after the two changes from reading it on hardware.** ✅ The
       transport row folded into the ordinary button path, and the display switched from
       most-recently-used ordering to rows that hold their positions:
@@ -436,7 +454,45 @@ the on-device controller sweep is still outstanding; everything that does not ne
       before the flush metro fires.)*
 - [ ] **39. The OLED read by eye** — the three type-size layouts and the ageing. The geometry is
       verified through `oscOut` on the Mac, but "is 16px actually readable at arm's length" is a
-      judgement only the hardware can settle.
+      judgement only the hardware can settle. The one-mover 24px layout has now been read on the
+      device incidentally, via item 38's transport presses; the 2-mover and 3–5-mover layouts have
+      not.
+
+---
+
+## Session 4d — the aux button LED ✅ PASSED
+
+Run for Phase 5, which needed a transport indicator. **The answer was better than expected.**
+
+- [x] **47. What `[s led]` accepts, and what the eight states look like.** ✅ Read off the device,
+      then swept by eye:
+
+      | Finding | |
+      |---|---|
+      | `[s led]` takes one number; `mother.pd` applies `[% 8]` | eight states, any float legal |
+      | It reaches `SerialMCU::setLED(unsigned)` — the front-panel MCU, same serial link as the OLED | ✅ |
+      | Patch-facing 0–7 → **off, red, yellow, green, cyan, dark blue, pink, white** | ✅ by eye |
+      | `mother.pd` **permutes** patch-facing → hardware: `0,4,5,1,3,2,6,7` | ✅ |
+      | The hardware value is a **3-bit RGB bitmask** — bit 0 green, bit 1 blue, bit 2 red | ✅ derived and consistent with all eight readings |
+      | mother sets **`led 0` on `quitting`** already | ✅ safe exit needs nothing |
+      | An undocumented **`/led/flash`** exists in the binary and is **not** exposed through `mother.pd` | ✅ |
+
+      **So the Organelle has a full RGB LED, not an indicator lamp** — seven colours plus off, and the
+      only state display in the rig that is not a screen. Recorded in
+      [ref-display.md](ref-display.md).
+
+      The permutation is the interesting part: mother is reordering an RGB bitmask into spectrum order
+      so patch authors get `red → yellow → green → cyan → blue → magenta → white` rather than a bit
+      pattern. **Design against the patch-facing numbers**; the bitmask only matters if you ever want
+      to compose a colour from components, and that needs the raw `oscOut` path.
+
+      Re-run the sweep with:
+
+      ```sh
+      ssh root@organelle.local 'for r in 0 4 5 1 3 2 6 7; do
+        oscsend localhost 4001 /led i $r; echo "raw $r"; sleep 5; done
+        oscsend localhost 4001 /led i 0'
+      ```
 
 ### The procedure, in order
 
@@ -494,12 +550,12 @@ metre away removes the venue from the equation entirely.
 reports **AP** among supported interface modes. ✅ The dongle is a Ralink RT5370, a
 well-supported hostapd chipset.
 
-- [ ] **17. Bring up an AP on `wlan0` and join it from the iPhone.** Confirm the phone gets an
+- [ ] **43. Bring up an AP on `wlan0` and join it from the iPhone.** Confirm the phone gets an
       address from `dnsmasq` and the status display still updates.
-- [ ] **18. Check it in airplane mode** — cellular off, wifi manually re-enabled.
-- [ ] **19. Judge the link quality.** Watch the heartbeat for gaps over a few minutes. This is
+- [ ] **44. Check it in airplane mode** — cellular off, wifi manually re-enabled.
+- [ ] **45. Judge the link quality.** Watch the heartbeat for gaps over a few minutes. This is
       the actual question: is it steady enough to trust mid-set?
-- [ ] **20. Decide whether it survives a reboot** — and whether you *want* it to. Persisting it
+- [ ] **46. Decide whether it survives a reboot** — and whether you *want* it to. Persisting it
       means the Organelle no longer joins the house network, which costs the `scp`/`ssh`
       workflow.
 
@@ -542,8 +598,10 @@ Not unimportant — just not blocking UI/UX decisions.
    dongle at once, because of the cable shortage.
 3. **Session 5** — Organelle as an access point. Doesn't block the v0.2 build; does block
    trusting the phone display on stage.
+4. **Items 38 and 39** — the rest of the nano sweep and the OLED type sizes read by eye. Both are
+   opportunistic; neither blocks Phase 5.
 
-Everything else in Sessions 1, 2 and 4 has passed. The full MIDI picture — every message each
+Everything else in Sessions 1, 2, 4 and 4d has passed. The full MIDI picture — every message each
 device accepts and transmits — is catalogued in [ref-midi.md](ref-midi.md), which also
 carries the remaining message-level unknowns, chief among them the **SP-404 pad note range**
 (verified 47+*n* here, but Roland's chart says 35–51 — sweep all 16 pads before writing

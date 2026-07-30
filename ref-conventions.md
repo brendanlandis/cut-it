@@ -21,7 +21,7 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `err` `disp`, plus mother's own | [→](#the-global-name-allowlist) |
 | **`[trigger]` on every fan-out**, even when the current order happens to work | [→](#trigger-on-every-fan-out) |
 | **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out | [→](#audio-io--never-adc-never-dac) |
-| **Only `g_oled` sends on `oscOut` / `screenLine*`.** Everything else asks via `disp` | [→](#the-display-bus-and-who-owns-the-screen) |
+| **One owner per display surface** — `oscOut` / `screenLine*` are `g_oled`'s, `led` is its own. Everything else asks via `disp` | [→](#the-display-bus-and-who-owns-the-screen) |
 | **Finish assembled messages with `[list trim]`**, and `[list append]` after a `route` | [→](#three-traps-around-route-every-one-silent) |
 | **Clear optional fields on every message** — `[list split n]` on exactly *n* atoms never fires | [→](#three-traps-around-route-every-one-silent) |
 | **Grain timing is audio-domain** — `phasor~` and `vline~`, never `metro` / `line~` | [→](#timing-and-the-two-domains) |
@@ -129,13 +129,24 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 
 | Name | Carries | Source |
 |---|---|---|
-| `mode` | compose / perform, and sub-mode | nano transport, Pd ch 18 |
-| `tempo` | **master reference** BPM, as a float | `u_tempo` |
+| `mode` | compose / perform, and sub-mode | any. ⬜ **Nothing drives it yet** |
+| `tempo` | **master reference** BPM, as a float | any → `u_tempo` |
 | `clock` | **master reference** beat bang | `u_tempo` |
-| `start` / `stop` | transport | nano transport |
+| `start` / `stop` | transport | any → `u_tempo` |
 | `panic` | all-notes-off, clear all state | any |
 | `err` | `<level> <source> <text>`, level ∈ `warn` `fail` | any → `u_err` |
 | `disp` | display requests: `<name> <value> [unit]` | any → `g_oled` |
+
+**Three of these are request buses, not publications.** `tempo`, `start`/`stop` and `mode` are
+written by whoever has something to say and *consumed* by one owner, exactly as `err` and `disp`
+are — so the Source column names the consumer. `u_tempo` owns the BPM value and the transport
+state; it does not own the right to change them. **`clock` is the exception**: only `u_tempo`
+writes it, because it is a publication of something already decided.
+
+⚠️ **Nothing has driven `mode` since Phase 4.** The nano's LOOP key was briefly a mode toggle and
+the transport row is now ordinary CC, so the bus exists with no writer. It degrades safely —
+`u_err` defaults to verbose — and finding it a home is tracked in
+[plan-v02.md](plan-v02.md).
 
 **`tempo` and `clock` are the master reference, not "the clock".** See *Poly-tempo* below —
 this distinction is load-bearing and easy to lose.
@@ -296,8 +307,13 @@ info bar is turned off anyway.
 **Exactly one abstraction may send on `oscOut` and `screenLine1`–`5`.** ✅ That is `g_oled`.
 Everything else asks for a display by sending to `disp` and does not know or care how it is
 drawn — **including `u_err`, which filters and forwards onto `disp` rather than drawing.**
-[plan-v02.md](plan-v02.md) originally had `u_err` writing to the ALERT buffer itself; where the
-two disagreed, this rule won. Two writers, one screen.
+The Phase 4 plan originally had `u_err` writing to the ALERT buffer itself; where the two
+disagreed, this rule won ([ref-build-log.md](ref-build-log.md)). Two writers, one screen.
+
+**The same rule covers the aux button LED.** It is a display surface, so it gets one owner and
+callers send semantics rather than a colour — see [ref-display.md](ref-display.md) for what the
+eight states look like. `led` is `mother.pd`'s own name and is reserved below; the point here is
+that exactly one abstraction may write it.
 
 **The `disp` message is `<name> <value> [unit]`, with the name as the *selector*.**
 
@@ -552,7 +568,7 @@ effort. Don't tidy and change behaviour in the same commit.
 | **`[value]` / `[v]` for anything but the allowlist** | Global mutable state |
 | **Copying a subpatch to reuse it** | Two codebases, silent divergence |
 | **`adc~` / `dac~` in a deployed patch** | `mother.pd` owns the sound card; `dac~` bypasses the volume knob and the limiter — see *Audio I/O* |
-| **`oscOut` / `screenLine*` outside the display abstraction** | Two writers, one screen |
+| **`oscOut` / `screenLine*` / `led` outside their display abstraction** | Two writers, one surface |
 | **Saving from plugdata** | Corrupts the file format for Pd 0.49 — see [CLAUDE.md](CLAUDE.md) |
 | **Objects newer than Pd 0.49** | The device can never be upgraded — see [CLAUDE.md](CLAUDE.md) |
 

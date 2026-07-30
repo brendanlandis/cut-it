@@ -217,18 +217,179 @@ mid-set is the worse failure. **The bus is unfiltered; only the screen is filter
 by-hand console sees warnings even in perform mode. This does not catch Pd's *own* runtime
 errors — those still go to tty1.
 
-### Phase 4 — nanoKONTROL
+### Phase 4 — nanoKONTROL, a persistent error log, and a multi-parameter display
 
-`m_nano`
+`m_nano`, `u_err`'s log, `g_oled`'s param layer
 
-The simplest controller: CC only, no LEDs, no SysEx. Pd channel 17 for controls, **channel 18
-for transport**, so `[route 18]` separates mode changes before any CC decoding.
+**This is the first phase where a physical device can misbehave while nobody is watching**, and
+that reframes it into three pieces of work. The order is fixed: step 0 exists so that steps 1
+and 2 are debuggable.
 
-Decode with `[div 10]` / `[mod 10]`. Emits named parameters onto `disp` and mode changes onto
-`mode`. Knows nothing about what it controls.
+0. **Errors must survive.** `u_err` prints every error unconditionally, but the menu-launched
+   patch sends stdout to tty1 — so in normal operation an error draws on the OLED for 2–4 s and
+   is then gone forever. Tolerable when the only inputs were four knobs you were holding; not
+   tolerable once a surface with 42 controls is attached.
+1. **`m_nano`** — the mapping layer. CC only, no LEDs, no SysEx.
+2. **The display must show more than one thing at once.** With 18 continuous controls, moving two
+   faders together is ordinary use, and today's param layer holds exactly one name and value, so
+   two movers alternate at the 10 Hz frame rate.
 
-**Done when:** every slider, knob and button is identified and displayed by name, and the
-transport buttons change `mode` visibly.
+**Done when:** every slider, knob and button is identified by name on the OLED, the transport
+buttons change `mode` visibly, several controls can be read at once, and an error raised while
+playing can be read off the Mac the next day.
+
+#### Develop against the real nanoKONTROL, plugged into the Mac
+
+It is USB class-compliant and needs no driver, so the real `[ctlin]`, the real CC numbers and
+real momentary behaviour are all exercised off-device. Nothing is faked, which is what avoids
+needing a new global bus — the dev panel is a *sibling* of `u_root` and could only reach inside it
+through a global name, so the allowlist in [ref-conventions.md](ref-conventions.md) stays
+untouched.
+
+The catch, and the design consequence: **Pd numbers MIDI channels by device slot.** ✅ Measured
+with `pd -listdev` — on the Mac the nano is input device **1** and the only one, so it lands on
+**channel 1**; on the Organelle it is device 2, so **channel 17**. The channel block therefore
+becomes a creation argument, and this is the one place the two entry points are allowed to
+differ:
+
+```
+main.pd       [u_root 17]      nano is Pd device 2 on the Organelle
+main-dev.pd   [u_root 1]       nano is Pd device 1 on the Mac
+u_root.pd     [m_nano $1]
+```
+
+One argument, because "the nano occupies a block of two channels" is a fact about the nano and
+belongs inside `m_nano`. Creation arguments are static, so `[ctlin $1+1]` is impossible — but no
+`loadbang` arithmetic is needed either, since `[- $1]` *is* a legal creation argument:
+
+```
+[ctlin]  channel outlet → [- $1] → [select 0 1] → controls / transport / another device
+```
+
+⬜ **This Mac's Pd has no MIDI input device saved in its preferences**, so `[ctlin]` receives
+nothing until Media → MIDI Settings selects the nano once. A setup step, not a code change — but
+it looks exactly like a broken patch.
+
+#### Step 0 — errors survive the session
+
+`u_err` gains a `[pd logfile]`: every error appends `<ms> <level> <source> <text>` to a
+`[text define]`, unconditionally, with `ms` from a `[timer]` started at load. The **write** is
+rate-limited by a dirty flag plus `[metro 2000]` — the same hold-state-flush-on-a-clock pattern
+as the display, and for the same reason — and bounded to ~200 lines, since `[text write]`
+rewrites the whole file. It targets **`/sdcard/cut-it-err.cur`**, this session only. `/sdcard` is
+writable with no remount and survives reboot; `/tmp` is wiped.
+
+Cross-session durability is a **second file and one shell call at load**. `[text write]` rewrites
+the whole file, so on its own the next patch load would destroy the previous session's log —
+which is the wrong property when debugging across many reloads. So `u_err`'s `loadbang` fires
+`sh logroll.sh` into the `[shell]` `u_init` already uses, and the script appends the previous
+`.cur` onto a durable `/sdcard/cut-it-err.log` behind a `date`-stamped `BOOT` separator, empties
+`.cur`, and trims the durable file.
+
+Three properties that matter:
+
+- **One fork per patch load, never per error.** Nothing shells out during a performance.
+- **A real wall clock without depending on `[shell]`'s return path**, because `date` runs inside
+  the script. Pd 0.49 vanilla has no wall clock of its own.
+- **`deploy.sh`'s gate stays clean.** The syntax check quits at load, before the metro fires, and
+  `[shell]` resolves to `mac-stubs/shell.pd`, which swallows the message. No output, no
+  per-platform path, no second creation argument.
+
+`tools/fetch-errors.sh` pulls **both** files — reading both is what makes a fetch correct even
+before a roll has happened — prints a summary of counts by level and source before the detail,
+newest session first, reports whether `pd` is running and its uptime, and md5-compares the
+deployed files against the repo, because an error from a build you no longer have is a trap.
+`--follow` tails; `--clear` truncates after reading.
+
+**Scope limit, stated honestly:** this captures errors the *patch raises*. Pd's own runtime
+errors still go to tty1 and no vanilla 0.49 object can intercept them. The by-hand SSH console
+remains the tool for those.
+
+#### Step 1 — `m_nano`
+
+Route the transport channel **first**, before any CC decoding, so a mode change can never be
+confused with a performance control even if the CC map is later revised. Then the `div 10` /
+`mod 10` idiom that already covers the Launchpad grid — sliders, knobs and the two button rows
+are kinds 0–3, and transport needs no `div 10` at all, since its own channel plus `[- 40]` is
+direct. Full map in [ref-midi.md](ref-midi.md).
+
+`[ctlin]`'s outlets are value, controller, channel, and Pd fires **right to left** — so channel
+and controller land in cold stores and the value arrives last and drives the dispatch. That is
+convenient rather than lucky, but it is the same fact behind this repo's `polytouchin` bruise, so
+**print it before building the decode on top of it.**
+
+Names come from `[makefilename slider-%d]` and friends — **placeholders, deliberately.** There
+are no parameters to name yet; `e_chop` and the rest arrive in v0.3. Generated names are honest
+about that in a way a lookup table pretending to be a mapping would not be, and those four
+objects are the seam where v0.3 swaps in real names and where mode-dependent mapping will hang.
+
+| Control | Emits |
+|---|---|
+| Sliders, knobs | `disp` → `<name> <value>`, raw 0–127. Scaling belongs to whoever consumes it later |
+| Buttons | `disp` → `<name> 1` on press only. Momentary; Pd owns all toggle state |
+| PLAY / STOP | `[s start]` / `[s stop]` — allowlist buses, first consumed in Phase 5 — plus `disp` |
+| LOOP | toggles `mode` compose ↔ perform, and writes the mode to the footer |
+| REW / FF / REC | `disp` by name only, so they are visibly alive and visibly unassigned |
+| An unmapped CC in the block | `warn m_nano cc-<n>-unmapped` on `err`, so a surprise is visible rather than silent — and it exercises step 0 |
+
+⚠️ **`disp` parameter values must be floats.** `g_oled` sends them through `[makefilename %g]`,
+which refuses a symbol. So the mode cannot be a parameter: it goes to the **footer**, which is
+sticky and takes one symbol. That makes the footer shared between `u_init` and `m_nano` — fine,
+since `disp` is a bus and last-writer-wins is its documented model — but it means the `boot`
+selector is now misnamed. **It is renamed to `status`, in its own commit, separate from
+behaviour.**
+
+**LOOP toggling mode is an end-to-end test that already exists:** `u_err` consumes `mode`, so
+flipping to perform and raising a `warn` should draw nothing while a `fail` still draws.
+
+#### Step 2 — several controls at once
+
+The largest piece, and the one that touches a file verified on hardware. `g_oled`'s param layer
+stops being one name/value/unit and becomes a **most-recently-used list** of up to five entries
+in a `[text define]`, newest first, one line per entry:
+
+```
+<name>  <value>  <unit>  <frame-stamp>
+```
+
+On each param message: `[text search]` the name, `[text delete]` it if present, `[text insert]`
+at line 0 to push it to the front, and drop the last if there are now more than five. ✅
+`text search`, `insert`, `delete`, `get`, `set` and `size` are all present in the local Pd
+0.49-1 binary — checked against it and against `text-object-help.pd`, not inferred.
+
+**Ageing is free, because the frame clock already runs.** Each entry stores the frame number when
+it last moved rather than an age to increment, and each frame the list is walked in from the tail
+dropping anything older than 12 frames (1.2 s). Because the list is strictly ordered by
+last-touched time, the expired entries are always a suffix, so the walk stops at the first live
+one. This replaces the param layer's single `[del 1200]` and keeps the existing promise that the
+TTL follows the *last* message rather than the first. Ageing runs **before** the priority
+cascade, so the frame trigger grows one outlet.
+
+Side benefit: the stale-unit trap is **structurally eliminated** in the new path, because each
+line is written whole rather than field by field.
+
+Font size adapts to how many are moving. The settled "24px is readable at arm's length" is
+preserved for the common case — one hand, one control — and degrades rather than being abandoned.
+The meters keep their 5 px bottom strips at y=48/56 throughout, so the param area is y=0…46:
+
+| Moving | Layout |
+|---|---|
+| 1 | name 8px, value **24px** — exactly today's layout, unchanged |
+| 2 | two stacked pairs, each name 8px over value **16px** |
+| 3–5 | **8px** lines, one per control, newest at top |
+
+The 2-mover case is a deliberate deviation from "two 16px lines": ✅ 16px fits about ten
+characters across 128 px, so `slider-1 43` would clip to `slider-1 4` — a silent failure that
+looks like a working display — and real v0.3 names like `chop-size` are no shorter.
+
+**`u_net` in Phase 7 gets this for free**, since it subscribes to `disp` — one address for all
+parameters, which [ref-display.md](ref-display.md) says scales to the nano's 18 controls without
+redesign.
+
+⚠️ **Step 2 edits a file verified on hardware, so re-running `tools/phase3-bench.pd` is the gate
+on it being finished, not a courtesy.** If the MRU list turns hairy it is separable: ship
+`m_nano` against today's single-parameter display and follow up, rather than blocking the phase
+on a display rewrite.
 
 ### Phase 5 — Clock and transport
 

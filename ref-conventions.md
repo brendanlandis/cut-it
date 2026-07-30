@@ -18,7 +18,7 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | Rule | |
 |---|---|
 | **`$0-` every send, receive, table and array name** inside an abstraction | [→](#0--mandatory) |
-| **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `err` `disp`, plus mother's own | [→](#the-global-name-allowlist) |
+| **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `param` `err` `disp`, plus mother's own | [→](#the-global-name-allowlist) |
 | **`[trigger]` on every fan-out**, even when the current order happens to work | [→](#trigger-on-every-fan-out) |
 | **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out | [→](#audio-io--never-adc-never-dac) |
 | **One owner per display surface** — `oscOut` / `screenLine*` are `g_oled`'s, `led` is its own. Everything else asks via `disp` | [→](#the-display-bus-and-who-owns-the-screen) |
@@ -73,10 +73,10 @@ cleanly onto this rig's structure:
 | Prefix | Holds | Cut It examples |
 |---|---|---|
 | `e_` | Effects and filters — the signal chain | `e_chop`, `e_pitch`, `e_trem`, `e_verb` |
-| `m_` | Mapping: device events → parameters | `m_launchpad`, `m_nano`, `m_keys` |
-| `c_` | Control data generation | `c_grainclock`, `c_drunk`, `c_sputter` |
-| `g_` | Display and GUI | `g_grid`, `g_oled` |
-| `u_` | Utilities | `u_scale`, `u_tempo`, `u_err` |
+| `m_` | Mapping: device events → named controls | `m_launchpad`, `m_nano`, `m_organelle` |
+| `c_` | Control data generation | `c_clock`, `c_drunk`, `c_sputter` |
+| `g_` | Display and GUI | `g_grid`, `g_oled`, `g_led` |
+| `u_` | Utilities | `u_map`, `u_tempo`, `u_err` |
 | `s_` | Sound sources | *(unused — Cut It generates no sound of its own)* |
 
 *(judgment call)* rjlib's scheme was chosen over a project prefix like `ci-` because the type
@@ -172,8 +172,8 @@ this distinction is load-bearing and easy to lose.
 
 | Direction | Names |
 |---|---|
-| To the patch | `knob1`–`knob4` (+`Raw`/`Override`), `notes`, `notesRaw`, `enc`, `encbut`, `aux`, `auxRaw`, `vol`, `exp`/`expRaw`/`expOverride`, `fs`/`fsRaw`, `midiCh`, `midiInGate`, `midiOutCh`, `midiOutGate`, `saveState`, `recallState`, `oscIn`, **`quitting`** |
-| From the patch | `screenLine1`–`screenLine5`, `led`, `goHome`, `oscIn`, `oscOut`, `enableSubMenu`, `footSwitchPolarity` |
+| To the patch | `knob1`–`knob4` (+`Raw`/`Override`), `notes`, `notesRaw`, `enc`, `encbut`, `aux`, `auxRaw`, `vol`, `exp`/`expRaw`/`expOverride`, `fs`/`fsRaw`, `saveState`, `recallState`, `oscIn`, **`quitting`** |
+| From the patch | `screenLine1`–`screenLine5`, `led`, `goHome`, `oscIn`, `oscOut`, `enableSubMenu`, `footSwitchPolarity`, **`midiInGate`** / `midiOutGate` / `midiCh` / `midiOutCh` |
 
 ✅ Enumerated from `mother.pd` itself rather than from documentation — every `[s]` and `[r]` in
 the file.
@@ -277,6 +277,13 @@ two values before it acts, the cold ones are set first — which means they come
 **Grain timing is audio-domain, always.** Pd's message clock is quantised to a 64-sample block
 (~1.45 ms), which is ~20% of a 256th note at 120 BPM. Grain clocks come from `phasor~`;
 envelopes from `vline~`. Never `metro` or `line~` at grain rate.
+
+⚠️ **`threshold~`'s debounce is counted in DSP blocks, not milliseconds.** It decrements its dead
+time once per block, so *any* non-zero debounce costs a full 1.45 ms per state change — and a
+trigger/rest pair costs two. This is what caps a `phasor~`-derived pulse train: **at zero debounce
+the limit is two blocks per cycle, measured at 344 Hz = 44100/64/2**; at 2 ms it drops to about
+170 Hz, silently. ✅ Found the hard way in Phase 5, where the clock lost pulses above 430 BPM and
+looked fine at every tempo anyone had tried. A `phasor~` cannot bounce, so set the debounces to 0.
 
 **Signal-domain feedback requires a block boundary** — `[send~]`/`[receive~]` or
 `[delwrite~]`/`[delread~]`. A direct signal loop is a DSP-sort error, not a sound.
@@ -522,11 +529,17 @@ ssh root@organelle.local
   killall pd; sleep 1
   cd /tmp/patch
   nohup pd -nogui -rt -audiobuf 6 -path /root/Pd/externals \
-      -path "/sdcard/Patches/!/Cut It" \
+      -path '/sdcard/Patches/!/Cut It' \
       /root/fw_dir/mother.pd main.pd /tmp/diag.pd > /tmp/diag.txt 2>&1 &
   sleep 6; killall pd
   cat /tmp/diag.txt
 ```
+
+⚠️ **Single quotes around that path, not double.** The patch folder is `/sdcard/Patches/!/…`, and
+**`!` inside double quotes is a history event in interactive zsh** — pasting the block gives
+`zsh: event not found: /Cut` before anything reaches the device. Single quotes are literal in both
+zsh and the device's busybox `ash`, so one form works everywhere. `deploy.sh` never hit this
+because a script is not an interactive shell.
 
 Loading `mother.pd` alongside `main.pd` gives the patch its real environment — `inL`/`inR` carry
 live audio, `oscOut` reaches the display. A third patch (`diag.pd`) can tap any bus with

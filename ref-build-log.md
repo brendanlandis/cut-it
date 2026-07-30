@@ -242,7 +242,7 @@ with no evidence of it on the canvas. The aux toggle in it **holds no state of i
 reads back `start`/`stop` from whoever caused them, so nothing can leave the button pressing the
 wrong way.
 
-### Six corrections, and one of them was the measuring rig
+### Thirteen corrections — two in the measuring rig, and seven that only hands found
 
 - **Pd 0.49 does not warn about extra creation arguments.** `[loadbang 7]` loads in silence, so
   the syntax check *cannot* answer whether `[midiout 3]` reaches port 3 — a silent creation
@@ -265,6 +265,67 @@ wrong way.
   is code and gets the same scrutiny as the thing it measures** — the correct reading, 6 beats in
   3 s at 120 BPM, came out of fixing the probe, not the patch. `phase5-bench.pd` had a matching
   bug of its own: `[r $0-say]` was never connected to its `[print]`, so every step ran silently.
+
+- ⚠️ **THE CLOCK SILENTLY LOST PULSES ABOVE ~430 BPM**, and the cause is a Pd detail worth
+  carrying forward: **`threshold~` decrements its debounce timer once per DSP *block*, not per
+  millisecond.** The plan's `[threshold~ 0.5 2 0.1 2]` therefore burned a whole 1.45 ms block on
+  every state change — 17 beats where 25 were due at 500 BPM. With both debounces at **0** the
+  same test is exact, and the real limit is two blocks per pulse: **344 Hz, measured, which is
+  44100 / 64 / 2 to the digit — 860 BPM.** A `phasor~` is monotonic and cannot bounce, so there
+  was never anything for the debounce to protect against. ⚠️ **The original 20–300 BPM range hid
+  this completely** — it surfaced only when the range was widened to 10–500 on request. A clamp
+  can conceal a defect as easily as it prevents one.
+- ⚠️ **The out-of-range warning filtered the verdict instead of the value.** `5000` warned; a `0`
+  sent straight after it did not, because the out-of-range *flag* had never changed — so a second
+  and quite opposite fault was silent. The `[change]` is on the **value** now: the same bad number
+  twice stays quiet, a different one does not. **The bench could not have caught this**, since it
+  only ever sent one out-of-range value. It took a person pressing the low button after the high
+  one.
+
+- ⚠️ **A `c_clock` created after startup did not run at all.** `u_tempo` publishes 120 on `tempo`
+  exactly once at load and thereafter only stores what it hears — so an instance born later never
+  heard a tempo and its phasor sat at 0 Hz. **Fixed in `c_clock`**, which now seeds itself with
+  `[f 120]` banged at 300 ms: whatever has arrived, or 120 if nothing has. Fixing it in `u_tempo`
+  by re-publishing would have put a second writer on a bus it also reads. Control-measured: **0
+  beats without the seed, 12 with it.** **This only surfaced because the bench was opened by hand
+  after the patch was already running** — every automated run loaded both from one command line,
+  which hid it completely.
+
+- ⚠️ **`status panic` was sticky and nothing cleared it** — found only on the device, and only by
+  doing the thing a performer would do. After a panic you could press aux, watch the LED go green
+  and the 404 start, and still be told `panic`. The footer is sticky by design and only a *tempo*
+  message rewrote it. A start or a stop now bangs the stored BPM back out, so the footer always
+  describes the state you are in. **The class of bug is "correct per the code, wrong for the
+  user", and no bench step would have caught it** — the bench asserts what each step sends, not
+  what the screen still says three steps later.
+
+⚠️ **A nanoKONTROL button was toggling the transport, and it was `mother.pd` doing it.** ✅
+mother runs `[ctlin 21]`–`[ctlin 26]` **omni** and maps them to `knob1`–`knob4` and `aux`; the
+nano's top row is CC 21–29 by this project's own by-tens scheme. So `btn-t-5` pressed aux and
+`btn-t-1` slammed the tempo between 500 and 10 BPM. **Phase 5 is what made it dangerous** — the
+collision existed all through Phase 4 and did nothing visible, because aux meant nothing then.
+`u_init` now sends **`midiInGate 0`**, which mother's own comment documents and which gates only
+the MIDI-derived paths, leaving the front panel alone. mother also loads a different patch on any
+program change, which the 404 can send — the same gate closes that too.
+
+⚠️ **Two more of mother's defaults had to be switched off, and both needed a delayed send.**
+`midiOutGate 0` as well as `midiInGate 0`: mother echoes the Organelle's keys as MIDI notes and its
+knobs as CC 21–24 to every port, so playing the keyboard lit Launchpad pads and would have triggered
+404 pads. The design routes the keys to the Volca and nowhere else. **The mother binary pushes its
+own `1` to both gates about half a second after load**, so anything sent at `loadbang` is silently
+overwritten — the first version of this fix did nothing at all and looked deployed. Both are sent
+again at 2 s, verified on the device with an `[r midiInGate]` print.
+
+⚠️ **The boot tempo was a race, and is now deterministic.** The patch started at the knob's position
+one day and at 120 the next, depending on whether mother's knob push beat `u_tempo`'s `del 200`
+seed. The seed now sits behind a spigot that any incoming `tempo` closes, so **120 is a fallback,
+not a default** — the same "seed only if unheard" shape `c_clock` needed.
+
+⚠️ **The clock is not free.** ✅ Deployed and idle: **10.2 % CPU, 117 UDP datagrams/second**,
+against Phase 4's 5.3 % and 117/s. The display costs exactly what it did; the clock roughly
+doubled Pd's CPU. Two extra `c_clock` instances add only ~0.4 points on top, so it is **not** the
+DSP — the candidate is the 96 ALSA MIDI writes a second. The plan predicted "almost certainly
+free"; it was not. Still ample headroom, but v0.3 stacks four filter stages on this.
 
 - **A bare `[change]` swallows a control parked at zero.** `m_organelle` guards each knob with
   `[change]`, because ⬜ it is not established whether `mother.pd` streams knob positions

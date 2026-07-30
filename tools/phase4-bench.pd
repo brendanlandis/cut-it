@@ -9,7 +9,7 @@
 #X obj 240 408 t b b;
 #X msg 320 446 === STEP-01-of-18 === baseline -- sending nothing;
 #X obj 320 476 s \$0-say;
-#X msg 1100 446 PASS IF: two bars with a small gate mark under each and v0.2-ready at the bottom;
+#X msg 1100 446 PASS IF: two bars with a small gate mark under each and a BPM at the bottom -- Phase 5 hands the footer over from v0.2-ready to the tempo about four seconds in;
 #X obj 1100 476 s \$0-say;
 #X obj 140 530 del 10000;
 #X obj 240 558 t b b b;
@@ -147,7 +147,7 @@
 #X obj 240 2358 t b b b;
 #X msg 320 2396 === STEP-14-of-18 === CLEARING THE MODAL;
 #X obj 320 2426 s \$0-say;
-#X msg 1100 2396 PASS IF: recording disappears and you are back to the two meters and v0.2-ready;
+#X msg 1100 2396 PASS IF: recording disappears and you are back to the two meters and the BPM footer;
 #X obj 1100 2426 s \$0-say;
 #X msg 2300 2396 modal-off;
 #X obj 2300 2426 s disp;

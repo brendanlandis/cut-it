@@ -412,6 +412,49 @@ the on-device controller sweep is still outstanding; everything that does not ne
       line with the 110/s item 21 measured for the home frame, so the display rewrite costs nothing
       noticeable and the real `packOSC` still accepts every typetag the runtime builder produces.
 
+### The two device measurements, with the commands that were missing
+
+Item 21 recorded the numbers and not the method, which is why they were hard to repeat. Both
+blocks are copy-paste and neither disturbs the running patch.
+
+**The bench on the device** — as a third patch, with a real console:
+
+```sh
+scp tools/phase5-bench.pd root@organelle.local:/tmp/
+ssh root@organelle.local
+  killall pd; sleep 1
+  cd /tmp/patch
+  nohup pd -nogui -rt -audiobuf 6 -path /root/Pd/externals \
+      -path '/sdcard/Patches/!/Cut It' \
+      /root/fw_dir/mother.pd main.pd /tmp/phase5-bench.pd > /tmp/bench.txt 2>&1 &
+  tail -f /tmp/bench.txt          # Ctrl-C when step 15 prints
+  killall pd
+```
+
+⚠️ **The `-path` is not optional here.** The bench's own `declare` is `../Cut\ It`, which resolves
+from `tools/` on the Mac but not from `/tmp/` on the device. Without it `c_clock` fails to create
+and both its counts read 0 — which looks exactly like a dead clock.
+
+**CPU, load and datagram rate** — `/proc` rather than `top`, so it works on busybox:
+
+```sh
+ssh root@organelle.local '
+  P=$(pgrep -nx pd)
+  col() { awk "/^Udp:/{ if(h==\"\"){h=1; for(i=1;i<=NF;i++) if(\$i==\"OutDatagrams\") c=i; next} print \$c }" /proc/net/snmp; }
+  T1=$(awk "{print \$14+\$15}" /proc/$P/stat); C1=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat); U1=$(col)
+  sleep 5
+  T2=$(awk "{print \$14+\$15}" /proc/$P/stat); C2=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat); U2=$(col)
+  awk -v a=$T1 -v b=$T2 -v c=$C1 -v d=$C2 "BEGIN{printf \"pd CPU: %.1f %%\n\", 100*(b-a)/(d-c)}"
+  echo "UDP out:  $(( (U2-U1)/5 )) datagrams/sec"
+  echo "load:     $(cat /proc/loadavg)"
+  aconnect -l | grep -c "Connecting To"
+'
+```
+
+`pgrep -nx pd`, not `pgrep pd` — the substring match hits a kernel thread on this device, which is
+the bug item 36 found in `fetch-errors.sh`. Compare against **8.2 % / 110 per second** (item 21)
+and **5.3 % / 117** (item 37); Phase 5 adds ~96 MIDI messages a second on top.
+
 ### Still outstanding on hardware
 
 - [x] **38. The nanoKONTROL on the device**, where it is Pd input slot 2 and the channel is **17**.
@@ -567,10 +610,15 @@ card. Numbers are from `tools/phase5-bench.pd` and two throwaway probe patches.
       10 s later: **20 / 20 / 30** — identical to the running case. This is the least obvious
       requirement in the phase: stop the pulse stream and the 404 stretches every sample to a
       stale tempo, so a stopped clock is a *wrong* tempo rather than no tempo.
-- [x] **51. Out of range clamps and warns exactly once.** ✅ `tempo 500` twice produced **one**
-      `warn u_tempo bpm-out-of-range` and a footer reading `300-bpm`. Sending `300` and then `500`
-      again warned again — so the `[change]` reports the transition, not the state, which is the
-      difference between a report and a flood.
+- [x] **51. Out of range clamps, and warns once per distinct value.** ✅ Against a legal range of
+      **5–600 BPM**: `5000` `5000` `0` `0` `300` `5000` produced alerts on the **first, third and
+      sixth** only. A repeat of the same out-of-range value is silent; a *different* one is not.
+
+      ⚠️ **This is the second version.** The first filtered the out-of-range *verdict* with
+      `[change]`, so `5000` warned and a `0` sent straight afterwards did not — the flag had never
+      changed, and a second, opposite fault was silent. **Brendan caught it by hand** (procedure
+      step 14) after the automated run had passed, because the bench only ever sent one out-of-range
+      value. The `[change]` is on the **value** now. See item 57.
 - [x] **52. The whole `disp` conversation through a boot and a transport cycle.** ✅ In order:
       `led stopped`, `status 120-bpm`, then `led running` on start, `status 60-bpm` on a tempo
       change, `led stopped` on stop. The LED is told a state and never a colour, and the BPM lands
@@ -597,6 +645,268 @@ card. Numbers are from `tools/phase5-bench.pd` and two throwaway probe patches.
       `main.pd` and `main-dev.pd` both silent under the syntax check with the five new
       abstractions instantiated; `pd-layout-check.py` reports `0 problems` on all eleven patch
       files and on the bench.
+
+### Found by testing it by hand, after the automated run had passed
+
+- [x] **57. ⚠️ The out-of-range warning filtered the verdict instead of the value.** ✅ Fixed and
+      re-measured — see item 51. **The automated bench could not have found this**, because it only
+      ever sent one out-of-range value; it took a person clicking the low button after the high one.
+      A bench proves the cases it contains and nothing else.
+- [x] **58. ⚠️ THE CLOCK LOST PULSES ABOVE ~430 BPM, and the cause is a Pd detail worth keeping.**
+      ✅ **`threshold~` decrements its debounce timer once per DSP *block*, not per millisecond.**
+      So *any* non-zero debounce costs a whole 1.45 ms block on every state change, and two of them
+      per cycle put a floor of four blocks under the pulse period. Measured with the original
+      `[threshold~ 0.5 2 0.1 2]`:
+
+      | Tempo | Beats in 3 s | Expected |
+      |---|---|---|
+      | 500 | **17** | 25 |
+      | 600 | **15** | 30 |
+
+      **With both debounces set to 0** the same test gives **25** and **30**, exactly. A `phasor~`
+      is monotonic and cannot bounce, so there was never anything for a debounce to protect against.
+
+      **The real ceiling, measured on a bare `phasor~` with no clamp in the way:** 200 Hz ✅,
+      240 Hz ✅, 300 Hz ✅, **344 Hz ✅**, 400 Hz ✗ (579 pulses where 800 were due), 500 Hz ✗. So the
+      limit is **two DSP blocks per pulse — 344 Hz, which is 44100 / 64 / 2 to the digit** — or
+      **860 BPM**. `u_tempo` clamps at 600, leaving 43 % of headroom.
+
+      ⚠️ **A `c_clock`'s ratio multiplies this**: `ratio × tempo` must stay under ~860 BPM
+      equivalent, so at the 600 BPM clamp the highest safe ratio is about 1.4.
+- [x] **59. Tempo at both ends of the new range.** ✅ 10 BPM: 2 beats in 12 s. 500 BPM: 25 beats in
+      3 s. 600 BPM (the clamp): 30 in 3 s. Anything above 600 pins to 600 and reads 30, which is the
+      clamp working rather than a ceiling — it fooled one round of measurement before the bare
+      `phasor~` test separated the two.
+- [x] **60. The bench resolves `c_clock` on its own.** ✅ `#X declare -path ../Cut\ It` — the escaped
+      space survives Pd's parser, verified with a one-object patch first. Opening
+      `tools/phase5-bench.pd` straight from Pd's File menu now works; before this it printed
+      `c_clock ... couldn't create` and both `c_clock` counts read 0, which looks like a dead clock
+      rather than a missing search path. ✅ Also confirmed `#X declare` does **not** occupy an object
+      index, so inserting it at the top of a file does not rewire anything.
+
+- [x] **61. ⚠️ A `c_clock` created after startup never ran, because nothing re-publishes the tempo.**
+      ✅ `u_tempo` writes 120 to `tempo` exactly once, at load, and afterwards only *stores* what it
+      hears — deliberately, so it cannot loop with a bus it also listens to. The consequence was
+      invisible until someone opened the bench **after** the patch was already running: both
+      `c_clock` counts read **0** while the master read 20. Their `[r tempo]` had simply never fired,
+      so the phasor sat at 0 Hz.
+
+      **Fixed inside `c_clock`, not in `u_tempo`** — an instance should be correct whenever it is
+      born, and re-publishing on a request bus would reintroduce the loop. It now holds
+      `[f 120]` fed by `[r tempo]`, banged once at 300 ms: whatever tempo has arrived, or 120 if
+      none has. Measured with a control build:
+
+      | Late-created clock, 6 s at 120 BPM | Beats |
+      |---|---|
+      | without the seed | **0** |
+      | with the seed | **12** |
+
+      ⚠️ **And a lesson about the rig again:** the first attempt to reproduce this used
+      `#X declare -path /path/with a space` **unescaped**, so the abstraction never loaded and the
+      count was 0 for an entirely different reason. A test that fails for the wrong reason looks
+      exactly like a test that fails for the right one. The real evidence came from Brendan's run,
+      where the declare was correct.
+- [x] **62. Two BPM readouts on the dev panel, and they are meant to disagree.** ✅ `tempo-bus`
+      shows the **bus** — what was requested, so `5000` — while the OLED row shows what `u_tempo`
+      did with it, `600`. Both are useful and neither is wrong; the readout was previously labelled
+      `bpm`, which implied it was the effective tempo. Renamed. The LED word readout was likewise
+      labelled `empty`: **atom boxes use `-` for "no label", not the iemgui `empty`.**
+
+- [x] **63. ✅ `[midiout]` with the port set into the cold inlet DOES reach that port — the ⬜ that
+      has been open since the phase began.** Test A of `tools/midiout-probe.pd` — raw note-on bytes
+      out of `[midiout]` with `1` sent to its right inlet at load — fired pad 1 on the SP-404.
+      That is `u_tempo`'s exact mechanism, so the clock's emission path is confirmed rather than
+      assumed. *(The creation-argument form, `[midiout 3]`, remains ⬜ and unneeded — see item 53.)*
+- [x] **64. ⚠️ THE 404 WAS FOLLOWING THE CLOCK ALL ALONG — the wrong number was being read.** ✅
+      The BPM shown beside a pad is that **sample's** tempo (150 for pad 1, 160 for pad 2) and never
+      moves under external sync. The external tempo is on the **Pattern Select** screen as
+      `EXT nnn`. Measured: a 20.833 ms pulse interval gave `EXT 120`, and 30.833 ms gave `EXT 81`
+      — 81.08 BPM to the digit. Full behaviour in [ref-midi.md](ref-midi.md).
+
+      **Three behaviours that fell out of the same session:** it *slides* into a tempo it has not
+      seen and *snaps* to one it has; `250` alone starts the pattern sequencer with no clock at all,
+      which makes Start the unambiguous "is it listening" test; and **when clock stops it reverts to
+      its own internal tempo** (`EXT 81` → `BPM 125`) rather than holding the last external one.
+      That last one is the first direct evidence for why `u_tempo` must keep sending 248 while
+      stopped — previously an inference from the manual.
+
+- [x] **65. ✅ The 404 follows external clock only between 40 and 200 BPM.** Swept `u_tempo` across
+      its full 10–500: `EXT` slides down to **40** and stops, up to **200** and stops. A device
+      limit, not a fault — but it means **clock-following cannot cover this instrument's range even
+      in principle**, which is empirical backing for a decision
+      [ref-software.md](ref-software.md) had already taken on structural grounds: *Pd sequences
+      everything and timing rides in note events*. When tight 404 sync matters, stay inside
+      40–200; outside it, the 404 has to be driven pad by pad.
+- [x] **66. The dev panel's `aux` toggle takes two clicks per press, and that is correct.** ✅ `aux`
+      is momentary 1/0 and `m_organelle` acts on the **1** only, so on a toggle the check is the
+      press and the uncheck is the release — the release is *supposed* to do nothing. `aux-tap`
+      exists for this reason: it sends 1 then 0, 120 ms apart, which is one real press per click.
+      Reported as a partial failure of the bench's aux step, which is a fair reading of a step that
+      did not say which widget to use. The step says so now.
+
+- [x] **67. ✅ mother does NOT intercept a long aux press — the last open assumption in Phase 5.**
+      Holding aux for two seconds has an identical effect to tapping it: one press, one transport
+      toggle. So `[r aux]` is genuinely ours, and `u_map`'s toggle needs no long-press handling.
+      This was ⬜ purely because *nothing had claimed it* — which is exactly the reasoning that
+      turned out wrong about the encoder, so it was worth checking rather than assuming.
+- [x] **68. ✅ Hands off the device, the OLED sits on the meters and the footer.** No `og-knob-*`
+      rows persist, so nothing pins the param layer open. ⚠️ **This does not distinguish "mother
+      does not stream knob positions" from "the `[change -1]` guard filters them"** — and it cannot,
+      without removing the guard. The outcome is correct either way and the guard stays; the
+      underlying question is now moot rather than answered.
+- [x] **69. ⚠️ THE PATCH BOOTS AT WHATEVER KNOB 1 IS PHYSICALLY SET TO, not at 120.** ✅ Observed on
+      the device: knob 1 was near its minimum, so the footer came up at **10-bpm** and the 404
+      pinned at its own floor of 40. `u_tempo` seeds 120 at 300 ms and mother then pushes the real
+      knob positions, which win.
+
+      **Two things this confirms:** mother **does** send knob values at load ✅, and
+      `m_organelle`'s `[change -1]` is doing real work — a bare `[change]` would have swallowed a
+      knob sitting at 0 and left the tempo at 120, which is the bug fixed in item 52b, now seen
+      from the other side.
+
+      ✅ **Decided: this is the wanted behaviour.** The instrument comes up at whatever the knob is
+      physically set to, which is the honest reading and avoids any pickup mismatch. No
+      `knob1Override` scheme is needed. The rest of this note is kept because the *reason* it
+      happens is not obvious.
+
+      **The alternative, for the record** — physical-control-wins
+      means no pickup mismatch, but it also means the instrument can boot at 10 BPM. `mother.pd`
+      exposes `knob1Raw` and `knob1Override` if a pickup scheme is ever wanted. Tracked in
+      [plan-v02.md](plan-v02.md).
+
+### Session 6b — Phase 5 on the Organelle
+
+Deployed with `./deploy.sh`, then the bench run by hand as a third patch for a real console.
+
+- [x] **70. The whole bench, on the device.** ✅ All fifteen steps. `wire.sh` reported **3
+      connections** (nano in, 404 in and out — the Launchpad is not attached, cable shortage), and
+      `m_nano-control-channel: 17` confirmed the channel block through the real `[ctlin]`. Counts
+      **30 / 20 / 20** at step 3 *and* step 11 — so two `c_clock` instances at ratios 1 and 1.5 run
+      correctly under real DSP on the hardware, and the clock keeps running while the transport is
+      stopped.
+- [x] **71. The 404 follows, and stops following where it must.** ✅ `EXT` tracked knob 1 through
+      the map, pinning at the device's own 40 and 200 limits (item 65). Start and stop drove its
+      pattern. **This is Phase 5's *done when*, met on the hardware.**
+- [x] **72. ⚠️ `status panic` was sticky and nothing cleared it.** Found on the device: after the
+      panic step, pressing aux started the transport, turned the LED green and started the 404 —
+      **and the footer still read `panic`.** Correct per the code as written and wrong for a
+      performer: `status` is sticky by design and only a *tempo* message rewrote it, so the footer
+      described a state the instrument had already left.
+
+      **Fixed:** a start or a stop now bangs the stored BPM back into the footer, so it always
+      describes the state you are in. Measured: `panic` → footer `panic`; `start` → LED `running`
+      **and footer `120-bpm`**. Both transport triggers gained an outlet for it, firing last so the
+      display is updated after the state it reports.
+
+      ⚠️ **The edit itself found a trap worth recording.** Inserting the new boxes "before the first
+      `#X connect`" put them inside the first **subpatch**, because a subpatch's own connects come
+      earlier in the file. `pd-layout-check.py` caught it as `BAD CONNECT`, and Pd printed
+      `connection failed` — but only because the indices happened to be out of range. **Top-level
+      objects must be inserted before the first connect at depth 1**, and any script that walks a
+      `.pd` file has to honour `#N canvas` / `#X restore` nesting or every index after the first
+      subpatch is wrong.
+- [x] **73. The error log proves the alerts fired.** ✅ Reading it back with
+      `tools/fetch-errors.sh` after the run: `66000 warn u_tempo bpm-out-of-range` and
+      `76000 warn u_tempo bpm-out-of-range` — bench steps 7 and 8 fire at 66 s and 76 s, so both
+      alerts were raised exactly once each at exactly the right moments. **That answers a question
+      the eye could not**: watching a 2 s alert on a 128×64 screen while also watching a 404 is not
+      reliable, and the log settles it afterwards. All deployed files md5-identical to the repo.
+- [x] **74. Throughput with the clock added.** ✅ **119 UDP datagrams/second**, load 0.44, ALSA 3
+      connections — in line with item 37's 117/s, so the display keeps up with ~96 MIDI messages a
+      second alongside it. ⚠️ **CPU read 10.6 %, but under the by-hand launch with the bench still
+      loaded** — two extra `c_clock`s and fifteen delay chains — so it is a worst case, not the
+      deployed baseline. The deployed figure is still to be taken.
+- [x] **75. ⚠️ The clock is NOT free — it roughly doubled Pd's CPU.** ✅ Measured on the **deployed,
+      idle** patch: **10.2 %** CPU, **117 UDP datagrams/second**, load 0.50. The display is
+      unchanged (117/s matches item 37 exactly); the CPU is not — Phase 4 measured **5.3 %**.
+
+      **Two measurements bracket the cause.** The by-hand run *with the bench loaded and two extra
+      `c_clock` instances* read **10.6 %**, against **10.2 %** deployed with none — so two more
+      phasors and fifteen delay chains cost about **0.4 points**. The DSP is therefore not what
+      doubled it, and the remaining candidate is the **96 ALSA MIDI writes a second** the two
+      clock ports produce. Not confirmed by isolation ⬜, but the arithmetic only points one way.
+
+      **Still comfortable** — 10 % with load 0.5 on a device that idles near zero — but the plan
+      predicted this would be "almost certainly free" and it was not, which matters for v0.3, where
+      four filter stages arrive on top.
+- [x] **76. ⚠️ A NANO BUTTON WAS TOGGLING THE TRANSPORT, and the culprit was `mother.pd`.** ✅ Found
+      by running `phase4-bench` steps 15–17 on the device: five top-row buttons each produced a
+      *second*, unrelated parameter —
+
+      | Pressed | Also produced |
+      |---|---|
+      | `btn-t-1`…`btn-t-4` | `og-knob-1`…`og-knob-4` |
+      | `btn-t-5` | **`og-aux`** — which toggles the transport |
+
+      **Cause, read out of `/root/fw_dir/mother.pd`:** it runs `[ctlin 21]`–`[ctlin 26]` with **no
+      channel argument, so OMNI**, and maps them onto `knob1`–`knob4` and `aux`. The nano's top row
+      is CC 21–29 by this project's own by-tens scheme, so the two overlap exactly. `btn-t-1` was
+      therefore slamming knob 1 — **500 BPM on press, 10 on release** — and `btn-t-5` was pressing
+      aux. ⚠️ mother also **loads a different patch on any program change**, which the SP-404 can
+      send.
+
+      **Phase 5 is what made this dangerous.** Before aux drove the transport, CC 25 did nothing
+      visible. The collision existed through all of Phase 4 and could not have been noticed.
+
+      **Fixed:** `u_init` sends **`midiInGate 0`** at load **and again at 2 s** — and the second one
+      is the one that works. ⚠️ **The mother binary pushes its own `midiInGate 1` over OSC about half
+      a second after the patch loads**, overwriting anything sent at `loadbang`, so the first
+      attempt at this fix silently did nothing and the collision survived a deploy. Measured with an
+      `[r midiInGate] → [print]` loaded *before* `main.pd` so it could see both writers:
+
+      ```
+      GATE: 0     <- our loadbang
+      GATE: 1     <- the mother binary, before 0.5 s
+         mark-2s
+      GATE: 0     <- our delayed copy wins
+      ```
+
+      No further pushes out to twelve seconds, so one late send is enough. ⬜ Using the System menu's
+      *MIDI Config* page mid-session may push it again; `/sdcard/MIDI-Config.txt` stores only the
+      **channel**, so there is no persistent gate setting to set instead.
+
+      ✅ Verified from the source that it gates only the MIDI-derived paths — mother has two `s notes`, one fed by `oscIn` (the physical
+      keyboard) and one behind the gate (`notein`), and the knobs split the same way — so the front
+      panel is untouched and Cut It's own `[ctlin]` objects are unaffected.
+- [x] **77. The Launchpad's flash and pulse do track our clock — within limits.** ✅ Three pads lit
+      static / flashing / pulsing from `tools/lp-modes.pd` alongside the running patch, and sweeping
+      knob 1 visibly changed the flash and pulse rates. **So Phase 6's assumption holds**: animation
+      follows `u_tempo` for free and does not have to be driven from `clock`.
+
+      ⚠️ **But it has its own range**, ⬜ not pinned down: past an upper and a lower limit the
+      animation **reverts to a default rate** rather than continuing to track, and a Start makes it
+      dip briefly before settling back. Same shape as the 404's 40–200 window (item 65) and almost
+      certainly the same kind of device-side limit — the pulse stream itself is known good, since
+      the 404 tracks it to the digit across its whole range. **Noted, not chased**; it matters only
+      if Phase 6 wants animation locked at extreme tempi.
+
+- [x] **78. ✅ The 120 BPM seed is now a fallback rather than a default, and the boot tempo is
+      deterministic.** The patch had started at the knob's position one day and at 120 the next —
+      a **race** between mother pushing the real knob positions and `u_tempo`'s `del 200` seed,
+      with no guarantee either way. `u_tempo`'s seed now goes through a **spigot that any incoming
+      `tempo` closes**, so it can only ever fill a silence.
+
+      Measured both ways on the Mac — knob pushed at load → `TEMPO: 255` and no seed; nothing pushed
+      → `TEMPO: 120` — and then on the device:
+
+      ```
+      PARAM: og-knob-4 0 … og-knob-1 0     <- mother pushes the knob positions
+      TEMPO: 10                            <- the knob wins, the seed never fires
+      ```
+
+      Same "seed only if unheard" shape as `c_clock`'s fix in item 61. **It still matters on the
+      Mac**, where nothing pushes a knob position at all.
+- [x] **79. ✅ mother's MIDI *output* echo is off too — `midiOutGate 0`.** mother routes the
+      Organelle's **keys as MIDI notes and its knobs as CC 21–24** to every output port. Observed:
+      playing the keyboard lit pads on the Launchpad — and with the SP-404 attached instead it would
+      have **triggered pads**. The design has the keys going to the Volca and nowhere else, so
+      mother must not route them at all; Cut It will send them deliberately once the DIN interface
+      exists.
+
+      ✅ It gates only mother's own `[noteout]` and `[ctlout]`; our `[midiout]` is untouched, which
+      the device trace confirms — the clock still leaves on ports 1 and 3 with both gates closed.
+      Sent from the same message box as `midiInGate`, so it inherits the 2 s re-send.
+
 
 ### Still outstanding
 
@@ -634,9 +944,10 @@ changes — the beat was already running. Click `stop`: back to **5**. Click `pa
 and the footer says `panic`. The beat must keep flashing through all three.
 
 **Mac, the map.** Sweep the panel's `knob1` slider. Expect `og-knob-1` to appear as a parameter
-row, the `bpm` readout to track **60 → 180**, and the footer to follow it. Click `bpm-500`: the
-footer clamps to `300-bpm` and one alert appears. Click it again: **nothing happens** — that is
-the pass. Click `bpm-5`, then `bpm-500` again: each warns once.
+row, the `bpm` readout to track **10 → 500**, and the footer to follow it. Click `bpm-hi` (5000):
+the footer clamps to `600-bpm` and one alert appears. Click it again: **nothing happens** — that
+is the pass. Click `bpm-lo` (0): clamps to `5-bpm` and alerts **again**, because the value
+changed even though the verdict did not.
 
 **Mac, the aux button.** Click `aux-tap`: the LED goes green. Click it again: dark blue. This is
 the same path the real aux button takes, so if it works here and not on the device, mother is
@@ -651,9 +962,10 @@ alert. Steps 12 and 13 will ask for hands you do not have on the Mac — they ar
 1. **The aux button, by hand.** Press: green, and the 404 starts. Press again: dark blue, and it
    stops. ⬜ If nothing happens at all, check whether mother is intercepting the press before
    suspecting `u_map` — the encoder is the precedent for a control that turned out not to be free.
-2. **Knob 1, by hand.** ⚠️ **The 404's own tempo display following the sweep is the real *done
-   when* of Phase 5.** Expect it to lag by a pulse or two and to stutter on a large jump — that is
-   inferred tempo working as documented, not a fault.
+2. **Knob 1, by hand.** ⚠️ **The 404 following the sweep is the real *done when* of Phase 5** —
+   and read it in the right place: **`EXT nnn` on the Pattern Select screen**, never the BPM beside
+   a pad, which is that sample's own tempo and never moves. Expect `EXT` to *slide* rather than
+   snap; the slide is the several-pulse inference working, not a fault. Item 64.
 3. **The four colours by eye**, which is the only way to settle whether dark blue reads as
    "stopped" or as "off" at arm's length on a dark stage.
 4. **Hands off the device for thirty seconds.** The OLED must fall back to the two meters and the

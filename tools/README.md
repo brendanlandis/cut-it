@@ -132,10 +132,10 @@ steps covering the clock, the transport, the map and the aux LED. **Steps 1–11
 12 and 13 need your hands on the Organelle itself** — the aux button and knob 1 are the only
 controls involved, and neither exists on a laptop.
 
-⚠️ **It needs `-path` pointing at the patch folder**, because it instantiates two `c_clock`
-objects and the deployed patch instantiates none. The by-hand console line in
-[../ref-conventions.md](../ref-conventions.md) already carries it; on the Mac add
-`-path "Cut It"`.
+**It finds `c_clock` itself**, through `#X declare -path ../Cut\ It` — the escaped space survives
+Pd's parser ✅ — so opening it straight from Pd's File menu works and no `-path` is needed. If the
+console ever says `c_clock ... couldn't create`, the two `c_clock` counts will read **0** and mean
+nothing, which looks like a dead clock rather than a missing search path.
 
 ⚠️ **On the Mac, tick the panel's `enable-DSP` toggle first.** `threshold~` is a signal object,
 so with DSP off the beat counters read **0** — which looks exactly like a broken clock. On the
@@ -147,7 +147,34 @@ Three steps carry the load:
 |---|---|
 | **3** | 24 PPQN is right, and `c_clock` at ratios 1 and 1.5 gives 20 and 30 beats in 10 s at 120 BPM |
 | **9–10** | **the clock keeps running when the transport stops.** A zero here is the bug the step exists for — stop the pulse stream and the 404 stretches to a stale tempo |
-| **7** | out-of-range warns **exactly once**, not once per message |
+| **7** | out-of-range clamps to the 5–600 legal range and warns **once per distinct value** — press the same button twice and the second press must be silent |
+
+### `panic-poke.pd` — the only way to raise a panic on the device
+
+**Nothing on the Organelle sends `panic`.** It has consumers — `u_init`'s safe exit and
+`u_tempo` — but the only writers are the bench and the Mac dev panel, so there is no way to
+provoke one by hand. This fires `panic` every 25 s as a third patch, and prints what the OLED is
+being told (`FOOTER` and `LED`) so the console and the screen can be compared directly.
+
+Written to retest one specific bug: **the footer used to stay on `panic` after the transport had
+visibly restarted**. Press aux after a poke — the button must go green *and* the footer must
+return to the BPM.
+
+### `midiout-probe.pd` — which half of the MIDI path is broken
+
+Written when the 404 appeared not to follow the clock. It talks straight to the MIDI ports and
+touches no Cut It code, so it splits "is Pd emitting?" from "is the device listening?":
+
+| Group | Answers |
+|---|---|
+| **A** | raw bytes out of `[midiout]` with the port in the cold inlet — **`u_tempo`'s exact mechanism** |
+| **B** | the same pad via `[noteout 1]`, which reaches the port by *channel* instead. A dead + B alive = the port inlet is the fault |
+| **C** | the same bytes on port 3, which must stay **silent** on a one-output Mac. If it fires, the port inlet is ignored and every byte goes everywhere |
+| **D** | a hand-rolled 24 PPQN clock from `[metro]`, sharing no code with `u_tempo`, plus Start and Stop |
+
+✅ **It closed the `[midiout]` port question** (item 63) and then showed the 404 had been following
+all along — the wrong number was being read (item 64). **`250` on its own starting the pattern
+sequencer is the unambiguous "is it listening" test**; a tempo display is not.
 
 ### `fetch-errors.sh` — read the error log back off the device
 

@@ -100,7 +100,7 @@ one boundary that is genuinely expensive to retrofit.
 | 2 | ✅ | Startup sequencing |
 | 3 | ✅ hardware | Display and errors |
 | 4 | ✅ hardware | nanoKONTROL, persistent error log, multi-parameter display |
-| 5 | ✅ Mac | Clock and transport — ⬜ still to be run on the device |
+| 5 | ✅ hardware | Clock and transport |
 | **6** | **next** | **Launchpad** |
 | 7 | | Phone status link |
 | 8 | | State and presets |
@@ -180,11 +180,11 @@ when something there is unverified, the work to resolve it is listed below.
 |---|---|---|
 | **SP-404 pad note range** — measured 47+*n* here, Roland's chart says 35–51 | v0.3's `m_404` | Only pads 1 and 2 were ever checked. **This is the one that silently corrupts work** — sequencing code written against the wrong range looks correct and triggers the wrong pads. Sweep all 16 with `tools/midi-drive.pd` |
 | **What drives `mode`** | Nothing hard, but the mode filter has had no physical driver since Phase 4 | Phase 6, on the Launchpad — the only device Pd can light, so the state becomes visible. Until then the bench drives it, which is how items 19 and 21c were verified anyway |
-| **Does mother intercept a long aux press?** | Nothing — but aux **is** the transport now | ⬜ Assumed clean because nothing has claimed it, which is exactly the reasoning that was wrong about the encoder. Step 12 of `tools/phase5-bench.pd` is the check: if a press does nothing at all, suspect mother before `u_map` |
+
 | **`[midiout]` port creation argument** | Nothing — `u_tempo` uses the long form | ⬜ And **the obvious experiment is invalid**: Pd 0.49 does not warn about extra creation arguments at all — `[loadbang 7]` loads in silence — so a clean syntax check proves nothing. Answering it needs a real MIDI destination on two ports, or the Pd 0.49 source |
 | **Launchpad perimeter CC numbers** | Phase 6 | Documented 📄, never confirmed on this unit. Ten minutes with `tools/lp-monitor.pd` |
-| **Do flashing / pulsing LEDs track a *modulated* tempo?** | Phase 6 | The modes work ✅; tracking a sweeping tempo is ⬜. ✅ Phase 5 made a sweeping tempo possible — sweep knob 1 and watch — so this is testable for the first time |
-| **Does `mother.pd` stream the knob positions continuously, or only on movement?** | Nothing — `m_organelle` puts a `[change]` in front of every knob either way | ⬜ New in Phase 5. If it streams, the guard is what stops four knob rows pinning the display open forever; if it does not, the guard costs nothing. Answered by watching the OLED with your hands off the device |
+| **How wide is the Launchpad's animation tempo range?** | Phase 6, weakly | ✅ Flash and pulse **do** track a swept tempo — Phase 6's assumption holds. ⬜ But past an upper and lower limit they revert to a default rate, and those limits are not pinned down. Same shape as the 404's 40–200. Only matters if animation must stay locked at extreme tempi — [plan-tests.md](plan-tests.md) item 77 |
+| **Does `mother.pd` stream the knob positions continuously, or only on movement?** | Nothing | ✅ **Moot.** Hands off the device the OLED sits on the meters, so nothing pins the param layer open — but that cannot separate "does not stream" from "the `[change -1]` guard filters it", and the guard is staying. Item 68 |
 | **Full-load power** | Phase 6 | Never run with three controllers plus the wifi dongle — the cable shortage. Presents as intermittent MIDI dropouts rather than an obvious failure, so if Phase 6 produces flaky Launchpad behaviour, **suspect the hub before the code**. [plan-tests.md](plan-tests.md) item 5 |
 | **Save New in a category folder** | Phase 8 | ⚠️ Already diagnosed — see the Phase 8 note above. Verify against a menu-selected patch, not a deploy-loaded one |
 
@@ -199,6 +199,7 @@ procedure in [plan-tests.md](plan-tests.md) Session 3, items 12–13.
 
 | Question | Where it stands |
 |---|---|
+| **Does the System menu's MIDI Config page re-open mother's MIDI gates?** | ⬜ `u_init` closes `midiInGate` and `midiOutGate` 2 s after load, which beats the mother binary's own push. Entering *MIDI Config* mid-session sends `/midich` and `/midiConfig` and may push the gates again — reopening the CC 21–26 collision that made a nano button toggle the transport ([plan-tests.md](plan-tests.md) item 76). Cheap to check: open the page, leave it, then press `btn-t-5` |
 | **Can Pd emit an OSC blob?** | Gates `gWaveform` and `gFrame` — so it gates ever drawing the captured buffer, which is what would stop playhead placement being blind. Untested ⬜ |
 | **Does the 404's *pattern playback* transmit notes?** | `SEQ Note Out` is On and pad presses transmit, but no pattern has been captured. Determines whether the 404 is a compose-time authoring surface. Watch for the reported stray continuous C |
 | **Can Novation Components disable the onboarding drive?** | A cleaner fix than the `mount.sh` guard, since it changes nothing on the Organelle. Untried |

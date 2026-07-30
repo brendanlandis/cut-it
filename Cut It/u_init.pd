@@ -1,4 +1,4 @@
-#N canvas 20 20 1500 1240 12;
+#N canvas 20 20 2000 1240 12;
 #X text 20 20 u_init -- owns the ordered startup. loadbang fires before ALSA connections exist \, so everything here is a timed sequence rather than a pile of del objects scattered through the patch., f 58;
 #X text 20 115 creation args: none. inlets: none. outlets: none., f 58;
 #X text 20 160 Each stage reports to the disp bus as it is REACHED. Nothing here is acknowledged by any device \, so a stage name on screen means the sequence got that far -- not that the hardware answered. Boot sticking on one name still tells you where to look., f 58;
@@ -87,6 +87,16 @@
 #X text 140 1050 THE STAGES ARE MODALS \, so each one takes the whole screen at 16px while the meters have nothing to say. The last stage sends modal-off and drops v0.2-ready into the footer \, where a persistent status belongs. That also gives g_oled's modal layer a real caller in Phase 3 rather than shipping it untested., f 58;
 #X text 620 1050 A message box typed modal booting ALREADY has modal as its selector \, so the list prepend / list trim chain this used to need is gone -- and with it one instance of the trap it was there to avoid. See ref-conventions.md \, The display bus., f 46;
 #X text 1080 1050 THE FOOTER IS HANDED OVER \, NOT SHARED. u_tempo drops the BPM into it at 4 s -- deliberately after v0.2-ready lands here at about 3.5 s \, so the boot status is superseded by something useful once the clock is up. CHANGE THESE STAGE TIMINGS AND THAT 4000 CHANGES WITH THEM., f 40;
+#X obj 1180 240 loadbang;
+#X msg 1180 375 0;
+#X obj 1180 420 s midiInGate;
+#X text 1550 240 SHUT OFF mother's OWN MIDI MAPPING \, FIRST THING. mother.pd runs [ctlin 21] to [ctlin 26] OMNI -- no channel argument -- and routes them to knob1 to knob4 and aux \, and it loads a new PATCH on any program change. The nanoKONTROL's top row is CC 21 to 29 \, so btn-t-5 pressed AUX and toggled the transport \, and btn-t-1 slammed knob 1 from 500 BPM to 10. Measured on the device \, not guessed., f 44;
+#X text 1550 460 mother's own comment says it: all MIDI input can be suppressed by sending 0 to midiInGate. It gates only the MIDI-derived paths -- the front panel arrives by OSC and is untouched \, and our own ctlin objects read Pd's MIDI system directly \, so m_nano and m_organelle are unaffected. Cut It decodes every controller itself \; mother's defaults are pure interference here \, and the program-change one is a hazard on stage., f 44;
+#X obj 1180 285 t b b;
+#X obj 1320 330 del 2000;
+#X text 1550 680 SENT TWICE \, AND THE SECOND ONE IS THE ONE THAT WORKS. The mother BINARY pushes its own midiInGate 1 over OSC about half a second after the patch loads \, which overwrote the value sent at loadbang -- measured with an [r midiInGate] print alongside \, which saw exactly one GATE 1 and no further pushes out to twelve seconds. The 2 s copy lands after it. The loadbang copy is kept because it costs nothing and closes the window in between., f 44;
+#X obj 1350 420 s midiOutGate;
+#X text 1550 900 AND THE SAME GOING OUT. mother echoes the Organelle's KEYS as MIDI notes and its KNOBS as CC 21 to 24 \, to every output port -- so playing the keyboard lit pads on the Launchpad \, and with the 404 attached instead it would TRIGGER PADS. The design says the keys go to the Volca and nowhere else \, so mother must not route them at all. Cut It will send them deliberately when the DIN interface arrives. This gates only mother's own noteout and ctlout \; our midiout is untouched \, which is why the clock still leaves on ports 1 and 3., f 50;
 #X connect 3 0 4 0;
 #X connect 4 1 10 0;
 #X connect 4 0 5 0;
@@ -108,3 +118,9 @@
 #X connect 14 0 15 0;
 #X connect 17 0 18 0;
 #X connect 18 0 24 0;
+#X connect 29 0 30 0;
+#X connect 28 0 33 0;
+#X connect 33 1 29 0;
+#X connect 33 0 34 0;
+#X connect 34 0 29 0;
+#X connect 29 0 36 0;

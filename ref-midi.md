@@ -102,6 +102,46 @@ Two things that surprise people: **`enc`, `aux` and `encbut` send `1`/`0`, not `
 Organelle 1 and Organelle M differ here, and the public `Organelle_OS` repo documents the M, so
 that enumeration is the authority rather than the repo.
 
+### ⚠️ mother.pd maps MIDI onto the front panel itself — and Cut It turns that off ✅
+
+**`mother.pd` runs `[ctlin 21]` through `[ctlin 26]` with no channel argument, so they are OMNI**,
+and routes them onto the Organelle's own controls. It also loads a **new patch on any program
+change**. Read out of `/root/fw_dir/mother.pd`:
+
+| Incoming | mother does |
+|---|---|
+| CC 21–24, any channel | sets `knob1`–`knob4` |
+| CC 25 | presses **`aux`** |
+| CC 26, CC 64 | encoder / footswitch |
+| Program change | **loads a different patch** |
+| Note on/off | sends `notes` |
+
+**This collides head-on with the nanoKONTROL**, whose top button row is CC 21–29 by this
+project's own by-tens scheme. ✅ Measured on the device: `btn-t-5` **pressed aux and toggled the
+transport**, and `btn-t-1`…`btn-t-4` slammed knobs 1–4 — so a single button press jerked the
+tempo to 500 BPM and back to 10 on release. Phase 5 is what made it dangerous; before aux drove
+the transport, CC 25 did nothing.
+
+**`u_init` sends `midiInGate 0` at load and again at 2 s.** mother's own comment states the
+contract: *"All MIDI output and input can be suppressed by sending a 0 to `midiOutGate` and
+`midiInGate`."* Each gated path runs through a `[spigot 1]` fed by `[r midiInGate]`.
+
+⚠️ **The second send is the one that matters.** ✅ The mother **binary** pushes its own
+`midiInGate 1` over OSC — mother.pd has `routeOSC /midiInGate` — roughly half a second after the
+patch loads, so a value sent at `loadbang` is silently overwritten. Measured on the device with an
+`[r midiInGate]` print: `0` (ours), `1` (the binary), then `0` again at 2 s, and nothing further
+out to twelve seconds. **Anything a patch sets on mother's MIDI settings at load needs the same
+treatment.** `/sdcard/MIDI-Config.txt` stores only the channel, so there is no persistent setting
+for this.
+
+✅ **It gates only the MIDI-derived paths.** mother has *two* `s notes` — one fed by `oscIn`, which
+is the physical keyboard, and one behind the gate, which is `notein`. Same split for the knobs.
+So the front panel keeps working and only mother's interpretation of incoming MIDI stops.
+Cut It's own `[ctlin]` objects read Pd's MIDI system directly and are unaffected.
+
+*(This means `midiInGate` is a name the patch **sends**, despite being listed among the ones
+mother sends to the patch — it is `[r midiInGate]` inside mother.)*
+
 ### MIDI out from Pd
 
 Raw System Real-Time bytes go straight out `[midiout]` as decimal floats ✅ — demonstrated in
@@ -124,13 +164,28 @@ Clock is **24 PPQN** — 24 pulses per quarter note, one every 20.8 ms at 120 BP
 | | |
 |---|---|
 | BPM ÷ 60 × 24 → **`[phasor~]`** at the pulse rate | 48 Hz at 120 BPM |
-| **`[threshold~ 0.5 2 0.1 2]`** → one bang per cycle | the phasor crosses 0.5 once per ramp and falls below 0.1 on the wrap |
+| **`[threshold~ 0.5 0 0.1 0]`** → one bang per cycle | the phasor crosses 0.5 once per ramp and falls below 0.1 on the wrap |
 | every pulse emits **248** and increments a counter | `[mod 24]` = 0 is the beat, published on `clock` |
 | **out on Pd MIDI ports 1 and 3** | the Launchpad and the SP-404 — `Pure Data:4` and `Pure Data:6`, already in `wire.sh` |
 
 **Counting the pulses rather than running a second oscillator is what makes the beat and the MIDI
 pulse the same clock by construction.** ✅ Measured on the Mac under real DSP: 6 beats in 3 s at
 120 BPM, 3 in 3 s at 60 — [plan-tests.md](plan-tests.md) item 48.
+
+**Range: 10–500 BPM from knob 1, clamped to 5–600.** The control range and the legal range are
+different decisions, and the legal one is wider at both ends so a bench, a tap tempo or an LFO is
+not limited by what one knob chose.
+
+⚠️ **Both `threshold~` debounces are ZERO, and that is load-bearing.** ✅ `threshold~` decrements
+its dead time **once per DSP block, not per millisecond**, so any non-zero debounce burns a whole
+1.45 ms block on every state change. With the obvious-looking `2 ms` the clock **silently lost
+pulses above about 430 BPM** — 17 beats where 25 were due at 500 BPM. At zero the floor is two
+blocks per pulse: **344 Hz measured, which is 44100 / 64 / 2 exactly, or 860 BPM.** A `phasor~` is
+monotonic and cannot bounce, so there was never anything for a debounce to protect against.
+[plan-tests.md](plan-tests.md) item 58.
+
+⚠️ **A `c_clock`'s ratio multiplies that ceiling**: `ratio × tempo` must stay under ~860 BPM
+equivalent, so at the 600 BPM clamp the highest safe ratio is about 1.4.
 
 ⚠️ **Audio-domain does not fix the jitter, and never could.** `threshold~` reports on a 64-sample
 block boundary exactly as `metro` fires on one, so the ~1.45 ms below is unchanged. What it buys
@@ -413,8 +468,46 @@ already correct for this rig. ✅ Arrives on **Pd channel 33**. ✅
 | Program Change 0–15 | Selects patterns 1–16 | 📄 |
 | Pitch bend | Only when INPUT FX is Vocoder, on MIDI ch 11 | 📄 |
 | Clock, Start/Stop/Continue | Drives BPM SYNC tempo | ✅ |
+| Start (250) | **Starts the pattern sequencer on its own** | ✅ |
+| Stop (252) | Stops it | ✅ |
 
 Velocity 100 works for triggering; `[makenote]` handles the note-offs. ✅
+
+### ⚠️ Where the external tempo actually shows — read this before debugging sync ✅
+
+**The BPM number beside a pad is that SAMPLE's tempo, not the sync tempo.** Pad 1 reads 150 and
+pad 2 reads 160 on this unit, and neither number moves when the 404 is following an external
+clock. Watching it is the natural thing to do and it is the wrong number entirely — it cost an
+afternoon.
+
+**The external tempo lives on the Pattern Select screen, as `EXT nnn`.** Measured against a
+hand-rolled clock from `tools/midiout-probe.pd`:
+
+| Pulse interval sent | Implied BPM | 404 displayed |
+|---|---|---|
+| 20.833 ms | 120.0 | **`EXT 120`** ✅ |
+| 30.833 ms | 81.1 | **`EXT 81`** ✅ |
+
+So the 404 infers tempo from pulse intervals correctly and to the digit.
+
+⚠️ **The 404 only follows between 40 and 200 BPM.** ✅ Measured by sweeping `u_tempo` across its
+full 10–500 range: `EXT` slides down to **40** and stops, and up to **200** and stops. Outside that
+window the 404 is pinned and simply no longer agrees with the Organelle. Nothing is broken — it is
+a device limit, and it is one of the reasons the design does not rely on clock for anything that
+has to be tight.
+
+**Three behaviours worth knowing, all ✅ measured:**
+
+- **It slides into a tempo it has not seen** — `EXT` ramps gradually from the old value to the
+  new one, which is the several-pulse averaging made visible. It **snaps** instantly to a tempo it
+  has already learned. So a slow slide is the inference working, not a fault.
+- ⚠️ **When the clock stops, it does not hold the last external tempo — it reverts to its own
+  internal one.** The display changes from `EXT 81` back to `BPM 125`. This is the concrete form
+  of *a stopped clock is a wrong tempo rather than no tempo*, and it is why `u_tempo` keeps
+  sending 248 whether or not the transport is running.
+- **Start alone drives the sequencer.** 250 starts the pattern, 252 stops it, with no clock
+  needed to make that happen — which makes Start the unambiguous test of whether the 404 is
+  listening at all. A tempo display is not: it may simply be showing you a sample's BPM.
 
 ### Two hard limits
 

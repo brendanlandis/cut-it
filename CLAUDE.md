@@ -80,8 +80,7 @@ tools/fetch-errors.sh  pulls the error log back off the device and summarises it
 tools/               diagnostic patches, plus pd-layout-check.py
 plan-v02.md          the build plan — the phases still to come, and EVERY open question
 plan-tests.md        ordered hardware checks, with results
-plan-phase5-brief.md transient — the onboarding brief for whoever builds Phase 5. Delete on landing
-ref-build-log.md     Phases 0-4 as built: outcomes, and every correction they produced
+ref-build-log.md     Phases 0-5 as built: outcomes, and every correction they produced
 ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow
 ref-hardware.md      the rig and the device — wiring, power, SSH, paths, how Pd launches
 ref-software.md      how the instrument works — architecture, timing model, decisions

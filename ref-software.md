@@ -196,6 +196,12 @@ accurate as internal timing, including tempo modulation that provably cannot wor
 | **Pd sequences, sends notes** | Tight. Modulate as violently as you like |
 | **Device sequencers synced to clock** | Must infer tempo. Lag and drift under modulation |
 
+✅ **Now measured, and the numbers argue the same way.** The SP-404 will only follow an external
+clock between **40 and 200 BPM** — sweep past either end and it pins there while the Organelle
+carries on. Cut It's own range is 10–500. So clock-following cannot cover the instrument's range
+even in principle, and anything outside 40–200 has to arrive as note events or not at all.
+[plan-tests.md](plan-tests.md) item 65.
+
 Pd's note output still carries the ~1.45ms block quantisation, so this is not sample
 accurate. But it is fixed absolute jitter rather than compounding inference lag, and it is
 inaudible at trigger rates. The fastest timing — grain chopping — never leaves the Organelle

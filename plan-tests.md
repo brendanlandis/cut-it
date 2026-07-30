@@ -198,13 +198,21 @@ No hardware needed, and it is repeatable in seconds — the pattern is worth reu
       are 10 s apart — so it expired exactly as step 07 fired. Only the expected *background*
       was wrong. **Every step now re-asserts the modal.** The general lesson: a timed test
       against a layer that expires must re-assert its own preconditions.
-- [ ] **22. Does the ALERT buffer work?** ⬜ `tools/alert-buffer-probe.pd` — draws into buffer
-      4, `gFlip 4`, `setscreen 4`, waits six seconds, `setscreen 3`. Only `setscreen` itself is
-      documented; drawing into buffer 4 and flipping it is inferred. If `BUFFER-4` appears and
-      then the meters return, `draw-alert` could move there and drop from ~70 messages/second
-      to about five per alert. If the screen blanks or never changes, screen 3 was the right
-      call anyway. Record either result in [ref-display.md](ref-display.md) — it is the last
-      ⬜ in the OLED section.
+- [x] **22. Does the ALERT buffer work?** ✅ **Yes — writable, displayable, and reversible.**
+      `tools/alert-buffer-probe.pd` drew into buffer 4 while `g_oled` kept redrawing screen 3
+      underneath, `setscreen 4` showed it, and `setscreen 3` brought the live meters back after
+      the six-second dwell. **That closes the last ⬜ in the OLED section.**
+
+      **It is still not adopted, deliberately** — see [ref-display.md](ref-display.md). Writable
+      is not the same as safe: buffer switching is edge-triggered where every `g_oled` layer is
+      state-driven, so a lost `setscreen 3` strands the display on a stale alert with no console
+      to say so, whereas a dropped frame today self-corrects in 100 ms. And there is nothing to
+      optimise — an alert is a 2–4 s event at ~70 msg/s against a home screen that sustains the
+      same rate continuously.
+
+      *By-product:* the probe's own second line was 24 characters and **clipped at 21**,
+      re-confirming the 8px font limit and that `gPrintln` truncates rather than wrapping. The
+      probe now says `buffer-4-works`.
 
 ---
 

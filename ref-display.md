@@ -98,9 +98,9 @@ AUX = 1     MENU = 2     PATCH = 3     ALERT = 4
 ✅ **Draw to screen 3.** Sending screen 1 writes to an undisplayed buffer and looks exactly
 like a dead API — this cost a debugging round trip.
 
-`ALERT` is a separate buffer worth reserving for the error path — but ⬜ **drawing into it has
-never been tested**, and Phase 3 deliberately does not rely on it. See *The ALERT buffer is
-still unverified* below.
+✅ **All four buffers are writable, and `setscreen` switches between them in both directions** —
+measured with `tools/alert-buffer-probe.pd`. `g_oled` nevertheless draws everything to screen 3
+and never switches; see *The ALERT buffer works and is unused anyway* below for why.
 
 **Which buffer is *shown* is switched with `/oled/setscreen <n>`.** ✅ Seen in
 `save-patch.sh`, which flips to the AUX screen to display "Saving…" and back to PATCH
@@ -390,21 +390,28 @@ because the boot sequence finishes before you can get to the window.
 **The same arbiter shape applies to `g_grid`** on the Launchpad — playhead, slot state, mode
 and meters all contend for the same 64 pads. Build the pattern once, instantiate it twice.
 
-### The ALERT buffer is unverified ⬜, and unused by choice
+### The ALERT buffer works ✅ and is unused anyway
 
-Phase 3 draws alerts to **screen 3, the buffer already on show**, as the top-priority layer.
-Drawing into buffer 4 and `setscreen`-ing to it was the original plan, but its stated benefit —
-"the performance display underneath is never disturbed" — does not exist here: `g_oled` clears
-and rebuilds screen 3 from stored state ten times a second, so there is nothing to preserve and
-restore is automatic on the next frame.
+**Measured, not inferred.** `tools/alert-buffer-probe.pd` drew a box and two lines of text into
+buffer 4 while `g_oled` carried on redrawing screen 3 underneath, `setscreen 4` displayed it,
+and `setscreen 3` brought the live meters back six seconds later. Drawing into an off-screen
+buffer, `gFlip`-ing it and switching in both directions all work.
 
-Only `setscreen` itself is documented (from `save-patch.sh`); **drawing into buffer 4 and
-flipping it is inferred and has never been tested.** Two reasons not to adopt it even if the
-probe passes: an alert is a 2–4 second event costing ~70 messages/second against a home screen
-that sustains the same rate continuously, so there is nothing to optimise; and buffer switching
-is **edge-triggered**, where every other layer is state-driven — a lost `setscreen 3` strands
-the display on a stale alert, on a device with no console, whereas a dropped frame today
-self-corrects 100 ms later.
+**`g_oled` still draws everything to screen 3 and never switches**, for two reasons that a
+passing probe does not change:
+
+- **There is nothing to optimise.** The original benefit — "the performance display underneath
+  is never disturbed" — does not exist here, because `g_oled` clears and rebuilds screen 3 from
+  stored state ten times a second, so nothing needs preserving and restore is automatic on the
+  next frame. The saving would be an alert dropping from ~70 messages/second to about five, for
+  a 2–4 second event, against a home screen that sustains that same rate continuously.
+- **Writable is not the same as safe.** Buffer switching is **edge-triggered**, where every
+  layer in the arbiter is state-driven. A lost `setscreen 3` strands the display on a stale
+  alert on a device with no console; a dropped frame today self-corrects in 100 ms. Trading a
+  self-healing design for a saving that doesn't matter is the wrong trade.
+
+Worth knowing the capability exists — `setscreen` is how `save-patch.sh` shows "Saving…" — but
+using it would make the alert the one layer that behaves differently from the other three.
 
 ---
 

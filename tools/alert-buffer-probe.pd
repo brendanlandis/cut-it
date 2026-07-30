@@ -6,7 +6,7 @@
 #X obj 20 300 t b b b;
 #X msg 1400 350 drawing into buffer 4 then switching to it;
 #X obj 1400 390 print PROBE;
-#X msg 620 440 sendtyped /oled/gClear ii 4 1  \, sendtyped /oled/gBox iiiiii 4 0 0 127 63 1  \, sendtyped /oled/gPrintln iiiiis 4 8 16 16 1 BUFFER-4  \, sendtyped /oled/gPrintln iiiiis 4 8 44 8 1 if-you-see-this-it-works  \, sendtyped /oled/gFlip i 4  \, sendtyped /oled/setscreen i 4;
+#X msg 620 440 sendtyped /oled/gClear ii 4 1  \, sendtyped /oled/gBox iiiiii 4 0 0 127 63 1  \, sendtyped /oled/gPrintln iiiiis 4 8 16 16 1 BUFFER-4  \, sendtyped /oled/gPrintln iiiiis 4 8 44 8 1 buffer-4-works  \, sendtyped /oled/gFlip i 4  \, sendtyped /oled/setscreen i 4;
 #X obj 620 490 s oscOut;
 #X obj 20 580 del 6000;
 #X obj 20 620 t b b;

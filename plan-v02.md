@@ -181,7 +181,9 @@ That also clears the phase's biggest unknown — `packOSC` drops a mismatched ty
 - **`u_err` does not draw.** This section used to say it writes to the ALERT buffer, which
   contradicts *Banned* — two writers, one screen. It filters and forwards onto `disp`.
 - **The alert draws to screen 3**, not the ALERT buffer. Nothing underneath needs preserving
-  when the frame is rebuilt from state ten times a second; buffer 4 remains ⬜ untested.
+  when the frame is rebuilt from state ten times a second. ✅ Buffer 4 has since been proven
+  writable and switchable — and deliberately still isn't used, because it would make the alert
+  the one edge-triggered layer in a state-driven arbiter.
 - **`route`'s remainder trap is wider than documented** — any remainder whose first atom is a
   symbol arrives as a selector, not just a lone symbol. And `[list split n]` on exactly *n*
   atoms silently never fires its right outlet, which is what would have made `grain 12` draw as
@@ -328,7 +330,6 @@ procedure in [plan-tests.md](plan-tests.md) Session 3, items 12–13.
 
 | Question | Where it stands |
 |---|---|
-| **Does the ALERT buffer work?** | Phase 3 deliberately does not rely on it, and the arbiter is *better off* not switching buffers — a lost `setscreen 3` would strand the display, where the fixed-clock redraw self-corrects. `tools/alert-buffer-probe.pd` answers it in two minutes; [plan-tests.md](plan-tests.md) item 22 |
 | **Can Pd emit an OSC blob?** | Gates `gWaveform` and `gFrame` — so it gates ever drawing the captured buffer, which is what would stop playhead placement being blind. Untested ⬜ |
 | **Does the 404's *pattern playback* transmit notes?** | `SEQ Note Out` is On and pad presses transmit, but no pattern has been captured. Determines whether the 404 is a compose-time authoring surface. Watch for the reported stray continuous C |
 | **Can Novation Components disable the onboarding drive?** | A cleaner fix than the `mount.sh` guard, since it changes nothing on the Organelle. Untried |

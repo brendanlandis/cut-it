@@ -27,7 +27,7 @@ and `mode`, exactly as a controller would.
 |---|---|
 | `phase3-bench.pd` | **The acceptance run, self-driving.** Fourteen steps, 10 s apart, ~3 minutes. Each prints what it is sending and a **PASS IF** line *before* the screen moves — including the steps whose correct result is that nothing happens, which are otherwise impossible to mark off. Run it in the **foreground** and watch the OLED. |
 | `phase3-diag.pd` | Counts rather than dumps. `FRAMES` and `MESSAGES` are cumulative totals printed once a second, so the rate is the gap between lines — expect +10 and +100. Printing every OSC message instead would slow down the thing being measured. |
-| `alert-buffer-probe.pd` | Answers the last ⬜ in [ref-display.md](../ref-display.md): draws into the ALERT buffer (screen 4), `setscreen 4`, waits, `setscreen 3`. Only `setscreen` itself is documented; drawing into buffer 4 is inferred. |
+| `alert-buffer-probe.pd` | ✅ **Answered:** draws into the ALERT buffer (screen 4), `setscreen 4`, waits six seconds, `setscreen 3`. All of it works — but `g_oled` still doesn't use buffer 4, for the reasons in [ref-display.md](../ref-display.md). Keep it as the re-check if that ever gets revisited. |
 
 ## `pd-layout-check.py`
 

@@ -23,7 +23,7 @@
 #X obj 240 708 t b b b b;
 #X msg 320 746 === STEP-03-of-18 === TWO MOVERS -- chop-size and grain together;
 #X obj 320 776 s \$0-say;
-#X msg 1100 746 PASS IF: TWO stacked pairs -- grain over 12 at the top and chop-size over 43 % below -- newest on top and the value mid-sized;
+#X msg 1100 746 PASS IF: TWO stacked pairs -- chop-size over 43 % on top and grain over 12 below -- FIRST TOUCHED on top and the value mid-sized;
 #X obj 1100 776 s \$0-say;
 #X msg 2300 746 chop-size 43 %;
 #X obj 2300 776 s disp;
@@ -33,7 +33,7 @@
 #X obj 240 858 t b b b b b b b;
 #X msg 320 896 === STEP-04-of-18 === FIVE MOVERS;
 #X obj 320 926 s \$0-say;
-#X msg 1100 896 PASS IF: FIVE small lines newest first: btn-t-2 then knob-3 then slider-1 then grain then chop-size;
+#X msg 1100 896 PASS IF: FIVE small lines in the order they were first touched: chop-size then grain then slider-1 then knob-3 then btn-t-2;
 #X obj 1100 926 s \$0-say;
 #X msg 2300 896 chop-size 43 %;
 #X obj 2300 926 s disp;
@@ -49,7 +49,7 @@
 #X obj 240 1008 t b b b b b b b b b;
 #X msg 320 1046 === STEP-05-of-18 === SEVEN MOVERS -- two more than fit;
 #X obj 320 1076 s \$0-say;
-#X msg 1100 1046 PASS IF: still exactly FIVE lines -- a7 a6 a5 a4 a3 -- and a1 and a2 have fallen off without any flicker;
+#X msg 1100 1046 PASS IF: still exactly FIVE lines -- a1 a2 a3 a4 a5 -- and a6 and a7 are REFUSED rather than pushing the rows around. Nothing shifts;
 #X obj 1100 1076 s \$0-say;
 #X msg 2300 1046 a1 1;
 #X obj 2300 1076 s disp;
@@ -67,11 +67,11 @@
 #X obj 4220 1076 s disp;
 #X obj 140 1130 del 10000;
 #X obj 240 1158 t b b b;
-#X msg 320 1196 === STEP-06-of-18 === AGEING -- only a7 is kept alive from here;
+#X msg 320 1196 === STEP-06-of-18 === AGEING -- only a1 is kept alive from here;
 #X obj 320 1226 s \$0-say;
-#X msg 1100 1196 PASS IF: the other four fade out within about 1.3 s and a7 alone is left -- and it grows BACK to the big 24px layout;
+#X msg 1100 1196 PASS IF: the other four fade out within about 1.3 s and a1 alone is left -- and it grows BACK to the big 24px layout;
 #X obj 1100 1226 s \$0-say;
-#X msg 2300 1196 a7 7;
+#X msg 2300 1196 a1 1;
 #X obj 2300 1226 s disp;
 #X obj 140 1280 del 10000;
 #X obj 240 1308 t b b b b;
@@ -161,13 +161,13 @@
 #X obj 240 2658 t b b;
 #X msg 320 2696 === STEP-16-of-18 === THE NANO -- two faders at once then three then all nine;
 #X obj 320 2726 s \$0-say;
-#X msg 1100 2696 PASS IF: two stay readable as stacked pairs -- three to five become small lines -- and nine still shows five with the oldest falling off;
+#X msg 1100 2696 PASS IF: two stay readable as stacked pairs -- three to five become small lines -- and nine shows the FIVE YOU TOUCHED FIRST with the rest refused. Rows must not reshuffle while you move things;
 #X obj 1100 2726 s \$0-say;
 #X obj 140 2780 del 10000;
 #X obj 240 2808 t b b;
-#X msg 320 2846 === STEP-17-of-18 === THE NANO -- press every button then the transport;
+#X msg 320 2846 === STEP-17-of-18 === THE NANO -- press every button then all six transport keys;
 #X obj 320 2876 s \$0-say;
-#X msg 1100 2846 PASS IF: all 18 buttons name themselves on press and nothing on release. LOOP flips the footer between compose and perform. REW FF and REC report their own names;
+#X msg 1100 2846 PASS IF: all 18 buttons name themselves on press and nothing on release. The six transport keys report xport-1 to xport-6 on press -- no toggle and no footer change;
 #X obj 1100 2876 s \$0-say;
 #X obj 140 2930 del 10000;
 #X obj 240 2958 t b b;

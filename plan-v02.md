@@ -344,11 +344,24 @@ objects are the seam where v0.3 swaps in real names and where mode-dependent map
 | Control | Emits |
 |---|---|
 | Sliders, knobs | `disp` → `<name> <value>`, raw 0–127. Scaling belongs to whoever consumes it later |
-| Buttons | `disp` → `<name> 1` on press only. Momentary; Pd owns all toggle state |
-| PLAY / STOP | `[s start]` / `[s stop]` — allowlist buses, first consumed in Phase 5 — plus `disp` |
-| LOOP | toggles `mode` compose ↔ perform, and writes the mode to the footer |
-| REW / FF / REC | `disp` by name only, so they are visibly alive and visibly unassigned |
+| Buttons | `disp` → `<name> 1` on press only. Momentary; Pd owns any state |
+| The six transport keys | exactly the same — `xport-1`…`xport-6` on press. **No toggle, no transport meaning** |
 | An unmapped CC in the block | `warn m_nano cc-<n>-unmapped` on `err`, so a surprise is visible rather than silent — and it exercises step 0 |
+
+**The transport row gets ordinary CC treatment**, decided after playing with it: it is being
+repurposed as **scene selection**, so "play" and "loop" would be a lie. CC 41–46 give `div 10` = 4
+and `mod 10` = 1…6, so it folds into the decode as a **fifth kind** and needs no separate path —
+which deleted a whole subpatch. Names follow physical position, like every other control.
+
+⚠️ **Consequence: nothing drives `mode`, `start` or `stop` any more.** `mode` degrades safely
+(`u_err` defaults to verbose) and all three are documented as first consumed in Phase 5, but the
+end-to-end mode test that the LOOP toggle provided is gone. **Deciding what drives them is a
+Phase 5 / 6 decision** — the encoder, the aux button and the Launchpad are all candidates.
+
+⚠️ **Second consequence, smaller:** the decode is now purely CC-number-based within the block, so
+CC 41–49 on *either* channel reads as `xport-1`…`xport-9` rather than warning. For scene selection
+that is probably what you want; there is no bounds check on the units digit anywhere, so CC 0 has
+always read as `slider-0`.
 
 ⚠️ **`disp` parameter values must be floats.** `g_oled` sends them through `[makefilename %g]`,
 which refuses a symbol. So the mode cannot be a parameter: it goes to the **footer**, which is
@@ -385,6 +398,13 @@ cascade, so the frame trigger grows one outlet.
 
 Side benefit: the stale-unit trap is **structurally eliminated** in the new path, because each
 line is written whole rather than field by field.
+
+**Rows do not move once a control has one.** The first design pushed the most-recently-moved to
+the front, which is what this plan originally asked for and was **wrong in the hand** — two faders
+moving together swapped places several times a second and could not be read. A control already on
+screen is now updated **in place**; a new one is appended below; and a **sixth is refused** rather
+than rotated in, so nothing ever shifts while you are reading it. The cost is stated honestly: move
+nine faders and you see the five you touched first, not the five most recent.
 
 Font size adapts to how many are moving. The settled "24px is readable at arm's length" is
 preserved for the common case — one hand, one control — and degrades rather than being abandoned.
@@ -544,6 +564,21 @@ XLR→1/4" for the mic — are probably already in the box; the full list is in
 interface and the original cubit in one box, worth it only if more DIN synths arrive. Don't buy
 a ground-loop isolator pre-emptively — but know it is the cause if hum appears, rather than
 chasing a bad cable.
+
+### OLED UI refinement — v0.3
+
+Phase 4 made the display *correct*; it is not yet *good*. From reading it on the hardware:
+
+| Wanted | Note |
+|---|---|
+| **Sliders instead of numbers** | a bar reads faster than a number for a continuous control. `gFillArea` already does this for the meters, so the drawing is solved — what is not is how a bar and a name share 128 px, and what happens when five of them stack |
+| **Show where the control was when the edit began** | a tick at the value the fader held when you first touched it, so you can see how far you have moved and get back. Needs a per-control "value at first touch", which is a new field in the param store — cheap, since the store already keys by name |
+| **Buttons should not display `1`** | the `1` is a placeholder for "pressed". What a button shows depends on what it is mapped to, so this resolves itself when v0.3 gives them meanings |
+| **Transport keys as scene selection** | ✅ already done in Phase 4 — they are ordinary CC buttons now. What remains is the *mapping*, which is v0.3 |
+
+The first two are real design work rather than plumbing, and both want the hardware in front of
+you. The param store is the right place for both: it already holds a name, a value, a unit and a
+frame stamp per row.
 
 ### Deliberately deferred
 

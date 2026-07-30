@@ -408,6 +408,32 @@ the on-device controller sweep is still outstanding; everything that does not ne
       **17**. `wire.sh` has connected it since Phase 2, so if it is silent check `aconnect -l`
       before suspecting the patch. Steps 15–17 of `tools/phase4-bench.pd` are written for exactly
       this.
+- [x] **38b. Everything re-run after the two changes from reading it on hardware.** ✅ The
+      transport row folded into the ordinary button path, and the display switched from
+      most-recently-used ordering to rows that hold their positions:
+
+      | Check | Result |
+      |---|---|
+      | transport keys | `xport-1`…`xport-6` on press, nothing on release, **no `mode` / `start` / `stop` traffic at all** |
+      | CC ≥ 50 in the block | still `warn m_nano cc-<n>-unmapped` |
+      | CC 41–49 | now a *name* (`xport-1`…`xport-9`) rather than a warning — the decode is CC-number-based within the block |
+      | CC 0 | `slider-0` — there is no bounds check on the units digit, and never was |
+      | two controls alternating | the first-touched **holds row 0** across every alternation. This was the whole complaint |
+      | five controls | rows in first-touched order, stable |
+      | a sixth control | **refused**, rows unchanged, nothing shifts |
+      | ageing | the survivor grows back to the 24px layout |
+      | Phase 3 regression | all layers, priorities, both alert TTLs (20 and 40 frames) and the mode filter unchanged |
+
+      ⚠️ **A third instance of the same bug shape.** `moses`'s LEFT outlet carries the value it did
+      not match — the `-1` that `text search` returns for an unseen name — and `text size` passes a
+      float straight through, so `-1` arrived at `text set` as a line number:
+      `error: text set: line number (-1) < 0`, seventeen times in one run. Fixed with a `[t b]`.
+      **The rule is now three-for-three: a reject, left or non-matching outlet carries DATA, and
+      anything behind one that expects a bang needs a trigger in front of it.**
+
+      *(The 4 `write failed` lines in a Mac regression run are `/sdcard` not existing there. That is
+      the documented diagnostic working, and it cannot affect `deploy.sh`, whose check quits at load
+      before the flush metro fires.)*
 - [ ] **39. The OLED read by eye** — the three type-size layouts and the ageing. The geometry is
       verified through `oscOut` on the Mac, but "is 16px actually readable at arm's length" is a
       judgement only the hardware can settle.

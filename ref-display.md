@@ -347,14 +347,22 @@ message instead of two ticks, and it reads as a zone.
 ### Several at once — the param layer is a list ✅ built
 
 With 18 continuous controls, moving two faders together is ordinary use, so the param layer holds
-a **most-recently-used list of up to five entries**, newest first, in `[text define $0-params]`:
-one line of `<frame-stamp> <name> <value> <unit>`. A repeat of a name is deleted and re-inserted at
-the front, so the list is always ordered by last-touched time. More movers than fit is not an
-error — the oldest fall off.
+**up to five entries** in `[text define $0-params]`: one line of
+`<frame-stamp> <name> <value> <unit>`.
+
+**Rows are stable.** A control already on screen is updated **in place** — only its value changes —
+and a new one is appended below. A **sixth is refused** until a row frees up. ⚠️ An earlier version
+pushed the most-recently-moved to the front, which is what plan-v02.md asked for and was **wrong in
+the hand**: two faders moving together swapped places several times a second and were unreadable.
+The cost of stability is honest — move nine faders and you see the five you touched first, not the
+five most recent — and it is the right trade, because a display you cannot read is worth nothing.
 
 **Ageing costs nothing, because the frame clock already runs.** Each entry records the frame it
-last moved in, and every frame the tail is dropped once it falls **13 frames** behind. Ordering by
-last-touched time is what makes that a tail check rather than a scan. 13 and not 12 is deliberate:
+last moved in, and every frame anything **13 frames** behind is dropped. Because rows hold their
+positions, expired entries can be anywhere in the list, so this **scans** — walking from the last
+index toward 0, because deleting a line shifts everything below it and going downward is what makes
+that harmless. `until`'s own count bounds the loop, so an empty store runs it zero times and
+`text get` is never handed a line that does not exist. 13 and not 12 is deliberate:
 `pd layers` still clears `$0-a-param` on a 1200 ms delay, so the store is guaranteed to outlive the
 flag by a frame — otherwise a rounding difference could leave the param layer winning with nothing
 to draw, which looks exactly like a dead patch.
@@ -367,7 +375,7 @@ strips at y=48/56 are untouched throughout.
 |---|---|---|
 | 1 | name 8px @ y=0, value+unit **24px** @ y=12 | ✅ byte-identical to what Phase 3 shipped |
 | 2 | name 8px @ y=0 / value **16px** @ y=8, then name 8px @ y=23 / value 16px @ y=31 | ✅ |
-| 3–5 | **8px** rows at y=0, 9, 18, 27, 36, newest at top | ✅ |
+| 3–5 | **8px** rows at y=0, 9, 18, 27, 36, in the order first touched | ✅ |
 
 **Two movers are NOT two 16px lines**, which is what the plan first called for. 16px fits about ten
 characters across 128 px, so `slider-1 43` would clip to `slider-1 4` — a silent failure that looks

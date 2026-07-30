@@ -302,7 +302,17 @@ Four scenes, switched locally by the SCENE button. **This is hidden state** — 
 switches and Pd is not told. If scenes are ever used, assign **distinct CC numbers per scene**
 so Pd infers the active scene from which CCs arrive. Currently only scene 1 is configured. ⬜
 
-### Transport buttons — the master mode control ✅ adopted and verified
+### Transport buttons ✅ reassigned, and now ordinary CC
+
+⚠️ **They are no longer a mode control.** Phase 4 briefly made LOOP toggle `mode` and PLAY/STOP
+drive the clock; playing with it settled that the row is better spent on **scene selection**, so
+all six now get ordinary momentary-CC treatment — `xport-1`…`xport-6` on press, no toggle, no
+transport meaning. The CC numbers and channel below are unchanged and still correct; only what Pd
+does with them changed. Reason 4 in the list further down — that a separate channel isolates mode
+changes — no longer applies, and `m_nano` decodes both channels through one path because CC 41–46
+give `div 10` = 4, folding the row in as a fifth control kind.
+
+### Why they were moved there in the first place ✅ verified
 
 Six buttons, reassigned in physical reading order and **verified on the wire**:
 

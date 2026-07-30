@@ -7,7 +7,7 @@ Most of this needs scratch patches only — no Cut It code. Diagnostic patches l
 [tools/](tools/). Companion to [ref-hardware.md](ref-hardware.md), which explains *why* each of these
 matters.
 
-**Status:** Sessions 2, 3b, 3c and 4 complete. Session 1 done bar the full-load power check.
+**Status:** Sessions 2, 3b, 3c, 4, 4b and 4c complete. Session 1 done bar the full-load power check.
 Session 3 blocked on the TRS Y-cable; Session 5 not attempted.
 
 **The two tests that could have forced a redesign have both passed:** Pd can drive the
@@ -243,6 +243,214 @@ No hardware needed, and it is repeatable in seconds — the pattern is worth reu
       The factory assignment was overwritten before it was ever read, so what these buttons
       shipped with is now unknown. ✅ The scene file — device-resident state that REC + STOP +
       SCENE at power-on wipes — is backed up in [device/](device/).
+
+---
+
+## Session 4b — Phase 4 groundwork, measured on the Mac
+
+Everything here was run headless against the real `main-dev.pd` with the real nanoKONTROL
+attached, or against the local Pd 0.49-1 binary. **No Organelle needed**, and repeatable in
+seconds — the pattern Session 3c established.
+
+- [x] **23. `[ctlin]`'s outlet firing order.** ✅ **Channel, then controller, then value** —
+      right to left, as the convention says, but *measured* because this repo has been bitten
+      here before (`polytouchin` emits note before value). Proof: `tools/midi-monitor.pd` packs
+      all three and is triggered by the **value**, and the very first event of a session printed
+      `CC: 1 1 1` — correct controller *and* channel. That cannot happen unless both were already
+      stored. **So `m_nano`'s cold stores are safe by measurement, not by hope.**
+- [x] **24. What channel the nano actually reports on, and why the answer moved.** ✅ **The
+      channel block follows Pd's INPUT SLOT, not the device's position in the system MIDI list.**
+      `pd -listdev` first showed the nano as system device 1, then as device 2 once a Scarlett
+      18i8 was plugged in — but opening it with `-midiindev 2` still put it on **channel 1**,
+      because it was Pd's *first opened* input. Slot *n* carries channels `(n-1)*16+1` upward.
+
+      **Consequence:** `main-dev.pd` passes **1** and `main.pd` passes **17**, and what a
+      Mac-side change of hardware alters is only *which system device you pick* to fill Pd input
+      slot 1 — not the channel. An earlier reading of this as "the Scarlett changes the channel to
+      17" was wrong and is recorded here so it is not re-derived.
+- [x] **25. The CC map, re-confirmed through the real patch.** ✅ Slider 1 → CC 1, slider 9 →
+      CC 9, knob 1 → CC 11, top-row button → CC 23, bottom-row button → CC 36, all on channel 1;
+      PLAY → CC 42 and LOOP → CC 44 on channel 2. Every button momentary **127 then 0**. Matches
+      [ref-midi.md](ref-midi.md) exactly.
+- [x] **26. A creation argument on `[u_root]` reaches through.** ✅ `m_nano`'s load-time print
+      reported `17` from `main.pd` and `1` from `main-dev.pd`. That closes the "creation args
+      reaching u_root" risk — the argument is in the patch, not on Pd's command line, so
+      `mother.pd` loading `main.pd` *by name* changes nothing.
+
+      ⚠️ **And it found a trap worth keeping.** The print at `loadbang` **broke `deploy.sh`**,
+      which gates on *output* rather than exit status. The print now sits behind `[del 2000]`:
+      the check quits at load and never sees it, while the by-hand SSH console — the only place
+      it is useful — still gets it. **Any new `[print]` in a deployed abstraction needs the same
+      treatment.**
+- [x] **27. The `text` objects the MRU display and the error log depend on.** ✅ All ten `text`
+      methods are present in the local Pd 0.49-1 binary, and three behaviours were measured
+      rather than assumed:
+
+      | Behaviour | Result |
+      |---|---|
+      | `text set` at a line past the end | **appends at the end** — line 5 of a 2-line text gives 3 lines, not 6 |
+      | `text search <name> 0` | line number on a match, **`-1`** when absent |
+      | `write -c <file>` | plain **newline**-terminated, space-separated fields. Without `-c` Pd writes its own semicolon format and `grep`/`tail`/`awk` stop being useful |
+      | `text set` / `text search` fed a non-list | **`no method for '<atom>'`** — a message whose first atom is a symbol arrives as a *selector*, so `[list append]` first. Same family as the three `route` traps |
+      | `text write` on success | **silent**. On failure it prints `<path>: write failed` to stdout, so a dead SD card stays visible in the by-hand console |
+- [x] **28. `makefilename` accepts `set`.** ✅ `[makefilename slider-%d]` sent `set knob-%d` then
+      `7` gives `knob-7`. Measured because the pattern is a creation argument and switching it at
+      runtime is not obviously supported in 0.49. *(`m_nano` ended up not needing it — routing a
+      packed `<kind> <which>` list gives each kind its own `makefilename` and no ordering to get
+      wrong — but the capability is confirmed for whenever a pattern must change.)*
+- [x] **29. The error log, end to end on the Mac.** ✅ Driven through the real `u_err` with the
+      write path pointed at a scratch file:
+
+      - the **200-line cap holds exactly** — 210 errors in one `[until]` burst left 200 lines
+      - lines read `<ms> <level> <source> <text>`, and the stamps matched the delays that
+        produced them exactly: `500 warn m_test early-warn`, `700 fail m_test late-fail`
+      - the 2 s dirty-flag flush fires
+      - **`quitting` forces a final flush** — the file appeared at 1.3 s, long before the metro's
+        first tick at 5 s. That is the case that matters, since mother gives the patch 100 ms and
+        the error you most want is the one just before it went
+      - the unconditional `[print err]` still fires for every error, whatever the mode
+- [x] **30. `status` replaces `boot`, verified through `oscOut` rather than by grep.** ✅ The
+      footer drew `v0.2-ready` from `u_init`, then `v0-9-test` pushed onto the bus. And a now-stale
+      `boot stale-name` fell through to the **param** layer as name `boot`, value `0` — the
+      documented "a mistyped `disp` name becomes a visible nonsense parameter rather than
+      vanishing", plus a concrete demonstration of why `disp` values must be floats:
+      `makefilename %g` refused the symbol and emitted `0`.
+
+- [x] **31. `m_nano`'s decode, all 21 branches, with no hardware in the loop.** ✅ `[ctlin]` was
+      swapped for `nano-testin` — a three-outlet stand-in driven by `nano-ch`, `nano-cc`,
+      `nano-val` **in that order**, which is ctlin's measured order made explicit. Because the
+      firing order is established separately (item 23), this tests the whole decode
+      deterministically and repeatably:
+
+      | Case | Result |
+      |---|---|
+      | slider 1 / 9, knob 1 / 9 (CC 1, 9, 11, 19) | `slider-1 64`, `slider-9 100`, `knob-1 5`, `knob-9 127` — **the CC 9 → CC 11 boundary is right** |
+      | top / bottom buttons (CC 21, 29, 31, 39) | `btn-t-1 1`, `btn-t-9 1`, `btn-b-1 1`, `btn-b-9 1` |
+      | any button RELEASE (value 0) | **silence** |
+      | CC 45 on the control channel | `warn m_nano cc-45-unmapped` and **no parameter** |
+      | CC 45 again | still no parameter — the flags really are cleared, so no stale name leaks |
+      | a foreign channel (5) | **complete silence** |
+      | PLAY / STOP | `xport-play 1` + a bang on `start`; `xport-stop 1` + a bang on `stop` |
+      | LOOP, twice | `perform` then `compose`, on **both** `mode` and the footer |
+      | REW / FF / REC | their own names, nothing else |
+      | CC 47 on the transport channel | `warn m_nano cc-47-unmapped` |
+
+      ⚠️ **This run found a real bug that reading the patch had not.** The transport's unmapped
+      warning reported **`cc-7-unmapped` instead of `cc-47`**: `[select 1 2 3 4 5 6]`'s reject
+      outlet emits the float it did *not* match — `cc − 40` — and that float landed on `[f]`'s
+      **hot** inlet, overwriting the stored CC rather than reading it out. Fixed with a `[t b]`.
+      The control side was already correct because its reject goes through `[t b b b]` first.
+      **The lesson generalises: a reject outlet carries a value, not a bang, and any `[f]` behind
+      one needs a trigger in front of it.**
+- [x] **32. `text get`'s field semantics — the one that shapes the MRU display.** ✅ Measured:
+
+      | Form | Behaviour |
+      |---|---|
+      | `text get <name>` | the whole line |
+      | `text get <name> 0 1` | field 0 only |
+      | `text get <name> 1 3` on a line with only 2 fields | ⚠️ **`error: text get: field request (1 3) out of range`**, and it prints |
+
+      **So the display cannot use a fixed field request**, because a parameter with no unit has one
+      field fewer than one with a unit. The MRU draw path fetches the whole line and strips the
+      frame stamp with `[list split 1]` instead — always safe here, since every stored line has at
+      least three atoms and `list split` only fails to fire its right outlet when the list is
+      *exactly* the split length.
+
+**One environment note that is not a test result:** `organelle.local` resolves from Brendan's
+terminal but not from the agent's sandboxed shell, which has to use `HOST=root@192.168.1.15`.
+`deploy.sh` needs no change.
+
+---
+
+## Session 4c — Phase 4 on the Organelle
+
+Deployed with `./deploy.sh`. The nanoKONTROL was plugged into the **Mac** during this session, so
+the on-device controller sweep is still outstanding; everything that does not need it passed.
+
+- [x] **33. `[shell]` runs `logroll.sh`, and its return path works.** ✅ The by-hand console showed
+      `errlog-roll: logroll: carried 0 line(s) from the previous session`. So `[shell]` **does**
+      hand stdout back as a usable message — previously ⬜. The design deliberately does not depend
+      on it, but the wall clock does come from `date` inside the script, which is what removed that
+      dependency.
+- [x] **34. A creation argument survives `mother.pd` loading `main.pd` by name.** ✅
+      `m_nano-control-channel: 17` on the device, `1` on the Mac.
+- [x] **35. The error log survives a patch reload — the whole point of step 0.** ✅ Two sessions
+      driven by hand, each raising three errors, with a `killall pd` between them:
+
+      ```
+      BOOT 2026-07-30 05:01:29        <- deploy
+      BOOT 2026-07-30 05:02:28        <- session 1
+      2000 warn m_test session-mark
+      2600 fail m_test disk-check
+      3200 warn m_test third-line
+      BOOT 2026-07-30 05:02:51        <- session 2
+      ```
+
+      Session 1's errors are in the durable log under **their own** `BOOT` line, and session 2's are
+      still in `.cur`. **Under a plain `[text write]` design session 1 would have been erased by
+      session 2's first flush** — a patch reload is the case that breaks it, and it is far more
+      common than a power cycle.
+- [x] **36. `tools/fetch-errors.sh` end to end.** ✅ Reported pd's uptime, confirmed all deployed
+      files md5-identical to the repo, pulled both files with mtimes, and printed counts by level
+      and source before the detail, newest session first and correctly grouped.
+
+      ⚠️ **It found its own bug: `pgrep pd` matches substrings.** On this device that hits a kernel
+      thread (pid 48), so the script cheerfully reported "pd running, up 01:47:20" while pd was in
+      fact killed. Fixed with `pgrep -nx pd`. Verified: `pgrep pd` → `48`, `pgrep -x pd` → empty.
+- [x] **37. The deployed patch is healthy with the rewritten display.** ✅ **117 UDP
+      datagrams/second** at **5.3 % CPU**, load 0.31, socket established to `127.0.0.1:4001` — in
+      line with the 110/s item 21 measured for the home frame, so the MRU rewrite costs nothing
+      noticeable and the real `packOSC` still accepts every typetag the runtime builder produces.
+
+### Still outstanding on hardware
+
+- [ ] **38. The nanoKONTROL sweep on the device**, where it is Pd input slot 2 and the channel is
+      **17**. `wire.sh` has connected it since Phase 2, so if it is silent check `aconnect -l`
+      before suspecting the patch. Steps 15–17 of `tools/phase4-bench.pd` are written for exactly
+      this.
+- [ ] **39. The OLED read by eye** — the three type-size layouts and the ageing. The geometry is
+      verified through `oscOut` on the Mac, but "is 16px actually readable at arm's length" is a
+      judgement only the hardware can settle.
+
+### The procedure, in order
+
+**Do every Mac step first, with the nano still on the Mac. Then move the cable once.**
+
+**Mac, one-time setup.** ⚠️ This Mac's Pd has **no MIDI input saved in its preferences**, so
+`[ctlin]` gets nothing until you set one: Pd 0.49 → *Media → MIDI Settings* → **Input Device 1 =
+nanoKONTROL SLIDER/KNOB** → OK. Pick the nano *by name*: with an interface attached it is not
+device 1 in the system list. What matters is that it is Pd's **input slot 1**, which is what makes
+the channel 1 and matches `[u_root 1]`.
+
+**Mac, static.** `python3 tools/pd-layout-check.py "Cut It"/*.pd tools/phase4-bench.pd` — every
+line must say `0 problems`. Then the syntax check on both entry points; **silence is the pass**,
+and any output at all is what `deploy.sh` would refuse on.
+
+**Mac, boot.** Open `Cut It/main-dev.pd`. Expect `booting` → `wiring` → `launchpad` → the two
+meters with `v0.2-ready` in the footer, and **`m_nano-control-channel: 1` in the Pd console about
+two seconds in**. That print is the whole point of the `[del 2000]`: it is the one direct
+confirmation the channel argument is right, and a wrong one otherwise looks exactly like a dead
+controller.
+
+**Mac, the sweep.** Items 1–5 of *Verification* in the Phase 4 plan. The dev panel's eight rows
+show whatever is drawn, so names are readable there.
+
+**Mac, the error log.** The dev panel's `warn` and `fail` bench buttons raise real errors. To read
+the accumulated log, navigate **main-dev.pd → u_root → u_err → pd logfile** and click
+`open-error-log`. ⚠️ **Do not open `u_err.pd` as a file** — that is a different instance with its
+own `$0` and its log is empty. On the Mac `[shell]` is stubbed, so no file is written and only the
+in-memory view works; that is expected and is why the log exists for the *device*.
+
+**Then move the nano to the Organelle**, plugged in directly rather than through a hub, and
+`./deploy.sh`. Confirm the wiring before suspecting the patch:
+`ssh root@organelle.local 'aconnect -l | grep -A1 nanoKONTROL'` should show a connection to
+`Pure Data` port 1. The channel is now **17**, and `main.pd` already passes it.
+
+**Device, the log across a power cycle** — the only real test of step 0. Clear the test data first
+(`./tools/fetch-errors.sh --clear`), raise errors with `tools/phase4-bench.pd`, **power-cycle**,
+select the patch from the menu, then `./tools/fetch-errors.sh`. Both sessions must appear, each
+under its own `BOOT` line. Selecting from the menu rather than a `deploy.sh` load also keeps
+`/tmp/curpatchname` correct, which matters for Phase 8.
 
 ---
 

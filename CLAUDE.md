@@ -51,7 +51,13 @@ Cut It/              the deployable patch — folder name is what appears in the
   u_root.pd            the actual root — the audio chain, and where every phase hangs its work
   u_init.pd            ordered startup: MIDI wiring, Launchpad mode, panic and safe exit
   u_level.pd           signal → a named level on the disp bus
-  u_err.pd             the err bus; filters by mode, forwards to disp. Never draws
+  u_err.pd             the err bus; filters by mode, forwards to disp. Never draws.
+                       Also keeps a persistent log on /sdcard, so an error raised
+                       mid-set can be read back the next day
+  logroll.sh           rolls the previous session's error log into the durable one at
+                       load, stamped with a real wall clock from `date`
+  m_nano.pd            the nanoKONTROL: CC -> named parameters on disp, transport ->
+                       mode / start / stop. Takes its Pd channel block as an argument
   g_oled.pd            the display arbiter — home < param < modal < alert, each with a TTL.
                        Sole owner of oscOut and screenLine*
   u_mother-stub.pd     impersonates mother.pd off-device AND is the dev panel — the whole
@@ -61,6 +67,7 @@ Cut It/              the deployable patch — folder name is what appears in the
   wire.sh              aconnect calls, run by u_init via [shell]
 mac-stubs/           stand-ins for device-only externals, for the local syntax check. NOT deployed
 deploy.sh            check → scp → reload → load, in one command (there is no rsync on the device)
+tools/fetch-errors.sh  pulls the error log back off the device and summarises it
 tools/               diagnostic patches, plus pd-layout-check.py
 plan-v02.md          the build plan — phases in order, and EVERY open question in the project
 plan-tests.md        ordered hardware checks, with results

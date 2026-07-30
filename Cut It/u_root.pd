@@ -1,7 +1,7 @@
 #N canvas 40 40 1340 860 12;
 #X text 20 20 u_root -- the actual root of Cut It. main.pd (on the device) and main-dev.pd (on the Mac) both instantiate this and nothing else \, which is what stops the two entry points drifting., f 58;
-#X text 20 110 creation args: none. inlets: none. outlets: none., f 58;
-#X text 20 145 THE AUDIO PATH IS WIRES \, ON PURPOSE. The four stages go in the gap below \, right to left \, so the chain stays something you can read off the canvas instead of tracing through send names., f 58;
+#X text 20 110 creation arg 1: the Pd channel the nanoKONTROL's own channel 1 lands on -- 17 on the Organelle \, 1 on the Mac. Passed straight to m_nano \, and the ONE thing main.pd and main-dev.pd are allowed to disagree about. inlets: none. outlets: none., f 58;
+#X text 20 215 THE AUDIO PATH IS WIRES \, ON PURPOSE. The four stages go in the gap below \, right to left \, so the chain stays something you can read off the canvas instead of tracing through send names., f 58;
 #X obj 20 300 r~ inL;
 #X obj 20 580 throw~ outL;
 #X obj 330 300 r~ inR;
@@ -18,6 +18,8 @@
 #X text 650 730 The level taps are a SIGNAL fan-out \, which needs no trigger: signal connections all run every block \, so there is no firing order to get wrong. The trigger rule is about messages., f 34;
 #X obj 1000 430 u_err;
 #X text 1000 470 the error bus. Anything raising a problem sends level \, source and text to err \; this decides what the mode lets through and forwards it to disp. It never draws -- g_oled owns the screen., f 34;
+#X obj 1000 620 m_nano \$1;
+#X text 1000 660 the nanoKONTROL. Decodes CC into named parameters on disp and the transport buttons into mode \, start and stop. Nothing below the m_ layer knows this device exists., f 34;
 #X connect 3 0 4 0;
 #X connect 3 0 7 0;
 #X connect 5 0 6 0;

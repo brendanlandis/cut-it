@@ -105,3 +105,46 @@ selector rules, `sendtyped` arity, `quitting`) are in
   `route /oled/gClear` emits `ii 3 1` — the typetag and its args. Feeding that to a float inlet
   prints `float: no method for 'ii'` on every message, which at a 10 Hz redraw is an endless
   console scroll. Put `[t b]` in between when you only care that the message happened.
+
+## Phase 4
+
+### `phase4-bench.pd` — the Phase 4 acceptance run
+
+Same shape as `phase3-bench.pd`: self-driving, ten seconds a step, and a printed `PASS IF` for
+every step **including the ones whose correct result is that nothing happens**. Load it as a third
+patch after `mother.pd` and `main.pd`. Steps 1–14 drive themselves off the `disp`, `err` and `mode`
+buses; **15–17 need your hands on the nanoKONTROL**, because nothing but the real controller can
+exercise `[ctlin]`.
+
+Step 2 and step 6 are the regression gate on the display rewrite. Steps 7–14 are `phase3-bench`'s
+assertions, re-run because the param layer they sit next to was rewritten.
+
+⚠️ **No commas or semicolons in a message box** — both are message separators, so a comma in a
+`PASS IF` string splits it and the remainder goes somewhere unhelpful (`canvas: no method for
+'then'`). `phase3-bench.pd` says so and it caught this one out too.
+
+### `fetch-errors.sh` — read the error log back off the device
+
+`u_err` now keeps a persistent log, so an error raised mid-set can be read the next day:
+
+```sh
+./tools/fetch-errors.sh              # summary, then detail, newest session first
+./tools/fetch-errors.sh --follow     # poll the live session
+./tools/fetch-errors.sh --clear      # read it, then truncate (asks first)
+HOST=root@192.168.1.15 ./tools/fetch-errors.sh
+```
+
+It reads **both** `/sdcard/cut-it-err.log` (every rolled session) and `/sdcard/cut-it-err.cur` (the
+one running now, or the last one if the patch has not been reloaded since — the normal case, because
+power-cycling the Organelle does not reload the patch). It also md5-compares the deployed patch
+against the repo and says so loudly if they differ, because an error from a build you no longer have
+is a trap.
+
+### Re-running `m_nano`'s decode test without the hardware
+
+`m_nano`'s decode was verified by swapping `[ctlin]` for a three-outlet stand-in driven by
+`nano-ch`, `nano-cc`, `nano-val` **in that order** — which is `ctlin`'s measured firing order made
+explicit. To repeat it: copy `Cut It/` aside, replace the `ctlin` line in `m_nano.pd` with a
+stand-in abstraction of that shape, and drive it. All 21 cases and the bug it found are recorded in
+[plan-tests.md](../plan-tests.md) item 31. The firing order itself is item 23 and needs the real
+device.

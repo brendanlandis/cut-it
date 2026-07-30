@@ -14,7 +14,7 @@
 #X msg 300 470 modal wiring;
 #X msg 300 620 modal launchpad;
 #X msg 300 770 modal-off;
-#X msg 600 810 boot v0.2-ready;
+#X msg 600 810 status v0.2-ready;
 #X obj 140 860 s disp;
 #X obj 300 720 t b b;
 #X msg 900 490 sh wire.sh;
@@ -66,7 +66,7 @@
 #X msg 500 480 1;
 #X msg 500 520 240 \, 0 \, 32 \, 41 \, 2 \, 14 \, 14 \, 0 \, 247;
 #X obj 360 600 midiout;
-#X msg 760 270 boot panic;
+#X msg 760 270 status panic;
 #X obj 760 320 s disp;
 #X text 20 640 The grid is deliberately NOT cleared here. Live Mode hands the surface back to the device \, which redraws it \, and the 100 ms budget is better spent making sure the one message that matters gets out., f 58;
 #X connect 2 0 3 0;

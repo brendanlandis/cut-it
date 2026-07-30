@@ -316,7 +316,7 @@ print function.**
 | Layer | Pri | Raised by | Cleared by | Draws |
 |---|---|---|---|---|
 | `home` | 0 | always active | never | two meters, 8px readouts, gate marks, footer |
-| `param` | 1 | any unreserved `disp` selector | `[del 1200]` | name 8px, value 24px, meters shrunk |
+| `param` | 1 | any unreserved `disp` selector | `[del 1200]` | an **MRU list of up to five**, newest first — see *Several at once* |
 | `modal` | 2 | `disp` → `modal <word>` | `modal-off`, or a 30 s safety TTL | word 16px + shrunk meters |
 | `alert` | 3 | `disp` → `alert …`, from `u_err` only | 2 s `warn`, 4 s `fail` | border, level 16px, source and text 8px |
 
@@ -344,6 +344,45 @@ untested and silence is the common case. The gate marks are **one `gBox` per met
 the measured noise floor (18–19 → x 23) to the top of the gate window (25–30 → x 38): one
 message instead of two ticks, and it reads as a zone.
 
+### Several at once — the param layer is a list ✅ built
+
+With 18 continuous controls, moving two faders together is ordinary use, so the param layer holds
+a **most-recently-used list of up to five entries**, newest first, in `[text define $0-params]`:
+one line of `<frame-stamp> <name> <value> <unit>`. A repeat of a name is deleted and re-inserted at
+the front, so the list is always ordered by last-touched time. More movers than fit is not an
+error — the oldest fall off.
+
+**Ageing costs nothing, because the frame clock already runs.** Each entry records the frame it
+last moved in, and every frame the tail is dropped once it falls **13 frames** behind. Ordering by
+last-touched time is what makes that a tail check rather than a scan. 13 and not 12 is deliberate:
+`pd layers` still clears `$0-a-param` on a 1200 ms delay, so the store is guaranteed to outlive the
+flag by a frame — otherwise a rounding difference could leave the param layer winning with nothing
+to draw, which looks exactly like a dead patch.
+
+**Type size follows how many are moving.** The settled "24px is readable at arm's length" is kept
+for the common case and degrades rather than being abandoned. The param area is y=0…46; the meter
+strips at y=48/56 are untouched throughout.
+
+| Moving | Layout | Measured |
+|---|---|---|
+| 1 | name 8px @ y=0, value+unit **24px** @ y=12 | ✅ byte-identical to what Phase 3 shipped |
+| 2 | name 8px @ y=0 / value **16px** @ y=8, then name 8px @ y=23 / value 16px @ y=31 | ✅ |
+| 3–5 | **8px** rows at y=0, 9, 18, 27, 36, newest at top | ✅ |
+
+**Two movers are NOT two 16px lines**, which is what the plan first called for. 16px fits about ten
+characters across 128 px, so `slider-1 43` would clip to `slider-1 4` — a silent failure that looks
+like a working display — and real v0.3 names like `chop-size` are no shorter. A small name over a
+mid-size value clips nothing and generalises.
+
+**A side effect worth knowing: the stale-unit trap is now structurally impossible** in the param
+path. Each line is stored whole, so `chop-size 43 %` followed by `grain 12` cannot inherit the `%` —
+there is no longer an optional field being written separately.
+
+⚠️ **`text get` errors, and prints, if you ask for more fields than a line holds.** Measured:
+`text get x 1 3` on a two-field line gives `field request (1 3) out of range`. So the draw path
+never requests fields — it takes the whole line and strips the stamp with `[list split 1]`, which is
+safe because every stored line has at least three atoms.
+
 **Deviation from the original sketch:** a moving knob shrinks the meters into a **full-width
 5 px bottom strip**, not a corner. A corner meter at 128×64 is ~40 px wide and 4 px tall, and
 24px text is ~18 px per character so the value needs the full width anyway. Intent is kept —
@@ -368,7 +407,7 @@ glance.
 
 ```
  0  modal booting      31  modal-off
-11  modal wiring       31  boot v0.2-ready
+11  modal wiring       31  status v0.2-ready
 26  modal launchpad    46  chop-size 43 %
 ```
 
@@ -386,6 +425,9 @@ because the boot sequence finishes before you can get to the window.
   impossible rather than merely unlikely. Values are stringified with `[makefilename %g]`
   because packOSC will not accept a float under an `s` tag.
 - **Single owner, enforced.** Only `g_oled` sends on `oscOut`. `u_err` forwards onto `disp`.
+
+**Two controls at once no longer alternate.** That limitation is gone — see *Several at once*
+above.
 
 **The same arbiter shape applies to `g_grid`** on the Launchpad — playhead, slot state, mode
 and meters all contend for the same 64 pads. Build the pattern once, instantiate it twice.

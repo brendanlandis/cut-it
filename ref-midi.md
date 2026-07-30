@@ -29,6 +29,20 @@ channels `(n-1)*16+1` through `n*16`. `notein`'s right outlet and `ctlin`'s thir
 report the channel, so **the device a message came from is free information** — no merge box,
 no SysEx device IDs, no guessing.
 
+✅ **"Device *n*" means Pd's INPUT SLOT, not the device's position in the system MIDI list.**
+Measured both ways: the nanoKONTROL showed as system device 1, then as device 2 once an audio
+interface was plugged in, and opening it with `-midiindev 2` still put it on **channel 1** — because
+it was Pd's *first opened* input. On the Organelle the slots come from `/root/.pdsettings`, which is
+what fixes the nano at 17. On the Mac, plugging in other gear changes *which system device you pick*
+to fill slot 1; it does not change the channel. This is why `m_nano` takes the block as a creation
+argument, and why `main.pd` passes 17 while `main-dev.pd` passes 1.
+
+✅ **`ctlin` fires channel, then controller, then value** — right to left, and *measured* rather
+than assumed, because this repo has been bitten here before by `polytouchin`. Proof: `pack` is
+triggered by the value, and the very first event of a session already carries the correct
+controller and channel, which cannot happen unless both were stored first. Cold stores behind
+`ctlin` are therefore safe.
+
 | Pd device | Hardware | Channel block | Device's own ch. 1 lands on | |
 |---|---|---|---|---|
 | 1 | Launchpad Pro MK3 | 1–16 | 1 | ✅ |
@@ -267,6 +281,11 @@ Sliders and knobs reach a **full 0–127** — *Upper Value* / *Right Value* are
 CC 41–46 in physical order on channel 18, no gaps and no reordering; control groups on
 channel 17; momentary 127/0 throughout; and **no SysEx anywhere in the stream**, so nothing
 emits MMC. ✅
+
+✅ **Re-confirmed through the real patch** in Phase 4, on the Mac where the nano is slot 1:
+slider 1 → CC 1, slider 9 → CC 9, knob 1 → CC 11, a top-row button → CC 23 and a bottom-row one →
+CC 36, all on channel 1; PLAY → CC 42 and LOOP → CC 44 on channel 2. Momentary 127 then 0
+throughout. `m_nano` decodes all of it — see [plan-tests.md](plan-tests.md) item 31.
 
 This is a rewrite of the factory map (which put sliders on CC 2–12 and was not regular). It is
 written to the device, so a factory reset destroys it — **that is REC + STOP + SCENE held at

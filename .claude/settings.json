@@ -21,7 +21,11 @@
       "Bash(pkill -f \"phase3-bench.pd\")",
       "Bash(nohup sh -c '/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio -path mac-stubs -path \"Cut It\" \"Cut It/main-dev.pd\" tools/phase3-bench.pd /private/tmp/claude-501/-Users-brendan-Sites-cut-it/2982fcf6-b29a-44a4-b912-65e9f54b9fcd/scratchpad/tap.pd > /private/tmp/claude-501/-Users-brendan-Sites-cut-it/2982fcf6-b29a-44a4-b912-65e9f54b9fcd/scratchpad/b5.txt 2>&1')",
       "Bash(bash -n deploy.sh)",
-      "Bash(python3 tools/pd-layout-check.py tools/alert-buffer-probe.pd)"
+      "Bash(python3 tools/pd-layout-check.py tools/alert-buffer-probe.pd)",
+      "Bash(/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio /private/tmp/claude-501/-Users-brendan-Sites-cut-it/8948c8fa-0ad4-417d-a9b4-9a1f4f2be971/scratchpad/text-probe.pd)",
+      "Bash(chmod +x \"Cut It/logroll.sh\")",
+      "Bash(python3 tools/pd-layout-check.py \"Cut It/u_err.pd\")",
+      "Bash(sed -i '' '1s/^#N canvas 20 20 1300 1150 12;$/#N canvas 20 20 1450 1150 12;/' \"Cut It/u_err.pd\")"
     ]
   }
 }

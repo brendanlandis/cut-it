@@ -217,9 +217,27 @@ mid-set is the worse failure. **The bus is unfiltered; only the screen is filter
 by-hand console sees warnings even in perform mode. This does not catch Pd's *own* runtime
 errors — those still go to tty1.
 
-### Phase 4 — nanoKONTROL, a persistent error log, and a multi-parameter display
+### Phase 4 — nanoKONTROL, a persistent error log, and a multi-parameter display ✅ **built**
 
 `m_nano`, `u_err`'s log, `g_oled`'s param layer
+
+**Deployed and running on the Organelle.** Everything that does not need the controller plugged
+into the device is verified — the decode (all 21 branches), the three display layouts and their
+ageing, the Phase 3 regression, and the error log surviving a patch reload with wall-clock session
+markers. ⬜ **What remains is the controller sweep on the device itself**, where the nano is Pd
+input slot 2 and the channel is 17; steps 15–17 of `tools/phase4-bench.pd` exist for it. Results in
+[plan-tests.md](plan-tests.md) Sessions 4b and 4c.
+
+**Three bugs this phase found by measuring rather than reading**, all now fixed and recorded:
+
+- A **reject outlet carries a value, not a bang.** `[select 1 2 3 4 5 6]`'s reject emits `cc − 40`,
+  which landed on an `[f]`'s *hot* inlet and overwrote the stored CC — so an unknown CC 47 reported
+  itself as `cc-7`. Any `[f]` behind a reject outlet needs a `[t b]` in front of it.
+- A **`[print]` at `loadbang` breaks `deploy.sh`**, which gates on *output* rather than exit status.
+  `m_nano`'s channel diagnostic now sits behind `[del 2000]`: the check quits at load and never sees
+  it, while the by-hand console still does.
+- **`pgrep pd` matches substrings** — on this device a kernel thread — so `fetch-errors.sh` reported
+  pd running while it was killed. `pgrep -nx pd`.
 
 **This is the first phase where a physical device can misbehave while nobody is watching**, and
 that reframes it into three pieces of work. The order is fixed: step 0 exists so that steps 1
@@ -335,9 +353,9 @@ objects are the seam where v0.3 swaps in real names and where mode-dependent map
 ⚠️ **`disp` parameter values must be floats.** `g_oled` sends them through `[makefilename %g]`,
 which refuses a symbol. So the mode cannot be a parameter: it goes to the **footer**, which is
 sticky and takes one symbol. That makes the footer shared between `u_init` and `m_nano` — fine,
-since `disp` is a bus and last-writer-wins is its documented model — but it means the `boot`
-selector is now misnamed. **It is renamed to `status`, in its own commit, separate from
-behaviour.**
+since `disp` is a bus and last-writer-wins is its documented model — but it meant the `boot`
+selector was misnamed. ✅ **Renamed to `status`**, in a commit of its own that changed no
+behaviour.
 
 **LOOP toggling mode is an end-to-end test that already exists:** `u_err` consumes `mode`, so
 flipping to perform and raising a `warn` should draw nothing while a `fail` still draws.

@@ -77,9 +77,10 @@ Cut It/              the deployable patch — folder name is what appears in the
 mac-stubs/           stand-ins for device-only externals, for the local syntax check. NOT deployed
 deploy.sh            check → scp → reload → load, in one command (there is no rsync on the device)
 tools/fetch-errors.sh  pulls the error log back off the device and summarises it
-tools/               diagnostic patches, plus pd-layout-check.py
+tools/               diagnostic patches, the per-phase benches, and pd-layout-check.py
+  README.md            what each one proves, how to run it, and how to run a bench ON the device
 plan-v02.md          the build plan — the phases still to come, and EVERY open question
-plan-tests.md        ordered hardware checks, with results
+plan-tests.md        the ordered hardware checks, with every measured number
 ref-build-log.md     Phases 0-5 as built: outcomes, and every correction they produced
 ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow
 ref-hardware.md      the rig and the device — wiring, power, SSH, paths, how Pd launches

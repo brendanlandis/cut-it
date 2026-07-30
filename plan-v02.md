@@ -180,26 +180,27 @@ when something there is unverified, the work to resolve it is listed below.
 |---|---|---|
 | **SP-404 pad note range** — measured 47+*n* here, Roland's chart says 35–51 | v0.3's `m_404` | Only pads 1 and 2 were ever checked. **This is the one that silently corrupts work** — sequencing code written against the wrong range looks correct and triggers the wrong pads. Sweep all 16 with `tools/midi-drive.pd` |
 | **What drives `mode`** | Nothing hard, but the mode filter has had no physical driver since Phase 4 | Phase 6, on the Launchpad — the only device Pd can light, so the state becomes visible. Until then the bench drives it, which is how items 19 and 21c were verified anyway |
-
-| **`[midiout]` port creation argument** | Nothing — `u_tempo` uses the long form | ⬜ And **the obvious experiment is invalid**: Pd 0.49 does not warn about extra creation arguments at all — `[loadbang 7]` loads in silence — so a clean syntax check proves nothing. Answering it needs a real MIDI destination on two ports, or the Pd 0.49 source |
 | **Launchpad perimeter CC numbers** | Phase 6 | Documented 📄, never confirmed on this unit. Ten minutes with `tools/lp-monitor.pd` |
 | **How wide is the Launchpad's animation tempo range?** | Phase 6, weakly | ✅ Flash and pulse **do** track a swept tempo — Phase 6's assumption holds. ⬜ But past an upper and lower limit they revert to a default rate, and those limits are not pinned down. Same shape as the 404's 40–200. Only matters if animation must stay locked at extreme tempi — [plan-tests.md](plan-tests.md) item 77 |
-| **Does `mother.pd` stream the knob positions continuously, or only on movement?** | Nothing | ✅ **Moot.** Hands off the device the OLED sits on the meters, so nothing pins the param layer open — but that cannot separate "does not stream" from "the `[change -1]` guard filters it", and the guard is staying. Item 68 |
 | **Full-load power** | Phase 6 | Never run with three controllers plus the wifi dongle — the cable shortage. Presents as intermittent MIDI dropouts rather than an obvious failure, so if Phase 6 produces flaky Launchpad behaviour, **suspect the hub before the code**. [plan-tests.md](plan-tests.md) item 5 |
 | **Save New in a category folder** | Phase 8 | ⚠️ Already diagnosed — see the Phase 8 note above. Verify against a menu-selected patch, not a deploy-loaded one |
 
 ### The last thing that could force a redesign
 
 **How the 404 places external input in the stereo field.** ✅ The Organelle's own TRS split is
-verified — `adc~ 1` is the tip and the channels are independent — but the 404's *internal*
-routing of its external input is not, and no cable will answer it. Blocked on the TRS Y-cable;
-procedure in [plan-tests.md](plan-tests.md) Session 3, items 12–13.
+verified — `inL` is the tip, `inR` the ring, and the two are genuinely independent — but the 404's
+*internal* routing of its external input is not, and no cable will answer it. Blocked on the TRS
+Y-cable; procedure in [plan-tests.md](plan-tests.md) Session 3, items 12–13.
 
 ### Not blocking anything, but worth knowing
 
 | Question | Where it stands |
 |---|---|
 | **Does the System menu's MIDI Config page re-open mother's MIDI gates?** | ⬜ `u_init` closes `midiInGate` and `midiOutGate` 2 s after load, which beats the mother binary's own push. Entering *MIDI Config* mid-session sends `/midich` and `/midiConfig` and may push the gates again — reopening the CC 21–26 collision that made a nano button toggle the transport ([plan-tests.md](plan-tests.md) item 76). Cheap to check: open the page, leave it, then press `btn-t-5` |
+| **The Organelle drops its wifi after a while.** | ⬜ Reproducible enough to be annoying — the connection is there after a deploy and gone an hour later, needing a manual reconnect. Costs nothing during a session that is already underway, but it breaks `deploy.sh` and `fetch-errors.sh` without warning, and it would take the phone display down mid-set. Unattributed: could be the dongle, power, the AP, or `wifi_control.py`. **Session 5's access-point work would sidestep it entirely**, which is the argument for doing that before chasing this |
+| **`[midiout]`'s port creation argument** | ⬜ and **unneeded** — `u_tempo` uses `u_init`'s proven pattern, the port sent to the cold inlet at load, and ✅ item 63 fired a real 404 pad through exactly that. What stays open is only whether `[midiout 3]` works, and **the obvious experiment is invalid**: Pd 0.49 does not warn about extra creation arguments at all — `[loadbang 7]` loads in silence — so a clean syntax check proves nothing. Answering it needs a real MIDI destination on two ports, or the 0.49 source |
+| **Does `mother.pd` stream the knob positions continuously, or only on movement?** | ✅ **Moot.** Hands off the device the OLED sits on the meters, so nothing pins the param layer open — but that cannot separate "does not stream" from "the `[change -1]` guard filters it", and the guard is staying either way. Item 68 |
+| **Are the OLED's 16px and 8px param rows legible at arm's length?** | ⬜ A judgement, not a test — and the last thing about the display nobody has actually decided. The geometry is verified through `oscOut`, and all three layouts have now been *rendered* on the device with their row behaviour passing (item 80), but they were watched for correctness rather than read. [plan-tests.md](plan-tests.md) item 39; feeds the *OLED UI refinement* work below |
 | **Can Pd emit an OSC blob?** | Gates `gWaveform` and `gFrame` — so it gates ever drawing the captured buffer, which is what would stop playhead placement being blind. Untested ⬜ |
 | **Does the 404's *pattern playback* transmit notes?** | `SEQ Note Out` is On and pad presses transmit, but no pattern has been captured. Determines whether the 404 is a compose-time authoring surface. Watch for the reported stray continuous C |
 | **Can Novation Components disable the onboarding drive?** | A cleaner fix than the `mount.sh` guard, since it changes nothing on the Organelle. Untried |

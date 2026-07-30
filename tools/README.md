@@ -127,10 +127,10 @@ assertions, re-run because the param layer they sit next to was rewritten.
 
 ### `phase5-bench.pd` — the Phase 5 acceptance run
 
-Same shape again: self-driving, ten seconds a step, a printed `PASS IF` before each one. Fourteen
-steps covering the clock, the transport, the map and the aux LED. **Steps 1–11 drive themselves;
-12 and 13 need your hands on the Organelle itself** — the aux button and knob 1 are the only
-controls involved, and neither exists on a laptop.
+Same shape again: self-driving, ten seconds a step, a printed `PASS IF` before each one. Fifteen
+steps covering the clock, the transport, the map and the aux LED. **Steps 1–12 drive themselves;
+13 and 14 need your hands on the Organelle itself** — the aux button and knob 1 are the only
+controls involved, and neither exists on a laptop. Step 15 just says to stop.
 
 **It finds `c_clock` itself**, through `#X declare -path ../Cut\ It` — the escaped space survives
 Pd's parser ✅ — so opening it straight from Pd's File menu works and no `-path` is needed. If the
@@ -192,6 +192,34 @@ one running now, or the last one if the patch has not been reloaded since — th
 power-cycling the Organelle does not reload the patch). It also md5-compares the deployed patch
 against the repo and says so loudly if they differ, because an error from a build you no longer have
 is a trap.
+
+### Running a bench on the device
+
+Any of the three benches loads as a **third patch** after `mother.pd` and `main.pd`, which is what
+gives it a real console. This is the launch line:
+
+```sh
+scp tools/phase5-bench.pd root@organelle.local:/tmp/
+ssh root@organelle.local
+  killall pd; sleep 1
+  cd /tmp/patch
+  nohup pd -nogui -rt -audiobuf 6 -path /root/Pd/externals \
+      -path '/sdcard/Patches/!/Cut It' \
+      /root/fw_dir/mother.pd main.pd /tmp/phase5-bench.pd > /tmp/bench.txt 2>&1 &
+  tail -f /tmp/bench.txt          # Ctrl-C when the last step prints
+  killall pd
+```
+
+⚠️ **Single quotes around that path, never double.** The patch folder is `/sdcard/Patches/!/…`, and
+`!` inside double quotes is a history event in interactive zsh — you get `zsh: event not found:
+/Cut` before anything reaches the device.
+
+⚠️ **The second `-path` is not optional for `phase5-bench`.** Its own `declare` is `../Cut\ It`,
+which resolves from `tools/` on the Mac but not from `/tmp/` on the device. Without it `c_clock`
+fails to create and both its counts read **0** — which looks exactly like a dead clock rather than
+a missing search path.
+
+Restore normal operation afterwards with `./deploy.sh`, which reloads through the menu path.
 
 ### Re-running `m_nano`'s decode test without the hardware
 

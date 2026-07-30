@@ -18,7 +18,8 @@ the Organelle — drums on the left, fx on the right. Cut It captures and mangle
 arrives, and its two outputs go to the mixer.
 
 Two channels through one stereo cable is the trick that makes this work: the Organelle has
-a single 1/4" TRS input jack, so the 404's L and R arrive as `adc~ 1` and `adc~ 2`.
+a single 1/4" TRS input jack, so the 404's L and R arrive as the tip and the ring — which the
+patch reads as `[r~ inL]` and `[r~ inR]`, never `adc~`. See *Signal flow — audio* below.
 
 
 ## Signal flow — MIDI
@@ -255,6 +256,41 @@ way to add devices. Note `-audiobuf 6` on the command line overrides `audiobuf: 
 show them either. This is why error reporting to the OLED is treated as an architecture
 requirement rather than a debugging convenience — see [ref-conventions.md](ref-conventions.md).
 
+### Measuring the running patch
+
+CPU, load and UDP datagram rate, **without disturbing what is running**. Reads `/proc` rather than
+using `top`, so it works on busybox:
+
+```sh
+ssh root@organelle.local '
+  P=$(pgrep -nx pd)
+  col() { awk "/^Udp:/{ if(h==\"\"){h=1; for(i=1;i<=NF;i++) if(\$i==\"OutDatagrams\") c=i; next} print \$c }" /proc/net/snmp; }
+  T1=$(awk "{print \$14+\$15}" /proc/$P/stat); C1=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat); U1=$(col)
+  sleep 5
+  T2=$(awk "{print \$14+\$15}" /proc/$P/stat); C2=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat); U2=$(col)
+  awk -v a=$T1 -v b=$T2 -v c=$C1 -v d=$C2 "BEGIN{printf \"pd CPU: %.1f %%\n\", 100*(b-a)/(d-c)}"
+  echo "UDP out:  $(( (U2-U1)/5 )) datagrams/sec"
+  echo "load:     $(cat /proc/loadavg)"
+  aconnect -l | grep -c "Connecting To"
+'
+```
+
+⚠️ **`pgrep -nx pd`, never `pgrep pd`** — the substring match hits a *kernel thread* on this
+device, which is the bug that once had `fetch-errors.sh` reporting pd alive while it was killed.
+[plan-tests.md](plan-tests.md) item 36.
+
+**The baselines to compare against**, all on the deployed and idle patch:
+
+| | CPU | UDP out |
+|---|---|---|
+| Phase 3 — home frame only | 8.2 % | 110/s |
+| Phase 4 — multi-parameter display | 5.3 % | 117/s |
+| Phase 5 — clock on two MIDI ports | **10.2 %** | 117/s |
+
+The datagram rate is the display and has been flat since Phase 3. **The CPU jump is the clock**,
+and it is ~96 ALSA MIDI writes a second rather than the DSP — two extra `c_clock` instances cost
+only 0.4 points. Items 21, 37 and 75.
+
 ### MIDI: OSS vs ALSA
 
 Out of the box, Pd here runs on **OSS MIDI**, not ALSA — `.pdsettings` has `flags: -alsamidi`
@@ -326,7 +362,12 @@ USB bus-powered.
 
 **The fit is good:** 9 knobs + 9 faders = 18 continuous controls against Cut It's 16.
 **Two channels per filter** gives 2 knobs + 2 faders — exactly the four per filter — across
-8 channels, leaving **one channel spare** for global volume or master tempo.
+8 channels, leaving **one channel spare**.
+
+⚠️ **That spare channel is not master tempo.** An earlier draft reserved it "for global volume or
+master tempo"; Phase 5 put tempo on the **Organelle's own knob 1** instead, so the whole clock is
+drivable on the Mac with no MIDI configured at all. The spare is genuinely spare. What any control
+means is decided in `u_map` and nowhere else — see [ref-conventions.md](ref-conventions.md).
 
 **The win over endless encoders is visible position.** A knob's physical position *is* the
 display, which is the legibility problem the BeatStep could never solve.

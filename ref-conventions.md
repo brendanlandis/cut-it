@@ -565,7 +565,8 @@ debugging convenience)*.
   **message box**, which already carries the level as its selector; anything built with
   `[list prepend]` needs `[list trim]`.
 - **`u_err` filters by `mode`** — compose shows everything, perform only `fail`. One place, same
-  bus, same callers. Defaults to verbose since nothing drives `mode` before Phase 4. ✅
+  bus, same callers. ✅ **Defaults to verbose, which is what makes an undriven `mode` safe** —
+  nothing has written that bus since Phase 4 and nothing will until Phase 6.
 - **`u_err` never draws.** It forwards onto `disp` as `alert <level> <source> <text>`; `g_oled`
   decides what an error looks like — see *The display bus* above.
 - **The bus is unfiltered; only the screen is filtered.** An unconditional `[print err]` means

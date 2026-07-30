@@ -8,9 +8,10 @@ It exists because the alternative was worse. Phases 0–4 accumulated their corr
 plans they overruled, so the build plan grew into a document where the current design and three
 superseded ones sat side by side. Finished work belongs somewhere that states outcomes.
 
-**Read it for the corrections.** Nine of the fourteen below were found by measuring something the
-plan had asserted, and several contradict what a reasonable person would infer from the
-documentation. They are the most valuable thing in this file.
+**Read it for the corrections.** Most of them were found by measuring something the plan had
+asserted, several contradict what a reasonable person would infer from the documentation, and a
+few were found only by a person putting hands on the hardware and doing what a performer would
+do. They are the most valuable thing in this file.
 
 | Phase | | Built |
 |---|---|---|
@@ -19,6 +20,7 @@ documentation. They are the most valuable thing in this file.
 | 2 | ✅ | `u_init`, `wire.sh` |
 | 3 | ✅ hardware | `g_oled`, `u_err` |
 | 4 | ✅ hardware | `m_nano`, the persistent error log, the multi-parameter display |
+| 5 | ✅ hardware | `u_tempo`, `c_clock`, `u_map`, `m_organelle`, `g_led`, the `param` bus |
 
 ---
 
@@ -242,7 +244,13 @@ with no evidence of it on the canvas. The aux toggle in it **holds no state of i
 reads back `start`/`stop` from whoever caused them, so nothing can leave the button pressing the
 wrong way.
 
-### Thirteen corrections — two in the measuring rig, and seven that only hands found
+### Thirteen corrections — two of them in the measuring rig, and seven that only hands found
+
+**The seven are the point of this list.** The out-of-range verdict, the pulse ceiling, the
+late-created `c_clock`, the sticky `panic` footer, the nano/mother CC collision, `midiOutGate` and
+the boot race were all invisible to a bench that passed. Each needed a person doing something a
+test script had no reason to do: pressing the low button after the high one, asking for a wider
+tempo range, opening the bench *after* the patch, or simply pressing aux and reading the screen.
 
 - **Pd 0.49 does not warn about extra creation arguments.** `[loadbang 7]` loads in silence, so
   the syntax check *cannot* answer whether `[midiout 3]` reaches port 3 — a silent creation
@@ -299,33 +307,27 @@ wrong way.
   user", and no bench step would have caught it** — the bench asserts what each step sends, not
   what the screen still says three steps later.
 
-⚠️ **A nanoKONTROL button was toggling the transport, and it was `mother.pd` doing it.** ✅
-mother runs `[ctlin 21]`–`[ctlin 26]` **omni** and maps them to `knob1`–`knob4` and `aux`; the
-nano's top row is CC 21–29 by this project's own by-tens scheme. So `btn-t-5` pressed aux and
-`btn-t-1` slammed the tempo between 500 and 10 BPM. **Phase 5 is what made it dangerous** — the
-collision existed all through Phase 4 and did nothing visible, because aux meant nothing then.
-`u_init` now sends **`midiInGate 0`**, which mother's own comment documents and which gates only
-the MIDI-derived paths, leaving the front panel alone. mother also loads a different patch on any
-program change, which the 404 can send — the same gate closes that too.
+- ⚠️ **A nanoKONTROL button was toggling the transport, and it was `mother.pd` doing it.** ✅
+  mother runs `[ctlin 21]`–`[ctlin 26]` **omni** and maps them to `knob1`–`knob4` and `aux`; the
+  nano's top row is CC 21–29 by this project's own by-tens scheme. So `btn-t-5` pressed aux and
+  `btn-t-1` slammed the tempo between 500 and 10 BPM. **Phase 5 is what made it dangerous** — the
+  collision existed all through Phase 4 and did nothing visible, because aux meant nothing then.
+  `u_init` now sends **`midiInGate 0`**, which mother's own comment documents and which gates only
+  the MIDI-derived paths, leaving the front panel alone. mother also loads a different patch on any
+  program change, which the 404 can send — the same gate closes that too.
 
-⚠️ **Two more of mother's defaults had to be switched off, and both needed a delayed send.**
-`midiOutGate 0` as well as `midiInGate 0`: mother echoes the Organelle's keys as MIDI notes and its
-knobs as CC 21–24 to every port, so playing the keyboard lit Launchpad pads and would have triggered
-404 pads. The design routes the keys to the Volca and nowhere else. **The mother binary pushes its
-own `1` to both gates about half a second after load**, so anything sent at `loadbang` is silently
-overwritten — the first version of this fix did nothing at all and looked deployed. Both are sent
-again at 2 s, verified on the device with an `[r midiInGate]` print.
+- ⚠️ **Two more of mother's defaults had to be switched off, and both needed a delayed send.**
+  `midiOutGate 0` as well as `midiInGate 0`: mother echoes the Organelle's keys as MIDI notes and
+  its knobs as CC 21–24 to every port, so playing the keyboard lit Launchpad pads and would have
+  triggered 404 pads. The design routes the keys to the Volca and nowhere else. **The mother binary
+  pushes its own `1` to both gates about half a second after load**, so anything sent at `loadbang`
+  is silently overwritten — the first version of this fix did nothing at all and looked deployed.
+  Both are sent again at 2 s, verified on the device with an `[r midiInGate]` print.
 
-⚠️ **The boot tempo was a race, and is now deterministic.** The patch started at the knob's position
-one day and at 120 the next, depending on whether mother's knob push beat `u_tempo`'s `del 200`
-seed. The seed now sits behind a spigot that any incoming `tempo` closes, so **120 is a fallback,
-not a default** — the same "seed only if unheard" shape `c_clock` needed.
-
-⚠️ **The clock is not free.** ✅ Deployed and idle: **10.2 % CPU, 117 UDP datagrams/second**,
-against Phase 4's 5.3 % and 117/s. The display costs exactly what it did; the clock roughly
-doubled Pd's CPU. Two extra `c_clock` instances add only ~0.4 points on top, so it is **not** the
-DSP — the candidate is the 96 ALSA MIDI writes a second. The plan predicted "almost certainly
-free"; it was not. Still ample headroom, but v0.3 stacks four filter stages on this.
+- ⚠️ **The boot tempo was a race, and is now deterministic.** The patch started at the knob's
+  position one day and at 120 the next, depending on whether mother's knob push beat `u_tempo`'s
+  `del 200` seed. The seed now sits behind a spigot that any incoming `tempo` closes, so **120 is a
+  fallback, not a default** — the same "seed only if unheard" shape `c_clock` needed.
 
 - **A bare `[change]` swallows a control parked at zero.** `m_organelle` guards each knob with
   `[change]`, because ⬜ it is not established whether `mother.pd` streams knob positions
@@ -335,6 +337,15 @@ free"; it was not. Still ample headroom, but v0.3 stacks four filter stages on t
   instead of dropping to 60. It is `[change -1]` now, which is exactly what `u_level` has always
   used. **Found by driving the real chain, not by reading it** — the comment beside the object
   already cited `u_level`'s `change -1` as the precedent while the object itself omitted the -1.
+
+### And one measurement that contradicted the plan
+
+⚠️ **The clock is not free.** ✅ Deployed and idle: **10.2 % CPU, 117 UDP datagrams/second**,
+against Phase 4's 5.3 % and 117/s. The display costs exactly what it did; the clock roughly
+**doubled** Pd's CPU. Two extra `c_clock` instances add only ~0.4 points on top, so it is **not**
+the DSP — the remaining candidate is the 96 ALSA MIDI writes a second, ⬜ not confirmed by
+isolation. The plan predicted "almost certainly free"; it was not. Still ample headroom at 10 % and
+load 0.5, but v0.3 stacks four filter stages on this, so the baseline matters. Item 75.
 
 ---
 

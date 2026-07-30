@@ -19,7 +19,8 @@ The four that shape everything else. Reasoning for each is further down this fil
 
 - **Grain timing must be audio-domain.** Pd's message clock is quantised to a 64-sample block
   (~1.45 ms), which is ~20% of a 256th note at 120 BPM. Drive grain clocks from `phasor~` and
-  envelopes from `vline~` — never `metro` / `line~` at grain rate.
+  envelopes from `vline~` — never `metro` / `line~` at grain rate. ✅ Built in Phase 5:
+  `u_tempo` and `c_clock` are `phasor~` from the first line.
 - **Pd sequences everything.** Timing rides in note events, not MIDI clock. No external device
   runs its own sequencer during a performance.
 - **Two independent input channels.** `inL` = drums (the tip), `inR` = fx (the ring), arriving
@@ -148,10 +149,11 @@ feedback path. Revisit later if wanted; it needs no rewiring beyond one cable fr
 ## Timing and tempo
 
 ### Tempo is freely modulable, but propagates unevenly
-Because the Organelle *generates* the clock, tempo is just a float in the patch. Route any CC
-to `s tempo` and a nanoKONTROL knob becomes tempo control; tap tempo, an LFO, a pad — all the
-same. (v0.1's `midiclock.pd` did this with `r tempo` → `tempo $1 permin` → `metro`. Phase 5
-rewrites it audio-domain — it is reference for intent, not code to lift.)
+Because the Organelle *generates* the clock, tempo is just a float in the patch. ✅ Anything may
+write the `tempo` bus — a knob, a tap tempo, an LFO, a pad — and `u_tempo` consumes it. **Which
+control does the writing is a `u_map` decision and lives in exactly one route branch**; today it is
+the Organelle's own knob 1. (v0.1's `midiclock.pd` did this with `r tempo` → `tempo $1 permin` →
+`metro`; Phase 5 rewrote it audio-domain. Reference for intent, not code to lift.)
 
 **But MIDI clock has no tempo message.** You change the *rate* of the 24 PPQN pulse stream,
 and slaved devices infer tempo by measuring pulse intervals, most averaging over several
@@ -182,6 +184,25 @@ readily fixable in vanilla Pd.
 **Largely moot under the compose/perform split.** If nothing external runs its own sequencer
 during a performance, there is nothing to propagate to and tempo is completely free. This
 section matters mainly at compose time, where quantise-on-capture handles it anyway.
+
+### Grain timing is cut from the same phase as the MIDI clock ✅ built
+
+**24 PPQN is far too coarse to count grains from** — a pulse every 20.8 ms at 120 BPM, coarser
+than a 256th note. An earlier draft of this file proposed the receiver's solution: estimate tempo
+from the pulse stream, free-wheel an oscillator at the derived frequency, resync per beat. **That
+is not this rig's problem.** The Organelle *is* the master, so there is nothing to estimate.
+
+What Phase 5 built instead runs the derivation the other way. One `phasor~` at BPM ÷ 60 × 24 is the
+pulse train; the MIDI byte and the beat are both **cut from that one phase** by counting, so they
+cannot drift apart by construction. Grain-rate code reads the same phase as a *signal* rather than
+being handed beat events. Each grain clock, sequencer or sampler owns a `c_clock` instance at its
+own ratio, rebuilt from the identical arithmetic so equal rates land in the same logical instant —
+✅ measured at **0.000000 ms** worst-case difference against master over a whole run.
+
+⚠️ **Audio-domain does not mean sample-accurate MIDI.** `threshold~` reports on a 64-sample block
+boundary exactly as `metro` fires on one, so the ~1.45 ms jitter above is unchanged. What it buys is
+glitch-free phase-continuous rate changes and one shared phase. The full construction, the pulse
+ceiling and the debounce trap are in [ref-midi.md](ref-midi.md).
 
 ### Timing rides in note events, not in clock
 MIDI clock's weakness is structural: it transmits a *rate* the receiver must infer by
@@ -308,15 +329,6 @@ start; it is much easier than retrofitting once the filter logic exists.
 3. **Store as plain text files in the repo.** `text define` + `text write` in vanilla Pd. The
    payoff is patterns that are git-diffable and editable in a text editor alongside the patch.
 
-
----
-
-
-### Deriving grain timing from a 24 PPQN clock
-
-**MIDI clock is 24 PPQN** — a pulse every 20.8 ms at 120 BPM, coarser than a 256th note. You
-cannot count pulses to get there. Estimate tempo from the clock, run a free-wheeling
-audio-domain oscillator at the derived frequency, and resync phase per beat or bar.
 
 ---
 

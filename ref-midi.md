@@ -285,7 +285,15 @@ half-lit. ✅ Velocity 0 turns the pad off.
 `[metro]` in Pd — and synchronises them **to incoming MIDI beat clock**, falling back to
 120 BPM or the last clock received. Flashing is one period per beat; pulsing is one period per
 two beats. 📄 Since the Organelle is clock master, LED animation follows the patch's tempo for
-nothing. ✅ for the modes working; ⬜ that they track a *modulated* tempo gracefully.
+nothing.
+
+✅ **Confirmed against the real clock:** three pads lit static / flashing / pulsing alongside the
+running patch visibly changed rate as knob 1 was swept, so Phase 6 can rely on this rather than
+driving animation from `clock`. ⚠️ **But it has its own range, ⬜ not pinned down** — past an upper
+and a lower limit the animation reverts to a default rate instead of tracking, and a Start makes it
+dip briefly before settling. Same shape as the 404's 40–200 window, and almost certainly the same
+kind of device-side limit: the pulse stream itself is known good, since the 404 tracks it to the
+digit across its whole range. [plan-tests.md](plan-tests.md) item 77.
 
 **2. Per-pad RGB SysEx**, for anything the palette can't express:
 

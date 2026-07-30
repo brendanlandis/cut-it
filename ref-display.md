@@ -189,6 +189,15 @@ components — and that needs the raw path, which is `oscOut`, which belongs to 
 
 **mother already sets `led 0` on `quitting`**, so a safe exit needs no LED handling of its own. ✅
 
+To re-read the colours by eye — five seconds each, in **hardware** order, which is why the list
+looks scrambled:
+
+```sh
+ssh root@organelle.local 'for r in 0 4 5 1 3 2 6 7; do
+  oscsend localhost 4001 /led i $r; echo "raw $r"; sleep 5; done
+  oscsend localhost 4001 /led i 0'
+```
+
 ### What Cut It puts on it ✅ built
 
 **`g_led` owns `led`**, exactly as `g_oled` owns the screen, and callers send a **state** on the

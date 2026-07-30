@@ -1,14 +1,20 @@
-# Cut It — Pre-Flight Tests
+# Cut It — Hardware Checks, With Results
 
-Things to verify on the hardware **before** starting UI/UX design or the patch rewrite.
-Ordered by what would force a redesign if it fails.
+**The ordered checklist and its evidence.** It began as pre-flight tests — things to verify before
+committing to a design — and has since grown a session per build phase, because every phase's
+measurements belong beside the checks that preceded them.
 
-Most of this needs scratch patches only — no Cut It code. Diagnostic patches live in
+Two things live here and nowhere else: the **numbers** (counts, rates, CPU, byte-level results) and
+the **procedures** that produced them. The narrative of what each phase taught is
+[ref-build-log.md](ref-build-log.md); what is still open is [plan-v02.md](plan-v02.md).
+
+Early sessions need scratch patches only — no Cut It code. Diagnostic patches live in
 [tools/](tools/). Companion to [ref-hardware.md](ref-hardware.md), which explains *why* each of these
 matters.
 
-**Status:** Sessions 2, 3b, 3c, 4, 4b and 4c complete. Session 1 done bar the full-load power check.
-Session 3 blocked on the TRS Y-cable; Session 5 not attempted.
+**Status:** Sessions 2, 3b, 3c, 4, 4b, 4c, 4d, 6 and 6b complete — **Phases 3, 4 and 5 are all
+verified end to end on the Organelle.** Session 1 is done bar the full-load power check. Session 3
+is blocked on the TRS Y-cable; Session 5 has not been attempted.
 
 ⚠️ **Item numbers are unique across the whole file and other documents cite them by bare number**
 ("item 21c", "item 31"). Sessions 4 and 5 were renumbered to 40–42 and 43–46 to remove a collision
@@ -412,50 +418,16 @@ the on-device controller sweep is still outstanding; everything that does not ne
       line with the 110/s item 21 measured for the home frame, so the display rewrite costs nothing
       noticeable and the real `packOSC` still accepts every typetag the runtime builder produces.
 
-### The two device measurements, with the commands that were missing
+### How both device measurements are taken
 
 Item 21 recorded the numbers and not the method, which is why they were hard to repeat. Both
-blocks are copy-paste and neither disturbs the running patch.
+procedures are copy-paste, neither disturbs the running patch, and **both have moved to where they
+get used**:
 
-**The bench on the device** — as a third patch, with a real console:
+- **Running a bench on the device**, as a third patch with a real console — [tools/README.md](tools/README.md), *Running a bench on the device*. Note the `-path`: without it `c_clock` fails to create and its counts read 0, which looks exactly like a dead clock.
+- **CPU, load and datagram rate** — [ref-hardware.md](ref-hardware.md), *Measuring the running patch*, with the `pgrep -nx` trap and the baseline figures for every phase. The numbers those produced are items 21, 37 and 75.
 
-```sh
-scp tools/phase5-bench.pd root@organelle.local:/tmp/
-ssh root@organelle.local
-  killall pd; sleep 1
-  cd /tmp/patch
-  nohup pd -nogui -rt -audiobuf 6 -path /root/Pd/externals \
-      -path '/sdcard/Patches/!/Cut It' \
-      /root/fw_dir/mother.pd main.pd /tmp/phase5-bench.pd > /tmp/bench.txt 2>&1 &
-  tail -f /tmp/bench.txt          # Ctrl-C when step 15 prints
-  killall pd
-```
-
-⚠️ **The `-path` is not optional here.** The bench's own `declare` is `../Cut\ It`, which resolves
-from `tools/` on the Mac but not from `/tmp/` on the device. Without it `c_clock` fails to create
-and both its counts read 0 — which looks exactly like a dead clock.
-
-**CPU, load and datagram rate** — `/proc` rather than `top`, so it works on busybox:
-
-```sh
-ssh root@organelle.local '
-  P=$(pgrep -nx pd)
-  col() { awk "/^Udp:/{ if(h==\"\"){h=1; for(i=1;i<=NF;i++) if(\$i==\"OutDatagrams\") c=i; next} print \$c }" /proc/net/snmp; }
-  T1=$(awk "{print \$14+\$15}" /proc/$P/stat); C1=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat); U1=$(col)
-  sleep 5
-  T2=$(awk "{print \$14+\$15}" /proc/$P/stat); C2=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat); U2=$(col)
-  awk -v a=$T1 -v b=$T2 -v c=$C1 -v d=$C2 "BEGIN{printf \"pd CPU: %.1f %%\n\", 100*(b-a)/(d-c)}"
-  echo "UDP out:  $(( (U2-U1)/5 )) datagrams/sec"
-  echo "load:     $(cat /proc/loadavg)"
-  aconnect -l | grep -c "Connecting To"
-'
-```
-
-`pgrep -nx pd`, not `pgrep pd` — the substring match hits a kernel thread on this device, which is
-the bug item 36 found in `fetch-errors.sh`. Compare against **8.2 % / 110 per second** (item 21)
-and **5.3 % / 117** (item 37); Phase 5 adds ~96 MIDI messages a second on top.
-
-### Still outstanding on hardware
+### The rest of the nanoKONTROL, and the OLED by eye
 
 - [x] **38. The nanoKONTROL on the device**, where it is Pd input slot 2 and the channel is **17**.
       ✅ **The transport row was read on the hardware and is correct** — pressing a transport key
@@ -463,12 +435,10 @@ and **5.3 % / 117** (item 37); Phase 5 adds ~96 MIDI messages a second on top.
       change. That is the change Phase 4 finished on, and it works through the real `[ctlin]` at
       channel 17.
 
-      ⬜ **The remaining 36 controls have not been swept on the device.** Low risk rather than
-      untested: all 21 decode branches were verified exhaustively off-device with a `[ctlin]`
-      stand-in (item 31), and the only thing the device adds is the channel offset, which the
-      transport keys just exercised. Steps 15–17 of `tools/phase4-bench.pd` remain written for it —
-      worth doing opportunistically, not worth blocking on. If a control is silent, check
-      `aconnect -l` before suspecting the patch.
+      ✅ **The remaining 36 controls have since been swept too — see item 80.** They were left
+      until Phase 5 as low risk rather than untested, and the sweep is what found the `mother.pd`
+      CC collision (item 76), so "low risk" was the wrong reading. If a control is ever silent,
+      check `aconnect -l` before suspecting the patch.
 - [x] **38b. Everything re-run after the two changes from reading it on hardware.** ✅ The
       transport row folded into the ordinary button path, and the display switched from
       most-recently-used ordering to rows that hold their positions:
@@ -498,8 +468,17 @@ and **5.3 % / 117** (item 37); Phase 5 adds ~96 MIDI messages a second on top.
 - [ ] **39. The OLED read by eye** — the three type-size layouts and the ageing. The geometry is
       verified through `oscOut` on the Mac, but "is 16px actually readable at arm's length" is a
       judgement only the hardware can settle. The one-mover 24px layout has now been read on the
-      device incidentally, via item 38's transport presses; the 2-mover and 3–5-mover layouts have
-      not.
+      device incidentally, via item 38's transport presses.
+
+      ⚠️ **What remains is a judgement, not a test.** Item 80 ran steps 15–16 on the hardware — two
+      faders at once, then three, then all nine — so the 2-mover and 3–5-mover layouts *have* now
+      been rendered on the device and their row behaviour passed. What was being checked there was
+      that each control reported the right name and held its row. **Nobody has yet stood back and
+      decided whether 16px and 8px rows are readable at arm's length on a dark stage**, which is
+      the only question this item was ever about.
+
+      Tracked in [plan-v02.md](plan-v02.md), where it feeds the *OLED UI refinement* work rather
+      than blocking anything.
 
 ---
 
@@ -529,15 +508,10 @@ Run for Phase 5, which needed a transport indicator. **The answer was better tha
       pattern. **Design against the patch-facing numbers**; the bitmask only matters if you ever want
       to compose a colour from components, and that needs the raw `oscOut` path.
 
-      Re-run the sweep with:
+      The colour table, the states `g_led` maps onto it and the command to re-run the sweep are all
+      in [ref-display.md](ref-display.md).
 
-      ```sh
-      ssh root@organelle.local 'for r in 0 4 5 1 3 2 6 7; do
-        oscsend localhost 4001 /led i $r; echo "raw $r"; sleep 5; done
-        oscsend localhost 4001 /led i 0'
-      ```
-
-### The procedure, in order
+### The Phase 4 procedure, in order
 
 **Do every Mac step first, with the nano still on the Mac. Then move the cable once.**
 
@@ -771,8 +745,8 @@ card. Numbers are from `tools/phase5-bench.pd` and two throwaway probe patches.
 
       **The alternative, for the record** — physical-control-wins
       means no pickup mismatch, but it also means the instrument can boot at 10 BPM. `mother.pd`
-      exposes `knob1Raw` and `knob1Override` if a pickup scheme is ever wanted. Tracked in
-      [plan-v02.md](plan-v02.md).
+      exposes `knob1Raw` and `knob1Override` if a pickup scheme is ever wanted — recorded here as
+      the road not taken, not as open work.
 
 ### Session 6b — Phase 5 on the Organelle
 
@@ -908,19 +882,40 @@ Deployed with `./deploy.sh`, then the bench run by hand as a third patch for a r
       Sent from the same message box as `midiInGate`, so it inherits the 2 s re-send.
 
 
-### Still outstanding
+- [x] **80. ✅ The whole nanoKONTROL, on the device — all 42 controls, and it closes item 38.**
+      `tools/phase4-bench.pd` steps 15–17 run by hand on the hardware: every slider, knob and
+      button reports its own name and nothing else on the OLED, with no stray second parameter.
 
-- [ ] **55. The Phase 3 and Phase 4 regressions.** `m_nano` gained a `[t a a]` and a second send,
-      and the footer now carries the BPM — so `phase4-bench.pd` is the gate on the first and
-      `phase3-bench.pd` on the second. Needs the nanoKONTROL attached; nothing else about them
-      changed.
-- [ ] **56. Everything that is the hardware.** The 404 following the tempo is the real *done
-      when* and no amount of Mac testing can stand in for it. Also the four LED colours by eye,
-      whether mother eats a long aux press, whether mother streams knob positions when nothing is
-      moving, and CPU + datagram rate against items 21 and 37 — clock on two ports adds about 96
-      MIDI messages a second.
+      **This is the sweep that had been deferred since Phase 4 as "low risk"**, and running it is
+      what exposed the `mother.pd` CC 21–26 collision (item 76) — five top-row buttons each
+      producing a phantom `og-knob-*` or `og-aux`. The re-run above is the confirmation that the
+      `midiInGate 0` fix holds through the whole surface, not just the two buttons that showed it.
 
-### The procedure, in order
+      ⚠️ **The lesson is about the deferral, not the bug.** The decode had been verified
+      exhaustively off-device (item 31) and the only thing the hardware added was thought to be the
+      channel offset. What it actually added was a *second decoder* running in `mother.pd` on the
+      same CC numbers — invisible in every Mac test, because `mother.pd` is not there.
+
+- [x] **55. The Phase 3 and Phase 4 regressions.** ✅ **Phase 4** is closed by item 80 — the
+      `[t a a]` and the second send are exercised by every control on the surface. ✅ **Phase 3**
+      is closed by the footer behaving correctly across the whole Phase 5 bench on hardware (items
+      70 and 72), including the `status panic` bug that only a footer regression would have caught.
+- [x] **56. Everything that is the hardware.** ✅ All of it, in Session 6b: the 404 following the
+      tempo (item 71 — Phase 5's real *done when*), the LED colours by eye, mother **not** eating a
+      long aux press (item 67), the knob-streaming question (item 68, now moot), and CPU plus
+      datagram rate (items 74 and 75).
+- [ ] **81. ⬜ The Organelle drops its wifi after a while.** Observed repeatedly across Session 6b:
+      the connection is up after a deploy and gone an hour or so later, needing a manual
+      reconnect. It costs nothing once a session is already underway, but it silently breaks
+      `deploy.sh` and `tools/fetch-errors.sh`, and it would take the phone display down mid-set.
+
+      **Unattributed** — dongle, hub current, the access point, or `wifi_control.py`; nothing has
+      been isolated. Not urgent, and **Session 5's access-point work would sidestep it entirely**,
+      which is the argument for doing that before chasing this. If it is ever chased: start by
+      logging `iwconfig wlan0` and `dmesg | tail` from cron, since the failure is unattended by
+      definition and the interesting evidence is whatever happens at the moment it drops.
+
+### The Phase 5 procedure, in order
 
 **Do every Mac step first. Then deploy once.** Expected result is stated *before* each action,
 including the steps whose correct result is that nothing happens.
@@ -1037,20 +1032,20 @@ Not unimportant — just not blocking UI/UX decisions.
 
 ## What's actually left
 
-1. **Session 3** — audio topology, once the Y-cable arrives. Items 11–13. The only remaining
-   test that could still force a redesign.
-2. **Item 5** — power under full load. Never tested with three controllers plus the wifi
-   dongle at once, because of the cable shortage.
-3. **Session 5** — Organelle as an access point. Doesn't block the v0.2 build; does block
-   trusting the phone display on stage.
-4. **Items 38 and 39** — the rest of the nano sweep and the OLED type sizes read by eye. Both are
-   opportunistic; neither blocked Phase 5.
-5. **Items 55 and 56** — Phase 5 on the hardware. Everything that can be measured off-device has
-   been (items 48–54); what is left is the 404 actually following the tempo, the aux button, the
-   LED colours by eye, and the two regressions that need the nanoKONTROL attached.
+**Five open items, and only one of them can still force a redesign.**
 
-Everything else in Sessions 1, 2, 4 and 4d has passed. The full MIDI picture — every message each
-device accepts and transmits — is catalogued in [ref-midi.md](ref-midi.md), which also
-carries the remaining message-level unknowns, chief among them the **SP-404 pad note range**
-(verified 47+*n* here, but Roland's chart says 35–51 — sweep all 16 pads before writing
-sequencing code against it).
+| | Blocked on | Why it is still here |
+|---|---|---|
+| **Session 3** — items 12 and 13, audio topology | the TRS Y-cable | ⚠️ **The only remaining test that could force a redesign.** How the 404 places *external* input in the stereo field is internal routing, and no amount of Mac testing reaches it |
+| **Item 5** — power under full load | a cable | Never run with three controllers plus the wifi dongle at once. Presents as intermittent dropouts, not an obvious failure — so if Phase 6 produces flaky Launchpad behaviour, **suspect the hub before the code** |
+| **Session 5** — items 43–46, Organelle as an access point | nothing | Doesn't block the v0.2 build; does block trusting the phone display on stage. ⚠️ Read its warning first — bringing up an AP drops SSH. Would also sidestep item 81 |
+| **Item 39** — the OLED's 2- and 3–5-mover layouts read by eye | nothing | Opportunistic. Steps 15–16 of `phase4-bench.pd` are written for it |
+| **Item 81** — the wifi dropping | nothing | Not urgent, unattributed, and Session 5 may make it irrelevant |
+
+**Everything else has passed**, including all three built phases end to end on the Organelle:
+Phase 3 (items 21–21c), Phase 4 (items 33–38b, 80) and Phase 5 (items 70–79).
+
+The full MIDI picture — every message each device accepts and transmits — is catalogued in
+[ref-midi.md](ref-midi.md), which also carries the remaining message-level unknowns, chief among
+them the **SP-404 pad note range** (verified 47+*n* here, but Roland's chart says 35–51 — sweep
+all 16 pads before writing sequencing code against it).

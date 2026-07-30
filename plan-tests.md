@@ -536,6 +536,139 @@ under its own `BOOT` line. Selecting from the menu rather than a `deploy.sh` loa
 
 ---
 
+## Session 6 — Phase 5, clock and transport, measured on the Mac
+
+Everything here was run headless against the real `main-dev.pd` under **real DSP**, with no
+Organelle and no MIDI device attached — the pattern Session 4b established. `-noaudio` still
+computes the DSP graph, which is what makes a `phasor~`-derived clock testable without a sound
+card. Numbers are from `tools/phase5-bench.pd` and two throwaway probe patches.
+
+- [x] **48. The pulse rate, and the beat cut from it.** ✅ `u_tempo`'s `[phasor~]` at BPM ÷ 60 × 24
+      with `[threshold~ 0.5 2 0.1 2]`, counting `[mod 24]`:
+
+      | Window | Tempo | Beats | Expected |
+      |---|---|---|---|
+      | 3 s | 120 | **6** | 6 |
+      | 3 s | 60 | **3** | 3 |
+      | 10 s | 120 | **20** | 20 |
+
+      So the pulse train is 24 PPQN and the beat is the 24th pulse, measured rather than asserted.
+- [x] **49. Two `c_clock` instances at different rates, and their alignment to master.** ✅ Over a
+      10.25 s window at 120 BPM: master **21** beats, `[c_clock 1 4]` **21**, `[c_clock 1.5 4]`
+      **31**, and **6** bar bangs with `beat-in-bar` cycling 1 2 3 4. That is the poly in
+      poly-tempo, working.
+
+      **The alignment number is the one that matters: the worst difference between a master beat
+      and the ratio-1 `c_clock` beat over the whole run was `0.000000 ms`** — every pair landed in
+      the same logical instant. That is what the `[*~ 24] → [wrap~]` construction buys, and it is
+      why a threshold on the beat phasor directly would have been wrong: it would have fired half
+      a beat away, uniformly, and looked fine in isolation.
+- [x] **50. The clock does not stop when the transport does.** ✅ Counters zeroed, `stop` sent,
+      10 s later: **20 / 20 / 30** — identical to the running case. This is the least obvious
+      requirement in the phase: stop the pulse stream and the 404 stretches every sample to a
+      stale tempo, so a stopped clock is a *wrong* tempo rather than no tempo.
+- [x] **51. Out of range clamps and warns exactly once.** ✅ `tempo 500` twice produced **one**
+      `warn u_tempo bpm-out-of-range` and a footer reading `300-bpm`. Sending `300` and then `500`
+      again warned again — so the `[change]` reports the transition, not the state, which is the
+      difference between a report and a flood.
+- [x] **52. The whole `disp` conversation through a boot and a transport cycle.** ✅ In order:
+      `led stopped`, `status 120-bpm`, then `led running` on start, `status 60-bpm` on a tempo
+      change, `led stopped` on stop. The LED is told a state and never a colour, and the BPM lands
+      in the footer rather than the param layer.
+- [x] **52b. ⚠️ A bare `[change]` swallows a control that is parked at zero — found by driving the
+      real chain rather than by reading it.** ✅ `knob1 0` → `param og-knob-1 0` → `tempo 60`
+      produced **nothing at all** on the first attempt: `[change]` starts life holding 0, so the
+      first value never looked like a change. Every knob in `m_organelle` is now `[change -1]`,
+      which is what `u_level` has always used and for the same reason. -1 cannot collide, since
+      mother's knobs are 0 to 1.
+
+      **The consequence had this stayed:** boot with knob 1 turned fully down and the tempo would
+      silently sit at its 120 default instead of 60, until you touched the knob. Verified fixed —
+      `og-knob-1 0` → `TEMPO: 60`, `1` → `180`, `0.5` → `120`, and `og-aux 1` alternating
+      `START` / `STOP` through the real `u_map`.
+- [x] **53. ⚠️ Pd 0.49 does not warn about extra creation arguments — so the `[midiout]` port
+      question cannot be answered by the syntax check.** ✅ Measured as a negative: `[loadbang 7]`
+      and `[wrap~ 9]` both load in complete silence. A clean check on `[midiout 3]` therefore
+      proves nothing at all about whether the 3 reaches anything. `u_tempo` uses `u_init`'s proven
+      pattern — the port set into the cold inlet at load — and the question stays ⬜ in
+      [plan-v02.md](plan-v02.md). **The lesson is that the obvious experiment was invalid**, which
+      is worth more than the answer would have been.
+- [x] **54. Both entry points still load clean, and every file passes the layout check.** ✅
+      `main.pd` and `main-dev.pd` both silent under the syntax check with the five new
+      abstractions instantiated; `pd-layout-check.py` reports `0 problems` on all eleven patch
+      files and on the bench.
+
+### Still outstanding
+
+- [ ] **55. The Phase 3 and Phase 4 regressions.** `m_nano` gained a `[t a a]` and a second send,
+      and the footer now carries the BPM — so `phase4-bench.pd` is the gate on the first and
+      `phase3-bench.pd` on the second. Needs the nanoKONTROL attached; nothing else about them
+      changed.
+- [ ] **56. Everything that is the hardware.** The 404 following the tempo is the real *done
+      when* and no amount of Mac testing can stand in for it. Also the four LED colours by eye,
+      whether mother eats a long aux press, whether mother streams knob positions when nothing is
+      moving, and CPU + datagram rate against items 21 and 37 — clock on two ports adds about 96
+      MIDI messages a second.
+
+### The procedure, in order
+
+**Do every Mac step first. Then deploy once.** Expected result is stated *before* each action,
+including the steps whose correct result is that nothing happens.
+
+**Mac, one-time setup.** ⚠️ **Tick `enable-DSP` on the dev panel.** `threshold~` is a signal
+object, so with DSP off there is no phasor, no pulse and no beat — and the failure looks exactly
+like a broken clock rather than like a setting. This is the Phase 5 equivalent of Phase 4's "no
+MIDI input saved in preferences". Nothing else is needed: **tempo is the Organelle's knob 1 now,
+so the whole clock is drivable from the panel with no MIDI configured at all.**
+
+**Mac, static.** `python3 tools/pd-layout-check.py "Cut It"/*.pd tools/phase5-bench.pd` — every
+line must say `0 problems`. Then the syntax check on both entry points; **silence is the pass**.
+
+**Mac, boot.** Open `Cut It/main-dev.pd` and tick `enable-DSP`. Expect, in order: `booting` →
+`wiring` → `launchpad` → the two meters, and then at about four seconds the footer changing from
+`v0.2-ready` to **`120-bpm`**. The `aux-LED` radio on the panel should sit on cell **5**, dark
+blue, and the `beat` bng should flash twice a second. **If the beat bng is dark, DSP is off.**
+
+**Mac, the transport.** Click `start`: the LED radio moves to **3** (green) and nothing else
+changes — the beat was already running. Click `stop`: back to **5**. Click `panic`: **1** (red)
+and the footer says `panic`. The beat must keep flashing through all three.
+
+**Mac, the map.** Sweep the panel's `knob1` slider. Expect `og-knob-1` to appear as a parameter
+row, the `bpm` readout to track **60 → 180**, and the footer to follow it. Click `bpm-500`: the
+footer clamps to `300-bpm` and one alert appears. Click it again: **nothing happens** — that is
+the pass. Click `bpm-5`, then `bpm-500` again: each warns once.
+
+**Mac, the aux button.** Click `aux-tap`: the LED goes green. Click it again: dark blue. This is
+the same path the real aux button takes, so if it works here and not on the device, mother is
+eating the press.
+
+**Mac, the bench.** `pd -path "Cut It" "Cut It/main-dev.pd" tools/phase5-bench.pd`, DSP on, and
+watch the console. Steps 3 and 10 must print **20 / 20 / 30**; step 7 must produce exactly one
+alert. Steps 12 and 13 will ask for hands you do not have on the Mac — they are for the device.
+
+**Then `./deploy.sh`** and do it again on the hardware, where the additions are:
+
+1. **The aux button, by hand.** Press: green, and the 404 starts. Press again: dark blue, and it
+   stops. ⬜ If nothing happens at all, check whether mother is intercepting the press before
+   suspecting `u_map` — the encoder is the precedent for a control that turned out not to be free.
+2. **Knob 1, by hand.** ⚠️ **The 404's own tempo display following the sweep is the real *done
+   when* of Phase 5.** Expect it to lag by a pulse or two and to stutter on a large jump — that is
+   inferred tempo working as documented, not a fault.
+3. **The four colours by eye**, which is the only way to settle whether dark blue reads as
+   "stopped" or as "off" at arm's length on a dark stage.
+4. **Hands off the device for thirty seconds.** The OLED must fall back to the two meters and the
+   footer. ⬜ If four `og-knob-*` rows sit there permanently, `mother.pd` streams knob positions
+   continuously and the `[change]` guard in `m_organelle` is doing real work.
+5. **CPU and datagram rate**, comparable to items 21 and 37.
+6. `./tools/fetch-errors.sh` afterwards — the only error the run should have raised is
+   `bpm-out-of-range`, twice.
+
+⚠️ On the Mac an error also prints `/sdcard/cut-it-err.cur: write failed`. That is `/sdcard` not
+existing there, it is the documented diagnostic working, and it cannot affect `deploy.sh` — the
+check quits before the flush metro fires.
+
+---
+
 ## Session 5 — Organelle as its own access point
 
 ⬜ **Not attempted.** Gates whether the PdParty status display is stage-worthy or
@@ -599,7 +732,10 @@ Not unimportant — just not blocking UI/UX decisions.
 3. **Session 5** — Organelle as an access point. Doesn't block the v0.2 build; does block
    trusting the phone display on stage.
 4. **Items 38 and 39** — the rest of the nano sweep and the OLED type sizes read by eye. Both are
-   opportunistic; neither blocks Phase 5.
+   opportunistic; neither blocked Phase 5.
+5. **Items 55 and 56** — Phase 5 on the hardware. Everything that can be measured off-device has
+   been (items 48–54); what is left is the 404 actually following the tempo, the aux button, the
+   LED colours by eye, and the two regressions that need the nanoKONTROL attached.
 
 Everything else in Sessions 1, 2, 4 and 4d has passed. The full MIDI picture — every message each
 device accepts and transmits — is catalogued in [ref-midi.md](ref-midi.md), which also

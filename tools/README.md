@@ -123,6 +123,32 @@ assertions, re-run because the param layer they sit next to was rewritten.
 `PASS IF` string splits it and the remainder goes somewhere unhelpful (`canvas: no method for
 'then'`). `phase3-bench.pd` says so and it caught this one out too.
 
+## Phase 5
+
+### `phase5-bench.pd` — the Phase 5 acceptance run
+
+Same shape again: self-driving, ten seconds a step, a printed `PASS IF` before each one. Fourteen
+steps covering the clock, the transport, the map and the aux LED. **Steps 1–11 drive themselves;
+12 and 13 need your hands on the Organelle itself** — the aux button and knob 1 are the only
+controls involved, and neither exists on a laptop.
+
+⚠️ **It needs `-path` pointing at the patch folder**, because it instantiates two `c_clock`
+objects and the deployed patch instantiates none. The by-hand console line in
+[../ref-conventions.md](../ref-conventions.md) already carries it; on the Mac add
+`-path "Cut It"`.
+
+⚠️ **On the Mac, tick the panel's `enable-DSP` toggle first.** `threshold~` is a signal object,
+so with DSP off the beat counters read **0** — which looks exactly like a broken clock. On the
+device `mother.pd` turns DSP on 200 ms after load and this does not arise.
+
+Three steps carry the load:
+
+| Step | Proves |
+|---|---|
+| **3** | 24 PPQN is right, and `c_clock` at ratios 1 and 1.5 gives 20 and 30 beats in 10 s at 120 BPM |
+| **9–10** | **the clock keeps running when the transport stops.** A zero here is the bug the step exists for — stop the pulse stream and the 404 stretches to a stale tempo |
+| **7** | out-of-range warns **exactly once**, not once per message |
+
 ### `fetch-errors.sh` — read the error log back off the device
 
 `u_err` now keeps a persistent log, so an error raised mid-set can be read the next day:

@@ -117,6 +117,39 @@ v0.1's `midiclock.pd`, archived in [! v0.1 plans/patch/](<! v0.1 plans/patch/REA
 
 Clock is **24 PPQN** — 24 pulses per quarter note, one every 20.8 ms at 120 BPM.
 
+### How Cut It generates it ✅ built
+
+`u_tempo` owns it, and the construction is worth stating because it is not the obvious one:
+
+| | |
+|---|---|
+| BPM ÷ 60 × 24 → **`[phasor~]`** at the pulse rate | 48 Hz at 120 BPM |
+| **`[threshold~ 0.5 2 0.1 2]`** → one bang per cycle | the phasor crosses 0.5 once per ramp and falls below 0.1 on the wrap |
+| every pulse emits **248** and increments a counter | `[mod 24]` = 0 is the beat, published on `clock` |
+| **out on Pd MIDI ports 1 and 3** | the Launchpad and the SP-404 — `Pure Data:4` and `Pure Data:6`, already in `wire.sh` |
+
+**Counting the pulses rather than running a second oscillator is what makes the beat and the MIDI
+pulse the same clock by construction.** ✅ Measured on the Mac under real DSP: 6 beats in 3 s at
+120 BPM, 3 in 3 s at 60 — [plan-tests.md](plan-tests.md) item 48.
+
+⚠️ **Audio-domain does not fix the jitter, and never could.** `threshold~` reports on a 64-sample
+block boundary exactly as `metro` fires on one, so the ~1.45 ms below is unchanged. What it buys
+is a rate change that is phase-continuous and glitch-free, and **one phase that grain-rate code
+reads as a signal**, so MIDI clock and grain timing cannot drift apart. Anyone who reads "audio
+domain" as "sample-accurate MIDI" will waste a day.
+
+**The transport bytes:** `start` → 250, `stop` → 252, `panic` → 252 plus All Notes Off.
+**Never 251** — nothing in the rig has Song Position Pointer, so a Continue would be a lie.
+
+⚠️ **The clock keeps running when the transport stops**, and that is deliberate: 248 flows
+whether or not anything is playing, and only 250/252 mark transport. Stop the stream and the 404
+stretches every sample to whatever tempo it last measured, so a stopped clock is a *wrong* tempo
+rather than no tempo.
+
+**A start aligns the beat grid to within half a pulse**, not to the instant. `threshold~` fires
+at phase 0.5, so the first pulse after a start arrives ~10.4 ms later at 120 BPM. It is a
+constant offset shared by every clock in the patch, not an error, and nothing external can see it.
+
 **The Organelle is clock master and every other device's clock output is off.** ✅ The 404's
 "MIDI Sync Out" in particular will echo clock back and create a loop if left on.
 

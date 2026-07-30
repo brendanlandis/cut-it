@@ -1,4 +1,4 @@
-#N canvas 40 40 1340 860 12;
+#N canvas 40 40 2020 1000 12;
 #X text 20 20 u_root -- the actual root of Cut It. main.pd (on the device) and main-dev.pd (on the Mac) both instantiate this and nothing else \, which is what stops the two entry points drifting., f 58;
 #X text 20 110 creation arg 1: the Pd channel the nanoKONTROL's own channel 1 lands on -- 17 on the Organelle \, 1 on the Mac. Passed straight to m_nano \, and the ONE thing main.pd and main-dev.pd are allowed to disagree about. inlets: none. outlets: none., f 58;
 #X text 20 215 THE AUDIO PATH IS WIRES \, ON PURPOSE. The four stages go in the gap below \, right to left \, so the chain stays something you can read off the canvas instead of tracing through send names., f 58;
@@ -20,6 +20,14 @@
 #X text 1000 470 the error bus. Anything raising a problem sends level \, source and text to err \; this decides what the mode lets through and forwards it to disp. It never draws -- g_oled owns the screen., f 34;
 #X obj 1000 620 m_nano \$1;
 #X text 1000 660 the nanoKONTROL. Decodes CC into named parameters on disp -- every control including the six transport keys \, which get ordinary momentary treatment. It drives no other bus: what a control MEANS is decided above this layer \, and nothing below it knows this device exists., f 34;
+#X obj 1350 300 u_tempo;
+#X text 1350 340 the master reference: master BPM \, the 24 PPQN pulse that MIDI clock is cut from \, and the transport. It is NOT the clock -- Cut It runs poly-tempo and a c_clock instance is what a beat comes from. There are none here yet because nothing consumes a beat., f 34;
+#X obj 1350 500 u_map;
+#X text 1350 540 THE MAP \, and the only file in Cut It that says what a control MEANS. Named controls in on param \, buses out. Organelle knob 1 is master tempo and the aux button is the transport \; everything else is published and mapped to nothing., f 34;
+#X obj 1350 700 m_organelle;
+#X text 1350 740 the Organelle's own front panel \, mapped like any other device -- aux and the four knobs become named controls on param. Same layer as m_nano and the same silence about meaning., f 34;
+#X obj 1700 300 g_led;
+#X text 1700 340 owns the aux button LED. Callers send led and a STATE on disp \, never a colour \, exactly as they do for the screen -- one writer per display surface \, and this is the surface that is not a screen., f 34;
 #X connect 3 0 4 0;
 #X connect 3 0 7 0;
 #X connect 5 0 6 0;

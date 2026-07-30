@@ -1,4 +1,4 @@
-#N canvas 20 20 1500 1180 12;
+#N canvas 20 20 1500 1240 12;
 #X text 20 20 u_init -- owns the ordered startup. loadbang fires before ALSA connections exist \, so everything here is a timed sequence rather than a pile of del objects scattered through the patch., f 58;
 #X text 20 115 creation args: none. inlets: none. outlets: none., f 58;
 #X text 20 160 Each stage reports to the disp bus as it is REACHED. Nothing here is acknowledged by any device \, so a stage name on screen means the sequence got that far -- not that the hardware answered. Boot sticking on one name still tells you where to look., f 58;
@@ -86,6 +86,7 @@
 #X obj 900 570 print wire;
 #X text 140 1050 THE STAGES ARE MODALS \, so each one takes the whole screen at 16px while the meters have nothing to say. The last stage sends modal-off and drops v0.2-ready into the footer \, where a persistent status belongs. That also gives g_oled's modal layer a real caller in Phase 3 rather than shipping it untested., f 58;
 #X text 620 1050 A message box typed modal booting ALREADY has modal as its selector \, so the list prepend / list trim chain this used to need is gone -- and with it one instance of the trap it was there to avoid. See ref-conventions.md \, The display bus., f 46;
+#X text 1080 1050 THE FOOTER IS HANDED OVER \, NOT SHARED. u_tempo drops the BPM into it at 4 s -- deliberately after v0.2-ready lands here at about 3.5 s \, so the boot status is superseded by something useful once the clock is up. CHANGE THESE STAGE TIMINGS AND THAT 4000 CHANGES WITH THEM., f 40;
 #X connect 3 0 4 0;
 #X connect 4 1 10 0;
 #X connect 4 0 5 0;

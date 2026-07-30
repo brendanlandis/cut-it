@@ -206,6 +206,77 @@ because the footer is shared between `u_init` and anything reporting persistent 
 
 ---
 
+## Phase 5 — Clock and transport
+
+`u_tempo`, `c_clock`, `u_map`, `m_organelle`, `g_led`, and the `param` bus.
+
+Master BPM, a 24 PPQN pulse cut from a `phasor~`, MIDI realtime out on two ports, the transport,
+and the first mapping layer that can make a control *do* something. Before this phase `m_nano`
+published only to `disp` — a display bus — so no control could drive anything at all.
+
+**The construction, because it is not the obvious one.** BPM ÷ 60 × 24 drives a `phasor~`;
+`[threshold~ 0.5 2 0.1 2]` gives one bang per ramp; every pulse emits 248 and increments a
+counter whose `[mod 24]` = 0 *is* the beat. **Counting the pulses rather than running a second
+oscillator makes the beat and the MIDI pulse the same clock by construction** — there is no
+second thing to drift.
+
+`c_clock` rebuilds the same construction off its own beat-rate phasor via `[*~ 24] → [wrap~]`,
+and that is the alignment mechanism: a threshold at 0.5 of a *beat* phasor would fire half a beat
+away from master. ✅ **Measured: master and a ratio-1 `c_clock` bang at bit-identical logical
+times for a whole run — worst difference 0.000000 ms** — and ratio 1.5 gives exactly half again
+as many beats. Item 49.
+
+**Two buses, deliberately.** `param` carries a control that *changed*; `disp` a request to *show*
+it. `m_nano` and the new `m_organelle` publish to both off one `[t a a]`, action first, report
+second — duplicating the data where teaching `g_oled` to listen on `param` would not. Not
+touching a hardware-verified display file won that trade.
+
+**Tempo is the Organelle's knob 1, not the nano's knob 9** — a change of mind about the plan, and
+a good one: the dev panel already sends `knob1`, so the entire clock is drivable on the Mac with
+no MIDI configured at all. `m_organelle` is the new home for mother's own controls, replacing the
+`m_keys` box in the architecture diagram; it is named for the device, like `m_nano`.
+
+**Every controller-function designation now lives in `u_map`, and nowhere else** — explicit
+`route` branches rather than a table, because a data-driven `[send]` could write any global name
+with no evidence of it on the canvas. The aux toggle in it **holds no state of its own**: it
+reads back `start`/`stop` from whoever caused them, so nothing can leave the button pressing the
+wrong way.
+
+### Six corrections, and one of them was the measuring rig
+
+- **Pd 0.49 does not warn about extra creation arguments.** `[loadbang 7]` loads in silence, so
+  the syntax check *cannot* answer whether `[midiout 3]` reaches port 3 — a silent creation
+  proves nothing either way. The question stays ⬜ and `u_init`'s proven pattern is used instead:
+  the port goes into the cold inlet at load. **The interesting part is that the obvious
+  experiment was invalid**, not the answer.
+- **A second display surface on `disp` costs one `route` argument in the first one.** `g_oled`
+  treats everything it does not recognise as a parameter, so `led running` would have drawn as a
+  nonsense parameter row. Two lines inside `pd disp-in`: `led` appended to the route, and the
+  reject connection moved from outlet 6 to 7. Worth knowing before a third surface arrives.
+- **The pulse counter resets to 23, not 0.** The next pulse adds one and lands on 0, which is the
+  beat. Reset it to 0 and the first beat after every start is silently skipped — one beat, once,
+  which is exactly the kind of thing nobody notices until a pattern is a bar out.
+- **On the Mac the beat counters read 0 and the patch looks broken.** Nothing turns DSP on there;
+  `mother.pd` does it on the device 200 ms after load. Predicted in the plan, and it still cost a
+  confused minute when the first bench run printed three zeros. The bench now says so in the step
+  that would show it.
+- ⚠️ **The first measurement said the clock ran at double speed, and the clock was innocent.**
+  The probe patch had a `[t b b]` with *both* outlets wired into one counter. **A measuring rig
+  is code and gets the same scrutiny as the thing it measures** — the correct reading, 6 beats in
+  3 s at 120 BPM, came out of fixing the probe, not the patch. `phase5-bench.pd` had a matching
+  bug of its own: `[r $0-say]` was never connected to its `[print]`, so every step ran silently.
+
+- **A bare `[change]` swallows a control parked at zero.** `m_organelle` guards each knob with
+  `[change]`, because ⬜ it is not established whether `mother.pd` streams knob positions
+  continuously or only on movement — a control that has not moved should say nothing either way,
+  and must not pin four rows onto the display forever. But `[change]` starts life holding **0**,
+  so `knob1 0` was filtered as "no change" and the tempo silently stayed at its 120 default
+  instead of dropping to 60. It is `[change -1]` now, which is exactly what `u_level` has always
+  used. **Found by driving the real chain, not by reading it** — the comment beside the object
+  already cited `u_level`'s `change -1` as the precedent while the object itself omitted the -1.
+
+---
+
 ## What every phase had in common
 
 Worth stating once, because it is the pattern rather than a coincidence:

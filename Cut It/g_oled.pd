@@ -7,7 +7,7 @@
 #X text 20 20 THE RESERVED SELECTORS ARE THIS ROUTE BOX. in-l \, in-r and status feed the home screen \; modal \, modal-off and alert name a layer directly. EVERYTHING ELSE FALLS OUT OF THE REJECT OUTLET AND IS A PARAMETER., f 58;
 #X text 20 115 Callers never say which layer they want -- see ref-conventions.md \, The display bus. A mistyped disp name shows up on the screen as a nonsense parameter \, which is a great deal better than vanishing., f 58;
 #X obj 20 250 r disp;
-#X obj 20 300 route in-l in-r status modal modal-off alert;
+#X obj 20 300 route in-l in-r status modal modal-off alert led;
 #N canvas 40 40 1000 620 levels 0;
 #X text 20 20 Two jobs per channel \, both derived once when the level arrives rather than every frame: the bar WIDTH in pixels \, and the 8px readout TEXT. env~ reports 0-100 dB \, the screen is 128 px \, so the scale is 1.28., f 58;
 #X obj 20 130 inlet;
@@ -170,6 +170,7 @@
 #X text 20 580 EVERY BRANCH OUT OF route GOES THROUGH list append FIRST. When route matches \, whatever is left over comes out as a MESSAGE \, not a list -- so status v0.2-ready arrives with v0.2-ready as its selector and alert warn u_init x arrives with warn as its selector. Feed that to a trigger and Pd says: can only convert 's' to 'b' or 'a'. list append turns it back into a list., f 58;
 #X text 560 580 ref-conventions.md describes this for a remainder that is a SINGLE symbol. It is wider than that: any remainder whose first atom is a symbol arrives as a selector plus arguments. A remainder starting with a float -- in-l 43 dB -- really is a list \, which is why the level chain needs no list append., f 58;
 #X text 1100 580 modal-off carries nothing \, so route hands out a bang and it goes straight to the layer logic. It is a reserved name rather than a modal with empty text because clearing a layer and setting one are different operations., f 58;
+#X text 1100 700 led IS MATCHED AND DELIBERATELY NOT CONNECTED. The aux button LED is a display surface with its own owner \, g_led \, and it listens on this same bus. Without a branch here every LED request would fall out of the reject outlet and draw as a parameter row called led. Phase 5., f 58;
 #X connect 2 0 3 0;
 #X connect 3 0 4 0;
 #X connect 3 1 4 1;
@@ -178,7 +179,7 @@
 #X connect 3 3 7 0;
 #X connect 3 4 8 0;
 #X connect 3 5 9 0;
-#X connect 3 6 10 0;
+#X connect 3 7 10 0;
 #X restore 20 420 pd disp-in;
 #X text 180 424 the bus \, the reserved names \, and where a parameter comes from, f 40;
 #N canvas 40 40 1500 900 layers 0;

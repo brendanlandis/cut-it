@@ -132,16 +132,33 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 | `mode` | compose / perform, and sub-mode | any. ⬜ **Nothing drives it yet** |
 | `tempo` | **master reference** BPM, as a float | any → `u_tempo` |
 | `clock` | **master reference** beat bang | `u_tempo` |
-| `start` / `stop` | transport | any → `u_tempo` |
+| `start` / `stop` | transport, carried as a **bang** | any → `u_tempo` |
 | `panic` | all-notes-off, clear all state | any |
+| `param` | `<name> <value>` — a control **changed** | any `m_` → `u_map` |
 | `err` | `<level> <source> <text>`, level ∈ `warn` `fail` | any → `u_err` |
-| `disp` | display requests: `<name> <value> [unit]` | any → `g_oled` |
+| `disp` | display requests: `<name> <value> [unit]` | any → `g_oled`, `g_led` |
 
-**Three of these are request buses, not publications.** `tempo`, `start`/`stop` and `mode` are
-written by whoever has something to say and *consumed* by one owner, exactly as `err` and `disp`
-are — so the Source column names the consumer. `u_tempo` owns the BPM value and the transport
-state; it does not own the right to change them. **`clock` is the exception**: only `u_tempo`
-writes it, because it is a publication of something already decided.
+**Four of these are request buses, not publications.** `tempo`, `start`/`stop`, `mode` and
+`param` are written by whoever has something to say and *consumed* by one owner, exactly as `err`
+and `disp` are — so the Source column names the consumer. `u_tempo` owns the BPM value and the
+transport state; it does not own the right to change them. **`clock` is the exception**: only
+`u_tempo` writes it, because it is a publication of something already decided.
+
+**`param` is a control changing; `disp` is a request to show it.** ✅ Added in Phase 5, and the
+distinction is the whole reason for a second bus: a device publishes what its surface *did*,
+and `u_map` — the only consumer — decides what that *means*. `m_nano` and `m_organelle` both
+publish to `param` and `disp` off one `[t a a]`, action first and report second. That duplicates
+the data where teaching `g_oled` to listen on `param` would not, and it was the right trade:
+not touching a hardware-verified display file beat saving a send.
+
+Two consequences worth stating, because both are deliberate:
+
+- **Names on `param` are physical, never functional** — `slider-1`, `og-knob-1`, `xport-2`. What
+  a control *does* is not knowable at the `m_` layer and must not be guessed there.
+- **`u_map` is the only file allowed to turn a `param` name into anything else**, and it does it
+  with explicit `route` branches rather than a lookup table. A data-driven `[send]` could write
+  any global name with no evidence of it on the canvas, which defeats an allowlist that is
+  audited by reading. Revisit when the mapping count justifies it — v0.3.
 
 ⚠️ **Nothing has driven `mode` since Phase 4.** The nano's LOOP key was briefly a mode toggle and
 the transport row is now ordinary CC, so the bus exists with no writer. It degrades safely —
@@ -310,10 +327,16 @@ drawn — **including `u_err`, which filters and forwards onto `disp` rather tha
 The Phase 4 plan originally had `u_err` writing to the ALERT buffer itself; where the two
 disagreed, this rule won ([ref-build-log.md](ref-build-log.md)). Two writers, one screen.
 
-**The same rule covers the aux button LED.** It is a display surface, so it gets one owner and
-callers send semantics rather than a colour — see [ref-display.md](ref-display.md) for what the
-eight states look like. `led` is `mother.pd`'s own name and is reserved below; the point here is
-that exactly one abstraction may write it.
+**The same rule covers the aux button LED, and ✅ Phase 5 built it.** It is a display surface, so
+it gets one owner — `g_led` — and callers send semantics rather than a colour: `led running` on
+`disp`, never a number. `led` is `mother.pd`'s own name and is reserved below; the point is that
+exactly one abstraction may write it. See [ref-display.md](ref-display.md) for the states.
+
+⚠️ **`led` had to be added to `g_oled`'s `route` as well**, matched and left unconnected.
+Everything `g_oled` does not recognise is a parameter by definition, so without a branch there
+every LED request would have drawn as a nonsense parameter row called `led`. **A second display
+surface on the same bus costs one route argument in the first one** — cheap, but not free, and
+worth knowing before adding a third.
 
 **The `disp` message is `<name> <value> [unit]`, with the name as the *selector*.**
 
@@ -329,6 +352,7 @@ registration step, and `m_nano` in Phase 4 needs no change to the display to sho
 | `modal` | one symbol — sticky until cleared | modal |
 | `modal-off` | nothing | clears modal |
 | `alert` | `<level> <source> <text>` — only `u_err` sends this | alert |
+| `led` | one symbol, a **state** — `off` `stopped` `running` `panic` | *not the OLED at all* |
 | *anything else* | `<value> [unit]` | param |
 
 *(judgment call)* Reserved-names-plus-fallthrough was chosen over tagging each message with its

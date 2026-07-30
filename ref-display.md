@@ -189,6 +189,26 @@ components — and that needs the raw path, which is `oscOut`, which belongs to 
 
 **mother already sets `led 0` on `quitting`**, so a safe exit needs no LED handling of its own. ✅
 
+### What Cut It puts on it ✅ built
+
+**`g_led` owns `led`**, exactly as `g_oled` owns the screen, and callers send a **state** on the
+`disp` bus — `led running` — never a colour:
+
+| State | `led` | Colour | Means |
+|---|---|---|---|
+| `off` | 0 | off | nothing claims it |
+| `stopped` | 5 | dark blue | patch up, transport stopped |
+| `running` | 3 | green | transport running |
+| `panic` | 1 | red | panic raised — cleared by the next start or stop |
+
+*(judgment call)* **stopped is lit rather than dark**, because a stopped patch and a dead patch
+look identical if stopped is `off` — and on a dark stage that is the difference between a pause
+and a problem. Anything `g_led` does not recognise raises `warn g_led unknown-led-state` and
+leaves the LED alone, so a typo cannot silently blank the only non-screen indicator in the rig.
+
+Phase 6 (mode) and Phase 8 (save in progress) are the next two callers, and they need no change
+here beyond a row in that table.
+
 ⚠️ **There is an undocumented `/led/flash`** — `flashLED(OSCMessage&)` is in the `mother` binary, and
 `mother.pd` does not expose it at all. Reaching it means sending raw OSC to `oscOut`. **Deliberately
 unused:** only one abstraction may send on `oscOut`, so adopting flash would put a second writer on

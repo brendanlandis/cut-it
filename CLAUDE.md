@@ -56,10 +56,19 @@ Cut It/              the deployable patch — folder name is what appears in the
                        mid-set can be read back the next day
   logroll.sh           rolls the previous session's error log into the durable one at
                        load, stamped with a real wall clock from `date`
-  m_nano.pd            the nanoKONTROL: CC -> named parameters on disp, transport ->
-                       mode / start / stop. Takes its Pd channel block as an argument
+  m_nano.pd            the nanoKONTROL: CC -> named controls on param and disp.
+                       Takes its Pd channel block as an argument
+  m_organelle.pd       the Organelle's own panel: aux and knobs 1-4 onto param and disp
+  u_map.pd             THE MAP — the only file that says what a control MEANS. Knob 1 is
+                       master tempo, aux is the transport. One route box, one branch each
+  u_tempo.pd           the master reference: BPM, the 24 PPQN pulse MIDI clock is cut from,
+                       realtime out on two ports, and the transport
+  c_clock.pd           ONE clock — its own rate and time signature, aligned to master by a
+                       start. Instantiable, because Cut It runs poly-tempo. No instances yet
   g_oled.pd            the display arbiter — home < param < modal < alert, each with a TTL.
                        Sole owner of oscOut and screenLine*
+  g_led.pd             the aux button LED and its sole owner. Callers send a state, never
+                       a colour — the one display surface that is not a screen
   u_mother-stub.pd     impersonates mother.pd off-device AND is the dev panel — the whole
                        front face (screen, knobs, encoder, volume, keys) laid out like the
                        device and rendered inline on main-dev.pd via graph-on-parent.

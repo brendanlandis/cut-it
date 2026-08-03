@@ -151,16 +151,19 @@ pretending to be a mapping would not be.
 
 Both were decided by *using* the thing, and both are the current design — not amendments to it.
 
-**The transport row is ordinary CC.** It was briefly a mode control, with LOOP toggling
-compose/perform and PLAY/STOP driving the clock. The row is better spent on **scene selection**, so
-all six now get momentary treatment like every other button: `xport-1`…`xport-6` on press, no
-toggle, no transport meaning. CC 41–46 give `div 10` = 4, so it folded into the decode as a **fifth
-kind** and deleted a whole subpatch.
+**The transport row is ordinary CC.** It was briefly a mode control *inside `m_nano`*, with LOOP
+toggling compose/perform and PLAY/STOP driving the clock — which put meaning in the one layer that
+must not have any. All six get momentary treatment like every other button instead:
+`xport-1`…`xport-6` on press, no toggle, no transport meaning. CC 41–46 give `div 10` = 4, so it
+folded into the decode as a **fifth kind** and deleted a whole subpatch. The row was earmarked for
+selecting between whole sets of behaviour — called *scenes* at the time, and **the same idea now
+called `mode`**, which is what Phase 6 mapped it to in `u_map`.
 
-Two consequences, both live: **nothing drives `mode`, `start` or `stop`** ([plan-v02.md](plan-v02.md)
-tracks finding them a home); and the decode is now purely CC-number-based within the block, so
-CC 41–49 read as `xport-1`…`xport-9` rather than warning. There is no bounds check on the units digit
-anywhere — CC 0 has always read as `slider-0`.
+Two consequences. **Nothing drove `mode`, `start` or `stop` when this landed** — Phase 5 gave
+start/stop a home and Phase 6 gave `mode` one, both in `u_map` and neither in `m_nano`, which is
+the point. And the decode is now purely CC-number-based within the block, so CC 41–49 read as
+`xport-1`…`xport-9` rather than warning. There is no bounds check on the units digit anywhere —
+CC 0 has always read as `slider-0`.
 
 **Display rows hold their positions.** The plan called for a most-recently-used list, newest first.
 That was **wrong in the hand**: two faders moving together swapped places several times a second and
@@ -372,7 +375,7 @@ changed the design:
 
 ### The shape of it
 
-**`m_launchpad` owns the mode and the layout; `g_grid` owns the LEDs.** Different surfaces, one
+**`m_launchpad` owns the Programmer/Live switch; `g_grid` owns the LEDs.** Different surfaces, one
 writer each — which is the rule, and it is what let the 89-note clear loop be deleted outright:
 **the first frame after ownership rises *is* the clear.** No second blanking step to keep in step
 with anything.

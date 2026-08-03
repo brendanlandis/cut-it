@@ -13,8 +13,9 @@ Early sessions need scratch patches only — no Cut It code. Diagnostic patches 
 matters.
 
 **Status:** Sessions 2, 3b, 3c, 4, 4b, 4c, 4d, 6 and 6b complete — **Phases 3, 4 and 5 are all
-verified end to end on the Organelle.** Session 1 is done bar the full-load power check. Session 3
-is blocked on the TRS Y-cable; Session 5 has not been attempted.
+verified end to end on the Organelle.** ⚠️ **Session 7 (Phase 6) is complete on the Mac only** —
+items 82–93b pass, 94–97 need the device and nothing has been deployed. Session 1 is done bar the
+full-load power check. Session 3 is blocked on the TRS Y-cable; Session 5 has not been attempted.
 
 ⚠️ **Item numbers are unique across the whole file and other documents cite them by bare number**
 ("item 21c", "item 31"). Sessions 4 and 5 were renumbered to 40–42 and 43–46 to remove a collision
@@ -26,10 +27,10 @@ Launchpad's Programmer Mode over SysEx (LEDs, velocity, polyphonic aftertouch), 
 per-device channel offsets work with multiple controllers at once. What remains is
 cable-blocked — the audio topology and full-rig power draw.
 
-**Do not treat open items as settled facts.** [ref-hardware.md](ref-hardware.md) has an
-*Open questions* section, [ref-midi.md](ref-midi.md) has its own, and this file is the
-ordered checklist with results. The [tools/](tools/) patches are working references for every
-technique verified here.
+**Do not treat open items as settled facts.** This file is the ordered checklist with results;
+**what to do about anything still open is in [plan-v02.md](plan-v02.md) under *Open questions***,
+which is the only place that carries plans. The [tools/](tools/) patches are working references
+for every technique verified here.
 
 ---
 
@@ -126,8 +127,8 @@ jack, and nothing else merges two mono outs into it.
       *external input* in the stereo field, which is internal routing and unrelated to the jacks
       on the back.
 
-See [ref-hardware.md](ref-hardware.md) open question 1 for the fuller version, including the
-LINE IN R-only variant.
+See [plan-v02.md](plan-v02.md) → *The last thing that could force a redesign* for why this one
+still matters, and *Deliberately skipped for now* below for the LINE IN R-only variant.
 
 ---
 
@@ -245,10 +246,10 @@ No hardware needed, and it is repeatable in seconds — the pattern is worth reu
       **CC 41–46**, in physical order, on the nano's **channel 2** — arriving as **Pd channel
       18** while the control groups stay on 17.
 
-      ⚠️ **They were reassigned as a mode control and are no longer used that way.** Phase 4 settled
-      that the row is better spent on scene selection, so all six now get ordinary momentary-CC
-      treatment and `m_nano` reads both channels through one path. The CC numbers and the channel
-      below are unchanged and still correct — see item 38b and
+      ⚠️ **They were briefly decoded as a mode control inside `m_nano` and are not any more.**
+      Phase 4 made all six ordinary momentary CC, read through one path; **Phase 6 mapped them to
+      `mode` in `u_map`**, which is where meaning belongs. The CC numbers and the channel below are
+      unchanged and still correct — see item 38b, item 90 and
       [ref-build-log.md](ref-build-log.md).
 
       **Verified by decoding the raw stream off the wire**, not just trusting the editor: all
@@ -1019,9 +1020,9 @@ cost of a USB port and some hub current. Worth considering if this turns into a 
 
 ## Session 7 — Phase 6, the Launchpad and the grid
 
-**Items 82–96.** Step 0 (82–87) was run on the **Mac with the Launchpad plugged in**, which is
-new for this project and is what made the rest of the phase off-device work. 88–93 are the build
-verified against the real patch. **94–96 need the Organelle and have not been run** — nothing in
+**Items 82–97.** Step 0 (82–87) was run on the **Mac with the Launchpad plugged in**, which is
+new for this project and is what made the rest of the phase off-device work. 88–93b are the build
+verified against the real patch. **94–97 need the Organelle and have not been run** — nothing in
 Phase 6 has been deployed yet.
 
 ### Step 0 — the measurements everything else was built on
@@ -1197,18 +1198,20 @@ Not unimportant — just not blocking UI/UX decisions.
 
 ## What's actually left
 
-**Five open items, and only one of them can still force a redesign.**
+**Six open items, and only one of them can still force a redesign.**
 
 | | Blocked on | Why it is still here |
 |---|---|---|
 | **Session 3** — items 12 and 13, audio topology | the TRS Y-cable | ⚠️ **The only remaining test that could force a redesign.** How the 404 places *external* input in the stereo field is internal routing, and no amount of Mac testing reaches it |
-| **Item 5** — power under full load | a cable | Never run with three controllers plus the wifi dongle at once. Presents as intermittent dropouts, not an obvious failure — so if Phase 6 produces flaky Launchpad behaviour, **suspect the hub before the code** |
+| **Session 7** — items 94, 96 and 97, Phase 6 on the device | nothing | ⚠️ **Phase 6 is verified on the Mac and has never been deployed.** The repaint budget, the safe exit after the lift, and the boot sequence in its real order. Item 96 is the one that costs a power cycle if it is wrong |
+| **Item 5 / item 95** — power under full load | a cable | Never run with three controllers plus the wifi dongle at once. Presents as intermittent dropouts, not an obvious failure — so if Phase 6 produces flaky Launchpad behaviour, **suspect the hub before the code** |
 | **Session 5** — items 43–46, Organelle as an access point | nothing | Doesn't block the v0.2 build; does block trusting the phone display on stage. ⚠️ Read its warning first — bringing up an AP drops SSH. Would also sidestep item 81 |
 | **Item 39** — the OLED's 2- and 3–5-mover layouts read by eye | nothing | Opportunistic. Steps 15–16 of `phase4-bench.pd` are written for it |
 | **Item 81** — the wifi dropping | nothing | Not urgent, unattributed, and Session 5 may make it irrelevant |
 
-**Everything else has passed**, including all three built phases end to end on the Organelle:
-Phase 3 (items 21–21c), Phase 4 (items 33–38b, 80) and Phase 5 (items 70–79).
+**Everything else has passed**, including three phases end to end on the Organelle: Phase 3
+(items 21–21c), Phase 4 (items 33–38b, 80) and Phase 5 (items 70–79). **Phase 6 (items 82–93b)
+has passed on the Mac only.**
 
 The full MIDI picture — every message each device accepts and transmits — is catalogued in
 [ref-midi.md](ref-midi.md), which also carries the remaining message-level unknowns, chief among

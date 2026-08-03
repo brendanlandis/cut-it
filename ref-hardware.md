@@ -208,9 +208,9 @@ connects, `/usbdrive` stays unmounted. Factory version kept at
 `/root/fw_dir/scripts/mount.sh.orig` and in [device/](device/). The rootfs is read-only, so
 `remount-rw.sh` before and `remount-ro.sh` after.
 
-**If it ever recurs:** `umount /usbdrive` clears it, no reboot needed. ⬜ Novation Components
-may also be able to disable the onboarding drive on the Launchpad itself — untried, and the
-cleaner fix if it works, since it changes nothing on the Organelle.
+**If it ever recurs:** `umount /usbdrive` clears it, no reboot needed. ⬜ Whether Novation
+Components can disable the onboarding drive on the Launchpad itself is untried and tracked in
+[plan-v02.md](plan-v02.md).
 
 ## The device itself
 
@@ -355,8 +355,9 @@ not a hack. In it:
 - Note layout is row/column encoded: pad at row *r*, column *c* is note `r*10+c` (11–88).
   `div 10` and `mod 10` gets you coordinates, no lookup table.
 - Entering it is either a button combo (hold SETUP, press the bottom Scene Launch) or a
-  SysEx message. Documented gotcha: entering via SysEx locks out the Settings menu until
-  you send a SysEx selecting a different layout.
+  SysEx message. ⚠️ **Entering via SysEx locks out the Settings menu**, and the only way back
+  is the **Live Mode** SysEx — Novation documents a layout-select command as the escape, and
+  ✅ that command does nothing at all on this unit. See [ref-midi.md](ref-midi.md).
 
 Unit is a **MK3** (MK3 announced Jan 2020; a 09/2020 build date rules out MK1). Use the MK3
 reference — SysEx headers and side-button note numbers differ from MK1.
@@ -420,8 +421,9 @@ already correct for this rig. Arrives on **Pd channel 33** (device 3). The full 
 the device settings that matter are in [ref-midi.md](ref-midi.md).
 
 ⬜ **One unresolved discrepancy:** pad *n* on bank A was measured here as note 47 + *n*, but
-Roland's chart says the mode-A range is 35–51. Only pads 1 and 2 were checked. Sweep all
-sixteen before writing sequencing code against it — see [ref-midi.md](ref-midi.md).
+Roland's chart says the mode-A range is 35–51, and only pads 1 and 2 were ever checked. Detail in
+[ref-midi.md](ref-midi.md); resolving it is tracked in [plan-v02.md](plan-v02.md), where it is the
+open question most able to corrupt work silently.
 
 **Cable warning:** the 404 needs a genuine **data** USB cable. Charge-only USB-A→C cables are
 visually identical and extremely common; two were tried before one worked. If the device does

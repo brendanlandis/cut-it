@@ -36,10 +36,14 @@ The four that shape everything else. Reasoning for each is further down this fil
 
 ### Launchpad — three tiers, and you only build the top one
 
-Programmer Mode is all-or-nothing: entering it disables every built-in mode. But **Pd can
-switch layouts by SysEx** (header `F0 00 20 29 02 0E`, with a layout-select command and a
-separate Programmer/Live switch), so modes are something you flip between, not something you
-choose once.
+Programmer Mode is all-or-nothing: entering it disables every built-in mode. **Pd flips between
+Programmer and Live by SysEx** (header `F0 00 20 29 02 0E`), so which world the surface is in is
+something the patch decides at runtime rather than once.
+
+⚠️ **Selecting a specific built-in layout by SysEx does NOT work on this unit** — ids 0, 4 and 5
+do nothing at all ([plan-tests.md](plan-tests.md) item 87). Live Mode returns to whichever
+built-in mode was last used on the device. So the choice available to Pd is two-valued, not a
+layout table, and `m_launchpad`'s surface-ownership state keys off exactly that.
 
 | Tier | What | Work | LED control |
 |---|---|---|---|
@@ -61,9 +65,9 @@ keyboard does not.
 Novation Components needs a computer (web app over WebMIDI, or standalone) — you cannot
 author Custom Modes from the Organelle, but once written they persist on the device.
 
-**Risk:** entering Programmer Mode *by SysEx* locks out the Settings menu until Pd sends a
-SysEx selecting another layout. If Pd dies mid-set you are power-cycling the Launchpad. Bind
-a "return to Live mode" message somewhere reachable.
+**Risk:** entering Programmer Mode *by SysEx* locks out the Settings menu until Pd sends the
+Live Mode SysEx. If Pd dies mid-set you are power-cycling the Launchpad. ✅ `m_launchpad` handles
+this on both `panic` and `quitting`, and it is the only file allowed to.
 
 ### Grid idioms worth stealing
 
@@ -137,7 +141,8 @@ the signal paths. The mixer's knobs only set levels — and a wrong level is aud
 immediately rather than failing silently.
 
 The remaining hidden state is all on the 404 (ExtIn monitoring, bus assignments, input FX),
-which lives in menus. **Build a pre-set checklist for that box specifically.**
+which lives in menus — the one "wrong knob" risk left in the rig. A pre-set checklist for that
+box is deferred in [plan-v02.md](plan-v02.md).
 
 ### Organelle audio back into the 404 — dropped
 Considered and dropped for now. Would have used the mixer's FX send as a variable-gain

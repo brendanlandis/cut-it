@@ -149,7 +149,7 @@ trap 4 above. It is not an init-time concern and does not belong in `u_init`.
   at small radii — don't design round meters.
 - `gWaveform` and `gFrame` need OSC **blobs**, and whether Pd can produce one through `oscOut`
   is ⬜ **untested**. If it can, drawing the captured buffer becomes possible and choosing a
-  playhead position in fresh audio stops being blind. Test before designing around it.
+  playhead position in fresh audio stops being blind. Tracked in [plan-v02.md](plan-v02.md).
 
 ---
 
@@ -215,8 +215,9 @@ look identical if stopped is `off` — and on a dark stage that is the differenc
 and a problem. Anything `g_led` does not recognise raises `warn g_led unknown-led-state` and
 leaves the LED alone, so a typo cannot silently blank the only non-screen indicator in the rig.
 
-Phase 6 (mode) and Phase 8 (save in progress) are the next two callers, and they need no change
-here beyond a row in that table.
+**Phase 6 deliberately did not claim it.** Mode is shown on the Launchpad's top row instead —
+the surface with six lamps rather than one — so the table above is unchanged. Phase 8's "save in
+progress" is the next candidate, and it would cost one row here and nothing else.
 
 ⚠️ **There is an undocumented `/led/flash`** — `flashLED(OSCMessage&)` is in the `mother` binary, and
 `mother.pd` does not expose it at all. Reaching it means sending raw OSC to `oscOut`. **Deliberately
@@ -532,9 +533,9 @@ from much further away than the OLED, which is what makes a failure turning it r
 valuable thing these pads can say in a venue — and `u_err` needed no change, because two
 consumers of one `disp` selector is fine. The rule is one owner per *surface*.
 
-**`m_launchpad` owns the mode and the layout; `g_grid` owns the LEDs.** Different surfaces, one
-writer each. That is what let the old 89-note clear loop be deleted outright: **the first frame
-after ownership rises IS the clear.**
+**`m_launchpad` owns the Programmer/Live switch; `g_grid` owns the LEDs.** Different surfaces,
+one writer each. That is what let the old 89-note clear loop be deleted outright: **the first
+frame after ownership rises IS the clear.**
 
 ⚠️ **And one place it must NOT copy `g_oled`: the repaint is conditional.** The OLED redraws
 unconditionally at 10 Hz because its frames are cheap local UDP. These are ALSA MIDI writes, and

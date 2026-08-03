@@ -1,5 +1,5 @@
 #N canvas 20 20 1900 1400 12;
-#X text 20 20 m_launchpad -- the Launchpad Pro MK3 mapping layer \, and the only file allowed to talk to the device. It owns Programmer Mode \, the safe exit and (from step 4) the layout \, so that everything which can change what the surface IS lives in one place. Pads and buttons come out as named controls on param and disp \, and it knows NOTHING about what any of them does -- same layer \, same rules and the same silence about meaning as m_nano., f 58;
+#X text 20 20 m_launchpad -- the Launchpad Pro MK3 mapping layer \, and the only file allowed to talk to the device. It owns the Programmer/Live switch and the safe exit \, so everything which can change what the surface IS lives in one place. Pads and buttons come out as named controls on param and disp \, and it knows NOTHING about what any of them does -- same layer \, same rules and the same silence about meaning as m_nano., f 58;
 #X text 20 190 creation arg 1: the Pd channel that the Launchpad's OWN channel 1 lands on. REQUIRED. It is 1 on the Organelle -- Pd input slot 1 \, per .pdsettings -- and whatever slot the Launchpad fills on the Mac. inlet: a bang from u_init when the boot sequence reaches the Launchpad stage. outlet 1: surface ownership -- 1 while the device is in Programmer Mode and its LEDs are ours to light \, 0 the moment safe-exit hands it back. Wired to g_grid in u_root., f 58;
 #X text 900 170 THE SAME ARGUMENT IS USED AS THE LIGHTING CHANNEL \, and that is an assumption worth knowing. The Launchpad's three animation modes are MIDI channels 1 \, 2 and 3 RELATIVE to its own port \, so static is the block \, flashing the block plus one and pulsing the block plus two. That only lines up when Pd's input slot and output port for this device are the SAME number -- which is why ref-midi.md says keep the Launchpad as device 1., f 58;
 #X obj 20 520 inlet;
@@ -15,7 +15,7 @@
 #X msg 1000 480 1;
 #X obj 1000 540 s \$0-own;
 #X text 700 620 The port goes into the cold inlet at load \, which is u_init's proven pattern rather than a creation argument on the object -- Pd 0.49 does not warn about extra creation arguments at all \, so a silent [midiout 1] would prove nothing either way., f 50;
-#X text 20 580 ORDER MATTERS AND COMES FROM THE TRIGGER: Programmer Mode first \, off the right outlet \, then ownership. Raising ownership is what makes g_grid start painting \, so it must not happen while the device is still in a stock layout., f 58;
+#X text 20 580 ORDER MATTERS AND COMES FROM THE TRIGGER: Programmer Mode first \, off the right outlet \, then ownership. Raising ownership is what makes g_grid start painting \, so it must not happen while the device is still in Live Mode., f 58;
 #X connect 2 0 3 0;
 #X connect 3 1 4 0;
 #X connect 3 0 8 0;
@@ -50,7 +50,7 @@
 #X connect 5 2 11 0;
 #X connect 11 0 12 0;
 #X restore 20 700 pd safe-exit;
-#X text 20 800 WHY THE SAFE EXIT LIVES HERE AND NOT IN u_init. Step 4 gives this file a layout table \, so it will be sending layout-select SysEx of its own. Two files sending layout messages to one device is the two-writers-one-surface failure the project bans everywhere else -- and the surface that would be lost is the one you cannot get back without a power cycle., f 58;
+#X text 20 800 WHY THE SAFE EXIT LIVES HERE AND NOT IN u_init. This file already sends the Programmer Mode SysEx at boot \, so leaving the Live Mode SysEx behind in u_init would put two files in charge of one device's mode -- the two-writers-one-surface failure the project bans everywhere else \, and the surface that would be lost is the one you cannot get back without a power cycle., f 58;
 #X obj 1000 520 loadbang;
 #X obj 1000 570 del 2000;
 #X obj 1000 620 f \$1;

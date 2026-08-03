@@ -295,7 +295,7 @@ two beats. 📄 Since the Organelle is clock master, LED animation follows the p
 nothing.
 
 ✅ **Confirmed against the real clock:** three pads lit static / flashing / pulsing alongside the
-running patch visibly changed rate as knob 1 was swept, so Phase 6 can rely on this rather than
+running patch visibly changed rate as knob 1 was swept, so `g_grid` relies on this rather than
 driving animation from `clock`. ⚠️ **But it has its own range, ⬜ not pinned down** — past an upper
 and a lower limit the animation reverts to a default rate instead of tracking, and a Start makes it
 dip briefly before settling. Same shape as the 404's 40–200 window, and almost certainly the same
@@ -430,8 +430,10 @@ All six: Assign Type **Control Change**, Button Behavior **Momentary**, Transpor
 → arriving as **Pd channel 18**. The control groups stay on the nano's channel 1 → Pd channel 17.
 
 **They carry no transport meaning.** `m_nano` treats all six as ordinary momentary buttons —
-`xport-1`…`xport-6` on press, no toggle — because the row is earmarked for **scene selection**, which
-makes "play" and "loop" lies. Named by physical position, like every other control on the surface.
+`xport-1`…`xport-6` on press, no toggle — and names them by physical position, like every other
+control on the surface, because what a control *means* is not knowable at the `m_` layer.
+✅ **Since Phase 6 the row is the mode selector**, mapped in `u_map` and shown as a lit lamp on the
+Launchpad's top row — which is what makes "play" and "loop" lies and why the labels are ignored.
 The reassignment was decided by playing with it; the reasoning is in
 [ref-build-log.md](ref-build-log.md).
 

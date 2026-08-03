@@ -22,8 +22,11 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | **`[trigger]` on every fan-out**, even when the current order happens to work | [→](#trigger-on-every-fan-out) |
 | **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out | [→](#audio-io--never-adc-never-dac) |
 | **One owner per display surface** — `oscOut` / `screenLine*` are `g_oled`'s, `led` is its own. Everything else asks via `disp` | [→](#the-display-bus-and-who-owns-the-screen) |
-| **Finish assembled messages with `[list trim]`**, and `[list append]` after a `route` | [→](#three-traps-around-route-every-one-silent) |
-| **Clear optional fields on every message** — `[list split n]` on exactly *n* atoms never fires | [→](#three-traps-around-route-every-one-silent) |
+| **Finish assembled messages with `[list trim]`**, and `[list append]` after a `route` | [→](#four-traps-around-route-every-one-silent) |
+| **Clear optional fields on every message** — `[list split n]` on exactly *n* atoms never fires | [→](#four-traps-around-route-every-one-silent) |
+| **`[t b]` in front of anything behind a reject outlet** — a reject carries DATA, not a bang | [→](#four-traps-around-route-every-one-silent) |
+| **Every `[print]` in a deployed abstraction sits behind `[del 2000]`** — `deploy.sh` gates on output | [→](#editing-a-pd-file-by-hand) |
+| **Append boxes at the end of a `.pd`, and move the `#X connect`s with them** | [→](#editing-a-pd-file-by-hand) |
 | **Grain timing is audio-domain** — `phasor~` and `vline~`, never `metro` / `line~` | [→](#timing-and-the-two-domains) |
 | **Report failures on `[s err]`** as `<level> <source> <text>`, text one symbol ≤ 21 chars | [→](#errors-must-reach-the-oled--built) |
 | **No dynamic patching, no `[value]`, no copied subpatches** | [→](#banned) |
@@ -379,9 +382,9 @@ than an error — which is the better failure, since you can see it.
 not wrap, 16px fits about ten characters across 128 px, and a message box has a fixed typetag.
 Write `launchpad-silent`, not `launchpad silent`.
 
-### Three traps around `route`, every one silent ✅
+### Four traps around `route`, every one silent ✅
 
-All three cost real debugging time on this project. The first two are the same underlying
+All four cost real debugging time on this project. The first two are the same underlying
 fact — Pd distinguishes a message's **selector** from its **arguments**, and the `list` objects
 move an atom across that boundary.
 
@@ -390,6 +393,7 @@ move an atom across that boundary.
 | `[list prepend foo]` → `route foo` | no match, silent | `[list trim]` before sending |
 | `route foo` → `[symbol]` / `[t l l]` | `expected 'symbol'` / `can only convert 's'` | `[list append]` after route |
 | `[list split n]` on exactly *n* atoms | right outlet **never fires** — the old value stays | write the field unconditionally first |
+| a **reject** outlet feeding something that wants a bang | the rejected **data** arrives instead | `[t b]` in between |
 
 **1 — sending.** `[route in-l]` matches a message whose *selector* is `in-l`; it does not match
 a `list` whose first element is. `[list prepend in-l]` produces the second kind, so finish with
@@ -408,6 +412,13 @@ that symbol becoming the selector. So `status v0.2-ready` arrives as selector `v
 **3 — the nasty one**, because it is a silent non-event rather than a wrong value. It is what
 makes `chop-size 43 %` followed by `grain 12` draw as `grain 12 %`. **Any optional field must
 be cleared on every message, not written on some.**
+
+**4 — not `route`-specific, but the same shape.** A **reject, left, or non-matching outlet
+carries the data that failed to match**, not a bang — `route`, `select`, `moses` and `spigot`
+all do this. Four separate instances in this repo's history, every one silent: `[select 1 2 3 4 5 6]`'s
+reject overwrote a stored CC through an `[f]`'s hot inlet, and `moses`'s left outlet passed
+`text search`'s `-1` into `text set` as a line number. **Anything behind such an outlet that
+expects a bang gets a `[t b]` in front of it.**
 
 **Rate limiting belongs to the display, not the caller.** Senders push whenever they have
 something to say; the display redraws on its own clock. ✅ And because every layer holds
@@ -561,6 +572,46 @@ rejected, showing as a plausible-looking zero on the OLED. Nothing else in the t
 have caught it. Expect `error: /tmp/patch/knobs.txt: can't open` in the output; that is mother
 looking for the optional knob-label file and is harmless.
 
+### How a phase runs
+
+Six phases have used the same shape and it is worth stating rather than rediscovering:
+
+1. **A decisions table first**, with the *consequence* of each decision beside it — settled with
+   Brendan before any code, because most of them change the shape of the work rather than its
+   details.
+2. **A Step 0 of measurements.** Anything the rest of the phase rests on that is currently 📄 or
+   ⬜ gets measured *before* anything is built on it. **Every phase so far has had at least one
+   assumption turn out wrong here**, and Phase 6's Step 0 changed two design decisions in an
+   afternoon.
+3. **Numbered build steps, each ending with both gates** before the next begins:
+
+   ```sh
+   python3 tools/pd-layout-check.py "Cut It"/*.pd
+   /Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio \
+       -path mac-stubs -send "pd quit" "Cut It/main-dev.pd"     # silence == pass
+   ```
+4. **A `tools/phaseN-bench.pd`** — self-driving, ten seconds a step, a printed `PASS IF` *before*
+   each step **including the ones whose correct result is that nothing happens**, and honest about
+   which steps need hands on hardware. ⚠️ **A measuring rig is code and gets the same scrutiny as
+   the thing it measures**: Phase 5 had two bugs in its own probes, one of which produced a
+   confident wrong answer about the clock.
+5. **A verification section separating Mac from device**, so what has actually been proven is never
+   in doubt.
+6. **A landing checklist**, and it is not optional — see *Where the abstractions go* and the
+   doc-hygiene rules in [CLAUDE.md](CLAUDE.md). Finished work moves to
+   [ref-build-log.md](ref-build-log.md); the phase's section *leaves* [plan-v02.md](plan-v02.md)
+   rather than being annotated; superseded designs are replaced, not annotated beside their
+   replacement; anything unresolved moves to *Open questions*; and a new
+   [plan-tests.md](plan-tests.md) session is added with items numbered **after the last used
+   number in the file** — numbers are cited bare across documents, so **never reuse one**.
+7. **The phase ends with a procedure, not a summary** — expected result stated *before* each
+   action, for both machines. It lands in `plan-tests.md` **and** in chat, because chat is where
+   it gets used.
+
+**The bench proves the cases it contains and nothing else.** Phase 5's stickiest bugs — a stale
+footer, a filter on the verdict instead of the value — were found by a person doing what a
+performer would do. Budget hands-on time *after* the bench passes, not instead of it.
+
 ## Errors must reach the OLED ✅ built
 
 **The Organelle runs Pd with `-nogui`, so an error you cannot see is a silent failure** — and
@@ -573,8 +624,10 @@ debugging convenience)*.
   **message box**, which already carries the level as its selector; anything built with
   `[list prepend]` needs `[list trim]`.
 - **`u_err` filters by `mode`** — compose shows everything, perform only `fail`. One place, same
-  bus, same callers. ✅ **Defaults to verbose, which is what makes an undriven `mode` safe** —
-  nothing has written that bus since Phase 4 and nothing will until Phase 6.
+  bus, same callers. ✅ **It defaults to verbose**, which is what made an undriven `mode` safe
+  through Phases 4 and 5. `u_map` drives the bus from Phase 6 on, and the filter needed no change:
+  `route` matches on the selector, so two-atom `compose mode-1` sets verbose exactly as bare
+  `compose` did.
 - **`u_err` never draws.** It forwards onto `disp` as `alert <level> <source> <text>`; `g_oled`
   decides what an error looks like — see *The display bus* above.
 - **The bus is unfiltered; only the screen is filtered.** An unconditional `[print err]` means
@@ -601,6 +654,30 @@ Layout is not cosmetic in Pd; it is the only structural documentation the langua
 **`.pd` files store absolute coordinates**, so moving a box is a real diff. Two consequences:
 small abstractions diff better than large canvases, and gratuitous rearranging costs review
 effort. Don't tidy and change behaviour in the same commit.
+
+### Editing a `.pd` file by hand
+
+The format is a flat, ordered record list, and three of its properties are traps. All three have
+bitten this project, most of them more than once.
+
+- **A `#X connect` names boxes by INDEX, and the index is position in the file.** Inserting or
+  deleting *anything* — including a comment — shifts every later box and silently rewires the
+  patch. **Append at the end**, honouring `#N canvas` / `#X restore` nesting: a top-level object
+  goes before the first connect *at depth 1*. If a box really must be replaced, replace it in
+  place so no index moves. `tools/pd-layout-check.py` reports the damage as *"indices are
+  probably off by one"*, which is how it was caught each time.
+- **Records are processed strictly in order**, so a `#X connect` that appears *before* its target
+  box is defined fails at load with `connection failed` — and Pd still exits 0. When you append
+  boxes, the connects have to move down with them.
+- **A comma or semicolon in a message box is a message separator**, whatever the file does with
+  escaping. `\,` satisfies the *parser*; the message box still splits on the comma atom. Keep
+  both out of any assembled string — a `PASS IF` line in a bench is the usual casualty.
+
+**Every `[print]` in a deployed abstraction sits behind `[del 2000]`.** `deploy.sh` gates on
+*output*, so a diagnostic that fires at `loadbang` breaks the deploy; behind a delay the syntax
+check quits before it fires while the by-hand console still sees it.
+
+**Never open or save any of this in plugdata** — see [CLAUDE.md](CLAUDE.md).
 
 ---
 

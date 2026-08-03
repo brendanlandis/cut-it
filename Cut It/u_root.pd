@@ -15,7 +15,7 @@
 #X obj 900 340 u_init;
 #X text 1120 340 owns startup ORDER -- MIDI wiring \, the stage reports and when the Launchpad is initialised. Its one outlet fires at the launchpad stage., f 34;
 #X obj 900 600 m_launchpad \$2;
-#X text 1120 600 the Launchpad Pro MK3 \, and the only file allowed to talk to it: Programmer Mode \, the safe exit and the layout. Pads out on param and disp \, like any other device., f 34;
+#X text 1120 600 the Launchpad Pro MK3 \, and the only file allowed to talk to it: the Programmer/Live switch and the safe exit. Pads out on param and disp \, like any other device \, and surface ownership out of its one outlet., f 34;
 #X obj 900 860 m_nano \$1;
 #X text 1120 860 the nanoKONTROL. Decodes CC into named parameters -- every control including the six transport keys \, which are the mode selector from Phase 6 onward. It drives no bus itself: what a control MEANS is decided above this layer., f 34;
 #X obj 900 1120 m_organelle;

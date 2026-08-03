@@ -71,7 +71,8 @@ Cut It/              the deployable patch — folder name is what appears in the
   u_tempo.pd           the master reference: BPM, the 24 PPQN pulse MIDI clock is cut from,
                        realtime out on two ports, and the transport
   c_clock.pd           ONE clock — its own rate and time signature, aligned to master by a
-                       start. Instantiable, because Cut It runs poly-tempo. No instances yet
+                       start. Instantiable, because Cut It runs poly-tempo. u_root holds the
+                       first instance, c_clock 1 8, which drives the grid's beat row
   g_oled.pd            the display arbiter — home < param < modal < alert, each with a TTL.
                        Sole owner of oscOut and screenLine*
   g_led.pd             the aux button LED and its sole owner. Callers send a state, never
@@ -88,7 +89,7 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
   README.md            what each one proves, how to run it, and how to run a bench ON the device
 plan-v02.md          the build plan — the phases still to come, and EVERY open question
 plan-tests.md        the ordered hardware checks, with every measured number
-ref-build-log.md     Phases 0-5 as built: outcomes, and every correction they produced
+ref-build-log.md     Phases 0-6 as built: outcomes, and every correction they produced
 ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow
 ref-hardware.md      the rig and the device — wiring, power, SSH, paths, how Pd launches
 ref-software.md      how the instrument works — architecture, timing model, decisions
@@ -148,10 +149,11 @@ sequence that finishes in four seconds can be read afterwards instead of watched
 
 ## Verified vs assumed
 
-Every plan doc marks claims ✅ verified on this hardware / 📄 manufacturer documentation /
+Every doc marks claims ✅ verified on this hardware / 📄 manufacturer documentation /
 ⬜ unknown. **Do not treat 📄 or ⬜ items as settled facts.** [plan-tests.md](plan-tests.md) is
-the ordered checklist with results; [ref-hardware.md](ref-hardware.md) and
-[ref-midi.md](ref-midi.md) each carry their own open questions.
+the ordered checklist with results. **The `ref-` docs mark uncertainty ⬜ but never say what to do
+about it** — the work to resolve any ⬜ lives in [plan-v02.md](plan-v02.md) under *Open
+questions*, which is the single place to look for what is unresolved.
 
 
 ## Working notes

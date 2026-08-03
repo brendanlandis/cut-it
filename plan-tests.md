@@ -1017,6 +1017,171 @@ cost of a USB port and some hub current. Worth considering if this turns into a 
 
 ---
 
+## Session 7 — Phase 6, the Launchpad and the grid
+
+**Items 82–96.** Step 0 (82–87) was run on the **Mac with the Launchpad plugged in**, which is
+new for this project and is what made the rest of the phase off-device work. 88–93 are the build
+verified against the real patch. **94–96 need the Organelle and have not been run** — nothing in
+Phase 6 has been deployed yet.
+
+### Step 0 — the measurements everything else was built on
+
+- [x] **82. ✅ The ring's CC numbers, measured — and the documented map was wrong twice.** All 41
+      ring buttons pressed in order, twice, with identical results both passes.
+
+      ✅ Confirmed as documented: top row **91–98**, right column **89 79 69 59 49 39 29 19**,
+      left column **80 70 60 50 40 30 20 10**, bottom row **101–108**.
+
+      ⚠️ **Two corrections.** There is a **second bottom row at CC 1–8**, interleaved with
+      101–108 and absent from the documented map entirely; and **CC 90 exists** — the top-left
+      corner — where the documentation starts at 91. Only **CC 99** (top-right corner) remains
+      untested, and nothing needs it.
+
+      **This is the one that changed a design decision**: see item 83.
+- [x] **83. ✅ One SysEx carries 99 colour specs. 120 is REJECTED OUTRIGHT.** Not truncated —
+      the entire message is dropped and the surface does not change at all. 64 works, 99 works.
+
+      ⚠️ **So an over-long frame fails silently as a frozen grid**, which is the worst possible
+      shape for this failure. `g_grid` paints indices **10–108 = 99 specs**, the largest span
+      measured good. Lighting CC 1–8 as well would put the count at ~106 — the documented limit,
+      and far too close to a cliff with no warning.
+- [x] **84. ✅ The batch SysEx lights the ring as well as the pads.** One message paints the 8×8
+      grid and every perimeter button together, addressed by the same Programmer-Mode index.
+- [x] **85. ✅ The Launchpad works as a Pd input on the Mac.** Set as MIDI in *and* out device 1.
+      **Both entry points now pass the same arguments** — `u_root 17 1` — which they never did
+      before. ⚠️ The output order is not optional: `m_launchpad` uses its channel block as the
+      **lighting** channel, so input slot and output port must be the same number or every static
+      pad comes up flashing.
+- [x] **86. ✅ Polyphonic aftertouch confirmed on this unit.** Two pads held together reported
+      independent interleaved streams (`44` and `45`), which channel pressure cannot do. Also
+      confirms `polytouchin`'s outlet order is value / note / channel.
+- [x] **87. ✅ Programmer ↔ Live works. ⚠️ The layout-select command does not.**
+      `F0 … 0E 01` and `0E 00` both work. **`F0 … 00 <layout>` with ids 0, 4 and 5 does nothing
+      at all** on this unit.
+
+      Three further facts from the same run: Live Mode returns to **Note view** — the device's
+      last built-in mode, not a fixed one; **LED state survives the round trip**, so the clear on
+      re-entering Programmer Mode is confirmed mandatory; and a **power cycle returns it to
+      Live**, so the escape hatch in `ref-midi.md` is sound.
+
+      **Consequence:** `m_launchpad`'s surface-ownership state keys off the Programmer/Live
+      toggle rather than a layout table, which is simpler than planned and rests on something
+      measured.
+
+### The build, verified against the real patch on the Mac
+
+- [x] **88. ✅ Pad and ring decode.** `pad-43 127` on press, `pad-43 0` on release, `pad-88 64`,
+      `lp-cc-91 127`, `lp-cc-108 64` — each on `param` first and `disp` second. **An event on
+      channel 17 produced nothing**, which is the gate working. Driven through stand-ins for
+      `notein` / `ctlin`, the same technique as item 31.
+- [x] **89. ✅ Aftertouch decode, and it never reaches `disp`.** `pad-88-at 40` followed by
+      `pad-43-at 70` — each reports its **own** pad, so the `polytouchin` note-before-value trap
+      is avoided. Nothing appeared on `disp`, which is deliberate: polyphonic pressure would fill
+      the OLED's five param rows for as long as a chord was held.
+- [x] **90. ✅ The `mode` bus has a driver.** `xport-5` → `perform mode-5`, `xport-1` →
+      `compose mode-1`, `slider-3` correctly silent. **The load seed fires once and a real mode
+      arriving at 100 ms suppresses it** — one line, not two. Same "seed only if unheard" shape
+      as items 61 and 78.
+- [x] **91. ✅ Grid arbitration, priority and TTL — nine frames.** home → mode-4 → mode-6 →
+      modal blue → *(mode changed underneath, still blue)* → modal-off revealing **mode-3** →
+      alert red → home again by itself. A `warn` produced **no frame at all**.
+
+      ⚠️ **The alert TTL was broken on the first run and the bench caught it.** Both layers
+      lowered their flag on expiry but never set the dirty flag, so an expired alert would have
+      left the grid **red permanently** — the display simply stopping. The comment in that very
+      subpatch already claimed every expiry set it.
+- [x] **92. ✅ The ownership gate.** A pad before init → nothing; after init → `pad-44 127`;
+      after a `panic` → nothing. Closed before boot, open while we own the surface, closed the
+      moment safe-exit hands it back.
+- [x] **93. ✅ The first `c_clock` instance in the deployed patch, and an off-by-one it caught.**
+      With DSP on, the beat row walks **1→8→1** with no gaps, and the repaint rate is **~2 frames
+      per second at 120 BPM** exactly as designed.
+
+      ⚠️ **`c_clock`'s beat-number outlet is ONE-BASED, 1 to 8 — measured, not assumed.** Built
+      against a 0-based assumption, beat 8 landed on index 19: a right-column **ring button** lit
+      white while the beat row went blank, once per bar. **Seven beats out of eight looked
+      perfect**, which is why it took decoding the painted frames rather than watching the
+      surface.
+- [x] **93b. ✅ Every frame is one SysEx.** 305 bytes — 7 header + 99×3 + terminator — with the
+      correct header and `247`, verified byte by byte across every frame of every run. **Idle
+      with the transport stopped it sends nothing at all.**
+
+### Still to run — these need the Organelle
+
+- [ ] **94. ⬜ The repaint budget on the device.** Target: **idle CPU at or below 11.2 %**, the
+      Phase 5 baseline of 10.2 % plus one point, by `ref-hardware.md` → *Measuring the running
+      patch*. Three readings: idle and stopped, transport running with the beat row walking, and
+      during a bench alert storm. Expected SysEx rates 0/s, ~2/s and ~6/s.
+- [ ] **95. ⬜ Full rig: three controllers plus the wifi dongle, powered at once.** Never run —
+      this is item 5, still blocked by the cable shortage. **A marginal hub presents as
+      intermittent dropouts, not an obvious failure, so if Phase 6 misbehaves on the device
+      suspect the hub before the code.**
+- [ ] **96. ⬜ The safe exit after the lift.** Kill Pd mid-session and confirm the Launchpad
+      returns to Live Mode. This is the one that costs a power cycle if it is wrong, and the code
+      moved files in this phase.
+- [ ] **97. ⬜ The boot sequence in its real order.** `loadbang` fires before ALSA exists, and the
+      Mac has no `wire.sh` and no `[shell]`. Watch for `modal launchpad` on the OLED and the grid
+      lighting immediately afterwards — the first frame after ownership **is** the clear.
+
+### The Phase 6 procedure, in order
+
+**Do every Mac step first. Then deploy once.** Expected result is stated *before* each action,
+including the steps whose correct result is that nothing happens.
+
+**Mac, one-time setup.** Media → MIDI Settings: **Launchpad as input device 1 AND output device
+1**, nanoKONTROL as input device 2. ⚠️ **Both lists matter** — `m_launchpad` uses its channel
+block as the lighting channel too, so if the input slot and output port differ, every static pad
+comes up *flashing* and it looks like a bug in `g_grid`. Both `m_` layers print the block they
+configured about two seconds after load; read those before suspecting anything.
+
+**Mac, static.** `python3 tools/pd-layout-check.py "Cut It"/*.pd` — every line must say
+`0 problems`. Then the syntax check on **both** entry points; **silence is the pass**.
+
+**Mac, boot.** Open `Cut It/main-dev.pd` and tick `enable-DSP`. Expect, in order: `booting` →
+`wiring` → `launchpad` → the two meters, and the footer changing to `120-bpm` at about four
+seconds. **At the launchpad stage the whole Launchpad repaints at once** — that single frame is
+the clear. Expect one bright green lamp at the left of the top row, five dim beside it, and a
+single white pad walking the bottom row twice a second. ⚠️ **If the white pad does not move, DSP
+is off** — `c_clock` hangs off `threshold~`.
+
+**Mac, the pads.** Press pads: each reports `pad-NN` and its velocity on the OLED, `11` at the
+bottom left and `88` at the top right. Press ring buttons: `lp-cc-NN`. **Now press a pad hard and
+hold it: the OLED must show NOTHING new.** Pressure goes to `param` only, deliberately, because a
+four-finger chord would otherwise fill all five param rows for as long as you held it.
+
+**Mac, the modes.** Press each of the nanoKONTROL's six transport keys. Expect the bright lamp to
+move to that position and the other five to go dim. That is the `mode` bus finally having a
+driver.
+
+**Mac, the tempo.** Sweep the panel's `knob1`. Expect the white pad to walk faster and the footer
+to follow. The Launchpad's own flash and pulse animations track the same clock for free.
+
+**Mac, the bench.** `pd -path "Cut It" "Cut It/main-dev.pd" tools/phase6-bench.pd`, DSP on, and
+watch **the Launchpad, not the screen**. Sixteen steps, ten seconds each, about three minutes.
+Steps 12, 13 and 15 will ask for hands. ⚠️ **Step 14 raises a panic and the grid does not come
+back** — that is known and deliberate; reload to continue.
+
+**Then `./deploy.sh`** — nothing was deleted this phase, so a plain deploy is enough — and do it
+again on the hardware, where the additions are:
+
+1. **The boot sequence in its real order** (item 97). `loadbang` fires before ALSA exists, so this
+   is the first time the wiring, the Programmer Mode SysEx and the first paint happen for real.
+   Watch for `modal launchpad` on the OLED and the grid lighting immediately after it.
+2. **The safe exit** (item 96). `killall pd` over SSH mid-session. **The Launchpad must return to
+   Live Mode on its own.** This is the one that costs a power cycle if it is wrong, and the code
+   moved files this phase. ⬜ If it fails, the device's own display will not come back and the
+   Settings menu stays locked out until you replug.
+3. **CPU and the SysEx rate** (item 94), by `ref-hardware.md` → *Measuring the running patch*.
+   Three readings — idle and stopped, transport running, and during the bench's alert step.
+   **The budget is 11.2 %**, against Phase 5's 10.2 % idle.
+4. **Full-rig power** (items 5 and 95). Three controllers plus the wifi dongle at once, for the
+   first time ever. ⚠️ **A marginal hub presents as intermittent dropouts, not a failure — so if
+   anything is flaky, suspect the hub before the code.**
+5. `./tools/fetch-errors.sh` afterwards. The only errors the run should have raised are the two
+   `u_bench` ones the bench sends on purpose.
+
+---
+
 ## Deliberately skipped for now
 
 Not unimportant — just not blocking UI/UX decisions.

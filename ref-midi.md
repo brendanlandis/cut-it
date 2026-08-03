@@ -248,17 +248,24 @@ tuning. ✅
 The 8×8 grid is **verified**: pad at row *r*, column *c* is note `r*10+c`, both digits 1–8,
 row 1 at the bottom. Notes 43, 44, 45, 53, 54, 55 confirmed in position. ✅
 
-The perimeter buttons continue the same rule and are **documented but not yet confirmed on
-this unit** 📄 — worth ten minutes with [tools/lp-monitor.pd](tools/lp-monitor.pd):
+✅ **The perimeter is now measured on this unit** — 41 buttons, pressed twice, identical both
+passes ([plan-tests.md](plan-tests.md) item 82). **The documented map was wrong in two places:**
 
 | Buttons | Numbers | Type |
 |---|---|---|
 | 8×8 grid | 11–88 (`r*10+c`) | Note ✅ |
-| Top row, left→right | CC 91–98 | CC 📄 |
-| Logo LED | CC 99 | CC 📄 |
-| Right column (scene launch), top→bottom | CC 89, 79, 69, 59, 49, 39, 29, 19 | CC 📄 |
-| Left column, top→bottom | CC 80, 70, 60, 50, 40, 30, 20, 10 | CC 📄 |
-| Bottom row, left→right | CC 101–108 | CC 📄 |
+| **Top-left corner** | **CC 90** | CC ✅ — **absent from the documentation**, which starts at 91 |
+| Top row, left→right | CC 91–98 | CC ✅ |
+| Logo / top-right corner | CC 99 | CC ⬜ — the one button never pressed |
+| Right column (scene launch), top→bottom | CC 89, 79, 69, 59, 49, 39, 29, 19 | CC ✅ |
+| Left column, top→bottom | CC 80, 70, 60, 50, 40, 30, 20, 10 | CC ✅ |
+| Bottom row, left→right | CC 101–108 | CC ✅ |
+| **A SECOND bottom row below it**, left→right | **CC 1–8** | CC ✅ — **absent from the documentation entirely** |
+
+⚠️ **The second bottom row is what changed a decision.** Counting it, the whole surface is about
+106 addressable indices — exactly the documented SysEx limit, and 120 specs is *rejected outright*
+on this unit (below). So `g_grid` paints indices **10–108** and leaves CC 1–8 dark: the largest
+span measured good, with the cliff kept at arm's length.
 
 ### Receives (Pd → Launchpad): lighting
 
@@ -310,9 +317,17 @@ F0 00 20 29 02 0E 03  <type> <index> <data...>  F7
 
 **RGB components are 0–127, not 0–255.** 📄
 
-**One message can carry up to 106 colour specs** — the entire surface in a single SysEx. 📄
-[tools/lp-flicker.pd](tools/lp-flicker.pd) currently sends one message per pad; batching is
-the obvious optimisation if grid refresh ever costs too much.
+✅ **Measured: 99 colour specs in one message works. 120 is REJECTED OUTRIGHT** — the whole
+message is dropped and the surface does not change at all, rather than being truncated.
+[plan-tests.md](plan-tests.md) item 83.
+
+⚠️ **That failure shape is the important part.** An over-long frame does not paint partially; it
+does not paint. On a display driven by a frame clock that reads as **the grid silently freezing**,
+with nothing in the console to say so.
+
+✅ **The same message lights the ring as well as the pads** (item 84), addressed by the same
+Programmer-Mode index. [tools/lp-flicker.pd](tools/lp-flicker.pd) still sends one message per pad
+and is kept as the per-pad RGB reference.
 
 ### Receives (Pd → Launchpad): mode control
 
@@ -322,7 +337,7 @@ All share the header `F0 00 20 29 02 0E`. 📄 except as marked.
 |---|---|---|
 | `0E` | `F0 00 20 29 02 0E 0E 01 F7` | Enter **Programmer Mode** ✅ |
 | `0E` | `F0 00 20 29 02 0E 0E 00 F7` | Return to **Live Mode** ✅ |
-| `00` | `F0 00 20 29 02 0E 00 <layout> F7` | Select layout |
+| `00` | `F0 00 20 29 02 0E 00 <layout> F7` | Select layout — ⚠️ **does nothing on this unit** for ids 0, 4 and 5 ✅ tested |
 | `03` | `F0 00 20 29 02 0E 03 <spec…> F7` | LED lighting (above) ✅ |
 | `10` | `F0 00 20 29 02 0E 10 <mode> F7` | DAW mode (1) / Standalone (0) |
 | `01` | `F0 00 20 29 02 0E 01 …` | DAW fader bank setup |
@@ -341,8 +356,14 @@ listed so they aren't mistaken for something missing.
   with the *previous* event's pressure.
 
 **Escape hatch:** entering Programmer Mode by SysEx locks out the Settings menu until Pd sends
-a SysEx selecting another layout. If Pd dies mid-set you are power-cycling the Launchpad.
-Bind "return to Live mode" somewhere reachable. ✅
+a SysEx selecting another layout. Bind "return to Live mode" somewhere reachable — `m_launchpad`
+does, on both `panic` and `quitting`. ✅
+
+✅ **A power cycle does rescue you**, measured: unplugged and replugged from Live Mode, it comes
+back in Live Mode. ✅ **Live Mode returns to whichever built-in mode was last used** — Note view
+here, not a fixed default. ⚠️ **LED state survives the round trip**: Programmer → Live →
+Programmer brought the previous colours back, so the clear on entering Programmer Mode is
+confirmed mandatory rather than merely prudent.
 
 ---
 

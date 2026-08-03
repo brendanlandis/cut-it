@@ -511,8 +511,42 @@ because the boot sequence finishes before you can get to the window.
 **Two controls at once no longer alternate.** That limitation is gone — see *Several at once*
 above.
 
-**The same arbiter shape applies to `g_grid`** on the Launchpad — playhead, slot state, mode
-and meters all contend for the same 64 pads. Build the pattern once, instantiate it twice.
+### `g_grid` — the same shape, on 96 LEDs ✅ built
+
+Phase 6. Three layers instead of four, and the cascade is `g_oled`'s `pd pick` one link shorter:
+
+| Layer | Pri | Raised by | Cleared by | Draws |
+|---|---|---|---|---|
+| `home` | 0 | always active | never | **regions** — six mode lamps on CC 91–96, the beat row on grid indices 11–18 |
+| `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | the whole surface, one colour |
+| `alert` | 2 | `disp` → `alert …`, **`fail` only** | 2 s | the whole surface, red |
+
+**One deliberate deviation, and it is the interesting one: `home` is a composite.** Whole-surface
+arbitration is right for a 128×64 screen and wrong for a grid, where the natural idiom is
+*regions* — so the mode lamps and the beat row coexist inside the layer that never expires, while
+`modal` and `alert` still take everything. The cascade is untouched; the composition happens
+below it.
+
+**A `warn` never reaches the grid.** Only `fail` is worth the whole surface. The grid is visible
+from much further away than the OLED, which is what makes a failure turning it red the most
+valuable thing these pads can say in a venue — and `u_err` needed no change, because two
+consumers of one `disp` selector is fine. The rule is one owner per *surface*.
+
+**`m_launchpad` owns the mode and the layout; `g_grid` owns the LEDs.** Different surfaces, one
+writer each. That is what let the old 89-note clear loop be deleted outright: **the first frame
+after ownership rises IS the clear.**
+
+⚠️ **And one place it must NOT copy `g_oled`: the repaint is conditional.** The OLED redraws
+unconditionally at 10 Hz because its frames are cheap local UDP. These are ALSA MIDI writes, and
+~96 of those a second is the standing suspect for the clock doubling Pd's CPU in Phase 5. The
+frame clock still runs at 10 Hz, but it paints only when a dirty flag is set — **nothing at all
+when idle, about two frames a second at 120 BPM.** Every repaint is one SysEx of 99 colour specs
+covering indices 10–108; the ceiling and why it is not 106 are in
+[ref-midi.md](ref-midi.md).
+
+**Every raise and every expiry sets the dirty flag.** A layer falling away changes the frame just
+as much as one arriving — and the first build got this wrong, which would have left an expired
+alert red permanently ([ref-build-log.md](ref-build-log.md)).
 
 ### The ALERT buffer works ✅ and is unused anyway
 

@@ -129,14 +129,14 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 
 | Name | Carries | Source |
 |---|---|---|
-| `mode` | compose / perform, and sub-mode | any. ⬜ **Nothing drives it yet** |
+| `mode` | **`<class> <name>`** — `compose`/`perform` then the sub-mode, e.g. `compose mode-1` | ✅ `u_map`, from the nano's transport row |
 | `tempo` | **master reference** BPM, as a float | any → `u_tempo` |
 | `clock` | **master reference** beat bang | `u_tempo` |
 | `start` / `stop` | transport, carried as a **bang** | any → `u_tempo` |
 | `panic` | all-notes-off, clear all state | any |
 | `param` | `<name> <value>` — a control **changed** | any `m_` → `u_map` |
 | `err` | `<level> <source> <text>`, level ∈ `warn` `fail` | any → `u_err` |
-| `disp` | display requests: `<name> <value> [unit]` | any → `g_oled`, `g_led` |
+| `disp` | display requests: `<name> <value> [unit]` | any → `g_oled`, `g_led`, `g_grid` |
 
 **Four of these are request buses, not publications.** `tempo`, `start`/`stop`, `mode` and
 `param` are written by whoever has something to say and *consumed* by one owner, exactly as `err`
@@ -160,10 +160,12 @@ Two consequences worth stating, because both are deliberate:
   any global name with no evidence of it on the canvas, which defeats an allowlist that is
   audited by reading. Revisit when the mapping count justifies it — v0.3.
 
-⚠️ **Nothing has driven `mode` since Phase 4.** The nano's LOOP key was briefly a mode toggle and
-the transport row is now ordinary CC, so the bus exists with no writer. It degrades safely —
-`u_err` defaults to verbose — and finding it a home is tracked in
-[plan-v02.md](plan-v02.md).
+✅ **`mode` got its driver in Phase 6**: the nanoKONTROL's six transport keys, shown as a lit
+lamp on the Launchpad's top row — the only device Pd can light, so the state is visible rather
+than remembered. It carries **two atoms**, a class and a sub-mode, which is why `u_err`'s
+`[route compose perform]` still works untouched: `route` matches the selector and its branches
+feed message boxes, which fire on anything. `u_map` seeds one at load behind a spigot that any
+real mode closes, so the seed fills a silence rather than setting a default.
 
 **`tempo` and `clock` are the master reference, not "the clock".** See *Poly-tempo* below —
 this distinction is load-bearing and easy to lose.
@@ -342,8 +344,13 @@ exactly one abstraction may write it. See [ref-display.md](ref-display.md) for t
 ⚠️ **`led` had to be added to `g_oled`'s `route` as well**, matched and left unconnected.
 Everything `g_oled` does not recognise is a parameter by definition, so without a branch there
 every LED request would have drawn as a nonsense parameter row called `led`. **A second display
-surface on the same bus costs one route argument in the first one** — cheap, but not free, and
-worth knowing before adding a third.
+surface on the same bus costs one route argument in the first one** — cheap, but not free.
+
+✅ **The third surface arrived in Phase 6 and cost exactly the same two lines**: `grid` appended
+to that `route` and the reject connection moved from outlet 7 to 8. The price is now known and it
+is flat, which is the argument for keeping every surface on one bus — the dev panel's screen log
+records all three interleaved, stamped with one frame number, so an interaction that spans the
+OLED, the aux LED and the pads reads as a single sequence.
 
 **The `disp` message is `<name> <value> [unit]`, with the name as the *selector*.**
 
@@ -360,6 +367,7 @@ registration step, and `m_nano` in Phase 4 needs no change to the display to sho
 | `modal-off` | nothing | clears modal |
 | `alert` | `<level> <source> <text>` — only `u_err` sends this | alert |
 | `led` | one symbol, a **state** — `off` `stopped` `running` `panic` | *not the OLED at all* |
+| `grid` | the Launchpad's own vocabulary — `grid modal <palette>`, `grid modal-off` | *not the OLED at all* |
 | *anything else* | `<value> [unit]` | param |
 
 *(judgment call)* Reserved-names-plus-fallthrough was chosen over tagging each message with its

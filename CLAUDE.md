@@ -58,6 +58,13 @@ Cut It/              the deployable patch — folder name is what appears in the
                        load, stamped with a real wall clock from `date`
   m_nano.pd            the nanoKONTROL: CC -> named controls on param and disp.
                        Takes its Pd channel block as an argument
+  m_launchpad.pd       the Launchpad Pro MK3 and the only file that talks to it:
+                       Programmer Mode, the safe exit, pads and ring onto param
+                       and disp, pressure onto param alone. Publishes surface
+                       ownership, which is what makes g_grid go quiet
+  g_grid.pd            the Launchpad's 96 LEDs and their sole owner. Same arbiter
+                       shape as g_oled -- home < modal < alert -- but home is a
+                       COMPOSITE of regions, and it repaints only when dirty
   m_organelle.pd       the Organelle's own panel: aux and knobs 1-4 onto param and disp
   u_map.pd             THE MAP — the only file that says what a control MEANS. Knob 1 is
                        master tempo, aux is the transport. One route box, one branch each

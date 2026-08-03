@@ -291,6 +291,13 @@ The datagram rate is the display and has been flat since Phase 3. **The CPU jump
 and it is ~96 ALSA MIDI writes a second rather than the DSP — two extra `c_clock` instances cost
 only 0.4 points. Items 21, 37 and 75.
 
+⬜ **Phase 6 has no row here yet, and that is deliberate.** The Launchpad grid is built and
+verified on the Mac but has never been deployed, so there is no measured number to put in this
+table. **The budget it must meet is 11.2 %** — the Phase 5 baseline plus one point — and the
+reason it should come nowhere near that is that `g_grid` repaints only when something changes:
+nothing at all when idle, about two SysEx a second at 120 BPM. [plan-tests.md](plan-tests.md)
+item 94 is the measurement.
+
 ### MIDI: OSS vs ALSA
 
 Out of the box, Pd here runs on **OSS MIDI**, not ALSA — `.pdsettings` has `flags: -alsamidi`

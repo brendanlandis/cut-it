@@ -81,9 +81,9 @@ whether they work.
   OLED            aux LED          Launchpad
 ```
 
-⚠️ **This diagram is the target, not the current state.** ✅ `u_map`, `g_led`, `u_tempo`, `c_clock`,
-`m_organelle` and the `param` bus arrived in Phase 5. `m_launchpad` / `g_grid` are Phase 6; `u_net`
-is 7; `u_state` is 8. The allowlist in [ref-conventions.md](ref-conventions.md) is the authority on
+⚠️ **This diagram is the target, not the current state.** ✅ Everything in it exists except `u_net`
+(Phase 7) and `u_state` (Phase 8) — `m_launchpad` and `g_grid` arrived in Phase 6, along with the
+first `c_clock` instance the diagram never showed. The allowlist in [ref-conventions.md](ref-conventions.md) is the authority on
 which buses actually exist.
 
 **The `m_` layer is the load-bearing boundary.** Nothing below it knows a nanoKONTROL exists. A
@@ -101,8 +101,8 @@ one boundary that is genuinely expensive to retrofit.
 | 3 | ✅ hardware | Display and errors |
 | 4 | ✅ hardware | nanoKONTROL, persistent error log, multi-parameter display |
 | 5 | ✅ hardware | Clock and transport |
-| **6** | **next** | **Launchpad** |
-| 7 | | Phone status link |
+| 6 | ✅ Mac | Launchpad, the grid arbiter, the `mode` driver |
+| **7** | **next** | **Phone status link** |
 | 8 | | State and presets |
 
 Details of 0–5, and every correction they produced, are in
@@ -111,27 +111,6 @@ them were found by measuring something a plan had asserted, and one of them by m
 thing that did the measuring.
 
 ---
-
-## Phase 6 — Launchpad
-
-`m_launchpad`, `g_grid`
-
-The most complex piece, deliberately late. Pad input on Pd channel 1 with `r*10+c` decode and
-polyphonic aftertouch. `g_grid` is the same arbiter shape as `g_oled` — playhead, slot state,
-mode and meters all contend for 64 pads.
-
-Batch LED updates: **one SysEx can carry up to 106 colour specs**, so a full-grid repaint is
-one message, not 64.
-
-Flash and pulse are **synced to MIDI beat clock**, so animation follows `u_tempo` for free — which
-is why Phase 5 sends clock to the Launchpad's port as well as the 404's.
-
-**This is also where `mode` finally gets a driver.** The Launchpad is the right home for it because it
-is the only device Pd can light, so mode state becomes visible rather than remembered.
-`u_init`'s `pd launchpad-init` subpatch lifts wholesale into `m_launchpad`.
-
-**Done when:** pads report position, velocity and pressure; the grid shows mode state; a full
-repaint is one message.
 
 ## Phase 7 — Phone status link
 
@@ -179,10 +158,8 @@ when something there is unverified, the work to resolve it is listed below.
 | Question | Blocks | Where it stands |
 |---|---|---|
 | **SP-404 pad note range** — measured 47+*n* here, Roland's chart says 35–51 | v0.3's `m_404` | Only pads 1 and 2 were ever checked. **This is the one that silently corrupts work** — sequencing code written against the wrong range looks correct and triggers the wrong pads. Sweep all 16 with `tools/midi-drive.pd` |
-| **What drives `mode`** | Nothing hard, but the mode filter has had no physical driver since Phase 4 | Phase 6, on the Launchpad — the only device Pd can light, so the state becomes visible. Until then the bench drives it, which is how items 19 and 21c were verified anyway |
-| **Launchpad perimeter CC numbers** | Phase 6 | Documented 📄, never confirmed on this unit. Ten minutes with `tools/lp-monitor.pd` |
-| **How wide is the Launchpad's animation tempo range?** | Phase 6, weakly | ✅ Flash and pulse **do** track a swept tempo — Phase 6's assumption holds. ⬜ But past an upper and lower limit they revert to a default rate, and those limits are not pinned down. Same shape as the 404's 40–200. Only matters if animation must stay locked at extreme tempi — [plan-tests.md](plan-tests.md) item 77 |
-| **Full-load power** | Phase 6 | Never run with three controllers plus the wifi dongle — the cable shortage. Presents as intermittent MIDI dropouts rather than an obvious failure, so if Phase 6 produces flaky Launchpad behaviour, **suspect the hub before the code**. [plan-tests.md](plan-tests.md) item 5 |
+| **Phase 6 on the hardware** | Nothing — but Phase 6 is not done until it runs there | ⚠️ **The whole phase is verified on the Mac only.** Nothing has been deployed. [plan-tests.md](plan-tests.md) items 94–97: the repaint budget, full-load power, the safe exit after the lift, and the boot sequence in its real order |
+| **Full-load power** | Phase 6's device run | Never run with three controllers plus the wifi dongle — the cable shortage. Presents as intermittent MIDI dropouts rather than an obvious failure, so if Phase 6 misbehaves on the device, **suspect the hub before the code**. [plan-tests.md](plan-tests.md) items 5 and 95 |
 | **Save New in a category folder** | Phase 8 | ⚠️ Already diagnosed — see the Phase 8 note above. Verify against a menu-selected patch, not a deploy-loaded one |
 
 ### The last thing that could force a redesign
@@ -196,6 +173,10 @@ Y-cable; procedure in [plan-tests.md](plan-tests.md) Session 3, items 12–13.
 
 | Question | Where it stands |
 |---|---|
+| **A panic blanks the Launchpad until the patch is reloaded** | ⚠️ New in Phase 6, deliberate, and currently harmless. `panic` returns the device to Live Mode and nothing re-enters Programmer Mode except `u_init`'s boot — so the grid stays the device's own for the rest of the session. **Nothing on the Organelle sends `panic`**; only the bench and the dev panel do. Revisit if a panic ever becomes performer-reachable, and note the trade: the escape hatch is worth more than the display |
+| **The six modes are named `mode-1`…`mode-6`** | Placeholders, three `compose` and three `perform`. The names are six message boxes in `u_map` and nothing else has to change. ⚠️ The **ratio** is not arbitrary: `u_err` routes on those two words, so a split weighted toward `perform` would make most mode selections silently quieten the error display |
+| **The Launchpad's own bottom row, CC 1–8** | ✅ Measured and real, but deliberately outside the painted span — including it would put a full repaint at ~106 specs, and 120 is known to be rejected outright. A second SysEx would be needed. Nothing wants them yet |
+| **CC 99, the Launchpad's top-right corner** | ⬜ The one ring button never pressed. Nothing needs it |
 | **Does the System menu's MIDI Config page re-open mother's MIDI gates?** | ⬜ `u_init` closes `midiInGate` and `midiOutGate` 2 s after load, which beats the mother binary's own push. Entering *MIDI Config* mid-session sends `/midich` and `/midiConfig` and may push the gates again — reopening the CC 21–26 collision that made a nano button toggle the transport ([plan-tests.md](plan-tests.md) item 76). Cheap to check: open the page, leave it, then press `btn-t-5` |
 | **The Organelle drops its wifi after a while.** | ⬜ Reproducible enough to be annoying — the connection is there after a deploy and gone an hour later, needing a manual reconnect. Costs nothing during a session that is already underway, but it breaks `deploy.sh` and `fetch-errors.sh` without warning, and it would take the phone display down mid-set. Unattributed: could be the dongle, power, the AP, or `wifi_control.py`. **Session 5's access-point work would sidestep it entirely**, which is the argument for doing that before chasing this |
 | **`[midiout]`'s port creation argument** | ⬜ and **unneeded** — `u_tempo` uses `u_init`'s proven pattern, the port sent to the cold inlet at load, and ✅ item 63 fired a real 404 pad through exactly that. What stays open is only whether `[midiout 3]` works, and **the obvious experiment is invalid**: Pd 0.49 does not warn about extra creation arguments at all — `[loadbang 7]` loads in silence — so a clean syntax check proves nothing. Answering it needs a real MIDI destination on two ports, or the 0.49 source |
@@ -248,7 +229,7 @@ Phase 4 made the display *correct*; it is not yet *good*. From reading it on the
 | **Show where the control was when the edit began** | a tick at the value the fader held when you first touched it, so you can see how far you have moved and get back. Needs a per-control "value at first touch", which is a new field in the param store — cheap, since the store already keys by name |
 | **Buttons should not display `1`** | the `1` is a placeholder for "pressed". What a button shows depends on what it is mapped to, so this resolves itself once `u_map` gives them meanings |
 | **A mapped control shows two rows** | ✅ Phase 5 created this: `og-knob-1 0.53` from `m_organelle` and the BPM from `u_tempo`. Mitigated by putting tempo in the footer, but it is the first concrete case of why an `m_` layer must eventually emit **parameter** names rather than control names — which is `u_map`'s job to hand back |
-| **Transport keys as scene selection** | ✅ they are ordinary CC buttons now. What remains is the *mapping*, which is `u_map` work in v0.3 |
+| **Transport keys as mode selection** | ✅ **Done in Phase 6** — all six now select a mode, shown as a lit lamp on the Launchpad's top row. This supersedes Phase 4's "scene selection" intent: scenes and modes were the same idea, and modes is what it is called now |
 
 The first two are real design work rather than plumbing, and both want the hardware in front of
 you. The param store is the right place for both: it already holds a name, a value, a unit and a

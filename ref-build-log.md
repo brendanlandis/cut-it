@@ -21,6 +21,7 @@ do. They are the most valuable thing in this file.
 | 3 | ✅ hardware | `g_oled`, `u_err` |
 | 4 | ✅ hardware | `m_nano`, the persistent error log, the multi-parameter display |
 | 5 | ✅ hardware | `u_tempo`, `c_clock`, `u_map`, `m_organelle`, `g_led`, the `param` bus |
+| 6 | ✅ Mac | `m_launchpad`, `g_grid`, the `mode` driver, the first `c_clock` instance |
 
 ---
 
@@ -348,6 +349,92 @@ isolation. The plan predicted "almost certainly free"; it was not. Still ample h
 load 0.5, but v0.3 stacks four filter stages on this, so the baseline matters. Item 75.
 
 ---
+
+## Phase 6 — the Launchpad and the grid
+
+`m_launchpad`, `g_grid`, the `mode` bus finally getting a driver, and the first `c_clock`
+instance in the deployed patch.
+
+⚠️ **Verified on the Mac, not yet on the Organelle.** Nothing here has been deployed. The
+Launchpad was plugged into the Mac for the whole phase, which is new for this project and is what
+made an off-device build possible at all — `plan-tests.md` items 94–97 are what remain.
+
+**Step 0 paid for itself immediately.** Six measurements before any code, and two of them
+changed the design:
+
+- **The documented ring map was wrong twice** — a whole second bottom row at **CC 1–8** that no
+  documentation mentions, and **CC 90** at the top-left corner where the docs start at 91.
+- **A SysEx of 120 colour specs is rejected outright** — the whole message dropped, not
+  truncated. 99 works. So an over-long frame would fail as a *silently frozen grid*, and
+  `g_grid` paints exactly indices 10–108. Lighting CC 1–8 too would sit at ~106, on the cliff.
+- **The layout-select command does nothing on this unit**, so surface ownership keys off the
+  proven Programmer/Live toggle instead of a layout table. Simpler than planned, and measured.
+
+### The shape of it
+
+**`m_launchpad` owns the mode and the layout; `g_grid` owns the LEDs.** Different surfaces, one
+writer each — which is the rule, and it is what let the 89-note clear loop be deleted outright:
+**the first frame after ownership rises *is* the clear.** No second blanking step to keep in step
+with anything.
+
+**`g_grid` rides `disp` under one reserved selector, `grid`** — two lines in `g_oled`, exactly
+what `led` cost in Phase 5. `mode` is read directly off its own bus, because one send from
+`u_map` should reach every surface and let each decide what a mode looks like.
+
+**One deliberate deviation from `g_oled`: `home` is a composite of regions.** Whole-surface
+arbitration is right for a 128×64 screen and wrong for a grid, where the idiom is regions — so
+the mode lamps and the beat row coexist in the layer that never expires, while `modal` and
+`alert` still take everything. The cascade is unchanged.
+
+**And one place it must NOT copy `g_oled`: the repaint is conditional.** The OLED redraws
+unconditionally at 10 Hz because its frames are cheap local UDP. These are ALSA MIDI writes, and
+~96 of those a second is the standing suspect for the clock doubling Pd's CPU in Phase 5. So the
+frame clock runs at 10 Hz but only paints when a dirty flag is set: **nothing at all when idle,
+~2 frames a second at 120 BPM.**
+
+### Six corrections, and four of them were invisible to reading
+
+- ⚠️ **`c_clock`'s beat-number outlet is ONE-BASED — 1 to 8, measured.** Built against a 0-based
+  assumption, beat 8 landed on index 19: a right-column **ring button** lit white while the beat
+  row went dark, once per bar. **Seven beats out of eight looked perfect.** It took decoding the
+  painted SysEx frames rather than watching the surface.
+- ⚠️ **Both layer TTLs lowered their flag without setting the dirty flag**, so an expired alert
+  would have left the grid **red permanently** — the display simply stopping. The comment in that
+  subpatch already claimed every expiry set it. **Prose describing intent is not evidence.**
+- ⚠️ **Pd processes `.pd` records strictly in order, so a `#X connect` that appears before its
+  target box is defined fails at load.** Appending boxes is the documented rule; the *connects*
+  have to move with them. It printed `connection failed` six times and `deploy.sh`'s output gate
+  caught it — twice, in two different files.
+- ⚠️ **`$1` in a message box is the incoming message, not the creation argument.** The port for
+  `[midiout]` needs `[f $1]` in an *object* box. The message-box form resolves to 0 — a different
+  port, and a silent one.
+- ⚠️ **A comma in a message box splits it however it is escaped in the file.** `\,` satisfies the
+  *parser*; the message box still treats the comma atom as a separator. Fourteen fragments in the
+  first bench run, in the file whose own header warns about it. **`phase6-bench.pd` is generated,
+  and the generator now asserts against commas and semicolons.**
+- **Aftertouch publishes to `param` only, never `disp`** — a deliberate break with `m_nano`'s
+  both-off-one-trigger rule. Polyphonic pressure is a continuous stream per held pad, and a
+  four-finger chord would fill the OLED's five param rows for as long as it was held.
+
+### Two things about process
+
+- **Deleting or inserting boxes mid-list silently rewires the file**, and it bit three times.
+  `pd-layout-check.py` reports it as *"indices are probably off by one"*, which is how it was
+  caught each time — the check earns its place as a graph checker, not just a layout one.
+- **`u_root` was re-laid out**, coordinates only. The audio chain did not move. The old three
+  ragged columns had no route for a new cord that did not pass through a comment.
+
+### What Phase 6 leaves behind
+
+**A panic blanks the grid until the patch is reloaded.** Panic returns the Launchpad to Live
+Mode, and nothing re-enters Programmer Mode except `u_init`'s boot. Deliberate — the escape hatch
+is worth more than the display — and currently harmless, since nothing on the device sends
+`panic`. Tracked in [plan-v02.md](plan-v02.md).
+
+**The mode names are placeholders.** Six message boxes in `u_map`, three `compose` and three
+`perform`. The split is arbitrary but the *ratio* is not: `u_err` routes on those words, so one
+compose and five perform would mean almost any mode selection silently made the error display
+quiet.
 
 ## What every phase had in common
 

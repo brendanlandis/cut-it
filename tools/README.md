@@ -15,6 +15,7 @@ All authored by hand in Pd 0.49 format. Do not open them in plugdata — see
 | `lp-monitor.pd` | Puts the Launchpad in Programmer Mode, echoes pad presses back as LEDs, prints velocity and polyphonic aftertouch. |
 | `lp-flicker.pd` | Fills the Launchpad with random monochrome noise via per-pad RGB SysEx. Press any pad to toggle grey ↔ blue. Demo, but a working reference for RGB SysEx and `until` loops. |
 | `lp-modes.pd` | Lights three pads static / flashing / pulsing — the device's three LED animation modes. |
+| `lp-step0.pd` | **Phase 6's Step 0 measurements, in one patch** — items 82–87. Prints incoming notes, **CC** and aftertouch with their channel, sends a batch colour SysEx of 64 / 99 / 120 specs, and switches layout. `lp-monitor.pd` cannot answer item 82 because it has no `[ctlin]`. Run it on the **Mac** with the Launchpad plugged in, in the foreground. |
 | `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
 
 ## Phase 3 — testing the display on hardware
@@ -192,6 +193,41 @@ one running now, or the last one if the patch has not been reloaded since — th
 power-cycling the Organelle does not reload the patch). It also md5-compares the deployed patch
 against the repo and says so loudly if they differ, because an error from a build you no longer have
 is a trap.
+
+## Phase 6
+
+### `phase6-bench.pd` — the Phase 6 acceptance run
+
+Same shape again: self-driving, ten seconds a step, a printed `PASS IF` before each one
+**including the steps whose correct result is that nothing happens**. Sixteen steps covering the
+mode bus, the grid arbiter, the layer priorities and TTLs, the first `c_clock` instance and the
+safe exit. **Steps 12, 13 and 15 need your hands** — nothing but the real controllers can
+exercise `notein` and `ctlin`.
+
+⚠️ **It is generated, not hand-authored.** Fifteen near-identical steps is exactly where box
+indices drift, and this file was written by a script for the same reason `pd-layout-check.py`
+exists. Edit the generator, not the `.pd` — see the Phase 6 section of
+[../ref-build-log.md](../ref-build-log.md).
+
+**Watch the Launchpad, not the screen.** The one automated assertion is the beat counter, which
+prints `BEATS` for the ten seconds either side of the tempo change — expect about 20 then about
+40. Everything else about a grid is visual by nature: **there is no way to read back what the
+LEDs are actually showing**, so this bench proves the cases it contains and nothing more.
+
+⚠️ **On the Mac, tick `enable-DSP` first.** `c_clock` hangs off `threshold~`, so with DSP off the
+beat row never moves and both `BEATS` counts read 0 — which looks exactly like a dead clock.
+
+⚠️ **Step 14 raises a panic, and the grid does not come back.** Panic returns the Launchpad to
+Live Mode, and nothing re-enters Programmer Mode except `u_init`'s boot sequence — so the grid
+stays the device's own until the patch is reloaded. Deliberate, and stated in the step.
+
+### `lp-step0.pd` — the Phase 6 Step 0 measurements
+
+Everything Phase 6 needed to stop guessing about: the ring's CC numbers, how many colour specs
+one SysEx really carries, whether that SysEx lights the ring as well as the pads, and what the
+layout-select command actually does. All of it is now recorded in
+[../plan-tests.md](../plan-tests.md) Session 7. Keep it as the re-check if a Launchpad is ever
+swapped.
 
 ### Running a bench on the device
 

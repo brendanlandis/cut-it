@@ -122,6 +122,11 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
                        be seen while the access point is up, which is exactly when a Mac
                        joined to it has no internet and nobody can watch
 plan-v02.md          the build plan — the phases still to come, and EVERY open question
+wifi-analysis.md     what to DO once the wifi fault is caught -- a decision tree from
+                     which recovery rung worked. Temporary: delete it with the fault
+plan-phase8.md       the Phase 8 execution plan: u_state, save and presets
+plan-phase8-prompt.md  the briefing for whoever picks Phase 8 up — what to read, and
+                       how thoroughly. Deleted with plan-phase8.md when the phase lands
 plan-tests.md        the ordered hardware checks, with every measured number
 ref-build-log.md     Phases 0-6 as built: outcomes, and every correction they produced
 ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow

@@ -1,0 +1,75 @@
+#!/bin/sh
+# wifi-report -- pull the evidence off the device once wifi-poll.sh has found
+# something, and summarise it into the shape the analysis actually needs.
+#
+#   ./tools/wifi-report.sh              summary
+#   ./tools/wifi-report.sh --full       and the raw log
+#
+# What matters in the output, in order:
+#
+#   1. HOW LONG IT SURVIVED before the first drop -- compare against the router's
+#      DHCP lease time. If they match, the fault is lease renewal and the dongle
+#      is innocent.
+#   2. WHETHER IT STAYED ASSOCIATED across the drop. Item 133 says it does: the
+#      SSID and BSSID hold while the IPv4 address goes. That is the whole reason
+#      this is a DHCP question rather than a radio one.
+#   3. WHICH RECOVERY RUNG WORKED. The ladder tries renew, then release+restart,
+#      then a wpa_supplicant restart. `UNRECOVERED` on every rung is itself the
+#      finding -- it would mean only a reboot fixes it, which is what has been
+#      observed by hand.
+set -u
+HOST=${HOST:-root@organelle.local}
+LOG=/sdcard/wifi-watch.log
+
+if ! ssh -o ConnectTimeout=8 "$HOST" true 2>/dev/null; then
+    echo "Cannot reach $HOST."
+    echo
+    echo "⚠️  That is not proof of anything on its own -- and note the trap from item 133:"
+    echo "    ssh can KEEP WORKING over IPv6 link-local while IPv4 is entirely gone."
+    echo "    If ssh works but nothing else does, check:  ip addr show wlan0 | grep 'inet '"
+    echo
+    echo "If the device is genuinely off the network, the log survives on /sdcard."
+    echo "Power-cycle it, wait for it to rejoin, then run this again -- nothing is lost."
+    exit 1
+fi
+
+echo "=== summary ======================================================="
+ssh "$HOST" "
+    if [ ! -f $LOG ]; then echo '  no $LOG -- was the watcher ever started?'; exit 0; fi
+    echo \"  watcher started : \$(grep -c 'wifi-watch started' $LOG) time(s)\"
+    echo \"  transitions     : \$(grep -c TRANSITION $LOG)\"
+    echo \"  recovered by    :\"
+    grep 'RESULT: RECOVERED' $LOG | sed 's/^/     /' || echo '     (none recorded)'
+    echo \"  unrecovered     : \$(grep -c UNRECOVERED $LOG)\"
+    echo
+    echo '  --- every transition, with the time it happened ---'
+    grep -A1 '^TRANSITION' $LOG | grep -E 'TRANSITION|time:' | sed 's/^/     /'
+    echo
+    echo '  --- was it still associated when IPv4 went? (the crux) ---'
+    grep -A4 '^TRANSITION' $LOG | grep -E 'assoc:' | sed 's/^/     /'
+    echo
+    echo '  --- liveness heartbeats, to read uptime-to-failure ---'
+    grep '\.\. alive' $LOG | head -3 | sed 's/^/     /'
+    grep '\.\. alive' $LOG | tail -3 | sed 's/^/     /'
+"
+
+echo
+echo "=== current state ================================================="
+ssh "$HOST" '
+    echo "  ipv4      : $(ip -4 addr show wlan0 2>/dev/null | grep -o "inet [0-9.]*" || echo NONE)"
+    echo "  assoc     : $(iw dev wlan0 link 2>/dev/null | head -2 | tr "\n" " ")"
+    echo "  procs     : wpa_supplicant=$(pgrep -x wpa_supplicant || echo -) dhcpcd=$(pgrep -x dhcpcd || echo -)"
+    echo "  uptime    : $(cut -d. -f1 /proc/uptime)s"
+    P=$(cat /sdcard/wifi-watch.pid 2>/dev/null)
+    if kill -0 "$P" 2>/dev/null; then echo "  watcher   : alive (pid $P)"; else echo "  watcher   : NOT RUNNING -- restart before the next attempt"; fi
+'
+
+if [ "${1:-}" = "--full" ]; then
+    echo
+    echo "=== raw log ======================================================="
+    ssh "$HOST" "cat $LOG"
+fi
+
+echo
+echo "Next: hand this to an agent along with wifi-analysis.md, which says"
+echo "what each outcome means and what to do about it."

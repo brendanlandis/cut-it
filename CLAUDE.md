@@ -107,6 +107,7 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
   phase6-assert.sh     the headless gate: rewrites [midiout] in a SCRATCH COPY so a run can
                        read back every byte, then asserts on what the grid actually showed
 plan-v02.md          the build plan — the phases still to come, and EVERY open question
+plan-phase7.md       the Phase 7 execution plan: u_net, the phone status link
 plan-tests.md        the ordered hardware checks, with every measured number
 ref-build-log.md     Phases 0-6 as built: outcomes, and every correction they produced
 ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow

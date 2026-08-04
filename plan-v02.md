@@ -125,6 +125,9 @@ not in the callers.
 **Done when:** every parameter shown on the OLED also reaches the phone, and pulling the plug
 shows `NO-LINK` within 1.5 s.
 
+📋 **The execution plan is [plan-phase7.md](plan-phase7.md)** — steps, constraints and risks.
+Open questions stay here.
+
 ## Phase 8 — State and presets
 
 `u_state`

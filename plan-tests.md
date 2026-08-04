@@ -1184,6 +1184,112 @@ well-supported hostapd chipset.
       phantom-`lp-cc` bug. It is not — `128:1` is Pd port 1, Midi-In **2**, channels 17-32, exactly
       what `m_nano 17` wants. The bug would show as `128:0`.
 
+- [x] **132. ✅ ⚠️ THE MAC BENCH RUN — the step this phase had skipped, and it found two things.**
+      15 of 15 steps, judged on the phone, driven with `HOST=127.0.0.1 ./tools/go.sh`.
+
+      ⚠️ **A bug of my own making, visible only at boot.** `[metro]` fires the instant it is
+      started, so the reconnect metro — armed at 1600 ms — banged the address store **before the
+      address had been resolved**, sending `connect` with an empty host and printing `bad host?` on
+      **every single boot**. Harmless by 2200 ms when the real connect lands, and invisible to
+      `deploy.sh` because the syntax check quits first. **New with discovery**: before it, the store
+      was `[f $2]` and an early bang produced a valid address. Fixed by arming the retry at **3000
+      ms**, after resolution on both platforms — 1550 ms on the device, 2200 on the Mac where the
+      `del 700` fallback covers a `shell` that never answers. By then a successful connect has
+      closed the spigot, so the metro's own first fire costs nothing.
+
+      ⚠️ **TWO INSTRUMENTS WILL FIGHT OVER ONE PHONE, and it does not look like contention.** With
+      the Organelle running Cut It *and* `main-dev.pd` running on the Mac, both were connected to
+      `192.168.1.5:8000` and the status row **fluttered between `120-bpm` and the Mac's knob value**.
+
+      The bus was innocent — a `[r disp]` tap showed `status` carrying exactly four messages and
+      never repeating. **`u_net` is the sole owner of the phone WITHIN an instrument; nothing
+      arbitrates ACROSS machines.** The one-owner-per-surface rule does not reach that far, and the
+      symptom is a baffling flutter rather than anything resembling two writers. **It will recur
+      during off-device development with the device still powered** — stop one of them.
+
+      ✅ **Everything else passed**: the link, both parameters, the status slot, the alert arriving
+      through `u_err` and persisting 14 s untouched, a second alert replacing it, and all four
+      reserved selectors inert.
+
+      ✅ **The teardown is the same failure on both platforms, differing only in the errno** —
+      **61** on macOS against **111** on Linux — with an identical tally of **12 connects, 11
+      refusals and exactly one `net-link-down`**.
+
+      ✅ **THE LATE-JOIN REPEAT VERIFIED ON HARDWARE for the first time.** After the reconnect the
+      phone repopulated `grain` / `12` / `128-bpm` **by itself within about two seconds**, with
+      nothing touched. Before item 123 it would have sat on `READY` and blank rows until something
+      moved. The alert row correctly showed `warn` / `net-link-down` — `u_net`'s own error about the
+      outage, newer than the bench's, so replacing it is right.
+
+      ⬜ **Step 12 was Mac-skipped, deliberately.** It needs a hand on a nanoKONTROL fader and the
+      nano is wired to the Organelle. The per-parameter trailing edge is covered twice already —
+      a real fader stopped mid-travel at 88 on the device, and two *simultaneous* synthetic sweeps
+      at 200 events/s in the headless gate. Moving the nano would have risked a channel-block
+      mismatch proving nothing about `u_net`.
+
+- [x] **133. ⚠️ ITEM 81 CAUGHT IN THE ACT, and it is NOT the radio dropping the network.** It
+      happened mid-bench, between steps 11 and 12 of the device run, and for several minutes it
+      looked exactly like a `u_net` fault — which is precisely what item 81's entry predicts.
+
+      **What was actually true:**
+
+      | | |
+      |---|---|
+      | `iw dev wlan0 link` | **still associated** to `hildegard`, BSSID and freq intact |
+      | `wpa_supplicant`, `dhcpcd` | **both running** |
+      | `ip addr show wlan0` | **no IPv4 address at all** — IPv6 link-local only |
+      | the patch | `error: connecting stream socket: Network is unreachable (101)` |
+
+      **So the association survives and the IPv4 LEASE is what is lost.** That is a much sharper
+      diagnosis than "the Organelle drops its wifi after about an hour", and it points somewhere
+      different: DHCP renewal — the router's lease time, or `dhcpcd` failing to renew — rather than
+      the dongle, the power or the access point, which is where item 81 has been pointing all along.
+
+      ⚠️ **A `dhcpcd -n wlan0` renew did not recover it** and appeared to finish off what was left:
+      mDNS stopped resolving immediately afterwards.
+
+      ⚠️ **AND SSH KEPT WORKING THROUGHOUT — over IPv6 link-local, via mDNS.** This is the part that
+      matters. Every doc in this project says *check `ssh` before debugging code*, and **SSH
+      answering was not evidence the network was up.** The symptoms were a dead phone link and a
+      bench that would not advance, with a reachable device.
+
+      ✅ **The correct check is an IPv4 address, not a login:**
+
+      ```sh
+      ssh root@organelle.local 'ip addr show wlan0 | grep "inet "'   # no output == this fault
+      ```
+
+      **`go.sh` failing to advance a bench is a symptom of it**, because the GO datagram is IPv4 to
+      port 9998 and has nowhere to go.
+
+- [x] **134. ✅ THE DEVICE RE-RUN — 15 of 15 on the build that includes everything.** The earlier
+      15/15 predated the late-join repeat, the broadcast round trip, discovery and the retry fix, so
+      it proved a patch that no longer existed. This one covers all of them.
+
+      **Controlled reading** — menu-launched, transport stopped, phone connected, IPv4 confirmed:
+      **CPU 11.7 %** on all three readings, **UDP 122–126/s**. Consistent with the 11.7–12.2 % band
+      measured twice before, and +5 to +9 over the ~117/s display baseline, which is heartbeat 2 +
+      alert 2 + repeat 1.
+
+      ⬜ **The 10.2–10.5 % readings taken earlier are still unexplained.** Both followed patch
+      reloads closely. Recorded rather than rationalised.
+
+      ✅ **All fifteen steps**, with each reserved selector confirmed by a *different* surface
+      reacting — Launchpad fully blue on `grid modal 45`, aux green on `led running`, phone still in
+      both cases. The fader swept and stopped mid-travel. Teardown at errno **111**, one
+      `net-link-down` across 19 connects and 18 refusals, and the phone **repopulated itself** after
+      the reconnect.
+
+      ⚠️ **Two workflow traps, both cheap and both cost time here:**
+
+      - **`/tmp` is wiped on reboot**, so `/tmp/phase7-bench.pd` vanishes with a restart and the
+        by-hand launch quietly runs `mother.pd` + `main.pd` with **no bench** — the GO port is never
+        bound and the bench appears frozen at step 1.
+      - **`/tmp/patch` does not exist until mother has loaded the patch once.** Launching by hand
+        before that leaves the working directory wrong, so **`wire.sh` never runs and the MIDI
+        wiring is silently absent** — no `wire:` line in the log is the tell. Load through
+        `deploy.sh` first, then launch by hand.
+
 - [ ] **43. Bring up an AP on `wlan0` and join it from the iPhone.** Confirm the phone gets an
       address from `dnsmasq` and the status display still updates.
 - [ ] **44. Check it in airplane mode** — cellular off, wifi manually re-enabled.

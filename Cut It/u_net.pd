@@ -46,7 +46,7 @@
 #X obj 700 1900 list trim;
 #X obj 700 1950 s \$0-tonet;
 #X obj 1150 1240 loadbang;
-#X obj 1150 1290 del 1600;
+#X obj 1150 1290 del 3000;
 #X obj 1150 1340 metro 5000;
 #X obj 1150 1390 spigot 1;
 #X obj 1350 1340 r \$0-down;
@@ -142,6 +142,7 @@
 #X obj 400 1790 symbol \$1;
 #X text 1400 2300 u_net IS NOT TOLD WHERE THE PHONE IS -- IT ASKS. phone-ip.sh reads the dnsmasq lease off the Organelle's OWN access point \, where the Organelle handed the address out itself and therefore already knows it \, and falls back to the creation argument anywhere else. So the same patch works on the house wifi and on the stage network with no edit \, which a literal address cannot do: it is right on exactly one network and dead on the others., f 58;
 #X text 2400 2500 THE del 700 IS THE FALLBACK \, AND IT IS WHAT KEEPS THE MAC WORKING. shell is an external that exists only on the Organelle -- mac-stubs/shell.pd swallows everything and answers nothing -- so off-device the script never replies and this timer fires instead \, connecting to the creation argument exactly as before. It also covers the script failing or hanging on the device. A reply arrives first and stops it., f 58;
+#X text 1150 2560 THE RETRY STARTS AT 3000 ms AND THAT NUMBER IS LOAD-BEARING. metro fires the INSTANT it is started \, so a retry armed before the address had been resolved banged an empty symbol store and sent connect with no host -- one bad host? on the console at every single boot. The address is resolved by 1550 ms on the device and by 2200 on the Mac \, where the del 700 fallback covers a shell that never answers \, so 3000 is after both. By then a successful connect has already closed the spigot \, so the metro's own first fire is blocked and costs nothing. FOUND BY RUNNING THE BENCH ON THE MAC \, which is the step this phase had skipped., f 70;
 #X connect 6 0 7 0;
 #X connect 7 2 8 0;
 #X connect 8 0 100 0;

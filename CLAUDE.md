@@ -87,6 +87,12 @@ deploy.sh            check → scp → reload → load, in one command (there is
 tools/fetch-errors.sh  pulls the error log back off the device and summarises it
 tools/               diagnostic patches, the per-phase benches, and pd-layout-check.py
   README.md            what each one proves, how to run it, and how to run a bench ON the device
+  bench-gen.py         GENERATES all four phaseN-bench.pd from bench_steps.py. The benches
+                       are stepped BY HAND -- press GO to run the step just described, press
+                       GO again to describe the next. Never edit a bench .pd
+  bench-verify.py      proves the step text survived the generator, by re-extracting it
+  phase6-assert.sh     the headless gate: rewrites [midiout] in a SCRATCH COPY so a run can
+                       read back every byte, then asserts on what the grid actually showed
 plan-v02.md          the build plan — the phases still to come, and EVERY open question
 plan-tests.md        the ordered hardware checks, with every measured number
 ref-build-log.md     Phases 0-6 as built: outcomes, and every correction they produced
@@ -119,7 +125,12 @@ Links to paths containing spaces use the angle-bracket form:
 `[README.md](<! v0.1 plans/README.md>)`.
 
 An Organelle patch is a **folder** containing `main.pd` (the entry point) plus its
-abstractions, optionally `knobs.txt` (OLED knob labels) and audio assets.
+abstractions, optionally `knobs.txt` and audio assets. ⚠️ **`knobs.txt` is NOT knob labels** — this said so and was
+wrong. Two real examples off the device read `0.195503 0.230694 0.134897 0.0136852;` and
+`0.521994 1 0.84262 0.723363;`: **four normalised knob positions**, saved state rather than text.
+**Cut It deliberately ships without one**, so the physical knob position always wins — knob 1 is
+master tempo, and a `knobs.txt` would decide what BPM the patch boots at. The cost is that mother
+logs `knobs.txt: can't open` at every boot; that line is expected and harmless.
 
 **Working on the device:** `ssh root@organelle.local` (password `organelle`). The root
 filesystem is read-only — `remount-rw.sh` before writing to `/root`. **`./deploy.sh` does the

@@ -1,0 +1,14 @@
+#N canvas 20 20 1400 820 12;
+#X text 20 20 dsp-toggle -- turn Pd's DSP on and off from outside \, so item 75's real cause can be isolated on the running patch. Loads as a third patch beside mother.pd and main.pd. It touches no bus in Cut It and owns no surface -- the only thing it can do is set the audio engine's global state., f 110;
+#X text 20 160 WHY THIS EXISTS. Item 75 recorded that the Phase 5 clock roughly DOUBLED Pd's CPU \, 5.3 to 10.2 percent \, and blamed the 96 ALSA MIDI writes a second -- marked as not confirmed by isolation. A tempo sweep has since shown those writes are worth about 0.43 points \, an order of magnitude too small \, so the remaining candidate is the DSP that arrived in the same phase. THAT IS ELIMINATION \, NOT PROOF. Nothing has ever turned DSP off and measured. This is what does it., f 110;
+#X text 20 340 USE: ./tools/dsp.sh 0 to stop the audio engine \, ./tools/dsp.sh 1 to start it. ⚠️ WITH DSP OFF THE PATCH MAKES NO SOUND AND THE BEAT ROW FREEZES -- c_clock is cut from a phasor \, so the grid stops walking and the transport stops counting. That is expected and is not a fault. Turn it back on when the reading is taken., f 110;
+#X obj 20 500 netreceive 9997 1;
+#X obj 20 560 route dsp;
+#X msg 20 620 dsp \$1;
+#X obj 20 680 s pd;
+#X obj 700 500 print DSP-TOGGLE;
+#X text 700 560 prints whatever arrives \, so a reading is never taken against a state nobody confirmed., f 60;
+#X connect 3 0 4 0;
+#X connect 4 0 5 0;
+#X connect 4 0 7 0;
+#X connect 5 0 6 0;

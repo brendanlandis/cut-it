@@ -791,7 +791,39 @@ Deployed with `./deploy.sh`, then the bench run by hand as a third patch for a r
       second alongside it. ⚠️ **CPU read 10.6 %, but under the by-hand launch with the bench still
       loaded** — two extra `c_clock`s and fifteen delay chains — so it is a worst case, not the
       deployed baseline. The deployed figure is still to be taken.
-- [x] **75. ⚠️ The clock is NOT free — it roughly doubled Pd's CPU.** ✅ Measured on the **deployed,
+- [x] **75. ⚠️ The clock is NOT free — it roughly doubled Pd's CPU. ✅ BUT THE CAUSE RECORDED HERE
+      IS WRONG, AND IS NOW ISOLATED (2026-08-03).** This item blamed the 96 ALSA MIDI writes a
+      second and marked it ⬜ *not confirmed by isolation*. **Confirmed now, and they are not it.**
+      Tempo varies the MIDI rate while leaving DSP cost identical — `phasor~` and `threshold~`
+      cost the same per sample at any frequency — so knob 1 is a clean one-variable sweep.
+      Measured on the device across a **50× range**: **10 BPM (8 writes/s) → 9.9 / 9.9 / 9.8 /
+      9.9 %**; **120 BPM (96/s) → 10.6–11.3 %**; **500 BPM (400/s) → 11.7–11.9 %**. That is a
+      slope of **≈0.48 points per 100 writes/s**, so the 96 writes at 120 BPM are worth about
+      **0.43 points** — against the **4.9 points** this item attributed to them. **Wrong by an
+      order of magnitude.**
+      ✅ **PROVEN BY DIRECT ISOLATION, not elimination.** `tools/dsp-toggle.pd` and `tools/dsp.sh`
+      turn Pd's audio engine off from outside on the running patch. Measured on the device:
+      **DSP on 11.8 / 11.7 / 11.8 %, DSP off 4.9 / 4.9 / 4.9 %, back on 12.0 / 11.8 %** —
+      reversible and repeatable. **The DSP costs 6.9 points. The MIDI clock costs 0.43.**
+      This item blamed the wrong thing by a factor of about sixteen.
+      **What that means for v0.3**, which stacks four filter stages on this baseline: the headroom
+      question is a DSP question, and the clock is nearly free. Anything spent optimising MIDI
+      output here would be spent in the wrong place — including the *stop sending clock to port 1*
+      idea in `plan-v02.md`, which is now worth about 0.2 points and not worth doing for CPU.
+      ✅ **AND THE SPLIT IS MEASURED TOO.** A scratch copy of the patch with two EXTRA `c_clock`
+      instances (appended after the last box so no `#X connect` index moved) was launched by hand
+      beside the real one, which was never touched. **1 instance: 11.8 / 11.8 / 11.7 / 11.5 %.
+      3 instances: 12.4 / 12.4 / 12.6 / 12.8 %.** That is ~0.85 points for two, so
+      **≈0.43 points per `c_clock`** — near item 75's original 0.2 estimate and the same order.
+      **So of the 6.9-point DSP total, three clocks are ~1.3 and the remaining ~5.6 is the base
+      graph** — audio passthrough, the level meters and `u_tempo`'s own `phasor~`/`threshold~`.
+      **This is the number poly-tempo needed**: ten more clocks would cost ~4.3 points. Clocks are
+      cheap; the base graph is where the DSP budget already went.
+      ⬜ One thing still does not reconcile: the Phase 4 → 5 jump of 4.9 points arrived WITH the
+      first clock, yet a marginal clock costs 0.43. Either `u_tempo`'s own DSP is far more
+      expensive than a `c_clock`, or the 5.3 % Phase 4 baseline is not comparable. Not worth
+      chasing unless a headroom decision turns on it — the marginal cost is what v0.3 uses.
+      ORIGINAL ENTRY FOLLOWS. ✅ Measured on the **deployed,
       idle** patch: **10.2 %** CPU, **117 UDP datagrams/second**, load 0.50. The display is
       unchanged (117/s matches item 37 exactly); the CPU is not — Phase 4 measured **5.3 %**.
 
@@ -1042,10 +1074,11 @@ Phase 6 has been deployed yet.
 - [x] **83. ✅ One SysEx carries 99 colour specs. 120 is REJECTED OUTRIGHT.** Not truncated —
       the entire message is dropped and the surface does not change at all. 64 works, 99 works.
 
-      ⚠️ **So an over-long frame fails silently as a frozen grid**, which is the worst possible
-      shape for this failure. `g_grid` paints indices **10–108 = 99 specs**, the largest span
-      measured good. Lighting CC 1–8 as well would put the count at ~106 — the documented limit,
-      and far too close to a cliff with no warning.
+      ⚠️ **SUPERSEDED — the cliff was not real.** This item's conclusion came from probes later
+      found broken three ways over (items 105, 107, 109): a clean 120-spec message paints the
+      whole surface. `g_grid` now paints indices **1–108 = 108 specs**, and the reason is not
+      the extra buttons — an index *outside* the span can never be cleared, because LED state
+      survives the Programmer Mode switch. Index 0 stays out and that one is measured (110).
 - [x] **84. ✅ The batch SysEx lights the ring as well as the pads.** One message paints the 8×8
       grid and every perimeter button together, addressed by the same Programmer-Mode index.
 - [x] **85. ✅ The Launchpad works as a Pd input on the Mac.** Set as MIDI in *and* out device 1.
@@ -1103,9 +1136,11 @@ Phase 6 has been deployed yet.
       white while the beat row went blank, once per bar. **Seven beats out of eight looked
       perfect**, which is why it took decoding the painted frames rather than watching the
       surface.
-- [x] **93b. ✅ Every frame is one SysEx.** 305 bytes — 7 header + 99×3 + terminator — with the
-      correct header and `247`, verified byte by byte across every frame of every run. **Idle
-      with the transport stopped it sends nothing at all.**
+- [x] **93b. ✅ Every frame is one SysEx.** Measured at **305 bytes** — 7 header + 99×3 +
+      terminator — with the correct header and `247`, verified byte by byte across every frame
+      of every run. **Idle with the transport stopped it sends nothing at all.**
+      ⚠️ **The number has since changed: the span widened to 1–108, so a frame is now 332 bytes**
+      — 7 + 108×3 + terminator. The shape and the assertion are unchanged; only the count moved.
 
 ### Still to run — these need the Organelle
 
@@ -1113,16 +1148,145 @@ Phase 6 has been deployed yet.
       Phase 5 baseline of 10.2 % plus one point, by `ref-hardware.md` → *Measuring the running
       patch*. Three readings: idle and stopped, transport running with the beat row walking, and
       during a bench alert storm. Expected SysEx rates 0/s, ~2/s and ~6/s.
-- [ ] **95. ⬜ Full rig: three controllers plus the wifi dongle, powered at once.** Never run —
-      this is item 5, still blocked by the cable shortage. **A marginal hub presents as
-      intermittent dropouts, not an obvious failure, so if Phase 6 misbehaves on the device
-      suspect the hub before the code.**
-- [ ] **96. ⬜ The safe exit after the lift.** Kill Pd mid-session and confirm the Launchpad
-      returns to Live Mode. This is the one that costs a power cycle if it is wrong, and the code
-      moved files in this phase.
-- [ ] **97. ⬜ The boot sequence in its real order.** `loadbang` fires before ALSA exists, and the
-      Mac has no `wire.sh` and no `[shell]`. Watch for `modal launchpad` on the OLED and the grid
-      lighting immediately afterwards — the first frame after ownership **is** the clear.
+      **✅ FLOOR TAKEN 2026-08-03, and it is not the answer.** First-ever Phase 6 deploy, patch
+      loaded and idle, transport stopped, **no controllers attached** — `aconnect` showed one link
+      and only the wifi dongle on USB. Three readings: **10.8 %, 10.8 %, 11.0 %**. UDP out 117–119/s
+      (the OLED, flat since Phase 3); load average 0.33 / 0.24 / 0.10.
+      ⚠️ **This is a floor and it understates the real cost**: `g_grid` emits nothing when idle and
+      stopped, and with no subscriber on the ALSA port the kernel discards what it does send —
+      the USB transfer to a real Launchpad is the part that costs. **Phase 6 has therefore spent
+      most of its one-point allowance before a single repaint happens**, leaving ~0.2 points.
+      Keep it in proportion: **11.2 % is a self-imposed tripwire set as Phase 5 + 1 before Phase 6
+      existed**, not a hardware limit, and a load average of 0.33 says the machine is not stressed.
+      **✅ REAL READING TAKEN 2026-08-03, WITH THE LAUNCHPAD AND NANOKONTROL ON A USB HUB.**
+      ALSA showed 4 links — Launchpad in *and* out, nanoKONTROL in. Transport stopped, DSP on, so
+      the beat row was walking and the grid repainting ~2/s.
+      **⚠️ OVER BUDGET: 11.7 %, 11.9 %, 12.0 %** against 11.2 %. Load 0.42–0.51, UDP 120/s.
+      **The overage is not the span widening and not the frame rate.** Two things were isolated:
+      the span went 99 → 108 specs (305 → 332 bytes), which at ~2 repaints/s is ~54 bytes/s and
+      cannot account for a point; and `[metro 100]` → `[metro 20]` was measured directly at
+      **11.5 %, 11.6 %, 12.0 %** — indistinguishable, one reading lower. The rest is the cost of
+      **actually transmitting to real USB hardware** rather than into unconnected ALSA ports.
+      **⚠️ The 11.2 % tripwire is not a like-for-like ceiling and should be restated.** It was set
+      as "Phase 5's 10.2 % plus one point", and that 10.2 % was measured before `m_launchpad`
+      existed and — like the floor above — with nothing on the other end of the MIDI ports.
+      ✅ **What item 94 actually exists to prove is PROVED**: the dirty flag gates. If it did not,
+      raising the frame clock 5× would have produced 5× the frames and moved the CPU. It did not
+      move at all, because the repaint count is bounded by the beat rate and never by the metro.
+      That is a stronger result than the number.
+      **✅ READING 2 — TRANSPORT RUNNING, 120 BPM, by-hand launch with the bench loaded:**
+      **10.6 %, 10.9 %, 11.3 %.** Running the transport did **not** raise CPU — it read *lower*
+      than the stopped reading above. The beat row's repaints cost nothing measurable.
+      **✅ READING 3 — TRANSPORT RUNNING AT 500 BPM:** **11.7 %, 11.7 %, 11.9 %.**
+      That is **+1.0 point for 4.17× the clock rate** — 400 ALSA writes/s against 96.
+      ⚠️ **THIS CONTRADICTS ITEM 75's ATTRIBUTION.** Item 75 blamed the Phase 4 → Phase 5 CPU
+      doubling (5.3 % → 10.2 %) on the 96 clock writes a second, and marked it ⬜ *not confirmed
+      by isolation*. If 96 writes cost ~5 points, adding 304 more should cost ~15. **It cost 1.**
+      So the per-message cost is low and the doubling was almost certainly the **DSP** that
+      arrived in the same phase, not the MIDI. Worth isolating properly before v0.3 builds on it.
+      ⚠️ **THE TRIPWIRE IS FINER THAN THE MEASUREMENT IS REPEATABLE.** Between-session drift is
+      ~1 point — menu-loaded vs by-hand-with-bench differ by about that — against an effect being
+      resolved at 0.2. **Restate the budget with stated conditions, or stop treating it as a gate.**
+      ⬜ An alert-storm reading was not taken separately: an alert is one repaint, not a rate.
+- [x] **94b. ✅ The clock is accurate at the top of its range.** `u_map` maps knob 1 across 10–500
+      BPM and the OLED footer reached **500**. Driven to the bench's beat-counter step with the
+      knob at maximum, a machine-timed ten-second window counted **BEATS: 84** against 83.3
+      expected — 504 BPM equivalent, within one beat. **The row LOOKING slow at 500 is an
+      intuition error, not a fault:** the row shows beats and there are 8 to a bar, so a full
+      sweep takes 0.96 s. One sweep a second is what 500 BPM looks like spread over eight pads.
+      ✅ **And the LEDs were confirmed separately**, which the beat count could not do on its own:
+      tapping tempo on a metronome in time with the walking row matched the BPM on the OLED. So
+      the row is on the BEAT, not the bar. The suspicion that it ran slow — `c_clock 1 8` gives 8
+      beats to a bar, so 500 BPM is 62.5 bars/min ≈ one sweep a second, which reads as sluggish —
+      was an intuition error about what 500 BPM looks like spread across eight pads.
+- [x] **111. ⚠️✅ A PHANTOM `lp-cc-N` ON EVERY NANO MOVE — a Phase 6 bug that shipped, found
+      2026-08-03, fixed in `wire.sh`.** Moving one nanoKONTROL fader on the device published
+      **both `slider-1` and `lp-cc-1`** to `param` and `disp`. Cause: mother's own
+      `/root/fw_dir/scripts/alsaconnect.sh` wires the **lowest-numbered** MIDI client to Pd's
+      Midi-In 1, and the nanoKONTROL enumerates at client 28 against the Launchpad's 32 — so
+      every boot put the nano on `m_launchpad`'s channel block.
+      ⚠️ **NO Pd-SIDE FIX IS POSSIBLE.** Once two devices share Midi-In 1 they are both
+      genuinely channel 1; `m_launchpad`'s channel test is correct and powerless. It has to be
+      undone at the ALSA level.
+      ✅ **Fixed with two `aconnect -d` lines in `wire.sh`** — for the nano and the SP-404 —
+      which costs **no new fork**, since `wire.sh` already runs once per load. Verified after
+      deploy: Midi-In 1 shows `32:0` only, Midi-In 2 shows `28:0` only.
+      ⚠️ **Invisible on the Mac**, which has explicit device slots and no mother. That is why
+      Phase 6 passed 25/25 twice without catching it, and it is the clearest argument yet that
+      a Mac-green bench does not mean a phase is done.
+      ⚠️ It also **invalidated an earlier conclusion**: this link was first seen after a replug
+      and written off as inert, because a test run *after a panic* showed no `lp-cc`. Ownership
+      was 0 then and `m_launchpad` gates on **channel AND ownership** — two spigots, not one —
+      so that test could not have shown anything either way.
+- [x] **112. ✅ THE REPLUG WATCHDOG — BUILT AND CONFIRMED ON HARDWARE.**
+      `m_launchpad` → `pd watchdog`. **Two mechanisms, because the platforms fail differently:**
+      a **heartbeat** re-asserting Programmer Mode every 2 s (the Mac cannot be fixed by polling —
+      the device answers the inquiry in *either* mode, so a replug is undetectable there), and a
+      **poll** of the universal device inquiry whose silence detects loss on the Organelle, where
+      the replug destroys the ALSA subscriptions outright.
+      ✅ **Measured on the device before building:** `[sysexin]` fires (40 polls, 40 replies, no
+      misses); re-asserting Programmer Mode while already in it **does not disturb the grid** —
+      the assumption the heartbeat rests on; `wire.sh` costs **133 ms**, is idempotent, and does
+      restore the link and resume polling; **ten forks back to back produced no audio complaint**
+      on Pd's console, which is what allows the recovery to fork at all.
+      ⚠️ **`$0-want` is not `$0-own`.** own = the surface IS ours; want = we still INTEND it.
+      Without the split, a panic hands the device back and the heartbeat grabs it again 2 s later.
+      ⚠️ **THE ARMING GATE IS LOAD-BEARING, and the assert layer is what found it.** The first
+      build let three missed polls drop ownership unconditionally — so on any machine with no
+      Launchpad (including the headless gate) the grid went dark 6 s in. **7 of 24 checks failed.**
+      Ownership can now only be dropped after a reply has actually been seen, so a detector that
+      has never proven it works can never blank the grid. No hands-on bench would have caught it.
+      ⚠️ **The first recovery cadence was useless and hardware proved it**: 3 attempts 2 s apart
+      meant giving up **12 s** after the unplug, and the very first test replugged at 10–12 s and
+      missed the window. Now 8 attempts — first at ~14 s, then every 8 s, stopping at ~70 s.
+      ✅ **CONFIRMED 2026-08-04 on the device.** Unplugged, replugged: the Launchpad returned to
+      **Programmer Mode by itself**, `aconnect` showed **4 links** with the Launchpad wired both
+      directions again, and the error log stayed **empty** — it recovered inside the window and
+      never reached the give-up path. **And it came back CORRECT, not merely lit**: one green mode
+      lamp with five dim beside it, the beat row walking, pads reporting `pad-NN`, and the nano's
+      transport keys still moving the lamp. That last part matters — it means `g_grid` repainted
+      from live arbiter state rather than restoring a stale frame.
+      ✅ **THE GIVE-UP PATH IS CONFIRMED TOO.** Left unplugged past the window, `309000 fail
+      m_launchpad grid-lost` appeared in the durable log on the SD card — **once**, not as a
+      repeating stream, so `sel 33` fires exactly on the boundary. Replugging afterwards did
+      **not** recover it: `aconnect` still showed 2 links with the Launchpad unconnected. The
+      bound holds in both directions — it stops forking, and it stays stopped. Recovering from
+      there needs a patch reload, which is the deliberate trade.
+      ✅ `/proc` polling could NOT have avoided the fork: `[text read]` fails on `/proc/asound/cards`
+      with `lseek: Invalid argument`, because Pd seeks to size the file.
+- [ ] **95. ⬜ Full rig: three controllers plus the wifi dongle, powered at once.** Still item 5,
+      still blocked by the cable shortage. **A marginal hub presents as intermittent dropouts, not
+      an obvious failure, so if Phase 6 misbehaves on the device suspect the hub before the code.**
+      ✅ **PARTIAL 2026-08-03: TWO controllers plus the dongle, on a hub, held up.** Launchpad and
+      nanoKONTROL through a USB hub alongside the wifi adapter, across two full sessions, a
+      25-step bench run, a hot replug and sustained 500 BPM clock — **no dropouts and no MIDI
+      misbehaviour attributable to power.** The SP-404 is the one still untried.
+- [x] **96. ✅ The safe exit after the lift — PASSES, and the obvious test is the wrong one.**
+      Confirm the Launchpad returns to Live Mode when the patch ends. The code moved from `u_init`
+      to `m_launchpad` this phase.
+      ⚠️ **`killall pd` DOES NOT TEST THIS.** Tried 2026-08-03: the Launchpad stayed in Programmer
+      Mode with a frozen beat row. That is **not** a failure of the safe exit — it hooks
+      `[r quitting]`, which only `mother.pd` sends, right before mother itself quits Pd. A signal
+      from the shell never produces it and Pd 0.49 has no `closebang`.
+      ✅ **TESTED THE RIGHT WAY 2026-08-03: opening another patch from the Organelle's own menu
+      returned the Launchpad to Live Mode.** That is mother's shutdown path and the only one the
+      design covers. The lift from `u_init` to `m_launchpad` did not break it.
+      ✅ **What the wrong test DID establish, and it matters more:** any exit that is not mother's
+      strands the device — a crash, power loss, or `killall pd`, which the by-hand console
+      workflow in [ref-conventions.md](ref-conventions.md) does every time. The Settings menu is
+      locked out in Programmer Mode, so the front panel cannot recover it.
+      ✅ **Recovery needs no power cycle and no Pd**: `tools/lp-live.sh` sends the Live Mode SysEx
+      with `amidi`, looking the port up by name. Measured bringing a stranded device straight back.
+      ✅ `deploy.sh` is unaffected — it loads via mother's `/loadPatch`, so `quitting` fires.
+- [x] **97. ✅ The boot sequence in its real order.** Measured 2026-08-03 on the by-hand console,
+      twice. Every boot reported `wire.sh: 4 connections`, `m_launchpad-channel: 1` and
+      `m_nano-control-channel: 17` — the channel blocks land correctly, and they did so **even
+      though the ALSA client numbers had swapped between sessions** (Launchpad 28/nano 32 one
+      time, the reverse the next). That is `wire.sh` connecting by NAME doing exactly the job its
+      header says it exists for. `errlog-roll` carried the previous session's lines, and **no
+      `/sdcard/cut-it-err.cur: write failed` appeared**, so the durable error log is real here.
+      ⬜ The OLED half — `modal launchpad` appearing during boot — was read from the console
+      rather than watched on the screen.
 
 ### The Phase 6 procedure, in order
 
@@ -1180,6 +1344,168 @@ again on the hardware, where the additions are:
    anything is flaky, suspect the hub before the code.**
 5. `./tools/fetch-errors.sh` afterwards. The only errors the run should have raised are the two
    `u_bench` ones the bench sends on purpose.
+
+---
+
+## Session 8 — the test suite itself
+
+**Items 98–109.** The benches were reworked to be **stepped by hand** rather than driven on a
+ten-second timer, because the console text and the physical device used to move at the same
+moment. Building that turned up three defects in the measuring rigs and one in `g_grid`; then the
+Launchpad turned out to answer a device inquiry, which a `ref-` doc had flatly denied; and then
+the test that had "measured" the SysEx length limit turned out to be sending illegal bytes.
+
+⚠️ **Two long-standing findings were overturned here, both had been written down as facts, and a
+third had been "measured" three times by three broken rigs and was FLATLY BACKWARDS.** The lesson
+is the one this project keeps relearning: *a measuring rig is code*, and a rig that cannot say what
+it did lets a bug pass for a result. Four separate flaws in one small diagnostic patch — indices
+past 127, a two-element message sent as one, a byte counter that printed 368 times, and every
+button painting the same colour so the second one was invisible — each produced a confident wrong
+answer.
+
+### The Launchpad CAN talk back — and the docs said it could not ✅
+
+`tools/lp-readback.pd`, run on the Mac. ⚠️ **`ref-midi.md` stated as fact that nothing in the rig
+transmits SysEx to Pd. That is false.** The sentence was an inference from two unrelated
+measurements — the nanoKONTROL's stream and Roland's chart for the 404 — and the Launchpad had
+never been checked.
+
+- [x] **98. ✅ `[sysexin]` exists AND fires in Pd 0.49.** It had never been instantiated on this
+      build before. Both `[sysexin]` and `[midiin]` delivered every byte of the reply.
+- [x] **99. ✅ THE LAUNCHPAD ANSWERS A UNIVERSAL DEVICE INQUIRY.** Send `F0 7E 7F 06 01 F7`:
+
+      ```
+      F0 7E 00 06 02 | 00 20 29 | 23 01 | 00 00 | 00 04 06 05 | F7
+                       Novation   family  member   firmware
+      ```
+
+      `00 20 29` is the same manufacturer ID that opens every Launchpad SysEx header.
+
+      **This is the one with consequences.** A device that answers is a device Pd can notice the
+      *absence* of — poll the inquiry, expect a reply — which is the only route to fixing the
+      replug hazard. Costs one round trip per poll against the 96 ALSA writes a second the clock
+      already makes. Design tracked in [plan-v02.md](plan-v02.md).
+- [x] **100. ✅ IT DOES NOT ANNOUNCE A MODE CHANGE.** Returned to Live Mode, then changed between
+      Live modes **by hand on the device**: the console stayed completely silent.
+
+      ⚠️ The first version of this step was impossible and had to be rerun. It asked for a
+      front-panel mode change *while in Programmer Mode*, and **Programmer Mode locks out the
+      device's own buttons** — which this repo already documented. Pressed there they are ordinary
+      CC: `176 93 127` then `176 93 0`.
+
+      **Consequence: there is nothing to listen for, so presence detection has to POLL.**
+- [x] **99b. ✅ The inquiry still answers after an unplug and replug.** Byte-for-byte the same
+      reply. Pd did **not** lose the device across the replug on the Mac.
+
+      **This is the green light for the replug fix**: poll the inquiry, and a Launchpad that has
+      gone and come back answers again. ⬜ Still worth confirming on the Organelle, which reaches
+      the device through `aconnect` by name rather than CoreMIDI.
+- [x] **101. ✅ 99 specs from index 10 paint cleanly.** Everything green from the top row down to
+      the bottom row of the ring, with **the second bottom row at CC 1–8 left dark** — the painted
+      span working exactly as designed. Reproduced across two runs, and it correctly overwrote a
+      pad that a previous run had left flashing.
+- [x] **105. ✅ THERE IS NO CEILING AT 120. A 368-byte message of 120 specs PAINTS — and item 83's
+      "rejected outright" was wrong, along with two later attempts to confirm it.**
+
+      120 specs from index 1, colour red, lit **every button on the surface including the
+      undocumented second bottom row at CC 1–8**. Reproduced across a patch reload.
+
+      | Attempt | What it actually sent | What it looked like |
+      |---|---|---|
+      | `lp-step0.pd`, and item 83 | 120 specs from index 10 → **indices 10–129** | "rejected outright" |
+      | `lp-readback.pd` v1 | same | one pad left **flashing** |
+      | `lp-readback.pd` v2 | bare `120` where `start count` was expected | **nothing at all** |
+      | `lp-readback.pd` v3 | `1 120` — every index ≤ 127 | ✅ **the whole surface painted** |
+
+      ⚠️ **MIDI data bytes are 7-bit.** Index 128 is `0x80`, a Note Off **status** byte, so the
+      first two attempts cut their own SysEx short and the tail was parsed as channel-voice
+      messages. Index 129 is `0x81` — **Note Off on channel 2, the Launchpad's *flashing*
+      channel** — addressing note **21**, which is the colour byte in every spec. That is why it
+      was always the same pad, row 2 column 1: **it was named by a byte meant to be a colour.**
+
+      ⚠️ **The third attempt was worse because it looked like a clean result.** A bare `120`
+      reached `[unpack f f]`, which fires only its left outlet — so *start* became 120 and *count*
+      kept whatever the previous button left. Pressed after step 3 it painted 99 specs from index
+      120 (indices 120–218, almost all status bytes) and the pad blinked again; pressed on its own
+      it painted **zero specs**, and an empty SysEx is indistinguishable from a rejected one.
+      **A bug read as a measurement.**
+
+      ✅ **The engine is verified end to end**: 305 / 368 / 326 / 332 bytes on the wire, each
+      carrying only its own colour, driven through the real message boxes. The patch prints
+      `PAINT-ASKED` and `PAINT-SENT-BYTES` on every press, so an empty message can never again be
+      mistaken for a rejection.
+
+      ⚠️ **A fourth flaw showed up only once the test finally worked**: every button painted the
+      same green, so after one of them covered the surface the next was **invisible**, and "no
+      change" read as "the device refused it" all over again. The buttons now paint distinct
+      colours — green, red, blue, yellow — so each press says something on its own.
+
+      **Novation documents "up to 106" 📄 and this unit exceeds it.** Whether there is a limit
+      further up is unknown and now uninteresting.
+- [x] **109. ✅ THE WHOLE SURFACE FITS IN ONE MESSAGE.** Implied by 105 and stronger than it
+      looks: **CC 101–108 is the first bottom row, i.e. specs 101–108 of the message**, and those
+      lit — so at least 108 specs applied out of 120.
+
+      **The design consequence: widening `g_grid`'s span to cover CC 1–8 would cost one SysEx,
+      not two.** Nothing wants those eight buttons yet, so nothing changes today — but the
+      constraint everyone believed was there is not there.
+- [x] **106. ✅ Nothing is ever volunteered.** The device says nothing at load, nothing when Pd
+      sends it into Programmer Mode or back to Live, and — with item 100 now answered — **nothing
+      when a human changes its mode either.** It speaks only when asked.
+
+      ⚠️ An earlier draft of this item claimed the same thing on much thinner evidence: at that
+      point every event in the run had been *initiated by Pd*, so all that was actually measured
+      was that Pd's own commands go unacknowledged. Item 100 is what closed it.
+- [x] **107. ✅ A malformed SysEx leaves the pipe needing one throwaway message.** After the
+      over-long paint, the first click of *"return to Live Mode"* did nothing and the second
+      worked — reproducibly, both runs. The unterminated SysEx from item 105 is still open
+      somewhere between Pd and the device, so the next `F0` only closes it and the one after
+      starts a clean message. **Not a bug in the mode-change path**, which works first time when
+      nothing malformed precedes it.
+
+### Passed on the Mac
+
+- [x] **102. ✅ An abstraction cannot shadow a built-in class.** A `midiout.pd` on the search path
+      is **ignored**; the same file as `t_midiout.pd` is used. Measured both ways.
+
+      This is why `mac-stubs/` works for `[shell]` — an *external absent on the Mac*, so Pd falls
+      through to a file — and why the assert harness has to **rewrite the object boxes** in a
+      scratch copy instead. `Cut It/` is never touched.
+- [x] **103. ✅ The headless assert layer: 29 checks, 0 failed.** Frame shape and the **1–108**
+      span, the mode lamp index, the modal claiming all **108** specs, `fail` painting red and
+      `warn` painting nothing, the alert expiring back to the modal *underneath* it, the beat row
+      never leaving 11–18, silence after a panic, and `m_launchpad`'s Programmer and Live SysEx.
+      ✅ **Re-run clean after the span widening, the `metro 20` change and the beat-store seed** —
+      29 checks, 0 failed, and the **NOTE is gone**: seeding the beat store at 1 removed the stray
+      index-10 light the layer had been reporting.
+- [x] **104. ✅ The assert layer has been proven to fail.** Reintroducing the one-based beat bug in
+      a scratch copy — the beat-row offset back to `+ 11` — reports
+      `lit outside every region: [(19, 3)]` and exits 1.
+
+      ⚠️ **The three `home-*` checks still passed under that mutation.** That is precisely why
+      *seven beats out of eight looked perfect*: only the six-second beat-row window catches it.
+      **A gate that cannot fail is worth nothing** — re-run the mutation after any change to the
+      analyser.
+
+### Three defects in the measuring rigs, and one in the patch
+
+- ⚠️ **`phase6-bench.pd`'s only automated assertion never fired.** `[r $0-zero]` and `[r $0-read]`
+      existed, the comment beside them claimed the tempo steps drove them, and **nothing anywhere
+      sent to either name.** Same shape as `phase5-bench`'s `[r $0-say]` that was never connected
+      to its `[print]`, one phase later. Now driven from the step table.
+- ⚠️ **`phase5-bench.pd` had the comma bug its own family warns about.** Two escaped commas inside
+      one `PASS IF`, so that line printed as **three fragments**. `\,` satisfies the .pd *parser*;
+      a message box still treats the comma atom as a separator. Re-measured here rather than
+      assumed. It is the only step text that changed in the conversion.
+- ⚠️ **Two of the first assertions I wrote were wrong, not the patch.** One window ran past the
+      point where DSP was enabled so "idle" was not idle; another read the *last* frame of a
+      window the 2 s alert TTL had already expired inside. **A measuring rig is code**, and both
+      would have reported a healthy patch as broken.
+- ⚠️ **`g_grid` lights LED index 10 before the first beat arrives.** The beat store starts at 0 and
+      `0 + 10` is a left-column ring button, so the very first frame has a stray white light.
+      **Cosmetic and Mac-only** — on the device mother enables DSP at 200 ms, so beats are already
+      flowing by the time ownership rises at ~3 s. Reported as a `NOTE` by the analyser rather than
+      a failure, and tracked in [plan-v02.md](plan-v02.md).
 
 ---
 

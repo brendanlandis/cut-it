@@ -233,9 +233,41 @@ either direction. ✅
 | Pad press | Note-on, note `r*10+c`, velocity 1–127 | ✅ |
 | Pad release | Note-off | ✅ |
 | Pad pressure | Polyphonic aftertouch, per pad, simultaneous | ✅ |
-| Function buttons | Control change, see layout below | 📄 |
+| Function buttons | Control change, see layout below | ✅ |
+| **Device inquiry reply** | **SysEx — see below** | ✅ |
 
 Velocity is real — soft presses register as low as 10. ✅
+
+### ⚠️ It answers a device inquiry — and this file used to deny it ✅
+
+**This document previously stated that nothing in the rig transmits SysEx *to* Pd.** That was an
+inference from two unrelated measurements — the nanoKONTROL's stream (measured) and Roland's
+chart for the 404 — and **it is false.** ✅ Measured with `tools/lp-readback.pd`
+([plan-tests.md](plan-tests.md) items 98–99): `[sysexin]` instantiates *and fires* on this Pd
+build, and the Launchpad answers the **universal device inquiry**:
+
+```
+send:   F0 7E 7F 06 01 F7
+reply:  F0 7E 00 06 02 | 00 20 29 | 23 01 | 00 00 | 00 04 06 05 | F7
+                        └ Novation  family  member   firmware
+```
+
+| Field | Value |
+|---|---|
+| Manufacturer | `00 20 29` — Novation. The same three bytes that open every Launchpad SysEx header |
+| Family / member | `23 01` / `00 00` |
+| Firmware | `00 04 06 05` |
+
+**Why it matters beyond trivia: a device that answers is a device Pd can notice the absence of.**
+Poll the inquiry, expect a reply, and a Launchpad that has been unplugged — or bumped out of
+Programmer Mode — stops being invisible. That is the only route to the replug hazard in
+[plan-v02.md](plan-v02.md), and it costs one round trip per poll against the 96 ALSA writes a
+second the clock already makes.
+
+⚠️ **Programmer Mode locks out the device's own mode buttons, so they cannot be used to change
+mode while Pd owns the surface.** Pressed in Programmer Mode they are ordinary CC — measured:
+`176 93 127` then `176 93 0` for the top row. ⬜ Whether the device *announces* a mode change made
+by hand in **Live** Mode is still unmeasured; item 100.
 
 **Polyphonic aftertouch must be enabled on the device**, and it is not the default. Hold
 `Setup`, press the **third Track Select button**, choose *Polyphonic Aftertouch*; the default
@@ -262,10 +294,15 @@ passes ([plan-tests.md](plan-tests.md) item 82). **The documented map was wrong 
 | Bottom row, left→right | CC 101–108 | CC ✅ |
 | **A SECOND bottom row below it**, left→right | **CC 1–8** | CC ✅ — **absent from the documentation entirely** |
 
-⚠️ **The second bottom row is what changed a decision.** Counting it, the whole surface is about
-106 addressable indices — exactly the documented SysEx limit, and 120 specs is *rejected outright*
-on this unit (below). So `g_grid` paints indices **10–108** and leaves CC 1–8 dark: the largest
-span measured good, with the cliff kept at arm's length.
+⚠️ **The second bottom row changed a decision, then changed it back.**
+Counting it, the whole surface is about 106 addressable indices — close to Novation's documented
+"up to 106" SysEx limit 📄, which is why `g_grid` originally stopped at index 10. ✅ **It now
+paints indices 1–108 and CC 1–8 with them**, because that documented limit is not real on this
+unit and an index outside the span can never be cleared.
+
+✅ **That span is a CHOICE, not a limit.** The probe that seemed to find a cliff at 120 was
+sending illegal bytes; a clean 120-spec message paints the whole surface, CC 1–8 included — see
+*lighting* below. Widening the span later costs one SysEx, not two.
 
 ### Receives (Pd → Launchpad): lighting
 
@@ -317,13 +354,33 @@ F0 00 20 29 02 0E 03  <type> <index> <data...>  F7
 
 **RGB components are 0–127, not 0–255.** 📄
 
-✅ **Measured: 99 colour specs in one message works. 120 is REJECTED OUTRIGHT** — the whole
-message is dropped and the surface does not change at all, rather than being truncated.
-[plan-tests.md](plan-tests.md) item 83.
+✅ **Measured: 99 colour specs in one message works**, and so does 120. `g_grid` paints **108**,
+indices 1–108, which includes the second bottom row at CC 1–8.
 
-⚠️ **That failure shape is the important part.** An over-long frame does not paint partially; it
-does not paint. On a display driven by a frame clock that reads as **the grid silently freezing**,
-with nothing in the console to say so.
+✅ **AND SO DOES 120 — the whole surface fits in one message.** This file used to state that 120
+specs are "rejected outright". **That was wrong**, and three separate attempts to confirm it were
+all broken in two different ways, each producing a plausible answer — [plan-tests.md](plan-tests.md)
+items 83 and 105. A clean 368-byte message of 120 specs from index 1 lights **every button
+including the second bottom row at CC 1–8**, reproducibly. Novation documents "up to 106" 📄 and
+this unit exceeds it.
+
+⚠️ **MIDI data bytes are 7-bit, and that is what the broken probes hit.** Counting LED indices
+from 10 reaches index **128** at the 119th spec — `0x80`, a **Note Off status byte** — which cuts
+the SysEx short. The tail is then parsed as channel-voice messages, and index 129 is `0x81`,
+**Note Off on channel 2: the Launchpad's *flashing* channel**, addressing note **21** — which is
+the colour byte in every spec. Hence the reproducible symptom of one pad, always row 2 column 1,
+left flashing when every spec sent was static. **Any probe of this must keep every index ≤ 127.**
+
+⚠️ **A malformed SysEx also leaves the pipe dirty**: the next message sent is swallowed closing
+it, and only the one after that gets through — measured twice (item 107).
+
+✅ **`g_grid` paints 108 specs at indices 1–108, CC 1–8 included.** Widening it cost one SysEx,
+not two. The reason was not that anything wanted those buttons — it is that **LED state survives
+the Programmer Mode switch**, so an index outside the painted span holds whatever Live Mode last
+drew there, forever, in every session.
+
+✅ **Index 0, the Setup button, is outside the span and that one IS a limit** (item 110). A valid
+one-spec frame addressing it lights nothing, and the button transmits nothing in Programmer Mode.
 
 ✅ **The same message lights the ring as well as the pads** (item 84), addressed by the same
 Programmer-Mode index. [tools/lp-flicker.pd](tools/lp-flicker.pd) still sends one message per pad
@@ -626,5 +683,8 @@ the only SysEx it understands.
 
 Anything above marked ⬜ is unresolved, and the work to resolve it is in
 [plan-v02.md](plan-v02.md) under *Open questions*. One note that belongs nowhere else:
-**`[sysexin]` on this Pd build is moot** — nothing in the rig transmits SysEx *to* Pd. Pd only
-ever sends it, to the Launchpad, which works ✅.
+
+✅ **`[sysexin]` is NOT moot, and this file used to say it was.** The Launchpad answers a device
+inquiry — see *It answers a device inquiry* under the Launchpad above. The nanoKONTROL and the
+404 still send none, so the corrected statement is narrower: **the Launchpad is the one device in
+the rig that can talk back to Pd**, and it is also the only one Pd can light.

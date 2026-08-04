@@ -540,9 +540,12 @@ frame after ownership rises IS the clear.**
 ⚠️ **And one place it must NOT copy `g_oled`: the repaint is conditional.** The OLED redraws
 unconditionally at 10 Hz because its frames are cheap local UDP. These are ALSA MIDI writes, and
 ~96 of those a second is the standing suspect for the clock doubling Pd's CPU in Phase 5. The
-frame clock still runs at 10 Hz, but it paints only when a dirty flag is set — **nothing at all
-when idle, about two frames a second at 120 BPM.** Every repaint is one SysEx of 99 colour specs
-covering indices 10–108; the ceiling and why it is not 106 are in
+frame clock runs at **50 Hz**, but it paints only when a dirty flag is set — **nothing at all
+when idle, about two frames a second at 120 BPM.** Every repaint is one SysEx of **108 colour
+specs covering indices 1–108**, 332 bytes. ✅ **The frame clock costs nothing**: it checks the
+flag rather than painting, so the frame count is bounded by the beat rate and never by the
+metro — 10 Hz and 50 Hz measured identical on the device (item 94). It was raised from 10 Hz
+because at 240 BPM a 250 ms beat does not divide into 100 ms, so the row swung ±50 ms. See
 [ref-midi.md](ref-midi.md).
 
 **Every raise and every expiry sets the dirty flag.** A layer falling away changes the frame just

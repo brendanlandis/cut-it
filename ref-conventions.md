@@ -543,9 +543,18 @@ for — and the run-it-yourself trick immediately below, which is better than bo
 "The Organelle has no Pd console" is true only of the **menu-launched** patch, whose stdout goes
 to tty1. Launch it yourself over SSH and you get the real thing:
 
+⚠️ **`killall pd` STRANDS THE LAUNCHPAD IN PROGRAMMER MODE.** The safe exit in `m_launchpad`
+hooks `[r quitting]`, and only `mother.pd` ever sends that — right before *it* quits Pd. A signal
+from the shell never produces it, and Pd 0.49 has no `closebang`, so there is no other hook.
+Programmer Mode locks out the device's own Settings menu, so the grid stays frozen and the front
+panel cannot recover it. **Run `./tools/lp-live.sh` afterwards** — it sends the Live Mode SysEx
+with `amidi`, needs no Pd at all, and was measured recovering a stranded device with no power
+cycle. `deploy.sh` is unaffected: it loads through mother's `/loadPatch`, so `quitting` fires
+normally.
+
 ```sh
 ssh root@organelle.local
-  killall pd; sleep 1
+  killall pd; sleep 1        # ⚠️ then ./tools/lp-live.sh when you are done
   cd /tmp/patch
   nohup pd -nogui -rt -audiobuf 6 -path /root/Pd/externals \
       -path '/sdcard/Patches/!/Cut It' \
@@ -590,11 +599,19 @@ Six phases have used the same shape and it is worth stating rather than rediscov
    /Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio \
        -path mac-stubs -send "pd quit" "Cut It/main-dev.pd"     # silence == pass
    ```
-4. **A `tools/phaseN-bench.pd`** — self-driving, ten seconds a step, a printed `PASS IF` *before*
-   each step **including the ones whose correct result is that nothing happens**, and honest about
-   which steps need hands on hardware. ⚠️ **A measuring rig is code and gets the same scrutiny as
-   the thing it measures**: Phase 5 had two bugs in its own probes, one of which produced a
-   confident wrong answer about the clock.
+4. **A `tools/phaseN-bench.pd`** — a printed `PASS IF` *before* each step **including the ones
+   whose correct result is that nothing happens**, and honest about which steps need hands.
+   **Stepped by hand, never on a timer**: a self-driving bench moves the console text and the
+   physical device at the same moment, so you can read one or watch the other and not both. Press
+   GO to run the described step, press GO again to describe the next. All four are generated from
+   the step tables in `tools/bench_steps.py` — edit those and re-run `tools/bench-gen.py`.
+
+   ⚠️ **A measuring rig is code and gets the same scrutiny as the thing it measures.** Phase 5 had
+   two bugs in its own probes, one of which produced a confident wrong answer about the clock;
+   Phase 6's bench had an automated assertion that **nothing ever drove**, with a comment beside it
+   claiming otherwise. **Where the rig can assert without eyes, make it** —
+   `tools/phase6-assert.sh` rewrites `[midiout]` in a scratch copy so a headless run can read back
+   every byte the patch emits, and it is proven to fail by reintroducing a real bug.
 5. **A verification section separating Mac from device**, so what has actually been proven is never
    in doubt.
 6. **A landing checklist**, and it is not optional — see *Where the abstractions go* and the

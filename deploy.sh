@@ -39,8 +39,16 @@ fi
 # -path mac-stubs supplies do-nothing stand-ins for externals that exist only
 # on the Organelle (currently [shell]). That folder is NOT deployed, so on the
 # device the real externals win — see mac-stubs/shell.pd.
+#
+# -nomidi because this gate reads OUTPUT, and Pd prints a device error at
+# startup whenever its saved MIDI preferences name hardware that is not plugged
+# in — "could not open midi input 0 (...): PortMidi: `Invalid device ID'". That
+# is the Mac's MIDI config, not the patch, and it blocked a deploy the moment
+# the controllers were moved to the Organelle. Object creation does not depend
+# on a device being open, so [midiout] and friends still instantiate and the
+# gate loses nothing.
 check_patch() {
-    out=$("$PD" -nogui -noaudio -path mac-stubs -send "pd quit" "$1" 2>&1) || true
+    out=$("$PD" -nogui -noaudio -nomidi -path mac-stubs -send "pd quit" "$1" 2>&1) || true
     if [ -n "$out" ]; then
         echo "syntax check FAILED: $1" >&2
         echo "$out" >&2

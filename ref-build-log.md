@@ -367,9 +367,14 @@ changed the design:
 
 - **The documented ring map was wrong twice** — a whole second bottom row at **CC 1–8** that no
   documentation mentions, and **CC 90** at the top-left corner where the docs start at 91.
-- **A SysEx of 120 colour specs is rejected outright** — the whole message dropped, not
-  truncated. 99 works. So an over-long frame would fail as a *silently frozen grid*, and
-  `g_grid` paints exactly indices 10–108. Lighting CC 1–8 too would sit at ~106, on the cliff.
+- ⚠️ **"A SysEx of 120 colour specs is rejected outright" — RECORDED AS MEASURED, AND FALSE.**
+  It came from three broken probes: one addressed index 128, which is `0x80`, a status byte that
+  cut its own SysEx short; one sent a bare count and painted zero specs, so an empty message read
+  as a rejection; and one painted the second frame the same colour as the first, so a successful
+  repaint was invisible. ✅ A clean 120-spec message paints the whole surface (items 105, 109).
+  **`g_grid` now paints indices 1–108**, 108 specs, 332 bytes — not for the extra buttons but
+  because LED state survives the Programmer Mode switch, so anything outside the span keeps
+  whatever Live Mode drew there and no repaint can reach it.
 - **The layout-select command does nothing on this unit**, so surface ownership keys off the
   proven Programmer/Live toggle instead of a layout table. Simpler than planned, and measured.
 

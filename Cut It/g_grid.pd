@@ -2,7 +2,7 @@
 #X text 20 20 g_grid -- the Launchpad's 96 LEDs \, and their sole owner. The same arbiter shape as g_oled: layers with a priority and a time to live \, callers pushing SEMANTICS onto the disp bus whenever they have something to say \, and a frame clock that redraws whichever layer is winning. Build the pattern once \, instantiate it twice., f 58;
 #X text 20 170 creation arg 1: the Pd MIDI OUTPUT PORT the Launchpad is on -- 1 on the Organelle. inlet 0: surface ownership from m_launchpad \, 1 while we are in Programmer Mode. inlet 1: the beat number within the bar \, from the c_clock instance in u_root. outlets: none., f 58;
 #X text 20 320 ONE DEVIATION FROM g_oled \, AND IT IS THE INTERESTING ONE. Whole-surface arbitration is right for a 128x64 screen and wrong for a grid \, where the natural idiom is REGIONS. So home is a COMPOSITE -- the mode lights along the top and the beat row along the bottom \, because both belong to normal operation -- while modal and alert take the whole surface. The cascade is unchanged \; the composition happens inside the layer that never expires., f 58;
-#X text 20 520 WHO OWNS WHAT \, because two files send bytes to this device. g_grid owns the LEDs \; m_launchpad owns the MODE and the layout. Those are different surfaces and each has exactly one writer \, which is the rule. m_launchpad lights nothing at all: the first frame after ownership is raised paints all 99 indices \, so the mandatory init clear IS that frame and there is no separate clear to keep in step., f 58;
+#X text 20 520 WHO OWNS WHAT \, because two files send bytes to this device. g_grid owns the LEDs \; m_launchpad owns the MODE and the layout. Those are different surfaces and each has exactly one writer \, which is the rule. m_launchpad lights nothing at all: the first frame after ownership is raised paints all 108 indices \, so the mandatory init clear IS that frame and there is no separate clear to keep in step., f 58;
 #X obj 20 720 inlet;
 #X obj 400 720 inlet;
 #X obj 20 780 change -1;
@@ -17,7 +17,7 @@
 #X obj 560 890 s \$0-dirty;
 #X text 760 720 OWNERSHIP GOES THROUGH change -1 \, so re-asserting it costs nothing \, and a 0 to 1 transition sets the dirty flag -- because while we did not own the surface the device was redrawing it and whatever we last sent is gone. THE -1 IS LOAD-BEARING for the same reason it is in u_level and m_organelle: a bare change starts life holding 0 and would swallow a real 0., f 50;
 #X obj 20 1080 array define \$0-surface 109;
-#X text 20 1140 THE FRAME BUFFER \, one cell per Programmer-Mode index. Only 10 to 108 are ever used -- the paint subpatch says why that span and not the whole surface., f 58;
+#X text 20 1140 THE FRAME BUFFER \, one cell per Programmer-Mode index. 1 to 108 are used -- cell 0 is allocated and deliberately never written \, because the Setup button is measured to take no colour. The paint subpatch says why., f 58;
 #N canvas 30 30 1900 1000 disp-in 0;
 #X text 20 20 g_grid RIDES THE disp BUS under ONE reserved selector \, grid \, and routes its own vocabulary underneath. That costs two lines in g_oled -- grid appended to its route and the reject moved along -- exactly what led cost in Phase 5 \, and it keeps every display request for every surface in one log stamped with one frame number., f 58;
 #X text 20 150 NO list append BEFORE THE SECOND ROUTE. grid modal 45 arrives out of the first route with modal already AS the selector \, which is the shape the second route wants. Same fact as g_led \, and a list append here would break every match., f 58;
@@ -195,11 +195,11 @@
 #X msg 620 330 0;
 #X obj 20 430 t b b f;
 #X obj 20 510 f;
-#X msg 300 490 99;
+#X msg 300 490 108;
 #X obj 300 550 until;
 #X obj 300 610 f;
 #X obj 460 670 + 1;
-#X obj 300 670 + 10;
+#X obj 300 670 + 1;
 #X obj 300 730 t b f;
 #X obj 300 800 tabwrite \$0-surface;
 #X msg 620 490 0;
@@ -237,7 +237,7 @@
 #X msg 860 740 1;
 #X obj 860 800 tabwrite \$0-surface;
 #X obj 1280 310 t b;
-#X obj 1280 370 f;
+#X obj 1280 370 f 1;
 #X obj 1420 330 r \$0-beat;
 #X obj 1280 430 + 10;
 #X obj 1280 490 t b f;
@@ -292,7 +292,7 @@
 #X connect 36 0 37 0;
 #X connect 37 0 38 0;
 #X restore 900 330 pd regions;
-#X text 900 430 THE FILL IS THE CLEAR. Every frame writes all 99 cells before anything else \, so there is no separate blank step to forget and no way for a stale pad to survive a layer change. t b b f sets the colour into its cold store FIRST \, off the rightmost outlet \, then resets the counter \, then runs the loop., f 50;
+#X text 900 430 THE FILL IS THE CLEAR. Every frame writes all 108 cells before anything else \, so there is no separate blank step to forget and no way for a stale pad to survive a layer change. t b b f sets the colour into its cold store FIRST \, off the rightmost outlet \, then resets the counter \, then runs the loop., f 50;
 #X text 900 600 The counter reset is a message box into the cold inlet off the trigger's rightmost outlet \, so a loop can never start from wherever the last one stopped -- the reset-to-23 lesson from u_tempo \, in its simplest form., f 50;
 #X connect 1 0 4 0;
 #X connect 2 0 5 0;
@@ -319,8 +319,8 @@
 #X restore 20 1580 pd prepare;
 #X text 280 1614 fills the frame buffer from whichever layer won -- emits nothing, f 50;
 #N canvas 30 30 2000 1150 paint 0;
-#X text 20 20 THE ONLY THING IN Cut It THAT SENDS TO THESE LEDs. One SysEx per repaint \, carrying the whole span: the header \, then 99 times a type byte \, an index and a colour \, then 247., f 58;
-#X text 20 140 THE SPAN IS 10 TO 108 \, AND THAT IS A MEASURED CEILING RATHER THAN A TIDY ROUND NUMBER. 99 specs in one message is accepted on this unit \; 120 is REJECTED OUTRIGHT -- the whole message is dropped rather than truncated \, so an over-long frame would show up as the grid silently freezing. 10 to 108 covers the 8x8 grid \, both side columns \, the top row and the lower of the two bottom rows. THE EIGHT BUTTONS AT INDEX 1 TO 8 ARE DELIBERATELY OUTSIDE IT: lighting those as well would put the count at about 106 \, which is the documented limit and far too close to a cliff that fails silently., f 58;
+#X text 20 20 THE ONLY THING IN Cut It THAT SENDS TO THESE LEDs. One SysEx per repaint \, carrying the whole span: the header \, then 108 times a type byte \, an index and a colour \, then 247. 332 bytes., f 58;
+#X text 20 140 THE SPAN IS 1 TO 108 -- 108 SPECS -- AND IT IS EVERY BUTTON THE DEVICE WILL TAKE. It used to stop at 10 on the belief that 120 specs were REJECTED OUTRIGHT and that 106 was a documented cliff which failed silently. BOTH WERE WRONG: that came from three broken probes \, and a clean 120-spec message paints the whole surface. plan-tests.md items 105 and 109. THE REASON TO COVER THE WHOLE SPAN IS NOT NEATNESS \, IT IS THAT AN INDEX OUTSIDE IT CAN NEVER BE CLEARED. LED state survives the Programmer Mode switch \, so whatever Live Mode last drew on CC 1 to 8 persisted into every session and no repaint could touch it -- measured twice \, green one run and dark the next \, with nothing here changing between them. INDEX 0 \, THE SETUP BUTTON \, IS OUTSIDE ON PURPOSE AND THAT ONE IS MEASURED: a valid one-spec frame addressing it lights nothing and the button transmits nothing in Programmer Mode. Item 110., f 90;
 #X obj 20 420 inlet;
 #X obj 20 480 t b b b b;
 #X msg 20 560 247;
@@ -328,11 +328,11 @@
 #X msg 300 560 240 \, 0 \, 32 \, 41 \, 2 \, 14 \, 3;
 #X obj 300 620 s \$0-byte;
 #X msg 700 480 0;
-#X msg 900 560 99;
+#X msg 900 560 108;
 #X obj 900 620 until;
 #X obj 900 680 f;
 #X obj 1060 740 + 1;
-#X obj 900 740 + 10;
+#X obj 900 740 + 1;
 #X obj 900 800 t f f b;
 #X msg 1320 870 0;
 #X obj 1320 930 s \$0-byte;
@@ -360,10 +360,10 @@
 #X connect 15 0 16 0;
 #X connect 18 0 19 0;
 #X restore 700 1660 pd paint;
-#X text 960 1694 one SysEx \, 99 specs \, indices 10 to 108, f 50;
+#X text 960 1694 one SysEx \, 108 specs \, indices 1 to 108, f 50;
 #X obj 1500 780 loadbang;
 #X obj 1500 840 del 400;
-#X obj 1500 890 metro 100;
+#X obj 1500 890 metro 20;
 #X obj 1500 950 f;
 #X obj 1660 910 r \$0-dirty;
 #X obj 1500 1010 select 1;

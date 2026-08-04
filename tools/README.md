@@ -5,7 +5,9 @@ Standalone Pd patches for testing the rig. **Not** Organelle patches — they do
 that `print` output is visible, which matters because the Organelle launches Pd with `-nogui`
 and there is no console otherwise.
 
-All authored by hand in Pd 0.49 format. Do not open them in plugdata — see
+Hand-authored in Pd 0.49 format except the four benches and two rigs that are **generated** —
+`bench-gen.py`, `lp-readback-gen.py` and `phase6-assert-drive-gen.py` write them, and the `.pd`
+is an output. Edit the generator. Do not open any of it in plugdata — see
 [../CLAUDE.md](../CLAUDE.md).
 
 | Patch | What it does |
@@ -15,6 +17,7 @@ All authored by hand in Pd 0.49 format. Do not open them in plugdata — see
 | `lp-monitor.pd` | Puts the Launchpad in Programmer Mode, echoes pad presses back as LEDs, prints velocity and polyphonic aftertouch. |
 | `lp-flicker.pd` | Fills the Launchpad with random monochrome noise via per-pad RGB SysEx. Press any pad to toggle grey ↔ blue. Demo, but a working reference for RGB SysEx and `until` loops. |
 | `lp-modes.pd` | Lights three pads static / flashing / pulsing — the device's three LED animation modes. |
+| `lp-readback.pd` | **Can the Launchpad talk back to Pd?** `[sysexin]`, a universal device inquiry, a front-panel mode change and a rejected 120-spec frame. Items 98–101 — see *lp-readback.pd* below. |
 | `lp-step0.pd` | **Phase 6's Step 0 measurements, in one patch** — items 82–87. Prints incoming notes, **CC** and aftertouch with their channel, sends a batch colour SysEx of 64 / 99 / 120 specs, and switches layout. `lp-monitor.pd` cannot answer item 82 because it has no `[ctlin]`. Run it on the **Mac** with the Launchpad plugged in, in the foreground. |
 | `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
 
@@ -26,7 +29,7 @@ and `mode`, exactly as a controller would.
 
 | Patch | What it does |
 |---|---|
-| `phase3-bench.pd` | **The acceptance run, self-driving.** Fourteen steps, 10 s apart, ~3 minutes. Each prints what it is sending and a **PASS IF** line *before* the screen moves — including the steps whose correct result is that nothing happens, which are otherwise impossible to mark off. Run it in the **foreground** and watch the OLED. |
+| `phase3-bench.pd` | **The acceptance run.** Fourteen steps, **stepped by hand** — see *The benches are stepped by hand* below. Each prints what it is sending and a **PASS IF** line *before* the screen moves, including the steps whose correct result is that nothing happens. Run it in the **foreground** and watch the OLED. |
 | `phase3-diag.pd` | Counts rather than dumps. `FRAMES` and `MESSAGES` are cumulative totals printed once a second, so the rate is the gap between lines — expect +10 and +100. Printing every OSC message instead would slow down the thing being measured. |
 | `alert-buffer-probe.pd` | ✅ **Answered:** draws into the ALERT buffer (screen 4), `setscreen 4`, waits six seconds, `setscreen 3`. All of it works — but `g_oled` still doesn't use buffer 4, for the reasons in [ref-display.md](../ref-display.md). Keep it as the re-check if that ever gets revisited. |
 
@@ -112,7 +115,7 @@ selector rules, `sendtyped` arity, `quitting`) are in
 
 ### `phase4-bench.pd` — the Phase 4 acceptance run
 
-Same shape as `phase3-bench.pd`: self-driving, ten seconds a step, and a printed `PASS IF` for
+Same shape as `phase3-bench.pd`: eighteen steps, stepped by hand, and a printed `PASS IF` for
 every step **including the ones whose correct result is that nothing happens**. Load it as a third
 patch after `mother.pd` and `main.pd`. Steps 1–14 drive themselves off the `disp`, `err` and `mode`
 buses; **15–17 need your hands on the nanoKONTROL**, because nothing but the real controller can
@@ -129,10 +132,15 @@ assertions, re-run because the param layer they sit next to was rewritten.
 
 ### `phase5-bench.pd` — the Phase 5 acceptance run
 
-Same shape again: self-driving, ten seconds a step, a printed `PASS IF` before each one. Fifteen
-steps covering the clock, the transport, the map and the aux LED. **Steps 1–12 drive themselves;
-13 and 14 need your hands on the Organelle itself** — the aux button and knob 1 are the only
-controls involved, and neither exists on a laptop. Step 15 just says to stop.
+Same shape again: fifteen steps, stepped by hand, a printed `PASS IF` before each one, covering
+the clock, the transport, the map and the aux LED. **Steps 1–12 drive themselves; 13 and 14 need
+your hands on the Organelle itself** — the aux button and knob 1 are the only controls involved,
+and neither exists on a laptop. Step 15 just says to stop.
+
+⚠️ **One line of its text changed in the conversion, and it was a bug fix.** The aux step carried
+two escaped commas inside its `PASS IF`. `\,` satisfies the .pd *parser*, but a message box still
+treats the comma atom as a separator — so that line printed as **three fragments**. Both are now
+` -- `. Everything else survived verbatim, which `bench-verify.py` proves.
 
 **It finds `c_clock` itself**, through `#X declare -path ../Cut\ It` — the escaped space survives
 Pd's parser ✅ — so opening it straight from Pd's File menu works and no `-path` is needed. If the
@@ -195,34 +203,120 @@ power-cycling the Organelle does not reload the patch). It also md5-compares the
 against the repo and says so loudly if they differ, because an error from a build you no longer have
 is a trap.
 
-## Phase 6
+## The benches are stepped by hand
+
+**All four benches are generated by `bench-gen.py` from the step tables in `bench_steps.py`.**
+Edit the table and re-run the generator; **never edit a `phaseN-bench.pd`.**
+
+```sh
+python3 tools/bench-gen.py        # writes all four
+python3 tools/bench-verify.py     # proves the step text survived
+```
+
+They no longer drive themselves on a timer. The old shape put the console text and the physical
+device in motion **at the same moment**, so you could read one or watch the other and not both.
+Now:
+
+```
+press GO  →  the step that was just described runs
+press GO  →  the next step is described, and nothing moves
+```
+
+The prompt line always says what the next press will do, so **one control is enough** — which is
+what makes the device half work at all, since the Organelle's encoder click is the only free
+control there is.
+
+| GO | |
+|---|---|
+| the `bng` at the top of the patch | Mac |
+| **the Organelle's encoder click** | both — `u_mother-stub` sends `encbut` on the Mac, and nothing in Cut It consumes it |
+| `echo "go;" \| nc -u -w0 organelle.local 9998` | device, from the SSH window |
+
+Turning the encoder **repeats** the current step without advancing — for when you looked away.
+
+⚠️ **A timed assertion starts its clock at RUN, not at the press after it.** A step that zeroes a
+beat counter arms a 10 s window, latches the count and prints it, so the number covers exactly ten
+seconds however long you take to judge the step. The latch starts at **-1**, so a count read before
+its window closed says so instead of lying.
+
+⚠️ **On the Mac, tick `enable-DSP` first.** `c_clock` hangs off `threshold~`, so with DSP off the
+beat row never moves and every count reads 0 — which looks exactly like a dead clock.
 
 ### `phase6-bench.pd` — the Phase 6 acceptance run
 
-Same shape again: self-driving, ten seconds a step, a printed `PASS IF` before each one
-**including the steps whose correct result is that nothing happens**. Sixteen steps covering the
-mode bus, the grid arbiter, the layer priorities and TTLs, the first `c_clock` instance and the
-safe exit. **Steps 12, 13 and 15 need your hands** — nothing but the real controllers can
-exercise `notein` and `ctlin`.
+**Twenty-five steps** covering the mode bus, the grid arbiter, the layer priorities and TTLs, the
+first `c_clock` instance, the ring map and the safe exit. Steps needing hands are marked in their
+own prompt line.
 
-⚠️ **It is generated by `phase6-bench-gen.py`, not hand-authored.** Sixteen near-identical steps
-is exactly where box indices drift, and this file was written by a script for the same reason
-`pd-layout-check.py` exists. **Edit the generator and re-run it, never the `.pd`.** The generator
-also asserts that no step string contains a comma or a semicolon, which is the trap that produced
-fourteen message fragments on the first run — see the Phase 6 section of
-[../ref-build-log.md](../ref-build-log.md).
+⚠️ **Its beat counter used to be dead.** `[r $0-zero]` and `[r $0-read]` existed, the comment beside
+them claimed the tempo steps drove them, and **nothing anywhere sent to either name** — so the one
+automated assertion in the Phase 6 bench never fired. Same shape as `phase5-bench`'s `[r $0-say]`
+that was never connected to its `[print]`. Fixed by driving them from the step table.
 
-**Watch the Launchpad, not the screen.** The one automated assertion is the beat counter, which
-prints `BEATS` for the ten seconds either side of the tempo change — expect about 20 then about
-40. Everything else about a grid is visual by nature: **there is no way to read back what the
-LEDs are actually showing**, so this bench proves the cases it contains and nothing more.
+⚠️ **The panic step hands the surface back and the grid does not come back.** Nothing re-enters
+Programmer Mode except `u_init`'s boot, so the grid stays the device's own until you reload.
+Deliberate, and stated in the step.
 
-⚠️ **On the Mac, tick `enable-DSP` first.** `c_clock` hangs off `threshold~`, so with DSP off the
-beat row never moves and both `BEATS` counts read 0 — which looks exactly like a dead clock.
+## `phase6-assert.sh` — the headless gate, no eyes and no hardware
 
-⚠️ **Step 14 raises a panic, and the grid does not come back.** Panic returns the Launchpad to
-Live Mode, and nothing re-enters Programmer Mode except `u_init`'s boot sequence — so the grid
-stays the device's own until the patch is reloaded. Deliberate, and stated in the step.
+```sh
+./tools/phase6-assert.sh            # ~45 s, exits non-zero on any failure
+./tools/phase6-assert.sh --keep     # and leaves the byte capture to read
+```
+
+**This is the part that asserts what the grid is actually showing.** `phase6-bench.pd` used to
+claim in its own header that *"there is no way to read back what the LEDs are actually showing"* —
+too strong, and it conflated three different things. Pd cannot ask the Launchpad what is lit, but
+**the bytes the patch sends are completely knowable**, and that is the right level to test our own
+code at.
+
+| Piece | |
+|---|---|
+| `test-stubs/t_midiout.pd` | a stand-in for `[midiout]` that prints every byte with its port |
+| `phase6-assert-drive.pd` | the timed driver — pushes onto the buses and prints a `MARK` before each window. Generated by `phase6-assert-drive-gen.py` |
+| `phase6-assert.py` | reassembles the SysEx frames and does all the reasoning |
+| `phase6-assert.sh` | copies the patch to a scratch dir, rewrites the `[midiout]` boxes, runs it, pipes the capture to the analyser |
+
+⚠️ **The stand-in cannot be supplied by search path.** `mac-stubs/` works because `shell` is an
+*external absent on the Mac*, so Pd falls through to an abstraction. `midiout` is a **built-in
+class**, and Pd resolves the class table before it looks for a file — ✅ measured both ways, and a
+`midiout.pd` on the path is simply ignored. So the object name has to change, which means
+rewriting the box. **`Cut It/` is never touched**; the scratch copy is thrown away.
+
+The script counts the boxes it rewrote and **refuses to run if it found none** — otherwise every
+assertion would pass vacuously, which is worse than failing.
+
+**29 checks**: frame shape and the 1–108 span, the mode lamp index, the modal claiming all 108
+specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
+underneath, the beat row never leaving 11–18, the grid going silent after a panic, and
+`m_launchpad`'s Programmer and Live SysEx.
+
+✅ **It has been proven to fail.** Reintroducing the one-based beat bug in a scratch copy — the
+beat-row offset back to `+ 11` — makes it report `lit outside every region: [(19, 3)]` and exit 1.
+⚠️ **The three `home-*` checks still passed under that mutation**, which is exactly why *seven
+beats out of eight looked perfect*: only the six-second beat-row window catches it. A gate that
+cannot fail is worth nothing, so re-run that mutation if you ever change the analyser.
+
+### `lp-readback.pd` — can the Launchpad tell Pd anything at all?
+
+Hands-on, on the Mac with the Launchpad on slot 1. `ref-midi.md` states that nothing in the rig
+transmits SysEx *to* Pd — ⚠️ **that has never been measured for the Launchpad, and `[sysexin]` has
+never been instantiated on this build.** Items 98–101: does `[sysexin]` fire, does the device
+answer a universal inquiry, does it announce a front-panel mode change, and does a rejected
+120-spec frame differ from an accepted 99-spec one.
+
+Every clickable control is one left-hand column in procedure order. Nothing here touches Cut It.
+
+### `phase6-cpu.sh` — the repaint budget on the device
+
+```sh
+./tools/phase6-cpu.sh -n 3
+```
+
+plan-tests.md item 94. Wraps the `/proc` arithmetic from [../ref-hardware.md](../ref-hardware.md)
+→ *Measuring the running patch* and says WITHIN or OVER against the **11.2 %** budget — Phase 5's
+10.2 % idle baseline plus one point. ⚠️ `pgrep -nx pd`, never a bare `pgrep`: the substring match
+hits a kernel thread on this device.
 
 ### `lp-step0.pd` — the Phase 6 Step 0 measurements
 
@@ -258,7 +352,72 @@ which resolves from `tools/` on the Mac but not from `/tmp/` on the device. With
 fails to create and both its counts read **0** — which looks exactly like a dead clock rather than
 a missing search path.
 
-Restore normal operation afterwards with `./deploy.sh`, which reloads through the menu path.
+⚠️ **THE ENCODER DOES NOT ADVANCE A BENCH ON THE DEVICE.** The plan that chose a single
+alternating control assumed it would. `mother` forwards `encbut` only to patches that have sent
+`/enableEncoder`, and **nothing in Cut It ever does** — `m_organelle` leaves the encoder out
+deliberately. On the Mac `u_mother-stub` sends it unconditionally, which is what hid this. Use:
+
+```sh
+./tools/go.sh              # one GO
+./tools/go.sh -n 25        # walk the bench forward
+```
+
+⚠️ **Not netcat.** The benches used to print `echo "go;" | nc -u -w0 organelle.local 9998`, and on
+macOS that **silently does nothing** — BSD `nc` exits before the datagram is flushed at `-w0`, and
+`-w1` was measured to fail too, while the port *is* bound and the bench *is* fine. It looks exactly
+like a dead bench. The device cannot send to itself either: busybox here has no `nc` at all.
+
+⚠️ **`killall pd` strands the Launchpad in Programmer Mode** — see `lp-live.sh` below. Restore
+normal operation with `./deploy.sh`, which reloads through the menu path and *does* run the safe
+exit.
+
+**Three of these already live on the device**, left there deliberately after the Phase 6 hardware
+run: `/sdcard/phase6-bench.pd`, `/sdcard/dsp-toggle.pd` and `/sdcard/lp-poll-probe.pd`. They sit
+*outside* the patch folder, so `deploy.sh` never touches them and they cannot affect what loads.
+Re-`scp` only if you have changed them locally.
+
+### `go.sh` — the only way to drive a bench on the Organelle
+
+One UDP datagram to the bench's `[netreceive 9998]`. Python's socket send rather than netcat, for
+the reason above. `-n N` fires N of them half a second apart, which is how you walk a bench to a
+particular step without judging every one on the way.
+
+### `dsp-toggle.pd` + `dsp.sh` — turn the audio engine off on a running patch
+
+```sh
+./tools/dsp.sh 0     # off
+./tools/dsp.sh 1     # on
+```
+
+Load `dsp-toggle.pd` as a third patch beside `mother.pd` and `main.pd`. It touches no bus and owns
+no surface; all it can do is set Pd's global DSP state.
+
+**Why it exists.** Item 75 recorded that the Phase 5 clock roughly doubled Pd's CPU and blamed the
+96 ALSA MIDI writes a second — marked ⬜ *not confirmed by isolation*. This is that isolation, and
+it overturned the conclusion: **DSP on 11.8 %, DSP off 4.9 %**, so the DSP costs **6.9 points** and
+the MIDI clock **0.43**. Wrong by a factor of sixteen.
+
+⚠️ **With DSP off the patch is silent and the beat row freezes** — `c_clock` is cut from a phasor,
+so the grid stops walking and the transport stops counting. Expected, not a fault.
+
+### `lp-live.sh` — rescue a Launchpad stranded in Programmer Mode
+
+```sh
+./tools/lp-live.sh
+```
+
+Sends the Live Mode SysEx with `amidi`, **needs no Pd at all**, and looks the port up by name
+because `hw:N` numbering shifts like the ALSA client numbers do.
+
+**Why it is needed.** `m_launchpad`'s safe exit hooks `[r quitting]`, which only `mother.pd` sends
+— right before mother itself quits Pd, with a 100 ms budget. Pd 0.49 has no `closebang`, so that is
+the only shutdown hook there is. **Every other way a session can end leaves the device stranded**: a
+crash, power loss, or `killall pd` — which the by-hand console workflow does every single time.
+Programmer Mode locks out the Launchpad's own Settings menu, so the front panel cannot recover it.
+
+Measured 2026-08-03: `killall pd` left the grid frozen in Programmer Mode, and this brought it back
+with no power cycle. `deploy.sh` is unaffected — it loads through `/loadPatch`, so `quitting` fires
+normally.
 
 ### Re-running `m_nano`'s decode test without the hardware
 

@@ -81,9 +81,10 @@ whether they work.
   OLED            aux LED          Launchpad
 ```
 
-⚠️ **This diagram is the target, not the current state.** ✅ Everything in it exists except `u_net`
-(Phase 7) and `u_state` (Phase 8) — `m_launchpad` and `g_grid` arrived in Phase 6, along with the
-first `c_clock` instance the diagram never showed. The allowlist in [ref-conventions.md](ref-conventions.md) is the authority on
+⚠️ **This diagram is the target, not the current state.** ✅ Everything in it exists except
+`u_state` (Phase 8). `m_launchpad` and `g_grid` arrived in Phase 6 along with the first `c_clock`
+instance the diagram never showed, and Phase 7 added **`u_net`, a fourth display surface the
+diagram does not draw** — it consumes `disp` beside the three arbiters and owns the phone. The allowlist in [ref-conventions.md](ref-conventions.md) is the authority on
 which buses actually exist.
 
 **The `m_` layer is the load-bearing boundary.** Nothing below it knows a nanoKONTROL exists. A
@@ -102,31 +103,15 @@ one boundary that is genuinely expensive to retrofit.
 | 4 | ✅ hardware | nanoKONTROL, persistent error log, multi-parameter display |
 | 5 | ✅ hardware | Clock and transport |
 | 6 | ✅ hardware | Launchpad, the grid arbiter, the `mode` driver, the replug watchdog |
-| **7** | **next** | **Phone status link** |
-| 8 | | State and presets |
+| 7 | ✅ hardware | Phone status link, the coalescer and the reconnect |
+| **8** | **next** | **State and presets** |
 
-Details of 0–6, and every correction they produced, are in
+Details of 0–7, and every correction they produced, are in
 [ref-build-log.md](ref-build-log.md). **Read its corrections before writing any Pd** — most of
 them were found by measuring something a plan had asserted, and one of them by measuring the
 thing that did the measuring.
 
 ---
-
-## Phase 7 — Phone status link
-
-`u_net`
-
-Promotion of `tools/status-display/` to an abstraction. Subscribes to `disp` and forwards over
-`[netsend -u]`, plus the heartbeat.
-
-**State never events; fire and forget; the Organelle never waits.** Rate limiting lives here,
-not in the callers.
-
-**Done when:** every parameter shown on the OLED also reaches the phone, and pulling the plug
-shows `NO-LINK` within 1.5 s.
-
-📋 **The execution plan is [plan-phase7.md](plan-phase7.md)** — steps, constraints and risks.
-Open questions stay here.
 
 ## Phase 8 — State and presets
 
@@ -191,20 +176,30 @@ Y-cable; procedure in [plan-tests.md](plan-tests.md) Session 3, items 12–13.
 
 ### Stage-readiness — the phone link
 
-Everything about the PdParty display works ✅ except what makes it trustworthy in a venue.
-Phase 7 or later:
+Everything about the PdParty display works ✅. **Two counts are left and neither is code** — Phase 7
+closed the other two, and added self-recovery on top:
 
-- **Organelle as its own access point.** `hostapd` and `dnsmasq` are installed and the chip
-  supports AP mode ✅, but it has never been configured ⬜. It removes the venue-WiFi dependency
-  and is the last thing between the phone display and being stage-worthy.
-  [plan-tests.md](plan-tests.md) Session 5 — read its warning first, since bringing up an AP
-  drops SSH.
-- **Rate limiting on the wire.** Every CC change currently sends a packet, so a fast fader sweep
-  floods. Needs coalescing to ~20 Hz with a guaranteed trailing edge. The OLED gets this free
-  because layers hold state; the phone link does not.
-- **Phone hardening.** Auto-Lock Never ✅; Do Not Disturb and Guided Access still to set.
-- **Cosmetic.** The value is an `nbx`, which draws box chrome around the number; a `cnv` label
-  through `[makefilename %g]` would be pure text. Dynamic labels are proven ✅.
+- **A self-contained network, so the link does not depend on venue WiFi.** Two routes, and the
+  cheap one should be tried first:
+
+  1. **The phone's own hotspot.** ✅ The mechanism is now known and it is trivial: credentials live
+     in `$USER_DIR/wifi.txt` as plain SSID/password line pairs, `/sdcard` is `rw`, so adding a
+     network is appending two lines — see [ref-hardware.md](ref-hardware.md). **SSH survives**,
+     the Organelle falls back to the home network if the hotspot is absent, and it is reversible.
+     ⚠️ **Needs cellular, so it cannot be combined with airplane mode** — the two are mutually
+     exclusive, which makes Do Not Disturb load-bearing rather than optional. ⬜ Untested: iOS
+     hotspots can power down, and the phone becomes both the network and the display.
+  2. **Organelle as its own access point.** `hostapd` and `dnsmasq` are installed and the chip
+     supports AP mode ✅, never configured ⬜. Fully self-contained — no cellular, no second
+     device. ⚠️ **Bringing up an AP drops SSH**, so read [plan-tests.md](plan-tests.md) Session 5's
+     warning first and give it its own session.
+
+  ⚠️ **Either one is a free diagnostic for item 81.** If the roughly hourly wifi drop still happens
+  on a network the venue is not providing, the cause is the dongle or power rather than the access
+  point — and item 81 is currently unattributed. It is the one fault that could take the display
+  down mid-set, and it would look exactly like a `u_net` bug.
+- **Phone hardening.** Auto-Lock Never ✅; Do Not Disturb and Guided Access still to set. Guided
+  Access is what stops a notification or a stray tap dropping you out of the scene mid-performance.
 
 ### Still to acquire
 

@@ -536,6 +536,89 @@ This is the part worth carrying into Phase 7.
 - **Hands** found the phantom `lp-cc` and the stranded Launchpad. Both needed somebody to do an
   ordinary thing — move a fader, quit the patch — and look at what happened.
 
+## Phase 7 — the phone status link
+
+`u_net`, the fourth display surface. Promotion of `tools/status-display/` to an abstraction that
+obeys the conventions: a consumer of `disp`, sole owner of the phone, rate-limited internally so
+no `m_` layer and no `u_map` branch learns a phone exists.
+
+**Built, deployed and verified on hardware in one session.** 28 headless checks, a 15-step bench
+that passed 15/15 on the device, and a cost of **0.2 CPU points and about 4 UDP datagrams a
+second**.
+
+### Step 0 changed the design, as it has in every phase
+
+⚠️ **A UDP `connect` to a host that is up with nothing listening SUCCEEDS, delivers exactly one
+datagram, and is then destroyed by the ICMP port-unreachable that comes back** — after which every
+`send` is discarded in silence. The first build had no reconnect, which would have left the link
+dead for a whole set with three lines on a console the device does not have. **The reconnect is the
+feature, not a nicety.**
+
+Two smaller ones, both of which would have cost time later:
+
+- **`oscformat`'s two spellings are identical.** The prototype used `[oscformat /cutit/hb]` *and*
+  `[oscformat cutit param]` in one file, and since the help patch shows args being joined with
+  slashes, the first looked like it had to be producing `//cutit/hb`. Byte-for-byte it is not — Pd
+  splits the args itself. **The inconsistency is cosmetic; do not "fix" it expecting a change.**
+- **`disp` is silent at rest and 402 messages a second under one moving knob** — half of them
+  `status`, because knob 1 is master tempo and `u_tempo` writes the BPM into the footer. **So
+  `status` needed its own rate limit**, which the plan had not called for.
+
+### The gate got its can-it-fail proof for free
+
+`phase6-assert.sh` had to demonstrate it could fail by reintroducing a real bug afterwards. This one
+did not: **`u_net` was built plumbing-first with no coalescer**, and that build failed **exactly the
+three rate ceilings** — 401, 802 and 401 packets — while every shape check passed. The per-name
+store took those to 42, 84 and 42.
+
+It is also much cheaper than Phase 6's. `[midiout]` is a built-in class with no side channel, so
+that gate rewrites boxes in a scratch copy. **`u_net` already emits to a socket**, so the gate
+points it at `127.0.0.1` and reads real datagrams. Nothing is rewritten and `Cut It/` is never
+touched.
+
+### Four things the device found that the Mac could not
+
+- ✅ **The ICMP teardown holds on Linux/ARM** — errno **111**, where macOS gave 61 — **and the
+  reconnect recovers the link unaided**: 12 attempts, 11 refusals, the 12th stuck, with nothing
+  touched on the Organelle. `net-link-down` was raised **once** across the whole outage rather than
+  once per retry, which is Phase 4's one-fork-per-load rule holding.
+- ✅ **The alert about the outage survived the outage.** On reconnect the phone displayed `warn` /
+  `net-link-down` — an error raised while it was switched off, delivered afterwards because the
+  alert is held as state and repeated on every heartbeat. **Sent as an event it would have been lost
+  forever.** This is the clearest demonstration in the project of why *state, never events* is not a
+  stylistic preference.
+- ⚠️ **A phone joining mid-session saw blanks.** Parameters and status were sent only on change, so
+  a scene opened later showed empty rows until something moved. The alert never had this problem;
+  the OLED never had it either, because it redraws held state every frame. **`u_net` was the only
+  surface where a late viewer saw nothing.** Fixed with a 2 s repeat of the last parameter and
+  status, below the noise floor at 124/s.
+- ⚠️ **The iPhone's notch covers the edge of the scene and PdParty does not inset for it.** About 44
+  points — 22 canvas units — in landscape, silently. Fixed by insetting **one** side, since turning
+  the phone chooses which edge it lands on.
+
+### Two corrections to the phase's own plan, both from arithmetic
+
+- **`NO-LINK` needed no work at all.** The phone restarts a 1500 ms timer on every datagram and the
+  heartbeat is 500 ms, so the last packet is at most half a second old when the link drops:
+  `NO-LINK` lands 1.0–1.5 s later. The prototype already met the spec.
+- ⚠️ **"If `u_net` moves the 117/s UDP figure, rate limiting is not working" was not a usable
+  gate** — the heartbeat alone is +2/s. The real target was ~121–124/s idle, and the measurement
+  landed at 121–125.
+
+### The lesson about measuring rigs, again
+
+⚠️ **The late-join fix broke 7 of the gate's 25 checks, and every one was asserting *zero packets
+in an idle window*.** Those were **proxies** — what they were really standing in for is that no
+reserved selector ever becomes a parameter. They were rewritten to assert that property directly
+rather than relaxed to accommodate the new traffic. **The gate came out of the change stronger than
+it went in**, at 28 checks.
+
+⚠️ **And a conclusion was drawn too early mid-session.** With PdParty apparently closed, the socket
+stayed `ESTABLISHED` and no teardown appeared — recorded briefly as "Linux does not behave like
+macOS". It was wrong: iOS was still running the app in the background with the port bound, so the
+case had simply never been tested. **Backgrounding an iOS app is not closing it**, and the orange
+pill in the status bar is the tell.
+
 ## What every phase had in common
 
 Worth stating once, because it is the pattern rather than a coincidence:

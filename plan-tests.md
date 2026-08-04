@@ -1510,6 +1510,242 @@ never been checked.
 
 ---
 
+## Session 9 — Phase 7, the phone status link
+
+Step 0 first, on the Mac, before anything was built on it. **Two of the four overturned something**
+— which is now the sixth phase running where that has been true.
+
+- [x] **113. ✅ `oscformat`'s creation args are path segments, and both prototype spellings are
+      identical.** `tools/status-display/main.pd` uses **two conventions in one file** —
+      `[oscformat /cutit/hb]` and `[oscformat cutit param]` — and since the help patch shows
+      `[oscformat cat horse pig]` → `/cat/horse/pig`, the first looked like it had to be producing
+      `//cutit/hb`.
+
+      It is not. Measured through `[oscformat] → [oscparse]`, the two forms are **byte-for-byte
+      the same**: `47 99 117 116 105 116 47 104 98 0 0 0` — `/cutit/hb` with three bytes of null
+      padding. Pd splits the args on `/` itself. **The prototype's inconsistency is cosmetic, so
+      do not "fix" it and expect a change.**
+
+      Also confirmed in the same run: `,sfs` (`/cutit/param chop-size 43 dB`, 44 bytes), `,s`
+      (`/cutit/status v0.2-ready`, 32 bytes) and `,fsss` (`/cutit/alert 3 warn u_init
+      launchpad-silent`) all round-trip, and a param whose **value is a symbol** works — so
+      `mode-2 compose -` is legal on the wire.
+
+- [x] **114. ⚠️ ✅ A UDP `connect` to a port with nothing listening SURVIVES EXACTLY ONE DATAGRAM,
+      and then dies in silence. This is the measurement that changed the design.**
+
+      Twenty datagrams at 5 Hz to `127.0.0.1:9999` with no listener:
+
+      ```
+      CONN: 1          <- the connect SUCCEEDS
+      SENT: 0          <- the first datagram goes out
+      error: recv: Connection refused (61)
+      error: netsend: Bad file descriptor (9)
+      CONN: 0          <- the socket is torn down
+      SENT: 1 .. 19    <- nineteen more sends, ALL SILENTLY DISCARDED
+      ```
+
+      The ICMP port-unreachable that comes back kills the socket. **After that, `send` reports
+      nothing and delivers nothing.** That is the ordinary case of a phone on wifi with PdParty
+      closed — and without a reconnect the link would be dead for the whole session with three
+      lines on a console the device does not have.
+
+      ✅ **A fresh `connect` revives it**, and each retry delivers exactly one more datagram before
+      dying again. Once a listener appears the next reconnect **sticks** — 22 datagrams delivered,
+      no further errors. So the retry loop works, and it is mandatory.
+
+      ⚠️ **The retry must be gated on the connection state.** Reconnecting an already-open socket
+      prints `error: netsend_connect: already connected` **every time**. `u_net`'s spigot starts
+      open (so a connect that never came up at all still retries) and the first success closes it.
+
+      ⚠️ **And the warning must fire once per load, not once per retry** — `u_err` writes its log
+      through a shell fork, and Phase 4's rule is one fork per load, never one per event.
+
+      ⬜ Measured on macOS. Linux behaves the same way for connected UDP sockets, but **this has
+      not been confirmed on the Organelle** — item 118.
+
+- [x] **115. ✅ `disp` is SILENT at rest, and one moving control puts 402 messages a second on it.**
+
+      Tapped with `[r disp] → [print]` beside `main-dev.pd`. After the boot sequence settles
+      (`in-l`/`in-r`, `led stopped`, three `modal` stages, `status v0.2-ready`, `status 120-bpm`)
+      the bus goes **completely quiet** — zero messages over nine seconds.
+
+      A 200-step sweep of knob 1 over one second produced **402 messages: 201 `og-knob-1` and
+      201 `status`**. Two facts fall out, and one of them was not obvious:
+
+      - **`status` moves at control rate.** Knob 1 is master tempo and `u_tempo` writes the BPM
+        into the footer, so the footer alone is half the flood. **It needed its own rate limit**,
+        which is not something the plan had said.
+      - **The level meters are the entire resting content of the bus** once there is audio, at
+        ~20/s and continuously changing. Forwarding them would have spent the whole budget on
+        something the phone does not draw, which is why `u_net` drops them.
+
+- [x] **116. ✅ The headless gate, and the proof it can fail — obtained for free.**
+      `./tools/phase7-assert.sh`, 25 checks, ~25 s, no phone and no hardware.
+
+      `u_net` was built **plumbing-first with no coalescer**, and that build failed **exactly the
+      three rate ceilings** — 401, 802 and 401 packets — while every shape check passed. Adding
+      the per-name store took those to **42, 84 and 42**, and all 25 pass. Total datagrams over
+      the run: **1698 → 262**.
+
+      **No mutation had to be invented afterwards**, which is the one weakness of
+      `phase6-assert.sh`, whose ability to fail had to be demonstrated by reintroducing a bug.
+
+      | Window | Before the store | After |
+      |---|---|---|
+      | one name swept, 401 events | 401 packets | **42**, last value 400 ✅ |
+      | two names swept together | 802 packets | **84**, *both* last values 400 ✅ |
+      | `status` swept, 401 events | 401 packets | **42**, last value `400-bpm` ✅ |
+      | idle | 0 param | 0 param, heartbeat at 2 Hz ✅ |
+
+- [x] **117. ✅ The phone, end to end from the Mac — the trailing edge survives on real hardware.**
+      `main-dev.pd` with `u_net 192.168.1.5 8000`, sweeping `chop-size` to **777** over three
+      seconds and then stopping.
+
+      **The phone showed `chop-size` / `777` / `NO-LINK`.** All three halves of that are the
+      result: the right parameter name, **the last value of the sweep and not one part-way
+      through it**, and the link detector firing once the traffic stopped.
+
+      ✅ The Mac half agrees: `connecting to port 8000`, `u_net-target: 192.168.1.5 8000`, and no
+      `netsend` errors for the whole run — so the socket stayed up against a real listener, which
+      is the other half of item 114.
+
+      ⚠️ **This ran against the PROTOTYPE scene**, which draws only `/cutit/param` and `/cutit/hb`.
+      `status` and `alert` were on the wire and correctly ignored by a scene that has no branch for
+      them — which is the right failure, but it means neither has yet been seen rendered.
+
+- [x] **118. ✅ Phase 7 on the Organelle — 15/15 on `phase7-bench.pd`, and the cost is 0.2 points.**
+      Measured 2026-08-04 with the nanoKONTROL and Launchpad attached.
+
+      | | Phase 6 | Phase 7 | |
+      |---|---|---|---|
+      | pd CPU | 11.7–12.0 % | **12.0–12.1 %** | `u_net` costs about **0.2 points** |
+      | UDP out | 120/s | **121–125/s** | predicted +4 — heartbeat 2/s plus alert state 2/s |
+      | load | 0.42–0.51 | 0.29–0.51 | unchanged |
+
+      ⚠️ **`phase6-cpu.sh` reports OVER BUDGET and that is the script being stale, not a
+      regression.** Its 11.2 % budget is Phase 5's baseline plus one point; **Phase 6 already
+      exceeded it** at 11.7–12.0 %. The number that mattered was the UDP rate and it landed inside
+      the predicted band.
+
+      ⚠️ **A reading taken across a `deploy.sh` reload is garbage** — it caught a dying pid and
+      reported `pd is not running` followed by 0.0 % CPU and 98/s. Let the patch settle first.
+
+      **What the bench proved that the Mac could not:**
+
+      - **The reserved selectors are inert, and each was confirmed by a DIFFERENT surface
+        reacting.** `grid modal 45` turned the Launchpad fully blue while the phone did not move;
+        `led running` turned the aux button green while the phone did not move. **That is the
+        distinction the steps exist for** — "nothing happened on the phone" otherwise cannot be
+        told apart from "the message never arrived".
+      - **The trailing edge on a real fader.** Swept hard and stopped mid-travel at **88**, and the
+        phone settled on 88 rather than a value from inside the sweep. ⚠️ **Stopping at an endpoint
+        proves nothing** — the first attempt stopped at 127, where "settled correctly" and "stuck at
+        the maximum" are indistinguishable.
+      - **Real instrument data reached the phone**: the status row read `260-bpm` off the physical
+        position of knob 1, through `u_map` → `u_tempo` → the footer → `u_net`.
+      - **The alert persisted for 12 s** with nothing re-sending it, while the OLED's copy had long
+        since timed out. The two surfaces disagreeing is the design.
+
+- [x] **119. ✅ ⚠️ THE ICMP TEARDOWN HOLDS ON LINUX/ARM, AND THE RECONNECT RECOVERS THE LINK.**
+      Item 114 was measured on macOS against **loopback**, and generalising it to "a phone on wifi
+      with PdParty closed" was an inference. It is now measured directly.
+
+      With PdParty **fully quit**, `/tmp/bench.txt` shows the cycle repeating every five seconds:
+
+      ```
+      connecting to port 8000
+      error: recv: Connection refused (111)      <- errno 111 on Linux -- it was 61 on macOS
+      error: netsend: Bad file descriptor (9)
+      warning: 68 removed from poll list but not found
+      ```
+
+      `netstat -un` showed the socket **gone entirely**. Reopening PdParty recovered it with
+      nothing touched on the Organelle: **12 connect attempts, 11 refusals, the 12th stuck**, and
+      the socket back to `ESTABLISHED`.
+
+      ✅ **`net-link-down` was raised exactly ONCE across the whole outage**, not once per retry —
+      the warn-gate spigot working. Eleven forks into `/sdcard` would have broken Phase 4's
+      one-fork-per-load rule.
+
+      ✅ **The instrument played straight through eleven socket teardowns** with no audio glitch and
+      nothing on the OLED. That is the fire-and-forget requirement met under real failure.
+
+      ✅ **AND THE ALERT ABOUT THE OUTAGE SURVIVED THE OUTAGE.** On reconnect the phone displayed
+      `warn` / `net-link-down` — an error raised while the phone was switched off, delivered
+      afterwards because the alert is held as state and repeated on every heartbeat. **Sent as an
+      event it would have been lost forever.** This is the clearest demonstration in the project of
+      why the state-never-events rule is not a stylistic preference.
+
+- [x] **120. ✅ PdParty's own lifecycle, which is not what it looks like.** Three facts, all
+      measured, and the first one cost a wrong conclusion mid-session:
+
+      - ⚠️ **Backgrounding PdParty does NOT drop the link.** iOS keeps the app running — the orange
+        pill around the clock — so **UDP 8000 stays bound and the socket stays `ESTABLISHED`**. A
+        first attempt at item 119 concluded the teardown did not happen on Linux; it had simply
+        never been tested, because the app was still listening. **Only a full quit from the app
+        switcher closes the port.** Operationally this is good news: the display survives tabbing
+        away.
+      - **PdParty binds 8000 whenever the app runs, with or without a scene open.** So the
+        Organelle's link recovering proves *the app* is alive, not that anything is being drawn.
+      - ⚠️ **The WebDAV server must be started by hand and does not survive an app restart.** With
+        the app open and demonstrably listening on 8000, port 9000 refused the connection and
+        `curl -T` failed with exit 7. See [ref-display.md](ref-display.md).
+
+- [x] **124. ✅ ⚠️ The iPhone's notch covers the edge of the scene, and PdParty does not inset for
+      it.** Found by eye on the device, not by any test. In landscape the speaker and camera cover
+      about **44 points — 22 canvas units** — off one end of a full-width row, silently.
+
+      Fixed by insetting **one** side rather than both: content runs `x = 4` to `x = 426`, leaving
+      the margin on the right, because **turning the phone chooses which edge the notch lands on**.
+      Symmetric margins would have cost 26 units of width for nothing. The bottom keeps 17 units
+      clear of the home indicator. See [ref-display.md](ref-display.md).
+
+- [x] **121. ✅ A PHONE THAT JOINS MID-SESSION SEES BLANKS — fixed, see item 123.** Found by reopening the scene after
+      item 119: it showed `READY` and empty value and status rows, because **parameters and status
+      are only sent when they change.** The alert did not have this problem — it is repeated on
+      every heartbeat — and the OLED does not either, because it redraws from held state every
+      frame. **`u_net` is the only surface where a late-joining viewer sees nothing until something
+      moves.**
+
+      Not a bug against any stated requirement, and harmless mid-performance since the next control
+      movement fixes it — but opening the phone and seeing an empty screen is exactly the moment you
+      most want it populated. **Found by hands, in the ordinary act of reopening a scene**, which no
+      assertion in the headless gate was looking for.
+
+- [x] **123. ✅ The late-join gap is closed, and the gate caught the change before the device did.**
+      Item 121's fix: `u_net` keeps a last-sent slot for the parameter and the status and re-sends
+      both every **2 s**, the same trick the alert already used. Deployed and measured — **UDP
+      124/s**, inside the 121–125 band already recorded, so the cost is below the noise floor.
+
+      ✅ **Banging an empty store needed no has-it-ever-fired flag.** Measured: it emits a valid
+      `/cutit/param` carrying no arguments, and on the phone that reaches `list split 1`'s
+      **too-short** outlet, so neither the name nor the value cnv is touched and nothing errors.
+      The *status* store carries a dash as its creation argument instead, because its branch has no
+      such guard.
+
+      ⚠️ **`phase7-assert.sh` failed 7 of 25 checks the moment the repeat existed**, and every one
+      was a check asserting *zero packets in an idle window*. **Those were proxies, and they were
+      loosened into properties rather than into nothing**: the gate now asserts that **no reserved
+      selector ever becomes a parameter NAME** — which is what the counts were standing in for all
+      along — plus that an idle window's traffic is the repeat and only the repeat, and that each
+      repeat carries an identical value rather than inventing new data. **28 checks now, and it is
+      a stronger gate than the one that passed before the change.**
+
+- [x] **122. ✅ A DIGIT FOLLOWED BY A FULL STOP IS A FLOAT, and the stop vanishes from bench text.**
+      `43.` in a `PASS IF` string printed as `43` — Pd parses the atom as the number 43. Same family
+      as the comma trap that splits a line into fragments, but **cosmetic rather than structural**:
+      it loses punctuation, it does not mangle the message.
+
+      ⚠️ **It is pre-existing and already present in hardware-verified benches** — one occurrence in
+      phase 5 and **six in phase 6**, all printing without their full stops and never noticed.
+      **The phase 3–6 tables are deliberately NOT reworded**: they are verified, `bench-verify.py`
+      gates on them matching, and the defect changes no step's behaviour. Only `STEPS7` is written
+      around it, and `bench-gen.py` warns rather than asserting — a hard assertion would refuse to
+      generate the four existing benches.
+
+---
+
 ## Deliberately skipped for now
 
 Not unimportant — just not blocking UI/UX decisions.
@@ -1525,10 +1761,12 @@ Not unimportant — just not blocking UI/UX decisions.
 
 ## What's actually left
 
-**Six open items, and only one of them can still force a redesign.**
+**Eight open items, and only one of them can still force a redesign.**
 
 | | Blocked on | Why it is still here |
 |---|---|---|
+| **Item 117** — the phone end to end from the Mac | somebody looking at the phone | The Mac half is confirmed and the socket stays up against a real listener; what is unconfirmed is what the screen actually says |
+| **Item 118** — Phase 7 on the Organelle | the device being switched on | ⚠️ **Phase 7 is Mac-verified and has never been deployed**, which is the exact position Phase 6 was in before it shipped three bugs. Also the only way to confirm item 114's ICMP teardown on Linux/ARM |
 | **Session 3** — items 12 and 13, audio topology | the TRS Y-cable | ⚠️ **The only remaining test that could force a redesign.** How the 404 places *external* input in the stereo field is internal routing, and no amount of Mac testing reaches it |
 | **Session 7** — items 94, 96 and 97, Phase 6 on the device | nothing | ⚠️ **Phase 6 is verified on the Mac and has never been deployed.** The repaint budget, the safe exit after the lift, and the boot sequence in its real order. Item 96 is the one that costs a power cycle if it is wrong |
 | **Item 5 / item 95** — power under full load | a cable | Never run with three controllers plus the wifi dongle at once. Presents as intermittent dropouts, not an obvious failure — so if Phase 6 produces flaky Launchpad behaviour, **suspect the hub before the code** |

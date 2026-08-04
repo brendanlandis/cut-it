@@ -81,6 +81,12 @@ Cut It/              the deployable patch — folder name is what appears in the
                        Sole owner of oscOut and screenLine*
   g_led.pd             the aux button LED and its sole owner. Callers send a state, never
                        a colour — the one display surface that is not a screen
+  u_net.pd             the phone — the FOURTH display surface, and the only file that
+                       talks to it. Consumes disp like the g_ arbiters but owns no
+                       selector on it, so it cost g_oled's route nothing. Coalesces
+                       per NAME at 20 Hz with a guaranteed trailing edge, holds the
+                       last alert as STATE and repeats it, and rebuilds its own socket
+                       — which a phone leaving the network destroys outright
   u_mother-stub.pd     impersonates mother.pd off-device AND is the dev panel — the whole
                        front face (screen, knobs, encoder, volume, keys) laid out like the
                        device and rendered inline on main-dev.pd via graph-on-parent.
@@ -106,8 +112,9 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
   bench-verify.py      proves the step text survived the generator, by re-extracting it
   phase6-assert.sh     the headless gate: rewrites [midiout] in a SCRATCH COPY so a run can
                        read back every byte, then asserts on what the grid actually showed
+  phase7-assert.sh     the same idea and much cheaper — u_net already emits to a socket,
+                       so it binds the port and reads real datagrams. Nothing is rewritten
 plan-v02.md          the build plan — the phases still to come, and EVERY open question
-plan-phase7.md       the Phase 7 execution plan: u_net, the phone status link
 plan-tests.md        the ordered hardware checks, with every measured number
 ref-build-log.md     Phases 0-6 as built: outcomes, and every correction they produced
 ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow

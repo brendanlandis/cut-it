@@ -139,7 +139,7 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 | `panic` | all-notes-off, clear all state | any |
 | `param` | `<name> <value>` — a control **changed** | any `m_` → `u_map` |
 | `err` | `<level> <source> <text>`, level ∈ `warn` `fail` | any → `u_err` |
-| `disp` | display requests: `<name> <value> [unit]` | any → `g_oled`, `g_led`, `g_grid` |
+| `disp` | display requests: `<name> <value> [unit]` | any → `g_oled`, `g_led`, `g_grid`, `u_net` |
 
 **Four of these are request buses, not publications.** `tempo`, `start`/`stop`, `mode` and
 `param` are written by whoever has something to say and *consumed* by one owner, exactly as `err`
@@ -354,6 +354,20 @@ to that `route` and the reject connection moved from outlet 7 to 8. The price is
 is flat, which is the argument for keeping every surface on one bus — the dev panel's screen log
 records all three interleaved, stamped with one frame number, so an interaction that spans the
 OLED, the aux LED and the pads reads as a single sequence.
+
+✅ **The fourth surface arrived in Phase 7 and cost nothing at all**, which breaks the pattern
+above rather than continuing it. `u_net` — the phone — **owns no selector on `disp`**. It
+subscribes, routes the reserved names into nothing, and forwards the rest; so `g_oled`'s `route`
+is untouched and no reject connection moved. **The flat two-line price is the cost of a surface
+with its own vocabulary, not the cost of a surface.** A consumer that mirrors the bus is free,
+and that is the cheaper shape to reach for when the thing being added is a *readout* rather than
+a device with commands of its own.
+
+⚠️ **A mirror still has to know the reserved names.** `u_net`'s `route` lists all eight and
+leaves six unconnected, for the same reason `g_oled` had to learn `led`: everything unrecognised
+is a parameter *by definition*, so a selector with no branch falls out of the reject and is
+forwarded as a nonsense parameter. Adding a selector to `disp` therefore means visiting every
+consumer that has a fallthrough — which is now two.
 
 **The `disp` message is `<name> <value> [unit]`, with the name as the *selector*.**
 

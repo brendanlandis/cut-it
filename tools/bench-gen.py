@@ -40,6 +40,7 @@ which latches and prints the count. However long you take to judge the step, the
 number covers exactly ten seconds.
 """
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -91,13 +92,25 @@ def width(text):
 
 def check(steps, phase):
     """A comma or a semicolon in a printed line splits it into fragments at
-    runtime. This assertion is the whole reason these files are generated."""
+    runtime. This assertion is the whole reason these files are generated.
+
+    The digit-then-full-stop check below is a WARNING and not an assertion, on
+    purpose. `43.` is a valid Pd float literal, so the atom is parsed as the
+    number and the stop disappears from the printed line -- but it is cosmetic
+    rather than structural, and it is already present in phase5 and phase6,
+    which are verified on the Organelle and must not be reworded. Asserting
+    would refuse to generate four working benches over a missing full stop.
+    plan-tests.md item 122."""
     for i, (title, passif, actions) in enumerate(steps, 1):
         for label, s in (("title", title), ("pass_if", passif)):
             for ch in (",", ";"):
                 assert ch not in s, (
                     "phase%d step %d %s contains %r -- a message box would split "
                     "there and print fragments: %s" % (phase, i, label, ch, s))
+            for m in re.finditer(r'(?<![\w-])(\d+\.)(?=\s|$)', s):
+                print("  note: phase%d step %d %s has %r -- Pd reads that as a "
+                      "float and the full stop will not print"
+                      % (phase, i, label, m.group(1)))
             assert "$" not in s, (
                 "phase%d step %d %s contains a dollar sign" % (phase, i, label))
         assert title, "phase%d step %d has no title" % (phase, i)
@@ -447,6 +460,9 @@ PHASES = {
     6: dict(steps=S.STEPS6, blurb="the Phase 6 acceptance run: the Launchpad \\, the "
             "grid arbiter \\, the mode bus and the first c_clock instance.",
             counters=[("BEATS", "r clock")]),
+    7: dict(steps=S.STEPS7, counters=[], blurb="the Phase 7 acceptance run: the phone "
+            "status link. EVERY PASS IF DESCRIBES THE PHONE \\, not the Organelle -- "
+            "so PdParty has to be open on the CutItRemote scene before step 1."),
 }
 
 

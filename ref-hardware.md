@@ -187,6 +187,31 @@ break boot, in four steps:
 **Every observation fits:** independent of hub, port and cable; broken when the Launchpad is
 present at boot; fine when hot-plugged afterwards, because `mount.sh` has already run.
 
+### Where the wifi credentials actually live ✅
+
+**`$USER_DIR/wifi.txt` — plain text, alternating SSID and password lines, two per network.**
+Measured on the device in Phase 7. `USER_DIR` resolves to **`/sdcard`** in normal operation, which
+is mounted `rw`, so **adding a network is appending two lines and needs no `remount-rw.sh`** — that
+is only for the `ro` rootfs.
+
+⚠️ **`/etc/wpa_supplicant/wpa_supplicant.conf` is a red herring.** It is the stock 55 KB example
+file dated 2015, still carrying `ssid="example"` and `ssid="eap-sim-test"`. **Nothing reads it.**
+The real path is `wifi_setup.py` → `wifi.txt` → `wifi-config.sh`, which builds the config inline
+with `wpa_passphrase`.
+
+```sh
+ssh root@organelle.local 'printf "SSID\nPASSWORD\n" >> /sdcard/wifi.txt'
+```
+
+⚠️ **The passwords are stored in the clear** — that is the device's design, not a choice available
+to us. **`wifi.txt` must never be copied into this repo**, and [device/](device/) deliberately does
+not back it up.
+
+**Adding a second network is the cheap way to a self-contained stage link**, and much lower risk
+than `hostapd`: the Organelle simply joins whichever is present and **SSH survives**, where
+bringing up an AP drops it. ⚠️ **An iPhone Personal Hotspot needs cellular**, so it cannot be
+combined with airplane mode — the two are mutually exclusive. See [plan-v02.md](plan-v02.md).
+
 **Beware the wider blast radius.** `USER_DIR` is not only wifi — `start-ap.sh` reads
 `$USER_DIR/ap.txt` and the System menu's save paths hang off it. And `mount.sh` runs on **every
 Reload**, so this can appear mid-session, not just at boot. That is why `deploy.sh` sends

@@ -5,9 +5,9 @@ Standalone Pd patches for testing the rig. **Not** Organelle patches — they do
 that `print` output is visible, which matters because the Organelle launches Pd with `-nogui`
 and there is no console otherwise.
 
-Hand-authored in Pd 0.49 format except the four benches and two rigs that are **generated** —
-`bench-gen.py` and `phase6-assert-drive-gen.py` write them, and the `.pd`
-is an output. Edit the generator. Do not open any of it in plugdata — see
+Hand-authored in Pd 0.49 format except the four benches and three rigs that are **generated** —
+`bench-gen.py`, `phase6-assert-drive-gen.py` and `phase7-assert-drive-gen.py` write them, and the
+`.pd` is an output. Edit the generator. Do not open any of it in plugdata — see
 [../CLAUDE.md](../CLAUDE.md).
 
 | Patch | What it does |
@@ -256,6 +256,27 @@ that was never connected to its `[print]`. Fixed by driving them from the step t
 Programmer Mode except `u_init`'s boot, so the grid stays the device's own until you reload.
 Deliberate, and stated in the step.
 
+### `phase7-bench.pd` — the Phase 7 acceptance run
+
+**Fifteen steps, and the first bench whose subject is not the Organelle** — every `PASS IF`
+describes what the *phone* shows. **PdParty has to be open on the `CutItRemote` scene before
+step 1**, and step 1 exists to confirm that before anything depends on it.
+
+Steps 8–11 are the ones whose correct result is that **nothing happens**: the level meters, the
+grid vocabulary and the aux LED are all on `disp` and all deliberately dropped by `u_net`. A line
+that starts reading `in-l` means the reserved branch is broken and the rate budget has gone to a
+meter the phone does not draw.
+
+⚠️ **The rate limit is not tested here and cannot be.** A step table pushes discrete messages; a
+flood needs a metro. `phase7-assert.sh` is what proves the coalescer. **Step 12 is the closest a
+person can get** — a real fader, and the question of whether the phone *settles* on the value you
+stopped at rather than one from the middle of the sweep.
+
+**Steps 13 and 14 are the only way to reach item 114 on real hardware.** Closing PdParty makes the
+phone answer with an ICMP port-unreachable, which destroys the socket; reopening it must bring the
+display back within about five seconds **with nothing touched on the Organelle**. A link that could
+not recover would be dead for the rest of the set and nothing on the instrument would say so.
+
 ## `phase6-assert.sh` — the headless gate, no eyes and no hardware
 
 ```sh
@@ -295,6 +316,44 @@ beat-row offset back to `+ 11` — makes it report `lit outside every region: [(
 ⚠️ **The three `home-*` checks still passed under that mutation**, which is exactly why *seven
 beats out of eight looked perfect*: only the six-second beat-row window catches it. A gate that
 cannot fail is worth nothing, so re-run that mutation if you ever change the analyser.
+
+## `phase7-assert.sh` — the same idea, and much cheaper
+
+```sh
+./tools/phase7-assert.sh            # ~25 s, exits non-zero on any failure
+```
+
+**Phase 7's gate needs no scratch copy and rewrites nothing.** `[midiout]` is a built-in class
+with no side channel, which is the whole reason `phase6-assert.sh` has to swap it for a stand-in
+in a throwaway copy of the patch. **`u_net` already emits to a socket** — so the gate binds
+`127.0.0.1:9995`, instantiates `u_net 127.0.0.1 9995` and reads the real datagrams. `Cut It/` is
+never touched.
+
+| Piece | |
+|---|---|
+| `phase7-assert-drive-gen.py` | generates the driver. **Edit this, never the `.pd`** |
+| `phase7-assert-drive.pd` | instantiates `u_net` and pushes synthetic traffic onto `disp` |
+| `phase7-assert.py` | binds the port, launches Pd, decodes OSC, does the reasoning |
+
+⚠️ **The analyser owns the lifecycle, and that is not tidiness.** It binds the socket *before*
+Pd starts, because a UDP connect to a port with nothing listening survives exactly one datagram
+(item 114). Start the driver by hand and you get one packet and then silence — which looks
+exactly like a broken rate limiter.
+
+**The window marks travel as datagrams**, to the same port, through the driver's own `netsend`.
+A mark on stdout would have to be correlated with socket timestamps afterwards; a mark *in* the
+stream arrives in true order with the data around it.
+
+**25 checks**: the four OSC addresses and nothing else, a monotonic heartbeat, silence on both
+idle windows, the coalescer's rate ceiling, **a per-name trailing edge on two simultaneous
+sweeps**, `status` limited on its own address, the alert arriving as repeated state, and the
+reserved selectors never leaking onto `/cutit/param`.
+
+✅ **It was proven to fail before it was trusted, and for free.** `u_net` was built plumbing-first
+with no coalescer, and that build failed exactly three checks — the three rate ceilings — at
+401, 802 and 401 packets, while every shape check passed. Adding the store took those to 42, 84
+and 42. No mutation had to be invented afterwards, which is the one weakness of Phase 6's
+equivalent.
 
 ### `phase6-cpu.sh` — the repaint budget on the device
 

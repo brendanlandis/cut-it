@@ -245,3 +245,61 @@ STEPS6 = [
   []),
 ]
 
+
+
+# Phase 7 -- the phone. Every PASS IF here describes what the PHONE shows, which
+# makes this the first bench whose subject is not the Organelle. Three steps are
+# hands-only and one of them (closing PdParty) is the only way to reach item 114's
+# ICMP teardown on real hardware.
+#
+# THE RATE LIMIT IS NOT TESTED HERE AND CANNOT BE. A step table pushes discrete
+# messages; a flood needs a metro. tools/phase7-assert.sh is what proves the
+# coalescer, and step 12 is the closest a person can get -- a real fader, and the
+# question of whether the phone SETTLES on the value you stopped at.
+STEPS7 = [
+ ('baseline -- the link is up and the mode is compose',
+  'PASS IF: the bottom line of the phone reads ok rather than NO-LINK. Nothing else has to be true yet -- this proves only that the heartbeat is flowing and the scene is bound. IF IT SAYS NO-LINK STOP HERE and check that PdParty is open on the same network -- every step below depends on it. compose is set because u_err shows warnings in compose and only failures in perform',
+  [('compose mode-1', 'mode')]),
+ ('ONE PARAMETER -- name value and unit',
+  'PASS IF: the top line reads chop-size and the big number reads 43 -- the unit rides on the wire but the scene does not draw it -- deliberate and not a fault',
+  [('chop-size 43 %', 'disp')]),
+ ('A SECOND PARAMETER -- and the stale-unit trap underneath it',
+  'PASS IF: the top line changes to grain and the number to 12 -- THE POINT OF THIS STEP IS SOMETHING YOU CANNOT SEE: grain carries no unit and the step before it did -- so on the wire this has to arrive as grain 12 and a dash rather than grain 12 and a percent sign. The scene draws no units so a stale one would be invisible here. tools/phase7-assert.sh is what actually proves it',
+  [('grain 12', 'disp')]),
+ ('THE STATUS LINE -- a row that is not a parameter',
+  'PASS IF: the third line reads 128-bpm and the parameter name and number ABOVE IT DO NOT CHANGE. status has its own OSC address and its own slot. Expect u_tempo to overwrite this with the real BPM at the next transport event -- that is the footer being handed back and not a fault',
+  [('status 128-bpm', 'disp')]),
+ ('AN ALERT -- and it travels the whole error bus to get here',
+  'PASS IF: the fourth line shows warn on the left and probe-warning on the right. This goes onto err rather than disp -- so u_err filtered it by mode and forwarded it -- which makes this the proof that the error bus reaches the phone and not just the OLED',
+  [('warn u_bench probe-warning', 'err')]),
+ ('THE ALERT PERSISTS -- which is the entire reason it is state',
+  'PASS IF: several seconds later the fourth line STILL reads warn and probe-warning. An alert is an event and UDP cannot carry events -- so u_net holds the last one and repeats it on every heartbeat. On the OLED the same alert has long since timed out. THE TWO SURFACES DISAGREE ON PURPOSE and this step is where you see it',
+  []),
+ ('A SECOND ALERT REPLACES THE FIRST',
+  'PASS IF: the fourth line changes to fail and probe-failure. A failure also draws on the OLED where the warning above may not have',
+  [('fail u_bench probe-failure', 'err')]),
+ ('THE METERS MUST NOT APPEAR -- correct result is nothing',
+  'PASS IF: NOTHING ON THE PHONE CHANGES AT ALL. in-l and in-r are the entire resting content of the disp bus once there is audio -- about twenty messages a second -- and u_net drops them on purpose. If a line here starts reading in-l then the reserved branch is broken and the whole rate budget has gone to a meter the phone does not draw',
+  [('in-l 42 dB', 'disp'), ('in-r 7 dB', 'disp')]),
+ ('THE GRID VOCABULARY MUST NOT APPEAR -- and the Launchpad WILL react',
+  'PASS IF: nothing on the phone changes. THE LAUNCHPAD GOING MODAL IS CORRECT -- grid is g_grid own vocabulary and this step proves only that u_net ignores it. The next step clears it',
+  [('grid modal 45', 'disp')]),
+ ('CLEARING THE GRID -- still nothing on the phone',
+  'PASS IF: the Launchpad returns to its home layout and the phone does not move',
+  [('grid modal-off', 'disp')]),
+ ('THE AUX LED -- still nothing on the phone',
+  'PASS IF: the aux button goes green and the phone does not move. That is the third reserved selector proven inert in a row',
+  [('led running', 'disp')]),
+ ('HANDS -- sweep a nanoKONTROL fader as fast as you can',
+  'PASS IF: the phone tracks the fader while it moves and then SETTLES ON THE VALUE YOU STOPPED AT. A phone left showing a number from the middle of the sweep is the trailing edge failing -- the one bug in this phase that hands can catch and that no headless run reproduces with real timing. Sweep two faders at once if you have the fingers -- both must settle correctly',
+  []),
+ ('HANDS -- close PdParty on the phone and count to ten',
+  'PASS IF: NOTHING ON THE ORGANELLE CHANGES. No audio glitch and no error on the OLED. THE ORGANELLE NEVER WAITS. What has actually happened is that the phone answered with an ICMP port-unreachable and the socket was destroyed -- and u_net has been reconnecting every five seconds ever since with nothing to show for it',
+  []),
+ ('HANDS -- reopen PdParty',
+  'PASS IF: the phone starts updating again WITHIN ABOUT FIVE SECONDS and you touched nothing on the Organelle. THIS IS THE STEP THAT PROVES ITEM 114 ON REAL HARDWARE. A link that could not recover would be dead for the rest of the set and nothing on the instrument would say so -- which is exactly what the first build did before Step 0 measured it',
+  []),
+ ('END MARKER -- not a test -- the run is over',
+  'PASS IF: nothing further prints. THIS STEP ASSERTS NOTHING and exists only so the last real step has something to advance INTO. Reload with deploy.sh to restore normal operation',
+  []),
+]

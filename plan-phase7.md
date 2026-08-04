@@ -1,142 +1,98 @@
 # Phase 7 — the phone status link (`u_net`)
 
 The execution plan. [plan-v02.md](plan-v02.md) keeps the one-paragraph summary and **remains the
-only home for open questions** — if something here turns into a question rather than a step, it
-moves there.
+only home for open questions**.
 
 **Done when:** every parameter shown on the OLED also reaches the phone, a fast fader sweep does
 not flood the wire, and pulling the plug shows `NO-LINK` on the phone within 1.5 s.
 
+**Where it stands: built and Mac-verified. Never deployed.** That is the exact position Phase 6
+was in before it shipped three bugs, so the remaining work is not a formality.
+
 ---
 
-## What already exists
+## Built ✅
 
 | | |
 |---|---|
-| `tools/status-display/main.pd` | The prototype. Bidirectional OSC, named-parameter protocol, verified both directions ✅ |
-| `tools/pdparty-scene/CutItRemote/` | The phone-side scene |
-| [ref-display.md](ref-display.md) → *iPhone / PdParty* | The four PdParty rules that cost the most time. **Read before writing any scene code** |
+| `Cut It/u_net.pd` | The abstraction. Consumes `disp`, coalesces per name at 20 Hz, holds the alert as state, reconnects |
+| `Cut It/u_root.pd` | One appended box, `u_net 192.168.1.5 8000`. 38 → 40 boxes, **7 cords unchanged** |
+| `tools/phase7-assert.{sh,py}` + `-drive-gen.py` | The headless gate. **25 checks, and it was proven able to fail before it was trusted** |
+| `tools/phase7-bench.pd` | 15 steps via `STEPS7` in `bench_steps.py`. `bench-verify.py` passes |
+| `tools/pdparty-scene/CutItRemote/_main.pd` | Promoted: six rows, `status` and `alert` added, the value is a `cnv` label rather than an `nbx` |
 
-**The job is promotion to an abstraction that obeys the conventions**, not discovering whether OSC
-works. That is the same shape every phase has had.
+Measurements are [plan-tests.md](plan-tests.md) **Session 9, items 113–118**. The design decisions
+and what each cost are in the same place.
 
----
-
-## Constraints that are not negotiable
-
-Read [ref-conventions.md](ref-conventions.md) first. The ones this phase will actually collide
-with:
-
-- **Pd 0.49 vanilla, forever.** No ELSE, no cyclone. **Never save from plugdata.**
-- **`u_net` is a CONSUMER of `disp`, not a writer to any surface.** `g_oled` owns `oscOut`;
-  `g_grid` owns the Launchpad; `g_led` owns the aux LED. The phone is a *fourth surface* and
-  `u_net` is its sole owner — but it must not send on any existing display bus.
-- **The global-send allowlist.** Adding a bus needs a decision recorded in `ref-conventions.md`,
-  not an invention at the call site.
-- **`$0` discipline**, `[trigger]` discipline, and the banned-constructs list.
-- ⚠️ **Never insert or delete a box mid-list in a `.pd` file** — `#X connect` indexes by file
-  position, so every later cord silently rewires. Append before the connects.
-  `tools/pd-layout-check.py` catches it; it bit four times in Phase 6 alone.
+**What Step 0 changed, in one line:** a UDP `connect` to a host that is up with nothing listening
+succeeds, delivers exactly one datagram, and is then destroyed by the ICMP port-unreachable — after
+which every send is discarded in silence. **The reconnect is the feature, not a nicety.** Item 114.
 
 ---
 
-## Step 1 — `u_net.pd`, the abstraction
+## Two claims in the earlier draft of this file were wrong
 
-Subscribe to `disp`, forward over `[netsend -u]`. Creation args: host and port.
+Corrected here rather than annotated, and both were caught by arithmetic rather than by measuring:
 
-- **Fire and forget. The Organelle never waits.** No handshake, no retry, no blocking.
-- **State, never events.** The phone shows what *is*, so a dropped packet is corrected by the next
-  one rather than lost. This is what makes UDP acceptable.
-- **One writer.** `u_net` is the only file that talks to the phone, exactly as `m_launchpad` is the
-  only file that talks to the Launchpad.
-- ⚠️ **Do not use port 9000** — it is PdParty's WebDAV server. See [ref-display.md](ref-display.md).
+- **`NO-LINK` needed no work.** The phone restarts a 1500 ms timer on every datagram and the
+  heartbeat is 500 ms, so the last packet is at most 500 ms old when the link drops: `NO-LINK`
+  lands **1.0–1.5 s** after the loss. The spec was already met by the prototype.
+- ⚠️ **"UDP out has sat at ~117/s since Phase 3 — if `u_net` moves that number, rate limiting is
+  not working" is not a usable gate.** The heartbeat alone is +2/s and the repeated alert state
+  another +2/s. **The real targets are ~121–124/s idle and ≤ ~140/s under a sweep**, and what
+  matters is that the number does not track the *control* rate — which at Step 0 was measured at
+  402 `disp` messages per second from one moving knob.
 
-## Step 2 — rate limiting, which is the actual engineering
+---
 
-**Every CC change currently sends a packet, so a fast fader sweep floods the wire.** The OLED gets
-this free because its layers hold state and a frame clock draws them; the phone link does not.
-
-**Coalesce to ~20 Hz with a guaranteed trailing edge.** The trailing edge is the part that matters:
-drop it and the phone ends a sweep showing a stale value, which is worse than showing nothing.
-
-⚠️ **Rate limiting lives in `u_net`, not in the callers.** No `m_` layer and no `u_map` branch may
-learn that a phone exists.
-
-**Model it on `g_grid`'s dirty flag** — a metro that checks whether anything changed and sends only
-then. That shape is measured: at 50 Hz it costs nothing, because the metro checks a flag rather
-than doing work, and the send count is bounded by the *event* rate.
-
-## Step 3 — `NO-LINK` within 1.5 s
-
-A heartbeat from the Organelle; the phone shows `NO-LINK` when it stops.
-
-⚠️ **The detector must live on the PHONE.** The Organelle cannot know the phone is gone — UDP is
-fire-and-forget and there is no reply. This is the same lesson as the Launchpad watchdog: *the
-platform that can detect the loss is the one that has to.*
-
-## Step 4 — the scene
-
-Promote `tools/pdparty-scene/CutItRemote/`.
-
-- A PdParty scene is a **folder containing `_main.pd`**.
-- **PdParty only renders iemguis that have send/receive names.** With `empty` or `-` they are
-  invisible — silently.
-- **Cosmetic, from [plan-v02.md](plan-v02.md):** the value is an `nbx`, which draws box chrome
-  around the number. A `cnv` label through `[makefilename %g]` would be pure text. Dynamic labels
-  are proven ✅.
-
-## Step 5 — the bench
-
-`tools/phase7-bench.pd`, generated by adding `STEPS7` to `tools/bench_steps.py` and a `phase7`
-entry to `bench-gen.py`. **Never hand-edit a bench `.pd`.**
-
-- **Stepped by hand**: GO runs the described step, GO again describes the next.
-- ⚠️ **On the device GO is `./tools/go.sh`, never the encoder** — `mother` forwards `encbut` only
-  to patches that have sent `/enableEncoder`, and nothing in Cut It does. Netcat does not work on
-  macOS either. Both cost time in Phase 6.
-- ⚠️ **No commas or semicolons in step text** — a message box splits on them regardless of
-  escaping. `bench-gen.py` asserts against it.
-- **`bench-verify.py` must pass** after every regeneration.
-
-## Step 6 — a headless gate, if one is cheap
-
-Phase 6's `tools/phase6-assert.sh` found a bug **no hands-on bench could have** — a failure that
-only existed when the hardware was *absent*. A phase7 equivalent would rewrite `[netsend]` in a
-scratch copy and assert on the bytes.
-
-**Judge whether it is worth it before building it.** The Phase 6 layer paid for itself; this one
-might not, and a gate nobody trusts is worse than none.
-
-## Step 7 — the device run
+## Step 7 — the device run, and it is all that is left
 
 ⚠️ **A green Mac bench does not mean the phase is done.** Phase 6 passed 25/25 on the Mac, twice,
 and shipped three bugs that only existed on the Organelle. Budget for a full hardware pass and
 expect it to find something.
 
-Take a CPU reading with `tools/phase6-cpu.sh`. The baseline to beat: **~11.8 % with DSP on**, of
-which **6.9 points is DSP** and the MIDI clock only 0.43. UDP out has sat at **~117/s since Phase
-3** — if `u_net` moves that number, rate limiting is not working.
+1. **`./deploy.sh`** — it syntax-checks both entry points and refuses on any output.
+2. **`tools/phase7-bench.pd`**, stepped with `./tools/go.sh`. ⚠️ **PdParty must be open on the
+   `CutItRemote` scene before step 1**, which is what step 1 exists to confirm.
+   ⚠️ **GO is `./tools/go.sh`, never the encoder and never netcat** — both cost time in Phase 6.
+3. **`tools/phase6-cpu.sh -n 3`** against the **11.8 %** baseline, of which 6.9 points is DSP and
+   only 0.43 the MIDI clock.
+
+**The three things most likely to fail, in order:**
+
+- ⚠️ **Item 114 on Linux/ARM.** The ICMP teardown was measured on **macOS**. Linux is documented to
+  behave the same for connected UDP sockets, and this project's history is that documented claims
+  are where the surprises live. **Bench steps 13–14 — close PdParty, reopen it — are the only way
+  to reach it**, and if the reconnect does not work the link is dead for a whole set with nothing
+  on the instrument to say so.
+- **The idle UDP rate.** Anything far off ~121–124/s means something is sending that should not be.
+- **`[text]` behaviour under the real scheduler.** The coalescer's flush walks the pending text on
+  a 50 ms tick; it has never run alongside DSP, the MIDI clock and the grid repaint.
+
+⚠️ **Check `ssh` before debugging any of it.** The Organelle drops its wifi after about an hour,
+unattributed, and it broke a deploy mid-session during Phase 6. **It will look exactly like a
+`u_net` bug and it is not.**
+
+---
+
+## The landing checklist, once the device run passes
+
+Not optional — [ref-conventions.md](ref-conventions.md), *How a phase runs*, step 6.
+
+- Phase 7's section **leaves** [plan-v02.md](plan-v02.md); its *Stage-readiness* bullets for rate
+  limiting and the `nbx` cosmetic are **done** and go with it.
+- The build log gains Phase 7. ⚠️ Include the two corrections above — *every phase's most valuable
+  output was a correction to something the plan asserted*, and this one is no exception.
+- `ref-display.md`'s ⬜ *"the link is not yet stage-worthy, on four counts"* drops to **two**: the
+  access point and phone hardening. Rate limiting and the `nbx` are resolved.
+- This file is deleted.
 
 ---
 
 ## Explicitly NOT in this phase
 
-- **Organelle as its own access point.** `hostapd` and `dnsmasq` are installed and the chip
-  supports AP mode ✅, never configured ⬜. ⚠️ **Bringing up an AP drops SSH** — read
+- **Organelle as its own access point.** ⚠️ **Bringing up an AP drops SSH** — read
   [plan-tests.md](plan-tests.md) Session 5's warning first. It is the last thing between the phone
   display and being stage-worthy, and it deserves its own session.
 - **Phone hardening.** Do Not Disturb and Guided Access. Not code.
-- ⚠️ **The Organelle drops its WiFi after about an hour** ⬜, unattributed — dongle, power, AP or
-  `wifi_control.py`. It broke a deploy mid-session during Phase 6. **It will look like a `u_net`
-  bug and it is not.** Session 5's AP work would sidestep it entirely, which is the argument for
-  doing that before chasing this.
-
----
-
-## Risks
-
-- **The WiFi drop above will be misdiagnosed as a Phase 7 bug.** Check `ssh` before debugging code.
-- **Rate limiting is easy to get subtly wrong** — a missing trailing edge shows as "the phone is
-  usually right", which passes a bench and fails on stage.
-- **UDP has no delivery guarantee**, which is fine for state and fatal for events. If anything in
-  this phase starts sending events, the design has drifted.
+- ⚠️ **The wifi drop above.** Unattributed — dongle, power, AP or `wifi_control.py`.

@@ -37,6 +37,8 @@
 #X obj 20 1320 g_grid \$2;
 #X text 300 1200 THE FIRST c_clock INSTANCE IN THE DEPLOYED PATCH \, and a real milestone: until now u_tempo published a master reference that nothing consumed. Ratio 1 \, eight beats to the bar \, so its beat-number outlet indexes the grid's bottom row directly. NOTHING DOWNSTREAM MAY ASSUME THE GLOBAL clock IS ITS CLOCK -- this instance is the grid's \, and the next consumer gets its own., f 58;
 #X text 300 1360 owns the Launchpad's LEDs. Two wires in: ownership from m_launchpad \, so it goes silent the moment a panic hands the surface back \, and the beat number from the c_clock beside it., f 40;
+#X obj 2300 1120 u_net 192.168.1.5 8000;
+#X text 2300 1170 THE FOURTH DISPLAY SURFACE \, and the only file that talks to the phone. It CONSUMES disp like the two above it and owns no selector on it \, so unlike led in Phase 5 and grid in Phase 6 it cost g_oled's route nothing at all -- a mirror rather than a surface with a vocabulary. Host and port are literal here for the same reason c_clock's ratio is: this is where the instrument is configured. THE PHONE'S ADDRESS IS DHCP AND WILL MOVE., f 34;
 #X connect 3 0 4 0;
 #X connect 3 0 7 0;
 #X connect 5 0 6 0;

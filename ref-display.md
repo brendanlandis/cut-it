@@ -275,6 +275,18 @@ venue WiFi, no cellular, no internet.
 **Do not use 9000 for OSC** — it is PdParty's WebDAV server (`GCDWebDAVServer`). ✅
 **Do not use 4001–4003** — those belong to `mother`. ✅
 
+⚠️ **The WebDAV server is NOT running just because PdParty is.** ✅ Measured in Phase 7: with the
+app open and demonstrably listening — a `[netsend -u -b]` delivered 20 datagrams to port 8000 with
+no ICMP teardown, which is positive proof of a listener — **port 9000 refused the connection
+outright** and `curl -T` failed with `Couldn't connect to server`. It has to be switched on in the
+app, and it does not necessarily survive the app being backgrounded.
+
+**So the phone deploy path in [ref-conventions.md](ref-conventions.md) has a precondition**, and
+its failure is loud rather than silent, which is the one mercy: `curl` exits 7. Check with
+`nc -z <phone> 9000` before assuming the scene was updated. ⚠️ **`nc -z` on port 8000 proves
+nothing** — OSC is UDP and a bare `nc -z` tests TCP; use a real datagram and watch for the ICMP
+teardown instead.
+
 ### The four PdParty rules that cost the most time
 
 1. **`[s #osc-out]` takes raw OSC bytes from `[oscformat]`.** ✅
@@ -322,6 +334,19 @@ do. Long comments do the same thing horizontally and get clipped.
 **iOS 14+ requires Settings → Privacy → Local Network permission**, and the entry only appears
 after the app first attempts an outbound local connection. 📄 Until granted, OSC fails
 silently.
+
+⚠️ **THE NOTCH EATS THE EDGE, AND PdParty DOES NOT INSET FOR IT.** ✅ Seen on the device in Phase
+7: the iPhone 11's speaker and front camera dip into the screen, and in landscape that covers
+roughly **44 points — 22 canvas units** — off one end of a full-width row. A scene laid out edge
+to edge loses whatever is under it, silently, and only in landscape.
+
+**Inset ONE side, not both.** Which edge the notch lands on is decided by which way the phone is
+turned, so the cheaper fix is to pick an orientation and hold it that way. `CutItRemote` keeps
+content at `x = 4` and stops at `x = 426`, leaving the 22 units on the right — worth 26 units of
+extra width over insetting symmetrically.
+
+**Leave the bottom clear too.** The home indicator sits over the last row; 17 canvas units is
+enough.
 
 ### What it is and isn't for
 
@@ -373,9 +398,22 @@ different things in different modes without the display lying.
 **The heartbeat must keep flowing even when nothing is happening**, because it is the only
 thing distinguishing "idle" from "dead".
 
-⬜ **The link is not yet stage-worthy**, on four counts — no rate limiting on the wire, no
-Organelle-hosted access point, phone hardening unfinished, and the value drawn as an `nbx` with
-box chrome. All four are tracked in [plan-v02.md](plan-v02.md) under *Open questions*.
+⬜ **The link is not yet stage-worthy, and it is down to two counts** — no Organelle-hosted access
+point, and phone hardening unfinished. Both are tracked in [plan-v02.md](plan-v02.md) under *Open
+questions*, and **neither is code**.
+
+✅ **The other two closed in Phase 7.** Rate limiting is done — coalesced per name at 20 Hz with a
+guaranteed trailing edge, measured taking 401 `disp` messages a second down to 42 datagrams — and
+the value is a `cnv` label rather than an `nbx`, so the box chrome is gone.
+
+**What Phase 7 added on top of the original four**, and both are stage-relevant:
+
+- ✅ **The link recovers by itself.** A phone that is switched off, quit, or leaves the network
+  destroys the socket; `u_net` rebuilds it within about five seconds of the phone coming back, with
+  nothing touched on the instrument. Measured on the device — [plan-tests.md](plan-tests.md)
+  item 119.
+- ✅ **Backgrounding PdParty does not drop the display.** iOS keeps the app running and the UDP port
+  bound, so tabbing away and back costs nothing. Only a full quit closes it.
 
 ---
 

@@ -37,7 +37,7 @@ def norm(table):
 
 def main():
     bad = 0
-    for phase in (3, 4, 5, 6):
+    for phase in (3, 4, 5, 6, 7):
         want = norm(getattr(steps_mod, "STEPS%d" % phase))
         path = os.path.join(HERE, "phase%d-bench.pd" % phase)
         got = norm(be.extract(path))

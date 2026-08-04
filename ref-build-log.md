@@ -444,6 +444,98 @@ is worth more than the display — and currently harmless, since nothing on the 
 compose and five perform would mean almost any mode selection silently made the error display
 quiet.
 
+## Phase 6 on the hardware — the acceptance run, and what it cost to trust it
+
+Everything above was Mac-verified. This is what happened when it was deployed, and it is the
+strongest evidence in the project that **a green Mac bench does not mean a phase is done**.
+
+### The bench had to be rebuilt before it could be believed
+
+The four benches were self-driving on a ten-second timer, so the console text and the hardware
+moved at the same instant — you cannot read one while watching the other. They are now **stepped by
+hand**: press GO to run the step just described, press GO again to describe the next. One control,
+because the device has only one to spare. `tools/bench-gen.py` generates all four from
+`bench_steps.py`, and `bench-verify.py` re-extracts the step text from the generated files and
+diffs it against the table — the three hardware-verified benches had to survive conversion
+**verbatim**, and that gate is the only reason converting them was safe.
+
+⚠️ **Four of the first run's five failures were in the bench, not the patch.** The modal chain
+(steps 7–10) silently expired under manual stepping because the 30-second TTL is wall-clock and a
+human takes longer than that to judge a step; step 12 could not distinguish the grid filter working
+from `u_err` being quiet in perform mode; step 19 asserted the opposite of what became true; and
+step 24 tested nothing at all, because the replug ran *after* the panic had already dropped
+ownership legitimately. **A bench that lies is worse than no bench**, and none of these were
+visible by reading.
+
+### Three bugs that shipped, all invisible on the Mac
+
+- ⚠️ **A phantom `lp-cc-N` on every nanoKONTROL movement.** `mother`'s own
+  `alsaconnect.sh` wires the **lowest-numbered** MIDI client to Pd's Midi-In 1, and the nano
+  enumerates below the Launchpad — so every boot put the nano on `m_launchpad`'s channel block, and
+  one fader move published both `slider-1` and a phantom `lp-cc-1`. **No Pd-side fix exists**: once
+  two devices share Midi-In 1 they are both genuinely channel 1, and `m_launchpad`'s channel test is
+  correct and powerless. Fixed with two `aconnect -d` lines in `wire.sh`, costing no extra fork.
+  Invisible on the Mac, which has explicit device slots and no `mother`.
+- ⚠️ **A replug fails differently on each platform.** On the Mac the device returns in Live Mode
+  with input still flowing under stale ownership; on the Organelle the ALSA subscriptions are
+  **destroyed outright**, so the surface simply vanishes and `wire.sh` only runs at boot. One
+  detector cannot cover both. See *The watchdog* below.
+- ⚠️ **`killall pd` strands the Launchpad in Programmer Mode**, with the device's own Settings menu
+  locked out. The safe exit hooks `[r quitting]`, which only `mother.pd` sends; Pd 0.49 has no
+  `closebang`, so a signal from the shell produces nothing. **The by-hand console workflow had been
+  doing this all along.** `tools/lp-live.sh` recovers it with `amidi` and no power cycle.
+  `deploy.sh` was never affected — it loads through `/loadPatch`, so `quitting` fires normally.
+
+### Two claims recorded as measured, and false
+
+- **"A SysEx of 120 colour specs is rejected outright."** It came from **three broken probes**: one
+  addressed index 128 — `0x80`, a status byte that cut its own SysEx short; one sent a bare count
+  and painted zero specs, so an empty message read as a rejection; one painted the second frame the
+  same colour as the first, so a successful repaint was invisible. A clean 120-spec message paints
+  the whole surface. **`g_grid` now spans 1–108**, and the reason is not the extra buttons: **LED
+  state survives the Programmer Mode switch**, so an index outside the span keeps whatever Live Mode
+  drew there forever. Seen twice — the row was green one run and dark the next with nothing in Cut
+  It touching it.
+- **"The clock roughly doubled Pd's CPU, and it is the 96 ALSA MIDI writes a second."** Item 75 said
+  so and marked it ⬜ *not confirmed by isolation*. Isolated now, two ways. A **tempo sweep** across
+  a 50× range puts the MIDI at **≈0.48 points per 100 writes/s** — so 96 writes cost about **0.43
+  points**, not five. Then `tools/dsp-toggle.pd` turned the audio engine off on the running patch:
+  **DSP on 11.8 %, DSP off 4.9 %.** ✅ **The DSP costs 6.9 points and the MIDI 0.43** — wrong by a
+  factor of sixteen. Within the DSP, a marginal `c_clock` is **0.43 points**, measured against a
+  scratch copy with two extra instances, so **poly-tempo is cheap and the base graph is where the
+  budget went**. That matters for v0.3, which stacks four filter stages on this baseline.
+
+### The watchdog — two mechanisms, because one detector cannot work
+
+`m_launchpad` → `pd watchdog`. A **heartbeat** re-asserts Programmer Mode every two seconds, which
+fixes the Mac without detecting anything — the device answers a universal device inquiry in *either*
+mode, so a Mac replug is undetectable by polling. An **inquiry poll** detects loss on the Organelle,
+where three missed replies drop ownership and `g_grid` goes silent. Recovery re-runs `wire.sh`:
+first attempt ~14 s after the cable goes, then every 8 s, stopping at ~70 s.
+
+- **`$0-want` is not `$0-own`.** `own` says the surface *is* ours; `want` says we still *intend* it.
+  Without the split, a panic hands the device back and the heartbeat grabs it again two seconds later.
+- ⚠️ **The arming gate is load-bearing.** The first build let three missed polls drop ownership
+  unconditionally, so on any machine with no Launchpad — including the headless gate — the grid went
+  dark six seconds in. Ownership can now only be *dropped* after a reply has actually been seen: **a
+  detector that has never proven it works can never blank the grid.**
+- ⚠️ **The bound on forking is what makes this permissible at all.** Phase 4's rule is *one fork per
+  load, never per event*, written against error logging, which cascades without limit. Three forks
+  tied to one cable event cannot. `wire.sh` costs **133 ms**, is idempotent, and ten forks fired back
+  to back produced no audio complaint on Pd's console — all measured before the rule was bent.
+
+### Three layers of testing, and each caught what the others could not
+
+This is the part worth carrying into Phase 7.
+
+- **The headless assert layer** found the arming gate — 7 of 24 checks. **No hands-on bench could
+  have**: the failure only exists when the hardware is *absent*.
+- **The hardware** found the recovery cadence. The first version gave up **12 seconds** after the
+  unplug, which reads as perfectly reasonable in source and is useless in a room — nobody reseats a
+  cable that fast, and the very first test missed the window.
+- **Hands** found the phantom `lp-cc` and the stranded Launchpad. Both needed somebody to do an
+  ordinary thing — move a fader, quit the patch — and look at what happened.
+
 ## What every phase had in common
 
 Worth stating once, because it is the pattern rather than a coincidence:

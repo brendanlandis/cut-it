@@ -6,7 +6,7 @@ that `print` output is visible, which matters because the Organelle launches Pd 
 and there is no console otherwise.
 
 Hand-authored in Pd 0.49 format except the four benches and two rigs that are **generated** —
-`bench-gen.py`, `lp-readback-gen.py` and `phase6-assert-drive-gen.py` write them, and the `.pd`
+`bench-gen.py` and `phase6-assert-drive-gen.py` write them, and the `.pd`
 is an output. Edit the generator. Do not open any of it in plugdata — see
 [../CLAUDE.md](../CLAUDE.md).
 
@@ -17,7 +17,6 @@ is an output. Edit the generator. Do not open any of it in plugdata — see
 | `lp-monitor.pd` | Puts the Launchpad in Programmer Mode, echoes pad presses back as LEDs, prints velocity and polyphonic aftertouch. |
 | `lp-flicker.pd` | Fills the Launchpad with random monochrome noise via per-pad RGB SysEx. Press any pad to toggle grey ↔ blue. Demo, but a working reference for RGB SysEx and `until` loops. |
 | `lp-modes.pd` | Lights three pads static / flashing / pulsing — the device's three LED animation modes. |
-| `lp-readback.pd` | **Can the Launchpad talk back to Pd?** `[sysexin]`, a universal device inquiry, a front-panel mode change and a rejected 120-spec frame. Items 98–101 — see *lp-readback.pd* below. |
 | `lp-step0.pd` | **Phase 6's Step 0 measurements, in one patch** — items 82–87. Prints incoming notes, **CC** and aftertouch with their channel, sends a batch colour SysEx of 64 / 99 / 120 specs, and switches layout. `lp-monitor.pd` cannot answer item 82 because it has no `[ctlin]`. Run it on the **Mac** with the Launchpad plugged in, in the foreground. |
 | `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
 
@@ -297,16 +296,6 @@ beat-row offset back to `+ 11` — makes it report `lit outside every region: [(
 beats out of eight looked perfect*: only the six-second beat-row window catches it. A gate that
 cannot fail is worth nothing, so re-run that mutation if you ever change the analyser.
 
-### `lp-readback.pd` — can the Launchpad tell Pd anything at all?
-
-Hands-on, on the Mac with the Launchpad on slot 1. `ref-midi.md` states that nothing in the rig
-transmits SysEx *to* Pd — ⚠️ **that has never been measured for the Launchpad, and `[sysexin]` has
-never been instantiated on this build.** Items 98–101: does `[sysexin]` fire, does the device
-answer a universal inquiry, does it announce a front-panel mode change, and does a rejected
-120-spec frame differ from an accepted 99-spec one.
-
-Every clickable control is one left-hand column in procedure order. Nothing here touches Cut It.
-
 ### `phase6-cpu.sh` — the repaint budget on the device
 
 ```sh
@@ -372,7 +361,7 @@ normal operation with `./deploy.sh`, which reloads through the menu path and *do
 exit.
 
 **Three of these already live on the device**, left there deliberately after the Phase 6 hardware
-run: `/sdcard/phase6-bench.pd`, `/sdcard/dsp-toggle.pd` and `/sdcard/lp-poll-probe.pd`. They sit
+run: `/sdcard/phase6-bench.pd` and `/sdcard/dsp-toggle.pd`. They sit
 *outside* the patch folder, so `deploy.sh` never touches them and they cannot affect what loads.
 Re-`scp` only if you have changed them locally.
 

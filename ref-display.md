@@ -548,6 +548,22 @@ metro — 10 Hz and 50 Hz measured identical on the device (item 94). It was rai
 because at 240 BPM a 250 ms beat does not divide into 100 ms, so the row swung ±50 ms. See
 [ref-midi.md](ref-midi.md).
 
+**THE GRID CAN GO DARK ON ITS OWN, AND THAT IS THE WATCHDOG RATHER THAN A FAULT.** `m_launchpad`
+polls the Launchpad with a universal device inquiry every two seconds. Three missed replies —
+**about six seconds** — mean the device is gone, ownership drops and `g_grid` stops painting
+entirely. Unplug the Launchpad on the Organelle and this is what you see. Recovery is automatic: it
+re-runs `wire.sh`, first about 14 s after the cable goes and then every 8 s, so a replug brings the
+grid back **within roughly eight seconds, in the correct state** — mode lamp, beat row and all,
+because the arbiter repaints from live state rather than restoring a frame.
+
+⚠️ **It gives up at about 70 seconds** and writes `fail m_launchpad grid-lost` to `err`. After that
+a replug will *not* recover the grid and the patch must be reloaded — the bound is deliberate, so a
+device nobody intends to plug back in cannot make Pd fork all night.
+
+**A dark grid is therefore three different things**, and the OLED is what tells them apart: nothing
+is wrong and nothing has changed (the dirty flag simply has no work); the surface was handed back by
+a panic; or the device is gone and the watchdog has said so.
+
 **Every raise and every expiry sets the dirty flag.** A layer falling away changes the frame just
 as much as one arriving — and the first build got this wrong, which would have left an expired
 alert red permanently ([ref-build-log.md](ref-build-log.md)).

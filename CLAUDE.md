@@ -61,8 +61,12 @@ Cut It/              the deployable patch — folder name is what appears in the
   m_launchpad.pd       the Launchpad Pro MK3 and the only file that talks to it:
                        Programmer Mode, the safe exit, pads and ring onto param
                        and disp, pressure onto param alone. Publishes surface
-                       ownership, which is what makes g_grid go quiet
-  g_grid.pd            the Launchpad's 96 LEDs and their sole owner. Same arbiter
+                       ownership, which is what makes g_grid go quiet. Also the
+                       REPLUG WATCHDOG -- a Programmer Mode heartbeat that fixes
+                       the Mac without detecting anything, plus a device-inquiry
+                       poll and a bounded wire.sh recovery for the Organelle,
+                       where a replug destroys the ALSA links outright
+  g_grid.pd            the Launchpad's 108 LEDs and their sole owner. Same arbiter
                        shape as g_oled -- home < modal < alert -- but home is a
                        COMPOSITE of regions, and it repaints only when dirty
   m_organelle.pd       the Organelle's own panel: aux and knobs 1-4 onto param and disp
@@ -81,10 +85,19 @@ Cut It/              the deployable patch — folder name is what appears in the
                        front face (screen, knobs, encoder, volume, keys) laid out like the
                        device and rendered inline on main-dev.pd via graph-on-parent.
                        No cords: every control binds by its iemgui send name. Mac only
-  wire.sh              aconnect calls, run by u_init via [shell]
+  wire.sh              aconnect calls, run by u_init via [shell]. Also UNDOES
+                       mother's own alsaconnect.sh, which wires the lowest-
+                       numbered MIDI client to Pd's Midi-In 1 -- the nano, which
+                       put it on m_launchpad's channel block on every boot
 mac-stubs/           stand-ins for device-only externals, for the local syntax check. NOT deployed
 deploy.sh            check → scp → reload → load, in one command (there is no rsync on the device)
 tools/fetch-errors.sh  pulls the error log back off the device and summarises it
+tools/go.sh            the ONLY way to advance a bench on the device -- the encoder
+                       does not work there, and netcat does not work on macOS
+tools/lp-live.sh       rescues a Launchpad stranded in Programmer Mode, with no Pd
+                       and no power cycle. Any exit that is not mother's strands it
+tools/dsp.sh           turns the audio engine off on a running patch, which is how
+                       item 75's real cause was finally isolated
 tools/               diagnostic patches, the per-phase benches, and pd-layout-check.py
   README.md            what each one proves, how to run it, and how to run a bench ON the device
   bench-gen.py         GENERATES all four phaseN-bench.pd from bench_steps.py. The benches

@@ -1365,7 +1365,8 @@ answer.
 
 ### The Launchpad CAN talk back — and the docs said it could not ✅
 
-`tools/lp-readback.pd`, run on the Mac. ⚠️ **`ref-midi.md` stated as fact that nothing in the rig
+`tools/lp-readback.pd`, run on the Mac. **That probe has since been DELETED** — items 98–110 below
+are everything it established, and nothing else depended on it. ⚠️ **`ref-midi.md` stated as fact that nothing in the rig
 transmits SysEx to Pd. That is false.** The sentence was an inference from two unrelated
 measurements — the nanoKONTROL's stream and Roland's chart for the 404 — and the Launchpad had
 never been checked.

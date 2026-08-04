@@ -242,7 +242,7 @@ Velocity is real — soft presses register as low as 10. ✅
 
 **This document previously stated that nothing in the rig transmits SysEx *to* Pd.** That was an
 inference from two unrelated measurements — the nanoKONTROL's stream (measured) and Roland's
-chart for the 404 — and **it is false.** ✅ Measured with `tools/lp-readback.pd`
+chart for the 404 — and **it is false.** ✅ Measured with `tools/lp-readback.pd` (the exploratory probe, **since deleted** — every question it was built to answer is closed and recorded in [plan-tests.md](plan-tests.md) items 98–110)
 ([plan-tests.md](plan-tests.md) items 98–99): `[sysexin]` instantiates *and fires* on this Pd
 build, and the Launchpad answers the **universal device inquiry**:
 

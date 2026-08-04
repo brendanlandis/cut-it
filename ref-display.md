@@ -259,10 +259,19 @@ installing libimobiledevice on a 2015-vintage Arch ARM with a read-only rootfs. 
 re-enabling WiFi is standard iOS behaviour — cellular stays off, WiFi works, and the setting
 persists. So WiFi is available in performance conditions.
 
-**And the Organelle can host the network itself.** `hostapd` and `dnsmasq` are already
-installed, `wlan0` exists, and `iw list` reports **AP** among supported interface modes. ✅
-present — ⬜ never actually configured or tested. That would make the link self-contained: no
-venue WiFi, no cellular, no internet.
+**And the Organelle hosts the network itself.** ✅ **Configured and verified in Phase 7**, and it
+is the vendor's own path rather than a hostapd project: `start-ap.sh` reads `$USER_DIR/ap.txt` and
+calls `create_ap`, and **`Start AP` is already in the Organelle's System → WiFi Setup menu**. The
+rig runs `organelle` / `definitelycutit`; two clients joined and the phone display worked over it.
+Details and the venue sequence are in [ref-hardware.md](ref-hardware.md).
+
+**That is what makes airplane mode workable.** A phone hotspot needs cellular, so it cannot be
+combined with airplane mode; an AP the Organelle hosts needs neither. The phone joins with
+cellular off and nothing else in the room is involved.
+
+⚠️ **The AP has no internet** — `create_ap` is called with `-n` and the Organelle has one radio,
+so it cannot be both AP and client. A laptop joined to it is offline, which makes an AP session
+one that cannot be driven interactively. Prepare on the house network, then switch.
 
 ### Addresses and ports
 
@@ -358,8 +367,10 @@ note timing.
 
 ## The performance status protocol
 
-Working, verified end to end on hardware. ✅ Reference implementation:
-`tools/status-display/` (Organelle) and `tools/pdparty-scene/CutItRemote/` (phone).
+Working, verified end to end on hardware. ✅ **The implementation is `Cut It/u_net.pd`** and the
+phone side is `tools/pdparty-scene/CutItRemote/`. `tools/status-display/` is the **superseded
+prototype** — kept as the smallest readable statement of the protocol, but it is not what runs:
+it reads `knob1`–`knob4` directly, hardcodes four parameter names, and sends a packet per CC.
 
 ### Three rules, and they are not optional
 
@@ -383,9 +394,22 @@ off, phone crashed, WiFi gone — the instrument plays identically.
 ### Wire format
 
 ```
-/cutit/param  <name> <value>     the parameter that just changed
-/cutit/hb     <counter>          heartbeat, every 500 ms
+/cutit/param   <name> <value> <unit>              coalesced per NAME at 20 Hz
+/cutit/status  <symbol>                           coalesced, one slot
+/cutit/hb      <counter>                          every 500 ms
+/cutit/alert   <count> <level> <source> <text>    every 500 ms, always present
 ```
+
+⚠️ **The unit is written on EVERY param message**, as `-` when there is none. `disp` treats it as
+optional and `[list split 3]` on exactly three atoms never fires its right outlet — so a field
+written on some messages and not others keeps its old value, and `chop-size 43 %` followed by
+`grain 12` draws as `grain 12 %`. `u_net` appends the dash *before* splitting, making the optional
+field mandatory by construction.
+
+**`alert` and `hb` are repeated unconditionally at 2 Hz**, and `param` and `status` are repeated
+every 2 s on top of their event-driven sends. That is what lets a phone that arrives late — or
+comes back from an outage — populate itself without anything moving. ✅ Verified on both
+platforms: after a reconnect the phone repopulated in about two seconds, untouched.
 
 **One address for all parameters.** Adding a parameter costs one `[list prepend <name>]` on the
 Organelle and nothing at all on the phone. This scales to the nanoKONTROL's 18 continuous
@@ -398,9 +422,15 @@ different things in different modes without the display lying.
 **The heartbeat must keep flowing even when nothing is happening**, because it is the only
 thing distinguishing "idle" from "dead".
 
-⬜ **The link is not yet stage-worthy, and it is down to two counts** — no Organelle-hosted access
-point, and phone hardening unfinished. Both are tracked in [plan-v02.md](plan-v02.md) under *Open
-questions*, and **neither is code**.
+⬜ **One count is left, and it is not code: phone hardening.** ✅ Rate limiting, the `nbx` chrome
+and the Organelle-hosted access point are all done — the venue sequence runs with no laptop and no
+venue WiFi, and the phone joins in airplane mode. What remains is Guided Access, so a stray swipe
+cannot drop you out of the scene mid-set. Tracked in [plan-v02.md](plan-v02.md) under *Open
+questions*.
+
+⚠️ **Do Not Disturb is no longer the answer to notifications** — the access point means the phone
+can be in **airplane mode**, which suppresses them at the source. That was the whole reason for
+hosting the network rather than using the phone's hotspot, which needs cellular.
 
 ✅ **The other two closed in Phase 7.** Rate limiting is done — coalesced per name at 20 Hz with a
 guaranteed trailing edge, measured taking 401 `disp` messages a second down to 42 datagrams — and

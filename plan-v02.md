@@ -176,30 +176,45 @@ Y-cable; procedure in [plan-tests.md](plan-tests.md) Session 3, items 12–13.
 
 ### Stage-readiness — the phone link
 
-Everything about the PdParty display works ✅. **Two counts are left and neither is code** — Phase 7
-closed the other two, and added self-recovery on top:
+✅ **Three of the original four counts are closed.** Rate limiting and the `nbx` chrome went with
+Phase 7; the Organelle-hosted access point is configured, tested and proven end to end — the venue
+sequence is in [ref-hardware.md](ref-hardware.md).
 
-- **A self-contained network, so the link does not depend on venue WiFi.** Two routes, and the
-  cheap one should be tried first:
+**One thing is left, and it is not code:**
 
-  1. **The phone's own hotspot.** ✅ The mechanism is now known and it is trivial: credentials live
-     in `$USER_DIR/wifi.txt` as plain SSID/password line pairs, `/sdcard` is `rw`, so adding a
-     network is appending two lines — see [ref-hardware.md](ref-hardware.md). **SSH survives**,
-     the Organelle falls back to the home network if the hotspot is absent, and it is reversible.
-     ⚠️ **Needs cellular, so it cannot be combined with airplane mode** — the two are mutually
-     exclusive, which makes Do Not Disturb load-bearing rather than optional. ⬜ Untested: iOS
-     hotspots can power down, and the phone becomes both the network and the display.
-  2. **Organelle as its own access point.** `hostapd` and `dnsmasq` are installed and the chip
-     supports AP mode ✅, never configured ⬜. Fully self-contained — no cellular, no second
-     device. ⚠️ **Bringing up an AP drops SSH**, so read [plan-tests.md](plan-tests.md) Session 5's
-     warning first and give it its own session.
+- **Phone hardening.** Auto-Lock Never ✅. **Guided Access** still to set — it pins the phone to one
+  app and kills the home gesture, so a stray swipe cannot drop you out of the scene mid-set. That
+  is the real risk on a phone lying on an amp, and nothing else addresses it.
+  ⚠️ **Do Not Disturb is no longer needed.** The access point means the phone can sit in **airplane
+  mode**, which suppresses notifications at the source. A phone *hotspot* could not have done this —
+  it needs cellular — which is why hosting the network on the Organelle was the right call.
 
-  ⚠️ **Either one is a free diagnostic for item 81.** If the roughly hourly wifi drop still happens
-  on a network the venue is not providing, the cause is the dongle or power rather than the access
-  point — and item 81 is currently unattributed. It is the one fault that could take the display
-  down mid-set, and it would look exactly like a `u_net` bug.
-- **Phone hardening.** Auto-Lock Never ✅; Do Not Disturb and Guided Access still to set. Guided
-  Access is what stops a notification or a stray tap dropping you out of the scene mid-performance.
+⚠️ **The one fault that could still take the display down mid-set is the wifi drop, item 81** — and
+Phase 7 caught it in the act. It is **not** the radio: the device stays associated and loses its
+**IPv4 lease**. See item 133, and the investigation below.
+
+### The wifi fault — the next session
+
+⬜ **Item 81, now much better defined.** Caught live during Phase 7's device run
+([plan-tests.md](plan-tests.md) item 133):
+
+- `wpa_supplicant` and `dhcpcd` both running, **still associated** to the right SSID and BSSID
+- **no IPv4 address on `wlan0`** — IPv6 link-local only
+- a `dhcpcd -n` renew did **not** recover it; **only a restart did, and then first try**
+- ⚠️ **SSH kept working the whole time over IPv6 link-local**, which is why this has looked
+  mysterious for so long. **The check is `ip addr show wlan0 | grep "inet "`, not whether you can
+  log in.**
+
+**That points at DHCP lease renewal — the router's lease time, or `dhcpcd` failing to renew — not
+at the dongle, the power or the access point**, which is where item 81 has pointed until now.
+
+**Order of work**, cheapest and most diagnostic first:
+
+1. **Capture `dhcpcd`'s own logging across a failure.** A restart resets it and the fault appears
+   within about an hour, so it is reproducible.
+2. **Check the router's DHCP lease time** against how long the device survives.
+3. **Only then swap the spare USB wifi card.** ⚠️ If the fault is DHCP-side a different radio
+   changes nothing, and the experiment is spent — so it is the *last* test, not the first.
 
 ### Still to acquire
 

@@ -212,6 +212,41 @@ than `hostapd`: the Organelle simply joins whichever is present and **SSH surviv
 bringing up an AP drops it. ⚠️ **An iPhone Personal Hotspot needs cellular**, so it cannot be
 combined with airplane mode — the two are mutually exclusive. See [plan-v02.md](plan-v02.md).
 
+### The Organelle as its own access point ✅
+
+**This is the stage configuration**, and it is the vendor's own path rather than a `hostapd`
+project. `start-ap.sh` reads `$USER_DIR/ap.txt` — first line network, last line password — and
+calls `create_ap --no-virt -n wlan0 $NET $PW`, defaulting to `Organelle` / `coolmusic`. This rig
+uses **`organelle` / `definitelycutit`**, and the phone leases **192.168.12.109** from it.
+
+**The venue sequence — no laptop, no venue wifi, phone in airplane mode:**
+
+1. Organelle: **System → WiFi Setup → Start AP**
+2. Phone: airplane mode on, wifi back on, join **`organelle`**
+3. Organelle: load **Cut It** — `phone-ip.sh` finds the phone's address from the DHCP lease
+
+✅ Verified end to end. Airplane mode is what makes this worth doing: a phone *hotspot* needs
+cellular, an AP the Organelle hosts does not.
+
+⚠️ **Start the AP from the SYSTEM MENU, not from a patch.** A patch that launches `start-ap.sh`
+loses it the moment the next patch loads — `create_ap`, `hostapd` and `dnsmasq` all die with the
+Pd that spawned them, **even behind `setsid nohup`**. Measured; [plan-tests.md](plan-tests.md)
+item 129.
+
+⚠️ **The passphrase must be 8–63 characters.** `create_ap` rejects anything shorter — and
+`start-ap.sh` runs `killall wpa_supplicant` *before* calling it, so a rejected passphrase leaves
+the device with **no wifi and no AP**, recoverable only by power cycle.
+
+⚠️ **`$NET` and `$PW` are passed unquoted**, so an AP name with spaces breaks — unlike `wifi.txt`,
+which handles them. Keep the AP name one word.
+
+⚠️ **The AP has no internet** — `create_ap` is called with `-n`, and one radio cannot be both AP
+and client. **A Mac joined to it is offline**, so an AP session cannot be driven from a laptop that
+needs a network. Prepare everything on the house wifi first.
+
+✅ **Recovery is a power cycle.** `createap.service` is `disabled`, so the device comes back on the
+house network by itself. Nothing about this is sticky.
+
 **Beware the wider blast radius.** `USER_DIR` is not only wifi — `start-ap.sh` reads
 `$USER_DIR/ap.txt` and the System menu's save paths hang off it. And `mount.sh` runs on **every
 Reload**, so this can appear mid-session, not just at boot. That is why `deploy.sh` sends
@@ -311,17 +346,24 @@ device, which is the bug that once had `fetch-errors.sh` reporting pd alive whil
 | Phase 3 — home frame only | 8.2 % | 110/s |
 | Phase 4 — multi-parameter display | 5.3 % | 117/s |
 | Phase 5 — clock on two MIDI ports | **10.2 %** | 117/s |
+| Phase 6 — Launchpad grid | **11.7–12.0 %** | 120/s |
+| Phase 7 — phone status link | **11.7 %** | **122–126/s** |
 
-The datagram rate is the display and has been flat since Phase 3. **The CPU jump is the clock**,
-and it is ~96 ALSA MIDI writes a second rather than the DSP — two extra `c_clock` instances cost
+The datagram rate was the display alone and flat from Phase 3 to 6. **The Phase 5 CPU jump is the
+clock** — ~96 ALSA MIDI writes a second rather than the DSP; two extra `c_clock` instances cost
 only 0.4 points. Items 21, 37 and 75.
 
-⬜ **Phase 6 has no row here yet, and that is deliberate.** The Launchpad grid is built and
-verified on the Mac but has never been deployed, so there is no measured number to put in this
-table. **The budget it must meet is 11.2 %** — the Phase 5 baseline plus one point — and the
-reason it should come nowhere near that is that `g_grid` repaints only when something changes:
-nothing at all when idle, about two SysEx a second at 120 BPM. [plan-tests.md](plan-tests.md)
-item 94 is the measurement.
+**Phase 7 is the first phase to move the UDP number**, and by a knowable amount: heartbeat 2/s,
+repeated alert state 2/s, and the late-join repeat 1/s. ✅ **`u_net` costs about 0.2 CPU points.**
+Items 118 and 134.
+
+⚠️ **The 11.2 % budget the tooling still prints is Phase 5's, and Phase 6 already exceeded it.**
+`tools/phase6-cpu.sh` reports OVER BUDGET against it, which is the script being stale rather than
+a regression. Compare against the row above instead.
+
+⬜ **One set of readings is unexplained**: 10.2–10.5 % during Phase 7's session, taken shortly
+after patch reloads, against 11.7 % under controlled conditions minutes later. Recorded rather
+than rationalised — item 134.
 
 ### MIDI: OSS vs ALSA
 

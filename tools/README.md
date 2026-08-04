@@ -344,7 +344,7 @@ exactly like a broken rate limiter.
 A mark on stdout would have to be correlated with socket timestamps afterwards; a mark *in* the
 stream arrives in true order with the data around it.
 
-**25 checks**: the four OSC addresses and nothing else, a monotonic heartbeat, silence on both
+**28 checks**: the four OSC addresses and nothing else, a monotonic heartbeat, silence on both
 idle windows, the coalescer's rate ceiling, **a per-name trailing edge on two simultaneous
 sweeps**, `status` limited on its own address, the alert arriving as repeated state, and the
 reserved selectors never leaking onto `/cutit/param`.
@@ -419,10 +419,14 @@ like a dead bench. The device cannot send to itself either: busybox here has no 
 normal operation with `./deploy.sh`, which reloads through the menu path and *does* run the safe
 exit.
 
-**Three of these already live on the device**, left there deliberately after the Phase 6 hardware
-run: `/sdcard/phase6-bench.pd` and `/sdcard/dsp-toggle.pd`. They sit
-*outside* the patch folder, so `deploy.sh` never touches them and they cannot affect what loads.
-Re-`scp` only if you have changed them locally.
+**Two of these live on the device**, left there deliberately after the Phase 6 hardware run:
+`/sdcard/phase6-bench.pd` and `/sdcard/dsp-toggle.pd`. They sit *outside* the patch folder, so
+`deploy.sh` never touches them and they cannot affect what loads. Re-`scp` only if you have
+changed them locally.
+
+⚠️ **`/tmp` is wiped on reboot**, which is why these live on `/sdcard`. A bench copied to `/tmp`
+vanishes with a restart, and the by-hand launch then runs `mother.pd` + `main.pd` with **no
+bench** — the GO port is never bound and the bench looks frozen at step 1. Item 134.
 
 ### `go.sh` — the only way to drive a bench on the Organelle
 

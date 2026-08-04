@@ -21,7 +21,8 @@ do. They are the most valuable thing in this file.
 | 3 | ✅ hardware | `g_oled`, `u_err` |
 | 4 | ✅ hardware | `m_nano`, the persistent error log, the multi-parameter display |
 | 5 | ✅ hardware | `u_tempo`, `c_clock`, `u_map`, `m_organelle`, `g_led`, the `param` bus |
-| 6 | ✅ Mac | `m_launchpad`, `g_grid`, the `mode` driver, the first `c_clock` instance |
+| 6 | ✅ hardware | `m_launchpad`, `g_grid`, the `mode` driver, the first `c_clock` instance |
+| 7 | ✅ hardware | `u_net`, the per-name coalescer, the reconnect, the phone scene |
 
 ---
 
@@ -618,6 +619,70 @@ stayed `ESTABLISHED` and no teardown appeared — recorded briefly as "Linux doe
 macOS". It was wrong: iOS was still running the app in the background with the port bound, so the
 case had simply never been tested. **Backgrounding an iOS app is not closing it**, and the orange
 pill in the status bar is the tell.
+
+### Where the phone lives: three answers, and the first two were wrong
+
+The address started as a literal in `u_root`, which is correct on exactly one network and dead on
+the others. Two attempts to fix that, and the failure of the second is the more instructive:
+
+- ❌ **A subnet broadcast** (`192.168.1.255`) is no less network-specific than a host address.
+- ❌ **A limited broadcast** (`255.255.255.255`) is genuinely network-agnostic, Linux permits it,
+  PdParty accepts it, and **19–20 of 20 datagrams arrive against a unicast control managing 18**.
+  Everything checked out except the property nobody measured. ⚠️ **Wifi access points buffer
+  broadcast frames and release them on beacon boundaries**: unicast arrived every 200 ms as sent,
+  broadcast arrived **in bursts of three or four separated by up to 819 ms**. Throughput identical,
+  latency not — which is exactly why a delivery test saw nothing wrong and **a person moving a knob
+  noticed within seconds**. It also eats the phone's 1500 ms `NO-LINK` margin.
+- ✅ **Discovery.** `phone-ip.sh` reads the DHCP lease the Organelle itself handed out when acting
+  as an access point, and falls back to the creation argument anywhere else — so it always prints
+  one line and no conditional lives in the patch. **There was never a discovery problem to solve;
+  the Organelle already knew the answer.**
+
+⚠️ **`[netreceive]` in 0.49 cannot tell you who sent a datagram**, which is why the phone announcing
+itself was not an option. Checked before designing around it.
+
+### The access point, and a probe that killed its own design
+
+The venue sequence — Start AP, join the phone, load Cut It — needed the AP startable without a
+laptop. The first answer was a `Start AP` menu patch. ⚠️ **It does not work**: `create_ap`,
+`hostapd` and `dnsmasq` are all children of the Pd that spawned them and die when the next patch
+loads, **even behind `setsid nohup`**. The Organelle's own System → WiFi Setup → **Start AP**
+predates the whole idea and is not a child of a patch.
+
+**The probe that found this was built to be run without help**, because a Mac joined to the AP has
+no internet — `create_ap` runs with `-n` and one radio cannot be both AP and client. So the session
+that answers those questions is the session with nobody watching. It recorded itself to
+`/sdcard/ap-probe.log`, and ✅ **its second extraction strategy is what saved the run**: dnsmasq had
+already exited, so the address came from `arp` rather than the lease file.
+
+### The Mac bench, which this phase had skipped
+
+Running the bench on the Mac *before* the device is the convention, and Phase 7 went device-first.
+Doing it afterwards found two things the device run had passed straight over:
+
+- ⚠️ **`[metro]` fires the instant it is started.** The reconnect metro, armed at 1600 ms, banged
+  the address store **before the address had resolved** — `connect` with an empty host, and
+  `bad host?` on the console at **every boot**. New with discovery: before it, the store was
+  `[f $2]` and an early bang produced a valid address. Fixed by arming at 3000 ms.
+- ⚠️ **TWO INSTRUMENTS WILL FIGHT OVER ONE PHONE.** With the Organelle running Cut It and
+  `main-dev.pd` running on the Mac, both were connected to the same phone and the status row
+  **fluttered between two values**. The bus was innocent — a `[r disp]` tap showed four messages
+  and no repeats. **`u_net` is the sole owner of the phone WITHIN an instrument; nothing arbitrates
+  ACROSS machines**, and the symptom looks nothing like contention. It will recur during off-device
+  development with the device still powered.
+
+### And item 81 finally showed its face
+
+The wifi drop interrupted the device re-run between steps 11 and 12, and for several minutes looked
+exactly like a `u_net` fault — which its own entry had predicted for two phases. What was actually
+true: **still associated**, `wpa_supplicant` and `dhcpcd` both running, and **no IPv4 address at
+all**. ⚠️ **SSH kept working over IPv6 link-local throughout**, so *"check ssh before debugging
+code"* — this project's own rule — **was not a sufficient test**. The check is
+`ip addr show wlan0 | grep "inet "`.
+
+**So it is the IPv4 lease that is lost, not the network**, and a restart fixes it first try where a
+`dhcpcd` renew does not. That points at DHCP renewal rather than the dongle, the power or the AP.
+[plan-tests.md](plan-tests.md) item 133; the investigation is in [plan-v02.md](plan-v02.md).
 
 ## What every phase had in common
 

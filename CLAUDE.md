@@ -91,6 +91,10 @@ Cut It/              the deployable patch — folder name is what appears in the
                        front face (screen, knobs, encoder, volume, keys) laid out like the
                        device and rendered inline on main-dev.pd via graph-on-parent.
                        No cords: every control binds by its iemgui send name. Mac only
+  phone-ip.sh          how u_net finds the phone WITHOUT being told: on the Organelle's own
+                       access point the Organelle is the DHCP server, so it reads the lease
+                       it handed out. Falls back to the creation arg on any other network,
+                       so one build works everywhere and no conditional lives in the patch
   wire.sh              aconnect calls, run by u_init via [shell]. Also UNDOES
                        mother's own alsaconnect.sh, which wires the lowest-
                        numbered MIDI client to Pd's Midi-In 1 -- the nano, which
@@ -114,6 +118,9 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
                        read back every byte, then asserts on what the grid actually showed
   phase7-assert.sh     the same idea and much cheaper — u_net already emits to a socket,
                        so it binds the port and reads real datagrams. Nothing is rewritten
+  stage-patches/       Organelle menu patches for the venue: AP Probe records what can only
+                       be seen while the access point is up, which is exactly when a Mac
+                       joined to it has no internet and nobody can watch
 plan-v02.md          the build plan — the phases still to come, and EVERY open question
 plan-tests.md        the ordered hardware checks, with every measured number
 ref-build-log.md     Phases 0-6 as built: outcomes, and every correction they produced

@@ -1049,7 +1049,7 @@ well-supported hostapd chipset.
       ✅ **Recovery is a power cycle.** `createap.service` is `disabled`, so the device returns to
       the home network on its own. Nothing about this is sticky.
 
-- [ ] **127. ⚠️ ⬜ THE AP HAS NO INTERNET, WHICH MAKES IT UNDRIVEABLE FROM THE MAC.**
+- [x] **127. ⚠️ ✅ THE AP HAS NO INTERNET, WHICH MAKES IT UNDRIVEABLE FROM THE MAC.**
       `create_ap` is called with **`-n`** — no internet sharing — so a Mac joined to `organelle` is
       off the internet, and **Claude cannot run at all**. The Organelle has one radio, so it cannot
       be both AP and client; there is no way to give that AP a route.
@@ -1290,12 +1290,18 @@ well-supported hostapd chipset.
         wiring is silently absent** — no `wire:` line in the log is the tell. Load through
         `deploy.sh` first, then launch by hand.
 
-- [ ] **43. Bring up an AP on `wlan0` and join it from the iPhone.** Confirm the phone gets an
+- [x] **43. ✅ AP up, phone joined, display working over it.** `organelle` / `definitelycutit` via the System menu; the phone leased **192.168.12.109** and Cut It found it without being told. Items 126, 130 and 131.
+
+- [ ] ~~**43. Bring up an AP on `wlan0` and join it from the iPhone.**~~ Confirm the phone gets an
       address from `dnsmasq` and the status display still updates.
-- [ ] **44. Check it in airplane mode** — cellular off, wifi manually re-enabled.
+- [x] **44. ✅ Confirmed in airplane mode** — cellular off, wifi re-enabled by hand, which is the whole point of hosting the network on the Organelle rather than using the phone's hotspot. A hotspot needs cellular; this does not.
+
+- [ ] ~~**44. Check it in airplane mode**~~
 - [ ] **45. Judge the link quality.** Watch the heartbeat for gaps over a few minutes. This is
       the actual question: is it steady enough to trust mid-set?
-- [ ] **46. Decide whether it survives a reboot** — and whether you *want* it to. Persisting it
+- [x] **46. ✅ Decided: it does NOT survive a reboot, and that is deliberate.** `createap.service` stays `disabled`, so a power cycle always returns the device to the house network — which is the recovery path for every AP mistake. Starting it is two menu presses at the venue.
+
+- [ ] ~~**46. Decide whether it survives a reboot**~~ — and whether you *want* it to. Persisting it
       means the Organelle no longer joins the house network, which costs the `scp`/`ssh`
       workflow.
 
@@ -1411,7 +1417,7 @@ Phase 6 has been deployed yet.
 
 ### Still to run — these need the Organelle
 
-- [ ] **94. ⬜ The repaint budget on the device.** Target: **idle CPU at or below 11.2 %**, the
+- [x] **94. ✅ Measured — 11.7–12.0 %.** Target: **idle CPU at or below 11.2 %**, the
       Phase 5 baseline of 10.2 % plus one point, by `ref-hardware.md` → *Measuring the running
       patch*. Three readings: idle and stopped, transport running with the beat row walking, and
       during a bench alert storm. Expected SysEx rates 0/s, ~2/s and ~6/s.
@@ -2028,22 +2034,25 @@ Not unimportant — just not blocking UI/UX decisions.
 
 ## What's actually left
 
-**Eight open items, and only one of them can still force a redesign.**
+**Five open items. One can still force a redesign, one is the only fault that could take the
+display down mid-set, and three are waiting on cables or eyes.**
 
 | | Blocked on | Why it is still here |
 |---|---|---|
-| **Item 117** — the phone end to end from the Mac | somebody looking at the phone | The Mac half is confirmed and the socket stays up against a real listener; what is unconfirmed is what the screen actually says |
-| **Item 118** — Phase 7 on the Organelle | the device being switched on | ⚠️ **Phase 7 is Mac-verified and has never been deployed**, which is the exact position Phase 6 was in before it shipped three bugs. Also the only way to confirm item 114's ICMP teardown on Linux/ARM |
 | **Session 3** — items 12 and 13, audio topology | the TRS Y-cable | ⚠️ **The only remaining test that could force a redesign.** How the 404 places *external* input in the stereo field is internal routing, and no amount of Mac testing reaches it |
-| **Session 7** — items 94, 96 and 97, Phase 6 on the device | nothing | ⚠️ **Phase 6 is verified on the Mac and has never been deployed.** The repaint budget, the safe exit after the lift, and the boot sequence in its real order. Item 96 is the one that costs a power cycle if it is wrong |
-| **Item 5 / item 95** — power under full load | a cable | Never run with three controllers plus the wifi dongle at once. Presents as intermittent dropouts, not an obvious failure — so if Phase 6 produces flaky Launchpad behaviour, **suspect the hub before the code** |
-| **Session 5** — items 43–46, Organelle as an access point | nothing | Doesn't block the v0.2 build; does block trusting the phone display on stage. ⚠️ Read its warning first — bringing up an AP drops SSH. Would also sidestep item 81 |
+| **Items 81 and 133** — the wifi fault | nothing | ⚠️ **The next session.** Now well defined: the device stays *associated* and loses its **IPv4 lease**; a restart fixes it first try, a `dhcpcd` renew does not. ⚠️ **SSH keeps working over IPv6 throughout**, so check `ip addr show wlan0 \| grep "inet "`, not whether you can log in. Plan in [plan-v02.md](plan-v02.md) |
+| **Items 5 and 95** — power under full load | a cable | Never run with three controllers plus the wifi dongle at once. **Presents as intermittent MIDI dropouts rather than an obvious failure** — suspect power before code. ⚠️ It is also the leading candidate for the Launchpad failing to present its MIDI interface in item 131 |
 | **Item 39** — the OLED's 2- and 3–5-mover layouts read by eye | nothing | Opportunistic. Steps 15–16 of `phase4-bench.pd` are written for it |
-| **Item 81** — the wifi dropping | nothing | Not urgent, unattributed, and Session 5 may make it irrelevant |
+| **Item 45** — AP link quality over several minutes | nothing | The AP works and the display runs over it; what has not been done is watching the heartbeat for gaps long enough to trust it for a set |
 
-**Everything else has passed**, including three phases end to end on the Organelle: Phase 3
-(items 21–21c), Phase 4 (items 33–38b, 80) and Phase 5 (items 70–79). **Phase 6 (items 82–93b)
-has passed on the Mac only.**
+**Everything else has passed**, including **five phases end to end on the Organelle**: Phase 3
+(items 21–21c), Phase 4 (items 33–38b, 80), Phase 5 (items 70–79), Phase 6 (items 82–97) and
+Phase 7 (items 113–134).
+
+✅ **Phase 7 is verified on both platforms** — 15 of 15 on the Mac and 15 of 15 on the device,
+plus a 28-check headless gate. The Mac run happened *after* the device run, against convention,
+and found two faults the device pass had gone straight past: a `bad host?` at every boot, and two
+instruments fighting over one phone. **Mac first, then device** — the order exists for a reason.
 
 The full MIDI picture — every message each device accepts and transmits — is catalogued in
 [ref-midi.md](ref-midi.md), which also carries the remaining message-level unknowns, chief among

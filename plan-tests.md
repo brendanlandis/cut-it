@@ -1011,9 +1011,9 @@ check quits before the flush metro fires.
 
 ## Session 5 — Organelle as its own access point
 
-⬜ **Not attempted.** Gates whether the PdParty status display is stage-worthy or
-development-only. Everything else about the phone link is already verified — see
-[ref-display.md](ref-display.md).
+✅ **PARTLY ATTEMPTED — the AP works, and it is the vendor's own script rather than a hostapd
+project.** Items 125–128 below are what Phase 7's session established. What is still open is the
+display link *over* the AP, which needs one more pass.
 
 **Why it matters:** the display currently rides the house wifi. In a venue that is either
 absent, congested, or full of other people's phones. An Organelle-hosted AP with one client a
@@ -1022,6 +1022,167 @@ metre away removes the venue from the equation entirely.
 **What's already known:** `hostapd` and `dnsmasq` are installed, `wlan0` exists, and `iw list`
 reports **AP** among supported interface modes. ✅ The dongle is a Ralink RT5370, a
 well-supported hostapd chipset.
+
+- [x] **125. ✅ The wifi credentials live in `$USER_DIR/wifi.txt`, and `wpa_supplicant.conf` is a
+      decoy.** Plain text, alternating SSID and password lines, `USER_DIR` = **`/sdcard`** which is
+      mounted `rw` — so adding a network is appending two lines and needs no `remount-rw.sh`.
+      `/etc/wpa_supplicant/wpa_supplicant.conf` is the stock 2015 example file and **nothing reads
+      it**. ✅ An SSID containing a space and an apostrophe works, because `wifi_control.py`
+      interpolates it inside double quotes. Details in [ref-hardware.md](ref-hardware.md).
+
+- [x] **126. ✅ The AP comes up, and `create_ap` does all the work.** `start-ap.sh` reads
+      `$USER_DIR/ap.txt` — first line network, last line password — and calls
+      `create_ap --no-virt -n wlan0 $NET $PW`, defaulting to `Organelle` / `coolmusic`.
+
+      Brought up as **`organelle` / `definitelycutit`**. ✅ **Two clients joined**: the iPhone, and
+      the Mac at `192.168.12.145` with the Organelle as gateway on `192.168.12.1`. The phone's
+      lease was **192.168.12.109**.
+
+      ⚠️ **The passphrase must be 8–63 characters** — `create_ap` rejects anything shorter. This
+      matters more than a normal typo because `start-ap.sh` runs `killall wpa_supplicant` **before**
+      calling `create_ap`, so a rejected passphrase leaves the device with **no wifi and no AP**,
+      recoverable only by power cycle. A five-character password was caught before it was tried.
+
+      ⚠️ **`$NET` and `$PW` are passed UNQUOTED**, so an AP name with spaces would break — unlike
+      `wifi.txt`, which handles them. Keep the AP name one word.
+
+      ✅ **Recovery is a power cycle.** `createap.service` is `disabled`, so the device returns to
+      the home network on its own. Nothing about this is sticky.
+
+- [ ] **127. ⚠️ ⬜ THE AP HAS NO INTERNET, WHICH MAKES IT UNDRIVEABLE FROM THE MAC.**
+      `create_ap` is called with **`-n`** — no internet sharing — so a Mac joined to `organelle` is
+      off the internet, and **Claude cannot run at all**. The Organelle has one radio, so it cannot
+      be both AP and client; there is no way to give that AP a route.
+
+      **Consequence for the workflow, and it is a real one:** an AP session cannot be driven
+      interactively. Either the Mac needs a **second interface** (Ethernet for internet, wifi for
+      the AP), or the AP is treated as **stage-only** and everything is prepared beforehand on a
+      network that has both.
+
+      **This is what the phone's hotspot is actually for** — it is the one configuration where the
+      Mac, the Organelle and the phone share a network *and* there is internet. ⚠️ It needs
+      cellular, so it cannot be combined with airplane mode; that is a development network, not a
+      stage one.
+
+- [x] **128. ✅ ⚠️ BROADCAST WORKS AND IS STILL THE WRONG ANSWER — measured, then rejected.**
+      `u_net`'s target is one literal IP, correct on exactly one of three networks, so a broadcast
+      address that needs no subnet knowledge looked like the clean fix.
+
+      **Everything about it checks out except the one property that matters:**
+
+      | | |
+      |---|---|
+      | Linux permits it | ✅ `[netsend -u -b]` to `255.255.255.255`, no `SO_BROADCAST` error |
+      | PdParty accepts it | ✅ the phone updated from a broadcast-only patch |
+      | Delivery | ✅ **19–20 of 20**, against a **unicast control that managed 18 of 20** |
+      | **Latency** | ❌ **up to 819 ms** |
+
+      ⚠️ **Wifi access points buffer broadcast and multicast frames and release them on beacon
+      boundaries**, so power-saving clients can receive them. Measured against a patch sending
+      every 200 ms:
+
+      ```
+      unicast    200 200 199 199 201 202 199 208 196 396 206 198   median 200 ms
+      broadcast    1   1   1 817   1 819   1   1   1 614   1   0   median 1 ms, max 819
+      ```
+
+      **Broadcast arrives in bursts of three or four separated by most of a second.** Throughput is
+      identical, which is exactly why the delivery test saw nothing wrong — **it measured the wrong
+      property.** A person moving a knob noticed within seconds what three runs of packet counting
+      had missed.
+
+      It also eats the phone's **1500 ms** `NO-LINK` margin: one 819 ms gap plus a dropped burst
+      exceeds it and shows a false disconnect.
+
+      **Reverted to unicast.** The address stays literal and has to be edited per network —
+      `192.168.1.5` at home, `192.168.12.109` on the access point.
+
+      **The real fix is for the phone to announce its own address**, which needs no new mechanism:
+      the bidirectional path is already proven in `tools/osc-bridge/`. That is design work, not
+      configuration, and it belongs in its own phase.
+
+- [x] **129. ⚠️ ✅ `create_ap` DOES NOT SURVIVE A PATCH CHANGE when a patch started it — the probe
+      killed its own approach.** A `Start AP` menu patch ran `setsid nohup start-ap.sh &` through
+      `[shell]`. Selecting the next patch restarts Pd, and `create_ap`, `hostapd` and `dnsmasq` all
+      went with it **despite `setsid`**.
+
+      ✅ **The access point had not finished collapsing when the probe ran** — `wlan0` still held
+      `192.168.12.1/24` and the phone was still associated at **−17 dBm** — which is why the screen
+      was still readable. Dying, not dead.
+
+      ✅ **The arp fallback is what saved the run.** dnsmasq was already gone so its `--dhcp-leasefile`
+      argument could not be read; the address came from `/proc/net/arp` instead. **A single-strategy
+      probe would have returned `none` and taught us nothing.**
+
+      ✅ **Both other questions answered anyway:** the lease file is
+      `/tmp/create_ap.wlan0.conf.*/dnsmasq.leases`, and the phone is **192.168.12.109** — the same
+      address on two separate sessions, so the lease is stable.
+
+      **The fix is to stop hanging the AP off Pd.** The Organelle already has **`Start AP` in its own
+      System → WiFi Setup menu** — found in `wifi_setup.py`, predating anything built here — which
+      is not a child of a patch. ⬜ **Untested, and it is the one thing left to prove**: same probe,
+      start the AP from the built-in menu instead, then load `AP Probe` and read Q1.
+
+- [x] **130. ✅ `u_net` now DISCOVERS the phone rather than being told.** `Cut It/phone-ip.sh` reads
+      the dnsmasq lease off the Organelle's own access point — where the Organelle handed the
+      address out and therefore already knows it — and **falls back to the creation argument**
+      anywhere else, so it always prints exactly one line and no conditional lives in the patch.
+
+      **This is what makes one build work on both networks.** A literal address is right on exactly
+      one and dead on the others; item 128 ruled out broadcast as the alternative.
+
+      ⚠️ **The `[del 700]` fallback is what keeps the Mac working.** `shell` is an external that
+      exists only on the Organelle and `mac-stubs/shell.pd` answers nothing, so off-device the
+      script never replies and the timer connects to the creation argument instead. It also covers
+      the script hanging or failing on the device.
+
+      ✅ Measured, rather than assumed, before wiring: `[shell]`'s output is accepted directly by
+      `[symbol]`, and on the device `sh phone-ip.sh 192.168.1.5` returns `192.168.1.5` with no AP
+      running.
+
+      ⚠️ **The gate was wrong and now is not.** `phase7-assert.sh` launched Pd **without**
+      `-path mac-stubs`, so `[shell]` failed to create and the fallback carried every run — 28
+      checks passing against a different object graph than the real patch. *A measuring rig is code.*
+
+- [x] **131. ⚠️ ✅ THE VENUE SEQUENCE WORKS — and it surfaced a USB fault that looked like a code
+      bug.** Run end to end with no laptop: System → WiFi Setup → **Start AP**, phone in airplane
+      mode joins `organelle`, load **Cut It**. ✅ **The phone display worked on the stage network**,
+      with `u_net` finding the address itself via item 130. That closes the last unknown in the
+      sequence, and confirms the BUILT-IN Start AP survives a patch change where the patch-started
+      one of item 129 did not.
+
+      ⚠️ **But the Launchpad came up stuck in Live Mode**, which reads exactly like the Programmer
+      Mode SysEx failing. It was not a patch fault at all:
+
+      | | |
+      |---|---|
+      | `lsusb` | `1235:0123 Focusrite-Novation` — **present on the USB bus** |
+      | `/proc/asound/cards` | **absent** — only the nanoKONTROL |
+      | `aconnect -l` | no Launchpad client, so nothing for `wire.sh` to connect |
+
+      **The device enumerated electrically but never presented its MIDI interface**, so the SysEx
+      left Pd and died. `wire.sh`'s two Launchpad lines failed silently, which is by design — every
+      `aconnect` in it is allowed to fail so a missing device cannot stop the boot — and `u_err`'s
+      log was clean, because nothing in the patch went wrong.
+
+      ⚠️ **And nothing would have recovered it.** `m_launchpad`'s watchdog re-runs `wire.sh` on
+      device loss, but only after an arming gate: ownership can be dropped only once an inquiry has
+      actually been answered. A device that was never reachable never arms it. **The gate that
+      stops a phantom detector blanking the grid also stops recovery from a device that never
+      appeared** — correct in both cases, worth knowing.
+
+      ✅ **Fixed by a physical replug plus a patch reload.** All four ALSA links correct afterwards:
+      Launchpad → `128:0`, nano → `128:1`, Pd → `32:0`.
+
+      ⬜ **Cause not established.** A device enumerating on USB without claiming its audio interface
+      is usually power or a wedged device, and **item 95 predicts this exact presentation** — two
+      controllers plus the wifi dongle on a hub, never load-tested. Several power cycles preceded
+      it. **If it recurs after AP sessions specifically, that is a pattern; suspect power before
+      code.**
+
+      ⚠️ **A misread worth recording:** `nanoKONTROL → 128:1` was briefly taken for the Phase 6
+      phantom-`lp-cc` bug. It is not — `128:1` is Pd port 1, Midi-In **2**, channels 17-32, exactly
+      what `m_nano 17` wants. The bug would show as `128:0`.
 
 - [ ] **43. Bring up an AP on `wlan0` and join it from the iPhone.** Confirm the phone gets an
       address from `dnsmasq` and the status display still updates.

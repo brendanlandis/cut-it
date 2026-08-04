@@ -107,7 +107,8 @@ def collect():
         sys.exit(2)
     print("listening on 127.0.0.1:%d, launching pd ..." % PORT)
     proc = subprocess.run(
-        [PD, "-nogui", "-noaudio", "-nomidi", DRIVE],
+        [PD, "-nogui", "-noaudio", "-nomidi",
+         "-path", os.path.join(HERE, os.pardir, "mac-stubs"), DRIVE],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=90)
     time.sleep(0.4)          # drain anything still in flight
     stop.set()

@@ -13,6 +13,73 @@ See also [ref-midi.md](ref-midi.md) for the MIDI message reference,
 
 ---
 
+## Architecture — what the patch is made of
+
+✅ **Current as of v0.2 complete.** Every box below exists on hardware. The allowlist in
+[ref-conventions.md](ref-conventions.md) is the authority on which buses exist; this is the
+shape they connect.
+
+```
+                             main.pd
+                          (wiring only)
+                                |
+                              u_root
+                                |
+   ┌──────────┬──────────┬──────┴─────┬──────────┬──────────┐
+   │          │          │            │          │          │
+ u_init    u_tempo     u_err       u_state    u_net      u_level
+ startup   clock +     errors      the data   the phone  meters
+ order     transport               store         │
+   │          │          │            │          │
+   └──────────┴────┬─────┴────────────┴──────────┘
+                   │
+              global buses
+  mode · tempo · clock · start/stop · panic · param · err · disp · state
+                   │
+   ┌───────────────┼───────────────┐
+   │               │               │
+ m_nano       m_launchpad     m_organelle          ← device mapping
+ ch 17          ch 1          aux + knobs 1-4
+   │               │               │
+   └───────────────┼───────────────┘
+                   │
+                 u_map                             ← the ONLY file that says
+                   │                                 what a control MEANS
+            (v0.3: e_chop, e_pitch, e_trem, e_verb)
+                   │
+   ┌───────┬───────┴───────┬───────────┐
+ g_oled  g_led          g_grid       u_net         ← the four display surfaces
+ OLED    aux LED        Launchpad    phone
+```
+
+**Two things the diagram cannot show, and both are load-bearing:**
+
+- **`c_clock` is instantiated, not global.** `u_root` holds `c_clock 1 8` driving the grid's beat
+  row, and **nothing downstream may assume the global `clock` is its clock** — Cut It runs
+  poly-tempo. See *Timing and tempo* below.
+- **`u_state` owns two `u_store` instances**, one per persistence policy.
+
+**The `m_` layer is the load-bearing boundary.** Nothing below it knows a nanoKONTROL exists. A
+device publishes a **named control** on `param`; what that control *means* is decided in `u_map`,
+above everything it controls. This is what makes the compose/perform split tractable, and it is
+the one boundary that is genuinely expensive to retrofit.
+
+### Why the infrastructure was built before any DSP
+
+Three constraints made the usual "get a sound out, then tidy up" approach expensive here, and all
+three were borne out:
+
+1. **There is no console.** Errors vanish. Anything not built to report itself is invisible, and
+   retrofitting reporting across an existing patch is far worse than designing it in. `u_err`
+   exists because of this.
+2. **The device mapping layer is the expensive thing to retrofit.** Compose and perform give the
+   same physical controls different meanings. If `e_chop` ever learns about the nanoKONTROL, that
+   is permanent.
+3. **Timing is architectural.** Grain clocks must be audio-domain from the first line, not
+   converted later.
+
+---
+
 ## Load-bearing decisions
 
 The four that shape everything else. Reasoning for each is further down this file.
@@ -142,7 +209,7 @@ immediately rather than failing silently.
 
 The remaining hidden state is all on the 404 (ExtIn monitoring, bus assignments, input FX),
 which lives in menus — the one "wrong knob" risk left in the rig. A pre-set checklist for that
-box is deferred in [plan-v02.md](plan-v02.md).
+box is deferred in [plan-v03.md](plan-v03.md).
 
 ### Organelle audio back into the 404 — dropped
 Considered and dropped for now. Would have used the mixer's FX send as a variable-gain

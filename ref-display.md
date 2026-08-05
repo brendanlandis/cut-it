@@ -149,7 +149,7 @@ trap 4 above. It is not an init-time concern and does not belong in `u_init`.
   at small radii — don't design round meters.
 - `gWaveform` and `gFrame` need OSC **blobs**, and whether Pd can produce one through `oscOut`
   is ⬜ **untested**. If it can, drawing the captured buffer becomes possible and choosing a
-  playhead position in fresh audio stops being blind. Tracked in [plan-v02.md](plan-v02.md).
+  playhead position in fresh audio stops being blind. Tracked in [plan-v03.md](plan-v03.md).
 
 ---
 
@@ -425,7 +425,7 @@ thing distinguishing "idle" from "dead".
 ⬜ **One count is left, and it is not code: phone hardening.** ✅ Rate limiting, the `nbx` chrome
 and the Organelle-hosted access point are all done — the venue sequence runs with no laptop and no
 venue WiFi, and the phone joins in airplane mode. What remains is Guided Access, so a stray swipe
-cannot drop you out of the scene mid-set. Tracked in [plan-v02.md](plan-v02.md) under *Open
+cannot drop you out of the scene mid-set. Tracked in [plan-v03.md](plan-v03.md) under *Open
 questions*.
 
 ⚠️ **Do Not Disturb is no longer the answer to notifications** — the access point means the phone

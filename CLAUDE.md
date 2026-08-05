@@ -3,7 +3,9 @@
 A cut-up / harsh noise instrument patch for the **original Critter & Guitari Organelle**
 (a.k.a. Organelle 1 — *not* the M, S, or S2). Pure Data.
 
-Being rewritten from scratch as **v0.2**. The build sequence is [plan-v02.md](plan-v02.md);
+✅ **v0.2 — the infrastructure — is complete and verified on hardware.** The instrument passes
+audio, knows what every control is doing, and can tell you about it. **[plan-v03.md](plan-v03.md)
+is what remains**: the four filter stages, and every open question in the project.
 v0.1 is superseded and kept only for reference.
 
 
@@ -132,18 +134,29 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
                        are stepped BY HAND -- press GO to run the step just described, press
                        GO again to describe the next. Never edit a bench .pd
   bench-verify.py      proves the step text survived the generator, by re-extracting it
+  check-all.sh         EVERY GATE IN ONE COMMAND — layout, both entry points, the bench
+                       text, and the phase 6/7/8 gates. ~40 s, Mac only, touches no
+                       device. RUN IT BEFORE CALLING ANYTHING DONE. Phase 8 edited
+                       u_map, u_init and u_root and came within one step of shipping
+                       without re-running the gates of the phases resting on them:
+                       a gate you must REMEMBER to run is one that eventually doesn't
   phase6-assert.sh     the headless gate: rewrites [midiout] in a SCRATCH COPY so a run can
                        read back every byte, then asserts on what the grid actually showed
   phase7-assert.sh     the same idea and much cheaper — u_net already emits to a socket,
                        so it binds the port and reads real datagrams. Nothing is rewritten
+  phase8-assert.sh     the cheapest of the three — u_state writes a FILE, so it reads what
+                       landed on disk. ⚠️ It PASSED THE BROKEN PATCH on its first
+                       can-it-fail run, because the driver's timing did not reproduce the
+                       real ordering. The 3600 ms in its driver is load-bearing
   stage-patches/       Organelle menu patches for the venue: AP Probe records what can only
                        be seen while the access point is up, which is exactly when a Mac
                        joined to it has no internet and nobody can watch
-plan-v02.md          the build plan — the phases still to come, and EVERY open question
-wifi-analysis.md     what to DO once the wifi fault is caught -- a decision tree from
-                     which recovery rung worked. Temporary: delete it with the fault
-plan-tests.md        the ordered hardware checks, with every measured number
-ref-build-log.md     Phases 0-6 as built: outcomes, and every correction they produced
+plan-v03.md          THE ONLY PLAN DOCUMENT. What v0.3 builds, every open question,
+                     the wifi decision tree, purchases, and what is deferred and why
+plan-tests.md        THE EVIDENCE LEDGER — numbered checks with their measured
+                     results, cited bare as "item 133" everywhere. It accumulates
+                     findings; it does not plan
+ref-build-log.md     Phases 0-8 as built: outcomes, and every correction they produced
 ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow
 ref-hardware.md      the rig and the device — wiring, power, SSH, paths, how Pd launches
 ref-software.md      how the instrument works — architecture, timing model, decisions
@@ -159,16 +172,20 @@ device-state/        backups of the instrument's own saved data, pulled off
   patch/               the v0.1 patch itself — reference for intent, NOT code to lift
 ```
 
-**`ref-` states what is; `plan-` states what's open.** A `ref-` doc describes the rig, the
+**`ref-` states what is; `plan-` states what's open. There is exactly ONE plan document.** A `ref-` doc describes the rig, the
 device, the message formats and the rules, and marks anything uncertain ⬜ — but it carries no
 plans. **Every unresolved question, recommendation and purchase lives in
-[plan-v02.md](plan-v02.md)** (or [plan-tests.md](plan-tests.md), for hardware checks). Keep it
+[plan-v03.md](plan-v03.md).** [plan-tests.md](plan-tests.md) is the *evidence ledger* — numbered
+checks with their measured results, cited bare as "item 133" across the project. It accumulates
+findings; it does not plan. Keep it
 that way when editing: if you find yourself writing "we should…" in a `ref-` doc, it belongs in
 a `plan-` doc.
 
 **Finished work moves to [ref-build-log.md](ref-build-log.md)** rather than staying in the plan as
-a plan. That file is a `ref-` because completed corrections are facts. When a phase lands, its
-section leaves `plan-v02.md`; **superseded designs get replaced, not annotated.** Phase 4 changed
+a plan. ✅ All eight v0.2 phases have now done this, and `plan-v02.md` was dissolved when the last
+one landed — its architecture diagram went to [ref-software.md](ref-software.md) and its open
+questions to `plan-v03.md`. That file is a `ref-` because completed corrections are facts. When a phase lands, its
+section leaves `plan-v03.md`; **superseded designs get replaced, not annotated.** Phase 4 changed
 its own design twice and recorded both reversals beside the text they overruled, which left the
 plan holding the current design and two dead ones at once.
 
@@ -222,7 +239,7 @@ sequence that finishes in four seconds can be read afterwards instead of watched
 Every doc marks claims ✅ verified on this hardware / 📄 manufacturer documentation /
 ⬜ unknown. **Do not treat 📄 or ⬜ items as settled facts.** [plan-tests.md](plan-tests.md) is
 the ordered checklist with results. **The `ref-` docs mark uncertainty ⬜ but never say what to do
-about it** — the work to resolve any ⬜ lives in [plan-v02.md](plan-v02.md) under *Open
+about it** — the work to resolve any ⬜ lives in [plan-v03.md](plan-v03.md) under *Open
 questions*, which is the single place to look for what is unresolved.
 
 

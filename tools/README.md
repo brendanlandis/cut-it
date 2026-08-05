@@ -20,6 +20,36 @@ Hand-authored in Pd 0.49 format except the four benches and three rigs that are 
 | `lp-step0.pd` | **Phase 6's Step 0 measurements, in one patch** — items 82–87. Prints incoming notes, **CC** and aftertouch with their channel, sends a batch colour SysEx of 64 / 99 / 120 specs, and switches layout. `lp-monitor.pd` cannot answer item 82 because it has no `[ctlin]`. Run it on the **Mac** with the Launchpad plugged in, in the foreground. |
 | `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
 
+## pd-layout-check.py --boxes — ask, don't count
+
+```sh
+python3 tools/pd-layout-check.py --boxes "Cut It/u_state.pd"
+```
+
+Prints the index of every box exactly as `#X connect` counts them. **Use it before writing a
+connect block by hand.** Pd numbers boxes by position in the FILE: comments count, `#X declare`
+does not, a subpatch's contents do not but its closing `#X restore` does. Getting any of that
+wrong shifts every later index and silently rewires the patch — which has bitten this project
+five times, plus two near-misses while Phase 8 was written, both caught only by re-deriving the
+indices by hand. That is what this flag is for.
+
+The check itself now separates **PROBLEM** (structural — exits non-zero) from **note**
+(cosmetic — does not). A crossed cord has never once meant the patch was wrong; a cord landing on
+a comment always has.
+
+## A bench suits a SURFACE, not a store
+
+⚠️ Worth knowing before writing `STEPS9`. The bench framework prints a `PASS IF` and waits for a
+human to look at something — which works beautifully for the OLED, the Launchpad and the phone,
+and not at all for a feature whose entire output is a **file**. Phase 8's six steps are the
+minimum that hardware can actually show (the front-panel Save, a real power cycle, the mode lamp);
+its logic is proven by `phase8-assert.sh` instead, headlessly, in twelve seconds.
+
+Phase 8's run was also driven **from the Mac by hand rather than by loading the bench**, because
+every one of its steps carries no actions. That avoided the by-hand console entirely — and
+therefore `killall pd`, and therefore stranding the Launchpad in Programmer Mode. **If a phase's
+steps have no actions, you do not need to load the bench at all.**
+
 ## phase8-assert.sh — the Phase 8 gate, and the cheapest of the three
 
 ```sh
@@ -249,7 +279,7 @@ staying **associated**, and ⚠️ **ssh keeps working over IPv6 throughout**, s
 |---|---|
 | `wifi-watch.sh` | **Runs ON the device.** Polls `wlan0` every 20 s, logs every IPv4 transition with `dmesg`, association and process state, then walks a **recovery ladder** — renew, release+restart, `wpa_supplicant` restart — recording which rung works. Copy to `/sdcard/` and launch with `setsid`. |
 | `wifi-poll.sh` | **Runs on the Mac.** Leave it in a terminal. Redraws a small block every minute and answers one question: *anything found yet, y/n.* Rings the bell and raises a macOS notification when it finds something. |
-| `../wifi-analysis.md` | What each outcome **means** and what to do about it. Hand it to an agent along with `wifi-report.sh`'s output. |
+| `../plan-v03.md` | What each outcome **means** and what to do about it. Hand it to an agent along with `wifi-report.sh`'s output. |
 | `wifi-report.sh` | Pulls the evidence off the device and summarises it into the shape the analysis needs. |
 
 ⚠️ **`wifi-poll.sh` does not rely on reachability.** The fault can drop and recover between two

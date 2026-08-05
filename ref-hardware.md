@@ -210,7 +210,7 @@ not back it up.
 **Adding a second network is the cheap way to a self-contained stage link**, and much lower risk
 than `hostapd`: the Organelle simply joins whichever is present and **SSH survives**, where
 bringing up an AP drops it. ⚠️ **An iPhone Personal Hotspot needs cellular**, so it cannot be
-combined with airplane mode — the two are mutually exclusive. See [plan-v02.md](plan-v02.md).
+combined with airplane mode — the two are mutually exclusive. See [plan-v03.md](plan-v03.md).
 
 ### The Organelle as its own access point ✅
 
@@ -270,7 +270,7 @@ connects, `/usbdrive` stays unmounted. Factory version kept at
 
 **If it ever recurs:** `umount /usbdrive` clears it, no reboot needed. ⬜ Whether Novation
 Components can disable the onboarding drive on the Launchpad itself is untried and tracked in
-[plan-v02.md](plan-v02.md).
+[plan-v03.md](plan-v03.md).
 
 ## The device itself
 
@@ -299,6 +299,20 @@ writing to `/root`, and `remount-ro.sh` after. `/sdcard` and `/usbdrive` are wri
 4-in/4-out configuration the whole MIDI topology depends on, plus `path1: /root/Pd/externals`,
 which is what makes `[shell]`, `packOSC` and `routeOSC` resolve in the menu-launched patch.
 ✅ Backed up in [device/](device/), verified current against the hardware.
+
+### ⚠️ The clock, and why device timestamps are not Mac timestamps
+
+**There is no RTC. The device boots at `Sat Oct 17 01:08:30 UTC 2015`** — the image's build date —
+and only jumps to the real time once `systemd-timesyncd` reaches the network. Two consequences,
+both of which have already misled an investigation:
+
+- **A file written in the first seconds after boot carries a 2015 timestamp.** `ls -l` output from
+  a freshly-booted device is not in the order you expect.
+- ⚠️ **The device runs UTC; the Mac runs local time.** Comparing a device file mtime against a
+  Mac log line without converting produced an apparent **5.5-hour clock jump** that did not exist —
+  the real explanation was simply that hours had passed between two `date` calls. **Convert, or
+  compare device-to-device only.** `wifi-watch.log` is internally consistent, so uptime-to-failure
+  read from *within* it is trustworthy.
 
 ### How Pd is launched
 
@@ -489,7 +503,7 @@ the device settings that matter are in [ref-midi.md](ref-midi.md).
 
 ⬜ **One unresolved discrepancy:** pad *n* on bank A was measured here as note 47 + *n*, but
 Roland's chart says the mode-A range is 35–51, and only pads 1 and 2 were ever checked. Detail in
-[ref-midi.md](ref-midi.md); resolving it is tracked in [plan-v02.md](plan-v02.md), where it is the
+[ref-midi.md](ref-midi.md); resolving it is tracked in [plan-v03.md](plan-v03.md), where it is the
 open question most able to corrupt work silently.
 
 **Cable warning:** the 404 needs a genuine **data** USB cable. Charge-only USB-A→C cables are
@@ -533,7 +547,7 @@ FM needs DIN, so a 1×1 interface is enough.
 
 ## Cabling
 
-What physically connects to what. **What is still to buy is in [plan-v02.md](plan-v02.md)**
+What physically connects to what. **What is still to buy is in [plan-v03.md](plan-v03.md)**
 under *Still to acquire*; power supplies are all covered.
 
 | Cable | Connects |

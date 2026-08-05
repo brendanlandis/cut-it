@@ -48,8 +48,16 @@ ssh "$HOST" "
     echo '  --- was it still associated when IPv4 went? (the crux) ---'
     grep -A4 '^TRANSITION' $LOG | grep -E 'assoc:' | sed 's/^/     /'
     echo
-    echo '  --- liveness heartbeats, to read uptime-to-failure ---'
+    echo '  --- liveness heartbeats: FIRST THREE, then LAST THREE ---'
+    echo '  ⚠️ THE MIDDLE IS ELIDED -- these two groups are NOT contiguous. Heartbeats'
+    echo '     are 30 min apart, so the count below tells you how much is hidden.'
+    echo '     ALSO CHECK THE WALL CLOCK before calling any span anomalous: a long'
+    echo '     gap here is usually just time passing while nobody was watching.'
+    echo '     Total heartbeats in the log:'
+    grep -c '\.\. alive' $LOG | sed 's/^/       /'
+    echo '     --- first ---'
     grep '\.\. alive' $LOG | head -3 | sed 's/^/     /'
+    echo '     --- last ---'
     grep '\.\. alive' $LOG | tail -3 | sed 's/^/     /'
 "
 
@@ -71,5 +79,5 @@ if [ "${1:-}" = "--full" ]; then
 fi
 
 echo
-echo "Next: hand this to an agent along with wifi-analysis.md, which says"
+echo "Next: hand this to an agent along with plan-v03.md, which says"
 echo "what each outcome means and what to do about it."

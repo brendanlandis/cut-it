@@ -1,7 +1,7 @@
 # Cut It — Build Log
 
 What has been built, phase by phase, and what each phase taught. **This file is history: every
-claim here is settled.** Work still open lives in [plan-v02.md](plan-v02.md); the ordered hardware
+claim here is settled.** Work still open lives in [plan-v03.md](plan-v03.md); the ordered hardware
 checklist and its evidence live in [plan-tests.md](plan-tests.md).
 
 It exists because the alternative was worse. Phases 0–4 accumulated their corrections *next to* the
@@ -439,7 +439,7 @@ frame clock runs at 10 Hz but only paints when a dirty flag is set: **nothing at
 **A panic blanks the grid until the patch is reloaded.** Panic returns the Launchpad to Live
 Mode, and nothing re-enters Programmer Mode except `u_init`'s boot. Deliberate — the escape hatch
 is worth more than the display — and currently harmless, since nothing on the device sends
-`panic`. Tracked in [plan-v02.md](plan-v02.md).
+`panic`. Tracked in [plan-v03.md](plan-v03.md).
 
 **The mode names are placeholders.** Six message boxes in `u_map`, three `compose` and three
 `perform`. The split is arbitrary but the *ratio* is not: `u_err` routes on those words, so one
@@ -683,7 +683,7 @@ code"* — this project's own rule — **was not a sufficient test**. The check 
 
 **So it is the IPv4 lease that is lost, not the network**, and a restart fixes it first try where a
 `dhcpcd` renew does not. That points at DHCP renewal rather than the dongle, the power or the AP.
-[plan-tests.md](plan-tests.md) item 133; the investigation is in [plan-v02.md](plan-v02.md).
+[plan-tests.md](plan-tests.md) item 133; the investigation is in [plan-v03.md](plan-v03.md).
 
 ## Phase 8 — the data store
 

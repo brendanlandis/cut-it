@@ -261,7 +261,7 @@ reply:  F0 7E 00 06 02 | 00 20 29 | 23 01 | 00 00 | 00 04 06 05 | F7
 **Why it matters beyond trivia: a device that answers is a device Pd can notice the absence of.**
 Poll the inquiry, expect a reply, and a Launchpad that has been unplugged — or bumped out of
 Programmer Mode — stops being invisible. That is the only route to the replug hazard in
-[plan-v02.md](plan-v02.md), and it costs one round trip per poll against the 96 ALSA writes a
+[plan-v03.md](plan-v03.md), and it costs one round trip per poll against the 96 ALSA writes a
 second the clock already makes.
 
 ⚠️ **Programmer Mode locks out the device's own mode buttons, so they cannot be used to change
@@ -619,7 +619,7 @@ The repo's hardware finding and Roland's chart disagree:
   run to 63, well outside that.
 
 One of these is wrong, or "MIDI mode A" means something narrower than assumed. Resolving it is
-tracked in [plan-v02.md](plan-v02.md) — it is the unknown that can silently corrupt work, since
+tracked in [plan-v03.md](plan-v03.md) — it is the unknown that can silently corrupt work, since
 sequencing code written against the wrong range looks correct and triggers the wrong pads.
 
 ### Relevant device settings, all already correct ✅
@@ -682,7 +682,7 @@ the only SysEx it understands.
 ---
 
 Anything above marked ⬜ is unresolved, and the work to resolve it is in
-[plan-v02.md](plan-v02.md) under *Open questions*. One note that belongs nowhere else:
+[plan-v03.md](plan-v03.md) under *Open questions*. One note that belongs nowhere else:
 
 ✅ **`[sysexin]` is NOT moot, and this file used to say it was.** The Launchpad answers a device
 inquiry — see *It answers a device inquiry* under the Launchpad above. The nanoKONTROL and the

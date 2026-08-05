@@ -1,11 +1,33 @@
 #!/usr/bin/env python3
 """Static layout check for Pd patches.
 
-Reports three things, none of which Pd itself will tell you:
+    python3 tools/pd-layout-check.py "Cut It"/*.pd     check
+    python3 tools/pd-layout-check.py --boxes FILE      list box INDICES
 
-  BOX/BOX    two boxes overlap
-  CORD/BOX   a connection is drawn straight through an unrelated box
-  TOO SMALL  content extends past the saved canvas size
+⚠️ TWO SEVERITIES, AND CONFLATING THEM WASTES TIME. Everything used to be
+counted as one "N problems", so a catastrophic rewiring and a cosmetic crossed
+cord looked identical and every run had to be triaged by eye.
+
+  PROBLEM -- structural. Exits non-zero. Your patch is or will be WRONG.
+    BAD CONNECT      a cord names a box that does not exist
+    CONNECT/COMMENT  a cord lands on a comment -- indices are off by one, which
+                     is how every silent rewiring in this project was caught
+    TOO SMALL        content extends past the saved canvas, so boxes are off
+                     screen and invisible when the patch is opened
+
+  note -- cosmetic. Does NOT fail the run.
+    BOX/BOX          two boxes overlap
+    CORD/BOX         a cord is drawn through an unrelated box
+
+Layout is the only structural documentation Pd has, so the notes are still worth
+clearing -- but they never mean the patch is broken, and treating them as though
+they did is what made this tool tiring to use.
+
+--boxes IS THE OTHER HALF OF THE OFF-BY-ONE PROBLEM. `#X connect` names boxes by
+POSITION IN THE FILE, and hand-writing a connect block means counting records by
+eye -- comments included, `#X declare` excluded, subpatch contents excluded but
+the `#X restore` line counted. That has bitten this project five times, and cost
+two more near-misses while Phase 8 was written. Ask instead of counting.
 
 Layout is the only structural documentation Pd has, and a comment placed
 between the logic and a message column gets cords drawn through it. That is
@@ -125,13 +147,13 @@ def check(path):
     for ci, ctx in enumerate(ctxs):
         boxes, conns, label = ctx['boxes'], ctx['conns'], ctx['label']
         if not boxes: continue
-        probs = []
+        probs, notes = [], []
         hit = lambda a,b: not (a['x']+a['w']<=b['x'] or b['x']+b['w']<=a['x']
                             or a['y']+a['h']<=b['y'] or b['y']+b['h']<=a['y'])
         for i in range(len(boxes)):
             for j in range(i+1, len(boxes)):
                 if hit(boxes[i], boxes[j]):
-                    probs.append(f"BOX/BOX  {boxes[i]['k']}@({boxes[i]['x']},{boxes[i]['y']}) '{boxes[i]['t']}'\n"
+                    notes.append(f"BOX/BOX  {boxes[i]['k']}@({boxes[i]['x']},{boxes[i]['y']}) '{boxes[i]['t']}'\n"
                                  f"      vs {boxes[j]['k']}@({boxes[j]['x']},{boxes[j]['y']}) '{boxes[j]['t']}'")
         nout, nin = {}, {}
         for s_,so,d,di in conns:
@@ -151,7 +173,7 @@ def check(path):
             for k, r in enumerate(boxes):
                 if k in (s_,d): continue
                 if seg_rect(p, q, r):
-                    probs.append(f"CORD/BOX cord {s_}:{so} -> {d}:{di} crosses "
+                    notes.append(f"CORD/BOX cord {s_}:{so} -> {d}:{di} crosses "
                                  f"{r['k']}@({r['x']},{r['y']}) '{r['t']}'")
         mx = max(b['x']+b['w'] for b in boxes); my = max(b['y']+b['h'] for b in boxes)
         fits = True
@@ -163,10 +185,34 @@ def check(path):
         else:
             size = f"extent {mx:.0f}x{my:.0f}"
         if probs or not fits: allok = False
-        print(f"{label:34} {len(boxes):3} boxes {len(conns):3} cords  {len(probs)} problems  "
-              f"{size}{'' if fits else '  <-- TOO SMALL'}")
-        for p_ in probs: print("   ", p_.replace("\n", "\n    "))
+        nprob = len(probs) + (0 if fits else 1)
+        print(f"{label:34} {len(boxes):3} boxes {len(conns):3} cords  "
+              f"{nprob} problems  {len(notes)} notes  "
+              f"{size}{'' if fits else '  <-- TOO SMALL (PROBLEM)'}")
+        for p_ in probs: print("    PROBLEM", p_.replace("\n", "\n      "))
+        for n_ in notes: print("    note   ", n_.replace("\n", "\n      "))
     return allok
 
-ok = all([check(f) for f in sys.argv[1:]])
+def list_boxes(path):
+    """Print the index of every box, exactly as `#X connect` counts them.
+
+    Pd numbers boxes by their order in the FILE at each canvas depth. Comments
+    count. `#X declare` does NOT. A subpatch's contents do not, but the closing
+    `#X restore` does -- it IS the box on the parent canvas. Getting any of that
+    wrong shifts every later index and silently rewires the patch."""
+    for ctx in parse(path):
+        if not ctx['boxes']: continue
+        print(f"--- {ctx['label']}")
+        for i, b in enumerate(ctx['boxes']):
+            t = b['t'] if len(b['t']) <= 58 else b['t'][:55] + "..."
+            print(f"  {i:3}  {b['k']:<11} @({b['x']:>5},{b['y']:>5})  {t}")
+
+
+args = sys.argv[1:]
+if args and args[0] == "--boxes":
+    for f in args[1:]:
+        list_boxes(f)
+    sys.exit(0)
+
+ok = all([check(f) for f in args])
 sys.exit(0 if ok else 1)

@@ -1,4 +1,4 @@
-#N canvas 40 40 820 580 12;
+#N canvas 40 40 900 580 12;
 #X obj 30 30 loadbang;
 #X obj 30 70 del 3000;
 #X obj 30 110 t b b b;

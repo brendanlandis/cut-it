@@ -39,8 +39,10 @@ LASTGW=$(gateway)
 
 # ONE INSTANCE ONLY. Two would run the recovery ladder twice against each other,
 # which is worse than not watching at all. A pidfile rather than pgrep, because
-# `pgrep -f wifi-watch` also matches the ssh command that goes looking for it --
-# that self-match cost real time and made a running watcher look dead.
+# ⚠️ ANY PROCESS SCAN MATCHING A STRING ALSO MATCHES THE SSH COMMAND CARRYING IT.
+# `pgrep -f wifi-watch` is the famous case, but a hand-rolled scan over /proc/*/cmdline
+# has exactly the same flaw and reported "2 instances" when there was one. It is not
+# about pgrep -- it is about searching for your own command line. Use the pidfile.
 # ⚠️ The pidfile lives on /sdcard and therefore SURVIVES A REBOOT, holding a pid
 # that is now dead -- or worse, recycled onto some unrelated process. So the guard
 # checks the cmdline too, not just that something with that number exists.
@@ -70,7 +72,7 @@ snap() {
 }
 
 # ⚠️ THE PROBE THAT SPLITS THE DECISION TREE, and the reason it exists.
-# wifi-analysis.md sends UNRECOVERED straight to the spare-card A/B, on the
+# plan-v03.md sends UNRECOVERED straight to the spare-card A/B, on the
 # reasoning that a different radio proves nothing if the fault is DHCP-side.
 # That fork had never actually been TESTED. A static address during the failure
 # settles it outright:

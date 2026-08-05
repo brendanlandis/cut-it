@@ -319,7 +319,7 @@
 #X obj 340 450 list append;
 #X obj 500 410 r \$0-a-text;
 #X obj 340 500 s \$0-text;
-#X text 20 580 This draws to screen 3 \, the buffer already on show \, rather than the ALERT buffer plan-v02.md suggested. There is nothing underneath to preserve: the frame is cleared and rebuilt from stored state ten times a second \, so when the TTL expires the next frame is the meters again. Buffer 4 has SINCE been proven writable and switchable \, and is deliberately still not used: switching is edge-triggered where every layer here is state-driven \, so a lost setscreen would strand the display. See ref-display.md., f 58;
+#X text 20 580 This draws to screen 3 \, the buffer already on show \, rather than the ALERT buffer plan-v03.md suggested. There is nothing underneath to preserve: the frame is cleared and rebuilt from stored state ten times a second \, so when the TTL expires the next frame is the meters again. Buffer 4 has SINCE been proven writable and switchable \, and is deliberately still not used: switching is edge-triggered where every layer here is state-driven \, so a lost setscreen would strand the display. See ref-display.md., f 58;
 #X connect 1 0 2 0;
 #X connect 2 3 3 0;
 #X connect 2 2 5 0;

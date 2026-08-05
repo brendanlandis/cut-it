@@ -6,7 +6,7 @@ measurements belong beside the checks that preceded them.
 
 Two things live here and nowhere else: the **numbers** (counts, rates, CPU, byte-level results) and
 the **procedures** that produced them. The narrative of what each phase taught is
-[ref-build-log.md](ref-build-log.md); what is still open is [plan-v02.md](plan-v02.md).
+[ref-build-log.md](ref-build-log.md); what is still open is [plan-v03.md](plan-v03.md).
 
 Early sessions need scratch patches only — no Cut It code. Diagnostic patches live in
 [tools/](tools/). Companion to [ref-hardware.md](ref-hardware.md), which explains *why* each of these
@@ -28,7 +28,7 @@ per-device channel offsets work with multiple controllers at once. What remains 
 cable-blocked — the audio topology and full-rig power draw.
 
 **Do not treat open items as settled facts.** This file is the ordered checklist with results;
-**what to do about anything still open is in [plan-v02.md](plan-v02.md) under *Open questions***,
+**what to do about anything still open is in [plan-v03.md](plan-v03.md) under *Open questions***,
 which is the only place that carries plans. The [tools/](tools/) patches are working references
 for every technique verified here.
 
@@ -127,7 +127,7 @@ jack, and nothing else merges two mono outs into it.
       *external input* in the stereo field, which is internal routing and unrelated to the jacks
       on the back.
 
-See [plan-v02.md](plan-v02.md) → *The last thing that could force a redesign* for why this one
+See [plan-v03.md](plan-v03.md) → *The last thing that could force a redesign* for why this one
 still matters, and *Deliberately skipped for now* below for the LINE IN R-only variant.
 
 ---
@@ -478,7 +478,7 @@ get used**:
       decided whether 16px and 8px rows are readable at arm's length on a dark stage**, which is
       the only question this item was ever about.
 
-      Tracked in [plan-v02.md](plan-v02.md), where it feeds the *OLED UI refinement* work rather
+      Tracked in [plan-v03.md](plan-v03.md), where it feeds the *OLED UI refinement* work rather
       than blocking anything.
 
 ---
@@ -614,7 +614,7 @@ card. Numbers are from `tools/phase5-bench.pd` and two throwaway probe patches.
       and `[wrap~ 9]` both load in complete silence. A clean check on `[midiout 3]` therefore
       proves nothing at all about whether the 3 reaches anything. `u_tempo` uses `u_init`'s proven
       pattern — the port set into the cold inlet at load — and the question stays ⬜ in
-      [plan-v02.md](plan-v02.md). **The lesson is that the obvious experiment was invalid**, which
+      [plan-v03.md](plan-v03.md). **The lesson is that the obvious experiment was invalid**, which
       is worth more than the answer would have been.
 - [x] **54. Both entry points still load clean, and every file passes the layout check.** ✅
       `main.pd` and `main-dev.pd` both silent under the syntax check with the five new
@@ -809,7 +809,7 @@ Deployed with `./deploy.sh`, then the bench run by hand as a third patch for a r
       **What that means for v0.3**, which stacks four filter stages on this baseline: the headroom
       question is a DSP question, and the clock is nearly free. Anything spent optimising MIDI
       output here would be spent in the wrong place — including the *stop sending clock to port 1*
-      idea in `plan-v02.md`, which is now worth about 0.2 points and not worth doing for CPU.
+      idea in `plan-v03.md`, which is now worth about 0.2 points and not worth doing for CPU.
       ✅ **AND THE SPLIT IS MEASURED TOO.** A scratch copy of the patch with two EXTRA `c_clock`
       instances (appended after the last box so no `#X connect` index moved) was launched by hand
       beside the real one, which was never touched. **1 instance: 11.8 / 11.8 / 11.7 / 11.5 %.
@@ -1658,7 +1658,7 @@ never been checked.
       **This is the one with consequences.** A device that answers is a device Pd can notice the
       *absence* of — poll the inquiry, expect a reply — which is the only route to fixing the
       replug hazard. Costs one round trip per poll against the 96 ALSA writes a second the clock
-      already makes. Design tracked in [plan-v02.md](plan-v02.md).
+      already makes. Design tracked in [plan-v03.md](plan-v03.md).
 - [x] **100. ✅ IT DOES NOT ANNOUNCE A MODE CHANGE.** Returned to Live Mode, then changed between
       Live modes **by hand on the device**: the console stayed completely silent.
 
@@ -1779,7 +1779,7 @@ never been checked.
       `0 + 10` is a left-column ring button, so the very first frame has a stray white light.
       **Cosmetic and Mac-only** — on the device mother enables DSP at 200 ms, so beats are already
       flowing by the time ownership rises at ~3 s. Reported as a `NOTE` by the analyser rather than
-      a failure, and tracked in [plan-v02.md](plan-v02.md).
+      a failure, and tracked in [plan-v03.md](plan-v03.md).
 
 ---
 
@@ -2142,7 +2142,7 @@ After the third, **the remaining probes were generated by script rather than han
 ## Session 11 — the wifi fault, caught in full
 
 ⚠️ **One transition. Do not conclude a cause from it** — that instruction is
-[wifi-analysis.md](wifi-analysis.md)'s and it still applies. What follows is *mechanism*, which is
+[plan-v03.md](plan-v03.md)'s and it still applies. What follows is *mechanism*, which is
 more than items 81 and 133 have ever had.
 
 - [x] **146. ✅ THE FAULT CAUGHT END TO END, and item 133's headline SURVIVES.** Device time
@@ -2183,7 +2183,7 @@ more than items 81 and 133 have ever had.
       address — but it was not *proven* sound.
 
 - [x] **149. ✅ A LINK PROBE NOW SPLITS THE DECISION TREE, and it is the test that was missing.**
-      [wifi-analysis.md](wifi-analysis.md) sends `UNRECOVERED` straight to the spare-card A/B, on
+      [plan-v03.md](plan-v03.md) sends `UNRECOVERED` straight to the spare-card A/B, on
       the reasoning that a different radio proves nothing if the fault is DHCP-side — **and that
       fork had never been tested.** `wifi-watch.sh` now assigns the last-known-good address and
       route *before* the ladder runs and pings the gateway:
@@ -2205,7 +2205,7 @@ more than items 81 and 133 have ever had.
       watcher was running; the count said two.
 
 ⬜ **Still to do at landing:** items 81 and 133 should be merged **in place** with the above rather
-than left pointing at a superseded description — [wifi-analysis.md](wifi-analysis.md)'s recording
+than left pointing at a superseded description — [plan-v03.md](plan-v03.md)'s recording
 rules.
 
 ---
@@ -2289,48 +2289,55 @@ plausible in each case.** Then a third found in the gate itself.
       unplugged, and the phone was not up). It bounds the cost as small and nothing more. The
       script's printed "WITHIN BUDGET ≤ 11.2 %" is still Phase 5's stale figure.
 
+- [x] **157. ✅ THE PHASE 8 ACCEPTANCE RUN ON THE DEVICE — 5 of 5, INCLUDING A REAL POWER CYCLE.**
+      Driven by hand with both controllers attached. Every Phase 8 bench step carries no actions,
+      so the run needed **no by-hand console and no `killall pd`** — and therefore never stranded
+      the Launchpad, which is the usual cost of running a bench on this device.
+
+      | Step | Result |
+      |---|---|
+      | 1 baseline | the **5th** mode lamp green, other five dim white — the saved value, not the mode-1 default |
+      | 2 transport key 4 | lamp moves to the **4th** |
+      | 3 reached the disk | `cut-it-auto.txt` → `mode perform mode-4` at 04:43:58. **The whole chain on hardware**: nanoKONTROL → `m_nano` → `param` → `u_map` → `mode` → `state` → `u_state` → SD card |
+      | 4 `Storage → Save` | `manual.txt` 04:40:41 → **04:44:50**, and ⚠️ **`auto.txt` UNTOUCHED at 04:43:58** — the two policies are genuinely independent, which is what will make "abandon a take by not saving" work. `knobs.txt` rewritten 0.5 s later |
+      | 5 **power cycle** | uptime 2 min, and the **4th lamp lit again**. State survived the SD card, which a patch reload can never demonstrate |
+
+      ⚠️ **`state-dir.sh` touches both files at every load, so `manual.txt`'s mtime also moves on a
+      patch reload.** The step-4 evidence is only clean because nothing reloaded in between. A
+      future run must take the baseline immediately before the Save, not from an older reading.
+
+      ⬜ **One observation, recorded rather than interpreted:** the Organelle **needed a retry to
+      rejoin wifi** after this power cycle. One occurrence, no evidence attached, and it may be
+      unrelated to items 81/146 — noted only so it is not "remembered" differently later.
+
+- [x] **158. ⚠️ A HARDWARE-VERIFIED BENCH TABLE WAS EDITED, DELIBERATELY, AND HERE IS WHY.** Item
+      122 records that the phase 3–6 step tables are **not reworded** — they are verified,
+      `bench-verify.py` gates on them matching, and rewording them would spend that verification.
+
+      Dissolving `plan-v02.md` into `plan-v03.md` changed **one atom in one phase 6 step**:
+      `See plan-v02.md` → `See plan-v03.md`. **The alternative was leaving a pointer to a file that
+      no longer exists**, in a step a person reads while standing at the device.
+
+      **What was NOT changed: what the step asserts.** The `PASS IF` semantics, the actions and the
+      ordering are untouched, and `bench-verify.py` still reports phase 6 IDENTICAL against the
+      table. Recorded because "the verified benches are not reworded" is a real rule and this is a
+      real exception to it — a filename, not a claim.
+
 ⬜ **Not established, and deliberately left open:** whether a saved `knobs.txt` beats the physical
 knob position at boot. Both are pushed at load and which wins was never measured. It is in
-[plan-v02.md](plan-v02.md) *Open questions* rather than asserted in a bench step.
-
----
-
-## Deliberately skipped for now
-
-Not unimportant — just not blocking UI/UX decisions.
-
-| Deferred | Why it can wait |
-|---|---|
-| LINE IN R-only behaviour | An upgrade path, not a requirement |
-| Ground loops | Deal with hum if and when you hear it |
-| 404 round-trip latency | Perform-time tuning; needs a working patch first |
-| CPU headroom | Not a real risk at this scale |
+[plan-v03.md](plan-v03.md) *Open questions* rather than asserted in a bench step.
 
 ---
 
 ## What's actually left
 
-**Five open items. One can still force a redesign, one is the only fault that could take the
-display down mid-set, and three are waiting on cables or eyes.**
+**Nothing lives here.** Every remaining question, blocked item and purchase is in
+[plan-v03.md](plan-v03.md), which is the project's single planning document.
 
-| | Blocked on | Why it is still here |
-|---|---|---|
-| **Session 3** — items 12 and 13, audio topology | the TRS Y-cable | ⚠️ **The only remaining test that could force a redesign.** How the 404 places *external* input in the stereo field is internal routing, and no amount of Mac testing reaches it |
-| **Items 81 and 133** — the wifi fault | nothing | ⚠️ **The next session.** Now well defined: the device stays *associated* and loses its **IPv4 lease**; a restart fixes it first try, a `dhcpcd` renew does not. ⚠️ **SSH keeps working over IPv6 throughout**, so check `ip addr show wlan0 \| grep "inet "`, not whether you can log in. Plan in [plan-v02.md](plan-v02.md) |
-| **Items 5 and 95** — power under full load | a cable | Never run with three controllers plus the wifi dongle at once. **Presents as intermittent MIDI dropouts rather than an obvious failure** — suspect power before code. ⚠️ It is also the leading candidate for the Launchpad failing to present its MIDI interface in item 131 |
-| **Item 39** — the OLED's 2- and 3–5-mover layouts read by eye | nothing | Opportunistic. Steps 15–16 of `phase4-bench.pd` are written for it |
-| **Item 45** — AP link quality over several minutes | nothing | The AP works and the display runs over it; what has not been done is watching the heartbeat for gaps long enough to trust it for a set |
+This file is the **evidence ledger**: numbered checks with their measured results, cited bare as
+"item 133" across the whole project. It accumulates; it does not plan. When a check here is still
+unticked, the *work* to resolve it is described in plan-v03.
 
-**Everything else has passed**, including **five phases end to end on the Organelle**: Phase 3
-(items 21–21c), Phase 4 (items 33–38b, 80), Phase 5 (items 70–79), Phase 6 (items 82–97) and
-Phase 7 (items 113–134).
-
-✅ **Phase 7 is verified on both platforms** — 15 of 15 on the Mac and 15 of 15 on the device,
-plus a 28-check headless gate. The Mac run happened *after* the device run, against convention,
-and found two faults the device pass had gone straight past: a `bad host?` at every boot, and two
-instruments fighting over one phone. **Mac first, then device** — the order exists for a reason.
-
-The full MIDI picture — every message each device accepts and transmits — is catalogued in
-[ref-midi.md](ref-midi.md), which also carries the remaining message-level unknowns, chief among
-them the **SP-404 pad note range** (verified 47+*n* here, but Roland's chart says 35–51 — sweep
-all 16 pads before writing sequencing code against it).
+**Everything through Phase 8 has passed**, including **six phases end to end on the Organelle**:
+Phase 3 (items 21–21c), Phase 4 (33–38b, 80), Phase 5 (70–79), Phase 6 (82–97), Phase 7 (113–134)
+and Phase 8 (150–157).

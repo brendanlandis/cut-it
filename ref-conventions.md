@@ -18,7 +18,7 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | Rule | |
 |---|---|
 | **`$0-` every send, receive, table and array name** inside an abstraction | [→](#0--mandatory) |
-| **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `param` `err` `disp`, plus mother's own | [→](#the-global-name-allowlist) |
+| **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `param` `err` `disp` `state`, plus mother's own | [→](#the-global-name-allowlist) |
 | **`[trigger]` on every fan-out**, even when the current order happens to work | [→](#trigger-on-every-fan-out) |
 | **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out | [→](#audio-io--never-adc-never-dac) |
 | **One owner per display surface** — `oscOut` / `screenLine*` are `g_oled`'s, `led` is its own. Everything else asks via `disp` | [→](#the-display-bus-and-who-owns-the-screen) |
@@ -123,7 +123,17 @@ Framing to keep in mind: **`$0` is private, `$1…$n` are public.**
 **The `$1` trap:** in an *object* box `$1` is a creation argument, resolved once at load. In a
 *message* box `$1` is the first element of the incoming message, resolved per message. Same
 glyph, unrelated meaning. When a message box needs a creation argument, capture it into the
-patch at load time and store it.
+patch at load time and store it — `[symbol $1]` in an *object* box, banged when needed.
+
+⚠️ **And `$0` has the same trap, which is easier to miss because `$0-name` is everywhere.** In a
+*message* box `$0` is **not** the patch id — it resolves to **0**. A `write -wave … $0-buf`
+message silently addressed a table called `0-buf`, every write failed with `no such table`, and
+because a failed write is *fast* the timing it reported looked excellent. Only a
+`FRAMES-WRITTEN: 0` control made it visible. **Object box: `$0` and `$1` mean what you expect.
+Message box: neither does.** Measured while building Phase 8.
+
+✅ **What DOES work in an object box is composing an argument**: `[u_store $1/cut-it-auto.txt]`
+expands correctly, which is how `u_state` hands each of its two stores a path.
 
 ### The global name allowlist
 
@@ -252,7 +262,7 @@ contradicts the "Pd sequences everything, timing rides in note events" decision 
 [ref-software.md](ref-software.md).
 
 **So `u_tempo` must be a master reference *plus* an instantiable `c_clock`, never a singleton.**
-The cost of getting that wrong is tracked as a risk in [plan-v02.md](plan-v02.md).
+The cost of getting that wrong is tracked as a risk in [plan-v03.md](plan-v03.md).
 
 ---
 
@@ -606,6 +616,11 @@ Neither needs a cable. See [ref-display.md](ref-display.md) for addresses and po
 failures, logic errors. That is what the error bus below and the PdParty remote console are
 for — and the run-it-yourself trick immediately below, which is better than both.
 
+**Small macOS gotchas that have each cost a wasted command:** there is no `timeout` (use a
+background PID and `kill`, or have the patch quit itself); `airport -I` is deprecated and reports
+"not associated" even when Wi-Fi is up (`ipconfig getifaddr en0` instead); and `cat -A` is GNU —
+use `cat -e`.
+
 ### There IS a console — launch the patch by hand ✅
 
 "The Organelle has no Pd console" is true only of the **menu-launched** patch, whose stdout goes
@@ -684,7 +699,7 @@ Six phases have used the same shape and it is worth stating rather than rediscov
    in doubt.
 6. **A landing checklist**, and it is not optional — see *Where the abstractions go* and the
    doc-hygiene rules in [CLAUDE.md](CLAUDE.md). Finished work moves to
-   [ref-build-log.md](ref-build-log.md); the phase's section *leaves* [plan-v02.md](plan-v02.md)
+   [ref-build-log.md](ref-build-log.md); the phase's section *leaves* [plan-v03.md](plan-v03.md)
    rather than being annotated; superseded designs are replaced, not annotated beside their
    replacement; anything unresolved moves to *Open questions*; and a new
    [plan-tests.md](plan-tests.md) session is added with items numbered **after the last used
@@ -793,7 +808,7 @@ is why the state restore is staged rather than run at `loadbang`.
 ## Where the abstractions go
 
 The decomposition that follows from all of the above — which abstraction exists, what each
-holds, and the order they get built in — is [plan-v02.md](plan-v02.md)'s *Architecture* and
+holds, and the order they get built in — is [plan-v03.md](plan-v03.md)'s *Architecture* and
 build phases.
 
 The one boundary worth restating here, because it constrains how everything else may be

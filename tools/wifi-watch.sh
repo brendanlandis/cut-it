@@ -43,6 +43,9 @@ LASTGW=$(gateway)
 # `pgrep -f wifi-watch` is the famous case, but a hand-rolled scan over /proc/*/cmdline
 # has exactly the same flaw and reported "2 instances" when there was one. It is not
 # about pgrep -- it is about searching for your own command line. Use the pidfile.
+# ⚠️ AND IF THE SWEEP ALSO RELAUNCHES, IT KILLS ITS OWN SHELL: the launch line
+# contains this script's path, so the sweep matches itself. Scan and launch in
+# SEPARATE commands, and skip $$.
 # ⚠️ The pidfile lives on /sdcard and therefore SURVIVES A REBOOT, holding a pid
 # that is now dead -- or worse, recycled onto some unrelated process. So the guard
 # checks the cmdline too, not just that something with that number exists.
@@ -59,7 +62,16 @@ echo $$ > "$PIDFILE"
 # pidfile and carry on running, and the next launch, seeing no pidfile, started a
 # second. Three accumulated that way, all running the recovery ladder against each
 # other, which is worse than not watching at all.
-trap 'rm -f "$PIDFILE" "$STAMP"' EXIT
+# ⚠️ ONLY REMOVE THE PIDFILE IF IT IS STILL OURS. A stop-then-start races: `kill`
+# returns immediately, and the dying watcher's EXIT trap ran AFTER the replacement
+# had written its own pid -- deleting it. That left a watcher running with no
+# pidfile, which silently DISARMS the single-instance guard above, so the next
+# launch would have made two. Seen 2026-08-05.
+cleanup() {
+    [ "$(cat "$PIDFILE" 2>/dev/null)" = "$$" ] && rm -f "$PIDFILE" "$STAMP"
+    return 0
+}
+trap cleanup EXIT
 trap 'exit 0' INT TERM
 
 snap() {
@@ -134,6 +146,31 @@ linkprobe() {
     return 0
 }
 
+# ⚠️ THE QUESTION THE LINK PROBE LEAVES OPEN, and it is the one that decides the
+# fix: is dhcpcd ASKING and getting no answer, or not asking at all? Those need
+# completely different repairs and nothing so far distinguishes them.
+#
+# `dhcpcd -T` is TEST MODE: it runs a full DHCP exchange and prints the result
+# WITHOUT configuring the interface, so it is safe to run in the broken state and
+# safe to run beside the real daemon (verified on a healthy device, with the real
+# dhcpcd running, 2026-08-05).
+#
+#   "soliciting a DHCP lease" + "offered X from Y"  -> THE SERVER IS ANSWERING.
+#       The running dhcpcd is the problem: it is wedged, not starved. A watchdog
+#       that restarts it is then the fix.
+#   "soliciting a DHCP lease" and then nothing      -> THE SERVER IS NOT ANSWERING
+#       this client. The problem is upstream -- router lease pool, a MAC-based
+#       rule, or the AP dropping our DHCP frames -- and no amount of restarting
+#       dhcpcd will help.
+dhcpprobe() {
+    echo "  --- DHCP PROBE (test mode -- asks, but configures nothing) ---"
+    timeout 30 dhcpcd -T -t 25 wlan0 2>&1 |
+        grep -iE "soliciting|offered|timed out|no useful|carrier|ifssid" |
+        sed 's/^/     /'
+    echo "     (an OFFER above means the server answers and the daemon is wedged;"
+    echo "      no offer means the server is not answering THIS client)"
+}
+
 try() {   # $1 = description, $2 = command, $3 = seconds to wait
     echo "  >> TRY: $1"
     echo "     cmd: $2"
@@ -172,18 +209,30 @@ while true; do
                 dmesg 2>/dev/null | tail -25 | sed 's/^/    /'
                 echo "  --- arp ---"; sed 's/^/    /' /proc/net/arp 2>/dev/null
                 linkprobe
+                dhcpprobe
                 if [ "$MODE" = "recover" ]; then
-                    # ⚠️ THE WAITS WERE 15/20/25s AND THAT WAS TOO SHORT TO BE
-                    # CONCLUSIVE. Rung 3 kills wpa_supplicant and re-runs
-                    # wifi-config.sh: the ASSOCIATION alone took ~8s in the dmesg
-                    # of the 2026-08-04 failure, leaving under 17s for a DHCP
-                    # exchange that retries. An UNRECOVERED verdict has to mean
-                    # "it did not come back", not "we did not wait".
+                    # ⚠️ TWO CORRECTIONS TO THIS LADDER, BOTH FROM REAL FAILURES.
+                    #
+                    # 1. THE WAITS WERE 15/20/25s AND TOO SHORT TO BE CONCLUSIVE.
+                    #    The association alone took ~8s in the 2026-08-04 dmesg.
+                    #    An UNRECOVERED verdict must mean "it did not come back",
+                    #    not "we did not wait".
+                    #
+                    # 2. ⚠️ RUNG 2 USED `dhcpcd -k`, WHICH ONLY RELEASES THE LEASE
+                    #    -- a wedged daemon stayed wedged and the "restart"
+                    #    restarted nothing. `-x` EXITS it. And rung 3 ran
+                    #    scripts/wifi-config.sh, WHICH IS A STALE FACTORY TEMPLATE
+                    #    HARDCODED TO SSID "name" / PASSPHRASE "pass" -- so it
+                    #    killed a working supplicant and put nothing in its place.
+                    #    Both verdicts it produced were partly self-inflicted.
+                    #    The ladder now ends with the sequence the FRONT PANEL
+                    #    uses, which is the only one observed to work without a
+                    #    reboot (2026-08-05).
                     echo "  --- RECOVERY LADDER (gentlest first) ---"
-                    try "dhcpcd renew"            "dhcpcd -n wlan0"                     45 ||
-                    try "dhcpcd release+restart"  "dhcpcd -k wlan0; sleep 2; dhcpcd wlan0" 45 ||
-                    try "wpa_supplicant restart"  "killall wpa_supplicant; sleep 2; sh /root/fw_dir/scripts/wifi-config.sh" 60 ||
-                    echo "  >> UNRECOVERED -- every rung failed. This is the datum: only a reboot fixes it."
+                    try "dhcpcd renew"             "dhcpcd -n wlan0"                        45 ||
+                    try "dhcpcd EXIT+restart"      "dhcpcd -b -x wlan0; sleep 2; dhcpcd -b wlan0" 45 ||
+                    try "full reassociate"         "bash /sdcard/wifi-reassociate.sh"       60 ||
+                    echo "  >> UNRECOVERED -- every rung failed, INCLUDING the one the front panel uses."
                 else
                     echo "  --- observe mode: changing nothing ---"
                 fi

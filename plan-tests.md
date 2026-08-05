@@ -938,15 +938,25 @@ Deployed with `./deploy.sh`, then the bench run by hand as a third patch for a r
       long aux press (item 67), the knob-streaming question (item 68, now moot), and CPU plus
       datagram rate (items 74 and 75).
 - [ ] **81. ⬜ The Organelle drops its wifi after a while.** Observed repeatedly across Session 6b:
-      the connection is up after a deploy and gone an hour or so later, needing a manual
-      reconnect. It costs nothing once a session is already underway, but it silently breaks
-      `deploy.sh` and `tools/fetch-errors.sh`, and it would take the phone display down mid-set.
+      the connection is up after a deploy and gone later, needing a manual reconnect. It silently
+      breaks `deploy.sh` and `tools/fetch-errors.sh`, and it would take the phone display down
+      mid-set.
 
-      **Unattributed** — dongle, hub current, the access point, or `wifi_control.py`; nothing has
-      been isolated. Not urgent, and **Session 5's access-point work would sidestep it entirely**,
-      which is the argument for doing that before chasing this. If it is ever chased: start by
-      logging `iwconfig wlan0` and `dmesg | tail` from cron, since the failure is unattended by
-      definition and the interesting evidence is whatever happens at the moment it drops.
+      ⚠️ **THE FRAMING IN THIS ENTRY IS WRONG AND IS KEPT ONLY AS HISTORY. Read items 133 and
+      146–168 instead.** Three things it asserts have since been measured and overturned:
+
+      - **"drops its wifi"** — it does not. The device stays **associated** at −35 dBm; what it
+        loses is the **IPv4 lease**. That wrong mental model sent this at the dongle for two
+        phases. Item 133.
+      - **"an hour or so"** — never measured. The real figures are **~3 h 12 m** and **2 h 09 m**,
+        so it is *not* a fixed interval, which argues against plain lease expiry. Item 159.
+      - **"unattributed — dongle, hub current, the access point, or `wifi_control.py`"** — the link
+        probe settled the branch: with a static address the gateway answers every ping, so the
+        radio and the path are healthy and the fault is **DHCP-side**. ⛔ The spare USB wifi card
+        is off the table. Item 159.
+
+      The suggestion to "start by logging `iwconfig` and `dmesg` from cron" was acted on and is
+      now `tools/wifi-watch.sh`, which does considerably more.
 
 ### The Phase 5 procedure, in order
 
@@ -1247,6 +1257,14 @@ well-supported hostapd chipset.
 
       ⚠️ **A `dhcpcd -n wlan0` renew did not recover it** and appeared to finish off what was left:
       mDNS stopped resolving immediately afterwards.
+
+      ⚠️ **CORRECTION — this entry's headline "only a restart fixes it" is WRONG.** ✅ A
+      **front-panel reconnect** recovered it with no reboot at all: `uptime` read **8 h 31 m across
+      the recovery** and the watcher kept the same pid throughout. Item 160. And the recovery
+      ladder that produced the original *"nothing else works"* verdicts **had two faults of its
+      own** — a rung running a stale factory template hardcoded to SSID `name`, and a `dhcpcd -k`
+      that released the lease without exiting the daemon — so those verdicts were partly a
+      description of damage the ladder had just done. Item 161.
 
       ⚠️ **AND SSH KEPT WORKING THROUGHOUT — over IPv6 link-local, via mDNS.** This is the part that
       matters. Every doc in this project says *check `ssh` before debugging code*, and **SSH
@@ -2322,6 +2340,139 @@ plausible in each case.** Then a third found in the gate itself.
       ordering are untouched, and `bench-verify.py` still reports phase 6 IDENTICAL against the
       table. Recorded because "the verified benches are not reworded" is a real rule and this is a
       real exception to it — a filename, not a claim.
+
+---
+
+## Session 13 — the wifi fault, second capture, and the branch is decided
+
+**The link probe answered the question the decision tree was built around**, and two faults in our
+own tooling turned out to be part of the previous answer.
+
+- [x] **159. ✅ THE FAULT IS DHCP-SIDE. A CARD SWAP WOULD PROVE NOTHING.** Second occurrence,
+      caught 2026-08-05 06:56:36, **2 h 09 m after boot** (the first was ~3 h 12 m, so it is **not**
+      a fixed interval). The probe assigned the last-known-good address and route and pinged the
+      gateway:
+
+      ```
+      3 packets transmitted, 3 received, 0% packet loss
+      rtt min/avg/max/mdev = 5.128/18.760/29.343/10.119 ms
+      arp: 192.168.1.1  a0:40:a0:5e:a2:01
+      VERDICT: LINK IS FINE -- the fault is DHCP-side.
+      ```
+
+      **The radio, the association and the whole path to the gateway are healthy. Only address
+      acquisition is broken.** ✅ The probe also cleaned up correctly (`ipv4 is now NONE`), so the
+      ladder results below it are trustworthy. ⛔ **The spare USB wifi card is now off the table** —
+      it was reserved for exactly the branch this rules out.
+
+- [x] **160. ⚠️ A FRONT-PANEL RECONNECT FIXED IT WITH NO REBOOT — item 133's headline is now
+      WRONG.** Item 133 recorded "only a restart fixes it, and a `dhcpcd -n` renew does not". The
+      first half no longer holds: `uptime` showed **8 h 31 m across the recovery**, and the watcher
+      kept the same pid throughout. Recovery came from mother's own WiFi menu.
+
+- [x] **161. ⚠️ TWO FAULTS IN OUR OWN RECOVERY LADDER, AND THEY POLLUTED THE PREVIOUS VERDICT.**
+      The measuring rig was contributing to the result — Phase 5's lesson, again.
+
+      1. **Rung 3 ran `/root/fw_dir/scripts/wifi-config.sh`, which is a STALE FACTORY TEMPLATE**
+         dated Feb 2020 and hardcoded to `wpa_passphrase "name" "pass"`. The SSID is literally
+         `name`; the passphrase is 4 characters and `wpa_passphrase` rejects anything under 8, so
+         it emits nothing. **The rung killed a working `wpa_supplicant` and put nothing in its
+         place.** It could never have worked. Real credentials live in `/sdcard/wifi.txt`.
+      2. **Rung 2 used `dhcpcd -k`, which only RELEASES the lease.** `-x` is what **exits** the
+         daemon. A wedged `dhcpcd` therefore stayed wedged and the "restart" restarted nothing —
+         which is precisely the difference between the ladder and the front panel, whose
+         `wifi_control.py` runs **`dhcpcd -b -x wlan0`** and then a fresh `dhcpcd -b wlan0`.
+
+      ⚠️ **So both `UNRECOVERED` verdicts were partly self-inflicted**, and "only a reboot fixes
+      it" was partly a description of damage the ladder had just done. **Fixed:** rung 2 now uses
+      `-x`, and rung 3 is `tools/wifi-reassociate.sh`, which mirrors `wifi_control.py`'s sequence
+      with the real credentials. ⬜ **The new ladder has not yet fired on a real failure.**
+
+- [x] **162. ⚠️ THE WATCHER'S PIDFILE HAD A STOP-THEN-START RACE.** `kill` returns immediately and
+      the dying watcher's `EXIT` trap ran *after* the replacement had written its own pid, deleting
+      it — leaving a watcher running with **no pidfile**, which silently **disarms the
+      single-instance guard**. Two instances then appeared. Fixed: the trap removes the pidfile
+      only if it still contains its own pid.
+
+      ⚠️ **`wifi-poll.sh` also relaunches the watcher whenever the stamp goes stale**, so it races
+      any manual restart. The reliable sequence is: kill all instances, delete the pidfile and
+      stamp, then **let the poll relaunch exactly one**.
+
+- [x] **163. ⚠️ THE SELF-MATCH TRAP BIT A THIRD TIME, THROUGH A CHECK WRITTEN TO AVOID IT.** The
+      file already warns against `pgrep -f wifi-watch`. A hand-rolled `/proc/*/cmdline` scan has the
+      same flaw, and so does a `case` pattern — **any** check whose command line contains the string
+      matches itself. The only reliable dodge is to build the pattern so the literal never appears:
+      `PAT="wifi-""watch.sh"`.
+
+      ⚠️ **AND IT IS WORSE THAN A BAD COUNT — IT KILLS YOUR OWN SESSION.** A sweep that scans *and*
+      relaunches in one command contains the script's path in its launch line, so it matches itself
+      and `kill`s the shell doing the sweeping. That produced three `ssh` exits with status 255 and
+      a half-executed cleanup before the cause was spotted. **Scan and launch must be separate
+      commands, and the sweep must skip its own `$$`.** ⚠️ **`wifi-poll.sh` latches too** — it logged one `DROP` and recorded
+      nothing for the outage after it, so the Mac-side log cannot date a second failure.
+
+- [x] **164. ✅ `wifi-reassociate.sh` TESTED LIVE, AND THE MECHANISM WORKS.** Run against a healthy
+      device with the watcher stopped so nothing else could take credit: `dhcpcd -b -x` reported
+      **`sending signal TERM to pid 31627 / waiting for pid to exit`** — confirming `-x` genuinely
+      exits the daemon, which `-k` never did — then a fresh `wpa_supplicant` and `dhcpcd` came up
+      and **the link was back in under 45 s**.
+
+      ⚠️ **This proves the MECHANISM, not the CURE.** It ran from a healthy state; whether it
+      recovers the actual fault can only be shown when the fault next fires with the corrected
+      ladder in place. Do not record it as a fix.
+
+- [x] **165. ⚠️ TESTING IT FOUND A DEFECT: TWO ADDRESSES ON `wlan0` AT ONCE.** `dhcpcd.conf` sets
+      **`persistent`**, so exiting the daemon deliberately leaves the interface configured — and the
+      fresh `dhcpcd` then leased a second address on top: `192.168.1.15` **and** `.18`
+      simultaneously. That breaks `wifi-watch.sh`'s own `ipv4()`, which greps *every* `inet` line
+      and would return two.
+
+      It cannot arise from the recovery ladder, which only runs when there is no address at all —
+      but it does when the script is run by hand. **Fixed with `ip addr flush dev wlan0`**, which is
+      a no-op in the failure case and correct in both. Re-tested: exactly one address afterwards.
+
+- [x] **166. ⚠️ THE DEVICE'S IPv4 ADDRESS IS NOT STABLE.** It came back as **`192.168.1.18`** after
+      the flush and has stayed there. `organelle.local` follows it via mDNS and every script
+      defaults to that, so nothing broke — but two documents stated `.15` as fact and have been
+      corrected. **Treat literal addresses in `HOST=` examples as fallbacks to re-check, not as
+      the address.**
+
+- [x] **167. ⚠️ THE SINGLE-INSTANCE GUARD IS ONLY AS GOOD AS THE PIDFILE, AND DELETING IT BY HAND
+      DISARMS IT.** Twice during this session two watchers ended up running, both times because the
+      pidfile had been removed manually and `wifi-poll.sh` — which relaunches whenever the stamp
+      goes stale — launched into the gap. **Kill the process and let its trap clean up; do not
+      `rm` the pidfile.** The reliable convergence is: kill all instances, wait for the traps, then
+      start exactly one so the guard is armed before the poll looks again.
+
+- [x] **168. ⚠️ BOTH WATCHERS LATCHED, SO NEITHER COULD ANSWER "DID IT HAPPEN AGAIN?".** The
+      question this investigation actually asks is *has it recurred since I last looked*, and
+      nothing could answer it:
+
+      - **`wifi-poll.sh` set its found-flag from transitions that were ALREADY in the log** when it
+        started, so the display read `*** YES ***` permanently and meaninglessly. It also logged
+        `UNREACHABLE` **once ever**, so the second outage went unrecorded on the Mac side entirely.
+      - **`wifi-report.sh` summarised the whole log cumulatively**, so it read identically before
+        and after the very failure being waited for.
+
+      **Fixed.** The poll now treats pre-existing transitions as a **baseline** and reports
+      `ANYTHING NEW?` relative to its own start, and re-arms `UNREACHABLE` per outage rather than
+      once per run. The report gains **`--mark`**, which writes `=== ANALYSED UP TO HERE <time> ===`
+      into the device log; it then summarises only what follows the last mark, with `--all` for the
+      full history. Marked at 2026-08-05 09:38:55, so the next report starts clean.
+
+      ⚠️ **And the test runs polluted the log.** Two malformed records —
+      `TRANSITION 192.168.1.15 -> 192.168.1.15` and a truncated one — came from the
+      double-address bug of item 165 making `ipv4()` return two lines. The mark is what separates
+      that noise from the next real fault. **A measuring rig contaminating its own data, for the
+      third time this project.**
+
+      ⚠️ Also learned the hard way: **editing a shell script while it is running is unsafe** — `sh`
+      reads incrementally by byte offset. Restart the poll after changing it.
+
+⬜ **Still open:** the router's DHCP lease time (`dhcpcd -U` returns nothing on 6.9.3 here), and
+whether `dhcpcd` can be made to persist a lease at all given the read-only rootfs — item 147.
+
+---
 
 ⬜ **Not established, and deliberately left open:** whether a saved `knobs.txt` beats the physical
 knob position at boot. Both are pushed at load and which wins was never measured. It is in

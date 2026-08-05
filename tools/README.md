@@ -5,10 +5,25 @@ Standalone Pd patches for testing the rig. **Not** Organelle patches — they do
 that `print` output is visible, which matters because the Organelle launches Pd with `-nogui`
 and there is no console otherwise.
 
-Hand-authored in Pd 0.49 format except the four benches and three rigs that are **generated** —
-`bench-gen.py`, `phase6-assert-drive-gen.py` and `phase7-assert-drive-gen.py` write them, and the
-`.pd` is an output. Edit the generator. Do not open any of it in plugdata — see
-[../CLAUDE.md](../CLAUDE.md).
+Hand-authored in Pd 0.49 format except the **six benches** and **three assert drivers**, which are
+**generated** — `bench-gen.py`, `phase6-assert-drive-gen.py`, `phase7-assert-drive-gen.py` and
+`phase8-assert-drive-gen.py` write them, and the `.pd` is an output. Edit the generator. Do not
+open any of it in plugdata — see [../CLAUDE.md](../CLAUDE.md).
+
+## Start here: `check-all.sh`
+
+```sh
+./tools/check-all.sh          every gate in one command, ~40 s, exit non-zero on any failure
+```
+
+Layout and graph structure, both entry points loading in silence, the bench step text, and the
+Phase 6 / 7 / 8 gates. **Mac only — it touches no device**, so it is safe to run at any time,
+including with the Organelle switched off.
+
+⚠️ **Run it before calling anything done.** Phase 8 edited `u_map`, `u_init` and `u_root` — files
+Phases 5, 6 and 7 all rest on — and came within one step of shipping without re-running *their*
+gates. The gates were all there, all passing, and all unused. **A gate you have to remember to run
+is a gate that eventually does not run.**
 
 | Patch | What it does |
 |---|---|
@@ -133,6 +148,23 @@ the phone side and is not an Organelle patch at all.
 | `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection. **Not** an Organelle patch: deploy over WebDAV with `curl -T http://<phone>:9000/CutItRemote/_main.pd`. |
 
 Findings from all of them are written up in [../ref-display.md](../ref-display.md).
+
+### `stage-patches/` — menu patches for the venue
+
+Organelle patches deployed to `/sdcard/Patches/!/`, for things that can only be done **at the
+device with no laptop attached**.
+
+| | |
+|---|---|
+| `AP Probe/` | ✅ Records what can only be seen **while the access point is up** — which is exactly when a Mac joined to it has no internet and nobody can watch. It logs to `/sdcard/ap-probe.log` and reads the phone's address from the dnsmasq lease file **or**, if dnsmasq has already exited, from `/proc/net/arp`. ⚠️ **That second strategy is what saved the run** (item 129) — a single-strategy probe would have returned `none` and taught us nothing. |
+| `Start AP/` | ⛔ **A dead end, kept as the record of why.** It has no `main.pd` and is not loadable. `create_ap`, `hostapd` and `dnsmasq` all die with the Pd that spawned them **even behind `setsid nohup`**, so an AP cannot be started from a patch. Use **System → WiFi Setup → Start AP**. Item 129. |
+| `State Probe/` | Phase 8's on-device state probe. |
+
+### `test-stubs/` — stand-ins the gates need
+
+`t_midiout.pd` replaces `[midiout]` so a headless run can read back every byte the patch emits.
+⚠️ **It cannot be supplied by search path**, which is why `phase6-assert.sh` rewrites boxes in a
+scratch copy — see that gate below.
 
 ## Running one
 
@@ -270,17 +302,38 @@ against the repo and says so loudly if they differ, because an error from a buil
 is a trap.
 
 
-## Chasing the wifi fault — items 81 and 133
+## Chasing the wifi fault — items 81, 133 and 146–168
 
-Three pieces. The fault is that the Organelle loses its **IPv4 lease** after roughly an hour while
-staying **associated**, and ⚠️ **ssh keeps working over IPv6 throughout**, so a login proves nothing.
+The fault is that the Organelle loses its **IPv4 lease** while staying **associated**, and
+⚠️ **ssh keeps working over IPv6 throughout**, so a login proves nothing. The check is
+`ip addr show wlan0 | grep "inet "`.
+
+⚠️ **Uptime-to-failure is NOT constant** — measured at **~3 h 12 m** and **2 h 09 m**, which
+already argues against plain lease expiry. An earlier version of this line said "roughly an hour"
+and that was never measured.
 
 | | |
 |---|---|
-| `wifi-watch.sh` | **Runs ON the device.** Polls `wlan0` every 20 s, logs every IPv4 transition with `dmesg`, association and process state, then walks a **recovery ladder** — renew, release+restart, `wpa_supplicant` restart — recording which rung works. Copy to `/sdcard/` and launch with `setsid`. |
-| `wifi-poll.sh` | **Runs on the Mac.** Leave it in a terminal. Redraws a small block every minute and answers one question: *anything found yet, y/n.* Rings the bell and raises a macOS notification when it finds something. |
+| `wifi-watch.sh` | **Runs ON the device.** Polls `wlan0` every 20 s and logs every IPv4 transition with `dmesg`, association and process state. On a failure it runs **two probes** and then a **recovery ladder**, recording which rung works. Copy to `/sdcard/` and launch with `setsid`. |
+| `wifi-reassociate.sh` | **Rung 3, and runnable by hand.** Mirrors what the front panel's own `wifi_control.py` does, with the real credentials from `/sdcard/wifi.txt`. ⚠️ **bash, not sh** — it uses process substitution and the device's `/bin/sh` is busybox ash. |
+| `wifi-poll.sh` | **Runs on the Mac.** Leave it in a terminal. Redraws a small block every minute and answers one question: *anything new since I started, y/n.* Rings the bell and raises a macOS notification. |
+| `wifi-report.sh` | Pulls the evidence off the device and summarises it. **`--mark` first**, then it reports only what happened after the mark. |
 | `../plan-v03.md` | What each outcome **means** and what to do about it. Hand it to an agent along with `wifi-report.sh`'s output. |
-| `wifi-report.sh` | Pulls the evidence off the device and summarises it into the shape the analysis needs. |
+
+**The two probes are the point of the current rig**, because they split the fault before anything
+tries to repair it:
+
+| Probe | Asks | ✅ Answer so far |
+|---|---|---|
+| **link probe** | assigns the last-known-good address and route, pings the gateway | **`LINK IS FINE`** — 0% loss. The radio, the association and the path are healthy; the fault is **DHCP-side**. Item 159 |
+| **DHCP probe** | `dhcpcd -T` — a full exchange that configures nothing | an **offer** means the server answers and the daemon is wedged; **no offer** means the server is not answering this client |
+
+⚠️ **The ladder had two faults of its own, and they polluted the earlier verdicts** (item 161).
+Rung 3 used to run `/root/fw_dir/scripts/wifi-config.sh`, a **stale factory template hardcoded to
+SSID `name`** — it killed a working supplicant and put nothing in its place. Rung 2 used
+`dhcpcd -k`, which only **releases** the lease; `-x` is what **exits** the daemon, so a wedged
+`dhcpcd` stayed wedged and the "restart" restarted nothing. Both are fixed, and ⬜ **the corrected
+ladder has not yet fired on a real failure.**
 
 ⚠️ **`wifi-poll.sh` does not rely on reachability.** The fault can drop and recover between two
 polls and the Mac would never see it, so it reads the **transition count** out of the device-side
@@ -291,15 +344,37 @@ that goes looking for it — that self-match made a running watcher look dead, a
 same pattern killed the ssh session outright. The watcher writes `/sdcard/wifi-watch.pid` and
 touches `/sdcard/wifi-watch.alive` every poll; **check the mtime.**
 
+⚠️ **The self-match trap has now bitten three times, and the third was the worst** (item 163). A
+hand-rolled `/proc/*/cmdline` scan has the same flaw, and so does a `case` pattern — **any** check
+whose own command line contains the string matches itself. Worse, a sweep that **scans and
+relaunches in one command** carries the script's path in its launch line, so it kills the shell
+doing the sweeping: three `ssh` exits with status 255 before the cause was spotted. **Scan and
+launch must be separate commands, and the sweep must skip its own `$$`.** The only reliable dodge
+in a pattern is to split the literal: `PAT="wifi-""watch.sh"`.
+
+⚠️ **Do not `rm` the pidfile to clean up** — that disarms the single-instance guard, and
+`wifi-poll.sh` relaunches whenever the stamp goes stale, so two watchers appear. Kill the process
+and let its `EXIT` trap remove the file. Item 167.
+
+⚠️ **Never edit these while they are running.** `sh` reads a script incrementally by byte offset,
+so an edit under a live interpreter is genuinely unsafe — restart the poll after changing it.
+
 ## The benches are stepped by hand
 
-**All four benches are generated by `bench-gen.py` from the step tables in `bench_steps.py`.**
-Edit the table and re-run the generator; **never edit a `phaseN-bench.pd`.**
+**All six benches are generated by `bench-gen.py` from the step tables in `bench_steps.py`**
+(`STEPS3` through `STEPS8`). Edit the table and re-run the generator; **never edit a
+`phaseN-bench.pd`.**
 
 ```sh
-python3 tools/bench-gen.py        # writes all four
+python3 tools/bench-gen.py        # writes all six
 python3 tools/bench-verify.py     # proves the step text survived
+python3 tools/bench-extract.py tools/phase5-bench.pd   # recover a bench's step table
 ```
+
+`bench-extract.py` is what made the conversion safe: it recovers the step text from a `.pd` by its
+`=== STEP-NN-of-M ===` markers, so the hand-authored, hardware-verified benches could be diffed
+before and after rebuilding their box graphs. Zero differences was the gate. `bench-verify.py` is
+that same check, run against the table.
 
 They no longer drive themselves on a timer. The old shape put the console text and the physical
 device in motion **at the same moment**, so you could read one or watch the other and not both.

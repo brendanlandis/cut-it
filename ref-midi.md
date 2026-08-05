@@ -260,9 +260,13 @@ reply:  F0 7E 00 06 02 | 00 20 29 | 23 01 | 00 00 | 00 04 06 05 | F7
 
 **Why it matters beyond trivia: a device that answers is a device Pd can notice the absence of.**
 Poll the inquiry, expect a reply, and a Launchpad that has been unplugged — or bumped out of
-Programmer Mode — stops being invisible. That is the only route to the replug hazard in
-[plan-v03.md](plan-v03.md), and it costs one round trip per poll against the 96 ALSA writes a
-second the clock already makes.
+Programmer Mode — stops being invisible. ✅ **Phase 6 built exactly that**: `m_launchpad`'s
+watchdog polls the inquiry every two seconds, and three missed replies drop surface ownership so
+`g_grid` stops painting. It costs one round trip per poll against the 96 ALSA writes a second the
+clock already makes. ⚠️ **The poll alone is not enough** — a Mac replug is undetectable this way,
+because the device answers the inquiry in *either* mode, so a Programmer Mode heartbeat runs
+alongside it. See [ref-display.md](ref-display.md) → *`g_grid`* and
+[ref-build-log.md](ref-build-log.md) → *The watchdog*.
 
 ⚠️ **Programmer Mode locks out the device's own mode buttons, so they cannot be used to change
 mode while Pd owns the surface.** Pressed in Programmer Mode they are ordinary CC — measured:

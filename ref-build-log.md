@@ -23,7 +23,7 @@ do. They are the most valuable thing in this file.
 | 5 | ✅ hardware | `u_tempo`, `c_clock`, `u_map`, `m_organelle`, `g_led`, the `param` bus |
 | 6 | ✅ hardware | `m_launchpad`, `g_grid`, the `mode` driver, the first `c_clock` instance |
 | 7 | ✅ hardware | `u_net`, the per-name coalescer, the reconnect, the phone scene |
-| 8 | ✅ hardware | `u_state`, `u_store`, the `state` bus, the two policies, `fetch-state.sh` |
+| 8 | ✅ hardware | `u_state`, `u_store`, the `state` bus, the two policies, `state-dir.sh`, `fetch-state.sh`, `check-all.sh` |
 
 ---
 
@@ -360,9 +360,10 @@ load 0.5, but v0.3 stacks four filter stages on this, so the baseline matters. I
 `m_launchpad`, `g_grid`, the `mode` bus finally getting a driver, and the first `c_clock`
 instance in the deployed patch.
 
-⚠️ **Verified on the Mac, not yet on the Organelle.** Nothing here has been deployed. The
-Launchpad was plugged into the Mac for the whole phase, which is new for this project and is what
-made an off-device build possible at all — `plan-tests.md` items 94–97 are what remain.
+**Built and verified entirely on the Mac first** — the Launchpad was plugged into the laptop for
+the whole phase, which is new for this project and is what made an off-device build possible at
+all. ✅ **It was afterwards deployed and accepted on the hardware**, and that run is the section
+*Phase 6 on the hardware* below; it found three bugs the Mac could not. Items 82–97.
 
 **Step 0 paid for itself immediately.** Six measurements before any code, and two of them
 changed the design:
@@ -456,8 +457,8 @@ strongest evidence in the project that **a green Mac bench does not mean a phase
 The four benches were self-driving on a ten-second timer, so the console text and the hardware
 moved at the same instant — you cannot read one while watching the other. They are now **stepped by
 hand**: press GO to run the step just described, press GO again to describe the next. One control,
-because the device has only one to spare. `tools/bench-gen.py` generates all four from
-`bench_steps.py`, and `bench-verify.py` re-extracts the step text from the generated files and
+because the device has only one to spare. `tools/bench-gen.py` generates every bench from
+`bench_steps.py` — four at the time, six now — and `bench-verify.py` re-extracts the step text from the generated files and
 diffs it against the table — the three hardware-verified benches had to survive conversion
 **verbatim**, and that gate is the only reason converting them was safe.
 
@@ -681,9 +682,19 @@ all**. ⚠️ **SSH kept working over IPv6 link-local throughout**, so *"check s
 code"* — this project's own rule — **was not a sufficient test**. The check is
 `ip addr show wlan0 | grep "inet "`.
 
-**So it is the IPv4 lease that is lost, not the network**, and a restart fixes it first try where a
-`dhcpcd` renew does not. That points at DHCP renewal rather than the dongle, the power or the AP.
-[plan-tests.md](plan-tests.md) item 133; the investigation is in [plan-v03.md](plan-v03.md).
+**So it is the IPv4 lease that is lost, not the network.** That points at DHCP renewal rather than
+the dongle, the power or the AP — ✅ and a later link probe confirmed it: with a static address the
+gateway answers every ping, so the radio and the association are healthy and **only address
+acquisition is broken** (item 159).
+
+⚠️ **Two claims recorded here at the time have since been overturned, both by measurement.** A
+restart is **not** the only cure — a front-panel reconnect fixed it with no reboot, `uptime` 8 h
+31 m across the recovery (item 160). And the recovery ladder that produced the original
+`UNRECOVERED` verdicts **had two faults of its own**: a rung running a stale factory template
+hardcoded to SSID `name`, and a `dhcpcd -k` that released the lease without exiting the daemon, so
+the ladder was partly describing damage it had just done (item 161). **A measuring rig is code**,
+for the third time in this file. [plan-tests.md](plan-tests.md) item 133; the open work is in
+[plan-v03.md](plan-v03.md).
 
 ## Phase 8 — the data store
 
@@ -764,6 +775,17 @@ and it works. `/proc/<pid>/environ` shows the *initial* environment and is not u
 
 **Data lives outside the patch folder** — `/sdcard/cut-it-state/` — so `deploy.sh`, `--clean` and a
 power cycle cannot touch it, with `tools/fetch-state.sh` as the other half of that bargain.
+`state-dir.sh` creates the directory **and touches both files** at load, because a `[text write]`
+into a missing directory prints and a `[text read]` of a missing file prints three lines — six
+error lines on a fresh install, before anything had gone wrong.
+
+**And one process fix, which is the phase's most transferable output.** Phase 8 edited `u_map`,
+`u_init` and `u_root` — files Phases 5, 6 and 7 all rest on — and came within one step of shipping
+without ever re-running **their** gates. Nothing prompted it; the gates were all there, all
+passing, and all unused. `tools/check-all.sh` now runs every gate in one command. ⚠️ **A gate you
+have to remember to run is a gate that eventually does not run** — the same lesson as `wire.sh`
+being run by `u_init` rather than by hand, and `deploy.sh` doing the syntax check rather than
+trusting anyone to.
 **`knobs.txt` now appears on the first `Storage → Save`** and the patch boots at saved knob
 positions from then on; deliberate, and CLAUDE.md was rewritten to say so. **The `manual` path
 ships with no in-patch user** — the first will be v0.3's drum mode — so it is exercised by the gate

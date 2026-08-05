@@ -398,8 +398,11 @@ start; it is much easier than retrofitting once the filter logic exists.
 2. **Decouple capture source from playback destination.** Channel offsets tell you what a
    pattern was recorded *from*; that should not determine where it plays *to*. Bake it in and
    you have permanently made something "a Launchpad pattern".
-3. **Store as plain text files in the repo.** `text define` + `text write` in vanilla Pd. The
-   payoff is patterns that are git-diffable and editable in a text editor alongside the patch.
+3. **Store as plain text files.** `text define` + `text write` in vanilla Pd, so patterns stay
+   git-diffable and editable in a text editor. ⚠️ **They do not live in the repo, and this point
+   used to say they did.** ✅ Phase 8 settled where: `/sdcard/cut-it-state/` on the device,
+   *outside* the patch folder, with `tools/fetch-state.sh` copying it back here. The instrument
+   writes to somewhere a deploy cannot erase; the repo gets a backup, not the original.
 
 
 ---

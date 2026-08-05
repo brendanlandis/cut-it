@@ -30,6 +30,8 @@ STARTED=$(date '+%Y-%m-%d %H:%M:%S')
 START_EPOCH=$(date +%s)
 
 LAST_TRANS=""
+BASELINE=""
+REPORTED_DOWN=""
 FOUND=0
 LAST_EVENT="-"
 DOWN_SINCE=""
@@ -71,6 +73,7 @@ while true; do
         STAMP=$(echo "$RAW" | cut -d"|" -f3)
         REACH=yes
         DOWN_SINCE=""
+        REPORTED_DOWN=""
     else
         IP=NONE; TRANS=""; STAMP=""; REACH=no
         [ -z "$DOWN_SINCE" ] && DOWN_SINCE=$(date +%s)
@@ -79,8 +82,13 @@ while true; do
     # --- the actual detection -------------------------------------------------
     if [ -n "$TRANS" ]; then
         if [ -z "$LAST_TRANS" ]; then
+            # ⚠️ TRANSITIONS ALREADY IN THE LOG ARE A BASELINE, NOT A FIND.
+            # This used to set FOUND=1 immediately, so once the log had ever
+            # recorded anything the display read "*** YES ***" forever and could
+            # never answer the only question being asked: did it happen AGAIN?
             LAST_TRANS=$TRANS
-            [ "$TRANS" -gt 0 ] && { FOUND=1; LAST_EVENT="$TRANS transition(s) already in the log before this run"; }
+            BASELINE=$TRANS
+            [ "$TRANS" -gt 0 ] && LAST_EVENT="baseline: $TRANS transition(s) already logged before this run"
         elif [ "$TRANS" -gt "$LAST_TRANS" ]; then
             FOUND=1
             LAST_EVENT="$(date '+%H:%M:%S') -- device logged a new transition (total $TRANS)"
@@ -91,7 +99,12 @@ while true; do
         fi
     fi
 
-    if [ "$REACH" = no ] && [ "$FOUND" = 0 ]; then
+    # ⚠️ ONCE PER OUTAGE, NOT ONCE EVER. The guard used to be [ "$FOUND" = 0 ],
+    # so the first event of the run silenced every one after it -- and a fault
+    # you are characterising across repeated occurrences is exactly the thing
+    # that needs each one recorded.
+    if [ "$REACH" = no ] && [ -z "$REPORTED_DOWN" ]; then
+        REPORTED_DOWN=1
         FOUND=1
         LAST_EVENT="$(date '+%H:%M:%S') -- UNREACHABLE from the Mac"
         printf "\007"
@@ -136,13 +149,13 @@ while true; do
     [ -n "$RELAUNCHED" ] && echo "  note           device watcher was dead -- relaunched at $RELAUNCHED"
     echo "  ------------------------------------------------------------------"
     if [ "$FOUND" = 1 ]; then
-        echo "  ANYTHING FOUND?   *** YES ***"
+        echo "  ANYTHING NEW?     *** YES *** (since this run started)"
         echo "  $LAST_EVENT"
         echo
         echo "  next:  ./tools/wifi-report.sh      (pulls the evidence off the device)"
         echo "  log:   $FIND"
     else
-        echo "  ANYTHING FOUND?   no"
+        echo "  ANYTHING NEW?     no (baseline: ${BASELINE:-0} already in the log)"
     fi
     echo
     echo "  ctrl-c to stop"

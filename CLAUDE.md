@@ -130,7 +130,7 @@ tools/dsp.sh           turns the audio engine off on a running patch, which is h
                        item 75's real cause was finally isolated
 tools/               diagnostic patches, the per-phase benches, and pd-layout-check.py
   README.md            what each one proves, how to run it, and how to run a bench ON the device
-  bench-gen.py         GENERATES all four phaseN-bench.pd from bench_steps.py. The benches
+  bench-gen.py         GENERATES all six phaseN-bench.pd from bench_steps.py. The benches
                        are stepped BY HAND -- press GO to run the step just described, press
                        GO again to describe the next. Never edit a bench .pd
   bench-verify.py      proves the step text survived the generator, by re-extracting it
@@ -151,6 +151,15 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
   stage-patches/       Organelle menu patches for the venue: AP Probe records what can only
                        be seen while the access point is up, which is exactly when a Mac
                        joined to it has no internet and nobody can watch
+  wifi-watch.sh        THE OPEN FAULT. Runs ON the device: polls wlan0, and on a failure
+                       runs a LINK PROBE and a DHCP PROBE before a recovery ladder.
+                       The link probe has already decided the branch -- the radio is
+                       fine and the fault is DHCP-side. wifi-poll.sh watches from the
+                       Mac, wifi-report.sh summarises (--mark FIRST), and
+                       wifi-reassociate.sh is the rung that mirrors the front panel.
+                       ⚠️ NEVER pgrep -f wifi-watch: it matches the ssh doing the
+                       checking, and a sweep that scans and relaunches in ONE command
+                       kills its own session
 plan-v03.md          THE ONLY PLAN DOCUMENT. What v0.3 builds, every open question,
                      the wifi decision tree, purchases, and what is deferred and why
 plan-tests.md        THE EVIDENCE LEDGER — numbered checks with their measured

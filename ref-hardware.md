@@ -196,8 +196,17 @@ is only for the `ro` rootfs.
 
 ⚠️ **`/etc/wpa_supplicant/wpa_supplicant.conf` is a red herring.** It is the stock 55 KB example
 file dated 2015, still carrying `ssid="example"` and `ssid="eap-sim-test"`. **Nothing reads it.**
-The real path is `wifi_setup.py` → `wifi.txt` → `wifi-config.sh`, which builds the config inline
-with `wpa_passphrase`.
+The real path is `wifi_setup.py` → `wifi.txt` → the front panel's own `wifi_control.py`, which
+builds a `wpa_supplicant` config inline with `wpa_passphrase` from the credentials in `wifi.txt`.
+
+⚠️ **AND `/root/fw_dir/scripts/wifi-config.sh` IS A SECOND RED HERRING — do not call it.** ✅
+Measured (item 161): on this device it is a **stale factory template** dated Feb 2020, hardcoded to
+`wpa_passphrase "name" "pass"`. The SSID is literally `name`, and the passphrase is 4 characters
+where `wpa_passphrase` rejects anything under 8 — so it emits **nothing** and the supplicant gets
+an empty config. Running it **kills a working `wpa_supplicant` and puts nothing in its place.**
+This repo's own recovery ladder called it for two phases, which is why two `UNRECOVERED` verdicts
+were partly self-inflicted. `tools/wifi-reassociate.sh` is the correct sequence — it mirrors what
+the front panel does, with the real credentials.
 
 ```sh
 ssh root@organelle.local 'printf "SSID\nPASSWORD\n" >> /sdcard/wifi.txt'
@@ -275,8 +284,14 @@ Components can disable the onboarding drive on the Launchpad itself is untried a
 ## The device itself
 
 ```sh
-ssh root@organelle.local        # 192.168.1.15, password: organelle
+ssh root@organelle.local        # password: organelle
 ```
+
+⚠️ **The IPv4 address is DHCP-assigned and NOT stable.** It has been observed as both
+`192.168.1.15` and `192.168.1.18`; a recovery that flushes the interface can come back on a
+different one. **Always use `organelle.local`** — mDNS follows it, and every script here defaults
+to that. The literal addresses in `HOST=` examples are fallbacks for when mDNS is flaky, and must
+be re-checked before use rather than trusted.
 
 | | |
 |---|---|
@@ -287,7 +302,29 @@ ssh root@organelle.local        # 192.168.1.15, password: organelle
 | Externals | `/root/Pd/externals` |
 | Scripts | `/root/fw_dir/scripts/` |
 | Extra libs | `/sdcard/PdExtraLibs` — already on Pd's search path |
+| **Running patch** | **`/tmp/patch` — a SYMLINK to the patch folder**, and Pd's working directory |
+| **Instrument data** | **`/sdcard/cut-it-state/`** — what `u_state` writes. Not config, not deployed |
+| Error log | `/sdcard/cut-it-err.log` (rolled) and `.cur` (running session) |
+| Wifi credentials | `/sdcard/wifi.txt` — plaintext, **never copy into the repo** |
 | Transfer | **`scp` only — no rsync installed** |
+
+### Durable device state — three things live outside the patch folder ✅
+
+**`/sdcard` is ext4 and survives a power cycle; `/tmp` is tmpfs and does not.** Everything the
+instrument writes for itself is therefore on `/sdcard`, deliberately *outside*
+`/sdcard/Patches/!/Cut It/`, so that `./deploy.sh`, `./deploy.sh --clean` and a power cycle cannot
+touch any of it:
+
+| | Written by | Read back with |
+|---|---|---|
+| `/sdcard/cut-it-state/` | `u_state`, on a flush or a commit | `tools/fetch-state.sh` |
+| `/sdcard/cut-it-err.log` / `.cur` | `u_err`, on a 2 s dirty flag | `tools/fetch-errors.sh` |
+| `/sdcard/wifi.txt`, `/sdcard/ap.txt` | the System menu | — |
+
+⚠️ **`/tmp/patch` is a SYMLINK to the patch folder, and it is Pd's working directory.** So a
+**relative** `[text write]` from inside a patch does not land in `/tmp/state` and does not wait for
+mother's copy — it **mutates the deployed patch immediately**. Item 140. Use absolute paths for
+anything meant to persist, which is what `u_state` does and why it needs no Save at all.
 
 Hardware is **i.MX-based** (`imx-spdif`, `imx-hdmi-soc`, `usb-ci_hdrc` in the ALSA card list),
 armv7. 495 MB RAM, 3.3 GB free on `/sdcard`.
@@ -362,10 +399,16 @@ device, which is the bug that once had `fetch-errors.sh` reporting pd alive whil
 | Phase 5 — clock on two MIDI ports | **10.2 %** | 117/s |
 | Phase 6 — Launchpad grid | **11.7–12.0 %** | 120/s |
 | Phase 7 — phone status link | **11.7 %** | **122–126/s** |
+| Phase 8 — the data store | 10.4–10.7 % | 115–116/s | ⚠️ **not comparable** — see below |
 
 The datagram rate was the display alone and flat from Phase 3 to 6. **The Phase 5 CPU jump is the
 clock** — ~96 ALSA MIDI writes a second rather than the DSP; two extra `c_clock` instances cost
 only 0.4 points. Items 21, 37 and 75.
+
+⚠️ **Phase 8's row is LOWER than Phase 7's, and that is not evidence `u_state` is free.** The rig
+was in a different state — **4 ALSA links rather than 5**, so a controller was unplugged, and the
+phone was not up. It bounds the cost as small and nothing more. Item 156. **Compare rows only when
+the rig matches**; that is the whole reason each row names its phase rather than a date.
 
 **Phase 7 is the first phase to move the UDP number**, and by a knowable amount: heartbeat 2/s,
 repeated alert state 2/s, and the late-join repeat 1/s. ✅ **`u_net` costs about 0.2 CPU points.**

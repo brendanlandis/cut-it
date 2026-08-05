@@ -6,8 +6,8 @@ uncertainty ⬜, but they carry no plans — when something there is unverified,
 it is below. [plan-tests.md](plan-tests.md) is the evidence ledger: numbered checks with their
 measured results, cited bare as "item 133" across the whole project.
 
-✅ **v0.2 is complete.** Nine abstractions, four display surfaces, three headless gates and six
-benches, all verified on hardware. What it does *not* do is make an interesting sound — it passes
+✅ **v0.2 is complete.** Sixteen deployed abstractions (plus `u_mother-stub`, which is Mac-only),
+four display surfaces, three headless gates and six benches, all verified on hardware. What it does *not* do is make an interesting sound — it passes
 audio through, knows what every control is doing, and can tell you about it. **v0.3 is the sound.**
 
 Read [ref-conventions.md](ref-conventions.md) before writing any Pd, and
@@ -54,7 +54,7 @@ Y-cable. Procedure: [plan-tests.md](plan-tests.md) Session 3, items 12–13.
 
 ---
 
-## The wifi fault — items 81, 133, 146–149
+## The wifi fault — items 81, 133, 146–168
 
 ⚠️ **The one fault that could take the phone display down mid-set**, and it has been open since
 Phase 6 and misdiagnosed for two of them. **A watcher runs on the device** (`/sdcard/wifi-watch.sh`)
@@ -75,29 +75,58 @@ watching.
 - ✅ **`dhcpcd` cannot persist a lease here** — the rootfs is read-only, `/var/lib/dhcpcd/` is
   unwritable, and there is **no lease file for the current SSID**. `dhcpcd` is **6.9.3** (2015),
   with `option rapid_commit` and `noipv4ll`.
-- ⚠️ **All three recovery rungs failed.** Only a reboot clears it.
+- ⚠️ **All three original rungs failed** — but ⚠️ **two of them were broken**, see item 161: rung 3
+  ran a stale factory template hardcoded to SSID `name`, and rung 2 released the lease without
+  exiting the daemon. Both verdicts were partly self-inflicted.
+- ⚠️ **Uptime-to-failure is NOT constant**: ~3 h 12 m and 2 h 09 m. That argues against plain lease
+  expiry on its own.
 
 **And one thing that is NOT established: the cause.** Item 81 has blamed the dongle, power, the
 access point and `wifi_control.py` at various times, on no evidence. **Do not add a fifth guess.**
 
-### The decision tree — read the probe's verdict first
+### ✅ THE BRANCH IS DECIDED — the probe ran, 2026-08-05
 
-`wifi-watch.sh` now runs a **link probe before the recovery ladder**: it assigns the last-known-good
-address and route and pings the gateway. That test is what splits the tree, and it had never been
-run.
+```
+VERDICT: LINK IS FINE -- the fault is DHCP-side.
+         3 packets transmitted, 3 received, 0% packet loss
+```
 
-| Probe verdict | Meaning | Do next |
-|---|---|---|
-| **LINK IS FINE** | traffic flows on a static address — radio, association and path all healthy; only *address acquisition* is broken | ⚠️ **A card swap would prove nothing.** Go at `dhcpcd`: check 6.9.3's known renewal bugs, try `--dbdir /sdcard/dhcpcd` so a lease can persist, and try disabling `rapid_commit` |
-| **LINK IS DEAD** | associated, but nothing passes even with addressing removed from the question | ✅ **Now** swap the spare USB wifi card. This is the driver/firmware branch it was reserved for |
-| **SKIPPED** | the guard fired, or no good address was recorded yet | Inconclusive — say so rather than reading anything into it |
+**The radio, the association and the whole path to the gateway are healthy. Only DHCP address
+acquisition is broken.** ⛔ **The spare USB wifi card is OFF THE TABLE** — it was held back for
+exactly the branch this rules out, and spending it now would prove nothing. Items 159–163.
 
-Rung-by-rung, if the ladder *does* recover it: **rung 1 (renew)** means the lease expired and
-renewal never fired — compare uptime-to-failure against the router's lease time, and ⚠️ note it
-contradicts item 133, where a hand-run renew did *not* work. **Rung 2 (`dhcpcd -k` + restart)**
-means `dhcpcd` was wedged, and a watchdog that restarts it on loss of IPv4 is a real, small fix.
-**Rung 3 (`wpa_supplicant` restart)** means the association was stale while *looking* healthy —
-⚠️ that partly contradicts item 133's headline, so re-check the evidence before concluding.
+⚠️ **And item 133's headline is wrong: a front-panel reconnect fixed it with no reboot** —
+`uptime` showed 8 h 31 m across the recovery.
+
+**What to do next, in order:**
+
+1. **Wait for the corrected ladder to fire on a real failure.** ⬜ It has not yet. Rung 2 now uses
+   `dhcpcd -x` (**exit**) rather than `-k` (**release only**), and rung 3 is
+   `tools/wifi-reassociate.sh`, which mirrors what mother's own WiFi menu does. If rung 2 or 3
+   recovers it unattended, **the fault stops being a stage risk** — the phone display would come
+   back on its own.
+2. **Read the DHCP PROBE, which is armed and has never yet fired on a real fault.** It runs
+   `dhcpcd -T` — a full exchange that configures nothing — between the link probe and the ladder,
+   and it splits the remaining question into two opposite repairs:
+
+   | The log shows | Means | Fix |
+   |---|---|---|
+   | `soliciting…` **and** `offered X from Y` | the server answers — **the daemon is wedged** | a watchdog that restarts `dhcpcd` |
+   | `soliciting…` then nothing | the server is not answering **this client** | upstream: lease pool, MAC rule, AP dropping DHCP |
+
+   ✅ Verified safe on the healthy device, running alongside the live daemon: `soliciting a DHCP
+   lease` / `offered 192.168.1.18 from 192.168.1.1`. ⚠️ It offered a **different address each
+   time** (.18, then .20), which is consistent with item 147 — `dhcpcd` cannot persist a lease here.
+
+3. **Then, and only then, change one thing.** `dhcpcd` is **6.9.3** (2015), it **cannot persist a
+   lease** (read-only rootfs, no lease file for the current SSID — item 147), and it has
+   `option rapid_commit` set. Try `--dbdir /sdcard/dhcpcd` so a lease can survive, and try
+   disabling `rapid_commit`. ⚠️ **One variable at a time, and not while waiting for a capture** —
+   the fault takes 2–3 hours to appear, so a non-recurrence is weak evidence and a change made
+   mid-wait confounds the run that was already in progress.
+4. **Get the router's lease time.** `dhcpcd -U` returns nothing on this version, so it has to come
+   from the router. Compare against uptime-to-failure — **2 h 09 m** and **~3 h 12 m** so far, which
+   is *not* a fixed interval and already argues against simple lease expiry.
 
 ### Regardless of branch
 
@@ -114,17 +143,21 @@ means `dhcpcd` was wedged, and a watchdog that restarts it on loss of IPv4 is a 
 - **Do not conclude from a single failure.** One data point cannot separate "the lease expired"
   from "`dhcpcd` wedged once".
 - **Do not trust `ssh` as a reachability check.**
+- **Run `./tools/wifi-report.sh --mark` once you have written a finding up.** The log accumulates,
+  so without a mark the report reads the same before and after the failure you are waiting for.
 - **Do not run two watchers.** Use the pidfile, or `ls -l /sdcard/wifi-watch.alive`. ⚠️ **Never
   `pgrep -f wifi-watch`** — it matches the ssh command doing the checking, and a `/proc` scan has
   exactly the same flaw. That has now cost time twice.
 
 ### Recording it
 
-New items in [plan-tests.md](plan-tests.md) **after the last used number**, and **items 81 and 133
-updated in place** rather than a third entry saying something slightly different. ⬜ **That in-place
-merge is still outstanding.** If it is fixed, [ref-hardware.md](ref-hardware.md) gains the mechanism
-and this section goes. ⚠️ **If it is NOT fixed, say so plainly and leave it open** — a wrong
-confident answer costs more than an open question, which is exactly how this ran for two phases.
+New items in [plan-tests.md](plan-tests.md) **after the last used number** — 168 is the highest
+used. ✅ **Items 81 and 133 have now been corrected in place**, each carrying a pointer to what
+overturned it rather than leaving three entries that say slightly different things.
+
+If the fault is ever *fixed*, [ref-hardware.md](ref-hardware.md) gains the mechanism and this
+section goes. ⚠️ **If it is NOT fixed, say so plainly and leave it open** — a wrong confident
+answer costs more than an open question, which is exactly how this ran for two phases.
 
 ---
 

@@ -2,8 +2,16 @@
 # wifi-report -- pull the evidence off the device once wifi-poll.sh has found
 # something, and summarise it into the shape the analysis actually needs.
 #
-#   ./tools/wifi-report.sh              summary
+#   ./tools/wifi-report.sh              summary of everything SINCE THE LAST MARK
+#   ./tools/wifi-report.sh --all        the whole log, marks ignored
+#   ./tools/wifi-report.sh --mark       draw a line: everything above is analysed
 #   ./tools/wifi-report.sh --full       and the raw log
+#
+# ⚠️ WHY MARKS EXIST. The log ACCUMULATES, so a cumulative summary can only ever
+# answer "has this ever happened", and the question actually being asked is "has
+# it happened AGAIN, since I last looked". Without a mark the report reads
+# identically before and after the very failure you are waiting for. Run --mark
+# once you have written a finding up, and the next report starts from there.
 #
 # What matters in the output, in order:
 #
@@ -20,6 +28,22 @@
 set -u
 HOST=${HOST:-root@organelle.local}
 LOG=/sdcard/wifi-watch.log
+MARK="=== ANALYSED UP TO HERE"
+SINCE=1
+case "${1:-}" in
+    --all)  SINCE=0 ;;
+    --mark) MARK_ONLY=1 ;;
+    --full) ;;
+    "")     ;;
+esac
+
+if [ "${MARK_ONLY:-0}" = 1 ]; then
+    ssh -o ConnectTimeout=8 "$HOST" \
+        "echo '$MARK $(date '+%Y-%m-%d %H:%M:%S') (by wifi-report.sh --mark) ===' >> $LOG" \
+        && echo "marked. The next ./tools/wifi-report.sh starts from here." \
+        || { echo "could not reach $HOST to write the mark" >&2; exit 1; }
+    exit 0
+fi
 
 if ! ssh -o ConnectTimeout=8 "$HOST" true 2>/dev/null; then
     echo "Cannot reach $HOST."
@@ -31,6 +55,18 @@ if ! ssh -o ConnectTimeout=8 "$HOST" true 2>/dev/null; then
     echo "If the device is genuinely off the network, the log survives on /sdcard."
     echo "Power-cycle it, wait for it to rejoin, then run this again -- nothing is lost."
     exit 1
+fi
+
+# Slice the log to everything after the LAST mark, and work on that from here.
+# Doing it remotely keeps every grep below unchanged.
+if [ "$SINCE" = 1 ]; then
+    if ssh "$HOST" "grep -q '^$MARK' $LOG" 2>/dev/null; then
+        ssh "$HOST" "awk '/^$MARK/{buf=\"\"; next} {buf = buf \$0 ORS} END{printf \"%s\", buf}' $LOG > /tmp/wifi-slice.log"
+        LOG=/tmp/wifi-slice.log
+        echo "(showing everything SINCE THE LAST MARK -- use --all for the whole log)"
+    else
+        echo "(no mark in the log yet -- showing everything. Use --mark when you have written a finding up)"
+    fi
 fi
 
 echo "=== summary ======================================================="

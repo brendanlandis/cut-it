@@ -508,13 +508,20 @@ and `all` broadcasts. Each instance still gets its own `$0`.
 
   **Verified available in 0.49-0** — `savestate-help.pd` is present at tag `0.49-0` and absent
   at `0.47-0`. A widely-repeated forum claim that `[savestate]` arrived in 0.49.1 is **wrong**;
-  do not let it talk you out of using it.
-- **Patterns and presets are plain text files** in the patch folder, via `[text define]` +
-  `[text write]`. Git-diffable and editable outside Pd. This was already decided in
-  [ref-software.md](ref-software.md) and stands.
-- **Use the Organelle's own save mechanism to deliver them.** ✅ Verified end to end on the device
-  — **`Storage → Save`** and **`Storage → Save New`** run `save-patch.sh` / `save-new-patch.sh`,
-  which:
+  do not let it talk you out of using it. ⚠️ **Phase 8 evaluated it and did not use it** (item
+  145): it writes into the **parent patch file** and needs a `menusave` that nothing on the
+  device triggers. Orthogonal to the `state` bus rather than an alternative to it.
+- **Patterns and presets are plain text files**, via `[text define]` + `[text write]` —
+  git-diffable and editable outside Pd. ⚠️ **But NOT in the patch folder**, which is what an
+  earlier version of this section said. ✅ Phase 8 put them in **`/sdcard/cut-it-state/`**,
+  outside it, so `deploy.sh`, `deploy.sh --clean` and a power cycle cannot touch them;
+  `tools/fetch-state.sh` is the other half of that bargain and copies them back into the repo.
+  **`u_state` is the only file that decides when any of it is written** — see *`state` — the
+  persistence bus* above.
+- **The Organelle's own save mechanism is NOT how the instrument's data is delivered**, and
+  knowing what it *does* do still matters, because `saveState` is what triggers the `manual`
+  commit and because it is why `knobs.txt` appears. ✅ Verified end to end on the device —
+  **`Storage → Save`** runs `save-patch.sh`, which:
 
   1. send OSC `/saveState 1` to Pd on port 4000 — arriving in the patch as `[r saveState]`
   2. **sleep** to let the patch write whatever it wants into **`/tmp/state/`**
@@ -523,9 +530,11 @@ and `all` broadcasts. Each instance still gets its own `$0`.
   ⚠️ **`Storage` is a TOP-LEVEL menu, not a System submenu.** There is no Save under System, and
   a doc that said so cost a wasted trip to the device — [plan-tests.md](plan-tests.md) item 136.
 
-  ⚠️ **The budget is 250 ms, not 500.** `save-patch.sh` sleeps `.5` but **`save-new-patch.sh`
-  sleeps `.25`**, and a preset workflow uses the latter most. Design against the smaller number.
-  Item 135.
+  ⚠️ **The budget is 250 ms, not 500** — `save-patch.sh` sleeps `.5` but `save-new-patch.sh`
+  sleeps `.25`. Item 135. ✅ **And it is now irrelevant to Cut It**: `u_state` writes straight to
+  `/sdcard` with an **absolute** path, so nothing it does has to finish inside mother's sleep.
+  The number still binds anything that writes into `/tmp/state/` and relies on the copy — which
+  today is only `knobs.txt`, and mother writes that itself.
 
   ⚠️ **`saveState` arrives as a BANG, not as `1`.** `mother.pd` routes the OSC message through a
   `[t b b b]`, so the float is discarded — a `[route 1]` or `[select 1]` on it never fires. Item 137.
@@ -543,11 +552,12 @@ and `all` broadcasts. Each instance still gets its own `$0`.
   ✅ `mother.pd` uses this for the four knob positions (`knobs.txt`) — **which means every Save
   creates one**, so a patch cannot opt out by shipping without it. Item 139.
 
-  **Save New duplicates the entire patch folder** under a numbered name and reloads it, so
-  preset variants become separate menu entries at no cost. ⚠️ **The copy lands at the top level of
-  `Patches`, never back inside a category folder like `!`** — that is `save-new-patch.sh`, and it
-  is not fixable patch-side. It also needs a **menu-selected** patch: a `deploy.sh` load leaves
-  `/tmp/curpatchname` reading `!`. Item 144.
+  ⛔ **`Storage → Save New` is DROPPED and is not part of this design.** It duplicates the entire
+  patch folder under a numbered name, making preset variants separate menu entries — the wrong
+  paradigm here, where a preset is a **record inside the store**. Dropping it deleted the whole
+  `/tmp/curpatchname` / `! 2` / top-level-variant cluster unasked, and `deploy.sh` was not
+  modified. Recorded so it is not rediscovered as an option: [plan-v03.md](plan-v03.md) *Deliberately
+  deferred*, and item 144 for what it actually does.
 - **Capture everything in one device-agnostic event format** — `time, note, velocity, duration` —
   so nothing downstream cares whether a pattern came from the Launchpad, the keyboard or the
   404.
@@ -807,9 +817,9 @@ is why the state restore is staged rather than run at `loadbang`.
 
 ## Where the abstractions go
 
-The decomposition that follows from all of the above — which abstraction exists, what each
-holds, and the order they get built in — is [plan-v03.md](plan-v03.md)'s *Architecture* and
-build phases.
+The decomposition that follows from all of the above — which abstraction exists and what each
+holds — is [ref-software.md](ref-software.md)'s *Architecture*, and the order the remaining ones
+get built in is [plan-v03.md](plan-v03.md)'s *The shape of v0.3*.
 
 The one boundary worth restating here, because it constrains how everything else may be
 written: **the `m_` layer separates device mapping from everything it controls.** Nothing in

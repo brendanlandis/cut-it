@@ -216,8 +216,11 @@ and a problem. Anything `g_led` does not recognise raises `warn g_led unknown-le
 leaves the LED alone, so a typo cannot silently blank the only non-screen indicator in the rig.
 
 **Phase 6 deliberately did not claim it.** Mode is shown on the Launchpad's top row instead —
-the surface with six lamps rather than one — so the table above is unchanged. Phase 8's "save in
-progress" is the next candidate, and it would cost one row here and nothing else.
+the surface with six lamps rather than one — so the table above is unchanged. **Phase 8 did not
+claim it either**, and a "save in progress" state was considered and not built: `Storage → Save`
+already flips the OLED to mother's own "Saving…" screen, so the confirmation exists for free. It
+remains the cheapest candidate if a *performable* commit is ever added — one row here and nothing
+else, since a commit from a Launchpad pad would have no screen of its own.
 
 ⚠️ **There is an undocumented `/led/flash`** — `flashLED(OSCMessage&)` is in the `mother` binary, and
 `mother.pd` does not expose it at all. Reaching it means sending raw OSC to `oscOut`. **Deliberately
@@ -277,9 +280,17 @@ one that cannot be driven interactively. Prepare on the house network, then swit
 
 | Device | Address | Notes |
 |---|---|---|
-| Organelle | `192.168.1.15` | listens on **9001** |
+| Organelle | `organelle.local` | listens on **9001**. ⚠️ The IPv4 address is DHCP-assigned and not stable — seen as both `.15` and `.18`. Use the name |
 | iPhone | `192.168.1.5` | OSC receive **8000**, WebDAV **9000** |
 | Mac | `192.168.1.16` | dev machine |
+
+⚠️ **Those are HOUSE-NETWORK addresses. On the Organelle's own access point the whole subnet
+changes** — the Organelle is `192.168.12.1` and hands the phone **`192.168.12.109`**. Nothing in
+the patch is configured with either: `phone-ip.sh` reads the DHCP lease the Organelle itself
+handed out and falls back to `u_net`'s creation argument on any other network, **so one build
+works on both and no conditional lives in the patch.** Hardcoding a phone address here is the
+mistake that discovery exists to prevent — see [ref-build-log.md](ref-build-log.md) → *Where the
+phone lives*.
 
 **Do not use 9000 for OSC** — it is PdParty's WebDAV server (`GCDWebDAVServer`). ✅
 **Do not use 4001–4003** — those belong to `mother`. ✅

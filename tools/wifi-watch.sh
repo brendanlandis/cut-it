@@ -167,8 +167,88 @@ dhcpprobe() {
     timeout 30 dhcpcd -T -t 25 wlan0 2>&1 |
         grep -iE "soliciting|offered|timed out|no useful|carrier|ifssid" |
         sed 's/^/     /'
-    echo "     (an OFFER above means the server answers and the daemon is wedged;"
-    echo "      no offer means the server is not answering THIS client)"
+    # ⚠️ THIS VERDICT USED TO SAY "an OFFER means the daemon is wedged", AND THAT
+    # WAS WRONG -- it claimed more than the probe measures. `dhcpcd -T` STOPS AT
+    # THE OFFER and never sends a REQUEST, so it only ever exercises the half of
+    # the exchange that works. A full debug capture (plan-tests item 184) showed
+    # dhcpcd behaving perfectly: carrier lost -> hooks -> carrier acquired ->
+    # re-solicit -> DISCOVER with correct backoff, and NO OFFER AT ALL.
+    echo "     READ THIS NARROWLY:"
+    echo "       an OFFER = the server answers a DISCOVER from this client, and"
+    echo "                  nothing more. It does NOT mean the daemon is wedged."
+    echo "       no OFFER = nothing is answering this client on this AP right now."
+}
+
+# ---------------------------------------------------------------------------
+# PREVENTION, not recovery -- and this is the only rung that stops the fault
+# happening at all.
+#
+# WHY. The failures all occur while associated to the SATELLITE. On it, DHCP
+# solicitations go unanswered and the association itself is unstable (two
+# spontaneous carrier losses observed). On the ROUTER the same radio leases in
+# seconds, and the router is also 10 dB STRONGER from the work room -- so
+# staying on it costs nothing and is better on both counts. Items 179-184.
+#
+# ⚠️ IT IS A PREFERENCE, NOT A PIN. If the router is not visible, this does
+# nothing and the device is free to use the satellite -- a pinned BSSID would
+# strand it if that AP ever went away. Prevention must not become a new
+# single point of failure.
+#
+# ⚠️ `wpa_cli roam` ONLY TARGETS A BSS ALREADY IN THE SCAN CACHE, so the scan
+# is required. A bare roam returns FAIL on a fresh supplicant -- and a FAIL
+# there looks exactly like a healthy device (item 175).
+#
+# ⛔ OFF BY DEFAULT, AND THAT IS A DELIBERATE REVERSAL. It was built, tested and
+# measured working (satellite -> router in 13 s), and then switched off for two
+# reasons that only became clear once it ran:
+#
+#   1. ⚠️ THE STEER ITSELF DROPS IPv4. A roam is a carrier change, so dhcpcd
+#      deconfigures every time it fires. That trades ONE RARE long outage for
+#      FREQUENT short ones -- a bad bargain if the fault is fixed.
+#   2. ⚠️ IT HIDES THE ANSWER. Keeping the device off the satellite means the
+#      fault can never recur, so we could never learn whether the Orbi firmware
+#      update (2.7.5.6 -> 2.7.6.6, 2026-08-05) actually fixed it. THE
+#      PREVENTION MASKS THE EXPERIMENT.
+#
+# The reordered ladder is the safety net instead: ~20 s to recover rather than
+# the old 2.5 minutes. Re-enable with:
+#
+#     PREFER_BSSID=a6:40:a0:5e:a2:01 sh /sdcard/wifi-watch.sh
+#
+# ⚠️ If it is ever re-enabled PERMANENTLY, say why in plan-tests -- an unexplained
+# steer looks like a fix for a fault that may no longer exist.
+PREFER_BSSID=${PREFER_BSSID:-}
+
+curbssid() { iw dev wlan0 link 2>/dev/null | sed -n 's/^Connected to \([0-9a-f:]*\).*/\1/p'; }
+
+prefer_router() {
+    [ -n "$PREFER_BSSID" ] || return 0
+    CUR=$(curbssid)
+    [ -n "$CUR" ] || return 0                    # unassociated: nothing to steer
+    [ "$CUR" = "$PREFER_BSSID" ] && return 0     # already where we want to be
+
+    # ⚠️ `scan dump` READS THE CACHE; a bare `iw ... scan` TRIGGERS A NEW ONE.
+    # The first version of this guard used the bare form immediately after a
+    # `wpa_cli scan`, so the two contended and it returned NOT VISIBLE for an
+    # AP sitting at -47 dBm. A false negative here is silent and total: the
+    # steer would simply never fire, and the prevention would look installed
+    # while doing nothing. Measured 2026-08-05.
+    wpa_cli -i wlan0 scan >/dev/null 2>&1
+    sleep 6
+    iw dev wlan0 scan dump 2>/dev/null | grep -qi "^BSS $PREFER_BSSID" || {
+        echo "  .. on $CUR, but $PREFER_BSSID is not visible -- leaving it alone" >> "$LOG"
+        return 0
+    }
+    {
+        echo
+        echo "  ~~ PREFERRED-AP STEER: on $CUR, moving to $PREFER_BSSID"
+        echo "     (the satellite is where every observed failure happened; the"
+        echo "      router is stronger AND reliable -- items 179-184)"
+        wpa_cli -i wlan0 roam "$PREFER_BSSID" 2>&1 | sed 's/^/     /'
+        sleep 6
+        A=$(ipv4); B=$(curbssid)
+        echo "     now on: ${B:-unassociated}   ipv4: ${A:-NONE}"
+    } >> "$LOG" 2>&1
 }
 
 try() {   # $1 = description, $2 = command, $3 = seconds to wait
@@ -228,10 +308,28 @@ while true; do
                     #    The ladder now ends with the sequence the FRONT PANEL
                     #    uses, which is the only one observed to work without a
                     #    reboot (2026-08-05).
-                    echo "  --- RECOVERY LADDER (gentlest first) ---"
+                    # ⚠️ THIRD CORRECTION, 2026-08-05: THE ORDER IS NOW
+                    # STRONGEST-FIRST, NOT GENTLEST-FIRST, AND THAT IS
+                    # DELIBERATE. Rungs 1 and 2 have now been measured failing
+                    # on this fault FOUR times, at 45s each, before the rung
+                    # that works -- over two and a half minutes of dead network
+                    # to reach the only thing that has ever helped. Neither of
+                    # them changes which AP you are on, and that is what has to
+                    # change (items 179-184).
+                    #
+                    # ⚠️ AND THE OLD 60s WAIT ON RUNG 3 WAS TOO SHORT: it
+                    # expired BEFORE the recovery it was waiting for landed and
+                    # printed UNRECOVERED about a rung that had just worked
+                    # (item 178). A generous wait is free when it goes first.
+                    #
+                    # The weak rungs are KEPT, just demoted. A future fault with
+                    # a different cause may well be fixed by them, and deleting
+                    # them would discard the discriminator that made these
+                    # captures readable in the first place.
+                    echo "  --- RECOVERY LADDER (most effective first) ---"
+                    try "full reassociate"         "bash /sdcard/wifi-reassociate.sh"       90 ||
                     try "dhcpcd renew"             "dhcpcd -n wlan0"                        45 ||
                     try "dhcpcd EXIT+restart"      "dhcpcd -b -x wlan0; sleep 2; dhcpcd -b wlan0" 45 ||
-                    try "full reassociate"         "bash /sdcard/wifi-reassociate.sh"       60 ||
                     echo "  >> UNRECOVERED -- every rung failed, INCLUDING the one the front panel uses."
                 else
                     echo "  --- observe mode: changing nothing ---"
@@ -246,6 +344,12 @@ while true; do
     if [ "$NOW" != "NONE" ]; then
         C=$(ipv4cidr); [ -n "$C" ] && LASTCIDR=$C
         G=$(gateway);  [ -n "$G" ] && LASTGW=$G
+
+        # PREVENTION runs on HEALTHY ticks, which is the whole point: steering
+        # back while the network still works costs one roam and no downtime,
+        # where waiting for the address to vanish costs the ladder. Only in
+        # recover mode -- observe mode must change nothing.
+        [ "$MODE" = "recover" ] && prefer_router
     fi
 
     date +%s > "$STAMP"   # liveness: the epoch IS the stamp, so no date -r needed

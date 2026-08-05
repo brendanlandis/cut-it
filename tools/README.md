@@ -314,7 +314,7 @@ and that was never measured.
 
 | | |
 |---|---|
-| `wifi-watch.sh` | **Runs ON the device.** Polls `wlan0` every 20 s and logs every IPv4 transition with `dmesg`, association and process state. On a failure it runs **two probes** and then a **recovery ladder**, recording which rung works. Copy to `/sdcard/` and launch with `setsid`. |
+| `wifi-watch.sh` | **Runs ON the device.** Polls `wlan0` every 20 s and logs every IPv4 transition with `dmesg`, association and process state. On a failure it runs **two probes** and then a **recovery ladder**, recording which rung works. Copy to `/sdcard/` and launch with `setsid`. Also carries an **optional preferred-AP steer**, off by default — see below. |
 | `wifi-reassociate.sh` | **Rung 3, and runnable by hand.** Mirrors what the front panel's own `wifi_control.py` does, with the real credentials from `/sdcard/wifi.txt`. ⚠️ **bash, not sh** — it uses process substitution and the device's `/bin/sh` is busybox ash. |
 | `wifi-poll.sh` | **Runs on the Mac.** Leave it in a terminal. Redraws a small block every minute and answers one question: *anything new since I started, y/n.* Rings the bell and raises a macOS notification. |
 | `wifi-report.sh` | Pulls the evidence off the device and summarises it. **`--mark` first**, then it reports only what happened after the mark. |
@@ -328,12 +328,53 @@ tries to repair it:
 | **link probe** | assigns the last-known-good address and route, pings the gateway | **`LINK IS FINE`** — 0% loss. The radio, the association and the path are healthy; the fault is **DHCP-side**. Item 159 |
 | **DHCP probe** | `dhcpcd -T` — a full exchange that configures nothing | an **offer** means the server answers and the daemon is wedged; **no offer** means the server is not answering this client |
 
-⚠️ **The ladder had two faults of its own, and they polluted the earlier verdicts** (item 161).
-Rung 3 used to run `/root/fw_dir/scripts/wifi-config.sh`, a **stale factory template hardcoded to
-SSID `name`** — it killed a working supplicant and put nothing in its place. Rung 2 used
-`dhcpcd -k`, which only **releases** the lease; `-x` is what **exits** the daemon, so a wedged
-`dhcpcd` stayed wedged and the "restart" restarted nothing. Both are fixed, and ⬜ **the corrected
-ladder has not yet fired on a real failure.**
+**The ladder is now STRONGEST-FIRST**, which is the reverse of how it started:
+
+```
+1. bash /sdcard/wifi-reassociate.sh     90 s   <- the only rung ever observed to work
+2. dhcpcd -n wlan0                      45 s
+3. dhcpcd -b -x wlan0 ; dhcpcd -b wlan0 45 s
+```
+
+⚠️ **Rungs 2 and 3 have each been measured failing on this fault four times**, at 45 s apiece —
+over two and a half minutes of dead network before reaching the one that helps. Neither changes
+which AP you are on, and that is what has to change. **They are kept, not deleted:** a future fault
+with a different cause may well be fixed by them, and removing them discards the discriminator that
+made these captures readable.
+
+⚠️ **THREE SEPARATE DEFECTS HAVE PRODUCED A WRONG `UNRECOVERED` VERDICT** — read every historical
+one as *"no address within the timeout"*, never as *"recovery failed"*:
+
+1. rung 3 ran a **stale factory template** hardcoded to SSID `name`, killing a working supplicant
+   and replacing it with nothing (item 161)
+2. rung 2 used `dhcpcd -k`, which only **releases** the lease where `-x` **exits** the daemon
+   (item 161)
+3. ⚠️ **the winning rung's timeout was shorter than the recovery it was waiting for** — it printed
+   `UNRECOVERED` about a rung that had just worked (item 178)
+
+### The preferred-AP steer — present, proven, and OFF
+
+`wifi-watch.sh` can steer the device back to a chosen BSSID on every healthy poll, preventing the
+fault instead of recovering from it. ✅ **Measured working: satellite → router in 13 s.**
+
+```sh
+PREFER_BSSID=a6:40:a0:5e:a2:01 sh /sdcard/wifi-watch.sh    # enable
+```
+
+⛔ **It is off by default, deliberately.** Two reasons that only appeared once it ran:
+
+- ⚠️ **The steer drops IPv4 itself** — a roam is a carrier change, so `dhcpcd` deconfigures every
+  time it fires. That trades one rare long outage for frequent short ones.
+- ⚠️ **IT HIDES THE ANSWER.** Keeping the device off the satellite means the fault can never recur,
+  so the Orbi firmware update could never be evaluated. **The prevention masks the experiment.**
+
+⚠️ **It is a PREFERENCE, NOT A PIN** — if the target is not in the scan it does nothing, so it
+cannot strand the device the way a hard `bssid=` would.
+
+⚠️ **And its visibility guard needs `iw dev wlan0 scan dump`, not `iw dev wlan0 scan`** — the bare
+form *triggers* a scan and contended with `wpa_cli scan`, reporting NOT VISIBLE for an AP at
+−47 dBm. **A false negative there is silent and total**: the steer would decline every time and
+look installed while doing nothing. Item 187.
 
 ⚠️ **`wifi-poll.sh` does not rely on reachability.** The fault can drop and recover between two
 polls and the Mac would never see it, so it reads the **transition count** out of the device-side

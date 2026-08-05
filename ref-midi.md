@@ -292,7 +292,7 @@ passes ([plan-tests.md](plan-tests.md) item 82). **The documented map was wrong 
 | 8×8 grid | 11–88 (`r*10+c`) | Note ✅ |
 | **Top-left corner** | **CC 90** | CC ✅ — **absent from the documentation**, which starts at 91 |
 | Top row, left→right | CC 91–98 | CC ✅ |
-| Logo / top-right corner | CC 99 | CC ⬜ — the one button never pressed |
+| **Logo / top-right corner** | **CC 99** | ⚠️ **NOT A BUTTON — an LED only.** ✅ Measured: pressing it transmits **nothing**, while lighting index 99 works. **Write-only.** Item 198 |
 | Right column (scene launch), top→bottom | CC 89, 79, 69, 59, 49, 39, 29, 19 | CC ✅ |
 | Left column, top→bottom | CC 80, 70, 60, 50, 40, 30, 20, 10 | CC ✅ |
 | Bottom row, left→right | CC 101–108 | CC ✅ |
@@ -385,6 +385,12 @@ drew there, forever, in every session.
 
 ✅ **Index 0, the Setup button, is outside the span and that one IS a limit** (item 110). A valid
 one-spec frame addressing it lights nothing, and the button transmits nothing in Programmer Mode.
+
+✅ **Index 99 is the opposite case and worth knowing: it LIGHTS but never TRANSMITS.** It is the
+Novation logo — an indicator, not a switch (item 198). ⚠️ **`g_grid` already paints it**, since
+its span is 1–108, so it currently carries background dim for no reason. **The only non-button LED
+on the surface**, which makes it the one place a persistent status light cannot be mistaken for
+something pressable — and it costs no extra SysEx, because the byte is already in the frame.
 
 ✅ **The same message lights the ring as well as the pads** (item 84), addressed by the same
 Programmer-Mode index. [tools/lp-flicker.pd](tools/lp-flicker.pd) still sends one message per pad
@@ -536,14 +542,15 @@ Per-button, Korg Kontrol Editor exposes: 📄
 ## Roland SP-404MKII
 
 Verified working in both directions with **no settings changes** — the factory MIDI config is
-already correct for this rig. ✅ Arrives on **Pd channel 33**. ✅
+already correct for this rig. ✅ **Bank A** arrives on **Pd channel 33**; banks B–J follow on
+34–42 — see *160 pads, not 16* below, which is the thing to read first about this device. ✅
 
 ### Transmits (404 → Pd)
 
 | Event | Message | |
 |---|---|---|
-| Pad press | Note-on with velocity | ✅ |
-| Pattern sequencer | Note-on with velocity | ⬜ setting is on, never captured |
+| Pad press | Note-on, **velocity FIXED at 127** — see below | ✅ |
+| **Pattern sequencer** | **Note-on — it DOES transmit.** 199 events captured from a playing pattern, all within 36–51, on the bank's own channel | ✅ |
 | CTRL knobs | CC 16 and 17 | ✅ |
 | Volume slider | CC 7 | 📄 |
 | X-FADE crossfader | CC 8 | 📄 |
@@ -554,7 +561,7 @@ already correct for this rig. ✅ Arrives on **Pd channel 33**. ✅
 
 | Message | Effect | |
 |---|---|---|
-| Note-on | Triggers a pad. **Bank A pad *n* = note 47 + *n***, so pad 1 = 48 | ✅ |
+| Note-on | Triggers a pad. **Bank A is notes 36–51** — see *The pad note map* below. ⛔ NOT `47 + n` | ✅ |
 | CC 16–19, 80–83 | BUS 1–4 effect controls | 📄 |
 | CC 7 / CC 8 | Volume / crossfader | 📄 |
 | Program Change 0–15 | Selects patterns 1–16 | 📄 |
@@ -564,6 +571,12 @@ already correct for this rig. ✅ Arrives on **Pd channel 33**. ✅
 | Stop (252) | Stops it | ✅ |
 
 Velocity 100 works for triggering; `[makenote]` handles the note-offs. ✅
+
+⚠️ **PAD VELOCITY IS FIXED AT 127 IN THE TRANSMIT DIRECTION, and this file used to say it was
+real.** A firm press and a deliberately soft one both reported **127**, as did all sixteen pads in
+the sweep — item 193. **So a pattern captured from the 404's pads carries no dynamics**, which
+matters for the drum mode. ⬜ Recorded as *fixed as configured*, not *the 404 cannot do velocity*:
+Roland's pads are velocity-capable, so a device setting probably exists and was not looked for.
 
 ### ⚠️ Where the external tempo actually shows — read this before debugging sync ✅
 
@@ -613,18 +626,62 @@ always lags by several pulses. That lag is structural — no message exists that
 inference. This is the whole reason [ref-software.md](ref-software.md) concludes that Pd
 should sequence the 404 with note events rather than let it follow clock.
 
-### Note-range discrepancy ⬜ — do not build on either number
+### ✅✅ 160 PADS, NOT 16 — bank sets the CHANNEL, pad sets the NOTE
 
-The repo's hardware finding and Roland's chart disagree:
+**The single most useful thing measured about this device**, and it was not known until Session 15.
+Pad 1 pressed on each bank in turn reports **note 48 every time**, with only the channel moving:
 
-- **Verified here:** bank A pad *n* = note 47 + *n* (pad 1 = 48, pad 2 = 49), established
-  empirically. Only pads 1 and 2 were actually checked. ✅
-- **Roland's chart:** MIDI mode A note range is **35–51**. 📄 Sixteen pads starting at 48 would
-  run to 63, well outside that.
+| Bank | A | B | C | D | E | F | G | H | I | J |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **404's own channel** | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+| **Pd channel on the Organelle** | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40 | 41 | 42 |
 
-One of these is wrong, or "MIDI mode A" means something narrower than assumed. Resolving it is
-tracked in [plan-v03.md](plan-v03.md) — it is the unknown that can silently corrupt work, since
-sequencing code written against the wrong range looks correct and triggers the wrong pads.
+✅ **Receive mirrors transmit** — note 48 on channel 2 lights **B1**, on channel 3 lights **C1**.
+So the whole instrument is **note 36–51 × channel 1–10 = 160 pads**, one formula, no special cases.
+
+✅ **It fits the Organelle's block with room spare.** Device 3 owns channels 33–48; the ten banks
+use 33–42 and leave 43–48 unused. Items 195–196.
+
+⚠️ **A receive test MUST state which bank is selected.** The 404 lights only the *currently
+selected* bank, so a pad firing on any other is invisible — that produced a false "channel 3 does
+nothing" reading and nearly recorded a constraint that does not exist. Item 196.
+
+### ✅ The pad note map — SETTLED, and `47 + n` was wrong
+
+All sixteen pads measured in **both directions**, items 190–192. **The range is 36–51**, and it is
+the same on every bank.
+
+```
+pads              notes
+ 1  2  3  4       48 49 50 51     <- top row
+ 5  6  7  8       44 45 46 47
+ 9 10 11 12       40 41 42 43
+13 14 15 16       36 37 38 39     <- bottom row
+```
+
+**Pad 1 is top-left; notes ascend from the BOTTOM-left, four per row** — the standard MPC / General
+MIDI drum-grid convention. The 404 is entirely conventional here.
+
+```
+note = 36 + (3 - (pad-1)/4) * 4 + (pad-1) % 4        integer division
+```
+
+⛔ **`47 + n` — which this file asserted — is WRONG.** It holds for pads 1–4 and then breaks: pad 5
+is **44**, not 52. It was derived from **pads 1 and 2 only**, which sit inside the single block
+where the formula happens to work. ⚠️ **Sequencing code written against it looks correct and
+triggers the wrong drums with no error** — which is precisely why this was flagged as the open
+question most able to corrupt work silently.
+
+⚠️ **Roland's chart (35–51 📄) was CLOSER than our own measurement**, off by one at the bottom.
+Worth remembering the next time a repo finding and a manufacturer document disagree.
+
+✅ **Receive and transmit use the SAME map**, verified at both ends — note 36 fires pad 13, note 51
+fires pad 4. **One table, not two.**
+
+✅ **Nothing outside 36–51 is addressable.** Notes 35, 52 and 63 fire nothing, forty attempts each.
+
+✅ **A 4×4 Launchpad quadrant maps on with no vertical flip**, because the Launchpad also numbers
+its grid from the bottom row up (`r*10+c`, row 1 at the bottom).
 
 ### Relevant device settings, all already correct ✅
 

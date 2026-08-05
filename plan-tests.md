@@ -2474,6 +2474,580 @@ whether `dhcpcd` can be made to persist a lease at all given the read-only rootf
 
 ---
 
+## Session 14 — the wifi fault CAUGHT IN FULL, and the ladder recovered it
+
+**The capture the whole investigation was built for.** Both probes fired on a real fault for the
+first time, the corrected ladder ran all three rungs, and the third recovered the device with
+nobody watching. Caught 2026-08-05 18:18:21.
+
+- [x] **169. ✅ THE TRIGGER IS A ROAM TO A DIFFERENT BSSID — and "same BSSID" was WRONG.**
+      Every healthy heartbeat for thirteen hours read `a6:40:a0:5e:a2:01`. The transition record
+      reads **`a6:40:a0:5e:c9:25`**, and `dmesg` shows the whole handoff:
+
+      ```
+      cfg80211: Calling CRDA to update world regulatory domain
+      wlan0: authenticate with a6:40:a0:5e:c9:25   (try 1/3)
+      wlan0: authenticated
+      wlan0: associate with a6:40:a0:5e:c9:25      (try 2/3)
+      wlan0: RX AssocResp ... status=0 aid=1
+      wlan0: associated
+      ```
+
+      ⚠️ **`plan-v03.md` asserted the device stays associated to the SAME BSSID. It does not** —
+      it **roams to a different access point** and never re-acquires an address on the new one.
+      The ARP table was empty immediately after, consistent with a fresh association.
+
+      ✅ **This explains the interval that never made sense.** Uptime-to-failure has now been
+      **2 h 09 m**, **~3 h 12 m** and — this time — **13 h 32 m**. It was never a timer and never
+      lease expiry. It is *how long until the access point hands you off*, which is a property of
+      the room and the other clients, not of the Organelle. **Stop looking for a period.**
+
+- [x] **170. ✅ THE DHCP PROBE ANSWERED, ON ITS FIRST REAL FIRING: THE SERVER REPLIES.**
+
+      ```
+      wlan0: soliciting a DHCP lease
+      wlan0: offered 192.168.1.20 from 192.168.1.1
+      ```
+
+      Per the decision table this is the **daemon-wedged** branch, not the
+      server-not-answering-this-client branch. ⛔ Nothing upstream needs changing: no lease pool
+      problem, no MAC rule, no AP dropping DHCP. And the **link probe** agreed from the other
+      side — a static address reached the gateway with **0% packet loss** over 3 packets.
+
+- [x] **171. ✅ THE CORRECTED LADDER RECOVERED A REAL FAULT UNATTENDED — the fault is no longer a
+      stage risk.** All three rungs ran, and the result of rung 2 is the informative one:
+
+      | Rung | Command | Result |
+      |---|---|---|
+      | 1 | `dhcpcd -n wlan0` | ❌ no IPv4 after 45 s |
+      | 2 | `dhcpcd -b -x wlan0; sleep 2; dhcpcd -b wlan0` | ❌ **no IPv4 after 45 s** |
+      | 3 | `bash /sdcard/wifi-reassociate.sh` | ✅ **RECOVERED — 192.168.1.20** |
+
+      ⚠️ **RUNG 2 FAILING REFINES THE DIAGNOSIS, AND "dhcpcd IS WEDGED" IS TOO SIMPLE.** Exiting
+      and restarting the daemon was not enough — yet `dhcpcd -T` had received an offer over that
+      *same* association seconds earlier. So a fresh daemon on the existing association still
+      cannot acquire, while a test-mode solicit on it can. **What has to be rebuilt is the
+      `wpa_supplicant` association itself, not the DHCP client.**
+
+      ✅ That is exactly why a front-panel reconnect always worked and a renew never did — item
+      160 recorded the symptom without the mechanism. **The mechanism is now known.**
+
+- [x] **172. ⚠️ RECOVERY CHANGES THE ADDRESS, AND A SUCCESSFUL RECOVERY PRESENTS EXACTLY LIKE A
+      CONTINUED FAILURE.** The device came back healthy on **`192.168.1.20`** while the Mac's mDNS
+      cache still resolved `organelle.local` to the dead `192.168.1.18`. So:
+
+      - `./tools/wifi-report.sh` printed **“Cannot reach root@organelle.local”** about a device
+        that was completely fine.
+      - `ping 192.168.1.18` → 100% loss, while `ping organelle.local` → **0% loss over IPv6**, and
+        `dscacheutil` returned **both** addresses at once.
+
+      ⚠️ **The tool's own failure message was the thing that misled**, and it is the second time
+      this project has been fooled by a reachability check rather than by the device. The reliable
+      probe during a recovery window is **IPv6 link-local**, which needs the zone id and a host-key
+      bypass because the address is not in `known_hosts`:
+
+      ```sh
+      ssh -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+          "root@fe80::33b6:6da7:44c5:83f7%en0"
+      ```
+
+      **The cache caught up on its own within a few minutes** and normal tooling resumed. Nothing
+      was broken; nothing needed a power cycle. ⚠️ **Do not power-cycle on a "cannot reach" —
+      check IPv6 first**, or the evidence of the recovery is destroyed along with the live state.
+
+- [x] **175. ✅✅ THE FAULT REPRODUCES ON DEMAND IN THREE SECONDS — no more waiting hours.**
+      The house network `hildegard` is served by **two access points**, `a6:40:a0:5e:a2:01` and
+      `a6:40:a0:5e:c9:25`, both visible in a scan. Forcing a handoff between them reproduces the
+      fault exactly:
+
+      ```sh
+      wpa_cli -i wlan0 scan ; sleep 4              # ⚠️ REQUIRED -- see below
+      wpa_cli -i wlan0 roam a6:40:a0:5e:c9:25      # IPv4 is gone within 3 s
+      ```
+
+      ⚠️ **The `scan` is not optional and the first version of this item omitted it.** A bare
+      `roam` returned **`FAIL`** on the second attempt, because `wpa_cli roam` can only target a
+      BSS already in the supplicant's scan cache — and a supplicant freshly started by
+      `wifi-reassociate.sh` has an empty one. **A `FAIL` here is a stale cache, not a healthy
+      device.**
+
+      **The signature is identical to the natural fault**, which is what makes it a repro rather
+      than merely a similar-looking break:
+
+      | | natural, 18:18:21 | forced, 18:30:39 |
+      |---|---|---|
+      | link probe | 0% loss, `LINK IS FINE` | 0% loss, `LINK IS FINE` |
+      | DHCP probe | `offered .20 from 192.168.1.1` | `offered .20 from 192.168.1.1` |
+      | rung 1 `dhcpcd -n` | ❌ 45 s | ❌ 45 s |
+      | rung 2 exit+restart | ❌ 45 s | ❌ 45 s |
+
+      ✅ **This confirms the roam is the CAUSE and not a coincidence** — one capture could not have
+      established that. Every candidate fix can now be tested in minutes: reorder the ladder,
+      trigger on the BSSID change, pin the BSSID, and confirm each actually works rather than
+      inferring it from a non-recurrence.
+
+      ⚠️ **`wpa_cli` only works because a supplicant was started WITH a control interface.**
+      `wifi-reassociate.sh` writes `ctrl_interface=/var/run/wpa_supplicant` into its config; a
+      boot-started supplicant may not, in which case the socket is absent and this handle is gone.
+      ⬜ **Unverified after a power cycle** — check `ls /var/run/wpa_supplicant/` before assuming
+      the repro survives a reboot.
+
+- [x] **188. ✅ ORBI FIRMWARE UPDATED 2.7.5.6 → 2.7.6.6, AND THE SATELLITE THEN LEASED FINE — but
+      that is NOT a fix, and must not be recorded as one.** The kit is an **Orbi RBK40** (RBR40
+      router + RBS40 satellite), read straight off the unauthenticated
+      `http://<host>/currentsetting.htm` endpoint on both units — no credentials needed for model,
+      firmware, device mode or uptime.
+
+      ⚠️ **The router's own updater said "No new firmware version available" while a newer release
+      existed.** 2.7.6.6 (January 2026) had to be downloaded from Netgear's KB and applied
+      manually, per unit. ⚠️ **The satellite went flaky during the update and needed removing and
+      re-adding.** Both ended on 2.7.6.6.
+
+      **Post-update test:** forced onto the satellite, a fresh `dhcpcd` leased `192.168.1.3` in
+      **20 s**. ⛔ **This proves nothing on its own** — the same node leased fine at 18:52
+      *before* the update (item 182). **The fault was already intermittent, so one success cannot
+      separate "fixed" from "currently working."** Recorded as one data point, not a verdict.
+
+      ⬜ **The real test is time**, with the steer off so the fault is free to recur.
+
+- [x] **189. ⛔ THE PREFERRED-AP STEER WAS BUILT, PROVEN, AND THEN DELIBERATELY SWITCHED OFF.**
+      It works — satellite → router in 13 s, measured. It is off by default anyway, for two reasons
+      that only appeared once it ran:
+
+      1. ⚠️ **The steer drops IPv4 itself.** A roam is a carrier change, so `dhcpcd` deconfigures
+         every time it fires. That trades **one rare long outage for frequent short ones** — a bad
+         bargain if the fault is fixed. ✅ Measured: address gone at the steer, back within seconds.
+      2. ⚠️ **IT HIDES THE ANSWER.** Keeping the device off the satellite means the fault can never
+         recur, so the firmware update could never be evaluated. **The prevention masks the
+         experiment.**
+
+      **The reordered ladder is the safety net instead** — ~20 s to recover against the old 2.5
+      minutes. Re-enable the steer with `PREFER_BSSID=a6:40:a0:5e:a2:01 sh /sdcard/wifi-watch.sh`.
+
+      ⚠️ **A capability kept and disabled is only useful if the reason is written down**, which is
+      why it is in the script's header as well as here. An unexplained steer would look like a fix
+      for a fault that may no longer exist.
+
+- [x] **186. ✅ THE PREFERRED-AP STEER, BUILT AND PROVEN FIRING.** ⛔ **It is OFF by default — read
+      item 189 for why before enabling it.**
+      `wifi-watch.sh` now checks the BSSID on every **healthy** poll and, if the device is on
+      anything other than `PREFER_BSSID` (default the router, `a6:40:a0:5e:a2:01`), roams it back.
+      ✅ **Measured working:** on the satellite before, on the router **13 s** later, with the
+      steer logged and explained.
+
+      **Why prevention rather than recovery:** steering back while the network still works costs
+      one roam; waiting for the address to vanish costs the whole ladder. And the router is
+      **−35 dBm against the satellite's −47**, so this is not a reliability-versus-signal trade.
+
+      ⚠️ **IT IS A PREFERENCE, NOT A PIN.** If the preferred AP is not in the scan, it does nothing
+      and leaves the device where it is. A hard `bssid=` pin would strand the Organelle if that AP
+      ever went away — **prevention must not become a new single point of failure.**
+
+      ⚠️ **The steer itself briefly drops IPv4** (`ipv4: NONE` in the log immediately after), because
+      a roam is a carrier change and `dhcpcd` deconfigures. ✅ **It re-acquires within seconds on
+      the router** — verified — which is exactly the asymmetry the fix exploits: the same event that
+      strands the device on the satellite is harmless on the router.
+
+      **Two other corrections shipped with it:**
+
+      - **The ladder is now STRONGEST-FIRST.** `wifi-reassociate.sh` runs first with a **90 s**
+        wait; the two `dhcpcd` rungs are demoted, not deleted. They have failed on this fault four
+        times at 45 s each — over two and a half minutes of dead network before reaching the only
+        rung that has ever worked (items 178, 184).
+      - **The DHCP probe's verdict is reworded.** It claimed an offer proves "the daemon is
+        wedged". It proves nothing of the sort — `dhcpcd -T` stops at the OFFER and never sends a
+        REQUEST, so it exercises only the half that works.
+
+- [x] **187. ⚠️ A SIXTH RIG DEFECT, CAUGHT ONLY BY TESTING THE FIX: `iw scan` vs `iw scan dump`.**
+      The steer's visibility guard first used `iw dev wlan0 scan`, which **triggers a new scan**,
+      immediately after a `wpa_cli scan`. The two contended and it reported **NOT VISIBLE for an AP
+      sitting at −47 dBm**. `iw dev wlan0 scan dump` reads the cache and is correct.
+
+      ⚠️ **A false negative there is silent and total** — the guard would have declined every steer,
+      so the prevention would have looked installed while doing nothing at all. **It was found only
+      because the fix was exercised rather than assumed**, which is this project's rule about
+      measuring rigs applied to a repair for once.
+
+- [x] **184. ✅✅ `dhcpcd` IS EXONERATED — IT BEHAVES CORRECTLY AND NOTHING ANSWERS IT.** The
+      missing observation: `dhcpcd -d -B` running **through** a forced roam, with a 150 s budget
+      rather than the 20 s that produced a misleading capture earlier.
+
+      ```
+      soliciting a DHCP lease
+      sending DISCOVER ×3   (4.5s, 7.1s, 15.7s)      <- NO OFFER, EVER
+      carrier lost                                    <- the forced roam
+      executing dhcpcd-run-hooks NOCARRIER
+      executing dhcpcd-run-hooks EXPIRE               <- correctly deconfigures
+      carrier acquired                                <- re-associates
+      soliciting a DHCP lease
+      sending DISCOVER ×5   (4.1, 7.5, 16.3, 31.9, 64.4)   <- NO OFFER, EVER
+      carrier lost                                    <- SPONTANEOUS, not induced
+      ```
+
+      **Every step is textbook:** it notices the carrier go, deconfigures through its own hooks,
+      notices it return, re-solicits at once, and retries with proper exponential backoff. ⛔ **It
+      is not wedged, not confused, and not misconfigured. It gets no reply.**
+
+      ⚠️ **THIS ALSO KILLS ITEM 180's FRAMING.** The failure is at **DISCOVER**, not at
+      REQUEST → ACK — nothing answers at all. The earlier "offer arrives, REQUEST unanswered"
+      capture was the short-timeout artifact of item 183.
+
+      **Two things the run showed that nobody asked for:**
+
+      - ⚠️ **The device drifts to the satellite on its own.** The setup phase explicitly roamed to
+        the **router** and the very next line reads `settled on a6:40:a0:5e:c9:25`.
+      - ⚠️ **The association to the satellite dropped by itself** at +80 s — a second `carrier
+        lost` that was not induced, with the BSSID going empty in the independent poll.
+
+      ✅ **Synthesis, and it is narrower than any previous claim:** while associated to the
+      satellite this client is **unreliable in two independent ways** — DHCP solicitations go
+      unanswered, and the association itself is unstable. ⚠️ **But it is INTERMITTENT**: the same
+      node leased an address twice, instantly, eight minutes earlier (item 182). **Do not
+      re-derive "the satellite is broken" from this** — it is "the satellite is unreliable for
+      this client", which is a different and weaker claim.
+
+- [x] **185. ⚠️ A FIFTH MEASURING-RIG DEFECT, IN THIS SESSION'S OWN CAPTURE.** The `dhcpcd` output
+      was piped through `... | while read L; do echo "[$(date)] ..." ; done`, which **buffered**:
+      every one of the forty-odd lines carries the identical timestamp `19:00:14`, the moment the
+      pipe closed. **All timing correlation was lost** — the sequence survives, the clock does
+      not. It happened to be enough because the ordering told the story, but it was luck.
+      **A pipeline that timestamps lines must flush per line**, exactly as `tools/README.md`
+      already warns for monitors.
+
+- [x] **182. ⛔⛔ ITEM 179 IS OVERTURNED — THE SATELLITE IS NOT THE CAUSE, AND I OVER-CLAIMED FROM
+      A SINGLE A/B.** Thirty minutes after concluding "the Organelle cannot get a lease on the
+      satellite", a controlled two-arm test **on the satellite** leased an address twice, in
+      seconds, on the first DISCOVER:
+
+      ```
+      CONTROL   (stock /etc/dhcpcd.conf):  leased 192.168.1.21 for 86400 seconds   on c9:25
+      TREATMENT (no rapid_commit, no require server-id): leased 192.168.1.21        on c9:25
+      ```
+
+      ⚠️ **So the satellite works, and the neat "satellite broken / router fine" story was built on
+      one satellite-fails-then-router-succeeds pair.** That is exactly the single-data-point
+      reasoning this file's own rule forbids — *"do not conclude from a single failure"* — applied
+      to a single **success** instead, which is the same error wearing a different hat.
+
+      ✅ **Two things the test DID establish, and they are worth keeping:**
+
+      - ⛔ **`option rapid_commit` and `require dhcp_server_identifier` are NOT the cause.** The
+        control passed, so there was nothing for the treatment to fix. Both hypotheses are dead
+        and neither needs revisiting.
+      - ✅ **A fresh `dhcpcd` on a SETTLED association succeeds on either AP.** Every success today
+        followed the same recipe: flush the interface, associate, let it settle, *then* start
+        `dhcpcd`.
+
+      **What the failures have in common is not an AP — it is that `dhcpcd` was running THROUGH the
+      association change**, or was started immediately after one. That is a better fit for every
+      observation, including why only a full reassociate ever recovered it.
+
+      ⬜ **Still not established: why a running `dhcpcd` cannot re-acquire after a roam.** Say so
+      plainly and leave it open.
+
+- [x] **183. ⚠️ AND ITEM 180's "REQUEST NEVER ACKED" IS PARTLY AN ARTIFACT OF MY OWN TIMEOUT.**
+      That capture ran under `timeout 20`, and the log ends `received SIGTERM, stopping` with the
+      retry schedule still counting — *"next in 7.9 seconds"*. **The exchange was killed, not
+      refused.** ⚠️ **It also ran while the roam had returned `FAIL`, so the device was on the
+      ROUTER, not the satellite** — which alone should have prevented the satellite conclusion.
+
+      The successful runs completed on the **first** DISCOVER/REQUEST pair, so a run needing three
+      DISCOVERs and two REQUESTs was already abnormal — but "abnormal and cut short" is not
+      "refused", and the difference matters.
+
+- [x] **179. ⛔ SUPERSEDED BY ITEM 182 — READ THAT FIRST. The reasoning below stands only as the
+      record of a wrong turn.** The decisive-looking test, run back to back on the same device in
+      the same minute:
+
+      | Associated to | Result |
+      |---|---|
+      | `a6:40:a0:5e:c9:25` — **the Orbi SATELLITE** | ❌ **no IPv4 after 37 s** |
+      | `a6:40:a0:5e:a2:01` — **the Orbi ROUTER** | ✅ **192.168.1.21 within 15 s** |
+
+      **The Organelle cannot obtain a DHCP lease while associated to the satellite.** Roaming was
+      never the fault — it is merely *how the device ends up on the broken node*. ⚠️ **Item 169's
+      framing ("the trigger is a roam") is therefore a step short of the truth**: the roam is
+      necessary but not sufficient, and a roam *to the router* is harmless.
+
+      **Everything previously unexplained falls out of this:**
+
+      - **The erratic interval** (2 h 09 m, 3 h 12 m, 13 h 32 m) is just *whenever the Orbi steers
+        this client onto the satellite*. Never a timer, never a lease.
+      - **Rungs 1 and 2 were doomed regardless of what they did to `dhcpcd`** — neither changes
+        which AP you are on. Only rung 3 works, and it works because a fresh supplicant re-picks
+        the **strongest** AP, which is the router.
+      - **"The link is fine"** is true and was never the contradiction it appeared to be: the
+        satellite carries ordinary traffic perfectly. It just does not carry this client through
+        to a lease.
+
+- [x] **180. ✅ WHERE DHCP ACTUALLY STOPS: THE OFFER ARRIVES AND THE REQUEST IS NEVER ACKED.**
+      ⚠️ **`syslogd` is NOT running on this device**, so `dhcpcd` has been logging into a void for
+      the entire investigation — which is why we knew an offer arrived but never what came after.
+      Running it in the foreground with debug (`dhcpcd -d -B wlan0`) while on the satellite:
+
+      ```
+      wlan0: sending DISCOVER (xid 0x43ba3935), next in 3.5 seconds
+      wlan0: sending DISCOVER (xid 0x43ba3935), next in 8.5 seconds     <- first two unanswered
+      wlan0: sending DISCOVER (xid 0x43ba3935), next in 15.4 seconds
+      wlan0: offered 192.168.1.21 from 192.168.1.1
+      wlan0: sending REQUEST  (xid 0x43ba3935), next in 4.1 seconds
+      wlan0: sending REQUEST  (xid 0x43ba3935), next in 7.9 seconds     <- never ACKed
+      ```
+
+      **DISCOVER → OFFER completes; REQUEST → ACK does not.** ⛔ **It never reaches the ARP
+      duplicate-address probe**, so the `noarp` hypothesis is dead — that was my suspicion and the
+      measurement killed it.
+
+      ✅ This also explains why `dhcpcd -T` always "worked": **test mode stops at the OFFER** and
+      never sends a REQUEST, so it exercises exactly the half that is not broken. ⚠️ **The DHCP
+      probe in `wifi-watch.sh` is therefore weaker evidence than its own wording claims** — its
+      "the server answers, the daemon is wedged" verdict is wrong. The server answers the
+      *DISCOVER*; the daemon is not wedged.
+
+- [x] **181. ✅ THE ROUTER IS BOTH THE STRONGER AP AND THE WORKING ONE — avoiding the satellite is
+      free.** Measured from the work room, where both nodes are roughly equidistant physically:
+
+      | AP | Signal |
+      |---|---|
+      | `a2:01` router | **−35 dBm** |
+      | `c9:25` satellite | **−45 dBm** |
+
+      **Ten dB apart, in favour of the node that works.** So pinning this device to the router is
+      not a trade-off between reliability and signal quality — it is strictly better on both.
+      ⚠️ **Which makes the Orbi's decision to steer it onto the weaker, broken node the real
+      open question**, and it is a router-side question rather than an Organelle one.
+
+- [x] **178. ⚠️ `UNRECOVERED` IS A FALSE NEGATIVE — THE RUNG WORKED AND THE TIMEOUT WAS TOO
+      SHORT.** On the forced-roam run the watcher wrote:
+
+      ```
+      RESULT: still no ipv4 after 60s
+      >> UNRECOVERED -- every rung failed, INCLUDING the one the front panel uses.
+      ```
+
+      ✅ **And the device had 192.168.1.20 shortly afterwards**, associated to `a6:40:a0:5e:a2:01`
+      with the fresh daemons rung 3 had started. **`wifi-reassociate.sh` did recover it; the
+      address simply arrived after the 60 s window had closed.**
+
+      ⚠️ **THIS IS THE THIRD DISTINCT WAY AN `UNRECOVERED` VERDICT HAS BEEN WRONG**, and every
+      historical one must now be read as *"no address within 60 s"* rather than *"recovery
+      failed"*:
+
+      1. rung 3 ran a stale factory template that could never work (item 161)
+      2. rung 2 released the lease without exiting the daemon (item 161)
+      3. **the winning rung's timeout is shorter than the recovery it is waiting for**
+
+      ⚠️ **Recovery time is worse than the ~90 s previously recorded.** Detection is up to 20 s,
+      then link probe ~10 s, DHCP probe ~25 s, rung 1 45 s, rung 2 47 s, and rung 3 more than
+      60 s — **over two and a half minutes end to end**, of which the only productive part is the
+      last rung. That is the concrete argument for reordering.
+
+      **Fix on both sides:** raise rung 3's wait well past 60 s *and* try it first, so the
+      generous timeout costs nothing when it succeeds.
+
+- [x] **176. ⚠️ THE LINK PROBE LOOKS EXACTLY LIKE A RECOVERY, AND ALMOST PRODUCED A FALSE
+      FINDING.** An independent 3-second poll of `ip addr` during the forced roam showed the
+      address **gone at 3 s, back at 18 s, gone again at 24 s** — which reads as *"dhcpcd recovers
+      by itself and then breaks again"*. It does not. The watcher's own log shows the 18 s
+      appearance was **the link probe** assigning the last-known-good address to test the path:
+
+      ```
+      using 192.168.1.20/24 via 192.168.1.1 (last known good)
+      ... cleaned up -- ipv4 is now NONE
+      ```
+
+      ⚠️ **The probe now assigns the SAME address a real recovery would**, because the last known
+      good *is* the current lease — so the two are indistinguishable in any external poll.
+      **Correlate against `wifi-watch.log` timestamps; never read an address poll alone.** A
+      measuring rig contaminating its own observation, for the fourth time in this project.
+
+- [x] **177. ⚠️ DURING RUNG 3 THE DEVICE ANSWERS ON NO PROTOCOL AT ALL.**
+      `wifi-reassociate.sh` runs `killall wpa_supplicant`, so for the length of the reassociation
+      there is no IPv4 **and no IPv6 link-local** — `ping organelle.local` fails, ssh fails, mDNS
+      still resolves stale entries. Measured at over 90 s of total silence across the ladder.
+
+      **"Unreachable" is therefore an EXPECTED mid-recovery state, not a failure signal.** Anyone
+      watching would reasonably conclude the device had crashed and reach for the power. ⚠️ **That
+      is the worst possible moment to power-cycle** — it destroys the live evidence and interrupts
+      a recovery that was working. Wait at least two minutes before concluding anything.
+
+- [x] **174. ✅ THE STAGE CONFIGURATION IS STRUCTURALLY IMMUNE TO THIS FAULT.** Not a mitigation —
+      the mechanism is absent. `start-ap.sh` runs `killall wpa_supplicant` and then
+      `create_ap --no-virt -n wlan0`, so on stage the Organelle **is** the access point: no client
+      association to be handed off, no second BSSID to roam to, and it **serves** DHCP rather than
+      requesting it. Every link in the chain of items 169–171 is missing.
+
+      ⚠️ **Immunity to THIS fault is not proof the stage link is sound** — AP-mode stability over a
+      set-length window remains ⬜ unmeasured (item 45). ⚠️ **And it holds only if the venue
+      sequence is followed**: a set run on house wifi is a client again, with no fix that makes the
+      roam impossible.
+
+      **Requirement recorded:** a drop mid-set is unacceptable at *any* recovery speed, because the
+      phone display is what says the instrument is alive. Fast recovery is a development-time
+      convenience; the stage answer is that the fault cannot arise.
+
+- [x] **173. ⬜ UNRELATED, AND RECORDED SO IT IS NOT LOST: `imx-uart` Rx FIFO OVERRUNS.** The
+      `dmesg` tail is dominated by `imx-uart 2020000.serial: Rx FIFO overrun`, seventeen of them
+      across the capture window and continuing. **That is the serial link to the front-panel MCU —
+      the OLED and the knobs — not the wifi dongle.** No symptom has been attributed to it and the
+      display has never visibly failed. Recorded as an observation with no diagnosis attached,
+      because inventing one is how item 81 went wrong for two phases.
+
+---
+
+## Session 15 — the SP-404 pad map, settled in both directions
+
+**The item `plan-v03.md` called "the one that silently corrupts work".** Measured on the Mac with
+the 404 as the only MIDI device, using `tools/sp404-notes.pd` + `tools/sp404-send.sh`.
+
+- [x] **190. ⛔ `47 + n` IS WRONG, AND IT WAS WRONG IN EXACTLY THE PREDICTED WAY.** All sixteen
+      pads of bank A pressed in order:
+
+      | Pads | Notes |
+      |---|---|
+      | 1–4 | **48 49 50 51** |
+      | 5–8 | **44 45 46 47** |
+      | 9–12 | **40 41 42 43** |
+      | 13–16 | **36 37 38 39** |
+
+      **The range is 36–51**, in descending blocks of four as the pad number rises. ⚠️ **`47 + n`
+      holds for pads 1–4 and then breaks completely** — pad 5 is 44, not 52. The old figure came
+      from **pads 1 and 2**, which sit inside the single block where the formula happens to work.
+      Sequencing code written against it would have put every drum from pad 5 upward on the wrong
+      sound, with no error anywhere.
+
+      ✅ **Roland's chart was CLOSER than our own measurement** — 35–51 against an actual 36–51,
+      off by one at the bottom. ⚠️ **A repo finding beat a manufacturer document in this project's
+      instincts, and the document was nearer the truth.**
+
+- [x] **191. ✅ THE LAYOUT IS THE STANDARD MPC / GM DRUM GRID, and that is a convenience worth
+      knowing.** Pad 1 is **top-left**, pad 4 top-right, pad 16 bottom-right — so with notes
+      36–39 on the bottom row and 48–51 on the top, **notes ascend from the bottom-left, four per
+      row**:
+
+      ```
+      pads              notes
+       1  2  3  4       48 49 50 51     <- top
+       5  6  7  8       44 45 46 47
+       9 10 11 12       40 41 42 43
+      13 14 15 16       36 37 38 39     <- bottom
+      ```
+
+      `note = 36 + (3 - (pad-1)/4)*4 + (pad-1)%4`, integer division.
+
+      ✅ **The Launchpad numbers its own grid from the bottom row up too** (`r*10+c`, row 1 at the
+      bottom), so a 4×4 Launchpad quadrant maps onto 404 pads **with matching visual orientation
+      and no vertical flip** in `m_404`. The 404 is entirely conventional; our old number was the
+      anomaly.
+
+- [x] **192. ✅ RECEIVE AND TRANSMIT USE THE SAME MAP — `m_404` needs ONE table, not two.**
+      Verified at both ends of the range rather than assumed: **note 36 → pad 13** (bottom-left)
+      and **note 51 → pad 4** (top-right), each fired repeatedly and watched.
+
+      ✅ **And 35, 52 and 63 fire NOTHING** — forty attempts each, in rotation, no pad on bank A
+      responding. So the addressable range is exactly **36–51** in both directions, Roland's `35`
+      is not addressable, and the old upper bound of 63 addresses nothing at all. ⚠️ **Forty
+      attempts is what makes a null result trustworthy** — a single silent try is indistinguishable
+      from a dropped message.
+
+      ⚠️ **Observation was VISUAL ONLY** — the 404's audio was not connected, so the evidence is
+      "no pad lit", not "no sound". Adequate here, since a triggered pad lights. **Fire fast (~3–5
+      per second) for a visual test**: a flashing pad is far easier to catch than one blink every
+      two seconds, and it costs nothing.
+
+- [x] **193. ⚠️ PAD VELOCITY IS FIXED AT 127, and `ref-midi.md` claimed it was real.** A firm press
+      and a deliberately soft one both reported **127**, as did all sixteen pads in the sweep.
+      **Captured patterns from the 404 would therefore have no dynamics at all** — which matters
+      for the drum mode.
+
+      ⬜ **Recorded as "fixed as configured", not "the 404 cannot do velocity."** Roland's pads are
+      velocity-capable, so a device setting probably exists; it was not looked for. Worth one look
+      the next time the 404's menus are open.
+
+- [x] **194. ✅ THE ADDRESSING MODEL RE-CONFIRMED, FREE, AS A SIDE EFFECT.** The 404 was **system
+      MIDI device 2** on the Mac — the Scarlett 18i8 is device 1 — and opening it with
+      `-midiindev 2` put it on **Pd channel 1**, because channel follows Pd's *first opened slot*
+      rather than the system list position. Exactly what `ref-midi.md` says, measured again rather
+      than trusted. On the Organelle the same pad is channel 33.
+
+- [x] **195. ✅✅ THE 404 IS A 160-SOUND INSTRUMENT OVER MIDI, NOT A 16-SOUND ONE — banks map to
+      MIDI channels, both directions.** ⚠️ **This was not known and nothing in the project was
+      designed for it.**
+
+      **Pad sets the NOTE; bank sets the CHANNEL.** Pad 1 pressed on each of the ten banks in turn
+      reported **note 48 every time**, with only the channel moving:
+
+      | Bank | A | B | C | D | E | F | G | H | I | J |
+      |---|---|---|---|---|---|---|---|---|---|---|
+      | **Channel** | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+
+      ✅ **Perfectly linear, and RECEIVE MIRRORS TRANSMIT** — note 48 sent on channel 2 lit **B1**,
+      on channel 3 lit **C1**. So the addressable surface is **note 36–51 × channel 1–10 = 160
+      pads**, with one formula and no special cases.
+
+      ✅ **And it fits the Organelle's addressing model with room spare.** The 404 is Pd device 3
+      there, so its block is **channels 33–48**: banks A–J land on **33–42**, leaving 43–48 unused.
+      Had it needed more than sixteen channels the whole scheme in `ref-midi.md` would have needed
+      rework.
+
+      ⚠️ **The discovery was accidental** — a recorded pattern played back with note 51 arriving on
+      **channel 2** while everything else was on channel 1. **The channel column in the probe's
+      print existed to verify Pd's slot numbering, and it caught a device capability instead.**
+      Print the channel.
+
+- [x] **196. ⚠️ A NULL RESULT THAT WAS THE OBSERVER'S FAULT, NOT THE DEVICE'S.** Note 48 on channel
+      3 was first reported as firing nothing on bank C — which read as *"receive and transmit
+      differ, only banks A and B are addressable inbound"*, a real constraint on `m_404`. **It was
+      wrong.** The 404 lights only the **currently selected** bank, and the test was run while
+      standing on a different one. Re-run with bank C selected, **C1 flashed immediately**.
+
+      ⚠️ **With no audio connected, an unlit pad on an unselected bank is indistinguishable from
+      nothing happening.** ⚠️ **And I had inferred the bank-to-channel rule from TWO points, then
+      "disproved" it with a third that was mis-observed** — very nearly recording a wrong
+      constraint twice over. **State which bank is selected as part of any receive test.**
+
+- [x] **197. ✅ THE PATTERN SEQUENCER TRANSMITS — the 404 IS a compose-time authoring surface.**
+      199 note-ons captured from a recorded pattern playing back, every note within **36–51**,
+      channels 1 and 2 (the pattern included one bank-B pad). `SEQ Note Out` was already On.
+
+      ⚠️ **Velocity was 127 throughout, and that does NOT settle whether the sequencer can carry
+      dynamics.** The pattern was recorded by *playing the pads*, and the pads are fixed at 127
+      (item 193) — so the sequencer faithfully reproduced what it was given. ⬜ **TR-REC's
+      per-step velocity is still untested** and is the thing that would decide it.
+
+      ✅ **No stray continuous C.** `ref-midi.md` carries that as a rumour; nothing outside 36–51
+      appeared across 199 events. Not disproved in general, but it did not occur here.
+
+- [x] **198. ✅ CC 99 IS THE NOVATION LOGO — AN LED, NOT A BUTTON. Write-only, and the ⬜ closes as
+      "nothing to press".** Measured in both directions on the Mac with `tools/lp-cc-probe.pd`:
+
+      | Direction | Result |
+      |---|---|
+      | **Press it** | ⛔ **nothing transmitted** — while CC 94 and 95 from the top row arrived normally in the same session, so the probe was known good |
+      | **Light it** | ✅ **it lights** — a flashing white/red spec at index 99 was clearly visible |
+
+      ⚠️ **The null press was only trustworthy because a control press came first.** "No output"
+      is otherwise ambiguous between *that button sends nothing* and *my probe is broken* — and it
+      was ambiguous in exactly that way an hour earlier with the 404's bank C.
+
+      ⚠️ **And identifying the object needed the LED, not words.** "Top-right corner" was not
+      enough to be sure the operator and the documentation meant the same physical thing, so index
+      99 was lit **flashing** beside a **static** landmark on CC 94 — a button known to exist
+      because it had just been pressed. **Lighting the thing under discussion is cheaper than
+      describing it**, and it is the only reason this closed rather than staying ⬜ forever.
+
+- [x] **199. ✅ AND THE LOGO IS ALREADY UNDER CUT IT'S CONTROL — a free indicator nobody counted.**
+      `g_grid` paints **indices 1–108** every dirty frame, and **99 is inside that span**, so the
+      logo LED is already being written on every repaint — currently as background dim, because it
+      belongs to no region.
+
+      ✅ **So a status light costs one region branch and NO extra SysEx**, since the byte is
+      already in the frame. It is the only LED on the surface that is **not** a button, which makes
+      it the one place a persistent indicator cannot be confused with something pressable —
+      the same argument that made the Organelle's aux LED worth having. Candidate for v0.3.
+
+---
+
 ⬜ **Not established, and deliberately left open:** whether a saved `knobs.txt` beats the physical
 knob position at boot. Both are pushed at load and which wins was never measured. It is in
 [plan-v03.md](plan-v03.md) *Open questions* rather than asserted in a bench step.

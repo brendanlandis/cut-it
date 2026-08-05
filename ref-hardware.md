@@ -237,6 +237,14 @@ uses **`organelle` / `definitelycutit`**, and the phone leases **192.168.12.109*
 ✅ Verified end to end. Airplane mode is what makes this worth doing: a phone *hotspot* needs
 cellular, an AP the Organelle hosts does not.
 
+✅ **And it removes the roaming fault outright, which is a second reason to host the network.**
+`start-ap.sh` runs `killall wpa_supplicant` before `create_ap`, so in AP mode the Organelle has
+**no client association at all** — it serves DHCP rather than requesting it. The fault that drops
+the IPv4 lease (items 169–172) requires a client association being handed off to another BSSID,
+and **none of that exists here.** ⚠️ **That is immunity to that one fault, not proof the stage
+link is solid** — AP-mode stability over a set-length window is still ⬜ unmeasured, item 45. And
+it only holds if the AP is actually started: **a set run on house wifi is a client again.**
+
 ⚠️ **Start the AP from the SYSTEM MENU, not from a patch.** A patch that launches `start-ap.sh`
 loses it the moment the next patch loads — `create_ap`, `hostapd` and `dnsmasq` all die with the
 Pd that spawned them, **even behind `setsid nohup`**. Measured; [plan-tests.md](plan-tests.md)
@@ -544,10 +552,10 @@ Confirmed on hardware with **no settings changes required** — the 404's factor
 already correct for this rig. Arrives on **Pd channel 33** (device 3). The full message map and
 the device settings that matter are in [ref-midi.md](ref-midi.md).
 
-⬜ **One unresolved discrepancy:** pad *n* on bank A was measured here as note 47 + *n*, but
-Roland's chart says the mode-A range is 35–51, and only pads 1 and 2 were ever checked. Detail in
-[ref-midi.md](ref-midi.md); resolving it is tracked in [plan-v03.md](plan-v03.md), where it is the
-open question most able to corrupt work silently.
+✅ **The pad note map is settled: bank A is notes 36–51**, ascending from the bottom-left four per
+row — the standard MPC/GM drum grid, with receive and transmit sharing one map. ⛔ **The old
+`47 + n` figure was wrong** past pad 4, and came from checking only pads 1 and 2. Full detail and
+the formula are in [ref-midi.md](ref-midi.md); items 190–194.
 
 **Cable warning:** the 404 needs a genuine **data** USB cable. Charge-only USB-A→C cables are
 visually identical and extremely common; two were tried before one worked. If the device does

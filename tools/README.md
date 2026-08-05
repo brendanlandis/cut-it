@@ -20,6 +20,43 @@ Hand-authored in Pd 0.49 format except the four benches and three rigs that are 
 | `lp-step0.pd` | **Phase 6's Step 0 measurements, in one patch** — items 82–87. Prints incoming notes, **CC** and aftertouch with their channel, sends a batch colour SysEx of 64 / 99 / 120 specs, and switches layout. `lp-monitor.pd` cannot answer item 82 because it has no `[ctlin]`. Run it on the **Mac** with the Launchpad plugged in, in the foreground. |
 | `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
 
+## phase8-assert.sh — the Phase 8 gate, and the cheapest of the three
+
+```sh
+./tools/phase8-assert.sh          15 checks, ~12 s, exit non-zero on any failure
+./tools/phase8-assert.sh -v       and the detail behind every check
+```
+
+`u_state` writes a **file**, so this gate reads what landed on disk. No scratch copy (Phase 6
+needed one, because `[midiout]` is a built-in class with no side channel), no socket (Phase 7's
+trick), no hardware. It works entirely inside `/tmp/cut-it-phase8-gate` and never touches
+`Cut It/`, `/sdcard/cut-it-state` or the device.
+
+**What it protects, stated as properties rather than proxies:** the two policies never leak into
+each other; re-putting a key REPLACES its line; **a contributor answering behind a `[del]` is
+absent from the file** — the synchronous contract itself; manual is replayed before auto so auto
+wins a duplicate key; **a boot does not overwrite saved state before reading it**; and both entry
+points load in **silence**, which is `deploy.sh`'s own gate.
+
+⚠️ **It passed the broken patch on its first can-it-fail run** — the driver banged the restore at
+600 ms when the bug needs it after 3000 ms, and the final check asserted against a value nothing
+drove. **The 3600 ms in the driver is load-bearing**; shortening it re-blinds the gate. Proven
+both ways now: 15/15 clean, 2 failures with the bug reintroduced. `phase8-assert-drive.pd` is an
+OUTPUT — edit `phase8-assert-drive-gen.py`, never the `.pd`.
+
+## fetch-state.sh — back the instrument's own data up into the repo
+
+```sh
+./tools/fetch-state.sh              copy /sdcard/cut-it-state/ into device-state/
+./tools/fetch-state.sh --show       print it instead
+./tools/fetch-state.sh --diff       show what would change, copy nothing
+```
+
+`u_state` deliberately writes OUTSIDE the patch folder so `deploy.sh`, `--clean` and a power cycle
+cannot touch it. The cost is that the data then lives in exactly one place, on an SD card, in a
+device that has already lost its network once. This is the other half of that bargain. It commits
+nothing — git is Brendan's.
+
 ## Phase 3 — testing the display on hardware
 
 These three load **alongside** a running `mother.pd` + `main.pd` (see *Running one* below).

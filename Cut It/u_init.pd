@@ -1,4 +1,4 @@
-#N canvas 20 20 2000 1240 12;
+#N canvas 20 20 2500 1300 12;
 #X text 20 20 u_init -- owns the ordered startup. loadbang fires before ALSA connections exist \, so everything here is a timed sequence rather than a pile of del objects scattered through the patch., f 58;
 #X text 620 20 creation args: none. inlets: none. outlet 1: a bang when the boot sequence reaches the LAUNCHPAD stage \, wired to m_launchpad in u_root. A wire and not a send \, deliberately: the stage timings below are already coupled to u_tempo's 4000 \, and duplicating one of them into a second file is how that coupling gets broken silently., f 58;
 #X text 20 160 Each stage reports to the disp bus as it is REACHED. Nothing here is acknowledged by any device \, so a stage name on screen means the sequence got that far -- not that the hardware answered. Boot sticking on one name still tells you where to look., f 58;
@@ -16,7 +16,7 @@
 #X msg 300 770 modal-off;
 #X msg 600 810 status v0.2-ready;
 #X obj 140 860 s disp;
-#X obj 300 720 t b b;
+#X obj 300 720 t b b b;
 #X msg 900 490 sh wire.sh;
 #X obj 900 530 shell;
 #X obj 900 650 outlet;
@@ -74,3 +74,8 @@
 #X connect 34 0 29 0;
 #X connect 29 0 36 0;
 #X text 1180 620 THE LAUNCHPAD STAGE IS NOW AN OUTLET \, not a subpatch. Phase 6 moved Programmer Mode and the safe exit into m_launchpad \, and what stays here is the ORDER: this file still decides WHEN the Launchpad is initialised \, it just no longer knows HOW. The stage still reports modal launchpad to the screen at the same moment \, so a boot stuck on that name still means the same thing., f 44;
+#X obj 1180 850 outlet;
+#X text 2000 680 OUTLET 2 -- RESTORE THE SAVED STATE \, wired to u_state in u_root. It fires at the LAST stage \, about 3.5s in \, which is the earliest moment every m_ layer and u_map exist to receive what comes back. Earlier and a restore would publish into nothing., f 44;
+#X text 2000 860 WHY IT IS HERE AND NOT A del INSIDE u_state. Startup ORDER is this file's job and the restore is a stage of it \, so putting a timer in u_state would mean two files owning the same sequence and neither one saying so -- exactly what the launchpad outlet above exists to avoid. It also fires FIRST of the three \, before modal-off and the footer \, so the screen settles after the state does rather than during it., f 44;
+#X text 2000 1060 ⚠️ THE NEW OUTLET HAD TO GO TO THE RIGHT OF THE OLD ONE. Pd orders inlets and outlets by their x COORDINATE \, not by creation order -- so placing this box left of the launchpad outlet at x=900 would have silently made IT outlet 1 and sent the Launchpad init to u_state instead. Nothing would have errored., f 44;
+#X connect 16 2 39 0;

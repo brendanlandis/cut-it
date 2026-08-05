@@ -303,3 +303,24 @@ STEPS7 = [
   'PASS IF: nothing further prints. THIS STEP ASSERTS NOTHING and exists only so the last real step has something to advance INTO. Reload with deploy.sh to restore normal operation',
   []),
 ]
+
+STEPS8 = [
+ ('baseline -- the patch has just booted and nothing has been touched',
+  'PASS IF: the Launchpad top row shows exactly ONE lit mode lamp. WHICH one is the test: a fresh install comes up on mode-1 and a restored one comes up wherever you left it. If the grid is dark then the Launchpad is not owned and nothing below can be read',
+  []),
+ ('CHANGE THE MODE -- press transport key 4 on the nanoKONTROL',
+  'PASS IF: the lit lamp moves to the fourth position. Nothing about STATE is visible yet and that is correct -- u_state has it in memory and flushes within two seconds',
+  []),
+ ('CONFIRM IT REACHED THE DISK -- from the Mac run ./tools/fetch-state.sh --show',
+  'PASS IF: cut-it-auto.txt reads mode perform mode-4. THE FILE IS THE ONLY EVIDENCE -- nothing on the instrument displays what has been saved and that is deliberate. If it still reads the old mode the flush is not firing',
+  []),
+ ('COMMIT -- on the Organelle press Storage then Save',
+  'PASS IF: the screen shows Saving briefly and returns. Then cut-it-manual.txt has a NEW timestamp even though it is still empty -- no shipped contributor uses the manual policy yet. An UNCHANGED timestamp means saveState never arrived and the commit path is dead',
+  []),
+ ('THE ONE THAT MATTERS -- power cycle the Organelle and wait for it to come back',
+  'PASS IF: the same mode lamp is lit as before the power cycle. This is the only durability test that counts -- a patch reload proves nothing about an SD card. DO THIS LAST IN A SESSION because it resets the wifi fault uptime clock and that fault needs about three hours to appear',
+  []),
+ ('END MARKER -- not a test -- the run is over',
+  'PASS IF: nothing further prints. THIS STEP ASSERTS NOTHING and exists only so the last real step has something to advance INTO. Run ./deploy.sh to restore normal operation and ./tools/lp-live.sh if the Launchpad was stranded',
+  []),
+]

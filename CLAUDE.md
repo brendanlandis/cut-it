@@ -87,6 +87,20 @@ Cut It/              the deployable patch — folder name is what appears in the
                        per NAME at 20 Hz with a guaranteed trailing edge, holds the
                        last alert as STATE and repeats it, and rebuilds its own socket
                        — which a phone leaving the network destroys outright
+  u_state.pd           THE DATA STORE -- the only file that says WHEN state is
+                       written. Owns two u_store instances and the state bus.
+                       auto is flushed on a timer, manual only on a commit.
+                       A contributor names its own key and its own policy, so
+                       an abstraction written later persists itself with NO
+                       change here -- which is the whole point of the phase
+  u_store.pd           a keyed line store with one file behind it. Give it a
+                       list, it REPLACES the line whose first atom matches.
+                       Two instances, which is why it is an abstraction
+  state-dir.sh         makes the data directory AND touches both files at load.
+                       A text write into a missing directory PRINTS, and a read
+                       of a missing file prints three lines -- so without this a
+                       fresh install would print six errors before doing
+                       anything wrong. touch never truncates
   u_mother-stub.pd     impersonates mother.pd off-device AND is the dev panel — the whole
                        front face (screen, knobs, encoder, volume, keys) laid out like the
                        device and rendered inline on main-dev.pd via graph-on-parent.
@@ -102,6 +116,10 @@ Cut It/              the deployable patch — folder name is what appears in the
 mac-stubs/           stand-ins for device-only externals, for the local syntax check. NOT deployed
 deploy.sh            check → scp → reload → load, in one command (there is no rsync on the device)
 tools/fetch-errors.sh  pulls the error log back off the device and summarises it
+tools/fetch-state.sh   backs the instrument's SAVED DATA up into device-state/.
+                       The other half of the bargain for keeping state outside
+                       the patch folder: safe from deploys, and therefore in
+                       exactly one place on one SD card
 tools/go.sh            the ONLY way to advance a bench on the device -- the encoder
                        does not work there, and netcat does not work on macOS
 tools/lp-live.sh       rescues a Launchpad stranded in Programmer Mode, with no Pd
@@ -124,9 +142,6 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
 plan-v02.md          the build plan — the phases still to come, and EVERY open question
 wifi-analysis.md     what to DO once the wifi fault is caught -- a decision tree from
                      which recovery rung worked. Temporary: delete it with the fault
-plan-phase8.md       the Phase 8 execution plan: u_state, save and presets
-plan-phase8-prompt.md  the briefing for whoever picks Phase 8 up — what to read, and
-                       how thoroughly. Deleted with plan-phase8.md when the phase lands
 plan-tests.md        the ordered hardware checks, with every measured number
 ref-build-log.md     Phases 0-6 as built: outcomes, and every correction they produced
 ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow
@@ -135,6 +150,9 @@ ref-software.md      how the instrument works — architecture, timing model, de
 ref-midi.md          every MIDI message each device accepts and transmits, and how Pd sees it
 ref-display.md       visual feedback — the OLED graphics API, the Launchpad's limits, PdParty
 device/              backups of config that lives only on hardware
+device-state/        backups of the instrument's own saved data, pulled off
+                     /sdcard/cut-it-state/ by tools/fetch-state.sh. NOT config
+                     and not deployed -- this is what the instrument wrote
 ! v0.1 plans/        the original v0.1 material, kept for reference
   README.md            musical intent, filter chain, button/knob map
   *.jpg                hand-drawn rig and signal-flow diagrams
@@ -161,9 +179,17 @@ An Organelle patch is a **folder** containing `main.pd` (the entry point) plus i
 abstractions, optionally `knobs.txt` and audio assets. ⚠️ **`knobs.txt` is NOT knob labels** — this said so and was
 wrong. Two real examples off the device read `0.195503 0.230694 0.134897 0.0136852;` and
 `0.521994 1 0.84262 0.723363;`: **four normalised knob positions**, saved state rather than text.
-**Cut It deliberately ships without one**, so the physical knob position always wins — knob 1 is
-master tempo, and a `knobs.txt` would decide what BPM the patch boots at. The cost is that mother
-logs `knobs.txt: can't open` at every boot; that line is expected and harmless.
+
+**Cut It ships without one, and `Storage → Save` creates it.** ✅ Measured in Phase 8 (item 139):
+`mother.pd` writes `/tmp/state/knobs.txt` on every save, so the file appears the first time you
+commit and the patch boots at the saved knob positions from then on — knob 1 being master tempo.
+**That is a deliberate decision, not a leak**: a preset that restores the knobs is what a performer
+wants. Until the first Save, mother logs `knobs.txt: can't open` at boot; that line is expected and
+harmless. An ordinary `./deploy.sh` will not remove the file once it exists — `--clean` will.
+
+⚠️ **The instrument's own data does NOT live in the patch folder.** `u_state` writes to
+`/sdcard/cut-it-state/`, outside it, precisely so that `deploy.sh`, `deploy.sh --clean` and a power
+cycle cannot touch it. `tools/fetch-state.sh` copies it back into the repo.
 
 **Working on the device:** `ssh root@organelle.local` (password `organelle`). The root
 filesystem is read-only — `remount-rw.sh` before writing to `/root`. **`./deploy.sh` does the

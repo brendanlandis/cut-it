@@ -2019,6 +2019,282 @@ Step 0 first, on the Mac, before anything was built on it. **Two of the four ove
 
 ---
 
+## Session 10 — Phase 8 Step 0, state and presets
+
+Step 0 before anything was built on it, as every phase has done. **Six of the eleven items below
+correct something a document asserted**, and one killed a hypothesis this session had invented.
+Neither of the two design forks fired, so the `u_state` design stands as planned.
+
+Most of it was measured **without disturbing the running patch**: a second Pd launched with
+`-nogui -noaudio -nomidi` opens no ALSA device and touches no Launchpad, so it can be run over
+SSH while the instrument is live. ⚠️ It must **quit itself** — `killall pd` would take the running
+patch with it, and `-send "pd quit"` returns before any `[del]` fires.
+
+- [x] **135. ⚠️ THE SAVE BUDGET IS 250 ms, NOT 500 — the two scripts disagree and only one was
+      ever read.** `save-patch.sh` sleeps `.5`, but **`save-new-patch.sh` sleeps `.25`**.
+      [ref-conventions.md](ref-conventions.md) and the Phase 8 plan both stated 0.5 s as *the*
+      budget. **Design against 250 ms**, which is the smaller of the two and the one a preset
+      workflow uses most.
+
+- [x] **136. ⚠️ THE MENU PATH IS `Storage → Save`, AND THE DOCS SAID `System → Save`.** There is no
+      Save in the System menu; **Storage is a top-level menu** and holds Eject, Reload, Save and
+      Save New. The `<-- System` string sitting beside them in the `mother` binary is a *back
+      label*, and reading it as evidence of nesting was wrong. **This cost a wasted trip to the
+      device** — the instruction was followed exactly and the menu item did not exist.
+
+- [x] **137. ✅⚠️ `[r saveState]` FIRES — AND IT CARRIES A BANG, NOT `1`.** Seen arriving for the
+      first time, twice, once per Save. `save-patch.sh` sends `/saveState i 1`, but `mother.pd`
+      routes it through a `[t b b b]` before `[s saveState]`, so **the float is discarded**. A
+      probe logging `$1` recorded `0`, which is what `$1` of a bang gives in a message box.
+      ⚠️ **A `[route 1]` or `[select 1]` on `saveState` would never fire** — a silent dead end,
+      and nothing documented it.
+
+- [x] **138. ✅ THE FULL ROUND TRIP WORKS.** `[text write]` → `/tmp/state/` → `save-patch.sh`'s
+      `cp` → the patch folder. `probe-2000.txt` (26 003 bytes) and `probe-small.txt` both landed in
+      `/sdcard/Patches/!/State Probe/`. ✅ `/tmp/state/` **already exists** — created at patch load,
+      and **cleared at patch load too**, which is why it reads empty after a reload.
+
+- [x] **139. ✅ mother WRITES `knobs.txt` ON EVERY SAVE.** `mother.pd` carries
+      `write /tmp/state/knobs.txt` beside `[routeOSC /saveState]`, and a Save produced
+      `knobs.txt` holding `0.0997067 0 0 0;` — four normalised knob positions, matching what was
+      read off two stock patches earlier the same day. **So Cut It's "ships without a `knobs.txt`"
+      decision survives only until Save is pressed**, and knob 1 is master tempo. Accepted
+      deliberately: a preset that restores the knobs is what a performer wants.
+
+- [x] **140. ✅ A RELATIVE `[text write]` BYPASSES THE WHOLE MECHANISM.** Pd's working directory is
+      `/tmp/patch`, which is a **symlink to the patch folder on the SD card** — so a write with no
+      path lands in the deployed folder immediately, with **no Save involved**. Measured:
+      `probe-relative.txt` appeared in `/sdcard/Patches/!/State Probe/` three seconds after load.
+      Cuts both ways — a persistence route that needs no Save, and a way for a careless write to
+      silently mutate the deployed patch.
+
+- [x] **141. ✅ WRITE COST — 2000 LINES / 26 KB IS ~16 ms, AND THE STORAGE DOES NOT MATTER.**
+      Measured with `[realtime]` around one `[text write]`, with the line count printed separately
+      because **a write that fails is fast** — a failed `/sdcard` write on the Mac reported
+      0.183 ms.
+
+      | | ms |
+      |---|---|
+      | Mac | 1.5 |
+      | Organelle, `/tmp` (**tmpfs — RAM**) | 15.8 |
+      | Organelle, `/sdcard` (**ext4 on the SD card**) | 16.2 |
+      | Organelle, **in situ** inside the menu-launched patch | **15.6 / 15.1** |
+
+      tmpfs and the SD card measure the same, so **the cost is Pd's serialisation, not the
+      storage**. ~6 % of the 250 ms budget; linear extrapolation puts it near **30 000 lines**.
+      ✅ The in-situ numbers match the second-Pd numbers, which validates that cheaper method.
+
+- [x] **142. ✅ A SAMPLE CAN BE WRITTEN INSIDE THE BUDGET — BUT NOT UNBOUNDEDLY.** `soundfiler`
+      write, mono 44.1 kHz, to `/tmp/state`: **2 s = 6.1 ms, 10 s = 29 ms, 30 s (2.6 MB) =
+      85 ms.** mother's own `cp` of 2.6 MB to the SD card cost 45 ms, outside the patch's budget.
+      So ~3 × 30 s or ~8 × 10 s samples exhaust 250 ms.
+
+      ⚠️ **NOT MEASURED, AND DO NOT GENERALISE THESE:** they ran in a second Pd with **no DSP**. In
+      the running instrument an 85 ms *synchronous* `soundfiler` write sits on Pd's message thread
+      with audio live and would very likely glitch. `writesf~` writes from a helper thread, or
+      capture writes at capture time rather than save time. Phase 7's lesson, applied to itself.
+
+- [x] **143. ⚠️ `[text write]` TO A MISSING DIRECTORY DOES NOT FAIL SILENTLY — it prints.** The
+      Phase 8 plan asserted it did. It prints `write failed`. `[text read]` of a **missing file**
+      prints three lines. ⚠️ **`deploy.sh` gates on output**, and first boot has no state file.
+
+      ✅ **The fix needs no new mechanism.** `-send "pd quit"` returns in **735 ms**, before any
+      `[del]` fires — proved with an undelayed control print that *did* appear beside a delayed
+      read that did not. `u_init` already stages the restore at ~3.5 s, so the gate is satisfied
+      for free. **No default state file has to be shipped**, which also avoids `deploy.sh`
+      overwriting saved device state on every push.
+
+- [x] **144. ✅ SAVE NEW WORKS FROM A MENU SELECTION — AND LANDS OUTSIDE THE CATEGORY FOLDER.**
+      Menu selection leaves `/tmp/curpatchname` = `State Probe`, against the `!` a `deploy.sh`
+      load leaves — **the item 130-era diagnosis confirmed by direct observation rather than by
+      reading the script.** Save New then produced a complete working `/sdcard/Patches/State
+      Probe 2/` — `main.pd`, all state files and `knobs.txt`.
+
+      ⚠️ **It lands at the TOP LEVEL of `Patches`, never back inside `!`**, because
+      `save-new-patch.sh` copies to `${PATCH_DIR}/${NEWNAME}`. Not fixable patch-side.
+
+      ❌ **A hypothesis this session invented, and measurement killed it.** `save-new-patch.sh`
+      reads `PATCH_DIR=${PATCH_DIR:="/usbdrive/Patches"}`, `start-mother.sh` exports only
+      `USER_DIR`, and `/usbdrive` is unmounted — which predicted Save New writing nowhere.
+      **mother sets `PATCH_DIR` at runtime and it works.** `/proc/<pid>/environ` shows the
+      *initial* environment and is not updated by `setenv`, which is what made the reasoning look
+      sound.
+
+- [x] **145. ✅ `[savestate]` WORKS END TO END IN 0.49 — and is orthogonal to all of the above.**
+      Two instances of one abstraction saved `#A saved 111;` and `#A saved 222;` into the parent
+      file, immediately after each `#X obj` line, and both restored on reload. ⚠️ But it writes
+      into the **parent patch file** and needs a `menusave` that nothing on the Organelle triggers,
+      so it is **not** a route into mother's save mechanism. ⚠️ Its restore also **prints at load**,
+      the same `deploy.sh` hazard as item 143.
+
+      Incidental: saving a patch in 0.49 **re-wraps long comments across physical lines and
+      reorders the `#X connect` block**. Diff noise, not corruption.
+
+**Three rig bugs, every one caught by a deliberate control rather than by reading** — the Phase 5
+lesson holding for a fourth phase. A failed write reporting a *fast* 0.183 ms; ⚠️ **`$0` in a
+MESSAGE box is not the patch id** (`\$0-a0` resolved to `0-a0`, every `soundfiler` write hit "no
+such table" and reported a very quick 0.126 ms, and only `FRAMES-WRITTEN: 0` made it visible —
+the documented `$1` trap, generalised); and an off-by-one in a hand-written `#X connect` block.
+After the third, **the remaining probes were generated by script rather than hand-indexed**.
+
+---
+
+## Session 11 — the wifi fault, caught in full
+
+⚠️ **One transition. Do not conclude a cause from it** — that instruction is
+[wifi-analysis.md](wifi-analysis.md)'s and it still applies. What follows is *mechanism*, which is
+more than items 81 and 133 have ever had.
+
+- [x] **146. ✅ THE FAULT CAUGHT END TO END, and item 133's headline SURVIVES.** Device time
+      2026-08-04 22:04:48, confirmed against the Mac's independent `UNREACHABLE 18:05:48 EDT`
+      (= 22:05:48 UTC) — **the two agree within 60 s**, so the device clock was correct and there
+      was no clock jump.
+
+      | | |
+      |---|---|
+      | association | **held** — same BSSID, `SSID: hildegard` |
+      | signal | **−35 dBm** — excellent. Not range, not the radio |
+      | route / ARP | default route gone, **ARP table completely empty** |
+      | duration | ran **6 hours** with `ipv4=NONE`, patch alive, OLED meters moving |
+      | recovery | **UNRECOVERED** — all three rungs failed |
+
+      ⚠️ **`dmesg` gave the mechanism, and it is not lease expiry.** Immediately before the loss:
+      `cfg80211: Calling CRDA to update world regulatory domain` then a full
+      `authenticate` → `associate` cycle at kernel `[11531]`. **The interface went down and back
+      up, re-associated cleanly, and never re-acquired an address.** An identical cycle at
+      `[9398]`, ~35 min earlier, survived. So the trigger is a **re-association**, not a timer.
+
+- [x] **147. ✅ `dhcpcd` CANNOT PERSIST A LEASE ON THIS DEVICE — the root filesystem is read-only.**
+      `/dev/root / ext4 ro,relatime`, and `/var/lib/dhcpcd/` is not writable. The only lease files
+      present are **image artifacts dated Oct 17 2015** for `CBCI-AD15-2.4`, `birds` and `birds2`
+      — and **there is no lease file for the network it actually uses.** `dhcpcd` is **6.9.3**
+      (2015), configured with `option rapid_commit` and `noipv4ll`.
+
+      **Hypothesis, explicitly NOT a finding:** on re-association `dhcpcd` would normally REBIND a
+      stored lease; with none it must run a full DISCOVER, and 6.9.3 evidently does not recover
+      when that fails. ⚠️ Recorded as a lead, not a cause — item 81 has had four unevidenced
+      guesses already and this must not become a fifth.
+
+- [x] **148. ⚠️ THE RECOVERY LADDER'S TIMEOUTS WERE TOO SHORT TO BE CONCLUSIVE — 15/20/25 s, now
+      45/45/60 s.** Rung 3 kills `wpa_supplicant` and re-runs `wifi-config.sh`; the association
+      alone took ~8 s in this failure's own `dmesg`, leaving under 17 s for a DHCP exchange that
+      retries. **An `UNRECOVERED` verdict has to mean "it did not come back", not "we did not
+      wait".** The 2026-08-04 verdict is probably still sound — it then sat six hours without an
+      address — but it was not *proven* sound.
+
+- [x] **149. ✅ A LINK PROBE NOW SPLITS THE DECISION TREE, and it is the test that was missing.**
+      [wifi-analysis.md](wifi-analysis.md) sends `UNRECOVERED` straight to the spare-card A/B, on
+      the reasoning that a different radio proves nothing if the fault is DHCP-side — **and that
+      fork had never been tested.** `wifi-watch.sh` now assigns the last-known-good address and
+      route *before* the ladder runs and pings the gateway:
+
+      - **traffic flows** → the link is fine, the fault is DHCP-side, **and a card swap would prove
+        nothing**
+      - **traffic does not** → the link is dead while still reporting associated → driver or dongle
+        firmware, and the card swap is correct
+
+      ⚠️ **A bug in the probe was caught before it shipped, not in the field.** The cleanup deletes
+      an address and a route; run against a *healthy* interface it would have deleted the **real**
+      ones and taken the device off the network unattended. It now refuses to run when an address
+      is present, and only ever removes what it successfully added. Verified by calling it against
+      the live interface: it skipped, and the address and gateway were byte-identical either side.
+      **A measuring rig is code** — Phase 5's lesson, holding for a fifth phase.
+
+      Also re-learned: a `/proc` scan for `wifi-watch.sh` **matches the ssh command doing the
+      scanning**, which is the same self-match the file already warns about for `pgrep -f`. One
+      watcher was running; the count said two.
+
+⬜ **Still to do at landing:** items 81 and 133 should be merged **in place** with the above rather
+than left pointing at a superseded description — [wifi-analysis.md](wifi-analysis.md)'s recording
+rules.
+
+---
+
+## Session 12 — Phase 8, the data store, built and verified
+
+**Two bugs found on the Mac before hardware, and both were invisible: the files looked entirely
+plausible in each case.** Then a third found in the gate itself.
+
+- [x] **150. ✅ THE `[text]` PRIMITIVES, MEASURED BEFORE ANYTHING RESTED ON THEM.** This project
+      had already been bitten twice here (item 32, and `moses` passing `-1` into `text set`), so
+      the keyed-store primitive was measured first:
+
+      | | |
+      |---|---|
+      | `[text search NAME]`, one-atom list | matches field 0, returns the line number |
+      | a key that is absent | **`-1`** — must be guarded, per the reject rule |
+      | `[text set NAME n]` | replaces line *n* **in place**; size unchanged |
+      | `[text get NAME n]`, no field range | the whole line, **silently**, as a `list` |
+      | `drumkit` vs `drums` | **exact atom match — a key may safely be a prefix of another** |
+      | `text get` **past the end** | returns `bang` and prints nothing — the replay loop cannot overrun into an error |
+      | `until` with 0 | runs **zero** times, so an empty file replays nothing |
+
+      ⚠️ **`list append` is load-bearing for BOTH `text set` and `text search`** — each answers a
+      bare selector with `no method for 'mode'`. Seen in `u_err` first and again here.
+
+- [x] **151. ⚠️ `read -c` AND `write -c` MUST MATCH.** A file written with `-c` and read back
+      **without** it comes back as **ONE line** — `text size` 1 — because Pd is hunting for
+      semicolons that are not there. Measured both ways.
+
+- [x] **152. ⚠️ THE AUTO STORE WROTE BEFORE IT EVER READ, and saved state could never have
+      survived a boot.** The seed published at 500 ms, the flush fired at 3000 ms and **overwrote
+      the saved file**, and only then did the restore read at 3500 ms. Every boot replaced the
+      previous session with its own defaults, and `auto.txt` looked correct throughout.
+
+      **Fixed with an invariant rather than a timing tweak: the flush metro is armed BY THE
+      RESTORE**, so `u_state` can never write a file it has not yet read. ⚠️ The consequence is
+      worth knowing — if the restore never fires, the auto store never flushes. That is the safer
+      failure (no writes) rather than data loss, but it means `u_init`'s outlet 2 is load-bearing.
+
+- [x] **153. ⚠️ `text read` OF AN EMPTY FILE WIPES THE LIVE STORE**, silently discarding puts that
+      arrived before the restore. On a fresh install the boot mode was discarded and `auto.txt`
+      was written empty; it self-healed on the first real change, which is exactly the kind of
+      thing that would never have been noticed. **Fixed by reading into a SEPARATE text and
+      replaying from that** — the live store is never wiped by a load. Both cases then verified:
+      empty files keep the seed, and a saved file wins over it.
+
+- [x] **154. ✅ THE PHASE VERIFIED ON HARDWARE WITHOUT EYES.** `state-dir.sh` ran and created
+      `/sdcard/cut-it-state/` with both files; `auto.txt` read `mode compose mode-1`. Then the
+      test that proves the restore with no display and no Launchpad: **plant `mode perform mode-5`
+      in the file, reload the patch, and see whether it survives.** It did — which it can only do
+      if the restore ran and beat the 500 ms seed.
+
+      ✅ **`Storage → Save` reaches the patch**: `cut-it-manual.txt` was rewritten at the moment of
+      the press (mtime 04:28:46 against a device clock of 04:29:15) while `auto.txt` was left
+      alone at 04:25:00 — so the two policies really are independent. The file is **empty and that
+      is correct**: no shipped contributor uses the manual policy yet.
+
+      ✅ **Item 139 confirmed for Cut It specifically** — mother wrote `knobs.txt` containing
+      `0.0957967 0 0 0;`.
+
+- [x] **155. ⚠️ THE GATE PASSED THE BROKEN PATCH ON ITS FIRST CAN-IT-FAIL RUN.** Phase 6's rule is
+      that a bench must be proven able to fail; this one was not, and it lied. **Two faults, both
+      classic:**
+
+      1. **The driver's timing did not reproduce the real ordering.** The bug is *flush at 3000 ms,
+         restore at 3500 ms*; the driver banged the restore at 600 ms, so the fatal sequence never
+         occurred. The driver now uses **3600 ms and that number is load-bearing** — shortening it
+         re-blinds the gate.
+      2. **The final check could not fail.** It looked for `mode compose mode-1`, a value only
+         `u_map`'s seed produces, and the driver has no seed — Phase 6's *"an assertion that
+         nothing ever drove"*, exactly. Rewritten to assert the real property: **did the restore
+         replay what was on disk at boot?**
+
+      Now proven both ways: **15/15 on the good build, 2 failures with the bug reintroduced**, and
+      the file restored byte-identical afterwards.
+
+- [x] **156. ✅ COST: 10.4–10.7 % CPU / 115–116 UDP per second**, against Phase 7's 11.7 % and
+      122–126/s. ⚠️ **Lower, and NOT evidence that `u_state` is free** — the rig was not in the
+      same state as that measurement (**4 ALSA links rather than 5**, so a controller was
+      unplugged, and the phone was not up). It bounds the cost as small and nothing more. The
+      script's printed "WITHIN BUDGET ≤ 11.2 %" is still Phase 5's stale figure.
+
+⬜ **Not established, and deliberately left open:** whether a saved `knobs.txt` beats the physical
+knob position at boot. Both are pushed at load and which wins was never measured. It is in
+[plan-v02.md](plan-v02.md) *Open questions* rather than asserted in a bench step.
+
+---
+
 ## Deliberately skipped for now
 
 Not unimportant — just not blocking UI/UX decisions.

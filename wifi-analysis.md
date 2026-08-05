@@ -66,12 +66,22 @@ the log carefully before concluding, and record the contradiction explicitly.
 
 ### Nothing worked — `UNRECOVERED`
 
-**Meaning:** consistent with what has been seen by hand — only a reboot clears it. That points below
-`dhcpcd` and `wpa_supplicant`, at the driver or the dongle's firmware state.
+**Meaning:** consistent with what has been seen by hand — only a reboot clears it.
 
-**Do next, and only now:** ✅ **the spare USB wifi card A/B.** Brendan has a second card. It is the
-*last* test rather than the first precisely because a different radio proves nothing if the fault is
-DHCP-side — and if you have reached this branch, it is not DHCP-side.
+⚠️ **READ THE LINK PROBE FIRST — it now answers this branch directly.** The reasoning below used
+to run "if no rung worked, it is not DHCP-side, so swap the card". **That inference was never
+tested**, and `wifi-watch.sh` now tests it: before the ladder runs, it assigns the last-known-good
+address and route and pings the gateway. Its `VERDICT:` line is in the log.
+
+| Probe verdict | What it means | Do next |
+|---|---|---|
+| **LINK IS FINE** | traffic flows on a static address — the radio, the association and the path are all healthy, and only address *acquisition* is broken | **A card swap would prove nothing.** Go at `dhcpcd`: it is **6.9.3**, it **cannot persist a lease** (read-only rootfs, item 147), it has **no lease file for the current SSID**, and `rapid_commit` is on |
+| **LINK IS DEAD** | associated, but nothing passes even with addressing taken out of the question | ✅ **Now** the spare USB card A/B — this is the driver/firmware branch it was reserved for |
+| **SKIPPED** | the guard fired, or no good address was recorded yet | The probe is inconclusive; fall back to the old reasoning and say so |
+
+**And the trigger is a re-association, not a timer** — item 146. `dmesg` shows `CRDA` plus a full
+authenticate/associate cycle immediately before the address goes. Anything that explains this has
+to explain *that*, which rules out plain lease expiry on its own.
 
 Also worth capturing on this branch: `dmesg` around the failure is already in the log, and driver
 resets or USB errors would show there.

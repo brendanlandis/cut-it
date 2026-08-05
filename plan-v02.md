@@ -104,34 +104,15 @@ one boundary that is genuinely expensive to retrofit.
 | 5 | ✅ hardware | Clock and transport |
 | 6 | ✅ hardware | Launchpad, the grid arbiter, the `mode` driver, the replug watchdog |
 | 7 | ✅ hardware | Phone status link, the coalescer and the reconnect |
-| **8** | **next** | **State and presets** |
+| 8 | ✅ hardware | The data store — `u_state`, `u_store`, the `state` bus, two policies |
+
+**v0.2 is complete.** The infrastructure is done and v0.3's four filter stages have a floor to
+stand on.
 
 Details of 0–7, and every correction they produced, are in
 [ref-build-log.md](ref-build-log.md). **Read its corrections before writing any Pd** — most of
 them were found by measuring something a plan had asserted, and one of them by measuring the
 thing that did the measuring.
-
----
-
-## Phase 8 — State and presets
-
-`u_state`
-
-Hooks `[r saveState]`, writes to `/tmp/state/` within the **0.5 s budget**, reads from
-`/tmp/patch/` on load. Plain text via `[text]`, git-diffable.
-
-Gets Save and Save New from the Organelle's own menu for free.
-
-⚠️ **Save New is broken for patches in a category folder, and `deploy.sh` makes it worse.**
-`save-new-patch.sh` derives the name with `ls /tmp/curpatchname`, and mother records whatever
-name it was given. A `deploy.sh` load passes `!/Cut It`, so that becomes `/tmp/curpatchname/!/Cut It`
-and the script reads back `!` — Save New then creates a folder called `! 2`. Selecting the
-patch from the menu leaves the correct `Cut It`. Plain Save is unaffected; it works off the
-`/tmp/patch` symlink. **Verify this phase against a menu-selected patch, not a deploy-loaded
-one**, and decide then whether to have `deploy.sh` repair `/tmp/curpatchname`.
-
-**Done when:** control state survives Save → reload, and Save New produces a working variant in
-the patch menu.
 
 ---
 
@@ -147,7 +128,6 @@ when something there is unverified, the work to resolve it is listed below.
 |---|---|---|
 | **SP-404 pad note range** — measured 47+*n* here, Roland's chart says 35–51 | v0.3's `m_404` | Only pads 1 and 2 were ever checked. **This is the one that silently corrupts work** — sequencing code written against the wrong range looks correct and triggers the wrong pads. Sweep all 16 with `tools/midi-drive.pd` |
 | **Full-load power** | v0.3's `m_404` — no longer Phase 6 | ✅ **Two** controllers plus the wifi dongle on a hub held up across two sessions, a 25-step bench run, a hot replug and sustained 500 BPM, with no dropouts. ⬜ **The SP-404 has still never been powered alongside them**, and that is the whole of what item 95 has left. Blocked by the cable shortage. **A marginal hub presents as intermittent MIDI dropouts rather than an obvious failure**, so when it goes in, suspect power before code. [plan-tests.md](plan-tests.md) items 5 and 95 |
-| **Save New in a category folder** | Phase 8 | ⚠️ Already diagnosed — see the Phase 8 note above. Verify against a menu-selected patch, not a deploy-loaded one |
 
 ### The last thing that could force a redesign
 
@@ -160,6 +140,10 @@ Y-cable; procedure in [plan-tests.md](plan-tests.md) Session 3, items 12–13.
 
 | Question | Where it stands |
 |---|---|
+| **Does a saved `knobs.txt` beat the PHYSICAL knob position at boot?** | ⬜ Both are pushed at load and which wins was never measured. It matters because knob 1 is master tempo, so the answer decides what BPM the patch boots at once a Save has happened. Deliberately not asserted in a bench step — see [plan-tests.md](plan-tests.md) Session 12 |
+| **Parameter pickup** | ⬜ Moved out of Phase 8 when state was reframed as CONTENT rather than control positions. The stored value would be shown and used until the physical control passes through it — the way hardware synths solve it. **v0.3**, and it wants the same per-control store as the OLED's "show where the control was when the edit began" below, so the two should be designed together |
+| **The `manual` policy ships with no in-patch user** | Nothing built today wants a committed take; the first will be v0.3's drum mode. It is exercised by `tools/phase8-assert.sh` and a synthetic contributor, so the mechanism is proven — but nothing on the instrument drives it yet |
+| **Can a captured sample be written without glitching the audio?** | ⬜ Measured **without DSP**: 2 s = 6.1 ms, 10 s = 29 ms, 30 s = 85 ms. An 85 ms *synchronous* `soundfiler` write sits on Pd's message thread with audio live and would very likely glitch. `writesf~` writes from a helper thread, or capture writes at capture time. **Not measured under DSP** — item 142 |
 | **`g_grid` lights LED index 10 before the first beat arrives** | ⬜ The beat store starts at 0 and `0 + 10` is a left-column ring button, so the very first painted frame carries a stray white light. **Cosmetic and Mac-only**: on the device mother enables DSP at 200 ms, so beats are flowing well before ownership rises at ~3 s and the frame is never seen. One box to fix — seed the store at 1 — and deliberately not fixed here, because this round of work was scoped to tests. Found by `tools/phase6-assert.sh`, which reports it as a NOTE rather than a failure |
 | **A panic blanks the Launchpad until the patch is reloaded** | ⚠️ New in Phase 6, deliberate, and currently harmless. `panic` returns the device to Live Mode and nothing re-enters Programmer Mode except `u_init`'s boot — so the grid stays the device's own for the rest of the session. **Nothing on the Organelle sends `panic`**; only the bench and the dev panel do. Revisit if a panic ever becomes performer-reachable, and note the trade: the escape hatch is worth more than the display |
 | **The six modes are named `mode-1`…`mode-6`** | Placeholders, three `compose` and three `perform`. The names are six message boxes in `u_map` and nothing else has to change. ⚠️ The **ratio** is not arbitrary: `u_err` routes on those two words, so a split weighted toward `perform` would make most mode selections silently quieten the error display |

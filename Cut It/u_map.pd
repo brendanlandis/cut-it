@@ -1,4 +1,4 @@
-#N canvas 20 20 2560 1400 12;
+#N canvas 20 20 2620 1900 12;
 #X text 20 20 u_map -- THE MAP \, and the only file in Cut It that says what a control MEANS. Every device below publishes named controls onto param and stops there \; everything above is driven by the buses this file writes. Nothing in e_ or c_ may ever learn that a nanoKONTROL exists \, and this is the layer that keeps that true., f 58;
 #X text 20 150 creation args: none. inlets: none. outlets: none., f 58;
 #X text 20 200 THE WHOLE MAP \, IN WORDS -- keep this in step with the route box below. og-knob-1 \, the Organelle's knob 1 \, is master tempo over 10 to 500 BPM. og-aux \, the Organelle's aux button \, toggles the transport. That is all of it: 42 other controls are published and mapped to nothing \, which is the normal state of affairs., f 58;
@@ -43,6 +43,18 @@
 #X text 1300 1050 THE SIX TRANSPORT KEYS ARE THE MODE SELECTOR \, and this is the second route rather than six more arguments on the first: chaining onto the REJECT keeps each group's cords short and local \, and the reject already carried every unmapped control. EXCLUSIVE BY CONSTRUCTION AND STATELESS -- the live mode is simply whichever message went out last \, exactly like the aux toggle above reading back what actually happened., f 90;
 #X text 1300 1200 THE NAMES ARE PLACEHOLDERS AND THE SPLIT IS ARBITRARY \, but the CLASS is not: u_err routes on compose and perform \, so compose is verbose and perform shows only failures. Three of each is deliberate -- with one compose and five perform \, choosing almost any mode would silently make the error display quiet \, which is the kind of thing you discover at the worst moment. Rename the six message boxes when the modes are designed \; nothing else has to change., f 90;
 #X text 2000 1050 THE SEED FILLS A SILENCE \, IT DOES NOT SET A DEFAULT. Nothing else writes mode at load \, so without this the grid boots with no mode to show and two files would each invent one. Any incoming mode closes the spigot \, so a real selection always wins -- the same shape u_tempo needed for its 120 and c_clock for its own tempo. The seed's own send closes it too \, harmlessly \, because Pd is synchronous and the bang has already passed through., f 70;
+#X obj 20 1420 r mode;
+#X obj 20 1470 list append;
+#X obj 20 1520 list prepend put auto mode;
+#X obj 20 1570 list trim;
+#X obj 20 1620 s state;
+#X obj 900 1420 r state;
+#X obj 900 1470 route restore;
+#X obj 900 1520 route mode;
+#X obj 900 1570 s mode;
+#X text 20 1700 u_map IS THE FIRST CONTRIBUTOR TO THE STATE STORE \, and mode is an AUTO key: it is a running value rather than a committed take \, so it is pushed whenever it changes and u_state flushes it on its own clock. Nothing here waits for a save., f 58;
+#X text 900 1700 RESTORE ARRIVES AS A REAL SELECTION. route restore then route mode leaves compose mode-1 with compose as its SELECTOR \, which is exactly the shape s mode wants -- so no list trim is needed on this side. It lands at about 3.5s \, long after the seed at 500ms \, and the seed's spigot is already shut., f 58;
+#X text 1750 1420 THE PUBLISH AND THE RESTORE MAKE A LOOP THAT TERMINATES. A restored mode is sent to the mode bus \, the r mode above hears it and publishes put auto mode ... straight back \, which stores the identical line and marks the store dirty one extra time. It is idempotent and costs one flush \, and breaking the loop would mean u_map knowing WHY a mode arrived -- which is exactly the kind of hidden state this file exists to avoid., f 58;
 #X connect 3 0 4 0;
 #X connect 4 0 5 0;
 #X connect 4 1 10 0;
@@ -78,3 +90,10 @@
 #X connect 38 0 39 0;
 #X connect 39 0 40 0;
 #X connect 40 0 35 1;
+#X connect 44 0 45 0;
+#X connect 45 0 46 0;
+#X connect 46 0 47 0;
+#X connect 47 0 48 0;
+#X connect 49 0 50 0;
+#X connect 50 0 51 0;
+#X connect 51 0 52 0;

@@ -1,6 +1,6 @@
 #N canvas 20 20 2900 1700 12;
 #X text 20 20 u_root -- the actual root of Cut It. main.pd (on the device) and main-dev.pd (on the Mac) both instantiate this and nothing else \, which is what stops the two entry points drifting., f 58;
-#X text 700 20 creation arg 1: the Pd channel the nanoKONTROL's own channel 1 lands on -- 17 on the Organelle \, and on the Mac whatever slot it fills. creation arg 2: the same thing for the Launchpad -- 1 on the Organelle. Passed straight to m_nano and m_launchpad \, and the ONLY things main.pd and main-dev.pd are allowed to disagree about. inlets: none. outlets: none., f 58;
+#X text 700 20 creation arg 1: the Pd channel the nanoKONTROL's own channel 1 lands on -- 17 on the Organelle \, and on the Mac whatever slot it fills. creation arg 2: the same thing for the Launchpad -- 1 on the Organelle. Passed straight to m_nano and m_launchpad. creation arg 3: the DATA DIRECTORY for u_state \, absolute and with no trailing slash -- /sdcard/cut-it-state on the device and /tmp on the Mac. Those three are the ONLY things main.pd and main-dev.pd are allowed to disagree about \, and arg 3 is the one that is a genuine platform difference rather than a MIDI slot. inlets: none. outlets: none., f 58;
 #X text 20 230 THE AUDIO PATH IS WIRES \, ON PURPOSE. The four stages go in the gap below \, right to left \, so the chain stays something you can read off the canvas instead of tracing through send names., f 58;
 #X obj 20 340 r~ inL;
 #X obj 20 620 throw~ outL;
@@ -13,7 +13,7 @@
 #X text 20 800 adc~ and dac~ appear NOWHERE in this patch \, and must not. mother.pd owns both -- it publishes the inputs on inL / inR and collects the output from outL / outR \, then applies the volume knob and a limiter. A patch that writes to dac~ silently bypasses both. See ref-conventions.md \, Audio I/O., f 58;
 #X text 470 1050 The level taps are a SIGNAL fan-out \, which needs no trigger: signal connections all run every block \, so there is no firing order to get wrong. The trigger rule is about messages., f 46;
 #X obj 900 340 u_init;
-#X text 1120 340 owns startup ORDER -- MIDI wiring \, the stage reports and when the Launchpad is initialised. Its one outlet fires at the launchpad stage., f 34;
+#X text 1120 340 owns startup ORDER -- MIDI wiring \, the stage reports \, when the Launchpad is initialised and when saved state is restored. Outlet 1 fires at the launchpad stage \, outlet 2 at the last stage about 3.5s in., f 34;
 #X obj 900 600 m_launchpad \$2;
 #X text 1120 600 the Launchpad Pro MK3 \, and the only file allowed to talk to it: the Programmer/Live switch and the safe exit. Pads out on param and disp \, like any other device \, and surface ownership out of its one outlet., f 34;
 #X obj 900 860 m_nano \$1;
@@ -31,7 +31,7 @@
 #X obj 2300 600 g_led;
 #X text 2300 650 owns the aux button LED. Callers send led and a STATE on disp \, never a colour -- one writer per display surface \, and this is the surface that is not a screen., f 34;
 #X text 2300 860 g_grid IS NOT IN THIS COLUMN \, and that is on purpose -- it sits at the bottom left \, next to the two boxes it is WIRED to. Where a file has cords \, the cords decide where it goes \; the column is only for the ones that talk on buses alone., f 34;
-#X text 900 1300 THE COLUMNS ARE THE ARCHITECTURE DIAGRAM. Left is the m_ layer \, device by device \; middle is the buses and the map \; right is the display owners. THE ONE WIRE ON THIS CANVAS IS u_init TO m_launchpad \, and it is a wire rather than a send because the boot ORDER is u_init's and the boot ACTION is m_launchpad's -- the seam between them is worth being able to see. Everything else here talks on the allowlisted buses., f 90;
+#X text 900 1300 THE COLUMNS ARE THE ARCHITECTURE DIAGRAM. Left is the m_ layer \, device by device \; middle is the buses and the map \; right is the display owners. THE ONLY WIRES ON THIS CANVAS COME OUT OF u_init -- to m_launchpad and to u_state -- and they are wires rather than sends because the boot ORDER is u_init's while the ACTION is the other file's. That seam is worth being able to see \, and both would be invisible as a send. Everything else here talks on the allowlisted buses., f 90;
 #X text 900 1420 RE-LAID OUT IN PHASE 6 \, with no behaviour change beyond the new box and the new wire. The audio chain has not moved. The control area was three ragged columns with cords that could not reach a new box without being drawn through a comment., f 90;
 #X obj 20 1200 c_clock 1 8;
 #X obj 20 1320 g_grid \$2;
@@ -39,6 +39,9 @@
 #X text 300 1360 owns the Launchpad's LEDs. Two wires in: ownership from m_launchpad \, so it goes silent the moment a panic hands the surface back \, and the beat number from the c_clock beside it., f 40;
 #X obj 2300 1120 u_net 192.168.1.5 8000;
 #X text 2300 1170 THE FOURTH DISPLAY SURFACE \, and the only file that talks to the phone. It CONSUMES disp like the two above it and owns no selector on it \, so unlike led in Phase 5 and grid in Phase 6 it cost g_oled's route nothing -- a mirror rather than a surface with a vocabulary. THE HOST IS A LITERAL ADDRESS AND IT IS ONLY RIGHT ON ONE NETWORK: the phone is 192.168.1.5 at home and 192.168.12.109 on the Organelle's own access point \, so THIS LINE HAS TO BE EDITED AND REDEPLOYED when the rig changes network. BROADCAST WAS TRIED AND REJECTED \, and the reason is worth keeping: 255.255.255.255 works -- Linux permits it \, PdParty accepts it \, and 19 to 20 of 20 datagrams arrive -- but WIFI ACCESS POINTS BUFFER BROADCAST FRAMES AND RELEASE THEM ON BEACON BOUNDARIES. Measured: unicast arrives every 200 ms as sent \, while broadcast arrives in bursts of three or four separated by up to 819 ms. THROUGHPUT IS IDENTICAL AND LATENCY IS NOT \, which is why a delivery test saw nothing and a person moving a knob saw it immediately. It also eats the phone's 1500 ms NO-LINK margin. The real fix is for the PHONE TO ANNOUNCE ITS ADDRESS -- the bidirectional path is already proven in tools/osc-bridge -- and that is a design job rather than a config one., f 58;
+#X obj 1450 180 u_state \$3;
+#X text 1450 250 THE DATA STORE. Two files under the directory in \$3 -- one flushed on a timer \, one written only on an explicit commit. It is wired rather than sent because the RESTORE is a stage of u_init's boot sequence \, exactly like the launchpad init beside it: u_init owns WHEN \, u_state owns WHAT. Everything else it does travels on the state bus., f 28;
+#X text 1450 530 ⚠️ \$3 IS THE ONE THING THE TWO ENTRY POINTS MUST STILL DISAGREE ABOUT \, and it is a real platform difference rather than an oversight: there is no /sdcard on a Mac. main.pd passes /sdcard/cut-it-state \, which SURVIVES deploy.sh \, deploy.sh --clean and a power cycle \; main-dev.pd passes /tmp. Data lives OUTSIDE the patch folder on purpose -- the same reasoning that put u_err's log there., f 28;
 #X connect 3 0 4 0;
 #X connect 3 0 7 0;
 #X connect 5 0 6 0;
@@ -46,3 +49,4 @@
 #X connect 13 0 15 0;
 #X connect 15 0 35 0;
 #X connect 34 2 35 1;
+#X connect 13 1 40 0;

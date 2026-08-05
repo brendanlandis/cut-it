@@ -460,6 +460,12 @@ PHASES = {
     6: dict(steps=S.STEPS6, blurb="the Phase 6 acceptance run: the Launchpad \\, the "
             "grid arbiter \\, the mode bus and the first c_clock instance.",
             counters=[("BEATS", "r clock")]),
+    8: dict(steps=S.STEPS8, counters=[], blurb="the Phase 8 acceptance run: the "
+            "data store. MOST OF PHASE 8 IS DELIBERATELY INVISIBLE -- state is FILES \\, "
+            "and tools/phase8-assert.sh proves the logic headlessly in twelve seconds. "
+            "What is left here is only what hardware can show: the front-panel Save \\, a "
+            "REAL power cycle \\, and the mode lamp. Six steps rather than a padded "
+            "twenty \\, because a bench proves the cases it contains and nothing else."),
     7: dict(steps=S.STEPS7, counters=[], blurb="the Phase 7 acceptance run: the phone "
             "status link. EVERY PASS IF DESCRIBES THE PHONE \\, not the Organelle -- "
             "so PdParty has to be open on the CutItRemote scene before step 1."),

@@ -23,6 +23,7 @@ do. They are the most valuable thing in this file.
 | 5 | ✅ hardware | `u_tempo`, `c_clock`, `u_map`, `m_organelle`, `g_led`, the `param` bus |
 | 6 | ✅ hardware | `m_launchpad`, `g_grid`, the `mode` driver, the first `c_clock` instance |
 | 7 | ✅ hardware | `u_net`, the per-name coalescer, the reconnect, the phone scene |
+| 8 | ✅ hardware | `u_state`, `u_store`, the `state` bus, the two policies, `fetch-state.sh` |
 
 ---
 
@@ -683,6 +684,91 @@ code"* — this project's own rule — **was not a sufficient test**. The check 
 **So it is the IPv4 lease that is lost, not the network**, and a restart fixes it first try where a
 `dhcpcd` renew does not. That points at DHCP renewal rather than the dongle, the power or the AP.
 [plan-tests.md](plan-tests.md) item 133; the investigation is in [plan-v02.md](plan-v02.md).
+
+## Phase 8 — the data store
+
+`u_state`, `u_store`, the `state` bus and the two persistence policies. **The last phase of
+v0.2.**
+
+**The phase was reframed twice, both times by Brendan, and the second reframe deleted more work
+than it added.** The plan treated state as a *control snapshot*, which made parameter pickup the
+central problem. It is not that: state here is **content** — beats, kits, melodies, samples —
+almost none of which exists yet. Then the sharper correction: this is a **frontend-to-database**
+paradigm, *the patch persisting its own data*, and **not** the Organelle's "Save New duplicates
+the patch folder" idiom.
+
+⛔ **Dropping Save New deleted a whole cluster of problems unasked** — `/tmp/curpatchname`
+returning `!`, variants landing at the top level of `Patches`, and whether `deploy.sh` should
+repair any of it. All of it existed only to serve Save New. **Presets became records inside the
+store instead**, and `deploy.sh` was not modified at all.
+
+### The design, and the one thing that makes it cheap
+
+**One new global name, `state`, three selectors, disjoint per side.** A contributor names its own
+key and declares its own policy — `auto` for a running value, `manual` for a committed take — so
+an abstraction written long after `u_state` persists itself with no change to `u_state`. That was
+the actual deliverable.
+
+⚠️ **The `manual` answer is SYNCHRONOUS, and that is the whole mechanism.** Pd is depth-first, so
+by the time the `save` broadcast returns every honest answer is already stored and the file can be
+written immediately — no settle timer, no `[del]`. It also made the 250 ms budget irrelevant:
+writing straight to `/sdcard` with an absolute path never depended on mother's `cp`.
+
+**A registry table was designed and then dropped.** Pull semantics survive without one: a
+broadcast reaches every contributor with nobody bookkeeping who exists, and it avoids a
+**data-driven send**, which is the construct `ref-conventions.md` refuses in `u_map`.
+
+### Two bugs, both invisible, both caught on the Mac
+
+- ⚠️ **The auto store wrote before it ever read.** Seed at 500 ms, flush at 3000 ms, restore at
+  3500 ms — so **every boot overwrote the previous session with its own defaults**, and the file
+  looked entirely plausible throughout. Fixed with an invariant, not a timing tweak: **the flush is
+  armed by the restore.** Item 152.
+- ⚠️ **`text read` of an empty file wiped the live store**, discarding puts that arrived before the
+  restore. It self-healed on the first real change, which is precisely why nobody would have
+  noticed. Fixed by reading into a separate text and replaying from that. Item 153.
+
+**Running the Mac pass first is what caught both**, and Phase 7's reversal of that order is why
+the convention exists at all.
+
+### The gate lied on its first can-it-fail run ⚠️
+
+Phase 6's rule is that a measuring rig must be proven able to fail. **This one was not, and it
+passed the broken patch 15/15.** Two faults, both already named in this file for other phases:
+
+- **the driver's timing did not reproduce the real ordering** — it banged the restore at 600 ms,
+  long before the 3000 ms flush that causes the bug. It uses **3600 ms** now, and that number is
+  load-bearing.
+- **the final check could not fail** — it asserted against `mode compose mode-1`, a value only
+  `u_map`'s seed produces, in a driver that has no seed. *"An assertion that nothing ever drove"*,
+  for the second time in three phases.
+
+Rewritten to assert the real property — *did the restore replay what was on disk at boot?* — it
+now fails 2 checks with the bug present and passes 15/15 without it. **Had the proof been skipped,
+Phase 8 would have shipped with a green gate protecting nothing.**
+
+### What Step 0 corrected before any of it was built
+
+Six of eleven measurements contradicted a document. The load-bearing ones: **the budget is 250 ms,
+not 500** (the two save scripts disagree and only one had been read); **`saveState` arrives as a
+BANG, not `1`**, so a `[route 1]` on it never fires; **`[text write]` to a missing directory
+PRINTS** rather than failing silently; and **the menu path is `Storage → Save`** — there is no Save
+under System, and the doc that said so cost a wasted trip to the device.
+
+✅ And one hypothesis of this phase's own died on contact: `save-new-patch.sh` defaults `PATCH_DIR`
+to an unmounted `/usbdrive`, which predicted Save New writing nowhere. mother sets it at runtime
+and it works. `/proc/<pid>/environ` shows the *initial* environment and is not updated by
+`setenv`, which is what made the reasoning look sound.
+
+### What Phase 8 leaves behind
+
+**Data lives outside the patch folder** — `/sdcard/cut-it-state/` — so `deploy.sh`, `--clean` and a
+power cycle cannot touch it, with `tools/fetch-state.sh` as the other half of that bargain.
+**`knobs.txt` now appears on the first `Storage → Save`** and the patch boots at saved knob
+positions from then on; deliberate, and CLAUDE.md was rewritten to say so. **The `manual` path
+ships with no in-patch user** — the first will be v0.3's drum mode — so it is exercised by the gate
+and a synthetic contributor rather than by anything deployed, and that is stated plainly rather
+than papered over.
 
 ## What every phase had in common
 

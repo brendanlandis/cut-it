@@ -75,14 +75,28 @@ Cut It/              the deployable patch — folder name is what appears in the
                        COMPOSITE of regions, and it repaints only when dirty
   m_organelle.pd       the Organelle's own panel: aux and knobs 1-4 onto param and disp
   m_volca.pd           the Korg Volca FM -- the FIRST OUTPUT-ONLY m_ layer, because the
-                       Volca transmits nothing at all. Three inlets (notes, CC, program)
-                       and no outlets. WIRED from u_map rather than fed by a bus: param
-                       is device-to-map and disp is display, and neither fits a sounding
-                       note. ⚠️ Needs Pajen 1.09 firmware for velocity and program change,
-                       both gated behind undocumented global settings -- see ref-midi.md.
-                       ⬜ NOT YET INSTANTIATED by u_root
-  u_map.pd             THE MAP — the only file that says what a control MEANS. Knob 1 is
-                       master tempo, aux is the transport. One route box, one branch each
+                       Volca transmits nothing at all. ONE inlet, selector-prefixed
+                       (notes / cc / program), and no outlets. WIRED from u_map rather
+                       than fed by a bus: param is device-to-map and disp is display, and
+                       neither fits a sounding note. ⚠️ Needs Pajen 1.09 firmware for
+                       velocity and program change, both gated behind undocumented global
+                       settings -- see ref-midi.md. ⛔ Pd's pgmout is 1-BASED, so it
+                       carries a [+ 1] and its inlet means the WIRE number (item 228)
+  m_404.pd             the SP-404MKII, and the FIRST BIDIRECTIONAL device layer. 160 pads
+                       -- bank sets the CHANNEL (33-42), pad sets the NOTE (36-51) -- with
+                       receive and transmit sharing ONE table. ⛔ 47+n is WRONG and was in
+                       this repo's docs; it breaks at pad 5. Ships a HARD RATE LIMIT that
+                       DROPS rather than queues, and owns the 404's panic across all ten
+                       banks. Every event to param, only a press to disp, as ONE stable
+                       name (sp-hit) because 160 names would evict the OLED
+  u_map.pd             THE MAP — the only file that says what a control MEANS, and since
+                       v0.3 it is TABLE-DRIVEN and MODE-DEPENDENT. ⛔ The table never
+                       names a send: it names a destination that must exist as a literal
+                       argument on a route box, which is the allowlist guard and the whole
+                       of what makes a table acceptable. One outlet per output DEVICE
+  cut-it-map.txt       the map's rows, one per mapping, FOUR ATOMS ALWAYS:
+                       <mode> <control> <dest> <arg>. A plain file so it diffs a row at a
+                       time; read relative, which resolves against the patch folder
   u_tempo.pd           the master reference: BPM, the 24 PPQN pulse MIDI clock is cut from,
                        realtime out on two ports, and the transport
   c_clock.pd           ONE clock — its own rate and time signature, aligned to master by a

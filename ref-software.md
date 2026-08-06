@@ -36,16 +36,24 @@ shape they connect.
               global buses
   mode · tempo · clock · start/stop · panic · param · err · disp · state
                    │
-   ┌───────────────┼───────────────┐
-   │               │               │
- m_nano       m_launchpad     m_organelle          ← device mapping
- ch 17          ch 1          aux + knobs 1-4
-   │               │               │
-   └───────────────┼───────────────┘
+   ┌───────────────┼───────────────┬───────────────┐
+   │               │               │               │
+ m_nano       m_launchpad     m_organelle       m_404            ← device mapping,
+ ch 17          ch 1          aux + knobs 1-4   ch 33-42            INPUT side
+   │               │               │               │
+   └───────────────┼───────────────┴───────────────┘
                    │
-                 u_map                             ← the ONLY file that says
-                   │                                 what a control MEANS
-            (v0.3: e_chop, e_pitch, e_trem, e_verb)
+                 u_map  ←── cut-it-map.txt         ← the ONLY file that says
+                   │        <mode> <control>          what a control MEANS.
+                   │        <dest> <arg>              Table-driven since v0.3,
+                   │                                  guarded by a literal route
+       ┌───────────┴───────────┐
+       │  CORDS, not a bus     │                   ← output devices are TOLD
+    m_404                  m_volca                    what to play. No bus
+    ch 33-42               ch 49                      carries that.
+    pad <n> <vel>          notes/cc/program
+                   │
+            (v0.4: e_chop, e_pitch, e_trem, e_verb)
                    │
    ┌───────┬───────┴───────┬───────────┐
  g_oled  g_led          g_grid       u_net         ← the four display surfaces

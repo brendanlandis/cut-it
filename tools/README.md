@@ -179,6 +179,29 @@ the `/tmp/patch` symlink. Same caveat as `deploy.sh`'s own load.
 ⚠️ **It cannot be supplied by search path**, which is why `phase6-assert.sh` rewrites boxes in a
 scratch copy — see that gate below.
 
+**Phase 9 added four more, because `[midiout]` is not the only way this patch emits MIDI:**
+
+| | |
+|---|---|
+| `t_noteout.pd` | `[noteout]` — prints `pitch velocity channel` |
+| `t_ctlout.pd` | `[ctlout]` — prints `value controller channel` |
+| `t_pgmout.pd` | `[pgmout]` — prints `program channel`. ⚠️ **It cannot answer the 0-based/1-based question** (item 228): it prints what Pd was *given*, not the byte on the wire |
+| `t_notein.pd` | ⛔ **a SOURCE, not a sink** — the only way to test a receive path. Drive it with `; t-notein <pitch> <velocity> <channel>` |
+
+⛔ **`m_volca` and `m_404` emit through `noteout`/`ctlout`/`pgmout`, not `midiout`**, so
+`phase6-assert.sh`'s rewrite finds nothing in them and every assertion about them would pass
+**vacuously**. ⚠️ **And phase 6's regex is anchored so the class name must END the line** — it
+silently skips any box carrying creation arguments, of which the patch has one:
+`[ctlout 123 33]`. A phase 9 rewriter has to take a trailing argument list, and the stubs
+therefore read creation args too.
+
+⛔ **`t_notein` exists because the receive side is otherwise untestable.** Every *output* path can
+be driven from a bus, but `m_404`'s entire receive side sits behind `[notein]` and **there is no
+bus behind a MIDI input** — the channel gate, the note-to-pad lookup, the bank name builder and
+the `param`/`disp` split would all go unexercised. Its outlet order reproduces the real object's
+(channel, then velocity, then pitch) rather than approximating it; get that backwards and the
+stub tests itself instead of the patch.
+
 ## Running one
 
 ```sh

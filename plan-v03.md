@@ -98,77 +98,52 @@ Three gaps defined v0.3. **One is closed.**
 
 **In order.** The measurement that gated all of it is closed — see §3.
 
-### 4.1 Wire `m_volca` in
+### 4.1 ✅ Built and verified — what is left is proving it
 
-| File | Change |
+**All three gaps in §3 are closed.** `m_volca` is wired in on one selector-prefixed cord,
+`m_404` is built in both directions, and `u_map` is table-driven and mode-aware with the allowlist
+guard. Evidence: **items 228–231**. ⚠️ **None of it has run on the hardware yet** — every result so
+far is a headless Mac run, and this project's own history says that difference matters.
+
+**Three corrections came out of building it, all now in the `ref-` docs:**
+
+| | |
 |---|---|
-| `Cut It/u_root.pd` | Instantiate `m_volca $5`; add the cord from `u_map`'s new outlet |
-| `Cut It/u_map.pd` | ⚠️ It has **no outlets today**. Add one per output device — this is the decided design, see [ref-conventions.md](ref-conventions.md) → *Output devices are WIRED from `u_map`* |
-| `Cut It/main.pd` + `main-dev.pd` | Pass the Volca channel block (**49**) as `$5`. ⚠️ These two files may **only** disagree about creation arguments |
+| ⛔ **Pd's `pgmout` is 1-based** | `pgmout N` puts wire value `N-1` on the cable. `m_volca` carries a `[+ 1]`. Item 228 |
+| ⛔ **`u_tempo`'s panic covered one bank of ten** | All Notes Off on channel 33 alone. Moved into `m_404`, now all ten. Item 231 |
+| ⛔ **`ref-conventions.md` said `u_map` used route branches "rather than a lookup table"** | No longer true, and the guard that replaces it is not optional |
 
-⚠️ **`u_root` currently takes three creation args** (`$1` nano channel, `$2` Launchpad channel,
-`$3` state dir). `m_404` takes `$4` and `m_volca` `$5`. That was Brendan's decision — straight
-extension of the existing precedent rather than a restructure.
+### 4.2 The gate, the bench, and landing
 
-### 4.2 Build `m_404`
-
-**Bidirectional, and the largest remaining piece.**
-
-- **In:** `[notein]` on channels base…base+9 → bank + pad. ✅ **160 pads: bank sets the CHANNEL
-  (33–42), pad sets the NOTE (36–51).** One formula, no special cases.
-- **Out:** trigger a pad. ⚠️ **Ships with a hard rate limit, not as a later fix.**
-
-```
-pads              notes            note = 36 + (3 - (pad-1)/4)*4 + (pad-1) % 4
- 1  2  3  4       48 49 50 51        (integer division)
- 5  6  7  8       44 45 46 47
- 9 10 11 12       40 41 42 43      receive and transmit share ONE map
-13 14 15 16       36 37 38 39
-```
-
-⛔ **`47 + n` is WRONG and was in this repo's docs.** It holds for pads 1–4 and breaks at pad 5.
-**Assert all sixteen in the gate, not a sample.**
-
-**Two decisions to settle before building:**
-
-| Decision | Recommendation |
-|---|---|
-| **Does a playing 404 pattern flood the OLED?** | The 404's sequencer transmits notes, and five dense note-ons would fill `g_oled`'s five param rows. **Follow `m_launchpad`'s aftertouch precedent: pad presses to `param` AND `disp`, sequencer-rate traffic to `param` only** |
-| **How does the rate limit behave at the ceiling?** | ⛔ **Drop, never queue.** Item 209 proved there is no queue between Pd and the 404; adding one recreates the exact symptom — overshoot costs *seconds* of lag that outlive the gesture, while a stop is instant |
-
-### 4.3 Make `u_map` mode-aware
-
-**The centrepiece of the phase, and the thing that makes v0.4 possible.**
-
-Today `u_map` holds three `route` branches — `og-knob-1`/`og-aux`, and the six `xport-*` keys — and
-sends `mode`, `start`, `stop`, `tempo`, `state`. **It publishes `mode` and never consults it.**
-
-✅ **Decided: a hybrid — table-driven lookup with a hardcoded allowlist of destination sends.** This
-reverses the old *"`u_map` as a `[text]` table"* deferral, whose own condition was "revisit past
-about ten mappings"; 42 nanoKONTROL controls × six modes is well past it.
-
-⚠️ **The allowlist guard is the whole of what makes this acceptable.** A data-driven `[send]` can
-write **any** global name with no evidence on the canvas, which defeats an allowlist audited by
-reading. The table selects *among* destination names that exist as literal objects. ⛔ **Skip the
-guard and the property is gone silently — nothing fails and no test notices.**
-
-**Also settle:** whether the mapping table is persisted via `u_state` (it would be the first real
-in-patch user of the `manual` policy — ⚠️ **the synchronous-answer rule is the part a contributor
-can break invisibly**), and the six mode names, whose `compose`/`perform` **ratio is load-bearing**
-because `u_err` routes on those words.
-
-### 4.4 The gate, the bench, and landing
-
-- **`tools/phase9-assert.sh`** — reuse `phase6-assert.sh`'s shape: it rewrites `[midiout]` in a
-  **scratch copy** so a headless run reads back every byte. Exactly right for two MIDI-emitting
-  abstractions. `Cut It/` is never touched.
-- ⚠️ **Prove the gate can fail.** `phase8-assert.sh` passed the broken patch 15/15 on its first
-  can-it-fail run. Reintroduce a real bug — a `47 + n` pad map is the obvious one.
-- **`tools/bench_steps.py`** then `bench-gen.py`. ⛔ **Never edit a bench `.pd`.**
+- **`tools/phase9-assert.sh`** — `phase6-assert.sh`'s shape: a **scratch copy** of `Cut It/` with
+  the MIDI objects rewritten to printing stubs, driven headless. `Cut It/` is never touched.
+  ⛔ **Two corrections to what this section used to say.** It is **not** `[midiout]` — `m_volca` and
+  `m_404` emit through **`noteout` / `ctlout` / `pgmout`**, so phase 6's rewrite finds nothing in
+  them and every assertion would pass **vacuously**. And phase 6's regex is **anchored**, so it
+  silently skips a box with creation arguments — the patch has one, `[ctlout 123 33]`. The stubs
+  exist already: `tools/test-stubs/t_{noteout,ctlout,pgmout,notein}.pd`.
+- ⛔ **`t_notein` is not optional.** Every *output* path can be driven from a bus, but `m_404`'s
+  entire **receive** side sits behind `[notein]` and **no bus reaches a MIDI input**.
+- ⭐ **A static map lint, which needs no Pd at all** and is the cheapest strong check available:
+  every row exactly 4 atoms; **every `<dest>` present on `u_map`'s literal `route`** — the allowlist
+  guard, enforced by reading; **no duplicate `(mode, control)` pair**, because `text search` returns
+  only the first match and a shadowed row is silent (item 229); every `<mode>` one of the six.
+- ⚠️ **Assert an EXACT rewritten-box count.** Phase 6 only checks "not zero", and its own comment
+  claims five where the patch has six — the count drifted unnoticed.
+- ⚠️ **Prove the gate can fail — three bugs, not one.** `phase8-assert.sh` passed the broken patch
+  15/15 on its first can-it-fail run. (1) a `47 + n` pad map — must fail on **12 of 16 pads in each
+  direction** and stay green on 1–4, which is the shape that let the bug survive; (2) a row naming a
+  destination not on the route — the static lint must reject it *and* the runtime must emit
+  `unknown-dest` with **no MIDI**; (3) disarm the rate limiter and confirm the burst overflows.
+- **`tools/bench_steps.py`** then `bench-gen.py`. ⛔ **Never edit a bench `.pd`.** ⚠️ **Add `9` to
+  `bench-verify.py`'s hardcoded phase tuple** — miss it and the bench is generated but never
+  fidelity-checked, and `check-all.sh` silently ignores it.
 - **Add the Phase 9 gate to `tools/check-all.sh`.**
+- ⚠️ **THEN THE HARDWARE.** Everything so far is a headless Mac run. Phase 6 passed 25/25 on the Mac
+  twice and shipped three bugs.
 - **Landing:** finished work moves to [ref-build-log.md](ref-build-log.md); this section *leaves*
   this file rather than being annotated; a new [plan-tests.md](plan-tests.md) session is added with
-  items numbered **after the last used number** — currently **227**. ⛔ **Never reuse an item
+  items numbered **after the last used number** — currently **231**. ⛔ **Never reuse an item
   number.**
 
 ---

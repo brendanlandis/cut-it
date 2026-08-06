@@ -18,7 +18,7 @@ wire format) and [ref-conventions.md](ref-conventions.md) (how the Pd is written
 |---|---|---|
 | **Organelle OLED** | ✅ yes | The primary performance surface. 128×64 graphics, not five text lines. |
 | **Organelle aux LED** | ❌ no | One RGB LED, **seven colours and off**. ✅ The only state display that isn't a screen — see *The aux button LED*. |
-| **Launchpad Pro MK3** | ❌ no | 96 RGB LEDs. Spatial state only — see *No text on the Launchpad*. |
+| **Launchpad Pro MK3** | ❌ no | **96 button LEDs + the logo** = 97 addressable, painted across an index span of **1–108**. Spatial state only — see *No text on the Launchpad*. |
 | **iPhone / PdParty** | ✅ yes | Unlimited size and colour, over WiFi. Development and diagnostics, **not** performance. |
 | **nanoKONTROL** | ❌ none | No host-controllable LEDs on the mk1. Confirmed in Kontrol Editor. ✅ |
 | **SP-404MKII** | ❌ none | Has the best screen in the rig and **it is permanently unreachable** — no SysEx in either direction. 📄 Don't spend time here. |
@@ -31,6 +31,30 @@ wire format) and [ref-conventions.md](ref-conventions.md) (how the Pd is written
 **128×64 monochrome framebuffer.** ✅ The `mother` binary exposes a full graphics API that
 `mother.pd` never surfaces — patches normally see only five text lines, which badly
 undersells it.
+
+### ⚠️ IT LAGS THE AUDIO BY ~200 ms — so it is NOT a rhythmic display ✅
+
+**Measured by driving the 404 from Cut It's own beat and watching all four surfaces at once**
+(item 206). The audio, the Launchpad's beat row and the footer BPM all agree; **the OLED trails**,
+by roughly a 16th note at 74 BPM.
+
+| Surface | Path | Result |
+|---|---|---|
+| **Launchpad** | `g_grid` → ALSA MIDI, repaints at **50 Hz** when dirty | ✅ **tight** |
+| **OLED** | `g_oled` → `oscOut` → UDP → the `mother` binary → **serial to the front-panel MCU**, redrawn at **10 Hz** | ⚠️ **~200 ms behind** |
+
+**The 10 Hz frame clock alone is up to 100 ms of it**, before the OSC hop and the serial link.
+⛔ **Not fixable by tuning** — raising the frame rate spends UDP and CPU on a transport that still
+ends at a serial MCU.
+
+✅ **The design rule that falls out of it:** anything that must agree with what you *hear* —
+a playhead, a beat indicator, step position — belongs on **the Launchpad**. The OLED is for state,
+values and text, where 200 ms is invisible. ⚠️ **This binds the v0.3 display work**: a bar meter
+and a "value at first touch" tick are both fine; a moving playhead is not.
+
+⬜ **Possibly related, recorded rather than asserted:** `dmesg` carries continuous
+`imx-uart 2020000.serial: Rx FIFO overrun` (item 173) on **the same serial link to the front
+panel**. Whether the overruns and the lag share a cause is unmeasured.
 
 ### Two ways in
 
@@ -147,9 +171,27 @@ trap 4 above. It is not an init-time concern and does not belong in `u_init`.
 
 - `gFilledCircle` at r=8 renders as a rounded diamond, not a circle. ✅ The rasteriser is crude
   at small radii — don't design round meters.
-- `gWaveform` and `gFrame` need OSC **blobs**, and whether Pd can produce one through `oscOut`
-  is ⬜ **untested**. If it can, drawing the captured buffer becomes possible and choosing a
-  playhead position in fresh audio stops being blind. Tracked in [plan-v03.md](plan-v03.md).
+- ✅ **`gWaveform` and `gFrame` are REACHABLE — Pd can produce an OSC blob.** Item 202, measured in
+  both halves. `packOSC` accepts the **`b` typetag** and takes the remaining floats as bytes,
+  prefixing the length itself:
+
+  ```
+  sendtyped /oled/gWaveform ib 4 10 20 30 40
+    ->  "/oled/gWaveform\0"  ",ib\0"  0 0 0 4  0 0 0 4  10 20 30 40
+                                      screen   bloblen  payload
+  ```
+
+  ⛔ **No count argument and no `blob` keyword** — that form errors with
+  `packOSC_blob: all values must be floats`. And a 128-byte blob drawn to the OLED rendered
+  correctly, so **drawing the captured buffer is unblocked** and playhead placement in fresh audio
+  need not stay blind.
+
+  ⚠️ **Draw it to a spare buffer, not screen 3.** `g_oled` rebuilds screen 3 ten times a second and
+  wipes anything else within 100 ms — the measurement used screen 4 and `setscreen` for exactly
+  that reason.
+
+  ⚠️ **`oscsend` cannot help here**: its type list is `i h f d s S c m T F N I` with **no blob**.
+  Anything testing this outside Pd has to build the packet by hand.
 
 ---
 
@@ -591,7 +633,7 @@ because the boot sequence finishes before you can get to the window.
 **Two controls at once no longer alternate.** That limitation is gone — see *Several at once*
 above.
 
-### `g_grid` — the same shape, on 96 LEDs ✅ built
+### `g_grid` — the same shape, across the 1–108 index span ✅ built
 
 Phase 6. Three layers instead of four, and the cascade is `g_oled`'s `pd pick` one link shorter:
 
@@ -642,6 +684,11 @@ device nobody intends to plug back in cannot make Pd fork all night.
 **A dark grid is therefore three different things**, and the OLED is what tells them apart: nothing
 is wrong and nothing has changed (the dirty flag simply has no work); the surface was handed back by
 a panic; or the device is gone and the watchdog has said so.
+
+⚠️ **A panic blanks the Launchpad until the patch is reloaded, and that is deliberate.** Ownership
+drops and nothing repaints. ✅ **Currently harmless — nothing on the Organelle sends `panic`**, so
+it is unreachable in normal use. **The escape hatch is worth more than the display**; revisit only
+if a panic ever becomes performer-reachable.
 
 **Every raise and every expiry sets the dirty flag.** A layer falling away changes the frame just
 as much as one arriving — and the first build got this wrong, which would have left an expired

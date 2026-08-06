@@ -792,6 +792,87 @@ ships with no in-patch user** — the first will be v0.3's drum mode — so it i
 and a synthetic contributor rather than by anything deployed, and that is stated plainly rather
 than papered over.
 
+## The measurement sweep — 2026-08-04/05, and it wrote no code at all
+
+**Every remaining ⬜ that hardware could answer, batched into two days with the whole rig up.**
+Items 169–211. It is in this file because it produced corrections, which is what this file is for —
+but ⚠️ **it was not a phase**: no abstraction was written, no gate was added, and `check-all.sh`
+passed unchanged at the end because nothing it checks was touched.
+
+**The batching was the point.** Each device session costs setup, and several of the questions had
+been open for months purely because nobody had the rig assembled and the time at once. Three of
+them gated design decisions and one could still have forced a redesign.
+
+### What it closed
+
+| Closed | Was |
+|---|---|
+| **The last redesign risk** — how the 404 places external input in the stereo field | ⬜ since Session 3, blocked on one cable. **It sums to both**, which gives a dry/wet split for free |
+| **The SP-404 pad map**, both directions | ⛔ **wrong in the repo** — see below |
+| **Full-load power** | ⬜ since the very first checklist. Passed under hours of the heaviest MIDI the rig can make |
+| **The wifi fault** | Open since Phase 6 and **misdiagnosed for two of them** |
+| **CC 99, `knobs.txt` precedence, the MIDI Config page, OSC blobs** | four independent ⬜, all cheap once the hardware was up |
+
+### The corrections, which are the valuable part
+
+⛔ **`47 + n` for the 404's pad notes was wrong, and it was wrong in the most dangerous possible
+way.** It holds for pads 1–4 and breaks completely at pad 5. The real map is **36–51**, descending
+in blocks of four. The old figure came from measuring **pads 1 and 2** — inside the one block where
+the formula happens to work. ⚠️ **Sequencing code written against it would have triggered the wrong
+drum from pad 5 upward, with no error anywhere.** Item 190.
+
+✅ **And Roland's own chart was CLOSER than our measurement** — 35–51 against an actual 36–51.
+⚠️ **This project's instinct is that a repo finding beats a manufacturer document, and here the
+document was nearer the truth.** The repo finding was not wrong because it was measured; it was
+wrong because it was measured on **two points and extrapolated**.
+
+✅✅ **The 404 is a 160-pad instrument, not a 16-pad one** — bank sets the *channel*, pad sets the
+*note*, perfectly linear across all ten banks in both directions. **Nothing in the project was
+designed for this** and it fits the existing channel scheme with room spare. ⚠️ **The discovery was
+accidental**: a channel column existed in a probe's print to verify Pd's slot numbering, and it
+caught a device capability instead. **Print the channel.** Item 195.
+
+⛔ **`MONO (Left)` / `MONO (Right)` are not the hard-pan settings**, and this project's docs said
+they were. They collapse the sample to mono *using* that source and play it on **both** outputs —
+so a drums sample set that way lands on both channels **while reading as correctly configured**.
+The hard pan is one step inboard of each extreme, `L:50` / `R:50`. ⚠️ **Following the old wording
+would have broken the drums/fx split in a way that looked like a cabling fault.**
+
+⛔ **"The 404's pads are fixed at 127" was recorded as a device limit and was a SETTING** —
+`[SHIFT]` + a pad. ✅ **The hedge saved it**: item 193 said a device setting probably existed but
+"was not looked for", so when the toggle turned up, one item was overturned rather than a drum mode
+designed around a limitation that does not exist. ⚠️ **Write the hedge. It is the difference
+between a correction and a rebuild.**
+
+### Three hypotheses of mine, each killed by a direct test
+
+⚠️ **Worth listing together, because each one sounded right and none survived contact.**
+
+1. ⛔ **"The Orbi satellite is broken."** Built on one satellite-fails-then-router-succeeds pair,
+   **overturned thirty minutes later** by a controlled two-arm test. ⚠️ **Concluding from a single
+   success is the same error as concluding from a single failure** — this project forbids the
+   second in writing and the first still slipped through. Item 182.
+2. ⛔ **"The MIDI transport is queueing."** The obvious explanation for the trigger ceiling. A drain
+   test killed it: after 10 s at 1000/s a `stop` gave **immediate** silence. Item 209.
+3. ⛔ **"`u_tempo`'s clock starves the note-outs."** Tested — and the arithmetic afterwards showed
+   `g_grid` emits **3320 bytes/s** against the clock's **480**. ⚠️ **The whole test was aimed at
+   the smaller of the two sources by a factor of seven**, and I only noticed on computing the
+   numbers. Item 210.
+
+### And two lessons about measurement itself
+
+⚠️ **A stepped sweep with short holds is structurally blind to an effect that takes seconds to
+appear — and it reports a confident wrong number rather than nothing.** My automated rate sweep
+held each step ~6 s and declared 500/s clean. A **hand** sweep on a knob, hunting around the
+transition, found saturation at ~362. **The hand beat the script**, and the script's failure was
+not a bug — it was the shape of the test. Item 208.
+
+⚠️ **A null result is worthless until the channel is proven.** "No pad lit" meant *"receive and
+transmit differ"* for half an hour, until it turned out the 404 lights only the **selected** bank
+and the test was run standing on a different one. The same ambiguity nearly closed CC 99 wrongly,
+and was only escaped there because a control press came first. **Prove the probe, then believe the
+silence.** Items 196, 198.
+
 ## What every phase had in common
 
 Worth stating once, because it is the pattern rather than a coincidence:

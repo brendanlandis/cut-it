@@ -68,7 +68,8 @@ Cut It/              the deployable patch — folder name is what appears in the
                        the Mac without detecting anything, plus a device-inquiry
                        poll and a bounded wire.sh recovery for the Organelle,
                        where a replug destroys the ALSA links outright
-  g_grid.pd            the Launchpad's 108 LEDs and their sole owner. Same arbiter
+  g_grid.pd            the Launchpad's LEDs and their sole owner -- 96 buttons plus the
+                       logo, painted across the full 1-108 index span. Same arbiter
                        shape as g_oled -- home < modal < alert -- but home is a
                        COMPOSITE of regions, and it repaints only when dirty
   m_organelle.pd       the Organelle's own panel: aux and knobs 1-4 onto param and disp
@@ -212,6 +213,13 @@ commit and the patch boots at the saved knob positions from then on — knob 1 b
 **That is a deliberate decision, not a leak**: a preset that restores the knobs is what a performer
 wants. Until the first Save, mother logs `knobs.txt: can't open` at boot; that line is expected and
 harmless. An ordinary `./deploy.sh` will not remove the file once it exists — `--clean` will.
+
+✅ **And the saved file BEATS the physical knob — measured, item 200.** Knob 1 turned fully
+clockwise, patch reloaded, and it booted at the file's **57 BPM** rather than the knob's 500.
+⚠️ **So after any Save every knob is desynced from its value, and the first touch jumps** — up to
+the full range. Nothing on the instrument can detect this: mother reports position, not whether the
+position still matches the file. **That is the concrete case for parameter pickup** in
+[plan-v03.md](plan-v03.md), and it happens on every boot rather than only on a bank switch.
 
 ⚠️ **The instrument's own data does NOT live in the patch folder.** `u_state` writes to
 `/sdcard/cut-it-state/`, outside it, precisely so that `deploy.sh`, `deploy.sh --clean` and a power

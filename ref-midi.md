@@ -142,10 +142,27 @@ Cut It's own `[ctlin]` objects read Pd's MIDI system directly and are unaffected
 *(This means `midiInGate` is a name the patch **sends**, despite being listed among the ones
 mother sends to the patch — it is `[r midiInGate]` inside mother.)*
 
+✅ **Entering mother's *MIDI Config* page mid-session does NOT re-open the gates — it is safe to
+visit during a set.** The worry was that leaving the page would re-push `midiInGate 1` and
+resurrect the CC 21–26 collision above. Opened, left, returned, then `btn-t-5` pressed on the nano:
+**BPM unchanged**, on the OLED and the Launchpad both. Item 201.
+
+⚠️ **The precondition is what makes that a result rather than a guess.** Had returning from the
+menu **reloaded** the patch, `u_init` would have re-closed the gates at 2 s and the test would have
+proven nothing while looking like a pass. ✅ **The evidence is that the OLED did not replay
+`booting` → `wiring` → `launchpad`** — a surviving pid is *not* enough, because `/loadPatch` loads
+a patch inside the running Pd.
+
 ### MIDI out from Pd
 
 Raw System Real-Time bytes go straight out `[midiout]` as decimal floats ✅ — demonstrated in
 v0.1's `midiclock.pd`, archived in [! v0.1 plans/patch/](<! v0.1 plans/patch/README.md>).
+
+⛔ **`[midiout]` needs no port creation argument, and this is settled rather than unknown.**
+`u_tempo` uses the proven **cold-inlet** pattern — port into the right inlet, byte into the left —
+and item 63 fired a real 404 pad through it. ⚠️ **The obvious experiment is invalid**: Pd 0.49 does
+not warn about extra creation arguments at all, so a clean syntax check proves nothing either way.
+**Nothing needs the answer** — recorded so the question is not reopened.
 **Reference for which byte went where, not code to lift**; `u_tempo` is a rewrite in Phase 5.
 
 | Message | Decimal | Hex |
@@ -186,6 +203,33 @@ monotonic and cannot bounce, so there was never anything for a debounce to prote
 
 ⚠️ **A `c_clock`'s ratio multiplies that ceiling**: `ratio × tempo` must stay under ~860 BPM
 equivalent, so at the 600 BPM clamp the highest safe ratio is about 1.4.
+
+### The four rate ceilings, and they are different numbers ✅ measured
+
+⚠️ **These get confused with each other constantly.** They stack, and the one that bites is
+whichever is lowest on the path you are actually using.
+
+| Ceiling | Value | What it limits |
+|---|---|---|
+| **`threshold~` pulse** | **344 Hz** = 44100/64/2 | The raw 24 PPQN pulse. Item 58 |
+| **`c_clock`'s BANG outlet** | **14.3/s** = 344 ÷ 24 | ⛔ **Beat bangs.** The ×24 that buys provable alignment with `u_tempo` costs a factor of 24 in headroom |
+| **MIDI triggers to the 404** | **~360–400/s** | Note-on/off pairs. Perceptual, not a hard edge. Items 208–209 |
+| **Pd's own wall** | **~689/s** | One message per 64-sample scheduler tick, a compile-time constant. ⛔ **Never reached** — something downstream saturates first |
+
+⛔ **NO CLOCK-DRIVEN PATH CAN PRODUCE AN AUDIO-RATE MIDI STREAM.** At 14.3 bangs/s, `c_clock` is
+two orders of magnitude below the trigger ceiling. A dense machine-gun trigger stream needs a plain
+`[metro]`, not a clock ratio — **this was measured by trying, and the clock ran out first.**
+
+✅ **But the AUDIO-DOMAIN path has no ceiling at all.** `c_clock` outlet 0 is the raw phase as a
+**signal**; a filter stage reads it and drives `vline~` envelopes and table reads directly. **Every
+number above applies only to the message domain.** ⚠️ **If a filter stage ever converts that phase
+to bangs, that is the mistake — not the ceiling.**
+
+⚠️ **Exceeding the trigger ceiling costs more than dropped notes.** Turning the rate *down* after
+overshooting takes **seconds** to become audible, and the delay grows with how long the high rate
+was held — while a *stop* is instant. ⛔ **It is not a queue in Pd** (tested directly, item 209);
+the 404's voice pool is the leading guess and is not established. **Either way `m_404` needs a hard
+rate limit.**
 
 ⚠️ **Audio-domain does not fix the jitter, and never could.** `threshold~` reports on a 64-sample
 block boundary exactly as `metro` fires on one, so the ~1.45 ms below is unchanged. What it buys
@@ -549,7 +593,7 @@ already correct for this rig. ✅ **Bank A** arrives on **Pd channel 33**; banks
 
 | Event | Message | |
 |---|---|---|
-| Pad press | Note-on, **velocity FIXED at 127** — see below | ✅ |
+| Pad press | Note-on with **real velocity** — but only if *fixed velocity* is OFF. See below | ✅ |
 | **Pattern sequencer** | **Note-on — it DOES transmit.** 199 events captured from a playing pattern, all within 36–51, on the bank's own channel | ✅ |
 | CTRL knobs | CC 16 and 17 | ✅ |
 | Volume slider | CC 7 | 📄 |
@@ -572,11 +616,32 @@ already correct for this rig. ✅ **Bank A** arrives on **Pd channel 33**; banks
 
 Velocity 100 works for triggering; `[makenote]` handles the note-offs. ✅
 
-⚠️ **PAD VELOCITY IS FIXED AT 127 IN THE TRANSMIT DIRECTION, and this file used to say it was
-real.** A firm press and a deliberately soft one both reported **127**, as did all sixteen pads in
-the sweep — item 193. **So a pattern captured from the 404's pads carries no dynamics**, which
-matters for the drum mode. ⬜ Recorded as *fixed as configured*, not *the 404 cannot do velocity*:
-Roland's pads are velocity-capable, so a device setting probably exists and was not looked for.
+### ⚠️ PAD VELOCITY IS A SETTING — `[SHIFT]` + a pad toggles it ✅
+
+**With *fixed velocity* ON, every pad transmits 127** regardless of how hard it is struck — a firm
+press and a deliberately soft one both reported 127, as did all sixteen pads in a sweep (item 193).
+
+✅ **With it OFF, velocity is real:** nine presses gave **6, 10, 14, 15, 24, 27, 29, 74, 89** and no
+127 at all (item 204). **So the 404 can author dynamics**, and any claim that it cannot is wrong.
+
+⚠️ **Check this setting before trusting any velocity measurement from this device** — a flat wall
+of 127s is a *configuration*, not a capability limit, and it looks identical to one.
+
+⚠️ **And hearing is not measuring.** The 404 responds to strike force *internally* — the sample
+plays louder — **while fixed velocity is still on and the wire still carries 127.** Only reading
+the MIDI stream separates the two.
+
+✅ **And the SEQUENCER records and transmits them too** — a pattern recorded with varied strength
+played back **27 distinct velocities, 3 to 104** (item 205). ⛔ **So the 404 is a full authoring
+surface**: it can fill every field of `time, note, velocity, duration`, not just perform dynamics
+live. ⚠️ **3–104 is the range PLAYED, not the device's range** — nothing suggests a ceiling below
+127.
+
+⚠️ **One unexplained residue, and it is recorded so it is not rediscovered as a mystery:** in that
+same capture every **channel 2** (bank B) event was exactly 127 while channel 1 varied.
+⛔ **"Fixed velocity is per-bank" is ruled out — the setting is global**, tested directly. Stale
+pattern data is the leading guess; it predates the toggle. **Cheap check if it ever matters: press
+bank-B pads by hand, no pattern involved.**
 
 ### ⚠️ Where the external tempo actually shows — read this before debugging sync ✅
 

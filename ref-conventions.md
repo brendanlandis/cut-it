@@ -782,6 +782,13 @@ bitten this project, most of them more than once.
 - **A comma or semicolon in a message box is a message separator**, whatever the file does with
   escaping. `\,` satisfies the *parser*; the message box still splits on the comma atom. Keep
   both out of any assembled string — a `PASS IF` line in a bench is the usual casualty.
+- ⚠️ **AND AN UNESCAPED `;` ENDS A RECORD — INCLUDING A COMMENT.** This bit twice in one session,
+  both times in ordinary prose: `Outlet 1 is the beat bang; outlet 0 is a signal phase` **ends the
+  `#X text` at the semicolon** and turns the remainder into a new record, which Pd then tries to
+  instantiate — `error: outlet: no such object`. ⚠️ **In a message box it is worse**: `; pd quit`
+  ends the box early and **takes every following `#X connect` with it**, so the patch loads, runs,
+  and does nothing at all — indistinguishable from a negative result. **Write `\;`, or use a dash;
+  it reads the same and cannot break anything.**
 
 **Every `[print]` in a deployed abstraction sits behind `[del 2000]`.** `deploy.sh` gates on
 *output*, so a diagnostic that fires at `loadbang` breaks the deploy; behind a delay the syntax

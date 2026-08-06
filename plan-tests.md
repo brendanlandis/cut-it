@@ -12,20 +12,22 @@ Early sessions need scratch patches only — no Cut It code. Diagnostic patches 
 [tools/](tools/). Companion to [ref-hardware.md](ref-hardware.md), which explains *why* each of these
 matters.
 
-**Status:** Sessions 2, 3b, 3c, 4, 4b, 4c, 4d, 6 and 6b complete — **Phases 3, 4 and 5 are all
-verified end to end on the Organelle.** ⚠️ **Session 7 (Phase 6) is complete on the Mac only** —
-items 82–93b pass, 94–97 need the device and nothing has been deployed. Session 1 is done bar the
-full-load power check. Session 3 is blocked on the TRS Y-cable; Session 5 has not been attempted.
+**Status: every session is complete.** ✅ **All eight v0.2 phases are verified end to end on the
+Organelle**, and as of 2026-08-05 the two long-standing blockers are both closed — **Session 3**
+(audio topology) by the TRS Y-cable arriving, and **Session 1**'s full-load power check by item 211.
+⛔ **Nothing in this file is waiting on hardware any more.** What remains open is listed in
+[plan-v03.md](plan-v03.md), and is open for reasons other than access to the rig.
 
 ⚠️ **Item numbers are unique across the whole file and other documents cite them by bare number**
 ("item 21c", "item 31"). Sessions 4 and 5 were renumbered to 40–42 and 43–46 to remove a collision
 with Session 3c's 15–22; items 11, 21, 21c, 23 and 31 were left alone because they are cited
 elsewhere. **Never reuse a number** — add at the end, or suffix (`21b`, `21c`).
 
-**The two tests that could have forced a redesign have both passed:** Pd can drive the
-Launchpad's Programmer Mode over SysEx (LEDs, velocity, polyphonic aftertouch), and Pd's
-per-device channel offsets work with multiple controllers at once. What remains is
-cable-blocked — the audio topology and full-rig power draw.
+✅ **All three tests that could have forced a redesign have passed.** Pd can drive the Launchpad's
+Programmer Mode over SysEx (LEDs, velocity, polyphonic aftertouch); Pd's per-device channel offsets
+work with multiple controllers at once; and **the 404 sums external input to both channels**, which
+was the last one and the only one no amount of Mac testing could reach (items 12–13).
+⛔ **No design risk of that class is left open.**
 
 **Do not treat open items as settled facts.** This file is the ordered checklist with results;
 **what to do about anything still open is in [plan-v03.md](plan-v03.md) under *Open questions***,
@@ -91,14 +93,16 @@ Every byte sequence, palette detail and gotcha found here is catalogued in
 
 ---
 
-## Session 3 — Audio topology
+## Session 3 — Audio topology ✅ COMPLETE
 
-**Item 11 passed.** ⬜ Items 12 and 13 remain blocked on the TRS Y-cable (1× 1/4" TRS →
-2× 1/4" TS). Needs no USB at all.
+✅ **All three items passed, and the session carried the last redesign risk in the project.** It sat
+blocked for months on one cable — 1× 1/4" TRS → 2× 1/4" TS — because the Organelle has a single TRS
+input jack and nothing else merges the 404's two mono outs into it. **The cable arrived 2026-08-04
+and items 12 and 13 closed the same day.**
 
-**The source side is not in question** — the 404 has discrete L and R jacks. The Y-cable is
-required because of the constraint at the *other* end: the Organelle has a single TRS input
-jack, and nothing else merges two mono outs into it.
+⚠️ **The result was not the one the design feared, and it was better:** the 404 sums external input
+to **both** channels rather than keeping them separate, which turns out to give a dry/wet split for
+free. See item 13, and *Do this first* in [plan-v03.md](plan-v03.md).
 
 - [x] **11. TRS input → two independent channels.** ✅ **PASSED.** Measured with
       `tools/audio-probe/`, a passive bass through an ordinary mono TS cable:
@@ -116,16 +120,49 @@ jack, and nothing else merges two mono outs into it.
       0–100 scale (≈ −82 dBFS), which puts a sensible gate at **25–30**; and a **passive bass
       reaches the 90s**, so gain and headroom are ample. **Re-confirmed through the v0.2 patch**
       in Phase 1 — both channels report 18–19 at rest in the real signal path.
-- [ ] **12. 404 pan split.** Pan one sample MONO Left and another MONO Right; confirm they
-      arrive on separate Organelle inputs. Tests the 404's *internal* per-sample routing, which
-      discrete output jacks do not guarantee.
-- [ ] **13. Mic bleed test.** Mic into MIC/GUITAR IN, play a sample panned hard left, listen
-      to the **L output alone**. Expected: the mic is audible there too (it sums to both). If
-      it isn't, the accepted bleed compromise is unnecessary and the design gets simpler.
+- [x] **12. ✅ PASSED — the per-sample split works. ⚠️ BUT `MONO (Left)` IS NOT THE HARD-PAN
+      SETTING, AND THIS ENTRY USED TO SAY IT WAS.** With A1 set to the **`L:50`** extreme and A2 to
+      **`R:50`**, each sample drives **one** Organelle meter only — confirmed on the headphones and
+      on the OLED. **The drums/fx split is real at the source.**
 
-      **This is the one that could still change the design** — it is about how the 404 places
-      *external input* in the stereo field, which is internal routing and unrelated to the jacks
-      on the back.
+      ⛔ **`MONO (Left)` / `MONO (Right)` do the WRONG thing for this design.** They are not pan
+      positions — they **collapse the sample to mono using that source channel** and play the
+      result on **both** outputs. Set that way, a sample intended for the drums channel appears on
+      **both** channels while the setting reads exactly as the plan describes.
+
+      ⚠️ **The naming is the trap.** *"MONO (Left)"* reads as *"mono, panned left"* and means
+      *"mono, taken from the left"*. They sit at the two ends of the same knob sweep, so the hard
+      pan is **one step inboard of each extreme** — turn all the way and you go past it:
+
+      ```
+      MONO(Left)   L:50 ......... R:50   MONO(Right)
+        ^ both out   ^ WHAT WE WANT ^      ^ both out
+      ```
+
+      ✅ **Reaching the setting at all needed `[PITCH/SPEED]` first**, then the pad, then
+      `[SHIFT]` + `[CTRL 3]`. Outside a sample-edit screen the CTRL knobs drive the **current
+      effect** — `SHIFT + CTRL 3` changed Filter+Drive's drive instead, which looks exactly like a
+      pan control doing nothing. Roland's own support article omits the `[PITCH/SPEED]` step.
+
+      ⚠️ **The SP-404MK2 App's *Info → Balance* did not reach the device.** It appears to edit a
+      project copy rather than live state. **Use the hardware path.**
+- [x] **13. ✅ MIC BLEED CONFIRMED — external input sums to BOTH channels, and the design does NOT
+      change.** A microphone into the 404's MIC/GUITAR IN is audible in **both** headphone
+      channels **and** moves **both** meters on the Organelle, through the TRS Y-cable and the real
+      `u_level` path.
+
+      ⛔ **So "the last thing that could force a redesign" is closed, in favour of what was already
+      built.** The accepted compromise in [ref-software.md](ref-software.md) stands: a live vocal
+      arrives **dry on the drums channel and mangled on the fx channel at the same time**, which is
+      the standard dry/wet vocal setup for free — and it means anything sampled into a drums-channel
+      buffer while the mic is hot will have the voice baked in. Handle at capture time.
+
+      ✅ **This also re-confirmed the Y-cable and the whole analogue path end to end**, which had
+      never been exercised: 404 OUT L/R → Y-cable → the Organelle's single TRS input → `[r~ inL]` /
+      `[r~ inR]` → `u_level` → `disp` → the OLED meters. **Every link measured at once.**
+
+      ⚠️ **The test needed NO per-sample pan setting**, which is why it ran while item 12 is still
+      blocked. An earlier reading of this session conflated the two; they are independent.
 
 See [plan-v03.md](plan-v03.md) → *The last thing that could force a redesign* for why this one
 still matters, and *Deliberately skipped for now* below for the LINE IN R-only variant.
@@ -2555,6 +2592,28 @@ nobody watching. Caught 2026-08-05 18:18:21.
       was broken; nothing needed a power cycle. ⚠️ **Do not power-cycle on a "cannot reach" —
       check IPv6 first**, or the evidence of the recovery is destroyed along with the live state.
 
+- [x] **173. ⬜ UNRELATED, AND RECORDED SO IT IS NOT LOST: `imx-uart` Rx FIFO OVERRUNS.** The
+      `dmesg` tail is dominated by `imx-uart 2020000.serial: Rx FIFO overrun`, seventeen of them
+      across the capture window and continuing. **That is the serial link to the front-panel MCU —
+      the OLED and the knobs — not the wifi dongle.** No symptom has been attributed to it and the
+      display has never visibly failed. Recorded as an observation with no diagnosis attached,
+      because inventing one is how item 81 went wrong for two phases.
+
+- [x] **174. ✅ THE STAGE CONFIGURATION IS STRUCTURALLY IMMUNE TO THIS FAULT.** Not a mitigation —
+      the mechanism is absent. `start-ap.sh` runs `killall wpa_supplicant` and then
+      `create_ap --no-virt -n wlan0`, so on stage the Organelle **is** the access point: no client
+      association to be handed off, no second BSSID to roam to, and it **serves** DHCP rather than
+      requesting it. Every link in the chain of items 169–171 is missing.
+
+      ⚠️ **Immunity to THIS fault is not proof the stage link is sound** — AP-mode stability over a
+      set-length window remains ⬜ unmeasured (item 45). ⚠️ **And it holds only if the venue
+      sequence is followed**: a set run on house wifi is a client again, with no fix that makes the
+      roam impossible.
+
+      **Requirement recorded:** a drop mid-set is unacceptable at *any* recovery speed, because the
+      phone display is what says the instrument is alive. Fast recovery is a development-time
+      convenience; the stage answer is that the fault cannot arise.
+
 - [x] **175. ✅✅ THE FAULT REPRODUCES ON DEMAND IN THREE SECONDS — no more waiting hours.**
       The house network `hildegard` is served by **two access points**, `a6:40:a0:5e:a2:01` and
       `a6:40:a0:5e:c9:25`, both visible in a scan. Forcing a handoff between them reproduces the
@@ -2592,168 +2651,59 @@ nobody watching. Caught 2026-08-05 18:18:21.
       ⬜ **Unverified after a power cycle** — check `ls /var/run/wpa_supplicant/` before assuming
       the repro survives a reboot.
 
-- [x] **188. ✅ ORBI FIRMWARE UPDATED 2.7.5.6 → 2.7.6.6, AND THE SATELLITE THEN LEASED FINE — but
-      that is NOT a fix, and must not be recorded as one.** The kit is an **Orbi RBK40** (RBR40
-      router + RBS40 satellite), read straight off the unauthenticated
-      `http://<host>/currentsetting.htm` endpoint on both units — no credentials needed for model,
-      firmware, device mode or uptime.
-
-      ⚠️ **The router's own updater said "No new firmware version available" while a newer release
-      existed.** 2.7.6.6 (January 2026) had to be downloaded from Netgear's KB and applied
-      manually, per unit. ⚠️ **The satellite went flaky during the update and needed removing and
-      re-adding.** Both ended on 2.7.6.6.
-
-      **Post-update test:** forced onto the satellite, a fresh `dhcpcd` leased `192.168.1.3` in
-      **20 s**. ⛔ **This proves nothing on its own** — the same node leased fine at 18:52
-      *before* the update (item 182). **The fault was already intermittent, so one success cannot
-      separate "fixed" from "currently working."** Recorded as one data point, not a verdict.
-
-      ⬜ **The real test is time**, with the steer off so the fault is free to recur.
-
-- [x] **189. ⛔ THE PREFERRED-AP STEER WAS BUILT, PROVEN, AND THEN DELIBERATELY SWITCHED OFF.**
-      It works — satellite → router in 13 s, measured. It is off by default anyway, for two reasons
-      that only appeared once it ran:
-
-      1. ⚠️ **The steer drops IPv4 itself.** A roam is a carrier change, so `dhcpcd` deconfigures
-         every time it fires. That trades **one rare long outage for frequent short ones** — a bad
-         bargain if the fault is fixed. ✅ Measured: address gone at the steer, back within seconds.
-      2. ⚠️ **IT HIDES THE ANSWER.** Keeping the device off the satellite means the fault can never
-         recur, so the firmware update could never be evaluated. **The prevention masks the
-         experiment.**
-
-      **The reordered ladder is the safety net instead** — ~20 s to recover against the old 2.5
-      minutes. Re-enable the steer with `PREFER_BSSID=a6:40:a0:5e:a2:01 sh /sdcard/wifi-watch.sh`.
-
-      ⚠️ **A capability kept and disabled is only useful if the reason is written down**, which is
-      why it is in the script's header as well as here. An unexplained steer would look like a fix
-      for a fault that may no longer exist.
-
-- [x] **186. ✅ THE PREFERRED-AP STEER, BUILT AND PROVEN FIRING.** ⛔ **It is OFF by default — read
-      item 189 for why before enabling it.**
-      `wifi-watch.sh` now checks the BSSID on every **healthy** poll and, if the device is on
-      anything other than `PREFER_BSSID` (default the router, `a6:40:a0:5e:a2:01`), roams it back.
-      ✅ **Measured working:** on the satellite before, on the router **13 s** later, with the
-      steer logged and explained.
-
-      **Why prevention rather than recovery:** steering back while the network still works costs
-      one roam; waiting for the address to vanish costs the whole ladder. And the router is
-      **−35 dBm against the satellite's −47**, so this is not a reliability-versus-signal trade.
-
-      ⚠️ **IT IS A PREFERENCE, NOT A PIN.** If the preferred AP is not in the scan, it does nothing
-      and leaves the device where it is. A hard `bssid=` pin would strand the Organelle if that AP
-      ever went away — **prevention must not become a new single point of failure.**
-
-      ⚠️ **The steer itself briefly drops IPv4** (`ipv4: NONE` in the log immediately after), because
-      a roam is a carrier change and `dhcpcd` deconfigures. ✅ **It re-acquires within seconds on
-      the router** — verified — which is exactly the asymmetry the fix exploits: the same event that
-      strands the device on the satellite is harmless on the router.
-
-      **Two other corrections shipped with it:**
-
-      - **The ladder is now STRONGEST-FIRST.** `wifi-reassociate.sh` runs first with a **90 s**
-        wait; the two `dhcpcd` rungs are demoted, not deleted. They have failed on this fault four
-        times at 45 s each — over two and a half minutes of dead network before reaching the only
-        rung that has ever worked (items 178, 184).
-      - **The DHCP probe's verdict is reworded.** It claimed an offer proves "the daemon is
-        wedged". It proves nothing of the sort — `dhcpcd -T` stops at the OFFER and never sends a
-        REQUEST, so it exercises only the half that works.
-
-- [x] **187. ⚠️ A SIXTH RIG DEFECT, CAUGHT ONLY BY TESTING THE FIX: `iw scan` vs `iw scan dump`.**
-      The steer's visibility guard first used `iw dev wlan0 scan`, which **triggers a new scan**,
-      immediately after a `wpa_cli scan`. The two contended and it reported **NOT VISIBLE for an AP
-      sitting at −47 dBm**. `iw dev wlan0 scan dump` reads the cache and is correct.
-
-      ⚠️ **A false negative there is silent and total** — the guard would have declined every steer,
-      so the prevention would have looked installed while doing nothing at all. **It was found only
-      because the fix was exercised rather than assumed**, which is this project's rule about
-      measuring rigs applied to a repair for once.
-
-- [x] **184. ✅✅ `dhcpcd` IS EXONERATED — IT BEHAVES CORRECTLY AND NOTHING ANSWERS IT.** The
-      missing observation: `dhcpcd -d -B` running **through** a forced roam, with a 150 s budget
-      rather than the 20 s that produced a misleading capture earlier.
+- [x] **176. ⚠️ THE LINK PROBE LOOKS EXACTLY LIKE A RECOVERY, AND ALMOST PRODUCED A FALSE
+      FINDING.** An independent 3-second poll of `ip addr` during the forced roam showed the
+      address **gone at 3 s, back at 18 s, gone again at 24 s** — which reads as *"dhcpcd recovers
+      by itself and then breaks again"*. It does not. The watcher's own log shows the 18 s
+      appearance was **the link probe** assigning the last-known-good address to test the path:
 
       ```
-      soliciting a DHCP lease
-      sending DISCOVER ×3   (4.5s, 7.1s, 15.7s)      <- NO OFFER, EVER
-      carrier lost                                    <- the forced roam
-      executing dhcpcd-run-hooks NOCARRIER
-      executing dhcpcd-run-hooks EXPIRE               <- correctly deconfigures
-      carrier acquired                                <- re-associates
-      soliciting a DHCP lease
-      sending DISCOVER ×5   (4.1, 7.5, 16.3, 31.9, 64.4)   <- NO OFFER, EVER
-      carrier lost                                    <- SPONTANEOUS, not induced
+      using 192.168.1.20/24 via 192.168.1.1 (last known good)
+      ... cleaned up -- ipv4 is now NONE
       ```
 
-      **Every step is textbook:** it notices the carrier go, deconfigures through its own hooks,
-      notices it return, re-solicits at once, and retries with proper exponential backoff. ⛔ **It
-      is not wedged, not confused, and not misconfigured. It gets no reply.**
+      ⚠️ **The probe now assigns the SAME address a real recovery would**, because the last known
+      good *is* the current lease — so the two are indistinguishable in any external poll.
+      **Correlate against `wifi-watch.log` timestamps; never read an address poll alone.** A
+      measuring rig contaminating its own observation, for the fourth time in this project.
 
-      ⚠️ **THIS ALSO KILLS ITEM 180's FRAMING.** The failure is at **DISCOVER**, not at
-      REQUEST → ACK — nothing answers at all. The earlier "offer arrives, REQUEST unanswered"
-      capture was the short-timeout artifact of item 183.
+- [x] **177. ⚠️ DURING RUNG 3 THE DEVICE ANSWERS ON NO PROTOCOL AT ALL.**
+      `wifi-reassociate.sh` runs `killall wpa_supplicant`, so for the length of the reassociation
+      there is no IPv4 **and no IPv6 link-local** — `ping organelle.local` fails, ssh fails, mDNS
+      still resolves stale entries. Measured at over 90 s of total silence across the ladder.
 
-      **Two things the run showed that nobody asked for:**
+      **"Unreachable" is therefore an EXPECTED mid-recovery state, not a failure signal.** Anyone
+      watching would reasonably conclude the device had crashed and reach for the power. ⚠️ **That
+      is the worst possible moment to power-cycle** — it destroys the live evidence and interrupts
+      a recovery that was working. Wait at least two minutes before concluding anything.
 
-      - ⚠️ **The device drifts to the satellite on its own.** The setup phase explicitly roamed to
-        the **router** and the very next line reads `settled on a6:40:a0:5e:c9:25`.
-      - ⚠️ **The association to the satellite dropped by itself** at +80 s — a second `carrier
-        lost` that was not induced, with the BSSID going empty in the independent poll.
-
-      ✅ **Synthesis, and it is narrower than any previous claim:** while associated to the
-      satellite this client is **unreliable in two independent ways** — DHCP solicitations go
-      unanswered, and the association itself is unstable. ⚠️ **But it is INTERMITTENT**: the same
-      node leased an address twice, instantly, eight minutes earlier (item 182). **Do not
-      re-derive "the satellite is broken" from this** — it is "the satellite is unreliable for
-      this client", which is a different and weaker claim.
-
-- [x] **185. ⚠️ A FIFTH MEASURING-RIG DEFECT, IN THIS SESSION'S OWN CAPTURE.** The `dhcpcd` output
-      was piped through `... | while read L; do echo "[$(date)] ..." ; done`, which **buffered**:
-      every one of the forty-odd lines carries the identical timestamp `19:00:14`, the moment the
-      pipe closed. **All timing correlation was lost** — the sequence survives, the clock does
-      not. It happened to be enough because the ordering told the story, but it was luck.
-      **A pipeline that timestamps lines must flush per line**, exactly as `tools/README.md`
-      already warns for monitors.
-
-- [x] **182. ⛔⛔ ITEM 179 IS OVERTURNED — THE SATELLITE IS NOT THE CAUSE, AND I OVER-CLAIMED FROM
-      A SINGLE A/B.** Thirty minutes after concluding "the Organelle cannot get a lease on the
-      satellite", a controlled two-arm test **on the satellite** leased an address twice, in
-      seconds, on the first DISCOVER:
+- [x] **178. ⚠️ `UNRECOVERED` IS A FALSE NEGATIVE — THE RUNG WORKED AND THE TIMEOUT WAS TOO
+      SHORT.** On the forced-roam run the watcher wrote:
 
       ```
-      CONTROL   (stock /etc/dhcpcd.conf):  leased 192.168.1.21 for 86400 seconds   on c9:25
-      TREATMENT (no rapid_commit, no require server-id): leased 192.168.1.21        on c9:25
+      RESULT: still no ipv4 after 60s
+      >> UNRECOVERED -- every rung failed, INCLUDING the one the front panel uses.
       ```
 
-      ⚠️ **So the satellite works, and the neat "satellite broken / router fine" story was built on
-      one satellite-fails-then-router-succeeds pair.** That is exactly the single-data-point
-      reasoning this file's own rule forbids — *"do not conclude from a single failure"* — applied
-      to a single **success** instead, which is the same error wearing a different hat.
+      ✅ **And the device had 192.168.1.20 shortly afterwards**, associated to `a6:40:a0:5e:a2:01`
+      with the fresh daemons rung 3 had started. **`wifi-reassociate.sh` did recover it; the
+      address simply arrived after the 60 s window had closed.**
 
-      ✅ **Two things the test DID establish, and they are worth keeping:**
+      ⚠️ **THIS IS THE THIRD DISTINCT WAY AN `UNRECOVERED` VERDICT HAS BEEN WRONG**, and every
+      historical one must now be read as *"no address within 60 s"* rather than *"recovery
+      failed"*:
 
-      - ⛔ **`option rapid_commit` and `require dhcp_server_identifier` are NOT the cause.** The
-        control passed, so there was nothing for the treatment to fix. Both hypotheses are dead
-        and neither needs revisiting.
-      - ✅ **A fresh `dhcpcd` on a SETTLED association succeeds on either AP.** Every success today
-        followed the same recipe: flush the interface, associate, let it settle, *then* start
-        `dhcpcd`.
+      1. rung 3 ran a stale factory template that could never work (item 161)
+      2. rung 2 released the lease without exiting the daemon (item 161)
+      3. **the winning rung's timeout is shorter than the recovery it is waiting for**
 
-      **What the failures have in common is not an AP — it is that `dhcpcd` was running THROUGH the
-      association change**, or was started immediately after one. That is a better fit for every
-      observation, including why only a full reassociate ever recovered it.
+      ⚠️ **Recovery time is worse than the ~90 s previously recorded.** Detection is up to 20 s,
+      then link probe ~10 s, DHCP probe ~25 s, rung 1 45 s, rung 2 47 s, and rung 3 more than
+      60 s — **over two and a half minutes end to end**, of which the only productive part is the
+      last rung. That is the concrete argument for reordering.
 
-      ⬜ **Still not established: why a running `dhcpcd` cannot re-acquire after a roam.** Say so
-      plainly and leave it open.
-
-- [x] **183. ⚠️ AND ITEM 180's "REQUEST NEVER ACKED" IS PARTLY AN ARTIFACT OF MY OWN TIMEOUT.**
-      That capture ran under `timeout 20`, and the log ends `received SIGTERM, stopping` with the
-      retry schedule still counting — *"next in 7.9 seconds"*. **The exchange was killed, not
-      refused.** ⚠️ **It also ran while the roam had returned `FAIL`, so the device was on the
-      ROUTER, not the satellite** — which alone should have prevented the satellite conclusion.
-
-      The successful runs completed on the **first** DISCOVER/REQUEST pair, so a run needing three
-      DISCOVERs and two REQUESTs was already abnormal — but "abnormal and cut short" is not
-      "refused", and the difference matters.
+      **Fix on both sides:** raise rung 3's wait well past 60 s *and* try it first, so the
+      generous timeout costs nothing when it succeeds.
 
 - [x] **179. ⛔ SUPERSEDED BY ITEM 182 — READ THAT FIRST. The reasoning below stands only as the
       record of a wrong turn.** The decisive-looking test, run back to back on the same device in
@@ -2817,81 +2767,168 @@ nobody watching. Caught 2026-08-05 18:18:21.
       ⚠️ **Which makes the Orbi's decision to steer it onto the weaker, broken node the real
       open question**, and it is a router-side question rather than an Organelle one.
 
-- [x] **178. ⚠️ `UNRECOVERED` IS A FALSE NEGATIVE — THE RUNG WORKED AND THE TIMEOUT WAS TOO
-      SHORT.** On the forced-roam run the watcher wrote:
+- [x] **182. ⛔⛔ ITEM 179 IS OVERTURNED — THE SATELLITE IS NOT THE CAUSE, AND I OVER-CLAIMED FROM
+      A SINGLE A/B.** Thirty minutes after concluding "the Organelle cannot get a lease on the
+      satellite", a controlled two-arm test **on the satellite** leased an address twice, in
+      seconds, on the first DISCOVER:
 
       ```
-      RESULT: still no ipv4 after 60s
-      >> UNRECOVERED -- every rung failed, INCLUDING the one the front panel uses.
+      CONTROL   (stock /etc/dhcpcd.conf):  leased 192.168.1.21 for 86400 seconds   on c9:25
+      TREATMENT (no rapid_commit, no require server-id): leased 192.168.1.21        on c9:25
       ```
 
-      ✅ **And the device had 192.168.1.20 shortly afterwards**, associated to `a6:40:a0:5e:a2:01`
-      with the fresh daemons rung 3 had started. **`wifi-reassociate.sh` did recover it; the
-      address simply arrived after the 60 s window had closed.**
+      ⚠️ **So the satellite works, and the neat "satellite broken / router fine" story was built on
+      one satellite-fails-then-router-succeeds pair.** That is exactly the single-data-point
+      reasoning this file's own rule forbids — *"do not conclude from a single failure"* — applied
+      to a single **success** instead, which is the same error wearing a different hat.
 
-      ⚠️ **THIS IS THE THIRD DISTINCT WAY AN `UNRECOVERED` VERDICT HAS BEEN WRONG**, and every
-      historical one must now be read as *"no address within 60 s"* rather than *"recovery
-      failed"*:
+      ✅ **Two things the test DID establish, and they are worth keeping:**
 
-      1. rung 3 ran a stale factory template that could never work (item 161)
-      2. rung 2 released the lease without exiting the daemon (item 161)
-      3. **the winning rung's timeout is shorter than the recovery it is waiting for**
+      - ⛔ **`option rapid_commit` and `require dhcp_server_identifier` are NOT the cause.** The
+        control passed, so there was nothing for the treatment to fix. Both hypotheses are dead
+        and neither needs revisiting.
+      - ✅ **A fresh `dhcpcd` on a SETTLED association succeeds on either AP.** Every success today
+        followed the same recipe: flush the interface, associate, let it settle, *then* start
+        `dhcpcd`.
 
-      ⚠️ **Recovery time is worse than the ~90 s previously recorded.** Detection is up to 20 s,
-      then link probe ~10 s, DHCP probe ~25 s, rung 1 45 s, rung 2 47 s, and rung 3 more than
-      60 s — **over two and a half minutes end to end**, of which the only productive part is the
-      last rung. That is the concrete argument for reordering.
+      **What the failures have in common is not an AP — it is that `dhcpcd` was running THROUGH the
+      association change**, or was started immediately after one. That is a better fit for every
+      observation, including why only a full reassociate ever recovered it.
 
-      **Fix on both sides:** raise rung 3's wait well past 60 s *and* try it first, so the
-      generous timeout costs nothing when it succeeds.
+      ⬜ **Still not established: why a running `dhcpcd` cannot re-acquire after a roam.** Say so
+      plainly and leave it open.
 
-- [x] **176. ⚠️ THE LINK PROBE LOOKS EXACTLY LIKE A RECOVERY, AND ALMOST PRODUCED A FALSE
-      FINDING.** An independent 3-second poll of `ip addr` during the forced roam showed the
-      address **gone at 3 s, back at 18 s, gone again at 24 s** — which reads as *"dhcpcd recovers
-      by itself and then breaks again"*. It does not. The watcher's own log shows the 18 s
-      appearance was **the link probe** assigning the last-known-good address to test the path:
+- [x] **183. ⚠️ AND ITEM 180's "REQUEST NEVER ACKED" IS PARTLY AN ARTIFACT OF MY OWN TIMEOUT.**
+      That capture ran under `timeout 20`, and the log ends `received SIGTERM, stopping` with the
+      retry schedule still counting — *"next in 7.9 seconds"*. **The exchange was killed, not
+      refused.** ⚠️ **It also ran while the roam had returned `FAIL`, so the device was on the
+      ROUTER, not the satellite** — which alone should have prevented the satellite conclusion.
+
+      The successful runs completed on the **first** DISCOVER/REQUEST pair, so a run needing three
+      DISCOVERs and two REQUESTs was already abnormal — but "abnormal and cut short" is not
+      "refused", and the difference matters.
+
+- [x] **184. ✅✅ `dhcpcd` IS EXONERATED — IT BEHAVES CORRECTLY AND NOTHING ANSWERS IT.** The
+      missing observation: `dhcpcd -d -B` running **through** a forced roam, with a 150 s budget
+      rather than the 20 s that produced a misleading capture earlier.
 
       ```
-      using 192.168.1.20/24 via 192.168.1.1 (last known good)
-      ... cleaned up -- ipv4 is now NONE
+      soliciting a DHCP lease
+      sending DISCOVER ×3   (4.5s, 7.1s, 15.7s)      <- NO OFFER, EVER
+      carrier lost                                    <- the forced roam
+      executing dhcpcd-run-hooks NOCARRIER
+      executing dhcpcd-run-hooks EXPIRE               <- correctly deconfigures
+      carrier acquired                                <- re-associates
+      soliciting a DHCP lease
+      sending DISCOVER ×5   (4.1, 7.5, 16.3, 31.9, 64.4)   <- NO OFFER, EVER
+      carrier lost                                    <- SPONTANEOUS, not induced
       ```
 
-      ⚠️ **The probe now assigns the SAME address a real recovery would**, because the last known
-      good *is* the current lease — so the two are indistinguishable in any external poll.
-      **Correlate against `wifi-watch.log` timestamps; never read an address poll alone.** A
-      measuring rig contaminating its own observation, for the fourth time in this project.
+      **Every step is textbook:** it notices the carrier go, deconfigures through its own hooks,
+      notices it return, re-solicits at once, and retries with proper exponential backoff. ⛔ **It
+      is not wedged, not confused, and not misconfigured. It gets no reply.**
 
-- [x] **177. ⚠️ DURING RUNG 3 THE DEVICE ANSWERS ON NO PROTOCOL AT ALL.**
-      `wifi-reassociate.sh` runs `killall wpa_supplicant`, so for the length of the reassociation
-      there is no IPv4 **and no IPv6 link-local** — `ping organelle.local` fails, ssh fails, mDNS
-      still resolves stale entries. Measured at over 90 s of total silence across the ladder.
+      ⚠️ **THIS ALSO KILLS ITEM 180's FRAMING.** The failure is at **DISCOVER**, not at
+      REQUEST → ACK — nothing answers at all. The earlier "offer arrives, REQUEST unanswered"
+      capture was the short-timeout artifact of item 183.
 
-      **"Unreachable" is therefore an EXPECTED mid-recovery state, not a failure signal.** Anyone
-      watching would reasonably conclude the device had crashed and reach for the power. ⚠️ **That
-      is the worst possible moment to power-cycle** — it destroys the live evidence and interrupts
-      a recovery that was working. Wait at least two minutes before concluding anything.
+      **Two things the run showed that nobody asked for:**
 
-- [x] **174. ✅ THE STAGE CONFIGURATION IS STRUCTURALLY IMMUNE TO THIS FAULT.** Not a mitigation —
-      the mechanism is absent. `start-ap.sh` runs `killall wpa_supplicant` and then
-      `create_ap --no-virt -n wlan0`, so on stage the Organelle **is** the access point: no client
-      association to be handed off, no second BSSID to roam to, and it **serves** DHCP rather than
-      requesting it. Every link in the chain of items 169–171 is missing.
+      - ⚠️ **The device drifts to the satellite on its own.** The setup phase explicitly roamed to
+        the **router** and the very next line reads `settled on a6:40:a0:5e:c9:25`.
+      - ⚠️ **The association to the satellite dropped by itself** at +80 s — a second `carrier
+        lost` that was not induced, with the BSSID going empty in the independent poll.
 
-      ⚠️ **Immunity to THIS fault is not proof the stage link is sound** — AP-mode stability over a
-      set-length window remains ⬜ unmeasured (item 45). ⚠️ **And it holds only if the venue
-      sequence is followed**: a set run on house wifi is a client again, with no fix that makes the
-      roam impossible.
+      ✅ **Synthesis, and it is narrower than any previous claim:** while associated to the
+      satellite this client is **unreliable in two independent ways** — DHCP solicitations go
+      unanswered, and the association itself is unstable. ⚠️ **But it is INTERMITTENT**: the same
+      node leased an address twice, instantly, eight minutes earlier (item 182). **Do not
+      re-derive "the satellite is broken" from this** — it is "the satellite is unreliable for
+      this client", which is a different and weaker claim.
 
-      **Requirement recorded:** a drop mid-set is unacceptable at *any* recovery speed, because the
-      phone display is what says the instrument is alive. Fast recovery is a development-time
-      convenience; the stage answer is that the fault cannot arise.
+- [x] **185. ⚠️ A FIFTH MEASURING-RIG DEFECT, IN THIS SESSION'S OWN CAPTURE.** The `dhcpcd` output
+      was piped through `... | while read L; do echo "[$(date)] ..." ; done`, which **buffered**:
+      every one of the forty-odd lines carries the identical timestamp `19:00:14`, the moment the
+      pipe closed. **All timing correlation was lost** — the sequence survives, the clock does
+      not. It happened to be enough because the ordering told the story, but it was luck.
+      **A pipeline that timestamps lines must flush per line**, exactly as `tools/README.md`
+      already warns for monitors.
 
-- [x] **173. ⬜ UNRELATED, AND RECORDED SO IT IS NOT LOST: `imx-uart` Rx FIFO OVERRUNS.** The
-      `dmesg` tail is dominated by `imx-uart 2020000.serial: Rx FIFO overrun`, seventeen of them
-      across the capture window and continuing. **That is the serial link to the front-panel MCU —
-      the OLED and the knobs — not the wifi dongle.** No symptom has been attributed to it and the
-      display has never visibly failed. Recorded as an observation with no diagnosis attached,
-      because inventing one is how item 81 went wrong for two phases.
+- [x] **186. ✅ THE PREFERRED-AP STEER, BUILT AND PROVEN FIRING.** ⛔ **It is OFF by default — read
+      item 189 for why before enabling it.**
+      `wifi-watch.sh` now checks the BSSID on every **healthy** poll and, if the device is on
+      anything other than `PREFER_BSSID` (default the router, `a6:40:a0:5e:a2:01`), roams it back.
+      ✅ **Measured working:** on the satellite before, on the router **13 s** later, with the
+      steer logged and explained.
+
+      **Why prevention rather than recovery:** steering back while the network still works costs
+      one roam; waiting for the address to vanish costs the whole ladder. And the router is
+      **−35 dBm against the satellite's −47**, so this is not a reliability-versus-signal trade.
+
+      ⚠️ **IT IS A PREFERENCE, NOT A PIN.** If the preferred AP is not in the scan, it does nothing
+      and leaves the device where it is. A hard `bssid=` pin would strand the Organelle if that AP
+      ever went away — **prevention must not become a new single point of failure.**
+
+      ⚠️ **The steer itself briefly drops IPv4** (`ipv4: NONE` in the log immediately after), because
+      a roam is a carrier change and `dhcpcd` deconfigures. ✅ **It re-acquires within seconds on
+      the router** — verified — which is exactly the asymmetry the fix exploits: the same event that
+      strands the device on the satellite is harmless on the router.
+
+      **Two other corrections shipped with it:**
+
+      - **The ladder is now STRONGEST-FIRST.** `wifi-reassociate.sh` runs first with a **90 s**
+        wait; the two `dhcpcd` rungs are demoted, not deleted. They have failed on this fault four
+        times at 45 s each — over two and a half minutes of dead network before reaching the only
+        rung that has ever worked (items 178, 184).
+      - **The DHCP probe's verdict is reworded.** It claimed an offer proves "the daemon is
+        wedged". It proves nothing of the sort — `dhcpcd -T` stops at the OFFER and never sends a
+        REQUEST, so it exercises only the half that works.
+
+- [x] **187. ⚠️ A SIXTH RIG DEFECT, CAUGHT ONLY BY TESTING THE FIX: `iw scan` vs `iw scan dump`.**
+      The steer's visibility guard first used `iw dev wlan0 scan`, which **triggers a new scan**,
+      immediately after a `wpa_cli scan`. The two contended and it reported **NOT VISIBLE for an AP
+      sitting at −47 dBm**. `iw dev wlan0 scan dump` reads the cache and is correct.
+
+      ⚠️ **A false negative there is silent and total** — the guard would have declined every steer,
+      so the prevention would have looked installed while doing nothing at all. **It was found only
+      because the fix was exercised rather than assumed**, which is this project's rule about
+      measuring rigs applied to a repair for once.
+
+- [x] **188. ✅ ORBI FIRMWARE UPDATED 2.7.5.6 → 2.7.6.6, AND THE SATELLITE THEN LEASED FINE — but
+      that is NOT a fix, and must not be recorded as one.** The kit is an **Orbi RBK40** (RBR40
+      router + RBS40 satellite), read straight off the unauthenticated
+      `http://<host>/currentsetting.htm` endpoint on both units — no credentials needed for model,
+      firmware, device mode or uptime.
+
+      ⚠️ **The router's own updater said "No new firmware version available" while a newer release
+      existed.** 2.7.6.6 (January 2026) had to be downloaded from Netgear's KB and applied
+      manually, per unit. ⚠️ **The satellite went flaky during the update and needed removing and
+      re-adding.** Both ended on 2.7.6.6.
+
+      **Post-update test:** forced onto the satellite, a fresh `dhcpcd` leased `192.168.1.3` in
+      **20 s**. ⛔ **This proves nothing on its own** — the same node leased fine at 18:52
+      *before* the update (item 182). **The fault was already intermittent, so one success cannot
+      separate "fixed" from "currently working."** Recorded as one data point, not a verdict.
+
+      ⬜ **The real test is time**, with the steer off so the fault is free to recur.
+
+- [x] **189. ⛔ THE PREFERRED-AP STEER WAS BUILT, PROVEN, AND THEN DELIBERATELY SWITCHED OFF.**
+      It works — satellite → router in 13 s, measured. It is off by default anyway, for two reasons
+      that only appeared once it ran:
+
+      1. ⚠️ **The steer drops IPv4 itself.** A roam is a carrier change, so `dhcpcd` deconfigures
+         every time it fires. That trades **one rare long outage for frequent short ones** — a bad
+         bargain if the fault is fixed. ✅ Measured: address gone at the steer, back within seconds.
+      2. ⚠️ **IT HIDES THE ANSWER.** Keeping the device off the satellite means the fault can never
+         recur, so the firmware update could never be evaluated. **The prevention masks the
+         experiment.**
+
+      **The reordered ladder is the safety net instead** — ~20 s to recover against the old 2.5
+      minutes. Re-enable the steer with `PREFER_BSSID=a6:40:a0:5e:a2:01 sh /sdcard/wifi-watch.sh`.
+
+      ⚠️ **A capability kept and disabled is only useful if the reason is written down**, which is
+      why it is in the script's header as well as here. An unexplained steer would look like a fix
+      for a fault that may no longer exist.
 
 ---
 
@@ -3046,11 +3083,309 @@ the 404 as the only MIDI device, using `tools/sp404-notes.pd` + `tools/sp404-sen
       it the one place a persistent indicator cannot be confused with something pressable —
       the same argument that made the Organelle's aux LED worth having. Candidate for v0.3.
 
----
+- [x] **200. ✅ A SAVED `knobs.txt` BEATS THE PHYSICAL KNOB AT BOOT — decisively, and it creates a
+      desync the patch cannot see.** The test was built so the two answers could not be confused:
 
-⬜ **Not established, and deliberately left open:** whether a saved `knobs.txt` beats the physical
-knob position at boot. Both are pushed at load and which wins was never measured. It is in
-[plan-v03.md](plan-v03.md) *Open questions* rather than asserted in a bench step.
+      1. `knobs.txt` held `0.0957967 0 0 0` from the Phase 8 Save. `u_map` maps knob 1 as
+         `× 490 + 10` rounded, so **that file predicts 57 BPM**.
+      2. Knob 1 turned **fully clockwise** — the footer tracked to **500 BPM** live, confirming the
+         knob and the whole chain were working.
+      3. Patch reloaded. **The footer came back at 57.**
+
+      ⛔ **So the saved file wins and the physical position is ignored.** ✅ CLAUDE.md already
+      described this as deliberate — *"a preset that restores the knobs is what a performer
+      wants"* — and it is now **measured** rather than asserted.
+
+      ⚠️ **THE CONSEQUENCE IS A LIVE DESYNC, AND IT IS THE PARAMETER-PICKUP PROBLEM MADE REAL.**
+      After that reload the knob is at maximum while the value is 57. **The first touch of any knob
+      will jump its parameter**, by as much as the full range — here 443 BPM in whatever direction
+      the knob happens to move first. Every knob is affected, not just tempo, and **nothing on the
+      instrument can detect it**: mother reports position, not "position changed since the file was
+      written".
+
+      ✅ **This is the concrete case for the value-at-first-touch store** that plan-v03 groups with
+      the OLED tick and the slider display. It is no longer a hypothetical about bank switching —
+      **it happens on every boot after a Save.** ⚠️ And `ref-hardware.md`'s settled answer for the
+      nano's shift layer is **jump** (*"a sudden parameter jolt is entirely on brand here"*), which
+      is defensible for a fader you are already holding and much weaker for a 443 BPM lurch at boot.
+      **Decide the two cases separately.**
+
+- [x] **201. ✅ ENTERING *MIDI Config* MID-SESSION DOES NOT RE-OPEN MOTHER'S MIDI GATES.** The
+      worry was that mother would re-push `midiInGate 1` on leaving the page, resurrecting the
+      CC 21–26 collision that once made a nano button slam the tempo between 500 and 10 BPM
+      (item 76). It does not.
+
+      **Procedure:** footer noted at 57 BPM → *MIDI Config* opened, left, returned to Cut It →
+      **`btn-t-5` pressed on the nano** → **BPM unchanged**, on the Organelle *and* on the
+      Launchpad's beat row.
+
+      ⚠️ **THE PRECONDITION IS WHAT MAKES THIS A RESULT RATHER THAN A GUESS**, and it was nearly
+      missed. If returning from the menu had **reloaded** the patch, `u_init` would have re-closed
+      the gates at 2 s and the test would have proven nothing while looking like a pass. Two
+      checks, because the first was insufficient on its own:
+
+      - Pd ran **204 s continuously** across the whole test, no restart. ⚠️ **Not sufficient** —
+        mother's `/loadPatch` loads a patch *inside* the running Pd, so the pid can survive a
+        reload.
+      - ✅ **The OLED did NOT replay `booting` → `wiring` → `launchpad`** — it returned straight to
+        the BPM. **That is the evidence**: no reload, so the gates stayed shut on their own.
+
+      ✅ **So the MIDI Config page is safe to visit mid-set.** ⬜ Untested: pressing a colliding CC
+      *while the page is open*, which is a different question and one nobody needs answered.
+
+- [x] **202. ✅✅ PD CAN EMIT AN OSC BLOB, AND `gWaveform` DRAWS IT — drawing the captured buffer is
+      UNBLOCKED.** Both halves measured separately, then matched byte for byte.
+
+      **Half 1 — mother accepts a blob.** ⚠️ `oscsend` has **no blob type** (`i h f d s S c m T F
+      N I`), so the packet was hand-built in `python2` on the device and sent straight to mother's
+      port 4001. A 128-byte sine drawn to **screen 4** and shown with `setscreen` rendered
+      **four clean cycles**. ✅ Screen 4 was chosen deliberately: `g_oled` rebuilds screen 3 ten
+      times a second and would have wiped it within 100 ms.
+
+      **Half 2 — `packOSC` produces one.** `sendtyped /oled/gWaveform ib 4 10 20 30 40` packs to:
+
+      ```
+      "/oled/gWaveform\0"   ",ib\0"   0 0 0 4   0 0 0 4   10 20 30 40
+                                      screen    blob len  payload
+      ```
+
+      ✅ **The `b` typetag takes the remaining floats as bytes and prefixes the length itself** — no
+      count argument and ⛔ **no `blob` keyword**: that variant errors with
+      `packOSC_blob: all values must be floats`.
+
+      ✅ **So `gWaveform` and `gFrame` are both reachable from the patch**, which is what stopped
+      playhead placement in fresh audio being blind. ⬜ Not yet done end to end from inside Cut It;
+      the two halves match in structure, which is strong but is not the same as one run through
+      `g_oled`.
+
+- [x] **203. ⚠️ TWO SELF-INFLICTED DEAD ENDS WHILE MEASURING 202, both already documented traps.**
+
+      1. **An unescaped `;` in a message box silently broke the whole test patch.**
+         `#X msg 30 440 ; pd quit;` ends the box at the first `;` and turns the rest into a garbage
+         record — **which took every following `#X connect` with it.** The patch loaded, ran, and
+         printed *nothing at all*, which reads exactly like "packOSC cannot do blobs". `\;` is the
+         escape. ⚠️ **A silent structural break is indistinguishable from a negative result.**
+      2. **Pd's output needed a FILE and a kill-by-PID**, not a pipe. `ref-conventions.md` already
+         says redirect to a file; piping it over ssh produced nothing. ⚠️ **And `killall pd` was
+         NOT usable** — it would have taken the running instrument down and stranded the Launchpad,
+         so the test instance was killed by its own `$!` with the live pid checked before and after.
+
+      ✅ **The diagnostic that broke the deadlock was a patch containing a deliberately impossible
+      object.** It forced a guaranteed error, proving the output path worked and moving the fault
+      onto the patch — where it was. **When a test produces silence, prove the channel before
+      believing the silence.**
+
+- [x] **204. ⛔ ITEM 193 IS OVERTURNED — THE 404'S PADS ARE VELOCITY-SENSITIVE. It was a SETTING,
+      and the setting is `[SHIFT]` + a pad.** With *fixed velocity* switched off, nine presses gave
+      **nine distinct velocities — 6, 10, 14, 15, 24, 27, 29, 74, 89** — and not a single 127.
+
+      ⚠️ **Item 193 recorded "fixed at 127" and hedged that a device setting probably existed but
+      "was not looked for."** ✅ **The hedge was right and the hedge was the point** — had it been
+      written as *"the 404 cannot do velocity"*, the drum mode would have been designed around a
+      limitation that does not exist. **Brendan found the toggle by pressing `[SHIFT]` + `A1`
+      while looking for something else.**
+
+      ✅ **So the 404 CAN author dynamics**, and every consequence recorded against the flat-127
+      reading is void:
+
+      | Recorded earlier | Now |
+      |---|---|
+      | "patterns captured from the 404 carry no dynamics" | ⛔ **false** — they can |
+      | "a constraint on the drum mode" | ⛔ **no constraint** |
+      | item 197's flat 127s | ✅ explained: that pattern was recorded with fixed velocity **ON** |
+
+      ⚠️ **AND IT SETTLES THE HEARD-VERSUS-TRANSMITTED QUESTION SEPARATELY.** Hearing the 404 play
+      louder proves only that the pad responds *internally*; a device can do that while still
+      sending a flat 127. **The wire is what decides**, and it was read on the wire.
+
+      ⬜ **Still untested: whether the SEQUENCER now records and transmits those velocities.** The
+      only pattern captured (item 197) predates this change. Re-recording one would close it.
+
+- [x] **205. ✅ THE SEQUENCER RECORDS AND TRANSMITS REAL VELOCITY — the 404 can AUTHOR dynamics,
+      not just perform them.** A pattern re-recorded with varied strength played back **27 distinct
+      velocities, 3 to 104** on channel 1. ⛔ **So the last doubt from items 193/197 is gone**: the
+      flat 127s in the original capture were the *fixed velocity* setting, not the sequencer
+      flattening anything.
+
+      ✅ **Compose-mode capture from the 404 is fully viable.** The event format is
+      `time, note, velocity, duration` and the 404 can now fill every field — so it is a real
+      authoring surface alongside the Launchpad's sequencer rather than a fallback.
+
+      ⚠️ **3–104 is the range PLAYED, not the device's range.** Nothing here suggests a ceiling —
+      the low end reached **3**, and 127 is presumably available to a hard enough strike. **Do not
+      read it as a limit.**
+
+      ⬜ **AND ONE THING IN THE SAME CAPTURE IS UNEXPLAINED — the obvious answer has been RULED
+      OUT.** Every **channel 2** event was **exactly 127**, while channel 1 ranged 3–104:
+
+      ```
+      note 51  vel 127  ch 2      <- flat, every occurrence
+      note 51  vel  56  ch 1      <- same note number, bank A, varies
+      ```
+
+      Channel 2 is **bank B** (item 195). ⛔ **"Fixed velocity is per-bank" is RULED OUT — tested
+      as a certainty: the setting is GLOBAL and every bank obeys it.** So a global toggle was OFF
+      and one bank still sent flat 127.
+
+      **What remains, none of it established:** the channel-2 event is probably **not a live pad
+      press**. Most likely it is **stale pattern data** — a step written before the velocity toggle
+      and replayed unchanged — or an event that was never a pad hit at all. ⚠️ **It appeared in the
+      pattern recorded BEFORE the toggle as well**, which fits the stale-data reading and rules out
+      the change itself as the cause.
+
+      **Cheap next test if it ever matters: press bank-B pads BY HAND**, no pattern involved. Given
+      the global setting is now confirmed, varying velocities are expected — and would confirm the
+      127s as sequencer data rather than device behaviour. ⛔ **Nothing depends on this**; it is
+      recorded so it is not rediscovered as a mystery.
+
+- [x] **206. ⚠️ THE OLED LAGS THE AUDIO BY ROUGHLY 200 ms — AND THE LAUNCHPAD DOES NOT.** Found by
+      driving the 404 from Cut It's own beat and watching all four surfaces at once. **The audio,
+      the Launchpad's beat row and the footer BPM all agree; the OLED trails**, estimated by
+      Brendan at *"about a 16th note at 74 BPM"* — **~200 ms**.
+
+      ✅ **The asymmetry is the finding**, and it is structural rather than a fault:
+
+      | Surface | Path | Result |
+      |---|---|---|
+      | Launchpad | `g_grid` → ALSA MIDI, repaints at **50 Hz** when dirty | **tight** |
+      | OLED | `g_oled` → `oscOut` → UDP → the `mother` binary → **serial to the front-panel MCU**, redrawn at **10 Hz** | **~200 ms behind** |
+
+      **The 10 Hz frame clock alone is up to 100 ms of it**, before the OSC hop and the serial link
+      to the MCU. ⛔ **Not fixable by tuning** — raising the OLED frame rate spends UDP and CPU on a
+      transport that still ends in a serial MCU.
+
+      ✅ **The design consequence is clear and worth acting on: THE OLED IS NOT A RHYTHMIC
+      DISPLAY.** Anything that must agree with what you *hear* — a playhead, a beat indicator, step
+      position — belongs on **the Launchpad**, which is tight. The OLED is for state, values and
+      text, where 200 ms is invisible. ⚠️ **This bears directly on the v0.3 display work**, where
+      "show where the control was when the edit began" and a bar-style meter are both fine, but a
+      moving playhead would not be.
+
+      ⬜ **Possibly related, recorded rather than asserted:** `dmesg` is full of
+      `imx-uart 2020000.serial: Rx FIFO overrun` (item 173) — **that is the same serial link to the
+      front panel**. Whether the overruns and the lag share a cause is unmeasured.
+
+- [x] **207. ⚠️ AN UNESCAPED `;` IN A COMMENT BROKE A PATCH — the SECOND time in one session, and
+      the first was two hours earlier.** A `.pd` comment reading
+      `Outlet 1 is the beat bang; outlet 0 is a signal phase` **ends the text record at the
+      semicolon**, and the remainder becomes a new record Pd tries to instantiate:
+
+      ```
+      error: outlet: no such object
+      ```
+
+      ⚠️ **The trap is documented for MESSAGE boxes and applies to COMMENTS just as hard.**
+      `ref-conventions.md` warns that a comma or semicolon is a separator "whatever the file does
+      with escaping" — but the examples are all message boxes, and prose in a comment is exactly
+      where one gets typed without thinking. **`\;`, or avoid it: a dash reads the same.**
+
+      ⚠️ **AND I DECLARED IT PASSING ANYWAY.** The check ran `pd ... && echo "loads silently"` —
+      **Pd exits 0 even when objects fail to create**, so the `&&` fired while an error sat in the
+      output. `deploy.sh` gets this right and gates on *output*; my ad-hoc check did not.
+      **A gate that reads exit status is not a gate**, which is the whole reason `deploy.sh`
+      captures stdout and stderr instead.
+
+- [x] **208. ✅ THE MIDI TRIGGER CEILING IS ABOUT 360–400 PER SECOND, AND IT IS PERCEPTUAL RATHER
+      THAN A HARD EDGE.** Found by putting the rate on **knob 2** and sweeping it by hand
+      (`tools/404-knob-rate.pd`), exponential from 2/s to 1000/s so the knob could sweep **through**
+      the limit rather than up to it. Brendan stopped where further increase stopped changing
+      anything: **362 Hz measured**, self-described as "difficult to tell" and "around 400".
+
+      ⚠️ **Recorded as a RANGE on purpose.** The threshold is a judgement, and three digits would
+      be spurious precision on a number that was hard to place.
+
+      ⚠️ **AND A HAND SWEEP BEAT MY AUTOMATED ONE, WHICH WAS STRUCTURALLY BLIND.** My stepped test
+      held each rate ~6 s and reported **500/s as a clean buzz** with breakup only at 666/s. The
+      hand sweep, holding longer and hunting around the transition, found saturation lower.
+      **A discrete sweep with short holds cannot find an effect that takes seconds to become
+      audible** — and it will confidently report the wrong number instead of nothing.
+
+      **For scale:** Pd's own theoretical wall is ~689/s (one message per 64-sample scheduler
+      tick, a compile-time constant in vanilla). ⛔ **We never reach it** — something downstream
+      saturates first.
+
+- [x] **209. ⛔ "THE TRANSPORT IS QUEUEING MESSAGES" — TESTED AND FALSE.** The obvious explanation
+      for the ceiling was a backlog: messages accepted faster than they can be delivered, draining
+      afterwards. **A drain test killed it.** After 10 s at 1000/s, a `stop` produced **silence
+      immediately** — sound ceased *before* the operator was even told it had stopped. ⛔ **No
+      significant queue anywhere between Pd and the 404.**
+
+      ⚠️ **But the observation that prompted the hypothesis is REAL and remains unexplained:**
+      turning the rate *down* while still triggering takes **seconds** before the new spacing is
+      audible, and the delay grows with how long the high rate was held. Stopping is instant;
+      slowing is not.
+
+      ⬜ **Leading candidate, NOT established: the 404's voice pool.** At 1000/s with 20 ms notes
+      about twenty voices overlap continuously. On a stop they simply decay; on a slowdown
+      triggering continues, so the pool stays saturated and may mask the new spacing until it
+      clears. **This is a hypothesis and is written as one** — the queue explanation sounded just
+      as good and was wrong.
+
+      ✅ **Either way the design consequence holds: `m_404` needs a hard rate limit.** Exceeding
+      the ceiling has a cost that outlives the gesture, whatever its mechanism.
+
+- [x] **210. ⚠️ MILD MIDI CONTENTION AT EXTREME TEMPO — AND THE SUSPECT IS `g_grid`, NOT THE
+      CLOCK.** Triggers held at **250/s** while only the tempo changed:
+
+      | Condition | Clock traffic | Heard |
+      |---|---|---|
+      | **A** — 60 BPM | 48 msg/s | clean buzz |
+      | **B** — 600 BPM | 480 msg/s | *"the same, except with a few more audible artifacts — maybe dropouts"* |
+
+      ⛔ **The test was CONFOUNDED and the confound was predicted before running it.** Raising the
+      tempo does not only raise the clock — it also makes `g_grid` repaint faster, and the
+      arithmetic says the grid dominates:
+
+      ```
+      u_tempo clock   240 pulses/s x 2 ports x 1 byte  =   480 bytes/s
+      g_grid repaint  10 beats/s x 332-byte SysEx      =  3320 bytes/s
+      ```
+
+      ⚠️ **The grid alone exceeds the ~2200 bytes/s implied by item 208's trigger ceiling**
+      (362 triggers x 6 bytes). **So the original worry — that `u_tempo`'s clock might starve
+      note-outs — was aimed at the smaller of the two sources by a factor of seven.**
+
+      ⬜ **Not established:** whether the limit is **per-device or aggregate**. The grid goes to the
+      Launchpad (Pd port 1) and the triggers to the 404 (port 3) — different devices. If the
+      transport is per-device they cannot contend at all and the artifacts have a third cause.
+
+      **The clean isolating condition needs the Launchpad UNPLUGGED** — 600 BPM with no grid SysEx
+      at all. ⚠️ Not run, because unplugging triggers `m_launchpad`'s watchdog and its bounded
+      `wire.sh` recovery, which adds forks and noise to the very thing being measured.
+
+      ✅ **Practical conclusion, and it is the useful one: NOTHING NEEDS RESTRUCTURING.** The effect
+      appears only at tempos far above musical use, it is mild, and the dominant emitter is a
+      display that already repaints only when dirty. ⚠️ **But `m_404` and `g_grid` may contend at
+      extreme settings**, so a rate limit belongs on the trigger path regardless — which item 209
+      already required for a different reason.
+
+- [x] **211. ✅ FULL-LOAD POWER — PASSED, and it was measured as a BY-PRODUCT rather than as a
+      test.** The last ⬜ from Session 1, open since the very first checklist. All three controllers
+      (Launchpad Pro MK3, nanoKONTROL, SP-404MKII) **and** the wifi dongle on the powered hub, held
+      under the heaviest MIDI the rig can produce — the trigger sweep of items 208–209, from 4/s to
+      1000/s.
+
+      | Watched | Result |
+      |---|---|
+      | ALSA links (`aconnect -l`) | ✅ **6, unchanged** at every rate |
+      | USB errors in `dmesg` | ✅ **none new** |
+      | uart overruns (item 173) | ✅ **none new at any rate** |
+      | Dropped or stuttering MIDI | ✅ **none**, across hours |
+      | CPU | **10.7 % → 14.0 %** across the whole sweep |
+
+      ✅ **3.3 CPU points for a 250× increase in MIDI traffic**, which matches Phase 6's isolation
+      putting MIDI at ~0.43 points per 100 writes/s. **The DSP is the budget; the MIDI is noise.**
+
+      ⚠️ **THE METHOD IS THE POINT AND IT IS WORTH COPYING.** `plan-v03.md` had this as *"not a
+      discrete test — a standing observation across the whole session"*, because **a marginal hub
+      presents as intermittent dropouts, not as a failure.** A pass/fail run of a few seconds would
+      have proven nothing; hours of the rig being hammered for other reasons is exactly the
+      evidence the question wanted. **The right test for an intermittent fault is duration under
+      load, not a probe.**
+
+      ⬜ **The last USB slot is still untested** — the USB→DIN interface is not owned. ⛔ **But it
+      would not change the answer:** the Volca is separately powered and its interface is
+      bus-powered at a few mA, against three controllers already carried.
 
 ---
 

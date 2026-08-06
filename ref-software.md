@@ -174,10 +174,40 @@ Nothing overlaps:
 
 ## Signal architecture
 
-### Drums and fx split across the 404's L/R
-Per-sample pan on the 404 runs from MONO(Left) through to MONO(Right). Hard-pan drum
-samples left and fx samples right and you get two independent mono streams out of one
-stereo pair.
+### Drums and fx split across the 404's L/R ✅ verified on hardware
+Hard-pan drum samples left and fx samples right and you get two independent mono streams out of
+one stereo pair. ✅ Measured end to end — each sample drives one Organelle meter only
+([plan-tests.md](plan-tests.md) item 12).
+
+**Setting it, and BOTH steps here are counter-intuitive:**
+
+```
+[PITCH/SPEED]  ->  press the pad  ->  hold [SHIFT] + turn [CTRL 3]  ->  [EXIT]
+
+   MONO(Left)   L:50 ................ R:50   MONO(Right)
+     ^ WRONG      ^ THIS IS THE HARD PAN ^      ^ WRONG
+```
+
+⛔ **`MONO (Left)` / `MONO (Right)` are NOT the hard-pan settings, and this section used to say
+they were.** They **collapse the sample to mono using that source channel** and play the result on
+**both** outputs. Set that way, a drums-channel sample appears on **both** channels while the
+setting reads exactly as intended. ⚠️ **The name is the trap** — *"MONO (Left)"* means *"mono,
+taken from the left"*, not *"mono, panned left"*.
+
+⚠️ **So the hard pan is one step INBOARD of each extreme.** Turn the knob all the way and you go
+past it into the wrong mode.
+
+⚠️ **`[PITCH/SPEED]` first, or you edit the wrong thing entirely.** The CTRL knobs are
+context-sensitive: outside a sample-edit screen `SHIFT + CTRL 3` drives the **current effect's**
+parameter — on this rig it changed Filter+Drive's drive, which looks exactly like a pan control
+doing nothing. Roland's own support article omits this step.
+
+⚠️ **The SP-404MK2 App's *Info → Balance* did not reach the device** when tried here — it appears
+to edit a project copy rather than live state. **Use the hardware path.**
+
+**Fallback if the setting is ever unavailable:** export mono samples, or stereo files with one
+channel silent. That works but bakes the routing into the audio, so changing your mind means
+re-exporting — the per-sample pan is reversible and is what this design assumes.
 
 - **Master FX break this.** BUS 3/4 are master effects applied to the whole mix and will
   bleed across the split. Use per-sample BUS 1/2 effects only.
@@ -389,6 +419,11 @@ This dissolves three problems at once:
 *and* the Organelle's own keyboard are double-booked — the keyboard is four filter groups
 during performance and a note-entry surface during composition. Design this in from the
 start; it is much easier than retrofitting once the filter logic exists.
+
+⚠️ **The six modes in `u_map` are placeholders, but their RATIO is not arbitrary.** `u_err` routes
+on `compose` / `perform`, so **a split weighted toward `perform` would make most mode selections
+silently quieten the error display.** Anyone renaming or re-balancing them needs to know that
+before they start — it is the kind of change that looks cosmetic and is not.
 
 **Three storage decisions worth making early:**
 

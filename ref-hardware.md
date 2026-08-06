@@ -221,6 +221,57 @@ than `hostapd`: the Organelle simply joins whichever is present and **SSH surviv
 bringing up an AP drops it. ⚠️ **An iPhone Personal Hotspot needs cellular**, so it cannot be
 combined with airplane mode — the two are mutually exclusive. See [plan-v03.md](plan-v03.md).
 
+### ⚠️ The roam fault — what is known, and how to reproduce it ✅
+
+**On house wifi the device loses its IPv4 lease and does not get it back.** Open since Phase 6 and
+misdiagnosed for two of them. ⚠️ **It is narrowed, not solved** — what remains open, and what is
+being waited for, is in [plan-v03.md](plan-v03.md). Evidence: [plan-tests.md](plan-tests.md)
+Session 14, items 169–189.
+
+✅ **The fault is a ROAM breaking a RUNNING `dhcpcd`.** The device roams between the two AP radios,
+and a `dhcpcd` running across that association change never re-acquires.
+
+✅ **`dhcpcd` is EXONERATED** — caught in full with `-d` running *through* a roam. It detects the
+carrier going, deconfigures through its own hooks, detects re-acquisition, re-solicits at once and
+backs off correctly. **It sends DISCOVER and nothing ever answers.** ⚠️ **The diagnostics had gone
+nowhere for the entire investigation because `syslogd` is not running on this device.**
+
+| Established | |
+|---|---|
+| **The link is never the problem** | A static address reaches the gateway with **0% loss**, on either AP |
+| **A fresh `dhcpcd` on a SETTLED association succeeds** | On *either* AP, first DISCOVER, in seconds. That is why only the reassociate rung ever worked |
+| ⛔ **The interval was never a timer or a lease expiry** | 2 h 09 m, 3 h 12 m, 13 h 32 m — it is *how long until the AP hands the device off*. **Stop asking for the router's lease time** |
+| ⬜ **Why nothing answers a DISCOVER after a roam** | **NOT established.** ⚠️ Say so plainly — this investigation has already produced two confident wrong answers |
+
+**The repro — three seconds, no waiting:**
+
+```sh
+wpa_cli -i wlan0 scan ; sleep 4      # ⚠️ required: roam only targets a cached BSS
+wpa_cli -i wlan0 roam <other-bssid>  # IPv4 gone within 3 s
+```
+
+⚠️ **Needs a supplicant started with a `ctrl_interface`**, which `wifi-reassociate.sh` writes and a
+boot-started one may not. ⬜ Unverified after a power cycle — check `ls /var/run/wpa_supplicant/`.
+
+⛔ **Ruled out, so nobody walks them again:** the Orbi satellite being at fault (overturned by a
+two-arm test 30 minutes later — item 182), `option rapid_commit`, `require dhcp_server_identifier`,
+the ARP duplicate-address probe / `noarp`, swapping the wifi card (two link probes, 0% loss), and
+`--dbdir /sdcard/dhcpcd`. ⚠️ **All were queued to explain a lease that expires, and the lease does
+not expire** — the association changes underneath it.
+
+⚠️ **Two pieces of evidence are weaker than they look.** Item 180's *"the REQUEST is never ACKed"*
+came from a capture cut off by a `timeout 20` with the retry schedule still running — the failure
+is at **DISCOVER**. And **`dhcpcd -T` stops at the OFFER** and never sends a REQUEST, so it
+exercises only the half that works.
+
+**Operating the watcher:**
+
+- **Run `./tools/wifi-report.sh --mark`** once a finding is written up, or the report reads the
+  same before and after the next failure.
+- **Do not run two watchers.** Use the pidfile, or `ls -l /sdcard/wifi-watch.alive`.
+- ⚠️ **NEVER `pgrep -f wifi-watch`**, and never let one command both scan and relaunch — that
+  self-match kills the ssh session doing the sweeping. Item 163.
+
 ### The Organelle as its own access point ✅
 
 **This is the stage configuration**, and it is the vendor's own path rather than a `hostapd`
@@ -295,11 +346,28 @@ Components can disable the onboarding drive on the Launchpad itself is untried a
 ssh root@organelle.local        # password: organelle
 ```
 
-⚠️ **The IPv4 address is DHCP-assigned and NOT stable.** It has been observed as both
-`192.168.1.15` and `192.168.1.18`; a recovery that flushes the interface can come back on a
-different one. **Always use `organelle.local`** — mDNS follows it, and every script here defaults
-to that. The literal addresses in `HOST=` examples are fallbacks for when mDNS is flaky, and must
-be re-checked before use rather than trusted.
+⚠️ **The IPv4 address is DHCP-assigned and NOT stable.** It has been observed as `192.168.1.11`,
+`.15`, `.18` and `.20`; a recovery that flushes the interface can come back on a different one.
+**Always use `organelle.local`** — mDNS follows it, and every script here defaults to that. The
+literal addresses in `HOST=` examples are fallbacks for when mDNS is flaky, and must be re-checked
+before use rather than trusted.
+
+### ⚠️ "Cannot reach" after a wifi drop — CHECK IPv6 BEFORE BELIEVING IT ✅
+
+**A successful recovery presents exactly like a continued failure**, because recovery changes the
+IP address and **mDNS does not notice for a few minutes.** The device once came back healthy on
+`.20` while `organelle.local` still resolved to the dead `.18`, so `wifi-report.sh` reported
+*"Cannot reach"* about a device that was completely fine. ⚠️ **A power cycle at that moment would
+have destroyed the evidence of a recovery that had already worked.**
+
+```sh
+ping organelle.local              # 0% loss over IPv6 == the device is ALIVE
+ssh -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+    "root@fe80::<link-local>%en0" # the zone id and BOTH bypasses are required
+```
+
+⛔ **Do not trust `ssh`'s own error message, or any tool's, as a reachability check** — both have
+now misled this investigation. The cache catches up on its own. Item 172.
 
 | | |
 |---|---|

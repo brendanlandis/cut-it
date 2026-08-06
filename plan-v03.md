@@ -146,7 +146,52 @@ three bugs. Nothing in this phase has met the real 404, the real Volca or the re
   ⛔ **Never reuse an item number.**
 
 
-## 5. ⚠️ Constraints that bind what you build
+## 5. Open questions
+
+**The single place to look for what is unresolved.** CLAUDE.md, ref-conventions.md and ref-midi.md
+all point here; the section did not exist until v0.3 and the pointers were dangling.
+
+### The Launchpad watchdog cannot recover a device that was absent at load
+
+**Item 235, found on hardware, and it is shipped Phase 6 code rather than anything v0.3 did.**
+Power on with the Launchpad unplugged - or with a hub that does not enumerate it in time - and
+plugging it in afterwards **never** restores it. Only a patch reload does.
+
+`[r $0-armed]` gates the `[spigot]` in front of the bounded `wire.sh` recovery, and `$0-armed` is
+set by exactly one thing: `[sysexin]` receiving a device-inquiry reply. So the recovery arms only
+after the device has answered **at least once**, and a device that was never there never answers.
+The give-up path sits downstream of the same shut spigot, so it cannot report that it gave up
+either - which is why the error log was empty.
+
+**The gap in one sentence: "lost" was built as a TRANSITION from present to absent, and
+never-present is not a transition.**
+
+**Likely a one-box change** - arm at load rather than on first reply, letting the existing
+`moses 33` bound stop it after eight attempts exactly as it does now. **But it sits beside the safe
+exit**, which is the one message in this patch worth more than everything around it, so it wants
+its own can-it-fail test rather than being bolted onto the end of another phase.
+
+### Which control, if any, should raise panic
+
+Panic was briefly bound to a nano button in v0.3 and **withdrawn**. `m_launchpad` wires `[r panic]`
+straight to the Live Mode SysEx - panic hands the surface back by design - and the watchdog only
+re-asserts Programmer Mode while `want` is 1, which panic sets to 0. **So panic kills the grid until
+the patch reloads.** A bare button is too easy to brush mid-set on a device with no console.
+
+The capability is right and proven: `m_404` silences all ten banks when panic arrives, which
+`u_tempo` never did. Only the binding is open. A deliberate gesture - a two-control combination, or
+a control nothing else uses - is a v0.4 decision.
+
+### Still unticked in plan-tests.md
+
+Eight checks have never been run. They are **not** v0.3 work and none of them block it, but this is
+where to look for them: **item 5 / 95** brownouts with the full rig powered at once, **item 39** the
+OLED read by eye, **item 45** AP link quality over a set-length window, **item 81** the wifi fault
+itself, and **43/44/46** struck through as answered by later work.
+
+---
+
+## 6. ⚠️ Constraints that bind what you build
 
 **The four rate ceilings are in [ref-midi.md](ref-midi.md). What they bind here:**
 
@@ -170,7 +215,7 @@ ceilings are message-domain only.** ⚠️ If a stage converts that phase to ban
 
 ---
 
-## 6. The wifi fault — background, not blocking
+## 7. The wifi fault — background, not blocking
 
 **Requirement, as Brendan states it: the Organelle must stop dropping wifi.** Not "recover fast" —
 a dead phone display mid-set is the failure.
@@ -200,7 +245,7 @@ outages, twice**), and check satellite backhaul health.
 
 ---
 
-## 7. Deliberately not in this phase
+## 8. Deliberately not in this phase
 
 **Recorded so none of it is rediscovered as news.**
 
@@ -217,7 +262,7 @@ outages, twice**), and check satellite backhaul health.
 
 ---
 
-## 8. ⚠️ How this project gets things wrong
+## 9. ⚠️ How this project gets things wrong
 
 **Read this before trusting your own conclusions. Every one of these cost real time.**
 
@@ -241,7 +286,7 @@ outages, twice**), and check satellite backhaul health.
 
 ---
 
-## 9. Repo hygiene, noted not done
+## 10. Repo hygiene, noted not done
 
 Sitting in the repo root, none of it mine to move: two firmware `.wav`s (~11 MB), ten Volca
 settings photographs (~25 MB — ⚠️ **these are the primary evidence for item 226 and deserve a home

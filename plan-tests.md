@@ -4111,9 +4111,9 @@ it to read a **current** value, which is a different thing.)*
       bus at boot but brought up **zero interfaces**, so ALSA created no card at all — which is
       indistinguishable, from Pd's side, from it not being there.
 
-      **Not fixed here.** It is Phase 6 code, hardware-verified, and it sits next to the safe exit —
-      the one message in this patch worth more than everything around it. Recorded so the fix is a
-      deliberate change rather than something bolted onto the end of another phase.
+      **Not fixed here** — it is hardware-verified Phase 6 code sitting next to the safe exit. The
+      *work* is described in [plan-v03.md](plan-v03.md) under **Open questions**, which is where it
+      belongs: this file accumulates findings and does not plan.
 
 ---
 

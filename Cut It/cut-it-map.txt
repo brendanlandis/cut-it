@@ -11,3 +11,9 @@ mode-4 og-aux transport 0
 mode-5 og-aux transport 0
 mode-6 og-aux transport 0
 mode-1 slider-1 volca-cc 41
+mode-1 btn-b-8 panic 0
+mode-2 btn-b-8 panic 0
+mode-3 btn-b-8 panic 0
+mode-4 btn-b-8 panic 0
+mode-5 btn-b-8 panic 0
+mode-6 btn-b-8 panic 0

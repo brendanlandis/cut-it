@@ -327,47 +327,59 @@ STEPS8 = [
 
 
 STEPS9 = [
- ('baseline -- the patch has just booted and nothing has been touched',
-  'PASS IF: the OLED footer shows a BPM and the Launchpad has exactly one lit mode lamp. Everything below needs MODE 1 which is where a fresh install boots. If a previous session left another mode selected then press transport key 1 before going on -- the shipped map rows are keyed per mode and that is the whole point of this phase',
+ ('baseline -- read the OLED footer before touching anything',
+  'PASS IF: the footer reads 57 BPM and NOT 120 -- this is a REAL TEST and not a formality -- knobs.txt holds knob 1 at about 0.096 and mother pushes it at boot. 57 means the message went through the mapping TABLE and came out the tempo handler. 120 means u_tempo is sitting on its own default and the table never matched. Also note which mode lamp is lit on the Launchpad top row -- a restored session comes up wherever you left it',
   []),
 
- ('THE 404 RECEIVE SIDE -- HANDS -- select bank A on the SP-404 and press pad 1',
-  'PASS IF: the OLED shows sp-hit and the number 1 -- this is the map this project got WRONG once and pad 1 is note 48 -- nothing appears at all if the 404 is on the wrong MIDI channel or the cable is out',
+ ('GET TO MODE 1 -- HANDS -- press transport key 1 on the nanoKONTROL',
+  'PASS IF: the lit lamp moves to the first position. Fader 1 is only bound in mode 1 so the later steps need this. If the lamp does not move then the nano is not reaching param and nothing below will work',
+  []),
+
+ ('THE 404 RECEIVE SIDE -- HANDS -- select BANK A on the SP-404 and press pad 1',
+  'PASS IF: the OLED shows sp-hit and the number 1 -- this is the map this project got WRONG once and pad 1 is note 48 -- ⚠️ STATE WHICH BANK IS SELECTED OUT LOUD before every one of these: the 404 lights only the bank it is on and a receive test that does not state the bank cost half an hour once',
   []),
 
  ('THE PAD THAT BREAKS THE OLD FORMULA -- HANDS -- press pad 5 on bank A',
-  'PASS IF: the OLED shows sp-hit and the number 5 -- pad 5 is note 44 and NOT note 52 -- anything other than 5 here means the pad table is wrong in exactly the direction the docs used to be wrong',
+  'PASS IF: the OLED shows sp-hit and the number 5 -- pad 5 is note 44 and NOT note 52 -- anything other than 5 means the pad table is wrong in exactly the direction this repo used to have it wrong',
   []),
 
- ('THE BANK IS THE CHANNEL -- HANDS -- select bank B and press pad 1 again',
-  'PASS IF: the OLED STILL shows sp-hit and the number 1 -- the bank is deliberately not on the display because the 404 shows its own selected bank on its own screen. An UNCHANGED reading is the pass here. What changed is the name on param which the headless gate asserts',
+ ('WALK THE WHOLE BANK -- HANDS -- press pads 1 through 16 in order on bank A',
+  'PASS IF: the OLED counts 1 2 3 up to 16 in step with your finger. The headless gate already asserts all sixteen notes -- what this adds is that the DEVICE agrees with it. A run that goes 1 2 3 4 then jumps is the old formula surviving somewhere',
+  []),
+
+ ('THE BANK IS THE CHANNEL -- HANDS -- select BANK B and press pad 1',
+  'PASS IF: the OLED STILL shows sp-hit and the number 1 -- the bank is deliberately not on the display because the 404 shows its own bank on its own screen. An UNCHANGED reading is the pass here',
   []),
 
  ('A RELEASE IS NOT A PRESS -- HANDS -- press and hold any pad then let go',
-  'PASS IF: the OLED updates on the PRESS and does NOT update again on the release. A release is a real event and does reach param but it is not worth a display row. If the reading changes twice per hit then the velocity test on the disp side has gone',
+  'PASS IF: the OLED updates on the PRESS and does NOT update again on the release. The release is a real event and does reach param but it is not worth a display row. Two updates per hit means the velocity test on the disp side has gone',
   []),
 
- ('THE MAP IS MODE-DEPENDENT -- send a fader value that IS mapped in mode 1',
-  'PASS IF: the Volca tone changes. Fader 1 is bound to Volca CC 41 in mode 1 and to nothing at all in the other five. THIS IS THE POINT OF THE WHOLE PHASE -- a control means whatever the row for the current mode says it means',
-  [('slider-1 100', 'param')]),
-
- ('NOW CHANGE MODE AND SEND EXACTLY THE SAME THING',
-  'PASS IF: the Volca does NOT change. Nothing is broken -- there is no row for fader 1 in mode 4 and an unmapped control is the normal state of most controls. SILENCE IS THE PASS',
-  [('xport-4 1', 'param'), ('slider-1 100', 'param')]),
-
- ('BACK TO MODE 1 AND CONFIRM IT COMES BACK',
-  'PASS IF: the Volca tone changes again. If it stays silent then the mode did not actually change back and the lit lamp on the Launchpad top row will say so',
-  [('xport-1 1', 'param'), ('slider-1 100', 'param')]),
-
- ('THE TRANSPORT STILL WORKS FROM THE AUX BUTTON -- HANDS -- press aux',
-  'PASS IF: the aux LED changes state and the OLED footer agrees. The transport is a table row like any other now so this is the proof that migrating it into the table did not quietly drop it',
+ ('THE MAP IS MODE-DEPENDENT -- HANDS -- in mode 1 move FADER 1 on the nanoKONTROL',
+  'PASS IF: the Volca tone changes as you move it. Fader 1 is bound to Volca CC 41 in mode 1 and to NOTHING in the other five. THIS IS THE POINT OF THE WHOLE PHASE -- a control means whatever the row for the current mode says it means. ⚠️ The Volca is BY EAR and always will be -- it transmits nothing so there is never a readback',
   []),
 
- ('PANIC REACHES ALL TEN BANKS -- HANDS -- hold a pad on bank B then press aux twice quickly',
-  'PASS IF: nothing is left sounding. u_tempo used to send All Notes Off on bank A alone which is one tenth of the instrument -- so a note held on bank B or C would have survived it',
+ ('NOW CHANGE MODE AND MOVE THE SAME FADER -- HANDS -- transport key 4 then fader 1',
+  'PASS IF: the Volca does NOT change. Nothing is broken -- there is no row for fader 1 in mode 4 and an unmapped control is the normal state of most controls. SILENCE IS THE PASS. The OLED still shows the fader moving because m_nano publishes it either way',
+  []),
+
+ ('AND BACK -- HANDS -- transport key 1 then fader 1 again',
+  'PASS IF: the Volca responds again. If it stays silent then the mode did not change back and the lit lamp will say so',
+  []),
+
+ ('TEMPO STILL COMES FROM KNOB 1 -- HANDS -- turn Organelle knob 1',
+  'PASS IF: the footer BPM follows the knob over roughly 10 to 500 -- ⚠️ THE FIRST TOUCH WILL JUMP -- knobs.txt restored the value but the physical knob is wherever you left it. That is expected and it is the case for parameter pickup. Knob 1 is a TABLE ROW now like everything else',
+  []),
+
+ ('THE TRANSPORT STILL WORKS -- HANDS -- press the Organelle aux button twice',
+  'PASS IF: the aux LED changes state each press and the footer agrees. The transport migrated into the table too so this is the proof that migrating it did not quietly drop it',
+  []),
+
+ ('PANIC HAS A CONTROL AT LAST -- HANDS -- hold a pad on bank B then press nano bottom-row button 8',
+  'PASS IF: nothing is left sounding. ⚠️ NOTHING ON THE DEVICE COULD RAISE PANIC BEFORE THIS PHASE -- only the Mac dev panel could -- so this row is new and the button choice is a suggestion you can move in one line of cut-it-map.txt. u_tempo used to silence bank A alone which is one tenth of the instrument',
   []),
 
  ('END MARKER -- not a test -- the run is over',
-  'PASS IF: nothing further prints. THIS STEP ASSERTS NOTHING and exists only so the last real step has something to advance INTO. The logic of this phase is proven headlessly by tools/phase9-assert.sh in about eight seconds -- what is here is only what HARDWARE can show',
+  'PASS IF: nothing further prints. THIS STEP ASSERTS NOTHING. ⚠️ Every step above is HANDS-ON and has NO actions -- so this bench never has to be LOADED on the device which means no killall pd and no stranded Launchpad. Read the steps and press the real controls. The logic is proven headlessly by tools/phase9-assert.sh',
   []),
 ]

@@ -243,36 +243,169 @@ If those photographs still exist outside the repo, `device/volca-settings/` is w
 
 ## 10. NEXT: the documentation refactor
 
-**Agreed as the work that follows v0.3, and it is a real problem rather than tidying.**
+**Agreed as the work that follows v0.3, and it is a real problem rather than tidying.** The design
+below is settled; what is still open is listed at the end.
+
+### 10.1 The size of it, measured
 
 | | Lines |
 |---|---|
 | `plan-tests.md` | **4,131** — 249 items, append-only, and the single largest file in the project |
 | `ref-` docs (six files) | ~4,550 |
-| `CLAUDE.md` | 309 |
 | `tools/README.md` | 765 |
-| **Total** | **~10,050** |
+| `CLAUDE.md` | 313 |
+| **Total prose** | **~10,300** |
+| `.pd` comments (21 files, not counted above) | 446 |
 
-That is roughly 400 lines of prose per `.pd` file in `Cut It/`. CLAUDE.md tells a cold reader "do
-not read everything", which is an admission that the volume has already outgrown its usefulness.
+That is roughly 400 lines of prose per `.pd` file. **~10,300 lines is most of a context window**, and
+CLAUDE.md already tells a cold reader "do not read everything" — an admission that the volume has
+outgrown its usefulness. Three facts are restated in eight files apiece (`47 + n`), seven
+(`pgmout` is 1-based) and ten (the `[list split]` trap).
 
-**What the refactor has to do, at minimum:**
+### 10.2 The diagnosis, and why it is structural
 
-- **Collect every remaining TODO into one place.** Right now open work is spread across
-  plan-v03 §4 *Open questions*, eight unticked items in plan-tests.md, and prose scattered through
-  the `ref-` docs. §4 was itself only created in v0.3, despite three documents having pointed at it
-  for months — so a pointer existing is no guarantee the target does.
-- **Decide what plan-tests.md is for.** At 4,131 lines it is never read start to finish, by its own
-  instruction. Items are cited by number from everywhere, so the numbering must survive any change.
-  Splitting by session, archiving closed sessions, or extracting a findings index are all options.
-- **Find the claims that are now false.** v0.3 alone falsified three: `ref-conventions.md` said
-  `u_map` used route branches "rather than a lookup table"; `ref-midi.md` implied `pgmout` needed no
-  correction; `u_tempo`'s own comment described a panic covering one bank as if it covered the
-  instrument. Nothing systematically looks for these.
-- **Deduplicate.** The same facts — the `47 + n` pad map, the `[del 2000]` print rule, the
-  reject-outlet rule — are restated in CLAUDE.md, the `ref-` docs, the `.pd` comments and the commit
-  history. Some of that repetition is deliberate and load-bearing; some is drift waiting to happen.
+**Agents have written 100% of these docs.** That means restatement was never laziness — it is the
+only thing a cold context can do. A session editing `ref-midi.md` has no way to know the same fact
+sits in seven other files; it would have to grep for a fact it does not know exists.
 
-⚠️ **The `.pd` comments are documentation too**, and they are not counted above. They are also the
-only copy that a person editing the patch in Pd can actually see, which is an argument for keeping
-them rich even as the prose files shrink.
+⛔ **So "one home per fact" cannot be a convention that authors follow. It has to be a structure they
+fall into, and a program that catches the drift.** Every part of the design below follows from that.
+
+### 10.3 The design, settled
+
+**Format: Markdown stays. The tables become the database.** A GitHub markdown table is already
+machine-readable — it is simply not being read. Give the tables a fixed column schema and a parser
+and the human-readable copy and the machine-readable copy are *the same bytes*: no build step, no
+generated files, no second format, and it still diffs a row at a time. `ref-midi.md` is most of the
+way there already.
+
+Anything **Pd itself** must read stays space-separated `.txt` — `cut-it-map.txt` is the proven
+pattern and Pd can parse nothing else.
+
+| Kind of content | Home | Rule |
+|---|---|---|
+| Device facts code depends on | `ref-midi`, `ref-hardware`, `ref-display` | Schema'd markdown tables, checked against the patch |
+| Rules and rationale | `ref-conventions` | One rule per numbered heading with a **stable ID** (`C-31`); everything else cites the ID |
+| Open work | `plan-v03` | The only plan document, as now |
+| Orientation | `CLAUDE.md` | A router, not a store. Its Layout tree is ~240 of its 313 lines and duplicates each file's own header — one line per file |
+
+**The rule that does the work:** *a fact appears once in full; everywhere else it appears as a
+citation.*
+
+### 10.4 The journals dissolve
+
+`plan-tests.md` (4,131) and `ref-build-log.md` (981) are half the corpus and neither is ever read
+start to finish. **Both dissolve into the reference docs.**
+
+**Git is now the journal.** `phase 9: fix the boot-time tempo race -- the map was not ready when
+mother pushed` is a journal entry with a timestamp, a diff and no maintenance cost; recent commit
+bodies run ~36 lines. `plan-tests.md` exists because git was read-only until the commit exception.
+
+⚠️ **But that quality begins at `dca0b04`.** Before it the log reads `docs update, bug fixes` and
+`straggler issues part 1`. Git carries the journal role *forward* only — Sessions 1–17 must be
+condensed by hand, and **that is the bulk of the work in this refactor.**
+
+**Item numbers survive as fact IDs.** Item 228 stops being "the 228th thing measured" and becomes
+the ID of the `pgmout` row in `ref-midi.md`. All ~180 citations across the project keep resolving by
+grep, with no renumbering and no index file. New facts take new numbers from the same
+never-reused sequence.
+
+⛔ **The disposal rule — without it the `ref-` docs simply absorb 5,100 lines and nothing shrinks.**
+Every paragraph of a journal goes to exactly one of four places:
+
+| Journal material | Destination |
+|---|---|
+| The result | A reference table row: value, evidence class, date, item ID |
+| The trap — what looked right and was not | A warning at the point of use: the `.pd` comment, or a numbered rule in `ref-conventions` |
+| The method, if reusable | `ref-conventions`, or better, into the tool that performs it |
+| Everything else | **Deleted.** The narrative of a session is git's job |
+
+**The fourth row has to actually get used, or this is a move rather than a reduction.**
+
+### 10.5 `tools/docs-check.py` — the checker
+
+A sibling to `pd-layout-check.py`: pure stdlib, into `check-all.sh`, same discipline that any output
+is a failure.
+
+Tables are anchored by an HTML comment — invisible when rendered, greppable, self-documenting:
+
+```markdown
+<!-- check: table sp404-pads == pd-array "Cut It/m_404.pd" $0-pad -->
+
+| Pad | Note | Evidence | Item |
+|-----|------|----------|------|
+| 1   | 48   | verified | 190  |
+```
+
+The script finds the comment, parses the table into pairs, parses the `#A set` line out of the
+patch, and compares. About 40 lines. ⛔ **That check fails on `47 + n` at pad 5, before hardware** —
+it is the cheapest thing in this plan and it catches the bug that got furthest.
+
+The same script then does the rest of the upkeep for nothing: every `item NNN` citation resolves to
+a row that exists; every fact row carries an evidence class from the allowed set; no duplicate fact
+IDs. **That is what stops the docs re-inflating.**
+
+### 10.6 The marker scheme, settled
+
+The repo carries **1,479 markers**. They were doing more jobs than they had glyphs.
+
+| Glyph | Meaning after the refactor | Notes |
+|---|---|---|
+| ✅ | **Verified on this hardware** | Kept, all ~545 of them. Only 96 of 645 sit in tables, so a table column can never replace them |
+| 📄 | **Manufacturer documentation** | Kept |
+| ⬜ | **Unknown / unverified** | Kept |
+| ⛔ | **A trap: ignoring it breaks something SILENTLY** | Re-sorted. Was covering four jobs |
+| ⚠️ | **An operational rule: never do this to the rig or the device** | Re-sorted |
+| ❌ | *retired* | Table cells become `none`; the two prose bullets say "rejected" |
+
+**Two things stop being markers:**
+
+- ⛔ **`✅` as a completion marker is deleted — roughly 100 uses, 40 of them in headings**
+  (`## Errors must reach the OLED ✅ built`). **An evidence marker never rots; a completion marker
+  silently becomes false**, which is exactly how `ref-conventions.md` came to assert that `u_map`
+  used no lookup table. And in this project a completion marker is nearly always a *placement*
+  error: in a `ref-` doc everything described is built by definition, and in `plan-v03` "complete"
+  means the section should have left the file. **Each deletion doubles as a check that the item is
+  in the right file.**
+- **Corrections lose their marker.** "X was recorded here and it is FALSE" mostly gets deleted once
+  the false claim is gone — the *trap that produced it* survives, the retraction does not. Plain
+  emphasis becomes bold.
+
+Tables additionally gain an explicit `Evidence` column, so `docs-check.py` can assert that no fact
+row is missing its class — something it can never do for prose.
+
+### 10.7 The `.pd` comments are in scope
+
+446 lines across 21 files, and the hardest case: **they are the only copy visible while editing in
+Pd**, so a comment can never be replaced by a link.
+
+**The rule: the warning stays inline as one imperative line; the evidence and the reasoning leave.**
+`[pgmout] is 1-BASED -- see C-31` rather than a paragraph — short enough to be obviously not the
+source of truth, present enough to stop you at the box.
+
+### 10.8 Order of work, and the three refactors next to this one
+
+Three other cleanups are queued. **They are not part of this work, but two of them constrain its
+order.**
+
+| Refactor | Coupling |
+|---|---|
+| **Testing, by module instead of phase** | **Deep — it is the same job on the same axis.** The gates are named by *phase*: four `phaseN-assert.sh`, four drive-gens, `bench_steps.py`'s `STEPS3`…`STEPS9`. Phase is a *time* axis, which is what this refactor dissolves. The cost is already visible — `phase9-assert` exists partly because `phase6-assert` rewrote only `[midiout]` and would have passed vacuously over `noteout`/`ctlout`/`pgmout`. On a module axis that is **one** MIDI-emission gate, not two. **So this refactor must choose module names knowing the tests will adopt them.** |
+| **Tool cleanup** | Sequencing only. `tools/README.md` is 46 KB describing ~40 files, many one-off probes from July. Rewriting it before deciding what survives means documenting things about to be deleted. ⚠️ **Leave `tools/README.md` until last.** |
+| **Organelle cruft cleanup** | One chapter. `ref-hardware.md`'s *The device itself* (lines 355–539) describes paths the cleanup will change. ⚠️ **Do not invest there; mark it verify-after.** The rest of that file — wiring, power, gear — is independent. |
+
+**Resulting order:** documentation refactor (every chapter except `tools/README.md` and
+`ref-hardware`'s device section) → testing refactor on the taxonomy this establishes → tool cleanup
+→ `tools/README.md` → Organelle cleanup → `ref-hardware`'s device section.
+
+### 10.9 Still open
+
+- **The module taxonomy itself.** The names the docs adopt are the names the tests will inherit, so
+  they are worth settling first. The `.pd` prefixes (`u_`, `m_`, `g_`, `c_`) are the obvious
+  candidate axis, but the gates cut across them — a MIDI-emission gate spans `m_volca`, `m_404`,
+  `m_launchpad` and `u_tempo`.
+- **How far `docs-check.py` should reach on the first pass.** The pad-map check and the citation
+  check are clearly worth it. Whether it should also verify the channel-block table against
+  `wire.sh` is a judgement call about how much checking is too much.
+- **The eight unticked `plan-tests.md` items** (5, 39, 43–46, 81, 95) need a destination before that
+  file dissolves — they are open work, so §4 is where they belong.

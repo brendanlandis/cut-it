@@ -3389,6 +3389,442 @@ the 404 as the only MIDI device, using `tools/sp404-notes.pd` + `tools/sp404-sen
 
 ---
 
+## Session 16 — the ladder fires for real, and the fault survives 2.7.6.6
+
+**Items 212–215.** Read off the device 2026-08-06 13:52 UTC with **nothing changed** — the whole
+session is `ls`, `cat /proc`, and the log. ⚠️ **The capture conditions are what make it evidence**,
+and all three were verified before the log was read rather than assumed:
+
+| | |
+|---|---|
+| Watcher | **alive**, pid 793, `.alive` stamp touched the same minute |
+| Launch line | `sh /sdcard/wifi-watch.sh` — **no argument**, so `MODE=${1:-recover}` = **recover**. The ladder was armed |
+| `PREFER_BSSID` | **unset in `/proc/793/environ`** — ⛔ **the steer was OFF**, so the fault was free to recur and neither failure is self-inflicted |
+| Uptime | **1 day 9:06 (119236 s)** across both failures — ⛔ **no reboot**, so both recoveries happened in place |
+
+*(Reading the launch environment out of `/proc/<pid>/environ` is the **correct** use of that file —
+it shows the INITIAL environment, which is exactly the question. Item 144's warning is about using
+it to read a **current** value, which is a different thing.)*
+
+- [x] **212. ✅ THE RECOVERY LADDER FIRED ON TWO REAL FAILURES AND RECOVERED BOTH — item 161's ⬜
+      closes.** Both times on **rung 1, first try, with no other rung attempted**:
+
+      ```
+      TRANSITION  192.168.1.11 -> NONE   2026-08-05 22:54:54
+        >> TRY: full reassociate   ->  RECOVERED -- ipv4 is 192.168.1.11
+      TRANSITION  192.168.1.11 -> NONE   2026-08-06 06:28:10
+        >> TRY: full reassociate   ->  RECOVERED -- ipv4 is 192.168.1.11
+      ```
+
+      ✅ **So the reorder was right**: `wifi-reassociate.sh` promoted to first is the rung that
+      works, and the two demoted `dhcpcd` rungs were never even reached. ⛔ **And "only a reboot
+      fixes it" is now dead twice over** — item 160 showed a front-panel reconnect fixing it by
+      hand, and this is the unattended version.
+
+      ⚠️ **The outage duration is NOT in the log and should not be guessed.** No `NONE -> ipv4`
+      transition was recorded for either event, which means recovery completed inside the same
+      detection cycle — bounded by one ladder pass (a 20 s poll, a link probe, a DHCP probe of up
+      to 30 s, then the reassociate), not measured to the second. **Logging the recovery timestamp
+      is a cheap improvement to the watcher.**
+
+      ✅ **SHIPPED the same day.** `wifi-watch.sh` now stamps `DOWN_AT` at the transition and
+      reports the elapsed time from `try()` — which is the path that matters, because **a rung
+      succeeding is exactly why no second transition was ever logged.** ⚠️ **It reports a LOWER
+      BOUND, deliberately**: detection is at 20 s poll granularity, so the address was already gone
+      for up to a poll before the stamp. Writing a bare figure would be item 208's error again — a
+      confident number that is quietly wrong at the edges.
+
+- [x] **213. ⛔ THE FAULT SURVIVED FIRMWARE 2.7.6.6 — TWICE IN 15 HOURS. The update did not fix
+      it.** This is the answer the whole "leave it running and let days pass" task was waiting for,
+      and it is the negative one.
+
+      | Interval | |
+      |---|---|
+      | Mark to failure 1 | 2026-08-05 15:55:58 → 22:54:54 |
+      | **Failure 1 → failure 2** | **7 h 33 m** |
+      | Failure 2 → the read | 7 h 24 m clean |
+
+      ⚠️ **7 h 33 m sits squarely inside the pre-update family** — 2 h 09 m, 3 h 12 m, 13 h 32 m
+      (items 169–172). **There is no improvement to read here.** ✅ The post-update lease test in
+      item 188 was correctly recorded as *"one data point, not a verdict"*; this is what the verdict
+      turned out to be.
+
+      **So [plan-v03.md](plan-v03.md)'s decision tree takes the `it recurs` branch:** the Orbi
+      admin UI — the satellite's backhaul health, and the router's 2.4 GHz auto-channel behaviour.
+
+- [x] **214. ⚠️ A FAILURE HAPPENED ON THE ROUTER, NOT THE SATELLITE — AND THAT OVERTURNS A STANDING
+      CLAIM.** `wifi-watch.sh`'s own comment states *"the failures all occur while associated to
+      the SATELLITE… on the ROUTER the same radio leases in seconds"*, and the preferred-AP steer
+      is built entirely on it.
+
+      | | Roamed TO | Signal | Auth tries |
+      |---|---|---|---|
+      | Failure 1 | **`a6:40:a0:5e:c9:25`** — satellite | −39 dBm | 3 |
+      | Failure 2 | **`a6:40:a0:5e:a2:01`** — **the ROUTER** | −37 dBm | 1 |
+
+      ✅ **`a2:01` is confirmed as the router by the arp table, not by assumption**: the probe's own
+      arp shows the gateway `192.168.1.1` at `a0:40:a0:5e:a2:01` — the same address one bit apart in
+      the locally-administered flag, which is the ordinary relationship between an AP's BSSID and
+      its LAN MAC. It is also literally the `PREFER_BSSID` value the steer targets.
+
+      ⛔ **CONSEQUENCE FOR THE STEER, AND IT IS THE IMPORTANT ONE: parking the device on the router
+      would NOT have prevented failure 2**, because failure 2 was a roam *to* the router. The steer
+      was being held in reserve as the mitigation of last resort in
+      [plan-v03.md](plan-v03.md); **that fallback is now much weaker than it looked**, and it should
+      not be enabled on the assumption that the router is safe.
+
+      ⚠️ **Both dmesg tails show `authenticate` → `associate` immediately before the loss**, so the
+      *roam breaks a running `dhcpcd`* mechanism (items 169–172) is confirmed a third and fourth
+      time. **What changed is only which AP it can happen on.**
+
+- [x] **215. ⚠️ THE TWO DHCP PROBES GAVE OPPOSITE ANSWERS, AND NOTHING IN THE RECORD PREDICTED
+      THAT.** Same script, same client, same SSID, seven hours apart:
+
+      | | DHCP probe (`dhcpcd -T`, asks but configures nothing) |
+      |---|---|
+      | **Failure 1** (satellite) | `timed out` / `soliciting a DHCP lease` — ⛔ **NO OFFER.** Nothing answered |
+      | **Failure 2** (router) | `soliciting a DHCP lease` → **`offered 192.168.1.11 from 192.168.1.1`** ✅ **The server answered at once** |
+
+      ✅ **Both link probes were identical and both were clean** — 3/3 packets, **0 % loss** to the
+      gateway (rtt 14.4 ms and 7.4 ms mean). **So the radio and the association are healthy in both
+      cases and the fault is DHCP-side both times**, which is items 159 and 178 confirmed twice more.
+
+      ⚠️ **What failure 2 shows that nothing before it did: a FRESH client got an offer instantly
+      while the RUNNING `dhcpcd` sat with no address at that same moment.** The two are not the
+      same daemon and the probe stops at the OFFER, so ⛔ **this is NOT proof the running daemon is
+      wedged** — the probe's own text says so deliberately, because `dhcpcd -T` never sends a
+      REQUEST and exercises only the half that works.
+
+      ⬜ **Hypothesis, written as one, because this investigation has already produced three
+      confident wrong answers:** the two failures may not be the same fault. On the satellite
+      nothing answers anyone (upstream); on the router the server answers a new client fine while
+      the incumbent one cannot re-acquire (client-side). **Two failures is not enough to separate
+      those**, and the same probe pair on the next few events is what would.
+
+      **Cheap and worth doing before any Orbi work:** ⚠️ the probe currently records *whether* an
+      offer came, and the interesting question is now *what the running daemon is doing at the same
+      instant*. `dhcpcd -U wlan0` and the daemon's own state alongside the `-T` probe would cost
+      nothing and split the hypothesis.
+
+      ✅ **SHIPPED the same day, and the discriminator is a PID rather than `-U`.** `wifi-watch.sh`
+      now records the dhcpcd pid on every healthy tick and compares it at the failure:
+
+      | At the failure | Reading |
+      |---|---|
+      | **same pid** as when healthy | the **incumbent** daemon cannot re-acquire — **CLIENT-side** |
+      | **changed pid** | it restarted and *still* has no address — points **UPSTREAM** |
+
+      Combined with the existing offer/no-offer verdict that gives a 2×2, which is what actually
+      separates the two events. ⚠️ **`-U` itself turned out to be useless here — see item 216.**
+
+- [x] **216. ✅ WHY `dhcpcd -U` RETURNS NOTHING ON THIS DEVICE — it is the READ-ONLY ROOTFS, not a
+      version quirk.** Item 161 recorded the symptom bare. The cause, measured directly:
+
+      ```
+      # dhcpcd -U wlan0
+      wlan0: dhcp_dump: No such file or directory
+      wlan0: dhcp6_dump: No such file or directory
+
+      # touch /var/lib/dhcpcd/.wtest
+      touch: cannot touch '/var/lib/dhcpcd/.wtest': Read-only file system
+      ```
+
+      ✅ **`-U` reads a LEASE FILE, and `/var/lib/dhcpcd` is on the read-only rootfs**, so dhcpcd
+      has never been able to write one. The directory holds only **2015-dated leases for SSIDs this
+      rig has not used in years** (`CBCI-AD15-2.4`, `birds`, `birds2`) — the image build date again,
+      the same fingerprint as the no-RTC clock in *The clock* section of
+      [ref-hardware.md](ref-hardware.md).
+
+      ⬜ **AND IT REOPENS A LEAD THAT WAS CLOSED FOR THE WRONG REASON.** With no writable lease
+      store, dhcpcd has nothing to **rebind** to after a carrier change and must always fall back to
+      a full DISCOVER — which is precisely what every capture shows it doing.
+      **`--dbdir /sdcard/dhcpcd` is in this file's RULED OUT list**, but it was dismissed inside a
+      batch aimed at *"the lease expires"* — a model that item 172 later overturned. ⚠️ **It was
+      never refuted on its own merits.**
+
+      ⛔ **This is a LEAD, not a finding and not a fix.** A running daemon holds its lease in
+      memory, so the missing file may well be irrelevant to a roam. Written as a hypothesis because
+      this investigation has already produced three confident wrong answers (items 182, 209, 210).
+
+- [x] **217. ✅ THE 2.4 GHz BAND, SURVEYED FROM THE ORGANELLE ITSELF — and ch 4 is the worst
+      available choice.** `iw dev wlan0 scan`, aggregated by channel. ✅ **The instrument is the
+      right measuring tool here**: it has the only radio whose experience actually matters.
+
+      | ch | APs | strongest neighbours |
+      |---|---|---|
+      | 1 | 3 | Sin-Net −51, NETGEAR89 −59, 1708SSA −79 |
+      | 2 | 1 | T Mobil Joel **−41** |
+      | 3 | 1 | TMOBILE-72F1 −51 |
+      | **4** | **4** | **hildegard ×2 (ours) −41**, plus 2 unnamed |
+      | 6 | 3 | SpectrumSetup-48 **−41**, SpectrumSetup-70 −53, TMOBILE-E328 −69 |
+      | 9 | 2 | TMOBILE-933F −49, TMOBILE-305E −63 |
+      | 10 | 5 | P1 −67, P1 −73, TMOBILE-F1F8 −75, Aida123 −79 |
+      | 11 | 2 | SpectrumSetup-ED **−43**, SpectrumSetup-7772 −81 |
+
+      **2.4 GHz channels are 5 MHz apart and 20 MHz wide, so channel N collides with N±4.** Total
+      APs inside each candidate's window:
+
+      | choice | APs within ±4 |
+      |---|---|
+      | **ch 1** | **9** |
+      | ch 6 | 16 |
+      | **ch 11** | **9** |
+
+      ⛔ **Ch 4 — where the Orbi's auto-channel had put it — overlaps 1, 2, 3, 5, 6, 7 and 8, i.e.
+      nearly the whole band.** ✅ **That is almost certainly why the link runs at 14.4 MBit/s MCS 1
+      at −41 dBm**, which is poor for that signal and was noticed before this scan was run.
+
+      **Ch 1 and ch 11 tie at 9.** ✅ **Ch 1 wins on the tie-break**: two of ch 4's four APs are
+      *ours* and move with us, so ch 1's real external load is **7**, and its strongest neighbour
+      (−41) matches ch 11's (−43).
+
+      ⚠️ **WHAT THIS DOES NOT FIX, and it is the important caveat.** The Orbi exposes **one** 2.4 GHz
+      channel setting and mesh nodes share the fronthaul channel — so **router and satellite stay
+      co-channel with each other whatever is chosen.** Pinning the channel buys two things only:
+      it removes **auto-channel changes** (a re-association event for every client, and one of the
+      trigger classes in item 213's branch), and it cuts real interference. **It does not stop the
+      two hildegard APs competing.**
+
+- [x] **218. ✅ FAST ROAMING IS ALREADY OFF ON THE ORBI, and wpa_supplicant has NO bgscan — so
+      NOTHING IS ACTIVELY HUNTING FOR A BETTER AP.** Read off the Orbi UI (Implicit BEAMFORMING,
+      MU-MIMO and **Enable Fast Roaming** all unchecked) and out of
+      `tools/wifi-reassociate.sh`, which builds the supplicant config from exactly two pieces —
+      `ctrl_interface=...` and `wpa_passphrase` output. **No `bgscan`, no roam thresholds.**
+
+      ⚠️ **THIS REFRAMES THE FAULT AND THE REFRAME IS NOT YET ESTABLISHED.** With 802.11r off and
+      no background scanning, a *voluntary* roam is hard to account for — which makes
+      **disconnect-then-reconnect** the more likely reading, where the AP drops the client (or
+      beacons are lost) and the reassociation lands wherever answers first. ✅ **That would explain
+      why failure 2 came back on the SAME BSSID it left**, which a "roam to a better AP" model does
+      not.
+
+      ⛔ **Written as a hypothesis.** Every capture so far shows `authenticate with <bssid>` with
+      nothing before it, because the dmesg window was 25 lines. **`wifi-watch.sh` now captures 60**,
+      so a deauth or beacon-loss line — if there is one — will be in the next capture. That is the
+      cheapest possible way to settle it and it required no new probe.
+
+- [x] **219. ⛔ ITEM 218'S HYPOTHESIS IS REFUTED BY THE FIRST CAPTURE THAT COULD TEST IT — the
+      client deauthenticates ITSELF.** The widened 60-line dmesg window earned its place
+      immediately:
+
+      ```
+      wlan0: deauthenticating from a6:40:a0:5e:c9:25 by local choice (reason=3)
+      wlan0: authenticate with a6:40:a0:5e:a2:01   ... associated
+      wlan0: authenticate with a6:40:a0:5e:c9:25   ... associated     (209 s later)
+      ```
+
+      ⛔ **"by local choice" means the STA initiated it**, so *"the AP is dropping us"* is dead.
+      ✅ **And the surface shape is visible for the first time: satellite → router → satellite**,
+      which is co-channel churn rather than a one-way roam.
+
+      ⚠️ **BUT ATTRIBUTION IS NOT SETTLED, AND SAYING SO IS THE POINT.** `wifi-reassociate.sh` runs
+      `killall wpa_supplicant`, which produces a *local-choice deauth of its own* — and the ladder
+      had run minutes earlier. **The line proves the deauth was client-side; it does NOT prove the
+      client decided to roam on its own**, because our own recovery is a client-side deauth too.
+      Distinguishing them needs a capture where the ladder has not run recently.
+
+- [x] **220. ✅ THE OUTAGE IS ~132 SECONDS, MEASURED — and the "~20 s" in `wifi-watch.sh` is
+      WRONG.** The first duration this project has ever recorded:
+
+      ```
+      TRANSITION  192.168.1.11 -> NONE    2026-08-06 14:33:09
+         ** OUTAGE: about 132s without ipv4
+      ```
+
+      ⛔ **`wifi-watch.sh`'s own comment claims the reordered ladder recovers in "~20 s rather than
+      the old 2.5 minutes."** It does not, and the arithmetic says it never could:
+
+      | Before any recovery is attempted | |
+      |---|---|
+      | detection | up to **20 s** (the poll) |
+      | link probe | ~10 s |
+      | DHCP probe | up to **30 s** (`timeout 30 dhcpcd -T`) |
+      | **then** rung 1 waits | **90 s** |
+
+      ⚠️ **THE DIAGNOSTICS ARE INSIDE THE RECOVERY PATH**, and they cost about a minute before the
+      rung that works is even tried. **For a capture build that is the right trade; for a
+      stage-ready build it is exactly the wrong one** — 132 s of dead phone display is the thing
+      the requirement in [plan-v03.md](plan-v03.md) forbids. A `--fast` mode that recovers first
+      and diagnoses afterwards is the obvious answer and is not yet built.
+
+- [x] **221. ✅ CHANNEL 1 TOOK, AND IT HELPED THROUGHPUT ENORMOUSLY — but it did NOT separate the
+      two APs, exactly as predicted.** Both `hildegard` BSSIDs now sit on **2412 MHz (ch 1)** at
+      −39 and −41 dBm:
+
+      | | before (ch 4) | after (ch 1) |
+      |---|---|---|
+      | tx bitrate at ~−40 dBm | **14.4 MBit/s MCS 1** | **72.2 MBit/s MCS 7** |
+
+      ✅ **A 5× rate improvement confirms item 217's reading that ch 4 was congested.**
+      ⛔ **But the roam-churn condition is UNCHANGED**: one Orbi channel setting moves both mesh
+      nodes together, so router and satellite remain co-channel and near-equal in strength. **The
+      trigger is still there.**
+
+- [x] **222. ⚠️ THE 14:33 AND 14:37 FAILURES ARE ORBI-SURGERY ARTEFACTS, NOT THE FAULT — and the
+      link probe is what says so.** Every earlier capture returned *LINK IS FINE — the fault is
+      DHCP-side*. This pair returned the opposite:
+
+      ```
+      3 packets transmitted, 0 received, +3 errors, 100% packet loss
+      arp: 192.168.1.1 -> 00:00:00:00:00:00        (gateway never resolved)
+      VERDICT: LINK IS DEAD despite reporting associated
+      ```
+
+      ✅ **So this is a different failure class** — it coincides with config saves, radio restarts
+      and the satellite being unplugged, and the DHCP probe shows `carrier lost / carrier acquired`
+      repeatedly. ⛔ **Do not pool these with items 212–215.** The ladder correctly reported
+      **UNRECOVERED on all three rungs**, which is honest: there was no network to recover onto.
+
+      ✅ **This also explains the three front-panel "Problem connecting" failures** and kills a
+      hypothesis of mine — I proposed the watcher's ladder was fighting the front panel. It was
+      not: the ladder fires only on a *transition*, ran once, and went quiet. **The network was
+      simply down.**
+
+      ⚠️ **AND IT EXPOSED A FLAW IN THE NEW INSTRUMENTATION, WHICH IS THE USEFUL PART.** The pid
+      discriminator printed *"the incumbent daemon cannot re-acquire — CLIENT-side"* while the link
+      probe had just said the link was dead. **Of course it could not re-acquire.** The verdict is
+      now gated on the link probe and prints **NO VERDICT** unless the link measured healthy —
+      the same correction item 180 and the `dhcpcd -T` wording both needed. ⚠️ A second, quieter
+      bug was found by reading rather than by failure: `FINE` is assigned only at the ping, *after*
+      three early returns, so a **skipped** probe left the previous failure's verdict in place.
+      It is cleared on entry now.
+
+---
+
+## Session 17 — Phase 9 Step 0A: the Volca reaches the rig
+
+**Items 223–224.** The last device with no path in now has one.
+
+- [x] **223. ✅ THE VOLCA ANSWERS NOTES *AND* CC 40 — so `MIDI RX ShortMessage` IS ALREADY ON, and
+      no menu had to be found.** ⚠️ **The setting was diagnosed by the test rather than being a
+      precondition for it**, which is the reusable part: notes are *not* gated by ShortMessage and
+      CC 40–50 are, so notes are a built-in control on the whole path.
+
+      **The A/B that settled it — three events, all MIDI note 48**, differing only in CC 40:
+
+      | # | CC 40 | Heard |
+      |---|---|---|
+      | 1 | centre | reference |
+      | 2 | centre | **identical to 1** — the control |
+      | 3 | **127** | **a couple of octaves up** |
+
+      ⛔ **Without note 2 this would have been an impression, not a result.** Two identical notes
+      followed by a different one is what rules out an accidental trigger — which had been raised
+      as a real doubt about the first, looser run.
+
+      *(The first run corroborates: five events at three MIDI pitches produced **four distinct
+      pitches by ear**, which is impossible unless something moved a note off 48/52/55.)*
+
+      ⚠️ **EVIDENCE CLASS: THIS IS BY EAR, NOT OFF THE WIRE.** The Volca transmits nothing at all,
+      so there is no readback and there never can be — unlike every other device in this rig, whose
+      claims are byte-level. Recorded as a judgement in the same spirit as item 208's trigger
+      ceiling being a range rather than three digits. ⬜ **Presets and `MIDI Clock src` are still
+      untested**; Korg's chart marks Program Change unsupported 📄 and nothing yet needs clock.
+
+- [x] **224. ⚠️ `amidi` CANNOT BE USED WHILE Pd IS RUNNING — and the failure is itself the proof
+      that slot 4 is live.** The obvious first probe died immediately:
+
+      ```
+      open /dev/snd/midiC5D0 failed: Device or resource busy
+      ```
+
+      ✅ **Pd holds the raw device**, because `/root/.pdsettings` opens four MIDI in/out devices and
+      the Uno is now the fourth. **So the busy error is a positive result** — it says Pd claimed the
+      interface — even though it blocked the test.
+
+      ✅ **The way round it is `aplaymidi` to the SEQUENCER port**, which is shareable where the raw
+      device is exclusive: `aplaymidi -p 36:0 <file>`. ⛔ **This matters beyond one test.** The
+      documented alternative is the by-hand three-patch console, which needs `killall pd` — and that
+      **strands the Launchpad in Programmer Mode** every time (item 96), requiring
+      `tools/lp-live.sh` afterwards. **The sequencer route touches neither Pd nor the Launchpad**,
+      so it is the cheaper probe for anything that only needs MIDI *sent* to a device.
+
+      ⚠️ **`aplaymidi` needs a MIDI FILE, not bytes** — built here with a few lines of python on the
+      Mac and `scp`'d over. Kept as `tools/volca-probe.pd` for the Pd-side path, but the file route
+      is what actually ran.
+
+- [x] **225. ✅ PROGRAM CHANGE IS NOT RECEIVED BY THE VOLCA FM — Korg's chart is CORRECT and the
+      measurement agrees with it.** Sent PC 0 → PC 0 → PC 10 → PC 20, each followed by note 48,
+      about two seconds apart. **Four identical notes, and the display never moved.**
+
+      ⛔ **THE DISPLAY IS WHAT MAKES THIS A CLEAN NEGATIVE**, and it is why the test was built that
+      way. Had only the *audio* been watched, "all four sounded the same" would have been
+      ambiguous — indistinguishable from every program slot holding the same patch. **The Volca
+      shows its program number regardless of what the patch sounds like**, so an unchanged display
+      rules out reception itself rather than merely reception-with-no-audible-effect.
+      ✅ **The slots on this unit genuinely do hold different patches**, confirmed by Brendan, which
+      closes the trap from the other side too.
+
+      **So [ref-midi.md](ref-midi.md)'s 📄 claim stands** — *aftertouch, pitch bend and program
+      change are all unsupported; don't route them.*
+
+      📄 **AND THE COMMUNITY RECORD EXPLAINS WHY, AND OFFERS A WAY OUT.** Stock Volca FM firmware
+      does not implement Program Change — a known, never-fixed limitation, despite Korg's own chart
+      being ambiguous about it. **The `Pajen` custom firmware adds it: PC 0–31 select patches and
+      32–48 select patterns**, alongside extra CC coverage and LFO fixes. ⚠️ **Marked 📄 rather than
+      ✅** — that is the community's claim, not this rig's measurement, and the firmware is
+      unofficial. **The measurement here only establishes that STOCK firmware ignores PC.**
+
+      ⬜ **So preset switching is a FIRMWARE DECISION rather than a dead end**, and it is Brendan's
+      to make. Until then the only patch-level channel is DX7 bulk SysEx, which is a v0.4 question.
+
+      ⚠️ **I RECORDED THE OPPOSITE OF THIS FOR ABOUT A MINUTE.** "The presets are different" was a
+      statement about what is *stored* in the slots and I read it as *they changed*, and wrote up a
+      correction overturning Korg's chart. **The control note existed and would have caught it; I
+      did not wait for the readout of it.** ⛔ **This is the third time in this project's history
+      that a confident wrong answer came from acting on a partial result** — items 182, 209 and 210
+      are the others. **The lesson is not "check the docs", it is "wait for the whole measurement."**
+
+- [x] **226. ✅✅ PROGRAM CHANGE WORKS ON PAJEN 1.09 — AND IT IS GATED BY *TWO* ADJACENT GLOBAL
+      SETTINGS, NEITHER OF THEM DOCUMENTED ANYWHERE WE COULD FIND.** After enabling key 12, the
+      PC 0 / 20 / 0 / 20 sequence produced **A B A B** — the alternation the same file had failed to
+      produce four times running.
+
+      **The Pajen MIDI block, read off the device's own display** (7-segment, so `V` renders as `U`):
+
+      | Key | Display | Meaning | Wanted |
+      |---|---|---|---|
+      | 9 | `Md UEL` | MIDI **velocity** | **On** |
+      | 10 | `MdSYSX` | MIDI **SysEx** — Yamaha vs Korg patch import/export | Off |
+      | 11 | `PCnot` | PC **per-note** — the multitimbral mode | **Off** |
+      | 12 | **`PCMId`** | **PC over MIDI — the master enable** | **On** |
+
+      ⛔ **`PCnot` AND `PCMId` ARE A TRAP AND THE TRAP IS THE FINDING.** Both begin with "PC", both
+      are booleans, they sit side by side, and **turning on the wrong one produces a symptom
+      identical to the fault**: per-note mode binds a program change to the *next note* and
+      deliberately leaves the current program and the display untouched, so presets appear not to
+      change. ⚠️ **`PCMId` is the one that matters**; `PCnot` must stay **off** for conventional
+      program change.
+
+      ⚠️ **Keys 13–16 report only `global` and are not settings.** Stock firmware documents keys
+      1–8 (item 227); Pajen extends the block to 12.
+
+      ⚠️ **HOW THIS WAS ACTUALLY SOLVED, BECAUSE THE METHOD IS THE TRANSFERABLE PART.** Three
+      mechanisms were proposed from community write-ups and reasoning — a PC-to-note timing gap, the
+      `MIDI RX ShortMessage` filter, and a firmware that had not taken — **and all three were
+      wrong**. What solved it was **Brendan photographing every global setting in both states** and
+      reading the labels off the device. ⛔ **Every secondary source describes "PC 0–31 selects
+      patches" and none mentions that two separate globals gate it**, so no amount of reasoning from
+      them could have arrived here. **When a device has a settings menu, read the menu.**
+
+- [x] **227. ✅ THE VOLCA'S STOCK GLOBAL SETTINGS, AND BOTH OF THE ONES THIS PROJECT NEEDED WERE
+      ALREADY CORRECT.** Enter with **`FUNC` held at power-on**; keys toggle; **`REC` saves**,
+      `PLAY` cancels. (MIDI channel is a separate menu: **`MEMORY` held at power-on**, keys 1–16.)
+
+      | Key | Setting | Factory default |
+      |---|---|---|
+      | 6 | **MIDI Clock Source** | **Auto** ✅ — what the rig needs |
+      | 7 | **MIDI RX ShortMessage** | **On** ✅ — why CC 40 worked untouched |
+
+      ⛔ **So both settings marked ⬜ in [ref-midi.md](ref-midi.md) as "will silently break things"
+      were right by default and never needed changing.** ⚠️ **And the toggles are a hazard in
+      themselves**: pressing a key that is already correct turns it OFF, which is what nearly
+      happened to ShortMessage mid-session. It was caught by re-running the CC 40 transpose test —
+      **a known-good prior result reused as a probe for device state**, which is the cheap move
+      whenever a setting's true state is in doubt.
+
+---
+
 ## What's actually left
 
 **Nothing lives here.** Every remaining question, blocked item and purchase is in

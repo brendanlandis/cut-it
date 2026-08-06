@@ -20,6 +20,14 @@ aconnect "nanoKONTROL":0 "Pure Data":1       2>/dev/null || true  # -> Pd ch 17-
 aconnect "SP-404MKII":0 "Pure Data":2        2>/dev/null || true  # -> Pd ch 33-48
 aconnect "Pure Data":6 "SP-404MKII":0        2>/dev/null || true  # pad triggers out
 
+# The USB->DIN interface, and through it the Volca FM. ONE bidirectional port,
+# verified with aconnect -i and -o: 'USB Uno MIDI Interface':0 appears in both.
+# The Volca is RECEIVE-ONLY -- it has no MIDI out at all -- so line 2 is the one
+# that matters and line 1 exists because the interface has a DIN IN jack that a
+# future device could use. Costs nothing to wire both.
+aconnect "USB Uno MIDI Interface":0 "Pure Data":3 2>/dev/null || true  # -> Pd ch 49-64
+aconnect "Pure Data":7 "USB Uno MIDI Interface":0 2>/dev/null || true  # notes + CC to the Volca
+
 # UNDO mother's OWN AUTO-CONNECT, which is not ours and is actively wrong.
 # /root/fw_dir/scripts/alsaconnect.sh wires the LOWEST-NUMBERED MIDI client to
 # Pd's Midi-In 1 -- and the nanoKONTROL enumerates below the Launchpad (client
@@ -35,8 +43,16 @@ aconnect "Pure Data":6 "SP-404MKII":0        2>/dev/null || true  # pad triggers
 # why Phase 6 shipped without catching it.
 #
 # Costs no extra fork: wire.sh already runs once per load.
+#
+# ⚠️ THE CLIENT NUMBERS MOVE, WHICH IS WHY THIS LIST MUST COVER EVERY DEVICE
+# THAT IS NOT THE LAUNCHPAD. Measured 2026-08-06: after a power cycle the order
+# became Launchpad 28, SP-404 32, USB Uno 36, nanoKONTROL 40 -- the nano had
+# been 32 and the 404 36. Whichever device happens to enumerate lowest is the
+# one mother grabs, so undoing only the two seen so far would leave a hole the
+# next reboot could walk through.
 aconnect -d "nanoKONTROL":0 "Pure Data":0    2>/dev/null || true
 aconnect -d "SP-404MKII":0 "Pure Data":0     2>/dev/null || true
+aconnect -d "USB Uno MIDI Interface":0 "Pure Data":0 2>/dev/null || true
 
 # Report what actually connected, for the run-it-by-hand console.
 echo "wire.sh: $(aconnect -l | grep -c "Connecting To") connections"

@@ -37,6 +37,27 @@ gateway()  { ip route 2>/dev/null | awk '/^default/{print $3; exit}'; }
 LASTCIDR=$(ipv4cidr)
 LASTGW=$(gateway)
 
+# ⚠️ THE OUTAGE DURATION WAS MISSING FROM EVERY CAPTURE, AND THE REASON IS
+# STRUCTURAL RATHER THAN AN OVERSIGHT. When a ladder rung succeeds, LAST is
+# re-read at the BOTTOM of the loop and becomes the new address -- so no
+# `NONE -> ipv4` transition is ever logged, and nothing recorded how long the
+# network was actually down. Both 2026-08-05/06 failures recovered exactly that
+# way and neither has a duration to its name. Item 212.
+#
+# THAT IS THE NUMBER THE REQUIREMENT IS ABOUT: "zero drops during a set" is a
+# statement about how long the phone display is dead, and it was unmeasured.
+DOWN_AT=""
+
+# ⚠️ THE DISCRIMINATOR FOR ITEM 215, and it costs one variable. The 2026-08-06
+# capture got OPPOSITE dhcp-probe answers on the two APs -- no offer at all on
+# the satellite, an instant offer on the router while the running daemon still
+# had nothing. Those need different fixes, and what separates them is whether
+# the daemon holding the dead lease is the SAME PROCESS that acquired it:
+#
+#   same pid -> the incumbent daemon cannot re-acquire. CLIENT-side.
+#   new pid  -> it restarted and still cannot get an answer. UPSTREAM.
+LASTDHCPPID=$(pgrep -nx dhcpcd)
+
 # ONE INSTANCE ONLY. Two would run the recovery ladder twice against each other,
 # which is worse than not watching at all. A pidfile rather than pgrep, because
 # ⚠️ ANY PROCESS SCAN MATCHING A STRING ALSO MATCHES THE SSH COMMAND CARRYING IT.
@@ -100,6 +121,13 @@ snap() {
 # address from a leased one -- leaving it would make every rung below score a
 # false RECOVERED and would corrupt the very datum this script exists to collect.
 linkprobe() {
+    # ⚠️ CLEAR THE VERDICT FIRST. FINE is set only at the ping below, AFTER three
+    # early returns -- so without this a probe that SKIPS leaves the previous
+    # failure's verdict in place, and the dhcp block downstream reads a stale
+    # "yes" as though this probe had measured it. Caught by reading, not by a
+    # failure, but it is the same shape as every reject-outlet bug in this repo:
+    # a variable that looks set and is left over from something else.
+    FINE=""
     echo "  --- LINK PROBE (reads the broken state, changes nothing lasting) ---"
     if [ -z "$LASTCIDR" ] || [ -z "$LASTGW" ]; then
         echo "     SKIPPED -- no healthy address/gateway recorded yet this run"
@@ -177,6 +205,62 @@ dhcpprobe() {
     echo "       an OFFER = the server answers a DISCOVER from this client, and"
     echo "                  nothing more. It does NOT mean the daemon is wedged."
     echo "       no OFFER = nothing is answering this client on this AP right now."
+
+    # ⚠️ THE PROBE ABOVE ASKS WITH A FRESH CLIENT, WHICH IS NOT THE THING THAT
+    # IS BROKEN. The 2026-08-06 capture is the reason this exists: on the router
+    # the server offered an address INSTANTLY while the running dhcpcd sat with
+    # nothing, and on the satellite nothing answered anyone. Those are opposite
+    # faults and the -T probe alone cannot tell them apart. Item 215.
+    echo "  --- THE RUNNING DAEMON, at the same instant (item 215) ---"
+    D=$(pgrep -nx dhcpcd)
+    if [ -z "$D" ]; then
+        echo "     ⛔ NO dhcpcd RUNNING AT ALL -- that alone explains the missing"
+        echo "        lease, and none of the reasoning below applies."
+    else
+        # ⚠️ THE VERDICT IS ONLY MEANINGFUL IF THE LINK IS ALIVE, and the first
+        # capture proved it: on 2026-08-06 the link probe said LINK IS DEAD and
+        # this block still printed "the incumbent daemon cannot re-acquire --
+        # CLIENT-side", which claims far more than it measures. Of course it
+        # could not re-acquire: there was no working link to re-acquire over.
+        # Same error shape as item 180's "the REQUEST is never ACKed" and the
+        # old "an OFFER means the daemon is wedged" wording -- an assertion
+        # outrunning its evidence. FINE is set by linkprobe.
+        if [ "$D" = "$LASTDHCPPID" ]; then
+            echo "     dhcpcd pid $D -- SAME PROCESS that held the lease when healthy"
+        else
+            echo "     dhcpcd pid $D -- CHANGED (was ${LASTDHCPPID:-none} when healthy)"
+        fi
+        if [ "${FINE:-unknown}" != "yes" ]; then
+            echo "     => NO VERDICT: the link probe did not report a healthy link,"
+            echo "        so nothing here distinguishes a wedged daemon from a dead"
+            echo "        network. Read the LINK PROBE above first."
+        elif [ "$D" = "$LASTDHCPPID" ]; then
+            echo "     => link is FINE and the incumbent daemon still has no lease."
+            echo "        CLIENT-side."
+        else
+            echo "     => link is FINE and even a restarted daemon has no lease."
+            echo "        Points UPSTREAM."
+        fi
+        # ⚠️ -U CANNOT WORK ON THIS DEVICE, and the reason is worth knowing rather
+        # than rediscovering. It prints only:
+        #     wlan0: dhcp_dump: No such file or directory
+        # because it reads a LEASE FILE, and /var/lib/dhcpcd is on the READ-ONLY
+        # rootfs -- so dhcpcd has never been able to write one. (The dir holds
+        # only 2015-dated leases for SSIDs this rig has not used in years.)
+        # plan-tests recorded "-U returns nothing on 6.9.3 here" without the
+        # cause; this is the cause. Kept because the error line is itself the
+        # evidence, and it costs nothing.
+        #
+        # ⬜ AND IT RAISES A QUESTION NOBODY HAS ASKED PROPERLY: with no writable
+        # lease store, dhcpcd has nothing to REBIND to after a carrier change and
+        # must always fall back to a full DISCOVER -- which is exactly what every
+        # capture shows it doing. `--dbdir /sdcard/dhcpcd` sits in plan-tests'
+        # RULED OUT list, but it was dismissed inside a batch aimed at "the lease
+        # expires", a model that turned out to be wrong. It was never refuted on
+        # its own merits. NOT a fix, and NOT a finding -- a lead.
+        echo "     dhcpcd -U wlan0:"
+        dhcpcd -U wlan0 2>&1 | head -12 | sed 's/^/       /'
+    fi
 }
 
 # ---------------------------------------------------------------------------
@@ -251,6 +335,19 @@ prefer_router() {
     } >> "$LOG" 2>&1
 }
 
+# ⚠️ A BOUND, NOT A STOPWATCH -- and it is reported as one on purpose. Detection
+# is at POLL granularity, so the address was already gone for up to POLL seconds
+# before DOWN_AT was stamped. Writing a bare number here would be the same class
+# of error as the "500/s is clean" rate sweep in item 208: a confident figure
+# that is quietly wrong at the edges.
+outage_report() {
+    [ -n "$DOWN_AT" ] || return 0
+    NOWS=$(date +%s)
+    echo "     ** OUTAGE: about $((NOWS - DOWN_AT))s without ipv4"
+    echo "        (lower bound -- add 0 to ${POLL}s for the poll that detected it)"
+    DOWN_AT=""
+}
+
 try() {   # $1 = description, $2 = command, $3 = seconds to wait
     echo "  >> TRY: $1"
     echo "     cmd: $2"
@@ -259,6 +356,7 @@ try() {   # $1 = description, $2 = command, $3 = seconds to wait
     NEW=$(ipv4)
     if [ -n "$NEW" ]; then
         echo "     RESULT: RECOVERED -- ipv4 is $NEW after $1"
+        outage_report
         return 0
     fi
     echo "     RESULT: still no ipv4 after ${3}s"
@@ -285,8 +383,18 @@ while true; do
             echo "TRANSITION  $LAST  ->  $NOW"
             snap
             if [ "$NOW" = "NONE" ]; then
+                DOWN_AT=$(date +%s)
+                # ⚠️ 60 LINES, NOT 25, AND THE EXTRA 35 ARE THE POINT. Every
+                # capture so far shows `authenticate with <bssid>` and nothing
+                # before it, so we cannot tell a VOLUNTARY roam from a
+                # DISCONNECT-AND-RECONNECT -- and those are different faults.
+                # wpa_supplicant here has NO bgscan configured (wifi-reassociate.sh
+                # writes only ctrl_interface + wpa_passphrase output), so it is not
+                # hunting for better APs at all, which makes "the AP dropped us"
+                # the more likely reading of the two. A deauth/beacon-loss line
+                # would settle it, and it sits just outside the old window.
                 echo "  --- dmesg tail (kernel view of the dongle) ---"
-                dmesg 2>/dev/null | tail -25 | sed 's/^/    /'
+                dmesg 2>/dev/null | tail -60 | sed 's/^/    /'
                 echo "  --- arp ---"; sed 's/^/    /' /proc/net/arp 2>/dev/null
                 linkprobe
                 dhcpprobe
@@ -334,6 +442,12 @@ while true; do
                 else
                     echo "  --- observe mode: changing nothing ---"
                 fi
+            else
+                # Came back WITHOUT a rung claiming it: observe mode, or a
+                # spontaneous recovery between two polls. ⚠️ That second case is
+                # the one worth catching -- the record says the lease is lost and
+                # NOT regained, so an unaided return would overturn it.
+                outage_report
             fi
         } >> "$LOG" 2>&1
         LAST=$(ipv4); LAST=${LAST:-NONE}
@@ -344,6 +458,7 @@ while true; do
     if [ "$NOW" != "NONE" ]; then
         C=$(ipv4cidr); [ -n "$C" ] && LASTCIDR=$C
         G=$(gateway);  [ -n "$G" ] && LASTGW=$G
+        P=$(pgrep -nx dhcpcd); [ -n "$P" ] && LASTDHCPPID=$P
 
         # PREVENTION runs on HEALTHY ticks, which is the whole point: steering
         # back while the network still works costs one roam and no downtime,

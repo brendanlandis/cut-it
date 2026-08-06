@@ -47,7 +47,7 @@ than assumed, because this repo has been bitten here before by `polytouchin`. **
 | 1 | Launchpad Pro MK3 | 1–16 | 1 | ✅ |
 | 2 | nanoKONTROL | 17–32 | 17 | ✅ |
 | 3 | SP-404MKII | 33–48 | 33 | ✅ |
-| 4 | USB→DIN interface → Volca FM | 49–64 | 49 | ⬜ interface not purchased |
+| 4 | **USB Uno MIDI Interface** → Volca FM | 49–64 | 49 | ✅ wired, slot 4 live |
 
 `MAXMIDIINDEV` is 16 in Pd, so four devices is nowhere near the ceiling. Pd is configured for
 4 in / 4 out in `/root/.pdsettings` with `midiapi: 1`. ✅
@@ -766,7 +766,21 @@ its grid from the bottom row up (`r*10+c`, row 1 at the bottom).
 **Receive only.** The original Volca FM has no MIDI out at all — its sequencer cannot be
 captured, and it can never tell Pd anything. 📄 (The FM2 added MIDI out; this is not an FM2.)
 Reaches the rig over DIN through the USB→DIN interface, so **Pd device 4, channel 49** for the
-Volca's own channel 1. ⬜ interface not yet purchased.
+Volca's own channel 1.
+
+✅ **The interface is owned, attached and wired** (2026-08-06). It enumerates as
+**`USB Uno MIDI Interface`** — an M-Audio Uno — with **one bidirectional port**, confirmed present
+in both `aconnect -i` and `aconnect -o`. `wire.sh` connects it both ways:
+`USB Uno MIDI Interface:0 → Pure Data:3` (in, ch 49–64) and `Pure Data:7 → USB Uno MIDI Interface:0`
+(out). ⚠️ **Only the outbound line can ever carry Volca traffic**; the inbound one exists because
+the interface has a DIN IN jack a future device could use.
+
+⚠️ **ALSA CLIENT NUMBERS MOVE, AND THEY MOVED WHEN THIS WAS ADDED.** After a power cycle the order
+became Launchpad 28, SP-404 32, Uno 36, nanoKONTROL 40 — the nano had been 32 and the 404 36.
+✅ **Nothing broke, because `wire.sh` connects by NAME** and Pd's channel block follows which
+`Pure Data` port a device is joined to, not enumeration order. **This is the payoff for the
+connect-by-name rule.** `wire.sh`'s `aconnect -d` block now covers the Uno too, since whichever
+device enumerates lowest is the one mother's `alsaconnect.sh` grabs for Midi-In 1.
 
 Basic channel 1–16, default 1–16, memorised. Mode 3 (OMNI OFF, POLY). 📄
 
@@ -793,13 +807,59 @@ Basic channel 1–16, default 1–16, memorised. Mode 3 (OMNI OFF, POLY). 📄
 
 **Transmits: nothing.** Every column on the transmitted side of Korg's chart is empty. 📄
 
-### Three settings that will silently break things ⬜
+### Three settings that will silently break things
 
-1. **`MIDI RX ShortMessage` must be ON** or **none of CC 40–50 is received**. Every parameter
-   CC in the table above is gated behind this one global. If Volca CCs appear to do nothing,
-   check this before debugging Pd.
+1. ✅ **`MIDI RX ShortMessage` is ON on this unit — verified 2026-08-06, and it did not have to be
+   found in a menu.** Every parameter CC 40–50 is gated behind this one global **and notes are
+   not**, which makes notes a built-in control: notes + CC working proves it is on, notes alone
+   proves it is off, and silence from both is cabling rather than a setting. ⚠️ **Diagnose it with
+   the test instead of setting it first.** Item 223.
+
+   **The A/B that proves it:** three events, all MIDI note 48, differing only in CC 40 —
+   centre, centre, 127. The first two must sound identical; the third came back **a couple of
+   octaves up**. ⛔ **The duplicated control note is what makes it evidence** rather than an
+   impression, and it is what ruled out an accidental trigger.
+
+   ⚠️ **This claim is BY EAR, not off the wire, and it always will be** — the Volca transmits
+   nothing, so there is no readback to check it against. That is a weaker evidence class than
+   everything else in this file.
 2. **`MIDI Clock src` must be Auto**, not Internal, or clock and start/stop are ignored.
-3. Aftertouch, pitch bend and program change are all unsupported — don't route them.
+3. Aftertouch and pitch bend are unsupported — don't route them. ⛔ **Program change WAS on this
+   list and is not any more — see below.**
+
+### ⚠️ THIS UNIT RUNS PAJEN 1.09, NOT STOCK FIRMWARE ✅
+
+**Flashed 2026-08-06** (audio into SYNC IN; verify with `REC` held at power-on → `Main 109`). It
+changes what this device can do, and **two capabilities the rest of this file called impossible are
+now real**:
+
+| | Stock | Pajen 1.09 |
+|---|---|---|
+| **Program Change** | ⛔ ignored | ✅ **selects patches** — measured A B A B across PC 0/20 |
+| **Velocity** | ⛔ ignored | ✅ **received** — 100/100/10/127 read as medium/medium/low/high |
+
+✅ **Velocity is the one that matters most to this project**: the capture format is
+`time, note, velocity, duration`, and the Volca was the only destination that would have discarded
+a field. It no longer is.
+
+⛔ **BOTH ARE GATED BY GLOBAL SETTINGS, AND NEITHER IS DOCUMENTED IN ANY SECONDARY SOURCE.** Pajen
+extends the settings block from the stock 8 (item 227) to 12. Enter with **`FUNC` at power-on**,
+**`REC` to save**:
+
+| Key | Display | Meaning | Required |
+|---|---|---|---|
+| 9 | `Md UEL` | MIDI velocity | **On** |
+| 10 | `MdSYSX` | SysEx — Yamaha vs Korg patch import/export | Off |
+| 11 | `PCnot` | PC **per-note** (multitimbral) | **Off** |
+| 12 | **`PCMId`** | **PC over MIDI — the master enable** | **On** |
+
+⚠️ **`PCnot` and `PCMId` ARE A TRAP.** Both start with "PC", both are booleans, they are adjacent —
+and enabling the wrong one gives a symptom **indistinguishable from the fault**: per-note mode binds
+a program change to the next note and deliberately leaves the current program *and the display*
+unchanged. **Four separate test runs failed this way.** Items 226–227.
+
+⚠️ **Everything about this device is BY EAR.** It transmits nothing, so there is never a readback —
+a permanently weaker evidence class than the rest of this file. Item 223.
 
 **DX7 SysEx is a real capability worth remembering.** The Volca FM accepts Yamaha DX7 bulk
 dumps, so its entire patch bank is loadable from Pd if that ever becomes interesting. It is

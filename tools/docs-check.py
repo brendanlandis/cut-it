@@ -244,7 +244,10 @@ def check_dangling_docs(verbose):
     return out
 
 
-MODULE_SKELETON = ['What it is', 'Facts', 'Traps', 'Open']
+# What it is / Facts / Traps are about the DEVICE. Design is about us -- how Cut
+# It chooses to use it and why -- which is neither a measured fact nor something
+# that will bite you, and had no home until two pages in a row needed one.
+MODULE_SKELETON = ['What it is', 'Facts', 'Traps', 'Design', 'Open']
 SCHEMAS = ('module', 'rules', 'freeform')
 SCHEMA_LINE = re.compile(r'^<!--\s*schema:\s*(\w+)\s*-->\s*$')
 PATHS = re.compile(r'`([^`]+)`')

@@ -542,37 +542,9 @@ What each box can actually do, verified on hardware. What to *build* with it liv
 [ref-software.md](ref-software.md); the message-by-message detail — every CC, note and
 SysEx each device accepts and transmits — lives in [ref-midi.md](ref-midi.md).
 
-### Launchpad Pro MK3 — a genuine blank slate
+### Launchpad Pro MK3
 
-**Physical layout.** An 8×8 grid of RGB pads, surrounded by large function buttons on the
-left, right and top, plus a double row of smaller buttons across the bottom. Left column
-selects modes (Session, Note, Chord, Custom, Sequencer, Projects); right column is scene
-launch; top row is navigation; bottom rows are track select and Ableton controls. In
-Programmer Mode all of that labelling becomes meaningless — every button is just a note
-number you define.
-
-The pads are **velocity *and* pressure sensitive** (polyphonic aftertouch). They are not
-switches.
-
-**Programmer Mode** is officially documented (Novation publishes a
-[Programmer's Reference Manual](https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/downloads/LPP3_prog_ref_guide_200415.pdf)),
-not a hack. In it:
-
-- All built-in modes are disabled. The firmware gets out of the way completely; every pad
-  just sends note-on/note-off.
-- You drive every LED yourself. Note-on to a pad's note number, velocity selects from a
-  128-colour palette. SysEx gives full RGB.
-- Static / flashing / pulsing are MIDI channels 1 / 2 / 3 — so blinking a pad costs one
-  message, no timing logic in Pd.
-- Note layout is row/column encoded: pad at row *r*, column *c* is note `r*10+c` (11–88).
-  `div 10` and `mod 10` gets you coordinates, no lookup table.
-- Entering it is either a button combo (hold SETUP, press the bottom Scene Launch) or a
-  SysEx message. ⚠️ **Entering via SysEx locks out the Settings menu**, and the only way back
-  is the **Live Mode** SysEx — Novation documents a layout-select command as the escape, and
-  ✅ that command does nothing at all on this unit. See [ref-midi.md](ref-midi.md).
-
-Unit is a **MK3** (MK3 announced Jan 2020; a 09/2020 build date rules out MK1). Use the MK3
-reference — SysEx headers and side-button note numbers differ from MK1.
+**Moved** to [ref/launchpad.md](ref/launchpad.md), which is now the only page about this device.
 
 ### nanoKONTROL (mk1) — visible position, no host LEDs
 

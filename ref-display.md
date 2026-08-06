@@ -273,16 +273,8 @@ that name — the same trade the ALERT buffer lost below. Recorded so it isn't r
 
 ## No text on the Launchpad
 
-The Launchpad Pro MK3 has **no text-scrolling SysEx**. The word "scroll" does not appear
-anywhere in Novation's programmer reference, and the SysEx command summary lists only six
-commands. 📄 The Launchpad Mini MK3 and Launchpad X have text scrolling; the Pro MK3 does not.
-
-Rendering text would mean hand-rolling a font and shifting columns across the grid — slow to
-read, and it would consume the entire surface. **Not a text channel.** Treat the Launchpad as
-96 RGB pixels of spatial state: which slots are filled, which pattern is queued, where the
-playhead is, which filter is selected.
-
-Its LED details are in [ref-midi.md](ref-midi.md).
+**Moved** to [ref/launchpad.md](ref/launchpad.md). Short version: the Pro MK3 has no text-scrolling
+SysEx, so it is 96 RGB pixels of spatial state and not a text channel. `g_grid`'s arbiter is below.
 
 ---
 

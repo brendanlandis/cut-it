@@ -109,63 +109,11 @@ The four that shape everything else. Reasoning for each is further down this fil
 
 ## Interface design
 
-### Launchpad — three tiers, and you only build the top one
+### The Launchpad
 
-Programmer Mode is all-or-nothing: entering it disables every built-in mode. **Pd flips between
-Programmer and Live by SysEx** (header `F0 00 20 29 02 0E`), so which world the surface is in is
-something the patch decides at runtime rather than once.
-
-⚠️ **Selecting a specific built-in layout by SysEx does NOT work on this unit** — ids 0, 4 and 5
-do nothing at all ([plan-tests.md](plan-tests.md) item 87). Live Mode returns to whichever
-built-in mode was last used on the device. So the choice available to Pd is two-valued, not a
-layout table, and `m_launchpad`'s surface-ownership state keys off exactly that.
-
-| Tier | What | Work | LED control |
-|---|---|---|---|
-| **Built-in** (Note, Chord, Sequencer, Projects) | Novation's, fully featured | **None** | Device owns them |
-| **Custom Modes** — 8 slots, built in Novation Components | Drag-and-drop widgets: scaled keyboards, drum grids, virtual faders. Pads send Note / CC / Program Change | Moderate, no code | Limited — one "on" colour per mode, per-pad "off" colours |
-| **Programmer Mode** | Everything from scratch | Most | Full dynamic RGB |
-
-**Do not rebuild these.** Note mode's scale tables, root selection and isomorphic layout
-maths are genuinely fiddly in Pd and Novation's are good. Chord mode is worse to replicate.
-The Sequencer is 4 tracks × 32 steps × 8-note poly with pattern chaining — a substantial
-project on its own, and it is already the compose-time authoring tool. Projects handles
-save/recall of that sequencer data.
-
-**The tier 2/3 boundary is dynamic colour.** Custom Modes allow only one "on" colour per
-mode, so static colour-coding works but "empty / loaded / queued / playing" as four distinct
-states does not. The pattern launcher needs Programmer Mode; a plain CC grid or a scaled
-keyboard does not.
-
-Novation Components needs a computer (web app over WebMIDI, or standalone) — you cannot
-author Custom Modes from the Organelle, but once written they persist on the device.
-
-**Risk:** entering Programmer Mode *by SysEx* locks out the Settings menu until Pd sends the
-Live Mode SysEx. If Pd dies mid-set you are power-cycling the Launchpad. ✅ `m_launchpad` handles
-this on both `panic` and `quitting`, and it is the only file allowed to.
-
-### Grid idioms worth stealing
-
-The conventions grid controllers have converged on, and what each maps to here:
-
-| Idiom | What it is | Use for Cut It |
-|---|---|---|
-| **Clip launching** (Session) | Columns = tracks, rows = scenes. Blinks when queued, solid when playing. Right column fires a whole row | **The pattern launcher.** Columns = destinations (404 drums, Volca, internal), rows = variations. Inherits the queued/playing visual convention free |
-| **Drum rack** | 4×4 quadrants of velocity-sensitive trigger pads | **Four filter quadrants**, arranged right-to-left to match the signal chain. 16 pads per filter vs the 5–7 keys currently on the Organelle keyboard |
-| **Isomorphic note layout** | Fixed interval per row, scale-locked | Playing the Volca — use built-in Note mode, don't rebuild |
-| **Step sequencing** | Row = track, column = step | Compose-time authoring — use built-in Sequencer |
-| **Column-as-fader** | Press higher = higher value. 8 steps of resolution | Coarse parameter control if the nano runs out |
-| **X/Y pad** | Pad coordinates set two parameters at once | **Chop Shop's drunkenness + sputter.** A 4×4 block = 16 positions over both. Slapping a corner is a different gesture than turning two knobs |
-| **Radio buttons** | A row as exclusive mode select, lit | Filter selection |
-| **Pure display** | Grid as output only | Playhead position, which sample slots are filled |
-
-**Pressure is the forgotten input.** Grain size, chop intensity, filter depth — any of these
-can ride pad pressure while held. Costs no panel space and is the most expressive control on
-the rig.
-
-The README says the controls *"will take some practice and memorization."* The RGB grid is
-the direct antidote to half of that: which filters are on, which of the five sample slots are
-filled, which pattern is queued, where the playhead is — all visible rather than memorised.
+**Moved** to [ref/launchpad.md](ref/launchpad.md) — the three-tier decision and how Cut It uses the
+surface are in that page's *Design* section. The grid idioms it would enable are v0.4 intent and
+live in [plan-v03.md](plan-v03.md) §7.
 
 ### Division of labour
 

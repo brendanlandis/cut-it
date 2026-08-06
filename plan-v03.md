@@ -286,8 +286,50 @@ outages, twice**), and check satellite backhaul health.
 
 ---
 
-## 10. Repo hygiene, noted not done
+## 10. Repo hygiene
 
-Sitting in the repo root, none of it mine to move: two firmware `.wav`s (~11 MB), ten Volca
-settings photographs (~25 MB — ⚠️ **these are the primary evidence for item 226 and deserve a home
-like `device/volca-settings/` rather than deletion**), and a stray screenshot.
+**The root is clean.** The firmware `.wav`s, the Volca settings photographs and the stray
+screenshot are all gone. Nothing is left to move.
+
+One thing to be aware of rather than to act on: **the Volca settings photographs were the primary
+evidence for item 226** and are no longer in the repo. The finding itself survives in full in
+plan-tests.md — the key 9–12 table and the `PCnot`/`PCMId` trap — so nothing operational is lost.
+If those photographs still exist outside the repo, `device/volca-settings/` is where they belong.
+
+---
+
+## 11. NEXT: the documentation refactor
+
+**Agreed as the work that follows v0.3, and it is a real problem rather than tidying.**
+
+| | Lines |
+|---|---|
+| `plan-tests.md` | **4,131** — 249 items, append-only, and the single largest file in the project |
+| `ref-` docs (six files) | ~4,550 |
+| `CLAUDE.md` | 309 |
+| `tools/README.md` | 765 |
+| **Total** | **~10,050** |
+
+That is roughly 400 lines of prose per `.pd` file in `Cut It/`. CLAUDE.md tells a cold reader "do
+not read everything", which is an admission that the volume has already outgrown its usefulness.
+
+**What the refactor has to do, at minimum:**
+
+- **Collect every remaining TODO into one place.** Right now open work is spread across
+  plan-v03 §5 *Open questions*, eight unticked items in plan-tests.md, and prose scattered through
+  the `ref-` docs. §5 was itself only created in v0.3, despite three documents having pointed at it
+  for months — so a pointer existing is no guarantee the target does.
+- **Decide what plan-tests.md is for.** At 4,131 lines it is never read start to finish, by its own
+  instruction. Items are cited by number from everywhere, so the numbering must survive any change.
+  Splitting by session, archiving closed sessions, or extracting a findings index are all options.
+- **Find the claims that are now false.** v0.3 alone falsified three: `ref-conventions.md` said
+  `u_map` used route branches "rather than a lookup table"; `ref-midi.md` implied `pgmout` needed no
+  correction; `u_tempo`'s own comment described a panic covering one bank as if it covered the
+  instrument. Nothing systematically looks for these.
+- **Deduplicate.** The same facts — the `47 + n` pad map, the `[del 2000]` print rule, the
+  reject-outlet rule — are restated in CLAUDE.md, the `ref-` docs, the `.pd` comments and the commit
+  history. Some of that repetition is deliberate and load-bearing; some is drift waiting to happen.
+
+⚠️ **The `.pd` comments are documentation too**, and they are not counted above. They are also the
+only copy that a person editing the patch in Pd can actually see, which is an argument for keeping
+them rich even as the prose files shrink.

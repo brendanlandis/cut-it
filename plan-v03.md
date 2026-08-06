@@ -427,31 +427,43 @@ order.**
 
 ### 10.9 Where this stands — 2026-08-06
 
-**Five commits in, `91c68f4`…`13df31c`. All gates pass.** ⚠️ **Read
-[ref/README.md](ref/README.md) first** — it carries the page schema, the trap form, the marker
-definitions and the parking rule, and `tools/docs-check.py` enforces all of it, so none of it has to
-be remembered. Run the gate and it will tell you.
+**Nine commits, `91c68f4`…`156ccd2`. All gates pass.** ⚠️ **Read [ref/README.md](ref/README.md)
+first** — it carries the page schema, the trap form, the marker definitions and the parking rule,
+and `tools/docs-check.py` enforces all of it. None of it has to be remembered; run the gate.
 
-| | Lines |
-|---|---|
-| Root docs | **8,752** (was 10,340) |
-| `ref/` pages | 903 across 4 |
-| `plan-tests.md` + `ref-build-log.md`, untouched | **5,112 — still 58% of the root total** |
+| | Then | Now |
+|---|---|---|
+| `ref-midi.md` | 897 | **241** |
+| `ref-display.md` | 727 | **279** |
+| `ref-hardware.md` | 697 | 620 |
+| `ref-software.md` | 455 | 351 |
+| `ref-conventions.md` | 892 | **26** (a pointer stub) |
+| `ref/` pages | — | **~2,100 across 8** |
+| `plan-tests.md` + `ref-build-log.md`, untouched | 5,112 | **5,112** |
 
-**Done:** `tools/docs-check.py`, proven to fail four ways and wired into `check-all.sh`;
-`ref/sp404.md`, `ref/launchpad.md`, `ref/volca.md`, `ref/nanokontrol.md`, each with its source
-sections replaced by a **Moved** pointer; the schema's fifth section, `Design`; traps rewritten as
-claim-plus-fix. `ref-midi.md` is down from 897 lines to 307.
+**Done — all six device pages, plus the conventions:**
+`ref/sp404.md` · `ref/launchpad.md` · `ref/volca.md` · `ref/nanokontrol.md` · `ref/organelle.md` ·
+`ref/phone.md` · `ref/conventions.md` · `ref/README.md`. Every source section replaced by a
+**Moved** pointer.
 
-**Next, in order:** `ref/organelle.md` (the largest — panel, OLED and aux LED) → `ref/phone.md` →
-`ref/conventions.md` with `C-NN` IDs → the five instrument pages → `ref/architecture.md`,
-`ref/device-os.md`, `ref/rig.md` → **the journals** → `CLAUDE.md` as a router.
+`tools/docs-check.py` now runs four checks, each proven to fail: anchored table vs `[text define]`,
+dangling document pointers, the full page schema, and **`C-NN` rule-ID resolution**.
+
+**Next, in order:** the five instrument pages — `map`, `tempo`, `state`, `boot`, `audio` — then
+`ref/architecture.md`, `ref/device-os.md`, `ref/rig.md`, then **the journals**, then `CLAUDE.md` as
+a router, then the `.pd` comments citing `C-NN` so the `ref-conventions.md` stub can go.
 
 ⚠️ **THE LINE COUNT GOES UP PER PAGE, AND THAT IS EXPECTED.** `ref/sp404.md` replaced 279 source
-lines with 281: tables gained `Evidence` and `Item` columns, the pad map became sixteen rows instead
-of a five-line diagram, and merging three overlapping sources replaced "summary + full" with one
-full statement. **The volume reduction is entirely in the journals.** Do not expect the module pages
-to deliver it, and do not compress them chasing it.
+lines with 281. Tables gained `Evidence` and `Item` columns, the pad map became sixteen rows instead
+of a five-line diagram, and merging overlapping sources replaced "summary + full" with one full
+statement. **The volume reduction is entirely in the journals**, which are still untouched and are
+now **58% of the root total**. Do not compress the module pages chasing it.
+
+**Where the material for the remaining pages is:** `ref-software.md` (architecture, load-bearing
+decisions, signal architecture, timing), `ref-hardware.md` (the device itself, wifi, power, cabling,
+gear), `ref-display.md` (the display arbiter only), `ref-midi.md` (the addressing model and
+`u_tempo`'s clock construction), and the `.pd` comments, which hold material that is in no `.md` at
+all — `u_map`, `u_state`, `u_init` and `m_404` are the richest.
 
 ### 10.10 Still open
 

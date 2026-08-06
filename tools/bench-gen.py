@@ -466,6 +466,12 @@ PHASES = {
             "What is left here is only what hardware can show: the front-panel Save \\, a "
             "REAL power cycle \\, and the mode lamp. Six steps rather than a padded "
             "twenty \\, because a bench proves the cases it contains and nothing else."),
+    9: dict(steps=S.STEPS9, counters=[], blurb="the Phase 9 acceptance run: the "
+            "mode-dependent map \\, both output devices and the SP-404 in both "
+            "directions. MOST OF PHASE 9 IS PROVEN HEADLESSLY -- tools/phase9-assert.sh "
+            "asserts all sixteen pads \\, the rate limiter and the allowlist guard in about "
+            "eight seconds. What is left here is only what HARDWARE can show: a real pad "
+            "under a real finger \\, and a Volca you can hear."),
     7: dict(steps=S.STEPS7, counters=[], blurb="the Phase 7 acceptance run: the phone "
             "status link. EVERY PASS IF DESCRIBES THE PHONE \\, not the Organelle -- "
             "so PdParty has to be open on the CutItRemote scene before step 1."),

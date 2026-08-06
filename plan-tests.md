@@ -3965,12 +3965,84 @@ it to read a **current** value, which is a different thing.)*
       error** — indistinguishable from a lookup miss. Found by testing `u_map`'s outlet in isolation,
       which proved the message left `u_map` correctly and moved the search downstream.
 
-      ⚠️ **AND THE MEASURING RIG LIED FIRST.** The initial run stopped after five pads, which looks
-      exactly like a pad-map error at the `47 + n` boundary. It was not: `u_net` fails with
-      `netsend: Bad file descriptor` at about four seconds on a Mac with no phone, `u_err` then
-      cannot write its log to `/sdcard`, and the run dies. **The rig's failure mimicked the exact
-      bug the test existed to find.** Fixed by compressing the schedule inside the four-second
-      window. A measuring rig is code — items 182, 209 and Phase 5's two probe bugs.
+      ⚠️ **AND THE MEASURING RIG LIED FIRST — see item 232, which corrects the first diagnosis
+      recorded here.** The initial run stopped after five pads, which looks exactly like a pad-map
+      error at the `47 + n` boundary. It is not, and it is not `u_net` either — that was the first
+      answer written down and it was wrong.
+
+- [x] **232. ⛔ A PREVIOUS TEST RUN'S SAVED STATE SILENTLY CHANGED WHAT THE MAP DID, MID-RUN — and
+      the first diagnosis of it was wrong.** While testing `m_404`, a driver firing seventeen pads
+      250 ms apart emitted **exactly five**, all before ~3.5 s. Compressing the same seventeen into
+      a 60 ms spacing emitted **all seventeen**. So the failure was **time-based, not count-based**.
+
+      ⚠️ **The first answer written down — that `u_net` fails at ~4 s on a Mac with no phone and
+      takes the run with it — was WRONG, and it was plausible enough to be believed.** A `netsend:
+      Bad file descriptor` really does appear, and `u_err` really cannot write `/sdcard` on a Mac.
+      **Neither kills anything:** a control patch ticking a `[metro 500]` alongside `main-dev.pd`
+      ran a clean 18 ticks over 9 seconds, straight through both errors.
+
+      ✅ **The real cause: `/tmp/cut-it-auto.txt` contained `mode perform mode-4`** — written by an
+      *earlier, unrelated* test that had switched mode to prove mode-dependence. `u_init` fires the
+      state restore at about 3.5 s, `u_map` republishes the restored mode, and from that instant
+      every row in the map keyed to `mode-1` stopped matching. **The instrument did exactly what it
+      was told; a previous session had told it something else.**
+
+      ⛔ **CONSEQUENCE FOR EVERY GATE THAT LOADS `main-dev.pd`: it must own its state directory.**
+      `main-dev.pd` passes `/tmp`, which is shared by every run on the machine, so one test that
+      changes mode silently rewrites the starting conditions of every test after it — including
+      tests written months later by someone who never ran the first one. `phase8-assert.sh` already
+      works inside its own `/tmp/cut-it-phase8-gate` and wipes it between phases; that is the
+      pattern, and it is now a requirement rather than a nicety.
+
+      ⚠️ **Three lessons, and the middle one is the expensive one.** A failure that stops partway is
+      not automatically a rate limit or a count boundary — **check whether it is a CLOCK**. A rig's
+      most dangerous failure is the one that mimics the bug it was built to find: five pads then
+      silence is *exactly* what a broken `47 + n` map looks like. And **a plausible diagnosis
+      confirmed by nothing is not a measurement** — the `u_net` story explained the evidence, was
+      wrong, and cost a wrong line in this ledger until a control test killed it.
+- [x] **233. ✅ `tools/phase9-assert.sh` — 23 checks in ~8 s, AND IT IS PROVEN TO FAIL.** The fourth
+      headless gate. It asserts the mode table and its guard, both output devices, `m_404` in both
+      directions, the rate limit and panic across ten banks.
+
+      **The can-it-fail runs, which are the only part that makes the rest worth anything:**
+
+      | Bug reintroduced | What the gate did |
+      |---|---|
+      | **`47 + n` pad map** | ⭐ failed with `pads wrong: [5..16]` — **12 of 16, pads 1–4 green**, the exact signature — plus **two receive assertions**, so it catches BOTH directions |
+      | **a shipped row naming `tempoo`** | failed the static lint at `line 14 names 'tempoo'`, **without running Pd at all** |
+      | **a duplicate `(mode, control)` row** | failed with `line 14 repeats mode-1 og-knob-1 from line 1` |
+      | **rate limiter disarmed (`del 5` → `del 0`)** | ⛔ **PASSED. The gate did not notice.** |
+
+      ⛔ **THE FOURTH ONE IS THE FINDING, AND IT IS PHASE 8's LESSON REPEATING.** The burst test
+      fires twenty triggers in ONE logical instant and asserts exactly one comes out — but **`[del 0]`
+      still defers to the next scheduler tick**, so the gate stays shut for the whole instant *no
+      matter what the interval is*. The burst proves **drops-rather-than-queues** and nothing
+      whatever about the interval. Fixed by adding a window of **two triggers 2 ms apart**, which
+      straddles the 5 ms gate: it emits 1 armed and **2 disarmed**, confirmed both ways.
+      ⚠️ **An assertion that cannot distinguish the bug from the fix is decoration.**
+
+      ⛔ **And the gate had a defect of its own that was worse than a wrong answer: IT HUNG.** The
+      driver generator raised a `NameError`, the shell never checked its exit status, Pd was handed
+      a driver file that did not exist, and the `; pd quit` that lives *inside that file* therefore
+      never fired. **A gate that hangs is worse than one that fails** — a failure is read, a hang is
+      waited on. Now: the generator's status is checked, the driver's existence is checked, and a
+      40 s watchdog makes any future variant of the same mistake impossible.
+
+      ✅ **Two more things this gate does that the earlier three do not:**
+      - **It asserts an EXACT rewritten-box count per class** (`noteout:2 ctlout:2 pgmout:1
+        notein:2`). Phase 6 only checks "not zero", and its own comment claims five where the patch
+        has six — the count drifted and nothing noticed. A LOWER count means assertions have gone
+        vacuous; a HIGHER one means an emitter the gate does not know about.
+      - **It owns its state directory** (item 232). `main-dev.pd` passes `/tmp`, shared by every run
+        on the machine.
+
+      ⚠️ **Rig bugs found and fixed while building it, none of them in the patch:** the driver had no
+      `param`/`disp`/`err` taps, so every assertion about them was answered by an empty list rather
+      than by a fact; its sixteen pad messages fired in **one logical instant**, which the limiter
+      correctly collapsed to one and which read exactly like a broken pad map; each action's `[del]`
+      was given an **absolute** time when `[del]` counts from when it is banged, firing actions at
+      `ms+ms` and landing them in later windows; and the `unknown-dest` window sat **after** the mode
+      switch, making it a lookup miss rather than a guard test.
 
 ---
 

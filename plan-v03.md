@@ -23,12 +23,13 @@ it** for Pd 0.49.
 | | |
 |---|---|
 | **v0.2** | ✅ Complete and hardware-verified. Sixteen abstractions, four display surfaces, three headless gates, six benches |
-| **v0.3** | ⬅ **You are here.** The *blank slate* — every device addressable, every control assignable |
-| **v0.4** | The instrument: four filter stages, the drum mode, the sampler, compose-time capture |
+| **v0.3** | ✅ **Complete and hardware-verified.** The *blank slate* — every device addressable, every control assignable. Eighteen abstractions, four headless gates, seven benches |
+| **v0.4** | ⬅ **Next.** The instrument: four filter stages, the drum mode, the sampler, compose-time capture. ⚠️ **But the documentation refactor comes first — see §10** |
 
-⚠️ **v0.3 IS NOT THE SOUND, AND THIS DOCUMENT USED TO SAY IT WAS.** An earlier version planned the
-filter stages here. The goal now is to finish the infrastructure so the *next* phase can say
-***"in Mode A, moving this fader does X"*** and have somewhere to put the answer.
+⚠️ **v0.3 WAS NOT THE SOUND, AND THIS DOCUMENT ONCE SAID IT WAS.** An earlier version planned the
+filter stages here. The goal was to finish the infrastructure so the *next* phase can say
+***"in Mode A, moving this fader does X"*** and have somewhere to put the answer. **It can now**:
+that sentence is one row of `Cut It/cut-it-map.txt`.
 
 ---
 
@@ -63,90 +64,32 @@ filter stages here. The goal now is to finish the infrastructure so the *next* p
 
 ---
 
-## 3. What v0.3 is, and what is already done
+## 3. v0.3 is COMPLETE — what it built, and what it corrected
 
-Three gaps defined v0.3. **One is closed.**
+**All three gaps that defined v0.3 are closed, and the phase ran on the hardware.**
 
-| Gap | State |
+| Gap | |
 |---|---|
-| **The SP-404 has no `m_` layer** | ✅ **CLOSED.** `m_404` is built, wired and verified both ways — all sixteen pads asserted, the rate limit proved to drop rather than queue, panic across all ten banks (item 231) |
-| **The Volca has no `m_` layer** | ✅ **CLOSED.** `m_volca` is wired in — one selector-prefixed cord from `u_map`, `$5` verified arriving as 49. ⬜ Nothing drives the outlet until the mode table lands |
-| **`u_map` cannot express a mode-dependent meaning** | ✅ **CLOSED.** Table-driven with a hardcoded allowlist of destinations — `cut-it-map.txt`, `<mode> <control> <dest> <arg>`. Guard proven: a bad destination errors and emits nothing (item 230) |
+| The SP-404 has no `m_` layer | **CLOSED.** `m_404`, the first bidirectional device layer. 160 pads, one shared table both directions, a rate limit that drops rather than queues |
+| The Volca has no `m_` layer | **CLOSED.** `m_volca` wired in on one selector-prefixed cord |
+| `u_map` cannot express a mode-dependent meaning | **CLOSED.** Table-driven with a hardcoded allowlist of destinations |
 
-### ✅ Closed during the last session — do not redo these
+**The full account is in [ref-build-log.md](ref-build-log.md) under *Phase 9*.** Evidence is
+items 228–235. What follows here is only what is still OPEN.
 
-- **The USB→DIN interface is owned, attached and wired.** It enumerates as
-  **`USB Uno MIDI Interface`**, and `wire.sh` connects it both ways. **Pd slot 4 (channels 49–64) is
-  live** for the first time in the project.
-- **The Volca is fully characterised** — notes, CC 40–50, **Program Change** and **velocity** all
-  confirmed working. Items 223–227.
-- **`Cut It/m_volca.pd` is written**, passes the layout check with 0 problems and loads silently.
-  ⚠️ **Nothing instantiates it yet**, so it is inert.
-- **⛔ `pgmout` is 1-BASED, measured both directions — item 228.** `pgmout N` puts wire value `N-1`
-  on the cable, so the bare `[pgmout]` `m_volca` shipped with would have selected **one patch below**
-  the number asked for, silently. ✅ **Fixed** — `m_volca` now carries a `[+ 1]`, and its inlet means
-  the *wire* number. ⚠️ Two mechanism findings came with it: **loading any patch drops Pd's ALSA
-  output connections** (which is why `u_init` runs `wire.sh` — a probe patch must make its own
-  `aconnect` or it measures silence and looks like a negative result), and **a menu patch loaded by
-  `oscsend /loadPatch` is the cheap way to run Pd-side MIDI probes**, because it needs no
-  `killall pd` and so cannot strand the Launchpad. Probe kept at `tools/stage-patches/PGM Probe/`.
-- **The wifi fault is instrumented** — see §6.
+**Four corrections came out of building it**, and they are the part worth carrying forward:
+Pd's `pgmout` is 1-based; `u_tempo`'s panic covered one bank in ten; nothing on the device could
+raise panic at all; and `ref-conventions.md` asserted that `u_map` did not use a lookup table.
+
+⚠️ **And one bug that 23 green headless checks could not see.** The instrument booted at 120 BPM
+instead of the saved 57, because the map was not ready when mother pushes `knobs.txt` at boot. The
+gate's own windows were timed *from the implementation detail that was wrong*, so it could only
+test the patch after the race had resolved. **A person reading a number off a screen found it.**
+Item 234.
 
 ---
 
-## 4. What remains in this phase
-
-**In order.** The measurement that gated all of it is closed — see §3.
-
-### 4.1 ✅ Built and verified — what is left is proving it
-
-**All three gaps in §3 are closed.** `m_volca` is wired in on one selector-prefixed cord,
-`m_404` is built in both directions, and `u_map` is table-driven and mode-aware with the allowlist
-guard. Evidence: **items 228–231**. ⚠️ **None of it has run on the hardware yet** — every result so
-far is a headless Mac run, and this project's own history says that difference matters.
-
-**Three corrections came out of building it, all now in the `ref-` docs:**
-
-| | |
-|---|---|
-| ⛔ **Pd's `pgmout` is 1-based** | `pgmout N` puts wire value `N-1` on the cable. `m_volca` carries a `[+ 1]`. Item 228 |
-| ⛔ **`u_tempo`'s panic covered one bank of ten** | All Notes Off on channel 33 alone. Moved into `m_404`, now all ten. Item 231 |
-| ⛔ **`ref-conventions.md` said `u_map` used route branches "rather than a lookup table"** | No longer true, and the guard that replaces it is not optional |
-
-### 4.2 ✅ The gate and the bench are built — what is left is the HARDWARE
-
-`tools/phase9-assert.sh` is 23 checks in ~8 s and runs inside `tools/check-all.sh`. Its static half
-needs no Pd at all. It is **proven to fail** on a `47 + n` pad map, a row naming a destination that
-is not on the route, and a duplicate row. `STEPS9` is eleven hands-on steps. Items 233 and 232.
-
-⚠️ **Two of its own defects are worth carrying forward, because both are general:**
-
-| | |
-|---|---|
-| ⛔ **It passed a disarmed rate limiter** | The burst window fires in ONE logical instant, and `[del 0]` still defers to the next scheduler tick — so it proved *drops-rather-than-queues* and **nothing** about the interval. **An assertion that cannot tell the bug from the fix is decoration.** |
-| ⛔ **It HUNG rather than failing** | Its driver generator errored, the exit status went unchecked, and the `; pd quit` inside the un-written driver never fired. **A gate that hangs is worse than one that fails** — a failure gets read, a hang gets waited on. |
-
-### 4.3 What actually remains: the device, then landing
-
-⛔ **EVERYTHING SO FAR IS A HEADLESS MAC RUN.** Phase 6 passed 25/25 on the Mac twice and shipped
-three bugs. Nothing in this phase has met the real 404, the real Volca or the real OLED.
-
-- **`./deploy.sh`**, then the eleven-step bench with `./tools/go.sh` — ⚠️ **the encoder does not
-  advance a bench on the device**, and netcat does not work on macOS.
-- **The receive side is the part only hardware can settle**: a real pad under a real finger, on a
-  real bank, at a real velocity. ⚠️ **A receive test MUST state which bank is selected** — the 404
-  lights only the selected one, which cost half an hour once (item 196).
-- **The Volca is BY EAR and always will be** — it transmits nothing, so no result from it is ever
-  read back off the wire. Record the evidence class honestly.
-- ⚠️ **`/tmp/curpatchname`**: if the patch is loaded by `deploy.sh` or `oscsend` rather than from the
-  menu, **System → Save New** makes a folder called `! 2`. Select it from the menu once first.
-- **Landing:** finished work moves to [ref-build-log.md](ref-build-log.md); §4 *leaves* this file
-  rather than being annotated; anything unresolved moves to *Open questions*; a new
-  [plan-tests.md](plan-tests.md) session is numbered **after the last used number — currently 233**.
-  ⛔ **Never reuse an item number.**
-
-
-## 5. Open questions
+## 4. Open questions
 
 **The single place to look for what is unresolved.** CLAUDE.md, ref-conventions.md and ref-midi.md
 all point here; the section did not exist until v0.3 and the pointers were dangling.
@@ -191,7 +134,7 @@ itself, and **43/44/46** struck through as answered by later work.
 
 ---
 
-## 6. ⚠️ Constraints that bind what you build
+## 5. ⚠️ Constraints that bind what you build
 
 **The four rate ceilings are in [ref-midi.md](ref-midi.md). What they bind here:**
 
@@ -215,7 +158,7 @@ ceilings are message-domain only.** ⚠️ If a stage converts that phase to ban
 
 ---
 
-## 7. The wifi fault — background, not blocking
+## 6. The wifi fault — background, not blocking
 
 **Requirement, as Brendan states it: the Organelle must stop dropping wifi.** Not "recover fast" —
 a dead phone display mid-set is the failure.
@@ -245,7 +188,7 @@ outages, twice**), and check satellite backhaul health.
 
 ---
 
-## 8. Deliberately not in this phase
+## 7. Deliberately not in this phase
 
 **Recorded so none of it is rediscovered as news.**
 
@@ -262,7 +205,7 @@ outages, twice**), and check satellite backhaul health.
 
 ---
 
-## 9. ⚠️ How this project gets things wrong
+## 8. ⚠️ How this project gets things wrong
 
 **Read this before trusting your own conclusions. Every one of these cost real time.**
 
@@ -286,7 +229,7 @@ outages, twice**), and check satellite backhaul health.
 
 ---
 
-## 10. Repo hygiene
+## 9. Repo hygiene
 
 **The root is clean.** The firmware `.wav`s, the Volca settings photographs and the stray
 screenshot are all gone. Nothing is left to move.
@@ -298,7 +241,7 @@ If those photographs still exist outside the repo, `device/volca-settings/` is w
 
 ---
 
-## 11. NEXT: the documentation refactor
+## 10. NEXT: the documentation refactor
 
 **Agreed as the work that follows v0.3, and it is a real problem rather than tidying.**
 
@@ -316,8 +259,8 @@ not read everything", which is an admission that the volume has already outgrown
 **What the refactor has to do, at minimum:**
 
 - **Collect every remaining TODO into one place.** Right now open work is spread across
-  plan-v03 §5 *Open questions*, eight unticked items in plan-tests.md, and prose scattered through
-  the `ref-` docs. §5 was itself only created in v0.3, despite three documents having pointed at it
+  plan-v03 §4 *Open questions*, eight unticked items in plan-tests.md, and prose scattered through
+  the `ref-` docs. §4 was itself only created in v0.3, despite three documents having pointed at it
   for months — so a pointer existing is no guarantee the target does.
 - **Decide what plan-tests.md is for.** At 4,131 lines it is never read start to finish, by its own
   instruction. Items are cited by number from everywhere, so the numbering must survive any change.

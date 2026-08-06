@@ -873,6 +873,102 @@ and the test was run standing on a different one. The same ambiguity nearly clos
 and was only escaped there because a control press came first. **Prove the probe, then believe the
 silence.** Items 196, 198.
 
+## Phase 9 — the blank slate: the map becomes a table, and both output devices land
+
+**What v0.3 was for: every device addressable, every control assignable.** Three gaps defined it and
+all three are closed. `m_volca` is wired in, `m_404` is built in both directions, and `u_map` looks a
+control's meaning up **per mode** from a table instead of holding one hardcoded branch per mapping.
+Items 228–235.
+
+### The corrections, which are the valuable part
+
+**`pgmout` is 1-BASED — `pgmout N` puts wire value `N-1` on the cable.** Every prior Program Change
+test in this project sent raw `0xC0` bytes, so nothing had ever exercised Pd's own object. A bare
+`[pgmout n]` selects the patch *below* `n` and nothing reports it — the `47 + n` shape exactly.
+`m_volca` carries a `[+ 1]`. Measured both directions on hardware, item 228.
+
+**`u_tempo`'s panic covered one bank in ten.** It sent All Notes Off on channel 33 alone — bank A —
+written before any file owned the 404. Moved into `m_404`, which now covers all ten. Item 231.
+
+**Nothing on the device could raise panic at all.** `s panic` existed only in `u_mother-stub`, which
+is the Mac dev panel. That predates v0.3 and is still open — see plan-v03 §5.
+
+**`ref-conventions.md` asserted something the phase falsified**: that `u_map` maps "with explicit
+`route` branches rather than a lookup table". It does not any more, and the guard that replaces the
+old property is not optional.
+
+### Two bugs that were completely silent
+
+**`[t b a]`'s outlets were wired backwards** in `m_404`. Arguments map left to right, so outlet 0 is
+the **bang** and outlet 1 is the **message** — the bang was reaching `[unpack f f]` and the list was
+reaching the rate limiter's gate. A bang into `unpack` does nothing and a list into `[t b b]` just
+makes bangs, so the patch emitted **no MIDI and no error**, indistinguishable from a lookup miss.
+Found by testing `u_map`'s outlet in isolation, which proved the message left `u_map` correctly and
+moved the search downstream.
+
+**`[list split 1]` emits `symbol og-knob-1`, not `og-knob-1`.** `route` matches a *selector*, so
+without a `[list trim]` between them the divisor lookup **never matches** — every control would take
+the reject, get divided by 127, and the Organelle's five 0–1 controls would collapse to nothing
+**while all forty-two 0–127 controls kept working perfectly**. A fault visible on five controls out
+of forty-seven is exactly the kind that ships. Measured, not reasoned.
+
+### The one the hardware found, and the gate could not
+
+**The instrument booted at the wrong tempo and nothing reported it.** The OLED read 120 where it
+should have read 57: `knobs.txt` holds knob 1 at ~0.0958 and mother pushes it at boot. **Two
+separate races, one symptom** — the table was read at `[del 2000]` and the lookup key's mode came
+from the seed at `[del 500]`, and mother pushes before both. Fixing either alone changed nothing.
+
+**Why 23 green checks missed it.** Every window in the gate's driver started at 2400 ms, with a
+comment explaining that as the earliest safe time *because the table was read at 2000*. **The test's
+timing was derived from the implementation detail that was wrong.** A test whose schedule is chosen
+to suit the implementation cannot falsify the implementation. There is now an `EARLY` window at
+300 ms, proven to fail on the old code.
+
+**And this is the concrete case for hands-on benches.** The headless gate was fully green. What
+found it was a person reading a number off a screen four seconds after power-on — the one
+measurement no automated window was positioned to take. Item 234.
+
+### What the gate learned about itself
+
+`tools/phase9-assert.sh` is 23 checks in ~8 s, and **half of it needs no Pd at all**: a static lint
+parses `u_map`'s literal `route` box and the map's rows and proves every destination a row can name
+exists on that route. That is the allowlist guard enforced by reading.
+
+⚠️ **It passed a disarmed rate limiter on its first can-it-fail run.** The burst window fires twenty
+triggers in one logical instant and asserts one comes out — but `[del 0]` still defers to the next
+scheduler tick, so the gate stays shut for the whole instant *whatever the interval is*. The burst
+proved drops-rather-than-queues and **nothing** about the 5 ms figure it was claimed to prove. A
+window of two triggers 2 ms apart was added. **An assertion that cannot tell the bug from the fix is
+decoration.**
+
+⚠️ **And it HUNG rather than failing** when its driver generator errored unchecked: Pd was handed a
+file that did not exist, so the `; pd quit` living *inside that file* never fired. **A gate that
+hangs is worse than one that fails** — a failure gets read, a hang gets waited on.
+
+⚠️ **A leftover state file silently changed what the map did, mid-run.** `/tmp/cut-it-auto.txt` held
+`mode perform mode-4` from an earlier, unrelated test; the restore at ~3.5 s republished it and every
+row keyed to `mode-1` stopped matching. **Any gate that loads `main-dev.pd` must own its state
+directory.** The first diagnosis of this was wrong and is corrected in item 232 — a plausible story
+that explains the evidence is not a measurement.
+
+### What Phase 9 leaves behind
+
+- **`u_map` is a table plus a hardcoded allowlist.** The table never names a send; it names a
+  destination that must exist as a literal `route` argument feeding a visible handler. A row naming
+  an unknown destination reports `unknown-dest` and emits nothing.
+- **`param` values are not one unit**, and nobody had written that down: 0–127 everywhere except
+  mother's own controls, which are 0–1. `u_map` normalises at entry so every handler sees 0–1, which
+  makes each trigger destination one uniform test instead of a per-surface threshold.
+- **160 pads, one shared table both directions.** `47 + n` is absent and all sixteen are asserted.
+- **The rate limit drops and never queues** — a closed `[spigot]` emits nothing, so the event is gone
+  rather than deferred.
+- **`t_notein` exists** because no bus reaches a MIDI input, and `m_404`'s whole receive side sits
+  behind one.
+- **Two stable `disp` rows, `sp-bank` and `sp-pad`.** A playing pattern churns two rows and can never
+  evict a third — `g_oled` refuses a sixth name rather than rotating it in. Brendan asked why B1
+  looked like A1 during the bench, which is how the second row came to exist.
+
 ## What every phase had in common
 
 Worth stating once, because it is the pattern rather than a coincidence:

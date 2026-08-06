@@ -3,10 +3,14 @@
 A cut-up / harsh noise instrument patch for the **original Critter & Guitari Organelle**
 (a.k.a. Organelle 1 — *not* the M, S, or S2). Pure Data.
 
-✅ **v0.2 — the infrastructure — is complete and verified on hardware.** The instrument passes
-audio, knows what every control is doing, and can tell you about it. **[plan-v03.md](plan-v03.md)
-is what remains**: v0.3 is **the blank slate** — every device addressable, every control
-assignable — not the sound. The four filter stages are v0.4.
+✅ **v0.3 — the blank slate — is complete and verified on hardware.** Every device is addressable
+and every control assignable: `u_map` looks a control's meaning up **per mode** from a table, and
+both output devices (the SP-404 and the Volca) are wired in. The instrument can now be told
+*"in Mode A, moving this fader does X"* in one row of `Cut It/cut-it-map.txt`.
+
+**[plan-v03.md](plan-v03.md) now holds only what is OPEN**, and its §10 names the next piece of
+work: **a documentation refactor**, because these files have reached ~10,000 lines. The sound —
+the four filter stages, the drum mode, the sampler — is v0.4 and comes after that.
 v0.1 is superseded and kept only for reference.
 
 

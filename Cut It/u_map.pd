@@ -1,4 +1,4 @@
-#N canvas 20 20 3150 3700 12;
+#N canvas 20 20 3400 3700 12;
 #X obj 20 300 r param;
 #X obj 20 360 route xport-1 xport-2 xport-3 xport-4 xport-5 xport-6;
 #X obj 20 480 list;
@@ -39,7 +39,7 @@
 #X obj 2500 350 list split 1;
 #X obj 2500 900 text define \$0-map;
 #X obj 2500 500 loadbang;
-#X obj 2500 550 del 2000;
+#X obj 2500 550 t b;
 #X obj 2500 610 t b b;
 #X msg 2500 680 read -c cut-it-map.txt;
 #X obj 2820 680 text size \$0-map;
@@ -129,7 +129,7 @@
 #X text 1080 2390 THE VOLCA HANDLERS BUILD THE SELECTOR-PREFIXED MESSAGE m_volca EXPECTS \, and list trim is what turns list notes 48 100 200 into a message whose SELECTOR is notes. Without it m_volca's route would reject every one of them straight to err -- loudly \, at least \, which is why that reject exists., f 62;
 #X text 2140 2390 volca-prog USES THE VALUE AS A GATE RATHER THAN AS DATA \, because a program number is the ARG. The value only decides whether the press counts \, so a fader release cannot select a patch., f 62;
 #X text 20 2620 THE TABLE IS A FILE RATHER THAN text define -k \, so it diffs one row at a time and can be edited without opening Pd. A relative read resolves against the PATCH FOLDER -- no path \, no creation argument \, no absolute path -- and it works identically on the Mac \, on the device and inside the gate's scratch copy. Item 229., f 62;
-#X text 1080 2620 ⛔ read -c TAKES THE FLAG FIRST. read cut-it-map.txt -c warns and then reads the whole file as ONE line \, which is a table that matches nothing. ⚠️ The del 2000 is deploy.sh's rule -- it gates on OUTPUT \, and its check quits at about 735 ms \, so a missing file must not print before then. AN EMPTY TABLE IS REPORTED \, because an instrument whose controls all silently do nothing is the worst possible failure., f 62;
+#X text 1080 2620 ⛔ read -c TAKES THE FLAG FIRST. read cut-it-map.txt -c warns and then reads the whole file as ONE line \, which is a table that matches nothing. ⛔ AND THE READ IS AT loadbang WITH NO DELAY \, WHICH IT DID NOT USED TO BE. It sat behind del 2000 to keep a missing file's error clear of deploy.sh's 735 ms output gate -- but MOTHER PUSHES knobs.txt AT BOOT \, long before 2000 ms \, so the tempo knob's restored position hit an EMPTY TABLE and was silently dropped. The instrument booted at u_tempo's own 120 instead of the saved 57 \, and nothing reported it. Item 234. A missing map SHOULD fail a deploy \, so that error is now welcome rather than something to hide from. AN EMPTY TABLE IS REPORTED for the same reason., f 62;
 #X text 2140 2620 THE MODE NAME IS THE SECOND ATOM. mode carries class then name \, and the class is u_err's business rather than this file's -- so the key is mode-1 and not compose mode-1. A second r mode rather than a tap off the state chain below \, because receives are free and order-independent \, and it leaves a working chain alone., f 62;
 #X text 20 2850 THE SEED FILLS A SILENCE \, IT DOES NOT SET A DEFAULT. Nothing else writes mode at load \, so without this the grid boots with no mode to show. Any incoming mode closes the spigot \, so a real selection always wins. The seed's own send closes it too \, harmlessly \, because Pd is synchronous and the bang has already passed through., f 62;
 #X text 1080 2850 u_map IS THE FIRST CONTRIBUTOR TO THE STATE STORE \, and mode is an AUTO key: a running value rather than a committed take \, so it is pushed whenever it changes and u_state flushes it on its own clock. ⬜ THE TABLE ITSELF IS NOT PERSISTED \, and that is deliberate -- it is code rather than a running value \, and nothing rewrites it at runtime. Live re-assignment is v0.4 \, and it brings its own persistence with it., f 62;
@@ -142,6 +142,9 @@
 #X obj 2820 1450 list prepend pad;
 #X obj 2820 1510 list trim;
 #X obj 2820 1620 outlet;
+#X obj 2820 250 loadbang;
+#X msg 2820 300 mode-1;
+#X text 2820 360 ⛔ THE LOOKUP KEY GETS ITS MODE AT LOAD \, NOT FROM THE SEED. The mode bus is seeded at 500 ms \, and the table is read at load -- but MOTHER PUSHES knobs.txt BEFORE EITHER \, so the tempo knob's restored position arrived when the key had no mode at all and missed every row. Two separate races \, one symptom: the instrument booted at 120 instead of the saved 57 and said nothing. This sets the key SYNCHRONOUSLY at load so a lookup is never waiting on a clock. A real mode still overwrites it \, from the seed or from a restore. Item 234., f 62;
 #X connect 0 0 1 0;
 #X connect 1 0 4 0;
 #X connect 1 1 5 0;
@@ -279,3 +282,5 @@
 #X connect 139 0 140 0;
 #X connect 140 0 141 0;
 #X connect 141 0 142 0;
+#X connect 143 0 144 0;
+#X connect 144 0 28 1;

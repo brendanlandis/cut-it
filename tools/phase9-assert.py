@@ -111,7 +111,7 @@ def parse(cap):
         if m:
             by[cur].append((m.group(1), [float(v) for v in m.group(2).split()]))
             continue
-        m = re.match(r"^(PARAM|DISP|ERR):\s+(.*)$", line)
+        m = re.match(r"^(PARAM|DISP|ERR|TEMPO):\s+(.*)$", line)
         if m:
             by[cur].append((m.group(1), m.group(2).split()))
     return order, by
@@ -129,6 +129,14 @@ def run_asserts(cap):
 
     # --- the map -----------------------------------------------------------
     print("\n--- the mode table ---")
+    # ⛔ THE REGRESSION TEST FOR ITEM 234. mother pushes knobs.txt at BOOT, long
+    # before any window here used to start, and the map has to be usable by then --
+    # both the table AND the lookup key's mode. It was not, the instrument booted at
+    # u_tempo's own 120 instead of the saved 57, and NOTHING reported it.
+    early = [e for e in W("EARLY") if e[0] == "TEMPO"]
+    check("⛔ a control moved at 300 ms ALREADY MAPS -- table and mode key ready at load",
+          any(abs(float(e[1][0]) - 57) < 1.5 for e in early if e[1]),
+          "tempo in that window: %s" % [e[1] for e in early])
     check("a mapped control reaches its destination",
           any(e[0] == "CTLOUT" and e[1][1] == 41 for e in W("VOLCA-CC")),
           repr(W("VOLCA-CC")))

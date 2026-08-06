@@ -4044,6 +4044,42 @@ it to read a **current** value, which is a different thing.)*
       `ms+ms` and landing them in later windows; and the `unknown-dest` window sat **after** the mode
       switch, making it a lookup miss rather than a guard test.
 
+- [x] **234. ⛔ THE INSTRUMENT BOOTED AT THE WRONG TEMPO AND NOTHING REPORTED IT — found by the
+      bench's FIRST STEP, and the headless gate could not have seen it.** After deploying Phase 9
+      the OLED footer read **120 BPM**. It should have read **57**: `knobs.txt` holds knob 1 at
+      ~0.0958, mother pushes it at boot, and `10 + 0.0958 × 490` is 57. 120 is `u_tempo`'s own
+      default — so the knob's restored position was **silently dropped**.
+
+      ✅ **Reproduced headlessly in one run** — the same value at 500 ms gave **120**, at 3000 ms
+      gave **57**. So it was a race, not a wrong mapping.
+
+      ⛔ **TWO SEPARATE RACES, ONE SYMPTOM, and fixing the first alone changed nothing:**
+
+      | | |
+      |---|---|
+      | **The table was read at `[del 2000]`** | It sat there so a *missing* file's error would land clear of `deploy.sh`'s 735 ms output gate. But mother pushes `knobs.txt` at BOOT, so the lookup hit an EMPTY TABLE |
+      | **The lookup key's mode came from the seed at `[del 500]`** | Even with the table loaded, a lookup before 500 ms had **no mode at all** and missed every row. Moving the read to `loadbang` alone still gave 120 |
+
+      ✅ **Fixed both:** the table is read at `loadbang` with no delay, and the lookup key is seeded
+      with `mode-1` **synchronously at load** rather than waiting for the mode bus. A real mode from
+      the seed or from a restore still overwrites it. ⚠️ **A missing map now fails a deploy, and that
+      is correct** — hiding that error is what created this bug.
+
+      ⭐ **WHY THE GATE WAS BLIND, WHICH IS THE TRANSFERABLE PART.** Every window in
+      `phase9-assert-drive-gen.py` started at **2400 ms**, with a comment explaining that as the
+      earliest safe time *because the table was read at 2000*. **The gate's windows were derived
+      from the very implementation detail that was wrong**, so it could only ever test the patch
+      after the race had resolved. 23 checks passed against a patch that boots wrong.
+      ⚠️ **A test whose timing is chosen to suit the implementation cannot falsify the
+      implementation.** Now there is an `EARLY` window at **300 ms**, asserted to produce 57 — it
+      fails on the old code and passes on the new, confirmed both ways.
+
+      ⭐ **And this is the case for hands-on benches, stated concretely.** The headless gate is
+      faster, cheaper and repeatable, and it was *fully green*. The thing that found this was a
+      person reading a number off a screen four seconds after power-on — the one measurement no
+      automated window was positioned to take. Phase 6 shipped three bugs past a 25/25 Mac run;
+      this is the same lesson arriving from the other direction.
+
 ---
 
 ## What's actually left

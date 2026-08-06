@@ -25,6 +25,12 @@ ACTION_GAP = 20                   # default ms between actions inside one window
 
 # (absolute_ms, mark, [message-box bodies])   -- a body is raw Pd, already escaped
 SEQ = [
+    # ⛔ 300 ms -- DELIBERATELY EARLY, and the regression test for item 234. Every
+    # other window starts at 2400 ms because the table used to be read at 2000. That
+    # convention is exactly why the gate could not see the bug the hardware found:
+    # mother pushes knobs.txt at BOOT, the table and the mode key were both still
+    # unset, and the restored tempo was silently dropped. The map must work from load.
+    (300, "EARLY", ["\\; param og-knob-1 0.0958"], ACTION_GAP),
     (2400, "TEMPO", ["\\; param og-knob-1 0.5"], ACTION_GAP),
     (2600, "VOLCA-CC", ["\\; param gk-cc 64"], ACTION_GAP),
     (2700, "VOLCA-NOTE", ["\\; param gk-note 100"], ACTION_GAP),
@@ -118,7 +124,8 @@ def main(path):
 
     # the taps: without these the capture holds MIDI only, and every assertion
     # about param, disp or err is answered by an empty list rather than by a fact
-    for k, (bus, label) in enumerate([("param", "PARAM"), ("disp", "DISP"), ("err", "ERR")]):
+    for k, (bus, label) in enumerate([("param", "PARAM"), ("disp", "DISP"),
+                                      ("err", "ERR"), ("tempo", "TEMPO")]):
         r = obj(20 + k * 300, 1000, "r " + bus)
         pp = obj(20 + k * 300, 1050, "print " + label)
         C.append((r, 0, pp, 0))

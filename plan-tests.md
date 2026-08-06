@@ -3827,6 +3827,51 @@ it to read a **current** value, which is a different thing.)*
 
 ---
 
+## Session 18 — Phase 9 Step 0B: `pgmout` is 1-based
+
+**Item 228.** The measurement `m_volca` was blocked on, and it went the dangerous way.
+
+- [x] **228. ⛔ Pd's `pgmout` IS 1-BASED — `pgmout N` puts wire value `N-1` on the cable, and
+      nothing anywhere reports it.** `Cut It/m_volca.pd` shipped a bare `[pgmout]`, so every patch
+      it selected would have sat **one below the number asked for**. ✅ **Fixed with a `[+ 1]`
+      before `[pgmout]`**, so the inlet means the *wire* number that Korg, Pajen and every prior
+      test in this project use.
+
+      **The method, and it is the transferable part: the readout was made BINARY.** The obvious
+      test — send raw `0xC0 20`, send `pgmout 20`, compare the two program names — asks a person to
+      hold one name in their head while a second is produced. Instead a menu patch looped
+      `pgmout 20` every six seconds while `aplaymidi` sent raw `0xC0 20` in between, so the only
+      question was **"does the name move?"** ⚠️ **The Volca shows a program NAME, not a number** —
+      item 225 says "number" and is imprecise.
+
+      | Sent | Volca showed |
+      |---|---|
+      | raw `0xC0 19` | **LilChorus** |
+      | raw `0xC0 20` | **Mouthlead** |
+      | `pgmout 20` (looping) | **LilChorus** — i.e. wire 19 |
+      | `pgmout 21` (looping), three raw `0xC0 20` interleaved | **Mouthlead**, and it **never moved** |
+
+      ⭐ **Both directions, and the second is a positive control rather than an inference.** The
+      first row pair alone would have been two separate observations compared from memory; the
+      `pgmout 21` run put the two paths in direct competition on one display and the display stayed
+      still. **Wait for the whole measurement** — items 182, 209, 210, 225.
+
+      ✅ **Two mechanism findings fell out of it, both reusable:**
+
+      - **Loading any patch DROPS Pd's ALSA output connections.** After
+        `oscsend /loadPatch`, `Pure Data Midi-Out 4` had no target at all and the probe reached
+        nothing. **This is why `u_init` runs `wire.sh`** — a probe patch that is not Cut It must
+        make its own `aconnect` call or it measures silence. ⚠️ **A null result here would have
+        been indistinguishable from "the Volca ignores `pgmout`"** — which is exactly the wrong
+        conclusion, and exactly the shape of item 225.
+      - **A menu patch is the cheap way to run Pd-side MIDI probes.** `oscsend /loadPatch` swaps
+        the patch and swaps back with no `killall pd`, which **strands the Launchpad in Programmer
+        Mode every time** (item 96). The probe is kept as `tools/stage-patches/PGM Probe/`.
+        ⚠️ Loading this way leaves `!/Cut It` in `/tmp/curpatchname`, so **select Cut It from the
+        menu once before using System → Save New** (plain Save is unaffected).
+
+---
+
 ## What's actually left
 
 **Nothing lives here.** Every remaining question, blocked item and purchase is in

@@ -70,7 +70,7 @@ Three gaps defined v0.3. **One is closed.**
 | Gap | State |
 |---|---|
 | **The SP-404 has no `m_` layer** | ⬜ **Open — `m_404` is the main remaining build** |
-| **The Volca has no `m_` layer** | 🔨 **`m_volca.pd` is WRITTEN but NOT WIRED IN** |
+| **The Volca has no `m_` layer** | ✅ **CLOSED.** `m_volca` is wired in — one selector-prefixed cord from `u_map`, `$5` verified arriving as 49. ⬜ Nothing drives the outlet until the mode table lands |
 | **`u_map` cannot express a mode-dependent meaning** | ⬜ **Open.** It *publishes* `mode` and never *consults* it |
 
 ### ✅ Closed during the last session — do not redo these
@@ -82,28 +82,23 @@ Three gaps defined v0.3. **One is closed.**
   confirmed working. Items 223–227.
 - **`Cut It/m_volca.pd` is written**, passes the layout check with 0 problems and loads silently.
   ⚠️ **Nothing instantiates it yet**, so it is inert.
+- **⛔ `pgmout` is 1-BASED, measured both directions — item 228.** `pgmout N` puts wire value `N-1`
+  on the cable, so the bare `[pgmout]` `m_volca` shipped with would have selected **one patch below**
+  the number asked for, silently. ✅ **Fixed** — `m_volca` now carries a `[+ 1]`, and its inlet means
+  the *wire* number. ⚠️ Two mechanism findings came with it: **loading any patch drops Pd's ALSA
+  output connections** (which is why `u_init` runs `wire.sh` — a probe patch must make its own
+  `aconnect` or it measures silence and looks like a negative result), and **a menu patch loaded by
+  `oscsend /loadPatch` is the cheap way to run Pd-side MIDI probes**, because it needs no
+  `killall pd` and so cannot strand the Launchpad. Probe kept at `tools/stage-patches/PGM Probe/`.
 - **The wifi fault is instrumented** — see §6.
 
 ---
 
 ## 4. What remains in this phase
 
-**In order. Items 1–3 are the phase; 4–5 can happen any time.**
+**In order.** The measurement that gated all of it is closed — see §3.
 
-### 4.1 ⚠️ FIRST: measure whether Pd's `pgmout` is 0-based or 1-based
-
-⛔ **Do this before trusting `m_volca` at all.** Every test that proved Program Change works sent
-**raw `0xC0` bytes** with values 0 and 20 — *wire* numbers. **If `pgmout` adds one, every patch
-`m_volca` selects is off by one and nothing reports it.**
-
-⚠️ **This is the `47 + n` failure shape exactly** (item 190): code that looks correct, triggers the
-wrong thing, and produces no error anywhere. That bug survived in this repo's docs for months.
-
-**How:** `aplaymidi` to a sequencer port with a known raw value, versus `pgmout` from Pd with the
-same number, and compare what the Volca selects. ⚠️ **`amidi` cannot be used while Pd is running** —
-Pd holds the raw device exclusively. Use the **sequencer** port, which is shareable (item 224).
-
-### 4.2 Wire `m_volca` in
+### 4.1 Wire `m_volca` in
 
 | File | Change |
 |---|---|
@@ -115,7 +110,7 @@ Pd holds the raw device exclusively. Use the **sequencer** port, which is sharea
 `$3` state dir). `m_404` takes `$4` and `m_volca` `$5`. That was Brendan's decision — straight
 extension of the existing precedent rather than a restructure.
 
-### 4.3 Build `m_404`
+### 4.2 Build `m_404`
 
 **Bidirectional, and the largest remaining piece.**
 
@@ -141,7 +136,7 @@ pads              notes            note = 36 + (3 - (pad-1)/4)*4 + (pad-1) % 4
 | **Does a playing 404 pattern flood the OLED?** | The 404's sequencer transmits notes, and five dense note-ons would fill `g_oled`'s five param rows. **Follow `m_launchpad`'s aftertouch precedent: pad presses to `param` AND `disp`, sequencer-rate traffic to `param` only** |
 | **How does the rate limit behave at the ceiling?** | ⛔ **Drop, never queue.** Item 209 proved there is no queue between Pd and the 404; adding one recreates the exact symptom — overshoot costs *seconds* of lag that outlive the gesture, while a stop is instant |
 
-### 4.4 Make `u_map` mode-aware
+### 4.3 Make `u_map` mode-aware
 
 **The centrepiece of the phase, and the thing that makes v0.4 possible.**
 
@@ -162,7 +157,7 @@ in-patch user of the `manual` policy — ⚠️ **the synchronous-answer rule is
 can break invisibly**), and the six mode names, whose `compose`/`perform` **ratio is load-bearing**
 because `u_err` routes on those words.
 
-### 4.5 The gate, the bench, and landing
+### 4.4 The gate, the bench, and landing
 
 - **`tools/phase9-assert.sh`** — reuse `phase6-assert.sh`'s shape: it rewrites `[midiout]` in a
   **scratch copy** so a headless run reads back every byte. Exactly right for two MIDI-emitting

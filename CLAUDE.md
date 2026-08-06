@@ -157,9 +157,12 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
                        landed on disk. ⚠️ It PASSED THE BROKEN PATCH on its first
                        can-it-fail run, because the driver's timing did not reproduce the
                        real ordering. The 3600 ms in its driver is load-bearing
-  stage-patches/       Organelle menu patches for the venue: AP Probe records what can only
-                       be seen while the access point is up, which is exactly when a Mac
-                       joined to it has no internet and nobody can watch
+  stage-patches/       Organelle menu patches: AP Probe records what can only be seen while
+                       the access point is up, which is exactly when a Mac joined to it has
+                       no internet and nobody can watch. PGM Probe proved pgmout is 1-based,
+                       and is the pattern for any Pd-side MIDI probe -- a menu patch needs no
+                       killall pd, so it cannot strand the Launchpad. ⚠️ A patch load DROPS
+                       Pd's aconnect links, so such a probe must re-wire its own output
   wifi-watch.sh        THE OPEN FAULT. Runs ON the device: polls wlan0, and on a failure
                        runs a LINK PROBE and a DHCP PROBE before a recovery ladder.
                        The link probe has already decided the branch -- the radio is

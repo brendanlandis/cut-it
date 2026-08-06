@@ -247,7 +247,24 @@ grain of every `m_` file before them.** The existing three are input mappers —
 named controls on `param`, which `u_map` consumes. These two are *told what to play*.
 
 ⛔ **No bus carries that, and none was added.** `param` is device→map, `disp` is display requests,
-and a sounding note is neither. **`u_map` grows one outlet per output device**, wired in `u_root`.
+and a sounding note is neither. **`u_map` grows one outlet per output device**, wired in `u_root` —
+**one device, one cord.**
+
+**The message is SELECTOR-PREFIXED, and the device layer routes it** — `notes 48 100 200`,
+`cc 41 64`, `program 20`, `pad 23 96`. This is the same shape `state` uses to carry three selectors
+on one name, and `disp` to carry every surface's vocabulary on one: **a device that learns a new
+capability costs one `route` argument inside that device** and nothing anywhere else — not `u_map`'s
+outlet count, not `u_root`'s cords, not this file.
+
+⚠️ **The device's `route` reject is a REAL error and goes to `[s err]`** — the opposite of `u_map`'s
+reject, where an unmapped control is normal and silent. An unrecognised selector means `u_map` and
+the device disagree about the interface, and for an output-only device there is no other way to find
+out: it transmits nothing, so a message that goes nowhere is indistinguishable from one that worked.
+
+*(judgment call)* **One outlet per device *inlet* was considered and rejected.** It makes `u_map`'s
+outlet count the sum of every device's capabilities — three for the Volca alone — and so crosses the
+four-device threshold below with **two** devices. It also puts the fan-out on `u_root`'s canvas
+rather than inside the file that owns the device.
 
 *(judgment call)* A `voice` bus was considered and rejected. It would scale without touching
 `u_root` — the way `disp` serves four surfaces — but **the allowlist is audited by reading**, and
@@ -663,6 +680,13 @@ panel cannot recover it. **Run `./tools/lp-live.sh` afterwards** — it sends th
 with `amidi`, needs no Pd at all, and was measured recovering a stranded device with no power
 cycle. `deploy.sh` is unaffected: it loads through mother's `/loadPatch`, so `quitting` fires
 normally.
+
+⭐ **If the probe only needs to SEND MIDI, do not use this at all — load a menu patch instead.**
+`oscsend localhost 4001 /loadPatch s "!/<name>"` swaps the patch and swaps back through mother, so
+`quitting` fires, the Launchpad is never stranded, and there is no `lp-live.sh` to remember.
+`tools/stage-patches/PGM Probe/` is the worked example (item 228). ⚠️ **The probe must `aconnect`
+Pd's output port for itself** — a patch load drops the connections, which is what `wire.sh` exists
+to undo. Keep this section's console for when you need `[print]` output *back*.
 
 ```sh
 ssh root@organelle.local

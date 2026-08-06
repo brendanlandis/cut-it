@@ -859,6 +859,26 @@ and enabling the wrong one gives a symptom **indistinguishable from the fault**:
 a program change to the next note and deliberately leaves the current program *and the display*
 unchanged. **Four separate test runs failed this way.** Items 226–227.
 
+### ⛔ Pd's `pgmout` is 1-BASED — `pgmout N` sends wire value `N-1` ✅
+
+**Measured both directions on the hardware, item 228.** Every earlier Program Change test in this
+project sent **raw `0xC0` bytes** — wire numbers — so nothing had ever exercised Pd's own object.
+
+| Sent | Volca selected |
+|---|---|
+| raw `0xC0 19` | LilChorus |
+| raw `0xC0 20` | Mouthlead |
+| `pgmout 20` | **LilChorus** — i.e. wire 19 |
+| `pgmout 21` | **Mouthlead** — i.e. wire 20, and it held through three raw `0xC0 20` interleaves |
+
+⛔ **So a bare `[pgmout n]` selects the patch one BELOW `n`, and nothing reports it** — the `47 + n`
+shape exactly (item 190). ✅ **`Cut It/m_volca.pd` carries a `[+ 1]` before `[pgmout]`**, so its
+`program <n>` inlet means the **wire** number that Korg, Pajen and every other measurement here use.
+
+⚠️ **The Volca displays a program NAME, not a number** — the wording in item 225 is imprecise. A
+name is still a fine readout, but two adjacent slots must be confirmed to read *differently* before
+any comparison based on it can be trusted.
+
 ⚠️ **Everything about this device is BY EAR.** It transmits nothing, so there is never a readback —
 a permanently weaker evidence class than the rest of this file. Item 223.
 

@@ -69,6 +69,18 @@ and the Launchpad's three ports collapse into one). Verified surviving a cold bo
 at load time via `[shell]`, because mother's `alsaconnect.sh` only connects one device. See
 `tools/wire.sh`.
 
+⛔ **LOADING ANY PATCH DROPS PD'S ALSA CONNECTIONS — measured, item 228.** After
+`oscsend localhost 4001 /loadPatch …`, `Pure Data Midi-Out 4` had **no target at all**, and a probe
+patch that assumed the wiring survived reached nothing. The Pd *process* persists across a patch
+swap, but its port connections do not. ✅ **This is exactly why `u_init` runs `wire.sh`** — Cut It
+re-wires itself every load and so never notices. ⚠️ **Any patch that is not Cut It must make its own
+`aconnect` call**, or it measures silence — and silence from a MIDI probe reads as *"the device
+ignores this message"*, which is the wrong conclusion and the precise shape of item 225. Verify with:
+
+```sh
+aconnect -l | grep -A2 "Midi-Out 4"        # expect: Connecting To: <the Uno's client>:0
+```
+
 **Direction:** the Organelle is clock master. Disable clock-out on every other device —
 particularly the 404's "MIDI Sync Out", which will otherwise echo clock back and create a
 loop.

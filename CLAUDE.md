@@ -153,7 +153,7 @@ tools/dsp.sh           turns the audio engine off on a running patch, which is h
                        item 75's real cause was finally isolated
 tools/               diagnostic patches, the per-phase benches, and pd-layout-check.py
   README.md            what each one proves, how to run it, and how to run a bench ON the device
-  bench-gen.py         GENERATES all six phaseN-bench.pd from bench_steps.py. The benches
+  bench-gen.py         GENERATES all seven phaseN-bench.pd from bench_steps.py. The benches
                        are stepped BY HAND -- press GO to run the step just described, press
                        GO again to describe the next. Never edit a bench .pd
   bench-verify.py      proves the step text survived the generator, by re-extracting it
@@ -167,6 +167,15 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
                        read back every byte, then asserts on what the grid actually showed
   phase7-assert.sh     the same idea and much cheaper — u_net already emits to a socket,
                        so it binds the port and reads real datagrams. Nothing is rewritten
+  phase9-assert.sh     the FOURTH gate, and the only one with a half that needs no Pd
+                       at all: a STATIC LINT reads u_map's literal route box and the
+                       map's rows and proves every destination a row can name exists
+                       on that route -- the allowlist guard, enforced by reading. The
+                       other half rewrites noteout/ctlout/pgmout AND notein, because
+                       m_volca and m_404 never touch [midiout] and phase 6's rewrite
+                       would find nothing in them. ⚠️ It asserts an EXACT box count
+                       per class, and it OWNS ITS STATE DIRECTORY -- main-dev.pd
+                       passes /tmp, which every run on the machine shares
   phase8-assert.sh     the cheapest of the three — u_state writes a FILE, so it reads what
                        landed on disk. ⚠️ It PASSED THE BROKEN PATCH on its first
                        can-it-fail run, because the driver's timing did not reproduce the

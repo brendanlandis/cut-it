@@ -113,40 +113,38 @@ far is a headless Mac run, and this project's own history says that difference m
 | ⛔ **`u_tempo`'s panic covered one bank of ten** | All Notes Off on channel 33 alone. Moved into `m_404`, now all ten. Item 231 |
 | ⛔ **`ref-conventions.md` said `u_map` used route branches "rather than a lookup table"** | No longer true, and the guard that replaces it is not optional |
 
-### 4.2 The gate, the bench, and landing
+### 4.2 ✅ The gate and the bench are built — what is left is the HARDWARE
 
-- **`tools/phase9-assert.sh`** — `phase6-assert.sh`'s shape: a **scratch copy** of `Cut It/` with
-  the MIDI objects rewritten to printing stubs, driven headless. `Cut It/` is never touched.
-  ⛔ **Two corrections to what this section used to say.** It is **not** `[midiout]` — `m_volca` and
-  `m_404` emit through **`noteout` / `ctlout` / `pgmout`**, so phase 6's rewrite finds nothing in
-  them and every assertion would pass **vacuously**. And phase 6's regex is **anchored**, so it
-  silently skips a box with creation arguments — the patch has one, `[ctlout 123 33]`. The stubs
-  exist already: `tools/test-stubs/t_{noteout,ctlout,pgmout,notein}.pd`.
-- ⛔ **`t_notein` is not optional.** Every *output* path can be driven from a bus, but `m_404`'s
-  entire **receive** side sits behind `[notein]` and **no bus reaches a MIDI input**.
-- ⭐ **A static map lint, which needs no Pd at all** and is the cheapest strong check available:
-  every row exactly 4 atoms; **every `<dest>` present on `u_map`'s literal `route`** — the allowlist
-  guard, enforced by reading; **no duplicate `(mode, control)` pair**, because `text search` returns
-  only the first match and a shadowed row is silent (item 229); every `<mode>` one of the six.
-- ⚠️ **Assert an EXACT rewritten-box count.** Phase 6 only checks "not zero", and its own comment
-  claims five where the patch has six — the count drifted unnoticed.
-- ⚠️ **Prove the gate can fail — three bugs, not one.** `phase8-assert.sh` passed the broken patch
-  15/15 on its first can-it-fail run. (1) a `47 + n` pad map — must fail on **12 of 16 pads in each
-  direction** and stay green on 1–4, which is the shape that let the bug survive; (2) a row naming a
-  destination not on the route — the static lint must reject it *and* the runtime must emit
-  `unknown-dest` with **no MIDI**; (3) disarm the rate limiter and confirm the burst overflows.
-- **`tools/bench_steps.py`** then `bench-gen.py`. ⛔ **Never edit a bench `.pd`.** ⚠️ **Add `9` to
-  `bench-verify.py`'s hardcoded phase tuple** — miss it and the bench is generated but never
-  fidelity-checked, and `check-all.sh` silently ignores it.
-- **Add the Phase 9 gate to `tools/check-all.sh`.**
-- ⚠️ **THEN THE HARDWARE.** Everything so far is a headless Mac run. Phase 6 passed 25/25 on the Mac
-  twice and shipped three bugs.
-- **Landing:** finished work moves to [ref-build-log.md](ref-build-log.md); this section *leaves*
-  this file rather than being annotated; a new [plan-tests.md](plan-tests.md) session is added with
-  items numbered **after the last used number** — currently **231**. ⛔ **Never reuse an item
-  number.**
+`tools/phase9-assert.sh` is 23 checks in ~8 s and runs inside `tools/check-all.sh`. Its static half
+needs no Pd at all. It is **proven to fail** on a `47 + n` pad map, a row naming a destination that
+is not on the route, and a duplicate row. `STEPS9` is eleven hands-on steps. Items 233 and 232.
 
----
+⚠️ **Two of its own defects are worth carrying forward, because both are general:**
+
+| | |
+|---|---|
+| ⛔ **It passed a disarmed rate limiter** | The burst window fires in ONE logical instant, and `[del 0]` still defers to the next scheduler tick — so it proved *drops-rather-than-queues* and **nothing** about the interval. **An assertion that cannot tell the bug from the fix is decoration.** |
+| ⛔ **It HUNG rather than failing** | Its driver generator errored, the exit status went unchecked, and the `; pd quit` inside the un-written driver never fired. **A gate that hangs is worse than one that fails** — a failure gets read, a hang gets waited on. |
+
+### 4.3 What actually remains: the device, then landing
+
+⛔ **EVERYTHING SO FAR IS A HEADLESS MAC RUN.** Phase 6 passed 25/25 on the Mac twice and shipped
+three bugs. Nothing in this phase has met the real 404, the real Volca or the real OLED.
+
+- **`./deploy.sh`**, then the eleven-step bench with `./tools/go.sh` — ⚠️ **the encoder does not
+  advance a bench on the device**, and netcat does not work on macOS.
+- **The receive side is the part only hardware can settle**: a real pad under a real finger, on a
+  real bank, at a real velocity. ⚠️ **A receive test MUST state which bank is selected** — the 404
+  lights only the selected one, which cost half an hour once (item 196).
+- **The Volca is BY EAR and always will be** — it transmits nothing, so no result from it is ever
+  read back off the wire. Record the evidence class honestly.
+- ⚠️ **`/tmp/curpatchname`**: if the patch is loaded by `deploy.sh` or `oscsend` rather than from the
+  menu, **System → Save New** makes a folder called `! 2`. Select it from the menu once first.
+- **Landing:** finished work moves to [ref-build-log.md](ref-build-log.md); §4 *leaves* this file
+  rather than being annotated; anything unresolved moves to *Open questions*; a new
+  [plan-tests.md](plan-tests.md) session is numbered **after the last used number — currently 233**.
+  ⛔ **Never reuse an item number.**
+
 
 ## 5. ⚠️ Constraints that bind what you build
 

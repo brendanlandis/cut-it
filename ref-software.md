@@ -182,63 +182,11 @@ Nothing overlaps:
 
 ## Signal architecture
 
-### Drums and fx split across the 404's L/R ✅ verified on hardware
-Hard-pan drum samples left and fx samples right and you get two independent mono streams out of
-one stereo pair. ✅ Measured end to end — each sample drives one Organelle meter only
-([plan-tests.md](plan-tests.md) item 12).
+### The 404 carries the audio split
 
-**Setting it, and BOTH steps here are counter-intuitive:**
-
-```
-[PITCH/SPEED]  ->  press the pad  ->  hold [SHIFT] + turn [CTRL 3]  ->  [EXIT]
-
-   MONO(Left)   L:50 ................ R:50   MONO(Right)
-     ^ WRONG      ^ THIS IS THE HARD PAN ^      ^ WRONG
-```
-
-⛔ **`MONO (Left)` / `MONO (Right)` are NOT the hard-pan settings, and this section used to say
-they were.** They **collapse the sample to mono using that source channel** and play the result on
-**both** outputs. Set that way, a drums-channel sample appears on **both** channels while the
-setting reads exactly as intended. ⚠️ **The name is the trap** — *"MONO (Left)"* means *"mono,
-taken from the left"*, not *"mono, panned left"*.
-
-⚠️ **So the hard pan is one step INBOARD of each extreme.** Turn the knob all the way and you go
-past it into the wrong mode.
-
-⚠️ **`[PITCH/SPEED]` first, or you edit the wrong thing entirely.** The CTRL knobs are
-context-sensitive: outside a sample-edit screen `SHIFT + CTRL 3` drives the **current effect's**
-parameter — on this rig it changed Filter+Drive's drive, which looks exactly like a pan control
-doing nothing. Roland's own support article omits this step.
-
-⚠️ **The SP-404MK2 App's *Info → Balance* did not reach the device** when tried here — it appears
-to edit a project copy rather than live state. **Use the hardware path.**
-
-**Fallback if the setting is ever unavailable:** export mono samples, or stereo files with one
-channel silent. That works but bakes the routing into the audio, so changing your mind means
-re-exporting — the per-sample pan is reversible and is what this design assumes.
-
-- **Master FX break this.** BUS 3/4 are master effects applied to the whole mix and will
-  bleed across the split. Use per-sample BUS 1/2 effects only.
-- **Both channels are mono.** Stereo samples fold down. Acceptable; a future "stereo mode"
-  in the patch could drop drums and process fx in stereo instead.
-
-### Mic goes into the 404, and bleeds into both channels
-The 404's MIC/GUITAR IN is a mono input and sums to **both** outputs. There is no pan
-control for the external input. So live vocals appear on the drums channel as well as the
-fx channel.
-
-This is accepted deliberately — the alternative was splitting the mic through the mixer's
-FX send, which is more cables and more unlabelled knob state to get wrong mid-set.
-
-Consequences:
-- **Upside:** the vocal arrives dry via the drums path and mangled via the fx path at the
-  same time. That is the standard dry/wet vocal setup, for free.
-- **Watch:** the vocal will also be captured into any drums-channel sampler. Sing while
-  Cut It grabs a drum buffer and your voice is baked into it. Handle at capture time — a
-  "don't record into drum buffers" toggle, or just don't arm drum capture while the mic is
-  hot. Cheap now, annoying to retrofit.
-- Once a vocal is **sampled** to a pad it behaves like any other sample and can be panned
-  hard right. Only live passthrough bleeds.
+Drums hard-panned left, fx hard-panned right — two independent mono streams out of one stereo
+pair, and the mic sums to both. **The measurements, the hardware path for setting the pan and the
+traps around it are on [ref/sp404.md](ref/sp404.md)**; what follows is the design consequence.
 
 ### No routing depends on a knob position
 Deliberate. The 404's per-sample pans are saved with the project and recall. Cables carry

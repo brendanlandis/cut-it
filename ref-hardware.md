@@ -627,20 +627,9 @@ one axis where it wins. But the Launchpad covers every state-display need in the
 visible knob position plus a bank of faders is worth more here than a second grid of red
 lights.
 
-### SP-404 MIDI — verified working, both directions
-Confirmed on hardware with **no settings changes required** — the 404's factory MIDI config is
-already correct for this rig. Arrives on **Pd channel 33** (device 3). The full message map and
-the device settings that matter are in [ref-midi.md](ref-midi.md).
+### SP-404 MIDI
 
-✅ **The pad note map is settled: bank A is notes 36–51**, ascending from the bottom-left four per
-row — the standard MPC/GM drum grid, with receive and transmit sharing one map. ⛔ **The old
-`47 + n` figure was wrong** past pad 4, and came from checking only pads 1 and 2. Full detail and
-the formula are in [ref-midi.md](ref-midi.md); items 190–194.
-
-**Cable warning:** the 404 needs a genuine **data** USB cable. Charge-only USB-A→C cables are
-visually identical and extremely common; two were tried before one worked. If the device does
-not appear in `lsusb`, suspect the cable before anything else.
-
+**Moved** to [ref/sp404.md](ref/sp404.md), which is now the only page about this device.
 
 ---
 

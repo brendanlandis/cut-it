@@ -38,6 +38,23 @@ THE CHECKS
               named from eight files that are NOT documentation, and it is being
               dissolved; without this check every one of them rots in silence.
 
+  shape       every page in `ref/` declares a schema on line 1 and keeps to it.
+              The cheapest checks here, because a heading structure is already a
+              parse tree -- and the two that matter most are the ones that make
+              a DECISION PERMANENT rather than a one-time sweep:
+
+                no ⬜ outside an `Open` section, so open work keeps exactly one
+                home. Three documents pointed at `plan-v03.md` §4 for months
+                while that section did not exist.
+
+                no ✅ in any heading. An evidence marker never rots; a
+                COMPLETION marker silently becomes false. `ref-conventions.md`
+                asserted `u_map` used no lookup table right up until Phase 9
+                contradicted it.
+
+              Scoped to `ref/` only. The root documents predate all of this and
+              are dissolved rather than corrected.
+
 ⛔ A CHECK THAT CANNOT FIND WHAT IT IS CHECKING MUST FAIL, NOT PASS. An anchor
 naming a table that is not there, or an array that is not in the patch, is a
 FAILURE here. `phase6-assert.sh` asserted only that its rewrite count was
@@ -227,9 +244,132 @@ def check_dangling_docs(verbose):
     return out
 
 
+MODULE_SKELETON = ['What it is', 'Facts', 'Traps', 'Open']
+SCHEMAS = ('module', 'rules', 'freeform')
+SCHEMA_LINE = re.compile(r'^<!--\s*schema:\s*(\w+)\s*-->\s*$')
+PATHS = re.compile(r'`([^`]+)`')
+
+
+def _strip_fences(lines):
+    """(line, is_fenced) for every line, so a ## inside a code block is not a heading."""
+    fenced, out = False, []
+    for ln in lines:
+        if ln.lstrip().startswith(('```', '~~~')):
+            fenced = not fenced
+            out.append((ln, True))
+            continue
+        out.append((ln, fenced))
+    return out
+
+
+def check_shape(verbose):
+    """Every page in ref/ declares a schema and keeps to it."""
+    out, pages = [], 0
+    refdir = ROOT / 'ref'
+    if not refdir.is_dir():
+        return out
+
+    # The parking spot for material that does not fit any schema. It explains
+    # itself in an HTML comment, so the emptiness test ignores those -- anything
+    # a person actually parks there is real content and trips the check.
+    unfiled = refdir / '_unfiled.md'
+    if unfiled.exists():
+        body = re.sub(r'<!--.*?-->', '', unfiled.read_text(encoding='utf-8'), flags=re.S)
+        if body.strip():
+            out.append('ref/_unfiled.md is not empty -- material is parked there awaiting '
+                       'a shape decision, so the refactor is not done. Propose a shape for '
+                       'it and ask; do not cram it into the nearest section')
+
+    for doc in sorted(refdir.glob('*.md')):
+        if doc.name == '_unfiled.md':
+            continue
+        pages += 1
+        rel = doc.relative_to(ROOT)
+        lines = doc.read_text(encoding='utf-8').splitlines()
+        marked = _strip_fences(lines)
+
+        m = SCHEMA_LINE.match(lines[0]) if lines else None
+        if not m:
+            out.append(f'{rel}:1  no <!-- schema: ... --> on line 1')
+            continue
+        schema = m.group(1)
+        if schema not in SCHEMAS:
+            out.append(f'{rel}:1  unknown schema "{schema}" -- expected one of '
+                       f'{", ".join(SCHEMAS)}')
+            continue
+
+        # ⛔ A completion marker silently becomes false; an evidence marker never does.
+        for i, (ln, fenced) in enumerate(marked):
+            if not fenced and ln.startswith('#') and '✅' in ln:
+                out.append(f'{rel}:{i + 1}  ✅ in a heading. It reads as "built", which rots. '
+                           f'Evidence belongs in an Evidence column or in prose')
+
+        if schema != 'module':
+            continue
+
+        heads = [(i, ln[3:].strip()) for i, (ln, f) in enumerate(marked)
+                 if not f and ln.startswith('## ')]
+        if [h for _, h in heads] != MODULE_SKELETON:
+            out.append(f'{rel}  schema:module wants exactly {MODULE_SKELETON}, '
+                       f'found {[h for _, h in heads]}')
+            continue
+
+        # Files: and Gate: must name paths that exist, so a page cannot outlive
+        # the abstraction it documents.
+        decl = next((ln for ln, f in marked[:6] if not f and '**Files:**' in ln), None)
+        if decl is None:
+            out.append(f'{rel}  no **Files:** line in the first six lines')
+        else:
+            for p in PATHS.findall(decl):
+                if p != 'none' and not (ROOT / p).exists():
+                    out.append(f'{rel}  **Files:**/**Gate:** names {p}, which does not exist')
+
+        bounds = {h: heads[n][0] for n, (_, h) in enumerate(heads)}
+        ends = {h: (heads[n + 1][0] if n + 1 < len(heads) else len(marked))
+                for n, (_, h) in enumerate(heads)}
+
+        facts = [(i, ln) for i, (ln, f) in enumerate(marked)
+                 if not f and bounds['Facts'] < i < ends['Facts']]
+        # A header is a row whose NEXT line is the |---| separator.
+        # ⛔ The separator test must require a dash. `set('') <= set('-:| ')` is
+        # True, so a blank line after a table's LAST row read as a separator and
+        # every table reported its final row as a header.
+        def _is_sep(s):
+            s = s.strip()
+            return '-' in s and set(s.strip('|')) <= set('-:| ')
+
+        headers = [ln for i, ln in facts
+                   if ln.lstrip().startswith('|')
+                   and i + 1 < len(marked)
+                   and _is_sep(marked[i + 1][0])]
+        if not headers:
+            out.append(f'{rel}  the Facts section holds no table -- facts stated only '
+                       f'in prose cannot be checked against anything')
+        for h in headers:
+            cells = [c.strip() for c in h.strip().strip('|').split('|')]
+            missing = [c for c in ('Evidence', 'Item') if c not in cells]
+            if missing:
+                out.append(f'{rel}  a Facts table is missing the {" and ".join(missing)} '
+                           f'column(s): {h.strip()[:60]}')
+
+        for i, (ln, f) in enumerate(marked):
+            if f or '⬜' not in ln:
+                continue
+            if not (bounds['Open'] < i < ends['Open']):
+                out.append(f'{rel}:{i + 1}  ⬜ outside the Open section. Uncertainty is '
+                           f'recorded here; what to DO about it lives in plan-v03 §4')
+            elif 'plan-v03.md' not in ln and not any(
+                    'plan-v03.md' in marked[j][0] for j in range(i, min(i + 4, ends['Open']))):
+                out.append(f'{rel}:{i + 1}  ⬜ in Open with no link to plan-v03.md')
+
+    if verbose and pages:
+        print(f'  {pages} ref/ page(s) matched their schema')
+    return out
+
+
 def main():
     verbose = '-v' in sys.argv
-    problems = check_anchors(verbose) + check_dangling_docs(verbose)
+    problems = check_anchors(verbose) + check_dangling_docs(verbose) + check_shape(verbose)
     if problems:
         print('\n'.join(problems))
         print(f'\n{len(problems)} problem(s).')

@@ -1,7 +1,7 @@
-#N canvas 20 20 2620 1900 12;
+#N canvas 20 20 2950 1900 12;
 #X text 20 20 u_map -- THE MAP \, and the only file in Cut It that says what a control MEANS. Every device below publishes named controls onto param and stops there \; everything above is driven by the buses this file writes. Nothing in e_ or c_ may ever learn that a nanoKONTROL exists \, and this is the layer that keeps that true., f 58;
-#X text 20 150 creation args: none. inlets: none. outlets: none., f 58;
-#X text 20 200 THE WHOLE MAP \, IN WORDS -- keep this in step with the route box below. og-knob-1 \, the Organelle's knob 1 \, is master tempo over 10 to 500 BPM. og-aux \, the Organelle's aux button \, toggles the transport. That is all of it: 42 other controls are published and mapped to nothing \, which is the normal state of affairs., f 58;
+#X text 20 150 creation args: none. inlets: none. outlet 1: THE VOLCA \, selector-prefixed -- notes <n> <v> <d> \, cc <c> <v> \, program <n>. One outlet per OUTPUT DEVICE \, wired in u_root \, because no bus carries a sounding note. ⬜ Nothing drives it until the mode table lands., f 58;
+#X text 20 260 THE WHOLE MAP \, IN WORDS -- keep this in step with the route box below. og-knob-1 \, the Organelle's knob 1 \, is master tempo over 10 to 500 BPM. og-aux \, the Organelle's aux button \, toggles the transport. That is all of it: 42 other controls are published and mapped to nothing \, which is the normal state of affairs., f 58;
 #X obj 20 380 r param;
 #X obj 20 430 route og-knob-1 og-aux;
 #X obj 20 510 * 490;
@@ -55,6 +55,8 @@
 #X text 20 1700 u_map IS THE FIRST CONTRIBUTOR TO THE STATE STORE \, and mode is an AUTO key: it is a running value rather than a committed take \, so it is pushed whenever it changes and u_state flushes it on its own clock. Nothing here waits for a save., f 58;
 #X text 900 1700 RESTORE ARRIVES AS A REAL SELECTION. route restore then route mode leaves compose mode-1 with compose as its SELECTOR \, which is exactly the shape s mode wants -- so no list trim is needed on this side. It lands at about 3.5s \, long after the seed at 500ms \, and the seed's spigot is already shut., f 58;
 #X text 1750 1420 THE PUBLISH AND THE RESTORE MAKE A LOOP THAT TERMINATES. A restored mode is sent to the mode bus \, the r mode above hears it and publishes put auto mode ... straight back \, which stores the identical line and marks the store dirty one extra time. It is idempotent and costs one flush \, and breaking the loop would mean u_map knowing WHY a mode arrived -- which is exactly the kind of hidden state this file exists to avoid., f 58;
+#X obj 2350 1420 outlet;
+#X text 2350 1480 THE VOLCA \, AND THE FIRST OUTLET THIS FILE HAS EVER HAD. Output devices are told what to play \, and no bus carries that: param is device-to-map \, disp is display \, and a sounding note is neither. ONE CORD PER DEVICE \, selector-prefixed -- notes <n> <v> <d> \, cc <c> <v> \, program <n> -- so a device that learns a new capability costs one route argument inside m_volca and nothing here. ⬜ NOTHING DRIVES IT YET: the handlers arrive with the mode table \, and until then this outlet is structure rather than behaviour., f 62;
 #X connect 3 0 4 0;
 #X connect 4 0 5 0;
 #X connect 4 1 10 0;

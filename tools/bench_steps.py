@@ -336,23 +336,23 @@ STEPS9 = [
   []),
 
  ('THE 404 RECEIVE SIDE -- HANDS -- select BANK A on the SP-404 and press pad 1',
-  'PASS IF: the OLED shows sp-hit and the number 1 -- this is the map this project got WRONG once and pad 1 is note 48 -- ⚠️ STATE WHICH BANK IS SELECTED OUT LOUD before every one of these: the 404 lights only the bank it is on and a receive test that does not state the bank cost half an hour once',
+  'PASS IF: the OLED shows sp-bank 1 and sp-pad 1 -- this is the map this project got WRONG once and pad 1 is note 48 -- ⚠️ STATE WHICH BANK IS SELECTED OUT LOUD before every one of these: the 404 lights only the bank it is on and a receive test that does not state the bank cost half an hour once',
   []),
 
  ('THE PAD THAT BREAKS THE OLD FORMULA -- HANDS -- press pad 5 on bank A',
-  'PASS IF: the OLED shows sp-hit and the number 5 -- pad 5 is note 44 and NOT note 52 -- anything other than 5 means the pad table is wrong in exactly the direction this repo used to have it wrong',
+  'PASS IF: sp-pad reads 5 -- pad 5 is note 44 and NOT note 52 -- anything other than 5 means the pad table is wrong in exactly the direction this repo used to have it wrong',
   []),
 
  ('WALK THE WHOLE BANK -- HANDS -- press pads 1 through 16 in order on bank A',
-  'PASS IF: the OLED counts 1 2 3 up to 16 in step with your finger. The headless gate already asserts all sixteen notes -- what this adds is that the DEVICE agrees with it. A run that goes 1 2 3 4 then jumps is the old formula surviving somewhere',
+  'PASS IF: sp-pad counts 1 2 3 up to 16 in step with your finger while sp-bank stays at 1 throughout. The headless gate already asserts all sixteen notes -- what this adds is that the DEVICE agrees with it. A run that goes 1 2 3 4 then jumps is the old formula surviving somewhere',
   []),
 
  ('THE BANK IS THE CHANNEL -- HANDS -- select BANK B and press pad 1',
-  'PASS IF: the OLED STILL shows sp-hit and the number 1 -- the bank is deliberately not on the display because the 404 shows its own bank on its own screen. An UNCHANGED reading is the pass here',
+  'PASS IF: sp-pad still reads 1 but sp-bank CHANGES from 1 to 2 -- two rows rather than one because a single row could not tell A1 from B1 -- and it could not be one row carrying both: g_oled formats a value with makefilename %g which refuses a symbol so sp-hit b1 is impossible',
   []),
 
  ('A RELEASE IS NOT A PRESS -- HANDS -- press and hold any pad then let go',
-  'PASS IF: the OLED updates on the PRESS and does NOT update again on the release. The release is a real event and does reach param but it is not worth a display row. Two updates per hit means the velocity test on the disp side has gone',
+  'PASS IF: both rows update on the PRESS and NEITHER updates again on the release. The release is a real event and does reach param but it is not worth a display row. Two updates per hit means the velocity test on the disp side has gone',
   []),
 
  ('THE MAP IS MODE-DEPENDENT -- HANDS -- in mode 1 move FADER 1 on the nanoKONTROL',

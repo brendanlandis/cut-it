@@ -199,15 +199,19 @@ def run_asserts(cap):
     p = [e for e in W("RX-B5") if e[0] == "PARAM"]
     d = [e for e in W("RX-B5") if e[0] == "DISP"]
     check("a pad press names its BANK and PAD", p and p[0][1] == ["sp-b5", "90"], repr(p))
-    check("... and reports ONE stable disp name, with a FLOAT value",
-          d and d[0][1] == ["sp-hit", "5"], repr(d))
+    check("... and reports TWO stable disp rows, both FLOAT values",
+          ["sp-bank", "2"] in [e[1] for e in d] and ["sp-pad", "5"] in [e[1] for e in d],
+          repr(d))
     pr = [e for e in W("RX-RELEASE") if e[0] == "PARAM"]
     dr = [e for e in W("RX-RELEASE") if e[0] == "DISP"]
     check("a RELEASE reaches param", pr and pr[0][1] == ["sp-b5", "0"], repr(pr))
     check("... and does NOT reach disp",
-          not [e for e in dr if e[1] and e[1][0] == "sp-hit"], repr(dr))
+          not [e for e in dr if e[1] and e[1][0] in ("sp-bank", "sp-pad")], repr(dr))
     pa = [e for e in W("RX-A1") if e[0] == "PARAM"]
     check("a different bank gives a different name", pa and pa[0][1] == ["sp-a1", "77"], repr(pa))
+    da = [e for e in W("RX-A1") if e[0] == "DISP"]
+    check("... and the BANK is now on the display too, not just on param",
+          ["sp-bank", "1"] in [e[1] for e in da], repr(da))
     # only sp-* names are m_404's; other disp traffic in the window is unrelated
     check("⛔ a channel outside the 404's ten is IGNORED",
           not [e for e in W("RX-REJECT")

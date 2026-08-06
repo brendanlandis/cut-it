@@ -1,7 +1,7 @@
 #N canvas 20 20 3600 5000 12;
 #X obj 20 460 notein;
 #X obj 20 530 - \$1;
-#X obj 20 590 t f f f;
+#X obj 20 590 t f f f f;
 #X obj 300 660 >= 0;
 #X obj 20 660 < 10;
 #X obj 20 720 *;
@@ -34,7 +34,7 @@
 #X obj 700 1440 > 0;
 #X obj 700 1500 select 1;
 #X obj 700 1560 t b;
-#X msg 700 1620 sp-hit \$1;
+#X msg 700 1620 sp-pad \$1;
 #X obj 700 1680 s disp;
 #X obj 2500 460 ctlin;
 #X obj 2500 530 - \$1;
@@ -114,6 +114,11 @@
 #X text 2420 4120 PANIC COVERS ALL TEN CHANNELS. u_tempo used to send All Notes Off on channel 33 alone \, which is bank A and one tenth of the instrument \, written before this file existed. The device's owner owns its panic -- the same argument m_launchpad makes for owning its own safe exit., f 66;
 #X text 20 4360 SELF-IDENTIFYING \, like m_nano and m_volca. The 404 transmits plenty \, but nothing that says which Pd channel block it landed on \, and Pd 0.49 does not warn about a missing creation argument. ⚠️ The 2000 ms is deploy.sh's rule -- it gates on OUTPUT and quits at about 735 ms., f 66;
 #X text 1220 4360 THE REJECT IS A REAL ERROR \, exactly as in m_volca: an unrecognised selector means u_map and this file disagree about the interface. The t b is the reject-outlet rule -- a reject carries the DATA that failed to match \, never a bang., f 66;
+#X obj 240 1020 + 1;
+#X obj 240 1080 f;
+#X obj 940 1560 t b b;
+#X msg 940 1620 sp-bank \$1;
+#X text 940 1700 TWO STABLE ROWS RATHER THAN ONE \, and the bank is the reason. sp-hit alone could not tell bank A pad 1 from bank B pad 1 -- the distinction was on param all along but never on the display. ⚠️ IT COULD NOT BE ONE ROW: g_oled formats a parameter value with makefilename %g \, which REFUSES a symbol \, so sp-hit b1 is impossible. Two names that never vary cost one more of the five rows and can still never evict anything at any rate \, which is the property that mattered., f 62;
 #X connect 0 2 1 0;
 #X connect 1 0 2 0;
 #X connect 2 2 7 0;
@@ -161,7 +166,6 @@
 #X connect 31 0 32 0;
 #X connect 32 0 33 0;
 #X connect 33 0 34 0;
-#X connect 34 0 27 0;
 #X connect 27 0 35 0;
 #X connect 35 0 36 0;
 #X connect 37 2 38 0;
@@ -233,3 +237,10 @@
 #X connect 91 0 92 0;
 #X connect 92 0 93 0;
 #X connect 93 0 94 0;
+#X connect 2 3 114 0;
+#X connect 114 0 115 1;
+#X connect 34 0 116 0;
+#X connect 116 1 115 0;
+#X connect 115 0 117 0;
+#X connect 117 0 36 0;
+#X connect 116 0 27 0;

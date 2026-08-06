@@ -712,21 +712,45 @@ use 33–42 and leave 43–48 unused. Items 195–196.
 selected* bank, so a pad firing on any other is invisible — that produced a false "channel 3 does
 nothing" reading and nearly recorded a constraint that does not exist. Item 196.
 
-### ✅ The pad note map — SETTLED, and `47 + n` was wrong
+### The pad note map — settled, and `47 + n` was wrong
 
 All sixteen pads measured in **both directions**, items 190–192. **The range is 36–51**, and it is
 the same on every bank.
 
-```
-pads              notes
- 1  2  3  4       48 49 50 51     <- top row
- 5  6  7  8       44 45 46 47
- 9 10 11 12       40 41 42 43
-13 14 15 16       36 37 38 39     <- bottom row
-```
-
 **Pad 1 is top-left; notes ascend from the BOTTOM-left, four per row** — the standard MPC / General
 MIDI drum-grid convention. The 404 is entirely conventional here.
+
+```
+ 1  2  3  4      <- top row
+ 5  6  7  8
+ 9 10 11 12
+13 14 15 16      <- bottom row, and the LOWEST notes
+```
+
+**The table below is the canonical copy**, and `tools/docs-check.py` asserts it against
+`[text define $0-pad]` in `Cut It/m_404.pd` — the array the instrument actually plays from. The two
+cannot drift apart without the gate going red.
+
+<!-- check: pd-text "Cut It/m_404.pd" $0-pad -->
+
+| Pad | Note | Evidence | Item |
+|-----|------|----------|------|
+| 1   | 48   | verified | 190  |
+| 2   | 49   | verified | 190  |
+| 3   | 50   | verified | 190  |
+| 4   | 51   | verified | 190  |
+| 5   | 44   | verified | 190  |
+| 6   | 45   | verified | 190  |
+| 7   | 46   | verified | 190  |
+| 8   | 47   | verified | 190  |
+| 9   | 40   | verified | 190  |
+| 10  | 41   | verified | 190  |
+| 11  | 42   | verified | 190  |
+| 12  | 43   | verified | 190  |
+| 13  | 36   | verified | 190  |
+| 14  | 37   | verified | 190  |
+| 15  | 38   | verified | 190  |
+| 16  | 39   | verified | 190  |
 
 ```
 note = 36 + (3 - (pad-1)/4) * 4 + (pad-1) % 4        integer division

@@ -40,6 +40,15 @@ run() {   # $1 = label, rest = command
 # exit non-zero, so the status is trustworthy on its own.
 run "layout and graph structure" python3 tools/pd-layout-check.py "Cut It"/*.pd
 
+# --- 1b. the documentation -------------------------------------------------
+# The docs restate the same fact in up to ten files and nothing connected the
+# copies, so a correction landed in one and the rest went stale. docs-check ties
+# them together mechanically: an anchored markdown table must equal the array
+# the patch actually plays from, and every pointer to a document must resolve.
+# Reintroduce `47 + n` and it goes red AT PAD 5 -- before deploy, before the
+# device, in ~200 ms.
+run "documentation matches the patch" python3 tools/docs-check.py
+
 # --- 2. the deploy gate -----------------------------------------------------
 # Pd exits 0 even when objects fail to create, so the gate is OUTPUT, not status.
 syntax() {

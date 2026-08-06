@@ -202,15 +202,33 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
                        checking, and a sweep that scans and relaunches in ONE command
                        kills its own session
 plan-v03.md          THE ONLY PLAN DOCUMENT. What v0.3 builds, every open question,
-                     the wifi decision tree, purchases, and what is deferred and why
+                     the wifi decision tree, purchases, and what is deferred and why.
+                     §10 IS THE DOCUMENTATION REFACTOR, IN PROGRESS — read §10.9 for
+                     where it stands before touching any documentation
+ref/                 ⬅ ONE PAGE PER MODULE, and the direction all documentation is
+                     moving. A module is a physical device or one instrument concern,
+                     and everything about it is on its page — what it is, what was
+                     measured, what will bite you, how Cut It uses it.
+  README.md            ⛔ READ THIS BEFORE WRITING ANY DOCUMENTATION. The page schema,
+                       the trap form, the five markers and what each means, and what to
+                       do with material that fits no section. tools/docs-check.py
+                       ENFORCES all of it, so none of it has to be remembered
+  sp404.md             the SP-404MKII — 160 pads, the pad map, the rate limit
+  launchpad.md         the Launchpad Pro MK3 — Programmer Mode, lighting, the watchdog
+  volca.md             the Volca FM — receive-only, Pajen 1.09, pgmout is 1-based
+  nanokontrol.md       the nanoKONTROL mk1 — the CC map, momentary-only and why
+  _unfiled.md          the parking spot. The gate FAILS while anything is in it
 plan-tests.md        THE EVIDENCE LEDGER — numbered checks with their measured
                      results, cited bare as "item 133" everywhere. It accumulates
-                     findings; it does not plan
-ref-build-log.md     Phases 0-8 as built: outcomes, and every correction they produced
+                     findings; it does not plan. ⚠️ BEING DISSOLVED into ref/ —
+                     item numbers survive as FACT IDS on the reference rows
+ref-build-log.md     Phases 0-8 as built: outcomes, and every correction they produced.
+                     ⚠️ Also being dissolved into ref/
 ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow
 ref-hardware.md      the rig and the device — wiring, power, SSH, paths, how Pd launches
 ref-software.md      how the instrument works — architecture, timing model, decisions
-ref-midi.md          every MIDI message each device accepts and transmits, and how Pd sees it
+ref-midi.md          the addressing model and the Organelle. ⚠️ The other four devices
+                     have MOVED to ref/ and this file holds pointers where they were
 ref-display.md       visual feedback — the OLED graphics API, the Launchpad's limits, PdParty
 device/              backups of config that lives only on hardware
 device-state/        backups of the instrument's own saved data, pulled off

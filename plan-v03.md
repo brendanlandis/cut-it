@@ -425,7 +425,35 @@ order.**
 `ref-hardware`'s device section) → testing refactor on the taxonomy this establishes → tool cleanup
 → `tools/README.md` → Organelle cleanup → `ref-hardware`'s device section.
 
-### 10.9 Still open
+### 10.9 Where this stands — 2026-08-06
+
+**Five commits in, `91c68f4`…`13df31c`. All gates pass.** ⚠️ **Read
+[ref/README.md](ref/README.md) first** — it carries the page schema, the trap form, the marker
+definitions and the parking rule, and `tools/docs-check.py` enforces all of it, so none of it has to
+be remembered. Run the gate and it will tell you.
+
+| | Lines |
+|---|---|
+| Root docs | **8,752** (was 10,340) |
+| `ref/` pages | 903 across 4 |
+| `plan-tests.md` + `ref-build-log.md`, untouched | **5,112 — still 58% of the root total** |
+
+**Done:** `tools/docs-check.py`, proven to fail four ways and wired into `check-all.sh`;
+`ref/sp404.md`, `ref/launchpad.md`, `ref/volca.md`, `ref/nanokontrol.md`, each with its source
+sections replaced by a **Moved** pointer; the schema's fifth section, `Design`; traps rewritten as
+claim-plus-fix. `ref-midi.md` is down from 897 lines to 307.
+
+**Next, in order:** `ref/organelle.md` (the largest — panel, OLED and aux LED) → `ref/phone.md` →
+`ref/conventions.md` with `C-NN` IDs → the five instrument pages → `ref/architecture.md`,
+`ref/device-os.md`, `ref/rig.md` → **the journals** → `CLAUDE.md` as a router.
+
+⚠️ **THE LINE COUNT GOES UP PER PAGE, AND THAT IS EXPECTED.** `ref/sp404.md` replaced 279 source
+lines with 281: tables gained `Evidence` and `Item` columns, the pad map became sixteen rows instead
+of a five-line diagram, and merging three overlapping sources replaced "summary + full" with one
+full statement. **The volume reduction is entirely in the journals.** Do not expect the module pages
+to deliver it, and do not compress them chasing it.
+
+### 10.10 Still open
 
 - **The module taxonomy itself.** The names the docs adopt are the names the tests will inherit, so
   they are worth settling first. The `.pd` prefixes (`u_`, `m_`, `g_`, `c_`) are the obvious
@@ -434,5 +462,11 @@ order.**
 - **How far `docs-check.py` should reach on the first pass.** The pad-map check and the citation
   check are clearly worth it. Whether it should also verify the channel-block table against
   `wire.sh` is a judgement call about how much checking is too much.
+- ⬜ **Where does the display arbiter go?** `ref-display.md` is 719 lines and barely touched,
+  because most of it is not device fact — it is the `home < modal < alert` pattern that `g_oled` and
+  `g_grid` share, plus the `disp` bus protocol. Proposal: **the arbiter goes to
+  `ref/architecture.md` and each device page keeps only its own surface.** That splits the Launchpad
+  across two files again, which is what this refactor exists to stop — but the split would be
+  *device vs instrument* rather than accidental. **Brendan has not ruled on this; ask first.**
 - **The eight unticked `plan-tests.md` items** (5, 39, 43–46, 81, 95) need a destination before that
   file dissolves — they are open work, so §4 is where they belong.

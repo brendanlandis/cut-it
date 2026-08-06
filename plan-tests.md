@@ -4080,6 +4080,41 @@ it to read a **current** value, which is a different thing.)*
       automated window was positioned to take. Phase 6 shipped three bugs past a 25/25 Mac run;
       this is the same lesson arriving from the other direction.
 
+- [x] **235. THE LAUNCHPAD WATCHDOG CANNOT RECOVER A DEVICE THAT WAS ABSENT AT LOAD — a real bug in
+      shipped Phase 6 code, found by Phase 9's hardware run.** The Organelle was powered on with the
+      Launchpad not enumerated. Plugging it in afterwards restored it at USB and ALSA level (card 6,
+      client 40, three MIDI ports) but **Pd never reconnected**, and it stayed in Live Mode
+      indefinitely. A manual `sh wire.sh` on the device restored all four links, and the Programmer
+      Mode heartbeat then re-asserted **within seconds** — so the heartbeat had been running the
+      whole time and only the ALSA subscription was missing.
+
+      **The mechanism, read off the connects rather than inferred.** In `pd watchdog`,
+      `[r $0-armed]` gates the `[spigot]` in front of the bounded `wire.sh` recovery, and
+      `$0-armed` is set to 1 by exactly one thing: `[sysexin]` receiving a device-inquiry reply.
+      **So the recovery arms only after the device has answered at least once.** A device that was
+      never present never answers, the spigot stays shut, and `wire.sh` is never re-run.
+
+      **Why nothing reported it.** The give-up path — `[sel 33]` into
+      `fail m_launchpad grid-lost` — sits *downstream* of that same closed spigot, so the watchdog
+      could not even complain that it had given up. The session's error log holds only an unrelated
+      `warn u_net net-link-down`. **A failure path behind the gate that failed cannot report the
+      failure.**
+
+      **The design gap in one sentence: "lost" was implemented as a TRANSITION from present to
+      absent, and never-present is not a transition.** The comment beside the recovery says "the
+      counter ticks every 2 s while the grid is lost", which reads as a state and is built as an
+      edge.
+
+      **Consequence, and it is a gig scenario rather than a lab one:** power on with the controller
+      unplugged, or with a hub that does not enumerate it in time, and plugging it in later never
+      works. The only recovery is reloading the patch. Tonight the Launchpad enumerated on the USB
+      bus at boot but brought up **zero interfaces**, so ALSA created no card at all — which is
+      indistinguishable, from Pd's side, from it not being there.
+
+      **Not fixed here.** It is Phase 6 code, hardware-verified, and it sits next to the safe exit —
+      the one message in this patch worth more than everything around it. Recorded so the fix is a
+      deliberate change rather than something bolted onto the end of another phase.
+
 ---
 
 ## What's actually left

@@ -546,47 +546,9 @@ SysEx each device accepts and transmits — lives in [ref-midi.md](ref-midi.md).
 
 **Moved** to [ref/launchpad.md](ref/launchpad.md), which is now the only page about this device.
 
-### nanoKONTROL (mk1) — visible position, no host LEDs
+### nanoKONTROL (mk1)
 
-Replaces the BeatStep (see *BeatStep retired*, below). 9 channels, each with **1 fader,
-1 knob, 2 buttons**, plus a transport section and 4 on-device scenes. Class compliant,
-USB bus-powered.
-
-**The fit is good:** 9 knobs + 9 faders = 18 continuous controls against Cut It's 16.
-**Two channels per filter** gives 2 knobs + 2 faders — exactly the four per filter — across
-8 channels, leaving **one channel spare**.
-
-⚠️ **That spare channel is not master tempo.** An earlier draft reserved it "for global volume or
-master tempo"; Phase 5 put tempo on the **Organelle's own knob 1** instead, so the whole clock is
-drivable on the Mac with no MIDI configured at all. The spare is genuinely spare. What any control
-means is decided in `u_map` and nowhere else — see [ref-conventions.md](ref-conventions.md).
-
-**The win over endless encoders is visible position.** A knob's physical position *is* the
-display, which is the legibility problem the BeatStep could never solve.
-
-**The cost is parameter pickup.** Any control serving two parameters stops matching its
-stored value on a bank switch. The primary layer avoids this entirely via the 1:1 mapping,
-but the shift layer still doubles up. Options are jump (snaps, jarring), pickup (dead until
-it crosses the old value) or scaled. **Use jump** — a sudden parameter jolt is entirely on
-brand here, so the usual reason to avoid absolute controllers mostly does not apply.
-
-**No host-controllable LEDs.** External LED mode is a nanoKONTROL2-only feature; on the mk1
-the button LEDs reflect local state only and Pd cannot drive them.
-
-**Therefore: every button is momentary**, and Pd owns all toggle state. A toggle button with no host
-LED control keeps its own state, and that state can silently desync from Pd's — exactly the
-invisible-failure mode the FX-send routing was rejected over. Momentary buttons are pure events with
-nothing to desync. **This is the reason the device is configured the way it is**, which is why it is
-here rather than in [ref-midi.md](ref-midi.md) — that file has the CC map, the transport
-reassignment and the Kontrol Editor settings.
-
-**On the four scenes:** useful for multiplying control count, but they are hidden state — the
-device switches locally and Pd has no idea. Assign **distinct CC numbers per scene** so Pd
-infers the active scene from which CCs arrive. Do that and scene switching self-announces;
-don't, and it is the unlabelled-knob problem in a worse form.
-
-✅ Configured and verified on hardware. Arrives on **Pd channel 17**, transport on 18. The scene
-file — device-resident state that a factory reset wipes — is backed up in [device/](device/).
+**Moved** to [ref/nanokontrol.md](ref/nanokontrol.md).
 
 ### BeatStep retired
 

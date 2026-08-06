@@ -1,0 +1,222 @@
+<!-- schema: module -->
+# The phone — PdParty and the status link
+
+**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/pdparty-scene/CutItRemote/` · **Gate:** `tools/phase7-assert.sh`
+
+## What it is
+
+An iPhone running PdParty on the same network, used as **an unlimited plain-English display** — and,
+more valuable, as the answer to the Organelle having no Pd console.
+
+`u_net.pd` is the fourth display surface and the only file that talks to it. It consumes `disp` like
+the `g_` arbiters but **owns no selector on it**, so adding it cost `g_oled`'s route nothing. It
+coalesces per name at 20 Hz with a guaranteed trailing edge, holds the last alert as *state* and
+repeats it, and rebuilds its own socket — which a phone leaving the network destroys outright.
+
+**Status display, diagnostics and remote console — not performance control.** UDP over WiFi arrives
+unevenly, visibly so in the heartbeat counter. Fine for a readout, unacceptable for note timing.
+
+## Facts
+
+### Addresses and ports
+
+| Device | Address | Notes | Evidence | Item |
+|--------|---------|-------|----------|------|
+| Organelle | `organelle.local` | Listens on **9001**. The IPv4 address is DHCP-assigned and **not stable** — seen as both `.15` and `.18`. Use the name | verified | — |
+| iPhone | `192.168.1.5` | OSC receive **8000**, WebDAV **9000** | verified | — |
+| Mac | `192.168.1.16` | Dev machine | verified | — |
+
+⚠️ **Those are HOUSE-NETWORK addresses. On the Organelle's own access point the whole subnet
+changes** — the Organelle is `192.168.12.1` and hands the phone `192.168.12.109`.
+
+**Nothing in the patch is configured with either.** `phone-ip.sh` reads the DHCP lease the Organelle
+itself handed out and falls back to `u_net`'s creation argument on any other network, so **one build
+works on both and no conditional lives in the patch.**
+
+| Port | Status | Evidence | Item |
+|------|--------|----------|------|
+| 9000 | **Do not use for OSC** — it is PdParty's WebDAV server (`GCDWebDAVServer`) | verified | — |
+| 4001–4003 | **Do not use** — they belong to `mother` | verified | — |
+| 8000 | PdParty's OSC receive | verified | — |
+| 9001 | The Organelle's OSC receive | verified | — |
+
+### The wire format
+
+```
+/cutit/param   <name> <value> <unit>              coalesced per NAME at 20 Hz
+/cutit/status  <symbol>                           coalesced, one slot
+/cutit/hb      <counter>                          every 500 ms
+/cutit/alert   <count> <level> <source> <text>    every 500 ms, always present
+```
+
+| Property | Value | Evidence | Item |
+|----------|-------|----------|------|
+| `alert` and `hb` | Repeated **unconditionally at 2 Hz** | verified | — |
+| `param` and `status` | Repeated every 2 s **on top of** their event-driven sends | verified | — |
+| Late or returning phone | Repopulates in about two seconds with nothing moving | verified | — |
+| Rate limiting | 401 `disp` messages a second measured down to **42 datagrams** | verified | — |
+| Socket recovery | `u_net` rebuilds within about five seconds of the phone coming back, nothing touched on the instrument | verified | 119 |
+| Backgrounding PdParty | Costs nothing — iOS keeps the app running and the UDP port bound. Only a full quit closes it | verified | — |
+
+**One address for all parameters.** Adding a parameter costs one `[list prepend <name>]` on the
+Organelle and nothing at all on the phone — this scales to the nanoKONTROL's 18 continuous controls
+without redesign.
+
+### The network
+
+| Fact | Evidence | Item |
+|------|----------|------|
+| The Organelle hosts the network itself — `start-ap.sh` reads `$USER_DIR/ap.txt` and calls `create_ap`, and **`Start AP` is already in System → WiFi Setup**. It is the vendor's own path, not a hostapd project | verified | — |
+| The rig runs `organelle` / `definitelycutit`; two clients joined and the phone display worked over it | verified | — |
+| **The AP has no internet** — `create_ap` is called with `-n` and the Organelle has one radio, so it cannot be both AP and client | verified | — |
+| Airplane mode then re-enabling WiFi is standard iOS behaviour — cellular stays off, WiFi works, the setting persists | verified | — |
+
+**Why not USB.** iOS will not present itself as a USB MIDI device or network interface to a Linux
+host — Apple's USB MIDI support is host-side only. Personal Hotspot over USB requires cellular, which
+defeats airplane mode. `usbmuxd`/`iproxy` could tunnel TCP over Lightning but would mean installing
+libimobiledevice on a 2015-vintage Arch ARM with a read-only rootfs. 📄
+
+**An AP the Organelle hosts needs neither cellular nor anything else in the room**, which is what
+makes airplane mode workable — and airplane mode suppresses notifications at the source, so Do Not
+Disturb is not the answer to them.
+
+### Scene structure and layout
+
+| Property | Value | Evidence | Item |
+|----------|-------|----------|------|
+| A scene | A **folder containing `_main.pd`**. A bare `.pd` also works as a "patch scene", but without background image support | doc | — |
+| Orientation | Inferred from the canvas aspect ratio — wider than tall gives landscape, and PdParty locks the device to match. There is no `info.json` key for it | doc | — |
+| `info.json` keys | *author*, *description*, *name*, *category* — that is all | doc | — |
+| iPhone 11 landscape | **896×414 points.** A canvas of **448×207** — exactly half — fills the screen edge to edge, everything rendering at 2× | verified | — |
+| iOS 14+ | Requires Settings → Privacy → **Local Network** permission, and the entry only appears after the app first attempts an outbound local connection. Until granted, OSC fails silently | doc | — |
+
+## Traps
+
+Each is a claim and its fix. How any of them was found is in the git history.
+
+### `[s #osc-out]` takes raw OSC bytes, and the obvious alternative sends nothing
+
+⛔ A message with the address as selector — `[list prepend /cutit/fader]` → `[list trim]` — sends
+**nothing at all, silently.**
+
+**Fix:** use `[oscformat]`.
+
+```
+[r $0-fader-out]  →  [oscformat cutit fader]  →  [s #osc-out]
+```
+
+PdParty's own `tests/pdparty/Osc` scene is the reference; the message boxes in it that resemble the
+wrong approach are labelled *"test that sending other message types doesn't crash pdparty"*.
+
+### `[r #osc-in]` delivers the address as bare symbols, with no slashes
+
+`/cutit/hb 210` arrives as `cutit hb 210`.
+
+**Fix:** route as `[route cutit]` → `[route hb]`, never `[route /cutit/hb]`.
+
+### PdParty only renders iemguis that have send/receive names
+
+⛔ With `empty` or `-` they parse, instantiate, participate in the patch — and are **invisible**.
+The symptom is a scene showing only comments. This is documented nowhere.
+
+**Fix:** give every GUI object both names, `$0-` prefixed, exactly as PdParty's bundled
+`tests/all_pd_guis.pd` does.
+
+### `[print]` is transmitted as `/pdparty/print` OSC
+
+⛔ Accidentally a free remote console, and accidentally a flood — a single `[print]` on a 2 Hz
+message stream produced **138 packets** in the time it took to drag a fader once.
+
+**Fix:** do not leave prints in a running scene.
+
+### Non-GUI objects still occupy canvas space
+
+A column of `[r]`, `[route]` and `[unpack]` objects down the left of the canvas produces a large
+empty region on the phone and pushes the visible content downward. Long comments do the same thing
+horizontally, and get clipped.
+
+**Fix:** keep the main canvas GUI-only and put all plumbing in a `[pd guts]` subpatch — which is what
+PdParty's own bundled scenes do.
+
+### The notch eats the edge, and PdParty does not inset for it
+
+⛔ In landscape the iPhone 11's speaker and camera cover roughly **44 points — 22 canvas units** off
+one end of a full-width row. A scene laid out edge to edge loses whatever is under it, **silently,
+and only in landscape.**
+
+**Fix:** inset **one** side, not both — which edge the notch lands on depends on which way the phone
+is turned, so pick an orientation and hold it. `CutItRemote` keeps content at `x = 4` and stops at
+`x = 426`, leaving the 22 units on the right, worth 26 units of extra width over insetting
+symmetrically. Leave the bottom clear too; 17 canvas units clears the home indicator.
+
+### The WebDAV server is not running just because PdParty is
+
+⚠️ With the app open and demonstrably listening — a `[netsend -u -b]` delivered 20 datagrams to port
+8000 with no ICMP teardown, which is positive proof of a listener — **port 9000 refused the
+connection outright.** It has to be switched on in the app, and it does not necessarily survive the
+app being backgrounded. So the phone deploy path has a precondition.
+
+**Fix:** `nc -z <phone> 9000` before assuming a scene was updated. The failure is at least loud —
+`curl` exits 7.
+
+⚠️ **`nc -z` on port 8000 proves nothing** — OSC is UDP and a bare `nc -z` tests TCP. Use a real
+datagram and watch for the ICMP teardown instead.
+
+### The unit field must be written on every param message
+
+⛔ `disp` treats the unit as optional, and **`[list split 3]` on exactly three atoms never fires its
+right outlet** — so a field written on some messages and not others keeps its old value.
+`chop-size 43 %` followed by `grain 12` draws as `grain 12 %`.
+
+**Fix:** `u_net` appends the dash *before* splitting, making the optional field mandatory by
+construction. The unit is written on every message, as `-` when there is none.
+
+### An AP session cannot be driven interactively
+
+⚠️ The AP has no internet and the Organelle has one radio, so a laptop joined to it is offline.
+
+**Fix:** prepare on the house network, then switch.
+
+## Design
+
+### Send state, never events
+
+Every message carries the complete current value — `chop-size is 43`, never `chop-size +1`. A dropped
+packet then **self-corrects on the next send** instead of leaving the display permanently and
+silently wrong. UDP will drop packets; the protocol has to not care.
+
+### The display must show its own staleness
+
+**A frozen display looks exactly like a working one**, and mid-performance you will read it and act
+on it. The phone restarts a 1500 ms timer on every incoming message; if it ever fires, the display
+says `NO-LINK` rather than continuing to present a stale value as current.
+
+⚠️ **The default label is `NO-LINK`, not `ok`.** It must assume the worst until traffic proves
+otherwise, or a scene opened before the Organelle is running looks connected when it is not.
+
+The heartbeat keeps flowing even when nothing is happening, because it is the only thing
+distinguishing *idle* from *dead*.
+
+### The Organelle never waits for the phone
+
+Fire and forget over `[netsend -u]`. Phone off, phone crashed, WiFi gone — **the instrument plays
+identically.**
+
+### The name is the parameter, not the control
+
+Knob 2 sends `grain`, not `knob2`. The display says what *changed* rather than which physical control
+moved, so the same knob can mean different things in different modes without the display lying.
+
+### The address is discovered, not configured
+
+Hardcoding a phone address is the mistake `phone-ip.sh` exists to prevent. On the Organelle's own
+access point the Organelle is the DHCP server, so it reads the lease it handed out; on any other
+network it falls back to the creation argument. One build works everywhere and no conditional lives
+in the patch.
+
+## Open
+
+- ⬜ **Guided Access is not set up**, so a stray swipe can drop you out of the scene mid-set. Rate
+  limiting, the `nbx` chrome and the Organelle-hosted access point are all done — the venue sequence
+  runs with no laptop and no venue WiFi, and the phone joins in airplane mode. This is the last
+  count, and it is not code. See [plan-v03.md](../plan-v03.md) §4.

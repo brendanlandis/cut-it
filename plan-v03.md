@@ -312,7 +312,7 @@ pattern and Pd can parse nothing else.
 | Kind of content | Home | Rule |
 |---|---|---|
 | Device facts code depends on | `ref-midi`, `ref-hardware`, `ref-display` | Schema'd markdown tables, checked against the patch |
-| Rules and rationale | `ref-conventions` | One rule per numbered heading with a **stable ID** (`C-31`); everything else cites the ID |
+| Rules and rationale | `ref-conventions` | One rule per numbered heading with a **stable ID** (`C-NN`); everything else cites the ID |
 | Open work | `plan-v03` | The only plan document, as now |
 | Orientation | `CLAUDE.md` | A router, not a store. Its Layout tree is ~240 of its 313 lines and duplicates each file's own header — one line per file |
 
@@ -407,7 +407,7 @@ row is missing its class — something it can never do for prose.
 Pd**, so a comment can never be replaced by a link.
 
 **The rule: the warning stays inline as one imperative line; the evidence and the reasoning leave.**
-`[pgmout] is 1-BASED -- see C-31` rather than a paragraph — short enough to be obviously not the
+`[pgmout] is 1-BASED -- see C-NN` rather than a paragraph — short enough to be obviously not the
 source of truth, present enough to stop you at the box.
 
 ### 10.8 Order of work, and the three refactors next to this one

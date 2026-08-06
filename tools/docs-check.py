@@ -370,9 +370,48 @@ def check_shape(verbose):
     return out
 
 
+RULE_ID = re.compile(r'(?<![\w-])(C-\d+)(?![\w-])')
+
+
+def check_rule_ids(verbose):
+    """Every C-NN cited anywhere must be a rule that exists.
+
+    ⛔ This is what makes a `.pd` comment able to cite the conventions at all. A
+    comment is the only documentation visible while editing in Pd and it has no
+    link syntax, so the citation is a bare ID -- and a bare ID that resolves to
+    nothing is exactly the rot this gate exists to stop.
+    """
+    out = []
+    src = ROOT / 'ref' / 'conventions.md'
+    if not src.exists():
+        return out
+    defined = set(RULE_ID.findall(src.read_text(encoding='utf-8')))
+    if not defined:
+        return ['ref/conventions.md defines no C-NN rules, so every citation is dangling']
+    cited = 0
+    for f in sorted(ROOT.rglob('*')):
+        if not f.is_file() or f.suffix not in TEXT_SUFFIXES:
+            continue
+        if any(p in SKIP_DIRS for p in f.relative_to(ROOT).parts):
+            continue
+        try:
+            body = f.read_text(encoding='utf-8')
+        except UnicodeDecodeError:
+            continue
+        for rid in sorted(set(RULE_ID.findall(body))):
+            cited += 1
+            if rid not in defined:
+                out.append(f'{f.relative_to(ROOT)}  cites {rid}, which is not a rule '
+                           f'in ref/conventions.md')
+    if verbose:
+        print(f'  {len(defined)} rule(s) defined, {cited} citation(s) resolved')
+    return out
+
+
 def main():
     verbose = '-v' in sys.argv
-    problems = check_anchors(verbose) + check_dangling_docs(verbose) + check_shape(verbose)
+    problems = (check_anchors(verbose) + check_dangling_docs(verbose)
+                + check_shape(verbose) + check_rule_ids(verbose))
     if problems:
         print('\n'.join(problems))
         print(f'\n{len(problems)} problem(s).')

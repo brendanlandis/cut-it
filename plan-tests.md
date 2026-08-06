@@ -3870,6 +3870,62 @@ it to read a **current** value, which is a different thing.)*
         ⚠️ Loading this way leaves `!/Cut It` in `/tmp/curpatchname`, so **select Cut It from the
         menu once before using System → Save New** (plain Save is unaffected).
 
+- [x] **229. ✅ A RELATIVE `text read` INSIDE AN ABSTRACTION RESOLVES AGAINST THE PATCH FOLDER — not
+      Pd's working directory.** Measured three ways with Pd's cwd set to `$HOME` throughout, using a
+      three-line file and `text size` as the readout:
+
+      | | Where the file was | `-path` | Result |
+      |---|---|---|---|
+      | **A** | beside the abstraction | includes that dir | **3** ✅ — ambiguous on its own |
+      | **B** | a decoy dir, **not** beside the abstraction | includes the decoy | **3** ⚠️ — so `text read` **does** consult the search path |
+      | **C** | beside the abstraction | **none at all** | **3** ✅ — the conclusive one |
+
+      ✅ **So `u_map` can keep its mapping table in a plain file in the patch folder and read it with
+      no path, no creation argument and no absolute path** — and it works identically on the Mac,
+      on the device (where `/tmp/patch` is a symlink), and inside a gate's scratch copy.
+      ⚠️ **But B means a same-named file anywhere on `-path` would shadow it** — on the device
+      `.pdsettings` carries `path1: /root/Pd/externals` — so the name has to be distinctive.
+
+      ⛔ **AND THE FLAG COMES FIRST: `read -c <file>`, NOT `read <file> -c`.** The wrong order does
+      **not** error usefully — it prints `warning: text define ignoring extra argument: -c` and then
+      reads the whole newline-separated file as **ONE line**, which is `text size 1` and a table that
+      silently matches nothing. Same shape as the `-c` mismatch `u_store` already records. ✅ The
+      warning does at least reach stdout, so **`deploy.sh`'s output gate catches it** — but nothing
+      in the patch would.
+
+- [x] **230. ✅ `u_map` IS MODE-AWARE, AND THE ALLOWLIST GUARD HOLDS.** The centrepiece of v0.3,
+      verified headlessly through `main-dev.pd` with the MIDI-output stubs in a scratch copy. Every
+      row below is one `param` message in and what actually came out:
+
+      | Sent | Mode | Table row | Result |
+      |---|---|---|---|
+      | `og-knob-1 0.5` | mode-1 | `tempo 0` | **`TEMPO: 255`** — 10 + 0.5×490, and **not** divided by 127 |
+      | `slider-1 64` | mode-1 | `volca-cc 41` | **`CTLOUT: 64 41 49`** — table → outlet → cord → `m_volca` |
+      | `xport-4 1` | — | *hardcoded* | **`MODE: perform mode-4`** |
+      | `slider-1 64` | **mode-4** | *no row* | **nothing** ⭐ the same control now means nothing |
+      | `og-knob-1 1` | mode-4 | `tempo 0` | **`TEMPO: 500`** — six rows, so it works in every mode |
+      | `og-aux 1` ×2 | mode-4 | `transport 0` | **`START`** then **`STOP`** |
+      | `nosuchctl 42` | mode-4 | *no row* | **nothing** — an unmapped control is silent, as it must be |
+      | `slider-2 100` | mode-1 | `volca-note 48` | **`NOTEOUT: 48 100 49`** + its note-off |
+      | `slider-3 100` | mode-1 | `volca-prog 5` | **`PGMOUT: 6 49`** — the item 228 `+ 1` applies from the table |
+      | `slider-4 100` | mode-1 | **`tempoo 0`** | **`ERR: fail u_map unknown-dest`, and NO MIDI AT ALL** |
+
+      ⛔ **The last row is the one that matters.** A table that could name a send could write any
+      global name with no evidence on the canvas. It cannot: the destination must exist as a literal
+      argument on a `route` box, and a row naming `tempoo` produced a loud error and emitted nothing.
+      **That is the only failure this design can have which nothing else would catch.**
+
+      ⚠️ **And one trap was measured rather than reasoned, because it would have been silent.**
+      `[list split 1]` emits **`symbol og-knob-1`** — selector `symbol`, not the name — and `route`
+      matches a *selector*, so `[route og-knob-1 …]` **never matches it**. A `[list trim]` in between
+      fixes it. Without that trim every control would take the divisor route's reject, get 127, and
+      **the Organelle's 0–1 knobs would collapse to nothing** while every 0–127 control kept working
+      — a fault that only shows on five controls out of forty-seven.
+
+      ✅ **Not a regression, checked:** `/tmp/cut-it-manual.txt: can't open` appears at HEAD too. It
+      is `state-dir.sh` running through the stubbed `[shell]` on the Mac, and `deploy.sh`'s gate
+      quits at ~735 ms, long before the ~3.5 s restore that raises it.
+
 ---
 
 ## What's actually left

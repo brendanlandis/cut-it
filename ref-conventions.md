@@ -169,10 +169,24 @@ Two consequences worth stating, because both are deliberate:
 
 - **Names on `param` are physical, never functional** — `slider-1`, `og-knob-1`, `xport-2`. What
   a control *does* is not knowable at the `m_` layer and must not be guessed there.
-- **`u_map` is the only file allowed to turn a `param` name into anything else**, and it does it
-  with explicit `route` branches rather than a lookup table. A data-driven `[send]` could write
-  any global name with no evidence of it on the canvas, which defeats an allowlist that is
-  audited by reading. Revisit when the mapping count justifies it — v0.3.
+- **`u_map` is the only file allowed to turn a `param` name into anything else**, and since v0.3 it
+  does it with **a table plus a hardcoded allowlist of destinations** — `Cut It/cut-it-map.txt`,
+  four atoms per row, `<mode> <control> <dest> <arg>`. The old one-branch-per-mapping rule was
+  written with a "revisit past about ten mappings" condition, and 42 controls × six modes is far
+  past it.
+
+  ⛔ **The guard is the whole of what makes a table acceptable, and it is not optional.** A
+  data-driven `[send]` could write any global name with no evidence of it on the canvas, which
+  defeats an allowlist that is audited by reading. So **the table never names a send** — it names a
+  destination that must exist as a **literal argument on a `route` box**, feeding a handler you can
+  see. The set of things a control can reach is still the set of boxes you can read. **A row naming
+  a destination that is not on that route goes to `err` as `unknown-dest` and emits nothing** —
+  proven by test, and it is the only failure this design can have that nothing else would catch.
+  ⚠️ **Skip the guard and the property is gone silently**: nothing fails and no test notices.
+
+  ⚠️ **The table is code, not state.** It is not persisted through `u_state` — nothing rewrites it
+  at runtime, so persisting it would only store a constant, and a restore could silently override
+  the shipped file. Live re-assignment is v0.4 and brings its own persistence.
 
 ✅ **`mode` got its driver in Phase 6**: the nanoKONTROL's six transport keys, shown as a lit
 lamp on the Launchpad's top row — the only device Pd can light, so the state is visible rather

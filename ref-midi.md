@@ -78,80 +78,14 @@ See *Transport buttons* under the nanoKONTROL below.
 
 ## Organelle 1
 
-**The Organelle's own panel is not MIDI.** Keys, knobs, encoder, aux button and the OLED all
-arrive as ordinary Pd messages from `mother.pd`, on named sends and receives. Nothing about
-the front panel is addressable over MIDI, and no CC number will ever reach it. This is the
-single most important thing to know about the device's control surface.
+**The panel, the OLED and the aux LED have MOVED** to **[ref/organelle.md](ref/organelle.md)** — the
+`mother.pd` interface, the OMNI CC 21–26 collision and the `midiInGate` double-send, the OLED
+graphics API and its four buffers, and the LED colour table.
 
-The Organelle 1 is a USB **host** only. It has no USB-device port, so it never appears as a
-MIDI device to anything else. All MIDI in this rig is Pd talking to the four attached
-controllers.
+⛔ **The one thing to carry away: the Organelle's own panel is not MIDI.** No CC number will ever
+reach it.
 
-### mother.pd interface
-
-✅ **The full name list is enumerated from `/root/fw_dir/mother.pd` itself** — every `[s]` and
-`[r]` in the file — and lives in [ref-conventions.md](ref-conventions.md) under *The global
-name allowlist*, because those names are reserved rather than merely documented. In summary:
-`notes`, `knob1`–`knob4`, `enc`, `encbut`, `aux`, `vol`, `exp`, `fs`, the MIDI-gate names and
-`quitting` come **in**; `screenLine1`–`5`, `led`, `goHome`, `oscOut` and `enableSubMenu` go
-**out**.
-
-Two things that surprise people: **`enc`, `aux` and `encbut` send `1`/`0`, not `±1`** ✅, and
-`quitting` is the only shutdown hook — Pd 0.49 has no `closebang`.
-
-Organelle 1 and Organelle M differ here, and the public `Organelle_OS` repo documents the M, so
-that enumeration is the authority rather than the repo.
-
-### ⚠️ mother.pd maps MIDI onto the front panel itself — and Cut It turns that off ✅
-
-**`mother.pd` runs `[ctlin 21]` through `[ctlin 26]` with no channel argument, so they are OMNI**,
-and routes them onto the Organelle's own controls. It also loads a **new patch on any program
-change**. Read out of `/root/fw_dir/mother.pd`:
-
-| Incoming | mother does |
-|---|---|
-| CC 21–24, any channel | sets `knob1`–`knob4` |
-| CC 25 | presses **`aux`** |
-| CC 26, CC 64 | encoder / footswitch |
-| Program change | **loads a different patch** |
-| Note on/off | sends `notes` |
-
-**This collides head-on with the nanoKONTROL**, whose top button row is CC 21–29 by this
-project's own by-tens scheme. ✅ Measured on the device: `btn-t-5` **pressed aux and toggled the
-transport**, and `btn-t-1`…`btn-t-4` slammed knobs 1–4 — so a single button press jerked the
-tempo to 500 BPM and back to 10 on release. Phase 5 is what made it dangerous; before aux drove
-the transport, CC 25 did nothing.
-
-**`u_init` sends `midiInGate 0` at load and again at 2 s.** mother's own comment states the
-contract: *"All MIDI output and input can be suppressed by sending a 0 to `midiOutGate` and
-`midiInGate`."* Each gated path runs through a `[spigot 1]` fed by `[r midiInGate]`.
-
-⚠️ **The second send is the one that matters.** ✅ The mother **binary** pushes its own
-`midiInGate 1` over OSC — mother.pd has `routeOSC /midiInGate` — roughly half a second after the
-patch loads, so a value sent at `loadbang` is silently overwritten. Measured on the device with an
-`[r midiInGate]` print: `0` (ours), `1` (the binary), then `0` again at 2 s, and nothing further
-out to twelve seconds. **Anything a patch sets on mother's MIDI settings at load needs the same
-treatment.** `/sdcard/MIDI-Config.txt` stores only the channel, so there is no persistent setting
-for this.
-
-✅ **It gates only the MIDI-derived paths.** mother has *two* `s notes` — one fed by `oscIn`, which
-is the physical keyboard, and one behind the gate, which is `notein`. Same split for the knobs.
-So the front panel keeps working and only mother's interpretation of incoming MIDI stops.
-Cut It's own `[ctlin]` objects read Pd's MIDI system directly and are unaffected.
-
-*(This means `midiInGate` is a name the patch **sends**, despite being listed among the ones
-mother sends to the patch — it is `[r midiInGate]` inside mother.)*
-
-✅ **Entering mother's *MIDI Config* page mid-session does NOT re-open the gates — it is safe to
-visit during a set.** The worry was that leaving the page would re-push `midiInGate 1` and
-resurrect the CC 21–26 collision above. Opened, left, returned, then `btn-t-5` pressed on the nano:
-**BPM unchanged**, on the OLED and the Launchpad both. Item 201.
-
-⚠️ **The precondition is what makes that a result rather than a guess.** Had returning from the
-menu **reloaded** the patch, `u_init` would have re-closed the gates at 2 s and the test would have
-proven nothing while looking like a pass. ✅ **The evidence is that the OLED did not replay
-`booting` → `wiring` → `launchpad`** — a surviving pid is *not* enough, because `/loadPatch` loads
-a patch inside the running Pd.
+What remains below is Pd generating MIDI *out*, which belongs to `u_tempo` rather than to the panel.
 
 ### MIDI out from Pd
 

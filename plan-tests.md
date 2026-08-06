@@ -102,7 +102,9 @@ and items 12 and 13 closed the same day.**
 
 ⚠️ **The result was not the one the design feared, and it was better:** the 404 sums external input
 to **both** channels rather than keeping them separate, which turns out to give a dry/wet split for
-free. See item 13, and *Do this first* in [plan-v03.md](plan-v03.md).
+free. See item 13, and *Mic goes into the 404* in [ref-software.md](ref-software.md).
+*(This used to point at "Do this first" in plan-v03.md, a section that no longer meant this — the
+name now belongs to the wifi work.)*
 
 - [x] **11. TRS input → two independent channels.** ✅ **PASSED.** Measured with
       `tools/audio-probe/`, a passive bass through an ordinary mono TS cable:

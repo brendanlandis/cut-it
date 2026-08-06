@@ -637,11 +637,12 @@ surface**: it can fill every field of `time, note, velocity, duration`, not just
 live. ⚠️ **3–104 is the range PLAYED, not the device's range** — nothing suggests a ceiling below
 127.
 
-⚠️ **One unexplained residue, and it is recorded so it is not rediscovered as a mystery:** in that
-same capture every **channel 2** (bank B) event was exactly 127 while channel 1 varied.
-⛔ **"Fixed velocity is per-bank" is ruled out — the setting is global**, tested directly. Stale
-pattern data is the leading guess; it predates the toggle. **Cheap check if it ever matters: press
-bank-B pads by hand, no pattern involved.**
+⛔ **A "bank B sends flat 127" residue was recorded here and IT IS FALSE — closed 2026-08-06.**
+**Every bank sends real velocity once fixed velocity is off.** The flat 127s in the original capture
+were stale pattern data recorded *before* the toggle was found, exactly as the leading guess said.
+⚠️ **There is nothing bank-specific about velocity on this device**, and the earlier wording — an
+open question with a "cheap check if it ever matters" — invited someone to go looking for a
+device behaviour that does not exist.
 
 ### ⚠️ Where the external tempo actually shows — read this before debugging sync ✅
 

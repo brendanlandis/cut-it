@@ -240,6 +240,25 @@ sending on reserved names *is* its function. It is instantiated by `main-dev.pd`
 
 Everything else is `$0-`, or a wire.
 
+### Output devices are WIRED from `u_map`, not given a bus ✅ decided in v0.3
+
+**`m_404` and `m_volca` are the project's first *output* device layers, and they run against the
+grain of every `m_` file before them.** The existing three are input mappers — device events become
+named controls on `param`, which `u_map` consumes. These two are *told what to play*.
+
+⛔ **No bus carries that, and none was added.** `param` is device→map, `disp` is display requests,
+and a sounding note is neither. **`u_map` grows one outlet per output device**, wired in `u_root`.
+
+*(judgment call)* A `voice` bus was considered and rejected. It would scale without touching
+`u_root` — the way `disp` serves four surfaces — but **the allowlist is audited by reading**, and
+what is carried here is the signal path rather than a request to show something. `u_root` already
+sets the precedent: the only wires on that canvas come out of `u_init`, because the boot *order* is
+`u_init`'s while the *action* belongs to the file at the other end. Same shape — `u_map` owns the
+decision, the device owns the emission, and the cord between them is worth being able to see.
+
+**Revisit if the output-device count passes about four**, where `u_root`'s canvas stops being the
+clearer option. Same threshold reasoning as `u_map`'s route branches.
+
 ### Poly-tempo
 
 Cut It runs **multiple simultaneous tempi**. Sequencers and samplers may deviate from master —

@@ -5,7 +5,8 @@ A cut-up / harsh noise instrument patch for the **original Critter & Guitari Org
 
 ✅ **v0.2 — the infrastructure — is complete and verified on hardware.** The instrument passes
 audio, knows what every control is doing, and can tell you about it. **[plan-v03.md](plan-v03.md)
-is what remains**: the four filter stages, and every open question in the project.
+is what remains**: v0.3 is **the blank slate** — every device addressable, every control
+assignable — not the sound. The four filter stages are v0.4.
 v0.1 is superseded and kept only for reference.
 
 
@@ -73,6 +74,13 @@ Cut It/              the deployable patch — folder name is what appears in the
                        shape as g_oled -- home < modal < alert -- but home is a
                        COMPOSITE of regions, and it repaints only when dirty
   m_organelle.pd       the Organelle's own panel: aux and knobs 1-4 onto param and disp
+  m_volca.pd           the Korg Volca FM -- the FIRST OUTPUT-ONLY m_ layer, because the
+                       Volca transmits nothing at all. Three inlets (notes, CC, program)
+                       and no outlets. WIRED from u_map rather than fed by a bus: param
+                       is device-to-map and disp is display, and neither fits a sounding
+                       note. ⚠️ Needs Pajen 1.09 firmware for velocity and program change,
+                       both gated behind undocumented global settings -- see ref-midi.md.
+                       ⬜ NOT YET INSTANTIATED by u_root
   u_map.pd             THE MAP — the only file that says what a control MEANS. Knob 1 is
                        master tempo, aux is the transport. One route box, one branch each
   u_tempo.pd           the master reference: BPM, the 24 PPQN pulse MIDI clock is cut from,
@@ -156,7 +164,9 @@ tools/               diagnostic patches, the per-phase benches, and pd-layout-ch
                        runs a LINK PROBE and a DHCP PROBE before a recovery ladder.
                        The link probe has already decided the branch -- the radio is
                        fine and the fault is DHCP-side. wifi-poll.sh watches from the
-                       Mac, wifi-report.sh summarises (--mark FIRST), and
+                       Mac, wifi-report.sh summarises (⚠️ --mark AFTER a finding is
+                       written up, never before -- it draws the analysed-to-here
+                       line, so running it first erases the event you are reading), and
                        wifi-reassociate.sh is the rung that mirrors the front panel.
                        ⚠️ NEVER pgrep -f wifi-watch: it matches the ssh doing the
                        checking, and a sweep that scans and relaunches in ONE command

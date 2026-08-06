@@ -1,4 +1,4 @@
-#N canvas 20 20 2760 1680 12;
+#N canvas 20 20 2760 2000 12;
 #X text 20 20 u_tempo -- the MASTER REFERENCE. It owns the master BPM \, the pulse oscillator that MIDI clock is cut from \, and the transport. It is NOT the clock: Cut It runs poly-tempo and every part that needs a beat owns a c_clock instance of its own. See ref-conventions.md \, Poly-tempo., f 58;
 #X text 20 140 creation args: none. inlets: none. outlets: none. It talks on tempo \, clock \, start \, stop \, panic \, disp and err \, and out of two MIDI ports., f 58;
 #X obj 20 300 r tempo;
@@ -80,11 +80,11 @@
 #X msg 900 640 led stopped;
 #X obj 900 685 s disp;
 #X obj 900 760 r panic;
-#X obj 900 805 t b b b;
+#X obj 900 805 t b b;
 #X msg 1220 870 252;
 #X obj 1220 915 s \$0-rt;
-#X msg 1040 870 0;
-#X obj 1040 915 ctlout 123 33;
+#X text 20 1700 ⬇ ALL NOTES OFF MOVED TO m_404 IN v0.3 \, and the two boxes that did it stood here. It sent CC 123 on channel 33 alone -- bank A \, ONE TENTH of the instrument -- because it was written before any file owned the 404. The device's owner owns its panic \, the same argument m_launchpad makes for owning its own safe exit \, and m_404 now sends it on all ten channels., f 80;
+#X text 1200 1700 ⚠️ u_tempo STILL OWNS THE 252 \, which is the realtime STOP and reaches every port. What left is only the note-silencing \, which is per-device and per-channel and was never this file's to know about., f 80;
 #X msg 900 870 led panic;
 #X obj 900 915 s disp;
 #X obj 1450 300 r \$0-bpm;
@@ -107,7 +107,7 @@
 #X text 20 1360 THE COUNTER RESETS TO 23 \, NOT 0. The next pulse adds one and lands on 0 \, which is the beat. Reset it to 0 and the first beat after every start is silently skipped -- 24 pulses late \, once \, which is exactly the kind of thing nobody notices until a pattern is a beat out., f 58;
 #X text 780 1160 CLOCK NEVER STOPS. 248 flows whether the transport is running or not \; only 250 and 252 mark transport. Stop the stream and the 404 stretches its samples to whatever tempo it last measured \, so a stopped clock is a wrong tempo rather than no tempo. This is the least obvious thing in the file., f 44;
 #X text 780 1330 NEVER 251. Continue means resume from a stored position and nothing in this rig has Song Position Pointer \, so sending it would be a lie that some future device might believe., f 44;
-#X text 780 1460 panic sends 252 and All Notes Off on channel 33 -- port 3 \, channel 1 \, the 404 -- and leaves the clock running. More destinations belong here when anything in Cut It actually emits notes., f 44;
+#X text 780 1460 panic sends 252 -- the realtime STOP \, on every port -- and lights the aux LED \, and leaves the clock running. ⬇ SILENCING NOTES IS NO LONGER DONE HERE: each device layer owns its own \, because the channels are the device's business. m_404 sends All Notes Off across all ten of its banks and m_volca's makenote cannot leave a note hanging., f 44;
 #X text 1450 700 THE FOOTER \, NOT THE PARAM LAYER. status is sticky and always visible \, which is right for a tempo \, and it supersedes u_init's v0.2-ready once the clock is up. panic still overwrites it \, correctly. The f holds the value so the footer can be redrawn without a new tempo arriving., f 44;
 #X text 1450 870 TWO LOADBANGS \, TWO REASONS. del 200 publishes 120 on tempo ONCE -- the only time this file writes that bus -- so the phasor starts and anything that came up first still gets a value. del 4000 redraws the footer only \, because u_init's boot sequence puts v0.2-ready there at about 3.5 s. THAT NUMBER IS COUPLED TO u_init'S TIMINGS and u_init says so too., f 44;
 #X text 1450 1070 It stores what it hears and never re-emits \, so there is no loop between this file and the bus. Anything may write tempo \; only this file owns what happens next., f 44;
@@ -161,11 +161,9 @@
 #X connect 38 0 39 0;
 #X connect 40 0 41 0;
 #X connect 42 0 43 0;
-#X connect 43 2 44 0;
-#X connect 43 1 46 0;
+#X connect 43 1 44 0;
 #X connect 43 0 48 0;
 #X connect 44 0 45 0;
-#X connect 46 0 47 0;
 #X connect 48 0 49 0;
 #X connect 50 0 51 0;
 #X connect 51 1 52 1;

@@ -69,7 +69,7 @@ Three gaps defined v0.3. **One is closed.**
 
 | Gap | State |
 |---|---|
-| **The SP-404 has no `m_` layer** | ⬜ **Open — `m_404` is the main remaining build** |
+| **The SP-404 has no `m_` layer** | ✅ **CLOSED.** `m_404` is built, wired and verified both ways — all sixteen pads asserted, the rate limit proved to drop rather than queue, panic across all ten banks (item 231) |
 | **The Volca has no `m_` layer** | ✅ **CLOSED.** `m_volca` is wired in — one selector-prefixed cord from `u_map`, `$5` verified arriving as 49. ⬜ Nothing drives the outlet until the mode table lands |
 | **`u_map` cannot express a mode-dependent meaning** | ✅ **CLOSED.** Table-driven with a hardcoded allowlist of destinations — `cut-it-map.txt`, `<mode> <control> <dest> <arg>`. Guard proven: a bad destination errors and emits nothing (item 230) |
 

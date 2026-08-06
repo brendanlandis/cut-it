@@ -3926,6 +3926,52 @@ it to read a **current** value, which is a different thing.)*
       is `state-dir.sh` running through the stubbed `[shell]` on the Mac, and `deploy.sh`'s gate
       quits at ~735 ms, long before the ~3.5 s restore that raises it.
 
+- [x] **231. ✅ `m_404` WORKS IN BOTH DIRECTIONS, AND ALL SIXTEEN PADS WERE ASSERTED RATHER THAN
+      SAMPLED.** The first bidirectional device layer in the project. Driven headlessly through
+      `main-dev.pd` with the MIDI stubs, including a new `t_notein` so the receive side — which no
+      bus can reach — could be driven at all.
+
+      **Transmit, all sixteen pads of bank A in one run:**
+
+      | pads | notes emitted |
+      |---|---|
+      | 1–4 | **48 49 50 51** |
+      | 5–8 | **44 45 46 47** |
+      | 9–12 | **40 41 42 43** |
+      | 13–16 | **36 37 38 39** |
+
+      ⛔ **Pad 5 is 44, not 52** — so `47 + n` is genuinely absent rather than merely believed to be.
+      Bank C pad 1 emitted **note 48 on channel 35**, confirming bank sets the CHANNEL and pad sets
+      the NOTE across the whole 160.
+
+      **Receive:** note 44 vel 90 on channel 34 → `param: sp-b5 90` **and** `disp: sp-hit 5`; the
+      same note at velocity 0 → `param: sp-b5 0` and **no disp**; note 48 on channel 33 →
+      `sp-a1 77`; and note 44 on **channel 20** → **nothing**, so the ten-wide gate rejects the
+      other devices.
+
+      **The rate limit drops rather than queues — proved directly.** Twenty triggers fired in ONE
+      logical instant produced **exactly one** note-on. A closed `[spigot]` emits nothing, so the
+      event is gone rather than deferred; item 209 showed there is no queue to Pd's 404 and that
+      overshoot costs seconds of lag.
+
+      ✅ **Panic now covers all ten banks** — CC 123 on channels 33 through 42. `u_tempo` had been
+      sending it on channel 33 alone, which is bank A and **one tenth of the instrument**, written
+      before any file owned the 404.
+
+      ⛔ **ONE BUG, AND IT WAS COMPLETELY SILENT — `[t b a]`'s outlets were wired backwards.** The
+      arguments map left to right, so outlet 0 is the **bang** and outlet 1 is the **message**. The
+      bang was going to `[unpack f f]` and the list to the rate-limiter's gate. A bang into `unpack`
+      does nothing and a list into `[t b b]` just makes bangs, so the patch emitted **no MIDI and no
+      error** — indistinguishable from a lookup miss. Found by testing `u_map`'s outlet in isolation,
+      which proved the message left `u_map` correctly and moved the search downstream.
+
+      ⚠️ **AND THE MEASURING RIG LIED FIRST.** The initial run stopped after five pads, which looks
+      exactly like a pad-map error at the `47 + n` boundary. It was not: `u_net` fails with
+      `netsend: Bad file descriptor` at about four seconds on a Mac with no phone, `u_err` then
+      cannot write its log to `/sdcard`, and the run dies. **The rig's failure mimicked the exact
+      bug the test existed to find.** Fixed by compressing the schedule inside the four-second
+      window. A measuring rig is code — items 182, 209 and Phase 5's two probe bugs.
+
 ---
 
 ## What's actually left

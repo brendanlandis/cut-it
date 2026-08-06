@@ -3851,7 +3851,7 @@ it to read a **current** value, which is a different thing.)*
       | `pgmout 20` (looping) | **LilChorus** — i.e. wire 19 |
       | `pgmout 21` (looping), three raw `0xC0 20` interleaved | **Mouthlead**, and it **never moved** |
 
-      ⭐ **Both directions, and the second is a positive control rather than an inference.** The
+      **Both directions, and the second is a positive control rather than an inference.** The
       first row pair alone would have been two separate observations compared from memory; the
       `pgmout 21` run put the two paths in direct competition on one display and the display stayed
       still. **Wait for the whole measurement** — items 182, 209, 210, 225.
@@ -3902,7 +3902,7 @@ it to read a **current** value, which is a different thing.)*
       | `og-knob-1 0.5` | mode-1 | `tempo 0` | **`TEMPO: 255`** — 10 + 0.5×490, and **not** divided by 127 |
       | `slider-1 64` | mode-1 | `volca-cc 41` | **`CTLOUT: 64 41 49`** — table → outlet → cord → `m_volca` |
       | `xport-4 1` | — | *hardcoded* | **`MODE: perform mode-4`** |
-      | `slider-1 64` | **mode-4** | *no row* | **nothing** ⭐ the same control now means nothing |
+      | `slider-1 64` | **mode-4** | *no row* | **nothing** the same control now means nothing |
       | `og-knob-1 1` | mode-4 | `tempo 0` | **`TEMPO: 500`** — six rows, so it works in every mode |
       | `og-aux 1` ×2 | mode-4 | `transport 0` | **`START`** then **`STOP`** |
       | `nosuchctl 42` | mode-4 | *no row* | **nothing** — an unmapped control is silent, as it must be |
@@ -4008,7 +4008,7 @@ it to read a **current** value, which is a different thing.)*
 
       | Bug reintroduced | What the gate did |
       |---|---|
-      | **`47 + n` pad map** | ⭐ failed with `pads wrong: [5..16]` — **12 of 16, pads 1–4 green**, the exact signature — plus **two receive assertions**, so it catches BOTH directions |
+      | **`47 + n` pad map** | failed with `pads wrong: [5..16]` — **12 of 16, pads 1–4 green**, the exact signature — plus **two receive assertions**, so it catches BOTH directions |
       | **a shipped row naming `tempoo`** | failed the static lint at `line 14 names 'tempoo'`, **without running Pd at all** |
       | **a duplicate `(mode, control)` row** | failed with `line 14 repeats mode-1 og-knob-1 from line 1` |
       | **rate limiter disarmed (`del 5` → `del 0`)** | ⛔ **PASSED. The gate did not notice.** |
@@ -4065,7 +4065,7 @@ it to read a **current** value, which is a different thing.)*
       the seed or from a restore still overwrites it. ⚠️ **A missing map now fails a deploy, and that
       is correct** — hiding that error is what created this bug.
 
-      ⭐ **WHY THE GATE WAS BLIND, WHICH IS THE TRANSFERABLE PART.** Every window in
+      **WHY THE GATE WAS BLIND, WHICH IS THE TRANSFERABLE PART.** Every window in
       `phase9-assert-drive-gen.py` started at **2400 ms**, with a comment explaining that as the
       earliest safe time *because the table was read at 2000*. **The gate's windows were derived
       from the very implementation detail that was wrong**, so it could only ever test the patch
@@ -4074,7 +4074,7 @@ it to read a **current** value, which is a different thing.)*
       implementation.** Now there is an `EARLY` window at **300 ms**, asserted to produce 57 — it
       fails on the old code and passes on the new, confirmed both ways.
 
-      ⭐ **And this is the case for hands-on benches, stated concretely.** The headless gate is
+      **And this is the case for hands-on benches, stated concretely.** The headless gate is
       faster, cheaper and repeatable, and it was *fully green*. The thing that found this was a
       person reading a number off a screen four seconds after power-on — the one measurement no
       automated window was positioned to take. Phase 6 shipped three bugs past a 25/25 Mac run;

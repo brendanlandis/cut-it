@@ -695,7 +695,7 @@ with `amidi`, needs no Pd at all, and was measured recovering a stranded device 
 cycle. `deploy.sh` is unaffected: it loads through mother's `/loadPatch`, so `quitting` fires
 normally.
 
-⭐ **If the probe only needs to SEND MIDI, do not use this at all — load a menu patch instead.**
+**If the probe only needs to SEND MIDI, do not use this at all — load a menu patch instead.**
 `oscsend localhost 4001 /loadPatch s "!/<name>"` swaps the patch and swaps back through mother, so
 `quitting` fires, the Launchpad is never stranded, and there is no `lp-live.sh` to remember.
 `tools/stage-patches/PGM Probe/` is the worked example (item 228). ⚠️ **The probe must `aconnect`

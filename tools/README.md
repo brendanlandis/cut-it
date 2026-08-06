@@ -204,7 +204,7 @@ device with no laptop attached**.
 | `State Probe/` | Phase 8's on-device state probe. |
 | `PGM Probe/` | ✅ Phase 9 Step 0B — **it proved Pd's `pgmout` is 1-based** (item 228). It loops `pgmout 20` every six seconds while `aplaymidi` sends raw `0xC0 20` from the shell, so the readout is **binary — does the program name move?** — rather than asking anyone to compare two names from memory. ⚠️ **It must `aconnect` Pd's Midi-Out 4 to the Uno after loading**, because a patch load drops the connection (see [../ref-hardware.md](../ref-hardware.md)); without that it measures silence and looks like a clean negative. |
 
-⭐ **A menu patch is the CHEAP way to run a Pd-side MIDI probe, and `PGM Probe` is the pattern.**
+**A menu patch is the CHEAP way to run a Pd-side MIDI probe, and `PGM Probe` is the pattern.**
 The documented alternative is the by-hand three-patch console, which needs `killall pd` — and that
 **strands the Launchpad in Programmer Mode every time** (item 96), costing a `tools/lp-live.sh`
 recovery afterwards. `oscsend localhost 4001 /loadPatch s "!/<name>"` swaps the patch and swaps back

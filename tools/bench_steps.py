@@ -375,8 +375,8 @@ STEPS9 = [
   'PASS IF: the aux LED changes state each press and the footer agrees. The transport migrated into the table too so this is the proof that migrating it did not quietly drop it',
   []),
 
- ('PANIC HAS A CONTROL AT LAST -- HANDS -- hold a pad on bank B then press nano bottom-row button 8',
-  'PASS IF: nothing is left sounding. ⚠️ NOTHING ON THE DEVICE COULD RAISE PANIC BEFORE THIS PHASE -- only the Mac dev panel could -- so this row is new and the button choice is a suggestion you can move in one line of cut-it-map.txt. u_tempo used to silence bank A alone which is one tenth of the instrument',
+ ('PANIC IS DELIBERATELY UNBOUND -- nothing to press -- read this and move on',
+  'PASS IF: you understand why there is nothing to do here. NOTHING ON THE DEVICE CAN RAISE PANIC. It was briefly bound to a nano button and that was withdrawn: panic hands the Launchpad back to Live Mode BY DESIGN and the watchdog deliberately does not fight it back -- so an accidental brush of a bare button would kill the grid for the rest of the session with no console to explain it. m_404 now silences all ten banks when panic DOES arrive and the headless gate proves that. Choosing which control is worth that power is a v0.4 decision',
   []),
 
  ('END MARKER -- not a test -- the run is over',

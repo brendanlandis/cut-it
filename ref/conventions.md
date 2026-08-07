@@ -399,68 +399,20 @@ The full chain, the measured level scale and the rest are on [audio.md](module/a
 
 **Rule C-5.** Cite it by ID from a `.pd` comment, where a link cannot be followed.
 
-**Exactly one abstraction may send on `oscOut` and `screenLine1`–`5`.** ✅ That is `g_oled`.
-Everything else asks for a display by sending to `disp` and does not know or care how it is
-drawn — **including `u_err`, which filters and forwards onto `disp` rather than drawing.**
-The Phase 4 plan originally had `u_err` writing to the ALERT buffer itself; where the two
-disagreed, this rule won ([ref-build-log.md](ref-build-log.md)). Two writers, one screen.
+⛔ **Exactly one abstraction may write any display surface.** `g_oled` owns `oscOut` and
+`screenLine1`–`5`; `g_grid` owns the Launchpad's LEDs; `g_led` owns the aux button. Everything else
+asks by sending to `disp` and **does not know or care how it is drawn** — including `u_err`, which
+filters and forwards rather than drawing.
 
-**The same rule covers the aux button LED, and ✅ Phase 5 built it.** It is a display surface, so
-it gets one owner — `g_led` — and callers send semantics rather than a colour: `led running` on
-`disp`, never a number. `led` is `mother.pd`'s own name and is reserved below; the point is that
-exactly one abstraction may write it. See [ref-display.md](ref-display.md) for the states.
+**Callers send semantics, never layout.** `led running`, not a colour. `modal wiring`, not a font
+size.
 
-⚠️ **`led` had to be added to `g_oled`'s `route` as well**, matched and left unconnected.
-Everything `g_oled` does not recognise is a parameter by definition, so without a branch there
-every LED request would have drawn as a nonsense parameter row called `led`. **A second display
-surface on the same bus costs one route argument in the first one** — cheap, but not free.
+⚠️ **A new selector on `disp` costs one `route` argument in every consumer that has a fallthrough**,
+because everything unrecognised is a parameter by definition. Today that is two: `g_oled` and
+`u_net`.
 
-✅ **The third surface arrived in Phase 6 and cost exactly the same two lines**: `grid` appended
-to that `route` and the reject connection moved from outlet 7 to 8. The price is now known and it
-is flat, which is the argument for keeping every surface on one bus — the dev panel's screen log
-records all three interleaved, stamped with one frame number, so an interaction that spans the
-OLED, the aux LED and the pads reads as a single sequence.
-
-✅ **The fourth surface arrived in Phase 7 and cost nothing at all**, which breaks the pattern
-above rather than continuing it. `u_net` — the phone — **owns no selector on `disp`**. It
-subscribes, routes the reserved names into nothing, and forwards the rest; so `g_oled`'s `route`
-is untouched and no reject connection moved. **The flat two-line price is the cost of a surface
-with its own vocabulary, not the cost of a surface.** A consumer that mirrors the bus is free,
-and that is the cheaper shape to reach for when the thing being added is a *readout* rather than
-a device with commands of its own.
-
-⚠️ **A mirror still has to know the reserved names.** `u_net`'s `route` lists all eight and
-leaves six unconnected, for the same reason `g_oled` had to learn `led`: everything unrecognised
-is a parameter *by definition*, so a selector with no branch falls out of the reject and is
-forwarded as a nonsense parameter. Adding a selector to `disp` therefore means visiting every
-consumer that has a fallthrough — which is now two.
-
-**The `disp` message is `<name> <value> [unit]`, with the name as the *selector*.**
-
-### The reserved names, and where a parameter comes from
-
-`g_oled` routes six selectors. **Everything else is, by definition, a parameter** — there is no
-registration step, and `m_nano` in Phase 4 needs no change to the display to show a new control.
-
-| Selector | Carries | Layer |
-|---|---|---|
-| `in-l` `in-r` | `<dB>` from `u_level` | home |
-| `status` | one symbol, the footer status | home |
-| `modal` | one symbol — sticky until cleared | modal |
-| `modal-off` | nothing | clears modal |
-| `alert` | `<level> <source> <text>` — only `u_err` sends this | alert |
-| `led` | one symbol, a **state** — `off` `stopped` `running` `panic` | *not the OLED at all* |
-| `grid` | the Launchpad's own vocabulary — `grid modal <palette>`, `grid modal-off` | *not the OLED at all* |
-| *anything else* | `<value> [unit]` | param |
-
-*(judgment call)* Reserved-names-plus-fallthrough was chosen over tagging each message with its
-layer, because ref-display.md's settled contract is that callers "send semantics, never
-layout". The cost is that a mistyped `disp` name becomes a nonsense parameter on screen rather
-than an error — which is the better failure, since you can see it.
-
-**`modal` and `alert` text is ONE symbol**, and error text is ≤ 21 characters. `gPrintln` does
-not wrap, 16px fits about ten characters across 128 px, and a message box has a fixed typetag.
-Write `launchpad-silent`, not `launchpad silent`.
+The message format, the reserved names, the layer model and every trap around them are on
+[display.md](module/display.md).
 
 ### Four traps around `route`, every one silent
 

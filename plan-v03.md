@@ -501,6 +501,31 @@ gear), `ref-display.md` (the display arbiter only), `ref-midi.md` (the addressin
 `u_tempo`'s clock construction), and the `.pd` comments, which hold material that is in no `.md` at
 all — `u_map`, `u_state`, `u_init` and `m_404` are the richest.
 
+### 10.9b What "done" looks like, exactly
+
+**The root directory holds TWO `.md` files: `CLAUDE.md` and `plan-v03.md`.** Everything else is
+under `ref/`, `tools/` or the patch folder. `plan-v03.md` stays because `ref/` states what IS and a
+plan states what is OPEN — they are different kinds of document, not different topics.
+
+| Still at the root | Lines | Leaves when |
+|---|---|---|
+| **`CLAUDE.md`** | 172 | **Never** — it is the router |
+| **`plan-v03.md`** | 526 | **Never** — the only plan document |
+| `plan-tests.md` | 4,131 | Dissolved into the pages, one session per commit |
+| `ref-build-log.md` | 981 | Dissolved into the pages |
+| `ref-conventions.md` | 27 | The 14 patch and tool files naming it cite `C-NN` instead |
+| `ref-midi.md` | 141 | The `.pd` comments naming it point at `ref/device/` instead |
+| `ref-software.md` | 33 | Same |
+| `ref-display.md` | 19 | Same |
+| `ref-hardware.md` | 421 | ⚠️ **NOT in this refactor** — it becomes `ref/device-os.md` as the last step of the **Organelle cruft cleanup**, which changes the paths it documents |
+
+**So this refactor ends at THREE root files**, and drops to two when the cruft cleanup lands.
+
+⚠️ **The four stubs are the cheap part and they are blocked on the same thing**: a `.pd` comment has
+no link syntax, so it names a document by path. Replace `see ref-conventions.md` with `see C-6` in
+fourteen files and four stubs can be deleted in one commit. **Do the citations before the deletes**,
+or `docs-check.py`'s dangling-document check goes red across the patch.
+
 ### 10.10 Still open
 
 - **The module taxonomy itself.** The names the docs adopt are the names the tests will inherit, so

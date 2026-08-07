@@ -94,6 +94,27 @@ Disturb is not the answer to them.
 
 Each is a claim and its fix. How any of them was found is in the git history.
 
+### Two instruments will fight over one phone
+
+⛔ With the Organelle running Cut It **and** `main-dev.pd` running on the Mac, both connect to the
+same phone and the status row **flutters between two values**. The bus is innocent — a `[r disp]` tap
+shows four messages and no repeats.
+
+**`u_net` is the sole owner of the phone WITHIN an instrument; nothing arbitrates ACROSS machines**,
+and the symptom looks nothing like contention.
+
+**Fix:** none in the patch. **It will recur during off-device development with the device still
+powered** — close one of them.
+
+### A phone joining mid-session saw blanks
+
+⛔ Parameters and status were sent only on change, so a scene opened later showed **empty rows until
+something moved**. The alert never had this problem, and the OLED never had it either, because it
+redraws held state every frame. **`u_net` was the only surface where a late viewer saw nothing.**
+
+**Fix:** a 2 s repeat of the last parameter and status, on top of the event-driven sends — well below
+the 124/s noise floor.
+
 ### `[s #osc-out]` takes raw OSC bytes, and the obvious alternative sends nothing
 
 ⛔ A message with the address as selector — `[list prepend /cutit/fader]` → `[list trim]` — sends
@@ -184,6 +205,15 @@ construction. The unit is written on every message, as `-` when there is none.
 Every message carries the complete current value — `chop-size is 43`, never `chop-size +1`. A dropped
 packet then **self-corrects on the next send** instead of leaving the display permanently and
 silently wrong. UDP will drop packets; the protocol has to not care.
+
+### The phone cannot announce itself, so the Organelle looks the address up
+
+⚠️ **`[netreceive]` in 0.49 cannot tell you who sent a datagram.** Checked before designing around
+it, and it is why the obvious answer — the phone announcing its own address — was not available.
+
+`phone-ip.sh` reads the DHCP lease the Organelle handed out on its own access point, and falls back
+to the creation argument on any other network. **There was never a discovery problem to solve; the
+Organelle already knew the answer.**
 
 ### The display must show its own staleness
 

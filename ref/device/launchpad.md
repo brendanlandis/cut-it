@@ -150,6 +150,19 @@ already makes.
 
 `[sysexin]` instantiates *and fires* on this Pd build.
 
+⚠️ **The recovery re-runs `wire.sh`, which is a FORK, and the bound is what makes that permissible.**
+Phase 4's rule is *one fork per load, never per event* — written against error logging, which
+cascades without limit. Three forks tied to one cable event cannot.
+
+| | Evidence | Item |
+|---|----------|------|
+| `wire.sh` costs **133 ms** and is **idempotent** | verified | — |
+| Ten forks fired back to back produced **no audio complaint** on Pd's console | verified | — |
+| The recovery gives up at about **70 s**, so a device nobody intends to plug back in cannot make Pd fork all night | verified | — |
+
+**All three were measured before the rule was bent**, which is the only reason bending it was
+allowed.
+
 ### Aftertouch is a device setting
 
 **Polyphonic aftertouch must be enabled on the device, and it is not the default** — the default is

@@ -69,7 +69,7 @@ echo "$pdstat"
 # --- Does the deployed patch still match the repo? -------------------------
 # An error raised by a build you no longer have is a trap: you read the log
 # against source that never produced it. This is the md5 check from
-# plan-tests.md item 21, made automatic.
+# item 21, made automatic.
 echo
 echo "── deployed vs repo ──────────────────────────────────────────"
 if ssh "$HOST" "cd '$DEST/$PATCH' 2>/dev/null && md5sum *.pd *.sh 2>/dev/null" \

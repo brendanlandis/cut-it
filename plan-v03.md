@@ -49,7 +49,6 @@ pointer stubs holding nothing. Read in this order:
 | **[ref/architecture.md](ref/architecture.md)** | All of it (200 lines) | How the modules compose, and the four load-bearing decisions |
 | **[ref/device/](ref/device/)**, **[ref/module/](ref/module/)** | **Only the page you are touching** | Everything about one device or one instrument concern, in one place |
 | **[ref-hardware.md](ref-hardware.md)** | Only if working on the device | SSH, paths, how Pd launches, wifi. ⚠️ Verify-after: the cruft cleanup changes these paths |
-| **[plan-tests.md](plan-tests.md)** | **Never read start to finish (4,131 lines).** Grep for the item number you were cited | The evidence ledger. Item numbers are **fact IDs**, cited bare as "item 133" |
 
 ### How this project works
 
@@ -128,12 +127,17 @@ The capability is right and proven: `m_404` silences all ten banks when panic ar
 `u_tempo` never did. Only the binding is open. A deliberate gesture - a two-control combination, or
 a control nothing else uses - is a v0.4 decision.
 
-### Still unticked in plan-tests.md
+### Checks that were never run
 
-Eight checks have never been run. They are **not** v0.3 work and none of them block it, but this is
-where to look for them: **item 5 / 95** brownouts with the full rig powered at once, **item 39** the
-OLED read by eye, **item 45** AP link quality over a set-length window, **item 81** the wifi fault
-itself, and **43/44/46** struck through as answered by later work.
+⬜ Four, carried forward from the dissolved evidence ledger. **None of them blocks anything**, and
+they keep their item numbers so the citations still mean something.
+
+| Item | Check | Why it is still open |
+|---|---|---|
+| 5, 95 | **Brownouts with the full rig powered at once** | Partially closed by item 211; never run with every box live simultaneously |
+| 39 | **The OLED read by eye** — the three type-size layouts and the ageing | The geometry is verified through `oscOut` on the Mac, but *"is 16px readable at arm's length"* is a judgement only the hardware can settle. The one-mover 24px layout has been read on the device incidentally |
+| 45 | **AP link quality over a set-length window** | Needs an actual set's duration to mean anything |
+| 81 | **The wifi fault itself** | ⚠️ Narrowed, not solved — see [ref-hardware.md](ref-hardware.md). Items 43, 44 and 46 were answered by later work |
 
 ---
 
@@ -265,8 +269,9 @@ filled, which pattern is queued, where the playhead is — all visible rather th
 screenshot are all gone. Nothing is left to move.
 
 One thing to be aware of rather than to act on: **the Volca settings photographs were the primary
-evidence for item 226** and are no longer in the repo. The finding itself survives in full in
-plan-tests.md — the key 9–12 table and the `PCnot`/`PCMId` trap — so nothing operational is lost.
+evidence for item 226** and are no longer in the repo. The finding itself survives in full on
+[ref/device/volca.md](ref/device/volca.md) — the key 9–12 table and the `PCnot`/`PCMId` trap — so
+nothing operational is lost.
 If those photographs still exist outside the repo, `device/volca-settings/` is where they belong.
 
 ---
@@ -280,7 +285,7 @@ below is settled; what is still open is listed at the end.
 
 | | Lines |
 |---|---|
-| `plan-tests.md` | **4,131** — 249 items, append-only, and the single largest file in the project |
+| `plan-tests.md` | **4,131** — 249 items, append-only, and the single largest file in the project. ✅ **Dissolved 2026-08-06** |
 | `ref-` docs (six files) | ~4,550 |
 | `tools/README.md` | 765 |
 | `CLAUDE.md` | 313 |
@@ -329,7 +334,7 @@ start to finish. **Both dissolve into the reference docs.**
 
 **Git is now the journal.** `phase 9: fix the boot-time tempo race -- the map was not ready when
 mother pushed` is a journal entry with a timestamp, a diff and no maintenance cost; recent commit
-bodies run ~36 lines. `plan-tests.md` exists because git was read-only until the commit exception.
+bodies run ~36 lines. `plan-tests.md` existed because git was read-only until the commit exception.
 
 ⚠️ **But that quality begins at `dca0b04`.** Before it the log reads `docs update, bug fixes` and
 `straggler issues part 1`. Git carries the journal role *forward* only — Sessions 1–17 must be
@@ -443,7 +448,7 @@ and `tools/docs-check.py` enforces all of it. None of it has to be remembered; r
 | `ref-hardware.md` | 697 | **406** — now only the Organelle as a COMPUTER, and verify-after |
 | `ref/` pages | — | **4,092 across 16** |
 | `CLAUDE.md` | 313 | 327 — **not yet the router** |
-| `plan-tests.md` | 4,131 | **4,131 — 79% of what is left at the root** |
+| `plan-tests.md` | 4,131 | ✅ **0 — dissolved.** 71 of 71 citations resolve elsewhere; the five uncited measurements that were facts are placed |
 | `ref-build-log.md` | 981 | ✅ **0 — dissolved.** Nine unique facts extracted to the pages; the narrative is in git |
 
 ⚠️ **`ref/` now has subdirectories.** `ref/device/` (six, fixed by the hardware) and
@@ -515,7 +520,6 @@ plan states what is OPEN — they are different kinds of document, not different
 |---|---|---|
 | **`CLAUDE.md`** | 172 | **Never** — it is the router |
 | **`plan-v03.md`** | 526 | **Never** — the only plan document |
-| `plan-tests.md` | 4,131 | Dissolved into the pages, one session per commit |
 | `ref-conventions.md` | 27 | The 14 patch and tool files naming it cite `C-NN` instead |
 | `ref-midi.md` | 141 | The `.pd` comments naming it point at `ref/device/` instead |
 | `ref-software.md` | 33 | Same |
@@ -550,5 +554,4 @@ or `docs-check.py`'s dangling-document check goes red across the patch.
   arbitrates. Putting it in `ref/architecture.md` instead would make that file a grab bag before it
   is even written. That splits the Launchpad
   *device vs instrument* rather than accidental. **Brendan has not ruled on this; ask first.**
-- **The eight unticked `plan-tests.md` items** (5, 39, 43–46, 81, 95) need a destination before that
-  file dissolves — they are open work, so §4 is where they belong.
+- ✅ **The unticked items now live in §4** under *Checks that were never run*, with their numbers.

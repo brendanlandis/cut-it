@@ -1,5 +1,5 @@
 #!/bin/sh
-# plan-tests.md item 94 -- the Phase 6 repaint budget, measured on the device.
+# item 94 -- the Phase 6 repaint budget, measured on the device.
 #
 #     ./tools/phase6-cpu.sh              # one reading
 #     ./tools/phase6-cpu.sh -n 3         # three, so you can see it settle
@@ -73,7 +73,7 @@ while [ "$i" -le "$N" ]; do
 done
 
 cat <<'EOF'
-Record these in plan-tests.md item 94, and add the row ref-hardware.md ->
+Record these in item 94, and add the row ref-hardware.md ->
 Measuring the running patch is holding open for Phase 6.
 
 The SysEx rate is not visible here -- UDP out is the OLED. To see the grid's

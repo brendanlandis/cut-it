@@ -21,7 +21,7 @@ THAT SPAN WIDENED FROM 10..108 AND THE OLD REASON WAS MEASURED FALSE. It stopped
 at 10 on the belief that ~106 specs approached a documented cliff and that 120
 was REJECTED OUTRIGHT -- a whole message dropped, which on a frame clock reads as
 a frozen grid. Three broken probes produced that; a clean 120-spec message paints
-the whole surface (plan-tests.md 105, 109). The reason to cover the span is that
+the whole surface (item 105, 109). The reason to cover the span is that
 an index OUTSIDE it can never be cleared: LED state survives the Programmer Mode
 switch, so whatever Live Mode drew on CC 1-8 persisted into every session.
 

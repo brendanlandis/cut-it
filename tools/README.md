@@ -645,7 +645,7 @@ equivalent.
 ./tools/phase6-cpu.sh -n 3
 ```
 
-plan-tests.md item 94. Wraps the `/proc` arithmetic from [../ref-hardware.md](../ref-hardware.md)
+item 94. Wraps the `/proc` arithmetic from [../ref-hardware.md](../ref-hardware.md)
 → *Measuring the running patch* and says WITHIN or OVER against the **11.2 %** budget — Phase 5's
 10.2 % idle baseline plus one point. ⚠️ `pgrep -nx pd`, never a bare `pgrep`: the substring match
 hits a kernel thread on this device.
@@ -655,7 +655,7 @@ hits a kernel thread on this device.
 Everything Phase 6 needed to stop guessing about: the ring's CC numbers, how many colour specs
 one SysEx really carries, whether that SysEx lights the ring as well as the pads, and what the
 layout-select command actually does. All of it is now recorded in
-[../plan-tests.md](../plan-tests.md) Session 7. Keep it as the re-check if a Launchpad is ever
+the git history. Keep it as the re-check if a Launchpad is ever
 swapped.
 
 ### Running a bench on the device
@@ -761,5 +761,5 @@ normally.
 `nano-ch`, `nano-cc`, `nano-val` **in that order** — which is `ctlin`'s measured firing order made
 explicit. To repeat it: copy `Cut It/` aside, replace the `ctlin` line in `m_nano.pd` with a
 stand-in abstraction of that shape, and drive it. All 21 cases and the bug it found are recorded in
-[plan-tests.md](../plan-tests.md) item 31. The firing order itself is item 23 and needs the real
+item 31. The firing order itself is item 23 and needs the real
 device.

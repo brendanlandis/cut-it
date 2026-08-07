@@ -100,7 +100,7 @@ def check(steps, phase):
     rather than structural, and it is already present in phase5 and phase6,
     which are verified on the Organelle and must not be reworded. Asserting
     would refuse to generate four working benches over a missing full stop.
-    plan-tests.md item 122."""
+    item 122."""
     for i, (title, passif, actions) in enumerate(steps, 1):
         for label, s in (("title", title), ("pass_if", passif)):
             for ch in (",", ";"):

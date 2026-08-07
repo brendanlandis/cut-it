@@ -622,10 +622,10 @@ Six phases have used the same shape and it is worth stating rather than rediscov
    the git history; the phase's section *leaves* [plan-v03.md](plan-v03.md)
    rather than being annotated; superseded designs are replaced, not annotated beside their
    replacement; anything unresolved moves to *Open questions*; and a new
-   [plan-tests.md](plan-tests.md) session is added with items numbered **after the last used
+   commit records the measurements, with items numbered **after the last used
    number in the file** — numbers are cited bare across documents, so **never reuse one**.
 7. **The phase ends with a procedure, not a summary** — expected result stated *before* each
-   action, for both machines. It lands in `plan-tests.md` **and** in chat, because chat is where
+   action, for both machines. It lands in the commit **and** in chat, because chat is where
    it gets used.
 
 **The bench proves the cases it contains and nothing else.** Phase 5's stickiest bugs — a stale
@@ -710,7 +710,7 @@ stream — `[text read]` of a missing file prints three lines, and `[text write]
 directory prints `write failed` rather than failing silently, which a plan in this repo asserted
 it did. **Anything that touches a file that may not exist belongs behind the same delay**, which
 is why the state restore is staged rather than run at `loadbang`.
-[plan-tests.md](plan-tests.md) item 143.
+item 143.
 
 **Never open or save any of this in plugdata** — see [CLAUDE.md](CLAUDE.md).
 

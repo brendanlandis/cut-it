@@ -5,14 +5,14 @@ transmits, and how it lands in Pd.
 
 Companion to [ref-hardware.md](ref-hardware.md) (the boxes and cables),
 [ref-software.md](ref-software.md) (what we decided to build) and
-[plan-tests.md](plan-tests.md) (how the verified claims were verified).
+the git history (how the verified claims were verified).
 
 **Confidence markers** are used throughout, and they matter — several claims in this
 project's history turned out wrong when checked:
 
 | | |
 |---|---|
-| ✅ | Verified on this hardware. Test recorded in [plan-tests.md](plan-tests.md). |
+| ✅ | Verified on this hardware. |
 | 📄 | From the manufacturer's own documentation. Not yet confirmed on this unit. |
 | ⬜ | Unknown, assumed, or inferred. Do not build on it without checking. |
 
@@ -40,7 +40,7 @@ argument, and why `main.pd` passes 17 while `main-dev.pd` passes 1.
 
 ✅ **`ctlin` fires channel, then controller, then value** — right to left, and *measured* rather
 than assumed, because this repo has been bitten here before by `polytouchin`. **Cold stores behind
-`ctlin` are therefore safe.** The evidence is [plan-tests.md](plan-tests.md) item 23.
+`ctlin` are therefore safe.** The evidence is item 23.
 
 | Pd device | Hardware | Channel block | Device's own ch. 1 lands on | |
 |---|---|---|---|---|

@@ -8,7 +8,7 @@
 # load and never per event.
 #
 # WHY IT TOUCHES THE FILES AND DOES NOT JUST MAKE THE DIRECTORY. Two measured
-# facts, plan-tests.md items 143 and 147:
+# facts, items 143 and 147:
 #
 #   - a [text write] into a directory that does not exist PRINTS `write failed`.
 #     It does NOT fail silently, whatever the Phase 8 plan assumed.

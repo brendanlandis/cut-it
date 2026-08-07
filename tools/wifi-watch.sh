@@ -198,7 +198,7 @@ dhcpprobe() {
     # ⚠️ THIS VERDICT USED TO SAY "an OFFER means the daemon is wedged", AND THAT
     # WAS WRONG -- it claimed more than the probe measures. `dhcpcd -T` STOPS AT
     # THE OFFER and never sends a REQUEST, so it only ever exercises the half of
-    # the exchange that works. A full debug capture (plan-tests item 184) showed
+    # the exchange that works. A full debug capture (item 184) showed
     # dhcpcd behaving perfectly: carrier lost -> hooks -> carrier acquired ->
     # re-solicit -> DISCOVER with correct backoff, and NO OFFER AT ALL.
     echo "     READ THIS NARROWLY:"
@@ -247,14 +247,14 @@ dhcpprobe() {
         # because it reads a LEASE FILE, and /var/lib/dhcpcd is on the READ-ONLY
         # rootfs -- so dhcpcd has never been able to write one. (The dir holds
         # only 2015-dated leases for SSIDs this rig has not used in years.)
-        # plan-tests recorded "-U returns nothing on 6.9.3 here" without the
+        # it was recorded that "-U returns nothing on 6.9.3 here" without the
         # cause; this is the cause. Kept because the error line is itself the
         # evidence, and it costs nothing.
         #
         # ⬜ AND IT RAISES A QUESTION NOBODY HAS ASKED PROPERLY: with no writable
         # lease store, dhcpcd has nothing to REBIND to after a carrier change and
         # must always fall back to a full DISCOVER -- which is exactly what every
-        # capture shows it doing. `--dbdir /sdcard/dhcpcd` sits in plan-tests'
+        # capture shows it doing. `--dbdir /sdcard/dhcpcd` sits in this project's
         # RULED OUT list, but it was dismissed inside a batch aimed at "the lease
         # expires", a model that turned out to be wrong. It was never refuted on
         # its own merits. NOT a fix, and NOT a finding -- a lead.
@@ -299,7 +299,7 @@ dhcpprobe() {
 #
 #     PREFER_BSSID=a6:40:a0:5e:a2:01 sh /sdcard/wifi-watch.sh
 #
-# ⚠️ If it is ever re-enabled PERMANENTLY, say why in plan-tests -- an unexplained
+# ⚠️ If it is ever re-enabled PERMANENTLY, say why in the commit -- an unexplained
 # steer looks like a fix for a fault that may no longer exist.
 PREFER_BSSID=${PREFER_BSSID:-}
 

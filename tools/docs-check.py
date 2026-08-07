@@ -34,9 +34,10 @@ THE CHECKS
 
   no-dangling-doc
               every `*.md` named anywhere in the repo -- including inside `.pd`
-              comments and `tools/` scripts -- must exist. `plan-tests.md` is
-              named from eight files that are NOT documentation, and it is being
-              dissolved; without this check every one of them rots in silence.
+              comments and `tools/` scripts -- must exist. Both journals were
+              named from eight files that are NOT documentation and both have
+              since been deleted; without this check every one of those
+              references rots in silence.
 
   shape       every page in `ref/` declares a schema on line 1 and keeps to it.
               The cheapest checks here, because a heading structure is already a
@@ -313,10 +314,14 @@ def check_dangling_docs(verbose):
                      comment, so a bare name IS the pointer, and no comment has
                      a narrative reason to name a document that is gone.
 
-    ⛔ That second rule is the one that matters. `plan-tests.md` is named from
-    eight files that are not documentation and is being dissolved; without this
-    they would each keep pointing at nothing, in silence.
-    """
+    ⛔ That second rule is the one that matters. The two journals were named
+    from eight files that are NOT documentation -- u_level.pd, u_net.pd,
+    u_root.pd, g_grid.pd, bench-gen.py, fetch-errors.sh, fetch-state.sh,
+    phase6-assert.py -- and both journals have since been deleted. Every one of
+    those references was repointed at a bare item number in the same commit.
+    Without this check they would have rotted in silence, which is the exact
+    failure the whole refactor exists to stop.
+"""
     out, seen = [], 0
     known = {p.relative_to(ROOT).as_posix() for p in ROOT.rglob('*.md')}
     basenames = {pathlib.PurePath(n).name for n in known}

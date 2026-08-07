@@ -9,7 +9,7 @@
 #X obj 170 400 u_level in-l;
 #X obj 480 400 u_level in-r;
 #X text 70 490 v0.3: e_chop \, e_pitch \, e_trem \, e_verb go in this gap., f 30;
-#X text 20 700 L = drums \, R = fx: the SP-404's hard-panned outputs arriving through the TRS Y-cable. adc~ 1 is the tip \, verified -- plan-tests.md item 11., f 34;
+#X text 20 700 L = drums \, R = fx: the SP-404's hard-panned outputs arriving through the TRS Y-cable. adc~ 1 is the tip \, verified -- item 11., f 34;
 #X text 20 800 adc~ and dac~ appear NOWHERE in this patch \, and must not. mother.pd owns both -- it publishes the inputs on inL / inR and collects the output from outL / outR \, then applies the volume knob and a limiter. A patch that writes to dac~ silently bypasses both. See ref-conventions.md \, Audio I/O., f 58;
 #X text 470 1050 The level taps are a SIGNAL fan-out \, which needs no trigger: signal connections all run every block \, so there is no firing order to get wrong. The trigger rule is about messages., f 46;
 #X obj 900 340 u_init;

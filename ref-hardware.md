@@ -162,7 +162,7 @@ ssh root@organelle.local '
 
 ⚠️ **`pgrep -nx pd`, never `pgrep pd`** — the substring match hits a *kernel thread* on this
 device, which is the bug that once had `fetch-errors.sh` reporting pd alive while it was killed.
-[plan-tests.md](plan-tests.md) item 36.
+item 36.
 
 **The baselines to compare against**, all on the deployed and idle patch:
 
@@ -297,8 +297,8 @@ scans and relaunches in one command kills its own session.
 
 **On house wifi the device loses its IPv4 lease and does not get it back.** Open since Phase 6 and
 misdiagnosed for two of them. ⚠️ **It is narrowed, not solved** — what remains open, and what is
-being waited for, is in [plan-v03.md](plan-v03.md). Evidence: [plan-tests.md](plan-tests.md)
-Session 14, items 169–189.
+being waited for, is in [plan-v03.md](plan-v03.md). The measurements are in *The evidence, item by
+item* below.
 
 ✅ **The fault is a ROAM breaking a RUNNING `dhcpcd`.** The device roams between the two AP radios,
 and a `dhcpcd` running across that association change never re-acquires.
@@ -411,8 +411,7 @@ it only holds if the AP is actually started: **a set run on house wifi is a clie
 
 ⚠️ **Start the AP from the SYSTEM MENU, not from a patch.** A patch that launches `start-ap.sh`
 loses it the moment the next patch loads — `create_ap`, `hostapd` and `dnsmasq` all die with the
-Pd that spawned them, **even behind `setsid nohup`**. Measured; [plan-tests.md](plan-tests.md)
-item 129.
+Pd that spawned them, **even behind `setsid nohup`**. Measured; item 129.
 
 ⚠️ **The passphrase must be 8–63 characters.** `create_ap` rejects anything shorter — and
 `start-ap.sh` runs `killall wpa_supplicant` *before* calling it, so a rejected passphrase leaves

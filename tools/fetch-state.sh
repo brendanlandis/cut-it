@@ -49,7 +49,7 @@ if ! ssh -o ConnectTimeout=8 "$HOST" true 2>/dev/null; then
     echo >&2
     echo "⚠️  ssh answering is NOT the reachability test on this device — it keeps" >&2
     echo "    working over IPv6 link-local while IPv4 is entirely gone. See" >&2
-    echo "    plan-tests.md items 133 and 146. The check is:" >&2
+    echo "    items 133 and 146. The check is:" >&2
     echo "        ip addr show wlan0 | grep 'inet '" >&2
     echo >&2
     echo "Nothing is lost by waiting — the state lives on /sdcard and survives a" >&2

@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Novation Launchpad Pro MK3
 
-**Files:** `Cut It/m_launchpad.pd`, `Cut It/g_grid.pd` · **Gate:** `tools/phase6-assert.sh`
+**Files:** `Cut It/m_launchpad.pd`, `Cut It/g_grid.pd` · **Gate:** `tools/phase6-assert.sh` · **Bench:** `tools/phase6-bench.pd`
 
 ## What it is
 

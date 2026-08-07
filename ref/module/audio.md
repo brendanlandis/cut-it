@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The audio chain
 
-**Files:** `Cut It/u_root.pd`, `Cut It/u_level.pd` · **Gate:** none
+**Files:** `Cut It/u_root.pd`, `Cut It/u_level.pd` · **Gate:** `none` · **Bench:** `none`
 
 ## What it is
 

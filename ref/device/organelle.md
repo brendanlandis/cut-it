@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Organelle 1 — the panel, the OLED and the aux LED
 
-**Files:** `Cut It/m_organelle.pd`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `tools/phase6-assert.sh`
+**Files:** `Cut It/m_organelle.pd`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `tools/phase6-assert.sh` · **Bench:** `tools/phase3-bench.pd`
 
 ## What it is
 

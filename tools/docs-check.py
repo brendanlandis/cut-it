@@ -441,7 +441,18 @@ def check_shape(verbose):
         else:
             for p in PATHS.findall(decl):
                 if p != 'none' and not (ROOT / p).exists():
-                    out.append(f'{rel}  **Files:**/**Gate:** names {p}, which does not exist')
+                    out.append(f'{rel}  **Files:**/**Gate:**/**Bench:** names {p}, '
+                               f'which does not exist')
+            # ⛔ A GATE AND A BENCH ARE DIFFERENT ORACLES, so a page must declare
+            # both. A gate's verdict comes from a program and runs unattended; a
+            # bench's comes from a person's eyes with the rig plugged in. Naming
+            # only one leaves the other kind of coverage invisible -- and five
+            # pages claimed phase6-assert.sh while nothing said which of them a
+            # bench had ever touched. `none` is a legitimate answer to either.
+            for field in ('**Gate:**', '**Bench:**'):
+                if field not in decl:
+                    out.append(f'{rel}  the **Files:** line declares no {field} '
+                               f'-- say `none` if there is not one')
 
         bounds = {h: heads[n][0] for n, (_, h) in enumerate(heads)}
         ends = {h: (heads[n + 1][0] if n + 1 < len(heads) else len(marked))

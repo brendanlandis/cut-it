@@ -41,7 +41,7 @@ Line 1 declares the schema. `##` is the fixed skeleton and must appear exactly, 
 ```markdown
 <!-- schema: module -->
 # Roland SP-404MKII
-**Files:** `Cut It/m_404.pd` · **Gate:** `tools/phase9-assert.sh`
+**Files:** `Cut It/m_404.pd` · **Gate:** `tools/phase9-assert.sh` · **Bench:** `tools/phase9-bench.pd`
 
 ## What it is     one or two paragraphs
 ## Facts          schema'd tables, every one with Evidence and Item columns
@@ -65,8 +65,15 @@ of parts.** This one is a form, not a gate — nothing can check that the right 
 ⚠️ **`Design` holds what is DECIDED, not what is planned.** A table of features that do not exist is
 intent, and belongs in `plan-v03.md`.
 
-⚠️ **Every path in `**Files:**` and `**Gate:**` must exist**, so a page cannot outlive the
-abstraction it documents. Use `none` if there is no gate yet.
+⚠️ **Every path on that line must exist**, so a page cannot outlive the abstraction it documents.
+`none` is a legitimate answer to `Gate` or `Bench`.
+
+⛔ **A GATE AND A BENCH ARE DIFFERENT ORACLES, which is why the page declares both.** A gate's verdict
+comes from a **program** — headless, on the Mac, unattended, any output is a failure. A bench's comes
+from a **person's eyes**, on the device, with the rig plugged in, judging *"PASS IF the third pad is
+green"*. Neither substitutes for the other: **Phase 6 passed 25/25 on the Mac twice and shipped three
+bugs.** Declaring only one leaves the other kind of coverage invisible, and the gate now fails if a
+page names neither.
 
 ## How a Trap is written
 

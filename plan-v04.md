@@ -8,7 +8,14 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-✅ **Both scoped plans have landed, so this is the only one left.**
+⚠️ **This is no longer the only plan.** Six scoped plans — [plan-v03.0.md](plan-v03.0.md) through
+[plan-v03.5.md](plan-v03.5.md) — hold the last batch of infrastructural work before v0.4: the test
+runner, coverage, cleanup, hot-swap and the venue kit. **Read [CLAUDE.md](CLAUDE.md)'s table for the
+order and the dependencies.**
+
+⛔ **§3 below is being emptied by those six.** Every open question in it is assigned to one of them,
+and when they land this section holds **nine items, all of them v0.4 code**. Do not start work on a
+§3 item without checking which plan owns it first.
 
 The **testing refactor** moved the gates off the phase axis and out of `tools/`: every one lives in
 `test/gate/`, is named for the module it covers, and every module page names a gate whose whole

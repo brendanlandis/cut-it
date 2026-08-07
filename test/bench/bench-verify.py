@@ -3,7 +3,7 @@
 
     python3 test/bench/bench-verify.py
 
-phase3/4/5-bench.pd were hand-authored and are verified on the Organelle.
+The display, nanoKONTROL and tempo benches were hand-authored and are verified on the Organelle.
 bench-gen.py rebuilds their box graph completely, so the only honest way to be
 sure the conversion changed how a step is DRIVEN and not what it CLAIMS is to
 read the step text back out of the generated file and diff it against the table
@@ -28,6 +28,15 @@ def _load(name, path):
 
 
 be = _load("bench_extract", os.path.join(HERE, "bench-extract.py"))
+# ⛔ THE LIST OF BENCHES IS DERIVED, NEVER RETYPED. This file used to carry a
+# hand-maintained tuple (3, 4, 5, 6, 7, 8, 9) -- a third copy of a list that also
+# lived in bench-gen.py's table and in bench_steps.py's names -- and the gate skill
+# had to warn that missing it meant a bench was generated but NEVER
+# FIDELITY-CHECKED. Reading bench-gen's own table makes that impossible instead of
+# merely documented: a bench that can be generated is a bench that gets verified.
+# ⚠️ bench-gen.py writes files only under `if __name__ == "__main__"`, so importing
+# it here generates nothing.
+gen = _load("bench_gen", os.path.join(HERE, "bench-gen.py"))
 steps_mod = _load("bench_steps", os.path.join(HERE, "bench_steps.py"))
 
 
@@ -37,17 +46,21 @@ def norm(table):
 
 def main():
     bad = 0
-    for phase in (3, 4, 5, 6, 7, 8, 9):
-        want = norm(getattr(steps_mod, "STEPS%d" % phase))
-        path = os.path.join(HERE, "phase%d-bench.pd" % phase)
+    names = sorted(gen.BENCHES)
+    # ⛔ AND THE COUNT IS PRINTED, because a verifier that silently checked zero
+    # benches would also print no differences and exit 0.
+    print("verifying %d bench(es): %s\n" % (len(names), " ".join(names)))
+    for name in names:
+        want = norm(gen.BENCHES[name]["steps"])
+        path = os.path.join(HERE, "%s-bench.pd" % name)
         got = norm(be.extract(path))
 
         if want == got:
-            print("phase%d  %2d steps  IDENTICAL" % (phase, len(want)))
+            print("%-12s %2d steps  IDENTICAL" % (name, len(want)))
             continue
 
         bad += 1
-        print("phase%d  DIFFERS" % phase)
+        print("%s  DIFFERS" % name)
         if len(want) != len(got):
             print("   step count: table %d, generated %d" % (len(want), len(got)))
         for i, (w, g) in enumerate(zip(want, got), 1):

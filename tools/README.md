@@ -169,7 +169,7 @@ and `mode`, exactly as a controller would.
 
 | Patch | What it does |
 |---|---|
-| `phase3-bench.pd` | **The acceptance run.** Fourteen steps, **stepped by hand** — see *The benches are stepped by hand* below. Each prints what it is sending and a **PASS IF** line *before* the screen moves, including the steps whose correct result is that nothing happens. Run it in the **foreground** and watch the OLED. |
+| `display-bench.pd` | **The acceptance run.** Fourteen steps, **stepped by hand** — see *The benches are stepped by hand* below. Each prints what it is sending and a **PASS IF** line *before* the screen moves, including the steps whose correct result is that nothing happens. Run it in the **foreground** and watch the OLED. |
 | `phase3-diag.pd` | Counts rather than dumps. `FRAMES` and `MESSAGES` are cumulative totals printed once a second, so the rate is the gap between lines — expect +10 and +100. Printing every OSC message instead would slow down the thing being measured. |
 | `alert-buffer-probe.pd` | ✅ **Answered:** draws into the ALERT buffer (screen 4), `setscreen 4`, waits six seconds, `setscreen 3`. All of it works — but `g_oled` still doesn't use buffer 4, for the reasons in [ref-display.md](../ref/module/display.md). Keep it as the re-check if that ever gets revisited. |
 
@@ -306,24 +306,24 @@ selector rules, `sendtyped` arity, `quitting`) are in
 
 ## Phase 4
 
-### `phase4-bench.pd` — the Phase 4 acceptance run
+### `nanokontrol-bench.pd` — the Phase 4 acceptance run
 
-Same shape as `phase3-bench.pd`: eighteen steps, stepped by hand, and a printed `PASS IF` for
+Same shape as `display-bench.pd`: eighteen steps, stepped by hand, and a printed `PASS IF` for
 every step **including the ones whose correct result is that nothing happens**. Load it as a third
 patch after `mother.pd` and `main.pd`. Steps 1–14 drive themselves off the `disp`, `err` and `mode`
 buses; **15–17 need your hands on the nanoKONTROL**, because nothing but the real controller can
 exercise `[ctlin]`.
 
-Step 2 and step 6 are the regression gate on the display rewrite. Steps 7–14 are `phase3-bench`'s
+Step 2 and step 6 are the regression gate on the display rewrite. Steps 7–14 are `display-bench`'s
 assertions, re-run because the param layer they sit next to was rewritten.
 
 ⚠️ **No commas or semicolons in a message box** — both are message separators, so a comma in a
 `PASS IF` string splits it and the remainder goes somewhere unhelpful (`canvas: no method for
-'then'`). `phase3-bench.pd` says so and it caught this one out too.
+'then'`). `display-bench.pd` says so and it caught this one out too.
 
 ## Phase 5
 
-### `phase5-bench.pd` — the Phase 5 acceptance run
+### `tempo-bench.pd` — the Phase 5 acceptance run
 
 Same shape again: fifteen steps, stepped by hand, a printed `PASS IF` before each one, covering
 the clock, the transport, the map and the aux LED. **Steps 1–12 drive themselves; 13 and 14 need
@@ -504,7 +504,7 @@ so an edit under a live interpreter is genuinely unsafe — restart the poll aft
 ```sh
 python3 test/bench/bench-gen.py        # writes all six
 python3 test/bench/bench-verify.py     # proves the step text survived
-python3 test/bench/bench-extract.py test/bench/phase5-bench.pd   # recover a bench's step table
+python3 test/bench/bench-extract.py test/bench/tempo-bench.pd   # recover a bench's step table
 ```
 
 `bench-extract.py` is what made the conversion safe: it recovers the step text from a `.pd` by its
@@ -541,7 +541,7 @@ its window closed says so instead of lying.
 ⚠️ **On the Mac, tick `enable-DSP` first.** `c_clock` hangs off `threshold~`, so with DSP off the
 beat row never moves and every count reads 0 — which looks exactly like a dead clock.
 
-### `phase6-bench.pd` — the Phase 6 acceptance run
+### `launchpad-bench.pd` — the Phase 6 acceptance run
 
 **Twenty-five steps** covering the mode bus, the grid arbiter, the layer priorities and TTLs, the
 first `c_clock` instance, the ring map and the safe exit. Steps needing hands are marked in their
@@ -549,14 +549,14 @@ own prompt line.
 
 ⚠️ **Its beat counter used to be dead.** `[r $0-zero]` and `[r $0-read]` existed, the comment beside
 them claimed the tempo steps drove them, and **nothing anywhere sent to either name** — so the one
-automated assertion in the Phase 6 bench never fired. Same shape as `phase5-bench`'s `[r $0-say]`
+automated assertion in the Phase 6 bench never fired. Same shape as `tempo-bench`'s `[r $0-say]`
 that was never connected to its `[print]`. Fixed by driving them from the step table.
 
 ⚠️ **The panic step hands the surface back and the grid does not come back.** Nothing re-enters
 Programmer Mode except `u_init`'s boot, so the grid stays the device's own until you reload.
 Deliberate, and stated in the step.
 
-### `phase7-bench.pd` — the Phase 7 acceptance run
+### `phone-bench.pd` — the Phase 7 acceptance run
 
 **Fifteen steps, and the first bench whose subject is not the Organelle** — every `PASS IF`
 describes what the *phone* shows. **PdParty has to be open on the `CutItRemote` scene before
@@ -691,13 +691,13 @@ Any of the four benches loads as a **third patch** after `mother.pd` and `main.p
 gives it a real console. This is the launch line:
 
 ```sh
-scp test/bench/phase5-bench.pd root@organelle.local:/tmp/
+scp test/bench/tempo-bench.pd root@organelle.local:/tmp/
 ssh root@organelle.local
   killall pd; sleep 1
   cd /tmp/patch
   nohup pd -nogui -rt -audiobuf 6 -path /root/Pd/externals \
       -path '/sdcard/Patches/!/Cut It' \
-      /root/fw_dir/mother.pd main.pd /tmp/phase5-bench.pd > /tmp/bench.txt 2>&1 &
+      /root/fw_dir/mother.pd main.pd /tmp/tempo-bench.pd > /tmp/bench.txt 2>&1 &
   tail -f /tmp/bench.txt          # Ctrl-C when the last step prints
   killall pd
 ```
@@ -706,7 +706,7 @@ ssh root@organelle.local
 `!` inside double quotes is a history event in interactive zsh — you get `zsh: event not found:
 /Cut` before anything reaches the device.
 
-⚠️ **The second `-path` is not optional for `phase5-bench`.** Its own `declare` is `../Cut\ It`,
+⚠️ **The second `-path` is not optional for `tempo-bench`.** Its own `declare` is `../Cut\ It`,
 which resolves from `tools/` on the Mac but not from `/tmp/` on the device. Without it `c_clock`
 fails to create and both its counts read **0** — which looks exactly like a dead clock rather than
 a missing search path.
@@ -731,7 +731,7 @@ normal operation with `./deploy.sh`, which reloads through the menu path and *do
 exit.
 
 **Two of these live on the device**, left there deliberately after the Phase 6 hardware run:
-`/sdcard/phase6-bench.pd` and `/sdcard/dsp-toggle.pd`. They sit *outside* the patch folder, so
+`/sdcard/launchpad-bench.pd` and `/sdcard/dsp-toggle.pd`. They sit *outside* the patch folder, so
 `deploy.sh` never touches them and they cannot affect what loads. Re-`scp` only if you have
 changed them locally.
 

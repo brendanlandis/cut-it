@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The map
 
-**Files:** `Cut It/u_map.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh` · **Bench:** `test/bench/phase9-bench.pd`
+**Files:** `Cut It/u_map.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
 
 ## What it is
 

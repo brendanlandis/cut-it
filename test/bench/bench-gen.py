@@ -3,7 +3,7 @@
 
     python3 test/bench/bench-gen.py
 
-Replaces phase6-bench-gen.py, which generated one bench. Four near-identical
+Replaces launchpad-bench-gen.py, which generated one bench. Four near-identical
 files of fifteen-odd near-identical steps is exactly where hand-authored box
 indices drift, and it did -- see C-10, and the git history.
 
@@ -90,14 +90,14 @@ def width(text):
     return len(text) * CW + 10
 
 
-def check(steps, phase):
+def check(steps, name):
     """A comma or a semicolon in a printed line splits it into fragments at
     runtime. This assertion is the whole reason these files are generated.
 
     The digit-then-full-stop check below is a WARNING and not an assertion, on
     purpose. `43.` is a valid Pd float literal, so the atom is parsed as the
     number and the stop disappears from the printed line -- but it is cosmetic
-    rather than structural, and it is already present in phase5 and phase6,
+    rather than structural, and it is already present in the tempo and Launchpad benches,
     which are verified on the Organelle and must not be reworded. Asserting
     would refuse to generate four working benches over a missing full stop.
     item 122."""
@@ -105,19 +105,19 @@ def check(steps, phase):
         for label, s in (("title", title), ("pass_if", passif)):
             for ch in (",", ";"):
                 assert ch not in s, (
-                    "phase%d step %d %s contains %r -- a message box would split "
-                    "there and print fragments: %s" % (phase, i, label, ch, s))
+                    "%s step %d %s contains %r -- a message box would split "
+                    "there and print fragments: %s" % (name, i, label, ch, s))
             for m in re.finditer(r'(?<![\w-])(\d+\.)(?=\s|$)', s):
-                print("  note: phase%d step %d %s has %r -- Pd reads that as a "
+                print("  note: %s step %d %s has %r -- Pd reads that as a "
                       "float and the full stop will not print"
-                      % (phase, i, label, m.group(1)))
+                      % (name, i, label, m.group(1)))
             assert "$" not in s, (
-                "phase%d step %d %s contains a dollar sign" % (phase, i, label))
-        assert title, "phase%d step %d has no title" % (phase, i)
+                "%s step %d %s contains a dollar sign" % (name, i, label))
+        assert title, "%s step %d has no title" % (name, i)
         assert passif.startswith("PASS IF"), (
-            "phase%d step %d pass_if does not start with PASS IF" % (phase, i))
+            "%s step %d pass_if does not start with PASS IF" % (name, i))
         for _m, bus in actions:
-            assert bus, "phase%d step %d has an action with no bus" % (phase, i)
+            assert bus, "%s step %d has an action with no bus" % (name, i)
 
 
 # --------------------------------------------------------------------------
@@ -187,18 +187,18 @@ def counters(p, specs, x0, y0):
 
 
 # --------------------------------------------------------------------------
-def build(phase, cfg):
+def build(name, cfg):
     steps = cfg["steps"]
-    check(steps, phase)
+    check(steps, name)
     n = len(steps)
     p = Patch()
 
     p.txt(20, 20,
-          "phase%d-bench -- %s STEPPED BY HAND: press GO to run the step that has "
+          "%s-bench -- %s STEPPED BY HAND: press GO to run the step that has "
           "just been described \\, press GO again to describe the next one. Nothing "
           "moves until you ask it to \\, so the PASS IF is on screen and STILL while "
           "you read it. The prompt line always says what the next press will do."
-          % (phase, cfg["blurb"]), 120)
+          % (name, cfg["blurb"]), 120)
     p.txt(20, 150,
           "GO ON THE MAC: the bng below \\, or the dev panel's ENCODER CLICK -- u_mother-stub "
           "sends encbut unconditionally and nothing in Cut It consumes it. TURNING the encoder "
@@ -442,43 +442,61 @@ def build(phase, cfg):
     W = int(max(7000, runmax + 200,
                 max(width(esc(s[1])) for s in steps) + TX + 200))
     H = int(yy + 300)
-    p.write("test/bench/phase%d-bench.pd" % phase, W, H, cfg.get("declare"))
+    p.write("test/bench/%s-bench.pd" % name, W, H, cfg.get("declare"))
     return n, len(p.B), len(p.C)
 
 
-PHASES = {
-    3: dict(steps=S.STEPS3, counters=[], blurb="the Phase 3 acceptance run: the "
-            "display arbiter and the error bus.", ),
-    4: dict(steps=S.STEPS4, counters=[], blurb="the Phase 4 acceptance run: the "
-            "nanoKONTROL and the multi-parameter display.", ),
-    5: dict(steps=S.STEPS5, blurb="the Phase 5 acceptance run: the clock \\, the "
-            "transport \\, the map and the aux LED.",
-            counters=[("M-BEATS", "r clock"),
-                      ("C1-BEATS-ratio-1", "c_clock 1 4"),
-                      ("C2-BEATS-ratio-1.5", "c_clock 1.5 4")],
-            declare="-path ../../Cut\\ It"),
-    6: dict(steps=S.STEPS6, blurb="the Phase 6 acceptance run: the Launchpad \\, the "
-            "grid arbiter \\, the mode bus and the first c_clock instance.",
-            counters=[("BEATS", "r clock")]),
-    8: dict(steps=S.STEPS8, counters=[], blurb="the Phase 8 acceptance run: the "
-            "data store. MOST OF PHASE 8 IS DELIBERATELY INVISIBLE -- state is FILES \\, "
-            "and test/gate/state-assert.sh proves the logic headlessly in twelve seconds. "
-            "What is left here is only what hardware can show: the front-panel Save \\, a "
-            "REAL power cycle \\, and the mode lamp. Six steps rather than a padded "
-            "twenty \\, because a bench proves the cases it contains and nothing else."),
-    9: dict(steps=S.STEPS9, counters=[], blurb="the Phase 9 acceptance run: the "
-            "mode-dependent map \\, both output devices and the SP-404 in both "
-            "directions. MOST OF PHASE 9 IS PROVEN HEADLESSLY -- test/gate/sp404-assert.sh "
-            "asserts all sixteen pads \\, the rate limiter and the allowlist guard in about "
-            "eight seconds. What is left here is only what HARDWARE can show: a real pad "
-            "under a real finger \\, and a Volca you can hear."),
-    7: dict(steps=S.STEPS7, counters=[], blurb="the Phase 7 acceptance run: the phone "
-            "status link. EVERY PASS IF DESCRIBES THE PHONE \\, not the Organelle -- "
-            "so PdParty has to be open on the CutItRemote scene before step 1."),
+# ⛔ THE KEY IS THE OUTPUT FILENAME, and it is the only list of benches there is.
+# bench-verify.py derives its own list from these keys rather than repeating them,
+# because it used to carry a hand-typed tuple (3, 4, 5, 6, 7, 8, 9) -- a third
+# copy of the same list, alongside this table and the STEPS_ names -- and missing
+# it meant a bench was generated but NEVER FIDELITY-CHECKED. That trap is gone
+# rather than documented.
+#
+# ⚠️ These are named for MODULES now, not phases. What a bench asks a person to do
+# has not changed by one word; only which page can honestly point at it.
+BENCHES = {
+    "display": dict(steps=S.STEPS_DISPLAY, counters=[],
+                    blurb="the display acceptance run: the display arbiter and "
+                    "the error bus."),
+    "nanokontrol": dict(steps=S.STEPS_NANOKONTROL, counters=[],
+                        blurb="the nanoKONTROL acceptance run: every fader \\, knob "
+                        "and transport key \\, and the multi-parameter display."),
+    "tempo": dict(steps=S.STEPS_TEMPO,
+                  blurb="the tempo acceptance run: the clock \\, the transport \\, "
+                  "the map and the aux LED.",
+                  counters=[("M-BEATS", "r clock"),
+                            ("C1-BEATS-ratio-1", "c_clock 1 4"),
+                            ("C2-BEATS-ratio-1.5", "c_clock 1.5 4")],
+                  declare="-path ../../Cut\\ It"),
+    "launchpad": dict(steps=S.STEPS_LAUNCHPAD,
+                      blurb="the Launchpad acceptance run: the grid \\, the grid "
+                      "arbiter \\, the mode bus and the first c_clock instance.",
+                      counters=[("BEATS", "r clock")]),
+    "phone": dict(steps=S.STEPS_PHONE, counters=[],
+                  blurb="the phone acceptance run: the status link. EVERY PASS IF "
+                  "DESCRIBES THE PHONE \\, not the Organelle -- so PdParty has to be "
+                  "open on the CutItRemote scene before step 1."),
+    "state": dict(steps=S.STEPS_STATE, counters=[],
+                  blurb="the data store acceptance run. MOST OF THE DATA STORE IS "
+                  "DELIBERATELY INVISIBLE -- state is FILES \\, and "
+                  "test/gate/state-assert.sh proves the logic headlessly in twelve "
+                  "seconds. What is left here is only what hardware can show: the "
+                  "front-panel Save \\, a REAL power cycle \\, and the mode lamp. Six "
+                  "steps rather than a padded twenty \\, because a bench proves the "
+                  "cases it contains and nothing else."),
+    "midi": dict(steps=S.STEPS_MIDI, counters=[],
+                 blurb="the MIDI acceptance run: the mode-dependent map \\, both "
+                 "output devices and the SP-404 in both directions. MOST OF THIS IS "
+                 "PROVEN HEADLESSLY -- test/gate/sp404-assert.sh asserts all sixteen "
+                 "pads \\, the rate limiter and the allowlist guard in about eight "
+                 "seconds \\, and test/gate/map-assert.sh asserts the lookup. What is "
+                 "left here is only what HARDWARE can show: a real pad under a real "
+                 "finger \\, and a Volca you can hear."),
 }
 
 
 if __name__ == "__main__":
-    for ph in sorted(PHASES):
-        n, b, c = build(ph, PHASES[ph])
-        print("phase%d-bench.pd  %2d steps  %3d boxes  %3d connects" % (ph, n, b, c))
+    for name in sorted(BENCHES):
+        n, b, c = build(name, BENCHES[name])
+        print("%s-bench.pd  %2d steps  %3d boxes  %3d connects" % (name, n, b, c))

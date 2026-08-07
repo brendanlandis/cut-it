@@ -41,7 +41,7 @@ Line 1 declares the schema. `##` is the fixed skeleton and must appear exactly, 
 ```markdown
 <!-- schema: module -->
 # Roland SP-404MKII
-**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/sp404-assert.sh` · **Bench:** `test/bench/phase9-bench.pd`
+**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/sp404-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
 
 ## What it is     one or two paragraphs
 ## Facts          schema'd tables, every one with Evidence and Item columns

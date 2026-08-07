@@ -8,8 +8,8 @@ their box graph completely, so the only way to be sure nothing was lost is to
 extract the step TEXT from the old file and from the new one and diff the two.
 Zero differences is the gate.
 
-    python3 test/bench/bench-extract.py test/bench/phase5-bench.pd            # python source
-    python3 test/bench/bench-extract.py test/bench/phase5-bench.pd --json     # for diffing
+    python3 test/bench/bench-extract.py test/bench/tempo-bench.pd            # python source
+    python3 test/bench/bench-extract.py test/bench/tempo-bench.pd --json     # for diffing
 
 Steps are found by their "=== STEP-NN-of-M ===" marker, never by counting
 "PASS IF" strings -- the counts do not match, because some PASS IF lines live in

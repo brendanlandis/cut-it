@@ -145,7 +145,7 @@ if [ ! -s "$TMP/all" ]; then
     echo "  Nothing logged. Either nothing has gone wrong, or the patch has not"
     echo "  run since logroll.sh was deployed. Raise one deliberately to check:"
     echo "    ssh $HOST \"oscsend localhost 4001 /doNothing i 1\"   # no-op"
-    echo "  …or drive [s err] from test/bench/phase4-bench.pd."
+    echo "  …or drive [s err] from test/bench/nanokontrol-bench.pd."
     exit 0
 fi
 

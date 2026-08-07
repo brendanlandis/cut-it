@@ -17,7 +17,7 @@ Phase 6 run, in a bench family whose own README warns about it, which is why
 bench-gen.py asserts against commas and semicolons rather than trusting review.
 """
 
-STEPS3 = [
+STEPS_DISPLAY = [
  ('baseline -- sending nothing',
   'PASS IF: two bars with a small gate mark under each and a BPM at the bottom -- Phase 5 hands the footer over from v0.2-ready to the tempo about four seconds in',
   []),
@@ -62,7 +62,7 @@ STEPS3 = [
   []),
 ]
 
-STEPS4 = [
+STEPS_NANOKONTROL = [
  ('baseline -- sending nothing',
   'PASS IF: two bars with a small gate mark under each and a BPM at the bottom -- Phase 5 hands the footer over from v0.2-ready to the tempo about four seconds in',
   []),
@@ -119,7 +119,7 @@ STEPS4 = [
   []),
 ]
 
-STEPS5 = [
+STEPS_TEMPO = [
  ('baseline -- re-asserting 120 BPM and stopped',
   'PASS IF: two bars with a small gate mark under each and 120-bpm in the footer -- and the aux button lit DARK BLUE. This step exists so the run repeats without reopening the patch',
   [('120', 'tempo'), ('bang', 'stop')]),
@@ -167,7 +167,7 @@ STEPS5 = [
   []),
 ]
 
-STEPS6 = [
+STEPS_LAUNCHPAD = [
  ('baseline -- 120 BPM -- stopped -- compose mode-1',
   'PASS IF: the top row shows ONE bright green lamp at the far left and five dim ones beside it -- and the BOTTOM row of pads has a single white pad. DIM MEANS FAINT AND NOT OFF: the five idle lamps are colour 1 which is a near-black grey and the current one is 21. THE WHITE PAD IS ALREADY WALKING and that is correct -- c_clock free-runs and the transport gates what PLAYS rather than what counts -- so a frozen pad here is the fault and a moving one is not. Everything else on the surface is dark',
   [('120', 'tempo'), ('bang', 'stop'), ('compose mode-1', 'mode')]),
@@ -256,7 +256,7 @@ STEPS6 = [
 # messages; a flood needs a metro. test/gate/phone-assert.sh is what proves the
 # coalescer, and step 12 is the closest a person can get -- a real fader, and the
 # question of whether the phone SETTLES on the value you stopped at.
-STEPS7 = [
+STEPS_PHONE = [
  ('baseline -- the link is up and the mode is compose',
   'PASS IF: the bottom line of the phone reads ok rather than NO-LINK. Nothing else has to be true yet -- this proves only that the heartbeat is flowing and the scene is bound. IF IT SAYS NO-LINK STOP HERE and check that PdParty is open on the same network -- every step below depends on it. compose is set because u_err shows warnings in compose and only failures in perform',
   [('compose mode-1', 'mode')]),
@@ -304,7 +304,7 @@ STEPS7 = [
   []),
 ]
 
-STEPS8 = [
+STEPS_STATE = [
  ('baseline -- the patch has just booted and nothing has been touched',
   'PASS IF: the Launchpad top row shows exactly ONE lit mode lamp. WHICH one is the test: a fresh install comes up on mode-1 and a restored one comes up wherever you left it. If the grid is dark then the Launchpad is not owned and nothing below can be read',
   []),
@@ -326,7 +326,7 @@ STEPS8 = [
 ]
 
 
-STEPS9 = [
+STEPS_MIDI = [
  ('baseline -- read the OLED footer before touching anything',
   'PASS IF: the footer reads 57 BPM and NOT 120 -- this is a REAL TEST and not a formality -- knobs.txt holds knob 1 at about 0.096 and mother pushes it at boot. 57 means the message went through the mapping TABLE and came out the tempo handler. 120 means u_tempo is sitting on its own default and the table never matched. Also note which mode lamp is lit on the Launchpad top row -- a restored session comes up wherever you left it',
   []),

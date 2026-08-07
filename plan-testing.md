@@ -38,7 +38,7 @@ ref/          architecture  conventions  device-os  rig
 file does not exist:
 
 ```markdown
-**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/sp404-assert.sh` · **Bench:** `test/bench/phase9-bench.pd`
+**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/sp404-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
 ```
 
 ⛔ **So renaming a gate is not free — every page naming it goes red until its header moves too.**
@@ -48,18 +48,18 @@ That coupling is deliberate and it is the safety net for this whole job. **Do no
 
 | Page | Gate | Bench |
 |---|---|---|
-| `device/launchpad` | `phase6-assert.sh` | `phase6-bench.pd` |
-| `device/nanokontrol` | `phase6-assert.sh` ⛔ **false — it tests nothing about the nano** | `phase4-bench.pd` |
-| `device/organelle` | `phase6-assert.sh` ⛔ **false — it tests nothing about the OLED** | `phase3-bench.pd` |
-| `device/phone` | `phase7-assert.sh` | `phase7-bench.pd` |
-| `device/sp404` | `phase9-assert.sh` | `phase9-bench.pd` |
-| `device/volca` | `phase9-assert.sh` | `phase9-bench.pd` |
+| `device/launchpad` | `phase6-assert.sh` | `launchpad-bench.pd` |
+| `device/nanokontrol` | `phase6-assert.sh` ⛔ **false — it tests nothing about the nano** | `nanokontrol-bench.pd` |
+| `device/organelle` | `phase6-assert.sh` ⛔ **false — it tests nothing about the OLED** | `display-bench.pd` |
+| `device/phone` | `phase7-assert.sh` | `phone-bench.pd` |
+| `device/sp404` | `phase9-assert.sh` | `midi-bench.pd` |
+| `device/volca` | `phase9-assert.sh` | `midi-bench.pd` |
 | `module/audio` | **none** | **none** |
-| `module/boot` | `check-all.sh` | `phase3-bench.pd` |
-| `module/display` | `phase6-assert.sh` | `phase3` + `phase4` + `phase6-bench.pd` |
-| `module/map` | `phase9-assert.sh` | `phase9-bench.pd` |
-| `module/state` | `phase8-assert.sh` | `phase8-bench.pd` |
-| `module/tempo` | `phase6-assert.sh` | `phase5-bench.pd` |
+| `module/boot` | `check-all.sh` | `display-bench.pd` |
+| `module/display` | `phase6-assert.sh` | `phase3` + `phase4` + `launchpad-bench.pd` |
+| `module/map` | `phase9-assert.sh` | `midi-bench.pd` |
+| `module/state` | `phase8-assert.sh` | `state-bench.pd` |
+| `module/tempo` | `phase6-assert.sh` | `tempo-bench.pd` |
 
 **Five pages claim `phase6-assert.sh` and two of those claims are false.** That is the concrete cost
 of the phase axis, and it is why this job is worth doing rather than tidying.

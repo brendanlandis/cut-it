@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Boot and wiring
 
-**Files:** `Cut It/u_init.pd`, `Cut It/wire.sh`, `Cut It/main.pd`, `Cut It/main-dev.pd`, `Cut It/u_root.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/check-all.sh` · **Bench:** `test/bench/phase3-bench.pd`
+**Files:** `Cut It/u_init.pd`, `Cut It/wire.sh`, `Cut It/main.pd`, `Cut It/main-dev.pd`, `Cut It/u_root.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/check-all.sh` · **Bench:** `test/bench/display-bench.pd`
 
 ## What it is
 

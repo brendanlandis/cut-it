@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Organelle 1 — the panel, the OLED and the aux LED
 
-**Files:** `Cut It/m_organelle.pd`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `none` · **Bench:** `test/bench/phase3-bench.pd`
+**Files:** `Cut It/m_organelle.pd`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `none` · **Bench:** `test/bench/display-bench.pd`
 
 ## What it is
 

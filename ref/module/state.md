@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # State and persistence
 
-**Files:** `Cut It/u_state.pd`, `Cut It/u_store.pd`, `Cut It/state-dir.sh` · **Gate:** `test/gate/state-assert.sh` · **Bench:** `test/bench/phase8-bench.pd`
+**Files:** `Cut It/u_state.pd`, `Cut It/u_store.pd`, `Cut It/state-dir.sh` · **Gate:** `test/gate/state-assert.sh` · **Bench:** `test/bench/state-bench.pd`
 
 ## What it is
 

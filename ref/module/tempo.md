@@ -76,6 +76,23 @@ would fire half a beat away from `u_tempo`'s beat, because `u_tempo`'s pulses fi
 and the events are cut from the same ramp. A second oscillator at 24× would drift from the first —
 slowly, and only under a long take.
 
+### Tempo propagates unevenly, because MIDI clock has no tempo message
+
+Because the Organelle *generates* the clock, tempo is just a float in the patch and anything may
+write the `tempo` bus. **But you cannot send a BPM.** You change the *rate* of the 24 PPQN pulse
+stream, and slaved devices infer tempo by measuring pulse intervals — most averaging over several
+pulses.
+
+| Change | What slaved gear does | Evidence | Item |
+|--------|-----------------------|----------|------|
+| Gradual | Tracks fine everywhere | verified | — |
+| Instant jump | Takes several pulses to propagate. Large ones can make the 404 or Volca **stutter or briefly drop sync** | verified | — |
+
+⚠️ **So internal and external timing diverge under fast modulation.** The Organelle's own grain
+clocks are `phasor~`-based — a frequency change is instant and glitch-free, and the phase simply
+continues. Slaved gear lags several pulses behind. **Modulate tempo quickly and the Organelle is
+somewhere the 404 has not reached yet.**
+
 ### The four rate ceilings
 
 ⚠️ **These get confused with each other constantly.** They stack, and the one that bites is whichever

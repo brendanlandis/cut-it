@@ -215,11 +215,18 @@ folder under a numbered name, making preset variants separate menu entries — t
 where a preset is a **record inside the store**. Recorded so it is not rediscovered as an option; see
 [plan-v03.md](../../plan-v03.md) *Deliberately deferred*, and item 144 for what it does.
 
-### Patterns and presets will be plain text
+### Three decisions about captured patterns, made early on purpose
 
-`[text define]` + `[text write]`, git-diffable and editable outside Pd, in one device-agnostic event
-format — `time, note, velocity, duration` — so nothing downstream cares whether a pattern came from
-the Launchpad, the keyboard or the 404.
+None of these is built. All three are cheap now and expensive later, which is why they are recorded
+as decisions rather than left to whoever writes the capture.
+
+1. **One device-agnostic event format.** Sources have wildly different shapes — the Launchpad is
+   4×32 at 8-note poly, the keyboard is free-played. Capture everything as
+   `time, note, velocity, duration` and **nothing downstream cares what authored it.**
+2. ⛔ **Decouple the capture SOURCE from the playback DESTINATION.** Channel offsets tell you what a
+   pattern was recorded *from*; that must not determine where it plays *to*. **Bake it in and you
+   have permanently made something "a Launchpad pattern."**
+3. **Plain text files** — `[text define]` + `[text write]`, git-diffable and editable outside Pd.
 
 ## Open
 

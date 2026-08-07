@@ -238,39 +238,13 @@ Everything else is `$0-`, or a wire.
 
 ### Output devices are WIRED from `u_map`, not given a bus
 
-**`m_404` and `m_volca` are the project's first *output* device layers, and they run against the
-grain of every `m_` file before them.** The existing three are input mappers — device events become
-named controls on `param`, which `u_map` consumes. These two are *told what to play*.
+⛔ **No bare global name carries a sounding note**, and none is being added. `m_volca` and `m_404`
+are told what to play on a **cord** from `u_map`, one outlet per output device, carrying a
+selector-prefixed message. The reasoning and the two rejected alternatives are on
+[architecture.md](architecture.md).
 
-⛔ **No bus carries that, and none was added.** `param` is device→map, `disp` is display requests,
-and a sounding note is neither. **`u_map` grows one outlet per output device**, wired in `u_root` —
-**one device, one cord.**
-
-**The message is SELECTOR-PREFIXED, and the device layer routes it** — `notes 48 100 200`,
-`cc 41 64`, `program 20`, `pad 23 96`. This is the same shape `state` uses to carry three selectors
-on one name, and `disp` to carry every surface's vocabulary on one: **a device that learns a new
-capability costs one `route` argument inside that device** and nothing anywhere else — not `u_map`'s
-outlet count, not `u_root`'s cords, not this file.
-
-⚠️ **The device's `route` reject is a REAL error and goes to `[s err]`** — the opposite of `u_map`'s
-reject, where an unmapped control is normal and silent. An unrecognised selector means `u_map` and
-the device disagree about the interface, and for an output-only device there is no other way to find
-out: it transmits nothing, so a message that goes nowhere is indistinguishable from one that worked.
-
-*(judgment call)* **One outlet per device *inlet* was considered and rejected.** It makes `u_map`'s
-outlet count the sum of every device's capabilities — three for the Volca alone — and so crosses the
-four-device threshold below with **two** devices. It also puts the fan-out on `u_root`'s canvas
-rather than inside the file that owns the device.
-
-*(judgment call)* A `voice` bus was considered and rejected. It would scale without touching
-`u_root` — the way `disp` serves four surfaces — but **the allowlist is audited by reading**, and
-what is carried here is the signal path rather than a request to show something. `u_root` already
-sets the precedent: the only wires on that canvas come out of `u_init`, because the boot *order* is
-`u_init`'s while the *action* belongs to the file at the other end. Same shape — `u_map` owns the
-decision, the device owns the emission, and the cord between them is worth being able to see.
-
-**Revisit if the output-device count passes about four**, where `u_root`'s canvas stops being the
-clearer option. Same threshold reasoning as `u_map`'s route branches.
+⚠️ **A device layer's `route` reject is a REAL error and goes to `[s err]`** — the opposite of
+`u_map`'s reject, where an unmapped control is normal and silent.
 
 ### Poly-tempo
 
@@ -657,29 +631,16 @@ performer would do. Budget hands-on time *after* the bench passes, not instead o
 
 **Rule C-12.** Cite it by ID from a `.pd` comment, where a link cannot be followed.
 
-**The Organelle runs Pd with `-nogui`, so an error you cannot see is a silent failure** — and
-Pd's failure mode for a wrong message is to print and continue. `u_err` was built in the first
-infrastructure pass rather than retrofitted *(judgment call: an architecture requirement, not a
-debugging convenience)*.
+**The Organelle runs Pd with `-nogui`, so an error you cannot see is a silent failure** — and Pd's
+failure mode for a wrong message is to print and continue.
 
-- Any abstraction reports via `[s err]` as **`<level> <source> <text>`** — level `warn` or
-  `fail`, source a symbol naming the abstraction, text **one symbol of ≤ 21 characters**. Use a
-  **message box**, which already carries the level as its selector; anything built with
-  `[list prepend]` needs `[list trim]`.
-- **`u_err` filters by `mode`** — compose shows everything, perform only `fail`. One place, same
-  bus, same callers. ✅ **It defaults to verbose**, which is what made an undriven `mode` safe
-  through Phases 4 and 5. `u_map` drives the bus from Phase 6 on, and the filter needed no change:
-  `route` matches on the selector, so two-atom `compose mode-1` sets verbose exactly as bare
-  `compose` did.
-- **`u_err` never draws.** It forwards onto `disp` as `alert <level> <source> <text>`; `g_oled`
-  decides what an error looks like — see *The display bus* above.
-- **The bus is unfiltered; only the screen is filtered.** An unconditional `[print err]` means
-  the by-hand SSH console sees every error raised, even in perform mode.
-- Errors **time out**; they are never modal. A stuck error covering the display mid-set is
-  worse than a missed warning.
+⛔ **Any abstraction reports via `[s err]` as `<level> <source> <text>`** — level `warn` or `fail`,
+source a symbol naming the abstraction, text **one symbol of ≤ 21 characters**. Use a **message
+box**, which already carries the level as its selector; anything built with `[list prepend]` needs
+`[list trim]` (C-6).
 
-This does not catch Pd's *own* runtime errors — those still go to tty1. It catches the ones we
-raise, which is most of what actually goes wrong.
+`u_err` filters by mode, never draws, and leaves the bus itself unfiltered — the design and its
+reasoning are on [architecture.md](architecture.md).
 
 ---
 

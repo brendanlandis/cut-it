@@ -141,6 +141,15 @@ untouched throughout.
 26  modal launchpad    46  chop-size 43 %
 ```
 
+✅ **The OSC rate has ample headroom, measured on the running device** (item 21): `pd` at **8.2%
+CPU**, load 0.16, **110 UDP datagrams/second** to `127.0.0.1:4001`. The home frame is ten OSC
+messages at 10 Hz, so 110/s is the frame clock keeping up with room to spare.
+
+⚠️ **Hands off the device, the OLED sits on the meters and the footer** — no `og-knob-*` rows persist,
+so nothing pins the param layer open (item 68). **This does not distinguish "mother does not stream
+knob positions" from "the `[change -1]` guard filters them"**, and it cannot without removing the
+guard. The outcome is right either way.
+
 **Gaps read directly as tenths of a second** (11, 15, 5 = `u_init`'s 1500/1500/500 ms). It exists
 because the boot sequence finishes before you can get to the window.
 

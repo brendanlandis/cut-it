@@ -43,7 +43,7 @@ Launchpad X have it; this does not. Treat it as 96 RGB pixels of *spatial* state
 |-------|---------|----------|------|
 | Pad press | Note-on, note `r*10+c`, velocity 1–127. Real velocity — soft presses register as low as 10 | verified | — |
 | Pad release | Note-off | verified | — |
-| Pad pressure | Polyphonic aftertouch, per pad, simultaneous | verified | — |
+| Pad pressure | Polyphonic aftertouch, per pad, **simultaneous** — two pads held together give independent interleaved streams, which channel pressure cannot do | verified | 86 |
 | Function buttons | Control change, per the index map below | verified | 82 |
 | Device inquiry reply | SysEx — see *Device inquiry* | verified | 98 |
 
@@ -149,6 +149,10 @@ stops painting. It costs one round trip per poll against the 96 ALSA writes a se
 already makes.
 
 `[sysexin]` instantiates *and fires* on this Pd build.
+
+⛔ **`killall pd` DOES NOT TEST THE SAFE EXIT.** Tried on the device: the Launchpad stayed in
+Programmer Mode with a frozen beat row. **Any exit that is not mother's own strands it** — which is
+what `tools/lp-live.sh` exists to rescue. Item 96.
 
 ⛔ **`$0-want` is not `$0-own`.** `own` says the surface **is** ours; `want` says we still **intend**
 it. Without that split, a panic hands the device back and the heartbeat grabs it again two seconds

@@ -113,7 +113,18 @@ something moved**. The alert never had this problem, and the OLED never had it e
 redraws held state every frame. **`u_net` was the only surface where a late viewer saw nothing.**
 
 **Fix:** a 2 s repeat of the last parameter and status, on top of the event-driven sends — well below
-the 124/s noise floor.
+the 124/s noise floor. Item 121.
+
+### A UDP `connect` to a port with nothing listening survives EXACTLY ONE datagram
+
+⛔ **The measurement that changed the design** (item 114). Twenty datagrams at 5 Hz to a port with no
+listener: the `connect` **succeeds**, the first datagram **goes out**, and then the socket dies —
+`error: recv: Connection refused` — and everything after it is silently discarded.
+
+**So a socket that reports connected proves nothing**, and a phone that leaves the network destroys
+the link without the patch hearing about it.
+
+**Fix:** rebuild the socket rather than trusting it. `u_net` reconnects on a timer.
 
 ### `[s #osc-out]` takes raw OSC bytes, and the obvious alternative sends nothing
 

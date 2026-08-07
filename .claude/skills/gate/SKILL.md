@@ -69,7 +69,9 @@ the scratch copy. State it, so nobody "fixes" it.
 ⛔ **OWN YOUR STATE DIRECTORY.** `main-dev.pd` passes `/tmp`, which every run on the machine shares.
 A previous test that changed mode leaves it in that file, `u_init` restores it mid-run at ~3.5 s,
 and every assertion keyed to another mode stops matching from that instant. That produced a **wrong
-diagnosis** once. Repoint the scratch copy at a private directory and assert the repoint worked.
+diagnosis** once — item 232: a driver firing seventeen pads 250 ms apart emitted exactly five, all
+before ~3.5 s, and the same seventeen at 60 ms spacing emitted all seventeen. **Repoint the scratch
+copy at a private directory and assert the repoint worked.**
 
 ⛔ **CHECK THE GENERATOR SUCCEEDED.** If a driver generator errors unchecked, the driver is never
 written, Pd loads a file that does not exist, the `; pd quit` inside it never fires, and **the gate

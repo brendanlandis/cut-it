@@ -51,6 +51,15 @@ on **unescaped** semicolons, and a comment legitimately contains escaped ones (`
 mid-comment and the tail becomes a record with no `#X` prefix. **This has broken the patch three
 times.** Replace the whole line.
 
+⚠️ **The same trap from the other side: an unescaped `;` TYPED into a comment ends the record.**
+`Outlet 1 is the beat bang; outlet 0 is a signal phase` makes the remainder a new record Pd tries to
+instantiate — `error: outlet: no such object`. **Escape it as `\;` or rewrite the sentence.** Item
+207, and it has happened twice in one session.
+
+⚠️ **A digit followed by a full stop is a FLOAT, and the stop vanishes.** `43.` in a bench `PASS IF`
+string prints as `43` — Pd parses the atom as the number 43. Cosmetic rather than structural, unlike
+the comma, which splits the line into fragments. Item 122.
+
 ⛔ **C-10 — `#X connect` names boxes by POSITION IN THE FILE.** Inserting a box mid-file renumbers
 every subsequent index and silently invalidates every later connect. Append at the end and move the
 connects with it. **This has bitten the project five times.**

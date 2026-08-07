@@ -110,6 +110,13 @@ mistaken for a bug.
 
 ## Design
 
+### `[ctlin]`'s outlets fire channel, then controller, then value
+
+Right to left, as the convention says — but **measured, because this repo has been bitten here
+before**: `polytouchin` emits note before value. Item 23.
+
+**Fix:** trigger off the **value** outlet, which fires last.
+
 ### Momentary only, because the device has no host LEDs
 
 The mk1 cannot be lit by Pd at all. **Device-side toggle state would therefore desync silently** —

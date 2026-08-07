@@ -139,6 +139,11 @@ Message box: neither does.** Measured while building Phase 8.
 ✅ **What DOES work in an object box is composing an argument**: `[u_store $1/cut-it-auto.txt]`
 expands correctly, which is how `u_state` hands each of its two stores a path.
 
+### `polytouchin`'s outlets are value, note, channel
+
+⚠️ **Not the note-first order the name suggests**, and the odd one out — `[ctlin]` is channel,
+controller, value (item 23) and `[notein]` is channel, velocity, pitch. Measured, item 86.
+
 ### The global name allowlist
 
 **Rule C-2.** Cite it by ID from a `.pd` comment, where a link cannot be followed.

@@ -322,6 +322,38 @@ wpa_cli -i wlan0 scan ; sleep 4      # ⚠️ required: roam only targets a cach
 wpa_cli -i wlan0 roam <other-bssid>  # IPv4 gone within 3 s
 ```
 
+### The evidence, item by item
+
+Every measurement the investigation rests on, and the four that turned out to be wrong. **The tools
+cite these numbers by bare item — `wifi-watch.sh` alone names seven.**
+
+| Item | Finding | Evidence |
+|------|---------|----------|
+| 81 | **The Organelle drops its wifi after a while.** The original observation. ⚠️ Its framing was wrong — it read as a radio fault | verified |
+| 133 | **Item 81 caught in the act, and it is NOT the radio dropping the network.** `iw dev wlan0 link` stayed associated throughout | verified |
+| 169 | ⛔ **The trigger is a roam to a DIFFERENT BSSID**, and "same BSSID" was wrong. Thirteen hours of healthy heartbeats on `…a2:01`; the transition record reads `…c9:25` | verified |
+| 175 | ✅ **The fault reproduces on demand in three seconds.** `hildegard` is served by two APs; forcing a handoff reproduces it exactly | verified |
+| 180 | **Where DHCP stops.** ⚠️ **`syslogd` is NOT running on this device**, so `dhcpcd` logged into a void for the whole investigation. Its "the REQUEST is never ACKed" is **weaker than it looks** — see below | verified |
+| 159 | ✅ **The fault is DHCP-side, so a card swap would prove nothing.** The link probe assigned the last-known-good address and route and reached the gateway. ⚠️ Second occurrence at **2 h 09 m** after boot against the first at ~3 h 12 m — **not a fixed interval** | verified |
+| 184 | ✅✅ **`dhcpcd` is EXONERATED.** Caught with `-d -B` running *through* a forced roam on a 150 s budget: DISCOVER ×3, **no OFFER, ever**. It detects, deconfigures, re-solicits and backs off correctly | verified |
+| 214 | ⚠️ **A failure happened on the ROUTER, not the satellite** — which overturns the standing claim `wifi-watch.sh`'s own comment is built on | verified |
+| 215 | ⚠️ **The two DHCP probes gave OPPOSITE answers** seven hours apart, same script, same client, same SSID. Nothing in the record predicted it | verified |
+| 220 | ✅ **The outage is ~132 seconds, measured** — and the "~20 s" in `wifi-watch.sh`'s own comment is **wrong** | verified |
+| 212 | ✅ **The ladder fired on two real failures and recovered both**, rung 1, first try, no other rung attempted | verified |
+| 213 | ⛔ **The fault SURVIVED firmware 2.7.6.6 — twice in 15 hours.** This is the answer the leave-it-running task was waiting for, and it is the negative one | verified |
+| 221 | ✅ **Channel 1 took, and helped throughput enormously** — 14.4 MBit/s MCS 1 → **72.2 MBit/s MCS 7**. But it did **not** separate the two APs, exactly as predicted | verified |
+
+**Four wrong turns, kept so nobody walks them again:**
+
+| Item | Was claimed | Overturned by |
+|------|-------------|---------------|
+| 179 | *"The Organelle cannot get a lease on the satellite"* | **Item 182**, thirty minutes later — a controlled two-arm test **on the satellite** leased twice, in seconds, on the first DISCOVER. ⛔ **Over-claimed from a single A/B** |
+| 178 | `UNRECOVERED` in the watcher's log | A **false negative** — the rung worked and the timeout was too short. The device had an address shortly afterwards |
+| 161 | The recovery ladder's own verdict | ⚠️ **Two faults in our own measuring rig.** Rung 3 ran `/root/fw_dir/scripts/wifi-config.sh`, a **stale factory template** dated Feb 2020 hardcoded to `wpa_passphrase "name" "pass"` |
+| 167 | The watcher's single-instance guard | ⚠️ **Only as good as the pidfile, and deleting it by hand disarms it.** Twice in one session two watchers ran, both times after a manual pidfile removal, because `wifi-poll.sh` relaunches whenever the stamp goes stale |
+| 187 | The AP-visibility guard in the steer | ⚠️ **A sixth defect in the measuring rig: `iw scan` is not `iw scan dump`.** `iw dev wlan0 scan` **triggers a new scan**, so run right after a `wpa_cli scan` the two contend — and it reported NOT VISIBLE for an AP sitting at **−47 dBm** |
+| 163 | A rewritten self-match check | ⛔ **The self-match trap bit a THIRD time, through a check written to avoid it.** A `/proc/*/cmdline` scan and a `case` pattern have the same flaw — **any** check whose own command line contains the string matches itself |
+
 ⚠️ **Needs a supplicant started with a `ctrl_interface`**, which `wifi-reassociate.sh` writes and a
 boot-started one may not. ⬜ Unverified after a power cycle — check `ls /var/run/wpa_supplicant/`.
 

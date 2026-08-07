@@ -215,6 +215,20 @@ folder under a numbered name, making preset variants separate menu entries — t
 where a preset is a **record inside the store**. Recorded so it is not rediscovered as an option; see
 [plan-v03.md](../../plan-v03.md) *Deliberately deferred*, and item 144 for what it does.
 
+### A sample can be written inside mother's budget, but not unboundedly
+
+`soundfiler` write, mono 44.1 kHz, into `/tmp/state` (item 142):
+
+| Length | Cost |
+|---|---|
+| 2 s | 6.1 ms |
+| 10 s | 29 ms |
+| 30 s (2.6 MB) | 85 ms |
+
+⚠️ **mother's own `cp` of 2.6 MB to the SD card costs 45 ms and is OUTSIDE the patch's budget**, so
+the ceiling is roughly **3 × 30 s or 8 × 10 s** per save. `u_state` sidesteps this entirely by writing
+absolute paths to `/sdcard`, but anything that ever writes into `/tmp/state` inherits it.
+
 ### Three decisions about captured patterns, made early on purpose
 
 None of these is built. All three are cheap now and expensive later, which is why they are recorded

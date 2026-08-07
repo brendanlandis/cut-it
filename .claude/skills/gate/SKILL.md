@@ -85,6 +85,23 @@ it.** Add a window that runs before the thing you are assuming.
 *drops-not-queues* and nothing about an interval. Test an interval with two events a real
 millisecond or two apart.
 
+## Two ways a measurement lies
+
+⚠️ **A stepped sweep with short holds is structurally blind to an effect that takes seconds to
+appear — and it reports a confident wrong number rather than nothing.** An automated rate sweep held
+each step ~6 s and declared 500/s clean. A **hand** sweep on a knob, hunting around the transition,
+found saturation at ~362. **The hand beat the script, and the script's failure was not a bug — it was
+the shape of the test.**
+
+⛔ **Concluding from a single SUCCESS is the same error as concluding from a single failure.** This
+project forbids the second in writing, and the first still slipped through: one
+satellite-fails-then-router-succeeds pair became "the satellite is broken", overturned thirty
+minutes later by a controlled two-arm test.
+
+⚠️ **Check which of two sources you are actually testing.** A starvation test aimed at `u_tempo`'s
+clock was aimed at the smaller of the two emitters **by a factor of seven** — `g_grid` puts out
+3320 bytes/s against the clock's 480. Nobody noticed until the arithmetic was done afterwards.
+
 ## Prefer the check that needs no Pd
 
 The strongest half of `phase9-assert` is a **static lint**: it reads `u_map`'s literal `route` box

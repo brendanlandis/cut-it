@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Korg nanoKONTROL (mk1)
 
-**Files:** `Cut It/m_nano.pd` · **Gate:** `test/gate/phase6-assert.sh` · **Bench:** `test/bench/phase4-bench.pd`
+**Files:** `Cut It/m_nano.pd` · **Gate:** `none` · **Bench:** `test/bench/phase4-bench.pd`
 
 ## What it is
 

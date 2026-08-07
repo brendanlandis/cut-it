@@ -58,7 +58,7 @@ THE CHECKS
 
 ⛔ A CHECK THAT CANNOT FIND WHAT IT IS CHECKING MUST FAIL, NOT PASS. An anchor
 naming a table that is not there, or an array that is not in the patch, is a
-FAILURE here. `phase6-assert.sh` asserted only that its rewrite count was
+FAILURE here. the old phase 6 gate asserted only that its rewrite count was
 non-zero and its own comment drifted from five boxes to six with nothing
 noticing; a gate that passes vacuously is worse than no gate, because it is
 BELIEVED. Every lookup below raises rather than returning empty.
@@ -326,7 +326,7 @@ def check_dangling_docs(verbose):
     ⛔ That second rule is the one that matters. The two journals were named
     from eight files that are NOT documentation -- u_level.pd, u_net.pd,
     u_root.pd, g_grid.pd, bench-gen.py, fetch-errors.sh, fetch-state.sh,
-    phase6-assert.py -- and both journals have since been deleted. Every one of
+    display-assert.py -- and both journals have since been deleted. Every one of
     those references was repointed at a bare item number in the same commit.
     Without this check they would have rotted in silence, which is the exact
     failure the whole refactor exists to stop.
@@ -456,7 +456,7 @@ def check_shape(verbose):
             # both. A gate's verdict comes from a program and runs unattended; a
             # bench's comes from a person's eyes with the rig plugged in. Naming
             # only one leaves the other kind of coverage invisible -- and five
-            # pages claimed phase6-assert.sh while nothing said which of them a
+            # pages claimed the old phase 6 gate while nothing said which of them a
             # bench had ever touched. `none` is a legitimate answer to either.
             for field in ('**Gate:**', '**Bench:**'):
                 if field not in decl:
@@ -557,7 +557,7 @@ def check_dangling_paths(verbose):
 
     ⛔ THE SKILLS ARE THE REASON THIS EXISTS. A skill is procedure -- every path
     in one is an instruction to run or read something -- and the `gate` skill
-    names phase6-assert.sh, state-assert.sh and map-assert.py, all of which
+    names the old phase 6 gate, state-assert.sh and map-assert.py, all of which
     the coming test refactor renames onto a module axis. Without this, three
     skills quietly start instructing people to run files that are gone.
 

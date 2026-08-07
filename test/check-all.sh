@@ -65,15 +65,20 @@ run "both entry points load in silence (deploy.sh's own gate)" syntax
 # --- 3. the benches are generated, not hand-written -------------------------
 run "bench step text survived generation" python3 test/bench/bench-verify.py
 
-# --- 4. every phase gate ----------------------------------------------------
-# In phase order, because a failure in an early one explains failures after it.
+# --- 4. one gate per module -------------------------------------------------
+# ⛔ THE INVENTORY RUNS FIRST because every gate below it rewrites the same MIDI
+# object boxes, so a count that has drifted explains all of them at once.
+# Then the instrument-wide concerns, then one gate per physical device -- the
+# same axis ref/ uses, because a page that names a gate should be able to name
+# one whose whole subject is that page.
 run "the MIDI inventory"                   ./test/gate/midi-emitters-assert.sh
-run "Phase 6 gate -- the Launchpad grid"   ./test/gate/phase6-assert.sh
-run "the phone link"                       ./test/gate/phone-assert.sh
-run "the data store"                       ./test/gate/state-assert.sh
+run "the display arbiter"                  ./test/gate/display-assert.sh
 run "the map"                              ./test/gate/map-assert.sh
-run "the Volca"                            ./test/gate/volca-assert.sh
+run "the data store"                       ./test/gate/state-assert.sh
+run "the Launchpad"                        ./test/gate/launchpad-assert.sh
+run "the phone link"                       ./test/gate/phone-assert.sh
 run "the SP-404, both directions"          ./test/gate/sp404-assert.sh
+run "the Volca"                            ./test/gate/volca-assert.sh
 
 # ---------------------------------------------------------------------------
 # ⛔ EXACTLY ONE LINE MATCHES "RESULT:", AND THAT IS DELIBERATE.

@@ -12,7 +12,7 @@ that `print` output is visible, which matters because the Organelle launches Pd 
 and there is no console otherwise.
 
 Hand-authored in Pd 0.49 format except the **seven benches** and **four assert drivers**, which are
-**generated** — `bench-gen.py`, `phase6-assert-drive-gen.py`, `phone-assert-drive-gen.py`,
+**generated** — `bench-gen.py`, `display-assert-drive-gen.py`, `phone-assert-drive-gen.py`,
 `state-assert-drive-gen.py` and the three split-gate generators write them, and the `.pd` is an output. Edit the generator. Do not
 open any of it in plugdata — see [../CLAUDE.md](../CLAUDE.md).
 
@@ -235,7 +235,7 @@ the `/tmp/patch` symlink. Same caveat as `deploy.sh`'s own load.
 ### `test-stubs/` — stand-ins the gates need
 
 `t_midiout.pd` replaces `[midiout]` so a headless run can read back every byte the patch emits.
-⚠️ **It cannot be supplied by search path**, which is why `phase6-assert.sh` rewrites boxes in a
+⚠️ **It cannot be supplied by search path**, which is why `display-assert.sh` rewrites boxes in a
 scratch copy — see that gate below.
 
 **Phase 9 added four more, because `[midiout]` is not the only way this patch emits MIDI:**
@@ -248,7 +248,7 @@ scratch copy — see that gate below.
 | `t_notein.pd` | ⛔ **a SOURCE, not a sink** — the only way to test a receive path. Drive it with `; t-notein <pitch> <velocity> <channel>` |
 
 ⛔ **`m_volca` and `m_404` emit through `noteout`/`ctlout`/`pgmout`, not `midiout`**, so
-`phase6-assert.sh`'s rewrite finds nothing in them and every assertion about them would pass
+`display-assert.sh`'s rewrite finds nothing in them and every assertion about them would pass
 **vacuously**. ⚠️ **And phase 6's regex is anchored so the class name must END the line** — it
 silently skips any box carrying creation arguments, of which the patch has one:
 `[ctlout 123 33]`. A phase 9 rewriter has to take a trailing argument list, and the stubs
@@ -577,25 +577,36 @@ phone answer with an ICMP port-unreachable, which destroys the socket; reopening
 display back within about five seconds **with nothing touched on the Organelle**. A link that could
 not recover would be dead for the rest of the set and nothing on the instrument would say so.
 
-## `phase6-assert.sh` — the headless gate, no eyes and no hardware
+## `display-assert.sh` and `launchpad-assert.sh` — no eyes and no hardware
 
 ```sh
-./test/gate/phase6-assert.sh            # ~45 s, exits non-zero on any failure
-./test/gate/phase6-assert.sh --keep     # and leaves the byte capture to read
+./test/gate/display-assert.sh          29 checks, ~46 s — the ARBITER
+./test/gate/launchpad-assert.sh         5 checks, ~4 s  — the DEVICE
 ```
 
-**This is the part that asserts what the grid is actually showing.** `phase6-bench.pd` used to
-claim in its own header that *"there is no way to read back what the LEDs are actually showing"* —
-too strong, and it conflated three different things. Pd cannot ask the Launchpad what is lit, but
-**the bytes the patch sends are completely knowable**, and that is the right level to test our own
-code at.
+Both take `--keep` to leave the byte capture behind to read. **They were one gate**, which is why
+five pages once named it and two of those claims were false: it tested nothing about the
+nanoKONTROL and nothing about the OLED.
+
+**This is the part that asserts what the grid is actually showing.** The bench used to claim in its
+own header that *"there is no way to read back what the LEDs are actually showing"* — too strong,
+and it conflated three different things. Pd cannot ask the Launchpad what is lit, but **the bytes
+the patch sends are completely knowable**, and that is the right level to test our own code at.
+
+⚠️ **The split is not cosmetic — it is 46 seconds.** `display-assert` needs DSP, because the beat
+row hangs off `threshold~`; the two SysEx checks about the *device* need no clock at all and were
+paying that bill for no reason. `launchpad-assert` now runs in four seconds and gained three checks
+it could not previously afford: the **order** of the mode switch against the first painted frame,
+which neither message existing implies. LED writes sent in Live Mode do not appear, so a patch that
+painted first and switched second would send both messages and still come up dark.
 
 | Piece | |
 |---|---|
-| `test-stubs/t_midiout.pd` | a stand-in for `[midiout]` that prints every byte with its port |
-| the driver | generated into the scratch directory on every run by `phase6-assert-drive-gen.py` — pushes onto the buses and prints a `MARK` before each window. Not committed |
-| `phase6-assert.py` | reassembles the SysEx frames and does all the reasoning |
-| `phase6-assert.sh` | copies the patch to a scratch dir, rewrites the `[midiout]` boxes, runs it, pipes the capture to the analyser |
+| `test/stubs/t_midiout.pd` | a stand-in for `[midiout]` that prints every byte with its port |
+| the drivers | generated into the scratch directory on every run by `display-assert-drive-gen.py` and `launchpad-assert-drive-gen.py`. Not committed |
+| `test/gate/lib_grid.py` | reassembles the SysEx frames — shared, because both gates read the same byte stream and want different frames out of it |
+| `display-assert.py` | the arbiter: which layer owns the surface, and what happens when one gives it up |
+| `launchpad-assert.py` | the device: what the hardware is told, and in what order |
 
 ⚠️ **The stand-in cannot be supplied by search path.** `mac-stubs/` works because `shell` is an
 *external absent on the Mac*, so Pd falls through to an abstraction. `midiout` is a **built-in
@@ -624,7 +635,7 @@ cannot fail is worth nothing, so re-run that mutation if you ever change the ana
 ```
 
 **Phase 7's gate needs no scratch copy and rewrites nothing.** `[midiout]` is a built-in class
-with no side channel, which is the whole reason `phase6-assert.sh` has to swap it for a stand-in
+with no side channel, which is the whole reason `display-assert.sh` has to swap it for a stand-in
 in a throwaway copy of the patch. **`u_net` already emits to a socket** — so the gate binds
 `127.0.0.1:9995`, instantiates `u_net 127.0.0.1 9995` and reads the real datagrams. `Cut It/` is
 never touched.

@@ -15,7 +15,7 @@
 #
 # The count itself lives in MIDI_EXPECT in lib-scratch.sh, shared with every gate
 # that makes a scratch copy, so there is one inventory rather than one per gate.
-# ⚠️ The reason there were two before is instructive: phase6-assert.sh counted
+# ⚠️ The reason there were two before is instructive: the old phase 6 gate counted
 # [midiout] and the split gates counted the other four, so no single place ever
 # said what the patch contained, and phase 6's half drifted from five to six with
 # nothing noticing.

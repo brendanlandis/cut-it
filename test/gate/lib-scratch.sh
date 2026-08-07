@@ -7,7 +7,7 @@
 # WHY IT EXISTS. Four gates need the same five things -- a scratch copy of the
 # patch, MIDI object boxes rewritten to printing stubs, a private state
 # directory, a generated driver, and a watchdogged Pd run -- and until now two of
-# them had two different, drifted implementations. phase6-assert.sh rewrote
+# them had two different, drifted implementations. the old phase 6 gate rewrote
 # [midiout] with an anchored regex and a non-zero count; the split gates
 # rewrote four other classes with an argument-tolerant regex and an exact count.
 # ⛔ THE WEAKER ONE IS NOT A STYLE DIFFERENCE. It is three of the four ways a
@@ -28,7 +28,7 @@
 # a new MIDI emitter no gate knows about. Both are failures and both are silent
 # without this.
 #
-# The drift this replaces: phase6-assert.sh's comment claimed five [midiout]
+# The drift this replaces: the old phase 6 gate's comment claimed five [midiout]
 # where the patch has six, and nothing noticed, because it only ever asserted the
 # count was not zero.
 #

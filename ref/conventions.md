@@ -612,7 +612,7 @@ Six phases have used the same shape and it is worth stating rather than rediscov
    two bugs in its own probes, one of which produced a confident wrong answer about the clock;
    Phase 6's bench had an automated assertion that **nothing ever drove**, with a comment beside it
    claiming otherwise. **Where the rig can assert without eyes, make it** —
-   `test/gate/phase6-assert.sh` rewrites `[midiout]` in a scratch copy so a headless run can read back
+   `test/gate/display-assert.sh` rewrites `[midiout]` in a scratch copy so a headless run can read back
    every byte the patch emits, and it is proven to fail by reintroducing a real bug.
 5. **A verification section separating Mac from device**, so what has actually been proven is never
    in doubt.

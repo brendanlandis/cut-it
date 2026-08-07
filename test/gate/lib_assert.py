@@ -23,13 +23,15 @@ import re
 import sys
 
 fails = 0
+total = 0
 verbose = "-v" in sys.argv
 
 
 def check(name, ok, detail=""):
     """One assertion. Prints PASS or FAIL, and the detail whenever it is useful
     -- always on a failure, and on a pass only under -v."""
-    global fails
+    global fails, total
+    total += 1
     if not ok:
         fails += 1
     print("  %s  %s%s" % ("PASS" if ok else "FAIL", name,
@@ -44,8 +46,14 @@ def note(text):
 
 
 def report():
-    """Print the tally and return the failure count, for sys.exit."""
-    print("\n%d checks failed" % fails)
+    """Print the tally and return the failure count, for sys.exit.
+
+    ⛔ IT PRINTS THE TOTAL, NOT ONLY THE FAILURES. A gate that says "0 failed"
+    says nothing about whether it ran twelve checks or none -- and this suite has
+    been split and re-split, so the count is what proves no assertion was lost on
+    the way. Watch it go UP.
+    """
+    print("\n%d checks, %d failed" % (total, fails))
     return fails
 
 

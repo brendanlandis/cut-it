@@ -21,14 +21,14 @@ a gate can be right about one fault and blind to another.
 
 Every one of these has happened here.
 
-**1. It rewrites the wrong thing.** `phase6-assert.sh` rewrites `[midiout]` only. `m_volca` and
+**1. It rewrites the wrong thing.** the old phase 6 gate rewrites `[midiout]` only. `m_volca` and
 `m_404` emit through `noteout` / `ctlout` / `pgmout`, so phase 6's rewrite finds nothing in them and
 every assertion about them would pass silently.
 
 **2. Its regex is anchored so arguments are skipped.** `'^#X obj [0-9]* [0-9]* midiout;$'` requires
 the class name to end the line, so `[ctlout 123 33]` is invisible to it.
 
-**3. It asserts non-zero instead of exact.** `phase6-assert.sh` checks its rewrite count is not zero,
+**3. It asserts non-zero instead of exact.** the old phase 6 gate checks its rewrite count is not zero,
 and its own comment claims five boxes where the patch has six. **The count drifted and nothing
 noticed.** Assert an EXACT count per class:
 

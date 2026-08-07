@@ -8,10 +8,15 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **There is a second plan in flight: [plan-testing.md](plan-testing.md).** It is scoped to the
-testing refactor and dissolves when that lands. **A plan document is scoped to one piece of work and
-goes away when the work does** — this one is the exception that persists, because it is where
-everything unscoped waits.
+⚠️ **Two scoped plans come first, in this order:**
+
+1. **[plan-testing.md](plan-testing.md)** — the gates move from the phase axis to the module axis.
+   Mac-side; no device needs plugging in.
+2. **[plan-cleanup.md](plan-cleanup.md)** — `tools/` and then the Organelle itself.
+3. **This document** — the sound.
+
+**A plan is scoped to one piece of work and is deleted when the work lands.** This one is the
+exception that persists, because it is where everything unscoped waits.
 
 ---
 
@@ -165,22 +170,13 @@ ceilings are message-domain only.** ⚠️ If a stage converts that phase to ban
 
 ## 5. The two cleanups still queued
 
-Both were scoped alongside the documentation refactor and neither is started.
+**Both are planned in [plan-cleanup.md](plan-cleanup.md)** — the `tools/` directory (89 files, and
+the decision is which probes are finished) and the Organelle itself (three system files modified
+from factory, and a survey nobody has done).
 
-### Tool cleanup
-
-- **Decide what survives.** ~40 files in `tools/`, many one-off probes from July.
-- ⛔ **`tools/wire.sh` is a delete candidate** — a Phase 1 ancestor of `Cut It/wire.sh`, 59 lines
-  behind, with no autoconnect undo and no `|| true`. It is the only same-basename pair in the repo.
-- ✅ **A script being mentioned in no document is FINE** (Brendan, 2026-08-06). Five of 42 are.
-  `docs-check.py` is mention-driven by design and will never look for them.
-- ⚠️ **Rewrite `tools/README.md` last** — 765 lines describing files some of which are about to go.
-
-### Organelle cruft cleanup
-
-- Clean the device, **then verify every path in [ref/device-os.md](ref/device-os.md) against it** and
-  drop the verify-after banner. That page is 461 lines and is **the only documentation deliberately
-  left stale.**
+⚠️ **The order is [plan-testing.md](plan-testing.md) → [plan-cleanup.md](plan-cleanup.md) → this
+document.** The testing refactor renames ~30 files in `tools/`, so a cleanup that runs first decides
+the fate of filenames about to change.
 
 ---
 

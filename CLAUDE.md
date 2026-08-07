@@ -49,7 +49,8 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **The testing refactor**, scoped and ready to hand off | [plan-testing.md](plan-testing.md) |
+| **The testing refactor** — gates onto the module axis | [plan-testing.md](plan-testing.md) — **do this first** |
+| **The tool and device cleanup** | [plan-cleanup.md](plan-cleanup.md) — **second** |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
 | One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
@@ -129,8 +130,7 @@ plan, that section should have left the file.
 
 ⚠️ **A plan is scoped to one piece of work and is DELETED when the work lands** — `plan-v02` and
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
-is where everything unscoped waits; [plan-testing.md](plan-testing.md) dissolves when the testing
-refactor is done.
+is where everything unscoped waits. **The order is testing → cleanup → v0.4.**
 
 **A fact appears once in full; everywhere else it is a citation.** `tools/docs-check.py` enforces
 what can be enforced — run it rather than trying to remember it:

@@ -3,24 +3,30 @@
 A cut-up / harsh noise instrument patch for the **original Critter & Guitari Organelle**
 (a.k.a. Organelle 1 — *not* the M, S, or S2). Pure Data.
 
-✅ **v0.3 — the blank slate — is complete and verified on hardware.** Every device is addressable
-and every control assignable: `u_map` looks a control's meaning up **per mode** from a table, and
-both output devices (the SP-404 and the Volca) are wired in. The instrument can now be told
-*"in Mode A, moving this fader does X"* in one row of `Cut It/cut-it-map.txt`.
+**v0.3 — the blank slate — is complete and verified on hardware.** Every device is addressable and
+every control assignable: `u_map` looks a control's meaning up **per mode** from a table, and both
+output devices are wired in. The instrument can be told *"in Mode A, moving this fader does X"* in
+one row of `Cut It/cut-it-map.txt`.
 
-**[plan-v03.md](plan-v03.md) now holds only what is OPEN**, and its §10 names the next piece of
-work: **a documentation refactor**, because these files have reached ~10,000 lines. The sound —
-the four filter stages, the drum mode, the sampler — is v0.4 and comes after that.
-v0.1 is superseded and kept only for reference.
+**[plan-v03.md](plan-v03.md) holds only what is OPEN.** Its §10 is the current work — a
+documentation refactor — and the sound (four filter stages, the drum mode, the sampler) is v0.4 and
+comes after it. v0.1 is superseded and kept only for reference.
+
+**This file is a router.** It says where to look, not what is true.
 
 
-## Writing Pd — use the `pd` skill
+## Before you write anything
 
-⛔ **Invoke the `pd` skill before writing, editing or reviewing any Pure Data in this repo.** It
-carries the constraints, the C-1..C-14 conventions, how to edit a `.pd` by hand without breaking it,
-and the gates. It loads on demand, so it costs nothing in a session that never touches a patch.
+| Doing | Invoke |
+|---|---|
+| Writing, editing or reviewing any Pd | ⛔ the **`pd`** skill |
+| Adding or restructuring any documentation | ⛔ the **`docs`** skill |
+| Building or changing a test or a gate | ⛔ the **`gate`** skill |
 
-**The three that are not negotiable, repeated here because they are expensive to learn late:**
+They load on demand, so they cost nothing in a session that does none of those things.
+
+**The three Pd constraints that are not negotiable**, repeated here because they are expensive to
+learn late:
 
 - **Pd vanilla 0.49, permanently.** The Organelle 1 runs OS 4.0 and **that is the end of the line
   for this hardware** — 4.1 was Organelle M only, and 4.2 / 4.4 / OS 5 are M/S/S2. Do not suggest
@@ -31,297 +37,136 @@ and the gates. It loads on demand, so it costs nothing in a session that never t
 
 ⚠️ **The `critterandguitari/Organelle_OS` GitHub repo targets CM3/CM4 hardware — the Organelle M and
 S2, not this device.** Its paths are wrong here (`/home/music`, an `audioinjector-pi-soundcard`).
-The mechanisms are the same lineage; verify paths against the actual device before relying on them.
+The mechanisms are the same lineage; verify against the actual device before relying on them.
 
 
-## Layout
+## Where everything is
 
-```
-Cut It/              the deployable patch — folder name is what appears in the Organelle menu
-  main.pd              device entry point; mother.pd loads this by name. Instantiates u_root
-  main-dev.pd          Mac entry point; adds u_mother-stub. The device never loads it
-  u_root.pd            the actual root — the audio chain, and where every phase hangs its work
-  u_init.pd            ordered startup: MIDI wiring, Launchpad mode, panic and safe exit
-  u_level.pd           signal → a named level on the disp bus
-  u_err.pd             the err bus; filters by mode, forwards to disp. Never draws.
-                       Also keeps a persistent log on /sdcard, so an error raised
-                       mid-set can be read back the next day
-  logroll.sh           rolls the previous session's error log into the durable one at
-                       load, stamped with a real wall clock from `date`
-  m_nano.pd            the nanoKONTROL: CC -> named controls on param and disp.
-                       Takes its Pd channel block as an argument
-  m_launchpad.pd       the Launchpad Pro MK3 and the only file that talks to it:
-                       Programmer Mode, the safe exit, pads and ring onto param
-                       and disp, pressure onto param alone. Publishes surface
-                       ownership, which is what makes g_grid go quiet. Also the
-                       REPLUG WATCHDOG -- a Programmer Mode heartbeat that fixes
-                       the Mac without detecting anything, plus a device-inquiry
-                       poll and a bounded wire.sh recovery for the Organelle,
-                       where a replug destroys the ALSA links outright
-  g_grid.pd            the Launchpad's LEDs and their sole owner -- 96 buttons plus the
-                       logo, painted across the full 1-108 index span. Same arbiter
-                       shape as g_oled -- home < modal < alert -- but home is a
-                       COMPOSITE of regions, and it repaints only when dirty
-  m_organelle.pd       the Organelle's own panel: aux and knobs 1-4 onto param and disp
-  m_volca.pd           the Korg Volca FM -- the FIRST OUTPUT-ONLY m_ layer, because the
-                       Volca transmits nothing at all. ONE inlet, selector-prefixed
-                       (notes / cc / program), and no outlets. WIRED from u_map rather
-                       than fed by a bus: param is device-to-map and disp is display, and
-                       neither fits a sounding note. ⚠️ Needs Pajen 1.09 firmware for
-                       velocity and program change, both gated behind undocumented global
-                       settings -- see ref-midi.md. ⛔ Pd's pgmout is 1-BASED, so it
-                       carries a [+ 1] and its inlet means the WIRE number (item 228)
-  m_404.pd             the SP-404MKII, and the FIRST BIDIRECTIONAL device layer. 160 pads
-                       -- bank sets the CHANNEL (33-42), pad sets the NOTE (36-51) -- with
-                       receive and transmit sharing ONE table. ⛔ 47+n is WRONG and was in
-                       this repo's docs; it breaks at pad 5. Ships a HARD RATE LIMIT that
-                       DROPS rather than queues, and owns the 404's panic across all ten
-                       banks. Every event to param, only a press to disp, as ONE stable
-                       name (sp-hit) because 160 names would evict the OLED
-  u_map.pd             THE MAP — the only file that says what a control MEANS, and since
-                       v0.3 it is TABLE-DRIVEN and MODE-DEPENDENT. ⛔ The table never
-                       names a send: it names a destination that must exist as a literal
-                       argument on a route box, which is the allowlist guard and the whole
-                       of what makes a table acceptable. One outlet per output DEVICE
-  cut-it-map.txt       the map's rows, one per mapping, FOUR ATOMS ALWAYS:
-                       <mode> <control> <dest> <arg>. A plain file so it diffs a row at a
-                       time; read relative, which resolves against the patch folder
-  u_tempo.pd           the master reference: BPM, the 24 PPQN pulse MIDI clock is cut from,
-                       realtime out on two ports, and the transport
-  c_clock.pd           ONE clock — its own rate and time signature, aligned to master by a
-                       start. Instantiable, because Cut It runs poly-tempo. u_root holds the
-                       first instance, c_clock 1 8, which drives the grid's beat row
-  g_oled.pd            the display arbiter — home < param < modal < alert, each with a TTL.
-                       Sole owner of oscOut and screenLine*
-  g_led.pd             the aux button LED and its sole owner. Callers send a state, never
-                       a colour — the one display surface that is not a screen
-  u_net.pd             the phone — the FOURTH display surface, and the only file that
-                       talks to it. Consumes disp like the g_ arbiters but owns no
-                       selector on it, so it cost g_oled's route nothing. Coalesces
-                       per NAME at 20 Hz with a guaranteed trailing edge, holds the
-                       last alert as STATE and repeats it, and rebuilds its own socket
-                       — which a phone leaving the network destroys outright
-  u_state.pd           THE DATA STORE -- the only file that says WHEN state is
-                       written. Owns two u_store instances and the state bus.
-                       auto is flushed on a timer, manual only on a commit.
-                       A contributor names its own key and its own policy, so
-                       an abstraction written later persists itself with NO
-                       change here -- which is the whole point of the phase
-  u_store.pd           a keyed line store with one file behind it. Give it a
-                       list, it REPLACES the line whose first atom matches.
-                       Two instances, which is why it is an abstraction
-  state-dir.sh         makes the data directory AND touches both files at load.
-                       A text write into a missing directory PRINTS, and a read
-                       of a missing file prints three lines -- so without this a
-                       fresh install would print six errors before doing
-                       anything wrong. touch never truncates
-  u_mother-stub.pd     impersonates mother.pd off-device AND is the dev panel — the whole
-                       front face (screen, knobs, encoder, volume, keys) laid out like the
-                       device and rendered inline on main-dev.pd via graph-on-parent.
-                       No cords: every control binds by its iemgui send name. Mac only
-  phone-ip.sh          how u_net finds the phone WITHOUT being told: on the Organelle's own
-                       access point the Organelle is the DHCP server, so it reads the lease
-                       it handed out. Falls back to the creation arg on any other network,
-                       so one build works everywhere and no conditional lives in the patch
-  wire.sh              aconnect calls, run by u_init via [shell]. Also UNDOES
-                       mother's own alsaconnect.sh, which wires the lowest-
-                       numbered MIDI client to Pd's Midi-In 1 -- the nano, which
-                       put it on m_launchpad's channel block on every boot
-mac-stubs/           stand-ins for device-only externals, for the local syntax check. NOT deployed
-deploy.sh            check → scp → reload → load, in one command (there is no rsync on the device)
-tools/fetch-errors.sh  pulls the error log back off the device and summarises it
-tools/fetch-state.sh   backs the instrument's SAVED DATA up into device-state/.
-                       The other half of the bargain for keeping state outside
-                       the patch folder: safe from deploys, and therefore in
-                       exactly one place on one SD card
-tools/go.sh            the ONLY way to advance a bench on the device -- the encoder
-                       does not work there, and netcat does not work on macOS
-tools/lp-live.sh       rescues a Launchpad stranded in Programmer Mode, with no Pd
-                       and no power cycle. Any exit that is not mother's strands it
-tools/dsp.sh           turns the audio engine off on a running patch, which is how
-                       item 75's real cause was finally isolated
-tools/               diagnostic patches, the per-phase benches, and pd-layout-check.py
-  README.md            what each one proves, how to run it, and how to run a bench ON the device
-  bench-gen.py         GENERATES all seven phaseN-bench.pd from bench_steps.py. The benches
-                       are stepped BY HAND -- press GO to run the step just described, press
-                       GO again to describe the next. Never edit a bench .pd
-  bench-verify.py      proves the step text survived the generator, by re-extracting it
-  check-all.sh         EVERY GATE IN ONE COMMAND — layout, both entry points, the bench
-                       text, and the phase 6/7/8 gates. ~40 s, Mac only, touches no
-                       device. RUN IT BEFORE CALLING ANYTHING DONE. Phase 8 edited
-                       u_map, u_init and u_root and came within one step of shipping
-                       without re-running the gates of the phases resting on them:
-                       a gate you must REMEMBER to run is one that eventually doesn't
-  phase6-assert.sh     the headless gate: rewrites [midiout] in a SCRATCH COPY so a run can
-                       read back every byte, then asserts on what the grid actually showed
-  phase7-assert.sh     the same idea and much cheaper — u_net already emits to a socket,
-                       so it binds the port and reads real datagrams. Nothing is rewritten
-  phase9-assert.sh     the FOURTH gate, and the only one with a half that needs no Pd
-                       at all: a STATIC LINT reads u_map's literal route box and the
-                       map's rows and proves every destination a row can name exists
-                       on that route -- the allowlist guard, enforced by reading. The
-                       other half rewrites noteout/ctlout/pgmout AND notein, because
-                       m_volca and m_404 never touch [midiout] and phase 6's rewrite
-                       would find nothing in them. ⚠️ It asserts an EXACT box count
-                       per class, and it OWNS ITS STATE DIRECTORY -- main-dev.pd
-                       passes /tmp, which every run on the machine shares
-  phase8-assert.sh     the cheapest of the three — u_state writes a FILE, so it reads what
-                       landed on disk. ⚠️ It PASSED THE BROKEN PATCH on its first
-                       can-it-fail run, because the driver's timing did not reproduce the
-                       real ordering. The 3600 ms in its driver is load-bearing
-  stage-patches/       Organelle menu patches: AP Probe records what can only be seen while
-                       the access point is up, which is exactly when a Mac joined to it has
-                       no internet and nobody can watch. PGM Probe proved pgmout is 1-based,
-                       and is the pattern for any Pd-side MIDI probe -- a menu patch needs no
-                       killall pd, so it cannot strand the Launchpad. ⚠️ A patch load DROPS
-                       Pd's aconnect links, so such a probe must re-wire its own output
-  wifi-watch.sh        THE OPEN FAULT. Runs ON the device: polls wlan0, and on a failure
-                       runs a LINK PROBE and a DHCP PROBE before a recovery ladder.
-                       The link probe has already decided the branch -- the radio is
-                       fine and the fault is DHCP-side. wifi-poll.sh watches from the
-                       Mac, wifi-report.sh summarises (⚠️ --mark AFTER a finding is
-                       written up, never before -- it draws the analysed-to-here
-                       line, so running it first erases the event you are reading), and
-                       wifi-reassociate.sh is the rung that mirrors the front panel.
-                       ⚠️ NEVER pgrep -f wifi-watch: it matches the ssh doing the
-                       checking, and a sweep that scans and relaunches in ONE command
-                       kills its own session
-plan-v03.md          THE ONLY PLAN DOCUMENT. What v0.3 builds, every open question,
-                     the wifi decision tree, purchases, and what is deferred and why.
-                     §10 IS THE DOCUMENTATION REFACTOR, IN PROGRESS — read §10.9 for
-                     where it stands before touching any documentation
-ref/                 ⬅ ONE PAGE PER MODULE, and the direction all documentation is
-                     moving. A module is a physical device or one instrument concern,
-                     and everything about it is on its page — what it is, what was
-                     measured, what will bite you, how Cut It uses it.
-  README.md            ⛔ READ THIS BEFORE WRITING ANY DOCUMENTATION. The page schema,
-                       the index, the trap form, the five markers and what each means,
-                       and what to do with material that fits no section.
-                       tools/docs-check.py ENFORCES all of it — run the gate rather
-                       than trying to remember it
-  conventions.md       how the Pd is written. Rules C-1..C-14, cited BY ID from patch
-                       comments, where a link cannot be followed
-  device/              ONE PAGE PER PHYSICAL THING. Fixed set — the hardware decides it
-    sp404.md             160 pads, the pad map, the rate limit
-    launchpad.md         Programmer Mode, lighting, the replug watchdog
-    organelle.md         the panel, the OLED, the aux LED. ⛔ The panel is NOT MIDI
-    volca.md             receive-only, Pajen 1.09, pgmout is 1-based
-    nanokontrol.md       the CC map, momentary-only and why
-    phone.md             PdParty, the status protocol, the access point
-  module/              ONE PAGE PER INSTRUMENT CONCERN. ⬅ THIS IS WHAT v0.4 GROWS
-    tempo.md             u_tempo and c_clock, poly-tempo, the four rate ceilings
-  _unfiled.md          the parking spot. The gate FAILS while anything is in it
-plan-tests.md        THE EVIDENCE LEDGER — numbered checks with their measured
-                     results, cited bare as "item 133" everywhere. It accumulates
-                     findings; it does not plan. ⚠️ BEING DISSOLVED into ref/ —
-                     item numbers survive as FACT IDS on the reference rows
-ref-build-log.md     Phases 0-8 as built: outcomes, and every correction they produced.
-                     ⚠️ Also being dissolved into ref/
-ref-conventions.md   ⚠️ A POINTER STUB. The rules moved to ref/conventions.md and are
-                     cited by ID (C-1..C-14). This file survives only because fourteen
-                     patches and tools still name it by path, and a .pd comment has no
-                     link syntax. It goes when those become C-NN citations
-ref-hardware.md      the rig and the device — wiring, power, SSH, paths, how Pd launches
-ref-software.md      how the instrument works — architecture, timing model, decisions
-ref-midi.md          the addressing model and the Organelle. ⚠️ The other four devices
-                     have MOVED to ref/ and this file holds pointers where they were
-ref-display.md       visual feedback — the OLED graphics API, the Launchpad's limits, PdParty
-device/              backups of config that lives only on hardware
-device-state/        backups of the instrument's own saved data, pulled off
-                     /sdcard/cut-it-state/ by tools/fetch-state.sh. NOT config
-                     and not deployed -- this is what the instrument wrote
-! v0.1 plans/        the original v0.1 material, kept for reference
-  README.md            musical intent, filter chain, button/knob map
-  *.jpg                hand-drawn rig and signal-flow diagrams
-  patch/               the v0.1 patch itself — reference for intent, NOT code to lift
+**[ref/](ref/README.md) is one page per module**, and the directory is the kind. A page holds
+everything about its module: what it is, what was measured, what will bite you, and how Cut It
+chooses to use it.
+
+| Looking for | Go to |
+|---|---|
+| **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v03.md](plan-v03.md) — **the only plan document** |
+| How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
+| How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
+| One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
+| One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `display` `map` `state` `tempo` |
+| Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
+| The Organelle as a **computer** — SSH, paths, how Pd launches, deploying, wifi | [ref-hardware.md](ref-hardware.md) ⚠️ verify-after |
+| A cited `item NNN` | `grep` it — item numbers are **fact IDs**, not log entries |
+| What each tool proves and how to run it | [tools/README.md](tools/README.md) |
+
+⚠️ **Four root files are pointer stubs** — `ref-conventions.md`, `ref-software.md`,
+`ref-display.md`, `ref-midi.md`. They survive only because `.pd` comments name them by path and a
+comment has no link syntax. **Do not add to them.**
+
+⚠️ **Two root files are journals being dissolved** — [plan-tests.md](plan-tests.md) (the evidence
+ledger) and [ref-build-log.md](ref-build-log.md) (phases 0–8 as built). **Never read either start to
+finish.** Grep for the item number you were cited.
+
+
+## The patch
+
+`Cut It/` is the deployable folder — **its name is what appears in the Organelle menu.** An Organelle
+patch is a folder containing `main.pd` plus its abstractions.
+
+| Prefix | Is | Files |
+|---|---|---|
+| `main` | Entry points. `main.pd` is the device's, `main-dev.pd` the Mac's | `main.pd` `main-dev.pd` `u_root.pd` |
+| `m_` | One physical device, publishing named controls | `m_nano` `m_launchpad` `m_organelle` `m_404` `m_volca` |
+| `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_err` `u_net` `u_level` `u_mother-stub` |
+| `g_` | One display surface, and its sole owner | `g_oled` `g_grid` `g_led` |
+| `c_` | **Instantiable** — there is more than one | `c_clock` |
+| `e_` | An effect stage — **v0.4, none yet** | — |
+| `.sh` | Run once at load through `[shell]` | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` |
+| `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` |
+
+**What each one does is on its module page**, not here. `mac-stubs/` stands in for device-only
+externals during the local syntax check and is never deployed.
+
+`device/` backs up config that lives only on hardware; `device-state/` backs up what the *instrument*
+wrote. Neither is deployed.
+
+
+## Working on it
+
+**Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and the
+whole instrument is *there* — `u_mother-stub` draws the front panel inline and fakes the knobs, keys,
+aux and encoder. **Most work should never need the Organelle powered on.**
+
+```sh
+./tools/check-all.sh     # every gate, ~40 s, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
+./deploy.sh              # syntax check -> scp -> reload -> load, in one command
+ssh root@organelle.local # password: organelle. Root fs is read-only -- remount-rw.sh first
 ```
 
-**`ref-` states what is; `plan-` states what's open. There is exactly ONE plan document.** A `ref-` doc describes the rig, the
-device, the message formats and the rules, and marks anything uncertain ⬜ — but it carries no
-plans. **Every unresolved question, recommendation and purchase lives in
-[plan-v03.md](plan-v03.md).** [plan-tests.md](plan-tests.md) is the *evidence ledger* — numbered
-checks with their measured results, cited bare as "item 133" across the project. It accumulates
-findings; it does not plan. Keep it
-that way when editing: if you find yourself writing "we should…" in a `ref-` doc, it belongs in
-a `plan-` doc.
+⚠️ **Read `check-all.sh`'s `RESULT:` line; do not grep for it.** `grep -E 'ALL|FAILED'` also matches
+the per-gate `--- FAILED:` lines, and a broken patch has been committed that way.
 
-**Finished work moves to [ref-build-log.md](ref-build-log.md)** rather than staying in the plan as
-a plan. ✅ All eight v0.2 phases have now done this, and `plan-v02.md` was dissolved when the last
-one landed — its architecture diagram went to [ref-software.md](ref-software.md) and its open
-questions to `plan-v03.md`. That file is a `ref-` because completed corrections are facts. When a phase lands, its
-section leaves `plan-v03.md`; **superseded designs get replaced, not annotated.** Phase 4 changed
-its own design twice and recorded both reversals beside the text they overruled, which left the
-plan holding the current design and two dead ones at once.
+**Nothing reports itself unless the patch reports it.** Two things make that survivable:
+
+- **The menu-launched patch has no console** — Pd runs `-nogui` and errors go to tty1, which VNC will
+  not show. **But you can launch the patch yourself over SSH and get a real console**, including
+  `[print]` taps on any bus. It found a silent bug in Phase 1 — see *There IS a console* in
+  [ref/conventions.md](ref/conventions.md).
+- **Nothing has to be caught live.** The dev panel's `open-screen-log` opens a running history of
+  every `disp` message except the level reports, stamped with the frame number — so a boot sequence
+  that finishes in four seconds can be read afterwards instead of watched.
+
+⚠️ **The instrument's own data does NOT live in the patch folder.** `u_state` writes to
+`/sdcard/cut-it-state/`, outside it, precisely so `deploy.sh`, `deploy.sh --clean` and a power cycle
+cannot touch it. `tools/fetch-state.sh` copies it back. See [ref/module/state.md](ref/module/state.md).
+
+⛔ **`knobs.txt` is four saved knob positions, not knob labels**, and **the saved file beats the
+physical knob** — so after any Save the first touch of a knob jumps, up to the full range, and knob 1
+is master tempo. Nothing on the instrument can detect it. See
+[ref/device/organelle.md](ref/device/organelle.md) under *Saving*.
+
+
+## How the documentation works
+
+**`ref/` states what IS. `plan-v03.md` states what is OPEN.** If you find yourself writing "we
+should…" in a `ref/` page, it belongs in the plan. If you find yourself writing "and it works" in the
+plan, its section should have left the file.
+
+**A fact appears once in full; everywhere else it is a citation.** `tools/docs-check.py` enforces
+what can be enforced — run it rather than trying to remember it:
+
+```sh
+python3 tools/docs-check.py -v
+```
+
+**Five markers, and no other emoji anywhere in this repo:**
+
+| | |
+|---|---|
+| ✅ | Verified on this hardware |
+| 📄 | Manufacturer documentation |
+| ⬜ | Unknown or unverified — **only inside an `Open` section** |
+| ⛔ | A trap: ignoring it breaks something **silently** |
+| ⚠️ | An operational rule: never do this to the rig or the device |
+
+⛔ **A check mark never means "built."** An evidence marker never rots; a completion marker silently
+becomes false — which is how `ref-conventions.md` came to assert `u_map` used no lookup table and
+kept saying it until Phase 9 contradicted it. **Do not treat 📄 or ⬜ items as settled facts.**
 
 Links to paths containing spaces use the angle-bracket form:
 `[README.md](<! v0.1 plans/README.md>)`.
 
-An Organelle patch is a **folder** containing `main.pd` (the entry point) plus its
-abstractions, optionally `knobs.txt` and audio assets. ⚠️ **`knobs.txt` is NOT knob labels** — this said so and was
-wrong. Two real examples off the device read `0.195503 0.230694 0.134897 0.0136852;` and
-`0.521994 1 0.84262 0.723363;`: **four normalised knob positions**, saved state rather than text.
-
-**Cut It ships without one, and `Storage → Save` creates it.** ✅ Measured in Phase 8 (item 139):
-`mother.pd` writes `/tmp/state/knobs.txt` on every save, so the file appears the first time you
-commit and the patch boots at the saved knob positions from then on — knob 1 being master tempo.
-**That is a deliberate decision, not a leak**: a preset that restores the knobs is what a performer
-wants. Until the first Save, mother logs `knobs.txt: can't open` at boot; that line is expected and
-harmless. An ordinary `./deploy.sh` will not remove the file once it exists — `--clean` will.
-
-✅ **And the saved file BEATS the physical knob — measured, item 200.** Knob 1 turned fully
-clockwise, patch reloaded, and it booted at the file's **57 BPM** rather than the knob's 500.
-⚠️ **So after any Save every knob is desynced from its value, and the first touch jumps** — up to
-the full range. Nothing on the instrument can detect this: mother reports position, not whether the
-position still matches the file. **That is the concrete case for parameter pickup** in
-[plan-v03.md](plan-v03.md), and it happens on every boot rather than only on a bank switch.
-
-⚠️ **The instrument's own data does NOT live in the patch folder.** `u_state` writes to
-`/sdcard/cut-it-state/`, outside it, precisely so that `deploy.sh`, `deploy.sh --clean` and a power
-cycle cannot touch it. `tools/fetch-state.sh` copies it back into the repo.
-
-**Working on the device:** `ssh root@organelle.local` (password `organelle`). The root
-filesystem is read-only — `remount-rw.sh` before writing to `/root`. **`./deploy.sh` does the
-whole loop** — syntax check, copy, reload the patch list, load the patch — with no physical
-interaction. Full details, paths and the `mother`/Pd launch line are in
-[ref-hardware.md](ref-hardware.md) under *The device itself*.
-
-**The menu-launched patch has no console** — Pd runs `-nogui` and errors go to tty1, which VNC
-will not show. **But you can launch the patch yourself over SSH and get a real console**,
-including `[print]` taps on any bus, by loading `mother.pd` and `main.pd` together with output
-redirected to a file. This is the highest-value debugging tool on the project and it found a
-silent bug in Phase 1 — see *There IS a console* in [ref/conventions.md](ref/conventions.md).
-
-Still assume nothing reports itself unless the patch reports it. **`deploy.sh` syntax-checks in
-local Pd 0.49 and refuses to deploy on any output**, so that rule is automatic rather than
-remembered.
-
-**Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and
-the whole instrument is *there* — `u_mother-stub` draws the front panel inline, fakes the knobs,
-keys, aux and encoder, and previews whatever the patch writes to `oscOut`. Most work should
-never need the Organelle powered on.
-
-**Nothing has to be caught live.** The panel's `open-screen-log` button opens a running history
-of every `disp` message except the level reports, stamped with the frame number — so a boot
-sequence that finishes in four seconds can be read afterwards instead of watched.
-
-
-## Verified vs assumed
-
-Every doc marks claims ✅ verified on this hardware / 📄 manufacturer documentation /
-⬜ unknown. **Do not treat 📄 or ⬜ items as settled facts.** [plan-tests.md](plan-tests.md) is
-the ordered checklist with results. **The `ref-` docs mark uncertainty ⬜ but never say what to do
-about it** — the work to resolve any ⬜ lives in [plan-v03.md](plan-v03.md) under *Open
-questions*, which is the single place to look for what is unresolved.
-
 
 ## Working notes
 
-- Before any bulk delete or overwrite on Brendan's data, print the count, a sample, and the
-  evidence that the targets are what you claim — then ask. Verifying privately is not enough.
-- When a fact matters (a Pd version, a device capability, a file format), check it against the
-  device or the source rather than inferring from documentation. Several claims in this
-  project's history turned out wrong that way — including two corrected in these files.
-- Configuration that lives only on a device is one accident from being lost. The nanoKONTROL
-  scene and `/root/.pdsettings` are both backed up in [device/](device/) — verified current
-  against the hardware. `.pdsettings` is load-bearing: `path1: /root/Pd/externals` is what makes
-  `[shell]`, `packOSC` and `routeOSC` resolve in the menu-launched patch.
+- **Before any bulk delete or overwrite on Brendan's data, print the count, a sample, and the
+  evidence that the targets are what you claim — then ask.** Verifying privately is not enough.
+- ⛔ **A section is not what its heading says.** Read what is under it before deleting from one
+  heading to the next, and probe distinctive strings afterwards. That has caught a real deletion
+  twice in this refactor.
+- **When a fact matters — a Pd version, a device capability, a file format — check it against the
+  device or the source** rather than inferring from documentation. Several claims in this project's
+  history turned out wrong that way, including two corrected in these files.
+- **Configuration that lives only on a device is one accident from being lost.** The nanoKONTROL
+  scene and `/root/.pdsettings` are both backed up in [device/](device/), verified current against
+  the hardware. `.pdsettings` is load-bearing: `path1: /root/Pd/externals` is what makes `[shell]`,
+  `packOSC` and `routeOSC` resolve in the menu-launched patch.

@@ -278,6 +278,21 @@ than `hostapd`: the Organelle simply joins whichever is present and **SSH surviv
 bringing up an AP drops it. ⚠️ **An iPhone Personal Hotspot needs cellular**, so it cannot be
 combined with airplane mode — the two are mutually exclusive. See [plan-v03.md](plan-v03.md).
 
+### The tools that watch it
+
+| Tool | Runs on | Does |
+|---|---|---|
+| `tools/wifi-watch.sh` | **the device** | Polls `wlan0`, and on a failure runs a **link probe** and a **DHCP probe** before a recovery ladder |
+| `tools/wifi-poll.sh` | the Mac | Watches from outside, so a device that has gone silent still produces a record |
+| `tools/wifi-report.sh` | the Mac | Summarises `wifi-watch.log` |
+| `tools/wifi-reassociate.sh` | the device | The recovery rung that mirrors what the front panel does. **The only one that has ever worked** |
+
+⚠️ **`--mark` goes AFTER a finding is written up, never before.** It draws the analysed-to-here line,
+so running it first erases the event you were about to read.
+
+⛔ **NEVER `pgrep -f wifi-watch`.** It matches the `ssh` command doing the checking, so a sweep that
+scans and relaunches in one command kills its own session.
+
 ### ⚠️ The roam fault — what is known, and how to reproduce it
 
 **On house wifi the device loses its IPv4 lease and does not get it back.** Open since Phase 6 and

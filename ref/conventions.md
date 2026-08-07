@@ -382,33 +382,16 @@ the parameter, not throughout the patch.
 
 **Rule C-4.** Cite it by ID from a `.pd` comment, where a link cannot be followed.
 
-**`mother.pd` owns the sound card.** A patch that reaches for `adc~` or `dac~` is going around
-it. The interface is four names:
+**`mother.pd` owns the sound card.** A patch that reaches for `adc~` or `dac~` is going around it.
+The interface is four names — `[r~ inL]` / `[r~ inR]` in, `[throw~ outL]` / `[throw~ outR]` out.
 
-| Patch uses | Carries |
-|---|---|
-| `[r~ inL]` `[r~ inR]` | the two inputs — `inL` is the **tip**, `inR` the ring |
-| `[throw~ outL]` `[throw~ outR]` | everything the patch wants heard |
-
-✅ Read off the device from `mother.pd`'s `pd audioIO`, and cross-checked against **every**
-stock effect in `/sdcard/Patches/Effects/` — they all use exactly this.
-
-```
-mother:  [adc~] ─→ [s~ inL] [s~ inR]
-patch:   [r~ inL] [r~ inR] ─→ … ─→ [throw~ outL] [throw~ outR]
-mother:  [catch~ outL/outR] ─→ [*~ vol²] ← [lop~ 5] ─→ [clip~ -1 1] ─→ [dac~]
-```
-
-**`adc~` in a patch happens to work; `dac~` is a real bug.** The output path applies the volume
-knob (a **square law**, smoothed at 5 Hz) and a `clip~ -1 1` limiter. Writing to `dac~` bypasses
-both — the volume knob stops working and the patch can clip the converter. `throw~`/`catch~`
-also sums, so several stages can feed the output without a mixer.
+⛔ **`adc~` in a patch happens to work; `dac~` is a real bug.** The output path applies the volume
+knob and a `clip~ -1 1` limiter, and writing to `dac~` bypasses both — the knob stops working and
+the patch can clip the converter. Nothing reports it.
 
 **mother enables DSP.** `pd init` fires `; pd dsp 1` 200 ms after load. A patch must not.
 
-**mother drives the VU meter**, from `inL`, `inR` and the *post-volume* outputs, via
-`/oled/vumeter`. A patch never sends it. See [ref-display.md](ref-display.md) for why the
-info bar is turned off anyway.
+The full chain, the measured level scale and the rest are on [audio.md](module/audio.md).
 
 ---
 

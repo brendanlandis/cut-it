@@ -130,24 +130,9 @@ Nothing overlaps:
 
 ## Signal architecture
 
-### The 404 carries the audio split
-
-Drums hard-panned left, fx hard-panned right — two independent mono streams out of one stereo
-pair, and the mic sums to both. **The measurements, the hardware path for setting the pan and the
-traps around it are on [ref/device/sp404.md](ref/device/sp404.md)**; what follows is the design consequence.
-
-### No routing depends on a knob position
-Deliberate. The 404's per-sample pans are saved with the project and recall. Cables carry
-the signal paths. The mixer's knobs only set levels — and a wrong level is audible
-immediately rather than failing silently.
-
-The remaining hidden state is all on the 404 (ExtIn monitoring, bus assignments, input FX),
-which lives in menus — the one "wrong knob" risk left in the rig. A pre-set checklist for that
-box is deferred in [plan-v03.md](plan-v03.md).
-
-### Organelle audio back into the 404 — dropped
-Considered and dropped for now. Would have used the mixer's FX send as a variable-gain
-feedback path. Revisit later if wanted; it needs no rewiring beyond one cable from FX SEND.
+**Moved.** The I/O contract, the level meter, the 404's audio split and the dropped feedback path
+are on [ref/module/audio.md](ref/module/audio.md); the measurements behind the split are on
+[ref/device/sp404.md](ref/device/sp404.md).
 
 
 ---

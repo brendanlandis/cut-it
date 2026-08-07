@@ -62,9 +62,11 @@ chooses to use it.
 `ref-display.md`, `ref-midi.md`. They survive only because `.pd` comments name them by path and a
 comment has no link syntax. **Do not add to them.**
 
-⚠️ **Two root files are journals being dissolved** — [plan-tests.md](plan-tests.md) (the evidence
-ledger) and [ref-build-log.md](ref-build-log.md) (phases 0–8 as built). **Never read either start to
-finish.** Grep for the item number you were cited.
+⚠️ **One root file is a journal being dissolved** — [plan-tests.md](plan-tests.md), the evidence
+ledger. **Never read it start to finish.** Grep for the item number you were cited.
+
+**The build log is gone**; phases 0–8 as built are in `git log`, and every fact they produced is on a
+`ref/` page.
 
 
 ## The patch

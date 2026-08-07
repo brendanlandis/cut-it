@@ -6,7 +6,7 @@ measurements belong beside the checks that preceded them.
 
 Two things live here and nowhere else: the **numbers** (counts, rates, CPU, byte-level results) and
 the **procedures** that produced them. The narrative of what each phase taught is
-[ref-build-log.md](ref-build-log.md); what is still open is [plan-v03.md](plan-v03.md).
+the git history; what is still open is [plan-v03.md](plan-v03.md).
 
 Early sessions need scratch patches only — no Cut It code. Diagnostic patches live in
 [tools/](tools/). Companion to [ref-hardware.md](ref-hardware.md), which explains *why* each of these
@@ -289,7 +289,7 @@ No hardware needed, and it is repeatable in seconds — the pattern is worth reu
       Phase 4 made all six ordinary momentary CC, read through one path; **Phase 6 mapped them to
       `mode` in `u_map`**, which is where meaning belongs. The CC numbers and the channel below are
       unchanged and still correct — see item 38b, item 90 and
-      [ref-build-log.md](ref-build-log.md).
+      the git history.
 
       **Verified by decoding the raw stream off the wire**, not just trusting the editor: all
       six in order with no gaps, momentary 127/0 throughout, control groups on 17, full 0–127

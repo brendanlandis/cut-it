@@ -614,7 +614,7 @@ Six phases have used the same shape and it is worth stating rather than rediscov
    in doubt.
 6. **A landing checklist**, and it is not optional — see *Where the abstractions go* and the
    doc-hygiene rules in [CLAUDE.md](CLAUDE.md). Finished work moves to
-   [ref-build-log.md](ref-build-log.md); the phase's section *leaves* [plan-v03.md](plan-v03.md)
+   the git history; the phase's section *leaves* [plan-v03.md](plan-v03.md)
    rather than being annotated; superseded designs are replaced, not annotated beside their
    replacement; anything unresolved moves to *Open questions*; and a new
    [plan-tests.md](plan-tests.md) session is added with items numbered **after the last used

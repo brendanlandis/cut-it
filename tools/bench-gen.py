@@ -5,7 +5,7 @@
 
 Replaces phase6-bench-gen.py, which generated one bench. Four near-identical
 files of fifteen-odd near-identical steps is exactly where hand-authored box
-indices drift, and it did: see the corrections in ref-build-log.md.
+indices drift, and it did -- see C-10, and the git history.
 
 THE INTERACTION, and why it changed. Every bench up to now drove itself on a
 ten-second timer, so the console text and the physical device moved at the same

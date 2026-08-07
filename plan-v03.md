@@ -49,7 +49,6 @@ pointer stubs holding nothing. Read in this order:
 | **[ref/architecture.md](ref/architecture.md)** | All of it (200 lines) | How the modules compose, and the four load-bearing decisions |
 | **[ref/device/](ref/device/)**, **[ref/module/](ref/module/)** | **Only the page you are touching** | Everything about one device or one instrument concern, in one place |
 | **[ref-hardware.md](ref-hardware.md)** | Only if working on the device | SSH, paths, how Pd launches, wifi. ⚠️ Verify-after: the cruft cleanup changes these paths |
-| **[ref-build-log.md](ref-build-log.md)** | **Grep it.** Being dissolved | Phases 0–8 as built. Its facts have moved to the pages; what is left is narrative |
 | **[plan-tests.md](plan-tests.md)** | **Never read start to finish (4,131 lines).** Grep for the item number you were cited | The evidence ledger. Item numbers are **fact IDs**, cited bare as "item 133" |
 
 ### How this project works
@@ -78,7 +77,7 @@ pointer stubs holding nothing. Read in this order:
 | The Volca has no `m_` layer | **CLOSED.** `m_volca` wired in on one selector-prefixed cord |
 | `u_map` cannot express a mode-dependent meaning | **CLOSED.** Table-driven with a hardcoded allowlist of destinations |
 
-**The full account is in [ref-build-log.md](ref-build-log.md) under *Phase 9*.** Evidence is
+**The full account is in the git history** — `git log` from `dca0b04`. Evidence is
 items 228–235. What follows here is only what is still OPEN.
 
 **Four corrections came out of building it**, and they are the part worth carrying forward:
@@ -202,7 +201,7 @@ outages, twice**), and check satellite backhaul health.
 | **The drum mode, compose-mode capture, the sampler** | v0.4. The `time, note, velocity, duration` format is decided and every device can now fill all four fields |
 | **The mic-bleed capture guard** | v0.4, with capture. ⚠️ A live vocal bakes into any drums-channel buffer sampled while the mic is hot |
 | **Items 142, 202, 210** | Step 0 measurements that gate the **v0.4 sampler**, not this phase. Batch them next time the rig is up |
-| **Footswitch, nanoKONTROL scenes, a 404 pre-set checklist, Save New** | Long-standing deferrals; reasons in [ref-build-log.md](ref-build-log.md) and [ref-hardware.md](ref-hardware.md) |
+| **Footswitch, nanoKONTROL scenes, a 404 pre-set checklist, Save New** | Long-standing deferrals; reasons on [ref/rig.md](ref/rig.md), [ref/device/nanokontrol.md](ref/device/nanokontrol.md) and [ref/module/state.md](ref/module/state.md) |
 | **LINE IN R-only, ground loops, 404 latency, CPU headroom** | Upgrade paths and perform-time tuning |
 | **Guided Access, a dynamic mic, OLED legibility (item 39), the Launchpad onboarding drive** | Real wants, none of them this phase |
 | **AP link quality over a set-length window (item 45)** | The last outstanding measurement. ⚠️ Needs the AP up, which kills the house link |
@@ -325,7 +324,7 @@ citation.*
 
 ### 10.4 The journals dissolve
 
-`plan-tests.md` (4,131) and `ref-build-log.md` (981) are half the corpus and neither is ever read
+`plan-tests.md` (4,131) and `ref-build-log.md` (981) were half the corpus and neither was ever read
 start to finish. **Both dissolve into the reference docs.**
 
 **Git is now the journal.** `phase 9: fix the boot-time tempo race -- the map was not ready when
@@ -444,7 +443,8 @@ and `tools/docs-check.py` enforces all of it. None of it has to be remembered; r
 | `ref-hardware.md` | 697 | **406** — now only the Organelle as a COMPUTER, and verify-after |
 | `ref/` pages | — | **4,092 across 16** |
 | `CLAUDE.md` | 313 | 327 — **not yet the router** |
-| `plan-tests.md` + `ref-build-log.md`, untouched | 5,112 | **5,112 — 78% of what is left at the root** |
+| `plan-tests.md` | 4,131 | **4,131 — 79% of what is left at the root** |
+| `ref-build-log.md` | 981 | ✅ **0 — dissolved.** Nine unique facts extracted to the pages; the narrative is in git |
 
 ⚠️ **`ref/` now has subdirectories.** `ref/device/` (six, fixed by the hardware) and
 `ref/module/` (one so far — **this is what v0.4 grows**). Cross-cutting pages stay flat.
@@ -516,7 +516,6 @@ plan states what is OPEN — they are different kinds of document, not different
 | **`CLAUDE.md`** | 172 | **Never** — it is the router |
 | **`plan-v03.md`** | 526 | **Never** — the only plan document |
 | `plan-tests.md` | 4,131 | Dissolved into the pages, one session per commit |
-| `ref-build-log.md` | 981 | Dissolved into the pages |
 | `ref-conventions.md` | 27 | The 14 patch and tool files naming it cite `C-NN` instead |
 | `ref-midi.md` | 141 | The `.pd` comments naming it point at `ref/device/` instead |
 | `ref-software.md` | 33 | Same |

@@ -68,7 +68,7 @@ now misled this investigation. The cache catches up on its own. Item 172.
 | Pd config | `/root/.pdsettings` |
 | Externals | `/root/Pd/externals` |
 | Scripts | `/root/fw_dir/scripts/` |
-| Extra libs | ⛔ **There are none, and there is no `/sdcard/PdExtraLibs`.** This page claimed both until 2026-08-07. `.pdsettings` says `npath: 1` and the one path is `/root/Pd/externals` |
+| Extra libs | `/sdcard/PdExtraLibs` — **on Pd's search path but NOT PRESENT.** ⚠️ The path is passed on the command line by `mother` itself (`-path /sdcard/PdExtraLibs`, seen in the live `ps` line), *not* through `.pdsettings`, whose `npath: 1` points only at `/root/Pd/externals`. So the directory does not exist, and creating it would work — anything dropped in resolves. Verified 2026-08-07 |
 | **Running patch** | **`/tmp/patch` — a SYMLINK to the patch folder**, and Pd's working directory. ⚠️ It exists only *while a patch is loaded*; mother creates it on load. Verified absent with none running |
 | **Instrument data** | **`/sdcard/cut-it-state/`** — what `u_state` writes. Not config, not deployed |
 | Error log | `/sdcard/cut-it-err.log` (rolled) and `.cur` (running session) |

@@ -16,9 +16,13 @@ subject is that page — or `none`, honestly. The **cleanup** took 18 answered p
 cleared the Organelle's menu down to `Cut It`, backed up the two device files that had no copy, and
 verified `ref/device-os.md` against the hardware.
 
-⬜ **One check from the cleanup is still outstanding, and only you can run it:** *does the instrument
-still boot with the Launchpad attached?* That is the one-line test that `/root/fw_dir/scripts/mount.sh`
-survived, and it needs a power cycle at the device.
+⚠️ **One re-confirmation is worth doing, but it is not an open question.** *Does the instrument
+still boot with the Launchpad attached?* `ref/device-os.md` already records that as ✅ verified by
+cold boot when the `mount.sh` guard was installed, the guard is still live on the device (checked
+2026-08-07), and the cleanup touched nothing under `/root`. **The cheap version needs no power
+cycle at all:** `mount.sh` runs on every Reload, so plugging the Launchpad in and running
+`sh /root/fw_dir/scripts/mount.sh` exercises the same code path — expect *"skipping write-protected
+device /dev/sda1"* and `/usbdrive` absent from `/proc/mounts`.
 
 **A plan is scoped to one piece of work and is deleted when the work lands.** This one is the
 exception that persists, because it is where everything unscoped waits.

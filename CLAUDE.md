@@ -14,39 +14,24 @@ the four filter stages, the drum mode, the sampler — is v0.4 and comes after t
 v0.1 is superseded and kept only for reference.
 
 
-## Hard constraints — read before writing any Pd
+## Writing Pd — use the `pd` skill
 
-**Target is Pd vanilla 0.49, permanently.** Verified on the device:
-`Pd-0.49.0, compiled Oct 9 2018`. The Organelle 1 runs OS 4.0.
+⛔ **Invoke the `pd` skill before writing, editing or reviewing any Pure Data in this repo.** It
+carries the constraints, the C-1..C-14 conventions, how to edit a `.pd` by hand without breaking it,
+and the gates. It loads on demand, so it costs nothing in a session that never touches a patch.
 
-**OS 4.0 is the end of the line for this hardware — there is no upgrade and the Pd target
-cannot move.** 4.1 was Organelle M only; 4.2 / 4.4 / OS 5 are M/S/S2. Confirmed three ways: the
-official Organelle 1 manual names `OG1-4.0` as the current release, C&G staff state "OS 4.0 is
-the highest version currently available for the Organelle 1", and on C&G's own image host only
-`OG1-v4.0.img.zip` exists — `OG1-v4.1`, `4.2`, `4.4` and `5.0` all 404. **Do not suggest
-objects newer than 0.49.**
+**The three that are not negotiable, repeated here because they are expensive to learn late:**
 
-**Never save an Organelle-bound patch from plugdata.** plugdata is built on Pd 0.55+ and
-rewrites `.pd` files into a newer format — iemgui colours become hex (`#fcfcfc` instead of
-`-262144`), floatatoms gain a trailing arg. Pd 0.49 cannot parse that. This has already
-happened once in this repo. Edit with **vanilla Pd 0.49** for anything that ships to hardware.
+- **Pd vanilla 0.49, permanently.** The Organelle 1 runs OS 4.0 and **that is the end of the line
+  for this hardware** — 4.1 was Organelle M only, and 4.2 / 4.4 / OS 5 are M/S/S2. Do not suggest
+  any object newer than 0.49.
+- **Never save an Organelle-bound patch from plugdata.** It is built on Pd 0.55+ and rewrites `.pd`
+  files into a format 0.49 cannot parse. This has already happened once here.
+- **Vanilla objects only** — the Organelle ships neither ELSE nor cyclone.
 
-**Vanilla by default.** The Organelle ships neither ELSE nor cyclone. Bundling them is
-*possible* — the device is **armv7** and armv7 builds exist — but current ELSE requires Pd
-0.56+, so you would need a ~2019-vintage release. Pd 0.49 also expects the `.pd_linux`
-extension, not the newer `.l_arm` naming. Pure-Pd abstractions can simply be dropped in the
-patch folder with no such concerns. Prefer vanilla unless there is a specific object worth the
-dependency.
-
-**The `critterandguitari/Organelle_OS` GitHub repo targets CM3/CM4 hardware — that is the
-Organelle M and S2, not this device.** Its paths are wrong here (it uses `/home/music`, an
-`audioinjector-pi-soundcard`). The mechanisms are the same lineage, but verify paths against
-the actual device before relying on them.
-
-**Read [ref-conventions.md](ref-conventions.md) before writing or reviewing any Pd in this
-repo.** It carries the naming scheme, the `$0` rule, the global-send allowlist, `[trigger]`
-discipline and the banned-constructs list. Those are project decisions, not suggestions, and
-they are not reproducible from reading the existing patch — most of it predates them.
+⚠️ **The `critterandguitari/Organelle_OS` GitHub repo targets CM3/CM4 hardware — the Organelle M and
+S2, not this device.** Its paths are wrong here (`/home/music`, an `audioinjector-pi-soundcard`).
+The mechanisms are the same lineage; verify paths against the actual device before relying on them.
 
 
 ## Layout
@@ -232,7 +217,10 @@ plan-tests.md        THE EVIDENCE LEDGER — numbered checks with their measured
                      item numbers survive as FACT IDS on the reference rows
 ref-build-log.md     Phases 0-8 as built: outcomes, and every correction they produced.
                      ⚠️ Also being dissolved into ref/
-ref-conventions.md   how the Pd is written — naming, $0, trigger discipline, dev workflow
+ref-conventions.md   ⚠️ A POINTER STUB. The rules moved to ref/conventions.md and are
+                     cited by ID (C-1..C-14). This file survives only because fourteen
+                     patches and tools still name it by path, and a .pd comment has no
+                     link syntax. It goes when those become C-NN citations
 ref-hardware.md      the rig and the device — wiring, power, SSH, paths, how Pd launches
 ref-software.md      how the instrument works — architecture, timing model, decisions
 ref-midi.md          the addressing model and the Organelle. ⚠️ The other four devices
@@ -301,7 +289,7 @@ interaction. Full details, paths and the `mother`/Pd launch line are in
 will not show. **But you can launch the patch yourself over SSH and get a real console**,
 including `[print]` taps on any bus, by loading `mother.pd` and `main.pd` together with output
 redirected to a file. This is the highest-value debugging tool on the project and it found a
-silent bug in Phase 1 — see *There IS a console* in [ref-conventions.md](ref-conventions.md).
+silent bug in Phase 1 — see *There IS a console* in [ref/conventions.md](ref/conventions.md).
 
 Still assume nothing reports itself unless the patch reports it. **`deploy.sh` syntax-checks in
 local Pd 0.49 and refuses to deploy on any output**, so that rule is automatic rather than

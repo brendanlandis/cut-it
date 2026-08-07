@@ -34,7 +34,7 @@
 #X text 1080 920 shell is an external that exists only on the Organelle. mac-stubs/shell.pd stands in for it during the local syntax check \, and is never deployed., f 46;
 #X obj 900 570 print wire;
 #X text 140 1050 THE STAGES ARE MODALS \, so each one takes the whole screen at 16px while the meters have nothing to say. The last stage sends modal-off and drops v0.2-ready into the footer \, where a persistent status belongs. That also gives g_oled's modal layer a real caller in Phase 3 rather than shipping it untested., f 58;
-#X text 620 1050 A message box typed modal booting ALREADY has modal as its selector \, so the list prepend / list trim chain this used to need is gone -- and with it one instance of the trap it was there to avoid. See ref-conventions.md \, The display bus., f 46;
+#X text 620 1050 A message box typed modal booting ALREADY has modal as its selector \, so the list prepend / list trim chain this used to need is gone -- and with it one instance of the trap it was there to avoid. See C-6., f 46;
 #X text 1080 1050 THE FOOTER IS HANDED OVER \, NOT SHARED. u_tempo drops the BPM into it at 4 s -- deliberately after v0.2-ready lands here at about 3.5 s \, so the boot status is superseded by something useful once the clock is up. CHANGE THESE STAGE TIMINGS AND THAT 4000 CHANGES WITH THEM., f 40;
 #X obj 1180 240 loadbang;
 #X msg 1180 375 0;

@@ -1,5 +1,5 @@
 #N canvas 20 20 2760 2000 12;
-#X text 20 20 u_tempo -- the MASTER REFERENCE. It owns the master BPM \, the pulse oscillator that MIDI clock is cut from \, and the transport. It is NOT the clock: Cut It runs poly-tempo and every part that needs a beat owns a c_clock instance of its own. See ref-conventions.md \, Poly-tempo., f 58;
+#X text 20 20 u_tempo -- the MASTER REFERENCE. It owns the master BPM \, the pulse oscillator that MIDI clock is cut from \, and the transport. It is NOT the clock: Cut It runs poly-tempo and every part that needs a beat owns a c_clock instance of its own. See ref/module/tempo.md., f 58;
 #X text 20 140 creation args: none. inlets: none. outlets: none. It talks on tempo \, clock \, start \, stop \, panic \, disp and err \, and out of two MIDI ports., f 58;
 #X obj 20 300 r tempo;
 #X obj 20 345 t f f;

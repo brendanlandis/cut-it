@@ -10,7 +10,7 @@
 #X obj 480 400 u_level in-r;
 #X text 70 490 v0.3: e_chop \, e_pitch \, e_trem \, e_verb go in this gap., f 30;
 #X text 20 700 L = drums \, R = fx: the SP-404's hard-panned outputs arriving through the TRS Y-cable. adc~ 1 is the tip \, verified -- item 11., f 34;
-#X text 20 800 adc~ and dac~ appear NOWHERE in this patch \, and must not. mother.pd owns both -- it publishes the inputs on inL / inR and collects the output from outL / outR \, then applies the volume knob and a limiter. A patch that writes to dac~ silently bypasses both. See ref-conventions.md \, Audio I/O., f 58;
+#X text 20 800 adc~ and dac~ appear NOWHERE in this patch \, and must not. mother.pd owns both -- it publishes the inputs on inL / inR and collects the output from outL / outR \, then applies the volume knob and a limiter. A patch that writes to dac~ silently bypasses both. See C-4., f 58;
 #X text 470 1050 The level taps are a SIGNAL fan-out \, which needs no trigger: signal connections all run every block \, so there is no firing order to get wrong. The trigger rule is about messages., f 46;
 #X obj 900 340 u_init;
 #X text 1120 340 owns startup ORDER -- MIDI wiring \, the stage reports \, when the Launchpad is initialised and when saved state is restored. Outlet 1 fires at the launchpad stage \, outlet 2 at the last stage about 3.5s in., f 34;
@@ -43,7 +43,7 @@
 #X text 1450 250 THE DATA STORE. Two files under the directory in \$3 -- one flushed on a timer \, one written only on an explicit commit. It is wired rather than sent because the RESTORE is a stage of u_init's boot sequence \, exactly like the launchpad init beside it: u_init owns WHEN \, u_state owns WHAT. Everything else it does travels on the state bus., f 28;
 #X text 1450 530 ⚠️ \$3 IS THE ONE THING THE TWO ENTRY POINTS MUST STILL DISAGREE ABOUT \, and it is a real platform difference rather than an oversight: there is no /sdcard on a Mac. main.pd passes /sdcard/cut-it-state \, which SURVIVES deploy.sh \, deploy.sh --clean and a power cycle \; main-dev.pd passes /tmp. Data lives OUTSIDE the patch folder on purpose -- the same reasoning that put u_err's log there., f 28;
 #X obj 1700 1150 m_volca \$5;
-#X text 1700 1560 the Korg Volca FM \, and the FIRST OUTPUT-ONLY device layer in this patch -- it is told what to play rather than publishing what was touched. IT SITS HERE RATHER THAN IN THE m_ COLUMN because it has a cord \, and on this canvas the cords decide placement: it is wired straight up to u_map \, which is the only file allowed to decide that a note should sound. One cord \, selector-prefixed \, per ref-conventions.md., f 44;
+#X text 1700 1560 the Korg Volca FM \, and the FIRST OUTPUT-ONLY device layer in this patch -- it is told what to play rather than publishing what was touched. IT SITS HERE RATHER THAN IN THE m_ COLUMN because it has a cord \, and on this canvas the cords decide placement: it is wired straight up to u_map \, which is the only file allowed to decide that a note should sound. One cord \, selector-prefixed \, per C-2., f 44;
 #X obj 2050 1400 m_404 \$4;
 #X text 2050 1450 the SP-404MKII \, and the first BIDIRECTIONAL device layer -- it publishes pad presses on param and is told which pads to trigger through this cord. Wired to u_map for the same reason m_volca is \, and placed by its cord rather than by column., f 30;
 #X connect 3 0 4 0;

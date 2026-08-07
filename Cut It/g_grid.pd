@@ -378,7 +378,7 @@
 #X obj 2280 780 loadbang;
 #X text 1500 1330 THE FRAME CLOCK RUNS AT 50 Hz -- metro 20 -- BUT REPAINTS ONLY WHEN DIRTY \, and that is the one place this file must NOT copy g_oled. The OLED redraws unconditionally because its frames are cheap UDP to a local socket. These are ALSA MIDI writes \, and about 96 of those a second is the standing suspect for the clock roughly doubling Pd's CPU in Phase 5 -- so an unconditional full-surface repaint at this file's own 50 Hz would add to exactly the cost that already hurts. Idle with the transport stopped this sends NOTHING AT ALL. At 120 BPM the beat row moves twice a second \, so it sends twice a second., f 90;
 #X text 1500 1520 THE SPIGOT COMES BEFORE THE FLAG IS CLEARED \, deliberately. While the surface is not ours the flag stays set \, so whatever changed while a stock layout had the pads gets painted in the first frame after we get them back rather than being lost., f 90;
-#X text 2100 990 THE PORT IS AN OBJECT-BOX \$1 \, NOT A MESSAGE-BOX ONE. In a message box \$1 is the first element of the incoming message and would resolve to 0 \, which is a different port and a silent one. Same glyph \, unrelated meaning -- ref-conventions.md \, The \$1 trap., f 50;
+#X text 2100 990 THE PORT IS AN OBJECT-BOX \$1 \, NOT A MESSAGE-BOX ONE. In a message box \$1 is the first element of the incoming message and would resolve to 0 \, which is a different port and a silent one. Same glyph \, unrelated meaning -- ref/conventions.md \, The \$1 trap., f 50;
 #X connect 4 0 6 0;
 #X connect 5 0 12 0;
 #X connect 6 0 7 0;

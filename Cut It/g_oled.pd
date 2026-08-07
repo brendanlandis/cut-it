@@ -5,7 +5,7 @@
 #X text 20 265 LAYERS ARE STATE \, NOT DRAW CALLS. Every layer keeps its values and the frame clock renders whichever one wins. That is why there is no rate limiting anywhere: the last value written is what the next frame draws \, so 200 messages a second and one every five seconds both come out as ten frames a second \, and neither can strand a stale half-swept value on the screen., f 58;
 #N canvas 30 30 1900 800 disp-in 0;
 #X text 20 20 THE RESERVED SELECTORS ARE THIS ROUTE BOX. in-l \, in-r and status feed the home screen \; modal \, modal-off and alert name a layer directly. EVERYTHING ELSE FALLS OUT OF THE REJECT OUTLET AND IS A PARAMETER., f 58;
-#X text 20 115 Callers never say which layer they want -- see ref-conventions.md \, The display bus. A mistyped disp name shows up on the screen as a nonsense parameter \, which is a great deal better than vanishing., f 58;
+#X text 20 115 Callers never say which layer they want -- see C-5. A mistyped disp name shows up on the screen as a nonsense parameter \, which is a great deal better than vanishing., f 58;
 #X obj 20 250 r disp;
 #X obj 20 300 route in-l in-r status modal modal-off alert led grid;
 #N canvas 40 40 1000 620 levels 0;
@@ -168,7 +168,7 @@
 #X connect 3 0 18 0;
 #X restore 1600 420 pd param-in;
 #X text 20 580 EVERY BRANCH OUT OF route GOES THROUGH list append FIRST. When route matches \, whatever is left over comes out as a MESSAGE \, not a list -- so status v0.2-ready arrives with v0.2-ready as its selector and alert warn u_init x arrives with warn as its selector. Feed that to a trigger and Pd says: can only convert 's' to 'b' or 'a'. list append turns it back into a list., f 58;
-#X text 560 580 ref-conventions.md describes this for a remainder that is a SINGLE symbol. It is wider than that: any remainder whose first atom is a symbol arrives as a selector plus arguments. A remainder starting with a float -- in-l 43 dB -- really is a list \, which is why the level chain needs no list append., f 58;
+#X text 560 580 C-7 describes this for a remainder that is a SINGLE symbol. It is wider than that: any remainder whose first atom is a symbol arrives as a selector plus arguments. A remainder starting with a float -- in-l 43 dB -- really is a list \, which is why the level chain needs no list append., f 58;
 #X text 1100 580 modal-off carries nothing \, so route hands out a bang and it goes straight to the layer logic. It is a reserved name rather than a modal with empty text because clearing a layer and setting one are different operations., f 58;
 #X text 1100 700 led AND grid ARE MATCHED AND DELIBERATELY NOT CONNECTED. The aux button LED is a display surface with its own owner \, g_led \, and it listens on this same bus. Without a branch here every LED request would fall out of the reject outlet and draw as a parameter row called led. Phase 5., f 58;
 #X connect 2 0 3 0;
@@ -319,7 +319,7 @@
 #X obj 340 450 list append;
 #X obj 500 410 r \$0-a-text;
 #X obj 340 500 s \$0-text;
-#X text 20 580 This draws to screen 3 \, the buffer already on show \, rather than the ALERT buffer plan-v03.md suggested. There is nothing underneath to preserve: the frame is cleared and rebuilt from stored state ten times a second \, so when the TTL expires the next frame is the meters again. Buffer 4 has SINCE been proven writable and switchable \, and is deliberately still not used: switching is edge-triggered where every layer here is state-driven \, so a lost setscreen would strand the display. See ref-display.md., f 58;
+#X text 20 580 This draws to screen 3 \, the buffer already on show \, rather than the ALERT buffer plan-v03.md suggested. There is nothing underneath to preserve: the frame is cleared and rebuilt from stored state ten times a second \, so when the TTL expires the next frame is the meters again. Buffer 4 has SINCE been proven writable and switchable \, and is deliberately still not used: switching is edge-triggered where every layer here is state-driven \, so a lost setscreen would strand the display. See ref/module/display.md., f 58;
 #X connect 1 0 2 0;
 #X connect 2 3 3 0;
 #X connect 2 2 5 0;
@@ -492,7 +492,7 @@
 #X text 20 430 Each text line is a geometry message box -- x \, y \, height -- with the words appended from a receive. pd text-out turns that into gPrintln with a typetag that fits., f 46;
 #X text 420 430 The footer holds whatever was last sent as status -- u_init at boot \, then m_nano's mode. Two writers on one bus is the documented model. The selector was called boot until it stopped being only about booting., f 46;
 #X text 820 430 Ten OSC messages a frame including the clear and the flip \, against six for the Phase 1 display. The metro period is one number in the parent if the device ever objects., f 46;
-#X text 20 560 y 0-7 readout \, 10-21 bar \, 23-25 gate mark \, 27-34 readout \, 37-48 bar \, 50-52 gate mark \, 54-61 footer. 62 of the 64 rows \, and only because the info bar is off -- see ref-display.md., f 58;
+#X text 20 560 y 0-7 readout \, 10-21 bar \, 23-25 gate mark \, 27-34 readout \, 37-48 bar \, 50-52 gate mark \, 54-61 footer. 62 of the 64 rows \, and only because the info bar is off -- see ref/module/display.md., f 58;
 #X connect 1 0 2 0;
 #X connect 2 3 3 0;
 #X connect 2 2 7 0;
@@ -636,7 +636,7 @@
 #X connect 9 0 10 0;
 #X restore 580 1010 pd meters-small;
 #X text 20 1120 THE DRAW ORDER IS THE TRIGGER ORDER \, rightmost outlet first: turn the info bar off \, clear \, draw the winning layer \, flip. gFlip last is not optional -- draw commands only set pixels in a buffer and nothing reaches the display without it., f 46;
-#X text 420 1120 gShowInfoBar goes out on EVERY frame \, not once at load. mother repaints the patch screen after loading a patch and restores the bar \, so a one-off at loadbang gets quietly undone -- ref-display.md \, trap 4., f 46;
+#X text 420 1120 gShowInfoBar goes out on EVERY frame \, not once at load. mother repaints the patch screen after loading a patch and restores the bar \, so a one-off at loadbang gets quietly undone -- ref/device/organelle.md \, Traps., f 46;
 #X text 820 1120 The 300 ms delay before the metro starts is the same one the Phase 1 display used: mother is still settling immediately after load \, and there is nothing worth drawing yet anyway., f 46;
 #X text 1220 1120 Everything that reaches the screen converges on the single s oscOut here. Everything a frame draws converges on \$0-raw or on pd text-out first \, so the one owner of the screen stays visibly one., f 46;
 #X text 20 1250 WHAT IS NOT HERE: any notion of which control moved. A layer holds a name and a value \, and m_nano in Phase 4 will send chop-size 43 % without this file learning anything about a nanoKONTROL. That separation is the point of the m_ layer and it is the one boundary that is genuinely expensive to retrofit., f 58;

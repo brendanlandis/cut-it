@@ -24,7 +24,7 @@
 #X obj 1900 760 list split 3;
 #X obj 2800 1780 oscformat cutit param;
 #X obj 2800 1830 s \$0-osc;
-#X text 2350 920 THE UNIT IS MADE MANDATORY BY CONSTRUCTION. disp carries name value and an OPTIONAL unit \, and list split 3 on exactly three atoms never fires its right outlet -- trap 3 in ref-conventions.md \, the one that makes chop-size 43 % followed by grain 12 draw as grain 12 %. Appending a dash BEFORE the split means there is always a third atom \, so the field is written on every message instead of on some. A message that already had a unit loses the spare dash out the middle outlet., f 58;
+#X text 2350 920 THE UNIT IS MADE MANDATORY BY CONSTRUCTION. disp carries name value and an OPTIONAL unit \, and list split 3 on exactly three atoms never fires its right outlet -- C-7 \, the one that makes chop-size 43 % followed by grain 12 draw as grain 12 %. Appending a dash BEFORE the split means there is always a third atom \, so the field is written on every message instead of on some. A message that already had a unit loses the spare dash out the middle outlet., f 58;
 #X obj 20 1240 loadbang;
 #X obj 20 1290 del 1600;
 #X obj 20 1340 metro 500;

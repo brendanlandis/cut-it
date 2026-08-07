@@ -1,7 +1,7 @@
 #N canvas 30 30 2300 1600 12;
 #X text 20 20 u_store -- a KEYED LINE STORE with one file behind it. Give it a list \, it replaces the line whose FIRST ATOM matches and appends if there is none. Tell it write and it writes its file \; tell it load and it reads the file into a SEPARATE text and replays every line out outlet 1 -- the live store is never wiped by a load. It knows nothing about policy \, about WHEN to write \, or about the state bus -- u_state owns all three., f 58;
 #X text 920 20 creation arg 1: the FULL PATH of its file \, absolute. inlet 1: a LIST to store \, or write \, or load. outlet 1: each stored line \, one message per line \, replayed by load. outlet 2: a bang whenever a line changed \, which is what u_state's dirty flag hangs off., f 58;
-#X text 1620 20 IT EXISTS BECAUSE THERE ARE TWO OF IT. auto and manual are the same store with different write policies \, and ref-conventions.md says anything you would copy is an abstraction rather than a duplicated subpatch -- two copies are two codebases that diverge silently., f 58;
+#X text 1620 20 IT EXISTS BECAUSE THERE ARE TWO OF IT. auto and manual are the same store with different write policies \, and C-13 says anything you would copy is an abstraction rather than a duplicated subpatch -- two copies are two codebases that diverge silently., f 58;
 #X obj 20 320 inlet;
 #X obj 20 380 route write load;
 #X obj 20 460 t b;

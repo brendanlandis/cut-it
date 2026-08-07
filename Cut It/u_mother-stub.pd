@@ -437,7 +437,7 @@
 #X msg 300 190 0;
 #X obj 300 230 s enc;
 #X text 20 300 The panel's enc+ and enc- are two bangs rather than one toggle \, because a toggle would alternate direction on every click -- which is not what an encoder does., f 58;
-#X text 20 420 aux \, encbut and the four knobs need nothing here: their iemguis send straight to the mother.pd names with no wire at all. See ref-conventions.md \, GUI binding., f 58;
+#X text 20 420 aux \, encbut and the four knobs need nothing here: their iemguis send straight to the mother.pd names with no wire at all. See ref/conventions.md \, GUI binding., f 58;
 #X connect 1 0 2 0;
 #X connect 2 0 3 0;
 #X connect 4 0 5 0;
@@ -573,8 +573,8 @@
 #X connect 13 0 14 0;
 #X restore 1140 620 pd log;
 #X text 40 680 u_mother-stub -- impersonates mother.pd when Cut It runs on the Mac \, where mother.pd does not exist \, AND is the dev panel. main-dev.pd instantiates it \; main.pd does not \, so the device never sees it., f 58;
-#X text 40 775 THE ONE SANCTIONED EXCEPTION to the reserved-name rule in ref-conventions.md -- it deliberately sends on names owned by mother.pd. That is its entire purpose., f 58;
-#X text 40 860 NO CORDS ON THE PANEL \, ON PURPOSE. Every control above binds by its iemgui SEND name -- knob1 goes straight to knob1 -- and every readout by its RECEIVE name. That is what lets the whole face render on main-dev.pd through graph-on-parent \, which draws iemguis and atom boxes and nothing else. See ref-conventions.md \, GUI binding., f 58;
+#X text 40 775 THE ONE SANCTIONED EXCEPTION to the reserved-name rule C-2 -- it deliberately sends on names owned by mother.pd. That is its entire purpose., f 58;
+#X text 40 860 NO CORDS ON THE PANEL \, ON PURPOSE. Every control above binds by its iemgui SEND name -- knob1 goes straight to knob1 -- and every readout by its RECEIVE name. That is what lets the whole face render on main-dev.pd through graph-on-parent \, which draws iemguis and atom boxes and nothing else. See ref/conventions.md \, GUI binding., f 58;
 #X text 640 680 The eight black strips are the 128x64 screen \, one per 8-pixel row \, keyed by the y coordinate of each drawing command. They are cnv objects and the text is their LABEL \, which is why pd oled-decode has to join each row into a single symbol first., f 58;
 #X text 640 800 Layout follows the real front panel: aux \, knobs 1-4 \, screen \, selector encoder \, volume \, keys underneath. Anything below this line is plumbing and is invisible on main-dev.pd., f 58;
 #X text 1240 680 The bench row is the Phase 3 acceptance run. The screen log is the answer to a boot sequence that finishes before you can look at it: click open-screen-log and read what happened., f 58;

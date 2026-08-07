@@ -183,7 +183,7 @@ repeated alert state 2/s, and the late-join repeat 1/s. ✅ **`u_net` costs abou
 Items 118 and 134.
 
 ⚠️ **The 11.2 % budget the tooling still prints is Phase 5's, and Phase 6 already exceeded it.**
-`tools/phase6-cpu.sh` reports OVER BUDGET against it, which is the script being stale rather than
+`tools/display-cpu.sh` reports OVER BUDGET against it, which is the script being stale rather than
 a regression. Compare against the row above instead.
 
 ⬜ **One set of readings is unexplained**: 10.2–10.5 % during Phase 7's session, taken shortly

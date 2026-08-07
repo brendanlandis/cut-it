@@ -33,36 +33,52 @@ what it is for.
 |---|---|---|
 | **Gate machinery** | `check-all.sh` `docs-check.py` `pd-layout-check.py` `*-assert*` `bench-gen.py` `bench-verify.py` `bench-extract.py` `bench_steps.py` `test-stubs/` | ⛔ **Keep all.** These run on every commit |
 | **Benches** — generated outputs | `phase*-bench.pd` | ⛔ **Keep, never edit.** Regenerated from `bench_steps.py` |
-| **Operational** — used by a person, not a gate | `fetch-errors.sh` `fetch-state.sh` `go.sh` `lp-live.sh` `dsp.sh` `wifi-*.sh` `phase6-cpu.sh` | **Keep.** ⚠️ Being unused by a gate is not evidence against a tool — `go.sh` is the only way to advance a bench on the device, and `lp-live.sh` rescues a stranded Launchpad |
+| **Operational** — used by a person, not a gate | `fetch-errors.sh` `fetch-state.sh` `go.sh` `lp-live.sh` `dsp.sh` `wifi-*.sh` `display-cpu.sh` | **Keep.** ⚠️ Being unused by a gate is not evidence against a tool — `go.sh` is the only way to advance a bench on the device, and `lp-live.sh` rescues a stranded Launchpad |
 | **Reference patches** — worked examples for a technique | `audio-probe/` `oled-probe/` `osc-bridge/` `status-display/` `pdparty-scene/` | **Keep, probably.** Each is the working proof behind a `ref/` claim |
 | **Stage patches** — deployed to the device's menu | `stage-patches/` | **See Job 2** — these live on the device too |
 | **One-off probes** — answered, and the answer is now in `ref/` | the rest, below | ⬅ **This is the decision** |
 
-### The probes, with what each answered
+### ✅ The probes — DONE, 2026-08-07
 
-**The test is not "is it used" — it is "would you run it again."** A probe whose answer is now a row
-on a `ref/` page and whose question cannot recur is finished.
+**The test was not "is it used" but "would you run it again."** Eighteen files went, 30 KB, every one
+with its finding already on a `ref/` page and most now asserted by a gate as well. All recoverable
+from git history.
 
-| File | Answered | Still worth keeping? |
-|---|---|---|
-| `alert-buffer-probe.pd` | The ALERT buffer works and is deliberately unused | ⬜ `tools/README.md` calls it *"the re-check if that ever gets revisited"* |
-| `lp-step0.pd` | Phase 6 Step 0 — items 82–87, the whole index map | ⬜ Re-runnable if a Launchpad is ever swapped |
-| `lp-cc-probe.pd` `lp-flicker.pd` `lp-modes.pd` `lp-monitor.pd` | The CC map, per-pad RGB, the three animations, pad echo | ⬜ Four patches, overlapping. **Probably one survivor** |
-| `404-accel.pd` `404-clock-contention.pd` `404-contend.sh` `404-drive.pd` `404-knob-rate.pd` `404-rate-sweep.pd` `404-rate.sh` | The trigger ceiling (~362/s), that it drops rather than queues, that the clock does not starve it | ⬜ **Seven files for one finding.** The finding is on `ref/device/sp404.md` |
-| `midi-monitor.pd` `midi-drive.pd` `midiout-probe.pd` | Channel blocks, `[ctlin]` firing order, `[midiout]`'s port inlet | ⬜ **July. Superseded by `m_` layers that do this for real** |
-| `panic-poke.pd` | Panic reaches the devices | ⬜ July |
-| `self-wire.pd` + `tools/wire.sh` | That a patch can wire its own ALSA MIDI at load | ⛔ **`tools/wire.sh` is a DELETE** — see below |
-| `phase3-diag.pd` | A real console for the display arbiter | **Keep** — the by-hand console pattern |
-| `volca-probe.pd` `sp404-notes.pd` | Volca CC reachability; 404 note reference | ⬜ |
-| `dsp-toggle.pd` | Paired with `dsp.sh` | **Keep** — how item 75 was isolated |
+| Deleted | Because |
+|---|---|
+| `404-accel.pd` `404-clock-contention.pd` `404-contend.sh` `404-drive.pd` `404-knob-rate.pd` `404-rate-sweep.pd` `404-rate.sh` | **Seven files for one finding** — the ~362/s ceiling, drops-not-queues, and that the clock does not starve it. On `ref/device/sp404.md`, and asserted by `sp404-assert` |
+| `midi-monitor.pd` `midi-drive.pd` `midiout-probe.pd` | July. Superseded by the `m_` layers, which do this for real and are gated |
+| `panic-poke.pd` | Panic is asserted headlessly by `sp404-assert` and `launchpad-assert` |
+| `lp-cc-probe.pd` `lp-flicker.pd` `lp-modes.pd` | Three of four overlapping Launchpad probes. **`lp-monitor.pd` survives**, the most general |
+| `volca-probe.pd` `sp404-notes.pd` `sp404-send.sh` | See the note below — they are not the seed of the device-only debugging system they look like |
+| `wire.sh` (was in `tools/`) | ⛔ **A hazard, not a probe.** A Phase 1 ancestor of `Cut It/wire.sh`, 42 lines behind, with no `2>/dev/null \|\| true` on any line — so one unplugged device aborted the whole run. It was the only same-basename pair in the repo. ⚠️ `self-wire.pd` turned out NOT to reference it: it runs `sh /tmp/wire.sh`, a runtime path, so nothing dangled and `self-wire.pd` stays untouched |
 
-⛔ **`tools/wire.sh` is not a probe, it is a hazard.** It is a Phase 1 ancestor of `Cut It/wire.sh`,
-**59 lines behind**, with no autoconnect undo and no `|| true` on any line. `ref-hardware.md` pointed
-at it for months. **It is the only same-basename pair in the repo** — swept every `.sh` / `.py` /
-`.pd` / `.txt`, and the nine `main.pd` copies are all legitimate Organelle patch folders.
+**Kept:** `lp-step0.pd` (re-runnable if a Launchpad is ever swapped), `alert-buffer-probe.pd`,
+`display-diag.pd` and `dsp-toggle.pd` + `dsp.sh` (how item 75 was isolated), `lp-monitor.pd`,
+`self-wire.pd`, every `wifi-*.sh`, `fetch-*.sh`, `go.sh`, `lp-live.sh`, `display-cpu.sh`, and the
+five reference directories.
 
-⚠️ **`self-wire.pd` names it**, so decide them together: either both go, or `self-wire.pd` is
-repointed at `Cut It/wire.sh`.
+⚠️ **AND THE TWO PHASE-NAMED SURVIVORS WERE RENAMED**: `phase6-cpu.sh` → `display-cpu.sh` and
+`phase3-diag.pd` → `display-diag.pd`. Both are about the display, and they were the last
+phase-named files in the repo.
+
+### ⬜ What the three SP-404 and Volca probes revealed, which is a v0.4 requirement
+
+They looked like the beginnings of *debugging the rig without a laptop*, and they are not:
+`sp404-send.sh` is driven from the Mac over SSH — its own header says a message box "needs a hand on
+the laptop at the same moment" — and the other two are bare patches that still need launching.
+
+**The real seed is `stage-patches/`.** Those four are menu-launchable, need no laptop, and already
+solved the two hard problems: a menu-launched patch has no console because stdout goes to tty1, so
+each writes its findings to `/sdcard/*.log` and puts instructions on the OLED.
+
+⛔ **A standalone menu patch can use the ENCODER, and Cut It cannot.** mother forwards `encbut` only
+after a patch sends `/enableEncoder`, and Cut It never does because C-5 gives `g_oled` sole ownership
+of `oscOut`. A separate debug patch is not bound by that — so it gets the encoder plus the four
+knobs, the aux button and 25 keys, where the instrument gets everything but the encoder.
+
+**Recorded in [plan-v04.md](plan-v04.md) as open work.** It is a thing to build, not a thing to
+clean up.
 
 ### What is settled and should not be re-litigated
 

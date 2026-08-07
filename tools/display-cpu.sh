@@ -1,9 +1,9 @@
 #!/bin/sh
 # item 94 -- the Phase 6 repaint budget, measured on the device.
 #
-#     ./tools/phase6-cpu.sh              # one reading
-#     ./tools/phase6-cpu.sh -n 3         # three, so you can see it settle
-#     HOST=root@192.168.1.15 ./tools/phase6-cpu.sh
+#     ./tools/display-cpu.sh              # one reading
+#     ./tools/display-cpu.sh -n 3         # three, so you can see it settle
+#     HOST=root@192.168.1.15 ./tools/display-cpu.sh
 #
 # Wraps the /proc arithmetic from ref/device-os.md -> Measuring the running patch,
 # which reads /proc rather than using top because the device has busybox. Takes

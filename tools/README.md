@@ -38,11 +38,7 @@ is a gate that eventually does not run.**
 
 | Patch | What it does |
 |---|---|
-| `midi-monitor.pd` | Prints incoming notes and CCs with their Pd channel. Use to confirm device channel offsets (device *n* → channel `(n-1)*16+1`). |
-| `midi-drive.pd` | Sweeps notes 47–62 on channel 33 to trigger SP-404 pads, and monitors incoming. |
 | `lp-monitor.pd` | Puts the Launchpad in Programmer Mode, echoes pad presses back as LEDs, prints velocity and polyphonic aftertouch. |
-| `lp-flicker.pd` | Fills the Launchpad with random monochrome noise via per-pad RGB SysEx. Press any pad to toggle grey ↔ blue. Demo, but a working reference for RGB SysEx and `until` loops. |
-| `lp-modes.pd` | Lights three pads static / flashing / pulsing — the device's three LED animation modes. |
 | `lp-step0.pd` | **Phase 6's Step 0 measurements, in one patch** — items 82–87. Prints incoming notes, **CC** and aftertouch with their channel, sends a batch colour SysEx of 64 / 99 / 120 specs, and switches layout. `lp-monitor.pd` cannot answer item 82 because it has no `[ctlin]`. Run it on the **Mac** with the Launchpad plugged in, in the foreground. |
 | `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
 
@@ -175,7 +171,7 @@ and `mode`, exactly as a controller would.
 | Patch | What it does |
 |---|---|
 | `display-bench.pd` | **The acceptance run.** Fourteen steps, **stepped by hand** — see *The benches are stepped by hand* below. Each prints what it is sending and a **PASS IF** line *before* the screen moves, including the steps whose correct result is that nothing happens. Run it in the **foreground** and watch the OLED. |
-| `phase3-diag.pd` | Counts rather than dumps. `FRAMES` and `MESSAGES` are cumulative totals printed once a second, so the rate is the gap between lines — expect +10 and +100. Printing every OSC message instead would slow down the thing being measured. |
+| `display-diag.pd` | Counts rather than dumps. `FRAMES` and `MESSAGES` are cumulative totals printed once a second, so the rate is the gap between lines — expect +10 and +100. Printing every OSC message instead would slow down the thing being measured. |
 | `alert-buffer-probe.pd` | ✅ **Answered:** draws into the ALERT buffer (screen 4), `setscreen 4`, waits six seconds, `setscreen 3`. All of it works — but `g_oled` still doesn't use buffer 4, for the reasons in [ref-display.md](../ref/module/display.md). Keep it as the re-check if that ever gets revisited. |
 
 ## `pd-layout-check.py`
@@ -269,13 +265,13 @@ stub tests itself instead of the patch.
 ## Running one
 
 ```sh
-scp tools/lp-flicker.pd root@organelle.local:/tmp/
+scp tools/lp-monitor.pd root@organelle.local:/tmp/
 
 ssh root@organelle.local
   killall pd 2>/dev/null; sleep 1
   cd /tmp
   nohup pd -alsamidi -midiindev 1,2,3,4 -midioutdev 1,2,3,4 \
-        -nogui -noaudio /tmp/lp-flicker.pd > /tmp/out.txt 2>&1 &
+        -nogui -noaudio /tmp/lp-monitor.pd > /tmp/out.txt 2>&1 &
   sleep 2
   aconnect 'Launchpad Pro MK3':0 'Pure Data':0    # -> Pd device 1, channels 1-16
   aconnect 'Pure Data':4 'Launchpad Pro MK3':0    # LEDs and SysEx back out
@@ -671,10 +667,10 @@ with no coalescer, and that build failed exactly three checks — the three rate
 and 42. No mutation had to be invented afterwards, which is the one weakness of Phase 6's
 equivalent.
 
-### `phase6-cpu.sh` — the repaint budget on the device
+### `display-cpu.sh` — the repaint budget on the device
 
 ```sh
-./tools/phase6-cpu.sh -n 3
+./tools/display-cpu.sh -n 3
 ```
 
 item 94. Wraps the `/proc` arithmetic from [../ref/device-os.md](../ref/device-os.md)

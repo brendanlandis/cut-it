@@ -139,9 +139,35 @@ untouched** — both APs remain co-channel, and one Orbi setting moves both mesh
 ### No gate covers audio
 
 ⬜ Every gate asserts on **messages**; nothing reads a signal back. `ref/module/audio.md` declares
-`**Gate:** none` and `**Bench:** none`, honestly. A headless audio gate is possible — Pd can write a
-soundfile — and it would be the first of its kind here. **It becomes worth building the moment
-`e_chop` exists.**
+`**Gate:** none` and `**Bench:** none`, honestly — and since `tempo-assert` landed it is the **only**
+page still saying so. A headless audio gate is possible — Pd can write a soundfile — and it would be
+the first of its kind here. **It becomes worth building the moment `e_chop` exists.**
+
+### ⬜ Debugging the rig with no laptop
+
+**The problem is a venue.** Every diagnostic tool this project has is driven from the Mac over SSH —
+`go.sh`, `fetch-errors.sh`, `display-cpu.sh` — and SSH needs a network, which is the exact thing that
+is missing when it matters. Three probes that looked like the start of an answer were deleted in the
+cleanup because they were not: `sp404-send.sh` ran *from* the Mac by design, and its own header said
+a message box "needs a hand on the laptop at the same moment".
+
+**The seed is `tools/stage-patches/`**, and it already solved the two hard parts:
+
+- ⛔ **A menu-launched patch has no console** — Pd runs `-nogui` and stdout goes to tty1, which VNC
+  will not show. Every stage patch therefore writes its findings to `/sdcard/*.log` and puts
+  instructions on the **OLED**. `State Probe` says so in its own header, for exactly this reason.
+- **Selecting the patch is itself the test**, in more cases than you would expect. Loading one
+  restarts Pd, which is how `AP Probe` proves the access point survives a patch change.
+
+⛔ **A standalone menu patch may use the ENCODER, and Cut It may not.** mother forwards `encbut` only
+after a patch sends `/enableEncoder`, and the instrument never does because C-5 gives `g_oled` sole
+ownership of `oscOut`. A separate debug patch is not bound by that — so it has the encoder **plus**
+four knobs, the aux button and 25 keys, where the instrument has everything but the encoder. That is
+the difference between a menu of one screen and a menu you can navigate.
+
+⬜ **Not designed yet.** What it should show, at minimum: what MIDI is arriving from each device and
+on what channel, a way to fire test output at each device, and the tail of `cut-it-err.log` — the
+three questions that currently require a laptop and a network.
 
 ---
 

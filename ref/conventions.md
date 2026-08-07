@@ -31,6 +31,7 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | **C-11** | **Grain timing is audio-domain** — `phasor~` and `vline~`, never `metro` / `line~` | [→](#timing-and-the-two-domains) |
 | **C-12** | **Report failures on `[s err]`** as `<level> <source> <text>`, text one symbol ≤ 21 chars | [→](#errors-must-reach-the-oled--built) |
 | **C-13** | **No dynamic patching, no `[value]`, no copied subpatches** | [→](#banned) |
+| **C-14** | **Edit a `#X text` by replacing the WHOLE LINE** — escaped `\;` is legal inside one, so scanning for "the next `;`" splits the comment | [→](#editing-a-pd-file-by-hand) |
 
 Prefixes: `e_` effects · `m_` device mapping · `c_` control generation · `g_` display ·
 `u_` utilities.
@@ -841,7 +842,16 @@ effort. Don't tidy and change behaviour in the same commit.
 
 ### Editing a `.pd` file by hand
 
-**Rule C-9 and C-10.** Cite it by ID from a `.pd` comment, where a link cannot be followed.
+**Rules C-9, C-10 and C-14.** Cite them by ID from a `.pd` comment, where a link cannot be followed.
+
+⛔ **C-14 — a `#X text` record cannot be edited by scanning for the next `;`.** Pd splits a file
+into records on **unescaped** semicolons, and a comment legitimately contains escaped ones (`\;`).
+Anything that rewrites a comment by finding "the next `;`" stops in the middle of it, and the tail
+becomes a record with no `#X` prefix. **This has broken the patch three times.**
+
+**Fix:** replace the whole line. `tools/pd-layout-check.py` now reports
+`MALFORMED RECORD -- does not start with '#'` on the signature, so the fault is named rather than
+showing up as a canvas-size complaint.
 
 The format is a flat, ordered record list, and three of its properties are traps. All three have
 bitten this project, most of them more than once.

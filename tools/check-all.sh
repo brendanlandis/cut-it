@@ -73,14 +73,26 @@ run "Phase 8 gate -- the data store"       ./tools/phase8-assert.sh
 run "Phase 9 gate -- the map and the output devices" ./tools/phase9-assert.sh
 
 # ---------------------------------------------------------------------------
+# ⛔ EXACTLY ONE LINE MATCHES "RESULT:", AND THAT IS DELIBERATE.
+# The old summary printed "ALL GATES PASS." on success and "FAILED:" on failure,
+# so `check-all.sh | grep -E 'ALL|FAILED'` looked like a reasonable way to read
+# it -- and it is not. That pattern matches the per-gate "--- FAILED:" lines too,
+# so a run with two red gates still scrolls past and the eye finds what it
+# expects. That happened, and a broken patch was committed with a message
+# claiming every gate passed.
+#
+# Grep for RESULT: and you get one line, or check the exit status. Both are now
+# impossible to misread.
 echo
 if [ -n "$FAILED" ]; then
     echo "=================================================================="
-    printf 'FAILED:%b\n' "$FAILED"
+    printf 'the following gates FAILED:%b\n' "$FAILED"
+    echo "=================================================================="
+    echo "RESULT: FAIL"
     exit 1
 fi
 echo "=================================================================="
-echo "ALL GATES PASS."
+echo "RESULT: PASS -- all gates."
 echo
 echo "⚠️  That is the Mac. It is not the device, and this project's own history"
 echo "    says the difference matters: Phase 6 passed 25/25 on the Mac twice and"

@@ -141,7 +141,47 @@ def seg_rect(p, q, r):
         else:       bx, by, cb = px, py, code(px,py)
     return False
 
+def malformed_records(path):
+    """Records that do not begin with '#'. There should never be any.
+
+    ⛔ THE UNESCAPED-SEMICOLON BUG, NAMED RATHER THAN GUESSED AT. Pd splits a
+    file into records on unescaped ';'. A comment legitimately contains escaped
+    ones -- '\\;' -- so anything that rewrites a '#X text' by scanning for "the
+    next ';'" stops in the MIDDLE of the comment, and the tail becomes a record
+    of its own with no '#X' prefix. Pd then errors on load.
+
+    This has broken the patch three times (item 207 twice, then once more while
+    the documentation refactor was rewriting a stale c_clock comment).
+
+    ⚠️ IT WAS ALREADY BEING CAUGHT, AND THAT IS THE POINT OF NAMING IT. The
+    orphaned fragment parses as a box far to the right, so the extent check
+    reported TOO SMALL -- a canvas-size complaint, which sends you looking at
+    the canvas. The fault is a broken comment. Cheap to detect exactly: split on
+    unescaped ';' and every record must start with '#'. Zero false positives
+    across all 21 patches.
+
+    C-14: edit a '#X text' by replacing the WHOLE LINE, never by scanning.
+    """
+    src = open(path, encoding='utf-8').read()
+    out = []
+    for rec in re.split(r'(?<!\\);', src):
+        rec = rec.strip()
+        if rec and not rec.startswith('#'):
+            out.append(rec.replace('\n', ' ')[:70])
+    return out
+
+
 def check(path):
+    bad = malformed_records(path)
+    if bad:
+        print(f"{path}")
+        for b in bad:
+            print(f"    PROBLEM MALFORMED RECORD -- does not start with '#': {b!r}")
+        print("      A '#X text' was almost certainly split by an UNESCAPED ';'.")
+        print("      Escaped semicolons are legal inside a comment and this repo")
+        print("      uses them, so never rewrite one by scanning for the next ';'")
+        print("      -- replace the whole line. See C-14.")
+        return False
     ctxs = parse(path)
     allok = True
     for ci, ctx in enumerate(ctxs):

@@ -21,6 +21,7 @@ every `C-NN` cited anywhere resolves to a rule that exists.
 | C-11 | Grain timing is audio-domain |
 | C-12 | Report failures on `[s err]` |
 | C-13 | No dynamic patching, no `[value]`, no copied subpatches |
+| C-14 | Edit a `#X text` by replacing the whole line — never scan for the next `;` |
 
 This stub exists because fourteen files — patches and tools — still name `ref-conventions.md`, and
 a `.pd` comment has no link syntax. It goes away when those citations become `C-NN`.

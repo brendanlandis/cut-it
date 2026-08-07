@@ -6,10 +6,13 @@
 document because both are *"decide what survives"* rather than *"build something"*, and both end by
 rewriting a document that describes what is left.
 
-⚠️ **Do this AFTER [plan-testing.md](plan-testing.md).** The testing refactor renames roughly 30
-files in `tools/`, so a cleanup that runs first is deciding the fate of filenames that are about to
-change — and `tools/README.md` describes the gates by their **phase** names, so rewriting it before
-the rename means rewriting it twice.
+✅ **The testing refactor has landed, so this is now the next job.** Every gate and bench moved out
+of `tools/` and into `test/`, and every one is named for the module it covers — so `tools/` is
+already down to operational scripts and one-off probes, and the filenames below will not move again.
+
+⚠️ **`tools/README.md` still describes both directories and is still organised on the phase axis.**
+It carries a banner saying so. Rewriting it is the LAST thing this job does, after the deletions,
+because it should describe what is left rather than what was.
 
 **Then [plan-v04.md](plan-v04.md)**, which is the sound.
 

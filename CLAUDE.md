@@ -49,8 +49,7 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **The testing refactor** — gates onto the module axis | [plan-testing.md](plan-testing.md) — **do this first** |
-| **The tool and device cleanup** | [plan-cleanup.md](plan-cleanup.md) — **second** |
+| **The tool and device cleanup** | [plan-cleanup.md](plan-cleanup.md) — **do this first** |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
 | One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |

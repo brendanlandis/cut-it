@@ -8,12 +8,14 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **Two scoped plans come first, in this order:**
+⚠️ **One scoped plan comes first:**
 
-1. **[plan-testing.md](plan-testing.md)** — the gates move from the phase axis to the module axis.
-   Mac-side; no device needs plugging in.
-2. **[plan-cleanup.md](plan-cleanup.md)** — `tools/` and then the Organelle itself.
-3. **This document** — the sound.
+1. **[plan-cleanup.md](plan-cleanup.md)** — `tools/` and then the Organelle itself.
+2. **This document** — the sound.
+
+✅ **The testing refactor is done.** The gates moved off the phase axis and out of `tools/`: every
+one now lives in `test/gate/`, is named for the module it covers, and every module page names a gate
+whose whole subject is that page — or `none`, honestly, where nothing tests it.
 
 **A plan is scoped to one piece of work and is deleted when the work lands.** This one is the
 exception that persists, because it is where everything unscoped waits.
@@ -174,9 +176,9 @@ ceilings are message-domain only.** ⚠️ If a stage converts that phase to ban
 the decision is which probes are finished) and the Organelle itself (three system files modified
 from factory, and a survey nobody has done).
 
-⚠️ **The order is [plan-testing.md](plan-testing.md) → [plan-cleanup.md](plan-cleanup.md) → this
-document.** The testing refactor renames ~30 files in `tools/`, so a cleanup that runs first decides
-the fate of filenames about to change.
+⚠️ **The order is [plan-cleanup.md](plan-cleanup.md) → this document.** The testing refactor is
+already done and took ~40 files out of `tools/` on its way, so the cleanup is now deciding the fate
+of probes and operational scripts only.
 
 ---
 

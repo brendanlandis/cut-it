@@ -1,6 +1,6 @@
 ---
 name: gate
-description: Building or changing a test for Cut It — a headless gate, a hardware bench, or a measurement on the device. Carries the scratch-copy and stub-rewrite pattern, why counts must be exact rather than non-zero, the ways a gate passes vacuously, and the rule that a gate is not trusted until it has been made to fail. Use before writing any phaseN-assert, docs-check or bench.
+description: Building or changing a test for Cut It — a headless gate, a hardware bench, or a measurement on the device. Carries the scratch-copy and stub-rewrite pattern, why counts must be exact rather than non-zero, the ways a gate passes vacuously, and the rule that a gate is not trusted until it has been made to fail. Use before writing anything under test/.
 ---
 
 # Building a gate for Cut It
@@ -19,25 +19,29 @@ a gate can be right about one fault and blind to another.
 
 ## The four ways a gate passes vacuously
 
-Every one of these has happened here.
+Every one of these has happened here, and the first three were all in one gate — the phase 6 grid
+gate, since split into `display-assert` and `launchpad-assert`.
 
-**1. It rewrites the wrong thing.** the old phase 6 gate rewrites `[midiout]` only. `m_volca` and
-`m_404` emit through `noteout` / `ctlout` / `pgmout`, so phase 6's rewrite finds nothing in them and
-every assertion about them would pass silently.
+**1. It rewrote the wrong thing.** It rewrote `[midiout]` only. `m_volca` and `m_404` emit through
+`noteout` / `ctlout` / `pgmout`, so it found nothing in them and every assertion about them would
+have passed silently.
 
-**2. Its regex is anchored so arguments are skipped.** `'^#X obj [0-9]* [0-9]* midiout;$'` requires
-the class name to end the line, so `[ctlout 123 33]` is invisible to it.
+**2. Its regex was anchored so arguments were skipped.** `'^#X obj [0-9]* [0-9]* midiout;$'` requires
+the class name to end the line, so `[ctlout 123]` is invisible to it — and measured on this patch,
+that regex finds **one** `ctlout` where there are **two**.
 
-**3. It asserts non-zero instead of exact.** the old phase 6 gate checks its rewrite count is not zero,
-and its own comment claims five boxes where the patch has six. **The count drifted and nothing
-noticed.** Assert an EXACT count per class:
+**3. It asserted non-zero instead of exact.** Its comment claimed five `[midiout]` where the patch
+has six. **The count drifted and nothing noticed**, because "not zero" cannot notice. There is one
+`MIDI_EXPECT` now, in `test/gate/lib-scratch.sh`, and every gate that makes a scratch copy enforces
+all of it:
 
 ```sh
-EXPECT="noteout:2 ctlout:2 pgmout:1 notein:2"
+MIDI_EXPECT="midiout:6 noteout:2 ctlout:2 pgmout:1 notein:2"
 ```
 
 A lower count means assertions have gone vacuous; a higher one means a new emitter the gate does not
-know about. Update it deliberately, never silently.
+know about. `test/gate/midi-emitters-assert.sh` asserts it on its own without Pd, so the claim has an
+owner that belongs to no device. Update it deliberately, never to make a red run green.
 
 **4. It stops seeing files.** `docs-check.py` globbed `ref/*.md`; when subdirectories appeared, seven
 of nine pages stopped being checked **and the run still said ok**. Print the count of things checked
@@ -78,10 +82,12 @@ written, Pd loads a file that does not exist, the `; pd quit` inside it never fi
 hangs forever instead of failing.** A gate that hangs is worse than one that fails. Status-check it
 and put a watchdog on every headless run.
 
-⛔ **TIME THE WINDOWS FROM BEHAVIOUR, NOT FROM THE IMPLEMENTATION.** Phase 9's gate had 23 green
+⛔ **TIME THE WINDOWS FROM BEHAVIOUR, NOT FROM THE IMPLEMENTATION.** The old map gate had 23 green
 checks and missed a boot-time race, because its windows started at 2400 ms *for the reason the code
 read its table at 2000*. **A test whose schedule is derived from the implementation cannot falsify
-it.** Add a window that runs before the thing you are assuming.
+it**, and item 234 was found by hardware instead. Every driver in `test/gate/` now opens a window
+**before** the thing it is assuming — `map-assert` at 300 ms, `sp404-assert` at 300 and 700 in both
+directions, `display-assert` at 300 with a mode nothing else in the run sets.
 
 ⚠️ **`[del 0]` still defers to the next tick.** A burst fired in one logical instant proves
 *drops-not-queues* and nothing about an interval. Test an interval with two events a real
@@ -122,9 +128,11 @@ python3 test/bench/bench-gen.py        # from test/bench/bench_steps.py, run fro
 python3 test/bench/bench-verify.py     # re-extracts the text to prove it survived
 ```
 
-⛔ **Never edit a bench `.pd` — it is an output.** Add `STEPS<N>` to `bench_steps.py`, a `PHASES`
-entry to `bench-gen.py`, and **the phase number to `bench-verify.py`'s hardcoded tuple** — miss that
-last one and the bench is generated but never fidelity-checked.
+⛔ **Never edit a bench `.pd` — it is an output.** Add `STEPS_<MODULE>` to `bench_steps.py` and a
+`BENCHES` entry to `bench-gen.py`, keyed by the output filename. **That is the whole list** —
+`bench-verify.py` derives its own from those keys, so a bench that can be generated is a bench that
+gets verified. It used to carry a hand-typed tuple as well, and missing it meant a bench was
+generated but never fidelity-checked.
 
 Step text: no `,` `;` or `$`; every `pass_if` starts with `PASS IF`; include the steps whose correct
 result is that **nothing happens**.

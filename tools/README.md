@@ -2,9 +2,13 @@
 
 ⚠️ **THE TESTS HAVE MOVED TO [`../test/`](../test/)** — `test/check-all.sh`, `test/gate/`,
 `test/bench/` and `test/stubs/`. `tools/` now holds only operational scripts and one-off probes.
-**This file still describes both**, and it is still organised on the old phase axis; splitting it is
-`plan-cleanup.md`'s job, deliberately left until after the gates finish moving onto the module axis.
-Every path below is current — `docs-check.py` would be red otherwise — but a heading may not be.
+
+**This file still describes both, and it is still organised on the old PHASE axis** — `## Phase 3`,
+`## Phase 4`, `## Phase 5` and a dozen subheadings that name a phase. The gates and benches they
+describe are all named for modules now. **Every path below is current — `docs-check.py` would be red
+otherwise — but a heading may not be.** Splitting and rewriting this file is
+[plan-cleanup.md](../plan-cleanup.md)'s last job, deliberately left until after that job decides
+which probes survive, so it describes what is left rather than what was.
 
 Standalone Pd patches for testing the rig. **Not** Organelle patches — they don't use
 `mother.pd` and aren't meant to be loaded from the device menu. They run manually over SSH so
@@ -22,9 +26,10 @@ open any of it in plugdata — see [../CLAUDE.md](../CLAUDE.md).
 ./test/check-all.sh          every gate in one command, ~40 s, exit non-zero on any failure
 ```
 
-Layout and graph structure, both entry points loading in silence, the bench step text, and the
-Phase 6 / 7 / 8 / 9 gates. **Mac only — it touches no device**, so it is safe to run at any time,
-including with the Organelle switched off.
+Layout and graph structure, both entry points loading in silence, the bench step text, the MIDI
+inventory, and one gate per module — the display arbiter, the map, the data store, the Launchpad,
+the phone, the SP-404 and the Volca. **Mac only — it touches no device**, so it is safe to run at
+any time, including with the Organelle switched off.
 
 ⚠️ **Run it before calling anything done.** Phase 8 edited `u_map`, `u_init` and `u_root` — files
 Phases 5, 6 and 7 all rest on — and came within one step of shipping without re-running *their*
@@ -232,7 +237,7 @@ selection would leave `Cut It`, so **System → Save New afterwards makes a fold
 Select the patch from the menu once before using Save New. Plain Save is unaffected — it works off
 the `/tmp/patch` symlink. Same caveat as `deploy.sh`'s own load.
 
-### `test-stubs/` — stand-ins the gates need
+### `test/stubs/` — stand-ins the gates need
 
 `t_midiout.pd` replaces `[midiout]` so a headless run can read back every byte the patch emits.
 ⚠️ **It cannot be supplied by search path**, which is why `display-assert.sh` rewrites boxes in a

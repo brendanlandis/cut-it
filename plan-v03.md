@@ -433,13 +433,14 @@ and `tools/docs-check.py` enforces all of it. None of it has to be remembered; r
 
 | | Then | Now |
 |---|---|---|
-| `ref-midi.md` | 897 | **241** |
-| `ref-display.md` | 727 | **279** |
-| `ref-hardware.md` | 697 | 620 |
-| `ref-software.md` | 455 | 351 |
-| `ref-conventions.md` | 892 | **26** (a pointer stub) |
-| `ref/` pages | — | **~2,100 across 8** |
-| `plan-tests.md` + `ref-build-log.md`, untouched | 5,112 | **5,112** |
+| `ref-conventions.md` | 892 | **27** (a pointer stub) |
+| `ref-software.md` | 455 | **33** (a pointer stub) |
+| `ref-display.md` | 727 | **19** (a pointer stub) |
+| `ref-midi.md` | 897 | **141** |
+| `ref-hardware.md` | 697 | **406** — now only the Organelle as a COMPUTER, and verify-after |
+| `ref/` pages | — | **4,092 across 16** |
+| `CLAUDE.md` | 313 | 327 — **not yet the router** |
+| `plan-tests.md` + `ref-build-log.md`, untouched | 5,112 | **5,112 — 78% of what is left at the root** |
 
 ⚠️ **`ref/` now has subdirectories.** `ref/device/` (six, fixed by the hardware) and
 `ref/module/` (one so far — **this is what v0.4 grows**). Cross-cutting pages stay flat.
@@ -469,11 +470,14 @@ schema, and `C-NN` rule-ID resolution.
 pointed at `tools/wire.sh`, a Phase 1 ancestor of `Cut It/wire.sh` — 59 lines behind, no autoconnect
 undo, no `|| true`. Found by reading, not by a gate.
 
-✅ **All five instrument pages are done** — `map`, `tempo`, `state`, `boot`, `audio`. `ref/` is
-thirteen pages.
+✅ **Every page is written.** Six device pages, six module pages — `audio`, `boot`, `display`,
+`map`, `state`, `tempo` — and three cross-cutting: `architecture`, `conventions`, `rig`.
 
-**Next, in order:** `ref/architecture.md`, `ref/device-os.md`, `ref/rig.md` — and the display
-arbiter, whose home is the one thing in §10.10 still needing a ruling — then **the journals**, then
+⚠️ **`ref/device-os.md` was NOT written, deliberately.** `ref-hardware.md` is now exactly that page
+and nothing else, and §10.8 says not to invest there until the Organelle cruft cleanup changes its
+paths. **Renaming it into `ref/` is the last step of that cleanup, not of this refactor.**
+
+**Next, in order:** **the journals** — which is now the whole of the remaining volume — then
 `CLAUDE.md` as a router, then the `.pd` comments citing `C-NN` so the `ref-conventions.md` stub can
 go.
 
@@ -481,7 +485,15 @@ go.
 lines with 281. Tables gained `Evidence` and `Item` columns, the pad map became sixteen rows instead
 of a five-line diagram, and merging overlapping sources replaced "summary + full" with one full
 statement. **The volume reduction is entirely in the journals**, which are still untouched and are
-now **58% of the root total**. Do not compress the module pages chasing it.
+now **78% of what is left at the root**. Do not compress the module pages chasing it.
+
+⛔ **AND THE LOSS CHECK IS NOT OPTIONAL — it has caught a real deletion twice.** Collapsing
+`ref-software.md` lost twelve facts, including tempo propagation in full and the reason explicit
+modes exist. Collapsing `ref-hardware.md` nearly lost four `###` subsections that had accumulated
+under *Signal flow — power* and had nothing to do with power, including the root cause of the
+Launchpad boot hang. ⚠️ **A section is not what its heading says. Read what is under it before
+deleting from heading to next `##`** — and probe 30–50 distinctive strings from the old text against
+the new pages afterwards, case- and whitespace-normalised.
 
 **Where the material for the remaining pages is:** `ref-software.md` (architecture, load-bearing
 decisions, signal architecture, timing), `ref-hardware.md` (the device itself, wifi, power, cabling,
@@ -499,7 +511,9 @@ all — `u_map`, `u_state`, `u_init` and `m_404` are the richest.
   blocks against `wire.sh`, and the answer to "how much checking is too much" turned out to be
   governed by whether the fact already exists twice in machine-readable form. Where it does, the
   check is ~25 lines and pays for itself; where it does not, no check is possible at any price.
-- ⬜ **Where does the display arbiter go?** `ref-display.md` is now 279 lines, and about 220 of them
+- ✅ **Where the display arbiter goes — RULED: its own page**, `ref/module/display.md`, built. The
+  reasoning is kept below because the same question will come up for whatever v0.4 shares between
+  two devices. `ref-display.md` was 279 lines, and about 220 of them
   are the framework rather than device fact: the `home < modal < alert` arbiter that `g_oled`,
   `g_grid` and `g_led` share, the `disp` bus protocol, and the geometry. Four files implement it.
   **Revised proposal: its own page, `ref/module/display.md`** — it is one instrument concern, which

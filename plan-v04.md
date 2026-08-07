@@ -8,14 +8,17 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **One scoped plan comes first:**
+✅ **Both scoped plans have landed, so this is the only one left.**
 
-1. **[plan-cleanup.md](plan-cleanup.md)** — `tools/` and then the Organelle itself.
-2. **This document** — the sound.
+The **testing refactor** moved the gates off the phase axis and out of `tools/`: every one lives in
+`test/gate/`, is named for the module it covers, and every module page names a gate whose whole
+subject is that page — or `none`, honestly. The **cleanup** took 18 answered probes out of `tools/`,
+cleared the Organelle's menu down to `Cut It`, backed up the two device files that had no copy, and
+verified `ref/device-os.md` against the hardware.
 
-✅ **The testing refactor is done.** The gates moved off the phase axis and out of `tools/`: every
-one now lives in `test/gate/`, is named for the module it covers, and every module page names a gate
-whose whole subject is that page — or `none`, honestly, where nothing tests it.
+⬜ **One check from the cleanup is still outstanding, and only you can run it:** *does the instrument
+still boot with the Launchpad attached?* That is the one-line test that `/root/fw_dir/scripts/mount.sh`
+survived, and it needs a power cycle at the device.
 
 **A plan is scoped to one piece of work and is deleted when the work lands.** This one is the
 exception that persists, because it is where everything unscoped waits.
@@ -143,6 +146,14 @@ untouched** — both APs remain co-channel, and one Orbi setting moves both mesh
 page still saying so. A headless audio gate is possible — Pd can write a soundfile — and it would be
 the first of its kind here. **It becomes worth building the moment `e_chop` exists.**
 
+### ⬜ Do the reference patches under `tools/*/` earn their keep
+
+`audio-probe/`, `oled-probe/`, `osc-bridge/` and `status-display/` are each the working proof behind
+a claim on a `ref/` page. That argues for keeping them. **None has been opened since its phase**,
+which argues the claim is now the artefact and the patch is not. Carried over from the cleanup
+undecided, because it is a judgement call rather than a rule. ⚠️ `pdparty-scene/` is NOT in this
+question — `ref/device/phone.md` names it as a `Files:` entry, so it is live.
+
 ### ⬜ Debugging the rig with no laptop
 
 **The problem is a venue.** Every diagnostic tool this project has is driven from the Mac over SSH —
@@ -202,15 +213,19 @@ ceilings are message-domain only.** ⚠️ If a stage converts that phase to ban
 
 ---
 
-## 5. The two cleanups still queued
+## 5. ✅ The two cleanups, done
 
-**Both are planned in [plan-cleanup.md](plan-cleanup.md)** — the `tools/` directory (89 files, and
-the decision is which probes are finished) and the Organelle itself (three system files modified
-from factory, and a survey nobody has done).
+`tools/` went from 89 files to **28**, all of them run by a person. The tests are in `test/`. The
+device menu holds **`Cut It` alone**, and the three factory-modified system files are all backed up
+in [device/](device/) now that `pdsettings.orig` is there too.
 
-⚠️ **The order is [plan-cleanup.md](plan-cleanup.md) → this document.** The testing refactor is
-already done and took ~40 files out of `tools/` on its way, so the cleanup is now deciding the fate
-of probes and operational scripts only.
+⚠️ **The survey corrected the plan that asked for it**, which is the usual pattern here:
+`/root/Pd/externals` turned out to be entirely factory stock rather than something this project
+modified, `/root` held no debugging debris at all, `/sdcard/PdExtraLibs` did not exist despite being
+documented as on Pd's search path, and the four stage patches on the device were a different four
+from the ones in the repo.
+
+⬜ **The one outstanding check is in §1** — booting with the Launchpad attached.
 
 ---
 

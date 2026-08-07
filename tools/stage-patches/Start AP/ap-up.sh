@@ -17,7 +17,8 @@
 # is in ref/device-os.md.
 #
 # start-ap.sh reads $USER_DIR/ap.txt: first line network, last line password,
-# defaulting to Organelle / coolmusic. Ours says organelle / definitelycutit.
+# defaulting to Organelle / coolmusic. Ours says organelle, with the password in
+# that file -- deliberately not repeated here, because this repo is public.
 # It runs `killall wpa_supplicant` first, so ANY existing wifi connection drops
 # -- including the one an ssh session is riding on. That is expected here.
 setsid nohup /root/fw_dir/scripts/start-ap.sh >/tmp/ap.log 2>&1 &

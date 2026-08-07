@@ -384,7 +384,7 @@ exercises only the half that works.
 **This is the stage configuration**, and it is the vendor's own path rather than a `hostapd`
 project. `start-ap.sh` reads `$USER_DIR/ap.txt` — first line network, last line password — and
 calls `create_ap --no-virt -n wlan0 $NET $PW`, defaulting to `Organelle` / `coolmusic`. This rig
-uses **`organelle` / `definitelycutit`**, and the phone leases **192.168.12.109** from it.
+uses **`organelle`**, with the password in `/sdcard/ap.txt` on the device, and the phone leases **192.168.12.109** from it.
 
 **The venue sequence — no laptop, no venue wifi, phone in airplane mode:**
 

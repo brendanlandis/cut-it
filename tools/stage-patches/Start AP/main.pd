@@ -1,4 +1,4 @@
-#N canvas 40 40 1400 800 12;
+#N canvas 40 40 1400 1000 12;
 #X text 20 20 Start AP -- brings up the Organelle's own access point from the FRONT PANEL. This is the piece that makes a venue with no wifi workable: without it the AP can only be started over ssh \, and ssh needs a network \, which is the thing you do not have., f 58;
 #X text 620 20 IT IS NOT AN INSTRUMENT. It makes no sound and touches no bus -- it runs one script and puts instructions on the screen. Select it \, join the phone \, then select Cut It. THE ACCESS POINT OUTLIVES THIS PATCH \, which is the whole trick -- see ap-up.sh., f 58;
 #X text 20 180 THE COMMAND LIVES IN A SHELL SCRIPT \, NOT A MESSAGE BOX. Pd atomises a message on spaces and the shell external rejoins it \, so quoting and redirection do not survive the trip. tools/README.md records that as a rule after it bit once already., f 58;
@@ -13,11 +13,11 @@
 #X obj 320 470 s screenLine1;
 #X msg 620 420 symbol organelle;
 #X obj 620 470 s screenLine2;
-#X msg 860 420 symbol definitelycutit;
+#X msg 860 420 symbol see-sdcard-ap-txt;
 #X obj 860 470 s screenLine3;
 #X msg 1120 420 symbol join-then-load-CutIt;
 #X obj 1120 470 s screenLine4;
-#X text 20 680 THE SCREEN IS THE INSTRUCTIONS. At a venue there is no laptop and no notes \, so the network name and the password go on the OLED where they are actually needed. Five lines \, 21 characters each \, monospace., f 58;
+#X text 20 680 THE SCREEN IS THE INSTRUCTIONS. At a venue there is no laptop and no notes \, so the network name and the password go on the OLED where they are actually needed. Five lines \, 21 characters each \, monospace., f 58 ⛔ THE PASSWORD LINE IS A PLACEHOLDER \, not the real one -- this repo is public. The live value is the last line of /sdcard/ap.txt \, which is what start-ap.sh itself reads. ⚠️ This patch is a RECORD of an approach that does not work (see ap-up.sh) \, so the placeholder costs nothing. Anything that revives it should read ap.txt rather than hardcode a secret., f 58;
 #X text 620 560 THE SCREEN IS WRITTEN BEFORE THE SCRIPT RUNS -- right outlet first. start-ap.sh kills wpa_supplicant \, and a patch that had not drawn yet would leave the panel blank at the exact moment the network disappears., f 46;
 #X connect 3 0 4 0;
 #X connect 4 1 9 0;

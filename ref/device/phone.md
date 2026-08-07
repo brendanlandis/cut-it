@@ -67,7 +67,7 @@ without redesign.
 | Fact | Evidence | Item |
 |------|----------|------|
 | The Organelle hosts the network itself — `start-ap.sh` reads `$USER_DIR/ap.txt` and calls `create_ap`, and **`Start AP` is already in System → WiFi Setup**. It is the vendor's own path, not a hostapd project | verified | — |
-| The rig runs `organelle` / `definitelycutit`; two clients joined and the phone display worked over it | verified | — |
+| The rig runs `organelle`, password in `/sdcard/ap.txt`; two clients joined and the phone display worked over it | verified | — |
 | **The AP has no internet** — `create_ap` is called with `-n` and the Organelle has one radio, so it cannot be both AP and client | verified | — |
 | Airplane mode then re-enabling WiFi is standard iOS behaviour — cellular stays off, WiFi works, the setting persists | verified | — |
 

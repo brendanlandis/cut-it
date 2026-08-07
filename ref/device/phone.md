@@ -285,4 +285,4 @@ in the patch.
 - ⬜ **Guided Access is not set up**, so a stray swipe can drop you out of the scene mid-set. Rate
   limiting, the `nbx` chrome and the Organelle-hosted access point are all done — the venue sequence
   runs with no laptop and no venue WiFi, and the phone joins in airplane mode. This is the last
-  count, and it is not code. See [plan-v03.md](../../plan-v03.md) §4.
+  count, and it is not code. See [plan-v04.md](../../plan-v04.md) §3.

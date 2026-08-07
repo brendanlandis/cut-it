@@ -152,4 +152,4 @@ to the wrong place. **The SP-404 has ten and cannot use this** — see
 
 - ⬜ **Nothing on this page has ever been read back off the wire, and nothing ever can be.** The
   strongest available evidence class for this device is a controlled A/B by ear. That is recorded
-  here as a permanent limitation rather than as work to do — see [plan-v03.md](../../plan-v03.md) §4.
+  here as a permanent limitation rather than as work to do — see [plan-v04.md](../../plan-v04.md) §3.

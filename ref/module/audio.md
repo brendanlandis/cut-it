@@ -129,8 +129,8 @@ Revisit if wanted; it needs no rewiring beyond one cable from FX SEND.
 ## Open
 
 - ⬜ **There is no DSP yet.** The chain is input → level tap → output, and the four filter stages,
-  the drum mode and the sampler are v0.4. See [plan-v03.md](../../plan-v03.md) §4.
+  the drum mode and the sampler are v0.4. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **Nothing measures the output side.** Both `u_level` instances are on the input; a tap before
-  `throw~` would need the stages to exist first. See [plan-v03.md](../../plan-v03.md) §4.
+  `throw~` would need the stages to exist first. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **No gate covers audio.** Every existing gate asserts on messages, and nothing reads a signal
-  back. See [plan-v03.md](../../plan-v03.md) §4.
+  back. See [plan-v04.md](../../plan-v04.md) §3.

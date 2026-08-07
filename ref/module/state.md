@@ -221,7 +221,7 @@ this file is that `saveState` is what triggers a `manual` commit.
 ⛔ **`Storage → Save New` is dropped and is not part of this design.** It duplicates the entire patch
 folder under a numbered name, making preset variants separate menu entries — the wrong paradigm here,
 where a preset is a **record inside the store**. Recorded so it is not rediscovered as an option; see
-[plan-v03.md](../../plan-v03.md) *Deliberately deferred*, and item 144 for what it does.
+[plan-v04.md](../../plan-v04.md) *Deliberately deferred*, and item 144 for what it does.
 
 ### A sample can be written inside mother's budget, but not unboundedly
 
@@ -254,6 +254,6 @@ as decisions rather than left to whoever writes the capture.
 
 - ⬜ **Only one key is stored today.** `mode`, from `u_map`. The pattern store, the presets and the
   filter-stage parameters are v0.4, and each brings its own key and its own policy. See
-  [plan-v03.md](../../plan-v03.md) §4.
+  [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **Nothing uses the `manual` policy yet.** It is proven by the gate and by a deliberately-late
-  test contributor, not by a real one. See [plan-v03.md](../../plan-v03.md) §4.
+  test contributor, not by a real one. See [plan-v04.md](../../plan-v04.md) §3.

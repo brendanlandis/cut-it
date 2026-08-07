@@ -195,6 +195,6 @@ only one today; the v0.4 filter stages are the reason the prefix exists.
 
 - ⬜ **`e_` has no members yet.** The four filter stages, the drum mode and the sampler are v0.4, and
   they are the first thing to sit *between* `u_map` and the audio chain rather than beside it. See
-  [plan-v03.md](../plan-v03.md) §4.
+  [plan-v04.md](../plan-v04.md) §3.
 - ⬜ **Nothing composes two `c_clock` instances yet.** Poly-tempo is built and has one consumer. See
-  [plan-v03.md](../plan-v03.md) §4.
+  [plan-v04.md](../plan-v04.md) §3.

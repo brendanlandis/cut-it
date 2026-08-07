@@ -272,7 +272,7 @@ contradicts the "Pd sequences everything, timing rides in note events" decision 
 [architecture.md](architecture.md).
 
 **So `u_tempo` must be a master reference *plus* an instantiable `c_clock`, never a singleton.**
-The cost of getting that wrong is tracked as a risk in [plan-v03.md](plan-v03.md).
+The cost of getting that wrong is tracked as a risk in [plan-v04.md](plan-v04.md).
 
 ---
 
@@ -618,7 +618,7 @@ Six phases have used the same shape and it is worth stating rather than rediscov
    in doubt.
 6. **A landing checklist**, and it is not optional — see *Where the abstractions go* and the
    doc-hygiene rules in [CLAUDE.md](CLAUDE.md). Finished work moves to
-   the git history; the phase's section *leaves* [plan-v03.md](plan-v03.md)
+   the git history; the phase's section *leaves* [plan-v04.md](plan-v04.md)
    rather than being annotated; superseded designs are replaced, not annotated beside their
    replacement; anything unresolved moves to *Open questions*; and a new
    commit records the measurements, with items numbered **after the last used
@@ -737,7 +737,7 @@ item 143.
 
 The decomposition that follows from all of the above — which abstraction exists and what each
 holds — is [architecture.md](architecture.md), and the order the remaining ones
-get built in is [plan-v03.md](plan-v03.md)'s *The shape of v0.3*.
+get built in is [plan-v04.md](plan-v04.md)'s *The shape of v0.3*.
 
 The one boundary worth restating here, because it constrains how everything else may be
 written: **the `m_` layer separates device mapping from everything it controls.** Nothing in

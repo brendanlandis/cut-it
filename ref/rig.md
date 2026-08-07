@@ -186,7 +186,7 @@ Recorded so it is not rediscovered as news.
 
 ## Cabling
 
-**What is still to buy is in [plan-v03.md](../plan-v03.md)** under *Still to acquire*; power supplies
+**What is still to buy is in [plan-v04.md](../plan-v04.md)** under *Still to acquire*; power supplies
 are all covered.
 
 | Cable | Connects |
@@ -208,7 +208,7 @@ cable; the 404 has its PSD adapter.
 
 - ⬜ **The only routing that depends on a menu rather than a cable is on the 404** — ExtIn
   monitoring, bus assignments, input FX. A pre-set checklist for that box is deferred; see
-  [plan-v03.md](../plan-v03.md) §4.
+  [plan-v04.md](../plan-v04.md) §3.
 - ⬜ **Organelle audio back into the 404 was considered and dropped**, using the mixer's FX send as a
   variable-gain feedback path. It needs no rewiring beyond one cable from FX SEND. See
-  [plan-v03.md](../plan-v03.md) §4.
+  [plan-v04.md](../plan-v04.md) §3.

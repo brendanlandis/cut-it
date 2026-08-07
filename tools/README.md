@@ -397,7 +397,7 @@ and that was never measured.
 | `wifi-reassociate.sh` | **Rung 3, and runnable by hand.** Mirrors what the front panel's own `wifi_control.py` does, with the real credentials from `/sdcard/wifi.txt`. ⚠️ **bash, not sh** — it uses process substitution and the device's `/bin/sh` is busybox ash. |
 | `wifi-poll.sh` | **Runs on the Mac.** Leave it in a terminal. Redraws a small block every minute and answers one question: *anything new since I started, y/n.* Rings the bell and raises a macOS notification. |
 | `wifi-report.sh` | Pulls the evidence off the device and summarises it. **`--mark` first**, then it reports only what happened after the mark. |
-| `../plan-v03.md` | What each outcome **means** and what to do about it. Hand it to an agent along with `wifi-report.sh`'s output. |
+| `../plan-v04.md` | What each outcome **means** and what to do about it. Hand it to an agent along with `wifi-report.sh`'s output. |
 
 **The two probes are the point of the current rig**, because they split the fault before anything
 tries to repair it:

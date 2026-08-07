@@ -115,5 +115,5 @@ if [ "${1:-}" = "--full" ]; then
 fi
 
 echo
-echo "Next: hand this to an agent along with plan-v03.md, which says"
+echo "Next: hand this to an agent along with plan-v04.md, which says"
 echo "what each outcome means and what to do about it."

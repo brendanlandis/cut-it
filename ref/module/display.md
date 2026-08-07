@@ -311,7 +311,7 @@ does not change:
 ## Open
 
 - ⬜ **Nothing arbitrates the phone.** `u_net` mirrors `disp` and the phone decides what to show, so
-  the priority model stops at the Organelle. See [plan-v03.md](../../plan-v03.md) §4.
+  the priority model stops at the Organelle. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **`g_led` has no layers at all** — it takes the last state sent. Whether it needs a TTL has not
   come up, because nothing yet sends a transient LED state. See
-  [plan-v03.md](../../plan-v03.md) §4.
+  [plan-v04.md](../../plan-v04.md) §3.

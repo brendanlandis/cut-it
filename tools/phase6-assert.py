@@ -209,7 +209,7 @@ def main():
                    "10, a left-column ring button. Cosmetic and Mac-only: on the "
                    "device mother enables DSP at 200 ms so beats are already "
                    "flowing by the time ownership rises at ~3 s. Tracked in "
-                   "plan-v03.md" % problem)
+                   "plan-v04.md" % problem)
 
     # ---- home, and the mode lamp ------------------------------------------
     for mark, expect_lamp in (("home-mode-1", 91), ("home-mode-4", 94),

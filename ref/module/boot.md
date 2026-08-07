@@ -225,7 +225,7 @@ only way to know from the patch side whether anything answered.
 
 - ⬜ **Nothing detects a device that failed to wire.** A stage name means the sequence reached that
   point, not that hardware answered, and there is no readback into the patch. See
-  [plan-v03.md](../../plan-v03.md) §4.
+  [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **A replug after boot destroys the ALSA links** and only the Launchpad has a recovery path
   today — `m_launchpad`'s bounded `wire.sh` retry. See [launchpad.md](../device/launchpad.md) and
-  [plan-v03.md](../../plan-v03.md) §4.
+  [plan-v04.md](../../plan-v04.md) §3.

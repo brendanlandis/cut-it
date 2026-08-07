@@ -105,7 +105,7 @@ snap() {
 }
 
 # ⚠️ THE PROBE THAT SPLITS THE DECISION TREE, and the reason it exists.
-# plan-v03.md sends UNRECOVERED straight to the spare-card A/B, on the
+# plan-v04.md sends UNRECOVERED straight to the spare-card A/B, on the
 # reasoning that a different radio proves nothing if the fault is DHCP-side.
 # That fork had never actually been TESTED. A static address during the failure
 # settles it outright:

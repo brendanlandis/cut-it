@@ -205,7 +205,7 @@ defensible on a fader you are already holding and much weaker at boot, on a cont
 touched. **Nothing on the instrument can detect this**: mother reports
 position, not whether the position still matches the file. It happens on every boot rather than only
 on a bank switch, and it is the concrete case for parameter pickup in
-[plan-v03.md](../../plan-v03.md) §4.
+[plan-v04.md](../../plan-v04.md) §3.
 
 ⚠️ **Cut It does not deliver its data this way.** `u_state` writes straight to `/sdcard` with an
 absolute path, so nothing it does has to finish inside the sleep. The only part that reaches the
@@ -368,4 +368,4 @@ table and nothing else, since a commit from a Launchpad pad would have no screen
 
 - ⬜ **Whether the serial overruns and the OLED lag share a cause is unmeasured.** `dmesg` carries
   continuous `imx-uart 2020000.serial: Rx FIFO overrun` on **the same serial link to the front
-  panel**. Recorded rather than asserted. Item 173 — see [plan-v03.md](../../plan-v03.md) §4.
+  panel**. Recorded rather than asserted. Item 173 — see [plan-v04.md](../../plan-v04.md) §3.

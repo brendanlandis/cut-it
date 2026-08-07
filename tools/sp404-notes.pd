@@ -13,7 +13,7 @@
 #X obj 430 330 noteout 1;
 #X obj 700 190 t f f;
 #X obj 810 230 print CHAN;
-#X text 30 20 SP-404 PAD NOTE MAP -- the measurement that gates every line of m_404. plan-v03 said pad n = note 47+n \, measured from pads 1 and 2 ONLY \, while Roland's chart said MIDI mode A is 35-51. BOTH WERE WRONG: the range is 36-51 \, ascending from the bottom-left four per row \, which is the standard MPC/GM drum grid. Items 190-192., f 100;
+#X text 30 20 SP-404 PAD NOTE MAP -- the measurement that gates every line of m_404. plan-v04 said pad n = note 47+n \, measured from pads 1 and 2 ONLY \, while Roland's chart said MIDI mode A is 35-51. BOTH WERE WRONG: the range is 36-51 \, ascending from the bottom-left four per row \, which is the standard MPC/GM drum grid. Items 190-192., f 100;
 #X text 30 380 RECEIVE -- what the 404 TRANSMITS. RX-NOTE prints note \, velocity \, CHANNEL. THE CHANNEL IS PRINTED FOR A REASON \, and it earned its place: a recorded pattern played back with note 51 arriving on CHANNEL 2 while everything else was on channel 1. Pd numbers channels by its own INPUT SLOT \, not the device's place in the system list -- here the 404 is system device 2 and the Scarlett is 1 \, so -midiindev 2 opens it as Pd's FIRST slot and it arrives on channel 1. On the Organelle the same pad is channel 33., f 100;
 #X text 430 390 SEND -- fired from the shell over UDP 9997 so nobody has to click a message box while also watching the pads:, f 56;
 #X text 430 450 ./tools/sp404-send.sh 48 sends note 48 on the current channel. ./tools/sp404-send.sh 48 2 sets the channel to 2 first -- which is how the bank-to-channel question gets answered., f 56;

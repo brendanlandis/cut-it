@@ -45,7 +45,7 @@ THE CHECKS
               a DECISION PERMANENT rather than a one-time sweep:
 
                 no ⬜ outside an `Open` section, so open work keeps exactly one
-                home. Three documents pointed at `plan-v03.md` §4 for months
+                home. Three documents pointed at `plan-v04.md` §4 for months
                 while that section did not exist.
 
                 no ✅ in any heading. An evidence marker never rots; a
@@ -271,7 +271,7 @@ def check_anchors(verbose):
                 fenced = not fenced
                 continue
             # ⛔ An anchor inside a fence is an EXAMPLE of the syntax, not a check.
-            # plan-v03.md documents this gate and contains one; reading it as live
+            # plan-v04.md documents this gate and contains one; reading it as live
             # made the gate fail on its own documentation.
             if fenced:
                 continue
@@ -487,10 +487,10 @@ def check_shape(verbose):
                 continue
             if not (bounds['Open'] < i < ends['Open']):
                 out.append(f'{rel}:{i + 1}  ⬜ outside the Open section. Uncertainty is '
-                           f'recorded here; what to DO about it lives in plan-v03 §4')
-            elif 'plan-v03.md' not in ln and not any(
-                    'plan-v03.md' in marked[j][0] for j in range(i, min(i + 4, ends['Open']))):
-                out.append(f'{rel}:{i + 1}  ⬜ in Open with no link to plan-v03.md')
+                           f'recorded here; what to DO about it lives in plan-v04 §4')
+            elif 'plan-v04.md' not in ln and not any(
+                    'plan-v04.md' in marked[j][0] for j in range(i, min(i + 4, ends['Open']))):
+                out.append(f'{rel}:{i + 1}  ⬜ in Open with no link to plan-v04.md')
 
     if verbose and pages:
         print(f'  {pages} ref/ page(s) matched their schema')

@@ -250,6 +250,6 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
 ## Open
 
 - ⬜ **Live re-assignment — editing a mapping from the instrument rather than the file — is v0.4**,
-  and it brings its own persistence with it. See [plan-v03.md](../../plan-v03.md) §4.
+  and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **The mode names are placeholders.** `mode-1`…`mode-6` say nothing about what each mode is for,
-  and the sound work is what will name them. See [plan-v03.md](../../plan-v03.md) §4.
+  and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.

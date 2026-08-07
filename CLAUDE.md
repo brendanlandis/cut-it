@@ -8,9 +8,9 @@ every control assignable: `u_map` looks a control's meaning up **per mode** from
 output devices are wired in. The instrument can be told *"in Mode A, moving this fader does X"* in
 one row of `Cut It/cut-it-map.txt`.
 
-**[plan-v03.md](plan-v03.md) holds only what is OPEN.** Its §10 is the current work — a
-documentation refactor — and the sound (four filter stages, the drum mode, the sampler) is v0.4 and
-comes after it. v0.1 is superseded and kept only for reference.
+✅ **The documentation refactor is done** — 10 root files and ~10,300 lines of prose became 2 files
+and 18 `ref/` pages, held together by `tools/docs-check.py`. **v0.4 is the sound**: four filter
+stages, the drum mode, the sampler. v0.1 is superseded and kept only for reference.
 
 **This file is a router.** It says where to look, not what is true.
 
@@ -48,7 +48,8 @@ chooses to use it.
 
 | Looking for | Go to |
 |---|---|
-| **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v03.md](plan-v03.md) — **the only plan document** |
+| **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
+| **The testing refactor**, scoped and ready to hand off | [plan-testing.md](plan-testing.md) |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
 | One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
@@ -122,9 +123,14 @@ is master tempo. Nothing on the instrument can detect it. See
 
 ## How the documentation works
 
-**`ref/` states what IS. `plan-v03.md` states what is OPEN.** If you find yourself writing "we
-should…" in a `ref/` page, it belongs in the plan. If you find yourself writing "and it works" in the
-plan, its section should have left the file.
+**`ref/` states what IS. A `plan-` document states what is OPEN.** If you find yourself writing "we
+should…" in a `ref/` page, it belongs in a plan. If you find yourself writing "and it works" in a
+plan, that section should have left the file.
+
+⚠️ **A plan is scoped to one piece of work and is DELETED when the work lands** — `plan-v02` and
+`plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
+is where everything unscoped waits; [plan-testing.md](plan-testing.md) dissolves when the testing
+refactor is done.
 
 **A fact appears once in full; everywhere else it is a citation.** `tools/docs-check.py` enforces
 what can be enforced — run it rather than trying to remember it:

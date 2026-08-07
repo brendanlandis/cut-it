@@ -270,7 +270,7 @@ not back it up.
 **Adding a second network is the cheap way to a self-contained stage link**, and much lower risk
 than `hostapd`: the Organelle simply joins whichever is present and **SSH survives**, where
 bringing up an AP drops it. ⚠️ **An iPhone Personal Hotspot needs cellular**, so it cannot be
-combined with airplane mode — the two are mutually exclusive. See [plan-v03.md](../plan-v03.md).
+combined with airplane mode — the two are mutually exclusive. See [plan-v04.md](../plan-v04.md).
 
 ### The tools that watch it
 
@@ -291,7 +291,7 @@ scans and relaunches in one command kills its own session.
 
 **On house wifi the device loses its IPv4 lease and does not get it back.** Open since Phase 6 and
 misdiagnosed for two of them. ⚠️ **It is narrowed, not solved** — what remains open, and what is
-being waited for, is in [plan-v03.md](../plan-v03.md). The measurements are in *The evidence, item by
+being waited for, is in [plan-v04.md](../plan-v04.md). The measurements are in *The evidence, item by
 item* below.
 
 ✅ **The fault is a ROAM breaking a RUNNING `dhcpcd`.** The device roams between the two AP radios,
@@ -444,7 +444,7 @@ connects, `/usbdrive` stays unmounted. Factory version kept at
 
 **If it ever recurs:** `umount /usbdrive` clears it, no reboot needed. ⬜ Whether Novation
 Components can disable the onboarding drive on the Launchpad itself is untried and tracked in
-[plan-v03.md](../plan-v03.md).
+[plan-v04.md](../plan-v04.md).
 
 
 ## Device capabilities

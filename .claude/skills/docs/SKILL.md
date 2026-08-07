@@ -1,6 +1,6 @@
 ---
 name: docs
-description: Writing or editing documentation for Cut It — anything under ref/, CLAUDE.md, or plan-v03.md. Carries the page schema, how a Trap is written, the five permitted markers, the anchor syntax for facts the patch also holds, and what to do with material that fits no section. Use before adding or restructuring any documentation page.
+description: Writing or editing documentation for Cut It — anything under ref/, CLAUDE.md, or a plan- document. Carries the page schema, how a Trap is written, the five permitted markers, the anchor syntax for facts the patch also holds, and what to do with material that fits no section. Use before adding or restructuring any documentation page.
 ---
 
 # Writing documentation for Cut It
@@ -28,7 +28,7 @@ python3 tools/docs-check.py -v
 | `ref/device/` | One physical thing each. **Fixed set** — the hardware decides it | `module` |
 | `ref/module/` | One instrument concern each. **This is what v0.4 grows** | `module` |
 | `ref/` | Cross-cutting: `conventions`, `architecture`, `README` | `rules` / `freeform` |
-| `plan-v03.md` | Everything open. **`ref/` states what IS; the plan states what's OPEN** | — |
+| `plan-*.md` | Everything open. **`ref/` states what IS; a plan states what's OPEN.** A plan is scoped to one piece of work and is **deleted when it lands** — `plan-v04.md` is the standing one | — |
 
 ⚠️ Adding a page means adding it to `ref/README.md`'s index. The gate asserts the index lists
 exactly what exists.
@@ -47,7 +47,7 @@ Line 1 declares the schema. `##` is the fixed skeleton and must appear exactly, 
 ## Facts          schema'd tables, every one with Evidence and Item columns
 ## Traps          what will bite you
 ## Design         how Cut It uses it, and why
-## Open           unknowns only, each linking to plan-v03.md §4
+## Open           unknowns only, each linking to plan-v04.md §3
 ```
 
 **What it is / Facts / Traps are about the THING. Design is about US.** That distinction is why
@@ -63,7 +63,7 @@ not the clock"*, `state` opens *"it knows nothing about what any key MEANS"*, `m
 of parts.** This one is a form, not a gate — nothing can check that the right decision was chosen.
 
 ⚠️ **`Design` holds what is DECIDED, not what is planned.** A table of features that do not exist is
-intent, and belongs in `plan-v03.md`.
+intent, and belongs in `plan-v04.md`.
 
 ⚠️ **Every path on that line must exist**, so a page cannot outlive the abstraction it documents.
 `none` is a legitimate answer to `Gate` or `Bench`.

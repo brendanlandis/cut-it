@@ -2,7 +2,7 @@
 #X text 20 20 u_err -- the error bus. Any abstraction reports a problem with [s err] and a message box: <level> <source> <text> \, where level is warn or fail. u_err decides what reaches the screen \; g_oled decides what it looks like., f 58;
 #X text 20 110 creation args: none. inlets: none. outlets: none., f 58;
 #X declare -path ../mac-stubs;
-#X text 20 150 U_ERR DOES NOT DRAW. C-5 allows exactly one abstraction to send on oscOut \, and that is g_oled \, so this forwards onto disp as alert <level> <source> <text> instead. plan-v03.md says u_err draws to the ALERT buffer \; where the two disagree the convention wins -- two writers \, one screen., f 58;
+#X text 20 150 U_ERR DOES NOT DRAW. C-5 allows exactly one abstraction to send on oscOut \, and that is g_oled \, so this forwards onto disp as alert <level> <source> <text> instead. plan-v04.md says u_err draws to the ALERT buffer \; where the two disagree the convention wins -- two writers \, one screen., f 58;
 #X obj 20 300 r err;
 #X obj 20 340 t a a a;
 #X obj 20 400 route warn fail;

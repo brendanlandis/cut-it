@@ -112,7 +112,7 @@ on its first can-it-fail run. Reintroduce the bug, watch it go red, revert.
 | `ref/device/<name>.md` | Everything about one device — messages, traps, how Cut It uses it |
 | `ref/module/<name>.md` | One instrument concern |
 | `CLAUDE.md` | Repo layout, working notes, the device itself |
-| `plan-v03.md` | The only plan document. §4 is every open question |
+| `plan-v04.md` | The only plan document. §4 is every open question |
 
 **Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and the
 whole instrument is there — `u_mother-stub` draws the front panel inline and fakes the knobs, keys,

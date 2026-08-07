@@ -292,10 +292,10 @@ and costs no buttons.
 
 - ⬜ **The watchdog cannot recover a device that was absent at load.** A replug destroys the ALSA
   links outright on the Organelle, and the bounded `wire.sh` recovery does not cover the
-  never-connected case. Item 235 — see [plan-v03.md](../../plan-v03.md) §4.
+  never-connected case. Item 235 — see [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **The animation rate has its own range, not pinned down.** Past an upper and a lower limit the
   device reverts to a default rate instead of tracking, and a Start makes it dip briefly before
   settling — the same shape as the 404's 40–200 window. The pulse stream itself is known good. Item
-  77 — see [plan-v03.md](../../plan-v03.md) §4.
+  77 — see [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **Whether the device announces a mode change made by hand in Live Mode** is unmeasured. Item
-  100 — see [plan-v03.md](../../plan-v03.md) §4.
+  100 — see [plan-v04.md](../../plan-v04.md) §3.

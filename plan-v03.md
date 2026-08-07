@@ -35,18 +35,22 @@ that sentence is one row of `Cut It/cut-it-map.txt`.
 
 ## 2. What to read, and how much
 
-**Do not read everything.** The reference docs total ~4000 lines. Read in this order:
+**Do not read everything.** ⚠️ **The documentation was restructured in §10 and the old advice is
+obsolete** — `ref-conventions.md`, `ref-midi.md`, `ref-software.md` and `ref-display.md` are now
+pointer stubs holding nothing. Read in this order:
 
 | Document | How much | Why |
 |---|---|---|
-| **[CLAUDE.md](CLAUDE.md)** | **All of it (~280 lines)** | Hard constraints, the file layout, working notes. Non-optional |
-| **[ref-conventions.md](ref-conventions.md)** | **"The rules, in one screen" table, then the sections it links** | How the Pd is written. `$0`, the global allowlist, `[trigger]` discipline, the four `route` traps, the banned list. **Read before writing Pd** |
-| **[ref-midi.md](ref-midi.md)** | **The addressing model + the section for the device you are touching** | Every CC, note and SysEx each device accepts. Skip the devices you are not working on |
-| **[ref-software.md](ref-software.md)** | **Architecture + Load-bearing decisions (~100 lines)** | What the patch is made of and why. The rest is v0.4 design |
-| **[ref-hardware.md](ref-hardware.md)** | **"The device itself" + whatever rig section applies** | SSH, paths, how Pd launches, how to measure the running patch |
-| **[ref-build-log.md](ref-build-log.md)** | **The corrections in each phase section** | ⚠️ **Every phase produced at least one correction to something a plan asserted.** This is the highest-value-per-line document in the repo |
-| **[ref-display.md](ref-display.md)** | Only if touching a display surface | OLED, Launchpad LEDs, aux LED, phone |
-| **[plan-tests.md](plan-tests.md)** | **Never read start to finish (~3500 lines).** Grep for the item number you were cited | The evidence ledger. Items are cited bare as "item 133" across every document |
+| **[CLAUDE.md](CLAUDE.md)** | **All of it (172 lines)** | The router. Hard constraints, where everything is, working notes. Non-optional |
+| **This file** | **§4 in full** | The single place to look for what is unresolved |
+| **The `pd` / `docs` / `gate` skills** | Invoked, not read | ⛔ Invoke the matching one before writing Pd, documentation or a gate |
+| **[ref/README.md](ref/README.md)** | 52 lines | How `ref/` is organised, and the page schema |
+| **[ref/conventions.md](ref/conventions.md)** | The rules table, then the sections it links | How the Pd is written — `C-1`…`C-14`. **Read before writing Pd** |
+| **[ref/architecture.md](ref/architecture.md)** | All of it (200 lines) | How the modules compose, and the four load-bearing decisions |
+| **[ref/device/](ref/device/)**, **[ref/module/](ref/module/)** | **Only the page you are touching** | Everything about one device or one instrument concern, in one place |
+| **[ref-hardware.md](ref-hardware.md)** | Only if working on the device | SSH, paths, how Pd launches, wifi. ⚠️ Verify-after: the cruft cleanup changes these paths |
+| **[ref-build-log.md](ref-build-log.md)** | **Grep it.** Being dissolved | Phases 0–8 as built. Its facts have moved to the pages; what is left is narrative |
+| **[plan-tests.md](plan-tests.md)** | **Never read start to finish (4,131 lines).** Grep for the item number you were cited | The evidence ledger. Item numbers are **fact IDs**, cited bare as "item 133" |
 
 ### How this project works
 

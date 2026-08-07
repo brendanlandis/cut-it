@@ -1,10 +1,12 @@
-# Generates test/gate/phase6-assert-drive.pd -- the timed driver for the headless
-# assertion run. It prints a MARK before each window so phase6-assert.py knows
-# what the frames in that window are supposed to look like.
+# Generates the timed driver for the Launchpad grid gate, into the scratch path
+# it is given. It prints a MARK before each window so phase6-assert.py knows what
+# the frames in that window are supposed to look like.
 #
 # Every delay hangs off the ONE loadbang with an absolute time. Chaining them
 # would make each wait the SUM of everything before it, which is the kind of
 # arithmetic that silently drifts as steps are added.
+import sys
+
 B, C = [], []
 
 
@@ -100,6 +102,16 @@ qm = msg(20, 540, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
 
-open("test/gate/phase6-assert-drive.pd", "w").write(
+# ⛔ THE OUTPUT PATH IS A REQUIRED ARGUMENT, AND THERE IS NO COMMITTED .pd.
+# It used to be hardcoded, and the gate never ran this generator at all -- it
+# loaded the committed driver instead, so an edit here changed nothing and there
+# was no way to tell. The gate now generates into its own scratch directory on
+# every run and checks that it succeeded. A default path would just recreate the
+# stale artefact, so there is not one.
+if len(sys.argv) < 2:
+    sys.exit("usage: phase6-assert-drive-gen.py OUT.pd  "
+             "(run it through test/gate/phase6-assert.sh, which passes a scratch path)")
+OUT = sys.argv[1]
+open(OUT, "w").write(
     "#N canvas 20 20 %d %d 12;\n" % (220 + len(SEQ) * PITCH + 400, y + 250) + "\n".join(B + C) + "\n")
-print("boxes", len(B), "connects", len(C))
+print(OUT, "boxes", len(B), "connects", len(C))

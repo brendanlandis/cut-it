@@ -1,61 +1,52 @@
 #!/bin/sh
-# Headless regression gate for Phase 6. Asserts on what the patch ACTUALLY emits
-# to the Launchpad, with no hardware and nobody watching.
+# Headless regression gate for the Launchpad grid. Asserts on what the patch
+# ACTUALLY emits, with no hardware and nobody watching. ~45 s.
 #
 #     ./test/gate/phase6-assert.sh            # run it
 #     ./test/gate/phase6-assert.sh --keep     # and leave the capture behind to read
 #
-# HOW IT SEES THE BYTES. Pd resolves a class name against its built-in table
-# before it looks for an abstraction, so a midiout.pd on the search path is
-# simply ignored -- measured both ways, and it is why mac-stubs/ works for
-# [shell] (an external absent on the Mac) but could never work here. So this
-# copies the patch to a scratch directory and rewrites the [midiout] OBJECT
-# BOXES to [t_midiout], which prints every byte with its port.
+# ⚠️ DSP IS ON AND THERE IS NO -noaudio. The beat row hangs off threshold~, so a
+# silent run would assert on a grid that never moves. That is the whole reason
+# this gate costs 45 s where the others cost 8.
 #
-# NOTHING IN "Cut It/" IS TOUCHED. The copy is thrown away unless --keep.
-#
-# Exits non-zero if any assertion fails.
+# Everything else -- the scratch copy, the stub rewrite and its exact count, the
+# private state directory, the driver generator and the watchdog -- comes from
+# lib-scratch.sh, which is shared with every other MIDI gate. ⛔ IT USED TO HAVE
+# ITS OWN WEAKER COPY OF ALL OF THAT: an anchored regex that skipped boxes with
+# creation arguments, a count checked only for being non-zero, a driver that was
+# never regenerated so edits to its generator did nothing, and no state directory
+# of its own. See lib-scratch.sh for what each of those cost.
 set -e
 
-ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+cd "$(dirname "$0")/../.."
+
+. test/gate/lib-scratch.sh
+
 PD=${PD:-/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd}
-WORK=${TMPDIR:-/tmp}/cutit-assert-$$
+WORK=${TMPDIR:-/tmp}/cutit-phase6-$$
 KEEP=0
-[ "$1" = "--keep" ] && KEEP=1
+[ "${1:-}" = "--keep" ] && KEEP=1
 
 [ -x "$PD" ] || { echo "no Pd at $PD -- set PD=..." >&2; exit 2; }
 
-mkdir -p "$WORK"
-cp -R "$ROOT/Cut It" "$WORK/patch"
-cp "$ROOT/test/stubs/t_midiout.pd" "$WORK/patch/"
-cp "$ROOT/mac-stubs/"*.pd "$WORK/patch/" 2>/dev/null || true
+scratch_require "Cut It/g_grid.pd" "Cut It/m_launchpad.pd" "Cut It/main-dev.pd"
 
-# rewrite the object boxes, and count them so a silent miss cannot pass for a
-# clean run -- five is what the patch has today
-n=0
-for f in "$WORK"/patch/*.pd; do
-    c=$(grep -c '^#X obj .* midiout;$' "$f" 2>/dev/null || true)
-    [ "$c" = "0" ] && continue
-    sed -i '' 's/^\(#X obj [0-9]* [0-9]*\) midiout;$/\1 t_midiout;/' "$f"
-    n=$((n + c))
-    echo "   rewrote $c [midiout] in $(basename "$f")"
-done
-if [ "$n" -eq 0 ]; then
-    echo "FAIL: no [midiout] object boxes found to rewrite -- every assertion" >&2
-    echo "      would pass vacuously, which is worse than failing." >&2
-    exit 2
-fi
-echo "   $n [midiout] boxes rewritten to [t_midiout]"
+scratch_make "$WORK"
+scratch_state_dir "$WORK"
+midi_rewrite "$WORK"
+
+scratch_drive test/gate/phase6-assert-drive-gen.py "$WORK/drive.pd"
 
 CAP="$WORK/capture.txt"
 echo "   running (about 45 s -- DSP is on, the beat row needs it) ..."
-"$PD" -nogui -path "$WORK/patch" \
-      "$WORK/patch/main-dev.pd" "$ROOT/test/gate/phase6-assert-drive.pd" \
-      > "$CAP" 2>&1 || true
+scratch_run "$CAP" 90 -nogui -path "$WORK/patch" \
+    "$WORK/patch/main-dev.pd" "$WORK/drive.pd"
 
 echo
-python3 "$ROOT/test/gate/phase6-assert.py" < "$CAP"
+set +e
+python3 test/gate/phase6-assert.py < "$CAP"
 rc=$?
+set -e
 
 if [ "$KEEP" -eq 1 ]; then
     echo

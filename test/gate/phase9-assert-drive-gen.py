@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates test/gate/phase9-assert-drive.pd -- the timed driver for Phase 9's gate.
+"""Generates the timed driver for the map and output-device gate, into a scratch path.
 
 ⛔ THE .pd IS AN OUTPUT. Edit this file, never the .pd.
 
@@ -154,4 +154,10 @@ def main(path):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "test/gate/phase9-assert-drive.pd")
+    # ⛔ THE OUTPUT PATH IS REQUIRED, AND THERE IS NO COMMITTED .pd. The gate
+    # generates into its own scratch directory on every run; a default path would
+    # only recreate a stale artefact that nothing reads and nothing regenerates.
+    if len(sys.argv) < 2:
+        sys.exit("usage: phase9-assert-drive-gen.py OUT.pd  "
+                 "(run it through test/gate/phase9-assert.sh, which passes a scratch path)")
+    main(sys.argv[1])

@@ -16,13 +16,16 @@ subject is that page — or `none`, honestly. The **cleanup** took 18 answered p
 cleared the Organelle's menu down to `Cut It`, backed up the two device files that had no copy, and
 verified `ref/device-os.md` against the hardware.
 
-⚠️ **One re-confirmation is worth doing, but it is not an open question.** *Does the instrument
-still boot with the Launchpad attached?* `ref/device-os.md` already records that as ✅ verified by
-cold boot when the `mount.sh` guard was installed, the guard is still live on the device (checked
-2026-08-07), and the cleanup touched nothing under `/root`. **The cheap version needs no power
-cycle at all:** `mount.sh` runs on every Reload, so plugging the Launchpad in and running
-`sh /root/fw_dir/scripts/mount.sh` exercises the same code path — expect *"skipping write-protected
-device /dev/sda1"* and `/usbdrive` absent from `/proc/mounts`.
+✅ **Re-confirmed on hardware, 2026-08-07, after the cleanup.** Both devices powered from one
+strip — the Launchpad enumerates in a second or two, the Organelle's boot takes far longer to reach
+`mount.sh`, so the hazardous ordering is the one that happens. The instrument came up running, the
+Launchpad entered Programmer Mode, and the beat row was walking. **Three things at once:** the
+`mount.sh` guard held, `m_launchpad`'s boot SysEx fired on real hardware rather than into a stub,
+and — see below — item 234's fix was visible in the tempo.
+
+⚠️ **The cheap version needs no power cycle**, because `mount.sh` runs on every Reload: plug the
+Launchpad in and run `sh /root/fw_dir/scripts/mount.sh` — expect *"skipping write-protected device
+/dev/sda1"* and `/usbdrive` absent from `/proc/mounts`.
 
 **A plan is scoped to one piece of work and is deleted when the work lands.** This one is the
 exception that persists, because it is where everything unscoped waits.
@@ -116,6 +119,17 @@ measured at **443 BPM** on knob 1, which is master tempo. Nothing on the instrum
 mother reports position, not whether the position still matches the file. It happens on **every
 boot**, not only on a bank switch. See [ref/device/organelle.md](ref/device/organelle.md) under
 *Saving*.
+
+✅ **Seen again on a cold boot, 2026-08-07**, and it is worth stating as the shape of the fault
+rather than one measurement. The instrument came up playing at **57 BPM** — `knobs.txt` has knob 1
+at ≈0.096, and `10 + 0.096 × 490` rounds to 57 — while the physical knob was wherever it was left.
+⚠️ **That 57 is also the proof item 234 is fixed**: mother pushes `knobs.txt` at boot, and the
+restored position only becomes a tempo if `u_map` has already read its table and has a mode key.
+Before the fix it hit an empty table and the instrument came up at `u_tempo`'s own 120.
+
+**So the two facts sit on top of each other**: the restore working is exactly what puts the patch
+and the hardware out of step. Pickup is what reconciles them — ignore the control until it passes
+*through* the stored value, then hand it authority.
 
 ### Checks that were never run
 

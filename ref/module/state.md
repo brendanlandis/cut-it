@@ -87,6 +87,14 @@ wrong** — the same class of noise as mother's own `knobs.txt: can't open`.
 
 Each is a claim and its fix. How any of them was found is in the git history.
 
+### A FAILED write reports a fast time
+
+⛔ A `[text write]` into a directory that does not exist came back in **0.183 ms** — faster than any
+successful write, because nothing was written. **A write time cannot tell you a write happened**, and
+timing one is exactly the sort of check that looks like verification and is not.
+
+**Fix:** read the file back, or watch for the `write failed` print. See *The files* above.
+
 ### A `manual` answer must be SYNCHRONOUS
 
 ⛔ **This is the one rule a contributor can break invisibly.** Pd is eager, synchronous and

@@ -19,7 +19,7 @@ else. All MIDI in this rig is Pd talking to the four attached controllers.
 Three abstractions divide it: `m_organelle` reads the panel onto `param` and `disp`, `g_oled` owns
 the screen and is the only file allowed to send `oscOut` or `screenLine*`, and `g_led` owns the aux
 LED. The display *arbiter* they share with `g_grid` is instrument architecture, not device fact —
-see `ref-display.md`.
+see [display.md](../module/display.md).
 
 This page covers the **Organelle 1 only**, not the M, S or S2. Organelle 1 and M differ here, and the
 public `Organelle_OS` repo documents the M.
@@ -200,7 +200,9 @@ one and `Storage → Save` creates it; until then mother logs `knobs.txt: can't 
 expected and harmless. `./deploy.sh` will not remove it once it exists — `--clean` will.
 
 ⛔ **So after any Save every knob is desynced from its value, and the first touch jumps** — up to the
-full range, and knob 1 is master tempo. **Nothing on the instrument can detect this**: mother reports
+full range, and knob 1 is master tempo. **Measured, that is a 443 BPM lurch**: a jump that is
+defensible on a fader you are already holding and much weaker at boot, on a control nobody has
+touched. **Nothing on the instrument can detect this**: mother reports
 position, not whether the position still matches the file. It happens on every boot rather than only
 on a bank switch, and it is the concrete case for parameter pickup in
 [plan-v03.md](../../plan-v03.md) §4.

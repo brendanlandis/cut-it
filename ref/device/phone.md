@@ -217,6 +217,31 @@ Every message carries the complete current value — `chop-size is 43`, never `c
 packet then **self-corrects on the next send** instead of leaving the display permanently and
 silently wrong. UDP will drop packets; the protocol has to not care.
 
+### Broadcast was tried and rejected, and the reason is latency not throughput
+
+⛔ `255.255.255.255` **works** — Linux permits it, PdParty accepts it, and 19–20 of 20 datagrams
+arrive. **But wifi access points buffer broadcast frames and release them on beacon boundaries.**
+
+| | Unicast | Broadcast |
+|---|---|---|
+| Arrival | Every 200 ms, as sent | Bursts of three or four |
+| Worst gap | — | ⛔ **up to 819 ms** |
+| Throughput | identical | identical |
+
+**Throughput is identical and latency is not**, which is why a delivery test saw nothing wrong and a
+person moving a knob saw it immediately. One 819 ms gap also eats most of the phone's **1500 ms**
+`NO-LINK` margin.
+
+### The address resolves at 1550 ms on the device and 2200 on the Mac
+
+⚠️ **Anything armed earlier fires into an empty host.** The reconnect metro was armed at 1600 ms and
+banged the address store **before resolution**, sending `connect` with an empty host and printing
+`bad host?` on **every single boot** — harmless, and invisible to `deploy.sh` because the syntax
+check quits first.
+
+**Fix:** arm at **3000 ms**, past both platforms. `[metro]` fires the instant it is started, so
+"armed at" means "fires at". On the Mac a `[del 700]` fallback covers a `[shell]` that never answers.
+
 ### The phone cannot announce itself, so the Organelle looks the address up
 
 ⚠️ **`[netreceive]` in 0.49 cannot tell you who sent a datagram.** Checked before designing around

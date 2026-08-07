@@ -105,6 +105,20 @@ is lowest on the path you are actually using.
 | MIDI triggers to the 404 | ~360–400/s | Note-on/off pairs. Perceptual, not a hard edge | verified | 208, 209 |
 | Pd's own wall | ~689/s | One message per 64-sample scheduler tick, a compile-time constant. **Never reached** — something downstream saturates first | verified | — |
 
+### What the clock actually costs, isolated
+
+⛔ **The clock is not the CPU cost, and this was recorded wrongly once.** The original measurement
+blamed the 96 ALSA MIDI writes a second. Toggling DSP on a running patch settles it:
+
+| | pd CPU | Evidence | Item |
+|---|--------|----------|------|
+| DSP on | **11.8 / 11.7 / 11.8 %** | verified | 75 |
+| DSP off | **4.9 / 4.9 / 4.9 %** | verified | 75 |
+| DSP back on | **12.0 / 11.8 %** | verified | 75 |
+
+**So ~7 points are the audio engine and the MIDI rate is not it** — varying tempo moves the MIDI rate
+while leaving DSP cost identical. `tools/dsp.sh` is what performs the toggle.
+
 ⛔ **No clock-driven path can produce an audio-rate MIDI stream.** At 14.3 bangs/s, `c_clock` is two
 orders of magnitude below the trigger ceiling. A dense machine-gun trigger stream needs a plain
 `[metro]`, not a clock ratio — **measured by trying, and the clock ran out first.**

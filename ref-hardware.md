@@ -66,8 +66,12 @@ and the Launchpad's three ports collapse into one). Verified surviving a cold bo
 `/root/.pdsettings.bak`.
 
 **Devices are wired to Pd's ports with `aconnect`, by name** — and the patch does this itself
-at load time via `[shell]`, because mother's `alsaconnect.sh` only connects one device. See
-`tools/wire.sh`.
+at load time via `[shell]`, because mother's `alsaconnect.sh` connects one device and connects the
+**wrong** one. The port map, every connection and the autoconnect undo are on
+[boot.md](ref/module/boot.md).
+
+⛔ **The deployed script is `Cut It/wire.sh`.** `tools/wire.sh` is a Phase 1 ancestor, 59 lines
+behind, with no autoconnect undo and no `|| true` — this line used to point at it.
 
 ⛔ **LOADING ANY PATCH DROPS PD'S ALSA CONNECTIONS — measured, item 228.** After
 `oscsend localhost 4001 /loadPatch …`, `Pure Data Midi-Out 4` had **no target at all**, and a probe

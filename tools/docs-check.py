@@ -69,7 +69,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 ANCHOR = re.compile(r'<!--\s*check:\s*(.+?)\s*-->')
-SPEC = re.compile(r'^(pd-text|pd-route)\s+"([^"]+)"\s+(\S+)$')
+SPEC = re.compile(r'^(pd-text|pd-route|sh-aconnect)\s+"([^"]+)"\s+(\S+)$')
 # Only names that look like this project's own docs. A bare "README.md" inside a
 # URL or a shell heredoc is not worth a false positive.
 DOCNAME = re.compile(r'(?<![\w/.-])((?:[a-z0-9_-]+/)?[a-zA-Z0-9_-]+\.md)\b')
@@ -158,6 +158,29 @@ def pd_route(path, first):
     return found[0]
 
 
+def sh_aconnect(path, which):
+    """The `aconnect` calls in a shell script, as (source, destination) pairs.
+
+    `which` is `connect` or `disconnect` -- wire.sh does both, and they mean
+    opposite things: the connects are the rig, the disconnects UNDO mother's own
+    autoconnect. A check that lumped them would pass with the rig unwired.
+    """
+    if which not in ('connect', 'disconnect'):
+        raise CheckFailed(f'sh-aconnect takes connect or disconnect, not {which}')
+    src = (ROOT / path)
+    if not src.exists():
+        raise CheckFailed(f'{path} does not exist')
+    flag = r'-d ' if which == 'disconnect' else r''
+    want = re.compile(r'^\s*aconnect ' + flag + r'"([^"]+)":(\d+)\s+"([^"]+)":(\d+)')
+    found = [(f'{m.group(1)}:{m.group(2)}', f'{m.group(3)}:{m.group(4)}')
+             for m in (want.match(ln)
+                       for ln in src.read_text(encoding='utf-8').splitlines())
+             if m]
+    if not found:
+        raise CheckFailed(f'no aconnect {which} lines in {path}')
+    return found
+
+
 # --- the checks ------------------------------------------------------------
 
 def check_pd_text(doc, lineno, rows, path, name):
@@ -211,6 +234,29 @@ def check_pd_route(doc, lineno, rows, path, first):
     return out
 
 
+def check_sh_aconnect(doc, lineno, rows, path, which):
+    """Compare a table's first two columns against a script's `aconnect` calls.
+
+    The ALSA wiring is restated in wire.sh, main.pd, u_root.pd and here, and it
+    is the fact most likely to be edited in one place -- a port number moves the
+    whole channel block that the m_ layers test against.
+    """
+    have = sh_aconnect(path, which)
+    want = [(r[0].strip().strip('`'), r[1].strip().strip('`')) for r in rows]
+    if want == have:
+        return []
+    out = [f'{doc}:{lineno}  table vs the aconnect {which} lines in {path}']
+    for pair in have:
+        if pair not in want:
+            out.append(f'    {pair[0]} -> {pair[1]}: in {path}, absent from the table')
+    for pair in want:
+        if pair not in have:
+            out.append(f'    {pair[0]} -> {pair[1]}: in the table, NOT in {path}')
+    if sorted(want) == sorted(have):
+        out.append('    same set, different order')
+    return out
+
+
 def check_anchors(verbose):
     """Every `<!-- check: ... -->` anchor in every markdown file."""
     out, seen = [], 0
@@ -240,7 +286,8 @@ def check_anchors(verbose):
             if not spec:
                 out.append(f'{rel}:{i + 1}  unreadable check spec: {m.group(1)}')
                 continue
-            kind = {'pd-text': check_pd_text, 'pd-route': check_pd_route}[spec.group(1)]
+            kind = {'pd-text': check_pd_text, 'pd-route': check_pd_route,
+                    'sh-aconnect': check_sh_aconnect}[spec.group(1)]
             try:
                 rows = md_table(lines, i + 1)
                 out += kind(rel, i + 1, rows, spec.group(2), spec.group(3))

@@ -17,7 +17,7 @@ agents who cannot know what the other files already say.
 | Kind | Where | Pages |
 |------|-------|-------|
 | **Devices** — one physical thing each | `ref/device/` | `launchpad` · `nanokontrol` · `organelle` · `phone` · `sp404` · `volca` |
-| **Modules** — one instrument concern each | `ref/module/` | `map` · `state` · `tempo` |
+| **Modules** — one instrument concern each | `ref/module/` | `boot` · `map` · `state` · `tempo` |
 | **Cross-cutting** | `ref/` | `conventions` · `README` |
 | **Parking** | `ref/` | `_unfiled` — must be empty |
 

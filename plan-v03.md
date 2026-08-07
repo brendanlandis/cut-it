@@ -441,6 +441,13 @@ and `tools/docs-check.py` enforces all of it. None of it has to be remembered; r
 | `ref/` pages | — | **~2,100 across 8** |
 | `plan-tests.md` + `ref-build-log.md`, untouched | 5,112 | **5,112** |
 
+⚠️ **`ref/` now has subdirectories.** `ref/device/` (six, fixed by the hardware) and
+`ref/module/` (one so far — **this is what v0.4 grows**). Cross-cutting pages stay flat.
+`ref/README.md` carries an index that `docs-check.py` verifies against what exists.
+
+⚠️ **A `pd` skill exists** at `.claude/skills/pd/`. Invoke it before writing any Pd; it carries the
+constraints, the C-1..C-14 rules and the hand-editing traps, and CLAUDE.md has been trimmed to match.
+
 **Done — all six device pages, plus the conventions:**
 `ref/device/sp404.md` · `ref/device/launchpad.md` · `ref/device/volca.md` · `ref/device/nanokontrol.md` · `ref/device/organelle.md` ·
 `ref/device/phone.md` · `ref/conventions.md` · `ref/README.md`. Every source section replaced by a

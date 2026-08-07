@@ -322,6 +322,15 @@ wpa_cli -i wlan0 scan ; sleep 4      # ⚠️ required: roam only targets a cach
 wpa_cli -i wlan0 roam <other-bssid>  # IPv4 gone within 3 s
 ```
 
+**And the one-line check for whether the fault is present right now:**
+
+```sh
+ssh root@organelle.local 'ip addr show wlan0 | grep "inet "'   # NO OUTPUT == this fault
+```
+
+⚠️ The device is still **associated** when this returns nothing — that is the whole point. "Drops its
+wifi" describes the symptom and misdescribes the cause.
+
 ### The evidence, item by item
 
 Every measurement the investigation rests on, and the four that turned out to be wrong. **The tools

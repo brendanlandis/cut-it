@@ -544,11 +544,11 @@ SysEx each device accepts and transmits — lives in [ref-midi.md](ref-midi.md).
 
 ### Launchpad Pro MK3
 
-**Moved** to [ref/launchpad.md](ref/launchpad.md), which is now the only page about this device.
+**Moved** to [ref/device/launchpad.md](ref/device/launchpad.md), which is now the only page about this device.
 
 ### nanoKONTROL (mk1)
 
-**Moved** to [ref/nanokontrol.md](ref/nanokontrol.md).
+**Moved** to [ref/device/nanokontrol.md](ref/device/nanokontrol.md).
 
 ### BeatStep retired
 
@@ -563,7 +563,7 @@ lights.
 
 ### SP-404 MIDI
 
-**Moved** to [ref/sp404.md](ref/sp404.md), which is now the only page about this device.
+**Moved** to [ref/device/sp404.md](ref/device/sp404.md), which is now the only page about this device.
 
 ---
 

@@ -136,4 +136,4 @@ The regular CC layout (sliders 1–9, knobs 11–19, buttons 21–29 and 31–39
 - ⬜ **The factory transport assignment was never captured.** The buttons were reconfigured before
   anything read what they shipped with, so whether they defaulted to MMC or CC is unknowable without
   a factory reset. Reason 1 above stayed a risk rather than a finding — do not read it as evidence
-  about the default. See [plan-v03.md](../plan-v03.md) §4.
+  about the default. See [plan-v03.md](../../plan-v03.md) §4.

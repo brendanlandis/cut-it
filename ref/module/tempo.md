@@ -208,4 +208,4 @@ flash and pulse animations. Stop sending it and both fall back to stale values.
 
 - ⬜ **Nothing consumes a beat for musical purposes yet.** `u_root`'s `c_clock 1 8` drives the grid's
   bottom row and nothing else; the filter stages, drum mode and sampler that would use the audio-rate
-  phase outlet are v0.4. See [plan-v03.md](../plan-v03.md) §4.
+  phase outlet are v0.4. See [plan-v03.md](../../plan-v03.md) §4.

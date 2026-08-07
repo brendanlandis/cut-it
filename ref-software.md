@@ -111,7 +111,7 @@ The four that shape everything else. Reasoning for each is further down this fil
 
 ### The Launchpad
 
-**Moved** to [ref/launchpad.md](ref/launchpad.md) — the three-tier decision and how Cut It uses the
+**Moved** to [ref/device/launchpad.md](ref/device/launchpad.md) — the three-tier decision and how Cut It uses the
 surface are in that page's *Design* section. The grid idioms it would enable are v0.4 intent and
 live in [plan-v03.md](plan-v03.md) §7.
 
@@ -134,7 +134,7 @@ Nothing overlaps:
 
 Drums hard-panned left, fx hard-panned right — two independent mono streams out of one stereo
 pair, and the mic sums to both. **The measurements, the hardware path for setting the pan and the
-traps around it are on [ref/sp404.md](ref/sp404.md)**; what follows is the design consequence.
+traps around it are on [ref/device/sp404.md](ref/device/sp404.md)**; what follows is the design consequence.
 
 ### No routing depends on a knob position
 Deliberate. The 404's per-sample pans are saved with the project and recall. Cables carry

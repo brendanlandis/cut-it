@@ -328,4 +328,4 @@ table and nothing else, since a commit from a Launchpad pad would have no screen
 
 - ⬜ **Whether the serial overruns and the OLED lag share a cause is unmeasured.** `dmesg` carries
   continuous `imx-uart 2020000.serial: Rx FIFO overrun` on **the same serial link to the front
-  panel**. Recorded rather than asserted. Item 173 — see [plan-v03.md](../plan-v03.md) §4.
+  panel**. Recorded rather than asserted. Item 173 — see [plan-v03.md](../../plan-v03.md) §4.

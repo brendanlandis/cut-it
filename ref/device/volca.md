@@ -146,10 +146,10 @@ means `u_map` and this file disagree about the interface, and nothing else would
 
 The Volca has **one** channel, set cold at load, so `[makenote]` → `[noteout]` cannot send a note-off
 to the wrong place. **The SP-404 has ten and cannot use this** — see
-[ref/sp404.md](sp404.md) → *Traps*.
+[ref/device/sp404.md](sp404.md) → *Traps*.
 
 ## Open
 
 - ⬜ **Nothing on this page has ever been read back off the wire, and nothing ever can be.** The
   strongest available evidence class for this device is a controlled A/B by ear. That is recorded
-  here as a permanent limitation rather than as work to do — see [plan-v03.md](../plan-v03.md) §4.
+  here as a permanent limitation rather than as work to do — see [plan-v03.md](../../plan-v03.md) §4.

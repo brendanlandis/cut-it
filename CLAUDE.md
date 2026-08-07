@@ -210,13 +210,21 @@ ref/                 ⬅ ONE PAGE PER MODULE, and the direction all documentatio
                      and everything about it is on its page — what it is, what was
                      measured, what will bite you, how Cut It uses it.
   README.md            ⛔ READ THIS BEFORE WRITING ANY DOCUMENTATION. The page schema,
-                       the trap form, the five markers and what each means, and what to
-                       do with material that fits no section. tools/docs-check.py
-                       ENFORCES all of it, so none of it has to be remembered
-  sp404.md             the SP-404MKII — 160 pads, the pad map, the rate limit
-  launchpad.md         the Launchpad Pro MK3 — Programmer Mode, lighting, the watchdog
-  volca.md             the Volca FM — receive-only, Pajen 1.09, pgmout is 1-based
-  nanokontrol.md       the nanoKONTROL mk1 — the CC map, momentary-only and why
+                       the index, the trap form, the five markers and what each means,
+                       and what to do with material that fits no section.
+                       tools/docs-check.py ENFORCES all of it — run the gate rather
+                       than trying to remember it
+  conventions.md       how the Pd is written. Rules C-1..C-14, cited BY ID from patch
+                       comments, where a link cannot be followed
+  device/              ONE PAGE PER PHYSICAL THING. Fixed set — the hardware decides it
+    sp404.md             160 pads, the pad map, the rate limit
+    launchpad.md         Programmer Mode, lighting, the replug watchdog
+    organelle.md         the panel, the OLED, the aux LED. ⛔ The panel is NOT MIDI
+    volca.md             receive-only, Pajen 1.09, pgmout is 1-based
+    nanokontrol.md       the CC map, momentary-only and why
+    phone.md             PdParty, the status protocol, the access point
+  module/              ONE PAGE PER INSTRUMENT CONCERN. ⬅ THIS IS WHAT v0.4 GROWS
+    tempo.md             u_tempo and c_clock, poly-tempo, the four rate ceilings
   _unfiled.md          the parking spot. The gate FAILS while anything is in it
 plan-tests.md        THE EVIDENCE LEDGER — numbered checks with their measured
                      results, cited bare as "item 133" everywhere. It accumulates

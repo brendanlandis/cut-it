@@ -28,7 +28,7 @@ wire format) and [ref-conventions.md](ref-conventions.md) (how the Pd is written
 
 ## Organelle OLED and the aux button LED
 
-**Moved** to **[ref/organelle.md](ref/organelle.md)** — the graphics command table, the four screen
+**Moved** to **[ref/device/organelle.md](ref/device/organelle.md)** — the graphics command table, the four screen
 buffers, the fonts, every silent trap, the ~200 ms lag and the LED colour table.
 
 ⚠️ **The display *arbiter* stayed here** — `home < modal < alert`, the `disp` bus and the layer
@@ -39,14 +39,14 @@ about either device. They move to `ref/architecture.md` when that page is writte
 
 ## No text on the Launchpad
 
-**Moved** to [ref/launchpad.md](ref/launchpad.md). Short version: the Pro MK3 has no text-scrolling
+**Moved** to [ref/device/launchpad.md](ref/device/launchpad.md). Short version: the Pro MK3 has no text-scrolling
 SysEx, so it is 96 RGB pixels of spatial state and not a text channel. `g_grid`'s arbiter is below.
 
 ---
 
 ## iPhone / PdParty, and the performance status protocol
 
-**Moved** to **[ref/phone.md](ref/phone.md)** — addresses and ports, the wire format, the
+**Moved** to **[ref/device/phone.md](ref/device/phone.md)** — addresses and ports, the wire format, the
 Organelle-hosted access point, the PdParty scene rules, the notch, and the three protocol rules
 (send state never events; the display must show its own staleness; the Organelle never waits).
 

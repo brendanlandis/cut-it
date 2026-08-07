@@ -181,8 +181,11 @@ def check_anchors(verbose):
             m = ANCHOR.search(ln)
             if not m:
                 continue
-            seen += 1
             rel = doc.relative_to(ROOT)
+            # anchors carry a KIND. `index` is verified by check_index, not here.
+            if m.group(1).strip() == 'index':
+                continue
+            seen += 1
             spec = SPEC.match(m.group(1))
             if not spec:
                 out.append(f'{rel}:{i + 1}  unreadable check spec: {m.group(1)}')
@@ -283,11 +286,21 @@ def check_shape(verbose):
                        'a shape decision, so the refactor is not done. Propose a shape for '
                        'it and ask; do not cram it into the nearest section')
 
-    for doc in sorted(refdir.glob('*.md')):
+    # ⛔ rglob, NOT glob. When ref/ gained device/ and module/ subdirectories a
+    # plain glob stopped seeing seven of the nine pages, and the run still said
+    # "ok" -- coverage vanished with no failure, which is the worst shape a gate
+    # can take. The count printed under -v is the guard: watch it go UP.
+    for doc in sorted(refdir.rglob('*.md')):
         if doc.name == '_unfiled.md':
             continue
         pages += 1
         rel = doc.relative_to(ROOT)
+        # the directory IS the kind, so it can be asserted
+        if doc.parent.name in ('device', 'module'):
+            first = doc.read_text(encoding='utf-8').split('\n', 1)[0]
+            if 'schema: module' not in first:
+                out.append(f'{rel}  lives in {doc.parent.name}/ but is not '
+                           f'schema:module. Those directories hold module pages only')
         lines = doc.read_text(encoding='utf-8').splitlines()
         marked = _strip_fences(lines)
 
@@ -373,6 +386,32 @@ def check_shape(verbose):
 RULE_ID = re.compile(r'(?<![\w-])(C-\d+)(?![\w-])')
 
 
+def check_index(verbose):
+    """ref/README.md's index must list exactly the pages that exist.
+
+    Same two-copies-and-compare idea as everything else here: the index is
+    written by hand and would otherwise rot the first time a page is added.
+    """
+    out = []
+    readme = ROOT / 'ref' / 'README.md'
+    refdir = ROOT / 'ref'
+    if not readme.exists():
+        return out
+    body = readme.read_text(encoding='utf-8')
+    if '<!-- check: index -->' not in body:
+        return ['ref/README.md has no <!-- check: index --> anchor, so its index '
+                'is not being verified against what exists']
+    listed = set(re.findall(r'`([a-z0-9_-]+)`', body[body.index('<!-- check: index -->'):]
+                            .split('## The page schema')[0]))
+    for sub in ('device', 'module'):
+        actual = {f.stem for f in (refdir / sub).glob('*.md')} if (refdir / sub).is_dir() else set()
+        for name in sorted(actual - listed):
+            out.append(f'ref/{sub}/{name}.md exists but ref/README.md\'s index does not list it')
+    if verbose and not out:
+        print('  the ref/ index matches what exists')
+    return out
+
+
 def check_rule_ids(verbose):
     """Every C-NN cited anywhere must be a rule that exists.
 
@@ -411,7 +450,8 @@ def check_rule_ids(verbose):
 def main():
     verbose = '-v' in sys.argv
     problems = (check_anchors(verbose) + check_dangling_docs(verbose)
-                + check_shape(verbose) + check_rule_ids(verbose))
+                + check_shape(verbose) + check_index(verbose)
+                + check_rule_ids(verbose))
     if problems:
         print('\n'.join(problems))
         print(f'\n{len(problems)} problem(s).')

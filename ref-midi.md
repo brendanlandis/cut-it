@@ -78,7 +78,7 @@ See *Transport buttons* under the nanoKONTROL below.
 
 ## Organelle 1
 
-**The panel, the OLED and the aux LED have MOVED** to **[ref/organelle.md](ref/organelle.md)** — the
+**The panel, the OLED and the aux LED have MOVED** to **[ref/device/organelle.md](ref/device/organelle.md)** — the
 `mother.pd` interface, the OMNI CC 21–26 collision and the `midiInGate` double-send, the OLED
 graphics API and its four buffers, and the LED colour table.
 
@@ -89,7 +89,7 @@ What remains below is Pd generating MIDI *out*, which belongs to `u_tempo` rathe
 
 ### MIDI out from Pd
 
-**Moved** to **[ref/tempo.md](ref/tempo.md)** — the System Real-Time byte table, how `u_tempo` cuts
+**Moved** to **[ref/module/tempo.md](ref/module/tempo.md)** — the System Real-Time byte table, how `u_tempo` cuts
 the 24 PPQN pulse from a `phasor~`, the four rate ceilings and why they get confused with each
 other, and the `threshold~` debounce that must be zero.
 
@@ -99,7 +99,7 @@ other, and the `threshold~` debounce that must be zero.
 
 **Moved.** Ports, the Programmer Mode index map, both lighting paths, mode control, the device
 inquiry, every trap and the three-tier design decision now live on one page:
-**[ref/launchpad.md](ref/launchpad.md)**.
+**[ref/device/launchpad.md](ref/device/launchpad.md)**.
 
 It used to be spread across this file, `ref-display.md`, `ref-hardware.md` and `ref-software.md` —
 416 lines in four places, the most fragmented device in the repo.
@@ -109,7 +109,7 @@ It used to be spread across this file, `ref-display.md`, `ref-hardware.md` and `
 ## Korg nanoKONTROL (mk1)
 
 **Moved.** The full CC map, the transport reassignment, the Kontrol Editor settings and the
-momentary-only decision now live on one page: **[ref/nanokontrol.md](ref/nanokontrol.md)**.
+momentary-only decision now live on one page: **[ref/device/nanokontrol.md](ref/device/nanokontrol.md)**.
 
 ---
 
@@ -117,7 +117,7 @@ momentary-only decision now live on one page: **[ref/nanokontrol.md](ref/nanokon
 
 **Moved.** Everything about this device — addressing, the pad note map, what it transmits and
 receives, velocity, the trigger ceiling, clock following, its audio role, its device settings and
-every trap it carries — now lives on one page: **[ref/sp404.md](ref/sp404.md)**.
+every trap it carries — now lives on one page: **[ref/device/sp404.md](ref/device/sp404.md)**.
 
 It used to be spread across this file, `ref-hardware.md` and `ref-software.md`, which is how the
 `47 + n` error survived in three places at once.
@@ -128,7 +128,7 @@ It used to be spread across this file, `ref-hardware.md` and `ref-software.md`, 
 
 **Moved.** The interface, every CC it accepts, the Pajen 1.09 firmware and the four global settings
 it adds, the `pgmout` correction and the `PCnot`/`PCMId` trap now live on one page:
-**[ref/volca.md](ref/volca.md)**.
+**[ref/device/volca.md](ref/device/volca.md)**.
 
 ---
 

@@ -10,6 +10,25 @@ session added to whichever file it was already in. **A device-major layout gives
 place it can go**, which is the only thing that resists the drift, because the docs are written by
 agents who cannot know what the other files already say.
 
+## The index
+
+<!-- check: index -->
+
+| Kind | Where | Pages |
+|------|-------|-------|
+| **Devices** — one physical thing each | `ref/device/` | `launchpad` · `nanokontrol` · `organelle` · `phone` · `sp404` · `volca` |
+| **Modules** — one instrument concern each | `ref/module/` | `tempo` |
+| **Cross-cutting** | `ref/` | `conventions` · `README` |
+| **Parking** | `ref/` | `_unfiled` — must be empty |
+
+**The directory is the kind**, so `ls` answers the question and `docs-check.py` asserts that
+`device/` and `module/` hold only `schema: module` pages. The table above is checked against what
+actually exists, so it cannot go stale.
+
+⚠️ **v0.4 grows `module/`, not `device/`.** The device set is fixed by the hardware; the filter
+stages, drum mode, sampler and capture each become a module page.
+
+
 ## The page schema
 
 Line 1 declares which schema applies. `tools/docs-check.py` enforces the rest, so the shape does not

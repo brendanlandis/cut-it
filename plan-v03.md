@@ -442,8 +442,8 @@ and `tools/docs-check.py` enforces all of it. None of it has to be remembered; r
 | `plan-tests.md` + `ref-build-log.md`, untouched | 5,112 | **5,112** |
 
 **Done — all six device pages, plus the conventions:**
-`ref/sp404.md` · `ref/launchpad.md` · `ref/volca.md` · `ref/nanokontrol.md` · `ref/organelle.md` ·
-`ref/phone.md` · `ref/conventions.md` · `ref/README.md`. Every source section replaced by a
+`ref/device/sp404.md` · `ref/device/launchpad.md` · `ref/device/volca.md` · `ref/device/nanokontrol.md` · `ref/device/organelle.md` ·
+`ref/device/phone.md` · `ref/conventions.md` · `ref/README.md`. Every source section replaced by a
 **Moved** pointer.
 
 `tools/docs-check.py` now runs four checks, each proven to fail: anchored table vs `[text define]`,
@@ -453,7 +453,7 @@ dangling document pointers, the full page schema, and **`C-NN` rule-ID resolutio
 `ref/architecture.md`, `ref/device-os.md`, `ref/rig.md`, then **the journals**, then `CLAUDE.md` as
 a router, then the `.pd` comments citing `C-NN` so the `ref-conventions.md` stub can go.
 
-⚠️ **THE LINE COUNT GOES UP PER PAGE, AND THAT IS EXPECTED.** `ref/sp404.md` replaced 279 source
+⚠️ **THE LINE COUNT GOES UP PER PAGE, AND THAT IS EXPECTED.** `ref/device/sp404.md` replaced 279 source
 lines with 281. Tables gained `Evidence` and `Item` columns, the pad map became sixteen rows instead
 of a five-line diagram, and merging overlapping sources replaced "summary + full" with one full
 statement. **The volume reduction is entirely in the journals**, which are still untouched and are

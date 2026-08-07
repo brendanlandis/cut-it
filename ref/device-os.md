@@ -5,9 +5,8 @@
 cables* are on [rig.md](rig.md); the Organelle's own **control surface** — panel, OLED, aux LED — is
 on [device/organelle.md](device/organelle.md).
 
-⛔ **VERIFY-AFTER.** The paths below are the ones the **Organelle cruft cleanup** will change. They
-are correct as measured and this page has deliberately not been rewritten ahead of that job. **Check
-against the device before relying on any of them.**
+✅ **Every path on this page was verified against the device on 2026-08-07**, after the cruft
+cleanup. Two claims were wrong and are corrected below; the rest held.
 
 ## Signal flow
 
@@ -65,12 +64,12 @@ now misled this investigation. The cache catches up on its own. Item 172.
 |---|---|
 | Home | `/root` (not `/home/music`) |
 | Patches | `/sdcard/Patches/` — factory set lives here |
-| User patches | `/sdcard/Patches/!/` — `!` sorts to the top of the menu |
+| User patches | `/sdcard/Patches/!/` — `!` sorts to the top of the menu. ✅ **It holds `Cut It` and nothing else** since 2026-08-07. Anything you might reach for *instead* of playing goes in `! debug` — see [plan-v04.md](../plan-v04.md) |
 | Pd config | `/root/.pdsettings` |
 | Externals | `/root/Pd/externals` |
 | Scripts | `/root/fw_dir/scripts/` |
-| Extra libs | `/sdcard/PdExtraLibs` — already on Pd's search path |
-| **Running patch** | **`/tmp/patch` — a SYMLINK to the patch folder**, and Pd's working directory |
+| Extra libs | ⛔ **There are none, and there is no `/sdcard/PdExtraLibs`.** This page claimed both until 2026-08-07. `.pdsettings` says `npath: 1` and the one path is `/root/Pd/externals` |
+| **Running patch** | **`/tmp/patch` — a SYMLINK to the patch folder**, and Pd's working directory. ⚠️ It exists only *while a patch is loaded*; mother creates it on load. Verified absent with none running |
 | **Instrument data** | **`/sdcard/cut-it-state/`** — what `u_state` writes. Not config, not deployed |
 | Error log | `/sdcard/cut-it-err.log` (rolled) and `.cur` (running session) |
 | Wifi credentials | `/sdcard/wifi.txt` — plaintext, **never copy into the repo** |
@@ -104,6 +103,11 @@ writing to `/root`, and `remount-ro.sh` after. `/sdcard` and `/usbdrive` are wri
 4-in/4-out configuration the whole MIDI topology depends on, plus `path1: /root/Pd/externals`,
 which is what makes `[shell]`, `packOSC` and `routeOSC` resolve in the menu-launched patch.
 ✅ Backed up in [device/](../device/), verified current against the hardware.
+
+⚠️ **Only `midiapi: 1` and MIDI devices 2–4 were added here.** `path1` and `flags: -alsamidi` are
+**factory** — measured 2026-08-07 by diffing against the device's own `.pdsettings.bak`, which is
+now kept as [device/pdsettings.orig](../device/pdsettings.orig). `path1` is still the thing the
+instrument cannot boot without; it is simply not something this project set.
 
 ### ⚠️ The clock, and why device timestamps are not Mac timestamps
 

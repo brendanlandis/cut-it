@@ -169,6 +169,12 @@ the difference between a menu of one screen and a menu you can navigate.
 on what channel, a way to fire test output at each device, and the tail of `cut-it-err.log` — the
 three questions that currently require a laptop and a network.
 
+⛔ **It goes in `/sdcard/Patches/! debug/`, not in `!`.** As of 2026-08-07 the `!` menu holds
+**`Cut It` and nothing else** — the four probes that had accumulated there were removed once every
+one was confirmed byte-identical to its copy in the repo. At a venue you should scroll past nothing
+to reach the instrument, and a second menu directory is where anything you might reach for *instead*
+of playing belongs.
+
 ---
 
 ## 4. ⚠️ Constraints that bind what you build

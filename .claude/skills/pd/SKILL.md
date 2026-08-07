@@ -29,20 +29,20 @@ comment is the only documentation visible while editing in Pd and it has no link
 
 | ID | Rule |
 |----|------|
-| C-1 | `$0-` every send, receive, table and array name inside an abstraction |
-| C-2 | Bare global names only from the allowlist — `mode` `tempo` `clock` `start`/`stop` `panic` `param` `err` `disp` `state`, plus mother's own |
-| C-3 | `[trigger]` on every fan-out, even when the current order happens to work |
-| C-4 | Never `adc~` / `dac~` — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out |
-| C-5 | One owner per display surface. Everything else asks via `disp` |
-| C-6 | Finish assembled messages with `[list trim]`, and `[list append]` after a `route` |
-| C-7 | Clear optional fields on every message — `[list split n]` on exactly *n* atoms never fires |
-| C-8 | `[t b]` in front of anything behind a reject outlet — a reject carries DATA, not a bang |
-| C-9 | Every `[print]` in a deployed abstraction sits behind `[del 2000]` |
-| C-10 | Append boxes at the end of a `.pd`, and move the `#X connect`s with them |
-| C-11 | Grain timing is audio-domain — `phasor~` and `vline~`, never `metro` / `line~` |
-| C-12 | Report failures on `[s err]` as `<level> <source> <text>`, text one symbol ≤ 21 chars |
-| C-13 | No dynamic patching, no `[value]`, no copied subpatches |
-| C-14 | Edit a `#X text` by replacing the whole line — never scan for the next `;` |
+| C-1 | **`$0-` every send, receive, table and array name** inside an abstraction |
+| C-2 | **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `param` `err` `disp` `state`, plus mother's own |
+| C-3 | **`[trigger]` on every fan-out**, even when the current order happens to work |
+| C-4 | **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out |
+| C-5 | **One owner per display surface** — `oscOut` / `screenLine*` are `g_oled`'s, `led` is its own. Everything else asks via `disp` |
+| C-6 | **Finish assembled messages with `[list trim]`**, and `[list append]` after a `route` |
+| C-7 | **Clear optional fields on every message** — `[list split n]` on exactly *n* atoms never fires |
+| C-8 | **`[t b]` in front of anything behind a reject outlet** — a reject carries DATA, not a bang |
+| C-9 | **Every `[print]` in a deployed abstraction sits behind `[del 2000]`** — `deploy.sh` gates on output |
+| C-10 | **Append boxes at the end of a `.pd`, and move the `#X connect`s with them** |
+| C-11 | **Grain timing is audio-domain** — `phasor~` and `vline~`, never `metro` / `line~` |
+| C-12 | **Report failures on `[s err]`** as `<level> <source> <text>`, text one symbol ≤ 21 chars |
+| C-13 | **No dynamic patching, no `[value]`, no copied subpatches** |
+| C-14 | **Edit a `#X text` by replacing the WHOLE LINE** — escaped `\;` is legal inside one, so scanning for "the next `;`" splits the comment |
 
 ## Editing a `.pd` file by hand
 

@@ -412,6 +412,52 @@ def check_index(verbose):
     return out
 
 
+def check_skill_rules(verbose):
+    """The pd skill's rule table must match ref/conventions.md.
+
+    ⛔ A SKILL THAT RESTATES A DOC IS THE DUPLICATION THIS REFACTOR EXISTS TO
+    REMOVE. The skill carries the rule table because a link cannot be followed
+    from inside a loaded skill any more than from a Pd comment -- so the copy is
+    justified, but only if it cannot drift. Same two-copies-and-compare as the
+    pad map: both are markdown tables, so parse both and compare.
+
+    Compares the ID set and the rule text, ignoring emphasis and the trailing
+    link column that only the doc has.
+    """
+    out = []
+    skill = ROOT / '.claude' / 'skills' / 'pd' / 'SKILL.md'
+    conv = ROOT / 'ref' / 'conventions.md'
+    if not skill.exists() or not conv.exists():
+        return out
+
+    def rules(path, strip_link):
+        found = {}
+        for ln in path.read_text(encoding='utf-8').splitlines():
+            m = re.match(r'^\|\s*\*{0,2}(C-\d+)\*{0,2}\s*\|(.+)$', ln)
+            if not m:
+                continue
+            body = m.group(2).split('|')
+            if strip_link and len(body) > 1:
+                body = body[:-2] if body[-1].strip() == '' else body[:-1]
+            text = '|'.join(body)
+            found[m.group(1)] = re.sub(r'[*`\s]+', ' ', text).strip().strip('|').strip()
+        return found
+
+    a, b = rules(skill, False), rules(conv, True)
+    for rid in sorted(set(b) - set(a), key=lambda r: int(r[2:])):
+        out.append(f'.claude/skills/pd/SKILL.md is missing {rid}, which ref/conventions.md defines')
+    for rid in sorted(set(a) - set(b), key=lambda r: int(r[2:])):
+        out.append(f'.claude/skills/pd/SKILL.md defines {rid}, which ref/conventions.md does not')
+    for rid in sorted(set(a) & set(b), key=lambda r: int(r[2:])):
+        if a[rid] != b[rid]:
+            out.append(f'{rid} differs between the pd skill and ref/conventions.md:\n'
+                       f'    skill: {a[rid][:70]}\n'
+                       f'    doc:   {b[rid][:70]}')
+    if verbose and not out:
+        print(f'  the pd skill\'s {len(a)} rules match ref/conventions.md')
+    return out
+
+
 def check_rule_ids(verbose):
     """Every C-NN cited anywhere must be a rule that exists.
 
@@ -451,7 +497,7 @@ def main():
     verbose = '-v' in sys.argv
     problems = (check_anchors(verbose) + check_dangling_docs(verbose)
                 + check_shape(verbose) + check_index(verbose)
-                + check_rule_ids(verbose))
+                + check_rule_ids(verbose) + check_skill_rules(verbose))
     if problems:
         print('\n'.join(problems))
         print(f'\n{len(problems)} problem(s).')

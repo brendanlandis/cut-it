@@ -72,14 +72,57 @@ of the phase axis, and it is why this job is worth doing rather than tidying.
 prefix here because they do not exist yet, and `docs-check.py` rightly fails a document that points
 at a file that is not there.
 
-| Gate | Asserts | Comes from |
-|---|---|---|
-| `map-assert.sh` | The **static lint** — the allowlist guard, four-atom rows, no duplicate `(mode, control)` pair, every mode one of six. **No Pd, ~200 ms** | `phase9` checks 1–5 |
-| `midi-out-assert.sh` | **Every MIDI emitter in the patch, in one place** — `noteout` `ctlout` `pgmout` `midiout` and `notein` readback. The Volca, the 404 in both directions, the rate limit, panic across ten banks, the clock bytes | `phase9` checks 6–29 **+** `phase6`'s `[midiout]` half |
-| `display-assert.sh` | The **arbiter** — frames, layer priority, modal, alert expiry, "nothing lit outside the lamp row", the beat row walking | `phase6` checks 1–20 |
-| `launchpad-assert.sh` | The **device** — Programmer Mode at boot, Live Mode on panic, the 1–108 span, the watchdog's arming gate | `phase6` checks 21–23 |
-| `phone-assert.sh` | Unchanged in content — real datagrams off a bound socket | `phase7`, renamed |
-| `state-assert.sh` | Unchanged in content — reads the file that landed on disk | `phase8`, renamed |
+⛔ **Do not trust an ordinal — get the list yourself.** The groupings below were derived by reading
+the assertion strings in order, and **an ordinal is positional in the source**: edit an assert and
+every number after it shifts. Regenerate before splitting anything:
+
+```sh
+python3 - <<'EOF'
+import re, pathlib
+for n in (6, 9):
+    t = pathlib.Path(f'tools/phase{n}-assert.py').read_text()
+    for i, c in enumerate(re.findall(r'check\(\s*"([^"]*)"', t), 1):
+        print(f'phase{n} {i:>2}. {c}')
+EOF
+```
+
+### `phase6`'s 23 checks
+
+| Goes to | Checks |
+|---|---|
+| `display-assert` | 1–5 frame shape (byte count, terminator, static type, the 1–108 span) · 6 *DSP off and idle: the grid stops repainting* · 7–9 the home layer · 10–12 modal, and that a `warn` changes nothing · 13–17 alert and its expiry back to the modal underneath · 18–20 the beat row walking |
+| `launchpad-assert` | 22 *enters Programmer Mode at boot* · 23 *returns to Live Mode on panic* |
+| ⬜ **Decide** | 21 *after a panic the grid paints nothing at all* — this is the **arbiter's** response to losing ownership, and equally the **device's** panic behaviour. It reads either way |
+
+### `phase9`'s 29 checks — and they split THREE ways, not two
+
+⚠️ **This corrects an earlier draft of this plan**, which said checks 6–29 all went to one MIDI gate.
+Reading the assertions shows otherwise: nine of them are about the **404's receive path**, which is a
+device concern, not an emission one.
+
+| Goes to | Checks |
+|---|---|
+| `map-assert` | 1–5 the **static lint** — literal route box, four-atom rows, ⛔ the guard, valid modes, no duplicate pair. **No Pd, ~200 ms** |
+| `map-assert` (runtime) | 7 ⛔ *a control moved at 300 ms ALREADY MAPS* · 8 a mapped control reaches its destination · 9 ⛔ *the SAME control in another mode does NOTHING* · 10–11 ⛔ an unknown destination emits no MIDI and reports `unknown-dest` |
+| `midi-out-assert` | 12–14 the Volca — CC, note on channel 49, ⛔ `pgmout` arg+1 · 15–18 the 404 transmit side — all sixteen bank-A pads, bank-sets-channel, matched note-offs · 19–20 ⛔ the rate limit drops rather than queues, and the interval is real · 28 ⛔ panic covers all ten banks |
+| **the 404's receive side** | 21–27 a pad press names bank and pad, two stable `disp` rows, a release reaches `param` but not `disp`, a different bank, ⛔ a channel outside the ten is ignored |
+| — | 6 and 29 are driver bookkeeping. Keep whichever gate owns the driver |
+
+⬜ **So where do 21–27 go?** Two defensible answers, and **this is the plan's one real open
+decision:**
+
+- **`sp404-assert`** — the 404 is one device with one page, and its gate covering both directions
+  matches the module axis exactly. But then `midi-out-assert` loses the 404's transmit half too, and
+  becomes just the Volca.
+- **Keep emission together and give receive its own gate.** The argument for one emission gate is not
+  the assertions — it is the **`EXPECT` count**, which is a repo-wide structural invariant: *these
+  are all the MIDI emitters in the patch, and a new one must be declared*. That does not belong to
+  any device.
+
+**Recommendation: split the two jobs rather than the two directions.** One `midi-emitters-assert`
+whose only job is the rewrite and the exact `EXPECT` count, and per-device gates — `sp404-assert`,
+`volca-assert` — for behaviour. ⚠️ **But confirm with Brendan before building it**, because it is
+three gates where this plan originally promised one.
 
 **Benches follow the same axis**, generated from `bench_steps.py` as they are now.
 
@@ -88,6 +131,11 @@ at a file that is not there.
 ## 4. Order of work
 
 **One commit per step. Every step ends with `./tools/check-all.sh` green.**
+
+⚠️ **"One commit per step" describes the SHAPE of the work — one logical change, reviewable and
+revertable on its own — not who runs `git commit`.** [plan-v04.md](plan-v04.md) says *never touch
+git; Brendan commits his own work*. **If that still holds, leave each step in the working tree and
+describe what changed.** Ask if unsure; do not assume from this line that committing is authorised.
 
 ### Step 0 — measure before moving anything
 

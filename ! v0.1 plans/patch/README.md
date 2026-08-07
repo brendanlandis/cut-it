@@ -4,7 +4,7 @@ The deployable patch as it stood before the v0.2 rewrite. Kept because it record
 instrument was trying to do**, and because the git history is worth following.
 
 **Do not lift code from here.** All of it predates
-[ref-conventions.md](../../ref-conventions.md) — no `$0` discipline, no `[trigger]` on
+[ref/conventions.md](<../../ref/conventions.md>) — no `$0` discipline, no `[trigger]` on
 fan-outs, no prefixed abstraction names, global sends outside the allowlist. Assume it is naive
 until proven otherwise. `keyboard.pd` in particular is 22 KB of heavy duplication.
 

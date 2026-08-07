@@ -29,7 +29,7 @@ public `Organelle_OS` repo documents the M.
 ### The `mother.pd` interface
 
 The full name list is enumerated from `/root/fw_dir/mother.pd` itself — every `[s]` and `[r]` in the
-file — and lives in `ref-conventions.md` under *The global name allowlist*, because those names are
+file — and lives in [conventions.md](../conventions.md) under *The global name allowlist*, because those names are
 **reserved rather than merely documented**.
 
 | Direction | Names | Evidence | Item |

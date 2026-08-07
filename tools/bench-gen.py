@@ -32,7 +32,7 @@ after a patch sends /enableEncoder, and nothing in Cut It ever does -- m_organel
 leaves the encoder out deliberately. On the Mac u_mother-stub sends encbut
 unconditionally, which is what hid this. Use netcat on the device. Making the
 bench ask mother to enable the encoder is NOT the fix: that means writing to
-oscOut, and ref-conventions.md gives g_oled sole ownership of it.
+oscOut, and C-5 gives g_oled sole ownership of it.
 
 TIMED ASSERTIONS still mean something because the window starts at RUN rather than
 at the press that follows it: a step that zeroes a beat counter arms a 10 s timer

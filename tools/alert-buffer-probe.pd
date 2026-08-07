@@ -1,5 +1,5 @@
 #N canvas 20 20 2520 1100 12;
-#X text 20 20 alert-buffer-probe -- ANSWERED \, and kept as the re-check. A patch CAN draw into the ALERT buffer (screen 4) \, gFlip it \, and switch to it and back with setscreen. All of it works. g_oled still draws everything to screen 3 anyway -- see ref-display.md for why writable is not the same as safe., f 90;
+#X text 20 20 alert-buffer-probe -- ANSWERED \, and kept as the re-check. A patch CAN draw into the ALERT buffer (screen 4) \, gFlip it \, and switch to it and back with setscreen. All of it works. g_oled still draws everything to screen 3 anyway -- see ref/module/display.md for why writable is not the same as safe., f 90;
 #X text 20 110 Load it as a third patch after mother.pd and main.pd. It leaves the running patch alone: g_oled keeps drawing to screen 3 throughout \, and this only changes which buffer is SHOWN., f 90;
 #X obj 20 210 loadbang;
 #X obj 20 260 del 4000;

@@ -1,5 +1,5 @@
 #N canvas 20 20 1700 1060 12;
-#X text 20 20 volca-probe -- Phase 9 Step 0A2. Does the Volca FM answer at all \, and are its parameter CCs reachable? Load as a THIRD patch after mother.pd and main.pd \, per ref-conventions.md. It sends on Pd channel 49 -- device 4 \, the USB Uno interface \, the Volca's own channel 1., f 76;
+#X text 20 20 volca-probe -- Phase 9 Step 0A2. Does the Volca FM answer at all \, and are its parameter CCs reachable? Load as a THIRD patch after mother.pd and main.pd \, per ref/conventions.md. It sends on Pd channel 49 -- device 4 \, the USB Uno interface \, the Volca's own channel 1., f 76;
 #X text 20 110 IT DIAGNOSES THE SETTING RATHER THAN REQUIRING IT. MIDI RX ShortMessage gates every CC 40-50 and NOTHING ELSE \, so notes are the control: notes + CC working means the setting is already on \; notes working while CC does nothing IS that setting being off \; silence from both is cabling or channel and not a setting at all. Prove the channel \, then believe the silence -- items 196 and 198., f 76;
 #X text 20 240 SELF-DRIVING ON PURPOSE. This is a first-contact probe rather than a bench -- there is nothing to step through \, and the only judgement is whether you HEAR it. Every stage prints before it fires., f 76;
 #X obj 20 380 loadbang;

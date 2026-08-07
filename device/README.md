@@ -67,5 +67,5 @@ rootfs remounted rw, or scp `mount.sh.orig` from this folder.
 that happens, load `korg nano kontrol.nktrl_set` in Kontrol Editor 2.4.0 and write it back.
 2.5.0 will not see the device — it dropped first-generation nanoKONTROL support.
 
-The expected result is documented in [ref-midi.md](../ref-midi.md); verify against it after
+The expected result is documented in [ref/device/nanokontrol.md](../ref/device/nanokontrol.md); verify against it after
 any restore, ideally by decoding the raw stream rather than trusting the editor.

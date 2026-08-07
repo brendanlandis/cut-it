@@ -49,7 +49,7 @@ THE CHECKS
                 while that section did not exist.
 
                 no ✅ in any heading. An evidence marker never rots; a
-                COMPLETION marker silently becomes false. `ref-conventions.md`
+                COMPLETION marker silently becomes false. The old conventions doc
                 asserted `u_map` used no lookup table right up until Phase 9
                 contradicted it.
 

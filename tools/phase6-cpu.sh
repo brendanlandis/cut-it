@@ -77,6 +77,6 @@ Record these in item 94, and add the row ref-hardware.md ->
 Measuring the running patch is holding open for Phase 6.
 
 The SysEx rate is not visible here -- UDP out is the OLED. To see the grid's
-own traffic, run the by-hand console (ref-conventions.md -> There IS a console)
+own traffic, run the by-hand console (ref/conventions.md -> There IS a console)
 and count F0 bytes: 0/s idle and stopped, ~2/s at 120 BPM, ~6/s worst case.
 EOF

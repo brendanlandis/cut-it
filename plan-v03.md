@@ -35,9 +35,7 @@ that sentence is one row of `Cut It/cut-it-map.txt`.
 
 ## 2. What to read, and how much
 
-**Do not read everything.** ⚠️ **The documentation was restructured in §10 and the old advice is
-obsolete** — `ref-conventions.md`, `ref-midi.md`, `ref-software.md` and `ref-display.md` are now
-pointer stubs holding nothing. Read in this order:
+**Do not read everything.** Read in this order:
 
 | Document | How much | Why |
 |---|---|---|
@@ -62,7 +60,7 @@ pointer stubs holding nothing. Read in this order:
   beneath it.
 - **A phase runs in a fixed shape** — decisions table, Step 0 measurements, numbered build steps
   each ending with both gates, a generated bench, verification separating Mac from device, then a
-  landing checklist. See [ref-conventions.md](ref-conventions.md) → *How a phase runs*.
+  landing checklist. See [ref/conventions.md](ref/conventions.md) → *How a phase runs*.
 
 ---
 
@@ -81,7 +79,7 @@ items 228–235. What follows here is only what is still OPEN.
 
 **Four corrections came out of building it**, and they are the part worth carrying forward:
 Pd's `pgmout` is 1-based; `u_tempo`'s panic covered one bank in ten; nothing on the device could
-raise panic at all; and `ref-conventions.md` asserted that `u_map` did not use a lookup table.
+raise panic at all; and the old conventions doc asserted that `u_map` did not use a lookup table.
 
 ⚠️ **And one bug that 23 green headless checks could not see.** The instrument booted at 120 BPM
 instead of the saved 57, because the map was not ready when mother pushes `knobs.txt` at boot. The
@@ -93,8 +91,8 @@ Item 234.
 
 ## 4. Open questions
 
-**The single place to look for what is unresolved.** CLAUDE.md, ref-conventions.md and ref-midi.md
-all point here; the section did not exist until v0.3 and the pointers were dangling.
+**The single place to look for what is unresolved.** Every `ref/` page's `Open` section points here;
+the section did not exist until v0.3 and the pointers were dangling.
 
 ### The Launchpad watchdog cannot recover a device that was absent at load
 
@@ -143,7 +141,7 @@ they keep their item numbers so the citations still mean something.
 
 ## 5. ⚠️ Constraints that bind what you build
 
-**The four rate ceilings are in [ref-midi.md](ref-midi.md). What they bind here:**
+**The four rate ceilings are in [ref/module/tempo.md](ref/module/tempo.md). What they bind here:**
 
 | Constraint | Consequence |
 |---|---|
@@ -214,7 +212,7 @@ outages, twice**), and check satellite backhaul health.
 
 ### Grid idioms, and what each would map to
 
-Moved out of `ref-software.md` during the documentation refactor. **Every row below describes a
+Moved out of the old design-notes file during the documentation refactor. **Every row below describes a
 feature that does not exist yet** — the pattern launcher, the four filter quadrants, Chop Shop's
 drunkenness — so it is intent rather than reference, and `ref-` states what is.
 
@@ -300,7 +298,7 @@ outgrown its usefulness. Three facts are restated in eight files apiece (`47 + n
 ### 10.2 The diagnosis, and why it is structural
 
 **Agents have written 100% of these docs.** That means restatement was never laziness — it is the
-only thing a cold context can do. A session editing `ref-midi.md` has no way to know the same fact
+only thing a cold context can do. A session editing one topic-major file has no way to know the same fact
 sits in seven other files; it would have to grep for a fact it does not know exists.
 
 ⛔ **So "one home per fact" cannot be a convention that authors follow. It has to be a structure they
@@ -311,8 +309,7 @@ fall into, and a program that catches the drift.** Every part of the design belo
 **Format: Markdown stays. The tables become the database.** A GitHub markdown table is already
 machine-readable — it is simply not being read. Give the tables a fixed column schema and a parser
 and the human-readable copy and the machine-readable copy are *the same bytes*: no build step, no
-generated files, no second format, and it still diffs a row at a time. `ref-midi.md` is most of the
-way there already.
+generated files, no second format, and it still diffs a row at a time.
 
 Anything **Pd itself** must read stays space-separated `.txt` — `cut-it-map.txt` is the proven
 pattern and Pd can parse nothing else.
@@ -341,7 +338,7 @@ bodies run ~36 lines. `plan-tests.md` existed because git was read-only until th
 condensed by hand, and **that is the bulk of the work in this refactor.**
 
 **Item numbers survive as fact IDs.** Item 228 stops being "the 228th thing measured" and becomes
-the ID of the `pgmout` row in `ref-midi.md`. All ~180 citations across the project keep resolving by
+the ID of the `pgmout` row in `ref/device/volca.md`. All citations across the project keep resolving by
 grep, with no renumbering and no index file. New facts take new numbers from the same
 never-reused sequence.
 
@@ -397,7 +394,7 @@ The repo carries **1,479 markers**. They were doing more jobs than they had glyp
 
 - ⛔ **`✅` as a completion marker is deleted — roughly 100 uses, 40 of them in headings**
   (`## Errors must reach the OLED ✅ built`). **An evidence marker never rots; a completion marker
-  silently becomes false**, which is exactly how `ref-conventions.md` came to assert that `u_map`
+  silently becomes false**, which is exactly how the old conventions doc came to assert that `u_map`
   used no lookup table. And in this project a completion marker is nearly always a *placement*
   error: in a `ref-` doc everything described is built by definition, and in `plan-v03` "complete"
   means the section should have left the file. **Each deletion doubles as a check that the item is
@@ -441,10 +438,10 @@ and `tools/docs-check.py` enforces all of it. None of it has to be remembered; r
 
 | | Then | Now |
 |---|---|---|
-| `ref-conventions.md` | 892 | **27** (a pointer stub) |
-| `ref-software.md` | 455 | **33** (a pointer stub) |
-| `ref-display.md` | 727 | **19** (a pointer stub) |
-| `ref-midi.md` | 897 | **141** |
+| `ref-conventions.md` | 892 | ✅ **0 — deleted.** The rules are `C-1`…`C-14` on [ref/conventions.md](ref/conventions.md) |
+| `ref-software.md` | 455 | ✅ **0 — deleted** |
+| `ref-display.md` | 727 | ✅ **0 — deleted** |
+| `ref-midi.md` | 897 | ✅ **0 — deleted.** One page per device under [ref/device/](ref/device/) |
 | `ref-hardware.md` | 697 | **406** — now only the Organelle as a COMPUTER, and verify-after |
 | `ref/` pages | — | **4,092 across 16** |
 | `CLAUDE.md` | 313 | 327 — **not yet the router** |
@@ -487,8 +484,8 @@ and nothing else, and §10.8 says not to invest there until the Organelle cruft 
 paths. **Renaming it into `ref/` is the last step of that cleanup, not of this refactor.**
 
 **Next, in order:** **the journals** — which is now the whole of the remaining volume — then
-`CLAUDE.md` as a router, then the `.pd` comments citing `C-NN` so the `ref-conventions.md` stub can
-go.
+`CLAUDE.md` as a router, then the `.pd` comments citing `C-NN` so the four stubs could go. **All
+done.**
 
 ⚠️ **THE LINE COUNT GOES UP PER PAGE, AND THAT IS EXPECTED.** `ref/device/sp404.md` replaced 279 source
 lines with 281. Tables gained `Evidence` and `Item` columns, the pad map became sixteen rows instead
@@ -497,18 +494,15 @@ statement. **The volume reduction is entirely in the journals**, which are still
 now **78% of what is left at the root**. Do not compress the module pages chasing it.
 
 ⛔ **AND THE LOSS CHECK IS NOT OPTIONAL — it has caught a real deletion twice.** Collapsing
-`ref-software.md` lost twelve facts, including tempo propagation in full and the reason explicit
+the old design-notes file lost twelve facts, including tempo propagation in full and the reason explicit
 modes exist. Collapsing `ref-hardware.md` nearly lost four `###` subsections that had accumulated
 under *Signal flow — power* and had nothing to do with power, including the root cause of the
 Launchpad boot hang. ⚠️ **A section is not what its heading says. Read what is under it before
 deleting from heading to next `##`** — and probe 30–50 distinctive strings from the old text against
 the new pages afterwards, case- and whitespace-normalised.
 
-**Where the material for the remaining pages is:** `ref-software.md` (architecture, load-bearing
-decisions, signal architecture, timing), `ref-hardware.md` (the device itself, wifi, power, cabling,
-gear), `ref-display.md` (the display arbiter only), `ref-midi.md` (the addressing model and
-`u_tempo`'s clock construction), and the `.pd` comments, which hold material that is in no `.md` at
-all — `u_map`, `u_state`, `u_init` and `m_404` are the richest.
+✅ **Every page is written and every source is gone.** The only root documents left are `CLAUDE.md`,
+this file, and `ref-hardware.md`, which the Organelle cruft cleanup renames to `ref/device-os.md`.
 
 ### 10.9b What "done" looks like, exactly
 
@@ -520,18 +514,15 @@ plan states what is OPEN — they are different kinds of document, not different
 |---|---|---|
 | **`CLAUDE.md`** | 172 | **Never** — it is the router |
 | **`plan-v03.md`** | 526 | **Never** — the only plan document |
-| `ref-conventions.md` | 27 | The 14 patch and tool files naming it cite `C-NN` instead |
-| `ref-midi.md` | 141 | The `.pd` comments naming it point at `ref/device/` instead |
-| `ref-software.md` | 33 | Same |
-| `ref-display.md` | 19 | Same |
+| ~~the four stubs~~ | ~~220~~ | ✅ **Deleted.** 22 `.pd` citations became `C-NN` rules or `ref/` paths first |
 | `ref-hardware.md` | 421 | ⚠️ **NOT in this refactor** — it becomes `ref/device-os.md` as the last step of the **Organelle cruft cleanup**, which changes the paths it documents |
 
 **So this refactor ends at THREE root files**, and drops to two when the cruft cleanup lands.
 
 ⚠️ **The four stubs are the cheap part and they are blocked on the same thing**: a `.pd` comment has
-no link syntax, so it names a document by path. Replace `see ref-conventions.md` with `see C-6` in
-fourteen files and four stubs can be deleted in one commit. **Do the citations before the deletes**,
-or `docs-check.py`'s dangling-document check goes red across the patch.
+no link syntax, so it names a document by path — which is why the stubs could not be deleted until
+the citations moved. ✅ **Done**: 22 citations across thirteen patches now name a `C-NN` rule where
+one exists, or the `ref/` page that holds the fact where none does.
 
 ### 10.10 Still open
 
@@ -545,7 +536,7 @@ or `docs-check.py`'s dangling-document check goes red across the patch.
   check is ~25 lines and pays for itself; where it does not, no check is possible at any price.
 - ✅ **Where the display arbiter goes — RULED: its own page**, `ref/module/display.md`, built. The
   reasoning is kept below because the same question will come up for whatever v0.4 shares between
-  two devices. `ref-display.md` was 279 lines, and about 220 of them
+  two devices. The old display doc was 279 lines, and about 220 of them
   are the framework rather than device fact: the `home < modal < alert` arbiter that `g_oled`,
   `g_grid` and `g_led` share, the `disp` bus protocol, and the geometry. Four files implement it.
   **Revised proposal: its own page, `ref/module/display.md`** — it is one instrument concern, which

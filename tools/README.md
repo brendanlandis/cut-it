@@ -155,7 +155,7 @@ and `mode`, exactly as a controller would.
 |---|---|
 | `phase3-bench.pd` | **The acceptance run.** Fourteen steps, **stepped by hand** — see *The benches are stepped by hand* below. Each prints what it is sending and a **PASS IF** line *before* the screen moves, including the steps whose correct result is that nothing happens. Run it in the **foreground** and watch the OLED. |
 | `phase3-diag.pd` | Counts rather than dumps. `FRAMES` and `MESSAGES` are cumulative totals printed once a second, so the rate is the gap between lines — expect +10 and +100. Printing every OSC message instead would slow down the thing being measured. |
-| `alert-buffer-probe.pd` | ✅ **Answered:** draws into the ALERT buffer (screen 4), `setscreen 4`, waits six seconds, `setscreen 3`. All of it works — but `g_oled` still doesn't use buffer 4, for the reasons in [ref-display.md](../ref-display.md). Keep it as the re-check if that ever gets revisited. |
+| `alert-buffer-probe.pd` | ✅ **Answered:** draws into the ALERT buffer (screen 4), `setscreen 4`, waits six seconds, `setscreen 3`. All of it works — but `g_oled` still doesn't use buffer 4, for the reasons in [ref-display.md](../ref/module/display.md). Keep it as the re-check if that ever gets revisited. |
 
 ## `pd-layout-check.py`
 
@@ -190,7 +190,7 @@ the phone side and is not an Organelle patch at all.
 | `audio-probe/` | `env~` levels for `adc~ 1` and `adc~ 2` drawn large on the OLED. Used to verify the TRS input split; still the quickest way to check what is arriving at the inputs. |
 | `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection. **Not** an Organelle patch: deploy over WebDAV with `curl -T http://<phone>:9000/CutItRemote/_main.pd`. |
 
-Findings from all of them are written up in [../ref-display.md](../ref-display.md).
+Findings from all of them are written up in [../ref/module/display.md](../ref/module/display.md).
 
 ### `stage-patches/` — menu patches for the venue
 
@@ -267,10 +267,10 @@ Stop with `killall pd`.
 
 Findings specific to working *in this folder*. The Launchpad's own behaviour — palette,
 animation modes, LED state, `polytouchin` ordering — is catalogued in
-[../ref-midi.md](../ref-midi.md). Pd message-discipline traps (`[list trim]`, `route`'s
+[../ref/device/](../ref/device/). Pd message-discipline traps (`[list trim]`, `route`'s
 selector rules, `sendtyped` arity, `quitting`) are in
-[../ref-conventions.md](../ref-conventions.md), and the OSC ones in
-[../ref-display.md](../ref-display.md).
+[../ref/conventions.md](../ref/conventions.md), and the OSC ones in
+[../ref/module/display.md](../ref/module/display.md).
 
 - **`loadbang` fires before ALSA connections exist.** Initialisation SysEx sent on `loadbang`
   goes nowhere. Use `[loadbang] → [del 2000]` or longer. Repeated here because every patch in

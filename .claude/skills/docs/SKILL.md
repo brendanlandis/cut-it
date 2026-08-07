@@ -95,7 +95,7 @@ line-neutral. Pages get more scannable, not shorter.
 | ⚠️ | An operational rule: never do this to the rig or the device |
 
 ⛔ **A check mark never means "built".** An evidence marker never rots; a completion marker silently
-becomes false — which is how `ref-conventions.md` came to assert `u_map` used no lookup table and
+becomes false — which is how the old conventions doc came to assert `u_map` used no lookup table and
 kept saying it until Phase 9 contradicted it. **The gate fails on a ✅ in any heading.**
 
 In tables the evidence class is a **column value** — `verified` / `doc` / `unknown` — so no fact row

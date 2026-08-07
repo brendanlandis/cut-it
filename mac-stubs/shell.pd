@@ -4,4 +4,4 @@
 #X obj 20 240 inlet;
 #X obj 20 300 outlet;
 #X text 200 240 swallowed: no command runs \, and nothing is emitted \, which is exactly what a check that only asks "does every object exist" needs., f 40;
-#X text 20 360 If you find yourself wanting this to actually do something \, you want the real thing -- run the patch on the device instead \, see ref-conventions.md \, There IS a console., f 58;
+#X text 20 360 If you find yourself wanting this to actually do something \, you want the real thing -- run the patch on the device instead \, see ref/conventions.md \, There IS a console., f 58;

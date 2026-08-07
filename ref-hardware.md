@@ -139,7 +139,7 @@ way to add devices. Note `-audiobuf 6` on the command line overrides `audiobuf: 
 
 **`-nogui` means there is no Pd console.** Patch errors go to stdout on tty1, so VNC will not
 show them either. This is why error reporting to the OLED is treated as an architecture
-requirement rather than a debugging convenience — see [ref-conventions.md](ref-conventions.md).
+requirement rather than a debugging convenience — see [ref/architecture.md](ref/architecture.md).
 
 ### Measuring the running patch
 
@@ -213,7 +213,7 @@ USB-enumeration-order drift across reboots.
 
 `./deploy.sh` does the whole loop — syntax check, copy, reload the patch list, load the patch —
 with no physical interaction. Flags and the reasoning are in
-[ref-conventions.md](ref-conventions.md). Because there is **no rsync**, locally-deleted files
+[ref/conventions.md](ref/conventions.md). Because there is **no rsync**, locally-deleted files
 linger remotely: use `./deploy.sh --clean` after renaming or removing an abstraction, or a stale
 `.pd` will shadow the new one.
 

@@ -8,9 +8,8 @@ rules that keep a Pd project legible past a few hundred objects.
 *(judgment call)* with the reasoning, so it can be overruled deliberately rather than drifted
 away from.
 
-Companion to [ref-software.md](ref-software.md) (what the instrument does),
-[ref-hardware.md](ref-hardware.md) (the rig) and [ref-midi.md](ref-midi.md) (the wire
-format). Hard constraints — Pd version, plugdata, vanilla-only — are in [CLAUDE.md](CLAUDE.md).
+Companion to [architecture.md](architecture.md) (how the modules compose), [rig.md](rig.md) (the
+boxes and cables) and the pages under [device/](device/) (the wire format). Hard constraints — Pd version, plugdata, vanilla-only — are in [CLAUDE.md](CLAUDE.md).
 
 ## The rules, in one screen
 
@@ -270,7 +269,7 @@ one tempo and one beat.
 **MIDI clock carries exactly one tempo**, so the SP-404 and Volca always follow master.
 Poly-tempo is internal-only for anything leaving the box — which reinforces rather than
 contradicts the "Pd sequences everything, timing rides in note events" decision in
-[ref-software.md](ref-software.md).
+[architecture.md](architecture.md).
 
 **So `u_tempo` must be a master reference *plus* an instantiable `c_clock`, never a singleton.**
 The cost of getting that wrong is tracked as a risk in [plan-v03.md](plan-v03.md).
@@ -523,7 +522,7 @@ A bare `Cut It` loads nothing, silently. `deploy.sh` derives this from `DEST`.
 | Organelle | `./deploy.sh` |
 | iPhone (PdParty) | `curl -T <file> http://<phone>:9000/<scene>/_main.pd` over WebDAV |
 
-Neither needs a cable. See [ref-display.md](ref-display.md) for addresses and ports.
+Neither needs a cable. See [device/phone.md](device/phone.md) for addresses and ports.
 
 **What the check cannot catch** is runtime behaviour — wrong message types, silent OSC
 failures, logic errors. That is what the error bus below and the PdParty remote console are
@@ -737,7 +736,7 @@ item 143.
 ## Where the abstractions go
 
 The decomposition that follows from all of the above — which abstraction exists and what each
-holds — is [ref-software.md](ref-software.md)'s *Architecture*, and the order the remaining ones
+holds — is [architecture.md](architecture.md), and the order the remaining ones
 get built in is [plan-v03.md](plan-v03.md)'s *The shape of v0.3*.
 
 The one boundary worth restating here, because it constrains how everything else may be

@@ -58,10 +58,6 @@ chooses to use it.
 | A cited `item NNN` | `grep` it — item numbers are **fact IDs**, not log entries |
 | What each tool proves and how to run it | [tools/README.md](tools/README.md) |
 
-⚠️ **Four root files are pointer stubs** — `ref-conventions.md`, `ref-software.md`,
-`ref-display.md`, `ref-midi.md`. They survive only because `.pd` comments name them by path and a
-comment has no link syntax. **Do not add to them.**
-
 ✅ **Both journals are gone.** Phases 0–8 as built and every measurement behind them are in
 `git log`; every fact they produced is on a `ref/` page. **`item NNN` still resolves** — grep for it.
 
@@ -148,7 +144,7 @@ python3 tools/docs-check.py -v
 | ⚠️ | An operational rule: never do this to the rig or the device |
 
 ⛔ **A check mark never means "built."** An evidence marker never rots; a completion marker silently
-becomes false — which is how `ref-conventions.md` came to assert `u_map` used no lookup table and
+becomes false — which is how the old conventions doc came to assert `u_map` used no lookup table and
 kept saying it until Phase 9 contradicted it. **Do not treat 📄 or ⬜ items as settled facts.**
 
 Links to paths containing spaces use the angle-bracket form:

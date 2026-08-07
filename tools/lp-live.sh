@@ -13,7 +13,7 @@
 #
 # EVERY OTHER WAY OF ENDING A SESSION STRANDS THE DEVICE:
 #   * `killall pd` over SSH -- which the by-hand console workflow in
-#     ref-conventions.md does every single time
+#     ref/conventions.md does every single time
 #   * a Pd crash
 #   * power loss mid-session
 # Measured 2026-08-03: killall left the grid frozen in Programmer Mode, and this

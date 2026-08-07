@@ -106,7 +106,7 @@ clock was aimed at the smaller of the two emitters **by a factor of seven** — 
 
 ## Prefer the check that needs no Pd
 
-The strongest half of `phase9-assert` is a **static lint**: it reads `u_map`'s literal `route` box
+The strongest half of `map-assert` is a **static lint**: it reads `u_map`'s literal `route` box
 and the map's rows and proves every destination a row can name exists on that route. No Pd, no
 timing, ~200 ms, and it enforces the allowlist guard by reading.
 

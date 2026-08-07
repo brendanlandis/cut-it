@@ -71,7 +71,9 @@ run "the MIDI inventory"                   ./test/gate/midi-emitters-assert.sh
 run "Phase 6 gate -- the Launchpad grid"   ./test/gate/phase6-assert.sh
 run "the phone link"                       ./test/gate/phone-assert.sh
 run "the data store"                       ./test/gate/state-assert.sh
-run "Phase 9 gate -- the map and the output devices" ./test/gate/phase9-assert.sh
+run "the map"                              ./test/gate/map-assert.sh
+run "the Volca"                            ./test/gate/volca-assert.sh
+run "the SP-404, both directions"          ./test/gate/sp404-assert.sh
 
 # ---------------------------------------------------------------------------
 # ⛔ EXACTLY ONE LINE MATCHES "RESULT:", AND THAT IS DELIBERATE.

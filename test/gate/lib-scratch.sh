@@ -8,7 +8,7 @@
 # patch, MIDI object boxes rewritten to printing stubs, a private state
 # directory, a generated driver, and a watchdogged Pd run -- and until now two of
 # them had two different, drifted implementations. phase6-assert.sh rewrote
-# [midiout] with an anchored regex and a non-zero count; phase9-assert.sh
+# [midiout] with an anchored regex and a non-zero count; the split gates
 # rewrote four other classes with an argument-tolerant regex and an exact count.
 # ⛔ THE WEAKER ONE IS NOT A STYLE DIFFERENCE. It is three of the four ways a
 # gate passes vacuously, shipped and green. There is one implementation now, and

@@ -38,7 +38,7 @@ ref/          architecture  conventions  device-os  rig
 file does not exist:
 
 ```markdown
-**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/phase9-assert.sh` · **Bench:** `test/bench/phase9-bench.pd`
+**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/sp404-assert.sh` · **Bench:** `test/bench/phase9-bench.pd`
 ```
 
 ⛔ **So renaming a gate is not free — every page naming it goes red until its header moves too.**

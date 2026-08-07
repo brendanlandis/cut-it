@@ -13,7 +13,7 @@ and there is no console otherwise.
 
 Hand-authored in Pd 0.49 format except the **seven benches** and **four assert drivers**, which are
 **generated** — `bench-gen.py`, `phase6-assert-drive-gen.py`, `phone-assert-drive-gen.py`,
-`state-assert-drive-gen.py` and `phase9-assert-drive-gen.py` write them, and the `.pd` is an output. Edit the generator. Do not
+`state-assert-drive-gen.py` and the three split-gate generators write them, and the `.pd` is an output. Edit the generator. Do not
 open any of it in plugdata — see [../CLAUDE.md](../CLAUDE.md).
 
 ## Start here: `check-all.sh`
@@ -95,21 +95,30 @@ drove. **The 3600 ms in the driver is load-bearing**; shortening it re-blinds th
 both ways now: 15/15 clean, 2 failures with the bug reintroduced. `state-assert-drive.pd` is an
 OUTPUT — edit `state-assert-drive-gen.py`, never the `.pd`.
 
-## phase9-assert.sh — the Phase 9 gate, and the only one with a half that needs no Pd
+## map-assert.sh, sp404-assert.sh, volca-assert.sh — three gates, one per module
 
 ```sh
-./test/gate/phase9-assert.sh          23 checks, ~8 s, exit non-zero on any failure
-./test/gate/phase9-assert.sh -v       and the detail behind every check
-./test/gate/phase9-assert.sh --keep   leave the scratch dir and capture behind
+./test/gate/map-assert.sh            11 checks, ~7 s — the lookup, and the static lint
+./test/gate/sp404-assert.sh          17 checks, ~7 s — the 404 in BOTH directions
+./test/gate/volca-assert.sh           6 checks, ~5 s — three destinations, one channel
 ```
 
-**Half of it is a STATIC LINT.** It parses the literal `route` box out of `u_map.pd` and the rows
+Each takes `-v` for the detail behind every check and `--keep` to leave the scratch directory and
+capture behind. **They were one gate, and it claimed three pages at once** — the map's page, the
+404's and the Volca's — which is exactly the false-coverage this refactor exists to remove. The
+split reconciles upward: 28 checks became 34, because each gate could then say things the shared one
+had no window for.
+
+⚠️ **`map-assert` uses `volca-cc` and asserts nothing about the Volca.** A lookup has to land
+somewhere; what the destination then does with the value is the device gate's business.
+
+**Half of `map-assert` is a STATIC LINT.** It parses the literal `route` box out of `u_map.pd` and the rows
 out of `cut-it-map.txt` and asserts that **every destination a row can name exists as an argument on
 that route** — the allowlist guard, enforced by reading, exactly the way this project audits its
 global sends. It also catches a **duplicate `(mode, control)` pair**, which `text search` resolves
 to the *first* match only, so a repeat is dead and silent. That half runs without Pd at all.
 
-The other half rewrites the MIDI object boxes in a scratch copy — **all five classes, from the one
+The other half of each gate rewrites the MIDI object boxes in a scratch copy — **all five classes, from the one
 `MIDI_EXPECT` in `test/gate/lib-scratch.sh`**, shared with every other gate that makes a copy. ⛔
 **`[midiout]` alone was never enough**: `m_volca` and `m_404` emit through `noteout` / `ctlout` /
 `pgmout`, so a rewrite of `midiout` only finds nothing in them and every assertion about them passes
@@ -121,12 +130,12 @@ vacuous; a **higher** one means an emitter no gate knows about. `test/gate/midi-
 asserts the same inventory on its own, without Pd, so the claim has an owner that belongs to no
 device.
 
-⚠️ **It owns its state directory**, and every gate that loads `main-dev.pd` now does. `main-dev.pd`
+⚠️ **Each owns its state directory**, and every gate that loads `main-dev.pd` now does. `main-dev.pd`
 passes `/tmp`, shared by every run on the machine, and `u_init` restores saved state at ~3.5 s — so
 one test that changes mode silently rewrites the starting conditions of every test after it. That
 cost a wrong diagnosis once: item 232.
 
-**Proven to fail** on a `47 + n` pad map (12 of 16 pads, both directions), a row naming a
+**Proven to fail** — the shared gate was, on a `47 + n` pad map (12 of 16 pads, both directions), a row naming a
 non-existent destination, and a duplicate row. ⛔ **It PASSED a disarmed rate limiter on the first
 try** — the burst window fires in one logical instant and `[del 0]` still defers to the next
 scheduler tick, so it proved *drops-rather-than-queues* and nothing about the interval. A window of
@@ -137,7 +146,7 @@ unchecked, Pd was handed a file that did not exist, and the `; pd quit` that liv
 never fired. **A gate that hangs is worse than one that fails.** The generator's status and the
 driver's existence are checked now, behind a 40 s watchdog.
 
-The driver is an OUTPUT and is generated into the scratch directory on every run — edit `phase9-assert-drive-gen.py`. There is no committed `.pd`.
+Each driver is an OUTPUT, generated into the scratch directory on every run — edit `map-assert-drive-gen.py`, `sp404-assert-drive-gen.py` or `volca-assert-drive-gen.py`. None is committed.
 
 ## fetch-state.sh — back the instrument's own data up into the repo
 

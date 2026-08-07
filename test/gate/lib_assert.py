@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+"""What every capture-reading analyser needs: the check tally, and the parser.
+
+Imported, never run:
+
+    import lib_assert as A
+    A.check("the thing holds", ok, detail)
+    sys.exit(1 if A.report() else 0)
+
+⚠️ THE MODULE NAME HAS AN UNDERSCORE and every other file here has a hyphen.
+That is not inconsistency -- a hyphen is not a legal Python identifier, so a
+module that is IMPORTED cannot have one, while a script that is only ever RUN
+can. The bench tooling loads its hyphenated neighbours through importlib for
+exactly this reason; a library does not have to.
+
+WHY IT EXISTS. Splitting the old phase 9 gate into three -- the map, the SP-404
+and the Volca -- would otherwise have made three copies of the tally, the parser
+and the window index. Three copies of a parser is how a fix reaches one gate and
+not the other two, which is the same failure the documentation refactor existed
+to remove.
+"""
+import re
+import sys
+
+fails = 0
+verbose = "-v" in sys.argv
+
+
+def check(name, ok, detail=""):
+    """One assertion. Prints PASS or FAIL, and the detail whenever it is useful
+    -- always on a failure, and on a pass only under -v."""
+    global fails
+    if not ok:
+        fails += 1
+    print("  %s  %s%s" % ("PASS" if ok else "FAIL", name,
+                          "" if (ok and not verbose) else ("   -- " + detail if detail else "")))
+    return bool(ok)
+
+
+def note(text):
+    """Something worth printing that is NOT an assertion. ⛔ A note must never
+    stand in for a check -- if it can be wrong, it should be a check."""
+    print("  note  " + text)
+
+
+def report():
+    """Print the tally and return the failure count, for sys.exit."""
+    print("\n%d checks failed" % fails)
+    return fails
+
+
+# ---------------------------------------------------------------------------
+_MIDI = re.compile(r"^(NOTEOUT|CTLOUT|PGMOUT|MIDIOUT):\s+(-?[\d.]+(?:\s+-?[\d.]+)*)$")
+_BUS = re.compile(r"^(PARAM|DISP|ERR|TEMPO):\s+(.*)$")
+
+
+def parse(cap, tag):
+    """-> (marks in order, {mark: [(kind, values)]})
+
+    `tag` is the driver's print label -- the MARK lines read "<tag>: MARK NAME".
+
+    ⚠️ THE MARK IS THE ONLY THING SEPARATING ONE WINDOW FROM THE NEXT, and the
+    driver fires it on its trigger's HIGHEST outlet so it lands in the capture
+    BEFORE the actions it labels. Triggers fire right to left. Get that wrong and
+    every assertion is reading the previous window's traffic.
+
+    MIDI values come back as floats and bus traffic as a list of atoms, because
+    that is what each is: a note number is arithmetic, a parameter name is not.
+    """
+    mark_re = re.compile(r"^%s:\s+MARK\s+(\S+)$" % re.escape(tag))
+    order, by, cur = [], {}, "PRE"
+    by[cur] = []
+    for line in cap.splitlines():
+        line = line.strip()
+        m = mark_re.match(line)
+        if m:
+            cur = m.group(1); order.append(cur); by.setdefault(cur, [])
+            continue
+        m = _MIDI.match(line)
+        if m:
+            by[cur].append((m.group(1), [float(v) for v in m.group(2).split()]))
+            continue
+        m = _BUS.match(line)
+        if m:
+            by[cur].append((m.group(1), m.group(2).split()))
+    return order, by
+
+
+def windows(cap, tag, expected):
+    """parse(), plus the bookkeeping check that the driver got all the way through.
+
+    ⛔ WITHOUT THIS EVERY OTHER ASSERTION CAN PASS VACUOUSLY IN THE SAME WAY: a
+    driver that died at window three leaves windows four onward empty, and an
+    assertion of the form "no MIDI in this window" is then answered by an empty
+    list rather than by a fact. Every gate here has at least one of those.
+    """
+    order, by = parse(cap, tag)
+    check("the driver reached every window", len(order) >= expected,
+          "saw %d of %d marks: %s" % (len(order), expected, " ".join(order)))
+    return order, by
+
+
+def require_capture(cap):
+    """A gate handed an empty capture must FAIL, not report nothing and exit 0."""
+    if not cap.strip():
+        check("a capture was supplied", False, "stdin was empty")
+        sys.exit(1)
+    return cap

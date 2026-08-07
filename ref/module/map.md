@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The map
 
-**Files:** `Cut It/u_map.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/phase9-assert.sh` · **Bench:** `test/bench/phase9-bench.pd`
+**Files:** `Cut It/u_map.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh` · **Bench:** `test/bench/phase9-bench.pd`
 
 ## What it is
 
@@ -39,7 +39,7 @@ mode-1 slider-1  volca-cc 41
 | `<dest>` | One of the nine below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
 
-**A row with any other width is a lint failure**, not a runtime one — `phase9-assert.py` reads the
+**A row with any other width is a lint failure**, not a runtime one — `map-assert.py` reads the
 file and rejects it before Pd ever does.
 
 ### The destinations — the allowlist, in order
@@ -59,7 +59,7 @@ file and rejects it before Pd ever does.
 | `404-pad` | The pad number | Velocity | verified | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
-to this page fails the doc gate. `phase9-assert.py` checks the same box against the map's rows.
+to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
 
 ### Values are normalised to 0–1, and the divisor is not uniform
 
@@ -189,7 +189,7 @@ The set of things a control can reach is still the set of boxes you can read —
 one-branch-per-mapping rule existed to protect, kept while the mappings became data.
 
 ⚠️ **Skip the guard and it is gone silently**: nothing fails, and no test notices. That is why it is
-checked from three sides — `phase9-assert.py` against the map's rows, `docs-check.py` against the
+checked from three sides — `map-assert.py` against the map's rows, `docs-check.py` against the
 table on this page, and a runtime `unknown-dest` on `err`.
 
 ### The six transport keys stay hardcoded, and they come first

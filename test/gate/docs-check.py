@@ -221,7 +221,7 @@ def check_pd_text(doc, lineno, rows, path, name):
 def check_pd_route(doc, lineno, rows, path, first):
     """Compare a table's first column against a `route` box's arguments, in order.
 
-    This is the ALLOWLIST GUARD read from the other side. `phase9-assert.py`
+    This is the ALLOWLIST GUARD read from the other side. `map-assert.py`
     proves every row of `cut-it-map.txt` names a destination on the route; this
     proves the DOCUMENTED set is that same set. A destination added to the patch
     and not to the page makes the page quietly incomplete, which nothing else
@@ -557,7 +557,7 @@ def check_dangling_paths(verbose):
 
     ⛔ THE SKILLS ARE THE REASON THIS EXISTS. A skill is procedure -- every path
     in one is an instruction to run or read something -- and the `gate` skill
-    names phase6-assert.sh, state-assert.sh and phase9-assert.py, all of which
+    names phase6-assert.sh, state-assert.sh and map-assert.py, all of which
     the coming test refactor renames onto a module axis. Without this, three
     skills quietly start instructing people to run files that are gone.
 

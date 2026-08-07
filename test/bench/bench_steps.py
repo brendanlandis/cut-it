@@ -380,6 +380,6 @@ STEPS9 = [
   []),
 
  ('END MARKER -- not a test -- the run is over',
-  'PASS IF: nothing further prints. THIS STEP ASSERTS NOTHING. ⚠️ Every step above is HANDS-ON and has NO actions -- so this bench never has to be LOADED on the device which means no killall pd and no stranded Launchpad. Read the steps and press the real controls. The logic is proven headlessly by test/gate/phase9-assert.sh',
+  'PASS IF: nothing further prints. THIS STEP ASSERTS NOTHING. ⚠️ Every step above is HANDS-ON and has NO actions -- so this bench never has to be LOADED on the device which means no killall pd and no stranded Launchpad. Read the steps and press the real controls. The logic is proven headlessly by test/gate/sp404-assert.sh',
   []),
 ]

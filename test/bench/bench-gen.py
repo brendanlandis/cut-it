@@ -468,7 +468,7 @@ PHASES = {
             "twenty \\, because a bench proves the cases it contains and nothing else."),
     9: dict(steps=S.STEPS9, counters=[], blurb="the Phase 9 acceptance run: the "
             "mode-dependent map \\, both output devices and the SP-404 in both "
-            "directions. MOST OF PHASE 9 IS PROVEN HEADLESSLY -- test/gate/phase9-assert.sh "
+            "directions. MOST OF PHASE 9 IS PROVEN HEADLESSLY -- test/gate/sp404-assert.sh "
             "asserts all sixteen pads \\, the rate limiter and the allowlist guard in about "
             "eight seconds. What is left here is only what HARDWARE can show: a real pad "
             "under a real finger \\, and a Volca you can hear."),

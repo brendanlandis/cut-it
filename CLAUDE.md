@@ -55,10 +55,10 @@ chooses to use it.
 | One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
 | One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `display` `map` `state` `tempo` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
-| The Organelle as a **computer** — SSH, paths, how Pd launches, deploying, wifi | [ref/device-os.md](ref/device-os.md) ⛔ verify-after |
+| The Organelle as a **computer** — SSH, paths, how Pd launches, deploying, wifi | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
 | A cited `item NNN` | `grep` it — item numbers are **fact IDs**, not log entries |
-| **Every test** — the headless gates, the hands-on benches, the stubs | [test/](test/) — `check-all.sh` · `gate/` · `bench/` · `stubs/` |
-| What each tool proves and how to run it | [tools/README.md](tools/README.md) |
+| **Every test** — the headless gates, the hands-on benches, the stubs | [test/README.md](test/README.md) |
+| What each operational tool and probe does | [tools/README.md](tools/README.md) |
 
 ✅ **Both journals are gone.** Phases 0–8 as built and every measurement behind them are in
 `git log`; every fact they produced is on a `ref/` page. **`item NNN` still resolves** — grep for it.
@@ -102,6 +102,9 @@ under `ref/`. Nothing in either is deployed.
 
 ⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
+
+**Nine gates, one per module**, and what each one protects is in
+[test/README.md](test/README.md). ⬜ `module/audio` is the only page still declaring `Gate: none`.
 
 
 ## Working on it

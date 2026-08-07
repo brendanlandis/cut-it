@@ -1,155 +1,37 @@
-# Diagnostic patches
+# Operational tools and probes
 
-⚠️ **THE TESTS HAVE MOVED TO [`../test/`](../test/)** — `test/check-all.sh`, `test/gate/`,
-`test/bench/` and `test/stubs/`. `tools/` now holds only operational scripts and one-off probes.
+**Everything here is run by a PERSON, on purpose, when something needs doing or diagnosing.**
+Nothing is run by a gate, nothing is deployed with the patch, and nothing here is a test — the tests
+are in [../test/](../test/README.md).
 
-**This file still describes both, and it is still organised on the old PHASE axis** — `## Phase 3`,
-`## Phase 4`, `## Phase 5` and a dozen subheadings that name a phase. The gates and benches they
-describe are all named for modules now. **Every path below is current — `docs-check.py` would be red
-otherwise — but a heading may not be.** Splitting and rewriting this file is
-[plan-cleanup.md](../plan-cleanup.md)'s last job, deliberately left until after that job decides
-which probes survive, so it describes what is left rather than what was.
+⚠️ **These are not Organelle patches** unless the table below says so. They don't load `mother.pd`
+and aren't meant for the device menu; they run over SSH so that `[print]` output is visible, which
+matters because the Organelle launches Pd with `-nogui` and there is no console otherwise.
 
-Standalone Pd patches for testing the rig. **Not** Organelle patches — they don't use
-`mother.pd` and aren't meant to be loaded from the device menu. They run manually over SSH so
-that `print` output is visible, which matters because the Organelle launches Pd with `-nogui`
-and there is no console otherwise.
+## What is here
 
-Hand-authored in Pd 0.49 format except the **seven benches** and **four assert drivers**, which are
-**generated** — `bench-gen.py`, `display-assert-drive-gen.py`, `phone-assert-drive-gen.py`,
-`state-assert-drive-gen.py` and the three split-gate generators write them, and the `.pd` is an output. Edit the generator. Do not
-open any of it in plugdata — see [../CLAUDE.md](../CLAUDE.md).
-
-## Start here: `check-all.sh`
-
-```sh
-./test/check-all.sh          every gate in one command, ~40 s, exit non-zero on any failure
-```
-
-Layout and graph structure, both entry points loading in silence, the bench step text, the MIDI
-inventory, and one gate per module — the display arbiter, the map, the data store, the Launchpad,
-the phone, the SP-404 and the Volca. **Mac only — it touches no device**, so it is safe to run at
-any time, including with the Organelle switched off.
-
-⚠️ **Run it before calling anything done.** Phase 8 edited `u_map`, `u_init` and `u_root` — files
-Phases 5, 6 and 7 all rest on — and came within one step of shipping without re-running *their*
-gates. The gates were all there, all passing, and all unused. **A gate you have to remember to run
-is a gate that eventually does not run.**
-
-| Patch | What it does |
+| | |
 |---|---|
-| `lp-monitor.pd` | Puts the Launchpad in Programmer Mode, echoes pad presses back as LEDs, prints velocity and polyphonic aftertouch. |
-| `lp-step0.pd` | **Phase 6's Step 0 measurements, in one patch** — items 82–87. Prints incoming notes, **CC** and aftertouch with their channel, sends a batch colour SysEx of 64 / 99 / 120 specs, and switches layout. `lp-monitor.pd` cannot answer item 82 because it has no `[ctlin]`. Run it on the **Mac** with the Launchpad plugged in, in the foreground. |
-| `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
+| **Getting data back off the device** | `fetch-state.sh` `fetch-errors.sh` |
+| **The wifi investigation** — an OPEN fault | `wifi-watch.sh` `wifi-poll.sh` `wifi-report.sh` `wifi-reassociate.sh` |
+| **Driving and rescuing hardware** | `go.sh` `lp-live.sh` `dsp.sh` + `dsp-toggle.pd` |
+| **Measuring the device** | `display-cpu.sh` `display-diag.pd` |
+| **Probes still worth running** | `lp-monitor.pd` `lp-step0.pd` `alert-buffer-probe.pd` `self-wire.pd` |
+| **Worked examples** — a technique, kept as the proof | `audio-probe/` `oled-probe/` `osc-bridge/` `status-display/` |
+| **The phone side** | `pdparty-scene/` — a PdParty scene, not an Organelle patch |
+| **Menu patches** | `stage-patches/` — see below |
 
-## pd-layout-check.py --boxes — ask, don't count
+⚠️ **Eighteen one-off probes were deleted on 2026-08-07** — seven for the SP-404 rate ceiling alone,
+three July MIDI probes superseded by the `m_` layers, and a `wire.sh` here that was a 42-line-behind
+ancestor of `Cut It/wire.sh` with no `|| true` on any line. Every finding is on a `ref/` page and
+most are now asserted by a gate. They are all in git history; `plan-cleanup.md` lists them.
 
-```sh
-python3 test/gate/pd-layout-check.py --boxes "Cut It/u_state.pd"
-```
+⛔ **The test was "would you run it again", not "is it used".** A script mentioned in no document is
+fine.
 
-Prints the index of every box exactly as `#X connect` counts them. **Use it before writing a
-connect block by hand.** Pd numbers boxes by position in the FILE: comments count, `#X declare`
-does not, a subpatch's contents do not but its closing `#X restore` does. Getting any of that
-wrong shifts every later index and silently rewires the patch — which has bitten this project
-five times, plus two near-misses while Phase 8 was written, both caught only by re-deriving the
-indices by hand. That is what this flag is for.
+## Getting data back off the device
 
-The check itself now separates **PROBLEM** (structural — exits non-zero) from **note**
-(cosmetic — does not). A crossed cord has never once meant the patch was wrong; a cord landing on
-a comment always has.
-
-## A bench suits a SURFACE, not a store
-
-⚠️ Worth knowing before writing `STEPS9`. The bench framework prints a `PASS IF` and waits for a
-human to look at something — which works beautifully for the OLED, the Launchpad and the phone,
-and not at all for a feature whose entire output is a **file**. Phase 8's six steps are the
-minimum that hardware can actually show (the front-panel Save, a real power cycle, the mode lamp);
-its logic is proven by `state-assert.sh` instead, headlessly, in twelve seconds.
-
-Phase 8's run was also driven **from the Mac by hand rather than by loading the bench**, because
-every one of its steps carries no actions. That avoided the by-hand console entirely — and
-therefore `killall pd`, and therefore stranding the Launchpad in Programmer Mode. **If a phase's
-steps have no actions, you do not need to load the bench at all.**
-
-## state-assert.sh — the data store's gate, and the cheapest in the suite
-
-```sh
-./test/gate/state-assert.sh          15 checks, ~12 s, exit non-zero on any failure
-./test/gate/state-assert.sh -v       and the detail behind every check
-```
-
-`u_state` writes a **file**, so this gate reads what landed on disk. No scratch copy (Phase 6
-needed one, because `[midiout]` is a built-in class with no side channel), no socket (Phase 7's
-trick), no hardware. It works entirely inside `/tmp/cut-it-state-gate` and never touches
-`Cut It/`, `/sdcard/cut-it-state` or the device.
-
-**What it protects, stated as properties rather than proxies:** the two policies never leak into
-each other; re-putting a key REPLACES its line; **a contributor answering behind a `[del]` is
-absent from the file** — the synchronous contract itself; manual is replayed before auto so auto
-wins a duplicate key; **a boot does not overwrite saved state before reading it**; and both entry
-points load in **silence**, which is `deploy.sh`'s own gate.
-
-⚠️ **It passed the broken patch on its first can-it-fail run** — the driver banged the restore at
-600 ms when the bug needs it after 3000 ms, and the final check asserted against a value nothing
-drove. **The 3600 ms in the driver is load-bearing**; shortening it re-blinds the gate. Proven
-both ways now: 15/15 clean, 2 failures with the bug reintroduced. `state-assert-drive.pd` is an
-OUTPUT — edit `state-assert-drive-gen.py`, never the `.pd`.
-
-## map-assert.sh, sp404-assert.sh, volca-assert.sh — three gates, one per module
-
-```sh
-./test/gate/map-assert.sh            11 checks, ~7 s — the lookup, and the static lint
-./test/gate/sp404-assert.sh          17 checks, ~7 s — the 404 in BOTH directions
-./test/gate/volca-assert.sh           6 checks, ~5 s — three destinations, one channel
-```
-
-Each takes `-v` for the detail behind every check and `--keep` to leave the scratch directory and
-capture behind. **They were one gate, and it claimed three pages at once** — the map's page, the
-404's and the Volca's — which is exactly the false-coverage this refactor exists to remove. The
-split reconciles upward: 28 checks became 34, because each gate could then say things the shared one
-had no window for.
-
-⚠️ **`map-assert` uses `volca-cc` and asserts nothing about the Volca.** A lookup has to land
-somewhere; what the destination then does with the value is the device gate's business.
-
-**Half of `map-assert` is a STATIC LINT.** It parses the literal `route` box out of `u_map.pd` and the rows
-out of `cut-it-map.txt` and asserts that **every destination a row can name exists as an argument on
-that route** — the allowlist guard, enforced by reading, exactly the way this project audits its
-global sends. It also catches a **duplicate `(mode, control)` pair**, which `text search` resolves
-to the *first* match only, so a repeat is dead and silent. That half runs without Pd at all.
-
-The other half of each gate rewrites the MIDI object boxes in a scratch copy — **all five classes, from the one
-`MIDI_EXPECT` in `test/gate/lib-scratch.sh`**, shared with every other gate that makes a copy. ⛔
-**`[midiout]` alone was never enough**: `m_volca` and `m_404` emit through `noteout` / `ctlout` /
-`pgmout`, so a rewrite of `midiout` only finds nothing in them and every assertion about them passes
-**vacuously**. ⛔ **And `t_notein` is not optional**: every *output* path can be driven from a bus,
-but `m_404`'s whole receive side sits behind a MIDI input and **no bus reaches one**.
-
-⚠️ **The count is EXACT per class, never "not zero".** A **lower** count means assertions have gone
-vacuous; a **higher** one means an emitter no gate knows about. `test/gate/midi-emitters-assert.sh`
-asserts the same inventory on its own, without Pd, so the claim has an owner that belongs to no
-device.
-
-⚠️ **Each owns its state directory**, and every gate that loads `main-dev.pd` now does. `main-dev.pd`
-passes `/tmp`, shared by every run on the machine, and `u_init` restores saved state at ~3.5 s — so
-one test that changes mode silently rewrites the starting conditions of every test after it. That
-cost a wrong diagnosis once: item 232.
-
-**Proven to fail** — the shared gate was, on a `47 + n` pad map (12 of 16 pads, both directions), a row naming a
-non-existent destination, and a duplicate row. ⛔ **It PASSED a disarmed rate limiter on the first
-try** — the burst window fires in one logical instant and `[del 0]` still defers to the next
-scheduler tick, so it proved *drops-rather-than-queues* and nothing about the interval. A window of
-two triggers **2 ms apart** was added, which straddles the 5 ms gate: 1 armed, 2 disarmed.
-
-⛔ **It also HUNG once instead of failing** — the driver generator errored, its exit status was
-unchecked, Pd was handed a file that did not exist, and the `; pd quit` that lives *inside that file*
-never fired. **A gate that hangs is worse than one that fails.** The generator's status and the
-driver's existence are checked now, behind a 40 s watchdog.
-
-Each driver is an OUTPUT, generated into the scratch directory on every run — edit `map-assert-drive-gen.py`, `sp404-assert-drive-gen.py` or `volca-assert-drive-gen.py`. None is committed.
-
-## fetch-state.sh — back the instrument's own data up into the repo
+### `fetch-state.sh` — the instrument's own data
 
 ```sh
 ./tools/fetch-state.sh              copy /sdcard/cut-it-state/ into device-state/
@@ -161,224 +43,6 @@ Each driver is an OUTPUT, generated into the scratch directory on every run — 
 cannot touch it. The cost is that the data then lives in exactly one place, on an SD card, in a
 device that has already lost its network once. This is the other half of that bargain. It commits
 nothing — git is Brendan's.
-
-## Phase 3 — testing the display on hardware
-
-These three load **alongside** a running `mother.pd` + `main.pd` (see *Running one* below).
-None of them touches the deployed patch: they only read `oscOut` or push onto `disp`, `err`
-and `mode`, exactly as a controller would.
-
-| Patch | What it does |
-|---|---|
-| `display-bench.pd` | **The acceptance run.** Fourteen steps, **stepped by hand** — see *The benches are stepped by hand* below. Each prints what it is sending and a **PASS IF** line *before* the screen moves, including the steps whose correct result is that nothing happens. Run it in the **foreground** and watch the OLED. |
-| `display-diag.pd` | Counts rather than dumps. `FRAMES` and `MESSAGES` are cumulative totals printed once a second, so the rate is the gap between lines — expect +10 and +100. Printing every OSC message instead would slow down the thing being measured. |
-| `alert-buffer-probe.pd` | ✅ **Answered:** draws into the ALERT buffer (screen 4), `setscreen 4`, waits six seconds, `setscreen 3`. All of it works — but `g_oled` still doesn't use buffer 4, for the reasons in [ref-display.md](../ref/module/display.md). Keep it as the re-check if that ever gets revisited. |
-
-## `pd-layout-check.py`
-
-Not a patch — a static check on `.pd` files:
-
-```sh
-python3 test/gate/pd-layout-check.py "Cut It"/*.pd
-```
-
-Reports overlapping boxes, **connections drawn through unrelated boxes**, and content that
-extends past the saved canvas size. Exits non-zero on any of them.
-
-Layout is the only structural documentation Pd has, and the failure it was written for is
-specific: a comment placed between the logic and a message column gets cords drawn straight
-through it, which is invisible until you open the patch. Box sizes are estimated from the text
-rather than measured, so it is a smell detector, not a renderer.
-
-The diagnostic patches above predate it and do not pass — they are working references, not
-examples of layout.
-
-## Organelle patches
-
-The first four **are** Organelle patches — they load `mother.pd` and run from the device menu,
-unlike everything above. Deploy with `scp` to `/sdcard/Patches/!/<name>/main.pd`. The fifth is
-the phone side and is not an Organelle patch at all.
-
-| Patch | What it proves |
-|---|---|
-| `oled-probe/` | The OLED **graphics** API is reachable from a patch via `[s oscOut]`. Measures the font (21 chars, monospace, 8px) and redraws live from knob 1. |
-| `osc-bridge/` | Bidirectional OSC between Organelle and an iPhone running PdParty. Sends a heartbeat and `knob1`; draws whatever arrives on `/cutit/fader` big on the OLED. |
-| `status-display/` | The performance status protocol: four knobs sending **named parameters** (`chop-size`, `grain`, `speed`, `drunk`) plus a heartbeat. |
-| `audio-probe/` | `env~` levels for `adc~ 1` and `adc~ 2` drawn large on the OLED. Used to verify the TRS input split; still the quickest way to check what is arriving at the inputs. |
-| `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection. **Not** an Organelle patch: deploy over WebDAV with `curl -T http://<phone>:9000/CutItRemote/_main.pd`. |
-
-Findings from all of them are written up in [../ref/module/display.md](../ref/module/display.md).
-
-### `stage-patches/` — menu patches for the venue
-
-Organelle patches deployed to `/sdcard/Patches/!/`, for things that can only be done **at the
-device with no laptop attached**.
-
-| | |
-|---|---|
-| `AP Probe/` | ✅ Records what can only be seen **while the access point is up** — which is exactly when a Mac joined to it has no internet and nobody can watch. It logs to `/sdcard/ap-probe.log` and reads the phone's address from the dnsmasq lease file **or**, if dnsmasq has already exited, from `/proc/net/arp`. ⚠️ **That second strategy is what saved the run** (item 129) — a single-strategy probe would have returned `none` and taught us nothing. |
-| `Start AP/` | ⛔ **A dead end, kept as the record of why.** It has no `main.pd` and is not loadable. `create_ap`, `hostapd` and `dnsmasq` all die with the Pd that spawned them **even behind `setsid nohup`**, so an AP cannot be started from a patch. Use **System → WiFi Setup → Start AP**. Item 129. |
-| `State Probe/` | Phase 8's on-device state probe. |
-| `PGM Probe/` | ✅ Phase 9 Step 0B — **it proved Pd's `pgmout` is 1-based** (item 228). It loops `pgmout 20` every six seconds while `aplaymidi` sends raw `0xC0 20` from the shell, so the readout is **binary — does the program name move?** — rather than asking anyone to compare two names from memory. ⚠️ **It must `aconnect` Pd's Midi-Out 4 to the Uno after loading**, because a patch load drops the connection (see [../ref/device-os.md](../ref/device-os.md)); without that it measures silence and looks like a clean negative. |
-
-**A menu patch is the CHEAP way to run a Pd-side MIDI probe, and `PGM Probe` is the pattern.**
-The documented alternative is the by-hand three-patch console, which needs `killall pd` — and that
-**strands the Launchpad in Programmer Mode every time** (item 96), costing a `tools/lp-live.sh`
-recovery afterwards. `oscsend localhost 4001 /loadPatch s "!/<name>"` swaps the patch and swaps back
-with no signal, so `quitting` fires normally and the Launchpad is never touched. Use it for anything
-that only needs MIDI **sent**; use the console when you need `[print]` output back.
-
-⚠️ **One side effect.** Loading this way leaves `!/Cut It` in `/tmp/curpatchname` where a menu
-selection would leave `Cut It`, so **System → Save New afterwards makes a folder called `! 2`**.
-Select the patch from the menu once before using Save New. Plain Save is unaffected — it works off
-the `/tmp/patch` symlink. Same caveat as `deploy.sh`'s own load.
-
-### `test/stubs/` — stand-ins the gates need
-
-`t_midiout.pd` replaces `[midiout]` so a headless run can read back every byte the patch emits.
-⚠️ **It cannot be supplied by search path**, which is why `display-assert.sh` rewrites boxes in a
-scratch copy — see that gate below.
-
-**Phase 9 added four more, because `[midiout]` is not the only way this patch emits MIDI:**
-
-| | |
-|---|---|
-| `t_noteout.pd` | `[noteout]` — prints `pitch velocity channel` |
-| `t_ctlout.pd` | `[ctlout]` — prints `value controller channel` |
-| `t_pgmout.pd` | `[pgmout]` — prints `program channel`. ⚠️ **It cannot answer the 0-based/1-based question** (item 228): it prints what Pd was *given*, not the byte on the wire |
-| `t_notein.pd` | ⛔ **a SOURCE, not a sink** — the only way to test a receive path. Drive it with `; t-notein <pitch> <velocity> <channel>` |
-
-⛔ **`m_volca` and `m_404` emit through `noteout`/`ctlout`/`pgmout`, not `midiout`**, so
-`display-assert.sh`'s rewrite finds nothing in them and every assertion about them would pass
-**vacuously**. ⚠️ **And phase 6's regex is anchored so the class name must END the line** — it
-silently skips any box carrying creation arguments, of which the patch has one:
-`[ctlout 123 33]`. A phase 9 rewriter has to take a trailing argument list, and the stubs
-therefore read creation args too.
-
-⛔ **`t_notein` exists because the receive side is otherwise untestable.** Every *output* path can
-be driven from a bus, but `m_404`'s entire receive side sits behind `[notein]` and **there is no
-bus behind a MIDI input** — the channel gate, the note-to-pad lookup, the bank name builder and
-the `param`/`disp` split would all go unexercised. Its outlet order reproduces the real object's
-(channel, then velocity, then pitch) rather than approximating it; get that backwards and the
-stub tests itself instead of the patch.
-
-## Running one
-
-```sh
-scp tools/lp-monitor.pd root@organelle.local:/tmp/
-
-ssh root@organelle.local
-  killall pd 2>/dev/null; sleep 1
-  cd /tmp
-  nohup pd -alsamidi -midiindev 1,2,3,4 -midioutdev 1,2,3,4 \
-        -nogui -noaudio /tmp/lp-monitor.pd > /tmp/out.txt 2>&1 &
-  sleep 2
-  aconnect 'Launchpad Pro MK3':0 'Pure Data':0    # -> Pd device 1, channels 1-16
-  aconnect 'Pure Data':4 'Launchpad Pro MK3':0    # LEDs and SysEx back out
-  cat /tmp/out.txt
-```
-
-Stop with `killall pd`.
-
-## Things these patches taught us
-
-Findings specific to working *in this folder*. The Launchpad's own behaviour — palette,
-animation modes, LED state, `polytouchin` ordering — is catalogued in
-[../ref/device/](../ref/device/). Pd message-discipline traps (`[list trim]`, `route`'s
-selector rules, `sendtyped` arity, `quitting`) are in
-[../ref/conventions.md](../ref/conventions.md), and the OSC ones in
-[../ref/module/display.md](../ref/module/display.md).
-
-- **`loadbang` fires before ALSA connections exist.** Initialisation SysEx sent on `loadbang`
-  goes nowhere. Use `[loadbang] → [del 2000]` or longer. Repeated here because every patch in
-  this folder has to obey it.
-- **`aconnect` by name, never by client number.** Client 28 was the Launchpad, then became the
-  SP-404 when devices were swapped. Names are stable, numbers are not.
-- **`amidi` and Pd cannot both hold a port.** Once ALSA seq has subscribed a device,
-  `amidi -p hw:x,y,z` fails with "Device or resource busy". Use `aseqdump`, which coexists.
-- **`[random]` takes a bang, not a float.** Feeding it a float errors once per event, which at
-  grid-refresh rates produced 2,500 errors/sec.
-- **A patch can wire its own `aconnect` calls** via `[shell]`, but put the commands in a shell
-  script — Pd message boxes and shell quoting do not mix well.
-- **`route` passes the matched message's ARGUMENTS on, and they are rarely what you want next.**
-  `route /oled/gClear` emits `ii 3 1` — the typetag and its args. Feeding that to a float inlet
-  prints `float: no method for 'ii'` on every message, which at a 10 Hz redraw is an endless
-  console scroll. Put `[t b]` in between when you only care that the message happened.
-
-## Phase 4
-
-### `nanokontrol-bench.pd` — the Phase 4 acceptance run
-
-Same shape as `display-bench.pd`: eighteen steps, stepped by hand, and a printed `PASS IF` for
-every step **including the ones whose correct result is that nothing happens**. Load it as a third
-patch after `mother.pd` and `main.pd`. Steps 1–14 drive themselves off the `disp`, `err` and `mode`
-buses; **15–17 need your hands on the nanoKONTROL**, because nothing but the real controller can
-exercise `[ctlin]`.
-
-Step 2 and step 6 are the regression gate on the display rewrite. Steps 7–14 are `display-bench`'s
-assertions, re-run because the param layer they sit next to was rewritten.
-
-⚠️ **No commas or semicolons in a message box** — both are message separators, so a comma in a
-`PASS IF` string splits it and the remainder goes somewhere unhelpful (`canvas: no method for
-'then'`). `display-bench.pd` says so and it caught this one out too.
-
-## Phase 5
-
-### `tempo-bench.pd` — the Phase 5 acceptance run
-
-Same shape again: fifteen steps, stepped by hand, a printed `PASS IF` before each one, covering
-the clock, the transport, the map and the aux LED. **Steps 1–12 drive themselves; 13 and 14 need
-your hands on the Organelle itself** — the aux button and knob 1 are the only controls involved,
-and neither exists on a laptop. Step 15 just says to stop.
-
-⚠️ **One line of its text changed in the conversion, and it was a bug fix.** The aux step carried
-two escaped commas inside its `PASS IF`. `\,` satisfies the .pd *parser*, but a message box still
-treats the comma atom as a separator — so that line printed as **three fragments**. Both are now
-` -- `. Everything else survived verbatim, which `bench-verify.py` proves.
-
-**It finds `c_clock` itself**, through `#X declare -path ../Cut\ It` — the escaped space survives
-Pd's parser ✅ — so opening it straight from Pd's File menu works and no `-path` is needed. If the
-console ever says `c_clock ... couldn't create`, the two `c_clock` counts will read **0** and mean
-nothing, which looks like a dead clock rather than a missing search path.
-
-⚠️ **On the Mac, tick the panel's `enable-DSP` toggle first.** `threshold~` is a signal object,
-so with DSP off the beat counters read **0** — which looks exactly like a broken clock. On the
-device `mother.pd` turns DSP on 200 ms after load and this does not arise.
-
-Three steps carry the load:
-
-| Step | Proves |
-|---|---|
-| **3** | 24 PPQN is right, and `c_clock` at ratios 1 and 1.5 gives 20 and 30 beats in 10 s at 120 BPM |
-| **9–10** | **the clock keeps running when the transport stops.** A zero here is the bug the step exists for — stop the pulse stream and the 404 stretches to a stale tempo |
-| **7** | out-of-range clamps to the 5–600 legal range and warns **once per distinct value** — press the same button twice and the second press must be silent |
-
-### `panic-poke.pd` — the only way to raise a panic on the device
-
-**Nothing on the Organelle sends `panic`.** It has consumers — `u_init`'s safe exit and
-`u_tempo` — but the only writers are the bench and the Mac dev panel, so there is no way to
-provoke one by hand. This fires `panic` every 25 s as a third patch, and prints what the OLED is
-being told (`FOOTER` and `LED`) so the console and the screen can be compared directly.
-
-Written to retest one specific bug: **the footer used to stay on `panic` after the transport had
-visibly restarted**. Press aux after a poke — the button must go green *and* the footer must
-return to the BPM.
-
-### `midiout-probe.pd` — which half of the MIDI path is broken
-
-Written when the 404 appeared not to follow the clock. It talks straight to the MIDI ports and
-touches no Cut It code, so it splits "is Pd emitting?" from "is the device listening?":
-
-| Group | Answers |
-|---|---|
-| **A** | raw bytes out of `[midiout]` with the port in the cold inlet — **`u_tempo`'s exact mechanism** |
-| **B** | the same pad via `[noteout 1]`, which reaches the port by *channel* instead. A dead + B alive = the port inlet is the fault |
-| **C** | the same bytes on port 3, which must stay **silent** on a one-output Mac. If it fires, the port inlet is ignored and every byte goes everywhere |
-| **D** | a hand-rolled 24 PPQN clock from `[metro]`, sharing no code with `u_tempo`, plus Start and Stop |
-
-✅ **It closed the `[midiout]` port question** (item 63) and then showed the 404 had been following
-all along — the wrong number was being read (item 64). **`250` on its own starting the pattern
-sequencer is the unambiguous "is it listening" test**; a tempo display is not.
 
 ### `fetch-errors.sh` — read the error log back off the device
 
@@ -397,8 +61,9 @@ power-cycling the Organelle does not reload the patch). It also md5-compares the
 against the repo and says so loudly if they differ, because an error from a build you no longer have
 is a trap.
 
+## The wifi fault
 
-## Chasing the wifi fault — items 81, 133 and 146–168
+### Chasing it — items 81, 133 and 146–168
 
 The fault is that the Organelle loses its **IPv4 lease** while staying **associated**, and
 ⚠️ **ssh keeps working over IPv6 throughout**, so a login proves nothing. The check is
@@ -496,273 +161,13 @@ and let its `EXIT` trap remove the file. Item 167.
 ⚠️ **Never edit these while they are running.** `sh` reads a script incrementally by byte offset,
 so an edit under a live interpreter is genuinely unsafe — restart the poll after changing it.
 
-## The benches are stepped by hand
-
-**All seven benches are generated by `bench-gen.py` from the step tables in `bench_steps.py`**
-(`STEPS3` through `STEPS8`). Edit the table and re-run the generator; **never edit a
-`phaseN-bench.pd`.**
-
-```sh
-python3 test/bench/bench-gen.py        # writes all six
-python3 test/bench/bench-verify.py     # proves the step text survived
-python3 test/bench/bench-extract.py test/bench/tempo-bench.pd   # recover a bench's step table
-```
-
-`bench-extract.py` is what made the conversion safe: it recovers the step text from a `.pd` by its
-`=== STEP-NN-of-M ===` markers, so the hand-authored, hardware-verified benches could be diffed
-before and after rebuilding their box graphs. Zero differences was the gate. `bench-verify.py` is
-that same check, run against the table.
-
-They no longer drive themselves on a timer. The old shape put the console text and the physical
-device in motion **at the same moment**, so you could read one or watch the other and not both.
-Now:
-
-```
-press GO  →  the step that was just described runs
-press GO  →  the next step is described, and nothing moves
-```
-
-The prompt line always says what the next press will do, so **one control is enough** — which is
-what makes the device half work at all, since the Organelle's encoder click is the only free
-control there is.
-
-| GO | |
-|---|---|
-| the `bng` at the top of the patch | Mac |
-| **the Organelle's encoder click** | both — `u_mother-stub` sends `encbut` on the Mac, and nothing in Cut It consumes it |
-| `echo "go;" \| nc -u -w0 organelle.local 9998` | device, from the SSH window |
-
-Turning the encoder **repeats** the current step without advancing — for when you looked away.
-
-⚠️ **A timed assertion starts its clock at RUN, not at the press after it.** A step that zeroes a
-beat counter arms a 10 s window, latches the count and prints it, so the number covers exactly ten
-seconds however long you take to judge the step. The latch starts at **-1**, so a count read before
-its window closed says so instead of lying.
-
-⚠️ **On the Mac, tick `enable-DSP` first.** `c_clock` hangs off `threshold~`, so with DSP off the
-beat row never moves and every count reads 0 — which looks exactly like a dead clock.
-
-### `launchpad-bench.pd` — the Phase 6 acceptance run
-
-**Twenty-five steps** covering the mode bus, the grid arbiter, the layer priorities and TTLs, the
-first `c_clock` instance, the ring map and the safe exit. Steps needing hands are marked in their
-own prompt line.
-
-⚠️ **Its beat counter used to be dead.** `[r $0-zero]` and `[r $0-read]` existed, the comment beside
-them claimed the tempo steps drove them, and **nothing anywhere sent to either name** — so the one
-automated assertion in the Phase 6 bench never fired. Same shape as `tempo-bench`'s `[r $0-say]`
-that was never connected to its `[print]`. Fixed by driving them from the step table.
-
-⚠️ **The panic step hands the surface back and the grid does not come back.** Nothing re-enters
-Programmer Mode except `u_init`'s boot, so the grid stays the device's own until you reload.
-Deliberate, and stated in the step.
-
-### `phone-bench.pd` — the Phase 7 acceptance run
-
-**Fifteen steps, and the first bench whose subject is not the Organelle** — every `PASS IF`
-describes what the *phone* shows. **PdParty has to be open on the `CutItRemote` scene before
-step 1**, and step 1 exists to confirm that before anything depends on it.
-
-Steps 8–11 are the ones whose correct result is that **nothing happens**: the level meters, the
-grid vocabulary and the aux LED are all on `disp` and all deliberately dropped by `u_net`. A line
-that starts reading `in-l` means the reserved branch is broken and the rate budget has gone to a
-meter the phone does not draw.
-
-⚠️ **The rate limit is not tested here and cannot be.** A step table pushes discrete messages; a
-flood needs a metro. `phone-assert.sh` is what proves the coalescer. **Step 12 is the closest a
-person can get** — a real fader, and the question of whether the phone *settles* on the value you
-stopped at rather than one from the middle of the sweep.
-
-**Steps 13 and 14 are the only way to reach item 114 on real hardware.** Closing PdParty makes the
-phone answer with an ICMP port-unreachable, which destroys the socket; reopening it must bring the
-display back within about five seconds **with nothing touched on the Organelle**. A link that could
-not recover would be dead for the rest of the set and nothing on the instrument would say so.
-
-## `display-assert.sh` and `launchpad-assert.sh` — no eyes and no hardware
-
-```sh
-./test/gate/display-assert.sh          29 checks, ~46 s — the ARBITER
-./test/gate/launchpad-assert.sh         5 checks, ~4 s  — the DEVICE
-```
-
-Both take `--keep` to leave the byte capture behind to read. **They were one gate**, which is why
-five pages once named it and two of those claims were false: it tested nothing about the
-nanoKONTROL and nothing about the OLED.
-
-**This is the part that asserts what the grid is actually showing.** The bench used to claim in its
-own header that *"there is no way to read back what the LEDs are actually showing"* — too strong,
-and it conflated three different things. Pd cannot ask the Launchpad what is lit, but **the bytes
-the patch sends are completely knowable**, and that is the right level to test our own code at.
-
-⚠️ **The split is not cosmetic — it is 46 seconds.** `display-assert` needs DSP, because the beat
-row hangs off `threshold~`; the two SysEx checks about the *device* need no clock at all and were
-paying that bill for no reason. `launchpad-assert` now runs in four seconds and gained three checks
-it could not previously afford: the **order** of the mode switch against the first painted frame,
-which neither message existing implies. LED writes sent in Live Mode do not appear, so a patch that
-painted first and switched second would send both messages and still come up dark.
-
-| Piece | |
-|---|---|
-| `test/stubs/t_midiout.pd` | a stand-in for `[midiout]` that prints every byte with its port |
-| the drivers | generated into the scratch directory on every run by `display-assert-drive-gen.py` and `launchpad-assert-drive-gen.py`. Not committed |
-| `test/gate/lib_grid.py` | reassembles the SysEx frames — shared, because both gates read the same byte stream and want different frames out of it |
-| `display-assert.py` | the arbiter: which layer owns the surface, and what happens when one gives it up |
-| `launchpad-assert.py` | the device: what the hardware is told, and in what order |
-
-⚠️ **The stand-in cannot be supplied by search path.** `mac-stubs/` works because `shell` is an
-*external absent on the Mac*, so Pd falls through to an abstraction. `midiout` is a **built-in
-class**, and Pd resolves the class table before it looks for a file — ✅ measured both ways, and a
-`midiout.pd` on the path is simply ignored. So the object name has to change, which means
-rewriting the box. **`Cut It/` is never touched**; the scratch copy is thrown away.
-
-The script counts the boxes it rewrote and **refuses to run if it found none** — otherwise every
-assertion would pass vacuously, which is worse than failing.
-
-**29 checks**: frame shape and the 1–108 span, the mode lamp index, the modal claiming all 108
-specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
-underneath, the beat row never leaving 11–18, the grid going silent after a panic, and
-`m_launchpad`'s Programmer and Live SysEx.
-
-✅ **It has been proven to fail.** Reintroducing the one-based beat bug in a scratch copy — the
-beat-row offset back to `+ 11` — makes it report `lit outside every region: [(19, 3)]` and exit 1.
-⚠️ **The three `home-*` checks still passed under that mutation**, which is exactly why *seven
-beats out of eight looked perfect*: only the six-second beat-row window catches it. A gate that
-cannot fail is worth nothing, so re-run that mutation if you ever change the analyser.
-
-## `phone-assert.sh` — the same idea, and much cheaper
-
-```sh
-./test/gate/phone-assert.sh            # ~25 s, exits non-zero on any failure
-```
-
-**Phase 7's gate needs no scratch copy and rewrites nothing.** `[midiout]` is a built-in class
-with no side channel, which is the whole reason `display-assert.sh` has to swap it for a stand-in
-in a throwaway copy of the patch. **`u_net` already emits to a socket** — so the gate binds
-`127.0.0.1:9995`, instantiates `u_net 127.0.0.1 9995` and reads the real datagrams. `Cut It/` is
-never touched.
-
-| Piece | |
-|---|---|
-| `phone-assert-drive-gen.py` | generates the driver. **Edit this, never the `.pd`** |
-| `phone-assert-drive.pd` | instantiates `u_net` and pushes synthetic traffic onto `disp` |
-| `phone-assert.py` | binds the port, launches Pd, decodes OSC, does the reasoning |
-
-⚠️ **The analyser owns the lifecycle, and that is not tidiness.** It binds the socket *before*
-Pd starts, because a UDP connect to a port with nothing listening survives exactly one datagram
-(item 114). Start the driver by hand and you get one packet and then silence — which looks
-exactly like a broken rate limiter.
-
-**The window marks travel as datagrams**, to the same port, through the driver's own `netsend`.
-A mark on stdout would have to be correlated with socket timestamps afterwards; a mark *in* the
-stream arrives in true order with the data around it.
-
-**28 checks**: the four OSC addresses and nothing else, a monotonic heartbeat, silence on both
-idle windows, the coalescer's rate ceiling, **a per-name trailing edge on two simultaneous
-sweeps**, `status` limited on its own address, the alert arriving as repeated state, and the
-reserved selectors never leaking onto `/cutit/param`.
-
-✅ **It was proven to fail before it was trusted, and for free.** `u_net` was built plumbing-first
-with no coalescer, and that build failed exactly three checks — the three rate ceilings — at
-401, 802 and 401 packets, while every shape check passed. Adding the store took those to 42, 84
-and 42. No mutation had to be invented afterwards, which is the one weakness of Phase 6's
-equivalent.
-
-### `display-cpu.sh` — the repaint budget on the device
-
-```sh
-./tools/display-cpu.sh -n 3
-```
-
-item 94. Wraps the `/proc` arithmetic from [../ref/device-os.md](../ref/device-os.md)
-→ *Measuring the running patch* and says WITHIN or OVER against the **11.2 %** budget — Phase 5's
-10.2 % idle baseline plus one point. ⚠️ `pgrep -nx pd`, never a bare `pgrep`: the substring match
-hits a kernel thread on this device.
-
-### `lp-step0.pd` — the Phase 6 Step 0 measurements
-
-Everything Phase 6 needed to stop guessing about: the ring's CC numbers, how many colour specs
-one SysEx really carries, whether that SysEx lights the ring as well as the pads, and what the
-layout-select command actually does. All of it is now recorded in
-the git history. Keep it as the re-check if a Launchpad is ever
-swapped.
-
-### Running a bench on the device
-
-Any of the four benches loads as a **third patch** after `mother.pd` and `main.pd`, which is what
-gives it a real console. This is the launch line:
-
-```sh
-scp test/bench/tempo-bench.pd root@organelle.local:/tmp/
-ssh root@organelle.local
-  killall pd; sleep 1
-  cd /tmp/patch
-  nohup pd -nogui -rt -audiobuf 6 -path /root/Pd/externals \
-      -path '/sdcard/Patches/!/Cut It' \
-      /root/fw_dir/mother.pd main.pd /tmp/tempo-bench.pd > /tmp/bench.txt 2>&1 &
-  tail -f /tmp/bench.txt          # Ctrl-C when the last step prints
-  killall pd
-```
-
-⚠️ **Single quotes around that path, never double.** The patch folder is `/sdcard/Patches/!/…`, and
-`!` inside double quotes is a history event in interactive zsh — you get `zsh: event not found:
-/Cut` before anything reaches the device.
-
-⚠️ **The second `-path` is not optional for `tempo-bench`.** Its own `declare` is `../Cut\ It`,
-which resolves from `tools/` on the Mac but not from `/tmp/` on the device. Without it `c_clock`
-fails to create and both its counts read **0** — which looks exactly like a dead clock rather than
-a missing search path.
-
-⚠️ **THE ENCODER DOES NOT ADVANCE A BENCH ON THE DEVICE.** The plan that chose a single
-alternating control assumed it would. `mother` forwards `encbut` only to patches that have sent
-`/enableEncoder`, and **nothing in Cut It ever does** — `m_organelle` leaves the encoder out
-deliberately. On the Mac `u_mother-stub` sends it unconditionally, which is what hid this. Use:
-
-```sh
-./tools/go.sh              # one GO
-./tools/go.sh -n 25        # walk the bench forward
-```
-
-⚠️ **Not netcat.** The benches used to print `echo "go;" | nc -u -w0 organelle.local 9998`, and on
-macOS that **silently does nothing** — BSD `nc` exits before the datagram is flushed at `-w0`, and
-`-w1` was measured to fail too, while the port *is* bound and the bench *is* fine. It looks exactly
-like a dead bench. The device cannot send to itself either: busybox here has no `nc` at all.
-
-⚠️ **`killall pd` strands the Launchpad in Programmer Mode** — see `lp-live.sh` below. Restore
-normal operation with `./deploy.sh`, which reloads through the menu path and *does* run the safe
-exit.
-
-**Two of these live on the device**, left there deliberately after the Phase 6 hardware run:
-`/sdcard/launchpad-bench.pd` and `/sdcard/dsp-toggle.pd`. They sit *outside* the patch folder, so
-`deploy.sh` never touches them and they cannot affect what loads. Re-`scp` only if you have
-changed them locally.
-
-⚠️ **`/tmp` is wiped on reboot**, which is why these live on `/sdcard`. A bench copied to `/tmp`
-vanishes with a restart, and the by-hand launch then runs `mother.pd` + `main.pd` with **no
-bench** — the GO port is never bound and the bench looks frozen at step 1. Item 134.
+## Driving and rescuing hardware
 
 ### `go.sh` — the only way to drive a bench on the Organelle
 
 One UDP datagram to the bench's `[netreceive 9998]`. Python's socket send rather than netcat, for
 the reason above. `-n N` fires N of them half a second apart, which is how you walk a bench to a
 particular step without judging every one on the way.
-
-### `dsp-toggle.pd` + `dsp.sh` — turn the audio engine off on a running patch
-
-```sh
-./tools/dsp.sh 0     # off
-./tools/dsp.sh 1     # on
-```
-
-Load `dsp-toggle.pd` as a third patch beside `mother.pd` and `main.pd`. It touches no bus and owns
-no surface; all it can do is set Pd's global DSP state.
-
-**Why it exists.** Item 75 recorded that the Phase 5 clock roughly doubled Pd's CPU and blamed the
-96 ALSA MIDI writes a second — marked ⬜ *not confirmed by isolation*. This is that isolation, and
-it overturned the conclusion: **DSP on 11.8 %, DSP off 4.9 %**, so the DSP costs **6.9 points** and
-the MIDI clock **0.43**. Wrong by a factor of sixteen.
-
-⚠️ **With DSP off the patch is silent and the beat row freezes** — `c_clock` is cut from a phasor,
-so the grid stops walking and the transport stops counting. Expected, not a fault.
 
 ### `lp-live.sh` — rescue a Launchpad stranded in Programmer Mode
 
@@ -783,11 +188,141 @@ Measured 2026-08-03: `killall pd` left the grid frozen in Programmer Mode, and t
 with no power cycle. `deploy.sh` is unaffected — it loads through `/loadPatch`, so `quitting` fires
 normally.
 
-### Re-running `m_nano`'s decode test without the hardware
+### `dsp-toggle.pd` + `dsp.sh` — turn the audio engine off on a running patch
 
-`m_nano`'s decode was verified by swapping `[ctlin]` for a three-outlet stand-in driven by
-`nano-ch`, `nano-cc`, `nano-val` **in that order** — which is `ctlin`'s measured firing order made
-explicit. To repeat it: copy `Cut It/` aside, replace the `ctlin` line in `m_nano.pd` with a
-stand-in abstraction of that shape, and drive it. All 21 cases and the bug it found are recorded in
-item 31. The firing order itself is item 23 and needs the real
-device.
+```sh
+./tools/dsp.sh 0     # off
+./tools/dsp.sh 1     # on
+```
+
+Load `dsp-toggle.pd` as a third patch beside `mother.pd` and `main.pd`. It touches no bus and owns
+no surface; all it can do is set Pd's global DSP state.
+
+**Why it exists.** Item 75 recorded that the Phase 5 clock roughly doubled Pd's CPU and blamed the
+96 ALSA MIDI writes a second — marked ⬜ *not confirmed by isolation*. This is that isolation, and
+it overturned the conclusion: **DSP on 11.8 %, DSP off 4.9 %**, so the DSP costs **6.9 points** and
+the MIDI clock **0.43**. Wrong by a factor of sixteen.
+
+⚠️ **With DSP off the patch is silent and the beat row freezes** — `c_clock` is cut from a phasor,
+so the grid stops walking and the transport stops counting. Expected, not a fault.
+
+## Measuring, and probes still worth running
+
+### `display-cpu.sh` — the repaint budget on the device
+
+```sh
+./tools/display-cpu.sh -n 3
+```
+
+item 94. Wraps the `/proc` arithmetic from [../ref/device-os.md](../ref/device-os.md)
+→ *Measuring the running patch* and says WITHIN or OVER against the **11.2 %** budget — Phase 5's
+10.2 % idle baseline plus one point. ⚠️ `pgrep -nx pd`, never a bare `pgrep`: the substring match
+hits a kernel thread on this device.
+
+### `display-diag.pd` — a real console for the display arbiter
+
+These three load **alongside** a running `mother.pd` + `main.pd` (see *Running one* below).
+None of them touches the deployed patch: they only read `oscOut` or push onto `disp`, `err`
+and `mode`, exactly as a controller would.
+
+| Patch | What it does |
+|---|---|
+| `display-bench.pd` | **The acceptance run.** Fourteen steps, **stepped by hand** — see *The benches are stepped by hand* below. Each prints what it is sending and a **PASS IF** line *before* the screen moves, including the steps whose correct result is that nothing happens. Run it in the **foreground** and watch the OLED. |
+| `display-diag.pd` | Counts rather than dumps. `FRAMES` and `MESSAGES` are cumulative totals printed once a second, so the rate is the gap between lines — expect +10 and +100. Printing every OSC message instead would slow down the thing being measured. |
+| `alert-buffer-probe.pd` | ✅ **Answered:** draws into the ALERT buffer (screen 4), `setscreen 4`, waits six seconds, `setscreen 3`. All of it works — but `g_oled` still doesn't use buffer 4, for the reasons in [ref-display.md](../ref/module/display.md). Keep it as the re-check if that ever gets revisited. |
+
+### `lp-step0.pd` — the Launchpad index map, items 82–87
+
+Everything Phase 6 needed to stop guessing about: the ring's CC numbers, how many colour specs
+one SysEx really carries, whether that SysEx lights the ring as well as the pads, and what the
+layout-select command actually does. All of it is now recorded in
+the git history. Keep it as the re-check if a Launchpad is ever
+swapped.
+
+## Organelle patches
+
+The first four **are** Organelle patches — they load `mother.pd` and run from the device menu,
+unlike everything above. Deploy with `scp` to `/sdcard/Patches/!/<name>/main.pd`. The fifth is
+the phone side and is not an Organelle patch at all.
+
+| Patch | What it proves |
+|---|---|
+| `oled-probe/` | The OLED **graphics** API is reachable from a patch via `[s oscOut]`. Measures the font (21 chars, monospace, 8px) and redraws live from knob 1. |
+| `osc-bridge/` | Bidirectional OSC between Organelle and an iPhone running PdParty. Sends a heartbeat and `knob1`; draws whatever arrives on `/cutit/fader` big on the OLED. |
+| `status-display/` | The performance status protocol: four knobs sending **named parameters** (`chop-size`, `grain`, `speed`, `drunk`) plus a heartbeat. |
+| `audio-probe/` | `env~` levels for `adc~ 1` and `adc~ 2` drawn large on the OLED. Used to verify the TRS input split; still the quickest way to check what is arriving at the inputs. |
+| `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection. **Not** an Organelle patch: deploy over WebDAV with `curl -T http://<phone>:9000/CutItRemote/_main.pd`. |
+
+Findings from all of them are written up in [../ref/module/display.md](../ref/module/display.md).
+
+### `stage-patches/` — menu patches for the venue
+
+Organelle patches for things that can only be done **at the device with no laptop attached**.
+
+⚠️ **None of them is deployed any more.** As of 2026-08-07 `/sdcard/Patches/!/` holds `Cut It` and
+nothing else — at a venue you should scroll past nothing to reach the instrument. Each was confirmed
+byte-identical to the copy here before it was removed, so any of them is one `scp` from coming back.
+⬜ When the laptop-free debugging system in [plan-v04.md](../plan-v04.md) gets built, it goes in a
+`! debug` directory rather than back into `!`.
+
+| | |
+|---|---|
+| `AP Probe/` | ✅ Records what can only be seen **while the access point is up** — which is exactly when a Mac joined to it has no internet and nobody can watch. It logs to `/sdcard/ap-probe.log` and reads the phone's address from the dnsmasq lease file **or**, if dnsmasq has already exited, from `/proc/net/arp`. ⚠️ **That second strategy is what saved the run** (item 129) — a single-strategy probe would have returned `none` and taught us nothing. |
+| `Start AP/` | ⛔ **A dead end, kept as the record of why.** ⚠️ It *does* have a `main.pd` — this page claimed otherwise until 2026-08-07 — but loading it does not work: `create_ap`, `hostapd` and `dnsmasq` all die with the Pd that spawned them **even behind `setsid nohup`**, so an AP cannot be started from a patch. Use **System → WiFi Setup → Start AP**. Item 129. Its password line is a **placeholder**; the live value is in `/sdcard/ap.txt`, because this repo is public. |
+| `State Probe/` | Phase 8's on-device state probe. |
+| `PGM Probe/` | ✅ Phase 9 Step 0B — **it proved Pd's `pgmout` is 1-based** (item 228). It loops `pgmout 20` every six seconds while `aplaymidi` sends raw `0xC0 20` from the shell, so the readout is **binary — does the program name move?** — rather than asking anyone to compare two names from memory. ⚠️ **It must `aconnect` Pd's Midi-Out 4 to the Uno after loading**, because a patch load drops the connection (see [../ref/device-os.md](../ref/device-os.md)); without that it measures silence and looks like a clean negative. |
+
+**A menu patch is the CHEAP way to run a Pd-side MIDI probe, and `PGM Probe` is the pattern.**
+The documented alternative is the by-hand three-patch console, which needs `killall pd` — and that
+**strands the Launchpad in Programmer Mode every time** (item 96), costing a `tools/lp-live.sh`
+recovery afterwards. `oscsend localhost 4001 /loadPatch s "!/<name>"` swaps the patch and swaps back
+with no signal, so `quitting` fires normally and the Launchpad is never touched. Use it for anything
+that only needs MIDI **sent**; use the console when you need `[print]` output back.
+
+⚠️ **One side effect.** Loading this way leaves `!/Cut It` in `/tmp/curpatchname` where a menu
+selection would leave `Cut It`, so **System → Save New afterwards makes a folder called `! 2`**.
+Select the patch from the menu once before using Save New. Plain Save is unaffected — it works off
+the `/tmp/patch` symlink. Same caveat as `deploy.sh`'s own load.
+
+### Running one of these by hand
+
+```sh
+scp tools/lp-monitor.pd root@organelle.local:/tmp/
+
+ssh root@organelle.local
+  killall pd 2>/dev/null; sleep 1
+  cd /tmp
+  nohup pd -alsamidi -midiindev 1,2,3,4 -midioutdev 1,2,3,4 \
+        -nogui -noaudio /tmp/lp-monitor.pd > /tmp/out.txt 2>&1 &
+  sleep 2
+  aconnect 'Launchpad Pro MK3':0 'Pure Data':0    # -> Pd device 1, channels 1-16
+  aconnect 'Pure Data':4 'Launchpad Pro MK3':0    # LEDs and SysEx back out
+  cat /tmp/out.txt
+```
+
+Stop with `killall pd`.
+
+## Things these patches taught us
+
+Findings specific to working *in this folder*. The Launchpad's own behaviour — palette,
+animation modes, LED state, `polytouchin` ordering — is catalogued in
+[../ref/device/](../ref/device/). Pd message-discipline traps (`[list trim]`, `route`'s
+selector rules, `sendtyped` arity, `quitting`) are in
+[../ref/conventions.md](../ref/conventions.md), and the OSC ones in
+[../ref/module/display.md](../ref/module/display.md).
+
+- **`loadbang` fires before ALSA connections exist.** Initialisation SysEx sent on `loadbang`
+  goes nowhere. Use `[loadbang] → [del 2000]` or longer. Repeated here because every patch in
+  this folder has to obey it.
+- **`aconnect` by name, never by client number.** Client 28 was the Launchpad, then became the
+  SP-404 when devices were swapped. Names are stable, numbers are not.
+- **`amidi` and Pd cannot both hold a port.** Once ALSA seq has subscribed a device,
+  `amidi -p hw:x,y,z` fails with "Device or resource busy". Use `aseqdump`, which coexists.
+- **`[random]` takes a bang, not a float.** Feeding it a float errors once per event, which at
+  grid-refresh rates produced 2,500 errors/sec.
+- **A patch can wire its own `aconnect` calls** via `[shell]`, but put the commands in a shell
+  script — Pd message boxes and shell quoting do not mix well.
+- **`route` passes the matched message's ARGUMENTS on, and they are rarely what you want next.**
+  `route /oled/gClear` emits `ii 3 1` — the typetag and its args. Feeding that to a float inlet
+  prints `float: no method for 'ii'` on every message, which at a 10 Hz redraw is an endless
+  console scroll. Put `[t b]` in between when you only care that the message happened.

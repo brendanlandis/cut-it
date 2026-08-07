@@ -150,6 +150,14 @@ already makes.
 
 `[sysexin]` instantiates *and fires* on this Pd build.
 
+⛔ **`$0-want` is not `$0-own`.** `own` says the surface **is** ours; `want` says we still **intend**
+it. Without that split, a panic hands the device back and the heartbeat grabs it again two seconds
+later.
+
+⚠️ **The give-up bound is 70 s because 12 s was useless in a room.** The first build gave up twelve
+seconds after the unplug, which reads as perfectly reasonable in source — **nobody reseats a cable
+that fast**, and the very first hardware test missed the window entirely.
+
 ⚠️ **The recovery re-runs `wire.sh`, which is a FORK, and the bound is what makes that permissible.**
 Phase 4's rule is *one fork per load, never per event* — written against error logging, which
 cascades without limit. Three forks tied to one cable event cannot.

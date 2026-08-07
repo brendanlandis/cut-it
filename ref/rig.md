@@ -140,6 +140,11 @@ there is ample gain and headroom for instrument-level sources.
 guarantee operation through hubs. A USB-A→C cable from the hub carries **data only**, which is what
 we want — the 404 runs off its own adapter and costs the hub nothing.
 
+⛔ **ONE hub, never chained.** The Launchpad would not configure behind three chained hubs —
+`can't set config #1, error -32` — and the same topology wedged the wifi dongle at boot. **Plugged
+into a single hub it works first time.** The failure looks like a bad device or a bad cable, and
+swapping either changes nothing.
+
 ## Gear
 
 | Item | Role |

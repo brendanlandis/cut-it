@@ -239,11 +239,16 @@ in [device/](device/) now that `pdsettings.orig` is there too.
 
 ⚠️ **The survey corrected the plan that asked for it**, which is the usual pattern here:
 `/root/Pd/externals` turned out to be entirely factory stock rather than something this project
-modified, `/root` held no debugging debris at all, `/sdcard/PdExtraLibs` did not exist despite being
-documented as on Pd's search path, and the four stage patches on the device were a different four
-from the ones in the repo.
+modified, `/root` held no debugging debris at all, and the four stage patches on the device were a
+different four from the ones in the repo.
 
-⬜ **The one outstanding check is in §1** — booting with the Launchpad attached.
+⚠️ **And one correction was itself wrong.** `/sdcard/PdExtraLibs` does not exist, so the page's claim
+that it was "already on Pd's search path" looked doubly wrong and was rewritten to say so. Loading a
+patch showed the path **is** on the search path — `mother` passes `-path /sdcard/PdExtraLibs` on the
+command line, not through `.pdsettings`. Only the directory is missing. Corrected again, and worth
+remembering as the shape of the mistake: *absent* and *unconfigured* are not the same finding.
+
+✅ **Nothing from the cleanup is outstanding.** The boot test is done — see §1.
 
 ---
 

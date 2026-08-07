@@ -18,7 +18,7 @@
 #
 # GO IS THE ONLY WAY TO DRIVE A BENCH ON THE ORGANELLE. The encoder click drives
 # it on the Mac only -- mother forwards encbut just to patches that have sent
-# /enableEncoder, and nothing in Cut It ever does. See tools/bench-gen.py.
+# /enableEncoder, and nothing in Cut It ever does. See test/bench/bench-gen.py.
 set -eu
 
 HOST=${HOST:-organelle.local}

@@ -1,6 +1,6 @@
 <!--
 The parking spot, and it must be EMPTY before the documentation refactor is
-called done. `tools/docs-check.py` asserts that (HTML comments like this one do
+called done. `test/gate/docs-check.py` asserts that (HTML comments like this one do
 not count as content).
 
 WHAT IT IS FOR. The page schemas -- module, rules, freeform -- are a hypothesis

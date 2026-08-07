@@ -34,11 +34,11 @@ ref/module/   audio  boot  display  map  state  tempo
 ref/          architecture  conventions  device-os  rig
 ```
 
-✅ **Every module page already declares its coverage**, and `tools/docs-check.py` fails if a named
+✅ **Every module page already declares its coverage**, and `test/gate/docs-check.py` fails if a named
 file does not exist:
 
 ```markdown
-**Files:** `Cut It/m_404.pd` · **Gate:** `tools/phase9-assert.sh` · **Bench:** `tools/phase9-bench.pd`
+**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/phase9-assert.sh` · **Bench:** `test/bench/phase9-bench.pd`
 ```
 
 ⛔ **So renaming a gate is not free — every page naming it goes red until its header moves too.**
@@ -130,7 +130,7 @@ three gates where this plan originally promised one.
 
 ## 4. Order of work
 
-**One commit per step. Every step ends with `./tools/check-all.sh` green.**
+**One commit per step. Every step ends with `./test/check-all.sh` green.**
 
 ⚠️ **"One commit per step" describes the SHAPE of the work — one logical change, reviewable and
 revertable on its own — not who runs `git commit`.** [plan-v04.md](plan-v04.md) says *never touch
@@ -204,8 +204,8 @@ an improvement over saying something untrue.
 
 Rename `STEPS3`…`STEPS9` in `bench_steps.py` onto module names, and update:
 
-1. `tools/bench-gen.py`'s `PHASES` table
-2. ⛔ **`tools/bench-verify.py`'s hardcoded tuple `(3, 4, 5, 6, 7, 8, 9)`** — miss this and a bench
+1. `test/bench/bench-gen.py`'s `PHASES` table
+2. ⛔ **`test/bench/bench-verify.py`'s hardcoded tuple `(3, 4, 5, 6, 7, 8, 9)`** — miss this and a bench
    is generated but never fidelity-checked
 3. every `**Bench:**` line
 
@@ -224,8 +224,8 @@ will delete some of what it describes — touch only the gate names here and lea
 ## 5. How to know it worked
 
 ```sh
-./tools/check-all.sh              # every gate, ~40 s, Mac only. Read RESULT:, do not grep for it
-python3 tools/docs-check.py -v    # the **Gate:**/**Bench:** lines resolve
+./test/check-all.sh              # every gate, ~40 s, Mac only. Read RESULT:, do not grep for it
+python3 test/gate/docs-check.py -v    # the **Gate:**/**Bench:** lines resolve
 ```
 
 - **No gate has fewer checks than Step 0 recorded**, and the totals reconcile.

@@ -1,5 +1,11 @@
 # Diagnostic patches
 
+⚠️ **THE TESTS HAVE MOVED TO [`../test/`](../test/)** — `test/check-all.sh`, `test/gate/`,
+`test/bench/` and `test/stubs/`. `tools/` now holds only operational scripts and one-off probes.
+**This file still describes both**, and it is still organised on the old phase axis; splitting it is
+`plan-cleanup.md`'s job, deliberately left until after the gates finish moving onto the module axis.
+Every path below is current — `docs-check.py` would be red otherwise — but a heading may not be.
+
 Standalone Pd patches for testing the rig. **Not** Organelle patches — they don't use
 `mother.pd` and aren't meant to be loaded from the device menu. They run manually over SSH so
 that `print` output is visible, which matters because the Organelle launches Pd with `-nogui`
@@ -13,7 +19,7 @@ open any of it in plugdata — see [../CLAUDE.md](../CLAUDE.md).
 ## Start here: `check-all.sh`
 
 ```sh
-./tools/check-all.sh          every gate in one command, ~40 s, exit non-zero on any failure
+./test/check-all.sh          every gate in one command, ~40 s, exit non-zero on any failure
 ```
 
 Layout and graph structure, both entry points loading in silence, the bench step text, and the
@@ -38,7 +44,7 @@ is a gate that eventually does not run.**
 ## pd-layout-check.py --boxes — ask, don't count
 
 ```sh
-python3 tools/pd-layout-check.py --boxes "Cut It/u_state.pd"
+python3 test/gate/pd-layout-check.py --boxes "Cut It/u_state.pd"
 ```
 
 Prints the index of every box exactly as `#X connect` counts them. **Use it before writing a
@@ -68,8 +74,8 @@ steps have no actions, you do not need to load the bench at all.**
 ## state-assert.sh — the data store's gate, and the cheapest in the suite
 
 ```sh
-./tools/state-assert.sh          15 checks, ~12 s, exit non-zero on any failure
-./tools/state-assert.sh -v       and the detail behind every check
+./test/gate/state-assert.sh          15 checks, ~12 s, exit non-zero on any failure
+./test/gate/state-assert.sh -v       and the detail behind every check
 ```
 
 `u_state` writes a **file**, so this gate reads what landed on disk. No scratch copy (Phase 6
@@ -92,9 +98,9 @@ OUTPUT — edit `state-assert-drive-gen.py`, never the `.pd`.
 ## phase9-assert.sh — the Phase 9 gate, and the only one with a half that needs no Pd
 
 ```sh
-./tools/phase9-assert.sh          23 checks, ~8 s, exit non-zero on any failure
-./tools/phase9-assert.sh -v       and the detail behind every check
-./tools/phase9-assert.sh --keep   leave the scratch dir and capture behind
+./test/gate/phase9-assert.sh          23 checks, ~8 s, exit non-zero on any failure
+./test/gate/phase9-assert.sh -v       and the detail behind every check
+./test/gate/phase9-assert.sh --keep   leave the scratch dir and capture behind
 ```
 
 **Half of it is a STATIC LINT.** It parses the literal `route` box out of `u_map.pd` and the rows
@@ -162,7 +168,7 @@ and `mode`, exactly as a controller would.
 Not a patch — a static check on `.pd` files:
 
 ```sh
-python3 tools/pd-layout-check.py "Cut It"/*.pd
+python3 test/gate/pd-layout-check.py "Cut It"/*.pd
 ```
 
 Reports overlapping boxes, **connections drawn through unrelated boxes**, and content that
@@ -486,9 +492,9 @@ so an edit under a live interpreter is genuinely unsafe — restart the poll aft
 `phaseN-bench.pd`.**
 
 ```sh
-python3 tools/bench-gen.py        # writes all six
-python3 tools/bench-verify.py     # proves the step text survived
-python3 tools/bench-extract.py tools/phase5-bench.pd   # recover a bench's step table
+python3 test/bench/bench-gen.py        # writes all six
+python3 test/bench/bench-verify.py     # proves the step text survived
+python3 test/bench/bench-extract.py test/bench/phase5-bench.pd   # recover a bench's step table
 ```
 
 `bench-extract.py` is what made the conversion safe: it recovers the step text from a `.pd` by its
@@ -564,8 +570,8 @@ not recover would be dead for the rest of the set and nothing on the instrument 
 ## `phase6-assert.sh` — the headless gate, no eyes and no hardware
 
 ```sh
-./tools/phase6-assert.sh            # ~45 s, exits non-zero on any failure
-./tools/phase6-assert.sh --keep     # and leaves the byte capture to read
+./test/gate/phase6-assert.sh            # ~45 s, exits non-zero on any failure
+./test/gate/phase6-assert.sh --keep     # and leaves the byte capture to read
 ```
 
 **This is the part that asserts what the grid is actually showing.** `phase6-bench.pd` used to
@@ -604,7 +610,7 @@ cannot fail is worth nothing, so re-run that mutation if you ever change the ana
 ## `phone-assert.sh` — the same idea, and much cheaper
 
 ```sh
-./tools/phone-assert.sh            # ~25 s, exits non-zero on any failure
+./test/gate/phone-assert.sh            # ~25 s, exits non-zero on any failure
 ```
 
 **Phase 7's gate needs no scratch copy and rewrites nothing.** `[midiout]` is a built-in class
@@ -664,7 +670,7 @@ Any of the four benches loads as a **third patch** after `mother.pd` and `main.p
 gives it a real console. This is the launch line:
 
 ```sh
-scp tools/phase5-bench.pd root@organelle.local:/tmp/
+scp test/bench/phase5-bench.pd root@organelle.local:/tmp/
 ssh root@organelle.local
   killall pd; sleep 1
   cd /tmp/patch

@@ -130,8 +130,8 @@ anything modified from factory that is not yet in `device/` is.
 ## How to know the whole thing worked
 
 ```sh
-./tools/check-all.sh              # every gate, ~40 s, Mac only. Read RESULT:, do not grep for it
-python3 tools/docs-check.py -v    # every path named in documentation resolves
+./test/check-all.sh              # every gate, ~40 s, Mac only. Read RESULT:, do not grep for it
+python3 test/gate/docs-check.py -v    # every path named in documentation resolves
 ```
 
 - **No gate lost.** `check-all.sh` runs the same number of gates it ran before, and each still fails

@@ -597,7 +597,7 @@ Six phases have used the same shape and it is worth stating rather than rediscov
 3. **Numbered build steps, each ending with both gates** before the next begins:
 
    ```sh
-   python3 tools/pd-layout-check.py "Cut It"/*.pd
+   python3 test/gate/pd-layout-check.py "Cut It"/*.pd
    /Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio \
        -path mac-stubs -send "pd quit" "Cut It/main-dev.pd"     # silence == pass
    ```
@@ -606,13 +606,13 @@ Six phases have used the same shape and it is worth stating rather than rediscov
    **Stepped by hand, never on a timer**: a self-driving bench moves the console text and the
    physical device at the same moment, so you can read one or watch the other and not both. Press
    GO to run the described step, press GO again to describe the next. All four are generated from
-   the step tables in `tools/bench_steps.py` — edit those and re-run `tools/bench-gen.py`.
+   the step tables in `test/bench/bench_steps.py` — edit those and re-run `test/bench/bench-gen.py`.
 
    ⚠️ **A measuring rig is code and gets the same scrutiny as the thing it measures.** Phase 5 had
    two bugs in its own probes, one of which produced a confident wrong answer about the clock;
    Phase 6's bench had an automated assertion that **nothing ever drove**, with a comment beside it
    claiming otherwise. **Where the rig can assert without eyes, make it** —
-   `tools/phase6-assert.sh` rewrites `[midiout]` in a scratch copy so a headless run can read back
+   `test/gate/phase6-assert.sh` rewrites `[midiout]` in a scratch copy so a headless run can read back
    every byte the patch emits, and it is proven to fail by reintroducing a real bug.
 5. **A verification section separating Mac from device**, so what has actually been proven is never
    in doubt.
@@ -672,7 +672,7 @@ into records on **unescaped** semicolons, and a comment legitimately contains es
 Anything that rewrites a comment by finding "the next `;`" stops in the middle of it, and the tail
 becomes a record with no `#X` prefix. **This has broken the patch three times.**
 
-**Fix:** replace the whole line. `tools/pd-layout-check.py` now reports
+**Fix:** replace the whole line. `test/gate/pd-layout-check.py` now reports
 `MALFORMED RECORD -- does not start with '#'` on the signature, so the fault is named rather than
 showing up as a canvas-size complaint.
 
@@ -683,7 +683,7 @@ bitten this project, most of them more than once.
   deleting *anything* — including a comment — shifts every later box and silently rewires the
   patch. **Append at the end**, honouring `#N canvas` / `#X restore` nesting: a top-level object
   goes before the first connect *at depth 1*. If a box really must be replaced, replace it in
-  place so no index moves. `tools/pd-layout-check.py` reports the damage as *"indices are
+  place so no index moves. `test/gate/pd-layout-check.py` reports the damage as *"indices are
   probably off by one"*, which is how it was caught each time.
 - **Records are processed strictly in order**, so a `#X connect` that appears *before* its target
   box is defined fails at load with `connection failed` — and Pd still exits 0. When you append

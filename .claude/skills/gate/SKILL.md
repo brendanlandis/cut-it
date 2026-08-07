@@ -53,7 +53,7 @@ scratch-copy "Cut It/"  →  rewrite objects to printing stubs  →  drive it  �
 table before it looks for a file, so the only way to read back what a patch emitted is to swap the
 object out in a copy.
 
-Stubs live in `tools/test-stubs/`. Each must match its real object's inlet arity and cold-inlet
+Stubs live in `test/stubs/`. Each must match its real object's inlet arity and cold-inlet
 semantics, and must tolerate creation arguments.
 
 ⚠️ **A bus is not enough stimulus.** Anything behind `[notein]` / `[ctlin]` has no bus in front of
@@ -118,8 +118,8 @@ compare. **Reach for that before reaching for a driver.**
 Hands-on hardware steps, and they are **generated**:
 
 ```sh
-python3 tools/bench-gen.py        # from tools/bench_steps.py, run from the repo root
-python3 tools/bench-verify.py     # re-extracts the text to prove it survived
+python3 test/bench/bench-gen.py        # from test/bench/bench_steps.py, run from the repo root
+python3 test/bench/bench-verify.py     # re-extracts the text to prove it survived
 ```
 
 ⛔ **Never edit a bench `.pd` — it is an output.** Add `STEPS<N>` to `bench_steps.py`, a `PHASES`
@@ -135,7 +135,7 @@ on macOS.
 ## Running everything
 
 ```sh
-./tools/check-all.sh
+./test/check-all.sh
 ```
 
 ⚠️ **Read the result; do not grep for it.** Exactly one line matches `RESULT:`, and the exit status

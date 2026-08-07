@@ -25,7 +25,7 @@ such concerns. Prefer vanilla unless a specific object is worth the dependency.
 
 Full text and reasoning: `ref/conventions.md`. **Cite a rule by ID from a patch comment** — a `.pd`
 comment is the only documentation visible while editing in Pd and it has no link syntax.
-`tools/docs-check.py` asserts every `C-NN` cited anywhere resolves.
+`test/gate/docs-check.py` asserts every `C-NN` cited anywhere resolves.
 
 | ID | Rule |
 |----|------|
@@ -67,7 +67,7 @@ connects with it. **This has bitten the project five times.**
 Counting records by eye is what causes it. Ask instead:
 
 ```sh
-python3 tools/pd-layout-check.py --boxes "Cut It/u_map.pd"
+python3 test/gate/pd-layout-check.py --boxes "Cut It/u_map.pd"
 ```
 
 Comments count. `#X declare` does not. Subpatch contents do not, but the `#X restore` line does.
@@ -88,8 +88,8 @@ perfect silence, so a clean syntax check proves nothing about arity.
 **Run these before calling anything done.** All Mac-side; they touch no device.
 
 ```sh
-python3 tools/pd-layout-check.py "Cut It"/*.pd    # after every edit -- PROBLEM = fail
-./tools/check-all.sh                              # ~40 s, every gate in one command
+python3 test/gate/pd-layout-check.py "Cut It"/*.pd    # after every edit -- PROBLEM = fail
+./test/check-all.sh                              # ~40 s, every gate in one command
 ```
 
 ⚠️ **Read `check-all.sh`'s result, do not grep for it.** Exactly one line matches `RESULT:`, and the

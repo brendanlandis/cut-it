@@ -1,0 +1,18 @@
+#N canvas 20 20 1400 700 12;
+#X text 20 20 t_pgmout -- a stand-in for [pgmout] that prints every program change the patch emits \, with the channel it went out on. test/gate/phase9-assert.sh rewrites [pgmout] to [t_pgmout] in a SCRATCH COPY \; nothing in Cut It/ is touched and this file is never deployed., f 84;
+#X text 20 140 ⚠️ IT CANNOT ANSWER THE 0-BASED / 1-BASED QUESTION \, AND MUST NOT BE READ AS IF IT COULD. This stub prints the number Pd was GIVEN \, not the byte that would have reached the wire -- so it sees 21 where the cable would carry 20. That the real object subtracts one was measured on HARDWARE \, item 228 \, and no headless run can reproduce it. What this stub is for is proving m_volca applies its + 1 \, which is a different claim., f 84;
+#X text 20 300 creation arg 1: the channel \, exactly as the real object. inlet 0: program \, HOT. inlet 1: channel \, cold. outlets: none. Prints PGMOUT: <program> <channel> \, which is inlet order., f 84;
+#X obj 20 460 inlet;
+#X obj 300 460 inlet;
+#X obj 20 530 pack f f;
+#X obj 20 600 print PGMOUT;
+#X obj 700 380 loadbang;
+#X obj 700 430 f \$1;
+#X obj 700 480 max 1;
+#X text 700 530 THE DEFAULT IS 1 \, NOT 0 -- same reasoning as t_noteout. A bare [pgmout] is channel 1 \, and f \$1 with no argument answers 0., f 60;
+#X connect 3 0 5 0;
+#X connect 4 0 5 1;
+#X connect 5 0 6 0;
+#X connect 7 0 8 0;
+#X connect 8 0 9 0;
+#X connect 9 0 5 1;

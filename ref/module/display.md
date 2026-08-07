@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The display arbiter
 
-**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_led.pd`, `Cut It/u_net.pd` · **Gate:** `tools/phase6-assert.sh` · **Bench:** `tools/phase3-bench.pd`, `tools/phase4-bench.pd`, `tools/phase6-bench.pd`
+**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_led.pd`, `Cut It/u_net.pd` · **Gate:** `test/gate/phase6-assert.sh` · **Bench:** `test/bench/phase3-bench.pd`, `test/bench/phase4-bench.pd`, `test/bench/phase6-bench.pd`
 
 ## What it is
 

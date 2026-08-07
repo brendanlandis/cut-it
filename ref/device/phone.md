@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The phone — PdParty and the status link
 
-**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/pdparty-scene/CutItRemote/` · **Gate:** `tools/phone-assert.sh` · **Bench:** `tools/phase7-bench.pd`
+**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/pdparty-scene/CutItRemote/` · **Gate:** `test/gate/phone-assert.sh` · **Bench:** `test/bench/phase7-bench.pd`
 
 ## What it is
 

@@ -9,7 +9,7 @@ output devices are wired in. The instrument can be told *"in Mode A, moving this
 one row of `Cut It/cut-it-map.txt`.
 
 ✅ **The documentation refactor is done** — 10 root files and ~10,300 lines of prose became 2 files
-and 18 `ref/` pages, held together by `tools/docs-check.py`. **v0.4 is the sound**: four filter
+and 18 `ref/` pages, held together by `test/gate/docs-check.py`. **v0.4 is the sound**: four filter
 stages, the drum mode, the sampler. v0.1 is superseded and kept only for reference.
 
 **This file is a router.** It says where to look, not what is true.
@@ -58,6 +58,7 @@ chooses to use it.
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
 | The Organelle as a **computer** — SSH, paths, how Pd launches, deploying, wifi | [ref/device-os.md](ref/device-os.md) ⛔ verify-after |
 | A cited `item NNN` | `grep` it — item numbers are **fact IDs**, not log entries |
+| **Every test** — the headless gates, the hands-on benches, the stubs | [test/](test/) — `check-all.sh` · `gate/` · `bench/` · `stubs/` |
 | What each tool proves and how to run it | [tools/README.md](tools/README.md) |
 
 ✅ **Both journals are gone.** Phases 0–8 as built and every measurement behind them are in
@@ -87,6 +88,23 @@ externals during the local syntax check and is never deployed.
 wrote. Neither is deployed.
 
 
+## The tests
+
+**`test/` is every test; `tools/` is everything else.** The directory is the kind, exactly as it is
+under `ref/`. Nothing in either is deployed.
+
+| Where | Is | Oracle |
+|---|---|---|
+| `test/check-all.sh` | **the entry point** — every gate in one command | — |
+| `test/gate/` | Headless gates. One per module, named for it | a program, unattended |
+| `test/bench/` | Hands-on acceptance runs, and the three scripts that **generate** them | a person, with the rig plugged in |
+| `test/stubs/` | `t_*` stand-ins a gate swaps in inside a scratch copy | — |
+| `tools/` | Operational scripts and one-off probes — `go.sh`, `fetch-*.sh`, the wifi tooling | — |
+
+⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
+⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
+
+
 ## Working on it
 
 **Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and the
@@ -94,7 +112,7 @@ whole instrument is *there* — `u_mother-stub` draws the front panel inline and
 aux and encoder. **Most work should never need the Organelle powered on.**
 
 ```sh
-./tools/check-all.sh     # every gate, ~40 s, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
+./test/check-all.sh     # every gate, ~40 s, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
 ./deploy.sh              # syntax check -> scp -> reload -> load, in one command
 ssh root@organelle.local # password: organelle. Root fs is read-only -- remount-rw.sh first
 ```
@@ -132,11 +150,11 @@ plan, that section should have left the file.
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
 is where everything unscoped waits. **The order is testing → cleanup → v0.4.**
 
-**A fact appears once in full; everywhere else it is a citation.** `tools/docs-check.py` enforces
+**A fact appears once in full; everywhere else it is a citation.** `test/gate/docs-check.py` enforces
 what can be enforced — run it rather than trying to remember it:
 
 ```sh
-python3 tools/docs-check.py -v
+python3 test/gate/docs-check.py -v
 ```
 
 **Five markers, and no other emoji anywhere in this repo:**

@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Korg Volca FM
 
-**Files:** `Cut It/m_volca.pd` · **Gate:** `tools/phase9-assert.sh` · **Bench:** `tools/phase9-bench.pd`
+**Files:** `Cut It/m_volca.pd` · **Gate:** `test/gate/phase9-assert.sh` · **Bench:** `test/bench/phase9-bench.pd`
 
 ## What it is
 

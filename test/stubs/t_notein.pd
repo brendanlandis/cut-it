@@ -1,0 +1,15 @@
+#N canvas 20 20 1500 800 12;
+#X text 20 20 t_notein -- a stand-in for [notein] that a DRIVER CAN DRIVE. test/gate/phase9-assert.sh rewrites [notein] to [t_notein] in a SCRATCH COPY \; nothing in Cut It/ is touched and this file is never deployed., f 84;
+#X text 20 130 ⛔ IT EXISTS BECAUSE THE RECEIVE SIDE IS OTHERWISE UNTESTABLE. Every output path in this patch can be driven from a bus -- param \, mode \, tempo \, start \, stop \, panic -- but m_404's ENTIRE RECEIVE SIDE sits behind [notein] \, and THERE IS NO BUS BEHIND A MIDI INPUT. The channel gate \, the note-to-pad lookup \, the bank name builder and the param/disp split would all go untested \, and a gate that cannot see them is a gate that would pass them broken., f 84;
+#X text 20 280 THE OUTLET ORDER IS THE WHOLE CONTRACT. The real object fires CHANNEL \, then VELOCITY \, then PITCH -- right to left \, which is what lets a decode finish before the pitch triggers it. unpack fires right to left too \, so wiring outlet 2 to outlet 2 reproduces that order exactly rather than approximating it. ⚠️ Get this backwards and the stub tests itself rather than the patch., f 84;
+#X text 20 430 creation args: none. inlets: none -- it is a SOURCE. outlets 3: pitch \, velocity \, channel \, exactly as the real object. Drive it with a message: \; t-notein <pitch> <velocity> <channel>., f 84;
+#X text 20 560 ⚠️ t-notein IS A BARE GLOBAL NAME OUTSIDE THE ALLOWLIST \, and that is deliberate and safe: it exists ONLY in the gate's scratch copy \, exactly like t_midiout \, and Cut It/ never contains it., f 84;
+#X obj 20 660 r t-notein;
+#X obj 20 710 unpack f f f;
+#X obj 20 770 outlet;
+#X obj 300 770 outlet;
+#X obj 580 770 outlet;
+#X connect 5 0 6 0;
+#X connect 6 0 7 0;
+#X connect 6 1 8 0;
+#X connect 6 2 9 0;

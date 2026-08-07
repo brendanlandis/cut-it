@@ -31,7 +31,7 @@ MK3 and a Korg Volca FM complete the rig.
 |---|---|
 | **v0.2** | ✅ Complete and hardware-verified. Sixteen abstractions, four display surfaces, three headless gates, six benches |
 | **v0.3** | ✅ **Complete and hardware-verified.** The *blank slate* — every device addressable, every control assignable |
-| **The documentation refactor** | ✅ **Complete.** 10 root files and ~10,300 lines of prose became 2 files and 18 `ref/` pages, held together by `tools/docs-check.py` |
+| **The documentation refactor** | ✅ **Complete.** 10 root files and ~10,300 lines of prose became 2 files and 18 `ref/` pages, held together by `test/gate/docs-check.py` |
 | **v0.4** | ⬅ **This document.** The instrument: four filter stages, the drum mode, the sampler, compose-time capture |
 
 **v0.3 was not the sound, and an earlier plan said it was.** The goal was to finish the
@@ -63,7 +63,7 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
   whole instrument is there, front panel included.
 - **`./deploy.sh` does the whole loop** — syntax check, scp, reload, load. It **gates on output, not
   exit status**, because Pd exits 0 even when objects fail to create.
-- **`./tools/check-all.sh` runs every gate in one command.** ⚠️ **Run it before calling anything
+- **`./test/check-all.sh` runs every gate in one command.** ⚠️ **Run it before calling anything
   done**, and read its `RESULT:` line rather than grepping for one.
 - **`item NNN` is a FACT ID, not a log entry.** Grep for it. Never reuse a number.
 

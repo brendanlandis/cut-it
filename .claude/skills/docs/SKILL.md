@@ -12,11 +12,11 @@ page has no way to know the same fact sits in seven others — it would have to 
 does not know exists. Restatement is the only thing a cold context *can* do.
 
 So **"one home per fact" cannot be a convention people follow.** It has to be a structure you fall
-into, plus a program that catches drift. That program is `tools/docs-check.py`. **Run it rather than
+into, plus a program that catches drift. That program is `test/gate/docs-check.py`. **Run it rather than
 trying to remember any of this:**
 
 ```sh
-python3 tools/docs-check.py -v
+python3 test/gate/docs-check.py -v
 ```
 
 ## Where a page goes
@@ -41,7 +41,7 @@ Line 1 declares the schema. `##` is the fixed skeleton and must appear exactly, 
 ```markdown
 <!-- schema: module -->
 # Roland SP-404MKII
-**Files:** `Cut It/m_404.pd` · **Gate:** `tools/phase9-assert.sh` · **Bench:** `tools/phase9-bench.pd`
+**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/phase9-assert.sh` · **Bench:** `test/bench/phase9-bench.pd`
 
 ## What it is     one or two paragraphs
 ## Facts          schema'd tables, every one with Evidence and Item columns
@@ -149,8 +149,8 @@ was added exactly this way.
 ## Before calling a page done
 
 ```sh
-python3 tools/docs-check.py        # the doc gate
-./tools/check-all.sh               # everything, ~40 s. Read RESULT:, do not grep for it
+python3 test/gate/docs-check.py        # the doc gate
+./test/check-all.sh               # everything, ~40 s. Read RESULT:, do not grep for it
 ```
 
 ⚠️ **Prove nothing was lost.** When moving material, probe 30–50 distinctive facts from the removed

@@ -37,10 +37,10 @@ facts the patch also holds, and what to do with material that fits no section.
 
 It loads on demand, so it costs nothing in a session that only *reads* documentation.
 
-**And `tools/docs-check.py` enforces all of it** — run the gate rather than trying to remember it:
+**And `test/gate/docs-check.py` enforces all of it** — run the gate rather than trying to remember it:
 
 ```sh
-python3 tools/docs-check.py -v
+python3 test/gate/docs-check.py -v
 ```
 
 | Check | What it asserts |

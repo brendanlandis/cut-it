@@ -412,6 +412,63 @@ def check_index(verbose):
     return out
 
 
+SKILLS = '.claude/skills'
+PATHREF = re.compile(
+    r'(?<![\w.-])\.?/?((?:tools/|Cut It/|device/|mac-stubs/|\.claude/)[\w /.-]*?'
+    r'\.(?:sh|py|pd|txt))(?![\w.-])')
+
+
+def check_dangling_paths(verbose):
+    """Scripts and patches named anywhere must exist.
+
+    ⛔ THE SKILLS ARE THE REASON THIS EXISTS. A skill is procedure -- every path
+    in one is an instruction to run or read something -- and the `gate` skill
+    names phase6-assert.sh, phase8-assert.sh and phase9-assert.py, all of which
+    the coming test refactor renames onto a module axis. Without this, three
+    skills quietly start instructing people to run files that are gone.
+
+    ⚠️ UNLIKE check_dangling_docs, THIS CHECKS EVERY FILE TYPE INCLUDING .md.
+    That rule is looser for documents because prose legitimately names a doc
+    that is gone -- "the v0.2 plan was dissolved" is history, not a broken
+    pointer. A SCRIPT is different: naming one is nearly always a live
+    instruction to run or read it, and a doc describing a renamed tool is
+    simply wrong. Measured before widening: including .md cost exactly one
+    false positive across the whole repo.
+
+    Renaming tools/phase8-assert.sh goes red in six places -- the conventions,
+    tools/README.md, bench-gen.py, check-all.sh, phase8-bench.pd and the script
+    itself. That is the point: the test refactor renames every gate onto a
+    module axis, and this is what makes those renames impossible to half-finish.
+
+    ⚠️ A path containing a capital placeholder -- phaseN-bench.pd -- is a
+    pattern, not a reference, and is skipped.
+    """
+    out, seen = [], 0
+    for f in sorted(ROOT.rglob('*')):
+        if not f.is_file() or f.suffix not in ('.md', '.pd', '.sh', '.py'):
+            continue
+        rel = f.relative_to(ROOT)
+        if any(p in SKIP_DIRS for p in rel.parts):
+            continue
+        is_skill = rel.as_posix().startswith(SKILLS)
+        try:
+            body = f.read_text(encoding='utf-8')
+        except UnicodeDecodeError:
+            continue
+        for p in sorted(set(PATHREF.findall(body))):
+            if re.search(r'[A-Z]', pathlib.PurePath(p).name):
+                continue                  # a placeholder like phaseN-bench.pd
+            seen += 1
+            if not (ROOT / p).exists():
+                where = 'the SKILL' if is_skill else str(rel)
+                out.append(f'{rel}  names {p}, which does not exist'
+                           + ('  -- a skill instructs, so this is a live pointer'
+                              if is_skill else ''))
+    if verbose:
+        print(f'  {seen} script/patch path(s) resolved')
+    return out
+
+
 def check_skill_rules(verbose):
     """The pd skill's rule table must match ref/conventions.md.
 
@@ -497,7 +554,8 @@ def main():
     verbose = '-v' in sys.argv
     problems = (check_anchors(verbose) + check_dangling_docs(verbose)
                 + check_shape(verbose) + check_index(verbose)
-                + check_rule_ids(verbose) + check_skill_rules(verbose))
+                + check_rule_ids(verbose) + check_skill_rules(verbose)
+                + check_dangling_paths(verbose))
     if problems:
         print('\n'.join(problems))
         print(f'\n{len(problems)} problem(s).')

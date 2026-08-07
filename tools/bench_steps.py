@@ -3,7 +3,7 @@
 phase3/4/5 were transcribed out of the hand-authored .pd files by
 tools/bench-extract.py and must not be reworded: those benches are verified on
 the Organelle and the conversion to manual stepping is meant to change how a
-step is DRIVEN, never what it claims. tools/bench-verify.sh re-extracts from the
+step is DRIVEN, never what it claims. tools/bench-verify.py re-extracts from the
 regenerated files and diffs against these tables.
 
 Each step is (title, pass_if, [(message, bus), ...]).

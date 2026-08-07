@@ -199,35 +199,18 @@ this distinction is load-bearing and easy to lose.
 
 ### `state` — the persistence bus
 
-**One name, three selectors, disjoint per side**, so the whole protocol fits in one allowlist
-entry with no loop. Contributors `[route save restore]`; `u_state` routes `put`.
+**One name, three selectors, disjoint per side**, so the whole protocol fits in one allowlist entry
+with no loop. Contributors `[route save restore]`; `u_state` routes `put`.
 
-| Direction | Message | Meaning |
-|---|---|---|
-| contributor → `u_state` | `put auto <key> <atoms…>` | store now; flushed on a timer |
-| `u_state` → all | `save` | broadcast at a commit — **answer now** |
-| contributor → `u_state` | `put manual <key> <atoms…>` | the answer to a `save` |
-| `u_state` → all | `restore <key> <atoms…>` | replayed at load, line by line |
+**A contributor names its own key and declares its own policy**, which is what lets an abstraction
+written long after `u_state` persist itself with no change to `u_state`. `auto` is a running value;
+`manual` is a committed take you could abandon by not saving.
 
-**A contributor names its own key and declares its own policy**, which is what lets an
-abstraction written long after `u_state` persist itself with no change to `u_state`. `auto` is a
-running value; `manual` is a committed take you could abandon by not saving.
+⚠️ **A `manual` answer MUST be synchronous**, and it is the one rule a contributor can break
+invisibly — the failure is a short file rather than an error.
 
-⚠️ **A `manual` answer MUST be synchronous.** Pd is eager, synchronous and depth-first, so by the
-time the `save` broadcast returns, every honest answer is already stored — which is why the write
-sits on the *left* outlet of the trigger and needs no settle timer. **A contributor answering from
-behind a `[del]` is silently absent from the file**, and the failure is a short file rather than an
-error. `tools/phase8-assert.sh` asserts this directly with a deliberately-late contributor,
-because a rule nothing tests is a rule that quietly stops being true.
-
-⚠️ **`u_state` must never write a file it has not yet read.** The auto flush is armed *by the
-restore*, not by a `loadbang`. The first build armed it at 3 s while `u_init` restores at ~3.5 s,
-so every boot overwrote the previous session with its own defaults — and the file looked entirely
-plausible throughout. Found on the Mac before it reached hardware; item 152.
-
-**Two files, because they have different lifecycles** — the same split, for the same reason, as
-`u_err`'s `.cur` and `.log`. `text write` rewrites the whole file every time, so an auto flush
-must not be able to corrupt a committed take.
+The message table, the two stores, the file format and the rest of the traps are on
+[state.md](module/state.md).
 
 **Owned by `mother.pd`** — not ours to rename, and reserved:
 
@@ -560,66 +543,13 @@ and `all` broadcasts. Each instance still gets its own `$0`.
 
 ## State and persistence
 
-- **Runtime state lives in objects** — `[f ]`, `[i ]`, arrays, `[text]`. There is nowhere else
-  for it to live.
-- **Per-instance persistence: `[savestate]`.** Saves a parameter list into the parent patch, so
-  different instances of an abstraction restore different values.
-
-  **Verified available in 0.49-0** — `savestate-help.pd` is present at tag `0.49-0` and absent
-  at `0.47-0`. A widely-repeated forum claim that `[savestate]` arrived in 0.49.1 is **wrong**;
-  do not let it talk you out of using it. ⚠️ **Phase 8 evaluated it and did not use it** (item
-  145): it writes into the **parent patch file** and needs a `menusave` that nothing on the
-  device triggers. Orthogonal to the `state` bus rather than an alternative to it.
-- **Patterns and presets are plain text files**, via `[text define]` + `[text write]` —
-  git-diffable and editable outside Pd. ⚠️ **But NOT in the patch folder**, which is what an
-  earlier version of this section said. ✅ Phase 8 put them in **`/sdcard/cut-it-state/`**,
-  outside it, so `deploy.sh`, `deploy.sh --clean` and a power cycle cannot touch them;
-  `tools/fetch-state.sh` is the other half of that bargain and copies them back into the repo.
-  **`u_state` is the only file that decides when any of it is written** — see *`state` — the
-  persistence bus* above.
-- **The Organelle's own save mechanism is NOT how the instrument's data is delivered**, and
-  knowing what it *does* do still matters, because `saveState` is what triggers the `manual`
-  commit and because it is why `knobs.txt` appears. ✅ Verified end to end on the device —
-  **`Storage → Save`** runs `save-patch.sh`, which:
-
-  1. send OSC `/saveState 1` to Pd on port 4000 — arriving in the patch as `[r saveState]`
-  2. **sleep** to let the patch write whatever it wants into **`/tmp/state/`**
-  3. `cp -r /tmp/state/*` — everything written lands in the patch folder
-
-  ⚠️ **`Storage` is a TOP-LEVEL menu, not a System submenu.** There is no Save under System, and
-  a doc that said so cost a wasted trip to the device — [plan-tests.md](plan-tests.md) item 136.
-
-  ⚠️ **The budget is 250 ms, not 500** — `save-patch.sh` sleeps `.5` but `save-new-patch.sh`
-  sleeps `.25`. Item 135. ✅ **And it is now irrelevant to Cut It**: `u_state` writes straight to
-  `/sdcard` with an **absolute** path, so nothing it does has to finish inside mother's sleep.
-  The number still binds anything that writes into `/tmp/state/` and relies on the copy — which
-  today is only `knobs.txt`, and mother writes that itself.
-
-  ⚠️ **`saveState` arrives as a BANG, not as `1`.** `mother.pd` routes the OSC message through a
-  `[t b b b]`, so the float is discarded — a `[route 1]` or `[select 1]` on it never fires. Item 137.
-
-  On load the patch folder is copied to `/tmp/patch/`, so **write to `/tmp/state/`, read from
-  `/tmp/patch/`**. ✅ `/tmp/state/` already exists — it is created *and cleared* at patch load.
-  ⚠️ `/tmp` is **tmpfs**; the SD card is only touched by mother's `cp`, after the sleep. A
-  2000-line write costs **~16 ms** either way, because the cost is Pd's serialisation rather than
-  the storage. Item 141.
-
-  ⚠️ **`/tmp/patch` is a SYMLINK to the patch folder**, and it is Pd's working directory — so a
-  **relative** `[text write]` bypasses `/tmp/state` and the copy entirely and mutates the deployed
-  patch immediately. Item 140.
-
-  ✅ `mother.pd` uses this for the four knob positions (`knobs.txt`) — **which means every Save
-  creates one**, so a patch cannot opt out by shipping without it. Item 139.
-
-  ⛔ **`Storage → Save New` is DROPPED and is not part of this design.** It duplicates the entire
-  patch folder under a numbered name, making preset variants separate menu entries — the wrong
-  paradigm here, where a preset is a **record inside the store**. Dropping it deleted the whole
-  `/tmp/curpatchname` / `! 2` / top-level-variant cluster unasked, and `deploy.sh` was not
-  modified. Recorded so it is not rediscovered as an option: [plan-v03.md](plan-v03.md) *Deliberately
-  deferred*, and item 144 for what it actually does.
-- **Capture everything in one device-agnostic event format** — `time, note, velocity, duration` —
-  so nothing downstream cares whether a pattern came from the Launchpad, the keyboard or the
-  404.
+- **Runtime state lives in objects** — `[f ]`, `[i ]`, arrays, `[text]`. There is nowhere else for it
+  to live.
+- **`u_state` is the only file that decides when any of it is written.** The `state` bus, the two
+  policies, the file format and every trap in them are on [state.md](module/state.md).
+- ⛔ **Nothing writes into the patch folder.** The instrument's data lives in `/sdcard/cut-it-state/`,
+  outside it, so a deploy cannot touch it. A **relative** `[text write]` mutates the deployed patch
+  immediately — see [organelle.md](device/organelle.md) under *Saving*.
 
 ---
 

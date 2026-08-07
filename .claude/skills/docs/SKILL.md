@@ -54,6 +54,14 @@ Line 1 declares the schema. `##` is the fixed skeleton and must appear exactly, 
 `Design` exists — the Launchpad's three-tier decision and the 404's accepted mic bleed are neither
 measured behaviour nor something that will bite you, and they were being crammed into `Facts`.
 
+⚠️ **`Design` is last because most of it is forward-referencing** — "the reject outlet is the normal
+path in `u_store`" means nothing before `Facts` says what `u_store` matches. **But the ONE decision
+that makes the page legible goes in `What it is`, at the top**, and is then stated properly in
+`Design`. Every page does this already: `tempo` opens *"`u_tempo` is the master REFERENCE, and it is
+not the clock"*, `state` opens *"it knows nothing about what any key MEANS"*, `map` opens
+*"table-driven and mode-dependent"*. **A page whose `What it is` is pure description reads as a list
+of parts.** This one is a form, not a gate — nothing can check that the right decision was chosen.
+
 ⚠️ **`Design` holds what is DECIDED, not what is planned.** A table of features that do not exist is
 intent, and belongs in `plan-v03.md`.
 

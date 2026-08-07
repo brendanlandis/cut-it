@@ -173,6 +173,44 @@ comment states the contract: *"All MIDI output and input can be suppressed by se
 | `/sdcard/MIDI-Config.txt` stores only the channel, so there is **no persistent setting** for this | verified | — |
 | Entering mother's *MIDI Config* page mid-session does **not** re-open the gates — safe to visit during a set | verified | 201 |
 
+### Saving
+
+✅ **Verified end to end.** `Storage → Save` runs `save-patch.sh`, which does three things:
+
+| Step | What happens | Evidence | Item |
+|------|--------------|----------|------|
+| 1 | Sends OSC `/saveState 1` to Pd on port 4000, arriving in the patch as `[r saveState]` | verified | — |
+| 2 | **Sleeps**, to let the patch write whatever it wants into `/tmp/state/` | verified | 135 |
+| 3 | `cp -r /tmp/state/*` — everything written lands in the **patch folder** | verified | — |
+
+| Fact | Evidence | Item |
+|------|----------|------|
+| ⚠️ **`saveState` arrives as a BANG, not as `1`.** mother routes the OSC message through a `[t b b b]`, so the float is discarded — a `[route 1]` or `[select 1]` on it never fires | verified | 137 |
+| ⚠️ **The budget is 250 ms, not 500.** `save-patch.sh` sleeps `.5` but `save-new-patch.sh` sleeps `.25` | verified | 135 |
+| ⚠️ **`Storage` is a TOP-LEVEL menu**, not a System submenu | verified | 136 |
+| On load the patch folder is copied to `/tmp/patch/`, so **write to `/tmp/state/`, read from `/tmp/patch/`**. `/tmp/state/` already exists — created *and cleared* at patch load | verified | — |
+| ⛔ **`/tmp/patch` is a SYMLINK to the patch folder**, and it is Pd's working directory — so a **relative** `[text write]` bypasses `/tmp/state` and the copy entirely and mutates the deployed patch immediately | verified | 140 |
+| `/tmp` is **tmpfs**; the SD card is only touched by mother's `cp`, after the sleep. A 2000-line write costs **~16 ms** either way, because the cost is Pd's serialisation rather than the storage | verified | 141 |
+| mother uses this for the four knob positions, so **every Save creates `knobs.txt`** — a patch cannot opt out by shipping without one | verified | 139 |
+| ⛔ **The saved file BEATS the physical knob.** Knob 1 fully clockwise, patch reloaded, and it booted at the file's **57 BPM** rather than the knob's 500 | verified | 200 |
+
+⚠️ **`knobs.txt` is four normalised knob positions, not knob labels** — two real files off the device
+read `0.195503 0.230694 0.134897 0.0136852;` and `0.521994 1 0.84262 0.723363;`. Cut It ships without
+one and `Storage → Save` creates it; until then mother logs `knobs.txt: can't open` at boot, which is
+expected and harmless. `./deploy.sh` will not remove it once it exists — `--clean` will.
+
+⛔ **So after any Save every knob is desynced from its value, and the first touch jumps** — up to the
+full range, and knob 1 is master tempo. **Nothing on the instrument can detect this**: mother reports
+position, not whether the position still matches the file. It happens on every boot rather than only
+on a bank switch, and it is the concrete case for parameter pickup in
+[plan-v03.md](../../plan-v03.md) §4.
+
+⚠️ **Cut It does not deliver its data this way.** `u_state` writes straight to `/sdcard` with an
+absolute path, so nothing it does has to finish inside the sleep. The only part that reaches the
+patch is that `saveState` triggers a `manual` commit — see [state.md](../module/state.md). The 250 ms
+still binds anything that writes into `/tmp/state/` and relies on the copy, which today is only
+`knobs.txt`.
+
 ## Traps
 
 Each is a claim and its fix. How any of them was found is in the git history.

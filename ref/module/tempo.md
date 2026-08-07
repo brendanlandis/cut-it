@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Tempo and clocks
 
-**Files:** `Cut It/u_tempo.pd`, `Cut It/c_clock.pd` · **Gate:** `none` · **Bench:** `test/bench/tempo-bench.pd`
+**Files:** `Cut It/u_tempo.pd`, `Cut It/c_clock.pd` · **Gate:** `test/gate/tempo-assert.sh` · **Bench:** `test/bench/tempo-bench.pd`
 
 ## What it is
 

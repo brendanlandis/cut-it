@@ -73,6 +73,7 @@ run "bench step text survived generation" python3 test/bench/bench-verify.py
 # one whose whole subject is that page.
 run "the MIDI inventory"                   ./test/gate/midi-emitters-assert.sh
 run "the display arbiter"                  ./test/gate/display-assert.sh
+run "the tempo reference"                  ./test/gate/tempo-assert.sh
 run "the map"                              ./test/gate/map-assert.sh
 run "the data store"                       ./test/gate/state-assert.sh
 run "the Launchpad"                        ./test/gate/launchpad-assert.sh

@@ -69,7 +69,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 ANCHOR = re.compile(r'<!--\s*check:\s*(.+?)\s*-->')
-SPEC = re.compile(r'^pd-text\s+"([^"]+)"\s+(\S+)$')
+SPEC = re.compile(r'^(pd-text|pd-route)\s+"([^"]+)"\s+(\S+)$')
 # Only names that look like this project's own docs. A bare "README.md" inside a
 # URL or a shell heredoc is not worth a false positive.
 DOCNAME = re.compile(r'(?<![\w/.-])((?:[a-z0-9_-]+/)?[a-zA-Z0-9_-]+\.md)\b')
@@ -134,6 +134,30 @@ def pd_text(path, name):
     raise CheckFailed(f'no [text define {name}] in {path}')
 
 
+def pd_route(path, first):
+    """The arguments of a `route` box, identified by its FIRST argument.
+
+    Named by its first argument rather than by position, because C-10 makes box
+    indices move: appending anything to the patch renumbers nothing here, but a
+    check keyed to "the fourth route box" would rot the first time one is added.
+    """
+    src = (ROOT / path)
+    if not src.exists():
+        raise CheckFailed(f'{path} does not exist')
+    want = re.compile(r'^#X obj -?\d+ -?\d+ route ('
+                      + re.escape(first) + r'(?: [^;]*)?);$')
+    found = [m.group(1).split()
+             for m in (want.match(ln)
+                       for ln in src.read_text(encoding='utf-8').splitlines())
+             if m]
+    if not found:
+        raise CheckFailed(f'no [route {first} ...] in {path}')
+    if len(found) > 1:
+        raise CheckFailed(f'{len(found)} [route {first} ...] boxes in {path} '
+                          f'-- the anchor cannot say which')
+    return found[0]
+
+
 # --- the checks ------------------------------------------------------------
 
 def check_pd_text(doc, lineno, rows, path, name):
@@ -159,6 +183,32 @@ def check_pd_text(doc, lineno, rows, path, name):
         head = f'{doc}:{lineno}  table vs [text define {name}] in {path}'
         return [head] + [f'    {p}' for p in problems]
     return []
+
+
+def check_pd_route(doc, lineno, rows, path, first):
+    """Compare a table's first column against a `route` box's arguments, in order.
+
+    This is the ALLOWLIST GUARD read from the other side. `phase9-assert.py`
+    proves every row of `cut-it-map.txt` names a destination on the route; this
+    proves the DOCUMENTED set is that same set. A destination added to the patch
+    and not to the page makes the page quietly incomplete, which nothing else
+    would say.
+    """
+    have = pd_route(path, first)
+    want = [r[0].strip().strip('`') for r in rows]
+    if want == have:
+        return []
+    out = [f'{doc}:{lineno}  table vs [route {first} ...] in {path}']
+    for d in have:
+        if d not in want:
+            out.append(f'    {d}: on the route, absent from the table')
+    for d in want:
+        if d not in have:
+            out.append(f'    {d}: in the table, NOT on the route -- a row naming '
+                       f'it would go to err as unknown-dest')
+    if sorted(want) == sorted(have):
+        out.append(f'    same set, different order -- doc has {" ".join(want)}')
+    return out
 
 
 def check_anchors(verbose):
@@ -190,9 +240,10 @@ def check_anchors(verbose):
             if not spec:
                 out.append(f'{rel}:{i + 1}  unreadable check spec: {m.group(1)}')
                 continue
+            kind = {'pd-text': check_pd_text, 'pd-route': check_pd_route}[spec.group(1)]
             try:
                 rows = md_table(lines, i + 1)
-                out += check_pd_text(rel, i + 1, rows, spec.group(1), spec.group(2))
+                out += kind(rel, i + 1, rows, spec.group(2), spec.group(3))
             except CheckFailed as e:
                 out.append(f'{rel}:{i + 1}  {e}')
     if not seen:

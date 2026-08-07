@@ -157,8 +157,8 @@ feedback path. Revisit later if wanted; it needs no rewiring beyond one cable fr
 ### Tempo is freely modulable, but propagates unevenly
 Because the Organelle *generates* the clock, tempo is just a float in the patch. ✅ Anything may
 write the `tempo` bus — a knob, a tap tempo, an LFO, a pad — and `u_tempo` consumes it. **Which
-control does the writing is a `u_map` decision and lives in exactly one route branch**; today it is
-the Organelle's own knob 1. (v0.1's `midiclock.pd` did this with `r tempo` → `tempo $1 permin` →
+control does the writing is a `u_map` decision and lives in one row of `cut-it-map.txt`**; today it
+is the Organelle's own knob 1. (v0.1's `midiclock.pd` did this with `r tempo` → `tempo $1 permin` →
 `metro`; Phase 5 rewrote it audio-domain. Reference for intent, not code to lift.)
 
 **But MIDI clock has no tempo message.** You change the *rate* of the 24 PPQN pulse stream,
@@ -324,10 +324,8 @@ This dissolves three problems at once:
 during performance and a note-entry surface during composition. Design this in from the
 start; it is much easier than retrofitting once the filter logic exists.
 
-⚠️ **The six modes in `u_map` are placeholders, but their RATIO is not arbitrary.** `u_err` routes
-on `compose` / `perform`, so **a split weighted toward `perform` would make most mode selections
-silently quieten the error display.** Anyone renaming or re-balancing them needs to know that
-before they start — it is the kind of change that looks cosmetic and is not.
+⚠️ **The six modes in `u_map` are placeholders, but their 3/3 RATIO is not** — see
+[map.md](ref/module/map.md) under *Renaming or re-balancing the six modes is not cosmetic*.
 
 **Three storage decisions worth making early:**
 

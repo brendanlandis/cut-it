@@ -67,6 +67,7 @@ run "bench step text survived generation" python3 test/bench/bench-verify.py
 
 # --- 4. every phase gate ----------------------------------------------------
 # In phase order, because a failure in an early one explains failures after it.
+run "the MIDI inventory"                   ./test/gate/midi-emitters-assert.sh
 run "Phase 6 gate -- the Launchpad grid"   ./test/gate/phase6-assert.sh
 run "the phone link"                       ./test/gate/phone-assert.sh
 run "the data store"                       ./test/gate/state-assert.sh

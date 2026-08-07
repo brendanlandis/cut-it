@@ -453,12 +453,29 @@ constraints, the C-1..C-14 rules and the hand-editing traps, and CLAUDE.md has b
 `ref/device/phone.md` · `ref/conventions.md` · `ref/README.md`. Every source section replaced by a
 **Moved** pointer.
 
-`tools/docs-check.py` now runs four checks, each proven to fail: anchored table vs `[text define]`,
-dangling document pointers, the full page schema, and **`C-NN` rule-ID resolution**.
+`tools/docs-check.py` now runs seven checks, each proven to fail. Three of them are **anchored
+tables** — a fact that exists twice in machine-readable form, parsed from both sides and compared:
 
-**Next, in order:** the five instrument pages — `map`, `tempo`, `state`, `boot`, `audio` — then
-`ref/architecture.md`, `ref/device-os.md`, `ref/rig.md`, then **the journals**, then `CLAUDE.md` as
-a router, then the `.pd` comments citing `C-NN` so the `ref-conventions.md` stub can go.
+| Anchor | Asserts |
+|---|---|
+| `pd-text "<patch>" <name>` | The table equals that `[text define]`'s contents. Reintroduce `47 + n` and it goes red **at pad 5** |
+| `pd-route "<patch>" <first-arg>` | The table's first column equals that `route` box's arguments, in order. **This is the allowlist guard read from the doc side** |
+| `sh-aconnect "<script>" connect\|disconnect` | The table's first two columns equal the script's `aconnect` calls. The two directions are parsed **separately**, because a check that lumped them would pass with the rig unwired |
+
+The other four are dangling document pointers, dangling script and patch paths, the full page
+schema, and `C-NN` rule-ID resolution.
+
+⛔ **A path that resolves can still be the WRONG file, and nothing catches that.** `ref-hardware.md`
+pointed at `tools/wire.sh`, a Phase 1 ancestor of `Cut It/wire.sh` — 59 lines behind, no autoconnect
+undo, no `|| true`. Found by reading, not by a gate.
+
+✅ **All five instrument pages are done** — `map`, `tempo`, `state`, `boot`, `audio`. `ref/` is
+thirteen pages.
+
+**Next, in order:** `ref/architecture.md`, `ref/device-os.md`, `ref/rig.md` — and the display
+arbiter, whose home is the one thing in §10.10 still needing a ruling — then **the journals**, then
+`CLAUDE.md` as a router, then the `.pd` comments citing `C-NN` so the `ref-conventions.md` stub can
+go.
 
 ⚠️ **THE LINE COUNT GOES UP PER PAGE, AND THAT IS EXPECTED.** `ref/device/sp404.md` replaced 279 source
 lines with 281. Tables gained `Evidence` and `Item` columns, the pad map became sixteen rows instead
@@ -478,14 +495,18 @@ all — `u_map`, `u_state`, `u_init` and `m_404` are the richest.
   they are worth settling first. The `.pd` prefixes (`u_`, `m_`, `g_`, `c_`) are the obvious
   candidate axis, but the gates cut across them — a MIDI-emission gate spans `m_volca`, `m_404`,
   `m_launchpad` and `u_tempo`.
-- **How far `docs-check.py` should reach on the first pass.** The pad-map check and the citation
-  check are clearly worth it. Whether it should also verify the channel-block table against
-  `wire.sh` is a judgement call about how much checking is too much.
-- ⬜ **Where does the display arbiter go?** `ref-display.md` is 719 lines and barely touched,
-  because most of it is not device fact — it is the `home < modal < alert` pattern that `g_oled` and
-  `g_grid` share, plus the `disp` bus protocol. Proposal: **the arbiter goes to
-  `ref/architecture.md` and each device page keeps only its own surface.** That splits the Launchpad
-  across two files again, which is what this refactor exists to stop — but the split would be
+- ✅ **How far `docs-check.py` should reach — settled by building it.** It verifies the channel
+  blocks against `wire.sh`, and the answer to "how much checking is too much" turned out to be
+  governed by whether the fact already exists twice in machine-readable form. Where it does, the
+  check is ~25 lines and pays for itself; where it does not, no check is possible at any price.
+- ⬜ **Where does the display arbiter go?** `ref-display.md` is now 279 lines, and about 220 of them
+  are the framework rather than device fact: the `home < modal < alert` arbiter that `g_oled`,
+  `g_grid` and `g_led` share, the `disp` bus protocol, and the geometry. Four files implement it.
+  **Revised proposal: its own page, `ref/module/display.md`** — it is one instrument concern, which
+  is what `ref/module/` is for, and it splits the Launchpad no worse than `tempo.md` splits
+  `u_tempo`: the device page says what the hardware can show, the module page says how Cut It
+  arbitrates. Putting it in `ref/architecture.md` instead would make that file a grab bag before it
+  is even written. That splits the Launchpad
   *device vs instrument* rather than accidental. **Brendan has not ruled on this; ask first.**
 - **The eight unticked `plan-tests.md` items** (5, 39, 43–46, 81, 95) need a destination before that
   file dissolves — they are open work, so §4 is where they belong.

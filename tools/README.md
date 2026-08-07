@@ -202,7 +202,7 @@ device with no laptop attached**.
 | `AP Probe/` | ✅ Records what can only be seen **while the access point is up** — which is exactly when a Mac joined to it has no internet and nobody can watch. It logs to `/sdcard/ap-probe.log` and reads the phone's address from the dnsmasq lease file **or**, if dnsmasq has already exited, from `/proc/net/arp`. ⚠️ **That second strategy is what saved the run** (item 129) — a single-strategy probe would have returned `none` and taught us nothing. |
 | `Start AP/` | ⛔ **A dead end, kept as the record of why.** It has no `main.pd` and is not loadable. `create_ap`, `hostapd` and `dnsmasq` all die with the Pd that spawned them **even behind `setsid nohup`**, so an AP cannot be started from a patch. Use **System → WiFi Setup → Start AP**. Item 129. |
 | `State Probe/` | Phase 8's on-device state probe. |
-| `PGM Probe/` | ✅ Phase 9 Step 0B — **it proved Pd's `pgmout` is 1-based** (item 228). It loops `pgmout 20` every six seconds while `aplaymidi` sends raw `0xC0 20` from the shell, so the readout is **binary — does the program name move?** — rather than asking anyone to compare two names from memory. ⚠️ **It must `aconnect` Pd's Midi-Out 4 to the Uno after loading**, because a patch load drops the connection (see [../ref-hardware.md](../ref-hardware.md)); without that it measures silence and looks like a clean negative. |
+| `PGM Probe/` | ✅ Phase 9 Step 0B — **it proved Pd's `pgmout` is 1-based** (item 228). It loops `pgmout 20` every six seconds while `aplaymidi` sends raw `0xC0 20` from the shell, so the readout is **binary — does the program name move?** — rather than asking anyone to compare two names from memory. ⚠️ **It must `aconnect` Pd's Midi-Out 4 to the Uno after loading**, because a patch load drops the connection (see [../ref/device-os.md](../ref/device-os.md)); without that it measures silence and looks like a clean negative. |
 
 **A menu patch is the CHEAP way to run a Pd-side MIDI probe, and `PGM Probe` is the pattern.**
 The documented alternative is the by-hand three-patch console, which needs `killall pd` — and that
@@ -645,7 +645,7 @@ equivalent.
 ./tools/phase6-cpu.sh -n 3
 ```
 
-item 94. Wraps the `/proc` arithmetic from [../ref-hardware.md](../ref-hardware.md)
+item 94. Wraps the `/proc` arithmetic from [../ref/device-os.md](../ref/device-os.md)
 → *Measuring the running patch* and says WITHIN or OVER against the **11.2 %** budget — Phase 5's
 10.2 % idle baseline plus one point. ⚠️ `pgrep -nx pd`, never a bare `pgrep`: the substring match
 hits a kernel thread on this device.

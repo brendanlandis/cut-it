@@ -509,7 +509,7 @@ vanish into tty1 on a device with no console.
 **Refresh with `/reloadNoRemount`, never `reload.sh`.** `reload.sh` sends `/reload`, which also
 runs `mount.sh`, which mounts the last `/dev/sd*` on `/usbdrive`. With a Launchpad attached that
 is its write-protected onboarding drive, and mounting it moves `USER_DIR` onto a read-only
-volume — breaking wifi config, Save and Save New. See [ref-hardware.md](ref-hardware.md).
+volume — breaking wifi config, Save and Save New. See [device-os.md](device-os.md).
 
 **The load step needs the category folder in the name.** `mother`'s `/loadPatch` resolves
 against its *current* patch directory (`MainMenu::runPatch` builds `getPatchDir() + "/" + arg`),

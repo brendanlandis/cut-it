@@ -14,7 +14,7 @@
 #
 # ✅ USE THE DEVICE'S OWN MENU INSTEAD: System -> WiFi Setup -> Start AP. It
 # predates this whole idea and is not a child of any patch. The venue sequence
-# is in ref-hardware.md.
+# is in ref/device-os.md.
 #
 # start-ap.sh reads $USER_DIR/ap.txt: first line network, last line password,
 # defaulting to Organelle / coolmusic. Ours says organelle / definitelycutit.

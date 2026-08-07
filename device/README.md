@@ -32,7 +32,7 @@ factory.
 That is the whole change, and it is what the entire MIDI topology depends on. Without
 `midiapi: 1` Pd falls back to OSS, where the Launchpad's three ports collapse into one and
 Programmer Mode may be unreachable. See *MIDI: OSS vs ALSA* in
-[ref-hardware.md](../ref-hardware.md).
+[ref/device-os.md](../ref/device-os.md).
 
 ## The `mount.sh` change
 
@@ -40,7 +40,7 @@ Programmer Mode may be unreachable. See *MIDI: OSS vs ALSA* in
 MIDI interfaces. `mount.sh` takes the *last* `/dev/sd*` and mounts it on `/usbdrive`;
 `AppData::getDefaultUserDir()` then makes that read-only volume `USER_DIR`, and
 `wifi_control.py` dies opening a log for writing there — hanging the UI at boot. Full chain in
-[ref-hardware.md](../ref-hardware.md).
+[ref/device-os.md](../ref/device-os.md).
 
 **The change** — refuse write-protected volumes, since `USER_DIR` exists to be written to:
 

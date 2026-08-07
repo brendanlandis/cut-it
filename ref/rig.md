@@ -4,7 +4,7 @@
 **The physical instrument.** What connects to what, why, and the handful of hardware facts that
 decide the shape. What each *device* can do is on its own page under [device/](device/); what the
 Organelle is as a *computer* — SSH, paths, deploying, wifi — is in
-[ref-hardware.md](../ref-hardware.md).
+[device-os.md](device-os.md).
 
 The Organelle is the brains: it runs the patch, hosts every controller over USB, and is **clock
 master** for the whole rig. The SP-404MK2 is the sample store and the front end — it holds the drum

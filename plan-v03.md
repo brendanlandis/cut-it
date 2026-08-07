@@ -46,7 +46,7 @@ that sentence is one row of `Cut It/cut-it-map.txt`.
 | **[ref/conventions.md](ref/conventions.md)** | The rules table, then the sections it links | How the Pd is written — `C-1`…`C-14`. **Read before writing Pd** |
 | **[ref/architecture.md](ref/architecture.md)** | All of it (200 lines) | How the modules compose, and the four load-bearing decisions |
 | **[ref/device/](ref/device/)**, **[ref/module/](ref/module/)** | **Only the page you are touching** | Everything about one device or one instrument concern, in one place |
-| **[ref-hardware.md](ref-hardware.md)** | Only if working on the device | SSH, paths, how Pd launches, wifi. ⚠️ Verify-after: the cruft cleanup changes these paths |
+| **[ref/device-os.md](ref/device-os.md)** | Only if working on the device | SSH, paths, how Pd launches, wifi. ⚠️ Verify-after: the cruft cleanup changes these paths |
 
 ### How this project works
 
@@ -135,7 +135,7 @@ they keep their item numbers so the citations still mean something.
 | 5, 95 | **Brownouts with the full rig powered at once** | Partially closed by item 211; never run with every box live simultaneously |
 | 39 | **The OLED read by eye** — the three type-size layouts and the ageing | The geometry is verified through `oscOut` on the Mac, but *"is 16px readable at arm's length"* is a judgement only the hardware can settle. The one-mover 24px layout has been read on the device incidentally |
 | 45 | **AP link quality over a set-length window** | Needs an actual set's duration to mean anything |
-| 81 | **The wifi fault itself** | ⚠️ Narrowed, not solved — see [ref-hardware.md](ref-hardware.md). Items 43, 44 and 46 were answered by later work |
+| 81 | **The wifi fault itself** | ⚠️ Narrowed, not solved — see [ref/device-os.md](ref/device-os.md). Items 43, 44 and 46 were answered by later work |
 
 ---
 
@@ -282,14 +282,18 @@ onward. What stays here is only what still binds work that has not happened.
 
 | | Before | After |
 |---|---|---|
-| Root `.md` | **10 files, 10,300 lines** | **3 files, 1,176** |
-| `ref/` | — | **17 pages, 4,268 lines** |
-| Total prose | ~10,300 | **5,444** |
+| Root `.md` | **10 files, 10,300 lines** | **2 files, 501** |
+| `ref/` | — | **18 pages, 4,729 lines** |
+| Total prose | ~10,300 | **5,230** |
 | Journals | 5,112 lines, never read start to finish | **0 — dissolved** |
 
-**The three root files are `CLAUDE.md` (the router), this file (the only plan), and
-`ref-hardware.md`** — the Organelle as a computer, which becomes `ref/device-os.md` as the **last
-step of the Organelle cruft cleanup**, because that cleanup changes the paths it documents.
+**The root holds exactly two `.md` files: `CLAUDE.md` (the router) and this one (the only plan).**
+Everything else is under `ref/`.
+
+⛔ **`ref/device-os.md` is VERIFY-AFTER, not unfinished.** Its content is the one thing the Organelle
+cruft cleanup will change, so it has deliberately not been rewritten — but *not investing in its
+content* was never a reason to leave the file at the root, and it did for one commit longer than it
+should have.
 
 ### What the next three jobs inherit
 
@@ -306,7 +310,7 @@ ref/          architecture  conventions  rig
 |---|---|
 | **Testing, by module instead of phase** | **The same axis, and the names above.** The gates are still named by *phase* — four `phaseN-assert.sh`, four drive-gens, `bench_steps.py`'s `STEPS3`…`STEPS9`. Phase is a *time* axis, and the cost is already visible: `phase9-assert` exists partly because `phase6-assert` rewrote only `[midiout]` and would have passed vacuously over `noteout`/`ctlout`/`pgmout`. On a module axis that is **one** MIDI-emission gate, not two. ⚠️ Every module page's `**Gate:**` line already names its gate — **rename the gates and those lines must move with them**, and `docs-check.py` will say so |
 | **Tool cleanup** | `tools/README.md` is 46 KB describing ~40 files, many one-off probes from July. ⛔ **`tools/wire.sh` is a Phase 1 ancestor of `Cut It/wire.sh`** — 59 lines behind, no autoconnect undo, no `\|\| true` — and is a delete candidate. ✅ Five scripts of 42 are named in no document at all, and **that is fine** (Brendan, 2026-08-06); `docs-check.py` is mention-driven by design and will never look for them |
-| **Organelle cruft cleanup** | `ref-hardware.md` is entirely about the device as a computer, and its paths are the ones that change. **Do not invest there before the cleanup; rename it to `ref/device-os.md` after** |
+| **Organelle cruft cleanup** | [ref/device-os.md](ref/device-os.md) is entirely about the device as a computer, and **its paths are what the cleanup changes.** ⛔ Do not rewrite them before it; verify each against the device after, and drop the verify-after banner when they are |
 
 ### The rules that outlived the refactor
 
@@ -330,5 +334,5 @@ ref/          architecture  conventions  rig
 
 - ⬜ **What `docs-check.py` structurally cannot do.** It is **mention-driven**: it proves every
   mention resolves, and can say nothing about a file nobody mentions, nor about a mention that
-  resolves to the *wrong* file. `ref-hardware.md` pointed at `tools/wire.sh` for months and the check
+  resolves to the *wrong* file. The hardware page pointed at `tools/wire.sh` for months and the check
   had nothing to say. **Found by reading, and there is no gate for it.**

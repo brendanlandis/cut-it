@@ -90,7 +90,7 @@ ssh "$HOST" "ls -la '$DEST/$PATCH'"
 # Launchpad attached that is its 192 KiB write-protected onboarding drive, and
 # mounting it moves USER_DIR onto a read-only volume — which breaks wifi
 # config, Save, Save New and AP mode until it is unmounted. See
-# ref-hardware.md. Nothing here needs a remount: the files went to /sdcard.
+# ref/device-os.md. Nothing here needs a remount: the files went to /sdcard.
 if [ "${NORELOAD:-}" = "1" ]; then
     echo
     echo "skipped reload (NORELOAD=1) — press Storage -> Reload on the device"

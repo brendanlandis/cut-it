@@ -5,7 +5,7 @@
 #     ./tools/phase6-cpu.sh -n 3         # three, so you can see it settle
 #     HOST=root@192.168.1.15 ./tools/phase6-cpu.sh
 #
-# Wraps the /proc arithmetic from ref-hardware.md -> Measuring the running patch,
+# Wraps the /proc arithmetic from ref/device-os.md -> Measuring the running patch,
 # which reads /proc rather than using top because the device has busybox. Takes
 # the reading over five seconds WITHOUT disturbing the running patch.
 #
@@ -73,7 +73,7 @@ while [ "$i" -le "$N" ]; do
 done
 
 cat <<'EOF'
-Record these in item 94, and add the row ref-hardware.md ->
+Record these in item 94, and add the row ref/device-os.md ->
 Measuring the running patch is holding open for Phase 6.
 
 The SysEx rate is not visible here -- UDP out is the OLED. To see the grid's

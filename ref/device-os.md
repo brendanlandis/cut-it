@@ -1,24 +1,18 @@
-# Cut It — Rig Plan
+<!-- schema: freeform -->
+# The Organelle as a computer
 
-Hardware setup plan for the Cut It instrument. Companion to
-[README.md](<! v0.1 plans/README.md>), which covers the Pd patch itself.
+**SSH, paths, the read-only filesystem, how Pd launches, deploying, and wifi.** The *boxes and
+cables* are on [rig.md](rig.md); the Organelle's own **control surface** — panel, OLED, aux LED — is
+on [device/organelle.md](device/organelle.md).
 
-Target hardware: **Organelle 1** (the original, not M/S/S2).
-
----
-
-## Overview
-
-**Moved** to [ref/rig.md](ref/rig.md). **This file is now only the Organelle as a COMPUTER** — SSH,
-paths, the read-only filesystem, how Pd launches, deploying, and wifi.
-
-⚠️ Its paths are the ones the Organelle cruft cleanup will change. Verify against the device before
-relying on them.
+⛔ **VERIFY-AFTER.** The paths below are the ones the **Organelle cruft cleanup** will change. They
+are correct as measured and this page has deliberately not been rewritten ahead of that job. **Check
+against the device before relying on any of them.**
 
 ## Signal flow
 
-**Moved** to [ref/rig.md](ref/rig.md) — MIDI, audio and power, plus the gear list and the cabling.
-The ALSA wiring and the channel blocks are on [ref/module/boot.md](ref/module/boot.md).
+**On [rig.md](rig.md)** — MIDI, audio and power, plus the gear list and the cabling. The ALSA wiring
+and the channel blocks are on [module/boot.md](module/boot.md).
 
 ⛔ **LOADING ANY PATCH DROPS PD'S ALSA CONNECTIONS — measured, item 228.** After
 `oscsend localhost 4001 /loadPatch …`, `Pure Data Midi-Out 4` had **no target at all**, and a probe
@@ -109,7 +103,7 @@ writing to `/root`, and `remount-ro.sh` after. `/sdcard` and `/usbdrive` are wri
 **`/root/.pdsettings` is load-bearing device-resident state.** It holds the `midiapi: 1` and
 4-in/4-out configuration the whole MIDI topology depends on, plus `path1: /root/Pd/externals`,
 which is what makes `[shell]`, `packOSC` and `routeOSC` resolve in the menu-launched patch.
-✅ Backed up in [device/](device/), verified current against the hardware.
+✅ Backed up in [device/](../device/), verified current against the hardware.
 
 ### ⚠️ The clock, and why device timestamps are not Mac timestamps
 
@@ -139,7 +133,7 @@ way to add devices. Note `-audiobuf 6` on the command line overrides `audiobuf: 
 
 **`-nogui` means there is no Pd console.** Patch errors go to stdout on tty1, so VNC will not
 show them either. This is why error reporting to the OLED is treated as an architecture
-requirement rather than a debugging convenience — see [ref/architecture.md](ref/architecture.md).
+requirement rather than a debugging convenience — see [ref/architecture.md](architecture.md).
 
 ### Measuring the running patch
 
@@ -213,7 +207,7 @@ USB-enumeration-order drift across reboots.
 
 `./deploy.sh` does the whole loop — syntax check, copy, reload the patch list, load the patch —
 with no physical interaction. Flags and the reasoning are in
-[ref/conventions.md](ref/conventions.md). Because there is **no rsync**, locally-deleted files
+[ref/conventions.md](conventions.md). Because there is **no rsync**, locally-deleted files
 linger remotely: use `./deploy.sh --clean` after renaming or removing an abstraction, or a stale
 `.pd` will shadow the new one.
 
@@ -270,13 +264,13 @@ ssh root@organelle.local 'printf "SSID\nPASSWORD\n" >> /sdcard/wifi.txt'
 ```
 
 ⚠️ **The passwords are stored in the clear** — that is the device's design, not a choice available
-to us. **`wifi.txt` must never be copied into this repo**, and [device/](device/) deliberately does
+to us. **`wifi.txt` must never be copied into this repo**, and [device/](../device/) deliberately does
 not back it up.
 
 **Adding a second network is the cheap way to a self-contained stage link**, and much lower risk
 than `hostapd`: the Organelle simply joins whichever is present and **SSH survives**, where
 bringing up an AP drops it. ⚠️ **An iPhone Personal Hotspot needs cellular**, so it cannot be
-combined with airplane mode — the two are mutually exclusive. See [plan-v03.md](plan-v03.md).
+combined with airplane mode — the two are mutually exclusive. See [plan-v03.md](../plan-v03.md).
 
 ### The tools that watch it
 
@@ -297,7 +291,7 @@ scans and relaunches in one command kills its own session.
 
 **On house wifi the device loses its IPv4 lease and does not get it back.** Open since Phase 6 and
 misdiagnosed for two of them. ⚠️ **It is narrowed, not solved** — what remains open, and what is
-being waited for, is in [plan-v03.md](plan-v03.md). The measurements are in *The evidence, item by
+being waited for, is in [plan-v03.md](../plan-v03.md). The measurements are in *The evidence, item by
 item* below.
 
 ✅ **The fault is a ROAM breaking a RUNNING `dhcpcd`.** The device roams between the two AP radios,
@@ -445,17 +439,17 @@ fi
 
 ✅ Installed, and **verified by cold boot with the Launchpad attached**: boots normally, wifi
 connects, `/usbdrive` stays unmounted. Factory version kept at
-`/root/fw_dir/scripts/mount.sh.orig` and in [device/](device/). The rootfs is read-only, so
+`/root/fw_dir/scripts/mount.sh.orig` and in [device/](../device/). The rootfs is read-only, so
 `remount-rw.sh` before and `remount-ro.sh` after.
 
 **If it ever recurs:** `umount /usbdrive` clears it, no reboot needed. ⬜ Whether Novation
 Components can disable the onboarding drive on the Launchpad itself is untried and tracked in
-[plan-v03.md](plan-v03.md).
+[plan-v03.md](../plan-v03.md).
 
 
 ## Device capabilities
 
-**Moved.** One page per device under [ref/device/](ref/device/) — the Launchpad, the nanoKONTROL,
+**Moved.** One page per device under [ref/device/](device/) — the Launchpad, the nanoKONTROL,
 the SP-404, the Volca, the Organelle's own panel and the phone. The gear list, the retired
-BeatStep, the cubit and the pedal jack are on [ref/rig.md](ref/rig.md).
+BeatStep, the cubit and the pedal jack are on [ref/rig.md](rig.md).
 

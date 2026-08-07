@@ -54,7 +54,7 @@ chooses to use it.
 | One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
 | One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `display` `map` `state` `tempo` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
-| The Organelle as a **computer** — SSH, paths, how Pd launches, deploying, wifi | [ref-hardware.md](ref-hardware.md) ⚠️ verify-after |
+| The Organelle as a **computer** — SSH, paths, how Pd launches, deploying, wifi | [ref/device-os.md](ref/device-os.md) ⛔ verify-after |
 | A cited `item NNN` | `grep` it — item numbers are **fact IDs**, not log entries |
 | What each tool proves and how to run it | [tools/README.md](tools/README.md) |
 

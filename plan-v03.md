@@ -24,7 +24,7 @@ it** for Pd 0.49.
 |---|---|
 | **v0.2** | ✅ Complete and hardware-verified. Sixteen abstractions, four display surfaces, three headless gates, six benches |
 | **v0.3** | ✅ **Complete and hardware-verified.** The *blank slate* — every device addressable, every control assignable. Eighteen abstractions, four headless gates, seven benches |
-| **v0.4** | ⬅ **Next.** The instrument: four filter stages, the drum mode, the sampler, compose-time capture. ⚠️ **But the documentation refactor comes first — see §10** |
+| **v0.4** | ⬅ **Next.** The instrument: four filter stages, the drum mode, the sampler, compose-time capture. ✅ The documentation refactor that blocked it is **done** — see §10 for what the remaining cleanups inherit |
 
 ⚠️ **v0.3 WAS NOT THE SOUND, AND THIS DOCUMENT ONCE SAID IT WAS.** An earlier version planned the
 filter stages here. The goal was to finish the infrastructure so the *next* phase can say
@@ -274,275 +274,61 @@ If those photographs still exist outside the repo, `device/volca-settings/` is w
 
 ---
 
-## 10. NEXT: the documentation refactor
+## 10. The documentation refactor — DONE
 
-**Agreed as the work that follows v0.3, and it is a real problem rather than tidying.** The design
-below is settled; what is still open is listed at the end.
+**Landed 2026-08-06.** Per this project's own rule a completed phase leaves the plan, and **git is
+now the journal**, so the account of what was built and why is in the commit log from `91c68f4`
+onward. What stays here is only what still binds work that has not happened.
 
-### 10.1 The size of it, measured
-
-| | Lines |
-|---|---|
-| `plan-tests.md` | **4,131** — 249 items, append-only, and the single largest file in the project. ✅ **Dissolved 2026-08-06** |
-| `ref-` docs (six files) | ~4,550 |
-| `tools/README.md` | 765 |
-| `CLAUDE.md` | 313 |
-| **Total prose** | **~10,300** |
-| `.pd` comments (21 files, not counted above) | 446 |
-
-That is roughly 400 lines of prose per `.pd` file. **~10,300 lines is most of a context window**, and
-CLAUDE.md already tells a cold reader "do not read everything" — an admission that the volume has
-outgrown its usefulness. Three facts are restated in eight files apiece (`47 + n`), seven
-(`pgmout` is 1-based) and ten (the `[list split]` trap).
-
-### 10.2 The diagnosis, and why it is structural
-
-**Agents have written 100% of these docs.** That means restatement was never laziness — it is the
-only thing a cold context can do. A session editing one topic-major file has no way to know the same fact
-sits in seven other files; it would have to grep for a fact it does not know exists.
-
-⛔ **So "one home per fact" cannot be a convention that authors follow. It has to be a structure they
-fall into, and a program that catches the drift.** Every part of the design below follows from that.
-
-### 10.3 The design, settled
-
-**Format: Markdown stays. The tables become the database.** A GitHub markdown table is already
-machine-readable — it is simply not being read. Give the tables a fixed column schema and a parser
-and the human-readable copy and the machine-readable copy are *the same bytes*: no build step, no
-generated files, no second format, and it still diffs a row at a time.
-
-Anything **Pd itself** must read stays space-separated `.txt` — `cut-it-map.txt` is the proven
-pattern and Pd can parse nothing else.
-
-| Kind of content | Home | Rule |
+| | Before | After |
 |---|---|---|
-| Device facts code depends on | `ref-midi`, `ref-hardware`, `ref-display` | Schema'd markdown tables, checked against the patch |
-| Rules and rationale | `ref-conventions` | One rule per numbered heading with a **stable ID** (`C-NN`); everything else cites the ID |
-| Open work | `plan-v03` | The only plan document, as now |
-| Orientation | `CLAUDE.md` | A router, not a store. Its Layout tree is ~240 of its 313 lines and duplicates each file's own header — one line per file |
+| Root `.md` | **10 files, 10,300 lines** | **3 files, 1,176** |
+| `ref/` | — | **17 pages, 4,268 lines** |
+| Total prose | ~10,300 | **5,444** |
+| Journals | 5,112 lines, never read start to finish | **0 — dissolved** |
 
-**The rule that does the work:** *a fact appears once in full; everywhere else it appears as a
-citation.*
+**The three root files are `CLAUDE.md` (the router), this file (the only plan), and
+`ref-hardware.md`** — the Organelle as a computer, which becomes `ref/device-os.md` as the **last
+step of the Organelle cruft cleanup**, because that cleanup changes the paths it documents.
 
-### 10.4 The journals dissolve
+### What the next three jobs inherit
 
-`plan-tests.md` (4,131) and `ref-build-log.md` (981) were half the corpus and neither was ever read
-start to finish. **Both dissolve into the reference docs.**
+⚠️ **The taxonomy is settled and the tests will adopt it.** A module is a physical device or one
+instrument concern, the directory is the kind, and the page names are the gate names:
 
-**Git is now the journal.** `phase 9: fix the boot-time tempo race -- the map was not ready when
-mother pushed` is a journal entry with a timestamp, a diff and no maintenance cost; recent commit
-bodies run ~36 lines. `plan-tests.md` existed because git was read-only until the commit exception.
-
-⚠️ **But that quality begins at `dca0b04`.** Before it the log reads `docs update, bug fixes` and
-`straggler issues part 1`. Git carries the journal role *forward* only — Sessions 1–17 must be
-condensed by hand, and **that is the bulk of the work in this refactor.**
-
-**Item numbers survive as fact IDs.** Item 228 stops being "the 228th thing measured" and becomes
-the ID of the `pgmout` row in `ref/device/volca.md`. All citations across the project keep resolving by
-grep, with no renumbering and no index file. New facts take new numbers from the same
-never-reused sequence.
-
-⛔ **The disposal rule — without it the `ref-` docs simply absorb 5,100 lines and nothing shrinks.**
-Every paragraph of a journal goes to exactly one of four places:
-
-| Journal material | Destination |
-|---|---|
-| The result | A reference table row: value, evidence class, date, item ID |
-| The trap — what looked right and was not | A warning at the point of use: the `.pd` comment, or a numbered rule in `ref-conventions` |
-| The method, if reusable | `ref-conventions`, or better, into the tool that performs it |
-| Everything else | **Deleted.** The narrative of a session is git's job |
-
-**The fourth row has to actually get used, or this is a move rather than a reduction.**
-
-### 10.5 `tools/docs-check.py` — the checker
-
-A sibling to `pd-layout-check.py`: pure stdlib, into `check-all.sh`, same discipline that any output
-is a failure.
-
-Tables are anchored by an HTML comment — invisible when rendered, greppable, self-documenting:
-
-```markdown
-<!-- check: table sp404-pads == pd-array "Cut It/m_404.pd" $0-pad -->
-
-| Pad | Note | Evidence | Item |
-|-----|------|----------|------|
-| 1   | 48   | verified | 190  |
+```
+ref/device/   launchpad  nanokontrol  organelle  phone  sp404  volca
+ref/module/   audio  boot  display  map  state  tempo
+ref/          architecture  conventions  rig
 ```
 
-The script finds the comment, parses the table into pairs, parses the `#A set` line out of the
-patch, and compares. About 40 lines. ⛔ **That check fails on `47 + n` at pad 5, before hardware** —
-it is the cheapest thing in this plan and it catches the bug that got furthest.
-
-The same script then does the rest of the upkeep for nothing: every `item NNN` citation resolves to
-a row that exists; every fact row carries an evidence class from the allowed set; no duplicate fact
-IDs. **That is what stops the docs re-inflating.**
-
-### 10.6 The marker scheme, settled
-
-The repo carries **1,479 markers**. They were doing more jobs than they had glyphs.
-
-| Glyph | Meaning after the refactor | Notes |
-|---|---|---|
-| ✅ | **Verified on this hardware** | Kept, all ~545 of them. Only 96 of 645 sit in tables, so a table column can never replace them |
-| 📄 | **Manufacturer documentation** | Kept |
-| ⬜ | **Unknown / unverified** | Kept |
-| ⛔ | **A trap: ignoring it breaks something SILENTLY** | Re-sorted. Was covering four jobs |
-| ⚠️ | **An operational rule: never do this to the rig or the device** | Re-sorted |
-| ❌ | *retired* | Table cells become `none`; the two prose bullets say "rejected" |
-
-**Two things stop being markers:**
-
-- ⛔ **`✅` as a completion marker is deleted — roughly 100 uses, 40 of them in headings**
-  (`## Errors must reach the OLED ✅ built`). **An evidence marker never rots; a completion marker
-  silently becomes false**, which is exactly how the old conventions doc came to assert that `u_map`
-  used no lookup table. And in this project a completion marker is nearly always a *placement*
-  error: in a `ref-` doc everything described is built by definition, and in `plan-v03` "complete"
-  means the section should have left the file. **Each deletion doubles as a check that the item is
-  in the right file.**
-- **Corrections lose their marker.** "X was recorded here and it is FALSE" mostly gets deleted once
-  the false claim is gone — the *trap that produced it* survives, the retraction does not. Plain
-  emphasis becomes bold.
-
-Tables additionally gain an explicit `Evidence` column, so `docs-check.py` can assert that no fact
-row is missing its class — something it can never do for prose.
-
-### 10.7 The `.pd` comments are in scope
-
-446 lines across 21 files, and the hardest case: **they are the only copy visible while editing in
-Pd**, so a comment can never be replaced by a link.
-
-**The rule: the warning stays inline as one imperative line; the evidence and the reasoning leave.**
-`[pgmout] is 1-BASED -- see C-NN` rather than a paragraph — short enough to be obviously not the
-source of truth, present enough to stop you at the box.
-
-### 10.8 Order of work, and the three refactors next to this one
-
-Three other cleanups are queued. **They are not part of this work, but two of them constrain its
-order.**
-
-| Refactor | Coupling |
+| Job | What it inherits |
 |---|---|
-| **Testing, by module instead of phase** | **Deep — it is the same job on the same axis.** The gates are named by *phase*: four `phaseN-assert.sh`, four drive-gens, `bench_steps.py`'s `STEPS3`…`STEPS9`. Phase is a *time* axis, which is what this refactor dissolves. The cost is already visible — `phase9-assert` exists partly because `phase6-assert` rewrote only `[midiout]` and would have passed vacuously over `noteout`/`ctlout`/`pgmout`. On a module axis that is **one** MIDI-emission gate, not two. **So this refactor must choose module names knowing the tests will adopt them.** |
-| **Tool cleanup** | Sequencing only. `tools/README.md` is 46 KB describing ~40 files, many one-off probes from July. Rewriting it before deciding what survives means documenting things about to be deleted. ⚠️ **Leave `tools/README.md` until last.** ⛔ **And one candidate is already known to be a hazard: `tools/wire.sh` is a Phase 1 ancestor of `Cut It/wire.sh`, 59 lines behind, with no autoconnect undo and no `\|\| true`.** `ref-hardware.md` pointed at it, and `docs-check.py` cannot catch that class — the path resolves; it is simply the wrong file. **It is the only such pair in the repo** — swept every `.sh` / `.py` / `.pd` / `.txt`, and the nine `main.pd` copies are all legitimate Organelle patch folders. So this is one file to delete, not a pattern. ✅ **A script or doc being mentioned nowhere is NOT a problem — Brendan's call, 2026-08-06.** Five of 42 are (`404-contend.sh`, `404-rate.sh`, `phase8-assert.py`, both stage-patch shell scripts) and that is fine. `docs-check.py` is mention-driven by design and will never look for them. **Do not raise this again.** |
-| **Organelle cruft cleanup** | One chapter. `ref-hardware.md`'s *The device itself* (lines 355–539) describes paths the cleanup will change. ⚠️ **Do not invest there; mark it verify-after.** The rest of that file — wiring, power, gear — is independent. |
+| **Testing, by module instead of phase** | **The same axis, and the names above.** The gates are still named by *phase* — four `phaseN-assert.sh`, four drive-gens, `bench_steps.py`'s `STEPS3`…`STEPS9`. Phase is a *time* axis, and the cost is already visible: `phase9-assert` exists partly because `phase6-assert` rewrote only `[midiout]` and would have passed vacuously over `noteout`/`ctlout`/`pgmout`. On a module axis that is **one** MIDI-emission gate, not two. ⚠️ Every module page's `**Gate:**` line already names its gate — **rename the gates and those lines must move with them**, and `docs-check.py` will say so |
+| **Tool cleanup** | `tools/README.md` is 46 KB describing ~40 files, many one-off probes from July. ⛔ **`tools/wire.sh` is a Phase 1 ancestor of `Cut It/wire.sh`** — 59 lines behind, no autoconnect undo, no `\|\| true` — and is a delete candidate. ✅ Five scripts of 42 are named in no document at all, and **that is fine** (Brendan, 2026-08-06); `docs-check.py` is mention-driven by design and will never look for them |
+| **Organelle cruft cleanup** | `ref-hardware.md` is entirely about the device as a computer, and its paths are the ones that change. **Do not invest there before the cleanup; rename it to `ref/device-os.md` after** |
 
-**Resulting order:** documentation refactor (every chapter except `tools/README.md` and
-`ref-hardware`'s device section) → testing refactor on the taxonomy this establishes → tool cleanup
-→ `tools/README.md` → Organelle cleanup → `ref-hardware`'s device section.
+### The rules that outlived the refactor
 
-### 10.9 Where this stands — 2026-08-06
+**None of these has to be remembered — `tools/docs-check.py` enforces what can be enforced, and the
+`docs` skill carries the rest.** Listed only so a reader knows the constraints exist.
 
-**Nine commits, `91c68f4`…`156ccd2`. All gates pass.** ⚠️ **Read [ref/README.md](ref/README.md)
-first** — it carries the page schema, the trap form, the marker definitions and the parking rule,
-and `tools/docs-check.py` enforces all of it. None of it has to be remembered; run the gate.
+- **A fact appears once in full; everywhere else it is a citation.** `item NNN` is a **fact ID**, not
+  a log entry. Never reuse a number.
+- ⛔ **A check mark never means "built."** An evidence marker never rots; a completion marker
+  silently becomes false. The gate fails on a `✅` in any heading.
+- ⛔ **The `.pd` comments cite `C-NN`**, because a comment has no link syntax and a path rots. Where
+  no rule covers it, they name a `ref/` page.
+- ⛔ **A section is not what its heading says.** Read what is under it before deleting from one
+  heading to the next, and probe distinctive strings afterwards. That caught a real deletion twice
+  here — twelve facts out of the design notes, and four `###` subsections filed under *Signal
+  flow — power* that had nothing to do with power.
+- ⚠️ **The line count goes UP per page and that is expected.** The reduction was entirely in the
+  journals. Do not compress the module pages chasing it.
 
-| | Then | Now |
-|---|---|---|
-| `ref-conventions.md` | 892 | ✅ **0 — deleted.** The rules are `C-1`…`C-14` on [ref/conventions.md](ref/conventions.md) |
-| `ref-software.md` | 455 | ✅ **0 — deleted** |
-| `ref-display.md` | 727 | ✅ **0 — deleted** |
-| `ref-midi.md` | 897 | ✅ **0 — deleted.** One page per device under [ref/device/](ref/device/) |
-| `ref-hardware.md` | 697 | **406** — now only the Organelle as a COMPUTER, and verify-after |
-| `ref/` pages | — | **4,092 across 16** |
-| `CLAUDE.md` | 313 | 327 — **not yet the router** |
-| `plan-tests.md` | 4,131 | ✅ **0 — dissolved.** 71 of 71 citations resolve elsewhere; the five uncited measurements that were facts are placed |
-| `ref-build-log.md` | 981 | ✅ **0 — dissolved.** Nine unique facts extracted to the pages; the narrative is in git |
+### Still open
 
-⚠️ **`ref/` now has subdirectories.** `ref/device/` (six, fixed by the hardware) and
-`ref/module/` (one so far — **this is what v0.4 grows**). Cross-cutting pages stay flat.
-`ref/README.md` carries an index that `docs-check.py` verifies against what exists.
-
-⚠️ **A `pd` skill exists** at `.claude/skills/pd/`. Invoke it before writing any Pd; it carries the
-constraints, the C-1..C-14 rules and the hand-editing traps, and CLAUDE.md has been trimmed to match.
-
-**Done — all six device pages, plus the conventions:**
-`ref/device/sp404.md` · `ref/device/launchpad.md` · `ref/device/volca.md` · `ref/device/nanokontrol.md` · `ref/device/organelle.md` ·
-`ref/device/phone.md` · `ref/conventions.md` · `ref/README.md`. Every source section replaced by a
-**Moved** pointer.
-
-`tools/docs-check.py` now runs seven checks, each proven to fail. Three of them are **anchored
-tables** — a fact that exists twice in machine-readable form, parsed from both sides and compared:
-
-| Anchor | Asserts |
-|---|---|
-| `pd-text "<patch>" <name>` | The table equals that `[text define]`'s contents. Reintroduce `47 + n` and it goes red **at pad 5** |
-| `pd-route "<patch>" <first-arg>` | The table's first column equals that `route` box's arguments, in order. **This is the allowlist guard read from the doc side** |
-| `sh-aconnect "<script>" connect\|disconnect` | The table's first two columns equal the script's `aconnect` calls. The two directions are parsed **separately**, because a check that lumped them would pass with the rig unwired |
-
-The other four are dangling document pointers, dangling script and patch paths, the full page
-schema, and `C-NN` rule-ID resolution.
-
-⛔ **A path that resolves can still be the WRONG file, and nothing catches that.** `ref-hardware.md`
-pointed at `tools/wire.sh`, a Phase 1 ancestor of `Cut It/wire.sh` — 59 lines behind, no autoconnect
-undo, no `|| true`. Found by reading, not by a gate.
-
-✅ **Every page is written.** Six device pages, six module pages — `audio`, `boot`, `display`,
-`map`, `state`, `tempo` — and three cross-cutting: `architecture`, `conventions`, `rig`.
-
-⚠️ **`ref/device-os.md` was NOT written, deliberately.** `ref-hardware.md` is now exactly that page
-and nothing else, and §10.8 says not to invest there until the Organelle cruft cleanup changes its
-paths. **Renaming it into `ref/` is the last step of that cleanup, not of this refactor.**
-
-**Next, in order:** **the journals** — which is now the whole of the remaining volume — then
-`CLAUDE.md` as a router, then the `.pd` comments citing `C-NN` so the four stubs could go. **All
-done.**
-
-⚠️ **THE LINE COUNT GOES UP PER PAGE, AND THAT IS EXPECTED.** `ref/device/sp404.md` replaced 279 source
-lines with 281. Tables gained `Evidence` and `Item` columns, the pad map became sixteen rows instead
-of a five-line diagram, and merging overlapping sources replaced "summary + full" with one full
-statement. **The volume reduction is entirely in the journals**, which are still untouched and are
-now **78% of what is left at the root**. Do not compress the module pages chasing it.
-
-⛔ **AND THE LOSS CHECK IS NOT OPTIONAL — it has caught a real deletion twice.** Collapsing
-the old design-notes file lost twelve facts, including tempo propagation in full and the reason explicit
-modes exist. Collapsing `ref-hardware.md` nearly lost four `###` subsections that had accumulated
-under *Signal flow — power* and had nothing to do with power, including the root cause of the
-Launchpad boot hang. ⚠️ **A section is not what its heading says. Read what is under it before
-deleting from heading to next `##`** — and probe 30–50 distinctive strings from the old text against
-the new pages afterwards, case- and whitespace-normalised.
-
-✅ **Every page is written and every source is gone.** The only root documents left are `CLAUDE.md`,
-this file, and `ref-hardware.md`, which the Organelle cruft cleanup renames to `ref/device-os.md`.
-
-### 10.9b What "done" looks like, exactly
-
-**The root directory holds TWO `.md` files: `CLAUDE.md` and `plan-v03.md`.** Everything else is
-under `ref/`, `tools/` or the patch folder. `plan-v03.md` stays because `ref/` states what IS and a
-plan states what is OPEN — they are different kinds of document, not different topics.
-
-| Still at the root | Lines | Leaves when |
-|---|---|---|
-| **`CLAUDE.md`** | 172 | **Never** — it is the router |
-| **`plan-v03.md`** | 526 | **Never** — the only plan document |
-| ~~the four stubs~~ | ~~220~~ | ✅ **Deleted.** 22 `.pd` citations became `C-NN` rules or `ref/` paths first |
-| `ref-hardware.md` | 421 | ⚠️ **NOT in this refactor** — it becomes `ref/device-os.md` as the last step of the **Organelle cruft cleanup**, which changes the paths it documents |
-
-**So this refactor ends at THREE root files**, and drops to two when the cruft cleanup lands.
-
-⚠️ **The four stubs are the cheap part and they are blocked on the same thing**: a `.pd` comment has
-no link syntax, so it names a document by path — which is why the stubs could not be deleted until
-the citations moved. ✅ **Done**: 22 citations across thirteen patches now name a `C-NN` rule where
-one exists, or the `ref/` page that holds the fact where none does.
-
-### 10.10 Still open
-
-- **The module taxonomy itself.** The names the docs adopt are the names the tests will inherit, so
-  they are worth settling first. The `.pd` prefixes (`u_`, `m_`, `g_`, `c_`) are the obvious
-  candidate axis, but the gates cut across them — a MIDI-emission gate spans `m_volca`, `m_404`,
-  `m_launchpad` and `u_tempo`.
-- ✅ **How far `docs-check.py` should reach — settled by building it.** It verifies the channel
-  blocks against `wire.sh`, and the answer to "how much checking is too much" turned out to be
-  governed by whether the fact already exists twice in machine-readable form. Where it does, the
-  check is ~25 lines and pays for itself; where it does not, no check is possible at any price.
-- ✅ **Where the display arbiter goes — RULED: its own page**, `ref/module/display.md`, built. The
-  reasoning is kept below because the same question will come up for whatever v0.4 shares between
-  two devices. The old display doc was 279 lines, and about 220 of them
-  are the framework rather than device fact: the `home < modal < alert` arbiter that `g_oled`,
-  `g_grid` and `g_led` share, the `disp` bus protocol, and the geometry. Four files implement it.
-  **Revised proposal: its own page, `ref/module/display.md`** — it is one instrument concern, which
-  is what `ref/module/` is for, and it splits the Launchpad no worse than `tempo.md` splits
-  `u_tempo`: the device page says what the hardware can show, the module page says how Cut It
-  arbitrates. Putting it in `ref/architecture.md` instead would make that file a grab bag before it
-  is even written. That splits the Launchpad
-  *device vs instrument* rather than accidental. **Brendan has not ruled on this; ask first.**
-- ✅ **The unticked items now live in §4** under *Checks that were never run*, with their numbers.
+- ⬜ **What `docs-check.py` structurally cannot do.** It is **mention-driven**: it proves every
+  mention resolves, and can say nothing about a file nobody mentions, nor about a mention that
+  resolves to the *wrong* file. `ref-hardware.md` pointed at `tools/wire.sh` for months and the check
+  had nothing to say. **Found by reading, and there is no gate for it.**

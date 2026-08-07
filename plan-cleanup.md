@@ -64,9 +64,9 @@ repointed at `Cut It/wire.sh`.
 ### What is settled and should not be re-litigated
 
 - ✅ **A script mentioned in no document is FINE** (Brendan, 2026-08-06). Five of 42 are:
-  `404-contend.sh`, `404-rate.sh`, `phase8-assert.py`, and both stage-patch shell scripts.
+  `404-contend.sh`, `404-rate.sh`, `state-assert.py`, and both stage-patch shell scripts.
   `docs-check.py` is mention-driven by design and will never look for them. **Do not raise it.**
-- ⚠️ **`phase8-assert.py` is LIVE** — `phase8-assert.sh` execs it. It is unmentioned, not unused.
+- ⚠️ **`state-assert.py` is LIVE** — `state-assert.sh` execs it. It is unmentioned, not unused.
 
 ### Then, and only then, `tools/README.md`
 

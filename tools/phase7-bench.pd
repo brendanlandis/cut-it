@@ -68,7 +68,7 @@
 #X obj 20 2600 select 3;
 #X obj 240 2600 t b b b;
 #X msg 700 2600 === STEP-03-of-15 === A SECOND PARAMETER -- and the stale-unit trap underneath it;
-#X msg 700 2650 PASS IF: the top line changes to grain and the number to 12 -- THE POINT OF THIS STEP IS SOMETHING YOU CANNOT SEE: grain carries no unit and the step before it did -- so on the wire this has to arrive as grain 12 and a dash rather than grain 12 and a percent sign. The scene draws no units so a stale one would be invisible here. tools/phase7-assert.sh is what actually proves it;
+#X msg 700 2650 PASS IF: the top line changes to grain and the number to 12 -- THE POINT OF THIS STEP IS SOMETHING YOU CANNOT SEE: grain carries no unit and the step before it did -- so on the wire this has to arrive as grain 12 and a dash rather than grain 12 and a percent sign. The scene draws no units so a stale one would be invisible here. tools/phone-assert.sh is what actually proves it;
 #X msg 700 2700 >>> press GO to run step 3 of 15;
 #X obj 240 2770 s \$0-say;
 #X obj 20 2860 select 4;

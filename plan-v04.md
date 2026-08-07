@@ -206,7 +206,7 @@ the fate of filenames about to change.
   proven. "No pad lit" meant "receive and transmit differ" for half an hour, until it turned out the
   404 lights only the *selected* bank.
 - ⚠️ **A measuring rig is code and gets the same scrutiny.** Phase 5 had two bugs in its own probes;
-  Phase 6's bench had an assertion nothing ever drove; `phase8-assert.sh` passed a broken patch 15/15.
+  Phase 6's bench had an assertion nothing ever drove; `state-assert.sh` passed a broken patch 15/15.
 - ⚠️ **Wait for the whole measurement.** Three confident wrong answers came from acting on a partial
   result — items 182, 209, 210, and again in 225.
 - ⚠️ **Concluding from a single SUCCESS is the same error as concluding from a single failure.** This

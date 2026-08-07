@@ -100,7 +100,7 @@ exit status is trustworthy. A pattern like `grep -E 'ALL|FAILED'` also matches t
 Its check quits at about 735 ms, which is why every deployed `[print]` sits behind `[del 2000]`
 (C-9).
 
-⛔ **A gate is not trusted until it has failed.** `phase8-assert.sh` passed the broken patch 15/15
+⛔ **A gate is not trusted until it has failed.** `state-assert.sh` passed the broken patch 15/15
 on its first can-it-fail run. Reintroduce the bug, watch it go red, revert.
 
 ## Where to read more

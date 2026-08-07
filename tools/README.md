@@ -6,8 +6,8 @@ that `print` output is visible, which matters because the Organelle launches Pd 
 and there is no console otherwise.
 
 Hand-authored in Pd 0.49 format except the **seven benches** and **four assert drivers**, which are
-**generated** — `bench-gen.py`, `phase6-assert-drive-gen.py`, `phase7-assert-drive-gen.py`,
-`phase8-assert-drive-gen.py` and `phase9-assert-drive-gen.py` write them, and the `.pd` is an output. Edit the generator. Do not
+**generated** — `bench-gen.py`, `phase6-assert-drive-gen.py`, `phone-assert-drive-gen.py`,
+`state-assert-drive-gen.py` and `phase9-assert-drive-gen.py` write them, and the `.pd` is an output. Edit the generator. Do not
 open any of it in plugdata — see [../CLAUDE.md](../CLAUDE.md).
 
 ## Start here: `check-all.sh`
@@ -58,23 +58,23 @@ a comment always has.
 human to look at something — which works beautifully for the OLED, the Launchpad and the phone,
 and not at all for a feature whose entire output is a **file**. Phase 8's six steps are the
 minimum that hardware can actually show (the front-panel Save, a real power cycle, the mode lamp);
-its logic is proven by `phase8-assert.sh` instead, headlessly, in twelve seconds.
+its logic is proven by `state-assert.sh` instead, headlessly, in twelve seconds.
 
 Phase 8's run was also driven **from the Mac by hand rather than by loading the bench**, because
 every one of its steps carries no actions. That avoided the by-hand console entirely — and
 therefore `killall pd`, and therefore stranding the Launchpad in Programmer Mode. **If a phase's
 steps have no actions, you do not need to load the bench at all.**
 
-## phase8-assert.sh — the Phase 8 gate, and the cheapest of the three
+## state-assert.sh — the data store's gate, and the cheapest in the suite
 
 ```sh
-./tools/phase8-assert.sh          15 checks, ~12 s, exit non-zero on any failure
-./tools/phase8-assert.sh -v       and the detail behind every check
+./tools/state-assert.sh          15 checks, ~12 s, exit non-zero on any failure
+./tools/state-assert.sh -v       and the detail behind every check
 ```
 
 `u_state` writes a **file**, so this gate reads what landed on disk. No scratch copy (Phase 6
 needed one, because `[midiout]` is a built-in class with no side channel), no socket (Phase 7's
-trick), no hardware. It works entirely inside `/tmp/cut-it-phase8-gate` and never touches
+trick), no hardware. It works entirely inside `/tmp/cut-it-state-gate` and never touches
 `Cut It/`, `/sdcard/cut-it-state` or the device.
 
 **What it protects, stated as properties rather than proxies:** the two policies never leak into
@@ -86,8 +86,8 @@ points load in **silence**, which is `deploy.sh`'s own gate.
 ⚠️ **It passed the broken patch on its first can-it-fail run** — the driver banged the restore at
 600 ms when the bug needs it after 3000 ms, and the final check asserted against a value nothing
 drove. **The 3600 ms in the driver is load-bearing**; shortening it re-blinds the gate. Proven
-both ways now: 15/15 clean, 2 failures with the bug reintroduced. `phase8-assert-drive.pd` is an
-OUTPUT — edit `phase8-assert-drive-gen.py`, never the `.pd`.
+both ways now: 15/15 clean, 2 failures with the bug reintroduced. `state-assert-drive.pd` is an
+OUTPUT — edit `state-assert-drive-gen.py`, never the `.pd`.
 
 ## phase9-assert.sh — the Phase 9 gate, and the only one with a half that needs no Pd
 
@@ -552,7 +552,7 @@ that starts reading `in-l` means the reserved branch is broken and the rate budg
 meter the phone does not draw.
 
 ⚠️ **The rate limit is not tested here and cannot be.** A step table pushes discrete messages; a
-flood needs a metro. `phase7-assert.sh` is what proves the coalescer. **Step 12 is the closest a
+flood needs a metro. `phone-assert.sh` is what proves the coalescer. **Step 12 is the closest a
 person can get** — a real fader, and the question of whether the phone *settles* on the value you
 stopped at rather than one from the middle of the sweep.
 
@@ -601,10 +601,10 @@ beat-row offset back to `+ 11` — makes it report `lit outside every region: [(
 beats out of eight looked perfect*: only the six-second beat-row window catches it. A gate that
 cannot fail is worth nothing, so re-run that mutation if you ever change the analyser.
 
-## `phase7-assert.sh` — the same idea, and much cheaper
+## `phone-assert.sh` — the same idea, and much cheaper
 
 ```sh
-./tools/phase7-assert.sh            # ~25 s, exits non-zero on any failure
+./tools/phone-assert.sh            # ~25 s, exits non-zero on any failure
 ```
 
 **Phase 7's gate needs no scratch copy and rewrites nothing.** `[midiout]` is a built-in class
@@ -615,9 +615,9 @@ never touched.
 
 | Piece | |
 |---|---|
-| `phase7-assert-drive-gen.py` | generates the driver. **Edit this, never the `.pd`** |
-| `phase7-assert-drive.pd` | instantiates `u_net` and pushes synthetic traffic onto `disp` |
-| `phase7-assert.py` | binds the port, launches Pd, decodes OSC, does the reasoning |
+| `phone-assert-drive-gen.py` | generates the driver. **Edit this, never the `.pd`** |
+| `phone-assert-drive.pd` | instantiates `u_net` and pushes synthetic traffic onto `disp` |
+| `phone-assert.py` | binds the port, launches Pd, decodes OSC, does the reasoning |
 
 ⚠️ **The analyser owns the lifecycle, and that is not tidiness.** It binds the socket *before*
 Pd starts, because a UDP connect to a port with nothing listening survives exactly one datagram

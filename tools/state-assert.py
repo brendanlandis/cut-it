@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Phase 8's headless gate -- no eyes, no hardware, no socket, ~12 s.
+"""The data store's headless gate -- ref/module/state.md. No eyes, no hardware, no socket, ~12 s.
 
 It asserts on the FILES u_state leaves on disk, plus the console output, which
 is the right level to test our own code at: what a performer eventually loses is
 a file, not a message.
 
-⚠️ THE CHECKS ASSERT PROPERTIES, NOT PROXIES. Phase 7's gate had seven checks
+⚠️ THE CHECKS ASSERT PROPERTIES, NOT PROXIES. phone-assert had seven checks
 that asserted "zero packets in an idle window" as a stand-in for a property they
 never named, and they all broke the moment a legitimate feature added traffic.
 They were rewritten to assert the real property and the gate came out stronger.
@@ -19,8 +19,8 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 PD = os.environ.get("PD", "/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd")
-DIR = "/tmp/cut-it-phase8-gate"
-DRIVE = os.path.join(HERE, "phase8-assert-drive.pd")
+DIR = "/tmp/cut-it-state-gate"
+DRIVE = os.path.join(HERE, "state-assert-drive.pd")
 AUTO = os.path.join(DIR, "cut-it-auto.txt")
 MANUAL = os.path.join(DIR, "cut-it-manual.txt")
 VERBOSE = "-v" in sys.argv

@@ -462,7 +462,7 @@ PHASES = {
             counters=[("BEATS", "r clock")]),
     8: dict(steps=S.STEPS8, counters=[], blurb="the Phase 8 acceptance run: the "
             "data store. MOST OF PHASE 8 IS DELIBERATELY INVISIBLE -- state is FILES \\, "
-            "and tools/phase8-assert.sh proves the logic headlessly in twelve seconds. "
+            "and tools/state-assert.sh proves the logic headlessly in twelve seconds. "
             "What is left here is only what hardware can show: the front-panel Save \\, a "
             "REAL power cycle \\, and the mode lamp. Six steps rather than a padded "
             "twenty \\, because a bench proves the cases it contains and nothing else."),

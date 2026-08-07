@@ -3,8 +3,8 @@
 #X obj 20 60 loadbang;
 #X obj 20 120 del 23000;
 #X msg 20 170 \; pd quit;
-#X text 20 260 phase7-assert-drive -- the driver half of Phase 7's headless assertion run. It instantiates u_net pointed at 127.0.0.1 and pushes synthetic traffic onto disp \, exactly as m_nano \, m_organelle and u_err would. Nothing in the deployed patch is touched or rewritten., f 70;
-#X text 20 400 RUN IT THROUGH tools/phase7-assert.sh \, never by hand -- the analyser has to be bound to the port BEFORE u_net connects. Measured in Step 0: a UDP connect to a port with nothing listening survives exactly ONE datagram \, then ICMP kills the socket and every later send is discarded in silence. Start this by hand and you get one packet and then nothing \, which looks exactly like a broken rate limiter., f 70;
+#X text 20 260 phone-assert-drive -- the driver half of the phone link's headless assertion run. It instantiates u_net pointed at 127.0.0.1 and pushes synthetic traffic onto disp \, exactly as m_nano \, m_organelle and u_err would. Nothing in the deployed patch is touched or rewritten., f 70;
+#X text 20 400 RUN IT THROUGH tools/phone-assert.sh \, never by hand -- the analyser has to be bound to the port BEFORE u_net connects. Measured in Step 0: a UDP connect to a port with nothing listening survives exactly ONE datagram \, then ICMP kills the socket and every later send is discarded in silence. Start this by hand and you get one packet and then nothing \, which looks exactly like a broken rate limiter., f 70;
 #X text 20 600 IT TESTS u_net IN ISOLATION \, not the whole instrument. The declare at the top of the file is what finds the abstraction from tools/. Driving the real u_tempo would make the status window depend on rounding that belongs to u_map \, and the contract under test here is only that u_net consumes disp and rate-limits what leaves., f 70;
 #X obj 20 780 u_net 127.0.0.1 9995;
 #X text 20 830 THE ABSTRACTION UNDER TEST. Creation args are host and port \, so pointing it at the analyser costs nothing and exercises exactly the code path the phone gets., f 70;

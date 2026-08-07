@@ -68,8 +68,8 @@ run "bench step text survived generation" python3 tools/bench-verify.py
 # --- 4. every phase gate ----------------------------------------------------
 # In phase order, because a failure in an early one explains failures after it.
 run "Phase 6 gate -- the Launchpad grid"   ./tools/phase6-assert.sh
-run "Phase 7 gate -- the phone link"       ./tools/phase7-assert.sh
-run "Phase 8 gate -- the data store"       ./tools/phase8-assert.sh
+run "the phone link"                       ./tools/phone-assert.sh
+run "the data store"                       ./tools/state-assert.sh
 run "Phase 9 gate -- the map and the output devices" ./tools/phase9-assert.sh
 
 # ---------------------------------------------------------------------------

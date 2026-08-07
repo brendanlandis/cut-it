@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Phase 7's headless gate -- no eyes, no phone, no hardware.
+"""The phone link's headless gate -- ref/device/phone.md. No eyes, no phone, no hardware.
 
-Binds the UDP port FIRST, then launches Pd with phase7-assert-drive.pd, then
+Binds the UDP port FIRST, then launches Pd with phone-assert-drive.pd, then
 reasons about the datagrams that actually arrived.
 
 Why binding first is not optional: measured in Step 0, a UDP connect to a port
@@ -26,7 +26,7 @@ PORT = 9995
 PD = os.environ.get(
     "PD", "/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd")
 HERE = os.path.dirname(os.path.abspath(__file__))
-DRIVE = os.path.join(HERE, "phase7-assert-drive.pd")
+DRIVE = os.path.join(HERE, "phone-assert-drive.pd")
 
 # The coalescer's target. u_net flushes on a 50 ms tick, so a window of T
 # seconds can hold at most 20*T packets per distinct name, plus edge effects.
@@ -103,7 +103,7 @@ def collect():
     th.start()
 
     if not os.path.exists(DRIVE):
-        print("missing %s -- run phase7-assert-drive-gen.py" % DRIVE)
+        print("missing %s -- run phone-assert-drive-gen.py" % DRIVE)
         sys.exit(2)
     print("listening on 127.0.0.1:%d, launching pd ..." % PORT)
     proc = subprocess.run(

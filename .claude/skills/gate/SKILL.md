@@ -9,7 +9,7 @@ description: Building or changing a test for Cut It — a headless gate, a hardw
 
 ⛔ **A GATE IS NOT TRUSTED UNTIL IT HAS FAILED.** Reintroduce the bug, watch it go red, revert.
 
-This is not caution. `phase8-assert.sh` **passed the broken patch 15/15** on its first can-it-fail
+This is not caution. `state-assert.sh` **passed the broken patch 15/15** on its first can-it-fail
 run, because the driver's timing did not reproduce the real ordering. `docs-check.py`'s first shape
 check reported every table's last row as a header, because `set('')` is a subset of everything. Both
 looked correct and green.

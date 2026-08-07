@@ -253,7 +253,7 @@ STEPS6 = [
 # ICMP teardown on real hardware.
 #
 # THE RATE LIMIT IS NOT TESTED HERE AND CANNOT BE. A step table pushes discrete
-# messages; a flood needs a metro. tools/phase7-assert.sh is what proves the
+# messages; a flood needs a metro. tools/phone-assert.sh is what proves the
 # coalescer, and step 12 is the closest a person can get -- a real fader, and the
 # question of whether the phone SETTLES on the value you stopped at.
 STEPS7 = [
@@ -264,7 +264,7 @@ STEPS7 = [
   'PASS IF: the top line reads chop-size and the big number reads 43 -- the unit rides on the wire but the scene does not draw it -- deliberate and not a fault',
   [('chop-size 43 %', 'disp')]),
  ('A SECOND PARAMETER -- and the stale-unit trap underneath it',
-  'PASS IF: the top line changes to grain and the number to 12 -- THE POINT OF THIS STEP IS SOMETHING YOU CANNOT SEE: grain carries no unit and the step before it did -- so on the wire this has to arrive as grain 12 and a dash rather than grain 12 and a percent sign. The scene draws no units so a stale one would be invisible here. tools/phase7-assert.sh is what actually proves it',
+  'PASS IF: the top line changes to grain and the number to 12 -- THE POINT OF THIS STEP IS SOMETHING YOU CANNOT SEE: grain carries no unit and the step before it did -- so on the wire this has to arrive as grain 12 and a dash rather than grain 12 and a percent sign. The scene draws no units so a stale one would be invisible here. tools/phone-assert.sh is what actually proves it',
   [('grain 12', 'disp')]),
  ('THE STATUS LINE -- a row that is not a parameter',
   'PASS IF: the third line reads 128-bpm and the parameter name and number ABOVE IT DO NOT CHANGE. status has its own OSC address and its own slot. Expect u_tempo to overwrite this with the real BPM at the next transport event -- that is the footer being handed back and not a fault',

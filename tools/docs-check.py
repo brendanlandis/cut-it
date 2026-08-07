@@ -542,7 +542,7 @@ def check_dangling_paths(verbose):
 
     ⛔ THE SKILLS ARE THE REASON THIS EXISTS. A skill is procedure -- every path
     in one is an instruction to run or read something -- and the `gate` skill
-    names phase6-assert.sh, phase8-assert.sh and phase9-assert.py, all of which
+    names phase6-assert.sh, state-assert.sh and phase9-assert.py, all of which
     the coming test refactor renames onto a module axis. Without this, three
     skills quietly start instructing people to run files that are gone.
 
@@ -554,7 +554,7 @@ def check_dangling_paths(verbose):
     simply wrong. Measured before widening: including .md cost exactly one
     false positive across the whole repo.
 
-    Renaming tools/phase8-assert.sh goes red in six places -- the conventions,
+    Renaming tools/state-assert.sh goes red in six places -- the conventions,
     tools/README.md, bench-gen.py, check-all.sh, phase8-bench.pd and the script
     itself. That is the point: the test refactor renames every gate onto a
     module axis, and this is what makes those renames impossible to half-finish.

@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # State and persistence
 
-**Files:** `Cut It/u_state.pd`, `Cut It/u_store.pd`, `Cut It/state-dir.sh` · **Gate:** `tools/phase8-assert.sh` · **Bench:** `tools/phase8-bench.pd`
+**Files:** `Cut It/u_state.pd`, `Cut It/u_store.pd`, `Cut It/state-dir.sh` · **Gate:** `tools/state-assert.sh` · **Bench:** `tools/phase8-bench.pd`
 
 ## What it is
 
@@ -105,7 +105,7 @@ which is why the write sits on the trigger's **left** outlet and needs no settle
 short file rather than an error.
 
 **Fix:** answer during the broadcast. Say so in the contributor, not only here.
-`tools/phase8-assert.sh` asserts it with a deliberately-late contributor, because a rule nothing
+`tools/state-assert.sh` asserts it with a deliberately-late contributor, because a rule nothing
 tests is a rule that quietly stops being true.
 
 ### `u_state` must never write a file it has not yet read

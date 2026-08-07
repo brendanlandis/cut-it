@@ -1,4 +1,4 @@
-# Generates tools/phase7-assert-drive.pd -- the timed driver for Phase 7's headless
+# Generates tools/phone-assert-drive.pd -- the timed driver for the phone link's headless
 # assertion run. It instantiates u_net POINTED AT LOCALHOST and pushes synthetic
 # traffic onto disp, exactly as the m_ layers and u_err would.
 #
@@ -57,12 +57,12 @@ con(qd, 0, qm, 0)
 
 # ------------------------------------------------------------- the left column
 txt(20, 260,
-    "phase7-assert-drive -- the driver half of Phase 7's headless assertion run. It "
+    "phone-assert-drive -- the driver half of the phone link's headless assertion run. It "
     "instantiates u_net pointed at 127.0.0.1 and pushes synthetic traffic onto disp \\, "
     "exactly as m_nano \\, m_organelle and u_err would. Nothing in the deployed patch is "
     "touched or rewritten.", 70)
 txt(20, 400,
-    "RUN IT THROUGH tools/phase7-assert.sh \\, never by hand -- the analyser has to be "
+    "RUN IT THROUGH tools/phone-assert.sh \\, never by hand -- the analyser has to be "
     "bound to the port BEFORE u_net connects. Measured in Step 0: a UDP connect to a port "
     "with nothing listening survives exactly ONE datagram \\, then ICMP kills the socket "
     "and every later send is discarded in silence. Start this by hand and you get one "
@@ -201,7 +201,7 @@ for i, (when, mark, actions) in enumerate(SEQ):
 
 W = 1200 + len(SEQ) * PITCH + 400
 H = TOP + 900
-open("tools/phase7-assert-drive.pd", "w").write(
+open("tools/phone-assert-drive.pd", "w").write(
     "#N canvas 20 20 %d %d 12;\n" % (W, H)
     + "#X declare -path ../Cut\\ It;\n"
     + "\n".join(B + C) + "\n")

@@ -179,7 +179,23 @@ than leaving it untested here.
 
 ## Phase 3 — the three decisions, taken with hands on the rig
 
-### Which control, if any, raises panic
+### ✅ DECIDED — panic means RECOVER, not silence
+
+**Taken 2026-08-08 with the rig in front of us.** The mixer's master fader is the better silence:
+instant, analogue, and independent of whatever is misbehaving. So panic's value is **recovery** —
+silence, then reload the patch, re-enumerating every device and re-running `wire.sh`.
+
+✅ **The destructive half is removed already** (item 251): panic no longer hands the Launchpad back.
+It used to kill the grid until reload and, per item 250, leave the device flooding Pd's Midi-In 1
+with clock. Both gates inverted deliberately, both made to fail against the old code.
+
+⬜ **The build — and the control binding with it — is now
+[plan-v03.4.md](plan-v03.4.md) Phase 1b**, because a reload closes item 235 by brute force. Two
+tiers: a short press silences, a held combination silences and reloads. ⛔ The original question was
+unanswerable while panic was destructive; removing the handback is what made a binding safe to
+choose at all.
+
+### The original question, kept for its constraint
 
 Bound to a nano button in v0.3 and **withdrawn**. A bare button is too easy to brush mid-set on a
 device with no console — and ⛔ `m_launchpad` wires `[r panic]` straight to the Live Mode SysEx, so

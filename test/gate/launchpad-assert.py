@@ -7,10 +7,21 @@ they are wrong:
 
   Programmer Mode at boot   LED writes sent in Live Mode do not appear, so
                             getting this wrong is a grid that comes up dark
-  Live Mode on panic        ⛔ a Launchpad left in Programmer Mode is STRANDED --
+  Live Mode on QUIT         ⛔ a Launchpad left in Programmer Mode is STRANDED --
                             it stops behaving like a Launchpad for everything
                             else on the machine, and nothing on the Organelle can
                             put it back. This is the one that costs a power cycle.
+
+⛔ PANIC MUST *NOT* HAND THE SURFACE BACK, and that is the newer half of the
+contract. It used to, which killed the grid until the patch was reloaded -- and
+in Live Mode the device floods MIDI port 1 with clock straight into Pd's Midi-In
+1 (item 250), so a panic made the instrument worse in two ways at the moment it
+was most needed. Silencing notes has nothing to do with surrendering the surface.
+
+⚠️ Driving `quitting` is therefore not optional. Panic used to be the only thing
+that produced a Live Mode frame, which made the PANIC window the sole coverage of
+the safe exit BY ACCIDENT. Removing the handback without driving quitting would
+have deleted that coverage silently, with the gate still green.
 
 ⚠️ IT ASSERTS ON THE DEVICE, NOT ON THE ARBITER. Whether g_grid stops painting
 when it loses the surface is display-assert's check, next door; this one is only
@@ -44,8 +55,19 @@ def main():
 
     A.check("m_launchpad enters Programmer Mode at boot", bool(prog),
             "no F0 .. 0E 01 F7 was ever sent")
-    A.check("⛔ m_launchpad returns to Live Mode on panic", bool(live),
-            "NO F0 .. 0E 00 F7 -- this is the one that costs a power cycle")
+    A.check("⛔ m_launchpad returns to Live Mode on QUIT", bool(live),
+            "NO F0 .. 0E 00 F7 -- a Launchpad left in Programmer Mode is STRANDED")
+
+    # ⛔ THE NEW HALF, AS AN EXACT COUNT rather than a window test. The driver
+    # fires panic and THEN quitting, and Live Mode is sent nowhere else -- so the
+    # old behaviour produced TWO of these frames and the correct one produces
+    # exactly ONE. The check above is this one's liveness witness: together they
+    # say "a handback happened, and only the right one did".
+    A.check("⛔ panic does NOT hand the surface back -- exactly ONE Live Mode frame",
+            len(live) == 1,
+            "saw %d Live Mode frames. Two means panic is still surrendering the "
+            "surface, which kills the grid until the patch is reloaded and leaves "
+            "the device flooding Pd's Midi-In 1 with clock (item 250)" % len(live))
 
     # ⛔ THE ORDER, WHICH IS NOT IMPLIED BY EITHER MESSAGE EXISTING. A patch that
     # painted the grid and then switched mode would send both of these and still

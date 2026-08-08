@@ -101,6 +101,46 @@ nothing regressed.
 
 ---
 
+## Phase 1b — panic becomes RECOVER, and it closes item 235 the blunt way
+
+**Decided 2026-08-08, with the rig in front of us.** Panic's job is not silence — the mixer's master
+fader is faster, analogue, and does not depend on the thing that is misbehaving. Panic's job is
+**recovery**: silence what is sounding, then reload the patch, so every device is re-enumerated into
+Pd and `wire.sh` runs fresh. That covers item 235 by brute force, including the never-present case
+Phase 1 is picking apart delicately.
+
+✅ **The destructive half is already removed** (item 251): panic no longer hands the Launchpad back.
+That was a bug — it killed the grid until reload and buried Pd's Midi-In 1 under a clock flood. Both
+gates were inverted deliberately and both were made to fail against the old code.
+
+**What is left to build, and the four things that make it non-trivial:**
+
+1. ⛔ **Silence must land BEFORE the reload.** Killing Pd mid-note never sends the note-off, so the
+   404 holds it — a panic that *creates* a stuck note. Sequence the existing note-off loop and the
+   `252` STOP, then fire the reload behind a short delay.
+2. ⛔ **The two-step OSC, or it silently does nothing.** `oscsend localhost 4001 /reloadNoRemount i 1`
+   **then** `/loadPatch s '!/Cut It'`. A bare name loads nothing at all and says nothing —
+   `deploy.sh` documents this, and it still caught us on 2026-08-08.
+3. ⛔ **The failure mode is worse than the fault.** If the load does not take, there is no patch at
+   all, and the patch cannot verify its own reload because it is dead by then. This is item 243's
+   shape exactly. Design for it rather than discovering it.
+4. ⚠️ **Its core is untestable on the Mac.** `[shell]` is stubbed, so a gate can assert the silence
+   sequence and that the message is well formed, and can never assert that the reload happened. Say
+   so in the gate rather than implying coverage that does not exist.
+
+⚠️ **It breaks the one-fork-per-load rule** (Phase 4's). Defensibly — a panic is rare, user-initiated
+and ends the patch — but it must say so in a comment, the way `m_launchpad`'s bounded recovery does.
+
+⚠️ **Knobs come back latched.** mother re-pushes `knobs.txt`, pickup arms, and every knob is held
+until swept through its stored value (item 239). Correct on a normal boot; possibly wrong right after
+an emergency. ⬜ Decide whether the reload path should skip arming.
+
+⚠️ **Two tiers, so the meanings stay separate**: a short press silences only and is always safe; a
+held combination silences **and** reloads. That is also the answer to *"which control raises panic"*
+in [plan-v03.0.md](plan-v03.0.md) — the question was unanswerable while panic was destructive.
+
+---
+
 ## Phase 2 — Step 0, and why the model cannot be uniform
 
 ⛔ **[plan-v03.0.md](plan-v03.0.md) answers two questions this phase is built on. Do not design

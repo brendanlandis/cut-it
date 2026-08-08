@@ -30,7 +30,8 @@ Launchpad X have it; this does not. Treat it as 96 RGB pixels of *spatial* state
 | Property | Value | Evidence | Item |
 |----------|-------|----------|------|
 | Programmer Mode port | 0 — `hw:3,0,0`, seq `28:0` | verified | — |
-| Ports 1 and 2 | Carry nothing in either direction | verified | — |
+| Ports 1 and 2 | Carry nothing **in Programmer Mode** | verified | — |
+| ⛔ In **Live Mode** they are not silent | Port 2 carries the layout announcement, and port 0 carries a continuous **MIDI clock** flood. The old blanket "carry nothing" was measured in Programmer Mode only | verified | 250 |
 | Pd channel block | 1–16 (input slot 1) | verified | — |
 | Grid note formula | Pad at row *r*, column *c* is note `r*10+c`, both digits 1–8, **row 1 at the bottom** | verified | — |
 | Pads | Velocity **and** pressure sensitive (polyphonic aftertouch). Not switches | verified | — |
@@ -182,8 +183,14 @@ Programmer Mode with a frozen beat row. **Any exit that is not mother's own stra
 what `tools/lp-live.sh` exists to rescue. Item 96.
 
 ⛔ **`$0-want` is not `$0-own`.** `own` says the surface **is** ours; `want` says we still **intend**
-it. Without that split, a panic hands the device back and the heartbeat grabs it again two seconds
-later.
+it. Without that split, a handback is undone by the heartbeat two seconds later.
+
+⛔ **PANIC NO LONGER HANDS THE DEVICE BACK, and it used to** (item 251). It surrendered the surface
+and set `want` 0, so the watchdog stopped re-asserting and **the grid stayed dead until the patch was
+reloaded** — during the one moment the instrument is most needed. Worse than was known when it was
+written: in Live Mode the device floods MIDI port 1 with clock, and `wire.sh` connects that port to
+Pd's Midi-In 1 (item 250), so a panic also buried Cut It's primary MIDI input. **Silencing notes has
+nothing to do with surrendering the surface.** `quitting` is now the only handback.
 
 ⚠️ **The give-up bound is 70 s because 12 s was useless in a room.** The first build gave up twelve
 seconds after the unplug, which reads as perfectly reasonable in source — **nobody reseats a cable
@@ -230,8 +237,12 @@ Each is a claim and its fix. How any of them was found is in the git history.
 ⚠️ Novation documents the layout-select command as the escape, and **that command does nothing at
 all on this unit.** If Pd dies mid-set without sending the Live Mode SysEx, the surface is stranded.
 
-**Fix:** bind "return to Live Mode" somewhere reachable. `m_launchpad` does, on both `panic` and
-`quitting`, and it is the only file allowed to. Out of band, `tools/lp-live.sh` does it without Pd.
+**Fix:** bind "return to Live Mode" somewhere reachable. `m_launchpad` does it on **`quitting`**,
+and it is the only file allowed to. ⚠️ **On `quitting` only, since item 251** — panic used to do it
+too, and that made `quitting` untested by accident, because the gate's Live Mode frame came from the
+panic path. The gate now drives both. Out of band, `tools/lp-live.sh` does it without Pd —
+⚠️ **but only once Pd is gone**: `amidi` cannot open the device while Pd holds it (`Device or
+resource busy`), so it is a post-mortem tool, not a live one.
 
 ### `loadbang` fires before ALSA connections exist
 

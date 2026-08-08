@@ -143,13 +143,20 @@ def main():
         A.check("beat-row: the beat walks -- at least 4 of the 8 cells were lit",
                 len(seen) >= 4, "only saw %s" % sorted(seen))
 
-    # ---- panic hands the surface back -------------------------------------
+    # ---- panic must NOT cost the grid --------------------------------------
     # ⚠️ THIS IS THE ARBITER'S SIDE OF PANIC, not the device's. What m_launchpad
-    # tells the hardware to do about it is launchpad-assert's check; this one is
-    # that g_grid stops painting a surface it no longer owns.
+    # tells the hardware is launchpad-assert's check; this one is that g_grid
+    # KEEPS painting, because it still owns the surface.
+    #
+    # ⛔ THIS ASSERTION WAS INVERTED ON 2026-08-08, deliberately. It used to
+    # require silence -- panic surrendered the surface, so the grid died until the
+    # patch was reloaded, and in Live Mode the device then flooded Pd's Midi-In 1
+    # with clock (item 250). A panic that makes the instrument worse at the moment
+    # you need it is a bug, and this gate was faithfully protecting it.
     fs = window("after-panic")
-    A.check("after a panic the grid paints nothing at all", not fs,
-            "%d frames after ownership was dropped" % len(fs))
+    A.check("⛔ the grid SURVIVES a panic -- it must keep painting", bool(fs),
+            "no frames after panic. The surface is being surrendered again: "
+            "silencing notes has nothing to do with giving the device back")
 
     return A.report()
 

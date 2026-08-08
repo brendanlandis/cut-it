@@ -219,25 +219,32 @@ wire: wire.sh: 8 connections
   Item 237. ⛔ Pickup depends on this: if mother streamed, the first value would be spent on its own
   reading and pickup would never arm.
 
-### ⛔ The next thing to build, before any more pickup testing
+### The no-Save arming bug is fixed — item 239, Mac-side
 
-**Pickup arms wrongly when there is no `knobs.txt`** — item 239, a regression this feature
-introduced, written up in full on [ref/module/map.md](ref/module/map.md). mother pushes a knob value
-**either way**: the *saved* position when the file exists (100 ms), the *live physical knob* when it
-does not (~223 ms). In the second case patch and hardware already agree, so arming leaves the knob
-dead until it is turned back below where it started. Reachable after any `deploy.sh --clean`.
+**Built, and it is not the shape this file proposed.** The plan said `[shell]` would run
+`test -f knobs.txt`. `[shell]` is the wrong tool: it **forks and answers hundreds of milliseconds
+late**, it is a do-nothing stub on the Mac, and a gate driven through a stub can only ever reach one
+of the two branches. `u_map` reads the file **itself** instead — `[text define]` + `read`, then
+`[text size]`, which answers **1** when the file is there and **0** when it is not, synchronously,
+identically on both machines. Measured in Pd 0.49 before it was built.
 
-**The fix, in shape:**
+The read sits behind `[del 2000]` because a missing file prints three lines and `deploy.sh` fails a
+check on any output before ~735 ms (C-9). Deferring costs nothing — mother's push is taken by the
+virgin branch either way, and a knob turned inside the first two seconds is released the instant the
+probe fires. The full mechanism and its two ⛔ *do-nots* are on
+[ref/module/map.md](ref/module/map.md).
 
-1. `[shell]` tests `test -f knobs.txt` at load and publishes the answer as a flag.
-2. That flag replaces the 1000 ms boot window in `u_map`'s pickup machine — arm only when the file
-   existed, because that is the only case where the pushed value is not the live position.
-3. The gate needs a `knobs.txt` in its scratch copy for the arming scenarios, **plus a second
-   scenario without one** asserting the knob goes straight to live. ⚠️ On the Mac `[shell]` is
-   stubbed and answers nothing, so the default has to be chosen deliberately and stated.
+⛔ **The gate now runs the whole drive TWICE, and the only difference between the runs is that one
+scratch copy has a `knobs.txt` and the other does not.** Four new checks, each the mirror image of a
+check in the armed run — `30 checks, 0 failed`.
 
-⛔ **Do not key on the 100 ms / 223 ms difference.** It is an artefact of the error path taking
-longer, not a promised signal, and §7 records what that class of inference has cost here.
+**And it has been made to fail three ways:**
+
+| Mutation | Red | Green | Proves |
+|---|---|---|---|
+| Cut the cord that writes LIVE into the slots | the 2 no-Save checks | all 26 others | the new checks bite on the new behaviour and nothing else |
+| **Invert the probe** — `select 1`, disarm when the file *exists* | 5 armed + 2 no-Save | — | each half tests **its own branch**; neither is vacuous |
+| Never read the file, so size is always 0 | the 5 armed checks | the no-Save half | the armed half is not passing by accident |
 
 ### ✅ Hardware, verified 2026-08-08
 
@@ -246,17 +253,46 @@ longer, not a promised signal, and §7 records what that class of inference has 
 - The push lands at **100 ms**, three consecutive boots identical, so the 1000 ms window has 10x
   margin. That number had been a guess.
 - The mapped display works on the device: held shows `bpm 57 (n)`, live shows `bpm n`.
-- ⬜ **A cold power cycle has NOT been run.** Worth doing **after** the fix above, so one boot tests
-  both the restore path and the corrected arming.
 
-⬜ **What is left needs a hand on the knob**, because nothing else can tell the two branches apart —
-`TEMPO: 57` is what *both* "armed" and "went straight to live" look like:
+**Both branches of item 239 are now confirmed on hardware, and the two-boot run found two more
+bugs.** Boot 1 with a `knobs.txt`: restored 57, knob 1 held until it crossed, then tracked. Boot 2
+after `deploy.sh --clean`: no latch, knob 1 live on its first movement, knobs 2–4 silent.
 
-- **Pickup is verified by the shape of the fault, not by one number**: cold boot, observe the
-  restored tempo on the OLED footer, touch knob 1, and confirm the value does **not** move until the
-  knob passes through the restored value. Then confirm it tracks normally afterwards.
-- ⚠️ **Re-check that the restore still works** after the pickup change — item 234's symptom is the
-  instrument coming up at `u_tempo`'s own 120 instead of the saved tempo.
+- ⛔ **Item 240 — the held row was drawn for every armed knob.** Knobs 2–4 are mapped to nothing and
+  all three reported `bpm 10 (n)`. The row is built inside the pickup machine, which cannot know what
+  a held knob maps to. **Fixed:** gated on slot 0.
+- ⛔ **Item 241 — a target on a rail could never be crossed.** The release test is a side flip, so a
+  knob armed above a target of `0` waited for `value < 0`. Knob 2 sat at `bpm 10 (10)` and would not
+  release. **Reachable on knob 1**: Save with master tempo at the bottom and it is dead for the
+  session. **Fixed:** equality releases too.
+
+Both are in the gate, both were made to fail, and both mutations reproduce the exact symptom seen on
+the device — `bpm 255 (451)` from an unmapped knob, and an empty release window.
+
+✅ **240 and 241 are confirmed on hardware.** Saved `0 0 0 0;` — every target on the rail, the
+strongest form of 241 — and after a cold cycle knob 1 held on the way up, handed over on *reaching*
+the stop, and knobs 2–4 drew no `bpm` row.
+
+- ⛔ **Item 242 — an unmapped control said nothing at all.** Silence is the rule for the *buses*;
+  applied to the screen it made a control that does nothing indistinguishable from a broken one. The
+  Organelle's knobs were the case, because `m_organelle` stopped reporting raw when `u_map` took over
+  the row. **Fixed:** `[moses 0]`'s left outlet — the lookup miss — reports `<name> <raw>`.
+  ⛔ **The pickup gate moved below the lookup** to make that reachable: it used to sit on the control
+  NAME, so a held knob never reached `[text search]` and nothing could tell unmapped from suppressed.
+  The lookup is a pure read; only the emission needs gating. That also gave the mode-dependence
+  negative a liveness witness in its own window, which it never had.
+
+✅ **242 is confirmed on hardware**, read off a live console rather than inferred: at boot mother
+pushes all four knobs and `u_map` answers `og-knob-4 0`, `og-knob-3 0`, `og-knob-2 0` on `disp` while
+knob 1 correctly becomes `bpm 10`. Turning knobs 2–4 draws their own rows; knob 1 still reads `bpm`.
+No object failed to create.
+
+⛔ **It appeared broken for an hour, and the cause was not in the patch — item 243.** The deploy had
+landed the files and left the **previous build running**, because the wifi dropped between the copy
+and the load. The deployed file greps as current, the instrument behaves like the old one, and
+nothing anywhere reports the difference. `deploy.sh` now verifies that Pd restarted after the push,
+and that check has been made to fail. Written up in
+[ref/device-os.md](ref/device-os.md) under *Deploying*.
 
 ---
 

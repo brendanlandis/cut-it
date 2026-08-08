@@ -118,6 +118,8 @@ then hands it authority.
 | Boot window | 1000 ms. A first value inside it is a restore and **arms**; after it, a hand, and goes straight to live | verified | 236 |
 | State | Five, per knob, in two 4-element arrays | verified | 236 |
 | mother pushes **once** at load and then says nothing | One `og-knob-1` in twelve seconds, untouched, on the device | verified | 237 |
+| With `knobs.txt`, the push is the **saved** value, at **100 ms** | Three consecutive boots, identical | verified | 239 |
+| With **no** `knobs.txt`, mother pushes the **live physical position**, at ~223 ms | `0.373412` against a saved `0.0957967` | verified | 239 |
 
 **The five states.** `0` virgin, never seen a value · `1` armed, side not yet known · `2` armed
 **above** the target, waiting for a fall · `3` armed **below** it, waiting for a rise · `4` live.
@@ -316,6 +318,14 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
   and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **The mode names are placeholders.** `mode-1`…`mode-6` say nothing about what each mode is for,
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
+- ⛔ **Pickup arms wrongly when there is no `knobs.txt`, and that is a bug this feature introduced.**
+  mother pushes either way — the *saved* value when the file exists, the *live knob position* when it
+  does not. In the second case the patch and the hardware already agree, so there is nothing to pick
+  up, but the boot window arms anyway and the knob is then held until it is turned back **below where
+  it started**. Reachable on a fresh install and after any `deploy.sh --clean`.
+  ⛔ **Do not fix this by keying on the 100 ms / 223 ms difference** — that gap is an artefact of the
+  error path, not a designed signal. The direct question is whether the file exists, and `[shell]`
+  can answer it. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **Only `tempo` shows its mapped value.** Every other destination shows nothing at all now that
   the knobs no longer report raw positions, and the nano, 404 and Volca still report their own raw
   values. Making it universal is decided and scoped — see [plan-v04.md](../../plan-v04.md) §3.

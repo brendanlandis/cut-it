@@ -117,6 +117,7 @@ then hands it authority.
 | Never applies to | `og-aux` — a button — or any control that is not an Organelle knob | verified | 236 |
 | Boot window | 1000 ms. A first value inside it is a restore and **arms**; after it, a hand, and goes straight to live | verified | 236 |
 | State | Five, per knob, in two 4-element arrays | verified | 236 |
+| mother pushes **once** at load and then says nothing | One `og-knob-1` in twelve seconds, untouched, on the device | verified | 237 |
 
 **The five states.** `0` virgin, never seen a value · `1` armed, side not yet known · `2` armed
 **above** the target, waiting for a fall · `3` armed **below** it, waiting for a rise · `4` live.

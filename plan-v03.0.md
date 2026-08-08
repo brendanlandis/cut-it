@@ -202,6 +202,26 @@ python3 test/gate/docs-check.py -v
 
 - **Every ⬜ this plan owns is struck on its own page**, and every number has an item ID that grep
   resolves. A measurement recorded only in a session note does not count as taken.
+✅ **Three of these are done, on the device, 2026-08-08.** Launched by hand over SSH with a `tempo`
+tap and read back:
+
+```
+KNOB1: 0.0957967
+TEMPO: 57
+wire: wire.sh: 8 connections
+```
+
+- ✅ **The pickup boxes create cleanly on the device** — no `array define`, `tabread`, `tabwrite` or
+  `spigot` errors. That is the one thing the Mac syntax check cannot prove.
+- ✅ **The restore is not regressed.** `0.0957967 × 490 + 10` rounds to **57**, and the instrument
+  came up there rather than at `u_tempo`'s fallback 120. Item 234 still fixed.
+- ✅ **mother pushes once and then says nothing** — one `KNOB1` line in twelve seconds, untouched.
+  Item 237. ⛔ Pickup depends on this: if mother streamed, the first value would be spent on its own
+  reading and pickup would never arm.
+
+⬜ **What is left needs a hand on the knob**, because nothing else can tell the two branches apart —
+`TEMPO: 57` is what *both* "armed" and "went straight to live" look like:
+
 - **Pickup is verified by the shape of the fault, not by one number**: cold boot, observe the
   restored tempo on the OLED footer, touch knob 1, and confirm the value does **not** move until the
   knob passes through the restored value. Then confirm it tracks normally afterwards.

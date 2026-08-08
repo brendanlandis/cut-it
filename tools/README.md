@@ -13,7 +13,7 @@ matters because the Organelle launches Pd with `-nogui` and there is no console 
 | | |
 |---|---|
 | **Getting data back off the device** | `fetch-state.sh` `fetch-errors.sh` |
-| **The wifi investigation** — an OPEN fault | `wifi-watch.sh` `wifi-poll.sh` `wifi-report.sh` `wifi-reassociate.sh` |
+| **The wifi investigation** — an OPEN fault | `find-organelle.sh` `wifi-watch.sh` `wifi-poll.sh` `wifi-report.sh` `wifi-reassociate.sh` |
 | **Driving and rescuing hardware** | `go.sh` `lp-live.sh` `dsp.sh` + `dsp-toggle.pd` |
 | **Measuring the device** | `display-cpu.sh` `display-diag.pd` |
 | **Probes still worth running** | `lp-monitor.pd` `lp-step0.pd` `alert-buffer-probe.pd` `self-wire.pd` |
@@ -63,6 +63,32 @@ against the repo and says so loudly if they differ, because an error from a buil
 is a trap.
 
 ## The wifi fault
+
+### `find-organelle.sh` — which failure is this?
+
+```sh
+./tools/find-organelle.sh          # the ladder, then a named verdict
+./tools/find-organelle.sh -q       # the verdict line only
+```
+
+⚠️ **"Cannot reach it" is the most misread observation in this project.** Four states all present as
+a failed `ssh`, and they want opposite responses. This runs the ladder — mDNS, an IPv4 sweep of the
+Mac's own `/24`, IPv6 neighbour discovery, and an AP-mode SSID scan — and names one of
+**REACHABLE** · **ASSOCIATED-NO-LEASE** · **AP-MODE** · **ABSENT**.
+
+⛔ **`ASSOCIATED-NO-LEASE` is the documented fault and `ABSENT` is not.** Item 81 leaves the device
+associated, so ssh over IPv6 link-local keeps working the whole time — nothing answering *anywhere*
+means powered off, adapter down, or a different SSID. Telling those two apart is the whole point.
+
+⚠️ **The identity signal is the ssh banner** — OS 4.0 ships **OpenSSH 7.1** and everything else on
+this network answers 8.2 or newer. It is a heuristic; override with `ORG_BANNER=` if the image
+changes. ⛔ The first version tried mother's OSC port 4001 instead, and `nc -z` tests **TCP** while
+4001 is **UDP** — so it found the Organelle and dismissed it. The first version also reported a NAS
+as the documented fault, because it probed every IPv6 neighbour and believed whichever answered
+first. **Both bugs were found by running it against the live network, not by reading it.**
+
+⬜ Only the `REACHABLE` and `ABSENT` branches have been exercised against real hardware.
+`ASSOCIATED-NO-LEASE` and `AP-MODE` are written from the recorded evidence and unproven.
 
 ### Chasing it — items 81, 133 and 146–168
 

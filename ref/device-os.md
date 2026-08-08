@@ -529,7 +529,16 @@ connects, `/usbdrive` stays unmounted. Factory version kept at
 
 **If it ever recurs:** `umount /usbdrive` clears it, no reboot needed. ⬜ Whether Novation
 Components can disable the onboarding drive on the Launchpad itself is untried and tracked in
-[plan-v04.md](../plan-v04.md).
+[plan-v04.md](../plan-v04.md). ⚠️ **And it costs more than "a computer with Components".** Components
+refuses to open the device at all until a **firmware update** is accepted — so the answer cannot be
+had without changing the firmware every `verified` fact on
+[ref/device/launchpad.md](device/launchpad.md) was measured against (item 248).
+
+✅ **Re-verified hot 2026-08-08**, which the cold-boot test could not cover: the drive appeared live
+as `/dev/sda` + `sda1`, `Novation Onboarding Drive`, `384 512-byte logical blocks (192 KiB)`,
+`Write Protect is on` — and `/usbdrive` stayed unmounted with `/sdcard` still `rw`. 📄 The 192 KiB in
+this repo is the **device** size and is correct; `df` on a Mac reports 144 KiB, which is the usable
+filesystem and a different number for a different thing.
 
 
 ## Device capabilities

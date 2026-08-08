@@ -145,6 +145,31 @@ we want — the 404 runs off its own adapter and costs the hub nothing.
 into a single hub it works first time.** The failure looks like a bad device or a bad cable, and
 swapping either changes nothing.
 
+⚠️ **AND THE RIG DRIFTS BACK INTO IT.** On 2026-08-08 the tree was found **four hubs deep** —
+Generic `43f2:1211` → SMSC `0424:2422`, and a second Generic `43f2:1211` → Realtek `0bda:5411` — with
+the Launchpad silent again on exactly this fault. Nothing about the rule is self-enforcing: the hubs
+are small, the cables reach, and the topology grows back whenever something is replugged. **Check the
+depth, not the socket count.** `lsusb` shows every hub in the chain (item 248).
+
+**What that session added, since the fault was already known:**
+
+| | |
+|---|---|
+| ⛔ It is the **hub chip**, not the depth alone | Fails on Generic `43f2:1211` port 1; works on Realtek `0bda:5411` port 4 **in the same chain** |
+| ✅ **Power is exonerated** | It enumerated with the **entire rig attached**, having also failed with almost nothing attached. Not a current budget |
+| ✅ The device and cable are exonerated | Same cable enumerates on a Mac in 142 ms, `registered, matched, active` |
+| ⚠️ It survives everything short of moving it | Reproduced across a cold boot, a hub replug, and a forced `authorized` re-enumeration — three independent attempts, same error |
+| ⚠️ The Launchpad is a **full-speed** device with an unusually complex configuration | Three MIDI interfaces **plus** mass storage. The SP-404 and nano are full-speed too and simpler, and they never fail — consistent with a weak transaction translator stalling `SET_CONFIGURATION` |
+
+⛔ **A Launchpad that half-enumerates is invisible to the patch.** It answers control transfers, so
+`lsusb` lists it with its serial number, but no ALSA port is ever created — and `m_launchpad`'s
+recovery runs `wire.sh` and gives up after ~70 s, because there is nothing to wire to. From inside
+Cut It it is indistinguishable from a Launchpad that was never plugged in. **This is a venue failure
+mode**: see [plan-v03.5.md](../plan-v03.5.md).
+
+⚠️ **The nanoKONTROL spontaneously re-enumerates** — three times in one evening, seconds apart, on a
+settled bus. Milder, unexplained, and on the same tree (item 248).
+
 ## Gear
 
 | Item | Role |

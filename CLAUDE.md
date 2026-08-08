@@ -204,6 +204,10 @@ Links to paths containing spaces use the angle-bracket form:
 - **When a fact matters — a Pd version, a device capability, a file format — check it against the
   device or the source** rather than inferring from documentation. Several claims in this project's
   history turned out wrong that way, including two corrected in these files.
+- ⛔ **Before diagnosing a hardware symptom, grep `ref/` for its literal error string.** A Launchpad
+  that would not enumerate — `can't set config #1, error -32` — was diagnosed from scratch across
+  five physical tests on 2026-08-08, and [ref/rig.md](ref/rig.md) had already written it up **with
+  that exact code in the text**. Symptoms are as greppable as `item NNN`, and cost more to re-derive.
 - **Configuration that lives only on a device is one accident from being lost.** The nanoKONTROL
   scene and `/root/.pdsettings` are both backed up in [device/](device/), verified current against
   the hardware. `.pdsettings` is load-bearing: `path1: /root/Pd/externals` is what makes `[shell]`,

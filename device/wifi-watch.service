@@ -28,6 +28,27 @@ RequiresMountsFor=/sdcard
 
 [Service]
 Type=simple
+
+# ⛔ WAIT FOR AN ADDRESS BEFORE THE FIRST SAMPLE. network.target is far too weak
+# here: measured on the first real boot, the watcher came up with the clock still
+# at 2015, `assoc: Not connected` and `wpa_supplicant=- dhcpcd=-`. It ran no
+# recovery -- nothing fought with the boot -- but its first sample was NONE, so
+# the ordinary boot-time DHCP acquisition was logged as `TRANSITION NONE ->
+# 192.168.1.9`. wifi-poll.sh counts TRANSITION lines as drops, so every boot
+# would have added a phantom drop and tripped "ANYTHING NEW?" -- corrupting the
+# evidence this service exists to collect.
+#
+# ⚠️ BOUNDED, AND IT STARTS ANYWAY WHEN THE BOUND EXPIRES. A device that never
+# gets an address is precisely when you want the watcher running, so this must
+# never be an unbounded wait. 12 x 10 s; TimeoutStartSec must exceed it, and the
+# systemd default of 90 s does not.
+#
+# ⚠️ NO SHELL VARIABLES IN HERE. systemd expands $NAME itself before /bin/sh ever
+# sees it, so a loop counter would arrive empty. The `for i in ...` list needs no
+# expansion because `i` is never referenced.
+ExecStartPre=/bin/sh -c 'for i in 1 2 3 4 5 6 7 8 9 10 11 12; do ip -4 addr show wlan0 2>/dev/null | grep -q "inet " && break; sleep 10; done; true'
+TimeoutStartSec=180
+
 ExecStart=/bin/sh /sdcard/wifi-watch.sh recover
 Restart=on-failure
 RestartSec=120

@@ -320,6 +320,19 @@ mechanism, and it counts consecutive failed relaunches instead of retrying in si
 ⚠️ **`/root` is read-only** — `remount-rw.sh` before installing or enabling the unit, `remount-ro.sh`
 after, because `systemctl enable` writes a symlink into `multi-user.target.wants/`.
 
+⛔ **`After=network.target` is far too weak here, and the unit waits for an address instead.**
+Measured on the first real boot: the watcher came up with the clock still at 2015, `assoc: Not
+connected` and `wpa_supplicant=- dhcpcd=-`. It ran **no** recovery, so nothing fought with the boot —
+but its first sample was `NONE`, so the ordinary boot-time DHCP acquisition was logged as
+`TRANSITION NONE -> 192.168.1.9`. **`wifi-poll.sh` counts `TRANSITION` lines as drops**, so every
+boot would have added a phantom one and tripped *ANYTHING NEW?*. The unit now polls for an IPv4 in
+`ExecStartPre`, **bounded at 120 s and starting anyway when that expires** — a device that never gets
+an address is exactly when the watcher is wanted. `TimeoutStartSec` has to exceed the bound; the
+systemd default of 90 s does not.
+
+⚠️ **One phantom `TRANSITION NONE -> …` already exists in the log**, stamped `2026-08-08 21:34:27`.
+It is a boot artefact, not a drop.
+
 ### ⬜ 2026-08-08 — three drops that did NOT look like the roam fault
 
 **Recorded here because it contradicts the signature below, and a future session will otherwise

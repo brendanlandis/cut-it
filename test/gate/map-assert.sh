@@ -42,9 +42,16 @@ scratch_state_dir "$WORK"
 # The gate's own rows, APPENDED so the shipped rows stay under test too. The
 # static lint checks the SHIPPED file; these give the run a destination that
 # exists and one that does not.
+#
+# ⛔ og-knob-2 AND og-knob-3 ARE HERE FOR PICKUP, and they must be DISTINCT CC
+# numbers. Both windows below send two values to a knob and count what comes out
+# -- one expects exactly one event and the other expects two -- so a leak between
+# them has to be visible as a different controller, not as a duplicate.
 {
     echo "mode-1 gk-cc volca-cc 41"
     echo "mode-1 gk-bad no-such-destination 0"
+    echo "mode-1 og-knob-2 volca-cc 42"
+    echo "mode-1 og-knob-3 volca-cc 43"
 } | scratch_map_rows "$WORK"
 
 if ! midi_rewrite "$WORK"; then

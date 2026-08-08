@@ -116,7 +116,7 @@
 #X obj 20 4680 select 11;
 #X obj 240 4680 t b b b;
 #X msg 700 4680 === STEP-11-of-14 === TEMPO STILL COMES FROM KNOB 1 -- HANDS -- turn Organelle knob 1;
-#X msg 700 4730 PASS IF: the footer BPM follows the knob over roughly 10 to 500 -- ⚠️ THE FIRST TOUCH WILL JUMP -- knobs.txt restored the value but the physical knob is wherever you left it. That is expected and it is the case for parameter pickup. Knob 1 is a TABLE ROW now like everything else;
+#X msg 700 4730 PASS IF: the footer BPM follows the knob over roughly 10 to 500 -- ⛔ BUT NOT UNTIL THE KNOB PASSES THROUGH THE RESTORED VALUE. knobs.txt restored a position and the physical knob is wherever you left it -- so turning it does NOTHING until it crosses -- and then it takes over and tracks. That is parameter pickup and the jump it replaced was measured at 443 BPM. Knob 1 is a TABLE ROW now like everything else;
 #X msg 700 4780 >>> press GO to run step 11 of 14 -- THIS ONE NEEDS YOUR HANDS ON THE HARDWARE;
 #X obj 240 4850 s \$0-say;
 #X obj 20 4940 select 12;

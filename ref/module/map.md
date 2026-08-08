@@ -103,6 +103,31 @@ controls is 252 possible rows and the shipped file has thirteen.
 ⛔ **Both the read and the key-seed used to be later than mother's push, and both broke the same
 thing.** See *Traps*.
 
+### Parameter pickup — a restored control is held until it crosses
+
+**mother replays `knobs.txt` at boot, so the patch believes a knob sits where the knob physically
+does not.** Nothing on the instrument can detect it: mother reports a *position*, not whether that
+position is still true. Pickup holds a control until its value passes **through** the stored one,
+then hands it authority.
+
+| | | Evidence | Item |
+|---|---|---|---|
+| The jump it replaces | 443 BPM on knob 1, which is master tempo | verified | 236 |
+| Applies to | `og-knob-1`…`og-knob-4` only | verified | 236 |
+| Never applies to | `og-aux` — a button — or any control that is not an Organelle knob | verified | 236 |
+| Boot window | 1000 ms. A first value inside it is a restore and **arms**; after it, a hand, and goes straight to live | verified | 236 |
+| State | Five, per knob, in two 4-element arrays | verified | 236 |
+
+**The five states.** `0` virgin, never seen a value · `1` armed, side not yet known · `2` armed
+**above** the target, waiting for a fall · `3` armed **below** it, waiting for a rise · `4` live.
+States 2 and 3 *are* the answer they wait for offset by two, so one comparison releases both.
+
+⚠️ **The boot window is the only timer in this, and it decides only whether to ARM.** mother pushes
+`knobs.txt` **only if a Save has ever happened** — until then it logs `knobs.txt: can't open`, which
+is a fresh install or any `deploy.sh --clean`. Without the split, pickup would latch a physical touch
+as its target and **the knob would go dead after one value**. Both branches pass the value through,
+so neither can produce silence.
+
 ## Traps
 
 Each is a claim and its fix. How any of them was found is in the git history.
@@ -163,6 +188,26 @@ split weighted toward `perform` makes most mode selections silently quieten the 
 
 **Fix:** the current 3/3 split is a decision, not a placeholder. The mode *names* are placeholders;
 the ratio is not.
+
+### The OLED parameter row still tracks a knob that pickup is holding
+
+`m_organelle` publishes to `disp` **and** `param`, and only `param` goes through `u_map`. So while a
+knob is held, the parameter row on the OLED follows the physical knob and the tempo footer does not.
+
+**This is not a bug and must not be "fixed".** It is the only feedback showing where the knob is
+relative to the value it has to cross — without it, a held knob is indistinguishable from a dead one.
+
+**Fix:** nothing. Expect the two readouts to disagree while a control is held.
+
+### Pickup gates the control NAME, never the value
+
+`[list append]` holds the value in its **cold** inlet. Suppressing the value would leave the
+*previous* one parked and the name would still fire it — re-sending a stale BPM for `tempo`, and
+firing a **note** on every suppressed step for a knob mapped to `volca-note`, carrying a value that
+could have come from another surface entirely.
+
+**Fix:** the spigot sits between the name split and the lookup. Nothing downstream runs when it is
+shut.
 
 ### The reject is the normal path in the divisor test
 
@@ -253,3 +298,9 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
   and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **The mode names are placeholders.** `mode-1`…`mode-6` say nothing about what each mode is for,
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
+  would jump once per change. Not reachable today — `og-knob-1` is `tempo` in all six modes. **It
+  closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.
+  ⚠️ Doing it *cheaply* is worse than nothing — re-arming to the knob's last position puts the next
+  move on the far side and suppresses until you turn back. Doing it right needs a per-`(mode, knob)`
+  value memory, and the arrays widen 4 → 24 with one index term.

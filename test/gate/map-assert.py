@@ -90,7 +90,9 @@ def static_lint():
 # --------------------------------------------------------------- run assertions
 def run_asserts(cap):
     print("\n=== B. the lookup, driven ===")
-    order, by = A.windows(cap, "MAP", len(["EARLY", "TEMPO", "MAPPED",
+    order, by = A.windows(cap, "MAP", len(["EARLY", "EARLY-2", "SUPPRESS", "MAPPED",
+                                           "AWAY", "CROSS", "LIVE", "AUX-1", "AUX-2",
+                                           "KNOB-2", "LATE-KNOB",
                                            "BAD-DEST", "MODE-4", "MODE-DEP"]))
     W = lambda k: by.get(k, [])
     # ⛔ MIDIOUT IS DELIBERATELY NOT EVIDENCE HERE, and the reason is worth the
@@ -122,6 +124,56 @@ def run_asserts(cap):
     A.check("⛔ ... and reports unknown-dest on err",
             any(e[0] == "ERR" and "unknown-dest" in " ".join(e[1]) for e in W("BAD-DEST")),
             repr(W("BAD-DEST")))
+
+    # ------------------------------------------------------- parameter pickup
+    # mother replays knobs.txt at boot, so the patch believes a knob is somewhere
+    # the knob physically is not, and the first touch JUMPS -- measured at 443 BPM
+    # on knob 1, which is master tempo. Pickup holds the control until its value
+    # passes THROUGH the stored one. See ref/module/map.md.
+    #
+    # ⛔ EVERY NEGATIVE HERE CARRIES A LIVENESS WITNESS IN ITS OWN WINDOW. "This
+    # window emitted no tempo" is also true of a window that never happened, and
+    # A.windows only proves the MARK landed -- not that the actions after it did.
+    print("\n=== C. parameter pickup ===")
+    tempos = lambda k: [float(e[1][0]) for e in W(k) if e[0] == "TEMPO" and e[1]]
+    cc = lambda k, n: [e[1] for e in W(k) if e[0] == "CTLOUT" and e[1][1] == n]
+
+    A.check("⛔ a knob that has NOT crossed its stored value moves nothing",
+            not tempos("SUPPRESS"), "tempo in that window: %s" % tempos("SUPPRESS"))
+    A.check("... and that window was LIVE -- another control reached its destination",
+            len(cc("SUPPRESS", 41)) == 1, repr(W("SUPPRESS")))
+
+    A.check("⛔ moving FURTHER AWAY does not hand over either",
+            not tempos("AWAY"), "tempo in that window: %s" % tempos("AWAY"))
+    A.check("... and that window was live too",
+            len(cc("AWAY", 41)) == 1, repr(W("AWAY")))
+
+    A.check("⛔ CROSSING the stored value hands over -- 0.02 is 20 bpm",
+            any(abs(t - 20) < 1.5 for t in tempos("CROSS")),
+            "tempo in that window: %s" % tempos("CROSS"))
+    A.check("and it tracks normally from then on -- 0.3 is 157 bpm",
+            any(abs(t - 157) < 1.5 for t in tempos("LIVE")),
+            "tempo in that window: %s" % tempos("LIVE"))
+
+    # og-aux is a BUTTON. If it were ever given a pickup slot the second press
+    # would latch and vanish, and the transport would stick on.
+    A.check("⛔ og-aux is a BUTTON and never picks up -- first press starts",
+            any(e[0] == "START" for e in W("AUX-1")), repr(W("AUX-1")))
+    A.check("⛔ ... and the SECOND press stops. A latched aux would be silent here",
+            any(e[0] == "STOP" for e in W("AUX-2")), repr(W("AUX-2")))
+
+    # ⛔ EXACT COUNTS, never "at least". Knob 2 armed at 400 ms inside the boot
+    # window and has not crossed, so its second value is held. Knob 3's FIRST
+    # value arrived at 4200 ms -- long after the window -- so it was a hand and
+    # not a restore, and it must never arm at all.
+    A.check("⛔ pickup state is PER KNOB -- knob 2 is still held while knob 1 is live",
+            len(cc("KNOB-2", 42)) == 0, "cc 42 in that window: %s" % cc("KNOB-2", 42))
+    A.check("... and knob 2's window was live -- its first value DID land at 400 ms",
+            len(cc("EARLY-2", 42)) == 1, repr(W("EARLY-2")))
+    A.check("⛔ a knob first seen AFTER the boot window never arms -- both values pass",
+            len(cc("LATE-KNOB", 43)) == 2,
+            "cc 43 in that window: %s -- expected two, the no-Save case"
+            % cc("LATE-KNOB", 43))
 
 
 if __name__ == "__main__":

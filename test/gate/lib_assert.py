@@ -59,7 +59,7 @@ def report():
 
 # ---------------------------------------------------------------------------
 _MIDI = re.compile(r"^(NOTEOUT|CTLOUT|PGMOUT|MIDIOUT):\s+(-?[\d.]+(?:\s+-?[\d.]+)*)$")
-_BUS = re.compile(r"^(PARAM|DISP|ERR|TEMPO):\s+(.*)$")
+_BUS = re.compile(r"^(PARAM|DISP|ERR|TEMPO|START|STOP):\s+(.*)$")
 
 
 def parse(cap, tag):

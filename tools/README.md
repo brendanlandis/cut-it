@@ -17,6 +17,7 @@ matters because the Organelle launches Pd with `-nogui` and there is no console 
 | **Driving and rescuing hardware** | `go.sh` `lp-live.sh` `dsp.sh` + `dsp-toggle.pd` |
 | **Measuring the device** | `display-cpu.sh` `display-diag.pd` |
 | **Probes still worth running** | `lp-monitor.pd` `lp-step0.pd` `alert-buffer-probe.pd` `self-wire.pd` |
+| **Answering a device** — does it reply at all | `stage-patches/Inquiry Probe/` |
 | **Worked examples** — a technique, kept as the proof | `audio-probe/` `oled-probe/` `osc-bridge/` `status-display/` |
 | **The phone side** | `pdparty-scene/` — a PdParty scene, not an Organelle patch |
 | **Menu patches** | `stage-patches/` — see below |
@@ -267,6 +268,7 @@ byte-identical to the copy here before it was removed, so any of them is one `sc
 
 | | |
 |---|---|
+| `Inquiry Probe/` | **Does a device answer a universal device inquiry?** It wires itself through `[shell]`, then asks one device every four seconds — Launchpad, nanoKONTROL, SP-404 — packing the phase number alongside every byte `[sysexin]` receives, and writes `/sdcard/inquiry-probe.log`. ⛔ **It asks the Launchpad FIRST and that is the whole method**: the Launchpad is known to answer, so phase 1 proves the channel. A silence from the other two means nothing until phase 1 has answered **in the same run**. ⛔ Its `inquiry-wire.sh` creates a **`Pure Data:5 → nanoKONTROL` link that has never existed anywhere in this project** — Cut It's `wire.sh` wires an input from the nano and no output to it, so the nano has never been sent a byte. [plan-v03.4.md](../plan-v03.4.md) branches on the answer. |
 | `AP Probe/` | ✅ Records what can only be seen **while the access point is up** — which is exactly when a Mac joined to it has no internet and nobody can watch. It logs to `/sdcard/ap-probe.log` and reads the phone's address from the dnsmasq lease file **or**, if dnsmasq has already exited, from `/proc/net/arp`. ⚠️ **That second strategy is what saved the run** (item 129) — a single-strategy probe would have returned `none` and taught us nothing. |
 | `Start AP/` | ⛔ **A dead end, kept as the record of why.** ⚠️ It *does* have a `main.pd` — this page claimed otherwise until 2026-08-07 — but loading it does not work: `create_ap`, `hostapd` and `dnsmasq` all die with the Pd that spawned them **even behind `setsid nohup`**, so an AP cannot be started from a patch. Use **System → WiFi Setup → Start AP**. Item 129. Its password line is a **placeholder**; the live value is in `/sdcard/ap.txt`, because this repo is public. |
 | `State Probe/` | Phase 8's on-device state probe. |
@@ -300,7 +302,23 @@ ssh root@organelle.local
   cat /tmp/out.txt
 ```
 
-Stop with `killall pd`.
+Stop with `killall pd`. ⚠️ **Then run `./tools/lp-live.sh`** — `killall pd` strands the Launchpad in
+Programmer Mode every time, because Pd 0.49 has no `closebang` and only `mother.pd` sends `quitting`.
+
+✅ **`lp-monitor.pd` was repaired on 2026-08-08 and prints three things it did not before.** It had
+**no `[sysexin]`**, so a device-inquiry reply — or an announcement of a mode change made *by hand* —
+arrived and was silently discarded, which is the one thing item 100 needs. It had **no `[ctlin]`**,
+so the entire outer function ring was invisible to it. And its Live Mode escape was a **click-only**
+message box, useless on a device that runs Pd with `-nogui` and has no mouse. Send any datagram to
+port **9996** and the device is handed back:
+
+```sh
+python3 -c "import socket; socket.socket(socket.AF_INET, socket.SOCK_DGRAM).sendto(b'live;', ('organelle.local', 9996))"
+```
+
+⛔ **Not `nc`.** BSD `nc -u -w0` on macOS exits before the datagram is flushed and looks exactly like
+a dead patch — the same reason `go.sh` and `dsp.sh` are Python. `tools/lp-live.sh` remains the
+fallback that needs no running patch at all.
 
 ## Things these patches taught us
 

@@ -1,4 +1,4 @@
-#N canvas 40 40 900 580 12;
+#N canvas 40 40 1500 1000 12;
 #X obj 30 30 loadbang;
 #X obj 30 70 del 3000;
 #X obj 30 110 t b b b;
@@ -19,6 +19,18 @@
 #X text 30 470 Programmer Mode SysEx out MIDI port 1.;
 #X text 30 490 Pressing a pad echoes it back as an LED (velocity = colour).;
 #X text 30 510 PAD prints: pitch velocity. PRESSURE prints: value note.;
+#X obj 800 290 sysexin;
+#X obj 800 340 print SYSEX;
+#X obj 800 440 ctlin;
+#X obj 800 490 pack f f f;
+#X obj 800 540 print CC-val-num-ch;
+#X obj 30 620 netreceive 9996 1;
+#X obj 30 670 t b;
+#X obj 300 670 print REMOTE;
+#X text 800 380 ⛔ WITHOUT THIS THE PATCH CANNOT ANSWER ITS OWN QUESTION. It had no sysexin at all \, so a device-inquiry reply -- or an announcement of a mode change made BY HAND -- arrived and was discarded. Item 100 is what this print is for, f 54;
+#X text 800 590 ctlin IS OMNI HERE ON PURPOSE \, unlike the notein above. The whole outer function ring is CC \, and it was invisible to this patch. Item 82 is what the MIDDLE number settles, f 54;
+#X text 30 720 ⛔ THE LIVE MODE MESSAGE USED TO BE CLICK-ONLY \, which made it useless exactly where it was needed: the Organelle runs Pd with -nogui and there is no mouse. Send ANY datagram to port 9996 and the device is handed back. The no-Pd fallback is tools/lp-live.sh \, which uses amidi and needs no patch at all, f 60;
+#X text 30 850 DRIVE IT FROM THE MAC -- python3 -c "import socket \; socket.socket(socket.AF_INET \, socket.SOCK_DGRAM).sendto(b'live \;' \, ('organelle.local' \, 9996))" -- the same shape as tools/go.sh \, and for the same reason: BSD nc with -w0 exits before the datagram is flushed and looks exactly like a dead patch, f 60;
 #X connect 0 0 1 0;
 #X connect 1 0 2 0;
 #X connect 2 0 14 0;
@@ -36,3 +48,11 @@
 #X connect 11 0 12 0;
 #X connect 13 0 5 0;
 #X connect 14 0 15 0;
+#X connect 20 0 21 0;
+#X connect 22 0 23 0;
+#X connect 22 1 23 1;
+#X connect 22 2 23 2;
+#X connect 23 0 24 0;
+#X connect 25 0 26 0;
+#X connect 25 0 27 0;
+#X connect 26 0 13 0;

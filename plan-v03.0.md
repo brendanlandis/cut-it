@@ -42,7 +42,8 @@ that batch.
 | [ref/device/sp404.md](ref/device/sp404.md) | The CC table and `Facts` | The unexercised CC map, and the pre-set checklist you are writing |
 | [ref/device/launchpad.md](ref/device/launchpad.md) | Its `Open` section, items 77 and 100 | Two measurements, one of which plan v0.3.4 needs |
 | [ref/device-os.md](ref/device-os.md) | The three CPU-measurement facts only | Item 134's unexplained readings |
-| `tools/lp-monitor.pd`, `tools/lp-step0.pd` | **Load them; do not read them** | ⚠️ Kept in the cleanup precisely as the re-check for a session like this |
+| `tools/stage-patches/Inquiry Probe/` | **Both halves, before running it** | ✅ **Built 2026-08-08.** The probe for the three questions below. Its script creates the nanoKONTROL output link, which had never existed anywhere in this project |
+| `tools/lp-monitor.pd`, `tools/lp-step0.pd` | **Load them; do not read them** | ⚠️ Kept in the cleanup precisely as the re-check for a session like this. ✅ `lp-monitor` was repaired 2026-08-08 — see below |
 
 **Do not read** anything under `test/`, `ref/module/display.md`, `ref/module/state.md`,
 `ref/module/map.md`, or `Cut It/g_oled.pd`. None of it bears on this plan, and `ref/` is ~5,300 lines
@@ -78,13 +79,37 @@ whether three of the five devices get active polling or only passive last-heard 
 
 | # | Question | How |
 |---|---|---|
-| 1 | **Does the nanoKONTROL answer a universal device inquiry** (`F0 7E 7F 06 01 F7`)? | Send it from Pd on its port, watch `[sysexin]`. This is a **new** open item — nobody has asked it |
-| 2 | **Does the SP-404MK2 answer one?** | Same rig, same session |
-| 3 | **Does the Launchpad announce a mode change made by hand in Live Mode?** Item 100 | `lp-monitor.pd` is kept for exactly this |
+| 1 | **Does the nanoKONTROL answer a universal device inquiry** (`F0 7E 7F 06 01 F7`)? | `Inquiry Probe`, phase 2. This is a **new** open item — nobody has asked it |
+| 2 | **Does the SP-404MK2 answer one?** | `Inquiry Probe`, phase 3. 📄 Its chart marks SysEx `x` both ways, so a **no** confirms documentation |
+| 3 | **Does the Launchpad announce a mode change made by hand in Live Mode?** Item 100 | `lp-monitor.pd`, watching its new `SYSEX` print |
 
 ⚠️ **Prove the probe before believing the silence.** A null result is worthless until the channel is
-proven — send the inquiry to the Launchpad first, which is known to answer in either mode, and only
-then trust a silence from the other two.
+proven — the probe asks the Launchpad **first**, which is known to answer in either mode, and only
+then asks the other two. **If phase 1 produces no bytes, the run tells you nothing about phases 2
+and 3.**
+
+✅ **Both tools were built or repaired on 2026-08-08**, because neither existed in a usable form:
+
+- **`tools/stage-patches/Inquiry Probe/`** — a menu patch that wires itself through `[shell]`, asks
+  one device per phase four seconds apart, packs the phase number alongside every received byte, and
+  writes `/sdcard/inquiry-probe.log`. ⛔ **Its script creates a `Pure Data:5 → nanoKONTROL` link that
+  has never existed anywhere in this project** — Cut It's `wire.sh` wires an input from the nano and
+  no output to it, so the nano has never been sent a byte.
+- **`tools/lp-monitor.pd`** — it could not answer item 100 as written: **no `[sysexin]`**, so a reply
+  or an announcement was discarded; **no `[ctlin]`**, so the whole function ring was invisible; and
+  its Live Mode escape was a click-only message box, which is useless on a device running `-nogui`.
+  All three are fixed, and the escape now fires from a datagram to port 9996.
+
+⛔ **Run the probe from the menu, not over SSH.** Loading it costs no `killall pd`, which strands the
+Launchpad in Programmer Mode every time.
+
+```sh
+scp -r "tools/stage-patches/Inquiry Probe" 'root@organelle.local:/sdcard/Patches/! debug/'
+ssh root@organelle.local "oscsend localhost 4001 /reloadNoRemount i 1"
+ssh root@organelle.local "oscsend localhost 4001 /loadPatch s '! debug/Inquiry Probe'"
+# ... wait ~20 s, then read it back
+scp root@organelle.local:/sdcard/inquiry-probe.log .
+```
 
 ### The rest
 

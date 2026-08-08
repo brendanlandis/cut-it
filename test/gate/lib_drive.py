@@ -29,7 +29,8 @@ MIDI only, and every assertion about param, disp or err is answered by an empty
 list rather than by a fact -- a pass, and a meaningless one.
 """
 
-TAP_LABELS = {"param": "PARAM", "disp": "DISP", "err": "ERR", "tempo": "TEMPO"}
+TAP_LABELS = {"param": "PARAM", "disp": "DISP", "err": "ERR", "tempo": "TEMPO",
+              "start": "START", "stop": "STOP"}
 
 
 def build(path, seq, tag, taps, quit_ms, blurb, burst=None, notes=()):

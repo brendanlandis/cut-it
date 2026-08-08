@@ -24,9 +24,36 @@ GAP = 20
 
 SEQ = [
     # ⛔ BEFORE u_map reads its table. The map must work from load.
+    # ⛔ AND IT IS ALSO KNOB 1's FIRST VALUE EVER, inside u_map's boot window, so
+    # pickup must TAKE it and arm against it. If pickup ever swallows this the
+    # instrument boots at u_tempo's fallback 120 -- item 234's exact symptom.
     (300, "EARLY", ["\\; param og-knob-1 0.0958"], GAP),
-    (2400, "TEMPO", ["\\; param og-knob-1 0.5"], GAP),
+    # Knob 2's first value, also inside the boot window. Armed independently.
+    (400, "EARLY-2", ["\\; param og-knob-2 0.5"], GAP),
+    # ⛔ ARMED AT 0.0958 AND MOVED WITHOUT CROSSING -- nothing may reach tempo.
+    # gk-cc rides along as the LIVENESS WITNESS: without it "no tempo here" is
+    # answered by a dead driver rather than by a fact.
+    (2400, "SUPPRESS", ["\\; param og-knob-1 0.5", "\\; param gk-cc 64"], GAP),
     (2600, "MAPPED", ["\\; param gk-cc 64"], GAP),
+    # Further away is still not a crossing. Same witness.
+    (2800, "AWAY", ["\\; param og-knob-1 0.9", "\\; param gk-cc 64"], GAP),
+    # THROUGH it from above. 0.02 is 20 bpm.
+    (3000, "CROSS", ["\\; param og-knob-1 0.02"], GAP),
+    # ... and it tracks normally from then on. 0.3 is 157 bpm.
+    (3200, "LIVE", ["\\; param og-knob-1 0.3"], GAP),
+    # ⛔ og-aux IS A BUTTON AND NEVER PICKS UP. Two presses, two transport
+    # events. A latched aux would be silent on the second.
+    (3400, "AUX-1", ["\\; param og-aux 1"], GAP),
+    (3600, "AUX-2", ["\\; param og-aux 1"], GAP),
+    # ⛔ STATE IS PER KNOB. Knob 2 armed at 400 ms and knob 1 has long since gone
+    # live, so knob 2 is still held: EXACTLY ONE cc 42, from its first value.
+    (4000, "KNOB-2", ["\\; param og-knob-2 0.9"], GAP),
+    # ⛔ THE NO-SAVE CASE, and the mirror image of KNOB-2. Knob 3's FIRST value
+    # arrives long after the boot window, so it was a hand rather than a restore
+    # -- it must go straight to LIVE and its second value must pass too. TWO
+    # cc 43 events. mother pushes knobs.txt only if a Save has ever happened, so
+    # this is a fresh install or any deploy.sh --clean.
+    (4200, "LATE-KNOB", ["\\; param og-knob-3 0.5", "\\; param og-knob-3 0.9"], GAP),
     # ⛔ BEFORE the mode switch. The bad row is keyed mode-1, so testing it after
     # switching to mode-4 makes it a LOOKUP MISS -- correctly silent, and nothing
     # to do with the guard it is meant to exercise.
@@ -62,6 +89,6 @@ if __name__ == "__main__":
         sys.exit("usage: map-assert-drive-gen.py OUT.pd  "
                  "(run it through test/gate/map-assert.sh, which passes a scratch path)")
     w, b, c = D.build(sys.argv[1], SEQ, tag="MAP",
-                      taps=["param", "err", "tempo"], quit_ms=QUIT_MS,
+                      taps=["param", "err", "tempo", "start", "stop"], quit_ms=QUIT_MS,
                       blurb=BLURB, notes=NOTES)
     print("%s  %d windows  %d boxes  %d connects" % (sys.argv[1], w, b, c))

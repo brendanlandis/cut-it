@@ -72,6 +72,21 @@ and the rest are cheap once the rig is out.
 number never reaches a page has to be taken again. New facts take the next free item number — grep
 first, and never reuse one.
 
+### ✅ ANSWERED 2026-08-08 — and both answers are YES
+
+**All three devices answer a universal device inquiry** (item 249), so plan v0.3.4 is unblocked and
+can design **active polling for every device**, not passive last-heard detection for three of them.
+
+| Asked | Reply | |
+|---|---|---|
+| Launchpad Pro MK3 | `F0 7E 00 06 02 00 20 29 23 01 00 00 00 04 06 05 F7` | the control, and it matches item 98 **byte for byte** — same firmware |
+| **nanoKONTROL** | `F0 7E 00 06 02 42 04 01 00 00 23 00 00 00 F7` | ⛔ nobody had ever asked. `42` = KORG |
+| **SP-404MKII** | `F0 7E 10 06 02 41 08 04 00 00 00 03 00 00 F7` | ⛔ **contradicts Roland's own chart**, which marks SysEx `x` both ways |
+
+⚠️ **The 404's answer is the one with consequences beyond this question.** A `x` in that chart is now
+evidence of nothing, and every capability ruled out by reading it deserves a three-minute test before
+being believed. Recorded on [ref/device/sp404.md](ref/device/sp404.md).
+
 ### The two that plan v0.3.4 is blocked on
 
 ⚠️ **Answer these before anything in [plan-v03.4.md](plan-v03.4.md) is designed.** They decide

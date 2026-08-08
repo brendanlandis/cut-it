@@ -35,7 +35,8 @@ and `disp`.
 | Button behaviour | **Momentary** throughout — 127 on press, 0 on release. Pd owns all toggle state | verified | 31 |
 | Slider / knob range | Full 0–127. *Upper Value* / *Right Value* are not clipped | verified | — |
 | SysEx | **None anywhere in the stream** — nothing emits MMC | verified | — |
-| Receives from Pd | **Nothing it acts on.** Sent from the Organelle with `amidi` to `hw:5,0,0`: every button CC on its own channel, every Note On 0–127 on channels 1–2, and the button CCs on **all 16 channels**. No LED responded to any of it, against a control that lights on a physical press | verified | 245 |
+| Receives from Pd | **Nothing musical, and no LED.** Sent from the Organelle with `amidi` to `hw:5,0,0`: every button CC on its own channel, every Note On 0–127 on channels 1–2, and the button CCs on **all 16 channels**. No LED responded to any of it, against a control that lights on a physical press | verified | 245 |
+| ⛔ **It DOES answer a universal device inquiry** | `F0 7E 7F 06 01 F7` in, `F0 7E 00 06 02 42 04 01 00 00 23 00 00 00 F7` back — manufacturer `42`, KORG. **Its input is not inert**, and "receives nothing" was too strong | verified | 249 |
 | The buttons have LEDs, driven **internally** | Press and hold lights one; release puts it out. The lamps exist — only host control is missing | verified | 245 |
 
 Verified end to end off the wire, then re-confirmed through the real patch: slider 1 → CC 1, slider 9

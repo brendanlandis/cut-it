@@ -150,6 +150,33 @@ already makes.
 
 `[sysexin]` instantiates *and fires* on this Pd build.
 
+### Mode changes are announced — on MIDI port 3, which nothing is wired to
+
+✅ **Item 100, closed 2026-08-08.** Pressed by hand in Live Mode, each layout button emits
+
+```
+F0 00 20 29 02 0E 00 <layout> 00 00 F7
+```
+
+| | | Evidence | Item |
+|---|---|---|---|
+| Port it arrives on | **`Launchpad Pro MK3 MIDI 3`** — ALSA `40:2` | verified | 250 |
+| Layout IDs seen | `02`, `03`, `04` — one per press | verified | 250 |
+| ⛔ Cut It cannot see it | `wire.sh` connects **port 0 only**, so as wired today these never reach Pd | verified | 250 |
+
+⛔ **The three ports are not interchangeable, and this is the measurement that proves it.** Watching
+port 0 alone — which is what `lp-monitor.pd` did, and what every earlier attempt at item 100 did —
+produces a confident *"it announces nothing"*. It announces plenty, two ports away.
+
+### ⛔ In Live Mode it floods port 0 with MIDI clock
+
+Measured in the same run: **5745 `Clock` events and nothing else** on port 0 while in Live Mode — no
+notes, no CC, no pad traffic at all (item 250). Programmer Mode is what stops it.
+
+⚠️ **`wire.sh` connects that port to Pd's Midi-In 1**, so a Launchpad left in Live Mode floods Cut
+It's primary MIDI input. Today the mode SysEx at load prevents it — which makes that one message
+load-bearing for more than the grid, and it fails silently if the device is not yet enumerated.
+
 ⛔ **`killall pd` DOES NOT TEST THE SAFE EXIT.** Tried on the device: the Launchpad stayed in
 Programmer Mode with a frozen beat row. **Any exit that is not mother's own strands it** — which is
 what `tools/lp-live.sh` exists to rescue. Item 96.
@@ -297,5 +324,6 @@ and costs no buttons.
   device reverts to a default rate instead of tracking, and a Start makes it dip briefly before
   settling — the same shape as the 404's 40–200 window. The pulse stream itself is known good. Item
   77 — see [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **Whether the device announces a mode change made by hand in Live Mode** is unmeasured. Item
-  100 — see [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **What every layout ID means.** `02`, `03` and `04` were seen; the full set and their names are
+  not established. See [plan-v04.md](../../plan-v04.md) §3. ✅ *That it announces at all* is now
+  answered — item 100 is closed, see *Mode changes are announced* under **Facts**.

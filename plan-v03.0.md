@@ -96,7 +96,7 @@ whether three of the five devices get active polling or only passive last-heard 
 |---|---|---|
 | 1 | **Does the nanoKONTROL answer a universal device inquiry** (`F0 7E 7F 06 01 F7`)? | `Inquiry Probe`, phase 2. This is a **new** open item — nobody has asked it |
 | 2 | **Does the SP-404MK2 answer one?** | `Inquiry Probe`, phase 3. 📄 Its chart marks SysEx `x` both ways, so a **no** confirms documentation |
-| 3 | **Does the Launchpad announce a mode change made by hand in Live Mode?** Item 100 | `lp-monitor.pd`, watching its new `SYSEX` print |
+| 3 | ✅ **ANSWERED — yes, on MIDI port 3.** `F0 00 20 29 02 0E 00 <layout> 00 00 F7`, item 250 | ⛔ **not** `lp-monitor.pd` — it watches port 0, where the announcement never appears. `aseqdump -p 40:2` |
 
 ⚠️ **Prove the probe before believing the silence.** A null result is worthless until the channel is
 proven — the probe asks the Launchpad **first**, which is known to answer in either mode, and only

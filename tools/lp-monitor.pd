@@ -1,4 +1,4 @@
-#N canvas 40 40 1500 1000 12;
+#N canvas 40 40 1500 1200 12;
 #X obj 30 30 loadbang;
 #X obj 30 70 del 3000;
 #X obj 30 110 t b b b;
@@ -30,7 +30,7 @@
 #X text 800 380 ⛔ WITHOUT THIS THE PATCH CANNOT ANSWER ITS OWN QUESTION. It had no sysexin at all \, so a device-inquiry reply -- or an announcement of a mode change made BY HAND -- arrived and was discarded. Item 100 is what this print is for, f 54;
 #X text 800 590 ctlin IS OMNI HERE ON PURPOSE \, unlike the notein above. The whole outer function ring is CC \, and it was invisible to this patch. Item 82 is what the MIDDLE number settles, f 54;
 #X text 30 720 ⛔ THE LIVE MODE MESSAGE USED TO BE CLICK-ONLY \, which made it useless exactly where it was needed: the Organelle runs Pd with -nogui and there is no mouse. Send ANY datagram to port 9996 and the device is handed back. The no-Pd fallback is tools/lp-live.sh \, which uses amidi and needs no patch at all, f 60;
-#X text 30 850 DRIVE IT FROM THE MAC -- python3 -c "import socket \; socket.socket(socket.AF_INET \, socket.SOCK_DGRAM).sendto(b'live \;' \, ('organelle.local' \, 9996))" -- the same shape as tools/go.sh \, and for the same reason: BSD nc with -w0 exits before the datagram is flushed and looks exactly like a dead patch, f 60;
+#X text 30 850 DRIVE IT FROM THE MAC -- python3 -c "import socket \; socket.socket(socket.AF_INET \, socket.SOCK_DGRAM).sendto(b'live\;\\n' \, ('organelle.local' \, 9996))" -- the same shape as tools/go.sh \, and for the same reason: BSD nc with -w0 exits before the datagram is flushed and looks exactly like a dead patch. ⛔ THE TRAILING NEWLINE IS REQUIRED and this comment omitted it until 2026-08-08 -- b'live \;' with a space and no newline is accepted by the socket and DROPPED by netreceive \, which is the same silent nothing the nc warning above is about. Item 250., f 60;
 #X connect 0 0 1 0;
 #X connect 1 0 2 0;
 #X connect 2 0 14 0;

@@ -117,6 +117,12 @@ both of which have already misled an investigation:
 
 - **A file written in the first seconds after boot carries a 2015 timestamp.** `ls -l` output from
   a freshly-booted device is not in the order you expect.
+- ⚠️ **A timestamp WRITTEN before the jump and READ after it looks ancient.** `wifi-watch` stamps
+  its liveness file with `date +%s`, so a stamp written during boot reads as **~11 years stale** for
+  the few seconds until its next tick rewrites it. `wifi-poll.sh` therefore fires one spurious
+  *"watcher was dead — relaunched"* per boot; the one-instance guard refuses it and the next tick
+  clears it. ⚠️ **Left alone deliberately** — a rule that ignored implausibly old stamps would also
+  mask a genuinely long-dead watcher.
 - ⚠️ **The device runs UTC; the Mac runs local time.** Comparing a device file mtime against a
   Mac log line without converting produced an apparent **5.5-hour clock jump** that did not exist —
   the real explanation was simply that hours had passed between two `date` calls. **Convert, or
@@ -332,6 +338,10 @@ systemd default of 90 s does not.
 
 ⚠️ **One phantom `TRANSITION NONE -> …` already exists in the log**, stamped `2026-08-08 21:34:27`.
 It is a boot artefact, not a drop.
+
+✅ **Verified across a real reboot 2026-08-08**: the service comes up `active`, its opening block
+carries a populated `ipv4:` and the SSID, and **no `TRANSITION` is logged at boot**. The header is
+still stamped `2015`, which is the expected proof that it starts before the clock is corrected.
 
 ### ⬜ 2026-08-08 — three drops that did NOT look like the roam fault
 

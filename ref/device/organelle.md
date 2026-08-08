@@ -366,6 +366,11 @@ table and nothing else, since a commit from a Launchpad pad would have no screen
 
 ## Open
 
-- ⬜ **Whether the serial overruns and the OLED lag share a cause is unmeasured.** `dmesg` carries
-  continuous `imx-uart 2020000.serial: Rx FIFO overrun` on **the same serial link to the front
-  panel**. Recorded rather than asserted. Item 173 — see [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **Whether the serial overruns and the OLED lag share a cause — narrowed, not closed.** See
+  [plan-v04.md](../../plan-v04.md) §3. ✅ **Item 247**: with the patch running and the OLED repainting
+  ten times a second, `dmesg` held **exactly one** `imx-uart 2020000.serial: Rx FIFO overrun` in
+  822 s of uptime, at 733 s — ⛔ **not the "continuous" stream this page recorded before**, which was
+  written from a glance at `dmesg` rather than a count. A once-per-quarter-hour event cannot produce
+  a lag that is present on **every** frame, so a shared cause is unlikely. ⚠️ Unlikely is not
+  disproven, and one boot is one boot: what would settle it is catching an overrun and a lag spike
+  inside the same second.

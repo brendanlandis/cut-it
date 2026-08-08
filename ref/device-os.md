@@ -435,8 +435,15 @@ cite these numbers by bare item — `wifi-watch.sh` alone names seven.**
 | 187 | The AP-visibility guard in the steer | ⚠️ **A sixth defect in the measuring rig: `iw scan` is not `iw scan dump`.** `iw dev wlan0 scan` **triggers a new scan**, so run right after a `wpa_cli scan` the two contend — and it reported NOT VISIBLE for an AP sitting at **−47 dBm** |
 | 163 | A rewritten self-match check | ⛔ **The self-match trap bit a THIRD time, through a check written to avoid it.** A `/proc/*/cmdline` scan and a `case` pattern have the same flaw — **any** check whose own command line contains the string matches itself |
 
-⚠️ **Needs a supplicant started with a `ctrl_interface`**, which `wifi-reassociate.sh` writes and a
-boot-started one may not. ⬜ Unverified after a power cycle — check `ls /var/run/wpa_supplicant/`.
+✅ **A boot-started `wpa_supplicant` DOES have a working `ctrl_interface`** — item 246, measured
+after a real power cycle rather than assumed. The supplicant comes up **29 s after boot** as
+`wpa_supplicant -B -D nl80211,wext -i wlan0 -c /dev/fd/63`, the socket exists at
+`/var/run/wpa_supplicant/wlan0`, and `wpa_cli -i wlan0 status` answers with the live BSSID and SSID.
+
+⛔ **So the roam repro needs no special setup and restarts nothing.** `wpa_cli -i wlan0 scan` then
+`wpa_cli -i wlan0 roam <other-bssid>` can be run against the supplicant the device booted with, which
+is the only version of the fault worth reproducing — a hand-started supplicant is a different
+configuration and was always the weaker test.
 
 ⛔ **Ruled out, so nobody walks them again:** the Orbi satellite being at fault (overturned by a
 two-arm test 30 minutes later — item 182), `option rapid_commit`, `require dhcp_server_identifier`,

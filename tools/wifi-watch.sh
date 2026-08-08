@@ -18,7 +18,24 @@
 #   sh wifi-watch.sh            watch, and try to recover
 #   sh wifi-watch.sh observe    watch only -- change nothing
 #
-# Stop it with: pkill -f wifi-watch
+# Stop it with:  kill "$(cat /sdcard/wifi-watch.pid)"
+#
+# ⛔ NOT `pkill -f wifi-watch`, which this header recommended until 2026-08-08 --
+# and which the ONE INSTANCE ONLY block below already forbids in the same file.
+# `-f` matches the full command line, so it also matches the ssh command carrying
+# the string, and the kill takes the session with it. Item 163: bitten three
+# times, the third the worst.
+#
+# ⚠️ THE KILL IS NOT INSTANT -- ALLOW A FULL POLL INTERVAL. `trap 'exit 0' TERM`
+# cannot run while the shell is blocked in `sleep $POLL`, so the signal sits
+# pending until that sleep returns: up to 20 s. Checking two seconds later shows
+# it "still running" and invites a second, harder kill, which is how a half-dead
+# watcher with a stale pidfile gets made. Wait, then confirm the pidfile is gone
+# -- the EXIT trap removes it and the stamp, but only while they are still ours.
+#
+# ⚠️ AND DO NOT OVERWRITE THIS FILE WHILE IT IS RUNNING. `sh` reads a script by
+# byte offset as it executes, so an scp over a live watcher makes it run whatever
+# now sits at that offset. Stop it, sync, then start it.
 LOG=/sdcard/wifi-watch.log
 PIDFILE=/sdcard/wifi-watch.pid
 STAMP=/sdcard/wifi-watch.alive     # touched every poll -- mtime IS the liveness check

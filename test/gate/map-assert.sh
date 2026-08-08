@@ -36,8 +36,6 @@ done
 scratch_require "Cut It/u_map.pd" "Cut It/cut-it-map.txt"
 
 WORK=${TMPDIR:-/tmp}/cutit-map-$$
-scratch_make "$WORK"
-scratch_state_dir "$WORK"
 
 # The gate's own rows, APPENDED so the shipped rows stay under test too. The
 # static lint checks the SHIPPED file; these give the run a destination that
@@ -47,29 +45,53 @@ scratch_state_dir "$WORK"
 # numbers. Both windows below send two values to a knob and count what comes out
 # -- one expects exactly one event and the other expects two -- so a leak between
 # them has to be visible as a different controller, not as a duplicate.
-{
+gate_rows() {
     echo "mode-1 gk-cc volca-cc 41"
     echo "mode-1 gk-bad no-such-destination 0"
     echo "mode-1 og-knob-2 volca-cc 42"
     echo "mode-1 og-knob-3 volca-cc 43"
-} | scratch_map_rows "$WORK"
+    echo "mode-1 og-knob-4 volca-cc 44"
+}
 
-if ! midi_rewrite "$WORK"; then
-    [ "$KEEP" = "1" ] && echo "kept $WORK"
-    exit 2
-fi
+# ⛔ THE GATE RUNS TWICE, AND THE ONLY DIFFERENCE IS ONE FILE. Pickup arms a knob
+# because mother replayed a SAVED position; it must NOT arm when mother pushed
+# the knob's LIVE position, which is what happens when no Save has ever run.
+# u_map tells the two apart by reading knobs.txt at load, so the branch is
+# selected here by creating that file or not -- the real path either way, on both
+# machines, with no stub answering for it. Item 239.
+#
+# ⚠️ TWO WORK DIRS, NOT ONE REUSED. u_state restores at about 3.5 s from the
+# state directory the run before it wrote, and that is item 232 -- a mode left
+# behind changes what the map does mid-run and half the windows go quiet.
+build_run() {
+    # $1 = work dir, $2 = "save" (a knobs.txt exists) or "nosave", $3 = capture
+    _w=$1
+    scratch_make "$_w"
+    scratch_state_dir "$_w"
+    gate_rows | scratch_map_rows "$_w"
+    midi_rewrite "$_w" > "$_w/inventory.txt" || {
+        cat "$_w/inventory.txt"
+        return 2
+    }
+    [ "$2" = "save" ] && printf '0.0957967 0.5 0.5 0.5;\n' > "$_w/patch/knobs.txt"
 
-scratch_drive test/gate/map-assert-drive-gen.py "$WORK/drive.pd"
+    scratch_drive test/gate/map-assert-drive-gen.py "$_w/drive.pd"
+    scratch_run "$3" 40 -nogui -noaudio -nomidi -path "$_w/patch" \
+        "$_w/patch/main-dev.pd" "$_w/drive.pd"
+}
 
-CAP="$WORK/capture.txt"
-scratch_run "$CAP" 40 -nogui -noaudio -nomidi -path "$WORK/patch" \
-    "$WORK/patch/main-dev.pd" "$WORK/drive.pd"
+CAP="$WORK/save/capture.txt"
+CAP2="$WORK/nosave/capture.txt"
 
-python3 test/gate/map-assert.py $ARGS < "$CAP"
+build_run "$WORK/save" save "$CAP" || { [ "$KEEP" = "1" ] && echo "kept $WORK"; exit 2; }
+cat "$WORK/save/inventory.txt"
+build_run "$WORK/nosave" nosave "$CAP2" || { [ "$KEEP" = "1" ] && echo "kept $WORK"; exit 2; }
+
+python3 test/gate/map-assert.py $ARGS --nosave "$CAP2" < "$CAP"
 rc=$?
 
 if [ "$KEEP" = "1" ]; then
-    echo "capture kept at $CAP"
+    echo "captures kept at $CAP and $CAP2"
 else
     rm -rf "$WORK"
 fi

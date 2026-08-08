@@ -90,10 +90,12 @@ def static_lint():
 # --------------------------------------------------------------- run assertions
 def run_asserts(cap):
     print("\n=== B. the lookup, driven ===")
-    order, by = A.windows(cap, "MAP", len(["EARLY", "EARLY-2", "SUPPRESS", "MAPPED",
-                                           "AWAY", "CROSS", "LIVE", "AUX-1", "AUX-2",
-                                           "KNOB-2", "LATE-KNOB",
-                                           "BAD-DEST", "MODE-4", "MODE-DEP"]))
+    order, by = A.windows(cap, "MAP", len(["EARLY", "EARLY-2", "RAIL-ARM",
+                                           "SUPPRESS", "MAPPED", "AWAY", "CROSS",
+                                           "LIVE", "AUX-1", "AUX-2", "KNOB-2",
+                                           "LATE-KNOB", "BAD-DEST", "RAIL-UP",
+                                           "RAIL-BACK", "MODE-4", "MODE-DEP",
+                                           "UNMAPPED"]))
     W = lambda k: by.get(k, [])
     # ⛔ MIDIOUT IS DELIBERATELY NOT EVIDENCE HERE, and the reason is worth the
     # three lines. g_grid repaints the Launchpad off a [metro 100] that runs with
@@ -119,6 +121,13 @@ def run_asserts(cap):
             repr(W("MAPPED")))
     A.check("⛔ the SAME control in another mode does NOTHING (mode-dependence)",
             not midi("MODE-DEP"), repr(midi("MODE-DEP")))
+    # ⛔ AND THAT NEGATIVE NOW HAS A WITNESS IN ITS OWN WINDOW. An unmapped control
+    # is silent on every BUS and says so on the SCREEN, so "no MIDI here" can no
+    # longer be answered by a window that never happened.
+    A.check("... and it reports its RAW value on disp -- the witness for the line above",
+            any(d[:2] == ["gk-cc", "64"]
+                for d in [e[1] for e in W("MODE-DEP") if e[0] == "DISP"]),
+            "disp in that window: %s" % [e[1] for e in W("MODE-DEP") if e[0] == "DISP"])
     A.check("⛔ a row naming an unknown destination emits NO MIDI",
             not midi("BAD-DEST"), repr(midi("BAD-DEST")))
     A.check("⛔ ... and reports unknown-dest on err",
@@ -191,8 +200,83 @@ def run_asserts(cap):
             "cc 43 in that window: %s -- expected two, the no-Save case"
             % cc("LATE-KNOB", 43))
 
+    # ⛔ THE HELD ROW IS BUILT IN THE PICKUP MACHINE, NOT AT THE DESTINATION,
+    # because a held value never reaches the lookup -- so it cannot know what the
+    # knob maps to and it is hardcoded to bpm. Every armed knob therefore
+    # announced itself as a tempo on the OLED, including the three that are
+    # mapped to nothing at all. Item 240.
+    A.check("⛔ an UNMAPPED knob is held SILENTLY -- no bpm row for knob 2",
+            not any(d[:1] == ["bpm"] for d in disp("KNOB-2")),
+            "disp in that window: %s" % disp("KNOB-2"))
+    A.check("... and that window was live -- another control reached its destination",
+            len(cc("KNOB-2", 41)) == 1, repr(W("KNOB-2")))
+
+    # ⛔ A TARGET ON A RAIL. Knob 4 armed at 0, so "crossed" -- a flip of
+    # target <= value -- would need value < 0 and can never happen. EXACT counts:
+    # the hold and the release are one event each, and a gate that accepted "at
+    # least one" would pass whether or not the release ever came.
+    A.check("⛔ a knob armed against a target of 0 is still HELD on the way up",
+            len(cc("RAIL-UP", 44)) == 0, "cc 44 in that window: %s" % cc("RAIL-UP", 44))
+    A.check("... and that window was live too",
+            len(cc("RAIL-UP", 41)) == 1, repr(W("RAIL-UP")))
+    # ⛔ HELD AND UNMAPPED AT ONCE. Knob 2 is still armed from 400 ms and its row is
+    # mode-1, so in mode-4 it maps to nothing -- and it must still report. The gate
+    # used to sit ABOVE the lookup, so a held knob never reached text search and an
+    # unassigned knob could not be told from a broken one. Item 242.
+    A.check("⛔ a HELD and UNMAPPED knob still reports its raw value",
+            any(d[:2] == ["og-knob-2", "0.75"]
+                for d in [e[1] for e in W("UNMAPPED") if e[0] == "DISP"]),
+            "disp in that window: %s" % [e[1] for e in W("UNMAPPED") if e[0] == "DISP"])
+    A.check("... and it is still silent on every bus -- the row above is the witness",
+            not midi("UNMAPPED"), repr(midi("UNMAPPED")))
+
+    A.check("⛔ ... and RETURNING TO the target releases it -- a rail has no beyond",
+            len(cc("RAIL-BACK", 44)) == 1,
+            "cc 44 in that window: %s -- a dead knob for the whole session"
+            % cc("RAIL-BACK", 44))
+
+
+# --------------------------------------------------------------- the no-Save run
+def nosave_asserts(cap):
+    """The SAME drive against a patch folder with NO knobs.txt.
+
+    ⛔ THIS IS THE MIRROR IMAGE, AND THAT IS THE WHOLE POINT. mother pushes a
+    knob value at boot either way -- the SAVED position when knobs.txt exists,
+    the LIVE PHYSICAL position when it does not. Only the first is a desync, so
+    only the first may arm. Every assertion below is a window the run above
+    asserts the OPPOSITE of; if both expect the same thing, u_map is not reading
+    the file and nothing here is testing anything. Item 239.
+    """
+    print("\n=== D. no knobs.txt -- nothing may be held ===")
+    order, by = A.windows(cap, "MAP", len(["EARLY", "EARLY-2", "RAIL-ARM",
+                                           "SUPPRESS", "MAPPED", "AWAY", "CROSS",
+                                           "LIVE", "AUX-1", "AUX-2", "KNOB-2",
+                                           "LATE-KNOB", "BAD-DEST", "RAIL-UP",
+                                           "RAIL-BACK", "MODE-4", "MODE-DEP",
+                                           "UNMAPPED"]))
+    W = lambda k: by.get(k, [])
+    tempos = lambda k: [float(e[1][0]) for e in W(k) if e[0] == "TEMPO" and e[1]]
+    cc = lambda k, n: [e[1] for e in W(k) if e[0] == "CTLOUT" and e[1][1] == n]
+
+    # The value is still TAKEN. Both branches pass it through -- neither can
+    # produce silence, which is what made item 234 expensive to find.
+    A.check("⛔ the boot push is still TAKEN with no knobs.txt -- 0.0958 is 57 bpm",
+            any(abs(t - 57) < 1.5 for t in tempos("EARLY")),
+            "tempo in that window: %s" % tempos("EARLY"))
+    A.check("⛔ ... and NOTHING is held -- knob 1 moves the tempo at 2400 ms, 0.5 is 255",
+            any(abs(t - 255) < 1.5 for t in tempos("SUPPRESS")),
+            "tempo in that window: %s -- armed against its own live position?"
+            % tempos("SUPPRESS"))
+    A.check("... and that window was live -- another control reached its destination",
+            len(cc("SUPPRESS", 41)) == 1, repr(W("SUPPRESS")))
+    A.check("⛔ knob 2 is live too -- exactly one cc 42, where the armed run has none",
+            len(cc("KNOB-2", 42)) == 1, "cc 42 in that window: %s" % cc("KNOB-2", 42))
+
 
 if __name__ == "__main__":
     static_lint()
     run_asserts(A.require_capture(sys.stdin.read()))
+    if "--nosave" in sys.argv:
+        nosave_asserts(A.require_capture(
+            open(sys.argv[sys.argv.index("--nosave") + 1]).read()))
     sys.exit(1 if A.report() else 0)

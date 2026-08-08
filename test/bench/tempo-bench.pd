@@ -127,13 +127,13 @@
 #X obj 20 3780 select 5;
 #X obj 240 3780 t b b b;
 #X msg 700 3780 === STEP-05-of-16 === TEMPO THROUGH THE MAP -- og-knob-1 at 0 -- PICKUP HOLDS IT;
-#X msg 700 3830 PASS IF: ⛔ THIS ONE DIFFERS BY MACHINE AND THE DIFFERENCE IS PICKUP WORKING. ON THE DEVICE the footer does NOT move -- mother restored knob 1 at boot and 0 is below that stored value so the knob is HELD until it crosses back. ON THE MAC nothing pushes knobs.txt at all so this is knob 1's first value ever -- it lands and the footer reads 10-bpm with the 404's EXT sliding down;
+#X msg 700 3830 PASS IF: ⛔ THIS ONE DIFFERS BY WHETHER A SAVE HAS EVER HAPPENED AND THE DIFFERENCE IS PICKUP WORKING. WITH A SAVED knobs.txt -- the device after any Storage Save -- the footer does NOT move: mother restored knob 1 at boot and 0 is below that stored value so the knob is HELD until it crosses back. WITH NO knobs.txt -- always on the Mac and on the device after deploy.sh --clean -- u_map reads that the file is absent and holds nothing so this lands and the footer reads 10-bpm with the 404's EXT sliding down;
 #X msg 700 3880 >>> press GO to run step 5 of 16;
 #X obj 240 3950 s \$0-say;
 #X obj 20 4040 select 6;
 #X obj 240 4040 t b b b;
 #X msg 700 4040 === STEP-06-of-16 === TEMPO THROUGH THE MAP -- og-knob-1 at 1 -- THE CROSSING;
-#X msg 700 4090 PASS IF: the footer reads 500-bpm and the 404's EXT slides up. ON THE DEVICE this is the moment the knob crosses the restored value and TAKES OVER -- held one step ago and live now. A slide rather than a snap IS the inference working -- it snaps only to a tempo it has already learned;
+#X msg 700 4090 PASS IF: the footer reads 500-bpm and the 404's EXT slides up. WITH A SAVED knobs.txt this is the moment the knob crosses the restored value and TAKES OVER -- held one step ago and live now. A slide rather than a snap IS the inference working -- it snaps only to a tempo it has already learned;
 #X msg 700 4140 >>> press GO to run step 6 of 16;
 #X obj 240 4210 s \$0-say;
 #X obj 20 4300 select 7;

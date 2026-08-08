@@ -116,6 +116,12 @@ then hands it authority.
 | Applies to | `og-knob-1`…`og-knob-4` only | verified | 236 |
 | Never applies to | `og-aux` — a button — or any control that is not an Organelle knob | verified | 236 |
 | Boot window | 1000 ms. A first value inside it is a restore and **arms**; after it, a hand, and goes straight to live | verified | 236 |
+| Whether that arming survives | `u_map` **reads `knobs.txt` itself** at 2000 ms. `[text size]` answers 1 when the file is there and 0 when it is not | verified | 239 |
+| With **no** `knobs.txt` | every slot is written straight to LIVE and no knob is ever held | verified | 239 |
+| The held row is drawn for **knob 1 only** | it is built inside the pickup machine, which cannot know what a held knob maps to. Knobs 2–4 are held *silently* | verified | 240 |
+| **Reaching** the target releases, not only passing it | a target on a rail has no beyond: armed above a target of `0`, the flip test waits for `value < 0` | verified | 241 |
+| An **unmapped** control reports `<name> <raw>` on `disp` | `[moses 0]`'s left outlet — `[text search]` answers `-1`. Silent on every bus, never on the screen | verified | 242 |
+| The pickup gate sits **below** the lookup | so a held control still knows whether it is mapped. The lookup is a pure read | verified | 242 |
 | State | Five, per knob, in two 4-element arrays | verified | 236 |
 | mother pushes **once** at load and then says nothing | One `og-knob-1` in twelve seconds, untouched, on the device | verified | 237 |
 | With `knobs.txt`, the push is the **saved** value, at **100 ms** | Three consecutive boots, identical | verified | 239 |
@@ -125,11 +131,16 @@ then hands it authority.
 **above** the target, waiting for a fall · `3` armed **below** it, waiting for a rise · `4` live.
 States 2 and 3 *are* the answer they wait for offset by two, so one comparison releases both.
 
-⚠️ **The boot window is the only timer in this, and it decides only whether to ARM.** mother pushes
-`knobs.txt` **only if a Save has ever happened** — until then it logs `knobs.txt: can't open`, which
-is a fresh install or any `deploy.sh --clean`. Without the split, pickup would latch a physical touch
-as its target and **the knob would go dead after one value**. Both branches pass the value through,
-so neither can produce silence.
+**Arming takes two answers, and the boot window is only the first.** A first value inside the window
+is a restore rather than a hand, so it arms; a first value after it is a hand and goes straight to
+live. ⛔ **But mother pushes a value either way** — the *saved* position when `knobs.txt` exists, the
+*live physical* position when it does not, both inside the window — so the window alone armed knobs
+that were already in sync. `u_map` therefore **reads `knobs.txt` itself**, and if the file is absent
+it writes every slot to LIVE. Nothing is held on a machine that has never been Saved.
+
+⚠️ **Both branches pass the value through, which is the only reason a timer is tolerable here.** Item
+234 was two boot races that shipped silently. A window too short costs the old jump; one too long
+costs a knob that needs one sweep to free it. **Neither can produce silence.**
 
 ## Traps
 
@@ -229,6 +240,69 @@ could have come from another surface entirely.
 **Fix:** the spigot sits between the name split and the lookup. Nothing downstream runs when it is
 shut.
 
+### An unmapped control is silent on every bus, but not on the screen
+
+⛔ *"An unmapped control must stay silent"* is a rule about the **buses**. Applied to the screen it
+produced a control that does nothing and says nothing — indistinguishable from a broken one. The
+Organelle's knobs were the case that shipped that way, because `m_organelle` stopped reporting raw
+positions when `u_map` took over the row (item 242).
+
+**Fix:** `[text search]` answers `-1` for a name with no row, so `[moses 0]`'s left outlet is the
+miss. It reports `<control-name> <raw value>` on `disp` — the **pre-divisor** value, what the device
+actually sent.
+
+⛔ **This is why the pickup gate moved below the lookup.** It used to sit on the control NAME, above
+`[text search]`: equally safe, and blind — a held knob never reached the lookup, so nothing could tell
+an unmapped control from a suppressed one. The lookup is a pure read and now always runs; only the
+emission is gated.
+
+⚠️ `m_nano`, `m_404` and `m_launchpad` still post their own rows for the same controls, and theirs
+land **after** this one, so they win and nothing about those surfaces changes. `g_oled` updates a row
+in place by name, so the duplicate costs nothing.
+
+### A target sitting on a rail can never be crossed
+
+⛔ The release test is a **side flip** — `[<=]` computes `target <= value`, and a knob armed *above*
+the target waits for that to go false, which is `value < target`. **With a target of `0` that is
+unreachable however far the knob is turned down.** Save with knob 1 at the bottom and master tempo is
+dead for the whole session, and nothing reports it (item 241).
+
+**Fix:** release on the flip **or** on `value == target`. Equality can never fire spuriously — a knob
+sitting exactly on its stored value *is* in sync, which is the entire definition of pickup.
+
+### An armed knob that is mapped to nothing still had something to say
+
+⛔ The held row is assembled **inside the pickup machine**, because a held value never reaches the
+lookup — so it cannot know what the knob maps to, and it is hardcoded to `bpm` and the tempo scaling.
+Every armed knob therefore announced itself as a tempo, including the three mapped to nothing:
+`bpm 10 (60)` from knob 2 (item 240).
+
+**Fix:** the row is gated on slot 0. Knobs 2–4 are still held, they are just silent about it.
+⚠️ That is the *same* tempo-only assumption already carried by the `bpm` prefix and the `× 490 + 10`
+beside it — made once more rather than newly, and it goes when the row moves to its destination.
+
+### A boot push is not proof that anything was restored
+
+⛔ mother pushes a knob value at load **whether or not `knobs.txt` exists** — the saved position when
+it does, the knob's own live position when it does not. Arming on the push alone latched knobs that
+already agreed with the hardware, and they then stayed dead until turned back past where they
+started. Reachable on a fresh install and after any `deploy.sh --clean` (item 239).
+
+**Fix:** ask the direct question. `u_map` reads `knobs.txt` into a `[text define]` and takes
+`[text size]` — 1 when present, 0 when absent — and on absent it writes every pickup slot to LIVE.
+
+⛔ **Do not answer it from the timing.** The push lands at 100 ms with the file and at ~223 ms
+without, and that gap is an artefact of the error path taking longer, not a promised signal.
+⛔ **Do not answer it with `[shell]` either.** It forks and replies hundreds of milliseconds later,
+it is a do-nothing stub on the Mac, and a gate could then only ever reach one of the two branches. A
+`[text]` read behaves identically on both machines, so the gate creates the file or does not and
+exercises the real path either way.
+
+⚠️ **The read sits behind `[del 2000]` because a missing file prints three lines**, and `deploy.sh`
+fails a check on any output before ~735 ms (C-9). Deferring costs nothing: mother's push is taken by
+the virgin branch either way, and a knob turned inside the first two seconds is released the instant
+the probe fires.
+
 ### The reject is the normal path in the divisor test
 
 ⚠️ Opposite of the `route` above the handlers: almost every control in the rig is 0–127, and the five
@@ -318,17 +392,10 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
   and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **The mode names are placeholders.** `mode-1`…`mode-6` say nothing about what each mode is for,
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
-- ⛔ **Pickup arms wrongly when there is no `knobs.txt`, and that is a bug this feature introduced.**
-  mother pushes either way — the *saved* value when the file exists, the *live knob position* when it
-  does not. In the second case the patch and the hardware already agree, so there is nothing to pick
-  up, but the boot window arms anyway and the knob is then held until it is turned back **below where
-  it started**. Reachable on a fresh install and after any `deploy.sh --clean`.
-  ⛔ **Do not fix this by keying on the 100 ms / 223 ms difference** — that gap is an artefact of the
-  error path, not a designed signal. The direct question is whether the file exists, and `[shell]`
-  can answer it. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **Only `tempo` shows its mapped value.** Every other destination shows nothing at all now that
-  the knobs no longer report raw positions, and the nano, 404 and Volca still report their own raw
-  values. Making it universal is decided and scoped — see [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **Only `tempo` shows its mapped value.** An *unmapped* control now reports raw (item 242), so
+  nothing is silent — but a control mapped to anything **other than tempo** still shows nothing,
+  because the mapped row and the held `(n)` bracket both carry the tempo scaling. Making it universal
+  is decided and scoped — see [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
   would jump once per change. Not reachable today — `og-knob-1` is `tempo` in all six modes. **It
   closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.

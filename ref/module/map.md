@@ -190,15 +190,32 @@ split weighted toward `perform` makes most mode selections silently quieten the 
 **Fix:** the current 3/3 split is a decision, not a placeholder. The mode *names* are placeholders;
 the ratio is not.
 
-### The OLED parameter row still tracks a knob that pickup is holding
+### A knob's raw position is not a readable parameter row
 
-`m_organelle` publishes to `disp` **and** `param`, and only `param` goes through `u_map`. So while a
-knob is held, the parameter row on the OLED follows the physical knob and the tempo footer does not.
+`m_organelle` used to report every knob to `disp` as well as `param`, so turning knob 1 put
+`og-knob-1 0.245` on screen — and ⛔ **`g_oled`'s param layer REPLACES the footer**, so the BPM it
+was mapped to disappeared exactly while you were turning it. A 0–1 number where a BPM belongs is not
+feedback; it is arithmetic homework.
 
-**This is not a bug and must not be "fixed".** It is the only feedback showing where the knob is
-relative to the value it has to cross — without it, a held knob is indistinguishable from a dead one.
+**Fix:** the knobs no longer report to `disp`. `u_map` reports the **mapped** value instead, because
+it is the only file that knows what a control means. `og-aux` keeps its report — the transport is not
+a mapped value — and an **unmapped** knob now shows nothing, which is correct: it means nothing.
 
-**Fix:** nothing. Expect the two readouts to disagree while a control is held.
+### While pickup holds, one row carries both numbers
+
+`bpm 57 (120)` — the latched tempo still in force, and where the knob is currently pointing. The gap
+between them tells you which way to turn.
+
+⛔ **The value must be a float** — `g_oled` runs it through `makefilename %g`, which refuses a
+symbol. So the second number rides in the **unit** field, which is a free symbol.
+
+⛔ **A held value never reaches the tempo branch**, because pickup gates the control *name* and the
+lookup never runs. The held readout is therefore built inside the pickup machine, which is why the
+0–1 → BPM scaling exists twice in `u_map`.
+
+**Fix:** nothing to do here. ⚠️ But when this pattern reaches the other destinations, each scaling
+must live **with its destination** — otherwise every destination that gains a held readout duplicates
+it again.
 
 ### Pickup gates the control NAME, never the value
 
@@ -299,6 +316,9 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
   and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **The mode names are placeholders.** `mode-1`…`mode-6` say nothing about what each mode is for,
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **Only `tempo` shows its mapped value.** Every other destination shows nothing at all now that
+  the knobs no longer report raw positions, and the nano, 404 and Volca still report their own raw
+  values. Making it universal is decided and scoped — see [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
   would jump once per change. Not reachable today — `og-knob-1` is `tempo` in all six modes. **It
   closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.

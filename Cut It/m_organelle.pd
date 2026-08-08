@@ -1,4 +1,4 @@
-#N canvas 20 20 1560 1280 12;
+#N canvas 20 20 1560 1620 12;
 #X text 20 20 m_organelle -- the Organelle's OWN front panel \, mapped like any other device. mother.pd publishes aux and the four knobs on reserved names \; this turns them into named controls on param and disp \, and knows nothing about what any of them does. Same layer \, same rules and the same silence about meaning as m_nano., f 58;
 #X text 20 170 creation args: none. inlets: none. outlets: none., f 58;
 #X obj 20 300 r aux;
@@ -25,6 +25,7 @@
 #X text 640 520 FAN-IN NEEDS NO TRIGGER -- only a fan-out does. Five sources converge on one trigger \, which then does the fan-out: param first \, disp second. The action goes out before the report., f 44;
 #X text 640 660 EVERY KNOB GOES THROUGH change -1. ✅ MOTHER PUSHES ONCE AT LOAD AND THEN SAYS NOTHING -- measured on the device 2026-08-08 \, one KNOB1 print in twelve seconds with nobody touching it. Item 237 \, and parameter pickup in u_map depends on it: if mother streamed \, the first value would be spent on its own reading and pickup would never arm. THE -1 IS LOAD-BEARING: a bare change starts life holding 0 \, so a knob physically parked at 0 would never publish at all and the tempo would sit at its default. -1 cannot be a real value here \, since mother's knobs are 0 to 1. Measured \, not reasoned -- the bare form swallowed the first value in testing, f 60;
 #X text 640 950 WHAT IS NOT HERE: the encoder \, encbut \, the keyboard and the pedal jack. The encoder is contested with mother's own menu through enableSubMenu \, and none of the others has anything to drive yet. They belong in THIS file when they do -- it is one device \, so it is one m_ abstraction., f 44;
+#X text 20 1250 ⛔ THE KNOBS NO LONGER REPORT TO disp \, and og-aux still does. A knob's RAW 0-to-1 position is not a readable parameter row -- the screen said og-knob-1 0.245 where a BPM belonged \, and the param layer replaces the footer \, so the tempo it was mapped to vanished while you turned it. u_map reports the MAPPED value instead \, because it is the only file that knows what a control means. An UNMAPPED knob therefore shows nothing \, which is correct: it means nothing. ⚠️ og-aux keeps its report because the transport is not a mapped value, f 62;
 #X connect 2 0 7 0;
 #X connect 3 0 8 0;
 #X connect 4 0 9 0;
@@ -36,9 +37,9 @@
 #X connect 10 0 15 0;
 #X connect 11 0 16 0;
 #X connect 12 0 17 0;
-#X connect 13 0 17 0;
-#X connect 14 0 17 0;
-#X connect 15 0 17 0;
-#X connect 16 0 17 0;
+#X connect 13 0 19 0;
+#X connect 14 0 19 0;
+#X connect 15 0 19 0;
+#X connect 16 0 19 0;
 #X connect 17 0 18 0;
 #X connect 17 1 19 0;

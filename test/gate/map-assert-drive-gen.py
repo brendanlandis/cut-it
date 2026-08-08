@@ -89,6 +89,6 @@ if __name__ == "__main__":
         sys.exit("usage: map-assert-drive-gen.py OUT.pd  "
                  "(run it through test/gate/map-assert.sh, which passes a scratch path)")
     w, b, c = D.build(sys.argv[1], SEQ, tag="MAP",
-                      taps=["param", "err", "tempo", "start", "stop"], quit_ms=QUIT_MS,
+                      taps=["param", "err", "tempo", "start", "stop", "disp"], quit_ms=QUIT_MS,
                       blurb=BLURB, notes=NOTES)
     print("%s  %d windows  %d boxes  %d connects" % (sys.argv[1], w, b, c))

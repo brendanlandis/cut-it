@@ -163,7 +163,7 @@ STEPS_TEMPO = [
   'PASS IF: ON THE DEVICE use the real button. ON THE MAC use aux-tap and NOT the aux toggle -- aux is momentary 1 then 0 and only the 1 is a press -- so a toggle needs two clicks per press and the uncheck is meant to do nothing. First press GREEN and the 404 starts -- second DARK BLUE and it stops. If nothing happens at all then mother is eating the press',
   []),
  ('BY HAND -- sweep KNOB 1 all the way and back',
-  'PASS IF: og-knob-1 appears as a parameter row on the OLED and the footer tracks between 10-bpm and 500-bpm. The 404 follows the sweep. ⚠️ A FULL SWEEP ALWAYS CROSSES so pickup can never make this step fail -- that is why it is a sweep and not a nudge',
+  'PASS IF: the row reads bpm and a NUMBER -- never og-knob-1 and never a 0-to-1 decimal. While the knob is still held it reads bpm 57 (120) or similar: the latched tempo first and the knob position in brackets. Once it crosses it reads bpm alone and tracks between 10 and 500. The 404 follows the sweep. ⚠️ A FULL SWEEP ALWAYS CROSSES so pickup can never make this step fail -- that is why it is a sweep and not a nudge',
   []),
  ('done -- press Ctrl-C',
   'PASS IF: every step above was marked off. If 2 3 11 or 12 failed the clock is wrong -- if 5 6 7 or 15 failed the map or pickup is -- if 4 13 or 14 failed the transport or the LED is',

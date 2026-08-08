@@ -170,6 +170,22 @@ def run_asserts(cap):
             len(cc("KNOB-2", 42)) == 0, "cc 42 in that window: %s" % cc("KNOB-2", 42))
     A.check("... and knob 2's window was live -- its first value DID land at 400 ms",
             len(cc("EARLY-2", 42)) == 1, repr(W("EARLY-2")))
+    # ⛔ THE SCREEN MUST SHOW THE MAPPED VALUE, NOT THE RAW POSITION. m_organelle
+    # stopped reporting knobs to disp because a 0-to-1 number where a BPM belongs
+    # is not feedback -- and the param layer REPLACES the footer, so the tempo
+    # vanished while the knob was being turned. Item 238.
+    disp = lambda k: [e[1] for e in W(k) if e[0] == "DISP"]
+    A.check("⛔ while HELD the row carries BOTH numbers -- bpm <latched> (<knob>)",
+            any(d[:2] == ["bpm", "57"] and d[2:] == ["(255)"] for d in disp("SUPPRESS")),
+            "disp in that window: %s" % disp("SUPPRESS"))
+    A.check("... and it follows the knob while still held -- 0.9 is 451",
+            any(d[:2] == ["bpm", "57"] and d[2:] == ["(451)"] for d in disp("AWAY")),
+            "disp in that window: %s" % disp("AWAY"))
+    A.check("⛔ once LIVE the row is the mapped value alone -- no raw og-knob-1",
+            any(d == ["bpm", "157"] for d in disp("LIVE"))
+            and not any(d and d[0].startswith("og-knob") for d in disp("LIVE")),
+            "disp in that window: %s" % disp("LIVE"))
+
     A.check("⛔ a knob first seen AFTER the boot window never arms -- both values pass",
             len(cc("LATE-KNOB", 43)) == 2,
             "cc 43 in that window: %s -- expected two, the no-Save case"

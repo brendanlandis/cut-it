@@ -187,7 +187,7 @@
 #X obj 20 6380 select 15;
 #X obj 240 6380 t b b b;
 #X msg 700 6380 === STEP-15-of-16 === BY HAND -- sweep KNOB 1 all the way and back;
-#X msg 700 6430 PASS IF: og-knob-1 appears as a parameter row on the OLED and the footer tracks between 10-bpm and 500-bpm. The 404 follows the sweep. ⚠️ A FULL SWEEP ALWAYS CROSSES so pickup can never make this step fail -- that is why it is a sweep and not a nudge;
+#X msg 700 6430 PASS IF: the row reads bpm and a NUMBER -- never og-knob-1 and never a 0-to-1 decimal. While the knob is still held it reads bpm 57 (120) or similar: the latched tempo first and the knob position in brackets. Once it crosses it reads bpm alone and tracks between 10 and 500. The 404 follows the sweep. ⚠️ A FULL SWEEP ALWAYS CROSSES so pickup can never make this step fail -- that is why it is a sweep and not a nudge;
 #X msg 700 6480 >>> press GO to run step 15 of 16;
 #X obj 240 6550 s \$0-say;
 #X obj 20 6640 select 16;

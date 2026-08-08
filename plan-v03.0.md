@@ -219,6 +219,36 @@ wire: wire.sh: 8 connections
   Item 237. ⛔ Pickup depends on this: if mother streamed, the first value would be spent on its own
   reading and pickup would never arm.
 
+### ⛔ The next thing to build, before any more pickup testing
+
+**Pickup arms wrongly when there is no `knobs.txt`** — item 239, a regression this feature
+introduced, written up in full on [ref/module/map.md](ref/module/map.md). mother pushes a knob value
+**either way**: the *saved* position when the file exists (100 ms), the *live physical knob* when it
+does not (~223 ms). In the second case patch and hardware already agree, so arming leaves the knob
+dead until it is turned back below where it started. Reachable after any `deploy.sh --clean`.
+
+**The fix, in shape:**
+
+1. `[shell]` tests `test -f knobs.txt` at load and publishes the answer as a flag.
+2. That flag replaces the 1000 ms boot window in `u_map`'s pickup machine — arm only when the file
+   existed, because that is the only case where the pushed value is not the live position.
+3. The gate needs a `knobs.txt` in its scratch copy for the arming scenarios, **plus a second
+   scenario without one** asserting the knob goes straight to live. ⚠️ On the Mac `[shell]` is
+   stubbed and answers nothing, so the default has to be chosen deliberately and stated.
+
+⛔ **Do not key on the 100 ms / 223 ms difference.** It is an artefact of the error path taking
+longer, not a promised signal, and §7 records what that class of inference has cost here.
+
+### ✅ Hardware, verified 2026-08-08
+
+- The pickup boxes create cleanly on the device; the restore is not regressed (**57**, not 120).
+- mother pushes **once** and then says nothing — item 237, four separate runs.
+- The push lands at **100 ms**, three consecutive boots identical, so the 1000 ms window has 10x
+  margin. That number had been a guess.
+- The mapped display works on the device: held shows `bpm 57 (n)`, live shows `bpm n`.
+- ⬜ **A cold power cycle has NOT been run.** Worth doing **after** the fix above, so one boot tests
+  both the restore path and the corrected arming.
+
 ⬜ **What is left needs a hand on the knob**, because nothing else can tell the two branches apart —
 `TEMPO: 57` is what *both* "armed" and "went straight to live" look like:
 

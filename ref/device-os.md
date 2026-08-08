@@ -219,6 +219,24 @@ Patch storage falls back from `/usbdrive` to `/sdcard` based on whether `/usbdri
 *mounted*, not whether it holds patches. An empty mounted USB drive yields an empty patch
 menu; Storage → Eject unmounts it without physical removal.
 
+⛔ **A deploy can land the files and leave the OLD patch running, and nothing anywhere says so.**
+The copy and the load are separate steps — a wifi drop between them is enough — and `oscsend` is
+fire-and-forget UDP, so a clean exit from it proves only that a packet left the Mac. The result is
+the worst shape available: **the deployed file greps as the current build while the instrument
+behaves like the previous one**, and the two cannot be told apart from the Mac. It cost a whole
+debugging session, in which a fix was hunted in code that was correct and already on the device
+(item 243).
+
+**`deploy.sh` now verifies the RUN rather than the file.** A successful load restarts Pd, so the
+test is whether Pd is younger than the files just pushed — `/proc/<pid>`'s mtime is the process
+start time, which needs one `test -nt` and no `ps` flags that differ between busybox and procps.
+⚠️ Both sides of that comparison are **device-side**, which is the only safe way to compare
+timestamps here — see *The clock* above.
+
+⚠️ **The check cannot be skipped by `NOLOAD=1`** — that flag skips the load itself, so there is
+nothing to verify. If you use it, select the patch from the front panel and know that until you do,
+the device is running whatever it was running before.
+
 
 ## Wifi, and the boot hang
 

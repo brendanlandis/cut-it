@@ -132,7 +132,40 @@ if [ "${NOLOAD:-}" = "1" ]; then
 else
     echo
     echo "loading '$LOADNAME' ..."
-    ssh "$HOST" "oscsend localhost 4001 /loadPatch s '$LOADNAME'"
+    ssh "$HOST" "oscsend localhost 4001 /loadPatch s '$LOADNAME'" || {
+        echo "load failed — select '$PATCH' on the device instead" >&2
+        exit 1
+    }
+
+    # ⛔ VERIFY THE RUN, NOT THE FILE. The scp can land a current patch while the
+    # RUNNING one stays stale, and until this check existed nothing anywhere said
+    # so: the deployed file greps as current, the instrument behaves like the old
+    # build, and the two cannot be told apart from the Mac. It cost a whole
+    # debugging session -- item 243. It happens whenever the load does not take,
+    # and a wifi drop between the scp and the load is all it needs. oscsend is
+    # fire-and-forget UDP, so a clean exit from it proves nothing at all.
+    #
+    # A successful load RESTARTS Pd, so the test is whether pd is younger than
+    # the files we just pushed. /proc/<pid> carries the process start time as its
+    # mtime, which makes this one `test -nt` and no dependency on ps flags that
+    # differ between busybox and procps.
+    echo "verifying the running patch restarted ..."
+    sleep 5
+    if ssh "$HOST" '
+            p=$(pgrep -f "mother.pd" | head -1)
+            [ -n "$p" ] || exit 3
+            [ "/proc/$p" -nt "'"$DEST/$PATCH"'/main.pd" ] || exit 4
+        '; then
+        echo "  ok — Pd restarted after the push"
+    else
+        case $? in
+          3) echo "⛔ NO Pd IS RUNNING on the device." >&2 ;;
+          *) echo "⛔ THE FILES LANDED BUT THE PATCH DID NOT RELOAD." >&2
+             echo "   The device is still running the PREVIOUS build, and nothing" >&2
+             echo "   on it will say so. Select '$PATCH' from the front panel." >&2 ;;
+        esac
+        exit 1
+    fi
 fi
 
 echo

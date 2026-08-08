@@ -31,7 +31,7 @@
 #X msg 600 690 BOOT inquiry-probe;
 #X obj 20 690 del 2000;
 #X obj 20 740 t b b;
-#X msg 220 790 0;
+#X msg 220 790 1;
 #X obj 20 800 metro 4000;
 #X obj 20 860 f;
 #X obj 240 920 + 1;
@@ -70,6 +70,7 @@
 #X obj 3000 940 makefilename rx-%d;
 #X obj 3000 1000 s screenLine3;
 #X text 3000 1060 A RUNNING BYTE COUNT IS THE BINARY READOUT. Nobody has to read or remember a reply -- only whether the number MOVES while a given device is being asked., f 44;
+#X text 420 940 ⛔ THE COUNTER SEEDS 1 \, NOT 0. metro fires the INSTANT it starts and f is tapped BEFORE the + 1 stores \, so a seed of 0 spends the whole first tick on a phase that matches nothing -- every device then gets asked four seconds late and anything arriving in that dead window is logged as phase 0. Found by running the probe on the Mac against a fake device rather than by reading it, f 44;
 #X connect 5 0 6 0;
 #X connect 8 0 9 0;
 #X connect 9 1 10 0;

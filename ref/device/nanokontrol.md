@@ -8,9 +8,12 @@
 The rig's fader bank: **9 control groups — each 1 knob, 1 slider, 2 buttons — plus 6 transport
 buttons and a SCENE button.** 1 IN / 1 OUT, bus powered, ≤100 mA. 📄
 
-**Nothing on it is host-controllable.** There is no LED Mode setting on the mk1 — confirmed in Korg
-Kontrol Editor rather than inferred. Pd cannot light anything here, which is why every button is
-momentary and all visible state lives on the Launchpad or the OLED.
+**The buttons DO have LEDs, and nothing on the host can light them.** They are driven internally —
+a button lights while it is held and goes dark on release — so a dark surface is the *Momentary*
+configuration working, not an absence of lamps. There is no LED Mode setting on the mk1; the
+Internal/External switch is a nanoKONTROL2 feature. ✅ Tested on this hardware rather than inferred,
+item 245. Pd cannot light anything here, which is why every button is momentary and all visible state
+lives on the Launchpad or the OLED.
 
 `m_nano.pd` takes its Pd channel block as a creation argument and decodes every control onto `param`
 and `disp`.
@@ -32,7 +35,8 @@ and `disp`.
 | Button behaviour | **Momentary** throughout — 127 on press, 0 on release. Pd owns all toggle state | verified | 31 |
 | Slider / knob range | Full 0–127. *Upper Value* / *Right Value* are not clipped | verified | — |
 | SysEx | **None anywhere in the stream** — nothing emits MMC | verified | — |
-| Receives from Pd | **Nothing musical.** The MIDI OUT port exists solely for Korg Kontrol Editor to read and write configuration | doc | — |
+| Receives from Pd | **Nothing it acts on.** Sent from the Organelle with `amidi` to `hw:5,0,0`: every button CC on its own channel, every Note On 0–127 on channels 1–2, and the button CCs on **all 16 channels**. No LED responded to any of it, against a control that lights on a physical press | verified | 245 |
+| The buttons have LEDs, driven **internally** | Press and hold lights one; release puts it out. The lamps exist — only host control is missing | verified | 245 |
 
 Verified end to end off the wire, then re-confirmed through the real patch: slider 1 → CC 1, slider 9
 → CC 9, knob 1 → CC 11, a top-row button → CC 23, a bottom-row one → CC 36, all on channel 1;
@@ -117,13 +121,20 @@ before**: `polytouchin` emits note before value. Item 23.
 
 **Fix:** trigger off the **value** outlet, which fires last.
 
-### Momentary only, because the device has no host LEDs
+### Momentary only — the LEDs are real, and the host cannot reach them
 
-The mk1 cannot be lit by Pd at all. **Device-side toggle state would therefore desync silently** —
-the surface would believe one thing, the patch another, and nothing could show the difference.
+⚠️ **"No host LEDs" does not mean "no LEDs".** The buttons light on press, internally. What the mk1
+cannot do is be lit by Pd, and that asymmetry is the whole problem: set a button to **Toggle** and its
+LED would *latch*, holding visible state that Pd can neither read nor write. **It would then desync
+silently** — the surface believing one thing, the patch another, and nothing able to show the
+difference.
 
-So every button is configured momentary and **Pd owns all state**. This is the single decision the
-whole nano configuration rests on.
+So every button is configured momentary and **Pd owns all state**. A momentary LED only ever says
+"you are pressing this", which cannot disagree with anything. This is the single decision the whole
+nano configuration rests on.
+
+⚠️ **A dark nanoKONTROL is therefore correct and expected**, and it is not evidence of a fault, a
+missing wire, or an unfinished feature.
 
 ### Moved off the factory map, and MMC is why
 

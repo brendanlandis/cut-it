@@ -309,6 +309,39 @@ so running it first erases the event you were about to read.
 ⛔ **NEVER `pgrep -f wifi-watch`.** It matches the `ssh` command doing the checking, so a sweep that
 scans and relaunches in one command kills its own session.
 
+✅ **The watcher starts at boot** — `device/wifi-watch.service`, installed at
+`/etc/systemd/system/` and enabled (item 244). ⛔ **Until it existed, every recovery disarmed the
+detection for the next failure**, because a reboot is how this fault gets recovered and nothing
+restarted the watcher afterwards. That is not hypothetical: three drops on **2026-08-08** produced
+**no evidence at all**, the device having come up at 15:15 with nothing watching until 20:54.
+`tools/wifi-poll.sh`'s relaunch is now the backstop for a mid-session death rather than the primary
+mechanism, and it counts consecutive failed relaunches instead of retrying in silence.
+
+⚠️ **`/root` is read-only** — `remount-rw.sh` before installing or enabling the unit, `remount-ro.sh`
+after, because `systemctl enable` writes a symlink into `multi-user.target.wants/`.
+
+### ⬜ 2026-08-08 — three drops that did NOT look like the roam fault
+
+**Recorded here because it contradicts the signature below, and a future session will otherwise
+re-derive it.** What was actually observed, and nothing more:
+
+| | |
+|---|---|
+| From the Mac | `ssh` failed at **name resolution** (`Could not resolve hostname`), and `find-organelle.sh` returned **ABSENT** — no IPv4, and no IPv6 neighbour either, while it happily found another host at `.14` |
+| On the device, afterwards | Associated, `192.168.1.9` held, −31 to −41 dBm, and **uptime unbroken across all three drops** — so no reboot |
+| Roaming | Both radios appear in the log: `a6:40:a0:5e:a2:01` (36) and `…c9:25` (8) |
+
+⛔ **This is NOT the documented signature.** Item 81 leaves the device associated and reachable over
+IPv6 link-local throughout — that is what made it mysterious for two phases — and here **nothing
+answered on either protocol**.
+
+⬜ **Whether the lease was lost is not established**, and neither is anything else about these three:
+the watcher was not running, and the device was reconnected by hand rather than recovering on its
+own, so the recovery proves nothing either. ⚠️ **Do not fold these into the roam fault below without
+new evidence.** This investigation has already produced two confident wrong answers; the honest
+position is that item 244 now exists so the *next* one is recorded. See
+[plan-v04.md](../plan-v04.md).
+
 ### ⚠️ The roam fault — what is known, and how to reproduce it
 
 **On house wifi the device loses its IPv4 lease and does not get it back.** Open since Phase 6 and

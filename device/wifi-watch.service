@@ -1,0 +1,36 @@
+# cut-it -- start the wifi watcher at boot.  Installed at
+# /etc/systemd/system/wifi-watch.service on the Organelle.
+#
+# WHY IT EXISTS. wifi-watch.sh is what catches item 81, and a REBOOT is how that
+# fault gets recovered -- so until now every recovery disarmed the detection for
+# the next failure. On 2026-08-08 the device dropped off the network three times
+# and produced no evidence at all for exactly that reason: it came up at 15:15
+# and nothing restarted the watcher until 20:54. Item 244.
+#
+# ⚠️ THE ROOT FILESYSTEM IS READ-ONLY. Run /root/fw_dir/scripts/remount-rw.sh
+# before installing or enabling this, and remount-ro.sh after -- `systemctl
+# enable` writes a symlink into /etc/systemd/system/multi-user.target.wants/ and
+# fails silently-ish on a ro mount. This copy is backed up in the repo because
+# configuration that lives only on the device is one accident from being lost.
+#
+# ⚠️ /sdcard IS A SEPARATE MOUNT (/dev/mmcblk0p2), and both the script and its
+# log live there, so RequiresMountsFor is load-bearing rather than decorative.
+#
+# ⚠️ RestartSec IS DELIBERATELY LONG. wifi-watch.sh refuses to start while
+# another instance holds /sdcard/wifi-watch.pid and exits non-zero when it does,
+# and tools/wifi-poll.sh relaunches it from the Mac -- so a short interval would
+# have systemd and the poller fighting over one pidfile every few seconds.
+
+[Unit]
+Description=cut-it wifi watcher (item 81)
+After=network.target
+RequiresMountsFor=/sdcard
+
+[Service]
+Type=simple
+ExecStart=/bin/sh /sdcard/wifi-watch.sh recover
+Restart=on-failure
+RestartSec=120
+
+[Install]
+WantedBy=multi-user.target

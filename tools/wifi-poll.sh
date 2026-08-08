@@ -123,16 +123,29 @@ while true; do
         D=$(hms $(( $(date +%s) - ${DOWN_SINCE:-$(date +%s)} )))
         echo "  organelle      UNREACHABLE   for $D"
     fi
-    # ⚠️ THE WATCHER DOES NOT SURVIVE A REBOOT. /sdcard keeps the log, but nothing
-    # restarts the process -- and a reboot is how this very fault gets recovered,
-    # so recovering would otherwise disarm the detection for the NEXT failure.
-    # Relaunch it here rather than expecting anyone to remember.
+    # THE WATCHER DOES NOT SURVIVE A REBOOT, and a reboot is how this very fault
+    # gets recovered -- so recovering used to disarm the detection for the NEXT
+    # failure. ✅ SINCE ITEM 244 THAT IS SYSTEMD'S JOB: device/wifi-watch.service
+    # starts it at boot. This relaunch is now the BACKSTOP for a watcher that
+    # died mid-session, not the primary mechanism.
+    #
+    # ⛔ AND IT COUNTS ITS OWN FAILURES, because it silently did nothing for five
+    # and a half hours on 2026-08-08 while three drops went unrecorded, and the
+    # only reason anybody noticed was a six-hour hole in the log read back
+    # afterwards. A relaunch that does not take now says so on the screen instead
+    # of being retried forever in silence. ⚠️ Why it did nothing that day is
+    # STILL NOT ESTABLISHED -- this makes the next occurrence visible, it does
+    # not explain the last one.
     if [ "$REACH" = yes ] && [ -n "$STAMP" ] && [ "$STAMP" -gt 120 ]; then
         ssh -o ConnectTimeout=8 -o BatchMode=yes "$HOST" \
             'setsid sh /sdcard/wifi-watch.sh recover >/dev/null 2>&1 </dev/null &' 2>/dev/null
-        echo "$(date '+%Y-%m-%d %H:%M:%S')  watcher was dead -- relaunched" >> "$FIND"
+        TRIES=$(( ${TRIES:-0} + 1 ))
+        echo "$(date '+%Y-%m-%d %H:%M:%S')  watcher was dead -- relaunched (try $TRIES)" >> "$FIND"
         RELAUNCHED="$(date '+%H:%M:%S')"
     fi
+    # A fresh tick means the last relaunch took. Reset, so TRIES only ever counts
+    # CONSECUTIVE failures rather than a lifetime total.
+    [ -n "$STAMP" ] && [ "$STAMP" -lt 60 ] && TRIES=0
 
     if [ -n "$STAMP" ]; then
         if [ "$STAMP" -lt 60 ]; then
@@ -147,6 +160,11 @@ while true; do
     echo "  watching for   $UP"
     echo "  last check     $NOW"
     [ -n "$RELAUNCHED" ] && echo "  note           device watcher was dead -- relaunched at $RELAUNCHED"
+    if [ "${TRIES:-0}" -ge 3 ]; then
+        echo "  ⛔ RELAUNCH IS NOT TAKING  $TRIES consecutive tries, still no tick."
+        echo "                 systemd should own it -- check on the device:"
+        echo "                 systemctl status wifi-watch.service"
+    fi
     echo "  ------------------------------------------------------------------"
     if [ "$FOUND" = 1 ]; then
         echo "  ANYTHING NEW?     *** YES *** (since this run started)"

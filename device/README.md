@@ -8,6 +8,7 @@ factory.
 |---|---|---|
 | `pdsettings` | `/root/.pdsettings` on the Organelle | Governs MIDI. `/root` is read-only — run `/root/fw_dir/scripts/remount-rw.sh` first, `remount-ro.sh` after. |
 | `korg nano kontrol.nktrl_set` | The nanoKONTROL, via Korg Kontrol Editor **2.4.0** | All 24 control assignments plus the CC 41–46 transport map. Korg's own binary format — **not diffable**, so treat it as an opaque blob and re-export after any change. |
+| `wifi-watch.service` | `/etc/systemd/system/wifi-watch.service`, then `systemctl daemon-reload && systemctl enable wifi-watch.service` | **Added, not factory.** Starts the wifi watcher at boot so a recovery stops disarming the detection for the next failure (item 244). `/` is read-only — `remount-rw.sh` first, `remount-ro.sh` after, because `enable` writes a symlink. |
 | `mount.sh` | `/root/fw_dir/scripts/mount.sh` | **Modified from factory** — see below. On-device backup also kept at `mount.sh.orig`. |
 | `mount.sh.orig` | — | The factory version, for reverting. |
 | `wifi_control.py` | — | Not modified; captured because it is the script the modification exists to protect. |

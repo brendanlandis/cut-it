@@ -18,7 +18,7 @@ agents who cannot know what the other files already say.
 |------|-------|-------|
 | **Devices** — one physical thing each | `ref/device/` | `launchpad` · `nanokontrol` · `organelle` · `phone` · `sp404` · `volca` |
 | **Modules** — one instrument concern each | `ref/module/` | `audio` · `boot` · `display` · `map` · `state` · `tempo` |
-| **Cross-cutting** | `ref/` | `architecture` · `conventions` · `rig` · `README` |
+| **Cross-cutting** | `ref/` | `architecture` · `conventions` · `workflow` · `rig` · `README` |
 | **Parking** | `ref/` | `_unfiled` — must be empty |
 
 **The directory is the kind**, so `ls` answers the question and `docs-check.py` asserts that

@@ -51,6 +51,7 @@ chooses to use it.
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
 | **What is being BUILT next** — four scoped plans, in order | [plan-v03.2.md](plan-v03.2.md) … [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
+| How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
 | One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
 | One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `display` `map` `state` `tempo` |
@@ -144,7 +145,7 @@ row can actually tick. **A faster machine will not help.** Three consequences:
 - **The menu-launched patch has no console** — Pd runs `-nogui` and errors go to tty1, which VNC will
   not show. **But you can launch the patch yourself over SSH and get a real console**, including
   `[print]` taps on any bus. It found a silent bug in Phase 1 — see *There IS a console* in
-  [ref/conventions.md](ref/conventions.md).
+  [ref/workflow.md](ref/workflow.md).
 - **Nothing has to be caught live.** The dev panel's `open-screen-log` opens a running history of
   every `disp` message except the level reports, stamped with the frame number — so a boot sequence
   that finishes in four seconds can be read afterwards instead of watched.

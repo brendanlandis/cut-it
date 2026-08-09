@@ -36,11 +36,13 @@ passed. Grep for RESULT: and you get one line, or check the exit status.
 import argparse
 import os
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import gates                                                    # noqa: E402
+import predicates                                               # noqa: E402
 import records                                                  # noqa: E402
 import steps as S                                               # noqa: E402
 import stream                                                   # noqa: E402
@@ -52,6 +54,16 @@ import stream                                                   # noqa: E402
 # A gap mid-run is a stall, and a stall is recoverable by resending GO.
 LOAD_TIMEOUT = 15.0
 STEP_TIMEOUT = 5.0
+
+# ⛔ THE FIRED LINE IS NOT THE END OF THE EVIDENCE. bench-gen sends it last so it
+# cannot arrive before the actions it describes, which is true for anything
+# SYNCHRONOUS -- a bus tap sees its message immediately. The OLED does not:
+# g_oled batches into frames and the screen lags about 200 ms, so a window that
+# closed at the fired line would ask what the screen showed before it had been
+# drawn, and get "nothing". Measured that way first: display 3's predicate
+# reported an empty screen while the patch was working perfectly.
+# ⚠️ A step can widen this with `wait` in its meta.
+SETTLE = 0.4
 
 
 class Desync(Exception):
@@ -230,6 +242,27 @@ def run_bench(bench, target, auto_only, start):
     return rec.rows
 
 
+def _drain(src, window, seconds):
+    """Keep reading for `seconds`, appending everything to the predicate window.
+
+    ⚠️ IT DRAINS RATHER THAN SLEEPS. A plain sleep would leave the lines sitting
+    in the queue, and they would then be read as the NEXT step's window -- which
+    is how a predicate comes to be answered by the previous step's traffic.
+    """
+    if not src.realtime:
+        # Nothing to wait for: the whole stream already exists, and draining it
+        # on a wall clock would consume steps that have not been described yet.
+        return
+    end = time.time() + seconds
+    while True:
+        left = end - time.time()
+        if left <= 0:
+            return
+        line = src.readline(min(0.2, left))
+        if line is not None:
+            window.append(line)
+
+
 def check_marker(m, line, expect, bench):
     """⛔ THE PATCH'S OWN STEP NUMBER AND TITLE, BOTH, AGAINST THE TABLE.
 
@@ -293,6 +326,14 @@ def run_bench_driven(bench, target, auto_only, start, src):
             # was refactored.
             return [], False
 
+        # ⛔ LET THE INSTRUMENT FINISH BOOTING BEFORE THE FIRST GO. Everything
+        # collected during the wait joins nothing -- it is thrown away on
+        # purpose, because it belongs to the boot rather than to any step.
+        if src.boot_settle:
+            stream.say("  ... letting the patch finish booting (%g s)"
+                       % src.boot_settle)
+            _drain(src, [], src.boot_settle)
+
         # --from: walk the PATCH forward to meet us, because a bench always
         # starts at step 1 however far in we want to resume.
         # ⛔ RECORD NOTHING FOR THE STEPS WALKED PAST. They were not run, and a
@@ -312,11 +353,20 @@ def run_bench_driven(bench, target, auto_only, start, src):
             check_marker(m, line, step, bench)
             describe(bench, step)
 
-            if step.hands:
+            if step.hands and not auto_only:
                 # ⛔ NEVER AUTO-ANSWER THIS. GO sent before the finger is on the
                 # pad judges the step against nothing at all, and the verdict
                 # that comes back is about an empty console.
-                stream.prompt("  press enter when you are ready: ")
+                try:
+                    stream.prompt("  press enter when you are ready: ")
+                except EOFError:
+                    # Input ran out where a person was expected. That is the end
+                    # of the run, not permission to carry on without one.
+                    record(step, "interrupted", "input ended before the step ran")
+                    stream.say("\n  stopped at step %d. Resume with:" % step.n)
+                    stream.say("      ./test/run.sh --bench %s --target %s --from %d"
+                               % (bench.name, target, step.n))
+                    break
 
             src.go()
             window = []
@@ -331,6 +381,58 @@ def run_bench_driven(bench, target, auto_only, start, src):
             if int(fm.group(1)) != step.n:
                 raise Desync("step %d was described but step %s fired\n  line: %s"
                              % (step.n, fm.group(1), fline.strip()))
+
+            # ⚠️ A MEASURE STEP ARMS A TIMED COUNT AND THE NUMBER MEANS NOTHING
+            # UNTIL THE WINDOW CLOSES. The latch starts at -1 so an early read
+            # says so instead of lying, but reading -1 and calling it a failure
+            # would be this runner's own impatience reported as a bug in the
+            # clock. Wait it out.
+            if step.measure:
+                stream.say("  ... %g s measurement window is running"
+                           % (S.WINDOW_MS / 1000.0))
+                _drain(src, window, S.WINDOW_MS / 1000.0 + 0.5)
+            else:
+                _drain(src, window, step.meta.get("wait", SETTLE))
+
+            # ⛔ A STEP ITS TARGET CANNOT JUDGE IS A SKIP WITH A REASON. midi 1
+            # wants 57 BPM, which comes from knobs.txt -- a file mother reads at
+            # boot and no Mac has. On a Mac that step legitimately reads 120, so
+            # asserting there would be asserting the absence of hardware.
+            want_targets = step.meta.get("targets")
+            if want_targets and target not in want_targets:
+                why = "this step only means something on %s" % " or ".join(want_targets)
+                stream.say("  SKIP   %s" % why)
+                record(step, "skip", why, auto=True)
+                i += 1
+                src.go()
+                if i >= len(bench.steps):
+                    break
+                try:
+                    m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
+                except stream.Stalled:
+                    stream.say("\n  STALLED after step %d." % step.n)
+                    rec.close()
+                    return rec.rows, False
+                continue
+
+            spec = step.meta.get("check")
+            if spec:
+                ok, want, got = predicates.evaluate(spec, window)
+                stream.say("  %s   want %s\n         got  %s"
+                           % ("AUTO PASS" if ok else "AUTO FAIL", want, got))
+                record(step, "pass" if ok else "fail", "", auto=True,
+                       want=want, got=got)
+                i += 1
+                src.go()
+                if i >= len(bench.steps):
+                    break
+                try:
+                    m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
+                except stream.Stalled:
+                    stream.say("\n  STALLED after step %d." % step.n)
+                    rec.close()
+                    return rec.rows, False
+                continue
 
             # ⛔ NO PREDICATE AND NOBODY WATCHING IS A SKIP WITH A REASON. The
             # GO above still had to be sent -- the bench has to advance whether

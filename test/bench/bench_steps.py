@@ -90,7 +90,17 @@ STEPS_DISPLAY = [
   [('chop-size 43 %', 'disp')]),
  ('PARAM WITH NO UNIT -- sending grain 12',
   'PASS IF: grain then a big 12 and NO PERCENT SIGN left over from the last step -- this is the one that matters most',
-  [('grain 12', 'disp')]),
+  [('grain 12', 'disp')],
+  # ⛔ EXACT ROWS, NOT SUBSTRINGS, AND NOT A TIMED WINDOW. g_oled draws a
+  # parameter as two rows -- the name, then the value -- and the stale unit shows
+  # up as a VALUE ROW reading `12 %` where it must read `12`. Asserting exact
+  # rows catches that whatever else is on screen, which matters because g_oled
+  # stacks up to five parameters: for about 1.3 s after the previous step the
+  # screen correctly shows chop-size 43 % as well, so a screen-wide `no %` test
+  # reports a failure that is really the runner outpacing the fade. Tried that
+  # first, both ways -- judging at once saw the %, waiting 2.5 s saw grain fade
+  # away too. An exact row does not care.
+  {'check': {'kind': 'oled', 'has_row': ['grain', '12']}}),
  ('MODAL -- sending modal recording',
   'PASS IF: recording in mid-size text with the bars as a thin strip -- and unlike a param it STAYS and does not fade',
   [('modal recording', 'disp')]),
@@ -192,7 +202,19 @@ STEPS_TEMPO = [
   [('bang', '\\$0-zero')]),
  ('READ THE COUNTS -- the clock ran for 10 s while STOPPED',
   'PASS IF: M-BEATS 20 or 21 -- C1-BEATS the same number -- C2-BEATS 30 or 31. A zero anywhere means the clock does not run until the transport does -- or on the Mac it means DSP is off which looks exactly the same',
-  [('bang', '\\$0-read')]),
+  [('bang', '\\$0-read')],
+  # ⛔ THE RATIO IS THE POINT, and it is why this is not three range checks. A
+  # count in a range still depends on the real-time scheduler having kept up;
+  # C2/C1 cancels the scheduler entirely, because both counters were driven by
+  # the same clock over the same window. tempo-assert.sh makes the same argument
+  # about 24 PPQN on the wire.
+  {'check': {'kind': 'all', 'of': [
+      {'kind': 'print', 'name': 'M-BEATS', 'min': 19, 'max': 22},
+      {'kind': 'print', 'name': 'C1-BEATS-ratio-1', 'min': 19, 'max': 22},
+      {'kind': 'print', 'name': 'C2-BEATS-ratio-1.5', 'min': 29, 'max': 32},
+      {'kind': 'ratio', 'a': 'C2-BEATS-ratio-1.5', 'b': 'C1-BEATS-ratio-1',
+       'want': 1.5, 'tol': 0.15},
+  ]}}),
  ('START THE TRANSPORT',
   "PASS IF: the aux button turns GREEN and the 404 starts its pattern. WATCH EXT ON THE 404'S PATTERN SELECT SCREEN -- the number beside a pad is that SAMPLE's BPM and never moves",
   [('bang', 'start')]),
@@ -207,7 +229,12 @@ STEPS_TEMPO = [
   [('og-knob-1 0', 'param')]),
  ('OUT OF RANGE -- 5000 sent TWICE',
   'PASS IF: the footer reads 600-bpm and EXACTLY ONE alert appears -- a bordered box naming u_tempo. The second 5000 must be silent because the VALUE did not change',
-  [('5000', 'tempo'), ('5000', 'tempo')]),
+  [('5000', 'tempo'), ('5000', 'tempo')],
+  # ⛔ EXACTLY ONE, and that is the whole step. The second 5000 must be silent
+  # because the VALUE did not change -- "one or more alerts" is satisfied by two
+  # and would pass the bug. A person counting bordered boxes on an OLED that
+  # redraws is exactly the oracle a machine should replace.
+  {'check': {'kind': 'bus-count', 'bus': 'ERR', 'match': 'u_tempo', 'n': 1}}),
  ('OUT OF RANGE THE OTHER WAY -- 0',
   'PASS IF: the footer reads 5-bpm and a SECOND alert appears. The verdict did not change but the value did -- and this is the case that was broken once',
   [('0', 'tempo')]),
@@ -219,7 +246,11 @@ STEPS_TEMPO = [
   [('bang', '\\$0-zero'), ('bang', 'stop')]),
  ('READ THE COUNTS WHILE STOPPED',
   'PASS IF: M-BEATS 20 or 21 again. Stop the pulse stream and the 404 stretches every sample to a stale tempo -- so this is the least obvious requirement in the phase',
-  [('bang', '\\$0-read')]),
+  [('bang', '\\$0-read')],
+  # ⛔ A ZERO HERE IS THE BUG THE STEP EXISTS FOR: the transport pauses the
+  # subscribers, it does not clear the timer, and a clock that stopped with the
+  # transport leaves the 404 stretching every sample to a stale tempo.
+  {'check': {'kind': 'print', 'name': 'M-BEATS', 'min': 19, 'max': 22}}),
  ('PANIC',
   'PASS IF: the aux button turns RED and the footer says panic -- and the clock is STILL running underneath',
   [('bang', 'panic')]),
@@ -276,7 +307,16 @@ STEPS_LAUNCHPAD = [
   [('grid modal 21', 'disp')]),
  ('TRANSPORT -- start -- and the beat counter starts with it',
   'PASS IF: the white pad WALKS along the bottom row -- twice a second -- and the aux LED goes green. ON THE MAC THE AUX LED IS NOT A BUTTON: it is the numeric readout labelled aux-LED on the bottom row of the dev panel next to the clock beat bng and the tempo-bus box -- with a symbol box beside it spelling the colour. Only the Organelle has a lamp to look at. On the Mac with DSP off the pad will not move -- tick enable-DSP first. A BEATS line prints about ten seconds from now',
-  [('bang', 'start'), ('bang', '\\$0-zero')]),
+  [('bang', 'start'), ('bang', '\\$0-zero')],
+  # The eyes still judge the walking pad and the aux LED. What the machine can
+  # judge is the number underneath them, which is the same evidence and is not
+  # subject to anyone counting flashes.
+  # ⚠️ THE EXPECTED COUNT IS STATED IN `watch` BECAUSE THE PASS IF DOES NOT SAY
+  # IT -- it only promises a BEATS line "about ten seconds from now". A predicate
+  # asserting a number the prose never mentions is a disagreement waiting to
+  # happen, and the person reading the terminal deserves to know what it wants.
+  {'watch': 'the white pad WALKS along the bottom row twice a second and the aux LED goes green -- then a BEATS line of about 20 prints about ten seconds from now',
+   'check': {'kind': 'print', 'name': 'BEATS', 'min': 19, 'max': 22}}),
  ('THE BEAT ROW WRAPPING -- WATCH ONLY -- this step sends nothing on purpose',
   'PASS IF: the white pad reaches the EIGHTH pad and the next step is back to the FIRST -- with no gap and no stray light anywhere else. NO ACTION IS SENT AND THAT IS DELIBERATE rather than an omission: the wrap happens on the clock schedule and cannot be provoked on demand -- the only way to test it is to watch one go by -- and it gets its own step because folding it into the transport step is how it goes unlooked-at. Nothing here disturbs the ten second BEATS window still running underneath. THE BEAT NUMBER IS ONE-BASED: built against a zero-based assumption beat 8 landed on a right-column ring button and blanked the row once a bar -- and seven beats out of eight looked perfect',
   []),
@@ -396,7 +436,12 @@ STEPS_STATE = [
 STEPS_MIDI = [
  ('baseline -- read the OLED footer before touching anything',
   'PASS IF: the footer reads 57 BPM and NOT 120 -- this is a REAL TEST and not a formality -- knobs.txt holds knob 1 at about 0.096 and mother pushes it at boot. 57 means the message went through the mapping TABLE and came out the tempo handler. 120 means u_tempo is sitting on its own default and the table never matched. Also note which mode lamp is lit on the Launchpad top row -- a restored session comes up wherever you left it',
-  []),
+  [],
+  # ⚠️ ONLY ON THE DEVICE. 57 comes from knobs.txt, which mother reads at boot
+  # and which no Mac has -- on a Mac this legitimately reads 120 and the
+  # predicate would be asserting the absence of hardware.
+  {'targets': ('device',),
+   'check': {'kind': 'oled', 'has': ['57'], 'has_not': ['120']}}),
 
  ('GET TO MODE 1 -- HANDS -- press transport key 1 on the nanoKONTROL',
   'PASS IF: the lit lamp moves to the first position. Fader 1 is only bound in mode 1 so the later steps need this. If the lamp does not move then the nano is not reaching param and nothing below will work',
@@ -408,7 +453,14 @@ STEPS_MIDI = [
 
  ('THE PAD THAT BREAKS THE OLD FORMULA -- HANDS -- press pad 5 on bank A',
   'PASS IF: sp-pad reads 5 -- pad 5 is note 44 and NOT note 52 -- anything other than 5 means the pad table is wrong in exactly the direction this repo used to have it wrong',
-  []),
+  [],
+  # ⛔ THE PAD THAT CATCHES `47 + n`. Under the old formula pad 5 reads 13, and
+  # 13 is a plausible-looking number on an OLED -- which is how that bug lived
+  # in this repo's own docs for months. A person reads two digits; this reads
+  # the bus.
+  {'do': 'press pad 5 on bank A of the SP-404',
+   'need': ['the SP-404 powered and connected', 'BANK A selected -- say it out loud'],
+   'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-pad 5']}}),
 
  ('WALK THE WHOLE BANK -- HANDS -- press pads 1 through 16 in order on bank A',
   'PASS IF: sp-pad counts 1 2 3 up to 16 in step with your finger while sp-bank stays at 1 throughout. The headless gate already asserts all sixteen notes -- what this adds is that the DEVICE agrees with it. A run that goes 1 2 3 4 then jumps is the old formula surviving somewhere',
@@ -416,11 +468,20 @@ STEPS_MIDI = [
 
  ('THE BANK IS THE CHANNEL -- HANDS -- select BANK B and press pad 1',
   'PASS IF: sp-pad still reads 1 but sp-bank CHANGES from 1 to 2 -- two rows rather than one because a single row could not tell A1 from B1 -- and it could not be one row carrying both: g_oled formats a value with makefilename %g which refuses a symbol so sp-hit b1 is impossible',
-  []),
+  [],
+  {'do': 'select BANK B on the SP-404 and press pad 1',
+   'need': ['the SP-404 powered and connected', 'BANK B selected -- say it out loud'],
+   'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-pad 1', 'sp-bank 2']}}),
 
  ('A RELEASE IS NOT A PRESS -- HANDS -- press and hold any pad then let go',
   'PASS IF: both rows update on the PRESS and NEITHER updates again on the release. The release is a real event and does reach param but it is not worth a display row. Two updates per hit means the velocity test on the disp side has gone',
-  []),
+  [],
+  # ⛔ EXACTLY ONE sp-pad ROW FOR ONE HIT. Two means the velocity test on the
+  # disp side has gone and every pad is reporting itself twice -- which on a
+  # screen that redraws looks like nothing at all.
+  {'do': 'press and hold any pad on the SP-404 then let go',
+   'need': ['the SP-404 powered and connected'],
+   'check': {'kind': 'bus-count', 'bus': 'DISP', 'match': 'sp-pad', 'n': 1}}),
 
  ('THE MAP IS MODE-DEPENDENT -- HANDS -- in mode 1 move FADER 1 on the nanoKONTROL',
   'PASS IF: the Volca tone changes as you move it. Fader 1 is bound to Volca CC 41 in mode 1 and to NOTHING in the other five. THIS IS THE POINT OF THE WHOLE PHASE -- a control means whatever the row for the current mode says it means. ⚠️ The Volca is BY EAR and always will be -- it transmits nothing so there is never a readback',

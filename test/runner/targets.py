@@ -41,6 +41,9 @@ class Process(stream.Source):
     than one that fails.
     """
 
+    # The real instrument boots; a recording does not. See Source.boot_settle.
+    boot_settle = 5.0
+
     def __init__(self, argv, go, teardown=None, label=""):
         self.q = queue.Queue()
         self.teardown_fn = teardown
@@ -108,6 +111,17 @@ def _scratch(work):
         check=True)
 
 
+def _tap():
+    """bench-tap.pd, loaded beside every bench so a predicate has something to
+    read. ⛔ It listens and sends nothing -- see build_tap in bench-gen.py."""
+    p = os.path.abspath("test/bench/bench-tap.pd")
+    if not os.path.exists(p):
+        sys.exit("targets: %s does not exist -- run bench-gen.py. Without it "
+                 "every bus predicate would be answered by an empty window "
+                 "rather than by a fact." % p)
+    return p
+
+
 def mac(bench_name, auto_only, work):
     """main-dev.pd plus the bench, in a scratch copy, on this machine."""
     _scratch(work)
@@ -121,8 +135,18 @@ def mac(bench_name, auto_only, work):
     # working. Under --auto-only there is nobody to look at a window, so -nogui
     # is both cheaper and free of that dependency.
     mode = ["-nogui"] if auto_only else ["-stderr"]
-    argv = [PD] + mode + ["-path", os.path.join(work, "patch"),
-                          os.path.join(work, "patch", "main-dev.pd"), bench_pd]
+
+    # ⛔ DSP ON, AND IT IS NOT OPTIONAL. Every beat counter hangs off threshold~
+    # reading a phasor~, so with DSP off EVERY COUNT READS 0 -- which looks
+    # exactly like a dead clock rather than a setting, and would make the tempo
+    # predicates fail for a reason that has nothing to do with the patch. On the
+    # device mother turns DSP on 200 ms after load and this never arises; on the
+    # Mac it is the panel toggle a person is told to tick, and nobody is here to
+    # tick it. -send runs after the patches are loaded.
+    argv = [PD] + mode + ["-send", "pd dsp 1",
+                          "-path", os.path.join(work, "patch"),
+                          os.path.join(work, "patch", "main-dev.pd"),
+                          bench_pd, _tap()]
 
     def teardown():
         shutil.rmtree(work, ignore_errors=True)
@@ -142,9 +166,10 @@ def device(bench_name, auto_only, work):
     """
     bench_pd = "test/bench/%s-bench.pd" % bench_name
     remote_pd = "%s/%s-bench.pd" % (REMOTE_DIR, bench_name)
-    stream.say("  copying %s to %s ..." % (bench_pd, HOST))
-    subprocess.run(["scp", "-q", bench_pd, "%s:%s" % (HOST, remote_pd)],
-                   check=True)
+    remote_tap = "%s/bench-tap.pd" % REMOTE_DIR
+    stream.say("  copying %s and bench-tap.pd to %s ..." % (bench_pd, HOST))
+    subprocess.run(["scp", "-q", bench_pd, _tap(),
+                    "%s:%s/" % (HOST, REMOTE_DIR)], check=True)
 
     # ⚠️ THE SECOND -path IS NOT OPTIONAL. tempo-bench's own declare is
     # `../../Cut It`, which resolves from test/bench/ on the Mac and from
@@ -157,8 +182,8 @@ def device(bench_name, auto_only, work):
     # you get `zsh: event not found` before anything reaches the device.
     remote = ("killall pd 2>/dev/null; sleep 1; cd '%s' && "
               "exec pd -nogui -rt -audiobuf 6 -path /root/Pd/externals "
-              "-path '%s' /root/fw_dir/mother.pd main.pd %s 2>&1"
-              % (PATCH_DIR, PATCH_DIR, remote_pd))
+              "-path '%s' /root/fw_dir/mother.pd main.pd %s %s 2>&1"
+              % (PATCH_DIR, PATCH_DIR, remote_pd, remote_tap))
 
     def teardown():
         subprocess.run(["ssh", HOST, "killall pd 2>/dev/null; true"],

@@ -59,7 +59,13 @@ def report():
 
 # ---------------------------------------------------------------------------
 _MIDI = re.compile(r"^(NOTEOUT|CTLOUT|PGMOUT|MIDIOUT):\s+(-?[\d.]+(?:\s+-?[\d.]+)*)$")
-_BUS = re.compile(r"^(PARAM|DISP|ERR|TEMPO|START|STOP):\s+(.*)$")
+# ⛔ THIS MUST MATCH EVERY LABEL IN lib_drive.TAP_LABELS. A tap whose label has
+# no pattern here produces lines this parser silently drops, and every assertion
+# about that bus is then answered by an empty list rather than by a fact -- the
+# first way a gate passes vacuously, arrived at by punctuation.
+# ⚠️ MODE was added with test/bench/bench-tap.pd. No existing driver taps mode,
+# so no capture written before that change can contain a MODE: line.
+_BUS = re.compile(r"^(PARAM|DISP|ERR|TEMPO|START|STOP|MODE):\s+(.*)$")
 
 
 def parse(cap, tag):

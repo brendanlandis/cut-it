@@ -29,8 +29,21 @@ MIDI only, and every assertion about param, disp or err is answered by an empty
 list rather than by a fact -- a pass, and a meaningless one.
 """
 
+# ⛔ THE BUS -> PRINT LABEL MAP, AND IT IS SHARED WITH lib_assert's PARSER.
+# These labels are what test/gate/lib_assert.py's _BUS regex matches, so the two
+# have to be changed together: a label with no matching pattern produces lines
+# the parser silently drops, and every assertion about that bus is then answered
+# by an empty list rather than by a fact.
+#
+# ⚠️ `mode` WAS ADDED FOR test/bench/bench-tap.pd, which the runner loads beside
+# a bench so a step can assert on what reached a bus. Inert for every gate here:
+# each names its taps explicitly and none asks for mode, so no existing capture
+# can gain a MODE: line.
+#
+# ⛔ `clock` IS DELIBERATELY ABSENT. It carries a beat twice a second forever,
+# which no assertion wants and which would bury every capture it appeared in.
 TAP_LABELS = {"param": "PARAM", "disp": "DISP", "err": "ERR", "tempo": "TEMPO",
-              "start": "START", "stop": "STOP"}
+              "start": "START", "stop": "STOP", "mode": "MODE"}
 
 
 def build(path, seq, tag, taps, quit_ms, blurb, burst=None, notes=()):

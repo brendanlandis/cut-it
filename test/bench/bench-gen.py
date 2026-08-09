@@ -44,7 +44,13 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# ⛔ THE TAP LABELS ARE THE GATES', NOT A SECOND SET. lib_drive.TAP_LABELS
+# is what lib_assert's parser matches, so bench-tap.pd emits exactly the
+# labels every headless gate already reads.
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gate"))
 import bench_steps as S  # noqa: E402
+import lib_drive as D  # noqa: E402
 
 CW, LH = 7.0, 18.0          # must match test/gate/pd-layout-check.py
 
@@ -102,7 +108,8 @@ def check(steps, name):
     would refuse to generate four working benches over a missing full stop.
     item 122."""
     for i, step in enumerate(steps, 1):
-        title, passif, actions, _meta = S.norm(step)
+        title, passif, actions, meta = S.norm(step)
+        lint_meta(meta, actions, "%s step %d" % (name, i))
         for label, s in (("title", title), ("pass_if", passif)):
             for ch in (",", ";"):
                 assert ch not in s, (
@@ -119,6 +126,90 @@ def check(steps, name):
             "%s step %d pass_if does not start with PASS IF" % (name, i))
         for _m, bus in actions:
             assert bus, "%s step %d has an action with no bus" % (name, i)
+
+
+# --------------------------------------------------------------------------
+# ⛔ THE VACUITY LINT -- a predicate that cannot fail must never be generated
+# --------------------------------------------------------------------------
+KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled", "all")
+META_KEYS = ("need", "do", "watch", "check", "wait", "targets")
+TARGETS = ("device", "mac", "paper")
+BUS_KINDS = ("bus", "bus-count", "bus-not")
+# The label bench-tap.pd prints for each bus, so a predicate can be checked
+# against the traffic its own step generates.
+LABEL_OF = {b: l for b, l in D.TAP_LABELS.items()}
+
+
+def _positive(spec):
+    """Does this predicate assert that something IS there?
+
+    ⛔ A PURELY NEGATIVE PREDICATE PASSES ON AN EMPTY STREAM. "the OLED must not
+    say %" is satisfied by an OLED that said nothing, by a patch that failed to
+    load, and by a window the runner opened in the wrong place. It needs an
+    independent witness that the stream was live at all.
+    """
+    k = spec.get("kind")
+    if k == "all":
+        return any(_positive(s) for s in spec.get("of", []))
+    if k == "bus-not":
+        return False
+    if k == "oled":
+        return bool(spec.get("has") or spec.get("has_row"))
+    return True
+
+
+def lint_check(spec, actions, where):
+    """Every rule that can be enforced by reading, before Pd is involved."""
+    kind = spec.get("kind")
+    assert kind in KINDS, "%s: unknown predicate kind %r" % (where, kind)
+
+    if kind == "all":
+        assert spec.get("of"), "%s: an `all` with nothing in it asserts nothing" % where
+        for s in spec["of"]:
+            lint_check(s, actions, where)
+        return
+
+    if kind == "bus-count":
+        # ⛔ EXACTLY n. "at least" cannot catch a count that has drifted, which
+        # is the failure this project keeps finding -- and the steps that use
+        # this kind exist precisely because a SECOND event must not happen.
+        assert "n" in spec, "%s: bus-count needs an exact n" % where
+        assert "min" not in spec and "max" not in spec, (
+            "%s: bus-count asserts EXACTLY n, never a range. A count that has "
+            "drifted is the failure this catches, and a range cannot." % where)
+
+    if kind in BUS_KINDS:
+        # ⛔ A TAP ON A BUS THE STEP ITSELF WRITES IS VACUOUS. The bench sent the
+        # traffic, bench-tap read it back, and the patch under test was never
+        # involved -- the predicate proves only that Pd delivers messages.
+        written = {LABEL_OF.get(b.lstrip("\\$"), b) for _m, b in actions}
+        assert spec["bus"] not in written, (
+            "%s: the predicate reads %s but this step WRITES to it, so it would "
+            "be reading the bench's own traffic rather than the patch's response"
+            % (where, spec["bus"]))
+
+
+def lint_meta(meta, actions, where):
+    if not meta:
+        return
+    for k in meta:
+        assert k in META_KEYS, "%s: unknown meta key %r -- known keys are %s" % (
+            where, k, ", ".join(META_KEYS))
+    for t in meta.get("targets", ()):
+        assert t in TARGETS, "%s: unknown target %r" % (where, t)
+    spec = meta.get("check")
+    if not spec:
+        return
+    lint_check(spec, actions, where)
+    # ⚠️ `oled` IS EXEMPT FROM THE SELF-WRITE RULE ABOVE and must be: display
+    # step 3 writes to disp and then asserts on what g_oled DREW, which is
+    # downstream of the patch rather than an echo of the bench. Refusing that
+    # would refuse every screen assertion there is.
+    assert _positive(spec), (
+        "%s: this predicate only says what must NOT be there, so an empty "
+        "window satisfies it -- a patch that failed to load would pass. Put it "
+        "in an `all` beside something that asserts the stream was live."
+        % where)
 
 
 # --------------------------------------------------------------------------
@@ -505,7 +596,61 @@ BENCHES = {
 }
 
 
+# --------------------------------------------------------------------------
+def build_tap():
+    """bench-tap.pd -- a fourth patch the runner loads beside a bench.
+
+    ⛔ IT LISTENS AND SENDS NOTHING. Not one message box, not one [s], nothing.
+    C-5 gives g_oled sole ownership of oscOut and g_grid its own surface, but
+    that rule governs WRITING: adding a [receive] cannot change what any other
+    subscriber gets, because Pd delivers a message to every receiver of a name.
+    ⚠️ SO DO NOT "FIX" THIS FILE BY ROUTING ITS OUTPUT ANYWHERE. Its whole value
+    is that loading it cannot change what the bench under it does.
+
+    ⛔ THE LABELS COME FROM lib_drive.TAP_LABELS, which is also what
+    lib_assert.parse() matches -- so the runner reuses the gates' parser instead
+    of growing a second one. Two parsers is how a fix reaches one and not the
+    other, which is the failure the whole test refactor existed to remove.
+
+    ⛔ `clock` IS NOT TAPPED. It carries a beat twice a second forever and would
+    bury every window in noise no predicate wants.
+    """
+    p = Patch()
+    p.txt(20, 20,
+          "bench-tap -- loaded BESIDE a bench so a step can assert on what "
+          "actually reached a bus. IT LISTENS AND SENDS NOTHING \\, which is "
+          "what makes it safe: g_oled owns oscOut and g_grid owns the grid \\, "
+          "but that governs WRITING -- Pd delivers a message to EVERY receiver "
+          "of a name \\, so adding one here cannot change what any other "
+          "subscriber sees. ⛔ DO NOT ROUTE ITS OUTPUT ANYWHERE. clock is "
+          "deliberately absent: two beats a second forever \\, which no "
+          "assertion wants and which would bury every window it appeared in.",
+          120)
+    p.txt(20, 150,
+          "⛔ THIS FILE IS AN OUTPUT. Edit build_tap in test/bench/bench-gen.py "
+          "and regenerate \\; never this. The print labels are "
+          "lib_drive.TAP_LABELS \\, which is the same map "
+          "test/gate/lib_assert.py's parser matches -- so the runner reuses the "
+          "gates' parser rather than growing a second one.", 120)
+    taps = sorted(D.TAP_LABELS.items())
+    # ⛔ AND THE SCREEN ITSELF. oscOut is how g_oled draws, so this is the only
+    # way to assert what the OLED was TOLD to show -- Pd cannot ask a screen what
+    # it is displaying, but the bytes sent to it are completely knowable, which
+    # is the right level to test our own code at.
+    # ⚠️ C-5 MAKES g_oled THE SOLE OWNER OF oscOut AND THIS DOES NOT BREAK IT:
+    # ownership governs WRITING. Nothing here writes.
+    taps.append(("oscOut", "OLED"))
+    for k, (bus, label) in enumerate(taps):
+        r = p.obj(20 + k * 220, 320, "r %s" % bus)
+        pr = p.obj(20 + k * 220, 380, "print %s" % label)
+        p.con(r, 0, pr, 0)
+    p.write("test/bench/bench-tap.pd", 220 * len(taps) + 200, 520)
+    return len(taps), len(p.B), len(p.C)
+
+
 if __name__ == "__main__":
     for name in sorted(BENCHES):
         n, b, c = build(name, BENCHES[name])
         print("%s-bench.pd  %2d steps  %3d boxes  %3d connects" % (name, n, b, c))
+    n, b, c = build_tap()
+    print("bench-tap.pd    %2d taps   %3d boxes  %3d connects" % (n, b, c))

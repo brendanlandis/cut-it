@@ -27,6 +27,22 @@ class Source(object):
     """The interface. `readline` returns a line without its newline, or None
     when nothing arrived before the deadline."""
 
+    # ⛔ HOW LONG THE INSTRUMENT TAKES TO FINISH BOOTING, BEFORE THE FIRST GO.
+    # u_init wires MIDI, restores saved state at about 3.5 s and hands the OLED
+    # footer over at about four seconds -- and the bench announces step 1 half a
+    # second after load. A person takes long enough to read a PASS IF that this
+    # never arises; a runner does not, and the first three steps then get judged
+    # against a screen still saying `booting` and `wiring`. Measured that way:
+    # display 3's OLED predicate reported the boot frames as its evidence.
+    boot_settle = 0.0
+
+    # ⛔ IS THERE REAL TIME ON THE OTHER END? A live Pd makes the runner WAIT for
+    # a screen to redraw or a ten-second counter to latch. A recording has
+    # already happened: every line is available at once, so a wall-clock drain
+    # against it does not wait -- it swallows the whole rest of the transcript
+    # and every later step reports "not run". Measured exactly that way.
+    realtime = True
+
     def readline(self, timeout):
         raise NotImplementedError
 
@@ -65,6 +81,8 @@ class Replay(Source):
     the truncated fixture: a transcript that stops at step 7 must make the runner
     say STALL rather than quietly report a pass on the seven it did see.
     """
+
+    realtime = False
 
     def __init__(self, path):
         with open(path, encoding="utf-8", errors="replace") as fh:

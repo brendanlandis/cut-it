@@ -36,9 +36,11 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 6 | `device/volca` |
 
-⬜ `module/audio` says `Gate: none`, honestly — every gate here asserts on **messages** and nothing
-reads a signal back. `device/nanokontrol` and `device/organelle` say `none` too, and that is an
-improvement over what they used to claim.
+**No page declares `Gate: none` any more.** `module/audio`, `device/nanokontrol` and
+`device/organelle` were the last three, and each has its own gate now. ⛔ **`audio-assert.sh` is the
+only one that reads a SIGNAL back** — it records `u_root`'s output to a soundfile and asserts the
+passthrough is not silent, not swapped and not attenuated. Every other gate here asserts on messages,
+which is what made the audio path invisible for as long as it was.
 
 **`midi-emitters-assert.sh` belongs to no device on purpose.** Its only claim is structural — *these
 are all the MIDI objects in the patch* — and a new `[noteout]` in some future `e_` stage is not the

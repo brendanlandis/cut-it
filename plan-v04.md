@@ -169,12 +169,17 @@ and no drop has ever been correlated with load. ⛔ The obvious test — move th
 hub — carries a **known hazard**, since that hub has one controller the Launchpad will not configure
 on at all (item 256). Worth one deliberate trial **only if the fault recurs**, per the rule above.
 
-### No gate covers audio
+### ⬜ Nothing measures the OUTPUT side
 
-⬜ Every gate asserts on **messages**; nothing reads a signal back. `ref/module/audio.md` declares
-`**Gate:** none` and `**Bench:** none`, honestly — and since `tempo-assert` landed it is the **only**
-page still saying so. A headless audio gate is possible — Pd can write a soundfile — and it would be
-the first of its kind here. **It becomes worth building the moment `e_chop` exists.**
+✅ **The input side is gated.** `test/gate/audio-assert.sh` records `u_root`'s output to a soundfile
+and asserts three things about the passthrough: it is not silent, L and R are not swapped — measured
+by **frequency**, because both channels carry the same level and amplitude cannot see a swap — and it
+is unity rather than attenuated. It is the first signal-domain gate in the project, which makes the
+second one a small addition rather than a new kind of thing.
+
+⬜ **What stays open is output-side metering.** Both `u_level` instances sit on the input; a tap
+before `throw~` measures a passthrough and nothing else until there are stages between the two.
+**This one genuinely waits for `e_chop`** — see [ref/module/audio.md](ref/module/audio.md).
 
 ### ✅ The reference patches under `tools/*/` earn their keep — decided, and kept
 

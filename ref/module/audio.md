@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The audio chain
 
-**Files:** `Cut It/u_root.pd`, `Cut It/u_level.pd` · **Gate:** `none` · **Bench:** `none`
+**Files:** `Cut It/u_root.pd`, `Cut It/u_level.pd` · **Gate:** `test/gate/audio-assert.sh` · **Bench:** `none`
 
 ## What it is
 
@@ -132,5 +132,3 @@ Revisit if wanted; it needs no rewiring beyond one cable from FX SEND.
   the drum mode and the sampler are v0.4. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **Nothing measures the output side.** Both `u_level` instances are on the input; a tap before
   `throw~` would need the stages to exist first. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **No gate covers audio.** Every existing gate asserts on messages, and nothing reads a signal
-  back. See [plan-v04.md](../../plan-v04.md) §3.

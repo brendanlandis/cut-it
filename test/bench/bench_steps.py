@@ -6,7 +6,8 @@ the Organelle and the conversion to manual stepping is meant to change how a
 step is DRIVEN, never what it claims. test/bench/bench-verify.py re-extracts from the
 regenerated files and diffs against these tables.
 
-Each step is (title, pass_if, [(message, bus), ...]).
+Each step is (title, pass_if, [(message, bus), ...]) and optionally a fourth
+element, a dict -- see norm() below.
 
 ONE DELIBERATE TEXT CHANGE, and it is a bug fix rather than a reword. phase5's aux
 step carried two escaped commas inside its PASS IF. `\\,` satisfies the .pd PARSER,
@@ -16,6 +17,42 @@ again here -- so at runtime that line printed as THREE fragments. Both are now
 Phase 6 run, in a bench family whose own README warns about it, which is why
 bench-gen.py asserts against commas and semicolons rather than trusting review.
 """
+
+# ---------------------------------------------------------------------------
+# ⛔ THE MEASUREMENT WINDOW LIVES HERE AND NOWHERE ELSE. bench-gen.py builds the
+# [del] from it and test/runner/ opens its predicate window from it, and until
+# this existed the same 10000 was written in the generator and would have been
+# written again in the runner -- two copies of one number, which is exactly the
+# drift this project keeps eliminating. The generator's own prose is derived from
+# it too, so "TEN SECOND" in a bench header cannot go stale either.
+WINDOW_MS = 10000
+
+# ⛔ AND WHAT MARKS A MEASURE STEP. A step that sends to a bus ending in this is
+# arming a timed count, so the prompt tells the person to WAIT for the printed
+# number and the runner holds its window open for WINDOW_MS instead of judging
+# immediately. Same reason as above: the generator and the runner must agree, so
+# there is one definition rather than two spellings of "-zero".
+MEASURE_SUFFIX = "-zero"
+
+
+def norm(step):
+    """A step is 3 or 4 long -> (title, pass_if, actions, meta).
+
+    ⛔ THE FOURTH ELEMENT IS RUNNER-SIDE ONLY AND NEVER REACHES A .pd. It carries
+    what a person needs (`need`, `do`, `watch`) and what a program needs
+    (`check`, `wait`, `targets`) -- and keeping it out of the patch is not
+    tidiness. Emitting it would reopen every hardware-verified step text to the
+    comma/semicolon fragmentation hazard the generator exists to prevent, which
+    produced fourteen fragments on the first Phase 6 run. It buys nothing either:
+    with the runner in place the person reads the runner's terminal, not Pd's
+    console.
+
+    ⚠️ SO bench-verify.py STILL DIFFS THREE FIELDS. Its round trip proves the
+    step TEXT survived generation, and meta is not text that gets generated.
+    """
+    title, pass_if, actions = step[0], step[1], list(step[2])
+    return title, pass_if, actions, dict(step[3]) if len(step) > 3 else {}
+
 
 STEPS_DISPLAY = [
  ('baseline -- sending nothing',

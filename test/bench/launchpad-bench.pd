@@ -51,7 +51,7 @@
 #X obj 2500 1040 del 500;
 #X msg 2500 1100 1;
 #X obj 2500 1160 s \$0-set-step;
-#X text 20 1660 BEAT COUNTERS. \$0-zero resets one and starts a TEN SECOND window \; the count is latched and printed when that window closes \, and \$0-read reprints the latched value. THE WINDOW IS MACHINE-TIMED ON PURPOSE -- under manual stepping the gap between two steps is however long you take to judge one \, so a count taken between steps would mean nothing. On the Mac with DSP OFF every count reads 0 \, which looks exactly like a dead clock rather than a setting., f 120;
+#X text 20 1660 BEAT COUNTERS. \$0-zero resets one and starts a 10 SECOND window \; the count is latched and printed when that window closes \, and \$0-read reprints the latched value. THE WINDOW IS MACHINE-TIMED ON PURPOSE -- under manual stepping the gap between two steps is however long you take to judge one \, so a count taken between steps would mean nothing. On the Mac with DSP OFF every count reads 0 \, which looks exactly like a dead clock rather than a setting., f 120;
 #X obj 20 1860 r clock;
 #X obj 20 1930 t b;
 #X obj 20 2000 f;
@@ -66,7 +66,7 @@
 #X obj 720 2300 f -1;
 #X obj 20 2380 print BEATS;
 #X obj 970 2240 r \$0-read;
-#X text 20 2440 latch starts at -1 \, so a count read before its ten seconds are up says so rather than lying., f 46;
+#X text 20 2440 latch starts at -1 \, so a count read before its 10 seconds are up says so rather than lying., f 46;
 #X text 20 2580 DESCRIBING A STEP. One select per step rather than one wide fan \, so every cord stays short and local -- the same reason u_map chains its routes., f 120;
 #X obj 20 2680 r \$0-do-show;
 #X obj 20 2740 select 1;

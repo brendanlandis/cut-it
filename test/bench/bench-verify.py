@@ -41,7 +41,19 @@ steps_mod = _load("bench_steps", os.path.join(HERE, "bench_steps.py"))
 
 
 def norm(table):
-    return [[t, p, [list(a) for a in acts]] for t, p, acts in table]
+    """A step table -> the three fields a .pd actually carries.
+
+    ⚠️ A STEP MAY BE 3 OR 4 LONG, and the fourth is the runner's meta -- what to
+    have at hand, what to press, and any machine predicate. None of it is emitted
+    into a .pd, so this round trip cannot see it and must not try: extracting
+    three fields from a four-field step is the whole point, not an oversight.
+    What is verified here is that the step TEXT survived generation.
+    """
+    out = []
+    for step in table:
+        t, p, acts, _meta = steps_mod.norm(step)
+        out.append([t, p, [list(a) for a in acts]])
+    return out
 
 
 def main():

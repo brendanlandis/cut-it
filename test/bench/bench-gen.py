@@ -101,7 +101,8 @@ def check(steps, name):
     which are verified on the Organelle and must not be reworded. Asserting
     would refuse to generate four working benches over a missing full stop.
     item 122."""
-    for i, (title, passif, actions) in enumerate(steps, 1):
+    for i, step in enumerate(steps, 1):
+        title, passif, actions, _meta = S.norm(step)
         for label, s in (("title", title), ("pass_if", passif)):
             for ch in (",", ";"):
                 assert ch not in s, (
@@ -127,20 +128,26 @@ def counters(p, specs, x0, y0):
     """specs is [(print_name, source)] where source is 'r clock' or 'c_clock A B'.
 
     Each block counts beats freely, and a bang on $0-zero resets it AND arms a
-    ten-second timer that latches the count and prints it. $0-read reprints the
-    latched value, so the number always covers exactly ten seconds no matter when
-    the step that reads it is reached.
+    timer of bench_steps.WINDOW_MS that latches the count and prints it. $0-read
+    reprints the latched value, so the number always covers exactly that window
+    no matter when the step that reads it is reached.
+
+    ⛔ THE WINDOW IS NOT WRITTEN DOWN HERE. It is bench_steps.WINDOW_MS, because
+    test/runner/ has to open its predicate window over the same span -- and the
+    prose below is derived from it too, so a bench header cannot come to say TEN
+    while the [del] says something else.
     """
     if not specs:
         return y0
+    secs = S.WINDOW_MS // 1000
     p.txt(x0, y0 - 200,
-          "BEAT COUNTERS. \\$0-zero resets one and starts a TEN SECOND window \\; the "
-          "count is latched and printed when that window closes \\, and \\$0-read "
-          "reprints the latched value. THE WINDOW IS MACHINE-TIMED ON PURPOSE -- "
-          "under manual stepping the gap between two steps is however long you take "
-          "to judge one \\, so a count taken between steps would mean nothing. On the "
-          "Mac with DSP OFF every count reads 0 \\, which looks exactly like a dead "
-          "clock rather than a setting.", 120)
+          ("BEAT COUNTERS. \\$0-zero resets one and starts a %d SECOND window \\; the "
+           "count is latched and printed when that window closes \\, and \\$0-read "
+           "reprints the latched value. THE WINDOW IS MACHINE-TIMED ON PURPOSE -- "
+           "under manual stepping the gap between two steps is however long you take "
+           "to judge one \\, so a count taken between steps would mean nothing. On the "
+           "Mac with DSP OFF every count reads 0 \\, which looks exactly like a dead "
+           "clock rather than a setting.") % secs, 120)
     for n, (name, source) in enumerate(specs):
         x = x0 + n * 1300
         src = p.obj(x, y0, source)
@@ -163,7 +170,7 @@ def counters(p, specs, x0, y0):
         rz = p.obj(x + 700, y0, "r \\$0-zero")
         rzt = p.obj(x + 700, y0 + 70, "t b b")
         zero = p.msg(x + 880, y0 + 140, "0")
-        dl = p.obj(x + 700, y0 + 200, "del 10000")
+        dl = p.obj(x + 700, y0 + 200, "del %d" % S.WINDOW_MS)
         p.con(rz, 0, rzt, 0)
         p.con(rzt, 1, zero, 0)
         p.con(zero, 0, count, 1)
@@ -181,8 +188,8 @@ def counters(p, specs, x0, y0):
         p.con(rr, 0, latch, 0)
         p.con(latch, 0, pr, 0)
         p.txt(x, y0 + 580,
-              "latch starts at -1 \\, so a count read before its ten seconds are up "
-              "says so rather than lying.", 46)
+              "latch starts at -1 \\, so a count read before its %d seconds are up "
+              "says so rather than lying." % secs, 46)
     return y0 + 660
 
 
@@ -357,7 +364,8 @@ def build(name, cfg):
     prev = show_r
     prev_out = 0
     TX = 700
-    for i, (title, passif, _a) in enumerate(steps, 1):
+    for i, step in enumerate(steps, 1):
+        title, passif, _a, _meta = S.norm(step)
         y = Y + 60 + (i - 1) * 260
         sel = p.obj(20, y, "select %d" % i)
         p.con(prev, prev_out, sel, 0)
@@ -366,8 +374,12 @@ def build(name, cfg):
         t3 = p.obj(240, y, "t b b b")
         p.con(sel, 0, t3, 0)
 
+        # ⚠️ THE SUBSTRING TEST IS KNOWN TO BE WRONG and is kept only until the
+        # runner's meta carries the flag: measured, it misses NINE hands-on steps
+        # -- all three `THE NANO --`, both tempo `BY HAND`, and four of the six
+        # state steps. A flag has to be a field, not a guess at prose.
         hands = "HANDS" in title.upper()
-        measure = any(b.endswith("-zero") for _m, b in _a)
+        measure = any(b.endswith(S.MEASURE_SUFFIX) for _m, b in _a)
         prompt = ">>> press GO to run step %d of %d" % (i, len(steps))
         if hands:
             prompt += " -- THIS ONE NEEDS YOUR HANDS ON THE HARDWARE"
@@ -407,7 +419,8 @@ def build(name, cfg):
     prev, prev_out = run_r, 0
     runmax = 0
     yy = Y + 60
-    for i, (title, _p, actions) in enumerate(steps, 1):
+    for i, step in enumerate(steps, 1):
+        title, _p, actions, _meta = S.norm(step)
         na = len(actions)
         sel = p.obj(20, yy, "select %d" % i)
         p.con(prev, prev_out, sel, 0)

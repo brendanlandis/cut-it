@@ -148,10 +148,10 @@ hub draws its downstream budget from upstream. Declared draw on the whole USB tr
 
 | Device | `MaxPower` | On |
 |--------|-----------|-----|
-| Launchpad Pro MK3 | **500 mA** | the hub chain |
-| nanoKONTROL | 100 mA | the hub chain |
-| SP-404MKII (2 interfaces) | 100 mA + 2 mA | the hub chain — nominal, it is self-powered |
-| M-Audio Uno | 0 mA | the hub chain |
+| Launchpad Pro MK3 | **500 mA** | the hub |
+| nanoKONTROL | 100 mA | the hub |
+| SP-404MKII (2 interfaces) | 100 mA + 2 mA | the hub — nominal, it is self-powered |
+| M-Audio Uno | 0 mA | the hub |
 | **RT5370 wifi dongle** | **450 mA** | ⚠️ **its own root bus, `2-1`** |
 | Every hub | 0 mA | — |
 
@@ -163,45 +163,54 @@ nothing attached* and configured *with the entire rig live*, so it was never a c
 dongle sits on a **separate root bus from the powered hub**, so its declared 450 mA comes out of the
 9 V 1000 mA adapter rather than the hub's PSU. ⬜ Whether that contributes to the wifi fault is
 **untested and is a hypothesis, not a finding** — see [plan-v04.md](../plan-v04.md) §3. ⛔ Moving the
-dongle onto the powered hub is the obvious test and it carries a **known hazard**: chained hubs are
-what wedged the dongle at boot before.
+dongle onto the powered hub is the obvious test, and ⚠️ **the hub is the thing that is fussy about
+what plugs into it** — see the Launchpad's `-32` below before assuming a free socket is a good one.
 
-### Checking the depth, in one command
+### ⛔ THERE IS ONE PHYSICAL HUB, AND `lsusb` MAKES IT LOOK LIKE THREE
 
-The rule above is *one hub, never chained*, and nothing enforces it. **The sysfs path is the depth** —
-count the dots:
+**Item 256, and it overturns how this fault was explained for two sessions.** `lsusb -t` counts hub
+*controllers*, not boxes on the desk, and both the hub and the SP-404 contain more than one. The
+authoritative discriminator is the **parent hub's own port descriptor**, which sysfs exposes as
+`removable`:
 
 ```sh
-ssh root@organelle.local 'lsusb -t; ls -d /sys/bus/usb/devices/1-1*'
+ssh root@organelle.local 'for p in 1-1 1-1.2 1-1.4 1-1.4.4; do \
+  echo "$p $(cat /sys/bus/usb/devices/$p/idVendor):$(cat /sys/bus/usb/devices/$p/idProduct) \
+  $(cat /sys/bus/usb/devices/$p/removable)"; done'
 ```
 
-⚠️ **As of 2026-08-08 the Launchpad is at `1-1.4.4.4` — three hubs deep**, and works only because
-that last hop is the Realtek. The chain is `43f2:1211` → `43f2:1211` → `0bda:5411`, with the SP-404
-behind a fourth (`0424:2422`) on another branch. ⛔ **`1-1.1` — the first Generic hub's port 1 — is
-the port that produced `can't set config #1, error -32` three times**, at boot and on two replugs,
-before the Launchpad was moved. That port is a known-bad socket on a known-bad chain, and the working
-position is one replug away from being lost.
+| Path | Chip | `removable` | What it actually is | Evidence | Item |
+|------|------|-------------|---------------------|----------|------|
+| `1-1` | `43f2:1211` | — | **The hub**, plugged into the Organelle | verified | 256 |
+| `1-1.4` | `43f2:1211` | **`fixed`** | ⛔ A second controller **soldered inside the same enclosure** | verified | 256 |
+| `1-1.4.4` | `0bda:5411` | **`fixed`** | ⛔ A third, also inside it | verified | 256 |
+| `1-1.2` | `0424:2422` | `removable` | ⛔ **Inside the SP-404** — the 404 is two USB devices behind its own hub, on one cable | verified | 256 |
+| `1-1.3`, `1-1.4.1` | — | `removable` | Real sockets — the Uno and the nanoKONTROL | verified | 256 |
 
-⛔ **ONE hub, never chained.** The Launchpad would not configure behind three chained hubs —
-`can't set config #1, error -32` — and the same topology wedged the wifi dongle at boot. **Plugged
-into a single hub it works first time.** The failure looks like a bad device or a bad cable, and
-swapping either changes nothing.
+**`fixed` means the parent hub declares the downstream device permanently attached.** Three
+controllers reporting one enclosure is ordinary construction for a hub with more than four sockets.
 
-⚠️ **AND THE RIG DRIFTS BACK INTO IT.** On 2026-08-08 the tree was found **four hubs deep** —
-Generic `43f2:1211` → SMSC `0424:2422`, and a second Generic `43f2:1211` → Realtek `0bda:5411` — with
-the Launchpad silent again on exactly this fault. Nothing about the rule is self-enforcing: the hubs
-are small, the cables reach, and the topology grows back whenever something is replugged. **Check the
-depth, not the socket count.** `lsusb` shows every hub in the chain (item 248).
+⛔ **So the fault is NOT depth and NOT chaining.** The socket that fails (`1-1.1`) and the socket that
+works (`1-1.4.4.4`) are **both sockets on the same physical hub** — they differ only in which internal
+controller they hang off. The measured behaviour in item 248 stands exactly as recorded; only its
+explanation was wrong.
 
-**What that session added, since the fault was already known:**
+### The Launchpad is fussy about which controller it sits on
+
+⛔ **`can't set config #1, error -32`, and it is per-socket.** Measured three times on `1-1.1` — at
+boot and on two replugs — and never since the Launchpad moved.
 
 | | |
 |---|---|
-| ⛔ It is the **hub chip**, not the depth alone | Fails on Generic `43f2:1211` port 1; works on Realtek `0bda:5411` port 4 **in the same chain** |
-| ✅ **Power is exonerated** | It enumerated with the **entire rig attached**, having also failed with almost nothing attached. Not a current budget |
-| ✅ The device and cable are exonerated | Same cable enumerates on a Mac in 142 ms, `registered, matched, active` |
-| ⚠️ It survives everything short of moving it | Reproduced across a cold boot, a hub replug, and a forced `authorized` re-enumeration — three independent attempts, same error |
-| ⚠️ The Launchpad is a **full-speed** device with an unusually complex configuration | Three MIDI interfaces **plus** mass storage. The SP-404 and nano are full-speed too and simpler, and they never fail — consistent with a weak transaction translator stalling `SET_CONFIGURATION` |
+| ✅ **Works** | The Realtek `0bda:5411` controller — **the bottommost socket, the one with the lock icon** |
+| ⛔ **Fails** | At least one socket on the first Generic `43f2:1211` controller |
+| ✅ Power is exonerated | It failed with almost nothing attached and configured with the entire rig live. Not a current budget |
+| ✅ Device and cable exonerated | The same cable enumerates on a Mac in 142 ms |
+| ⚠️ It survives everything short of moving it | Reproduced across a cold boot, a hub replug, and a forced `authorized` re-enumeration — three independent attempts, same error. **Only the socket changes it** |
+| ⚠️ Consistent with the chip | The Launchpad is a **full-speed** device with three MIDI interfaces **plus** mass storage. The SP-404 and nano are full-speed too and simpler, and they never fail — a weak transaction translator stalling `SET_CONFIGURATION` fits |
+
+⚠️ **The fix is a labelled socket, not a topology rule.** Put the Launchpad in the lock-icon port and
+mark it, because nothing in the patch can tell a half-enumerated Launchpad from an absent one.
 
 ⛔ **A Launchpad that half-enumerates is invisible to the patch.** It answers control transfers, so
 `lsusb` lists it with its serial number, but no ALSA port is ever created — and `m_launchpad`'s

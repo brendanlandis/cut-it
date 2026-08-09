@@ -40,19 +40,22 @@ These are a **session**, and they stay together because they are done together.
 
 ---
 
-## ⚠️ Before anything else — check the USB depth
+## ⚠️ Before anything else — is the Launchpad in the right socket
 
-⛔ **The rule is one hub, never chained, and the rig has drifted back twice.** As of 2026-08-08 the
-Launchpad sits at `1-1.4.4.4`, three hubs deep, working only because the last hop is the Realtek.
-`1-1.1` is the port that produced `can't set config #1, error -32` three times.
+⛔ **It is fussy about which socket, and the patch cannot tell you.** A half-enumerated Launchpad
+answers `lsusb` but never gets an ALSA port, so from inside Cut It it is identical to one that was
+never plugged in — and it would make item 77 below look like a device fault.
+
+**Put it in the bottommost port, the one with the lock icon.** That socket is on the hub's Realtek
+controller and works; at least one socket on the Generic controller produces
+`can't set config #1, error -32`. Item 256 on [ref/rig.md](ref/rig.md).
 
 ```sh
-ssh root@organelle.local 'lsusb -t; ls -d /sys/bus/usb/devices/1-1*'
+ssh root@organelle.local 'aconnect -l | grep -i launchpad'   # an ALSA client means it really came up
 ```
 
-**The sysfs path is the depth — count the dots.** Full account on [ref/rig.md](ref/rig.md), item 255.
-⚠️ **Do this first**, because a half-enumerated Launchpad is invisible to the patch and would make
-item 77 below look like a device fault.
+⚠️ **Do not count hubs in `lsusb -t`.** There is **one** physical hub; it contains three controllers
+and the SP-404 contains another, so the tree looks four deep and is not.
 
 ---
 

@@ -171,8 +171,8 @@ powered hub** (`2-1`), so it draws from the 9 V 1000 mA adapter rather than the 
 place in the rig with a shared budget. Item 255, on [ref/rig.md](ref/rig.md). ⚠️ **This is a
 hypothesis and nothing more**: `MaxPower` is a declared maximum, the adapter has headroom on paper,
 and no drop has ever been correlated with load. ⛔ The obvious test — move the dongle onto the powered
-hub — carries a **known hazard**, since chained hubs are what wedged the dongle at boot before. Worth
-one deliberate trial **only if the fault recurs**, per the rule above.
+hub — carries a **known hazard**, since that hub has one controller the Launchpad will not configure
+on at all (item 256). Worth one deliberate trial **only if the fault recurs**, per the rule above.
 
 ### No gate covers audio
 

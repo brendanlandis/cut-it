@@ -114,13 +114,24 @@ whole instrument is *there* — `u_mother-stub` draws the front panel inline and
 aux and encoder. **Most work should never need the Organelle powered on.**
 
 ```sh
-./test/check-all.sh     # every gate, ~40 s, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
+./test/check-all.sh     # every gate, ~2.5 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
 ./deploy.sh              # syntax check -> scp -> reload -> load, in one command
 ssh root@organelle.local # password: organelle. Root fs is read-only -- remount-rw.sh first
 ```
 
 ⚠️ **Read `check-all.sh`'s `RESULT:` line; do not grep for it.** `grep -E 'ALL|FAILED'` also matches
 the per-gate `--- FAILED:` lines, and a broken patch has been committed that way.
+
+⛔ **It takes ~2.5 minutes and only 24 s of that is computation** — measured, 148.85 s real against
+23.7 s user+sys. The rest is Pd instances running **DSP in real time** so a `phasor~` clock and a beat
+row can actually tick. **A faster machine will not help.** Three consequences:
+
+- ⛔ **Never start a second run while one is in flight.** They contend for CPU and MIDI, every run in
+  the window slows down, and the results stop meaning anything. Six were once stacked here by accident
+  and two "failures" were nothing but the cleanup kill.
+- **Documentation-only changes do not need it.** `python3 test/gate/docs-check.py` covers those and
+  returns in under a second. Save the full suite for when a `.pd` actually changed.
+- **Run it once per batch of work, not after every edit.** It is a gate, not a linter.
 
 **Nothing reports itself unless the patch reports it.** Two things make that survivable:
 

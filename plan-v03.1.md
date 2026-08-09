@@ -51,7 +51,7 @@ rate-ceiling table.
 
 ## What is already true
 
-- **`test/check-all.sh` is the gate half and it works.** 9 gates plus 4 structural checks, ~40 s,
+- **`test/check-all.sh` is the gate half and it works.** 9 gates plus 4 structural checks, ~2.5 min,
   Mac-only, one `RESULT:` line. Its header promises it *"touches NOTHING on the Organelle … safe to
   run at any time, including with the device off."*
 - **The benches are generated.** `test/bench/bench-gen.py` reads the tables in

@@ -63,7 +63,7 @@ drifted and nothing noticed.
 ## Running everything
 
 ```sh
-./test/check-all.sh          every gate in one command, ~40 s, exit non-zero on any failure
+./test/check-all.sh          every gate in one command, ~2.5 min, exit non-zero on any failure
 ```
 
 Layout and graph structure, both entry points loading in silence, the bench step text, the MIDI

@@ -150,7 +150,7 @@ was added exactly this way.
 
 ```sh
 python3 test/gate/docs-check.py        # the doc gate
-./test/check-all.sh               # everything, ~40 s. Read RESULT:, do not grep for it
+./test/check-all.sh               # everything, ~2.5 min. Read RESULT:, do not grep for it
 ```
 
 ⚠️ **Prove nothing was lost.** When moving material, probe 30–50 distinctive facts from the removed

@@ -144,7 +144,7 @@
 #X obj 2820 1620 outlet;
 #X obj 2820 250 loadbang;
 #X msg 2820 300 mode-1;
-#X text 2820 360 ⛔ THE LOOKUP KEY GETS ITS MODE AT LOAD \, NOT FROM THE SEED. The mode bus is seeded at 500 ms \, and the table is read at load -- but MOTHER PUSHES knobs.txt BEFORE EITHER \, so the tempo knob's restored position arrived when the key had no mode at all and missed every row. Two separate races \, one symptom: the instrument booted at 120 instead of the saved 57 and said nothing. This sets the key SYNCHRONOUSLY at load so a lookup is never waiting on a clock. A real mode still overwrites it \, from the seed or from a restore. Item 234., f 62;
+#X text 2820 360 ⛔ THE LOOKUP KEY GETS ITS MODE AT LOAD \, NOT FROM THE SEED. The mode bus is seeded at 500 ms \, and the table is read at load -- but MOTHER PUSHES knobs.txt BEFORE EITHER \, so the tempo knob's restored position arrived when the key had no mode at all and missed every row. Two separate races \, one symptom: the instrument booted at 120 instead of the saved 57 and said nothing. This sets the key SYNCHRONOUSLY at load so a lookup is never waiting on a clock. A real mode still overwrites it \, from the seed or from a restore. Item 234. Item 234 \, on ref/module/map.md., f 62;
 #X obj 1900 665 t a a;
 #X obj 20 3620 route og-knob-1 og-knob-2 og-knob-3 og-knob-4 og-aux;
 #X obj 1140 3700 t b;

@@ -252,6 +252,19 @@ in five seconds → exactly 51 frames**, the value advancing 20 per frame.
 ⚠️ **It is also why the ALERT buffer is not used** — see below. Buffer switching is
 **edge-triggered**, and every layer here is state-driven.
 
+### `g_led` has no layers, and does not need any — decided
+
+**It takes the last state sent, and that is the whole design.** There are four states, exactly one
+caller can be right at a time, and **no caller has ever needed a TTL** because nothing sends a
+transient LED state — an LED here reports a condition, not an event.
+
+**Rejected:** giving it the layer stack `g_oled` and `g_grid` share, for symmetry. Layers exist to
+arbitrate between callers that disagree; one lamp with four mutually exclusive meanings has nothing
+to arbitrate, and the stack would be structure with no question to answer.
+
+⚠️ **What would reopen it** is a caller that wants the LED to flash for a moment and then go back —
+that is an event, needs a TTL, and is the case this decision does not cover.
+
 ### `g_grid`'s `home` is a composite, and that is the one deliberate deviation
 
 Whole-surface arbitration is right for a 128×64 screen and **wrong for a grid**, where the natural
@@ -320,6 +333,3 @@ does not change:
 
 - ⬜ **Nothing arbitrates the phone.** `u_net` mirrors `disp` and the phone decides what to show, so
   the priority model stops at the Organelle. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **`g_led` has no layers at all** — it takes the last state sent. Whether it needs a TTL has not
-  come up, because nothing yet sends a transient LED state. See
-  [plan-v04.md](../../plan-v04.md) §3.

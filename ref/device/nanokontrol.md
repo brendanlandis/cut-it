@@ -103,7 +103,16 @@ scene from which CCs arrive. Only scene 1 is configured today, so nothing depend
 ⚠️ REC + STOP + SCENE at power-on wipes the configuration back to the factory layout, which put
 sliders on CC 2–12 and was not regular.
 
-**Fix:** know the combo so you do not hit it by accident. The scene file is backed up in `device/`.
+**Fix:** know the combo so you do not hit it by accident. The scene file is backed up in
+[device/](../../device/README.md), and restoring it needs Kontrol Editor **2.4.0** — 2.5.0 dropped
+first-generation support.
+
+⛔ **What the transport buttons shipped with is UNKNOWABLE, permanently, and that is a stated
+limitation rather than an open question — item 267.** They were reconfigured before anything read
+the factory values, so the only way to find out is the reset above, which would destroy the scene
+that `device/` exists to protect. **The trade is never worth it.** ⚠️ Do not read the MMC /
+momentary-only incompatibility under *Facts* as evidence about what the default was; it stayed a
+risk, never a finding.
 
 ### The CC numbers collide with the Volca's parameter range
 
@@ -152,7 +161,6 @@ The regular CC layout (sliders 1–9, knobs 11–19, buttons 21–29 and 31–39
 
 ## Open
 
-- ⬜ **The factory transport assignment was never captured.** The buttons were reconfigured before
-  anything read what they shipped with, so whether they defaulted to MMC or CC is unknowable without
-  a factory reset. Reason 1 above stayed a risk rather than a finding — do not read it as evidence
-  about the default. See [plan-v04.md](../../plan-v04.md) §3.
+**Nothing.** The one long-standing question — what the transport buttons shipped with — is a
+**permanent limitation** rather than an unknown, and is stated as one under *A factory reset
+destroys the map* in **Traps**. Item 267.

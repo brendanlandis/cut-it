@@ -31,6 +31,7 @@ change work at all.
 | `wire.sh` inbound | `USB Uno MIDI Interface:0 → Pure Data:3` — exists only because the interface has a DIN IN jack a future device could use. **Nothing Volca can ever arrive on it** | verified | 229 |
 | Basic channel | 1–16, default 1–16, memorised. Mode 3 (OMNI OFF, POLY) | doc | — |
 | Transmits | **Nothing.** Every column on the transmitted side of Korg's chart is empty | doc | — |
+| ⛔ **Nothing here can ever be read back off the wire** | The device is write-only, so the strongest evidence class available for this page is a controlled A/B **by ear**. **A structural limitation, not a gap** — no future session can close it, and `verified` on this page will never mean *read back* | unknown | 268 |
 
 ### Receives (Pd → Volca)
 
@@ -150,6 +151,6 @@ to the wrong place. **The SP-404 has ten and cannot use this** — see
 
 ## Open
 
-- ⬜ **Nothing on this page has ever been read back off the wire, and nothing ever can be.** The
-  strongest available evidence class for this device is a controlled A/B by ear. That is recorded
-  here as a permanent limitation rather than as work to do — see [plan-v04.md](../../plan-v04.md) §3.
+**Nothing.** That nothing here can be read back off the wire is a **permanent limitation, not an
+unknown** — it is stated in **Facts** as item 268, with `unknown` as its evidence value, so it
+cannot be rediscovered as news.

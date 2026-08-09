@@ -173,13 +173,12 @@ on at all (item 256). Worth one deliberate trial **only if the fault recurs**, p
 page still saying so. A headless audio gate is possible — Pd can write a soundfile — and it would be
 the first of its kind here. **It becomes worth building the moment `e_chop` exists.**
 
-### ⬜ Do the reference patches under `tools/*/` earn their keep
+### ✅ The reference patches under `tools/*/` earn their keep — decided, and kept
 
-`audio-probe/`, `oled-probe/`, `osc-bridge/` and `status-display/` are each the working proof behind
-a claim on a `ref/` page. That argues for keeping them. **None has been opened since its phase**,
-which argues the claim is now the artefact and the patch is not. Carried over from the cleanup
-undecided, because it is a judgement call rather than a rule. ⚠️ `pdparty-scene/` is NOT in this
-question — `ref/device/phone.md` names it as a `Files:` entry, so it is live.
+`audio-probe/`, `oled-probe/`, `osc-bridge/` and `status-display/` all stay. **[plan-v03.5.md](plan-v03.5.md)
+wants two of them as working references within weeks**, which is the "would you run it again" test
+answering itself. The reasoning is recorded on [tools/README.md](tools/README.md) so the question
+stops recurring.
 
 ### ⬜ Debugging the rig with no laptop
 

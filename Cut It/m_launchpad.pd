@@ -187,7 +187,7 @@
 #X obj 20 1060 s \$0-own;
 #X msg 220 1000 0;
 #X obj 500 940 spigot;
-#X obj 500 1000 t b b;
+#X obj 500 1000 t b;
 #X msg 500 1060 0;
 #X obj 500 1120 s \$0-own;
 #X obj 1900 500 sysexin;
@@ -212,7 +212,9 @@
 #X text 20 1180 THREE MISSED POLLS IS SIX SECONDS \, not one -- a single dropped reply must not blank the grid. moses 3 needs no edge detection: every tick simply re-states ownership \, and g_grid's change -1 makes a repeated 1 free., f 60;
 #X text 1900 780 ANY SysEx AT ALL COUNTS AS PRESENCE. Only the Launchpad transmits SysEx in this rig -- measured \, the nanoKONTROL never does -- so matching the Novation ID would buy nothing and cost a byte matcher., f 60;
 #X text 1900 1240 THE RECOVERY IS BOUNDED \, and the bound is why this is allowed to exist at all. shell FORKS Pd \, and Phase 4's rule is one fork per load and NEVER per event -- written against error logging \, which cascades without limit. This cannot cascade: the counter ticks every 2 s while the grid is lost \, mod 4 fires wire.sh every FOURTH tick \, and moses 33 stops it dead after eight attempts. First try about 14 s after the cable goes \, last about 70 s \, then it gives up and says so on err rather than forking all night behind a device nobody intends to plug back in. ⚠️ THE FIRST VERSION GAVE UP AFTER 12 SECONDS AND THAT WAS USELESS -- nobody reseats a cable that fast \, and the very first hardware test missed the window. wire.sh costs 133 ms and is idempotent \, and ten forks fired back to back produced no audio complaint on Pd's console -- all measured. The fork budget and the measured cost of a wire.sh run are on ref/device/launchpad.md., f 60;
-#X text 20 1420 THE SPIGOT IS THE ARMING GATE \, AND IT IS NOT OPTIONAL. Ownership can only be DROPPED once a reply has actually been seen \, so a detector that has never once proven it works is never allowed to blank the grid. Without it the headless assert layer -- which has no Launchpad and no sysexin -- lost every frame six seconds in \, and so would any platform where sysexin is missing. It failed 7 of 24 checks and that is how this was found., f 60;
+#X text 20 1420 THE SPIGOT IS THE ARMING GATE \, AND IT NOW GATES ONE THING RATHER THAN THREE. Ownership can only be DROPPED once a reply has actually been seen \, so a detector that has never once proven it works is never allowed to blank the grid. Without that the headless assert layer -- which has no Launchpad and no sysexin -- lost every frame six seconds in \, failing 7 of 24 checks \, and so would any platform where sysexin is missing. ⛔ BUT IT USED TO STAND IN FRONT OF THE RECOVERY AND THE GIVE-UP TOO \, AND NEITHER OF THOSE NEEDS PROOF OF PRESENCE. A device that was ABSENT AT LOAD never answers \, so the bounded re-wire that would have rescued it was unreachable -- and the give-up sat downstream of the same shut spigot \, so it could not report that it had given up either \, which is why the error log was empty. Item 235. The t b b below splits the two: the ownership drop stays gated \, the recovery does not., f 60;
+#X obj 200 900 t b b;
+#X text 20 1900 ⛔ THE SPLIT \, AND THE ORDER IS THE OLD ONE. Rightmost outlet first \, so ownership drops before the recovery ticks -- exactly the sequence the t b b downstream of the spigot used to impose on its own. ⚠️ moses fires its right outlet with the FLOAT that failed the test \, never a bang \, so this box is also the C-8 guard that used to be provided by that one., f 90;
 #X connect 2 0 3 0;
 #X connect 3 0 4 0;
 #X connect 4 2 10 0;
@@ -231,12 +233,13 @@
 #X connect 15 0 16 0;
 #X connect 14 0 17 0;
 #X connect 17 0 30 1;
-#X connect 13 1 18 0;
+#X connect 13 1 45 0;
+#X connect 45 1 18 0;
+#X connect 45 0 30 0;
 #X connect 28 0 18 1;
 #X connect 18 0 19 0;
-#X connect 19 1 20 0;
+#X connect 19 0 20 0;
 #X connect 20 0 21 0;
-#X connect 19 0 30 0;
 #X connect 22 0 23 0;
 #X connect 23 1 24 0;
 #X connect 24 0 25 0;

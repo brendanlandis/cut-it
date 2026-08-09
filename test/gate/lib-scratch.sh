@@ -39,14 +39,34 @@
 # ctlin are INPUTS and they are here because test/stubs/ has a source stub for
 # each. The name is older than the notein stub and is kept because every gate,
 # every error message and the gate skill all cite it.
-MIDI_EXPECT="midiout:6 noteout:2 ctlout:2 pgmout:1 notein:2 ctlin:3"
+MIDI_EXPECT="midiout:6 noteout:2 ctlout:2 pgmout:1 notein:2 ctlin:3 sysexin:1"
 
 # The MIDI objects with no stub. Counted so the inventory is complete and a new
 # one cannot appear unannounced -- never rewritten, because there is nothing to
-# rewrite them to. [sysexin] is the last one: m_launchpad's device-inquiry reply
-# is the only thing that arrives on it, and the arming spigot in front of that
-# reply is already asserted from the other side by launchpad-assert.
-MIDI_INVENTORY="sysexin:1"
+# rewrite them to.
+#
+# [sysexin] used to be the only entry and it moved UP into MIDI_EXPECT when
+# t_sysexin landed: the hot-swap work needed to DRIVE a device-inquiry reply,
+# because a reply is the only evidence of presence there is and it arrives on a
+# MIDI input, where there is no bus to fake.
+#
+# ⛔ [polytouchin] WAS NEVER IN EITHER LIST, AND NOTHING NOTICED. It is
+# m_launchpad's polyphonic aftertouch decode -- "the most expressive control on
+# the rig" by its own page -- and this file's header has claimed "these are all
+# the MIDI objects in the patch" the whole time it was missing. Found by
+# midi_scan_unknown on its first run, which is the check that asks the question
+# in the direction that can actually answer it. ⬜ It is COUNTED and not covered:
+# a t_polytouchin would be the same shape as t_ctlin, and the pressure path it
+# would unlock is nobody's yet. See ref/device/launchpad.md.
+MIDI_INVENTORY="polytouchin:1"
+
+# ⛔ EVERY MIDI CLASS Pd HAS, so "these are all the MIDI objects in the patch" can
+# be checked as a CLOSED question rather than by listing what we expect and
+# hoping the list is complete. The old inventory could only ever find a drift in
+# a class someone had already thought of.
+MIDI_ALL_CLASSES="notein ctlin pgmin bendin touchin polytouchin midiin sysexin \
+midirealtimein midiclkin noteout ctlout pgmout bendout touchout polytouchout \
+midiout"
 
 # ---------------------------------------------------------------------------
 scratch_require() {
@@ -170,6 +190,36 @@ midi_check_counts() {
             echo "   $_got [$_cls]"
         fi
     done
+    return $_rc
+}
+
+midi_scan_unknown() {
+    # $1 = dir. Fails if any MIDI class present in the patch is named by NEITHER
+    # MIDI_EXPECT nor MIDI_INVENTORY.
+    #
+    # ⛔ THIS IS THE HALF THAT CANNOT GO VACUOUS. midi_check_counts walks a list
+    # we wrote and asks the patch about each entry, so a class nobody thought of
+    # is invisible to it -- and once MIDI_INVENTORY emptied, the "counted only"
+    # arm of midi-emitters-assert became a loop over nothing that returned 0.
+    # This walks the CLASSES and asks the list, which is the closed question the
+    # gate has always claimed to answer.
+    _rc=0
+    _known=" $(echo "$MIDI_EXPECT $MIDI_INVENTORY" | tr ' ' '\n' \
+                | sed 's/:.*//' | tr '\n' ' ')"
+    for _cls in $MIDI_ALL_CLASSES; do
+        _got=$(_midi_boxes "$1" "$_cls")
+        [ "$_got" = "0" ] && continue
+        case "$_known" in
+            *" $_cls "*) ;;
+            *)  echo "FAIL: $_got [$_cls] box(es) in the patch, and NO gate knows." >&2
+                echo "      A MIDI object nobody inventoried is a way to talk to a" >&2
+                echo "      device that nothing is watching. Add it to MIDI_EXPECT in" >&2
+                echo "      test/gate/lib-scratch.sh, give it a stub, and give it a" >&2
+                echo "      gate at the same time." >&2
+                _rc=2 ;;
+        esac
+    done
+    [ "$_rc" = "0" ] && echo "   no MIDI class outside the inventory"
     return $_rc
 }
 

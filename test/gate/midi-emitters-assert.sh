@@ -37,7 +37,20 @@ midi_check_counts "Cut It" "$MIDI_EXPECT" || rc=2
 
 echo
 echo "=== inputs -- counted only, because no stub exists for these yet ==="
-midi_check_counts "Cut It" "$MIDI_INVENTORY" || rc=2
+if [ -n "$MIDI_INVENTORY" ]; then
+    midi_check_counts "Cut It" "$MIDI_INVENTORY" || rc=2
+else
+    echo "   none -- every MIDI class in the patch has a stub"
+fi
+
+# ⛔ AND THE CLOSED QUESTION, which is the one this gate's header claims to
+# answer. The two checks above walk a list WE wrote and ask the patch about each
+# entry, so a class nobody thought of is invisible to both -- and when the
+# inventory emptied, its arm became a loop over nothing that returned 0. This
+# walks every MIDI class Pd has and asks the list.
+echo
+echo "=== the closed question -- no MIDI class outside the inventory ==="
+midi_scan_unknown "Cut It" || rc=2
 
 echo
 if [ "$rc" = "0" ]; then

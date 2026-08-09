@@ -38,7 +38,7 @@ import sys
 #
 # ⚠️ UPDATE THIS DELIBERATELY, NEVER TO MAKE A RED RUN GREEN -- the same rule as
 # MIDI_EXPECT in test/gate/lib-scratch.sh, and for the same reason.
-EXPECT = 22
+EXPECT = 23
 
 # ⛔ THE INVENTORY RUNS FIRST because every gate below it rewrites the same MIDI
 # object boxes, so a count that has drifted explains all of them at once. Then
@@ -86,6 +86,12 @@ GATES = [
     # --- 4. one gate per module --------------------------------------------
     ("the MIDI inventory", "./test/gate/midi-emitters-assert.sh"),
     ("the boot sequence", "./test/gate/init-assert.sh"),
+    # ⛔ THE ONLY GATE WHOSE STIMULUS IS A SILENCE. It withholds the device
+    # inquiry reply rather than sending one, which is the absent-at-load case of
+    # item 235 -- the case the Launchpad watchdog was built unable to handle,
+    # because "lost" was a transition from present to absent and never-present is
+    # not a transition.
+    ("device presence and the bounded re-wire", "./test/gate/presence-assert.sh"),
     # ⛔ THE ONLY GATE HERE THAT READS A SIGNAL BACK. Everything else asserts on
     # messages, which is exactly why the audio path -- four connect lines and no
     # gain -- was the last page in ref/ still declaring `Gate: none`.

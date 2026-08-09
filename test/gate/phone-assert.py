@@ -22,6 +22,14 @@ import sys
 import threading
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# ⛔ ONE DECODER. test/runner/ judges phone steps from the same datagrams,
+# so the decode lives in lib_osc.py rather than here -- two copies is how a
+# fix reaches one caller and not the other.
+import lib_osc                                                  # noqa: E402
+
+decode = lib_osc.decode
+
 PORT = 9995
 PD = os.environ.get(
     "PD", "/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd")
@@ -38,47 +46,6 @@ ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert", "/mark"}
 # them and leaves them unconnected; if one ever reaches the wire as a parameter
 # name, the reserved branch is broken.
 RESERVED = {"in-l", "in-r", "led", "grid", "modal", "modal-off", "alert", "status"}
-
-
-# ----------------------------------------------------------------- OSC decoding
-def _pad(n):
-    return (n + 3) & ~3
-
-
-def _string(buf, i):
-    end = buf.index(b"\0", i)
-    return buf[i:end].decode("ascii", "replace"), i + _pad(end - i + 1)
-
-
-def decode(buf):
-    """Return (address, [args]) or None if this is not an OSC message."""
-    try:
-        addr, i = _string(buf, 0)
-        if not addr.startswith("/"):
-            return None
-        tags, i = _string(buf, i)
-        if not tags.startswith(","):
-            return None
-        args = []
-        for t in tags[1:]:
-            if t == "f":
-                args.append(struct.unpack_from(">f", buf, i)[0])
-                i += 4
-            elif t == "i":
-                args.append(struct.unpack_from(">i", buf, i)[0])
-                i += 4
-            elif t == "s":
-                s, i = _string(buf, i)
-                args.append(s)
-            elif t == "b":
-                n = struct.unpack_from(">i", buf, i)[0]
-                args.append(buf[i + 4:i + 4 + n])
-                i += 4 + _pad(n)
-            else:
-                return None
-        return addr, args
-    except Exception:
-        return None
 
 
 # ------------------------------------------------------------------- collection

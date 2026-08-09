@@ -132,7 +132,8 @@ def check(steps, name):
 # --------------------------------------------------------------------------
 # ⛔ THE VACUITY LINT -- a predicate that cannot fail must never be generated
 # --------------------------------------------------------------------------
-KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled", "all")
+KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled",
+         "osc", "osc-rate", "file", "all")
 META_KEYS = ("need", "do", "watch", "check", "wait", "targets")
 TARGETS = ("device", "mac", "paper")
 BUS_KINDS = ("bus", "bus-count", "bus-not")
@@ -156,6 +157,13 @@ def _positive(spec):
         return False
     if k == "oled":
         return bool(spec.get("has") or spec.get("has_row"))
+    if k == "osc":
+        # ⛔ Same trap as oled: "this address never carries in-l" is satisfied by
+        # an address that carried nothing, which is what a dead u_net looks like.
+        # ⚠️ `has` PRESENT BUT EMPTY IS STILL POSITIVE -- it asserts that the
+        # address carried traffic at all, which is precisely the liveness
+        # witness a has_not needs beside it (phone 8 uses the heartbeat).
+        return "has" in spec
     return True
 
 
@@ -210,6 +218,11 @@ def _claims(spec):
         return list(spec["absent"])
     if k == "oled":
         return list(spec.get("has", [])) + list(spec.get("has_row", []))
+    if k == "osc":
+        return list(spec.get("has", []))
+    if k in ("osc-rate", "file"):
+        # A rate and a file path are not things the prose restates in words.
+        return []
     return []
 
 

@@ -12,9 +12,12 @@ line off outlet 0, LAST, precisely so the line cannot arrive before the thing it
 describes. So everything a step caused is already in the window by the time the
 marker closing it shows up.
 """
+import os
 import re
+import subprocess
 
-KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled", "all")
+KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled",
+         "osc", "osc-rate", "file", "all")
 
 # ⛔ THE BUS KINDS READ WHAT lib_assert's PARSER ALREADY MATCHES. bench-tap.pd
 # emits lib_drive.TAP_LABELS, which is the same map every headless gate's driver
@@ -138,7 +141,7 @@ def _sample(lines, n=4):
     return head + (" ... (%d more)" % (len(lines) - n) if len(lines) > n else "")
 
 
-def _one(spec, window):
+def _one(spec, window, ctx=None):
     kind = spec.get("kind")
     if kind not in KINDS:
         raise BadSpec("unknown predicate kind %r -- known kinds are %s"
@@ -220,6 +223,119 @@ def _one(spec, window):
             bad.append("should not be there: " + ", ".join(repr(s) for s in present))
         return not bad, want, ("; ".join(bad) + " -- saw: " + blob) if bad else blob
 
+    if kind in ("osc", "osc-rate"):
+        addr = spec["addr"]
+        lines = [ln.split(":", 1)[1].strip() for ln in window
+                 if ln.startswith("OSC: ")]
+        mine = [ln[len(addr):].strip() for ln in lines if ln.startswith(addr)]
+        if kind == "osc":
+            need = spec.get("has", [])
+            absent = spec.get("has_not", [])
+            if not mine and "has" in spec:
+                # ⛔ NO DATAGRAM WHERE TRAFFIC WAS ASSERTED IS A FAILURE. u_net
+                # absent, failed to create, or never connected all look like
+                # this.
+                # ⚠️ BUT SILENCE SATISFIES A PURELY NEGATIVE SPEC, and must: "the
+                # meters never reach the phone" is answered correctly by an
+                # address that carried nothing. That is only safe because the
+                # lint refuses a bare has_not -- the liveness witness is its
+                # sibling, not this branch.
+                return (False, "%s carries %s" % (addr, need or "traffic"),
+                        "nothing arrived on %s" % addr)
+            blob = " | ".join(mine)
+            missing = [s for s in need if s not in blob]
+            present = [s for s in absent if s in blob]
+            want = "%s carries %s" % (addr, ", ".join(map(repr, need)) or "traffic")
+            if absent:
+                want += " and never %s" % ", ".join(map(repr, absent))
+            bad = []
+            if missing:
+                bad.append("missing " + ", ".join(map(repr, missing)))
+            if present:
+                bad.append("should not be there: " + ", ".join(map(repr, present)))
+            return not bad, want, ("; ".join(bad) + " -- saw: " + blob) if bad else blob
+        # osc-rate: the coalescer's whole job is that a flood does NOT become a
+        # flood on the wire.
+        secs = spec.get("over", 1.0)
+        hz = len(mine) / float(secs)
+        return (hz <= spec["max_hz"],
+                "%s stays at or under %g Hz" % (addr, spec["max_hz"]),
+                "%d packets in %gs = %.1f Hz" % (len(mine), secs, hz))
+
+    if kind == "file":
+        path = spec["path"]
+        # ⛔ A TIMESTAMP MUST BE READ ON THE DEVICE, NEVER OFF THE FETCHED COPY.
+        # tools/fetch-state.sh copies with scp and no -p, so the local file's
+        # mtime is the moment it was FETCHED -- always newer than the step that
+        # asked, so the predicate passes whatever the instrument did. Caught by
+        # running it: state 4 reported AUTO PASS with nobody having touched
+        # Storage or Save.
+        #
+        # ⚠️ EPOCH SECONDS, WHICH ARE ABSOLUTE. The device runs UTC and the Mac
+        # runs local time, and comparing formatted stamps across that boundary
+        # once produced an apparent 5.5-hour clock jump that did not exist.
+        if spec.get("remote"):
+            rpath = spec["remote"]
+            host = os.environ.get("ORGANELLE", "root@organelle.local")
+            p = subprocess.run(
+                ["ssh", "-o", "ConnectTimeout=8", "-o", "BatchMode=yes", host,
+                 "date +%%s -r %s 2>/dev/null || echo missing" % rpath],
+                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            got = p.stdout.decode().strip()
+            want = "%s has a NEW timestamp on the device" % os.path.basename(rpath)
+            if not got.isdigit():
+                return False, want, "could not stat %s on %s (%r)" % (rpath, host, got)
+            ref = spec["newer_than"]
+            if ref == "step-start":
+                ref = (ctx or {}).get("step_start", 0)
+            age = int(got) - int(ref)
+            return (int(got) > int(ref), want,
+                    "device mtime is %+ds relative to the start of this step"
+                    % age)
+        # ⛔ THE RUNNER FETCHES IT. This is the step that used to read, in its own
+        # PASS IF, "from the Mac run ./tools/fetch-state.sh --show" -- an
+        # instruction to a person to run a shell command and compare its output
+        # by eye. The instrument writes to /sdcard/cut-it-state/, off the device
+        # and outside the patch folder, so the file has to come across first.
+        if spec.get("fetch") == "state":
+            rc = subprocess.run(["./tools/fetch-state.sh"],
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.STDOUT).returncode
+            if rc != 0:
+                return (False, "the file %s" % path,
+                        "tools/fetch-state.sh failed (rc=%d) -- the device may "
+                        "be unreachable, which is not a verdict about the "
+                        "patch" % rc)
+        try:
+            body = open(path, encoding="utf-8", errors="replace").read()
+        except OSError as e:
+            return False, "the file %s" % path, "could not read it: %s" % e
+        if "contains" in spec:
+            want = spec["contains"]
+            return (want in body, "%s contains %r" % (os.path.basename(path), want),
+                    (body.strip() or "(empty)")[:200])
+        if "newer_than" in spec:
+            # ⚠️ A TIMESTAMP COMPARISON, WHICH IS WHAT A PERSON WAS DOING BY EYE.
+            # An UNCHANGED timestamp means saveState never arrived and the
+            # commit path is dead -- and an empty file is the expected state
+            # here, so contents cannot answer it.
+            try:
+                mtime = os.path.getmtime(path)
+            except OSError as e:
+                return False, "a fresh %s" % path, "could not stat it: %s" % e
+            ref = spec["newer_than"]
+            # ⚠️ `step-start` IS RESOLVED BY THE RUNNER, not written as a number.
+            # The question is whether the file was rewritten BY THIS STEP, and a
+            # literal timestamp in a step table would answer a different one the
+            # moment anybody ran the bench twice.
+            if ref == "step-start":
+                ref = (ctx or {}).get("step_start", 0)
+            return (mtime > ref,
+                    "%s has a NEW timestamp" % os.path.basename(path),
+                    "mtime %s, needed newer than %s"
+                    % (int(mtime), int(ref)))
+        raise BadSpec("a `file` predicate needs `contains` or `newer_than`")
+
     if kind == "ratio":
         a, b = spec["a"], spec["b"]
         want_r, tol = spec["want"], spec.get("tol", 0.1)
@@ -240,15 +356,15 @@ def _one(spec, window):
     raise BadSpec(kind)
 
 
-def evaluate(spec, window):
+def evaluate(spec, window, ctx=None):
     """-> (ok, want, got). `all` is how a negative assertion gets its witness."""
     if spec.get("kind") == "all":
         parts = spec["of"]
         if not parts:
             raise BadSpec("an `all` with nothing in it asserts nothing")
-        results = [_one(p, window) for p in parts]
+        results = [_one(p, window, ctx) for p in parts]
         ok = all(r[0] for r in results)
         return (ok,
                 " AND ".join(r[1] for r in results),
                 " / ".join(r[2] for r in results))
-    return _one(spec, window)
+    return _one(spec, window, ctx)

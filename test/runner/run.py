@@ -196,6 +196,7 @@ def run_bench(bench, target, auto_only, start):
     i = max(0, (start or 1) - 1)
     while i < len(bench.steps):
         step = bench.steps[i]
+        started = time.time()
         describe(bench, step)
 
         # ⛔ A STEP WHOSE ORACLE IS ABSENT IS A SKIP WITH A REASON, NEVER A PASS.
@@ -208,6 +209,37 @@ def run_bench(bench, target, auto_only, start):
             rec.append(dict(bench=bench.name, step=step.n, title=step.title,
                             sha=records.step_sha(step.title, step.pass_if),
                             deps_sha=dsha, verdict="skip", auto=True, note=why))
+            i += 1
+            continue
+
+        # ⛔ PAPER MODE JUDGES WHAT IT CAN. A `file` predicate needs no console
+        # and no Pd -- the evidence is on disk -- so the two steps that read the
+        # data store are machine-checkable even here, where there is no stream
+        # at all. Without this they would still be a person running a shell
+        # command and comparing output by eye.
+        spec = step.meta.get("check")
+        want_targets = step.meta.get("targets")
+        if want_targets and target not in want_targets:
+            why = "this step only means something on %s" % " or ".join(want_targets)
+            stream.say("  SKIP   %s" % why)
+            rec.append(dict(bench=bench.name, step=step.n, title=step.title,
+                            sha=records.step_sha(step.title, step.pass_if),
+                            deps_sha=dsha, verdict="skip", auto=True, note=why))
+            i += 1
+            continue
+        if spec:
+            if step.hands:
+                try:
+                    stream.prompt("  press enter when you have done that: ")
+                except EOFError:
+                    break
+            ok, w, g = predicates.evaluate(spec, [], {"step_start": started})
+            stream.say("  %s   want %s\n         got  %s"
+                       % ("AUTO PASS" if ok else "AUTO FAIL", w, g))
+            rec.append(dict(bench=bench.name, step=step.n, title=step.title,
+                            sha=records.step_sha(step.title, step.pass_if),
+                            deps_sha=dsha, verdict="pass" if ok else "fail",
+                            auto=True, note="", want=w, got=g))
             i += 1
             continue
 

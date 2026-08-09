@@ -423,6 +423,25 @@ def _predicates():
                             ["C1-BEATS-ratio-1: 0", "C2-BEATS-ratio-1.5: 0"])
     A.check("ratio: a zero denominator fails rather than raising", not ok, got)
 
+    osc = ["OSC: /cutit/hb 41", "OSC: /cutit/param grain 12"]
+    ok, _, got = P.evaluate({"kind": "osc", "addr": "/cutit/param",
+                             "has": ["grain"]}, osc)
+    A.check("osc: finds a parameter on the wire", ok, got)
+    ok, _, got = P.evaluate({"kind": "osc", "addr": "/cutit/param",
+                             "has": ["grain"]}, [])
+    A.check("osc: silence FAILS where traffic was asserted -- a dead u_net "
+            "looks exactly like this", not ok, got)
+    # ⛔ THE ASYMMETRY IS DELIBERATE AND IS THE SUBTLE PART. A purely negative
+    # spec is SATISFIED by silence -- "the meters never reach the phone" is
+    # answered correctly by an address that carried nothing -- and that is only
+    # safe because the lint refuses a bare has_not. Its witness is a sibling.
+    ok, _, got = P.evaluate({"kind": "osc", "addr": "/cutit/param",
+                             "has_not": ["in-l"]}, [])
+    A.check("osc: silence SATISFIES a purely negative spec", ok, got)
+    ok, _, got = P.evaluate({"kind": "osc", "addr": "/cutit/param",
+                             "has_not": ["grain"]}, osc)
+    A.check("osc: and a forbidden name still fails", not ok, got)
+
     try:
         P.evaluate({"kind": "buscount", "bus": "ERR"}, [])
         A.check("an unknown kind is a failure, not a silent pass", False,

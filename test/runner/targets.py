@@ -13,12 +13,18 @@ the room, and the steps only eyes can judge say so instead of being invented.
 import os
 import queue
 import shutil
+import socket
 import subprocess
 import sys
 import threading
 import time
 
 import stream
+
+# ⛔ ONE OSC DECODER, shared with test/gate/phone-assert.py.
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gate"))
+import lib_osc                                                  # noqa: E402
 
 PD = os.environ.get(
     "PD", "/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd")
@@ -44,8 +50,20 @@ class Process(stream.Source):
     # The real instrument boots; a recording does not. See Source.boot_settle.
     boot_settle = 5.0
 
-    def __init__(self, argv, go, teardown=None, label=""):
+    def __init__(self, argv, go, teardown=None, label="", osc_port=None):
         self.q = queue.Queue()
+        # ⛔ THE SOCKET IS BOUND BEFORE Pd STARTS. Measured: a UDP connect to a
+        # port with nothing listening survives exactly ONE datagram -- the ICMP
+        # port-unreachable that comes back tears the socket down and every later
+        # send is discarded in silence (item 114). Bind after launching and you
+        # get one packet and then nothing, which looks exactly like a broken
+        # rate limiter. phone-assert.py owns its lifecycle for the same reason.
+        self.osc = None
+        if osc_port is not None:
+            self.osc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.osc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.osc.bind(("127.0.0.1", osc_port))
+            self.osc.settimeout(0.25)
         self.teardown_fn = teardown
         self.label = label
         self.log = []
@@ -55,11 +73,29 @@ class Process(stream.Source):
         self.gosender = go
         self.reader = threading.Thread(target=self._pump, daemon=True)
         self.reader.start()
+        if self.osc:
+            # ⚠️ THE DATAGRAMS JOIN THE SAME QUEUE as the console lines, decoded
+            # into the same "LABEL: rest" shape bench-tap.pd prints. One window
+            # format rather than a second one only OSC uses -- so a predicate,
+            # a stall and the step loop all read one stream.
+            threading.Thread(target=self._pump_osc, daemon=True).start()
 
     def _pump(self):
         for line in self.proc.stdout:
             self.q.put(line.rstrip("\n"))
         self.q.put(None)                    # the process ended
+
+    def _pump_osc(self):
+        while True:
+            try:
+                data, _ = self.osc.recvfrom(4096)
+            except socket.timeout:
+                continue
+            except OSError:
+                return
+            m = lib_osc.decode(data)
+            if m:
+                self.q.put(lib_osc.as_text(*m))
 
     def readline(self, timeout):
         try:
@@ -83,6 +119,8 @@ class Process(stream.Source):
                 self.proc.kill()
             except Exception:
                 pass
+        if self.osc:
+            self.osc.close()
         if self.gosender:
             self.gosender.close()
         if self.teardown_fn:
@@ -122,9 +160,26 @@ def _tap():
     return p
 
 
+PHONE_PORT = 9995
+
+
 def mac(bench_name, auto_only, work):
     """main-dev.pd plus the bench, in a scratch copy, on this machine."""
     _scratch(work)
+    # ⚠️ THE PHONE BENCH ON THIS MACHINE IS A MIRROR, AND IT ANSWERS A DIFFERENT
+    # QUESTION FROM A DEVICE RUN. Repointed at localhost, u_net's real datagrams
+    # are readable here -- so what it FILTERS can be judged with no phone in the
+    # room. What it cannot judge is anything about the phone itself, which is
+    # why the device run keeps its human verdict rather than being replaced.
+    osc_port = None
+    if bench_name == "phone":
+        subprocess.run(
+            ["sh", "-c",
+             '. test/gate/lib-scratch.sh; scratch_phone_mirror "$1" "$2"',
+             "_", work, str(PHONE_PORT)], check=True)
+        osc_port = PHONE_PORT
+        stream.say("  u_net repointed at 127.0.0.1:%d -- no phone involved"
+                   % PHONE_PORT)
     bench_pd = os.path.abspath("test/bench/%s-bench.pd" % bench_name)
     if not os.path.exists(bench_pd):
         sys.exit("targets: %s does not exist -- run bench-gen.py" % bench_pd)
@@ -152,7 +207,8 @@ def mac(bench_name, auto_only, work):
         shutil.rmtree(work, ignore_errors=True)
 
     stream.say("  launching Pd%s ..." % ("" if auto_only else " with the GUI"))
-    return Process(argv, stream.Go("127.0.0.1"), teardown, label="mac")
+    return Process(argv, stream.Go("127.0.0.1"), teardown, label="mac",
+                   osc_port=osc_port)
 
 
 def device(bench_name, auto_only, work):

@@ -98,6 +98,31 @@ scratch_state_dir() {
     }
 }
 
+scratch_phone_mirror() {
+    # ⛔ POINT u_net AT THIS MACHINE, AND ASSERT THE REPOINT WORKED. Same shape
+    # and same reason as scratch_state_dir above.
+    #
+    # WHY IT IS NEEDED AT ALL. u_net sends to the phone, so on a live run the
+    # Mac cannot see those datagrams -- a tap on the device would prove what
+    # u_net was OFFERED, not what it FILTERED, and the filtering is the whole
+    # subject. Repointing it at localhost in a throwaway copy gives real OSC
+    # verdicts with no phone in the room. ⚠️ It answers a DIFFERENT question
+    # from a device run with a real phone, and neither replaces the other.
+    #
+    # ⛔ A SILENT MISS HERE IS THE WORST OUTCOME: every datagram would go to a
+    # real address on the network and the predicate would read an empty socket,
+    # which looks exactly like u_net being broken.
+    _w=$1; _port=${2:-9995}
+    sed -i '' "s|u_net 192.168.1.5 8000|u_net 127.0.0.1 $_port|" "$_w/patch/u_root.pd"
+    grep -q "u_net 127.0.0.1 $_port" "$_w/patch/u_root.pd" || {
+        echo "FAIL: could not repoint u_net at localhost." >&2
+        echo "      Without that every datagram goes to a real address and the" >&2
+        echo "      predicate reads an empty socket -- which looks exactly like" >&2
+        echo "      u_net being broken." >&2
+        exit 2
+    }
+}
+
 scratch_map_rows() {
     # $1 = work dir. Rows on stdin, APPENDED to the scratch map rather than
     # replacing it, so the shipped rows stay under test too.

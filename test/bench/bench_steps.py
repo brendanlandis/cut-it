@@ -381,7 +381,13 @@ STEPS_PHONE = [
   [('compose mode-1', 'mode')]),
  ('ONE PARAMETER -- name value and unit',
   'PASS IF: the top line reads chop-size and the big number reads 43 -- the unit rides on the wire but the scene does not draw it -- deliberate and not a fault',
-  [('chop-size 43 %', 'disp')]),
+  [('chop-size 43 %', 'disp')],
+  # ⚠️ THE MAC RUN IS A MIRROR AND ANSWERS A DIFFERENT QUESTION FROM THE DEVICE.
+  # With u_net repointed at localhost the datagrams are readable here, so what
+  # u_net FILTERS can be judged with no phone at all. What no Mac can judge is
+  # what the PHONE then draws -- so the device run keeps its human verdict.
+  {'targets': ('mac',),
+   'check': {'kind': 'osc', 'addr': '/cutit/param', 'has': ['chop-size', '43']}}),
  ('A SECOND PARAMETER -- and the stale-unit trap underneath it',
   'PASS IF: the top line changes to grain and the number to 12 -- THE POINT OF THIS STEP IS SOMETHING YOU CANNOT SEE: grain carries no unit and the step before it did -- so on the wire this has to arrive as grain 12 and a dash rather than grain 12 and a percent sign. The scene draws no units so a stale one would be invisible here. test/gate/phone-assert.sh is what actually proves it',
   [('grain 12', 'disp')]),
@@ -399,7 +405,15 @@ STEPS_PHONE = [
   [('fail u_bench probe-failure', 'err')]),
  ('THE METERS MUST NOT APPEAR -- correct result is nothing',
   'PASS IF: NOTHING ON THE PHONE CHANGES AT ALL. in-l and in-r are the entire resting content of the disp bus once there is audio -- about twenty messages a second -- and u_net drops them on purpose. If a line here starts reading in-l then the reserved branch is broken and the whole rate budget has gone to a meter the phone does not draw',
-  [('in-l 42 dB', 'disp'), ('in-r 7 dB', 'disp')]),
+  [('in-l 42 dB', 'disp'), ('in-r 7 dB', 'disp')],
+  # ⛔ THE has HALF IS THE WITNESS, not decoration. "in-l never appears" is
+  # satisfied by a u_net that emitted nothing at all -- which is what a broken
+  # one looks like -- so the heartbeat proves the link was live while the
+  # meters were being dropped. The lint refuses this predicate without it.
+  {'targets': ('mac',),
+   'check': {'kind': 'all', 'of': [
+       {'kind': 'osc', 'addr': '/cutit/hb', 'has': []},
+       {'kind': 'osc', 'addr': '/cutit/param', 'has_not': ['in-l', 'in-r']}]}}),
  ('THE GRID VOCABULARY MUST NOT APPEAR -- and the Launchpad WILL react',
   'PASS IF: nothing on the phone changes. THE LAUNCHPAD GOING MODAL IS CORRECT -- grid is g_grid own vocabulary and this step proves only that u_net ignores it. The next step clears it',
   [('grid modal 45', 'disp')]),
@@ -440,13 +454,30 @@ STEPS_STATE = [
  ('CONFIRM IT REACHED THE DISK -- from the Mac run ./tools/fetch-state.sh --show',
   'PASS IF: cut-it-auto.txt reads mode perform mode-4. THE FILE IS THE ONLY EVIDENCE -- nothing on the instrument displays what has been saved and that is deliberate. If it still reads the old mode the flush is not firing',
   [],
-  {'do': 'nothing on the instrument -- the runner reads the file for you',
-   'need': []}),
+  # ⛔ THIS STEP USED TO INSTRUCT A PERSON TO RUN A SHELL COMMAND AND READ THE
+  # OUTPUT. The file is the only evidence there is -- nothing on the instrument
+  # displays what has been saved, deliberately -- so the runner fetches it and
+  # compares the string, which is exactly what the person was doing by eye.
+  {'do': 'nothing on the instrument -- the runner fetches the file and reads it for you',
+   'need': ['the Organelle reachable over the network'],
+   'targets': ('device', 'paper'),
+   'check': {'kind': 'file', 'fetch': 'state',
+             'path': 'device-state/cut-it-auto.txt',
+             'contains': 'mode perform mode-4'}}),
  ('COMMIT -- on the Organelle press Storage then Save',
   'PASS IF: the screen shows Saving briefly and returns. Then cut-it-manual.txt has a NEW timestamp even though it is still empty -- no shipped contributor uses the manual policy yet. An UNCHANGED timestamp means saveState never arrived and the commit path is dead',
   [],
+  # ⚠️ A TIMESTAMP, NOT CONTENTS, AND IT HAS TO BE. cut-it-manual.txt is still
+  # EMPTY -- no shipped contributor uses the manual policy yet -- so there is
+  # nothing in it to compare. An UNCHANGED timestamp means saveState never
+  # arrived and the commit path is dead, which is the whole assertion.
   {'do': 'on the Organelle press Storage then Save',
-   'need': ['the Organelle powered and in reach']}),
+   'need': ['the Organelle powered and in reach'],
+   'targets': ('device', 'paper'),
+   'check': {'kind': 'file',
+             'path': 'device-state/cut-it-manual.txt',
+             'remote': '/sdcard/cut-it-state/cut-it-manual.txt',
+             'newer_than': 'step-start'}}),
  ('THE ONE THAT MATTERS -- power cycle the Organelle and wait for it to come back',
   'PASS IF: the same mode lamp is lit as before the power cycle. This is the only durability test that counts -- a patch reload proves nothing about an SD card. DO THIS LAST IN A SESSION because it resets the wifi fault uptime clock and that fault needs about three hours to appear',
   [],

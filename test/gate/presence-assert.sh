@@ -1,6 +1,6 @@
 #!/bin/sh
 # Device presence and the bounded re-wire -- ref/module/presence.md. No eyes, no
-# hardware, ~17 s.
+# hardware, ~32 s.
 #
 #   ./test/gate/presence-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/presence-assert.sh -v       and show the detail behind every check
@@ -68,8 +68,8 @@ fi
 scratch_drive test/gate/presence-assert-drive-gen.py "$WORK/drive.pd"
 
 CAP="$WORK/capture.txt"
-echo "   running (about 17 s -- the fourth recovery tick is at 13 s) ..."
-scratch_run "$CAP" 40 -nogui -noaudio -nomidi -path "$WORK/patch" \
+echo "   running (about 32 s -- the three re-wires are at 13 s, 21 s and never) ..."
+scratch_run "$CAP" 60 -nogui -noaudio -nomidi -path "$WORK/patch" \
     "$WORK/patch/main-dev.pd" "$WORK/drive.pd"
 
 echo

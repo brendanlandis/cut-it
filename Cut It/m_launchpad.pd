@@ -190,7 +190,7 @@
 #X obj 500 1000 t b;
 #X msg 500 1060 0;
 #X obj 500 1120 s \$0-own;
-#X obj 1900 500 sysexin;
+#X obj 1900 500 c_devid 0;
 #X obj 1900 560 t b b;
 #X msg 1900 620 0;
 #X obj 1900 680 s \$0-miss-zero;
@@ -210,7 +210,7 @@
 #X msg 1500 1480 fail m_launchpad grid-lost;
 #X obj 1500 1540 s err;
 #X text 20 1180 THREE MISSED POLLS IS SIX SECONDS \, not one -- a single dropped reply must not blank the grid. moses 3 needs no edge detection: every tick simply re-states ownership \, and g_grid's change -1 makes a repeated 1 free., f 60;
-#X text 1900 780 ANY SysEx AT ALL COUNTS AS PRESENCE. Only the Launchpad transmits SysEx in this rig -- measured \, the nanoKONTROL never does -- so matching the Novation ID would buy nothing and cost a byte matcher., f 60;
+#X text 1900 780 ⛔ IT USED TO SAY ANY SysEx AT ALL COUNTS AS PRESENCE \, AND THAT STOPPED BEING TRUE. It was correct when written -- only the Launchpad transmitted SysEx in this rig \, measured \, and the nanoKONTROL never did -- so matching the Novation ID would have bought nothing. Item 249 then found that the nano and the 404 BOTH answer a universal device inquiry \, and the hot-swap work polls all three. One [sysexin] hears every device \, so the old shortcut would have reported this Launchpad present whenever the NANO answered: item 235 silently un-fixed \, in the worst direction \, with the watchdog believing a device that is gone. c_devid matches the manufacturer byte instead \, and 0 is Novation., f 60;
 #X text 1900 1240 THE RECOVERY IS BOUNDED \, and the bound is why this is allowed to exist at all. shell FORKS Pd \, and Phase 4's rule is one fork per load and NEVER per event -- written against error logging \, which cascades without limit. This cannot cascade: the counter ticks every 2 s while the grid is lost \, mod 4 fires wire.sh every FOURTH tick \, and moses 33 stops it dead after eight attempts. First try about 14 s after the cable goes \, last about 70 s \, then it gives up and says so on err rather than forking all night behind a device nobody intends to plug back in. ⚠️ THE FIRST VERSION GAVE UP AFTER 12 SECONDS AND THAT WAS USELESS -- nobody reseats a cable that fast \, and the very first hardware test missed the window. wire.sh costs 133 ms and is idempotent \, and ten forks fired back to back produced no audio complaint on Pd's console -- all measured. The fork budget and the measured cost of a wire.sh run are on ref/device/launchpad.md., f 60;
 #X text 20 1420 THE SPIGOT IS THE ARMING GATE \, AND IT NOW GATES ONE THING RATHER THAN THREE. Ownership can only be DROPPED once a reply has actually been seen \, so a detector that has never once proven it works is never allowed to blank the grid. Without that the headless assert layer -- which has no Launchpad and no sysexin -- lost every frame six seconds in \, failing 7 of 24 checks \, and so would any platform where sysexin is missing. ⛔ BUT IT USED TO STAND IN FRONT OF THE RECOVERY AND THE GIVE-UP TOO \, AND NEITHER OF THOSE NEEDS PROOF OF PRESENCE. A device that was ABSENT AT LOAD never answers \, so the bounded re-wire that would have rescued it was unreachable -- and the give-up sat downstream of the same shut spigot \, so it could not report that it had given up either \, which is why the error log was empty. Item 235. The t b b below splits the two: the ownership drop stays gated \, the recovery does not., f 60;
 #X obj 200 900 t b b;

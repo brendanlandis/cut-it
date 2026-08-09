@@ -31,7 +31,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 import lib_grid as G                                           # noqa: E402
 
-MARKS = ("BOOT", "BEFORE-LOSS", "AFTER-LOSS", "WAITING", "AFTER-REWIRE", "OWNED")
+MARKS = ("BOOT", "BEFORE-LOSS", "AFTER-LOSS", "WAITING", "AFTER-REWIRE",
+         "FOREIGN", "STILL-LOST", "OWN-REPLY", "RECOVERED")
 
 MARK_RE = re.compile(r"^PRES:\s+MARK\s+(\S+)\s*$")
 # ⚠️ THE TRAILING ARGUMENTS ARE NOT OPTIONAL IN THIS REGEX -- two of the four
@@ -126,23 +127,58 @@ def main():
             "device absent at load never armed it and only a reload brought the "
             "surface back" % wire_in(by, "WAITING"))
 
-    total = sum(v.count("wire.sh") for v in by.values())
-    A.check("exactly two wire.sh forks in the whole run -- u_init's and the recovery's",
-            total == 2,
-            "saw %d. More means the interval or the loss test has gone" % total)
-
     # --- ⛔ THE INVARIANT THE ARMING GATE PROTECTS ---------------------------
     # g_grid paints only while it owns the surface, so a lighting frame after the
     # loss was declared is proof that ownership survived a detector which has
     # never once seen a reply.
     late = [f for f in frames
-            if f.is_lighting and f.mark in ("AFTER-REWIRE", "OWNED")]
+            if f.is_lighting and f.mark in ("AFTER-REWIRE", "FOREIGN")]
     A.check("⛔ ownership is NOT dropped by a detector that never saw a reply",
             bool(late),
             "no lighting frame after the re-wire. The arming gate has been "
             "REMOVED rather than split: the grid now blanks six seconds into "
             "every run on any platform without a Launchpad, which is how this "
             "was found the first time -- 7 of 24 checks")
+
+    # --- ⛔ CROSS-TALK: ANOTHER DEVICE'S REPLY IS NOT THIS DEVICE'S ----------
+    # A KORG reply landed in FOREIGN. If m_launchpad counted it, the miss counter
+    # zeroed, moses went left, the recovery counter was reset -- and the re-wire
+    # due at 21000 never comes.
+    A.check("⛔ a nanoKONTROL reply does NOT mark the Launchpad present",
+            wire_in(by, "STILL-LOST") == 1,
+            "%d wire.sh fork(s) in STILL-LOST, wanted exactly 1. A KORG reply "
+            "(manufacturer byte 66) was accepted as this device's. That is item "
+            "235 un-fixed in the worst direction -- the watchdog believing a "
+            "device that is gone -- and it is what 'ANY SysEx counts as "
+            "presence' becomes the moment more than one device answers"
+            % wire_in(by, "STILL-LOST"))
+
+    # ⛔ THE POSITIVE CONTROL FOR THE CHECK ABOVE, AND WITHOUT IT THAT CHECK IS
+    # WORTHLESS: a c_devid that matches nothing at all ignores the nano's reply
+    # for entirely the wrong reason and passes. The Launchpad's OWN reply landed
+    # in OWN-REPLY, so the re-wire due at 29000 must NOT happen.
+    A.check("⛔ ...but the Launchpad's OWN reply is honoured -- recovery stops",
+            wire_in(by, "RECOVERED") == 0,
+            "%d wire.sh fork(s) in RECOVERED, wanted 0. The device answered and "
+            "the watchdog kept forking anyway, so c_devid matches nothing at "
+            "all -- which also makes the cross-talk check above vacuous"
+            % wire_in(by, "RECOVERED"))
+
+    # ⛔ AND THE LIVENESS WITNESS FOR *THAT* ONE. "No fork in RECOVERED" is also
+    # what a Pd that died at 25 s produces. The Programmer Mode heartbeat rides
+    # $0-want and keeps going regardless of presence, so a mode frame in the last
+    # window is proof the run was still alive to have forked if it wanted to.
+    alive = [f for f in frames if f.is_mode and f.mark == "RECOVERED"]
+    A.check("the run is still alive in the last window",
+            bool(alive),
+            "no heartbeat frame in RECOVERED -- Pd died before the third re-wire "
+            "was due, so 'recovery stopped' is unproven")
+
+    total = sum(v.count("wire.sh") for v in by.values())
+    A.check("exactly three wire.sh forks in the whole run",
+            total == 3,
+            "saw %d, wanted u_init's boot fork plus two recoveries. More means "
+            "the interval or the loss test has gone" % total)
 
     A.note("wire.sh by window: %s"
            % " ".join("%s=%d" % (m, wire_in(by, m)) for m in MARKS))

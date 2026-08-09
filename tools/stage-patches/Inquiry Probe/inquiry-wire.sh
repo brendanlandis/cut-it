@@ -1,8 +1,9 @@
 #!/bin/sh
 # Wire this probe's own ALSA MIDI links. Run once at load, by main.pd through [shell].
 #
-# ⛔ LOADING ANY PATCH DROPS PD'S ALSA CONNECTIONS -- item 228, measured. The Pd
-# PROCESS survives a patch swap; its port connections do not. A probe that assumes
+# ⛔ LOADING ANY PATCH DROPS PD'S ALSA CONNECTIONS -- item 228, measured. Loading a
+# patch REPLACES THE PD PROCESS: runPatch runs killpatch.sh, which SIGTERMs and then
+# SIGKILLs every pd before the new instance starts (item 252). A probe that assumes
 # the wiring survived measures SILENCE, and silence from a MIDI probe reads as
 # "the device ignores this message" -- which is the wrong conclusion and the exact
 # shape of item 225.

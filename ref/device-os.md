@@ -15,8 +15,10 @@ and the channel blocks are on [module/boot.md](module/boot.md).
 
 ⛔ **LOADING ANY PATCH DROPS PD'S ALSA CONNECTIONS — measured, item 228.** After
 `oscsend localhost 4001 /loadPatch …`, `Pure Data Midi-Out 4` had **no target at all**, and a probe
-patch that assumed the wiring survived reached nothing. The Pd *process* persists across a patch
-swap; its port connections do not. ✅ **This is why `u_init` runs `wire.sh`** — Cut It re-wires
+patch that assumed the wiring survived reached nothing. ⛔ **The reason is that `/loadPatch` replaces
+the Pd process outright** — `MainMenu::runPatch` runs `killpatch.sh` before it launches anything, and
+that script SIGTERMs and then SIGKILLs every `pd` — so no subscription of the old process can survive
+and re-wiring is not optional (item 252). ✅ **This is why `u_init` runs `wire.sh`** — Cut It re-wires
 itself every load and so never notices. ⚠️ **Any patch that is not Cut It must make its own
 `aconnect` call**, or it measures silence — and silence from a MIDI probe reads as *"the device
 ignores this message"*, which is the wrong conclusion and the precise shape of item 225.

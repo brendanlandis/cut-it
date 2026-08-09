@@ -232,6 +232,13 @@ That is the entire budget for putting hardware back in a sane state — enough f
 SysEx, not for anything clever. **Pd 0.49 has no `closebang`** (checked: `closebang` and
 `initbang` both fail to create), so `[r quitting]` is it.
 
+⛔ **`quitting` fires on every PATCH LOAD, not only on shutdown, and that is what makes menu
+probes safe.** `/loadPatch` calls `MainMenu::runPatch`, which runs `killpatch.sh` *before* launching
+anything — and that script's first line is `oscsend localhost 4000 /quitpd i 1`, straight into the
+send above. So swapping patches from the menu gives the outgoing patch the same ~100 ms to hand
+hardware back that a shutdown does, and **Pd is then killed and relaunched** rather than reused
+(item 252). Read from `mother.pd`, `MainMenu.cpp` and `killpatch.sh` on the device, not inferred.
+
 **One abstraction is allowed to send on the `mother.pd` names: `u_mother-stub`.** It exists to
 impersonate `mother.pd` when the patch runs on the Mac, where `mother.pd` does not exist, so
 sending on reserved names *is* its function. It is instantiated by `main-dev.pd` only —

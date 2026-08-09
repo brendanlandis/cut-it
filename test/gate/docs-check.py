@@ -545,11 +545,6 @@ DIRS = ('tools/', 'test/', 'Cut It/', 'device/', 'mac-stubs/', r'\.claude/')
 PATHREF = re.compile(
     r'(?<![\w.-])\.?/?((?:' + '|'.join(DIRS) + r')[\w /.-]*?'
     r'\.(?:sh|py|pd|txt))(?![\w.-])')
-# ...and deploy.sh, the one script at the repo root, which has no directory to
-# recognise it by. It is named in a dozen places and a rename would otherwise go
-# unnoticed. ⚠️ Only deploy.sh -- logroll.sh looks like a root script and lives
-# in "Cut It/", so listing it here reported six phantom failures.
-ROOTSCRIPT = re.compile(r'(?<![\w./-])\.?/?(deploy\.sh)(?![\w.-])')
 
 
 def check_dangling_paths(verbose):
@@ -589,7 +584,7 @@ def check_dangling_paths(verbose):
             body = f.read_text(encoding='utf-8')
         except UnicodeDecodeError:
             continue
-        found = set(PATHREF.findall(body)) | set(ROOTSCRIPT.findall(body))
+        found = set(PATHREF.findall(body))
         for p in sorted(found):
             if re.search(r'[A-Z]', pathlib.PurePath(p).name):
                 continue                  # a placeholder like phaseN-bench.pd

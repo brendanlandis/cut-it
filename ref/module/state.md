@@ -18,7 +18,7 @@ policy, about when to write, or about the bus.
 committed take, written only when a commit is asked for and therefore abandonable by not saving.
 
 ⚠️ **The data does not live in the patch folder.** `u_state` writes to `/sdcard/cut-it-state/`,
-outside it, so `deploy.sh`, `deploy.sh --clean` and a power cycle cannot touch it.
+outside it, so `tools/deploy.sh`, `tools/deploy.sh --clean` and a power cycle cannot touch it.
 `tools/fetch-state.sh` is the other half of that bargain and copies it back into the repo.
 
 ## Facts
@@ -198,7 +198,7 @@ created, which is why `main-dev.pd` passes a directory that already exists.
 
 ### The print is behind `[del 2000]`
 
-`deploy.sh` gates on **output** and its syntax check quits at about 735 ms (C-9). The by-hand SSH
+`tools/deploy.sh` gates on **output** and its syntax check quits at about 735 ms (C-9). The by-hand SSH
 console still sees the line, which is where you look when the data directory is wrong.
 
 ### `[savestate]` was evaluated and not used

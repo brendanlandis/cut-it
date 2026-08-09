@@ -245,7 +245,7 @@ Organelle still cannot know the phone is gone.
 ```sh
 ./test/run.sh                        # read the RESULT: line
 python3 test/gate/docs-check.py -v
-./deploy.sh
+./tools/deploy.sh
 ```
 
 Then, and this is the real test:

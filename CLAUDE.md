@@ -117,7 +117,7 @@ aux and encoder. **Most work should never need the Organelle powered on.**
 ```sh
 ./test/run.sh            # every gate, ~2.5 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
 ./test/run.sh --all      # and then the benches -- needs the rig, and a person
-./deploy.sh              # syntax check -> scp -> reload -> load, in one command
+./tools/deploy.sh              # syntax check -> scp -> reload -> load, in one command
 ssh root@organelle.local # password: organelle. Root fs is read-only -- remount-rw.sh first
 ```
 
@@ -150,7 +150,7 @@ row can actually tick. **A faster machine will not help.** Three consequences:
   that finishes in four seconds can be read afterwards instead of watched.
 
 ⚠️ **The instrument's own data does NOT live in the patch folder.** `u_state` writes to
-`/sdcard/cut-it-state/`, outside it, precisely so `deploy.sh`, `deploy.sh --clean` and a power cycle
+`/sdcard/cut-it-state/`, outside it, precisely so `tools/deploy.sh`, `tools/deploy.sh --clean` and a power cycle
 cannot touch it. `tools/fetch-state.sh` copies it back. See [ref/module/state.md](ref/module/state.md).
 
 ⛔ **`knobs.txt` is four saved knob positions, not knob labels**, and **the saved file beats the

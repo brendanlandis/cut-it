@@ -37,7 +37,7 @@ comment is the only documentation visible while editing in Pd and it has no link
 | C-6 | **Finish assembled messages with `[list trim]`**, and `[list append]` after a `route` |
 | C-7 | **Clear optional fields on every message** — `[list split n]` on exactly *n* atoms never fires |
 | C-8 | **`[t b]` in front of anything behind a reject outlet** — a reject carries DATA, not a bang |
-| C-9 | **Every `[print]` in a deployed abstraction sits behind `[del 2000]`** — `deploy.sh` gates on output |
+| C-9 | **Every `[print]` in a deployed abstraction sits behind `[del 2000]`** — `tools/deploy.sh` gates on output |
 | C-10 | **Append boxes at the end of a `.pd`, and move the `#X connect`s with them** |
 | C-11 | **Grain timing is audio-domain** — `phasor~` and `vline~`, never `metro` / `line~` |
 | C-12 | **Report failures on `[s err]`** as `<level> <source> <text>`, text one symbol ≤ 21 chars |
@@ -96,7 +96,7 @@ python3 test/gate/pd-layout-check.py "Cut It"/*.pd    # after every edit -- PROB
 exit status is trustworthy. A pattern like `grep -E 'ALL|FAILED'` also matches the per-gate
 `--- FAILED:` lines, and a broken patch has been committed that way.
 
-⚠️ **`deploy.sh` gates on OUTPUT, not exit status** — Pd exits 0 even when objects fail to create.
+⚠️ **`tools/deploy.sh` gates on OUTPUT, not exit status** — Pd exits 0 even when objects fail to create.
 Its check quits at about 735 ms, which is why every deployed `[print]` sits behind `[del 2000]`
 (C-9).
 

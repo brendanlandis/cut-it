@@ -19,7 +19,7 @@
 # Measured 2026-08-03: killall left the grid frozen in Programmer Mode, and this
 # script brought it back with no power cycle.
 #
-# deploy.sh is NOT affected -- it loads through mother's /loadPatch, so `quitting`
+# tools/deploy.sh is NOT affected -- it loads through mother's /loadPatch, so `quitting`
 # fires and the safe exit runs normally.
 #
 # THE PORT IS LOOKED UP BY NAME. amidi's hw:N numbering shifts as devices come and

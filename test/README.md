@@ -308,7 +308,7 @@ trick), no hardware. It works entirely inside `/tmp/cut-it-state-gate` and never
 each other; re-putting a key REPLACES its line; **a contributor answering behind a `[del]` is
 absent from the file** — the synchronous contract itself; manual is replayed before auto so auto
 wins a duplicate key; **a boot does not overwrite saved state before reading it**; and both entry
-points load in **silence**, which is `deploy.sh`'s own gate.
+points load in **silence**, which is `tools/deploy.sh`'s own gate.
 
 ⚠️ **It passed the broken patch on its first can-it-fail run** — the driver banged the restore at
 600 ms when the bug needs it after 3000 ms, and the final check asserted against a value nothing
@@ -486,12 +486,12 @@ macOS that **silently does nothing** — BSD `nc` exits before the datagram is f
 like a dead bench. The device cannot send to itself either: busybox here has no `nc` at all.
 
 ⚠️ **`killall pd` strands the Launchpad in Programmer Mode** — see `lp-live.sh` below. Restore
-normal operation with `./deploy.sh`, which reloads through the menu path and *does* run the safe
+normal operation with `./tools/deploy.sh`, which reloads through the menu path and *does* run the safe
 exit.
 
 **Two of these live on the device**, left there deliberately after the Phase 6 hardware run:
 `/sdcard/launchpad-bench.pd` and `/sdcard/dsp-toggle.pd`. They sit *outside* the patch folder, so
-`deploy.sh` never touches them and they cannot affect what loads. Re-`scp` only if you have
+`tools/deploy.sh` never touches them and they cannot affect what loads. Re-`scp` only if you have
 changed them locally.
 
 ⚠️ **`/tmp` is wiped on reboot**, which is why these live on `/sdcard`. A bench copied to `/tmp`

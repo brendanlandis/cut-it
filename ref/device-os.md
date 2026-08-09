@@ -107,7 +107,7 @@ same for DSP. Nothing needs to be typed by hand.
 
 **`/sdcard` is ext4 and survives a power cycle; `/tmp` is tmpfs and does not.** Everything the
 instrument writes for itself is therefore on `/sdcard`, deliberately *outside*
-`/sdcard/Patches/!/Cut It/`, so that `./deploy.sh`, `./deploy.sh --clean` and a power cycle cannot
+`/sdcard/Patches/!/Cut It/`, so that `./tools/deploy.sh`, `./tools/deploy.sh --clean` and a power cycle cannot
 touch any of it:
 
 | | Written by | Read back with |
@@ -257,10 +257,10 @@ USB-enumeration-order drift across reboots.
 
 ### Deploying
 
-`./deploy.sh` does the whole loop — syntax check, copy, reload the patch list, load the patch —
+`./tools/deploy.sh` does the whole loop — syntax check, copy, reload the patch list, load the patch —
 with no physical interaction. Flags and the reasoning are in
 [ref/conventions.md](conventions.md). Because there is **no rsync**, locally-deleted files
-linger remotely: use `./deploy.sh --clean` after renaming or removing an abstraction, or a stale
+linger remotely: use `./tools/deploy.sh --clean` after renaming or removing an abstraction, or a stale
 `.pd` will shadow the new one.
 
 Patch storage falls back from `/usbdrive` to `/sdcard` based on whether `/usbdrive` is
@@ -275,7 +275,7 @@ behaves like the previous one**, and the two cannot be told apart from the Mac. 
 debugging session, in which a fix was hunted in code that was correct and already on the device
 (item 243).
 
-**`deploy.sh` now verifies the RUN rather than the file.** A successful load restarts Pd, so the
+**`tools/deploy.sh` now verifies the RUN rather than the file.** A successful load restarts Pd, so the
 test is whether Pd is younger than the files just pushed — `/proc/<pid>`'s mtime is the process
 start time, which needs one `test -nt` and no `ps` flags that differ between busybox and procps.
 ⚠️ Both sides of that comparison are **device-side**, which is the only safe way to compare
@@ -550,7 +550,7 @@ house network by itself. Nothing about this is sticky.
 
 **Beware the wider blast radius.** `USER_DIR` is not only wifi — `start-ap.sh` reads
 `$USER_DIR/ap.txt` and the System menu's save paths hang off it. And `mount.sh` runs on **every
-Reload**, so this can appear mid-session, not just at boot. That is why `deploy.sh` sends
+Reload**, so this can appear mid-session, not just at boot. That is why `tools/deploy.sh` sends
 **`/reloadNoRemount`** rather than running `reload.sh`, which would trigger it on every single
 deploy. ✅ Verified: `/usbdrive` stays clear through a full deploy.
 

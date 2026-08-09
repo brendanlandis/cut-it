@@ -236,7 +236,7 @@ person moving a knob saw it immediately. One 819 ms gap also eats most of the ph
 
 ⚠️ **Anything armed earlier fires into an empty host.** The reconnect metro was armed at 1600 ms and
 banged the address store **before resolution**, sending `connect` with an empty host and printing
-`bad host?` on **every single boot** — harmless, and invisible to `deploy.sh` because the syntax
+`bad host?` on **every single boot** — harmless, and invisible to `tools/deploy.sh` because the syntax
 check quits first.
 
 **Fix:** arm at **3000 ms**, past both platforms. `[metro]` fires the instant it is started, so

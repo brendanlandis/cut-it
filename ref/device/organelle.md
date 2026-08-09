@@ -197,7 +197,7 @@ comment states the contract: *"All MIDI output and input can be suppressed by se
 ⚠️ **`knobs.txt` is four normalised knob positions, not knob labels** — two real files off the device
 read `0.195503 0.230694 0.134897 0.0136852;` and `0.521994 1 0.84262 0.723363;`. Cut It ships without
 one and `Storage → Save` creates it; until then mother logs `knobs.txt: can't open` at boot, which is
-expected and harmless. `./deploy.sh` will not remove it once it exists — `--clean` will.
+expected and harmless. `./tools/deploy.sh` will not remove it once it exists — `--clean` will.
 
 ⛔ **So after any Save every knob is desynced from its value, and the first touch jumps** — up to the
 full range, and knob 1 is master tempo. **Measured, that is a 443 BPM lurch**: a jump that is

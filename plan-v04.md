@@ -80,7 +80,7 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 - ⛔ **Never touch git** unless asked. Brendan commits his own work.
 - **Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and the
   whole instrument is there, front panel included.
-- **`./deploy.sh` does the whole loop** — syntax check, scp, reload, load. It **gates on output, not
+- **`./tools/deploy.sh` does the whole loop** — syntax check, scp, reload, load. It **gates on output, not
   exit status**, because Pd exits 0 even when objects fail to create.
 - **`./test/run.sh` runs every gate in one command**, and `--all` adds the benches. ⚠️ **Run it
   before calling anything done**, and read its `RESULT:` line rather than grepping for one.

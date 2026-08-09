@@ -1,18 +1,15 @@
 #!/bin/sh
 # Deploy the Cut It patch to the Organelle, and load it.
 #
-#   ./deploy.sh                      check, push, reload, load
-#   ./deploy.sh --clean              wipe the remote copy first
-#   NOCHECK=1 ./deploy.sh            skip the local Pd syntax check
-#   NORELOAD=1 ./deploy.sh           skip refreshing the patch list
-#   NOLOAD=1 ./deploy.sh             push but leave the running patch alone
-#   DEST=/usbdrive/Patches ./deploy.sh   push to a USB drive instead
-#   HOST=root@192.168.1.15 ./deploy.sh   target by IP if mDNS is flaky
-#   PD=/path/to/pd ./deploy.sh           use a different Pd for the check
+#   ./tools/deploy.sh                    check, push, reload, load
+#   ./tools/deploy.sh --clean            wipe the remote copy first
+#   HOST=root@192.168.1.15 ./tools/deploy.sh   target by IP if mDNS is flaky
+#
+# Every flag, and the reasoning behind the loop, is on ref/conventions.md.
 #
 # There is no rsync on the Organelle (Pd 0.49 / OS 4.0 build), so this uses scp.
 # Note that means files DELETED locally are not removed on the device — see
-# `./deploy.sh --clean` to wipe the remote copy first.
+# `--clean` to wipe the remote copy first.
 
 set -eu
 
@@ -21,7 +18,9 @@ DEST="${DEST:-/sdcard/Patches/!}"
 PD="${PD:-/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd}"
 PATCH="Cut It"
 
-cd "$(dirname "$0")"
+# The repo root, not tools/ — $PATCH, mac-stubs and the scp source are all
+# relative to it.
+cd "$(dirname "$0")/.."
 
 if [ ! -d "$PATCH" ]; then
     echo "error: no '$PATCH' directory in $(pwd)" >&2
@@ -118,7 +117,7 @@ fi
 # given in /tmp/curpatchname, so loading this way leaves "!/Cut It" there where
 # a menu selection would leave "Cut It". save-new-patch.sh reads that with
 # `ls /tmp/curpatchname` and would see "!" — so System -> Save New after a
-# deploy.sh load makes a folder called "! 2" instead of copying the patch.
+# deploy makes a folder called "! 2" instead of copying the patch.
 # Plain Save is unaffected (it works off the /tmp/patch symlink, which is
 # correct). Select the patch from the menu once before using Save New.
 LOADNAME="$PATCH"

@@ -76,7 +76,7 @@
 #X obj 2100 2000 f \$2;
 #X obj 2100 2050 list prepend \$1;
 #X obj 2100 2100 print u_net-target;
-#X text 2100 2160 BEHIND del 2000 BECAUSE deploy.sh GATES ON OUTPUT. The syntax check loads the patch and quits immediately \, so a print that fires at loadbang would break the deploy \, while a delayed one still reaches the by-hand console., f 44;
+#X text 2100 2160 BEHIND del 2000 BECAUSE tools/deploy.sh GATES ON OUTPUT. The syntax check loads the patch and quits immediately \, so a print that fires at loadbang would break the deploy \, while a delayed one still reaches the by-hand console., f 44;
 #X obj 160 1500 t f f;
 #X obj 1900 1150 t l l;
 #X obj 2100 1200 list split 1;

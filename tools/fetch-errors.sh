@@ -14,7 +14,7 @@
 # power-cycling the Organelle does not reload the patch). READING BOTH is what
 # makes a fetch correct either way.
 #
-# Follows deploy.sh's conventions: set -eu, HOST/DEST overridable, and every
+# Follows tools/deploy.sh's conventions: set -eu, HOST/DEST overridable, and every
 # failure explained in prose rather than left as a status code.
 
 set -eu
@@ -91,7 +91,7 @@ if ssh "$HOST" "cd '$DEST/$PATCH' 2>/dev/null && md5sum *.pd *.sh 2>/dev/null" \
         echo
         echo "  *** The deployed patch is NOT the one in this repo. ***"
         echo "  *** Any error below may come from code you no longer have. ***"
-        echo "  *** ./deploy.sh, reproduce, and fetch again. ***"
+        echo "  *** ./tools/deploy.sh, reproduce, and fetch again. ***"
     else
         echo "  all files identical — the log below came from this source"
     fi

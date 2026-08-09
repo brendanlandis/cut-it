@@ -60,7 +60,7 @@ SEQ = [
     # arrives long after the boot window, so it was a hand rather than a restore
     # -- it must go straight to LIVE and its second value must pass too. TWO
     # cc 43 events. mother pushes knobs.txt only if a Save has ever happened, so
-    # this is a fresh install or any deploy.sh --clean.
+    # this is a fresh install or any tools/deploy.sh --clean.
     (4200, "LATE-KNOB", ["\\; param og-knob-3 0.5", "\\; param og-knob-3 0.9"], GAP),
     # ⛔ BEFORE the mode switch. The bad row is keyed mode-1, so testing it after
     # switching to mode-4 makes it a LOOKUP MISS -- correctly silent, and nothing

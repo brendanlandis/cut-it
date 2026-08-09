@@ -25,7 +25,7 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | **C-6** | **Finish assembled messages with `[list trim]`**, and `[list append]` after a `route` | [→](#four-traps-around-route-every-one-silent) |
 | **C-7** | **Clear optional fields on every message** — `[list split n]` on exactly *n* atoms never fires | [→](#four-traps-around-route-every-one-silent) |
 | **C-8** | **`[t b]` in front of anything behind a reject outlet** — a reject carries DATA, not a bang | [→](#four-traps-around-route-every-one-silent) |
-| **C-9** | **Every `[print]` in a deployed abstraction sits behind `[del 2000]`** — `deploy.sh` gates on output | [→](#editing-a-pd-file-by-hand) |
+| **C-9** | **Every `[print]` in a deployed abstraction sits behind `[del 2000]`** — `tools/deploy.sh` gates on output | [→](#editing-a-pd-file-by-hand) |
 | **C-10** | **Append boxes at the end of a `.pd`, and move the `#X connect`s with them** | [→](#editing-a-pd-file-by-hand) |
 | **C-11** | **Grain timing is audio-domain** — `phasor~` and `vline~`, never `metro` / `line~` | [→](#timing-and-the-two-domains) |
 | **C-12** | **Report failures on `[s err]`** as `<level> <source> <text>`, text one symbol ≤ 21 chars | [→](#errors-must-reach-the-oled--built) |
@@ -483,7 +483,7 @@ GUI controls, and previews everything the patch writes to `screenLine1`–`5` an
 shows *what* is drawn, not *where* — pixel-accurate OLED rendering is deliberately out of
 scope. Reach for the hardware when the thing you are testing is the hardware.
 
-### `./deploy.sh` — the whole loop, one command
+### `./tools/deploy.sh` — the whole loop, one command
 
 ```
 edit in repo  →  syntax check  →  scp  →  reload patch list  →  load the patch
@@ -508,7 +508,7 @@ Organelle runs:
 ```
 
 Silence means it parsed and every object instantiated. **Pd exits 0 even when objects fail to
-create, so the gate is output, not exit status** — `deploy.sh` captures stdout and stderr and
+create, so the gate is output, not exit status** — `tools/deploy.sh` captures stdout and stderr and
 refuses to copy anything if either is non-empty. This catches the entire class of load-time
 errors — misspelled objects, malformed iemgui lines, bad connections — that would otherwise
 vanish into tty1 on a device with no console.
@@ -522,11 +522,11 @@ volume — breaking wifi config, Save and Save New. See [device-os.md](device-os
 against its *current* patch directory (`MainMenu::runPatch` builds `getPatchDir() + "/" + arg`),
 and `/reload` resets that to the default — `/usbdrive/Patches` if it exists, else
 `/sdcard/Patches`. Since the patch lives in `/sdcard/Patches/!`, the argument is `!/Cut It`.
-A bare `Cut It` loads nothing, silently. `deploy.sh` derives this from `DEST`.
+A bare `Cut It` loads nothing, silently. `tools/deploy.sh` derives this from `DEST`.
 
 | Target | Deploy |
 |---|---|
-| Organelle | `./deploy.sh` |
+| Organelle | `./tools/deploy.sh` |
 | iPhone (PdParty) | `curl -T <file> http://<phone>:9000/<scene>/_main.pd` over WebDAV |
 
 Neither needs a cable. See [device/phone.md](device/phone.md) for addresses and ports.
@@ -551,7 +551,7 @@ from the shell never produces it, and Pd 0.49 has no `closebang`, so there is no
 Programmer Mode locks out the device's own Settings menu, so the grid stays frozen and the front
 panel cannot recover it. **Run `./tools/lp-live.sh` afterwards** — it sends the Live Mode SysEx
 with `amidi`, needs no Pd at all, and was measured recovering a stranded device with no power
-cycle. `deploy.sh` is unaffected: it loads through mother's `/loadPatch`, so `quitting` fires
+cycle. `tools/deploy.sh` is unaffected: it loads through mother's `/loadPatch`, so `quitting` fires
 normally.
 
 **If the probe only needs to SEND MIDI, do not use this at all — load a menu patch instead.**
@@ -575,7 +575,7 @@ ssh root@organelle.local
 ⚠️ **Single quotes around that path, not double.** The patch folder is `/sdcard/Patches/!/…`, and
 **`!` inside double quotes is a history event in interactive zsh** — pasting the block gives
 `zsh: event not found: /Cut` before anything reaches the device. Single quotes are literal in both
-zsh and the device's busybox `ash`, so one form works everywhere. `deploy.sh` never hit this
+zsh and the device's busybox `ash`, so one form works everywhere. `tools/deploy.sh` never hit this
 because a script is not an interactive shell.
 
 Loading `mother.pd` alongside `main.pd` gives the patch its real environment — `inL`/`inR` carry
@@ -583,7 +583,7 @@ live audio, `oscOut` reaches the display. A third patch (`diag.pd`) can tap any 
 `[print]` without touching the deployed files: `[r disp] → [print DISP]`, `[r oscOut] →
 [print OSCOUT]`.
 
-Restore normal operation with `./deploy.sh`, which reloads and relaunches through the menu path.
+Restore normal operation with `./tools/deploy.sh`, which reloads and relaunches through the menu path.
 
 **This found the `[list trim]` bug in Phase 1** — a `disp` message that `route` silently
 rejected, showing as a plausible-looking zero on the OLED. Nothing else in the toolkit would
@@ -706,7 +706,7 @@ bitten this project, most of them more than once.
   and does nothing at all — indistinguishable from a negative result. **Write `\;`, or use a dash;
   it reads the same and cannot break anything.**
 
-**Every `[print]` in a deployed abstraction sits behind `[del 2000]`.** `deploy.sh` gates on
+**Every `[print]` in a deployed abstraction sits behind `[del 2000]`.** `tools/deploy.sh` gates on
 *output*, so a diagnostic that fires at `loadbang` breaks the deploy; behind a delay the syntax
 check quits before it fires while the by-hand console still sees it.
 

@@ -31,7 +31,7 @@
 #X obj 20 1490 del 2000;
 #X obj 20 1540 f \$1;
 #X obj 20 1590 print m_volca-channel;
-#X text 300 1490 SELF-IDENTIFYING \, the same way m_nano is. The Volca transmits NOTHING \, so a wrong channel here is invisible from every direction: no readback \, no error \, and Pd 0.49 does not warn about a missing creation argument. This print is the only thing that says out loud which channel this instance actually got. ⚠️ THE 2000 ms IS NOT COSMETIC -- deploy.sh gates on OUTPUT rather than exit status \, and its check quits at about 735 ms \, so a print at loadbang would fail every deploy., f 66;
+#X text 300 1490 SELF-IDENTIFYING \, the same way m_nano is. The Volca transmits NOTHING \, so a wrong channel here is invisible from every direction: no readback \, no error \, and Pd 0.49 does not warn about a missing creation argument. This print is the only thing that says out loud which channel this instance actually got. ⚠️ THE 2000 ms IS NOT COSMETIC -- tools/deploy.sh gates on OUTPUT rather than exit status \, and its check quits at about 735 ms \, so a print at loadbang would fail every deploy., f 66;
 #X connect 3 0 4 0;
 #X connect 4 0 5 0;
 #X connect 4 1 8 0;

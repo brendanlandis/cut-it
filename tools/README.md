@@ -41,7 +41,7 @@ fine.
 ./tools/fetch-state.sh --diff       show what would change, copy nothing
 ```
 
-`u_state` deliberately writes OUTSIDE the patch folder so `deploy.sh`, `--clean` and a power cycle
+`u_state` deliberately writes OUTSIDE the patch folder so `tools/deploy.sh`, `--clean` and a power cycle
 cannot touch it. The cost is that the data then lives in exactly one place, on an SD card, in a
 device that has already lost its network once. This is the other half of that bargain. It commits
 nothing — git is Brendan's.
@@ -215,7 +215,7 @@ crash, power loss, or `killall pd` — which the by-hand console workflow does e
 Programmer Mode locks out the Launchpad's own Settings menu, so the front panel cannot recover it.
 
 Measured 2026-08-03: `killall pd` left the grid frozen in Programmer Mode, and this brought it back
-with no power cycle. `deploy.sh` is unaffected — it loads through `/loadPatch`, so `quitting` fires
+with no power cycle. `tools/deploy.sh` is unaffected — it loads through `/loadPatch`, so `quitting` fires
 normally.
 
 ### `dsp-toggle.pd` + `dsp.sh` — turn the audio engine off on a running patch
@@ -314,7 +314,7 @@ that only needs MIDI **sent**; use the console when you need `[print]` output ba
 ⚠️ **One side effect.** Loading this way leaves `!/Cut It` in `/tmp/curpatchname` where a menu
 selection would leave `Cut It`, so **System → Save New afterwards makes a folder called `! 2`**.
 Select the patch from the menu once before using Save New. Plain Save is unaffected — it works off
-the `/tmp/patch` symlink. Same caveat as `deploy.sh`'s own load.
+the `/tmp/patch` symlink. Same caveat as `tools/deploy.sh`'s own load.
 
 ### Running one of these by hand
 

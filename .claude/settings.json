@@ -19,11 +19,10 @@
       "Bash(defaults read *)",
       "Bash(bash -n *)",
       "Bash(sh -n *)",
-      "Bash(./deploy.sh)",
-      "Bash(HOST=* ./deploy.sh)",
+      "Bash(./tools/deploy.sh)",
+      "Bash(HOST=* ./tools/deploy.sh)",
       "Bash(./tools/fetch-errors.sh)",
       "Bash(HOST=* ./tools/fetch-errors.sh)",
-      "Bash(./tools/phase6-assert.sh)",
       "Read(//Users/brendan/Desktop/**)",
       "Read(//Users/brendan/Library/Preferences/**)",
       "Read(//tmp/**)"

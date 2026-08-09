@@ -57,7 +57,7 @@
 #X obj 1000 570 del 2000;
 #X obj 1000 620 f \$1;
 #X obj 1000 670 print m_launchpad-channel;
-#X text 1000 730 Says which block it is listening on \, once \, a couple of seconds in. THE DELAY IS NOT COSMETIC: deploy.sh gates on OUTPUT rather than exit status and quits the check immediately after load \, so a print at loadbang would fail every deploy. Same treatment as m_nano's., f 50;
+#X text 1000 730 Says which block it is listening on \, once \, a couple of seconds in. THE DELAY IS NOT COSMETIC: tools/deploy.sh gates on OUTPUT rather than exit status and quits the check immediately after load \, so a print at loadbang would fail every deploy. Same treatment as m_nano's., f 50;
 #N canvas 30 30 1900 1200 input 0;
 #X text 20 20 EVERY BUTTON ON THE SURFACE. The 8x8 grid arrives as NOTES -- pitch r*10+c \, rows and columns both 1 to 8 \, row 1 at the bottom -- and the outer function ring as CC. Two decodes \, one emit chain \, and no notion anywhere of what any of them does., f 58;
 #X text 700 20 THE GATE IS ONE CHANNEL \, not two. In Programmer Mode the Launchpad sends everything on its own channel 1 \, so the test is simply that the Pd channel EQUALS the block -- where m_nano needs a range because the nano's transport row sits on the channel above. Every other device in the rig is 16 or more away and cannot be mistaken for this one., f 58;

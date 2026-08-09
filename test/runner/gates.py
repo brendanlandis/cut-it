@@ -10,7 +10,7 @@ it. The gates were all there, all passing, and all unused.
 
 ⚠️ A GATE YOU HAVE TO REMEMBER TO RUN IS A GATE THAT EVENTUALLY DOES NOT RUN.
 That is the same lesson as `wire.sh` being run by u_init rather than by hand, and
-as deploy.sh doing the syntax check rather than trusting anyone to.
+as tools/deploy.sh doing the syntax check rather than trusting anyone to.
 
 ⛔ EVERYTHING HERE IS MAC-SIDE AND TOUCHES NOTHING ON THE ORGANELLE: no ssh, no
 deploy, no device. Safe to run at any time, including with the device off. That
@@ -68,7 +68,7 @@ GATES = [
     # Pd exits 0 even when objects fail to create, so the gate is OUTPUT, not
     # status. Handled in code below rather than as a command, because it needs
     # to read what Pd wrote.
-    ("both entry points load in silence (deploy.sh's own gate)", None),
+    ("both entry points load in silence (tools/deploy.sh's own gate)", None),
 
     # --- 3. the benches are generated, not hand-written --------------------
     ("bench step text survived generation",
@@ -97,7 +97,7 @@ GATES = [
 
 
 def _syntax():
-    """deploy.sh's own gate: both entry points must load in SILENCE.
+    """tools/deploy.sh's own gate: both entry points must load in SILENCE.
 
     ⛔ THE ORACLE IS OUTPUT, NOT EXIT STATUS. Pd returns 0 even when half the
     objects in a patch failed to create, so a status check here would pass a

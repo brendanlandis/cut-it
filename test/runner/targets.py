@@ -249,7 +249,7 @@ def device(bench_name, auto_only, work):
             "      skips m_launchpad's safe exit, and the device's own Settings\n"
             "      menu is locked out in that state. Restore it with:\n"
             "          ./tools/lp-live.sh        (needs no Pd)\n"
-            "          ./deploy.sh               (reloads the instrument too)")
+            "          ./tools/deploy.sh               (reloads the instrument too)")
 
     stream.say("  launching on %s -- ⚠️ this stops the running instrument" % HOST)
     return Process(["ssh", HOST, remote], stream.Go(_host_only(HOST)),

@@ -44,7 +44,7 @@ def fresh_dir():
 
 def run_driver():
     """Run the driver to completion. It quits itself -- -send 'pd quit' would
-    return before any [del] fired, which is the same fact that lets deploy.sh
+    return before any [del] fired, which is the same fact that lets tools/deploy.sh
     ignore a [print] behind [del 2000]."""
     p = subprocess.run(
         [PD, "-nogui", "-noaudio", "-nomidi",
@@ -63,8 +63,8 @@ def read(path):
 
 
 # ---------------------------------------------------------------------------
-print("=== A. the deploy.sh gate: both entry points load in SILENCE ===")
-# This is deploy.sh's own command, not an approximation of it. u_state reads two
+print("=== A. the tools/deploy.sh gate: both entry points load in SILENCE ===")
+# This is tools/deploy.sh's own command, not an approximation of it. u_state reads two
 # files at boot and a missing file PRINTS three lines (item 143) -- so this is
 # the check that would catch the state store breaking every deploy.
 for entry in ("main.pd", "main-dev.pd"):

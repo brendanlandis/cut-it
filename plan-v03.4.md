@@ -121,7 +121,7 @@ gates were inverted deliberately and both were made to fail against the old code
    `252` STOP, then fire the reload behind a short delay.
 2. ⛔ **The two-step OSC, or it silently does nothing.** `oscsend localhost 4001 /reloadNoRemount i 1`
    **then** `/loadPatch s '!/Cut It'`. A bare name loads nothing at all and says nothing —
-   `deploy.sh` documents this, and it still caught us on 2026-08-08.
+   `tools/deploy.sh` documents this, and it still caught us on 2026-08-08.
 3. ⛔ **The failure mode is worse than the fault.** If the load does not take, there is no patch at
    all, and the patch cannot verify its own reload because it is dead by then. This is item 243's
    shape exactly. Design for it rather than discovering it.
@@ -272,7 +272,7 @@ rather than pretending a machine judged it.**
 ```sh
 ./test/run.sh                        # read the RESULT: line
 python3 test/gate/docs-check.py -v   # the two boot.md tables are anchored to wire.sh
-./deploy.sh
+./tools/deploy.sh
 ```
 
 Then, on hardware, for **each** of the Launchpad, nanoKONTROL and SP-404:

@@ -148,7 +148,7 @@ Each is a claim and its fix. How any of them was found is in the git history.
 
 ### The map must be read at `loadbang` with no delay
 
-⛔ The read sat behind `[del 2000]`, to keep a missing file's error clear of `deploy.sh`'s 735 ms
+⛔ The read sat behind `[del 2000]`, to keep a missing file's error clear of `tools/deploy.sh`'s 735 ms
 output gate. But **mother pushes `knobs.txt` at boot, long before 2000 ms**, so the restored tempo
 knob hit an **empty table** and was silently dropped. The instrument booted at `u_tempo`'s fallback
 120 instead of the saved 57, and nothing reported it (item 234).
@@ -286,7 +286,7 @@ beside it — made once more rather than newly, and it goes when the row moves t
 ⛔ mother pushes a knob value at load **whether or not `knobs.txt` exists** — the saved position when
 it does, the knob's own live position when it does not. Arming on the push alone latched knobs that
 already agreed with the hardware, and they then stayed dead until turned back past where they
-started. Reachable on a fresh install and after any `deploy.sh --clean` (item 239).
+started. Reachable on a fresh install and after any `tools/deploy.sh --clean` (item 239).
 
 **Fix:** ask the direct question. `u_map` reads `knobs.txt` into a `[text define]` and takes
 `[text size]` — 1 when present, 0 when absent — and on absent it writes every pickup slot to LIVE.
@@ -298,7 +298,7 @@ it is a do-nothing stub on the Mac, and a gate could then only ever reach one of
 `[text]` read behaves identically on both machines, so the gate creates the file or does not and
 exercises the real path either way.
 
-⚠️ **The read sits behind `[del 2000]` because a missing file prints three lines**, and `deploy.sh`
+⚠️ **The read sits behind `[del 2000]` because a missing file prints three lines**, and `tools/deploy.sh`
 fails a check on any output before ~735 ms (C-9). Deferring costs nothing: mother's push is taken by
 the virgin branch either way, and a knob turned inside the first two seconds is released the instant
 the probe fires.

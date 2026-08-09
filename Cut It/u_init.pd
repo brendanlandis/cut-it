@@ -29,7 +29,7 @@
 #X connect 1 0 2 0;
 #X connect 2 0 3 0;
 #X restore 900 760 pd panic-footer;
-#X text 140 920 STAGE TIMINGS ARE GUESSES WITH EVIDENCE \, not measurements. loadbang fires before ALSA is up -- tools/README.md records init SysEx sent on loadbang going nowhere \, and 1500 ms being enough in tools/self-wire.pd. If the Launchpad ever comes up unlit \, lengthen the second delay before suspecting the SysEx., f 58;
+#X text 140 920 STAGE TIMINGS ARE GUESSES WITH EVIDENCE \, not measurements. loadbang fires before ALSA is up -- tools/README.md records init SysEx sent on loadbang going nowhere \, and item 266 on ref/module/boot.md is where the 1500 ms came from. If the Launchpad ever comes up unlit \, lengthen the second delay before suspecting the SysEx., f 58;
 #X text 620 920 wire.sh runs from /tmp/patch \, which is Pd's working directory on the device. Every aconnect in it is allowed to fail \, so a missing device does not stop the rest -- and cannot stop the boot., f 46;
 #X text 1080 920 shell is an external that exists only on the Organelle. mac-stubs/shell.pd stands in for it during the local syntax check \, and is never deployed., f 46;
 #X obj 900 570 print wire;

@@ -751,3 +751,21 @@ written: **the `m_` layer separates device mapping from everything it controls.*
 `e_*` may know that a nanoKONTROL exists. That is what makes the compose/perform split
 tractable — the same surfaces mean different things in each mode — and it is the one boundary
 that is genuinely expensive to retrofit.
+
+### `mac-stubs/` is a sibling of the patch folder, and cannot move into it
+
+⛔ **Do not tidy `mac-stubs/` into `Cut It/`.** Two independent reasons, either one fatal:
+
+1. `Cut It/u_err.pd` and `Cut It/u_init.pd` carry `#X declare -path ../mac-stubs`, and
+   `tools/deploy.sh` passes `-path mac-stubs` from the repo root. **The relative path is the
+   mechanism** — it only resolves from outside.
+2. Its own header records the trap: **a file named `shell.pd` reaching the patch folder SHADOWS
+   the real external, and MIDI wiring silently stops happening.** Pd resolves a class from the
+   patch directory before it reaches the externals path, so the stub would win on the device — and
+   nothing would report it, because a do-nothing `[shell]` creates cleanly and returns nothing.
+
+**It has exactly one member and always will.** Everything else the patch needs is a built-in
+class, and a built-in cannot be shadowed by a file at all — which is why `test/stubs/` exists as a
+separate mechanism with a different shape: a gate swaps *those* in by rewriting object boxes inside
+a scratch copy, because there is no path trick that would work. **One directory per mechanism, and
+the two mechanisms are not interchangeable.**

@@ -16,7 +16,7 @@ matters because the Organelle launches Pd with `-nogui` and there is no console 
 | **The wifi investigation** — an OPEN fault | `find-organelle.sh` `wifi-watch.sh` `wifi-poll.sh` `wifi-report.sh` `wifi-reassociate.sh` |
 | **Driving and rescuing hardware** | `lp-live.sh` `dsp.sh` + `dsp-toggle.pd` |
 | **Measuring the device** | `display-cpu.sh` `display-diag.pd` |
-| **Probes still worth running** | `lp-monitor.pd` `lp-step0.pd` `alert-buffer-probe.pd` `self-wire.pd` |
+| **Probes still worth running** | `lp-monitor.pd` `lp-step0.pd` `alert-buffer-probe.pd` |
 | **Answering a device** — does it reply at all | `stage-patches/Inquiry Probe/` |
 | **Watching a device animate** — does it still track the clock | `stage-patches/Anim Probe/` |
 | **Worked examples** — a technique, kept as the proof | `audio-probe/` `oled-probe/` `osc-bridge/` `status-display/` |
@@ -245,9 +245,10 @@ so the grid stops walking and the transport stops counting. Expected, not a faul
 ```
 
 item 94. Wraps the `/proc` arithmetic from [../ref/device-os.md](../ref/device-os.md)
-→ *Measuring the running patch* and says WITHIN or OVER against the **11.2 %** budget — Phase 5's
-10.2 % idle baseline plus one point. ⚠️ `pgrep -nx pd`, never a bare `pgrep`: the substring match
-hits a kernel thread on this device.
+→ *Measuring the running patch* and says WITHIN or OVER against a budget of one point above the
+newest baseline row on that page. ⛔ **The budget is stated there, not here** — it went stale once
+by being written in three places at once. ⚠️ `pgrep -nx pd`, never a bare `pgrep`: the substring
+match hits a kernel thread on this device.
 
 ### `display-diag.pd` — a real console for the display arbiter
 

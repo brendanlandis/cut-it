@@ -38,7 +38,10 @@ stage name on screen means the sequence got that far — not that the hardware a
 on one name still tells you where to look.**
 
 ⚠️ **The stage timings are guesses with evidence, not measurements.** `loadbang` fires before ALSA
-is up; init SysEx sent on `loadbang` goes nowhere, and 1500 ms was enough in `tools/self-wire.pd`.
+is up and init SysEx sent on `loadbang` goes nowhere, so every stage sits behind a delay chosen to
+clear that — **1500 ms was enough**, established by a feasibility probe that ran `wire.sh` from a
+bare `[loadbang]` → `[del 1500]` → `[shell]` before `u_init` existed. **Item 266.** The probe was
+retired once `u_init` did the same thing in production; the number is the part that survived.
 **If the Launchpad ever comes up unlit, lengthen the second delay before suspecting the SysEx.**
 
 ⛔ **`u_tempo`'s 4000 is coupled to this sequence.** Change a stage timing and that number changes

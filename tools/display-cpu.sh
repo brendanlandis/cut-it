@@ -9,8 +9,15 @@
 # which reads /proc rather than using top because the device has busybox. Takes
 # the reading over five seconds WITHOUT disturbing the running patch.
 #
-# THE BUDGET IS 11.2 %: Phase 5's measured idle baseline of 10.2 % plus one
-# point. g_grid should come nowhere near it, because it repaints only when
+# THE BUDGET IS A BASELINE PLUS ONE POINT, AND THE BASELINE LIVES ON THE PAGE,
+# NOT HERE. ref/device-os.md -> Measuring the running patch carries one row per
+# phase; BUDGET below tracks the newest row that matches the rig you are
+# measuring. ⛔ It read 11.2 for three phases after Phase 5 set it, so the
+# script reported OVER BUDGET as a matter of course and the verdict stopped
+# meaning anything. When the table gains a row, move this number and say which
+# row it came from -- do not re-derive the baseline here.
+#
+# g_grid should come nowhere near the budget, because it repaints only when
 # something changed -- nothing at all when idle, about two SysEx a second at
 # 120 BPM. If this is over budget, the dirty flag is not gating.
 #
@@ -22,10 +29,14 @@ HOST=${HOST:-root@organelle.local}
 N=1
 [ "$1" = "-n" ] && N=$2
 
-BUDGET=11.2
+# Phase 7's 11.7 % -- the newest full-rig row, phone up, five ALSA links --
+# plus one point. Phase 8's 10.4-10.7 % is LOWER and not comparable: four links
+# and no phone. Item 156.
+BUDGET=12.7
+BASELINE="Phase 7 full rig 11.7 % plus one point"
 
 echo "measuring $HOST -- five seconds a reading, $N reading(s)"
-echo "budget: ${BUDGET} % (Phase 5 idle baseline 10.2 % plus one point)"
+echo "budget: ${BUDGET} % (${BASELINE}) -- ref/device-os.md has the table"
 echo
 
 i=1
@@ -65,7 +76,7 @@ while [ "$i" -le "$N" ]; do
 
     echo "reading $i"
     echo "   pd CPU        ${cpu} %       ${verdict} (<= ${BUDGET} %)"
-    echo "   UDP out       ${udp}/s        the display -- flat at ~117 since Phase 3"
+    echo "   UDP out       ${udp}/s        the display + u_net -- compare the table, not a memory"
     echo "   load          ${load}"
     echo "   ALSA links    ${alsa}         expect 5 with three controllers wired both ways"
     echo

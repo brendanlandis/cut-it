@@ -125,7 +125,7 @@ so the question does not recur.
 |---|---|
 | `tools/__pycache__/` and the two under `test/` | **Delete.** Five orphaned `.pyc` files; one has no source anywhere in the repo. Confirm `.gitignore` covers them |
 | `tools/display-cpu.sh` | **Fix or retire.** Its 11.2 % budget is Phase 5's, and Phase 6 already exceeded it — it reports OVER BUDGET as a matter of course |
-| `tools/self-wire.pd` | **Retire.** Superseded by `u_init` running `wire.sh` on every load; its one remaining claim is already stated on [ref/module/boot.md](ref/module/boot.md) |
+| the `self-wire` probe | ✅ **Retired.** Superseded by `u_init` running `wire.sh` on every load; its one live claim — the 1500 ms — is item 266 on [ref/module/boot.md](ref/module/boot.md) |
 | `tools/audio-probe/`, `oled-probe/`, `osc-bridge/`, `status-display/` | **Keep** — see Phase 5 |
 
 ⛔ **The test is "would you run it again", not "is it used".** A script mentioned in no document is

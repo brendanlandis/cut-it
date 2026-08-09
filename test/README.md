@@ -92,7 +92,7 @@ Phases 5, 6 and 7 all rest on — and came within one step of shipping without r
 gates. The gates were all there, all passing, and all unused. **A gate you have to remember to run
 is a gate that eventually does not run.**
 
-⚠️ **`lp-monitor.pd`, `lp-step0.pd` and `self-wire.pd` are NOT here.** They were listed under
+⚠️ **`lp-monitor.pd` and `lp-step0.pd` are NOT here.** They were listed under
 `test/` and they live in [tools/](../tools/README.md), where the directory-is-the-kind rule puts
 them: they are probes a person runs, not tests with an oracle.
 

@@ -220,9 +220,11 @@ the rig matches**; that is the whole reason each row names its phase rather than
 repeated alert state 2/s, and the late-join repeat 1/s. ✅ **`u_net` costs about 0.2 CPU points.**
 Items 118 and 134.
 
-⚠️ **The 11.2 % budget the tooling still prints is Phase 5's, and Phase 6 already exceeded it.**
-`tools/display-cpu.sh` reports OVER BUDGET against it, which is the script being stale rather than
-a regression. Compare against the row above instead.
+⛔ **The budget belongs to the newest row that matches your rig, and `tools/display-cpu.sh` tracks
+it from here.** It printed Phase 5's 11.2 % for three phases after Phase 6 exceeded it, so every
+run said OVER BUDGET and the verdict stopped carrying information — **a threshold nobody moves is a
+threshold nobody reads.** It now reads **12.7 %**, Phase 7's full-rig 11.7 % plus one point.
+**When this table gains a row, move that number and name the row it came from.**
 
 ✅ **10.2–10.5 % is the idle baseline, not an artefact — item 134 closed, item 254.** Those
 readings had been held open on the suspicion that they were taken *shortly after patch reloads*.

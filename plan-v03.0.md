@@ -1,9 +1,9 @@
 # Plan v0.3.0 — what is left that needs hands on the rig
 
 **Everything in this plan that could be done without the hardware in front of you has been done.**
-What remains is **five** things, and every one of them needs a person at the rig — eyes on a screen,
-ears on a speaker, fingers on a menu, or a cable moved. Item 77 was the sixth and it was answered on
-2026-08-08; its result is kept below because it changes what v0.4 can assume.
+What remains is **four** things, and every one of them needs a person at the rig — eyes on a screen,
+ears on a speaker, fingers on a menu, or a cable moved. Items 77 and 39 were answered on 2026-08-08;
+their results are kept below because one of them changes what v0.4 can assume.
 
 ⛔ **This file is now a checklist, not a design document.** The reasoning behind each item lives on
 its `ref/` page; what is here is *what to do* and *what counts as done*. The history — parameter
@@ -66,7 +66,7 @@ and the SP-404 contains another, so the tree looks four deep and is not.
 | # | Do | Needs | Lands on |
 |---|---|---|---|
 | ~~1~~ | ✅ **DONE 2026-08-08.** Item 77 closed — there are no limits, because the device never tracks. Item 257 | — | [ref/device/launchpad.md](ref/device/launchpad.md) |
-| 2 | **Read the OLED by eye** — item 39 | eyes | [ref/module/display.md](ref/module/display.md) |
+| ~~2~~ | ✅ **DONE 2026-08-08.** Item 39 closed — all three layouts legible at playing distance. Item 258 | — | [ref/module/display.md](ref/module/display.md) |
 | 3 | **Exercise the SP-404 CC map** beyond 16/17 | the rig | [ref/device/sp404.md](ref/device/sp404.md) |
 | 4 | **Write the 404 pre-set checklist** | the box in hand | [ref/rig.md](ref/rig.md) |
 | 5 | **Try Organelle audio back into the 404** | one cable | [ref/rig.md](ref/rig.md) |
@@ -88,13 +88,14 @@ on it.
 ⚠️ **`tools/stage-patches/Anim Probe/` is kept**, since it is the only thing in the project that
 exercises the animation channels at all, and a firmware update could change this answer.
 
-### 2. Item 39 — the OLED read by eye
+### ~~2. Item 39~~ ✅ ANSWERED 2026-08-08 — all three layouts pass
 
-The geometry is already verified through `oscOut` on the Mac. What cannot be: *"is 16 px readable at
-arm's length"*, across the three type-size layouts, and whether the panel has aged.
+Read off the panel at playing distance, raising each layout in turn with one nano slider, then two,
+then four. **24px, 16px and the 8px five-row case are all legible.**
 
-**Done means:** a judgement per layout on `display.md`, and a note on ageing. ⚠️ A `⬜` that says
-*"looks fine"* with no viewing distance is not an answer.
+⛔ **So the two-mover layout's weakness is CLIPPING, not size** — 16px truncates at about ten
+characters and `slider-1 43` becomes `slider-1 4`. A larger font would not help; that is a layout
+problem. Item 258 on [ref/module/display.md](ref/module/display.md).
 
 ### 3. The SP-404 CC map beyond 16/17
 
@@ -148,6 +149,5 @@ python3 test/gate/docs-check.py -v
 
 ## Done means
 
-1. All five above are answered on their pages, or explicitly declined with the reason recorded.
-2. `plan-v04.md` §3 no longer carries item 39.
-3. **This file is deleted.**
+1. All four above are answered on their pages, or explicitly declined with the reason recorded.
+2. **This file is deleted.**

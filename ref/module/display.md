@@ -113,6 +113,14 @@ untouched throughout.
 | 2 | Name 8px @ y=0 / value **16px** @ y=8, then name 8px @ y=23 / value 16px @ y=31 | verified | — |
 | 3–5 | **8px** rows at y=0, 9, 18, 27, 36, in the order first touched | verified | — |
 
+✅ **All three are legible at playing distance — item 258, item 39 closed.** Read off the panel by
+eye at arm's length rather than judged from the geometry, one nano slider then two then four to
+raise each layout in turn. **Even the 8px five-row case passes.**
+
+⛔ **So the two-mover layout's weakness is CLIPPING, not size.** 16px fits about ten characters
+across 128 px and silently truncates — `slider-1 43` becomes `slider-1 4`. That is the one to design
+against, and it would not be helped by a larger font.
+
 ### `g_grid` — the same shape, one link shorter
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |

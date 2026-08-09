@@ -140,14 +140,18 @@ and the hardware out of step. Pickup is what reconciles them — ignore the cont
 
 ### Checks that were never run
 
-⬜ Three, carried forward from the dissolved evidence ledger. **None blocks anything**, and they keep
-their item numbers so the citations still resolve. ✅ *Brownouts with the full rig powered* — items 5
-and 95 — left this table on 2026-08-08: there is no shared rail for one to happen on, and the
-evidence is on [ref/rig.md](ref/rig.md) as item 255.
+⬜ **Two left of the four**, carried forward from the dissolved evidence ledger. **Neither blocks
+anything**, and they keep their item numbers so the citations still resolve. Both of the others were
+struck on 2026-08-08:
+
+- ✅ *Brownouts with the full rig powered* — items 5 and 95. **There is no shared rail for one to
+  happen on**; the evidence is on [ref/rig.md](ref/rig.md) as item 255.
+- ✅ *The OLED read by eye* — item 39. **All three type-size layouts are legible at playing
+  distance**, including the 8px five-row case; on
+  [ref/module/display.md](ref/module/display.md) as item 258.
 
 | Item | Check | Why it is still open |
 |---|---|---|
-| 39 | **The OLED read by eye** — the three type-size layouts and the ageing | The geometry is verified through `oscOut` on the Mac, but *"is 16px readable at arm's length"* is a judgement only the hardware can settle |
 | 45 | **AP link quality over a set-length window** | Needs an actual set's duration to mean anything. ⚠️ Needs the AP up, which kills the house link |
 | 81 | **The wifi fault itself** | ⚠️ Narrowed, not solved — see [ref/device-os.md](ref/device-os.md) |
 

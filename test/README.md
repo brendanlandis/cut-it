@@ -262,12 +262,13 @@ that route** — the allowlist guard, enforced by reading, exactly the way this 
 global sends. It also catches a **duplicate `(mode, control)` pair**, which `text search` resolves
 to the *first* match only, so a repeat is dead and silent. That half runs without Pd at all.
 
-The other half of each gate rewrites the MIDI object boxes in a scratch copy — **all five classes, from the one
+The other half of each gate rewrites the MIDI object boxes in a scratch copy — **all six classes, from the one
 `MIDI_EXPECT` in `test/gate/lib-scratch.sh`**, shared with every other gate that makes a copy. ⛔
 **`[midiout]` alone was never enough**: `m_volca` and `m_404` emit through `noteout` / `ctlout` /
 `pgmout`, so a rewrite of `midiout` only finds nothing in them and every assertion about them passes
-**vacuously**. ⛔ **And `t_notein` is not optional**: every *output* path can be driven from a bus,
-but `m_404`'s whole receive side sits behind a MIDI input and **no bus reaches one**.
+**vacuously**. ⛔ **And the two input stubs are not optional**: every *output* path can be driven from
+a bus, but `m_404`'s receive side sits behind `[notein]` and `m_nano`'s *entire surface* sits behind
+`[ctlin]`, and **no bus reaches a MIDI input**. `[sysexin]` is the one class left with no stub.
 
 ⚠️ **The count is EXACT per class, never "not zero".** A **lower** count means assertions have gone
 vacuous; a **higher** one means an emitter no gate knows about. `test/gate/midi-emitters-assert.sh`

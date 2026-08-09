@@ -1,0 +1,15 @@
+#N canvas 20 20 1500 1080 12;
+#X text 20 20 t_ctlin -- a stand-in for [ctlin] that a DRIVER CAN DRIVE. Every gate that makes a scratch copy rewrites [ctlin] to [t_ctlin] there \; nothing in Cut It/ is touched and this file is never deployed., f 84;
+#X text 20 130 ⛔ IT EXISTS BECAUSE THREE DEVICE LAYERS ARE OTHERWISE UNREACHABLE. m_nano decodes its ENTIRE surface behind [ctlin] -- the channel gate \, the div 10 / mod 10 name families \, the press-only button rule and the unmapped-CC warning -- and m_404 and m_launchpad each have one too. THERE IS NO BUS BEHIND A MIDI INPUT \, so without this the main control surface of the instrument had no headless gate at all. test/gate/lib-scratch.sh named the missing stub as the blocker in writing., f 84;
+#X text 20 310 THE OUTLET ORDER IS THE WHOLE CONTRACT \, and it is the MIRROR of t_notein's. The real object fires CHANNEL \, then CONTROLLER \, then VALUE -- right to left -- so the value is what triggers an emit and the controller number is already stored. unpack fires right to left too \, so wiring outlet 2 to outlet 2 reproduces that order exactly rather than approximating it. ⚠️ Get this backwards and the stub tests itself rather than the patch. m_launchpad.pd says the same thing from the other side: t b f for pads and t f b for the ring., f 84;
+#X text 20 490 creation args: none \, and none are needed -- all three boxes in the patch are BARE [ctlin] with three outlets. inlets: none -- it is a SOURCE. outlets 3: value \, controller \, channel \, exactly as the real object. ⚠️ THE MESSAGE ATOMS ARE IN OUTLET ORDER \, same as t_notein: \; t-ctlin <value> <controller> <channel>., f 84;
+#X text 20 640 ⚠️ t-ctlin IS A BARE GLOBAL NAME OUTSIDE THE ALLOWLIST \, and that is deliberate and safe: it exists ONLY in the gate's scratch copy \, exactly like t-notein and t_midiout \, and Cut It/ never contains it. ⛔ ONE NAME REACHES ALL THREE REWRITTEN BOXES \, so a driver aimed at the nano's channel block is also offered to m_404 and m_launchpad -- which makes cross-talk between the three channel gates a thing a gate can assert rather than assume., f 84;
+#X obj 20 860 r t-ctlin;
+#X obj 20 910 unpack f f f;
+#X obj 20 970 outlet;
+#X obj 300 970 outlet;
+#X obj 580 970 outlet;
+#X connect 5 0 6 0;
+#X connect 6 0 7 0;
+#X connect 6 1 8 0;
+#X connect 6 2 9 0;

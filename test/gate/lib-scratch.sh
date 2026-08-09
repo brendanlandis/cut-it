@@ -34,13 +34,19 @@
 #
 # ⚠️ UPDATE THIS DELIBERATELY, NEVER TO MAKE A RED RUN GREEN. A gate going red
 # here is the invariant working.
-MIDI_EXPECT="midiout:6 noteout:2 ctlout:2 pgmout:1 notein:2"
+#
+# ⚠️ IT IS "EVERY CLASS THAT GETS REWRITTEN", not "every emitter" -- notein and
+# ctlin are INPUTS and they are here because test/stubs/ has a source stub for
+# each. The name is older than the notein stub and is kept because every gate,
+# every error message and the gate skill all cite it.
+MIDI_EXPECT="midiout:6 noteout:2 ctlout:2 pgmout:1 notein:2 ctlin:3"
 
-# The MIDI INPUTS with no stub yet. Counted so the inventory is complete and a
-# new one cannot appear unannounced -- never rewritten, because there is nothing
-# to rewrite them to. ⬜ A t_ctlin would let a nanoKONTROL gate exist at all; see
-# plan-v04.md.
-MIDI_INVENTORY="ctlin:3 sysexin:1"
+# The MIDI objects with no stub. Counted so the inventory is complete and a new
+# one cannot appear unannounced -- never rewritten, because there is nothing to
+# rewrite them to. [sysexin] is the last one: m_launchpad's device-inquiry reply
+# is the only thing that arrives on it, and the arming spigot in front of that
+# reply is already asserted from the other side by launchpad-assert.
+MIDI_INVENTORY="sysexin:1"
 
 # ---------------------------------------------------------------------------
 scratch_require() {
@@ -171,7 +177,7 @@ midi_rewrite() {
     # $1 = work dir. Rewrites every class in MIDI_EXPECT to its printing stub in
     # the scratch copy, asserting the exact count as it goes.
     #
-    # ⚠️ IT REWRITES ALL FIVE, even for a gate that reads only one of them. That
+    # ⚠️ IT REWRITES ALL SIX, even for a gate that reads only one of them. That
     # is deliberate: it costs nothing -- a stub only prints -- and it means every
     # gate that makes a scratch copy enforces the whole inventory, so a new
     # emitter cannot be added without some gate going red.

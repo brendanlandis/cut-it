@@ -36,7 +36,7 @@ has six. **The count drifted and nothing noticed**, because "not zero" cannot no
 all of it:
 
 ```sh
-MIDI_EXPECT="midiout:6 noteout:2 ctlout:2 pgmout:1 notein:2"
+MIDI_EXPECT="midiout:6 noteout:2 ctlout:2 pgmout:1 notein:2 ctlin:3"
 ```
 
 A lower count means assertions have gone vacuous; a higher one means a new emitter the gate does not
@@ -63,10 +63,15 @@ semantics, and must tolerate creation arguments.
 ⚠️ **A bus is not enough stimulus.** Anything behind `[notein]` / `[ctlin]` has no bus in front of
 it, so a receive path goes untested. Rewrite the **inputs** too: `t_notein` is `[r t-notein]` →
 `[unpack f f f]` with outlets wired 2→2, 1→1, 0→0, so it emits channel, velocity, pitch — the order
-`notein` documents.
+`notein` documents. `t_ctlin` is the same shape for channel, controller, value.
 
-⚠️ **`t-notein` is a bare global name outside the allowlist, and that is fine** — it exists only in
-the scratch copy. State it, so nobody "fixes" it.
+⚠️ **`t-notein` and `t-ctlin` are bare global names outside the allowlist, and that is fine** — they
+exist only in the scratch copy. State it, so nobody "fixes" it.
+
+⚠️ **One receive name reaches every rewritten box of its class.** All three `[ctlin]` become
+`[t_ctlin]`, so a driver aimed at the nano's channel block is also offered to `m_404` and
+`m_launchpad`. That is not a leak to work around — it makes **cross-talk between the three channel
+gates something a gate can assert** rather than assume.
 
 ## Three things that have cost real time
 

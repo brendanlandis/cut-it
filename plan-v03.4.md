@@ -11,7 +11,9 @@ serve all of them, and closes item 235.
 
 ✅ **The two measurements it was blocked on are in** — item 249, 2026-08-08: **all three devices
 answer a universal device inquiry**, so every one of them gets *active* polling rather than passive
-last-heard detection. It now depends only on the stub from [plan-v03.3.md](plan-v03.3.md).
+last-heard detection. ✅ **The `ctlin` stub it was waiting on landed 2026-08-09** —
+`test/stubs/t_ctlin.pd`, with `test/gate/nano-assert.sh` already built on it. **Nothing blocks this
+plan.**
 
 ---
 

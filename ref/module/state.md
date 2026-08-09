@@ -77,6 +77,9 @@ wrong** — the same class of noise as mother's own `knobs.txt: can't open`.
 ⚠️ **`touch` never truncates**, which is what makes it safe at every load. Creating the files with
 `>` would destroy every previous session's state, before anything had a chance to read them.
 
+⚠️ **That last claim is the one thing here nothing tests** — the gates hand-create the two files, so
+`state-dir.sh` itself never runs on a Mac. It is declared in `Open` below.
+
 ### Contributors today
 
 | Key | Policy | Written by | Evidence | Item |
@@ -257,3 +260,7 @@ as decisions rather than left to whoever writes the capture.
   [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **Nothing uses the `manual` policy yet.** It is proven by the gate and by a deliberately-late
   test contributor, not by a real one. See [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **`state-dir.sh` is invoked but never exercised.** Its invocation is gated; `[shell]` is a
+  do-nothing stub on the Mac, so the gates hand-create the two files and the script never runs.
+  Proving `touch` does not truncate needs a device step against an existing save. See
+  [boot.md](boot.md) and [plan-v04.md](../../plan-v04.md) §3.

@@ -178,6 +178,30 @@ describes the state you are actually in.
 ⚠️ `mac-stubs/shell.pd` stands in during the local syntax check and is **never deployed**. Nothing
 `wire.sh` or `state-dir.sh` does happens on the Mac.
 
+⛔ **A file named `shell.pd` reaching the patch folder SHADOWS the real external**, and every
+`aconnect` silently stops happening. `[shell]` is an external rather than a built-in class, so unlike
+`ctlin` it resolves from the search path and any file of that name simply wins.
+`test/gate/init-assert.sh` exploits that deliberately — it copies `test/stubs/t_shell.pd` over
+`shell.pd` **inside its scratch copy** — and the stub keeps the `t_` name in the repo precisely so no
+plausible accident deploys it.
+
+### The four `.sh` scripts are invoked but not exercised
+
+**All four run once per patch load through `[shell]`, never per event**, and that much is asserted:
+`test/gate/init-assert.sh` swaps in a counting stub and requires exactly one invocation of each. ⛔
+**What none of them DOES is covered by anything**, because none of it can happen on a Mac — the gap
+is declared in `Open` below rather than papered over.
+
+| Script | What is asserted today |
+|--------|------------------------|
+| `wire.sh` | Invoked once, **inside** the `modal wiring` stage. Its `aconnect` lines are also statically parsed against the two tables above |
+| `state-dir.sh` | Invoked once. The gates work around it by hand-creating the two files — see [state.md](state.md) |
+| `logroll.sh` | Invoked once |
+| `phone-ip.sh` | Invoked once, with the fallback address as its argument |
+
+⚠️ **Each of them echoes exactly one summary line, and that is why** — a silent run is
+indistinguishable from a missing script, and the echo is the only thing a bench step could judge.
+
 ### Every `aconnect` is allowed to fail
 
 ⚠️ Each line carries `2>/dev/null || true`. A device that is not plugged in must not stop the ones
@@ -235,3 +259,7 @@ only way to know from the patch side whether anything answered.
 - ⬜ **A replug after boot destroys the ALSA links** and only the Launchpad has a recovery path
   today — `m_launchpad`'s bounded `wire.sh` retry. See [launchpad.md](../device/launchpad.md) and
   [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **What the four `.sh` scripts DO is untested.** Each invocation is gated; the effects cannot be,
+  on a Mac. Each needs a device step reading its own echo — `wire.sh: N connections`, `logroll:
+  carried N line(s)`, `state-dir.sh` against an existing save, and `phone-ip.sh` with the phone on
+  the Organelle's own AP. See [plan-v04.md](../../plan-v04.md) §3.

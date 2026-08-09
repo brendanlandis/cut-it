@@ -9,7 +9,7 @@ output devices are wired in. The instrument can be told *"in Mode A, moving this
 one row of `Cut It/cut-it-map.txt`.
 
 ✅ **The documentation refactor is done** — 10 root files and ~10,300 lines of prose became 2 files
-and 20 `ref/` pages, held together by `test/gate/docs-check.py`. **v0.4 is the sound**: four filter
+and 21 `ref/` pages, held together by `test/gate/docs-check.py`. **v0.4 is the sound**: four filter
 stages, the drum mode, the sampler. v0.1 is superseded and kept only for reference.
 
 **This file is a router.** It says where to look, not what is true.
@@ -49,12 +49,12 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **What is being BUILT next** — three scoped plans, in order | [plan-v03.3.md](plan-v03.3.md) … [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
+| **What is being BUILT next** — two scoped plans, in order | [plan-v03.4.md](plan-v03.4.md) then [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
 | One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
-| One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `display` `map` `state` `tempo` |
+| One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `display` `error` `map` `state` `tempo` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
 | The Organelle as a **computer** — SSH, paths, how Pd launches, the boot hang | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
 | The wifi fault — the roam signature, the watchers, AP mode | [ref/wifi.md](ref/wifi.md) ⚠️ background, not blocking |
@@ -106,8 +106,10 @@ under `ref/`. Nothing in either is deployed.
 ⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Ten gates**, and what each one protects is in
-[test/README.md](test/README.md). ⬜ `module/audio` is the only page still declaring `Gate: none`.
+**Eighteen gates and 381 checks**, and what each one protects is in
+[test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
+a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
+project asserts on messages, which is what kept the audio path invisible for so long.
 
 
 ## Working on it
@@ -122,7 +124,7 @@ whole instrument is *there* — `u_mother-stub` draws the front panel inline and
 aux and encoder. **Most work should never need the Organelle powered on.**
 
 ```sh
-./test/run.sh            # every gate, ~2.5 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
+./test/run.sh            # every gate, ~5 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
 ./test/run.sh --all      # and then the benches -- needs the rig, and a person
 ./tools/deploy.sh              # syntax check -> scp -> reload -> load, in one command
 ssh root@organelle.local # password: organelle. Root fs is read-only -- remount-rw.sh first
@@ -135,8 +137,8 @@ the per-gate `--- FAILED:` lines, and a broken patch has been committed that way
 safe with the device off. The benches are behind `--all` / `--bench` on purpose: ⚠️ **a check that
 costs twenty minutes stops being run**, which is the failure this command was built to fix.
 
-⛔ **It takes ~2.5 minutes and only 24 s of that is computation** — measured, 148.85 s real against
-23.7 s user+sys. The rest is Pd instances running **DSP in real time** so a `phasor~` clock and a beat
+⛔ **It takes ~5 minutes and only about a minute of that is computation** — measured, 302.7 s real
+against 64.5 s user+sys. The rest is Pd instances running **DSP in real time** so a `phasor~` clock and a beat
 row can actually tick. **A faster machine will not help.** Three consequences:
 
 - ⛔ **Never start a second run while one is in flight.** They contend for CPU and MIDI, every run in
@@ -176,21 +178,20 @@ plan, that section should have left the file.
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
 is where everything unscoped waits.
 
-**Four scoped plans stand between here and v0.4**, and each one is written to be handed to a fresh
+**Two scoped plans stand between here and v0.4**, and each one is written to be handed to a fresh
 agent cold — it carries its own reading list, saying how much of each file to read and what to skip.
 ⛔ **Every ⬜ in the repository is closed by one of them, or is one of the nine items that genuinely
 need the sound to exist.**
 
 | | Plan | Needs |
 |---|---|---|
-| 1 | [plan-v03.3.md](plan-v03.3.md) — coverage | — |
-| 2 | [plan-v03.4.md](plan-v03.4.md) — hot-swap | 1 |
-| 3 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | 2 |
+| 1 | [plan-v03.4.md](plan-v03.4.md) — hot-swap | — |
+| 2 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | 1 |
 
-✅ **Plan 0, the test runner and the v0.3.2 cleanup are all gone** — the measurement session ran on
-2026-08-08, `test/run.sh` landed on 2026-08-09, and the cleanup landed the same day. The facts are on
-`ref/` pages and the reasoning is in `git log`. **1 is independent of everything; 1 → 2 → 3 is a
-chain.**
+✅ **Plan 0, the test runner, the v0.3.2 cleanup and v0.3.3 coverage are all gone** — the measurement
+session ran on 2026-08-08, `test/run.sh` landed on 2026-08-09, and the cleanup and the coverage pass
+landed the same day. The facts are on `ref/` pages and the reasoning is in `git log`. **1 → 2 is a
+chain**, and the `ctlin` stub 1 was waiting on is in `test/stubs/`.
 
 ⛔ **`check_closers` in `docs-check.py` is written but gated behind `--strict`**, because most
 remaining ⬜ are owned by the three plans above. **plan-v03.5.md's landing checklist removes the

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Every gate, and every bench, in one command. Run it before calling a phase done.
 #
-#   ./test/run.sh                 the gates. Mac-only, ~2.5 min, the default
+#   ./test/run.sh                 the gates. Mac-only, ~5 min, the default
 #   ./test/run.sh --all           the gates, then every bench
 #   ./test/run.sh --bench midi    one bench, no gates
 #   ./test/run.sh --help          the rest

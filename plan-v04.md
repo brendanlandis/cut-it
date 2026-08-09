@@ -8,12 +8,12 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **This is no longer the only plan.** Three scoped plans — [plan-v03.3.md](plan-v03.3.md) through
-[plan-v03.5.md](plan-v03.5.md) — hold the last batch of infrastructural work before v0.4: coverage,
-hot-swap and the venue kit. ✅ **The test runner landed 2026-08-09** and ✅ **the v0.3.2 cleanup the
-same day.** **Read [CLAUDE.md](CLAUDE.md)'s table for the order and the dependencies.**
+⚠️ **This is no longer the only plan.** Two scoped plans — [plan-v03.4.md](plan-v03.4.md) and
+[plan-v03.5.md](plan-v03.5.md) — hold the last batch of infrastructural work before v0.4: hot-swap
+and the venue kit. ✅ **The test runner, the v0.3.2 cleanup and the v0.3.3 coverage pass all landed
+2026-08-09.** **Read [CLAUDE.md](CLAUDE.md)'s table for the order and the dependencies.**
 
-⛔ **§3 below is being emptied by those five.** Every open question in it is assigned to one of them,
+⛔ **§3 below is being emptied by those two.** Every open question in it is assigned to one of them,
 and when they land this section holds **only v0.4 code**. Do not start work on a
 §3 item without checking which plan owns it first.
 
@@ -50,7 +50,7 @@ MK3 and a Korg Volca FM complete the rig.
 |---|---|
 | **v0.2** | ✅ Complete and hardware-verified. Sixteen abstractions, four display surfaces, three headless gates, six benches |
 | **v0.3** | ✅ **Complete and hardware-verified.** The *blank slate* — every device addressable, every control assignable |
-| **The documentation refactor** | ✅ **Complete.** 10 root files and ~10,300 lines of prose became 2 files and 18 `ref/` pages, held together by `test/gate/docs-check.py` |
+| **The documentation refactor** | ✅ **Complete.** 10 root files and ~10,300 lines of prose became 2 files and 21 `ref/` pages, held together by `test/gate/docs-check.py` |
 | **v0.4** | ⬅ **This document.** The instrument: four filter stages, the drum mode, the sampler, compose-time capture |
 
 **v0.3 was not the sound, and an earlier plan said it was.** The goal was to finish the

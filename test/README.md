@@ -5,7 +5,7 @@ who or what says pass:
 
 | | Verdict from | Runs |
 |---|---|---|
-| `gate/` | **a program**, unattended | every commit, in ~2 minutes, on the Mac |
+| `gate/` | **a program**, unattended | every commit, in ~5 minutes, on the Mac |
 | `bench/` | **a person**, with the rig plugged in | when hardware behaviour needs judging |
 
 ⛔ **A gate is not trusted until it has FAILED.** Reintroduce the bug, watch it go red, revert. This
@@ -18,7 +18,7 @@ word.
 
 ## One gate per module
 
-Ten gates, and each answers for exactly one page under `ref/`. That is the whole organising
+Eighteen gates, and each answers for exactly one page under `ref/`. That is the whole organising
 principle: **a page that names a gate should be able to name one whose entire subject is that page**,
 or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
@@ -27,14 +27,28 @@ were false.
 |---|---|---|
 | `runner-assert.sh` | 58 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
-| `display-assert.sh` | 29 | `module/display` |
-| `tempo-assert.sh` | 17 | `module/tempo` |
-| `map-assert.sh` | 11 | `module/map` |
+| `init-assert.sh` | 16 | `module/boot` |
+| `audio-assert.sh` | 12 | `module/audio` |
+| `err-assert.sh` | 15 | `module/error` |
+| `display-assert.sh` | 31 | `module/display` — the grid |
+| `oled-assert.sh` | 43 | `module/display` — the OLED |
+| `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
+| `tempo-assert.sh` | 17 | `module/tempo` — `u_tempo` |
+| `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
+| `map-assert.sh` | 38 | `module/map` |
 | `state-assert.sh` | 15 | `module/state` |
-| `launchpad-assert.sh` | 5 | `device/launchpad` |
+| `launchpad-assert.sh` | 8 | `device/launchpad` |
+| `nano-assert.sh` | 23 | `device/nanokontrol` |
+| `organelle-assert.sh` | 13 | `device/organelle` |
 | `phone-assert.sh` | 28 | `device/phone` |
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 6 | `device/volca` |
+
+**381 checks.** ⚠️ Three pages name more than one gate, and that is the rule working rather than
+bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
+master reference and the clock cut from it, and `device/organelle` covers a front panel and an LED.
+**A gate whose subject is two abstractions is what the split was for**; a page whose subject is two
+surfaces gets two gates for the same reason.
 
 **No page declares `Gate: none` any more.** `module/audio`, `device/nanokontrol` and
 `device/organelle` were the last three, and each has its own gate now. ⛔ **`audio-assert.sh` is the
@@ -80,14 +94,16 @@ drifted and nothing noticed.
 ## Running everything
 
 ```sh
-./test/run.sh                every gate in one command, ~2.5 min, exit non-zero on any failure
+./test/run.sh                every gate in one command, ~5 min, exit non-zero on any failure
 ./test/run.sh --all          and then the benches -- needs the rig, and a person
 ```
 
 Layout and graph structure, both entry points loading in silence, the bench step text, the MIDI
-inventory, and one gate per module — the display arbiter, the map, the data store, the Launchpad,
-the phone, the SP-404 and the Volca. **Mac only — it touches no device**, so it is safe to run at
-any time, including with the Organelle switched off.
+inventory, and one gate per module — the boot sequence, the audio path, the error bus, the display
+arbiter, the OLED, the aux LED, the tempo reference, the clock, the map, the data store, the
+Launchpad, the nanoKONTROL, the Organelle's own panel, the phone, the SP-404 and the Volca. **Mac
+only — it touches no device**, so it is safe to run at any time, including with the Organelle
+switched off.
 
 ⚠️ **Run it before calling anything done.** Phase 8 edited `u_map`, `u_init` and `u_root` — files
 Phases 5, 6 and 7 all rest on — and came within one step of shipping without re-running *their*
@@ -101,7 +117,7 @@ them: they are probes a person runs, not tests with an oracle.
 ## `test/run.sh` — the entry point, and both halves
 
 ```sh
-./test/run.sh                              the gates. Mac-only, ~2.5 min, the default
+./test/run.sh                              the gates. Mac-only, ~5 min, the default
 ./test/run.sh --all                        the gates, then every bench
 ./test/run.sh --bench midi                 one bench
 ./test/run.sh --bench tempo --target mac   run the patch here rather than on the device

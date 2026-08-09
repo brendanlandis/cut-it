@@ -42,8 +42,23 @@ list rather than by a fact -- a pass, and a meaningless one.
 #
 # ⛔ `clock` IS DELIBERATELY ABSENT. It carries a beat twice a second forever,
 # which no assertion wants and which would bury every capture it appeared in.
+#
+# ⚠️ NOT EVERY NAME HERE IS ON THE C-2 ALLOWLIST, and that is the point. led,
+# oscOut, midiInGate and midiOutGate are MOTHER's names, and they are the only
+# way to read back what the aux LED, the OLED and mother's MIDI gating were told
+# -- Pd cannot ask a screen what it is showing, but the messages sent to it are
+# completely knowable. ⛔ C-5's one-owner rule governs WRITING: Pd delivers a
+# message to every receiver of a name, so tapping one cannot change what g_oled
+# or g_led sees. Nothing built from this map ever writes.
+#
+# ⚠️ oscOut USED TO BE APPENDED BY bench-gen.build_tap INSTEAD OF LIVING HERE,
+# which made "the labels are in one place" false for the one bus whose label a
+# gate would most want to reuse. It is here now, and build_tap has no special
+# case left.
 TAP_LABELS = {"param": "PARAM", "disp": "DISP", "err": "ERR", "tempo": "TEMPO",
-              "start": "START", "stop": "STOP", "mode": "MODE"}
+              "start": "START", "stop": "STOP", "mode": "MODE",
+              "led": "LED", "state": "STATE", "oscOut": "OLED",
+              "midiInGate": "MIDIINGATE", "midiOutGate": "MIDIOUTGATE"}
 
 
 def build(path, seq, tag, taps, quit_ms, blurb, burst=None, notes=()):

@@ -699,14 +699,12 @@ def build_tap():
           "lib_drive.TAP_LABELS \\, which is the same map "
           "test/gate/lib_assert.py's parser matches -- so the runner reuses the "
           "gates' parser rather than growing a second one.", 120)
+    # ⛔ EVERY TAP, AND NO SPECIAL CASE. oscOut used to be appended here rather
+    # than living in TAP_LABELS, which made this function the second home for a
+    # label -- exactly what the comment above says the map exists to prevent, and
+    # the one bus a g_oled gate would most want to reuse. It is in TAP_LABELS now
+    # and this loop reads the whole map.
     taps = sorted(D.TAP_LABELS.items())
-    # ⛔ AND THE SCREEN ITSELF. oscOut is how g_oled draws, so this is the only
-    # way to assert what the OLED was TOLD to show -- Pd cannot ask a screen what
-    # it is displaying, but the bytes sent to it are completely knowable, which
-    # is the right level to test our own code at.
-    # ⚠️ C-5 MAKES g_oled THE SOLE OWNER OF oscOut AND THIS DOES NOT BREAK IT:
-    # ownership governs WRITING. Nothing here writes.
-    taps.append(("oscOut", "OLED"))
     for k, (bus, label) in enumerate(taps):
         r = p.obj(20 + k * 220, 320, "r %s" % bus)
         pr = p.obj(20 + k * 220, 380, "print %s" % label)

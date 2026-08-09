@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The display arbiter
 
-**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_led.pd`, `Cut It/u_net.pd` · **Gate:** `test/gate/display-assert.sh` · **Bench:** `test/bench/display-bench.pd`, `test/bench/nanokontrol-bench.pd`, `test/bench/launchpad-bench.pd`
+**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_led.pd`, `Cut It/u_net.pd` · **Gate:** `test/gate/display-assert.sh`, `test/gate/led-assert.sh` · **Bench:** `test/bench/display-bench.pd`, `test/bench/nanokontrol-bench.pd`, `test/bench/launchpad-bench.pd`
 
 ## What it is
 

@@ -145,24 +145,14 @@ rejected** — `u_root` could serve several device layers the way `disp` serves 
 
 ## `u_err` — one filter, one place
 
-**The Organelle runs Pd with `-nogui`, so an error you cannot see is a silent failure** — and Pd's
-failure mode for a wrong message is to print and continue. `u_err` was built in the first
-infrastructure pass rather than retrofitted. *(judgment call: an architecture requirement, not a
-debugging convenience.)*
+**The Organelle runs Pd with `-nogui`, so an error you cannot see is a silent failure.** `u_err` is
+the one filter that decides what a problem is allowed to interrupt, and it is the only file that
+decides it: any abstraction reports with `[s err]` and none of them knows what mode the instrument is
+in. It never draws — C-5 gives `g_oled` the screen, so this forwards onto `disp`.
 
-| | |
-|---|---|
-| **Filters by `mode`** | compose shows everything, perform only `fail`. One place, same bus, same callers |
-| **Defaults to verbose** | Which is what made an undriven `mode` safe through Phases 4 and 5. `u_map` drives it from Phase 6 on, and the filter needed no change — `route` matches on the selector, so two-atom `compose mode-1` sets verbose exactly as bare `compose` did |
-| ⛔ **Never draws** | It forwards onto `disp` as `alert <level> <source> <text>`; `g_oled` decides what an error looks like |
-| **The bus is unfiltered; only the SCREEN is filtered** | An unconditional `[print err]` means the by-hand SSH console sees every error raised, even in perform mode |
-| **Errors time out; they are never modal** | A stuck error covering the display mid-set is worse than a missed warning |
-
-⚠️ **This does not catch Pd's own runtime errors** — those still go to tty1. It catches the ones we
-raise, which is most of what actually goes wrong.
-
-The message format is rule C-12; the four display surfaces and how an alert is arbitrated are on
-[display.md](module/display.md).
+**Everything about it is on [module/error.md](module/error.md)** — the mode filter, the durable log,
+and why the default is verbose. The message format is rule C-12; the four display surfaces and how an
+alert is arbitrated are on [display.md](module/display.md).
 
 ## Load-bearing decisions
 

@@ -65,7 +65,12 @@ _MIDI = re.compile(r"^(NOTEOUT|CTLOUT|PGMOUT|MIDIOUT):\s+(-?[\d.]+(?:\s+-?[\d.]+
 # first way a gate passes vacuously, arrived at by punctuation.
 # ⚠️ MODE was added with test/bench/bench-tap.pd. No existing driver taps mode,
 # so no capture written before that change can contain a MODE: line.
-_BUS = re.compile(r"^(PARAM|DISP|ERR|TEMPO|START|STOP|MODE):\s+(.*)$")
+# ⚠️ AND LED, STATE, OLED, MIDIINGATE, MIDIOUTGATE ARE MOTHER'S NAMES, added for
+# the g_led, u_init and g_oled gates. They are how a test reads back what a
+# display surface or mother's MIDI gating was TOLD -- see lib_drive.TAP_LABELS,
+# which this must always match.
+_BUS = re.compile(r"^(PARAM|DISP|ERR|TEMPO|START|STOP|MODE"
+                  r"|LED|STATE|OLED|MIDIINGATE|MIDIOUTGATE):\s+(.*)$")
 
 
 def parse(cap, tag):

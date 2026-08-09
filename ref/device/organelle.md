@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Organelle 1 — the panel, the OLED and the aux LED
 
-**Files:** `Cut It/m_organelle.pd`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `none` · **Bench:** `test/bench/display-bench.pd`
+**Files:** `Cut It/m_organelle.pd`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/organelle-assert.sh`, `test/gate/led-assert.sh` · **Bench:** `test/bench/display-bench.pd`
 
 ## What it is
 
@@ -147,6 +147,27 @@ ssh root@organelle.local 'for r in 0 4 5 1 3 2 6 7; do
 
 Anything `g_led` does not recognise raises `warn g_led unknown-led-state` and **leaves the LED
 alone**, so a typo cannot silently blank the only non-screen indicator in the rig.
+
+### What `m_organelle` publishes
+
+The front panel is mapped like any other device: mother's reserved names in, named controls out, and
+**no notion anywhere in the file of what any of them does.** Same layer and the same silence about
+meaning as `m_nano`.
+
+| Fact | Evidence | Item |
+|------|----------|------|
+| The four knobs publish `og-knob-1`…`og-knob-4`, the aux button publishes `og-aux 1` | verified | — |
+| **The `og-` prefix is not decoration** — `m_nano` already publishes `knob-1` to `knob-9`, and a single hyphen is not a distinction anyone can be trusted to read inside a `route` box | verified | — |
+| **Every knob goes through `[change -1]`**, and mother pushes once at load and then says nothing — one `KNOB1` print in twelve seconds untouched. Parameter pickup depends on it: if mother streamed, the first value would be spent on its own reading and pickup would never arm | verified | 237 |
+| ⛔ **The `-1` is load-bearing.** A bare `[change]` starts life holding 0, so a knob parked at 0 would never publish at all and whatever it feeds would sit at its default. `-1` cannot be a real value, because mother's knobs are 0 to 1 | verified | 237 |
+| **`aux` is momentary and emits on PRESS only.** `[select 1]` takes the press; its reject carries the released `0`, not a bang, and goes nowhere | verified | — |
+| ⛔ **The knobs reach `param` and NOT `disp`; `og-aux` reaches both.** A knob's raw 0-to-1 position is not a readable parameter row — the screen said `og-knob-1 0.245` where a BPM belonged, and the param layer replaces the footer, so the tempo it was mapped to vanished while you turned it. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
+| ⚠️ **An unmapped knob still reports**, via `u_map`'s raw-value row. A control that does nothing and says nothing cannot be told from a broken one | verified | 242 |
+
+⚠️ **Not in the file, deliberately:** the encoder, `encbut`, the keyboard and the pedal jack. The
+encoder is contested with mother's own menu through `enableSubMenu`, and none of the others has
+anything to drive yet. They belong here when they do — it is one device, so it is one `m_`
+abstraction.
 
 ### `mother.pd` maps MIDI onto the front panel
 

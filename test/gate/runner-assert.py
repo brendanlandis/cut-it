@@ -23,6 +23,7 @@ gate table without costing the bare `./test/run.sh` its guarantee.
 import os
 import subprocess
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -230,6 +231,26 @@ def main():
     A.check("exhausted keys: keeps the 2 real verdicts", "2 passed" in out,
             _tail(out))
 
+    # -- 7b. a real SIGINT, at a real prompt --------------------------------
+    # ⛔ Ctrl-C IS NOT quit AND IT IS NOT fail. It arrives while a person is
+    # looking at hardware and deciding, so the step in flight has no verdict --
+    # recording a failure would put a red mark against working code, and a skip
+    # would claim somebody decided to pass over it.
+    #
+    # ⚠️ IT IS DRIVEN BY PID, NOT BY pkill. Trying this from the shell first,
+    # `pkill -INT -f "runner/run.py"` matched the harness script running it --
+    # the pattern appears in the script's own text -- which tore down the pipe
+    # and produced an EOF the runner correctly read as quit. The measurement was
+    # of the harness, not the runner. Popen hands back the exact pid.
+    rc, out = _sigint(write("sigint.txt", clean))
+    A.check("SIGINT: exits non-zero", rc != 0, "rc=%d" % rc)
+    A.check("SIGINT: says INTERRUPTED rather than quit or fail",
+            "INTERRUPTED" in out, _tail(out))
+    A.check("SIGINT: prints a resume command for the step in flight",
+            "--from 1" in out, _tail(out))
+    A.check("SIGINT: records the step as interrupted, not as a verdict",
+            "0 passed" in out and "0 failed" in out, _tail(out))
+
     # -- 8. and the roll-up was never touched -------------------------------
     # ⛔ latest.json IS COMMITTED AND DESCRIBES HARDWARE. A fixture is a
     # fiction; letting one write there would put invented verdicts in the one
@@ -249,6 +270,38 @@ def main():
     else:
         print("fixtures kept at %s" % WORK)
     return rc
+
+
+def _sigint(transcript_path):
+    """Block the runner at a verdict prompt, then interrupt it. -> (rc, output).
+
+    ⚠️ NO --keys HERE, DELIBERATELY. A scripted key list that runs out raises
+    EOF, which the prompt reads as quit -- a different path with a similar
+    outcome, and using it would test the wrong branch. An open pipe nobody
+    writes to is what actually blocks a person's prompt.
+    """
+    import signal
+    p = subprocess.Popen(
+        [sys.executable, "-u", os.path.join(ROOT, "test", "runner", "run.py"),
+         "--bench", BENCH, "--replay", transcript_path],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    # Wait for the prompt rather than sleeping a guessed interval: a fixed sleep
+    # is a race that passes on a fast machine and fails on a loaded one.
+    buf = b""
+    deadline = time.time() + 20
+    while b"verdict?" not in buf and time.time() < deadline:
+        ch = p.stdout.read(1)
+        if not ch:
+            break
+        buf += ch
+    p.send_signal(signal.SIGINT)
+    try:
+        rest, _ = p.communicate(timeout=20)
+    except subprocess.TimeoutExpired:
+        p.kill()
+        rest, _ = p.communicate()
+    return p.returncode, (buf + rest).decode("utf-8", "replace")
 
 
 def _interleave(pair, n):

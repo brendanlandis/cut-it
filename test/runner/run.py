@@ -332,7 +332,18 @@ def run_bench_driven(bench, target, auto_only, start, src):
                 raise Desync("step %d was described but step %s fired\n  line: %s"
                              % (step.n, fm.group(1), fline.strip()))
 
-            verdict, note = ask(step, allow_undo=False)
+            # ⛔ NO PREDICATE AND NOBODY WATCHING IS A SKIP WITH A REASON. The
+            # GO above still had to be sent -- the bench has to advance whether
+            # or not anyone is judging -- but nothing here saw the result, and
+            # calling that a pass is how a suite reports green over work nothing
+            # checked.
+            if auto_only and not step.meta.get("check"):
+                why = "no predicate, and --auto-only means no person to judge it"
+                stream.say("  SKIP   %s" % why)
+                verdict, note = "skip", why
+                record(step, verdict, note, auto=True)
+            else:
+                verdict, note = ask(step, allow_undo=False)
             if verdict == "quit":
                 record(step, "interrupted", note)
                 stream.say("\n  stopped at step %d. Resume with:" % step.n)
@@ -360,6 +371,19 @@ def run_bench_driven(bench, target, auto_only, start, src):
                            % (step.n, i + 1, STEP_TIMEOUT))
                 rec.close()
                 return rec.rows, False
+    except KeyboardInterrupt:
+        # ⛔ INTERRUPTED IS NOT FAIL AND IT IS NOT SKIP. Nobody judged this step
+        # and nothing about it is known -- calling it a failure would put a red
+        # mark against working code, and calling it a skip would claim somebody
+        # decided to pass over it. It is the absence of an answer, recorded as
+        # one, and the summary counts it as not run.
+        stream.say("\n  INTERRUPTED at step %d." % step.n)
+        record(step, "interrupted", "Ctrl-C")
+        stream.say("  Resume with:")
+        stream.say("      ./test/run.sh --bench %s --target %s --from %d"
+                   % (bench.name, target, step.n))
+        rec.close()
+        return rec.rows, False
     except Desync as e:
         # ⛔ ABORT. Not "skip the step", not "resync" -- every verdict already
         # written is still good, and every one that would follow a guess is not.
@@ -528,16 +552,18 @@ def main(argv):
     for name in want:
         b = S.load(name)
         target, why = pick_target(b, a.target)
-        if target != "paper":
-            # Phase B territory. ⛔ SAY SO rather than reporting an empty pass:
-            # a bench that silently ran nothing is the single worst thing this
-            # runner could do, so it refuses instead.
-            sys.exit("run.py: target %r is not built yet -- only `paper` runs "
-                     "today, which covers the benches whose every step has no "
-                     "actions (%s). %s wants %s: %s"
-                     % (target, ", ".join(n for n in S.names() if S.load(n).paper),
-                        name, target, why))
-        rows = run_bench(b, target, a.auto_only, a.start)
+        if target == "paper":
+            rows = run_bench(b, target, a.auto_only, a.start)
+        else:
+            import targets
+            src = targets.open_target(target, name, a.auto_only)
+            try:
+                rows, _ok = run_bench_driven(b, target, a.auto_only, a.start, src)
+            finally:
+                # ⛔ TEARDOWN HAPPENS WHATEVER HAPPENED. A desync, a stall, a
+                # Ctrl-C: every one of them still leaves a Pd running and, on
+                # the device, a Launchpad stranded in Programmer Mode.
+                src.close()
         records.roll_up(rows)
         bench_rows.append((name, rows, len(b.steps)))
 

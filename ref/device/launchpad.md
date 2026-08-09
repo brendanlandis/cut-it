@@ -108,11 +108,34 @@ F0 00 20 29 02 0E 03  <type> <index> <data...>  F7
 | What `g_grid` sends | 108 specs, indices 1–108 | verified | — |
 | The ring | Lit by the same message, same index | verified | 84 |
 
-**Animation is free and tempo-locked.** The device animates flash and pulse itself — no `[metro]` in
-Pd — and synchronises to incoming MIDI beat clock, falling back to 120 BPM or the last clock
-received. Flashing is one period per beat, pulsing one per two beats. 📄 Since the Organelle is
-clock master, LED animation follows the patch's tempo for nothing, confirmed by sweeping knob 1
-against three pads lit static / flashing / pulsing.
+**Animation is free, and it is NOT tempo-locked.** The device animates flash and pulse itself — no
+`[metro]` in Pd, which is the part that holds — but ⛔ **in Programmer Mode it ignores incoming MIDI
+beat clock entirely and runs at its own internal rate.** Item 257, and it replaces a claim on this
+page that said the opposite.
+
+| Measured | Result | Evidence | Item |
+|----------|--------|----------|------|
+| Clock swept **5 → 1000 BPM** | Flash rate never moved | verified | 257 |
+| The free-running rate, by null comparison | **≈118 BPM** — our clock tuned until it matched the flash | verified | 257 |
+| MIDI **Start** sent at 5 BPM, a 24× difference | No change | verified | 257 |
+| Clock delivered to **all three** MIDI ports at once | No change | verified | 257 |
+| Clock present on the wire | ✅ `aseqdump` on Pd's out port: `Clock` at exactly 2/s at 5 BPM | verified | 257 |
+| **Positive control** — pads lit over the same port, same `[midiout]` | ✅ Working throughout | verified | 257 |
+
+📄 Novation's documentation describes flash and pulse as synchronising to beat clock and falling back
+to 120 BPM. **The fallback is all this unit does.** ⚠️ 📄 is not ✅, and this is the second time in a
+week that reading a manufacturer's chart produced a wrong belief — see the SP-404's SysEx row,
+item 249.
+
+⛔ **The design consequence: a beat-synced blink must be driven BY THE PATCH.** `g_grid` cannot hand
+the tempo to the device and walk away. Nothing in Cut It depends on this today — the grid lights every
+pad **static**, on channel 1 — which is exactly why it went unnoticed.
+
+⚠️ **Live Mode is untested.** Every measurement above was taken in Programmer Mode, which is the only
+mode Cut It ever uses. Whether the animation follows clock in Live Mode is unknown and, for this
+instrument, does not matter.
+
+Flashing is one period per beat and pulsing one per two beats — 📄 relative to *its* rate, not ours.
 
 ### Mode control
 
@@ -331,10 +354,10 @@ and costs no buttons.
 - ⬜ **The watchdog cannot recover a device that was absent at load.** A replug destroys the ALSA
   links outright on the Organelle, and the bounded `wire.sh` recovery does not cover the
   never-connected case. Item 235 — see [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **The animation rate has its own range, not pinned down.** Past an upper and a lower limit the
-  device reverts to a default rate instead of tracking, and a Start makes it dip briefly before
-  settling — the same shape as the 404's 40–200 window. The pulse stream itself is known good. Item
-  77 — see [plan-v04.md](../../plan-v04.md) §3.
+- ✅ **Item 77 is closed, and the question turned out not to apply.** It asked where the animation
+  rate stops tracking, above and below. There is no tracking to lose: in Programmer Mode the device
+  ignores incoming clock at any tempo. Measured with `tools/stage-patches/Anim Probe/` — item 257,
+  under **Facts**.
 - ⬜ **What every layout ID means.** `02`, `03` and `04` were seen; the full set and their names are
   not established. See [plan-v04.md](../../plan-v04.md) §3. ✅ *That it announces at all* is now
   answered — item 100 is closed, see *Mode changes are announced* under **Facts**.

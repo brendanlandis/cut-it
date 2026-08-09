@@ -1,8 +1,9 @@
 # Plan v0.3.0 — what is left that needs hands on the rig
 
 **Everything in this plan that could be done without the hardware in front of you has been done.**
-What remains is six things, and every one of them needs a person at the rig — eyes on a screen, ears
-on a speaker, fingers on a menu, or a cable moved.
+What remains is **five** things, and every one of them needs a person at the rig — eyes on a screen,
+ears on a speaker, fingers on a menu, or a cable moved. Item 77 was the sixth and it was answered on
+2026-08-08; its result is kept below because it changes what v0.4 can assume.
 
 ⛔ **This file is now a checklist, not a design document.** The reasoning behind each item lives on
 its `ref/` page; what is here is *what to do* and *what counts as done*. The history — parameter
@@ -44,7 +45,8 @@ These are a **session**, and they stay together because they are done together.
 
 ⛔ **It is fussy about which socket, and the patch cannot tell you.** A half-enumerated Launchpad
 answers `lsusb` but never gets an ALSA port, so from inside Cut It it is identical to one that was
-never plugged in — and it would make item 77 below look like a device fault.
+never plugged in. It is what made item 77's measurement trustworthy, and it will do the same for
+anything else measured through this device.
 
 **Put it in the bottommost port, the one with the lock icon.** That socket is on the hub's Realtek
 controller and works; at least one socket on the Generic controller produces
@@ -59,44 +61,32 @@ and the SP-404 contains another, so the tree looks four deep and is not.
 
 ---
 
-## The six
+## What is left
 
 | # | Do | Needs | Lands on |
 |---|---|---|---|
-| 1 | **Run `Anim Probe`** — the Launchpad animation limits, item 77 | eyes | [ref/device/launchpad.md](ref/device/launchpad.md) |
+| ~~1~~ | ✅ **DONE 2026-08-08.** Item 77 closed — there are no limits, because the device never tracks. Item 257 | — | [ref/device/launchpad.md](ref/device/launchpad.md) |
 | 2 | **Read the OLED by eye** — item 39 | eyes | [ref/module/display.md](ref/module/display.md) |
 | 3 | **Exercise the SP-404 CC map** beyond 16/17 | the rig | [ref/device/sp404.md](ref/device/sp404.md) |
 | 4 | **Write the 404 pre-set checklist** | the box in hand | [ref/rig.md](ref/rig.md) |
 | 5 | **Try Organelle audio back into the 404** | one cable | [ref/rig.md](ref/rig.md) |
 | 6 | **The Launchpad onboarding drive** — can Components disable it | a Mac, and a firmware update | [ref/device-os.md](ref/device-os.md) |
 
-### 1. Item 77 — run `tools/stage-patches/Anim Probe/`
+### ~~1. Item 77~~ ✅ ANSWERED 2026-08-08 — there are no limits to find
 
-**Nothing in Cut It exercises the animation channels** — `g_grid` lights every pad *static*, on
-channel 1 — which is why this needed a probe of its own. ✅ Built and proved on the Mac 2026-08-08.
+⛔ **In Programmer Mode the Launchpad ignores incoming MIDI clock entirely** and runs its flash and
+pulse at ≈118 BPM regardless. Swept 5 → 1000, sent a Start at 5 BPM where a lock would be a 24×
+change, and delivered clock to all three of its MIDI ports — nothing moved it. Clock was confirmed
+**on the wire** with `aseqdump`, and the pads lit throughout over the same port as the positive
+control. Item 257, on [ref/device/launchpad.md](ref/device/launchpad.md).
 
-```sh
-scp -r "tools/stage-patches/Anim Probe" 'root@organelle.local:/sdcard/Patches/! debug/'
-ssh root@organelle.local "oscsend localhost 4001 /reloadNoRemount i 1"
-ssh root@organelle.local "oscsend localhost 4001 /loadPatch s '! debug/Anim Probe'"
-# knob 1 sweeps 5-1000 BPM. aux marks + restarts. Then:
-scp root@organelle.local:/sdcard/anim-probe.log .
-```
+⛔ **The consequence for v0.4: a beat-synced blink has to be driven by the patch.** `g_grid` cannot
+hand the tempo to the device. Nothing depends on this today because the grid lights every pad
+*static*, which is why it went unnoticed — and why it was worth finding before something was built
+on it.
 
-⛔ **A ruler pad sits beside each animated one, and that is the whole method.** Pads 43 and 47 are
-blinked *by the patch*; 44 and 48 are flashed and pulsed *by the device* at the same two rates. While
-it tracks, each pair holds its relative phase; the moment it stops, one laps the other.
-
-⛔ **The OLED's `act` line is the probe checking itself.** If `act` stops following `req`, the limit
-you just found is **Pd's, not the Launchpad's**. ⚠️ The Mac held 1000 BPM with no audio running; the
-device resolves `metro` against 1.45 ms DSP blocks, so expect a lower ceiling and read `act` first.
-
-⛔ **120 BPM is the one tempo this cannot measure** — 📄 the documented fallback *is* 120, so there a
-tracking device and a reverted one look identical. Judge from well away and sweep **toward** each
-limit.
-
-**Done means:** an upper and a lower BPM on `launchpad.md`, each with `act` recorded alongside, and
-a note on whether a Start makes the rate dip before settling.
+⚠️ **`tools/stage-patches/Anim Probe/` is kept**, since it is the only thing in the project that
+exercises the animation channels at all, and a firmware update could change this answer.
 
 ### 2. Item 39 — the OLED read by eye
 
@@ -158,6 +148,6 @@ python3 test/gate/docs-check.py -v
 
 ## Done means
 
-1. All six above are answered on their pages, or explicitly declined with the reason recorded.
+1. All five above are answered on their pages, or explicitly declined with the reason recorded.
 2. `plan-v04.md` §3 no longer carries item 39.
 3. **This file is deleted.**

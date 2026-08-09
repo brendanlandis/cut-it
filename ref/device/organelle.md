@@ -234,6 +234,16 @@ serial MCU.
 **Fix:** anything that must agree with what you *hear* — a playhead, a beat indicator, step position
 — belongs on **the Launchpad**. The OLED is for state, values and text, where 200 ms is invisible.
 
+⛔ **The serial `Rx FIFO overrun` in `dmesg` is NOT this, and the two must not be conflated.** The
+transport ends at a serial MCU, so the overruns look like a lead and were treated as one. Counted
+across a full session with the patch running and the rig wired: **20 `imx-uart 2020000.serial: Rx
+FIFO overrun` in 10,143 s**, one per 507 s, with intervals running **25 s to 1,262 s** — irregular,
+so event-driven rather than periodic. The lag is on **every** frame at ten frames a second, about
+101,000 frames in that same window. **Five orders of magnitude apart, so neither can be causing the
+other**, and the lag is fully accounted for by the 10 Hz clock plus the OSC and serial hops. Item
+253, agreeing with item 247's shorter single-boot count. ⛔ **The "continuous stream" of overruns
+this page once recorded never existed** — it came from a glance at `dmesg` rather than a count.
+
 ### mother's OMNI CC 21–26 collide head-on with the nanoKONTROL
 
 ⛔ The nano's top button row is CC 21–29 by this project's by-tens scheme, and mother's `[ctlin 21]`
@@ -366,11 +376,9 @@ table and nothing else, since a commit from a Launchpad pad would have no screen
 
 ## Open
 
-- ⬜ **Whether the serial overruns and the OLED lag share a cause — narrowed, not closed.** See
-  [plan-v04.md](../../plan-v04.md) §3. ✅ **Item 247**: with the patch running and the OLED repainting
-  ten times a second, `dmesg` held **exactly one** `imx-uart 2020000.serial: Rx FIFO overrun` in
-  822 s of uptime, at 733 s — ⛔ **not the "continuous" stream this page recorded before**, which was
-  written from a glance at `dmesg` rather than a count. A once-per-quarter-hour event cannot produce
-  a lag that is present on **every** frame, so a shared cause is unlikely. ⚠️ Unlikely is not
-  disproven, and one boot is one boot: what would settle it is catching an overrun and a lag spike
-  inside the same second.
+**Nothing.** The last one — whether the serial overruns and the OLED lag shared a cause — closed as
+item 253, and the finding is under *The OLED lags the audio by ~200 ms* in **Traps**, where the
+ruled-out cause is useful to the next person who spots `Rx FIFO overrun` in `dmesg`.
+
+⚠️ This is the first page in the project with an empty `Open`, and that is a claim rather than an
+achievement: it says only that nothing about **this device** is currently recorded as unknown.

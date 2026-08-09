@@ -204,6 +204,12 @@ Links to paths containing spaces use the angle-bracket form:
 - **When a fact matters — a Pd version, a device capability, a file format — check it against the
   device or the source** rather than inferring from documentation. Several claims in this project's
   history turned out wrong that way, including two corrected in these files.
+- **"Needs the rig" and "needs the device powered" are different, and conflating them parks work
+  that could have been done today.** Items 173 and 134 sat in a hands-on measurement batch; both
+  turned out to be pure `ssh` reads, and both closed with the Organelle simply *up* — a better
+  condition than a rig session, because nobody was perturbing it. **Before booking a measurement
+  against a session with hands on the hardware, ask what it actually needs**: eyes, fingers, a
+  cable, or only a reachable device.
 - ⛔ **Before diagnosing a hardware symptom, grep `ref/` for its literal error string.** A Launchpad
   that would not enumerate — `can't set config #1, error -32` — was diagnosed from scratch across
   five physical tests on 2026-08-08, and [ref/rig.md](ref/rig.md) had already written it up **with

@@ -135,8 +135,8 @@ scp root@organelle.local:/sdcard/inquiry-probe.log .
 | 39 | **The OLED read by eye** — the three type-size layouts and the ageing. *"Is 16 px readable at arm's length"* is a judgement only the hardware can settle | [ref/module/display.md](ref/module/display.md) |
 | 77 | **The Launchpad animation rate's upper and lower limits**, past which the device reverts to a default rate. ✅ **The probe now exists** — `tools/stage-patches/Anim Probe/`, built and proved on the Mac 2026-08-08. See below | [ref/device/launchpad.md](ref/device/launchpad.md) |
 | — | **The SP-404 CC map beyond 16/17.** CC 7, 8, 20–27, 80–83 and Program Change 0–15 are manufacturer documentation, never exercised from Pd | [ref/device/sp404.md](ref/device/sp404.md) |
-| 173 | **Whether the `imx-uart` Rx FIFO overruns and the OLED lag share a cause** | [ref/device/organelle.md](ref/device/organelle.md) |
-| 134 | **The unexplained 10.2–10.5 % CPU readings** from Phase 7, against 11.7 % under controlled conditions minutes later. Re-measure, or close it as *recorded rather than rationalised* | [ref/device-os.md](ref/device-os.md) |
+| ~~173~~ | ✅ **CLOSED 2026-08-08 — they do not share a cause**, item 253. See below | [ref/device/organelle.md](ref/device/organelle.md) |
+| ~~134~~ | ✅ **CLOSED 2026-08-08 — 10.2–10.5 % is simply the idle baseline**, item 254. See below | [ref/device-os.md](ref/device-os.md) |
 | — | **Whether a boot-started `wpa_supplicant` has a `ctrl_interface`.** One command: `ls /var/run/wpa_supplicant/` after a power cycle | [ref/device-os.md](ref/device-os.md) |
 | — | **Whether Novation Components can disable the onboarding drive on the Launchpad itself.** Needs a computer with Components installed | [ref/device-os.md](ref/device-os.md) |
 
@@ -170,6 +170,24 @@ the wrong trigger outlet and cleared pad 1 ninety-nine times, which reading the 
 ⚠️ **Expect the Mac's ceiling to be optimistic.** It held 1000 BPM — a 2.5 ms `metro` — with no
 audio running. On the device `metro` resolves against 1.45 ms DSP blocks, so `act` is the number to
 watch before believing any high-end limit.
+
+### ✅ Two of these needed no hands, and both closed 2026-08-08
+
+⛔ **They were both listed as rig work and neither was.** The Organelle was reachable over ssh with
+Cut It running and untouched, which is a *better* condition for both than a session with someone at
+the rig — nobody was perturbing it. **Check what a measurement actually needs before booking it
+against a rig session.**
+
+- **Item 253 closes 173.** `dmesg` over a whole session: **20 Rx FIFO overruns in 10,143 s**, one per
+  507 s, and ⛔ **the intervals run 25 s to 1,262 s** — irregular, so event-driven rather than
+  periodic. The OLED lag is on *every* frame at ten frames a second: ~101,000 frames against 20
+  overruns in the same window. Five orders of magnitude apart, so a shared cause is out. Item 247
+  reached *unlikely* off one boot and 822 s; this is a second boot, twelve times longer, and it agrees.
+- **Item 254 closes 134.** The suspicion was that 10.2–10.5 % came from readings *taken shortly after
+  patch reloads*. Measured **1 h 32 m after the last reload** on an untouched instrument with all 8
+  ALSA links up: **10.4 / 10.2 / 10.7 %**. Proximity to a reload was never it. ⛔ **And it equals
+  Phase 5's baseline, which is `g_grid` costing nothing when idle** — the dirty flag gating, confirmed
+  on hardware rather than from the design.
 
 ⚠️ **Wait for the whole measurement.** Three confident wrong answers in this project came from acting
 on a partial result — items 182, 209, 210, and again in 225. ⚠️ And **concluding from a single

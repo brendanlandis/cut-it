@@ -198,9 +198,23 @@ Items 118 and 134.
 `tools/display-cpu.sh` reports OVER BUDGET against it, which is the script being stale rather than
 a regression. Compare against the row above instead.
 
-⬜ **One set of readings is unexplained**: 10.2–10.5 % during Phase 7's session, taken shortly
-after patch reloads, against 11.7 % under controlled conditions minutes later. Recorded rather
-than rationalised — item 134.
+✅ **10.2–10.5 % is the idle baseline, not an artefact — item 134 closed, item 254.** Those
+readings had been held open on the suspicion that they were taken *shortly after patch reloads*.
+Re-measured on an untouched instrument **1 h 32 m after the last reload**, with all four devices
+wired (8 ALSA links) and nobody playing it: **10.4 %, 10.2 %, 10.7 %** across three five-second
+readings, UDP out 111–113/s. Proximity to a reload was never the explanation — this simply *is* what
+the patch costs sitting still.
+
+⛔ **And it is Phase 5's number, which means `g_grid` is free when nothing changes.** Phase 5
+measured 10.2 % with no grid code in the patch at all; the grid arrived in Phase 6 and idle still
+costs the same. That is the dirty-flag gating working on real hardware — `g_grid` repaints only when
+something changed, so with the transport stopped it sends nothing and adds nothing.
+`tools/display-cpu.sh`'s own budget check is exactly this test.
+
+⚠️ **The transport state was inferred, not read.** At 120 BPM a running beat row repaints twice a
+second and lands on Phase 6's 11.7–12.0 % row; these readings sit a point and a half below it, which
+is why they are recorded as idle-and-stopped. **The 11.7 % readings are a different rig state, not a
+contradiction** — which is the rule this table already states.
 
 ### MIDI: OSS vs ALSA
 

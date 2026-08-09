@@ -230,8 +230,9 @@ no surface; all it can do is set Pd's global DSP state.
 
 **Why it exists.** Item 75 recorded that the Phase 5 clock roughly doubled Pd's CPU and blamed the
 96 ALSA MIDI writes a second — marked ⬜ *not confirmed by isolation*. This is that isolation, and
-it overturned the conclusion: **DSP on 11.8 %, DSP off 4.9 %**, so the DSP costs **6.9 points** and
-the MIDI clock **0.43**. Wrong by a factor of sixteen.
+it overturned the conclusion — **the DSP is the budget, not the MIDI, and the original guess was
+wrong by a factor of sixteen.** The three-way readings are on
+[../ref/module/tempo.md](../ref/module/tempo.md), item 75.
 
 ⚠️ **With DSP off the patch is silent and the beat row freezes** — `c_clock` is cut from a phasor,
 so the grid stops walking and the transport stops counting. Expected, not a fault.

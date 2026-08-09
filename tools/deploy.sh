@@ -5,7 +5,7 @@
 #   ./tools/deploy.sh --clean            wipe the remote copy first
 #   HOST=root@192.168.1.15 ./tools/deploy.sh   target by IP if mDNS is flaky
 #
-# Every flag, and the reasoning behind the loop, is on ref/conventions.md.
+# Every flag, and the reasoning behind the loop, is on ref/workflow.md.
 #
 # There is no rsync on the Organelle (Pd 0.49 / OS 4.0 build), so this uses scp.
 # Note that means files DELETED locally are not removed on the device — see
@@ -84,12 +84,10 @@ ssh "$HOST" "ls -la '$DEST/$PATCH'"
 # Refresh the Organelle's patch list, and reset mother's current patch
 # directory to the default — which the load step below depends on.
 #
-# /reloadNoRemount, NOT reload.sh. reload.sh sends /reload, which additionally
-# runs mount.sh, and mount.sh mounts the LAST /dev/sd* on /usbdrive. With a
-# Launchpad attached that is its 192 KiB write-protected onboarding drive, and
-# mounting it moves USER_DIR onto a read-only volume — which breaks wifi
-# config, Save, Save New and AP mode until it is unmounted. See
-# ref/device-os.md. Nothing here needs a remount: the files went to /sdcard.
+# /reloadNoRemount, NOT reload.sh. reload.sh sends /reload, which also runs
+# mount.sh -- and with a Launchpad attached that mounts its write-protected
+# onboarding drive and takes USER_DIR down with it. The chain is on
+# ref/workflow.md. Nothing here needs a remount: the files went to /sdcard.
 if [ "${NORELOAD:-}" = "1" ]; then
     echo
     echo "skipped reload (NORELOAD=1) — press Storage -> Reload on the device"

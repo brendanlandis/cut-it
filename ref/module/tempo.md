@@ -210,6 +210,29 @@ signature, and a `start` is the only thing aligning instances to each other.
 **It stores what it hears and never re-emits**, so there is no loop between `u_tempo` and the bus.
 Anything may write `tempo`; only `u_tempo` owns what happens next.
 
+**Cut It runs multiple simultaneous tempi**, and this is the page that says what that commits every
+other module to. Sequencers and samplers may deviate from master — a different BPM, or ms-based
+timing instead of beat-based — and different parts of a drum sequence may run different time
+signatures. **The `clock` bus in C-2's allowlist must not be read as implying one tempo and one
+beat.**
+
+- **`tempo` and `clock` are the master reference**: what MIDI clock out is derived from, and what
+  parts *may* choose to follow. Nothing is obliged to.
+- ⛔ **Timing is per-instance, and nothing downstream may assume the global `clock` is its clock.**
+  Each grain clock, sequencer and sampler owns a `c_clock` with its own rate, optionally slaved to
+  master by a ratio.
+- **Time signature is a `c_clock` concern** — bar length, accent pattern — not a global.
+- *Normalise BPM and ms to Hz at the edge, feed one `phasor~`* generalises cleanly: N clocks is
+  N `phasor~` objects, and ms-based versus beat-based parts stop being a special case (C-11).
+
+**MIDI clock carries exactly one tempo**, so the SP-404 and Volca always follow master. Poly-tempo
+is internal-only for anything leaving the box — which reinforces rather than contradicts the "Pd
+sequences everything, timing rides in note events" decision in
+[architecture.md](../architecture.md).
+
+⛔ **So `u_tempo` must be a master reference *plus* an instantiable `c_clock`, never a singleton.**
+The cost of getting that wrong is tracked as a standing risk in [plan-v04.md](../../plan-v04.md).
+
 ### The 120 is a fallback, not a default
 
 mother pushes the real knob positions at load, so knob 1 usually sets the tempo before the fallback

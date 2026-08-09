@@ -89,7 +89,7 @@ home                              param                    alert
 | | Evidence | Item |
 |---|----------|------|
 | `env~`'s 0–100 maps to pixels as **× 1.28**, clipped to **1–128** — a zero-width `gFillArea` is untested and silence is the common case | verified | — |
-| The gate marks are **one `gBox` per meter**, spanning the noise floor (18–19 → x 23) to the top of the gate window (25–30 → x 38). One message instead of two ticks, and it reads as a zone | verified | 11 |
+| The gate marks are **one `gBox` per meter**, spanning the noise floor to the top of the gate window — x 23 to x 38. One message instead of two ticks, and it reads as a zone. The levels those pixels come from are item 11, on [audio.md](audio.md) | verified | 11 |
 | A moving knob shrinks the meters into a **full-width 5 px bottom strip**, not a corner. A corner meter here is ~40×4 px, and 24px text needs the full width anyway | verified | — |
 
 ### The param layer is a list, and rows are STABLE

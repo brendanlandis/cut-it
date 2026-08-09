@@ -50,3 +50,23 @@ python3 test/gate/docs-check.py -v
 | index | The table above lists exactly the pages that exist |
 | dangling | Every pointer to a document resolves |
 | `C-NN` | Every rule cited anywhere exists, and the `pd` skill's copy matches the doc |
+| ⬜ | Every open item sits under `Open`, on every page, whatever its schema |
+
+## The standard for v0.4
+
+**Written down because it is what keeps the next hundred pages from costing what the last ones
+did.** v0.4 grows `ref/module/` — one page per filter stage, the drum mode, the sampler.
+
+- ⛔ **An `e_` page is written AFTER the stage is hardware-verified, not before.** A pre-written
+  page is how a completion marker silently becomes false, and this project has already had one
+  page assert a thing about `u_map` that stayed wrong until Phase 9 contradicted it.
+- **An `e_` page holds what it is, its parameters, and its traps.** No rationale essay, no evidence
+  ledger, no history — **git is the journal**.
+- **A rejected alternative gets one sentence, not a section.**
+- **A measured number goes on the page and is cited from the patch**, never the reverse. A `.pd`
+  comment has no link syntax, so it cites a bare `item NNN` or a bare page path — which is what
+  makes the number write-once instead of write-twice.
+
+⚠️ **This standard is for NEW material only.** The existing device and module pages describe
+hardware that cannot be re-derived from the code, and an agent handed this project cold has no
+other source for it. **They stay as they are.**

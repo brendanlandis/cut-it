@@ -116,9 +116,10 @@ into one input; the output side needs only two ordinary patch cables.
 cable drives the tip to the 90s on `env~`'s scale while the ring stays at the 18–19 noise floor.
 Measured with `tools/audio-probe/`; item 11.
 
-Two numbers worth remembering: the **input noise floor is ~18–19** on `env~`'s 0–100 dB scale
-(≈ −82 dBFS), so a noise gate belongs around **25–30**; and a **passive bass reaches the 90s**, so
-there is ample gain and headroom for instrument-level sources.
+The noise floor and the gate window that follows from it are on
+[module/audio.md](module/audio.md), item 11 — one place, because three pages used to write the
+number out. What belongs here is the gear consequence: **a passive bass reaches the 90s**, so there
+is ample gain and headroom for instrument-level sources.
 
 ⛔ **A patch never touches `adc~` or `dac~`** (C-4). See [audio.md](module/audio.md).
 

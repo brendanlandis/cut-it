@@ -168,16 +168,13 @@ and `disp` are — so the Source column names the consumer. `u_tempo` owns the B
 transport state; it does not own the right to change them. **`clock` is the exception**: only
 `u_tempo` writes it, because it is a publication of something already decided.
 
-**`param` is a control changing; `disp` is a request to show it.** ✅ Added in Phase 5, and the
-distinction is the whole reason for a second bus: a device publishes what its surface *did*,
-and `u_map` — the only consumer — decides what that *means*. `m_nano` and `m_organelle` both
-publish to `param` and `disp` off one `[t a a]`, action first and report second. That duplicates
-the data where teaching `g_oled` to listen on `param` would not, and it was the right trade:
-not touching a hardware-verified display file beat saving a send.
+**`param` is a control changing; `disp` is a request to show it**, and an `m_` layer publishes to
+both off one `[t a a]`, action first and report second. **Why there are two buses rather than one**
+is on [architecture.md](architecture.md) under *Request buses and publications*.
 
-Two consequences worth stating, because both are deliberate:
+Two consequences bind whoever writes an `m_` layer, and both are deliberate:
 
-- **Names on `param` are physical, never functional** — `slider-1`, `og-knob-1`, `xport-2`. What
+- ⛔ **Names on `param` are physical, never functional** — `slider-1`, `og-knob-1`, `xport-2`. What
   a control *does* is not knowable at the `m_` layer and must not be guessed there.
 - **`u_map` is the only file allowed to turn a `param` name into anything else**, and since v0.3 it
   does it with **a table plus a hardcoded allowlist of destinations**.
@@ -259,27 +256,10 @@ selector-prefixed message. The reasoning and the two rejected alternatives are o
 
 ### Poly-tempo
 
-Cut It runs **multiple simultaneous tempi**. Sequencers and samplers may deviate from master —
-a different BPM, or ms-based timing instead of beat-based — and different parts of a drum
-sequence may run different time signatures. The allowlist above must not be read as implying
-one tempo and one beat.
-
-- **`tempo` and `clock` are the master reference**: what MIDI clock out is derived from, and
-  what parts *may* choose to follow. Nothing is obliged to.
-- **Timing is per-instance.** Each grain clock, sequencer and sampler owns a `c_clock` instance
-  with its own rate, optionally slaved to master by a ratio. **Nothing downstream may assume
-  the global `clock` is its clock.**
-- **Time signature is a `c_clock` concern** — bar length, accent pattern — not a global.
-- *Normalise BPM and ms to Hz at the edge, feed one `phasor~`* generalises cleanly: N clocks is
-  N `phasor~` objects, and ms-based versus beat-based parts stop being a special case.
-
-**MIDI clock carries exactly one tempo**, so the SP-404 and Volca always follow master.
-Poly-tempo is internal-only for anything leaving the box — which reinforces rather than
-contradicts the "Pd sequences everything, timing rides in note events" decision in
-[architecture.md](architecture.md).
-
-**So `u_tempo` must be a master reference *plus* an instantiable `c_clock`, never a singleton.**
-The cost of getting that wrong is tracked as a risk in [plan-v04.md](plan-v04.md).
+⛔ **`clock` being on the allowlist does not mean there is one tempo.** Cut It runs multiple
+simultaneous tempi, and **nothing downstream may assume the global `clock` is its clock** — a part
+that needs a beat instantiates its own `c_clock`. What that commits you to when writing one is on
+[tempo.md](module/tempo.md) under *`u_tempo` is a reference, `c_clock` is a clock*.
 
 ---
 
@@ -586,11 +566,9 @@ The decomposition that follows from all of the above — which abstraction exist
 holds — is [architecture.md](architecture.md), and the order the remaining ones
 get built in is [plan-v04.md](plan-v04.md)'s *The shape of v0.3*.
 
-The one boundary worth restating here, because it constrains how everything else may be
-written: **the `m_` layer separates device mapping from everything it controls.** Nothing in
-`e_*` may know that a nanoKONTROL exists. That is what makes the compose/perform split
-tractable — the same surfaces mean different things in each mode — and it is the one boundary
-that is genuinely expensive to retrofit.
+⛔ **The one boundary that constrains how everything else may be written: nothing in `e_*` may know
+that a nanoKONTROL exists.** Why it is the expensive one, and what it costs to get wrong, are on
+[architecture.md](architecture.md) under *The `m_` boundary is the expensive thing*.
 
 ### `mac-stubs/` is a sibling of the patch folder, and cannot move into it
 

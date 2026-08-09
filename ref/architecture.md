@@ -68,8 +68,8 @@ is the buses and the map; right is the display owners. **The only wires on that 
 **Nothing below the `m_` layer knows a nanoKONTROL exists.** A device publishes a **named control**
 on `param`; what that control means is decided in `u_map`, above everything it controls.
 
-⛔ **Names on `param` are physical, never functional** — `slider-1`, `og-knob-1`, `xport-2`. What a
-control *does* is not knowable at the `m_` layer and must not be guessed there.
+⛔ **Names on `param` are physical, never functional** — the rule, and what it binds when you write
+an `m_` layer, are in [conventions.md](conventions.md) under *The global name allowlist*.
 
 This is what makes the compose/perform split tractable, and **it is the one boundary that is
 genuinely expensive to retrofit.** If `e_chop` ever learns about the nanoKONTROL, that is permanent.

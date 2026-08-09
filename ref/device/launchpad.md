@@ -266,7 +266,8 @@ to Live Mode first.
 | Live Mode returns to whichever built-in mode was last used, not a fixed default | verified | — |
 | LED state survives Programmer → Live → Programmer, bringing the previous colours back | verified | — |
 
-`tools/lp-live.sh` rescues a Launchpad stranded in Programmer Mode with no Pd and no power cycle.
+**A power cycle is not the only rescue** — `tools/lp-live.sh` does it with no Pd running, item 96
+above and the *stranded in Programmer Mode* Trap below.
 
 ## Traps
 

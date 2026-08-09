@@ -29,9 +29,8 @@ unevenly, visibly so in the heartbeat counter. Fine for a readout, unacceptable 
 ⚠️ **Those are HOUSE-NETWORK addresses. On the Organelle's own access point the whole subnet
 changes** — the Organelle is `192.168.12.1` and hands the phone `192.168.12.109`.
 
-**Nothing in the patch is configured with either.** `phone-ip.sh` reads the DHCP lease the Organelle
-itself handed out and falls back to `u_net`'s creation argument on any other network, so **one build
-works on both and no conditional lives in the patch.**
+**Nothing in the patch is configured with either** — `phone-ip.sh` resolves it at load. See
+*The phone cannot announce itself* under **Design** for why, and what it costs to change.
 
 | Port | Status | Evidence | Item |
 |------|--------|----------|------|
@@ -251,6 +250,10 @@ it, and it is why the obvious answer — the phone announcing its own address �
 to the creation argument on any other network. **There was never a discovery problem to solve; the
 Organelle already knew the answer.**
 
+⛔ **Hardcoding a phone address is the mistake `phone-ip.sh` exists to prevent.** Discovered rather
+than configured means **one build works everywhere and no conditional lives in the patch** — which
+is the property worth protecting if this is ever changed.
+
 ### The display must show its own staleness
 
 **A frozen display looks exactly like a working one**, and mid-performance you will read it and act
@@ -272,13 +275,6 @@ identically.**
 
 Knob 2 sends `grain`, not `knob2`. The display says what *changed* rather than which physical control
 moved, so the same knob can mean different things in different modes without the display lying.
-
-### The address is discovered, not configured
-
-Hardcoding a phone address is the mistake `phone-ip.sh` exists to prevent. On the Organelle's own
-access point the Organelle is the DHCP server, so it reads the lease it handed out; on any other
-network it falls back to the creation argument. One build works everywhere and no conditional lives
-in the patch.
 
 ## Open
 

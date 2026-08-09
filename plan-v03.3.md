@@ -15,7 +15,8 @@ It runs on top of `test/run.sh` (landed 2026-08-09), because the new bench steps
 - **Pd vanilla 0.49, permanently.**
 - ⛔ **Never open or save an Organelle-bound patch in plugdata.**
 - **Vanilla objects only.**
-- ⛔ **Never touch git.** Reading is fine. Brendan commits his own work.
+- **Commit as you go**, in reviewable batches — a plan's phases are good commit boundaries.
+  ⛔ **Brendan is the sole author: no `Co-Authored-By` trailer and no agent byline.**
 - ⚠️ **Read `run.sh`'s `RESULT:` line; do not grep for it.**
 - ⛔ **A bench `.pd` is an OUTPUT.** Edit the step table and regenerate.
 - ⛔ **A GATE IS NOT TRUSTED UNTIL IT HAS FAILED.** Every gate below gets a deliberate can-it-fail
@@ -236,4 +237,5 @@ python3 test/gate/docs-check.py -v
 ⛔ **This plan does not hand its open items to `plan-v04.md`.** Output-side metering is the one thing
 that legitimately stays, because it needs DSP stages that do not exist.
 
-⛔ **Leave every change in the working tree.** Brendan commits his own work.
+**Commit each phase as it lands** rather than leaving the whole plan in the working tree.
+⛔ **Brendan is the sole author: no `Co-Authored-By` trailer and no agent byline.**

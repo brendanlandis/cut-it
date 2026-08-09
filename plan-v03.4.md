@@ -20,7 +20,8 @@ last-heard detection. It now depends only on the stub from [plan-v03.3.md](plan-
 - **Pd vanilla 0.49, permanently.**
 - ⛔ **Never open or save an Organelle-bound patch in plugdata.**
 - **Vanilla objects only.**
-- ⛔ **Never touch git.** Reading is fine. Brendan commits his own work.
+- **Commit as you go**, in reviewable batches — a plan's phases are good commit boundaries.
+  ⛔ **Brendan is the sole author: no `Co-Authored-By` trailer and no agent byline.**
 - ⚠️ **Read `run.sh`'s `RESULT:` line; do not grep for it.**
 - ⛔ **A GATE IS NOT TRUSTED UNTIL IT HAS FAILED.**
 - ⛔ **This plan edits the file that holds the safe exit.** `m_launchpad`'s Live Mode message on
@@ -301,4 +302,5 @@ Mode. If it does not, `tools/lp-live.sh` rescues it — but the point is that it
 
 ⛔ **This plan does not hand its open items to `plan-v04.md`.**
 
-⛔ **Leave every change in the working tree.** Brendan commits his own work.
+**Commit each phase as it lands** rather than leaving the whole plan in the working tree.
+⛔ **Brendan is the sole author: no `Co-Authored-By` trailer and no agent byline.**

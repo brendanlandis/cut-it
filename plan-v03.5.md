@@ -19,7 +19,8 @@ diagnostic screen displays. **Do not start it first.**
 - **Pd vanilla 0.49, permanently.**
 - ⛔ **Never open or save an Organelle-bound patch in plugdata.**
 - **Vanilla objects only.**
-- ⛔ **Never touch git.** Reading is fine. Brendan commits his own work.
+- **Commit as you go**, in reviewable batches — a plan's phases are good commit boundaries.
+  ⛔ **Brendan is the sole author: no `Co-Authored-By` trailer and no agent byline.**
 - ⚠️ **Read `run.sh`'s `RESULT:` line; do not grep for it.**
 - ⚠️ **Bringing the AP up kills the house link**, and with it your ssh session and every Mac-side
   tool. Plan each AP session to be self-sufficient before you start it.
@@ -287,4 +288,5 @@ device is dead.
 
 ⛔ **This plan does not hand its open items to `plan-v04.md`.**
 
-⛔ **Leave every change in the working tree.** Brendan commits his own work.
+**Commit each phase as it lands** rather than leaving the whole plan in the working tree.
+⛔ **Brendan is the sole author: no `Co-Authored-By` trailer and no agent byline.**

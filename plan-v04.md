@@ -79,7 +79,8 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 
 ### How this project works
 
-- ⛔ **Never touch git** unless asked. Brendan commits his own work.
+- **Commit as you go**, in reviewable batches. ⛔ **Brendan is the sole author: no `Co-Authored-By`
+  trailer and no agent byline.**
 - **Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and the
   whole instrument is there, front panel included.
 - **`./tools/deploy.sh` does the whole loop** — syntax check, scp, reload, load. It **gates on output, not

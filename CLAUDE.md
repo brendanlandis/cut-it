@@ -112,6 +112,11 @@ under `ref/`. Nothing in either is deployed.
 
 ## Working on it
 
+⛔ **This project's git rule OVERRIDES the global one, which says never touch git.** Here you
+**commit as you go**, in reviewable batches — a plan's phases are good commit boundaries, and
+`git log` is this project's only journal, so work that never lands in it is work whose reasoning is
+lost. ⛔ **Brendan is the sole author: no `Co-Authored-By` trailer and no agent byline.**
+
 **Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and the
 whole instrument is *there* — `u_mother-stub` draws the front panel inline and fakes the knobs, keys,
 aux and encoder. **Most work should never need the Organelle powered on.**

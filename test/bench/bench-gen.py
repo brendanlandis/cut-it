@@ -110,6 +110,7 @@ def check(steps, name):
     for i, step in enumerate(steps, 1):
         title, passif, actions, meta = S.norm(step)
         lint_meta(meta, actions, "%s step %d" % (name, i))
+        lint_agreement(meta, passif, "%s step %d" % (name, i))
         for label, s in (("title", title), ("pass_if", passif)):
             for ch in (",", ";"):
                 assert ch not in s, (
@@ -187,6 +188,59 @@ def lint_check(spec, actions, where):
             "%s: the predicate reads %s but this step WRITES to it, so it would "
             "be reading the bench's own traffic rather than the patch's response"
             % (where, spec["bus"]))
+
+
+def _claims(spec):
+    """The things a predicate says are true, as text a person could read."""
+    k = spec.get("kind")
+    if k == "all":
+        out = []
+        for s in spec["of"]:
+            out.extend(_claims(s))
+        return out
+    if k == "print":
+        return [spec["name"]]
+    if k == "ratio":
+        return [spec["a"], spec["b"]]
+    if k == "bus":
+        return list(spec["has"])
+    if k == "bus-count":
+        return [spec["match"]]
+    if k == "bus-not":
+        return list(spec["absent"])
+    if k == "oled":
+        return list(spec.get("has", [])) + list(spec.get("has_row", []))
+    return []
+
+
+def lint_agreement(meta, pass_if, where):
+    """⛔ THE PREDICATE AND THE PROSE MUST AGREE.
+
+    A step has two oracles now -- a person reading the PASS IF, and a program
+    reading the bus -- and nothing stops them drifting apart. Change the
+    predicate without the prose and the run goes green while the sentence
+    describing it is false; change the prose without the predicate and a person
+    marks off something the machine never checked. Either way the step still
+    LOOKS covered, which is worse than not being covered at all.
+
+    ⚠️ WORD BY WORD RATHER THAN WHOLE-STRING, and that is not laziness. A
+    predicate reads the wire and prose reads as English: the bus carries
+    `sp-pad 5` and the sentence says "sp-pad reads 5". Demanding the exact
+    string would force the prose to be rewritten into wire format -- and these
+    sentences are hardware-verified and are not to be reworded.
+    """
+    spec = meta.get("check")
+    if not spec:
+        return
+    prose = (pass_if + " " + meta.get("watch", "")).lower()
+    for claim in _claims(spec):
+        for word in str(claim).split():
+            assert word.lower() in prose, (
+                "%s: the predicate asserts %r but %r appears nowhere in the "
+                "PASS IF or in `watch`. Either the prose is now wrong, or the "
+                "predicate is -- say which in the step rather than letting a "
+                "person and a program answer different questions."
+                % (where, claim, word))
 
 
 def lint_meta(meta, actions, where):

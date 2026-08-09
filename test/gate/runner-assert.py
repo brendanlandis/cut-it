@@ -168,7 +168,7 @@ def main():
     clean = transcript(bench)
 
     # -- 1. a clean transcript ---------------------------------------------
-    rc, out = run(write("clean.txt", clean), ["p"] * n)
+    rc, out = run(write("clean.txt", clean), _keys(bench))
     A.check("clean: exits 0", rc == 0, "rc=%d" % rc)
     A.check("clean: every step passed",
             ("%d passed" % n) in out, _tail(out))
@@ -177,7 +177,7 @@ def main():
     # ⛔ MUST NOT PASS. Seven good verdicts and a console that stops is a run
     # that did not happen, and reporting the seven as a result is the whole
     # failure this fixture exists for.
-    rc, out = run(write("truncated.txt", transcript(bench, upto=7)), ["p"] * n)
+    rc, out = run(write("truncated.txt", transcript(bench, upto=7)), _keys(bench))
     A.check("truncated: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("truncated: says STALLED rather than reporting a pass",
             "STALLED" in out and "RESULT: PASS" not in out, _tail(out))
@@ -190,7 +190,7 @@ def main():
     # to report success with this gate staying green.
     rc, out = run(write("nofire.txt",
                         transcript(bench, upto=7, stop_before_fired=True)),
-                  ["p"] * n)
+                  _keys(bench))
     A.check("no fired line: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("no fired line: says STALLED and does not pass the step",
             "STALLED" in out and "RESULT: PASS" not in out, _tail(out))
@@ -207,7 +207,7 @@ def main():
     # renumbered both and was caught downstream, leaving check_marker untested.
     rc, out = run(write("desync-marker.txt",
                         transcript(bench, marker_n=lambda i: i + 1 if i > 1 else i)),
-                  ["p"] * n)
+                  _keys(bench))
     A.check("desync by step number: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("desync by step number: aborts and says so", "DESYNC" in out, _tail(out))
     A.check("desync by step number: does NOT report a full tally",
@@ -221,13 +221,13 @@ def main():
     rc, out = run(write("desync-title.txt",
                         transcript(bench, retitle=lambda i, t:
                                    "a step that is not in the table" if i == 4 else t)),
-                  ["p"] * n)
+                  _keys(bench))
     A.check("desync by title: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("desync by title: aborts naming the title mismatch",
             "DESYNC" in out and "title" in out, _tail(out))
 
     # -- 3c. a bench generated from a different table -----------------------
-    rc, out = run(write("desync-of.txt", transcript(bench, of=99)), ["p"] * n)
+    rc, out = run(write("desync-of.txt", transcript(bench, of=99)), _keys(bench))
     A.check("desync by step count: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("desync by step count: says the tables differ",
             "DESYNC" in out, _tail(out))
@@ -240,7 +240,7 @@ def main():
     # is the shape of a bench whose run branch and describe branch disagree.
     rc, out = run(write("desync-fired.txt",
                         transcript(bench, fired_n=lambda i: i + 1 if i > 1 else i)),
-                  ["p"] * n)
+                  _keys(bench))
     A.check("desync by fired line: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("desync by fired line: aborts saying which step actually fired",
             "DESYNC" in out and "fired" in out, _tail(out))
@@ -248,7 +248,7 @@ def main():
             ("%d passed" % n) not in out, _tail(out))
 
     # -- 4. an empty file ---------------------------------------------------
-    rc, out = run(write("empty.txt", []), ["p"] * n)
+    rc, out = run(write("empty.txt", []), _keys(bench))
     A.check("empty: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("empty: names the cause -- the bench never loaded",
             "NEVER LOADED" in out.upper(), _tail(out))
@@ -259,7 +259,7 @@ def main():
     # keystroke -- the moment midi 1, 4, 6 and 7 gained predicates and stopped
     # consuming keys, four fixtures went red over nothing at all. A loop fixture
     # must not break when a step becomes machine-checkable.
-    rc, out = run(write("interrupt.txt", clean), ["p", "p", "p", "p", "q"])
+    rc, out = run(write("interrupt.txt", clean), _keys(bench, stop_after=4) + ["q"])
     A.check("interrupted: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("interrupted: keeps the verdicts it did get rather than discarding",
             _tally(out)["pass"] > 0, _tail(out))
@@ -271,7 +271,7 @@ def main():
     # -- 6. every verdict skipped ------------------------------------------
     # ⛔ A SKIP IS NEVER A PASS. It is the absence of a verdict, and a suite
     # that counts absence as success reports green over work nobody checked.
-    rc, out = run(write("allskip.txt", clean), _interleave(["s", "no rig here"], n))
+    rc, out = run(write("allskip.txt", clean), _keys(bench, "s", "no rig here"))
     A.check("all skipped: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("all skipped: RESULT is FAIL, never PASS",
             "RESULT: FAIL" in out and "RESULT: PASS" not in out, _tail(out))
@@ -280,7 +280,7 @@ def main():
     # ⚠️ The fixture provider must EXHAUST rather than repeat its last key: a
     # provider that repeated would let a transcript longer than its key list
     # pass by accident, which is a fixture grading itself.
-    rc, out = run(write("shortkeys.txt", clean), ["p", "p"])
+    rc, out = run(write("shortkeys.txt", clean), _keys(bench, stop_after=2))
     A.check("exhausted keys: exits non-zero rather than inventing verdicts",
             rc != 0, "rc=%d" % rc)
     A.check("exhausted keys: keeps the real verdicts and finishes nothing else",
@@ -312,7 +312,7 @@ def main():
     # file whose entire value is that it contains none.
     import records
     before = len(records.load_latest().get("records", {}))
-    run(write("clean2.txt", clean), ["p"] * n)
+    run(write("clean2.txt", clean), _keys(bench))
     after = len(records.load_latest().get("records", {}))
     A.check("a replay never writes to the committed latest.json",
             before == after, "%d records before, %d after" % (before, after))
@@ -439,21 +439,47 @@ def _sigint(transcript_path):
     outcome, and using it would test the wrong branch. An open pipe nobody
     writes to is what actually blocks a person's prompt.
     """
+    import selectors
     import signal
     p = subprocess.Popen(
         [sys.executable, "-u", os.path.join(ROOT, "test", "runner", "run.py"),
          "--bench", BENCH, "--replay", transcript_path, "--target", "device"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
-    # Wait for the prompt rather than sleeping a guessed interval: a fixed sleep
-    # is a race that passes on a fast machine and fails on a loaded one.
+
+    # Wait for whichever prompt comes first rather than sleeping a guessed
+    # interval -- a fixed sleep is a race that passes on a fast machine and
+    # fails on a loaded one.
+    #
+    # ⛔ AND THE READ MUST BE ABLE TO TIME OUT. This was a blocking read(1) in a
+    # `while ... time.time() < deadline` loop, which cannot work: with the child
+    # blocked on a prompt there is no byte to return, read() waits forever, and
+    # the deadline is never evaluated. The whole suite hung -- and A GATE THAT
+    # HANGS IS WORSE THAN ONE THAT FAILS, because a failure is at least a
+    # verdict. selectors gives the wait a real deadline.
+    #
+    # ⚠️ IT WATCHES FOR BOTH PROMPTS. Waiting only for "verdict?" broke the day
+    # the hands-on steps gained a `do`, because the runner then asks "press
+    # enter when you are ready" first and never reaches the other one.
+    # ⚠️ os.read ON THE RAW fd, NEVER p.stdout.read(). select() answers about the
+    # FILE DESCRIPTOR while a buffered reader keeps its own buffer in front of
+    # it -- so bytes that have already arrived sit unseen in Python while select
+    # reports nothing new, and the loop waits out its whole deadline for a
+    # prompt that was delivered immediately. That cost this fixture 20 s a run.
+    sel = selectors.DefaultSelector()
+    sel.register(p.stdout.fileno(), selectors.EVENT_READ)
     buf = b""
     deadline = time.time() + 20
-    while b"verdict?" not in buf and time.time() < deadline:
-        ch = p.stdout.read(1)
-        if not ch:
+    while not (b"verdict?" in buf or b"press enter" in buf):
+        if time.time() >= deadline:
             break
-        buf += ch
+        if not sel.select(timeout=0.25):
+            continue
+        chunk = os.read(p.stdout.fileno(), 4096)
+        if not chunk:
+            break
+        buf += chunk
+    sel.close()
     p.send_signal(signal.SIGINT)
     try:
         rest, _ = p.communicate(timeout=20)
@@ -476,10 +502,48 @@ def _tally(out):
 
 
 def _resumes_at_last_step(out):
-    """The resume command must name the step that was actually in flight."""
+    """The resume command must name the step the runner said it stopped on.
+
+    ⚠️ AGAINST THE RUNNER'S OWN STATEMENT, not against the last header it
+    printed. Those are usually the same and are not always: a step is described,
+    then interrupted at its prompt, and whether its header reached the pipe
+    before the signal did is a buffering question rather than a correctness one.
+    What must be true is that "stopped at step N" and "--from N" agree -- a
+    resume command pointing anywhere else is the actual defect.
+    """
     import re
-    seen = re.findall(r"\[(\d+)/\d+\]", out)
-    return bool(seen) and ("--from %s" % int(seen[-1])) in out
+    m = re.findall(r"(?:INTERRUPTED at step|stopped at step) (\d+)", out)
+    return bool(m) and ("--from %s" % m[-1]) in out
+
+
+def _keys(bench, verdict="p", note=None, stop_after=None):
+    """The keystrokes a person would type to give every step `verdict`.
+
+    ⛔ IT IS DERIVED FROM THE BENCH, NOT A FLAT LIST OF n. How many inputs a step
+    consumes depends on the step: one with a predicate asks nothing, one with a
+    `do` asks TWICE -- once for "press enter when you are ready" and once for the
+    verdict. A flat ["p"] * n was right only while every step was judged by hand,
+    and the moment the hands-on steps gained instructions it ran short and four
+    fixtures reported "not run" over nothing at all.
+    """
+    out = []
+    for step in bench.steps:
+        if stop_after is not None and step.n > stop_after:
+            break
+        # ⚠️ THE TWO QUESTIONS ARE INDEPENDENT. A step with a `do` asks "press
+        # enter when you are ready" WHATEVER judges it -- the finger has to be on
+        # the pad before GO goes out, or the predicate reads an empty console --
+        # and only then does a predicate answer for it or a person. midi 4, 6
+        # and 7 are both at once, and treating "has a predicate" as "asks
+        # nothing" left exactly those three short.
+        if step.hands:
+            out.append("")               # "press enter when you are ready"
+        if step.meta.get("check"):
+            continue                     # a predicate gives the verdict
+        out.append(verdict)
+        if note is not None:
+            out.append(note)
+    return out
 
 
 def _interleave(pair, n):

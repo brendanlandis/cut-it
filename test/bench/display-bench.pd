@@ -133,7 +133,7 @@
 #X obj 240 5370 s \$0-say;
 #X obj 20 5460 select 14;
 #X obj 240 5460 t b b b;
-#X msg 700 5460 === STEP-14-of-14 === done -- press Ctrl-C;
+#X msg 700 5460 === STEP-14-of-14 === THE 30 SECOND SAFETY TIMEOUT -- the deferred half of step 13;
 #X msg 700 5510 PASS IF: the screen returned to the meters on its own during that 35s wait -- that was the safety timeout;
 #X msg 700 5560 >>> press GO to run step 14 of 14;
 #X obj 240 5630 s \$0-say;

@@ -163,8 +163,18 @@ def use(provider):
 
 
 def prompt(text):
+    """⚠️ THE PROMPT IS WRITTEN AND FLUSHED BEFORE THE READ BLOCKS.
+
+    input(text) writes its argument without a newline, and a partial line can
+    sit in the buffer until something else flushes it -- so the runner appears
+    to hang silently at a step it has in fact already described and is waiting
+    on. Harmless at a terminal, wrong down a pipe, and it made the interrupt
+    fixture wait out its whole deadline for a prompt that had been issued.
+    """
+    sys.stdout.write(text)
+    sys.stdout.flush()
     try:
-        return ask_line(text)
+        return ask_line("")
     except EOFError:
         print()
         raise

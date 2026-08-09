@@ -63,6 +63,35 @@ is the buses and the map; right is the display owners. **The only wires on that 
 `u_init`** — to `m_launchpad` and to `u_state` — because the boot *order* is `u_init`'s while the
 *action* belongs to the file at the other end. Everything else talks on the allowlisted buses.
 
+## Creation arguments — the contract between the two entry points
+
+`main.pd` and `main-dev.pd` differ in exactly one thing, and every other difference between the Mac
+and the device is absorbed by these five arguments to `u_root`.
+
+| # | Is | Device | Mac |
+|---|---|---|---|
+| 1 | Pd channel the **nanoKONTROL**'s own channel 1 lands on | `17` | whatever slot it fills |
+| 2 | The same for the **Launchpad** | `1` | " |
+| 3 | **`u_state`'s data directory** — absolute, no trailing slash | `/sdcard/cut-it-state` | `/tmp` |
+| 4 | Pd channel for the **SP-404**'s channel 1 | `33` | " |
+| 5 | Pd channel for the **Volca**'s channel 1 | `49` | " |
+
+**A Pd input slot maps to channels `(n-1)*16+1` upward**, so slot 2 begins at 17 and slot 3 at 33.
+On the device that ordering comes from `/root/.pdsettings`; set the Mac's MIDI inputs to the same
+order — Launchpad first, nano second — and both entry points pass the same two numbers, which is the
+point of doing it that way round.
+
+⛔ **Argument 3 is the one genuine platform difference, and it is not an oversight.** There is no
+`/sdcard` on a Mac. The device path survives `tools/deploy.sh`, `--clean` and a power cycle, which
+the patch folder does not — **the instrument's data is deliberately outside the code**. See
+[state.md](module/state.md).
+
+⛔ **Pd 0.49 does not warn about a missing or extra creation argument, and positional arguments
+cannot be skipped.** A wrong count loads in perfect silence, so a clean syntax check proves nothing
+about arity — and omitting one would silently shift every argument after it. **That is why each
+`m_` layer prints the channel it actually received**, a couple of seconds in, behind `[del 2000]`
+(C-9).
+
 ## The `m_` boundary is the expensive thing
 
 **Nothing below the `m_` layer knows a nanoKONTROL exists.** A device publishes a **named control**

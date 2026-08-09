@@ -38,6 +38,16 @@ Launchpad X have it; this does not. Treat it as 96 RGB pixels of *spatial* state
 
 `div 10` and `mod 10` recover the coordinates, so no lookup table is needed.
 
+⛔ **Four counts are in play and they are four different quantities.** `g_grid.pd` uses all of them,
+which is how "the Launchpad's 96 LEDs" sat in its header while it painted 108.
+
+| Count | Is | Evidence | Item |
+|---|---|---|---|
+| **96** | **Physical buttons** on the device — 64 pads plus 32 edge | verified | — |
+| **108** | **Specs sent per frame**, indices 1–108, per the index map below | verified | — |
+| **109** | **Array cells** — `[array define $0-surface 109]`, indices 0–108. Cell 0 is allocated and deliberately never written, so an index maps straight to a cell with no arithmetic | verified | — |
+| **~96/s** | **ALSA MIDI writes per second** at the frame clock. ⚠️ Unrelated to the first 96 — a rate, not a count, and the number `g_grid`'s dirty-flag gating exists to hold down | verified | 75 |
+
 ### The onboarding drive — a USB mass-storage interface that once broke boot
 
 The device presents a vfat volume alongside its audio/MIDI interfaces, and it is the reason the

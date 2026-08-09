@@ -167,7 +167,7 @@
 #X connect 16 0 17 0;
 #X connect 3 0 18 0;
 #X restore 1600 420 pd param-in;
-#X text 20 580 EVERY BRANCH OUT OF route GOES THROUGH list append FIRST. When route matches \, whatever is left over comes out as a MESSAGE \, not a list -- so status v0.2-ready arrives with v0.2-ready as its selector and alert warn u_init x arrives with warn as its selector. Feed that to a trigger and Pd says: can only convert 's' to 'b' or 'a'. list append turns it back into a list., f 58;
+#X text 20 580 EVERY BRANCH OUT OF route GOES THROUGH list append FIRST. When route matches \, whatever is left over comes out as a MESSAGE \, not a list -- so status v0.3-ready arrives with v0.3-ready as its selector and alert warn u_init x arrives with warn as its selector. Feed that to a trigger and Pd says: can only convert 's' to 'b' or 'a'. list append turns it back into a list., f 58;
 #X text 560 580 C-7 describes this for a remainder that is a SINGLE symbol. It is wider than that: any remainder whose first atom is a symbol arrives as a selector plus arguments. A remainder starting with a float -- in-l 43 dB -- really is a list \, which is why the level chain needs no list append., f 58;
 #X text 1100 580 modal-off carries nothing \, so route hands out a bang and it goes straight to the layer logic. It is a reserved name rather than a modal with empty text because clearing a layer and setting one are different operations., f 58;
 #X text 1100 700 led AND grid ARE MATCHED AND DELIBERATELY NOT CONNECTED. The aux button LED is a display surface with its own owner \, g_led \, and it listens on this same bus. Without a branch here every LED request would fall out of the reject outlet and draw as a parameter row called led. Phase 5., f 58;
@@ -239,11 +239,11 @@
 #X obj 20 180 t b b b;
 #X msg 20 240 L 0;
 #X msg 200 240 R 0;
-#X msg 380 240 cut-it v0.2;
+#X msg 380 240 cut-it v0.3;
 #X obj 20 290 s \$0-txt-l;
 #X obj 200 290 s \$0-txt-r;
 #X obj 380 290 s \$0-foot;
-#X text 20 360 The levels overwrite L 0 and R 0 within a tenth of a second of DSP starting. The footer keeps cut-it v0.2 until u_init reports its first boot stage., f 58;
+#X text 20 360 The levels overwrite L 0 and R 0 within a tenth of a second of DSP starting. The footer keeps cut-it v0.3 until u_init reports its first boot stage., f 58;
 #X connect 1 0 2 0;
 #X connect 2 2 3 0;
 #X connect 2 1 4 0;

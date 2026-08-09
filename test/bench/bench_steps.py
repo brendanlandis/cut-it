@@ -83,7 +83,7 @@ def norm(step):
 
 STEPS_DISPLAY = [
  ('baseline -- sending nothing',
-  'PASS IF: two bars with a small gate mark under each and a BPM at the bottom -- Phase 5 hands the footer over from v0.2-ready to the tempo about four seconds in',
+  'PASS IF: two bars with a small gate mark under each and a BPM at the bottom -- Phase 5 hands the footer over from v0.3-ready to the tempo about four seconds in',
   []),
  ('PARAM WITH A UNIT -- sending chop-size 43 %',
   'PASS IF: chop-size on the top line and a big 43 % under it -- bars shrink to a thin strip -- then about 1.2s later the meters come back on their own',
@@ -138,7 +138,7 @@ STEPS_DISPLAY = [
 
 STEPS_NANOKONTROL = [
  ('baseline -- sending nothing',
-  'PASS IF: two bars with a small gate mark under each and a BPM at the bottom -- Phase 5 hands the footer over from v0.2-ready to the tempo about four seconds in',
+  'PASS IF: two bars with a small gate mark under each and a BPM at the bottom -- Phase 5 hands the footer over from v0.3-ready to the tempo about four seconds in',
   []),
  ('ONE MOVER -- chop-size 43 %',
   'PASS IF: chop-size small on the top line and a BIG 43 % under it -- this is the Phase 3 layout and it must be unchanged',

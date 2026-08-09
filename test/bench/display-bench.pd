@@ -56,7 +56,7 @@
 #X obj 20 2080 select 1;
 #X obj 240 2080 t b b b;
 #X msg 700 2080 === STEP-01-of-14 === baseline -- sending nothing;
-#X msg 700 2130 PASS IF: two bars with a small gate mark under each and a BPM at the bottom -- Phase 5 hands the footer over from v0.2-ready to the tempo about four seconds in;
+#X msg 700 2130 PASS IF: two bars with a small gate mark under each and a BPM at the bottom -- Phase 5 hands the footer over from v0.3-ready to the tempo about four seconds in;
 #X msg 700 2180 >>> press GO to run step 1 of 14;
 #X obj 240 2250 s \$0-say;
 #X obj 20 2340 select 2;

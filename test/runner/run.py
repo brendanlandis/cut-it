@@ -43,6 +43,25 @@ sys.path.insert(0, HERE)
 import gates                                                    # noqa: E402
 import records                                                  # noqa: E402
 import steps as S                                               # noqa: E402
+import stream                                                   # noqa: E402
+
+# ⚠️ FIFTEEN TO SEE THE FIRST MARKER, FIVE FOR EVERY ONE AFTER IT, and the
+# difference is diagnostic rather than arbitrary. Nothing at all within fifteen
+# seconds of launch means the bench never loaded -- the signature of scp'ing it
+# somewhere the launch line does not name -- and that wants naming by its cause.
+# A gap mid-run is a stall, and a stall is recoverable by resending GO.
+LOAD_TIMEOUT = 15.0
+STEP_TIMEOUT = 5.0
+
+
+class Desync(Exception):
+    """⛔ THE RUNNER IS RECORDING VERDICTS AGAINST THE WRONG STEP.
+
+    This is never recovered by guessing. A runner that shrugs and carries on
+    writes a tally in which every verdict after the slip answers a question
+    nobody asked -- which is precisely a gate that lies, and worse than no
+    runner at all, because the file it leaves behind is believed.
+    """
 
 # ⛔ THE REPO ROOT, AND IT IS ASSERTED. Every gate below is a path relative to
 # it, so a root one level off would run nothing, report nothing and exit ok --
@@ -125,15 +144,15 @@ def ask(step, allow_undo):
     """
     while True:
         try:
-            c = input("  verdict? %s : " % HELP).strip().lower()
+            c = stream.prompt("  verdict? %s : " % HELP).strip().lower()
         except EOFError:
             return "quit", "stdin closed"
         if c == "p":
             return "pass", ""
         if c == "f":
-            return "fail", input("  what went wrong (one line, optional): ").strip()
+            return "fail", stream.prompt("  what went wrong (one line, optional): ").strip()
         if c == "s":
-            return "skip", input("  why skip it (one line): ").strip() or "no reason given"
+            return "skip", stream.prompt("  why skip it (one line): ").strip() or "no reason given"
         if c == "r":
             return "repeat", ""
         if c == "u":
@@ -142,11 +161,11 @@ def ask(step, allow_undo):
             print("  nothing to undo -- this is the first step of the run")
             continue
         if c == "?":
-            print("  %s" % step.pass_if)
+            stream.say("  %s" % step.pass_if)
             continue
         if c == "q":
             return "quit", ""
-        print("  not one of those. %s" % HELP)
+        stream.say("  not one of those. %s" % HELP)
 
 
 def run_bench(bench, target, auto_only, start):
@@ -209,6 +228,149 @@ def run_bench(bench, target, auto_only, start):
 
     rec.close()
     return rec.rows
+
+
+def check_marker(m, line, expect, bench):
+    """⛔ THE PATCH'S OWN STEP NUMBER AND TITLE, BOTH, AGAINST THE TABLE.
+
+    The number alone is not enough: a bench regenerated from a reordered table
+    still counts 1, 2, 3 while every title has moved, and a runner checking only
+    the count would record a full set of verdicts against the wrong questions
+    and report PASS.
+    """
+    got_n, got_of, got_title = int(m.group(1)), int(m.group(2)), m.group(3).strip()
+    if got_n != expect.n:
+        raise Desync("the patch announced step %d where the table expects %d\n"
+                     "  line: %s" % (got_n, expect.n, line.strip()))
+    if got_of != expect.of:
+        raise Desync("the patch says %d steps where the table holds %d -- the "
+                     "bench on the other end was generated from a different "
+                     "table\n  line: %s" % (got_of, expect.of, line.strip()))
+    if got_title != expect.title.strip():
+        raise Desync("step %d's title does not match the table\n"
+                     "  table: %s\n  patch: %s"
+                     % (expect.n, expect.title.strip(), got_title))
+
+
+def run_bench_driven(bench, target, auto_only, start, src):
+    """A bench with a patch on the other end. -> (rows, ok).
+
+    THE INTERACTION, and it is the bench's, not ours. Each step takes TWO GOs:
+    one runs the step that was just described, the next describes the following
+    one. That is what keeps the PASS IF on screen and STILL while it is read,
+    and it is why the loop below sends GO twice per step rather than once.
+    """
+    rec = records.Recorder(bench.name, target, auto_only)
+    dsha = records.deps_sha(bench.deps)
+    stream.say("\n%s\n%s -- %d steps, target %s%s\n%s"
+               % (BAR, bench.name, len(bench.steps), target,
+                  ", --auto-only" if auto_only else "", BAR))
+
+    def record(step, verdict, note, auto=False, want=None, got=None):
+        return rec.append(dict(
+            bench=bench.name, step=step.n, title=step.title,
+            sha=records.step_sha(step.title, step.pass_if), deps_sha=dsha,
+            verdict=verdict, auto=auto, note=note, want=want, got=got))
+
+    try:
+        # -- the bench has to announce itself before anything else is true ---
+        try:
+            m, line = src.wait_for(S.RE_STEP, LOAD_TIMEOUT)
+        except stream.Stalled:
+            stream.say(
+                "\n  THE BENCH NEVER LOADED. Nothing announced itself in %g s.\n"
+                "  That is not a stalled run -- it is a bench that is not there.\n"
+                "  The usual cause is the file having been copied somewhere the\n"
+                "  launch line does not name. /tmp is wiped on reboot, which is\n"
+                "  why the benches live on /sdcard." % LOAD_TIMEOUT)
+            rec.close()
+            # ⚠️ THE False HERE IS REDUNDANT AND KNOWINGLY SO. With no records
+            # at all the summary already reports every step as not run and
+            # fails, so flipping this to True changes nothing observable --
+            # confirmed by mutation. It stays because "reported PASS having run
+            # nothing" is the worst thing this runner could do, and one
+            # unnecessary guard on that is cheaper than finding out the summary
+            # was refactored.
+            return [], False
+
+        # --from: walk the PATCH forward to meet us, because a bench always
+        # starts at step 1 however far in we want to resume.
+        # ⛔ RECORD NOTHING FOR THE STEPS WALKED PAST. They were not run, and a
+        # resumed run that quietly filled them in would turn "I checked the
+        # second half" into a claim about the whole bench.
+        i = max(0, (start or 1) - 1)
+        while int(m.group(1)) < i + 1:
+            stream.say("  ... walking past step %s unjudged (--from %d)"
+                       % (m.group(1), i + 1))
+            src.go()
+            src.wait_for(S.RE_FIRED, STEP_TIMEOUT)
+            src.go()
+            m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
+
+        while True:
+            step = bench.steps[i]
+            check_marker(m, line, step, bench)
+            describe(bench, step)
+
+            if step.hands:
+                # ⛔ NEVER AUTO-ANSWER THIS. GO sent before the finger is on the
+                # pad judges the step against nothing at all, and the verdict
+                # that comes back is about an empty console.
+                stream.prompt("  press enter when you are ready: ")
+
+            src.go()
+            window = []
+            try:
+                fm, fline = src.wait_for(S.RE_FIRED, STEP_TIMEOUT, collect=window)
+            except stream.Stalled:
+                stream.say("\n  STALLED at step %d -- GO was sent and nothing "
+                           "fired within %g s." % (step.n, STEP_TIMEOUT))
+                record(step, "interrupted", "stalled mid-run: GO sent, no fired line")
+                rec.close()
+                return rec.rows, False
+            if int(fm.group(1)) != step.n:
+                raise Desync("step %d was described but step %s fired\n  line: %s"
+                             % (step.n, fm.group(1), fline.strip()))
+
+            verdict, note = ask(step, allow_undo=False)
+            if verdict == "quit":
+                record(step, "interrupted", note)
+                stream.say("\n  stopped at step %d. Resume with:" % step.n)
+                stream.say("      ./test/run.sh --bench %s --target %s --from %d"
+                           % (bench.name, target, step.n))
+                break
+            if verdict in ("repeat", "undo"):
+                # ⚠️ Neither is available with a patch on the other end: the
+                # bench has already moved, and pretending otherwise would put
+                # the runner and the patch on different steps. Say so.
+                stream.say("  not while a bench is running -- it has already "
+                           "advanced. Judge what you saw.")
+                continue
+            record(step, verdict, note)
+
+            i += 1
+            src.go()
+            if i >= len(bench.steps):
+                break
+            try:
+                m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
+            except stream.Stalled:
+                stream.say("\n  STALLED after step %d -- nothing described "
+                           "step %d within %g s."
+                           % (step.n, i + 1, STEP_TIMEOUT))
+                rec.close()
+                return rec.rows, False
+    except Desync as e:
+        # ⛔ ABORT. Not "skip the step", not "resync" -- every verdict already
+        # written is still good, and every one that would follow a guess is not.
+        stream.say("\n  DESYNC -- %s" % e)
+        stream.say("  Aborting. Verdicts already recorded stand; nothing after "
+                   "this point would have meant anything.")
+        rec.close()
+        return rec.rows, False
+
+    rec.close()
+    return rec.rows, True
 
 
 def bench_summary(name, rows, total):
@@ -329,6 +491,29 @@ def main(argv):
 
     if a.list:
         return do_list()
+
+    if a.keys:
+        stream.use(stream.keystrokes(a.keys))
+
+    if a.replay:
+        # ⛔ REPLAY NEVER TOUCHES latest.json. The committed roll-up is a record
+        # of what hardware was seen to do; a fixture is a recording of a fiction
+        # written to exercise a failure path, and letting one write there would
+        # put invented verdicts in the file whose whole value is that it does not
+        # contain any.
+        if not a.bench:
+            sys.exit("run.py: --replay needs --bench, so the transcript can be "
+                     "checked against a step table")
+        b = S.load(a.bench)
+        src = stream.Replay(a.replay)
+        rows, ok = run_bench_driven(b, a.target or "replay", a.auto_only,
+                                    a.start, src)
+        rc = summarise([], 0, [(a.bench, rows, len(b.steps))])
+        # ⚠️ `ok` is belt AND braces. A stall or a desync already shows up in the
+        # summary as steps not run, so rc is normally enough -- but a failure
+        # path that produced a full set of records and still went wrong must not
+        # be able to exit 0, and this is what makes that impossible.
+        return rc or (0 if ok else 1)
 
     if a.bench and a.bench not in S.names():
         sys.exit("run.py: no bench called %r. There are: %s"

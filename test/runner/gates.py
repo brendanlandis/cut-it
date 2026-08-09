@@ -38,7 +38,7 @@ import sys
 #
 # ⚠️ UPDATE THIS DELIBERATELY, NEVER TO MAKE A RED RUN GREEN -- the same rule as
 # MIDI_EXPECT in test/gate/lib-scratch.sh, and for the same reason.
-EXPECT = 13
+EXPECT = 14
 
 # ⛔ THE INVENTORY RUNS FIRST because every gate below it rewrites the same MIDI
 # object boxes, so a count that has drifted explains all of them at once. Then
@@ -73,6 +73,15 @@ GATES = [
     # --- 3. the benches are generated, not hand-written --------------------
     ("bench step text survived generation",
      "python3 test/bench/bench-verify.py"),
+
+    # --- 3b. the runner itself ---------------------------------------------
+    # ⛔ THE ONLY THING THAT EVER EXERCISES THE RUNNER'S FAILURE PATHS. A
+    # hardware run that goes well never stalls, never desyncs, is never
+    # interrupted and never meets an empty console, so without this every one of
+    # those branches could be dead code and every run would look identical and
+    # green. Replay fixtures: Mac-only, headless, under a second, so it costs
+    # the bare run nothing and takes nothing away from its guarantee.
+    ("the runner's own failure paths", "./test/gate/runner-assert.sh"),
 
     # --- 4. one gate per module --------------------------------------------
     ("the MIDI inventory", "./test/gate/midi-emitters-assert.sh"),

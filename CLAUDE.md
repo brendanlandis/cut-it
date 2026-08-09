@@ -104,7 +104,7 @@ under `ref/`. Nothing in either is deployed.
 ⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Nine gates, one per module**, and what each one protects is in
+**Ten gates**, and what each one protects is in
 [test/README.md](test/README.md). ⬜ `module/audio` is the only page still declaring `Gate: none`.
 
 

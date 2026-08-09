@@ -35,6 +35,21 @@ _steps = _load("bench_steps", os.path.join(BENCH_DIR, "bench_steps.py"))
 WINDOW_MS = _steps.WINDOW_MS
 MEASURE_SUFFIX = _steps.MEASURE_SUFFIX
 
+# ⛔ RE-EXPORTED, NEVER RE-DECLARED. The console protocol is one agreement
+# between the generator that writes these lines and the runner that reads them,
+# and it lives in bench_steps.py beside the format strings it has to match.
+# Writing the regexes again here would be the second copy, and the failure it
+# produces is the nastiest kind: the runner stops recognising a step, reports a
+# stall, and the bench on the other end is working perfectly.
+SAY_STEP = _steps.SAY_STEP
+SAY_PROMPT = _steps.SAY_PROMPT
+SAY_FIRED = _steps.SAY_FIRED
+SAY_FIRED_LAST = _steps.SAY_FIRED_LAST
+SAY_COMPLETE = _steps.SAY_COMPLETE
+RE_STEP = _steps.RE_STEP
+RE_FIRED = _steps.RE_FIRED
+RE_COMPLETE = _steps.RE_COMPLETE
+
 # ---------------------------------------------------------------------------
 # ⛔ WHAT EACH BENCH'S VERDICTS ACTUALLY DEPEND ON, and it is PER BENCH.
 #

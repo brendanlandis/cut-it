@@ -17,6 +17,7 @@ again here -- so at runtime that line printed as THREE fragments. Both are now
 Phase 6 run, in a bench family whose own README warns about it, which is why
 bench-gen.py asserts against commas and semicolons rather than trusting review.
 """
+import re
 
 # ---------------------------------------------------------------------------
 # ⛔ THE MEASUREMENT WINDOW LIVES HERE AND NOWHERE ELSE. bench-gen.py builds the
@@ -33,6 +34,32 @@ WINDOW_MS = 10000
 # immediately. Same reason as above: the generator and the runner must agree, so
 # there is one definition rather than two spellings of "-zero".
 MEASURE_SUFFIX = "-zero"
+
+# ---------------------------------------------------------------------------
+# ⛔ THE CONSOLE PROTOCOL, AND BOTH HALVES OF IT LIVE HERE.
+#
+# A bench announces itself on Pd's console and test/runner/ reads those lines
+# back to know which step is running -- so the generator's format strings and the
+# runner's regexes are two halves of ONE agreement. Written apart they drift
+# silently and in the worst possible way: the runner stops recognising a step,
+# calls it a stall, and the bench is fine. Written together, a change to the
+# wording has to pass runner-assert, which checks each regex against the string
+# its own format produces.
+#
+# ⚠️ THE REGEXES ARE UNANCHORED ON PURPOSE. These reach the console through a
+# bare [print], so every line arrives with Pd's own "print: " in front of it.
+SAY_STEP = "=== STEP-%02d-of-%02d === %s"
+SAY_PROMPT = ">>> press GO to run step %d of %d"
+SAY_FIRED = ("--- step %d fired --- judge it against the PASS IF above --- "
+             "press GO for step %d")
+SAY_FIRED_LAST = ("--- step %d fired --- that was the last one --- "
+                  "press GO to finish")
+SAY_COMPLETE = ("=== BENCH COMPLETE === every step has been run -- reload the "
+                "patch to go round again")
+
+RE_STEP = re.compile(r"=== STEP-(\d+)-of-(\d+) === (.*?)\s*$")
+RE_FIRED = re.compile(r"--- step (\d+) fired ---")
+RE_COMPLETE = re.compile(r"=== BENCH COMPLETE ===")
 
 
 def norm(step):

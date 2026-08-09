@@ -380,13 +380,13 @@ def build(name, cfg):
         # state steps. A flag has to be a field, not a guess at prose.
         hands = "HANDS" in title.upper()
         measure = any(b.endswith(S.MEASURE_SUFFIX) for _m, b in _a)
-        prompt = ">>> press GO to run step %d of %d" % (i, len(steps))
+        prompt = S.SAY_PROMPT % (i, len(steps))
         if hands:
             prompt += " -- THIS ONE NEEDS YOUR HANDS ON THE HARDWARE"
         if measure:
             prompt += " -- then WAIT for the printed count before pressing GO again"
 
-        m1 = p.msg(TX, y, esc("=== STEP-%02d-of-%02d === %s" % (i, len(steps), title)))
+        m1 = p.msg(TX, y, esc(S.SAY_STEP % (i, len(steps), title)))
         m2 = p.msg(TX, y + 50, esc(passif))
         m3 = p.msg(TX, y + 100, esc(prompt))
         s1 = p.obj(240, y + 170, "s \\$0-say")
@@ -400,9 +400,7 @@ def build(name, cfg):
 
     done_t = p.obj(20, Y + 60 + len(steps) * 260, "t b")
     p.con(prev, prev_out, done_t, 0)
-    done_m = p.msg(240, Y + 60 + len(steps) * 260, esc(
-        "=== BENCH COMPLETE === every step has been run -- reload the patch to go "
-        "round again"))
+    done_m = p.msg(240, Y + 60 + len(steps) * 260, esc(S.SAY_COMPLETE))
     done_s = p.obj(240, Y + 120 + len(steps) * 260, "s \\$0-say")
     p.con(done_t, 0, done_m, 0)
     p.con(done_m, 0, done_s, 0)
@@ -441,10 +439,8 @@ def build(name, cfg):
             p.con(am, 0, asnd, 0)
             runmax = max(runmax, 480 + width(m))
 
-        tail = ("--- step %d fired --- judge it against the PASS IF above --- "
-                "press GO for step %d" % (i, i + 1)) if i < len(steps) else (
-               "--- step %d fired --- that was the last one --- press GO to finish"
-               % i)
+        tail = (S.SAY_FIRED % (i, i + 1)) if i < len(steps) else (
+                S.SAY_FIRED_LAST % i)
         fm = p.msg(480, yy + na * 110 + 70, esc(tail))
         fs = p.obj(240, yy + na * 110 + 130, "s \\$0-say")
         p.con(tr, 0, fm, 0)

@@ -18,13 +18,14 @@ word.
 
 ## One gate per module
 
-Nine gates, and each answers for exactly one page under `ref/`. That is the whole organising
+Ten gates, and each answers for exactly one page under `ref/`. That is the whole organising
 principle: **a page that names a gate should be able to name one whose entire subject is that page**,
 or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
 
 | Gate | Checks | Answers for |
 |---|---|---|
+| `runner-assert.sh` | 31 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `display-assert.sh` | 29 | `module/display` |
 | `tempo-assert.sh` | 17 | `module/tempo` |
@@ -42,6 +43,20 @@ improvement over what they used to claim.
 **`midi-emitters-assert.sh` belongs to no device on purpose.** Its only claim is structural — *these
 are all the MIDI objects in the patch* — and a new `[noteout]` in some future `e_` stage is not the
 SP-404's business or the Volca's, but very much the instrument's. It needs no Pd and takes ~200 ms.
+
+**`runner-assert.sh` belongs to no page for a different reason: its subject is `test/run.sh`,** which
+is not part of the instrument. Inventing a `ref/` page for it would put a claim about test tooling on
+the same shelf as claims about the hardware. ⛔ **It is the only thing that ever exercises the
+runner's failure paths** — a hardware bench run that goes well never stalls, never desyncs, is never
+interrupted and never meets an empty console, so without it all four branches could be dead code and
+every run would look identical and green.
+
+⚠️ **Its fixture set was written by mutation, not by guessing.** The first version had seven
+fixtures and looked complete; deleting the runner's fired-line check, its marker check and its
+mid-run stall handler left it **fully green** in all three cases — one fixture was tripping two
+guards at once and so only ever tested the first to fire, and one stall handler had no fixture that
+reached it at all. Four more fixtures, each corrupting exactly one thing. ⛔ **A fixture that trips
+two guards tests one of them.**
 
 ### The shared machinery
 

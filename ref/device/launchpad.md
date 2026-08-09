@@ -38,6 +38,23 @@ Launchpad X have it; this does not. Treat it as 96 RGB pixels of *spatial* state
 
 `div 10` and `mod 10` recover the coordinates, so no lookup table is needed.
 
+### The onboarding drive — a USB mass-storage interface that once broke boot
+
+The device presents a vfat volume alongside its audio/MIDI interfaces, and it is the reason the
+Organelle needs a patched `mount.sh`.
+
+| Property | Value | Evidence | Item |
+|----------|-------|----------|------|
+| Enumerates as | `/dev/sda` + `sda1`, `Novation Onboarding Drive` | verified | — |
+| Size | **192 KiB** — `384 512-byte logical blocks`. ⚠️ `df` on a Mac reports 144 KiB, the usable filesystem: a different number for a different thing | verified | — |
+| Write protect | **On.** `Write Protect is on`, and this is what broke boot | verified | — |
+| Present when hot-plugged | Yes — ✅ re-verified hot 2026-08-08, with `/usbdrive` staying unmounted and `/sdcard` still `rw` | verified | — |
+
+⛔ **Why it mattered:** `mount.sh` mounted it on `/usbdrive`, `USER_DIR` followed it onto a
+read-only volume, and the front panel died trying to write there. The chain, and the guard that
+stops it, are on [device-os.md](../device-os.md) and [device/README.md](../../device/README.md).
+**Switching the drive off at the device is declined** — see *Design*.
+
 ### Transmits (Launchpad → Pd)
 
 | Event | Message | Evidence | Item |
@@ -349,6 +366,36 @@ The pads are polyphonic-aftertouch sensitive, and that channel is free panel spa
 parameter can ride pad pressure while a pad is held. It is the most expressive control on the rig
 and costs no buttons.
 
+### The firmware update is DECLINED, and the onboarding drive stays on
+
+✅ **Item 265.** Novation Components can perhaps switch the onboarding drive off, but Components
+refuses to open the Launchpad at all until a **firmware update** is accepted. ⛔ **That would change
+the firmware every `verified` fact on this page was measured against** — including item 257, that
+the device ignores incoming MIDI clock — on the one device in the rig with a known enumeration
+quirk (item 248).
+
+**The changelog was read before deciding, rather than left as an unknown.** 📄 Novation's V1.2 /
+V1.2.1 addendum lists everything the update adds:
+
+| V1.2 / V1.2.1 / V1.2.2 | Bears on this rig? |
+|---|---|
+| Unquantised recording | No — it belongs to the **Launchpad's own** sequencer, and ⛔ **Programmer Mode bypasses that entirely**: the patch owns the surface |
+| Performance Velocity, Probability and Mutation | No — same, and ⚠️ **v0.4 is building sequencing, probability and mutation in Pd on purpose.** The firmware's versions are not merely unused, they are the thing being replaced |
+| **Pad Trigger Threshold** (new setting) | ⚠️ **Yes** — a threshold change can move measured velocity |
+| Legacy Mode brought in line with Launchpad X / Mini MK3 | No |
+| **Aftertouch threshold fix** | ⚠️ **Yes** — `m_launchpad`'s `pressure` subpatch depends on aftertouch behaviour |
+| Crash fix, multiple Novation devices connected then disconnected | No — one Novation device here |
+
+⛔ **Nothing in it touches MIDI clock, tempo sync or LED animation**, so it would not be expected to
+fix item 257 — the device ignoring incoming clock — which is the only Launchpad behaviour this
+project actually wants changed. **The update offers nothing needed and risks two things measured**
+(items 193 and 204, velocity and aftertouch).
+
+**So the trade is bad and the decision is to stop asking.** The drive is neutralised on the device
+side instead, by a guard in `mount.sh` — see [device/README.md](../../device/README.md).
+⚠️ **Revisit only if an update is being done for another reason** — then re-measure velocity and
+aftertouch afterwards rather than trusting the old numbers.
+
 ## Open
 
 - ⬜ **The watchdog cannot recover a device that was absent at load.** A replug destroys the ALSA
@@ -361,3 +408,8 @@ and costs no buttons.
 - ⬜ **What every layout ID means.** `02`, `03` and `04` were seen; the full set and their names are
   not established. See [plan-v04.md](../../plan-v04.md) §3. ✅ *That it announces at all* is now
   answered — item 100 is closed, see *Mode changes are announced* under **Facts**.
+- ⬜ **What firmware version this unit is on, in Novation's terms.** Item 98, and
+  [plan-v04.md](../../plan-v04.md) §3. The device inquiry returns firmware bytes `00 04 06 05`
+  and nothing published maps that to a marketing version, so *how far behind* this unit is cannot
+  be stated. ⚠️ **It does not change the decision** to decline the update — see *The firmware
+  update is DECLINED* under **Design**.

@@ -54,14 +54,31 @@ if [ "$(cat /sys/block/$BASE/ro 2>/dev/null)" = "1" ]; then
 fi
 ```
 
-✅ Verified on hardware: with the Launchpad attached, a full `/reload` no longer mounts
-anything and `/tmp/user_dir` stays `/sdcard`.
+⛔ **`mount.sh` runs on EVERY Reload, not only at boot**, so without the guard this appears
+mid-session as readily as at power-on. That is why `tools/deploy.sh` sends `/reloadNoRemount`
+rather than running `reload.sh` — otherwise every single deploy would trigger it.
+
+✅ **Verified three ways.** With the Launchpad attached, a full `/reload` no longer mounts anything
+and `/tmp/user_dir` stays `/sdcard`; a **cold boot** with the Launchpad attached comes up normally
+with wifi connected and `/usbdrive` unmounted; and a full deploy leaves `/usbdrive` clear.
+✅ Re-verified **hot** on 2026-08-08, which the cold-boot test could not cover — the drive appeared
+live and `/usbdrive` still stayed unmounted with `/sdcard` still `rw`.
+
+⚠️ **The blast radius is wider than wifi.** `USER_DIR` is also where `start-ap.sh` reads `ap.txt`
+and where the System menu's save paths hang off, so a bad mount breaks Save and AP mode too — the
+wifi log is just the first thing to try writing.
+
+**If it ever recurs:** `umount /usbdrive` clears it, no reboot needed.
 
 **To revert:** `cp /root/fw_dir/scripts/mount.sh.orig /root/fw_dir/scripts/mount.sh` with the
 rootfs remounted rw, or scp `mount.sh.orig` from this folder.
 
 **Side effect worth knowing:** a genuinely write-protected USB stick will no longer mount as
 `/usbdrive`. That is arguably correct here, but it is a behaviour change.
+
+⚠️ **Turning the drive off at the Launchpad instead was considered and declined** — it requires a
+firmware update that would invalidate every measured fact on
+[ref/device/launchpad.md](../ref/device/launchpad.md). Item 265, reasoning on that page.
 
 ## Restoring the nanoKONTROL
 

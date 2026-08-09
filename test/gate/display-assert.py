@@ -24,9 +24,29 @@ import lib_grid as G                                           # noqa: E402
 MODAL = 45
 
 
+# ⛔ THE NUMBER OF WINDOWS display-assert-drive-gen.py's SEQ OPENS. Update it when
+# that table changes, deliberately -- the same rule as MIDI_EXPECT and gates.py's
+# EXPECT, and for the same reason: the check it feeds is what stops a driver that
+# died early from answering every negative assertion below with an empty list.
+MARKS = 15
+
+
 def main():
-    frames = G.parse(sys.stdin, "GRID")
+    # ⛔ READ THE CAPTURE ONCE. G.parse reassembles SysEx frames out of it and
+    # A.windows counts the MARK lines in the same text; handing sys.stdin to both
+    # would leave the second one an exhausted stream and a silent "0 of 15".
+    cap = A.require_capture(sys.stdin.read())
+    frames = G.parse(cap.splitlines(), "GRID")
     lighting = [f for f in frames if f.is_lighting]
+
+    # ⛔ THE BOOKKEEPING CHECK, AND THIS GATE WENT WITHOUT IT. It groups frames by
+    # mark below with setdefault, which makes a window that NEVER ARRIVED
+    # indistinguishable from one that arrived empty -- and two assertions here are
+    # negative ("the grid stops repainting", "a warn changes nothing"), so a driver
+    # that died at window three would have been ANSWERED BY THE EMPTY LIST rather
+    # than by a fact. lib_assert.windows() exists precisely for this and every
+    # other capture-reading gate already used it.
+    A.windows(cap, "GRID", MARKS)
 
     if not A.check("the run produced lighting frames at all", bool(lighting),
                    "no frame ever reached [midiout] -- is the scratch copy rewritten?"):
@@ -103,10 +123,19 @@ def main():
                 "colours present: %s" % sorted(set(fs[-1].colours()))[:6])
 
     # ---- a warn must never reach the grid ---------------------------------
+    # ⛔ THE LIVENESS WITNESS IS NOT OPTIONAL, AND THIS ONE USED TO SAY `if fs else
+    # True` -- an assertion that answered ITSELF with a pass whenever the window
+    # was empty. "A warn changed nothing" and "nothing happened at all" are the
+    # same capture, and only one of them is the fact being claimed. Every other
+    # window on this page already guards itself this way.
     fs = window("warn-ignored")
-    A.check("a warn changes nothing -- the modal is still up",
-            all(set(f.colours()) == {MODAL} for f in fs) if fs else True,
-            "a warn repainted the surface")
+    if A.check("warn-ignored: the grid repainted", bool(fs),
+               "no frame in the window -- the beat row should be driving a repaint "
+               "here, so silence means the run died rather than that the warn was "
+               "ignored"):
+        A.check("a warn changes nothing -- the modal is still up",
+                all(set(f.colours()) == {MODAL} for f in fs),
+                "a warn repainted the surface")
 
     # ---- alert outranks the modal, then gives it back ---------------------
     # The alert TTL is 2 s and this window is longer, so the LAST frame in it has

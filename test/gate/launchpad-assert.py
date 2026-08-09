@@ -37,15 +37,30 @@ import lib_grid as G                                           # noqa: E402
 PROGRAMMER, LIVE = 1, 0
 
 
+MARKS = ("SETTLED", "PANIC", "QUIT")
+
+
 def main():
-    frames = G.parse(sys.stdin, "LP")
+    # ⛔ READ THE CAPTURE ONCE, because it is needed twice: G.parse reassembles
+    # SysEx out of it and A.windows does the bookkeeping over the same MARK lines.
+    # Handing sys.stdin to both would give the second one an exhausted stream and
+    # a silent "0 of 3 marks".
+    cap = A.require_capture(sys.stdin.read())
+    frames = G.parse(cap.splitlines(), "LP")
     mode = [f for f in frames if f.is_mode]
     lighting = [f for f in frames if f.is_lighting]
 
-    # ⛔ WITHOUT THIS THE WHOLE GATE CAN PASS ON AN EMPTY CAPTURE. Every check
-    # below is of the form "a frame like this exists", and none of them can tell
-    # a scratch copy that was never rewritten from a device that was never told
-    # anything. This one says the run happened at all.
+    # ⛔ THE DRIVER GOT ALL THE WAY THROUGH. Without this, a Pd that died after
+    # SETTLED leaves the PANIC and QUIT windows empty, and every assertion below
+    # of the form "exactly one frame like this" is answered by an empty list
+    # rather than by a fact. This gate went without it for its whole life because
+    # it taps no bus -- but it does emit marks, so the check was always available.
+    A.windows(cap, "LP", len(MARKS))
+
+    # ⛔ AND WITHOUT THIS THE WHOLE GATE CAN PASS ON A CAPTURE THAT REACHED EVERY
+    # MARK AND STILL SAID NOTHING. Every check below is of the form "a frame like
+    # this exists", and none of them can tell a scratch copy that was never
+    # rewritten from a device that was never told anything.
     if not A.check("the run produced SysEx at all", bool(frames),
                    "nothing reached [midiout] -- is the scratch copy rewritten?"):
         return A.report()
@@ -69,6 +84,17 @@ def main():
             "surface, which kills the grid until the patch is reloaded and leaves "
             "the device flooding Pd's Midi-In 1 with clock (item 250)" % len(live))
 
+    # ⛔ AND IT IS THE QUIT WINDOW'S, NOT PANIC'S. The count alone cannot tell the
+    # two failures apart: "panic hands back and quitting does not" also produces
+    # exactly one frame, and it is the WORSE of the two -- the grid dies mid-set
+    # AND the device is left stranded on exit. The mark says which window it
+    # arrived in, so say so.
+    A.check("⛔ the ONE Live Mode frame arrives in the QUIT window",
+            [f.mark for f in live] == ["QUIT"],
+            "Live Mode was sent in window(s) %s. Sent at PANIC instead of QUIT "
+            "means the grid dies mid-set and the device is STILL stranded on exit"
+            % ([f.mark for f in live] or "none"))
+
     # ⛔ THE ORDER, WHICH IS NOT IMPLIED BY EITHER MESSAGE EXISTING. A patch that
     # painted the grid and then switched mode would send both of these and still
     # come up dark, because LED writes in Live Mode do not appear.
@@ -83,10 +109,23 @@ def main():
 
     # ...and the same argument on the way out: handing the device back before the
     # last paint would leave whatever was lit on screen in Live Mode.
+    #
+    # ⛔ THE else ARM IS NOT DECORATION. This check used to live inside a bare
+    # `if live:` with nothing after it, so the case it exists for -- the device
+    # never handed back at all, which is the ⛔ STRANDED failure at the top of
+    # this file -- made it SILENTLY NOT RUN. The tally dropped 5 to 4 and the only
+    # witness was a count in test/README.md that nothing compares against. A check
+    # that disappears in exactly the situation it was written for is worse than no
+    # check, because the run still says ok.
     if live:
         after = [f for f in lighting if frames.index(f) > frames.index(live[0])]
         A.check("nothing is painted AFTER the device has been handed back",
                 not after, "%d frame(s) sent to a Launchpad in Live Mode" % len(after))
+    else:
+        A.check("nothing is painted AFTER the device has been handed back",
+                False, "NO Live Mode frame was ever sent, so there is no handback "
+                       "to paint after -- the device is STRANDED in Programmer Mode "
+                       "and this check cannot be answered")
 
     A.note("%d mode switch(es) in the run: %s"
            % (len(mode), " ".join("programmer" if f.data[7:8] == [PROGRAMMER] else "live"

@@ -254,5 +254,21 @@ if args and args[0] == "--boxes":
         list_boxes(f)
     sys.exit(0)
 
+# ⛔ AN EMPTY ARGUMENT LIST IS A FAILURE, NOT A PASS. `all([])` is True, so this
+# file used to print nothing and exit 0 when it was handed no patches at all --
+# and it is invoked from test/runner/gates.py through a SHELL GLOB. A glob that
+# stops matching (the folder renamed, the run started from the wrong directory)
+# would then read as a clean gate over zero files. That is the fourth way a gate
+# passes vacuously, and docs-check.py already guards the same shape with its
+# "no anchors found anywhere" check.
+if not args:
+    sys.exit("pd-layout-check: no patches to check. The glob that feeds this "
+             "matched nothing, which is a failure and not a pass -- run it from "
+             "the repo root as: python3 test/gate/pd-layout-check.py \"Cut It\"/*.pd")
+
 ok = all([check(f) for f in args])
+
+# ⚠️ AND PRINT THE COUNT, so it can be watched going UP. A silent drop from nine
+# patches to two is otherwise indistinguishable from a clean run.
+print(f"\n{len(args)} patch(es) checked")
 sys.exit(0 if ok else 1)

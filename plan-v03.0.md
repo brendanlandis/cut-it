@@ -1,9 +1,9 @@
 # Plan v0.3.0 — what is left that needs hands on the rig
 
 **Everything in this plan that could be done without the hardware in front of you has been done.**
-What remains is **four** things, and every one of them needs a person at the rig — eyes on a screen,
-ears on a speaker, fingers on a menu, or a cable moved. Items 77 and 39 were answered on 2026-08-08;
-their results are kept below because one of them changes what v0.4 can assume.
+What remains is **three** things, and every one of them needs a person at the rig — eyes on a screen,
+ears on a speaker, fingers on a menu, or a cable moved. Items 77, 39 and 3 were answered on 2026-08-08;
+their results are kept below because two of them change what v0.4 can assume.
 
 ⛔ **This file is now a checklist, not a design document.** The reasoning behind each item lives on
 its `ref/` page; what is here is *what to do* and *what counts as done*. The history — parameter
@@ -67,7 +67,7 @@ and the SP-404 contains another, so the tree looks four deep and is not.
 |---|---|---|---|
 | ~~1~~ | ✅ **DONE 2026-08-08.** Item 77 closed — there are no limits, because the device never tracks. Item 257 | — | [ref/device/launchpad.md](ref/device/launchpad.md) |
 | ~~2~~ | ✅ **DONE 2026-08-08.** Item 39 closed — all three layouts legible at playing distance. Item 258 | — | [ref/module/display.md](ref/module/display.md) |
-| 3 | **Exercise the SP-404 CC map** beyond 16/17 | the rig | [ref/device/sp404.md](ref/device/sp404.md) |
+| ~~3~~ | ✅ **DONE 2026-08-08.** CC 7 and PC are dead; **the effect CCs are alive**. Items 260, 262 | — | [ref/device/sp404.md](ref/device/sp404.md) |
 | 4 | **Write the 404 pre-set checklist** | the box in hand | [ref/rig.md](ref/rig.md) |
 | 5 | **Try Organelle audio back into the 404** | one cable | [ref/rig.md](ref/rig.md) |
 | 6 | **The Launchpad onboarding drive** — can Components disable it | a Mac, and a firmware update | [ref/device-os.md](ref/device-os.md) |
@@ -97,24 +97,29 @@ then four. **24px, 16px and the 8px five-row case are all legible.**
 characters and `slider-1 43` becomes `slider-1 4`. A larger font would not help; that is a layout
 problem. Item 258 on [ref/module/display.md](ref/module/display.md).
 
-### 3. The SP-404 CC map — ⛔ READ THE MIDI MENU FIRST
+### ~~3. The SP-404 CC map~~ ✅ ANSWERED 2026-08-08 — and it found a capability
 
-**Partly measured 2026-08-08, item 260, and it stopped for a reason.** CC 7 and Program Change were
-sent and produced **no observable response** — CC 7 swept against an audibly looping pad, Program
-Change six times across five values with the sequencer stopped. Note-on works over the same wire in
-the same session, so the channel is proven and the negatives are real.
+**The negative first.** ⛔ **CC 7 and Program Change do nothing on this unit**, chased until nothing
+was left to blame: all 16 channels for both, values across the range, five-second holds, `PC Rx: On`
+confirmed in the menu, **no `CC Rx` setting existing at all**, sequencer stopped, and a note-on
+working over the same wire as the positive control. Item 260.
 
-⛔ **But a device limitation and a menu switch look identical from here, so the rest was NOT tested.**
-CC 8, 16–19, 20–27 and 80–83 remain unexercised on purpose: if one MIDI-receive setting gates CC,
-testing twenty more is twenty more measurements of the same unknown.
+⛔ **Then the effect CCs turned out to work.** With a pad looping on BUS 1 and the resonator on,
+**CC 16, CC 18 and CC 80 each sweep the effect audibly** — confirmed one at a time, three or four
+sweeps each, nothing else sent. Item 262.
 
-⚠️ **Item 226 is the precedent** — the Volca's Program Change looked broken from Pd, three reasoned
-hypotheses failed, and two adjacent undocumented globals in a menu explained it in one step.
-⚠️ **Toggles are hazardous**: pressing a setting that is already correct turns it off.
+⚠️ **It does NOT show the chart's bus mapping is wrong**, though a first draft of this said so:
+BUS 3/4 are **master FX over the whole mix**, so CC 18 being audible on a BUS 1 sample is exactly
+what 📄 predicts. ⛔ **The next test must name the bus** — one effect on BUS 1 only, nothing on 3/4 —
+or a master effect and a per-sample one cannot be told apart by ear.
 
-**Done means:** the 404's MIDI receive settings are written down, the CCs are retested against them,
-and each row on `sp404.md` moves to `verified` or says what it actually did. **The menu reading goes
-on the checklist in item 4 whatever the answer is.**
+⚠️ **This is the biggest thing v0.4 gained tonight.** The 404 is the audio front end for the whole
+rig, so a Launchpad pad or a nano fader can play its DSP in real time. Nothing in
+[plan-v04.md](plan-v04.md) assumes that is possible.
+
+⬜ **What is left is mapping, not discovery** — which CC moves which parameter, whether the set
+changes per effect, and CC 17, 19, 81–83. On [ref/device/sp404.md](ref/device/sp404.md), and it is an
+afternoon with a looping pad and an ear.
 
 ### 4. The 404 pre-set checklist
 
@@ -163,5 +168,5 @@ python3 test/gate/docs-check.py -v
 
 ## Done means
 
-1. All four above are answered on their pages, or explicitly declined with the reason recorded.
+1. All three above are answered on their pages, or explicitly declined with the reason recorded.
 2. **This file is deleted.**

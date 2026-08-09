@@ -8,10 +8,10 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **This is no longer the only plan.** Four scoped plans — [plan-v03.2.md](plan-v03.2.md) through
-[plan-v03.5.md](plan-v03.5.md) — hold the last batch of infrastructural work before v0.4: cleanup,
-coverage, hot-swap and the venue kit. ✅ **The test runner landed 2026-08-09** — `test/run.sh`. **Read [CLAUDE.md](CLAUDE.md)'s table for the
-order and the dependencies.**
+⚠️ **This is no longer the only plan.** Three scoped plans — [plan-v03.3.md](plan-v03.3.md) through
+[plan-v03.5.md](plan-v03.5.md) — hold the last batch of infrastructural work before v0.4: coverage,
+hot-swap and the venue kit. ✅ **The test runner landed 2026-08-09** and ✅ **the v0.3.2 cleanup the
+same day.** **Read [CLAUDE.md](CLAUDE.md)'s table for the order and the dependencies.**
 
 ⛔ **§3 below is being emptied by those five.** Every open question in it is assigned to one of them,
 and when they land this section holds **only v0.4 code**. Do not start work on a
@@ -65,14 +65,16 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 
 | Document | How much | Why |
 |---|---|---|
-| **[CLAUDE.md](CLAUDE.md)** | **All of it (167 lines)** | The router. Hard constraints, where everything is, working notes |
+| **[CLAUDE.md](CLAUDE.md)** | **All of it** | The router. Hard constraints, where everything is, working notes |
 | **This file** | **§3 in full** | The single place to look for what is unresolved |
 | **The `pd` / `docs` / `gate` skills** | Invoked, not read | ⛔ Invoke the matching one before writing Pd, documentation or a test |
-| **[ref/README.md](ref/README.md)** | 52 lines | How `ref/` is organised, and the page schema |
+| **[ref/README.md](ref/README.md)** | All of it | How `ref/` is organised, the page schema, and the standard for a v0.4 page |
 | **[ref/conventions.md](ref/conventions.md)** | The rules table, then the sections it links | `C-1`…`C-14`. **Read before writing Pd** |
+| **[ref/workflow.md](ref/workflow.md)** | Only when you are about to run something | The deploy loop, the by-hand SSH console, how a phase runs |
 | **[ref/architecture.md](ref/architecture.md)** | All of it | How the modules compose, and the four load-bearing decisions |
 | **[ref/device/](ref/device/)**, **[ref/module/](ref/module/)** | **Only the page you are touching** | Everything about one device or one concern, in one place |
-| **[ref/device-os.md](ref/device-os.md)** | Only if working on the device | SSH, paths, how Pd launches, wifi. ⛔ **Verify-after** — see §5 |
+| **[ref/device-os.md](ref/device-os.md)** | Only if working on the device | SSH, paths, how Pd launches, the boot hang. ⛔ **Verify-after** — see §5 |
+| **[ref/wifi.md](ref/wifi.md)** | ⚠️ Only if the fault recurs | The roam fault and the evidence behind it. **Not blocking anything** |
 | **`git log`** | Grep it | **Git is the journal.** Both journals dissolved; the account of every phase is in the commit history from `dca0b04` |
 
 ### How this project works

@@ -9,7 +9,7 @@ output devices are wired in. The instrument can be told *"in Mode A, moving this
 one row of `Cut It/cut-it-map.txt`.
 
 ✅ **The documentation refactor is done** — 10 root files and ~10,300 lines of prose became 2 files
-and 18 `ref/` pages, held together by `test/gate/docs-check.py`. **v0.4 is the sound**: four filter
+and 20 `ref/` pages, held together by `test/gate/docs-check.py`. **v0.4 is the sound**: four filter
 stages, the drum mode, the sampler. v0.1 is superseded and kept only for reference.
 
 **This file is a router.** It says where to look, not what is true.
@@ -49,14 +49,15 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **What is being BUILT next** — four scoped plans, in order | [plan-v03.2.md](plan-v03.2.md) … [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
+| **What is being BUILT next** — three scoped plans, in order | [plan-v03.3.md](plan-v03.3.md) … [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
 | One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
 | One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `display` `map` `state` `tempo` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
-| The Organelle as a **computer** — SSH, paths, how Pd launches, deploying, wifi | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
+| The Organelle as a **computer** — SSH, paths, how Pd launches, the boot hang | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
+| The wifi fault — the roam signature, the watchers, AP mode | [ref/wifi.md](ref/wifi.md) ⚠️ background, not blocking |
 | A cited `item NNN` | `grep` it — item numbers are **fact IDs**, not log entries |
 | **Every test** — the headless gates, the hands-on benches, the stubs | [test/README.md](test/README.md) |
 | What each operational tool and probe does | [tools/README.md](tools/README.md) |
@@ -177,14 +178,18 @@ need the sound to exist.**
 
 | | Plan | Needs |
 |---|---|---|
-| 1 | [plan-v03.2.md](plan-v03.2.md) — cleanup, and the decision items | — |
-| 2 | [plan-v03.3.md](plan-v03.3.md) — coverage | — |
-| 3 | [plan-v03.4.md](plan-v03.4.md) — hot-swap | 2 |
-| 4 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | 3 |
+| 1 | [plan-v03.3.md](plan-v03.3.md) — coverage | — |
+| 2 | [plan-v03.4.md](plan-v03.4.md) — hot-swap | 1 |
+| 3 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | 2 |
 
-✅ **Plan 0 and the test runner are both gone** — the measurement session ran on 2026-08-08, and
-`test/run.sh` landed on 2026-08-09. The facts are on `ref/` pages and the reasoning is in `git log`.
-**1 and 2 are independent of everything. 2 → 3 → 4 is a chain.**
+✅ **Plan 0, the test runner and the v0.3.2 cleanup are all gone** — the measurement session ran on
+2026-08-08, `test/run.sh` landed on 2026-08-09, and the cleanup landed the same day. The facts are on
+`ref/` pages and the reasoning is in `git log`. **1 is independent of everything; 1 → 2 → 3 is a
+chain.**
+
+⛔ **`check_closers` in `docs-check.py` is written but gated behind `--strict`**, because most
+remaining ⬜ are owned by the three plans above. **plan-v03.5.md's landing checklist removes the
+flag** — see it before adding a ⬜ anywhere.
 
 **A fact appears once in full; everywhere else it is a citation.** `test/gate/docs-check.py` enforces
 what can be enforced — run it rather than trying to remember it:

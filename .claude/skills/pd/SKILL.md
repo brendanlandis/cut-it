@@ -108,11 +108,12 @@ on its first can-it-fail run. Reintroduce the bug, watch it go red, revert.
 | | |
 |---|---|
 | `ref/conventions.md` | The rules in full, with reasoning |
+| `ref/workflow.md` | How the loop is run — deploy, the by-hand SSH console, how a phase runs |
 | `ref/README.md` | How the documentation is organised, and the page schema |
 | `ref/device/<name>.md` | Everything about one device — messages, traps, how Cut It uses it |
 | `ref/module/<name>.md` | One instrument concern |
 | `CLAUDE.md` | Repo layout, working notes, the device itself |
-| `plan-v04.md` | The only plan document. §4 is every open question |
+| `plan-v04.md` | The **standing** plan — §3 is every open question. ⚠️ Not the only one: scoped `plan-v03.N.md` documents come and go beside it |
 
 **Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and the
 whole instrument is there — `u_mother-stub` draws the front panel inline and fakes the knobs, keys,

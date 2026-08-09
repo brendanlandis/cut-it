@@ -40,7 +40,7 @@ diagnostic screen displays. **Do not start it first.**
 | [plan-v04.md](plan-v04.md) | §3 in full, especially *Debugging the rig with no laptop* | **Its design constraints are already written.** This plan answers them |
 | [ref/conventions.md](ref/conventions.md) | The rules table, then only the sections it links | `C-1`…`C-14`, and **C-5 is central here** |
 | `git log` | **Grep it, never read it** | Git is the journal |
-| The wifi material — a page of its own after [plan-v03.2.md](plan-v03.2.md), otherwise [ref/device-os.md](ref/device-os.md)'s wifi section | **All of it** | What is known, what was tried, the four wrong turns, the three-second reproduction. ⛔ **Two confident wrong answers are recorded there — read them before forming a third** |
+| [ref/wifi.md](ref/wifi.md) | **All of it** | What is known, what was tried, the four wrong turns, the three-second reproduction. ⛔ **Two confident wrong answers are recorded there — read them before forming a third** |
 | [ref/device/phone.md](ref/device/phone.md) | **All 288 lines** | The wire format, the rate limiting, the address discovery, and the one-way property you are about to change |
 | `Cut It/u_net.pd` | **All of it, comments included** | You are adding an inbound path. Its comments hold the UDP-connect trap and the address-resolution timings |
 | `Cut It/phone-ip.sh` | All 34 lines | **It already discovers the phone on the Organelle's own AP.** One build works on both networks |

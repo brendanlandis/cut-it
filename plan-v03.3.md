@@ -159,8 +159,7 @@ when `e_chop` lands — a small addition rather than a new kind of thing.
 
 ⚠️ **Strike `Gate: none` in all five places it is written**: [ref/module/audio.md](ref/module/audio.md)'s
 header and its `Open` section, [plan-v04.md](plan-v04.md), [CLAUDE.md](CLAUDE.md), and
-[test/README.md](test/README.md). ⛔ **Otherwise [plan-v03.2.md](plan-v03.2.md)'s dedupe pass has
-nothing to converge on.**
+[test/README.md](test/README.md). ⛔ **The v0.3.2 dedupe pass deliberately left these alone as yours**, so they are still five.
 
 **What stays open is output-side metering**, which genuinely needs stages to exist. Say so.
 

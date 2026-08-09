@@ -1,5 +1,5 @@
 #N canvas 20 20 1600 1220 12;
-#X text 20 20 m_nano -- the nanoKONTROL mapping layer. Decodes CC into named parameters on the disp bus and nothing else. It knows NOTHING about what it controls: that is the point of the m_ layer and the one boundary that is genuinely expensive to retrofit., f 58;
+#X text 20 20 m_nano -- the nanoKONTROL mapping layer. Decodes CC into named parameters on the disp bus and nothing else. It knows NOTHING about what it controls: that is the point of the m_ layer and the one boundary that is genuinely expensive to retrofit. See ref/device/nanokontrol.md., f 58;
 #X text 20 130 creation arg 1: the Pd channel that the nano's OWN channel 1 lands on. REQUIRED -- without it nothing decodes. The transport row is that channel plus one \, and this accepts BOTH. inlets: none. outlets: none., f 58;
 #X text 20 240 THE CHANNEL BLOCK IS PD'S INPUT SLOT \, not the device's position in the system MIDI list. Pd gives input slot n the channels (n-1)*16+1 upward \, so the nano is 17 on the Organelle (slot 2 \, per .pdsettings) and 1 on the Mac when it is the only input opened. MEASURED both ways rather than inferred -- and that is exactly why this is an argument and not a constant., f 58;
 #X obj 20 400 ctlin;

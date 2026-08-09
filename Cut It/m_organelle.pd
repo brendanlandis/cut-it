@@ -1,5 +1,5 @@
 #N canvas 20 20 1560 1620 12;
-#X text 20 20 m_organelle -- the Organelle's OWN front panel \, mapped like any other device. mother.pd publishes aux and the four knobs on reserved names \; this turns them into named controls on param and disp \, and knows nothing about what any of them does. Same layer \, same rules and the same silence about meaning as m_nano., f 58;
+#X text 20 20 m_organelle -- the Organelle's OWN front panel \, mapped like any other device. mother.pd publishes aux and the four knobs on reserved names \; this turns them into named controls on param and disp \, and knows nothing about what any of them does. Same layer \, same rules and the same silence about meaning as m_nano. Everything about this module is on ref/device/organelle.md., f 58;
 #X text 20 170 creation args: none. inlets: none. outlets: none., f 58;
 #X obj 20 300 r aux;
 #X obj 260 300 r knob1;

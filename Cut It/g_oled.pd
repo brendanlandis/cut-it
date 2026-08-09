@@ -125,7 +125,7 @@
 #X connect 3 0 22 0;
 #X restore 1300 420 pd alert-in;
 #N canvas 40 40 1500 800 param-in 0;
-#X text 20 20 ANY disp name that is not one of the reserved ones is a parameter. That is the whole registration mechanism: m_nano in Phase 4 sends chop-size 43 % and needs no change here at all., f 58;
+#X text 20 20 ANY disp name that is not one of the reserved ones is a parameter. That is the whole registration mechanism: an m_ layer sends chop-size 43 % and needs no change here at all., f 58;
 #X obj 20 130 inlet;
 #X obj 20 170 list append;
 #X obj 20 210 t b l l;
@@ -639,8 +639,8 @@
 #X text 420 1120 gShowInfoBar goes out on EVERY frame \, not once at load. mother repaints the patch screen after loading a patch and restores the bar \, so a one-off at loadbang gets quietly undone -- ref/device/organelle.md \, Traps., f 46;
 #X text 820 1120 The 300 ms delay before the metro starts is the same one the Phase 1 display used: mother is still settling immediately after load \, and there is nothing worth drawing yet anyway., f 46;
 #X text 1220 1120 Everything that reaches the screen converges on the single s oscOut here. Everything a frame draws converges on \$0-raw or on pd text-out first \, so the one owner of the screen stays visibly one., f 46;
-#X text 20 1250 WHAT IS NOT HERE: any notion of which control moved. A layer holds a name and a value \, and m_nano in Phase 4 will send chop-size 43 % without this file learning anything about a nanoKONTROL. That separation is the point of the m_ layer and it is the one boundary that is genuinely expensive to retrofit., f 58;
-#X text 620 1250 TWO CONTROLS MOVED AT ONCE will alternate at the frame rate \, because they share one param slot. Splitting the parameter area into two 16px rows is the fix \, and it wants a real controller to judge -- revisit in Phase 4., f 58;
+#X text 20 1250 WHAT IS NOT HERE: any notion of which control moved. A layer holds a name and a value \, and an m_ layer sends chop-size 43 % without this file learning anything about a nanoKONTROL. That separation is the point of the m_ boundary and it is the one that is genuinely expensive to retrofit -- ref/architecture.md., f 58;
+#X text 620 1250 TWO CONTROLS MOVED AT ONCE will alternate at the frame rate \, because they share one param slot. Splitting the parameter area into two 16px rows is the fix \, and it wants a real controller to judge -- revisit in v0.4 \, when there is an effect to judge it against., f 58;
 #X text 1220 1250 A parameter that arrives while a modal is up is still stored and still runs its TTL \; it is simply outranked. If the modal clears with time left \, it appears. The value is current \, so showing it is right., f 58;
 #N canvas 30 30 1600 2350 params 0;
 #X text 20 20 THE PARAMETER STORE. Up to five controls \, one line each: <frame-stamp> <name> <value> <unit>. The stamp is field 0 and the name is field 1 \, both at fixed positions \; everything after is display-ready and drawn as it stands \, which is why a missing unit needs no placeholder., f 58;

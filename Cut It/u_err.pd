@@ -25,7 +25,7 @@
 #X text 20 700 THE BUS IS UNFILTERED \; ONLY THE SCREEN IS FILTERED. The print fires on every error whatever the mode \, so the by-hand SSH console in ref/conventions.md sees everything even when the OLED is deliberately showing nothing., f 46;
 #X text 20 820 route \, not select. mode arrives as a bare selector -- compose \, not symbol compose -- and select has no method for that. Same underlying fact as the list trim trap: Pd distinguishes a message's selector from its arguments., f 46;
 #X text 20 940 A level that is neither warn nor fail falls out of the reject outlet and is printed rather than displayed. Swallowing it silently would be the exact failure this file exists to prevent., f 46;
-#X text 480 700 DEFAULTS TO VERBOSE. Nothing drives mode until Phase 4 \, and while developing \, seeing every warning is the useful default. It degrades safely -- the worst case is an error you did not need., f 46;
+#X text 480 700 DEFAULTS TO VERBOSE \, which is the state before any mode arrives -- the nanoKONTROL's transport row has driven mode since Phase 6. While developing \, seeing every warning is the useful default. It degrades safely -- the worst case is an error you did not need., f 46;
 #X text 480 820 ERROR TEXT IS ONE LINE \, 21 CHARACTERS. gPrintln does not wrap \; it draws until it runs off the right of the screen. Keep the text short at the call site \, because nothing downstream can shorten it for you., f 46;
 #X text 480 940 Callers use a MESSAGE BOX \, which already carries warn or fail as its selector. Anything built with list prepend is a list instead \, and route will reject it -- finish with list trim., f 46;
 #N canvas 30 30 1700 1520 logfile 0;

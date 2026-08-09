@@ -38,7 +38,7 @@ import sys
 #
 # ⚠️ UPDATE THIS DELIBERATELY, NEVER TO MAKE A RED RUN GREEN -- the same rule as
 # MIDI_EXPECT in test/gate/lib-scratch.sh, and for the same reason.
-EXPECT = 20
+EXPECT = 21
 
 # ⛔ THE INVENTORY RUNS FIRST because every gate below it rewrites the same MIDI
 # object boxes, so a count that has drifted explains all of them at once. Then
@@ -88,6 +88,7 @@ GATES = [
     ("the boot sequence", "./test/gate/init-assert.sh"),
     ("the error bus", "./test/gate/err-assert.sh"),
     ("the display arbiter", "./test/gate/display-assert.sh"),
+    ("the OLED's four layers", "./test/gate/oled-assert.sh"),
     ("the aux LED", "./test/gate/led-assert.sh"),
     ("the tempo reference", "./test/gate/tempo-assert.sh"),
     ("one clock, and its two arguments", "./test/gate/clock-assert.sh"),

@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The display arbiter
 
-**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_led.pd`, `Cut It/u_net.pd` · **Gate:** `test/gate/display-assert.sh`, `test/gate/led-assert.sh` · **Bench:** `test/bench/display-bench.pd`, `test/bench/nanokontrol-bench.pd`, `test/bench/launchpad-bench.pd`
+**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_led.pd`, `Cut It/u_net.pd` · **Gate:** `test/gate/display-assert.sh`, `test/gate/oled-assert.sh`, `test/gate/led-assert.sh` · **Bench:** `test/bench/display-bench.pd`, `test/bench/nanokontrol-bench.pd`, `test/bench/launchpad-bench.pd`
 
 ## What it is
 
@@ -39,7 +39,7 @@ permanently unreachable** — no SysEx in either direction.
 
 ### The `disp` message
 
-**`<name> <value> [unit]`, with the name as the SELECTOR.** `g_oled` routes seven selectors;
+**`<name> <value> [unit]`, with the name as the SELECTOR.** `g_oled` routes eight selectors;
 **everything else is a parameter by definition** — there is no registration step, so a new control
 needs no change to any display.
 

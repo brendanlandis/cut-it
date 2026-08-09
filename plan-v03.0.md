@@ -97,19 +97,33 @@ then four. **24px, 16px and the 8px five-row case are all legible.**
 characters and `slider-1 43` becomes `slider-1 4`. A larger font would not help; that is a layout
 problem. Item 258 on [ref/module/display.md](ref/module/display.md).
 
-### 3. The SP-404 CC map beyond 16/17
+### 3. The SP-404 CC map — ⛔ READ THE MIDI MENU FIRST
 
-📄 CC 7, 8, 20–27, 80–83 and Program Change 0–15 are **manufacturer documentation, never exercised
-from Pd**. ⛔ And the 404's chart is now known to be wrong in at least one place — item 249 caught it
-claiming SysEx `x` in both directions when the device answers a device inquiry. **Treat every
-unexercised row as unverified**, not as fact.
+**Partly measured 2026-08-08, item 260, and it stopped for a reason.** CC 7 and Program Change were
+sent and produced **no observable response** — CC 7 swept against an audibly looping pad, Program
+Change six times across five values with the sequencer stopped. Note-on works over the same wire in
+the same session, so the channel is proven and the negatives are real.
 
-**Done means:** each row on `sp404.md` moves to `verified` or gets a ⬜ saying what it actually did.
+⛔ **But a device limitation and a menu switch look identical from here, so the rest was NOT tested.**
+CC 8, 16–19, 20–27 and 80–83 remain unexercised on purpose: if one MIDI-receive setting gates CC,
+testing twenty more is twenty more measurements of the same unknown.
+
+⚠️ **Item 226 is the precedent** — the Volca's Program Change looked broken from Pd, three reasoned
+hypotheses failed, and two adjacent undocumented globals in a menu explained it in one step.
+⚠️ **Toggles are hazardous**: pressing a setting that is already correct turns it off.
+
+**Done means:** the 404's MIDI receive settings are written down, the CCs are retested against them,
+and each row on `sp404.md` moves to `verified` or says what it actually did. **The menu reading goes
+on the checklist in item 4 whatever the answer is.**
 
 ### 4. The 404 pre-set checklist
 
 ⬜ **The only routing in the rig that depends on a menu rather than a cable is on the 404** — ExtIn
 monitoring, bus assignments, input FX.
+
+⛔ **Add per-pad PLAY MODE to it, on the strength of item 259.** A looping pad *toggles* on note-on,
+so a sampler that retriggers one silences it instead — and nothing about the cabling reveals which
+mode a pad is in. Whatever v0.4 needs, the checklist has to state it.
 
 ⚠️ **When a device has a settings menu, read the menu.** The Volca's Program Change was gated behind
 two adjacent undocumented globals; three reasoned hypotheses failed and photographs of the menu

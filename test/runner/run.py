@@ -41,6 +41,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import gates                                                    # noqa: E402
+import records                                                  # noqa: E402
+import steps as S                                               # noqa: E402
 
 # ⛔ THE REPO ROOT, AND IT IS ASSERTED. Every gate below is a path relative to
 # it, so a root one level off would run nothing, report nothing and exit ok --
@@ -90,6 +92,142 @@ def gate_half():
     return failed, len(gates.GATES)
 
 
+# ---------------------------------------------------------------------------
+# the bench half
+# ---------------------------------------------------------------------------
+HELP = ("[p]ass  [f]ail  [s]kip  [r]epeat  [u]ndo  [?]the full PASS IF  [q]uit")
+
+
+def describe(bench, step):
+    """The header a person reads before doing anything.
+
+    ⚠️ `need` AND `do` COME BEFORE THE VERDICT PROMPT, never after. A step that
+    tells you what to have at hand only once you are already being asked to
+    judge it has told you too late.
+    """
+    tag = " -- HANDS" if step.hands else ""
+    print("\n[%d/%d] %s%s" % (step.n, step.of, bench.name, tag))
+    print("       %s" % step.title)
+    for line in step.meta.get("need", []):
+        print("  need   %s" % line)
+    if step.meta.get("do"):
+        print("  do     %s" % step.meta["do"])
+    print("  watch  %s" % step.watch)
+
+
+def ask(step, allow_undo):
+    """The verdict prompt. -> (verdict, note).
+
+    ⛔ NOTHING HERE MAY GUESS. Every path out of this function is something a
+    person typed: the one failure mode that would make the whole runner
+    worthless is a verdict it invented, and a default-on-empty-input is exactly
+    that. Enter re-prompts.
+    """
+    while True:
+        try:
+            c = input("  verdict? %s : " % HELP).strip().lower()
+        except EOFError:
+            return "quit", "stdin closed"
+        if c == "p":
+            return "pass", ""
+        if c == "f":
+            return "fail", input("  what went wrong (one line, optional): ").strip()
+        if c == "s":
+            return "skip", input("  why skip it (one line): ").strip() or "no reason given"
+        if c == "r":
+            return "repeat", ""
+        if c == "u":
+            if allow_undo:
+                return "undo", ""
+            print("  nothing to undo -- this is the first step of the run")
+            continue
+        if c == "?":
+            print("  %s" % step.pass_if)
+            continue
+        if c == "q":
+            return "quit", ""
+        print("  not one of those. %s" % HELP)
+
+
+def run_bench(bench, target, auto_only, start):
+    """One bench, start to finish. -> list of records.
+
+    PAPER MODE, and it is why `state` and `midi` were the first two working:
+    every step has no actions, so there is nothing to drive. No Pd, no ssh, no
+    `killall pd`, and no Launchpad left stranded in Programmer Mode.
+    """
+    rec = records.Recorder(bench.name, target, auto_only)
+    dsha = records.deps_sha(bench.deps)
+    print("\n%s\n%s -- %d steps, target %s%s\n%s"
+          % (BAR, bench.name, len(bench.steps), target,
+             ", --auto-only" if auto_only else "", BAR))
+
+    i = max(0, (start or 1) - 1)
+    while i < len(bench.steps):
+        step = bench.steps[i]
+        describe(bench, step)
+
+        # ⛔ A STEP WHOSE ORACLE IS ABSENT IS A SKIP WITH A REASON, NEVER A PASS.
+        # Under --auto-only there is no person, so a step with no predicate has
+        # nobody to answer it. Counting that as a pass is how a suite comes to
+        # report green over work nothing checked.
+        if auto_only and not step.meta.get("check"):
+            why = "no predicate, and --auto-only means no person to judge it"
+            print("  SKIP   %s" % why)
+            rec.append(dict(bench=bench.name, step=step.n, title=step.title,
+                            sha=records.step_sha(step.title, step.pass_if),
+                            deps_sha=dsha, verdict="skip", auto=True, note=why))
+            i += 1
+            continue
+
+        verdict, note = ask(step, allow_undo=i > 0)
+
+        if verdict == "repeat":
+            continue                                    # describe it again
+        if verdict == "undo":
+            prev = bench.steps[i - 1]
+            rec.append(dict(bench=bench.name, step=prev.n, title=prev.title,
+                            sha=records.step_sha(prev.title, prev.pass_if),
+                            deps_sha=dsha, verdict="undone", auto=False,
+                            note="withdrawn by the person running it"))
+            i -= 1
+            continue
+        if verdict == "quit":
+            rec.append(dict(bench=bench.name, step=step.n, title=step.title,
+                            sha=records.step_sha(step.title, step.pass_if),
+                            deps_sha=dsha, verdict="interrupted", auto=False,
+                            note=note))
+            print("\n  stopped at step %d. Resume with:" % step.n)
+            print("      ./test/run.sh --bench %s --target %s --from %d"
+                  % (bench.name, target, step.n))
+            break
+
+        rec.append(dict(bench=bench.name, step=step.n, title=step.title,
+                        sha=records.step_sha(step.title, step.pass_if),
+                        deps_sha=dsha, verdict=verdict, auto=False, note=note))
+        i += 1
+
+    rec.close()
+    return rec.rows
+
+
+def bench_summary(name, rows, total):
+    """One line per bench, and the counts that PASS depends on."""
+    tally = {}
+    for row in rows:                      # append-only, so the last one wins
+        if row["verdict"] != "undone":
+            tally[row["step"]] = row["verdict"]
+    counts = {v: sum(1 for x in tally.values() if x == v)
+              for v in ("pass", "fail", "skip", "interrupted")}
+    counts["never"] = total - len(tally)
+    bad = counts["fail"] or counts["skip"] or counts["interrupted"] or counts["never"]
+    print(" %-4s %-12s %2d steps   %2d passed  %2d failed  %2d skipped  %2d not run"
+          % ("FAIL" if bad else "ok", name, total, counts["pass"],
+             counts["fail"], counts["skip"],
+             counts["interrupted"] + counts["never"]))
+    return counts
+
+
 def summarise(gate_failed, gate_ran, bench_rows):
     """The one summary, and the one RESULT: line.
 
@@ -120,11 +258,30 @@ def summarise(gate_failed, gate_ran, bench_rows):
     if problems and not bench_rows:
         print("RESULT: FAIL")
         return 1
+
+    if bench_rows:
+        print(BAR)
+        total = {"pass": 0, "fail": 0, "skip": 0, "interrupted": 0, "never": 0}
+        for name, rows, n in bench_rows:
+            for k, v in bench_summary(name, rows, n).items():
+                total[k] += v
+        print()
+        print(" Steps    %d passed, %d failed, %d skipped, %d not run"
+              % (total["pass"], total["fail"], total["skip"],
+                 total["interrupted"] + total["never"]))
+        for label, n in (("failed", total["fail"]), ("skipped", total["skip"]),
+                         ("not run", total["interrupted"] + total["never"])):
+            if n:
+                problems.append("%d step%s %s" % (n, "" if n == 1 else "s", label))
+
     if problems:
         print("RESULT: FAIL -- %s" % ", ".join(problems))
         return 1
 
     print(BAR)
+    if bench_rows:
+        print("RESULT: PASS -- every gate, and every step of every bench selected.")
+        return 0
     print("RESULT: PASS -- all gates.")
     print()
     print("⚠️  That is the Mac. It is not the device, and this project's own history")
@@ -133,16 +290,73 @@ def summarise(gate_failed, gate_ran, bench_rows):
     return 0
 
 
+def pick_target(bench, asked):
+    """-> (target, why). ⚠️ A bench with no actions needs no patch at all."""
+    if asked:
+        return asked, "asked for"
+    if bench.paper:
+        return "paper", "every step has no actions, so nothing has to be driven"
+    return "device", "the PASS IFs are claims about the real rig"
+
+
+def do_list():
+    """What would run, and how fresh each verdict is. Costs nothing."""
+    doc = records.load_latest()
+    for name in S.names():
+        b = S.load(name)
+        dsha = records.deps_sha(b.deps)
+        target, _ = pick_target(b, None)
+        fresh = sum(1 for s in b.steps
+                    if records.freshness(doc, name, s.n, target,
+                                         records.step_sha(s.title, s.pass_if),
+                                         dsha)[0])
+        why = ""
+        if fresh < len(b.steps):
+            _, why = records.freshness(
+                doc, name, b.steps[0].n, target,
+                records.step_sha(b.steps[0].title, b.steps[0].pass_if), dsha)
+        print(" %-12s %2d steps  target %-6s  %2d fresh%s"
+              % (name, len(b.steps), target, fresh,
+                 "   -- " + why if why else ""))
+    return 0
+
+
 def main(argv):
     a = parse_args(argv)
-    want_benches = a.all or a.benches or a.bench
-    want_gates = not want_benches
+    problems = S.check_inventory()
+    if problems:
+        sys.exit("run.py: " + "; ".join(problems))
 
+    if a.list:
+        return do_list()
+
+    if a.bench and a.bench not in S.names():
+        sys.exit("run.py: no bench called %r. There are: %s"
+                 % (a.bench, ", ".join(S.names())))
+
+    want = [a.bench] if a.bench else (S.names() if (a.all or a.benches) else [])
     gate_failed, gate_ran = ([], 0)
-    if want_gates or a.all:
+    if not want or a.all:
         gate_failed, gate_ran = gate_half()
 
-    return summarise(gate_failed, gate_ran, [])
+    bench_rows = []
+    for name in want:
+        b = S.load(name)
+        target, why = pick_target(b, a.target)
+        if target != "paper":
+            # Phase B territory. ⛔ SAY SO rather than reporting an empty pass:
+            # a bench that silently ran nothing is the single worst thing this
+            # runner could do, so it refuses instead.
+            sys.exit("run.py: target %r is not built yet -- only `paper` runs "
+                     "today, which covers the benches whose every step has no "
+                     "actions (%s). %s wants %s: %s"
+                     % (target, ", ".join(n for n in S.names() if S.load(n).paper),
+                        name, target, why))
+        rows = run_bench(b, target, a.auto_only, a.start)
+        records.roll_up(rows)
+        bench_rows.append((name, rows, len(b.steps)))
+
+    return summarise(gate_failed, gate_ran, bench_rows)
 
 
 if __name__ == "__main__":

@@ -63,7 +63,8 @@ drifted and nothing noticed.
 ## Running everything
 
 ```sh
-./test/check-all.sh          every gate in one command, ~2.5 min, exit non-zero on any failure
+./test/run.sh                every gate in one command, ~2.5 min, exit non-zero on any failure
+./test/run.sh --all          and then the benches -- needs the rig, and a person
 ```
 
 Layout and graph structure, both entry points loading in silence, the bench step text, the MIDI

@@ -570,7 +570,7 @@ def check_dangling_paths(verbose):
     false positive across the whole repo.
 
     Renaming test/gate/state-assert.sh goes red in six places -- the conventions,
-    tools/README.md, bench-gen.py, check-all.sh, state-bench.pd and the script
+    tools/README.md, bench-gen.py, run.sh, state-bench.pd and the script
     itself. That is the point: the test refactor renames every gate onto a
     module axis, and this is what makes those renames impossible to half-finish.
 

@@ -301,7 +301,7 @@ for. **They stay as they are.**
 
 ```sh
 python3 test/gate/docs-check.py -v        # after EVERY move, not once at the end
-./test/check-all.sh                       # read the RESULT: line
+./test/run.sh                             # read the RESULT: line
 ./deploy.sh                               # from its new home, to a real device
 ```
 

@@ -6,7 +6,7 @@ itself; where it needs eyes on the hardware it tells you what to have at hand, w
 to watch for, then waits.
 
 This plan changes **no patch behaviour**. It is entirely `test/`-side, plus one line in
-`check-all.sh`.
+`run.sh`.
 
 ---
 
@@ -17,7 +17,7 @@ This plan changes **no patch behaviour**. It is entirely `test/`-side, plus one 
   format 0.49 cannot parse.
 - **Vanilla objects only** — neither ELSE nor cyclone is on the device.
 - ⛔ **Never touch git.** Reading is fine. Brendan commits his own work.
-- ⚠️ **Read `check-all.sh`'s `RESULT:` line; do not grep for it.**
+- ⚠️ **Read `run.sh`'s `RESULT:` line; do not grep for it.**
 - ⛔ **A bench `.pd` is an OUTPUT.** Edit the step tables and regenerate; never the `.pd`.
 - ⛔ **A gate is not trusted until it has failed.** That applies to this runner as much as to a gate.
 
@@ -33,7 +33,7 @@ This plan changes **no patch behaviour**. It is entirely `test/`-side, plus one 
 | [ref/conventions.md](ref/conventions.md) | The rules table, then only the sections it links | `C-1`…`C-14` |
 | `git log` | **Grep it, never read it** | Git is the journal |
 | [test/README.md](test/README.md) | **All of it** | ⚠️ **Six of its claims are stale** — it says the tables are `STEPS3`…`STEPS8` (they are `STEPS_DISPLAY`…`STEPS_MIDI`), that the generator "writes all six" (seven), "any of the four benches" (seven), and lists `lp-monitor.pd`, `lp-step0.pd` and `self-wire.pd` under `test/` when they live in `tools/`. **Fix them as you go** |
-| `test/check-all.sh` | **All 109 lines, comments included** | You change one line. Its comments say why exactly one line matches `RESULT:` — a broken patch was committed by grepping |
+| `test/run.sh` | **All 109 lines, comments included** | You change one line. Its comments say why exactly one line matches `RESULT:` — a broken patch was committed by grepping |
 | `test/bench/bench-gen.py` | **All of it** | You extend it. `check()`, `build()` and the counter block are what you touch |
 | `test/bench/bench_steps.py` | **All 107 steps** | The tuple you extend. ⛔ Its docstring forbids rewording hardware-verified prose |
 | `test/bench/bench-verify.py`, `test/bench/bench-extract.py` | Both in full — they are short | The round-trip guard, and the marker parser you reuse |
@@ -51,7 +51,7 @@ rate-ceiling table.
 
 ## What is already true
 
-- **`test/check-all.sh` is the gate half and it works.** 9 gates plus 4 structural checks, ~2.5 min,
+- **`test/run.sh` is the gate half and it works.** 9 gates plus 4 structural checks, ~2.5 min,
   Mac-only, one `RESULT:` line. Its header promises it *"touches NOTHING on the Organelle … safe to
   run at any time, including with the device off."*
 - **The benches are generated.** `test/bench/bench-gen.py` reads the tables in
@@ -88,11 +88,11 @@ draws the front panel and decodes the OLED inline.
 
 ## Design decisions, and why
 
-### `check-all.sh` is called, never extended
+### `run.sh` is called, never extended
 
 Folding benches into it destroys its device-independence guarantee and turns a 40-second pre-commit
 reflex into a 20-minute human loop. ⚠️ **A check that costs twenty minutes stops being run**, which
-is the same failure `check-all.sh` itself was built to fix.
+is the same failure `run.sh` itself was built to fix.
 
 **One line changes in it**: `echo "${RESULT_LABEL:-RESULT}: PASS -- all gates."` Run bare, its output
 is byte-identical to today. The runner sets `RESULT_LABEL=GATES` and emits the only `RESULT:` line
@@ -270,7 +270,7 @@ mirror image of a gate that lies. Add a `deps` list to the bench table: tempo de
 staleness is actionable: *"you changed `u_tempo.pd` — the tempo bench's 14 verdicts no longer
 apply."*
 
-⚠️ **Freshness must not fail `check-all.sh`.** That would put a red line in front of every commit
+⚠️ **Freshness must not fail `run.sh`.** That would put a red line in front of every commit
 whenever hardware had not been touched in a month. It appears in the runner's summary only.
 
 ---
@@ -300,7 +300,7 @@ selected set. **A skip is never a pass.**
 
 | | Phase | Ends when |
 |---|---|---|
-| **A** | **Skeleton, no Pd.** The runner with `--replay`, the prompt loop, the record file, the roll-up, `run.sh` in `test/`, the `RESULT_LABEL` change, and the self-test added to `check-all.sh` | `--bench midi` and `--bench state` work end to end — 20 steps, no device |
+| **A** | **Skeleton, no Pd.** The runner with `--replay`, the prompt loop, the record file, the roll-up, `run.sh` in `test/`, the `RESULT_LABEL` change, and the self-test added to `run.sh` | `--bench midi` and `--bench state` work end to end — 20 steps, no device |
 | **B** | **Driving Pd.** Target scripts for device and Mac, the stream reader, the GO sender (with `tools/go.sh` reduced to a wrapper), stall/desync/teardown, `--from N` | A bench runs on the device and is resumable |
 | **C** | **The tap and `print` predicates.** `bench-tap.pd` emitted by the generator, the `norm()` refactor, the counter window centralised. Convert tempo 3, tempo 11, launchpad 14 | ⚠️ First can-it-fail **on hardware** |
 | **D** | **Bus and OLED predicates.** Convert midi 4/6/7, display 3, tempo 7. **Land the vacuity lint here, not later** | The lint refuses to generate a bad predicate |
@@ -348,7 +348,7 @@ list. A self-test drives it against fixtures, each asserting an exit code and a 
 | SIGINT at step 5 | 4 verdicts recorded, resume command printed |
 | Every verdict `s` | RESULT: FAIL, **never** PASS |
 
-This is Mac-only, headless, and under a second, so it goes into `check-all.sh` without violating that
+This is Mac-only, headless, and under a second, so it goes into `run.sh` without violating that
 file's guarantee. **It is the only way the runner's failure paths are ever exercised**, because a
 successful hardware run touches none of them.
 
@@ -361,8 +361,8 @@ says budget for it failing to fail on the first attempt.
 ## Verification
 
 ```sh
-./test/check-all.sh                        # must still print exactly one RESULT: line
-./run.sh --gates                      # byte-identical to check-all.sh run bare
+./test/run.sh                        # must still print exactly one RESULT: line
+./run.sh --gates                      # byte-identical to run.sh run bare
 ./run.sh --bench midi                 # 13 steps, no device
 ./run.sh --bench state                # 5 steps, no device
 python3 test/bench/bench-verify.py         # step counts confirm the six removals

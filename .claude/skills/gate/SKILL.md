@@ -143,7 +143,7 @@ on macOS.
 ## Running everything
 
 ```sh
-./test/check-all.sh
+./test/run.sh
 ```
 
 ⚠️ **Read the result; do not grep for it.** Exactly one line matches `RESULT:`, and the exit status

@@ -20,7 +20,7 @@ diagnostic screen displays. **Do not start it first.**
 - ⛔ **Never open or save an Organelle-bound patch in plugdata.**
 - **Vanilla objects only.**
 - ⛔ **Never touch git.** Reading is fine. Brendan commits his own work.
-- ⚠️ **Read `check-all.sh`'s `RESULT:` line; do not grep for it.**
+- ⚠️ **Read `run.sh`'s `RESULT:` line; do not grep for it.**
 - ⚠️ **Bringing the AP up kills the house link**, and with it your ssh session and every Mac-side
   tool. Plan each AP session to be self-sufficient before you start it.
 - ⛔ **Never `pgrep -f wifi-watch`.** The pattern self-matches and kills the ssh session. **Bitten
@@ -243,7 +243,7 @@ Organelle still cannot know the phone is gone.
 ## Verification
 
 ```sh
-./test/check-all.sh                  # read the RESULT: line
+./test/run.sh                        # read the RESULT: line
 python3 test/gate/docs-check.py -v
 ./deploy.sh
 ```

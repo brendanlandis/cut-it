@@ -16,7 +16,7 @@ It runs after [plan-v03.1.md](plan-v03.1.md), because the new bench steps want t
 - ⛔ **Never open or save an Organelle-bound patch in plugdata.**
 - **Vanilla objects only.**
 - ⛔ **Never touch git.** Reading is fine. Brendan commits his own work.
-- ⚠️ **Read `check-all.sh`'s `RESULT:` line; do not grep for it.**
+- ⚠️ **Read `run.sh`'s `RESULT:` line; do not grep for it.**
 - ⛔ **A bench `.pd` is an OUTPUT.** Edit the step table and regenerate.
 - ⛔ **A GATE IS NOT TRUSTED UNTIL IT HAS FAILED.** Every gate below gets a deliberate can-it-fail
   run, and this project's history says budget for it failing to fail on the first attempt.
@@ -53,7 +53,7 @@ It runs after [plan-v03.1.md](plan-v03.1.md), because the new bench steps want t
 
 - **Every abstraction already gets a does-it-create check**, because six gates load the whole patch
   through `main-dev.pd` → `u_root`, and `pd-layout-check.py` runs over every `.pd`.
-- **Nine gates exist** and each is named for the module it covers. `check-all.sh` runs them plus four
+- **Nine gates exist** and each is named for the module it covers. `test/run.sh` runs them plus four
   structural checks.
 - **The scratch-copy pattern**: a gate copies the patch to a temp dir, rewrites MIDI object boxes to
   `t_*` stand-ins, hard-fails on an exact-count mismatch, hand-creates the state files because
@@ -82,7 +82,8 @@ the gate now goes red where it used to go green.
 ## Phase 2 — the missing gates, in priority order
 
 **Priority is by risk, not by ease.** Each gate's assertions come from its `ref/` page's `Facts`
-section, and each new gate must be added to `check-all.sh`.
+section, and each new gate must be added to `test/runner/gates.py`'s table --
+which asserts its own length, so adding one means bumping `EXPECT` deliberately.
 
 ### 1. `m_nano` — the main control surface, with no headless coverage at all
 
@@ -206,7 +207,7 @@ declared untested is the worse of the two.
 ## Verification
 
 ```sh
-./test/check-all.sh                        # its check count must go UP, and be watched going up
+./test/run.sh                              # its check count must go UP, and be watched going up
 python3 test/gate/docs-check.py -v
 ```
 

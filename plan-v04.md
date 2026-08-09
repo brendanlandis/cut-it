@@ -82,8 +82,8 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
   whole instrument is there, front panel included.
 - **`./deploy.sh` does the whole loop** — syntax check, scp, reload, load. It **gates on output, not
   exit status**, because Pd exits 0 even when objects fail to create.
-- **`./test/check-all.sh` runs every gate in one command.** ⚠️ **Run it before calling anything
-  done**, and read its `RESULT:` line rather than grepping for one.
+- **`./test/run.sh` runs every gate in one command**, and `--all` adds the benches. ⚠️ **Run it
+  before calling anything done**, and read its `RESULT:` line rather than grepping for one.
 - **`item NNN` is a FACT ID, not a log entry.** Grep for it. Never reuse a number.
 
 ---

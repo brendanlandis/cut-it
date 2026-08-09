@@ -94,11 +94,12 @@ under `ref/`. Nothing in either is deployed.
 
 | Where | Is | Oracle |
 |---|---|---|
-| `test/check-all.sh` | **the entry point** — every gate in one command | — |
+| `test/run.sh` | **the entry point** — the gates bare, the benches with `--all` | — |
+| `test/runner/` | What `run.sh` is. The gate table, the bench loop, the verdict record | — |
 | `test/gate/` | Headless gates. One per module, named for it | a program, unattended |
 | `test/bench/` | Hands-on acceptance runs, and the three scripts that **generate** them | a person, with the rig plugged in |
 | `test/stubs/` | `t_*` stand-ins a gate swaps in inside a scratch copy | — |
-| `tools/` | Operational scripts and one-off probes — `go.sh`, `fetch-*.sh`, the wifi tooling | — |
+| `tools/` | Operational scripts and one-off probes — `fetch-*.sh`, the wifi tooling | — |
 
 ⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
@@ -114,13 +115,18 @@ whole instrument is *there* — `u_mother-stub` draws the front panel inline and
 aux and encoder. **Most work should never need the Organelle powered on.**
 
 ```sh
-./test/check-all.sh     # every gate, ~2.5 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
+./test/run.sh            # every gate, ~2.5 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
+./test/run.sh --all      # and then the benches -- needs the rig, and a person
 ./deploy.sh              # syntax check -> scp -> reload -> load, in one command
 ssh root@organelle.local # password: organelle. Root fs is read-only -- remount-rw.sh first
 ```
 
-⚠️ **Read `check-all.sh`'s `RESULT:` line; do not grep for it.** `grep -E 'ALL|FAILED'` also matches
+⚠️ **Read `run.sh`'s `RESULT:` line; do not grep for it.** `grep -E 'ALL|FAILED'` also matches
 the per-gate `--- FAILED:` lines, and a broken patch has been committed that way.
+
+⛔ **Run bare it is the gate half and nothing else** — Mac-only, touching nothing on the Organelle,
+safe with the device off. The benches are behind `--all` / `--bench` on purpose: ⚠️ **a check that
+costs twenty minutes stops being run**, which is the failure this command was built to fix.
 
 ⛔ **It takes ~2.5 minutes and only 24 s of that is computation** — measured, 148.85 s real against
 23.7 s user+sys. The rest is Pd instances running **DSP in real time** so a `phasor~` clock and a beat

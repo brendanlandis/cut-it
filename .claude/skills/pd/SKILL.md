@@ -89,10 +89,10 @@ perfect silence, so a clean syntax check proves nothing about arity.
 
 ```sh
 python3 test/gate/pd-layout-check.py "Cut It"/*.pd    # after every edit -- PROBLEM = fail
-./test/check-all.sh                              # ~2.5 min, every gate in one command
+./test/run.sh                                    # ~2.5 min, every gate in one command
 ```
 
-⚠️ **Read `check-all.sh`'s result, do not grep for it.** Exactly one line matches `RESULT:`, and the
+⚠️ **Read `run.sh`'s result, do not grep for it.** Exactly one line matches `RESULT:`, and the
 exit status is trustworthy. A pattern like `grep -E 'ALL|FAILED'` also matches the per-gate
 `--- FAILED:` lines, and a broken patch has been committed that way.
 

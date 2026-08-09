@@ -21,7 +21,7 @@ last-heard detection. It now depends only on the stub from [plan-v03.3.md](plan-
 - ⛔ **Never open or save an Organelle-bound patch in plugdata.**
 - **Vanilla objects only.**
 - ⛔ **Never touch git.** Reading is fine. Brendan commits his own work.
-- ⚠️ **Read `check-all.sh`'s `RESULT:` line; do not grep for it.**
+- ⚠️ **Read `run.sh`'s `RESULT:` line; do not grep for it.**
 - ⛔ **A GATE IS NOT TRUSTED UNTIL IT HAS FAILED.**
 - ⛔ **This plan edits the file that holds the safe exit.** `m_launchpad`'s Live Mode message on
   `quitting` is the one message in this patch worth more than everything around it — a patch that
@@ -270,7 +270,7 @@ rather than pretending a machine judged it.**
 ## Verification
 
 ```sh
-./test/check-all.sh                  # read the RESULT: line
+./test/run.sh                        # read the RESULT: line
 python3 test/gate/docs-check.py -v   # the two boot.md tables are anchored to wire.sh
 ./deploy.sh
 ```

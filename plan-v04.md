@@ -314,6 +314,45 @@ remembering as the shape of the mistake: *absent* and *unconfigured* are not the
 | **Where each lands** | `e_` pages under `ref/module/`, one per stage. **`ref/module/` is what v0.4 grows** — the device set is fixed by the hardware |
 | **How a control reaches it** | One row of `Cut It/cut-it-map.txt`, and a destination on `u_map`'s literal `route` box. ⛔ **The allowlist guard is not optional** — see [ref/module/map.md](ref/module/map.md) |
 
+### ⬜ The 404 is a live effects processor, and v0.4 has not budgeted for it
+
+**Found 2026-08-08 while chasing an unrelated negative — item 262.** The SP-404 is the audio front
+end for the whole rig; every sound passes through it. Its effects turn out to be **sweepable from Pd
+in real time over CC**, confirmed one CC at a time against a looping pad with the resonator on.
+
+⚠️ **Nothing above assumes this**, because until it was measured nobody knew it was possible. It is
+the only DSP in the rig that is not `e_`-shaped and not written by us, and it is free.
+
+Two pieces of work, in order:
+
+1. ⬜ **Map it.** Which CC moves which parameter, whether the set changes per effect, and CC 17, 19,
+   81–83, which are untried. ⛔ **The next test must name the bus** — one effect on BUS 1 only,
+   nothing on 3/4 — because BUS 3/4 are master FX over the whole mix, so a master effect and a
+   per-sample one cannot be told apart by ear. **An afternoon with a looping pad and an ear.**
+2. ⬜ **Decide what plays it.** A nano fader is the obvious first answer; ⛔ **pad pressure is the
+   more interesting one**, since *Pressure is the forgotten input* below applies exactly here — a
+   held pad sweeping a resonator on the drum bus is a gesture the rig cannot currently make.
+
+⚠️ **Read [ref/device/sp404.md](ref/device/sp404.md) before designing against this.** 📄 Roland's
+chart is wrong in both directions on this device — it denies SysEx the device answers (item 249) and
+promises a CC 7 and Program Change that do nothing (item 260). **Treat every unexercised row as
+unlikely rather than unknown.**
+
+### ⬜ `MIDI EXT SRC` — a note that opens and closes the mic
+
+**Item 261, and untested.** The 404's MIDI menu carries `MIDI EXT SRC`, with values
+**GATE / TOGGLE / THROUGH**, governing how MIDI drives its **external audio input** — the mic and the
+arbitrary line source. It is set to `GATE` today and none of the three has been exercised.
+
+⚠️ **For a cut-up instrument this is a playable feature, not a setting.** The rig's front end is a
+live mic; *"a note opens the input"* makes the mic a gated source under sequencer control, and the
+three values are three different instruments. ⛔ **It also interacts with the mic-bleed capture guard
+above** — a gate that can close the input is a way to make capture safe rather than merely warned
+about.
+
+⬜ **What is not known: which note, and on which channel.** That is the whole measurement, and it is
+minutes with a mic and a looping pad.
+
 ### Grid idioms, and what each would map to
 
 ⚠️ **Every row below describes a feature that does not exist yet** — the pattern launcher, the four filter quadrants, Chop Shop's

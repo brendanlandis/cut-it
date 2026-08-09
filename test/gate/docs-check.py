@@ -432,6 +432,16 @@ def check_shape(verbose):
                 out.append(f'{rel}:{i + 1}  ✅ in a heading. It reads as "built", which rots. '
                            f'Evidence belongs in an Evidence column or in prose')
 
+        # ⛔ EVERY SCHEMA, NOT JUST module. This rule sat inside the module branch
+        # below for its whole life, so conventions.md, architecture.md, rig.md and
+        # device-os.md were unpoliced -- which is how device-os.md came to carry
+        # FIVE live open items with no Open section at all, one of them buried in a
+        # table cell. A freeform page has no enforced skeleton, so the rule is
+        # stated in terms of the section rather than the skeleton: a page with any
+        # ⬜ must have a ## Open, and every ⬜ must be inside it. A page with no ⬜
+        # needs no Open.
+        out += _check_open_items(rel, marked)
+
         if schema != 'module':
             continue
 
@@ -491,18 +501,59 @@ def check_shape(verbose):
                 out.append(f'{rel}  a Facts table is missing the {" and ".join(missing)} '
                            f'column(s): {h.strip()[:60]}')
 
-        for i, (ln, f) in enumerate(marked):
-            if f or '⬜' not in ln:
-                continue
-            if not (bounds['Open'] < i < ends['Open']):
-                out.append(f'{rel}:{i + 1}  ⬜ outside the Open section. Uncertainty is '
-                           f'recorded here; what to DO about it lives in plan-v04 §4')
-            elif 'plan-v04.md' not in ln and not any(
-                    'plan-v04.md' in marked[j][0] for j in range(i, min(i + 4, ends['Open']))):
-                out.append(f'{rel}:{i + 1}  ⬜ in Open with no link to plan-v04.md')
-
     if verbose and pages:
         print(f'  {pages} ref/ page(s) matched their schema')
+    return out
+
+
+def _is_marker_gloss(line):
+    """A ⬜ that is DEFINING the glyph rather than using it.
+
+    ⛔ Count STRUCTURE, not characters. CLAUDE.md's marker table and the `docs`
+    skill's both have a row whose whole job is to say what ⬜ means, and a
+    substring blacklist of those exact lines would rot the moment either was
+    reworded. The structural fact is what makes them different: a gloss row is a
+    two-cell table row whose FIRST cell is the bare glyph and nothing else.
+
+        | ⬜ | Unknown or unverified |     <- a definition, not an open item
+        | 45 | ⬜ AP link quality    |     <- an open item in a table cell
+    """
+    if not line.lstrip().startswith('|'):
+        return False
+    cells = [c.strip() for c in line.strip().strip('|').split('|')]
+    return len(cells) == 2 and cells[0] == '⬜'
+
+
+def _check_open_items(rel, marked):
+    """Every ⬜ must sit under a `## Open`, whatever the page's schema.
+
+    ⚠️ Stated in terms of the SECTION, not the module skeleton, because a
+    freeform page has no enforced skeleton to hang it off. A page with no ⬜
+    needs no Open section at all.
+    """
+    out = []
+    marks = [i for i, (ln, f) in enumerate(marked)
+             if not f and '⬜' in ln and not _is_marker_gloss(ln)]
+    if not marks:
+        return out
+
+    start = next((i for i, (ln, f) in enumerate(marked)
+                  if not f and ln.strip() == '## Open'), None)
+    if start is None:
+        out.append(f'{rel}  has {len(marks)} ⬜ but no "## Open" section. An open '
+                   f'item outside Open is invisible -- that is how ref/device-os.md '
+                   f'came to carry five of them')
+        return out
+    end = next((i for i, (ln, f) in enumerate(marked[start + 1:], start=start + 1)
+                if not f and ln.startswith('## ')), len(marked))
+
+    for i in marks:
+        if not (start < i < end):
+            out.append(f'{rel}:{i + 1}  ⬜ outside the Open section. Uncertainty is '
+                       f'recorded there; what to DO about it lives in plan-v04 §3')
+        elif 'plan-v04.md' not in marked[i][0] and not any(
+                'plan-v04.md' in marked[j][0] for j in range(i, min(i + 4, end))):
+            out.append(f'{rel}:{i + 1}  ⬜ in Open with no link to plan-v04.md')
     return out
 
 
@@ -524,12 +575,22 @@ def check_index(verbose):
     if '<!-- check: index -->' not in body:
         return ['ref/README.md has no <!-- check: index --> anchor, so its index '
                 'is not being verified against what exists']
-    listed = set(re.findall(r'`([a-z0-9_-]+)`', body[body.index('<!-- check: index -->'):]
+    # ⚠️ [A-Za-z], not [a-z]: the index lists `README` and a lowercase-only class
+    # silently failed to see it the moment the top level started being checked.
+    listed = set(re.findall(r'`([A-Za-z0-9_-]+)`', body[body.index('<!-- check: index -->'):]
                             .split('## The page schema')[0]))
     for sub in ('device', 'module'):
         actual = {f.stem for f in (refdir / sub).glob('*.md')} if (refdir / sub).is_dir() else set()
         for name in sorted(actual - listed):
             out.append(f'ref/{sub}/{name}.md exists but ref/README.md\'s index does not list it')
+    # ⛔ AND THE TOP LEVEL, which this check could not see for its whole life. Only
+    # device/ and module/ were compared, so ref/workflow.md and ref/wifi.md were
+    # both added and the index still reported "matches what exists" -- the two
+    # pages it could not see were exactly the two being added. Cross-cutting pages
+    # are the rarest kind and therefore the ones a hand-maintained index forgets.
+    top = {f.stem for f in refdir.glob('*.md')} - {'_unfiled'}
+    for name in sorted(top - listed):
+        out.append(f'ref/{name}.md exists but ref/README.md\'s index does not list it')
     if verbose and not out:
         print('  the ref/ index matches what exists')
     return out
@@ -679,12 +740,60 @@ def check_rule_ids(verbose):
     return out
 
 
+CLOSER = re.compile(r'plan-v0[34](?:\.\d)?\.md|\bv0\.[4-9]\b')
+
+
+def check_closers(verbose):
+    """⬜ --strict ONLY, AND DELIBERATELY NOT WIRED YET.
+
+    Every remaining ⬜ should name the plan or the version that closes it, so an
+    open item cannot sit in the tree with nobody owning it. That is the rule this
+    whole batch exists to make stick.
+
+    ⛔ IT DOES NOT RUN BY DEFAULT, AND THAT IS THE POINT. plans v0.3.3, v0.3.4 and
+    v0.3.5 have not landed, so a large minority of today's items legitimately have
+    no closer -- and **a gate that stays red for two weeks is a gate that gets
+    ignored**, which would cost more than the rule buys. Run it with --strict to
+    see the backlog.
+
+    ⚠️ TO LAND IT: delete the flag so main() always calls this, after
+    plan-v03.5.md ships. Its landing checklist says so.
+
+    SCOPE IS EVERY .md, REPO-WIDE -- not just ref/. Open items live in CLAUDE.md,
+    tools/README.md and test/README.md too. ⛔ A ⬜ in a .pd or .sh comment is
+    deliberately NOT covered: forcing a plan citation into a Pd comment is exactly
+    the write-twice trap this batch removed.
+    """
+    out, checked = [], 0
+    for f in sorted(ROOT.rglob('*.md')):
+        rel = f.relative_to(ROOT)
+        if any(p in SKIP_DIRS for p in rel.parts):
+            continue
+        try:
+            lines = f.read_text(encoding='utf-8').splitlines()
+        except UnicodeDecodeError:
+            continue
+        marked = _strip_fences(lines)
+        for i, (ln, fenced) in enumerate(marked):
+            if fenced or '⬜' not in ln or _is_marker_gloss(ln):
+                continue
+            checked += 1
+            window = ' '.join(marked[j][0] for j in range(i, min(i + 4, len(marked))))
+            if not CLOSER.search(window):
+                out.append(f'{rel}:{i + 1}  ⬜ names no plan or version that closes it')
+    if verbose:
+        print(f'  {checked} open item(s) checked for a closer')
+    return out
+
+
 def main():
     verbose = '-v' in sys.argv
     problems = (check_anchors(verbose) + check_dangling_docs(verbose)
                 + check_shape(verbose) + check_index(verbose)
                 + check_rule_ids(verbose) + check_skill_rules(verbose)
                 + check_dangling_paths(verbose))
+    if '--strict' in sys.argv:
+        problems += check_closers(verbose)
     if problems:
         print('\n'.join(problems))
         print(f'\n{len(problems)} problem(s).')

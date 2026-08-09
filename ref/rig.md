@@ -162,10 +162,8 @@ nothing attached* and configured *with the entire rig live*, so it was never a c
 
 ⚠️ **The one genuine shared rail is the Organelle's own supply, and the wifi dongle is on it.** The
 dongle sits on a **separate root bus from the powered hub**, so its declared 450 mA comes out of the
-9 V 1000 mA adapter rather than the hub's PSU. ⬜ Whether that contributes to the wifi fault is
-**untested and is a hypothesis, not a finding** — see [plan-v04.md](../plan-v04.md) §3. ⛔ Moving the
-dongle onto the powered hub is the obvious test, and ⚠️ **the hub is the thing that is fussy about
-what plugs into it** — see the Launchpad's `-32` below before assuming a free socket is a good one.
+9 V 1000 mA adapter rather than the hub's PSU. **Whether that contributes to the wifi fault is
+untested — see *Open* below.**
 
 ### ⛔ THERE IS ONE PHYSICAL HUB, AND `lsusb` MAKES IT LOOK LIKE THREE
 
@@ -305,6 +303,13 @@ toggled *off*.
 
 ## Open
 
+- ⬜ **Whether the wifi dongle's draw contributes to the wifi fault — item 255**, and
+  [plan-v04.md](../plan-v04.md) §3. It is the only thing on the Organelle's own 9 V 1000 mA rail,
+  declaring 450 mA on a separate root bus from the powered hub. ⚠️ **A hypothesis and nothing
+  more**: `MaxPower` is a declared maximum, the adapter has headroom on paper, and no drop has ever
+  been correlated with load. ⛔ The obvious test — move the dongle onto the powered hub — carries a
+  known hazard, because that hub has one controller the Launchpad will not configure on at all
+  (item 256, the `-32` below). **Worth one deliberate trial only if the fault recurs.**
 - ✅ **The 404 pre-set checklist is short, and it is short for a reason — item 263.** The question
   assumed that ExtIn monitoring, bus assignments, input FX and pad play mode were things to *set
   before* a set. **They are not: they are played.** Brendan switches input monitoring on and off

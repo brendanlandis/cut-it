@@ -229,7 +229,7 @@ Load `dsp-toggle.pd` as a third patch beside `mother.pd` and `main.pd`. It touch
 no surface; all it can do is set Pd's global DSP state.
 
 **Why it exists.** Item 75 recorded that the Phase 5 clock roughly doubled Pd's CPU and blamed the
-96 ALSA MIDI writes a second — marked ⬜ *not confirmed by isolation*. This is that isolation, and
+96 ALSA MIDI writes a second, unconfirmed by isolation. This is that isolation, and
 it overturned the conclusion — **the DSP is the budget, not the MIDI, and the original guess was
 wrong by a factor of sixteen.** The three-way readings are on
 [../ref/module/tempo.md](../ref/module/tempo.md), item 75.

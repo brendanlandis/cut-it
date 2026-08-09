@@ -242,7 +242,8 @@ by construction, but nothing has measured whether the stage link *holds* for the
 actual set. ⚠️ Measuring it needs the AP up, which kills the house link.
 [plan-v04.md](../plan-v04.md) §3.
 
-⬜ **Three drops on 2026-08-08 that did NOT match the roam signature.** Recorded because they
+⬜ **Three drops on 2026-08-08 that did NOT match the roam signature** —
+[plan-v04.md](../plan-v04.md) §3. Recorded because they
 contradict it, and a future session will otherwise re-derive them. From the Mac, `ssh` failed at
 **name resolution** and `find-organelle.sh` returned **ABSENT** — no IPv4 and no IPv6 neighbour,
 while it found another host at `.14` happily. On the device afterwards: associated, `192.168.1.9`

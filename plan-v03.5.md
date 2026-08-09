@@ -277,7 +277,13 @@ device is dead.
 7. `plan-v04.md` §3 no longer carries the wifi section, the never-run AP check, or *Debugging the rig
    with no laptop* — and [tools/README.md](tools/README.md)'s ⬜ about where the debug system lives is
    struck.
-8. **This file is deleted.**
+8. ⛔ **`check_closers` loses its `--strict` flag and becomes unconditional.** It is written and
+   tested in `test/gate/docs-check.py` already, and gated off only because this plan and its two
+   siblings had not landed — most remaining ⬜ legitimately had no closer, and a gate that stays red
+   for two weeks is a gate that gets ignored. **This is the last plan of the four, so when it lands
+   the condition is gone.** Run `python3 test/gate/docs-check.py --strict` to see what is left, clear
+   it, then delete the flag check in `main()`.
+9. **This file is deleted.**
 
 ⛔ **This plan does not hand its open items to `plan-v04.md`.**
 

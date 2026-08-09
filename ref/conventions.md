@@ -403,7 +403,7 @@ anything assembled with `[list …]` is not.
 **2 — receiving.** Measured in 0.49, and **wider than this document once claimed** — the old
 wording said the trap applied only when the remainder was a single symbol. The real rule: when
 `route` matches, **the remainder is emitted as a message whenever its first atom is a symbol**,
-that symbol becoming the selector. So `status v0.2-ready` arrives as selector `v0.2-ready`, and
+that symbol becoming the selector. So `status v0.3-ready` arrives as selector `v0.3-ready`, and
 `alert warn u_init x` as selector `warn` with two arguments; only a remainder starting with a
 **float** is really a list. This is why every branch out of `g_oled`'s `route` begins with
 `[list append]`.

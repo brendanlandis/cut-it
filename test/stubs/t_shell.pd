@@ -1,0 +1,10 @@
+#N canvas 20 20 1500 900 12;
+#X text 20 20 t_shell -- a stand-in for [shell] that SAYS WHAT IT WAS ASKED TO RUN. test/gate/init-assert.sh copies this over shell.pd inside its scratch copy \; nothing in Cut It/ or mac-stubs/ is touched and this file is never deployed., f 84;
+#X text 20 130 ⛔ IT IS COPIED UNDER A DIFFERENT NAME \, AND THAT IS THE WHOLE REASON IT IS CALLED t_shell. A file named shell.pd anywhere in this repository is a live hazard: if one ever reaches the patch folder it SHADOWS the real external on the device and every aconnect in wire.sh silently stops happening -- mac-stubs/shell.pd says so in its own second comment. Keeping the repo copy named t_shell.pd means no plausible accident deploys it \, and the rename happens once \, in the gate that wants it., f 84;
+#X text 20 310 ⛔ IT EXISTS BECAUSE [shell] IS AN EXTERNAL \, NOT A BUILT-IN. Pd resolves built-in classes out of the class table before it looks at the file system \, which is why ctlin and midiout have to be rewritten box by box -- but shell is loaded from a path \, so a file of that name simply wins. That is the same mechanism mac-stubs already relies on \, used here for the opposite purpose: mac-stubs/shell.pd swallows the command so a syntax check stays silent \, and this one reports it so a gate can count it., f 84;
+#X text 20 510 creation args: none. inlet 1: the command \, exactly as the real object takes it. outlet 1: the real object's stdout -- LEFT UNCONNECTED HERE \, because no command runs and inventing output would be a lie a gate could come to depend on., f 84;
+#X text 20 640 ⚠️ IT COUNTS \, IT DOES NOT EXECUTE. u_init runs wire.sh through this \, and the assertion a gate wants is that the boot sequence invoked it ONCE at the right moment -- not that ALSA got wired \, which cannot happen on a Mac and is a bench's job. The four .sh scripts are declared uncovered on ref/module/boot.md for exactly that reason., f 84;
+#X obj 20 800 inlet;
+#X obj 20 850 print SHELL;
+#X obj 300 850 outlet;
+#X connect 5 0 6 0;

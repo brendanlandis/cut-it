@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Boot and wiring
 
-**Files:** `Cut It/u_init.pd`, `Cut It/wire.sh`, `Cut It/main.pd`, `Cut It/main-dev.pd`, `Cut It/u_root.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/run.sh` · **Bench:** `test/bench/display-bench.pd`
+**Files:** `Cut It/u_init.pd`, `Cut It/wire.sh`, `Cut It/main.pd`, `Cut It/main-dev.pd`, `Cut It/u_root.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/init-assert.sh` · **Bench:** `test/bench/display-bench.pd`
 
 ## What it is
 
@@ -25,13 +25,16 @@ also **undoes mother's own autoconnect**, which is not ours and is actively wron
 | ~Time | Stage | What happens | Evidence | Item |
 |-------|-------|--------------|----------|------|
 | 0 ms | `modal booting` | `midiInGate 0` and `midiOutGate 0` — mother's MIDI mapping off | verified | — |
-| 0 ms | | `wire.sh` runs through `[shell]` | verified | — |
-| 1500 ms | `modal wiring` | | verified | — |
-| 2000 ms | | `midiInGate 0` **again** — the second send is the one that works | verified | — |
+| 1500 ms | `modal wiring` | **then** `wire.sh` runs through `[shell]` — the screen says what is about to be attempted | verified | — |
+| 2000 ms | | `midiInGate 0` and `midiOutGate 0` **again** — the second send is the one that works | verified | — |
 | 3000 ms | `modal launchpad` | **Outlet 1** bangs `m_launchpad`, which enters Programmer Mode | verified | — |
-| 3500 ms | | **Outlet 2** bangs `u_state` — restore the saved state | verified | — |
-| 3500 ms | `modal-off` | `status v0.2-ready` into the footer | verified | — |
+| 3500 ms | | **Outlet 2** bangs `u_state` — restore the saved state, and it fires FIRST of the three at this stage | verified | — |
+| 3500 ms | `modal-off` | `status v0.3-ready` into the footer | verified | — |
 | 4000 ms | | `u_tempo` drops the BPM into the footer, taking it over | verified | — |
+
+⚠️ **Both gates go out twice, not just `midiInGate`.** One message box feeds both sends and is
+banged at `loadbang` and again at 2000 ms, so the second copy of each is what survives mother's own
+push. Asserted by [test/gate/init-assert.sh](../../test/gate/init-assert.sh).
 
 **Each stage reports to `disp` as it is REACHED.** Nothing here is acknowledged by any device, so a
 stage name on screen means the sequence got that far — not that the hardware answered. **A boot stuck

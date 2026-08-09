@@ -82,7 +82,7 @@ home                              param                    alert
 | R 19            y=27 8 |  |                        |  || u_init      y=30   8 ||
 | ===             y=37 12|  |                        |  || launchpad-x y=44   8 ||
 |      |==|       y=50  3|  | =========       y=48  5|  |+----------------------+|
-| v0.2-ready      y=54  8|  | ====            y=56  5|  +------------------------+
+| v0.3-ready      y=54  8|  | ====            y=56  5|  +------------------------+
 +------------------------+  +------------------------+
 ```
 
@@ -145,7 +145,7 @@ against, and it would not be helped by a larger font.
 
 ```
  0  modal booting      31  modal-off
-11  modal wiring       31  status v0.2-ready
+11  modal wiring       31  status v0.3-ready
 26  modal launchpad    46  chop-size 43 %
 ```
 

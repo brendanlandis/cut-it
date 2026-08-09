@@ -1,7 +1,7 @@
 # Plan v0.3.0 — what is left that needs hands on the rig
 
 **Everything in this plan that could be done without the hardware in front of you has been done.**
-What remains is **three** things, and every one of them needs a person at the rig — eyes on a screen,
+What remains is **two** things, and every one of them needs a person at the rig — eyes on a screen,
 ears on a speaker, fingers on a menu, or a cable moved. Items 77, 39 and 3 were answered on 2026-08-08;
 their results are kept below because two of them change what v0.4 can assume.
 
@@ -68,7 +68,7 @@ and the SP-404 contains another, so the tree looks four deep and is not.
 | ~~1~~ | ✅ **DONE 2026-08-08.** Item 77 closed — there are no limits, because the device never tracks. Item 257 | — | [ref/device/launchpad.md](ref/device/launchpad.md) |
 | ~~2~~ | ✅ **DONE 2026-08-08.** Item 39 closed — all three layouts legible at playing distance. Item 258 | — | [ref/module/display.md](ref/module/display.md) |
 | ~~3~~ | ✅ **DONE 2026-08-08.** CC 7 and PC are dead; **the effect CCs are alive**. Items 260, 262 | — | [ref/device/sp404.md](ref/device/sp404.md) |
-| 4 | **Write the 404 pre-set checklist** | the box in hand | [ref/rig.md](ref/rig.md) |
+| ~~4~~ | ✅ **DONE 2026-08-08.** Most of it is played, not preset. One check survives. Item 263 | — | [ref/rig.md](ref/rig.md) |
 | 5 | **Try Organelle audio back into the 404** | one cable | [ref/rig.md](ref/rig.md) |
 | 6 | **The Launchpad onboarding drive** — can Components disable it | a Mac, and a firmware update | [ref/device-os.md](ref/device-os.md) |
 
@@ -121,21 +121,21 @@ rig, so a Launchpad pad or a nano fader can play its DSP in real time. Nothing i
 changes per effect, and CC 17, 19, 81–83. On [ref/device/sp404.md](ref/device/sp404.md), and it is an
 afternoon with a looping pad and an ear.
 
-### 4. The 404 pre-set checklist
+### ~~4. The 404 pre-set checklist~~ ✅ ANSWERED 2026-08-08 — and the premise was wrong
 
-⬜ **The only routing in the rig that depends on a menu rather than a cable is on the 404** — ExtIn
-monitoring, bus assignments, input FX.
+**It assumed ExtIn monitoring, bus assignments, input FX and pad play mode were things to set
+*before* a set. They are played.** Input monitoring goes on and off throughout a performance, pad
+play modes are set ad hoc, bus assignment is mixer work. ⛔ **Nothing varied on purpose belongs on a
+checklist** — putting it there would be telling the player to undo their own settings. Item 263.
 
-⛔ **Add per-pad PLAY MODE to it, on the strength of item 259.** A looping pad *toggles* on note-on,
-so a sampler that retriggers one silences it instead — and nothing about the cabling reveals which
-mode a pad is in. Whatever v0.4 needs, the checklist has to state it.
+**What survives is one check**, on [ref/rig.md](ref/rig.md) under *Before a set — the 404*: verify
+the MIDI tab, because **MIDI Mode**, **Soft Through**, **USB-MIDI Thru** and **MIDI Sync Out** are
+the four that break the instrument silently if they drift. The route and the full table are on
+[ref/device/sp404.md](ref/device/sp404.md).
 
-⚠️ **When a device has a settings menu, read the menu.** The Volca's Program Change was gated behind
-two adjacent undocumented globals; three reasoned hypotheses failed and photographs of the menu
-solved it in one step (item 226). ⚠️ **And toggles are hazardous** — pressing a setting that is
-already correct turns it *off*. Re-use a known-good prior result as a probe for device state.
-
-**Done means:** an ordered checklist on `rig.md` that someone can run at a venue without thinking.
+⛔ **It also kills the easy fix for item 259.** Since play mode is set by hand mid-set, the patch can
+never know whether a pad is looping — and there is no message that asks. v0.4's sampler must survive
+both behaviours rather than assuming one-shot.
 
 ### 5. Organelle audio back into the 404
 
@@ -168,5 +168,5 @@ python3 test/gate/docs-check.py -v
 
 ## Done means
 
-1. All three above are answered on their pages, or explicitly declined with the reason recorded.
+1. Both remaining items are answered on their pages, or explicitly declined with the reason recorded.
 2. **This file is deleted.**

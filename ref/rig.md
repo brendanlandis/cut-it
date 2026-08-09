@@ -280,11 +280,36 @@ cable; the 404 has its PSD adapter.
 
 ⚠️ **Label the cables.** With this many identical 1/4" jacks it is worth the ten minutes.
 
+## Before a set — the 404
+
+**One check, and it is the one that breaks the instrument silently.** Everything else on this box is
+performance: input monitoring, pad play modes and bus assignment are all varied deliberately while
+playing, so putting them on a checklist would be telling you to undo your own settings.
+
+⛔ **Verify the MIDI tab against the recorded values.** If one of these drifts, Cut It stops driving
+the 404 and nothing anywhere reports it. The route and the full table are on
+[device/sp404.md](device/sp404.md) — `[SHIFT]` + pad 13 → SYSTEM → `[CTRL 3]` to MIDI.
+
+The four that actually matter:
+
+| Setting | Must be | If it is wrong |
+|---------|---------|----------------|
+| **MIDI Mode** | **A** | Bank-equals-channel breaks, and `m_404` is built on it — every pad addresses the wrong bank |
+| **Soft Through** | Off | MIDI echo loop |
+| **USB-MIDI Thru** | Off | Same |
+| **MIDI Sync Out** | Off | Clock echoed back at the Organelle, which is clock master |
+
+⚠️ **Read, do not press.** Pressing `[VALUE]` on a setting that is already correct is how it gets
+toggled *off*.
+
 ## Open
 
-- ⬜ **The only routing that depends on a menu rather than a cable is on the 404** — ExtIn
-  monitoring, bus assignments, input FX. A pre-set checklist for that box is deferred; see
-  [plan-v04.md](../plan-v04.md) §3.
+- ✅ **The 404 pre-set checklist is short, and it is short for a reason — item 263.** The question
+  assumed that ExtIn monitoring, bus assignments, input FX and pad play mode were things to *set
+  before* a set. **They are not: they are played.** Brendan switches input monitoring on and off
+  throughout a performance, sets pad play modes ad hoc, and treats bus assignment as mixer work.
+  ⛔ **Nothing that gets varied on purpose belongs on a checklist.** What is left is under
+  *Before a set — the 404* below.
 - ⬜ **Organelle audio back into the 404 was considered and dropped**, using the mixer's FX send as a
   variable-gain feedback path. It needs no rewiring beyond one cable from FX SEND. See
   [plan-v04.md](../plan-v04.md) §3.

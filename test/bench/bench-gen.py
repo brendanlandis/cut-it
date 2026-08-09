@@ -22,7 +22,7 @@ on the Organelle, where the encoder click is the only free control there is.
 GO is:
   * the bng at the top of the patch                     (Mac)
   * the encoder click, via [r encbut]                   (MAC ONLY -- see below)
-  * ./tools/go.sh                                       (THE ONLY ONE THAT WORKS
+  * ./test/run.sh --bench <name>                        (THE ONLY ONE THAT WORKS
                                                          ON THE DEVICE)
 Turning the encoder REPEATS the current step without advancing (Mac only).
 
@@ -30,7 +30,7 @@ Turning the encoder REPEATS the current step without advancing (Mac only).
 chose a single alternating control assumed it did. mother forwards encbut only
 after a patch sends /enableEncoder, and nothing in Cut It ever does -- m_organelle
 leaves the encoder out deliberately. On the Mac u_mother-stub sends encbut
-unconditionally, which is what hid this. Use netcat on the device. Making the
+unconditionally, which is what hid this. Use test/run.sh on the device. Making the
 bench ask mother to enable the encoder is NOT the fix: that means writing to
 oscOut, and C-5 gives g_oled sole ownership of it.
 
@@ -374,8 +374,8 @@ def build(name, cfg):
           "OPTIONAL. mother only forwards encbut once a patch has asked with /enableEncoder \\, "
           "and NOTHING IN Cut It EVER ASKS -- m_organelle leaves the encoder out on purpose. So "
           "the click that drives this bench on the Mac is silently dead on the Organelle. Send "
-          "instead with ./tools/go.sh from the Mac. ⚠️ NOT netcat: the one-liner this file used "
-          "to print here does nothing on macOS -- BSD nc exits before the datagram is flushed at "
+          "instead with ./test/run.sh --bench <name> from the Mac. ⚠️ NOT netcat: the line this file "
+          "used to print does nothing on macOS -- BSD nc exits before the datagram is flushed at "
           "-w0 \\, and -w1 was measured to fail too \\, while the port IS bound and the bench is "
           "fine. It looks exactly like a dead bench. The device cannot send to itself either: "
           "busybox here has no nc at all. Asking mother to enable the encoder is NOT the fix "

@@ -14,7 +14,7 @@ matters because the Organelle launches Pd with `-nogui` and there is no console 
 |---|---|
 | **Getting data back off the device** | `fetch-state.sh` `fetch-errors.sh` |
 | **The wifi investigation** — an OPEN fault | `find-organelle.sh` `wifi-watch.sh` `wifi-poll.sh` `wifi-report.sh` `wifi-reassociate.sh` |
-| **Driving and rescuing hardware** | `go.sh` `lp-live.sh` `dsp.sh` + `dsp-toggle.pd` |
+| **Driving and rescuing hardware** | `lp-live.sh` `dsp.sh` + `dsp-toggle.pd` |
 | **Measuring the device** | `display-cpu.sh` `display-diag.pd` |
 | **Probes still worth running** | `lp-monitor.pd` `lp-step0.pd` `alert-buffer-probe.pd` `self-wire.pd` |
 | **Answering a device** — does it reply at all | `stage-patches/Inquiry Probe/` |
@@ -191,11 +191,13 @@ so an edit under a live interpreter is genuinely unsafe — restart the poll aft
 
 ## Driving and rescuing hardware
 
-### `go.sh` — the only way to drive a bench on the Organelle
+### ✅ `go.sh` is gone — `test/run.sh` sends GO itself
 
-One UDP datagram to the bench's `[netreceive 9998]`. Python's socket send rather than netcat, for
-the reason above. `-n N` fires N of them half a second apart, which is how you walk a bench to a
-particular step without judging every one on the way.
+It fired one UDP datagram at a bench's `[netreceive 9998]`, and `-n N` walked a bench forward
+without judging the steps on the way. **The runner does both better**: it sends GO at the right
+moment rather than needing a second window, and `--from N` *records* that the skipped steps were
+not run instead of passing over them in silence. The netcat lesson it carried is on
+[ref/device-os.md](../ref/device-os.md).
 
 ### `lp-live.sh` — rescue a Launchpad stranded in Programmer Mode
 
@@ -345,7 +347,7 @@ python3 -c "import socket; socket.socket(socket.AF_INET, socket.SOCK_DGRAM).send
 ```
 
 ⛔ **Not `nc`.** BSD `nc -u -w0` on macOS exits before the datagram is flushed and looks exactly like
-a dead patch — the same reason `go.sh` and `dsp.sh` are Python. `tools/lp-live.sh` remains the
+a dead patch — the same reason `dsp.sh` and the runner's GO are Python. `tools/lp-live.sh` remains the
 fallback that needs no running patch at all.
 
 ## Things these patches taught us

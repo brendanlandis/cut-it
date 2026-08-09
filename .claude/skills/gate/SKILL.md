@@ -137,8 +137,8 @@ generated but never fidelity-checked.
 Step text: no `,` `;` or `$`; every `pass_if` starts with `PASS IF`; include the steps whose correct
 result is that **nothing happens**.
 
-⚠️ **On the device, `tools/go.sh` advances a bench.** The encoder does not, and netcat does not work
-on macOS.
+⚠️ **On the device, `./test/run.sh --bench <name>` drives a bench** — it sends GO itself. The
+encoder does not advance one, and netcat does not work on macOS.
 
 ## Running everything
 

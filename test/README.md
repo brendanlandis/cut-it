@@ -25,7 +25,7 @@ were false.
 
 | Gate | Checks | Answers for |
 |---|---|---|
-| `runner-assert.sh` | 31 | **no page** — it answers for this one |
+| `runner-assert.sh` | 58 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `display-assert.sh` | 29 | `module/display` |
 | `tempo-assert.sh` | 17 | `module/tempo` |
@@ -92,11 +92,71 @@ Phases 5, 6 and 7 all rest on — and came within one step of shipping without r
 gates. The gates were all there, all passing, and all unused. **A gate you have to remember to run
 is a gate that eventually does not run.**
 
-| Patch | What it does |
-|---|---|
-| `lp-monitor.pd` | Puts the Launchpad in Programmer Mode, echoes pad presses back as LEDs, prints velocity and polyphonic aftertouch. |
-| `lp-step0.pd` | **Phase 6's Step 0 measurements, in one patch** — items 82–87. Prints incoming notes, **CC** and aftertouch with their channel, sends a batch colour SysEx of 64 / 99 / 120 specs, and switches layout. `lp-monitor.pd` cannot answer item 82 because it has no `[ctlin]`. Run it on the **Mac** with the Launchpad plugged in, in the foreground. |
-| `self-wire.pd` + `wire.sh` | **The pattern the real patch needs.** Shows a patch wiring its own ALSA MIDI connections at load time via `[shell]`. |
+⚠️ **`lp-monitor.pd`, `lp-step0.pd` and `self-wire.pd` are NOT here.** They were listed under
+`test/` and they live in [tools/](../tools/README.md), where the directory-is-the-kind rule puts
+them: they are probes a person runs, not tests with an oracle.
+
+## `test/run.sh` — the entry point, and both halves
+
+```sh
+./test/run.sh                              the gates. Mac-only, ~2.5 min, the default
+./test/run.sh --all                        the gates, then every bench
+./test/run.sh --bench midi                 one bench
+./test/run.sh --bench tempo --target mac   run the patch here rather than on the device
+./test/run.sh --bench phone --target mac --auto-only
+./test/run.sh --from 8                     resume a bench part-way
+./test/run.sh --list                       what would run, and how fresh each verdict is
+```
+
+⛔ **Run bare it is the gate half and nothing else** — Mac-only, touching nothing on the Organelle,
+safe with the device off. Benches are behind a flag on purpose: ⚠️ **a check that costs twenty
+minutes stops being run**, which is the failure this command exists to fix.
+
+⛔ **`--target` says WHERE the patch runs; `--auto-only` says whether a PERSON is watching.** Two
+axes, not one — welding them together makes an unattended run on the real rig unreachable, and that
+is worth having.
+
+| `--target` | Is | Can judge |
+|---|---|---|
+| `device` | **Default.** The real rig, over ssh | everything |
+| `mac` | `main-dev.pd` plus the bench here; `u_mother-stub` draws the panel and decodes the OLED | display, nanokontrol, tempo |
+| `paper` | no Pd at all | auto-selected when every step has no actions — `state` and `midi` |
+
+⛔ **A step whose oracle is missing is a SKIP WITH A REASON, never a pass** — whether the reason is
+the target or the absence of a person.
+
+### Nine steps judge themselves
+
+A step may carry an optional **fourth element**, a dict: `need` and `do` (what to have at hand, what
+to press), `watch`, `check` (a predicate), `wait`, and `targets`. ⛔ **It never reaches the `.pd`** —
+emitting it would reopen every hardware-verified step text to the comma/semicolon fragmentation
+hazard the generator exists to prevent, so `bench-verify.py` still diffs three fields.
+
+**`bench-tap.pd`** is generated beside the benches and loaded with them: `[r bus] → [print LABEL]`
+and `[r oscOut] → [print OLED]`, and **it sends nothing**. C-5 gives `g_oled` sole ownership of
+`oscOut`, but ownership governs *writing* — Pd delivers a message to every receiver of a name, so a
+listener cannot change what any other subscriber sees. ⛔ **Do not "fix" it by routing its output
+anywhere.** `clock` is deliberately not tapped: two beats a second forever.
+
+⛔ **The generator refuses a predicate that cannot fail.** A purely negative one needs an
+independent liveness witness beside it; a bus predicate may not name a bus its own step writes;
+`bus-count` takes an exact `n` and rejects a range. ⚠️ **`oled` is exempt from the self-write rule
+and must be** — display 3 writes `disp` and asserts on what `g_oled` *drew*, which is downstream,
+not an echo.
+
+⛔ **And it refuses a predicate that disagrees with its own prose.** A step has two oracles now, a
+person reading the PASS IF and a program reading the bus, and nothing else stops them drifting apart.
+
+### Results, and freshness
+
+Per-run records go to `test/results/runs/` (gitignored), fsynced before the next step is described.
+The roll-up in `test/results/latest.json` is **committed**, which is what makes *"when did phone step
+12 last pass, and against what code?"* a `git log` question.
+
+A verdict is **fresh** only if the sha of its title and `pass_if` is unchanged, the target matches,
+it is under 30 days old, and its **per-bench dependency sha** is unchanged. ⛔ **Per bench, not the
+whole tree** — hashing all of `Cut It/` would mark every bench stale on every patch commit, and a
+signal that is always lit is one nobody reads.
 
 ## `display-assert.sh` and `launchpad-assert.sh` — no eyes and no hardware
 
@@ -341,11 +401,11 @@ steps have no actions, you do not need to load the bench at all.**
 ### They are stepped by hand
 
 **All seven benches are generated by `bench-gen.py` from the step tables in `bench_steps.py`**
-(`STEPS3` through `STEPS8`). Edit the table and re-run the generator; **never edit a
+(`STEPS_DISPLAY` through `STEPS_MIDI`). Edit the table and re-run the generator; **never edit a
 `phaseN-bench.pd`.**
 
 ```sh
-python3 test/bench/bench-gen.py        # writes all six
+python3 test/bench/bench-gen.py        # writes all seven, plus bench-tap.pd
 python3 test/bench/bench-verify.py     # proves the step text survived
 python3 test/bench/bench-extract.py test/bench/tempo-bench.pd   # recover a bench's step table
 ```
@@ -386,7 +446,7 @@ beat row never moves and every count reads 0 — which looks exactly like a dead
 
 ### Running a bench on the device
 
-Any of the four benches loads as a **third patch** after `mother.pd` and `main.pd`, which is what
+Any of the seven benches loads as a **third patch** after `mother.pd` and `main.pd`, which is what
 gives it a real console. This is the launch line:
 
 ```sh
@@ -416,8 +476,8 @@ alternating control assumed it would. `mother` forwards `encbut` only to patches
 deliberately. On the Mac `u_mother-stub` sends it unconditionally, which is what hid this. Use:
 
 ```sh
-./tools/go.sh              # one GO
-./tools/go.sh -n 25        # walk the bench forward
+./test/run.sh --bench tempo --target device      # the runner sends GO itself
+./test/run.sh --bench tempo --target device --from 13
 ```
 
 ⚠️ **Not netcat.** The benches used to print `echo "go;" | nc -u -w0 organelle.local 9998`, and on

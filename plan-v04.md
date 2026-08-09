@@ -8,9 +8,9 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **This is no longer the only plan.** Five scoped plans — [plan-v03.1.md](plan-v03.1.md) through
-[plan-v03.5.md](plan-v03.5.md) — hold the last batch of infrastructural work before v0.4: the test
-runner, coverage, cleanup, hot-swap and the venue kit. **Read [CLAUDE.md](CLAUDE.md)'s table for the
+⚠️ **This is no longer the only plan.** Four scoped plans — [plan-v03.2.md](plan-v03.2.md) through
+[plan-v03.5.md](plan-v03.5.md) — hold the last batch of infrastructural work before v0.4: cleanup,
+coverage, hot-swap and the venue kit. ✅ **The test runner landed 2026-08-09** — `test/run.sh`. **Read [CLAUDE.md](CLAUDE.md)'s table for the
 order and the dependencies.**
 
 ⛔ **§3 below is being emptied by those five.** Every open question in it is assigned to one of them,
@@ -184,7 +184,7 @@ question — `ref/device/phone.md` names it as a `Files:` entry, so it is live.
 ### ⬜ Debugging the rig with no laptop
 
 **The problem is a venue.** Every diagnostic tool this project has is driven from the Mac over SSH —
-`go.sh`, `fetch-errors.sh`, `display-cpu.sh` — and SSH needs a network, which is the exact thing that
+`test/run.sh`, `fetch-errors.sh`, `display-cpu.sh` — and SSH needs a network, which is the exact thing that
 is missing when it matters. Three probes that looked like the start of an answer were deleted in the
 cleanup because they were not: `sp404-send.sh` ran *from* the Mac by design, and its own header said
 a message box "needs a hand on the laptop at the same moment".

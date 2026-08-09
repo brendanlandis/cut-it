@@ -250,7 +250,7 @@ that asserts what the code says is not a test.
 ### Bench steps
 
 One per device: **unplug, count to five, replug, confirm recovery within the deadline.** These are
-exactly the shape [plan-v03.1.md](plan-v03.1.md)'s `need` / `do` / `watch` fields were built for, and
+exactly the shape the runner's `need` / `do` / `watch` step fields were built for, and
 **the recovery deadline is machine-checkable from a tap** — so these steps can be auto-judged after
 the human does the unplugging.
 

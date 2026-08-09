@@ -49,7 +49,7 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **What is being BUILT next** — five scoped plans, in order | [plan-v03.1.md](plan-v03.1.md) … [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
+| **What is being BUILT next** — four scoped plans, in order | [plan-v03.2.md](plan-v03.2.md) … [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
 | One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
@@ -169,22 +169,21 @@ plan, that section should have left the file.
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
 is where everything unscoped waits.
 
-**Five scoped plans stand between here and v0.4**, and each one is written to be handed to a fresh
+**Four scoped plans stand between here and v0.4**, and each one is written to be handed to a fresh
 agent cold — it carries its own reading list, saying how much of each file to read and what to skip.
 ⛔ **Every ⬜ in the repository is closed by one of them, or is one of the nine items that genuinely
 need the sound to exist.**
 
 | | Plan | Needs |
 |---|---|---|
-| 1 | [plan-v03.1.md](plan-v03.1.md) — the test runner | — |
-| 2 | [plan-v03.2.md](plan-v03.2.md) — cleanup, and the decision items | — |
-| 3 | [plan-v03.3.md](plan-v03.3.md) — coverage | 1 |
-| 4 | [plan-v03.4.md](plan-v03.4.md) — hot-swap | 1, 3 |
-| 5 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | 4 |
+| 1 | [plan-v03.2.md](plan-v03.2.md) — cleanup, and the decision items | — |
+| 2 | [plan-v03.3.md](plan-v03.3.md) — coverage | — |
+| 3 | [plan-v03.4.md](plan-v03.4.md) — hot-swap | 2 |
+| 4 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | 3 |
 
-✅ **Plan 0 is gone** — the measurement session ran on 2026-08-08 and every one of its items closed;
-the facts are on `ref/` pages and the reasoning is in `git log`. **1 and 2 are independent of
-everything. 3 → 4 → 5 is a chain.**
+✅ **Plan 0 and the test runner are both gone** — the measurement session ran on 2026-08-08, and
+`test/run.sh` landed on 2026-08-09. The facts are on `ref/` pages and the reasoning is in `git log`.
+**1 and 2 are independent of everything. 2 → 3 → 4 is a chain.**
 
 **A fact appears once in full; everywhere else it is a citation.** `test/gate/docs-check.py` enforces
 what can be enforced — run it rather than trying to remember it:

@@ -5,7 +5,7 @@ all.** One of them — `g_led` — is referenced by **zero files** anywhere unde
 closes the worst of that, fixes three real defects in the gates that do exist, and builds the first
 signal-domain gate in the project.
 
-It runs after [plan-v03.1.md](plan-v03.1.md), because the new bench steps want the runner, and before
+It runs on top of `test/run.sh` (landed 2026-08-09), because the new bench steps want the runner, and before
 [plan-v03.4.md](plan-v03.4.md), which needs the stub this plan adds.
 
 ---

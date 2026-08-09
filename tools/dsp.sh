@@ -5,7 +5,7 @@
 #     ./tools/dsp.sh 1        # audio engine on
 #     HOST=192.168.1.15 ./tools/dsp.sh 0
 #
-# Same Python socket send as tools/go.sh, and for the same measured reason:
+# A Python socket send, and the reason is measured: see ref/device-os.md,
 # macOS BSD netcat exits before the datagram is flushed at -w0, and -w1 was
 # measured to fail too, while the port is bound and the patch is fine. It looks
 # exactly like a dead receiver.

@@ -62,6 +62,32 @@ ssh -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
 ⛔ **Do not trust `ssh`'s own error message, or any tool's, as a reachability check** — both have
 now misled this investigation. The cache catches up on its own. Item 172.
 
+### ⚠️ Sending the device a UDP datagram — never with netcat
+
+Several patches here bind a UDP port and wait to be poked: a bench's GO on 9998, `lp-monitor.pd` on
+9996, `dsp-toggle.pd` on 9997. **`nc` cannot do it from a Mac and does not exist on the device.**
+
+| | |
+|---|---|
+| **BSD `nc -u -w0`** | ✅ Measured to send **nothing**. It exits before the datagram is flushed |
+| **`nc -u -w1`** | ✅ Measured to fail here too |
+| **On the device** | ✅ busybox has **no `nc` at all**, so "from an SSH window on the device" never worked |
+
+⛔ **It looks exactly like a dead patch.** The port *is* bound — `netstat -lun` on the device shows
+it — so the failure is entirely on the sending side, and every symptom points at the patch. Use a
+socket send, which is deterministic:
+
+```python
+import socket
+socket.socket(socket.AF_INET, socket.SOCK_DGRAM).sendto(b"go;\n", ("organelle.local", 9998))
+```
+
+⛔ **The trailing newline is required.** `b'live ;'` — a space and no newline — is accepted by the
+socket and **dropped by `netreceive`**, which is the same silent nothing as above. Item 250.
+
+**`test/run.sh` sends its own GO** and is the normal way to drive a bench; `tools/dsp.sh` does the
+same for DSP. Nothing needs to be typed by hand.
+
 | | |
 |---|---|
 | Home | `/root` (not `/home/music`) |

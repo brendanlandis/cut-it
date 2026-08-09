@@ -1,276 +1,141 @@
-# Plan v0.3.0 — the measurement session, and the shipped bugs
+# Plan v0.3.0 — what is left that needs hands on the rig
 
-**One session with the whole rig powered closes ten open items, takes three decisions, and fixes the
-one bug in this batch that bites on every boot.** It runs **first** of the six v0.3.x plans, because
-two of its measurements are inputs that [plan-v03.4.md](plan-v03.4.md) cannot be designed without.
+**Everything in this plan that could be done without the hardware in front of you has been done.**
+What remains is six things, and every one of them needs a person at the rig — eyes on a screen, ears
+on a speaker, fingers on a menu, or a cable moved.
 
-`plan-v04.md` §6 already says to batch hardware measurements the next time the rig is out. This is
-that batch.
+⛔ **This file is now a checklist, not a design document.** The reasoning behind each item lives on
+its `ref/` page; what is here is *what to do* and *what counts as done*. The history — parameter
+pickup, the device inquiries, the panic decision, items 173, 134, 5 and 95 — is in `git log`, and
+every fact it produced is on a page.
+
+⚠️ **It is deliberately not merged into `plan-v04.md`.** Only the genuine v0.4 items belong there.
+These are a **session**, and they stay together because they are done together.
 
 ---
 
-## ⚠️ Constraints that bind everything below
+## ⚠️ Constraints
 
 - **Pd vanilla 0.49, permanently.** The Organelle 1 runs OS 4.0 and that is the end of the line for
-  this hardware. Do not suggest any object newer than 0.49.
-- ⛔ **Never open or save an Organelle-bound patch in plugdata.** It is built on Pd 0.55+ and
-  rewrites `.pd` files into a format 0.49 cannot parse. This has already happened once here.
-- **Vanilla objects only** — the Organelle ships neither ELSE nor cyclone.
-- ⛔ **Never touch git.** Reading (`log`, `show`, `diff`, `blame`) is fine. Brendan commits his own
-  work; leave changes in the working tree and describe them.
-- ⚠️ **Run `./test/check-all.sh` and read its `RESULT:` line before calling anything done.** Do not
-  grep for it — `grep -E 'ALL|FAILED'` also matches the per-gate `--- FAILED:` lines, and a broken
-  patch has been committed that way.
+  this hardware.
+- ⛔ **Never open or save an Organelle-bound patch in plugdata.** It rewrites `.pd` into a format
+  0.49 cannot parse. This has already happened once here.
+- ⚠️ **Run `./test/check-all.sh` and read its `RESULT:` line** before calling anything done. Do not
+  grep for it — `grep -E 'ALL|FAILED'` also matches the per-gate `--- FAILED:` lines.
+- ⛔ **Record each result on its `ref/` page and strike its ⬜ in the same pass.** A measurement whose
+  number never reaches a page has to be taken again. New facts take the next free item number — grep
+  first, and never reuse one.
 
 ---
 
-## What to read, and how much
+## What to read
 
-| Document | How much | Why |
-|---|---|---|
-| [CLAUDE.md](CLAUDE.md) | **All of it** | The router. Hard constraints, where everything is, working notes |
-| The **`pd`** skill | ⛔ **Invoked, not read** | You are editing shipped Pd |
-| The **`docs`** skill | ⛔ **Invoked, not read** | Every measurement below lands on a `ref/` page |
-| [plan-v04.md](plan-v04.md) | §3 and §7 in full | What is unresolved, and the seven ways this project has been wrong before |
-| [ref/conventions.md](ref/conventions.md) | The rules table, then only the sections it links | `C-1`…`C-14`, cited by ID from patch comments |
-| `git log` | **Grep it, never read it** | Git is the journal. `item NNN` is a fact ID — grep resolves it |
-| [plan-v04.md](plan-v04.md) | §3 *Parameter pickup* and *Which control should raise panic*, in full | Both are diagnosed down to the measurement. Do not re-derive them |
-| [ref/device/organelle.md](ref/device/organelle.md) | The **Saving** section in full, then the OLED facts | ⛔ `knobs.txt` is four saved knob **positions**, and the saved file beats the physical knob. That is the pickup bug's mechanism |
-| `Cut It/u_map.pd` | **All of it, comments included** | Where pickup lands. Its comments hold the item-234 postmortem |
-| `Cut It/m_organelle.pd` | All 44 lines | Where knob values enter. `[change -1]` on every knob is load-bearing |
-| [ref/rig.md](ref/rig.md) | **All of it** — power, cabling, both audio diagrams | Two decisions are about cables; one measurement is about brownouts |
-| [ref/device/sp404.md](ref/device/sp404.md) | The CC table and `Facts` | The unexercised CC map, and the pre-set checklist you are writing |
-| [ref/device/launchpad.md](ref/device/launchpad.md) | Its `Open` section, items 77 and 100 | Two measurements, one of which plan v0.3.4 needs |
-| [ref/device-os.md](ref/device-os.md) | The three CPU-measurement facts only | Item 134's unexplained readings |
-| `tools/stage-patches/Inquiry Probe/` | **Both halves, before running it** | ✅ **Built 2026-08-08.** The probe for the three questions below. Its script creates the nanoKONTROL output link, which had never existed anywhere in this project |
-| `tools/lp-monitor.pd`, `tools/lp-step0.pd` | **Load them; do not read them** | ⚠️ Kept in the cleanup precisely as the re-check for a session like this. ✅ `lp-monitor` was repaired 2026-08-08 — see below |
-| `tools/stage-patches/Anim Probe/` | **Its four header comments, before running it** | ✅ **Built 2026-08-08.** The probe for item 77, which nothing in Cut It can measure. Its method and its two ⛔ traps are below |
+**Not much.** Each item below names its own page; read that one and nothing else.
 
-**Do not read** anything under `test/`, `ref/module/display.md`, `ref/module/state.md`,
-`ref/module/map.md`, or `Cut It/g_oled.pd`. None of it bears on this plan, and `ref/` is ~5,300 lines
-— reading it all is the failure mode, not the diligent option.
+| Document | How much |
+|---|---|
+| [CLAUDE.md](CLAUDE.md) | **All of it** — the router, the constraints, the working notes |
+| The **`docs`** skill | ⛔ **Invoked, not read.** Every measurement lands on a `ref/` page |
+| [ref/rig.md](ref/rig.md) | Power, cabling and both audio diagrams — for the two cable decisions |
 
 ---
 
-## What is already true
+## ⚠️ Before anything else — check the USB depth
 
-- **The rig**: Organelle 1 (brains, clock master), SP-404MK2 (sample store and audio front end),
-  nanoKONTROL, Launchpad Pro MK3, Volca FM. Cabling and power are on [ref/rig.md](ref/rig.md).
-- **Pd input slot *n* carries MIDI channels `(n-1)*16+1` upward.** Launchpad 1–16, nanoKONTROL 17–32,
-  SP-404 33–48, USB Uno → Volca 49–64. The channel number *is* the port.
-- **mother pushes `knobs.txt` at boot**, and item 234 is fixed — the restored knob position only
-  becomes a tempo once `u_map` has read its table and has a mode key.
-- ⛔ **`adc~` and `dac~` appear nowhere in this patch and must not.** mother owns both.
-
----
-
-## Phase 1 — the measurements
-
-Run them in one sitting with everything powered, because item 5/95 *is* everything powered at once
-and the rest are cheap once the rig is out.
-
-⛔ **Record each result on its `ref/` page and strike its ⬜ in the same pass.** A measurement whose
-number never reaches a page has to be taken again. New facts take the next free item number — grep
-first, and never reuse one.
-
-### ✅ ANSWERED 2026-08-08 — and both answers are YES
-
-**All three devices answer a universal device inquiry** (item 249), so plan v0.3.4 is unblocked and
-can design **active polling for every device**, not passive last-heard detection for three of them.
-
-| Asked | Reply | |
-|---|---|---|
-| Launchpad Pro MK3 | `F0 7E 00 06 02 00 20 29 23 01 00 00 00 04 06 05 F7` | the control, and it matches item 98 **byte for byte** — same firmware |
-| **nanoKONTROL** | `F0 7E 00 06 02 42 04 01 00 00 23 00 00 00 F7` | ⛔ nobody had ever asked. `42` = KORG |
-| **SP-404MKII** | `F0 7E 10 06 02 41 08 04 00 00 00 03 00 00 F7` | ⛔ **contradicts Roland's own chart**, which marks SysEx `x` both ways |
-
-⚠️ **The 404's answer is the one with consequences beyond this question.** A `x` in that chart is now
-evidence of nothing, and every capability ruled out by reading it deserves a three-minute test before
-being believed. Recorded on [ref/device/sp404.md](ref/device/sp404.md).
-
-### The two that plan v0.3.4 is blocked on
-
-⚠️ **Answer these before anything in [plan-v03.4.md](plan-v03.4.md) is designed.** They decide
-whether three of the five devices get active polling or only passive last-heard detection.
-
-| # | Question | How |
-|---|---|---|
-| 1 | **Does the nanoKONTROL answer a universal device inquiry** (`F0 7E 7F 06 01 F7`)? | `Inquiry Probe`, phase 2. This is a **new** open item — nobody has asked it |
-| 2 | **Does the SP-404MK2 answer one?** | `Inquiry Probe`, phase 3. 📄 Its chart marks SysEx `x` both ways, so a **no** confirms documentation |
-| 3 | ✅ **ANSWERED — yes, on MIDI port 3.** `F0 00 20 29 02 0E 00 <layout> 00 00 F7`, item 250 | ⛔ **not** `lp-monitor.pd` — it watches port 0, where the announcement never appears. `aseqdump -p 40:2` |
-
-⚠️ **Prove the probe before believing the silence.** A null result is worthless until the channel is
-proven — the probe asks the Launchpad **first**, which is known to answer in either mode, and only
-then asks the other two. **If phase 1 produces no bytes, the run tells you nothing about phases 2
-and 3.**
-
-✅ **Both tools were built or repaired on 2026-08-08**, because neither existed in a usable form:
-
-- **`tools/stage-patches/Inquiry Probe/`** — a menu patch that wires itself through `[shell]`, asks
-  one device per phase four seconds apart, packs the phase number alongside every received byte, and
-  writes `/sdcard/inquiry-probe.log`. ⛔ **Its script creates a `Pure Data:5 → nanoKONTROL` link that
-  has never existed anywhere in this project** — Cut It's `wire.sh` wires an input from the nano and
-  no output to it, so the nano has never been sent a byte.
-- **`tools/lp-monitor.pd`** — it could not answer item 100 as written: **no `[sysexin]`**, so a reply
-  or an announcement was discarded; **no `[ctlin]`**, so the whole function ring was invisible; and
-  its Live Mode escape was a click-only message box, which is useless on a device running `-nogui`.
-  All three are fixed, and the escape now fires from a datagram to port 9996.
-
-⛔ **Run the probe from the menu, not over SSH.** Loading it costs no `killall pd`, which strands the
-Launchpad in Programmer Mode every time.
+⛔ **The rule is one hub, never chained, and the rig has drifted back twice.** As of 2026-08-08 the
+Launchpad sits at `1-1.4.4.4`, three hubs deep, working only because the last hop is the Realtek.
+`1-1.1` is the port that produced `can't set config #1, error -32` three times.
 
 ```sh
-scp -r "tools/stage-patches/Inquiry Probe" 'root@organelle.local:/sdcard/Patches/! debug/'
-ssh root@organelle.local "oscsend localhost 4001 /reloadNoRemount i 1"
-ssh root@organelle.local "oscsend localhost 4001 /loadPatch s '! debug/Inquiry Probe'"
-# ... wait ~20 s, then read it back
-scp root@organelle.local:/sdcard/inquiry-probe.log .
+ssh root@organelle.local 'lsusb -t; ls -d /sys/bus/usb/devices/1-1*'
 ```
 
-### The rest
+**The sysfs path is the depth — count the dots.** Full account on [ref/rig.md](ref/rig.md), item 255.
+⚠️ **Do this first**, because a half-enumerated Launchpad is invisible to the patch and would make
+item 77 below look like a device fault.
 
-| Item | Question | Lands on |
-|---|---|---|
-| 5, 95 | **Brownouts with the full rig powered at once.** Partially closed by item 211; never run with every box live simultaneously | [ref/rig.md](ref/rig.md) |
-| 39 | **The OLED read by eye** — the three type-size layouts and the ageing. *"Is 16 px readable at arm's length"* is a judgement only the hardware can settle | [ref/module/display.md](ref/module/display.md) |
-| 77 | **The Launchpad animation rate's upper and lower limits**, past which the device reverts to a default rate. ✅ **The probe now exists** — `tools/stage-patches/Anim Probe/`, built and proved on the Mac 2026-08-08. See below | [ref/device/launchpad.md](ref/device/launchpad.md) |
-| — | **The SP-404 CC map beyond 16/17.** CC 7, 8, 20–27, 80–83 and Program Change 0–15 are manufacturer documentation, never exercised from Pd | [ref/device/sp404.md](ref/device/sp404.md) |
-| ~~173~~ | ✅ **CLOSED 2026-08-08 — they do not share a cause**, item 253. See below | [ref/device/organelle.md](ref/device/organelle.md) |
-| ~~134~~ | ✅ **CLOSED 2026-08-08 — 10.2–10.5 % is simply the idle baseline**, item 254. See below | [ref/device-os.md](ref/device-os.md) |
-| — | **Whether a boot-started `wpa_supplicant` has a `ctrl_interface`.** One command: `ls /var/run/wpa_supplicant/` after a power cycle | [ref/device-os.md](ref/device-os.md) |
-| — | **Whether Novation Components can disable the onboarding drive on the Launchpad itself.** Needs a computer with Components installed | [ref/device-os.md](ref/device-os.md) |
+---
 
-### Item 77 has a probe now — `tools/stage-patches/Anim Probe/`
+## The six
 
-**Nothing in Cut It exercises the animation channels**, so this could not be measured with the
-instrument: `g_grid` lights every pad **static**, on channel 1. The probe sweeps an emitted MIDI
-clock from **5 to 1000 BPM** on knob 1 and answers by eye.
+| # | Do | Needs | Lands on |
+|---|---|---|---|
+| 1 | **Run `Anim Probe`** — the Launchpad animation limits, item 77 | eyes | [ref/device/launchpad.md](ref/device/launchpad.md) |
+| 2 | **Read the OLED by eye** — item 39 | eyes | [ref/module/display.md](ref/module/display.md) |
+| 3 | **Exercise the SP-404 CC map** beyond 16/17 | the rig | [ref/device/sp404.md](ref/device/sp404.md) |
+| 4 | **Write the 404 pre-set checklist** | the box in hand | [ref/rig.md](ref/rig.md) |
+| 5 | **Try Organelle audio back into the 404** | one cable | [ref/rig.md](ref/rig.md) |
+| 6 | **The Launchpad onboarding drive** — can Components disable it | a Mac, and a firmware update | [ref/device-os.md](ref/device-os.md) |
+
+### 1. Item 77 — run `tools/stage-patches/Anim Probe/`
+
+**Nothing in Cut It exercises the animation channels** — `g_grid` lights every pad *static*, on
+channel 1 — which is why this needed a probe of its own. ✅ Built and proved on the Mac 2026-08-08.
+
+```sh
+scp -r "tools/stage-patches/Anim Probe" 'root@organelle.local:/sdcard/Patches/! debug/'
+ssh root@organelle.local "oscsend localhost 4001 /reloadNoRemount i 1"
+ssh root@organelle.local "oscsend localhost 4001 /loadPatch s '! debug/Anim Probe'"
+# knob 1 sweeps 5-1000 BPM. aux marks + restarts. Then:
+scp root@organelle.local:/sdcard/anim-probe.log .
+```
 
 ⛔ **A ruler pad sits beside each animated one, and that is the whole method.** Pads 43 and 47 are
-blinked *by the patch* at one and two beats; 44 and 48 are flashed and pulsed *by the device* at the
-same two rates. While the device tracks, each pair holds its relative phase; the moment it stops, one
-pad laps the other. **Nothing has to be estimated in absolute terms or remembered** — which is what
-made this measurement unattractive before.
+blinked *by the patch*; 44 and 48 are flashed and pulsed *by the device* at the same two rates. While
+it tracks, each pair holds its relative phase; the moment it stops, one laps the other.
 
-⛔ **The OLED's `act` line is the probe checking itself.** It counts the clock bytes actually
-emitted, so if `act` stops following `req`, the limit just found is **Pd's and not the Launchpad's**.
-Inquiry Probe's *prove the probe before believing the silence* applied to a rate instead of a reply.
+⛔ **The OLED's `act` line is the probe checking itself.** If `act` stops following `req`, the limit
+you just found is **Pd's, not the Launchpad's**. ⚠️ The Mac held 1000 BPM with no audio running; the
+device resolves `metro` against 1.45 ms DSP blocks, so expect a lower ceiling and read `act` first.
 
-⛔ **120 BPM is the one tempo it cannot measure.** 📄 The documented fallback *is* 120 BPM or the
-last clock received, so there a tracking device and a reverted one look identical. Judge from well
-away and sweep **toward** each limit. Aux marks the current pair into `/sdcard/anim-probe.log` and
-sends a Start — the other half of item 77, the reported dip before the device settles.
+⛔ **120 BPM is the one tempo this cannot measure** — 📄 the documented fallback *is* 120, so there a
+tracking device and a reverted one look identical. Judge from well away and sweep **toward** each
+limit.
 
-✅ **Proved on the Mac before it goes near the rig**, driven headless against a fake device with
-`[midiout]` swapped for a print: 5, 185 and 1000 BPM all requested *and* achieved exactly, the clear
-loop covering indices 1–99, both mode transitions in the right order, and **zero reference-pad writes
-while the surface is handed back**. ⛔ That run found a real bug — the clear loop's counter was fed
-the wrong trigger outlet and cleared pad 1 ninety-nine times, which reading the patch had not caught.
+**Done means:** an upper and a lower BPM on `launchpad.md`, each with `act` recorded alongside, and
+a note on whether a Start makes the rate dip before settling.
 
-⚠️ **Expect the Mac's ceiling to be optimistic.** It held 1000 BPM — a 2.5 ms `metro` — with no
-audio running. On the device `metro` resolves against 1.45 ms DSP blocks, so `act` is the number to
-watch before believing any high-end limit.
+### 2. Item 39 — the OLED read by eye
 
-### ✅ Two of these needed no hands, and both closed 2026-08-08
+The geometry is already verified through `oscOut` on the Mac. What cannot be: *"is 16 px readable at
+arm's length"*, across the three type-size layouts, and whether the panel has aged.
 
-⛔ **They were both listed as rig work and neither was.** The Organelle was reachable over ssh with
-Cut It running and untouched, which is a *better* condition for both than a session with someone at
-the rig — nobody was perturbing it. **Check what a measurement actually needs before booking it
-against a rig session.**
+**Done means:** a judgement per layout on `display.md`, and a note on ageing. ⚠️ A `⬜` that says
+*"looks fine"* with no viewing distance is not an answer.
 
-- **Item 253 closes 173.** `dmesg` over a whole session: **20 Rx FIFO overruns in 10,143 s**, one per
-  507 s, and ⛔ **the intervals run 25 s to 1,262 s** — irregular, so event-driven rather than
-  periodic. The OLED lag is on *every* frame at ten frames a second: ~101,000 frames against 20
-  overruns in the same window. Five orders of magnitude apart, so a shared cause is out. Item 247
-  reached *unlikely* off one boot and 822 s; this is a second boot, twelve times longer, and it agrees.
-- **Item 254 closes 134.** The suspicion was that 10.2–10.5 % came from readings *taken shortly after
-  patch reloads*. Measured **1 h 32 m after the last reload** on an untouched instrument with all 8
-  ALSA links up: **10.4 / 10.2 / 10.7 %**. Proximity to a reload was never it. ⛔ **And it equals
-  Phase 5's baseline, which is `g_grid` costing nothing when idle** — the dirty flag gating, confirmed
-  on hardware rather than from the design.
+### 3. The SP-404 CC map beyond 16/17
 
-⚠️ **Wait for the whole measurement.** Three confident wrong answers in this project came from acting
-on a partial result — items 182, 209, 210, and again in 225. ⚠️ And **concluding from a single
-SUCCESS is the same error as concluding from a single failure**; this project forbids the second in
-writing and the first still got through (item 182).
+📄 CC 7, 8, 20–27, 80–83 and Program Change 0–15 are **manufacturer documentation, never exercised
+from Pd**. ⛔ And the 404's chart is now known to be wrong in at least one place — item 249 caught it
+claiming SysEx `x` in both directions when the device answers a device inquiry. **Treat every
+unexercised row as unverified**, not as fact.
 
----
+**Done means:** each row on `sp404.md` moves to `verified` or gets a ⬜ saying what it actually did.
 
-## Phase 2 — parameter pickup, the one shipped bug
-
-**It fires on every boot, and knob 1 is master tempo.**
-
-mother pushes `knobs.txt` at boot, the restored position becomes the tempo, and the physical knob is
-wherever it was left — so the first touch jumps. **Measured at 443 BPM.** Nothing on the instrument
-can detect it: mother reports position, not whether the position still matches the file.
-
-✅ Seen again on a cold boot 2026-08-07 as a **57 BPM** start — `knobs.txt` has knob 1 at ≈0.096, and
-`10 + 0.096 × 490` rounds to 57.
-
-⛔ **That 57 is also the proof item 234 is fixed.** Do not "fix" the restore while fixing the jump.
-The restore working is exactly what puts the patch and the hardware out of step; the two facts sit on
-top of each other.
-
-**The fix** is not in dispute: **ignore the control until its value passes *through* the stored
-value, then hand it authority.**
-
-**Where it lives: `u_map`, not `m_organelle`.** ⛔ Nothing outside an `m_` may know a knob exists —
-the `m_` boundary is the one genuinely expensive thing to retrofit, and pickup is a property of a
-*mapped destination*, not of a physical control. A knob mapped to nothing needs no pickup.
-
-⚠️ **This affects every control that can be restored, not only knob 1.** Write it once in `u_map` and
-it covers whatever v0.4 maps.
-
-**Its gate belongs to [plan-v03.3.md](plan-v03.3.md)** if the ordering works out — the pickup rule is
-pure message logic and is exactly what a headless `u_map` assertion can cover. Say so there rather
-than leaving it untested here.
-
----
-
-## Phase 3 — the three decisions, taken with hands on the rig
-
-### ✅ DECIDED — panic means RECOVER, not silence
-
-**Taken 2026-08-08 with the rig in front of us.** The mixer's master fader is the better silence:
-instant, analogue, and independent of whatever is misbehaving. So panic's value is **recovery** —
-silence, then reload the patch, re-enumerating every device and re-running `wire.sh`.
-
-✅ **The destructive half is removed already** (item 251): panic no longer hands the Launchpad back.
-It used to kill the grid until reload and, per item 250, leave the device flooding Pd's Midi-In 1
-with clock. Both gates inverted deliberately, both made to fail against the old code.
-
-⬜ **The build — and the control binding with it — is now
-[plan-v03.4.md](plan-v03.4.md) Phase 1b**, because a reload closes item 235 by brute force. Two
-tiers: a short press silences, a held combination silences and reloads. ⛔ The original question was
-unanswerable while panic was destructive; removing the handback is what made a binding safe to
-choose at all.
-
-### The original question, kept for its constraint
-
-Bound to a nano button in v0.3 and **withdrawn**. A bare button is too easy to brush mid-set on a
-device with no console — and ⛔ `m_launchpad` wires `[r panic]` straight to the Live Mode SysEx, so
-**panic hands the surface back and the watchdog stops re-asserting**, because it only re-asserts
-while `want` is 1 and panic sets `want` 0. **Panic kills the grid until the patch reloads.**
-
-Decide with the rig in front of you. *"A held combination"* and *"nothing"* are both real answers —
-record whichever it is on [ref/module/map.md](ref/module/map.md) and strike the question from
-`plan-v04.md` §3.
-
-### Organelle audio back into the 404
-
-Considered and dropped: the mixer's FX SEND as a variable-gain feedback path. **It needs no rewiring
-beyond one cable.** Try it, decide, close `rig.md`'s ⬜.
-
-### The 404 pre-set checklist
+### 4. The 404 pre-set checklist
 
 ⬜ **The only routing in the rig that depends on a menu rather than a cable is on the 404** — ExtIn
-monitoring, bus assignments, input FX. Write the checklist with the box in hand and put it on
-[ref/rig.md](ref/rig.md).
+monitoring, bus assignments, input FX.
 
 ⚠️ **When a device has a settings menu, read the menu.** The Volca's Program Change was gated behind
-two adjacent, undocumented global settings; three reasoned hypotheses failed and photographs of the
-menu solved it in one step (item 226). ⚠️ **And toggles are hazardous** — pressing a setting that is
+two adjacent undocumented globals; three reasoned hypotheses failed and photographs of the menu
+solved it in one step (item 226). ⚠️ **And toggles are hazardous** — pressing a setting that is
 already correct turns it *off*. Re-use a known-good prior result as a probe for device state.
+
+**Done means:** an ordered checklist on `rig.md` that someone can run at a venue without thinking.
+
+### 5. Organelle audio back into the 404
+
+Considered and dropped once: the mixer's **FX SEND** as a variable-gain feedback path. **It needs no
+rewiring beyond one cable.** Try it, decide, and close `rig.md`'s ⬜ — *"tried it, it howls"* is a
+perfectly good answer and closes the item just as well as a yes.
+
+### 6. The Launchpad onboarding drive
+
+⬜ Whether Novation Components can disable it on the device itself. ⚠️ **It costs more than "a
+computer with Components"** — Components will not talk to the unit without a firmware update first,
+and this is the Launchpad the whole rig depends on. Details on
+[ref/device-os.md](ref/device-os.md). **Declining is a legitimate outcome**; record it as one.
 
 ---
 
@@ -283,115 +148,13 @@ python3 test/gate/docs-check.py -v
 
 - **Every ⬜ this plan owns is struck on its own page**, and every number has an item ID that grep
   resolves. A measurement recorded only in a session note does not count as taken.
-✅ **Three of these are done, on the device, 2026-08-08.** Launched by hand over SSH with a `tempo`
-tap and read back:
-
-```
-KNOB1: 0.0957967
-TEMPO: 57
-wire: wire.sh: 8 connections
-```
-
-- ✅ **The pickup boxes create cleanly on the device** — no `array define`, `tabread`, `tabwrite` or
-  `spigot` errors. That is the one thing the Mac syntax check cannot prove.
-- ✅ **The restore is not regressed.** `0.0957967 × 490 + 10` rounds to **57**, and the instrument
-  came up there rather than at `u_tempo`'s fallback 120. Item 234 still fixed.
-- ✅ **mother pushes once and then says nothing** — one `KNOB1` line in twelve seconds, untouched.
-  Item 237. ⛔ Pickup depends on this: if mother streamed, the first value would be spent on its own
-  reading and pickup would never arm.
-
-### The no-Save arming bug is fixed — item 239, Mac-side
-
-**Built, and it is not the shape this file proposed.** The plan said `[shell]` would run
-`test -f knobs.txt`. `[shell]` is the wrong tool: it **forks and answers hundreds of milliseconds
-late**, it is a do-nothing stub on the Mac, and a gate driven through a stub can only ever reach one
-of the two branches. `u_map` reads the file **itself** instead — `[text define]` + `read`, then
-`[text size]`, which answers **1** when the file is there and **0** when it is not, synchronously,
-identically on both machines. Measured in Pd 0.49 before it was built.
-
-The read sits behind `[del 2000]` because a missing file prints three lines and `deploy.sh` fails a
-check on any output before ~735 ms (C-9). Deferring costs nothing — mother's push is taken by the
-virgin branch either way, and a knob turned inside the first two seconds is released the instant the
-probe fires. The full mechanism and its two ⛔ *do-nots* are on
-[ref/module/map.md](ref/module/map.md).
-
-⛔ **The gate now runs the whole drive TWICE, and the only difference between the runs is that one
-scratch copy has a `knobs.txt` and the other does not.** Four new checks, each the mirror image of a
-check in the armed run — `30 checks, 0 failed`.
-
-**And it has been made to fail three ways:**
-
-| Mutation | Red | Green | Proves |
-|---|---|---|---|
-| Cut the cord that writes LIVE into the slots | the 2 no-Save checks | all 26 others | the new checks bite on the new behaviour and nothing else |
-| **Invert the probe** — `select 1`, disarm when the file *exists* | 5 armed + 2 no-Save | — | each half tests **its own branch**; neither is vacuous |
-| Never read the file, so size is always 0 | the 5 armed checks | the no-Save half | the armed half is not passing by accident |
-
-### ✅ Hardware, verified 2026-08-08
-
-- The pickup boxes create cleanly on the device; the restore is not regressed (**57**, not 120).
-- mother pushes **once** and then says nothing — item 237, four separate runs.
-- The push lands at **100 ms**, three consecutive boots identical, so the 1000 ms window has 10x
-  margin. That number had been a guess.
-- The mapped display works on the device: held shows `bpm 57 (n)`, live shows `bpm n`.
-
-**Both branches of item 239 are now confirmed on hardware, and the two-boot run found two more
-bugs.** Boot 1 with a `knobs.txt`: restored 57, knob 1 held until it crossed, then tracked. Boot 2
-after `deploy.sh --clean`: no latch, knob 1 live on its first movement, knobs 2–4 silent.
-
-- ⛔ **Item 240 — the held row was drawn for every armed knob.** Knobs 2–4 are mapped to nothing and
-  all three reported `bpm 10 (n)`. The row is built inside the pickup machine, which cannot know what
-  a held knob maps to. **Fixed:** gated on slot 0.
-- ⛔ **Item 241 — a target on a rail could never be crossed.** The release test is a side flip, so a
-  knob armed above a target of `0` waited for `value < 0`. Knob 2 sat at `bpm 10 (10)` and would not
-  release. **Reachable on knob 1**: Save with master tempo at the bottom and it is dead for the
-  session. **Fixed:** equality releases too.
-
-Both are in the gate, both were made to fail, and both mutations reproduce the exact symptom seen on
-the device — `bpm 255 (451)` from an unmapped knob, and an empty release window.
-
-✅ **240 and 241 are confirmed on hardware.** Saved `0 0 0 0;` — every target on the rail, the
-strongest form of 241 — and after a cold cycle knob 1 held on the way up, handed over on *reaching*
-the stop, and knobs 2–4 drew no `bpm` row.
-
-- ⛔ **Item 242 — an unmapped control said nothing at all.** Silence is the rule for the *buses*;
-  applied to the screen it made a control that does nothing indistinguishable from a broken one. The
-  Organelle's knobs were the case, because `m_organelle` stopped reporting raw when `u_map` took over
-  the row. **Fixed:** `[moses 0]`'s left outlet — the lookup miss — reports `<name> <raw>`.
-  ⛔ **The pickup gate moved below the lookup** to make that reachable: it used to sit on the control
-  NAME, so a held knob never reached `[text search]` and nothing could tell unmapped from suppressed.
-  The lookup is a pure read; only the emission needs gating. That also gave the mode-dependence
-  negative a liveness witness in its own window, which it never had.
-
-✅ **242 is confirmed on hardware**, read off a live console rather than inferred: at boot mother
-pushes all four knobs and `u_map` answers `og-knob-4 0`, `og-knob-3 0`, `og-knob-2 0` on `disp` while
-knob 1 correctly becomes `bpm 10`. Turning knobs 2–4 draws their own rows; knob 1 still reads `bpm`.
-No object failed to create.
-
-⛔ **It appeared broken for an hour, and the cause was not in the patch — item 243.** The deploy had
-landed the files and left the **previous build running**, because the wifi dropped between the copy
-and the load. The deployed file greps as current, the instrument behaves like the old one, and
-nothing anywhere reports the difference. `deploy.sh` now verifies that Pd restarted after the push,
-and that check has been made to fail. Written up in
-[ref/device-os.md](ref/device-os.md) under *Deploying*.
-
----
+- ⚠️ **Wait for the whole measurement.** Confident wrong answers in this project came from acting on
+  a partial result — items 182, 209, 210, 225. ⚠️ And **concluding from a single SUCCESS is the same
+  error as concluding from a single failure**; this project forbids the second in writing and the
+  first still got through (item 182).
 
 ## Done means
 
-1. Every ⬜ assigned to this plan is struck on its page, and the two device-inquiry answers are
-   written down where [plan-v03.4.md](plan-v03.4.md) will look for them —
-   [ref/device/nanokontrol.md](ref/device/nanokontrol.md) and
-   [ref/device/sp404.md](ref/device/sp404.md).
-2. Pickup is shipped, hardware-verified, and its behaviour is stated on
-   [ref/module/map.md](ref/module/map.md).
-3. The three decisions are recorded as decisions, not as open questions.
-4. `plan-v04.md` §3 no longer carries *Parameter pickup*, *Which control should raise panic*, or the
-   four never-run checks.
-5. `CLAUDE.md`'s router table and `plan-v04.md` §2 are updated to match what is now true.
-6. **This file is deleted.**
-
-⛔ **This plan does not hand its open items to `plan-v04.md`.** Only the nine genuine v0.4 items
-belong there; anything else is closed here or this plan is not done.
-
-⛔ **Leave every change in the working tree.** Brendan commits his own work.
+1. All six above are answered on their pages, or explicitly declined with the reason recorded.
+2. `plan-v04.md` §3 no longer carries item 39.
+3. **This file is deleted.**

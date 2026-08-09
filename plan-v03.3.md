@@ -165,17 +165,22 @@ nothing to converge on.**
 
 ---
 
-## Phase 4 — the pickup gate
+## Phase 4 — the pickup gate ✅ LANDED 2026-08-08, ahead of this plan
 
-[plan-v03.0.md](plan-v03.0.md) ships parameter pickup into `u_map`. **The rule is pure message logic
-and is exactly what a headless assertion covers**, so its gate belongs here rather than being left
-untested there.
+**It was built with the feature rather than after it**, because the pickup bugs were being found on
+hardware faster than a later gate could have caught them. `test/gate/map-assert.py` carries it —
+a `parameter pickup` section, and ⛔ **the whole drive runs TWICE**, the two scratch copies differing
+only in whether `knobs.txt` exists, so each branch tests its own half.
 
-Assert: a restored value is published; a control moving **away** from it changes nothing; the control
-**passing through** it takes authority; and it tracks normally afterwards. ⚠️ Assert also that the
-restore itself still works — item 234's symptom was the instrument coming up at `u_tempo`'s own 120
-instead of the saved tempo, and **the restore working is precisely what creates the desync pickup
-solves.**
+What it asserts, and all of it was made to fail: a restored value is published; a control moving
+**away** from the target changes nothing; **passing through** it takes authority; it tracks normally
+afterwards; state is **per knob**; a button never picks up; an unmapped knob draws no held row
+(item 240); a target on a rail still releases (item 241); and ⚠️ **the restore itself still works** —
+item 234's symptom was the instrument coming up at `u_tempo`'s own 120 instead of the saved tempo,
+and **the restore working is precisely what creates the desync pickup solves.**
+
+**Nothing is owed here.** Left in place because the reasoning for *why* the gate is shaped this way
+is worth reading before touching it.
 
 ---
 

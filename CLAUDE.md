@@ -159,15 +159,16 @@ need the sound to exist.**
 
 | | Plan | Needs |
 |---|---|---|
-| 0 | [plan-v03.0.md](plan-v03.0.md) — the measurement session, and the shipped bugs | the rig powered |
+| 0 | [plan-v03.0.md](plan-v03.0.md) — **six things that need hands on the rig**, and nothing else | a person at the rig |
 | 1 | [plan-v03.1.md](plan-v03.1.md) — the test runner | — |
 | 2 | [plan-v03.2.md](plan-v03.2.md) — cleanup, and the decision items | — |
 | 3 | [plan-v03.3.md](plan-v03.3.md) — coverage | 1 |
-| 4 | [plan-v03.4.md](plan-v03.4.md) — hot-swap | 0, 1, 3 |
+| 4 | [plan-v03.4.md](plan-v03.4.md) — hot-swap | 1, 3 |
 | 5 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | 4 |
 
-**0 runs first** — it needs the rig out and it answers two questions plan 4 cannot be designed
-without. 1 and 2 are independent of everything. 3 → 4 → 5 is a chain.
+**0 no longer gates anything** — the two questions plan 4 could not be designed without were answered
+on 2026-08-08 (item 249), and what is left of 0 is six things that need a person at the rig. Run it
+whenever the rig is out. 1 and 2 are independent of everything. 3 → 4 → 5 is a chain.
 
 **A fact appears once in full; everywhere else it is a citation.** `test/gate/docs-check.py` enforces
 what can be enforced — run it rather than trying to remember it:

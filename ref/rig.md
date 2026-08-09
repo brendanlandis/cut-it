@@ -140,6 +140,48 @@ there is ample gain and headroom for instrument-level sources.
 guarantee operation through hubs. A USB-A→C cable from the hub carries **data only**, which is what
 we want — the 404 runs off its own adapter and costs the hub nothing.
 
+### There is no shared rail for a brownout to happen on — items 5 and 95
+
+✅ **Read off the device rather than reasoned about** — item 255. Every box has its own mains supply
+(the tree above), and every USB hub in the chain reports **`Self Powered`, `MaxPower 0mA`**, so no
+hub draws its downstream budget from upstream. Declared draw on the whole USB tree:
+
+| Device | `MaxPower` | On |
+|--------|-----------|-----|
+| Launchpad Pro MK3 | **500 mA** | the hub chain |
+| nanoKONTROL | 100 mA | the hub chain |
+| SP-404MKII (2 interfaces) | 100 mA + 2 mA | the hub chain — nominal, it is self-powered |
+| M-Audio Uno | 0 mA | the hub chain |
+| **RT5370 wifi dongle** | **450 mA** | ⚠️ **its own root bus, `2-1`** |
+| Every hub | 0 mA | — |
+
+**~700 mA across three self-powered hubs is not a budget problem**, and item 248 had already
+exonerated power empirically from the other direction: the Launchpad failed to configure *with almost
+nothing attached* and configured *with the entire rig live*, so it was never a current ceiling.
+
+⚠️ **The one genuine shared rail is the Organelle's own supply, and the wifi dongle is on it.** The
+dongle sits on a **separate root bus from the powered hub**, so its declared 450 mA comes out of the
+9 V 1000 mA adapter rather than the hub's PSU. ⬜ Whether that contributes to the wifi fault is
+**untested and is a hypothesis, not a finding** — see [plan-v04.md](../plan-v04.md) §3. ⛔ Moving the
+dongle onto the powered hub is the obvious test and it carries a **known hazard**: chained hubs are
+what wedged the dongle at boot before.
+
+### Checking the depth, in one command
+
+The rule above is *one hub, never chained*, and nothing enforces it. **The sysfs path is the depth** —
+count the dots:
+
+```sh
+ssh root@organelle.local 'lsusb -t; ls -d /sys/bus/usb/devices/1-1*'
+```
+
+⚠️ **As of 2026-08-08 the Launchpad is at `1-1.4.4.4` — three hubs deep**, and works only because
+that last hop is the Realtek. The chain is `43f2:1211` → `43f2:1211` → `0bda:5411`, with the SP-404
+behind a fourth (`0424:2422`) on another branch. ⛔ **`1-1.1` — the first Generic hub's port 1 — is
+the port that produced `can't set config #1, error -32` three times**, at boot and on two replugs,
+before the Launchpad was moved. That port is a known-bad socket on a known-bad chain, and the working
+position is one replug away from being lost.
+
 ⛔ **ONE hub, never chained.** The Launchpad would not configure behind three chained hubs —
 `can't set config #1, error -32` — and the same topology wedged the wifi dongle at boot. **Plugged
 into a single hub it works first time.** The failure looks like a bad device or a bad cable, and

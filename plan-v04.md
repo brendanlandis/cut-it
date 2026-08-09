@@ -140,12 +140,13 @@ and the hardware out of step. Pickup is what reconciles them — ignore the cont
 
 ### Checks that were never run
 
-⬜ Four, carried forward from the dissolved evidence ledger. **None blocks anything**, and they keep
-their item numbers so the citations still resolve.
+⬜ Three, carried forward from the dissolved evidence ledger. **None blocks anything**, and they keep
+their item numbers so the citations still resolve. ✅ *Brownouts with the full rig powered* — items 5
+and 95 — left this table on 2026-08-08: there is no shared rail for one to happen on, and the
+evidence is on [ref/rig.md](ref/rig.md) as item 255.
 
 | Item | Check | Why it is still open |
 |---|---|---|
-| 5, 95 | **Brownouts with the full rig powered at once** | Partially closed by item 211; never run with every box live simultaneously |
 | 39 | **The OLED read by eye** — the three type-size layouts and the ageing | The geometry is verified through `oscOut` on the Mac, but *"is 16px readable at arm's length"* is a judgement only the hardware can settle |
 | 45 | **AP link quality over a set-length window** | Needs an actual set's duration to mean anything. ⚠️ Needs the AP up, which kills the house link |
 | 81 | **The wifi fault itself** | ⚠️ Narrowed, not solved — see [ref/device-os.md](ref/device-os.md) |
@@ -163,6 +164,15 @@ untouched** — both APs remain co-channel, and one Orbi setting moves both mesh
 ⛔ **The preferred-AP steer is no longer a safe fallback**: one failure happened *on* the router
 (item 214). The measurements, the four wrong turns and the reproduction recipe are on
 [ref/device-os.md](ref/device-os.md).
+
+⬜ **One untried angle, turned up while closing items 5 and 95: the dongle is the only thing on the
+Organelle's own rail.** The RT5370 declares **450 mA** and sits on a **separate root bus from the
+powered hub** (`2-1`), so it draws from the 9 V 1000 mA adapter rather than the hub's PSU — the one
+place in the rig with a shared budget. Item 255, on [ref/rig.md](ref/rig.md). ⚠️ **This is a
+hypothesis and nothing more**: `MaxPower` is a declared maximum, the adapter has headroom on paper,
+and no drop has ever been correlated with load. ⛔ The obvious test — move the dongle onto the powered
+hub — carries a **known hazard**, since chained hubs are what wedged the dongle at boot before. Worth
+one deliberate trial **only if the fault recurs**, per the rule above.
 
 ### No gate covers audio
 

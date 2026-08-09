@@ -9,8 +9,9 @@ transition.
 This plan gives every device that *can* be detected a presence model, makes the bounded re-wire
 serve all of them, and closes item 235.
 
-⛔ **It depends on two measurements from [plan-v03.0.md](plan-v03.0.md)** and on the stub from
-[plan-v03.3.md](plan-v03.3.md). **Do not start it before those land.**
+✅ **The two measurements it was blocked on are in** — item 249, 2026-08-08: **all three devices
+answer a universal device inquiry**, so every one of them gets *active* polling rather than passive
+last-heard detection. It now depends only on the stub from [plan-v03.3.md](plan-v03.3.md).
 
 ---
 
@@ -143,14 +144,13 @@ in [plan-v03.0.md](plan-v03.0.md) — the question was unanswerable while panic 
 
 ## Phase 2 — Step 0, and why the model cannot be uniform
 
-⛔ **[plan-v03.0.md](plan-v03.0.md) answers two questions this phase is built on. Do not design
-before reading them.**
+✅ **Both questions this phase was built on are answered — item 249, and both answers are yes.**
 
 | Device | Can it be detected? |
 |---|---|
 | **Launchpad Pro MK3** | ✅ **Actively** — it answers a universal device inquiry in either mode. Already polled |
-| **nanoKONTROL** | ⬜ **Answered by plan v0.3.0.** It speaks only when touched; whether it answers an inquiry has never been measured |
-| **SP-404MK2** | ⬜ **Answered by plan v0.3.0.** Same question |
+| **nanoKONTROL** | ✅ **Actively.** `F0 7E 00 06 02 42 04 01 00 00 23 00 00 00 F7` — `42` is KORG. ⛔ Nobody had ever asked; its input had been recorded as inert. See [ref/device/nanokontrol.md](ref/device/nanokontrol.md) |
+| **SP-404MK2** | ✅ **Actively.** `F0 7E 10 06 02 41 08 04 00 00 00 03 00 00 F7` — ⛔ **contradicting Roland's own chart**, which marks SysEx `x` in both directions |
 | **Volca FM** | ⛔ **Never.** It transmits nothing, ever. Structurally impossible, and that is a fact rather than a gap |
 | **Organelle panel** | Not MIDI — mother's own receives |
 | **Phone** | Only at the phone end. UDP is fire-and-forget, so **only the end that stops hearing can know** |

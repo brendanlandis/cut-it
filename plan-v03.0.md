@@ -44,6 +44,7 @@ that batch.
 | [ref/device-os.md](ref/device-os.md) | The three CPU-measurement facts only | Item 134's unexplained readings |
 | `tools/stage-patches/Inquiry Probe/` | **Both halves, before running it** | ✅ **Built 2026-08-08.** The probe for the three questions below. Its script creates the nanoKONTROL output link, which had never existed anywhere in this project |
 | `tools/lp-monitor.pd`, `tools/lp-step0.pd` | **Load them; do not read them** | ⚠️ Kept in the cleanup precisely as the re-check for a session like this. ✅ `lp-monitor` was repaired 2026-08-08 — see below |
+| `tools/stage-patches/Anim Probe/` | **Its four header comments, before running it** | ✅ **Built 2026-08-08.** The probe for item 77, which nothing in Cut It can measure. Its method and its two ⛔ traps are below |
 
 **Do not read** anything under `test/`, `ref/module/display.md`, `ref/module/state.md`,
 `ref/module/map.md`, or `Cut It/g_oled.pd`. None of it bears on this plan, and `ref/` is ~5,300 lines
@@ -132,12 +133,43 @@ scp root@organelle.local:/sdcard/inquiry-probe.log .
 |---|---|---|
 | 5, 95 | **Brownouts with the full rig powered at once.** Partially closed by item 211; never run with every box live simultaneously | [ref/rig.md](ref/rig.md) |
 | 39 | **The OLED read by eye** — the three type-size layouts and the ageing. *"Is 16 px readable at arm's length"* is a judgement only the hardware can settle | [ref/module/display.md](ref/module/display.md) |
-| 77 | **The Launchpad animation rate's upper and lower limits**, past which the device reverts to a default rate | [ref/device/launchpad.md](ref/device/launchpad.md) |
+| 77 | **The Launchpad animation rate's upper and lower limits**, past which the device reverts to a default rate. ✅ **The probe now exists** — `tools/stage-patches/Anim Probe/`, built and proved on the Mac 2026-08-08. See below | [ref/device/launchpad.md](ref/device/launchpad.md) |
 | — | **The SP-404 CC map beyond 16/17.** CC 7, 8, 20–27, 80–83 and Program Change 0–15 are manufacturer documentation, never exercised from Pd | [ref/device/sp404.md](ref/device/sp404.md) |
 | 173 | **Whether the `imx-uart` Rx FIFO overruns and the OLED lag share a cause** | [ref/device/organelle.md](ref/device/organelle.md) |
 | 134 | **The unexplained 10.2–10.5 % CPU readings** from Phase 7, against 11.7 % under controlled conditions minutes later. Re-measure, or close it as *recorded rather than rationalised* | [ref/device-os.md](ref/device-os.md) |
 | — | **Whether a boot-started `wpa_supplicant` has a `ctrl_interface`.** One command: `ls /var/run/wpa_supplicant/` after a power cycle | [ref/device-os.md](ref/device-os.md) |
 | — | **Whether Novation Components can disable the onboarding drive on the Launchpad itself.** Needs a computer with Components installed | [ref/device-os.md](ref/device-os.md) |
+
+### Item 77 has a probe now — `tools/stage-patches/Anim Probe/`
+
+**Nothing in Cut It exercises the animation channels**, so this could not be measured with the
+instrument: `g_grid` lights every pad **static**, on channel 1. The probe sweeps an emitted MIDI
+clock from **5 to 1000 BPM** on knob 1 and answers by eye.
+
+⛔ **A ruler pad sits beside each animated one, and that is the whole method.** Pads 43 and 47 are
+blinked *by the patch* at one and two beats; 44 and 48 are flashed and pulsed *by the device* at the
+same two rates. While the device tracks, each pair holds its relative phase; the moment it stops, one
+pad laps the other. **Nothing has to be estimated in absolute terms or remembered** — which is what
+made this measurement unattractive before.
+
+⛔ **The OLED's `act` line is the probe checking itself.** It counts the clock bytes actually
+emitted, so if `act` stops following `req`, the limit just found is **Pd's and not the Launchpad's**.
+Inquiry Probe's *prove the probe before believing the silence* applied to a rate instead of a reply.
+
+⛔ **120 BPM is the one tempo it cannot measure.** 📄 The documented fallback *is* 120 BPM or the
+last clock received, so there a tracking device and a reverted one look identical. Judge from well
+away and sweep **toward** each limit. Aux marks the current pair into `/sdcard/anim-probe.log` and
+sends a Start — the other half of item 77, the reported dip before the device settles.
+
+✅ **Proved on the Mac before it goes near the rig**, driven headless against a fake device with
+`[midiout]` swapped for a print: 5, 185 and 1000 BPM all requested *and* achieved exactly, the clear
+loop covering indices 1–99, both mode transitions in the right order, and **zero reference-pad writes
+while the surface is handed back**. ⛔ That run found a real bug — the clear loop's counter was fed
+the wrong trigger outlet and cleared pad 1 ninety-nine times, which reading the patch had not caught.
+
+⚠️ **Expect the Mac's ceiling to be optimistic.** It held 1000 BPM — a 2.5 ms `metro` — with no
+audio running. On the device `metro` resolves against 1.45 ms DSP blocks, so `act` is the number to
+watch before believing any high-end limit.
 
 ⚠️ **Wait for the whole measurement.** Three confident wrong answers in this project came from acting
 on a partial result — items 182, 209, 210, and again in 225. ⚠️ And **concluding from a single

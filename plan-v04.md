@@ -8,13 +8,13 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **This is no longer the only plan.** Six scoped plans — [plan-v03.0.md](plan-v03.0.md) through
+⚠️ **This is no longer the only plan.** Five scoped plans — [plan-v03.1.md](plan-v03.1.md) through
 [plan-v03.5.md](plan-v03.5.md) — hold the last batch of infrastructural work before v0.4: the test
 runner, coverage, cleanup, hot-swap and the venue kit. **Read [CLAUDE.md](CLAUDE.md)'s table for the
 order and the dependencies.**
 
-⛔ **§3 below is being emptied by those six.** Every open question in it is assigned to one of them,
-and when they land this section holds **nine items, all of them v0.4 code**. Do not start work on a
+⛔ **§3 below is being emptied by those five.** Every open question in it is assigned to one of them,
+and when they land this section holds **only v0.4 code**. Do not start work on a
 §3 item without checking which plan owns it first.
 
 The **testing refactor** moved the gates off the phase axis and out of `tools/`: every one lives in
@@ -112,31 +112,19 @@ bound stop it after eight attempts exactly as it does now. ⚠️ **But it sits 
 which is the one message in this patch worth more than everything around it, so it wants its own
 can-it-fail test rather than being bolted onto the end of another phase.
 
-### Which control, if any, should raise panic
+### ✅ Panic, and parameter pickup — both closed, kept only as pointers
 
-Panic was briefly bound to a nano button in v0.3 and **withdrawn**. `m_launchpad` wires `[r panic]`
-straight to the Live Mode SysEx — panic hands the surface back by design — and the watchdog only
-re-asserts Programmer Mode while `want` is 1, which panic sets to 0. **So panic kills the grid until
-the patch reloads.** A bare button is too easy to brush mid-set on a device with no console.
+**Panic means RECOVER, not silence** — decided 2026-08-08 with the rig present. The mixer's master
+fader is the better silence: instant, analogue, independent of whatever is misbehaving. ✅ The
+destructive half is already removed (item 251) — panic no longer hands the Launchpad back, which used
+to kill the grid until reload and bury Pd's Midi-In 1 under a clock flood. ⬜ **The build and the
+control binding are [plan-v03.4.md](plan-v03.4.md) Phase 1b**, because a reload closes item 235 by
+brute force.
 
-### Parameter pickup
-
-⛔ **After any `Storage → Save`, every knob is desynced from its value and the first touch jumps** —
-measured at **443 BPM** on knob 1, which is master tempo. Nothing on the instrument can detect it:
-mother reports position, not whether the position still matches the file. It happens on **every
-boot**, not only on a bank switch. See [ref/device/organelle.md](ref/device/organelle.md) under
-*Saving*.
-
-✅ **Seen again on a cold boot, 2026-08-07**, and it is worth stating as the shape of the fault
-rather than one measurement. The instrument came up playing at **57 BPM** — `knobs.txt` has knob 1
-at ≈0.096, and `10 + 0.096 × 490` rounds to 57 — while the physical knob was wherever it was left.
-⚠️ **That 57 is also the proof item 234 is fixed**: mother pushes `knobs.txt` at boot, and the
-restored position only becomes a tempo if `u_map` has already read its table and has a mode key.
-Before the fix it hit an empty table and the instrument came up at `u_tempo`'s own 120.
-
-**So the two facts sit on top of each other**: the restore working is exactly what puts the patch
-and the hardware out of step. Pickup is what reconciles them — ignore the control until it passes
-*through* the stored value, then hand it authority.
+**Parameter pickup is shipped and hardware-verified.** Items 239–242, on
+[ref/module/map.md](ref/module/map.md). ⛔ It found three further bugs on the device after the first
+fix landed, and all three are in the gate: the held row drawn for unmapped knobs, a target on a rail
+that could never be crossed, and an unmapped control reporting nothing at all.
 
 ### Checks that were never run
 

@@ -543,12 +543,41 @@ connects, `/usbdrive` stays unmounted. Factory version kept at
 `/root/fw_dir/scripts/mount.sh.orig` and in [device/](../device/). The rootfs is read-only, so
 `remount-rw.sh` before and `remount-ro.sh` after.
 
-**If it ever recurs:** `umount /usbdrive` clears it, no reboot needed. ⬜ Whether Novation
-Components can disable the onboarding drive on the Launchpad itself is untried and tracked in
-[plan-v04.md](../plan-v04.md). ⚠️ **And it costs more than "a computer with Components".** Components
-refuses to open the device at all until a **firmware update** is accepted — so the answer cannot be
-had without changing the firmware every `verified` fact on
-[ref/device/launchpad.md](device/launchpad.md) was measured against (item 248).
+**If it ever recurs:** `umount /usbdrive` clears it, no reboot needed.
+
+✅ **Disabling the drive at the device is DECLINED, not unknown — item 265.** Novation Components can
+perhaps switch it off, but Components refuses to open the Launchpad at all until a **firmware update**
+is accepted. ⛔ **That would change the firmware every `verified` fact on
+[ref/device/launchpad.md](device/launchpad.md) was measured against** — including item 257, that the
+device ignores incoming MIDI clock — on the one device in the rig with a known enumeration quirk
+(item 248).
+
+**And the changelog was read before deciding, rather than left as an unknown.** 📄 Novation's V1.2 /
+V1.2.1 addendum lists everything the update adds:
+
+| V1.2 / V1.2.1 / V1.2.2 | Bears on this rig? |
+|---|---|
+| Unquantised recording | No — it belongs to the **Launchpad's own** sequencer, and ⛔ **Programmer Mode bypasses that entirely**: the patch owns the surface |
+| Performance Velocity, Probability and Mutation | No — same, and ⚠️ **v0.4 is building sequencing, probability and mutation in Pd on purpose.** The firmware's versions are not merely unused, they are the thing being replaced |
+| **Pad Trigger Threshold** (new setting) | ⚠️ **Yes** — a threshold change can move measured velocity |
+| Legacy Mode brought in line with Launchpad X / Mini MK3 | No |
+| **Aftertouch threshold fix** | ⚠️ **Yes** — `m_launchpad`'s `pressure` subpatch depends on aftertouch behaviour |
+| Crash fix, multiple Novation devices connected then disconnected | No — one Novation device here |
+
+⛔ **Nothing in it touches MIDI clock, tempo sync or LED animation**, so it would not be expected to
+fix item 257 — the device ignoring incoming clock — which is the only Launchpad behaviour this
+project actually wants changed. **The update offers nothing needed and risks two things measured**
+(items 193 and 204, velocity and aftertouch).
+
+**So the trade is bad and the decision is to stop asking.** A patched `mount.sh`, backed up and
+re-verified hot, beats a firmware change that buys nothing. ⚠️ **Revisit only if an update is being
+done for another reason** — then re-measure velocity and aftertouch afterwards rather than trusting
+the old numbers.
+
+⬜ **What version we are actually on is still not known in Novation's terms.** The device inquiry
+returns firmware bytes `00 04 06 05` (item 98) and nothing published maps that to a marketing version,
+so *how far behind* this unit is cannot be stated. It does not change the decision. See
+[plan-v04.md](../plan-v04.md) §3.
 
 ✅ **Re-verified hot 2026-08-08**, which the cold-boot test could not cover: the drive appeared live
 as `/dev/sda` + `sda1`, `Novation Onboarding Drive`, `384 512-byte logical blocks (192 KiB)`,

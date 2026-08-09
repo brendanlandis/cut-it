@@ -138,7 +138,8 @@ an emergency. ⬜ Decide whether the reload path should skip arming.
 
 ⚠️ **Two tiers, so the meanings stay separate**: a short press silences only and is always safe; a
 held combination silences **and** reloads. That is also the answer to *"which control raises panic"*
-in [plan-v03.0.md](plan-v03.0.md) — the question was unanswerable while panic was destructive.
+on [ref/device/launchpad.md](ref/device/launchpad.md) as item 251 — the question was unanswerable
+while panic was destructive.
 
 ---
 

@@ -310,6 +310,9 @@ toggled *off*.
   throughout a performance, sets pad play modes ad hoc, and treats bus assignment as mixer work.
   ⛔ **Nothing that gets varied on purpose belongs on a checklist.** What is left is under
   *Before a set — the 404* below.
-- ⬜ **Organelle audio back into the 404 was considered and dropped**, using the mixer's FX send as a
-  variable-gain feedback path. It needs no rewiring beyond one cable from FX SEND. See
-  [plan-v04.md](../plan-v04.md) §3.
+**Nothing.** Organelle audio back into the 404 — the mixer's FX SEND as a variable-gain feedback
+path — was **scrapped on 2026-08-08**, item 264. It had been carried as *"considered and dropped, but
+it is only one cable, so try it"*; it is now dropped outright and is not waiting on a session.
+
+⚠️ An idea kept alive because it is *cheap to test* is still an open item, and it still costs
+attention every time someone reads this page. Scrapping it is a result.

@@ -37,6 +37,15 @@ scratch_require "Cut It/u_err.pd"
 WORK=${TMPDIR:-/tmp}/cutit-err-$$
 scratch_make "$WORK"
 scratch_state_dir "$WORK"
+# ⛔ POINT u_net SOMEWHERE REAL AND GIVE IT SOMETHING TO TALK TO. Left alone it
+# sends to the phone's literal LAN address, and an ICMP port-unreachable from
+# there tears its socket down (item 114) and raises `warn u_net net-link-down`.
+# That alert takes the OLED footer and lands in the error log, failing this gate
+# on whichever window it hits -- for a reason that has nothing to do with what
+# this gate tests. ⚠️ The sink is not optional: 127.0.0.1 with nothing bound is
+# the WORST target, because the local stack answers with ICMP every time.
+scratch_phone_mirror "$WORK" 9992
+SINK=$(scratch_udp_sink 9992 90)
 
 # ⚠️ THE REWRITE IS NOT FOR THIS GATE'S BENEFIT -- u_err emits no MIDI.
 # It runs because every scratch-copy gate enforces the whole inventory, so a new
@@ -51,6 +60,8 @@ scratch_drive test/gate/err-assert-drive-gen.py "$WORK/drive.pd"
 CAP="$WORK/capture.txt"
 scratch_run "$CAP" 30 -nogui -noaudio -nomidi -path "$WORK/patch" \
     "$WORK/patch/main-dev.pd" "$WORK/drive.pd"
+
+kill "$SINK" 2>/dev/null || true
 
 python3 test/gate/err-assert.py $ARGS < "$CAP"
 rc=$?

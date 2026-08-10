@@ -154,8 +154,27 @@ def run_asserts(cap):
               "fail u_gate compose-fail", "warn u_gate perform-warn",
               "fail u_gate perform-fail", "warn u_gate back-warn",
               "warn u_gate two-atom", "chatty u_gate bad-level"]
+    # ⛔ THE DRIVER'S OWN ERRORS ONLY, AND THE FILTER IS THE FIX FOR A REAL
+    # FRAGILITY. This compared the whole log against `raised` by equality, which
+    # quietly asserted a SECOND claim it was never meant to make: that the patch
+    # itself raises nothing during the run. It does -- u_net's link watchdog says
+    # `warn u_net net-link-down` on any machine with no phone answering, which is
+    # correct behaviour and not this gate's business. The check passed only
+    # because that watchdog happened to fire just outside the window, and it
+    # moved inside as soon as an unrelated change shifted the load by a few
+    # milliseconds. Worse, it moved to a DIFFERENT position on different runs, so
+    # the failure looked like an ordering bug in u_err.
+    #
+    # ⚠️ THE ORDER IS STILL EXACT, and so is the count -- just of u_gate's own
+    # lines. Anything else the patch raises is reported as a note below rather
+    # than silently folded in, because an error nobody expected is worth seeing.
+    mine = [ln for ln in logged if " u_gate " in ln]
     A.check("every error raised reaches the log, in order and whatever the mode",
-            logged == raised, "logged %s" % logged)
+            mine == raised, "logged %s" % mine)
+    others = [ln for ln in logged if " u_gate " not in ln]
+    if others:
+        A.note("%d error(s) from the patch itself during the run: %s"
+               % (len(others), others))
     A.check("⛔ including the two the SCREEN was never shown",
             "warn u_gate perform-warn" in logged and "warn u_gate two-atom" in logged,
             "a suppressed warning was suppressed on the bus as well as on the "

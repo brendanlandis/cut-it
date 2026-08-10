@@ -149,6 +149,42 @@ scratch_phone_mirror() {
     }
 }
 
+scratch_udp_sink() {
+    # $1 = port, $2 = seconds to live. Binds a UDP socket and prints its PID.
+    #
+    # ⛔ IT EXISTS BECAUSE THREE GATES SILENTLY DEPENDED ON THE MAC'S LAN. u_net
+    # points at a literal phone address, and a datagram to an address that
+    # answers with ICMP port-unreachable TEARS THE SOCKET DOWN -- item 114 --
+    # which raises `warn u_net net-link-down`. That alert takes the OLED footer
+    # and lands in the error log, so oled-assert and err-assert fail on whichever
+    # window it happens to hit, with a message about u_net that has nothing to do
+    # with what either gate tests.
+    #
+    # ⚠️ IT PASSED FOR MONTHS BY LUCK. Nothing on the network answered, the ICMP
+    # never came back, and the socket stayed up. The day something did answer,
+    # two gates went red and pointed at the wrong module.
+    #
+    # ⚠️ REPOINTING ALONE IS NOT ENOUGH, which is the trap here. Sending to
+    # 127.0.0.1 with nothing bound is the WORST case -- the local stack answers
+    # with ICMP immediately and reliably. The socket has to actually exist.
+    # phone-assert.py binds before Pd starts for exactly this reason.
+    #
+    # ⚠️ ITS STDOUT MUST GO TO /dev/null OR THE CALLER HANGS. This is read back
+    # through $(...), and a command substitution does not return until every
+    # process holding that pipe has let go of it -- including a BACKGROUND one.
+    # Without the redirect the gate waits out the sink's whole lifetime.
+    python3 -c 'import socket,sys,time
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# ⚠️ REUSEADDR so a sink still lingering from an interrupted run cannot stop the
+# next one binding. Without it the bind raises, the sink dies unseen behind the
+# /dev/null redirect, and the gate fails on net-link-down as though nothing had
+# been done about it.
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(("127.0.0.1", int(sys.argv[1])))
+time.sleep(float(sys.argv[2]))' "$1" "${2:-90}" >/dev/null 2>&1 &
+    echo $!
+}
+
 scratch_map_rows() {
     # $1 = work dir. Rows on stdin, APPENDED to the scratch map rather than
     # replacing it, so the shipped rows stay under test too.

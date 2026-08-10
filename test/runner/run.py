@@ -136,20 +136,25 @@ def describe(bench, step):
     tells you what to have at hand only once you are already being asked to
     judge it has told you too late.
     """
-    tag = " -- HANDS" if step.hands else ""
-    print("\n[%d/%d] %s%s" % (step.n, step.of, bench.name, tag))
-    print("       %s" % step.title)
+    # ⚠️ ONE LINE: counter, bench, what this step tests. The title used to sit on
+    # a second line of its own and the two together said less than either -- the
+    # bench name is the module and the title is the case, so they belong beside
+    # each other.
+    tag = "  [HANDS]" if step.hands else ""
+    print("\n[%d/%d] %s - %s%s"
+          % (step.n, step.of, bench.name, step.title, tag))
     for line in step.meta.get("need", []):
         print("  need     %s" % line)
     if step.meta.get("do"):
         print("  do       %s" % step.meta["do"])
-    # ⚠️ THE LABEL IS `PASS IF` BECAUSE THAT IS WHAT THE TEXT IS. It was `watch`,
+    # ⚠️ THE LABEL IS `PASS IF:` BECAUSE THAT IS WHAT THE TEXT IS. It was `watch`,
     # which named nothing a person could act on -- the line is the step's PASS
     # IF with its prefix stripped (steps.py `watch`), the verdict prompt asks
     # against it, and `?` reprints it under that name. Three names for one
     # sentence, and the one on screen was the only one that appeared nowhere
-    # else.
-    print("  PASS IF  %s" % step.watch)
+    # else. The colon is the step text's own; only a comma or a semicolon is
+    # barred, and that is inside a message box rather than in this label.
+    print("  PASS IF: %s" % step.watch)
 
 
 def ask(step, allow_undo):
@@ -263,7 +268,7 @@ def run_bench(bench, target, auto_only, start):
                 continue
             if step.hands:
                 try:
-                    stream.prompt("  press enter when you have done that: ")
+                    stream.prompt("  Press ENTER when you have done that: ")
                 except EOFError:
                     break
             ok, w, g = predicates.evaluate(spec, [], {"step_start": started})
@@ -439,14 +444,13 @@ def run_bench_driven(bench, target, auto_only, start, src):
                 # the ones anybody tested by hand. A STEP THAT REQUIRES NOTHING TO
                 # BE DONE STILL REQUIRES TO BE READ.
                 #
-                # ⚠️ BOTH WORDINGS CARRY THE LITERAL "press enter".
-                # runner-assert's SIGINT fixture waits on that substring to know
-                # the child has blocked on a person; reword past it and that
-                # fixture waits out its whole deadline instead.
+                # ⚠️ ONE WORDING, AND runner-assert MATCHES THE LITERAL. Its
+                # SIGINT fixture waits on this substring to know the child has
+                # blocked on a person and the prompt-count check anchors on it;
+                # reword past either and the fixture waits out its whole
+                # deadline instead of reading a prompt that was issued.
                 try:
-                    stream.prompt("  press enter when you are ready: "
-                                  if step.hands else
-                                  "  press enter when you have read this: ")
+                    stream.prompt("  Press ENTER to run the test: ")
                 except EOFError:
                     # Input ran out where a person was expected. That is the end
                     # of the run, not permission to carry on without one.

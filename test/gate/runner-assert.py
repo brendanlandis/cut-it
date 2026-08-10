@@ -227,11 +227,11 @@ def main():
     # red the day somebody adds a step, which is not a defect; restoring the
     # guard IS one, and that is what this catches.
     # ⚠️ ANCHORED AT THE START OF A LINE, NOT SEARCHED LOOSELY -- and it had to
-    # be. A bare out.count("press enter") reads 18 for 17 steps, because midi
+    # be. A bare out.count("press enter") read 18 for 17 steps, because midi
     # step 14's own `do` text says "then press enter straight away" and
     # describe() prints it. Same shape as the BEATS-inside-M-BEATS anchor in
     # predicates.py: a loose match answered by prose instead of by a prompt.
-    prompts = len(re.findall(r"(?m)^  press enter", out))
+    prompts = len(re.findall(r"(?m)^  Press ENTER", out))
     A.check("clean: every step gets a read prompt before GO -- not just hands "
             "steps", prompts == n, "%d prompts for %d steps" % (prompts, n))
 
@@ -263,9 +263,9 @@ def main():
             rc == 0 and ("%d passed" % n) in out and "DESYNC" not in out,
             "rc=%d -- %s" % (rc, _tail(out)))
     A.check("repeat: still describes each step exactly once",
-            len(re.findall(r"(?m)^  press enter", out)) == n,
+            len(re.findall(r"(?m)^  Press ENTER", out)) == n,
             "%d prompts for %d steps -- a repeat re-described its step"
-            % (len(re.findall(r"(?m)^  press enter", out)), n))
+            % (len(re.findall(r"(?m)^  Press ENTER", out)), n))
     A.check("repeat: says so plainly when the source cannot fire again",
             out.count("not available against a recorded console") == 1,
             _tail(out))
@@ -640,7 +640,7 @@ def _sigint(transcript_path):
     sel.register(p.stdout.fileno(), selectors.EVENT_READ)
     buf = b""
     deadline = time.time() + 20
-    while not (b"verdict?" in buf or b"press enter" in buf):
+    while not (b"verdict?" in buf or b"Press ENTER" in buf):
         if time.time() >= deadline:
             break
         if not sel.select(timeout=0.25):

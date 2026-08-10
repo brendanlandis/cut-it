@@ -114,6 +114,23 @@ redraws held state every frame. **`u_net` was the only surface where a late view
 **Fix:** a 2 s repeat of the last parameter and status, on top of the event-driven sends — well below
 the 124/s noise floor. Item 121.
 
+### ⛔ `warn u_net net-link-down` is not a wifi fault, and it reads exactly like one
+
+The alert names the *link*, the Organelle's only link is wireless, and
+[wifi.md](../wifi.md) documents a real fault that drops it — so the obvious reading is that the
+network has gone. It is almost always wrong. **`u_net`'s watchdog watches a SOCKET**, and the
+socket dies the moment nothing is listening on the phone's port (item 114 below): PdParty closed,
+backgrounded by the phone, or on the wrong scene. The wifi can be perfectly healthy — verifiable in
+one line, because `ssh root@organelle.local` uses the same radio.
+
+**It is also the most common line in the error log by a wide margin**, appearing in most sessions,
+which is what makes it easy to read as a symptom of something worsening.
+
+**Fix:** before suspecting the network, check that PdParty is open on the `CutItRemote` scene, then
+`ping organelle.local` or `ssh` to it. A reachable device with `net-link-down` on screen is the
+phone, not the wifi. ⚠️ **The real roam fault has a different signature** — the *whole device* goes
+unreachable, `ssh` included — and it is on [wifi.md](../wifi.md) with a reproduction.
+
 ### A UDP `connect` to a port with nothing listening survives EXACTLY ONE datagram
 
 ⛔ **The measurement that changed the design** (item 114). Twenty datagrams at 5 Hz to a port with no

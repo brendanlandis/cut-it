@@ -1,4 +1,20 @@
 {
- "records": {},
+ "records": {
+  "launchpad/1/device": {
+   "auto": false,
+   "bench": "launchpad",
+   "deps_sha": "a907b4fe1f75",
+   "got": null,
+   "note": "stalled mid-run: GO sent, no fired line",
+   "run": "20260810T163201Z-launchpad-device",
+   "sha": "866c2b6bfeb6",
+   "step": 1,
+   "target": "device",
+   "title": "baseline -- 120 BPM -- stopped -- compose mode-1",
+   "ts": "2026-08-10T16:32:13+00:00",
+   "verdict": "interrupted",
+   "want": null
+  }
+ },
  "schema": 1
 }

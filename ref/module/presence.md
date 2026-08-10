@@ -85,6 +85,7 @@ silently, because a matcher that matches nothing looks exactly like a device tha
 | stagger | 0 / 60 / 120 ms | `c_presence`'s third argument, one per instance | verified | 271 |
 | fork interval | every 4th tick | `[mod 4]` in `u_present` | verified | 271 |
 | give-up | tick 33 | `[moses 33]`, so **8 forks** at ticks 4…32 | verified | 271 |
+| trailing fork | **one**, off the transition to nothing-lost | not on the interval — see *Design* | verified | 275 |
 
 Which puts the wall clock at, from load:
 
@@ -193,6 +194,18 @@ computes 0, `change` swallows it, and nothing is published until something actua
 
 ## Design
 
+**One trailing fork, and it bends Phase 4's rule deliberately.** That rule is *one fork per load and
+never per event*, and this is a fork on a transition. It is here because the recovery used to stop
+the instant the last **detectable** device answered, which is not the same as the rig being whole: a
+`none` device knocked off in the same event gets its one attempt while it is still enumerating, and
+is then never retried. That is not hypothetical — it stranded the Volca on the bench, item 275. The
+fork is bounded at exactly one per episode and fires at the best-informed instant available, because
+a device answering its inquiry is the signal that enumeration has **finished**.
+
+⚠️ **It narrows the gap rather than closing it.** Unplug a `none` device *on its own* and nothing is
+lost, nothing forks, and nothing recovers — the trailing fork only helps when a detectable device
+went down alongside it. See [volca.md](../device/volca.md).
+
 **One bound, coalesced.** The counter runs while **any** source is lost and resets when **none** is,
 so the rig gets eight attempts whether one cable came out or three. Two devices unplugged together
 must not double the fork rate, and the gate asserts it by counting: three lost sources produce three
@@ -253,6 +266,12 @@ more. The diagnostic screen that reads all of this is
   inside 34 s; it never sees tick 33. `u_present` takes the settle, the tick and the give-up as
   creation arguments precisely so a scratch copy can scale the two *times* and reach the give-up in a
   few seconds with the **counts exactly as shipped**.
+
+⬜ **The trailing fork is not exercised by any gate.** See [plan-v04.md](../../plan-v04.md) §3.
+  `presence-assert.sh` never reaches a lost count of zero — `m_404` is deliberately never answered —
+  so the one path added after the hardware session is the one path no gate covers. It is verified on
+  the rig and nowhere else, which is the wrong way round. A window that hands every device back
+  would exercise it.
 
 ⬜ **A passive layer's last-heard is published and nothing reads it.** See
   [plan-v04.md](../../plan-v04.md) §3 and [plan-v03.5.md](../../plan-v03.5.md), which is the

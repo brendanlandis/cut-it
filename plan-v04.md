@@ -95,6 +95,42 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 
 **The single place to look for what is unresolved.** Every `ref/` page's `Open` section points here.
 
+### What [plan-v03.4.md](plan-v03.4.md) still owns
+
+⛔ **These are NOT handed here, and that plan says so in its own landing checklist.** They are indexed
+here because every `ref/` page's `Open` points at this section, and a pointer that resolves to
+nothing is worse than no pointer. **This whole subsection goes when plan-v03.4.md does.**
+
+| Still open | Where it is executed |
+|---|---|
+| The eight bench steps — two cases × four devices, the Volca's judged by ear | Phase 6 |
+| The bound asserted by **reaching** it, on a scratch-scaled tick with the counts as shipped | Phase 6 |
+| ⛔ **The trailing fork has no gate at all** — `presence-assert.sh` never reaches a lost count of zero, so the one path added after the hardware session is the one path nothing covers | Phase 6 |
+| The SP-404 and the Volca never got their own transition runs on the rig | Verification |
+| Panic becomes `recover` — the CC 90 tiers, the two-step OSC reload, the breadcrumb | Phase 1b |
+
+### ⬜ `[polytouchin]` has no stub, so the Launchpad's pressure path is untested
+
+It was in **neither** MIDI inventory list in `test/gate/lib-scratch.sh` until a closed-question scan
+found it — the check that walks every MIDI class Pd has and asks the roster, rather than checking the
+roster against itself. It is counted now and still uncovered, and
+[launchpad.md](ref/device/launchpad.md) calls aftertouch the most expressive control on the rig.
+
+**Small**: `t_polytouchin` is the same shape as `t_ctlin`. ⚠️ **What it unlocks is nobody's yet** —
+the pressure path publishes to `param` and nothing maps it, so a gate would assert a decode with no
+consumer. Worth doing when something uses pressure, not before.
+
+### ⬜ The Volca made a sound three times and it has never been reproduced
+
+Full account, including everything excluded by measurement, is on
+[volca.md](ref/device/volca.md). In one line: nine subsequent loads produced nothing, every software
+path is ruled out directly, and the leading explanation — cable handling injecting noise into an
+opto-isolated input — needs no software at all.
+
+⚠️ **The only observer that could settle it is a MIDI monitor on the DIN wire**, which this rig does
+not have. Recorded rather than closed, because three occurrences are not nothing.
+
+
 ### The Volca gets no MIDI clock, and neither does the nanoKONTROL
 
 **Measured on the hardware 2026-08-10, item 279.** `u_tempo`'s `realtime-out` holds exactly two

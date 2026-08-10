@@ -17,6 +17,38 @@ plan.**
 
 ---
 
+## ⛔ STATUS — most of this plan has LANDED
+
+**Phases 1, 2, 3, 4 and 5 are built, gated, and verified on the hardware 2026-08-10.** Everything
+below them is kept for its reasoning only: the facts they produced live on
+[ref/module/presence.md](ref/module/presence.md) and the work is in `git log`.
+
+**What remains, and this is all of it:**
+
+| Remaining | State |
+|---|---|
+| Phase 6 — the eight bench steps | not started |
+| Phase 6 — the bound asserted by **reaching** it, on a scratch-scaled tick with the counts as shipped | not started |
+| Phase 6 — ⛔ **the trailing fork has no gate**; `presence-assert.sh` never reaches a lost count of zero | verified on the rig only, which is the wrong way round |
+| Verification — the SP-404 and the Volca never got their own transition runs | the shared machinery beneath both is verified |
+| Phase 1b — panic becomes `recover` | not started |
+
+**Two claims in this plan turned out FALSE on hardware, and both are corrected in the `ref/` pages
+rather than in the prose below:**
+
+- ⛔ *"`wire.sh` itself does not change — no connect or disconnect line moves"*, listed here as
+  removing the plan's largest documentation hazard. **The nanoKONTROL had no inbound connection at
+  all**, because nothing had ever sent to it, so its device inquiry went into an unconnected port
+  forever. One line added; six links became seven. Item 274.
+- ⛔ *A bound recovery is enough.* It stopped the instant the last **detectable** device answered,
+  which is not the same as the rig being whole — and it stranded the Volca. One trailing fork now
+  runs on the transition to nothing-lost. Item 275.
+
+⚠️ **Neither was findable on the Mac.** `[midiout]` and `[sysexin]` are both stubs there, and all 19
+gates passed either way.
+
+---
+
 ## ⚠️ Constraints that bind everything below
 
 - **Pd vanilla 0.49, permanently.**
@@ -44,7 +76,7 @@ plan.**
 | [ref/conventions.md](ref/conventions.md) | The rules table, then only the sections it links | `C-1`…`C-14` |
 | `git log` | **Grep it, never read it** | Git is the journal |
 | `Cut It/m_launchpad.pd` | **All of it, and the `watchdog` subpatch twice** | The only reconnect logic that exists. Its comments explain **why two mechanisms**, **why the bound is 70 s and not 12**, and **why the arming gate is not removable** |
-| `Cut It/wire.sh` | **All 58 lines, comments included** | Idempotent, 133 ms, `\|\| true` on every line. Its comments hold the enumeration-order incident |
+| `Cut It/wire.sh` | **All 67 lines, comments included** | Idempotent, 133 ms, `\|\| true` on every line. Its comments hold the enumeration-order incident |
 | `Cut It/u_init.pd` | All of it | It calls `wire.sh` at 1500 ms and owns the boot stage sequence |
 | [ref/module/boot.md](ref/module/boot.md) | **All of it** | **Two of its `Open` items are what this plan closes.** Its two tables are anchored to `wire.sh` by the doc gate — change one and you change both |
 | [ref/device/launchpad.md](ref/device/launchpad.md) | All of it | Item 235, plus what the device does and does not announce |
@@ -61,7 +93,7 @@ plan.**
 
 ## What is already true
 
-- **`wire.sh` connects six ALSA links by name**, each with `2>/dev/null || true`, so a device that is
+- **`wire.sh` connects seven ALSA links by name**, each with `2>/dev/null || true`, so a device that is
   not plugged in cannot stop the ones that are. It then **undoes mother's own auto-connect**, which
   wires the lowest-numbered MIDI client to Pd's Midi-In 1.
 - ⛔ **Loading any patch drops Pd's ALSA connections** (item 228). The Pd *process* survives a patch

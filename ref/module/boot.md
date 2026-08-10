@@ -66,6 +66,7 @@ sequence is still bringing it up. See [presence.md](presence.md).
 | `Launchpad Pro MK3:0` | `Pure Data:0` | Pads and CCs in, Pd channels 1–16 | verified | — |
 | `Pure Data:4` | `Launchpad Pro MK3:0` | LEDs and SysEx out | verified | — |
 | `nanoKONTROL:0` | `Pure Data:1` | Faders, knobs, transport, Pd channels 17–32 | verified | — |
+| `Pure Data:5` | `nanoKONTROL:0` | The device inquiry, and nothing else | verified | 274 |
 | `SP-404MKII:0` | `Pure Data:2` | Pad presses in, Pd channels 33–48 | verified | — |
 | `Pure Data:6` | `SP-404MKII:0` | Pad triggers out | verified | — |
 | `USB Uno MIDI Interface:0` | `Pure Data:3` | Nothing today — the DIN IN jack, for a future device. Pd channels 49–64 | verified | — |

@@ -14,9 +14,18 @@
 # on each. u_init reports progress to the OLED either way; it cannot tell from
 # here which devices answered.
 
+# ⛔ THE nanoKONTROL LINE BELOW IS AN OUTPUT TO A DEVICE WITH NOTHING TO SHOW.
+# It has no lights, no screen and no host-controllable state, so an outbound
+# connection looks like a mistake and is exactly the kind of line somebody
+# tidies away. It carries ONE message: the universal device inquiry, which is
+# the only way the patch can tell a nano that is unplugged from one that is
+# simply not being touched. Delete it and m_nano is declared lost about eight
+# seconds into every boot, forever, with the device sitting right there --
+# measured on the hardware 2026-08-10, item 274.
 aconnect "Launchpad Pro MK3":0 "Pure Data":0 2>/dev/null || true  # -> Pd ch 1-16
 aconnect "Pure Data":4 "Launchpad Pro MK3":0 2>/dev/null || true  # LEDs + SysEx out
 aconnect "nanoKONTROL":0 "Pure Data":1       2>/dev/null || true  # -> Pd ch 17-32
+aconnect "Pure Data":5 "nanoKONTROL":0       2>/dev/null || true  # device inquiry out
 aconnect "SP-404MKII":0 "Pure Data":2        2>/dev/null || true  # -> Pd ch 33-48
 aconnect "Pure Data":6 "SP-404MKII":0        2>/dev/null || true  # pad triggers out
 

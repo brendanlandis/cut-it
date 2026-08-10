@@ -1,4 +1,4 @@
-#N canvas 20 20 3200 2800 12;
+#N canvas 20 20 3200 3200 12;
 #X text 20 20 u_present -- THE SHARED HALF OF DEVICE PRESENCE. It owns the one tick every c_presence ages on \, and the ONE bounded wire.sh recovery that serves every device. It keeps no per-device state at all: a c_presence instance inside each m_ layer decides whether ITS device is lost \, and this file only counts how many are., f 84;
 #X text 20 190 creation arg 1: the SETTLE delay in ms before the tick starts. creation arg 2: the TICK interval in ms. creation arg 3: the GIVE-UP count \, in ticks after the first loss. inlets: none. outlets: none. It talks on presence and err \, and forks wire.sh through [shell]., f 84;
 #X declare -path ../mac-stubs;
@@ -34,7 +34,7 @@
 #X obj 1200 1980 > 0;
 #X obj 1200 2040 t f f;
 #X obj 1560 2100 select 0;
-#X msg 1560 2160 0;
+#X msg 1820 2220 0;
 #X obj 20 2020 spigot;
 #X obj 20 2160 f;
 #X obj 200 2220 + 1;
@@ -47,6 +47,10 @@
 #X obj 2500 2340 select \$3;
 #X msg 2500 2400 fail u_present rewire-gaveup;
 #X obj 2500 2460 s err;
+#X obj 200 2650 print rewire;
+#X obj 1560 2160 t b b;
+#X text 1000 2760 ⛔ ONE TRAILING FORK \, AND IT BENDS PHASE 4'S RULE ON PURPOSE. That rule is one fork per load and NEVER per event \, and this is a fork on a transition. It is here because the recovery used to stop the instant the last DETECTABLE device answered \, which is not the same as the rig being whole. A device registered none -- the Volca \, which transmits nothing and can never be polled -- can be knocked off in the SAME event \, get its one attempt while it is still enumerating \, and then never be retried. Measured on the hardware 2026-08-10 \, item 275: pulling the Volca's interface also dropped the SP-404 \, the 404 came back first \, the counter reset \, and the Volca sat silently unreachable until wire.sh was run by hand. ⚠️ IT IS BOUNDED AT EXACTLY ONE PER EPISODE \, and it fires at the best moment available -- a device answering its inquiry is the signal that enumeration has FINISHED \, so a re-wire right then is the likeliest of all of them to catch whatever came back beside it., f 62;
+#X text 480 2650 ⛔ THE EIGHT ATTEMPTS WERE COMPLETELY SILENT UNTIL THIS BOX \, and only the give-up ever spoke -- so on the device there was no way to tell a recovery that was running from one that was never reached. u_init prints its own boot fork exactly like this. ⚠️ IT NEEDS NO del 2000 (C-9): shell cannot emit before the fourth tick after a loss \, which is at least twelve seconds in \, and tools/deploy.sh quits its output check at about 735 ms. Same reasoning as u_init's print wire \, which is also ungated and fires at 1500 ms., f 62;
 #X connect 8 0 9 0;
 #X connect 9 0 10 0;
 #X connect 10 1 22 0;
@@ -79,7 +83,9 @@
 #X connect 31 0 32 0;
 #X connect 32 1 35 1;
 #X connect 32 0 33 0;
-#X connect 33 0 34 0;
+#X connect 33 0 48 0;
+#X connect 48 1 34 0;
+#X connect 48 0 42 0;
 #X connect 34 0 36 1;
 #X connect 35 0 36 0;
 #X connect 36 0 37 0;
@@ -93,3 +99,4 @@
 #X connect 42 0 43 0;
 #X connect 44 0 45 0;
 #X connect 45 0 46 0;
+#X connect 43 0 47 0;

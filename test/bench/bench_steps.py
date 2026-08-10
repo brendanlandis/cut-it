@@ -194,6 +194,32 @@ STEPS_NANOKONTROL = [
   [],
   {'do': 'press every button on the nanoKONTROL then all six transport keys',
    'need': ['the nanoKONTROL powered and connected']}),
+
+ # ⛔ HOT-SWAP, TWO CASES, AND ITEM 235 IS THE PROOF THEY ARE NOT THE SAME TEST.
+ # The transition case needs the device to have ANSWERED at least once, because
+ # c_presence's warn is armed by a reply -- a device that was never there is
+ # ABSENT rather than lost, and absent raises nothing. The absent-at-load case
+ # needs a fresh load and can see what no transition ever shows: that a device
+ # missing at boot is recovered at all.
+ ('HANDS -- UNPLUG THE NANOKONTROL AND LEAVE IT OUT',
+  'PASS IF the OLED shows a warn for m_nano within 10 seconds',
+  [],
+  # ⚠️ wait 12 IS LOAD-BEARING -- the warn is three missed ticks behind the
+  # unplug, up to 8 s, and the runner's default drain is 0.4 s.
+  {'do': 'unplug the nanoKONTROL and leave it out -- then press enter straight away because the runner starts listening from there',
+   'need': ['the nanoKONTROL powered and connected'],
+   'wait': 12,
+   'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_nano']}}),
+ ('HANDS -- ABSENT AT LOAD -- reload with it unplugged then plug it in',
+  'PASS IF slider 1 moves a value on the OLED',
+  [],
+  # ⚠️ 60 SECONDS AND NOT 10 -- the nano needed two of the eight attempts on the
+  # bench because the device was still enumerating when the first landed (item
+  # 277). ⛔ AND THE SLIDER IS THE ORACLE, not the absence of a warn: the nano is
+  # PASSIVE to look at, so the only proof the subscription came back is traffic
+  # arriving through it.
+  {'do': 'plug it in and wait 60 seconds then move slider 1',
+   'need': ['the patch freshly loaded with the nanoKONTROL UNPLUGGED -- reload first then resume this bench with --from 19']}),
 ]
 
 STEPS_TEMPO = [
@@ -346,13 +372,45 @@ STEPS_LAUNCHPAD = [
   [],
   {'do': 'press each of the six nanoKONTROL transport keys',
    'need': ['the nanoKONTROL powered and connected', 'the Launchpad connected and in Programmer Mode']}),
- ('HANDS -- THE REPLUG HAZARD -- unplug the Launchpad and plug it back in',
-  'PASS IF: RECORD WHAT HAPPENS -- this step documents a known hazard rather than asserting a fix. The device returns in Live Mode but m_launchpad still believes it owns the surface -- so press a few pads afterwards and watch the OLED: pad-NN names are the hazard showing itself because a stock layout sends musical pitches that get decoded as r*10+c. THIS STEP MUST COME BEFORE THE PANIC AND THAT IS THE WHOLE POINT. The hazard IS stale ownership -- run it after the panic and ownership has already been dropped legitimately so there is nothing stale left and the step silently tests nothing. It was ordered that way on the first run and proved exactly that. MEASURED SINCE: Pd does NOT lose the device on the Mac and the Launchpad still answers a universal device inquiry after a replug -- so this IS detectable by polling and the fix is unblocked. Not built yet. See plan-v04.md',
+ # ⛔ THESE TWO REPLACED THE REPLUG HAZARD STEP, WHICH DESCRIBED A HAZARD THAT NO
+ # LONGER EXISTS. It read "the device returns in Live Mode but m_launchpad still
+ # believes it owns the surface -- press a few pads and watch pad-NN names appear
+ # on the OLED", and closed "Not built yet. See plan-v04.md". Presence drops
+ # ownership on the third missed poll and the bounded re-wire brings the device
+ # back with Programmer Mode re-asserted -- item 276, verified on the hardware --
+ # so the step asserted the opposite of what the instrument does, and pointed at a
+ # plan-v04 section that had already gone.
+ #
+ # ⛔ TWO CASES, AND ITEM 235 IS THE PROOF THEY ARE NOT THE SAME TEST. "Lost" was
+ # built as a transition from present to absent, and never-present is not a
+ # transition -- so a device that was missing when the patch loaded could not be
+ # recovered at all, however long you waited. Only the second step below can see
+ # that, and only from a fresh load.
+ ('HANDS -- UNPLUG THE LAUNCHPAD AND LEAVE IT OUT',
+  'PASS IF the OLED shows a warn for m_launchpad within 10 seconds and the grid goes dark',
   [],
-  {'do': 'unplug the Launchpad and plug it back in -- then press a few pads',
-   'need': ['the Launchpad connected and in Programmer Mode']}),
+  # ⚠️ THE PREDICATE READS err AND THE EYES READ THE GRID, and neither covers the
+  # other. c_presence publishes the warn; g_grid going dark is m_launchpad
+  # dropping ownership two boxes further on, and no bus carries "the grid stopped
+  # painting".
+  # ⚠️ wait 12 IS LOAD-BEARING. The warn is three missed ticks behind the unplug
+  # -- up to 8 s at the shipped 2000 ms tick -- and the runner's default drain is
+  # 0.4 s, which would miss it on entirely correct hardware.
+  {'do': 'unplug the Launchpad USB and leave it out -- then press enter straight away because the runner starts listening from there',
+   'need': ['the Launchpad connected and in Programmer Mode -- with the grid lit'],
+   'wait': 12,
+   'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_launchpad']}}),
+ ('HANDS -- ABSENT AT LOAD -- reload with it unplugged then plug it in',
+  'PASS IF the grid lights and the top row shows one green lamp',
+  [],
+  # ⚠️ 60 SECONDS AND NOT 10. A replug is routinely missed by the FIRST re-wire
+  # because the device is still enumerating -- the Launchpad used six of its eight
+  # attempts on the bench, item 277 -- and the eight are spread over seventy
+  # seconds. Anything under about 50 s fails intermittently on correct code.
+  {'do': 'plug the Launchpad in and wait up to 60 seconds without touching anything else',
+   'need': ['the patch freshly loaded with the Launchpad UNPLUGGED -- reload first then resume this bench with --from 22']}),
  ('PANIC -- the surface goes back to the device',
-  'PASS IF: BUTTON PRESSES STOP REACHING THE OLED. That is the assertion -- not the Launchpad changing appearance -- because the step before this one already left it in Live Mode by unplugging it. Watch for the INPUT going quiet rather than the display changing. What just happened is the panic curing the hazard the replug created: ownership was still 1 over a device we no longer control -- so presses were being decoded as grid coordinates -- and the panic drops it. If the previous step was skipped the device WILL visibly leave Programmer Mode here and its own display will return. KNOWN AND DELIBERATE: it stays that way until the patch is reloaded -- so EVERY REMAINING STEP IS DOWNSTREAM OF THIS ONE and nothing after it can check the grid. If you have any doubt about an earlier step go back and redo it before pressing GO here',
+  'PASS IF: the Launchpad visibly leaves Programmer Mode and its own display returns -- AND BUTTON PRESSES STOP REACHING THE OLED. Watch both: the panic hands the surface back and drops ownership. THE VISIBLE HALF IS NEW AND THE STEP BEFORE THIS ONE IS WHY. This step used to say the device was already in Live Mode because the replug step had left it there -- it is not any more. Presence brings a replugged Launchpad back INTO Programmer Mode with ownership restored -- so there is a live surface here for the panic to hand back. KNOWN AND DELIBERATE: it stays handed back until the patch is reloaded -- so EVERY REMAINING STEP IS DOWNSTREAM OF THIS ONE and nothing after it can check the grid. If you have any doubt about an earlier step go back and redo it before pressing GO here',
   [('bang', 'panic')]),
  ('AFTER THE PANIC THE GRID MUST GO SILENT -- sending it a mode change',
   'PASS IF: NOTHING HAPPENS. The Launchpad keeps showing its own display and g_grid paints nothing at all. Ownership dropped when the surface was handed back -- so the arbiter still runs and simply never reaches the wire',
@@ -577,4 +635,57 @@ STEPS_MIDI = [
   'PASS IF: you understand why there is nothing to do here. NOTHING ON THE DEVICE CAN RAISE PANIC. It was briefly bound to a nano button and that was withdrawn: panic hands the Launchpad back to Live Mode BY DESIGN and the watchdog deliberately does not fight it back -- so an accidental brush of a bare button would kill the grid for the rest of the session with no console to explain it. m_404 now silences all ten banks when panic DOES arrive and the headless gate proves that. Choosing which control is worth that power is a v0.4 decision',
   []),
 
+ # ⛔ HOT-SWAP FOR BOTH OUTPUT DEVICES, AND THE TWO ARE NOT ALIKE. The SP-404 is
+ # `active` -- it answers a device inquiry, so it has a last-heard clock and can
+ # be declared lost. The Volca is `none`: it transmits nothing at all, can never
+ # be polled, and its recovery is PARASITIC on a detectable device being missing
+ # in the same moment. Step 7 below is what that costs.
+ ('HANDS -- UNPLUG THE SP-404 AND LEAVE IT OUT',
+  'PASS IF the OLED shows a warn for m_404 within 10 seconds',
+  [],
+  # ⚠️ wait 12 IS LOAD-BEARING -- the warn is three missed ticks behind the
+  # unplug, up to 8 s, and the runner's default drain is 0.4 s.
+  {'do': 'unplug the SP-404 and leave it out -- then press enter straight away because the runner starts listening from there',
+   'need': ['the SP-404 powered and connected'],
+   'wait': 12,
+   'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_404']}}),
+ ('HANDS -- ABSENT AT LOAD -- reload with the SP-404 unplugged then plug it in',
+  'PASS IF the OLED shows an sp-pad row',
+  [],
+  # ⚠️ A PAD IS THE ORACLE AND NOT THE ABSENCE OF A WARN. The 404's detection is
+  # proven by its silence at boot -- it can only stay quiet by matching byte 65 on
+  # port 3 -- but silence cannot tell a working subscription from a dead one. A
+  # pad under a finger can.
+  {'do': 'plug it in and wait 60 seconds then press pad 1',
+   'need': ['the patch freshly loaded with the SP-404 UNPLUGGED -- reload first then resume this bench with --from 15',
+            'BANK A selected -- say it out loud']}),
+
+ ('HANDS -- THE VOLCA -- unplug it WITH the nanoKONTROL then plug both back in',
+  'PASS IF the Volca can be played again within 60 seconds -- BY EAR',
+  [],
+  # ⛔ THE NANOKONTROL COMES OUT TOO AND IT HAS TO. The Volca registers `none`, so
+  # pulling it alone loses nothing, forks nothing and recovers nothing -- there is
+  # no clock to run out on a device that never speaks. Its recovery rides a
+  # DETECTABLE device being missing at the same moment: the trailing fork fires on
+  # the transition back to nothing-lost, which is the best-informed instant
+  # available because a device answering its inquiry is the signal that
+  # enumeration has FINISHED. A step that unplugged only the Volca would fail for
+  # a reason that has nothing to do with what it tests. Item 275, and it stranded
+  # the Volca on the bench exactly this way.
+  # ⚠️ AND IT IS BY EAR AND ALWAYS WILL BE. The Volca transmits nothing, so there
+  # is no readback and no predicate is possible -- see ref/device/volca.md.
+  {'do': 'unplug the Volca interface AND the nanoKONTROL together then plug both back in -- then play the Volca',
+   'need': ['the Volca sounding and its USB interface connected',
+            'the nanoKONTROL powered and connected',
+            'mode 1 -- fader 1 is the only control bound to the Volca']}),
+ ('HANDS -- ABSENT AT LOAD -- reload with the Volca interface unplugged then plug it in',
+  'PASS IF the Volca sounds -- BY EAR',
+  [],
+  # ⚠️ THIS ONE NEEDS NO SECOND DEVICE, and that is the difference from the step
+  # above. u_init runs wire.sh at boot whatever is plugged in, and the recovery
+  # counter is already running for the pollable layers that are absent -- so a
+  # Volca plugged in during the eight attempts is picked up by one of them.
+  {'do': 'plug it in and wait 60 seconds then play the Volca',
+   'need': ['the patch freshly loaded with the Volca interface UNPLUGGED -- reload first then resume this bench with --from 17',
+            'mode 1 -- fader 1 is the only control bound to the Volca']}),
 ]

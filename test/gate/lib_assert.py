@@ -69,8 +69,14 @@ _MIDI = re.compile(r"^(NOTEOUT|CTLOUT|PGMOUT|MIDIOUT):\s+(-?[\d.]+(?:\s+-?[\d.]+
 # the g_led, u_init and g_oled gates. They are how a test reads back what a
 # display surface or mother's MIDI gating was TOLD -- see lib_drive.TAP_LABELS,
 # which this must always match.
+# ⛔ PRESENCE WAS MISSING FOR A DAY AND THE WARNING ABOVE IS WHY IT MATTERED. The
+# label went into TAP_LABELS with the hot-swap work and never arrived here, so
+# every `PRESENCE:` line this parser was handed went silently on the floor --
+# exactly the failure the comment above describes, applied to the very next label
+# anyone added. presence-assert.py did not notice because it carries its own
+# regex for that bus; the next gate would have.
 _BUS = re.compile(r"^(PARAM|DISP|ERR|TEMPO|START|STOP|MODE"
-                  r"|LED|STATE|OLED|MIDIINGATE|MIDIOUTGATE):\s+(.*)$")
+                  r"|LED|STATE|OLED|MIDIINGATE|MIDIOUTGATE|PRESENCE):\s+(.*)$")
 
 
 def parse(cap, tag):

@@ -1,4 +1,4 @@
-#N canvas 20 20 2840 520 12;
+#N canvas 20 20 3060 520 12;
 #X text 20 20 bench-tap -- loaded BESIDE a bench so a step can assert on what actually reached a bus. IT LISTENS AND SENDS NOTHING \, which is what makes it safe: g_oled owns oscOut and g_grid owns the grid \, but that governs WRITING -- Pd delivers a message to EVERY receiver of a name \, so adding one here cannot change what any other subscriber sees. ⛔ DO NOT ROUTE ITS OUTPUT ANYWHERE. clock is deliberately absent: two beats a second forever \, which no assertion wants and which would bury every window it appeared in., f 120;
 #X text 20 150 ⛔ THIS FILE IS AN OUTPUT. Edit build_tap in test/bench/bench-gen.py and regenerate \; never this. The print labels are lib_drive.TAP_LABELS \, which is the same map test/gate/lib_assert.py's parser matches -- so the runner reuses the gates' parser rather than growing a second one., f 120;
 #X obj 20 320 r disp;
@@ -17,14 +17,16 @@
 #X obj 1340 380 print OLED;
 #X obj 1560 320 r param;
 #X obj 1560 380 print PARAM;
-#X obj 1780 320 r start;
-#X obj 1780 380 print START;
-#X obj 2000 320 r state;
-#X obj 2000 380 print STATE;
-#X obj 2220 320 r stop;
-#X obj 2220 380 print STOP;
-#X obj 2440 320 r tempo;
-#X obj 2440 380 print TEMPO;
+#X obj 1780 320 r presence;
+#X obj 1780 380 print PRESENCE;
+#X obj 2000 320 r start;
+#X obj 2000 380 print START;
+#X obj 2220 320 r state;
+#X obj 2220 380 print STATE;
+#X obj 2440 320 r stop;
+#X obj 2440 380 print STOP;
+#X obj 2660 320 r tempo;
+#X obj 2660 380 print TEMPO;
 #X connect 2 0 3 0;
 #X connect 4 0 5 0;
 #X connect 6 0 7 0;
@@ -37,3 +39,4 @@
 #X connect 20 0 21 0;
 #X connect 22 0 23 0;
 #X connect 24 0 25 0;
+#X connect 26 0 27 0;

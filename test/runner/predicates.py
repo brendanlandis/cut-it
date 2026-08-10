@@ -23,7 +23,13 @@ KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled",
 # emits lib_drive.TAP_LABELS, which is the same map every headless gate's driver
 # taps with, so there is one parser for both. Two would be how a fix reaches one
 # and not the other.
-_BUS_LINE = re.compile(r"(?:^|\s)(PARAM|DISP|ERR|TEMPO|START|STOP|MODE):\s+(.*?)\s*$")
+# ⚠️ PRESENCE ARRIVED WITH THE HOT-SWAP WORK AND WAS MISSING FROM BOTH PARSERS
+# UNTIL THE BENCH STEPS NEEDED IT. A label with no pattern here does not error --
+# the line is simply dropped, so a `bus` predicate naming it reads an empty list
+# and reports the step failed. The hot-swap steps read ERR rather than presence,
+# but they read it by choice now instead of by necessity.
+_BUS_LINE = re.compile(
+    r"(?:^|\s)(PARAM|DISP|ERR|TEMPO|START|STOP|MODE|PRESENCE):\s+(.*?)\s*$")
 
 # The OLED as u_mother-stub decodes it: g_oled writes rows through oscOut, and
 # the stub's oled-decode subpatch turns /oled/gPrintln into the eight cnv rows

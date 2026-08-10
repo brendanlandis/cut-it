@@ -156,7 +156,7 @@ is worth having.
 ⛔ **A step whose oracle is missing is a SKIP WITH A REASON, never a pass** — whether the reason is
 the target or the absence of a person.
 
-### Nine steps judge themselves
+### Sixteen steps judge themselves
 
 A step may carry an optional **fourth element**, a dict: `need` and `do` (what to have at hand, what
 to press), `watch`, `check` (a predicate), `wait`, and `targets`. ⛔ **It never reaches the `.pd`** —
@@ -177,6 +177,17 @@ not an echo.
 
 ⛔ **And it refuses a predicate that disagrees with its own prose.** A step has two oracles now, a
 person reading the PASS IF and a program reading the bus, and nothing else stops them drifting apart.
+
+⚠️ **`wait` is what makes the three hot-swap unplug steps work at all.** The runner drains for
+`wait` seconds *after* GO, and a `device-lost` warn is three missed polls behind the cable coming
+out — up to 8 s. The default is 0.4 s, so those three carry `'wait': 12` and their `do` text says to
+press enter **as soon as the cable is out**: a person who unplugs, counts to ten and then presses
+enter would get an AUTO FAIL out of entirely correct hardware.
+
+⛔ **Four of the eight hot-swap steps cannot judge themselves and must not pretend to.** The Volca's
+two are **by ear** — it transmits nothing, so there is no readback of any kind — and the two
+absent-at-load recoveries are judged by a lit grid and a moving slider, neither of which any bus
+carries.
 
 ### Results, and freshness
 
@@ -426,7 +437,7 @@ stub tests itself instead of the patch.
 
 ⚠️ Worth knowing before writing `STEPS9`. The bench framework prints a `PASS IF` and waits for a
 human to look at something — which works beautifully for the OLED, the Launchpad and the phone,
-and not at all for a feature whose entire output is a **file**. Phase 8's six steps are the
+and not at all for a feature whose entire output is a **file**. The data store's five steps are the
 minimum that hardware can actually show (the front-panel Save, a real power cycle, the mode lamp);
 its logic is proven by `state-assert.sh` instead, headlessly, in twelve seconds.
 
@@ -538,8 +549,16 @@ bench** — the GO port is never bound and the bench looks frozen at step 1. Ite
 ### `launchpad-bench.pd` — the Launchpad acceptance run
 
 **Twenty-five steps** covering the mode bus, the grid arbiter, the layer priorities and TTLs, the
-first `c_clock` instance, the ring map and the safe exit. Steps needing hands are marked in their
-own prompt line.
+first `c_clock` instance, the ring map, hot-swap and the safe exit. Steps needing hands are marked in
+their own prompt line.
+
+⛔ **Steps 21 and 22 replaced the replug-hazard step, which asserted the opposite of what the
+instrument now does.** It read *"the device returns in Live Mode but `m_launchpad` still believes it
+owns the surface"* and closed *"Not built yet"* — presence drops ownership on the third missed poll
+and the bounded re-wire brings the device back with Programmer Mode re-asserted. ⚠️ **The panic step
+after them changed with it**: there is a live, owned surface for the panic to hand back now, so the
+device visibly leaving Programmer Mode is part of the assertion rather than something the previous
+step had already caused.
 
 ⚠️ **Its beat counter used to be dead.** `[r $0-zero]` and `[r $0-read]` existed, the comment beside
 them claimed the tempo steps drove them, and **nothing anywhere sent to either name** — so the one
@@ -552,11 +571,11 @@ Deliberate, and stated in the step.
 
 ### `nanokontrol-bench.pd` — the nanoKONTROL acceptance run
 
-Same shape as `display-bench.pd`: eighteen steps, stepped by hand, and a printed `PASS IF` for
+Same shape as `display-bench.pd`: nineteen steps, stepped by hand, and a printed `PASS IF` for
 every step **including the ones whose correct result is that nothing happens**. Load it as a third
 patch after `mother.pd` and `main.pd`. Steps 1–14 drive themselves off the `disp`, `err` and `mode`
-buses; **15–17 need your hands on the nanoKONTROL**, because nothing but the real controller can
-exercise `[ctlin]`.
+buses; **15–19 need your hands on the nanoKONTROL**, because nothing but the real controller can
+exercise `[ctlin]` — and 18 and 19 need them on the cable.
 
 Step 2 and step 6 are the regression gate on the display rewrite. Steps 7–14 are `display-bench`'s
 assertions, re-run because the param layer they sit next to was rewritten.
@@ -596,7 +615,7 @@ Three steps carry the load:
 
 ### `phone-bench.pd` — the phone acceptance run
 
-**Fifteen steps, and the first bench whose subject is not the Organelle** — every `PASS IF`
+**Fourteen steps, and the first bench whose subject is not the Organelle** — every `PASS IF`
 describes what the *phone* shows. **PdParty has to be open on the `CutItRemote` scene before
 step 1**, and step 1 exists to confirm that before anything depends on it.
 

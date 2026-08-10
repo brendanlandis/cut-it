@@ -62,13 +62,26 @@ RE_COMPLETE = _steps.RE_COMPLETE
 # ⚠️ ERR ON THE SIDE OF LISTING. A dependency left out means a verdict stays
 # green across a change that invalidated it, which is the failure that matters;
 # one listed too many costs a re-run.
+#
+# ⚠️ THE THREE PRESENCE FILES ARE ON THREE BENCHES BECAUSE THREE BENCHES NOW ASK
+# A HOT-SWAP QUESTION. u_present owns the shared bound, c_presence is the
+# per-device clock inside each m_, and c_devid is the manufacturer-byte matcher
+# that decides whether a reply was this device's -- so a change to any of them
+# invalidates "the warn appeared" and "it came back within 60 seconds" on every
+# one of them.
 DEPS = {
     "display":     ["Cut It/g_oled.pd", "Cut It/u_err.pd"],
     "launchpad":   ["Cut It/g_grid.pd", "Cut It/m_launchpad.pd",
-                    "Cut It/c_clock.pd", "Cut It/u_err.pd"],
+                    "Cut It/c_clock.pd", "Cut It/u_err.pd",
+                    "Cut It/u_present.pd", "Cut It/c_presence.pd",
+                    "Cut It/c_devid.pd"],
     "midi":        ["Cut It/m_404.pd", "Cut It/m_volca.pd", "Cut It/u_map.pd",
-                    "Cut It/cut-it-map.txt", "Cut It/g_oled.pd"],
-    "nanokontrol": ["Cut It/m_nano.pd", "Cut It/g_oled.pd", "Cut It/u_err.pd"],
+                    "Cut It/cut-it-map.txt", "Cut It/g_oled.pd",
+                    "Cut It/u_present.pd", "Cut It/c_presence.pd",
+                    "Cut It/c_devid.pd"],
+    "nanokontrol": ["Cut It/m_nano.pd", "Cut It/g_oled.pd", "Cut It/u_err.pd",
+                    "Cut It/u_present.pd", "Cut It/c_presence.pd",
+                    "Cut It/c_devid.pd"],
     "phone":       ["Cut It/u_net.pd", "Cut It/u_err.pd"],
     "state":       ["Cut It/u_state.pd", "Cut It/u_store.pd", "Cut It/u_init.pd"],
     "tempo":       ["Cut It/u_tempo.pd", "Cut It/c_clock.pd", "Cut It/u_map.pd"],

@@ -420,13 +420,13 @@ aftertouch afterwards rather than trusting the old numbers.
 
 ## Open
 
-- ⬜ **Item 235 is fixed and not yet verified on hardware.** See
-  [plan-v04.md](../../plan-v04.md) §3 and [presence.md](../module/presence.md).
-  A device absent at load now gets recovered: the arming gate was split rather than
-  removed, so the ownership drop still waits for a
-  proven reply while the bounded `wire.sh` recovery and its give-up do not. ⚠️ **Both directions
-  need the rig** — boot with it unplugged then plug it in, and boot with it plugged in to confirm
-  nothing regressed.
+- ✅ **Item 235 is closed, and verified on this hardware 2026-08-10.** Booted with the Launchpad
+  unplugged and plugged it in after: five `wire.sh` attempts missed it, the sixth caught it, and it
+  came back **completely** — re-enumerated, Programmer Mode re-asserted by the watchdog heartbeat at
+  a device the init SysEx had never reached, ownership restored, `g_grid` repainting the mode lamp.
+  No `warn` was raised while it had never answered, which is the arming gate holding, and the safe
+  exit still returns it to Live Mode through `/loadPatch`. See
+  [presence.md](../module/presence.md).
 - ⬜ **`[polytouchin]` has no stub, so the pressure path is uncovered.** See
   [plan-v04.md](../../plan-v04.md) §3. It was in neither MIDI
   inventory list in `test/gate/lib-scratch.sh` until a closed-question scan found it, and this

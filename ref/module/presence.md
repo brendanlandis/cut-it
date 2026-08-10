@@ -96,6 +96,23 @@ Which puts the wall clock at, from load:
 | 70 s | the eighth and last fork | unknown | 271 |
 | 72 s | `fail u_present rewire-gaveup`, once, naming nobody — the per-source `warn`s already did | unknown | 271 |
 
+### Verified on the hardware, 2026-08-10
+
+| Claim | How it was seen | Evidence | Item |
+|---|---|---|---|
+| A device **absent at load** is recovered — item 235's whole subject | Launchpad unplugged before launch, plugged in after: five `wire.sh` attempts missed it, the sixth caught it, `back m_launchpad` followed | verified | 235 |
+| …and comes back **fully** | Programmer Mode re-asserted by the heartbeat at a device the init SysEx never reached, ownership restored, `g_grid` repainted the mode lamp | verified | 276 |
+| An **absent** device raises no `warn` | no `warn m_launchpad device-lost` while it had never answered; the same device warned normally once seen and lost | verified | 276 |
+| The give-up **reports** | `fail u_present rewire-gaveup` reached `err` — the path that was unreachable behind the shut spigot | verified | 235 |
+| **Coalescing** | nano and 404 pulled together: two `rewire:` lines, not four. One bound served both | verified | 277 |
+| The **safe exit** survived the watchdog rewrite | patch swapped away through `/loadPatch`: Launchpad returned to Live Mode and its Setup button responded | verified | 278 |
+| ⛔ **USB enumeration races the retry** | replugged at ten seconds and the *first* attempt still missed — `wire.sh`'s own count showed 7 then 9. The Launchpad case used six of its eight | verified | 277 |
+
+⚠️ **That last row is an argument for the bound that nobody had written down.** Eight attempts over
+seventy seconds is not only about giving a person time to reseat a cable — a single-shot recovery
+would have failed every replug tested today, because the device is still enumerating when the first
+attempt lands.
+
 ⚠️ **A run longer than ~70 s with a device unplugged now raises a real `fail` on `err`.** That is the
 feature working. Nothing in `test/run.sh` runs that long; a hands-on bench for another device will
 see it.
@@ -218,12 +235,11 @@ more. The diagnostic screen that reads all of this is
 **[plan-v03.4.md](../../plan-v03.4.md) owns all four of these** and strikes them when it lands.
 [plan-v04.md](../../plan-v04.md) §3 is where any survivor waits if that plan is deleted first.
 
-⬜ **None of this is hardware-verified.** See [plan-v04.md](../../plan-v04.md) §3.
-  Every claim above is a Mac gate's. Three directions need the rig, per device: unplug mid-run and
-  watch the `warn` and the recovery; **boot with it unplugged** and plug it in, which is the case
-  item 235 never covered; and leave it unplugged past the bound to confirm the give-up **reports**
-  rather than going quiet. Then `killall pd` and confirm the Launchpad returns to Live Mode — the
-  safe exit is two subpatches from what changed.
+⬜ **Two of the four devices were never given their own transition run.** See
+  [plan-v04.md](../../plan-v04.md) §3. The SP-404's *detection* is proven — it stays silent at boot,
+  which it can only do by matching byte 65 on port 3 — but it was never unplugged on its own, and the
+  Volca has no audible test because its only mapping is a CC that needs the device already sounding.
+  The shared machinery underneath both is verified.
 
 ⬜ **The eight bench steps are not written.** See [plan-v04.md](../../plan-v04.md) §3.
   Two cases per device — present-at-load-then-unplugged, and absent-at-load-then-plugged-in — which

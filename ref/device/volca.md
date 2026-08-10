@@ -92,10 +92,20 @@ ageing, and it can never be declared lost or back. **The Volca transmits nothing
 is no evidence of its presence for any amount of code to find, and the alternative to recording that
 is a silence that reads as an oversight.
 
-⚠️ **Recovery still reaches it.** `u_present` re-runs `wire.sh` for the whole rig whenever *any*
-source is lost, so a replugged Volca comes back with everything else — but nothing in the patch can
-confirm that it did. Only your ears can, which is why its bench step is judged by ear. See
-[presence.md](../module/presence.md).
+⛔ **ITS RECOVERY IS PARASITIC, AND THAT IS SHARPER THAN IT FIRST READS.** `u_present` re-runs
+`wire.sh` whenever *any* source is lost — so a replugged Volca comes back **only if a detectable
+device happened to be missing at the same time**. Unplug the interface on its own and nothing is
+lost, nothing forks, and the Volca is silently unreachable until the patch is reloaded.
+
+⚠️ **And it was worse than that until 2026-08-10.** Pulling the interface also knocked the SP-404 off
+the shared USB bus, which *did* start a recovery — but the 404 answered first, the lost count hit
+zero, the counter reset, and the Volca was left disconnected because the one attempt that ran had
+landed while it was still enumerating. Measured, item 275. `u_present` now fires **one trailing
+`wire.sh` at the moment the last device returns**, which is the best-informed instant available: a
+device answering its inquiry is the signal that enumeration has finished.
+
+⚠️ **Nothing in the patch can confirm the Volca came back.** Only your ears can, which is why its
+bench step is judged by ear. See [presence.md](../module/presence.md).
 
 ## Traps
 
@@ -162,6 +172,16 @@ to the wrong place. **The SP-404 has ten and cannot use this** — see
 [ref/device/sp404.md](sp404.md) → *Traps*.
 
 ## Open
+
+- ⬜ **The Volca makes a sound on every patch LOAD, and nothing in Cut It accounts for it.** See
+  [plan-v04.md](../../plan-v04.md) §3. Heard three times on 2026-08-10 — twice on a `/loadPatch`
+  swap, once on a by-hand `killall` and relaunch — and **never** on a `wire.sh` re-wire, including
+  runs where the interface was unplugged and replugged. With `start`, `stop` and `panic` all tapped
+  at load, **none of them fires**, so the patch's own transport is excluded. What is left is below
+  Cut It: mother's own load or unload, or the Uno interface emitting a stray byte on its DIN out when
+  the host ALSA port opens and closes. ⚠️ **It matters for plan-v03.4's Phase 1b**, which makes a
+  reload a user-facing gesture — a `recover` that ends with the Volca blurting is a venue problem,
+  and the cause needs to be known before that ships.
 
 **Nothing.** That nothing here can be read back off the wire is a **permanent limitation, not an
 unknown** — it is stated in **Facts** as item 268, with `unknown` as its evidence value, so it

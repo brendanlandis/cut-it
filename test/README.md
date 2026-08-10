@@ -203,8 +203,8 @@ signal that is always lit is one nobody reads.
 ## `display-assert.sh` and `launchpad-assert.sh` — no eyes and no hardware
 
 ```sh
-./test/gate/display-assert.sh          29 checks, ~46 s — the ARBITER
-./test/gate/launchpad-assert.sh         5 checks, ~4 s  — the DEVICE
+./test/gate/display-assert.sh          31 checks, ~46 s — the ARBITER
+./test/gate/launchpad-assert.sh         8 checks, ~4 s  — the DEVICE
 ```
 
 Both take `--keep` to leave the byte capture behind to read. **They were one gate**, which is why
@@ -240,7 +240,7 @@ rewriting the box. **`Cut It/` is never touched**; the scratch copy is thrown aw
 The script counts the boxes it rewrote and **refuses to run if it found none** — otherwise every
 assertion would pass vacuously, which is worse than failing.
 
-**29 checks**: frame shape and the 1–108 span, the mode lamp index, the modal claiming all 108
+**31 checks**: frame shape and the 1–108 span, the mode lamp index, the modal claiming all 108
 specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
 underneath, the beat row never leaving 11–18, the grid going silent after a panic, and
 `m_launchpad`'s Programmer and Live SysEx.
@@ -284,7 +284,7 @@ halt the clock** — the transport pauses the subscribers, it does not clear the
 ## `map-assert.sh`, `sp404-assert.sh`, `volca-assert.sh` — the map and the output devices
 
 ```sh
-./test/gate/map-assert.sh            11 checks, ~7 s — the lookup, and the static lint
+./test/gate/map-assert.sh            38 checks, ~7 s — the lookup, and the static lint
 ./test/gate/sp404-assert.sh          17 checks, ~7 s — the 404 in BOTH directions
 ./test/gate/volca-assert.sh           6 checks, ~5 s — three destinations, one channel
 ```

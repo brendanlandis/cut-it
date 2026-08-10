@@ -115,7 +115,24 @@ what carries over to the shipped tick is *counter 32* and *counter 33*, not the 
 | The **safe exit** survived the watchdog rewrite | patch swapped away through `/loadPatch`: Launchpad returned to Live Mode and its Setup button responded | verified | 278 |
 | ⛔ **USB enumeration races the retry** | replugged at ten seconds and the *first* attempt still missed — `wire.sh`'s own count showed 7 then 9. The Launchpad case used six of its eight | verified | 277 |
 | The **SP-404 was lost on its own** and reported it | `/sdcard/cut-it-err.log`, session `BOOT 06:09:50`: `350000 warn m_404 device-lost` beside the nano, then `510000 warn m_404 device-lost` **alone**. A second `device-lost` for one source is only reachable through `[change]`, so it had come back in between; no `rewire-gaveup` follows, so it came back again | verified | 281 |
+| ⛔ **Unplugging one USB device knocks a BYSTANDER off**, and the re-wire repairs it silently | the SP-404 was declared lost **twice** on 2026-08-10 without being touched — `488000` and `424000` in two sessions — each time while a neighbouring device was pulled. Links dipped and were restored by a scheduled fork six seconds later | verified | 286 |
+| The give-up interval is **exactly** 64000 ms | `224000 warn m_nano device-lost` → `288000 fail`, and `522000` → `586000`. Two sessions, both exact — 32 ticks at the shipped 2000 ms | verified | 288 |
+| …and **72000 ms** from load when the device is absent at load | `72000 fail u_present rewire-gaveup`, the **only** line in that session — no per-source `warn`, because nothing was ever seen | verified | 288 |
+| ⛔ **ALSA renumbers clients across a replug, and `wire.sh` does not care** | the SP-404 went client `32 → 28` and the Volca's interface `28 → 32` — they swapped. After a reload every device was on its correct Pd port anyway: 404 on `128:2/128:6`, Volca on `128:3/128:7` | verified | 287 |
 | **No false loss in 9.5 hours** with the whole rig connected | the session that began `BOOT 06:53:30` ran to 16:21 with four devices plugged in and wrote **one** line to `/sdcard/cut-it-err.cur` — `warn u_net net-link-down`, which is the phone's socket and not presence — see [phone.md](../device/phone.md). Three active layers polling every 2 s is ~17 000 polls each, and `m_organelle` sat passive and silent throughout | verified | 282 |
+
+⚠️ **The bystander row is the one to remember at a gig: a warn can name a device you did not
+touch.** Pulling any USB cable can take a neighbour off the bus long enough to cross the three-poll
+threshold, and nothing on the instrument distinguishes that from a real unplug. It is also an
+argument for the shared re-wire nobody had written down — the recovery is not only for the device
+that went missing, and on both occasions it put the bystander back without anyone noticing.
+
+⚠️ **The renumbering row is the phantom-control hazard NOT happening.** `wire.sh` connects by name,
+which is stated in [boot.md](boot.md) and had never once been exercised against an actual
+renumbering. Had it wired by number, the SP-404 would have landed on the Volca's channel block and
+vice versa. ⛔ **The reload is what re-ran it** — a renumbering that happens while the bound is spent
+leaves the rig wired to nothing until the patch is loaded again, which is exactly what was observed
+before the reload.
 
 ⚠️ **The no-false-loss row is worth more than a gate can be.** Every headless gate here runs on a
 Mac, where every device is absent by definition and `[sysexin]` is a stub — so *"a device that is

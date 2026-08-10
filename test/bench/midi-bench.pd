@@ -146,13 +146,13 @@
 #X obj 20 5980 select 16;
 #X obj 240 5980 t b b b;
 #X msg 700 5980 === STEP-16-of-17 === HANDS -- THE VOLCA -- unplug it WITH the nanoKONTROL then plug both back in;
-#X msg 700 6030 PASS IF the Volca can be played again within 60 seconds -- BY EAR;
+#X msg 700 6030 PASS IF holding a Volca key and sweeping slider 1 changes the sound -- BY EAR. Slider 1 is Volca CC 41 which is VELOCITY -- so sweep it UP: left at the bottom it silences the device and that looks exactly like a dead link;
 #X msg 700 6080 >>> press GO to run step 16 of 17 -- THIS ONE NEEDS YOUR HANDS ON THE HARDWARE;
 #X obj 240 6150 s \$0-say;
 #X obj 20 6240 select 17;
 #X obj 240 6240 t b b b;
-#X msg 700 6240 === STEP-17-of-17 === HANDS -- ABSENT AT LOAD -- reload with the Volca interface unplugged then plug it in;
-#X msg 700 6290 PASS IF the Volca sounds -- BY EAR;
+#X msg 700 6240 === STEP-17-of-17 === HANDS -- ABSENT AT LOAD -- reload with the Volca interface AND the nano out then plug both in;
+#X msg 700 6290 PASS IF holding a Volca key and sweeping slider 1 changes the sound -- BY EAR. Sweep it UP -- CC 41 is velocity;
 #X msg 700 6340 >>> press GO to run step 17 of 17 -- THIS ONE NEEDS YOUR HANDS ON THE HARDWARE;
 #X obj 240 6410 s \$0-say;
 #X obj 20 6500 t b;

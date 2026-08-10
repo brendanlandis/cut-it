@@ -660,8 +660,17 @@ STEPS_MIDI = [
    'need': ['the patch freshly loaded with the SP-404 UNPLUGGED -- reload first then resume this bench with --from 15',
             'BANK A selected -- say it out loud']}),
 
+ # ⛔ THE ORACLE IS THE FADER CHANGING THE SOUND \, NEVER THE VOLCA MAKING ONE.
+ # Both of these steps used to read "PASS IF the Volca sounds -- BY EAR" \, which
+ # is satisfied by a Volca with no MIDI cable in it at all: it is a synth with its
+ # own keyboard and it sounds whenever it is powered. Measured on the rig
+ # 2026-08-10 -- the interface was enumerated and completely unsubscribed for two
+ # minutes and the keys still played. ref/device/volca.md said so before the step
+ # was written: its only mapping is a CC that needs the device ALREADY SOUNDING.
+ # ⚠️ THE TEXT CAME VERBATIM FROM THE PLAN and was checked against the punctuation
+ # rules rather than against what this device can demonstrate.
  ('HANDS -- THE VOLCA -- unplug it WITH the nanoKONTROL then plug both back in',
-  'PASS IF the Volca can be played again within 60 seconds -- BY EAR',
+  'PASS IF holding a Volca key and sweeping slider 1 changes the sound -- BY EAR. Slider 1 is Volca CC 41 which is VELOCITY -- so sweep it UP: left at the bottom it silences the device and that looks exactly like a dead link',
   [],
   # ⛔ THE NANOKONTROL COMES OUT TOO AND IT HAS TO. The Volca registers `none`, so
   # pulling it alone loses nothing, forks nothing and recovers nothing -- there is
@@ -674,18 +683,31 @@ STEPS_MIDI = [
   # the Volca on the bench exactly this way.
   # ⚠️ AND IT IS BY EAR AND ALWAYS WILL BE. The Volca transmits nothing, so there
   # is no readback and no predicate is possible -- see ref/device/volca.md.
-  {'do': 'unplug the Volca interface AND the nanoKONTROL together then plug both back in -- then play the Volca',
+  {'do': 'unplug the Volca interface AND the nanoKONTROL together -- count to fifteen so the loss is recorded -- then plug both back in and sweep slider 1 while holding a Volca key',
    'need': ['the Volca sounding and its USB interface connected',
             'the nanoKONTROL powered and connected',
             'mode 1 -- fader 1 is the only control bound to the Volca']}),
- ('HANDS -- ABSENT AT LOAD -- reload with the Volca interface unplugged then plug it in',
-  'PASS IF the Volca sounds -- BY EAR',
+ ('HANDS -- ABSENT AT LOAD -- reload with the Volca interface AND the nano out then plug both in',
+  'PASS IF holding a Volca key and sweeping slider 1 changes the sound -- BY EAR. Sweep it UP -- CC 41 is velocity',
   [],
-  # ⚠️ THIS ONE NEEDS NO SECOND DEVICE, and that is the difference from the step
-  # above. u_init runs wire.sh at boot whatever is plugged in, and the recovery
-  # counter is already running for the pollable layers that are absent -- so a
-  # Volca plugged in during the eight attempts is picked up by one of them.
-  {'do': 'plug it in and wait 60 seconds then play the Volca',
-   'need': ['the patch freshly loaded with the Volca interface UNPLUGGED -- reload first then resume this bench with --from 17',
-            'mode 1 -- fader 1 is the only control bound to the Volca']}),
+  # ⛔ THE NANOKONTROL COMES OUT HERE TOO, AND THIS STEP USED TO CLAIM OTHERWISE.
+  # It read "THIS ONE NEEDS NO SECOND DEVICE" and reasoned that the recovery
+  # counter would already be running for the pollable layers that are absent --
+  # which is only true if one IS absent. Leave the Launchpad, nano and 404 all
+  # plugged in and nothing is ever lost: u_present's spigot stays shut, the
+  # counter never starts, and the eight attempts the step is waiting for are never
+  # scheduled at all. u_init's boot fork ran before the cable went in.
+  #
+  # ⛔ MEASURED, 2026-08-10, item 285: the interface was plugged into a clean
+  # session and sat ENUMERATED AND COMPLETELY UNSUBSCRIBED for two minutes with an
+  # empty error log. The step as written would have failed on correct code, which
+  # is the exact defect the plan flagged for the step above it.
+  #
+  # ⚠️ SO THIS IS THE SAME SHAPE AS THE TRANSITION STEP, and it has to be: a none
+  # device cannot be recovered on its own in EITHER direction, and absent-at-load
+  # is the likelier one in a room -- you power the rig up and then plug the Volca
+  # in. See ref/device/volca.md.
+  {'do': 'plug both back in and wait 60 seconds then hold a Volca key and sweep slider 1',
+   'need': ['the patch freshly loaded with BOTH the Volca interface and the nanoKONTROL UNPLUGGED -- reload first then resume this bench with --from 17',
+            'mode 1 -- slider 1 is the only control bound to the Volca']}),
 ]

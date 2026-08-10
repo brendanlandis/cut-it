@@ -169,6 +169,55 @@ Volca *did* is a permanently weaker evidence class than anything measured off th
 127. The duplicated control note is what made it evidence rather than an impression, and it is what
 ruled out an accidental trigger.
 
+### ⛔ "The Volca sounds" proves NOTHING — it is a synth with its own keyboard
+
+The obvious by-ear test for *"is Pd reaching this device"* is to play it and listen. It cannot work.
+The Volca's keys are local: it sounds whenever it is powered, with or without a MIDI cable.
+✅ **Measured 2026-08-10** — the interface sat enumerated and completely unsubscribed for two minutes
+and the keys played normally throughout.
+
+**Fix:** the oracle is **a Cut It control changing the sound**, never the sound existing. Hold a key
+and sweep `slider-1`. That is the only mapping there is — `mode-1 slider-1 volca-cc 41` — so it is
+also the only audible evidence of the link that exists. ⚠️ **A bench step in this repo asserted
+`PASS IF the Volca sounds` and would have passed with the cable out**; it came verbatim from a plan
+that had checked its text against the punctuation rules and not against this page.
+
+### ⛔ Cut It can silence this device from `slider-1`, and it looks exactly like a dead link
+
+`mode-1 slider-1 volca-cc 41` and **CC 41 is Velocity** — a global parameter on this device, not a
+per-note value. Leave the fader at the bottom and the Volca goes silent **to its own keyboard**, so
+every symptom points at MIDI, USB or the interface, and none of them is at fault. Seen on the rig
+2026-08-10: the device was silent to its own keys, then began sounding again when the fader moved,
+with its screen showing the incoming parameter.
+
+**Fix:** before diagnosing silence, **sweep `slider-1` to the top**. It costs one gesture and it
+removes the most misleading state this instrument can put the Volca into.
+
+| | Value | Evidence | Item |
+|---|---|---|---|
+| `slider-1` in mode 1 | Volca **CC 41 — Velocity**, global, silences the device at 0 | verified | 284 |
+
+### ⛔ Absent at load, this device is never wired — not in sixty seconds, not ever
+
+A `none` device has no clock, so it cannot be lost; and `u_present`'s recovery is gated on
+*something* being lost. Boot the instrument with the Volca's interface unplugged and every pollable
+layer answers, nothing is lost, the spigot stays shut, the counter never starts, and **no `wire.sh`
+fork is ever scheduled**. `u_init`'s boot fork ran before the cable went in. ✅ **Measured** — plugged
+into a clean session, enumerated within a second, and still holding **zero subscriptions** two
+minutes later with an empty error log.
+
+⚠️ **This is the likelier direction in a room**, and it is not the one
+[presence.md](../module/presence.md) frames the gap around: you power the rig up, *then* plug the
+Volca in. There is no warning, because nothing is wrong from the instrument's point of view.
+
+**Fix:** there is no in-patch remedy today. Reload, or unplug a **detectable** device to make the
+recovery run — which nobody would guess. Both hot-swap bench steps therefore pull the nanoKONTROL
+alongside the interface.
+
+| | Behaviour | Evidence | Item |
+|---|---|---|---|
+| `none` device absent at load | enumerated, unsubscribed, never re-wired — 120 s observed | verified | 285 |
+
 ## Design
 
 ### One selector-prefixed inlet, not one inlet per capability

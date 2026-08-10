@@ -263,7 +263,7 @@ cascades without limit. Three forks tied to one cable event cannot.
 
 | | Evidence | Item |
 |---|----------|------|
-| `wire.sh` costs **133 ms** and is **idempotent** | verified | — |
+| `wire.sh` costs **~247 ms** and is **idempotent** — ⚠️ this row said **133 ms** until it was re-measured; see [presence.md](../module/presence.md) | verified | 292 |
 | Ten forks fired back to back produced **no audio complaint** on Pd's console | verified | — |
 | The recovery gives up at about **70 s**, so a device nobody intends to plug back in cannot make Pd fork all night | verified | — |
 

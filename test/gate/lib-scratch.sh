@@ -127,6 +127,31 @@ scratch_state_dir() {
     }
 }
 
+scratch_watch_fast() {
+    # ⛔ MAKE THE HEARTBEAT OBSERVABLE WITHOUT CHANGING WHAT IT IS. The re-wire
+    # watch fires every 8 ticks, so 16 s at the shipped tick -- and the main
+    # presence run is about 40 s wide, which is two fires landing wherever the
+    # arithmetic puts them. The claim being tested is NOT the interval; it is
+    # that the watch runs off the RAW tick rather than through the recovery's
+    # spigot, so it fires while nothing is lost. Firing every tick makes that
+    # observable in every window.
+    #
+    # ⛔ THE SHIPPED INTERVAL IS ASSERTED SEPARATELY AND STATICALLY, by reading
+    # u_root.pd in presence-assert.py. Scaling a number in a scratch copy without
+    # checking the real one somewhere is how a gate comes to test a patch that
+    # does not ship.
+    #
+    # ⚠️ SAME SHAPE AND SAME CAVEAT AS scratch_scale_present BELOW: rewrite, then
+    # prove the rewrite landed. A sed that silently matched nothing leaves the
+    # gate asserting the shipped timing and reporting it as the scaled one.
+    _w=$1
+    sed -i '' "s|u_present 4000 2000 33 8|u_present 4000 2000 33 1|" "$_w/patch/u_root.pd"
+    grep -q "u_present 4000 2000 33 1" "$_w/patch/u_root.pd" || {
+        echo "scratch_watch_fast: the rewrite did not land in $_w/patch/u_root.pd" >&2
+        return 1
+    }
+}
+
 scratch_scale_present() {
     # ⛔ SCALE THE TWO TIMES AND LEAVE THE COUNTS ALONE, AND ASSERT THE REWRITE
     # WORKED. Same shape and same reason as scratch_state_dir above.

@@ -75,7 +75,7 @@ silently, because a matcher that matches nothing looks exactly like a device tha
 
 ### The arithmetic, and every number in it is load-bearing
 
-`u_root` instantiates `[u_present 4000 2000 33]`.
+`u_root` instantiates `[u_present 4000 2000 33 8]`.
 
 | | Value | Why | Evidence | Item |
 |---|---|---|---|---|
@@ -86,13 +86,46 @@ silently, because a matcher that matches nothing looks exactly like a device tha
 | fork interval | every 4th tick | `[mod 4]` in `u_present` | verified | 271 |
 | give-up | tick 33 | `[moses 33]`, so **8 forks** at ticks 4…32 | verified | 271 |
 | trailing fork | **one**, off the transition to nothing-lost | not on the interval — see *Design* | verified | 275 |
+| watch interval | every **8 ticks**, so ~16 s | `u_present`'s fourth argument — the heartbeat below | verified | 292 |
+
+### The heartbeat, for a device nothing ever lost
+
+⛔ **Everything above recovers a device that WAS here and went away, and every bit of it is gated on
+something being LOST.** A device registered `none` has no clock and can never be lost, so it was
+never recovered at all: plug the Volca's interface into a running instrument and it enumerates in
+under a second and sits **completely unsubscribed, forever**. Item 285, and ✅ seen on the rig
+2026-08-10 on a session that had been up 1 day 21 hours.
+
+`u_present` forks **`wire-watch.sh`** on its own interval, off the raw tick rather than through the
+recovery's spigot.
+
+| | Value | Evidence | Item |
+|---|---|---|---|
+| What it hashes | the ALSA **client names** only, never the subscriptions | verified | 292 |
+| Cost of the probe | **~50 ms**, measured three times on the device | verified | 292 |
+| Cost of `wire.sh` itself | **~247 ms**, measured three times — ⚠️ not the 133 ms the patch comment claimed | verified | 292 |
+| `wire.sh` is idempotent | 9 connections, twice in a row, no change | verified | 292 |
+
+⛔ **Hashing the names and not the subscriptions is the whole trick.** `aconnect -l` prints
+`Connecting To:` under each client, so hashing all of it would change the moment `wire.sh` connected
+anything — the watcher would see its own work as a change and re-wire again on the next tick,
+forever. ✅ Measured both ways: with the filter the hash is **byte-identical** across a `wire.sh`
+run, so one device event costs one re-wire.
+
+⚠️ **This is a fork on a real event, not a fork on a timer**, which is the distinction Phase 4's
+one-fork-per-load rule is actually about. The heartbeat costs one 50 ms probe; the 247 ms re-wire
+happens only when the rig has actually changed.
+
+⛔ **Pd 0.49 cannot read `/proc` and that was measured, not assumed.** Watching
+`/proc/asound/seq/clients` with `[text read]` would have cost no fork at all — but procfs reports
+size 0, Pd `lseek`s, and the read fails outright: `lseek: Invalid argument`, `text size` 0.
 
 ### Every fork says which kind it is, on `err`
 
 | Line | Fires | Evidence | Item |
 |---|---|---|---|
-| `warn u_present rewire-try` | each of the eight **scheduled** attempts | verified | 289 |
-| `warn u_present rewire-last` | the **single trailing** fork, when the last lost device answers | verified | 289 |
+| `info u_present rewire-try` | each of the eight **scheduled** attempts | verified | 289 |
+| `info u_present rewire-last` | the **single trailing** fork, when the last lost device answers | verified | 289 |
 | `fail u_present rewire-gaveup` | once, when the bound is spent | verified | 235 |
 
 ⛔ **A fork nothing records is a repair nobody can attribute.** The attempts had a `[print rewire]`
@@ -102,10 +135,9 @@ went from unsubscribed to wired on a **live** instrument, and `/sdcard/cut-it-er
 say about it — no `BOOT`, no `device-lost`, no `rewire-gaveup`, Pd's pid unchanged. Something ran
 `wire.sh` and nothing anywhere recorded it.
 
-⚠️ **`warn`, not `fail`, and the difference is what makes it usable in a set.** Neither is a failure
-— the give-up already says `fail`. The mode filter drops `warn` from the **screen** in perform mode
-and [error.md](error.md)'s log is unconditional, so a performance records every attempt without any
-of them drawing over it.
+⚠️ **`info`, which is logged and never drawn** — see [error.md](error.md). Neither is a failure, the
+give-up already says `fail`, and eight alerts per episode on a 21-character screen mid-set is noise.
+✅ Built as `warn` first and `oled-assert.sh` caught it inside one run, drawing over a modal.
 
 ⛔ **The two names are separate because both forks converge on one `sh wire.sh` message box.** A
 report tapped below that junction would name every scheduled attempt as the trailing one, and
@@ -268,9 +300,10 @@ must not double the fork rate, and the gate asserts it by counting: three lost s
 forks over the run, not nine.
 
 **⚠️ 12 seconds was useless in a room.** The first version gave up that fast and the very first
-hardware test missed the window entirely — nobody reseats a cable in twelve seconds. `wire.sh` costs
-133 ms, is idempotent, and ten forks back to back produced no audio complaint, all measured before
-Phase 4's *one fork per load, never per event* rule was bent.
+hardware test missed the window entirely — nobody reseats a cable in twelve seconds. `wire.sh` is
+idempotent and ten forks back to back produced no audio complaint, all measured before Phase 4's
+*one fork per load, never per event* rule was bent. **Its cost is in the heartbeat table above** —
+⚠️ **re-measured at ~247 ms in 2026-08-10, where three places in this repo said 133.**
 
 **The quieter bug the shared re-wire also fixes, and it needed no code.** `wire.sh`'s three
 `aconnect -d` lines undo mother's own autoconnect — but that undo has **already run** by the time a

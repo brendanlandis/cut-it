@@ -210,13 +210,17 @@ minutes later with an empty error log.
 [presence.md](../module/presence.md) frames the gap around: you power the rig up, *then* plug the
 Volca in. There is no warning, because nothing is wrong from the instrument's point of view.
 
-**Fix:** there is no in-patch remedy today. Reload, or unplug a **detectable** device to make the
-recovery run — which nobody would guess. Both hot-swap bench steps therefore pull the nanoKONTROL
-alongside the interface.
+**Fix:** `u_present` forks **`wire-watch.sh`** on a heartbeat — every 8 ticks, so ~16 s. It hashes
+the ALSA **client names** and runs `wire.sh` only when they change, so a device appearing is wired
+whether or not anything was ever lost. ⚠️ **The hot-swap bench steps still pull the nanoKONTROL
+alongside the interface**, because they were written to test the *recovery*, and that path is
+unchanged.
 
 | | Behaviour | Evidence | Item |
 |---|---|---|---|
 | `none` device absent at load | enumerated, unsubscribed, never re-wired — 120 s observed | verified | 285 |
+| …and seen again, unprompted | `USB Uno MIDI Interface` bare on a session up **1 day 21 h** — no `Connecting To`, no `Connected From`, both Pd ports unattached | verified | 285 |
+| The heartbeat closes it | `wire-watch.sh` fires while **nothing** is lost, which no other fork in `u_present` can do | verified | 292 |
 
 ## Design
 

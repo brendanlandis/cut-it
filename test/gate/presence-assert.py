@@ -159,7 +159,12 @@ def main_run(cap):
     # 1500 ms wiring stage, arrives late enough to be inside one. That is why
     # this is two checks: the three prove the STUB, and wire.sh proves the
     # WINDOWING as well.
-    quiet = sorted(s for v in by.values() for s in v if s != "wire.sh")
+    # ⚠️ wire-watch.sh IS EXCLUDED HERE AND ASSERTED SEPARATELY BELOW. It is
+    # a HEARTBEAT, not a one-shot -- it fires for the whole life of the
+    # patch -- so folding it into a list of scripts that run once at load
+    # would make this check depend on how long the run happened to be.
+    quiet = sorted(s for v in by.values() for s in v
+                   if s not in ("wire.sh", "wire-watch.sh"))
     if not A.check("⛔ the shell stub is installed -- the three loadbang scripts fired",
                    quiet == ["logroll.sh", "phone-ip.sh", "state-dir.sh"],
                    "saw %s, wanted one each of logroll.sh, phone-ip.sh and "
@@ -346,6 +351,61 @@ def main_run(cap):
             "unbounded stream that rule exists to prevent"
             % wire_in(by, "SETTLED"))
 
+    # --- ⛔ THE HEARTBEAT, WHICH FIRES WHEN NOTHING IS LOST -------------------
+    # ⛔ ITEM 285: A DEVICE NOTHING EVER LOST IS NEVER RECOVERED. Every fork
+    # above is gated on something being lost, and a `none` device -- the Volca,
+    # which transmits nothing and can never be polled -- has no clock, so it can
+    # never be lost. Plug its interface into a running instrument and it
+    # enumerates in a second and sits unsubscribed forever. Seen on the rig
+    # 2026-08-10 after 1 day 21 hours up.
+    #
+    # ⛔ SETTLED IS THE WINDOW THAT DECIDES IT, and it was chosen by measuring
+    # rather than by reasoning. Every device has answered by then, so nothing is
+    # lost -- which is why the check directly above asserts ZERO wire.sh forks
+    # here. A heartbeat in the same window is therefore the only positive
+    # evidence in this file that the watch does NOT share the recovery's gate.
+    #
+    # ⚠️ THE OBVIOUS CHOICE WAS WRONG AND THE MUTATION CAUGHT IT. This first read
+    # "BEFORE-LOSS or SETTLED", and BEFORE-LOSS is not quiet at all: no MIDI
+    # device ever answers on a Mac, so layers are already lost by then. Gating
+    # the watch behind the recovery spigot -- the exact regression this guards --
+    # left it firing in BEFORE-LOSS and the check passed. Measured both builds:
+    # correct fires in BOOT, FOREIGN and SETTLED; gated fires in BEFORE-LOSS and
+    # OWN-REPLY and never in SETTLED.
+    # ⛔ WHAT ACTUALLY SHIPS, READ OFF u_root.pd, because the copy this run
+    # judges has had its watch interval scaled to every tick so the property
+    # below is observable at all. Scaling a number in a scratch copy without
+    # asserting the real one somewhere is how a gate comes to test a patch that
+    # does not ship -- and the scaled value would satisfy every check here.
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "..", "..", "Cut It", "u_root.pd")
+    inst = re.search(r"u_present\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)",
+                     open(root, encoding="utf-8").read())
+    A.check("⛔ u_root ships the four presence arguments, watch included",
+            bool(inst),
+            "no `u_present <settle> <tick> <give-up> <watch>` in u_root.pd -- a "
+            "three-argument instantiation leaves the watch interval at 0 and Pd "
+            "0.49 does not warn about a missing creation argument")
+    if inst:
+        A.check("⛔ ...and the shipped watch interval is 8 ticks, not the scaled 1",
+                inst.group(4) == "8",
+                "u_root instantiates a watch interval of %s. The gate scales it "
+                "to 1 in its own copy; if the SHIPPED patch is 1 the instrument "
+                "forks a probe every 2 s forever" % inst.group(4))
+
+    watch = sum(by.get(m, []).count("wire-watch.sh") for m in MARKS)
+    A.check("⛔ the re-wire heartbeat fires at all -- item 285's whole subject",
+            watch > 0,
+            "no wire-watch.sh fork anywhere in the run. A device that was never "
+            "lost is then never wired, which is the gap this closes")
+    A.check("⛔ ...and in SETTLED, where nothing is lost and no other fork can be",
+            by.get("SETTLED", []).count("wire-watch.sh") > 0,
+            "the heartbeat fired %d time(s) overall but NONE in SETTLED, the one "
+            "window where every device has come back. If it only fires while "
+            "something is missing then it is sharing the recovery's gate, and a "
+            "device nothing ever lost is still never wired -- item 285 open, with "
+            "a green gate over it" % watch)
+
     # --- ⛔ AND IT SAYS SO ON err, WHICH IS WHAT MAKES IT ATTRIBUTABLE --------
     # ⛔ A FORK THE LOG CANNOT NAME IS THE DEFECT THIS CLOSES. The attempts had a
     # [print rewire] and nothing else, and a menu-launched patch sends stdout to
@@ -440,7 +500,12 @@ def bound_run(cap):
     # This is a SECOND scratch copy with its own shell stub, and the two headline
     # assertions below -- the give-up arrived, nothing forked afterwards -- are
     # both answered just as well by a copy that never loaded at all.
-    quiet = sorted(s for v in by.values() for s in v if s != "wire.sh")
+    # ⚠️ wire-watch.sh IS EXCLUDED HERE AND ASSERTED SEPARATELY BELOW. It is
+    # a HEARTBEAT, not a one-shot -- it fires for the whole life of the
+    # patch -- so folding it into a list of scripts that run once at load
+    # would make this check depend on how long the run happened to be.
+    quiet = sorted(s for v in by.values() for s in v
+                   if s not in ("wire.sh", "wire-watch.sh"))
     if not A.check("⛔ the shell stub is installed in the scaled copy too",
                    quiet == ["logroll.sh", "phone-ip.sh", "state-dir.sh"],
                    "saw %s, wanted one each of logroll.sh, phone-ip.sh and "

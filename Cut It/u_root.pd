@@ -46,7 +46,7 @@
 #X text 1700 1560 the Korg Volca FM \, and the FIRST OUTPUT-ONLY device layer in this patch -- it is told what to play rather than publishing what was touched. IT SITS HERE RATHER THAN IN THE m_ COLUMN because it has a cord \, and on this canvas the cords decide placement: it is wired straight up to u_map \, which is the only file allowed to decide that a note should sound. One cord \, selector-prefixed \, per C-2., f 44;
 #X obj 2050 1400 m_404 \$4;
 #X text 2050 1450 the SP-404MKII \, and the first BIDIRECTIONAL device layer -- it publishes pad presses on param and is told which pads to trigger through this cord. Wired to u_map for the same reason m_volca is \, and placed by its cord rather than by column., f 30;
-#X obj 1450 900 u_present 4000 2000 33;
+#X obj 1450 900 u_present 4000 2000 33 8;
 #X text 2600 900 DEVICE PRESENCE \, and the ONE bounded wire.sh recovery serving every device. It holds no per-device state -- a c_presence inside each pollable m_ decides whether ITS device is lost and this counts how many are \, so two cables out at once cannot double the fork rate. ⚠️ THE 4000 IS COUPLED TO u_init's LAST STAGE \, exactly like u_tempo's 4000: it must not tick before wire.sh has run once., f 34;
 #X connect 3 0 4 0;
 #X connect 3 0 7 0;

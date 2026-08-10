@@ -52,6 +52,10 @@ scratch_require "Cut It/m_launchpad.pd" "Cut It/g_grid.pd" "Cut It/wire.sh" \
 WORK=${TMPDIR:-/tmp}/cutit-presence-$$
 scratch_make "$WORK"
 scratch_state_dir "$WORK"
+# ⛔ THE HEARTBEAT FIRES EVERY TICK IN THIS COPY, so "it runs while nothing is
+# lost" is observable in every window rather than wherever 16 s happens to
+# land in a 40 s run. The SHIPPED interval is asserted statically below.
+scratch_watch_fast "$WORK"
 
 # ⛔ THE COUNTING SHELL STUB, COPIED UNDER THE NAME PD WILL LOOK FOR -- the same
 # trick init-assert.sh uses, and for the same reason. [shell] is an EXTERNAL, so

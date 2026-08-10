@@ -37,7 +37,7 @@ were false.
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
 | `map-assert.sh` | 38 | `module/map` |
 | `state-assert.sh` | 15 | `module/state` |
-| `presence-assert.sh` | 32 | `module/presence` |
+| `presence-assert.sh` | 36 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
 | `nano-assert.sh` | 23 | `device/nanokontrol` |
 | `organelle-assert.sh` | 13 | `device/organelle` |
@@ -45,12 +45,12 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 6 | `device/volca` |
 
-**431 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
+**435 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **424**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **428**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
-⚠️ **`presence-assert.sh`'s 32 come from TWO Pd runs and one tally**, which is the only entry here
+⚠️ **`presence-assert.sh`'s 36 come from TWO Pd runs and one tally**, which is the only entry here
 that does. The first run is the schedule at the shipped tick; the second scales `u_present`'s settle
 and tick by ten and leaves its **counts** exactly as shipped, so the eighth re-wire and the give-up
 actually happen — inside nine seconds rather than seventy-two. ⛔ **One analyser reads both

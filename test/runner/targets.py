@@ -129,6 +129,13 @@ class Process(stream.Source):
         self.gos += 1
         self.gosender.send()
 
+    def rerun(self):
+        # ⚠️ NOT COUNTED AS A GO. `gos` is what the stall diagnosis reports, and
+        # a repeat advances nothing -- counting it would make the diagnostic
+        # claim the runner had driven the bench further than it has.
+        self.gosender.send("rerun")
+        return True
+
     def close(self):
         try:
             self.proc.terminate()

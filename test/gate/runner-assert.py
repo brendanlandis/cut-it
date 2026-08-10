@@ -235,6 +235,41 @@ def main():
     A.check("clean: every step gets a read prompt before GO -- not just hands "
             "steps", prompts == n, "%d prompts for %d steps" % (prompts, n))
 
+    # ⛔ [r]epeat MUST ASK AGAIN AND ADVANCE NOTHING. It fires the current step a
+    # second time so a person can actually read an OLED that ages a row out in
+    # ~1.3 s. The first implementation looped the whole STEP rather than the
+    # verdict prompt, so it re-described the step AND sent a second GO -- the
+    # patch moved on while the runner still thought it was here, and the only
+    # thing that noticed was the desync guard. Against a replay there is nothing
+    # to fire again, and the run must carry on regardless rather than desync.
+    # ⚠️ THE STEP COUNT IS THE ASSERTION. If a repeat consumed a GO, the marker
+    # for step 2 would be read as step 1's fire and the run would abort.
+    # ⚠️ INJECTED AT THE FIRST PROMPT THAT ACTUALLY ASKS A PERSON. Dropping "r"
+    # at a fixed index put it on a READ prompt instead -- midi step 1 is judged
+    # by a predicate and never asks for a verdict, so the key was swallowed as
+    # an enter and the fixture tested nothing while looking green.
+    rkeys, done = [], False
+    for step in bench.steps:
+        rkeys.append("")
+        if step.meta.get("check"):
+            continue
+        if not done:
+            rkeys.append("r")
+            done = True
+        rkeys.append("p")
+    assert done, "runner-assert: no step in %s is judged by a person" % BENCH
+    rc, out = run(write("clean.txt", clean), rkeys)
+    A.check("repeat: asks again rather than advancing the bench",
+            rc == 0 and ("%d passed" % n) in out and "DESYNC" not in out,
+            "rc=%d -- %s" % (rc, _tail(out)))
+    A.check("repeat: still describes each step exactly once",
+            len(re.findall(r"(?m)^  press enter", out)) == n,
+            "%d prompts for %d steps -- a repeat re-described its step"
+            % (len(re.findall(r"(?m)^  press enter", out)), n))
+    A.check("repeat: says so plainly when the source cannot fire again",
+            out.count("not available against a recorded console") == 1,
+            _tail(out))
+
     # -- 2. truncated at step 7 --------------------------------------------
     # ⛔ MUST NOT PASS. Seven good verdicts and a console that stops is a run
     # that did not happen, and reporting the seven as a result is the whole

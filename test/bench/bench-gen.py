@@ -24,7 +24,10 @@ GO is:
   * the encoder click, via [r encbut]                   (MAC ONLY -- see below)
   * ./test/run.sh --bench <name>                        (THE ONLY ONE THAT WORKS
                                                          ON THE DEVICE)
-Turning the encoder REPEATS the current step without advancing (Mac only).
+Turning the encoder REPEATS the current step without advancing (Mac only), and
+test/run.sh's [r]epeat does the same over the network on either target -- it
+sends `rerun` rather than `go`, so a step whose result is on the OLED for about
+a second can be looked at as many times as it takes.
 
 !! THE ENCODER DOES NOT DRIVE THIS BENCH ON THE ORGANELLE, and the plan that
 chose a single alternating control assumed it did. mother forwards encbut only
@@ -506,12 +509,32 @@ def build(name, cfg):
           "twice.", 46)
 
     net_r = p.obj(300, Y + 260, "netreceive 9998 1")
-    net_rt = p.obj(300, Y + 320, "route go")
+    net_rt = p.obj(300, Y + 320, "route go rerun")
     net_t = p.obj(300, Y + 380, "t b")
     net_s = p.obj(300, Y + 440, "s \\$0-go")
     p.con(net_r, 0, net_rt, 0)
     p.con(net_rt, 0, net_t, 0)
     p.con(net_t, 0, net_s, 0)
+
+    # ⛔ RERUN FIRES THE CURRENT STEP AGAIN AND ADVANCES NOTHING, because a person
+    # cannot read an OLED in the time one is on it. g_oled ages a parameter row
+    # out after about 1.3 s -- by design -- so a visual step shows the thing you
+    # are asked to compare for barely longer than it takes to look up. The
+    # verdict menu has always offered [r]epeat and the runner refused it on the
+    # only target a bench actually runs on.
+    # ⚠️ IT BANGS THE SAME STORE THE FIRST FIRE DID, so a repeat is the step
+    # running again exactly as it ran the first time -- no separate path that
+    # could drift from it, and nothing that can disturb an assertion.
+    # ⚠️ [t b] BECAUSE A route REJECT CARRIES DATA (C-8): the outlet hands on the
+    # word that failed to match, and `run_store` must see a bang.
+    rr_t = p.obj(620, Y + 380, "t b")
+    rr_s = p.obj(620, Y + 440, "s \\$0-rerun")
+    p.con(net_rt, 1, rr_t, 0)
+    p.con(rr_t, 0, rr_s, 0)
+    p.txt(860, Y + 380,
+          "rerun fires the CURRENT step again without advancing \\, so a visual "
+          "step can be looked at more than once. [r]epeat in test/run.sh sends "
+          "it.", 46)
 
     rep_r = p.obj(1400, Y, "r enc")
     rep_t = p.obj(1400, Y + 60, "t b")
@@ -550,6 +573,11 @@ def build(name, cfg):
     p.con(run_t, 0, run_store, 0)
     run_go = p.obj(20, Y + 370, "s \\$0-do-run")
     p.con(run_store, 0, run_go, 0)
+    # ⚠️ THE REPEAT LANDS ON THE SAME STORE THE NORMAL FIRE DOES, so a repeated
+    # step is the step -- not a second copy of it that could drift. It does not
+    # touch the phase or the step number, so the bench does not advance.
+    rerun_r = p.obj(20, Y + 250, "r \\$0-rerun")
+    p.con(rerun_r, 0, run_store, 0)
 
     adv_t = p.obj(900, Y + 190, "t b b")
     p.con(phase_sel, 1, adv_t, 0)

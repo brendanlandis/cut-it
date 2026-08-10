@@ -551,17 +551,39 @@ def run_bench_driven(bench, target, auto_only, start, src):
                 verdict, note = "skip", why
                 record(step, verdict, note, auto=True)
             else:
-                verdict, note = ask(step, allow_undo=False)
+                # ⛔ THE REPEAT LOOP IS HERE AND NOT AROUND THE STEP. Asking again
+                # must not re-describe the step and must NOT send another GO --
+                # `continue` on the outer loop did both, and the second GO
+                # advanced the patch while the runner still believed it was on
+                # this step. The desync guard caught it, which is the only reason
+                # it was not a silently wrong verdict.
+                while True:
+                    verdict, note = ask(step, allow_undo=False)
+                    if verdict != "repeat":
+                        break
+                    # ⛔ A VISUAL STEP IS ON SCREEN FOR ABOUT A SECOND. g_oled
+                    # ages a parameter row out after ~1.3 s -- the instrument
+                    # working, not a fault -- so what a step asks you to compare
+                    # against a sentence is gone before the sentence is read.
+                    # `rerun` fires the CURRENT step again and advances nothing.
+                    # ⚠️ IT USED TO BE REFUSED ALONGSIDE `undo`, which was the
+                    # wrong half of a true statement: undo cannot work against a
+                    # running patch, because nothing can walk a bench backwards.
+                    # A repeat moves nothing, so it always could have.
+                    if src.rerun():
+                        stream.say("  fired again -- look as long as you need")
+                    else:
+                        stream.say("  not available against a recorded console")
             if verdict == "quit":
                 record(step, "interrupted", note)
                 stream.say("\n  stopped at step %d. Resume with:" % step.n)
                 stream.say("      ./test/run.sh --bench %s --target %s --from %d"
                            % (bench.name, target, step.n))
                 break
-            if verdict in ("repeat", "undo"):
-                # ⚠️ Neither is available with a patch on the other end: the
-                # bench has already moved, and pretending otherwise would put
-                # the runner and the patch on different steps. Say so.
+            if verdict == "undo":
+                # ⚠️ STILL REFUSED, and for the reason repeat no longer is: the
+                # bench has advanced past the previous step and nothing can walk
+                # a running patch backwards.
                 stream.say("  not while a bench is running -- it has already "
                            "advanced. Judge what you saw.")
                 continue

@@ -93,6 +93,15 @@ class Source(object):
     def go(self):
         raise NotImplementedError
 
+    def rerun(self):
+        """Fire the current step again without advancing. -> did it happen?
+
+        ⚠️ FALSE FROM A REPLAY, and honestly so: a recorded console cannot be
+        asked to do anything twice. The caller says so rather than pretending
+        the step ran again.
+        """
+        return False
+
     def close(self):
         pass
 
@@ -169,8 +178,14 @@ class Go(object):
         self.host, self.port = host, port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    def send(self):
-        self.sock.sendto(b"go;\n", (self.host, self.port))
+    def send(self, word="go"):
+        """`go` advances the bench. `rerun` fires the CURRENT step again.
+
+        ⚠️ Both go to the same [netreceive], and the bench routes them apart --
+        so a repeat travels the path a GO already proved works, rather than a
+        second mechanism that only ever runs when somebody presses r.
+        """
+        self.sock.sendto(("%s;\n" % word).encode(), (self.host, self.port))
 
     def close(self):
         self.sock.close()

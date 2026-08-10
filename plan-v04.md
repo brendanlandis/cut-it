@@ -95,18 +95,18 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 
 **The single place to look for what is unresolved.** Every `ref/` page's `Open` section points here.
 
-### What [plan-v03.4.md](plan-v03.4.md) still owns
+### What [plan-v03.4.md](plan-v03.4.md) and [plan-v03.4.1.md](plan-v03.4.1.md) still own
 
 ⛔ **These are NOT handed here, and that plan says so in its own landing checklist.** They are indexed
 here because every `ref/` page's `Open` points at this section, and a pointer that resolves to
-nothing is worse than no pointer. **This whole subsection goes when plan-v03.4.md does.**
+nothing is worse than no pointer. **This whole subsection goes when both of those plans do.**
 
 | Still open | Where it is executed |
 |---|---|
 | The eight bench steps — two cases × four devices, the Volca's judged by ear | Phase 6 |
 | The bound asserted by **reaching** it, on a scratch-scaled tick with the counts as shipped | Phase 6 |
-| The SP-404 and the Volca never got their own transition runs on the rig | Verification |
-| Panic becomes `recover` — the CC 90 tiers, the two-step OSC reload, the breadcrumb | Phase 1b |
+| The SP-404 and the Volca never got their own transition runs on the rig | v03.4, Verification |
+| Panic becomes `recover` — the CC 90 tiers, the two-step OSC reload, the breadcrumb | **[plan-v03.4.1.md](plan-v03.4.1.md)**, all of it |
 
 ### ⬜ `[polytouchin]` has no stub, so the Launchpad's pressure path is untested
 
@@ -158,9 +158,12 @@ expectation deliberately.
 **Panic means RECOVER, not silence** — decided 2026-08-08 with the rig present. The mixer's master
 fader is the better silence: instant, analogue, independent of whatever is misbehaving. ✅ The
 destructive half is already removed (item 251) — panic no longer hands the Launchpad back, which used
-to kill the grid until reload and bury Pd's Midi-In 1 under a clock flood. ⬜ **The build and the
-control binding are [plan-v03.4.md](plan-v03.4.md) Phase 1b**, because a reload closes item 235 by
-brute force.
+to kill the grid until reload and bury Pd's Midi-In 1 under a clock flood. ⬜ **The build and the control
+binding are [plan-v03.4.1.md](plan-v03.4.1.md)**, all of it. ⚠️ **Its original justification is
+obsolete** — it read "a reload closes item 235 by brute force", and item 235 is now closed properly
+and hardware-verified. What replaces it is sharper: a reload is the ONLY recovery that exists for a
+device nothing can detect, and the Volca was left stranded on 2026-08-10 proving the point (item
+275).
 
 **Parameter pickup is shipped and hardware-verified.** Items 239–242, on
 [ref/module/map.md](ref/module/map.md). ⛔ It found three further bugs on the device after the first

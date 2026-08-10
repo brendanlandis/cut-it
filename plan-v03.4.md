@@ -31,7 +31,7 @@ below them is kept for its reasoning only: the facts they produced live on
 | Phase 6 — ✅ the headless gate, including the trailing fork | **done** — 21 checks, falsified five ways. Do not rebuild it |
 | Phase 6 — the bound asserted by **reaching** it, on a scratch-scaled tick with the counts as shipped | not started |
 | Verification — the SP-404 and the Volca never got their own transition runs | the shared machinery beneath both is verified |
-| Phase 1b — panic becomes `recover` | not started |
+| Panic becomes `recover` | **moved out** to [plan-v03.4.1.md](plan-v03.4.1.md) — it is independent of everything here and this file should not wait on it |
 
 **Two claims in this plan turned out FALSE on hardware, and both are corrected in the `ref/` pages
 rather than in the prose below:**
@@ -73,7 +73,7 @@ that are actually left, not at the work that produced them.
 | Document | How much | Why |
 |---|---|---|
 | [CLAUDE.md](CLAUDE.md) | **All of it** | The router |
-| The **`pd`** skill | ⛔ **Invoked, not read** | Phase 1b edits shipped Pd beside the safe exit |
+| The **`pd`** skill | ⛔ **Invoked, not read** | You are editing tests, and `u_present` if a falsification needs it |
 | The **`gate`** skill | ⛔ **Invoked, not read** | Two of the three pieces are tests |
 | [ref/module/presence.md](ref/module/presence.md) | **All of it** | ⛔ **The single most important page here.** What was built, what was measured on the hardware, and the four traps. Do not re-derive any of it |
 | [plan-v04.md](plan-v04.md) | §3's *What plan-v03.4 still owns* | The index of these three pieces. ⚠️ Its *Launchpad watchdog* section is **gone** — that work landed |
@@ -84,16 +84,6 @@ that are actually left, not at the work that produced them.
 | `test/bench/bench-gen.py` | The `BENCHES` dict only | Keyed by output filename; `bench-verify.py` derives its own list from those keys |
 | [ref/conventions.md](ref/conventions.md) | The rules table, then only what it links | `C-1`…`C-14` |
 | `git log` | **Grep it, never read it** | Git is this project's only journal |
-
-**For Phase 1b, and not before you start it:**
-
-| Document | How much | Why |
-|---|---|---|
-| `Cut It/u_init.pd` | **All of it** | It owns `[shell]`, the boot sequence and therefore the reload |
-| `Cut It/u_map.pd` | The `route` box and the arming probe | `recover` needs a literal destination; the breadcrumb changes how arming is decided |
-| `Cut It/cut-it-map.txt` | All 20-odd rows | Six new rows for CC 90 |
-| [ref/module/map.md](ref/module/map.md) | `Facts`, and item 239 | Parameter pickup, which the reload path deliberately skips |
-| [ref/device/launchpad.md](ref/device/launchpad.md) | The safe exit, and item 252 | `/loadPatch` fires `quitting` first — ⚠️ verified on the hardware 2026-08-10 |
 
 **Do not read** `Cut It/g_oled.pd` (783 lines), `Cut It/u_net.pd`, the five `m_` device layers — they
 are finished — or any other `ref/module/` page.
@@ -118,47 +108,6 @@ are finished — or any other `ref/module/` page.
   subscriptions, so a poll detects loss and a bounded re-wire fixes it.
 - **`want` is not `own`.** A panic clears `want`, so the watchdog goes silent rather than fighting it.
 - **`u_net` has its own link watchdog**, but it detects the **socket**, not a device.
-
----
-
-## Phase 1b — panic becomes RECOVER, and it closes item 235 the blunt way
-
-**Decided 2026-08-08, with the rig in front of us.** Panic's job is not silence — the mixer's master
-fader is faster, analogue, and does not depend on the thing that is misbehaving. Panic's job is
-**recovery**: silence what is sounding, then reload the patch, so every device is re-enumerated into
-Pd and `wire.sh` runs fresh. That covers item 235 by brute force, including the never-present case
-Phase 1 is picking apart delicately.
-
-✅ **The destructive half is already removed** (item 251): panic no longer hands the Launchpad back.
-That was a bug — it killed the grid until reload and buried Pd's Midi-In 1 under a clock flood. Both
-gates were inverted deliberately and both were made to fail against the old code.
-
-**What is left to build, and the four things that make it non-trivial:**
-
-1. ⛔ **Silence must land BEFORE the reload.** Killing Pd mid-note never sends the note-off, so the
-   404 holds it — a panic that *creates* a stuck note. Sequence the existing note-off loop and the
-   `252` STOP, then fire the reload behind a short delay.
-2. ⛔ **The two-step OSC, or it silently does nothing.** `oscsend localhost 4001 /reloadNoRemount i 1`
-   **then** `/loadPatch s '!/Cut It'`. A bare name loads nothing at all and says nothing —
-   `tools/deploy.sh` documents this, and it still caught us on 2026-08-08.
-3. ⛔ **The failure mode is worse than the fault.** If the load does not take, there is no patch at
-   all, and the patch cannot verify its own reload because it is dead by then. This is item 243's
-   shape exactly. Design for it rather than discovering it.
-4. ⚠️ **Its core is untestable on the Mac.** `[shell]` is stubbed, so a gate can assert the silence
-   sequence and that the message is well formed, and can never assert that the reload happened. Say
-   so in the gate rather than implying coverage that does not exist.
-
-⚠️ **It breaks the one-fork-per-load rule** (Phase 4's). Defensibly — a panic is rare, user-initiated
-and ends the patch — but it must say so in a comment, the way `m_launchpad`'s bounded recovery does.
-
-⚠️ **Knobs come back latched.** mother re-pushes `knobs.txt`, pickup arms, and every knob is held
-until swept through its stored value (item 239). Correct on a normal boot; possibly wrong right after
-an emergency. ⬜ Decide whether the reload path should skip arming.
-
-⚠️ **Two tiers, so the meanings stay separate**: a short press silences only and is always safe; a
-held combination silences **and** reloads. That is also the answer to *"which control raises panic"*
-on [ref/device/launchpad.md](ref/device/launchpad.md) as item 251 — the question was unanswerable
-while panic was destructive.
 
 ---
 
@@ -272,7 +221,8 @@ real test is a patch swap through `/loadPatch`, which is what `tools/deploy.sh` 
 1. **The SP-404 and the Volca never got their own transition runs.** The shared machinery beneath
    both is verified, so this is confirmation rather than discovery.
 2. ⚠️ **The Volca cannot be tested alone** — see step 7 of the bench table above.
-3. **Phase 1b, all of it**, and its four hardware steps are inside that section.
+3. Nothing else. Panic-becomes-`recover` and its hardware steps moved to
+   [plan-v03.4.1.md](plan-v03.4.1.md).
 
 ---
 
@@ -289,8 +239,7 @@ the *Launchpad watchdog* section.
 1. The bound is asserted by **reaching** it, not by arithmetic.
 2. Each device has a gate **and** a bench step, covering the transition case and the absent-at-load
    case.
-3. Phase 1b is built, and hardware-verified.
-4. **This file is deleted**, and `plan-v04.md` §3's *What plan-v03.4 still owns* subsection goes with
+3. **This file is deleted**, and `plan-v04.md` §3's *What plan-v03.4 still owns* subsection goes with
    it.
 
 ⛔ **This plan does not hand its open items to `plan-v04.md`.** They are indexed there only so that

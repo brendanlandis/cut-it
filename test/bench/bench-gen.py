@@ -111,6 +111,7 @@ def check(steps, name):
         title, passif, actions, meta = S.norm(step)
         lint_meta(meta, actions, "%s step %d" % (name, i))
         lint_agreement(meta, passif, "%s step %d" % (name, i))
+        lint_resume(meta, i, "%s step %d" % (name, i))
         for label, s in (("title", title), ("pass_if", passif)):
             for ch in (",", ";"):
                 assert ch not in s, (
@@ -254,6 +255,39 @@ def lint_agreement(meta, pass_if, where):
                 "predicate is -- say which in the step rather than letting a "
                 "person and a program answer different questions."
                 % (where, claim, word))
+
+
+RESUME_RE = re.compile(r"--from\s+(\d+)")
+
+
+def lint_resume(meta, n, where):
+    """⛔ A STEP NUMBER WRITTEN INSIDE STEP TEXT GOES WRONG SILENTLY.
+
+    Four `need` lines say "reload first then resume this bench with `--from 22`",
+    and that number is the step's own index. Insert one step above any of them
+    and every later number is wrong -- the text still reads perfectly, the
+    generator still writes, the bench still loads, and a person following it
+    resumes at the wrong step and judges the wrong questions against the right
+    prose. Self-inflicted on 2026-08-10.
+
+    ⚠️ IT IS THE ONE NUMBER A STEP CAN KNOW ABOUT ITSELF, which is what makes it
+    checkable at all. Nothing else in this prose is derivable, and nothing else
+    here tries to be.
+    """
+    for field in ("do", "watch"):
+        for m in RESUME_RE.finditer(str(meta.get(field, ""))):
+            assert int(m.group(1)) == n, (
+                "%s: its `%s` says --from %s but it is step %d. That number is "
+                "the step's own index, so inserting a step above this one made "
+                "it wrong without changing a word of the text"
+                % (where, field, m.group(1), n))
+    for line in meta.get("need", []):
+        for m in RESUME_RE.finditer(line):
+            assert int(m.group(1)) == n, (
+                "%s: a `need` line says --from %s but it is step %d. That number "
+                "is the step's own index, so inserting a step above this one "
+                "made it wrong without changing a word of the text"
+                % (where, m.group(1), n))
 
 
 def lint_meta(meta, actions, where):

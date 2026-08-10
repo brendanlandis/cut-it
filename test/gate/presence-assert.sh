@@ -68,7 +68,7 @@ fi
 scratch_drive test/gate/presence-assert-drive-gen.py "$WORK/drive.pd"
 
 CAP="$WORK/capture.txt"
-echo "   running (about 32 s -- the three re-wires are at 13 s, 21 s and never) ..."
+echo "   running (about 32 s -- the three re-wires are at 14 s, 22 s and never) ..."
 scratch_run "$CAP" 60 -nogui -noaudio -nomidi -path "$WORK/patch" \
     "$WORK/patch/main-dev.pd" "$WORK/drive.pd"
 

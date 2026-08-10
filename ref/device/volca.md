@@ -12,7 +12,7 @@ added MIDI out; this is not an FM2.)
 It reaches the rig over DIN through a USB→DIN interface, so **Pd device 4, channel 49** carries the
 Volca's own channel 1.
 
-`m_volca.pd` has **one inlet, selector-prefixed** (`notes` / `cc` / `program`) and **no outlets** —
+`m_volca.pd` has **one inlet, selector-prefixed** (`notes` / `cc` / `program` / `note`) and **no outlets** —
 neither `param` (device-to-map) nor `disp` (display) fits a sounding note, so it is wired from
 `u_map` rather than fed by a bus.
 
@@ -92,10 +92,12 @@ ageing, and it can never be declared lost or back. **The Volca transmits nothing
 is no evidence of its presence for any amount of code to find, and the alternative to recording that
 is a silence that reads as an oversight.
 
-⛔ **ITS RECOVERY IS PARASITIC, AND THAT IS SHARPER THAN IT FIRST READS.** `u_present` re-runs
-`wire.sh` whenever *any* source is lost — so a replugged Volca comes back **only if a detectable
-device happened to be missing at the same time**. Unplug the interface on its own and nothing is
-lost, nothing forks, and the Volca is silently unreachable until the patch is reloaded.
+⛔ **ITS RECOVERY USED TO BE PARASITIC, AND THAT WAS SHARPER THAN IT FIRST READ.** `u_present`
+re-runs `wire.sh` whenever *any* source is lost — so a replugged Volca came back **only if a
+detectable device happened to be missing at the same time**. Unplug the interface on its own and
+nothing is lost, nothing forks. ✅ **Closed by the re-wire heartbeat**, which watches the ALSA client
+list and does not care whether anything was lost — see [presence.md](../module/presence.md). The
+recovery above is unchanged and still parasitic; the heartbeat is what covers the Volca.
 
 ⚠️ **And it was worse than that until 2026-08-10.** Pulling the interface also knocked the SP-404 off
 the shared USB bus, which *did* start a recovery — but the 404 answered first, the lost count hit
@@ -104,8 +106,9 @@ landed while it was still enumerating. Measured, item 275. `u_present` now fires
 `wire.sh` at the moment the last device returns**, which is the best-informed instant available: a
 device answering its inquiry is the signal that enumeration has finished.
 
-⚠️ **Nothing in the patch can confirm the Volca came back.** Only your ears can, which is why its
-bench step is judged by ear. See [presence.md](../module/presence.md).
+⚠️ **Nothing in the patch can confirm the Volca came back.** The heartbeat can say it re-wired —
+`info u_present rewire-try` reaches the log — but whether the Volca is *sounding* is still only your
+ears, which is why its bench step is judged by ear. See [presence.md](../module/presence.md).
 
 ## Traps
 
@@ -239,6 +242,27 @@ means `u_map` and this file disagree about the interface, and nothing else would
 The Volca has **one** channel, set cold at load, so `[makenote]` → `[noteout]` cannot send a note-off
 to the wrong place. **The SP-404 has ten and cannot use this** — see
 [ref/device/sp404.md](sp404.md) → *Traps*.
+
+### The `note` selector bypasses `makenote`, and pays for it with a panic
+
+⛔ **A keyboard cannot use `makenote`.** Its duration is fixed, so a **held key would release
+itself** — which is also why the map's `volca-note` destination cannot drive one. The `note`
+selector goes straight to the same `[noteout]`, and the note-off comes from the key as velocity 0.
+
+| | | Evidence | Item |
+|---|---|---|---|
+| `note <pitch> <velocity>` | a real note-on; velocity **0 is a real note-off** | verified | 293 |
+| It reuses the **same** `[noteout]` | one channel, one object, so `MIDI_EXPECT` stays at `noteout:2` | verified | 293 |
+| `panic` → **CC 123**, All Notes Off | `[ctlout 123]`, channel cold from the loadbang chain | verified | 293 |
+
+⛔ **The panic ships in the same commit as the `note` inlet and not later.** `makenote` owned the
+note-offs, which is what stopped a dropped cord or a reload leaving the Volca droning; bypassing it
+brings that risk back, and All Notes Off is what replaces it. `m_404` has the same box for the same
+reason.
+
+⚠️ **`[ctlout 123]`'s creation argument is the CONTROLLER, so the channel goes to inlet 2.** Wired
+to inlet 1 it sets the controller instead — the device receives `CC 49` on channel 1 and panic
+silently does nothing. Caught by `volca-assert.sh` on the first run.
 
 ## Open
 

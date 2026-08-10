@@ -36,7 +36,7 @@ mode-1 slider-1  volca-cc 41
 |-------|----|----------|------|
 | `<mode>` | The **second** atom of the `mode` bus message — `mode-1`, not `compose mode-1`. The class is `u_err`'s business | verified | — |
 | `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `sp-hit` | verified | — |
-| `<dest>` | One of the nine below, and **only** those | verified | 229 |
+| `<dest>` | One of the **ten** below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
 
 **A row with any other width is a lint failure**, not a runtime one — `map-assert.py` reads the
@@ -57,6 +57,7 @@ file and rejects it before Pd ever does.
 | `volca-cc` | The CC number | The CC value | verified | — |
 | `volca-prog` | The program number | A **gate only** — it decides whether the press counts | verified | — |
 | `404-pad` | The pad number | Velocity | verified | — |
+| `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key | verified | 293 |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -88,8 +89,9 @@ One destination fed from two surfaces would otherwise need two scalings.
 | Read | `read -c cut-it-map.txt` at `loadbang`, **no delay**. Relative, so it resolves against the patch folder on the Mac, on the device and inside the gate's scratch copy | verified | 229, 234 |
 | Empty table | Reported on `err` as `map-empty` | verified | 234 |
 
-**An unmapped control is the normal state of most controls and must stay silent.** Six modes × 42
-controls is 252 possible rows and the shipped file has thirteen.
+**An unmapped control is the normal state of most controls and must stay silent.** Six modes × 67
+controls is 402 possible rows and the shipped file has **38** — thirteen, plus the keyboard's 25 in
+mode 1.
 
 ### What happens at load
 
@@ -121,6 +123,7 @@ then hands it authority.
 | The held row is drawn for **knob 1 only** | it is built inside the pickup machine, which cannot know what a held knob maps to. Knobs 2–4 are held *silently* | verified | 240 |
 | **Reaching** the target releases, not only passing it | a target on a rail has no beyond: armed above a target of `0`, the flip test waits for `value < 0` | verified | 241 |
 | An **unmapped** control reports `<name> <raw>` on `disp` | `[moses 0]`'s left outlet — `[text search]` answers `-1`. Silent on every bus, never on the screen | verified | 242 |
+| …**except `og-key-*`**, which is silent on the screen too | 25 controls that also report their releases would evict a five-row screen twice per note. See *Traps* | verified | 293 |
 | The pickup gate sits **below** the lookup | so a held control still knows whether it is mapped. The lookup is a pure read | verified | 242 |
 | State | Five, per knob, in two 4-element arrays | verified | 236 |
 | mother pushes **once** at load and then says nothing | One `og-knob-1` in twelve seconds, untouched, on the device | verified | 237 |

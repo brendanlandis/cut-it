@@ -40,14 +40,14 @@ were false.
 | `presence-assert.sh` | 36 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
 | `nano-assert.sh` | 23 | `device/nanokontrol` |
-| `organelle-assert.sh` | 13 | `device/organelle` |
+| `organelle-assert.sh` | 17 | `device/organelle` |
 | `phone-assert.sh` | 28 | `device/phone` |
 | `sp404-assert.sh` | 17 | `device/sp404` |
-| `volca-assert.sh` | 6 | `device/volca` |
+| `volca-assert.sh` | 10 | `device/volca` |
 
-**435 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
+**443 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **428**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **436**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 36 come from TWO Pd runs and one tally**, which is the only entry here
@@ -300,7 +300,7 @@ halt the clock** — the transport pauses the subscribers, it does not clear the
 ```sh
 ./test/gate/map-assert.sh            38 checks, ~7 s — the lookup, and the static lint
 ./test/gate/sp404-assert.sh          17 checks, ~7 s — the 404 in BOTH directions
-./test/gate/volca-assert.sh           6 checks, ~5 s — three destinations, one channel
+./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
 
 Each takes `-v` for the detail behind every check and `--keep` to leave the scratch directory and

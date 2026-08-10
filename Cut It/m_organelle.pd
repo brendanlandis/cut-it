@@ -1,4 +1,4 @@
-#N canvas 20 20 2000 1900 12;
+#N canvas 20 20 2200 1900 12;
 #X text 20 20 m_organelle -- the Organelle's OWN front panel \, mapped like any other device. mother.pd publishes aux and the four knobs on reserved names \; this turns them into named controls on param and disp \, and knows nothing about what any of them does. Same layer \, same rules and the same silence about meaning as m_nano. Everything about this module is on ref/device/organelle.md., f 58;
 #X text 20 170 creation args: none. inlets: none. outlets: none., f 58;
 #X obj 20 300 r aux;
@@ -33,6 +33,19 @@
 #X obj 1000 1320 s presence;
 #X text 1100 950 LIVENESS OFF THE FAN-IN \, WHICH IS THE ONLY PLACE IT COULD GO. There is no channel gate here and no reply to match -- mother publishes on reserved global names and this file simply receives them \, so the arrival of ANY of the five IS the evidence. ⚠️ It is weaker evidence than the other two devices give \, and the kind field says so., f 40;
 #X text 1000 1400 ⛔ PASSIVE IS A KIND ON THE PRESENCE BUS \, NOT A SILENCE. m_organelle registers itself and publishes seen \, and it instantiates NO c_presence -- so nothing ages it and it can never be declared lost. ✅ MOTHER PUSHES THE KNOBS ONCE AT LOAD AND THEN SAYS NOTHING -- item 237 \, measured -- so a last-heard clock here would run out a few seconds into EVERY boot and put a device-lost warning on the screen for hardware that is bolted to the instrument. What a passive layer can offer is LAST HEARD \, which is plan-v03.5's diagnostic screen. What it cannot offer is the difference between unplugged and untouched \, and no amount of code here changes that -- the operator supplies it. See ref/module/presence.md., f 44;
+#X obj 1330 300 r notes;
+#X obj 1330 360 unpack f f;
+#X obj 1330 440 makefilename og-key-%d;
+#X obj 1600 520 pack s f;
+#X obj 1600 590 t a a;
+#X obj 1600 650 list trim;
+#X obj 1600 710 s param;
+#X text 1600 780 THE KEYBOARD \, AND THE COMMENT BELOW USED TO SAY IT WAS DELIBERATELY ABSENT. It was \, because none of the omitted controls had anything to drive yet -- and that is the whole condition it named: "They belong in THIS file when they do." This is the when. ⛔ notes IS ONE OF MOTHER'S OWN NAMES \, not a C-2 allowlist name \, and reading it here is legitimate for exactly the reason led and oscOut are: mother publishes on reserved global names and the m_ layer that owns the device is the file allowed to read them. Do not "fix" it into the allowlist., f 62;
+#X text 1600 1000 ONE CONTROL PER KEY \, WHICH IS WHAT THE ONE-VALUE RULE WANTS. mother packs the keyboard into ONE two-float list -- pitch then velocity -- and param carries exactly one value per control. So the PITCH rides in the control NAME and the velocity is the value: og-key-60 through og-key-84 \, since the Organelle's lowest key is note 60 and it has 25 of them. That is also what makes "these eight keys play the Volca and those two fire 404 pads" expressible at all. ⚠️ A RELEASE IS VELOCITY 0 AND IS PUBLISHED \, unlike aux \, which is press-only: a note-off is a real event that a destination has to act on \, where a button release means nothing., f 62;
+#X text 1600 1300 unpack FIRES RIGHT TO LEFT \, so the velocity is parked in pack's cold inlet before the pitch arrives to build the name and trigger it. Same guarantee u_map's arg-then-value ordering rests on. ⛔ THE list trim IS LOAD-BEARING: pack emits a LIST \, whose selector is list rather than the control name \, and u_map's route matches a SELECTOR (C-6). Without it every key takes the reject and is divided by 127 into nothing -- silent in both directions., f 62;
+#X text 1600 1560 ⛔ THE KEYS DO NOT REACH disp \, and that is the same decision the knobs made for a sharper reason. g_oled holds five parameter rows \, so a two-handed chord would evict everything else on the screen twice per note -- once on the press and once on the release. ⚠️ AND u_map DOES NOT REPORT THEM RAW EITHER \, which is a deliberate exception to item 242: see ref/module/map.md., f 62;
+#X msg 1980 640 seen m_organelle;
+#X obj 1980 700 s presence;
 #X connect 2 0 7 0;
 #X connect 3 0 8 0;
 #X connect 4 0 9 0;
@@ -54,3 +67,12 @@
 #X connect 27 0 28 0;
 #X connect 29 0 30 0;
 #X connect 30 0 31 0;
+#X connect 34 0 35 0;
+#X connect 35 1 37 1;
+#X connect 35 0 36 0;
+#X connect 36 0 37 0;
+#X connect 37 0 38 0;
+#X connect 38 1 45 0;
+#X connect 45 0 46 0;
+#X connect 38 0 39 0;
+#X connect 39 0 40 0;

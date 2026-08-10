@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 
 # ⛔ THE NUMBER OF WINDOWS organelle-assert-drive-gen.py's SEQ OPENS.
-MARKS = 9
+MARKS = 12
 
 
 def run_asserts(cap):
@@ -102,6 +102,39 @@ def run_asserts(cap):
             not param("AUX-RELEASE") and not disp("AUX-RELEASE"),
             "the released 0 leaked: param %s, disp %s"
             % (param("AUX-RELEASE"), disp("AUX-RELEASE")))
+
+    # ---- ⛔ THE KEYBOARD ---------------------------------------------------
+    # mother packs it into ONE two-float list, pitch then velocity, and param
+    # carries one value per control -- so the PITCH rides in the control NAME and
+    # the velocity is the value. 25 keys, note 60 at the bottom.
+    print("\n--- the keyboard: one control per key ---")
+    A.check("a key press publishes og-key-<note> carrying its velocity",
+            param("KEY-ON") == [["og-key-60", "100"]],
+            "wanted one og-key-60 100, got %s" % param("KEY-ON"))
+
+    # ⛔ THE RELEASE IS THE HALF THAT MATTERS AND IT IS THE EASY ONE TO LOSE.
+    # og-aux is press-only, and copying that here would give the Volca a note-on
+    # with no note-off -- a held key that never stops, which is exactly the
+    # droning `makenote` protects against everywhere else.
+    A.check("⛔ a release publishes too, as velocity 0 -- NOT press-only",
+            param("KEY-OFF") == [["og-key-60", "0"]],
+            "wanted one og-key-60 0, got %s. A key that publishes its press and "
+            "not its release leaves every note sounding forever"
+            % param("KEY-OFF"))
+
+    # ⚠️ THE TOP KEY, because note 60 alone is satisfied by a decode that ignores
+    # the pitch and hardcodes the lowest key.
+    A.check("the pitch really comes from the message -- the top key is og-key-84",
+            param("KEY-TOP") == [["og-key-84", "40"]],
+            "wanted one og-key-84 40, got %s" % param("KEY-TOP"))
+
+    # ⛔ AND NOT ON disp. g_oled holds five parameter rows, so a two-handed chord
+    # would evict everything else on the screen twice per note -- once on the
+    # press and once on the release.
+    A.check("⛔ the keys reach param and NOT disp",
+            not disp("KEY-ON") and not disp("KEY-OFF") and not disp("KEY-TOP"),
+            "a key wrote to disp: %s / %s / %s"
+            % (disp("KEY-ON"), disp("KEY-OFF"), disp("KEY-TOP")))
 
     A.note("windows reached: %s" % " ".join(order))
 

@@ -37,6 +37,7 @@ scratch_state_dir "$WORK"
     echo "mode-1 gk-cc volca-cc 41"
     echo "mode-1 gk-note volca-note 48"
     echo "mode-1 gk-prog volca-prog 5"
+    echo "mode-1 gk-key volca-key 60"
 } | scratch_map_rows "$WORK"
 
 if ! midi_rewrite "$WORK"; then

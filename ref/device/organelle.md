@@ -164,10 +164,29 @@ meaning as `m_nano`.
 | ⛔ **The knobs reach `param` and NOT `disp`; `og-aux` reaches both.** A knob's raw 0-to-1 position is not a readable parameter row — the screen said `og-knob-1 0.245` where a BPM belonged, and the param layer replaces the footer, so the tempo it was mapped to vanished while you turned it. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
 | ⚠️ **An unmapped knob still reports**, via `u_map`'s raw-value row. A control that does nothing and says nothing cannot be told from a broken one | verified | 242 |
 
-⚠️ **Not in the file, deliberately:** the encoder, `encbut`, the keyboard and the pedal jack. The
-encoder is contested with mother's own menu through `enableSubMenu`, and none of the others has
-anything to drive yet. They belong here when they do — it is one device, so it is one `m_`
-abstraction.
+### The keyboard — 25 controls, one per key
+
+mother packs the keyboard into **one two-float list on `s notes`** — pitch, then velocity — and
+`param` carries exactly one value per control. So the **pitch rides in the control NAME** and the
+velocity is the value.
+
+| Fact | Evidence | Item |
+|------|----------|------|
+| 25 keys, publishing `og-key-60` … `og-key-84` — the lowest key is note **60** | verified | 293 |
+| The value is that key's **velocity** | verified | 293 |
+| ⛔ **A release publishes too, as velocity 0**, unlike `og-aux`, which is press-only. A note-off is a real event a destination must act on | verified | 293 |
+| ⛔ **The keys reach `param` and NOT `disp`** — `g_oled` holds five parameter rows, so a two-handed chord would evict the screen twice per note | verified | 293 |
+| …and `u_map` does not report them raw either, which is a deliberate exception to item 242 | verified | 293 |
+
+⚠️ **`notes` is one of mother's own reserved names, not a C-2 allowlist name.** Reading it here is
+the same legitimate move `led` and `oscOut` are: mother publishes on reserved globals and the `m_`
+layer that owns the device is the file allowed to read them.
+
+⚠️ **Not in the file, deliberately:** the encoder, `encbut` and the pedal jack. The encoder is
+contested with mother's own menu through `enableSubMenu`, and neither of the others has anything to
+drive yet. They belong here when they do — it is one device, so it is one `m_` abstraction. **The
+keyboard was on that list until it had something to drive**, which is exactly the condition the
+sentence named.
 
 ### `mother.pd` maps MIDI onto the front panel
 

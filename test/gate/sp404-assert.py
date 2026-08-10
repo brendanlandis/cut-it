@@ -104,8 +104,14 @@ def run_asserts(cap):
 
     # --- panic -------------------------------------------------------------
     print("\n--- panic ---")
+    # ⚠️ SCOPED TO THIS DEVICE'S OWN CHANNEL BLOCK, because panic is a BUS
+    # message and m_volca answers it too now -- correctly, on channel 49. An
+    # unscoped sweep reads another device's All Notes Off as a bank of this one,
+    # and the list this asserts is exact, so it went red the day the Volca
+    # gained a panic path of its own.
     ch = sorted(int(e[1][2]) for e in W("PANIC")
-                if e[0] == "CTLOUT" and e[1][1] == 123)
+                if e[0] == "CTLOUT" and e[1][1] == 123
+                and 33 <= int(e[1][2]) <= 42)
     A.check("⛔ All Notes Off covers ALL TEN banks, not just bank A",
             ch == BANKS, "channels %s" % ch)
 

@@ -12,9 +12,14 @@ and every run would look exactly the same. Reading the stream from a file lets a
 gate drive a truncated transcript, an out-of-order one and an empty one in under
 a second, on a Mac, with no device.
 """
+import collections
 import socket
 import sys
 import time
+
+# How many of the last console lines a stall report shows. Enough to see which
+# step the patch thought it was on, short enough to read.
+TAIL = 6
 
 
 class Stalled(Exception):
@@ -42,6 +47,45 @@ class Source(object):
     # against it does not wait -- it swallows the whole rest of the transcript
     # and every later step reports "not run". Measured exactly that way.
     realtime = True
+
+    # ⛔ WHAT A STALL REPORT IS MADE OF, and none of it existed until a real one
+    # said nothing. The only bench verdict this project has ever recorded is a
+    # launchpad step-1 `interrupted` reading "stalled mid-run: GO sent, no fired
+    # line" -- which names the symptom and not one thing about the cause. A
+    # stall has three plausible causes and they are told apart by three
+    # different facts: GO never left (the sender), the patch is not there (an
+    # empty tail), or the runner is reading faster than the patch is printing (a
+    # backlog). Report all three and the next one diagnoses itself.
+    gos = 0
+
+    def _note(self, line):
+        """Remember the last few lines, for a stall report."""
+        if getattr(self, "seen", None) is None:
+            self.seen = collections.deque(maxlen=TAIL)
+        self.seen.append(line)
+
+    def pending(self):
+        """How far behind the reader is, or None where that has no meaning."""
+        return None
+
+    def diagnose(self):
+        """Everything known about why nothing arrived. -> a block of lines."""
+        out = ["    GO sent %d time(s) this run" % self.gos]
+        n = self.pending()
+        if n is not None:
+            out.append("    %d line(s) waiting unread -- %s"
+                       % (n, "the runner is ahead of the patch" if n else
+                          "nothing is queued, so nothing was sent"))
+        seen = getattr(self, "seen", None)
+        if seen:
+            out.append("    the last %d line(s) seen:" % len(seen))
+            out.extend("      %s" % ln.strip() for ln in seen)
+        else:
+            # ⛔ AN EMPTY TAIL IS THE MOST DIAGNOSTIC CASE OF ALL. Nothing has
+            # been read at any point, so this is not a stall in a running bench
+            # -- it is a bench that is not on the other end.
+            out.append("    NOTHING has been read on this stream at all")
+        return "\n".join(out)
 
     def readline(self, timeout):
         raise NotImplementedError
@@ -94,7 +138,11 @@ class Replay(Source):
         if self.i >= len(self.lines):
             return None
         self.i += 1
+        self._note(self.lines[self.i - 1])
         return self.lines[self.i - 1]
+
+    def pending(self):
+        return len(self.lines) - self.i
 
     def go(self):
         self.gos += 1

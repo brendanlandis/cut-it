@@ -105,9 +105,17 @@ class Process(stream.Source):
         if line is None:
             return None
         self.log.append(line)
+        self._note(line)
         return line
 
+    def pending(self):
+        """⚠️ THE QUEUE, NOT THE LOG. A backlog here means the reader is behind
+        the patch, which is the one stall cause that is not a fault at all --
+        the lines are coming, just later than STEP_TIMEOUT allows."""
+        return self.q.qsize()
+
     def go(self):
+        self.gos += 1
         self.gosender.send()
 
     def close(self):

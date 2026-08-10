@@ -374,7 +374,8 @@ def run_bench_driven(bench, target, auto_only, start, src):
                 "  That is not a stalled run -- it is a bench that is not there.\n"
                 "  The usual cause is the file having been copied somewhere the\n"
                 "  launch line does not name. /tmp is wiped on reboot, which is\n"
-                "  why the benches live on /sdcard." % LOAD_TIMEOUT)
+                "  why the benches live on /sdcard.\n%s"
+                % (LOAD_TIMEOUT, src.diagnose()))
             rec.close()
             # ⚠️ THE False HERE IS REDUNDANT AND KNOWINGLY SO. With no records
             # at all the summary already reports every step as not run and
@@ -455,8 +456,18 @@ def run_bench_driven(bench, target, auto_only, start, src):
                 fm, fline = src.wait_for(S.RE_FIRED, STEP_TIMEOUT, collect=window)
             except stream.Stalled:
                 stream.say("\n  STALLED at step %d -- GO was sent and nothing "
-                           "fired within %g s." % (step.n, STEP_TIMEOUT))
-                record(step, "interrupted", "stalled mid-run: GO sent, no fired line")
+                           "fired within %g s.\n%s"
+                           % (step.n, STEP_TIMEOUT, src.diagnose()))
+                # ⚠️ THE NOTE IS WHAT SURVIVES INTO latest.json, so it carries the
+                # counts rather than only the symptom. The one bench verdict this
+                # project has ever recorded is a stall whose note read "GO sent,
+                # no fired line" -- true, and it named nothing that would let
+                # anyone work out why.
+                record(step, "interrupted",
+                       "stalled mid-run: %d GO(s) sent, %s line(s) queued, "
+                       "%d line(s) seen"
+                       % (src.gos, src.pending(),
+                          len(getattr(src, "seen", None) or ())))
                 rec.close()
                 return rec.rows, False
             if int(fm.group(1)) != step.n:
@@ -491,7 +502,8 @@ def run_bench_driven(bench, target, auto_only, start, src):
                 try:
                     m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
                 except stream.Stalled:
-                    stream.say("\n  STALLED after step %d." % step.n)
+                    stream.say("\n  STALLED after step %d.\n%s"
+                               % (step.n, src.diagnose()))
                     rec.close()
                     return rec.rows, False
                 continue
@@ -510,7 +522,8 @@ def run_bench_driven(bench, target, auto_only, start, src):
                 try:
                     m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
                 except stream.Stalled:
-                    stream.say("\n  STALLED after step %d." % step.n)
+                    stream.say("\n  STALLED after step %d.\n%s"
+                               % (step.n, src.diagnose()))
                     rec.close()
                     return rec.rows, False
                 continue
@@ -550,8 +563,8 @@ def run_bench_driven(bench, target, auto_only, start, src):
                 m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
             except stream.Stalled:
                 stream.say("\n  STALLED after step %d -- nothing described "
-                           "step %d within %g s."
-                           % (step.n, i + 1, STEP_TIMEOUT))
+                           "step %d within %g s.\n%s"
+                           % (step.n, i + 1, STEP_TIMEOUT, src.diagnose()))
                 rec.close()
                 return rec.rows, False
     except KeyboardInterrupt:

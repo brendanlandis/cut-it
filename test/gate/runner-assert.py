@@ -226,6 +226,16 @@ def main():
     A.check("truncated: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("truncated: says STALLED rather than reporting a pass",
             "STALLED" in out and "RESULT: PASS" not in out, _tail(out))
+    # ⛔ A STALL THAT SAYS ONLY "STALLED" IS A REPORT NOBODY CAN ACT ON. The only
+    # bench verdict this project has ever recorded is a launchpad step-1 stall
+    # whose note read "GO sent, no fired line" -- true, and naming nothing that
+    # would let anyone work out why. Three causes, told apart by three facts.
+    A.check("truncated: the stall says whether GO was sent",
+            "GO sent" in out, _tail(out, 12))
+    A.check("truncated: ...and how far behind the reader was",
+            "waiting unread" in out, _tail(out, 12))
+    A.check("truncated: ...and shows the last lines it did see",
+            "the last" in out and "line(s) seen:" in out, _tail(out, 12))
 
     # -- 2b. GO sent and nothing fires -------------------------------------
     # ⛔ A DIFFERENT STALL FROM THE ONE ABOVE, and it took a mutation to notice.
@@ -297,6 +307,13 @@ def main():
     A.check("empty: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("empty: names the cause -- the bench never loaded",
             "NEVER LOADED" in out.upper(), _tail(out))
+    # ⛔ AN EMPTY TAIL IS THE MOST DIAGNOSTIC CASE THERE IS, and it is a
+    # different claim from "the bench never loaded" -- that one is inferred from
+    # a timeout, this one is the direct evidence for it. Nothing was read on the
+    # stream at any point, so this is not a stall in a running bench.
+    A.check("empty: the report says nothing was read at all, rather than "
+            "showing a tail of lines that do not exist",
+            "NOTHING has been read" in out, _tail(out, 12))
 
     # -- 5. interrupted part-way -------------------------------------------
     # ⚠️ THESE ASSERT PROPERTIES, NOT ARITHMETIC. An earlier version hardcoded

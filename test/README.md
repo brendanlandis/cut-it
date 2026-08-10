@@ -25,7 +25,7 @@ were false.
 
 | Gate | Checks | Answers for |
 |---|---|---|
-| `runner-assert.sh` | 58 | **no page** — it answers for this one |
+| `runner-assert.sh` | 63 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
@@ -45,9 +45,9 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 6 | `device/volca` |
 
-**410 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
+**415 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **403**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **408**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 29 come from TWO Pd runs and one tally**, which is the only entry here
@@ -86,6 +86,13 @@ mid-run stall handler left it **fully green** in all three cases — one fixture
 guards at once and so only ever tested the first to fire, and one stall handler had no fixture that
 reached it at all. Four more fixtures, each corrupting exactly one thing. ⛔ **A fixture that trips
 two guards tests one of them.**
+
+⚠️ **And every fixture drove `run_bench_driven`, so the OTHER loop was ungated.** `run_bench` — paper
+mode, no stream at all — had no fixture until it was found evaluating predicates against an empty
+window. There is one now, and it needs `CUTIT_RESULTS` pointed at a scratch directory: ⛔ **a paper
+run is a NORMAL run and rolls its verdicts up into `latest.json`**, which is committed and describes
+hardware. The replay path refuses to roll up at all; this one is redirected, and a check proves the
+redirect held rather than merely being passed.
 
 ### The shared machinery
 
@@ -151,10 +158,17 @@ is worth having.
 |---|---|---|
 | `device` | **Default.** The real rig, over ssh | everything |
 | `mac` | `main-dev.pd` plus the bench here; `u_mother-stub` draws the panel and decodes the OLED | display, nanokontrol, tempo |
-| `paper` | no Pd at all | auto-selected when every step has no actions — `state` and `midi` |
+| `paper` | no Pd at all | **`file` predicates only** — the evidence is on disk. Auto-selected when every step has no actions: `state` and `midi` |
 
 ⛔ **A step whose oracle is missing is a SKIP WITH A REASON, never a pass** — whether the reason is
-the target or the absence of a person.
+the target, the absence of a person, or **a predicate that needs a console in paper mode**.
+
+⚠️ **So `midi` cannot reach a clean PASS in paper mode, and that is honest.** Four of its steps read
+a bus, and no bus exists where no Pd is running; they skip, saying which kind could not be judged
+and why. They used to be evaluated against an **empty window** and report AUTO FAIL — four red steps
+on a working rig, unmet for as long as it was because every recorded `midi` run had used
+`--target device`. ⛔ **Do not "fix" the skips by making `midi` non-paper**: paper is what lets it
+and `state` run with no Pd, no ssh, and therefore no Launchpad stranded in Programmer Mode.
 
 ### Sixteen steps judge themselves
 

@@ -19,6 +19,18 @@ import subprocess
 KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled",
          "osc", "osc-rate", "file", "all")
 
+# ⛔ WHICH KINDS CAN BE JUDGED WITH NO CONSOLE AT ALL. Every kind but `file`
+# reads the WINDOW -- lines Pd printed -- so in paper mode, where there is no Pd
+# and no stream, it is handed an empty list. An empty window is not a verdict:
+# _bus_lines returns nothing, `has` finds nothing, and the step reports AUTO
+# FAIL on a rig that is working perfectly. `file` is the exception because its
+# evidence is on DISK, which exists whether or not anything is running.
+#
+# ⛔ AND THE LIST LIVES HERE RATHER THAN IN run.py. What a predicate can read is
+# a fact about the predicate; a runner that carried its own copy of this would
+# be the second list, and the one that rots is always the copy.
+OFFLINE_KINDS = ("file",)
+
 # ⛔ THE BUS KINDS READ WHAT lib_assert's PARSER ALREADY MATCHES. bench-tap.pd
 # emits lib_drive.TAP_LABELS, which is the same map every headless gate's driver
 # taps with, so there is one parser for both. Two would be how a fix reaches one
@@ -360,6 +372,36 @@ def _one(spec, window, ctx=None):
             a, b, va[-1], vb[-1], r)
 
     raise BadSpec(kind)
+
+
+def offline(spec):
+    """Can this predicate be judged with no console? -> (ok, [kinds that cannot]).
+
+    ⛔ ASKED BEFORE evaluate, NEVER INSTEAD OF A VERDICT. A step whose oracle is
+    absent is a SKIP WITH A REASON -- the same rule the runner already applies to
+    `targets` and to --auto-only -- and the reason has to name WHICH kinds needed
+    a console, or the skip is as uninformative as the false failure it replaced.
+
+    ⚠️ AN `all` IS OFFLINE ONLY IF EVERY LEAF IS. One bus predicate inside an
+    `all` is enough to make the whole thing unjudgeable, and answering "mostly"
+    would evaluate the rest against an empty window and fail them.
+    """
+    kind = spec.get("kind")
+    if kind == "all":
+        bad = []
+        for part in spec.get("of", []):
+            bad.extend(offline(part)[1])
+        # dict.fromkeys rather than set(): the reason string reads better in the
+        # order the step wrote them, and these lists are three items long.
+        bad = list(dict.fromkeys(bad))
+        return (not bad), bad
+    if kind not in KINDS:
+        # ⛔ NOT OUR QUESTION TO ANSWER QUIETLY. A typo in a kind name must reach
+        # BadSpec in evaluate() and fail the step, not be skipped here as
+        # "needs a console" -- a skip would leave the assertion disabled and the
+        # step still looking checked.
+        return True, []
+    return (kind in OFFLINE_KINDS), ([] if kind in OFFLINE_KINDS else [kind])
 
 
 def evaluate(spec, window, ctx=None):

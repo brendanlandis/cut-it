@@ -28,8 +28,17 @@ import hashlib
 import json
 import os
 
-RUNS = "test/results/runs"
-LATEST = "test/results/latest.json"
+# ⛔ REDIRECTABLE SO A FIXTURE CAN NEVER WRITE THE COMMITTED ROLL-UP. latest.json
+# is a record of what HARDWARE was seen to do; a gate fixture is a recording of a
+# fiction written to exercise a failure path, and one invented verdict in there
+# destroys the only value the file has. The replay path already refuses to roll
+# up at all, but paper mode is a NORMAL run -- run.py calls roll_up on it -- so
+# the runner's own gate cannot exercise paper mode without this.
+# ⚠️ An env var rather than a flag: a flag would be a production affordance for
+# "do not record", which is a thing no person running a bench should ever want.
+RESULTS = os.environ.get("CUTIT_RESULTS", "test/results")
+RUNS = os.path.join(RESULTS, "runs")
+LATEST = os.path.join(RESULTS, "latest.json")
 SCHEMA = 1
 
 # ⚠️ THIRTY DAYS, AND IT IS A JUDGEMENT RATHER THAN A MEASUREMENT. Long enough

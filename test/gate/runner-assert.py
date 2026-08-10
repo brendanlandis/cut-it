@@ -21,6 +21,7 @@ corrupting a generated one, so it stays wrong in exactly one known way.
 gate table without costing the bare `./test/run.sh` its guarantee.
 """
 import os
+import re
 import subprocess
 import sys
 import time
@@ -35,7 +36,11 @@ import steps as S                                               # noqa: E402
 
 WORK = os.path.join(os.environ.get("TMPDIR", "/tmp"),
                     "cutit-runner-assert-%d" % os.getpid())
-BENCH = "midi"          # 14 steps, no actions -- the cheapest table to recite
+# ⚠️ 17 steps, no actions anywhere -- the cheapest table to recite, and the only
+# one that is ALSO a paper bench, which is what lets the fixtures below drive
+# both of the runner's two loops from one step table. (This comment said 14 for
+# as long as it took three hot-swap steps to be added above it.)
+BENCH = "midi"
 
 
 # ---------------------------------------------------------------------------
@@ -122,6 +127,30 @@ def write(name, lines):
     return p
 
 
+def run_paper(keys):
+    """Drive a real PAPER-mode run. -> (exit code, output).
+
+    ⛔ NO TRANSCRIPT, BECAUSE PAPER MODE HAS NO STREAM. That is the whole point
+    of it: `midi` and `state` have no actions anywhere, so nothing has to be
+    driven -- no Pd, no ssh, and no Launchpad left stranded in Programmer Mode.
+    This is the only fixture here that exercises run_bench rather than
+    run_bench_driven, and until it existed that loop had no gate at all.
+
+    ⛔ CUTIT_RESULTS IS NOT OPTIONAL. Paper mode is a NORMAL run, so run.py rolls
+    its verdicts up into latest.json -- and latest.json is committed and
+    describes hardware. A fixture writing invented verdicts there would destroy
+    the one property that file has. The replay path refuses to roll up at all;
+    this one is redirected instead, and check 8 proves the redirect held.
+    """
+    kp = write("paper.keys", keys)
+    env = dict(os.environ, CUTIT_RESULTS=os.path.join(WORK, "results"))
+    p = subprocess.run(
+        [sys.executable, os.path.join(ROOT, "test", "runner", "run.py"),
+         "--bench", BENCH, "--target", "paper", "--keys", kp],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60, env=env)
+    return p.returncode, p.stdout.decode("utf-8", "replace")
+
+
 def run(transcript_path, keys):
     """Drive the real runner over a fixture. -> (exit code, output)."""
     kp = write(os.path.basename(transcript_path) + ".keys", keys)
@@ -172,6 +201,22 @@ def main():
     A.check("clean: exits 0", rc == 0, "rc=%d" % rc)
     A.check("clean: every step passed",
             ("%d passed" % n) in out, _tail(out))
+
+    # ⛔ EVERY STEP IS READ BEFORE IT IS RUN, INCLUDING THE ONES WITH NOTHING TO
+    # DO. The prompt used to be guarded on `step.hands`, so a step carrying no
+    # `do` had GO sent on the line after its watch text printed -- you were told
+    # what to look at after it had happened. launchpad 1-17 are all like that.
+    # ⚠️ COUNTED AGAINST THE STEP TABLE, NOT A LITERAL. A hardcoded 17 would go
+    # red the day somebody adds a step, which is not a defect; restoring the
+    # guard IS one, and that is what this catches.
+    # ⚠️ ANCHORED AT THE START OF A LINE, NOT SEARCHED LOOSELY -- and it had to
+    # be. A bare out.count("press enter") reads 18 for 17 steps, because midi
+    # step 14's own `do` text says "then press enter straight away" and
+    # describe() prints it. Same shape as the BEATS-inside-M-BEATS anchor in
+    # predicates.py: a loose match answered by prose instead of by a prompt.
+    prompts = len(re.findall(r"(?m)^  press enter", out))
+    A.check("clean: every step gets a read prompt before GO -- not just hands "
+            "steps", prompts == n, "%d prompts for %d steps" % (prompts, n))
 
     # -- 2. truncated at step 7 --------------------------------------------
     # ⛔ MUST NOT PASS. Seven good verdicts and a console that stops is a run
@@ -306,15 +351,52 @@ def main():
     A.check("SIGINT: records no failure for the step nobody judged",
             _tally(out)["fail"] == 0 and _tally(out)["notrun"] > 0, _tail(out))
 
+    # -- 7c. paper mode: an absent oracle is a SKIP, never a FAIL -----------
+    # ⛔ THIS IS THE ONLY FIXTURE THAT DRIVES run_bench, and until it existed
+    # that loop was ungated -- which is how it came to evaluate every predicate
+    # against an EMPTY WINDOW and report AUTO FAIL. There is no Pd in paper mode,
+    # so _bus_lines finds nothing, `has` finds nothing, and four steps of a
+    # working `midi` bench failed. Every recorded midi run had used
+    # `--target device`, so nobody had met it.
+    import predicates as P
+    console = [s for s in bench.steps
+               if s.meta.get("check")
+               and not P.offline(s.meta["check"])[0]
+               and "paper" in (s.meta.get("targets") or ("paper",))]
+    rc, out = run_paper(_paper_keys(bench))
+    A.check("paper: a predicate needing a console is SKIPPED, not failed",
+            out.count("reads the console") == len(console),
+            "%d skips for %d console predicates -- %s"
+            % (out.count("reads the console"), len(console), _tail(out)))
+    # ⛔ THE NEGATIVE HALF, AND IT IS THE ONE THAT REGRESSES. A skip and a fail
+    # both keep RESULT off PASS, so counting skips alone would stay green if the
+    # empty-window evaluation came back beside it.
+    A.check("paper: nothing reports AUTO FAIL out of an empty window",
+            "AUTO FAIL" not in out, _tail(out))
+    A.check("paper: the reason names the kind that could not be judged",
+            "`bus`" in out or "`bus-count`" in out, _tail(out))
+    # ⛔ AND A SKIP IS STILL NOT A PASS. Turning four false failures into four
+    # skips must not turn the run green -- those steps remain unjudged, and a
+    # suite that reported PASS over them would be the exact disease this fix was
+    # meant to cure, one level up.
+    A.check("paper: skips keep RESULT off PASS", rc != 0 and "RESULT: PASS"
+            not in out, "rc=%d / %s" % (rc, _tail(out)))
+
     # -- 8. and the roll-up was never touched -------------------------------
     # ⛔ latest.json IS COMMITTED AND DESCRIBES HARDWARE. A fixture is a
     # fiction; letting one write there would put invented verdicts in the one
     # file whose entire value is that it contains none.
+    # ⚠️ THE PAPER RUN ABOVE IS THE REASON THIS NOW MATTERS TWICE. A replay
+    # refuses to roll up at all, but paper mode is a normal run and DOES -- it is
+    # redirected with CUTIT_RESULTS instead, and this is what proves the redirect
+    # held rather than merely being passed.
     import records
     before = len(records.load_latest().get("records", {}))
     run(write("clean2.txt", clean), _keys(bench))
+    run_paper(_paper_keys(bench))
     after = len(records.load_latest().get("records", {}))
-    A.check("a replay never writes to the committed latest.json",
+    A.check("neither a replay nor a redirected paper run writes to the "
+            "committed latest.json",
             before == after, "%d records before, %d after" % (before, after))
 
     print()
@@ -539,29 +621,62 @@ def _keys(bench, verdict="p", note=None, stop_after=None):
     """The keystrokes a person would type to give every step `verdict`.
 
     ⛔ IT IS DERIVED FROM THE BENCH, NOT A FLAT LIST OF n. How many inputs a step
-    consumes depends on the step: one with a predicate asks nothing, one with a
-    `do` asks TWICE -- once for "press enter when you are ready" and once for the
-    verdict. A flat ["p"] * n was right only while every step was judged by hand,
-    and the moment the hands-on steps gained instructions it ran short and four
-    fixtures reported "not run" over nothing at all.
+    consumes depends on the step: one with a predicate asks nothing more after
+    the read prompt, one judged by a person asks again for the verdict. A flat
+    ["p"] * n was right only while every step was judged by hand, and the moment
+    the hands-on steps gained instructions it ran short and four fixtures
+    reported "not run" over nothing at all.
+
+    ⛔ EVERY STEP CONSUMES A READ PROMPT NOW, AND THIS LINE IS THE FIXTURE THAT
+    ENCODED THE OLD BEHAVIOUR. It used to be `if step.hands`, matching a runner
+    that prompted only for steps carrying a `do` -- and that was the defect:
+    every other step fired GO on the line after its watch text printed, so the
+    thing you were told to look at had already happened. The guard is gone from
+    run.py and it is gone from here, deliberately, because the runner now asks
+    every step to be READ before it is run. ⚠️ Changed to follow a fix, never to
+    turn a red run green: the prompt-count check in main() is what would go red
+    if that guard came back, and it is asserted against the step table rather
+    than against this list.
     """
     out = []
     for step in bench.steps:
         if stop_after is not None and step.n > stop_after:
             break
-        # ⚠️ THE TWO QUESTIONS ARE INDEPENDENT. A step with a `do` asks "press
-        # enter when you are ready" WHATEVER judges it -- the finger has to be on
-        # the pad before GO goes out, or the predicate reads an empty console --
-        # and only then does a predicate answer for it or a person. midi 4, 6
-        # and 7 are both at once, and treating "has a predicate" as "asks
-        # nothing" left exactly those three short.
-        if step.hands:
-            out.append("")               # "press enter when you are ready"
+        # ⚠️ THE TWO QUESTIONS ARE INDEPENDENT. Every step asks "press enter"
+        # before GO -- a step with a `do` because the finger has to be on the pad
+        # or the predicate reads an empty console, a step without one because it
+        # still has to be read -- and only then does a predicate answer for it or
+        # a person. midi 4, 6 and 7 are both at once, and treating "has a
+        # predicate" as "asks nothing" left exactly those three short.
+        out.append("")                   # the read prompt, every step
         if step.meta.get("check"):
             continue                     # a predicate gives the verdict
         out.append(verdict)
         if note is not None:
             out.append(note)
+    return out
+
+
+def _paper_keys(bench, verdict="p"):
+    """The keystrokes a paper-mode run of `bench` consumes.
+
+    ⛔ A DIFFERENT SHAPE FROM _keys, BECAUSE run_bench IS A DIFFERENT LOOP. There
+    is no GO and nothing to fire, so there is no read prompt: a step is either
+    skipped outright (its target, or a predicate needing a console), judged from
+    disk by a `file` predicate, or asked of a person. Only the last consumes a
+    key, and deriving that from the table is what stops this list going stale the
+    day a step gains a predicate.
+    """
+    import predicates as P
+    out = []
+    for step in bench.steps:
+        want = step.meta.get("targets")
+        if want and "paper" not in want:
+            continue                     # skipped: this target cannot judge it
+        spec = step.meta.get("check")
+        if spec:
+            continue                     # skipped for want of a console, or auto
+        out.append(verdict)
     return out
 
 

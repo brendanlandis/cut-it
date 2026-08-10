@@ -228,6 +228,33 @@ def run_bench(bench, target, auto_only, start):
             i += 1
             continue
         if spec:
+            # ⛔ A PREDICATE THAT NEEDS A CONSOLE CANNOT BE JUDGED HERE, AND
+            # ASKING IT ANYWAY IS A FALSE FAILURE. There is no Pd in paper mode
+            # and therefore no window, so `evaluate(spec, [])` hands every bus
+            # kind an empty list: _bus_lines finds nothing, `has` finds nothing,
+            # and the step reports AUTO FAIL on a rig that is working perfectly.
+            # midi carries FOUR of those, so a bare `./test/run.sh --all` failed
+            # four steps of a passing bench -- and every recorded midi run used
+            # `--target device`, which is why nobody had met it.
+            #
+            # ⚠️ THIS LEAVES midi UNABLE TO REACH A CLEAN PASS IN PAPER MODE, AND
+            # THAT IS HONEST. Four of its steps genuinely cannot be judged
+            # without a patch running, and a skip says so where a fail lied.
+            # ⛔ Do not "fix" it by making midi non-paper: paper is what lets
+            # state and midi run with no Pd, no ssh, and therefore no Launchpad
+            # stranded in Programmer Mode.
+            judgeable, needs_console = predicates.offline(spec)
+            if not judgeable:
+                why = ("%s reads the console and paper mode has none -- "
+                       "no Pd is running to produce a window"
+                       % " and ".join("`%s`" % k for k in needs_console))
+                stream.say("  SKIP   %s" % why)
+                rec.append(dict(bench=bench.name, step=step.n, title=step.title,
+                                sha=records.step_sha(step.title, step.pass_if),
+                                deps_sha=dsha, verdict="skip", auto=True,
+                                note=why))
+                i += 1
+                continue
             if step.hands:
                 try:
                     stream.prompt("  press enter when you have done that: ")
@@ -385,12 +412,34 @@ def run_bench_driven(bench, target, auto_only, start, src):
             check_marker(m, line, step, bench)
             describe(bench, step)
 
-            if step.hands and not auto_only:
+            if not auto_only:
                 # ⛔ NEVER AUTO-ANSWER THIS. GO sent before the finger is on the
                 # pad judges the step against nothing at all, and the verdict
                 # that comes back is about an empty console.
+                #
+                # ⛔ AND IT IS UNCONDITIONAL, WHICH IT DID NOT USED TO BE. The
+                # guard read `step.hands and not auto_only`, so a step carrying a
+                # `do` waited for you and EVERY OTHER STEP called go() on the
+                # line after describe() printed its watch text -- the thing you
+                # are told to look at had already happened by the time you
+                # finished the sentence telling you to look at it. launchpad 1-17
+                # are all non-hands and all visual, so that was seventeen steps of
+                # one bench. ⚠️ THIS IS THE EXACT FAILURE THE MANUAL-STEPPING
+                # REWRITE EXISTED TO REMOVE -- the old timer-driven shape "put the
+                # console text and the physical device in motion at the same
+                # moment, so you could read one or watch the other and not both"
+                # -- and the fix reached hands steps only, because hands steps are
+                # the ones anybody tested by hand. A STEP THAT REQUIRES NOTHING TO
+                # BE DONE STILL REQUIRES TO BE READ.
+                #
+                # ⚠️ BOTH WORDINGS CARRY THE LITERAL "press enter".
+                # runner-assert's SIGINT fixture waits on that substring to know
+                # the child has blocked on a person; reword past it and that
+                # fixture waits out its whole deadline instead.
                 try:
-                    stream.prompt("  press enter when you are ready: ")
+                    stream.prompt("  press enter when you are ready: "
+                                  if step.hands else
+                                  "  press enter when you have read this: ")
                 except EOFError:
                     # Input ran out where a person was expected. That is the end
                     # of the run, not permission to carry on without one.

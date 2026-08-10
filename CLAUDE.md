@@ -49,7 +49,7 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **What is being BUILT next** — three scoped plans | [plan-v03.4.md](plan-v03.4.md), [plan-v03.4.1.md](plan-v03.4.1.md), [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
+| **What is being BUILT next** — two scoped plans | [plan-v03.4.1.md](plan-v03.4.1.md), [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
@@ -178,26 +178,25 @@ plan, that section should have left the file.
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
 is where everything unscoped waits.
 
-**Three scoped plans stand between here and v0.4**, and each one is written to be handed to a fresh
+**Two scoped plans stand between here and v0.4**, and each one is written to be handed to a fresh
 agent cold — it carries its own reading list, saying how much of each file to read and what to skip.
 ⛔ **Every ⬜ in the repository is closed by one of them, or is one of the nine items that genuinely
 need the sound to exist.**
 
 | | Plan | Needs |
 |---|---|---|
-| 1 | [plan-v03.4.md](plan-v03.4.md) — hot-swap | — |
-| 2 | [plan-v03.4.1.md](plan-v03.4.1.md) — panic becomes `recover` | — |
-| 3 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | 1 |
+| 1 | [plan-v03.4.1.md](plan-v03.4.1.md) — panic becomes `recover` | — |
+| 2 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | — |
 
-✅ **Plan 0, the test runner, the v0.3.2 cleanup and v0.3.3 coverage are all gone** — the measurement
-session ran on 2026-08-08, `test/run.sh` landed on 2026-08-09, and the cleanup and the coverage pass
-landed the same day. The facts are on `ref/` pages and the reasoning is in `git log`. **1 → 3 is a
-chain** — the venue kit's diagnostic screen is built on the presence data plan 1 produces. **2
-stands alone**: it recovers what presence structurally cannot, so nothing gates it and it gates
-nothing. The `ctlin` stub 1 was waiting on is in `test/stubs/`.
+✅ **Plan 0, the test runner, the v0.3.2 cleanup, v0.3.3 coverage and hot-swap are all gone** — the
+measurement session ran on 2026-08-08, `test/run.sh` landed on 2026-08-09, the cleanup and the
+coverage pass landed the same day, and hot-swap landed on 2026-08-10. The facts are on `ref/` pages
+and the reasoning is in `git log`. **Neither of the two left gates the other**: 1 recovers what
+presence structurally cannot, and 2's diagnostic screen reads presence data that now exists — see
+[ref/module/presence.md](ref/module/presence.md).
 
 ⛔ **`check_closers` in `docs-check.py` is written but gated behind `--strict`**, because most
-remaining ⬜ are owned by the three plans above. **plan-v03.5.md's landing checklist removes the
+remaining ⬜ are owned by the two plans above. **plan-v03.5.md's landing checklist removes the
 flag** — see it before adding a ⬜ anywhere.
 
 **A fact appears once in full; everywhere else it is a citation.** `test/gate/docs-check.py` enforces

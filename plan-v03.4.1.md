@@ -4,8 +4,9 @@
 the thing that is misbehaving. Panic's job is **recovery**: silence what is sounding, then reload the
 patch, so every device is re-enumerated into Pd and `wire.sh` runs fresh.
 
-**Decided 2026-08-08 with the rig in front of us.** A spur off [plan-v03.4.md](plan-v03.4.md), which
-built the presence model; this is the half that recovers what presence cannot.
+**Decided 2026-08-08 with the rig in front of us.** A spur off the hot-swap work, which built the
+presence model and landed on 2026-08-10 — see [ref/module/presence.md](ref/module/presence.md). This
+is the half that recovers what presence cannot.
 
 ---
 
@@ -79,8 +80,7 @@ destructive.
 | `tools/deploy.sh` | Its `/reloadNoRemount` and `/loadPatch` calls | The two-step OSC, and the comment saying why a bare name loads nothing |
 | [ref/module/presence.md](ref/module/presence.md) | *Design*, and the `none` kind | Why this phase exists at all |
 
-**Do not read** `Cut It/g_oled.pd`, `Cut It/u_net.pd`, the five `m_` device layers, or
-[plan-v03.4.md](plan-v03.4.md) beyond its status header.
+**Do not read** `Cut It/g_oled.pd`, `Cut It/u_net.pd`, or the five `m_` device layers.
 
 ---
 

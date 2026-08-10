@@ -8,10 +8,11 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **This is no longer the only plan.** Two scoped plans — [plan-v03.4.md](plan-v03.4.md) and
-[plan-v03.5.md](plan-v03.5.md) — hold the last batch of infrastructural work before v0.4: hot-swap
-and the venue kit. ✅ **The test runner, the v0.3.2 cleanup and the v0.3.3 coverage pass all landed
-2026-08-09.** **Read [CLAUDE.md](CLAUDE.md)'s table for the order and the dependencies.**
+⚠️ **This is no longer the only plan.** Two scoped plans — [plan-v03.4.1.md](plan-v03.4.1.md) and
+[plan-v03.5.md](plan-v03.5.md) — hold the last batch of infrastructural work before v0.4: panic
+becoming `recover`, and the venue kit. ✅ **The test runner, the v0.3.2 cleanup, the v0.3.3 coverage
+pass and hot-swap have all landed** — the first three on 2026-08-09 and hot-swap on 2026-08-10.
+**Read [CLAUDE.md](CLAUDE.md)'s table for the order and the dependencies.**
 
 ⛔ **§3 below is being emptied by those two.** Every open question in it is assigned to one of them,
 and when they land this section holds **only v0.4 code**. Do not start work on a
@@ -95,18 +96,43 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 
 **The single place to look for what is unresolved.** Every `ref/` page's `Open` section points here.
 
-### What [plan-v03.4.md](plan-v03.4.md) and [plan-v03.4.1.md](plan-v03.4.1.md) still own
+### What [plan-v03.4.1.md](plan-v03.4.1.md) still owns
 
-⛔ **These are NOT handed here, and that plan says so in its own landing checklist.** They are indexed
-here because every `ref/` page's `Open` points at this section, and a pointer that resolves to
-nothing is worse than no pointer. **This whole subsection goes when both of those plans do.**
+⛔ **This is NOT handed here, and that plan says so in its own landing checklist.** It is indexed here
+because every `ref/` page's `Open` points at this section, and a pointer that resolves to nothing is
+worse than no pointer. **This whole subsection goes when that plan does.**
 
 | Still open | Where it is executed |
 |---|---|
-| The eight bench steps — two cases × four devices, the Volca's judged by ear | Phase 6 |
-| The bound asserted by **reaching** it, on a scratch-scaled tick with the counts as shipped | Phase 6 |
-| The SP-404 and the Volca never got their own transition runs on the rig | v03.4, Verification |
 | Panic becomes `recover` — the CC 90 tiers, the two-step OSC reload, the breadcrumb | **[plan-v03.4.1.md](plan-v03.4.1.md)**, all of it |
+
+✅ **plan-v0.3.4 is gone, and everything it owned is either built or in the item below.** Hot-swap
+landed 2026-08-10: every detectable device has a presence model, one bounded re-wire serves the rig,
+and the bound is now asserted by **reaching** it rather than by arithmetic. The facts are on
+[ref/module/presence.md](ref/module/presence.md) and the reasoning is in `git log`.
+
+### ⬜ The hot-swap bench steps have never been run
+
+**Eight steps, two per device**, across `launchpad-bench`, `nanokontrol-bench` and `midi-bench` —
+present-then-unplugged, and absent-at-load-then-plugged-in, which item 235 is the proof are not the
+same test. They were written on 2026-08-10 and the rig has not seen one of them.
+
+**This is confirmation rather than discovery**, and it is worth saying which parts are which. Item
+235 was closed on the hardware in both directions and the shared machinery underneath is verified
+(item 277). What has never happened is the **SP-404 and the Volca being unplugged on their own**: the
+404's detection is proven only by its silence at boot — which it can only manage by matching byte 65
+on port 3 — and the Volca has no readback of any kind.
+
+⛔ **The Volca cannot be tested alone, and that is structural rather than an oversight.** It registers
+`none`: it transmits nothing, can never be polled, and pulling its interface loses nothing, forks
+nothing and recovers nothing. Its recovery is **parasitic** on a detectable device being missing in
+the same moment, which is why its bench step unplugs the nanoKONTROL beside it. See
+[ref/device/volca.md](ref/device/volca.md) and item 275.
+
+⚠️ **Three of the eight judge themselves off the `err` tap and five cannot.** The Volca's two are by
+ear; the two absent-at-load recoveries are judged by a lit grid and a moving slider, and no bus
+carries either. **Closed by the next session with the rig in front of you** — no code is waiting on
+it.
 
 ### ⬜ `[polytouchin]` has no stub, so the Launchpad's pressure path is untested
 

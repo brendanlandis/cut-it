@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Device presence and the bounded re-wire
 
-**Files:** `Cut It/u_present.pd`, `Cut It/c_presence.pd`, `Cut It/c_devid.pd` · **Gate:** `test/gate/presence-assert.sh` · **Bench:** none
+**Files:** `Cut It/u_present.pd`, `Cut It/c_presence.pd`, `Cut It/c_devid.pd` · **Gate:** `test/gate/presence-assert.sh` · **Bench:** `test/bench/launchpad-bench.pd`, `test/bench/nanokontrol-bench.pd`, `test/bench/midi-bench.pd`
 
 ## What it is
 
@@ -94,8 +94,14 @@ Which puts the wall clock at, from load:
 | 8 s | every unanswered device is declared lost, and the shared counter starts on that same tick | verified | 271 |
 | 14 s | first `wire.sh` | verified | 271 |
 | every 8 s after | forks 2 through 8 | verified | 271 |
-| 70 s | the eighth and last fork | unknown | 271 |
-| 72 s | `fail u_present rewire-gaveup`, once, naming nobody — the per-source `warn`s already did | unknown | 271 |
+| 70 s | the eighth and last fork | verified | 271 |
+| 72 s | `fail u_present rewire-gaveup`, once, naming nobody — the per-source `warn`s already did | verified | 271 |
+
+⚠️ **The last two rows are verified as COUNTS, and the wall clock is those counts times the tick.**
+`presence-assert.sh`'s second run scales the settle and the tick by ten and leaves the counts exactly
+as shipped, so the eighth fork and the give-up genuinely happen — at 7.0 s and 7.2 s, measured — and
+what carries over to the shipped tick is *counter 32* and *counter 33*, not the seconds. Nothing in
+`test/run.sh` runs for seventy seconds and nothing needs to.
 
 ### Verified on the hardware, 2026-08-10
 
@@ -245,27 +251,16 @@ more. The diagnostic screen that reads all of this is
 
 ## Open
 
-**[plan-v03.4.md](../../plan-v03.4.md) owns all four of these** and strikes them when it lands.
-[plan-v04.md](../../plan-v04.md) §3 is where any survivor waits if that plan is deleted first.
+✅ **Two of the four are closed.** The bound is asserted by **reaching** it — `presence-assert.sh`'s
+second run — and the eight bench steps exist, two per device, across the three benches named at the
+top of this page. Both were plan-v0.3.4's, and that plan is gone.
 
-⬜ **Two of the four devices were never given their own transition run.** See
-  [plan-v04.md](../../plan-v04.md) §3. The SP-404's *detection* is proven — it stays silent at boot,
-  which it can only do by matching byte 65 on port 3 — but it was never unplugged on its own, and the
-  Volca has no audible test because its only mapping is a CC that needs the device already sounding.
-  The shared machinery underneath both is verified.
-
-⬜ **The eight bench steps are not written.** See [plan-v04.md](../../plan-v04.md) §3.
-  Two cases per device — present-at-load-then-unplugged, and absent-at-load-then-plugged-in — which
-  item 235 is the proof are not the same test. ⚠️ The Volca's is judged **by ear**: it transmits
-  nothing, so recovery can only be confirmed by sending a note and hearing it. Until they exist this
-  page declares `Bench: none`, which is the honest answer rather than a pointer to coverage that is
-  not there.
-
-⬜ **The bound is asserted by arithmetic, not by being reached.** See
-  [plan-v04.md](../../plan-v04.md) §3. `presence-assert.sh` proves the interval and the coalescing
-  inside 34 s; it never sees tick 33. `u_present` takes the settle, the tick and the give-up as
-  creation arguments precisely so a scratch copy can scale the two *times* and reach the give-up in a
-  few seconds with the **counts exactly as shipped**.
+⬜ **Not one of the eight bench steps has been RUN, and two devices never got a transition run at
+  all.** See [plan-v04.md](../../plan-v04.md) §3. The SP-404's *detection* is proven — it stays
+  silent at boot, which it can only do by matching byte 65 on port 3 — but it was never unplugged on
+  its own, and ⛔ **the Volca cannot be tested alone**: it registers `none`, so pulling it loses
+  nothing and recovers nothing, and its step has to unplug a detectable device beside it. The shared
+  machinery underneath all of it is verified.
 
 ⬜ **A passive layer's last-heard is published and nothing reads it.** See
   [plan-v04.md](../../plan-v04.md) §3 and [plan-v03.5.md](../../plan-v03.5.md), which is the

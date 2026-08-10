@@ -201,8 +201,8 @@ to the wrong place. **The SP-404 has ten and cannot use this** — see
   DIN cable can inject noise into an opto-isolated input, which fits the three positives and all
   nine negatives. ⛔ **It is recorded rather than closed** because three occurrences are not nothing,
   and because the only observer that could settle it is a MIDI monitor on the DIN wire, which this
-  rig does not have. A reload does **not** reliably cause it, so plan-v03.4's Phase 1b needs no
-  caveat on this account.
+  rig does not have. A reload does **not** reliably cause it, so nothing that re-runs `wire.sh`
+  needs a caveat on this account — including the bounded re-wire, which forks it up to eight times.
 
 **Nothing.** That nothing here can be read back off the wire is a **permanent limitation, not an
 unknown** — it is stated in **Facts** as item 268, with `unknown` as its evidence value, so it

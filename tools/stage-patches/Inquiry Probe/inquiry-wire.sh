@@ -12,7 +12,15 @@
 # wires an INPUT from the nanoKONTROL and no output to it, because the nano is a
 # control surface and Cut It never has anything to say to it. Asking it a question
 # means creating that link for the first time. If the nano turns out to answer a
-# device inquiry, plan-v03.4's hot-swap detector needs this line in wire.sh too.
+# device inquiry, the hot-swap detector needs this line in wire.sh too.
+#
+# ⛔ IT DID ANSWER, AND THE LINE WENT IN. Cut It's wire.sh wires seven links now,
+# not six -- item 274. The hot-swap plan had said in writing that "wire.sh itself
+# does not change, no connect or disconnect line moves", which was the largest
+# documentation hazard it thought it was removing, and it was measurably false:
+# the nano's inquiry went out into an unconnected port forever. ⚠️ NOTHING ON THE
+# MAC COULD HAVE FOUND IT -- [midiout] and [sysexin] are both stubs there and all
+# nineteen gates passed either way.
 #
 # Pd port map, matching /root/.pdsettings -- 4 in, 4 out:
 #   Pure Data:0..3  = Midi-In  1..4

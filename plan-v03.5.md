@@ -9,8 +9,10 @@ bringing the AP up kills `wpa_supplicant` and there is no association left to ha
 
 So one decision answers three problems: make the AP the performance network.
 
-⛔ **This plan depends on [plan-v03.4.md](plan-v03.4.md)**, which produces the presence data the
-diagnostic screen displays. **Do not start it first.**
+✅ **Nothing gates this plan any more.** It used to wait on hot-swap for the presence data its
+diagnostic screen displays; that landed on 2026-08-10 and the bus is live — `expect`, `tick`,
+`lost`/`back` and `seen`, with `seen` published by the passive layer for **exactly this screen** and
+read by nothing yet. See [ref/module/presence.md](ref/module/presence.md).
 
 ---
 
@@ -162,8 +164,8 @@ already produced two confident wrong answers.
 
 **The highest-value piece, because it needs nothing plugged in and no mode change.**
 
-A new layer on the OLED, fed by [plan-v03.4.md](plan-v03.4.md)'s presence data: **which device was
-last heard, and how long ago.**
+A new layer on the OLED, fed by the presence bus — see
+[ref/module/presence.md](ref/module/presence.md): **which device was last heard, and how long ago.**
 
 - One new selector on `g_oled`'s route, one layer flag and TTL, one link in the pick cascade, one
   draw subpatch writing through the existing text API.

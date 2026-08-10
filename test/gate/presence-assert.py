@@ -56,6 +56,12 @@ BOUND_EARLY = 6
 # Eight recovery forks at counter 4, 8 ... 32, plus u_init's one at boot.
 BOUND_TOTAL = 9
 GAVEUP = "fail u_present rewire-gaveup"
+# ⛔ THE TWO FORKS NAME THEMSELVES SEPARATELY, and that separation is the point.
+# Both converge on the same `sh wire.sh` message box, so one report tapped below
+# the junction would call every scheduled attempt a trailing one -- which is
+# precisely the distinction that could not be drawn on the hardware.
+REWIRE_TRY = "info u_present rewire-try"
+REWIRE_LAST = "info u_present rewire-last"
 
 # ⛔ EVERY m_ LAYER REGISTERS, INCLUDING THE TWO THAT CANNOT BE POLLED. Three are
 # active and hold a c_presence; m_organelle is passive and m_volca is none, and
@@ -340,6 +346,33 @@ def main_run(cap):
             "unbounded stream that rule exists to prevent"
             % wire_in(by, "SETTLED"))
 
+    # --- ⛔ AND IT SAYS SO ON err, WHICH IS WHAT MAKES IT ATTRIBUTABLE --------
+    # ⛔ A FORK THE LOG CANNOT NAME IS THE DEFECT THIS CLOSES. The attempts had a
+    # [print rewire] and nothing else, and a menu-launched patch sends stdout to
+    # tty1 -- so on the instrument they were invisible. Measured 2026-08-10: the
+    # Volca's interface went from unsubscribed to wired on a LIVE instrument with
+    # no BOOT, no device-lost and no give-up anywhere in cut-it-err.log. Something
+    # ran wire.sh and nothing recorded it.
+    last = raised_in(errs, REWIRE_LAST, *MARKS)
+    A.check("⛔ the trailing fork names ITSELF on err, once",
+            last == ["ALL-BACK"],
+            "`%s` reached err in %s, wanted exactly ALL-BACK. This is the line "
+            "that lets a trailing fork be told from a scheduled one after the "
+            "fact, which is the question item 275 turned on and which the "
+            "hardware could not answer" % (REWIRE_LAST, last))
+
+    # ⚠️ THE NEGATIVE HALF, and it is the one that catches a mis-wire. Both forks
+    # converge on the same `sh wire.sh` message box, so a report tapped one box
+    # too low would fire for BOTH kinds and the check above would still pass --
+    # the trailing fork would be named correctly and every scheduled one would be
+    # named as trailing too.
+    stray = raised_in(errs, REWIRE_LAST, "WAITING", "STILL-LOST", "SETTLED")
+    A.check("⛔ ...and a SCHEDULED fork is never reported as the trailing one",
+            not stray,
+            "`%s` also appeared in %s. Those windows hold regular attempts, so "
+            "the report is tapped below the point where the two paths meet and "
+            "the distinction it exists to draw is gone" % (REWIRE_LAST, stray))
+
     # ⛔ AND ITS POSITIVE CONTROL: all three matchers, on one [sysexin], in one
     # logical instant. If any of the three replies had been rejected the count
     # would not have reached zero and the check above would be answered by a
@@ -456,6 +489,20 @@ def bound_run(cap):
             "attempts at counter 4, 8 ... 32. Fewer means the give-up count is "
             "smaller than it ships; more means [moses] is not stopping them"
             % (total, BOUND_TOTAL))
+
+    # ⛔ EVERY ONE OF THEM REACHES err, AND THE COUNT IS EXACT. u_init's boot fork
+    # is not u_present's and must NOT be reported here, so this is one fewer than
+    # the fork total above -- which is also what makes the pair of counts able to
+    # disagree. A report wired to the wrong side of the schedule would match the
+    # forks and miss that distinction.
+    tries = raised_in(errs, REWIRE_TRY, "PRE", *BOUND_MARKS)
+    A.check("⛔ every scheduled attempt names itself on err -- all %d"
+            % (BOUND_TOTAL - 1), len(tries) == BOUND_TOTAL - 1,
+            "`%s` reached err %d time(s), in %s -- wanted %d, one per recovery "
+            "fork and NOT one for u_init's boot fork. Zero means the attempts are "
+            "still invisible to the log, which is how a re-wire on a live "
+            "instrument came to be unattributable"
+            % (REWIRE_TRY, len(tries), tries, BOUND_TOTAL - 1))
 
     A.check("...and they are spread on the interval rather than bunched",
             wire_in(by, "EARLY") == BOUND_EARLY,

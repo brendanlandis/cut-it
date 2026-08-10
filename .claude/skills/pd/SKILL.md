@@ -40,7 +40,7 @@ comment is the only documentation visible while editing in Pd and it has no link
 | C-9 | **Every `[print]` in a deployed abstraction sits behind `[del 2000]`** — `tools/deploy.sh` gates on output |
 | C-10 | **Append boxes at the end of a `.pd`, and move the `#X connect`s with them** |
 | C-11 | **Grain timing is audio-domain** — `phasor~` and `vline~`, never `metro` / `line~` |
-| C-12 | **Report failures on `[s err]`** as `<level> <source> <text>`, text one symbol ≤ 21 chars |
+| C-12 | **Report on `[s err]`** as `<level> <source> <text>` — `info` logs, `warn` draws in compose, `fail` always. Text one symbol ≤ 21 chars |
 | C-13 | **No dynamic patching, no `[value]`, no copied subpatches** |
 | C-14 | **Edit a `#X text` by replacing the WHOLE LINE** — escaped `\;` is legal inside one, so scanning for "the next `;`" splits the comment |
 

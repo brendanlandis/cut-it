@@ -1,11 +1,11 @@
-#N canvas 20 20 1450 1150 12;
-#X text 20 20 u_err -- the error bus. Any abstraction reports a problem with [s err] and a message box: <level> <source> <text> \, where level is warn or fail. u_err decides what reaches the screen \; g_oled decides what it looks like., f 58;
-#X text 20 110 creation args: none. inlets: none. outlets: none., f 58;
+#N canvas 20 20 1450 1400 12;
+#X text 20 20 u_err -- the error bus. Any abstraction reports a problem with [s err] and a message box: <level> <source> <text> \, where level is info \, warn or fail (C-12) -- see THREE LEVELS below. u_err decides what reaches the screen \; g_oled decides what it looks like., f 58;
+#X text 20 120 creation args: none. inlets: none. outlets: none., f 58;
 #X declare -path ../mac-stubs;
-#X text 20 150 U_ERR DOES NOT DRAW. C-5 allows exactly one abstraction to send on oscOut \, and that is g_oled \, so this forwards onto disp as alert <level> <source> <text> instead. plan-v04.md says u_err draws to the ALERT buffer \; where the two disagree the convention wins -- two writers \, one screen., f 58;
+#X text 20 170 U_ERR DOES NOT DRAW. C-5 allows exactly one abstraction to send on oscOut \, and that is g_oled \, so this forwards onto disp as alert <level> <source> <text> instead. plan-v04.md says u_err draws to the ALERT buffer \; where the two disagree the convention wins -- two writers \, one screen., f 58;
 #X obj 20 300 r err;
 #X obj 20 340 t a a a;
-#X obj 20 400 route warn fail;
+#X obj 20 400 route warn fail info;
 #X obj 110 445 r \$0-verbose;
 #X obj 20 490 spigot;
 #X obj 20 530 list prepend alert warn;
@@ -24,11 +24,11 @@
 #X obj 700 320 s \$0-verbose;
 #X text 20 700 THE BUS IS UNFILTERED \; ONLY THE SCREEN IS FILTERED. The print fires on every error whatever the mode \, so the by-hand SSH console in ref/conventions.md sees everything even when the OLED is deliberately showing nothing., f 46;
 #X text 20 820 route \, not select. mode arrives as a bare selector -- compose \, not symbol compose -- and select has no method for that. Same underlying fact as the list trim trap: Pd distinguishes a message's selector from its arguments., f 46;
-#X text 20 940 A level that is neither warn nor fail falls out of the reject outlet and is printed rather than displayed. Swallowing it silently would be the exact failure this file exists to prevent., f 46;
+#X text 20 940 THREE LEVELS \, AND THE THIRD ONE DRAWS NOTHING ON PURPOSE. info is LOGGED AND NEVER DISPLAYED -- its route outlet is deliberately connected to nothing \, the same idiom as u_map's unused select outlet. That works because the logfile tap hangs off the trigger ABOVE this route \, so every level reaches the log whatever the screen does. ⛔ IT EXISTS BECAUSE DIAGNOSTIC DETAIL AND OPERATOR ALERTS ARE NOT THE SAME THING: u_present forks wire.sh up to eight times per episode \, and nine alerts on a 21-character screen mid-set is noise where the log wants every one of them. A level that is none of the three still falls out of the reject and is PRINTED rather than displayed \, because swallowing it silently is the exact failure this file exists to prevent., f 46;
 #X text 480 700 DEFAULTS TO VERBOSE \, which is the state before any mode arrives -- the nanoKONTROL's transport row has driven mode since Phase 6. While developing \, seeing every warning is the useful default. It degrades safely -- the worst case is an error you did not need., f 46;
 #X text 480 820 ERROR TEXT IS ONE LINE \, 21 CHARACTERS. gPrintln does not wrap \; it draws until it runs off the right of the screen. Keep the text short at the call site \, because nothing downstream can shorten it for you., f 46;
 #X text 480 940 Callers use a MESSAGE BOX \, which already carries warn or fail as its selector. Anything built with list prepend is a list instead \, and route will reject it -- finish with list trim., f 46;
-#N canvas 30 30 1700 1520 logfile 0;
+#N canvas 30 30 1700 1750 logfile 0;
 #X text 20 20 THE ERROR LOG THAT SURVIVES THE SESSION. Capture here is UNCONDITIONAL -- the mode filter in the parent decides what reaches the SCREEN \, never what reaches the log. The menu-launched patch sends stdout to tty1 \, so without this an error draws for two seconds and is then gone forever., f 58;
 #X text 20 145 TWO FILES \, AND THE SPLIT IS THE WHOLE DESIGN. Pd's text write rewrites the WHOLE file \, so this can only hold the CURRENT session -- it writes cut-it-err.cur. logroll.sh carries the previous .cur into cut-it-err.log at load \, which is what makes sessions accumulate instead of the newest overwriting the rest \, and stamps each one with a wall clock Pd 0.49 does not have. tools/fetch-errors.sh reads BOTH., f 58;
 #X obj 20 300 inlet;
@@ -70,6 +70,8 @@
 #X text 20 1300 write -c IS NOT OPTIONAL. Without the flag Pd terminates every line with a SEMICOLON \, in its own format \, and grep \, tail and awk all stop being useful. Measured: with -c the file is plain newline-terminated \, space-separated fields., f 46;
 #X text 620 1300 text set PAST THE END APPENDS \, verified in 0.49 rather than assumed -- writing line 5 of a 2-line text gives 3 lines \, not 6. That is how the log grows without anything tracking its length \, and it is the same fact u_mother-stub's screen log rests on., f 46;
 #X text 1220 1300 The bng lives HERE and not on the dev panel. The panel is a sibling abstraction \, so reaching it would need a bare global name \, and the allowlist in C-2 is exhaustive. One extra click is cheaper than an eighth global., f 46;
+#X obj 580 560 makefilename %d;
+#X text 20 1450 ⛔ THE STAMP IS A SYMBOL \, AND WITHOUT THIS THE LOG ROTS AFTER 16 MINUTES 40 SECONDS. timer reports milliseconds as a FLOAT \, and text writes a float with %g -- which caps at six significant figures and switches to exponential above 999999. Measured on the device in this very log: 387600 written exactly \, 2104000 written as 2.104e+06. That is 1-second precision in the second hour and 10-second beyond about three \, and THE LOG IS THE ONLY RECORD OF WHEN ANYTHING HAPPENED ON THIS INSTRUMENT -- a set runs for hours. makefilename hands text a SYMBOL \, which it cannot reformat \, so the stamp stays exact forever. ⚠️ NOT a change of unit: logging tenths would be exact for only 27.8 hours and seconds for 11.6 days \, and every stamp already cited in ref/ and in git is in milliseconds., f 78;
 #X connect 2 0 3 0;
 #X connect 3 0 4 0;
 #X connect 4 4 5 0;
@@ -80,7 +82,8 @@
 #X connect 9 0 13 1;
 #X connect 10 0 11 0;
 #X connect 4 2 11 1;
-#X connect 11 0 12 1;
+#X connect 11 0 41 0;
+#X connect 41 0 12 1;
 #X connect 4 1 12 0;
 #X connect 12 0 13 0;
 #X connect 4 0 14 0;
@@ -109,7 +112,7 @@
 #X connect 4 0 5 0;
 #X connect 5 0 7 0;
 #X connect 5 1 11 0;
-#X connect 5 2 14 0;
+#X connect 5 3 14 0;
 #X connect 6 0 7 1;
 #X connect 7 0 8 0;
 #X connect 8 0 9 0;

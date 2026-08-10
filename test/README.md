@@ -29,7 +29,7 @@ were false.
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
-| `err-assert.sh` | 15 | `module/error` |
+| `err-assert.sh` | 24 | `module/error` |
 | `display-assert.sh` | 31 | `module/display` — the grid |
 | `oled-assert.sh` | 43 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
@@ -37,7 +37,7 @@ were false.
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
 | `map-assert.sh` | 38 | `module/map` |
 | `state-assert.sh` | 15 | `module/state` |
-| `presence-assert.sh` | 29 | `module/presence` |
+| `presence-assert.sh` | 32 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
 | `nano-assert.sh` | 23 | `device/nanokontrol` |
 | `organelle-assert.sh` | 13 | `device/organelle` |
@@ -45,12 +45,12 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 6 | `device/volca` |
 
-**415 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
+**427 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **408**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **420**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
-⚠️ **`presence-assert.sh`'s 29 come from TWO Pd runs and one tally**, which is the only entry here
+⚠️ **`presence-assert.sh`'s 32 come from TWO Pd runs and one tally**, which is the only entry here
 that does. The first run is the schedule at the shipped tick; the second scales `u_present`'s settle
 and tick by ten and leaves its **counts** exactly as shipped, so the eighth re-wire and the give-up
 actually happen — inside nine seconds rather than seventy-two. ⛔ **One analyser reads both

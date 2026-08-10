@@ -87,6 +87,30 @@ silently, because a matcher that matches nothing looks exactly like a device tha
 | give-up | tick 33 | `[moses 33]`, so **8 forks** at ticks 4…32 | verified | 271 |
 | trailing fork | **one**, off the transition to nothing-lost | not on the interval — see *Design* | verified | 275 |
 
+### Every fork says which kind it is, on `err`
+
+| Line | Fires | Evidence | Item |
+|---|---|---|---|
+| `warn u_present rewire-try` | each of the eight **scheduled** attempts | verified | 289 |
+| `warn u_present rewire-last` | the **single trailing** fork, when the last lost device answers | verified | 289 |
+| `fail u_present rewire-gaveup` | once, when the bound is spent | verified | 235 |
+
+⛔ **A fork nothing records is a repair nobody can attribute.** The attempts had a `[print rewire]`
+and nothing else — and a menu-launched patch runs `-nogui` with stdout on tty1, which VNC will not
+show, so on the instrument they were invisible. ✅ **Measured 2026-08-10:** the Volca's interface
+went from unsubscribed to wired on a **live** instrument, and `/sdcard/cut-it-err.log` had nothing to
+say about it — no `BOOT`, no `device-lost`, no `rewire-gaveup`, Pd's pid unchanged. Something ran
+`wire.sh` and nothing anywhere recorded it.
+
+⚠️ **`warn`, not `fail`, and the difference is what makes it usable in a set.** Neither is a failure
+— the give-up already says `fail`. The mode filter drops `warn` from the **screen** in perform mode
+and [error.md](error.md)'s log is unconditional, so a performance records every attempt without any
+of them drawing over it.
+
+⛔ **The two names are separate because both forks converge on one `sh wire.sh` message box.** A
+report tapped below that junction would name every scheduled attempt as the trailing one, and
+telling those two apart is exactly the question item 275 turned on.
+
 Which puts the wall clock at, from load:
 
 | At | Happens | Evidence | Item |

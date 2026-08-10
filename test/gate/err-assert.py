@@ -24,12 +24,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 
 # ⛔ THE NUMBER OF WINDOWS err-assert-drive-gen.py's SEQ OPENS.
-MARKS = 9
+MARKS = 10
 
 # C-12: <level> <source> <text>, text ONE symbol of at most 21 characters,
 # because gPrintln does not wrap -- it draws until it runs off the screen.
 TEXT_LIMIT = 21
-ERR_MSG = re.compile(r"^#X msg \d+ \d+ (warn|fail) (\S+) (\S+);$")
+# ⛔ THREE LEVELS, AND info IS THE ONE THAT NEVER DRAWS. It is logged like the
+# other two -- u_err's logfile tap hangs off the trigger ABOVE the route -- and
+# its route outlet is deliberately connected to nothing. It exists because
+# diagnostic detail and operator alerts are not the same thing: u_present forks
+# wire.sh up to eight times per episode, and nine alerts on a 21-character
+# screen mid-set is noise where the log wants every one of them.
+LEVELS = ("info", "warn", "fail")
+ERR_MSG = re.compile(r"^#X msg \d+ \d+ (%s) (\S+) (\S+);$" % "|".join(LEVELS))
 
 
 def run_lint():
@@ -50,7 +57,7 @@ def run_lint():
         with open(os.path.join(root, "Cut It", name)) as fh:
             for line in fh:
                 line = line.rstrip("\n")
-                if not re.match(r"^#X msg \d+ \d+ (warn|fail) ", line):
+                if not re.match(r"^#X msg \d+ \d+ (%s) " % "|".join(LEVELS), line):
                     continue
                 seen += 1
                 m = ERR_MSG.match(line)
@@ -71,6 +78,92 @@ def run_lint():
     A.check("every error text is one symbol of %d characters or fewer" % TEXT_LIMIT,
             not over, "%d over the limit: %s" % (len(over), over[:3]))
     A.note("%d error message box(es) linted across Cut It/" % seen)
+    lint_stamp(root)
+
+
+def lint_stamp(root):
+    """⛔ THE LOG'S TIMESTAMP MUST REACH [text] AS A SYMBOL, NEVER AS A FLOAT.
+
+    [timer] reports milliseconds as a float and [text] writes a float with %g,
+    which caps at SIX SIGNIFICANT FIGURES and switches to exponential above
+    999999 -- so 16 minutes 40 seconds into a session every stamp starts losing
+    precision. Measured in Pd 0.49 both ways: the symbol path writes
+    `2104000 warn ...`, the float path writes `2.104e+06 warn ...`, and the
+    device's own cut-it-err.log carries exactly that second form beside exact
+    six-digit stamps.
+
+    ⛔ AND IT HAS TO BE A STATIC LINT, WHICH IS NOT A COMPROMISE. The rot needs
+    999999 ms of uptime to appear, so a runtime check would have to run the gate
+    for seventeen minutes -- and a shorter run reads clean whatever the wiring
+    does, which is a check that cannot fail. What CAN be read cheaply is the
+    cord: the stamp reaching `list prepend`'s right inlet must come from a
+    makefilename, not from the timer.
+
+    ⚠️ NOTHING READ THIS FILE'S FORMAT UNTIL NOW, which is why the rot shipped.
+    err-assert's other half reads u_err's [print err] on the console, and the
+    console never sees the stamp -- it is added downstream, on the way to disk.
+    """
+    print("\n--- the log stamp survives past 16m40s (static, no Pd) ---")
+    path = os.path.join(root, "Cut It", "u_err.pd")
+    with open(path) as fh:
+        body = fh.read()
+
+    # The logfile subpatch, whose box indices the connects below count within.
+    sub = body.split("#N canvas", 2)
+    A.check("u_err still has a logfile subpatch to lint", len(sub) >= 3,
+            "expected a nested #N canvas in %s" % path)
+    if len(sub) < 3:
+        return
+    block = sub[2]
+    boxes, connects = [], []
+    for line in block.splitlines():
+        if line.startswith("#X restore"):
+            break
+        m = re.match(r"^#X (obj|msg|text|floatatom|symbolatom) \S+ \S+ ?(.*);$",
+                     line)
+        if m:
+            boxes.append(m.group(2))
+        c = re.match(r"^#X connect (\d+) (\d+) (\d+) (\d+);$", line)
+        if c:
+            connects.append(tuple(int(g) for g in c.groups()))
+
+    def index_of(prefix):
+        return [i for i, b in enumerate(boxes) if b.startswith(prefix)]
+
+    prepend = index_of("list prepend")
+    timer = index_of("timer")
+    maker = [i for i, b in enumerate(boxes)
+             if b.startswith("makefilename")
+             # ⚠️ %g IS THE BUG WEARING THE FIX'S CLOTHES. makefilename %g
+             # reformats exactly as [text] would, so the box being present
+             # proves nothing -- the FORMAT is the assertion.
+             and "%g" not in b]
+    A.check("the stamp goes through a makefilename with an integer format",
+            bool(maker), "makefilename boxes in the logfile subpatch: %s"
+            % [boxes[i] for i, b in enumerate(boxes)
+               if b.startswith("makefilename")])
+    A.check("the logfile subpatch still has a timer and a list prepend to wire",
+            bool(prepend) and bool(timer),
+            "timer=%s prepend=%s" % (timer, prepend))
+    if not (maker and prepend and timer):
+        return
+
+    # ⛔ THE RIGHT INLET IS THE STAMP. list prepend holds what to prepend in its
+    # COLD inlet, so inlet 1 is the one that carries the timestamp -- inlet 0 is
+    # the error message itself, and asserting on that would pass whatever the
+    # stamp did.
+    feeds = [c for c in connects if c[2] in prepend and c[3] == 1]
+    A.check("something feeds the stamp into list prepend's cold inlet",
+            bool(feeds), "no connect into inlet 1 of %s" % prepend)
+    from_timer = [c for c in feeds if c[0] in timer]
+    A.check("⛔ the RAW timer never reaches the stamp inlet -- %g would cap it "
+            "at six significant figures", not from_timer,
+            "timer wired straight to the stamp: %s" % (from_timer,))
+    from_maker = [c for c in feeds if c[0] in maker]
+    A.check("the stamp inlet is fed by the makefilename, so text stores a symbol",
+            bool(from_maker),
+            "stamp fed by box(es) %s, none of them the makefilename %s"
+            % ([boxes[c[0]] for c in feeds], [boxes[i] for i in maker]))
 
 
 def run_asserts(cap):
@@ -133,8 +226,39 @@ def run_asserts(cap):
             "the selector, so the trailing atom must be irrelevant"
             % alerts("TWO-ATOM-MODE"))
 
-    # ---- a level that is neither ------------------------------------------
-    print("\n--- a level that is neither warn nor fail ---")
+    # ---- ⛔ info: LOGGED AND NEVER DRAWN -----------------------------------
+    # The third level exists because diagnostic detail and operator alerts are
+    # not the same thing. u_present forks wire.sh up to eight times per episode
+    # and every one of them belongs in the log; nine alerts on a 21-character
+    # screen mid-set does not. It was `warn` first and oled-assert caught it
+    # drawing over a modal within one run.
+    print("\n--- info is logged and never drawn ---")
+    drew = [a for a in alerts("INFO") if "info-quiet" in " ".join(map(str, a))]
+    A.check("⛔ an info NEVER reaches the screen, even in compose",
+            not drew,
+            "info drew %s. Its route outlet is meant to be connected to nothing "
+            "-- if this is drawing, u_present's eight recovery attempts land on "
+            "the OLED during every unplug" % (drew,))
+
+    # ⛔ THE LIVENESS WITNESS, AND WITHOUT IT THE CHECK ABOVE IS VACUOUS. "The
+    # screen drew nothing" is satisfied just as well by a dead display, a shut
+    # spigot or a mode that filters everything -- so the same window raises a
+    # `warn` that MUST draw, in compose, one action earlier.
+    witness = [a for a in alerts("INFO") if "info-witness" in " ".join(map(str, a))]
+    A.check("...and the screen was demonstrably willing to draw at that moment",
+            witness,
+            "the warn raised alongside it drew nothing either, so this window "
+            "proves nothing about the LEVEL -- alerts seen: %s" % (alerts("INFO"),))
+
+    A.check("⛔ ...but it IS logged, exactly like the other two",
+            "err: info u_gate info-quiet" in cap,
+            "no `info u_gate info-quiet` on u_err's own [print err]. The logfile "
+            "tap hangs off the trigger ABOVE the route, so every level must reach "
+            "it whatever the screen does -- and the log is this level's entire "
+            "reason for existing")
+
+    # ---- a level that is none of the three ---------------------------------
+    print("\n--- a level that is none of the three ---")
     A.check("an unknown level draws nothing", not alerts("BAD-LEVEL"),
             "got %s" % alerts("BAD-LEVEL"))
     A.check("...and is PRINTED rather than swallowed",
@@ -150,10 +274,15 @@ def run_asserts(cap):
     print("\n--- the log is never filtered, even when the screen is ---")
     logged = [ln.strip()[len("err: "):] for ln in cap.splitlines()
               if ln.strip().startswith("err: ")]
+    # ⛔ info IS IN THIS LIST AND THAT IS THE POINT OF PUTTING IT HERE. The claim
+    # is that the LOG is unfiltered while the SCREEN is -- and info is the level
+    # the screen never draws at all, so its presence in this exact ordered
+    # sequence is the strongest form that claim can take.
     raised = ["warn u_gate before-mode", "warn u_gate compose-warn",
               "fail u_gate compose-fail", "warn u_gate perform-warn",
               "fail u_gate perform-fail", "warn u_gate back-warn",
-              "warn u_gate two-atom", "chatty u_gate bad-level"]
+              "warn u_gate two-atom", "warn u_gate info-witness",
+              "info u_gate info-quiet", "chatty u_gate bad-level"]
     # ⛔ THE DRIVER'S OWN ERRORS ONLY, AND THE FILTER IS THE FIX FOR A REAL
     # FRAGILITY. This compared the whole log against `raised` by equality, which
     # quietly asserted a SECOND claim it was never meant to make: that the patch

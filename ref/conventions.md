@@ -28,7 +28,7 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | **C-9** | **Every `[print]` in a deployed abstraction sits behind `[del 2000]`** — `tools/deploy.sh` gates on output | [→](#editing-a-pd-file-by-hand) |
 | **C-10** | **Append boxes at the end of a `.pd`, and move the `#X connect`s with them** | [→](#editing-a-pd-file-by-hand) |
 | **C-11** | **Grain timing is audio-domain** — `phasor~` and `vline~`, never `metro` / `line~` | [→](#timing-and-the-two-domains) |
-| **C-12** | **Report failures on `[s err]`** as `<level> <source> <text>`, text one symbol ≤ 21 chars | [→](#errors-must-reach-the-oled--built) |
+| **C-12** | **Report on `[s err]`** as `<level> <source> <text>` — `info` logs, `warn` draws in compose, `fail` always. Text one symbol ≤ 21 chars | [→](#errors-must-reach-the-oled--built) |
 | **C-13** | **No dynamic patching, no `[value]`, no copied subpatches** | [→](#banned) |
 | **C-14** | **Edit a `#X text` by replacing the WHOLE LINE** — escaped `\;` is legal inside one, so scanning for "the next `;`" splits the comment | [→](#editing-a-pd-file-by-hand) |
 
@@ -483,10 +483,27 @@ and `all` broadcasts. Each instance still gets its own `$0`.
 **The Organelle runs Pd with `-nogui`, so an error you cannot see is a silent failure** — and Pd's
 failure mode for a wrong message is to print and continue.
 
-⛔ **Any abstraction reports via `[s err]` as `<level> <source> <text>`** — level `warn` or `fail`,
-source a symbol naming the abstraction, text **one symbol of ≤ 21 characters**. Use a **message
-box**, which already carries the level as its selector; anything built with `[list prepend]` needs
-`[list trim]` (C-6).
+⛔ **Any abstraction reports via `[s err]` as `<level> <source> <text>`** — source a symbol naming
+the abstraction, text **one symbol of ≤ 21 characters**. Use a **message box**, which already
+carries the level as its selector; anything built with `[list prepend]` needs `[list trim]` (C-6).
+
+**Three levels, and they differ only in what the SCREEN does.** Every one of them is logged:
+`u_err`'s logfile tap hangs off the trigger *above* the mode route, so the bus is unfiltered
+whatever the display is doing.
+
+| Level | Logged | Drawn | For |
+|-------|--------|-------|-----|
+| `info` | yes | **never** | Diagnostic detail — a thing that happened, not a thing to act on |
+| `warn` | yes | compose only | Something is wrong and the operator may want to know |
+| `fail` | yes | **always** | Something is wrong and the operator must know |
+
+⛔ **`info` is not a quieter `warn` — it is the level for detail that would otherwise drown the
+screen.** `u_present` forks `wire.sh` up to eight times per recovery episode and every one belongs
+in the log; nine alerts on a 21-character display mid-set does not. It was built as `warn` first and
+`oled-assert.sh` caught it drawing over a modal inside one run.
+
+⚠️ **A level that is none of the three is a real error**, printed on `err-BAD-LEVEL` rather than
+swallowed — a typo must not silently disable a report.
 
 `u_err` filters by mode, never draws, and leaves the bus itself unfiltered — the design and its
 reasoning are on [architecture.md](architecture.md).

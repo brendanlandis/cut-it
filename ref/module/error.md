@@ -20,6 +20,25 @@ looks like.
 
 ## Facts
 
+### Three levels, and only the screen tells them apart
+
+<!-- check: pd-route "Cut It/u_err.pd" warn -->
+
+| Level | Logged | Drawn | Evidence | Item |
+|-------|--------|-------|----------|------|
+| `warn` | yes | compose only | verified | — |
+| `fail` | yes | **always** | verified | — |
+| `info` | yes | **never** | verified | 291 |
+
+⛔ **`info` draws nothing by construction, not by filtering** — its `route` outlet is connected to
+nothing, the same deliberate dead-outlet idiom `u_map` uses. That works because the logfile tap
+hangs off the trigger **above** the route, so every level reaches the log whatever the screen does.
+
+⛔ **It exists because diagnostic detail and operator alerts are not the same thing.** `u_present`
+forks `wire.sh` up to eight times per recovery episode and every one belongs in the log; nine alerts
+on a 21-character screen mid-set does not. ✅ It was built as `warn` first and `oled-assert.sh`
+caught it within one run, drawing over a modal the gate had asserted was undisturbed.
+
 ### What the filter does
 
 | | Evidence | Item |
@@ -43,8 +62,30 @@ raise, which is most of what actually goes wrong.
 | `/sdcard/cut-it-err.log` is the durable one, bounded at **400 lines** and trimmed to 300 by `logroll.sh` | verified | — |
 | `logroll.sh` runs **once per load** through `[shell]`, rolls `.cur` into `.log` and writes a `BOOT` line — the wall clock Pd 0.49 does not have. It echoes how many lines it carried, because a silent roll is indistinguishable from a missing script | verified | — |
 | `[r quitting]` forces a last flush, so the final seconds of a session are not lost | verified | — |
+| Each line is stamped with `[timer]` — **milliseconds since load**, and there is no other clock in the patch | verified | — |
+| ⛔ The stamp reaches `[text]` as a **symbol**, through `[makefilename %d]`, and must | verified | 290 |
 
 ## Traps
+
+### A float stamp rots after 16 minutes 40 seconds
+
+⛔ `[text]` writes a float with `%g`, which caps at **six significant figures** and switches to
+exponential above 999999 — so a millisecond stamp starts losing precision 16 min 40 s into a
+session. ✅ **Measured in Pd 0.49 both ways**, and both forms are in the device's own log:
+`387600` written exactly, `2104000` written as `2.104e+06`. That is 1-second precision in the second
+hour and 10-second beyond about three. **The log is the only record of when anything happened on
+this instrument, and a set runs for hours.**
+
+**Fix:** `[makefilename %d]` between `[timer]` and the `[list prepend]` that builds the line, so
+`[text]` stores a symbol it cannot reformat. Exact forever.
+
+⚠️ **Not a change of unit, and the arithmetic is the reason.** Logging tenths of a second would be
+exact for only 27.8 hours and whole seconds for 11.6 days, and every stamp already cited in `ref/`
+and in `git log` is in milliseconds.
+
+⚠️ **`makefilename %g` is the bug wearing the fix's clothes** — it reformats exactly as `[text]`
+would, so the box being present proves nothing. `err-assert.sh` asserts the **format**, not the
+object.
 
 ### Anything built with `list prepend` is a list, and `route` will reject it
 

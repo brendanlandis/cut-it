@@ -67,8 +67,19 @@ class Process(stream.Source):
         self.teardown_fn = teardown
         self.label = label
         self.log = []
+        # ⛔ stdin=DEVNULL, AND IT IS THE WHOLE REASON A DEVICE BENCH COULD NOT
+        # BE STEPPED BY A PERSON. Popen INHERITS stdin by default, and `ssh`
+        # reads stdin greedily to forward it to the remote command -- so the
+        # child and the runner's own prompt were both reading the same terminal
+        # and racing for every keystroke. Down a pipe ssh swallows the lot and
+        # the first prompt gets EOF; at a tty the Enter meant for the prompt
+        # goes to a Pd that has no use for it, and the step never fires. It
+        # presents as "GO was sent and nothing fired", which is a lie: the
+        # prompt never returned, so no GO was sent at all. Neither Pd reads
+        # stdin for anything, so closing it costs nothing.
         self.proc = subprocess.Popen(
-            argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            argv, stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             bufsize=1, universal_newlines=True)
         self.gosender = go
         self.reader = threading.Thread(target=self._pump, daemon=True)

@@ -140,10 +140,16 @@ def describe(bench, step):
     print("\n[%d/%d] %s%s" % (step.n, step.of, bench.name, tag))
     print("       %s" % step.title)
     for line in step.meta.get("need", []):
-        print("  need   %s" % line)
+        print("  need     %s" % line)
     if step.meta.get("do"):
-        print("  do     %s" % step.meta["do"])
-    print("  watch  %s" % step.watch)
+        print("  do       %s" % step.meta["do"])
+    # ⚠️ THE LABEL IS `PASS IF` BECAUSE THAT IS WHAT THE TEXT IS. It was `watch`,
+    # which named nothing a person could act on -- the line is the step's PASS
+    # IF with its prefix stripped (steps.py `watch`), the verdict prompt asks
+    # against it, and `?` reprints it under that name. Three names for one
+    # sentence, and the one on screen was the only one that appeared nowhere
+    # else.
+    print("  PASS IF  %s" % step.watch)
 
 
 def ask(step, allow_undo):
@@ -455,8 +461,14 @@ def run_bench_driven(bench, target, auto_only, start, src):
             try:
                 fm, fline = src.wait_for(S.RE_FIRED, STEP_TIMEOUT, collect=window)
             except stream.Stalled:
-                stream.say("\n  STALLED at step %d -- GO was sent and nothing "
-                           "fired within %g s.\n%s"
+                # ⚠️ SAY WHOSE %g SECONDS THOSE ARE. The old wording read as a
+                # reading deadline, and it was taken for one: the clock starts
+                # when you press enter, and it is how long the PATCH gets to
+                # answer a GO -- measured at about 50 ms on the device. Nothing
+                # about how long you spend reading a step is timed at all.
+                stream.say("\n  STALLED at step %d -- the patch did not answer "
+                           "GO within %g s.\n  (that window opens when you press "
+                           "enter -- your reading time is never timed)\n%s"
                            % (step.n, STEP_TIMEOUT, src.diagnose()))
                 # ⚠️ THE NOTE IS WHAT SURVIVES INTO latest.json, so it carries the
                 # counts rather than only the symptom. The one bench verdict this

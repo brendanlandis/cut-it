@@ -192,6 +192,23 @@ def main():
     A.check("protocol: the complete regex reads what the complete format writes",
             bool(S.RE_COMPLETE.search("print: " + S.SAY_COMPLETE)))
 
+    # ⛔ THE CHILD MUST NEVER INHERIT stdin, AND NO REPLAY FIXTURE CAN SEE THIS.
+    # Every check in this file drives stream.Replay, which launches nothing --
+    # so the one thing that only a real subprocess does went unguarded, and it
+    # broke the device target completely: Popen inherits stdin by default and
+    # `ssh` reads it greedily to forward to the remote command, so the runner's
+    # own prompt and the ssh child raced for every keystroke. Down a pipe the
+    # first prompt gets EOF; at a terminal the Enter that should send GO is
+    # eaten by a Pd with no use for it. It is a static check because making it a
+    # live one would need the rig.
+    tsrc = open(os.path.join(ROOT, "test/runner/targets.py"), encoding="utf-8").read()
+    A.check("⛔ the launched child gets stdin=DEVNULL -- ssh must not eat the "
+            "runner's keystrokes",
+            "stdin=subprocess.DEVNULL" in tsrc,
+            "targets.py's Popen does not close the child's stdin. With ssh on "
+            "the other end that makes a device bench unsteppable by a person, "
+            "and it reports as a stall rather than as anything to do with input")
+
     _predicates()
 
     clean = transcript(bench)

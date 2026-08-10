@@ -32,7 +32,8 @@ import lib_assert as A                                         # noqa: E402
 import lib_grid as G                                           # noqa: E402
 
 MARKS = ("BOOT", "BEFORE-LOSS", "AFTER-LOSS", "WAITING", "AFTER-REWIRE",
-         "FOREIGN", "STILL-LOST", "OWN-REPLY", "RECOVERED", "DROPPED")
+         "FOREIGN", "STILL-LOST", "OWN-REPLY", "RECOVERED", "DROPPED",
+         "ALL-BACK", "SETTLED")
 
 # ⛔ EVERY m_ LAYER REGISTERS, INCLUDING THE TWO THAT CANNOT BE POLLED. Three are
 # active and hold a c_presence; m_organelle is passive and m_volca is none, and
@@ -47,6 +48,16 @@ ACTIVE = 3
 MARK_RE = re.compile(r"^PRES:\s+MARK\s+(\S+)\s*$")
 ROSTER_RE = re.compile(r"^u_present-sources:\s+(\d+)\s*$")
 ERR_RE = re.compile(r"^err:\s+(.*\S)\s*$")
+# ⚠️ THE BUS IS TAPPED AS WELL AS err, and `tick` rides it every 2 s -- 17 of
+# them in this run. That is noise worth paying for: `back <src>` is the only
+# direct evidence that a matcher accepted its OWN reply, and without it the
+# trailing-fork check has no positive control except itself.
+# ⛔ UPPERCASE, AND THE err ONE ABOVE IS NOT. `err:` lines come from u_err's own
+# internal [print err], which is unconditional and is the reason the log sees
+# everything the screen is filtered out of. `PRESENCE:` lines come from the
+# DRIVER's tap, and lib_drive labels those from TAP_LABELS in upper case. Two
+# different mechanisms that happen to look alike in a capture.
+BUS_RE = re.compile(r"^PRESENCE:\s+(.*\S)\s*$")
 # ⚠️ THE TRAILING ARGUMENTS ARE NOT OPTIONAL IN THIS REGEX -- two of the four
 # scripts carry one. u_state forks `sh state-dir.sh <dir>` and u_net forks
 # `sh phone-ip.sh <fallback>`, so an end-anchored pattern matches logroll.sh and
@@ -87,6 +98,7 @@ def main():
     frames = G.parse(cap.splitlines(), "PRES")
     by = by_window(cap, SHELL_RE)
     errs = by_window(cap, ERR_RE)
+    bus = by_window(cap, BUS_RE)
 
     A.windows(cap, "PRES", len(MARKS))
 
@@ -267,15 +279,50 @@ def main():
             "was due, so 'the grid went quiet' is unproven. ⚠️ The heartbeat rides "
             "$0-want and NOT $0-own precisely so that this stays answerable")
 
+    # --- ⛔ THE TRAILING FORK -------------------------------------------------
+    # Added after the hardware session and covered by nothing until this window
+    # existed: every other window here leaves m_404 missing, so the lost count
+    # never reaches zero and the transition that fires this never happens.
+    A.check("⛔ the last device returning fires ONE trailing re-wire",
+            wire_in(by, "ALL-BACK") == 1,
+            "%d wire.sh fork(s) in ALL-BACK, wanted exactly 1. Zero means the "
+            "recovery still stops the instant the last DETECTABLE device answers "
+            "-- which is not the same as the rig being whole, and is what left a "
+            "replugged Volca disconnected on the bench (item 275). The regular "
+            "schedule is quiet in this window, so this fork can only be the "
+            "trailing one" % wire_in(by, "ALL-BACK"))
+
+    A.check("⛔ ...and exactly once -- the transition does not re-arm",
+            wire_in(by, "SETTLED") == 0,
+            "%d wire.sh fork(s) in SETTLED. The trailing fork is bounded at one "
+            "per episode by the same reset that triggers it; more than one turns "
+            "a deliberate exception to Phase 4's one-fork-per-load rule into the "
+            "unbounded stream that rule exists to prevent"
+            % wire_in(by, "SETTLED"))
+
+    # ⛔ AND ITS POSITIVE CONTROL: all three matchers, on one [sysexin], in one
+    # logical instant. If any of the three replies had been rejected the count
+    # would not have reached zero and the check above would be answered by a
+    # silence that has nothing to do with the trailing fork.
+    for src in ("m_launchpad", "m_nano", "m_404"):
+        A.check("...because %s accepted its own reply in ALL-BACK" % src,
+                ("back %s" % src) in bus.get("ALL-BACK", []),
+                "no `back %s` on the presence bus in ALL-BACK -- saw %s. Three "
+                "frames went into one [sysexin] back to back and this one's "
+                "matcher did not take its own, so the lost count reaching zero "
+                "cannot be what fired the trailing re-wire"
+                % (src, bus.get("ALL-BACK", [])))
+
     # --- ⛔ ONE BOUND, NOT ONE PER DEVICE ------------------------------------
     total = sum(v.count("wire.sh") for v in by.values())
     A.check("⛔ %d sources lost together produce ONE re-wire per interval" % ACTIVE,
-            total == 4,
+            total == 5,
             "saw %d wire.sh fork(s), wanted u_init's boot fork plus three "
-            "recoveries. %d would be one per lost source per interval, which is "
+            "recoveries plus one trailing. %d would be one per lost source per "
+            "interval, which is "
             "what the recovery did before Phase 4 moved it out of m_launchpad "
             "and into u_present -- three copies of a bound is not a bound. Fewer "
-            "than 4 means the interval or the loss test has gone"
+            "than 5 means the interval, the loss test or the trailing fork has gone"
             % (total, 1 + 3 * ACTIVE))
 
     A.note("wire.sh by window: %s"

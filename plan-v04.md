@@ -105,7 +105,6 @@ nothing is worse than no pointer. **This whole subsection goes when plan-v03.4.m
 |---|---|
 | The eight bench steps — two cases × four devices, the Volca's judged by ear | Phase 6 |
 | The bound asserted by **reaching** it, on a scratch-scaled tick with the counts as shipped | Phase 6 |
-| ⛔ **The trailing fork has no gate at all** — `presence-assert.sh` never reaches a lost count of zero, so the one path added after the hardware session is the one path nothing covers | Phase 6 |
 | The SP-404 and the Volca never got their own transition runs on the rig | Verification |
 | Panic becomes `recover` — the CC 90 tiers, the two-step OSC reload, the breadcrumb | Phase 1b |
 

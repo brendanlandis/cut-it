@@ -36,7 +36,7 @@ scratch_drive test/gate/display-assert-drive-gen.py "$WORK/drive.pd"
 
 CAP="$WORK/capture.txt"
 echo "   running (about 46 s -- DSP is on, the beat row needs it) ..."
-scratch_run "$CAP" 90 -nogui -path "$WORK/patch" \
+scratch_run "$CAP" 90 -nogui -noaudio -nomidi -path "$WORK/patch" \
     "$WORK/patch/main-dev.pd" "$WORK/drive.pd"
 
 echo

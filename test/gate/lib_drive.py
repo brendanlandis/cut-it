@@ -58,7 +58,8 @@ list rather than by a fact -- a pass, and a meaningless one.
 TAP_LABELS = {"param": "PARAM", "disp": "DISP", "err": "ERR", "tempo": "TEMPO",
               "start": "START", "stop": "STOP", "mode": "MODE",
               "led": "LED", "state": "STATE", "oscOut": "OLED",
-              "midiInGate": "MIDIINGATE", "midiOutGate": "MIDIOUTGATE"}
+              "midiInGate": "MIDIINGATE", "midiOutGate": "MIDIOUTGATE",
+              "presence": "PRESENCE"}
 
 
 def build(path, seq, tag, taps, quit_ms, blurb, burst=None, notes=()):

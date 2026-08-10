@@ -267,12 +267,6 @@ more. The diagnostic screen that reads all of this is
   creation arguments precisely so a scratch copy can scale the two *times* and reach the give-up in a
   few seconds with the **counts exactly as shipped**.
 
-⬜ **The trailing fork is not exercised by any gate.** See [plan-v04.md](../../plan-v04.md) §3.
-  `presence-assert.sh` never reaches a lost count of zero — `m_404` is deliberately never answered —
-  so the one path added after the hardware session is the one path no gate covers. It is verified on
-  the rig and nowhere else, which is the wrong way round. A window that hands every device back
-  would exercise it.
-
 ⬜ **A passive layer's last-heard is published and nothing reads it.** See
   [plan-v04.md](../../plan-v04.md) §3 and [plan-v03.5.md](../../plan-v03.5.md), which is the
   consumer. `seen m_organelle` goes on the bus for a screen that does not exist yet.

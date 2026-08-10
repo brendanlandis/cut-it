@@ -37,7 +37,7 @@ scratch_drive test/gate/tempo-assert-drive-gen.py "$WORK/drive.pd"
 
 CAP="$WORK/capture.txt"
 echo "   running (about 16 s -- DSP is on, the clock is a phasor~) ..."
-scratch_run "$CAP" 60 -nogui -path "$WORK/patch" \
+scratch_run "$CAP" 60 -nogui -noaudio -nomidi -path "$WORK/patch" \
     "$WORK/patch/main-dev.pd" "$WORK/drive.pd"
 
 echo

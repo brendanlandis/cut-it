@@ -14,8 +14,12 @@
 # nothing to tap, and only a [print] wired to an outlet can see it. Three
 # instances, no instrument around them, nothing else running.
 #
-# ⚠️ IT NEEDS DSP, so -noaudio is deliberately absent. The beat is threshold~ on a
-# wrap~ of a phasor~: without DSP nothing ticks and every count comes back 0.
+# ⚠️ IT NEEDS DSP -- AND -noaudio DOES NOT TAKE DSP AWAY. The beat is threshold~ on
+# a wrap~ of a phasor~, so without a running graph nothing ticks and every count
+# comes back 0. That part is true and worth keeping. The conclusion this line used
+# to draw from it was not: -noaudio disables the audio DEVICE, and Pd drives the
+# same graph from its internal scheduler instead. Measured both ways 2026-08-10 --
+# 22 checks, byte-identical output either way. Item 280.
 set -u
 set +m 2>/dev/null || true
 
@@ -60,7 +64,7 @@ scratch_drive test/gate/clock-assert-drive-gen.py "$WORK/drive.pd" "$WORK/harnes
 }
 
 CAP="$WORK/capture.txt"
-scratch_run "$CAP" 40 -nogui -nomidi -path "$WORK/patch" \
+scratch_run "$CAP" 40 -nogui -noaudio -nomidi -path "$WORK/patch" \
     "$WORK/harness.pd" "$WORK/drive.pd"
 
 python3 test/gate/clock-assert.py $ARGS < "$CAP"

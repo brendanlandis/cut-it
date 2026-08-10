@@ -37,7 +37,7 @@ were false.
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
 | `map-assert.sh` | 38 | `module/map` |
 | `state-assert.sh` | 15 | `module/state` |
-| `presence-assert.sh` | 16 | `module/presence` |
+| `presence-assert.sh` | 21 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
 | `nano-assert.sh` | 23 | `device/nanokontrol` |
 | `organelle-assert.sh` | 13 | `device/organelle` |
@@ -45,7 +45,12 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 6 | `device/volca` |
 
-**397 checks.** ⚠️ Three pages name more than one gate, and that is the rule working rather than
+**402 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
+not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
+total cannot be derived from a run by summing. Totalling the run gives **395**; the difference is
+that gate. Worth knowing before trusting an arithmetic check of this number against a log.
+
+ ⚠️ Three pages name more than one gate, and that is the rule working rather than
 bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
 master reference and the clock cut from it, and `device/organelle` covers a front panel and an LED.
 **A gate whose subject is two abstractions is what the split was for**; a page whose subject is two

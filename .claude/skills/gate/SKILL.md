@@ -73,6 +73,19 @@ exist only in the scratch copy. State it, so nobody "fixes" it.
 `m_launchpad`. That is not a leak to work around — it makes **cross-talk between the three channel
 gates something a gate can assert** rather than assume.
 
+## `-noaudio` does not turn DSP off
+
+⚠️ **It disables the audio DEVICE, not the graph.** Pd falls back to its internal scheduler and
+`phasor~`, `threshold~` and `writesf~` all keep working. Two gates carried comments asserting the
+reverse — *"NO -noaudio, the subject is a signal"* and *"without DSP nothing ticks and every count
+comes back 0"* — and both produced **byte-identical output** with and without it, peaks and counts
+included. Item 280, measured both ways.
+
+**Pass it.** A gate that opens a Mac audio device it has no use for is slower and can collide with
+whatever else is using the interface. ⛔ **But do not read this as "DSP is free"** — the suite still
+takes ~5 minutes because the graph runs in REAL TIME, and that is what a `phasor~` clock needs. A
+faster machine will not help.
+
 ## Three things that have cost real time
 
 ⛔ **OWN YOUR STATE DIRECTORY.** `main-dev.pd` passes `/tmp`, which every run on the machine shares.

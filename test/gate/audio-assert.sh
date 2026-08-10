@@ -17,7 +17,13 @@
 # be silent -- the worst possible failure, since silence is also what a broken
 # audio path looks like.
 #
-# ⚠️ NO -noaudio, AND THAT IS THE WHOLE POINT. The subject is a signal.
+# ⚠️ -noaudio IS SAFE HERE, AND THIS LINE USED TO SAY THE OPPOSITE. It read "NO
+# -noaudio, and that is the whole point -- the subject is a signal", which sounds
+# obviously right and is wrong: -noaudio disables the audio DEVICE, not the DSP
+# graph. Pd falls back to its internal scheduler, the graph still computes and
+# writesf~ still writes. Measured both ways 2026-08-10 -- BYTE-IDENTICAL output,
+# same peaks, same report counts. Item 280. Keeping it means the suite never
+# opens a Mac audio device it has no use for.
 set -u
 set +m 2>/dev/null || true
 
@@ -62,7 +68,7 @@ scratch_drive test/gate/audio-assert-drive-gen.py "$WORK/drive.pd" \
 }
 
 CAP="$WORK/capture.txt"
-scratch_run "$CAP" 45 -nogui -nomidi -path "$WORK/patch" \
+scratch_run "$CAP" 45 -nogui -noaudio -nomidi -path "$WORK/patch" \
     "$WORK/harness.pd" "$WORK/drive.pd"
 
 # ⛔ THE ANALYSER READS THE WAV, NOT stdin. It is the only one here that does,

@@ -1,15 +1,22 @@
 #!/bin/sh
 # Device presence and the bounded re-wire -- ref/module/presence.md. No eyes, no
-# hardware, ~32 s.
+# hardware.
 #
 #   ./test/gate/presence-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/presence-assert.sh -v       and show the detail behind every check
-#   ./test/gate/presence-assert.sh --keep   leave the scratch dir and capture behind
+#   ./test/gate/presence-assert.sh --keep   leave the scratch dirs and captures behind
 #
 # ⛔ IT IS THE ONLY GATE WHOSE STIMULUS IS A SILENCE. Every other gate here pushes
 # something in and reads something out. This one withholds the device-inquiry
 # reply and asserts on what the patch does about it -- which is the absent-at-load
 # case of item 235, the one the Launchpad watchdog was built unable to handle.
+#
+# ⛔ AND IT IS TWO Pd RUNS, ONE TALLY. The first is the schedule at the shipped
+# tick. The second scales u_present's settle and tick by ten -- and NOT its
+# counts -- so the eighth attempt and the give-up actually happen, inside nine
+# seconds instead of seventy-two. One analyser reads both captures, because two
+# would print two `N checks` lines and that number is what proves no assertion
+# went missing.
 #
 # ⚠️ A SILENCE IS ALSO WHAT A BROKEN SCRATCH COPY PRODUCES, so the analyser opens
 # with two liveness witnesses -- u_init's own four shell forks, and the fact that
@@ -68,17 +75,55 @@ fi
 scratch_drive test/gate/presence-assert-drive-gen.py "$WORK/drive.pd"
 
 CAP="$WORK/capture.txt"
-echo "   running (about 34 s -- the three re-wires are at 14 s, 22 s and 30 s) ..."
+echo "   running the schedule (about 38 s -- the three re-wires are at 14 s, 22 s and 30 s) ..."
 scratch_run "$CAP" 60 -nogui -noaudio -nomidi -path "$WORK/patch" \
     "$WORK/patch/main-dev.pd" "$WORK/drive.pd"
 
+# ---------------------------------------------------------------------------
+# ⛔ THE SECOND RUN, AND IT IS THE ONLY ONE THAT REACHES THE BOUND. The run above
+# proves the INTERVAL and the COALESCING inside 38 s; it never sees tick 33,
+# because at the shipped tick the give-up is 72 seconds away. So "eight attempts
+# and then it stops" was arithmetic read off [moses 33] rather than anything a
+# gate had watched happen.
+#
+# ⛔ A SECOND SCRATCH COPY, NOT THE FIRST ONE REWRITTEN. Two reasons, and the
+# first is enough on its own: scaling u_root.pd would change the patch the run
+# above is still being judged against. The second is item 232 -- the run above
+# sets a mode, u_state flushes it, and u_init would restore it into this run at
+# what is now the middle of the recovery.
+WORK2=${TMPDIR:-/tmp}/cutit-presence-bound-$$
+scratch_make "$WORK2"
+scratch_state_dir "$WORK2"
+scratch_scale_present "$WORK2"
+
+cp test/stubs/t_shell.pd "$WORK2/patch/shell.pd" || {
+    echo "FAIL: could not install the counting shell stub for the bound run." >&2
+    exit 2
+}
+
+# ⚠️ THE FULL REWRITE, EVEN THOUGH THIS RUN DRIVES NO MIDI AT ALL. It costs
+# nothing -- a stub only prints -- and it means the second copy enforces
+# MIDI_EXPECT exactly like the first, so a new emitter cannot slip in behind a
+# gate that happens to make two copies.
+if ! midi_rewrite "$WORK2"; then
+    [ "$KEEP" = "1" ] && echo "kept $WORK $WORK2"
+    exit 2
+fi
+
+scratch_drive test/gate/presence-bound-drive-gen.py "$WORK2/drive.pd"
+
+CAP2="$WORK2/capture.txt"
+echo "   running the bound (about 9 s -- the eighth fork is at 7 s and the give-up at 7.2) ..."
+scratch_run "$CAP2" 30 -nogui -noaudio -nomidi -path "$WORK2/patch" \
+    "$WORK2/patch/main-dev.pd" "$WORK2/drive.pd"
+
 echo
-python3 test/gate/presence-assert.py $ARGS < "$CAP"
+python3 test/gate/presence-assert.py $ARGS --bound "$CAP2" < "$CAP"
 rc=$?
 
 if [ "$KEEP" = "1" ]; then
-    echo "capture kept at $CAP"
+    echo "captures kept at $CAP and $CAP2"
 else
-    rm -rf "$WORK"
+    rm -rf "$WORK" "$WORK2"
 fi
 exit $rc

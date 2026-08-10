@@ -127,6 +127,41 @@ scratch_state_dir() {
     }
 }
 
+scratch_scale_present() {
+    # ⛔ SCALE THE TWO TIMES AND LEAVE THE COUNTS ALONE, AND ASSERT THE REWRITE
+    # WORKED. Same shape and same reason as scratch_state_dir above.
+    #
+    # WHY IT IS NEEDED AT ALL. u_present's bound -- eight wire.sh attempts and
+    # then a give-up -- is 72 seconds wide at the shipped tick, and no gate in
+    # this suite runs that long. So the only claim presence-assert could make
+    # about it was arithmetic read off [moses 33], which is not a claim about a
+    # run at all. u_present takes the settle, the tick and the give-up as
+    # creation arguments PRECISELY so a scratch copy can divide the two TIMES by
+    # ten and reach counter 33 in about seven seconds.
+    #
+    # ⛔ ONLY THE SETTLE AND THE TICK MOVE. 3 (c_presence's missed-tick
+    # threshold) and 33 (the give-up) are the SHIPPED counts, and a gate that
+    # scaled those would be asserting a different patch than the one that ships
+    # -- which is the most expensive kind of green there is.
+    #
+    # ⚠️ IT DELIBERATELY BREAKS THE SETTLE'S COUPLING TO u_init, and that is safe
+    # HERE and nowhere else. The 4000 ms settle exists so the first re-wire lands
+    # past u_init's last stage; at 400 ms it does not, so u_init's own boot fork
+    # at 1500 ms lands BETWEEN recovery forks 1 and 2. The bound driver's windows
+    # are drawn knowing that. ⛔ Do not reuse this in a gate that counts forks
+    # per window without accounting for it.
+    _w=$1
+    sed -i '' "s|u_present 4000 2000 33|u_present 400 200 33|" "$_w/patch/u_root.pd"
+    grep -q "u_present 400 200 33" "$_w/patch/u_root.pd" || {
+        echo "FAIL: could not scale u_present's settle and tick." >&2
+        echo "      Without that the give-up is 72 s away, the run quits at 9 s," >&2
+        echo "      and every count below is answered by a recovery that never" >&2
+        echo "      got started -- which looks exactly like a bound that fires" >&2
+        echo "      nothing." >&2
+        exit 2
+    }
+}
+
 scratch_phone_mirror() {
     # ⛔ POINT u_net AT THIS MACHINE, AND ASSERT THE REPOINT WORKED. Same shape
     # and same reason as scratch_state_dir above.

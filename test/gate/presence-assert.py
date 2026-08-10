@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""The device-presence analyser -- ref/module/presence.md. Reads a capture on stdin.
+"""The device-presence analyser -- ref/module/presence.md.
+
+    presence-assert.py [-v] --bound BOUND-CAPTURE < MAIN-CAPTURE
+
+⛔ IT READS TWO CAPTURES, FROM TWO Pd RUNS, AND KEEPS ONE TALLY. The first run is
+the schedule at the shipped tick; the second scales the settle and the tick by ten
+and leaves the counts alone, which is the only way anything here ever reaches the
+give-up. Two analysers would print two `N checks` lines, and the count is this
+suite's whole defence against an assertion quietly going missing -- test/README.md
+adds them up. So there is one report(), at the bottom, covering both.
 
 ⛔ THE CLAIM: A DEVICE THAT WAS NEVER THERE STILL GETS RECOVERED. The run it reads
 never delivers a device-inquiry reply, so the Launchpad it describes is one that
@@ -35,6 +44,19 @@ MARKS = ("BOOT", "BEFORE-LOSS", "AFTER-LOSS", "WAITING", "AFTER-REWIRE",
          "FOREIGN", "STILL-LOST", "OWN-REPLY", "RECOVERED", "DROPPED",
          "ALL-BACK", "SETTLED")
 
+# The second run's windows -- see presence-bound-drive-gen.py for the schedule
+# each one straddles.
+BOUND_MARKS = ("EARLY", "LATE", "AFTER")
+
+# ⛔ SIX IN EARLY, NOT FIVE. u_init forks wire.sh once at 1500 ms, and the scaled
+# settle deliberately puts the first recovery fork at 1400 -- so u_init's own lands
+# BETWEEN recovery forks 1 and 2 and inside this window. Every other count in the
+# bound run is of recovery forks alone.
+BOUND_EARLY = 6
+# Eight recovery forks at counter 4, 8 ... 32, plus u_init's one at boot.
+BOUND_TOTAL = 9
+GAVEUP = "fail u_present rewire-gaveup"
+
 # ⛔ EVERY m_ LAYER REGISTERS, INCLUDING THE TWO THAT CANNOT BE POLLED. Three are
 # active and hold a c_presence; m_organelle is passive and m_volca is none, and
 # both of those register and then age never. Asserting the TOTAL is what stops
@@ -45,7 +67,6 @@ MARKS = ("BOOT", "BEFORE-LOSS", "AFTER-LOSS", "WAITING", "AFTER-REWIRE",
 ROSTER = 5
 ACTIVE = 3
 
-MARK_RE = re.compile(r"^PRES:\s+MARK\s+(\S+)\s*$")
 ROSTER_RE = re.compile(r"^u_present-sources:\s+(\d+)\s*$")
 ERR_RE = re.compile(r"^err:\s+(.*\S)\s*$")
 # ⚠️ THE BUS IS TAPPED AS WELL AS err, and `tick` rides it every 2 s -- 17 of
@@ -67,12 +88,20 @@ BUS_RE = re.compile(r"^PRESENCE:\s+(.*\S)\s*$")
 SHELL_RE = re.compile(r"^SHELL:\s+sh\s+(\S+)")
 
 
-def by_window(cap, rx):
-    """-> {mark: [group(1), ...]} for every line matching rx, keyed by window."""
+def by_window(cap, rx, tag="PRES"):
+    """-> {mark: [group(1), ...]} for every line matching rx, keyed by window.
+
+    ⚠️ THE TAG IS A PARAMETER BECAUSE THERE ARE TWO RUNS. The first driver prints
+    `PRES: MARK ...` and the second `BOUND: MARK ...`, and a hardcoded prefix
+    here would silently put the whole of the second capture into the PRE window
+    -- where every per-window count reads zero and every "nothing happened in
+    this window" assertion passes for the worst possible reason.
+    """
+    mark_re = re.compile(r"^%s:\s+MARK\s+(\S+)\s*$" % re.escape(tag))
     by, cur = {"PRE": []}, "PRE"
     for line in cap.splitlines():
         line = line.strip()
-        m = MARK_RE.match(line)
+        m = mark_re.match(line)
         if m:
             cur = m.group(1)
             by.setdefault(cur, [])
@@ -93,8 +122,19 @@ def lost_in(errs, src, *marks):
     return [m for m in marks if want in errs.get(m, [])]
 
 
-def main():
-    cap = A.require_capture(sys.stdin.read())
+def raised_in(errs, want, *marks):
+    """Windows in which an exact err line appeared, once per appearance.
+
+    ⚠️ IT COUNTS RATHER THAN TESTING MEMBERSHIP, which lost_in above does not.
+    The give-up's whole claim is that it happens ONCE -- a window naming it twice
+    has to be distinguishable from a window naming it once, and `in` cannot do
+    that.
+    """
+    return [m for m in marks for _ in range(errs.get(m, []).count(want))]
+
+
+def main_run(cap):
+    """The first run: the schedule at the shipped tick. -> keep going?"""
     frames = G.parse(cap.splitlines(), "PRES")
     by = by_window(cap, SHELL_RE)
     errs = by_window(cap, ERR_RE)
@@ -119,20 +159,20 @@ def main():
                    "saw %s, wanted one each of logroll.sh, phone-ip.sh and "
                    "state-dir.sh. Without a working [shell] stub every count "
                    "below is answered by silence rather than by a fact" % (quiet,)):
-        return A.report()
+        return False
 
     if not A.check("⛔ u_init's own boot wire.sh lands in the BOOT window",
                    wire_in(by, "BOOT") == 1,
                    "%d in BOOT, wanted 1. The marks and the capture have come out "
                    "of step, so every window count below is reading the wrong "
                    "stretch of the run" % wire_in(by, "BOOT")):
-        return A.report()
+        return False
 
     # ⛔ AND THE OTHER HALF OF LIVENESS: the patch is actually talking to the
     # device. Without SysEx at all, "the grid is still painted" is unanswerable.
     if not A.check("the run produced SysEx at all", bool(frames),
                    "nothing reached [midiout] -- is the scratch copy rewritten?"):
-        return A.report()
+        return False
 
     # ⛔ THE ROSTER, AND IT IS THE THIRD LIVENESS WITNESS. u_present prints how
     # many layers registered, once, at settle. Every negative assertion below --
@@ -150,7 +190,7 @@ def main():
                    "silently unwatched, which makes every check below vacuous; "
                    "more than one line means the settle fired twice"
                    % (seen_roster, ROSTER)):
-        return A.report()
+        return False
 
     # --- the recovery is not eager ------------------------------------------
     A.check("no re-wire before the loss is declared",
@@ -333,6 +373,154 @@ def main():
     A.note("%d lighting frame(s), %d mode frame(s)"
            % (len([f for f in frames if f.is_lighting]),
               len([f for f in frames if f.is_mode])))
+    return True
+
+
+def bound_run(cap):
+    """The second run: the bound, REACHED.
+
+    ⛔ WHAT THE FIRST RUN CANNOT SAY. It proves the re-wire waits for the fourth
+    tick and that one counter serves three lost sources -- the INTERVAL and the
+    COALESCING. Where the counting STOPS was arithmetic: [moses 33] read off the
+    page, 72 seconds away, and no gate in this suite runs that long. This run
+    scales u_present's settle and tick by ten and leaves the counts exactly as
+    shipped, so counter 33 arrives at 7.2 s and the claim becomes a measurement.
+
+    THREE THINGS, AND THEY FAIL DIFFERENTLY:
+
+      the give-up REPORTS         item 235's other half. It sat behind the same
+                                  shut spigot as the recovery, which is why the
+                                  error log was empty when this happened for real
+      there are exactly EIGHT     the bound. Nine forks in the capture: u_init's
+                                  one at boot plus attempts at counter 4 ... 32
+      and then NOTHING            moses stops it dead rather than slowing it down.
+                                  The counter keeps counting out an unconnected
+                                  outlet, which is not the same as the counter
+                                  stopping, and only an empty window says so
+    """
+    by = by_window(cap, SHELL_RE, tag="BOUND")
+    errs = by_window(cap, ERR_RE, tag="BOUND")
+
+    A.windows(cap, "BOUND", len(BOUND_MARKS))
+
+    # ⛔ THE SAME LIVENESS WITNESS AS THE FIRST RUN, AND IT IS NOT REDUNDANT.
+    # This is a SECOND scratch copy with its own shell stub, and the two headline
+    # assertions below -- the give-up arrived, nothing forked afterwards -- are
+    # both answered just as well by a copy that never loaded at all.
+    quiet = sorted(s for v in by.values() for s in v if s != "wire.sh")
+    if not A.check("⛔ the shell stub is installed in the scaled copy too",
+                   quiet == ["logroll.sh", "phone-ip.sh", "state-dir.sh"],
+                   "saw %s, wanted one each of logroll.sh, phone-ip.sh and "
+                   "state-dir.sh. This is a SECOND scratch copy and it gets its "
+                   "own stub; without it every fork count below is answered by "
+                   "silence" % (quiet,)):
+        return False
+
+    # ⛔ AND THE ROSTER, because a run where no m_ registered loses nothing, forks
+    # nothing and gives up on nothing -- which passes "the bound stopped it dead"
+    # for the one reason that has nothing to do with the bound.
+    seen_roster = [int(n) for v in by_window(cap, ROSTER_RE, tag="BOUND").values()
+                   for n in v]
+    if not A.check("⛔ every m_ layer registered in the scaled run -- %d of them" % ROSTER,
+                   seen_roster == [ROSTER],
+                   "u_present-sources printed %s, wanted exactly one line saying "
+                   "%d. An empty roster means nothing was ever lost, so the "
+                   "recovery counter never started and every count below is a "
+                   "claim about a run that did nothing"
+                   % (seen_roster, ROSTER)):
+        return False
+
+    # --- ⛔ THE BOUND IS REACHED ---------------------------------------------
+    gaveup = raised_in(errs, GAVEUP, "PRE", *BOUND_MARKS)
+    A.check("⛔ the bound is REACHED -- the give-up reports, exactly once",
+            len(gaveup) == 1,
+            "`%s` reached err %d time(s), in %s -- wanted exactly one. Zero is "
+            "item 235's other half: the give-up sat downstream of the same "
+            "[spigot] the recovery did, so a device absent at load could not "
+            "even report that it had stopped trying. More than one means the "
+            "counter is being reset and re-run" % (GAVEUP, len(gaveup), gaveup))
+
+    A.check("⛔ ...and only once the eight attempts are spent -- not before",
+            gaveup == ["LATE"],
+            "the give-up landed in %s, wanted exactly LATE. EARLY means the "
+            "give-up count is smaller than the 33 that ships -- the rig would "
+            "get its handful of attempts and stop while somebody was still "
+            "reaching for the cable, which is the 12-second version that was "
+            "measured useless in a room" % (gaveup,))
+
+    # --- ⛔ EIGHT ATTEMPTS, AND THE COUNTS ARE THE SHIPPED ONES --------------
+    total = sum(v.count("wire.sh") for v in by.values())
+    A.check("⛔ exactly 8 recovery forks, on top of u_init's boot one",
+            total == BOUND_TOTAL,
+            "saw %d wire.sh fork(s), wanted %d -- u_init's one at 1500 ms plus "
+            "attempts at counter 4, 8 ... 32. Fewer means the give-up count is "
+            "smaller than it ships; more means [moses] is not stopping them"
+            % (total, BOUND_TOTAL))
+
+    A.check("...and they are spread on the interval rather than bunched",
+            wire_in(by, "EARLY") == BOUND_EARLY,
+            "%d wire.sh fork(s) in EARLY, wanted %d -- u_init's boot fork plus "
+            "recovery forks 1 through 5. ⚠️ SIX AND NOT FIVE: the scaled settle "
+            "puts the first recovery fork at 1400 ms and u_init's own lands at "
+            "1500, inside this window. A different number here means mod 4 is "
+            "not what is spacing them" % (wire_in(by, "EARLY"), BOUND_EARLY))
+
+    # --- ⛔ AND IT STOPS DEAD, WHICH IS NOT THE SAME AS SLOWING DOWN ---------
+    # moses sends 33 and everything above it out a right outlet connected to
+    # nothing, so the counter goes on counting for the rest of the run. Counters
+    # 36 and 40 fall inside this window, which is exactly where mod 4 would fire
+    # if the bound had been widened rather than reached.
+    A.check("⛔ nothing forks after the give-up -- the bound stops it DEAD",
+            wire_in(by, "AFTER") == 0,
+            "%d wire.sh fork(s) in AFTER. The counter is still counting -- that "
+            "is correct and unavoidable -- but nothing may act on it again. A "
+            "fork here means the bound slowed the retries down instead of "
+            "ending them, and Phase 4's one-fork-per-load rule was bent for a "
+            "recovery that ENDS" % wire_in(by, "AFTER"))
+
+    A.note("bound run, wire.sh by window: %s"
+           % " ".join("%s=%d" % (m, wire_in(by, m)) for m in BOUND_MARKS))
+    return True
+
+
+def _bound_capture():
+    """The second capture, named by --bound. ⛔ Its absence is a FAILURE.
+
+    A gate handed no second capture must fail rather than quietly report on one
+    run and exit 0 -- the same rule as lib_assert.require_capture, and the same
+    reason: a check that did not happen is indistinguishable from one that passed
+    once the tally is the only thing anyone reads.
+    """
+    if "--bound" not in sys.argv or sys.argv[-1] == "--bound":
+        A.check("a second capture was supplied", False,
+                "no --bound PATH argument. The bound half of this gate reads a "
+                "SECOND Pd run, and without it the give-up is untested while "
+                "the gate still exits 0")
+        return None
+    path = sys.argv[sys.argv.index("--bound") + 1]
+    try:
+        cap = open(path, encoding="utf-8", errors="replace").read()
+    except OSError as e:
+        A.check("the second capture is readable", False, "%s: %s" % (path, e))
+        return None
+    if not cap.strip():
+        A.check("the second capture is not empty", False,
+                "%s held nothing -- Pd wrote no output at all" % path)
+        return None
+    return cap
+
+
+def main():
+    ok = main_run(A.require_capture(sys.stdin.read()))
+    if not ok:
+        A.note("the first run's liveness failed -- its remaining checks were skipped")
+    # ⛔ THE SECOND RUN GOES AHEAD EITHER WAY. It is a separate Pd process on a
+    # separate scratch copy, so a first run that failed to load says nothing
+    # about it -- and skipping it here would silently shrink the tally, which is
+    # the one number that proves no assertion went missing.
+    cap = _bound_capture()
+    if cap is not None:
+        bound_run(cap)
     return A.report()
 
 

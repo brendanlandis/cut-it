@@ -28,8 +28,8 @@ below them is kept for its reasoning only: the facts they produced live on
 | Remaining | State |
 |---|---|
 | Phase 6 — the eight bench steps | not started |
+| Phase 6 — ✅ the headless gate, including the trailing fork | **done** — 21 checks, falsified five ways. Do not rebuild it |
 | Phase 6 — the bound asserted by **reaching** it, on a scratch-scaled tick with the counts as shipped | not started |
-| Phase 6 — ⛔ **the trailing fork has no gate**; `presence-assert.sh` never reaches a lost count of zero | verified on the rig only, which is the wrong way round |
 | Verification — the SP-404 and the Volca never got their own transition runs | the shared machinery beneath both is verified |
 | Phase 1b — panic becomes `recover` | not started |
 

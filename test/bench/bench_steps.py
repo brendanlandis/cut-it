@@ -3,12 +3,22 @@
 Each step is (title, pass_if, [(message, bus), ...]) and optionally a fourth
 element, a dict -- see norm() below.
 
+⛔ A STEP SAYS WHAT TO SEE AND WHAT TO DO. NOTHING ELSE.
+No mechanism, no rationale, no history, no "this step exists because". A person
+reads this with the rig in front of them and one question -- did that happen or
+not. Why it happens is on the module's ref/ page; why it is tested this way is
+in git log. Both were in here, and they buried the sentence that mattered.
+
+⛔ CAPITALS MEAN "THIS IS LITERALLY ON THE SCREEN OR THE LABEL", never emphasis.
+`EXT` is printed on the 404, `NO-LINK` on the phone, `SETUP` on the Launchpad;
+`NOTHING CHANGES` was just loud. With capitals doing both jobs they did neither.
+bench-gen.py's `lint_caps` holds the literal set and refuses anything else.
+
 ⛔ WHAT A STEP CLAIMS IS FIXED. HOW IT READS IS NOT. Every one of these was
 transcribed out of a hand-authored .pd by test/bench/bench-extract.py, and the
 benches behind them are verified on the Organelle -- so a change here may never
 alter what a step ASSERTS. Wording is a different question, and it was rewritten
-in full on 2026-08-10: sentence case, terminal full stops, run-ons split, no
-claim added or dropped. test/bench/bench-verify.py re-extracts from the
+in full on 2026-08-10. test/bench/bench-verify.py re-extracts from the
 regenerated files and diffs against these tables.
 
 ⛔ NO COMMA AND NO SEMICOLON IN A `title` OR A `pass_if`. A message box treats
@@ -89,13 +99,13 @@ def norm(step):
 
 STEPS_DISPLAY = [
  ('Baseline -- nothing is sent',
-  'PASS IF: Two bars with a small gate mark under each. A BPM at the bottom. Phase 5 hands the footer over from v0.3-ready to the tempo about four seconds in.',
+  'PASS IF: Two bars with a small gate mark under each. A BPM at the bottom. The footer changes from v0.3-ready to the tempo about four seconds in.',
   []),
  ('A parameter with a unit -- sending chop-size 43 %',
   'PASS IF: chop-size on the top line and a big 43 % under it. The bars shrink to a thin strip. About 1.2 s later the meters come back on their own.',
   [('chop-size 43 %', 'disp')]),
  ('A parameter with no unit -- sending grain 12',
-  'PASS IF: grain and then a big 12 with NO PERCENT SIGN left over from the last step. This is the one that matters most.',
+  'PASS IF: grain and then a big 12 with no percent sign left over from the last step.',
   [('grain 12', 'disp')],
   # ⛔ EXACT ROWS, NOT SUBSTRINGS, AND NOT A TIMED WINDOW. g_oled draws a
   # parameter as two rows -- the name, then the value -- and the stale unit shows
@@ -108,90 +118,90 @@ STEPS_DISPLAY = [
   # away too. An exact row does not care.
   {'check': {'kind': 'oled', 'has_row': ['grain', '12']}}),
  ('A modal -- sending modal recording',
-  'PASS IF: recording in mid-size text with the bars as a thin strip. Unlike a parameter it STAYS and does not fade.',
+  'PASS IF: recording in mid-size text with the bars as a thin strip. It stays and does not fade.',
   [('modal recording', 'disp')]),
  ('A parameter while a modal is up -- sending chop-size 43 %',
-  'PASS IF: NOTHING CHANGES. Still recording. chop-size never appears because the modal outranks it.',
+  'PASS IF: Nothing changes. Still recording. chop-size never appears.',
   [('modal recording', 'disp'), ('chop-size 43 %', 'disp')]),
  ('A warning over the modal -- sending warn u_root test-warn',
-  'PASS IF: A bordered box reads warn then u_root then test-warn. About 2 s later it vanishes and RECORDING IS BACK underneath.',
+  'PASS IF: A bordered box reads warn then u_root then test-warn. About 2 s later it vanishes and recording is back underneath.',
   [('modal recording', 'disp'), ('warn u_root test-warn', 'err')]),
  ('Mode to perform -- nothing is sent to the screen',
-  'PASS IF: NOTHING CHANGES. Still recording. Mode is never drawn. This only sets up the next two steps.',
+  'PASS IF: Nothing changes. Still recording. Mode is never drawn.',
   [('modal recording', 'disp'), ('perform', 'mode')]),
  ('A warning while in perform -- sending warn u_root hidden-warn',
-  'PASS IF: NOTHING CHANGES. No alert box at all. Still recording. Perform mode suppresses warnings.',
+  'PASS IF: Nothing changes. No alert box at all. Still recording.',
   [('modal recording', 'disp'), ('warn u_root hidden-warn', 'err')]),
  ('A failure while in perform -- sending fail u_root shown-fail',
-  'PASS IF: An alert DOES appear reading fail then u_root then shown-fail. Failures are never suppressed. Recording returns after about 4 s.',
+  'PASS IF: An alert does appear reading fail then u_root then shown-fail. recording returns after about 4 s.',
   [('modal recording', 'disp'), ('fail u_root shown-fail', 'err')]),
  ('Mode back to compose -- nothing is sent to the screen',
-  'PASS IF: NOTHING CHANGES. Still recording.',
+  'PASS IF: Nothing changes. Still recording.',
   [('modal recording', 'disp'), ('compose', 'mode')]),
  ('A warning now we are back in compose -- sending warn u_root back-again',
-  'PASS IF: The alert DOES appear this time reading warn then u_root then back-again. The filter has released.',
+  'PASS IF: The alert does appear this time reading warn then u_root then back-again.',
   [('modal recording', 'disp'), ('warn u_root back-again', 'err')]),
  ('Clearing the modal -- sending modal-off',
   'PASS IF: recording disappears. You are back to the two meters and the BPM footer.',
   [('modal-off', 'disp')]),
- ('The safety timeout -- sending modal stuck and then DELIBERATELY never clearing it',
-  'PASS IF: stuck appears now. With NO further input it clears itself after 30 s. The next step is 35 s away.',
+ ('The safety timeout -- sending modal stuck and then deliberately never clearing it',
+  'PASS IF: stuck appears now. With no further input it clears itself after 30 s. The next step is 35 s away.',
   [('modal stuck', 'disp')]),
  ('The 30 second safety timeout -- the deferred half of step 13',
-  'PASS IF: The screen returned to the meters on its own during that 35 s wait. That was the safety timeout.',
+  'PASS IF: The screen returned to the meters on its own during that 35 s wait.',
   []),
 ]
 
 STEPS_NANOKONTROL = [
  ('Baseline -- nothing is sent',
-  'PASS IF: Two bars with a small gate mark under each. A BPM at the bottom. Phase 5 hands the footer over from v0.3-ready to the tempo about four seconds in.',
+  'PASS IF: Two bars with a small gate mark under each. A BPM at the bottom. The footer changes from v0.3-ready to the tempo about four seconds in.',
   []),
  ('One mover -- chop-size 43 %',
-  'PASS IF: chop-size small on the top line and a BIG 43 % under it. This is the Phase 3 layout and it must be unchanged.',
+  'PASS IF: chop-size small on the top line and a big 43 % under it.',
   [('chop-size 43 %', 'disp')]),
  ('Two movers -- chop-size and grain together',
-  'PASS IF: TWO stacked pairs -- chop-size over 43 % on top and grain over 12 below. FIRST TOUCHED on top. The values are mid-sized.',
+  'PASS IF: Two stacked pairs -- chop-size over 43 % on top and grain over 12 below. First touched on top. The values are mid-sized.',
   [('chop-size 43 %', 'disp'), ('grain 12', 'disp')]),
  ('Five movers',
-  'PASS IF: FIVE small lines in the order they were first touched: chop-size then grain then slider-1 then knob-3 then btn-t-2.',
+  'PASS IF: Five small lines in the order they were first touched: chop-size then grain then slider-1 then knob-3 then btn-t-2.',
   [('chop-size 43 %', 'disp'), ('grain 12', 'disp'), ('slider-1 64', 'disp'), ('knob-3 100', 'disp'), ('btn-t-2 1', 'disp')]),
  ('Seven movers -- two more than fit',
-  'PASS IF: Still exactly FIVE lines -- a1 a2 a3 a4 a5. a6 and a7 are REFUSED rather than pushing the rows around. Nothing shifts.',
+  'PASS IF: Still exactly five lines -- a1 a2 a3 a4 a5. a6 and a7 are refused rather than pushing the rows around. Nothing shifts.',
   [('a1 1', 'disp'), ('a2 2', 'disp'), ('a3 3', 'disp'), ('a4 4', 'disp'), ('a5 5', 'disp'), ('a6 6', 'disp'), ('a7 7', 'disp')]),
  ('Ageing -- only a1 is kept alive from here',
-  'PASS IF: The other four fade out within about 1.3 s and a1 alone is left. It grows BACK to the big 24px layout.',
+  'PASS IF: The other four fade out within about 1.3 s and a1 alone is left. It grows back to the big 24px layout.',
   [('a1 1', 'disp')]),
  ('A modal over parameters -- modal recording',
-  'PASS IF: recording at mid size. NO parameters at all. The modal outranks them.',
+  'PASS IF: recording at mid size. No parameters at all.',
   [('modal recording', 'disp'), ('chop-size 43 %', 'disp')]),
  ('A warning over the modal',
-  'PASS IF: A bordered alert reads warn then u_root then bench-warn. About 2 s later it vanishes and RECORDING IS STILL THERE underneath.',
+  'PASS IF: A bordered alert reads warn then u_root then bench-warn. About 2 s later it vanishes and recording is still there underneath.',
   [('modal recording', 'disp'), ('warn u_root bench-warn', 'err')]),
  ('Perform mode -- nothing is drawn',
-  'PASS IF: NOTHING CHANGES. Still recording. This only sets up the next two steps.',
+  'PASS IF: Nothing changes. Still recording.',
   [('modal recording', 'disp'), ('perform', 'mode')]),
  ('A warning while in perform',
-  'PASS IF: NOTHING CHANGES. No alert at all. Perform suppresses warnings.',
+  'PASS IF: Nothing changes. No alert at all.',
   [('modal recording', 'disp'), ('warn u_root hidden-warn', 'err')]),
  ('A failure while in perform',
-  'PASS IF: An alert DOES appear because failures are never suppressed. Recording returns after about 4 s.',
+  'PASS IF: An alert does appear. recording returns after about 4 s.',
   [('modal recording', 'disp'), ('fail u_root shown-fail', 'err')]),
  ('Back to compose',
-  'PASS IF: NOTHING CHANGES. Still recording.',
+  'PASS IF: Nothing changes. Still recording.',
   [('modal recording', 'disp'), ('compose', 'mode')]),
  ('A warning now we are in compose',
-  'PASS IF: The alert DOES appear this time. The filter has released.',
+  'PASS IF: The alert does appear this time.',
   [('modal recording', 'disp'), ('warn u_root back-again', 'err')]),
  ('Clearing the modal',
   'PASS IF: recording disappears. You are back to the two meters and the BPM footer.',
   [('modal-off', 'disp')]),
  ('The nano -- sweep every slider and knob now',
-  "PASS IF: Each control names ITSELF -- slider-1 to slider-9 then knob-1 to knob-9. None reports another's name. Watch slider 9 and then knob 1 especially: CC 9 and CC 11 are where an off-by-one shows.",
+  "PASS IF: Each control names itself -- slider-1 to slider-9 then knob-1 to knob-9. None reports another's name. Watch slider 9 and knob 1 especially.",
   [],
   {'do': 'Sweep every slider and every knob on the nanoKONTROL.',
    'need': ['The nanoKONTROL powered and connected.']}),
  ('The nano -- two faders at once then three then all nine',
-  'PASS IF: Two stay readable as stacked pairs. Three to five become small lines. Nine shows the FIVE YOU TOUCHED FIRST with the rest refused. Rows must not reshuffle while you move things.',
+  'PASS IF: Two stay readable as stacked pairs. Three to five become small lines. Nine shows the five you touched first with the rest refused. Rows must not reshuffle while you move things.',
   [],
   {'do': 'Move two faders at once, then three, then all nine.',
    'need': ['The nanoKONTROL powered and connected.']}),
@@ -225,18 +235,18 @@ STEPS_NANOKONTROL = [
   # PASSIVE to look at, so the only proof the subscription came back is traffic
   # arriving through it.
   {'do': 'Plug it in, wait 60 seconds, then move slider 1.',
-   'need': ['The patch freshly loaded with the nanoKONTROL UNPLUGGED. Reload first, then resume this bench with --from 19.']}),
+   'need': ['The patch freshly loaded with the nanoKONTROL unplugged. Reload first, then resume this bench with --from 19.']}),
 ]
 
 STEPS_TEMPO = [
  ('Baseline -- re-asserting 120 BPM and stopped',
-  'PASS IF: Two bars with a small gate mark under each and 120-bpm in the footer. The aux button is lit DARK BLUE. This step exists so the run repeats without reopening the patch.',
+  'PASS IF: Two bars with a small gate mark under each and 120-bpm in the footer. The aux button is lit dark blue.',
   [('120', 'tempo'), ('bang', 'stop')]),
  ('Counting -- zeroing the beat counters for 10 s at 120 BPM',
-  'PASS IF: NOTHING VISIBLE CHANGES. The transport is still stopped and the clock is running anyway. That is exactly what is being counted.',
+  'PASS IF: Nothing visible changes. The transport is still stopped.',
   [('bang', '\\$0-zero')]),
- ('Read the counts -- the clock ran for 10 s while STOPPED',
-  'PASS IF: M-BEATS reads 20 or 21 beats. C1-BEATS reads the same number. C2-BEATS reads 30 or 31 in the same window. A zero anywhere means the clock does not run until the transport does. On the Mac it can also mean DSP is off which looks exactly the same.',
+ ('Read the counts -- the clock ran for 10 s while stopped',
+  'PASS IF: M-BEATS reads 20 or 21 beats. C1-BEATS reads the same number. C2-BEATS reads 30 or 31 in the same window. A zero anywhere is a failure -- on the Mac check DSP is on first.',
   [('bang', '\\$0-read')],
   # ⛔ THE RATIO IS THE POINT, and it is why this is not three range checks. A
   # count in a range still depends on the real-time scheduler having kept up;
@@ -252,19 +262,19 @@ STEPS_TEMPO = [
        'want': 1.5, 'tol': 0.15},
   ]}}),
  ('Start the transport',
-  "PASS IF: The aux button turns GREEN and the 404 starts its pattern. WATCH EXT ON THE 404'S PATTERN SELECT SCREEN. The number beside a pad is that SAMPLE's BPM and never moves.",
+  "PASS IF: The aux button turns green and the 404 starts its pattern. Watch EXT on the 404's pattern select screen. The number beside a pad never moves.",
   [('bang', 'start')]),
- ('Tempo through the map -- og-knob-1 at 0 -- PICKUP HOLDS IT',
-  "PASS IF: ⛔ THIS ONE DIFFERS BY WHETHER A SAVE HAS EVER HAPPENED AND THE DIFFERENCE IS PICKUP WORKING. With a saved knobs.txt -- the device after any Storage Save -- the footer does NOT move. Mother restored knob 1 at boot and 0 is below that stored value so the knob is HELD until it crosses back. With no knobs.txt -- always on the Mac and on the device after tools/deploy.sh --clean -- u_map reads that the file is absent and holds nothing. So this lands and the footer reads 10-bpm with the 404's EXT sliding down.",
+ ('Tempo through the map -- og-knob-1 at 0 -- pickup holds it',
+  "PASS IF: ⛔ What you see depends on whether A Save has ever happened. With a saved knobs.txt -- the device after any Storage Save -- the footer does not move. With no knobs.txt -- always on the Mac and on the device after tools/deploy.sh --clean -- the footer reads 10-bpm and the 404's EXT slides down.",
   [('og-knob-1 0', 'param')]),
- ('Tempo through the map -- og-knob-1 at 1 -- THE CROSSING',
-  "PASS IF: The footer reads 500-bpm and the 404's EXT slides up. With a saved knobs.txt this is the moment the knob crosses the restored value and TAKES OVER -- held one step ago and live now. A slide rather than a snap IS the inference working. It snaps only to a tempo it has already learned.",
+ ('Tempo through the map -- og-knob-1 at 1 -- the crossing',
+  "PASS IF: The footer reads 500-bpm and the 404's EXT slides up. A slide rather than a snap is correct.",
   [('og-knob-1 1', 'param')]),
- ('Tempo through the map -- back to 0 -- LIVE ON BOTH MACHINES',
-  'PASS IF: The footer reads 10-bpm on EITHER machine. Pickup has handed over so the knob tracks normally from here. If this one is held too then the release never happened and the knob is stuck.',
+ ('Tempo through the map -- back to 0 -- live on both machines',
+  'PASS IF: The footer reads 10-bpm on either machine. If it is held here too then the knob is stuck and that is the failure.',
   [('og-knob-1 0', 'param')]),
- ('Out of range -- 5000 sent TWICE',
-  'PASS IF: The footer reads 600-bpm and EXACTLY ONE alert appears -- a bordered box naming u_tempo. The second 5000 must be silent because the VALUE did not change.',
+ ('Out of range -- 5000 sent twice',
+  'PASS IF: The footer reads 600-bpm and exactly one alert appears -- a bordered box naming u_tempo. The second 5000 is silent.',
   [('5000', 'tempo'), ('5000', 'tempo')],
   # ⛔ EXACTLY ONE, and that is the whole step. The second 5000 must be silent
   # because the VALUE did not change -- "one or more alerts" is satisfied by two
@@ -272,78 +282,78 @@ STEPS_TEMPO = [
   # redraws is exactly the oracle a machine should replace.
   {'check': {'kind': 'bus-count', 'bus': 'ERR', 'match': 'u_tempo', 'n': 1}}),
  ('Out of range the other way -- 0',
-  'PASS IF: The footer reads 5-bpm and a SECOND alert appears. The verdict did not change but the value did. This is the case that was broken once.',
+  'PASS IF: The footer reads 5-bpm and a second alert appears.',
   [('0', 'tempo')]),
  ('Back to 120',
-  'PASS IF: The footer reads 120-bpm and NO alert appears at all.',
+  'PASS IF: The footer reads 120-bpm and no alert appears at all.',
   [('120', 'tempo')]),
- ('Stop -- and the clock must NOT stop with it',
-  'PASS IF: The aux button goes DARK BLUE and the 404 stops. But its display MUST STILL SAY EXT. If it falls back to BPM then the clock stopped with the transport and that is the bug this step exists for.',
+ ('Stop -- and the clock must not stop with it',
+  'PASS IF: The aux button goes dark blue and the 404 stops. But its display must still say EXT. If it falls back to BPM that is the failure.',
   [('bang', '\\$0-zero'), ('bang', 'stop')]),
  ('Read the counts while stopped',
-  'PASS IF: M-BEATS reads 20 or 21 again. Stop the pulse stream and the 404 stretches every sample to a stale tempo. This is the least obvious requirement in the phase.',
+  'PASS IF: M-BEATS reads 20 or 21 again.',
   [('bang', '\\$0-read')],
   # ⛔ A ZERO HERE IS THE BUG THE STEP EXISTS FOR: the transport pauses the
   # subscribers, it does not clear the timer, and a clock that stopped with the
   # transport leaves the 404 stretching every sample to a stale tempo.
   {'check': {'kind': 'print', 'name': 'M-BEATS', 'min': 19, 'max': 22}}),
  ('Panic',
-  'PASS IF: The aux button turns RED and the footer says panic. The clock is STILL running underneath.',
+  'PASS IF: The aux button turns red and the footer says panic.',
   [('bang', 'panic')]),
  ('By hand -- press the aux button twice',
-  'PASS IF: ON THE DEVICE use the real button. ON THE MAC use aux-tap and NOT the aux toggle. Aux is momentary 1 then 0 and only the 1 is a press. A toggle needs two clicks per press and the uncheck is meant to do nothing. First press GREEN and the 404 starts. Second press DARK BLUE and it stops. If nothing happens at all then mother is eating the press.',
+  'PASS IF: On the device use the real button. On the Mac use aux-tap and not the aux toggle. First press green and the 404 starts. Second press dark blue and it stops.',
   [],
-  {'do': 'Press the aux button twice. ON THE MAC use aux-tap and NOT the aux toggle.',
+  {'do': 'Press the aux button twice. On the Mac use aux-tap and not the aux toggle.',
    'need': ['The Organelle powered and in reach.']}),
- ('By hand -- sweep KNOB 1 all the way and back',
-  'PASS IF: The row reads bpm and a NUMBER. Never og-knob-1 and never a 0-to-1 decimal. While the knob is still held it reads bpm 57 (120) or similar: the latched tempo first and the knob position in brackets. Once it crosses it reads bpm alone and tracks between 10 and 500 BPM. The 404 follows the sweep. ⚠️ A FULL SWEEP ALWAYS CROSSES so pickup can never make this step fail. That is why it is a sweep and not a nudge.',
+ ('By hand -- sweep knob 1 all the way and back',
+  'PASS IF: The row reads bpm and a number. Never og-knob-1 and never a 0-to-1 decimal. While the knob is still held it reads bpm 57 (120) or similar -- the latched tempo first and the knob position in brackets. Once it crosses it reads bpm alone and tracks between 10 and 500 BPM. The 404 follows the sweep.',
   [],
-  {'do': 'Sweep Organelle knob 1 all the way and back. A FULL sweep always crosses.',
+  {'do': 'Sweep Organelle knob 1 all the way and back. A full sweep always crosses.',
    'need': ['The Organelle powered and in reach.']}),
 ]
 
 STEPS_LAUNCHPAD = [
  ('Baseline -- 120 BPM -- stopped -- compose mode-1',
-  'PASS IF: The top row shows ONE bright green lamp at the far left and five dim ones beside it. The BOTTOM row of pads has a single white pad. DIM MEANS FAINT AND NOT OFF: the five idle lamps are colour 1 which is a near-black grey and the current one is colour 21 instead. THE WHITE PAD IS ALREADY WALKING and that is correct. c_clock free-runs and the transport gates what PLAYS rather than what counts. A frozen pad here is the fault and a moving one is not. Everything else on the surface is dark.',
+  'PASS IF: The top row shows one bright green lamp at the far left and five dim ones beside it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct -- a frozen pad is the failure. Everything else on the surface is dark.',
   [('120', 'tempo'), ('bang', 'stop'), ('compose mode-1', 'mode')]),
  ('Mode -- selecting the fourth mode',
-  'PASS IF: The bright lamp MOVES to the fourth position and the other five go dim. Nothing else on the grid changes.',
+  'PASS IF: The bright lamp moves to the fourth position and the other five go dim. Nothing else on the grid changes.',
   [('perform mode-4', 'mode')]),
  ('Mode -- the second lamp',
-  'PASS IF: The bright lamp lands on the SECOND position. Between this step and the next four the bus drives all six lamps in turn. Until now only two of the six were ever exercised without hands.',
+  'PASS IF: The bright lamp lands on the second position.',
   [('compose mode-2', 'mode')]),
  ('Mode -- the fifth lamp',
-  'PASS IF: The bright lamp lands on the FIFTH position and the other five go dim.',
+  'PASS IF: The bright lamp lands on the fifth position and the other five go dim.',
   [('perform mode-5', 'mode')]),
  ('Mode -- the sixth and last lamp',
-  'PASS IF: The bright lamp lands on the sixth and last position. ONE MESSAGE PER STEP FOR ANYTHING VISUAL: two sent back to back both land inside the same frame and only the second is ever drawn. That was found by running this bench and watching the painted frames rather than the surface.',
+  'PASS IF: The bright lamp lands on the sixth and last position.',
   [('perform mode-6', 'mode')]),
  ('The grid selector must not reach the OLED -- sending grid vocabulary g_grid ignores',
-  'PASS IF: NOTHING HAPPENS ON EITHER SURFACE. g_oled treats every selector it does not recognise as a parameter to draw. Without grid in its route this would appear on the OLED as a nonsense parameter row called grid. That one route argument is the whole reason a third display surface was cheap.',
+  'PASS IF: Nothing happens on either surface. In particular no parameter row called grid appears on the OLED.',
   [('grid no-such-thing', 'disp')]),
  ('A modal -- the whole surface claimed',
-  'PASS IF: EVERY pad and every lamp on the top row turns blue. The mode lamps are covered too and that is the point of a modal. THE OLED MUST NOT CHANGE.',
+  'PASS IF: Every pad and every lamp on the top row turns blue. The mode lamps are covered too. The OLED must not change.',
   [('grid modal 45', 'disp')]),
  ('A mode change underneath a modal -- nothing should be visible',
-  'PASS IF: NOTHING HAPPENS. The surface stays blue. The mode really does change underneath and you will see it two steps from now. THIS STEP RE-SENDS THE MODAL BEFORE THE MODE CHANGE and so does the next one. That is not decoration: the modal safety TTL is thirty seconds of WALL CLOCK and under manual stepping the gap between two steps is however long you take. Without the re-send this chain silently expires mid-test and the surface is back to mode lamps before the step that needs it runs. Re-asserting a live modal is what a caller would do anyway and it restarts the timer.',
+  'PASS IF: Nothing happens. The surface stays blue. The mode really does change underneath and you will see it two steps from now.',
   [('grid modal 45', 'disp'), ('perform mode-3', 'mode')]),
  ('An alert on top of a modal -- two layers deep',
-  'PASS IF: The surface turns RED for about two seconds and then goes back to BLUE -- NOT to the mode lamps. The modal is still up underneath and the alert only borrowed the surface. This is the only step that tests the cascade more than one layer deep. The modal is re-sent first for the same reason as the last step.',
+  'PASS IF: The surface turns red for about two seconds and then goes back to blue -- not to the mode lamps.',
   [('grid modal 45', 'disp'), ('fail u_bench stacked', 'err')]),
  ('Modal off',
-  'PASS IF: The grid returns to mode lamps and the beat row. The bright lamp is now the THIRD one -- the change made while the modal covered it. THIS STEP RE-SENDS THE MODAL BEFORE CLEARING IT and that is not pointless. The 30 second safety TTL is wall clock and it has expired underneath this step before -- on the first device run -- because a report was being typed between the last step and this one. When that happens the surface has ALREADY returned home by itself and modal-off clears nothing. The step passes while proving nothing at all. Raising it again first means there is always a modal here to clear. You will not SEE the re-raise because both messages land in one frame and only the last is drawn. That is expected and it is why the previous steps carry the visible part of this test.',
+  'PASS IF: The grid returns to mode lamps and the beat row. The bright lamp is now the third one -- the change made while the modal covered it.',
   [('grid modal 45', 'disp'), ('grid modal-off', 'disp')]),
  ('An alert -- a fail -- which outranks everything',
-  'PASS IF: The whole surface turns RED and then goes back to the mode lamps BY ITSELF after about two seconds. A grid that stays red is the bug this step exists for.',
+  'PASS IF: The whole surface turns red and then goes back to the mode lamps by itself after about two seconds. A grid that stays red is the failure.',
   [('fail u_bench boom', 'err')]),
  ('An alert -- a warn -- which the grid must ignore but the OLED must show',
-  'PASS IF: NOTHING HAPPENS ON THE GRID and the OLED DOES show the warning. Only a fail is worth the whole surface. THE compose SENT FIRST IS LOAD-BEARING and not a mode test. u_err gates warns off the SCREEN in perform mode -- compose sets its verbose spigot to 1 and perform sets it to 0 -- and this bench put itself in perform back at step 8 already. Without the compose the OLED stays blank for a legitimate reason and the step cannot tell that apart from the grid filter working. Fails ignore the spigot which is why the previous step needed no such thing.',
+  'PASS IF: Nothing happens on the grid and the OLED does show the warning.',
   [('compose mode-3', 'mode'), ('warn u_bench quiet', 'err')]),
  ('The 30 second modal safety TTL -- this step needs you to wait',
-  'PASS IF: The surface turns green and then clears ITSELF about thirty seconds later with nothing sent to it. DO NOT PRESS GO -- sit and watch it. A modal is sticky by design so this timer is the only thing between a stuck modal and a grid that never comes back. It has never once been observed.',
+  'PASS IF: The surface turns green and then clears itself about thirty seconds later with nothing sent to it. Do not press GO -- sit and watch it.',
   [('grid modal 21', 'disp')]),
  ('Transport -- start -- and the beat counter starts with it',
-  'PASS IF: The white pad WALKS along the bottom row twice a second and the aux LED goes green. ON THE MAC THE AUX LED IS NOT A BUTTON: it is the numeric readout labelled aux-LED on the bottom row of the dev panel next to the clock beat bng and the tempo-bus box -- with a symbol box beside it spelling the colour. Only the Organelle has a lamp to look at. On the Mac with DSP off the pad will not move -- tick enable-DSP first. A BEATS line prints about ten seconds from now.',
+  'PASS IF: The white pad walks along the bottom row twice a second and the aux LED goes green. On the Mac the aux LED is not A button -- it is the numeric readout labelled aux-LED on the bottom row of the dev panel -- with a symbol box beside it spelling the colour. On the Mac tick enable-DSP first or the pad will not move. A BEATS line prints about ten seconds from now.',
   [('bang', 'start'), ('bang', '\\$0-zero')],
   # The eyes still judge the walking pad and the aux LED. What the machine can
   # judge is the number underneath them, which is the same evidence and is not
@@ -352,29 +362,29 @@ STEPS_LAUNCHPAD = [
   # IT -- it only promises a BEATS line "about ten seconds from now". A predicate
   # asserting a number the prose never mentions is a disagreement waiting to
   # happen, and the person reading the terminal deserves to know what it wants.
-  {'watch': 'The white pad WALKS along the bottom row twice a second and the aux LED goes green, then a BEATS line of about 20 prints about ten seconds from now.',
+  {'watch': 'The white pad walks along the bottom row twice a second and the aux LED goes green, then a BEATS line of about 20 prints about ten seconds from now.',
    'check': {'kind': 'print', 'name': 'BEATS', 'min': 19, 'max': 22}}),
- ('The beat row wrapping -- WATCH ONLY -- this step sends nothing on purpose',
-  'PASS IF: The white pad reaches the EIGHTH pad and the next step is back to the FIRST -- with no gap and no stray light anywhere else. NO ACTION IS SENT AND THAT IS DELIBERATE rather than an omission. The wrap happens on the clock schedule and cannot be provoked on demand. The only way to test it is to watch one go by. It gets its own step because folding it into the transport step is how it goes unlooked-at. Nothing here disturbs the ten second BEATS window still running underneath. THE BEAT NUMBER IS ONE-BASED: built against a zero-based assumption beat 8 landed on a right-column ring button and blanked the row once a bar -- and seven beats out of eight looked perfect.',
+ ('The beat row wrapping -- watch only -- this step sends nothing on purpose',
+  'PASS IF: The white pad reaches the eighth pad and the next step is back to the first -- with no gap and no stray light anywhere else. Nothing is sent for this step. Just watch one wrap go by.',
   []),
  ('Tempo -- 240 BPM -- so the beat row should double',
-  'PASS IF: The white pad moves twice as fast. The BEATS line just printed covers ten seconds at 120 and should read about 20 beats. The next one covers ten seconds at 240 and should read about 40 beats. EXPECT A VISIBLE SWING HERE AND DO NOT FAIL THE STEP FOR IT. g_grid repaints on a metro 100 so the row can only move on a 100 ms boundary. At 120 BPM a beat is 500 ms which divides exactly and the walk is dead even. At 240 a beat is 250 ms which does not. So beats land alternately at 200 and 300 ms and the row swings by 50 either way. The CLOCK is not swinging and the BEATS count is unaffected: this is the display quantising. It is the price of the 10 Hz repaint that keeps MIDI writes inside the CPU budget.',
+  'PASS IF: The white pad moves twice as fast. The BEATS line just printed should read about 20 beats and the next one about 40 beats. Expect A visible swing here and do not fail the step for it -- the row can only move on a 100 ms boundary so at 240 BPM it swings either way by 50 ms.',
   [('bang', '\\$0-read'), ('240', 'tempo'), ('bang', '\\$0-zero')]),
  ('Back to 120 and stopped',
-  'PASS IF: The second BEATS line reads about 40 and then the beat row slows to two a second. THE CLOCK KEEPS RUNNING WHEN THE TRANSPORT STOPS so the pad must keep walking after the stop.',
+  'PASS IF: The second BEATS line reads about 40 and then the beat row slows to two a second. The pad must keep walking after the stop.',
   [('bang', '\\$0-read'), ('120', 'tempo'), ('bang', 'stop')]),
- ('The Launchpad -- press pads and RELEASE them',
-  'PASS IF: Every pad you press reports pad-NN on the OLED with its velocity. RELEASING it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressure on a held pad reports NOTHING on the OLED. That is deliberate and it is not a fault.',
+ ('The Launchpad -- press pads and release them',
+  'PASS IF: Every pad you press reports pad-NN on the OLED with its velocity. Releasing it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressure on a held pad reports nothing and that is correct.',
   [],
-  {'do': 'Press pads on the Launchpad and RELEASE them.',
+  {'do': 'Press pads on the Launchpad and release them.',
    'need': ['The Launchpad connected and in Programmer Mode.']}),
- ('The Launchpad ring -- and the row that must stay dark',
-  'PASS IF: The ring buttons report lp-cc-NN. Check the two the documentation got wrong: the TOP LEFT CORNER is 90 and the bottom row runs from 101 to 108 in order. THEN LOOK AT CC 1 TO 8 -- AND NOTE THAT THIS EXPECTATION IS NOW THE OPPOSITE OF WHAT IT ONCE WAS. That row used to be outside the painted span and had to be DARK. It is INSIDE it now -- the span runs 1 to 108 -- so it must be lit like everything else and must go blue under a modal and red under an alert. THE REASON WAS NOT THAT ANYTHING WANTED THOSE EIGHT BUTTONS. LED state survives the Programmer Mode switch. An index outside the span keeps whatever Live Mode last drew there forever and no repaint can reach it. This bench is what caught that: the row was green from an old probe on one run and dark on the next -- with nothing in Cut It touching it either time. ONE BUTTON IS STILL OUTSIDE -- INDEX 0 -- SETUP -- and that one is measured rather than chosen. It takes no colour and it transmits nothing in Programmer Mode.',
+ ('The Launchpad ring -- and the row that must be lit',
+  'PASS IF: The ring buttons report lp-cc-NN. Check the top left corner reads 90 and the bottom row runs from 101 to 108 in order. CC 1 to 8 must be lit like everything else and must go blue under a modal and red under an alert. One button stays dark -- index 0 -- SETUP. It takes no colour and transmits nothing.',
   [],
   {'do': 'Press the Launchpad ring buttons, including the top left corner and the bottom row.',
    'need': ['The Launchpad connected and in Programmer Mode.']}),
  ('The nanoKONTROL -- the six transport keys',
-  'PASS IF: Each of the six keys moves the bright lamp to its own position. This is the mode bus finally having a driver.',
+  'PASS IF: Each of the six keys moves the bright lamp to its own position.',
   [],
   {'do': 'Press each of the six nanoKONTROL transport keys.',
    'need': ['The nanoKONTROL powered and connected.', 'The Launchpad connected and in Programmer Mode.']}),
@@ -414,15 +424,15 @@ STEPS_LAUNCHPAD = [
   # attempts on the bench, item 277 -- and the eight are spread over seventy
   # seconds. Anything under about 50 s fails intermittently on correct code.
   {'do': 'Plug the Launchpad in and wait up to 60 seconds without touching anything else.',
-   'need': ['The patch freshly loaded with the Launchpad UNPLUGGED. Reload first, then resume this bench with --from 22.']}),
+   'need': ['The patch freshly loaded with the Launchpad unplugged. Reload first, then resume this bench with --from 22.']}),
  ('Panic -- the surface goes back to the device',
-  'PASS IF: The Launchpad visibly leaves Programmer Mode and its own display returns. BUTTON PRESSES STOP REACHING THE OLED. Watch both: the panic hands the surface back and drops ownership. THE VISIBLE HALF IS NEW AND THE STEP BEFORE THIS ONE IS WHY. This step used to say the device was already in Live Mode because the replug step had left it there. It is not any more. Presence brings a replugged Launchpad back INTO Programmer Mode with ownership restored -- so there is a live surface here for the panic to hand back. KNOWN AND DELIBERATE: it stays handed back until the patch is reloaded. EVERY REMAINING STEP IS DOWNSTREAM OF THIS ONE and nothing after it can check the grid. If you have any doubt about an earlier step go back and redo it before pressing GO here.',
+  'PASS IF: The Launchpad visibly leaves Programmer Mode and its own display returns. Button presses stop reaching the OLED. Watch both. It stays handed back until the patch is reloaded -- so every remaining step is downstream of this one and nothing after it can check the grid. If you have any doubt about an earlier step go back and redo it before pressing GO here.',
   [('bang', 'panic')]),
  ('After the panic the grid must go silent -- sending it a mode change',
-  'PASS IF: NOTHING HAPPENS. The Launchpad keeps showing its own display and g_grid paints nothing at all. Ownership dropped when the surface was handed back. The arbiter still runs and simply never reaches the wire.',
+  'PASS IF: Nothing happens. The Launchpad keeps showing its own display.',
   [('compose mode-1', 'mode')]),
  ('Press a pad now -- after the panic',
-  'PASS IF: NOTHING REACHES THE OLED. In a stock layout the notes are musical pitches rather than r*10+c and decoding them as coordinates would publish nonsense. Reload the patch to get the grid back.',
+  'PASS IF: Nothing reaches the OLED. Reload the patch to get the grid back.',
   [],
   {'do': 'Press a pad on the Launchpad now that the panic has run.',
    'need': ['The Launchpad connected and in Programmer Mode.']}),
@@ -441,10 +451,10 @@ STEPS_LAUNCHPAD = [
 # question of whether the phone SETTLES on the value you stopped at.
 STEPS_PHONE = [
  ('Baseline -- the link is up and the mode is compose',
-  'PASS IF: The bottom line of the phone reads ok rather than NO-LINK. Nothing else has to be true yet. This proves only that the heartbeat is flowing and the scene is bound. IF IT SAYS NO-LINK STOP HERE and check that PdParty is open on the same network. Every step below depends on it. compose is set because u_err shows warnings in compose and only failures in perform.',
+  'PASS IF: The bottom line of the phone reads ok rather than NO-LINK. IF it says NO-LINK stop here and check that PdParty is open on the same network. Every step below depends on it.',
   [('compose mode-1', 'mode')]),
  ('One parameter -- name value and unit',
-  'PASS IF: The top line reads chop-size and the big number reads 43 on its own. The unit rides on the wire but the scene does not draw it. That is deliberate and not a fault.',
+  'PASS IF: The top line reads chop-size and the big number reads 43 on its own. The unit is not drawn and that is correct.',
   [('chop-size 43 %', 'disp')],
   # ⚠️ THE MAC RUN IS A MIRROR AND ANSWERS A DIFFERENT QUESTION FROM THE DEVICE.
   # With u_net repointed at localhost the datagrams are readable here, so what
@@ -453,22 +463,22 @@ STEPS_PHONE = [
   {'targets': ('mac',),
    'check': {'kind': 'osc', 'addr': '/cutit/param', 'has': ['chop-size', '43']}}),
  ('A second parameter -- and the stale-unit trap underneath it',
-  'PASS IF: The top line changes to grain and the number to 12 with it. THE POINT OF THIS STEP IS SOMETHING YOU CANNOT SEE: grain carries no unit and the step before it did. On the wire this has to arrive as grain 12 and a dash rather than grain 12 and a percent sign. The scene draws no units so a stale one would be invisible here. test/gate/phone-assert.sh is what actually proves it.',
+  'PASS IF: The top line changes to grain and the number to 12 with it.',
   [('grain 12', 'disp')]),
  ('The status line -- a row that is not a parameter',
-  'PASS IF: The third line reads 128-bpm and the parameter name and number ABOVE IT DO NOT CHANGE. status has its own OSC address and its own slot. Expect u_tempo to overwrite this with the real BPM at the next transport event. That is the footer being handed back and not a fault.',
+  'PASS IF: The third line reads 128-bpm and the parameter name and number above it do not change. Expect u_tempo to overwrite it with the real BPM at the next transport event.',
   [('status 128-bpm', 'disp')]),
  ('An alert -- and it travels the whole error bus to get here',
-  'PASS IF: The fourth line shows warn on the left and probe-warning on the right. This goes onto err rather than disp so u_err filtered it by mode and forwarded it. That makes this the proof that the error bus reaches the phone and not just the OLED.',
+  'PASS IF: The fourth line shows warn on the left and probe-warning on the right.',
   [('warn u_bench probe-warning', 'err')]),
  ('The alert persists -- which is the entire reason it is state',
-  'PASS IF: Several seconds later the fourth line STILL reads warn and probe-warning. An alert is an event and UDP cannot carry events so u_net holds the last one and repeats it on every heartbeat. On the OLED the same alert has long since timed out. THE TWO SURFACES DISAGREE ON PURPOSE and this step is where you see it.',
+  'PASS IF: Several seconds later the fourth line still reads warn and probe-warning. On the OLED the same alert has long since timed out. The two surfaces disagree on purpose.',
   []),
  ('A second alert replaces the first',
-  'PASS IF: The fourth line changes to fail and probe-failure. A failure also draws on the OLED where the warning above may not have.',
+  'PASS IF: The fourth line changes to fail and probe-failure.',
   [('fail u_bench probe-failure', 'err')]),
  ('The meters must not appear -- the correct result is nothing',
-  'PASS IF: NOTHING ON THE PHONE CHANGES AT ALL. in-l and in-r are the entire resting content of the disp bus once there is audio -- about twenty messages a second -- and u_net drops them on purpose. If a line here starts reading in-l then the reserved branch is broken and the whole rate budget has gone to a meter the phone does not draw.',
+  'PASS IF: Nothing on the phone changes at all. A line reading in-l or in-r is the failure.',
   [('in-l 42 dB', 'disp'), ('in-r 7 dB', 'disp')],
   # ⛔ THE has HALF IS THE WITNESS, not decoration. "in-l never appears" is
   # satisfied by a u_net that emitted nothing at all -- which is what a broken
@@ -478,45 +488,45 @@ STEPS_PHONE = [
    'check': {'kind': 'all', 'of': [
        {'kind': 'osc', 'addr': '/cutit/hb', 'has': []},
        {'kind': 'osc', 'addr': '/cutit/param', 'has_not': ['in-l', 'in-r']}]}}),
- ('The grid vocabulary must not appear -- and the Launchpad WILL react',
-  "PASS IF: Nothing on the phone changes. THE LAUNCHPAD GOING MODAL IS CORRECT. grid is g_grid's own vocabulary and this step proves only that u_net ignores it. The next step clears it.",
+ ('The grid vocabulary must not appear -- and the Launchpad will react',
+  'PASS IF: Nothing on the phone changes. The Launchpad going modal is correct. The next step clears it.',
   [('grid modal 45', 'disp')]),
  ('Clearing the grid -- still nothing on the phone',
   'PASS IF: The Launchpad returns to its home layout and the phone does not move.',
   [('grid modal-off', 'disp')]),
  ('The aux LED -- still nothing on the phone',
-  'PASS IF: The aux button goes green and the phone does not move. That is the third reserved selector proven inert in a row.',
+  'PASS IF: The aux button goes green and the phone does not move.',
   [('led running', 'disp')]),
  ('Sweep a nanoKONTROL fader as fast as you can',
-  'PASS IF: The phone tracks the fader while it moves and then SETTLES ON THE VALUE YOU STOPPED AT. A phone left showing a number from the middle of the sweep is the trailing edge failing -- the one bug in this phase that hands can catch and that no headless run reproduces with real timing. Sweep two faders at once if you have the fingers. Both must settle correctly.',
+  'PASS IF: The phone tracks the fader while it moves and then settles on the value you stopped at. A phone left showing a number from the middle of the sweep is the failure. Sweep two faders at once if you have the fingers -- both must settle.',
   [],
   {'do': 'Sweep a nanoKONTROL fader as fast as you can, two at once if you have the fingers.',
    'need': ['The nanoKONTROL powered and connected.', 'PdParty open on the CutItRemote scene.']}),
  ('Close PdParty on the phone and count to ten',
-  'PASS IF: NOTHING ON THE ORGANELLE CHANGES. No audio glitch and no error on the OLED. THE ORGANELLE NEVER WAITS. What has actually happened is that the phone answered with an ICMP port-unreachable and the socket was destroyed. u_net has been reconnecting every five seconds ever since with nothing to show for it.',
+  'PASS IF: Nothing on the Organelle changes. No audio glitch and no error on the OLED.',
   [],
   {'do': 'Close PdParty on the phone and count to ten.',
    'need': ['PdParty open on the CutItRemote scene.']}),
  ('Reopen PdParty',
-  'PASS IF: The phone starts updating again WITHIN ABOUT FIVE SECONDS and you touched nothing on the Organelle. THIS IS THE STEP THAT PROVES ITEM 114 ON REAL HARDWARE. A link that could not recover would be dead for the rest of the set and nothing on the instrument would say so. That is exactly what the first build did before Step 0 measured it.',
+  'PASS IF: The phone starts updating again within about five seconds and you touched nothing on the Organelle.',
   [],
-  {'do': 'Reopen PdParty on the phone. Touch NOTHING on the Organelle.',
+  {'do': 'Reopen PdParty on the phone. Touch nothing on the Organelle.',
    'need': ['PdParty open on the CutItRemote scene.']}),
 ]
 
 STEPS_STATE = [
  ('Baseline -- the patch has just booted and nothing has been touched',
-  'PASS IF: The Launchpad top row shows exactly ONE lit mode lamp. WHICH one is the test: a fresh install comes up on mode-1 and a restored one comes up wherever you left it. If the grid is dark then the Launchpad is not owned and nothing below can be read.',
+  'PASS IF: The Launchpad top row shows exactly one lit mode lamp. Which one is the test -- a fresh install comes up on mode-1 and a restored one comes up wherever you left it. If the grid is dark then nothing below can be read.',
   [],
   {'do': 'Look at the Launchpad top row. Press nothing.',
    'need': ['The Launchpad connected and in Programmer Mode.']}),
  ('Change the mode -- press transport key 4 on the nanoKONTROL',
-  'PASS IF: The lit lamp moves to the fourth position. Nothing about STATE is visible yet and that is correct. u_state has it in memory and flushes within two seconds.',
+  'PASS IF: The lit lamp moves to the fourth position. Nothing else is visible yet and that is correct.',
   [],
   {'do': 'Press transport key 4 on the nanoKONTROL.',
    'need': ['The nanoKONTROL powered and connected.', 'The Launchpad connected and in Programmer Mode.']}),
  ('Confirm it reached the disk -- from the Mac run ./tools/fetch-state.sh --show',
-  'PASS IF: cut-it-auto.txt reads mode perform mode-4. THE FILE IS THE ONLY EVIDENCE. Nothing on the instrument displays what has been saved and that is deliberate. If it still reads the old mode then the flush is not firing.',
+  'PASS IF: Cut-it-auto.txt reads mode perform mode-4. Nothing on the instrument shows this -- the file is the only evidence. If it still reads the old mode that is the failure.',
   [],
   # ⛔ THIS STEP USED TO INSTRUCT A PERSON TO RUN A SHELL COMMAND AND READ THE
   # OUTPUT. The file is the only evidence there is -- nothing on the instrument
@@ -529,7 +539,7 @@ STEPS_STATE = [
              'path': 'device-state/cut-it-auto.txt',
              'contains': 'mode perform mode-4'}}),
  ('Commit -- on the Organelle press Storage then Save',
-  'PASS IF: The screen shows Saving briefly and returns. Then cut-it-manual.txt has a NEW timestamp even though it is still empty -- no shipped contributor uses the manual policy yet. An UNCHANGED timestamp means saveState never arrived and the commit path is dead.',
+  'PASS IF: The screen shows Saving briefly and returns. Then cut-it-manual.txt has a new timestamp even though it is still empty. An unchanged timestamp is the failure.',
   [],
   # ⚠️ A TIMESTAMP, NOT CONTENTS, AND IT HAS TO BE. cut-it-manual.txt is still
   # EMPTY -- no shipped contributor uses the manual policy yet -- so there is
@@ -543,16 +553,16 @@ STEPS_STATE = [
              'remote': '/sdcard/cut-it-state/cut-it-manual.txt',
              'newer_than': 'step-start'}}),
  ('The one that matters -- power cycle the Organelle and wait for it to come back',
-  'PASS IF: The same mode lamp is lit as before the power cycle. This is the only durability test that counts. A patch reload proves nothing about an SD card. DO THIS LAST IN A SESSION because it resets the wifi fault uptime clock and that fault needs about three hours to appear.',
+  'PASS IF: The same mode lamp is lit as before the power cycle. Do this last in A session -- it resets the wifi fault uptime clock and that fault needs about three hours to reappear.',
   [],
-  {'do': 'Power cycle the Organelle and wait for it to come back. DO THIS LAST IN A SESSION.',
+  {'do': 'Power cycle the Organelle and wait for it to come back. Do this last in A session.',
    'need': ['The Organelle powered and in reach.', 'The Launchpad connected and in Programmer Mode.']}),
 ]
 
 
 STEPS_MIDI = [
  ('Baseline -- read the OLED footer before touching anything',
-  'PASS IF: The footer reads 57 BPM and NOT 120 BPM. This is a REAL TEST and not a formality. knobs.txt holds knob 1 at about 0.096 and mother pushes it at boot. 57 means the message went through the mapping TABLE and came out the tempo handler. 120 means u_tempo is sitting on its own default and the table never matched. Also note which mode lamp is lit on the Launchpad top row. A restored session comes up wherever you left it.',
+  'PASS IF: The footer reads 57 BPM and not 120 BPM. Also note which mode lamp is lit on the Launchpad top row -- a restored session comes up wherever you left it.',
   [],
   # ⚠️ ONLY ON THE DEVICE. 57 comes from knobs.txt, which mother reads at boot
   # and which no Mac has -- on a Mac this legitimately reads 120 and the
@@ -561,84 +571,84 @@ STEPS_MIDI = [
    'check': {'kind': 'oled', 'has': ['57'], 'has_not': ['120']}}),
 
  ('Get to mode 1 -- press transport key 1 on the nanoKONTROL',
-  'PASS IF: The lit lamp moves to the first position. Fader 1 is only bound in mode 1 so the later steps need this. If the lamp does not move then the nano is not reaching param and nothing below will work.',
+  'PASS IF: The lit lamp moves to the first position. If it does not move then nothing below will work.',
   [],
   {'do': 'Press transport key 1 on the nanoKONTROL.',
    'need': ['The nanoKONTROL powered and connected.', 'The Launchpad connected and in Programmer Mode.']}),
 
- ('The 404 receive side -- select BANK A on the SP-404 and press pad 1',
-  'PASS IF: The OLED shows sp-bank 1 and sp-pad 1 together. This is the map this project got WRONG once and pad 1 is note 48 on the wire. ⚠️ STATE WHICH BANK IS SELECTED OUT LOUD before every one of these: the 404 lights only the bank it is on and a receive test that does not state the bank cost half an hour once.',
+ ('The 404 receive side -- select bank A on the SP-404 and press pad 1',
+  'PASS IF: The OLED shows sp-bank 1 and sp-pad 1 together. ⚠️ State which bank is selected out loud before every one of these -- the 404 lights only the bank it is on.',
   [],
-  {'do': 'Select BANK A on the SP-404 and press pad 1.',
+  {'do': 'Select bank A on the SP-404 and press pad 1.',
    'need': ['The SP-404 powered and connected.']}),
 
- ('The pad that breaks the old formula -- press pad 5 on bank A',
-  'PASS IF: sp-pad reads 5 on the OLED. Pad 5 is note 44 and NOT note 52 as the old formula had it. Anything other than 5 means the pad table is wrong in exactly the direction this repo used to have it wrong.',
+ ('The pad that catches a wrong pad table -- press pad 5 on bank A',
+  'PASS IF: sp-pad reads 5 on the OLED. Anything else is the failure.',
   [],
   # ⛔ THE PAD THAT CATCHES `47 + n`. Under the old formula pad 5 reads 13, and
   # 13 is a plausible-looking number on an OLED -- which is how that bug lived
   # in this repo's own docs for months. A person reads two digits; this reads
   # the bus.
   {'do': 'Press pad 5 on bank A of the SP-404.',
-   'need': ['The SP-404 powered and connected.', 'BANK A selected. Say it out loud.'],
+   'need': ['The SP-404 powered and connected.', 'Bank A selected. Say it out loud.'],
    'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-pad 5']}}),
 
  ('Walk the whole bank -- press pads 1 through 16 in order on bank A',
-  'PASS IF: sp-pad counts 1 2 3 up to 16 in step with your finger while sp-bank stays at 1 throughout. The headless gate already asserts all sixteen notes. What this adds is that the DEVICE agrees with it. A run that goes 1 2 3 4 and then jumps is the old formula surviving somewhere.',
+  'PASS IF: sp-pad counts 1 2 3 up to 16 in step with your finger while sp-bank stays at 1 throughout. A run that counts 1 2 3 4 and then jumps is the failure.',
   [],
   {'do': 'Press pads 1 through 16 in order on bank A.',
    'need': ['The SP-404 powered and connected.']}),
 
- ('The bank is the channel -- select BANK B and press pad 1',
-  'PASS IF: sp-pad still reads 1 but sp-bank CHANGES from 1 to 2 as you switch banks. There are two rows rather than one because a single row could not tell A1 from B1. It could not be one row carrying both either: g_oled formats a value with makefilename %g which refuses a symbol so sp-hit b1 is impossible.',
+ ('The bank is the channel -- select bank B and press pad 1',
+  'PASS IF: sp-pad still reads 1 but sp-bank changes from 1 to 2 as you switch banks.',
   [],
-  {'do': 'Select BANK B on the SP-404 and press pad 1.',
-   'need': ['The SP-404 powered and connected.', 'BANK B selected. Say it out loud.'],
+  {'do': 'Select bank B on the SP-404 and press pad 1.',
+   'need': ['The SP-404 powered and connected.', 'Bank B selected. Say it out loud.'],
    'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-pad 1', 'sp-bank 2']}}),
 
  ('A release is not a press -- press and hold any pad then let go',
-  'PASS IF: Both rows update on the PRESS and NEITHER updates again on the release. The release is a real event and does reach param but it is not worth a display row. Two updates per hit means the velocity test on the disp side has gone.',
+  'PASS IF: Both rows update on the press and neither updates again on the release. Two updates per hit is the failure.',
   [],
   # ⛔ EXACTLY ONE sp-pad ROW FOR ONE HIT. Two means the velocity test on the
   # disp side has gone and every pad is reporting itself twice -- which on a
   # screen that redraws looks like nothing at all.
   {'do': 'Press and hold any pad on the SP-404 then let go.',
    'need': ['The SP-404 powered and connected.'],
-   'watch': 'The sp-pad and sp-bank rows update ONCE on the press and NOT again when you let go -- exactly one sp-pad row per hit.',
+   'watch': 'The sp-pad and sp-bank rows update once on the press and not again when you let go -- exactly one sp-pad row per hit.',
    'check': {'kind': 'bus-count', 'bus': 'DISP', 'match': 'sp-pad', 'n': 1}}),
 
- ('The map is mode-dependent -- in mode 1 move FADER 1 on the nanoKONTROL',
-  'PASS IF: The Volca tone changes as you move it. Fader 1 is bound to Volca CC 41 in mode 1 and to NOTHING in the other five. THIS IS THE POINT OF THE WHOLE PHASE: a control means whatever the row for the current mode says it means. ⚠️ The Volca is BY EAR and always will be. It transmits nothing so there is never a readback.',
+ ('The map is mode-dependent -- in mode 1 move fader 1 on the nanoKONTROL',
+  'PASS IF: The Volca tone changes as you move it. ⚠️ The Volca is by ear. It transmits nothing so there is never a readback.',
   [],
-  {'do': 'In mode 1 move FADER 1 on the nanoKONTROL.',
+  {'do': 'In mode 1 move fader 1 on the nanoKONTROL.',
    'need': ['The nanoKONTROL powered and connected.', 'The Volca audible. It transmits nothing so there is never a readback.']}),
 
  ('Now change mode and move the same fader -- transport key 4 then fader 1',
-  'PASS IF: The Volca does NOT change. Nothing is broken. There is no row for fader 1 in mode 4 and an unmapped control is the normal state of most controls. SILENCE IS THE PASS. The OLED still shows the fader moving because m_nano publishes it either way.',
+  'PASS IF: The Volca does not change. Silence is the pass. The OLED still shows the fader moving and that is correct.',
   [],
   {'do': 'Press transport key 4 then move fader 1.',
    'need': ['The nanoKONTROL powered and connected.', 'The Volca audible. It transmits nothing so there is never a readback.']}),
 
  ('And back -- transport key 1 then fader 1 again',
-  'PASS IF: The Volca responds again. If it stays silent then the mode did not change back and the lit lamp will say so.',
+  'PASS IF: The Volca responds again. If it stays silent check the lit lamp -- the mode did not change back.',
   [],
   {'do': 'Press transport key 1 then move fader 1 again.',
    'need': ['The nanoKONTROL powered and connected.', 'The Volca audible. It transmits nothing so there is never a readback.']}),
 
  ('Tempo still comes from knob 1 -- turn Organelle knob 1',
-  'PASS IF: The footer BPM follows the knob over roughly 10 to 500 BPM. ⛔ BUT NOT UNTIL THE KNOB PASSES THROUGH THE RESTORED VALUE. knobs.txt restored a position and the physical knob is wherever you left it. Turning it does NOTHING until it crosses. Then it takes over and tracks. That is parameter pickup and the jump it replaced was measured at 443 BPM. Knob 1 is a TABLE ROW now like everything else.',
+  'PASS IF: The footer BPM follows the knob over roughly 10 to 500 BPM. ⛔ But not until the knob passes through the restored value. Turning it does nothing until it crosses. Then it takes over and tracks.',
   [],
   {'do': 'Turn Organelle knob 1. It does nothing until it crosses the restored value.',
    'need': ['The Organelle powered and in reach.']}),
 
  ('The transport still works -- press the Organelle aux button twice',
-  'PASS IF: The aux LED changes state on each press and the footer agrees. The transport migrated into the table too so this is the proof that migrating it did not quietly drop it.',
+  'PASS IF: The aux LED changes state on each press and the footer agrees.',
   [],
   {'do': 'Press the Organelle aux button twice.',
    'need': ['The Organelle powered and in reach.']}),
 
  ('Panic is deliberately unbound -- nothing to press -- read this and move on',
-  'PASS IF: You understand why there is nothing to do here. NOTHING ON THE DEVICE CAN RAISE PANIC. It was briefly bound to a nano button and that was withdrawn. Panic hands the Launchpad back to Live Mode BY DESIGN and the watchdog deliberately does not fight it back -- so an accidental brush of a bare button would kill the grid for the rest of the session with no console to explain it. m_404 now silences all ten banks when panic DOES arrive and the headless gate proves that. Choosing which control is worth that power is a v0.4 decision.',
+  'PASS IF: There is nothing to do here. Nothing on the device can raise panic and nothing is meant to. Read this and move on.',
   []),
 
  # ⛔ HOT-SWAP FOR BOTH OUTPUT DEVICES, AND THE TWO ARE NOT ALIKE. The SP-404 is
@@ -663,8 +673,8 @@ STEPS_MIDI = [
   # port 3 -- but silence cannot tell a working subscription from a dead one. A
   # pad under a finger can.
   {'do': 'Plug it in, wait 60 seconds, then press pad 1.',
-   'need': ['The patch freshly loaded with the SP-404 UNPLUGGED. Reload first, then resume this bench with --from 15.',
-            'BANK A selected. Say it out loud.']}),
+   'need': ['The patch freshly loaded with the SP-404 unplugged. Reload first, then resume this bench with --from 15.',
+            'Bank A selected. Say it out loud.']}),
 
  # ⛔ THE ORACLE IS THE FADER CHANGING THE SOUND \, NEVER THE VOLCA MAKING ONE.
  # Both of these steps used to read "PASS IF the Volca sounds -- BY EAR" \, which
@@ -675,8 +685,8 @@ STEPS_MIDI = [
  # was written: its only mapping is a CC that needs the device ALREADY SOUNDING.
  # ⚠️ THE TEXT CAME VERBATIM FROM THE PLAN and was checked against the punctuation
  # rules rather than against what this device can demonstrate.
- ('The Volca -- unplug it WITH the nanoKONTROL then plug both back in',
-  'PASS IF: Holding a Volca key and sweeping slider 1 changes the sound -- BY EAR. Slider 1 is Volca CC 41 which is VELOCITY so sweep it UP. Left at the bottom it silences the device and that looks exactly like a dead link.',
+ ('The Volca -- unplug it with the nanoKONTROL then plug both back in',
+  'PASS IF: Holding a Volca key and sweeping slider 1 changes the sound -- by ear. Sweep it up. Slider 1 is velocity and left at the bottom it silences the Volca.',
   [],
   # ⛔ THE NANOKONTROL COMES OUT TOO AND IT HAS TO. The Volca registers `none`, so
   # pulling it alone loses nothing, forks nothing and recovers nothing -- there is
@@ -689,12 +699,12 @@ STEPS_MIDI = [
   # the Volca on the bench exactly this way.
   # ⚠️ AND IT IS BY EAR AND ALWAYS WILL BE. The Volca transmits nothing, so there
   # is no readback and no predicate is possible -- see ref/device/volca.md.
-  {'do': 'Unplug the Volca interface AND the nanoKONTROL together, count to fifteen so the loss is recorded, then plug both back in and sweep slider 1 while holding a Volca key.',
+  {'do': 'Unplug the Volca interface and the nanoKONTROL together, count to fifteen so the loss is recorded, then plug both back in and sweep slider 1 while holding a Volca key.',
    'need': ['The Volca sounding and its USB interface connected.',
             'The nanoKONTROL powered and connected.',
             'Mode 1. Fader 1 is the only control bound to the Volca.']}),
- ('Absent at load -- reload with the Volca interface AND the nano out then plug both in',
-  'PASS IF: Holding a Volca key and sweeping slider 1 changes the sound -- BY EAR. Sweep it UP because CC 41 is velocity.',
+ ('Absent at load -- reload with the Volca interface and the nano out then plug both in',
+  'PASS IF: Holding a Volca key and sweeping slider 1 changes the sound -- by ear. Sweep it up -- slider 1 is velocity.',
   [],
   # ⛔ THE NANOKONTROL COMES OUT HERE TOO, AND THIS STEP USED TO CLAIM OTHERWISE.
   # It read "THIS ONE NEEDS NO SECOND DEVICE" and reasoned that the recovery
@@ -714,6 +724,6 @@ STEPS_MIDI = [
   # is the likelier one in a room -- you power the rig up and then plug the Volca
   # in. See ref/device/volca.md.
   {'do': 'Plug both back in, wait 60 seconds, then hold a Volca key and sweep slider 1.',
-   'need': ['The patch freshly loaded with BOTH the Volca interface and the nanoKONTROL UNPLUGGED. Reload first, then resume this bench with --from 17.',
+   'need': ['The patch freshly loaded with both the Volca interface and the nanoKONTROL unplugged. Reload first, then resume this bench with --from 17.',
             'Mode 1. Slider 1 is the only control bound to the Volca.']}),
 ]

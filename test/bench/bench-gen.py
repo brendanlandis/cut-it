@@ -127,6 +127,7 @@ def check(steps, name):
         assert title, "%s step %d has no title" % (name, i)
         assert passif.startswith("PASS IF"), (
             "%s step %d pass_if does not start with PASS IF" % (name, i))
+        lint_caps(title, passif, meta, "%s step %d" % (name, i))
         for _m, bus in actions:
             assert bus, "%s step %d has an action with no bus" % (name, i)
 
@@ -256,6 +257,56 @@ def lint_agreement(meta, pass_if, where):
                 "predicate is -- say which in the step rather than letting a "
                 "person and a program answer different questions."
                 % (where, claim, word))
+
+
+# ⛔ CAPITALS MEAN "THIS IS LITERALLY WHAT IS ON THE SCREEN OR THE LABEL".
+# Nothing else. Emphasis by shouting was the house style and it made every step
+# read as a wall of alarm with no way to tell a value you must match from a
+# sentence somebody felt strongly about -- `EXT` is on the 404's display and
+# `NOTHING CHANGES` was just loud. One convention, and it is checkable.
+CAPS_OK = {
+    "PASS", "IF",                      # the protocol marker itself
+    "OLED", "LED", "BPM", "DSP", "USB", "CC", "TTL", "MIDI", "NN", "SD",
+    "SP-404", "EXT", "NO-LINK", "SETUP", "GO",
+    "BEATS", "M-BEATS", "C1-BEATS", "C2-BEATS",
+    "C1-BEATS-ratio-1", "C2-BEATS-ratio-1.5",
+}
+# ⚠️ WHOLE WHITESPACE TOKENS, NEVER A REGEX OVER THE LINE. A pattern anchored on
+# word boundaries splits `C1-BEATS-ratio-1` at the hyphen and reports the
+# `C1-BEATS-` half as shouting. A token carrying any lower case is an identifier
+# and is not shouting at all, whatever is capitalised inside it.
+CAPS_STRIP = ".,:;%()[]"
+
+
+def _shouted(text):
+    for tok in text.split():
+        tok = tok.strip(CAPS_STRIP)
+        if len(tok) < 3 or tok in CAPS_OK:
+            continue
+        if any(c.islower() for c in tok) or not any(c.isupper() for c in tok):
+            continue
+        yield tok
+
+
+def lint_caps(title, passif, meta, where):
+    """⛔ ONE MEANING FOR CAPITALS, ACROSS EVERY BENCH.
+
+    A step is read by a person in a hurry with the rig in front of them. If
+    capitals mean both "match this string exactly" and "I mean it", they mean
+    neither. `CAPS_OK` is the literal set -- screen text, printed counter
+    names, moulded labels, acronyms -- and anything else in capitals is
+    emphasis, which is what this refuses.
+    """
+    fields = [("title", title), ("pass_if", passif)]
+    fields += [(k, str(meta.get(k, ""))) for k in ("do", "watch")]
+    fields += [("need", line) for line in meta.get("need", [])]
+    for label, text in fields:
+        for word in _shouted(text):
+            assert False, (
+                "%s %s shouts %r. Capitals are reserved for what is literally "
+                "printed on a screen or moulded on a device -- add it to "
+                "CAPS_OK if it is one of those, otherwise write it as a "
+                "sentence: %s" % (where, label, word, text))
 
 
 RESUME_RE = re.compile(r"--from\s+(\d+)")

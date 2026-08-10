@@ -114,6 +114,15 @@ what carries over to the shipped tick is *counter 32* and *counter 33*, not the 
 | **Coalescing** | nano and 404 pulled together: two `rewire:` lines, not four. One bound served both | verified | 277 |
 | The **safe exit** survived the watchdog rewrite | patch swapped away through `/loadPatch`: Launchpad returned to Live Mode and its Setup button responded | verified | 278 |
 | ⛔ **USB enumeration races the retry** | replugged at ten seconds and the *first* attempt still missed — `wire.sh`'s own count showed 7 then 9. The Launchpad case used six of its eight | verified | 277 |
+| The **SP-404 was lost on its own** and reported it | `/sdcard/cut-it-err.log`, session `BOOT 06:09:50`: `350000 warn m_404 device-lost` beside the nano, then `510000 warn m_404 device-lost` **alone**. A second `device-lost` for one source is only reachable through `[change]`, so it had come back in between; no `rewire-gaveup` follows, so it came back again | verified | 281 |
+| **No false loss in 9.5 hours** with the whole rig connected | the session that began `BOOT 06:53:30` ran to 16:21 with four devices plugged in and wrote **one** line to `/sdcard/cut-it-err.cur` — `warn u_net net-link-down`, which is the wifi. Three active layers polling every 2 s is ~17 000 polls each, and `m_organelle` sat passive and silent throughout | verified | 282 |
+
+⚠️ **The no-false-loss row is worth more than a gate can be.** Every headless gate here runs on a
+Mac, where every device is absent by definition and `[sysexin]` is a stub — so *"a device that is
+there is never reported missing"* is precisely the claim they cannot make. Nine and a half hours of
+the real rig can, and the passive layer's silence is the same row: `m_organelle` is spoken to once at
+load and never again (item 237), so an `m_organelle` that aged would have warned within seconds of
+every one of those 148 boots.
 
 ⚠️ **That last row is an argument for the bound that nobody had written down.** Eight attempts over
 seventy seconds is not only about giving a person time to reseat a cable — a single-shot recovery
@@ -255,10 +264,10 @@ more. The diagnostic screen that reads all of this is
 second run — and the eight bench steps exist, two per device, across the three benches named at the
 top of this page. Both were plan-v0.3.4's, and that plan is gone.
 
-⬜ **Not one of the eight bench steps has been RUN, and two devices never got a transition run at
-  all.** See [plan-v04.md](../../plan-v04.md) §3. The SP-404's *detection* is proven — it stays
-  silent at boot, which it can only do by matching byte 65 on port 3 — but it was never unplugged on
-  its own, and ⛔ **the Volca cannot be tested alone**: it registers `none`, so pulling it loses
+⬜ **Not one of the eight bench steps has been RUN as written.** See
+  [plan-v04.md](../../plan-v04.md) §3. ✅ **The SP-404's own transition run is no longer among them** —
+  the device's error log had it all along, item 281 above. What is left is the **Volca**, and ⛔ **it
+  cannot be tested alone**: it registers `none`, so pulling its interface loses nothing, forks
   nothing and recovers nothing, and its step has to unplug a detectable device beside it. The shared
   machinery underneath all of it is verified.
 

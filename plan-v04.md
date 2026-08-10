@@ -115,13 +115,16 @@ and the bound is now asserted by **reaching** it rather than by arithmetic. The 
 
 **Eight steps, two per device**, across `launchpad-bench`, `nanokontrol-bench` and `midi-bench` —
 present-then-unplugged, and absent-at-load-then-plugged-in, which item 235 is the proof are not the
-same test. They were written on 2026-08-10 and the rig has not seen one of them.
+same test. They were written on 2026-08-10 and the rig has not seen one of them **as a step**.
 
 **This is confirmation rather than discovery**, and it is worth saying which parts are which. Item
-235 was closed on the hardware in both directions and the shared machinery underneath is verified
-(item 277). What has never happened is the **SP-404 and the Volca being unplugged on their own**: the
-404's detection is proven only by its silence at boot — which it can only manage by matching byte 65
-on port 3 — and the Volca has no readback of any kind.
+235 was closed on the hardware in both directions, the shared machinery underneath is verified (item
+277), and the rig ran 9.5 hours with everything plugged in without one false loss (item 282).
+
+⚠️ **The SP-404 came off this list by reading the device rather than by running anything.** It was
+written up here as never having had a transition run of its own; `/sdcard/cut-it-err.log` had one all
+along — lost alone at 510 s, reported, recovered, item 281. **Check the log before booking a
+measurement**, the same way you would grep `ref/` for an error string.
 
 ⛔ **The Volca cannot be tested alone, and that is structural rather than an oversight.** It registers
 `none`: it transmits nothing, can never be polled, and pulling its interface loses nothing, forks

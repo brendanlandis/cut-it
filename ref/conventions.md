@@ -18,7 +18,7 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | ID | Rule | |
 |---|---|---|
 | **C-1** | **`$0-` every send, receive, table and array name** inside an abstraction | [→](#0--mandatory) |
-| **C-2** | **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `param` `err` `disp` `state`, plus mother's own | [→](#the-global-name-allowlist) |
+| **C-2** | **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `param` `err` `disp` `state` `presence`, plus mother's own | [→](#the-global-name-allowlist) |
 | **C-3** | **`[trigger]` on every fan-out**, even when the current order happens to work | [→](#trigger-on-every-fan-out) |
 | **C-4** | **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out | [→](#audio-io--never-adc-never-dac) |
 | **C-5** | **One owner per display surface** — `oscOut` / `screenLine*` are `g_oled`'s, `led` is its own. Everything else asks via `disp` | [→](#the-display-bus-and-who-owns-the-screen) |
@@ -161,6 +161,7 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 | `err` | `<level> <source> <text>`, level ∈ `warn` `fail` | any → `u_err` |
 | `disp` | display requests: `<name> <value> [unit]` | any → `g_oled`, `g_led`, `g_grid`, `u_net` |
 | `state` | persistence, **three selectors** — see below | any ↔ `u_state` |
+| `presence` | device presence, **four selectors** — see below | any ↔ `u_present` |
 
 **Four of these are request buses, not publications.** `tempo`, `start`/`stop`, `mode` and
 `param` are written by whoever has something to say and *consumed* by one owner, exactly as `err`
@@ -212,6 +213,23 @@ invisibly — the failure is a short file rather than an error.
 
 The message table, the two stores, the file format and the rest of the traps are on
 [state.md](module/state.md).
+
+### `presence` — the device-presence bus
+
+**One name, four selectors, disjoint per side**, the same shape as `state` and for the same reason.
+An `m_` layer registers itself once at load with `expect <src> <kind>`; `u_present` broadcasts
+`tick`; a `c_presence` inside the `m_` answers with `lost <src>` or `back <src>` on the transition
+only. A **passive** layer — one that cannot be polled — publishes `seen <src>` instead.
+
+**Self-registration is what makes it extensible**: an `m_` written long after `u_present` is covered
+with no change to `u_present`, exactly as a `state` contributor is.
+
+⛔ **`<src>` is the ABSTRACTION's name and never the device's** — `m_nano`, not "nanoKONTROL". That
+is the `m_` boundary, and it adds nothing new to the world because `err`'s `source` field already
+carries the same names across the same boundary.
+
+The kinds, the manufacturer bytes, the bounded re-wire and its arithmetic are on
+[presence.md](module/presence.md).
 
 **Owned by `mother.pd`** — not ours to rename, and reserved:
 

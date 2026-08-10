@@ -18,7 +18,7 @@ word.
 
 ## One gate per module
 
-Eighteen gates, and each answers for exactly one page under `ref/`. That is the whole organising
+Nineteen gates, and each answers for exactly one page under `ref/`. That is the whole organising
 principle: **a page that names a gate should be able to name one whose entire subject is that page**,
 or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
@@ -37,6 +37,7 @@ were false.
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
 | `map-assert.sh` | 38 | `module/map` |
 | `state-assert.sh` | 15 | `module/state` |
+| `presence-assert.sh` | 16 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
 | `nano-assert.sh` | 23 | `device/nanokontrol` |
 | `organelle-assert.sh` | 13 | `device/organelle` |
@@ -44,7 +45,7 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 6 | `device/volca` |
 
-**381 checks.** ⚠️ Three pages name more than one gate, and that is the rule working rather than
+**397 checks.** ⚠️ Three pages name more than one gate, and that is the rule working rather than
 bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
 master reference and the clock cut from it, and `device/organelle` covers a front panel and an LED.
 **A gate whose subject is two abstractions is what the split was for**; a page whose subject is two
@@ -280,13 +281,18 @@ that route** — the allowlist guard, enforced by reading, exactly the way this 
 global sends. It also catches a **duplicate `(mode, control)` pair**, which `text search` resolves
 to the *first* match only, so a repeat is dead and silent. That half runs without Pd at all.
 
-The other half of each gate rewrites the MIDI object boxes in a scratch copy — **all six classes, from the one
+The other half of each gate rewrites the MIDI object boxes in a scratch copy — **all seven classes, from the one
 `MIDI_EXPECT` in `test/gate/lib-scratch.sh`**, shared with every other gate that makes a copy. ⛔
 **`[midiout]` alone was never enough**: `m_volca` and `m_404` emit through `noteout` / `ctlout` /
 `pgmout`, so a rewrite of `midiout` only finds nothing in them and every assertion about them passes
 **vacuously**. ⛔ **And the two input stubs are not optional**: every *output* path can be driven from
 a bus, but `m_404`'s receive side sits behind `[notein]` and `m_nano`'s *entire surface* sits behind
-`[ctlin]`, and **no bus reaches a MIDI input**. `[sysexin]` is the one class left with no stub.
+`[ctlin]`, and **no bus reaches a MIDI input**. ⛔ **`[polytouchin]` is the one class left with no
+stub, and it was in NEITHER list until `midi_scan_unknown` asked the question as a closed one** —
+walking every MIDI class Pd has and checking it against the inventory, rather than checking the
+inventory against itself. `[sysexin]` had no stub either until `t_sysexin` landed with the
+hot-swap work, because a device-inquiry reply is the only evidence of presence there is and it
+arrives on a MIDI input.
 
 ⚠️ **The count is EXACT per class, never "not zero".** A **lower** count means assertions have gone
 vacuous; a **higher** one means an emitter no gate knows about. `test/gate/midi-emitters-assert.sh`

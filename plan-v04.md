@@ -95,6 +95,29 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 
 **The single place to look for what is unresolved.** Every `ref/` page's `Open` section points here.
 
+### The Volca gets no MIDI clock, and neither does the nanoKONTROL
+
+**Measured on the hardware 2026-08-10, item 279.** `u_tempo`'s `realtime-out` holds exactly two
+`[midiout]` objects, set at loadbang to ports **1 and 3** — the Launchpad and the SP-404. Ports 2 and
+4 get nothing. `aseqdump` on Pd's Midi-Out 4 produced no events in five seconds, and none across a
+patch reload at either end.
+
+**So the Volca cannot sync to the master tempo**, and `m_volca.pd` asserted the opposite in a comment
+until this was measured — *"clock and transport … already reach every port"*.
+
+⚠️ **It is not obviously a bug for the nano**, which is a controller with nothing to sync. It is
+plainly one for the Volca, which is a synthesiser with a sequencer.
+
+**Probably small**: two more `[midiout]` objects in `realtime-out`, or one fed from a `[t f f f f]`
+with four ports set at loadbang. ⛔ **But decide what SHOULD be synced before widening it.** The
+Launchpad ignores incoming clock in Programmer Mode (item 257), so of the two ports currently fed,
+one is already pointless — a fan-out to all four would make that three. The real question is which
+devices Cut It intends to drive, and that is a v0.4 sound question, not a wiring one.
+
+⚠️ **`clock-assert.sh` asserts the clock leaves on BOTH ports** — a fan-out that lost one would look
+perfect on the other, which is why the gate counts them. Widening this changes that gate's
+expectation deliberately.
+
 ### ✅ Panic, and parameter pickup — both closed, kept only as pointers
 
 **Panic means RECOVER, not silence** — decided 2026-08-08 with the rig present. The mixer's master

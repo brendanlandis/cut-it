@@ -109,6 +109,22 @@ bench step is judged by ear. See [presence.md](../module/presence.md).
 
 ## Traps
 
+### No MIDI clock or transport reaches this device, and the patch used to claim otherwise
+
+`u_tempo`'s `realtime-out` holds exactly **two** `[midiout]` objects, set at loadbang to ports **1
+and 3** — the Launchpad and the SP-404. The Volca is port 4 and the nanoKONTROL is port 2, so
+neither has ever received a clock byte from Cut It. ✅ Measured with `aseqdump` on Pd's Midi-Out 4:
+five seconds produced nothing at all, and a capture across a patch reload produced nothing at either
+end. Item 279.
+
+⚠️ **So the Volca cannot sync to the instrument**, and anything that assumes it is following the
+master tempo is wrong. `m_volca.pd` carried the sentence *"clock and transport … already reach every
+port"* until this was measured.
+
+**Fix:** none yet — this is a gap rather than a decision, and widening `realtime-out` is
+[plan-v04.md](../../plan-v04.md) §3's. Until then, drive the Volca's timing from its own controls.
+
+
 Each is a claim and its fix. How any of them was found is in the git history.
 
 ### Pd's `pgmout` is 1-based
@@ -173,15 +189,18 @@ to the wrong place. **The SP-404 has ten and cannot use this** — see
 
 ## Open
 
-- ⬜ **The Volca makes a sound on every patch LOAD, and nothing in Cut It accounts for it.** See
-  [plan-v04.md](../../plan-v04.md) §3. Heard three times on 2026-08-10 — twice on a `/loadPatch`
-  swap, once on a by-hand `killall` and relaunch — and **never** on a `wire.sh` re-wire, including
-  runs where the interface was unplugged and replugged. With `start`, `stop` and `panic` all tapped
-  at load, **none of them fires**, so the patch's own transport is excluded. What is left is below
-  Cut It: mother's own load or unload, or the Uno interface emitting a stray byte on its DIN out when
-  the host ALSA port opens and closes. ⚠️ **It matters for plan-v03.4's Phase 1b**, which makes a
-  reload a user-facing gesture — a `recover` that ends with the Volca blurting is a venue problem,
-  and the cause needs to be known before that ships.
+- ⬜ **The Volca sometimes makes a sound on a patch load, and it is NOT Pd.** See
+  [plan-v04.md](../../plan-v04.md) §3. Heard three times on 2026-08-10 and **absent on the fourth
+  load**, so it is intermittent rather than every time, and it never once happened on a `wire.sh`
+  re-wire. Four things are now excluded by measurement: `start`, `stop` and `panic` never fire at
+  load; `aseqdump` on Pd's Midi-Out 4 caught **nothing** as the old Pd shut down; a loopback monitor
+  living inside the patch caught **nothing** as the new one loaded; and no clock reaches the port in
+  the first place (item 279 above). Pd sends this device nothing but one CC in mode-1. What is left
+  is below Cut It — mother's own load or unload, or the Uno interface putting something on its DIN
+  out when the host ALSA port opens or closes, which happens while Pd is not running and which no
+  patch can prevent. ⚠️ **It still matters for plan-v03.4's Phase 1b**, which makes a reload a
+  user-facing gesture: `recover` may end with the Volca blurting, and that should be a stated side
+  effect rather than a surprise on stage.
 
 **Nothing.** That nothing here can be read back off the wire is a **permanent limitation, not an
 unknown** — it is stated in **Facts** as item 268, with `unknown` as its evidence value, so it

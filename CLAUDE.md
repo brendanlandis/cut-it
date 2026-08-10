@@ -49,7 +49,7 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **What is being BUILT next** — two scoped plans | [plan-v03.4.1.md](plan-v03.4.1.md), [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
+| **What is being BUILT next** — three scoped plans | [plan-v03.4.0.1.md](plan-v03.4.0.1.md), [plan-v03.4.1.md](plan-v03.4.1.md), [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
@@ -178,15 +178,20 @@ plan, that section should have left the file.
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
 is where everything unscoped waits.
 
-**Two scoped plans stand between here and v0.4**, and each one is written to be handed to a fresh
+**Three scoped plans stand between here and v0.4**, and each one is written to be handed to a fresh
 agent cold — it carries its own reading list, saying how much of each file to read and what to skip.
 ⛔ **Every ⬜ in the repository is closed by one of them, or is one of the nine items that genuinely
 need the sound to exist.**
 
 | | Plan | Needs |
 |---|---|---|
-| 1 | [plan-v03.4.1.md](plan-v03.4.1.md) — panic becomes `recover` | — |
-| 2 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | — |
+| 1 | [plan-v03.4.0.1.md](plan-v03.4.0.1.md) — the runnable suite, and the first note path | — |
+| 2 | [plan-v03.4.1.md](plan-v03.4.1.md) — panic becomes `recover` | — |
+| 3 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | — |
+
+⚠️ **1 is the one to do first, and not because anything depends on it.** `./test/run.sh --all`
+cannot pass today for two reasons that have nothing to do with the patch, so until it lands the
+bench half of this suite cannot verify anything the other two build.
 
 ✅ **Plan 0, the test runner, the v0.3.2 cleanup, v0.3.3 coverage and hot-swap are all gone** — the
 measurement session ran on 2026-08-08, `test/run.sh` landed on 2026-08-09, the cleanup and the
@@ -196,7 +201,7 @@ presence structurally cannot, and 2's diagnostic screen reads presence data that
 [ref/module/presence.md](ref/module/presence.md).
 
 ⛔ **`check_closers` in `docs-check.py` is written but gated behind `--strict`**, because most
-remaining ⬜ are owned by the two plans above. **plan-v03.5.md's landing checklist removes the
+remaining ⬜ are owned by the three plans above. **plan-v03.5.md's landing checklist removes the
 flag** — see it before adding a ⬜ anywhere.
 
 **A fact appears once in full; everywhere else it is a citation.** `test/gate/docs-check.py` enforces

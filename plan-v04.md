@@ -111,31 +111,27 @@ landed 2026-08-10: every detectable device has a presence model, one bounded re-
 and the bound is now asserted by **reaching** it rather than by arithmetic. The facts are on
 [ref/module/presence.md](ref/module/presence.md) and the reasoning is in `git log`.
 
-### ⬜ The hot-swap bench steps have never been run
+### ⬜ Four bench steps have never been run, and no bench verdict has ever been recorded
 
-**Eight steps, two per device**, across `launchpad-bench`, `nanokontrol-bench` and `midi-bench` —
-present-then-unplugged, and absent-at-load-then-plugged-in, which item 235 is the proof are not the
-same test. They were written on 2026-08-10 and the rig has not seen one of them **as a step**.
+⛔ **Owned by [plan-v03.4.0.1.md](plan-v03.4.0.1.md), Part 2.** Indexed here only so the pointers
+from `ref/` pages resolve while that plan exists.
 
-**This is confirmation rather than discovery**, and it is worth saying which parts are which. Item
-235 was closed on the hardware in both directions, the shared machinery underneath is verified (item
-277), and the rig ran 9.5 hours with everything plugged in without one false loss (item 282).
+✅ **Six of the eight hot-swap steps were verified on the rig on 2026-08-10**, by hand over `ssh`
+rather than through the runner — the nanoKONTROL and SP-404 in both directions with the decode
+confirmed under a finger, and the Volca's transition case with its link back in 22 s. The facts are
+on [ref/module/presence.md](ref/module/presence.md) as items 281–288.
 
-⚠️ **The SP-404 came off this list by reading the device rather than by running anything.** It was
-written up here as never having had a transition run of its own; `/sdcard/cut-it-err.log` had one all
-along — lost alone at 510 s, reported, recovered, item 281. **Check the log before booking a
-measurement**, the same way you would grep `ref/` for an error string.
+**What is left:**
 
-⛔ **The Volca cannot be tested alone, and that is structural rather than an oversight.** It registers
-`none`: it transmits nothing, can never be polled, and pulling its interface loses nothing, forks
-nothing and recovers nothing. Its recovery is **parasitic** on a detectable device being missing in
-the same moment, which is why its bench step unplugs the nanoKONTROL beside it. See
-[ref/device/volca.md](ref/device/volca.md) and item 275.
+- **The Launchpad's two**, which need eyes on the grid and have never been run.
+- **The Volca's two**, which were **rewritten after** that session — their oracle asserted `PASS IF
+  the Volca sounds`, satisfied by a Volca with no cable in it, and their setup could not recover a
+  `none` device at all. Neither has been executed as written.
+- ⚠️ **No bench verdict has ever reached `test/results/latest.json`**, which still holds
+  `{"records": {}}`. Every step in every bench reads `never run`.
 
-⚠️ **Three of the eight judge themselves off the `err` tap and five cannot.** The Volca's two are by
-ear; the two absent-at-load recoveries are judged by a lit grid and a moving slider, and no bus
-carries either. **Closed by the next session with the rig in front of you** — no code is waiting on
-it.
+⛔ **And `./test/run.sh --all` cannot pass until that plan's Part 1 lands** — two runner defects fail
+four `midi` steps on a working rig and fire every non-hands step before a person can read it.
 
 ### ⬜ `[polytouchin]` has no stub, so the Launchpad's pressure path is untested
 

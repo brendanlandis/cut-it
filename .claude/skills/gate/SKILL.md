@@ -152,8 +152,14 @@ python3 test/bench/bench-verify.py     # re-extracts the text to prove it surviv
 gets verified. It used to carry a hand-typed tuple as well, and missing it meant a bench was
 generated but never fidelity-checked.
 
-Step text: no `,` `;` or `$`; every `pass_if` starts with `PASS IF`; include the steps whose correct
+Step text: no `,` `;` or `$`; every `pass_if` starts with `PASS IF:`; include the steps whose correct
 result is that **nothing happens**.
+
+⛔ **A `title` and a `pass_if` are rendered into Pd message boxes and a `need` / `do` / `watch` is
+not**, so only the first two carry those restrictions — the rest take ordinary commas. Write short
+sentences with capitals and full stops, joined by ` -- ` where a comma would normally go, and
+**never end a sentence on a bare number**: Pd reads `40.` as the float 40 and the stop vanishes
+(item 122, asserted since 2026-08-10).
 
 ⚠️ **On the device, `./test/run.sh --bench <name>` drives a bench** — it sends GO itself. The
 encoder does not advance one, and netcat does not work on macOS.

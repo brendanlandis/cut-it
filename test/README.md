@@ -598,6 +598,11 @@ assertions, re-run because the param layer they sit next to was rewritten.
 `PASS IF` string splits it and the remainder goes somewhere unhelpful (`canvas: no method for
 'then'`). `display-bench.pd` says so and it caught this one out too.
 
+⛔ **And no sentence may end on a bare number.** Pd parses `40.` as the float 40 and the full stop
+**disappears from the printed line**, running two sentences together with nothing to show for it
+(item 122). `bench-gen.py` asserted this from 2026-08-10, when the copy-edit below removed the last
+eleven cases; before that it could only warn, because the transcribed text was full of them.
+
 ### `tempo-bench.pd` — the tempo acceptance run
 
 Same shape again: fifteen steps, stepped by hand, a printed `PASS IF` before each one, covering
@@ -605,10 +610,9 @@ the clock, the transport, the map and the aux LED. **Steps 1–12 drive themselv
 your hands on the Organelle itself** — the aux button and knob 1 are the only controls involved,
 and neither exists on a laptop. Step 15 just says to stop.
 
-⚠️ **One line of its text changed in the conversion, and it was a bug fix.** The aux step carried
-two escaped commas inside its `PASS IF`. `\,` satisfies the .pd *parser*, but a message box still
-treats the comma atom as a separator — so that line printed as **three fragments**. Both are now
-` -- `. Everything else survived verbatim, which `bench-verify.py` proves.
+⚠️ **The aux step's text carried two escaped commas inside its `PASS IF`.** `\,` satisfies the .pd
+*parser*, but a message box still treats the comma atom as a separator — so that line printed as
+**three fragments**. Both are now ` -- `.
 
 **It finds `c_clock` itself**, through `#X declare -path ../Cut\ It` — the escaped space survives
 Pd's parser ✅ — so opening it straight from Pd's File menu works and no `-path` is needed. If the

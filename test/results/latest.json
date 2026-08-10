@@ -14,6 +14,21 @@
    "ts": "2026-08-10T16:32:13+00:00",
    "verdict": "interrupted",
    "want": null
+  },
+  "nanokontrol/1/device": {
+   "auto": false,
+   "bench": "nanokontrol",
+   "deps_sha": "cb7f3ee66916",
+   "got": null,
+   "note": "Ctrl-C",
+   "run": "20260810T214256Z-nanokontrol-device",
+   "sha": "544dd318a931",
+   "step": 1,
+   "target": "device",
+   "title": "baseline -- sending nothing",
+   "ts": "2026-08-10T21:45:07+00:00",
+   "verdict": "interrupted",
+   "want": null
   }
  },
  "schema": 1

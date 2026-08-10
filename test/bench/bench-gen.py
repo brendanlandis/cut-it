@@ -100,13 +100,13 @@ def check(steps, name):
     """A comma or a semicolon in a printed line splits it into fragments at
     runtime. This assertion is the whole reason these files are generated.
 
-    The digit-then-full-stop check below is a WARNING and not an assertion, on
-    purpose. `43.` is a valid Pd float literal, so the atom is parsed as the
-    number and the stop disappears from the printed line -- but it is cosmetic
-    rather than structural, and it is already present in the tempo and Launchpad benches,
-    which are verified on the Organelle and must not be reworded. Asserting
-    would refuse to generate four working benches over a missing full stop.
-    item 122."""
+    ⛔ AND A FULL STOP STRAIGHT AFTER A DIGIT IS THE QUIETER VERSION OF THE SAME
+    BUG. `43.` is a valid Pd float literal, so the atom is parsed as the number
+    and the stop DISAPPEARS from the printed line -- the sentence runs into the
+    next one and nothing reports it. It was a warning here for as long as the
+    step text was hardware-transcribed prose that carried eleven of them; the
+    2026-08-10 copy-edit removed every one, so it is an assertion now and the
+    fix is always the same -- do not end a sentence on a bare number. item 122."""
     for i, step in enumerate(steps, 1):
         title, passif, actions, meta = S.norm(step)
         lint_meta(meta, actions, "%s step %d" % (name, i))
@@ -118,9 +118,10 @@ def check(steps, name):
                     "%s step %d %s contains %r -- a message box would split "
                     "there and print fragments: %s" % (name, i, label, ch, s))
             for m in re.finditer(r'(?<![\w-])(\d+\.)(?=\s|$)', s):
-                print("  note: %s step %d %s has %r -- Pd reads that as a "
-                      "float and the full stop will not print"
-                      % (name, i, label, m.group(1)))
+                raise AssertionError(
+                    "%s step %d %s ends a sentence on %r -- Pd parses that as a "
+                    "float and the full stop will not print at all: %s"
+                    % (name, i, label, m.group(1), s))
             assert "$" not in s, (
                 "%s step %d %s contains a dollar sign" % (name, i, label))
         assert title, "%s step %d has no title" % (name, i)
@@ -240,8 +241,8 @@ def lint_agreement(meta, pass_if, where):
     ⚠️ WORD BY WORD RATHER THAN WHOLE-STRING, and that is not laziness. A
     predicate reads the wire and prose reads as English: the bus carries
     `sp-pad 5` and the sentence says "sp-pad reads 5". Demanding the exact
-    string would force the prose to be rewritten into wire format -- and these
-    sentences are hardware-verified and are not to be reworded.
+    string would force the prose to be rewritten into wire format, and these
+    sentences are written for a person to read.
     """
     spec = meta.get("check")
     if not spec:

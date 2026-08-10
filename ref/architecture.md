@@ -15,21 +15,25 @@ file decides what that means; and nothing below that file knows what hardware ex
                                 |
                               u_root
                                 |
-   ┌──────────┬──────────┬──────┴─────┬──────────┬──────────┐
-   │          │          │            │          │          │
- u_init    u_tempo     u_err       u_state    u_net      u_level
- startup   clock +     errors      the data   the phone  meters
- order     transport               store         │
-   │          │          │            │          │
-   └──────────┴────┬─────┴────────────┴──────────┘
+   ┌──────────┬──────────┬──────┴─────┬──────────┬──────────┬───────────┐
+   │          │          │            │          │          │           │
+ u_init    u_tempo     u_err       u_state    u_net      u_level    u_present
+ startup   clock +     errors      the data   the phone  meters     the tick +
+ order     transport               store         │                  ONE re-wire
+   │          │          │            │          │          │           │
+   └──────────┴────┬─────┴────────────┴──────────┴──────────┴───────────┘
                    │
               global buses
   mode · tempo · clock · start/stop · panic · param · err · disp · state
+                       · presence
                    │
    ┌───────────────┼───────────────┬───────────────┐
    │               │               │               │
  m_nano       m_launchpad     m_organelle       m_404            ← device mapping,
  ch 17          ch 1          aux + knobs 1-4   ch 33-42            INPUT side
+ c_presence   c_presence      passive           c_presence        ← and each one
+ c_devid 66   c_devid 0       seen only         c_devid 65           knows if it
+                                                                     is THERE
    │               │               │               │
    └───────────────┼───────────────┴───────────────┘
                    │
@@ -57,6 +61,11 @@ file decides what that means; and nothing below that file knows what hardware ex
   poly-tempo. See [tempo.md](module/tempo.md).
 - **`u_state` owns two `u_store` instances**, one per persistence policy. See
   [state.md](module/state.md).
+- ⛔ **`c_presence` and `c_devid` are instantiated INSIDE the `m_` layers**, one pair per pollable
+  device, and `u_present` holds no per-device state at all — only a count of how many sources are
+  lost. Deciding *"my device is gone"* has to know about that device; doing something about it has
+  to happen once for the whole rig, because re-running `wire.sh` re-enumerates everything. See
+  [presence.md](module/presence.md).
 
 **The layout of `u_root`'s canvas is this diagram.** Left is the `m_` layer, device by device; middle
 is the buses and the map; right is the display owners. **The only wires on that canvas come out of
@@ -105,13 +114,14 @@ genuinely expensive to retrofit.** If `e_chop` ever learns about the nanoKONTROL
 
 ## Request buses and publications
 
-The nine bare names are C-2's allowlist and are listed in [conventions.md](conventions.md). What the
+The ten bare names are C-2's allowlist and are listed in [conventions.md](conventions.md). What the
 allowlist does not say is that **they are not all the same kind of thing.**
 
 | Kind | Buses | Who writes | Who owns |
 |------|-------|------------|----------|
 | **Request** | `tempo`, `start`/`stop`, `mode`, `param`, `err`, `disp`, `state`, `panic` | Anyone with something to say | Exactly one consumer |
 | **Publication** | `clock` | **Only `u_tempo`** | `u_tempo` |
+| **Both directions** | `presence` | An `m_` registers and reports; `u_present` ticks | Disjoint by selector, so there is no loop |
 
 **`u_tempo` owns the BPM value and the transport state; it does not own the right to change them.**
 `clock` is the exception because it is a publication of something already decided.

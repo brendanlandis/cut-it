@@ -95,26 +95,6 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 
 **The single place to look for what is unresolved.** Every `ref/` page's `Open` section points here.
 
-### The Launchpad watchdog cannot recover a device that was absent at load
-
-**Item 235, found on hardware, and it is shipped Phase 6 code.** Power on with the Launchpad
-unplugged — or with a hub that does not enumerate it in time — and plugging it in afterwards
-**never** restores it. Only a patch reload does.
-
-`[r $0-armed]` gates the `[spigot]` in front of the bounded `wire.sh` recovery, and `$0-armed` is set
-by exactly one thing: `[sysexin]` receiving a device-inquiry reply. **So the recovery arms only after
-the device has answered at least once**, and a device that was never there never answers. The
-give-up path sits downstream of the same shut spigot, so it cannot report that it gave up either —
-which is why the error log was empty.
-
-**The gap in one sentence: "lost" was built as a TRANSITION from present to absent, and
-never-present is not a transition.**
-
-**Likely a one-box change** — arm at load rather than on first reply, letting the existing `moses 33`
-bound stop it after eight attempts exactly as it does now. ⚠️ **But it sits beside the safe exit**,
-which is the one message in this patch worth more than everything around it, so it wants its own
-can-it-fail test rather than being bolted onto the end of another phase.
-
 ### ✅ Panic, and parameter pickup — both closed, kept only as pointers
 
 **Panic means RECOVER, not silence** — decided 2026-08-08 with the rig present. The mixer's master

@@ -86,6 +86,18 @@ Per-button, Korg Kontrol Editor exposes: 📄
 | MMC Device ID | 0–127 (127 = all devices) | doc | — |
 | Transport MIDI Channel | 1–16, **or** "Scene MIDI Channel" — set independently of the control groups | doc | — |
 
+### Presence
+
+`m_nano` registers as `active` on the presence bus and is polled every two seconds with a universal
+device inquiry. **The nano answers** — manufacturer byte `42`, KORG, item 249 — so `[c_devid 66]`
+inside `m_nano` is what tells its reply apart from the Launchpad's and the 404's on the one
+`[sysexin]` the whole patch shares. ⚠️ **The argument is decimal and the byte is hex**: `42` is 66.
+
+Any CC landing in this file's own channel block counts as liveness as well, so a nano being *played*
+stays present even if one reply is dropped. The inquiry leaves on **port 2**, derived as
+`(17-1)/16+1` from the channel block this file already takes as its one argument rather than passed
+in separately. See [presence.md](../module/presence.md).
+
 ## Traps
 
 Each is a claim and its fix. How any of them was found is in the git history.

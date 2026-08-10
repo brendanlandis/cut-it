@@ -194,12 +194,23 @@ table**, and `m_launchpad`'s surface-ownership state keys off exactly that.
 | Family / member | `23 01` / `00 00` | verified | 98 |
 | Firmware | `00 04 06 05` | verified | 98 |
 
-**A device that answers is a device Pd can notice the absence of.** `m_launchpad`'s watchdog polls
-the inquiry every two seconds and drops surface ownership after three missed replies, so `g_grid`
-stops painting. It costs one round trip per poll against the 96 ALSA writes a second the clock
-already makes.
+**A device that answers is a device Pd can notice the absence of.** A `c_presence` inside
+`m_launchpad` polls the inquiry every two seconds and drops surface ownership after three missed
+replies, so `g_grid` stops painting. It costs one round trip per poll against the 96 ALSA writes a
+second the clock already makes. The recovery it triggers is not this file's — see
+[presence.md](../module/presence.md).
 
-`[sysexin]` instantiates *and fires* on this Pd build.
+⛔ **AND THE REPLY MUST BE MATCHED, NOT MERELY COUNTED.** This file used to treat *any* SysEx as
+proof of its own presence, which was true only while nothing else in the rig transmitted any. All
+three detectable devices answer the same inquiry (item 249) and there is exactly one `[sysexin]` box
+in the whole patch, so the shortcut reports the Launchpad present whenever the **nano** answers.
+`[c_devid 0]` matches byte 5 of the reply — `00`, Novation — and byte 5 discriminates all three.
+
+`[sysexin]` instantiates *and fires* on this Pd build, and has **two outlets on 0.49, byte and
+port** — measured by connecting each in turn, with outlet 5 tried first to prove the probe could
+fail at all. Pd's own `midi-help.pd` wires outlet 0 only, so it was inconclusive. Item 273. The port
+is unused: `c_devid` gates on the manufacturer byte instead, because whether that outlet counts from
+0 or from 1 cannot be settled on a Mac.
 
 ### Mode changes are announced — on MIDI port 3, which nothing is wired to
 
@@ -409,9 +420,18 @@ aftertouch afterwards rather than trusting the old numbers.
 
 ## Open
 
-- ⬜ **The watchdog cannot recover a device that was absent at load.** A replug destroys the ALSA
-  links outright on the Organelle, and the bounded `wire.sh` recovery does not cover the
-  never-connected case. Item 235 — see [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **Item 235 is fixed and not yet verified on hardware.** See
+  [plan-v04.md](../../plan-v04.md) §3 and [presence.md](../module/presence.md).
+  A device absent at load now gets recovered: the arming gate was split rather than
+  removed, so the ownership drop still waits for a
+  proven reply while the bounded `wire.sh` recovery and its give-up do not. ⚠️ **Both directions
+  need the rig** — boot with it unplugged then plug it in, and boot with it plugged in to confirm
+  nothing regressed.
+- ⬜ **`[polytouchin]` has no stub, so the pressure path is uncovered.** See
+  [plan-v04.md](../../plan-v04.md) §3. It was in neither MIDI
+  inventory list in `test/gate/lib-scratch.sh` until a closed-question scan found it, and this
+  page's own text calls aftertouch the most expressive control on the rig. A `t_polytouchin` would
+  be the same shape as `t_ctlin`.
 - ✅ **Item 77 is closed, and the question turned out not to apply.** It asked where the animation
   rate stops tracking, above and below. There is no tracking to lose: in Programmer Mode the device
   ignores incoming clock at any tempo. Measured with `tools/stage-patches/Anim Probe/` — item 257,

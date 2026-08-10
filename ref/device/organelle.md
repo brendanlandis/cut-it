@@ -234,6 +234,17 @@ patch is that `saveState` triggers a `manual` commit — see [state.md](../modul
 still binds anything that writes into `/tmp/state/` and relies on the copy, which today is only
 `knobs.txt`.
 
+### Presence: `passive`
+
+`m_organelle` registers as `passive` on the presence bus and publishes `seen m_organelle` whenever
+mother sends anything. It holds no last-heard clock and **can never be declared lost**.
+
+⛔ **A passive layer must not age.** ✅ mother pushes the knobs once at load and then says nothing —
+item 237, measured — so a clock here would run out a few seconds into *every* boot and put a
+`device-lost` warning on the screen for hardware that is bolted to the instrument. What a passive
+layer can offer is *last heard*; it cannot tell unplugged from untouched, and the operator supplies
+that. See [presence.md](../module/presence.md).
+
 ## Traps
 
 Each is a claim and its fix. How any of them was found is in the git history.

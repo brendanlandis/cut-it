@@ -85,6 +85,18 @@ Pajen extends the settings block from the stock 8 to 12. Enter with **`FUNC` at 
 | `MIDI RX ShortMessage` | **On** on this unit | Gates every parameter CC 40–50. Notes are **not** gated by it | verified | 223 |
 | `MIDI Clock src` | **Auto**, not Internal | Clock and start/stop are ignored otherwise | doc | — |
 
+### Presence: `none`, and that is a fact rather than a gap
+
+`m_volca` registers as `none` on the presence bus and stops there — no poll, no last-heard clock, no
+ageing, and it can never be declared lost or back. **The Volca transmits nothing at all**, so there
+is no evidence of its presence for any amount of code to find, and the alternative to recording that
+is a silence that reads as an oversight.
+
+⚠️ **Recovery still reaches it.** `u_present` re-runs `wire.sh` for the whole rig whenever *any*
+source is lost, so a replugged Volca comes back with everything else — but nothing in the patch can
+confirm that it did. Only your ears can, which is why its bench step is judged by ear. See
+[presence.md](../module/presence.md).
+
 ## Traps
 
 Each is a claim and its fix. How any of them was found is in the git history.

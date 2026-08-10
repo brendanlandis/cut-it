@@ -54,7 +54,7 @@ chooses to use it.
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
 | One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
-| One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `display` `error` `map` `state` `tempo` |
+| One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `display` `error` `map` `presence` `state` `tempo` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
 | The Organelle as a **computer** — SSH, paths, how Pd launches, the boot hang | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
 | The wifi fault — the roam signature, the watchers, AP mode | [ref/wifi.md](ref/wifi.md) ⚠️ background, not blocking |
@@ -75,9 +75,9 @@ patch is a folder containing `main.pd` plus its abstractions.
 |---|---|---|
 | `main` | Entry points. `main.pd` is the device's, `main-dev.pd` the Mac's | `main.pd` `main-dev.pd` `u_root.pd` |
 | `m_` | One physical device, publishing named controls | `m_nano` `m_launchpad` `m_organelle` `m_404` `m_volca` |
-| `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_err` `u_net` `u_level` `u_mother-stub` |
+| `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_err` `u_net` `u_level` `u_present` `u_mother-stub` |
 | `g_` | One display surface, and its sole owner | `g_oled` `g_grid` `g_led` |
-| `c_` | **Instantiable** — there is more than one | `c_clock` |
+| `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` |
 | `e_` | An effect stage — **v0.4, none yet** | — |
 | `.sh` | Run once at load through `[shell]` | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` |
 | `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` |
@@ -106,7 +106,7 @@ under `ref/`. Nothing in either is deployed.
 ⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Eighteen gates and 381 checks**, and what each one protects is in
+**Nineteen gates and 397 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.

@@ -31,6 +31,7 @@ also **undoes mother's own autoconnect**, which is not ours and is actively wron
 | 3500 ms | | **Outlet 2** bangs `u_state` — restore the saved state, and it fires FIRST of the three at this stage | verified | — |
 | 3500 ms | `modal-off` | `status v0.3-ready` into the footer | verified | — |
 | 4000 ms | | `u_tempo` drops the BPM into the footer, taking it over | verified | — |
+| 4000 ms | | `u_present`'s settle expires — the presence tick starts and every registered device is polled from here on | verified | 271 |
 
 ⚠️ **Both gates go out twice, not just `midiInGate`.** One message box feeds both sends and is
 banged at `loadbang` and again at 2000 ms, so the second copy of each is what survives mother's own
@@ -47,8 +48,14 @@ bare `[loadbang]` → `[del 1500]` → `[shell]` before `u_init` existed. **Item
 retired once `u_init` did the same thing in production; the number is the part that survived.
 **If the Launchpad ever comes up unlit, lengthen the second delay before suspecting the SysEx.**
 
-⛔ **`u_tempo`'s 4000 is coupled to this sequence.** Change a stage timing and that number changes
-with it.
+⛔ **TWO numbers outside this file are coupled to this sequence** — `u_tempo`'s 4000 and
+`u_present`'s. Change a stage timing and both change with it.
+
+⚠️ **`u_present`'s settle exists because of a GATE, not because of the hardware.** Started at
+`loadbang` its first re-wire lands inside `init-assert.sh`'s 8.6 s window, and that gate requires
+**exactly one** `wire.sh` — so it would go red for a reason with nothing to do with what it tests.
+Past the last stage is also simply correct: nothing should be declared missing while the boot
+sequence is still bringing it up. See [presence.md](presence.md).
 
 ### The ALSA wiring
 
@@ -253,12 +260,12 @@ only way to know from the patch side whether anything answered.
 
 ## Open
 
-- ⬜ **Nothing detects a device that failed to wire.** A stage name means the sequence reached that
-  point, not that hardware answered, and there is no readback into the patch. See
-  [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **A replug after boot destroys the ALSA links** and only the Launchpad has a recovery path
-  today — `m_launchpad`'s bounded `wire.sh` retry. See [launchpad.md](../device/launchpad.md) and
-  [plan-v04.md](../../plan-v04.md) §3.
+**Detecting a device that failed to wire, and recovering a replug, are both
+[presence.md](presence.md)'s** — every detectable device is polled from 4 s onward and reports on
+`err` when it goes missing, and one bounded `wire.sh` recovery serves the whole rig. Re-running it
+also undoes the phantom-control case, where a device enumerating late lands on another device's
+channel block. What is still unverified about that lives on its own page rather than here.
+
 - ⬜ **What the four `.sh` scripts DO is untested.** Each invocation is gated; the effects cannot be,
   on a Mac. Each needs a device step reading its own echo — `wire.sh: N connections`, `logroll:
   carried N line(s)`, `state-dir.sh` against an existing save, and `phone-ip.sh` with the phone on

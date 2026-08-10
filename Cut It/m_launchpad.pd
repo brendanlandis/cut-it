@@ -194,6 +194,9 @@
 #X obj 2020 660 r \$0-armed;
 #X msg 1780 780 0;
 #X obj 1780 840 s \$0-own;
+#X obj 860 340 r \$0-lp-on;
+#X obj 860 400 select 1;
+#X text 1000 1120 THE SECOND SOURCE OF LIVENESS \, AND IT COSTS NO REWIRING. c_devid's bang is the poll being answered. \$0-lp-on is the channel gate that pd input and pd pressure both set on every event they see \, so a select 1 on a receive of it turns any pad \, ring button or aftertouch frame into evidence that this device is here. A Launchpad being PLAYED therefore stays present even if a reply is dropped. ⚠️ The reject carries the 0 and goes nowhere deliberately -- notein and ctlin are omni \, so traffic from the nano or the 404 sets this flag to 0 \, which is evidence about a DIFFERENT device. That is the same mistake the bare sysexin used to make \, in the other direction., f 62;
 #X connect 5 0 6 0;
 #X connect 6 0 7 0;
 #X connect 8 0 7 1;
@@ -214,6 +217,8 @@
 #X connect 23 0 22 1;
 #X connect 22 0 24 0;
 #X connect 24 0 25 0;
+#X connect 26 0 27 0;
+#X connect 27 0 17 0;
 #X restore 20 1200 pd watchdog;
 #X text 250 1204 the replug watchdog -- heartbeat \, poll \, and a bounded re-wire, f 50;
 #X connect 3 0 4 0;

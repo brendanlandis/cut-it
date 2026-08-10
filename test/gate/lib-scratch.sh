@@ -39,7 +39,10 @@
 # ctlin are INPUTS and they are here because test/stubs/ has a source stub for
 # each. The name is older than the notein stub and is kept because every gate,
 # every error message and the gate skill all cite it.
-MIDI_EXPECT="midiout:6 noteout:2 ctlout:2 pgmout:1 notein:2 ctlin:3 sysexin:1"
+# midiout went 6 -> 8 when m_nano and m_404 gained device presence: an inquiry
+# has to leave through the m_'s OWN port, and midiout is the one MIDI object that
+# takes the port as a number rather than encoding it in the channel.
+MIDI_EXPECT="midiout:8 noteout:2 ctlout:2 pgmout:1 notein:2 ctlin:3 sysexin:1"
 
 # The MIDI objects with no stub. Counted so the inventory is complete and a new
 # one cannot appear unannounced -- never rewritten, because there is nothing to

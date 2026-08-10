@@ -1,4 +1,4 @@
-#N canvas 20 20 2400 1820 12;
+#N canvas 20 20 2400 1900 12;
 #X text 20 20 m_volca -- the Korg Volca FM \, and the only file allowed to talk to it. It is the FIRST OUTPUT-ONLY m_ layer in this project: the Volca transmits NOTHING AT ALL \, so unlike m_nano \, m_launchpad and m_organelle there are no device events to decode and nothing is ever published to param. The prefix still reads correctly -- m_ means the file that OWNS this device \, and m_launchpad already drives its own surface., f 84;
 #X text 20 150 creation arg 1: the Pd channel that the Volca's OWN channel 1 lands on -- 49 on the Organelle \, which is input/output slot 4 per .pdsettings. REQUIRED. inlet 1: ONE inlet \, selector-prefixed -- notes <note> <vel> <dur> \, cc <controller> <value> \, program <n>. outlets: none \, this is a terminus., f 84;
 #X text 20 250 WIRED \, NOT SENT \, AND ONE CORD RATHER THAN THREE. u_map reaches this file through a cord from u_root rather than a global bus: param is device-to-map and disp is display \, neither fits a sounding note \, and adding a name to the allowlist is a change to C-2 rather than a local call. The message is SELECTOR-PREFIXED for the same reason state carries three selectors on one name -- a device that learns a new capability costs ONE route argument here and nothing in u_map \, u_root or the conventions., f 84;
@@ -32,6 +32,10 @@
 #X obj 20 1540 f \$1;
 #X obj 20 1590 print m_volca-channel;
 #X text 300 1490 SELF-IDENTIFYING \, the same way m_nano is. The Volca transmits NOTHING \, so a wrong channel here is invisible from every direction: no readback \, no error \, and Pd 0.49 does not warn about a missing creation argument. This print is the only thing that says out loud which channel this instance actually got. ⚠️ THE 2000 ms IS NOT COSMETIC -- tools/deploy.sh gates on OUTPUT rather than exit status \, and its check quits at about 735 ms \, so a print at loadbang would fail every deploy., f 66;
+#X obj 1400 1440 loadbang;
+#X msg 1400 1500 expect m_volca none;
+#X obj 1400 1560 s presence;
+#X text 1750 1440 ⛔ none IS A KIND \, AND SAYING IT OUT LOUD IS THE WHOLE POINT. This file's own header already says the Volca transmits NOTHING AT ALL -- that is what makes it the one output-only m_ layer -- so there is no evidence of its presence for any amount of code to find. It registers and stops there: no c_presence \, no poll \, no ageing \, and it can never be declared lost or back. ⚠️ UNDETECTABLE IS A FACT AND NOT A GAP \, and the difference is worth three boxes because the alternative is a silence that reads as an oversight -- somebody forgot m_volca \, rather than somebody established that m_volca cannot be watched. RECOVERY IS STILL REAL HERE: u_present re-runs wire.sh for the WHOLE rig whenever any source is lost \, so a replugged Volca does come back with everything else. Nothing in the patch can confirm that it did \, which is why its bench step is judged by ear. See ref/module/presence.md., f 44;
 #X connect 3 0 4 0;
 #X connect 4 0 5 0;
 #X connect 4 1 8 0;
@@ -58,3 +62,5 @@
 #X connect 28 0 29 0;
 #X connect 29 0 30 0;
 #X connect 30 0 31 0;
+#X connect 33 0 34 0;
+#X connect 34 0 35 0;

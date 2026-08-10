@@ -189,18 +189,20 @@ to the wrong place. **The SP-404 has ten and cannot use this** — see
 
 ## Open
 
-- ⬜ **The Volca sometimes makes a sound on a patch load, and it is NOT Pd.** See
-  [plan-v04.md](../../plan-v04.md) §3. Heard three times on 2026-08-10 and **absent on the fourth
-  load**, so it is intermittent rather than every time, and it never once happened on a `wire.sh`
-  re-wire. Four things are now excluded by measurement: `start`, `stop` and `panic` never fire at
-  load; `aseqdump` on Pd's Midi-Out 4 caught **nothing** as the old Pd shut down; a loopback monitor
-  living inside the patch caught **nothing** as the new one loaded; and no clock reaches the port in
-  the first place (item 279 above). Pd sends this device nothing but one CC in mode-1. What is left
-  is below Cut It — mother's own load or unload, or the Uno interface putting something on its DIN
-  out when the host ALSA port opens or closes, which happens while Pd is not running and which no
-  patch can prevent. ⚠️ **It still matters for plan-v03.4's Phase 1b**, which makes a reload a
-  user-facing gesture: `recover` may end with the Volca blurting, and that should be a stated side
-  effect rather than a surprise on stage.
+- ⬜ **The Volca made a sound three times on 2026-08-10 and it has never been reproduced.** See
+  [plan-v04.md](../../plan-v04.md) §3. All three fell inside one window, while hands were on the
+  cables; **nine subsequent patch loads produced nothing**, including one deliberately staged
+  immediately after re-enumerating the interface, which was the predicted trigger. Everything in the
+  software path is excluded by direct measurement: `start`, `stop` and `panic` never fire at load;
+  `aseqdump` on Pd's Midi-Out 4 caught nothing as the old Pd shut down; a loopback monitor living
+  inside the patch caught nothing as the new one loaded; no clock reaches the port at all (item 279
+  above), so Pd sends this device nothing but one CC in mode-1; and `dmesg` logged no USB event
+  alongside any of the three. ⚠️ **The leading explanation needs no software at all** — handling a
+  DIN cable can inject noise into an opto-isolated input, which fits the three positives and all
+  nine negatives. ⛔ **It is recorded rather than closed** because three occurrences are not nothing,
+  and because the only observer that could settle it is a MIDI monitor on the DIN wire, which this
+  rig does not have. A reload does **not** reliably cause it, so plan-v03.4's Phase 1b needs no
+  caveat on this account.
 
 **Nothing.** That nothing here can be read back off the wire is a **permanent limitation, not an
 unknown** — it is stated in **Facts** as item 268, with `unknown` as its evidence value, so it

@@ -406,13 +406,29 @@ def offline(spec):
 
 def evaluate(spec, window, ctx=None):
     """-> (ok, want, got). `all` is how a negative assertion gets its witness."""
+    ok, want, got, _rows = report(spec, window, ctx)
+    return ok, want, got
+
+
+def report(spec, window, ctx=None):
+    """-> (ok, want, got, rows). `rows` is [(ok, got, want)], one per leaf.
+
+    ⛔ THE JOINED STRINGS ARE WHAT latest.json KEEPS and the rows are what a
+    person reads. An `all` of four leaves ran to two lines of ` AND ` and ` / `
+    on one row each, which is the whole conjunction in the order it was written
+    and unreadable at a terminal -- the numbers a person has to compare are at
+    opposite ends of two long lines. Splitting them here rather than in the
+    runner keeps the record's shape exactly as it was: change the display and no
+    verdict already on disk means something different.
+    """
     if spec.get("kind") == "all":
         parts = spec["of"]
         if not parts:
             raise BadSpec("an `all` with nothing in it asserts nothing")
         results = [_one(p, window, ctx) for p in parts]
-        ok = all(r[0] for r in results)
-        return (ok,
+        return (all(r[0] for r in results),
                 " AND ".join(r[1] for r in results),
-                " / ".join(r[2] for r in results))
-    return _one(spec, window, ctx)
+                " / ".join(r[2] for r in results),
+                [(r[0], r[2], r[1]) for r in results])
+    ok, want, got = _one(spec, window, ctx)
+    return ok, want, got, [(ok, got, want)]

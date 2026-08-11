@@ -607,6 +607,69 @@ def _emits_float(box):
     return cls in ("f", "float", "i", "int") or box.startswith("t f")
 
 
+def _auto_format():
+    """⛔ THE EVIDENCE HAS TO BE READABLE OR IT IS NOT EVIDENCE.
+
+    A four-leaf `all` printed as two joined lines carries the whole conjunction
+    in write order on each -- so reading it means counting terms in one line and
+    counting again in the other to pair a number with its bound. A person hit
+    exactly that on tempo 3 and could not tell what the step was claiming.
+    """
+    print("\n--- how a predicate's evidence reads ---")
+    import run as R
+
+    rows = [(True, "M-BEATS = 20", "M-BEATS between 19 and 22"),
+            (False, "C1-BEATS-ratio-1 = 0", "C1-BEATS-ratio-1 between 19 and 22"),
+            (True, "C2-BEATS-ratio-1.5 / C1-BEATS-ratio-1 = 30 / 20 = 1.500",
+             "C2-BEATS-ratio-1.5 / C1-BEATS-ratio-1 = 1.5 +/- 0.15")]
+    out = _capture(R._say_auto, False, rows)
+    body = [ln for ln in out.splitlines() if ln.strip()][1:]
+    A.check("a multi-leaf predicate gets one line per thing it asserted",
+            len(body) == len(rows),
+            "%d line(s) for %d leaves:\n%s" % (len(body), len(rows), out))
+    A.check("⛔ and the failing leaf is the marked one",
+            body[1].endswith("<-- FAIL")
+            and not body[0].endswith("<-- FAIL")
+            and not body[2].endswith("<-- FAIL"),
+            "the mark is on the rows that are fine, which hides the one that is "
+            "not:\n%s" % out)
+
+    # ⛔ THE NAME IS SAID ONCE. Both halves of a `print` predicate open on it,
+    # and leaving it in both is what pushed the two numbers to opposite ends.
+    A.check("a counter's name appears once on its row, not twice",
+            body[0].count("M-BEATS") == 1, body[0])
+
+    # ⛔ AND A LABEL NEVER ENDS ON AN OPERATOR. The shared run of a ratio is
+    # `C2 / C1 =`; hanging the `=` on the name starts both halves mid-expression.
+    label, _w, _g = R._split("A / B = 1.5 +/- 0.15", "A / B = 30 / 20 = 1.500")
+    A.check("a label does not end on an operator", label == "A / B",
+            "label is %r" % label)
+
+    # ⛔ ONE ASSERTION IS NOT A TABLE, and a satisfied one says the same words
+    # twice -- which took all but the LAST TOKEN for a label the first time.
+    same = "DISP carries 'sp-pad 5'"
+    out = _capture(R._say_auto, True, [(True, same, same)])
+    body = [ln.strip() for ln in out.splitlines() if ln.strip()][1:]
+    A.check("⛔ a single predicate that got what it wanted says it once",
+            body == [same], "%r" % body)
+
+    out = _capture(R._say_auto, False,
+                   [(False, "missing 'sp-pad 5'", "DISP carries 'sp-pad 5'")])
+    body = [ln.strip() for ln in out.splitlines() if ln.strip()][1:]
+    A.check("a single predicate that did not keeps want and got apart",
+            len(body) == 2 and body[0].startswith("want")
+            and body[1].startswith("got"), "%r" % body)
+
+
+def _capture(fn, *a):
+    import io
+    import contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        fn(*a)
+    return buf.getvalue()
+
+
 def _where_wiring():
     """⛔ THE QUERY HAS TO BE IN THE PATCH, in every bench, or the recovery above
     is a conversation with nobody."""
@@ -668,6 +731,7 @@ def main():
             bool(S.RE_COMPLETE.search("print: " + S.SAY_COMPLETE)))
 
     _where_wiring()
+    _auto_format()
     _stall()
     _recovery(bench)
 

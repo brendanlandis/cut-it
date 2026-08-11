@@ -288,9 +288,8 @@ def run_bench(bench, target, auto_only, start):
                     stream.prompt("  Press ENTER when you have done that: ")
                 except EOFError:
                     break
-            ok, w, g = predicates.evaluate(spec, [], {"step_start": started})
-            stream.say("  %s   want %s\n         got  %s"
-                       % ("AUTO PASS" if ok else "AUTO FAIL", w, g))
+            ok, w, g, prows = predicates.report(spec, [], {"step_start": started})
+            _say_auto(ok, prows)
             # ⛔ SAME RULE AS THE DRIVEN LOOP: the predicate is evidence and a
             # person in the room is the verdict. Here the predicate reads a FILE
             # -- state 3 fetches cut-it-auto.txt -- and the sentence beside it
@@ -351,6 +350,77 @@ def run_bench(bench, target, auto_only, start):
 
     rec.close()
     return rec.rows
+
+
+def _split(want, got):
+    """-> (label, want, got), with the words they open on said once.
+
+    ⚠️ A `print` predicate names its counter in BOTH halves, so the raw pair
+    reads "M-BEATS between 19 and 22" against "M-BEATS = 20" and the two numbers
+    a person has to compare sit at opposite ends of the line. The shared opening
+    is the name of the thing; it becomes the row's label and the halves keep
+    what actually differs. A predicate whose halves share nothing -- a bus, an
+    OLED row -- gets an empty label and loses nothing.
+    """
+    if want == got:
+        # ⚠️ NOTHING TO SPLIT. A predicate that reports its want and its got in
+        # the same words -- which every satisfied `bus` does -- would otherwise
+        # have all but its LAST TOKEN taken for a label, and the row would read
+        # `DISP carries 'sp-pad   5'   want 5'`. Measured exactly that way.
+        return "", want, got
+    w, g = want.split(), got.split()
+    i = 0
+    while i < min(len(w), len(g)) - 1 and w[i] == g[i]:
+        i += 1
+    # ⚠️ A LABEL DOES NOT END ON AN OPERATOR. The shared run of a ratio is
+    # `C2 / C1 =`, and hanging the `=` on the name leaves both halves starting
+    # mid-expression.
+    while i and w[i - 1] in ("=", "/", "+", "-", "is", "reads"):
+        i -= 1
+    return " ".join(w[:i]), " ".join(w[i:]), " ".join(g[i:])
+
+
+# ⚠️ WIDE ENOUGH FOR THE LONGEST LABEL A PREDICATE ACTUALLY PRODUCES, which is
+# tempo 3's ratio at 37 characters. A cap below that truncates a counter's name,
+# and a name half-printed is worse than a wide line.
+LABEL_MAX = 38
+GOT_MAX = 22
+
+
+def _say_auto(ok, rows):
+    """Print a predicate's evidence as one row per thing it asserted.
+
+    ⛔ IT USED TO BE ONE LINE PER HALF, JOINED WITH ` AND ` AND ` / `. Four
+    leaves came out as two eighty-column lines carrying the whole conjunction in
+    write order, so reading it meant counting terms in one line and counting
+    again in the other to find the number that went with each. It is a table.
+    """
+    if len(rows) < 2:
+        # ⚠️ ONE ASSERTION IS NOT A TABLE. A bus or an OLED predicate says its
+        # want and its got as sentences, and columns just push them apart -- so
+        # the single case keeps the two-line shape it always had, and collapses
+        # to one line where a pass reports both halves in the same words.
+        _rok, got, want = rows[0]
+        stream.say("  %s" % ("AUTO PASS" if ok else "AUTO FAIL"))
+        if want == got:
+            stream.say("      %s" % want)
+        else:
+            stream.say("      want  %s\n      got   %s" % (want, got))
+        return
+
+    stream.say("  %s   %d checks" % ("AUTO PASS" if ok else "AUTO FAIL",
+                                     len(rows)))
+    split = [_split(w, g) for _ok, g, w in rows]
+    lw = min(LABEL_MAX, max([len(x[0]) for x in split] + [0]))
+    gw = min(GOT_MAX, max([len(x[2]) for x in split] + [0]))
+    for (rok, _g, _w), (label, want, got) in zip(rows, split):
+        # ⚠️ ONLY A FAILING ROW IS MARKED, and never a passing one. The eye is
+        # meant to land on the thing that went wrong: marking the majority
+        # instead puts three marks beside the three rows that are fine and none
+        # beside the one that is not.
+        head = ("%-*s  " % (lw, label)) if lw else ""
+        stream.say("      %s%-*s  want %s%s"
+                   % (head, gw, got, want, "" if rok else "   <-- FAIL"))
 
 
 def _drain(src, window, seconds):
@@ -720,9 +790,8 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
             spec = step.meta.get("check")
             auto = None
             if spec:
-                ok, want, got = predicates.evaluate(spec, window)
-                stream.say("  %s   want %s\n         got  %s"
-                           % ("AUTO PASS" if ok else "AUTO FAIL", want, got))
+                ok, want, got, rows = predicates.report(spec, window)
+                _say_auto(ok, rows)
                 auto = (ok, want, got)
 
             # ⛔ WITH NOBODY WATCHING, THE PREDICATE IS ALL THERE IS. --auto-only

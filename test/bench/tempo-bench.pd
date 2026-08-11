@@ -84,13 +84,13 @@
 #X obj 20 2600 select 3;
 #X obj 240 2600 t b b b;
 #X msg 700 2600 === STEP-03-of-13 === Knob pickup crosses over;
-#X msg 700 2650 PASS IF: The footer slides up to 500-bpm rather than snapping to it. The knob has now crossed where it was saved and is live from here on.;
+#X msg 700 2650 PASS IF: The row reads bpm 500 and about a second later it ages out to show the footer underneath reading 500-bpm. The knob has crossed where it was saved and is live from here on.;
 #X msg 700 2700 >>> press GO to run step 3 of 13;
 #X obj 240 2770 s \$0-say;
 #X obj 20 2860 select 4;
 #X obj 240 2860 t b b b;
 #X msg 700 2860 === STEP-04-of-13 === Knob tracking after pickup;
-#X msg 700 2910 PASS IF: The footer follows straight down to 10-bpm with no hold. A hold here means the knob is stuck.;
+#X msg 700 2910 PASS IF: The row reads bpm 10 and the footer underneath reads 10-bpm once it ages out. A row still reading 500 means the knob is stuck.;
 #X msg 700 2960 >>> press GO to run step 4 of 13;
 #X obj 240 3030 s \$0-say;
 #X obj 20 3120 select 5;

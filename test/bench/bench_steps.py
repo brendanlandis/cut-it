@@ -297,10 +297,17 @@ STEPS_TEMPO = [
   # right control for it, because a person asks for that one deliberately.
   {'hold': False}),
  ('Knob pickup crosses over',
-  'PASS IF: The footer slides up to 500-bpm rather than snapping to it. The knob has now crossed where it was saved and is live from here on.',
-  [('og-knob-1 1', 'param')]),
+  'PASS IF: The row reads bpm 500 and about a second later it ages out to show the footer underneath reading 500-bpm. The knob has crossed where it was saved and is live from here on.',
+  [('og-knob-1 1', 'param')],
+  # ⛔ THE ROW IS WHAT YOU SEE AND THE FOOTER IS UNDERNEATH IT. This asked for a
+  # footer reading while its own param message raises g_oled's param layer, which
+  # REPLACES home -- the same defect as the 404 step, found the same way. ⛔ AND
+  # NOTHING SLIDES: the old text asked for a slide rather than a snap, which is
+  # what a HAND turning a knob produces. The bench sends one discrete value, so
+  # there is exactly one jump and no slide to see.
+  ),
  ('Knob tracking after pickup',
-  'PASS IF: The footer follows straight down to 10-bpm with no hold. A hold here means the knob is stuck.',
+  'PASS IF: The row reads bpm 10 and the footer underneath reads 10-bpm once it ages out. A row still reading 500 means the knob is stuck.',
   [('og-knob-1 0', 'param')]),
  ('Tempo above range',
   'PASS IF: The footer reads 600-bpm and exactly one alert appears -- a bordered box naming u_tempo. The second 5000 is silent.',
@@ -383,7 +390,7 @@ STEPS_LAUNCHPAD = [
   'PASS IF: Nothing happens on either surface. In particular no parameter row called grid appears on the OLED.',
   [('grid no-such-thing', 'disp')]),
  ('Modal claims the surface',
-  'PASS IF: Every pad and every lamp on the top row turns blue. The mode lamps are covered too. The OLED must not change.',
+  'PASS IF: Every pad and every ring button turns blue including the top row. The mode lamps are covered too. The OLED must not change.',
   [('grid modal 45', 'disp')]),
  ('Mode change under a modal',
   'PASS IF: Nothing happens. The surface stays blue. The mode really does change underneath and you will see it two steps from now.',
@@ -421,17 +428,25 @@ STEPS_LAUNCHPAD = [
   [],
   {'do': 'Watch one wrap go by.'}),
  ('Beat row at 240 BPM',
-  'PASS IF: The white pad moves twice as fast. The BEATS line just printed reads about 20 beats and the next one about 40 beats. A visible swing is correct rather than a failure -- the row can only move on a 100 ms boundary so at 240 BPM it swings either way by 50 ms.',
-  [('bang', '\\$0-read'), ('240', 'tempo'), ('bang', '\\$0-zero')]),
+  'PASS IF: The white pad moves twice as fast. A visible swing is correct rather than a failure -- the row can only move on a 100 ms boundary so at 240 BPM it swings either way by 50 ms.',
+  [('240', 'tempo')],
+  # ⛔ THE BEATS CLAIM WENT BECAUSE NOTHING SHOWED IT. A counter reaches Pd's
+  # console and the runner only ever displays one through a predicate, so these
+  # two steps asked a person to check a number that never appeared anywhere. The
+  # generator refuses a step whose predicate names a number its prose omits -- it
+  # cannot catch the reverse, which is this. The rate claim is gate-owned anyway:
+  # tempo-assert counts 24 PPQN at two tempos and the ratio between them. What is
+  # left here is the visible beat row, which is what a bench is for.
+  ),
  ('Back to 120 and stopped',
-  'PASS IF: The second BEATS line reads about 40 and then the beat row slows to two a second. The pad must keep walking after the stop.',
-  [('bang', '\\$0-read'), ('120', 'tempo'), ('bang', 'stop')]),
+  'PASS IF: The beat row slows back to two a second and the pad keeps walking after the stop.',
+  [('120', 'tempo'), ('bang', 'stop')]),
  ('Pads and releases',
   'PASS IF: Every pad you press reports pad-NN on the OLED with its velocity. Releasing it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressure on a held pad reports nothing and that is correct.',
   [],
   {'do': 'Press pads and release them.'}),
  ('Ring buttons',
-  'PASS IF: The ring buttons report lp-cc-NN. Check the top left corner reads 90 and the bottom row runs from 101 to 108 in order. CC 1 to 8 must be lit like everything else and must go blue under a modal and red under an alert. One button stays dark -- index 0 -- SETUP. It takes no colour and transmits nothing.',
+  'PASS IF: Each ring button reports lp-cc-NN on the OLED. The top left corner reads 90 and the bottom row runs from 101 to 108 in order. One button stays dark and reports nothing -- index 0 -- SETUP.',
   [],
   {'do': 'Press the ring buttons, including the top left corner and the bottom row.'}),
  ('Transport keys change mode',
@@ -454,7 +469,7 @@ STEPS_LAUNCHPAD = [
  # that, and only from a fresh load.
  ('Hot-swap -- unplugged mid-session',
   'PASS IF: A bordered alert on the OLED reads warn and then m_launchpad. The grid goes dark.',
-  [],
+  [('compose mode-1', 'mode')],
   # ⚠️ THE PREDICATE READS err AND THE EYES READ THE GRID, and neither covers the
   # other. c_presence publishes the warn; g_grid going dark is m_launchpad
   # dropping ownership two boxes further on, and no bus carries "the grid stopped
@@ -462,11 +477,18 @@ STEPS_LAUNCHPAD = [
   # ⚠️ wait 12 IS LOAD-BEARING. The warn is three missed ticks behind the unplug
   # -- up to 8 s at the shipped 2000 ms tick -- and the runner's default drain is
   # 0.4 s, which would miss it on entirely correct hardware.
+  # ⛔ IT SETS COMPOSE ITSELF, AND WITHOUT THAT THE STEP IS UNJUDGEABLE. u_err
+  # shows every error in compose and only `fail` in perform -- so a warn is
+  # correctly INVISIBLE on the OLED in perform. The step before this one asks a
+  # person to press all six transport keys, which leaves the rig on mode-6 and
+  # therefore in perform, and this step then asked them to look for an alert the
+  # instrument was right to suppress. The bus carried it and the eyes did not,
+  # which is exactly the disagreement the runner records both halves of.
   {'do': 'Press enter first, then unplug the Launchpad USB and leave it out.',
    'wait': 20,
    'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_launchpad']}}),
  ('Hot-swap -- absent at load',
-  'PASS IF: The grid lights and the top row shows one green lamp.',
+  'PASS IF: The grid ends up lit with one bright lamp on the top row. Only where it settles is the test -- what the Launchpad does on the way back is its own. The beat row runs at the tempo restored from knobs.txt rather than the one the earlier steps set.',
   [],
   # ⚠️ 60 SECONDS AND NOT 10. A replug is routinely missed by the FIRST re-wire
   # because the device is still enumerating -- the Launchpad used six of its eight
@@ -488,20 +510,25 @@ STEPS_LAUNCHPAD = [
   # the mode (item 276). A dark grid after sixty seconds is the failure.
   {'do': 'Press enter first. Unplug the Launchpad USB and count to fifteen, then '
          'plug it back in and wait up to 60 seconds without touching anything.'}),
- ('Panic hands the surface back',
-  'PASS IF: The Launchpad leaves Programmer Mode and its own display returns. Button presses stop reaching the OLED.',
-  [('bang', 'panic')],
-  # ⚠️ THE WARNING BELONGS IN `need` RATHER THAN IN THE PASS IF, because it is a
-  # precondition on the whole run: the surface stays handed back until a reload,
-  # so no step after this one can judge the grid.
-  {'need': ['Every earlier grid step judged. The panic hands the surface back '
-            'until the patch is reloaded, so nothing after this can check the '
-            'grid.']}),
- ('Grid silent after panic',
-  'PASS IF: Nothing happens. The Launchpad keeps showing its own display.',
+ # ⛔ THESE THREE ASSERTED BEHAVIOUR THAT WAS DELIBERATELY REMOVED, and the patch
+ # says so in capitals: m_launchpad's comment reads "PANIC USED TO COME IN HERE
+ # TOO, AND IT WAS WRONG ... DO NOT WIRE r panic BACK IN". Handing the surface
+ # back set want 0, the watchdog stopped re-asserting Programmer Mode, and the
+ # grid stayed dead until a reload -- at the one moment you most need the
+ # instrument. Worse, in Live Mode the device floods MIDI port 1 with clock and
+ # wire.sh connects that port to Pd's Midi-In 1, so a panic also buried Cut It's
+ # primary MIDI input. Item 250. display-assert has asserted the current
+ # behaviour all along -- "⛔ the grid SURVIVES a panic -- it must keep painting"
+ # -- so the gate and the bench were testing opposite claims and only the bench
+ # could be wrong.
+ ('Panic keeps the surface',
+  'PASS IF: The grid keeps painting and the Launchpad stays in Programmer Mode. Its own display does not come back.',
+  [('bang', 'panic')]),
+ ('The grid still answers after a panic',
+  'PASS IF: The bright lamp moves to the first position -- the panic silenced notes and did not surrender the surface.',
   [('compose mode-1', 'mode')]),
- ('Pads silent after panic',
-  'PASS IF: Nothing reaches the OLED.',
+ ('Pads still reach the OLED after a panic',
+  'PASS IF: A pad press still reports pad-NN on the OLED.',
   [],
   {'do': 'Press a pad.'}),
 ]

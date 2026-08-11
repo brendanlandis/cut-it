@@ -272,7 +272,7 @@ assertion would pass vacuously, which is worse than failing.
 
 **31 checks**: frame shape and the 1–108 span, the mode lamp index, the modal claiming all 108
 specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
-underneath, the beat row never leaving 11–18, the grid going silent after a panic, and
+underneath, the beat row never leaving 11–18, the grid SURVIVING a panic, and
 `m_launchpad`'s Programmer and Live SysEx.
 
 ✅ **It has been proven to fail.** Reintroducing the one-based beat bug in a scratch copy — the
@@ -601,30 +601,41 @@ their own prompt line.
 ⛔ **Steps 21 and 22 replaced the replug-hazard step, which asserted the opposite of what the
 instrument now does.** It read *"the device returns in Live Mode but `m_launchpad` still believes it
 owns the surface"* and closed *"Not built yet"* — presence drops ownership on the third missed poll
-and the bounded re-wire brings the device back with Programmer Mode re-asserted. ⚠️ **The panic step
-after them changed with it**: there is a live, owned surface for the panic to hand back now, so the
-device visibly leaving Programmer Mode is part of the assertion rather than something the previous
-step had already caused.
+and the bounded re-wire brings the device back with Programmer Mode re-asserted.
+
+⛔ **Step 21 has to set `compose` itself, and could not be judged until it did.** `u_err` shows every
+error in compose and only `fail` in perform, so a `warn` is correctly **invisible** on the OLED in
+perform — and step 20 asks a person to press all six transport keys, which leaves the rig on mode-6.
+The step then asked for an alert the instrument was right to suppress: the bus carried it, the eyes
+did not, and the runner recorded both halves disagreeing. **Every step sets up its own
+preconditions**, and a mode is one.
 
 ⚠️ **Its beat counter used to be dead.** `[r $0-zero]` and `[r $0-read]` existed, the comment beside
 them claimed the tempo steps drove them, and **nothing anywhere sent to either name** — so the one
 automated assertion in the Phase 6 bench never fired. Same shape as `tempo-bench`'s `[r $0-say]`
 that was never connected to its `[print]`. Fixed by driving them from the step table.
 
-⚠️ **The panic step hands the surface back and the grid does not come back.** Nothing re-enters
-Programmer Mode except `u_init`'s boot, so the grid stays the device's own until you reload.
-Deliberate, and stated in the step.
+⛔ **Panic KEEPS the surface — it does not hand it back**, and `m_launchpad` never sees `panic` at
+all. Handing it back set `want 0`, so the watchdog stopped re-asserting Programmer Mode and **the
+grid stayed dead until a reload** — at the one moment you most need the instrument. Worse, in Live
+Mode the device floods MIDI port 1 with clock and `wire.sh` connects that port to Pd's Midi-In 1, so
+a panic also buried Cut It's primary MIDI input (item 250). Silencing notes has nothing to do with
+surrendering a surface.
+
+⛔ **Three bench steps asserted the old behaviour until 2026-08-11 and failed on the rig**, while
+`display-assert` had asserted the current one all along — *"the grid SURVIVES a panic — it must keep
+painting"*. **A gate and a bench testing opposite claims is the disagreement worth catching**, and
+only the bench could be wrong: the patch carries a comment forbidding the old wiring in capitals.
 
 ### `nanokontrol-bench.pd` — the nanoKONTROL acceptance run
 
-Same shape as `display-bench.pd`: twenty steps, stepped by hand, and a printed `PASS IF` for
-every step **including the ones whose correct result is that nothing happens**. Load it as a third
-patch after `mother.pd` and `main.pd`. Steps 1–14 drive themselves off the `disp`, `err` and `mode`
-buses; **15–20 need your hands on the nanoKONTROL**, because nothing but the real controller can
-exercise `[ctlin]` — and 18, 19 and 20 need them on the cable.
+**Six steps, and every one of them needs a hand on the controller** — nothing but the real device can
+exercise `[ctlin]`. Load it as a third patch after `mother.pd` and `main.pd`. Steps 1–3 sweep the
+surface; **4, 5 and 6 need your hands on the cable**. The fourteen steps that used to sit here never
+touched the nanoKONTROL and moved to `display`, which is what they were always about.
 
-⛔ **Hot-swap is THREE cases and it read as two.** 18 is a loss being SEEN, 19 is a device that was
-never there being recovered, and **20 is the one that happens by accident** — a device you were
+⛔ **Hot-swap is THREE cases and it read as two.** 4 is a loss being SEEN, 5 is a device that was
+never there being recovered, and **6 is the one that happens by accident** — a device you were
 playing goes away and comes back. The first two sit either side of it and between them look like
 full coverage: one proves the loss is noticed and the other proves some recovery happens, and
 neither proves the controller under your hands comes back. Only `midi` had this case, for the Volca,

@@ -217,16 +217,15 @@ Phase 5.
 **Fix:** a dirty flag. The frame clock checks it rather than painting, so the frame count is bounded
 by the beat rate and never by the metro.
 
-### A dark grid is three different things
+### A dark grid is two different things
 
-⚠️ Nothing is wrong and nothing has changed (the dirty flag has no work); the surface was handed back
-by a **panic**; or the device is gone and the **watchdog** has said so. **The OLED is what tells them
-apart.**
+⚠️ Nothing is wrong and nothing has changed (the dirty flag has no work); or the device is gone and
+the **watchdog** has said so. **The OLED is what tells them apart.**
 
-⛔ **A panic blanks the Launchpad until the patch is reloaded, and that is deliberate.** Ownership
-drops and nothing repaints. Currently harmless — nothing on the Organelle sends `panic` — and **the
-escape hatch is worth more than the display**. Revisit only if a panic ever becomes
-performer-reachable.
+⛔ **A panic is no longer one of them.** It used to blank the Launchpad until the patch was reloaded;
+`m_launchpad` does not see `panic` at all now, so the surface survives it — item 250, on
+[launchpad.md](../device/launchpad.md). `display-assert.sh` asserts the grid keeps painting across
+one.
 
 ⚠️ **The watchdog gives up at about 70 seconds** and writes `fail m_launchpad grid-lost` to `err`.
 After that a replug will not recover the grid. See [launchpad.md](../device/launchpad.md).

@@ -165,6 +165,23 @@ def main():
             repr(rt(W("STOP"))))
     A.check("panic sends %d too" % STOP, bool(rt(W("PANIC"), byte=STOP)),
             repr(rt(W("PANIC"))))
+    # ⛔ PANIC REACHES A THIRD PORT AND THE TRANSPORT DOES NOT, and the pair of
+    # checks below is the whole of that claim -- one of them alone would pass
+    # over the bug in either direction. Item 279 measured realtime-out feeding
+    # ports 1 and 3 only, so the Volca on port 4 kept sequencing through a panic
+    # and nothing said so. It is fed now, from its own receive, by the panic
+    # branch alone. ⚠️ EXACT PORT SETS, never "at least one": a fan-out that
+    # accidentally handed the CLOCK to port 4 as well would satisfy any
+    # non-zero test here and would be exactly the widening plan-v04 parks.
+    panic_ports = sorted({v[1] for v in rt(W("PANIC"), byte=STOP)})
+    A.check("⛔ panic's STOP reaches ports 1, 3 AND 4", panic_ports == [1, 3, 4],
+            "saw ports %s -- port 4 is the Volca's DIN interface, item 279"
+            % panic_ports)
+    stop_ports = sorted({v[1] for v in rt(W("STOP"), byte=STOP)})
+    A.check("⛔ ...and the plain transport STOP still reaches ONLY 1 and 3",
+            stop_ports == [1, 3],
+            "saw ports %s. Widening the clock and transport to all four is a "
+            "v0.4 sound question parked in plan-v04, NOT this" % stop_ports)
     # ⛔ CONTINUE IS NEVER SENT, ANYWHERE IN THE RUN. A device that receives FB
     # resumes from where it was rather than from the top, and this instrument has
     # no concept of a resume position -- so sending it would be a lie about state

@@ -112,20 +112,28 @@ ears, which is why its bench step is judged by ear. See [presence.md](../module/
 
 ## Traps
 
-### No MIDI clock or transport reaches this device, and the patch used to claim otherwise
+### No MIDI clock reaches this device, and the patch used to claim otherwise
 
-`u_tempo`'s `realtime-out` holds exactly **two** `[midiout]` objects, set at loadbang to ports **1
-and 3** — the Launchpad and the SP-404. The Volca is port 4 and the nanoKONTROL is port 2, so
-neither has ever received a clock byte from Cut It. ✅ Measured with `aseqdump` on Pd's Midi-Out 4:
-five seconds produced nothing at all, and a capture across a patch reload produced nothing at either
-end. Item 279.
+`u_tempo`'s `realtime-out` fed exactly **two** `[midiout]` objects, set at loadbang to ports **1 and
+3** — the Launchpad and the SP-404. The Volca is port 4 and the nanoKONTROL is port 2, so neither
+had ever received a byte from Cut It. ✅ Measured with `aseqdump` on Pd's Midi-Out 4: five seconds
+produced nothing at all, and a capture across a patch reload produced nothing at either end.
+Item 279.
 
-⚠️ **So the Volca cannot sync to the instrument**, and anything that assumes it is following the
-master tempo is wrong. `m_volca.pd` carried the sentence *"clock and transport … already reach every
-port"* until this was measured.
+⚠️ **So the Volca still cannot sync to the instrument**, and anything that assumes it is following
+the master tempo is wrong. `m_volca.pd` carried the sentence *"clock and transport … already reach
+every port"* until this was measured.
 
-**Fix:** none yet — this is a gap rather than a decision, and widening `realtime-out` is
-[plan-v04.md](../../plan-v04.md) §3's. Until then, drive the Volca's timing from its own controls.
+**Fix, for the transport half only:** ✅ **`panic`'s realtime STOP now reaches port 4**, through a
+receive that the panic branch is the sole writer of — item 295. A synthesiser with a sequencer that
+keeps running through a panic is the case panic exists for, and the mixer's master fader cannot stop
+it. ⛔ **The clock is deliberately NOT widened with it.** Which devices Cut It intends to *drive* is
+a v0.4 sound question — the Launchpad ignores incoming clock in Programmer Mode, so one of the two
+ports already fed is pointless — and it stays in [plan-v04.md](../../plan-v04.md) §3. Until then,
+drive the Volca's timing from its own controls.
+
+📄 **The STOP only lands if this device's `MIDI Clock src` is `Auto`** — see *Settings* above. Set to
+Internal it is ignored, and a correct patch looks broken.
 
 
 Each is a claim and its fix. How any of them was found is in the git history.

@@ -326,11 +326,15 @@ the loss is reported by `c_presence` itself and the re-wire is `u_present`'s.
 detecting anything, it rides `$0-want` rather than presence, and it is Mac-specific. It is not
 presence and it did not move.
 
-**Surfacing is the `warn` and the `fail`, and nothing else.** ⚠️ A dark grid already means three
-different things — nothing changed, panic handed the surface back, or the watchdog gave up — and only
-the OLED tells them apart. A fourth ambiguous grid state would make the display less informative, not
-more. The diagnostic screen that reads all of this is
-[plan-v03.5.md](../../plan-v03.5.md)'s, deliberately.
+**Surfacing is the `warn` and the `fail`, and nothing else.** ⚠️ A dark grid already means two
+different things — nothing changed, or the watchdog gave up — and only the OLED tells them apart. A
+third ambiguous grid state would make the display less informative, not more. The diagnostic screen
+that reads all of this is [plan-v03.5.md](../../plan-v03.5.md)'s, deliberately.
+
+⛔ **This paragraph listed a third cause, "panic handed the surface back", and it had been false
+since item 251.** Panic does not touch the Launchpad's ownership at all now, and since item 296 it
+paints the surface **red** for a second — a state nothing could mistake for dark. See
+[display.md](display.md).
 
 ## Open
 

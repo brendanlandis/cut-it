@@ -15,7 +15,8 @@ beat-number outlet indexes the grid's bottom row directly. **Nothing downstream 
 global `clock` is its clock**; that instance is the grid's, and the next consumer gets its own.
 
 `u_tempo` has no creation arguments, no inlets and no outlets. It talks on `tempo`, `clock`, `start`,
-`stop`, `panic`, `disp` and `err`, and out of two MIDI ports.
+`stop`, `panic`, `disp` and `err`, and out of **three** MIDI ports — two carry the clock and the
+transport, and a third takes `panic`'s STOP alone.
 
 ## Facts
 
@@ -32,9 +33,19 @@ Clock is **24 PPQN** — 24 pulses per quarter note, one every 20.8 ms at 120 BP
 
 | Transport event | Sends | Evidence | Item |
 |-----------------|-------|----------|------|
-| `start` | 250 | verified | — |
-| `stop` | 252 | verified | — |
-| `panic` | 252 on every port, plus the aux LED. **Note-silencing is each device layer's own** | verified | 231 |
+| `start` | 250, on ports **1 and 3** | verified | — |
+| `stop` | 252, on ports **1 and 3** | verified | — |
+| `panic` | 252 on ports **1, 3 and 4**, plus the aux LED. **Note-silencing is each device layer's own** | verified | 231, 295 |
+
+⛔ **`panic` reaches one more port than the transport does, and that asymmetry is the point.** Port 4
+is the Volca's DIN interface, and item 279 measured it receiving nothing at all — so a Volca
+sequencing through a panic kept sequencing. It is fed from `$0-rt4`, a receive the panic branch is
+the **sole writer of**, so no clock byte can reach it however this file is edited later.
+⚠️ **Widening the CLOCK to all four ports is a different question** and stays in
+[plan-v04.md](../../plan-v04.md) §3: the Launchpad ignores incoming clock in Programmer Mode, so one
+of the two ports already fed is pointless, and which devices Cut It intends to *drive* is a v0.4
+sound decision. `tempo-assert.py` asserts both port sets **exactly**, because a check for either one
+alone passes over the bug in the other direction.
 
 ### How the clock is built
 
@@ -244,8 +255,9 @@ the fallback publish only if nothing else already has.
 `u_tempo` used to send All Notes Off on channel 33 alone — bank A, **one tenth of the instrument** —
 because it was written before any file owned the 404. The device's owner owns its panic.
 
-⚠️ **`u_tempo` still owns the 252**, which is the realtime STOP and reaches every port. What left is
-only the note-silencing, which is per-device and per-channel and was never this file's to know about.
+⚠️ **`u_tempo` still owns the 252**, the realtime STOP. What left is only the note-silencing, which
+is per-device and per-channel and was never this file's to know about. ⛔ **This paragraph said
+"reaches every port" until the ports were counted, and it was wrong** — see *Transport* above.
 
 ### The footer is redrawn on every transport change
 

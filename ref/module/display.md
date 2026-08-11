@@ -129,6 +129,13 @@ against, and it would not be helped by a larger font.
 | `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | The whole surface, one colour | verified | — |
 | `alert` | 2 | `disp` → `alert …`, **`fail` only** | 2 s | The whole surface, red | verified | — |
 
+**`panic` raises `modal` with palette 5, red, and clears it with an explicit `grid modal-off` one
+second later** — `u_init`'s `panic-display` subpatch, item 296. ⛔ **The `[del]` owns the duration
+and the 30 s TTL is never leaned on.** Half a minute of dead grid during the one moment the
+instrument is most needed is item 251's failure in a different costume. ⚠️ **It changes no
+ownership** — `g_grid` owns the LEDs and `disp` is how a caller asks (C-5); `m_launchpad` is not
+addressed at all, so panic still never hands the surface back.
+
 | | Evidence | Item |
 |---|----------|------|
 | The frame clock runs at **50 Hz** but paints only when a **dirty flag** is set — nothing at all when idle, about two frames a second at 120 BPM | verified | 94 |
@@ -225,7 +232,8 @@ the **watchdog** has said so. **The OLED is what tells them apart.**
 ⛔ **A panic is no longer one of them.** It used to blank the Launchpad until the patch was reloaded;
 `m_launchpad` does not see `panic` at all now, so the surface survives it — item 250, on
 [launchpad.md](../device/launchpad.md). `display-assert.sh` asserts the grid keeps painting across
-one.
+one. **Since item 296 a panic is unmistakable in the other direction**: the whole surface goes red
+for a second and then returns to `home`.
 
 ⚠️ **The watchdog gives up at about 70 seconds** and writes `fail m_launchpad grid-lost` to `err`.
 After that a replug will not recover the grid. See [launchpad.md](../device/launchpad.md).

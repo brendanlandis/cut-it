@@ -45,11 +45,13 @@ reinstate it. The full account is on [ref/device/volca.md](ref/device/volca.md).
 | **The control is the Launchpad's top-left corner, CC 90** | A verified real button on this unit, absent from Novation's documentation, currently unused, and `g_grid` can light it so the armed state is visible |
 | **Two tiers on that one control** | Short press → `panic`, silence only, always safe. Held → `recover`, silence **then** reload |
 | **The reload path SKIPS parameter pickup arming** | After an emergency the knobs you are holding are the truth. See *The breadcrumb does double duty* below |
-| ✅ **The destructive half is already gone** — item 251 | Panic no longer hands the Launchpad back. That was a bug: it killed the grid until reload and buried Pd's Midi-In 1 under a clock flood (item 250). Both gates were inverted deliberately and made to fail against the old code |
+| ✅ **The destructive half is already gone** — item 251 | Panic no longer hands the Launchpad back. That was a bug: it killed the grid until reload and buried Pd's Midi-In 1 under a clock flood (item 250). Both gates were inverted deliberately and made to fail against the old code, and **`launchpad` 24 to 26 confirmed it on the rig on 2026-08-11** — the surface kept, the grid still answering, pads still reaching the OLED |
 
-⚠️ **Two tiers on one button is also the answer to *"which control raises panic"*** on
-[ref/device/launchpad.md](ref/device/launchpad.md) — a question that was unanswerable while panic was
-destructive.
+⚠️ **The page does not yet say what CC 90 does, and the question that used to hold the space is
+gone.** *Which control raises panic* left [ref/device/launchpad.md](ref/device/launchpad.md)'s
+`Open` section when panic stopped being destructive, and nothing replaced it — so the page documents
+CC 90 as a real undocumented button (item 82) and says nothing about Cut It binding it. **Two tiers
+on one button is what belongs there**, under `Design`.
 
 ---
 
@@ -64,6 +66,34 @@ destructive.
 
 ---
 
+## ⛔ What this costs the bench half, and how to spend it once
+
+**All seven benches are fresh as of 2026-08-11** — one hundred steps, every one judged by a person at
+the rig. ⚠️ **This plan stales thirty-six of them**, and nothing will stop you or warn you:
+
+| You edit | Stales | Because |
+|---|---|---|
+| `Cut It/u_map.pd` | `midi` 18, `tempo` 13 | both name it in `DEPS` (`test/runner/steps.py`) |
+| `Cut It/u_init.pd` | `state` 5 | same |
+| `Cut It/cut-it-map.txt` | `midi` 18 | same |
+
+**So the rig session at the end of this is not optional and it is not small.** Budget for re-running
+`midi`, `tempo` and `state` in full, and read
+`python3 test/runner/run.py --list` before and after so the number is a fact rather than a memory.
+
+⛔ **Two other pieces of work touch `u_map.pd`, and doing them apart pays this bill twice.** Land
+them in the same pass:
+
+- [plan-v04.md](plan-v04.md) §3's ⬜ **`u_map` accepts a `mode` it cannot use** — the key-setter
+  refusing a `mode` that is not two atoms. It was blocked until every bench was fresh; it no longer
+  is. Its gate is the interesting half, since nothing yet drives a malformed mode through the restore.
+- This plan's own `route` box change and the six `lp-cc-90` rows.
+
+⚠️ **Adding a bench STEP costs nothing** — `step_sha` is the title and the `pass_if`, so a new step
+leaves every existing verdict fresh even though every step's `of` count changes in the `.pd`.
+
+---
+
 ## What to read, and how much
 
 | Document | How much | Why |
@@ -75,7 +105,9 @@ destructive.
 | `Cut It/u_map.pd` | The literal `route` box, and the no-save arming probe | `recover` needs a literal destination; the breadcrumb changes how arming is decided |
 | `Cut It/cut-it-map.txt` | All of it | Six new rows, one per mode |
 | [ref/module/map.md](ref/module/map.md) | `Facts`, and item 239 | Parameter pickup, which this path deliberately skips |
-| [ref/device/launchpad.md](ref/device/launchpad.md) | The safe exit section, items 250 / 251 / 252 | ⛔ `/loadPatch` runs `killpatch.sh` first, so `quitting` **does** fire on this path — verified on hardware 2026-08-10 |
+| [ref/device/launchpad.md](ref/device/launchpad.md) | The safe exit section, items 250 / 251, and CC 90 under `Facts` (item 82) | What panic may and may not do to this device, and the button you are binding |
+| [ref/conventions.md](ref/conventions.md) | Item 252 only | ⛔ `/loadPatch` runs `killpatch.sh` first, so `quitting` **does** fire on this path — verified on hardware 2026-08-10. It is defined here and on [ref/device-os.md](ref/device-os.md), not on the Launchpad's page |
+| [test/README.md](test/README.md) | *The benches*, and everything under it | You are adding bench steps, and its `wait` section carries what two rig sessions cost to learn |
 | [ref/module/state.md](ref/module/state.md) | The file format and the data directory | The breadcrumb is written beside the state files, outside the patch folder |
 | `tools/deploy.sh` | Its `/reloadNoRemount` and `/loadPatch` calls | The two-step OSC, and the comment saying why a bare name loads nothing |
 | [ref/module/presence.md](ref/module/presence.md) | *Design*, and the `none` kind | Why this phase exists at all |
@@ -149,17 +181,38 @@ implying coverage that does not exist.
 
 ## Verification, on hardware
 
-1. **Short-press CC 90** — everything goes quiet, the patch is still running, the grid is still lit.
-2. **Hold CC 90** — silence, then the patch reloads and comes back with every device re-enumerated.
-3. **Confirm the knobs are live immediately**, not held.
-4. ⛔ **Break it deliberately**: rename the patch folder, hold CC 90, and confirm the breadcrumb
-   explains what happened on the next manual load.
-5. **Confirm the safe exit still works** — the Launchpad returns to Live Mode and its Setup button
-   responds. ⚠️ **Do this through `/loadPatch`, never `killall pd`**: `quitting` comes from mother
-   rather than from a shell signal, which is the entire reason `tools/lp-live.sh` exists.
+⛔ **THESE ARE BENCH STEPS, NOT A CHECKLIST.** This project's standard for a hardware claim is a
+recorded verdict in `test/results/latest.json` against a known `step_sha` — that is what makes *"when
+did this last pass, and against what code?"* a `git log` question. A list of things to try by hand
+leaves nothing behind. **Add them to `STEPS_LAUNCHPAD` in `test/bench/bench_steps.py`**, since CC 90
+is a Launchpad control, and regenerate:
 
-⚠️ **`tools/lp-live.sh` rescues a stranded Launchpad** if anything goes wrong, but the point is that
-it should not be needed.
+```sh
+python3 test/bench/bench-gen.py && python3 test/bench/bench-verify.py
+```
+
+| | The step |
+|---|---|
+| 1 | **Short-press CC 90** — everything goes quiet, the patch is still running, the grid is still lit |
+| 2 | **Hold CC 90** — silence, then the patch reloads and comes back with every device re-enumerated |
+| 3 | **The knobs are live immediately**, not held |
+| 4 | ⛔ **Break it deliberately** — rename the patch folder, hold CC 90, and the breadcrumb explains what happened on the next manual load |
+| 5 | **The safe exit still works** — the Launchpad returns to Live Mode and its Setup button responds |
+
+⚠️ **Do 5 through `/loadPatch`, never `killall pd`**: `quitting` comes from mother rather than from a
+shell signal, which is the entire reason `tools/lp-live.sh` exists. That script rescues a stranded
+Launchpad if anything goes wrong, but the point is that it should not be needed.
+
+⛔ **Three things about writing these that cost two rig sessions each to learn**, all of them in
+[test/README.md](test/README.md) under *The benches* — read it rather than rediscovering them:
+
+- **A predicate whose traffic a PERSON makes needs `press enter first` AND a `wait`.** The window
+  opens at GO and closes 0.4 s later by default, which is shut before a hand has crossed the desk.
+  Steps 2 and 4 here both need one.
+- **Anything late and brief has to say where to look and when.** A step judged by eye against a
+  ~2 s alert that fires seconds after the action is unjudgeable unless it says so.
+- **A step sets up its own preconditions, and a mode is one.** Step 4 leaves the rig with no patch;
+  whatever follows it must not assume otherwise.
 
 ---
 
@@ -170,7 +223,12 @@ it should not be needed.
 3. The breadcrumb is written before the reload and read on the next boot.
 4. The reload path skips parameter pickup arming.
 5. `quitting` still fires and the Launchpad still returns to Live Mode — **asserted**, not assumed.
-6. `ref/device/launchpad.md`'s *which control raises panic* question is answered on the page.
-7. **This file is deleted.**
+6. `ref/device/launchpad.md` says under `Design` what Cut It binds CC 90 to, and what each tier does.
+7. **The five verification steps are in `STEPS_LAUNCHPAD` and hold fresh passes** in
+   `test/results/latest.json`.
+8. **`midi`, `tempo` and `state` are fresh again** — `python3 test/runner/run.py --list` shows seven
+   benches fully fresh, as it did before this plan started.
+9. `./test/run.sh` reports `RESULT: PASS`. ⚠️ Read that line; never grep for it.
+10. **This file is deleted.**
 
 ⛔ **This plan does not hand its open items to `plan-v04.md`.**

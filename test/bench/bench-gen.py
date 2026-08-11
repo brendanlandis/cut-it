@@ -115,6 +115,7 @@ def check(steps, name):
         title, passif, actions, meta = S.norm(step)
         lint_meta(meta, actions, "%s step %d" % (name, i))
         lint_agreement(meta, passif, "%s step %d" % (name, i))
+        lint_printed(meta, passif, "%s step %d" % (name, i))
         lint_resume(meta, i, "%s step %d" % (name, i))
         for label, s in (("title", title), ("pass_if", passif)):
             for ch in (",", ";"):
@@ -261,6 +262,47 @@ def lint_agreement(meta, pass_if, where):
                 "predicate is -- say which in the step rather than letting a "
                 "person and a program answer different questions."
                 % (where, claim, word))
+
+
+# ⛔ A NUMBER ONLY THE RUNNER CAN SEE MUST SAY SO.
+#
+# `print` and `ratio` predicates read COUNTERS THE BENCH KEEPS -- M-BEATS and the
+# two c_clock lines. Those go to Pd's console, which the runner captures and the
+# person never sees; the only place they appear is the runner's own `got` line.
+# So a PASS IF written as though the number were somewhere on the instrument
+# sends somebody hunting the OLED for a value that was never going to be there.
+# Both tempo steps did exactly that, and it cost a real bench session:
+# "M-BEATS reads 20 or 21" against a screen that says nothing of the kind.
+#
+# ⚠️ THE WORD IS THE CHECK, and it is deliberately a dumb one. Anything cleverer
+# would be a guess at English; requiring `print` in the prose of a step judged on
+# a printed number is a fact the writer has to have thought about.
+PRINTED_KINDS = ("print", "ratio")
+
+
+def _kinds(spec, out=None):
+    out = set() if out is None else out
+    if not spec:
+        return out
+    if spec.get("kind") == "all":
+        for sub in spec.get("of", ()):
+            _kinds(sub, out)
+    else:
+        out.add(spec.get("kind"))
+    return out
+
+
+def lint_printed(meta, pass_if, where):
+    spec = meta.get("check")
+    if not spec or not (_kinds(spec) & set(PRINTED_KINDS)):
+        return
+    prose = (pass_if + " " + meta.get("watch", "")).lower()
+    assert "print" in prose, (
+        "%s is judged on a counter the BENCH keeps and the runner prints -- it "
+        "is on no screen the person is looking at. The PASS IF must say so; the "
+        "word `printed` is what this looks for. Without it the sentence reads as "
+        "a claim about the instrument and somebody goes hunting the OLED for a "
+        "number that was never there." % where)
 
 
 # ⛔ CAPITALS MEAN "THIS IS LITERALLY WHAT IS ON THE SCREEN OR THE LABEL".

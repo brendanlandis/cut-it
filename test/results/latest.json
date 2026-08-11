@@ -569,6 +569,51 @@
    "ts": "2026-08-11T02:31:02+00:00",
    "verdict": "pass",
    "want": null
+  },
+  "tempo/1/device": {
+   "auto": false,
+   "bench": "tempo",
+   "deps_sha": "5df2a38abbf1",
+   "got": null,
+   "note": "",
+   "run": "20260811T042025Z-tempo-device",
+   "sha": "5caadc96ea4b",
+   "step": 1,
+   "target": "device",
+   "title": "Resting display at 120 BPM",
+   "ts": "2026-08-11T04:20:47+00:00",
+   "verdict": "pass",
+   "want": null
+  },
+  "tempo/2/device": {
+   "auto": false,
+   "bench": "tempo",
+   "deps_sha": "5df2a38abbf1",
+   "got": null,
+   "note": "",
+   "run": "20260811T042025Z-tempo-device",
+   "sha": "8f6822e72ab8",
+   "step": 2,
+   "target": "device",
+   "title": "Zero the beat counters",
+   "ts": "2026-08-11T04:21:11+00:00",
+   "verdict": "pass",
+   "want": null
+  },
+  "tempo/3/device": {
+   "auto": false,
+   "bench": "tempo",
+   "deps_sha": "5df2a38abbf1",
+   "got": null,
+   "note": "Ctrl-C",
+   "run": "20260811T042025Z-tempo-device",
+   "sha": "c74f9943e4da",
+   "step": 3,
+   "target": "device",
+   "title": "Beat counts while stopped",
+   "ts": "2026-08-11T04:22:28+00:00",
+   "verdict": "interrupted",
+   "want": null
   }
  },
  "schema": 1

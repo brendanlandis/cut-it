@@ -258,17 +258,17 @@ STEPS_TEMPO = [
   'PASS IF: Two bars with a small gate mark under each and 120-bpm in the footer. The aux button is lit dark blue.',
   [('120', 'tempo'), ('bang', 'stop')]),
  ('Zero the beat counters',
-  'PASS IF: Nothing visible changes. The transport is still stopped.',
-  [('bang', '\\$0-zero')]),
+  "PASS IF: Nothing changes anywhere. The aux button stays dark blue -- that is the transport and dark blue is stopped. The counters this arms belong to the bench and show up nowhere on the instrument.",
+  [('bang', 'stop'), ('bang', '\\$0-zero')]),
  ('Beat counts while stopped',
-  'PASS IF: M-BEATS reads 20 or 21 beats. C1-BEATS reads the same number. C2-BEATS reads 30 or 31 in the same window. A zero anywhere is a failure -- on the Mac check DSP is on first.',
+  'PASS IF: These are counted by the bench and printed on this screen -- look at the got line above and not at the instrument. M-BEATS reads 20 or 21 beats. C1-BEATS-ratio-1 reads the same number. C2-BEATS-ratio-1.5 reads 30 or 31 in the same window. C2 over C1 comes out at 1.5 exactly. A zero anywhere is the failure -- on the Mac check DSP is on first.',
   [('bang', '\\$0-read')],
   # ⛔ THE RATIO IS THE POINT, and it is why this is not three range checks. A
   # count in a range still depends on the real-time scheduler having kept up;
   # C2/C1 cancels the scheduler entirely, because both counters were driven by
   # the same clock over the same window. tempo-assert.sh makes the same argument
   # about 24 PPQN on the wire.
-  {'watch': 'M-BEATS reads 20 or 21, C1-BEATS-ratio-1 the same, C2-BEATS-ratio-1.5 reads 30 or 31, and C2 over C1 is 1.5.',
+  {'watch': 'The got line printed above -- M-BEATS at 20 or 21, C1-BEATS-ratio-1 the same, C2-BEATS-ratio-1.5 at 30 or 31, and C2 over C1 at 1.5 exactly. Nothing about this step is on the OLED.',
    'check': {'kind': 'all', 'of': [
       {'kind': 'print', 'name': 'M-BEATS', 'min': 19, 'max': 22},
       {'kind': 'print', 'name': 'C1-BEATS-ratio-1', 'min': 19, 'max': 22},
@@ -306,7 +306,7 @@ STEPS_TEMPO = [
   'PASS IF: The aux button goes dark blue and the 404 stops. But its display must still say EXT. If it falls back to BPM that is the failure.',
   [('bang', '\\$0-zero'), ('bang', 'stop')]),
  ('Beat counts after stopping',
-  'PASS IF: M-BEATS reads 20 or 21 again.',
+  'PASS IF: M-BEATS is printed above again and reads 20 or 21 beats. The master reference keeps running with the transport stopped -- that is the point of the step. Nothing about it is on the OLED.',
   [('bang', '\\$0-read')],
   # ⛔ A ZERO HERE IS THE BUG THE STEP EXISTS FOR: the transport pauses the
   # subscribers, it does not clear the timer, and a clock that stopped with the
@@ -377,7 +377,7 @@ STEPS_LAUNCHPAD = [
   # IT -- it only promises a BEATS line "about ten seconds from now". A predicate
   # asserting a number the prose never mentions is a disagreement waiting to
   # happen, and the person reading the terminal deserves to know what it wants.
-  {'watch': 'The white pad walks along the bottom row twice a second and the aux LED goes green, then a BEATS line of about 20 prints about ten seconds from now.',
+  {'watch': 'The white pad walks along the bottom row twice a second and the aux LED goes green. Then wait -- a BEATS line of about 20 is printed on this screen about ten seconds from now. It is counted by the bench and appears nowhere on the instrument.',
    'check': {'kind': 'print', 'name': 'BEATS', 'min': 19, 'max': 22}}),
  ('Beat row wrapping',
   'PASS IF: The white pad reaches the eighth pad and the next beat is back to the first -- with no gap and no stray light anywhere else. Nothing is sent for this step. Just watch one wrap go by.',

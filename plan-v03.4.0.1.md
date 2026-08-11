@@ -114,7 +114,7 @@ machinery: the per-bench dependency sha, the 30-day window, and the title/`pass_
 | `midi` | 18 | ⛔ The Volca's steps were **rewritten after** the rig session and have never been executed as written |
 | `display` | 18 | ⛔ Gained the OLED ladder that had been sitting in the `nanokontrol` bench |
 | `nanokontrol` | 6 | Its OLED steps went to `display`; what is left is the controller and its hot-swap |
-| `tempo` `phone` `state` | 15 / 14 / 5 | Never run through the runner |
+| `tempo` `phone` `state` | 16 / 14 / 5 | Never run through the runner |
 
 ⛔ **`nanokontrol` 1–14 never touched the nanoKONTROL.** Every action was a `disp`, `err` or `mode`
 message the bench sent itself, and nine of them were byte-identical to `display` steps — so fourteen

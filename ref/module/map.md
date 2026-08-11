@@ -167,6 +167,27 @@ that, so the key had **no mode at all** and missed every row.
 **Fix:** set the key to `mode-1` synchronously at load, so a lookup is never waiting on a clock. Any
 real mode still overwrites it, from the seed or from a restore.
 
+### A restored `mode` carrying no name empties the key again, and a reboot does not clear it
+
+⛔ The same symptom, a **third** cause, and the only one that survives a power cycle. `u_state`
+replays the saved `mode` at ~3500 ms; a stored value of `compose` with **no mode name** leaves
+`[list split 1]`'s remainder empty, so `[list prepend]`'s cold inlet is emptied and the key becomes
+the control name alone. `[text search]` then hunts for `og-knob-1` in the **mode** column, where it
+can never match, and every Organelle knob falls to the raw-row branch — `og-knob-1 0` on screen
+where a BPM belongs (item 294).
+
+⛔ **And it repairs itself in the wrong direction.** `u_map` puts whatever reaches the bus straight
+back into the store, so the truncated value is re-saved; the auto flush is armed **by the restore**,
+so the correct `mode-1` the seed stored at 500 ms is replaced before it ever reaches the disk. Every
+boot reads the bad value, re-stores it and writes it back.
+
+⚠️ **It is invisible on every surface but one.** `m_nano`, `m_404` and `m_launchpad` post their own
+`disp` rows and theirs land *after* `u_map`'s, so they win; `m_organelle` is the only device file
+that posts none (item 242). A dead lookup therefore shows up **only** on the Organelle's own knobs.
+
+**Fix:** none in the patch — see `Open`. Repair the file by making any real mode selection: one
+transport key writes all three atoms back and the next boot restores correctly.
+
 ### `read -c` takes the flag first
 
 ⛔ `read cut-it-map.txt -c` warns and then reads the whole file as **one line** — a table that
@@ -399,6 +420,10 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
   nothing is silent — but a control mapped to anything **other than tempo** still shows nothing,
   because the mapped row and the held `(n)` bracket both carry the tempo scaling. Making it universal
   is decided and scoped — see [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **`u_map` accepts a `mode` it cannot use.** A restored value carrying no mode name empties the
+  lookup key and kills every knob silently — the Trap above, item 294. The key-setter should refuse
+  a mode that is not two atoms and say so on `err`, the way an unknown destination already does.
+  Scoped but not built: see [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
   would jump once per change. Not reachable today — `og-knob-1` is `tempo` in all six modes. **It
   closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.

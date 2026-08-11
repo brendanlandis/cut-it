@@ -139,6 +139,27 @@ because the two either side of it look like the whole story: one proves a loss i
 proves a recovery HAPPENS, and neither proves the device under your hands comes back. Only the
 Volca had it, and only because a `none` device cannot be recovered any other way (item 275).
 
+### ⬜ `u_map` accepts a `mode` it cannot use, and one bad atom kills every knob
+
+Found on the rig on 2026-08-11, and it had been live for an unknown number of sessions. The saved
+`mode` in `cut-it-auto.txt` read `compose` with **no mode name**; the restore replays it at ~3500 ms,
+`[list split 1]`'s remainder is empty, and the lookup key falls back to the control name alone —
+so `[text search]` hunts for `og-knob-1` in the mode column and every Organelle knob draws its raw
+0-to-1 row where a BPM belongs. The full mechanism is a Trap on [map.md](ref/module/map.md), item 294.
+
+⛔ **Three properties made it expensive**, and each is worth more than the fix. It is **invisible on
+every surface but one** — `m_organelle` is the only device file that posts no `disp` row of its own,
+so the other three mask a dead lookup completely. It **survives a power cycle**, because the auto
+flush is armed by the restore and the boot seed's correct value is replaced before it can be written
+(see [state.md](ref/module/state.md)). And **nothing reports it**: an unknown *destination* already
+raises `fail u_map unknown-dest`, while an unusable *mode* passes silently.
+
+**Small**: the key-setter refuses a `mode` that is not two atoms and raises on `err`, exactly as the
+destination allowlist already does. ⚠️ **The gate for it is the interesting half** — `map-assert`'s
+static lint proves every row's destination exists, and nothing yet drives a malformed mode through
+the restore path. Repairing the file needs no code: any real mode selection writes all three atoms
+back.
+
 ### ⬜ `[polytouchin]` has no stub, so the Launchpad's pressure path is untested
 
 It was in **neither** MIDI inventory list in `test/gate/lib-scratch.sh` until a closed-question scan

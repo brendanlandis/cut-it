@@ -162,7 +162,7 @@
 #X obj 20 6500 select 18;
 #X obj 240 6500 t b b b;
 #X msg 700 6500 === STEP-18-of-19 === Hot-swap -- unplugged mid-session;
-#X msg 700 6550 PASS IF: The OLED shows a warn for m_nano within 10 seconds.;
+#X msg 700 6550 PASS IF: A bordered alert on the OLED reads warn and then m_nano.;
 #X msg 700 6600 >>> press GO to run step 18 of 19;
 #X obj 240 6670 s \$0-say;
 #X obj 20 6760 select 19;

@@ -110,8 +110,8 @@ class Source(object):
         the other end.
         """
 
-    def close(self):
-        pass
+    def close(self, quiet=False):
+        """⚠️ `quiet` is honoured by targets.Process -- see there."""
 
     # -- shared -------------------------------------------------------------
     def wait_for(self, pattern, timeout, collect=None):

@@ -196,7 +196,7 @@
 #X obj 20 7940 select 21;
 #X obj 240 7940 t b b b;
 #X msg 700 7940 === STEP-21-of-25 === Hot-swap -- unplugged mid-session;
-#X msg 700 7990 PASS IF: The OLED shows a warn for m_launchpad within 10 seconds and the grid goes dark.;
+#X msg 700 7990 PASS IF: A bordered alert on the OLED reads warn and then m_launchpad. The grid goes dark.;
 #X msg 700 8040 >>> press GO to run step 21 of 25;
 #X obj 240 8110 s \$0-say;
 #X obj 20 8200 select 22;

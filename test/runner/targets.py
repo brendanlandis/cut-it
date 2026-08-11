@@ -168,7 +168,11 @@ class Process(stream.Source):
                 self.gosender.send("rerun")
         threading.Thread(target=loop, daemon=True).start()
 
-    def close(self):
+    def close(self, quiet=False):
+        """⚠️ `quiet` IS FOR A RELOAD, not for saving a line. The teardown notice
+        says the Launchpad is stranded and names the two commands that fix it --
+        true at the END of a session, and alarming nonsense in the middle of one
+        when the runner is about to relaunch the patch itself."""
         try:
             self.proc.terminate()
             self.proc.wait(timeout=5)
@@ -181,7 +185,7 @@ class Process(stream.Source):
             self.osc.close()
         if self.gosender:
             self.gosender.close()
-        if self.teardown_fn:
+        if self.teardown_fn and not quiet:
             self.teardown_fn()
 
 

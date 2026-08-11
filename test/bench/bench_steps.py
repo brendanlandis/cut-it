@@ -218,13 +218,13 @@ STEPS_NANOKONTROL = [
  # needs a fresh load and can see what no transition ever shows: that a device
  # missing at boot is recovered at all.
  ('Hot-swap -- unplugged mid-session',
-  'PASS IF: The OLED shows a warn for m_nano within 10 seconds.',
+  'PASS IF: A bordered alert on the OLED reads warn and then m_nano.',
   [],
   # ⚠️ wait 12 IS LOAD-BEARING -- the warn is three missed ticks behind the
   # unplug, up to 8 s, and the runner's default drain is 0.4 s.
-  {'do': 'Unplug the nanoKONTROL and leave it out, then press enter straight away -- the runner starts listening from there.',
+  {'do': 'Press enter first, then unplug the nanoKONTROL and leave it out. Watch the OLED.',
    'need': ['The nanoKONTROL powered and connected.'],
-   'wait': 12,
+   'wait': 20,
    'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_nano']}}),
  ('Hot-swap -- absent at load',
   'PASS IF: Slider 1 moves a value on the OLED.',
@@ -235,7 +235,8 @@ STEPS_NANOKONTROL = [
   # PASSIVE to look at, so the only proof the subscription came back is traffic
   # arriving through it.
   {'do': 'Plug it in, wait 60 seconds, then move slider 1.',
-   'need': ['The patch freshly loaded with the nanoKONTROL unplugged. Reload first, then resume this bench with --from 19.']}),
+   'reload': True,
+   'need': ['The nanoKONTROL still unplugged from the last step.']}),
 ]
 
 STEPS_TEMPO = [
@@ -403,7 +404,7 @@ STEPS_LAUNCHPAD = [
  # recovered at all, however long you waited. Only the second step below can see
  # that, and only from a fresh load.
  ('Hot-swap -- unplugged mid-session',
-  'PASS IF: The OLED shows a warn for m_launchpad within 10 seconds and the grid goes dark.',
+  'PASS IF: A bordered alert on the OLED reads warn and then m_launchpad. The grid goes dark.',
   [],
   # ⚠️ THE PREDICATE READS err AND THE EYES READ THE GRID, and neither covers the
   # other. c_presence publishes the warn; g_grid going dark is m_launchpad
@@ -412,9 +413,9 @@ STEPS_LAUNCHPAD = [
   # ⚠️ wait 12 IS LOAD-BEARING. The warn is three missed ticks behind the unplug
   # -- up to 8 s at the shipped 2000 ms tick -- and the runner's default drain is
   # 0.4 s, which would miss it on entirely correct hardware.
-  {'do': 'Unplug the Launchpad USB and leave it out, then press enter straight away -- the runner starts listening from there.',
+  {'do': 'Press enter first, then unplug the Launchpad USB and leave it out. Watch the OLED and the grid.',
    'need': ['The Launchpad connected and in Programmer Mode, with the grid lit.'],
-   'wait': 12,
+   'wait': 20,
    'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_launchpad']}}),
  ('Hot-swap -- absent at load',
   'PASS IF: The grid lights and the top row shows one green lamp.',
@@ -424,7 +425,8 @@ STEPS_LAUNCHPAD = [
   # attempts on the bench, item 277 -- and the eight are spread over seventy
   # seconds. Anything under about 50 s fails intermittently on correct code.
   {'do': 'Plug the Launchpad in and wait up to 60 seconds without touching anything else.',
-   'need': ['The patch freshly loaded with the Launchpad unplugged. Reload first, then resume this bench with --from 22.']}),
+   'reload': True,
+   'need': ['The Launchpad still unplugged from the last step.']}),
  ('Panic hands the surface back',
   'PASS IF: The Launchpad visibly leaves Programmer Mode and its own display returns. Button presses stop reaching the OLED. Watch both. It stays handed back until the patch is reloaded -- so every remaining step is downstream of this one and nothing after it can check the grid. If you have any doubt about an earlier step go back and redo it before pressing GO here.',
   [('bang', 'panic')]),
@@ -657,13 +659,13 @@ STEPS_MIDI = [
  # be polled, and its recovery is PARASITIC on a detectable device being missing
  # in the same moment. Step 7 below is what that costs.
  ('Hot-swap -- SP-404 unplugged',
-  'PASS IF: The OLED shows a warn for m_404 within 10 seconds.',
+  'PASS IF: A bordered alert on the OLED reads warn and then m_404.',
   [],
   # ⚠️ wait 12 IS LOAD-BEARING -- the warn is three missed ticks behind the
   # unplug, up to 8 s, and the runner's default drain is 0.4 s.
-  {'do': 'Unplug the SP-404 and leave it out, then press enter straight away -- the runner starts listening from there.',
+  {'do': 'Press enter first, then unplug the SP-404 and leave it out. Watch the OLED.',
    'need': ['The SP-404 powered and connected.'],
-   'wait': 12,
+   'wait': 20,
    'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_404']}}),
  ('Hot-swap -- SP-404 absent at load',
   'PASS IF: The OLED shows an sp-pad row.',
@@ -673,7 +675,8 @@ STEPS_MIDI = [
   # port 3 -- but silence cannot tell a working subscription from a dead one. A
   # pad under a finger can.
   {'do': 'Plug it in, wait 60 seconds, then press pad 1.',
-   'need': ['The patch freshly loaded with the SP-404 unplugged. Reload first, then resume this bench with --from 15.',
+   'reload': True,
+   'need': ['The SP-404 still unplugged from the last step.',
             'Bank A selected. Say it out loud.']}),
 
  # ⛔ THE ORACLE IS THE FADER CHANGING THE SOUND \, NEVER THE VOLCA MAKING ONE.
@@ -724,6 +727,7 @@ STEPS_MIDI = [
   # is the likelier one in a room -- you power the rig up and then plug the Volca
   # in. See ref/device/volca.md.
   {'do': 'Plug both back in, wait 60 seconds, then hold a Volca key and sweep slider 1.',
-   'need': ['The patch freshly loaded with both the Volca interface and the nanoKONTROL unplugged. Reload first, then resume this bench with --from 17.',
+   'reload': True,
+   'need': ['The Volca interface and the nanoKONTROL both still unplugged from the last step.',
             'Mode 1. Slider 1 is the only control bound to the Volca.']}),
 ]

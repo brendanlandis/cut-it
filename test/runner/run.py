@@ -379,7 +379,7 @@ def check_marker(m, line, expect, bench):
                      % (expect.n, expect.title.strip(), got_title))
 
 
-def run_bench_driven(bench, target, auto_only, start, src):
+def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
     """A bench with a patch on the other end. -> (rows, ok).
 
     THE INTERACTION, and it is the bench's, not ours. Each step takes TWO GOs:
@@ -445,6 +445,30 @@ def run_bench_driven(bench, target, auto_only, start, src):
 
         while True:
             step = bench.steps[i]
+
+            # ⛔ A `reload` STEP NEEDS THE PATCH BOOTED WITHOUT ITS DEVICE, and
+            # that is a fact about the process this runner launched. It used to
+            # be a sentence in `need` -- "reload first then resume this bench
+            # with --from 19" -- which is the runner's own job written out as
+            # homework, in the one field that describes what you should already
+            # have rather than what to do. The device is already unplugged from
+            # the step before, so this is the moment.
+            if step.meta.get("reload") and reopen and not step.meta.get("_done"):
+                step.meta["_done"] = True
+                stream.say("\n  ... reloading the patch with the device still "
+                           "unplugged -- this is what the step needs and the "
+                           "runner owns it")
+                src = reopen()
+                m, line = src.wait_for(S.RE_STEP, LOAD_TIMEOUT)
+                if src.boot_settle:
+                    _drain(src, [], src.boot_settle)
+                while int(m.group(1)) < step.n:
+                    src.go()
+                    src.wait_for(S.RE_FIRED, STEP_TIMEOUT)
+                    src.go()
+                    m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
+                stream.say("  ... reloaded and back at step %d" % step.n)
+
             check_marker(m, line, step, bench)
             describe(bench, step)
 
@@ -857,9 +881,24 @@ def main(argv):
         else:
             import targets
             src = targets.open_target(target, name, a.auto_only)
+            # ⛔ THE RUNNER LAUNCHED THE PATCH SO THE RUNNER RELOADS IT. A step
+            # marked `reload` needs the patch to have booted with a device
+            # UNPLUGGED, and that is a precondition about the process this
+            # program owns -- it has no business being an instruction. It read
+            # "reload first then resume this bench with --from 19", which is the
+            # runner's own job written out as homework, and it sat in `need`
+            # where nothing tells you to act on it.
+            holder = [src]
+
+            def reopen(_t=target, _n=name, _a=a.auto_only, _h=holder):
+                _h[0].close(quiet=True)
+                _h[0] = targets.open_target(_t, _n, _a)
+                return _h[0]
             try:
-                rows, _ok = run_bench_driven(b, target, a.auto_only, a.start, src)
+                rows, _ok = run_bench_driven(b, target, a.auto_only, a.start,
+                                             src, reopen)
             finally:
+                src = holder[0]
                 # ⛔ TEARDOWN HAPPENS WHATEVER HAPPENED. A desync, a stall, a
                 # Ctrl-C: every one of them still leaves a Pd running and, on
                 # the device, a Launchpad stranded in Programmer Mode.

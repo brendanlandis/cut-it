@@ -120,6 +120,20 @@ class Process(stream.Source):
         self._note(line)
         return line
 
+    def flush(self):
+        """Discard the backlog. -> how many lines went. See Source.flush."""
+        n = 0
+        while True:
+            try:
+                line = self.q.get_nowait()
+            except queue.Empty:
+                return n
+            if line is None:                # the process ended -- put it back
+                self.q.put(None)
+                return n
+            self.log.append(line)
+            n += 1
+
     def pending(self):
         """⚠️ THE QUEUE, NOT THE LOG. A backlog here means the reader is behind
         the patch, which is the one stall cause that is not a fault at all --

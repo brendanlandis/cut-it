@@ -298,7 +298,7 @@ class Fake(stream.Source):
 
     def __init__(self, bench, drop=(), lose=()):
         self.steps = bench.steps
-        self.n, self.phase, self.gos = 1, 0, 0
+        self.n, self.phase, self.gos, self.flushes = 1, 0, 0, 0
         self.out = []
         self.drop, self.lose = set(drop), set(lose)
         self.asked = 0
@@ -361,6 +361,47 @@ class Fake(stream.Source):
                                 self.steps[self.n - 1].title))
         return True
 
+    def flush(self):
+        n, self.out = len(self.out), []
+        self.flushes += 1
+        return n
+
+
+JUNK = "print: PARAM: slider-3 0.5"
+
+
+class Noisy(Fake):
+    """A bench with a PERSON in front of it, which is the case that broke.
+
+    ⛔ NOTHING READS THE CONSOLE EXCEPT A WAIT, so everything the instrument
+    says while a verdict is open piles up in the queue. On a hands step that is
+    the person's own doing -- a sweep of nine faders is three lines per CC at
+    about 98 lines a second -- and it was 4141 lines deep after two steps of a
+    real run. Carried into the next step it does two things: the wait burns its
+    line cap on console that was already judged, and every one of those lines
+    lands in the next step's PREDICATE WINDOW.
+
+    ⚠️ THE BACKLOG IS DEEPER THAN TWICE THE CAP ON PURPOSE. Shallower and the
+    GO-recovery path rescues the run by accident -- `where` gets asked and
+    answered from under the pile -- which is luck, not the flush working, and a
+    fixture that passes on luck proves nothing. The real one was 4141 against a
+    cap of 2000 and the recovery drowned in it too.
+    """
+
+    def __init__(self, *a, **kw):
+        self.read_junk = 0
+        Fake.__init__(self, *a, **kw)
+
+    def readline(self, timeout):
+        line = Fake.readline(self, timeout)
+        if line == JUNK:
+            self.read_junk += 1
+        return line
+
+    def _fire(self):
+        Fake._fire(self)
+        self.out.extend([JUNK] * (stream.LINE_CAP * 2 + 500))
+
 
 def _stall():
     """⛔ A STALL IS SILENCE. Slowness is not a fault and must not be reported
@@ -396,9 +437,11 @@ def _stall():
     try:
         src.wait_for(S.RE_FIRED, 0.2)
         A.check("silence IS a stall", False, "it returned instead of raising")
-    except stream.Stalled:
+    except stream.Stalled as e:
         A.check("silence IS a stall -- nothing arriving still ends the wait",
-                True)
+                e.why == "silence",
+                "it stalled for %r, and the two causes read nothing alike to "
+                "whoever has to act on the report" % e.why)
 
     # ⛔ AND THE OTHER END OF IT. A patch that prints forever and never answers
     # would wait all night on silence alone, so the cap is what bounds it -- and
@@ -415,10 +458,10 @@ def _stall():
         src.wait_for(S.RE_FIRED, 0.2)
         A.check("⛔ prints forever and never answers IS a stall", False,
                 "it returned a match out of a stream that contains none")
-    except stream.Stalled:
+    except stream.Stalled as e:
         A.check("⛔ prints forever and never answers IS a stall -- it stopped "
                 "at the line cap and not at the gate's own safety net",
-                src.n <= stream.LINE_CAP + 1 < Chatter.LIMIT,
+                e.why == "cap" and src.n <= stream.LINE_CAP + 1 < Chatter.LIMIT,
                 "it read %d lines against a cap of %d. Nothing bounded the wait "
                 "but the fixture running out, and a real patch does not"
                 % (src.n, stream.LINE_CAP))
@@ -439,8 +482,8 @@ def _recovery(bench):
     saved_runs, saved_ask = records.RUNS, stream.ask_line
     records.RUNS = os.path.join(WORK, "runs")
 
-    def drive(**kw):
-        src = Fake(bench, **kw)
+    def drive(cls=Fake, **kw):
+        src = cls(bench, **kw)
         stream.use(stream.keystrokes(write("fake.keys", _keys(bench))))
         try:
             rows, ok = R.run_bench_driven(bench, "device", False, 1, src)
@@ -486,6 +529,26 @@ def _recovery(bench):
                 "steps recorded: %s" % [r["step"] for r in rows])
         A.check("and it had to ask -- otherwise the check above is vacuous",
                 src.asked > 0, "asked %d time(s)" % src.asked)
+
+        # ⛔ A PERSON'S OWN TRAFFIC MUST NOT COUNT AGAINST THE PATCH. This is
+        # the failure exactly as it happened: two hands-on steps, 4141 lines
+        # queued, and the wait spent its whole line cap on a backlog that was
+        # already judged.
+        src, rows, ok = drive(cls=Noisy)
+        A.check("⛔ a backlog from the previous step does not stall the next one",
+                len(rows) == len(bench.steps) and ok,
+                "%d rows of %d, ok=%s -- %d line(s) still queued. The wait is "
+                "chewing through console that was already judged, and every "
+                "line of it lands in the next step's predicate window too"
+                % (len(rows), len(bench.steps), ok, src.pending()))
+        # ⛔ AND NOT ONE LINE OF IT WAS READ. Completing is the weaker half:
+        # the runner could grind through the whole backlog and still finish,
+        # having put every stale line in a predicate window on the way. Zero is
+        # the claim that matters, and it is what the flush buys.
+        A.check("⛔ and not one line of the previous step's console was read "
+                "into this step", src.read_junk == 0,
+                "%d stale line(s) reached the step loop, and a predicate window "
+                "is built out of exactly those" % src.read_junk)
 
         # ⛔ A BENCH THAT WILL NOT ANSWER IS STILL A STALL. Recovery must not
         # turn a dead patch into a green run, which is the failure mode of every

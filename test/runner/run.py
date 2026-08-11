@@ -60,6 +60,18 @@ STEP_TIMEOUT = 5.0
 # is short on purpose: the answer is either immediate or it is not coming.
 WHERE_TIMEOUT = 2.0
 
+
+def _why(reason):
+    """⛔ THE TWO STALL CAUSES READ NOTHING ALIKE, and the first real one was
+    reported as the wrong one. `silence` is a console that stopped -- the patch
+    is gone. `cap` is a console still talking that has not answered, which is a
+    wedged bench and NOT a slow person: nothing anyone does at the keyboard is
+    timed, and saying "within 5 s" over a cap made it look as though it were."""
+    if reason == "cap":
+        return ("the patch said %d line(s) without ever answering"
+                % stream.LINE_CAP)
+    return "the console went silent for %g s" % STEP_TIMEOUT
+
 # ⛔ THE FIRED LINE IS NOT THE END OF THE EVIDENCE. bench-gen sends it last so it
 # cannot arrive before the actions it describes, which is true for anything
 # SYNCHRONOUS -- a bus tap sees its message immediately. The OLED does not:
@@ -379,7 +391,13 @@ def _drain(src, window, seconds):
 # ⚠️ SO IT ASKS FIRST. `where` moves nothing and names the step and the phase, so
 # whichever of the two happened is a FACT before anything is re-sent.
 def _ask_where(src):
-    """Where the bench says it is. -> (step, phase), or None if it will not say."""
+    """Where the bench says it is. -> (step, phase), or None if it will not say.
+
+    ⚠️ IT FLUSHES FIRST. Anything queued predates the question, and a stall is
+    exactly when the queue is deepest -- the first real one had 4141 lines in
+    it, which buried the answer as thoroughly as it had buried the marker.
+    """
+    src.flush()
     if not src.where():
         return None
     try:
@@ -403,6 +421,7 @@ def _regain_fired(src, n, window):
         stream.say("  ... the bench never heard that GO -- it is still waiting "
                    "on step %d. Sending it again." % n)
         del window[:]
+        src.flush()
         src.go()
     else:
         stream.say("  ... step %d had already run and its fired line was missed. "
@@ -421,6 +440,7 @@ def _next_step(src, want, prev):
 
     `prev` is the step just judged -- the one the bench is on if the GO was lost.
     """
+    src.flush()
     src.go()
     try:
         return src.wait_for(S.RE_STEP, STEP_TIMEOUT)
@@ -437,6 +457,7 @@ def _next_step(src, want, prev):
     elif at == (prev, 1):
         stream.say("  ... the bench never heard the GO after step %d. Sending "
                    "it again." % prev)
+        src.flush()
         src.go()
     else:
         # ⛔ NOT RECOVERED. The bench is somewhere neither branch explains, and a
@@ -601,12 +622,24 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
                                % (bench.name, target, step.n))
                     break
 
+            # ⛔ FLUSH BEFORE GO, AND THE WINDOW IS THE REASON AS MUCH AS THE
+            # STALL IS. Everything queued now is the console of what came
+            # before -- on a hands step, the person's own sweep during the last
+            # verdict -- and `window` below is what a predicate is judged
+            # against. Carried over it does two things: the wait spends its line
+            # cap on console that was already judged, and a step is judged
+            # partly on the traffic of the step before it, which is the exact
+            # contamination the self-contained-preconditions pass was meant to
+            # have ended. Measured at 4141 lines after two hands-on steps.
+            src.flush()
             src.go()
             window = []
             fired = None
+            fired_why = "silence"
             try:
                 fired = src.wait_for(S.RE_FIRED, STEP_TIMEOUT, collect=window)
-            except stream.Stalled:
+            except stream.Stalled as e:
+                fired_why = e.why
                 # ⛔ ASK BEFORE GIVING UP. A GO that never arrived and a patch
                 # that has died look identical from here, and only one of them
                 # ends the session -- see _regain_fired.
@@ -619,11 +652,10 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
                 # when you press enter, and it is how long the PATCH gets to
                 # answer a GO -- measured at about 50 ms on the device. Nothing
                 # about how long you spend reading a step is timed at all.
-                stream.say("\n  STALLED at step %d -- the patch did not answer "
-                           "GO within %g s of silence, and did not say where it "
-                           "was when asked.\n  (that window opens when you press "
-                           "enter -- your reading time is never timed)\n%s"
-                           % (step.n, STEP_TIMEOUT, src.diagnose()))
+                stream.say("\n  STALLED at step %d -- %s, and it did not say "
+                           "where it was when asked.\n  (nothing you do is "
+                           "timed -- see below)\n%s"
+                           % (step.n, _why(fired_why), src.diagnose()))
                 # ⚠️ THE NOTE IS WHAT SURVIVES INTO latest.json, so it carries the
                 # counts rather than only the symptom. The one bench verdict this
                 # project has ever recorded is a stall whose note read "GO sent,
@@ -791,10 +823,9 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
                 break
             nxt = _next_step(src, i + 1, step.n)
             if nxt is None:
-                stream.say("\n  STALLED after step %d -- nothing described "
-                           "step %d within %g s of silence, and the bench would "
-                           "not say where it was.\n%s"
-                           % (step.n, i + 1, STEP_TIMEOUT, src.diagnose()))
+                stream.say("\n  STALLED after step %d -- nothing described step "
+                           "%d, and the bench would not say where it was.\n%s"
+                           % (step.n, i + 1, src.diagnose()))
                 rec.close()
                 return rec.rows, False
             m, line = nxt

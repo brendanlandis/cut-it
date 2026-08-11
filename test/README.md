@@ -25,7 +25,7 @@ were false.
 
 | Gate | Checks | Answers for |
 |---|---|---|
-| `runner-assert.sh` | 124 | **no page** — it answers for this one |
+| `runner-assert.sh` | 126 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
@@ -45,7 +45,7 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 
-**500 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
+**502 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
 total cannot be derived from a run by summing. Totalling the run gives **436**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
@@ -159,6 +159,17 @@ is worth having.
 | `device` | **Default.** The real rig, over ssh | everything |
 | `mac` | `main-dev.pd` plus the bench here; `u_mother-stub` draws the panel and decodes the OLED | display, nanokontrol, tempo |
 | `paper` | no Pd at all | **`file` predicates only** — the evidence is on disk. Auto-selected for `state`, the one bench that needs nothing on the other end |
+
+### Nothing a person does is timed
+
+⛔ **The only clock in a bench run measures SILENCE FROM THE DEVICE**, and it exists for one case:
+the patch is gone — the instrument crashed, the ssh dropped, the bench never loaded. Then nothing
+ever arrives and without a bound the runner would sit forever, indistinguishable from waiting. On a
+live Organelle the console never goes quiet, because the level reports keep coming, so five seconds
+of real silence does mean it is dead.
+
+⚠️ **Reading, sweeping and deciding are not timed and never have been.** A stall that says otherwise
+is reporting the wrong bound — see the flush above.
 
 ⛔ **A step whose oracle is missing is a SKIP WITH A REASON, never a pass** — whether the reason is
 the target, the absence of a person, or **a predicate that needs a console in paper mode**.

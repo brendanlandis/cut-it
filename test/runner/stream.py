@@ -22,16 +22,29 @@ import time
 TAIL = 6
 
 # ⛔ HOW MANY LINES A PATCH MAY SAY WITHOUT ANSWERING before wait_for gives up.
-# The device console was measured at about 98 lines a second under a hand sweep,
-# so this is roughly twenty seconds of the busiest thing a bench ever does --
-# generous, and still bounded.
+# ⚠️ AND IT COUNTS ONLY WHAT ARRIVED AFTER THE QUESTION WAS ASKED. run.py flushes
+# the queue before every GO, so this is never spent on a backlog somebody's hands
+# built up during a verdict -- which is what it WAS spent on the first time it
+# fired: nine faders swept during one prompt left 4141 lines queued, the wait ate
+# 2000 of them and called a working bench a stall. The bound is real, the thing
+# being bounded was not.
 LINE_CAP = 2000
 
 
 class Stalled(Exception):
-    """No line arrived in time. ⚠️ Two shapes, and they must be told apart --
-    see run.py, where "the bench never loaded" and "stalled mid-run" get
-    different advice because they have different causes."""
+    """Nothing answered. ⚠️ THE REASON IS PART OF IT, because the two causes want
+    opposite responses and reporting them alike sends the next person after the
+    wrong one. `silence` means the console is dead -- the patch is gone. `cap`
+    means it is alive and talking and has not answered, which is a wedged bench
+    or a runner asking the wrong question.
+
+    ⚠️ AND SEPARATELY: "the bench never loaded" and "stalled mid-run" get
+    different advice in run.py, because those have different causes too.
+    """
+
+    def __init__(self, why="silence"):
+        Exception.__init__(self, why)
+        self.why = why
 
 
 class Source(object):
@@ -143,6 +156,25 @@ class Source(object):
         """Ask the bench to describe its current step again. -> did it happen?"""
         return False
 
+    def flush(self):
+        """Throw away everything already queued. -> how many lines went.
+
+        ⛔ EVERYTHING IN THE QUEUE BELONGS TO WHAT CAME BEFORE, and on a hands
+        step that is a person's own traffic: a sweep of nine faders is three
+        console lines per CC and the device console runs at about 98 lines a
+        second. It piles up while a verdict is open, because nothing reads the
+        console except a wait. Carried into the next step it does two things,
+        both bad -- the wait after GO has to chew through thousands of stale
+        lines before it reaches the answer, and every one of them lands in the
+        PREDICATE WINDOW, so a step is judged partly on the traffic of the step
+        before it. Measured: 4141 lines queued after two hands-on steps.
+
+        ⚠️ A RECORDING HAS NOTHING TO DISCARD and must never try. Its queue IS
+        the rest of the run, so flushing one would swallow every step that has
+        not been described yet -- the same trap _drain guards against.
+        """
+        return 0
+
     def close(self, quiet=False):
         """⚠️ `quiet` is honoured by targets.Process -- see there."""
 
@@ -178,7 +210,7 @@ class Source(object):
         while True:
             line = self.readline(timeout)
             if line is None:
-                raise Stalled()
+                raise Stalled("silence")
             if collect is not None:
                 collect.append(line)
             m = pattern.search(line)
@@ -186,7 +218,7 @@ class Source(object):
                 return m, line
             seen += 1
             if seen >= LINE_CAP:
-                raise Stalled()
+                raise Stalled("cap")
 
 
 class Replay(Source):

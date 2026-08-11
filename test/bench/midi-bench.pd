@@ -108,7 +108,7 @@
 #X obj 20 3640 select 7;
 #X obj 240 3640 t b b b;
 #X msg 700 3640 === STEP-07-of-18 === A release is not a press;
-#X msg 700 3690 PASS IF: Both rows update on the press and neither updates again on the release. Two updates per hit is the failure.;
+#X msg 700 3690 PASS IF: The sp-pad and sp-bank rows update on the press and neither updates again on the release. Exactly one sp-pad row per hit -- two is the failure.;
 #X msg 700 3740 >>> press GO to run step 7 of 18;
 #X obj 240 3810 s \$0-say;
 #X obj 20 3900 select 8;

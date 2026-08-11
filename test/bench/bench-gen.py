@@ -111,6 +111,7 @@ def check(steps, name):
     2026-08-10 copy-edit removed every one, so it is an assertion now and the
     fix is always the same -- do not end a sentence on a bare number. item 122."""
     lint_selfcontained(steps, name)
+    lint_modal(steps, name)
     for i, step in enumerate(steps, 1):
         title, passif, actions, meta = S.norm(step)
         lint_meta(meta, actions, "%s step %d" % (name, i))
@@ -403,6 +404,57 @@ def lint_selfcontained(steps, name):
             "put on screen has aged out by the time anyone presses ENTER, so "
             "this passes against a blank screen. Send it here too."
             % (name, i, " and ".join(leans)))
+
+
+def lint_modal(steps, name):
+    """⛔ A MODAL COVERS THE WHOLE SURFACE AND OUTLIVES THE STEP THAT RAISED IT.
+
+    `grid modal N` paints every pad, ring button and mode lamp one colour, and
+    the only things that take it down are an explicit `grid modal-off` and a
+    thirty-second safety timeout. So a step that raises one and does not clear
+    it has decided what the NEXT step is judged against -- and the next step's
+    prose knows nothing about it.
+
+    ⚠️ IN ORDER THIS IS INVISIBLE, WHICH IS WHY IT SURVIVED. launchpad 13 is the
+    timeout itself and its `do` says to watch the grid for thirty seconds, so a
+    person walking the bench in order sits the modal out and never sees the
+    problem. `--from` does not sit anything out: _walk_to fires every earlier
+    step as fast as the console answers, so a resumed run arrives at 14 with the
+    surface still green. Reported from the rig as "stuck in all-green" and then
+    "changed to the passing state as I typed this" -- the timeout expiring
+    mid-verdict (2026-08-11).
+
+    ⛔ RE-RAISING COUNTS AS HANDLING IT. launchpad 7 to 9 each send `grid modal`
+    again because the modal staying up IS their subject -- that is a step
+    setting up its own preconditions, which is exactly what this asks for.
+
+    ⛔ AND A NEXT STEP THAT SENDS NOTHING IS EXEMPT, which this lint learned on
+    its first run by flagging a step that is right. `display` 18 is *Modal
+    safety timeout -- the wait*: no actions at all, and what it judges is the
+    modal from 17 clearing itself. A step that puts nothing on the surface is
+    judging the picture it inherited, so the modal is not in its way -- it is
+    its subject. Same exemption, and the same wording, as lint_selfcontained.
+    ⚠️ IT IS DELIBERATELY NOT CLEVERER THAN THAT. Reading the prose to decide
+    whether a step "means" to sit under a modal would be a guess at English, and
+    this file does not make those.
+    """
+    for i, step in enumerate(steps, 1):
+        sends = _sends(S.norm(step)[2])
+        if not any(s.startswith("modal") and s != "modal-off" for s in sends):
+            continue
+        if "modal-off" in sends or i == len(steps):
+            continue
+        nxt_actions = S.norm(steps[i])[2]
+        if not nxt_actions:
+            continue                     # it is judging what it inherited
+        nxt = _sends(nxt_actions)
+        assert any(s.startswith("modal") for s in nxt), (
+            "%s step %d raises a modal and never clears it, and step %d does "
+            "not clear or re-raise one either. The whole surface stays that "
+            "colour for thirty seconds -- run in order a person waits the "
+            "timeout out, but a --from walk fires these back to back and step "
+            "%d is judged through it. Send `grid modal-off` from step %d."
+            % (name, i, i + 1, i + 1, i + 1))
 
 
 RESUME_RE = re.compile(r"--from\s+(\d+)")

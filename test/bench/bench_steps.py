@@ -413,7 +413,17 @@ STEPS_LAUNCHPAD = [
   {'do': 'Watch the grid for thirty seconds without touching anything.'}),
  ('Start the transport',
   'PASS IF: The white pad walks along the bottom row twice a second and the aux LED goes green. A BEATS line prints about ten seconds from now.',
-  [('bang', 'start'), ('bang', '\\$0-zero')],
+  [('grid modal-off', 'disp'), ('bang', 'start'), ('bang', '\\$0-zero')],
+  # ⛔ THE modal-off IS THIS STEP'S OWN PRECONDITION AND IT IS NOT DECORATION.
+  # Step 13 paints the whole surface GREEN and is cleared only by its own
+  # thirty-second safety timeout -- that IS what step 13 tests. Run in order a
+  # person sits out that timeout, because 13's `do` tells them to. A `--from`
+  # walk does not: it fires every earlier step as fast as the console answers,
+  # so 13 goes up and 14 arrives seconds later with the beat row buried under
+  # it. Every step sets up its own preconditions and a modal is one.
+  # ⚠️ FOUND ON HARDWARE, on `--from 16`: the grid was "stuck in all-green" and
+  # then "changed to the passing state as I typed this" -- the timeout expiring
+  # mid-verdict, read as a fault in a bench that was working (2026-08-11).
   # The eyes still judge the walking pad and the aux LED. What the machine can
   # judge is the number underneath them, which is the same evidence and is not
   # subject to anyone counting flashes.
@@ -702,13 +712,15 @@ STEPS_MIDI = [
    'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-pad 1', 'sp-bank 2']}}),
 
  ('A release is not a press',
-  'PASS IF: Both rows update on the press and neither updates again on the release. Two updates per hit is the failure.',
+  'PASS IF: The sp-pad and sp-bank rows update on the press and neither updates again on the release. Exactly one sp-pad row per hit -- two is the failure.',
   [],
   # ⛔ EXACTLY ONE sp-pad ROW FOR ONE HIT. Two means the velocity test on the
   # disp side has gone and every pad is reporting itself twice -- which on a
   # screen that redraws looks like nothing at all.
+  # ⚠️ AND IT CARRIED A `watch` THAT SAID THE PASS IF AGAIN IN OTHER WORDS.
+  # A second copy of a sentence is a second copy free to drift, and this one
+  # was displayed INSTEAD of the sentence the verdict is recorded against.
   {'do': 'Press and hold any pad then let go.',
-   'watch': 'The sp-pad and sp-bank rows update once on the press and not again when you let go -- exactly one sp-pad row per hit.',
    'check': {'kind': 'bus-count', 'bus': 'DISP', 'match': 'sp-pad', 'n': 1}}),
 
  ('Fader 1 in mode 1',

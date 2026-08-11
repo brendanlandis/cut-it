@@ -111,34 +111,6 @@ landed 2026-08-10: every detectable device has a presence model, one bounded re-
 and the bound is now asserted by **reaching** it rather than by arithmetic. The facts are on
 [ref/module/presence.md](ref/module/presence.md) and the reasoning is in `git log`.
 
-### ⬜ Six benches have no verdicts yet, and hot-swap is missing a case on two devices
-
-⛔ **Owned by [plan-v03.4.0.1.1.md](plan-v03.4.0.1.1.md).** Indexed here only so the pointers
-from `ref/` pages resolve while that plan exists.
-
-✅ **A bench has been run end to end through the runner** — `nanokontrol` as it then stood, on the
-device, 2026-08-10, with verdicts in `test/results/latest.json`. Those are the first bench verdicts
-this project has ever recorded, and they close the claim that `./test/run.sh --all` cannot be run by
-the person it was built for. ⚠️ **They no longer apply**: fourteen of those twenty steps were OLED
-claims that had been copied into the wrong bench and have since moved to `display`, so the freshness
-check reports them as reworded and they are to be re-run there.
-
-✅ **Six of the eight hot-swap steps were verified on the rig on 2026-08-10**, by hand over `ssh`
-rather than through the runner — the nanoKONTROL and SP-404 in both directions with the decode
-confirmed under a finger, and the Volca's transition case with its link back in 22 s. The facts are
-on [ref/module/presence.md](ref/module/presence.md) as items 281–288.
-
-**What is left:**
-
-- **The other six benches** — `display`, `tempo`, `launchpad`, `phone`, `state` and `midi` — have
-  no recorded verdict for any step. `launchpad` holds one `interrupted` from a step-1 stall on
-  2026-08-10, before the runner's stdin defect was found.
-✅ **Hot-swap's third case is now covered on every device that can have it** — `nanokontrol` 20,
-`launchpad` 23 and `midi` 16, matching the Volca's `midi` 17. It read as covered for a long time
-because the two either side of it look like the whole story: one proves a loss is SEEN and the other
-proves a recovery HAPPENS, and neither proves the device under your hands comes back. Only the
-Volca had it, and only because a `none` device cannot be recovered any other way (item 275).
-
 ### ⬜ `u_map` accepts a `mode` it cannot use, and one bad atom kills every knob
 
 Found on the rig on 2026-08-11, and it had been live for an unknown number of sessions. The saved

@@ -338,12 +338,10 @@ more. The diagnostic screen that reads all of this is
 second run — and the eight bench steps exist, two per device, across the three benches named at the
 top of this page. Both were plan-v0.3.4's, and that plan is gone.
 
-⬜ **Not one of the eight bench steps has been RUN as written.** See
-  [plan-v04.md](../../plan-v04.md) §3. ✅ **The SP-404's own transition run is no longer among them** —
-  the device's error log had it all along, item 281 above. What is left is the **Volca**, and ⛔ **it
-  cannot be tested alone**: it registers `none`, so pulling its interface loses nothing, forks
-  nothing and recovers nothing, and its step has to unplug a detectable device beside it. The shared
-  machinery underneath all of it is verified.
+✅ **Every hot-swap bench step has now been run as written** — all eight, through the runner, on
+  2026-08-11, with verdicts in `test/results/latest.json`. ⛔ **The Volca still cannot be tested
+  alone**: it registers `none`, so pulling its interface loses nothing, forks nothing and recovers
+  nothing, and both its steps unplug the interface and lean on a detectable device beside it.
 
 ⬜ **A passive layer's last-heard is published and nothing reads it.** See
   [plan-v04.md](../../plan-v04.md) §3 and [plan-v03.5.md](../../plan-v03.5.md), which is the

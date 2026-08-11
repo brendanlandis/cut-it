@@ -250,11 +250,25 @@ not an echo.
 ⛔ **And it refuses a predicate that disagrees with its own prose.** A step has two oracles now, a
 person reading the PASS IF and a program reading the bus, and nothing else stops them drifting apart.
 
-⚠️ **`wait` is what makes the three hot-swap unplug steps work at all.** The runner drains for
-`wait` seconds *after* GO, and a `device-lost` warn is three missed polls behind the cable coming
-out — up to 8 s. The default is 0.4 s, so those three carry `'wait': 12` and their `do` text says to
-press enter **as soon as the cable is out**: a person who unplugs, counts to ten and then presses
-enter would get an AUTO FAIL out of entirely correct hardware.
+⛔ **A PREDICATE WHOSE TRAFFIC A PERSON MAKES NEEDS BOTH HALVES: `press enter first` AND a `wait`.**
+The runner drains for `wait` seconds *after* GO and the default is `SETTLE`, **0.4 s** — so the
+window is shut before a hand has crossed the desk, however correctly the instruction is worded.
+⚠️ **The two halves were fixed a session apart and the first one alone fixed nothing.** `midi` 4, 6
+and 7 got `press enter first` and still reported AUTO FAIL against a working SP-404 on the next run:
+their windows held seven level-meter rows, four rows, and nothing at all. They carry `wait: 10` now.
+
+⚠️ **Then there is what the instrument is slow to say.** A `device-lost` warn is three missed polls
+behind the cable coming out — up to 8 s — so the two unplug steps carry `wait: 12` and `wait: 20`,
+and their `do` says to press enter **as soon as the cable is out**. A person who unplugs, counts to
+ten and then presses enter gets an AUTO FAIL out of entirely correct hardware.
+
+⛔ **And the same lateness defeats the EYES, which no `wait` can fix.** `midi` 14 asked a person to
+pull a cable and judge an alert that fires ~8 s later and clears itself ~2 s after that — while
+their hands and eyes were on the cable. Reported from the rig as *"no alert on the OLED"* with
+`332000 warn m_404 device-lost` in the device's own log at that moment. ⚠️ **The step AFTER it saw
+the warn off the same physical action**, because it has you counting to fifteen with the cable out;
+that comparison is what named the cause. **A step judging something late and brief has to say where
+to look and when.**
 
 ⛔ **Four of the eight hot-swap steps cannot judge themselves and must not pretend to.** The Volca's
 two are **by ear** — it transmits nothing, so there is no readback of any kind — and the two

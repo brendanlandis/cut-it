@@ -493,11 +493,11 @@ def _recovery(bench):
     saved_runs, saved_ask = records.RUNS, stream.ask_line
     records.RUNS = os.path.join(WORK, "runs")
 
-    def drive(cls=Fake, **kw):
+    def drive(cls=Fake, start=1, **kw):
         src = cls(bench, **kw)
         stream.use(stream.keystrokes(write("fake.keys", _keys(bench))))
         try:
-            rows, ok = R.run_bench_driven(bench, "device", False, 1, src)
+            rows, ok = R.run_bench_driven(bench, "device", False, start, src)
         finally:
             stream.use(saved_ask)
         return src, rows, ok
@@ -560,6 +560,24 @@ def _recovery(bench):
                 "into this step", src.read_junk == 0,
                 "%d stale line(s) reached the step loop, and a predicate window "
                 "is built out of exactly those" % src.read_junk)
+
+        # ⛔ AND THE SAME BACKLOG AGAINST --from, WHICH IS A SECOND LOOP. The
+        # flush above landed in the step loop only, so the walk that `--from`
+        # does kept everything the steps it fires print and each wait spent its
+        # cap on the backlog of the ones before it. ⚠️ IT PRESENTED AS AN
+        # UNCAUGHT Stalled -- a traceback, no verdict, no resume line -- and it
+        # looked intermittent, because whether 2000 lines had accumulated by any
+        # given step is a race. Measured on the device: `--from 11` died walking
+        # past step 7 where `--from 10` had survived the same walk.
+        src, rows, ok = drive(cls=Noisy, start=len(bench.steps))
+        A.check("⛔ a --from walk survives a backlog the same way the step loop "
+                "does", len(rows) == 1 and ok,
+                "%d row(s), ok=%s -- the walk is chewing through console the "
+                "steps it walked past printed, and blows the line cap"
+                % (len(rows), ok))
+        A.check("⛔ and the walk read none of it either",
+                src.read_junk == 0,
+                "%d stale line(s) reached the walk" % src.read_junk)
 
         # ⛔ A BENCH THAT WILL NOT ANSWER IS STILL A STALL. Recovery must not
         # turn a dead patch into a green run, which is the failure mode of every

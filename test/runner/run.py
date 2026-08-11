@@ -563,6 +563,49 @@ def _next_step(src, want, prev):
         return None
 
 
+def _walk_to(src, m, line, want, why):
+    """Walk the PATCH forward to step `want` without judging. -> (m, line) or None.
+
+    ⚠️ `line` IS CARRIED IN AND BACK OUT UNTOUCHED WHEN THERE IS NOTHING TO
+    WALK, which is the ordinary `--from 1` case. It belongs to the marker the
+    caller already read, and returning None for it instead puts a None into
+    check_marker's desync message -- caught by runner-assert, which is the only
+    thing that ever reaches that branch.
+
+    ⛔ IT FLUSHES BEFORE EVERY GO, exactly as the step loop does and for exactly
+    the same reason -- and it did not, because that fix reached the step loop
+    only. The two walk loops this replaces kept everything the steps they fire
+    print, so each `wait_for` spent its LINE_CAP chewing through the backlog of
+    the steps before it. On the device that is ~110 lines a second against a
+    2000-line cap, so a walk long enough to accumulate 2000 lines dies -- and
+    it died as an UNCAUGHT Stalled, a traceback with no verdict, no diagnosis
+    and no resume line. Measured: `--from 11` blew up walking past step 7,
+    while `--from 10` had survived the same walk minutes earlier. ⚠️ THE RACE
+    IS WHY IT LOOKED INTERMITTENT.
+
+    ⚠️ A STALL HERE IS NOT A STEP FAILING. Nothing has been judged, so there is
+    nothing to record -- it is reported and the run gives up, which is the same
+    shape as a bench that never loaded.
+    """
+    while int(m.group(1)) < want:
+        stream.say("  ... walking past step %s unjudged (--from %d)"
+                   % (m.group(1), want))
+        try:
+            src.flush()
+            src.go()
+            src.wait_for(S.RE_FIRED, STEP_TIMEOUT)
+            src.flush()
+            src.go()
+            m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
+        except stream.Stalled as e:
+            stream.say(
+                "\n  STALLED walking to step %d -- %s.\n"
+                "  Nothing was judged so nothing is recorded. %s\n%s"
+                % (want, _why(e.why), why, src.diagnose()))
+            return None
+    return m, line
+
+
 def check_marker(m, line, expect, bench):
     """⛔ THE PATCH'S OWN STEP NUMBER AND TITLE, BOTH, AGAINST THE TABLE.
 
@@ -641,13 +684,12 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
         # resumed run that quietly filled them in would turn "I checked the
         # second half" into a claim about the whole bench.
         i = max(0, (start or 1) - 1)
-        while int(m.group(1)) < i + 1:
-            stream.say("  ... walking past step %s unjudged (--from %d)"
-                       % (m.group(1), i + 1))
-            src.go()
-            src.wait_for(S.RE_FIRED, STEP_TIMEOUT)
-            src.go()
-            m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
+        walked = _walk_to(src, m, line, i + 1,
+                          "Try again -- or run the bench from step 1.")
+        if walked is None:
+            rec.close()
+            return [], False
+        m, line = walked
 
         while True:
             step = bench.steps[i]
@@ -668,11 +710,13 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
                 m, line = src.wait_for(S.RE_STEP, LOAD_TIMEOUT)
                 if src.boot_settle:
                     _drain(src, [], src.boot_settle)
-                while int(m.group(1)) < step.n:
-                    src.go()
-                    src.wait_for(S.RE_FIRED, STEP_TIMEOUT)
-                    src.go()
-                    m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
+                walked = _walk_to(src, m, line, step.n,
+                                  "The patch was reloaded and the walk back to "
+                                  "this step did not finish.")
+                if walked is None:
+                    rec.close()
+                    return rec.rows, False
+                m, line = walked
                 stream.say("  ... reloaded and back at step %d" % step.n)
 
             check_marker(m, line, step, bench)

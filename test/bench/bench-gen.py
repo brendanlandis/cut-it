@@ -110,6 +110,7 @@ def check(steps, name):
     step text was hardware-transcribed prose that carried eleven of them; the
     2026-08-10 copy-edit removed every one, so it is an assertion now and the
     fix is always the same -- do not end a sentence on a bare number. item 122."""
+    lint_selfcontained(steps, name)
     for i, step in enumerate(steps, 1):
         title, passif, actions, meta = S.norm(step)
         lint_meta(meta, actions, "%s step %d" % (name, i))
@@ -310,6 +311,55 @@ def lint_caps(title, passif, meta, where):
                 "printed on a screen or moulded on a device -- add it to "
                 "CAPS_OK if it is one of those, otherwise write it as a "
                 "sentence: %s" % (where, label, word, text))
+
+
+# ⛔ EVERY STEP SETS UP ITS OWN PRECONDITIONS. Nothing on the OLED survives the
+# time it takes to read the next step -- a parameter row ages out in ~1.3 s and a
+# modal in 30 s -- so a step that judges state the step BEFORE it established is
+# judging an empty screen, and passes. `Clearing the modal` sent nothing but
+# modal-off: by the time anyone pressed ENTER the modal had cleared itself, so
+# modal-off cleared nothing and the step could not fail however broken it was.
+# ⚠️ NAMES ONLY, AND ONLY WHERE THE STEP SENDS SOMETHING. A hands step names what
+# YOU are about to move; `warn` and `fail` are what the patch emits, not what the
+# bench sends; and "do not fail the step for it" is English.
+NOT_A_NAME = {"modal", "grid", "bang", "compose", "perform", "stop", "start",
+              "panic", "led", "status", "warn", "fail", "info"}
+
+
+def _sends(actions):
+    """The names a step puts on a bus itself."""
+    out = set()
+    for msg, _bus in actions:
+        tok = msg.split()
+        if not tok:
+            continue
+        out.add(tok[0])
+        if tok[0] in ("modal", "grid") and len(tok) > 1:
+            out.add(tok[1])
+    return out
+
+
+def lint_selfcontained(steps, name):
+    """⛔ A STEP THAT LEANS ON THE ONE BEFORE IT CANNOT FAIL.
+
+    Checked per bench, because the vocabulary is the bench's own: anything any
+    of its steps sends is a name a later step could be leaning on.
+    """
+    vocab = set()
+    for step in steps:
+        vocab |= _sends(S.norm(step)[2])
+    vocab -= NOT_A_NAME
+    for i, step in enumerate(steps, 1):
+        _t, passif, actions, _m = S.norm(step)
+        if not actions:
+            continue                     # a person supplies it -- see above
+        words = {w.strip(".,:%()") for w in passif.split()}
+        leans = sorted((vocab & words) - _sends(actions))
+        assert not leans, (
+            "%s step %d judges %s but never sends it. Whatever the step before "
+            "put on screen has aged out by the time anyone presses ENTER, so "
+            "this passes against a blank screen. Send it here too."
+            % (name, i, " and ".join(leans)))
 
 
 RESUME_RE = re.compile(r"--from\s+(\d+)")

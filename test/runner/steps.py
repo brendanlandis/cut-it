@@ -130,29 +130,18 @@ class Step(object):
     def watch(self):
         """What to look for: the PASS IF with its prefix stripped, always.
 
-        ⛔ meta's `watch` NO LONGER REPLACES THIS, and that was the whole reason
-        the prompt needed a [?] key. A step could put anything it liked on the
-        line labelled PASS IF, so the label was a promise the runner did not
-        keep on two steps out of a hundred -- and the only way to see what a
-        verdict was actually being recorded against was to ask for it. The
-        override is ADDITIVE now (`Step.also`), so the labelled line is the real
-        pass_if on every step and there is nothing left for [?] to print.
+        ⛔ meta HAD A `watch` THAT REPLACED THIS, and it is gone. A step could
+        put anything it liked on the line labelled PASS IF, so the label was a
+        promise the runner did not keep -- which is the only reason the prompt
+        ever needed a [?] key to show the real one. The last two overrides were
+        removed on 2026-08-11: midi 7's restated its PASS IF in other words, and
+        launchpad 14's explained the Mac dev panel to a person standing at the
+        rig. The count a predicate wants is printed by the predicate itself, on
+        the line above the verdict prompt, from the only source that cannot
+        drift from it.
         """
         p = self.pass_if
         return p[len("PASS IF:"):].strip() if p.startswith("PASS IF:") else p
-
-    @property
-    def also(self):
-        """What the PASS IF cannot say, and only launchpad 14 has any.
-
-        ⚠️ A PREDICATE'S NUMBER LIVES HERE. That step's prose promises a BEATS
-        line "about ten seconds from now" without naming a count, while its
-        predicate wants 19 to 22 -- so the person reading the terminal is told
-        what the machine beside them is about to assert. bench-gen reads this
-        field as part of the step's prose when it checks the two agree, which is
-        why the number may be written here and nowhere else.
-        """
-        return self.meta.get("watch")
 
     @property
     def measure(self):

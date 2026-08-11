@@ -108,7 +108,7 @@
 #X obj 20 3640 select 7;
 #X obj 240 3640 t b b b;
 #X msg 700 3640 === STEP-07-of-18 === A release is not a press;
-#X msg 700 3690 PASS IF: The sp-pad and sp-bank rows update on the press and neither updates again on the release. Exactly one sp-pad row per hit -- two is the failure.;
+#X msg 700 3690 PASS IF: The sp-pad and sp-bank rows update on the press and neither updates again on the release. Exactly one sp-pad row per hit -- two is the failure. A third row named for the pad itself -- sp-b3 for bank b pad 3 -- carries the velocity and does change on the release. That row is correct and belongs to u_map.;
 #X msg 700 3740 >>> press GO to run step 7 of 18;
 #X obj 240 3810 s \$0-say;
 #X obj 20 3900 select 8;
@@ -138,13 +138,13 @@
 #X obj 20 4940 select 12;
 #X obj 240 4940 t b b b;
 #X msg 700 4940 === STEP-12-of-18 === Transport from the aux button;
-#X msg 700 4990 PASS IF: The aux LED changes state on each press and the footer agrees.;
+#X msg 700 4990 PASS IF: The aux LED goes green on the first press and dark blue on the second.;
 #X msg 700 5040 >>> press GO to run step 12 of 18;
 #X obj 240 5110 s \$0-say;
 #X obj 20 5200 select 13;
 #X obj 240 5200 t b b b;
 #X msg 700 5200 === STEP-13-of-18 === Panic is unbound;
-#X msg 700 5250 PASS IF: Nothing on the rig can raise panic and nothing is meant to.;
+#X msg 700 5250 PASS IF: The aux LED never turns red however many controls you press.;
 #X msg 700 5300 >>> press GO to run step 13 of 18;
 #X obj 240 5370 s \$0-say;
 #X obj 20 5460 select 14;

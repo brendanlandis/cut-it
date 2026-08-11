@@ -734,6 +734,80 @@ def _interrupt_before_fire(bench):
         stream.use(saved_ask)
 
 
+def _mirror():
+    """⛔ A PREDICATE NEEDING THE OSC MIRROR IS SKIPPED. THE STEP IS NOT.
+
+    Only --target mac repoints u_net at a socket the runner binds. On the device
+    the datagrams go to the phone, so the window carries no OSC line and every
+    `has` finds nothing -- an AUTO FAIL on a rig that is working perfectly.
+
+    ⛔ AND THE STEP STILL GETS A VERDICT, which is the half that was wrong for
+    longer. phone 2 and 8 carried `targets: ('mac',)` to dodge this, and that
+    skips the whole STEP: two steps of the one bench whose subject is a screen in
+    your hand, never judged by anybody on the rig, while the comment beside them
+    said "the device run keeps its human verdict". A person watching the phone
+    answers both perfectly well.
+
+    ⚠️ THE PHONE BENCH IS DRIVEN HERE AND NOWHERE ELSE IN THIS FILE, because
+    `midi` -- the table every other fixture recites -- has no osc predicate at
+    all and never could prove this.
+    """
+    print("\n--- a predicate that needs the OSC mirror ---")
+    import records
+    import predicates as P
+    import run as R
+
+    # The kind question first, because the runner's behaviour rests on it.
+    A.check("needs_mirror: an osc predicate needs the mirror",
+            P.needs_mirror({"kind": "osc", "addr": "/x"})[0])
+    A.check("needs_mirror: a bus predicate does not",
+            not P.needs_mirror({"kind": "bus", "bus": "DISP", "has": ["x"]})[0])
+    A.check("⛔ needs_mirror: an `all` needs it if ANY leaf does -- phone 8 is "
+            "two osc halves and evaluating either against an empty window is a "
+            "false failure",
+            P.needs_mirror({"kind": "all", "of": [
+                {"kind": "bus", "bus": "DISP", "has": ["x"]},
+                {"kind": "osc", "addr": "/y"}]})[0])
+
+    bench = S.load("phone")
+    mirrored = [s.n for s in bench.steps
+                if s.meta.get("check") and P.needs_mirror(s.meta["check"])[0]]
+    A.check("the phone bench still has steps whose predicate needs the mirror -- "
+            "without one this fixture proves nothing",
+            len(mirrored) > 0, "found %s" % mirrored)
+
+    saved_runs, saved_ask = records.RUNS, stream.ask_line
+    records.RUNS = os.path.join(WORK, "runs")
+    try:
+        src = Fake(bench)
+        stream.use(stream.keystrokes(write("mirror.keys", _keys(bench))))
+        try:
+            rows, ok = R.run_bench_driven(bench, "device", False, 1, src)
+        finally:
+            stream.use(saved_ask)
+
+        by_step = {r["step"]: r for r in rows}
+        A.check("⛔ every mirrored step is still JUDGED on the device -- the "
+                "predicate is what is unavailable there and not the step",
+                all(n in by_step and by_step[n]["verdict"] == "pass"
+                    for n in mirrored),
+                "; ".join("step %d: %s" % (n, by_step.get(n, {}).get("verdict",
+                                                                    "no row"))
+                          for n in mirrored))
+        A.check("⛔ and none of them reports AUTO FAIL out of a window with no "
+                "OSC in it",
+                all(by_step[n].get("got") is None for n in mirrored
+                    if n in by_step),
+                "; ".join("step %d got %r" % (n, by_step[n].get("got"))
+                          for n in mirrored if n in by_step))
+        A.check("mirror: the run finishes rather than skipping its way to the end",
+                len(rows) == len(bench.steps) and ok,
+                "%d rows of %d, ok=%s" % (len(rows), len(bench.steps), ok))
+    finally:
+        records.RUNS = saved_runs
+        stream.use(saved_ask)
+
+
 def _boxes(src):
     """Every box in a .pd, in file order -- which is what #X connect indexes.
 
@@ -931,6 +1005,7 @@ def main():
     _stall()
     _recovery(bench)
     _interrupt_before_fire(bench)
+    _mirror()
 
     # ⛔ THE CHILD MUST NEVER INHERIT stdin, AND NO REPLAY FIXTURE CAN SEE THIS.
     # Every check in this file drives stream.Replay, which launches nothing --

@@ -31,6 +31,23 @@ KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled",
 # be the second list, and the one that rots is always the copy.
 OFFLINE_KINDS = ("file",)
 
+# ⛔ AND WHICH KINDS NEED THE OSC MIRROR, WHICH ONLY THE MAC TARGET HAS. `u_net`
+# sends to the phone; on the Mac it is repointed at 127.0.0.1 and the runner
+# binds that port, so a datagram is readable there and nowhere else. On the
+# device there is no socket to read and the window carries no `OSC:` line at all.
+#
+# ⚠️ TWO PHONE STEPS CARRIED `targets: ('mac',)` FOR THIS and it was the wrong
+# lever: it skipped the whole STEP, so phone 2 and 8 were never judged on the rig
+# by anybody -- and the comment beside them said the opposite, that "the device
+# run keeps its human verdict". A person watching the phone is a perfectly good
+# oracle for both. What is unavailable on the device is the PREDICATE, so that is
+# what gets skipped, exactly as paper mode skips a predicate needing a console.
+#
+# ⛔ DERIVED FROM THE KIND, NEVER LISTED PER STEP. The alternative was a
+# `check_targets` key beside `targets`, which is a second thing to remember and
+# goes stale the first time a step gains an osc predicate.
+MIRROR_KINDS = ("osc", "osc-rate")
+
 # ⛔ THE BUS KINDS READ WHAT lib_assert's PARSER ALREADY MATCHES. bench-tap.pd
 # emits lib_drive.TAP_LABELS, which is the same map every headless gate's driver
 # taps with, so there is one parser for both. Two would be how a fix reaches one
@@ -402,6 +419,23 @@ def offline(spec):
         # step still looking checked.
         return True, []
     return (kind in OFFLINE_KINDS), ([] if kind in OFFLINE_KINDS else [kind])
+
+
+def needs_mirror(spec):
+    """Does this predicate need the OSC mirror? -> (needs, [kinds that do]).
+
+    ⚠️ SAME SHAPE AS offline() AND ASKED THE SAME WAY -- before evaluate, never
+    instead of a verdict. An `all` needs the mirror if ANY leaf does: phone 8 is
+    an `osc` heartbeat beside an `osc` filter check, and evaluating either half
+    against a window with no OSC in it reports AUTO FAIL on a working rig.
+    """
+    kind = spec.get("kind")
+    if kind == "all":
+        bad = []
+        for part in spec.get("of", []):
+            bad.extend(needs_mirror(part)[1])
+        return bool(bad), list(dict.fromkeys(bad))
+    return (kind in MIRROR_KINDS), ([kind] if kind in MIRROR_KINDS else [])
 
 
 def evaluate(spec, window, ctx=None):

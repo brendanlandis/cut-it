@@ -224,12 +224,6 @@ def describe(bench, step):
     # else. The colon is the step text's own; only a comma or a semicolon is
     # barred, and that is inside a message box rather than in this label.
     print(_field("PASS IF:", step.watch))
-    # ⛔ UNDER IT AND NEVER INSTEAD OF IT. This is what a step knows that its
-    # PASS IF cannot say -- the count a predicate is about to assert -- and it
-    # used to be printed AS the PASS IF, which made that label a lie on two
-    # steps and is why the prompt had to offer a key for reading the real one.
-    if step.also:
-        print(_field("ALSO:   ", step.also))
 
 
 def ask(step):
@@ -913,6 +907,24 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
             # person typed anyway was left in the buffer and swallowed by the
             # NEXT step's read prompt -- firing that step without them.
             spec = step.meta.get("check")
+            # ⛔ A PREDICATE THAT NEEDS THE OSC MIRROR CANNOT BE READ HERE, and
+            # asking it anyway is a false failure -- the same rule paper mode
+            # applies to a predicate that needs a console. Only the Mac target
+            # repoints u_net at a socket the runner binds; on the device the
+            # datagrams go to the phone and the window carries no OSC line, so
+            # every `has` finds nothing on a rig that is working perfectly.
+            # ⚠️ THE STEP IS STILL JUDGED, BY THE PERSON WATCHING THE PHONE.
+            # phone 2 and 8 used to carry `targets: ('mac',)` for this and were
+            # therefore skipped WHOLE on the rig -- two steps nobody ever
+            # answered, in the one bench whose subject is a screen in your hand.
+            if spec and target != "mac":
+                needs, kinds = predicates.needs_mirror(spec)
+                if needs:
+                    stream.say(
+                        "  ... %s reads the OSC mirror and only --target mac has "
+                        "one -- your eyes on the phone are the oracle here"
+                        % " and ".join("`%s`" % k for k in kinds))
+                    spec = None
             auto = None
             if spec:
                 ok, want, got, rows = predicates.report(spec, window)

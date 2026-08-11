@@ -25,7 +25,7 @@ were false.
 
 | Gate | Checks | Answers for |
 |---|---|---|
-| `runner-assert.sh` | 153 | **no page** — it answers for this one |
+| `runner-assert.sh` | 160 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
@@ -35,7 +35,7 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 17 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 38 | `module/map` |
+| `map-assert.sh` | 39 | `module/map` |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 36 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
@@ -45,9 +45,9 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 
-**529 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
+**537 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **522**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **530**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 36 come from TWO Pd runs and one tally**, which is the only entry here
@@ -220,12 +220,20 @@ to press), `watch`, `check` (a predicate), `wait`, and `targets`. ⛔ **It never
 emitting it would reopen every hardware-verified step text to the comma/semicolon fragmentation
 hazard the generator exists to prevent, so `bench-verify.py` still diffs three fields.
 
-⛔ **`watch` ADDS a line and never replaces the PASS IF**, and it printed *as* the PASS IF until
-2026-08-11. Only one step still carries one — `launchpad` 14, whose prose promises a `BEATS` line
-"about ten seconds from now" while its predicate wants a count of 19 to 22, so the person reading the
-terminal is told what the machine beside them is about to assert. It shows up under its own `ALSO:`
-label. **The line labelled `PASS IF:` is now the step's real `pass_if` on every step**, which is what
-retired the prompt's `[?]` key: there was nothing left for it to print.
+⛔ **`watch` is gone entirely.** It replaced the line labelled `PASS IF:` with something else, so on
+two steps that label named text the verdict was not recorded against — which is the only reason the
+prompt ever needed a `[?]` key. `midi` 7's restated its PASS IF in other words and `launchpad` 14's
+explained the Mac dev panel to somebody standing at the rig. **The count a predicate wants is printed
+by the predicate**, on the line above the verdict prompt, from the one source that cannot drift from
+it. `bench-verify.py` diffs two fields now, not three.
+
+⛔ **A predicate that needs the OSC mirror is skipped on the device — the STEP is not.** Only
+`--target mac` repoints `u_net` at a socket the runner binds, so on the rig the window carries no
+`OSC:` line and every `has` finds nothing. ⚠️ **`phone` 2 and 8 carried `targets: ('mac',)` to dodge
+that**, which skips the whole step: two steps of the one bench whose subject is a screen in your hand,
+never judged by anyone on the rig, while the comment beside them claimed *"the device run keeps its
+human verdict"*. Derived from the predicate's kind in `predicates.MIRROR_KINDS`, never listed per
+step.
 
 **`bench-tap.pd`** is generated beside the benches and loaded with them: `[r bus] → [print LABEL]`
 and `[r oscOut] → [print OLED]`, and **it sends nothing**. C-5 gives `g_oled` sole ownership of

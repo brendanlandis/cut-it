@@ -178,13 +178,13 @@
 #X obj 20 6640 select 16;
 #X obj 240 6640 t b b b;
 #X msg 700 6640 === STEP-16-of-26 === Beat row at 240 BPM;
-#X msg 700 6690 PASS IF: The white pad moves twice as fast. A visible swing is correct rather than a failure -- the row can only move on a 100 ms boundary so at 240 BPM it swings either way by 50 ms.;
+#X msg 700 6690 PASS IF: The white pad moves twice as fast and keeps an even step. A visible swing is the failure.;
 #X msg 700 6740 >>> press GO to run step 16 of 26;
 #X obj 240 6810 s \$0-say;
 #X obj 20 6900 select 17;
 #X obj 240 6900 t b b b;
 #X msg 700 6900 === STEP-17-of-26 === Back to 120 and stopped;
-#X msg 700 6950 PASS IF: The beat row slows back to two a second and the pad keeps walking after the stop.;
+#X msg 700 6950 PASS IF: The beat row goes back to two a second at once and the pad keeps walking after the stop. The change is a snap and not a slide.;
 #X msg 700 7000 >>> press GO to run step 17 of 26;
 #X obj 240 7070 s \$0-say;
 #X obj 20 7160 select 18;

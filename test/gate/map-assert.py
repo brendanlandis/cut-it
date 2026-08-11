@@ -84,6 +84,19 @@ def static_lint():
                       for n, k, o in dupes))
     if dupes:
         A.note("text search returns only the FIRST match, so a repeat is DEAD and silent -- item 229")
+    # ⛔ NOTHING ON THE RIG MAY BE BOUND TO panic. It is a destination on u_map's
+    # route -- the bench reaches it and u_err's own tests need it -- but a
+    # CONTROL wired to it means a finger on a fader can silence the instrument
+    # mid-set with no way back but a reload. ⚠️ THE MAP IS THE ONLY THING THAT
+    # COULD BIND ONE, which is what makes this readable rather than something a
+    # person has to go looking for: the midi bench asked "nothing on the rig can
+    # raise panic and nothing is meant to" with no action and nothing to see,
+    # and a claim about a text file is not a thing eyes can answer. What the
+    # bench keeps is the half fingers can -- that no control anybody would reach
+    # for turns the aux LED red.
+    panic_rows = [(n, " ".join(f)) for n, f in rows if len(f) > 2 and f[2] == "panic"]
+    A.check("⛔ no map row binds a control to panic", not panic_rows,
+            "; ".join("line %d: %r" % b for b in panic_rows))
     A.note("%d rows, %d distinct controls" % (len(rows), len({f[1] for _, f in rows if len(f) > 1})))
 
 

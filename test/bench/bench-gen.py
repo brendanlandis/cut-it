@@ -143,7 +143,7 @@ def check(steps, name):
 # --------------------------------------------------------------------------
 KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled",
          "osc", "osc-rate", "file", "all")
-META_KEYS = ("need", "do", "watch", "check", "wait", "targets", "reload",
+META_KEYS = ("need", "do", "check", "wait", "targets", "reload",
              "hold")
 TARGETS = ("device", "mac", "paper")
 BUS_KINDS = ("bus", "bus-count", "bus-not")
@@ -255,12 +255,12 @@ def lint_agreement(meta, pass_if, where):
     spec = meta.get("check")
     if not spec:
         return
-    prose = (pass_if + " " + meta.get("watch", "")).lower()
+    prose = pass_if.lower()
     for claim in _claims(spec):
         for word in str(claim).split():
             assert word.lower() in prose, (
                 "%s: the predicate asserts %r but %r appears nowhere in the "
-                "PASS IF or in `watch`. Either the prose is now wrong, or the "
+                "PASS IF. Either the prose is now wrong, or the "
                 "predicate is -- say which in the step rather than letting a "
                 "person and a program answer different questions."
                 % (where, claim, word))
@@ -298,7 +298,7 @@ def lint_printed(meta, pass_if, where):
     spec = meta.get("check")
     if not spec or not (_kinds(spec) & set(PRINTED_KINDS)):
         return
-    prose = (pass_if + " " + meta.get("watch", "")).lower()
+    prose = pass_if.lower()
     assert "print" in prose, (
         "%s is judged on a counter the BENCH keeps and the runner prints -- it "
         "is on no screen the person is looking at. The PASS IF must say so; the "
@@ -346,7 +346,7 @@ def lint_caps(title, passif, meta, where):
     emphasis, which is what this refuses.
     """
     fields = [("title", title), ("pass_if", passif)]
-    fields += [(k, str(meta.get(k, ""))) for k in ("do", "watch")]
+    fields += [("do", str(meta.get("do", "")))]
     fields += [("need", line) for line in meta.get("need", [])]
     for label, text in fields:
         for word in _shouted(text):
@@ -474,7 +474,7 @@ def lint_resume(meta, n, where):
     checkable at all. Nothing else in this prose is derivable, and nothing else
     here tries to be.
     """
-    for field in ("do", "watch"):
+    for field in ("do",):
         for m in RESUME_RE.finditer(str(meta.get(field, ""))):
             assert int(m.group(1)) == n, (
                 "%s: its `%s` says --from %s but it is step %d. That number is "

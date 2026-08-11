@@ -30,8 +30,8 @@ stop disappears (item 122). That is why these read as short sentences joined by
 ` -- ` rather than as ordinary prose, and why bench-gen.py asserts it rather
 than trusting review.
 
-⚠️ `need`, `do` and `watch` NEVER REACH A .pd -- see norm() -- so they carry
-ordinary commas and are written as plain instructions.
+⚠️ `need` and `do` NEVER REACH A .pd -- see norm() -- so they carry ordinary
+commas and are written as plain instructions.
 """
 import re
 
@@ -98,7 +98,7 @@ def norm(step):
     """A step is 3 or 4 long -> (title, pass_if, actions, meta).
 
     ⛔ THE FOURTH ELEMENT IS RUNNER-SIDE ONLY AND NEVER REACHES A .pd. It carries
-    what a person needs (`need`, `do`, `watch`) and what a program needs
+    what a person needs (`need` and `do`) and what a program needs
     (`check`, `wait`, `targets`) -- and keeping it out of the patch is not
     tidiness. Emitting it would reopen every hardware-verified step text to the
     comma/semicolon fragmentation hazard the generator exists to prevent, which
@@ -427,19 +427,27 @@ STEPS_LAUNCHPAD = [
   # The eyes still judge the walking pad and the aux LED. What the machine can
   # judge is the number underneath them, which is the same evidence and is not
   # subject to anyone counting flashes.
-  # ⚠️ THE EXPECTED COUNT IS STATED IN `watch` BECAUSE THE PASS IF DOES NOT SAY
-  # IT -- it only promises a BEATS line "about ten seconds from now". A predicate
-  # asserting a number the prose never mentions is a disagreement waiting to
-  # happen, and the person reading the terminal deserves to know what it wants.
-  {'watch': 'The white pad walks along the bottom row twice a second and the aux LED goes green. Then wait -- about ten seconds from now a BEATS row of roughly 20 is printed below. It is counted by the bench and appears nowhere on the instrument. On the Mac tick enable-DSP first or the pad will not move, and the aux LED there is the numeric readout labelled aux-LED on the dev panel rather than a button.',
-   'check': {'kind': 'print', 'name': 'BEATS', 'min': 19, 'max': 22}}),
+  # ⛔ AND IT DOES NOT NEED SAYING TWICE. This carried a `watch` restating the
+  # PASS IF, naming the count the predicate wants, and explaining what to tick
+  # on the Mac dev panel -- printed at a person standing at the rig, where none
+  # of it applied. The runner prints `want BEATS between 19 and 22` and `got
+  # BEATS = 20` on the line above the verdict prompt, so the number was already
+  # on screen from the only source that cannot drift from the predicate.
+  {'check': {'kind': 'print', 'name': 'BEATS', 'min': 19, 'max': 22}}),
  ('Beat row wrapping',
   'PASS IF: The white pad reaches the eighth pad and the next beat is back to the first -- with no gap and no stray light anywhere else.',
   [],
   {'do': 'Watch one wrap go by.'}),
  ('Beat row at 240 BPM',
-  'PASS IF: The white pad moves twice as fast. A visible swing is correct rather than a failure -- the row can only move on a 100 ms boundary so at 240 BPM it swings either way by 50 ms.',
+  'PASS IF: The white pad moves twice as fast and keeps an even step. A visible swing is the failure.',
   [('240', 'tempo')],
+  # ⛔ THE SWING IS FIXED AND THIS STEP WAS STILL EXCUSING IT. The frame clock
+  # ran at 10 Hz once and a 250 ms beat does not divide into 100 ms, so the row
+  # swung +/-50 ms at this tempo -- which is why the clock was raised to 50 Hz
+  # (ref/module/display.md, verified). At 20 ms boundaries there is nothing to
+  # see. So the old text asked a person to accept the symptom of a bug that had
+  # already been repaired, and would have passed just as readily if it came
+  # back. ⚠️ A STEP THAT EXCUSES A FAILURE MODE CANNOT DETECT IT.
   # ⛔ THE BEATS CLAIM WENT BECAUSE NOTHING SHOWED IT. A counter reaches Pd's
   # console and the runner only ever displays one through a predicate, so these
   # two steps asked a person to check a number that never appeared anywhere. The
@@ -449,8 +457,14 @@ STEPS_LAUNCHPAD = [
   # left here is the visible beat row, which is what a bench is for.
   ),
  ('Back to 120 and stopped',
-  'PASS IF: The beat row slows back to two a second and the pad keeps walking after the stop.',
-  [('120', 'tempo'), ('bang', 'stop')]),
+  'PASS IF: The beat row goes back to two a second at once and the pad keeps walking after the stop. The change is a snap and not a slide.',
+  [('120', 'tempo'), ('bang', 'stop')],
+  # ⚠️ "SLOWS BACK" READ AS GRADUAL AND IT IS NOT. The row follows c_clock and a
+  # new tempo takes effect on the next tick -- the only thing on this rig that
+  # slides is the SP-404 chasing an external clock, which is a fact about the
+  # 404 rather than about anything here. Read from the rig as a possible fault
+  # (2026-08-11) and it was correct behaviour.
+  ),
  ('Pads and releases',
   'PASS IF: Every pad you press reports pad-NN on the OLED with its velocity. Releasing it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressure on a held pad reports nothing and that is correct.',
   [],
@@ -569,8 +583,12 @@ STEPS_PHONE = [
   # With u_net repointed at localhost the datagrams are readable here, so what
   # u_net FILTERS can be judged with no phone at all. What no Mac can judge is
   # what the PHONE then draws -- so the device run keeps its human verdict.
-  {'targets': ('mac',),
-   'check': {'kind': 'osc', 'addr': '/cutit/param', 'has': ['chop-size', '43']}}),
+  # ⛔ AND IT DID NOT, BECAUSE THIS SAID `targets: ('mac',)` -- which skips the
+  # whole STEP off the Mac, so the sentence above was false for as long as it
+  # had been written and this step was never judged on the rig by anyone. The
+  # runner now skips the PREDICATE where the mirror is absent and asks the
+  # person, which is what that comment always described.
+  {'check': {'kind': 'osc', 'addr': '/cutit/param', 'has': ['chop-size', '43']}}),
  ('A second parameter',
   'PASS IF: The top line changes to grain and the number to 12 with it.',
   [('grain 12', 'disp')]),
@@ -593,8 +611,9 @@ STEPS_PHONE = [
   # satisfied by a u_net that emitted nothing at all -- which is what a broken
   # one looks like -- so the heartbeat proves the link was live while the
   # meters were being dropped. The lint refuses this predicate without it.
-  {'targets': ('mac',),
-   'check': {'kind': 'all', 'of': [
+  # ⛔ AND IT CARRIED `targets: ('mac',)` TOO -- see step 2. Skipped whole on the
+  # device, which is the target whose eyes can answer it.
+  {'check': {'kind': 'all', 'of': [
        {'kind': 'osc', 'addr': '/cutit/hb', 'has': []},
        {'kind': 'osc', 'addr': '/cutit/param', 'has_not': ['in-l', 'in-r']}]}}),
  ('Grid vocabulary must not appear',
@@ -611,7 +630,11 @@ STEPS_PHONE = [
   [],
   {'do': 'Sweep a nanoKONTROL fader as fast as you can. Two at once if you have the fingers -- both must settle.'}),
  ('Link lost',
-  'PASS IF: Nothing on the Organelle changes. No audio glitch and no error on the OLED.',
+  'PASS IF: Nothing on the Organelle changes and no error appears on the OLED.',
+  # ⛔ IT ASKED FOR THE ABSENCE OF AN AUDIO GLITCH AND THERE IS NO AUDIO. v0.4 is
+  # the sound -- no effect stage exists yet -- so nobody could hear a glitch or
+  # its absence and the clause was unjudgeable. Put it back when there is
+  # something to hear.
   [],
   {'do': 'Close PdParty on the phone and count to ten.'}),
  ('Link recovers',
@@ -688,7 +711,7 @@ STEPS_MIDI = [
   [],
   # ⚠️ THE 404 LIGHTS ONLY THE BANK IT IS ON, so which bank is selected is not
   # readable at a glance and every 404 step says it out loud instead.
-  {'do': 'Select bank A on the SP-404 and press pad 1. Say the bank out loud.'}),
+  {'do': 'Press enter first. Check which bank the 404 is lit on -- it lights only the selected one -- then select bank A and press pad 1.'}),
 
  ('SP-404 pad 5',
   'PASS IF: sp-pad reads 5 on the OLED. Anything else is the failure.',
@@ -697,22 +720,22 @@ STEPS_MIDI = [
   # 13 is a plausible-looking number on an OLED -- which is how that bug lived
   # in this repo's own docs for months. A person reads two digits; this reads
   # the bus.
-  {'do': 'Press pad 5 on bank A. Say the bank out loud.',
+  {'do': 'Press enter first. Check the 404 is lit on bank A -- it lights only the selected one -- then press pad 5.',
    'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-pad 5']}}),
 
  ('All sixteen pads',
   'PASS IF: sp-pad counts 1 2 3 up to 16 in step with your finger while sp-bank stays at 1 throughout. A run that counts 1 2 3 4 and then jumps is the failure.',
   [],
-  {'do': 'Press pads 1 through 16 in order on bank A.'}),
+  {'do': 'Press enter first. Then press pads 1 through 16 in order on bank A.'}),
 
  ('Bank B',
   'PASS IF: sp-pad still reads 1 but sp-bank changes from 1 to 2 as you switch banks.',
   [],
-  {'do': 'Select bank B and press pad 1. Say the bank out loud.',
+  {'do': 'Press enter first. Then select bank B and press pad 1. The 404 lights only the bank it is on.',
    'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-pad 1', 'sp-bank 2']}}),
 
  ('A release is not a press',
-  'PASS IF: The sp-pad and sp-bank rows update on the press and neither updates again on the release. Exactly one sp-pad row per hit -- two is the failure.',
+  'PASS IF: The sp-pad and sp-bank rows update on the press and neither updates again on the release. Exactly one sp-pad row per hit -- two is the failure. A third row named for the pad itself -- sp-b3 for bank b pad 3 -- carries the velocity and does change on the release. That row is correct and belongs to u_map.',
   [],
   # ⛔ EXACTLY ONE sp-pad ROW FOR ONE HIT. Two means the velocity test on the
   # disp side has gone and every pad is reporting itself twice -- which on a
@@ -720,7 +743,14 @@ STEPS_MIDI = [
   # ⚠️ AND IT CARRIED A `watch` THAT SAID THE PASS IF AGAIN IN OTHER WORDS.
   # A second copy of a sentence is a second copy free to drift, and this one
   # was displayed INSTEAD of the sentence the verdict is recorded against.
-  {'do': 'Press and hold any pad then let go.',
+  # ⛔ THE THIRD ROW IS NAMED NOW BECAUSE THE SCREEN HAS ALWAYS HAD THREE. The
+  # step described two, so a person reading it correctly reported a failure --
+  # "only sp-b3 updates when I lift my finger off the pad", which is exactly
+  # what is supposed to happen. The per-pad name comes from u_map's generic
+  # echo and carries the control's VALUE, so a release is velocity 0 and the row
+  # changes (ref/device/sp404.md, item 283). A step that describes less of the
+  # screen than the screen shows makes correct behaviour read as a fault.
+  {'do': 'Press enter first. Then press and hold any pad and let go.',
    'check': {'kind': 'bus-count', 'bus': 'DISP', 'match': 'sp-pad', 'n': 1}}),
 
  ('Fader 1 in mode 1',
@@ -746,13 +776,27 @@ STEPS_MIDI = [
   {'do': 'Sweep knob 1 all the way and back.'}),
 
  ('Transport from the aux button',
-  'PASS IF: The aux LED changes state on each press and the footer agrees.',
+  'PASS IF: The aux LED goes green on the first press and dark blue on the second.',
   [],
+  # ⛔ THE FOOTER CLAIM WENT, FOR THE FOURTH TIME IN THIS SUITE. The 404's own
+  # sp-pad rows raise g_oled's param layer and that REPLACES home -- so by this
+  # point in the bench the footer is buried under the traffic of the steps
+  # above, and it only ever carried the BPM anyway. The aux LED is the readout
+  # this step is about and it is on the front panel where nothing covers it.
   {'do': 'Press the aux button twice.'}),
 
  ('Panic is unbound',
-  'PASS IF: Nothing on the rig can raise panic and nothing is meant to.',
-  []),
+  'PASS IF: The aux LED never turns red however many controls you press.',
+  [],
+  # ⛔ IT USED TO SAY "Nothing on the rig can raise panic and nothing is meant
+  # to", which is a claim about the map with nothing to do and nothing to look
+  # at -- read at the rig as "this is not even a test", correctly. The map half
+  # is a STATIC fact and map-assert owns it now: no row may name panic as a
+  # destination, proved by reading cut-it-map.txt with no Pd at all. What is
+  # left here is the half only fingers can answer -- that no control anybody
+  # would actually reach for raises it.
+  {'do': 'Press every transport key on the nanoKONTROL and every button on the '
+         'Organelle. Turn the encoder. Nothing should ever go red.'}),
 
  # ⛔ HOT-SWAP FOR BOTH OUTPUT DEVICES, AND THE TWO ARE NOT ALIKE. The SP-404 is
  # `active` -- it answers a device inquiry, so it has a last-heard clock and can
@@ -812,8 +856,13 @@ STEPS_MIDI = [
   # 8], so the watch interval is eight 2000 ms ticks -- 16 s -- plus enumeration.
   # ⚠️ AND IT IS BY EAR AND ALWAYS WILL BE. The Volca transmits nothing, so there
   # is no readback and no predicate is possible -- see ref/device/volca.md.
-  {'do': 'Press enter first. Unplug the Volca interface alone and count to fifteen, then plug it back in and wait up to 30 seconds before sweeping slider 1 while holding a Volca key.',
-   'need': ['Mode 1. Fader 1 is the only control bound to the Volca.']}),
+  # ⛔ IT HAS TO COME BACK OUT AT THE END, and it did not say so -- the step
+  # after this one loads the patch with the Volca ABSENT, and the runner does
+  # that reload the moment this verdict is given. So its `need` read "still
+  # unplugged from the last step" against a step that had just told you to plug
+  # it in. Reported from the rig on 2026-08-11.
+  {'do': 'Press enter first. Unplug the Volca interface alone and count to fifteen, then plug it back in and wait up to 30 seconds before sweeping slider 1 while holding a Volca key. Unplug it again before you answer -- the next step loads without it.',
+   'need': ['Mode 1. Slider 1 is the only control bound to the Volca.']}),
  ('Hot-swap -- Volca absent at load',
   'PASS IF: Holding a Volca key and sweeping slider 1 changes the sound -- by ear. Sweep it up -- slider 1 is velocity.',
   [],

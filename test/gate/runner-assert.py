@@ -612,6 +612,128 @@ def _recovery(bench):
         stream.use(saved_ask)
 
 
+def _interrupt_before_fire(bench):
+    """⛔ Ctrl-C MUST NOT WRITE A VERDICT FOR A STEP THAT NEVER RAN.
+
+    roll_up is last-write-wins, so `interrupted` is not a harmless nothing: it
+    REPLACES whatever that step last really answered. And Ctrl-C is the only way
+    out of a session, so it arrives wherever the person happened to be -- most
+    often at the read prompt of the step after the ones they came to re-run.
+    Three fresh passes went that way in one afternoon on 2026-08-11: tempo 5,
+    launchpad 8 and launchpad 17, all against unchanged shas.
+
+    ⚠️ THE TWO ARMS ARE THE WHOLE POINT. A runner that recorded nothing on any
+    interrupt would pass the first arm and lose a real observation in the
+    second, where the step DID fire and the person saw it and simply did not
+    answer. `ran` is what separates them, and only a fixture that tests both
+    proves it is being read rather than ignored.
+
+    ⚠️ THE STATE OF THE BENCH IS THE ASSERTION, not the count of anything. Fake
+    holds phase 0 for a step described and not fired, so "the patch was left
+    where it stood" is readable directly -- and it is the half no replay can
+    see, because a transcript has already decided what the patch did.
+    """
+    print("\n--- Ctrl-C before a step runs ---")
+    import records
+    import run as R
+
+    saved_runs, saved_ask = records.RUNS, stream.ask_line
+    records.RUNS = os.path.join(WORK, "runs")
+
+    def interrupt_after(keys):
+        """A person at a keyboard who answers `keys` and then presses Ctrl-C."""
+        pending = list(keys)
+
+        def provider(_prompt=""):
+            if not pending:
+                raise KeyboardInterrupt
+            return pending.pop(0)
+        return provider
+
+    # ⚠️ THE STEP IS CHOSEN FROM THE TABLE, never hardcoded. What matters is that
+    # something was judged before it, so a run that recorded nothing at all
+    # cannot satisfy these by accident.
+    stop = 2
+    at = stop + 1
+    try:
+        # -- arm 1: the interrupt lands on the READ prompt, before GO ---------
+        src = Fake(bench)
+        stream.use(interrupt_after(_keys(bench, stop_after=stop)))
+        try:
+            rows, ok = R.run_bench_driven(bench, "device", False, 1, src)
+        finally:
+            stream.use(saved_ask)
+
+        A.check("⛔ Ctrl-C before a step fires records NOTHING against it -- an "
+                "interrupted overwrites in latest.json and this step was never "
+                "even run",
+                not any(r["step"] == at for r in rows),
+                "step %d got a row: %s"
+                % (at, [r for r in rows if r["step"] == at]))
+        A.check("⛔ and the GO never left -- the patch is where it was, "
+                "describing the step it did not run",
+                src.n == at and src.phase == 0,
+                "the fake bench is at step %d phase %d" % (src.n, src.phase))
+        A.check("Ctrl-C before firing: the verdicts already given are kept",
+                any(r["step"] == stop and r["verdict"] == "pass" for r in rows),
+                "%d rows: %s"
+                % (len(rows), [(r["step"], r["verdict"]) for r in rows]))
+        # ⚠️ ok IS FALSE HERE AND TRUE FOR AN ORDERLY END, and neither decides
+        # anything: what keeps a run off PASS is summarise() counting a step
+        # with no row at all as not run. The assertion belongs on the rows.
+        A.check("Ctrl-C before firing: the bench is left unfinished rather than "
+                "reported complete",
+                len(rows) < len(bench.steps),
+                "%d rows of %d, ok=%s" % (len(rows), len(bench.steps), ok))
+
+        # -- arm 2: the interrupt lands on the VERDICT prompt, after GO -------
+        # ⛔ THE STEP RAN AND NOBODY ANSWERED IT, which is a real observation
+        # about a real firing and must still be recorded. Suppressing this one
+        # would let a resumed run quietly inherit the verdict of a step whose
+        # behaviour has since changed.
+        src = Fake(bench)
+        stream.use(interrupt_after(_keys(bench, stop_after=stop) + [""]))
+        try:
+            rows, _ok = R.run_bench_driven(bench, "device", False, 1, src)
+        finally:
+            stream.use(saved_ask)
+
+        A.check("⛔ but Ctrl-C AFTER the step fired still records interrupted -- "
+                "it ran and nobody judged it",
+                any(r["step"] == at and r["verdict"] == "interrupted"
+                    for r in rows),
+                "step %d rows: %s"
+                % (at, [(r["step"], r["verdict"]) for r in rows]))
+        A.check("Ctrl-C after firing: the GO did leave, so the two arms differ "
+                "in the way `ran` claims they do",
+                src.phase == 1, "the fake bench is at phase %d" % src.phase)
+
+        # -- and the four keys that were removed ------------------------------
+        # ⛔ NONE OF THESE MAY BE A VERDICT AGAIN. [q]uit was Ctrl-C with a worse
+        # failure mode, [u]ndo did nothing on a driven bench, [?] reprinted the
+        # PASS IF already on screen, and [s]kip answered a question a bench run
+        # does not ask -- the rig is plugged in or there is no session. ⚠️ THE
+        # AUTOMATIC SKIPS ARE A DIFFERENT THING and are checked in section 7c.
+        for gone in ("q", "u", "?", "s"):
+            src = Fake(bench)
+            stream.use(interrupt_after(["", gone, "p"]))
+            try:
+                rows, _ok = R.run_bench_driven(bench, "device", False, 1, src)
+            finally:
+                stream.use(saved_ask)
+            A.check("⛔ %r is not a verdict any more -- it is refused and the "
+                    "prompt asks again" % gone,
+                    any(r["step"] == 1 and r["verdict"] == "pass"
+                        for r in rows),
+                    "step 1 rows: %s"
+                    % [(r["step"], r["verdict"]) for r in rows])
+        A.check("and the prompt offers exactly the three that are left",
+                R.HELP == "[p]ass  [f]ail  [r]epeat", "HELP is %r" % R.HELP)
+    finally:
+        records.RUNS = saved_runs
+        stream.use(saved_ask)
+
+
 def _boxes(src):
     """Every box in a .pd, in file order -- which is what #X connect indexes.
 
@@ -808,6 +930,7 @@ def main():
     _wrapping()
     _stall()
     _recovery(bench)
+    _interrupt_before_fire(bench)
 
     # ⛔ THE CHILD MUST NEVER INHERIT stdin, AND NO REPLAY FIXTURE CAN SEE THIS.
     # Every check in this file drives stream.Replay, which launches nothing --
@@ -1018,7 +1141,13 @@ def main():
     # keystroke -- the moment midi 1, 4, 6 and 7 gained predicates and stopped
     # consuming keys, four fixtures went red over nothing at all. A loop fixture
     # must not break when a step becomes machine-checkable.
-    rc, out = run(write("interrupt.txt", clean), _keys(bench, stop_after=4) + ["q"])
+    #
+    # ⚠️ IT USED TO END ON A LITERAL "q" AND NOW ENDS ON RUNNING OUT. That key
+    # was a verdict once; it is an ordinary character at a read prompt now, so
+    # spelling it here would have made this fixture pass on the EOF underneath
+    # rather than on the thing it names. What ends this run is the keys being
+    # exhausted, which is what the last two lines of _keys already do.
+    rc, out = run(write("interrupt.txt", clean), _keys(bench, stop_after=4))
     A.check("interrupted: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("interrupted: keeps the verdicts it did get rather than discarding",
             _tally(out)["pass"] > 0, _tail(out))
@@ -1027,12 +1156,17 @@ def main():
     A.check("interrupted: prints a resume command for the step it stopped on",
             _resumes_at_last_step(out), _tail(out))
 
-    # -- 6. every verdict skipped ------------------------------------------
-    # ⛔ A SKIP IS NEVER A PASS. It is the absence of a verdict, and a suite
-    # that counts absence as success reports green over work nobody checked.
-    rc, out = run(write("allskip.txt", clean), _keys(bench, "s", "no rig here"))
-    A.check("all skipped: exits non-zero", rc != 0, "rc=%d" % rc)
-    A.check("all skipped: RESULT is FAIL, never PASS",
+    # -- 6. every verdict failed --------------------------------------------
+    # ⛔ A SKIP IS NEVER A PASS, and this fixture used to prove it by typing `s`
+    # at every step. That key is gone -- a bench run assumes the whole rig is
+    # plugged in and reachable, so "I cannot judge this today" is not an answer
+    # it offers. ⚠️ THE CHECK BEHIND IT DID NOT GO WITH THE KEY: the AUTOMATIC
+    # skips are the ones that matter, and section 7c drives all three of them.
+    # What is left here is the other absolute -- a bench of failures must never
+    # come out green.
+    rc, out = run(write("allfail.txt", clean), _keys(bench, "f", "x"))
+    A.check("all failed: exits non-zero", rc != 0, "rc=%d" % rc)
+    A.check("all failed: RESULT is FAIL, never PASS",
             "RESULT: FAIL" in out and "RESULT: PASS" not in out, _tail(out))
 
     # -- 7. the runner runs out of scripted answers -------------------------
@@ -1327,7 +1461,8 @@ def _resumes_at_last_step(out):
     resume command pointing anywhere else is the actual defect.
     """
     import re
-    m = re.findall(r"(?:INTERRUPTED at step|stopped at step) (\d+)", out)
+    m = re.findall(r"(?:INTERRUPTED at step|stopped at step|stopped before "
+                   r"step) (\d+)", out)
     return bool(m) and ("--from %s" % m[-1]) in out
 
 

@@ -135,16 +135,20 @@ def load_latest():
 def roll_up(rows):
     """Merge this run's records into the committed latest.json.
 
-    ⚠️ LAST WRITE WINS PER KEY, which is what makes [u]ndo work: the undone
-    verdict stays in the run file as history and is simply overwritten here.
+    ⛔ LAST WRITE WINS PER KEY, AND THAT IS WHY A ROW IS WRITTEN ONLY WHEN
+    SOMETHING WAS ACTUALLY LEARNED. There is no merge policy here to soften it:
+    whatever this run says about a step replaces what the file said, so a row
+    carrying the ABSENCE of a verdict destroys a real one. run.py owes this
+    function that discipline -- see `ran` in run_bench_driven, which is what
+    stops an interrupted step that never fired from being recorded at all.
+
+    ⚠️ IT USED TO CARRY AN `undone` BRANCH, deleting a key on the [u]ndo key.
+    Undo is gone -- it could never work against a driven bench, because nothing
+    can walk a running patch backwards, and `--from N` re-runs a step properly.
     """
     doc = load_latest()
     doc["schema"] = SCHEMA
     for row in rows:
-        if row.get("verdict") == "undone":
-            doc["records"].pop(key(row["bench"], row["step"], row["target"]),
-                               None)
-            continue
         doc["records"][key(row["bench"], row["step"], row["target"])] = row
     os.makedirs(os.path.dirname(LATEST), exist_ok=True)
     with open(LATEST, "w", encoding="utf-8") as fh:

@@ -143,7 +143,28 @@ def gate_half():
 # ---------------------------------------------------------------------------
 # the bench half
 # ---------------------------------------------------------------------------
-HELP = ("[p]ass  [f]ail  [s]kip  [r]epeat  [u]ndo  [?]the full PASS IF  [q]uit")
+# ⛔ THREE KEYS, AND THE FOUR THAT WENT WERE NOT SIMPLIFICATION FOR ITS OWN
+# SAKE. Each was either dead or a second spelling of something else:
+#
+#   [q]uit  was Ctrl-C with a worse failure mode. Both recorded `interrupted`
+#           for the step in front of you and both printed the same resume line
+#           -- but the only quit on offer came AFTER the read prompt, so leaving
+#           a session meant running one more step first, and the `interrupted`
+#           it then wrote OVERWRITES in latest.json. That is not a hypothetical:
+#           tempo 5, launchpad 8 and launchpad 17 were all fresh passes against
+#           unchanged shas until a session ended on them (2026-08-11).
+#   [u]ndo  did nothing at all on six of the seven benches. A driven bench has
+#           already advanced and nothing can walk a running patch backwards, so
+#           it printed a refusal and asked again; only paper mode could honour
+#           it. `--from N` re-runs a step properly.
+#   [?]     reprinted the PASS IF that is already on the screen above it.
+#   [s]kip  answered "I cannot judge this today", and a bench run assumes the
+#           whole rig is plugged in and reachable. ⚠️ THE AUTOMATIC SKIPS STAY
+#           and are a different thing entirely -- a target that cannot judge a
+#           step, a predicate with no console, --auto-only with nobody watching.
+#           Those are the runner declining to invent a verdict, not a person
+#           declining to give one.
+HELP = ("[p]ass  [f]ail  [r]epeat")
 
 
 # ⚠️ WHERE A STEP'S PROSE WRAPS. A PASS IF is a paragraph -- these are sentences
@@ -203,15 +224,26 @@ def describe(bench, step):
     # else. The colon is the step text's own; only a comma or a semicolon is
     # barred, and that is inside a message box rather than in this label.
     print(_field("PASS IF:", step.watch))
+    # ⛔ UNDER IT AND NEVER INSTEAD OF IT. This is what a step knows that its
+    # PASS IF cannot say -- the count a predicate is about to assert -- and it
+    # used to be printed AS the PASS IF, which made that label a lie on two
+    # steps and is why the prompt had to offer a key for reading the real one.
+    if step.also:
+        print(_field("ALSO:   ", step.also))
 
 
-def ask(step, allow_undo):
+def ask(step):
     """The verdict prompt. -> (verdict, note).
 
     ⛔ NOTHING HERE MAY GUESS. Every path out of this function is something a
     person typed: the one failure mode that would make the whole runner
     worthless is a verdict it invented, and a default-on-empty-input is exactly
     that. Enter re-prompts.
+
+    ⚠️ `quit` IS STILL A VERDICT THIS RETURNS, and no key produces it. It is
+    what running out of scripted input means -- a --keys file shorter than the
+    bench -- and the loops above already know how to end on it. Ctrl-C is the
+    exit a person uses and it does not come through here at all.
     """
     while True:
         try:
@@ -222,20 +254,8 @@ def ask(step, allow_undo):
             return "pass", ""
         if c == "f":
             return "fail", stream.prompt("  what went wrong (one line, optional): ").strip()
-        if c == "s":
-            return "skip", stream.prompt("  why skip it (one line): ").strip() or "no reason given"
         if c == "r":
             return "repeat", ""
-        if c == "u":
-            if allow_undo:
-                return "undo", ""
-            print("  nothing to undo -- this is the first step of the run")
-            continue
-        if c == "?":
-            stream.say("  %s" % step.pass_if)
-            continue
-        if c == "q":
-            return "quit", ""
         stream.say("  not one of those. %s" % HELP)
 
 
@@ -253,6 +273,27 @@ def run_bench(bench, target, auto_only, start):
              ", --auto-only" if auto_only else "", BAR))
 
     i = max(0, (start or 1) - 1)
+    try:
+        return _paper_loop(bench, target, auto_only, i, rec, dsha)
+    except KeyboardInterrupt:
+        # ⛔ THE SAME EXIT AS THE DRIVEN LOOP, AND THIS LOOP HAD NONE. While the
+        # verdict prompt carried [q]uit both loops could be left the same way;
+        # with that gone, paper mode -- which is how `state` runs -- would have
+        # answered Ctrl-C with a traceback. ⚠️ THIS PROJECT KEEPS FIXING ONE OF
+        # TWO IDENTICAL PATHS: the console flush reached the step loop and not
+        # the --from walk, the hold guard reached hands steps only. Both cost a
+        # session.
+        #
+        # Nothing fires in paper mode -- there is no patch on the other end --
+        # so a step interrupted here has NOT been run, and recording an
+        # interrupted against it would overwrite whatever it last answered.
+        stream.say("\n  INTERRUPTED. Nothing recorded against the step that was "
+                   "on screen.")
+        rec.close()
+        return rec.rows
+
+
+def _paper_loop(bench, target, auto_only, i, rec, dsha):
     while i < len(bench.steps):
         step = bench.steps[i]
         started = time.time()
@@ -332,11 +373,11 @@ def run_bench(bench, target, auto_only, start):
                                 auto=True, note="", want=w, got=g))
                 i += 1
                 continue
-            verdict, note = ask(step, allow_undo=i > 0)
-            if verdict in ("repeat", "undo", "quit"):
+            verdict, note = ask(step)
+            if verdict in ("repeat", "quit"):
                 # ⚠️ FALL THROUGH TO THE SHARED HANDLING BELOW rather than
-                # duplicating it -- paper mode can genuinely repeat and undo,
-                # because nothing has advanced on the other end.
+                # duplicating it -- paper mode can genuinely repeat, because
+                # nothing has advanced on the other end.
                 pass
             else:
                 if ok != (verdict == "pass"):
@@ -352,18 +393,10 @@ def run_bench(bench, target, auto_only, start):
                 i += 1
                 continue
 
-        verdict, note = ask(step, allow_undo=i > 0)
+        verdict, note = ask(step)
 
         if verdict == "repeat":
             continue                                    # describe it again
-        if verdict == "undo":
-            prev = bench.steps[i - 1]
-            rec.append(dict(bench=bench.name, step=prev.n, title=prev.title,
-                            sha=records.step_sha(prev.title, prev.pass_if),
-                            deps_sha=dsha, verdict="undone", auto=False,
-                            note="withdrawn by the person running it"))
-            i -= 1
-            continue
         if verdict == "quit":
             rec.append(dict(bench=bench.name, step=step.n, title=step.title,
                             sha=records.step_sha(step.title, step.pass_if),
@@ -657,6 +690,10 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
             sha=records.step_sha(step.title, step.pass_if), deps_sha=dsha,
             verdict=verdict, auto=auto, note=note, want=want, got=got))
 
+    # ⚠️ BOUND BEFORE THE try, because Ctrl-C during the load wait or the --from
+    # walk reaches the handler below with no step having started.
+    ran = False
+
     try:
         # -- the bench has to announce itself before anything else is true ---
         try:
@@ -702,6 +739,18 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
 
         while True:
             step = bench.steps[i]
+            # ⛔ DID THIS STEP ACTUALLY RUN. Ctrl-C is the only way out of a
+            # session now, and it arrives wherever the person happened to be --
+            # most often at the read prompt of the step AFTER the ones they came
+            # to do. Recording `interrupted` there is not a harmless nothing:
+            # roll_up is last-write-wins, so the absence of a verdict OVERWRITES
+            # whatever that step last really answered. Three fresh passes went
+            # that way in one afternoon -- tempo 5, launchpad 8 and launchpad 17
+            # on 2026-08-11, all against unchanged shas.
+            # ⚠️ A STEP THAT NEVER FIRED HAS NOT BEEN INTERRUPTED. Nothing was
+            # shown and nothing was asked, so the honest record is the one
+            # already on disk: absence, rather than an absence written down.
+            ran = False
 
             # ⛔ A `reload` STEP NEEDS THE PATCH BOOTED WITHOUT ITS DEVICE, and
             # that is a fact about the process this runner launched. It used to
@@ -778,6 +827,7 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
             # have ended. Measured at 4141 lines after two hands-on steps.
             src.flush()
             src.go()
+            ran = True
             window = []
             fired = None
             fired_why = "silence"
@@ -911,7 +961,7 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
                 # rather than kept as a list somebody has to remember.
                 src.hold(step.holds)
                 while True:
-                    verdict, note = ask(step, allow_undo=False)
+                    verdict, note = ask(step)
                     if verdict != "repeat":
                         break
                     # ⛔ A VISUAL STEP IS ON SCREEN FOR ABOUT A SECOND. g_oled
@@ -920,9 +970,10 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
                     # against a sentence is gone before the sentence is read.
                     # `rerun` fires the CURRENT step again and advances nothing.
                     # ⚠️ IT USED TO BE REFUSED ALONGSIDE `undo`, which was the
-                    # wrong half of a true statement: undo cannot work against a
-                    # running patch, because nothing can walk a bench backwards.
-                    # A repeat moves nothing, so it always could have.
+                    # wrong half of a true statement: undo could not work against
+                    # a running patch, because nothing can walk a bench
+                    # backwards. A repeat moves nothing, so it always could have
+                    # -- and undo has since gone entirely, for that same reason.
                     if src.rerun():
                         stream.say("  fired again -- look as long as you need")
                     else:
@@ -937,13 +988,6 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
                 stream.say("      ./test/run.sh --bench %s --target %s --from %d"
                            % (bench.name, target, step.n))
                 break
-            if verdict == "undo":
-                # ⚠️ STILL REFUSED, and for the reason repeat no longer is: the
-                # bench has advanced past the previous step and nothing can walk
-                # a running patch backwards.
-                stream.say("  not while a bench is running -- it has already "
-                           "advanced. Judge what you saw.")
-                continue
             # ⛔ WHEN THE TWO ORACLES DISAGREE, RECORD THAT THEY DID. One of them
             # is wrong and which one is the whole question -- a bus can carry
             # `warn m_nano` while the screen shows nothing, and a screen can show
@@ -979,8 +1023,15 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
         # mark against working code, and calling it a skip would claim somebody
         # decided to pass over it. It is the absence of an answer, recorded as
         # one, and the summary counts it as not run.
+        #
+        # ⛔ BUT ONLY IF THE STEP RAN. See `ran` at the top of the loop: an
+        # absence written down still OVERWRITES in latest.json, so a step that
+        # never fired must leave the record it already had alone.
         stream.say("\n  INTERRUPTED at step %d." % step.n)
-        record(step, "interrupted", "Ctrl-C")
+        if ran:
+            record(step, "interrupted", "Ctrl-C")
+        else:
+            stream.say("  It had not run yet -- nothing recorded against it.")
         stream.say("  Resume with:")
         stream.say("      ./test/run.sh --bench %s --target %s --from %d"
                    % (bench.name, target, step.n))
@@ -1003,8 +1054,7 @@ def bench_summary(name, rows, total):
     """One line per bench, and the counts that PASS depends on."""
     tally = {}
     for row in rows:                      # append-only, so the last one wins
-        if row["verdict"] != "undone":
-            tally[row["step"]] = row["verdict"]
+        tally[row["step"]] = row["verdict"]
     counts = {v: sum(1 for x in tally.values() if x == v)
               for v in ("pass", "fail", "skip", "interrupted")}
     counts["never"] = total - len(tally)

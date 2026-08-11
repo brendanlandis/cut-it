@@ -131,10 +131,19 @@ def run_asserts(cap):
     # ⛔ AND NOT ON disp. g_oled holds five parameter rows, so a two-handed chord
     # would evict everything else on the screen twice per note -- once on the
     # press and once on the release.
-    A.check("⛔ the keys reach param and NOT disp",
-            not disp("KEY-ON") and not disp("KEY-OFF") and not disp("KEY-TOP"),
-            "a key wrote to disp: %s / %s / %s"
-            % (disp("KEY-ON"), disp("KEY-OFF"), disp("KEY-TOP")))
+    # ⛔ AND IT ASKS ABOUT KEY ROWS, NOT ABOUT SILENCE ON disp. It used to demand
+    # the whole window be empty, and disp is a SHARED bus -- u_err puts every
+    # alert on it. With no phone in the room u_net warns `net-link-down`
+    # eventually, and whether that lands inside the KEY-TOP window is a race:
+    # measured red on one run in three, with the evidence line reading
+    # `a key wrote to disp: [['alert', 'warn', 'u_net', 'net-link-down']]`.
+    # ⚠️ A GATE THAT FAILS ON ANOTHER MODULE'S TRAFFIC IS A GATE NOBODY TRUSTS,
+    # and the claim never needed it: a key reaching disp arrives as an og-key row
+    # and nothing else here can produce one.
+    stray = [r for k in ("KEY-ON", "KEY-OFF", "KEY-TOP") for r in disp(k)
+             if r and str(r[0]).startswith("og-key")]
+    A.check("⛔ the keys reach param and NOT disp", not stray,
+            "a key wrote to disp: %s" % stray)
 
     A.note("windows reached: %s" % " ".join(order))
 

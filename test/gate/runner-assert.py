@@ -587,6 +587,56 @@ def _recovery(bench):
                 src.read_junk == 0,
                 "%d stale line(s) reached the walk" % src.read_junk)
 
+        # -- and the same losses INSIDE A --from WALK -------------------------
+        # ⛔ THE WALK HAD NO RECOVERY AT ALL, and it is where a lost GO costs
+        # most: the step loop loses one step, a walk loses the whole run with
+        # nothing judged and nothing to resume from. ⚠️ AND ON THE DEVICE IT
+        # CANNOT EVEN TIME OUT -- the level meters redraw forever, so wait_for
+        # never sees silence and burns its whole 2000-line cap instead, about
+        # eighteen seconds, then reports "the patch said 2000 lines without ever
+        # answering" over a bench sitting happily on step 1. Seen on the rig
+        # walking to launchpad 16 on 2026-08-11.
+        start = 4
+        src, rows, ok = drive(start=start, drop=[1])
+        A.check("⛔ a GO lost walking PAST a step is resent and the walk "
+                "finishes -- the step loop recovered this and the walk did not",
+                len(rows) == len(bench.steps) - (start - 1) and ok,
+                "%d rows for steps %d..%d, ok=%s -- the run died in the walk"
+                % (len(rows), start, len(bench.steps), ok))
+        A.check("a lost GO in the walk costs one `where` and no more",
+                src.asked == 1, "asked %d time(s)" % src.asked)
+
+        # ⛔ THE OTHER HALF OF THE WALK, and it is a different datagram: GO 2 is
+        # the one that asks the bench to DESCRIBE the step after the one just
+        # fired. One fixture covering both would prove only whichever guard
+        # fires first.
+        src, rows, ok = drive(start=start, drop=[2])
+        A.check("⛔ a GO lost between two walked steps is resent too",
+                len(rows) == len(bench.steps) - (start - 1) and ok,
+                "%d rows for steps %d..%d, ok=%s"
+                % (len(rows), start, len(bench.steps), ok))
+
+        # ⛔ AND A WALK THAT CANNOT BE RECOVERED STILL FAILS, judging nothing.
+        # A retry loop that turned a dead patch into a green run would be worse
+        # than the stall it replaced.
+        class DeafWalk(Fake):
+            def go(self):
+                self.gos += 1
+
+            def where(self):
+                self.asked += 1
+                return True
+
+        src = DeafWalk(bench)
+        stream.use(stream.keystrokes(write("deafwalk.keys", _keys(bench))))
+        try:
+            rows, ok = R.run_bench_driven(bench, "device", False, start, src)
+        finally:
+            stream.use(saved_ask)
+        A.check("⛔ a walk that cannot be recovered records NOTHING and fails",
+                not ok and not rows,
+                "%d row(s), ok=%s" % (len(rows), ok))
+
         # ⛔ A BENCH THAT WILL NOT ANSWER IS STILL A STALL. Recovery must not
         # turn a dead patch into a green run, which is the failure mode of every
         # retry ever written.

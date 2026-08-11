@@ -624,21 +624,44 @@ def _walk_to(src, m, line, want, why):
     shape as a bench that never loaded.
     """
     while int(m.group(1)) < want:
+        n = int(m.group(1))
         stream.say("  ... walking past step %s unjudged (--from %d)"
                    % (m.group(1), want))
+        src.flush()
+        src.go()
+        walked = []
         try:
-            src.flush()
-            src.go()
-            src.wait_for(S.RE_FIRED, STEP_TIMEOUT)
-            src.flush()
-            src.go()
-            m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
+            src.wait_for(S.RE_FIRED, STEP_TIMEOUT, collect=walked)
         except stream.Stalled as e:
+            # ⛔ ASK BEFORE GIVING UP, EXACTLY AS THE STEP LOOP DOES. GO is one
+            # UDP datagram and UDP guarantees nothing, so a lost one and a dead
+            # patch produce the same silence -- and on the device there is no
+            # silence to read at all. The level meters redraw forever, so
+            # wait_for never times out here: it burns its whole 2000-line cap on
+            # OLED frames, about eighteen seconds, and dies. What that looks like
+            # is "STALLED walking to step 16 -- the patch said 2000 lines without
+            # ever answering" over a console whose last line arrived 0.0 s ago
+            # and a bench sitting perfectly happily on step 1 (2026-08-11).
+            #
+            # ⚠️ RECOVERY REACHED THE STEP LOOP AND NOT THIS LOOP, which is the
+            # third time this project has fixed one of two identical paths --
+            # the console flush and the hold/hands guard were the other two. A
+            # walk is where a lost GO hurts MOST: the step loop loses one step,
+            # a walk loses the whole run and there is nothing to resume from.
+            if _regain_fired(src, n, walked) is None:
+                stream.say(
+                    "\n  STALLED walking to step %d -- %s.\n"
+                    "  Nothing was judged so nothing is recorded. %s\n%s"
+                    % (want, _why(e.why), why, src.diagnose()))
+                return None
+        nxt = _next_step(src, n + 1, n)
+        if nxt is None:
             stream.say(
-                "\n  STALLED walking to step %d -- %s.\n"
+                "\n  STALLED walking to step %d -- nothing described step %d.\n"
                 "  Nothing was judged so nothing is recorded. %s\n%s"
-                % (want, _why(e.why), why, src.diagnose()))
+                % (want, n + 1, why, src.diagnose()))
             return None
+        m, line = nxt
     return m, line
 
 

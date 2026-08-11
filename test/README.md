@@ -25,7 +25,7 @@ were false.
 
 | Gate | Checks | Answers for |
 |---|---|---|
-| `runner-assert.sh` | 160 | **no page** — it answers for this one |
+| `runner-assert.sh` | 164 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
@@ -45,9 +45,9 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 
-**537 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
+**541 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **530**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **534**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 36 come from TWO Pd runs and one tally**, which is the only entry here

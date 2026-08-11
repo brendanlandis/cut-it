@@ -11,7 +11,7 @@ what to open and what to skip.
 
 ## Where the session got to
 
-`./test/run.sh` is green — **19 gates, 537 checks.** The patch is deployed and the instrument is up.
+`./test/run.sh` is green — **19 gates, 541 checks.** The patch is deployed and the instrument is up.
 
 ```sh
 python3 test/runner/run.py --list      # what would run, and how fresh each verdict is
@@ -82,8 +82,13 @@ enter, and nothing is recorded against that step**; stop after it has fired and 
 | `midi` | SP-404 on bank A, nanoKONTROL, Volca audible. ⚠️ **Sweep slider 1 to the top first** — it is Volca CC 41, Velocity, and left at the bottom it silences the device to its own keyboard. ⚠️ **18 needs the Volca interface UNPLUGGED when 17 is judged** |
 | `state` | **Last in the session.** Step 5 is a real power cycle, and it resets the wifi-fault uptime clock |
 
-✅ **The long `--from` walk works on hardware** — `launchpad --from 8` re-walked nineteen steps and
-`midi --from 18` walked seventeen, which is the case that used to blow the runner's 2000-line cap.
+⛔ **A LOST GO IN A `--from` WALK USED TO END THE RUN, and it happened** — `launchpad --from 16`
+died walking past step 1 with *"the patch said 2000 line(s) without ever answering"* over a console
+whose last line had arrived 0.0 s ago. ⚠️ **On the device `wait_for` can never time out**: the level
+meters redraw forever, so there is no silence to detect and the 2000-line cap is the only bound —
+about eighteen seconds of OLED frames, then death with nothing judged. The walk now asks `where` and
+resends, exactly as the step loop has all along. ✅ **The long walk itself is fine** — `--from 8`
+re-walked nineteen steps and `midi --from 18` walked seventeen.
 
 Three things to say out loud before the run rather than after:
 
@@ -122,6 +127,8 @@ the screen than the screen shows. `git log 1df905c..HEAD` is the record.
 | **Hardware disproves prose that round-trips perfectly** | `bench-verify.py` proves the text survives generation, which is a different question from whether the text is TRUE. Five `tempo` steps asserted things the hardware does not do, and four were unreachable until the map was repaired |
 | **A step that duplicates a gate is worse than no step** | Three `tempo` steps asserted what `clock-assert` and `tempo-assert` already own, touched no device, and printed their numbers only to the runner's terminal. One claim judged twice under two names makes `latest.json` report more coverage than exists |
 | **A `--from` walk does not sit out a timeout** | `launchpad` 13 raises a thirty-second modal that covers the whole surface, and clearing it *is* what 13 tests — so in order a person waits it out. `_walk_to` fires every earlier step as fast as the console answers, so a resume landed on 16 with the grid still green. Reported as *"stuck in all-green"* and then *"changed to the passing state as I typed this"*. `bench-gen`'s `lint_modal` catches it now, and **found a second instance in `display` on its first run** — which was correct, and taught it the exemption |
+| **Recovery reached the step loop and not the walk** | Third time this project has fixed one of two identical paths, after the console flush and the `hold`/`hands` guard. ⚠️ **A walk is where a lost GO hurts most**: the step loop loses one step, a walk loses the whole run with nothing judged and nothing to resume from |
+| **A gate that fails on another module's traffic** | `organelle-assert` asserted the `disp` window was EMPTY during its key windows, and `disp` is shared — `u_err` puts every alert on it. With no phone in the room `u_net` warns `net-link-down` eventually, and whether it lands inside the window is a race. **Measured red on one run in three**, and it had nothing to do with keys |
 | **A step that EXCUSES a failure mode cannot detect it** | `launchpad` 16 told a person that a visible swing at 240 BPM was correct "because the row can only move on a 100 ms boundary". That is why the frame clock was raised to 50 Hz, and the fix landed long before the sentence did — so the step would have passed just as readily if the bug came back |
 | **A predicate whose traffic the person makes must say `press enter first`** | The runner flushes at GO and opens the window there. `midi` 4 and 6 asked for the pad BEFORE the prompt, so both judged an empty window and reported AUTO FAIL against a working 404 |
 | **Skipping a STEP where only its PREDICATE is unavailable** | `phone` 2 and 8 carried `targets: ('mac',)` because their `osc` predicate needs the mirror only the Mac has. That skipped them whole on the rig — two steps of the phone bench nobody ever judged — while the comment beside them said the device run kept its human verdict |

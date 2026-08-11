@@ -189,17 +189,12 @@ def describe(bench, step):
     need = step.meta.get("need", [])
     if need:
         print(_field("NEED:   ", " ".join(need)))
-    # ⚠️ AND THE DO LINE IS NEVER ABSENT, because "nothing" is an answer a person
-    # needs. Its absence used to mean two different things -- the bench sends the
-    # actions, or there is nothing to send at all -- and both read as a step that
-    # forgot to say. `hands` still keys on the authored `do` alone, so synthesising
-    # one here cannot make a step claim it wants fingers.
+    # ⛔ AND A FIELD WITH NOTHING TO SAY IS LEFT OUT. Synthesising "nothing to do
+    # here" onto every bench-driven step put the same sentence down seventeen of
+    # display's eighteen steps, which is how a field stops being read at all. No
+    # DO line means there is nothing for you to do.
     if step.meta.get("do"):
         print(_field("DO:     ", step.meta["do"]))
-    elif step.actions:
-        print(_field("DO:     ", "Nothing -- the bench sends this one."))
-    else:
-        print(_field("DO:     ", "Nothing -- just look."))
     # ⚠️ THE LABEL IS `PASS IF:` BECAUSE THAT IS WHAT THE TEXT IS. It was `watch`,
     # which named nothing a person could act on -- the line is the step's PASS
     # IF with its prefix stripped (steps.py `watch`), the verdict prompt asks

@@ -599,8 +599,10 @@ STEPS_STATE = [
   # OUTPUT. The file is the only evidence there is -- nothing on the instrument
   # displays what has been saved, deliberately -- so the runner fetches it and
   # compares the string, which is exactly what the person was doing by eye.
-  {'do': 'Nothing -- the runner fetches the file and reads it for you.',
-   'targets': ('device', 'paper'),
+  # ⛔ NO `do`, AND THAT IS WHAT MAKES THE [HANDS] TAG TRUE. A `do` reading
+  # "nothing to do here" marked this step as wanting fingers when the runner
+  # does all of it.
+  {'targets': ('device', 'paper'),
    'check': {'kind': 'file', 'fetch': 'state',
              'path': 'device-state/cut-it-auto.txt',
              'contains': 'mode perform mode-4'}}),

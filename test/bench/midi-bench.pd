@@ -155,7 +155,7 @@
 #X obj 240 6150 s \$0-say;
 #X obj 20 6240 select 17;
 #X obj 240 6240 t b b b;
-#X msg 700 6240 === STEP-17-of-18 === Hot-swap -- Volca unplugged;
+#X msg 700 6240 === STEP-17-of-18 === Hot-swap -- Volca unplugged and plugged back in;
 #X msg 700 6290 PASS IF: Holding a Volca key and sweeping slider 1 changes the sound -- by ear. Sweep it up. Slider 1 is velocity and left at the bottom it silences the Volca.;
 #X msg 700 6340 >>> press GO to run step 17 of 18;
 #X obj 240 6410 s \$0-say;

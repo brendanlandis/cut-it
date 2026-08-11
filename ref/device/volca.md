@@ -215,9 +215,10 @@ Volca in. There is no warning, because nothing is wrong from the instrument's po
 
 **Fix:** `u_present` forks **`wire-watch.sh`** on a heartbeat — every 8 ticks, so ~16 s. It hashes
 the ALSA **client names** and runs `wire.sh` only when they change, so a device appearing is wired
-whether or not anything was ever lost. ⚠️ **The hot-swap bench steps still pull the nanoKONTROL
-alongside the interface**, because they were written to test the *recovery*, and that path is
-unchanged.
+whether or not anything was ever lost. ✅ **So the bench steps pull the interface ALONE.** They used
+to pull the nanoKONTROL alongside it, because before the heartbeat a `none` device could only be
+recovered while a detectable one was missing (item 275) — pulling a second device now goes back
+through the loss path and proves nothing about the heartbeat that replaced it.
 
 | | Behaviour | Evidence | Item |
 |---|---|---|---|

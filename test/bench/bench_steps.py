@@ -688,7 +688,19 @@ STEPS_STATE = [
   # EMPTY -- no shipped contributor uses the manual policy yet -- so there is
   # nothing in it to compare. An UNCHANGED timestamp means saveState never
   # arrived and the commit path is dead, which is the whole assertion.
-  {'do': 'Press Storage then Save on the Organelle.',
+  # ⛔ THIS STEP REWRITES knobs.txt, AND TWO OTHER BENCHES REST ON WHAT IS IN IT.
+  # mother uses Save for the four knob positions, so EVERY Save creates knobs.txt
+  # from where the knobs physically are (item 139) -- and midi 1 asserts the
+  # footer reads 57 BPM at boot while tempo 2 needs a knob saved off the rail to
+  # reach the held branch of parameter pickup at all. Saving with knob 1
+  # somewhere else silently destroys both preconditions. ⚠️ AND NEITHER VERDICT
+  # WOULD GO STALE: knobs.txt lives on the device and is in no bench's DEPS, so
+  # both would stay green over a rig that could no longer produce them. Fresh
+  # forever is worse than stale forever, because it is believed.
+  {'do': 'Press Storage then Save on the Organelle. Storage is a top-level menu, not a System submenu.',
+   'need': ['Knob 1 parked where the footer reads 57 BPM. Every Save rewrites '
+            'knobs.txt from the physical knobs, and midi 1 and tempo 2 both '
+            'assert that restored value.'],
    'targets': ('device', 'paper'),
    'check': {'kind': 'file',
              'path': 'device-state/cut-it-manual.txt',

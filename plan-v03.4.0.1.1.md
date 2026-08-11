@@ -32,6 +32,11 @@ says the bus disagreed, and the bus was right to: their `do` told you to press t
 pressing enter, so the traffic they judge had already been flushed. The instruction is fixed and a
 clean run should now agree with itself. ⛔ **`do` is not part of `step_sha`, so nothing will make you.**
 
+⚠️ **The Launchpad is stranded in Programmer Mode right now** — the `--from 16` run that stalled
+`killall pd`'d the instrument without `m_launchpad`'s safe exit. `./tools/lp-live.sh` restores it
+without Pd, `./tools/deploy.sh` reloads the instrument too. **Every device bench run leaves it this
+way**, so this is routine rather than a fault.
+
 ### The rig's state, which two steps depend on
 
 ✅ **`knobs.txt` on the device reads `0.0957967 0 0 0`** — knob 1 parked at 57 BPM and saved through

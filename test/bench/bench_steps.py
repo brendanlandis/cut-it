@@ -211,12 +211,18 @@ STEPS_NANOKONTROL = [
   {'do': 'Press every button on the nanoKONTROL, then all six transport keys.',
    'need': ['The nanoKONTROL powered and connected.']}),
 
- # ⛔ HOT-SWAP, TWO CASES, AND ITEM 235 IS THE PROOF THEY ARE NOT THE SAME TEST.
- # The transition case needs the device to have ANSWERED at least once, because
- # c_presence's warn is armed by a reply -- a device that was never there is
- # ABSENT rather than lost, and absent raises nothing. The absent-at-load case
- # needs a fresh load and can see what no transition ever shows: that a device
- # missing at boot is recovered at all.
+ # ⛔ HOT-SWAP, THREE CASES, AND ITEM 235 IS THE PROOF THE FIRST TWO ARE NOT THE
+ # SAME TEST. The transition case needs the device to have ANSWERED at least
+ # once, because c_presence's warn is armed by a reply -- a device that was never
+ # there is ABSENT rather than lost, and absent raises nothing. The absent-at-load
+ # case needs a fresh load and can see what no transition ever shows: that a
+ # device missing at boot is recovered at all.
+ #
+ # ⛔ AND THE THIRD IS RECOVERY FROM A TRANSITION -- out and back in mid-session,
+ # which is what a knocked cable does and the only one of the three that happens
+ # by accident. It read as covered because the other two sit either side of it:
+ # one proves the loss is SEEN and the other proves a recovery happens, and
+ # neither proves the device you were playing comes back. See the last step.
  ('Hot-swap -- unplugged mid-session',
   'PASS IF: A bordered alert on the OLED reads warn and then m_nano.',
   [],
@@ -237,6 +243,28 @@ STEPS_NANOKONTROL = [
   {'do': 'Plug it in, wait 60 seconds, then move slider 1.',
    'reload': True,
    'need': ['The nanoKONTROL still unplugged from the last step.']}),
+
+ # ⛔ THE THIRD CASE, AND IT IS THE ONE THAT HAPPENS IN A ROOM. The two above
+ # are loss DETECTED and absent-at-load RECOVERED -- neither of them watches a
+ # device that was working, went away, and came back, which is what a knocked
+ # cable does mid-set. The recovery path is not the same one: absent-at-load has
+ # nothing to lose and no transition to fire on, while this arms u_present's
+ # counter on the way out and has to land one of the eight re-wire attempts on
+ # the way back in. It ran last so the device is plugged in from the step above,
+ # and so nothing after it depends on a cable being out.
+ ('Hot-swap -- unplugged and plugged back in',
+  'PASS IF: The OLED shows a slider-1 row again when you move it.',
+  [],
+  # ⚠️ FIFTEEN SECONDS OUT, AND THAT IS NOT PADDING. The loss is three missed
+  # presence ticks behind the unplug, so pulling it and pushing it straight back
+  # never registers as a loss at all and the step would prove nothing.
+  # ⚠️ AND UP TO 60 SECONDS BACK, for the same reason as the step above: the
+  # eight attempts are spread over about seventy seconds and the nano needed two
+  # of them on the bench because it was still enumerating (item 277).
+  {'do': 'Press enter first. Unplug the nanoKONTROL and count to fifteen so the '
+         'loss is recorded, then plug it back in and wait up to 60 seconds '
+         'before moving slider 1.',
+   'need': ['The nanoKONTROL powered and connected.']}),
 ]
 
 STEPS_TEMPO = [
@@ -427,6 +455,21 @@ STEPS_LAUNCHPAD = [
   {'do': 'Plug the Launchpad in and wait up to 60 seconds without touching anything else.',
    'reload': True,
    'need': ['The Launchpad still unplugged from the last step.']}),
+
+ # ⛔ THE THIRD HOT-SWAP CASE -- see the nanoKONTROL bench for why the two above
+ # are not it. ⚠️ IT SITS BEFORE THE PANIC DELIBERATELY: the panic hands the
+ # surface back and nothing after it can check the grid.
+ ('Hot-swap -- unplugged and plugged back in',
+  'PASS IF: The grid lights again and the top row shows one bright lamp.',
+  [],
+  # ⚠️ THE GRID COMING BACK IS THE WHOLE ORACLE, and it is a stronger one than it
+  # looks: the surface only paints when m_launchpad owns it AND the device is in
+  # Programmer Mode, so a lit grid says presence re-wired the port and re-asserted
+  # the mode (item 276). A dark grid after sixty seconds is the failure.
+  {'do': 'Press enter first. Unplug the Launchpad USB and count to fifteen so the '
+         'loss is recorded, then plug it back in and wait up to 60 seconds '
+         'without touching anything else.',
+   'need': ['The Launchpad connected and in Programmer Mode.']}),
  ('Panic hands the surface back',
   'PASS IF: The Launchpad visibly leaves Programmer Mode and its own display returns. Button presses stop reaching the OLED. Watch both. It stays handed back until the patch is reloaded -- so every remaining step is downstream of this one and nothing after it can check the grid. If you have any doubt about an earlier step go back and redo it before pressing GO here.',
   [('bang', 'panic')]),
@@ -677,6 +720,18 @@ STEPS_MIDI = [
   {'do': 'Plug it in, wait 60 seconds, then press pad 1.',
    'reload': True,
    'need': ['The SP-404 still unplugged from the last step.',
+            'Bank A selected. Say it out loud.']}),
+
+ # ⛔ THE THIRD HOT-SWAP CASE for the 404 -- see the nanoKONTROL bench. The Volca
+ # step below already has its own, because a `none` device can only be recovered
+ # this way (item 275), which is why this gap read as covered for so long.
+ ('Hot-swap -- SP-404 unplugged and plugged back in',
+  'PASS IF: The OLED shows an sp-pad row again.',
+  [],
+  {'do': 'Press enter first. Unplug the SP-404 and count to fifteen so the loss '
+         'is recorded, then plug it back in and wait up to 60 seconds before '
+         'pressing pad 1.',
+   'need': ['The SP-404 powered and connected.',
             'Bank A selected. Say it out loud.']}),
 
  # ⛔ THE ORACLE IS THE FADER CHANGING THE SOUND \, NEVER THE VOLCA MAKING ONE.

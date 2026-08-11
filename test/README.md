@@ -562,7 +562,7 @@ bench** — the GO port is never bound and the bench looks frozen at step 1. Ite
 
 ### `launchpad-bench.pd` — the Launchpad acceptance run
 
-**Twenty-five steps** covering the mode bus, the grid arbiter, the layer priorities and TTLs, the
+**Twenty-six steps** covering the mode bus, the grid arbiter, the layer priorities and TTLs, the
 first `c_clock` instance, the ring map, hot-swap and the safe exit. Steps needing hands are marked in
 their own prompt line.
 
@@ -585,11 +585,24 @@ Deliberate, and stated in the step.
 
 ### `nanokontrol-bench.pd` — the nanoKONTROL acceptance run
 
-Same shape as `display-bench.pd`: nineteen steps, stepped by hand, and a printed `PASS IF` for
+Same shape as `display-bench.pd`: twenty steps, stepped by hand, and a printed `PASS IF` for
 every step **including the ones whose correct result is that nothing happens**. Load it as a third
 patch after `mother.pd` and `main.pd`. Steps 1–14 drive themselves off the `disp`, `err` and `mode`
-buses; **15–19 need your hands on the nanoKONTROL**, because nothing but the real controller can
-exercise `[ctlin]` — and 18 and 19 need them on the cable.
+buses; **15–20 need your hands on the nanoKONTROL**, because nothing but the real controller can
+exercise `[ctlin]` — and 18, 19 and 20 need them on the cable.
+
+⛔ **Hot-swap is THREE cases and it read as two.** 18 is a loss being SEEN, 19 is a device that was
+never there being recovered, and **20 is the one that happens by accident** — a device you were
+playing goes away and comes back. The first two sit either side of it and between them look like
+full coverage: one proves the loss is noticed and the other proves some recovery happens, and
+neither proves the controller under your hands comes back. Only `midi` had this case, for the Volca,
+and only because the Volca's recovery is parasitic on another device being missing at the same time
+(item 275). It is closed for the Launchpad (step 23) and the SP-404 (`midi` step 16) as well.
+
+⚠️ **There is no SP-404 bench and no Volca bench.** Both live inside `midi`, which is named for the
+concern — the mode-dependent map and both output devices — where `nanokontrol` and `launchpad` are
+named for a device. `ref/device/sp404.md` and `ref/device/volca.md` both declare
+`test/bench/midi-bench.pd`, so the pages resolve; the naming is the inconsistency, not the coverage.
 
 Step 2 and step 6 are the regression gate on the display rewrite. Steps 7–14 are `display-bench`'s
 assertions, re-run because the param layer they sit next to was rewritten.

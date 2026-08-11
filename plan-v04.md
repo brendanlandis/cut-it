@@ -111,10 +111,15 @@ landed 2026-08-10: every detectable device has a presence model, one bounded re-
 and the bound is now asserted by **reaching** it rather than by arithmetic. The facts are on
 [ref/module/presence.md](ref/module/presence.md) and the reasoning is in `git log`.
 
-### ⬜ Four bench steps have never been run, and no bench verdict has ever been recorded
+### ⬜ Six benches have no verdicts yet, and hot-swap is missing a case on two devices
 
 ⛔ **Owned by [plan-v03.4.0.1.md](plan-v03.4.0.1.md), Part 2.** Indexed here only so the pointers
 from `ref/` pages resolve while that plan exists.
+
+✅ **`nanokontrol` has been run end to end through the runner and all 19 steps passed** —
+2026-08-10, on the device, verdicts in `test/results/latest.json`. That is the first bench verdict
+this project has ever recorded, and it closes the claim that `./test/run.sh --all` cannot be run by
+the person it was built for.
 
 ✅ **Six of the eight hot-swap steps were verified on the rig on 2026-08-10**, by hand over `ssh`
 rather than through the runner — the nanoKONTROL and SP-404 in both directions with the decode
@@ -123,15 +128,14 @@ on [ref/module/presence.md](ref/module/presence.md) as items 281–288.
 
 **What is left:**
 
-- **The Launchpad's two**, which need eyes on the grid and have never been run.
-- **The Volca's two**, which were **rewritten after** that session — their oracle asserted `PASS IF
-  the Volca sounds`, satisfied by a Volca with no cable in it, and their setup could not recover a
-  `none` device at all. Neither has been executed as written.
-- ⚠️ **No bench verdict has ever reached `test/results/latest.json`**, which still holds
-  `{"records": {}}`. Every step in every bench reads `never run`.
-
-⛔ **And `./test/run.sh --all` cannot pass until that plan's Part 1 lands** — two runner defects fail
-four `midi` steps on a working rig and fire every non-hands step before a person can read it.
+- **The other six benches** — `display`, `tempo`, `launchpad`, `phone`, `state` and `midi` — have
+  no recorded verdict for any step. `launchpad` holds one `interrupted` from a step-1 stall on
+  2026-08-10, before the runner's stdin defect was found.
+✅ **Hot-swap's third case is now covered on every device that can have it** — `nanokontrol` 20,
+`launchpad` 23 and `midi` 16, matching the Volca's `midi` 17. It read as covered for a long time
+because the two either side of it look like the whole story: one proves a loss is SEEN and the other
+proves a recovery HAPPENS, and neither proves the device under your hands comes back. Only the
+Volca had it, and only because a `none` device cannot be recovered any other way (item 275).
 
 ### ⬜ `[polytouchin]` has no stub, so the Launchpad's pressure path is untested
 

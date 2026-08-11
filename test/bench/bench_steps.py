@@ -277,8 +277,18 @@ STEPS_TEMPO = [
        'want': 1.5, 'tol': 0.15},
   ]}}),
  ('Knob pickup on the first touch',
-  'PASS IF: Touch nothing -- the bench moves knob 1 to the bottom for you. You get one of two screens and both are correct. (a) the row reads bpm 120 (10) and the footer still says 120-bpm -- the tempo is being held until the real knob is turned past where it was saved. (b) the row reads bpm 10 and the footer says 10-bpm -- the knob went straight through because it was saved at the bottom already or there is no knobs.txt at all. On both screens the row must never say og-knob-1 and never a raw 0-to-1 decimal.',
+  'PASS IF: Touch nothing -- the bench moves knob 1 to the bottom for you. You get one of two screens and both are correct. (a) the row reads bpm 57 (10) -- the knob position you saved first and where the knob is pointing now in brackets -- and the footer still says 120-bpm. The tempo is held until the real knob is turned past where it was saved. (b) the row reads bpm 10 and the footer says 10-bpm -- the knob went straight through because it was saved at the bottom already or there is no knobs.txt at all. On both screens the row must never say og-knob-1 and never a raw 0-to-1 decimal.',
   [('120', 'tempo'), ('og-knob-1 0', 'param')],
+  # ⛔ THE FIRST NUMBER IS THE SAVED KNOB POSITION, NOT THE TEMPO IN FORCE, and
+  # this line read 120 until hardware said otherwise. u_map builds the held row
+  # from [tabread $0-pk-t] -- the pickup TARGET -- scaled x490+10, while the
+  # incoming value takes the parallel chain into makefilename (%g) and rides in
+  # the unit field. So a knobs.txt of 0.0957967 draws `bpm 57 (10)` however many
+  # times the bench sends 120 to tempo first. ⚠️ BRANCH (a) NEEDS AN ARMED KNOB,
+  # which needs a knobs.txt saved off the rail -- with 0 0 0 0 the equality
+  # release fires and only (b) is reachable, which is why this text went two
+  # rewrites without once being exercised.
+  #
   # ⛔ NOT HELD. The runner re-fires a step every 0.8 s while its verdict is
   # open, so a parameter row survives g_oled's 1.3 s life -- but this step sends
   # a tempo AND a knob that maps to tempo, so each re-fire walks the footer from
@@ -308,12 +318,29 @@ STEPS_TEMPO = [
   [('120', 'tempo')]),
  ('Start the transport',
   "PASS IF: The aux button turns green and the 404 starts its pattern in time with it. Watch EXT on the 404's pattern select screen. The number beside a pad never moves.",
-  [('bang', 'start')]),
+  [('bang', 'start')],
+  # ⛔ A PATTERN HAS TO BE SELECTED AND STOPPED OR THERE IS NOTHING TO START, and
+  # the step read as an instrument failure without it -- the aux button goes
+  # green, the 404 sits there, and nothing on either device says why. Start (250)
+  # moves the sequencer on its own (ref/device/sp404.md) but only once the
+  # sequencer has a pattern loaded. Steps 11 and 12 inherit this state.
+  {'need': ['The SP-404 powered and connected.',
+            'The SP-404 on Pattern Select, with a pattern selected and stopped. '
+            'Press Pattern Select, tap the pattern pad to load it, then tap it '
+            'again so it is not playing.']}),
  ('The 404 follows a tempo change',
-  "PASS IF: The footer reads 240-bpm and the 404's EXT slides up to meet it and its pattern speeds up. A slide rather than a snap is correct. ⛔ The pattern also fills the OLED with sp-pad rows from here until the transport stops -- that is the 404 reporting what it plays and it is correct.",
-  [('240', 'tempo')]),
+  "PASS IF: The 404's EXT slides up to 180 and its pattern speeds up to match. A slide rather than a snap is correct. ⛔ The pattern also fills the OLED with sp-pad rows from here until the transport stops -- that is the 404 reporting what it plays and it is correct. The footer is behind those rows so the tempo change is not readable on the OLED until the transport stops.",
+  [('180', 'tempo')],
+  # ⛔ 180 AND NOT 240, BECAUSE THE 404 FOLLOWS ONLY BETWEEN 40 AND 200 BPM and
+  # pins outside that window -- ref/device/sp404.md, verified. At 240 the step
+  # asked the hardware for something it cannot do and read as an instrument
+  # failure. ⛔ AND THE FOOTER CLAIM WENT WITH IT: this step's own sp-pad rows
+  # raise g_oled's param layer, which REPLACES home and therefore the footer, so
+  # the step asserted a reading its own text guarantees is hidden. The footer is
+  # asserted in step 12 instead, once the rows have stopped arriving.
+  ),
  ('Stop the transport',
-  'PASS IF: The aux button goes dark blue and the 404 stops. But its display must still say EXT. If it falls back to BPM that is the failure. The sp-pad rows stop arriving and the OLED settles.',
+  'PASS IF: The aux button goes dark blue and the 404 stops. But its display must still say EXT. If it falls back to BPM that is the failure. The sp-pad rows stop arriving and the OLED settles back to the meters with 120-bpm in the footer.',
   [('120', 'tempo'), ('bang', '\\$0-zero'), ('bang', 'stop')]),
  ('Beat counts after stopping',
   'PASS IF: M-BEATS is printed again and reads 20 or 21 beats. The master reference keeps running with the transport stopped -- that is the point of the step. Nothing about it is on the instrument.',

@@ -137,7 +137,7 @@
 #X obj 20 3520 select 4;
 #X obj 240 3520 t b b b;
 #X msg 700 3520 === STEP-04-of-16 === Knob pickup on the first touch;
-#X msg 700 3570 PASS IF: Touch nothing -- the bench moves knob 1 to the bottom for you. You get one of two screens and both are correct. (a) the row reads bpm 120 (10) and the footer still says 120-bpm -- the tempo is being held until the real knob is turned past where it was saved. (b) the row reads bpm 10 and the footer says 10-bpm -- the knob went straight through because it was saved at the bottom already or there is no knobs.txt at all. On both screens the row must never say og-knob-1 and never a raw 0-to-1 decimal.;
+#X msg 700 3570 PASS IF: Touch nothing -- the bench moves knob 1 to the bottom for you. You get one of two screens and both are correct. (a) the row reads bpm 57 (10) -- the knob position you saved first and where the knob is pointing now in brackets -- and the footer still says 120-bpm. The tempo is held until the real knob is turned past where it was saved. (b) the row reads bpm 10 and the footer says 10-bpm -- the knob went straight through because it was saved at the bottom already or there is no knobs.txt at all. On both screens the row must never say og-knob-1 and never a raw 0-to-1 decimal.;
 #X msg 700 3620 >>> press GO to run step 4 of 16;
 #X obj 240 3690 s \$0-say;
 #X obj 20 3780 select 5;
@@ -179,13 +179,13 @@
 #X obj 20 5340 select 11;
 #X obj 240 5340 t b b b;
 #X msg 700 5340 === STEP-11-of-16 === The 404 follows a tempo change;
-#X msg 700 5390 PASS IF: The footer reads 240-bpm and the 404's EXT slides up to meet it and its pattern speeds up. A slide rather than a snap is correct. ⛔ The pattern also fills the OLED with sp-pad rows from here until the transport stops -- that is the 404 reporting what it plays and it is correct.;
+#X msg 700 5390 PASS IF: The 404's EXT slides up to 180 and its pattern speeds up to match. A slide rather than a snap is correct. ⛔ The pattern also fills the OLED with sp-pad rows from here until the transport stops -- that is the 404 reporting what it plays and it is correct. The footer is behind those rows so the tempo change is not readable on the OLED until the transport stops.;
 #X msg 700 5440 >>> press GO to run step 11 of 16;
 #X obj 240 5510 s \$0-say;
 #X obj 20 5600 select 12;
 #X obj 240 5600 t b b b;
 #X msg 700 5600 === STEP-12-of-16 === Stop the transport;
-#X msg 700 5650 PASS IF: The aux button goes dark blue and the 404 stops. But its display must still say EXT. If it falls back to BPM that is the failure. The sp-pad rows stop arriving and the OLED settles.;
+#X msg 700 5650 PASS IF: The aux button goes dark blue and the 404 stops. But its display must still say EXT. If it falls back to BPM that is the failure. The sp-pad rows stop arriving and the OLED settles back to the meters with 120-bpm in the footer.;
 #X msg 700 5700 >>> press GO to run step 12 of 16 -- then WAIT for the printed count before pressing GO again;
 #X obj 240 5770 s \$0-say;
 #X obj 20 5860 select 13;
@@ -287,7 +287,7 @@
 #X obj 240 11120 s \$0-say;
 #X obj 20 11240 select 11;
 #X obj 240 11240 t b b;
-#X msg 480 11240 240;
+#X msg 480 11240 180;
 #X obj 480 11285 s tempo;
 #X msg 480 11420 --- step 11 fired --- judge it against the PASS IF above --- press GO for step 12;
 #X obj 240 11480 s \$0-say;

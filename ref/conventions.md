@@ -18,7 +18,7 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | ID | Rule | |
 |---|---|---|
 | **C-1** | **`$0-` every send, receive, table and array name** inside an abstraction | [→](#0--mandatory) |
-| **C-2** | **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `param` `err` `disp` `state` `presence`, plus mother's own | [→](#the-global-name-allowlist) |
+| **C-2** | **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `recover` `param` `err` `disp` `state` `presence`, plus mother's own | [→](#the-global-name-allowlist) |
 | **C-3** | **`[trigger]` on every fan-out**, even when the current order happens to work | [→](#trigger-on-every-fan-out) |
 | **C-4** | **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out | [→](#audio-io--never-adc-never-dac) |
 | **C-5** | **One owner per display surface** — `oscOut` / `screenLine*` are `g_oled`'s, `led` is its own. Everything else asks via `disp` | [→](#the-display-bus-and-who-owns-the-screen) |
@@ -157,6 +157,7 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 | `clock` | **master reference** beat bang | `u_tempo` |
 | `start` / `stop` | transport, carried as a **bang** | any → `u_tempo` |
 | `panic` | all-notes-off, clear all state | any |
+| `recover` | a **bang** — panic, then reload the patch. Panic's second tier | `u_map` → `u_init` |
 | `param` | `<name> <value>` — a control **changed** | any `m_` → `u_map` |
 | `err` | `<level> <source> <text>`, level ∈ `warn` `fail` | any → `u_err` |
 | `disp` | display requests: `<name> <value> [unit]` | any → `g_oled`, `g_led`, `g_grid`, `u_net` |

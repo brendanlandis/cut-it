@@ -58,9 +58,23 @@ file and rejects it before Pd ever does.
 | `volca-prog` | The program number | A **gate only** — it decides whether the press counts | verified | — |
 | `404-pad` | The pad number | Velocity | verified | — |
 | `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key | verified | 293 |
+| `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
+
+⛔ **`recover` is the one destination that reads the RELEASE**, so it cannot use the uniform spigot
+trigger test — that gate opens on non-zero and throws the release away. `volca-key` is the existing
+precedent for a branch that lets a `0` through. The press raises `panic` and starts a `[del 2000]`;
+the release sends it `stop`. **Only the timer's completion reaches `recover`.**
+
+⚠️ **A hold raises `panic` twice** — once on the press here, once inside `u_init` before the reload —
+and that is deliberate, so `recover` is self-contained whatever reaches it. Every effect is
+idempotent, and the counts stay exactly assertable: **one on a tap, two on a hold.**
+
+⛔ **No map row may name `panic`, and the tiers are why that still holds.** The table names `recover`;
+raising `panic` is the *handler's* business. `map-assert.py` asserts the rule directly, because a
+control anyone could reach for must not be able to silence the instrument mid-set.
 
 ### Values are normalised to 0–1, and the divisor is not uniform
 
@@ -120,6 +134,7 @@ then hands it authority.
 | Boot window | 1000 ms. A first value inside it is a restore and **arms**; after it, a hand, and goes straight to live | verified | 236 |
 | Whether that arming survives | `u_map` **reads `knobs.txt` itself** at 2000 ms. `[text size]` answers 1 when the file is there and 0 when it is not | verified | 239 |
 | With **no** `knobs.txt` | every slot is written straight to LIVE and no knob is ever held | verified | 239 |
+| **After a `recover`** | the breadcrumb is read in the same 2000 ms pass and every slot goes straight to LIVE, `knobs.txt` or not | verified | 299 |
 | The held row is drawn for **knob 1 only** | it is built inside the pickup machine, which cannot know what a held knob maps to. Knobs 2–4 are held *silently* | verified | 240 |
 | **Reaching** the target releases, not only passing it | a target on a rail has no beyond: armed above a target of `0`, the flip test waits for `value < 0` | verified | 241 |
 | An **unmapped** control reports `<name> <raw>` on `disp` | `[moses 0]`'s left outlet — `[text search]` answers `-1`. Silent on every bus, never on the screen | verified | 242 |
@@ -144,6 +159,35 @@ it writes every slot to LIVE. Nothing is held on a machine that has never been S
 ⚠️ **Both branches pass the value through, which is the only reason a timer is tolerable here.** Item
 234 was two boot races that shipped silently. A window too short costs the old jump; one too long
 costs a knob that needs one sweep to free it. **Neither can produce silence.**
+
+### The recover breadcrumb, and why `u_map` reads it
+
+**`u_init` writes `<state-dir>/cut-it-recover.txt` immediately before it fires the reload**, and
+`u_map`'s 2000 ms probe reads it in the same pass that reads `knobs.txt`. Item 299.
+
+| | | Evidence | Item |
+|---|---|---|---|
+| Armed contents | `recover <ms>` — the stamp is elapsed milliseconds since load, from `[realtime]` | verified | 299 |
+| Cleared contents | `none`, written back over line 0 | verified | 299 |
+| A missing file | `[text size]` answers **0** and nothing happens, exactly as a missing `knobs.txt` does | verified | 299 |
+| The arming override | Every slot straight to **4, LIVE** — it bangs the same `msg 4` the no-save probe uses | verified | 299 |
+| The report | `warn u_map recovered`, deferred to **4500 ms** | verified | 299 |
+
+⛔ **The override must land at 2000 ms and the report must not.** After an emergency the knobs you
+are *holding* are the truth, so nothing may be held — but arming is decided at 2000, and an override
+any later would simply be undone by the knobs probe. The **report** goes the other way: a `warn`
+raised during the boot stages is buried by `modal launchpad` at 3000 and the footer hand-over at
+4000, so it waits until 4500. One read, two deadlines.
+
+⛔ **The file is cleared by OVERWRITING it, never by deleting it.** Vanilla Pd cannot delete a file;
+`[shell]` forks, is a do-nothing stub on the Mac, and would let a gate reach only one branch — the
+same argument that already forbids it in the no-save probe. A one-line sentinel makes the read decide
+on **content**, so nothing depends on how `[text]` writes an empty table, which has never been
+measured here.
+
+⚠️ **`[text set]` takes a LIST and has no outlet** — so the sentinel is `list none`, and the write
+hangs off a trigger beside it rather than downstream of it. Both were found by loading the patch, not
+by reading it.
 
 ## Traps
 
@@ -176,17 +220,28 @@ the control name alone. `[text search]` then hunts for `og-knob-1` in the **mode
 can never match, and every Organelle knob falls to the raw-row branch — `og-knob-1 0` on screen
 where a BPM belongs (item 294).
 
-⛔ **And it repairs itself in the wrong direction.** `u_map` puts whatever reaches the bus straight
-back into the store, so the truncated value is re-saved; the auto flush is armed **by the restore**,
-so the correct `mode-1` the seed stored at 500 ms is replaced before it ever reaches the disk. Every
-boot reads the bad value, re-stores it and writes it back.
+⛔ **And it used to repair itself in the wrong direction.** `u_map` put whatever reached the bus
+straight back into the store, so the truncated value was re-saved; the auto flush is armed **by the
+restore**, so the correct `mode-1` the seed stored at 500 ms was replaced before it ever reached the
+disk. Every boot read the bad value, re-stored it and wrote it back.
 
 ⚠️ **It is invisible on every surface but one.** `m_nano`, `m_404` and `m_launchpad` post their own
 `disp` rows and theirs land *after* `u_map`'s, so they win; `m_organelle` is the only device file
 that posts none (item 242). A dead lookup therefore shows up **only** on the Organelle's own knobs.
 
-**Fix:** none in the patch — see `Open`. Repair the file by making any real mode selection: one
-transport key writes all three atoms back and the next boot restores correctly.
+**Fix:** ✅ **the key-setter refuses a `mode` that is not two atoms and says `fail u_map bad-mode`**,
+the way an unknown *destination* already did — item 297.
+
+⛔ **The guard is BEFORE `[list split 1]`, not after it.** What that object does with a one-atom list
+is exactly the behaviour this bug turns on, so testing the length of the whole message is the one
+shape that cannot depend on it. `[list length]` → `[select 2]` opens a spigot; anything else raises.
+
+⛔ **And the store is fed from that spigot rather than from its own `[r mode]`**, which is what stops
+a bad value surviving a power cycle. The store never sees it, keeps the seed's `compose mode-1`, and
+**the auto flush repairs the file on its own** — measured: a `cut-it-auto.txt` holding `mode compose`
+came back reading `mode compose mode-1` after one boot, with the knobs mapping correctly throughout.
+⚠️ **It is a cord and not a second receive** — two `[r mode]` boxes have no defined order between
+them, so a spigot set by one could be read stale by the other.
 
 ### `read -c` takes the flag first
 
@@ -420,10 +475,10 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
   nothing is silent — but a control mapped to anything **other than tempo** still shows nothing,
   because the mapped row and the held `(n)` bracket both carry the tempo scaling. Making it universal
   is decided and scoped — see [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **`u_map` accepts a `mode` it cannot use.** A restored value carrying no mode name empties the
-  lookup key and kills every knob silently — the Trap above, item 294. The key-setter should refuse
-  a mode that is not two atoms and say so on `err`, the way an unknown destination already does.
-  Scoped but not built: see [plan-v04.md](../../plan-v04.md) §3.
+- ✅ **`u_map` no longer accepts a `mode` it cannot use** — item 297, the Trap above. The key-setter
+  refuses anything that is not two atoms, raises `fail u_map bad-mode`, and the state store is fed
+  from the same guard so a bad value can no longer survive a power cycle. **The file now repairs
+  itself**, where the old note said a mode selection had to be made by hand.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
   would jump once per change. Not reachable today — `og-knob-1` is `tempo` in all six modes. **It
   closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.

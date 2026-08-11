@@ -119,12 +119,17 @@ defaults** — and the file looked entirely plausible throughout (item 152).
 
 **Fix:** arm the flush from the restore. Found on the Mac before it reached hardware.
 
-⛔ **The cost of that ordering is that a bad saved value cannot be corrected by a boot.** A
-contributor's own put at load lands *before* the restore, so the restored value replaces it and the
-flush then writes the restored one back. A malformed line therefore survives every power cycle until
-something writes that key again while the instrument is running — measured on a `mode` of `compose`
-with its name missing, which killed the map lookup for a whole session (item 294,
-[map.md](map.md)).
+⛔ **The cost of that ordering is that a bad saved value cannot be corrected by a boot — unless the
+contributor refuses it.** A contributor's own put at load lands *before* the restore, so the restored
+value replaces it and the flush then writes the restored one back. A malformed line therefore
+survives every power cycle, measured on a `mode` of `compose` with its name missing, which killed the
+map lookup for a whole session (item 294, [map.md](map.md)).
+
+✅ **`u_map` now refuses one** — item 297. A `mode` that is not two atoms never reaches the store, so
+the store keeps the seed's good value and **the flush writes that back instead**, repairing the file
+on the next boot with no user action. ⚠️ **That is the contributor's job, not `u_state`'s**, which
+knows nothing about what any key means; a contributor that does not validate still inherits the
+original trap.
 
 ### The commit is right-to-left, and that is the whole mechanism
 

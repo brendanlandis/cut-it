@@ -36,3 +36,9 @@ mode-1 og-key-81 volca-key 81
 mode-1 og-key-82 volca-key 82
 mode-1 og-key-83 volca-key 83
 mode-1 og-key-84 volca-key 84
+mode-1 lp-cc-90 recover 0
+mode-2 lp-cc-90 recover 0
+mode-3 lp-cc-90 recover 0
+mode-4 lp-cc-90 recover 0
+mode-5 lp-cc-90 recover 0
+mode-6 lp-cc-90 recover 0

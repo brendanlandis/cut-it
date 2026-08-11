@@ -30,7 +30,7 @@ comment is the only documentation visible while editing in Pd and it has no link
 | ID | Rule |
 |----|------|
 | C-1 | **`$0-` every send, receive, table and array name** inside an abstraction |
-| C-2 | **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `param` `err` `disp` `state` `presence`, plus mother's own |
+| C-2 | **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `recover` `param` `err` `disp` `state` `presence`, plus mother's own |
 | C-3 | **`[trigger]` on every fan-out**, even when the current order happens to work |
 | C-4 | **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out |
 | C-5 | **One owner per display surface** — `oscOut` / `screenLine*` are `g_oled`'s, `led` is its own. Everything else asks via `disp` |

@@ -24,7 +24,7 @@
 #X text 1700 390 the error bus. Anything raising a problem sends level \, source and text to err \; this decides what the mode lets through and forwards it to disp. It never draws -- g_oled owns the screen., f 34;
 #X obj 1700 600 u_tempo;
 #X text 1700 650 the master reference: master BPM \, the 24 PPQN pulse that MIDI clock is cut from \, and the transport. It is NOT the clock -- Cut It runs poly-tempo and a c_clock instance is what a beat comes from., f 34;
-#X obj 1700 860 u_map;
+#X obj 1700 860 u_map \$3;
 #X text 2000 860 THE MAP \, and the only file in Cut It that says what a control MEANS. Named controls in on param \, buses out. Organelle knob 1 is master tempo \, aux is the transport \, and the nano's transport row selects the mode., f 34;
 #X obj 2300 340 g_oled;
 #X text 2300 390 owns the OLED -- four layers \, each with a priority and a time to live. Everything else asks by sending to disp., f 34;

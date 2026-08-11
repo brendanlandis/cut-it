@@ -607,6 +607,42 @@ def _emits_float(box):
     return cls in ("f", "float", "i", "int") or box.startswith("t f")
 
 
+def _wrapping():
+    """⛔ A PASS IF IS A PARAGRAPH AND HAS TO READ AS ONE.
+
+    Several run past two hundred characters. Printed as one line the terminal
+    folds them at whatever width it happens to be, every continuation starts
+    hard against the left margin, and there is nothing to tell one from the
+    start of the next field.
+    """
+    print("\n--- how a step's prose is laid out ---")
+    import run as R
+
+    long = ("Touch nothing and the bench moves knob 1 to the bottom for you. "
+            "You get one of two screens and both of them are correct in their "
+            "own way depending on where the knob was when it was last saved.")
+    out = R._field("PASS IF:", long).splitlines()
+    A.check("a long field wraps rather than running off the line",
+            len(out) > 1, "%d line(s) for %d characters" % (len(out), len(long)))
+    A.check("no wrapped line is longer than the wrap width",
+            max(len(x) for x in out) <= R.WRAP,
+            "longest is %d against a width of %d" % (max(len(x) for x in out),
+                                                     R.WRAP))
+    # ⛔ UNDER THE TEXT, NOT UNDER THE LABEL. A continuation at the left margin
+    # is indistinguishable from the next field down.
+    col = out[0].index("Touch")
+    A.check("⛔ every continuation is indented under the text it continues",
+            all(x.startswith(" " * col) and x[col:col + 1] != " "
+                for x in out[1:]),
+            "continuations start at %s, text starts at %d"
+            % ([len(x) - len(x.lstrip()) for x in out[1:]], col))
+    A.check("the words survive the wrap exactly",
+            " ".join(" ".join(out).split()) == "PASS IF: " + long,
+            "\n".join(out))
+    A.check("a short field stays on one line",
+            len(R._field("do      ", "Press pad 1.").splitlines()) == 1)
+
+
 def _auto_format():
     """⛔ THE EVIDENCE HAS TO BE READABLE OR IT IS NOT EVIDENCE.
 
@@ -732,6 +768,7 @@ def main():
 
     _where_wiring()
     _auto_format()
+    _wrapping()
     _stall()
     _recovery(bench)
 

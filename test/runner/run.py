@@ -146,6 +146,28 @@ def gate_half():
 HELP = ("[p]ass  [f]ail  [s]kip  [r]epeat  [u]ndo  [?]the full PASS IF  [q]uit")
 
 
+# ⚠️ WHERE A STEP'S PROSE WRAPS. A PASS IF is a paragraph -- these are sentences
+# written for a person, and several run past two hundred characters -- so
+# printing one as a single line makes the terminal fold it at whatever width it
+# happens to be, with the continuation starting hard against the left margin and
+# no way to tell it from the next field. Wrapped here, every continuation is
+# indented under its own label.
+WRAP = 76
+
+
+def _field(label, text, width=WRAP):
+    """`  label   text`, wrapped with the continuations under the text."""
+    pad = " " * (2 + len(label) + 1)
+    out, line = [], "  %s " % label
+    for word in text.split():
+        if len(line) + len(word) > width and line.strip() != label:
+            out.append(line.rstrip())
+            line = pad
+        line += word + " "
+    out.append(line.rstrip())
+    return "\n".join(out)
+
+
 def describe(bench, step):
     """The header a person reads before doing anything.
 
@@ -161,9 +183,9 @@ def describe(bench, step):
     print("\n[%d/%d] %s - %s%s"
           % (step.n, step.of, bench.name, step.title, tag))
     for line in step.meta.get("need", []):
-        print("  need     %s" % line)
+        print(_field("need    ", line))
     if step.meta.get("do"):
-        print("  do       %s" % step.meta["do"])
+        print(_field("do      ", step.meta["do"]))
     # ⚠️ THE LABEL IS `PASS IF:` BECAUSE THAT IS WHAT THE TEXT IS. It was `watch`,
     # which named nothing a person could act on -- the line is the step's PASS
     # IF with its prefix stripped (steps.py `watch`), the verdict prompt asks
@@ -171,7 +193,7 @@ def describe(bench, step):
     # sentence, and the one on screen was the only one that appeared nowhere
     # else. The colon is the step text's own; only a comma or a semicolon is
     # barred, and that is inside a message box rather than in this label.
-    print("  PASS IF: %s" % step.watch)
+    print(_field("PASS IF:", step.watch))
 
 
 def ask(step, allow_undo):

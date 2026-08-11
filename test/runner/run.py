@@ -55,6 +55,11 @@ import stream                                                   # noqa: E402
 LOAD_TIMEOUT = 15.0
 STEP_TIMEOUT = 5.0
 
+# ⚠️ HOW LONG THE BENCH GETS TO SAY WHERE IT IS. It is a print off a [pack], with
+# no timer and no screen anywhere between the datagram and the console, so this
+# is short on purpose: the answer is either immediate or it is not coming.
+WHERE_TIMEOUT = 2.0
+
 # ⛔ THE FIRED LINE IS NOT THE END OF THE EVIDENCE. bench-gen sends it last so it
 # cannot arrive before the actions it describes, which is true for anything
 # SYNCHRONOUS -- a bus tap sees its message immediately. The OLED does not:
@@ -357,6 +362,94 @@ def _drain(src, window, seconds):
             window.append(line)
 
 
+# ---------------------------------------------------------------------------
+# ⛔ GO IS ONE UDP DATAGRAM AND UDP GUARANTEES NOTHING. Every word this runner
+# sends the bench travels that way, over a wifi link this project has a whole
+# `ref/` page about, and a datagram that goes missing produces silence: no fired
+# line, no described step. That is byte for byte what a dead patch produces, and
+# for the wrong reason -- so the runner used to end a twenty-minute hands-on
+# session on the assumption it was the second one.
+#
+# ⛔ AND IT CANNOT SIMPLY RESEND. GO means "run this step" in phase 0 and
+# "advance" in phase 1, so a second one sent on the guess that the first was lost
+# advances a bench that in fact heard the first -- and every verdict after that
+# answers a question nobody asked. That is Desync, which this runner refuses to
+# recover by guessing anywhere else and must not start guessing about here.
+#
+# ⚠️ SO IT ASKS FIRST. `where` moves nothing and names the step and the phase, so
+# whichever of the two happened is a FACT before anything is re-sent.
+def _ask_where(src):
+    """Where the bench says it is. -> (step, phase), or None if it will not say."""
+    if not src.where():
+        return None
+    try:
+        m, _ = src.wait_for(S.RE_WHERE, WHERE_TIMEOUT)
+    except stream.Stalled:
+        return None
+    return int(m.group(1)), int(m.group(2))
+
+
+def _regain_fired(src, n, window):
+    """A GO was sent to run step `n` and no fired line came. -> (m, line) or None.
+
+    ⚠️ THE WINDOW IS CLEARED WHEN THE STEP IS RE-RUN, never appended to. A
+    predicate reads it as one step's console, and a window holding half of a
+    first attempt plus all of a second is evidence about neither.
+    """
+    at = _ask_where(src)
+    if at is None or at[0] != n:
+        return None
+    if at[1] == 0:
+        stream.say("  ... the bench never heard that GO -- it is still waiting "
+                   "on step %d. Sending it again." % n)
+        del window[:]
+        src.go()
+    else:
+        stream.say("  ... step %d had already run and its fired line was missed. "
+                   "Running it again." % n)
+        del window[:]
+        if not src.rerun():
+            return None
+    try:
+        return src.wait_for(S.RE_FIRED, STEP_TIMEOUT, collect=window)
+    except stream.Stalled:
+        return None
+
+
+def _next_step(src, want, prev):
+    """GO, then wait for step `want` to be described. -> (m, line) or None.
+
+    `prev` is the step just judged -- the one the bench is on if the GO was lost.
+    """
+    src.go()
+    try:
+        return src.wait_for(S.RE_STEP, STEP_TIMEOUT)
+    except stream.Stalled:
+        pass
+    at = _ask_where(src)
+    if at is None:
+        return None
+    if at[0] == want:
+        stream.say("  ... step %d was described and the line was missed -- "
+                   "asking the bench to say it again." % want)
+        if not src.show():
+            return None
+    elif at == (prev, 1):
+        stream.say("  ... the bench never heard the GO after step %d. Sending "
+                   "it again." % prev)
+        src.go()
+    else:
+        # ⛔ NOT RECOVERED. The bench is somewhere neither branch explains, and a
+        # guess from here writes verdicts against the wrong steps.
+        stream.say("  ... the bench says step %d phase %d, which is neither %d "
+                   "nor %d -- not recoverable." % (at[0], at[1], prev, want))
+        return None
+    try:
+        return src.wait_for(S.RE_STEP, STEP_TIMEOUT)
+    except stream.Stalled:
+        return None
+
+
 def check_marker(m, line, expect, bench):
     """⛔ THE PATCH'S OWN STEP NUMBER AND TITLE, BOTH, AGAINST THE TABLE.
 
@@ -510,16 +603,25 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
 
             src.go()
             window = []
+            fired = None
             try:
-                fm, fline = src.wait_for(S.RE_FIRED, STEP_TIMEOUT, collect=window)
+                fired = src.wait_for(S.RE_FIRED, STEP_TIMEOUT, collect=window)
             except stream.Stalled:
+                # ⛔ ASK BEFORE GIVING UP. A GO that never arrived and a patch
+                # that has died look identical from here, and only one of them
+                # ends the session -- see _regain_fired.
+                fired = _regain_fired(src, step.n, window)
+            if fired is not None:
+                fm, fline = fired
+            else:
                 # ⚠️ SAY WHOSE %g SECONDS THOSE ARE. The old wording read as a
                 # reading deadline, and it was taken for one: the clock starts
                 # when you press enter, and it is how long the PATCH gets to
                 # answer a GO -- measured at about 50 ms on the device. Nothing
                 # about how long you spend reading a step is timed at all.
                 stream.say("\n  STALLED at step %d -- the patch did not answer "
-                           "GO within %g s.\n  (that window opens when you press "
+                           "GO within %g s of silence, and did not say where it "
+                           "was when asked.\n  (that window opens when you press "
                            "enter -- your reading time is never timed)\n%s"
                            % (step.n, STEP_TIMEOUT, src.diagnose()))
                 # ⚠️ THE NOTE IS WHAT SURVIVES INTO latest.json, so it carries the
@@ -560,16 +662,16 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
                 stream.say("  SKIP   %s" % why)
                 record(step, "skip", why, auto=True)
                 i += 1
-                src.go()
                 if i >= len(bench.steps):
+                    src.go()
                     break
-                try:
-                    m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
-                except stream.Stalled:
+                nxt = _next_step(src, i + 1, step.n)
+                if nxt is None:
                     stream.say("\n  STALLED after step %d.\n%s"
                                % (step.n, src.diagnose()))
                     rec.close()
                     return rec.rows, False
+                m, line = nxt
                 continue
 
             # ⛔ A PREDICATE IS EVIDENCE. A PERSON IN THE ROOM IS THE VERDICT.
@@ -605,16 +707,16 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
                     stream.say("  SKIP   %s" % why)
                     record(step, "skip", why, auto=True)
                 i += 1
-                src.go()
                 if i >= len(bench.steps):
+                    src.go()
                     break
-                try:
-                    m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
-                except stream.Stalled:
+                nxt = _next_step(src, i + 1, step.n)
+                if nxt is None:
                     stream.say("\n  STALLED after step %d.\n%s"
                                % (step.n, src.diagnose()))
                     rec.close()
                     return rec.rows, False
+                m, line = nxt
                 continue
 
             if True:
@@ -684,17 +786,18 @@ def run_bench_driven(bench, target, auto_only, start, src, reopen=None):
                 record(step, verdict, note)
 
             i += 1
-            src.go()
             if i >= len(bench.steps):
+                src.go()
                 break
-            try:
-                m, line = src.wait_for(S.RE_STEP, STEP_TIMEOUT)
-            except stream.Stalled:
+            nxt = _next_step(src, i + 1, step.n)
+            if nxt is None:
                 stream.say("\n  STALLED after step %d -- nothing described "
-                           "step %d within %g s.\n%s"
+                           "step %d within %g s of silence, and the bench would "
+                           "not say where it was.\n%s"
                            % (step.n, i + 1, STEP_TIMEOUT, src.diagnose()))
                 rec.close()
                 return rec.rows, False
+            m, line = nxt
     except KeyboardInterrupt:
         # ⛔ INTERRUPTED IS NOT FAIL AND IT IS NOT SKIP. Nobody judged this step
         # and nothing about it is known -- calling it a failure would put a red

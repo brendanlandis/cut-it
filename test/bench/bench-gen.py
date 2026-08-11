@@ -559,7 +559,7 @@ def build(name, cfg):
           "twice.", 46)
 
     net_r = p.obj(300, Y + 260, "netreceive 9998 1")
-    net_rt = p.obj(300, Y + 320, "route go rerun")
+    net_rt = p.obj(300, Y + 320, "route go rerun where show")
     net_t = p.obj(300, Y + 380, "t b")
     net_s = p.obj(300, Y + 440, "s \\$0-go")
     p.con(net_r, 0, net_rt, 0)
@@ -585,6 +585,42 @@ def build(name, cfg):
           "rerun fires the CURRENT step again without advancing \\, so a visual "
           "step can be looked at more than once. [r]epeat in test/run.sh sends "
           "it.", 46)
+
+    # ⛔ where AND show ARE THE TWO WORDS THAT MOVE NOTHING, and that is the
+    # whole point of them. GO is a single UDP datagram with no delivery
+    # guarantee: if one goes missing the bench simply never hears it, and what
+    # the runner sees -- no fired line \, no described step -- is EXACTLY what a
+    # dead patch looks like. It has no safe response either \, because a second
+    # GO sent on the guess that the first was lost ADVANCES a bench that in fact
+    # heard the first \, and the runner then judges the wrong step.
+    # ⚠️ SO ASK BEFORE ACTING. `where` prints the step and the phase \, which
+    # says whether the last GO landed \; `show` re-describes the current step
+    # without running or advancing anything. Between them a stalled runner can
+    # work out which of the two it is in and recover into the right one.
+    wh_t = p.obj(1500, Y + 380, "t b b")
+    p.con(net_rt, 2, wh_t, 0)
+    wh_phase = p.obj(1680, Y + 440, "f")
+    wh_step = p.obj(1500, Y + 440, "f")
+    p.con(wh_t, 1, wh_phase, 0)
+    p.con(wh_t, 0, wh_step, 0)
+    wh_pk = p.obj(1500, Y + 500, "pack f f")
+    p.con(wh_step, 0, wh_pk, 0)
+    p.con(wh_phase, 0, wh_pk, 1)
+    wh_pr = p.obj(1500, Y + 560, "print %s" % S.SAY_WHERE)
+    p.con(wh_pk, 0, wh_pr, 0)
+    # ⚠️ THE TWO STORES ARE FED BY NAME FROM THE SAME SENDS THE STATE MACHINE
+    # WRITES \, so this cannot report a position the bench is not in. Reading
+    # the machine's own [f] boxes would need cords drawn the width of the
+    # patch \; a second pair written by the same two sends cannot drift.
+    wh_sr = p.obj(1500, Y + 320, "r \\$0-set-step")
+    wh_pr2 = p.obj(1680, Y + 320, "r \\$0-set-phase")
+    p.con(wh_sr, 0, wh_step, 1)
+    p.con(wh_pr2, 0, wh_phase, 1)
+
+    sh_t = p.obj(2000, Y + 380, "t b")
+    sh_s = p.obj(2000, Y + 440, "s \\$0-do-show")
+    p.con(net_rt, 3, sh_t, 0)
+    p.con(sh_t, 0, sh_s, 0)
 
     rep_r = p.obj(1400, Y, "r enc")
     rep_t = p.obj(1400, Y + 60, "t b")

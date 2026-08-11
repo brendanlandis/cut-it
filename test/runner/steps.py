@@ -62,6 +62,8 @@ SAY_COMPLETE = _steps.SAY_COMPLETE
 RE_STEP = _steps.RE_STEP
 RE_FIRED = _steps.RE_FIRED
 RE_COMPLETE = _steps.RE_COMPLETE
+SAY_WHERE = _steps.SAY_WHERE
+RE_WHERE = _steps.RE_WHERE
 
 # ---------------------------------------------------------------------------
 # ⛔ WHAT EACH BENCH'S VERDICTS ACTUALLY DEPEND ON, and it is PER BENCH.

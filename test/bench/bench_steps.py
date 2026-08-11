@@ -77,6 +77,22 @@ RE_STEP = re.compile(r"=== STEP-(\d+)-of-(\d+) === (.*?)\s*$")
 RE_FIRED = re.compile(r"--- step (\d+) fired ---")
 RE_COMPLETE = re.compile(r"=== BENCH COMPLETE ===")
 
+# ⛔ WHERE THE BENCH THINKS IT IS, AND IT IS THE ONLY QUESTION THE RUNNER CAN ASK.
+# Every other word in the protocol is an instruction -- go, rerun, show -- and an
+# instruction that goes missing cannot be told from one the bench ignored. GO
+# travels as a single UDP datagram, which has no delivery guarantee of any kind,
+# so a lost one and a dead patch produce the SAME silence: no fired line, no
+# described step, nothing. `where` is what tells them apart, because the answer
+# names the step and the phase and so says whether the last GO landed.
+#
+# ⚠️ IT IS A [print] PREFIX RATHER THAN A SENTENCE, unlike every marker above.
+# The numbers are live -- they come out of the two [f] stores -- and a message
+# box cannot carry `$1` through the generator's escaping, which turns every `$`
+# into `\$` precisely so step prose cannot smuggle one in. `print bench-at` needs
+# no escaping and no format string at all.
+SAY_WHERE = "bench-at"
+RE_WHERE = re.compile(r"\bbench-at: (\d+) (\d+)\b")
+
 
 def norm(step):
     """A step is 3 or 4 long -> (title, pass_if, actions, meta).

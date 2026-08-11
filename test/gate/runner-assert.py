@@ -33,13 +33,15 @@ sys.path.insert(0, HERE)
 
 import lib_assert as A                                          # noqa: E402
 import steps as S                                               # noqa: E402
+import stream                                                   # noqa: E402
 
 WORK = os.path.join(os.environ.get("TMPDIR", "/tmp"),
                     "cutit-runner-assert-%d" % os.getpid())
-# ⚠️ 17 steps, no actions anywhere -- the cheapest table to recite, and the only
+# ⚠️ 18 steps, no actions anywhere -- the cheapest table to recite, and the only
 # one that is ALSO a paper bench, which is what lets the fixtures below drive
 # both of the runner's two loops from one step table. (This comment said 14 for
-# as long as it took three hot-swap steps to be added above it.)
+# as long as it took three hot-swap steps to be added above it, and 17 for as
+# long as it took the fourth.)
 BENCH = "midi"
 
 
@@ -213,6 +215,324 @@ def _holds():
                 not bad, "steps %s" % bad)
 
 
+class Trickle(stream.Source):
+    """A source that says something every `gap` seconds and answers late.
+
+    ⛔ IT EXISTS TO PROVE A STALL IS SILENCE AND NOT SLOWNESS. wait_for used to
+    fix its deadline before the loop, so `timeout` was the total time the call
+    could take however much the patch was saying -- and that ended a hands-on
+    bench session on nanokontrol 15, which asks a person to sweep every fader
+    BEFORE pressing enter. Each CC is three console lines and the device's
+    console was measured at about 98 lines a second, so the fired line arrived
+    behind five seconds of the person's own traffic and the runner called a
+    working bench a stall.
+
+    ⚠️ NO REPLAY CAN SHOW THIS. Replay hands over its whole transcript at once,
+    so every deadline in it is met trivially; the defect only exists where lines
+    arrive over TIME, which is every real target and no fixture until this one.
+    """
+
+    realtime = True
+
+    def __init__(self, filler, answer, gap=0.05):
+        self.left = list(filler) + [answer]
+        self.gap = gap
+
+    def readline(self, timeout):
+        if not self.left:
+            return None
+        # ⚠️ IT HONOURS THE TIMEOUT. A source that always returned a line would
+        # pass whatever wait_for did with its clock, which is the whole subject.
+        if timeout < self.gap:
+            time.sleep(max(0.0, timeout))
+            return None
+        time.sleep(self.gap)
+        line = self.left.pop(0)
+        self._note(line)
+        return line
+
+
+class Chatter(stream.Source):
+    """A patch that says something forever and never answers.
+
+    ⛔ IT HAS NO END, which is the point: the bound under test is wait_for's,
+    not the fixture's. LIMIT is the GATE's safety net -- reaching it means the
+    cap did nothing and the check reports that rather than hanging.
+    """
+
+    realtime = True
+    LIMIT = 50000
+
+    def __init__(self):
+        self.n = 0
+
+    def readline(self, timeout):
+        self.n += 1
+        if self.n > self.LIMIT:
+            return None
+        line = "print: PARAM: slider-3 0.5"
+        self._note(line)
+        return line
+
+
+class Fake(stream.Source):
+    """The bench's state machine, in Python, on the other end of a fake wire.
+
+    ⛔ THIS IS THE ONLY THING THAT EVER EXERCISES GO RECOVERY. A lost datagram
+    cannot be provoked on demand on real hardware, and a replay cannot answer a
+    question at all -- so `where`, `show`, _ask_where, _regain_fired and
+    _next_step would every one of them be dead code that no run could
+    distinguish from working code.
+
+    ⚠️ `drop` IS A SET OF GO NUMBERS, counted the way the runner counts them, so
+    a fixture can say "the third datagram never arrived" and mean it.
+    ⚠️ `lose` IS A SET OF STEP NUMBERS whose DESCRIBE line goes missing -- the
+    other half, where the GO did land and the answer to it did not.
+    """
+
+    realtime = False        # so _drain returns at once rather than sleeping
+    boot_settle = 0.0
+
+    def __init__(self, bench, drop=(), lose=()):
+        self.steps = bench.steps
+        self.n, self.phase, self.gos = 1, 0, 0
+        self.out = []
+        self.drop, self.lose = set(drop), set(lose)
+        self.asked = 0
+        self._describe()
+
+    # -- the wire ----------------------------------------------------------
+    def _say(self, text):
+        self.out.append("print: " + text)
+
+    def readline(self, timeout):
+        if not self.out:
+            return None
+        line = self.out.pop(0)
+        self._note(line)
+        return line
+
+    def pending(self):
+        return len(self.out)
+
+    def diagnose(self):
+        return "    (fake bench at step %d phase %d)" % (self.n, self.phase)
+
+    # -- the bench ---------------------------------------------------------
+    def _describe(self):
+        if self.n in self.lose:
+            self.lose.discard(self.n)
+            return
+        self._say(S.SAY_STEP % (self.n, len(self.steps),
+                                self.steps[self.n - 1].title))
+
+    def _fire(self):
+        self._say(S.SAY_FIRED % (self.n, self.n + 1)
+                  if self.n < len(self.steps) else S.SAY_FIRED_LAST % self.n)
+
+    def go(self):
+        self.gos += 1
+        if self.gos in self.drop:
+            return                      # the datagram simply never arrived
+        if self.phase == 0:
+            self.phase = 1
+            self._fire()
+        elif self.n < len(self.steps):
+            self.phase = 0
+            self.n += 1
+            self._describe()
+        else:
+            self._say(S.SAY_COMPLETE)
+
+    def rerun(self):
+        self._fire()
+        return True
+
+    def where(self):
+        self.asked += 1
+        self._say("%s: %d %d" % (S.SAY_WHERE, self.n, self.phase))
+        return True
+
+    def show(self):
+        self._say(S.SAY_STEP % (self.n, len(self.steps),
+                                self.steps[self.n - 1].title))
+        return True
+
+
+def _stall():
+    """⛔ A STALL IS SILENCE. Slowness is not a fault and must not be reported
+    as one."""
+    print("\n--- what counts as a stall ---")
+    marker = "print: " + S.SAY_FIRED % (7, 8)
+    filler = ["print: PARAM: slider-3 0.5"] * 40
+
+    t0 = time.time()
+    src = Trickle(filler, marker, gap=0.05)
+    # ⚠️ CAUGHT RATHER THAN LET FLY. Reverting the fix makes this raise, and an
+    # uncaught Stalled ends the gate with a traceback -- red, but red in a way
+    # that names a Python line instead of the property that broke.
+    try:
+        m, _ = src.wait_for(S.RE_FIRED, 0.5)
+    except stream.Stalled:
+        m = None
+    took = time.time() - t0
+    A.check("⛔ 40 lines of chatter then the answer is NOT a stall -- the "
+            "deadline is per line",
+            m is not None and m.group(1) == "7",
+            "wait_for gave up while the patch was still printing. That is the "
+            "nanokontrol 15 failure exactly: a person sweeps every fader before "
+            "pressing enter and their own traffic outlives a fixed deadline")
+    A.check("⛔ and it really did outlive the timeout -- otherwise the check "
+            "above proves nothing",
+            took > 0.5 * 2,
+            "the call took %.2f s against a 0.5 s timeout. Under the old fixed "
+            "deadline this could not have returned at all" % took)
+
+    src = Trickle([], None, gap=0.05)
+    src.left = []
+    try:
+        src.wait_for(S.RE_FIRED, 0.2)
+        A.check("silence IS a stall", False, "it returned instead of raising")
+    except stream.Stalled:
+        A.check("silence IS a stall -- nothing arriving still ends the wait",
+                True)
+
+    # ⛔ AND THE OTHER END OF IT. A patch that prints forever and never answers
+    # would wait all night on silence alone, so the cap is what bounds it -- and
+    # it counts LINES, which is the only bound a replay can be made to hit.
+    # ⛔ AND THE OTHER END OF IT. A patch that prints forever and never answers
+    # would wait all night on silence alone, so the cap is what bounds it -- and
+    # it counts LINES, which is the only bound a replay can be made to hit.
+    # ⚠️ THE SOURCE IS ENDLESS ON PURPOSE. Any finite fixture stalls at its own
+    # end whether or not the cap exists, so asserting Stalled against one would
+    # be green with the bound deleted. Chatter has only the gate's own safety
+    # net, far above LINE_CAP, and the check is WHERE it stopped.
+    src = Chatter()
+    try:
+        src.wait_for(S.RE_FIRED, 0.2)
+        A.check("⛔ prints forever and never answers IS a stall", False,
+                "it returned a match out of a stream that contains none")
+    except stream.Stalled:
+        A.check("⛔ prints forever and never answers IS a stall -- it stopped "
+                "at the line cap and not at the gate's own safety net",
+                src.n <= stream.LINE_CAP + 1 < Chatter.LIMIT,
+                "it read %d lines against a cap of %d. Nothing bounded the wait "
+                "but the fixture running out, and a real patch does not"
+                % (src.n, stream.LINE_CAP))
+
+
+def _recovery(bench):
+    """⛔ A LOST GO MUST NOT END THE SESSION, and must not be guessed at either.
+
+    GO travels as one UDP datagram and UDP guarantees nothing. A lost one and a
+    dead patch produce identical silence, and the two want opposite responses --
+    resend, or stop. `where` is what separates them, and these are the only
+    checks that ever run that path.
+    """
+    print("\n--- recovering a lost GO ---")
+    import records
+    import run as R
+
+    saved_runs, saved_ask = records.RUNS, stream.ask_line
+    records.RUNS = os.path.join(WORK, "runs")
+
+    def drive(**kw):
+        src = Fake(bench, **kw)
+        stream.use(stream.keystrokes(write("fake.keys", _keys(bench))))
+        try:
+            rows, ok = R.run_bench_driven(bench, "device", False, 1, src)
+        finally:
+            stream.use(saved_ask)
+        return src, rows, ok
+
+    try:
+        # the control arm: nothing is dropped, and nothing is asked
+        src, rows, ok = drive()
+        A.check("no loss: every step is judged",
+                len(rows) == len(bench.steps) and ok,
+                "%d rows of %d, ok=%s" % (len(rows), len(bench.steps), ok))
+        A.check("⛔ no loss: the bench is never asked where it is -- recovery "
+                "must cost nothing on a healthy run",
+                src.asked == 0, "asked %d time(s)" % src.asked)
+
+        # ⛔ THE GO THAT RUNS STEP 3. The bench is left in phase 0, so the
+        # recovery is to send it again -- and a runner that sent GO blindly
+        # would be right here and catastrophically wrong in the arm below.
+        src, rows, ok = drive(drop=[5])
+        A.check("⛔ a lost GO before a step runs is resent, and the run finishes",
+                len(rows) == len(bench.steps) and ok,
+                "%d rows of %d, ok=%s -- the session ended on a dropped "
+                "datagram" % (len(rows), len(bench.steps), ok))
+
+        # ⛔ THE GO THAT ADVANCES. Identical silence, opposite cause: the bench
+        # is in phase 1 and a second GO would advance it TWICE.
+        src, rows, ok = drive(drop=[6])
+        A.check("⛔ a lost GO before an advance is resent, and no step is "
+                "skipped", len(rows) == len(bench.steps) and ok
+                and [r["step"] for r in rows] == [s.n for s in bench.steps],
+                "steps recorded: %s" % [r["step"] for r in rows])
+
+        # ⛔ THE OTHER HALF: the GO landed and its ANSWER did not. Resending GO
+        # here would advance a bench that is already where it should be, and
+        # every verdict after it would answer the wrong question. `show` is what
+        # makes that recoverable without moving anything.
+        src, rows, ok = drive(lose=[4])
+        A.check("⛔ a lost DESCRIBE line is asked for again rather than "
+                "re-driven", len(rows) == len(bench.steps) and ok
+                and [r["step"] for r in rows] == [s.n for s in bench.steps],
+                "steps recorded: %s" % [r["step"] for r in rows])
+        A.check("and it had to ask -- otherwise the check above is vacuous",
+                src.asked > 0, "asked %d time(s)" % src.asked)
+
+        # ⛔ A BENCH THAT WILL NOT ANSWER IS STILL A STALL. Recovery must not
+        # turn a dead patch into a green run, which is the failure mode of every
+        # retry ever written.
+        class Deaf(Fake):
+            def go(self):
+                self.gos += 1
+
+            def where(self):
+                self.asked += 1
+                return True         # sent, and nothing comes back
+
+        src = Deaf(bench)
+        stream.use(stream.keystrokes(write("deaf.keys", _keys(bench))))
+        try:
+            rows, ok = R.run_bench_driven(bench, "device", False, 1, src)
+        finally:
+            stream.use(saved_ask)
+        A.check("⛔ a patch that answers nothing at all still STALLS",
+                not ok and len(rows) < len(bench.steps),
+                "%d rows of %d, ok=%s" % (len(rows), len(bench.steps), ok))
+    finally:
+        records.RUNS = saved_runs
+        stream.use(saved_ask)
+
+
+def _where_wiring():
+    """⛔ THE QUERY HAS TO BE IN THE PATCH, in every bench, or the recovery above
+    is a conversation with nobody."""
+    print("\n--- where and show, in the generated benches ---")
+    m = S.RE_WHERE.search("print: %s: 16 1" % S.SAY_WHERE)
+    A.check("protocol: the where regex reads what [print %s] writes" % S.SAY_WHERE,
+            bool(m) and m.groups() == ("16", "1"),
+            "groups %s" % str(m.groups() if m else None))
+
+    import glob
+    files = sorted(glob.glob(os.path.join(ROOT, "test/bench/*-bench.pd")))
+    A.check("every bench file is checked -- %d of them" % len(files),
+            len(files) == 7, "found %d" % len(files))
+    for path in files:
+        src = open(path, encoding="utf-8").read()
+        name = os.path.basename(path)
+        A.check("%s routes go rerun where show" % name,
+                "route go rerun where show" in src,
+                "the runner can ask this bench nothing, so a lost GO ends the "
+                "session exactly as it did before")
+        A.check("%s prints its position" % name,
+                "print %s" % S.SAY_WHERE in src)
+
+
 def main():
     os.makedirs(WORK, exist_ok=True)
     os.chdir(ROOT)
@@ -237,6 +557,10 @@ def main():
             "groups %s" % str(m.groups() if m else None))
     A.check("protocol: the complete regex reads what the complete format writes",
             bool(S.RE_COMPLETE.search("print: " + S.SAY_COMPLETE)))
+
+    _where_wiring()
+    _stall()
+    _recovery(bench)
 
     # ⛔ THE CHILD MUST NEVER INHERIT stdin, AND NO REPLAY FIXTURE CAN SEE THIS.
     # Every check in this file drives stream.Replay, which launches nothing --

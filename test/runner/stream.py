@@ -21,6 +21,12 @@ import time
 # step the patch thought it was on, short enough to read.
 TAIL = 6
 
+# ⛔ HOW MANY LINES A PATCH MAY SAY WITHOUT ANSWERING before wait_for gives up.
+# The device console was measured at about 98 lines a second under a hand sweep,
+# so this is roughly twenty seconds of the busiest thing a bench ever does --
+# generous, and still bounded.
+LINE_CAP = 2000
+
 
 class Stalled(Exception):
     """No line arrived in time. ⚠️ Two shapes, and they must be told apart --
@@ -58,11 +64,21 @@ class Source(object):
     # backlog). Report all three and the next one diagnoses itself.
     gos = 0
 
+    # ⛔ WHEN THE LAST LINE ARRIVED, and both stall reports this project has
+    # collected were unreadable without it. One showed a queue of 3 and a tail of
+    # fader traffic; the other a queue of 0 and a tail of the resting screen --
+    # and neither says the thing that decides the diagnosis, which is whether the
+    # console was still ALIVE. A patch that has said nothing for five seconds is
+    # gone; one still printing every 40 ms simply has not answered yet, and those
+    # want opposite responses.
+    last_at = None
+
     def _note(self, line):
         """Remember the last few lines, for a stall report."""
         if getattr(self, "seen", None) is None:
             self.seen = collections.deque(maxlen=TAIL)
         self.seen.append(line)
+        self.last_at = time.time()
 
     def pending(self):
         """How far behind the reader is, or None where that has no meaning."""
@@ -76,6 +92,11 @@ class Source(object):
             out.append("    %d line(s) waiting unread -- %s"
                        % (n, "the runner is ahead of the patch" if n else
                           "nothing is queued, so nothing was sent"))
+        if self.last_at is not None and self.realtime:
+            gap = time.time() - self.last_at
+            out.append("    the last line arrived %.1f s ago -- %s"
+                       % (gap, "the console has gone quiet" if gap > 1.0 else
+                          "the console is still alive, it just has not answered"))
         seen = getattr(self, "seen", None)
         if seen:
             out.append("    the last %d line(s) seen:" % len(seen))
@@ -110,6 +131,18 @@ class Source(object):
         the other end.
         """
 
+    def where(self):
+        """Ask the bench which step it is on. -> did it happen?
+
+        ⚠️ FALSE FROM A REPLAY for the same reason `rerun` is: a recording
+        cannot be asked anything. The caller falls back to reporting the stall.
+        """
+        return False
+
+    def show(self):
+        """Ask the bench to describe its current step again. -> did it happen?"""
+        return False
+
     def close(self, quiet=False):
         """⚠️ `quiet` is honoured by targets.Process -- see there."""
 
@@ -120,10 +153,30 @@ class Source(object):
         Every line seen on the way is appended to `collect` if given -- that
         list is the predicate window, so nothing between two markers is thrown
         away before a predicate has had the chance to look at it.
+
+        ⛔ A STALL IS SILENCE, NOT SLOWNESS, and this used to have it the other
+        way round: `end` was fixed before the loop, so the deadline was the
+        total time the call was allowed to take however much the patch was
+        saying. It cost a hands-on bench session. A hands step prints what to do
+        BEFORE the prompt, so a person sweeps every fader and THEN presses
+        enter; each CC is three console lines and the device's console runs at
+        about 98 lines a second, so the fired line lands behind five seconds of
+        traffic the person generated themselves. The runner gave up while lines
+        were still arriving and reported a working bench as a stall.
+
+        ⚠️ SO THE DEADLINE IS PER LINE. `timeout` is now how long the patch may
+        stay SILENT, which is what the stall message has always claimed to
+        measure.
+
+        ⛔ AND THERE IS STILL A CAP, because "prints forever and never answers"
+        is a real failure and silence alone would wait for it all night. It
+        counts LINES rather than seconds on purpose: a wall-clock cap cannot be
+        tested against a replay, which hands over its whole transcript at once,
+        so the one bound that matters would be the one bound with no gate.
         """
-        end = time.time() + timeout
+        seen = 0
         while True:
-            line = self.readline(max(0.0, end - time.time()))
+            line = self.readline(timeout)
             if line is None:
                 raise Stalled()
             if collect is not None:
@@ -131,7 +184,8 @@ class Source(object):
             m = pattern.search(line)
             if m:
                 return m, line
-            if time.time() >= end:
+            seen += 1
+            if seen >= LINE_CAP:
                 raise Stalled()
 
 

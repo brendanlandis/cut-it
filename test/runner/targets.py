@@ -137,6 +137,18 @@ class Process(stream.Source):
         self.gosender.send("rerun")
         return True
 
+    def where(self):
+        # ⚠️ NOT COUNTED AS A GO EITHER, and for a sharper reason than rerun: the
+        # count is what a stall report uses to argue the GO went out at all, and
+        # a question asked BECAUSE of a stall must not inflate the evidence about
+        # what caused it.
+        self.gosender.send("where")
+        return True
+
+    def show(self):
+        self.gosender.send("show")
+        return True
+
     def hold(self, on):
         """Keep re-firing the current step while a verdict is open.
 

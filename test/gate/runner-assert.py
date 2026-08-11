@@ -509,6 +509,38 @@ def _recovery(bench):
         stream.use(saved_ask)
 
 
+def _boxes(src):
+    """Every box in a .pd, in file order -- which is what #X connect indexes.
+
+    ⚠️ COMMENTS COUNT AND #X connect DOES NOT. Same rule as C-10 and as
+    pd-layout-check.py, and getting it wrong here would silently read the wrong
+    box for every cord.
+    """
+    return [ln.split(" ", 4)[-1].rstrip(";")
+            for ln in src.splitlines()
+            if ln.startswith(("#X obj ", "#X msg ", "#X text "))]
+
+
+def _feeds(src, pattern):
+    """Every cord landing on a box matching `pattern`. -> [(from, to)] indices."""
+    boxes = _boxes(src)
+    want = [i for i, b in enumerate(boxes) if re.fullmatch(pattern, b)]
+    out = []
+    for ln in src.splitlines():
+        if not ln.startswith("#X connect "):
+            continue
+        a, _ao, b, _bi = ln[len("#X connect "):].rstrip(";").split()
+        if int(b) in want:
+            out.append((int(a), int(b)))
+    return out
+
+
+def _emits_float(box):
+    """Can this box's outlet 0 carry a number?"""
+    cls = box.split()[0] if box.split() else ""
+    return cls in ("f", "float", "i", "int") or box.startswith("t f")
+
+
 def _where_wiring():
     """⛔ THE QUERY HAS TO BE IN THE PATCH, in every bench, or the recovery above
     is a conversation with nobody."""
@@ -531,6 +563,17 @@ def _where_wiring():
                 "session exactly as it did before")
         A.check("%s prints its position" % name,
                 "print %s" % S.SAY_WHERE in src)
+        # ⛔ $0-do-show CARRIES THE STEP NUMBER, NOT A BANG. The describe chain
+        # is one [select N] per step, so a bang matches none of them and the
+        # re-describe is a silent no-op -- indistinguishable from a step whose
+        # text is already on screen, which is why the encoder's repeat was dead
+        # from the day it was written and nothing noticed. `show` inherited the
+        # same wire and a probe against real Pd caught it.
+        bad = [_boxes(src)[a] for a, b in _feeds(src, r"s \\\$0-do-show")
+               if not _emits_float(_boxes(src)[a])]
+        A.check("%s feeds $0-do-show a float and never a bang" % name,
+                not bad, "fed by %s -- a bang matches no [select N] and the "
+                         "step is silently not re-described" % bad)
 
 
 def main():

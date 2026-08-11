@@ -618,9 +618,12 @@ def build(name, cfg):
     p.con(wh_pr2, 0, wh_phase, 1)
 
     sh_t = p.obj(2000, Y + 380, "t b")
-    sh_s = p.obj(2000, Y + 440, "s \\$0-do-show")
+    sh_s = p.obj(2000, Y + 440, "s \\$0-repeat")
     p.con(net_rt, 3, sh_t, 0)
     p.con(sh_t, 0, sh_s, 0)
+    p.txt(2200, Y + 380,
+          "show goes through $0-repeat \\, which is the encoder's path too -- one "
+          "way to re-describe a step \\, not two.", 46)
 
     rep_r = p.obj(1400, Y, "r enc")
     rep_t = p.obj(1400, Y + 60, "t b")
@@ -696,14 +699,27 @@ def build(name, cfg):
     show_s = p.obj(2260, Y + 130, "s \\$0-do-show")
     p.con(set_t, 0, show_s, 0)
 
-    rep_rr = p.obj(2100, Y, "r \\$0-repeat")
-    rep_ss = p.obj(2100, Y + 60, "s \\$0-do-show")
-    p.con(rep_rr, 0, rep_ss, 0)
+    # ⛔ $0-do-show CARRIES THE STEP NUMBER \, NOT A BANG -- the describe chain is
+    # one [select N] per step and a bang matches none of them. This sent a bang
+    # for as long as it existed \, so the encoder's repeat did NOTHING on the Mac
+    # and nothing said so: the console simply stayed as it was \, which is also
+    # what a repeat of a step whose text is already on screen looks like. It was
+    # caught the day `show` was added and inherited the same wire.
+    # ⚠️ THE STORE READS $0-set-run \, which the same trigger writes one outlet
+    # before it fires this one \, so a repeat can never describe a step the bench
+    # has left.
+    rep_rr = p.obj(2600, Y, "r \\$0-repeat")
+    rep_f = p.obj(2600, Y + 60, "f")
+    rep_fr = p.obj(2780, Y, "r \\$0-set-run")
+    rep_ss = p.obj(2600, Y + 120, "s \\$0-do-show")
+    p.con(rep_rr, 0, rep_f, 0)
+    p.con(rep_fr, 0, rep_f, 1)
+    p.con(rep_f, 0, rep_ss, 0)
 
-    lb = p.obj(2500, Y, "loadbang")
-    lbd = p.obj(2500, Y + 60, "del 500")
-    lb1 = p.msg(2500, Y + 120, "1")
-    lbs = p.obj(2500, Y + 180, "s \\$0-set-step")
+    lb = p.obj(3100, Y, "loadbang")
+    lbd = p.obj(3100, Y + 60, "del 500")
+    lb1 = p.msg(3100, Y + 120, "1")
+    lbs = p.obj(3100, Y + 180, "s \\$0-set-step")
     p.con(lb, 0, lbd, 0)
     p.con(lbd, 0, lb1, 0)
     p.con(lb1, 0, lbs, 0)

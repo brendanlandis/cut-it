@@ -25,7 +25,7 @@ were false.
 
 | Gate | Checks | Answers for |
 |---|---|---|
-| `runner-assert.sh` | 138 | **no page** — it answers for this one |
+| `runner-assert.sh` | 142 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
@@ -45,9 +45,9 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 
-**514 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
+**518 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **436**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **440**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 36 come from TWO Pd runs and one tally**, which is the only entry here
@@ -559,10 +559,10 @@ ssh root@organelle.local
 `!` inside double quotes is a history event in interactive zsh — you get `zsh: event not found:
 /Cut` before anything reaches the device.
 
-⚠️ **The second `-path` is not optional for `tempo-bench`.** Its own `declare` is `../Cut\ It`,
-which resolves from `tools/` on the Mac but not from `/tmp/` on the device. Without it `c_clock`
-fails to create and both its counts read **0** — which looks exactly like a dead clock rather than
-a missing search path.
+⚠️ **The second `-path` is what lets a bench find an abstraction from `Cut It/`.** No bench needs one
+today — `tempo-bench` was the last, and it stopped when its `c_clock` counters were cut — but a
+bench that gains one resolves it from `/sdcard` and not from the patch folder, so leaving the flag
+in the launch line costs nothing and its absence is silent.
 
 ⚠️ **THE ENCODER DOES NOT ADVANCE A BENCH ON THE DEVICE.** The plan that chose a single
 alternating control assumed it would. `mother` forwards `encbut` only to patches that have sent
@@ -650,31 +650,34 @@ eleven cases; before that it could only warn, because the transcribed text was f
 
 ### `tempo-bench.pd` — the tempo acceptance run
 
-Same shape again: fifteen steps, stepped by hand, a printed `PASS IF` before each one, covering
-the clock, the transport, the map and the aux LED. **Steps 1–12 drive themselves; 13 and 14 need
-your hands on the Organelle itself** — the aux button and knob 1 are the only controls involved,
-and neither exists on a laptop. Step 15 just says to stop.
+Same shape again: thirteen steps, stepped by hand, a printed `PASS IF` before each one, covering
+parameter pickup, the transport, the clamp and the 404 link. **Steps 1–11 drive themselves; 12 and
+13 need your hands on the Organelle itself** — the aux button and knob 1 are the only controls
+involved, and neither exists on a laptop.
 
 ⚠️ **The aux step's text carried two escaped commas inside its `PASS IF`.** `\,` satisfies the .pd
 *parser*, but a message box still treats the comma atom as a separator — so that line printed as
 **three fragments**. Both are now ` -- `.
 
-**It finds `c_clock` itself**, through `#X declare -path ../Cut\ It` — the escaped space survives
-Pd's parser ✅ — so opening it straight from Pd's File menu works and no `-path` is needed. If the
-console ever says `c_clock ... couldn't create`, the two `c_clock` counts will read **0** and mean
-nothing, which looks like a dead clock rather than a missing search path.
+⛔ **The three beat-count steps are gone, and they are the clearest case of the duplication rule
+this project keeps rediscovering.** *Beat counts while stopped* asserted `c_clock`'s 1.5 ratio and
+*Beat counts after stopping* asserted that a stop does not halt the timer — both already owned, more
+tightly and in ~16 s, by `clock-assert.py` and `tempo-assert.py`. **Neither touched a device**: the
+counters lived in the bench patch and printed to the runner's own terminal, so both step texts had to
+admit there was nothing on the instrument to look at. *Zero the beat counters* armed them and nothing
+else. ⚠️ **The cost of keeping them was `latest.json`** — one claim judged twice under two names
+reports more coverage than exists, which is the `nanokontrol` duplication above, one level up.
 
-⚠️ **On the Mac, tick the panel's `enable-DSP` toggle first.** `threshold~` is a signal object,
-so with DSP off the beat counters read **0** — which looks exactly like a broken clock. On the
-device `mother.pd` turns DSP on 200 ms after load and this does not arise.
+**So `tempo-bench` no longer loads `c_clock`**, and the `#X declare` search path went with the
+counters. Nothing it does now needs an abstraction from `Cut It/`.
 
 Three steps carry the load:
 
 | Step | Proves |
 |---|---|
-| **3** | 24 PPQN is right, and `c_clock` at ratios 1 and 1.5 gives 20 and 30 beats in 10 s at 120 BPM |
-| **9–10** | **the clock keeps running when the transport stops.** A zero here is the bug the step exists for — stop the pulse stream and the 404 stretches to a stale tempo |
-| **7** | out-of-range clamps to the 5–600 legal range and warns **once per distinct value** — press the same button twice and the second press must be silent |
+| **2** | **parameter pickup holds a restored knob.** The row reads `bpm 57 (10)` — the saved position, then where the knob is now — and the footer does not move. ⛔ Needs a `knobs.txt` saved off the rail or only the released branch is reachable |
+| **5** | out-of-range clamps to the 5–600 legal range and warns **once per distinct value** — send the same value twice and the second must be silent |
+| **9** | **the 404 follows a tempo change**, at 180 BPM. ⛔ Not 240: the 404 follows only between 40 and 200 and pins outside that window |
 
 ### `phone-bench.pd` — the phone acceptance run
 

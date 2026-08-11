@@ -353,12 +353,17 @@ STEPS_TEMPO = [
   'PASS IF: The aux button turns red and the footer says panic.',
   [('bang', 'panic')]),
  ('Aux button transport',
-  'PASS IF: On the device use the real button. On the Mac use aux-tap and not the aux toggle. First press green and the 404 starts. Second press dark blue and it stops.',
+  'PASS IF: The first press turns the aux button green and the 404 starts. The second press turns it dark blue and the 404 stops.',
   [],
-  {'do': 'Press the aux button twice. On the Mac use aux-tap and not the aux toggle.',
+  # ⛔ WHICH CONTROL TO PRESS IS `do`, NOT THE PASS IF. Both fields carried the
+  # Mac/device sentence, so the runner printed it twice on consecutive lines --
+  # and the PASS IF opened on two instructions before it reached anything to
+  # look at. A PASS IF says what you can SEE.
+  {'do': 'Press the aux button twice. On the device use the real button, and on '
+         'the Mac use aux-tap rather than the aux toggle.',
    'need': ['The Organelle powered and in reach.']}),
  ('Knob 1 tempo sweep',
-  'PASS IF: The row reads bpm and a number. Never og-knob-1 and never a 0-to-1 decimal. While the knob is still held it reads bpm 57 (120) or similar -- the latched tempo first and the knob position in brackets. Once it crosses it reads bpm alone and tracks between 10 and 500 BPM. The 404 follows the sweep.',
+  'PASS IF: The row reads bpm and a number. Never og-knob-1 and never a 0-to-1 decimal. While the knob is still held it reads bpm 57 (120) or similar -- the knob position you saved first and where the knob is pointing now in brackets. Once it crosses it reads bpm alone and tracks between 10 and 500 BPM. The 404 follows the sweep.',
   [],
   {'do': 'Sweep Organelle knob 1 all the way and back. A full sweep always crosses.',
    'need': ['The Organelle powered and in reach.']}),

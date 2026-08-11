@@ -203,13 +203,13 @@
 #X obj 20 6380 select 15;
 #X obj 240 6380 t b b b;
 #X msg 700 6380 === STEP-15-of-16 === Aux button transport;
-#X msg 700 6430 PASS IF: On the device use the real button. On the Mac use aux-tap and not the aux toggle. First press green and the 404 starts. Second press dark blue and it stops.;
+#X msg 700 6430 PASS IF: The first press turns the aux button green and the 404 starts. The second press turns it dark blue and the 404 stops.;
 #X msg 700 6480 >>> press GO to run step 15 of 16;
 #X obj 240 6550 s \$0-say;
 #X obj 20 6640 select 16;
 #X obj 240 6640 t b b b;
 #X msg 700 6640 === STEP-16-of-16 === Knob 1 tempo sweep;
-#X msg 700 6690 PASS IF: The row reads bpm and a number. Never og-knob-1 and never a 0-to-1 decimal. While the knob is still held it reads bpm 57 (120) or similar -- the latched tempo first and the knob position in brackets. Once it crosses it reads bpm alone and tracks between 10 and 500 BPM. The 404 follows the sweep.;
+#X msg 700 6690 PASS IF: The row reads bpm and a number. Never og-knob-1 and never a 0-to-1 decimal. While the knob is still held it reads bpm 57 (120) or similar -- the knob position you saved first and where the knob is pointing now in brackets. Once it crosses it reads bpm alone and tracks between 10 and 500 BPM. The 404 follows the sweep.;
 #X msg 700 6740 >>> press GO to run step 16 of 16;
 #X obj 240 6810 s \$0-say;
 #X obj 20 6900 t b;

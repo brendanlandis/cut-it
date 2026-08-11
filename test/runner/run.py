@@ -182,10 +182,24 @@ def describe(bench, step):
     tag = "  [HANDS]" if step.hands else ""
     print("\n[%d/%d] %s - %s%s"
           % (step.n, step.of, bench.name, step.title, tag))
-    for line in step.meta.get("need", []):
-        print(_field("need    ", line))
+    # ⛔ THREE LABELS, ALWAYS THE SAME THREE, AND ALWAYS IN THIS ORDER. What you
+    # must have, what you must do, what you must see. A step that printed `need`
+    # twice and then a PASS IF opening on two more instructions gave a person in
+    # a hurry four fields to sort into those three categories themselves.
+    need = step.meta.get("need", [])
+    if need:
+        print(_field("NEED:   ", " ".join(need)))
+    # ⚠️ AND THE DO LINE IS NEVER ABSENT, because "nothing" is an answer a person
+    # needs. Its absence used to mean two different things -- the bench sends the
+    # actions, or there is nothing to send at all -- and both read as a step that
+    # forgot to say. `hands` still keys on the authored `do` alone, so synthesising
+    # one here cannot make a step claim it wants fingers.
     if step.meta.get("do"):
-        print(_field("do      ", step.meta["do"]))
+        print(_field("DO:     ", step.meta["do"]))
+    elif step.actions:
+        print(_field("DO:     ", "Nothing -- the bench sends this one."))
+    else:
+        print(_field("DO:     ", "Nothing -- just look."))
     # ⚠️ THE LABEL IS `PASS IF:` BECAUSE THAT IS WHAT THE TEXT IS. It was `watch`,
     # which named nothing a person could act on -- the line is the step's PASS
     # IF with its prefix stripped (steps.py `watch`), the verdict prompt asks

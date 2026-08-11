@@ -168,13 +168,13 @@
 #X obj 20 6240 select 17;
 #X obj 240 6240 t b b b;
 #X msg 700 6240 === STEP-17-of-18 === Modal safety timeout;
-#X msg 700 6290 PASS IF: stuck appears now. Then wait and watch -- with no further input it clears itself after 30 s. Do not answer until it has.;
+#X msg 700 6290 PASS IF: stuck appears in mid-size text and stays.;
 #X msg 700 6340 >>> press GO to run step 17 of 18;
 #X obj 240 6410 s \$0-say;
 #X obj 20 6500 select 18;
 #X obj 240 6500 t b b b;
 #X msg 700 6500 === STEP-18-of-18 === Modal safety timeout -- the wait;
-#X msg 700 6550 PASS IF: The screen returned to the meters on its own while you waited.;
+#X msg 700 6550 PASS IF: The screen went back to the meters on its own with nothing touched.;
 #X msg 700 6600 >>> press GO to run step 18 of 18;
 #X obj 240 6670 s \$0-say;
 #X obj 20 6760 t b;

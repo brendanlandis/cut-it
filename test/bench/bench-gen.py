@@ -888,13 +888,13 @@ BENCHES = {
     "nanokontrol": dict(steps=S.STEPS_NANOKONTROL, counters=[],
                         blurb="the nanoKONTROL acceptance run: every fader \\, knob "
                         "and transport key \\, and the multi-parameter display."),
-    "tempo": dict(steps=S.STEPS_TEMPO,
-                  blurb="the tempo acceptance run: the clock \\, the transport \\, "
-                  "the map and the aux LED.",
-                  counters=[("M-BEATS", "r clock"),
-                            ("C1-BEATS-ratio-1", "c_clock 1 4"),
-                            ("C2-BEATS-ratio-1.5", "c_clock 1.5 4")],
-                  declare="-path ../../Cut\\ It"),
+    # ⛔ NO COUNTERS, AND THEREFORE NO declare. The three beat counters existed
+    # for two steps that duplicated clock-assert and tempo-assert -- see the note
+    # above STEPS_TEMPO. c_clock was the only abstraction tempo-bench loaded, so
+    # the search path it needed goes with it.
+    "tempo": dict(steps=S.STEPS_TEMPO, counters=[],
+                  blurb="the tempo acceptance run: the transport \\, the map \\, "
+                  "the 404 link and the aux LED."),
     "launchpad": dict(steps=S.STEPS_LAUNCHPAD,
                       blurb="the Launchpad acceptance run: the grid \\, the grid "
                       "arbiter \\, the mode bus and the first c_clock instance.",

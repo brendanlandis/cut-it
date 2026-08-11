@@ -72,7 +72,7 @@
 #X obj 20 2080 select 1;
 #X obj 240 2080 t b b b;
 #X msg 700 2080 === STEP-01-of-14 === The link is up;
-#X msg 700 2130 PASS IF: The bottom line of the phone reads ok rather than NO-LINK. IF it says NO-LINK stop here and check that PdParty is open on the same network. Every step below depends on it.;
+#X msg 700 2130 PASS IF: The bottom line of the phone reads ok rather than NO-LINK.;
 #X msg 700 2180 >>> press GO to run step 1 of 14;
 #X obj 240 2250 s \$0-say;
 #X obj 20 2340 select 2;
@@ -90,7 +90,7 @@
 #X obj 20 2860 select 4;
 #X obj 240 2860 t b b b;
 #X msg 700 2860 === STEP-04-of-14 === The status line;
-#X msg 700 2910 PASS IF: The third line reads 128-bpm and the parameter name and number above it do not change. Expect u_tempo to overwrite it with the real BPM at the next transport event.;
+#X msg 700 2910 PASS IF: The third line reads 128-bpm and the parameter name and number above it do not change. u_tempo overwriting it with the real BPM at the next transport event is correct.;
 #X msg 700 2960 >>> press GO to run step 4 of 14;
 #X obj 240 3030 s \$0-say;
 #X obj 20 3120 select 5;
@@ -120,7 +120,7 @@
 #X obj 20 4160 select 9;
 #X obj 240 4160 t b b b;
 #X msg 700 4160 === STEP-09-of-14 === Grid vocabulary must not appear;
-#X msg 700 4210 PASS IF: Nothing on the phone changes. The Launchpad going modal is correct. The next step clears it.;
+#X msg 700 4210 PASS IF: Nothing on the phone changes. The Launchpad going modal is correct and the next step clears it.;
 #X msg 700 4260 >>> press GO to run step 9 of 14;
 #X obj 240 4330 s \$0-say;
 #X obj 20 4420 select 10;
@@ -132,13 +132,13 @@
 #X obj 20 4680 select 11;
 #X obj 240 4680 t b b b;
 #X msg 700 4680 === STEP-11-of-14 === The aux LED;
-#X msg 700 4730 PASS IF: The aux button goes green and the phone does not move.;
+#X msg 700 4730 PASS IF: The aux LED goes green and the phone does not move.;
 #X msg 700 4780 >>> press GO to run step 11 of 14;
 #X obj 240 4850 s \$0-say;
 #X obj 20 4940 select 12;
 #X obj 240 4940 t b b b;
 #X msg 700 4940 === STEP-12-of-14 === Fast fader sweep;
-#X msg 700 4990 PASS IF: The phone tracks the fader while it moves and then settles on the value you stopped at. A phone left showing a number from the middle of the sweep is the failure. Sweep two faders at once if you have the fingers -- both must settle.;
+#X msg 700 4990 PASS IF: The phone tracks the fader while it moves and settles on the value you stopped at. A number left over from the middle of the sweep is the failure.;
 #X msg 700 5040 >>> press GO to run step 12 of 14;
 #X obj 240 5110 s \$0-say;
 #X obj 20 5200 select 13;

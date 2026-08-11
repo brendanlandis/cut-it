@@ -72,7 +72,7 @@
 #X obj 20 2080 select 1;
 #X obj 240 2080 t b b b;
 #X msg 700 2080 === STEP-01-of-05 === Restored mode at boot;
-#X msg 700 2130 PASS IF: The Launchpad top row shows exactly one lit mode lamp. Which one is the test -- a fresh install comes up on mode-1 and a restored one comes up wherever you left it. If the grid is dark then nothing below can be read.;
+#X msg 700 2130 PASS IF: The Launchpad top row shows exactly one lit mode lamp -- on mode-1 for a fresh install and wherever you left it for a restored one. A dark grid means nothing below can be read.;
 #X msg 700 2180 >>> press GO to run step 1 of 5;
 #X obj 240 2250 s \$0-say;
 #X obj 20 2340 select 2;
@@ -84,7 +84,7 @@
 #X obj 20 2600 select 3;
 #X obj 240 2600 t b b b;
 #X msg 700 2600 === STEP-03-of-05 === The change reached the disk;
-#X msg 700 2650 PASS IF: Cut-it-auto.txt reads mode perform mode-4. Nothing on the instrument shows this -- the file is the only evidence. If it still reads the old mode that is the failure.;
+#X msg 700 2650 PASS IF: Cut-it-auto.txt reads mode perform mode-4. The file is the only evidence -- nothing on the instrument shows it. The old mode still being there is the failure.;
 #X msg 700 2700 >>> press GO to run step 3 of 5;
 #X obj 240 2770 s \$0-say;
 #X obj 20 2860 select 4;
@@ -96,7 +96,7 @@
 #X obj 20 3120 select 5;
 #X obj 240 3120 t b b b;
 #X msg 700 3120 === STEP-05-of-05 === Survives a power cycle;
-#X msg 700 3170 PASS IF: The same mode lamp is lit as before the power cycle. Do this last in A session -- it resets the wifi fault uptime clock and that fault needs about three hours to reappear.;
+#X msg 700 3170 PASS IF: The same mode lamp is lit as before the power cycle.;
 #X msg 700 3220 >>> press GO to run step 5 of 5;
 #X obj 240 3290 s \$0-say;
 #X obj 20 3380 t b;

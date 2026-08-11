@@ -182,6 +182,7 @@ def _holds():
     """
     print("\n--- which steps may be held on screen ---")
     disp, nano, lp = S.load("display"), S.load("nanokontrol"), S.load("launchpad")
+    ALL_BENCHES = [S.load(n) for n in S.names()]
 
     held = [st for b in (disp, nano, lp) for st in b.steps if st.holds]
     A.check("some step is actually held -- the exemptions have not eaten "
@@ -200,7 +201,7 @@ def _holds():
     # into display, which is what they were always about -- see test/README.md.
     for b, n, why in ((disp, 10, "about 2 s later it vanishes"),
                       (disp, 13, "recording returns after about 4 s"),
-                      (disp, 17, "clears itself after 30 s"),
+                      (disp, 17, "the 30 s TTL that the step AFTER it judges"),
                       (lp, 13, "clears ITSELF about thirty seconds later"),
                       (lp, 11, "goes back to the mode lamps by itself")):
         st = b.steps[n - 1]
@@ -210,20 +211,27 @@ def _holds():
                 "test\n     %s" % st.pass_if)
 
     # ⛔ A STEP MAY REFUSE THE HOLD OUTRIGHT, and the derivation cannot work it
-    # out: `hold: False` is about whether the ACTIONS are idempotent, not about
-    # whether the prose describes a decay. tempo 4 sends a tempo and then a knob
-    # mapped to tempo, so a re-fire walks the footer down in front of the reader.
-    t4 = S.load("tempo").steps[3]
-    A.check("⛔ a step carrying `hold: False` is not held",
-            not t4.holds and t4.actions and not t4.measure
-            and not S.DECAY_RE.search(t4.pass_if),
-            "tempo 4 holds=%s -- and it must be the meta doing it, not a decay "
-            "word that happens to be in the prose" % t4.holds)
+    # out: `hold: False` is about whether the ACTIONS are idempotent, or about a
+    # timer the NEXT step judges, and neither is visible in this step's prose.
+    # ⚠️ FOUND BY SEARCHING RATHER THAN BY INDEX, because this named `tempo 4`
+    # and broke the day two tempo steps were cut. A can-it-fail check pinned to a
+    # step NUMBER is the same brittleness as a runner that trusts the step count,
+    # and this file argues against that in three other places.
+    refusers = [(b.name, st) for b in ALL_BENCHES for st in b.steps
+                if st.meta.get("hold") is False]
+    A.check("at least one step still refuses the hold outright -- otherwise "
+            "the check below is vacuous", refusers, "found none")
+    for name, st in refusers:
+        A.check("⛔ %s step %d carries `hold: False` and is not held"
+                % (name, st.n),
+                not st.holds and st.actions and not st.measure
+                and not S.DECAY_RE.search(st.pass_if),
+                "holds=%s -- and it must be the meta doing it, not a decay word "
+                "that happens to be in the prose" % st.holds)
 
     # ⛔ STRUCTURAL, NOT PROSE. A measure step re-arms or re-reads a beat
     # counter; a step with no actions has nothing to re-send in the first place.
-    for b in (disp, nano, lp, S.load("tempo"), S.load("phone"),
-              S.load("state"), S.load("midi")):
+    for b in ALL_BENCHES:
         bad = [st.n for st in b.steps if st.holds and (st.measure or not st.actions)]
         A.check("%s: no measure step and no action-less step is held" % b.name,
                 not bad, "steps %s" % bad)

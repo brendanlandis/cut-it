@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Boot and wiring
 
-**Files:** `Cut It/u_init.pd`, `Cut It/wire.sh`, `Cut It/main.pd`, `Cut It/main-dev.pd`, `Cut It/u_root.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/init-assert.sh` · **Bench:** `test/bench/display-bench.pd`
+**Files:** `Cut It/u_init.pd`, `Cut It/wire.sh`, `Cut It/recover.sh`, `Cut It/main.pd`, `Cut It/main-dev.pd`, `Cut It/u_root.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/init-assert.sh` · **Bench:** `test/bench/display-bench.pd`
 
 ## What it is
 
@@ -193,19 +193,26 @@ describes the state you are actually in.
 `shell.pd` **inside its scratch copy** — and the stub keeps the `t_` name in the repo precisely so no
 plausible accident deploys it.
 
-### The four `.sh` scripts are invoked but not exercised
+### The `.sh` scripts are invoked but not exercised
 
-**All four run once per patch load through `[shell]`, never per event**, and that much is asserted:
-`test/gate/init-assert.sh` swaps in a counting stub and requires exactly one invocation of each. ⛔
-**What none of them DOES is covered by anything**, because none of it can happen on a Mac — the gap
-is declared in `Open` below rather than papered over.
+**Four of the five run once per patch load through `[shell]`, never per event**, and that much is
+asserted: `test/gate/init-assert.sh` swaps in a counting stub and requires exactly one invocation of
+each. ⛔ **What none of them DOES is covered by anything**, because none of it can happen on a Mac —
+the gap is declared in `Open` below rather than papered over.
 
 | Script | What is asserted today |
 |--------|------------------------|
 | `wire.sh` | Invoked once, **inside** the `modal wiring` stage. Its `aconnect` lines are also statically parsed against the two tables above |
-| `state-dir.sh` | Invoked once. The gates work around it by hand-creating the two files — see [state.md](state.md) |
+| `state-dir.sh` | Invoked once. The gates work around it by hand-creating the files — see [state.md](state.md) |
 | `logroll.sh` | Invoked once |
 | `phone-ip.sh` | Invoked once, with the fallback address as its argument |
+| `recover.sh` | ⛔ **Not at load, and that is the point.** Never invoked during a boot, which is what keeps `init-assert`'s exactly-four check green. Item 300 |
+
+⛔ **`recover.sh` is the one that forks on an EVENT**, and it bends Phase 4's rule deliberately — the
+same terms as `u_present`'s trailing fork. It is rare, user-initiated, bounded at exactly one per
+gesture by `u_map`'s `[del 2000]`, and it **ends the patch**: nothing can cascade behind a command
+whose effect is to kill the process that ran it. It is the second tier of `panic` —
+[map.md](map.md) has the control, [launchpad.md](../device/launchpad.md) has the button.
 
 ⚠️ **Each of them echoes exactly one summary line, and that is why** — a silent run is
 indistinguishable from a missing script, and the echo is the only thing a bench step could judge.
@@ -267,7 +274,9 @@ only way to know from the patch side whether anything answered.
 also undoes the phantom-control case, where a device enumerating late lands on another device's
 channel block. What is still unverified about that lives on its own page rather than here.
 
-- ⬜ **What the four `.sh` scripts DO is untested.** Each invocation is gated; the effects cannot be,
-  on a Mac. Each needs a device step reading its own echo — `wire.sh: N connections`, `logroll:
-  carried N line(s)`, `state-dir.sh` against an existing save, and `phone-ip.sh` with the phone on
-  the Organelle's own AP. See [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **What the load-time `.sh` scripts DO is untested.** Each invocation is gated; the effects
+  cannot be, on a Mac. Each needs a device step reading its own echo — `wire.sh: N connections`,
+  `logroll: carried N line(s)`, `state-dir.sh` against an existing save, and `phone-ip.sh` with the
+  phone on the Organelle's own AP. See [plan-v04.md](../../plan-v04.md) §3. ⚠️ **`recover.sh` is the
+  exception and is covered**: its two OSC commands are statically linted, and holding CC 90 on the
+  rig is a bench step — see [launchpad.md](../device/launchpad.md).

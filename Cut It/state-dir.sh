@@ -1,7 +1,14 @@
 #!/bin/sh
-# Make u_state's data directory, and make sure both of its files EXIST.
+# Make u_state's data directory, and make sure all three of its files EXIST.
 #
 #   sh state-dir.sh /sdcard/cut-it-state
+#
+# THE THIRD FILE IS NOT u_state's. cut-it-recover.txt is the breadcrumb u_init
+# writes just before a recover fires the patch reload, and u_map reads at 2000
+# ms. It lives here because it belongs to the same bargain as the other two:
+# outside the patch folder, where deploy.sh --clean and a power cycle cannot
+# touch it. It is touched here for the same reason as the others -- u_map reads
+# it at every boot, and a missing file prints three lines.
 #
 # Run once at load by u_state, through [shell] -- the same one-fork-per-load
 # pattern as wire.sh and logroll.sh, and inside Phase 4's rule of one fork per
@@ -31,4 +38,4 @@ set -eu
 DIR=${1:?usage: state-dir.sh <data-directory>}
 
 mkdir -p "$DIR"
-touch "$DIR/cut-it-auto.txt" "$DIR/cut-it-manual.txt"
+touch "$DIR/cut-it-auto.txt" "$DIR/cut-it-manual.txt" "$DIR/cut-it-recover.txt"

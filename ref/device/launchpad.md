@@ -382,6 +382,36 @@ Anything needing that needs Programmer Mode; a plain CC grid or a scaled keyboar
 Novation Components needs a computer — you cannot author Custom Modes from the Organelle, but once
 written they persist on the device.
 
+### CC 90 is the panic button, and it has two tiers
+
+**The top-left corner — item 82, a real button this unit sends and Novation does not document,
+whose numbering starts at 91.** It was unused, and `g_grid` can light it, so the armed state is
+visible on the surface itself.
+
+| Gesture | Raises | What happens |
+|---------|--------|--------------|
+| **Short press** | `panic` | All Notes Off to the SP-404 on all ten channels and to the Volca; realtime STOP on ports 1, 3 and 4; the aux LED goes red; the whole grid flashes red for a second; the OLED footer reads `panic` |
+| **Held 2000 ms** | `recover` | `panic` again, then the patch **reloads** — every device re-enumerated and `wire.sh` run fresh |
+
+⛔ **`panic` fires on the PRESS, not the release, and that is what makes the hold length free.** You
+are already silent while you hold for the reload, so 2000 ms costs nothing and nothing reaches it by
+accident. A hold therefore raises `panic` twice — once from `u_map`, once from `u_init` before the
+reload — deliberately, so `recover` is self-contained whatever reaches it.
+
+⚠️ **This is the *only* recovery for a device nothing can detect.** `m_volca` registers `none`, so it
+can never be polled or declared lost, and it comes back only if a detectable device happened to fail
+beside it — which failed on the bench exactly as the design allows, item 275. See
+[presence.md](../module/presence.md) and [volca.md](volca.md).
+
+⛔ **The map row names `recover` and never `panic`.** A control bound to `panic` in the table would
+let a finger on a fader silence the instrument mid-set, and `map-assert.py` refuses one; the tiers
+are the *handler's* business. The mechanism is on [map.md](../module/map.md), the reload on
+[boot.md](../module/boot.md).
+
+⚠️ **The reload does not surrender the surface.** It touches no ownership, and `quitting` still fires
+on the way out because `/loadPatch` runs `killpatch.sh` first (item 252) — so the safe exit below
+still returns the device to Live Mode. Item 251 stays closed.
+
 ### Pressure is the forgotten input
 
 The pads are polyphonic-aftertouch sensitive, and that channel is free panel space: any continuous

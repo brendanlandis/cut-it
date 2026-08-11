@@ -79,7 +79,7 @@ patch is a folder containing `main.pd` plus its abstractions.
 | `g_` | One display surface, and its sole owner | `g_oled` `g_grid` `g_led` |
 | `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` |
 | `e_` | An effect stage — **v0.4, none yet** | — |
-| `.sh` | Run once at load through `[shell]` | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` |
+| `.sh` | Run through `[shell]` — the first four once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `recover.sh` |
 | `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` |
 
 **What each one does is on its module page**, not here. `mac-stubs/` stands in for device-only

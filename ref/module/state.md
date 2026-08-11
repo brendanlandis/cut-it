@@ -65,9 +65,15 @@ traffic into nothing.
 | | | Evidence | Item |
 |---|---|----------|------|
 | Directory | `/sdcard/cut-it-state/` on the device; `main-dev.pd` passes an existing directory on the Mac | verified | — |
-| Files | `cut-it-auto.txt`, `cut-it-manual.txt` | verified | — |
+| Files | `cut-it-auto.txt`, `cut-it-manual.txt` — and `cut-it-recover.txt`, which is **not `u_state`'s** | verified | 299 |
 | Format | One line per key, first atom is the key. Written and read with **`-c`** | verified | — |
-| Made at load | `state-dir.sh` via `[shell]`, once per load. It **`mkdir -p`s the directory and `touch`es both files** | verified | 143, 147 |
+| Made at load | `state-dir.sh` via `[shell]`, once per load. It **`mkdir -p`s the directory and `touch`es all three files** | verified | 143, 147, 299 |
+
+⚠️ **`cut-it-recover.txt` lives here but `u_state` knows nothing about it.** `u_init` writes it
+immediately before a `recover` reloads the patch and `u_map` reads it at 2000 ms — the mechanism is
+on [map.md](map.md). It is in this directory for the same reason the other two are: outside the
+patch folder, where `tools/deploy.sh --clean` and a power cycle cannot touch it. It is `touch`ed by
+`state-dir.sh` because `u_map` reads it at every boot and a missing file prints three lines.
 | A write into a missing directory | **Prints `write failed`** — it does not fail silently | verified | 143 |
 | A read of a missing file | Prints **three lines** | verified | 147 |
 

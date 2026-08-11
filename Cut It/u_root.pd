@@ -12,7 +12,7 @@
 #X text 20 700 L = drums \, R = fx: the SP-404's hard-panned outputs arriving through the TRS Y-cable. adc~ 1 is the tip \, verified -- item 11., f 34;
 #X text 20 800 adc~ and dac~ appear NOWHERE in this patch \, and must not. mother.pd owns both -- it publishes the inputs on inL / inR and collects the output from outL / outR \, then applies the volume knob and a limiter. A patch that writes to dac~ silently bypasses both. See C-4., f 58;
 #X text 470 1050 The level taps are a SIGNAL fan-out \, which needs no trigger: signal connections all run every block \, so there is no firing order to get wrong. The trigger rule is about messages., f 46;
-#X obj 900 340 u_init;
+#X obj 900 340 u_init \$3;
 #X text 1120 340 owns startup ORDER -- MIDI wiring \, the stage reports \, when the Launchpad is initialised and when saved state is restored. Outlet 1 fires at the launchpad stage \, outlet 2 at the last stage about 3.5s in., f 34;
 #X obj 900 600 m_launchpad \$2;
 #X text 1120 600 the Launchpad Pro MK3 \, and the only file allowed to talk to it: the Programmer/Live switch and the safe exit. Pads out on param and disp \, like any other device \, and surface ownership out of its one outlet., f 34;

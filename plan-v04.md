@@ -116,10 +116,12 @@ and the bound is now asserted by **reaching** it rather than by arithmetic. The 
 ⛔ **Owned by [plan-v03.4.0.1.md](plan-v03.4.0.1.md), Part 2.** Indexed here only so the pointers
 from `ref/` pages resolve while that plan exists.
 
-✅ **`nanokontrol` has been run end to end through the runner and all 19 steps passed** —
-2026-08-10, on the device, verdicts in `test/results/latest.json`. That is the first bench verdict
-this project has ever recorded, and it closes the claim that `./test/run.sh --all` cannot be run by
-the person it was built for.
+✅ **A bench has been run end to end through the runner** — `nanokontrol` as it then stood, on the
+device, 2026-08-10, with verdicts in `test/results/latest.json`. Those are the first bench verdicts
+this project has ever recorded, and they close the claim that `./test/run.sh --all` cannot be run by
+the person it was built for. ⚠️ **They no longer apply**: fourteen of those twenty steps were OLED
+claims that had been copied into the wrong bench and have since moved to `display`, so the freshness
+check reports them as reworded and they are to be re-run there.
 
 ✅ **Six of the eight hot-swap steps were verified on the rig on 2026-08-10**, by hand over `ssh`
 rather than through the runner — the nanoKONTROL and SP-404 in both directions with the decode

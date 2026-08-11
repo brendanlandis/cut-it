@@ -190,14 +190,17 @@ def _holds():
             "delivering none of the point" % len(held))
 
     A.check("⛔ a parameter step IS held -- the case this exists for",
-            nano.steps[1].holds and disp.steps[2].holds,
-            "nanokontrol 2 %s / display 3 %s -- these are the OLED rows that "
-            "vanish in 1.3 s" % (nano.steps[1].holds, disp.steps[2].holds))
+            disp.steps[2].holds and disp.steps[3].holds,
+            "display 3 %s / display 4 %s -- these are the OLED rows that "
+            "vanish in 1.3 s" % (disp.steps[2].holds, disp.steps[3].holds))
 
     # ⛔ EACH OF THESE ASSERTS A TIMEOUT. Re-firing resets it.
-    for b, n, why in ((nano, 8, "about 2 s later it vanishes"),
-                      (nano, 11, "recording returns after about 4 s"),
-                      (disp, 13, "clears itself after 30 s"),
+    # ⚠️ ALL THREE USED TO NAME nanokontrol OR A LOWER display NUMBER. The OLED
+    # steps that had been copied into the nanokontrol bench were folded back
+    # into display, which is what they were always about -- see test/README.md.
+    for b, n, why in ((disp, 10, "about 2 s later it vanishes"),
+                      (disp, 13, "recording returns after about 4 s"),
+                      (disp, 17, "clears itself after 30 s"),
                       (lp, 13, "clears ITSELF about thirty seconds later"),
                       (lp, 11, "goes back to the mode lamps by itself")):
         st = b.steps[n - 1]

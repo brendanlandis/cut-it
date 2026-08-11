@@ -110,12 +110,17 @@ machinery: the per-bench dependency sha, the 30-day window, and the title/`pass_
 
 | Bench | Steps | Note |
 |---|---|---|
-| `launchpad` | 25 | ⛔ Includes the two hot-swap steps added 2026-08-10 — **never run**, and they need eyes on the grid |
-| `midi` | 17 | ⛔ The Volca's two steps were **rewritten after** the rig session and have never been executed as written |
-| `nanokontrol` | 19 | Two hot-swap steps, verified by hand over `ssh` but never through the runner |
-| `display` `tempo` `phone` `state` | 14 / 15 / 14 / 5 | Never run through the runner |
+| `launchpad` | 26 | ⛔ Includes the three hot-swap steps added 2026-08-10 — **never run**, and they need eyes on the grid |
+| `midi` | 18 | ⛔ The Volca's steps were **rewritten after** the rig session and have never been executed as written |
+| `display` | 18 | ⛔ Gained the OLED ladder that had been sitting in the `nanokontrol` bench |
+| `nanokontrol` | 6 | Its OLED steps went to `display`; what is left is the controller and its hot-swap |
+| `tempo` `phone` `state` | 15 / 14 / 5 | Never run through the runner |
 
-⚠️ **The `midi` bench needs `--target device` until Part 1 lands.**
+⛔ **`nanokontrol` 1–14 never touched the nanoKONTROL.** Every action was a `disp`, `err` or `mode`
+message the bench sent itself, and nine of them were byte-identical to `display` steps — so fourteen
+OLED claims were being judged twice under two names, which made `latest.json` report more coverage
+than existed. The ladder (two, five, seven rows and the big single) moved to `display`; the
+duplicates went.
 
 ---
 

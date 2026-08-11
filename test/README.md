@@ -158,17 +158,22 @@ is worth having.
 |---|---|---|
 | `device` | **Default.** The real rig, over ssh | everything |
 | `mac` | `main-dev.pd` plus the bench here; `u_mother-stub` draws the panel and decodes the OLED | display, nanokontrol, tempo |
-| `paper` | no Pd at all | **`file` predicates only** — the evidence is on disk. Auto-selected when every step has no actions: `state` and `midi` |
+| `paper` | no Pd at all | **`file` predicates only** — the evidence is on disk. Auto-selected for `state`, the one bench that needs nothing on the other end |
 
 ⛔ **A step whose oracle is missing is a SKIP WITH A REASON, never a pass** — whether the reason is
 the target, the absence of a person, or **a predicate that needs a console in paper mode**.
 
-⚠️ **So `midi` cannot reach a clean PASS in paper mode, and that is honest.** Four of its steps read
-a bus, and no bus exists where no Pd is running; they skip, saying which kind could not be judged
-and why. They used to be evaluated against an **empty window** and report AUTO FAIL — four red steps
-on a working rig, unmet for as long as it was because every recorded `midi` run had used
-`--target device`. ⛔ **Do not "fix" the skips by making `midi` non-paper**: paper is what lets it
-and `state` run with no Pd, no ssh, and therefore no Launchpad stranded in Programmer Mode.
+⛔ **THREE THINGS NEED A PATCH ON THE OTHER END, and only one of them is an action.** A predicate
+that reads a console has nothing to read without one, and a `reload` step is the runner *owning* the
+process it restarts. The auto-selection asked only about actions for as long as those two happened
+to travel with them — so `midi` came up `paper` and every recorded run of it passed `--target
+device` by hand, and `nanokontrol` joined it the day it was cut back to six hands-on steps that send
+nothing at all.
+
+⚠️ **Run `midi` on paper anyway and it still cannot reach a clean PASS, which is honest.** Four of
+its steps read a bus, and no bus exists where no Pd is running; they skip, naming the kind that
+could not be judged. They used to be evaluated against an **empty window** and report AUTO FAIL —
+four red steps on a working rig.
 
 ### Sixteen steps judge themselves
 
@@ -446,6 +451,22 @@ the `param`/`disp` split would all go unexercised. Its outlet order reproduces t
 stub tests itself instead of the patch.
 
 ## The benches
+
+### A bench belongs to whatever its steps TOUCH
+
+⛔ **The bench a step lives in is decided by what a person has to have in front of them, not by what
+was convenient when the table was written.** `nanokontrol` carried fourteen steps that never touched
+the nanoKONTROL — every action was a `disp`, `err` or `mode` message the bench sent itself, and the
+controller could have been unplugged for all fourteen. Nine were byte-identical to `display` steps
+but for one warn string.
+
+⚠️ **The cost was not the duplication, it was `latest.json`.** The same OLED claim was being judged
+twice under two names, so the record of what had been verified reported more coverage than existed —
+the same disease as a gate that lies, one level up. The OLED ladder moved to `display`, the
+duplicates went, and `nanokontrol` is now the six steps that need a hand on the controller.
+
+**The test before adding a step: could this run with the named device unplugged?** If yes, it is not
+that device's step.
 
 ### A bench suits a SURFACE, not a store
 

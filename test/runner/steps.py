@@ -16,6 +16,13 @@ inconsistent punctuation across test/.
 import importlib.util
 import os
 import re
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# ⚠️ KIND KNOWLEDGE STAYS IN predicates.py. `paper` has to know whether a
+# predicate can be judged with no console, and asking the module that owns the
+# kinds is what stops a second list of them growing here.
+import predicates                                               # noqa: E402
 
 # ⛔ THE SIGNATURE OF A STEP THAT TESTS A TIMEOUT, and it is deliberately wide.
 # A false positive costs one step its hold and a person presses r; a false
@@ -175,12 +182,32 @@ class Bench(object):
 
     @property
     def paper(self):
-        """⛔ NO ACTIONS ANYWHERE MEANS NO PATCH IS NEEDED AT ALL -- no Pd, no
-        ssh, no `killall pd`, and therefore no Launchpad stranded in Programmer
-        Mode. `state` and `midi` are both like this, which is 20 steps that can
-        be run with none of the device machinery. Phase 8's run was driven this
-        way by hand and that is exactly why it was painless."""
-        return all(not s.actions for s in self.steps)
+        """Can this bench run with NO PATCH ON THE OTHER END at all?
+
+        ⛔ NO PD, NO ssh, NO `killall pd`, and therefore no Launchpad stranded in
+        Programmer Mode. `state` is like this, which is five steps that can be
+        run with none of the device machinery. Phase 8's run was driven this way
+        by hand and that is exactly why it was painless.
+
+        ⛔ AND "NO ACTIONS" IS NOT THE SAME QUESTION, which is what this used to
+        ask. Three separate things need a patch, and only the first is an
+        action: a PREDICATE that reads a console has nothing to read, and a
+        `reload` step is the runner OWNING the process it is asked to restart.
+        The proxy held only while those two happened to travel with actions --
+        and it broke the moment nanokontrol was cut back to its six hands-on
+        steps, which have no actions at all and are entirely about a running
+        instrument. `midi` had the same shape already and every recorded run of
+        it passed `--target device` by hand to work around exactly this.
+        """
+        if any(s.actions for s in self.steps):
+            return False
+        if any(s.meta.get("reload") for s in self.steps):
+            return False
+        for s in self.steps:
+            spec = s.meta.get("check")
+            if spec and not predicates.offline(spec)[0]:
+                return False
+        return True
 
 
 def names():

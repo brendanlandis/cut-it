@@ -192,7 +192,8 @@ def _holds():
             "vanish in 1.3 s" % (nano.steps[1].holds, disp.steps[2].holds))
 
     # ⛔ EACH OF THESE ASSERTS A TIMEOUT. Re-firing resets it.
-    for b, n, why in ((nano, 6, "the other four fade out"),
+    for b, n, why in ((nano, 8, "about 2 s later it vanishes"),
+                      (nano, 11, "recording returns after about 4 s"),
                       (disp, 13, "clears itself after 30 s"),
                       (lp, 13, "clears ITSELF about thirty seconds later"),
                       (lp, 11, "goes back to the mode lamps by itself")):

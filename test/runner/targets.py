@@ -153,6 +153,12 @@ class Process(stream.Source):
             self._holding = False
             return
         self._holding = True
+        # ⛔ ONE IMMEDIATELY, THEN THE LOOP. The hold starts after the fired line
+        # and the settle window -- about a second into the row's ~1.3 s life --
+        # so waiting a full interval before the first re-send let the row expire
+        # first. What you saw was the result, a flash of the resting screen, and
+        # then the result again. Refreshing on entry closes that gap.
+        self.gosender.send("rerun")
 
         def loop():
             for _ in range(HOLD_MAX):
@@ -212,11 +218,11 @@ def _tap():
     return p
 
 
-# ⚠️ A ROW LIVES ~1.3 s ON THE OLED, so the hold has to re-send inside that or
-# the picture blinks. 1.0 s leaves margin for the network without the screen
-# ever going dark. HOLD_MAX caps a walk-away at about five minutes rather than
+# ⚠️ A ROW LIVES ~1.3 s ON THE OLED, so the hold has to re-send well inside
+# that or the picture blinks. 0.8 s leaves room for the datagram and for
+# g_oled's 10 Hz repaint without the screen ever going dark. HOLD_MAX caps a walk-away at about five minutes rather than
 # leaving a bench firing into an empty room all night.
-HOLD_EVERY = 1.0
+HOLD_EVERY = 0.8
 HOLD_MAX = 300
 
 PHONE_PORT = 9995

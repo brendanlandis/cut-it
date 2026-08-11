@@ -160,7 +160,7 @@
 #X obj 20 6380 select 15;
 #X obj 240 6380 t b b b;
 #X msg 700 6380 === STEP-15-of-25 === Beat row wrapping;
-#X msg 700 6430 PASS IF: The white pad reaches the eighth pad and the next step is back to the first -- with no gap and no stray light anywhere else. Nothing is sent for this step. Just watch one wrap go by.;
+#X msg 700 6430 PASS IF: The white pad reaches the eighth pad and the next beat is back to the first -- with no gap and no stray light anywhere else. Nothing is sent for this step. Just watch one wrap go by.;
 #X msg 700 6480 >>> press GO to run step 15 of 25;
 #X obj 240 6550 s \$0-say;
 #X obj 20 6640 select 16;

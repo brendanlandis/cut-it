@@ -274,12 +274,36 @@ def run_bench(bench, target, auto_only, start):
             ok, w, g = predicates.evaluate(spec, [], {"step_start": started})
             stream.say("  %s   want %s\n         got  %s"
                        % ("AUTO PASS" if ok else "AUTO FAIL", w, g))
-            rec.append(dict(bench=bench.name, step=step.n, title=step.title,
-                            sha=records.step_sha(step.title, step.pass_if),
-                            deps_sha=dsha, verdict="pass" if ok else "fail",
-                            auto=True, note="", want=w, got=g))
-            i += 1
-            continue
+            # ⛔ SAME RULE AS THE DRIVEN LOOP: the predicate is evidence and a
+            # person in the room is the verdict. Here the predicate reads a FILE
+            # -- state 3 fetches cut-it-auto.txt -- and the sentence beside it
+            # still describes a screen. Only --auto-only lets it answer alone.
+            if auto_only:
+                rec.append(dict(bench=bench.name, step=step.n, title=step.title,
+                                sha=records.step_sha(step.title, step.pass_if),
+                                deps_sha=dsha, verdict="pass" if ok else "fail",
+                                auto=True, note="", want=w, got=g))
+                i += 1
+                continue
+            verdict, note = ask(step, allow_undo=i > 0)
+            if verdict in ("repeat", "undo", "quit"):
+                # ⚠️ FALL THROUGH TO THE SHARED HANDLING BELOW rather than
+                # duplicating it -- paper mode can genuinely repeat and undo,
+                # because nothing has advanced on the other end.
+                pass
+            else:
+                if ok != (verdict == "pass"):
+                    stream.say("  ⚠️ you said %s and the check said %s -- both "
+                               "are recorded" % (verdict, "pass" if ok else "fail"))
+                    note = ("%s; the check disagreed and said %s"
+                            % (note or "no note",
+                               "pass" if ok else "fail")).strip("; ")
+                rec.append(dict(bench=bench.name, step=step.n, title=step.title,
+                                sha=records.step_sha(step.title, step.pass_if),
+                                deps_sha=dsha, verdict=verdict, auto=False,
+                                note=note, want=w, got=g))
+                i += 1
+                continue
 
         verdict, note = ask(step, allow_undo=i > 0)
 
@@ -524,13 +548,38 @@ def run_bench_driven(bench, target, auto_only, start, src):
                     return rec.rows, False
                 continue
 
+            # ⛔ A PREDICATE IS EVIDENCE. A PERSON IN THE ROOM IS THE VERDICT.
+            # It used to record its own verdict and never ask, which is wrong on
+            # this project's own terms: a gate and a bench are DIFFERENT ORACLES
+            # and neither substitutes for the other. The predicate reads a BUS;
+            # the PASS IF beside it asks you to look at the OLED, and those are
+            # not the same claim -- `warn m_nano` can be on err while the screen
+            # shows nothing at all, which is precisely a display bug a bench
+            # exists to catch. So it reports, and you still answer.
+            # ⚠️ IT ALSO ATE A KEYSTROKE. With no verdict prompt, the `p` a
+            # person typed anyway was left in the buffer and swallowed by the
+            # NEXT step's read prompt -- firing that step without them.
             spec = step.meta.get("check")
+            auto = None
             if spec:
                 ok, want, got = predicates.evaluate(spec, window)
                 stream.say("  %s   want %s\n         got  %s"
                            % ("AUTO PASS" if ok else "AUTO FAIL", want, got))
-                record(step, "pass" if ok else "fail", "", auto=True,
-                       want=want, got=got)
+                auto = (ok, want, got)
+
+            # ⛔ WITH NOBODY WATCHING, THE PREDICATE IS ALL THERE IS. --auto-only
+            # is the unattended run, so a step carrying one records it and a step
+            # without one is a skip with a reason -- never a pass, which is how a
+            # suite reports green over work nothing checked.
+            if auto_only:
+                if auto:
+                    ok, want, got = auto
+                    record(step, "pass" if ok else "fail", "", auto=True,
+                           want=want, got=got)
+                else:
+                    why = "no predicate, and --auto-only means no person to judge it"
+                    stream.say("  SKIP   %s" % why)
+                    record(step, "skip", why, auto=True)
                 i += 1
                 src.go()
                 if i >= len(bench.steps):
@@ -544,17 +593,7 @@ def run_bench_driven(bench, target, auto_only, start, src):
                     return rec.rows, False
                 continue
 
-            # ⛔ NO PREDICATE AND NOBODY WATCHING IS A SKIP WITH A REASON. The
-            # GO above still had to be sent -- the bench has to advance whether
-            # or not anyone is judging -- but nothing here saw the result, and
-            # calling that a pass is how a suite reports green over work nothing
-            # checked.
-            if auto_only and not step.meta.get("check"):
-                why = "no predicate, and --auto-only means no person to judge it"
-                stream.say("  SKIP   %s" % why)
-                verdict, note = "skip", why
-                record(step, verdict, note, auto=True)
-            else:
+            if True:
                 # ⛔ THE REPEAT LOOP IS HERE AND NOT AROUND THE STEP. Asking again
                 # must not re-describe the step and must NOT send another GO --
                 # `continue` on the outer loop did both, and the second GO
@@ -603,7 +642,22 @@ def run_bench_driven(bench, target, auto_only, start, src):
                 stream.say("  not while a bench is running -- it has already "
                            "advanced. Judge what you saw.")
                 continue
-            record(step, verdict, note)
+            # ⛔ WHEN THE TWO ORACLES DISAGREE, RECORD THAT THEY DID. One of them
+            # is wrong and which one is the whole question -- a bus can carry
+            # `warn m_nano` while the screen shows nothing, and a screen can show
+            # a warning the predicate looked for in the wrong window. Keeping
+            # only the person's answer throws away the half that says to look.
+            if auto is not None:
+                ok, want, got = auto
+                agreed = ok == (verdict == "pass")
+                if not agreed:
+                    stream.say("  ⚠️ you said %s and the bus said %s -- both are "
+                               "recorded" % (verdict, "pass" if ok else "fail"))
+                    note = ("%s; the bus disagreed and said %s"
+                            % (note or "no note", "pass" if ok else "fail")).strip("; ")
+                record(step, verdict, note, want=want, got=got)
+            else:
+                record(step, verdict, note)
 
             i += 1
             src.go()

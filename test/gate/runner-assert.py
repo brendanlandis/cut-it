@@ -151,12 +151,13 @@ def run_paper(keys):
     return p.returncode, p.stdout.decode("utf-8", "replace")
 
 
-def run(transcript_path, keys):
+def run(transcript_path, keys, auto_only=False):
     """Drive the real runner over a fixture. -> (exit code, output)."""
     kp = write(os.path.basename(transcript_path) + ".keys", keys)
     p = subprocess.run(
         [sys.executable, os.path.join(ROOT, "test", "runner", "run.py"),
-         "--bench", BENCH, "--replay", transcript_path, "--keys", kp,
+         "--bench", BENCH, "--replay", transcript_path, "--keys", kp]
+        + (["--auto-only"] if auto_only else []) + [
          # ⚠️ A TRANSCRIPT IS A RECORDING OF A DEVICE RUN, so it is replayed as
          # one. Without this, every step carrying `targets: ('device',)` is
          # skipped -- correctly -- and each one shifts the counts these fixtures
@@ -297,8 +298,6 @@ def main():
     rkeys, done = [], False
     for step in bench.steps:
         rkeys.append("")
-        if step.meta.get("check"):
-            continue
         if not done:
             rkeys.append("r")
             done = True
@@ -315,6 +314,35 @@ def main():
     A.check("repeat: says so plainly when the source cannot fire again",
             out.count("not available against a recorded console") == 1,
             _tail(out))
+
+    # ⛔ A PREDICATE IS EVIDENCE AND A PERSON IS THE VERDICT. The predicate reads
+    # a BUS; the PASS IF beside it describes a SCREEN. `warn m_nano` can be on
+    # err while the OLED shows nothing at all -- a display bug, and exactly what
+    # a bench exists to catch -- so a green predicate must not close the step.
+    # ⚠️ IT ALSO SWALLOWED A KEYSTROKE: with no verdict prompt on a predicate
+    # step, the key a person typed anyway was eaten by the NEXT step's read
+    # prompt and fired that step without them.
+    checks = [st for st in bench.steps if st.meta.get("check")]
+    A.check("this bench still has predicate steps to prove it with",
+            len(checks) >= 3, "%d steps carry a check" % len(checks))
+    rc, out = run(write("clean.txt", clean), _keys(bench, verdict="f", note="x"))
+    A.check("⛔ a person's FAIL stands over a passing predicate",
+            rc != 0 and ("%d failed" % n) in out,
+            "rc=%d -- every step should be the person's fail, not the "
+            "predicate's pass\n%s" % (rc, _tail(out)))
+    A.check("⛔ and the disagreement is reported rather than buried",
+            out.count("the bus said") >= len(checks),
+            "%d disagreements reported for %d predicate steps"
+            % (out.count("the bus said"), len(checks)))
+
+    # ⛔ --auto-only IS THE UNATTENDED RUN and there the predicate IS the verdict,
+    # because nobody is there to give one. Without this, "the person decides"
+    # would have quietly broken the one mode that has no person.
+    rc, out = run(write("clean.txt", clean), [], auto_only=True)
+    A.check("--auto-only: a predicate still answers with nobody in the room",
+            ("%d passed" % len(checks)) in out, _tail(out))
+    A.check("--auto-only: a step with no predicate is SKIPPED and never passed",
+            "no predicate, and --auto-only" in out, _tail(out))
 
     # -- 2. truncated at step 7 --------------------------------------------
     # ⛔ MUST NOT PASS. Seven good verdicts and a console that stops is a run
@@ -764,8 +792,13 @@ def _keys(bench, verdict="p", note=None, stop_after=None):
         # a person. midi 4, 6 and 7 are both at once, and treating "has a
         # predicate" as "asks nothing" left exactly those three short.
         out.append("")                   # the read prompt, every step
-        if step.meta.get("check"):
-            continue                     # a predicate gives the verdict
+        # ⛔ EVERY STEP ASKS A PERSON NOW, PREDICATE OR NOT. This used to skip
+        # the verdict key for a step carrying a `check`, matching a runner where
+        # the predicate recorded its own verdict and never asked -- and that was
+        # the defect: the predicate reads a BUS while the PASS IF beside it
+        # describes a SCREEN, and the keystroke a person typed anyway was
+        # swallowed by the next step's read prompt. The predicate is evidence
+        # now and the person answers, so every step consumes both keys.
         out.append(verdict)
         if note is not None:
             out.append(note)

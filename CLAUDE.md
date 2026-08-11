@@ -49,7 +49,7 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **What is being BUILT next** — three scoped plans | [plan-v03.4.0.1.md](plan-v03.4.0.1.md), [plan-v03.4.1.md](plan-v03.4.1.md), [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
+| **What is being BUILT next** — three scoped plans | [plan-v03.4.0.1.1.md](plan-v03.4.0.1.1.md), [plan-v03.4.1.md](plan-v03.4.1.md), [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
@@ -185,13 +185,13 @@ need the sound to exist.**
 
 | | Plan | Needs |
 |---|---|---|
-| 1 | [plan-v03.4.0.1.md](plan-v03.4.0.1.md) — the runnable suite, and the first note path | — |
+| 1 | [plan-v03.4.0.1.1.md](plan-v03.4.0.1.1.md) — finish the bench session | — |
 | 2 | [plan-v03.4.1.md](plan-v03.4.1.md) — panic becomes `recover` | — |
 | 3 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | — |
 
-⚠️ **1 is the one to do first, and not because anything depends on it.** `./test/run.sh --all`
-cannot pass today for two reasons that have nothing to do with the patch, so until it lands the
-bench half of this suite cannot verify anything the other two build.
+⚠️ **1 is the one to do first, and not because anything depends on it.** The bench half of this
+suite is what verifies anything the other two build, and it is two benches short of having been run
+once — see that plan for what is done and the one open bug.
 
 ✅ **Plan 0, the test runner, the v0.3.2 cleanup, v0.3.3 coverage and hot-swap are all gone** — the
 measurement session ran on 2026-08-08, `test/run.sh` landed on 2026-08-09, the cleanup and the

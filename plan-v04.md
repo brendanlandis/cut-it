@@ -113,7 +113,7 @@ and the bound is now asserted by **reaching** it rather than by arithmetic. The 
 
 ### ⬜ Six benches have no verdicts yet, and hot-swap is missing a case on two devices
 
-⛔ **Owned by [plan-v03.4.0.1.md](plan-v03.4.0.1.md), Part 2.** Indexed here only so the pointers
+⛔ **Owned by [plan-v03.4.0.1.1.md](plan-v03.4.0.1.1.md).** Indexed here only so the pointers
 from `ref/` pages resolve while that plan exists.
 
 ✅ **A bench has been run end to end through the runner** — `nanokontrol` as it then stood, on the

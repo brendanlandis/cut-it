@@ -630,13 +630,28 @@ STEPS_PHONE = [
   [],
   {'do': 'Sweep a nanoKONTROL fader as fast as you can. Two at once if you have the fingers -- both must settle.'}),
  ('Link lost',
-  'PASS IF: Nothing on the Organelle changes and no error appears on the OLED.',
+  'PASS IF: A bordered box reads warn then u_net then net-link-down. Nothing else on the Organelle changes.',
   # ⛔ IT ASKED FOR THE ABSENCE OF AN AUDIO GLITCH AND THERE IS NO AUDIO. v0.4 is
   # the sound -- no effect stage exists yet -- so nobody could hear a glitch or
   # its absence and the clause was unjudgeable. Put it back when there is
   # something to hear.
+  #
+  # ⛔ AND IT ASKED FOR NO ERROR ON THE OLED, WHICH IS THE OPPOSITE OF WHAT
+  # CLOSING PdParty DOES. u_net's watchdog watches a SOCKET, and the socket dies
+  # the moment nothing is listening on the phone's port -- so `warn u_net
+  # net-link-down` IS this step's action working. ref/device/phone.md says so
+  # under its own heading, and it is the most common line in the error log by a
+  # wide margin. Step 1 leaves the rig in compose, where u_err shows every
+  # error, so the warn could not even be suppressed: the step could never pass
+  # on the device. Failed on the rig 2026-08-11 against a working instrument.
+  #
+  # ⚠️ THE WARN IS SENT ONCE PER LOAD -- u_net's $0-warngate closes behind it,
+  # so a phone switched off does not warn every five seconds for the rest of the
+  # set. Every device bench run relaunches Pd, so a fresh run always sees it;
+  # a second link loss inside one load does not. That belongs in `do`, which is
+  # free to change, and not in the PASS IF, which would stale the verdict.
   [],
-  {'do': 'Close PdParty on the phone and count to ten.'}),
+  {'do': 'Close PdParty on the phone and count to ten. u_net warns once per load, so this has to be the first time the link has dropped since the run started.'}),
  ('Link recovers',
   'PASS IF: The phone starts updating again within about five seconds and you touched nothing on the Organelle.',
   [],

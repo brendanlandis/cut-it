@@ -144,7 +144,7 @@
 #X obj 20 5200 select 13;
 #X obj 240 5200 t b b b;
 #X msg 700 5200 === STEP-13-of-14 === Link lost;
-#X msg 700 5250 PASS IF: Nothing on the Organelle changes and no error appears on the OLED.;
+#X msg 700 5250 PASS IF: A bordered box reads warn then u_net then net-link-down. Nothing else on the Organelle changes.;
 #X msg 700 5300 >>> press GO to run step 13 of 14;
 #X obj 240 5370 s \$0-say;
 #X obj 20 5460 select 14;

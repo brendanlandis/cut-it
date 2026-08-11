@@ -25,7 +25,7 @@ were false.
 
 | Gate | Checks | Answers for |
 |---|---|---|
-| `runner-assert.sh` | 142 | **no page** — it answers for this one |
+| `runner-assert.sh` | 153 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
@@ -45,9 +45,9 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 
-**518 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
+**529 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **440**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **522**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 36 come from TWO Pd runs and one tally**, which is the only entry here
@@ -186,12 +186,46 @@ its steps read a bus, and no bus exists where no Pd is running; they skip, namin
 could not be judged. They used to be evaluated against an **empty window** and report AUTO FAIL —
 four red steps on a working rig.
 
+### Three keys, and Ctrl-C
+
+```
+verdict? [p]ass  [f]ail  [r]epeat :
+```
+
+**`r` fires the current step again and advances nothing** — the control to reach for when an OLED row
+aged out before you finished reading the sentence about it. ⛔ **Enter is not a verdict.** Every path
+out of that prompt is something a person typed; a default on empty input would be the runner
+inventing an answer, which is the one thing that would make it worthless.
+
+⛔ **Ctrl-C is the only way to leave, and what it records depends on whether the step RAN.** Stopped
+at the read prompt, before GO: nothing is recorded and whatever that step last answered stands.
+Stopped after it fired: `interrupted`, because it ran and nobody judged it. ⚠️ **That distinction is
+load-bearing** — `roll_up` is last-write-wins, so a row carrying the absence of a verdict *overwrites*
+a real one. Three fresh passes were destroyed that way in one afternoon (tempo 5, launchpad 8 and 17,
+2026-08-11) by a session that ended one step past the ones it came to re-run.
+
+**Four keys were removed on 2026-08-11** and each was dead or a second spelling of something else:
+`[q]uit` was Ctrl-C with the worse failure mode above, `[u]ndo` did nothing on six of the seven
+benches because nothing can walk a running patch backwards (`--from N` re-runs a step properly), `[?]`
+reprinted the PASS IF already on screen, and `[s]kip` answered *"I cannot judge this today"* — a
+question a bench run does not ask, since the rig is plugged in or there is no session. ⚠️ **The
+AUTOMATIC skips are a different thing and all three remain**: a target that cannot judge a step, a
+predicate with no console, `--auto-only` with nobody watching. Those are the runner declining to
+invent a verdict rather than a person declining to give one.
+
 ### Sixteen steps judge themselves
 
 A step may carry an optional **fourth element**, a dict: `need` and `do` (what to have at hand, what
 to press), `watch`, `check` (a predicate), `wait`, and `targets`. ⛔ **It never reaches the `.pd`** —
 emitting it would reopen every hardware-verified step text to the comma/semicolon fragmentation
 hazard the generator exists to prevent, so `bench-verify.py` still diffs three fields.
+
+⛔ **`watch` ADDS a line and never replaces the PASS IF**, and it printed *as* the PASS IF until
+2026-08-11. Only one step still carries one — `launchpad` 14, whose prose promises a `BEATS` line
+"about ten seconds from now" while its predicate wants a count of 19 to 22, so the person reading the
+terminal is told what the machine beside them is about to assert. It shows up under its own `ALSO:`
+label. **The line labelled `PASS IF:` is now the step's real `pass_if` on every step**, which is what
+retired the prompt's `[?]` key: there was nothing left for it to print.
 
 **`bench-tap.pd`** is generated beside the benches and loaded with them: `[r bus] → [print LABEL]`
 and `[r oscOut] → [print OLED]`, and **it sends nothing**. C-5 gives `g_oled` sole ownership of

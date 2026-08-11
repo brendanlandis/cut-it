@@ -11,7 +11,7 @@ what to open and what to skip.
 
 ## Where the session got to
 
-`./test/run.sh` is green — **19 gates, 518 checks.** The patch is deployed and the instrument is up.
+`./test/run.sh` is green — **19 gates, 529 checks.** The patch is deployed and the instrument is up.
 
 ```sh
 python3 test/runner/run.py --list      # what would run, and how fresh each verdict is
@@ -21,11 +21,15 @@ python3 test/runner/run.py --list      # what would run, and how fresh each verd
 |---|---|---|
 | `display` | 18 | ✅ **18 fresh** |
 | `nanokontrol` | 6 | ✅ **6 fresh** |
-| `tempo` | 13 | **11 fresh** — steps 3 and 4 corrected and not yet re-run |
-| `launchpad` | 26 | **17 fresh** — 9 corrected and not yet re-run |
+| `tempo` | 13 | **12 fresh** — 3 and 4 passed on the re-run. **5 needs re-running** |
+| `launchpad` | 26 | **17 fresh** — 7 passed and 8 was lost the same moment. **8 16 17 19 21 22 24 25 26 to go** |
 | `phone` | 14 | not run |
 | `midi` | 18 | not run |
 | `state` | 5 | not run. ⚠️ **LAST** — its step 5 is a real power cycle |
+
+⛔ **`tempo` 5 and `launchpad` 8 were fresh passes and are not any more, and no code did that.**
+Leaving a session recorded `interrupted` over them — the runner defect below, now fixed. They are
+re-runs of steps that have already passed once, not open questions.
 
 ⚠️ **`--target` is never needed.** Every bench picks its own; only `state` chooses `paper`.
 
@@ -66,22 +70,27 @@ value survives every reboot is on [ref/module/state.md](ref/module/state.md), an
 **One bench at a time, checking in after each.**
 
 ```sh
-./test/run.sh --bench tempo --from 3       # judge 3 and 4 then press q -- 5-13 are fresh
-./test/run.sh --bench launchpad --from 7   # 7 16 17 19 21 22 24 25 26
+./test/run.sh --bench tempo --from 5       # judge 5 then Ctrl-C -- 6-13 are fresh
+./test/run.sh --bench launchpad --from 8   # 8 16 17 19 21 22 24 25 26
 ./test/run.sh --bench phone
 ./test/run.sh --bench midi
 ./test/run.sh --bench state                # LAST
 ```
 
+⛔ **Leave a bench with Ctrl-C and nothing else** — `[q]uit` is gone, along with `[u]ndo`, `[?]` and
+`[s]kip`. The prompt is `[p]ass [f]ail [r]epeat`. ⚠️ **Stop at the read prompt, before pressing
+enter, and nothing is recorded against that step**; stop after it has fired and it records
+`interrupted`. See *Three keys, and Ctrl-C* in [test/README.md](test/README.md).
+
 | Bench | What has to be in front of you |
 |---|---|
-| `tempo` | The SP-404 on Pattern Select with a pattern loaded and nothing playing |
+| `tempo` | Step 5 is a bordered-alert count and touches no device. 8 to 10 want the SP-404 on Pattern Select with a pattern loaded and nothing playing |
 | `launchpad` | Eyes on the grid. Three hot-swap steps — you unplug it and watch it come back |
 | `phone` | PdParty open on the `CutItRemote` scene **before** step 1. Steps 13–14 close and reopen it |
 | `midi` | SP-404 on bank A, nanoKONTROL, Volca audible. ⚠️ **Sweep slider 1 to the top first** — it is Volca CC 41, Velocity, and left at the bottom it silences the device to its own keyboard |
 | `state` | **Last in the session.** Step 5 is a real power cycle, and it resets the wifi-fault uptime clock |
 
-⚠️ **`launchpad --from 7` re-walks twenty steps**, which is the case that used to blow the runner's
+⚠️ **`launchpad --from 8` re-walks nineteen steps**, which is the case that used to blow the runner's
 line cap. It is fixed and gated, but that walk has never run this long on hardware — **if it stalls,
 say so rather than assuming the bench is dead.**
 
@@ -121,9 +130,12 @@ the bench asserting something the instrument does not do, or something nobody ca
 | **A `reload` step reboots the instrument** | So the rig comes back *restored* — the beat row runs at the 57 BPM in `knobs.txt`, not the tempo the earlier steps set. A correct observation read as a fault |
 | **Hardware disproves prose that round-trips perfectly** | `bench-verify.py` proves the text survives generation, which is a different question from whether the text is TRUE. Five `tempo` steps asserted things the hardware does not do, and four were unreachable until the map was repaired |
 | **A step that duplicates a gate is worse than no step** | Three `tempo` steps asserted what `clock-assert` and `tempo-assert` already own, touched no device, and printed their numbers only to the runner's terminal. One claim judged twice under two names makes `latest.json` report more coverage than exists |
+| **A `--from` walk does not sit out a timeout** | `launchpad` 13 raises a thirty-second modal that covers the whole surface, and clearing it *is* what 13 tests — so in order a person waits it out. `_walk_to` fires every earlier step as fast as the console answers, so a resume landed on 16 with the grid still green. Reported as *"stuck in all-green"* and then *"changed to the passing state as I typed this"*. `bench-gen`'s `lint_modal` catches it now, and **found a second instance in `display` on its first run** — which was correct, and taught it the exemption |
+| **Leaving cost more than the step you left on** | The only quit was at the verdict prompt *after* the read prompt, so ending a session meant running one more step — and the `interrupted` that wrote OVERWRITES in `latest.json`. Three fresh passes destroyed in one afternoon. ⚠️ **The absence of a verdict is not a verdict**, and it must never be written where a real one already is |
 
 ⛔ **Every runner defect has a gate check that was proved red by mutation.** `runner-assert.py` went
-138 → 142 over this session. **Do not add one without proving it fails** — see the **`gate`** skill.
+138 → 142 → **153** over this session, and `bench-gen.py` gained `lint_modal`. **Do not add one
+without proving it fails** — see the **`gate`** skill.
 
 
 ## Reading list

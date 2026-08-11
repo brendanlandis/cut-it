@@ -150,7 +150,7 @@
 #X obj 20 5460 select 14;
 #X obj 240 5460 t b b b;
 #X msg 700 5460 === STEP-14-of-18 === Hot-swap -- SP-404 unplugged;
-#X msg 700 5510 PASS IF: A bordered alert on the OLED reads warn and then m_404.;
+#X msg 700 5510 PASS IF: A bordered alert on the OLED reads warn then m_404 then device-lost.;
 #X msg 700 5560 >>> press GO to run step 14 of 18;
 #X obj 240 5630 s \$0-say;
 #X obj 20 5720 select 15;

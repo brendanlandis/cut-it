@@ -735,7 +735,18 @@ STEPS_MIDI = [
   # 13 is a plausible-looking number on an OLED -- which is how that bug lived
   # in this repo's own docs for months. A person reads two digits; this reads
   # the bus.
-  {'do': 'Press enter first. Check the 404 is lit on bank A -- it lights only the selected one -- then press pad 5.',
+  #
+  # ⛔ `wait` IS THE OTHER HALF OF "PRESS ENTER FIRST", AND WITHOUT IT THE
+  # INSTRUCTION FIXES NOTHING. The window opens at GO and closes SETTLE later --
+  # 0.4 s, four tenths of a second -- so a step that asks a person to press
+  # enter and THEN reach for a pad judges an empty window however correctly
+  # worded it is. Measured on the rig 2026-08-11: this window held seven
+  # level-meter rows and nothing else, 6 held four, and 7 held none at all,
+  # while a person passed all three by eye. Two runs reported AUTO FAIL against
+  # a working 404 before the missing half was found. Every pad step that carries
+  # a predicate now holds the window open long enough for a hand to move.
+  {'do': 'Press enter first. Check the 404 is lit on bank A -- it lights only the selected one -- then press pad 5. There are about ten seconds to do it.',
+   'wait': 10,
    'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-pad 5']}}),
 
  ('All sixteen pads',
@@ -746,7 +757,9 @@ STEPS_MIDI = [
  ('Bank B',
   'PASS IF: sp-pad still reads 1 but sp-bank changes from 1 to 2 as you switch banks.',
   [],
-  {'do': 'Press enter first. Then select bank B and press pad 1. The 404 lights only the bank it is on.',
+  # ⛔ THE WINDOW HAS TO OUTLAST THE HAND -- see step 4.
+  {'do': 'Press enter first. Then select bank B and press pad 1. The 404 lights only the bank it is on. There are about ten seconds to do it.',
+   'wait': 10,
    'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-pad 1', 'sp-bank 2']}}),
 
  ('A release is not a press',
@@ -765,7 +778,10 @@ STEPS_MIDI = [
   # echo and carries the control's VALUE, so a release is velocity 0 and the row
   # changes (ref/device/sp404.md, item 283). A step that describes less of the
   # screen than the screen shows makes correct behaviour read as a fault.
-  {'do': 'Press enter first. Then press and hold any pad and let go.',
+  # ⛔ THE WINDOW HAS TO OUTLAST THE HAND -- see step 4. This one held NOTHING
+  # AT ALL on the rig, which is what an exact count of 1 reads as a fail against.
+  {'do': 'Press enter first. Then press and hold any pad and let go. There are about ten seconds to do it -- one hit only.',
+   'wait': 10,
    'check': {'kind': 'bus-count', 'bus': 'DISP', 'match': 'sp-pad', 'n': 1}}),
 
  ('Fader 1 in mode 1',
@@ -819,11 +835,26 @@ STEPS_MIDI = [
  # be polled, and its recovery is PARASITIC on a detectable device being missing
  # in the same moment. Step 7 below is what that costs.
  ('Hot-swap -- SP-404 unplugged',
-  'PASS IF: A bordered alert on the OLED reads warn and then m_404.',
+  'PASS IF: A bordered alert on the OLED reads warn then m_404 then device-lost.',
   [],
-  # ⚠️ wait 12 IS LOAD-BEARING -- the warn is three missed ticks behind the
+  # ⚠️ wait 20 IS LOAD-BEARING -- the warn is three missed ticks behind the
   # unplug, up to 8 s, and the runner's default drain is 0.4 s.
-  {'do': 'Press enter first, then unplug the SP-404 and leave it out.',
+  #
+  # ⛔ AND THE ALERT IS BRIEF AND LATE, SO THE STEP HAS TO SAY WHERE TO LOOK AND
+  # WHEN. It told a person to pull a cable and judge an alert that fires about
+  # eight seconds later and clears itself about two seconds after that -- while
+  # their hands and eyes were on the cable. Reported from the rig as "no alert
+  # on the OLED" 2026-08-11, and /sdcard/cut-it-err.log has
+  # `332000 warn m_404 device-lost` at exactly that moment. ⚠️ THE STEP AFTER
+  # IT SHOWED THE WARN and this one did not, off the same physical action, which
+  # is what named the cause: step 16 has you counting to fifteen with the cable
+  # out, so you are still watching when it lands.
+  #
+  # ⛔ AND A FAILURE HERE INVITES THE ONE ACTION THAT DESTROYS STEP 15. Seeing no
+  # alert, a person plugs the 404 back in to check it still works -- which it
+  # does -- and 15 then reloads with the device PRESENT and tests nothing. Same
+  # sentence as step 17, which has said so all along.
+  {'do': 'Press enter first, then unplug the SP-404 and watch the OLED. The alert arrives about eight seconds after the cable is out and clears itself about two seconds later. Leave it unplugged when you answer -- the next step loads without it.',
    'wait': 20,
    'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_404']}}),
  ('Hot-swap -- SP-404 absent at load',
@@ -833,9 +864,16 @@ STEPS_MIDI = [
   # proven by its silence at boot -- it can only stay quiet by matching byte 65 on
   # port 3 -- but silence cannot tell a working subscription from a dead one. A
   # pad under a finger can.
+  # ⛔ `need` DESCRIBES THE STATE THE RELOAD ALREADY PUT THE RIG IN, NOT A THING
+  # TO GO AND DO. It read "The SP-404 still unplugged from the last step" directly
+  # above a `do` reading "Plug it back in", and the two land on screen together
+  # after the reload has happened -- so they read as a contradiction and were
+  # reported as one. NEED is what you must HAVE, DO is what you must do.
   {'do': 'Plug it back in, wait 60 seconds, then press pad 1 on bank A.',
    'reload': True,
-   'need': ['The SP-404 still unplugged from the last step.']}),
+   'need': ['The SP-404 unplugged, and the patch just reloaded without it. '
+            'The runner has already done the reload -- that absence is what '
+            'this step tests.']}),
 
  # ⛔ THE THIRD HOT-SWAP CASE for the 404 -- see the nanoKONTROL bench. The Volca
  # step below already has its own, because a `none` device can only be recovered

@@ -561,6 +561,14 @@ def run_bench_driven(bench, target, auto_only, start, src):
                 # advanced the patch while the runner still believed it was on
                 # this step. The desync guard caught it, which is the only reason
                 # it was not a silently wrong verdict.
+                # ⛔ HOLD THE PICTURE UP WHILE THE VERDICT IS OPEN. g_oled ages
+                # a parameter row out after ~1.3 s, so without this a visual
+                # step is readable for about a second and the question about it
+                # arrives after the answer has gone. `step.holds` decides, and
+                # it exempts every step whose subject IS the decay -- see
+                # steps.py, where the rule is derived from the step's own prose
+                # rather than kept as a list somebody has to remember.
+                src.hold(step.holds)
                 while True:
                     verdict, note = ask(step, allow_undo=False)
                     if verdict != "repeat":
@@ -578,6 +586,10 @@ def run_bench_driven(bench, target, auto_only, start, src):
                         stream.say("  fired again -- look as long as you need")
                     else:
                         stream.say("  not available against a recorded console")
+                # ⚠️ STOPPED BEFORE THE VERDICT IS RECORDED, never later. A hold
+                # still running when the bench advances re-fires into the NEXT
+                # step and its lines are read as that step's console.
+                src.hold(False)
             if verdict == "quit":
                 record(step, "interrupted", note)
                 stream.say("\n  stopped at step %d. Resume with:" % step.n)

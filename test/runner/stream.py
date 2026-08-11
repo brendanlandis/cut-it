@@ -102,6 +102,14 @@ class Source(object):
         """
         return False
 
+    def hold(self, on):
+        """Keep the current step's result on screen while a verdict is open.
+
+        ⚠️ A NO-OP WHERE THERE IS NOTHING TO RE-FIRE -- a replay, and paper mode.
+        Overridden by targets.Process, which is the only Source with a patch on
+        the other end.
+        """
+
     def close(self):
         pass
 

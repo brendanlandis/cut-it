@@ -15,6 +15,19 @@ inconsistent punctuation across test/.
 """
 import importlib.util
 import os
+import re
+
+# ⛔ THE SIGNATURE OF A STEP THAT TESTS A TIMEOUT, and it is deliberately wide.
+# A false positive costs one step its hold and a person presses r; a false
+# NEGATIVE re-fires a decay test forever and it can never fail again. When in
+# doubt this must say "decay", so it matches the word forms the step text
+# actually uses -- digits and spelled-out numbers both, because the Launchpad
+# bench says "about two seconds" where the display bench says "about 2 s".
+DECAY_RE = re.compile(
+    r"\b(later|fades?|fade out|vanish\w*|clears? itself|on its own|"
+    r"by itself|returns? after|times? out|timed out|settles?|persists?|"
+    r"still reads|keeps? walking|after about|seconds?|30 s|35 s|"
+    r"\d+(\.\d+)?\s*s\b)", re.I)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BENCH_DIR = os.path.join(ROOT, "test", "bench")
@@ -120,6 +133,33 @@ class Step(object):
         """Does this step arm a timed count? Then the window has to be waited
         out before the number means anything."""
         return any(b.endswith(MEASURE_SUFFIX) for _m, b in self.actions)
+
+    @property
+    def holds(self):
+        """May the runner re-fire this step while a person reads it?
+
+        ⛔ A PARAMETER ROW IS ON THE OLED FOR ABOUT 1.3 s. g_oled ages it out --
+        the instrument working, and what stops a performance screen filling with
+        stale rows -- so a step whose result is a row gives you barely a glance.
+        Re-sending resets that timer, so the runner holds the picture up while
+        the verdict is open.
+
+        ⛔ AND FOR ROUGHLY TEN STEPS THAT WOULD DESTROY THE ASSERTION, because
+        the thing being tested IS the decay: "about 2 s later it vanishes",
+        "clears itself after 30 s", "the other four fade out". Re-firing those
+        keeps resetting the very timer under test and they would pass forever.
+        ⚠️ SO THE EXEMPTION IS DERIVED FROM THE TEXT RATHER THAN HAND-KEPT. A
+        hand-maintained list is a second place to forget, and forgetting here
+        does not fail loudly -- it makes a timeout test unfalsifiable.
+
+        Three ways out, and the first two are structural:
+          * no actions at all -- there is nothing to re-send
+          * a measure step -- re-firing re-arms or re-reads a beat counter
+          * the prose claims something happens after a delay
+        """
+        if not self.actions or self.measure:
+            return False
+        return not DECAY_RE.search(self.pass_if)
 
 
 class Bench(object):

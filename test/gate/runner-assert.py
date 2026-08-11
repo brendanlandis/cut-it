@@ -167,6 +167,50 @@ def run(transcript_path, keys):
 
 
 # ---------------------------------------------------------------------------
+def _holds():
+    """⛔ WHICH STEPS MAY BE HELD ON SCREEN, and the direction of every error.
+
+    The runner re-fires a step while its verdict is open, because g_oled ages a
+    parameter row out after ~1.3 s and a person cannot read one in that. For a
+    step whose subject IS that decay, re-firing resets the timer under test and
+    the step can never fail again -- so this asserts the exemptions hold, and
+    that at least one real parameter step still gets its hold. Both halves are
+    needed: "nothing holds" would satisfy the safety check on its own.
+    """
+    print("\n--- which steps may be held on screen ---")
+    disp, nano, lp = S.load("display"), S.load("nanokontrol"), S.load("launchpad")
+
+    held = [st for b in (disp, nano, lp) for st in b.steps if st.holds]
+    A.check("some step is actually held -- the exemptions have not eaten "
+            "everything", len(held) >= 10,
+            "%d steps hold. A zero here passes every safety check below while "
+            "delivering none of the point" % len(held))
+
+    A.check("⛔ a parameter step IS held -- the case this exists for",
+            nano.steps[1].holds and disp.steps[2].holds,
+            "nanokontrol 2 %s / display 3 %s -- these are the OLED rows that "
+            "vanish in 1.3 s" % (nano.steps[1].holds, disp.steps[2].holds))
+
+    # ⛔ EACH OF THESE ASSERTS A TIMEOUT. Re-firing resets it.
+    for b, n, why in ((nano, 6, "the other four fade out"),
+                      (disp, 13, "clears itself after 30 s"),
+                      (lp, 13, "clears ITSELF about thirty seconds later"),
+                      (lp, 11, "goes back to the mode lamps by itself")):
+        st = b.steps[n - 1]
+        A.check("⛔ %s step %d is NOT held -- it tests %s" % (b.name, n, why),
+                not st.holds,
+                "holding it re-sends the message that starts the timer under "
+                "test\n     %s" % st.pass_if)
+
+    # ⛔ STRUCTURAL, NOT PROSE. A measure step re-arms or re-reads a beat
+    # counter; a step with no actions has nothing to re-send in the first place.
+    for b in (disp, nano, lp, S.load("tempo"), S.load("phone"),
+              S.load("state"), S.load("midi")):
+        bad = [st.n for st in b.steps if st.holds and (st.measure or not st.actions)]
+        A.check("%s: no measure step and no action-less step is held" % b.name,
+                not bad, "steps %s" % bad)
+
+
 def main():
     os.makedirs(WORK, exist_ok=True)
     os.chdir(ROOT)
@@ -209,6 +253,7 @@ def main():
             "the other end that makes a device bench unsteppable by a person, "
             "and it reports as a stall rather than as anything to do with input")
 
+    _holds()
     _predicates()
 
     clean = transcript(bench)

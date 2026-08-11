@@ -65,6 +65,7 @@ class Process(stream.Source):
             self.osc.bind(("127.0.0.1", osc_port))
             self.osc.settimeout(0.25)
         self.teardown_fn = teardown
+        self._holding = False
         self.label = label
         self.log = []
         # ⛔ stdin=DEVNULL, AND IT IS THE WHOLE REASON A DEVICE BENCH COULD NOT
@@ -136,6 +137,31 @@ class Process(stream.Source):
         self.gosender.send("rerun")
         return True
 
+    def hold(self, on):
+        """Keep re-firing the current step while a verdict is open.
+
+        ⛔ IT IS A THREAD BECAUSE THE PROMPT BLOCKS. Firing a fixed burst before
+        asking would delay the question by as long as the hold lasts, on every
+        step, whether or not anyone needed it -- and then stop holding at exactly
+        the moment the person starts reading. This way the question appears at
+        once and the screen stays alive underneath it.
+
+        ⚠️ IT STOPS ITSELF. A hold that outlived its step would re-fire into the
+        next one, and the extra lines would be read as that step's console.
+        """
+        if not on:
+            self._holding = False
+            return
+        self._holding = True
+
+        def loop():
+            for _ in range(HOLD_MAX):
+                time.sleep(HOLD_EVERY)
+                if not self._holding:
+                    return
+                self.gosender.send("rerun")
+        threading.Thread(target=loop, daemon=True).start()
+
     def close(self):
         try:
             self.proc.terminate()
@@ -185,6 +211,13 @@ def _tap():
                  "rather than by a fact." % p)
     return p
 
+
+# ⚠️ A ROW LIVES ~1.3 s ON THE OLED, so the hold has to re-send inside that or
+# the picture blinks. 1.0 s leaves margin for the network without the screen
+# ever going dark. HOLD_MAX caps a walk-away at about five minutes rather than
+# leaving a bench firing into an empty room all night.
+HOLD_EVERY = 1.0
+HOLD_MAX = 300
 
 PHONE_PORT = 9995
 

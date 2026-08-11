@@ -142,7 +142,8 @@ def check(steps, name):
 # --------------------------------------------------------------------------
 KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled",
          "osc", "osc-rate", "file", "all")
-META_KEYS = ("need", "do", "watch", "check", "wait", "targets", "reload")
+META_KEYS = ("need", "do", "watch", "check", "wait", "targets", "reload",
+             "hold")
 TARGETS = ("device", "mac", "paper")
 BUS_KINDS = ("bus", "bus-count", "bus-not")
 # The label bench-tap.pd prints for each bus, so a predicate can be checked

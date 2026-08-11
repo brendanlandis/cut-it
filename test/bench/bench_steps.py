@@ -278,7 +278,14 @@ STEPS_TEMPO = [
   ]}}),
  ('Knob pickup on the first touch',
   'PASS IF: Touch nothing -- the bench moves knob 1 to the bottom for you. You get one of two screens and both are correct. (a) the row reads bpm 120 (10) and the footer still says 120-bpm -- the tempo is being held until the real knob is turned past where it was saved. (b) the row reads bpm 10 and the footer says 10-bpm -- the knob went straight through because it was saved at the bottom already or there is no knobs.txt at all. On both screens the row must never say og-knob-1 and never a raw 0-to-1 decimal.',
-  [('120', 'tempo'), ('og-knob-1 0', 'param')]),
+  [('120', 'tempo'), ('og-knob-1 0', 'param')],
+  # ⛔ NOT HELD. The runner re-fires a step every 0.8 s while its verdict is
+  # open, so a parameter row survives g_oled's 1.3 s life -- but this step sends
+  # a tempo AND a knob that maps to tempo, so each re-fire walks the footer from
+  # 120 back down to 10 under the eyes of whoever is reading it. Measured on the
+  # Mac: six full round trips in five seconds. [r]epeat still works and is the
+  # right control for it, because a person asks for that one deliberately.
+  {'hold': False}),
  ('Knob pickup crosses over',
   'PASS IF: The bench moves knob 1 to the top. The footer reads 500-bpm. A slide up rather than a snap is correct -- the knob has now crossed where it was saved and is live from here on.',
   [('og-knob-1 1', 'param')]),

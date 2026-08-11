@@ -209,6 +209,17 @@ def _holds():
                 "holding it re-sends the message that starts the timer under "
                 "test\n     %s" % st.pass_if)
 
+    # ⛔ A STEP MAY REFUSE THE HOLD OUTRIGHT, and the derivation cannot work it
+    # out: `hold: False` is about whether the ACTIONS are idempotent, not about
+    # whether the prose describes a decay. tempo 4 sends a tempo and then a knob
+    # mapped to tempo, so a re-fire walks the footer down in front of the reader.
+    t4 = S.load("tempo").steps[3]
+    A.check("⛔ a step carrying `hold: False` is not held",
+            not t4.holds and t4.actions and not t4.measure
+            and not S.DECAY_RE.search(t4.pass_if),
+            "tempo 4 holds=%s -- and it must be the meta doing it, not a decay "
+            "word that happens to be in the prose" % t4.holds)
+
     # ⛔ STRUCTURAL, NOT PROSE. A measure step re-arms or re-reads a beat
     # counter; a step with no actions has nothing to re-send in the first place.
     for b in (disp, nano, lp, S.load("tempo"), S.load("phone"),

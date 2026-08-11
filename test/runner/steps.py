@@ -147,6 +147,14 @@ class Step(object):
     def holds(self):
         """May the runner re-fire this step while a person reads it?
 
+        ⛔ AND A STEP MAY REFUSE OUTRIGHT WITH `hold: False`. The derivation
+        below asks whether the step is ABOUT a decay; it cannot ask whether the
+        step's own actions are idempotent. tempo 4 sends `120` to tempo and then
+        a knob that maps to tempo, so every re-fire walks the footer from 120
+        back down to 10 in front of somebody trying to read it -- measured, six
+        times in five seconds. That is a property of the action list and it
+        belongs beside the action list, not in a pattern over prose.
+
         ⛔ A PARAMETER ROW IS ON THE OLED FOR ABOUT 1.3 s. g_oled ages it out --
         the instrument working, and what stops a performance screen filling with
         stale rows -- so a step whose result is a row gives you barely a glance.
@@ -167,6 +175,8 @@ class Step(object):
           * the prose claims something happens after a delay
         """
         if not self.actions or self.measure:
+            return False
+        if self.meta.get("hold") is False:
             return False
         return not DECAY_RE.search(self.pass_if)
 

@@ -131,7 +131,7 @@
 #X obj 20 3260 select 3;
 #X obj 240 3260 t b b b;
 #X msg 700 3260 === STEP-03-of-16 === Beat counts while stopped;
-#X msg 700 3310 PASS IF: These are counted by the bench and printed on this screen -- look at the got line above and not at the instrument. M-BEATS reads 20 or 21 beats. C1-BEATS-ratio-1 reads the same number. C2-BEATS-ratio-1.5 reads 30 or 31 in the same window. C2 over C1 comes out at 1.5 exactly. A zero anywhere is the failure -- on the Mac check DSP is on first.;
+#X msg 700 3310 PASS IF: M-BEATS reads 20 or 21 beats. C1-BEATS-ratio-1 reads the same number. C2-BEATS-ratio-1.5 reads 30 or 31 in the same window. C2 over C1 comes out at 1.5 exactly. These are counted by the bench and printed by the runner -- none of them is on the instrument.;
 #X msg 700 3360 >>> press GO to run step 3 of 16;
 #X obj 240 3430 s \$0-say;
 #X obj 20 3520 select 4;
@@ -191,7 +191,7 @@
 #X obj 20 5860 select 13;
 #X obj 240 5860 t b b b;
 #X msg 700 5860 === STEP-13-of-16 === Beat counts after stopping;
-#X msg 700 5910 PASS IF: M-BEATS is printed above again and reads 20 or 21 beats. The master reference keeps running with the transport stopped -- that is the point of the step. Nothing about it is on the OLED.;
+#X msg 700 5910 PASS IF: M-BEATS is printed again and reads 20 or 21 beats. The master reference keeps running with the transport stopped -- that is the point of the step. Nothing about it is on the instrument.;
 #X msg 700 5960 >>> press GO to run step 13 of 16;
 #X obj 240 6030 s \$0-say;
 #X obj 20 6120 select 14;

@@ -14,11 +14,12 @@ ownership of `oscOut`**. A standalone patch is not bound by that — so it gets 
 four knobs, the aux button and 25 keys, where the instrument has everything but the encoder.
 **That is the difference between a menu of one screen and a menu you can navigate.**
 
-**One sibling plan came out of the same batch** — [plan-v03.5.1.md](plan-v03.5.1.md), diagnostics
-inside the instrument. This one is independent of it and **stales no bench**, because it touches
-nothing under `Cut It/`.
+**Two sibling plans came out of the same batch** — [plan-v03.5.1.md](plan-v03.5.1.md), the phone,
+and [plan-v03.5.3.md](plan-v03.5.3.md), the shift key. This one is independent of both and **stales
+no bench**, because it touches nothing under `Cut It/`.
 
-⛔ **This is the last of the two, and it carries the batch's closing chore** — see *Done means* #5.
+⛔ **This one must land LAST of the three, because it carries the batch's closing chore** — see
+*Done means* #5. It is the only ordering constraint between them.
 
 ---
 
@@ -184,7 +185,7 @@ enumerate was diagnosed from scratch across five physical tests when
    [tools/README.md](tools/README.md)'s ⬜ about where the debug system lives is struck.
 5. ⛔ **`check_closers` in `test/gate/docs-check.py` loses its `--strict` flag and becomes
    unconditional.** It is written and tested already, and gated off only because this batch had not
-   landed. **This is the last plan of the three, so the condition goes with it.** Run
+   landed. **This is the last plan of the batch to land, so the condition goes with it.** Run
    `python3 test/gate/docs-check.py --strict` to see what is left. ⚠️ **It is not only a flag
    deletion** — measured 2026-08-11, it reports 20 problems in four distinct kinds:
 

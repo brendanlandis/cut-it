@@ -17,7 +17,7 @@
 #X msg 260 1920 tick;
 #X obj 260 1980 s presence;
 #X obj 800 1520 r presence;
-#X obj 800 1570 route expect lost back;
+#X obj 800 1570 route expect lost back re-wire;
 #X obj 800 1640 t b;
 #X obj 800 1700 f;
 #X obj 960 1760 + 1;
@@ -66,6 +66,10 @@
 #X obj 1900 3060 shell;
 #X obj 1900 3120 print wire-watch;
 #X text 2400 2760 ⛔ THE HEARTBEAT THAT CATCHES A DEVICE NOTHING EVER LOST. Everything above recovers a device that WAS here and went away \, and that is gated on something being lost -- so a device registered none \, which has no clock and can never be lost \, is never recovered at all. Plug the Volca's interface into a running instrument and it enumerates in under a second and sits COMPLETELY UNSUBSCRIBED forever. Item 285 \, and ✅ seen on the rig 2026-08-10 after 1 day 21 hours up. ⚠️ THE COUNT IS TAKEN AFTER THE INCREMENT \, so the first fork lands on tick 8 and not on tick 0 -- at tick 0 it fired inside the boot window \, where u_init has just run wire.sh itself and init-assert requires EXACTLY ONE. ⚠️ THE FORK IS CHEAP AND CONDITIONAL: wire-watch.sh hashes the CLIENT NAMES and runs wire.sh only when they change -- measured 50 ms against wire.sh's 247 ms \, and the hash is byte-identical across a re-wire so the watcher cannot see its own work and retrigger. That is what keeps this a fork on a real EVENT rather than a fork on a timer \, which is the distinction Phase 4's rule is actually about., f 62;
+#X obj 1000 2500 t b b;
+#X msg 1000 2620 info u_present rewire-phone;
+#X obj 1000 2680 s err;
+#X text 2500 1520 ⛔ A THIRD CAUSE OF A FORK \, AND IT IS THE ONLY ONE A PERSON ASKS FOR. The eight scheduled attempts and the one trailing fork are both automatic and both BOUNDED -- and once the bound is spent the rig stays wired to nothing until the patch is reloaded \, which restarts everything you were doing. re-wire on this bus is the phone's button \, and it reaches the SAME sh wire.sh message box the other two do \, so there is still exactly one owner of the recovery and one place it can happen. ⚠️ IT IS DELIBERATELY NOT A RESET OF THE COUNTER: one fork per press \, paced by a finger \, which is the only rate limit an on-demand recovery can honestly have. ⛔ AND IT NEEDS ITS OWN NAME ON err FOR THE REASON THE OTHER TWO DO -- all three converge on one message box \, so a report tapped below the junction could not tell them apart \, and telling them apart is the whole question when reading a log afterwards. The trigger fires the FORK from its right outlet and the report from its left \, exactly as the scheduled one does., f 62;
 #X connect 8 0 9 0;
 #X connect 9 0 10 0;
 #X connect 10 1 22 0;
@@ -129,3 +133,7 @@
 #X connect 61 0 62 0;
 #X connect 62 0 63 0;
 #X connect 63 0 64 0;
+#X connect 17 3 66 0;
+#X connect 66 1 42 0;
+#X connect 66 0 67 0;
+#X connect 67 0 68 0;

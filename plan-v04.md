@@ -196,14 +196,21 @@ struck on 2026-08-08:
 **Requirement, as Brendan states it: the Organelle must stop dropping wifi.** Not "recover fast" — a
 dead phone display mid-set is the failure.
 
+⏸ **PARKED 2026-08-12, and [plan-v03.5.0.md](plan-v03.5.0.md) Phase B owns it — not this section.**
+⛔ **Parked is not closed**: no router configuration has been tried, so the stopping rule has not
+fired and **a quiet spell is not evidence for won't-fix.** ✅ The baseline to resume from is items
+298, 299 and 300 on [ref/wifi.md](ref/wifi.md).
+
 ⚠️ **Do not spend session time on this unless it recurs.** Everything actionable has shipped: the
 recovery ladder works unattended (item 212), Orbi firmware 2.7.6.6 did **not** fix it (item 213), and
 channel 1 was a real throughput win but did not separate the two APs (item 221). **The trigger is
-untouched** — both APs remain co-channel, and one Orbi setting moves both mesh nodes.
+untouched** — ✅ **re-confirmed on the hardware 2026-08-12, item 300**: both radios co-channel on
+2412, 12 dB apart. One Orbi setting moves both mesh nodes.
 
 ⛔ **The preferred-AP steer is no longer a safe fallback**: one failure happened *on* the router
-(item 214). The measurements, the four wrong turns and the reproduction recipe are on
-[ref/device-os.md](ref/device-os.md).
+(item 214). The measurements, the **six** wrong turns and the reproduction recipe are on
+[ref/wifi.md](ref/wifi.md) — ⚠️ **not on [ref/device-os.md](ref/device-os.md)**, which says *"Moved"*
+and has said so since the refactor.
 
 ⬜ **One untried angle, turned up while closing items 5 and 95: the dongle is the only thing on the
 Organelle's own rail.** The RT5370 declares **450 mA** and sits on a **separate root bus from the

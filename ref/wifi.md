@@ -6,8 +6,15 @@ why.** It is narrowed, not solved. The fault matters because the phone display i
 second screen — [device/phone.md](device/phone.md) — and a dead display mid-set is the failure
 being designed against.
 
-⚠️ **Do not spend session time on this unless it recurs.** Everything actionable has shipped.
-What is still open, and what is being waited for, is [plan-v04.md](../plan-v04.md).
+⏸ **PARKED 2026-08-12, and [plan-v03.5.0.md](../plan-v03.5.0.md) owns it — not
+[plan-v04.md](../plan-v04.md).** ⚠️ **Do not spend session time on this unless it recurs.** The
+device has been behaving and **no router configuration has been tried.**
+
+⛔ **Parked is not closed.** Item 81 is open, the stopping rule has not fired, and **a quiet spell is
+not evidence for won't-fix** — do not close it on one. ✅ **The baseline to resume from was taken
+before the pause**: items **298** (the dongle is 2.4 GHz only, so per-band separation cannot work),
+**299** (a hand-connected boot logs a phantom `TRANSITION`) and **300** (both radios co-channel, 12 dB
+apart). ⚠️ **Re-take item 300 before acting on it** — it is a scan cache and goes stale.
 
 **The boot hang that used to look like a wifi fault is not one** — it is a USB mass-storage fault
 with wifi as its most visible casualty, and it lives on [device-os.md](device-os.md).
@@ -261,12 +268,14 @@ house network by itself. Nothing about this is sticky.
 
 ⬜ **Why nothing answers a DISCOVER after a roam.** **Not established**, and the one thing that
 would turn the roam fault from narrowed into solved. ⚠️ Say so plainly — this investigation has
-already produced two confident wrong answers. [plan-v04.md](../plan-v04.md) §3.
+already produced two confident wrong answers. [plan-v04.md](../plan-v04.md) §3, and
+**[plan-v03.5.0.md](../plan-v03.5.0.md) Phase B owns it** — ⏸ **parked**, see the top of this page.
 
 ⬜ **AP-mode link quality over a set-length window — item 45.** AP mode is immune to the roam fault
 by construction, but nothing has measured whether the stage link *holds* for the length of an
 actual set. ⚠️ Measuring it needs the AP up, which kills the house link.
-[plan-v04.md](../plan-v04.md) §3.
+[plan-v04.md](../plan-v04.md) §3, and **[plan-v03.5.0.md](../plan-v03.5.0.md) A2 owns it** —
+⚠️ **this one is NOT parked.** It does not depend on the house fault and can be run at any set.
 
 ⬜ **Three drops on 2026-08-08 that did NOT match the roam signature** —
 [plan-v04.md](../plan-v04.md) §3. Recorded because they

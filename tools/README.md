@@ -189,6 +189,36 @@ moment rather than needing a second window, and `--from N` *records* that the sk
 not run instead of passing over them in silence. The netcat lesson it carried is on
 [ref/device-os.md](../ref/device-os.md).
 
+### `tidy.sh` — what has accumulated on the device, and what is safe to remove
+
+```sh
+./tools/tidy.sh              # survey only. Touches nothing. THE DEFAULT
+./tools/tidy.sh --delete     # the same list, then asks before removing it
+```
+
+**Four categories, and only the first three are ever deleted:** bench outputs (`*-bench.pd`,
+`bench-tap.pd` — `test/runner/targets.py` re-copies whichever it needs on every device run, so they
+are meant to be transient), probe logs whose findings already carry an item number, and loose `.pd`
+files on `/sdcard` **that also exist in `tools/`**. ⛔ A `.pd` this repo has never heard of is left
+alone — it is something you put there and did not write down, and removing it would be the script
+guessing.
+
+⛔ **The fourth category is DRIFT, and it is reported rather than deleted.** A deployed folder whose
+files differ from the repo's is fixed by a push; the script prints the exact `scp`.
+⚠️ `tools/deploy.sh` sends **both** patch folders every time so those two stay level by construction
+— but the stage probes in `! debug` are copied by hand and nothing re-sends them.
+
+⛔ **It is not a flag on `deploy.sh`, deliberately.** `deploy.sh` is run twenty times a day and must
+stay boring; this one deletes things. The two share nothing but an ssh connection.
+
+⚠️ **It never touches a patch folder.** Files deleted locally are `deploy.sh --clean`'s business,
+which is a question about one folder you are looking at rather than a sweep.
+
+**What it will not remove, ever:** the wifi investigation's watcher, log, pid and heartbeat; the
+credentials; `cut-it-state/` and the error log; and the vendor's own files. ⛔ **A candidate has to
+match a cruft pattern AND survive a `KEEP` guard**, and a collision between the two is treated as a
+bug in the script — it refuses and exits 3 without deleting anything.
+
 ### `lp-live.sh` — rescue a Launchpad stranded in Programmer Mode
 
 ```sh
@@ -273,7 +303,7 @@ the phone side and is not an Organelle patch at all.
 | `osc-bridge/` | Bidirectional OSC between Organelle and an iPhone running PdParty. Sends a heartbeat and `knob1`; draws whatever arrives on `/cutit/fader` big on the OLED. |
 | `status-display/` | The performance status protocol: four knobs sending **named parameters** (`chop-size`, `grain`, `speed`, `drunk`) plus a heartbeat. |
 | `audio-probe/` | `env~` levels for `adc~ 1` and `adc~ 2` drawn large on the OLED. Used to verify the TRS input split; still the quickest way to check what is arriving at the inputs. |
-| `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection, and **four buttons** that send back. **Not** an Organelle patch: deploy over WebDAV with `curl -T http://<phone>:9000/CutItRemote/_main.pd`. ⚠️ The WebDAV server is not running just because PdParty is — `nc -z <phone> 9000` first. And PdParty's OSC **send** host and port have to point at the Organelle or every button is silent. |
+| `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection, and **four buttons** that send back. **Not** an Organelle patch: deploy over WebDAV — the command and its three preconditions are below. |
 
 Findings from all of them are written up in [../ref/module/display.md](../ref/module/display.md).
 
@@ -290,6 +320,34 @@ cite it. That is what retired `self-wire.pd` and keeps these four.
 
 ⚠️ **`pdparty-scene/` was never part of that question** — [../ref/device/phone.md](../ref/device/phone.md)
 names it as a `Files:` entry, so it is live by definition.
+
+### Deploying the phone scene
+
+**A scene is a folder containing `_main.pd`**, and it goes over PdParty's WebDAV server:
+
+```sh
+nc -z <phone> 9000                                        # 1. is WebDAV even up
+curl -X MKCOL "http://<phone>:9000/CutItRemote"           # 2. first install only
+curl -T "pdparty-scene/CutItRemote/_main.pd" \
+     "http://<phone>:9000/CutItRemote/_main.pd"           # 3. upload
+```
+
+⛔ **`curl -T` takes the LOCAL FILE FIRST and then the URL.** This page carried a one-argument
+version — `curl -T http://<phone>:9000/…` — until 2026-08-12, which uploads a file *named* `http://…`
+and cannot ever have worked.
+
+**Three preconditions, and each fails in its own way:**
+
+| | |
+|---|---|
+| ⚠️ **WebDAV is not on just because PdParty is** | It is switched on in the app and does not reliably survive backgrounding. `curl` exits **7** if it is off, which is at least loud. The trap is on [../ref/device/phone.md](../ref/device/phone.md) |
+| ⛔ **The scene folder must already exist** | A `PUT` into a missing parent is a **409**. `MKCOL` first, once |
+| ⛔ **There is no live reload** | The scene is instantiated when it opens, so an upload under a running scene changes nothing you can see. Back out of it and reopen |
+
+⚠️ **And the phone's OSC send host must be a literal address** — PdParty will not resolve
+`organelle.local`, and the failure is silent at both ends. Item 312. The Organelle's lease has been
+seen at `.15`, `.18` and `.6`; on its own access point it is always `192.168.12.1`, which is why the
+stage network is the easy one and the house network is not.
 
 ### `stage-patches/` — menu patches for the venue
 

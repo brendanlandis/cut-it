@@ -1,0 +1,233 @@
+#!/bin/sh
+# What has accumulated on the Organelle, and what is safe to remove.
+#
+#   ./tools/tidy.sh              survey only. Touches nothing. THE DEFAULT
+#   ./tools/tidy.sh --delete     the same list, then asks before removing it
+#   HOST=root@192.168.1.6 ./tools/tidy.sh
+#
+# ⛔ IT IS NOT A FLAG ON tools/deploy.sh, DELIBERATELY. deploy.sh is run twenty
+# times a day and must stay boring; this one deletes things. Bundling a
+# destructive capability into the command you type most often is how the
+# accident eventually happens, and the two have nothing in common but an ssh
+# connection.
+#
+# ⛔ NOTHING IS DELETED WITHOUT A POSITIVE MATCH AND A KEEP CHECK. A candidate
+# has to match one of the CRUFT patterns below AND survive the KEEP guard, which
+# is a hard refusal rather than an omission. Belt and braces on purpose: the
+# device holds the only copy of the wifi investigation's evidence, and this is a
+# script whose whole job is `rm`.
+#
+# ⚠️ IT NEVER TOUCHES A PATCH FOLDER. Files deleted locally are `deploy.sh
+# --clean`'s business, which is a question about one folder you are looking at,
+# not a sweep. This only ever looks at LOOSE FILES in /sdcard.
+set -eu
+
+HOST="${HOST:-root@organelle.local}"
+DELETE=0
+for a in "$@"; do
+    case "$a" in
+        --delete) DELETE=1 ;;
+        -h|--help)
+            echo "usage: tools/tidy.sh [--delete]"
+            echo "  (no flags)  survey only -- touches nothing"
+            echo "  --delete    print the manifest, ask, then remove"
+            exit 0 ;;
+        *) echo "unknown flag: $a  (try --help)" >&2; exit 1 ;;
+    esac
+done
+
+cd "$(dirname "$0")/.."
+
+# ---------------------------------------------------------------------------
+# ⛔ THE KEEP GUARD, AND IT IS CHECKED AFTER THE CANDIDATE LIST IS BUILT rather
+# than instead of building one. Every name here is something the device holds
+# that nothing in this repo can regenerate:
+#
+#   wifi-*        the fault investigation's watcher, its log, its pid and its
+#                 heartbeat. ⚠️ wifi-watch.sh RUNS ON THE DEVICE and its log is
+#                 the evidence ledger -- ref/wifi.md is written out of it.
+#   wifi.txt      the house credentials. ap.txt the access point's.
+#   cut-it-*      the instrument's own error log, and its state directory, which
+#                 lives outside the patch folder precisely so a deploy cannot
+#                 touch it (ref/module/state.md).
+#   the rest      the vendor's, and older than this project.
+KEEP='wifi-watch.sh wifi-watch.log wifi-watch.pid wifi-watch.alive
+wifi-reassociate.sh wifi.txt wifi.txt.bak wifi_log.txt ap.txt
+cut-it-err.log cut-it-err.cur cut-it-state
+MIDI-Config.txt postfw.log Patches'
+
+# ⛔ IT SPLITS ON DEFAULT IFS -- WHITESPACE -- NOT ON NEWLINES. The first version
+# forced IFS to a newline, so each LINE of KEEP became one element and every
+# comparison ran against the whole line: "wifi-watch.sh wifi-watch.log ..." is
+# not equal to "wifi.txt", so the guard matched nothing and quietly passed
+# everything. Caught by deliberately widening a cruft pattern to swallow *.txt --
+# the run then offered to delete ap.txt, wifi.txt, wifi.txt.bak and wifi_log.txt,
+# which is the credentials and the fault log. ⚠️ A guard that cannot fail is not
+# a guard, and this one could not fail until it was made to.
+#
+# ⛔ AND IT SETS IFS ITSELF RATHER THAN INHERITING IT, which was the SECOND
+# version of the same bug. Fixing the split here was not enough: the loop that
+# calls this has already set IFS to a newline so it can walk the candidate list,
+# and a function inherits that -- so KEEP went back to splitting by line and the
+# guard went back to matching nothing. It reads the same either way from inside
+# the function, which is exactly why it needed a test that fires rather than an
+# argument that it should.
+kept() {
+    _kifs=$IFS
+    IFS=' 	
+'
+    for _k in $KEEP; do
+        if [ "$1" = "$_k" ]; then IFS=$_kifs; return 0; fi
+    done
+    IFS=$_kifs
+    return 1
+}
+
+# ---------------------------------------------------------------------------
+# ⚠️ NO ESCAPE CODES. Output from this gets pasted into commit messages and
+# read out of pipes, and a bold sequence survives both as literal `[1m`. The
+# rest of tools/ uses plain banners for the same reason.
+say() { printf '\n=== %s\n' "$1"; }
+
+# ⛔ EVERY ssh TAKES -n, WHICH IS stdin FROM /dev/null. ssh reads stdin greedily
+# to forward it to the remote command, so the `read` that asks for confirmation
+# below was answered by nothing -- the ssh calls above it had already swallowed
+# the keystroke, and --delete simply fell through to "nothing deleted" every
+# time with no error at all. test/runner/targets.py carries the same fix for the
+# same reason, where it presented as "GO was sent and nothing fired".
+
+REMOTE_LS=$(ssh -n "$HOST" 'cd /sdcard && ls -1p | grep -v /$' 2>/dev/null) || {
+    echo "cannot reach $HOST" >&2; exit 2; }
+
+CAND=""
+add() { CAND="$CAND$1
+"; }
+
+say "1. bench outputs -- regenerated by every device bench run"
+# ⚠️ test/runner/targets.py scps whichever bench it needs to /sdcard on every
+# run, along with bench-tap.pd. So these are not merely droppable, they are
+# SUPPOSED to be transient -- and a stale one on the device is a copy of a
+# question nobody is asking any more.
+FOUND=0
+for f in $REMOTE_LS; do
+    case "$f" in
+        *-bench.pd|bench-tap.pd) add "$f"; echo "   $f"; FOUND=1 ;;
+    esac
+done
+[ "$FOUND" = "1" ] || echo "   none"
+
+say "2. probe logs -- the findings are on ref/ pages, the logs are not"
+# ⚠️ Each stage probe writes /sdcard/<name>-probe.log because a menu-launched
+# patch has no console. Once the answer is written up with an item number the
+# log is a transcript of a question that has been closed -- ap-probe.log is
+# item 129, inquiry-probe.log item 249, anim-probe.log items 77 and 257.
+FOUND=0
+for f in $REMOTE_LS; do
+    case "$f" in
+        *-probe.log) add "$f"; echo "   $f"; FOUND=1 ;;
+    esac
+done
+[ "$FOUND" = "1" ] || echo "   none"
+
+say "3. loose patches that also live in tools/"
+# ⛔ ONLY IF THE REPO HAS ONE OF THE SAME NAME. A .pd on /sdcard that this repo
+# has never heard of is not cruft -- it is something you put there and did not
+# write down, and deleting it would be this script guessing.
+FOUND=0
+for f in $REMOTE_LS; do
+    case "$f" in
+        *.pd) [ -f "tools/$f" ] || continue
+              if ssh -n "$HOST" "md5sum '/sdcard/$f'" 2>/dev/null | cut -d' ' -f1 \
+                     | grep -qx "$(md5 -q "tools/$f" 2>/dev/null || md5sum "tools/$f" | cut -d' ' -f1)"
+              then echo "   $f   (identical to tools/$f)"
+              else echo "   $f   (device copy DIFFERS from tools/$f -- the repo's is the live one)"
+              fi
+              add "$f"; FOUND=1 ;;
+    esac
+done
+[ "$FOUND" = "1" ] || echo "   none"
+
+# ---------------------------------------------------------------------------
+say "4. deployed folders that have DRIFTED from the repo -- reported, never deleted"
+# ⛔ DRIFT IS NOT CRUFT AND THE FIX IS A PUSH, NOT AN rm. deploy.sh sends both
+# patch folders every time, so those two stay level by construction -- but the
+# stage probes in `! debug` are copied BY HAND and nothing re-sends them. One sat
+# there for four days carrying a comment citing a deleted plan, which is exactly
+# the rot this project keeps removing from its documents.
+DRIFT=0
+for d in tools/stage-patches/*/; do
+    name=$(basename "$d")
+    for f in "$d"*; do
+        b=$(basename "$f")
+        r="/sdcard/Patches/! debug/$name/$b"
+        rmd=$(ssh -n "$HOST" "md5sum '$r' 2>/dev/null" | cut -d' ' -f1) || true
+        [ -n "$rmd" ] || continue          # not deployed at all -- not drift
+        lmd=$(md5 -q "$f" 2>/dev/null || md5sum "$f" | cut -d' ' -f1)
+        if [ "$rmd" != "$lmd" ]; then
+            echo "   $name/$b   differs"
+            echo "      fix:  scp \"$f\" \"$HOST:/sdcard/Patches/! debug/$name/\""
+            DRIFT=1
+        fi
+    done
+done
+[ "$DRIFT" = "1" ] || echo "   none -- everything deployed matches the repo"
+
+# ---------------------------------------------------------------------------
+say "what is being KEPT, and why"
+echo "   the wifi investigation:  wifi-watch.{sh,log,pid,alive}  wifi-reassociate.sh"
+echo "   credentials:             wifi.txt  wifi.txt.bak  ap.txt"
+echo "   the instrument's data:   cut-it-state/  cut-it-err.log  cut-it-err.cur"
+echo "   the vendor's:            MIDI-Config.txt  postfw.log  wifi_log.txt"
+
+# ---------------------------------------------------------------------------
+N=0
+TOTAL=""
+_oifs=$IFS; IFS='
+'
+for f in $CAND; do
+    [ -n "$f" ] || continue
+    # ⛔ THE GUARD FIRES HERE, on the assembled list, so a pattern that grew too
+    # greedy is caught before anything is removed rather than being relied on
+    # never to grow. A collision is a BUG in this script and it stops the run.
+    if kept "$f"; then
+        echo >&2
+        echo "⛔ REFUSING TO CONTINUE: '$f' matched a cruft pattern AND is on the" >&2
+        echo "   keep list. One of the two is wrong. Nothing has been deleted." >&2
+        exit 3
+    fi
+    N=$((N + 1))
+    TOTAL="$TOTAL$f
+"
+done
+IFS=$_oifs
+
+say "$N file(s) could be removed"
+if [ "$N" = "0" ]; then
+    echo "   nothing to do."
+    exit 0
+fi
+
+if [ "$DELETE" != "1" ]; then
+    echo "   survey only. Nothing was touched."
+    echo "   To remove them:  ./tools/tidy.sh --delete"
+    exit 0
+fi
+
+echo
+printf "delete these %d file(s) from /sdcard? [y/N] " "$N"
+read -r answer
+case "$answer" in
+    y|Y|yes|YES) ;;
+    *) echo "nothing deleted."; exit 0 ;;
+esac
+
+_oifs=$IFS; IFS='
+'
+for f in $TOTAL; do
+    [ -n "$f" ] || continue
+    ssh -n "$HOST" "rm -f '/sdcard/$f'" && echo "   removed $f"
+done
+IFS=$_oifs
+echo
+echo "Done. /sdcard now:"
+ssh -n "$HOST" 'ls -1p /sdcard | grep -v /$'

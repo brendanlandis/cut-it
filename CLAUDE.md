@@ -136,8 +136,9 @@ aux and encoder. **Most work should never need the Organelle powered on.**
 ```sh
 ./test/run.sh            # every gate, ~5 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
 ./test/run.sh --all      # and then the benches -- needs the rig, and a person
-./tools/deploy.sh              # syntax check -> scp -> reload -> load, in one command
-./tools/deploy.sh --debug      # the same, for Cut It Debug -> /sdcard/Patches/! debug
+./tools/deploy.sh              # syntax check -> scp BOTH patches -> reload -> load Cut It
+./tools/deploy.sh --debug      # the same push, but loads Cut It Debug instead
+./tools/tidy.sh                # what has accumulated on the device. --delete to remove it
 ssh root@organelle.local # password: organelle. Root fs is read-only -- remount-rw.sh first
 ```
 

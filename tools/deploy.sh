@@ -1,10 +1,13 @@
 #!/bin/sh
-# Deploy a patch to the Organelle, and load it.
+# Push both patches to the Organelle, and load one of them.
 #
-#   ./tools/deploy.sh                    check, push, reload, load
-#   ./tools/deploy.sh --debug            the debug patch instead of the instrument
-#   ./tools/deploy.sh --clean            wipe the remote copy first
+#   ./tools/deploy.sh                    check, push BOTH, reload, load the instrument
+#   ./tools/deploy.sh --debug            same, but load the debug patch
+#   ./tools/deploy.sh --clean            wipe the remote copy of the loaded one first
 #   HOST=root@192.168.1.15 ./tools/deploy.sh   target by IP if mDNS is flaky
+#
+# ⚠️ --debug LOADS the debug patch, which STOPS THE INSTRUMENT. Run it bare
+# afterwards to put Cut It back.
 #
 # Every flag, and the reasoning behind the loop, is on ref/workflow.md.
 #
@@ -35,21 +38,49 @@ for a in "$@"; do
         --debug) DEBUG=1 ;;
         -h|--help)
             echo "usage: tools/deploy.sh [--debug] [--clean]"
-            echo "  (no flags)  the instrument -> /sdcard/Patches/!"
-            echo "  --debug     the debug patch -> /sdcard/Patches/! debug"
-            echo "  --clean     wipe the remote copy of whichever one first"
+            echo
+            echo "Both patch folders are pushed every time. The flag says which"
+            echo "one gets LOADED, and loading restarts Pd."
+            echo "  (no flags)  load Cut It        <- /sdcard/Patches/!"
+            echo "  --debug     load Cut It Debug  <- /sdcard/Patches/! debug"
+            echo "  --clean     wipe the remote copy of the loaded one first"
             exit 0 ;;
         *) echo "unknown flag: $a  (try --help)" >&2; exit 1 ;;
     esac
 done
 
+# ⛔ BOTH FOLDERS ARE PUSHED EVERY TIME; ONLY ONE IS LOADED. Copying files is
+# cheap and loading is the disruptive half -- it restarts Pd and stops whatever
+# is playing -- so there is no reason for the folder you did not name to go
+# stale on the device. It went stale exactly that way once already, though with
+# a probe rather than a patch: `Inquiry Probe` sat in `! debug` for four days
+# carrying a comment citing a plan that had been deleted, and nothing said so
+# because nothing ever pushed it again.
+#
+# $PATCH is the one that gets LOADED; $ALL_PATCHES is what gets COPIED.
+# ⚠️ NEWLINE-SEPARATED, not space-separated, because both names contain a space.
+ALL_PATCHES="Cut It
+Cut It Debug"
+
+# ⚠️ THE MENU DIRECTORY IS A PROPERTY OF THE FOLDER, not of the flag -- --debug
+# picks which one to LOAD. This is how the push loop places each one correctly
+# in a single pass.
+dest_for() {
+    case "$1" in
+        "Cut It Debug") echo "/sdcard/Patches/! debug" ;;
+        *)              echo "/sdcard/Patches/!" ;;
+    esac
+}
+
 if [ "$DEBUG" = "1" ]; then
     PATCH="Cut It Debug"
-    DEST="${DEST:-/sdcard/Patches/! debug}"
 else
     PATCH="Cut It"
-    DEST="${DEST:-/sdcard/Patches/!}"
 fi
+# ⚠️ DEST STILL OVERRIDES, and it applies to the patch being LOADED. The push
+# loop below asks dest_for for every other folder, so an override cannot send
+# one patch somewhere unusual and then load it from where it is not.
+DEST="${DEST:-$(dest_for "$PATCH")}"
 
 # The repo root, not tools/ — $PATCH, mac-stubs and the scp source are all
 # relative to it.
@@ -96,24 +127,53 @@ elif [ ! -x "$PD" ]; then
     echo "         set PD=... to point at a Pd 0.49 binary" >&2
 else
     echo "syntax checking ..."
-    check_patch "$PATCH/main.pd"
+    # ⛔ EVERY PATCH THAT IS ABOUT TO BE PUSHED, not just the one being loaded.
+    # The check is the only thing standing between a broken patch and a device
+    # with no console, and pushing an unchecked folder would put one there --
+    # ready to fail silently the next time it is selected from the menu.
+    # ⚠️ IFS IS SET TO A NEWLINE RATHER THAN PIPING INTO `while read`. A pipeline
+    # puts the loop in a SUBSHELL, so a failure inside it exits the subshell and
+    # the script carries on deploying a patch that did not pass -- and with
+    # `set -e` on, a plain for-loop aborts the run the moment one does.
+    _oifs=$IFS; IFS='
+'
+    for p in $ALL_PATCHES; do
+        check_patch "$p/main.pd"
+    done
+    IFS=$_oifs
     # ⚠️ ONLY THE INSTRUMENT HAS A main-dev.pd. The debug patch has no Mac entry
     # point at all: u_mother-stub fakes a front panel for Cut It, and this one IS
     # a front panel -- six screens steered from the keyboard, which is the thing
     # a stub would have to fake. It is exercised headlessly by
     # test/gate/debug-assert.sh instead.
-    [ "$DEBUG" = "1" ] || check_patch "$PATCH/main-dev.pd"
+    check_patch "Cut It/main-dev.pd"
 fi
 
 # --- Copy ------------------------------------------------------------------
-if [ "$CLEAN" = "1" ]; then
-    echo "removing remote $DEST/$PATCH ..."
-    ssh "$HOST" "rm -rf '$DEST/$PATCH'"
-fi
+# ⛔ EVERY PATCH GOES, EVERY TIME. Only $PATCH is loaded afterwards.
+# ⚠️ --clean WIPES ONLY THE ONE YOU NAMED. It exists to clear files deleted
+# locally, which scp cannot do, and that is a question about one folder; wiping
+# the other one as a side effect of a flag you passed for this one would be a
+# surprise with no upside.
+_oifs=$IFS; IFS='
+'
+for p in $ALL_PATCHES; do
+    if [ "$p" = "$PATCH" ]; then d=$DEST; else d=$(dest_for "$p"); fi
 
-echo "deploying '$PATCH' -> $HOST:$DEST/"
-ssh "$HOST" "mkdir -p '$DEST'"
-scp -rq "$PATCH" "$HOST:$DEST/"
+    if [ "$CLEAN" = "1" ] && [ "$p" = "$PATCH" ]; then
+        echo "removing remote $d/$p ..."
+        ssh "$HOST" "rm -rf '$d/$p'"
+    fi
+
+    if [ "$p" = "$PATCH" ]; then
+        echo "deploying '$p' -> $HOST:$d/   (this is the one that gets loaded)"
+    else
+        echo "deploying '$p' -> $HOST:$d/"
+    fi
+    ssh "$HOST" "mkdir -p '$d'"
+    scp -rq "$p" "$HOST:$d/"
+done
+IFS=$_oifs
 
 echo "deployed:"
 ssh "$HOST" "ls -la '$DEST/$PATCH'"

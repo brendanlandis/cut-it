@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Boot and wiring
 
-**Files:** `Cut It/u_init.pd`, `Cut It/wire.sh`, `Cut It/recover.sh`, `Cut It/main.pd`, `Cut It/main-dev.pd`, `Cut It/u_root.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/init-assert.sh` · **Bench:** `test/bench/display-bench.pd`
+**Files:** `Cut It/u_init.pd`, `Cut It/wire.sh`, `Cut It/recover.sh`, `Cut It/main.pd`, `Cut It/main-dev.pd`, `Cut It/u_root.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/init-assert.sh`, `test/gate/recover-assert.sh` · **Bench:** `test/bench/display-bench.pd`
 
 ## What it is
 

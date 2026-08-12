@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The map
 
-**Files:** `Cut It/u_map.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
+**Files:** `Cut It/u_map.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh`, `test/gate/recover-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
 
 ## What it is
 
@@ -36,7 +36,7 @@ mode-1 slider-1  volca-cc 41
 |-------|----|----------|------|
 | `<mode>` | The **second** atom of the `mode` bus message — `mode-1`, not `compose mode-1`. The class is `u_err`'s business | verified | — |
 | `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `sp-hit` | verified | — |
-| `<dest>` | One of the **ten** below, and **only** those | verified | 229 |
+| `<dest>` | One of the **eleven** below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
 
 **A row with any other width is a lint failure**, not a runtime one — `map-assert.py` reads the
@@ -104,8 +104,8 @@ One destination fed from two surfaces would otherwise need two scalings.
 | Empty table | Reported on `err` as `map-empty` | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Six modes × 67
-controls is 402 possible rows and the shipped file has **38** — thirteen, plus the keyboard's 25 in
-mode 1.
+controls is 402 possible rows and the shipped file has **44** — thirteen, plus the keyboard's 25 in
+mode 1, plus CC 90 in all six.
 
 ### What happens at load
 

@@ -108,7 +108,7 @@ def run_asserts(cap):
                                            "LIVE", "AUX-1", "AUX-2", "KNOB-2",
                                            "LATE-KNOB", "BAD-DEST", "RAIL-UP",
                                            "RAIL-BACK", "MODE-4", "MODE-DEP",
-                                           "UNMAPPED"]))
+                                           "UNMAPPED", "BAD-MODE", "AFTER-BAD"]))
     W = lambda k: by.get(k, [])
     # ⛔ MIDIOUT IS DELIBERATELY NOT EVIDENCE HERE, and the reason is worth the
     # three lines. g_grid repaints the Launchpad off a [metro 100] that runs with
@@ -146,6 +146,31 @@ def run_asserts(cap):
     A.check("⛔ ... and reports unknown-dest on err",
             any(e[0] == "ERR" and "unknown-dest" in " ".join(e[1]) for e in W("BAD-DEST")),
             repr(W("BAD-DEST")))
+
+    # ------------------------------------------ a mode the key-setter cannot use
+    # ⛔ AN UNKNOWN DESTINATION ALREADY RAISED WHILE AN UNUSABLE MODE PASSED IN
+    # SILENCE, and that asymmetry is what let item 294 live for an unknown number
+    # of sessions. A stored `compose` with no mode name empties the lookup key,
+    # text search hunts for og-knob-1 in the MODE column where it can never
+    # match, and every Organelle knob draws its raw row where a BPM belongs --
+    # visible on exactly one surface, because m_organelle is the only device file
+    # that posts no disp row of its own. Item 297 is the fix.
+    A.check("⛔ a mode that is not two atoms is REFUSED, and says so",
+            any(e[0] == "ERR" and "bad-mode" in " ".join(e[1]) for e in W("BAD-MODE")),
+            repr(W("BAD-MODE")))
+    # ⛔ THE HALF THAT MATTERS, and an error on its own would not have caught the
+    # bug: what shipped was a patch that accepted the value and then broke. The
+    # lookup key has to SURVIVE. og-knob-1 is tempo in all six modes.
+    A.check("⛔ ... and the lookup KEY SURVIVES IT -- 0.6 is still 304 bpm",
+            any(e[0] == "TEMPO" and e[1] == ["304"] for e in W("AFTER-BAD")),
+            "tempo in that window: %s -- a poisoned key sends nothing here and "
+            "draws og-knob-1 0.6 on the screen instead"
+            % [e[1] for e in W("AFTER-BAD") if e[0] == "TEMPO"])
+    A.check("⛔ ... and it does not draw a raw knob row either",
+            not any(d and d[0].startswith("og-knob")
+                    for d in [e[1] for e in W("AFTER-BAD") if e[0] == "DISP"]),
+            "disp in that window: %s"
+            % [e[1] for e in W("AFTER-BAD") if e[0] == "DISP"])
 
     # ------------------------------------------------------- parameter pickup
     # mother replays knobs.txt at boot, so the patch believes a knob is somewhere
@@ -266,7 +291,7 @@ def nosave_asserts(cap):
                                            "LIVE", "AUX-1", "AUX-2", "KNOB-2",
                                            "LATE-KNOB", "BAD-DEST", "RAIL-UP",
                                            "RAIL-BACK", "MODE-4", "MODE-DEP",
-                                           "UNMAPPED"]))
+                                           "UNMAPPED", "BAD-MODE", "AFTER-BAD"]))
     W = lambda k: by.get(k, [])
     tempos = lambda k: [float(e[1][0]) for e in W(k) if e[0] == "TEMPO" and e[1]]
     cc = lambda k, n: [e[1] for e in W(k) if e[0] == "CTLOUT" and e[1][1] == n]

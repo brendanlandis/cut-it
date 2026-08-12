@@ -214,14 +214,15 @@ STEPS_NANOKONTROL = [
   [],
   {'do': 'Move two faders at once, then three, then all nine.'}),
  ('Every button and transport key',
-  'PASS IF: All 18 buttons name themselves on press and nothing on release. The six transport keys report xport-1 to xport-6 as raw rows. No toggle.',
+  'PASS IF: All 18 buttons name themselves on press and nothing on release. REW FF LOOP and REC report xport-1 xport-3 xport-4 and xport-6 as raw rows. PLAY starts the clock and STOP stops it. No toggle.',
   [],
-  # ⚠️ THE TRANSPORT ROW DRAWS A RAW ROW NOW AND IT DID NOT BEFORE. It used to
-  # be consumed by u_map's hardcoded mode route, above the table, so it never
-  # reached the lookup at all. The mode selector moved to the Launchpad's lit top
-  # row, so these six fall through to the table, miss, and report their raw value
-  # -- item 242's rule, and the right behaviour: a control that does nothing and
-  # says nothing cannot be told from a broken one.
+  # ⚠️ FOUR OF THE SIX DRAW A RAW ROW NOW AND NONE OF THEM DID BEFORE. The row
+  # used to be consumed by u_map's hardcoded mode route, above the table, so it
+  # never reached the lookup at all. Mode moved to the Launchpad's lit top row,
+  # so these fall through to the table -- PLAY and STOP find start and stop
+  # there, and the other four miss and report their raw value, which is item
+  # 242's rule and the right behaviour: a control that does nothing and says
+  # nothing cannot be told from a broken one.
   {'do': 'Press every button, then all six transport keys.'}),
 
  # ⛔ HOT-SWAP, THREE CASES, AND ITEM 235 IS THE PROOF THE FIRST TWO ARE NOT THE

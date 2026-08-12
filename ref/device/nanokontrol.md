@@ -59,10 +59,15 @@ toggle — and names them by physical position, because what a control *means* i
 `m_` layer.
 
 **The row was the mode selector from Phase 6 until the shift key needed the aux button.** Mode moved
-to the Launchpad's top row, which was already showing the lit lamp — see
-[map.md](../module/map.md). ⚠️ **All six therefore report a raw row on the OLED now**, because they
-fall through to the table and miss it: item 242's rule, and correct, since a control that does
-nothing and says nothing cannot be told from a broken one.
+to the Launchpad's top row, which was already showing the lit lamp — see [map.md](../module/map.md).
+
+✅ **Two of the six labels stopped lying in the same pass.** `xport-2` is **PLAY** and drives
+`start`; `xport-5` is **STOP** and drives `stop`, in all six modes. They took the transport over
+from `og-aux`, which was needed as a modifier — see [organelle.md](organelle.md).
+
+⚠️ **The other four report a raw row on the OLED**, because they fall through to the table and miss
+it: item 242's rule, and correct, since a control that does nothing and says nothing cannot be told
+from a broken one. **REW, FF, LOOP and REC are four free controls for v0.4.**
 
 Because CC 41–46 give `div 10` = 4, `m_nano` folds the row in as a **fifth control kind** and reads
 both channels through one path. A separate channel therefore no longer isolates anything — it is

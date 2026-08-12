@@ -44,10 +44,16 @@ SEQ = [
     (3000, "CROSS", ["\\; param og-knob-1 0.02"], GAP),
     # ... and it tracks normally from then on. 0.3 is 157 bpm.
     (3200, "LIVE", ["\\; param og-knob-1 0.3"], GAP),
-    # ⛔ og-aux IS A BUTTON AND NEVER PICKS UP. Two presses, two transport
-    # events. A latched aux would be silent on the second.
-    (3400, "AUX-1", ["\\; param og-aux 1"], GAP),
-    (3600, "AUX-2", ["\\; param og-aux 1"], GAP),
+    # ⛔ PLAY AND STOP ARE BUTTONS AND NEVER PICK UP. The transport moved off
+    # og-aux onto the nano's own PLAY and STOP -- xport-2 and xport-5, which is
+    # what those two are physically labelled -- so that the aux button could
+    # become the keyboard's modifier. If either were ever given a pickup slot
+    # the repeat would latch and vanish, and the transport would stick.
+    (3400, "PLAY-1", ["\\; param xport-2 1"], GAP),
+    (3600, "STOP-1", ["\\; param xport-5 1"], GAP),
+    # ⛔ THE REPEAT IS THE POINT. start is not a toggle -- pressing PLAY twice
+    # must start twice, where a latched control would be silent the second time.
+    (3800, "PLAY-2", ["\\; param xport-2 1"], GAP),
     # ⛔ STATE IS PER KNOB. Knob 2 armed at 400 ms and knob 1 has long since gone
     # live, so knob 2 is still held: EXACTLY ONE cc 42, from its first value.
     # ⛔ AND AN UNMAPPED KNOB SAYS NOTHING. Knob 2 is held, and the held row is

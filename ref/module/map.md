@@ -49,7 +49,7 @@ file and rejects it before Pd ever does.
 | Destination | `<arg>` means | Value means | Evidence | Item |
 |-------------|---------------|-------------|----------|------|
 | `tempo` | unused | Scaled over **10–500 BPM**, rounded | verified | — |
-| `transport` | unused | Non-zero **toggles** start/stop | verified | — |
+| `transport` | unused | Non-zero **toggles** start/stop. ⚠️ **No shipped row names it** — start and stop are separate buttons now | verified | — |
 | `start` | unused | Non-zero fires; a release does nothing | verified | — |
 | `stop` | unused | Non-zero fires | verified | — |
 | `panic` | unused | Non-zero fires | verified | — |
@@ -105,8 +105,8 @@ One destination fed from two surfaces would otherwise need two scalings.
 | Empty table | Reported on `err` as `map-empty` | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Six modes × 67
-controls is 402 possible rows and the shipped file has **50** — thirteen, plus the keyboard's 25 in
-mode 1, plus CC 90 and CC 80 in all six.
+controls is 402 possible rows and the shipped file has **56** — seven, plus the keyboard's 25 in
+mode 1, plus CC 90, CC 80, PLAY and STOP in all six.
 
 ### What happens at load
 

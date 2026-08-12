@@ -105,7 +105,8 @@ def run_asserts(cap):
     print("\n=== B. the lookup, driven ===")
     order, by = A.windows(cap, "MAP", len(["EARLY", "EARLY-2", "RAIL-ARM",
                                            "SUPPRESS", "MAPPED", "AWAY", "CROSS",
-                                           "LIVE", "AUX-1", "AUX-2", "KNOB-2",
+                                           "LIVE", "PLAY-1", "STOP-1",
+                                           "PLAY-2", "KNOB-2",
                                            "LATE-KNOB", "BAD-DEST", "RAIL-UP",
                                            "RAIL-BACK", "MODE-4", "MODE-DEP",
                                            "MODE-4-RELEASE", "UNMAPPED",
@@ -205,12 +206,17 @@ def run_asserts(cap):
             any(abs(t - 157) < 1.5 for t in tempos("LIVE")),
             "tempo in that window: %s" % tempos("LIVE"))
 
-    # og-aux is a BUTTON. If it were ever given a pickup slot the second press
-    # would latch and vanish, and the transport would stick on.
-    A.check("⛔ og-aux is a BUTTON and never picks up -- first press starts",
-            any(e[0] == "START" for e in W("AUX-1")), repr(W("AUX-1")))
-    A.check("⛔ ... and the SECOND press stops. A latched aux would be silent here",
-            any(e[0] == "STOP" for e in W("AUX-2")), repr(W("AUX-2")))
+    # ⛔ PLAY AND STOP ARE BUTTONS AND NEVER PICK UP. Pickup is for og-knob-1..4
+    # and nothing else; a button given a slot would latch on its repeat and the
+    # transport would stick wherever it was.
+    A.check("⛔ PLAY reaches start", any(e[0] == "START" for e in W("PLAY-1")),
+            repr(W("PLAY-1")))
+    A.check("⛔ STOP reaches stop", any(e[0] == "STOP" for e in W("STOP-1")),
+            repr(W("STOP-1")))
+    A.check("⛔ ... and PLAY again starts AGAIN -- start is not a toggle",
+            any(e[0] == "START" for e in W("PLAY-2")),
+            "%s. A latched control would be silent the second time, and the "
+            "transport would stick wherever it was" % (W("PLAY-2"),))
 
     # ⛔ EXACT COUNTS, never "at least". Knob 2 armed at 400 ms inside the boot
     # window and has not crossed, so its second value is held. Knob 3's FIRST
@@ -323,7 +329,8 @@ def nosave_asserts(cap):
     print("\n=== D. no knobs.txt -- nothing may be held ===")
     order, by = A.windows(cap, "MAP", len(["EARLY", "EARLY-2", "RAIL-ARM",
                                            "SUPPRESS", "MAPPED", "AWAY", "CROSS",
-                                           "LIVE", "AUX-1", "AUX-2", "KNOB-2",
+                                           "LIVE", "PLAY-1", "STOP-1",
+                                           "PLAY-2", "KNOB-2",
                                            "LATE-KNOB", "BAD-DEST", "RAIL-UP",
                                            "RAIL-BACK", "MODE-4", "MODE-DEP",
                                            "MODE-4-RELEASE", "UNMAPPED",

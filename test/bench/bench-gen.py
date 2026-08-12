@@ -316,6 +316,9 @@ CAPS_OK = {
     "PASS", "IF",                      # the protocol marker itself
     "OLED", "LED", "BPM", "DSP", "USB", "CC", "TTL", "MIDI", "NN", "SD",
     "SP-404", "EXT", "NO-LINK", "SETUP", "GO",
+    # Moulded on the nanoKONTROL's transport row, left to right. Two of them
+    # mean what they say again since start and stop moved off the aux button.
+    "REW", "PLAY", "LOOP", "STOP", "REC",
     "BEATS", "M-BEATS", "C1-BEATS", "C2-BEATS",
     "C1-BEATS-ratio-1", "C2-BEATS-ratio-1.5",
 }

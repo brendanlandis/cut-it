@@ -210,6 +210,39 @@ exercises only the half that works.
 - ⚠️ **NEVER `pgrep -f wifi-watch`**, and never let one command both scan and relaunch — that
   self-match kills the ssh session doing the sweeping. Item 163.
 
+## ⚠️ If it recurs — what to try, and when to stop
+
+**This section exists because the plans that held it are deleted when they land.** Everything below
+is decided rather than open, and all of it is expensive to relearn.
+
+**The requirement, as Brendan states it: the Organelle must stop dropping wifi.** ⛔ **Not "recover
+fast"** — a dead phone display mid-set is the failure, and a recovery ladder that works is not the
+same as a fault that does not happen. That distinction is what makes the stopping rule below
+reasonable rather than defeatist.
+
+**Two configuration attacks, in order, and both are router-side** — everything on the device is
+exonerated:
+
+1. **Separate the two radios** so a roam stops being possible. ⛔ **Not per-band — item 298 rules
+   that out.** What is left is a difference the device can still see on 2.4 GHz: **a distinct SSID,
+   a distinct channel per node, or one node's 2.4 GHz radio switched off.** ⚠️ **One Orbi setting
+   moves both mesh nodes**, which is why this has never been trivial.
+2. **Disable fast roaming / band steering** if the Orbi exposes them. Weaker than separation — it
+   makes a roam less eager rather than impossible, so a quiet spell afterwards proves less.
+
+⛔ **THE STOPPING RULE, AND IT IS BINDING. If two configuration changes do not stop the roam, close
+item 81 as won't-fix and let AP mode be the answer.** AP mode satisfies the requirement by
+construction, because there is no client association to hand off. ⚠️ **Continuing past that point has
+already produced the two confident wrong answers and the six wrong turns above.**
+
+⛔ **DO NOT RE-ENABLE THE PREFERRED-AP STEER, and it is tempting precisely because it looks like a
+fallback.** It **drops IPv4 itself on every fire**, so it manufactures the symptom it is meant to
+avoid — and worse, **it hides the answer by preventing recurrence**, leaving nothing to measure.
+Item 214 is why it stopped being trusted.
+
+⚠️ **Verify against the repro above, not against a quiet spell** — and discount the session's first
+`TRANSITION` (item 299) before reading the log as evidence either way.
+
 ## The Organelle as its own access point
 
 **This is the stage configuration**, and it is the vendor's own path rather than a `hostapd`
@@ -234,10 +267,6 @@ service to write and none should be added.** ⚠️ The consequences are already
 to mistake for faults: a hand-connected boot logs a phantom `TRANSITION` (item 299), and **a set run
 without step 1 is a client on house wifi again**, carrying the roam fault onto the stage.
 
-⛔ **And it cannot be started from a patch** — `create_ap`, `hostapd` and `dnsmasq` all die with the
-Pd that spawned them, **even behind `setsid nohup`**. Item 129, measured;
-`tools/stage-patches/Start AP/` is kept only as the record of why. **Use the System menu.**
-
 ✅ **And it removes the roaming fault outright, which is a second reason to host the network.**
 `start-ap.sh` runs `killall wpa_supplicant` before `create_ap`, so in AP mode the Organelle has
 **no client association at all** — it serves DHCP rather than requesting it. The fault that drops
@@ -249,6 +278,7 @@ house wifi is a client again.**
 ⚠️ **Start the AP from the SYSTEM MENU, not from a patch.** A patch that launches `start-ap.sh`
 loses it the moment the next patch loads — `create_ap`, `hostapd` and `dnsmasq` all die with the
 Pd that spawned them, **even behind `setsid nohup`**. Measured; item 129.
+`tools/stage-patches/Start AP/` is kept only as the record of why.
 
 ⚠️ **The passphrase must be 8–63 characters.** `create_ap` rejects anything shorter — and
 `start-ap.sh` runs `killall wpa_supplicant` *before* calling it, so a rejected passphrase leaves
@@ -259,7 +289,17 @@ which handles them. Keep the AP name one word.
 
 ⚠️ **The AP has no internet** — `create_ap` is called with `-n`, and one radio cannot be both AP
 and client. **A Mac joined to it is offline**, so an AP session cannot be driven from a laptop that
-needs a network. Prepare everything on the house wifi first.
+needs a network.
+
+⛔ **SO AN AP SESSION HAS TO BE SELF-SUFFICIENT BEFORE IT STARTS.** Bringing the AP up drops the
+house link, the ssh session and every Mac-side tool at once, and there is no getting them back
+without ending the session. Staged on the device beforehand:
+
+- **`/sdcard/ap.txt`**, passphrase valid — see the 8–63 rule and the unquoted-`$NET` trap above.
+- **The instrument deployed and loaded**, and the phone's scene open.
+- **Anything the session needs to record written to `/sdcard/`** — the `AP Probe` pattern, read
+  afterwards. ⚠️ **Nothing has to be caught live**, which is the same reasoning as `u_err`'s
+  persistent log.
 
 ✅ **Recovery is a power cycle.** `createap.service` is `disabled`, so the device comes back on the
 house network by itself. Nothing about this is sticky.

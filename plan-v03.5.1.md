@@ -63,9 +63,24 @@ debug patch, which touches nothing under `Cut It/` and is independent of this on
 
 ## The inbound path
 
-Add `[netreceive -u 9001]` to `u_net` plus a route with a **closed vocabulary**: re-run `wire.sh`,
-clear alerts, request a full status dump, fire a test note at a named device. ⚠️ **Drop everything
-else silently**, exactly as `u_net` already swallows reserved selectors outbound.
+Add `[netreceive -u 9001]` to `u_net` plus a route with a **closed vocabulary of three**, decided
+2026-08-12. ⚠️ **Drop everything else silently**, exactly as `u_net` already swallows reserved
+selectors outbound.
+
+| Command | Does | Why it earns a button |
+|---|---|---|
+| **re-wire** | Forks `wire.sh` | ⛔ **The recovery gives up for good after eight attempts over ~70 s** — see [presence.md](ref/module/presence.md). After that the only way back is a reload, which restarts everything. This retries once you have reseated the cable, without losing what you were doing |
+| **clear-alert** | Drops `u_net`'s held alert | The last error repeats at 2 Hz until something replaces it, so a warning from twenty minutes ago is still on screen. This makes the display honest about *now* |
+| **test-note `<device>`** | Fires one note at a sounding device | ⛔ **The one command that answers "is it actually dead" rather than "has it stopped talking to me."** The OLED's roster can only report last-heard; hearing the device is the other half. *Prove the probe before believing the silence* |
+
+⚠️ **`test-note` takes a device argument, and the two worth a button are the two that make sound** —
+the Volca and the SP-404. That is the whole set `u_map` has destinations for (`volca-note`,
+`volca-cc`, `volca-prog`, `volca-key`, `404-pad`); the Launchpad and the nanoKONTROL are inputs.
+⛔ **The argument is still a closed list** — a device name off it is dropped like any other unknown.
+
+⛔ **A fourth was considered and REJECTED: a full status dump.** Parameters and status already
+re-send every two seconds and the alert repeats at 2 Hz, so a phone joining late repopulates on its
+own in about two seconds — item 121. It would have been a button that does what waiting does.
 
 **That is a robustness argument, not a musical one.** ⚠️ **An inbound path is an attack surface on a
 shared network**, and a closed list is what keeps the first one small enough to reason about.
@@ -119,7 +134,7 @@ Buttons go in `tools/pdparty-scene/CutItRemote/_main.pd`.
 
 | Gate | Add |
 |---|---|
-| `test/gate/phone-assert.sh` | The inbound path routes its vocabulary — **and the negative: a selector outside the list reaches nothing** |
+| `test/gate/phone-assert.sh` | All three commands arrive and act — **and the negatives: a selector outside the list reaches nothing, and `test-note` with a device name off its own list fires nothing** |
 
 **Bench steps** go through `test/bench/bench_steps.py` and a regenerate. ⚠️ **Counts must be exact
 rather than non-zero.**
@@ -166,7 +181,7 @@ that has come unplugged cannot summon the screen that would say so. See
 
 ## Done means
 
-1. The phone has buttons and a closed inbound vocabulary, recorded on
+1. The phone has the three buttons above and a closed inbound vocabulary, recorded on
    [ref/device/phone.md](ref/device/phone.md) as what the path is.
 2. `phone.md`'s `What it is` describes what the link carries rather than what it may not.
 3. `./test/run.sh` reports `RESULT: PASS`, and every new check has been seen to fail.

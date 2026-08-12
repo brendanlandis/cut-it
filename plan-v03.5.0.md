@@ -92,11 +92,12 @@ independent of this one. ⚠️ **But run 5.1 first** — see *Where this sits i
 **The house wifi stays the development-time convenience with its existing recovery ladder. The AP
 becomes what the rig runs on when it matters.** ⛔ **There is nothing to build.**
 
-### A1 — record the venue sequence as the operating procedure
+### ✅ A1 — the venue sequence is the operating procedure. Done 2026-08-12
 
-It is a subsection of [ref/wifi.md](ref/wifi.md) today. Promote it to the thing you do, and state
-plainly what Brendan confirmed: **both networks take a couple of clicks and neither is automatic.**
-That is a choice, not a gap.
+On [ref/wifi.md](ref/wifi.md), under *The Organelle as its own access point*. It states that neither
+network connects automatically and that this is a choice rather than a gap, that **no boot-time
+service should be added**, and it carries the two consequences that read as faults — the phantom
+`TRANSITION` (item 299) and a set run without step 1 being a client on house wifi again.
 
 ### A2 — ⬜ item 45, AP link quality over a set-length window
 
@@ -120,6 +121,29 @@ its `Open`.
 ---
 
 ## Phase B — the house fault, with a stated stopping point
+
+## ⏸ PAUSED 2026-08-12, and nothing here should be started without asking
+
+**Brendan's call: the Organelle has been behaving, so this waits a couple of weeks and comes back
+only if it becomes a problem again.** ⚠️ **That is this repo's own standing rule, not a departure
+from it** — [ref/wifi.md](ref/wifi.md) already says *"do not spend session time on this unless it
+recurs"*, and [plan-v04.md](plan-v04.md) §3 says the same.
+
+⛔ **The pause is NOT the stopping rule being invoked.** Item 81 is **parked, not closed** — no
+configuration change has been tried, so neither outcome in *Done means* #3 has happened yet. **Do
+not close it as won't-fix on the strength of a quiet fortnight**, and do not start B1 without asking.
+
+**Everything needed to resume is already captured**, which is the whole point of having taken it
+before pausing: the baseline is **item 300**, the constraint that kills per-band separation is
+**item 298**, and the log-reading caveat is **item 299**. ⛔ **Re-take the baseline before acting on
+it** — it is a scan cache and a fortnight old by then.
+
+⚠️ **What the pause costs:** this plan cannot reach *Done means* and be deleted while item 81 is
+open, and [plan-v03.5.2.md](plan-v03.5.2.md) is written as **the last of the three**. If 5.2 becomes
+ready first, either resolve item 81 or move the closing chore — **do not let 5.2 land silently out of
+order.**
+
+---
 
 Everything on the device side is exonerated. **This is a router-side problem**, so attack it from the
 router. ⛔ **Read [ref/wifi.md](ref/wifi.md) in full first.**

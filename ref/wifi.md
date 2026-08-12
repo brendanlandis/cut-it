@@ -210,7 +210,9 @@ project. `start-ap.sh` reads `$USER_DIR/ap.txt` — first line network, last lin
 calls `create_ap --no-virt -n wlan0 $NET $PW`, defaulting to `Organelle` / `coolmusic`. This rig
 uses **`organelle`**, with the password in `/sdcard/ap.txt` on the device, and the phone leases **192.168.12.109** from it.
 
-**The venue sequence — no laptop, no venue wifi, phone in airplane mode:**
+### ⛔ THE VENUE SEQUENCE — this is the operating procedure, not one option among several
+
+**No laptop, no venue wifi, phone in airplane mode:**
 
 1. Organelle: **System → WiFi Setup → Start AP**
 2. Phone: airplane mode on, wifi back on, join **`organelle`**
@@ -218,6 +220,16 @@ uses **`organelle`**, with the password in `/sdcard/ap.txt` on the device, and t
 
 ✅ Verified end to end. Airplane mode is what makes this worth doing: a phone *hotspot* needs
 cellular, an AP the Organelle hosts does not.
+
+⛔ **NEITHER NETWORK CONNECTS AUTOMATICALLY, AND THAT IS A CHOICE RATHER THAN A GAP.** The house
+network and the AP are each a couple of front-panel presses, deliberately — **there is no boot-time
+service to write and none should be added.** ⚠️ The consequences are already recorded and are easy
+to mistake for faults: a hand-connected boot logs a phantom `TRANSITION` (item 299), and **a set run
+without step 1 is a client on house wifi again**, carrying the roam fault onto the stage.
+
+⛔ **And it cannot be started from a patch** — `create_ap`, `hostapd` and `dnsmasq` all die with the
+Pd that spawned them, **even behind `setsid nohup`**. Item 129, measured;
+`tools/stage-patches/Start AP/` is kept only as the record of why. **Use the System menu.**
 
 ✅ **And it removes the roaming fault outright, which is a second reason to host the network.**
 `start-ap.sh` runs `killall wpa_supplicant` before `create_ap`, so in AP mode the Organelle has

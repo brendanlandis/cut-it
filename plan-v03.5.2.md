@@ -14,11 +14,11 @@ ownership of `oscOut`**. A standalone patch is not bound by that — so it gets 
 four knobs, the aux button and 25 keys, where the instrument has everything but the encoder.
 **That is the difference between a menu of one screen and a menu you can navigate.**
 
-**Two sibling plans came out of the same batch** — [plan-v03.5.0.md](plan-v03.5.0.md), the venue
-network, and [plan-v03.5.1.md](plan-v03.5.1.md), diagnostics inside the instrument. This one is
-independent of both and **stales no bench**, because it touches nothing under `Cut It/`.
+**One sibling plan came out of the same batch** — [plan-v03.5.1.md](plan-v03.5.1.md), diagnostics
+inside the instrument. This one is independent of it and **stales no bench**, because it touches
+nothing under `Cut It/`.
 
-⛔ **This is the last of the three, and it carries the batch's closing chore** — see *Done means* #5.
+⛔ **This is the last of the two, and it carries the batch's closing chore** — see *Done means* #5.
 
 ---
 
@@ -193,7 +193,7 @@ enumerate was diagnosed from scratch across five physical tests when
    | `plan-v04.md` | v0.4 items **inside the v0.4 plan**. `CLOSER` wants a literal `v0.4` in the window, so satisfying it there is tautological. ⛔ **Better: treat a ⬜ inside a `plan-` file as owned by that file** |
    | `CLAUDE.md` | Prose *about* the ⬜ marker, not open items — `_is_marker_gloss` misses them |
    | `tools/README.md` | A real open item that genuinely needs a closer |
-   | *the plan names* | ⛔ **`CLOSER` is `plan-v0[34](?:\.\d)?\.md` — one decimal group, so it matches none of `plan-v03.5.0.md`, `plan-v03.5.1.md` or `plan-v03.5.2.md`.** Widen it |
+   | *the plan names* | ⛔ **`CLOSER` is `plan-v0[34](?:\.\d)?\.md` — one decimal group, so it matches neither `plan-v03.5.1.md` nor `plan-v03.5.2.md`.** Widen it |
 
    ⛔ **And `DOCNAME` cannot see these filenames at all.** Its name class is `[a-zA-Z0-9_-]+` — no
    dot — and its lookbehind rejects the one inside `v03.5`, so a bare `plan-v03.5.N.md` in a `.pd`,

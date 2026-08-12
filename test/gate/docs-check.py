@@ -781,9 +781,9 @@ def check_closers(verbose):
     ⛔ AND IT IS NOT ONLY A FLAG DELETION, which that checklist spells out. Two
     things here are wrong for the plan names that now exist:
 
-      CLOSER  has ONE decimal group, so it stops one level short and matches none
-              of plan-v03.5.0.md / .1.md / .2.md. Every open item citing one of
-              the three fails this check as written.
+      CLOSER  has ONE decimal group, so it stops one level short and matches
+              neither plan-v03.5.1.md nor plan-v03.5.2.md. Every open item citing
+              either fails this check as written.
       DOCNAME cannot see those names AT ALL -- its class is [a-zA-Z0-9_-]+ with no
               dot, and the lookbehind rejects the one inside v03.5. So a bare
               plan-v03.5.N.md in a .pd/.sh/.py is invisible to

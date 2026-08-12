@@ -221,9 +221,10 @@ construction. The unit is written on every message, as `-` when there is none.
 
 ### An AP session cannot be driven interactively
 
-⚠️ The AP has no internet and the Organelle has one radio, so a laptop joined to it is offline.
+⚠️ A laptop joined to the Organelle's own access point is offline, so nothing Mac-side can reach the
+phone or the device during a stage session.
 
-**Fix:** prepare on the house network, then switch.
+**Fix:** stage everything beforehand — the checklist is on [wifi.md](../wifi.md).
 
 ## Design
 
@@ -295,7 +296,5 @@ moved, so the same knob can mean different things in different modes without the
 
 ## Open
 
-- ⬜ **Guided Access is not set up**, so a stray swipe can drop you out of the scene mid-set. Rate
-  limiting, the `nbx` chrome and the Organelle-hosted access point are all done — the venue sequence
-  runs with no laptop and no venue WiFi, and the phone joins in airplane mode. This is the last
-  count, and it is not code. See [plan-v04.md](../../plan-v04.md) §3.
+**Nothing.** Rate limiting, the `nbx` chrome and the Organelle-hosted access point are all done, and
+the venue sequence runs with no laptop and no venue WiFi, with the phone in airplane mode.

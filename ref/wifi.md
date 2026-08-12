@@ -313,12 +313,6 @@ would turn the roam fault from narrowed into solved. ⚠️ Say so plainly — t
 already produced two confident wrong answers. **NO PLAN OWNS THIS**: ⏸ parked, and *If it recurs*
 above is what to do about it.
 
-⬜ **AP-mode link quality over a set-length window — item 45.** AP mode is immune to the roam fault
-by construction, but nothing has measured whether the stage link *holds* for the length of an
-actual set. ⚠️ Measuring it needs the AP up, which kills the house link.
-**[plan-v03.5.0.md](../plan-v03.5.0.md) owns it** — ⚠️ **this one is NOT parked.** It does not depend
-on the house fault and can be run at any set.
-
 ⬜ **Three drops on 2026-08-08 that did NOT match the roam signature.** **NO PLAN OWNS THIS** —
 recorded because they
 contradict it, and a future session will otherwise re-derive them. From the Mac, `ssh` failed at

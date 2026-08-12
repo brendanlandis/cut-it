@@ -8,18 +8,17 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **This is no longer the only plan.** **Three** scoped plans hold the last batch of infrastructural
-work before v0.4 — the venue kit, split because router settings, a screen inside the instrument and a
-whole standalone patch are not one piece of work:
+⚠️ **This is no longer the only plan.** **Two** scoped plans hold the last batch of infrastructural
+work before v0.4, split because a screen inside the instrument and a whole standalone patch are not
+one piece of work:
 
 | Plan | Is |
 |---|---|
-| [plan-v03.5.0.md](plan-v03.5.0.md) | **The venue kit** — the stage-network measurement and Guided Access. ⛔ Everything about the network itself is on [ref/wifi.md](ref/wifi.md), never here |
 | [plan-v03.5.1.md](plan-v03.5.1.md) | **Diagnostics inside the instrument** — the OLED diag layer, the inbound UDP path, the phone's buttons |
-| [plan-v03.5.2.md](plan-v03.5.2.md) | **The standalone debug patch** — `! debug/`, encoder-navigable. ⛔ **The last of the three**, and it carries the batch's closing chore |
+| [plan-v03.5.2.md](plan-v03.5.2.md) | **The standalone debug patch** — `! debug/`, encoder-navigable. ⛔ **The last of the two**, and it carries the batch's closing chore |
 
-⚠️ **Run 5.1 before 5.0's rig session.** It edits `g_oled.pd` and `u_net.pd`, which stales every
-bench verdict that depends on them — so a rig session run first would be wasted.
+⚠️ **Run 5.1 before any bench session.** It edits `g_oled.pd` and `u_net.pd`, which stales every
+verdict that depends on them — so a session run first would be wasted.
 
 ✅ **The test runner, the v0.3.2 cleanup, the v0.3.3 coverage pass, hot-swap and panic becoming
 `recover` have all landed** — the first three on 2026-08-09, hot-swap on 2026-08-10 and `recover` on

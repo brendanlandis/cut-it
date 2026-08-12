@@ -12,9 +12,8 @@ the OLED**, and **buttons on the phone**.
 `tick`, `lost`/`back` and `seen`, with `seen` published by the passive layer **for exactly this
 screen** and read by nothing yet. See [ref/module/presence.md](ref/module/presence.md).
 
-**Two sibling plans came out of the same batch** — [plan-v03.5.0.md](plan-v03.5.0.md), the venue
-network, and [plan-v03.5.2.md](plan-v03.5.2.md), the standalone debug patch. ⚠️ **Run this one
-first** — see *Where this sits in the order*.
+**One sibling plan came out of the same batch** — [plan-v03.5.2.md](plan-v03.5.2.md), the standalone
+debug patch. ⚠️ **Run this one first** — see *Where this sits in the order*.
 
 ---
 
@@ -260,7 +259,7 @@ rather than non-zero.**
 
 ## Where this sits in the order
 
-⚠️ **Run this plan BEFORE [plan-v03.5.0.md](plan-v03.5.0.md)'s rig session.** `test/runner/steps.py`'s
+⚠️ **Run this plan BEFORE the next bench session.** `test/runner/steps.py`'s
 `DEPS` table stales every bench verdict that depends on a changed file: `g_oled.pd` stales **display,
 midi and nanokontrol**; `u_net.pd` stales **phone**; `c_presence.pd` stales **launchpad, midi and
 nanokontrol**. ⛔ **A rig session run first would be wasted**, because those verdicts would go stale

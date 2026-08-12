@@ -28,9 +28,16 @@ def run_asserts(cap):
 
     # ---- before the boot sequence has finished ----------------------------
     print("\n--- before the boot sequence has finished ---")
-    A.check("⛔ the aux button pressed at 300 ms already publishes",
-            param("EARLY") == [["og-aux", "1"]],
-            "wanted one og-aux 1, got %s" % param("EARLY"))
+    # ⛔ AUX PUBLISHES NO CONTROL AT ALL. It is the keyboard's modifier, so it
+    # must not occupy a name the map could bind and must not report itself raw
+    # on disp the way an unmapped control would. What it must still do is say
+    # mother spoke -- see the presence check below.
+    A.check("⛔ the aux button publishes NO control name",
+            param("EARLY") == [],
+            "aux reached param as %s. A modifier is not a control: a name here "
+            "could be bound in the map, and an unmapped one would draw a raw "
+            "row on the OLED every time you reached for a shifted key"
+            % param("EARLY"))
 
     # ---- the og- prefix ---------------------------------------------------
     # ⚠️ IT IS NOT DECORATION. m_nano already publishes knob-1 to knob-9, and a
@@ -86,27 +93,54 @@ def run_asserts(cap):
     raw = [d for d in disp("KNOB1") if d and d[0].startswith("og-knob-")]
     A.check("⛔ ...but never the knob's RAW position", not raw,
             "the screen got %s where the mapped value belongs (item 242)" % raw)
-    A.check("⛔ og-aux DOES keep its own report -- the transport is not a value",
-            [d for d in disp("AUX-PRESS") if d == ["og-aux", "1"]] == [["og-aux", "1"]],
-            "og-aux reached param as %s but the screen got %s"
-            % (param("AUX-PRESS"), disp("AUX-PRESS")))
+    # ⛔ AND THE MODIFIER SAYS SO ON THE SCREEN. A modifier with no feedback is
+    # a mystery -- holding aux puts `shift` up as a modal, and letting go clears
+    # it. A modal is priority 2 and diag is 3, so a shifted key that summons the
+    # roster still draws over the word.
+    A.check("⛔ holding aux says `shift` on the screen",
+            ["modal", "shift"] in disp("AUX-PRESS"),
+            "the screen got %s" % disp("AUX-PRESS"))
+    A.check("⛔ ...and letting go clears it",
+            ["modal-off"] in disp("AUX-RELEASE"),
+            "the screen got %s. A missed release leaves the word up for the "
+            "30 s safety TTL, which is what that TTL is for" % disp("AUX-RELEASE"))
 
     # ---- press only -------------------------------------------------------
     # aux is momentary 1 then 0, so [select 1] takes the press and its reject --
     # which carries the RELEASED 0, not a bang -- goes nowhere on purpose.
-    print("\n--- the aux button, on press only ---")
-    A.check("a press publishes og-aux 1",
-            param("AUX-PRESS") == [["og-aux", "1"]],
-            "got %s" % param("AUX-PRESS"))
-    A.check("⛔ the release publishes NOTHING",
-            not param("AUX-RELEASE") and not disp("AUX-RELEASE"),
-            "the released 0 leaked: param %s, disp %s"
-            % (param("AUX-RELEASE"), disp("AUX-RELEASE")))
+    print("\n--- the aux button publishes no control, on either edge ---")
+    A.check("neither edge puts a control on param",
+            not param("AUX-PRESS") and not param("AUX-RELEASE"),
+            "press %s, release %s" % (param("AUX-PRESS"), param("AUX-RELEASE")))
 
     # ---- ⛔ THE KEYBOARD ---------------------------------------------------
     # mother packs it into ONE two-float list, pitch then velocity, and param
     # carries one value per control -- so the PITCH rides in the control NAME and
     # the velocity is the value. 25 keys, note 60 at the bottom.
+    # ---- ⛔ THE SHIFT LAYER ------------------------------------------------
+    print("\n--- the shift layer ---")
+    A.check("⛔ a key held under aux publishes og-shift-NN, not og-key-NN",
+            param("SHIFT-KEY") == [["og-shift-72", "100"], ["og-shift-72", "0"]],
+            "got %s" % param("SHIFT-KEY"))
+    A.check("...and the layer drops the moment aux is let go",
+            param("AFTER-SHIFT") == [["og-key-72", "100"]],
+            "got %s" % param("AFTER-SHIFT"))
+
+    # ⛔ THE STRADDLE, AND IT IS THE ONE THAT STRANDS A NOTE. The press happened
+    # under the modifier and the release did not. Reading the layer at release
+    # time publishes og-key-65 for a note nothing ever started -- the shifted
+    # control never sees its note-off, and in mode 1 that is a stuck note on the
+    # Volca that nothing anywhere reports.
+    A.check("⛔ a shifted press publishes og-shift-NN",
+            param("STRADDLE-KEY") == [["og-shift-65", "100"]],
+            "got %s" % param("STRADDLE-KEY"))
+    A.check("⛔ ...and its release carries THE SAME NAME after aux is released",
+            param("STRADDLE-OFF") == [["og-shift-65", "0"]],
+            "got %s. The layer is latched per key AT PRESS TIME, in a "
+            "25-element array -- a release read from the live modifier would "
+            "say og-key-65 here and hang the note it never turned off"
+            % param("STRADDLE-OFF"))
+
     print("\n--- the keyboard: one control per key ---")
     A.check("a key press publishes og-key-<note> carrying its velocity",
             param("KEY-ON") == [["og-key-60", "100"]],

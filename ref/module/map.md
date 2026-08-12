@@ -131,7 +131,7 @@ then hands it authority.
 |---|---|---|---|
 | The jump it replaces | 443 BPM on knob 1, which is master tempo | verified | 236 |
 | Applies to | `og-knob-1`…`og-knob-4` only | verified | 236 |
-| Never applies to | `og-aux` — a button — or any control that is not an Organelle knob | verified | 236 |
+| Never applies to | any control that is not an Organelle knob — the keys and the shifted keys included | verified | 236 |
 | Boot window | 1000 ms. A first value inside it is a restore and **arms**; after it, a hand, and goes straight to live | verified | 236 |
 | Whether that arming survives | `u_map` **reads `knobs.txt` itself** at 2000 ms. `[text size]` answers 1 when the file is there and 0 when it is not | verified | 239 |
 | With **no** `knobs.txt` | every slot is written straight to LIVE and no knob is ever held | verified | 239 |
@@ -291,8 +291,10 @@ was mapped to disappeared exactly while you were turning it. A 0–1 number wher
 feedback; it is arithmetic homework.
 
 **Fix:** the knobs no longer report to `disp`. `u_map` reports the **mapped** value instead, because
-it is the only file that knows what a control means. `og-aux` keeps its report — the transport is not
-a mapped value — and an **unmapped** knob now shows nothing, which is correct: it means nothing.
+it is the only file that knows what a control means. An **unmapped** knob now shows nothing, which is
+correct: it means nothing. ⚠️ **`og-aux` used to keep a report of its own and no longer exists as a
+control at all** — it is the keyboard's modifier, so there is nothing for the map to bind and nothing
+to draw. See [organelle.md](../device/organelle.md).
 
 ### While pickup holds, one row carries both numbers
 

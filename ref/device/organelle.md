@@ -156,13 +156,40 @@ meaning as `m_nano`.
 
 | Fact | Evidence | Item |
 |------|----------|------|
-| The four knobs publish `og-knob-1`…`og-knob-4`, the aux button publishes `og-aux 1` | verified | — |
+| The four knobs publish `og-knob-1`…`og-knob-4`. ⛔ **The aux button publishes NO control at all** — it is the keyboard's modifier, and a modifier is not a control | verified | 305 |
 | **The `og-` prefix is not decoration** — `m_nano` already publishes `knob-1` to `knob-9`, and a single hyphen is not a distinction anyone can be trusted to read inside a `route` box | verified | — |
 | **Every knob goes through `[change -1]`**, and mother pushes once at load and then says nothing — one `KNOB1` print in twelve seconds untouched. Parameter pickup depends on it: if mother streamed, the first value would be spent on its own reading and pickup would never arm | verified | 237 |
 | ⛔ **The `-1` is load-bearing.** A bare `[change]` starts life holding 0, so a knob parked at 0 would never publish at all and whatever it feeds would sit at its default. `-1` cannot be a real value, because mother's knobs are 0 to 1 | verified | 237 |
 | **`aux` is momentary and emits on PRESS only.** `[select 1]` takes the press; its reject carries the released `0`, not a bang, and goes nowhere | verified | — |
-| ⛔ **The knobs reach `param` and NOT `disp`; `og-aux` reaches both.** A knob's raw 0-to-1 position is not a readable parameter row — the screen said `og-knob-1 0.245` where a BPM belonged, and the param layer replaces the footer, so the tempo it was mapped to vanished while you turned it. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
+| ⛔ **The knobs reach `param` and NOT `disp`.** A knob's raw 0-to-1 position is not a readable parameter row — the screen said `og-knob-1 0.245` where a BPM belonged, and the param layer replaces the footer, so the tempo it was mapped to vanished while you turned it. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
+| ⛔ **`aux` uses BOTH edges now**, where `[select 1]` used to take the press and drop the release on purpose. A modifier you cannot let go of is not a modifier | verified | 305 |
 | ⚠️ **An unmapped knob still reports**, via `u_map`'s raw-value row. A control that does nothing and says nothing cannot be told from a broken one | verified | 242 |
+
+### The aux button is a modifier, and the keyboard has two layers
+
+**Hold `aux` and the 25 keys publish `og-shift-60`…`og-shift-84` instead of `og-key-60`…`og-key-84`.**
+That is 25 more controls, and — because the Organelle is bolted to the instrument — **the only
+controls on the rig that can never be the missing device.** It is where `diag`, `stop` and `recover`
+live, so the panel alone can always ask what died, silence a runaway rig and force a reload.
+
+| | Evidence | Item |
+|---|----------|------|
+| `aux` publishes **no control name**. A modifier is not a control: a name here could be bound in the map, and an unmapped one would draw a raw row on the OLED every time you reached for a shifted key | verified | 305 |
+| It holds `$0-shift` — **1 on the press, 0 on the release.** Both edges, where `[select 1]` used to take the press and drop the release deliberately | verified | 305 |
+| Holding it puts `shift` on the OLED as a **modal**, cleared on release. ⚠️ A missed release leaves the word up for the 30 s safety TTL, which is what that TTL is for | verified | 305 |
+| **A modal is priority 2 and `diag` is 3**, so a shifted key that summons the roster still draws over the word. See [display.md](../module/display.md) | verified | 305 |
+| It was `transport` until start and stop moved to the nano's PLAY and STOP — [nanokontrol.md](nanokontrol.md) | verified | 305 |
+
+⛔ **The layer is latched PER KEY, AT PRESS TIME, and that is the whole of what makes it safe.**
+Press a shifted key, let go of `aux`, then let go of the key: read live, the press published
+`og-shift-72` and the release would publish `og-key-72`. The shifted control never sees its
+note-off, and an unshifted one gets a note-off it never had a note-on for — **in mode 1 that is a
+stuck note on the Volca, and nothing anywhere reports it.**
+
+**A 25-element array indexed by `pitch - 60`**, written only when the velocity is non-zero and read
+on **both** edges. A release then cannot disagree with its own press however the modifier moves
+underneath it. Same shape as `u_map`'s pickup arrays, and ⚠️ **it is what makes a CHORD safe too**:
+two keys held across a change of modifier keep their own layers independently.
 
 ### The keyboard — 25 controls, one per key
 
@@ -174,7 +201,8 @@ velocity is the value.
 |------|----------|------|
 | 25 keys, publishing `og-key-60` … `og-key-84` — the lowest key is note **60** | verified | 293 |
 | The value is that key's **velocity** | verified | 293 |
-| ⛔ **A release publishes too, as velocity 0**, unlike `og-aux`, which is press-only. A note-off is a real event a destination must act on | verified | 293 |
+| ⛔ **A release publishes too, as velocity 0.** A note-off is a real event a destination must act on | verified | 293 |
+| **Held under `aux` the same 25 keys publish `og-shift-60`…`og-shift-84`** — a second layer, and the only controls on the rig that can never go missing | verified | 305 |
 | ⛔ **The keys reach `param` and NOT `disp`** — `g_oled` holds five parameter rows, so a two-handed chord would evict the screen twice per note | verified | 293 |
 | …and `u_map` does not report them raw either, which is a deliberate exception to item 242 | verified | 293 |
 

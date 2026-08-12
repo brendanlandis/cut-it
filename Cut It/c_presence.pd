@@ -2,7 +2,7 @@
 #X text 20 20 c_presence -- ONE DEVICE'S LAST-HEARD CLOCK. It counts ticks since its device last said anything \, declares the device lost when that passes a threshold \, and says so on the presence bus and on err. Instantiated once inside each m_ layer that can be POLLED \, which is why it is a c_ and not a u_: there is more than one \, and the second one is what the prefix exists for., f 84;
 #X text 20 190 creation arg 1: the SOURCE NAME \, which is the abstraction's own name -- m_nano \, never nanoKONTROL. REQUIRED. creation arg 2: how many missed ticks count as lost. creation arg 3: the STAGGER in ms \, see below. inlet 1: SEEN -- send it anything at all whenever your device speaks. outlet 1: a bang meaning POLL YOUR DEVICE NOW. outlet 2: presence \, 1 or 0 \, on the transition only., f 84;
 #X text 20 370 ⛔ THE SOURCE NAME IS THE ABSTRACTION'S \, NOT THE DEVICE'S \, and that is the m_ boundary rather than a naming preference. Nothing below the m_ layer may know which hardware it is talking to. An abstraction name crossing the bus is exactly what err's SOURCE field already carries \, so this adds no new knowledge to the world -- where publishing nanoKONTROL would., f 84;
-#X text 20 550 ⛔ ONLY POLLABLE DEVICES GET ONE OF THESE \, AND A PASSIVE DEVICE MUST NOT AGE. A last-heard clock on a device nobody is touching runs out every time: mother pushes the Organelle's knobs once at load and then says nothing for the rest of the session -- item 237 \, measured -- so an m_organelle that aged would declare itself lost a few seconds into EVERY boot and put a warn on the screen for it. The readout a passive device wants is last-heard \, which is plan-v03.5's diagnostic screen \, not an alarm. Those layers publish expect and seen and instantiate nothing., f 84;
+#X text 20 550 ⛔ ONLY POLLABLE DEVICES GET ONE OF THESE \, AND A PASSIVE DEVICE MUST NOT AGE. A last-heard clock on a device nobody is touching runs out every time: mother pushes the Organelle's knobs once at load and then says nothing for the rest of the session -- item 237 \, measured -- so an m_organelle that aged would declare itself lost a few seconds into EVERY boot and put a warn on the screen for it. The readout a passive device wants is last-heard \, which is g_oled's diag layer \, not an alarm. Those layers publish expect and seen and instantiate nothing., f 84;
 #X text 20 780 ⚠️ THE STAGGER IS NOT COSMETIC. u_present broadcasts ONE tick and every instance hears it in the same logical instant \, so three inquiries would go out together and three replies could come back interleaved BYTE BY BYTE on the single [sysexin] that c_devid reads. Its index would then be counting one device's frame with another's bytes in it. Spacing the outgoing inquiries by tens of milliseconds costs nothing and makes the interleave impossible., f 84;
 #X text 20 980 THE COUNTER IS RE-EVALUATED FROM TWO PLACES AND THEY MEET AT THE >= \, which is why seen sends a literal 0 through the test rather than only clearing the store. Clearing the store alone would leave the last computed verdict standing until the next tick \, so a device that came back would stay lost for up to one whole interval and the back message would be late by the same amount., f 84;
 #X text 20 1150 ⚠️ [change] IS BARE ON PURPOSE \, WHERE EVERY OTHER ONE IN THIS PATCH CARRIES -1. A bare change starts life holding 0 \, which m_organelle and u_level both have to work around -- and here that is exactly the wanted cold start \, because 0 IS not-lost. The first tick computes 0 \, change swallows it \, and nothing is published until something actually crosses., f 84;
@@ -18,7 +18,7 @@
 #X obj 300 1720 change;
 #X obj 300 1780 select 1 0;
 #X obj 760 1350 inlet;
-#X obj 760 1410 t b b b;
+#X obj 760 1410 t b b b b;
 #X msg 900 1590 0;
 #X msg 760 1590 0;
 #X obj 300 1880 t b b b;
@@ -50,6 +50,14 @@
 #X obj 620 1880 spigot;
 #X obj 860 1730 r \$0-seen-ever;
 #X text 20 2280 ⛔ THE WARN IS ARMED AND THE RECOVERY IS NOT \, which is the same split the Launchpad's ownership drop already makes and it is here for a sharper reason. A device that has NEVER answered since load is ABSENT \, not lost -- and absent is the normal state of every device on a Mac. Without this gate main-dev.pd raises a device-lost warning for every pollable layer a few seconds into every session \, the dev panel shows three alerts that mean nothing \, and four headless gates that assert on err go red for a reason that has nothing to do with what they test. ⛔ IT GATES THE REPORT ONLY. lost still goes out on presence \, because that is what drives the bounded re-wire \, and a never-present device must still be recovered -- that is the whole of item 235. Nothing is silenced: an absent device is still reported \, by u_present's give-up \, which is unconditional., f 84;
+#X obj 1300 1470 f;
+#X obj 1460 1420 r \$0-seen-ever;
+#X obj 1300 1530 select 0;
+#X obj 1300 1590 symbol \$1;
+#X obj 1300 1650 list prepend seen;
+#X obj 1300 1710 list trim;
+#X obj 1300 1770 s presence;
+#X text 1300 2280 ⛔ seen IS PUBLISHED ONCE \, ON THE FIRST ANSWER THIS DEVICE EVER GIVES \, and the f is READ BEFORE THE FLAG IS WRITTEN -- the trigger's new rightmost outlet fires ahead of the one that sets \$0-seen-ever \, so the select still sees the old value. That one message is what lets g_oled's diag layer tell GONE from NEVER SEEN: lost publishes unarmed \, so on the bus a device absent since load and a device that worked and vanished look identical. A passive layer publishes seen on EVERY decode \; an active one publishes it EXACTLY ONCE \, which is the mildest way to make the selector uniform across both kinds. select's reject carries the 1 it did not match and goes nowhere \, which is C-8 satisfied by having nothing downstream. See ref/module/presence.md., f 84;
 #X connect 7 0 8 0;
 #X connect 8 0 9 0;
 #X connect 9 1 12 0;
@@ -94,3 +102,10 @@
 #X connect 42 0 43 0;
 #X connect 43 0 44 0;
 #X connect 44 0 45 0;
+#X connect 19 3 51 0;
+#X connect 52 0 51 1;
+#X connect 51 0 53 0;
+#X connect 53 0 54 0;
+#X connect 54 0 55 0;
+#X connect 55 0 56 0;
+#X connect 56 0 57 0;

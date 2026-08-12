@@ -446,6 +446,37 @@ def main_run(cap):
                 "cannot be what fired the trailing re-wire"
                 % (src, bus.get("ALL-BACK", [])))
 
+    # --- ⛔ `seen` IS PUBLISHED ONCE PER SOURCE, EVER -------------------------
+    # An ACTIVE layer publishes `seen <src>` the first time its device ever
+    # answers and never again; a PASSIVE one publishes on every decode. That
+    # asymmetry is what lets g_oled's diag layer tell a device that has GONE
+    # from one that was NEVER SEEN -- `lost` is published unarmed, so on the bus
+    # those two are identical, and this message is the only thing that separates
+    # them.
+    #
+    # ⛔ EXACTLY ONE, NOT AT LEAST ONE, and the difference is the whole check.
+    # Publishing on every reply would be one message per device every two
+    # seconds for the life of the session, and it would pass any non-zero test.
+    allbus = [m for v in bus.values() for m in v]
+    for src in ("m_launchpad", "m_nano"):
+        n = allbus.count("seen %s" % src)
+        A.check("⛔ %s publishes `seen` EXACTLY ONCE across the whole run" % src,
+                n == 1,
+                "saw %d. Zero means the diag screen can never tell this device "
+                "apart from one that has never answered; more than one means it "
+                "publishes per reply, which is a message every two seconds "
+                "forever" % n)
+    # ⛔ AND THE NEGATIVE, WHICH IS WHAT MAKES THE TWO ABOVE MEAN ANYTHING.
+    # m_404 is polled throughout and answers only in ALL-BACK, so a `seen` any
+    # earlier would be a publish that is not gated on a reply at all.
+    n404 = allbus.count("seen m_404")
+    A.check("⛔ ...and a device only says it before its FIRST reply, not before",
+            n404 == 1 and "seen m_404" in bus.get("ALL-BACK", []),
+            "saw %d `seen m_404` and ALL-BACK held %s. m_404 answers nothing "
+            "until that window, so a `seen` before it is published on a poll "
+            "rather than on an answer -- and every device on a Mac would then "
+            "read as present" % (n404, bus.get("ALL-BACK", [])))
+
     # --- ⛔ ONE BOUND, NOT ONE PER DEVICE ------------------------------------
     total = sum(v.count("wire.sh") for v in by.values())
     A.check("⛔ %d sources lost together produce ONE re-wire per interval" % ACTIVE,

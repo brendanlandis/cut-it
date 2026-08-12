@@ -84,7 +84,7 @@
 #X obj 20 2600 select 3;
 #X obj 240 2600 t b b b;
 #X msg 700 2600 === STEP-03-of-07 === Every button and transport key;
-#X msg 700 2650 PASS IF: All 18 buttons name themselves on press and nothing on release. The six transport keys report xport-1 to xport-6. No toggle and no footer change.;
+#X msg 700 2650 PASS IF: All 18 buttons name themselves on press and nothing on release. The six transport keys report xport-1 to xport-6 as raw rows. No toggle.;
 #X msg 700 2700 >>> press GO to run step 3 of 7;
 #X obj 240 2770 s \$0-say;
 #X obj 20 2860 select 4;

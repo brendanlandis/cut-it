@@ -412,6 +412,20 @@ are the *handler's* business. The mechanism is on [map.md](../module/map.md), th
 on the way out because `/loadPatch` runs `killpatch.sh` first (item 252) — so the safe exit below
 still returns the device to Live Mode. Item 251 stays closed.
 
+### CC 91–96 are the mode selector, and they are the lamps
+
+**The first six of the top row**, and `g_grid` has lit them as the mode lamps since Phase 6 — so
+this is one surface rather than press-here-look-there. Pressing one selects that mode; the lamp it
+paints is the confirmation.
+
+⛔ **`u_map` gates each of the six on the press.** A CC button here sends **127 then 0**, where the
+nanoKONTROL transport row this replaced sent only the press — so an ungated branch would select the
+same mode twice per push. Idempotent, therefore invisible. The mechanism is on
+[map.md](../module/map.md).
+
+⚠️ **Mode selection is now on a device that can be unplugged**, which the nano equally was. It is a
+lateral move rather than a regression, and it is not a control you need in a hurry.
+
 ### CC 80 is the diagnostic, directly below it
 
 **The left column's top button**, one row under the CC 90 corner — the two controls you reach for

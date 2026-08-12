@@ -54,10 +54,15 @@ Six buttons moved off their factory assignment, in physical reading order.
 All six: Assign Type **Control Change**, Button Behavior **Momentary**, Transport MIDI Channel **2**,
 arriving as Pd channel 18. The control groups stay on the nano's channel 1 → Pd channel 17.
 
-**The labels are lies.** `m_nano` treats all six as ordinary momentary buttons — `xport-1`…`xport-6`
-on press, no toggle — and names them by physical position, because what a control *means* is not
-knowable at the `m_` layer. Since Phase 6 the row is the **mode selector**, mapped in `u_map` and
-shown as a lit lamp on the Launchpad's top row.
+**`m_nano` treats all six as ordinary momentary buttons** — `xport-1`…`xport-6` on press, no
+toggle — and names them by physical position, because what a control *means* is not knowable at the
+`m_` layer.
+
+**The row was the mode selector from Phase 6 until the shift key needed the aux button.** Mode moved
+to the Launchpad's top row, which was already showing the lit lamp — see
+[map.md](../module/map.md). ⚠️ **All six therefore report a raw row on the OLED now**, because they
+fall through to the table and miss it: item 242's rule, and correct, since a control that does
+nothing and says nothing cannot be told from a broken one.
 
 Because CC 41–46 give `div 10` = 4, `m_nano` folds the row in as a **fifth control kind** and reads
 both channels through one path. A separate channel therefore no longer isolates anything — it is

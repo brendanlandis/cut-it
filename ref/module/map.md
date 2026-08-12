@@ -411,11 +411,27 @@ one-branch-per-mapping rule existed to protect, kept while the mappings became d
 checked from three sides — `map-assert.py` against the map's rows, `docs-check.py` against the
 table on this page, and a runtime `unknown-dest` on `err`.
 
-### The six transport keys stay hardcoded, and they come first
+### The six mode keys stay hardcoded, and they come first
 
 They **are** the mode selector, so a mode change can never itself be mode-dependent — and if the
 table were empty or broken you could still change mode on a device with no console. Everything the
-transport `route` does not match falls out of its reject and goes to the table.
+mode `route` does not match falls out of its reject and goes to the table.
+
+**They are the Launchpad's top row, `lp-cc-91`…`lp-cc-96`** — the six pads `g_grid` already lights
+as the mode lamps, so the thing you look at is the thing you press. They were the nanoKONTROL's
+transport row until the aux button was wanted as a modifier and PLAY and STOP went back to meaning
+play and stop. See [launchpad.md](../device/launchpad.md).
+
+⛔ **Each of the six branches carries a `[select 0]`, and that is not decoration.** A Launchpad CC
+button sends **127 on the press and 0 on the release**; the nano transport row it replaced sent only
+the press. Ungated, every mode selection fires **twice** — idempotent, so nothing on screen looks
+wrong, while every `mode` message, every state-store write and every `g_grid` repaint silently
+doubles.
+
+⛔ **The gate cannot go above the route.** That reject is the whole table path, and `og-key-*`
+releases are **real note-offs** `volca-key` must act on (item 293) — a value test up there would
+swallow every one and hang notes on the Volca. `[select 0]`'s reject carries anything that is not a
+release, which is the value the message box wanted anyway (C-8).
 
 ### The value is parked and the name does the work
 

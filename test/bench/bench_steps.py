@@ -214,8 +214,14 @@ STEPS_NANOKONTROL = [
   [],
   {'do': 'Move two faders at once, then three, then all nine.'}),
  ('Every button and transport key',
-  'PASS IF: All 18 buttons name themselves on press and nothing on release. The six transport keys report xport-1 to xport-6. No toggle and no footer change.',
+  'PASS IF: All 18 buttons name themselves on press and nothing on release. The six transport keys report xport-1 to xport-6 as raw rows. No toggle.',
   [],
+  # ⚠️ THE TRANSPORT ROW DRAWS A RAW ROW NOW AND IT DID NOT BEFORE. It used to
+  # be consumed by u_map's hardcoded mode route, above the table, so it never
+  # reached the lookup at all. The mode selector moved to the Launchpad's lit top
+  # row, so these six fall through to the table, miss, and report their raw value
+  # -- item 242's rule, and the right behaviour: a control that does nothing and
+  # says nothing cannot be told from a broken one.
   {'do': 'Press every button, then all six transport keys.'}),
 
  # ⛔ HOT-SWAP, THREE CASES, AND ITEM 235 IS THE PROOF THE FIRST TWO ARE NOT THE
@@ -413,6 +419,17 @@ STEPS_LAUNCHPAD = [
  ('Mode lamp 6',
   'PASS IF: The bright lamp lands on the sixth and last position.',
   [('perform mode-6', 'mode')]),
+ # ⛔ THE LAMP IS NOW THE BUTTON, which is the whole reason the mode selector
+ # moved here off the nano's transport row. The five steps above drive the mode
+ # bus directly and judge the PAINTING; this one judges the SELECTION, which
+ # nothing above it touches.
+ # ⚠️ The half a person cannot see is that the RELEASE selects nothing -- a
+ # Launchpad CC button sends 127 then 0 and re-selecting the same mode is
+ # idempotent, so a doubled selection looks identical. map-assert owns that.
+ ('Pressing a mode lamp selects it',
+  'PASS IF: The bright lamp moves to the pad you pressed and stays there after you let go. The OLED does not change.',
+  [],
+  {'do': 'Press the third pad along in the top row, then the first.'}),
  ('Grid vocabulary stays off the OLED',
   'PASS IF: Nothing happens on either surface. In particular no parameter row called grid appears on the OLED.',
   [('grid no-such-thing', 'disp')]),

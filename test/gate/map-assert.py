@@ -108,7 +108,8 @@ def run_asserts(cap):
                                            "LIVE", "AUX-1", "AUX-2", "KNOB-2",
                                            "LATE-KNOB", "BAD-DEST", "RAIL-UP",
                                            "RAIL-BACK", "MODE-4", "MODE-DEP",
-                                           "UNMAPPED", "BAD-MODE", "AFTER-BAD",
+                                           "MODE-4-RELEASE", "UNMAPPED",
+                                           "BAD-MODE", "AFTER-BAD",
                                            "MODE-1-BACK", "DIAG-DEST",
                                            "DIAG-RELEASE"]))
     W = lambda k: by.get(k, [])
@@ -275,6 +276,21 @@ def run_asserts(cap):
             "cc 44 in that window: %s -- a dead knob for the whole session"
             % cc("RAIL-BACK", 44))
 
+    # ⛔ THE MODE SELECTOR MOVED TO THE LAUNCHPAD'S LIT TOP ROW, and with it a
+    # second edge nothing upstream had ever sent. The six branches feed their
+    # message boxes with no non-zero test of their own, which was safe only
+    # while a nano transport button published on the press alone.
+    modes = lambda k: [e[1] for e in W(k) if e[0] == "MODE"]
+    A.check("⛔ a lit top-row pad selects its mode",
+            modes("MODE-4") == [["perform", "mode-4"]],
+            "mode in that window: %s" % modes("MODE-4"))
+    A.check("⛔ ... and its RELEASE selects nothing at all",
+            modes("MODE-4-RELEASE") == [],
+            "mode in that window: %s -- a Launchpad CC button sends 127 then 0, "
+            "so an ungated branch fires the same mode twice per press. It is "
+            "idempotent, which is exactly why nothing would look wrong"
+            % modes("MODE-4-RELEASE"))
+
     # ⛔ THE diag DESTINATION, FROM THE RUNNING SIDE. The static lint above
     # proves diag is on the route by reading; this proves a table row can
     # actually reach it. No shipped row names it yet -- which control summons
@@ -310,7 +326,8 @@ def nosave_asserts(cap):
                                            "LIVE", "AUX-1", "AUX-2", "KNOB-2",
                                            "LATE-KNOB", "BAD-DEST", "RAIL-UP",
                                            "RAIL-BACK", "MODE-4", "MODE-DEP",
-                                           "UNMAPPED", "BAD-MODE", "AFTER-BAD",
+                                           "MODE-4-RELEASE", "UNMAPPED",
+                                           "BAD-MODE", "AFTER-BAD",
                                            "MODE-1-BACK", "DIAG-DEST",
                                            "DIAG-RELEASE"]))
     W = lambda k: by.get(k, [])

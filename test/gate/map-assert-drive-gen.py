@@ -77,7 +77,16 @@ SEQ = [
     # ⚠️ AFTER 3.5 s ON PURPOSE. u_init restores saved state around then and
     # republishes mode; a switch before that is overwritten mid-run and the
     # mode-dependence check reads as broken when it is not. Item 232's other half.
-    (5000, "MODE-4", ["\\; param xport-4 1"], GAP),
+    # ⛔ 127 AND NOT 1, because that is what a Launchpad CC button sends. The
+    # mode selector moved onto the top row -- the six pads g_grid already lights
+    # as the mode lamps -- and those send 127 on the press and 0 on the release
+    # where the nano transport row it replaced sent only the press.
+    (5000, "MODE-4", ["\\; param lp-cc-94 127"], GAP),
+    # ⛔ AND THE RELEASE MUST SELECT NOTHING. Without a gate below the route
+    # every mode selection fires twice, once per edge -- idempotent, so the
+    # screen looks right while every mode message, state-store write and grid
+    # repaint silently doubles. This is the window that can tell.
+    (5100, "MODE-4-RELEASE", ["\\; param lp-cc-94 0"], GAP),
     (5200, "MODE-DEP", ["\\; param gk-cc 64"], GAP),
     # ⛔ HELD AND UNMAPPED AT THE SAME TIME, which is the case that shipped wrong.
     # Knob 2 armed at 400 ms and has never crossed, and its row is keyed mode-1 so
@@ -108,7 +117,7 @@ SEQ = [
     # guard from the running side, where the static lint proves it by reading.
     # gk-diag is keyed mode-1 and the run is in mode-4 by now, so the mode has
     # to go back first or this is a lookup MISS rather than a summon.
-    (6000, "MODE-1-BACK", ["\\; param xport-1 1"], GAP),
+    (6000, "MODE-1-BACK", ["\\; param lp-cc-91 127"], GAP),
     (6200, "DIAG-DEST", ["\\; param gk-diag 1"], GAP),
     # ⛔ AND A RELEASE MUST NOT SUMMON IT. Every button destination gates on
     # non-zero for exactly this reason: one press is one screen, not two.
@@ -139,6 +148,7 @@ if __name__ == "__main__":
         sys.exit("usage: map-assert-drive-gen.py OUT.pd  "
                  "(run it through test/gate/map-assert.sh, which passes a scratch path)")
     w, b, c = D.build(sys.argv[1], SEQ, tag="MAP",
-                      taps=["param", "err", "tempo", "start", "stop", "disp"], quit_ms=QUIT_MS,
+                      taps=["param", "err", "tempo", "start", "stop", "disp", "mode"],
+                      quit_ms=QUIT_MS,
                       blurb=BLURB, notes=NOTES)
     print("%s  %d windows  %d boxes  %d connects" % (sys.argv[1], w, b, c))

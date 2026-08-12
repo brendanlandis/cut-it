@@ -102,7 +102,12 @@ def parse(path):
             continue
         c = re.match(r'#X connect (\d+) (\d+) (\d+) (\d+)$', ln)
         if c:
-            cur['conns'].append(tuple(int(g) for g in c.groups())); continue
+            cur['conns'].append(tuple(int(g) for g in c.groups()))
+            # ⛔ HOW MANY BOXES EXISTED WHEN Pd READ THIS LINE. Pd builds a canvas
+            # by replaying the file top to bottom, so a connect naming a box that
+            # is defined FURTHER DOWN is dropped -- see forward_refs below.
+            cur.setdefault('cseen', []).append(len(cur['boxes']))
+            continue
         # symbolatom IS a box in Pd's index. Leaving it out of this regex does not
         # merely skip it -- it shifts every later box number, so #X connect lines
         # get resolved against the wrong objects and the report is quietly fiction.
@@ -116,6 +121,34 @@ def parse(path):
         w, h = _size(kind, rest, fw)
         cur['boxes'].append({'k':kind,'x':x,'y':y,'w':w,'h':h,'t':rest[:40]})
     return ctxs
+
+def forward_refs(ctxs):
+    """Connects that name a box defined LATER in the file. Pd drops them.
+
+    ⛔ THIS IS THE C-10 TRAP'S SECOND HALF, AND IT IS COMPLETELY SILENT HERE.
+    The rule says append boxes at the end of a .pd and move the connects with
+    them -- and it is easy to move only the NEW connects while an EDITED one
+    still sits in the original block, hundreds of lines above the box it now
+    names. Pd replays the file in order, finds no such object, and drops the
+    cord. Everything still loads. The patch is simply not wired.
+
+    ⚠️ Pd does print `connect: no such object`, and that is not a defence: a
+    menu-launched patch runs -nogui with stdout on tty1, tools/deploy.sh gates on
+    output only before ~735 ms, and a gate reading a capture is not looking for
+    it. It cost two silent miswirings in one session -- one where a shifted
+    presence publish never fired, one where mode selection stopped working
+    entirely -- and both looked exactly like a logic error in the new code.
+
+    The count is exact: this is not a heuristic, it is what Pd itself does.
+    """
+    out = []
+    for ctx in ctxs:
+        for (src, _, dst, _), nseen in zip(ctx['conns'], ctx.get('cseen', [])):
+            late = [n for n in (src, dst) if n >= nseen]
+            if late:
+                out.append((ctx['label'], src, dst, sorted(late), nseen))
+    return out
+
 
 def seg_rect(p, q, r):
     # does segment p-q intersect axis-aligned rect r (x,y,w,h)?
@@ -184,6 +217,18 @@ def check(path):
         return False
     ctxs = parse(path)
     allok = True
+    fwd = forward_refs(ctxs)
+    if fwd:
+        print(f"{path}")
+        for label, src, dst, late, nseen in fwd:
+            print(f"    PROBLEM FORWARD CONNECT {src} -> {dst} in {label}: "
+                  f"box {late} is defined LATER in the file "
+                  f"(only {nseen} boxes existed at that line)")
+        print("      Pd replays a canvas top to bottom, so it drops this cord and")
+        print("      loads anyway -- the patch is not wired and nothing says so.")
+        print("      C-10: append boxes at the end AND MOVE EVERY CONNECT THAT")
+        print("      NAMES THEM with it, including ones you only EDITED in place.")
+        allok = False
     for ci, ctx in enumerate(ctxs):
         boxes, conns, label = ctx['boxes'], ctx['conns'], ctx['label']
         if not boxes: continue

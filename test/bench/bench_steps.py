@@ -1122,3 +1122,109 @@ STEPS_MIDI = [
    'need': ['The Volca interface still unplugged from the last step.',
             'Mode 1. Slider 1 is the only control bound to the Volca.']}),
 ]
+
+
+# ⛔ THIS BENCH IS PAPER, AND IT HAS TO BE. A driven bench runs as a THIRD PATCH
+# inside the instrument's own Pd -- targets.py launches mother.pd, main.pd and the
+# bench together over one ssh -- and step 1 here LOADS ANOTHER PATCH, which is a
+# Pd restart. It would take the bench down with it and strand every step after.
+# test/bench/recover is paper for exactly the same reason, and it got there the
+# same way: the one thing under test cannot be allowed to kill the runner.
+#
+# ⛔ EVERY STEP IS EYES, AND THERE IS NOT ONE FILE PREDICATE. That is honest
+# rather than lazy: this patch writes nothing to disk -- its output IS the OLED,
+# which is the whole point of a tool for a venue with no laptop -- and inventing a
+# logfile purely so a predicate had something to read would be building a test
+# hook and calling it a feature. Everything machine-checkable about the patch is
+# already in test/gate/debug-assert.sh, which asserts all five rows.
+#
+# ⛔ AND IT LEAVES THE RIG WITHOUT THE INSTRUMENT. The last step puts Cut It back
+# and says so in its own `do`, rather than trusting the order to be remembered.
+STEPS_DEBUG = [
+ ('It is in the menu -- under debug and not under the instrument',
+  'PASS IF: The Organelle menu has a debug folder beside the one holding Cut It -- and Cut It Debug is inside it. Finding it in the same folder as the instrument is the failure. At a venue you should scroll past nothing to reach what you play.',
+  [],
+  {'do': 'From the Organelle menu browse the patch folders. Do not load anything yet.',
+   'need': ['The debug patch deployed. tools/deploy.sh --debug puts it there.']}),
+
+ ('It loads and comes up on the MIDI screen',
+  'PASS IF: Within a couple of seconds the screen reads 1-MIDI-IN with four rows under it -- lp nano sp404 and ch -- all reading zero. A screen that stays on the menu or goes blank is the failure.',
+  [],
+  # ⚠️ LOADING IT STOPS THE INSTRUMENT. That is what selecting any patch means on
+  # this device, and it is why this tool is for "Cut It is broken and I am not
+  # playing right now" rather than for mid-set.
+  {'do': 'Select Cut It Debug and wait.',
+   'need': ['You are not in the middle of a set. This stops the instrument.']}),
+
+ ('It wired itself -- and proving that is the whole bench',
+  'PASS IF: Moving a nanoKONTROL fader makes the nano row count up. This is the step everything else rests on: loading any patch drops the ALSA connections and the patch runs wire.sh itself to put them back. A nano row stuck on zero means the patch is measuring silence and would report a healthy rig as dead.',
+  [],
+  # ⛔ PROVE THE PROBE BEFORE BELIEVING THE SILENCE. The nanoKONTROL is the right
+  # device to prove it with: it transmits the moment you touch it, needs no mode
+  # and has nothing to go wrong at the far end. If this row does not move, nothing
+  # any later step reports about any other device means anything at all.
+  {'do': 'Move fader 1 on the nanoKONTROL a few times and watch the nano row.',
+   'need': ['The nanoKONTROL plugged in and its scene loaded.']}),
+
+ ('Each device lands on its own row',
+  "PASS IF: A Launchpad pad moves only the lp row. An SP-404 pad moves only the sp404 row. Each one also changes the ch row to a number in that device's own block -- ch 1 to 16 for the Launchpad and 33 to 42 for the 404 bank. Two devices sharing one row is the fault this patch exists to find.",
+  [],
+  # ⛔ THE ROW IS THE PORT AND THE PORT IS THE DEVICE, which only holds while
+  # wire.sh has undone mother's own auto-connect -- alsaconnect.sh wires the
+  # LOWEST-numbered client to Pd's Midi-In 1, and the nano has enumerated below
+  # the Launchpad before now. When that goes wrong two devices really are both
+  # channel 1 and nothing in Pd can tell them apart. Item 274.
+  {'do': 'Press a Launchpad pad and then an SP-404 pad on bank A. Watch which row moves.',
+   'need': ['The Launchpad and the SP-404 both plugged in and powered.']}),
+
+ ('The error log screen shows what the instrument left behind',
+  'PASS IF: The screen reads 3-ERR-LOG and the four rows under it hold the last four lines of the instrument s own log with dots where the spaces were. Four dashes mean the log was empty or missing -- which is a real answer and not a failure if the instrument has not raised anything.',
+  [],
+  # ⚠️ THE LOG IS u_err's AND NOT THIS PATCH'S. logroll.sh rolls the current
+  # session into the durable file once per load -- and loading this patch IS a
+  # load -- so the session that went wrong is already in cut-it-err.log by the
+  # time you read it here. ref/module/error.md.
+  {'do': 'Press the fourth key from the bottom to select the error log screen.'}),
+
+ ('The network screen shows the address you type into the phone',
+  "PASS IF: The screen reads 4-NETWORK and the row under it reads ip- followed by this Organelle's own address. That is the number PdParty needs -- it will not resolve the name -- and reading it here is what removes the last reason this rig needs a laptop to fix the phone link.",
+  [],
+  # ⛔ ITEM 312. PdParty's OSC send host has to be a literal address, the lease has
+  # been seen at three different numbers, and the failure is completely silent on
+  # both ends. On the Organelle's own access point it is always the same address,
+  # so the house network is the awkward one. ref/device/phone.md.
+  {'do': 'Press the fifth key from the bottom. Read the ip row and check it against what the phone is pointed at.'}),
+
+ ('Both output devices answer when you fire at them',
+  'PASS IF: The C an octave up plays a note on the Volca. The D above it plays pad A1 on the SP-404. The sent counter goes up by exactly one per press -- two for one finger would mean a key release is firing as well as the press.',
+  [],
+  # ⚠️ PAD A1 MAY HOLD A LOOPING SAMPLE AND NOTHING IN THE PATCH CAN STOP IT. The
+  # note-off is scheduled correctly and the loop is the 404's own sample setting,
+  # so All Notes Off will not end it either. Press the pad on the device. Item 311.
+  {'do': 'Press the second key from the bottom to see the test screen -- then press the C an octave up and the D above it. Listen.',
+   'need': ['The Volca powered and audible.',
+            'The SP-404 powered and audible. Pad A1 may hold a looping sample -- '
+            'if it starts one, press the pad on the device to stop it.']}),
+
+ ('A re-wire by hand reports how many links it made',
+  'PASS IF: The re-wire screen reads 5-RE-WIRE and the links row shows a number rather than a dash -- nine on the full rig. The runs row goes up by one each time you press the key. A links row still reading dash means wire.sh ran but said nothing back.',
+  [],
+  # ⛔ IT FORKS wire.sh DIRECTLY AND MUST NOT ASK THE presence BUS. That bus gained
+  # a re-wire selector for the phone, but it lives inside the Pd instance that
+  # loading this patch has already killed.
+  {'do': 'Press the sixth key from the bottom for the re-wire screen, then press the E an octave up twice.'}),
+
+ ('You can get out of it -- and the instrument comes back',
+  'PASS IF: The lowest key returns you to the Organelle menu. Cut It then loads and runs normally -- and when you leave it the Launchpad goes back to Live Mode with its Setup button responding. A Launchpad still dark and ignoring Setup is the failure.',
+  [],
+  # ⛔ THE LOWEST KEY IS THE ONLY WAY OUT THAT IS GUARANTEED, and that is a design
+  # decision rather than a convenience. Asking mother for the encoder is an
+  # OVERRIDE which takes the click as well -- the press that normally leaves a
+  # running patch -- so this patch deliberately never asks, and the key stands in
+  # for it anyway. Items 313 and 314.
+  # ⛔ THIS STEP RESTORES THE RIG. Everything above ran with the instrument
+  # stopped.
+  {'do': 'Press the lowest key. Then load Cut It from the menu and leave it once it is up.',
+   'need': ['Nothing else queued on the rig -- this is the step that puts the '
+            'instrument back.']}),
+]

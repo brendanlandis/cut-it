@@ -92,6 +92,16 @@ RE_WHERE = _steps.RE_WHERE
 # invalidates "the warn appeared" and "it came back within 60 seconds" on every
 # one of them.
 DEPS = {
+    # ⚠️ THE ONLY ENTRY THAT NAMES NOTHING UNDER "Cut It", and that is right:
+    # the debug patch is a second deployable and a change to the instrument
+    # cannot invalidate a verdict about it. The two SHELL SCRIPTS ARE IN HERE
+    # DELIBERATELY -- steps 5 and 6 judge what err-tail.sh and net-probe.sh put on
+    # the screen, so an edit to either is an edit to what those steps asserted.
+    # ⚠️ wire.sh is here as the debug patch's COPY, not the instrument's. The two
+    # are held identical by debug-assert.sh, so editing the instrument's does
+    # reach this list -- through the copy that has to follow it.
+    "debug":       ["Cut It Debug/main.pd", "Cut It Debug/wire.sh",
+                    "Cut It Debug/err-tail.sh", "Cut It Debug/net-probe.sh"],
     "display":     ["Cut It/g_oled.pd", "Cut It/u_err.pd"],
     # ⚠️ u_tempo WAS MISSING HERE AND THE OMISSION WAS PRE-EXISTING. Step 14
     # counts BEATS off `r clock`, and u_tempo is the only writer of that bus --

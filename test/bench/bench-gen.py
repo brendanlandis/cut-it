@@ -318,13 +318,23 @@ CAPS_OK = {
     # ⚠️ OSC joined the acronyms when the phone gained buttons: it is what
     # PdParty's own settings screen calls the section you have to point at the
     # Organelle before any of them do anything.
+    # ⚠️ ALSA joined them with the debug patch: it is the layer wire.sh actually
+    # operates on, and "the alsa connections" reads like a typo rather than like
+    # the name of the thing.
     "OLED", "LED", "BPM", "DSP", "USB", "CC", "TTL", "MIDI", "NN", "SD", "OSC",
+    "ALSA",
     "SP-404", "EXT", "NO-LINK", "SETUP", "GO",
     # Moulded on the nanoKONTROL's transport row, left to right. Two of them
     # mean what they say again since start and stop moved off the aux button.
     "REW", "PLAY", "LOOP", "STOP", "REC",
     "BEATS", "M-BEATS", "C1-BEATS", "C2-BEATS",
     "C1-BEATS-ratio-1", "C2-BEATS-ratio-1.5",
+    # ⚠️ THE DEBUG PATCH'S SCREEN TITLES, drawn exactly like this. It has no
+    # g_oled and draws every row as a single symbol with dashes where you want
+    # spaces -- so its rows are the most literally-printed text in the project
+    # and quoting them any other way would make a bench step describe a screen
+    # nobody can find.
+    "1-MIDI-IN", "2-TEST-OUT", "3-ERR-LOG", "4-NETWORK", "5-RE-WIRE", "6-HELP",
 }
 # ⚠️ WHOLE WHITESPACE TOKENS, NEVER A REGEX OVER THE LINE. A pattern anchored on
 # word boundaries splits `C1-BEATS-ratio-1` at the hyphen and reports the
@@ -983,6 +993,22 @@ BENCHES = {
                     "shell. WHAT IT CANNOT DO is load a patch \\, so the reload "
                     "itself is here and only here \\, along with the one case "
                     "that matters most: a reload that CANNOT land."),
+    # ⛔ PAPER, AND FOR THE SAME REASON recover IS. Step 2 LOADS ANOTHER PATCH,
+    # which is a Pd restart -- and a driven bench runs as a third patch inside
+    # the instrument's own Pd, so it would go down with it and strand every step
+    # after. ⚠️ It is also the only bench with no predicate at all: this patch
+    # writes nothing to disk because its output IS the screen, and inventing a
+    # logfile so a predicate had something to read would be a test hook wearing a
+    # feature's clothes. Everything machine-checkable is in debug-assert.sh.
+    "debug": dict(steps=S.STEPS_DEBUG, counters=[],
+                  blurb="the debug patch acceptance run. IT STOPS THE INSTRUMENT "
+                  "-- selecting any patch restarts Pd \\, which is exactly why this "
+                  "tool exists and exactly why it is not for mid-set. MOST OF IT IS "
+                  "PROVEN HEADLESSLY: test/gate/debug-assert.sh asserts all five "
+                  "screen rows \\, the channel-block decode and both probes in about "
+                  "thirteen seconds. What is left here is what only hardware can "
+                  "show -- that the patch WIRED ITSELF \\, which is step 3 and the "
+                  "one everything else rests on."),
     "midi": dict(steps=S.STEPS_MIDI, counters=[],
                  blurb="the MIDI acceptance run: the mode-dependent map \\, both "
                  "output devices and the SP-404 in both directions. MOST OF THIS IS "

@@ -99,6 +99,19 @@ deployable, not a probe — `tools/stage-patches/` is for one-shot probes and th
 | **Network** | Whether the AP is up, and what address the phone has |
 | **Re-wire** | Run `wire.sh` by hand |
 
+⚠️ **Three of those five were partly answered by the phone on 2026-08-12, and the overlap is worth
+knowing before building any of them** — see [ref/device/phone.md](ref/device/phone.md).
+
+- **Test output**: the probe messages are settled and documented — `notes 60 100 200` to the Volca
+  and `pad 1 100` to the SP-404. Reuse them rather than inventing a second pair. ⚠️ **Pad A1 may hold
+  a LOOPING sample**, so the probe can start something that only a press on the device stops.
+- **Network**: show **the Organelle's OWN address**, which is the thing you have to type into
+  PdParty — ⛔ it will not resolve `organelle.local`, and the lease has been seen at `.15`, `.18` and
+  `.6`. That screen removes the one reason this rig still needs a laptop to fix the phone link.
+- **Re-wire**: ⛔ **this patch must run `wire.sh` itself and must NOT try the `presence` bus.** The
+  bus gained a `re-wire` selector for the phone, but that lives inside Cut It's Pd instance and this
+  is a different one — loading this patch is what killed that instance.
+
 **Navigation is the encoder** — `enc` sends `1`/`0`, not `±1`, and `encbut` arrives only after
 `/enableEncoder`. Four knobs, the aux button and 25 keys are all available too.
 
@@ -184,15 +197,16 @@ enumerate was diagnosed from scratch across five physical tests when
 5. ⛔ **`check_closers` in `test/gate/docs-check.py` loses its `--strict` flag and becomes
    unconditional.** It is written and tested already, and gated off only because this batch had not
    landed. **This is the last plan of the batch to land, so the condition goes with it.** Run
-   `python3 test/gate/docs-check.py --strict` to see what is left. ⚠️ **It is not only a flag
-   deletion** — measured 2026-08-11, it reports 20 problems in four distinct kinds:
+   `python3 test/gate/docs-check.py --strict` to see what is left — ⚠️ **read the number off the run
+   rather than off this page**: it was 20 on 2026-08-11 and 21 on 2026-08-12, and it moves whenever a
+   plan lands. **It is not only a flag deletion**; the problems fall into four distinct kinds:
 
    | Where | What they are |
    |---|---|
    | `plan-v04.md` | v0.4 items **inside the v0.4 plan**. `CLOSER` wants a literal `v0.4` in the window, so satisfying it there is tautological. ⛔ **Better: treat a ⬜ inside a `plan-` file as owned by that file** |
    | `CLAUDE.md` | Prose *about* the ⬜ marker, not open items — `_is_marker_gloss` misses them |
    | `tools/README.md` | A real open item that genuinely needs a closer |
-   | *the plan names* | ⛔ **`CLOSER` is `plan-v0[34](?:\.\d)?\.md` — one decimal group, so it matches neither `plan-v03.5.1.md` nor `plan-v03.5.2.md`.** Widen it |
+   | *the plan names* | ⛔ **`CLOSER` is `plan-v0[34](?:\.\d)?\.md` — one decimal group, so it does not match `plan-v03.5.2.md`.** Widen it |
 
    ⛔ **And `DOCNAME` cannot see these filenames at all.** Its name class is `[a-zA-Z0-9_-]+` — no
    dot — and its lookbehind rejects the one inside `v03.5`, so a bare `plan-v03.5.N.md` in a `.pd`,

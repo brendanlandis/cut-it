@@ -215,7 +215,7 @@ mark it, because nothing in the patch can tell a half-enumerated Launchpad from 
 `lsusb` lists it with its serial number, but no ALSA port is ever created — and `m_launchpad`'s
 recovery runs `wire.sh` and gives up after ~70 s, because there is nothing to wire to. From inside
 Cut It it is indistinguishable from a Launchpad that was never plugged in. **This is a venue failure
-mode**: see [plan-v03.5.md](../plan-v03.5.md).
+mode**: see [plan-v03.5.0.md](../plan-v03.5.0.md).
 
 ⚠️ **The nanoKONTROL spontaneously re-enumerates** — three times in one evening, seconds apart, on a
 settled bus. Milder, unexplained, and on the same tree (item 248).

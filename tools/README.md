@@ -290,7 +290,7 @@ Findings from all of them are written up in [../ref/module/display.md](../ref/mo
 **They stay, and the question is settled rather than open.** The argument for deleting them was
 that the claim on the `ref/` page is now the artefact and the patch is not — reasonable, and wrong
 here, because **each one is a working reference for something the project is about to build again**.
-[../plan-v03.5.md](../plan-v03.5.md) wants `oled-probe/` and `osc-bridge/` as references within
+[../plan-v03.5.2.md](../plan-v03.5.2.md) wants `oled-probe/` and `osc-bridge/` as references within
 weeks, and `audio-probe/` is still the quickest way to see what is arriving at the inputs.
 
 ⛔ **The test is "would you run it again", not "is it used".** A patch mentioned in no document is

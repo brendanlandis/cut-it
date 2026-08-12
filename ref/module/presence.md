@@ -43,7 +43,7 @@ the `m_` may talk to its device** structural instead of advisory.
 ⚠️ **`seen` is a cord for `active` and a bus message for `passive`, and the asymmetry is deliberate.**
 An active device's liveness is consumed by its own `c_presence` two boxes away, so publishing it
 would be traffic with no reader. A passive layer holds no `c_presence` at all, so the bus is the only
-place its last-heard can go. Nothing reads `seen` today — [plan-v03.5.md](../../plan-v03.5.md)'s
+place its last-heard can go. Nothing reads `seen` today — [plan-v03.5.1.md](../../plan-v03.5.1.md)'s
 diagnostic screen is what it exists for.
 
 ### The three kinds, and every layer declares one
@@ -329,7 +329,7 @@ presence and it did not move.
 **Surfacing is the `warn` and the `fail`, and nothing else.** ⚠️ A dark grid already means two
 different things — nothing changed, or the watchdog gave up — and only the OLED tells them apart. A
 third ambiguous grid state would make the display less informative, not more. The diagnostic screen
-that reads all of this is [plan-v03.5.md](../../plan-v03.5.md)'s, deliberately.
+that reads all of this is [plan-v03.5.1.md](../../plan-v03.5.1.md)'s, deliberately.
 
 ⛔ **This paragraph listed a third cause, "panic handed the surface back", and it had been false
 since item 251.** Panic does not touch the Launchpad's ownership at all now, and since item 296 it
@@ -348,5 +348,5 @@ top of this page. Both were plan-v0.3.4's, and that plan is gone.
   nothing, and both its steps unplug the interface and lean on a detectable device beside it.
 
 ⬜ **A passive layer's last-heard is published and nothing reads it.** See
-  [plan-v04.md](../../plan-v04.md) §3 and [plan-v03.5.md](../../plan-v03.5.md), which is the
+  [plan-v04.md](../../plan-v04.md) §3 and [plan-v03.5.1.md](../../plan-v03.5.1.md), which is the
   consumer. `seen m_organelle` goes on the bus for a screen that does not exist yet.

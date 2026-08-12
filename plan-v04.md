@@ -8,13 +8,24 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **This is no longer the only plan.** One scoped plan — [plan-v03.5.md](plan-v03.5.md) — holds
-the last batch of infrastructural work before v0.4: the venue kit. ✅ **The test runner, the v0.3.2
-cleanup, the v0.3.3 coverage pass, hot-swap and panic becoming `recover` have all landed** — the
-first three on 2026-08-09, hot-swap on 2026-08-10 and `recover` on 2026-08-11.
-**Read [CLAUDE.md](CLAUDE.md)'s table for the order and the dependencies.**
+⚠️ **This is no longer the only plan.** **Three** scoped plans hold the last batch of infrastructural
+work before v0.4 — the venue kit, split because router settings, a screen inside the instrument and a
+whole standalone patch are not one piece of work:
 
-⛔ **§3 below is being emptied by those two.** Every open question in it is assigned to one of them,
+| Plan | Is |
+|---|---|
+| [plan-v03.5.0.md](plan-v03.5.0.md) | **The venue network** — the access point, the Orbi fault and its stopping rule, Guided Access |
+| [plan-v03.5.1.md](plan-v03.5.1.md) | **Diagnostics inside the instrument** — the OLED diag layer, the inbound UDP path, the phone's buttons |
+| [plan-v03.5.2.md](plan-v03.5.2.md) | **The standalone debug patch** — `! debug/`, encoder-navigable. ⛔ **The last of the three**, and it carries the batch's closing chore |
+
+⚠️ **Run 5.1 before 5.0's rig session.** It edits `g_oled.pd` and `u_net.pd`, which stales every
+bench verdict that depends on them — so a rig session run first would be wasted.
+
+✅ **The test runner, the v0.3.2 cleanup, the v0.3.3 coverage pass, hot-swap and panic becoming
+`recover` have all landed** — the first three on 2026-08-09, hot-swap on 2026-08-10 and `recover` on
+2026-08-11. **Read [CLAUDE.md](CLAUDE.md)'s table for the order and the dependencies.**
+
+⛔ **§3 below is being emptied by those three.** Every open question in it is assigned to one of them,
 and when they land this section holds **only v0.4 code**. Do not start work on a
 §3 item without checking which plan owns it first.
 
@@ -217,7 +228,7 @@ before `throw~` measures a passthrough and nothing else until there are stages b
 
 ### ✅ The reference patches under `tools/*/` earn their keep — decided, and kept
 
-`audio-probe/`, `oled-probe/`, `osc-bridge/` and `status-display/` all stay. **[plan-v03.5.md](plan-v03.5.md)
+`audio-probe/`, `oled-probe/`, `osc-bridge/` and `status-display/` all stay. **[plan-v03.5.2.md](plan-v03.5.2.md)
 wants two of them as working references within weeks**, which is the "would you run it again" test
 answering itself. The reasoning is recorded on [tools/README.md](tools/README.md) so the question
 stops recurring.

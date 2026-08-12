@@ -750,14 +750,25 @@ def check_closers(verbose):
     open item cannot sit in the tree with nobody owning it. That is the rule this
     whole batch exists to make stick.
 
-    ⛔ IT DOES NOT RUN BY DEFAULT, AND THAT IS THE POINT. plans v0.3.3, v0.3.4 and
-    v0.3.5 have not landed, so a large minority of today's items legitimately have
-    no closer -- and **a gate that stays red for two weeks is a gate that gets
-    ignored**, which would cost more than the rule buys. Run it with --strict to
-    see the backlog.
+    ⛔ IT DOES NOT RUN BY DEFAULT, AND THAT IS THE POINT. The v0.3.5 batch has not
+    landed, so a large minority of today's items legitimately have no closer -- and
+    **a gate that stays red for two weeks is a gate that gets ignored**, which would
+    cost more than the rule buys. Run it with --strict to see the backlog.
 
-    ⚠️ TO LAND IT: delete the flag so main() always calls this, after
-    plan-v03.5.md ships. Its landing checklist says so.
+    ⚠️ TO LAND IT: delete the flag so main() always calls this, after the LAST of
+    the three v0.3.5 plans ships. Its landing checklist says so and names the file.
+
+    ⛔ AND IT IS NOT ONLY A FLAG DELETION, which that checklist spells out. Two
+    things here are wrong for the plan names that now exist:
+
+      CLOSER  has ONE decimal group, so it stops one level short and matches none
+              of plan-v03.5.0.md / .1.md / .2.md. Every open item citing one of
+              the three fails this check as written.
+      DOCNAME cannot see those names AT ALL -- its class is [a-zA-Z0-9_-]+ with no
+              dot, and the lookbehind rejects the one inside v03.5. So a bare
+              plan-v03.5.N.md in a .pd/.sh/.py is invisible to
+              check_dangling_docs while a bare plan-v04.md is caught. That is why
+              this batch's Pd-comment references had to be found by grep.
 
     SCOPE IS EVERY .md, REPO-WIDE -- not just ref/. Open items live in CLAUDE.md,
     tools/README.md and test/README.md too. ⛔ A ⬜ in a .pd or .sh comment is

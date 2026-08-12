@@ -49,7 +49,7 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **What is being BUILT next** — one scoped plan | [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
+| **What is being BUILT next** — three scoped plans | [plan-v03.5.0.md](plan-v03.5.0.md) the venue network · [plan-v03.5.1.md](plan-v03.5.1.md) diagnostics · [plan-v03.5.2.md](plan-v03.5.2.md) the debug patch |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
@@ -178,9 +178,15 @@ plan, that section should have left the file.
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
 is where everything unscoped waits.
 
-**One scoped plan stands between here and v0.4** — [plan-v03.5.md](plan-v03.5.md), the venue kit —
-and it is written to be handed to a fresh agent cold, carrying its own reading list. ⛔ **Every ⬜ in
-the repository is closed by it, or is one of the items that genuinely need the sound to exist.**
+**Three scoped plans stand between here and v0.4**, each written to be handed to a fresh agent cold
+and carrying its own reading list — [plan-v03.5.0.md](plan-v03.5.0.md) the venue network,
+[plan-v03.5.1.md](plan-v03.5.1.md) diagnostics inside the instrument, and
+[plan-v03.5.2.md](plan-v03.5.2.md) the standalone debug patch. **They were one plan, and the split is
+by what the work NEEDS**: 5.0 is a router, a front panel and a phone with almost no Pd; 5.1 is Mac
+work; 5.2 is a whole second patch. ⚠️ **Run 5.1 before 5.0's rig session** — it stales every bench
+verdict that depends on `g_oled.pd` or `u_net.pd`, so a session run first is wasted.
+⛔ **Every ⬜ in the repository is closed by one of the three, or is one of the items that genuinely
+need the sound to exist.**
 
 ✅ **Plan 0, the test runner, the v0.3.2 cleanup, v0.3.3 coverage, hot-swap, the bench session and
 plan-v0.3.4.1 are all gone** — the measurement session ran on 2026-08-08, `test/run.sh` landed on
@@ -189,8 +195,9 @@ plan-v0.3.4.1 are all gone** — the measurement session ran on 2026-08-08, `tes
 The facts are on `ref/` pages and the reasoning is in `git log`.
 
 ⛔ **`check_closers` in `docs-check.py` is written but gated behind `--strict`**, because most
-remaining ⬜ are owned by the three plans above. **plan-v03.5.md's landing checklist removes the
-flag** — see it before adding a ⬜ anywhere.
+remaining ⬜ are owned by the three plans above. **[plan-v03.5.2.md](plan-v03.5.2.md)'s landing
+checklist removes the flag**, as the last of the three — ⚠️ **and it is not only a flag deletion**,
+so read that checklist before adding a ⬜ anywhere.
 
 **A fact appears once in full; everywhere else it is a citation.** `test/gate/docs-check.py` enforces
 what can be enforced — run it rather than trying to remember it:

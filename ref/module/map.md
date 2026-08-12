@@ -36,7 +36,7 @@ mode-1 slider-1  volca-cc 41
 |-------|----|----------|------|
 | `<mode>` | The **second** atom of the `mode` bus message — `mode-1`, not `compose mode-1`. The class is `u_err`'s business | verified | — |
 | `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `sp-hit` | verified | — |
-| `<dest>` | One of the **eleven** below, and **only** those | verified | 229 |
+| `<dest>` | One of the **twelve** below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
 
 **A row with any other width is a lint failure**, not a runtime one — `map-assert.py` reads the
@@ -59,6 +59,7 @@ file and rejects it before Pd ever does.
 | `404-pad` | The pad number | Velocity | verified | — |
 | `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key | verified | 293 |
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
+| `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **No shipped row names it yet** — see *Open* | verified | 301 |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.

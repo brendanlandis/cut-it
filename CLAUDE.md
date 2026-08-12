@@ -49,7 +49,7 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **What is being BUILT next** — two scoped plans | [plan-v03.5.1.md](plan-v03.5.1.md) diagnostics inside the instrument · [plan-v03.5.2.md](plan-v03.5.2.md) the standalone debug patch |
+| **What is being BUILT next** — two scoped plans | [plan-v03.5.1.md](plan-v03.5.1.md) the phone becomes interactive · [plan-v03.5.2.md](plan-v03.5.2.md) the standalone debug patch |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
@@ -106,7 +106,7 @@ under `ref/`. Nothing in either is deployed.
 ⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty gates and 580 checks**, and what each one protects is in
+**Twenty gates and 607 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.
@@ -179,10 +179,10 @@ plan, that section should have left the file.
 is where everything unscoped waits.
 
 **Two scoped plans stand between here and v0.4**, each written to be handed to a fresh agent cold and
-carrying its own reading list — [plan-v03.5.1.md](plan-v03.5.1.md) diagnostics inside the instrument,
+carrying its own reading list — [plan-v03.5.1.md](plan-v03.5.1.md) the phone becomes interactive,
 and [plan-v03.5.2.md](plan-v03.5.2.md) the standalone debug patch. **They were one plan with a third
-sibling, and the split is by what the work NEEDS**: 5.1 is Mac work, 5.2 is a whole second patch.
-⚠️ **Run 5.1 before any bench session** — it stales every verdict that depends on `g_oled.pd` or
+sibling, and the split is by what the work NEEDS**: 5.1 needs the phone in hand, 5.2 is a whole
+second patch. ⚠️ **Run 5.1 before any bench session** — it stales every verdict that depends on
 `u_net.pd`, so a session run first is wasted.
 ⛔ **Every remaining ⬜ is closed by one of the two, names no plan on purpose, or is one of the items
 that genuinely need the sound to exist.**

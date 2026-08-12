@@ -33,18 +33,31 @@ no loop.
 | `expect <src> <kind>` | every `m_`, once at `loadbang` | self-registration | verified | 269 |
 | `tick` | `u_present`, on the metro | age your clock | verified | 269 |
 | `lost <src>` / `back <src>` | a `c_presence`, on the transition only | the change | verified | 269 |
-| `seen <src>` | a **passive** `m_`, whenever it decodes anything | last-heard | verified | 269 |
+| `seen <src>` | a **passive** `m_` on every decode, and an **active** one **once** — its device's first ever answer | last-heard | verified | 269, 302 |
 
 ⚠️ **The poll is an outlet, not a bus message.** `c_presence`'s first outlet bangs *"send your
 inquiry now"* straight into the `m_` that contains it. The plan that produced this file put `poll
 <src>` on the bus; a cord inside one abstraction is strictly cheaper and keeps the rule that **only
 the `m_` may talk to its device** structural instead of advisory.
 
-⚠️ **`seen` is a cord for `active` and a bus message for `passive`, and the asymmetry is deliberate.**
-An active device's liveness is consumed by its own `c_presence` two boxes away, so publishing it
-would be traffic with no reader. A passive layer holds no `c_presence` at all, so the bus is the only
-place its last-heard can go. Nothing reads `seen` today — [plan-v03.5.1.md](../../plan-v03.5.1.md)'s
-diagnostic screen is what it exists for.
+⚠️ **`seen` means different things on the two sides, and the asymmetry is deliberate.** An active
+device's liveness is consumed by its own `c_presence` two boxes away — a **cord**, not the bus — so
+publishing it every two seconds forever would be traffic with a reader that does not need it. A
+passive layer holds no `c_presence` at all, so the bus is the only place its last-heard can go, and
+it publishes on **every** decode.
+
+⛔ **What changed is that an active layer now publishes `seen <src>` too, EXACTLY ONCE**, the first
+time its device ever answers — item 302. **That one message is the only thing on the bus that
+separates a device which has GONE from one that was NEVER SEEN**, because `lost` is published
+unarmed and the two are otherwise byte-identical. It is the mildest possible way to make the
+selector uniform: once per device per session, no new polling, no rate concern.
+
+**The alternative was reading the `err` bus.** `warn <src> device-lost` fires only for a device that
+was seen and then lost — item 276, verified — so the screen could have inferred the same bit with no
+change here at all. **It was rejected because it couples a display to another module's message
+TEXT**: reword the warning and the screen silently stops telling missing from never-seen, with
+nothing failing anywhere. `presence-assert.sh` asserts the count is **exactly one** per source, and
+that a source which has answered nothing has published none.
 
 ### The three kinds, and every layer declares one
 
@@ -244,6 +257,21 @@ last-heard clock on `m_organelle` would therefore run out a few seconds into **e
 layer can offer is *last heard*; what it cannot offer is the difference between unplugged and
 untouched, and no amount of code changes that — the operator supplies it.
 
+### A passive layer's `seen` has to come off EVERY source it has
+
+⛔ `m_organelle` publishes `seen m_organelle` from its fan-in, and from **item 242 until item 303**
+the four knobs did not go through it. Item 242 took the knobs off `disp` and rewired them straight
+to `param`; the presence publish went with them, silently. `og-aux` and the 25 keys kept theirs.
+
+**That is the worst possible source to lose**, because ✅ **mother pushes the knobs once at load and
+then says nothing** — item 237. The one thing the Organelle ever sends unprompted was the one thing
+that no longer said the Organelle was there, so the layer read as never-heard on a device where it
+had in fact spoken. **Nothing could see it until there was a screen that drew last-heard.**
+
+**Fix:** the four knobs fan in to a `[t a b]` of their own, `b` before `a`, so `seen` goes out ahead
+of the value exactly as it does for `og-aux`. ⚠️ **There are two fan-ins in that file now, not one**,
+and the comment that said "five sources converge on one trigger" was false for as long as the bug was.
+
 ### The warn is armed and the recovery is not
 
 A device that has never answered since load is **absent**, not lost — and absent is the normal state
@@ -347,6 +375,6 @@ top of this page. Both were plan-v0.3.4's, and that plan is gone.
   alone**: it registers `none`, so pulling its interface loses nothing, forks nothing and recovers
   nothing, and both its steps unplug the interface and lean on a detectable device beside it.
 
-⬜ **A passive layer's last-heard is published and nothing reads it.** See
-  [plan-v04.md](../../plan-v04.md) §3 and [plan-v03.5.1.md](../../plan-v03.5.1.md), which is the
-  consumer. `seen m_organelle` goes on the bus for a screen that does not exist yet.
+✅ **A passive layer's last-heard is published AND READ.** `g_oled`'s diag layer is the consumer
+  `seen` was written for — item 301, on [display.md](display.md). Building the reader is also what
+  found item 303 above, which had made the passive publish silent for the one source that matters.

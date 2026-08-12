@@ -16,8 +16,8 @@ rather than drawing** — the Phase 4 plan had it writing to the ALERT buffer it
 two disagreed this rule won.
 
 Two of the surfaces run the **same arbiter shape** — `home < modal < alert`, each layer with a
-priority and a time to live, one winner per frame. `g_grid` runs three layers instead of four and
-deviates in exactly one interesting way: its `home` is a **composite**.
+priority and a time to live, one winner per frame. `g_oled` runs five of them and `g_grid` three,
+and `g_grid` deviates in exactly one interesting way: its `home` is a **composite**.
 
 **The fourth surface, the phone, is a mirror rather than a surface with a vocabulary**, and that is
 why it cost nothing to add.
@@ -39,7 +39,7 @@ permanently unreachable** — no SysEx in either direction.
 
 ### The `disp` message
 
-**`<name> <value> [unit]`, with the name as the SELECTOR.** `g_oled` routes eight selectors;
+**`<name> <value> [unit]`, with the name as the SELECTOR.** `g_oled` routes nine selectors;
 **everything else is a parameter by definition** — there is no registration step, so a new control
 needs no change to any display.
 
@@ -49,6 +49,7 @@ needs no change to any display.
 | `status` | One symbol, the footer status | home | verified | — |
 | `modal` | One symbol — **sticky** until cleared | modal | verified | — |
 | `modal-off` | Nothing | clears modal | verified | — |
+| `diag` | Nothing — it is a summons, not a value | diag | verified | 301 |
 | `alert` | `<level> <source> <text>` — **only `u_err` sends this** | alert | verified | — |
 | `led` | One symbol, a **state** — `off` `stopped` `running` `panic` | *not the OLED at all* | verified | — |
 | `grid` | The Launchpad's own vocabulary — `grid modal <palette>`, `grid modal-off` | *not the OLED at all* | verified | — |
@@ -58,14 +59,15 @@ needs no change to any display.
 not wrap, 16px fits about ten characters across 128 px, and a message box has a fixed typetag.
 Write `launchpad-silent`, not `launchpad silent`.
 
-### `g_oled` — four layers, one winner per frame
+### `g_oled` — five layers, one winner per frame
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
 | `home` | 0 | Always active | Never | Two meters, 8px readouts, gate marks, footer | verified | — |
 | `param` | 1 | Any unreserved `disp` selector | `[del 1200]` | **Up to five rows that hold their positions** | verified | — |
 | `modal` | 2 | `disp` → `modal <word>` | `modal-off`, or a 30 s safety TTL | Word 16px + shrunk meters | verified | — |
-| `alert` | 3 | `disp` → `alert …`, from `u_err` only | 2 s `warn`, 4 s `fail` | Border, level 16px, source and text 8px | verified | — |
+| `diag` | 3 | `disp` → `diag` | `[del 8000]` | **One 8px row per device, and the shrunk meters** | verified | 301 |
+| `alert` | 4 | `disp` → `alert …`, from `u_err` only | 2 s `warn`, 4 s `fail` | Border, level 16px, source and text 8px | verified | — |
 
 **Priority is a `[select 1]` cascade rather than arithmetic**, so it reads top to bottom in exactly
 priority order. **TTL is one retriggered `[delay]` per layer**, so a moving control keeps `param`
@@ -120,6 +122,27 @@ raise each layout in turn. **Even the 8px five-row case passes.**
 ⛔ **So the two-mover layout's weakness is CLIPPING, not size.** 16px fits about ten characters
 across 128 px and silently truncates — `slider-1 43` becomes `slider-1 4`. That is the one to design
 against, and it would not be helped by a larger font.
+
+### The diag layer — what the rig is doing, on the instrument
+
+**When a controller stops working mid-set, this is what says which one.** The presence layer has
+always known; all it surfaced was a two-second `warn`. `diag` is the question *"what is the rig's
+state right now"* asked deliberately, and it reuses the 3–5-mover geometry exactly: **8px rows at
+y = 0, 9, 18, 27, 36**, one per source, plus the shrunk meter strip.
+
+| | Evidence | Item |
+|---|----------|------|
+| One row per source on the presence bus, drawn as `<src> <state>`. The roster is whatever `expect` published at load — today **five** | verified | 301 |
+| ⛔ **`<src>` is the ABSTRACTION's name** — `m_nano`, never "nanoKONTROL". `g_oled` sits below the `m_` boundary, so this is the only name it has. See [presence.md](presence.md) | verified | 301 |
+| Four states: `here` · `gone` · `never` · `unchecked`. **`m_volca` registers `none` and reads `unchecked`** — it is never polled and can never be lost, so drawing it as healthy would be a claim nothing has tested | verified | 301 |
+| ⛔ **The loop is bounded at FIVE rows, not at the roster size.** A sixth would draw at y=45 and run into the meter strip at y=48 | verified | 301 |
+| ⚠️ **`m_launchpad unchecked` is 21 characters** — the whole width of an 8px row. A longer state word or a longer abstraction name clips silently | verified | 301 |
+| Summoned by `disp` → `diag`, which carries nothing. Cleared by a retriggered `[del 8000]`, so pressing again while it is up buys another eight seconds | verified | 301 |
+| The state lives in a `[text define $0-diag]` as `<src> <code>` — **numbers, not words**, so every transition is a comparison and the words are chosen once, where they are drawn | verified | 301 |
+
+⚠️ **Presence is *last heard*, not *alive*, and the labels are chosen to say so.** A nanoKONTROL
+nobody has touched reads `here` and one on the floor reads `here` until the poll misses three times.
+No amount of code changes that — the operator supplies it.
 
 ### `g_grid` — the same shape, one link shorter
 
@@ -189,6 +212,17 @@ branch falls out of the reject and is drawn as a nonsense parameter row. `led` h
 
 **Fix:** when adding a selector, visit every consumer with a fallthrough — today `g_oled` and
 `u_net`. **A second surface costs one route argument in the first one.** Cheap, but not free.
+
+⛔ **And APPEND it, because the reject renumbers.** An argument slotted in beside the other layer
+names shifts every outlet after it — **including the reject**, which in both files is the entire
+parameter path. `diag` went on the end of both boxes and both rejects moved from outlet 8 to 9.
+
+⛔ **A selector carrying NO arguments does not leak, and that makes the trap worse rather than
+better.** `diag` alone reaches `u_net`'s reject as two atoms after the mandatory dash, dies on
+`[list split 3]`'s too-short outlet, and never reaches the wire — so removing its route argument
+altogether was measured against `phone-assert.sh`'s reserved window and **every datagram check still
+passed.** The property is asserted where it lives instead: the gate parses both `route` boxes and
+requires them to carry exactly the same selectors.
 
 ### `text get` errors if you ask for more fields than a line holds
 
@@ -306,6 +340,21 @@ two-line price is the cost of a surface with its own vocabulary, not the cost of
 consumer that *mirrors* the bus is free, and that is the cheaper shape when the thing being added is
 a readout rather than a device with commands of its own.
 
+### diag goes above `modal` and below `alert`, and both halves are load-bearing
+
+⛔ **Above `modal`, because a modal is STICKY** — cleared by `modal-off` or by a 30 s safety TTL. A
+diag underneath a live modal would draw nothing at all, **which looks exactly like a dead patch**,
+and the one moment you reach for a diagnostic is the moment the instrument is already misbehaving.
+
+⛔ **Below `alert`, because a diagnostic that covers an alert is worse than no diagnostic.** That is
+the direction a positive test cannot check: a layer that always wins draws its rows in every window
+you look at. `oled-assert.sh` raises an alert over a live diag and asserts the roster is **gone**,
+then that it comes back when the alert's TTL fires and diag's own is still running.
+
+**It is a summons on a TTL rather than a sticky layer**, and that is the same argument as
+`g_grid`'s panic paint: a readout you asked for should go away on its own, because the failure mode
+of *stuck* is a screen you cannot get back on a device with no console.
+
 ### One bus for every surface, so the log reads as one sequence
 
 The dev panel's screen log records all four interleaved, stamped with **one** frame number — so an
@@ -336,7 +385,22 @@ does not change:
   design for a saving that does not matter is the wrong trade**, and it would make the alert the one
   layer that behaves differently from the other three.
 
-## Open
+### The phone stays a MIRROR, and gets no arbiter — decided
 
-- ⬜ **Nothing arbitrates the phone.** `u_net` mirrors `disp` and the phone decides what to show, so
-  the priority model stops at the Organelle. See [plan-v04.md](../../plan-v04.md) §3.
+**`u_net` subscribes to `disp` and forwards; the phone decides what to show.** The priority model
+therefore stops at the Organelle, and that is the answer rather than a gap.
+
+**An arbiter exists to resolve scarcity, and the phone has none.** 128×64 pixels can show one thing
+at a time, which is the whole reason `g_oled` has a cascade; the phone has a full screen and gives
+every OSC address **its own row**, so parameter, status, heartbeat and alert are all visible at once
+and none of them displaces another. Ordering them would be arbitration with nothing to arbitrate.
+
+⚠️ **The diag layer sharpens this rather than weakening it.** It is the first `disp` selector that is
+matched in `u_net` and deliberately **left unconnected** — the roster is a five-row screen for a
+128-pixel display, and a phone that wanted the same information would ask the presence bus directly
+rather than mirror a layout built for the OLED.
+
+**What would reopen it** is the phone gaining a vocabulary of its own — a screen it draws rather than
+mirrors, or state it owns. That is the case this decision does not cover.
+
+## Open

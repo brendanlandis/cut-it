@@ -13,8 +13,15 @@ the `g_` arbiters but **owns no selector on it**, so adding it cost `g_oled`'s r
 coalesces per name at 20 Hz with a guaranteed trailing edge, holds the last alert as *state* and
 repeats it, and rebuilds its own socket — which a phone leaving the network destroys outright.
 
-**Status display, diagnostics and remote console — not performance control.** UDP over WiFi arrives
-unevenly, visibly so in the heartbeat counter. Fine for a readout, unacceptable for note timing.
+**The link runs both ways.** Outbound it carries four addresses — parameters, status, a heartbeat and
+a held alert. Inbound it takes **a closed vocabulary of three diagnostic commands**, acknowledges
+each one, and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
+the heartbeat counter and measured under *Broadcast* below; that is the evidence anything
+time-critical would have to answer to.
+
+**The one decision this page turns on: the inbound vocabulary is closed, and the closure is the
+feature.** An inbound socket is an attack surface on a shared network, and a set small enough to read
+in one line is what makes the first one safe to reason about.
 
 ## Facts
 
@@ -37,16 +44,51 @@ changes** — the Organelle is `192.168.12.1` and hands the phone `192.168.12.10
 | 9000 | **Do not use for OSC** — it is PdParty's WebDAV server (`GCDWebDAVServer`) | verified | — |
 | 4001–4003 | **Do not use** — they belong to `mother` | verified | — |
 | 8000 | PdParty's OSC receive | verified | — |
-| 9001 | The Organelle's OSC receive | verified | — |
+| 9001 | The Organelle's OSC receive. `u_root` passes it to `u_net` as arg 3 | verified | — |
+| 9002 | **The Mac's**, so `main-dev.pd` and a suite run cannot fight over one socket | verified | 307 |
+
+⛔ **PdParty's OSC *send* host and port have to be set to the Organelle before any button does
+anything**, and nothing on either end says so when they are not. It is the one piece of phone-side
+configuration the scene cannot carry.
 
 ### The wire format
 
 ```
+Organelle -> phone
 /cutit/param   <name> <value> <unit>              coalesced per NAME at 20 Hz
 /cutit/status  <symbol>                           coalesced, one slot
 /cutit/hb      <counter>                          every 500 ms
 /cutit/alert   <count> <level> <source> <text>    every 500 ms, always present
+/cutit/ack     <command> [<device>]               once per command accepted
+
+phone -> Organelle
+/cutit         <command> [<device>]               port 9001, anything else dropped
 ```
+
+⚠️ **The command travels as ARGUMENTS of `/cutit`, not as address components.** `[oscparse]`
+flattens `/cutit/re-wire` and `/cutit` carrying the string `re-wire` to the same list, so this is
+simply the cheaper of the two to build — one `[oscformat cutit]` on the phone rather than one per
+button.
+
+### The inbound vocabulary
+
+<!-- check: pd-route "Cut It/u_net.pd" re-wire -->
+
+| Command | Does | Evidence | Item |
+|---------|------|----------|------|
+| `re-wire` | Publishes `re-wire` on the `presence` bus, and `u_present` forks `wire.sh` — see [presence.md](../module/presence.md) | verified | 306 |
+| `clear-alert` | Writes the empty alert to `u_net`'s held store, so the 2 Hz repeat goes back to `none` / `-` | verified | 306 |
+| `test-note` | Fires one probe at a sounding device, out a cord. Takes the device below | verified | 306 |
+
+<!-- check: pd-route "Cut It/u_net.pd" m_volca -->
+
+| Device | Probe | Evidence | Item |
+|--------|-------|----------|------|
+| `m_volca` | `notes 60 100 200` — middle C, 200 ms, released by `makenote` | verified | 306 |
+| `m_404` | `pad 1 100` — bank A pad 1 | verified | 306 |
+
+**The two sounding devices are the whole set**, and it is `u_map`'s: the Launchpad and the
+nanoKONTROL are inputs. ⛔ **A device name off that list is dropped exactly like an unknown command.**
 
 | Property | Value | Evidence | Item |
 |----------|-------|----------|------|
@@ -226,6 +268,42 @@ phone or the device during a stage session.
 
 **Fix:** stage everything beforehand — the checklist is on [wifi.md](../wifi.md).
 
+### `[route 404]` matches a float and can never match the device name
+
+⛔ Pd parses a bare `404` in an object box as a **number**, and `[oscparse]` hands a string argument
+over as a **symbol** — so `[route volca 404]` rejects `test-note 404` while accepting `test-note
+volca`. Both spellings driven over a real socket, item 308. The failure is silent and looks exactly
+like a broken route.
+
+**Fix:** the devices are `m_volca` and `m_404`, which are symbols whatever else is true. That is also
+the name the `presence` bus and `err`'s `source` field already carry across the `m_` boundary, so
+nothing new enters the world for it.
+
+### A bng RE-SENDS when it receives, so a button lit by its own ack loops
+
+⛔ An iemgui `bng` whose send and receive names differ fires **both its outlet and its send name**
+when a bang arrives on its receive name — measured in 0.49, item 309. Feeding the acknowledgement
+back into the button that sent the command therefore sends the command again, which produces another
+acknowledgement, **for ever, at network speed.**
+
+**Fix:** the button and its lamp are two objects. The button sends on `-press` and receives on `-nc`,
+which nothing ever writes; the lamp receives on `-ack` and sends to `-lamp`, which nothing reads.
+Both carry both names because PdParty renders neither without them. `phone-assert.sh` asserts that no
+`bng` in the scene both transmits and is lit.
+
+### Only one process on a machine can hold the inbound port
+
+⛔ A second bind of the same UDP port prints `error: bind: Address already in use (48)` — measured on
+macOS in 0.49, item 307. That is a real line on stdout, and **stdout is the oracle** both
+`tools/deploy.sh` and the suite's silence gate use, so a patch that bound at `loadbang` would turn
+every run red whenever a copy was already open in Pd.
+
+**Fix:** two things, each independently sufficient for its own case. The `listen` is armed at
+**2000 ms**, past the ~735 ms at which the deploy check quits, so neither it nor the syntax gate ever
+binds at all. And `main-dev.pd` takes **9002** where `main.pd` takes 9001, so a long-running gate
+cannot collide with the dev patch. ⚠️ **The phone's buttons therefore drive the device, not the Mac**
+— point PdParty at 9002 if you want them to reach `main-dev.pd`.
+
 ## Design
 
 ### Send state, never events
@@ -288,6 +366,60 @@ distinguishing *idle* from *dead*.
 
 Fire and forget over `[netsend -u]`. Phone off, phone crashed, WiFi gone — **the instrument plays
 identically.**
+
+### The inbound vocabulary is closed, and the closure is the design
+
+Three commands and two device names, every one of them a **literal argument on a `route` box you can
+read**, with everything else falling out of an unconnected reject. That is the same allowlist guard
+`u_map` uses for its destinations and it is here for the same reason: the set of things a datagram
+can reach stays the set of boxes you can read.
+
+⚠️ **`[netreceive]` in 0.49 cannot tell you who sent a datagram.** Checked before designing around
+it — it is why `phone-ip.sh` exists, and it does not change now the link is bidirectional. **Nothing
+here may be built on a sender identity that is not available.**
+
+⛔ **A fourth command was considered and rejected: a full status dump.** Parameters and status re-send
+every two seconds and the alert repeats at 2 Hz, so a phone joining late repopulates on its own in
+about two seconds — item 121. It would have been a button that does what waiting does.
+
+**What this is not** is a rule about what the phone may ever do. Brendan's call, 2026-08-11: it may
+well drive something musical one day. The two properties recorded above — how unevenly the link
+delivers, and that the instrument plays identically without it — are what such a thing would have to
+answer to, not a veto.
+
+### `test-note` is the one command that answers *is it dead*
+
+Everything else the instrument knows about a device is **last-heard** — the `diag` roster, the
+`device-lost` warning, the whole presence bus. All of it answers *has it stopped talking to me*,
+which is a different question, and for the Volca it cannot be asked at all: it transmits nothing, so
+there is no evidence of its presence for any amount of code to find.
+
+⚠️ **Prove the probe before believing the silence.** Hearing the device is the other half, and it is
+the half only a person standing in the room can supply.
+
+### The lamp flashes on the answer, not on the finger
+
+Every accepted command echoes `/cutit/ack <command>`, and that is what lights the lamp beside the
+button. A button that lights when pressed tells you the one thing never in doubt.
+
+**Two of the three prove themselves anyway** — the alert row empties, the note sounds. `re-wire` has
+nothing whatever to show for itself, and it is the reason the ack exists at all.
+
+### What `re-wire` is actually for, now that the heartbeat exists
+
+⚠️ **It is NOT "the only way back once the bound is spent", and that reading is out of date.** The
+re-wire heartbeat hashes the ALSA client names every ~16 s and is **unbounded** — see
+[presence.md](../module/presence.md) — so a device that is unplugged and plugged back in is
+recovered on its own whether the eight scheduled attempts are spent or not. Item 310.
+
+What the button covers is the case the heartbeat cannot see: **the client names are unchanged and the
+subscriptions are still wrong.** That is mother's own autoconnect landing a late device on the
+Launchpad's channel block, a bystander whose subscription dipped, or simply not wanting to wait out
+the interval. ⚠️ **So a bench step of the form "unplug it, spend the bound, press the button" cannot
+attribute anything** — the heartbeat gets there first.
+
+`presence-assert.sh` is what proves the button forks at all, in the one window where nothing is
+scheduled.
 
 ### The name is the parameter, not the control
 

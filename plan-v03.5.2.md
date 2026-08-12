@@ -14,11 +14,10 @@ ownership of `oscOut`**. A standalone patch is not bound by that — so it gets 
 four knobs, the aux button and 25 keys, where the instrument has everything but the encoder.
 **That is the difference between a menu of one screen and a menu you can navigate.**
 
-**One sibling plan is still open** — [plan-v03.5.1.md](plan-v03.5.1.md), the phone. This one is
-independent of it and **stales no bench**, because it touches nothing under `Cut It/`.
+✅ **The sibling plan has landed** — the phone became interactive on 2026-08-12, and its plan file is
+gone. This one **stales no bench**, because it touches nothing under `Cut It/`.
 
-⛔ **This one must land LAST, because it carries the batch's closing chore** — see *Done means* #5.
-It is the only ordering constraint between them.
+⛔ **This one carries the batch's closing chore** — see *Done means* #5.
 
 ---
 

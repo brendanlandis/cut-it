@@ -162,7 +162,7 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 | `err` | `<level> <source> <text>`, level ∈ `warn` `fail` | any → `u_err` |
 | `disp` | display requests: `<name> <value> [unit]` | any → `g_oled`, `g_led`, `g_grid`, `u_net` |
 | `state` | persistence, **three selectors** — see below | any ↔ `u_state` |
-| `presence` | device presence, **four selectors** — see below | any ↔ `u_present` |
+| `presence` | device presence, **six selectors** — see below | any ↔ `u_present` |
 
 **Four of these are request buses, not publications.** `tempo`, `start`/`stop`, `mode` and
 `param` are written by whoever has something to say and *consumed* by one owner, exactly as `err`
@@ -217,10 +217,12 @@ The message table, the two stores, the file format and the rest of the traps are
 
 ### `presence` — the device-presence bus
 
-**One name, four selectors, disjoint per side**, the same shape as `state` and for the same reason.
+**One name, six selectors, disjoint per side**, the same shape as `state` and for the same reason.
 An `m_` layer registers itself once at load with `expect <src> <kind>`; `u_present` broadcasts
 `tick`; a `c_presence` inside the `m_` answers with `lost <src>` or `back <src>` on the transition
-only. A **passive** layer — one that cannot be polled — publishes `seen <src>` instead.
+only. A **passive** layer — one that cannot be polled — publishes `seen <src>` instead. **The sixth
+is `re-wire`**, the phone's button, and it is the only selector written by a file that owns no
+device — see [phone.md](device/phone.md).
 
 **Self-registration is what makes it extensible**: an `m_` written long after `u_present` is covered
 with no change to `u_present`, exactly as a `state` contributor is.

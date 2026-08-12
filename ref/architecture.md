@@ -44,8 +44,10 @@ file decides what that means; and nothing below that file knows what hardware ex
        ┌───────────┴───────────┐
        │  CORDS, not a bus     │                   ← output devices are TOLD
     m_404                  m_volca                    what to play. No bus
-    ch 33-42               ch 49                      carries that.
-    pad <n> <vel>          notes/cc/program
+    ch 33-42               ch 49                      carries that. u_net has
+    pad <n> <vel>          notes/cc/program           a cord to each too, for
+       ↑                       ↑                      the phone's test note.
+       └────── u_net ──────────┘
                    │
             (v0.4: e_chop, e_pitch, e_trem, e_verb)
                    │
@@ -68,14 +70,20 @@ file decides what that means; and nothing below that file knows what hardware ex
   [presence.md](module/presence.md).
 
 **The layout of `u_root`'s canvas is this diagram.** Left is the `m_` layer, device by device; middle
-is the buses and the map; right is the display owners. **The only wires on that canvas come out of
-`u_init`** — to `m_launchpad` and to `u_state` — because the boot *order* is `u_init`'s while the
-*action* belongs to the file at the other end. Everything else talks on the allowlisted buses.
+is the buses and the map; right is the display owners. **Where a file has cords, the cords decide
+where it goes** — which is why `m_volca` and `m_404` sit under `u_map` rather than in the `m_`
+column. Everything without cords talks on the allowlisted buses alone.
+
+**Four kinds of cord exist on that canvas, and each one is a seam worth seeing.** `u_init` reaches
+`m_launchpad` and `u_state`, because the boot *order* is `u_init`'s while the *action* belongs to the
+file at the other end. `u_map` and `u_net` each reach the two output devices, because no bare global
+name carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`. And `c_clock`
+feeds `g_grid`'s beat row.
 
 ## Creation arguments — the contract between the two entry points
 
-`main.pd` and `main-dev.pd` differ in exactly one thing, and every other difference between the Mac
-and the device is absorbed by these five arguments to `u_root`.
+`main.pd` and `main-dev.pd` differ in exactly two things, and every other difference between the Mac
+and the device is absorbed by these six arguments to `u_root`.
 
 | # | Is | Device | Mac |
 |---|---|---|---|
@@ -84,16 +92,23 @@ and the device is absorbed by these five arguments to `u_root`.
 | 3 | **`u_state`'s data directory** — absolute, no trailing slash | `/sdcard/cut-it-state` | `/tmp` |
 | 4 | Pd channel for the **SP-404**'s channel 1 | `33` | " |
 | 5 | Pd channel for the **Volca**'s channel 1 | `49` | " |
+| 6 | **`u_net`'s inbound UDP port** | `9001` | `9002` |
 
 **A Pd input slot maps to channels `(n-1)*16+1` upward**, so slot 2 begins at 17 and slot 3 at 33.
 On the device that ordering comes from `/root/.pdsettings`; set the Mac's MIDI inputs to the same
 order — Launchpad first, nano second — and both entry points pass the same two numbers, which is the
 point of doing it that way round.
 
-⛔ **Argument 3 is the one genuine platform difference, and it is not an oversight.** There is no
+⛔ **Argument 3 is a genuine platform difference, and it is not an oversight.** There is no
 `/sdcard` on a Mac. The device path survives `tools/deploy.sh`, `--clean` and a power cycle, which
 the patch folder does not — **the instrument's data is deliberately outside the code**. See
 [state.md](module/state.md).
+
+⛔ **Argument 6 differs for a different reason: contention, not platform.** Only one process on a
+machine can hold a UDP port, and `main-dev.pd` is open in Pd while `./test/run.sh` loads it again —
+so one number for both would print `bind: Address already in use` and fail the silence gate on every
+suite run. ⚠️ **It also means the phone's buttons drive the device rather than the Mac.** See
+[phone.md](device/phone.md).
 
 ⛔ **Pd 0.49 does not warn about a missing or extra creation argument, and positional arguments
 cannot be skipped.** A wrong count loads in perfect silence, so a clean syntax check proves nothing

@@ -270,7 +270,7 @@ the phone side and is not an Organelle patch at all.
 | `osc-bridge/` | Bidirectional OSC between Organelle and an iPhone running PdParty. Sends a heartbeat and `knob1`; draws whatever arrives on `/cutit/fader` big on the OLED. |
 | `status-display/` | The performance status protocol: four knobs sending **named parameters** (`chop-size`, `grain`, `speed`, `drunk`) plus a heartbeat. |
 | `audio-probe/` | `env~` levels for `adc~ 1` and `adc~ 2` drawn large on the OLED. Used to verify the TRS input split; still the quickest way to check what is arriving at the inputs. |
-| `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection. **Not** an Organelle patch: deploy over WebDAV with `curl -T http://<phone>:9000/CutItRemote/_main.pd`. |
+| `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection, and **four buttons** that send back. **Not** an Organelle patch: deploy over WebDAV with `curl -T http://<phone>:9000/CutItRemote/_main.pd`. ⚠️ The WebDAV server is not running just because PdParty is — `nc -z <phone> 9000` first. And PdParty's OSC **send** host and port have to point at the Organelle or every button is silent. |
 
 Findings from all of them are written up in [../ref/module/display.md](../ref/module/display.md).
 

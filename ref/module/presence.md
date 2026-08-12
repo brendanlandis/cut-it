@@ -25,8 +25,9 @@ downstream of an `m_` learns which device it is talking to.
 
 ### The bus
 
-C-2's allowlist gained `presence` for this — one name, five selectors, disjoint by side so there is
-no loop.
+C-2's allowlist gained `presence` for this — one name, **six** selectors, disjoint by side so
+there is no loop. Five are the `m_` layers' and `u_present`'s own; the sixth is the phone's
+button, and it is the only one written by a file that owns no device.
 
 | Selector | Sent by | Means | Evidence | Item |
 |---|---|---|---|---|
@@ -34,6 +35,7 @@ no loop.
 | `tick` | `u_present`, on the metro | age your clock | verified | 269 |
 | `lost <src>` / `back <src>` | a `c_presence`, on the transition only | the change | verified | 269 |
 | `seen <src>` | a **passive** `m_` on every decode, and an **active** one **once** — its device's first ever answer | last-heard | verified | 269, 302 |
+| `re-wire` | `u_net`, when the phone's button is pressed | run `wire.sh` now | verified | 306 |
 
 ⚠️ **The poll is an outlet, not a bus message.** `c_presence`'s first outlet bangs *"send your
 inquiry now"* straight into the `m_` that contains it. The plan that produced this file put `poll
@@ -139,6 +141,7 @@ size 0, Pd `lseek`s, and the read fails outright: `lseek: Invalid argument`, `te
 |---|---|---|---|
 | `info u_present rewire-try` | each of the eight **scheduled** attempts | verified | 289 |
 | `info u_present rewire-last` | the **single trailing** fork, when the last lost device answers | verified | 289 |
+| `info u_present rewire-phone` | the phone's button, once per press — [phone.md](../device/phone.md) | verified | 306 |
 | `fail u_present rewire-gaveup` | once, when the bound is spent | verified | 235 |
 
 ⛔ **A fork nothing records is a repair nobody can attribute.** The attempts had a `[print rewire]`
@@ -152,9 +155,10 @@ say about it — no `BOOT`, no `device-lost`, no `rewire-gaveup`, Pd's pid uncha
 give-up already says `fail`, and eight alerts per episode on a 21-character screen mid-set is noise.
 ✅ Built as `warn` first and `oled-assert.sh` caught it inside one run, drawing over a modal.
 
-⛔ **The two names are separate because both forks converge on one `sh wire.sh` message box.** A
-report tapped below that junction would name every scheduled attempt as the trailing one, and
-telling those two apart is exactly the question item 275 turned on.
+⛔ **The three names are separate because all three forks converge on one `sh wire.sh` message
+box.** A report tapped below that junction would name every scheduled attempt as the trailing one,
+and telling those two apart is exactly the question item 275 turned on. The phone's is the only one a
+person caused, which is the distinction most worth having in a log read afterwards.
 
 Which puts the wall clock at, from load:
 
@@ -357,7 +361,7 @@ presence and it did not move.
 **Surfacing is the `warn` and the `fail`, and nothing else.** ⚠️ A dark grid already means two
 different things — nothing changed, or the watchdog gave up — and only the OLED tells them apart. A
 third ambiguous grid state would make the display less informative, not more. The diagnostic screen
-that reads all of this is [plan-v03.5.1.md](../../plan-v03.5.1.md)'s, deliberately.
+that reads all of this is `g_oled`'s **diag** layer — [display.md](display.md).
 
 ⛔ **This paragraph listed a third cause, "panic handed the surface back", and it had been false
 since item 251.** Panic does not touch the Launchpad's ownership at all now, and since item 296 it

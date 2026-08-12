@@ -38,20 +38,20 @@ were false.
 | `map-assert.sh` | 48 | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
-| `presence-assert.sh` | 39 | `module/presence` |
+| `presence-assert.sh` | 42 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
 | `nano-assert.sh` | 23 | `device/nanokontrol` |
 | `organelle-assert.sh` | 21 | `device/organelle` |
-| `phone-assert.sh` | 30 | `device/phone` |
+| `phone-assert.sh` | 55 | `device/phone` |
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 
-**615 checks.** ⚠️ **Nineteen of the twenty gates print their own `N checks` line and one does
+**643 checks.** ⚠️ **Nineteen of the twenty gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **608**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **636**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
-⚠️ **`presence-assert.sh`'s 39 come from TWO Pd runs and one tally**, which is the only entry here
+⚠️ **`presence-assert.sh`'s 42 come from TWO Pd runs and one tally**, which is the only entry here
 that does. The first run is the schedule at the shipped tick; the second scales `u_present`'s settle
 and tick by ten and leaves its **counts** exactly as shipped, so the eighth re-wire and the give-up
 actually happen — inside nine seconds rather than seventy-two. ⛔ **One analyser reads both
@@ -455,14 +455,23 @@ OUTPUT — edit `state-assert-drive-gen.py`, never the `.pd`.
 ## `phone-assert.sh` — the same idea, and much cheaper
 
 ```sh
-./test/gate/phone-assert.sh            # ~25 s, exits non-zero on any failure
+./test/gate/phone-assert.sh            # ~35 s, exits non-zero on any failure
 ```
 
 **Phase 7's gate needs no scratch copy and rewrites nothing.** `[midiout]` is a built-in class
 with no side channel, which is the whole reason `display-assert.sh` has to swap it for a stand-in
 in a throwaway copy of the patch. **`u_net` already emits to a socket** — so the gate binds
-`127.0.0.1:9995`, instantiates `u_net 127.0.0.1 9995` and reads the real datagrams. `Cut It/` is
-never touched.
+`127.0.0.1:9995`, instantiates `u_net 127.0.0.1 9995 9994` and reads the real datagrams, then sends
+commands *into* 9994 to drive the inbound half. `Cut It/` is never touched.
+
+⛔ **Its strongest half needs no Pd at all.** The phone is the only sender there is, and the scene and
+`u_net` are deployed by two different mechanisms — `tools/deploy.sh` and a WebDAV copy — so their
+spellings can drift a long way apart with nothing failing until somebody is at the rig. The lint
+reads the scene's command message boxes **off the graph** and requires them to equal `u_net`'s route
+arguments exactly. It also mechanises two traps that were prose: every `bng` must carry both a send
+and a receive name, and **no `bng` may both transmit and be lit** — a bng re-sends when it receives,
+so a button lit by its own acknowledgement would ping-pong for ever. See
+[../ref/device/phone.md](../ref/device/phone.md).
 
 | Piece | |
 |---|---|
@@ -759,7 +768,7 @@ Three steps carry the load:
 
 ### `phone-bench.pd` — the phone acceptance run
 
-**Fourteen steps, and the first bench whose subject is not the Organelle** — every `PASS IF`
+**Eighteen steps, and the first bench whose subject is not the Organelle** — every `PASS IF`
 describes what the *phone* shows. **PdParty has to be open on the `CutItRemote` scene before
 step 1**, and step 1 exists to confirm that before anything depends on it.
 
@@ -777,6 +786,13 @@ stopped at rather than one from the middle of the sweep.
 phone answer with an ICMP port-unreachable, which destroys the socket; reopening it must bring the
 display back within about five seconds **with nothing touched on the Organelle**. A link that could
 not recover would be dead for the rest of the set and nothing on the instrument would say so.
+
+**Steps 15–18 are the buttons**, and they were appended rather than slotted in so every number above
+still means what a recorded verdict says it means. Each asserts the one thing no gate can reach: the
+lamp beside the button flashes, the alert row actually empties, and the Volca and the SP-404 make a
+sound. ⛔ **Step 15 carries the precondition that will otherwise waste the session** — PdParty's OSC
+*send* host and port have to be pointed at the Organelle, and until they are every button is silent
+with nothing on either end saying so.
 
 ### `recover-bench.pd` — panic's second tier
 

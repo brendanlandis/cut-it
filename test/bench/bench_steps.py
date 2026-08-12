@@ -718,6 +718,104 @@ STEPS_STATE = [
 ]
 
 
+# ⛔ THIS BENCH IS PAPER, AND IT HAS TO BE. Step 3 holds CC 90, which reloads the
+# patch -- and targets.device launches the bench as a THIRD PATCH inside the
+# instrument's own Pd, so /loadPatch kills the bench along with everything else.
+# A driven bench would end there with every later step stranded. With no actions,
+# no `reload` and only offline predicates the runner launches nothing at all: the
+# person runs these against the real deployed instrument, and the one thing under
+# test cannot take the runner down with it.
+#
+# ⚠️ SO THERE IS NOTHING TO DRIVE AND NOTHING TO DRAIN. `press enter first` and
+# `wait` are meaningless here -- they exist for predicates whose traffic a person
+# makes, and every predicate below reads a FILE.
+#
+# ⛔ STEP 5 LEAVES THE RIG WITH NO PATCH. Step 6 puts it back, and says so in its
+# own `need` and `do` rather than trusting the order to be remembered.
+STEPS_RECOVER = [
+ ('Short press -- panic and nothing more',
+  'PASS IF: Everything sounding stops the instant the button goes down -- not when you let go. The whole Launchpad flashes red and clears itself about a second later. The aux LED is red and the footer reads panic. The patch is still running: the grid comes back and the beat row still walks.',
+  [],
+  {'do': 'Start the transport, play something on the SP-404 so there is a sound to stop, then tap the top left corner button on the Launchpad once and let go straight away.',
+   'need': ['The Launchpad lit and in Programmer Mode.',
+            'Something audible running -- the 404 sequencer is easiest.']}),
+
+ ('Short press -- the Volca stops too',
+  'PASS IF: The Volca stops sequencing. Before this was built its transport never heard anything at all -- it kept running through a panic and the mixer could only mute it.',
+  [],
+  # 📄 KORG'S DOCUMENTATION, NOT A MEASUREMENT. The Volca honours Start/Stop only
+  # when its own MIDI Clock src is Auto; set to Internal it ignores them and a
+  # perfectly correct patch looks broken. That is why the setting is a `need`
+  # rather than something to discover halfway through. ref/device/volca.md.
+  # ⛔ AND THE CLOCK IS STILL NOT SENT THERE. Only the panic STOP reaches port 4
+  # -- the Volca cannot sync to the master tempo and this step does not claim it
+  # can. Item 279, item 295.
+  {'do': 'Set the Volca sequencing on its own, then tap the top left corner button once.',
+   'need': ['The Volca powered and its own sequencer running.',
+            "The Volca's MIDI Clock src set to Auto. Set to Internal it ignores "
+            'Start and Stop entirely and this step cannot pass.']}),
+
+ ('Hold -- the patch reloads and comes back whole',
+  'PASS IF: Silence at once. About two seconds later the screen goes through its boot sequence again and the instrument comes back with every device working -- the Launchpad lit and answering and both output devices reachable. A few seconds in a bordered alert reads warn and then u_map and then recovered. Knob 1 moves the tempo on the first touch with no dead sweep.',
+  [],
+  # ⛔ THIS STEP KILLS ANY BENCH IT IS RUN FROM, which is why this one is paper.
+  # ⚠️ THE ALERT IS LATE AND BRIEF. It is deferred to about 4.5 s after the
+  # reload -- clear of the boot stages, which would bury it -- and it lasts about
+  # two seconds. Watch the screen from the moment the boot sequence ends.
+  # ⛔ THE KNOB IS THE OTHER HALF AND IT IS EASY TO SKIP. After an emergency the
+  # knobs you are holding are the truth, so the reload deliberately does NOT arm
+  # parameter pickup. A knob that needs a sweep to wake up is a failure here even
+  # though it is correct behaviour on an ordinary boot.
+  {'do': 'Hold the top left corner button for a full two seconds and let go. Then watch the screen, and afterwards turn knob 1 a little.',
+   'need': ['A Save done at some point, so knobs.txt exists. Without one '
+            'nothing would be held on an ordinary boot either and the last '
+            'sentence proves nothing.']}),
+
+ ('...and the breadcrumb was consumed',
+  'PASS IF: Cut-it-recover.txt reads none. The instrument wrote it just before the reload and cleared it once it had reported -- so none means the whole cycle completed. Finding the word recover still in there means the report never ran.',
+  [],
+  {'targets': ('device', 'paper'),
+   'check': {'kind': 'file', 'fetch': 'state',
+             'path': 'device-state/cut-it-recover.txt',
+             'contains': 'none'}}),
+
+ ('Break it deliberately -- a reload that cannot land',
+  'PASS IF: Everything goes quiet and then nothing comes back at all. The screen stays dark or frozen and the Launchpad stops answering. That is the failure this is meant to produce.',
+  [],
+  # ⛔ DESIGN FOR THE FAILURE, BECAUSE IT IS WORSE THAN THE FAULT. If the load
+  # does not take there is no patch at all, and a patch cannot report on its own
+  # reload because it is dead by then. The breadcrumb is the only thing that
+  # survives to say an attempt was made -- and the step after this one is where
+  # it gets read.
+  {'do': 'Over ssh run: mv "/sdcard/Patches/!/Cut It" "/sdcard/Patches/!/Cut It away" -- then hold the top left corner button for two seconds.',
+   'need': ['An ssh session to the Organelle already open. The patch is about '
+            'to stop existing, so this is not the moment to go looking for one.',
+            'The root filesystem left alone -- the patch lives on /sdcard and '
+            'needs no remount.']}),
+
+ ('The breadcrumb survives to explain it',
+  'PASS IF: Cut-it-recover.txt still reads recover and a number. Nothing on the instrument could have told you what happened -- it was dead -- so this file is the whole account of it.',
+  [],
+  {'targets': ('device', 'paper'),
+   'check': {'kind': 'file', 'fetch': 'state',
+             'path': 'device-state/cut-it-recover.txt',
+             'contains': 'recover'}}),
+
+ ('Put it back -- and the safe exit still works',
+  'PASS IF: The instrument loads and runs normally again. When you leave it the Launchpad returns to Live Mode -- its pads show a built-in layout and its Setup button responds. A Launchpad still dark and ignoring Setup is the failure.',
+  [],
+  # ⚠️ THROUGH THE MENU OR /loadPatch, NEVER killall pd. quitting comes from
+  # mother rather than from a shell signal, so a killed Pd skips m_launchpad's
+  # safe exit entirely and strands the surface in Programmer Mode -- where the
+  # device's own Settings menu is locked out. tools/lp-live.sh rescues one, but
+  # the point of this step is that it should not be needed. Item 96.
+  # ⛔ THIS STEP RESTORES THE RIG. Step 5 left it with no patch at all, and a
+  # step sets up its own preconditions -- including the ones the step before it
+  # destroyed.
+  {'do': 'Over ssh run: mv "/sdcard/Patches/!/Cut It away" "/sdcard/Patches/!/Cut It" -- then load Cut It from the Organelle menu, let it settle, and leave it by selecting a different patch.',
+   'need': ['The renamed folder from the step before, still renamed.']}),
+]
+
 STEPS_MIDI = [
  ('Restored tempo at boot',
   'PASS IF: The footer reads 57 BPM and not 120 BPM. The lit mode lamp is wherever you left it -- note which one it is.',

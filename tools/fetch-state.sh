@@ -12,7 +12,7 @@
 # is then in exactly one place, on an SD card, in a device that has already
 # lost its network once. This is the other half of the bargain.
 #
-# TWO FILES, AND THEY ARE NOT THE SAME KIND OF THING:
+# THREE FILES, AND THEY ARE NOT THE SAME KIND OF THING:
 #
 #   cut-it-auto.txt    running values -- the mode, and later the working
 #                      pattern. Rewritten on a timer whenever something
@@ -20,6 +20,12 @@
 #   cut-it-manual.txt  committed takes -- written ONLY when you press
 #                      Storage -> Save. This is the one you would be sad to
 #                      lose, and the one worth committing to git.
+#   cut-it-recover.txt the recover breadcrumb, and NOT u_state's. u_init
+#                      writes it just before a held CC 90 reloads the patch
+#                      and u_map clears it once it has reported. Reading
+#                      `recover` here means a reload was attempted and never
+#                      landed -- which is the only account of it there is,
+#                      because the patch was dead before it could say so.
 #
 # Contributor-owned files (a future sampler's .wav) live in the same directory
 # and are copied too -- u_state records them as manifest lines in the text

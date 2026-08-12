@@ -963,6 +963,18 @@ BENCHES = {
                   "front-panel Save \\, a REAL power cycle \\, and the mode lamp. Six "
                   "steps rather than a padded twenty \\, because a bench proves the "
                   "cases it contains and nothing else."),
+    # ⛔ PAPER, AND DELIBERATELY SO. Step 3 holds CC 90, which reloads the patch
+    # -- and a driven bench runs as a third patch inside the instrument's own Pd,
+    # so /loadPatch would kill the bench along with it and strand every later
+    # step. No actions, no reload, only offline predicates: the runner launches
+    # nothing and the person runs these against the real deployed instrument.
+    "recover": dict(steps=S.STEPS_RECOVER, counters=[],
+                    blurb="panic's second tier. MOST OF IT IS PROVEN HEADLESSLY "
+                    "-- test/gate/recover-assert.sh lints the two-step OSC by "
+                    "reading it \\, and drives both tiers against a stubbed "
+                    "shell. WHAT IT CANNOT DO is load a patch \\, so the reload "
+                    "itself is here and only here \\, along with the one case "
+                    "that matters most: a reload that CANNOT land."),
     "midi": dict(steps=S.STEPS_MIDI, counters=[],
                  blurb="the MIDI acceptance run: the mode-dependent map \\, both "
                  "output devices and the SP-404 in both directions. MOST OF THIS IS "

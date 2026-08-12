@@ -11,8 +11,10 @@ read by the patch — the instrument reads `/sdcard/cut-it-state/` on the device
 | `device/` | Configuration that exists **only on hardware** — the nanoKONTROL scene, `/root/.pdsettings`, the patched `mount.sh` | A person, once, with an editor or a Korg utility | Unrecoverable. That is why the folder exists |
 | `device-state/` | What the **instrument** wrote while running — currently the mode, later the working pattern and a sampler's takes | `u_state`, on the device, unattended | Recoverable by playing the instrument again |
 
-**Two files, and they are not the same kind of thing** — `cut-it-auto.txt` is running values,
-rewritten on a timer; `cut-it-manual.txt` is committed takes, written only on Storage → Save.
+**Three files, and they are not the same kind of thing** — `cut-it-auto.txt` is running values,
+rewritten on a timer; `cut-it-manual.txt` is committed takes, written only on Storage → Save; and
+`cut-it-recover.txt` is **not `u_state`'s at all** — the breadcrumb `u_init` writes just before a
+held CC 90 reloads the patch. `recover` in it means a reload was attempted and never landed.
 The full reasoning, and why contributor-owned files land beside them, is in
 [`tools/fetch-state.sh`](../tools/fetch-state.sh)'s header. The on-device format and the
 `auto` / `manual` policies are on [ref/module/state.md](../ref/module/state.md).

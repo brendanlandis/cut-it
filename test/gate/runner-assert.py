@@ -1000,8 +1000,12 @@ def _where_wiring():
 
     import glob
     files = sorted(glob.glob(os.path.join(ROOT, "test/bench/*-bench.pd")))
+    # ⚠️ THE COUNT IS ASSERTED SO IT CAN ONLY GO UP DELIBERATELY, the same rule
+    # as gates.py's EXPECT and lib-scratch.sh's MIDI_EXPECT. A bench that stopped
+    # being generated would otherwise leave this loop quietly checking fewer
+    # files and still saying ok.
     A.check("every bench file is checked -- %d of them" % len(files),
-            len(files) == 7, "found %d" % len(files))
+            len(files) == 8, "found %d" % len(files))
     for path in files:
         src = open(path, encoding="utf-8").read()
         name = os.path.basename(path)

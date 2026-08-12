@@ -93,8 +93,15 @@ RE_WHERE = _steps.RE_WHERE
 # one of them.
 DEPS = {
     "display":     ["Cut It/g_oled.pd", "Cut It/u_err.pd"],
+    # ⚠️ u_tempo WAS MISSING HERE AND THE OMISSION WAS PRE-EXISTING. Step 14
+    # counts BEATS off `r clock`, and u_tempo is the only writer of that bus --
+    # so every beat-row verdict would have stayed green across a change to the
+    # clock's own source. Found while editing u_tempo for something unrelated.
+    # ⛔ ADDING IT STALES 26 VERDICTS ONCE. That is the bill for a signal that
+    # tells the truth from here on, and it is the cheaper half of the trade:
+    # fresh forever is worse than stale forever, because it is believed.
     "launchpad":   ["Cut It/g_grid.pd", "Cut It/m_launchpad.pd",
-                    "Cut It/c_clock.pd", "Cut It/u_err.pd",
+                    "Cut It/c_clock.pd", "Cut It/u_tempo.pd", "Cut It/u_err.pd",
                     "Cut It/u_present.pd", "Cut It/c_presence.pd",
                     "Cut It/c_devid.pd"],
     "midi":        ["Cut It/m_404.pd", "Cut It/m_volca.pd", "Cut It/u_map.pd",
@@ -105,6 +112,12 @@ DEPS = {
                     "Cut It/u_present.pd", "Cut It/c_presence.pd",
                     "Cut It/c_devid.pd"],
     "phone":       ["Cut It/u_net.pd", "Cut It/u_err.pd"],
+    # ⚠️ u_tempo IS IN HERE FOR THE VOLCA STEP, not for the tempo. panic's STOP
+    # is the only thing u_tempo sends to port 4, and step 2 is the only place
+    # anything asserts that the Volca hears it.
+    "recover":     ["Cut It/u_map.pd", "Cut It/u_init.pd", "Cut It/recover.sh",
+                    "Cut It/cut-it-map.txt", "Cut It/u_tempo.pd",
+                    "Cut It/state-dir.sh"],
     "state":       ["Cut It/u_state.pd", "Cut It/u_store.pd", "Cut It/u_init.pd"],
     "tempo":       ["Cut It/u_tempo.pd", "Cut It/c_clock.pd", "Cut It/u_map.pd"],
 }

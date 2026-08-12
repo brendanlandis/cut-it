@@ -49,7 +49,7 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **What is being BUILT next** — two scoped plans | [plan-v03.5.1.md](plan-v03.5.1.md) the phone becomes interactive · [plan-v03.5.2.md](plan-v03.5.2.md) the standalone debug patch |
+| **What is being BUILT next** — three scoped plans | [plan-v03.5.1.md](plan-v03.5.1.md) the phone becomes interactive · [plan-v03.5.2.md](plan-v03.5.2.md) the standalone debug patch · [plan-v03.5.3.md](plan-v03.5.3.md) the shift key and three controls that move |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
@@ -178,12 +178,15 @@ plan, that section should have left the file.
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
 is where everything unscoped waits.
 
-**Two scoped plans stand between here and v0.4**, each written to be handed to a fresh agent cold and
-carrying its own reading list — [plan-v03.5.1.md](plan-v03.5.1.md) the phone becomes interactive,
-and [plan-v03.5.2.md](plan-v03.5.2.md) the standalone debug patch. **They were one plan with a third
-sibling, and the split is by what the work NEEDS**: 5.1 needs the phone in hand, 5.2 is a whole
-second patch. ⚠️ **Run 5.1 before any bench session** — it stales every verdict that depends on
-`u_net.pd`, so a session run first is wasted.
+**Three scoped plans stand between here and v0.4**, each written to be handed to a fresh agent cold
+and carrying its own reading list — [plan-v03.5.1.md](plan-v03.5.1.md) the phone becomes
+interactive, [plan-v03.5.2.md](plan-v03.5.2.md) the standalone debug patch, and
+[plan-v03.5.3.md](plan-v03.5.3.md) the shift key. **The split is by what the work NEEDS**: 5.1 needs
+the phone in hand, 5.2 is a whole second patch, 5.3 is Mac work with a feel to judge afterwards.
+⚠️ **Run 5.1 and 5.3 before any bench session** — between them they stale every verdict that depends
+on `u_net.pd`, `u_map.pd`, `m_organelle.pd` or `cut-it-map.txt`, so a session run first is wasted.
+⛔ **5.2 must land LAST of the three**, because it carries the batch's closing chore — see its
+*Done means* #5.
 ⛔ **Every remaining ⬜ is closed by one of the two, names no plan on purpose, or is one of the items
 that genuinely need the sound to exist.**
 

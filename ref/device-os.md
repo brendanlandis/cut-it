@@ -173,6 +173,12 @@ way to add devices. Note `-audiobuf 6` on the command line overrides `audiobuf: 
 show them either. This is why error reporting to the OLED is treated as an architecture
 requirement rather than a debugging convenience — see [ref/architecture.md](architecture.md).
 
+**Selecting a patch is itself a test, more often than you would expect**, because loading one
+**restarts Pd**. `AP Probe` was built to exploit exactly that — the reload *is* the experiment, and
+what it measures is what survived it. The same fact is what makes
+[the debug patch](module/debug.md) work at all and what makes it expensive: it starts from nothing,
+and it takes the instrument down to get there.
+
 ### Measuring the running patch
 
 CPU, load and UDP datagram rate, **without disturbing what is running**. Reads `/proc` rather than

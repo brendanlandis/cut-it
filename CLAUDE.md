@@ -54,7 +54,7 @@ chooses to use it.
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
 | One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
-| One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `display` `error` `map` `presence` `state` `tempo` |
+| One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `debug` `display` `error` `map` `presence` `state` `tempo` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
 | The Organelle as a **computer** — SSH, paths, how Pd launches, the boot hang | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
 | The wifi fault — the roam signature, the watchers, AP mode | [ref/wifi.md](ref/wifi.md) ⚠️ background, not blocking |
@@ -68,8 +68,14 @@ chooses to use it.
 
 ## The patch
 
-`Cut It/` is the deployable folder — **its name is what appears in the Organelle menu.** An Organelle
-patch is a folder containing `main.pd` plus its abstractions.
+**There are TWO deployable folders**, and a folder's name is what appears in the Organelle menu. An
+Organelle patch is a folder containing `main.pd` plus its abstractions.
+
+`Cut It/` is the instrument. ⛔ **`Cut It Debug/` is the second one** — six screens steered from the
+keyboard that answer, from the front panel, the questions that otherwise need a laptop and a network.
+It deploys to `/sdcard/Patches/! debug/` with `./tools/deploy.sh --debug`, and ⚠️ **selecting it
+stops the instrument**, because loading any patch restarts Pd. See
+[ref/module/debug.md](ref/module/debug.md).
 
 | Prefix | Is | Files |
 |---|---|---|
@@ -81,6 +87,11 @@ patch is a folder containing `main.pd` plus its abstractions.
 | `e_` | An effect stage — **v0.4, none yet** | — |
 | `.sh` | Run through `[shell]` — the first four once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `recover.sh` |
 | `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` |
+
+**The prefix table above is `Cut It/`'s.** `Cut It Debug/` is flat and has no prefixes — one
+`main.pd` and three scripts — because it is one screen deep and nothing in it is reused.
+⛔ **Its `wire.sh` is a byte-identical COPY of the instrument's** so it does not depend on the other
+folder still existing at a venue, and `test/gate/debug-assert.sh` runs `cmp` on the two.
 
 **What each one does is on its module page**, not here. `mac-stubs/` stands in for device-only
 externals during the local syntax check and is never deployed.
@@ -106,7 +117,7 @@ under `ref/`. Nothing in either is deployed.
 ⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty gates and 643 checks**, and what each one protects is in
+**Twenty-one gates and 678 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.
@@ -127,6 +138,7 @@ aux and encoder. **Most work should never need the Organelle powered on.**
 ./test/run.sh            # every gate, ~5 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
 ./test/run.sh --all      # and then the benches -- needs the rig, and a person
 ./tools/deploy.sh              # syntax check -> scp -> reload -> load, in one command
+./tools/deploy.sh --debug      # the same, for Cut It Debug -> /sdcard/Patches/! debug
 ssh root@organelle.local # password: organelle. Root fs is read-only -- remount-rw.sh first
 ```
 

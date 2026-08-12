@@ -1,7 +1,8 @@
 #!/bin/sh
-# Deploy the Cut It patch to the Organelle, and load it.
+# Deploy a patch to the Organelle, and load it.
 #
 #   ./tools/deploy.sh                    check, push, reload, load
+#   ./tools/deploy.sh --debug            the debug patch instead of the instrument
 #   ./tools/deploy.sh --clean            wipe the remote copy first
 #   HOST=root@192.168.1.15 ./tools/deploy.sh   target by IP if mDNS is flaky
 #
@@ -14,9 +15,41 @@
 set -eu
 
 HOST="${HOST:-root@organelle.local}"
-DEST="${DEST:-/sdcard/Patches/!}"
 PD="${PD:-/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd}"
-PATCH="Cut It"
+
+# --- Which deployable ------------------------------------------------------
+# ⛔ TWO PATCH FOLDERS AND TWO MENU DIRECTORIES, and the second one is not a
+# variant of the first. `! debug` exists so that at a venue you scroll past
+# nothing to reach the instrument -- anything you might reach for INSTEAD of
+# playing lives there. ⚠️ --debug DOES NOT DEPLOY Cut It, and deploying either
+# one loads it, which stops whatever is running.
+#
+# ⚠️ THE FLAGS ARE PARSED BEFORE ANYTHING ELSE so --clean and --debug compose in
+# either order. --clean used to be read as literally $1 and would have been
+# silently ignored after --debug.
+CLEAN=0
+DEBUG=0
+for a in "$@"; do
+    case "$a" in
+        --clean) CLEAN=1 ;;
+        --debug) DEBUG=1 ;;
+        -h|--help)
+            echo "usage: tools/deploy.sh [--debug] [--clean]"
+            echo "  (no flags)  the instrument -> /sdcard/Patches/!"
+            echo "  --debug     the debug patch -> /sdcard/Patches/! debug"
+            echo "  --clean     wipe the remote copy of whichever one first"
+            exit 0 ;;
+        *) echo "unknown flag: $a  (try --help)" >&2; exit 1 ;;
+    esac
+done
+
+if [ "$DEBUG" = "1" ]; then
+    PATCH="Cut It Debug"
+    DEST="${DEST:-/sdcard/Patches/! debug}"
+else
+    PATCH="Cut It"
+    DEST="${DEST:-/sdcard/Patches/!}"
+fi
 
 # The repo root, not tools/ — $PATCH, mac-stubs and the scp source are all
 # relative to it.
@@ -64,11 +97,16 @@ elif [ ! -x "$PD" ]; then
 else
     echo "syntax checking ..."
     check_patch "$PATCH/main.pd"
-    check_patch "$PATCH/main-dev.pd"
+    # ⚠️ ONLY THE INSTRUMENT HAS A main-dev.pd. The debug patch has no Mac entry
+    # point at all: u_mother-stub fakes a front panel for Cut It, and this one IS
+    # a front panel -- six screens steered from the keyboard, which is the thing
+    # a stub would have to fake. It is exercised headlessly by
+    # test/gate/debug-assert.sh instead.
+    [ "$DEBUG" = "1" ] || check_patch "$PATCH/main-dev.pd"
 fi
 
 # --- Copy ------------------------------------------------------------------
-if [ "${1:-}" = "--clean" ]; then
+if [ "$CLEAN" = "1" ]; then
     echo "removing remote $DEST/$PATCH ..."
     ssh "$HOST" "rm -rf '$DEST/$PATCH'"
 fi

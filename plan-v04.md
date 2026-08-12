@@ -205,38 +205,6 @@ wants two of them as working references within weeks**, which is the "would you 
 answering itself. The reasoning is recorded on [tools/README.md](tools/README.md) so the question
 stops recurring.
 
-### ⬜ Debugging the rig with no laptop
-
-**The problem is a venue.** Every diagnostic tool this project has is driven from the Mac over SSH —
-`test/run.sh`, `fetch-errors.sh`, `display-cpu.sh` — and SSH needs a network, which is the exact thing that
-is missing when it matters. Three probes that looked like the start of an answer were deleted in the
-cleanup because they were not: `sp404-send.sh` ran *from* the Mac by design, and its own header said
-a message box "needs a hand on the laptop at the same moment".
-
-**The seed is `tools/stage-patches/`**, and it already solved the two hard parts:
-
-- ⛔ **A menu-launched patch has no console** — Pd runs `-nogui` and stdout goes to tty1, which VNC
-  will not show. Every stage patch therefore writes its findings to `/sdcard/*.log` and puts
-  instructions on the **OLED**. `State Probe` says so in its own header, for exactly this reason.
-- **Selecting the patch is itself the test**, in more cases than you would expect. Loading one
-  restarts Pd, which is what `AP Probe` was built to exploit: the reload *is* the experiment.
-
-⛔ **A standalone menu patch may use the ENCODER, and Cut It should not.** Asking is a bang to
-`enableSubMenu`, and it is an **override that takes both the turn and the click** — so the patch
-loses the press that returns to the Organelle's menu and must bind `goHome` itself. Items 313 and
-314 on [organelle.md](ref/device/organelle.md). A debug tool can pay that; an instrument mid-set
-cannot.
-
-⬜ **Not designed yet.** What it should show, at minimum: what MIDI is arriving from each device and
-on what channel, a way to fire test output at each device, and the tail of `cut-it-err.log` — the
-three questions that currently require a laptop and a network.
-
-⛔ **It goes in `/sdcard/Patches/! debug/`, not in `!`.** As of 2026-08-07 the `!` menu holds
-**`Cut It` and nothing else** — the four probes that had accumulated there were removed once every
-one was confirmed byte-identical to its copy in the repo. At a venue you should scroll past nothing
-to reach the instrument, and a second menu directory is where anything you might reach for *instead*
-of playing belongs.
-
 ---
 
 ## 4. ⚠️ Constraints that bind what you build

@@ -291,11 +291,16 @@ names it as a `Files:` entry, so it is live by definition.
 
 Organelle patches for things that can only be done **at the device with no laptop attached**.
 
-⚠️ **None of them is deployed any more.** As of 2026-08-07 `/sdcard/Patches/!/` holds `Cut It` and
-nothing else — at a venue you should scroll past nothing to reach the instrument. Each was confirmed
-byte-identical to the copy here before it was removed, so any of them is one `scp` from coming back.
-⬜ When the laptop-free debugging system in [plan-v04.md](../plan-v04.md) gets built, it goes in a
-`! debug` directory rather than back into `!`.
+⚠️ **None of them is in the instrument's menu any more.** As of 2026-08-07 `/sdcard/Patches/!/` holds
+`Cut It` and nothing else — at a venue you should scroll past nothing to reach the instrument. Each
+was confirmed byte-identical to the copy here before it was moved, so any of them is one `scp` from
+coming back.
+
+✅ **`! debug/` is where they went, and it is a real directory on the device** — `Anim Probe` and
+`Inquiry Probe` are in it today. It is the same folder
+[the debug patch](../ref/module/debug.md) deploys into: **anything you might reach for *instead of*
+playing belongs there rather than beside the instrument.** ⚠️ This page claimed none of them was
+deployed at all until 2026-08-12, which was read straight off the device and was never quite true.
 
 | | |
 |---|---|

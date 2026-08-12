@@ -90,6 +90,12 @@ button.
 **The two sounding devices are the whole set**, and it is `u_map`'s: the Launchpad and the
 nanoKONTROL are inputs. ⛔ **A device name off that list is dropped exactly like an unknown command.**
 
+⚠️ **The 404 probe starts whatever pad A1 holds, and a LOOPING sample keeps playing.** `m_404`
+schedules its note-off correctly — the loop is the 404's own sample setting, not a stuck note — so
+nothing in the patch can end it and All Notes Off will not either. **Press the pad on the device to
+stop it.** ✅ Seen on the rig 2026-08-12, and pad A1 was kept anyway: the probe's job is to make a
+noise you can identify, and a loop is easy to identify. Item 311.
+
 | Property | Value | Evidence | Item |
 |----------|-------|----------|------|
 | `alert` and `hb` | Repeated **unconditionally at 2 Hz** | verified | — |

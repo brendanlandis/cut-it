@@ -429,7 +429,7 @@
 #X connect 15 0 16 0;
 #X restore 420 620 pd keys;
 #N canvas 40 40 1100 600 controls 0;
-#X text 20 20 aux \, enc and encbut are all momentary 1/0 \, read out of Organelle_UI/main.cpp. The encoder is NOT plus/minus 1: it sends 1 for up and 0 for down. mother only forwards enc and encbut once the patch has asked with /enableEncoder., f 58;
+#X text 20 20 aux \, enc and encbut are all momentary 1/0. The encoder is NOT plus/minus 1: it sends 1 for up and 0 for down. ⛔ THIS STUB SENDS BOTH UNCONDITIONALLY AND THE DEVICE DOES NOT. mother forwards enc and encbut only after the patch bangs enableSubMenu \, and that is an OVERRIDE which takes the CLICK as well -- the press that leaves a running patch. Cut It never asks \, so on the Organelle these two are silent. Items 313 and 314 \, ref/device/organelle.md., f 58;
 #X obj 20 150 r \$0-encup;
 #X msg 20 190 1;
 #X obj 20 230 s enc;

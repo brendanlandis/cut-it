@@ -221,11 +221,11 @@ a message box "needs a hand on the laptop at the same moment".
 - **Selecting the patch is itself the test**, in more cases than you would expect. Loading one
   restarts Pd, which is what `AP Probe` was built to exploit: the reload *is* the experiment.
 
-⛔ **A standalone menu patch may use the ENCODER, and Cut It may not.** mother forwards `encbut` only
-after a patch sends `/enableEncoder`, and the instrument never does because C-5 gives `g_oled` sole
-ownership of `oscOut`. A separate debug patch is not bound by that — so it has the encoder **plus**
-four knobs, the aux button and 25 keys, where the instrument has everything but the encoder. That is
-the difference between a menu of one screen and a menu you can navigate.
+⛔ **A standalone menu patch may use the ENCODER, and Cut It should not.** Asking is a bang to
+`enableSubMenu`, and it is an **override that takes both the turn and the click** — so the patch
+loses the press that returns to the Organelle's menu and must bind `goHome` itself. Items 313 and
+314 on [organelle.md](ref/device/organelle.md). A debug tool can pay that; an instrument mid-set
+cannot.
 
 ⬜ **Not designed yet.** What it should show, at minimum: what MIDI is arriving from each device and
 on what channel, a way to fire test output at each device, and the tail of `cut-it-err.log` — the

@@ -31,11 +31,12 @@ a second can be looked at as many times as it takes.
 
 !! THE ENCODER DOES NOT DRIVE THIS BENCH ON THE ORGANELLE, and the plan that
 chose a single alternating control assumed it did. mother forwards encbut only
-after a patch sends /enableEncoder, and nothing in Cut It ever does -- m_organelle
+after a patch bangs enableSubMenu, and nothing in Cut It ever does -- m_organelle
 leaves the encoder out deliberately. On the Mac u_mother-stub sends encbut
 unconditionally, which is what hid this. Use test/run.sh on the device. Making the
-bench ask mother to enable the encoder is NOT the fix: that means writing to
-oscOut, and C-5 gives g_oled sole ownership of it.
+bench ask mother to enable the encoder is NOT the fix, and the reason is worse than
+it looks: it is an OVERRIDE that takes the CLICK as well, so the bench would eat
+the press that leaves the patch. Items 313 and 314, ref/device/organelle.md.
 
 TIMED ASSERTIONS still mean something because the window starts at RUN rather than
 at the press that follows it: a step that zeroes a beat counter arms a 10 s timer
@@ -611,7 +612,7 @@ def build(name, cfg):
           "away.", 120)
     p.txt(2400, 200,
           "⚠️ GO ON THE DEVICE IS NOT THE ENCODER -- IT IS netcat \\, AND THE DIFFERENCE IS NOT "
-          "OPTIONAL. mother only forwards encbut once a patch has asked with /enableEncoder \\, "
+          "OPTIONAL. mother only forwards encbut once a patch has banged enableSubMenu \\, "
           "and NOTHING IN Cut It EVER ASKS -- m_organelle leaves the encoder out on purpose. So "
           "the click that drives this bench on the Mac is silently dead on the Organelle. Send "
           "instead with ./test/run.sh --bench <name> from the Mac. ⚠️ NOT netcat: the line this file "
@@ -619,7 +620,8 @@ def build(name, cfg):
           "-w0 \\, and -w1 was measured to fail too \\, while the port IS bound and the bench is "
           "fine. It looks exactly like a dead bench. The device cannot send to itself either: "
           "busybox here has no nc at all. Asking mother to enable the encoder is NOT the fix "
-          "either: that means writing to oscOut \\, and g_oled is its sole owner.", 120)
+          "either: it is an OVERRIDE that takes the turn AND the click \\, so the bench would eat "
+          "the press that leaves the patch. Items 313 and 314 \\, ref/device/organelle.md.", 120)
     p.txt(20, 280,
           "Load it as a THIRD patch after mother.pd and main.pd. It touches nothing "
           "in the deployed patch -- it only pushes onto the same buses a controller "

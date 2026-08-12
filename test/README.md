@@ -641,9 +641,10 @@ bench that gains one resolves it from `/sdcard` and not from the patch folder, s
 in the launch line costs nothing and its absence is silent.
 
 ⚠️ **THE ENCODER DOES NOT ADVANCE A BENCH ON THE DEVICE.** The plan that chose a single
-alternating control assumed it would. `mother` forwards `encbut` only to patches that have sent
-`/enableEncoder`, and **nothing in Cut It ever does** — `m_organelle` leaves the encoder out
-deliberately. On the Mac `u_mother-stub` sends it unconditionally, which is what hid this. Use:
+alternating control assumed it would. `mother` forwards `encbut` only to patches that have banged
+`enableSubMenu`, and **nothing in Cut It ever does** — `m_organelle` leaves the encoder out
+deliberately, because asking for it costs the instrument the press that leaves the patch (items 313
+and 314). On the Mac `u_mother-stub` sends it unconditionally, which is what hid this. Use:
 
 ```sh
 ./test/run.sh --bench tempo --target device      # the runner sends GO itself

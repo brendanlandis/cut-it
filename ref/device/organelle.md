@@ -44,6 +44,24 @@ file — and lives in [conventions.md](../conventions.md) under *The global name
 | Knob range | **0–1**, not 0–127 like every MIDI control in the rig | verified | — |
 | Pedal jack | `fs` / `fsRaw` / `footSwitchPolarity` and `exp` / `expRaw` / `expOverride` — a sustain switch **or** an expression pedal, not both. Deliberately unused | doc | — |
 
+### The encoder, and what asking for it costs
+
+**`enc` and `encbut` arrive only after the patch asks**, and the asking is a bare bang to
+`enableSubMenu` — **not** a message to `oscOut`. Read out of `mother.pd`'s `menuControl` subpatch and
+out of the `mother` binary's symbol table on the device.
+
+| Fact | Evidence | Item |
+|------|----------|------|
+| `[r enableSubMenu]` → `[bang]` → `[msg send /enablepatchsub 1]` → `[s oscOut]`. **mother writes `oscOut` itself**, so a patch needs only the reserved name | verified | 313 |
+| `[r oscIn]` → `[routeOSC /encoder/turn /encoder/button]` → `[s enc]` / `[s encbut]`. Nothing arrives on either name until `/enablepatchsub` has been sent | verified | 313 |
+| The turn passes through a **50 ms speed limit** inside mother, so a fast spin coalesces and not every detent is delivered | verified | 313 |
+| ⛔ **It is an override, and it takes the turn AND the click.** `AppData::setPatchScreenEncoderOverride(bool)` — while it is on, neither gesture reaches mother's menu | verified | 314 |
+| `goHome` is the handback: `[r goHome]` → `[msg send /gohome 1]` → `[s oscOut]` | verified | 313 |
+| ⛔ **There is no `/enableEncoder`.** The string exists nowhere in `/root/fw_dir/` | verified | 313 |
+
+⛔ **So a patch that asks for the encoder has no way out unless it sends `goHome` itself** — see
+*Traps*. `enableSubMenu` and `goHome` are both already on the C-2 allowlist as patch→mother names.
+
 ### The OLED
 
 | Property | Value | Evidence | Item |
@@ -224,9 +242,9 @@ velocity is the value.
 the same legitimate move `led` and `oscOut` are: mother publishes on reserved globals and the `m_`
 layer that owns the device is the file allowed to read them.
 
-⚠️ **Not in the file, deliberately:** the encoder, `encbut` and the pedal jack. The encoder is
-contested with mother's own menu through `enableSubMenu`, and neither of the others has anything to
-drive yet. They belong here when they do — it is one device, so it is one `m_` abstraction. **The
+⚠️ **Not in the file, deliberately:** the encoder, `encbut` and the pedal jack. ⛔ **Taking the
+encoder costs the instrument its own way out** — item 314, above — which is a bad trade mid-set, and
+neither of the others has anything to drive yet. They belong here when they do — it is one device, so it is one `m_` abstraction. **The
 keyboard was on that list until it had something to drive**, which is exactly the condition the
 sentence named.
 
@@ -309,6 +327,21 @@ that. See [presence.md](../module/presence.md).
 ## Traps
 
 Each is a claim and its fix. How any of them was found is in the git history.
+
+### Asking for the encoder takes away the only way out of the patch
+
+⛔ **`/enablepatchsub 1` is an override, and it overrides both gestures.** With it set, turning the
+encoder does nothing and **pressing it does nothing** — and pressing it is how you leave a running
+patch and get back to the Organelle's menu. ✅ Confirmed on the rig 2026-08-12 with Cut It running
+and listening for neither name: the panel simply stopped responding until the override was cleared.
+
+⚠️ **At a venue that is a dead instrument with no laptop in the room.** A power cycle recovers it;
+nothing on the front panel does.
+
+**Fix:** a patch that sends `enableSubMenu` **must** bind something else to `goHome` — a key, an aux
+combination — and say so on its own screen. Sending `/enablepatchsub 0` raw through `oscOut` hands it
+back too, which a standalone patch may do because it owns `oscOut`; `mother.pd`'s own
+`[r enableSubMenu]` only ever sends `1`.
 
 ### The OLED lags the audio by ~200 ms
 

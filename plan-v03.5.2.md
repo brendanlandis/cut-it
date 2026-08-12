@@ -8,11 +8,12 @@ it, and what the error log says.
 
 This plan builds the patch that answers them **from the front panel**.
 
-⛔ **It is a separate patch, and that is the whole reason it can work.** mother forwards `encbut`
-only after a patch sends `/enableEncoder`, and Cut It never does because **C-5 gives `g_oled` sole
-ownership of `oscOut`**. A standalone patch is not bound by that — so it gets the encoder **plus**
-four knobs, the aux button and 25 keys, where the instrument has everything but the encoder.
-**That is the difference between a menu of one screen and a menu you can navigate.**
+⛔ **It is a separate patch, and that is the whole reason it can work.** mother forwards `enc` and
+`encbut` only after a patch bangs `enableSubMenu` — ⛔ **and that is an OVERRIDE which takes the
+CLICK as well**, so the patch loses the press that leaves it and must bind `goHome` itself. Items
+313 and 314. A debug tool can pay that price; the instrument mid-set cannot, which is why Cut It
+still leaves the encoder alone. **That is the difference between a menu of one screen and a menu you
+can navigate.**
 
 ✅ **The sibling plan has landed** — the phone became interactive on 2026-08-12, and its plan file is
 gone. This one **stales no bench**, because it touches nothing under `Cut It/`.
@@ -112,8 +113,9 @@ knowing before building any of them** — see [ref/device/phone.md](ref/device/p
   bus gained a `re-wire` selector for the phone, but that lives inside Cut It's Pd instance and this
   is a different one — loading this patch is what killed that instance.
 
-**Navigation is the encoder** — `enc` sends `1`/`0`, not `±1`, and `encbut` arrives only after
-`/enableEncoder`. Four knobs, the aux button and 25 keys are all available too.
+**Navigation is the 25 keys, and one of them sends `goHome`** — ⛔ because enabling the encoder
+takes away the click that would otherwise leave the patch (item 314). `enc` sends `1`/`0`, not `±1`,
+through a 50 ms speed limit. Four knobs and the aux button are available too.
 
 ### ⛔ It must make its own `aconnect` call
 

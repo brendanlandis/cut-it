@@ -709,6 +709,35 @@ STEPS_PHONE = [
   'PASS IF: The phone starts updating again within about five seconds and you touched nothing on the Organelle.',
   [],
   {'do': 'Reopen PdParty on the phone. Touch nothing on the Organelle.'}),
+ # ⚠️ THE FOUR BUTTONS ARE APPENDED RATHER THAN SLOTTED IN, so steps 1 to 14 keep
+ # the numbers every recorded verdict and test/README.md refer to.
+ ('The re-wire button',
+  'PASS IF: The small lamp beside the button flashes. Nothing else on the Organelle changes.',
+  [],
+  {'do': 'Tap re-wire on the phone.',
+   # ⛔ THE LAMP IS THE ONLY EVIDENCE THERE IS, which is why this step exists at
+   # all. The lamp is lit by the Organelle's answer rather than by your finger, so
+   # a flash means the datagram arrived and the command was accepted.
+   'need': ['PdParty OSC send host and port pointed at the Organelle, port 9001. '
+            'Without it every button below is silent and nothing says so.']}),
+ # ⛔ THERE IS NO STEP HERE ASSERTING THAT THE FORK REACHED THE LOG, and there was
+ # one for about an hour. It read "run tools/fetch-errors.sh and read the tail",
+ # which is the instruction a state step had already been rewritten to remove --
+ # and presence-assert.sh proves the same claim headlessly, exactly once, in a
+ # window where nothing else can fork. A bench step that duplicates a gate is a
+ # bench step that costs a person time for nothing.
+ ('The clear-alert button',
+  'PASS IF: The fourth line goes back to none on the left and a dash on the right. The lamp beside the button flashes.',
+  [],
+  {'do': 'Tap clear-alert on the phone. Step 7 left a fail showing there -- if the row is already empty raise one first.'}),
+ ('The Volca test note',
+  'PASS IF: The Volca sounds one short note. The lamp beside the button flashes.',
+  [],
+  {'do': 'Tap test-volca on the phone and listen.'}),
+ ('The SP-404 test note',
+  'PASS IF: The SP-404 plays pad A1. The lamp beside the button flashes.',
+  [],
+  {'do': 'Tap test-404 on the phone and listen.'}),
 ]
 
 STEPS_STATE = [

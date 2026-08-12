@@ -111,7 +111,12 @@ DEPS = {
     "nanokontrol": ["Cut It/m_nano.pd", "Cut It/g_oled.pd", "Cut It/u_err.pd",
                     "Cut It/u_present.pd", "Cut It/c_presence.pd",
                     "Cut It/c_devid.pd"],
-    "phone":       ["Cut It/u_net.pd", "Cut It/u_err.pd"],
+    # ⚠️ THE TWO OUTPUT LAYERS ARE IN HERE FOR THE TEST-NOTE STEPS. The phone can
+    # fire a probe note at each of them through a cord out of u_net, and those
+    # two verdicts are "the Volca sounded" and "the 404 sounded" -- so a change to
+    # either layer invalidates them. u_present is here for the re-wire button.
+    "phone":       ["Cut It/u_net.pd", "Cut It/u_err.pd", "Cut It/u_present.pd",
+                    "Cut It/m_volca.pd", "Cut It/m_404.pd"],
     # ⚠️ u_tempo IS IN HERE FOR THE VOLCA STEP, not for the tempo. panic's STOP
     # is the only thing u_tempo sends to port 4, and step 2 is the only place
     # anything asserts that the Volca hears it.

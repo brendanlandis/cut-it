@@ -314,7 +314,10 @@ def lint_printed(meta, pass_if, where):
 # `NOTHING CHANGES` was just loud. One convention, and it is checkable.
 CAPS_OK = {
     "PASS", "IF",                      # the protocol marker itself
-    "OLED", "LED", "BPM", "DSP", "USB", "CC", "TTL", "MIDI", "NN", "SD",
+    # ⚠️ OSC joined the acronyms when the phone gained buttons: it is what
+    # PdParty's own settings screen calls the section you have to point at the
+    # Organelle before any of them do anything.
+    "OLED", "LED", "BPM", "DSP", "USB", "CC", "TTL", "MIDI", "NN", "SD", "OSC",
     "SP-404", "EXT", "NO-LINK", "SETUP", "GO",
     # Moulded on the nanoKONTROL's transport row, left to right. Two of them
     # mean what they say again since start and stop moved off the aux button.

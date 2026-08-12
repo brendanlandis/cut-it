@@ -64,7 +64,7 @@ independent of both and **stales no bench**, because it touches nothing under `C
 - ⛔ **A menu-launched patch has no console.** Pd runs `-nogui` and stdout goes to tty1, which VNC
   will not show. **Every stage patch therefore logs to `/sdcard/` and instructs on the OLED.**
 - **Selecting a patch is itself a test**, more often than you would expect — loading one restarts Pd,
-  which is how `AP Probe` proved the access point survives a patch change.
+  which is what `AP Probe` was built to exploit: the reload *is* the experiment.
 - ⛔ **A standalone menu patch may use the encoder and Cut It may not.** See the opening above.
 - ⛔ **Loading any patch drops Pd's ALSA connections.** `wire.sh` is what puts them back, and it is
   idempotent — 9 connections, twice in a row, no change (item 292). It costs **~247 ms**, measured

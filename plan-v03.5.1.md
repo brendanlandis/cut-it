@@ -205,10 +205,9 @@ So **what goes on [ref/device/phone.md](ref/device/phone.md) is what the path IS
 vocabulary it accepts, and that it drops the rest silently. A prohibition on future work is a plan
 statement, not a page fact.
 
-**What stays, because it was measured:** UDP over wifi arrives unevenly, visibly so in the heartbeat
-counter, and the instrument plays identically with the phone off, crashed or the wifi gone. Both are
-already on that page. **They are evidence anything musical would have to answer to later, not a
-veto.**
+**What stays, because it was measured:** the two properties already recorded on that page — how
+unevenly the link delivers, and that the instrument plays identically without the phone. **They are
+evidence anything musical would have to answer to later, not a veto.**
 
 ⚠️ **One small edit falls out of this.** `phone.md`'s `What it is` reads *"Status display,
 diagnostics and remote console — **not** performance control"*, which is the same prohibition in

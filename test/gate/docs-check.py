@@ -524,12 +524,31 @@ def _is_marker_gloss(line):
     return len(cells) == 2 and cells[0] == '⬜'
 
 
+OWNER = re.compile(r'\bplan-v[0-9.]+\.md|\bNO PLAN OWNS THIS\b')
+
+
 def _check_open_items(rel, marked):
-    """Every ⬜ must sit under a `## Open`, whatever the page's schema.
+    """Every ⬜ must sit under a `## Open` and NAME AN OWNER, whatever the schema.
 
     ⚠️ Stated in terms of the SECTION, not the module skeleton, because a
     freeform page has no enforced skeleton to hang it off. A page with no ⬜
     needs no Open section at all.
+
+    ⛔ THE OWNER USED TO BE HARD-CODED TO plan-v04.md, AND THAT PUSHED CONTENT
+    BACK INTO PLANS THAT DID NOT WANT IT. When plan-v04 was the only standing
+    plan the two were the same thing. They are not any more: a scoped plan can
+    own an item, and a `ref/` page can own its own follow-up -- ref/wifi.md
+    carries an `If it recurs` section that says what to try and when to stop,
+    which is a better home for it than a plan that gets deleted. Requiring the
+    plan-v04 link forced a wifi section to exist in plan-v04.md purely to be
+    linked at, which is duplication the rest of this gate exists to prevent.
+
+    ⛔ SO AN OWNER IS EITHER A plan-*.md LINK OR THE LITERAL `NO PLAN OWNS THIS`.
+    The escape hatch is deliberately loud and greppable rather than silent: an
+    item nobody owns is a real state -- a recorded unknown with nothing queued --
+    and the honest way to record it is to say so where it can be found, not to
+    point at a plan as a dumping ground. `grep -rn "NO PLAN OWNS THIS"` is the
+    inventory.
     """
     out = []
     marks = [i for i, (ln, f) in enumerate(marked)
@@ -550,10 +569,11 @@ def _check_open_items(rel, marked):
     for i in marks:
         if not (start < i < end):
             out.append(f'{rel}:{i + 1}  ⬜ outside the Open section. Uncertainty is '
-                       f'recorded there; what to DO about it lives in plan-v04 §3')
-        elif 'plan-v04.md' not in marked[i][0] and not any(
-                'plan-v04.md' in marked[j][0] for j in range(i, min(i + 4, end))):
-            out.append(f'{rel}:{i + 1}  ⬜ in Open with no link to plan-v04.md')
+                       f'recorded there; what to DO about it lives with its owner')
+        elif not any(OWNER.search(marked[j][0])
+                     for j in range(i, min(i + 4, end))):
+            out.append(f'{rel}:{i + 1}  ⬜ in Open names no owner -- link the '
+                       f'plan-*.md that closes it, or say NO PLAN OWNS THIS')
     return out
 
 

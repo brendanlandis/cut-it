@@ -91,15 +91,12 @@ first. **Both bugs were found by running it against the live network, not by rea
 ⬜ Only the `REACHABLE` and `ABSENT` branches have been exercised against real hardware.
 `ASSOCIATED-NO-LEASE` and `AP-MODE` are written from the recorded evidence and unproven.
 
-### Chasing it — items 81, 133 and 146–168
+### Chasing it
 
-The fault is that the Organelle loses its **IPv4 lease** while staying **associated**, and
-⚠️ **ssh keeps working over IPv6 throughout**, so a login proves nothing. The check is
-`ip addr show wlan0 | grep "inet "`.
-
-⚠️ **Uptime-to-failure is NOT constant** — measured at **~3 h 12 m** and **2 h 09 m**, which
-already argues against plain lease expiry. An earlier version of this line said "roughly an hour"
-and that was never measured.
+⛔ **WHAT THE FAULT IS, WHAT IT IS NOT, AND WHAT TO TRY ARE ALL ON
+[../ref/wifi.md](../ref/wifi.md)** — the evidence ledger, the reproduction, the wrong turns, and the
+binding stopping rule. **This page is how to RUN the tools; that page is the subject.** ⚠️ **Do not
+restate any of it here.**
 
 | | |
 |---|---|
@@ -107,7 +104,7 @@ and that was never measured.
 | `wifi-reassociate.sh` | **Rung 3, and runnable by hand.** Mirrors what the front panel's own `wifi_control.py` does, with the real credentials from `/sdcard/wifi.txt`. ⚠️ **bash, not sh** — it uses process substitution and the device's `/bin/sh` is busybox ash. |
 | `wifi-poll.sh` | **Runs on the Mac.** Leave it in a terminal. Redraws a small block every minute and answers one question: *anything new since I started, y/n.* Rings the bell and raises a macOS notification. |
 | `wifi-report.sh` | Pulls the evidence off the device and summarises it. **`--mark` first**, then it reports only what happened after the mark. |
-| `../plan-v04.md` | What each outcome **means** and what to do about it. Hand it to an agent along with `wifi-report.sh`'s output. |
+| `../ref/wifi.md` | What each outcome **means** and what to do about it. Hand it to an agent along with `wifi-report.sh`'s output. |
 
 **The two probes are the point of the current rig**, because they split the fault before anything
 tries to repair it:
@@ -132,14 +129,8 @@ with a different cause may well be fixed by them, and removing them discards the
 made these captures readable.
 
 ⚠️ **THREE SEPARATE DEFECTS HAVE PRODUCED A WRONG `UNRECOVERED` VERDICT** — read every historical
-one as *"no address within the timeout"*, never as *"recovery failed"*:
-
-1. rung 3 ran a **stale factory template** hardcoded to SSID `name`, killing a working supplicant
-   and replacing it with nothing (item 161)
-2. rung 2 used `dhcpcd -k`, which only **releases** the lease where `-x` **exits** the daemon
-   (item 161)
-3. ⚠️ **the winning rung's timeout was shorter than the recovery it was waiting for** — it printed
-   `UNRECOVERED` about a rung that had just worked (item 178)
+one as *"no address within the timeout"*, never as *"recovery failed"*. All three are in
+[../ref/wifi.md](../ref/wifi.md)'s wrong-turns table, items 161 and 178.
 
 ### The preferred-AP steer — present, proven, and OFF
 
@@ -150,12 +141,8 @@ fault instead of recovering from it. ✅ **Measured working: satellite → route
 PREFER_BSSID=a6:40:a0:5e:a2:01 sh /sdcard/wifi-watch.sh    # enable
 ```
 
-⛔ **It is off by default, deliberately.** Two reasons that only appeared once it ran:
-
-- ⚠️ **The steer drops IPv4 itself** — a roam is a carrier change, so `dhcpcd` deconfigures every
-  time it fires. That trades one rare long outage for frequent short ones.
-- ⚠️ **IT HIDES THE ANSWER.** Keeping the device off the satellite means the fault can never recur,
-  so the Orbi firmware update could never be evaluated. **The prevention masks the experiment.**
+⛔ **It is off by default and must stay off** — the two reasons are on
+[../ref/wifi.md](../ref/wifi.md) under *If it recurs*, and they are why it is not a fallback.
 
 ⚠️ **It is a PREFERENCE, NOT A PIN** — if the target is not in the scan it does nothing, so it
 cannot strand the device the way a hard `bssid=` would.

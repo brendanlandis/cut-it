@@ -303,8 +303,9 @@ toggled *off*.
 
 ## Open
 
-- ⬜ **Whether the wifi dongle's draw contributes to the wifi fault — item 255**, and
-  [plan-v04.md](../plan-v04.md) §3. It is the only thing on the Organelle's own 9 V 1000 mA rail,
+- ⬜ **Whether the wifi dongle's draw contributes to the wifi fault — item 255.**
+  **NO PLAN OWNS THIS**, and ⚠️ **the fault it speculates about is [wifi.md](wifi.md)'s**, which says
+  not to spend time on it unless it recurs. It is the only thing on the Organelle's own 9 V 1000 mA rail,
   declaring 450 mA on a separate root bus from the powered hub. ⚠️ **A hypothesis and nothing
   more**: `MaxPower` is a declared maximum, the adapter has headroom on paper, and no drop has ever
   been correlated with load. ⛔ The obvious test — move the dongle onto the powered hub — carries a

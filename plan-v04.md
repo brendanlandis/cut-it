@@ -14,7 +14,7 @@ whole standalone patch are not one piece of work:
 
 | Plan | Is |
 |---|---|
-| [plan-v03.5.0.md](plan-v03.5.0.md) | **The venue network** — the access point, the Orbi fault and its stopping rule, Guided Access |
+| [plan-v03.5.0.md](plan-v03.5.0.md) | **The venue kit** — the stage-network measurement and Guided Access. ⛔ Everything about the network itself is on [ref/wifi.md](ref/wifi.md), never here |
 | [plan-v03.5.1.md](plan-v03.5.1.md) | **Diagnostics inside the instrument** — the OLED diag layer, the inbound UDP path, the phone's buttons |
 | [plan-v03.5.2.md](plan-v03.5.2.md) | **The standalone debug patch** — `! debug/`, encoder-navigable. ⛔ **The last of the three**, and it carries the batch's closing chore |
 
@@ -86,7 +86,7 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 | **[ref/architecture.md](ref/architecture.md)** | All of it | How the modules compose, and the four load-bearing decisions |
 | **[ref/device/](ref/device/)**, **[ref/module/](ref/module/)** | **Only the page you are touching** | Everything about one device or one concern, in one place |
 | **[ref/device-os.md](ref/device-os.md)** | Only if working on the device | SSH, paths, how Pd launches, the boot hang. ⛔ **Verify-after** — see §5 |
-| **[ref/wifi.md](ref/wifi.md)** | ⚠️ Only if the fault recurs | The roam fault and the evidence behind it. **Not blocking anything** |
+| **[ref/wifi.md](ref/wifi.md)** | ⚠️ Only if the network misbehaves | ⛔ **The whole subject lives there** — nothing about it is in any plan. **Not blocking anything** |
 | **`git log`** | Grep it | **Git is the journal.** Both journals dissolved; the account of every phase is in the commit history from `dca0b04` |
 
 ### How this project works
@@ -176,35 +176,16 @@ that could never be crossed, and an unmapped control reporting nothing at all.
 
 ### Checks that were never run
 
-⬜ **Two left of the four**, carried forward from the dissolved evidence ledger. **Neither blocks
-anything**, and they keep their item numbers so the citations still resolve. Both of the others were
-struck on 2026-08-08:
+✅ **All four are struck.** Both closed on 2026-08-08:
 
-- ✅ *Brownouts with the full rig powered* — items 5 and 95. **There is no shared rail for one to
+- *Brownouts with the full rig powered* — items 5 and 95. **There is no shared rail for one to
   happen on**; the evidence is on [ref/rig.md](ref/rig.md) as item 255.
-- ✅ *The OLED read by eye* — item 39. **All three type-size layouts are legible at playing
+- *The OLED read by eye* — item 39. **All three type-size layouts are legible at playing
   distance**, including the 8px five-row case; on
   [ref/module/display.md](ref/module/display.md) as item 258.
 
-**Both of the two left are wifi — items 45 and 81 — so they are listed once, in the section
-immediately below, with their owners.** ⚠️ **Do not restate them here**; that table said item 81 was
-*"see `ref/device-os.md`"* long after the wifi material moved off that page.
-
-### The wifi fault — ⏸ parked, and not blocking
-
-⛔ **THIS SECTION IS AN INDEX, NOT AN ACCOUNT.** Everything about wifi — the roam fault, the
-evidence, the two remaining attacks, the binding stopping rule, the AP as the stage network — is on
-[ref/wifi.md](ref/wifi.md), including its *If it recurs — what to try, and when to stop* section.
-⚠️ **Do not restate any of it here.** It was written in three places once and drifted in two of them.
-
-| Open | Owner |
-|---|---|
-| ⬜ **Item 81** — the roam fault itself. ⏸ **PARKED 2026-08-12**, and ⛔ **parked is not closed**: no configuration has been tried, so the stopping rule has not fired and a quiet spell is not evidence for won't-fix | [plan-v03.5.0.md](plan-v03.5.0.md) Phase B |
-| ⬜ **Item 45** — AP link quality over a set-length window. ⚠️ **Not parked**; it rides on the AP, not the house network | [plan-v03.5.0.md](plan-v03.5.0.md) A2 |
-| ⬜ **Three drops on 2026-08-08 that did not match the roam signature** | nobody yet — v0.4 if they recur |
-| ⬜ **Item 255** — whether the dongle's draw contributes. ⚠️ A hypothesis and nothing more; the account and the known hazard are on [ref/rig.md](ref/rig.md) | nobody yet — v0.4, one trial **only if the fault recurs** |
-
-⚠️ **Do not spend session time on any of it unless it recurs.**
+The other two were network measurements, and they are recorded with everything else about the
+network on [ref/wifi.md](ref/wifi.md).
 
 ### ⬜ Nothing measures the OUTPUT side
 
@@ -239,7 +220,7 @@ a message box "needs a hand on the laptop at the same moment".
   will not show. Every stage patch therefore writes its findings to `/sdcard/*.log` and puts
   instructions on the **OLED**. `State Probe` says so in its own header, for exactly this reason.
 - **Selecting the patch is itself the test**, in more cases than you would expect. Loading one
-  restarts Pd, which is how `AP Probe` proves the access point survives a patch change.
+  restarts Pd, which is what `AP Probe` was built to exploit: the reload *is* the experiment.
 
 ⛔ **A standalone menu patch may use the ENCODER, and Cut It may not.** mother forwards `encbut` only
 after a patch sends `/enableEncoder`, and the instrument never does because C-5 gives `g_oled` sole

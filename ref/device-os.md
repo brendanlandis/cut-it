@@ -328,9 +328,9 @@ declined there (item 265).
 
 ## Wifi
 
-**Moved.** The credentials, the watchers, the roam fault, the evidence ledger and the Organelle as
-its own access point are on [wifi.md](wifi.md). The boot hang above merely looked like a wifi
-fault and is a different thing.
+⛔ **All of it is on [wifi.md](wifi.md)** — the credentials, the watchers, the fault, the evidence
+and the Organelle as its own access point. ⚠️ **The boot hang above merely looked like a wifi fault
+and is a different thing.**
 
 ## Device capabilities
 

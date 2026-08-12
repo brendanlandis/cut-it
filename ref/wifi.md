@@ -298,8 +298,8 @@ without ending the session. Staged on the device beforehand:
 - **`/sdcard/ap.txt`**, passphrase valid — see the 8–63 rule and the unquoted-`$NET` trap above.
 - **The instrument deployed and loaded**, and the phone's scene open.
 - **Anything the session needs to record written to `/sdcard/`** — the `AP Probe` pattern, read
-  afterwards. ⚠️ **Nothing has to be caught live**, which is the same reasoning as `u_err`'s
-  persistent log.
+  afterwards; it is indexed in [tools/README.md](../tools/README.md). ⚠️ **Nothing has to be caught
+  live**, which is the same reasoning as `u_err`'s persistent log.
 
 ✅ **Recovery is a power cycle.** `createap.service` is `disabled`, so the device comes back on the
 house network by itself. Nothing about this is sticky.

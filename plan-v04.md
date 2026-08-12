@@ -191,35 +191,21 @@ struck on 2026-08-08:
 | 45 | **AP link quality over a set-length window** | Needs an actual set's duration to mean anything. ⚠️ Needs the AP up, which kills the house link |
 | 81 | **The wifi fault itself** | ⚠️ Narrowed, not solved — see [ref/device-os.md](ref/device-os.md) |
 
-### The wifi fault — background, not blocking
+### The wifi fault — ⏸ parked, and not blocking
 
-**Requirement, as Brendan states it: the Organelle must stop dropping wifi.** Not "recover fast" — a
-dead phone display mid-set is the failure.
+⛔ **THIS SECTION IS AN INDEX, NOT AN ACCOUNT.** Everything about wifi — the roam fault, the
+evidence, the two remaining attacks, the binding stopping rule, the AP as the stage network — is on
+[ref/wifi.md](ref/wifi.md), including its *If it recurs — what to try, and when to stop* section.
+⚠️ **Do not restate any of it here.** It was written in three places once and drifted in two of them.
 
-⏸ **PARKED 2026-08-12, and [plan-v03.5.0.md](plan-v03.5.0.md) Phase B owns it — not this section.**
-⛔ **Parked is not closed**: no router configuration has been tried, so the stopping rule has not
-fired and **a quiet spell is not evidence for won't-fix.** ✅ The baseline to resume from is items
-298, 299 and 300 on [ref/wifi.md](ref/wifi.md).
+| Open | Owner |
+|---|---|
+| ⬜ **Item 81** — the roam fault itself. ⏸ **PARKED 2026-08-12**, and ⛔ **parked is not closed**: no configuration has been tried, so the stopping rule has not fired and a quiet spell is not evidence for won't-fix | [plan-v03.5.0.md](plan-v03.5.0.md) Phase B |
+| ⬜ **Item 45** — AP link quality over a set-length window. ⚠️ **Not parked**; it rides on the AP, not the house network | [plan-v03.5.0.md](plan-v03.5.0.md) A2 |
+| ⬜ **Three drops on 2026-08-08 that did not match the roam signature** | nobody yet — v0.4 if they recur |
+| ⬜ **Item 255** — whether the dongle's draw contributes. ⚠️ A hypothesis and nothing more; the account and the known hazard are on [ref/rig.md](ref/rig.md) | nobody yet — v0.4, one trial **only if the fault recurs** |
 
-⚠️ **Do not spend session time on this unless it recurs.** Everything actionable has shipped: the
-recovery ladder works unattended (item 212), Orbi firmware 2.7.6.6 did **not** fix it (item 213), and
-channel 1 was a real throughput win but did not separate the two APs (item 221). **The trigger is
-untouched** — ✅ **re-confirmed on the hardware 2026-08-12, item 300**: both radios co-channel on
-2412, 12 dB apart. One Orbi setting moves both mesh nodes.
-
-⛔ **The preferred-AP steer is no longer a safe fallback**: one failure happened *on* the router
-(item 214). The measurements, the **six** wrong turns and the reproduction recipe are on
-[ref/wifi.md](ref/wifi.md) — ⚠️ **not on [ref/device-os.md](ref/device-os.md)**, which says *"Moved"*
-and has said so since the refactor.
-
-⬜ **One untried angle, turned up while closing items 5 and 95: the dongle is the only thing on the
-Organelle's own rail.** The RT5370 declares **450 mA** and sits on a **separate root bus from the
-powered hub** (`2-1`), so it draws from the 9 V 1000 mA adapter rather than the hub's PSU — the one
-place in the rig with a shared budget. Item 255, on [ref/rig.md](ref/rig.md). ⚠️ **This is a
-hypothesis and nothing more**: `MaxPower` is a declared maximum, the adapter has headroom on paper,
-and no drop has ever been correlated with load. ⛔ The obvious test — move the dongle onto the powered
-hub — carries a **known hazard**, since that hub has one controller the Launchpad will not configure
-on at all (item 256). Worth one deliberate trial **only if the fault recurs**, per the rule above.
+⚠️ **Do not spend session time on any of it unless it recurs.**
 
 ### ⬜ Nothing measures the OUTPUT side
 

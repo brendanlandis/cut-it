@@ -124,10 +124,31 @@ its `Open`.
 Everything on the device side is exonerated. **This is a router-side problem**, so attack it from the
 router. ⛔ **Read [ref/wifi.md](ref/wifi.md) in full first.**
 
+### ✅ B0 — the baseline, measured 2026-08-12
+
+**Item 300.** Both `hildegard` BSSIDs are on **freq 2412 — channel 1, co-channel**:
+`a6:40:a0:5e:a2:01` at −31 dBm and `a6:40:a0:5e:c9:25` at −43 dBm, **12 dB apart**. The device held
+`192.168.1.9` throughout, so the fault was not present when this was taken.
+
+⚠️ **The second BSS appears only after an active scan.** `iw dev wlan0 scan dump` alone shows just
+the associated one, which is not enough to tell whether a change separated them. Run
+`wpa_cli -i wlan0 scan`, wait, then dump. ✅ **The scan is the harmless half of the repro** — it was
+run and the lease survived it; only the `roam` drops the address.
+
+### ⛔ Item 298 removes one of the two attacks before you start
+
+**The dongle is 2.4 GHz only** — `iw phy` lists Band 1 and nothing else, zero 5 GHz channels. So
+**per-band separation cannot work here**: both radios the Organelle can reach are on 2.4 GHz by
+necessity, and moving one to 5 GHz does not separate the pair, it makes one **invisible**. What is
+left is a difference the device can still see on 2.4 GHz — **a distinct SSID, a distinct channel per
+node, or one node's 2.4 GHz radio switched off.**
+
+### B1 and B2 — the two changes
+
 **Brendan does the router configuration; this plan records the result.** Two attacks, in order:
 
-1. **Separate the two APs** so a roam stops being possible — distinct SSIDs, or per-band channel
-   separation. ⚠️ **One Orbi setting moves both mesh nodes**, which is why this has not been trivial.
+1. **Separate the two APs** so a roam stops being possible — ⛔ **not per-band**, see item 298.
+   ⚠️ **One Orbi setting moves both mesh nodes**, which is why this has not been trivial.
 2. **Disable fast roaming / band steering** if the Orbi exposes them.
 
 **Verification is the three-second repro**, against the supplicant the device booted with — item 246
@@ -150,6 +171,12 @@ already produced two confident wrong answers.**
 
 ⚠️ **`--mark` goes AFTER a finding is written up, never before.** It draws the analysed-to-here line,
 so running it first erases the event you were about to read.
+
+⛔ **Discount the first `TRANSITION` of every session before reading the log as evidence** — item
+299. The device is joined by hand, so the lease lands after `ExecStartPre`'s 120 s bound and the
+connect itself is logged as a transition. **`wifi-poll.sh` counts those as drops**, so a phantom one
+is the normal outcome of a hand-connected boot. Credit a router change with stopping the fault only
+against transitions that are not the session's first.
 
 ---
 

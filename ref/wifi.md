@@ -82,12 +82,23 @@ boot would have added a phantom one and tripped *ANYTHING NEW?*. The unit now po
 an address is exactly when the watcher is wanted. `TimeoutStartSec` has to exceed the bound; the
 systemd default of 90 s does not.
 
-⚠️ **One phantom `TRANSITION NONE -> …` already exists in the log**, stamped `2026-08-08 21:34:27`.
-It is a boot artefact, not a drop.
-
 ✅ **Verified across a real reboot 2026-08-08**: the service comes up `active`, its opening block
 carries a populated `ipv4:` and the SSID, and **no `TRANSITION` is logged at boot**. The header is
 still stamped `2015`, which is the expected proof that it starts before the clock is corrected.
+
+⛔ **BUT THAT HOLDS ONLY IF A LEASE ARRIVES INSIDE THE 120 s BOUND, AND ON THIS RIG IT OFTEN DOES
+NOT.** The device is joined to the house network **by hand at the front panel** — neither the house
+network nor the AP connects automatically, and that is deliberate. So the lease normally arrives
+*after* `ExecStartPre` has timed out, the opening block carries an **empty** `ipv4:`, and the
+hand-connect is then logged as `TRANSITION NONE -> <address>`. ⚠️ **`wifi-poll.sh` counts
+`TRANSITION` lines as drops**, so **a phantom drop is the normal outcome of a hand-connected boot**,
+not a one-off. Item 299.
+
+⚠️ **So the phantom is a CLASS, not the single artefact this page used to record.** One was noted at
+`2026-08-08 21:34:27`; another was produced on `2026-08-12`, from a boot whose opening block read
+`ipv4:` empty followed immediately by `TRANSITION NONE -> 192.168.1.9`. ⛔ **Discount the first
+`TRANSITION` of every session before reading the log as evidence of a drop** — otherwise a
+configuration change is credited or blamed for a transition that is only somebody pressing Connect.
 
 ## ⚠️ The roam fault — what is known, and how to reproduce it
 
@@ -147,6 +158,9 @@ thing that resolves them. Never delete a row; never reuse a number.**
 | 212 | ✅ **The ladder fired on two real failures and recovered both**, rung 1, first try, no other rung attempted | verified |
 | 213 | ⛔ **The fault SURVIVED firmware 2.7.6.6 — twice in 15 hours.** This is the answer the leave-it-running task was waiting for, and it is the negative one | verified |
 | 221 | ✅ **Channel 1 took, and helped throughput enormously** — 14.4 MBit/s MCS 1 → **72.2 MBit/s MCS 7**. But it did **not** separate the two APs, exactly as predicted | verified |
+| 298 | ⛔ **THE DONGLE IS 2.4 GHz ONLY, so per-band separation cannot work.** `iw phy` lists **Band 1 and nothing else** — zero 5 GHz channels. Both `hildegard` radios the Organelle can reach are on 2.4 GHz by necessity, and moving one to 5 GHz would not separate the pair, it would make one **invisible** | verified |
+| 299 | ⛔ **A hand-connected boot logs a phantom `TRANSITION`**, because the lease arrives after `ExecStartPre`'s 120 s bound expires. A class, not the single artefact once recorded — see *The tools that watch it* | verified |
+| 300 | **The Phase B baseline, measured 2026-08-12 before any router change.** Both `hildegard` BSSIDs on **freq 2412 — channel 1, co-channel**: `a6:40:a0:5e:a2:01` at −31 dBm and `a6:40:a0:5e:c9:25` at −43 dBm, 12 dB apart. ⚠️ The second appears **only after an active scan**; `scan dump` alone shows just the associated one | verified |
 
 **Six wrong turns, kept so nobody walks them again.** ⚠️ **Four of them are defects in this
 project's own measuring rig, not in the device** — which is the pattern worth carrying away.

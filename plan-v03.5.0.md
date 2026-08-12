@@ -158,8 +158,11 @@ the literal error string, because symptoms are as greppable as `item NNN`.
 3. The house fault is either fixed by configuration or **closed as won't-fix under the stopping
    rule** — not left open. ⏸ **Paused, not started.**
 4. **Guided Access is on**, and the ⬜ on [ref/device/phone.md](ref/device/phone.md) is struck.
-5. [plan-v04.md](plan-v04.md) §3 no longer carries a wifi section or item 45's row in *Checks that
-   were never run*.
+5. [plan-v04.md](plan-v04.md) §3's wifi index is **gone**, not merely shortened. ⚠️ **It cannot go
+   until items 45 and 81 are closed** — the doc gate requires every ⬜ on a `ref/` page to link to
+   §3, so emptying it early would leave [ref/wifi.md](ref/wifi.md)'s `Open` pointing at nothing.
+   ✅ Its restated account and item 45's duplicate row in *Checks that were never run* went on
+   2026-08-12; what is left is the four-row table itself.
 6. **This file is deleted**, and ⛔ **nothing on it is copied anywhere except `ref/`.**
 
 ⛔ **This plan does not hand its open items to [plan-v04.md](plan-v04.md).**

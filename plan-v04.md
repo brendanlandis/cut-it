@@ -186,10 +186,9 @@ struck on 2026-08-08:
   distance**, including the 8px five-row case; on
   [ref/module/display.md](ref/module/display.md) as item 258.
 
-| Item | Check | Why it is still open |
-|---|---|---|
-| 45 | **AP link quality over a set-length window** | Needs an actual set's duration to mean anything. ⚠️ Needs the AP up, which kills the house link |
-| 81 | **The wifi fault itself** | ⚠️ Narrowed, not solved — see [ref/device-os.md](ref/device-os.md) |
+**Both of the two left are wifi — items 45 and 81 — so they are listed once, in the section
+immediately below, with their owners.** ⚠️ **Do not restate them here**; that table said item 81 was
+*"see `ref/device-os.md`"* long after the wifi material moved off that page.
 
 ### The wifi fault — ⏸ parked, and not blocking
 

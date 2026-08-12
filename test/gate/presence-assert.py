@@ -42,7 +42,7 @@ import lib_grid as G                                           # noqa: E402
 
 MARKS = ("BOOT", "BEFORE-LOSS", "AFTER-LOSS", "WAITING", "AFTER-REWIRE",
          "FOREIGN", "STILL-LOST", "OWN-REPLY", "RECOVERED", "DROPPED",
-         "ALL-BACK", "SETTLED")
+         "ALL-BACK", "PHONE-REWIRE", "SETTLED")
 
 # The second run's windows -- see presence-bound-drive-gen.py for the schedule
 # each one straddles.
@@ -62,6 +62,10 @@ GAVEUP = "fail u_present rewire-gaveup"
 # precisely the distinction that could not be drawn on the hardware.
 REWIRE_TRY = "info u_present rewire-try"
 REWIRE_LAST = "info u_present rewire-last"
+# ⛔ THE THIRD CAUSE OF A FORK, AND IT NEEDS ITS OWN NAME FOR THE REASON THE
+# OTHER TWO DO: all three converge on one `sh wire.sh` message box, so a report
+# tapped below the junction would name every fork as whichever one it sat under.
+REWIRE_PHONE = "info u_present rewire-phone"
 
 # ⛔ EVERY m_ LAYER REGISTERS, INCLUDING THE TWO THAT CANNOT BE POLLED. Three are
 # active and hold a c_presence; m_organelle is passive and m_volca is none, and
@@ -421,12 +425,50 @@ def main_run(cap):
             "fact, which is the question item 275 turned on and which the "
             "hardware could not answer" % (REWIRE_LAST, last))
 
+    # --- ⛔ THE PHONE'S RE-WIRE, WHICH IS THE ONLY ONE A PERSON ASKS FOR ------
+    # The automatic recovery is bounded and gives up for good after eight
+    # attempts over ~70 s, and after that the rig stays wired to nothing until
+    # the patch is reloaded. re-wire on this bus is the way back that does not
+    # restart everything you were doing.
+    #
+    # ⛔ THE WINDOW IS WHAT MAKES THIS ATTRIBUTABLE. Every device answered in
+    # ALL-BACK, so the lost count is zero, the counter is reset and the spigot
+    # is shut -- nothing on the schedule is due. A fork in here came from the
+    # bus or from nowhere.
+    A.check("⛔ re-wire on the presence bus forks wire.sh, exactly once",
+            wire_in(by, "PHONE-REWIRE") == 1,
+            "%d wire.sh fork(s) in PHONE-REWIRE, wanted exactly 1. Zero means "
+            "the phone's button reaches u_present and dies there; more than one "
+            "means one press costs several forks, and a fork per event is the "
+            "thing Phase 4's rule exists to prevent"
+            % wire_in(by, "PHONE-REWIRE"))
+
+    phone = raised_in(errs, REWIRE_PHONE, *MARKS)
+    A.check("⛔ ...and names ITSELF on err, once, in that window alone",
+            phone == ["PHONE-REWIRE"],
+            "`%s` reached err in %s, wanted exactly PHONE-REWIRE. A fork nothing "
+            "records is a repair nobody can attribute, and this is the only one "
+            "of the three that a person caused" % (REWIRE_PHONE, phone))
+
+    # ⚠️ AND THE NEGATIVE THAT CATCHES THE MIS-TAP. All three reports hang off
+    # one message box, so a report wired below the junction would name every
+    # scheduled attempt as the phone's too -- and the two checks above would
+    # both still pass.
+    crossed = raised_in(errs, REWIRE_TRY, "PHONE-REWIRE") + \
+        raised_in(errs, REWIRE_LAST, "PHONE-REWIRE")
+    A.check("⛔ ...and the phone's fork is not ALSO reported as a scheduled one",
+            not crossed,
+            "a scheduled or trailing name appeared in PHONE-REWIRE: %s. The "
+            "three causes share one `sh wire.sh` box, so telling them apart "
+            "depends entirely on where each report is tapped" % crossed)
+
     # ⚠️ THE NEGATIVE HALF, and it is the one that catches a mis-wire. Both forks
     # converge on the same `sh wire.sh` message box, so a report tapped one box
     # too low would fire for BOTH kinds and the check above would still pass --
     # the trailing fork would be named correctly and every scheduled one would be
     # named as trailing too.
-    stray = raised_in(errs, REWIRE_LAST, "WAITING", "STILL-LOST", "SETTLED")
+    stray = raised_in(errs, REWIRE_LAST, "WAITING", "STILL-LOST", "SETTLED",
+                      "PHONE-REWIRE")
     A.check("⛔ ...and a SCHEDULED fork is never reported as the trailing one",
             not stray,
             "`%s` also appeared in %s. Those windows hold regular attempts, so "
@@ -479,14 +521,20 @@ def main_run(cap):
 
     # --- ⛔ ONE BOUND, NOT ONE PER DEVICE ------------------------------------
     total = sum(v.count("wire.sh") for v in by.values())
+    # ⚠️ SIX, NOT FIVE, AND THE SIXTH IS DELIBERATE. u_init's boot fork, three
+    # scheduled recoveries, one trailing fork -- and one the PHONE asked for in
+    # its own window. Raised from 5 when the presence bus gained `re-wire`; it is
+    # a number to change on purpose and never to make a red run green.
     A.check("⛔ %d sources lost together produce ONE re-wire per interval" % ACTIVE,
-            total == 5,
+            total == 6,
             "saw %d wire.sh fork(s), wanted u_init's boot fork plus three "
-            "recoveries plus one trailing. %d would be one per lost source per "
+            "recoveries plus one trailing plus the phone's one. %d would be one "
+            "per lost source per "
             "interval, which is "
             "what the recovery did before Phase 4 moved it out of m_launchpad "
             "and into u_present -- three copies of a bound is not a bound. Fewer "
-            "than 5 means the interval, the loss test or the trailing fork has gone"
+            "than 6 means the interval, the loss test, the trailing fork or the "
+            "phone's request has gone"
             % (total, 1 + 3 * ACTIVE))
 
     A.note("wire.sh by window: %s"

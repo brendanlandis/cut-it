@@ -148,6 +148,22 @@ SEQ = [
     # transition, so nothing further is due. A fork in here means the trailing
     # path re-arms itself, which would turn one extra fork per episode into an
     # unbounded stream -- the exact thing Phase 4's rule exists to prevent.
+    # ⛔ THE PHONE'S BUTTON, AND THIS WINDOW IS THE ONLY PLACE IT CAN BE
+    # ATTRIBUTED. Every device answered at 33000, so the lost count is zero, the
+    # recovery counter has been reset and the spigot is shut -- nothing on the
+    # schedule is due. A wire.sh fork in here came from the presence bus or from
+    # nowhere.
+    #
+    # ⚠️ IT SITS BETWEEN ALL-BACK AND SETTLED RATHER THAN AT THE END, and both
+    # sides of that are load-bearing. SETTLED's whole claim is that the trailing
+    # fork does not re-arm, so it asserts ZERO forks and a deliberate one inside
+    # it would make that check untestable. And a window after SETTLED would run
+    # past 38000, where the three devices that answered at 33000 miss their third
+    # poll and are declared lost all over again -- which lands `device-lost` in a
+    # window three other checks require to be quiet. Measured, not reasoned: put
+    # here first at 38000 and four checks went red for exactly that reason.
+    (34500, "PHONE-REWIRE", ["\\; presence re-wire"], GAP),
+
     (36000, "SETTLED", [], GAP),
 ]
 QUIT_MS = 38000

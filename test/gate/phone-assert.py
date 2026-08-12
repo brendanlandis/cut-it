@@ -44,7 +44,13 @@ GOLED = os.path.join(ROOT, "Cut It", "g_oled.pd")
 # seconds can hold at most 20*T packets per distinct name, plus edge effects.
 LIMIT_HZ = 20.0
 HB_HZ = 2.0
-ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert", "/mark"}
+ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert",
+         "/cutit/ack", "/mark",
+         # the driver's taps -- what the INBOUND half did. re-wire leaves on the
+         # presence bus and a test note leaves through a cord, so neither is on
+         # the wire at all without them.
+         "/probe/presence", "/probe/volca", "/probe/p404"}
+SCENE = os.path.join(ROOT, "tools", "pdparty-scene", "CutItRemote", "_main.pd")
 # every selector g_oled routes that is NOT a parameter. u_net matches all of
 # them and leaves them unconnected; if one ever reaches the wire as a parameter
 # name, the reserved branch is broken.
@@ -143,6 +149,93 @@ def goled_route():
     return _route_args(GOLED)
 
 
+# --------------------------------------------------------- the INBOUND vocabulary
+# ⛔ THE PHONE IS THE ONLY SENDER THERE IS, so a command it spells differently from
+# the way u_net routes it is dropped in silence and nothing anywhere says so. The
+# two spellings live in two files that are deployed by two different mechanisms --
+# tools/deploy.sh and a WebDAV copy -- so they can drift a long way apart. Reading
+# both is the only thing that can notice.
+def _route_of(path, first):
+    """The arguments of the one `route <first> ...` box in a file, or None.
+
+    Keyed on the FIRST argument rather than a position, exactly as docs-check.py's
+    pd-route anchor is, because C-10 makes box indices move.
+    """
+    try:
+        src = open(path, encoding="utf-8").read()
+    except OSError:
+        return None
+    hits = re.findall(r"^#X obj -?\d+ -?\d+ route (" + re.escape(first)
+                      + r"(?: [^;]*)?);$", src, re.M)
+    return hits[0].split() if len(hits) == 1 else None
+
+
+def _guts(path):
+    """The scene's `[pd guts]` subcanvas as (boxes, connects).
+
+    boxes are (kind, text) in file order -- which is the index a connect names.
+    """
+    boxes, cons, depth, want, inside = [], [], 0, None, False
+    for ln in open(path, encoding="utf-8").read().splitlines():
+        if ln.startswith("#N canvas"):
+            depth += 1
+            if " guts " in ln and not inside:
+                inside, want = True, depth
+            continue
+        if ln.startswith("#X restore"):
+            if inside and depth == want:
+                break
+            depth -= 1
+            continue
+        if not inside:
+            continue
+        m = re.match(r"^#X (obj|msg|text) -?\d+ -?\d+ (.*);$", ln)
+        if m:
+            boxes.append((m.group(1), m.group(2)))
+            continue
+        m = re.match(r"^#X connect (\d+) (\d+) (\d+) (\d+);$", ln)
+        if m:
+            cons.append(tuple(int(g) for g in m.groups()))
+    return boxes, cons
+
+
+def scene_msgs():
+    """Every message box in the scene that REACHES the shared [oscformat cutit].
+
+    ⚠️ Read off the GRAPH rather than off a naming convention. "every msg box in
+    the file" would also collect the two `label` messages the link row uses, and
+    a convention like "the ones next to an [r ...-press]" is a fact about layout
+    rather than about what can actually be sent.
+    """
+    boxes, cons = _guts(SCENE)
+    tgt = [i for i, (k, t) in enumerate(boxes)
+           if k == "obj" and t == "oscformat cutit"]
+    if len(tgt) != 1:
+        return None
+    reach = set(tgt)
+    for _ in range(4):
+        reach |= {a for a, _ao, b, _bi in cons if b in reach}
+    return sorted(boxes[i][1] for i in sorted(reach) if boxes[i][0] == "msg")
+
+
+def scene_iemguis():
+    """(send, receive) for every bng on the scene's MAIN canvas."""
+    out = []
+    for ln in open(SCENE, encoding="utf-8").read().splitlines():
+        m = re.match(r"^#X obj -?\d+ -?\d+ bng \d+ \d+ \d+ \d+ (\S+) (\S+) ", ln)
+        if m:
+            out.append((m.group(1), m.group(2)))
+    return out
+
+
+def scene_names():
+    """(names written by an [s ...], names read by an [r ...]) anywhere in the scene."""
+    src = open(SCENE, encoding="utf-8").read()
+    w = set(re.findall(r"^#X obj -?\d+ -?\d+ s (\S+);$", src, re.M))
+    r = set(re.findall(r"^#X obj -?\d+ -?\d+ r (\S+);$", src, re.M))
+    return w, r
+
+
 def main():
     packets, log = collect()
     wins = windows(packets)
@@ -198,13 +291,70 @@ def main():
            "selector fall out of its reject and be treated as a parameter"
            % (" ".join(unet_route()), " ".join(goled_route())))
 
+    # -- ⛔ THE INBOUND VOCABULARY, READ FROM BOTH ENDS, STILL NO Pd -----------
+    # The strongest half of this gate. Everything below needs a driver, a socket
+    # and 30 s; this needs none of them and catches the failure that costs the
+    # most -- a button that spells its command differently from the way u_net
+    # routes it, which is dropped in silence with the rig in front of you.
+    ucmd, udev = _route_of(UNET, "re-wire"), _route_of(UNET, "m_volca")
+    smsg = scene_msgs()
+    ck(ucmd is not None and udev is not None and smsg is not None,
+       "the inbound route boxes and the scene's commands are all readable",
+       "u_net: %r / %r   scene: %r" % (ucmd, udev, smsg))
+    if ucmd and udev and smsg is not None:
+        scmd = sorted({m.split()[0] for m in smsg})
+        sdev = sorted({m.split()[1] for m in smsg if len(m.split()) > 1})
+        ck(scmd == sorted(ucmd),
+           "⛔ the scene sends EXACTLY the commands u_net routes",
+           "scene sends %s, u_net routes %s -- whichever side is short is a "
+           "button that does nothing at all" % (" ".join(scmd), " ".join(ucmd)))
+        ck(sdev == sorted(udev),
+           "⛔ the scene names EXACTLY the devices u_net routes",
+           "scene names %s, u_net routes %s" % (" ".join(sdev), " ".join(udev)))
+        ck(len(smsg) == len(ucmd) - 1 + len(udev),
+           "one button per command, and one per sounding device",
+           "%d message boxes: %s" % (len(smsg), ", ".join(smsg)))
+        # and the ack must be able to light every one of them
+        ck(_route_of(SCENE, "re-wire") == ucmd,
+           "the scene's ACK route covers every command u_net can acknowledge",
+           "scene: %r" % (_route_of(SCENE, "re-wire"),))
+        ck(_route_of(SCENE, "m_volca") == udev,
+           "the scene's ACK route covers every device",
+           "scene: %r" % (_route_of(SCENE, "m_volca"),))
+
+    # -- ⛔ THE TWO TRAPS THE SCENE CANNOT REPORT ON ITSELF --------------------
+    guis = scene_iemguis()
+    writes, reads = scene_names()
+    ck(len(guis) >= 8 and all(s not in ("empty", "-") and r not in ("empty", "-")
+                              for s, r in guis),
+       "⛔ every bng carries BOTH a send and a receive name",
+       "PdParty renders no iemgui that is missing either -- it parses, "
+       "instantiates, participates and is INVISIBLE. saw %d: %s"
+       % (len(guis), guis))
+    senders = [(s, r) for s, r in guis if s in reads]
+    lamps = [(s, r) for s, r in guis if r in writes]
+    ck(bool(senders) and bool(lamps),
+       "the scene still has both transmitting buttons and lit lamps",
+       "%d transmit, %d are lit" % (len(senders), len(lamps)))
+    ck(not [b for b in senders if b[1] in writes],
+       "⛔ NO bng BOTH TRANSMITS AND IS LIT -- the ack cannot re-fire the command",
+       "a bng whose send and receive names differ RE-SENDS when it receives, so "
+       "one that transmits and is also lit by the ack would ping-pong for ever: %s"
+       % [b for b in senders if b[1] in writes])
+    ck("print" not in [t.split()[0] for _k, t in _guts(SCENE)[0] if t],
+       "no [print] anywhere in the scene",
+       "PdParty transmits print as /pdparty/print OSC -- 138 packets in the "
+       "time it takes to drag a fader once")
+
     # -- shape ---------------------------------------------------------------
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})
     ck(all(a in ADDRS for a in seen), "shape: only known OSC addresses",
        "saw " + ", ".join(seen))
     ck([n for n, _ in wins] == ["idle", "sweep1", "sweep2", "statussw",
-                                "alert", "reserved", "idle2", "done"],
-       "shape: all eight windows arrived",
+                                "alert", "reserved", "idle2", "cmdwire",
+                                "cmdvolca", "cmd404", "cmdbogus", "cmdclear",
+                                "done"],
+       "shape: all thirteen windows arrived",
        ", ".join(n for n, _ in wins))
 
     hbs = [g[0] for _, rowset in wins for _, a, g in rowset
@@ -306,6 +456,71 @@ def main():
        "reserved: seven reserved messages produced no traffic beyond the repeat",
        "%d param, %d status" % (len(rows("reserved", "/cutit/param")),
                                 len(rows("reserved", "/cutit/status"))))
+
+    # -- the inbound half, window by window -----------------------------------
+    # ⚠️ EXACT COUNTS, NEVER non-zero. "at least one ack" is satisfied by a route
+    # that fires every branch on every command, which is precisely the bug the
+    # negatives below exist to catch.
+    def args(win, addr):
+        return [g for _, a, g in rows(win, addr) if a == addr]
+
+    def one(win, addr, want, label):
+        got = args(win, addr)
+        ck(len(got) == 1 and got[0] == want, "%s: %s" % (win, label),
+           "wanted exactly one %s %s, got %s" % (addr, want, got))
+
+    def none_of(win, addrs, label):
+        got = {a: args(win, a) for a in addrs}
+        ck(not any(got.values()), "%s: %s" % (win, label),
+           "; ".join("%s %s" % (a, v) for a, v in got.items() if v) or "(silent)")
+
+    CMD = ["/probe/presence", "/probe/volca", "/probe/p404", "/cutit/ack"]
+
+    one("cmdwire", "/cutit/ack", ["re-wire"], "re-wire is acknowledged")
+    one("cmdwire", "/probe/presence", ["re-wire"],
+        "re-wire reaches u_present ON THE BUS -- one owner of the recovery")
+    none_of("cmdwire", ["/probe/volca", "/probe/p404"],
+            "re-wire sounded nothing")
+
+    one("cmdvolca", "/probe/volca", ["notes", 60.0, 100.0, 200.0],
+        "test-note m_volca fires ONE note out the Volca's own outlet")
+    one("cmdvolca", "/cutit/ack", ["test-note", "m_volca"],
+        "and acknowledges the device it fired at")
+    none_of("cmdvolca", ["/probe/p404", "/probe/presence"],
+            "it touched neither the 404 nor the re-wire")
+
+    one("cmd404", "/probe/p404", ["pad", 1.0, 100.0],
+        "test-note m_404 fires ONE pad out the 404's own outlet")
+    one("cmd404", "/cutit/ack", ["test-note", "m_404"],
+        "and acknowledges the device it fired at")
+    none_of("cmd404", ["/probe/volca", "/probe/presence"],
+            "it touched neither the Volca nor the re-wire")
+
+    # ⛔ THE NEGATIVES. Five malformed commands in one window: two selectors off
+    # the list, a DEVICE off its own list, the bare `404` spelling that route
+    # reads as a float and can never match, and a well-formed command under a
+    # different OSC root.
+    none_of("cmdbogus", CMD,
+            "⛔ FIVE WRONG COMMANDS REACH NOTHING AT ALL -- no ack, no bus, "
+            "neither outlet")
+    # ⛔ AND THE WITNESS THAT THE LINK WAS LIVE WHILE THEY WERE BEING IGNORED.
+    # Without it "nothing happened" is also satisfied by a patch that had died,
+    # by a socket that was never bound, and by a window opened in the wrong place.
+    ck(len(args("cmdbogus", "/cutit/hb")) >= 2,
+       "cmdbogus: the link was LIVE while they were ignored",
+       "%d heartbeats in that window" % len(args("cmdbogus", "/cutit/hb")))
+
+    one("cmdclear", "/cutit/ack", ["clear-alert"], "clear-alert is acknowledged")
+    before = [g for g in args("idle2", "/cutit/alert") if len(g) >= 4]
+    after = [g for g in args("done", "/cutit/alert") if len(g) >= 4]
+    ck(bool(before) and all(g[3] == "boom" for g in before),
+       "clear-alert: the alert was still held on the repeat BEFORE the clear",
+       "%d repeats carrying %s" % (len(before), {g[3] for g in before}))
+    ck(bool(after) and all(g[1] == "none" and g[3] == "-" for g in after),
+       "⛔ clear-alert: and the repeat carries the EMPTY alert afterwards",
+       "%d repeats carrying %s" % (len(after), [g[1:] for g in after]))
+    none_of("cmdclear", ["/probe/volca", "/probe/p404", "/probe/presence"],
+            "clearing the alert sounded nothing and re-wired nothing")
 
     print()
     rc = ck.report()

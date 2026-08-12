@@ -156,9 +156,11 @@ page and the gates first.**
 
 ## Open
 
-**Nothing.** ✅ The diag layer's summoning control is decided and shipped — `lp-cc-80` in all six
-modes, with its bench steps on `display` and `nanokontrol`. See
-[ref/device/launchpad.md](ref/device/launchpad.md).
+**Nothing.** ✅ The diag layer's summoning control is decided and shipped — **`og-shift-60`**, the
+Organelle's lowest key held under the `aux` modifier, in all six modes, with its bench steps on
+`display` and `nanokontrol`. It sat on `lp-cc-80` for part of a day and moved because a Launchpad
+that has come unplugged cannot summon the screen that would say so. See
+[ref/device/organelle.md](ref/device/organelle.md).
 
 ---
 

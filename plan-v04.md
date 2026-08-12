@@ -8,10 +8,10 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **This is no longer the only plan.** Two scoped plans — [plan-v03.4.1.md](plan-v03.4.1.md) and
-[plan-v03.5.md](plan-v03.5.md) — hold the last batch of infrastructural work before v0.4: panic
-becoming `recover`, and the venue kit. ✅ **The test runner, the v0.3.2 cleanup, the v0.3.3 coverage
-pass and hot-swap have all landed** — the first three on 2026-08-09 and hot-swap on 2026-08-10.
+⚠️ **This is no longer the only plan.** One scoped plan — [plan-v03.5.md](plan-v03.5.md) — holds
+the last batch of infrastructural work before v0.4: the venue kit. ✅ **The test runner, the v0.3.2
+cleanup, the v0.3.3 coverage pass, hot-swap and panic becoming `recover` have all landed** — the
+first three on 2026-08-09, hot-swap on 2026-08-10 and `recover` on 2026-08-11.
 **Read [CLAUDE.md](CLAUDE.md)'s table for the order and the dependencies.**
 
 ⛔ **§3 below is being emptied by those two.** Every open question in it is assigned to one of them,
@@ -96,42 +96,6 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 
 **The single place to look for what is unresolved.** Every `ref/` page's `Open` section points here.
 
-### What [plan-v03.4.1.md](plan-v03.4.1.md) still owns
-
-⛔ **This is NOT handed here, and that plan says so in its own landing checklist.** It is indexed here
-because every `ref/` page's `Open` points at this section, and a pointer that resolves to nothing is
-worse than no pointer. **This whole subsection goes when that plan does.**
-
-| Still open | Where it is executed |
-|---|---|
-| Panic becomes `recover` — the CC 90 tiers, the two-step OSC reload, the breadcrumb | **[plan-v03.4.1.md](plan-v03.4.1.md)**, all of it |
-
-✅ **plan-v0.3.4 is gone, and everything it owned is either built or in the item below.** Hot-swap
-landed 2026-08-10: every detectable device has a presence model, one bounded re-wire serves the rig,
-and the bound is now asserted by **reaching** it rather than by arithmetic. The facts are on
-[ref/module/presence.md](ref/module/presence.md) and the reasoning is in `git log`.
-
-### ⬜ `u_map` accepts a `mode` it cannot use, and one bad atom kills every knob
-
-Found on the rig on 2026-08-11, and it had been live for an unknown number of sessions. The saved
-`mode` in `cut-it-auto.txt` read `compose` with **no mode name**; the restore replays it at ~3500 ms,
-`[list split 1]`'s remainder is empty, and the lookup key falls back to the control name alone —
-so `[text search]` hunts for `og-knob-1` in the mode column and every Organelle knob draws its raw
-0-to-1 row where a BPM belongs. The full mechanism is a Trap on [map.md](ref/module/map.md), item 294.
-
-⛔ **Three properties made it expensive**, and each is worth more than the fix. It is **invisible on
-every surface but one** — `m_organelle` is the only device file that posts no `disp` row of its own,
-so the other three mask a dead lookup completely. It **survives a power cycle**, because the auto
-flush is armed by the restore and the boot seed's correct value is replaced before it can be written
-(see [state.md](ref/module/state.md)). And **nothing reports it**: an unknown *destination* already
-raises `fail u_map unknown-dest`, while an unusable *mode* passes silently.
-
-**Small**: the key-setter refuses a `mode` that is not two atoms and raises on `err`, exactly as the
-destination allowlist already does. ⚠️ **The gate for it is the interesting half** — `map-assert`'s
-static lint proves every row's destination exists, and nothing yet drives a malformed mode through
-the restore path. Repairing the file needs no code: any real mode selection writes all three atoms
-back.
-
 ### ⬜ `[polytouchin]` has no stub, so the Launchpad's pressure path is untested
 
 It was in **neither** MIDI inventory list in `test/gate/lib-scratch.sh` until a closed-question scan
@@ -167,27 +131,32 @@ until this was measured — *"clock and transport … already reach every port"*
 ⚠️ **It is not obviously a bug for the nano**, which is a controller with nothing to sync. It is
 plainly one for the Volca, which is a synthesiser with a sequencer.
 
-**Probably small**: two more `[midiout]` objects in `realtime-out`, or one fed from a `[t f f f f]`
-with four ports set at loadbang. ⛔ **But decide what SHOULD be synced before widening it.** The
-Launchpad ignores incoming clock in Programmer Mode (item 257), so of the two ports currently fed,
-one is already pointless — a fan-out to all four would make that three. The real question is which
-devices Cut It intends to drive, and that is a v0.4 sound question, not a wiring one.
+✅ **The TRANSPORT half is closed** — item 295. `panic`'s realtime STOP now reaches port 4 through
+`$0-rt4`, a receive the panic branch is the sole writer of, so a Volca sequencing through a panic
+stops. That was a bug rather than a decision: the mixer's master fader can mute the Volca but cannot
+stop its sequencer. ⚠️ **It only lands if the device's `MIDI Clock src` is `Auto`** — see
+[volca.md](ref/device/volca.md), and it is a `need` on the `recover` bench's second step.
 
-⚠️ **`clock-assert.sh` asserts the clock leaves on BOTH ports** — a fan-out that lost one would look
-perfect on the other, which is why the gate counts them. Widening this changes that gate's
-expectation deliberately.
+⬜ **The CLOCK half stays open, deliberately.** ⛔ **Decide what SHOULD be synced before widening
+it.** The Launchpad ignores incoming clock in Programmer Mode (item 257), so of the two ports fed,
+one is already pointless — a fan-out to all four would make that three. The real question is which
+devices Cut It intends to *drive*, and that is a v0.4 sound question, not a wiring one.
+
+⚠️ **`clock-assert.sh` asserts the clock leaves on BOTH ports**, and `tempo-assert.py` now asserts
+the exact port set at both ends — `panic` on 1, 3 and 4; the transport on 1 and 3. A fan-out that
+lost one would look perfect on the other, and one that leaked the clock onto port 4 would satisfy
+any non-zero test. Widening this changes both expectations deliberately.
 
 ### ✅ Panic, and parameter pickup — both closed, kept only as pointers
 
-**Panic means RECOVER, not silence** — decided 2026-08-08 with the rig present. The mixer's master
-fader is the better silence: instant, analogue, independent of whatever is misbehaving. ✅ The
-destructive half is already removed (item 251) — panic no longer hands the Launchpad back, which used
-to kill the grid until reload and bury Pd's Midi-In 1 under a clock flood. ⬜ **The build and the control
-binding are [plan-v03.4.1.md](plan-v03.4.1.md)**, all of it. ⚠️ **Its original justification is
-obsolete** — it read "a reload closes item 235 by brute force", and item 235 is now closed properly
-and hardware-verified. What replaces it is sharper: a reload is the ONLY recovery that exists for a
-device nothing can detect, and the Volca was left stranded on 2026-08-10 proving the point (item
-275).
+✅ **Panic is built, and it has two tiers** — items 295 to 300, landed 2026-08-11. CC 90 raises
+`panic` on a press and `recover` on a two-second hold; `recover` silences and then reloads the patch,
+re-enumerating every device. The facts are on [ref/device/launchpad.md](ref/device/launchpad.md)
+under `Design`, [ref/module/map.md](ref/module/map.md) and [ref/module/boot.md](ref/module/boot.md).
+⚠️ **The justification that survived is not the one it started with**: it read "a reload closes item
+235 by brute force", and item 235 was closed properly instead. What replaces it is sharper — a reload
+is the ONLY recovery that exists for a device nothing can detect, and the Volca was left stranded on
+2026-08-10 proving the point (item 275).
 
 **Parameter pickup is shipped and hardware-verified.** Items 239–242, on
 [ref/module/map.md](ref/module/map.md). ⛔ It found three further bugs on the device after the first

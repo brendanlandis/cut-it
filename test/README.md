@@ -18,14 +18,14 @@ word.
 
 ## One gate per module
 
-Nineteen gates, and each answers for exactly one page under `ref/`. That is the whole organising
+Twenty gates, and each answers for exactly one page under `ref/`. That is the whole organising
 principle: **a page that names a gate should be able to name one whose entire subject is that page**,
 or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
 
 | Gate | Checks | Answers for |
 |---|---|---|
-| `runner-assert.sh` | 164 | **no page** — it answers for this one |
+| `runner-assert.sh` | 168 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
@@ -33,9 +33,10 @@ were false.
 | `display-assert.sh` | 31 | `module/display` — the grid |
 | `oled-assert.sh` | 43 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
-| `tempo-assert.sh` | 17 | `module/tempo` — `u_tempo` |
+| `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 39 | `module/map` |
+| `map-assert.sh` | 42 | `module/map` |
+| `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 36 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
@@ -45,9 +46,9 @@ were false.
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 
-**541 checks.** ⚠️ **Eighteen of the nineteen gates print their own `N checks` line and one does
+**580 checks.** ⚠️ **Nineteen of the twenty gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **534**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **573**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 36 come from TWO Pd runs and one tally**, which is the only entry here
@@ -120,8 +121,9 @@ drifted and nothing noticed.
 
 Layout and graph structure, both entry points loading in silence, the bench step text, the MIDI
 inventory, and one gate per module — the boot sequence, the audio path, the error bus, the display
-arbiter, the OLED, the aux LED, the tempo reference, the clock, the map, the data store, the
-Launchpad, the nanoKONTROL, the Organelle's own panel, the phone, the SP-404 and the Volca. **Mac
+arbiter, the OLED, the aux LED, the tempo reference, the clock, the map, panic's second tier, the
+data store, the Launchpad, the nanoKONTROL, the Organelle's own panel, the phone, the SP-404 and the
+Volca. **Mac
 only — it touches no device**, so it is safe to run at any time, including with the Organelle
 switched off.
 

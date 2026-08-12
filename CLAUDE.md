@@ -49,7 +49,7 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **What is being BUILT next** — two scoped plans | [plan-v03.4.1.md](plan-v03.4.1.md), [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
+| **What is being BUILT next** — one scoped plan | [plan-v03.5.md](plan-v03.5.md) — see *How the documentation works* |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
@@ -106,7 +106,7 @@ under `ref/`. Nothing in either is deployed.
 ⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Nineteen gates and 541 checks**, and what each one protects is in
+**Twenty gates and 580 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.
@@ -178,24 +178,15 @@ plan, that section should have left the file.
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
 is where everything unscoped waits.
 
-**Two scoped plans stand between here and v0.4**, and each one is written to be handed to a fresh
-agent cold — it carries its own reading list, saying how much of each file to read and what to skip.
-⛔ **Every ⬜ in the repository is closed by one of them, or is one of the nine items that genuinely
-need the sound to exist.**
+**One scoped plan stands between here and v0.4** — [plan-v03.5.md](plan-v03.5.md), the venue kit —
+and it is written to be handed to a fresh agent cold, carrying its own reading list. ⛔ **Every ⬜ in
+the repository is closed by it, or is one of the items that genuinely need the sound to exist.**
 
-| | Plan | Needs |
-|---|---|---|
-| 1 | [plan-v03.4.1.md](plan-v03.4.1.md) — panic becomes `recover` | — |
-| 2 | [plan-v03.5.md](plan-v03.5.md) — the venue kit | — |
-
-**Neither gates the other**: 1 recovers what presence structurally cannot, and 2's diagnostic screen
-reads presence data that now exists — see [ref/module/presence.md](ref/module/presence.md).
-
-✅ **Plan 0, the test runner, the v0.3.2 cleanup, v0.3.3 coverage, hot-swap and the bench session are
-all gone** — the measurement session ran on 2026-08-08, `test/run.sh` landed on 2026-08-09, the
-cleanup and the coverage pass landed the same day, hot-swap landed on 2026-08-10, and **all seven
-benches were run and judged on 2026-08-11**. The facts are on `ref/` pages and the reasoning is in
-`git log`.
+✅ **Plan 0, the test runner, the v0.3.2 cleanup, v0.3.3 coverage, hot-swap, the bench session and
+plan-v0.3.4.1 are all gone** — the measurement session ran on 2026-08-08, `test/run.sh` landed on
+2026-08-09, the cleanup and the coverage pass landed the same day, hot-swap landed on 2026-08-10,
+**all seven benches were run and judged on 2026-08-11**, and panic became `recover` the same day.
+The facts are on `ref/` pages and the reasoning is in `git log`.
 
 ⛔ **`check_closers` in `docs-check.py` is written but gated behind `--strict`**, because most
 remaining ⬜ are owned by the three plans above. **plan-v03.5.md's landing checklist removes the

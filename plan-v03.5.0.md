@@ -55,8 +55,12 @@ tool at once, and that page holds the checklist for what must already be on the 
 ⚠️ **Five minutes on the phone, and it is exactly the venue failure this plan exists to prevent.** It
 has survived three counts because it is not code.
 
-**Do it in the same session as task 1.** Record it on
-[ref/device/phone.md](ref/device/phone.md) and strike the ⬜ in its `Open`.
+⛔ **DO IT BEFORE TASK 1, NOT ALONGSIDE IT.** ⚠️ **This task is independent of everything else in the
+repo** — no rig session, no AP, no 5.1, no device even powered. Five minutes whenever. And done
+first, **task 1's set becomes its test too**: an hour with the phone as the only display is exactly
+the condition a stray swipe would show up in. Done afterwards, that evidence is lost.
+
+Record it on [ref/device/phone.md](ref/device/phone.md) and strike the ⬜ in its `Open`.
 
 ---
 

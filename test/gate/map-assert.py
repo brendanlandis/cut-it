@@ -111,8 +111,8 @@ def run_asserts(cap):
                                            "RAIL-BACK", "MODE-4", "MODE-DEP",
                                            "MODE-4-RELEASE", "UNMAPPED",
                                            "BAD-MODE", "AFTER-BAD",
-                                           "MODE-1-BACK", "DIAG-DEST",
-                                           "DIAG-RELEASE"]))
+                                           "DIAG-DEST", "DIAG-RELEASE",
+                                           "SHIFT-STOP"]))
     W = lambda k: by.get(k, [])
     # ⛔ MIDIOUT IS DELIBERATELY NOT EVIDENCE HERE, and the reason is worth the
     # three lines. g_grid repaints the Launchpad off a [metro 100] that runs with
@@ -297,11 +297,10 @@ def run_asserts(cap):
             "idempotent, which is exactly why nothing would look wrong"
             % modes("MODE-4-RELEASE"))
 
-    # ⛔ THE diag DESTINATION, FROM THE RUNNING SIDE. The static lint above
-    # proves diag is on the route by reading; this proves a table row can
-    # actually reach it. No shipped row names it yet -- which control summons
-    # the diagnostic screen is undecided -- so without a gate row the whole
-    # handler would be Pd that has never once run.
+    # ⛔ THE SHIPPED ROWS, FROM THE RUNNING SIDE. The static lint above proves
+    # diag is on the route by reading; this proves the row that names it really
+    # reaches it. og-shift-60 is the lowest key held under aux, in all six
+    # modes, which is why this needs no mode change first.
     diag = lambda k: [e[1] for e in W(k) if e[0] == "DISP" and e[1][:1] == ["diag"]]
     A.check("⛔ a row naming diag summons the diagnostic layer",
             len(diag("DIAG-DEST")) == 1,
@@ -312,7 +311,16 @@ def run_asserts(cap):
     # screen would outlive the button by its whole eight seconds.
     A.check("⛔ ... and the RELEASE does not summon it again",
             len(diag("DIAG-RELEASE")) == 0,
-            "disp in that window: %s" % diag("DIAG-RELEASE"))
+            "disp in that window: %s. A shifted key publishes BOTH edges, so "
+            "every button destination's non-zero gate is load-bearing here in a "
+            "way it never was for a nano button that only sent the press"
+            % diag("DIAG-RELEASE"))
+    # ⛔ THE PANEL'S OWN STOP. The transport lives on the nano now, so with the
+    # nano unplugged this shifted key is the only way left to silence the
+    # instrument -- which is what moving start and stop off the aux button cost
+    # and what this row buys back.
+    A.check("⛔ a shifted key reaches stop, on the panel that cannot go missing",
+            any(e[0] == "STOP" for e in W("SHIFT-STOP")), repr(W("SHIFT-STOP")))
 
 
 # --------------------------------------------------------------- the no-Save run
@@ -335,8 +343,8 @@ def nosave_asserts(cap):
                                            "RAIL-BACK", "MODE-4", "MODE-DEP",
                                            "MODE-4-RELEASE", "UNMAPPED",
                                            "BAD-MODE", "AFTER-BAD",
-                                           "MODE-1-BACK", "DIAG-DEST",
-                                           "DIAG-RELEASE"]))
+                                           "DIAG-DEST", "DIAG-RELEASE",
+                                           "SHIFT-STOP"]))
     W = lambda k: by.get(k, [])
     tempos = lambda k: [float(e[1][0]) for e in W(k) if e[0] == "TEMPO" and e[1]]
     cc = lambda k, n: [e[1] for e in W(k) if e[0] == "CTLOUT" and e[1][1] == n]

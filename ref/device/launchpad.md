@@ -426,25 +426,17 @@ same mode twice per push. Idempotent, therefore invisible. The mechanism is on
 ⚠️ **Mode selection is now on a device that can be unplugged**, which the nano equally was. It is a
 lateral move rather than a regression, and it is not a control you need in a hurry.
 
-### CC 80 is the diagnostic, directly below it
+### CC 80 is free
 
-**The left column's top button**, one row under the CC 90 corner — the two controls you reach for
-when something is wrong sit together, and neither is anywhere near a pad you would play.
+**The left column's top button**, one row under the CC 90 corner. It held the diagnostic screen for
+part of a day and gave it up: ⛔ **a Launchpad that has come unplugged sends no CC**, so the control
+that would name the missing device was dead in exactly the case the screen exists for. `diag` moved
+to the Organelle's own keyboard, under the aux modifier — see [organelle.md](organelle.md).
 
-A press raises `diag`, which summons `g_oled`'s device roster: one 8px row per device reading
-`here` / `gone` / `never` / `unchecked`, cleared by its own 8 s TTL. It is mapped in **all six
-modes**, because a diagnostic you cannot reach from the mode you are in is not one. The screen and
-its states are on [display.md](../module/display.md).
-
-⛔ **It cannot report its own device.** A Launchpad that has come unplugged sends no CC, so this
-button is dead in one of the cases the roster exists for — chosen anyway, because the alternatives
-are a nanoKONTROL with the same problem or an Organelle key already spoken for. ⚠️ **The gap is
-covered from the other side rather than left open**: an unplugged Launchpad is also *dark*, the
-watchdog has already written `warn m_launchpad device-lost` to the screen, and
-[display.md](../module/display.md) records what a dark grid means.
-
-⚠️ **Unlike CC 90 it reads only the press.** There is no second tier and no hold, so nothing about it
-needs the release — see the `recover` note above for why that distinction is not free.
+⚠️ **The same objection applies to everything else on this surface**, `recover` on CC 90 included.
+What changed is not that the Launchpad became reliable but that there is now somewhere better for
+the controls you reach for when a device has died. Anything put on CC 80 should be something you
+would not miss if the Launchpad were the thing that went.
 
 ### Pressure is the forgotten input
 

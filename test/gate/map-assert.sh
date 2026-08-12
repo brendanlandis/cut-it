@@ -41,13 +41,6 @@ WORK=${TMPDIR:-/tmp}/cutit-map-$$
 # static lint checks the SHIPPED file; these give the run a destination that
 # exists and one that does not.
 #
-# ⛔ gk-diag IS HERE BECAUSE NO SHIPPED ROW NAMES diag YET. The destination
-# and its handler exist on u_map's route -- which is what the static lint
-# above reads -- but which physical control summons the diagnostic screen is
-# a decision about the panel that has not been made. A gate row is what keeps
-# the path EXERCISED in the meantime, so the day a row is added it is a line
-# of a text file rather than a line of Pd nobody has ever run.
-#
 # ⛔ og-knob-2 AND og-knob-3 ARE HERE FOR PICKUP, and they must be DISTINCT CC
 # numbers. Both windows below send two values to a knob and count what comes out
 # -- one expects exactly one event and the other expects two -- so a leak between
@@ -58,7 +51,6 @@ gate_rows() {
     echo "mode-1 og-knob-2 volca-cc 42"
     echo "mode-1 og-knob-3 volca-cc 43"
     echo "mode-1 og-knob-4 volca-cc 44"
-    echo "mode-1 gk-diag diag 0"
 }
 
 # ⛔ THE GATE RUNS TWICE, AND THE ONLY DIFFERENCE IS ONE FILE. Pickup arms a knob

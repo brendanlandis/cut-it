@@ -59,7 +59,7 @@ file and rejects it before Pd ever does.
 | `404-pad` | The pad number | Velocity | verified | — |
 | `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key | verified | 293 |
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
-| `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`lp-cc-80`, in all six modes** | verified | 301 |
+| `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, in all six modes** | verified | 301 |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -104,9 +104,9 @@ One destination fed from two surfaces would otherwise need two scalings.
 | Read | `read -c cut-it-map.txt` at `loadbang`, **no delay**. Relative, so it resolves against the patch folder on the Mac, on the device and inside the gate's scratch copy | verified | 229, 234 |
 | Empty table | Reported on `err` as `map-empty` | verified | 234 |
 
-**An unmapped control is the normal state of most controls and must stay silent.** Six modes × 67
-controls is 402 possible rows and the shipped file has **56** — seven, plus the keyboard's 25 in
-mode 1, plus CC 90, CC 80, PLAY and STOP in all six.
+**An unmapped control is the normal state of most controls and must stay silent.** Six modes × 92
+controls is 552 possible rows and the shipped file has **68** — seven, plus the keyboard's 25 in
+mode 1, plus CC 90, PLAY, STOP and the three shifted keys in all six.
 
 ### What happens at load
 

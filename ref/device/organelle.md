@@ -169,8 +169,22 @@ meaning as `m_nano`.
 
 **Hold `aux` and the 25 keys publish `og-shift-60`…`og-shift-84` instead of `og-key-60`…`og-key-84`.**
 That is 25 more controls, and — because the Organelle is bolted to the instrument — **the only
-controls on the rig that can never be the missing device.** It is where `diag`, `stop` and `recover`
-live, so the panel alone can always ask what died, silence a runaway rig and force a reload.
+controls on the rig that can never be the missing device.**
+
+| Shifted key | Does | Why there | Evidence | Item |
+|---|---|---|---|---|
+| **lowest**, `og-shift-60` | `diag` | An end of the keyboard, findable by feel without looking | verified | 305 |
+| **middle**, `og-shift-72` | `stop` | ⛔ The panel keeps a way to silence the rig when the nano is unplugged, which is what moving the transport off `aux` cost | verified | 305 |
+| **highest**, `og-shift-84` | `recover` | The destructive one, as far from `diag` as the keyboard allows. It reloads the patch | verified | 305 |
+
+⛔ **`stop` and `recover` here are the point, not a bonus.** The transport lives on the nano and
+`recover` also lives on the Launchpad, so **both critical controls sit on devices that can be
+unplugged.** These three rows mean the panel alone can always ask what died, silence a runaway rig
+and force a reload, whichever controller has gone.
+
+⚠️ **`recover` reads the RELEASE** — item 298, two tiers on one control. A shifted key publishes both
+edges, so it works unchanged; **the release carries the latched name**, which is exactly what the
+per-key array below guarantees. Without it the hold could never complete.
 
 | | Evidence | Item |
 |---|----------|------|

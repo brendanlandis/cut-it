@@ -196,14 +196,18 @@ def _holds():
             "vanish in 1.3 s" % (disp.steps[2].holds, disp.steps[3].holds))
 
     # ⛔ EACH OF THESE ASSERTS A TIMEOUT. Re-firing resets it.
+    # ⚠️ THE NUMBERS ARE POSITIONS AND THEY MOVE WHEN A STEP IS INSERTED ABOVE
+    # THEM. Both launchpad numbers shifted by one when `Pressing a mode lamp
+    # selects it` was added -- the check caught it, which is the point, but read
+    # the prose in the third column rather than trusting the number.
     # ⚠️ ALL THREE USED TO NAME nanokontrol OR A LOWER display NUMBER. The OLED
     # steps that had been copied into the nanokontrol bench were folded back
     # into display, which is what they were always about -- see test/README.md.
     for b, n, why in ((disp, 10, "about 2 s later it vanishes"),
                       (disp, 13, "recording returns after about 4 s"),
                       (disp, 17, "the 30 s TTL that the step AFTER it judges"),
-                      (lp, 13, "clears ITSELF about thirty seconds later"),
-                      (lp, 11, "goes back to the mode lamps by itself")):
+                      (lp, 14, "clears ITSELF about thirty seconds later"),
+                      (lp, 12, "goes back to the mode lamps by itself")):
         st = b.steps[n - 1]
         A.check("⛔ %s step %d is NOT held -- it tests %s" % (b.name, n, why),
                 not st.holds,

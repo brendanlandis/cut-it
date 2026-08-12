@@ -195,13 +195,22 @@ STEPS_DISPLAY = [
  # arm's length is a person's judgment, and m_launchpad unchecked is 21
  # characters -- the whole width of a row -- so the longest line clips silently
  # if anything about the names or the state words ever grows.
+ # ⛔ THE POINT OF THE WHOLE SHIFT LAYER, and it can only be judged with a
+ # device actually gone. The nano carries start and stop now, so this is the
+ # step that proves the panel alone can still silence the rig.
+ ('Shifted stop with the nano unplugged',
+  'PASS IF: The clock stops. The beat row on the Launchpad stops walking.',
+  [],
+  {'do': 'Hold the aux button and press the middle key.',
+   'need': ['The nanoKONTROL unplugged.',
+            'The clock running -- press PLAY on the nano before unplugging it.']}),
  ('The diag roster',
   'PASS IF: Five small lines naming m_launchpad m_nano m_organelle m_volca and m_404 -- each with here or gone or never or unchecked beside it. Every line is readable at arm reach and none is cut off at the right edge. About eight seconds later the meters come back on their own.',
   [],
-  {'do': 'Press the Launchpad button directly below the top-left corner, CC 80. '
-         'Look hardest at the longest line: m_launchpad unchecked is exactly as '
-         'wide as a row gets, so that is where clipping would show first.',
-   'need': ['The Launchpad plugged in and lit.']}),
+  {'do': 'Hold the aux button and press the lowest key. Look hardest at the '
+         'longest line: m_launchpad unchecked is exactly as wide as a row gets, '
+         'so that is where clipping would show first. The word shift is on '
+         'screen while aux is held and the roster draws over it.'}),
 ]
 
 STEPS_NANOKONTROL = [
@@ -265,12 +274,11 @@ STEPS_NANOKONTROL = [
  ('Hot-swap -- the diag roster names it',
   'PASS IF: The m_nano line reads gone. The other four lines are unchanged and none of them reads gone.',
   [],
-  {'do': 'Press the Launchpad button directly below the top-left corner, CC 80. '
-         'Check m_launchpad and m_404 as well as m_nano: pulling one USB cable '
-         'can knock a bystander off the bus, so a second line reading gone is '
-         'worth knowing about rather than a miss.',
-   'need': ['The nanoKONTROL still unplugged from the last step.',
-            'The Launchpad plugged in and lit.']}),
+  {'do': 'Hold the aux button and press the lowest key. Check m_launchpad and '
+         'm_404 as well as m_nano: pulling one USB cable can knock a bystander '
+         'off the bus, so a second line reading gone is worth knowing about '
+         'rather than a miss.',
+   'need': ['The nanoKONTROL still unplugged from the last step.']}),
 
  # ⛔ THE THIRD CASE, AND IT IS THE ONE THAT HAPPENS IN A ROOM. The two above
  # are loss DETECTED and absent-at-load RECOVERED -- neither of them watches a

@@ -51,6 +51,18 @@ changes** — the Organelle is `192.168.12.1` and hands the phone `192.168.12.10
 anything**, and nothing on either end says so when they are not. It is the one piece of phone-side
 configuration the scene cannot carry.
 
+⛔ **And it must be a LITERAL ADDRESS — PdParty does not resolve `organelle.local`.** ✅ Measured on
+the rig 2026-08-12: with the host set to the name, taps produced nothing at all and the Organelle's
+UDP counter did not move; with the same port and the literal address the very next tap completed the
+round trip. **The failure is completely silent on both ends.** Item 312.
+
+⚠️ **Which makes the house network the awkward one, and the stage network the easy one.** The
+Organelle's lease moves — seen as `.15`, `.18` and `.6` — so the phone has to be re-pointed whenever
+it does. **On the Organelle's own access point it is always `192.168.12.1`**, so the configuration
+that matters at a gig is the stable one. The instrument still discovers the *phone* by itself;
+`phone-ip.sh` is unaffected, and this is the one direction that cannot be discovered — see *The phone
+cannot announce itself* under **Design**.
+
 ### The wire format
 
 ```

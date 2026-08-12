@@ -28,7 +28,7 @@ cd "$(dirname "$0")/../.."
 
 . test/gate/lib-scratch.sh
 
-scratch_require "Cut It"
+scratch_require "Cut It" "Cut It Debug"
 
 rc=0
 
@@ -52,9 +52,21 @@ echo
 echo "=== the closed question -- no MIDI class outside the inventory ==="
 midi_scan_unknown "Cut It" || rc=2
 
+# ⛔ THE SECOND DEPLOYABLE, AND IT IS NOT A FORMALITY. Every count above is
+# scoped to "Cut It", so before this arm existed a [notein] in "Cut It Debug" was
+# not merely uncounted -- it was INVISIBLE, and this gate would have gone on
+# claiming "these are all the MIDI objects in the patch" while a second patch
+# grew ways to talk to the rig that nothing watched. A directory is as good a
+# hiding place as an object.
+echo
+echo "=== the debug patch -- its own inventory, and the same closed question ==="
+midi_check_counts "Cut It Debug" "$MIDI_DEBUG_EXPECT" || rc=2
+midi_scan_unknown "Cut It Debug" "$MIDI_DEBUG_EXPECT" || rc=2
+
 echo
 if [ "$rc" = "0" ]; then
     echo "the MIDI inventory matches: $MIDI_EXPECT $MIDI_INVENTORY"
+    echo "and the debug patch's: $MIDI_DEBUG_EXPECT"
 else
     echo "THE MIDI INVENTORY HAS CHANGED. Read the counts above, decide whether the" >&2
     echo "patch or the inventory is wrong, and if it is the inventory, update" >&2

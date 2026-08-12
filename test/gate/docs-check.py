@@ -622,7 +622,8 @@ SKILLS = '.claude/skills'
 # stays green while it rots. test/ was added when the gates and benches moved out
 # of tools/; the count printed at the end of this check is what proves the list is
 # still complete, and it must go UP as the repo grows, never down.
-DIRS = ('tools/', 'test/', 'Cut It/', 'device/', 'mac-stubs/', r'\.claude/')
+DIRS = ('tools/', 'test/', 'Cut It/', 'Cut It Debug/', 'device/', 'mac-stubs/',
+        r'\.claude/')
 PATHREF = re.compile(
     r'(?<![\w.-])\.?/?((?:' + '|'.join(DIRS) + r')[\w /.-]*?'
     r'\.(?:sh|py|pd|txt))(?![\w.-])')

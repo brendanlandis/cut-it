@@ -75,8 +75,13 @@ _MIDI = re.compile(r"^(NOTEOUT|CTLOUT|PGMOUT|MIDIOUT):\s+(-?[\d.]+(?:\s+-?[\d.]+
 # exactly the failure the comment above describes, applied to the very next label
 # anyone added. presence-assert.py did not notice because it carries its own
 # regex for that bus; the next gate would have.
+# ⚠️ AND SL1..SL5 AND GOHOME ARRIVED WITH THE DEBUG PATCH, which draws with
+# mother's screenLine names rather than through a g_oled it does not have. Same
+# rule as every label above: it goes in both places or the lines are dropped in
+# silence.
 _BUS = re.compile(r"^(PARAM|DISP|ERR|TEMPO|START|STOP|MODE"
-                  r"|LED|STATE|OLED|MIDIINGATE|MIDIOUTGATE|PRESENCE):\s+(.*)$")
+                  r"|LED|STATE|OLED|MIDIINGATE|MIDIOUTGATE|PRESENCE"
+                  r"|SL[1-5]|GOHOME):\s+(.*)$")
 
 
 def parse(cap, tag):

@@ -63,6 +63,20 @@ MIDI_EXPECT="midiout:9 noteout:2 ctlout:3 pgmout:1 notein:2 ctlin:3 sysexin:1"
 # would unlock is nobody's yet. See ref/device/launchpad.md.
 MIDI_INVENTORY="polytouchin:1"
 
+# ⛔ THE DEBUG PATCH IS A SECOND DEPLOYABLE AND IT NEEDS ITS OWN INVENTORY. Every
+# count above is scoped to "Cut It", so a [notein] in "Cut It Debug" is not
+# "uncounted" -- it is INVISIBLE, and the one gate whose entire claim is "these
+# are all the MIDI objects in the patch" would keep saying so while a second
+# patch grew ways to talk to the rig that nothing watched. That is the exact
+# failure midi-emitters-assert.sh exists to prevent, arrived at by adding a
+# directory rather than an object.
+#
+# ⚠️ THREE OBJECTS AND NO MORE, and the smallness is the point: the debug patch
+# reads what arrives and fires two settled probes. notein and ctlin are OMNI, so
+# one of each covers all four ports; noteout's channel encodes the port, so one
+# of it reaches both the Volca on 49 and the SP-404 on 33.
+MIDI_DEBUG_EXPECT="notein:1 ctlin:1 noteout:1"
+
 # ⛔ EVERY MIDI CLASS Pd HAS, so "these are all the MIDI objects in the patch" can
 # be checked as a CLOSED question rather than by listing what we expect and
 # hoping the list is complete. The old inventory could only ever find a drift in
@@ -87,10 +101,17 @@ scratch_require() {
 }
 
 scratch_make() {
-    # $1 = work dir. Leaves $1/patch ready to run and $1/state empty.
+    # $1 = work dir, $2 = source folder, defaulting to "Cut It". Leaves $1/patch
+    # ready to run and $1/state empty.
+    #
+    # ⚠️ THE SECOND ARGUMENT HAS A DEFAULT SO NO EXISTING GATE CHANGES. Fifteen
+    # call sites want the instrument; only debug-assert.sh wants the second
+    # deployable, and a required argument would have meant editing every one of
+    # them to say what they already said by saying nothing.
     _w=$1
+    _src=${2:-Cut It}
     mkdir -p "$_w/state" || exit 2
-    cp -R "Cut It" "$_w/patch" || exit 2
+    cp -R "$_src" "$_w/patch" || exit 2
 
     # ⛔ COPY THE STUBS WITH A HARD CHECK. A missing stub used to sail past an
     # unchecked cp and surface six windows later as confusing assertion
@@ -293,8 +314,17 @@ midi_check_counts() {
 }
 
 midi_scan_unknown() {
-    # $1 = dir. Fails if any MIDI class present in the patch is named by NEITHER
-    # MIDI_EXPECT nor MIDI_INVENTORY.
+    # $1 = dir, $2 = the known-class list, defaulting to MIDI_EXPECT plus
+    # MIDI_INVENTORY. Fails if any MIDI class present in the patch is named by
+    # neither.
+    #
+    # ⛔ THE LIST IS AN ARGUMENT AND NOT AN ENVIRONMENT OVERRIDE, and that is a
+    # correctness fix rather than a style one. `MIDI_EXPECT=... midi_scan_unknown`
+    # looks like a scoped override and is not: POSIX lets a variable assignment
+    # prefixed to a FUNCTION call persist in the calling shell, and in dash and
+    # busybox ash it does -- so the debug patch's three-class list silently
+    # became the instrument's for everything after it, and this gate's closing
+    # summary printed the wrong inventory while exiting 0.
     #
     # ⛔ THIS IS THE HALF THAT CANNOT GO VACUOUS. midi_check_counts walks a list
     # we wrote and asks the patch about each entry, so a class nobody thought of
@@ -303,7 +333,7 @@ midi_scan_unknown() {
     # This walks the CLASSES and asks the list, which is the closed question the
     # gate has always claimed to answer.
     _rc=0
-    _known=" $(echo "$MIDI_EXPECT $MIDI_INVENTORY" | tr ' ' '\n' \
+    _known=" $(echo "${2:-$MIDI_EXPECT $MIDI_INVENTORY}" | tr ' ' '\n' \
                 | sed 's/:.*//' | tr '\n' ' ')"
     for _cls in $MIDI_ALL_CLASSES; do
         _got=$(_midi_boxes "$1" "$_cls")
@@ -323,15 +353,20 @@ midi_scan_unknown() {
 }
 
 midi_rewrite() {
-    # $1 = work dir. Rewrites every class in MIDI_EXPECT to its printing stub in
-    # the scratch copy, asserting the exact count as it goes.
+    # $1 = work dir, $2 = the spec list, defaulting to MIDI_EXPECT. Rewrites
+    # every class in it to its printing stub in the scratch copy, asserting the
+    # exact count as it goes.
     #
     # ⚠️ IT REWRITES ALL SIX, even for a gate that reads only one of them. That
     # is deliberate: it costs nothing -- a stub only prints -- and it means every
     # gate that makes a scratch copy enforces the whole inventory, so a new
     # emitter cannot be added without some gate going red.
+    #
+    # ⚠️ THE SPEC IS AN ARGUMENT ONLY BECAUSE THERE ARE TWO DEPLOYABLES NOW. The
+    # debug patch has three MIDI objects and the instrument has nineteen, so one
+    # shared count would be wrong for both -- see MIDI_DEBUG_EXPECT above.
     _rc=0
-    for _spec in $MIDI_EXPECT; do
+    for _spec in ${2:-$MIDI_EXPECT}; do
         _cls=${_spec%%:*}; _want=${_spec##*:}
         _got=$(_midi_boxes "$1/patch" "$_cls")
         if [ "$_got" != "$_want" ]; then

@@ -38,7 +38,7 @@ import sys
 #
 # ⚠️ UPDATE THIS DELIBERATELY, NEVER TO MAKE A RED RUN GREEN -- the same rule as
 # MIDI_EXPECT in test/gate/lib-scratch.sh, and for the same reason.
-EXPECT = 24
+EXPECT = 25
 
 # ⛔ THE INVENTORY RUNS FIRST because every gate below it rewrites the same MIDI
 # object boxes, so a count that has drifted explains all of them at once. Then
@@ -51,8 +51,11 @@ GATES = [
     # means indices are off by one, which is how every one of the five silent
     # rewirings in this project was caught) from note (cosmetic -- crossed
     # cords). Only PROBLEMs exit non-zero, so the status is trustworthy alone.
+    # ⛔ BOTH DEPLOYABLES. "Cut It Debug" is a second patch folder, and a cord
+    # naming a box that does not exist is exactly as silent there as it is in the
+    # instrument -- Pd drops it and loads anyway.
     ("layout and graph structure",
-     'python3 test/gate/pd-layout-check.py "Cut It"/*.pd'),
+     'python3 test/gate/pd-layout-check.py "Cut It"/*.pd "Cut It Debug"/*.pd'),
 
     # --- 1b. the documentation ---------------------------------------------
     # The docs restate the same fact in up to ten files and nothing connected
@@ -111,6 +114,11 @@ GATES = [
     ("the phone link", "./test/gate/phone-assert.sh"),
     ("the SP-404, both directions", "./test/gate/sp404-assert.sh"),
     ("the Volca", "./test/gate/volca-assert.sh"),
+    # ⛔ THE SECOND DEPLOYABLE, and the only gate here whose subject is a SCREEN.
+    # The debug patch has no bus at all -- no disp, no g_oled, no u_map -- so the
+    # five rows it writes to mother are the whole product, and the rows are what
+    # it asserts.
+    ("the debug patch", "./test/gate/debug-assert.sh"),
 ]
 
 
@@ -123,7 +131,11 @@ def _syntax():
     """
     pd = os.environ["PD"]
     rc = 0
-    for f in ("Cut It/main.pd", "Cut It/main-dev.pd"):
+    # ⛔ THREE ENTRY POINTS, NOT TWO. "Cut It Debug/main.pd" is menu-launched on
+    # the same device with the same -nogui and the same absent console, so a
+    # load-time error there is exactly as silent as one in the instrument -- and
+    # it is the patch you reach for WHEN the instrument is already broken.
+    for f in ("Cut It/main.pd", "Cut It/main-dev.pd", "Cut It Debug/main.pd"):
         p = subprocess.run([pd, "-nogui", "-noaudio", "-nomidi",
                             "-path", "mac-stubs", "-send", "pd quit", f],
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

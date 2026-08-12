@@ -55,11 +55,19 @@ list rather than by a fact -- a pass, and a meaningless one.
 # which made "the labels are in one place" false for the one bus whose label a
 # gate would most want to reuse. It is here now, and build_tap has no special
 # case left.
+#
+# ⚠️ screenLine1..5 AND goHome ARE MOTHER'S NAMES TOO, added for the debug patch.
+# Cut It never writes either -- g_oled owns the OLED through oscOut and nothing
+# in the instrument leaves its own patch -- so these five labels exist for the
+# SECOND deployable, which draws with screenLine because it has no g_oled and
+# leaves with goHome because it steers itself from the keyboard.
 TAP_LABELS = {"param": "PARAM", "disp": "DISP", "err": "ERR", "tempo": "TEMPO",
               "start": "START", "stop": "STOP", "mode": "MODE",
               "led": "LED", "state": "STATE", "oscOut": "OLED",
               "midiInGate": "MIDIINGATE", "midiOutGate": "MIDIOUTGATE",
-              "presence": "PRESENCE"}
+              "presence": "PRESENCE",
+              "screenLine1": "SL1", "screenLine2": "SL2", "screenLine3": "SL3",
+              "screenLine4": "SL4", "screenLine5": "SL5", "goHome": "GOHOME"}
 
 
 def build(path, seq, tag, taps, quit_ms, blurb, burst=None, notes=()):

@@ -163,6 +163,16 @@
 #X obj 320 2900 s screenLine3;
 #X obj 620 2900 s screenLine4;
 #X obj 920 2900 s screenLine5;
+#X obj 2600 3050 t f f;
+#X obj 2750 3110 change -1;
+#X obj 2750 3160 select 3 4;
+#X text 2600 3220 ⛔ THE TWO SCRIPT SCREENS FORK ON SELECTION \, NOT ON REPAINT \, and the first version of this patch got that wrong: the metro redrew every screen three times a second \, so sitting on the error log forked a shell 3.3 times a SECOND on a Pi -- and two overlapping runs would interleave their lines into one line router and scramble the rows. change is what makes it once: the repaint path still ticks every screen \, and only a screen NUMBER that actually changed reaches the forks. -1 as the argument so the very first selection is not swallowed., f 78;
+#X connect 106 0 164 0;
+#X connect 164 1 107 0;
+#X connect 164 0 165 0;
+#X connect 165 0 166 0;
+#X connect 166 0 117 0;
+#X connect 166 1 119 0;
 #X connect 8 0 9 0;
 #X connect 9 0 10 0;
 #X connect 10 2 12 0;
@@ -292,11 +302,8 @@
 #X connect 105 1 106 1;
 #X connect 105 0 106 0;
 #X connect 108 0 106 0;
-#X connect 106 0 107 0;
 #X connect 107 0 110 0;
 #X connect 107 1 112 0;
-#X connect 107 2 117 0;
-#X connect 107 3 119 0;
 #X connect 107 4 122 0;
 #X connect 107 5 126 0;
 #X connect 110 4 111 0;

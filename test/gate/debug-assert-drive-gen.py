@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""Generates the timed driver for the debug patch's gate, into the scratch path.
+
+⛔ IT DRIVES A SECOND DEPLOYABLE, NOT THE INSTRUMENT. Every other driver here
+loads main-dev.pd; this one loads "Cut It Debug"/main.pd, which has no
+u_mother-stub, no disp bus and no g_oled. So the stimulus is mother's own names
+-- `notes` for the keyboard -- and the readback is mother's own names too:
+screenLine1 through screenLine5, which the patch writes because it draws the
+screen itself.
+
+⚠️ THE PATCH REPAINTS AT 3.3 Hz FOREVER, which is unlike anything else under
+test here. Every window therefore holds MANY copies of the same five rows, and
+every assertion below is written as "this row appeared in this window" rather
+than as a count. ⛔ Do not tighten one into an exact tally: the number depends on
+where a 300 ms metro tick lands inside the window and would be flaky rather than
+strict.
+
+⚠️ THE FIRST WINDOW OPENS BEFORE THE PATCH HAS WIRED ITSELF, deliberately. The
+fork is on a 1500 ms delay because loadbang fires before the ALSA connections
+exist, so a window at 600 ms proves the screen is not being drawn from something
+that only happens after the fork -- and the window at 2200 ms proves the fork
+happened at all. Timing the window from the behaviour rather than from the
+implementation is what the map gate learned the hard way (item 234).
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import lib_drive as D                                          # noqa: E402
+
+GAP = 40
+
+# ⛔ THE CHANNEL IS THE PORT AND THAT IS WHAT IS BEING ASSERTED. wire.sh puts the
+# Launchpad on Pd channels 1-16, the nanoKONTROL on 17-32, the SP-404 on 33-48
+# and the USB Uno interface on 49-64, so one event per block proves the whole
+# (channel-1)/16 decode. ⚠️ 16 AND 17 ARE THE INTERESTING PAIR -- they are the
+# boundary, and an off-by-one in the divide puts a Launchpad event on the nano's
+# row while every mid-block event still looks right.
+SEQ = [
+    # --- before the patch has wired itself -------------------------------
+    (600, "EARLY", [], GAP),
+
+    # --- the fork, and the screen it starts on ---------------------------
+    (2200, "BOOTED", [], GAP),
+
+    # --- one event per port, at the block boundaries ---------------------
+    # t_notein takes <pitch> <velocity> <channel>; t_ctlin <value> <controller>
+    # <channel>. Both stubs fire channel first, exactly as the real objects do.
+    (2600, "LP-LOW", ["\\; t-notein 60 100 1"], GAP),
+    (3000, "LP-HIGH", ["\\; t-ctlin 64 80 16"], GAP),
+    (3400, "NANO", ["\\; t-ctlin 40 5 17"], GAP),
+    (3800, "SP404", ["\\; t-notein 48 100 33"], GAP),
+
+    # ⚠️ THE UNO BLOCK HAS NO COUNTER AND THAT IS THE ASSERTION. Nothing is
+    # plugged into the interface's DIN IN, so a row that could only ever read
+    # zero was left out -- but the CHANNEL row still has to move, or a device
+    # that did appear there would be completely invisible.
+    (4200, "UNO", ["\\; t-notein 72 100 49"], GAP),
+
+    # --- the keyboard picks the screens ----------------------------------
+    # ⚠️ VELOCITY 0 IS A RELEASE AND IT IS SENT EVERY TIME. The patch gates on
+    # velocity above zero, and a release that slipped through would select the
+    # screen twice and fire a probe twice -- which is exactly what the sent
+    # counter below can see.
+    (4600, "HELP", ["\\; notes 66 100", "\\; notes 66 0"], GAP),
+    (5200, "ERRLOG", ["\\; notes 63 100", "\\; notes 63 0"], GAP),
+    (5800, "NETWORK", ["\\; notes 64 100", "\\; notes 64 0"], GAP),
+    (6400, "REWIRE-SCREEN", ["\\; notes 65 100", "\\; notes 65 0"], GAP),
+    (7000, "TESTOUT", ["\\; notes 62 100", "\\; notes 62 0"], GAP),
+
+    # --- the probes ------------------------------------------------------
+    (7600, "VOLCA", ["\\; notes 72 100", "\\; notes 72 0"], GAP),
+    (8400, "SP404-PROBE", ["\\; notes 74 100", "\\; notes 74 0"], GAP),
+
+    # --- a re-wire by hand -----------------------------------------------
+    # ⚠️ k17 DOES NOT CHANGE SCREEN, on purpose -- the three action keys work
+    # from anywhere -- so the run counter has to be looked at afterwards, on
+    # screen 5. Asserting it in this window was this gate's own first bug.
+    (9200, "REWIRE-KEY", ["\\; notes 76 100", "\\; notes 76 0"], GAP),
+    (9800, "REWIRE-VIEW", ["\\; notes 65 100", "\\; notes 65 0"], GAP),
+
+    # --- a key that means nothing ----------------------------------------
+    # ⚠️ THE PATCH SHARES THE KEYBOARD WITH NOTHING, so "it ignores what is not
+    # its own" is easy to get wrong in the generous direction: a select with a
+    # connected reject outlet would act on every key on the board.
+    (10400, "UNBOUND", ["\\; notes 79 100", "\\; notes 79 0"], GAP),
+
+    # --- and the way out --------------------------------------------------
+    (11000, "EXIT", ["\\; notes 60 100", "\\; notes 60 0"], GAP),
+
+    (11600, "DONE", [], GAP),
+]
+QUIT_MS = 12200
+
+BLURB = ("debug-assert-drive -- GENERATED by debug-assert-drive-gen.py. Do not edit "
+         "this file. It drives Cut It Debug: one MIDI event per channel block \\, "
+         "every screen key \\, both device probes \\, a re-wire \\, an unbound key "
+         "and the exit.")
+
+NOTES = [
+    "⚠️ RUN IT THROUGH test/gate/debug-assert.sh \\, never by hand. It needs the "
+    "scratch copy where notein \\, ctlin and noteout have been rewritten to their "
+    "printing stubs and shell.pd is t_shell -- without that the MIDI windows are "
+    "answered by an empty list and the wire.sh fork cannot be seen at all.",
+
+    "⛔ THE SCREEN ROWS REPEAT ABOUT THREE TIMES A SECOND because the patch "
+    "repaints on a metro. That is the feature -- a monitor that froze on the "
+    "value it held when you selected it would be the wrong lie -- so assert that "
+    "a row APPEARED in a window \\, never how many times it did.",
+]
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        sys.exit("usage: debug-assert-drive-gen.py OUT.pd  "
+                 "(run it through test/gate/debug-assert.sh, which passes a scratch path)")
+    w, b, c = D.build(sys.argv[1], SEQ, tag="DBG",
+                      taps=["screenLine1", "screenLine2", "screenLine3",
+                            "screenLine4", "screenLine5", "goHome"],
+                      quit_ms=QUIT_MS, blurb=BLURB, notes=NOTES)
+    print("%s  %d windows  %d boxes  %d connects" % (sys.argv[1], w, b, c))

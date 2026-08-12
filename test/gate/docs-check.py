@@ -82,7 +82,18 @@ ANCHOR = re.compile(r'<!--\s*check:\s*(.+?)\s*-->')
 SPEC = re.compile(r'^(pd-text|pd-route|sh-aconnect)\s+"([^"]+)"\s+(\S+)$')
 # Only names that look like this project's own docs. A bare "README.md" inside a
 # URL or a shell heredoc is not worth a false positive.
-DOCNAME = re.compile(r'(?<![\w/.-])((?:[a-z0-9_-]+/)?[a-zA-Z0-9_-]+\.md)\b')
+# ⛔ THE NAME CLASS CARRIES DOTS, and it did not until 2026-08-12. Without one a
+# bare `plan-v03.5.2.md` in a .pd, .sh or .py was invisible to
+# check_dangling_docs while a bare `plan-v04.md` was caught: the match started at
+# `plan-v03`, needed `.md` next, failed -- and every later start position was
+# refused by the lookbehind, which sees the dot inside `v03.5`. So this batch's
+# Pd-comment references to a plan that was about to be deleted had to be found by
+# grep, which is exactly the rot this check exists to stop.
+# ⛔ AND THE DIRECTORY GROUP REPEATS. It was `(?:[a-z0-9_-]+/)?` -- at most ONE
+# level -- so every two-level path was invisible too, and `ref/module/*.md` is
+# how this project refers to nine of its own pages. Cut It Debug/main.pd cites
+# one in a comment, which is precisely the kind of reference that rots quietly.
+DOCNAME = re.compile(r'(?<![\w/.-])((?:[a-z0-9_-]+/)*[a-zA-Z0-9_.-]+\.md)\b')
 # A markdown link target. The angle-bracket form carries paths containing
 # spaces -- `[README.md](<! v0.1 plans/README.md>)` -- which this repo uses.
 MDLINK = re.compile(r'\]\(<?([^)>#]+\.md)(?:#[^)>]*)?>?\)')
@@ -524,6 +535,58 @@ def _is_marker_gloss(line):
     return len(cells) == 2 and cells[0] == '⬜'
 
 
+# Whatever a line opens with before its content: list bullets, heading hashes,
+# an ordered-list number, a table cell wall.
+_ORNAMENT = '-*#0123456789. |'
+
+
+def is_open_item(line, in_open=False):
+    """A ⬜ that IS an open item, rather than prose about the marker.
+
+    ⛔ AN OPEN ITEM LEADS WITH THE GLYPH; PROSE NAMES IT MID-SENTENCE. That is the
+    structural difference, and it is the only one available -- `_is_marker_gloss`
+    catches the two-cell definition rows and misses everything else, so
+    CLAUDE.md's four sentences ABOUT the marker were being counted as four open
+    items with no owner.
+
+        ⬜ **Why nothing answers a DISCOVER after a roam.**   <- an open item
+        - ⬜ Whether the dongle's draw contributes                <- an open item
+        ### ⬜ Nothing measures the OUTPUT side                 <- an open item
+        | 45 | ⬜ AP link quality |                             <- an open item
+        so read that checklist before adding a ⬜ anywhere.    <- prose
+
+    ⚠️ MEASURED BEFORE IT WAS TRUSTED, because the generous direction here is
+    silent: of the 42 non-gloss marks in the repo on 2026-08-12, 35 led with the
+    glyph and ALL SEVEN that did not were prose about the marker, in the only two
+    files that discuss it. Not one real open item is written mid-sentence.
+
+    ⛔ AND `in_open` CLOSES THE HOLE THAT MEASUREMENT LEAVES. Inside an `## Open`
+    section the lead test is dropped, because there is no such thing as prose
+    about the marker under a heading whose entire job is to list open items -- so
+    a real item written mid-sentence is still caught where it is most likely to be
+    written. Outside one, the lead is all there is to go on.
+    """
+    if '⬜' not in line or _is_marker_gloss(line):
+        return False
+    if in_open:
+        return True
+    return line.lstrip().lstrip(_ORNAMENT).lstrip().startswith('⬜')
+
+
+def open_span(marked):
+    """(first, last) line indices of the `## Open` section, or None.
+
+    Shared so `_check_open_items` and `check_closers` agree on what is inside one.
+    """
+    start = next((i for i, (ln, f) in enumerate(marked)
+                  if not f and ln.strip() == '## Open'), None)
+    if start is None:
+        return None
+    end = next((i for i, (ln, f) in enumerate(marked[start + 1:], start=start + 1)
+                if not f and ln.startswith('## ')), len(marked))
+    return start, end
+
+
 OWNER = re.compile(r'\bplan-v[0-9.]+\.md|\bNO PLAN OWNS THIS\b')
 
 
@@ -551,20 +614,19 @@ def _check_open_items(rel, marked):
     inventory.
     """
     out = []
+    span = open_span(marked)
     marks = [i for i, (ln, f) in enumerate(marked)
-             if not f and '⬜' in ln and not _is_marker_gloss(ln)]
+             if not f and is_open_item(ln, span is not None and span[0] < i < span[1])]
     if not marks:
         return out
 
-    start = next((i for i, (ln, f) in enumerate(marked)
-                  if not f and ln.strip() == '## Open'), None)
+    start = span[0] if span else None
     if start is None:
         out.append(f'{rel}  has {len(marks)} ⬜ but no "## Open" section. An open '
                    f'item outside Open is invisible -- that is how ref/device-os.md '
                    f'came to carry five of them')
         return out
-    end = next((i for i, (ln, f) in enumerate(marked[start + 1:], start=start + 1)
-                if not f and ln.startswith('## ')), len(marked))
+    end = span[1]
 
     for i in marks:
         if not (start < i < end):
@@ -761,58 +823,63 @@ def check_rule_ids(verbose):
     return out
 
 
-CLOSER = re.compile(r'plan-v0[34](?:\.\d)?\.md|\bv0\.[4-9]\b')
+# ⛔ A CLOSER IS AN OWNER OR A VERSION, and the owner half is OWNER itself rather
+# than a second copy of the same idea. This used to be `plan-v0[34](?:\.\d)?\.md`
+# -- one decimal group, so it matched plan-v04.md but not a three-part name like
+# the v0.3.5 batch's, and every item citing one of those failed a check that was
+# meant to reward them. ⚠️ THAT SENTENCE USED TO NAME THE TWO FILES and it is
+# written this way on purpose: they are deleted now, and with DOCNAME widened
+# below a bare mention here is a dangling pointer this gate reports against
+# itself. Sharing OWNER also means `NO PLAN OWNS THIS` counts here,
+# which it must: _check_open_items documents that escape hatch as a legitimate
+# answer, and a closer check that rejected it would make the hatch unusable and
+# push three honestly-parked items into a plan as a dumping ground.
+CLOSER = re.compile(OWNER.pattern + r'|\bv0\.[4-9]\b')
 
 
 def check_closers(verbose):
-    """⬜ --strict ONLY, AND DELIBERATELY NOT WIRED YET.
+    """Every open ⬜ names the plan, the owner or the version that closes it.
 
-    Every remaining ⬜ should name the plan or the version that closes it, so an
-    open item cannot sit in the tree with nobody owning it. That is the rule this
-    whole batch exists to make stick.
+    So an open item cannot sit in the tree with nobody accountable for it. It ran
+    behind --strict for as long as the v0.3.5 batch was in flight, because a large
+    minority of items legitimately had no closer until those plans landed and **a
+    gate that stays red for two weeks is a gate that gets ignored.** The batch has
+    landed, so it runs unconditionally.
 
-    ⛔ IT DOES NOT RUN BY DEFAULT, AND THAT IS THE POINT. The v0.3.5 batch has not
-    landed, so a large minority of today's items legitimately have no closer -- and
-    **a gate that stays red for two weeks is a gate that gets ignored**, which would
-    cost more than the rule buys. Run it with --strict to see the backlog.
+    ⛔ A ⬜ INSIDE A plan- FILE IS OWNED BY THAT FILE, and is skipped. A plan is
+    the document that says what is open; requiring each of its items to name a
+    plan means requiring plan-v04.md to cite plan-v04.md, which is satisfiable
+    only by writing something tautological into every entry. The FILE is the
+    owner, and deleting it is what closes them -- which is exactly what happened
+    to section 3's laptop-free debugging item.
 
-    ⚠️ TO LAND IT: delete the flag so main() always calls this, after the LAST of
-    the three v0.3.5 plans ships. Its landing checklist says so and names the file.
-
-    ⛔ AND IT IS NOT ONLY A FLAG DELETION, which that checklist spells out. Two
-    things here are wrong for the plan names that now exist:
-
-      CLOSER  has ONE decimal group, so it stops one level short and matches
-              neither plan-v03.5.1.md nor plan-v03.5.2.md. Every open item citing
-              either fails this check as written.
-      DOCNAME cannot see those names AT ALL -- its class is [a-zA-Z0-9_-]+ with no
-              dot, and the lookbehind rejects the one inside v03.5. So a bare
-              plan-v03.5.N.md in a .pd/.sh/.py is invisible to
-              check_dangling_docs while a bare plan-v04.md is caught. That is why
-              this batch's Pd-comment references had to be found by grep.
-
-    SCOPE IS EVERY .md, REPO-WIDE -- not just ref/. Open items live in CLAUDE.md,
-    tools/README.md and test/README.md too. ⛔ A ⬜ in a .pd or .sh comment is
-    deliberately NOT covered: forcing a plan citation into a Pd comment is exactly
-    the write-twice trap this batch removed.
+    SCOPE IS EVERY OTHER .md, REPO-WIDE -- not just ref/. Open items live in
+    CLAUDE.md, tools/README.md and test/README.md too. ⛔ A ⬜ in a .pd or .sh
+    comment is deliberately NOT covered: forcing a plan citation into a Pd comment
+    is exactly the write-twice trap this batch removed.
     """
     out, checked = [], 0
     for f in sorted(ROOT.rglob('*.md')):
         rel = f.relative_to(ROOT)
         if any(p in SKIP_DIRS for p in rel.parts):
             continue
+        if rel.name.startswith('plan-'):
+            continue
         try:
             lines = f.read_text(encoding='utf-8').splitlines()
         except UnicodeDecodeError:
             continue
         marked = _strip_fences(lines)
+        span = open_span(marked)
         for i, (ln, fenced) in enumerate(marked):
-            if fenced or '⬜' not in ln or _is_marker_gloss(ln):
+            if fenced or not is_open_item(
+                    ln, span is not None and span[0] < i < span[1]):
                 continue
             checked += 1
             window = ' '.join(marked[j][0] for j in range(i, min(i + 4, len(marked))))
             if not CLOSER.search(window):
-                out.append(f'{rel}:{i + 1}  ⬜ names no plan or version that closes it')
+                out.append(f'{rel}:{i + 1}  ⬜ names no plan, owner or version that '
+                           f'closes it. Link the plan-*.md, or say NO PLAN OWNS THIS')
     if verbose:
         print(f'  {checked} open item(s) checked for a closer')
     return out
@@ -823,9 +890,7 @@ def main():
     problems = (check_anchors(verbose) + check_dangling_docs(verbose)
                 + check_shape(verbose) + check_index(verbose)
                 + check_rule_ids(verbose) + check_skill_rules(verbose)
-                + check_dangling_paths(verbose))
-    if '--strict' in sys.argv:
-        problems += check_closers(verbose)
+                + check_dangling_paths(verbose) + check_closers(verbose))
     if problems:
         print('\n'.join(problems))
         print(f'\n{len(problems)} problem(s).')

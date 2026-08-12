@@ -90,6 +90,9 @@ first. **Both bugs were found by running it against the live network, not by rea
 
 ⬜ Only the `REACHABLE` and `ABSENT` branches have been exercised against real hardware.
 `ASSOCIATED-NO-LEASE` and `AP-MODE` are written from the recorded evidence and unproven.
+**NO PLAN OWNS THIS**, and deliberately: exercising them means reproducing the wifi fault on purpose,
+and [../ref/wifi.md](../ref/wifi.md) says not to spend time on that unless it recurs. **If it does,
+these two branches get their proof for free** — the fault is the fixture.
 
 ### Chasing it
 

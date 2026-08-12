@@ -108,7 +108,9 @@ def run_asserts(cap):
                                            "LIVE", "AUX-1", "AUX-2", "KNOB-2",
                                            "LATE-KNOB", "BAD-DEST", "RAIL-UP",
                                            "RAIL-BACK", "MODE-4", "MODE-DEP",
-                                           "UNMAPPED", "BAD-MODE", "AFTER-BAD"]))
+                                           "UNMAPPED", "BAD-MODE", "AFTER-BAD",
+                                           "MODE-1-BACK", "DIAG-DEST",
+                                           "DIAG-RELEASE"]))
     W = lambda k: by.get(k, [])
     # ⛔ MIDIOUT IS DELIBERATELY NOT EVIDENCE HERE, and the reason is worth the
     # three lines. g_grid repaints the Launchpad off a [metro 100] that runs with
@@ -273,6 +275,23 @@ def run_asserts(cap):
             "cc 44 in that window: %s -- a dead knob for the whole session"
             % cc("RAIL-BACK", 44))
 
+    # ⛔ THE diag DESTINATION, FROM THE RUNNING SIDE. The static lint above
+    # proves diag is on the route by reading; this proves a table row can
+    # actually reach it. No shipped row names it yet -- which control summons
+    # the diagnostic screen is undecided -- so without a gate row the whole
+    # handler would be Pd that has never once run.
+    diag = lambda k: [e[1] for e in W(k) if e[0] == "DISP" and e[1][:1] == ["diag"]]
+    A.check("⛔ a row naming diag summons the diagnostic layer",
+            len(diag("DIAG-DEST")) == 1,
+            "disp in that window: %s" % [e[1] for e in W("DIAG-DEST")
+                                         if e[0] == "DISP"])
+    # ⛔ EXACTLY ONE, NOT AT LEAST ONE. A handler that fired on the release too
+    # would summon twice per press and reset the TTL on the way up, so the
+    # screen would outlive the button by its whole eight seconds.
+    A.check("⛔ ... and the RELEASE does not summon it again",
+            len(diag("DIAG-RELEASE")) == 0,
+            "disp in that window: %s" % diag("DIAG-RELEASE"))
+
 
 # --------------------------------------------------------------- the no-Save run
 def nosave_asserts(cap):
@@ -291,7 +310,9 @@ def nosave_asserts(cap):
                                            "LIVE", "AUX-1", "AUX-2", "KNOB-2",
                                            "LATE-KNOB", "BAD-DEST", "RAIL-UP",
                                            "RAIL-BACK", "MODE-4", "MODE-DEP",
-                                           "UNMAPPED", "BAD-MODE", "AFTER-BAD"]))
+                                           "UNMAPPED", "BAD-MODE", "AFTER-BAD",
+                                           "MODE-1-BACK", "DIAG-DEST",
+                                           "DIAG-RELEASE"]))
     W = lambda k: by.get(k, [])
     tempos = lambda k: [float(e[1][0]) for e in W(k) if e[0] == "TEMPO" and e[1]]
     cc = lambda k, n: [e[1] for e in W(k) if e[0] == "CTLOUT" and e[1][1] == n]

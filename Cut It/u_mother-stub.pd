@@ -443,7 +443,7 @@
 #X connect 4 0 5 0;
 #X connect 5 0 6 0;
 #X restore 580 620 pd controls;
-#N canvas 40 40 1600 800 bench 0;
+#N canvas 40 40 1980 800 bench 0;
 #X text 20 20 The Phase 3 acceptance run \, one button per case. Levels \, a parameter with a unit and one without \, a modal \, both error levels through u_err's mode filter \, and the mode itself., f 58;
 #X obj 20 130 r \$0-b-lvl;
 #X msg 20 170 in-l 43 dB;
@@ -477,6 +477,10 @@
 #X obj 1260 370 s mode;
 #X text 20 470 Each button is a bng on the panel whose SEND name is the receive here \, so the panel stays free of cords and the messages stay readable next to the bus they go to., f 58;
 #X text 20 590 chop-size 43 % followed by grain 12 is the one that matters: the second must draw with no % inherited from the first. See pd param-in in g_oled., f 58;
+#X obj 1580 130 r \$0-b-diag;
+#X msg 1580 170 diag;
+#X obj 1580 210 s disp;
+#X text 1580 270 THE DIAG LAYER HAS NO PHYSICAL CONTROL YET \, so this button is how it is judged on the Mac. On the instrument it wants a row in cut-it-map.txt naming the diag destination \, and which control that is has not been decided -- see ref/module/display.md., f 44;
 #X connect 1 0 2 0;
 #X connect 2 0 3 0;
 #X connect 4 0 5 0;
@@ -497,6 +501,8 @@
 #X connect 26 0 27 0;
 #X connect 28 0 29 0;
 #X connect 29 0 30 0;
+#X connect 33 0 34 0;
+#X connect 34 0 35 0;
 #X restore 760 620 pd bench;
 #N canvas 40 40 1100 800 screenlines 0;
 #X text 20 20 screenLine1-5 is the OTHER api -- the five text lines mother.pd offers a patch \, quite separate from the graphics commands the panel previews. Cut It does not use them \, so they live down here rather than taking panel space., f 58;
@@ -657,3 +663,4 @@
 #X restore 1340 620 pd bench5;
 #X text 1340 820 The Phase 5 row: the beat \, the BPM \, the aux LED as a radio \, and the buttons for everything a knob cannot do. Open pd bench5 for the plumbing., f 44;
 #X coords 0 0 1 1 1240 560 2 20 20;
+#X obj 1240 400 bng 24 250 50 0 \$0-b-diag empty diag 0 -13 0 11 -262144 -1 -1;

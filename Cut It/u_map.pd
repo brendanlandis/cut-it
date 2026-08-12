@@ -33,7 +33,7 @@
 #X obj 20 890 text get \$0-map 2 2;
 #X obj 20 950 list append;
 #X obj 20 1010 list trim;
-#X obj 20 1070 route tempo transport start stop panic volca-note volca-cc volca-prog 404-pad volca-key recover;
+#X obj 20 1070 route tempo transport start stop panic volca-note volca-cc volca-prog 404-pad volca-key recover diag;
 #X obj 2500 250 r mode;
 #X obj 2500 300 list append;
 #X obj 2500 350 list split 1;
@@ -379,7 +379,7 @@
 #X connect 34 6 87 0;
 #X connect 34 7 94 0;
 #X connect 34 9 257 0;
-#X connect 34 11 99 0;
+#X connect 34 12 99 0;
 #X connect 47 1 48 0;
 #X connect 48 0 49 0;
 #X connect 49 0 50 0;
@@ -634,3 +634,17 @@
 #X connect 305 0 313 0;
 #X connect 313 1 308 0;
 #X connect 313 0 310 0;
+#X obj 3700 1160 unpack f f;
+#X obj 3700 1230 != 0;
+#X obj 3700 1290 spigot;
+#X obj 3700 1350 t b;
+#X msg 3700 1410 diag;
+#X obj 3700 1470 s disp;
+#X text 3700 1540 diag SUMMONS g_oled's DIAGNOSTIC LAYER \, which names every device on the presence bus and whether it is here \, gone \, never seen or unchecked. The arg is unused \; the spigot is the same uniform non-zero trigger test every other button destination uses \, so a release cannot summon it. ⛔ THIS IS THE ALLOWLIST GUARD DOING ITS JOB: diag is a literal argument on the route box above feeding a handler you can read here \, not a send with a name that came out of a table. ⚠️ NO ROW IN cut-it-map.txt NAMES IT YET -- the control that summons it is a decision about the layout of the panel \, and the destination is built first so that decision is one line of a text file. See ref/module/display.md., f 62;
+#X connect 34 11 315 0;
+#X connect 315 1 316 0;
+#X connect 316 0 317 1;
+#X connect 315 0 317 0;
+#X connect 317 0 318 0;
+#X connect 318 0 319 0;
+#X connect 319 0 320 0;

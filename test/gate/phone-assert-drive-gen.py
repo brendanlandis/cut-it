@@ -124,7 +124,8 @@ SEQ = [
     (15000, "alert",    [("disp", "alert fail u_bench boom")]),
     (17000, "reserved", [("disp", "in-l 42 dB"), ("disp", "in-r 7 dB"),
                          ("disp", "grid modal 45"), ("disp", "led running"),
-                         ("disp", "modal hello"), ("disp", "modal-off")]),
+                         ("disp", "modal hello"), ("disp", "modal-off"),
+                         ("disp", "diag")]),
     (19000, "idle2",    []),
     (22000, "done",     []),
 ]

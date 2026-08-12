@@ -30,10 +30,20 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 
 # ⛔ THE NUMBER OF WINDOWS oled-assert-drive-gen.py's SEQ OPENS.
-MARKS = 18
+MARKS = 25
 
 # The five rows the store holds, in the order they are first touched.
 FIVE = ["gate-a", "gate-b", "gate-c", "gate-d", "gate-e"]
+
+# ⛔ EVERY SOURCE THAT PUBLISHES `expect` -- the diag roster, and the count is
+# exact rather than "some". A layer added without one, or one that stops
+# registering, is invisible on this screen and the whole point of the screen is
+# that nothing is invisible on it. presence-assert.sh asserts the same five from
+# the other side.
+DIAG_SOURCES = ["m_launchpad", "m_nano", "m_organelle", "m_volca", "m_404"]
+
+# The three that are POLLED, and therefore the three a `lost` can name.
+ACTIVE = ["m_launchpad", "m_nano", "m_404"]
 
 # The alert layer's border, read off g_oled.pd rather than guessed.
 BORDER = ["sendtyped", "/oled/gBox", "iiiiii", "3", "0", "0", "127", "63", "1"]
@@ -261,6 +271,109 @@ def run_asserts(cap):
                 "gate-home" in drawn,
                 "drew %s -- without this, ignoring them is indistinguishable "
                 "from a dead screen" % drawn)
+
+    # ---- the diag layer ----------------------------------------------------
+    # ⚠️ WHAT MAKES THIS ASSERTABLE ON A MAC IS THAT EVERY DEVICE IS ABSENT.
+    # The three active layers are declared lost by their own c_presence around
+    # 10 s and have never answered, so the roster's honest state at 26 s is
+    # three NEVER, one UNCHECKED, and m_organelle silent until something moves.
+    print("\n--- the diag layer, and the roster it draws ---")
+
+    def state(mark, which=last):
+        """-> {source: word} off the drawn rows, ignoring anything else."""
+        return {ws[0]: ws[1] for _, _, ws in rows(which(mark))
+                if len(ws) == 2 and ws[0] in DIAG_SOURCES}
+
+    if live("DIAG"):
+        A.check("the diag layer draws one row per registered source",
+                sorted(state("DIAG")) == sorted(DIAG_SOURCES),
+                "drew %s -- the roster is whatever `expect` published at load, "
+                "and every m_ layer publishes exactly one" % state("DIAG"))
+        # ⚠️ THE SAME 8px PITCH THE 3-TO-5-MOVER LAYOUT USES, and the same
+        # reason: the meter strips start at y=48, so a drifted pitch would put
+        # the fifth row into them and overlap rather than error.
+        A.check("...at 8px on the y=0 9 18 27 36 pitch, clear of the meters",
+                [(y, sz) for y, sz, ws in rows(last("DIAG"))
+                 if ws and ws[0] in DIAG_SOURCES]
+                == [(0, 8), (9, 8), (18, 8), (27, 8), (36, 8)],
+                "drew %s" % [(y, sz) for y, sz, _ in rows(last("DIAG"))])
+        # ⛔ THE ROW THAT COSTS NOTHING AND SAYS THE MOST. All three active
+        # devices have been LOST by now and none has ever answered, so a `lost`
+        # that wrote GONE unconditionally would show it right here.
+        A.check("⛔ a device that has never answered reads `never`, not `gone`",
+                [state("DIAG").get(s) for s in ACTIVE] == ["never"] * 3,
+                "drew %s. c_presence publishes `lost` UNARMED because that is "
+                "what drives the re-wire, so on the bus an absent device and a "
+                "vanished one are identical -- telling them apart is the whole "
+                "point of this screen" % state("DIAG"))
+        A.check("...and a device nothing can ever check reads `unchecked`",
+                state("DIAG").get("m_volca") == "unchecked",
+                "drew %s. m_volca registers `none`: it is never polled and can "
+                "never be lost, so drawing it as healthy would be a claim "
+                "nothing has ever tested" % state("DIAG"))
+
+    if live("DIAG-SEEN"):
+        A.check("`seen` moves an active source to `here`",
+                state("DIAG-SEEN").get("m_nano") == "here",
+                "drew %s" % state("DIAG-SEEN"))
+        # ⛔ THE PASSIVE PUBLISHER, WHICH NOTHING HAS EVER READ UNTIL NOW.
+        # m_organelle holds no c_presence and publishes `seen` on every decode;
+        # this screen is the reader that message was written for.
+        A.check("⛔ ...and so does the PASSIVE layer's own `seen`, off one knob",
+                state("DIAG-SEEN").get("m_organelle") == "here",
+                "drew %s. m_organelle publishes `seen` on the bus rather than "
+                "through a c_presence, and this is the only consumer it has" %
+                state("DIAG-SEEN"))
+        A.check("...and no other row moved with it",
+                [state("DIAG-SEEN").get(s) for s in ("m_launchpad", "m_404")]
+                == ["never", "never"],
+                "drew %s" % state("DIAG-SEEN"))
+
+    if live("DIAG-GONE"):
+        A.check("`lost` on a source that HAS answered moves it to `gone`",
+                state("DIAG-GONE").get("m_nano") == "gone",
+                "drew %s" % state("DIAG-GONE"))
+
+    # ⛔ THE DISCRIMINATING NEGATIVE, AND THE ONLY CHECK HERE THAT A LAYER WHICH
+    # ALWAYS WRITES GONE WOULD FAIL.
+    if live("DIAG-NEVER"):
+        got = state("DIAG-NEVER")
+        A.check("⛔ `lost` on a source that never answered leaves it `never`",
+                got.get("m_launchpad") == "never",
+                "drew %s. Both `lost` messages are byte-identical on the bus; "
+                "only the row's own history tells them apart" % got)
+        A.check("...and the row that really did go missing is still `gone`",
+                got.get("m_nano") == "gone",
+                "drew %s -- if the write had landed on the wrong row this is "
+                "where it would show" % got)
+
+    # ⛔ AND THE CASCADE IN THE DIRECTION THAT MATTERS.
+    print("\n--- and an alert covers the diagnostic ---")
+    if live("DIAG-ALERT"):
+        drawn = words(first("DIAG-ALERT"))
+        A.check("⛔ an alert covers the diag layer completely",
+                "gate-diagx" in drawn and not [s for s in DIAG_SOURCES
+                                               if s in drawn],
+                "drew %s. A diagnostic that hides an alert is worse than no "
+                "diagnostic, and a layer that always wins passes every "
+                "positive test above" % drawn)
+    if live("DIAG-BACK"):
+        A.check("...and the diag layer is still there underneath when it clears",
+                sorted(state("DIAG-BACK", first)) == sorted(DIAG_SOURCES),
+                "drew %s. The alert's TTL fired at 2 s and diag's own 8 s is "
+                "still running, so the screen must come back to the roster "
+                "rather than to home" % words(first("DIAG-BACK")))
+    # ⚠️ HOME IS RECOGNISED BY ITS METERS, NOT BY ITS FOOTER. The knob moved in
+    # DIAG-SEEN is master tempo, so u_tempo has since written a BPM into the
+    # status -- asserting on `gate-home` here would fail for a reason that has
+    # nothing to do with the TTL.
+    if live("DIAG-TTL"):
+        drawn = words(last("DIAG-TTL"))
+        A.check("...and diag expires on its own TTL and gives home back",
+                not [s for s in DIAG_SOURCES if s in drawn]
+                and "L" in drawn and "R" in drawn,
+                "drew %s. It is a summoned readout on a retriggered [delay], "
+                "not a modal: nothing clears it explicitly" % drawn)
 
     A.note("windows reached: %s" % " ".join(order))
 

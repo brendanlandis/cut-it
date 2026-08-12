@@ -15,6 +15,7 @@ ask a phone what it is displaying, but the bytes u_net emits are completely
 knowable, and that is the right level to test our own code at.
 """
 import os
+import re
 import socket
 import struct
 import subprocess
@@ -36,6 +37,8 @@ PD = os.environ.get(
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))       # test/gate/ -> the repo root
 DRIVE = os.path.join(HERE, "phone-assert-drive.pd")
+UNET = os.path.join(ROOT, "Cut It", "u_net.pd")
+GOLED = os.path.join(ROOT, "Cut It", "g_oled.pd")
 
 # The coalescer's target. u_net flushes on a 50 ms tick, so a window of T
 # seconds can hold at most 20*T packets per distinct name, plus edge effects.
@@ -45,7 +48,8 @@ ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert", "/mark"}
 # every selector g_oled routes that is NOT a parameter. u_net matches all of
 # them and leaves them unconnected; if one ever reaches the wire as a parameter
 # name, the reserved branch is broken.
-RESERVED = {"in-l", "in-r", "led", "grid", "modal", "modal-off", "alert", "status"}
+RESERVED = {"in-l", "in-r", "led", "grid", "modal", "modal-off", "alert",
+            "status", "diag"}
 
 
 # ------------------------------------------------------------------- collection
@@ -121,6 +125,24 @@ def windows(packets):
     return out
 
 
+def _route_args(path):
+    """The arguments of the one `route in-l ...` box in a file, or None."""
+    try:
+        src = open(path, encoding="utf-8").read()
+    except OSError:
+        return None
+    hits = re.findall(r"^#X obj \d+ \d+ route (in-l .*);$", src, re.M)
+    return hits[0].split() if len(hits) == 1 else None
+
+
+def unet_route():
+    return _route_args(UNET)
+
+
+def goled_route():
+    return _route_args(GOLED)
+
+
 def main():
     packets, log = collect()
     wins = windows(packets)
@@ -152,6 +174,29 @@ def main():
             if len(g) >= 2:
                 d[g[0]] = g[1]
         return d
+
+    # -- ⛔ THE TWO disp CONSUMERS MUST MATCH, AND THIS NEEDS NO Pd AT ALL ----
+    # A new selector costs one route argument in EVERY consumer that has a
+    # fallthrough, because everything a consumer does not recognise is a
+    # parameter by definition. There are two -- g_oled and u_net -- and the
+    # only reliable way to keep them in step is to read both boxes.
+    #
+    # ⛔ THE DATAGRAM CHECKS BELOW CANNOT SEE THIS, AND THAT IS WHY THIS
+    # EXISTS. `diag` carries no arguments, so on the reject it becomes the
+    # two atoms `diag -` and dies on [list split 3]'s too-short outlet --
+    # nothing reaches the wire whether the route argument is there or not.
+    # Removing it from u_net was measured against the reserved window and
+    # every check still passed. A selector that carries a value would leak;
+    # this one would not, so the property has to be asserted where it lives.
+    ck(unet_route() is not None and goled_route() is not None,
+       "the two disp route boxes are both still readable",
+       "u_net: %r  g_oled: %r" % (unet_route(), goled_route()))
+    if unet_route() and goled_route():
+        ck(unet_route() == goled_route(),
+           "⛔ u_net routes EXACTLY the selectors g_oled routes",
+           "u_net has %s, g_oled has %s -- whichever side is short lets that "
+           "selector fall out of its reject and be treated as a parameter"
+           % (" ".join(unet_route()), " ".join(goled_route())))
 
     # -- shape ---------------------------------------------------------------
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})
@@ -254,11 +299,11 @@ def main():
     # -- the reserved selectors must be swallowed ----------------------------
     res_names = {g[0] for _, _, g in rows("reserved", "/cutit/param") if g}
     ck(not (res_names & RESERVED),
-       "reserved: in-l / in-r / grid / led / modal never become parameters",
+       "reserved: in-l / in-r / grid / led / modal / diag never become parameters",
        "param names in that window: " + (", ".join(sorted(res_names)) or "(none)"))
     ck(len(rows("reserved", "/cutit/param")) <= 3
        and len(rows("reserved", "/cutit/status")) <= 3,
-       "reserved: six reserved messages produced no traffic beyond the repeat",
+       "reserved: seven reserved messages produced no traffic beyond the repeat",
        "%d param, %d status" % (len(rows("reserved", "/cutit/param")),
                                 len(rows("reserved", "/cutit/status"))))
 

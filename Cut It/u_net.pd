@@ -3,10 +3,10 @@
 #X text 700 20 creation arg 1: the phone's host \, e.g. 192.168.1.5. creation arg 2: its OSC receive port -- 8000 for PdParty. NEVER 9000 \, which is PdParty's WebDAV server \, and never 4001-4003 \, which belong to mother. inlets: none. outlets: none., f 58;
 #X text 1400 20 STATE \, NEVER EVENTS. Every message carries the whole current value \, so a dropped datagram is corrected by the next one rather than lost forever. That is what makes UDP acceptable here -- and it is why the alert below is held and repeated rather than sent once., f 58;
 #X text 20 220 FIRE AND FORGET -- THE ORGANELLE NEVER WAITS. There is no handshake \, no retry on a datagram and nothing blocking. Phone off \, phone crashed \, wifi gone: the instrument plays identically. The only thing that ever retries is the CONNECTION \, for the reason in the watchdog block below., f 58;
-#X text 700 220 THE RESERVED SELECTORS ARE MATCHED AND LEFT UNCONNECTED \, which is the whole reason the route box lists them. Everything g_oled does not recognise is a parameter by definition \, so without a branch here in-l \, grid and led would all fall out of the reject and reach the phone as nonsense parameters. Same shape as g_oled's own route \, same argument order \, so the two can be read side by side., f 58;
+#X text 700 220 THE RESERVED SELECTORS ARE MATCHED AND LEFT UNCONNECTED \, which is the whole reason the route box lists them. Everything g_oled does not recognise is a parameter by definition \, so without a branch here in-l \, grid \, led and diag would all fall out of the reject and reach the phone as nonsense parameters. Same shape as g_oled's own route \, same argument order \, so the two can be read side by side. ⛔ diag IS THE NINTH \, AND IT IS APPENDED RATHER THAN SLOTTED IN: an argument added anywhere but the end renumbers every outlet after it INCLUDING THE REJECT \, and the reject is the entire parameter path. The OLED's own route paid the same price on the same day., f 58;
 #X text 1400 220 THE LEVEL METERS AND THE GRID ARE DELIBERATELY DROPPED. in-l and in-r change continuously whenever there is audio -- measured at Phase 7 Step 0 as the ENTIRE resting content of the disp bus -- and would spend the whole rate budget on something the phone does not draw. grid is the Launchpad's own vocabulary and means nothing here., f 58;
 #X obj 20 520 r disp;
-#X obj 20 570 route in-l in-r status modal modal-off alert led grid;
+#X obj 20 570 route in-l in-r status modal modal-off alert led grid diag;
 #X obj 560 660 list append;
 #X obj 560 1010 oscformat cutit status;
 #X obj 560 1060 s \$0-osc;
@@ -156,7 +156,7 @@
 #X connect 16 0 17 1;
 #X connect 13 0 17 0;
 #X connect 17 0 18 0;
-#X connect 7 8 20 0;
+#X connect 7 9 20 0;
 #X connect 20 0 21 0;
 #X connect 21 0 22 0;
 #X connect 22 0 79 0;

@@ -1008,8 +1008,10 @@ def _where_wiring():
     # as gates.py's EXPECT and lib-scratch.sh's MIDI_EXPECT. A bench that stopped
     # being generated would otherwise leave this loop quietly checking fewer
     # files and still saying ok.
+    # ⚠️ 8 -> 9 WHEN THE DEBUG PATCH GAINED ITS BENCH. Updated deliberately, which
+    # is the only way this number is ever allowed to move.
     A.check("every bench file is checked -- %d of them" % len(files),
-            len(files) == 8, "found %d" % len(files))
+            len(files) == 9, "found %d" % len(files))
     for path in files:
         src = open(path, encoding="utf-8").read()
         name = os.path.basename(path)

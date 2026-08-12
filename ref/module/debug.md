@@ -66,6 +66,20 @@ there could only ever read zero; anything that does appear on the interface's DI
 | It repaints the current screen at **3.3 Hz**, so the counters are live rather than frozen | verified | 315 |
 | `err-tail.sh` and `net-probe.sh` fork **once per selection**, never per repaint | verified | 315 |
 
+### What the rig said
+
+✅ Deployed and loaded over ssh on 2026-08-12, with the instrument running before and after.
+
+| Measured | Value | Evidence | Item |
+|---|---|---|---|
+| ALSA links with Cut It running, then after this patch loaded and re-wired | **9, then 9** — it put back exactly what the reload dropped | verified | 315 |
+| `wire.sh` under the debug patch's own copy | `wire.sh: 9 connections` | verified | 315 |
+| `err-tail.sh` on the device, against a real log | **4 lines**, dot-flattened, cut to 21 | verified | 315 |
+| `net-probe.sh` on the device | **3 lines** — `ip-192.168.1.6`, `ap-down`, `phone-none` | verified | 315 |
+
+⚠️ **`.6` is a fourth lease address for this Organelle**, after `.15` and `.18` — which is the whole
+argument for the Network screen. See [phone.md](../device/phone.md), item 312.
+
 ### Where it lives
 
 `/sdcard/Patches/! debug/Cut It Debug/`, deployed with `./tools/deploy.sh --debug`.

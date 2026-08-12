@@ -49,7 +49,6 @@ chooses to use it.
 | Looking for | Go to |
 |---|---|
 | **What is OPEN** — every unresolved question, recommendation and purchase | [plan-v04.md](plan-v04.md) — **the standing plan** |
-| **What is being BUILT next** — one scoped plan | [plan-v03.5.2.md](plan-v03.5.2.md) the standalone debug patch |
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
@@ -117,7 +116,7 @@ under `ref/`. Nothing in either is deployed.
 ⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-one gates and 678 checks**, and what each one protects is in
+**Twenty-one gates and 682 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.
@@ -190,11 +189,10 @@ plan, that section should have left the file.
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
 is where everything unscoped waits.
 
-**One scoped plan stands between here and v0.4** — [plan-v03.5.2.md](plan-v03.5.2.md), the
-standalone debug patch, written to be handed to a fresh agent cold and carrying its own reading list.
-⛔ **It carries the batch's closing chore** — see its *Done means* #5.
-⛔ **Every remaining ⬜ is closed by it, names no plan on purpose, or is one of the items that
-genuinely need the sound to exist.**
+✅ **[plan-v04.md](plan-v04.md) is the only plan again**, which is what a scoped plan being deleted
+looks like. ⛔ **Every remaining ⬜ either sits inside a `plan-` file, which owns it, says
+`NO PLAN OWNS THIS` on purpose, or names the version that closes it** — and
+`test/gate/docs-check.py` enforces that on every run rather than leaving it to be remembered.
 
 ✅ **Plan 0, the test runner, the v0.3.2 cleanup, v0.3.3 coverage, hot-swap, the bench session and
 plan-v0.3.4.1 are all gone** — the measurement session ran on 2026-08-08, `test/run.sh` landed on
@@ -202,10 +200,11 @@ plan-v0.3.4.1 are all gone** — the measurement session ran on 2026-08-08, `tes
 **all seven benches were run and judged on 2026-08-11**, and panic became `recover` the same day.
 The facts are on `ref/` pages and the reasoning is in `git log`.
 
-⛔ **`check_closers` in `docs-check.py` is written but gated behind `--strict`**, because most
-remaining ⬜ are owned by the three plans above. **[plan-v03.5.2.md](plan-v03.5.2.md)'s landing
-checklist removes the flag**, as the last of the three — ⚠️ **and it is not only a flag deletion**,
-so read that checklist before adding a ⬜ anywhere.
+⛔ **Every ⬜ must name the plan, the owner or the version that closes it**, and `check_closers`
+enforces it unconditionally — it ran behind `--strict` only while the v0.3.5 batch was in flight.
+⚠️ **An open item LEADS with the glyph**; a sentence that merely mentions ⬜ mid-line is read as prose
+about the marker, except inside an `## Open` section where the lead test is dropped. `NO PLAN OWNS
+THIS` is a legitimate answer and is greppable on purpose.
 
 **A fact appears once in full; everywhere else it is a citation.** `test/gate/docs-check.py` enforces
 what can be enforced — run it rather than trying to remember it:

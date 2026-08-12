@@ -8,12 +8,8 @@ gets built next.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
-⚠️ **This is no longer the only plan.** **Two** scoped plans hold the last batch of infrastructural
-work before v0.4:
-
-| Plan | Is |
-|---|---|
-| [plan-v03.5.2.md](plan-v03.5.2.md) | **The standalone debug patch** — `! debug/`, encoder-navigable. ⛔ It carries the batch's closing chore |
+✅ **This is the only plan again.** The whole v0.3.5 batch has landed and every scoped plan in it is
+deleted, which is what a scoped plan is for.
 
 ✅ **Diagnostics inside the instrument has landed** — the OLED's `diag` layer, the inbound UDP path
 and the phone's four buttons, on 2026-08-12. What each one IS is on
@@ -200,10 +196,10 @@ before `throw~` measures a passthrough and nothing else until there are stages b
 
 ### ✅ The reference patches under `tools/*/` earn their keep — decided, and kept
 
-`audio-probe/`, `oled-probe/`, `osc-bridge/` and `status-display/` all stay. **[plan-v03.5.2.md](plan-v03.5.2.md)
-wants two of them as working references within weeks**, which is the "would you run it again" test
-answering itself. The reasoning is recorded on [tools/README.md](tools/README.md) so the question
-stops recurring.
+`audio-probe/`, `oled-probe/`, `osc-bridge/` and `status-display/` all stay. ✅ **The debug patch was
+built against two of them within the week**, which is the "would you run it again" test answering
+itself. The reasoning is recorded on [tools/README.md](tools/README.md) so the question stops
+recurring.
 
 ---
 

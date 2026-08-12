@@ -25,7 +25,7 @@ were false.
 
 | Gate | Checks | Answers for |
 |---|---|---|
-| `runner-assert.sh` | 168 | **no page** — it answers for this one |
+| `runner-assert.sh` | 172 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
@@ -47,9 +47,9 @@ were false.
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 
-**678 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**682 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **671**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **675**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 42 come from TWO Pd runs and one tally**, which is the only entry here
@@ -120,11 +120,11 @@ drifted and nothing noticed.
 ./test/run.sh --all          and then the benches -- needs the rig, and a person
 ```
 
-Layout and graph structure, both entry points loading in silence, the bench step text, the MIDI
+Layout and graph structure, all three entry points loading in silence, the bench step text, the MIDI
 inventory, and one gate per module — the boot sequence, the audio path, the error bus, the display
 arbiter, the OLED, the aux LED, the tempo reference, the clock, the map, panic's second tier, the
-data store, the Launchpad, the nanoKONTROL, the Organelle's own panel, the phone, the SP-404 and the
-Volca. **Mac
+data store, the Launchpad, the nanoKONTROL, the Organelle's own panel, the phone, the SP-404, the
+Volca and the debug patch. **Mac
 only — it touches no device**, so it is safe to run at any time, including with the Organelle
 switched off.
 

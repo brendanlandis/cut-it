@@ -83,10 +83,13 @@ SPEC = re.compile(r'^(pd-text|pd-route|sh-aconnect)\s+"([^"]+)"\s+(\S+)$')
 # Only names that look like this project's own docs. A bare "README.md" inside a
 # URL or a shell heredoc is not worth a false positive.
 # ⛔ THE NAME CLASS CARRIES DOTS, and it did not until 2026-08-12. Without one a
-# bare `plan-v03.5.2.md` in a .pd, .sh or .py was invisible to
+# bare three-part plan name in a .pd, .sh or .py was invisible to
 # check_dangling_docs while a bare `plan-v04.md` was caught: the match started at
-# `plan-v03`, needed `.md` next, failed -- and every later start position was
-# refused by the lookbehind, which sees the dot inside `v03.5`. So this batch's
+# the `plan-vNN` part, needed `.md` next, failed -- and every later start position
+# was refused by the lookbehind, which sees the dot inside the version.
+# ⚠️ THAT SENTENCE NO LONGER SPELLS THE NAME OUT, and the reason is this check:
+# the plan is deleted, so a literal mention here would be a dangling pointer the
+# gate reports against itself. It did, the first time this ran after the delete. So this batch's
 # Pd-comment references to a plan that was about to be deleted had to be found by
 # grep, which is exactly the rot this check exists to stop.
 # ⛔ AND THE DIRECTORY GROUP REPEATS. It was `(?:[a-z0-9_-]+/)?` -- at most ONE

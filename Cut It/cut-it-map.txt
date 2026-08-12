@@ -42,3 +42,9 @@ mode-3 lp-cc-90 recover 0
 mode-4 lp-cc-90 recover 0
 mode-5 lp-cc-90 recover 0
 mode-6 lp-cc-90 recover 0
+mode-1 lp-cc-80 diag 0
+mode-2 lp-cc-80 diag 0
+mode-3 lp-cc-80 diag 0
+mode-4 lp-cc-80 diag 0
+mode-5 lp-cc-80 diag 0
+mode-6 lp-cc-80 diag 0

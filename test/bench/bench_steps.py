@@ -190,6 +190,18 @@ STEPS_DISPLAY = [
   # the wrong step, so the thing you had to do arrived while you were judging
   # something else.
   {'do': 'Wait 30 seconds without touching anything.'}),
+ # ⛔ THIS IS THE HALF NO GATE CAN REACH. oled-assert proves the roster draws
+ # the right words in the right order; whether five 8px rows are READABLE at
+ # arm's length is a person's judgment, and m_launchpad unchecked is 21
+ # characters -- the whole width of a row -- so the longest line clips silently
+ # if anything about the names or the state words ever grows.
+ ('The diag roster',
+  'PASS IF: Five small lines naming m_launchpad m_nano m_organelle m_volca and m_404 -- each with here or gone or never or unchecked beside it. Every line is readable at arm reach and none is cut off at the right edge. About eight seconds later the meters come back on their own.',
+  [],
+  {'do': 'Press the Launchpad button directly below the top-left corner, CC 80. '
+         'Look hardest at the longest line: m_launchpad unchecked is exactly as '
+         'wide as a row gets, so that is where clipping would show first.',
+   'need': ['The Launchpad plugged in and lit.']}),
 ]
 
 STEPS_NANOKONTROL = [
@@ -237,6 +249,21 @@ STEPS_NANOKONTROL = [
   {'do': 'Plug it back in, wait 60 seconds, then move slider 1.',
    'reload': True,
    'need': ['The nanoKONTROL still unplugged from the last step.']}),
+
+ # ⛔ THE STEP THE WHOLE DIAG LAYER EXISTS FOR, and it has to live in a bench
+ # where a device is genuinely missing. The warn two steps up proves the loss
+ # was DETECTED and lasts two seconds; this proves you can ask afterwards, which
+ # is the thing that was impossible before. ⚠️ It runs BEFORE the device goes
+ # back in, so it sits between the unplug and the replug rather than at the end.
+ ('Hot-swap -- the diag roster names it',
+  'PASS IF: The m_nano line reads gone. The other four lines are unchanged and none of them reads gone.',
+  [],
+  {'do': 'Press the Launchpad button directly below the top-left corner, CC 80. '
+         'Check m_launchpad and m_404 as well as m_nano: pulling one USB cable '
+         'can knock a bystander off the bus, so a second line reading gone is '
+         'worth knowing about rather than a miss.',
+   'need': ['The nanoKONTROL still unplugged from the last step.',
+            'The Launchpad plugged in and lit.']}),
 
  # ⛔ THE THIRD CASE, AND IT IS THE ONE THAT HAPPENS IN A ROOM. The two above
  # are loss DETECTED and absent-at-load RECOVERED -- neither of them watches a

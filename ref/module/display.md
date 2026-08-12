@@ -138,11 +138,20 @@ y = 0, 9, 18, 27, 36**, one per source, plus the shrunk meter strip.
 | ⛔ **The loop is bounded at FIVE rows, not at the roster size.** A sixth would draw at y=45 and run into the meter strip at y=48 | verified | 301 |
 | ⚠️ **`m_launchpad unchecked` is 21 characters** — the whole width of an 8px row. A longer state word or a longer abstraction name clips silently | verified | 301 |
 | Summoned by `disp` → `diag`, which carries nothing. Cleared by a retriggered `[del 8000]`, so pressing again while it is up buys another eight seconds | verified | 301 |
+| The control is **`lp-cc-80` in all six modes** — the Launchpad's left column, top button, directly below the CC 90 corner that `recover` uses. One row of `cut-it-map.txt` per mode | verified | 304 |
 | The state lives in a `[text define $0-diag]` as `<src> <code>` — **numbers, not words**, so every transition is a comparison and the words are chosen once, where they are drawn | verified | 301 |
 
 ⚠️ **Presence is *last heard*, not *alive*, and the labels are chosen to say so.** A nanoKONTROL
 nobody has touched reads `here` and one on the floor reads `here` until the poll misses three times.
 No amount of code changes that — the operator supplies it.
+
+⛔ **The summoning control is on the device most likely to be the answer, and that is a known
+cost.** A Launchpad that has come unplugged cannot summon the screen that would say so — the button
+is dead in exactly the case the roster is most wanted. **Only the Organelle itself can never be the
+missing device**, and its 25 keys and four knobs are already spoken for. ⚠️ **The failure is at least
+unambiguous rather than silent**: a Launchpad that is gone is also dark, and `warn m_launchpad
+device-lost` has already been on the screen for two seconds. See
+[launchpad.md](../device/launchpad.md).
 
 ### `g_grid` — the same shape, one link shorter
 

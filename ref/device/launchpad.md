@@ -412,6 +412,26 @@ are the *handler's* business. The mechanism is on [map.md](../module/map.md), th
 on the way out because `/loadPatch` runs `killpatch.sh` first (item 252) — so the safe exit below
 still returns the device to Live Mode. Item 251 stays closed.
 
+### CC 80 is the diagnostic, directly below it
+
+**The left column's top button**, one row under the CC 90 corner — the two controls you reach for
+when something is wrong sit together, and neither is anywhere near a pad you would play.
+
+A press raises `diag`, which summons `g_oled`'s device roster: one 8px row per device reading
+`here` / `gone` / `never` / `unchecked`, cleared by its own 8 s TTL. It is mapped in **all six
+modes**, because a diagnostic you cannot reach from the mode you are in is not one. The screen and
+its states are on [display.md](../module/display.md).
+
+⛔ **It cannot report its own device.** A Launchpad that has come unplugged sends no CC, so this
+button is dead in one of the cases the roster exists for — chosen anyway, because the alternatives
+are a nanoKONTROL with the same problem or an Organelle key already spoken for. ⚠️ **The gap is
+covered from the other side rather than left open**: an unplugged Launchpad is also *dark*, the
+watchdog has already written `warn m_launchpad device-lost` to the screen, and
+[display.md](../module/display.md) records what a dark grid means.
+
+⚠️ **Unlike CC 90 it reads only the press.** There is no second tier and no hold, so nothing about it
+needs the release — see the `recover` note above for why that distinction is not free.
+
 ### Pressure is the forgotten input
 
 The pads are polyphonic-aftertouch sensitive, and that channel is free panel space: any continuous

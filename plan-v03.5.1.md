@@ -156,14 +156,9 @@ page and the gates first.**
 
 ## Open
 
-- ⬜ **Which physical control summons the diag layer.** The destination and its handler exist on
-  `u_map`'s `route` and `map-assert.sh` drives them from a gate row, so this is **one line of
-  `Cut It/cut-it-map.txt`** — but which control it is, and in which modes, is a decision about the
-  panel. Owned by [plan-v03.5.1.md](plan-v03.5.1.md). ⚠️ **Weigh reachability:** a control on a
-  device that has come unplugged cannot summon the screen that would say so, and only the Organelle
-  itself can never be the missing device. The dev panel's `diag` button covers the Mac meanwhile.
-- ⬜ **The diag layer has no bench step, because a bench step names a control to press.** It travels
-  with the row above. Owned by [plan-v03.5.1.md](plan-v03.5.1.md).
+**Nothing.** ✅ The diag layer's summoning control is decided and shipped — `lp-cc-80` in all six
+modes, with its bench steps on `display` and `nanokontrol`. See
+[ref/device/launchpad.md](ref/device/launchpad.md).
 
 ---
 
@@ -172,8 +167,7 @@ page and the gates first.**
 1. The phone has buttons and a closed inbound vocabulary, recorded on
    [ref/device/phone.md](ref/device/phone.md) as what the path is.
 2. `phone.md`'s `What it is` describes what the link carries rather than what it may not.
-3. A control summons the diag layer, its row is in `Cut It/cut-it-map.txt`, and it has a bench step.
-4. `./test/run.sh` reports `RESULT: PASS`, and every new check has been seen to fail.
-5. **This file is deleted.**
+3. `./test/run.sh` reports `RESULT: PASS`, and every new check has been seen to fail.
+4. **This file is deleted.**
 
 ⛔ **This plan does not hand its open items to [plan-v04.md](plan-v04.md).**

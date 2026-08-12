@@ -831,8 +831,22 @@ Not a patch — a static check on `.pd` files:
 python3 test/gate/pd-layout-check.py "Cut It"/*.pd
 ```
 
-Reports overlapping boxes, **connections drawn through unrelated boxes**, and content that
-extends past the saved canvas size. Exits non-zero on any of them.
+Reports overlapping boxes, **connections drawn through unrelated boxes**, content that extends past
+the saved canvas size, and ⛔ **connects that name a box defined LATER in the file**. Exits non-zero
+on any of them.
+
+⛔ **That last one is C-10's second half, and Pd is silent about it in every way that matters.** The
+rule says append boxes at the end and move the connects with them — and it is easy to move the NEW
+connects while an EDITED one still sits in the original block, hundreds of lines above the box it
+now names. Pd replays a canvas top to bottom, finds no such object, drops the cord, and **loads
+anyway**. The patch is simply not wired.
+
+⚠️ **Pd does print `connect: no such object`, and that is not a defence.** A menu-launched patch
+runs `-nogui` with stdout on tty1, `tools/deploy.sh` gates on output only before ~735 ms, and a gate
+reading a capture is not looking for it. It caused two silent miswirings in one session — a presence
+publish that never fired, and mode selection that stopped working outright — and both looked exactly
+like a logic error in the new code. The check is exact rather than heuristic: it is what Pd itself
+does.
 
 Layout is the only structural documentation Pd has, and the failure it was written for is
 specific: a comment placed between the logic and a message column gets cords drawn straight

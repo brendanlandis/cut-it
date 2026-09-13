@@ -68,14 +68,14 @@ traffic into nothing.
 | Files | `cut-it-auto.txt`, `cut-it-manual.txt` — and `cut-it-recover.txt`, which is **not `u_state`'s** | verified | 299 |
 | Format | One line per key, first atom is the key. Written and read with **`-c`** | verified | — |
 | Made at load | `state-dir.sh` via `[shell]`, once per load. It **`mkdir -p`s the directory and `touch`es all three files** | verified | 143, 147, 299 |
+| A write into a missing directory | **Prints `write failed`** — it does not fail silently | verified | 143 |
+| A read of a missing file | Prints **three lines** | verified | 147 |
 
 ⚠️ **`cut-it-recover.txt` lives here but `u_state` knows nothing about it.** `u_init` writes it
 immediately before a `recover` reloads the patch and `u_map` reads it at 2000 ms — the mechanism is
 on [map.md](map.md). It is in this directory for the same reason the other two are: outside the
 patch folder, where `tools/deploy.sh --clean` and a power cycle cannot touch it. It is `touch`ed by
 `state-dir.sh` because `u_map` reads it at every boot and a missing file prints three lines.
-| A write into a missing directory | **Prints `write failed`** — it does not fail silently | verified | 143 |
-| A read of a missing file | Prints **three lines** | verified | 147 |
 
 **Without the touch, a fresh install would print six error lines at every boot before doing anything
 wrong** — the same class of noise as mother's own `knobs.txt: can't open`.
@@ -119,19 +119,19 @@ tests is a rule that quietly stops being true.
 
 ### `u_state` must never write a file it has not yet read
 
-⛔ The auto flush is armed **by the restore**, not by a `loadbang`. The first build armed it at 3 s
-while `u_init` restores at ~3.5 s, so **every boot overwrote the previous session with its own
-defaults** — and the file looked entirely plausible throughout (item 152).
+⛔ The auto flush is armed **by the restore**, not by a `loadbang`. Armed on a timer that fires
+before `u_init`'s ~3.5 s restore, **every boot overwrites the previous session with its own
+defaults** — and the file looks entirely plausible throughout (item 152).
 
-**Fix:** arm the flush from the restore. Found on the Mac before it reached hardware.
+**Fix:** arm the flush from the restore.
 
 ⛔ **The cost of that ordering is that a bad saved value cannot be corrected by a boot — unless the
 contributor refuses it.** A contributor's own put at load lands *before* the restore, so the restored
 value replaces it and the flush then writes the restored one back. A malformed line therefore
-survives every power cycle, measured on a `mode` of `compose` with its name missing, which killed the
-map lookup for a whole session (item 294, [map.md](map.md)).
+survives every power cycle — a `mode` of `compose` with its name missing kills the map lookup on
+every boot (item 294, [map.md](map.md)).
 
-✅ **`u_map` now refuses one** — item 297. A `mode` that is not two atoms never reaches the store, so
+✅ **`u_map` refuses one** — item 297. A `mode` that is not two atoms never reaches the store, so
 the store keeps the seed's good value and **the flush writes that back instead**, repairing the file
 on the next boot with no user action. ⚠️ **That is the contributor's job, not `u_state`'s**, which
 knows nothing about what any key means; a contributor that does not validate still inherits the
@@ -162,20 +162,19 @@ namespace are the same namespace.
 
 ⚠️ The same trap one level down: `[text set]` and `[text search]` both answer a bare selector with
 "no method for `mode`". A message box typed `mode compose mode-1` carries `mode` as its **selector**,
-not as data. Seen twice in this repo — in `u_err` first, and again while building `u_store`.
+not as data.
 
 ### A `[text search]` miss reaches the wrong inlet as -1
 
 ⛔ `[moses]`'s **left** outlet carries the -1 rather than a bang (C-8). Without a `[t b]` it reaches
-`[text set]`'s line-number inlet as -1 and Pd answers `line number (-1) < 0` — the exact bug `moses`
-caused in `u_err`'s log.
+`[text set]`'s line-number inlet as -1 and Pd answers `line number (-1) < 0`.
 
 **Fix:** `[t b]`, so a miss becomes `[text size]` instead — one past the end, which appends.
 
 ### The path is a creation argument captured into a `[symbol]`
 
-⛔ **In a MESSAGE box `$1` is the incoming message, not the creation argument.** That trap has
-already cost this project a silent MIDI port and a `soundfiler` write to a table called `0-a0`.
+⛔ **In a MESSAGE box `$1` is the incoming message, not the creation argument.** The failures it
+produces are silent — a MIDI port that is never set, a `soundfiler` write to a table called `0-a0`.
 
 **Fix:** `[symbol $1]` in an *object* box holds the path, and the message box below substitutes it
 in.

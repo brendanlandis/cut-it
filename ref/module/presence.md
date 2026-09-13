@@ -38,9 +38,9 @@ button, and it is the only one written by a file that owns no device.
 | `re-wire` | `u_net`, when the phone's button is pressed | run `wire.sh` now | verified | 306 |
 
 ⚠️ **The poll is an outlet, not a bus message.** `c_presence`'s first outlet bangs *"send your
-inquiry now"* straight into the `m_` that contains it. The plan that produced this file put `poll
-<src>` on the bus; a cord inside one abstraction is strictly cheaper and keeps the rule that **only
-the `m_` may talk to its device** structural instead of advisory.
+inquiry now"* straight into the `m_` that contains it. A cord inside one abstraction is cheaper than
+a bus selector and keeps the rule that **only the `m_` may talk to its device** structural instead
+of advisory.
 
 ⚠️ **`seen` means different things on the two sides, and the asymmetry is deliberate.** An active
 device's liveness is consumed by its own `c_presence` two boxes away — a **cord**, not the bus — so
@@ -48,8 +48,8 @@ publishing it every two seconds forever would be traffic with a reader that does
 passive layer holds no `c_presence` at all, so the bus is the only place its last-heard can go, and
 it publishes on **every** decode.
 
-⛔ **What changed is that an active layer now publishes `seen <src>` too, EXACTLY ONCE**, the first
-time its device ever answers — item 302. **That one message is the only thing on the bus that
+⛔ **An active layer publishes `seen <src>` too, EXACTLY ONCE**, the first time its device ever
+answers — item 302. **That one message is the only thing on the bus that
 separates a device which has GONE from one that was NEVER SEEN**, because `lost` is published
 unarmed and the two are otherwise byte-identical. It is the mildest possible way to make the
 selector uniform: once per device per session, no new polling, no rate concern.
@@ -106,10 +106,9 @@ silently, because a matcher that matches nothing looks exactly like a device tha
 ### The heartbeat, for a device nothing ever lost
 
 ⛔ **Everything above recovers a device that WAS here and went away, and every bit of it is gated on
-something being LOST.** A device registered `none` has no clock and can never be lost, so it was
-never recovered at all: plug the Volca's interface into a running instrument and it enumerates in
-under a second and sits **completely unsubscribed, forever**. Item 285, and ✅ seen on the rig
-2026-08-10 on a session that had been up 1 day 21 hours.
+something being LOST.** A device registered `none` has no clock and can never be lost, so the
+bounded recovery never runs for it: plug the Volca's interface into a running instrument and it
+enumerates in under a second and sits **completely unsubscribed, forever** (item 285).
 
 `u_present` forks **`wire-watch.sh`** on its own interval, off the raw tick rather than through the
 recovery's spigot.
@@ -118,7 +117,7 @@ recovery's spigot.
 |---|---|---|---|
 | What it hashes | the ALSA **client names** only, never the subscriptions | verified | 292 |
 | Cost of the probe | **~50 ms**, measured three times on the device | verified | 292 |
-| Cost of `wire.sh` itself | **~247 ms**, measured three times — ⚠️ not the 133 ms the patch comment claimed | verified | 292 |
+| Cost of `wire.sh` itself | **~247 ms**, measured three times | verified | 292 |
 | `wire.sh` is idempotent | 9 connections, twice in a row, no change | verified | 292 |
 
 ⛔ **Hashing the names and not the subscriptions is the whole trick.** `aconnect -l` prints
@@ -144,16 +143,13 @@ size 0, Pd `lseek`s, and the read fails outright: `lseek: Invalid argument`, `te
 | `info u_present rewire-phone` | the phone's button, once per press — [phone.md](../device/phone.md) | verified | 306 |
 | `fail u_present rewire-gaveup` | once, when the bound is spent | verified | 235 |
 
-⛔ **A fork nothing records is a repair nobody can attribute.** The attempts had a `[print rewire]`
-and nothing else — and a menu-launched patch runs `-nogui` with stdout on tty1, which VNC will not
-show, so on the instrument they were invisible. ✅ **Measured 2026-08-10:** the Volca's interface
-went from unsubscribed to wired on a **live** instrument, and `/sdcard/cut-it-err.log` had nothing to
-say about it — no `BOOT`, no `device-lost`, no `rewire-gaveup`, Pd's pid unchanged. Something ran
-`wire.sh` and nothing anywhere recorded it.
+⛔ **A fork nothing records is a repair nobody can attribute.** A `[print]` is not a record: a
+menu-launched patch runs `-nogui` with stdout on tty1, which VNC will not show, so on the instrument
+a fork that only prints is invisible, and a device can go from unsubscribed to wired with nothing in
+`/sdcard/cut-it-err.log` to say so.
 
 ⚠️ **`info`, which is logged and never drawn** — see [error.md](error.md). Neither is a failure, the
 give-up already says `fail`, and eight alerts per episode on a 21-character screen mid-set is noise.
-✅ Built as `warn` first and `oled-assert.sh` caught it inside one run, drawing over a modal.
 
 ⛔ **The three names are separate because all three forks converge on one `sh wire.sh` message
 box.** A report tapped below that junction would name every scheduled attempt as the trailing one,
@@ -176,48 +172,42 @@ as shipped, so the eighth fork and the give-up genuinely happen — at 7.0 s and
 what carries over to the shipped tick is *counter 32* and *counter 33*, not the seconds. Nothing in
 `test/run.sh` runs for seventy seconds and nothing needs to.
 
-### Verified on the hardware, 2026-08-10
+### Behaviour on the rig
 
-| Claim | How it was seen | Evidence | Item |
-|---|---|---|---|
-| A device **absent at load** is recovered — item 235's whole subject | Launchpad unplugged before launch, plugged in after: five `wire.sh` attempts missed it, the sixth caught it, `back m_launchpad` followed | verified | 235 |
-| …and comes back **fully** | Programmer Mode re-asserted by the heartbeat at a device the init SysEx never reached, ownership restored, `g_grid` repainted the mode lamp | verified | 276 |
-| An **absent** device raises no `warn` | no `warn m_launchpad device-lost` while it had never answered; the same device warned normally once seen and lost | verified | 276 |
-| The give-up **reports** | `fail u_present rewire-gaveup` reached `err` — the path that was unreachable behind the shut spigot | verified | 235 |
-| **Coalescing** | nano and 404 pulled together: two `rewire:` lines, not four. One bound served both | verified | 277 |
-| The **safe exit** survived the watchdog rewrite | patch swapped away through `/loadPatch`: Launchpad returned to Live Mode and its Setup button responded | verified | 278 |
-| ⛔ **USB enumeration races the retry** | replugged at ten seconds and the *first* attempt still missed — `wire.sh`'s own count showed 7 then 9. The Launchpad case used six of its eight | verified | 277 |
-| The **SP-404 was lost on its own** and reported it | `/sdcard/cut-it-err.log`, session `BOOT 06:09:50`: `350000 warn m_404 device-lost` beside the nano, then `510000 warn m_404 device-lost` **alone**. A second `device-lost` for one source is only reachable through `[change]`, so it had come back in between; no `rewire-gaveup` follows, so it came back again | verified | 281 |
-| ⛔ **Unplugging one USB device knocks a BYSTANDER off**, and the re-wire repairs it silently | the SP-404 was declared lost **twice** on 2026-08-10 without being touched — `488000` and `424000` in two sessions — each time while a neighbouring device was pulled. Links dipped and were restored by a scheduled fork six seconds later | verified | 286 |
-| The give-up interval is **exactly** 64000 ms | `224000 warn m_nano device-lost` → `288000 fail`, and `522000` → `586000`. Two sessions, both exact — 32 ticks at the shipped 2000 ms | verified | 288 |
-| …and **72000 ms** from load when the device is absent at load | `72000 fail u_present rewire-gaveup`, the **only** line in that session — no per-source `warn`, because nothing was ever seen | verified | 288 |
-| ⛔ **ALSA renumbers clients across a replug, and `wire.sh` does not care** | the SP-404 went client `32 → 28` and the Volca's interface `28 → 32` — they swapped. After a reload every device was on its correct Pd port anyway: 404 on `128:2/128:6`, Volca on `128:3/128:7` | verified | 287 |
-| **No false loss in 9.5 hours** with the whole rig connected | the session that began `BOOT 06:53:30` ran to 16:21 with four devices plugged in and wrote **one** line to `/sdcard/cut-it-err.cur` — `warn u_net net-link-down`, which is the phone's socket and not presence — see [phone.md](../device/phone.md). Three active layers polling every 2 s is ~17 000 polls each, and `m_organelle` sat passive and silent throughout | verified | 282 |
+| Claim | Evidence | Item |
+|---|---|---|
+| A device **absent at load** is recovered by the scheduled forks — and comes back **fully**: Programmer Mode re-asserted, ownership restored, the mode lamp repainted | verified | 235, 276 |
+| An **absent** device raises no `warn`; the same device warns normally once seen and then lost | verified | 276 |
+| The give-up **reports** — `fail u_present rewire-gaveup` reaches `err` | verified | 235 |
+| **Coalescing** — two devices pulled together produce two `rewire:` lines, not four. One bound serves both | verified | 277 |
+| The **safe exit** survives a `/loadPatch` swap: the Launchpad returns to Live Mode and its Setup button responds | verified | 278 |
+| ⛔ **USB enumeration races the retry** — a replug at ten seconds still misses the *first* attempt, and one case used six of the eight | verified | 277 |
+| A device can be **lost and come back on its own**, twice in one session, with no `rewire-gaveup` — a second `device-lost` for one source is only reachable through `[change]` | verified | 281 |
+| ⛔ **Unplugging one USB device can knock a BYSTANDER off** the bus long enough to cross the three-poll threshold; a scheduled fork puts it back within seconds, and nothing on the instrument distinguishes it from a real unplug | verified | 286 |
+| The give-up interval is **exactly** 64000 ms after `device-lost` — 32 ticks at the shipped 2000 ms — and **72000 ms** from load for a device absent at load, with no per-source `warn` because nothing was ever seen | verified | 288 |
+| ⛔ **ALSA renumbers clients across a replug** — the SP-404 and the Volca's interface swapped `32 ↔ 28` — and `wire.sh` does not care: it connects by name, so every device lands on its correct Pd port | verified | 287 |
+| **No false loss in 9.5 hours** with four devices connected — one line in `/sdcard/cut-it-err.cur`, `warn u_net net-link-down`, which is the phone's socket and not presence ([phone.md](../device/phone.md)). Three active layers polling every 2 s is ~17 000 polls each; `m_organelle` sat passive and silent throughout | verified | 282 |
 
 ⚠️ **The bystander row is the one to remember at a gig: a warn can name a device you did not
-touch.** Pulling any USB cable can take a neighbour off the bus long enough to cross the three-poll
-threshold, and nothing on the instrument distinguishes that from a real unplug. It is also an
-argument for the shared re-wire nobody had written down — the recovery is not only for the device
-that went missing, and on both occasions it put the bystander back without anyone noticing.
+touch.** It is also an argument for the shared re-wire — the recovery is not only for the device that
+went missing.
 
-⚠️ **The renumbering row is the phantom-control hazard NOT happening.** `wire.sh` connects by name,
-which is stated in [boot.md](boot.md) and had never once been exercised against an actual
-renumbering. Had it wired by number, the SP-404 would have landed on the Volca's channel block and
-vice versa. ⛔ **The reload is what re-ran it** — a renumbering that happens while the bound is spent
-leaves the rig wired to nothing until the patch is loaded again, which is exactly what was observed
-before the reload.
+⚠️ **The renumbering row is the phantom-control hazard NOT happening.** Wired by number, the SP-404
+would land on the Volca's channel block and vice versa. ⛔ **But a renumbering that happens while the
+bound is spent leaves the rig wired to nothing until something re-runs `wire.sh`** — the heartbeat
+hashes client *names*, which a renumbering does not change, so that something is the phone's
+`re-wire` button or a reload.
 
 ⚠️ **The no-false-loss row is worth more than a gate can be.** Every headless gate here runs on a
 Mac, where every device is absent by definition and `[sysexin]` is a stub — so *"a device that is
 there is never reported missing"* is precisely the claim they cannot make. Nine and a half hours of
 the real rig can, and the passive layer's silence is the same row: `m_organelle` is spoken to once at
-load and never again (item 237), so an `m_organelle` that aged would have warned within seconds of
-every one of those 148 boots.
+load and never again (item 237), so an `m_organelle` that aged would warn within seconds of every
+boot.
 
-⚠️ **That last row is an argument for the bound that nobody had written down.** Eight attempts over
-seventy seconds is not only about giving a person time to reseat a cable — a single-shot recovery
-would have failed every replug tested today, because the device is still enumerating when the first
-attempt lands.
+⚠️ **The enumeration row is an argument for the bound.** Eight attempts over seventy seconds is not
+only about giving a person time to reseat a cable — a single-shot recovery fails every replug,
+because the device is still enumerating when the first attempt lands.
 
 ⚠️ **A run longer than ~70 s with a device unplugged now raises a real `fail` on `err`.** That is the
 feature working. Nothing in `test/run.sh` runs that long; a hands-on bench for another device will
@@ -242,10 +232,9 @@ both 1.** Do not copy that into a new layer.
 ### One `[sysexin]` hears every device in the rig
 
 There is exactly one `[sysexin]` box in the patch, inside `c_devid`, and every instance of `c_devid`
-reads the same stream. `m_launchpad` used to treat **any** SysEx as proof of its own presence — true
-only while nothing else in the rig transmitted any. Poll all three and the Launchpad reads as present
-whenever the *nano* answers: item 235 un-fixed in the worst direction, with the watchdog believing a
-device that is gone.
+reads the same stream. Treating **any** SysEx as proof of one device's presence holds only while
+nothing else in the rig transmits any. Poll all three and the Launchpad reads as present whenever the
+*nano* answers, with the watchdog believing a device that is gone.
 
 **Fix:** `[c_devid <byte>]` per device, never a bare `[sysexin]`. `presence-assert.sh` drives a KORG
 reply and asserts the Launchpad stays lost — **and** drives the Launchpad's own and asserts it does
@@ -263,24 +252,21 @@ untouched, and no amount of code changes that — the operator supplies it.
 
 ### A passive layer's `seen` has to come off EVERY source it has
 
-⛔ `m_organelle` publishes `seen m_organelle` from its fan-in, and from **item 242 until item 303**
-the four knobs did not go through it. Item 242 took the knobs off `disp` and rewired them straight
-to `param`; the presence publish went with them, silently. `og-aux` and the 25 keys kept theirs.
-
-**That is the worst possible source to lose**, because ✅ **mother pushes the knobs once at load and
-then says nothing** — item 237. The one thing the Organelle ever sends unprompted was the one thing
-that no longer said the Organelle was there, so the layer read as never-heard on a device where it
-had in fact spoken. **Nothing could see it until there was a screen that drew last-heard.**
+⛔ `m_organelle` publishes `seen m_organelle` from its fan-in. A source wired around that fan-in —
+the knobs going straight to `param`, say — publishes no `seen` at all, silently, and **the knobs are
+the worst possible source to lose**: ✅ mother pushes them once at load and then says nothing
+(item 237), so the one thing the Organelle ever sends unprompted no longer says the Organelle is
+there, and the layer reads as never-heard on a device that has in fact spoken. Nothing but a screen
+that draws last-heard can see it (item 303).
 
 **Fix:** the four knobs fan in to a `[t a b]` of their own, `b` before `a`, so `seen` goes out ahead
-of the value exactly as it does for `og-aux`. ⚠️ **There are two fan-ins in that file now, not one**,
-and the comment that said "five sources converge on one trigger" was false for as long as the bug was.
+of the value exactly as it does for `og-aux`. ⚠️ **There are two fan-ins in that file, not one.**
 
 ### The warn is armed and the recovery is not
 
 A device that has never answered since load is **absent**, not lost — and absent is the normal state
-of every device on a Mac. Arming the whole chain was item 235 itself: the recovery, *and* the give-up
-that would have reported it, both sat behind a `[spigot]` only the missing device could open.
+of every device on a Mac. Arming the whole chain on first-seen puts the recovery, *and* the give-up
+that would report it, behind a `[spigot]` only the missing device can open (item 235).
 
 **Fix:** the gate is **split, not removed**. `$0-seen-ever` gates the `warn` only. `lost` still
 publishes unarmed, because that is what drives the recovery, and the give-up stays unconditional. Two
@@ -315,12 +301,12 @@ computes 0, `change` swallows it, and nothing is published until something actua
 ## Design
 
 **One trailing fork, and it bends Phase 4's rule deliberately.** That rule is *one fork per load and
-never per event*, and this is a fork on a transition. It is here because the recovery used to stop
-the instant the last **detectable** device answered, which is not the same as the rig being whole: a
-`none` device knocked off in the same event gets its one attempt while it is still enumerating, and
-is then never retried. That is not hypothetical — it stranded the Volca on the bench, item 275. The
-fork is bounded at exactly one per episode and fires at the best-informed instant available, because
-a device answering its inquiry is the signal that enumeration has **finished**.
+never per event*, and this is a fork on a transition. Without it the recovery stops the instant the
+last **detectable** device answers, which is not the same as the rig being whole: a `none` device
+knocked off in the same event gets its one attempt while it is still enumerating, and is then never
+retried (item 275). The fork is bounded at exactly one per episode and fires at the best-informed
+instant available, because a device answering its inquiry is the signal that enumeration has
+**finished**.
 
 ⚠️ **It narrows the gap rather than closing it.** Unplug a `none` device *on its own* and nothing is
 lost, nothing forks, and nothing recovers — the trailing fork only helps when a detectable device
@@ -331,23 +317,20 @@ so the rig gets eight attempts whether one cable came out or three. Two devices 
 must not double the fork rate, and the gate asserts it by counting: three lost sources produce three
 forks over the run, not nine.
 
-**⚠️ 12 seconds was useless in a room.** The first version gave up that fast and the very first
-hardware test missed the window entirely — nobody reseats a cable in twelve seconds. `wire.sh` is
-idempotent and ten forks back to back produced no audio complaint, all measured before Phase 4's
-*one fork per load, never per event* rule was bent. **Its cost is in the heartbeat table above** —
-⚠️ **re-measured at ~247 ms in 2026-08-10, where three places in this repo said 133.**
+**⚠️ The bound is seventy seconds because nobody reseats a cable in twelve.** `wire.sh` is
+idempotent and ten forks back to back produce no audio complaint, which is what makes bending the
+*one fork per load* rule permissible. **Its cost is in the heartbeat table above.**
 
-**The quieter bug the shared re-wire also fixes, and it needed no code.** `wire.sh`'s three
+**The shared re-wire also fixes the phantom-control case, and it needs no code.** `wire.sh`'s three
 `aconnect -d` lines undo mother's own autoconnect — but that undo has **already run** by the time a
 device enumerates late, so a device plugged in after boot can land on the Launchpad's channel block.
-That is the phantom-control incident `wire.sh`'s own comments record, and nothing noticed it before.
 Re-running `wire.sh` fixes it, which is an argument for one shared owner rather than a recovery per
 device.
 
 **`c_presence` and `c_devid` are `c_` because there is more than one**, which is exactly why the
-prefix exists. The alternative — a `[text]` roster inside `u_present` holding every device's miss
-count — was the original design and was dropped: it puts per-device state in the one file that is
-supposed to hold none, and it makes coalescing harder rather than easier.
+prefix exists. A `[text]` roster inside `u_present` holding every device's miss count was rejected:
+it puts per-device state in the one file that is supposed to hold none, and it makes coalescing
+harder rather than easier.
 
 **`c_presence`'s second outlet is connected in exactly one place.** `m_launchpad` uses it to drop
 ownership of the grid, because a surface the patch no longer owns must stop being painted. The other
@@ -363,9 +346,8 @@ different things — nothing changed, or the watchdog gave up — and only the O
 third ambiguous grid state would make the display less informative, not more. The diagnostic screen
 that reads all of this is `g_oled`'s **diag** layer — item 301, on [display.md](display.md).
 
-⛔ **This paragraph listed a third cause, "panic handed the surface back", and it had been false
-since item 251.** Panic does not touch the Launchpad's ownership at all now, and since item 296 it
-paints the surface **red** for a second — a state nothing could mistake for dark. See
+**Panic is not a third cause.** It does not touch the Launchpad's ownership at all (item 251), and it
+paints the surface **red** for a second (item 296) — a state nothing could mistake for dark. See
 [display.md](display.md).
 
 ## Open

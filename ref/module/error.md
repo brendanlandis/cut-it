@@ -11,8 +11,8 @@ what a problem is allowed to interrupt, and **it is the only file that decides i
 reports with `[s err]` and a message box, and none of them knows or cares what mode the instrument is
 in.
 
-It was built in the first infrastructure pass rather than retrofitted. *(judgment call: an
-architecture requirement, not a debugging convenience.)*
+*(judgment call)* It is an architecture requirement, not a debugging convenience — built in from
+the start rather than retrofitted.
 
 **The message format is rule C-12** — `<level> <source> <text>`, level `warn` or `fail`, text one
 symbol of at most 21 characters. `u_err` decides what reaches the screen; `g_oled` decides what it
@@ -36,15 +36,14 @@ hangs off the trigger **above** the route, so every level reaches the log whatev
 
 ⛔ **It exists because diagnostic detail and operator alerts are not the same thing.** `u_present`
 forks `wire.sh` up to eight times per recovery episode and every one belongs in the log; nine alerts
-on a 21-character screen mid-set does not. ✅ It was built as `warn` first and `oled-assert.sh`
-caught it within one run, drawing over a modal the gate had asserted was undisturbed.
+on a 21-character screen mid-set does not.
 
 ### What the filter does
 
 | | Evidence | Item |
 |---|---|---|
 | **Filters by `mode`** — compose shows everything, perform only `fail`. One place, same bus, same callers | verified | — |
-| **Defaults to verbose**, which is the state before any `mode` arrives. `u_map` has driven `mode` since Phase 6 and the filter needed no change — `route` matches on the selector, so a two-atom `compose mode-1` sets verbose exactly as a bare `compose` did | verified | — |
+| **Defaults to verbose**, which is the state before any `mode` arrives. `route` matches on the selector, so the two-atom `compose mode-1` sets verbose exactly as a bare `compose` does | verified | — |
 | ⛔ **It never draws.** C-5 gives `g_oled` sole ownership of `oscOut`, so this forwards onto `disp` as `alert <level> <source> <text>` | verified | — |
 | **The bus is unfiltered; only the SCREEN is filtered.** An unconditional `[print err]` means the by-hand SSH console sees every error raised, even in perform mode | verified | — |
 | **A level that is neither `warn` nor `fail`** falls out of `route`'s reject and is printed as `err-BAD-LEVEL` rather than displayed. Swallowing it would be the exact failure this file exists to prevent | verified | — |

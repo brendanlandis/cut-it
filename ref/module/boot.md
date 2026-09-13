@@ -12,8 +12,8 @@ wire decides WHAT.** That is why the two things it triggers are cords rather tha
 worth being able to see, and a send would make it invisible.
 
 Two entry points instantiate `u_root` and nothing else. `main.pd` is what `mother.pd` loads by name
-on the device; `main-dev.pd` is the Mac's, and adds `u_mother-stub`. **Five creation arguments are
-the only thing they are allowed to disagree about**, and only one of them actually does.
+on the device; `main-dev.pd` is the Mac's, and adds `u_mother-stub`. **Six creation arguments are
+the only thing they are allowed to disagree about**, and only two of them actually do.
 
 `wire.sh` is the ALSA half — every `aconnect` in the rig, run once per load through `[shell]`. It
 also **undoes mother's own autoconnect**, which is not ours and is actively wrong.
@@ -43,10 +43,8 @@ on one name still tells you where to look.**
 
 ⚠️ **The stage timings are guesses with evidence, not measurements.** `loadbang` fires before ALSA
 is up and init SysEx sent on `loadbang` goes nowhere, so every stage sits behind a delay chosen to
-clear that — **1500 ms was enough**, established by a feasibility probe that ran `wire.sh` from a
-bare `[loadbang]` → `[del 1500]` → `[shell]` before `u_init` existed. **Item 266.** The probe was
-retired once `u_init` did the same thing in production; the number is the part that survived.
-**If the Launchpad ever comes up unlit, lengthen the second delay before suspecting the SysEx.**
+clear that — **1500 ms is enough** (item 266). **If the Launchpad ever comes up unlit, lengthen the
+second delay before suspecting the SysEx.**
 
 ⛔ **TWO numbers outside this file are coupled to this sequence** — `u_tempo`'s 4000 and
 `u_present`'s. Change a stage timing and both change with it.
@@ -97,7 +95,7 @@ See *Traps*.
 
 ### The creation arguments
 
-`u_root` takes five, and `main.pd` passes `17 1 /sdcard/cut-it-state 33 49`:
+`u_root` takes six, and `main.pd` passes `17 1 /sdcard/cut-it-state 33 49 9001`:
 
 | # | Is | Device | Mac | Evidence | Item |
 |---|----|--------|-----|----------|------|
@@ -106,10 +104,13 @@ See *Traps*.
 | 3 | `u_state`'s **data directory**, absolute, no trailing slash | `/sdcard/cut-it-state` | `/tmp` | verified | — |
 | 4 | The same for the SP-404 | `33` | `33` | verified | — |
 | 5 | The same for the Volca | `49` | `49` | verified | — |
+| 6 | `u_net`'s inbound UDP port | `9001` | `9002` | verified | 307 |
 
-⚠️ **Argument 3 is the only genuine disagreement, and it is a real platform difference** — there is
-no `/sdcard` on a Mac. Set the Mac's MIDI inputs in the same order (Launchpad first, nano second) and
-the other four are identical, which is the point of numbering them that way round.
+⚠️ **Argument 3 is a real platform difference** — there is no `/sdcard` on a Mac. **Argument 6
+differs for contention, not platform** — `main-dev.pd` is open in Pd while a gate loads it again,
+and one machine can hold a UDP port once; see [phone.md](../device/phone.md). Set the Mac's MIDI
+inputs in the same order (Launchpad first, nano second) and the other four are identical, which is
+the point of numbering them that way round.
 
 ### `u_mother-stub`
 
@@ -127,9 +128,9 @@ Each is a claim and its fix. How any of them was found is in the git history.
 
 ### mother's autoconnect puts the wrong device on the Launchpad's channel block
 
-⛔ `alsaconnect.sh` wires the **lowest-numbered** MIDI client to Pd's Midi-In 1, and the nanoKONTROL
-enumerated below the Launchpad — so mother put the nano on `m_launchpad`'s channel block. One fader
-move published **both `slider-1` and a phantom `lp-cc-1`** to `param` and `disp`.
+⛔ `alsaconnect.sh` wires the **lowest-numbered** MIDI client to Pd's Midi-In 1, and when the
+nanoKONTROL enumerates below the Launchpad that puts the nano on `m_launchpad`'s channel block. One
+fader move then publishes **both `slider-1` and a phantom `lp-cc-1`** to `param` and `disp`.
 
 **Nothing in Pd can fix it.** Once two devices share Midi-In 1 they are both genuinely "channel 1";
 `m_launchpad`'s channel test is correct and powerless.
@@ -142,8 +143,7 @@ Launchpad.** Measured across two boots: the order was nano 32 / 404 36, then 404
 nano 40. **Whichever device enumerates lowest is the one mother grabs**, so undoing only the two seen
 so far would leave a hole the next reboot could walk through.
 
-⚠️ **Invisible on the Mac**, which has explicit device slots and no mother — which is why Phase 6
-shipped without catching it.
+⚠️ **Invisible on the Mac**, which has explicit device slots and no mother.
 
 ### Shutting mother's own MIDI off is the FIRST thing, and it takes two sends
 
@@ -166,9 +166,9 @@ errored.**
 
 ### Positional creation arguments cannot be skipped, and Pd 0.49 does not warn
 
-⛔ Argument 4 was passed for months before `m_404` existed, because omitting it would silently have
-delivered the Volca's channel as arg 4. **Pd 0.49 does not warn about a missing or extra creation
-argument at all**, so a clean syntax check proves nothing about arity.
+⛔ An unused position still has to be passed: omitting argument 4 would silently deliver the Volca's
+channel as arg 4. **Pd 0.49 does not warn about a missing or extra creation argument at all**, so a
+clean syntax check proves nothing about arity.
 
 **Fix:** pass every position, even the unused ones, and say in the comment that it is unused.
 
@@ -230,8 +230,8 @@ needs MIDI out must re-wire its own output.
 
 ### `u_init` owns WHEN; the other file owns WHAT
 
-The Launchpad init and the state restore are **cords out of `u_init`**, not sends. Phase 6 moved
-Programmer Mode and the safe exit into `m_launchpad`; what stayed here is the order. Putting a
+The Launchpad init and the state restore are **cords out of `u_init`**, not sends. Programmer Mode
+and the safe exit live in `m_launchpad`; what lives here is the order. Putting a
 `[del]` inside `u_state` instead would mean two files owning the same sequence and neither one saying
 so.
 
@@ -246,10 +246,10 @@ screen settles *after* the state does rather than during it.
 
 ### Connect by NAME, never by client number
 
-Client 28 was the Launchpad, then became the SP-404 when they were swapped. Every line in `wire.sh`
-names the device.
+ALSA client numbers move across boots and replugs — see [presence.md](presence.md), item 287. Every
+line in `wire.sh` names the device.
 
-### The two entry points share everything but five numbers
+### The two entry points share everything but six arguments
 
 `main.pd` and `main-dev.pd` both instantiate `u_root` and nothing else, **which is what stops them
 drifting**. `main.pd` stays thin on purpose: it is the file `mother.pd` loads by name, and it is the
@@ -258,8 +258,8 @@ one nobody opens.
 ### Off-device development is the default
 
 Open `main-dev.pd` in Pd 0.49 and the whole instrument is there. **Reach for the hardware when the
-thing you are testing is the hardware** — and this project's own history says that line matters:
-Phase 6 passed 25/25 on the Mac twice and shipped three bugs.
+thing you are testing is the hardware** — a bench can pass on the Mac twice and still ship bugs the
+device finds in minutes.
 
 ### `wire.sh` reports what connected
 

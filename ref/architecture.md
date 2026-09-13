@@ -219,8 +219,8 @@ SysEx flipping.
 ⛔ **Two surfaces are DOUBLE-BOOKED, and that is what forces explicit modes.** The Launchpad *and*
 the Organelle's own keyboard both serve two roles — the keyboard is **four filter groups during
 performance and a note-entry surface during composition**. Designing that in from the start is much
-cheaper than retrofitting it once the filter logic exists, which is why `mode` was built in v0.2 and
-`u_map` became mode-dependent in v0.3.
+cheaper than retrofitting it once the filter logic exists, which is why `mode` and a mode-dependent
+`u_map` exist before any filter does.
 
 ## The naming, and what it tells you
 

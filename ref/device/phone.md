@@ -29,7 +29,7 @@ in one line is what makes the first one safe to reason about.
 
 | Device | Address | Notes | Evidence | Item |
 |--------|---------|-------|----------|------|
-| Organelle | `organelle.local` | Listens on **9001**. The IPv4 address is DHCP-assigned and **not stable** — seen as both `.15` and `.18`. Use the name | verified | — |
+| Organelle | `organelle.local` | Listens on **9001**. The IPv4 address is DHCP-assigned and **not stable**. Use the name | verified | — |
 | iPhone | `192.168.1.5` | OSC receive **8000**, WebDAV **9000** | verified | — |
 | Mac | `192.168.1.16` | Dev machine | verified | — |
 
@@ -51,10 +51,10 @@ changes** — the Organelle is `192.168.12.1` and hands the phone `192.168.12.10
 anything**, and nothing on either end says so when they are not. It is the one piece of phone-side
 configuration the scene cannot carry.
 
-⛔ **And it must be a LITERAL ADDRESS — PdParty does not resolve `organelle.local`.** ✅ Measured on
-the rig 2026-08-12: with the host set to the name, taps produced nothing at all and the Organelle's
-UDP counter did not move; with the same port and the literal address the very next tap completed the
-round trip. **The failure is completely silent on both ends.** Item 312.
+⛔ **And it must be a LITERAL ADDRESS — PdParty does not resolve `organelle.local`.** ✅ With the host
+set to the name, taps produce nothing at all and the Organelle's UDP counter does not move; with the
+same port and the literal address the next tap completes the round trip. **The failure is completely
+silent on both ends.** Item 312.
 
 ⚠️ **Which makes the house network the awkward one, and the stage network the easy one.** The
 Organelle's lease moves — seen as `.15`, `.18` and `.6` — so the phone has to be re-pointed whenever
@@ -105,8 +105,8 @@ nanoKONTROL are inputs. ⛔ **A device name off that list is dropped exactly lik
 ⚠️ **The 404 probe starts whatever pad A1 holds, and a LOOPING sample keeps playing.** `m_404`
 schedules its note-off correctly — the loop is the 404's own sample setting, not a stuck note — so
 nothing in the patch can end it and All Notes Off will not either. **Press the pad on the device to
-stop it.** ✅ Seen on the rig 2026-08-12, and pad A1 was kept anyway: the probe's job is to make a
-noise you can identify, and a loop is easy to identify. Item 311.
+stop it.** Pad A1 is kept anyway: the probe's job is to make a noise you can identify, and a loop is
+easy to identify. Item 311.
 
 | Property | Value | Evidence | Item |
 |----------|-------|----------|------|
@@ -167,9 +167,9 @@ powered** — close one of them.
 
 ### A phone joining mid-session saw blanks
 
-⛔ Parameters and status were sent only on change, so a scene opened later showed **empty rows until
-something moved**. The alert never had this problem, and the OLED never had it either, because it
-redraws held state every frame. **`u_net` was the only surface where a late viewer saw nothing.**
+⛔ Sent only on change, parameters and status leave a scene opened later showing **empty rows until
+something moves**. The alert never has this problem, and the OLED never has it either, because it
+redraws held state every frame. **`u_net` is the one surface where a late viewer could see nothing.**
 
 **Fix:** a 2 s repeat of the last parameter and status, on top of the event-driven sends — well below
 the 124/s noise floor. Item 121.
@@ -193,8 +193,7 @@ unreachable, `ssh` included — and it is on [wifi.md](../wifi.md) with a reprod
 
 ### A UDP `connect` to a port with nothing listening survives EXACTLY ONE datagram
 
-⛔ **The measurement that changed the design** (item 114). Twenty datagrams at 5 Hz to a port with no
-listener: the `connect` **succeeds**, the first datagram **goes out**, and then the socket dies —
+⛔ Twenty datagrams at 5 Hz to a port with no listener (item 114): the `connect` **succeeds**, the first datagram **goes out**, and then the socket dies —
 `error: recv: Connection refused` — and everything after it is silently discarded.
 
 **So a socket that reports connected proves nothing**, and a phone that leaves the network destroys
@@ -347,10 +346,9 @@ person moving a knob saw it immediately. One 819 ms gap also eats most of the ph
 
 ### The address resolves at 1550 ms on the device and 2200 on the Mac
 
-⚠️ **Anything armed earlier fires into an empty host.** The reconnect metro was armed at 1600 ms and
-banged the address store **before resolution**, sending `connect` with an empty host and printing
-`bad host?` on **every single boot** — harmless, and invisible to `tools/deploy.sh` because the syntax
-check quits first.
+⚠️ **Anything armed earlier fires into an empty host.** A reconnect metro that bangs the address
+store **before resolution** sends `connect` with an empty host and prints `bad host?` on **every
+boot** — harmless, and invisible to `tools/deploy.sh` because the syntax check quits first.
 
 **Fix:** arm at **3000 ms**, past both platforms. `[metro]` fires the instant it is started, so
 "armed at" means "fires at". On the Mac a `[del 700]` fallback covers a `[shell]` that never answers.
@@ -392,9 +390,8 @@ read**, with everything else falling out of an unconnected reject. That is the s
 `u_map` uses for its destinations and it is here for the same reason: the set of things a datagram
 can reach stays the set of boxes you can read.
 
-⚠️ **`[netreceive]` in 0.49 cannot tell you who sent a datagram.** Checked before designing around
-it — it is why `phone-ip.sh` exists, and it does not change now the link is bidirectional. **Nothing
-here may be built on a sender identity that is not available.**
+⚠️ **Nothing here may be built on a sender identity that is not available** — `[netreceive]` in
+0.49 cannot supply one (above), and a bidirectional link does not change that.
 
 ⛔ **A fourth command was considered and rejected: a full status dump.** Parameters and status re-send
 every two seconds and the alert repeats at 2 Hz, so a phone joining late repopulates on its own in
@@ -425,10 +422,10 @@ nothing whatever to show for itself, and it is the reason the ack exists at all.
 
 ### What `re-wire` is actually for, now that the heartbeat exists
 
-⚠️ **It is NOT "the only way back once the bound is spent", and that reading is out of date.** The
-re-wire heartbeat hashes the ALSA client names every ~16 s and is **unbounded** — see
-[presence.md](../module/presence.md) — so a device that is unplugged and plugged back in is
-recovered on its own whether the eight scheduled attempts are spent or not. Item 310.
+⚠️ **It is not "the only way back once the bound is spent".** The re-wire heartbeat hashes the ALSA
+client names every ~16 s and is **unbounded** — see [presence.md](../module/presence.md) — so a
+device that is unplugged and plugged back in is recovered on its own whether the eight scheduled
+attempts are spent or not. Item 310.
 
 What the button covers is the case the heartbeat cannot see: **the client names are unchanged and the
 subscriptions are still wrong.** That is mother's own autoconnect landing a late device on the

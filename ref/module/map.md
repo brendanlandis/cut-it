@@ -49,7 +49,7 @@ file and rejects it before Pd ever does.
 | Destination | `<arg>` means | Value means | Evidence | Item |
 |-------------|---------------|-------------|----------|------|
 | `tempo` | unused | Scaled over **10–500 BPM**, rounded | verified | — |
-| `transport` | unused | Non-zero **toggles** start/stop. ⚠️ **No shipped row names it** — start and stop are separate buttons now | verified | — |
+| `transport` | unused | Non-zero **toggles** start/stop. ⚠️ **No shipped row names it** — start and stop are separate buttons | verified | — |
 | `start` | unused | Non-zero fires; a release does nothing | verified | — |
 | `stop` | unused | Non-zero fires | verified | — |
 | `panic` | unused | Non-zero fires | verified | — |
@@ -117,8 +117,7 @@ mode 1, plus CC 90, PLAY, STOP and the three shifted keys in all six.
 | 500 ms | The `mode` seed fires — `compose mode-1` — behind a spigot any real mode has already closed | verified | — |
 | ~3500 ms | `u_state` restores, and a saved `mode` arrives as a real selection | verified | — |
 
-⛔ **Both the read and the key-seed used to be later than mother's push, and both broke the same
-thing.** See *Traps*.
+⛔ **Both the read and the key-seed have to land before mother's push.** See *Traps*.
 
 ### Parameter pickup — a restored control is held until it crosses
 
@@ -196,18 +195,18 @@ Each is a claim and its fix. How any of them was found is in the git history.
 
 ### The map must be read at `loadbang` with no delay
 
-⛔ The read sat behind `[del 2000]`, to keep a missing file's error clear of `tools/deploy.sh`'s 735 ms
-output gate. But **mother pushes `knobs.txt` at boot, long before 2000 ms**, so the restored tempo
-knob hit an **empty table** and was silently dropped. The instrument booted at `u_tempo`'s fallback
-120 instead of the saved 57, and nothing reported it (item 234).
+⛔ A read behind `[del 2000]` — to keep a missing file's error clear of `tools/deploy.sh`'s 735 ms
+output gate — lands after **mother pushes `knobs.txt` at boot**, so the restored tempo knob hits an
+**empty table** and is silently dropped. The instrument boots at `u_tempo`'s fallback 120 instead of
+the saved value, and nothing reports it (item 234).
 
 **Fix:** read at `loadbang`. A missing map *should* fail a deploy, so that error is welcome rather
 than something to hide from — and an empty table is reported on `err` for the same reason.
 
 ### The lookup key gets its mode at load, not from the seed
 
-⛔ The same symptom, a second cause. The `mode` bus is seeded at 500 ms; mother's push arrives before
-that, so the key had **no mode at all** and missed every row.
+⛔ The same symptom, a second cause. The `mode` bus is seeded at 500 ms and mother's push arrives
+before that, so a key that waits for the seed has **no mode at all** and misses every row.
 
 **Fix:** set the key to `mode-1` synchronously at load, so a lookup is never waiting on a clock. Any
 real mode still overwrites it, from the seed or from a restore.
@@ -221,17 +220,17 @@ the control name alone. `[text search]` then hunts for `og-knob-1` in the **mode
 can never match, and every Organelle knob falls to the raw-row branch — `og-knob-1 0` on screen
 where a BPM belongs (item 294).
 
-⛔ **And it used to repair itself in the wrong direction.** `u_map` put whatever reached the bus
-straight back into the store, so the truncated value was re-saved; the auto flush is armed **by the
-restore**, so the correct `mode-1` the seed stored at 500 ms was replaced before it ever reached the
-disk. Every boot read the bad value, re-stored it and wrote it back.
+⛔ **Fed from its own `[r mode]`, the store repairs it in the wrong direction.** Whatever reaches the
+bus goes straight back into the store, so the truncated value is re-saved; the auto flush is armed
+**by the restore**, so the correct `mode-1` the seed stored at 500 ms is replaced before it ever
+reaches the disk. Every boot reads the bad value, re-stores it and writes it back.
 
 ⚠️ **It is invisible on every surface but one.** `m_nano`, `m_404` and `m_launchpad` post their own
 `disp` rows and theirs land *after* `u_map`'s, so they win; `m_organelle` is the only device file
 that posts none (item 242). A dead lookup therefore shows up **only** on the Organelle's own knobs.
 
-**Fix:** ✅ **the key-setter refuses a `mode` that is not two atoms and says `fail u_map bad-mode`**,
-the way an unknown *destination* already did — item 297.
+**Fix:** **the key-setter refuses a `mode` that is not two atoms and says `fail u_map bad-mode`**,
+the way an unknown *destination* does — item 297.
 
 ⛔ **The guard is BEFORE `[list split 1]`, not after it.** What that object does with a one-atom list
 is exactly the behaviour this bug turns on, so testing the length of the whole message is the one
@@ -285,16 +284,14 @@ the ratio is not.
 
 ### A knob's raw position is not a readable parameter row
 
-`m_organelle` used to report every knob to `disp` as well as `param`, so turning knob 1 put
-`og-knob-1 0.245` on screen — and ⛔ **`g_oled`'s param layer REPLACES the footer**, so the BPM it
-was mapped to disappeared exactly while you were turning it. A 0–1 number where a BPM belongs is not
-feedback; it is arithmetic homework.
+A knob reported to `disp` as well as `param` puts `og-knob-1 0.245` on screen — and ⛔ **`g_oled`'s
+param layer REPLACES the footer**, so the BPM it is mapped to disappears exactly while you are
+turning it. A 0–1 number where a BPM belongs is not feedback; it is arithmetic homework.
 
-**Fix:** the knobs no longer report to `disp`. `u_map` reports the **mapped** value instead, because
-it is the only file that knows what a control means. An **unmapped** knob now shows nothing, which is
-correct: it means nothing. ⚠️ **`og-aux` used to keep a report of its own and no longer exists as a
-control at all** — it is the keyboard's modifier, so there is nothing for the map to bind and nothing
-to draw. See [organelle.md](../device/organelle.md).
+**Fix:** the knobs do not report to `disp`. `u_map` reports the **mapped** value instead, because it
+is the only file that knows what a control means. ⚠️ **`og-aux` is not a control at all** — it is
+the keyboard's modifier, so there is nothing for the map to bind and nothing to draw. See
+[organelle.md](../device/organelle.md).
 
 ### While pickup holds, one row carries both numbers
 
@@ -325,18 +322,17 @@ shut.
 ### An unmapped control is silent on every bus, but not on the screen
 
 ⛔ *"An unmapped control must stay silent"* is a rule about the **buses**. Applied to the screen it
-produced a control that does nothing and says nothing — indistinguishable from a broken one. The
-Organelle's knobs were the case that shipped that way, because `m_organelle` stopped reporting raw
-positions when `u_map` took over the row (item 242).
+produces a control that does nothing and says nothing — indistinguishable from a broken one
+(item 242).
 
 **Fix:** `[text search]` answers `-1` for a name with no row, so `[moses 0]`'s left outlet is the
 miss. It reports `<control-name> <raw value>` on `disp` — the **pre-divisor** value, what the device
 actually sent.
 
-⛔ **This is why the pickup gate moved below the lookup.** It used to sit on the control NAME, above
-`[text search]`: equally safe, and blind — a held knob never reached the lookup, so nothing could tell
-an unmapped control from a suppressed one. The lookup is a pure read and now always runs; only the
-emission is gated.
+⛔ **This is why the pickup gate sits BELOW the lookup.** On the control NAME, above `[text search]`,
+it is equally safe and blind — a held knob never reaches the lookup, so nothing can tell an unmapped
+control from a suppressed one. The lookup is a pure read and always runs; only the emission is
+gated.
 
 ⚠️ `m_nano`, `m_404` and `m_launchpad` still post their own rows for the same controls, and theirs
 land **after** this one, so they win and nothing about those surfaces changes. `g_oled` updates a row
@@ -352,12 +348,12 @@ dead for the whole session, and nothing reports it (item 241).
 **Fix:** release on the flip **or** on `value == target`. Equality can never fire spuriously — a knob
 sitting exactly on its stored value *is* in sync, which is the entire definition of pickup.
 
-### An armed knob that is mapped to nothing still had something to say
+### An armed knob that is mapped to nothing must stay silent
 
 ⛔ The held row is assembled **inside the pickup machine**, because a held value never reaches the
 lookup — so it cannot know what the knob maps to, and it is hardcoded to `bpm` and the tempo scaling.
-Every armed knob therefore announced itself as a tempo, including the three mapped to nothing:
-`bpm 10 (60)` from knob 2 (item 240).
+Drawn for every armed knob, it announces the three mapped to nothing as tempos too: `bpm 10 (60)`
+from knob 2 (item 240).
 
 **Fix:** the row is gated on slot 0. Knobs 2–4 are still held, they are just silent about it.
 ⚠️ That is the *same* tempo-only assumption already carried by the `bpm` prefix and the `× 490 + 10`
@@ -420,15 +416,13 @@ table were empty or broken you could still change mode on a device with no conso
 mode `route` does not match falls out of its reject and goes to the table.
 
 **They are the Launchpad's top row, `lp-cc-91`…`lp-cc-96`** — the six pads `g_grid` already lights
-as the mode lamps, so the thing you look at is the thing you press. They were the nanoKONTROL's
-transport row until the aux button was wanted as a modifier and PLAY and STOP went back to meaning
-play and stop. See [launchpad.md](../device/launchpad.md).
+as the mode lamps, so the thing you look at is the thing you press. See
+[launchpad.md](../device/launchpad.md).
 
 ⛔ **Each of the six branches carries a `[select 0]`, and that is not decoration.** A Launchpad CC
-button sends **127 on the press and 0 on the release**; the nano transport row it replaced sent only
-the press. Ungated, every mode selection fires **twice** — idempotent, so nothing on screen looks
-wrong, while every `mode` message, every state-store write and every `g_grid` repaint silently
-doubles.
+button sends **127 on the press and 0 on the release**, where a nanoKONTROL button sends only the
+press. Ungated, every mode selection fires **twice** — idempotent, so nothing on screen looks wrong,
+while every `mode` message, every state-store write and every `g_grid` repaint silently doubles.
 
 ⛔ **The gate cannot go above the route.** That reject is the whole table path, and `og-key-*`
 releases are **real note-offs** `volca-key` must act on (item 293) — a value test up there would

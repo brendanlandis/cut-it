@@ -118,8 +118,8 @@ is lowest on the path you are actually using.
 
 ### What the clock actually costs, isolated
 
-⛔ **The clock is not the CPU cost, and this was recorded wrongly once.** The original measurement
-blamed the 96 ALSA MIDI writes a second. Toggling DSP on a running patch settles it:
+⛔ **The clock's cost is DSP, not the 96 ALSA MIDI writes a second.** Toggling DSP on a running
+patch settles it:
 
 | | pd CPU | Evidence | Item |
 |---|--------|----------|------|
@@ -203,8 +203,8 @@ create a loop if left on.
 
 ### `[midiout]` needs no port creation argument
 
-The question is settled rather than open. `u_tempo` uses the cold-inlet pattern — port into the right
-inlet, byte into the left — and item 63 fired a real 404 pad through it.
+`u_tempo` uses the cold-inlet pattern — port into the right inlet, byte into the left — and item 63
+fired a real 404 pad through it.
 
 ⚠️ **The obvious experiment is invalid:** Pd 0.49 does not warn about extra creation arguments at
 all, so `[midiout 7]` loads silently and a clean syntax check proves nothing either way. Recorded so
@@ -250,20 +250,20 @@ mother pushes the real knob positions at load, so knob 1 usually sets the tempo 
 fires — but **which arrives first is a race**, and it has been seen going both ways. A spigot makes
 the fallback publish only if nothing else already has.
 
-### Note-silencing left this file in v0.3
+### Note-silencing is each device layer's own
 
-`u_tempo` used to send All Notes Off on channel 33 alone — bank A, **one tenth of the instrument** —
-because it was written before any file owned the 404. The device's owner owns its panic.
+An All Notes Off from here could only ever reach the channels this file knows about — one channel of
+the 404's ten, say — and which channels a device has is its owner's business. The device's owner
+owns its panic.
 
-⚠️ **`u_tempo` still owns the 252**, the realtime STOP. What left is only the note-silencing, which
-is per-device and per-channel and was never this file's to know about. ⛔ **This paragraph said
-"reaches every port" until the ports were counted, and it was wrong** — see *Transport* above.
+⚠️ **`u_tempo` owns the 252**, the realtime STOP, and nothing per-device. Which ports it reaches is
+counted under *Transport* above.
 
 ### The footer is redrawn on every transport change
 
-`status` is **sticky**, so `panic` sat in the footer until the next tempo message — you could start
-the transport, watch the LED go green and the 404 start, and still be told PANIC. Redrawing on every
-transport change is not cosmetic.
+`status` is **sticky**, so without a redraw `panic` would sit in the footer through a restart — LED
+green, the 404 running, and the screen still reading PANIC. Redrawing on every transport change is
+not cosmetic.
 
 ### Clock is not decorative
 

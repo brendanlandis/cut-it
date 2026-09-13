@@ -31,9 +31,8 @@ Measured (item 161): on this device it is a **stale factory template** dated Feb
 `wpa_passphrase "name" "pass"`. The SSID is literally `name`, and the passphrase is 4 characters
 where `wpa_passphrase` rejects anything under 8 — so it emits **nothing** and the supplicant gets
 an empty config. Running it **kills a working `wpa_supplicant` and puts nothing in its place.**
-This repo's own recovery ladder called it for two phases, which is why two `UNRECOVERED` verdicts
-were partly self-inflicted. `tools/wifi-reassociate.sh` is the correct sequence — it mirrors what
-the front panel does, with the real credentials.
+`tools/wifi-reassociate.sh` is the correct sequence — it mirrors what the front panel does, with
+the real credentials.
 
 ```sh
 ssh root@organelle.local 'printf "SSID\nPASSWORD\n" >> /sdcard/wifi.txt'
@@ -65,29 +64,27 @@ so running it first erases the event you were about to read.
 scans and relaunches in one command kills its own session. Item 163, and it has bitten three times.
 
 ✅ **The watcher starts at boot** — `device/wifi-watch.service`, installed at
-`/etc/systemd/system/` and enabled (item 244). ⛔ **Until it existed, every recovery disarmed the
-detection for the next failure**, because a reboot is how this fault gets recovered and nothing
-restarted the watcher afterwards. That is not hypothetical: three drops on **2026-08-08** produced
-**no evidence at all**, the device having come up at 15:15 with nothing watching until 20:54.
-`tools/wifi-poll.sh`'s relaunch is now the backstop for a mid-session death rather than the primary
-mechanism, and it counts consecutive failed relaunches instead of retrying in silence.
+`/etc/systemd/system/` and enabled (item 244). ⛔ **A watcher that is not a service disarms itself
+on every recovery**, because a reboot is how this fault gets recovered and nothing would restart it
+afterwards — a drop after such a reboot leaves no evidence at all. `tools/wifi-poll.sh`'s relaunch
+is the backstop for a mid-session death rather than the primary mechanism, and it counts consecutive
+failed relaunches instead of retrying in silence.
 
 ⚠️ **`/root` is read-only** — `remount-rw.sh` before installing or enabling the unit, `remount-ro.sh`
 after, because `systemctl enable` writes a symlink into `multi-user.target.wants/`.
 
-⛔ **`After=network.target` is far too weak here, and the unit waits for an address instead.**
-Measured on the first real boot: the watcher came up with the clock still at 2015, `assoc: Not
-connected` and `wpa_supplicant=- dhcpcd=-`. It ran **no** recovery, so nothing fought with the boot —
-but its first sample was `NONE`, so the ordinary boot-time DHCP acquisition was logged as
-`TRANSITION NONE -> 192.168.1.9`. **`wifi-poll.sh` counts `TRANSITION` lines as drops**, so every
-boot would have added a phantom one and tripped *ANYTHING NEW?*. The unit now polls for an IPv4 in
-`ExecStartPre`, **bounded at 120 s and starting anyway when that expires** — a device that never gets
-an address is exactly when the watcher is wanted. `TimeoutStartSec` has to exceed the bound; the
-systemd default of 90 s does not.
+⛔ **`After=network.target` is far too weak here, and the unit waits for an address instead.** At
+`network.target` the clock is still at 2015, `assoc: Not connected` and `wpa_supplicant=- dhcpcd=-`;
+a watcher started there runs no recovery, but its first sample is `NONE`, so the ordinary boot-time
+DHCP acquisition is logged as `TRANSITION NONE -> <address>` — and **`wifi-poll.sh` counts
+`TRANSITION` lines as drops**, so every boot would add a phantom one and trip *ANYTHING NEW?*. The
+unit polls for an IPv4 in `ExecStartPre`, **bounded at 120 s and starting anyway when that
+expires** — a device that never gets an address is exactly when the watcher is wanted.
+`TimeoutStartSec` has to exceed the bound; the systemd default of 90 s does not.
 
-✅ **Verified across a real reboot 2026-08-08**: the service comes up `active`, its opening block
-carries a populated `ipv4:` and the SSID, and **no `TRANSITION` is logged at boot**. The header is
-still stamped `2015`, which is the expected proof that it starts before the clock is corrected.
+✅ **Verified across a real reboot**: the service comes up `active`, its opening block carries a
+populated `ipv4:` and the SSID, and **no `TRANSITION` is logged at boot**. The header is still
+stamped `2015`, which is the expected proof that it starts before the clock is corrected.
 
 ⛔ **BUT THAT HOLDS ONLY IF A LEASE ARRIVES INSIDE THE 120 s BOUND, AND ON THIS RIG IT OFTEN DOES
 NOT.** The device is joined to the house network **by hand at the front panel** — neither the house
@@ -97,24 +94,22 @@ hand-connect is then logged as `TRANSITION NONE -> <address>`. ⚠️ **`wifi-po
 `TRANSITION` lines as drops**, so **a phantom drop is the normal outcome of a hand-connected boot**,
 not a one-off. Item 299.
 
-⚠️ **The phantom is a CLASS, not a one-off.** Seen at `2026-08-08 21:34:27`, and again on
-`2026-08-12` from a boot whose opening block read `ipv4:` empty followed immediately by
-`TRANSITION NONE -> 192.168.1.9`. ⛔ **Discount the first `TRANSITION` of every session before
-reading the log as evidence of a drop** — otherwise a configuration change is credited or blamed for
-a transition that is only somebody pressing Connect.
+⛔ **Discount the first `TRANSITION` of every session before reading the log as evidence of a
+drop** — its opening block reads `ipv4:` empty followed by `TRANSITION NONE -> <address>`, and
+otherwise a configuration change is credited or blamed for a transition that is only somebody
+pressing Connect.
 
 ## ⚠️ The roam fault — what is known, and how to reproduce it
 
-**On house wifi the device loses its IPv4 lease and does not get it back.** Open since Phase 6 and
-misdiagnosed for two of them.
+**On house wifi the device loses its IPv4 lease and does not get it back.**
 
 ✅ **The fault is a ROAM breaking a RUNNING `dhcpcd`.** The device roams between the two AP radios,
 and a `dhcpcd` running across that association change never re-acquires.
 
 ✅ **`dhcpcd` is EXONERATED** — caught in full with `-d` running *through* a roam. It detects the
 carrier going, deconfigures through its own hooks, detects re-acquisition, re-solicits at once and
-backs off correctly. **It sends DISCOVER and nothing ever answers.** ⚠️ **The diagnostics had gone
-nowhere for the entire investigation because `syslogd` is not running on this device.**
+backs off correctly. **It sends DISCOVER and nothing ever answers.** ⚠️ **`syslogd` is not running
+on this device**, so `dhcpcd`'s own log goes nowhere — run it with `-d` in the foreground.
 
 | Established | |
 |---|---|
@@ -142,13 +137,13 @@ wifi" describes the symptom and misdescribes the cause.
 
 ## The evidence, item by item
 
-Every measurement the investigation rests on, and the six that turned out to be wrong. ⛔ **The tools
-cite these numbers by bare item — `wifi-watch.sh` alone names seven — and `grep item N` is the only
+Every measurement the investigation rests on, and the six that were overturned. ⛔ **The tools cite
+these numbers by bare item — `wifi-watch.sh` alone names seven — and `grep item N` is the only
 thing that resolves them. Never delete a row; never reuse a number.**
 
 | Item | Finding | Evidence |
 |------|---------|----------|
-| 81 | **The Organelle drops its wifi after a while.** The original observation. ⚠️ Its framing was wrong — it read as a radio fault | verified |
+| 81 | **The Organelle drops its wifi after a while.** The original observation — the symptom, not the cause | verified |
 | 133 | **Item 81 caught in the act, and it is NOT the radio dropping the network.** `iw dev wlan0 link` stayed associated throughout | verified |
 | 169 | ⛔ **The trigger is a roam to a DIFFERENT BSSID**, and "same BSSID" was wrong. Thirteen hours of healthy heartbeats on `…a2:01`; the transition record reads `…c9:25` | verified |
 | 175 | ✅ **The fault reproduces on demand in three seconds.** `hildegard` is served by two APs; forcing a handoff reproduces it exactly | verified |
@@ -162,11 +157,11 @@ thing that resolves them. Never delete a row; never reuse a number.**
 | 213 | ⛔ **The fault SURVIVED firmware 2.7.6.6 — twice in 15 hours.** This is the answer the leave-it-running task was waiting for, and it is the negative one | verified |
 | 221 | ✅ **Channel 1 took, and helped throughput enormously** — 14.4 MBit/s MCS 1 → **72.2 MBit/s MCS 7**. But it did **not** separate the two APs, exactly as predicted | verified |
 | 298 | ⛔ **THE DONGLE IS 2.4 GHz ONLY, so per-band separation cannot work.** `iw phy` lists **Band 1 and nothing else** — zero 5 GHz channels. Both `hildegard` radios the Organelle can reach are on 2.4 GHz by necessity, and moving one to 5 GHz would not separate the pair, it would make one **invisible** | verified |
-| 299 | ⛔ **A hand-connected boot logs a phantom `TRANSITION`**, because the lease arrives after `ExecStartPre`'s 120 s bound expires. A class, not the single artefact once recorded — see *The tools that watch it* | verified |
+| 299 | ⛔ **A hand-connected boot logs a phantom `TRANSITION`**, because the lease arrives after `ExecStartPre`'s 120 s bound expires — see *The tools that watch it* | verified |
 | 300 | **The Phase B baseline, measured 2026-08-12 before any router change.** Both `hildegard` BSSIDs on **freq 2412 — channel 1, co-channel**: `a6:40:a0:5e:a2:01` at −31 dBm and `a6:40:a0:5e:c9:25` at −43 dBm, 12 dB apart. ⚠️ The second appears **only after an active scan**; `scan dump` alone shows just the associated one | verified |
 
-**Six wrong turns, kept so nobody walks them again.** ⚠️ **Four of them are defects in this
-project's own measuring rig, not in the device** — which is the pattern worth carrying away.
+**Six overturned findings.** The rows stay because the tools cite the numbers; the third column is
+what replaced each one. ⚠️ **Four of them were defects in the measuring rig, not in the device.**
 
 | Item | Was claimed | Overturned by |
 |------|-------------|---------------|

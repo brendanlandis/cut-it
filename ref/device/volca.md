@@ -92,19 +92,18 @@ ageing, and it can never be declared lost or back. **The Volca transmits nothing
 is no evidence of its presence for any amount of code to find, and the alternative to recording that
 is a silence that reads as an oversight.
 
-⛔ **ITS RECOVERY USED TO BE PARASITIC, AND THAT WAS SHARPER THAN IT FIRST READ.** `u_present`
-re-runs `wire.sh` whenever *any* source is lost — so a replugged Volca came back **only if a
-detectable device happened to be missing at the same time**. Unplug the interface on its own and
-nothing is lost, nothing forks. ✅ **Closed by the re-wire heartbeat**, which watches the ALSA client
-list and does not care whether anything was lost — see [presence.md](../module/presence.md). The
-recovery above is unchanged and still parasitic; the heartbeat is what covers the Volca.
+⛔ **THE BOUNDED RECOVERY CANNOT REACH THIS DEVICE ON ITS OWN.** `u_present` re-runs `wire.sh` only
+while *some* source is lost — so through that path a replugged Volca comes back **only if a
+detectable device is missing at the same time**. Unplug the interface on its own and nothing is
+lost, nothing forks. **The re-wire heartbeat is what covers the Volca**: it watches the ALSA client
+list and does not care whether anything was lost — see [presence.md](../module/presence.md).
 
-⚠️ **And it was worse than that until 2026-08-10.** Pulling the interface also knocked the SP-404 off
-the shared USB bus, which *did* start a recovery — but the 404 answered first, the lost count hit
-zero, the counter reset, and the Volca was left disconnected because the one attempt that ran had
-landed while it was still enumerating. Measured, item 275. `u_present` now fires **one trailing
-`wire.sh` at the moment the last device returns**, which is the best-informed instant available: a
-device answering its inquiry is the signal that enumeration has finished.
+⚠️ **Even the shared path can miss it.** Pulling the interface can knock the SP-404 off the shared
+USB bus too, which *does* start a recovery — but the 404 answers first, the lost count hits zero,
+the counter resets, and the Volca is left disconnected if the one attempt that ran landed while it
+was still enumerating (item 275). `u_present` therefore fires **one trailing `wire.sh` at the moment
+the last device returns**, which is the best-informed instant available: a device answering its
+inquiry is the signal that enumeration has finished.
 
 ⚠️ **Nothing in the patch can confirm the Volca came back.** The heartbeat can say it re-wired —
 `info u_present rewire-try` reaches the log — but whether the Volca is *sounding* is still only your
@@ -112,19 +111,19 @@ ears, which is why its bench step is judged by ear. See [presence.md](../module/
 
 ## Traps
 
-### No MIDI clock reaches this device, and the patch used to claim otherwise
+Each is a claim and its fix. How any of them was found is in the git history.
 
-`u_tempo`'s `realtime-out` fed exactly **two** `[midiout]` objects, set at loadbang to ports **1 and
-3** — the Launchpad and the SP-404. The Volca is port 4 and the nanoKONTROL is port 2, so neither
-had ever received a byte from Cut It. ✅ Measured with `aseqdump` on Pd's Midi-Out 4: five seconds
-produced nothing at all, and a capture across a patch reload produced nothing at either end.
-Item 279.
+### No MIDI clock reaches this device
 
-⚠️ **So the Volca still cannot sync to the instrument**, and anything that assumes it is following
-the master tempo is wrong. `m_volca.pd` carried the sentence *"clock and transport … already reach
-every port"* until this was measured.
+`u_tempo`'s `realtime-out` feeds exactly **two** `[midiout]` objects, set at loadbang to ports **1
+and 3** — the Launchpad and the SP-404. The Volca is port 4 and the nanoKONTROL is port 2, so
+neither receives a clock byte from Cut It. ✅ Measured with `aseqdump` on Pd's Midi-Out 4: five
+seconds produce nothing at all, across a patch reload included. Item 279.
 
-**Fix, for the transport half only:** ✅ **`panic`'s realtime STOP now reaches port 4**, through a
+⚠️ **So the Volca cannot sync to the instrument**, and anything that assumes it is following the
+master tempo is wrong.
+
+**Fix, for the transport half only:** ✅ **`panic`'s realtime STOP reaches port 4**, through a
 receive that the panic branch is the sole writer of — item 295. A synthesiser with a sequencer that
 keeps running through a panic is the case panic exists for, and the mixer's master fader cannot stop
 it. ⛔ **The clock is deliberately NOT widened with it.** Which devices Cut It intends to *drive* is
@@ -134,9 +133,6 @@ drive the Volca's timing from its own controls.
 
 📄 **The STOP only lands if this device's `MIDI Clock src` is `Auto`** — see *Settings* above. Set to
 Internal it is ignored, and a correct patch looks broken.
-
-
-Each is a claim and its fix. How any of them was found is in the git history.
 
 ### Pd's `pgmout` is 1-based
 
@@ -157,8 +153,7 @@ selects the patch one *below* the number asked for — the `47 + n` shape exactl
 
 ⛔ Both start with "PC", both are booleans, they sit next to each other — and enabling per-note mode
 binds a program change to the *next note* while deliberately leaving the current program **and the
-display** unchanged. That looks exactly like program change not working at all. Four separate test
-runs failed this way.
+display** unchanged. That looks exactly like program change not working at all.
 
 **Fix:** `PCnot` **off**, `PCMId` **on**. Confirm both before concluding anything about program
 change.
@@ -184,22 +179,20 @@ ruled out an accidental trigger.
 
 The obvious by-ear test for *"is Pd reaching this device"* is to play it and listen. It cannot work.
 The Volca's keys are local: it sounds whenever it is powered, with or without a MIDI cable.
-✅ **Measured 2026-08-10** — the interface sat enumerated and completely unsubscribed for two minutes
-and the keys played normally throughout.
+✅ **Measured** — with the interface enumerated and completely unsubscribed for two minutes, the keys
+played normally throughout.
 
 **Fix:** the oracle is **a Cut It control changing the sound**, never the sound existing. Hold a key
 and sweep `slider-1`. That is the only mapping there is — `mode-1 slider-1 volca-cc 41` — so it is
-also the only audible evidence of the link that exists. ⚠️ **A bench step in this repo asserted
-`PASS IF the Volca sounds` and would have passed with the cable out**; it came verbatim from a plan
-that had checked its text against the punctuation rules and not against this page.
+also the only audible evidence of the link that exists. ⚠️ **A bench step reading `PASS IF the Volca
+sounds` passes with the cable out.**
 
 ### ⛔ Cut It can silence this device from `slider-1`, and it looks exactly like a dead link
 
 `mode-1 slider-1 volca-cc 41` and **CC 41 is Velocity** — a global parameter on this device, not a
 per-note value. Leave the fader at the bottom and the Volca goes silent **to its own keyboard**, so
-every symptom points at MIDI, USB or the interface, and none of them is at fault. Seen on the rig
-2026-08-10: the device was silent to its own keys, then began sounding again when the fader moved,
-with its screen showing the incoming parameter.
+every symptom points at MIDI, USB or the interface, and none of them is at fault. Seen on the rig:
+silent to its own keys until the fader moved, its screen showing the incoming parameter.
 
 **Fix:** before diagnosing silence, **sweep `slider-1` to the top**. It costs one gesture and it
 removes the most misleading state this instrument can put the Volca into.
@@ -208,25 +201,22 @@ removes the most misleading state this instrument can put the Volca into.
 |---|---|---|---|
 | `slider-1` in mode 1 | Volca **CC 41 — Velocity**, global, silences the device at 0 | verified | 284 |
 
-### ⛔ Absent at load, this device is never wired — not in sixty seconds, not ever
+### ⛔ Absent at load, only the heartbeat ever wires this device
 
-A `none` device has no clock, so it cannot be lost; and `u_present`'s recovery is gated on
+A `none` device has no clock, so it cannot be lost; and `u_present`'s bounded recovery is gated on
 *something* being lost. Boot the instrument with the Volca's interface unplugged and every pollable
-layer answers, nothing is lost, the spigot stays shut, the counter never starts, and **no `wire.sh`
-fork is ever scheduled**. `u_init`'s boot fork ran before the cable went in. ✅ **Measured** — plugged
-into a clean session, enumerated within a second, and still holding **zero subscriptions** two
-minutes later with an empty error log.
+layer answers, nothing is lost, the spigot stays shut, the counter never starts, and **no scheduled
+`wire.sh` fork ever runs**; `u_init`'s boot fork ran before the cable went in. ✅ **Measured** —
+plugged into a clean session, enumerated within a second, and still holding **zero subscriptions**
+two minutes later with an empty error log.
 
-⚠️ **This is the likelier direction in a room**, and it is not the one
-[presence.md](../module/presence.md) frames the gap around: you power the rig up, *then* plug the
-Volca in. There is no warning, because nothing is wrong from the instrument's point of view.
+⚠️ **This is the likelier direction in a room**: you power the rig up, *then* plug the Volca in.
+There is no warning, because nothing is wrong from the instrument's point of view.
 
 **Fix:** `u_present` forks **`wire-watch.sh`** on a heartbeat — every 8 ticks, so ~16 s. It hashes
 the ALSA **client names** and runs `wire.sh` only when they change, so a device appearing is wired
-whether or not anything was ever lost. ✅ **So the bench steps pull the interface ALONE.** They used
-to pull the nanoKONTROL alongside it, because before the heartbeat a `none` device could only be
-recovered while a detectable one was missing (item 275) — pulling a second device now goes back
-through the loss path and proves nothing about the heartbeat that replaced it.
+whether or not anything was ever lost. ✅ **So the bench steps pull the interface ALONE** — pulling a
+detectable device alongside it goes through the loss path and proves nothing about the heartbeat.
 
 | | Behaviour | Evidence | Item |
 |---|---|---|---|
@@ -264,32 +254,29 @@ selector goes straight to the same `[noteout]`, and the note-off comes from the 
 | It reuses the **same** `[noteout]` | one channel, one object, so `MIDI_EXPECT` stays at `noteout:2` | verified | 293 |
 | `panic` → **CC 123**, All Notes Off | `[ctlout 123]`, channel cold from the loadbang chain | verified | 293 |
 
-⛔ **The panic ships in the same commit as the `note` inlet and not later.** `makenote` owned the
-note-offs, which is what stopped a dropped cord or a reload leaving the Volca droning; bypassing it
-brings that risk back, and All Notes Off is what replaces it. `m_404` has the same box for the same
-reason.
+⛔ **The panic belongs with the `note` inlet, not after it.** `makenote` owns the note-offs, which is
+what stops a dropped cord or a reload leaving the Volca droning; bypassing it brings that risk back,
+and All Notes Off is what replaces it. `m_404` has the same box for the same reason.
 
 ⚠️ **`[ctlout 123]`'s creation argument is the CONTROLLER, so the channel goes to inlet 2.** Wired
 to inlet 1 it sets the controller instead — the device receives `CC 49` on channel 1 and panic
-silently does nothing. Caught by `volca-assert.sh` on the first run.
+silently does nothing. `volca-assert.sh` asserts the channel.
 
 ## Open
 
 - ⬜ **The Volca made a sound three times on 2026-08-10 and it has never been reproduced.** See
   [plan-v04.md](../../plan-v04.md) §3. All three fell inside one window, while hands were on the
-  cables; **nine subsequent patch loads produced nothing**, including one deliberately staged
-  immediately after re-enumerating the interface, which was the predicted trigger. Everything in the
-  software path is excluded by direct measurement: `start`, `stop` and `panic` never fire at load;
-  `aseqdump` on Pd's Midi-Out 4 caught nothing as the old Pd shut down; a loopback monitor living
-  inside the patch caught nothing as the new one loaded; no clock reaches the port at all (item 279
-  above), so Pd sends this device nothing but one CC in mode-1; and `dmesg` logged no USB event
-  alongside any of the three. ⚠️ **The leading explanation needs no software at all** — handling a
-  DIN cable can inject noise into an opto-isolated input, which fits the three positives and all
-  nine negatives. ⛔ **It is recorded rather than closed** because three occurrences are not nothing,
-  and because the only observer that could settle it is a MIDI monitor on the DIN wire, which this
-  rig does not have. A reload does **not** reliably cause it, so nothing that re-runs `wire.sh`
-  needs a caveat on this account — including the bounded re-wire, which forks it up to eight times.
+  cables; nine patch loads since have produced nothing, including one staged immediately after
+  re-enumerating the interface. Everything in the software path is excluded by direct measurement:
+  `start`, `stop` and `panic` never fire at load; `aseqdump` on Pd's Midi-Out 4 and a loopback
+  monitor inside the patch both caught nothing across a reload; no clock reaches the port (item 279),
+  so Pd sends this device nothing but one CC in mode-1; and `dmesg` logged no USB event alongside any
+  of the three. ⚠️ **The leading explanation needs no software at all** — handling a DIN cable can
+  inject noise into an opto-isolated input. ⛔ **It is recorded rather than closed** because three
+  occurrences are not nothing, and because the only observer that could settle it is a MIDI monitor
+  on the DIN wire, which this rig does not have. A reload does **not** reliably cause it, so nothing
+  that re-runs `wire.sh` needs a caveat on this account.
 
-**Nothing.** That nothing here can be read back off the wire is a **permanent limitation, not an
-unknown** — it is stated in **Facts** as item 268, with `unknown` as its evidence value, so it
-cannot be rediscovered as news.
+That nothing here can be read back off the wire is a **permanent limitation, not an unknown** — it
+is stated in **Facts** as item 268, with `unknown` as its evidence value, so it cannot be
+rediscovered as news.

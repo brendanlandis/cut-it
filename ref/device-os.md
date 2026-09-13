@@ -5,8 +5,7 @@
 cables* are on [rig.md](rig.md); the Organelle's own **control surface** — panel, OLED, aux LED — is
 on [device/organelle.md](device/organelle.md).
 
-✅ **Every path on this page was verified against the device on 2026-08-07**, after the cruft
-cleanup. Two claims were wrong and are corrected below; the rest held.
+✅ **Every path on this page was verified against the device on 2026-08-07.**
 
 ## Signal flow
 
@@ -14,14 +13,14 @@ cleanup. Two claims were wrong and are corrected below; the rest held.
 and the channel blocks are on [module/boot.md](module/boot.md).
 
 ⛔ **LOADING ANY PATCH DROPS PD'S ALSA CONNECTIONS — measured, item 228.** After
-`oscsend localhost 4001 /loadPatch …`, `Pure Data Midi-Out 4` had **no target at all**, and a probe
-patch that assumed the wiring survived reached nothing. ⛔ **The reason is that `/loadPatch` replaces
-the Pd process outright** — `MainMenu::runPatch` runs `killpatch.sh` before it launches anything, and
-that script SIGTERMs and then SIGKILLs every `pd` — so no subscription of the old process can survive
-and re-wiring is not optional (item 252). ✅ **This is why `u_init` runs `wire.sh`** — Cut It re-wires
-itself every load and so never notices. ⚠️ **Any patch that is not Cut It must make its own
-`aconnect` call**, or it measures silence — and silence from a MIDI probe reads as *"the device
-ignores this message"*, which is the wrong conclusion and the precise shape of item 225.
+`oscsend localhost 4001 /loadPatch …`, every `Pure Data Midi-Out` port has **no target at all**.
+⛔ **The reason is that `/loadPatch` replaces the Pd process outright** — `MainMenu::runPatch` runs
+`killpatch.sh` before it launches anything, and that script SIGTERMs and then SIGKILLs every `pd` —
+so no subscription of the old process can survive and re-wiring is not optional (item 252). ✅ **This
+is why `u_init` runs `wire.sh`** — Cut It re-wires itself every load and so never notices. ⚠️ **Any
+patch that is not Cut It must make its own `aconnect` call**, or it measures silence — and silence
+from a MIDI probe reads as *"the device ignores this message"*, which is the wrong conclusion
+(item 225).
 
 ```sh
 aconnect -l | grep -A2 "Midi-Out 4"        # expect: Connecting To: <the Uno's client>:0
@@ -48,10 +47,9 @@ before use rather than trusted.
 ### ⚠️ "Cannot reach" after a wifi drop — CHECK IPv6 BEFORE BELIEVING IT
 
 **A successful recovery presents exactly like a continued failure**, because recovery changes the
-IP address and **mDNS does not notice for a few minutes.** The device once came back healthy on
-`.20` while `organelle.local` still resolved to the dead `.18`, so `wifi-report.sh` reported
-*"Cannot reach"* about a device that was completely fine. ⚠️ **A power cycle at that moment would
-have destroyed the evidence of a recovery that had already worked.**
+IP address and **mDNS does not notice for a few minutes.** `organelle.local` keeps resolving to the
+dead address, so every tool reports *"Cannot reach"* about a device that is completely fine — and
+⚠️ **a power cycle at that moment destroys the evidence of a recovery that has already worked.**
 
 ```sh
 ping organelle.local              # 0% loss over IPv6 == the device is ALIVE
@@ -59,8 +57,8 @@ ssh -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
     "root@fe80::<link-local>%en0" # the zone id and BOTH bypasses are required
 ```
 
-⛔ **Do not trust `ssh`'s own error message, or any tool's, as a reachability check** — both have
-now misled this investigation. The cache catches up on its own. Item 172.
+⛔ **Do not trust `ssh`'s own error message, or any tool's, as a reachability check.** The cache
+catches up on its own. Item 172.
 
 ### ⚠️ Sending the device a UDP datagram — never with netcat
 
@@ -92,7 +90,7 @@ same for DSP. Nothing needs to be typed by hand.
 |---|---|
 | Home | `/root` (not `/home/music`) |
 | Patches | `/sdcard/Patches/` — factory set lives here |
-| User patches | `/sdcard/Patches/!/` — `!` sorts to the top of the menu. ✅ **It holds `Cut It` and nothing else** since 2026-08-07. Anything you might reach for *instead* of playing goes in `! debug` — see [plan-v04.md](../plan-v04.md) |
+| User patches | `/sdcard/Patches/!/` — `!` sorts to the top of the menu. **It holds `Cut It` and nothing else.** Anything you might reach for *instead* of playing goes in `! debug` — see [module/debug.md](module/debug.md) |
 | Pd config | `/root/.pdsettings` |
 | Externals | `/root/Pd/externals` |
 | Scripts | `/root/fw_dir/scripts/` |
@@ -140,8 +138,7 @@ instrument cannot boot without; it is simply not something this project set.
 ### ⚠️ The clock, and why device timestamps are not Mac timestamps
 
 **There is no RTC. The device boots at `Sat Oct 17 01:08:30 UTC 2015`** — the image's build date —
-and only jumps to the real time once `systemd-timesyncd` reaches the network. Two consequences,
-both of which have already misled an investigation:
+and only jumps to the real time once `systemd-timesyncd` reaches the network. Three consequences:
 
 - **A file written in the first seconds after boot carries a 2015 timestamp.** `ls -l` output from
   a freshly-booted device is not in the order you expect.
@@ -151,9 +148,8 @@ both of which have already misled an investigation:
   *"watcher was dead — relaunched"* per boot; the one-instance guard refuses it and the next tick
   clears it. ⚠️ **Left alone deliberately** — a rule that ignored implausibly old stamps would also
   mask a genuinely long-dead watcher.
-- ⚠️ **The device runs UTC; the Mac runs local time.** Comparing a device file mtime against a
-  Mac log line without converting produced an apparent **5.5-hour clock jump** that did not exist —
-  the real explanation was simply that hours had passed between two `date` calls. **Convert, or
+- ⚠️ **The device runs UTC; the Mac runs local time.** A device file mtime set beside a Mac log
+  line without converting reads as a clock jump of several hours that did not happen. **Convert, or
   compare device-to-device only.** `wifi-watch.log` is internally consistent, so uptime-to-failure
   read from *within* it is trustworthy.
 
@@ -199,8 +195,7 @@ ssh root@organelle.local '
 ```
 
 ⚠️ **`pgrep -nx pd`, never `pgrep pd`** — the substring match hits a *kernel thread* on this
-device, which is the bug that once had `fetch-errors.sh` reporting pd alive while it was killed.
-item 36.
+device, so a plain `pgrep pd` reports pd alive when it has been killed (item 36).
 
 **The baselines to compare against**, all on the deployed and idle patch:
 
@@ -214,8 +209,9 @@ item 36.
 | Phase 8 — the data store | 10.4–10.7 % | 115–116/s | ⚠️ **not comparable** — see below |
 
 The datagram rate was the display alone and flat from Phase 3 to 6. **The Phase 5 CPU jump is the
-clock** — ~96 ALSA MIDI writes a second rather than the DSP; two extra `c_clock` instances cost
-only 0.4 points. Items 21, 37 and 75.
+clock, and it is DSP cost, not MIDI cost** — toggling DSP off drops `pd` to under 5 % while the
+MIDI rate leaves it unchanged; see [module/tempo.md](module/tempo.md). Two extra `c_clock`
+instances cost only 0.4 points. Items 21, 37 and 75.
 
 ⚠️ **Phase 8's row is LOWER than Phase 7's, and that is not evidence `u_state` is free.** The rig
 was in a different state — **4 ALSA links rather than 5**, so a controller was unplugged, and the
@@ -226,18 +222,15 @@ the rig matches**; that is the whole reason each row names its phase rather than
 repeated alert state 2/s, and the late-join repeat 1/s. ✅ **`u_net` costs about 0.2 CPU points.**
 Items 118 and 134.
 
-⛔ **The budget belongs to the newest row that matches your rig, and `tools/display-cpu.sh` tracks
-it from here.** It printed Phase 5's 11.2 % for three phases after Phase 6 exceeded it, so every
-run said OVER BUDGET and the verdict stopped carrying information — **a threshold nobody moves is a
-threshold nobody reads.** It now reads **12.7 %**, Phase 7's full-rig 11.7 % plus one point.
-**When this table gains a row, move that number and name the row it came from.**
+⛔ **The budget belongs to the newest row that matches your rig, and `tools/display-cpu.sh` holds
+it: 12.7 %**, Phase 7's full-rig 11.7 % plus one point. A threshold that stays put while the patch
+grows says OVER BUDGET on every run and stops carrying information — **a threshold nobody moves is a
+threshold nobody reads. When this table gains a row, move that number and name the row it came from.**
 
-✅ **10.2–10.5 % is the idle baseline, not an artefact — item 134 closed, item 254.** Those
-readings had been held open on the suspicion that they were taken *shortly after patch reloads*.
-Re-measured on an untouched instrument **1 h 32 m after the last reload**, with all four devices
-wired (8 ALSA links) and nobody playing it: **10.4 %, 10.2 %, 10.7 %** across three five-second
-readings, UDP out 111–113/s. Proximity to a reload was never the explanation — this simply *is* what
-the patch costs sitting still.
+✅ **10.2–10.7 % is the idle baseline — item 254.** Measured on an untouched instrument **1 h 32 m
+after the last reload**, with all four devices wired (8 ALSA links) and nobody playing it:
+**10.4 %, 10.2 %, 10.7 %** across three five-second readings, UDP out 111–113/s. This is what the
+patch costs sitting still.
 
 ⛔ **And it is Phase 5's number, which means `g_grid` is free when nothing changes.** Phase 5
 measured 10.2 % with no grid code in the patch at all; the grid arrived in Phase 6 and idle still
@@ -279,11 +272,9 @@ menu; Storage → Eject unmounts it without physical removal.
 The copy and the load are separate steps — a wifi drop between them is enough — and `oscsend` is
 fire-and-forget UDP, so a clean exit from it proves only that a packet left the Mac. The result is
 the worst shape available: **the deployed file greps as the current build while the instrument
-behaves like the previous one**, and the two cannot be told apart from the Mac. It cost a whole
-debugging session, in which a fix was hunted in code that was correct and already on the device
-(item 243).
+behaves like the previous one**, and the two cannot be told apart from the Mac (item 243).
 
-**`tools/deploy.sh` now verifies the RUN rather than the file.** A successful load restarts Pd, so the
+**`tools/deploy.sh` verifies the RUN rather than the file.** A successful load restarts Pd, so the
 test is whether Pd is younger than the files just pushed — `/proc/<pid>`'s mtime is the process
 start time, which needs one `test -nt` and no `ps` flags that differ between busybox and procps.
 ⚠️ Both sides of that comparison are **device-side**, which is the only safe way to compare
@@ -294,10 +285,10 @@ nothing to verify. If you use it, select the patch from the front panel and know
 the device is running whatever it was running before.
 
 
-## Booting with the Launchpad attached — root-caused and fixed
+## Booting with the Launchpad attached
 
-It used to hang the Organelle on "loading…" forever. Not power, and not the hub — swapping
-hubs, ports and cables changed nothing, because none of those was the cause.
+Unpatched, the Organelle hangs on "loading…" forever with the Launchpad attached at boot. Not power,
+and not the hub — swapping hubs, ports and cables changes nothing.
 
 **The Launchpad Pro MK3 presents a USB mass-storage interface** alongside its audio/MIDI ones:
 a 192 KiB **write-protected** vfat volume, Novation's "Onboarding Drive". That is enough to
@@ -311,8 +302,8 @@ break boot, in four steps:
 4. `wifi_control.py` opens `$USER_DIR/wifi_log.txt` for **writing**. On a write-protected volume
    that fails, the script dies, and the UI never finishes loading.
 
-**Every observation fits:** independent of hub, port and cable; broken when the Launchpad is
-present at boot; fine when hot-plugged afterwards, because `mount.sh` has already run.
+**The signature:** independent of hub, port and cable; broken when the Launchpad is present at
+boot; fine when hot-plugged afterwards, because `mount.sh` has already run.
 
 ⛔ **This is a USB mass-storage fault, not a wifi fault.** Wifi is only the first thing that tries
 to write to `USER_DIR`, and therefore the first thing to die. **Do not look for it on

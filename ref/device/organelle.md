@@ -178,9 +178,8 @@ meaning as `m_nano`.
 | **The `og-` prefix is not decoration** — `m_nano` already publishes `knob-1` to `knob-9`, and a single hyphen is not a distinction anyone can be trusted to read inside a `route` box | verified | — |
 | **Every knob goes through `[change -1]`**, and mother pushes once at load and then says nothing — one `KNOB1` print in twelve seconds untouched. Parameter pickup depends on it: if mother streamed, the first value would be spent on its own reading and pickup would never arm | verified | 237 |
 | ⛔ **The `-1` is load-bearing.** A bare `[change]` starts life holding 0, so a knob parked at 0 would never publish at all and whatever it feeds would sit at its default. `-1` cannot be a real value, because mother's knobs are 0 to 1 | verified | 237 |
-| **`aux` is momentary and emits on PRESS only.** `[select 1]` takes the press; its reject carries the released `0`, not a bang, and goes nowhere | verified | — |
-| ⛔ **The knobs reach `param` and NOT `disp`.** A knob's raw 0-to-1 position is not a readable parameter row — the screen said `og-knob-1 0.245` where a BPM belonged, and the param layer replaces the footer, so the tempo it was mapped to vanished while you turned it. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
-| ⛔ **`aux` uses BOTH edges now**, where `[select 1]` used to take the press and drop the release on purpose. A modifier you cannot let go of is not a modifier | verified | 305 |
+| ⛔ **The knobs reach `param` and NOT `disp`.** A knob's raw 0-to-1 position is not a readable parameter row — `og-knob-1 0.245` where a BPM belongs — and the param layer replaces the footer, so the tempo it maps to would vanish while you turned it. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
+| ⛔ **`aux` uses BOTH edges.** A modifier you cannot let go of is not a modifier | verified | 305 |
 | ⚠️ **An unmapped knob still reports**, via `u_map`'s raw-value row. A control that does nothing and says nothing cannot be told from a broken one | verified | 242 |
 
 ### The aux button is a modifier, and the keyboard has two layers
@@ -207,10 +206,10 @@ per-key array below guarantees. Without it the hold could never complete.
 | | Evidence | Item |
 |---|----------|------|
 | `aux` publishes **no control name**. A modifier is not a control: a name here could be bound in the map, and an unmapped one would draw a raw row on the OLED every time you reached for a shifted key | verified | 305 |
-| It holds `$0-shift` — **1 on the press, 0 on the release.** Both edges, where `[select 1]` used to take the press and drop the release deliberately | verified | 305 |
+| It holds `$0-shift` — **1 on the press, 0 on the release** | verified | 305 |
 | Holding it puts `shift` on the OLED as a **modal**, cleared on release. ⚠️ A missed release leaves the word up for the 30 s safety TTL, which is what that TTL is for | verified | 305 |
 | **A modal is priority 2 and `diag` is 3**, so a shifted key that summons the roster still draws over the word. See [display.md](../module/display.md) | verified | 305 |
-| It was `transport` until start and stop moved to the nano's PLAY and STOP — [nanokontrol.md](nanokontrol.md) | verified | 305 |
+| It is not a transport — start and stop are the nano's PLAY and STOP, [nanokontrol.md](nanokontrol.md) | verified | 305 |
 
 ⛔ **The layer is latched PER KEY, AT PRESS TIME, and that is the whole of what makes it safe.**
 Press a shifted key, let go of `aux`, then let go of the key: read live, the press published
@@ -244,9 +243,8 @@ layer that owns the device is the file allowed to read them.
 
 ⚠️ **Not in the file, deliberately:** the encoder, `encbut` and the pedal jack. ⛔ **Taking the
 encoder costs the instrument its own way out** — item 314, above — which is a bad trade mid-set, and
-neither of the others has anything to drive yet. They belong here when they do — it is one device, so it is one `m_` abstraction. **The
-keyboard was on that list until it had something to drive**, which is exactly the condition the
-sentence named.
+neither of the others has anything to drive yet. They belong here when they do — it is one device,
+so it is one `m_` abstraction.
 
 ### `mother.pd` maps MIDI onto the front panel
 
@@ -299,13 +297,11 @@ read `0.195503 0.230694 0.134897 0.0136852;` and `0.521994 1 0.84262 0.723363;`.
 one and `Storage → Save` creates it; until then mother logs `knobs.txt: can't open` at boot, which is
 expected and harmless. `./tools/deploy.sh` will not remove it once it exists — `--clean` will.
 
-⛔ **So after any Save every knob is desynced from its value, and the first touch jumps** — up to the
-full range, and knob 1 is master tempo. **Measured, that is a 443 BPM lurch**: a jump that is
-defensible on a fader you are already holding and much weaker at boot, on a control nobody has
-touched. **Nothing on the instrument can detect this**: mother reports
-position, not whether the position still matches the file. It happens on every boot rather than only
-on a bank switch, and it is the concrete case for parameter pickup in
-[plan-v04.md](../../plan-v04.md) §3.
+⛔ **So after any Save every knob is desynced from its value, and the first touch would jump** — up
+to the full range, and knob 1 is master tempo: **a 443 BPM lurch, measured**, on a control nobody
+has touched. **Nothing on the instrument can detect this**: mother reports position, not whether the
+position still matches the file. It happens on every boot, and it is what `u_map`'s parameter pickup
+exists for — see [map.md](../module/map.md).
 
 ⚠️ **Cut It does not deliver its data this way.** `u_state` writes straight to `/sdcard` with an
 absolute path, so nothing it does has to finish inside the sleep. The only part that reaches the
@@ -332,8 +328,8 @@ Each is a claim and its fix. How any of them was found is in the git history.
 
 ⛔ **`/enablepatchsub 1` is an override, and it overrides both gestures.** With it set, turning the
 encoder does nothing and **pressing it does nothing** — and pressing it is how you leave a running
-patch and get back to the Organelle's menu. ✅ Confirmed on the rig 2026-08-12 with Cut It running
-and listening for neither name: the panel simply stopped responding until the override was cleared.
+patch and get back to the Organelle's menu. ✅ Confirmed on the rig: the panel simply stops
+responding until the override is cleared.
 
 ⚠️ **At a venue that is a dead instrument with no laptop in the room.** A power cycle recovers it;
 nothing on the front panel does.
@@ -361,14 +357,13 @@ serial MCU.
 — belongs on **the Launchpad**. The OLED is for state, values and text, where 200 ms is invisible.
 
 ⛔ **The serial `Rx FIFO overrun` in `dmesg` is NOT this, and the two must not be conflated.** The
-transport ends at a serial MCU, so the overruns look like a lead and were treated as one. Counted
-across a full session with the patch running and the rig wired: **20 `imx-uart 2020000.serial: Rx
-FIFO overrun` in 10,143 s**, one per 507 s, with intervals running **25 s to 1,262 s** — irregular,
-so event-driven rather than periodic. The lag is on **every** frame at ten frames a second, about
-101,000 frames in that same window. **Five orders of magnitude apart, so neither can be causing the
-other**, and the lag is fully accounted for by the 10 Hz clock plus the OSC and serial hops. Item
-253, agreeing with item 247's shorter single-boot count. ⛔ **The "continuous stream" of overruns
-this page once recorded never existed** — it came from a glance at `dmesg` rather than a count.
+transport ends at a serial MCU, so the overruns look like a lead. Counted across a full session with
+the patch running and the rig wired: **20 `imx-uart 2020000.serial: Rx FIFO overrun` in 10,143 s**,
+one per 507 s, with intervals running **25 s to 1,262 s** — irregular, so event-driven rather than
+periodic. The lag is on **every** frame at ten frames a second, about 101,000 frames in that same
+window. **Five orders of magnitude apart, so neither can be causing the other**, and the lag is fully
+accounted for by the 10 Hz clock plus the OSC and serial hops. Item 253, agreeing with item 247's
+shorter single-boot count.
 
 ### mother's OMNI CC 21–26 collide head-on with the nanoKONTROL
 
@@ -493,15 +488,14 @@ flash would put a second writer on it. Recorded so it is not rediscovered as new
 
 ### The LED was deliberately not claimed for mode or for saving
 
-Phase 6 put mode on the Launchpad's top row instead — the surface with six lamps rather than one.
-Phase 8 considered a "save in progress" state and did not build it: `Storage → Save` already flips
-the OLED to mother's own "Saving…" screen, so the confirmation exists for free.
+Mode is on the Launchpad's top row — the surface with six lamps rather than one. A "save in
+progress" state was rejected: `Storage → Save` already flips the OLED to mother's own "Saving…"
+screen, so the confirmation exists for free.
 
 It remains the cheapest candidate if a *performable* commit is ever added — one row in the state
 table and nothing else, since a commit from a Launchpad pad would have no screen of its own.
 
 ## Open
 
-**Nothing.** The last one — whether the serial overruns and the OLED lag shared a cause — closed as
-item 253, and the finding is under *The OLED lags the audio by ~200 ms* in **Traps**, where the
-ruled-out cause is useful to the next person who spots `Rx FIFO overrun` in `dmesg`.
+**Nothing.** The ruled-out cause for the OLED lag is under *The OLED lags the audio by ~200 ms* in
+**Traps**, for the next person who spots `Rx FIFO overrun` in `dmesg`.

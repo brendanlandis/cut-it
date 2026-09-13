@@ -116,22 +116,21 @@ live audio, `oscOut` reaches the display. A third patch (`diag.pd`) can tap any 
 
 Restore normal operation with `./tools/deploy.sh`, which reloads and relaunches through the menu path.
 
-**This found the `[list trim]` bug in Phase 1** — a `disp` message that `route` silently
-rejected, showing as a plausible-looking zero on the OLED (`C-6`). Nothing else in the toolkit
-would have caught it. Expect `error: /tmp/patch/knobs.txt: can't open` in the output; that is
-mother looking for the optional knob-label file and is harmless.
+**It is the only tool here that sees a `route` silently rejecting a message** (`C-6`) — on the
+OLED that shows as a plausible-looking zero. Expect `error: /tmp/patch/knobs.txt: can't open` in
+the output; that is mother looking for the optional knob-label file and is harmless.
 
 ## How a phase runs
 
-Six phases have used the same shape and it is worth stating rather than rediscovering:
+The shape every piece of multi-session work here takes:
 
-1. **A decisions table first**, with the *consequence* of each decision beside it — settled with
-   Brendan before any code, because most of them change the shape of the work rather than its
-   details.
+1. **The decisions first**, each with its *consequence* beside it — settled with Brendan before any
+   code, because most of them change the shape of the work rather than its details. They live in
+   the work's file in `!projects` (`cut-it/<slug>`), as a `thought` until the shape-changing
+   questions are closed and a `project` after.
 2. **A Step 0 of measurements.** Anything the rest of the phase rests on that is still unverified —
    manufacturer documentation, or nothing but an assumption — gets measured *before* anything is
-   built on it. **Every phase so far has had at least one assumption turn out wrong here**, and
-   Phase 6's Step 0 changed two design decisions in an afternoon.
+   built on it. **An assumption that reaches Step 0 unmeasured usually turns out wrong.**
 3. **Numbered build steps, each ending with both gates** before the next begins:
 
    ```sh
@@ -146,25 +145,23 @@ Six phases have used the same shape and it is worth stating rather than rediscov
    press GO again to describe the next. Every bench is generated from the step tables in
    `test/bench/bench_steps.py` — edit those and re-run `test/bench/bench-gen.py`.
 
-   ⚠️ **A measuring rig is code and gets the same scrutiny as the thing it measures.** Phase 5 had
-   two bugs in its own probes, one of which produced a confident wrong answer about the clock;
-   Phase 6's bench had an automated assertion that **nothing ever drove**, with a comment beside it
-   claiming otherwise. **Where the rig can assert without eyes, make it** —
-   `test/gate/display-assert.sh` rewrites `[midiout]` in a scratch copy so a headless run can read back
-   every byte the patch emits, and it is proven to fail by reintroducing a real bug.
+   ⚠️ **A measuring rig is code and gets the same scrutiny as the thing it measures.** A probe with
+   a bug in it produces a confident wrong answer, and a bench assertion that nothing drives passes
+   forever. **Where the rig can assert without eyes, make it** — `test/gate/display-assert.sh`
+   rewrites `[midiout]` in a scratch copy so a headless run can read back every byte the patch
+   emits — and **a gate is not trusted until it has been made to fail** by reintroducing a real bug.
 5. **A verification section separating Mac from device**, so what has actually been proven is never
    in doubt.
-6. **A landing checklist**, and it is not optional — see *Where the abstractions go* in
-   [conventions.md](conventions.md) and the doc-hygiene rules in [CLAUDE.md](../CLAUDE.md).
-   Finished work moves to the git history; the phase's section *leaves*
-   [plan-v04.md](../plan-v04.md) rather than being annotated; superseded designs are replaced, not
-   annotated beside their replacement; anything unresolved moves to *Open questions*; and a new
-   commit records the measurements, with items numbered **after the last used
-   number in the file** — numbers are cited bare across documents, so **never reuse one**.
+6. **Landing, and it is not optional.** What was measured goes onto the `ref/` page it belongs to,
+   through the `docs` skill, with `test/gate/docs-check.py` green; superseded designs are replaced,
+   not annotated beside their replacement; the `!projects` file has its steps ticked and its `next:`
+   rewritten, or moves to `done/`; anything unresolved goes to that file or to `cut-it/inbox`, not
+   to a page's *Open* section unless it is a genuine unknown about the thing. Items are numbered
+   **after the last used number anywhere** — numbers are cited bare across documents and from the
+   patch, so **never reuse one**.
 7. **The phase ends with a procedure, not a summary** — expected result stated *before* each
-   action, for both machines. It lands in the commit **and** in chat, because chat is where
-   it gets used.
+   action, for both machines.
 
-**The bench proves the cases it contains and nothing else.** Phase 5's stickiest bugs — a stale
-footer, a filter on the verdict instead of the value — were found by a person doing what a
-performer would do. Budget hands-on time *after* the bench passes, not instead of it.
+**The bench proves the cases it contains and nothing else.** The stickiest bugs are found by a
+person doing what a performer would do — a stale footer, a filter on the verdict instead of the
+value. Budget hands-on time *after* the bench passes, not instead of it.

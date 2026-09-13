@@ -4,11 +4,9 @@
 **A module is either a physical device or one instrument concern.** Everything about it lives on its
 page: what it is, what was measured, what will bite you, and how Cut It chooses to use it.
 
-This replaced a topic-major layout — `ref-midi`, `ref-display`, `ref-hardware`, `ref-software` —
-where the Launchpad's facts were spread over 416 lines in four files. Nobody decided that; each
-session added to whichever file it was already in. **A device-major layout gives a fact exactly one
-place it can go**, which is the only thing that resists the drift, because the docs are written by
-agents who cannot know what the other files already say.
+**A device-major layout gives a fact exactly one place it can go**, which is the only thing that
+resists drift, because the docs are written by agents who cannot know what the other files already
+say — a topic-major layout spreads one device over four files, one session at a time.
 
 ## The index
 
@@ -59,8 +57,7 @@ python3 test/gate/docs-check.py -v
 did.** v0.4 grows `ref/module/` — one page per filter stage, the drum mode, the sampler.
 
 - ⛔ **An `e_` page is written AFTER the stage is hardware-verified, not before.** A pre-written
-  page is how a completion marker silently becomes false, and this project has already had one
-  page assert a thing about `u_map` that stayed wrong until Phase 9 contradicted it.
+  page is how a completion marker silently becomes false.
 - **An `e_` page holds what it is, its parameters, and its traps.** No rationale essay, no evidence
   ledger, no history — **git is the journal**.
 - **A rejected alternative gets one sentence, not a section.**

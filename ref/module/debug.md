@@ -77,8 +77,8 @@ there could only ever read zero; anything that does appear on the interface's DI
 | `err-tail.sh` on the device, against a real log | **4 lines**, dot-flattened, cut to 21 | verified | 315 |
 | `net-probe.sh` on the device | **3 lines** — `ip-192.168.1.6`, `ap-down`, `phone-none` | verified | 315 |
 
-⚠️ **`.6` is a fourth lease address for this Organelle**, after `.15` and `.18` — which is the whole
-argument for the Network screen. See [phone.md](../device/phone.md), item 312.
+⚠️ **The Organelle's lease address moves** — `.6`, `.15` and `.18` have all been seen — which is the
+whole argument for the Network screen. See [phone.md](../device/phone.md), item 312.
 
 ### Where it lives
 
@@ -131,14 +131,13 @@ command that fixes a divergence.
 emitted three lines on a short log and four on a long one would put the newest error on a different
 row every time.
 
-⛔ **And they must fork on selection, not on repaint.** The first version forked from the draw chain,
-which the repaint metro bangs three times a second — so sitting on the error log meant 3.3 `sh` forks
-a second on a Pi, forever, and two overlapping runs would interleave their lines into one router and
-scramble the rows.
+⛔ **And they must fork on selection, not on repaint.** A fork hung off the draw chain, which the
+repaint metro bangs three times a second, means 3.3 `sh` forks a second forever while sitting on the
+error log, and two overlapping runs interleave their lines into one router and scramble the rows.
 
 **Fix:** `err-tail.sh` pads to four lines and `net-probe.sh` always prints three; a `[change]` on the
-screen number gates both forks. The gate asserts the fork counts **exactly**, which is what caught the
-repaint bug — "did it fork at all" passes it happily.
+screen number gates both forks. The gate asserts the fork counts **exactly**, because "did it fork at
+all" passes a repaint-driven fork happily.
 
 ### The link count is a dash until the device answers
 

@@ -167,8 +167,8 @@ untested — see *Open* below.**
 
 ### ⛔ THERE IS ONE PHYSICAL HUB, AND `lsusb` MAKES IT LOOK LIKE THREE
 
-**Item 256, and it overturns how this fault was explained for two sessions.** `lsusb -t` counts hub
-*controllers*, not boxes on the desk, and both the hub and the SP-404 contain more than one. The
+**Item 256.** `lsusb -t` counts hub *controllers*, not boxes on the desk, and both the hub and the
+SP-404 contain more than one. The
 authoritative discriminator is the **parent hub's own port descriptor**, which sysfs exposes as
 `removable`:
 
@@ -191,8 +191,7 @@ controllers reporting one enclosure is ordinary construction for a hub with more
 
 ⛔ **So the fault is NOT depth and NOT chaining.** The socket that fails (`1-1.1`) and the socket that
 works (`1-1.4.4.4`) are **both sockets on the same physical hub** — they differ only in which internal
-controller they hang off. The measured behaviour in item 248 stands exactly as recorded; only its
-explanation was wrong.
+controller they hang off. Item 248 measured the behaviour; this is its explanation.
 
 ### The Launchpad is fussy about which controller it sits on
 

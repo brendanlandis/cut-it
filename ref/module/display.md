@@ -12,8 +12,7 @@ care how — or whether — it is rendered.
 
 ⛔ **One owner per display surface (C-5).** `g_oled` owns `oscOut` and `screenLine1`–`5`; `g_grid`
 owns the Launchpad's LEDs; `g_led` owns the aux button. **`u_err` filters and forwards onto `disp`
-rather than drawing** — the Phase 4 plan had it writing to the ALERT buffer itself, and where the
-two disagreed this rule won.
+rather than drawing.**
 
 Two of the surfaces run the **same arbiter shape** — `home < modal < alert`, each layer with a
 priority and a time to live, one winner per frame. `g_oled` runs five of them and `g_grid` three,
@@ -115,9 +114,9 @@ untouched throughout.
 | 2 | Name 8px @ y=0 / value **16px** @ y=8, then name 8px @ y=23 / value 16px @ y=31 | verified | — |
 | 3–5 | **8px** rows at y=0, 9, 18, 27, 36, in the order first touched | verified | — |
 
-✅ **All three are legible at playing distance — item 258, item 39 closed.** Read off the panel by
-eye at arm's length rather than judged from the geometry, one nano slider then two then four to
-raise each layout in turn. **Even the 8px five-row case passes.**
+✅ **All three are legible at playing distance — item 258.** Read off the panel by eye at arm's
+length rather than judged from the geometry, one nano slider then two then four to raise each
+layout in turn. **Even the 8px five-row case passes.**
 
 ⛔ **So the two-mover layout's weakness is CLIPPING, not size.** 16px fits about ten characters
 across 128 px and silently truncates — `slider-1 43` becomes `slider-1 4`. That is the one to design
@@ -145,11 +144,10 @@ y = 0, 9, 18, 27, 36**, one per source, plus the shrunk meter strip.
 nobody has touched reads `here` and one on the floor reads `here` until the poll misses three times.
 No amount of code changes that — the operator supplies it.
 
-✅ **The summoning control is on the one panel that can never be the missing device.** It sat on the
-Launchpad's `lp-cc-80` for part of a day, and a Launchpad that has come unplugged sends no CC — so
-the control that would name the missing device was dead in exactly the case the roster exists for.
-The aux modifier and its 25 shifted keys were built to fix that; `stop` and `recover` moved there in
-the same pass. See [organelle.md](../device/organelle.md).
+✅ **The summoning control is on the one panel that can never be the missing device.** On the
+Launchpad it would be dead in exactly the case the roster exists for — a Launchpad that has come
+unplugged sends no CC. The aux modifier and its 25 shifted keys are where it lives, beside `stop`
+and `recover`. See [organelle.md](../device/organelle.md).
 
 ### `g_grid` — the same shape, one link shorter
 
@@ -226,10 +224,9 @@ parameter path. `diag` went on the end of both boxes and both rejects moved from
 
 ⛔ **A selector carrying NO arguments does not leak, and that makes the trap worse rather than
 better.** `diag` alone reaches `u_net`'s reject as two atoms after the mandatory dash, dies on
-`[list split 3]`'s too-short outlet, and never reaches the wire — so removing its route argument
-altogether was measured against `phone-assert.sh`'s reserved window and **every datagram check still
-passed.** The property is asserted where it lives instead: the gate parses both `route` boxes and
-requires them to carry exactly the same selectors.
+`[list split 3]`'s too-short outlet, and never reaches the wire — so a datagram-level check passes
+with the route argument missing. The property is asserted where it lives instead: the gate parses
+both `route` boxes and requires them to carry exactly the same selectors.
 
 ### `text get` errors if you ask for more fields than a line holds
 
@@ -241,9 +238,8 @@ prints.
 
 ### The param layer must NOT reorder by recency
 
-⛔ An earlier version pushed the most-recently-moved row to the front, which is what the Phase 4 plan
-asked for and was **wrong in the hand**: two faders moving together swapped places several times a
-second and were unreadable.
+⛔ Pushing the most-recently-moved row to the front reads well on paper and is **wrong in the
+hand**: two faders moving together swap places several times a second and are unreadable.
 
 **Fix:** rows hold their positions. The cost is honest — move nine faders and you see the five you
 touched first, not the five most recent — and it is the right trade, because a display you cannot
@@ -259,8 +255,7 @@ failure that looks like a working display.** Real names like `chop-size` are no 
 ### `g_grid` must not copy `g_oled`'s unconditional repaint
 
 ⛔ The OLED redraws at 10 Hz because its frames are cheap local UDP. **The grid's are ALSA MIDI
-writes**, and ~96 of those a second is the standing suspect for the clock doubling Pd's CPU in
-Phase 5.
+writes** — a 332-byte SysEx per frame — and nothing about the grid needs one when nothing changed.
 
 **Fix:** a dirty flag. The frame clock checks it rather than painting, so the frame count is bounded
 by the beat rate and never by the metro.
@@ -270,11 +265,10 @@ by the beat rate and never by the metro.
 ⚠️ Nothing is wrong and nothing has changed (the dirty flag has no work); or the device is gone and
 the **watchdog** has said so. **The OLED is what tells them apart.**
 
-⛔ **A panic is no longer one of them.** It used to blank the Launchpad until the patch was reloaded;
-`m_launchpad` does not see `panic` at all now, so the surface survives it — item 250, on
-[launchpad.md](../device/launchpad.md). `display-assert.sh` asserts the grid keeps painting across
-one. **Since item 296 a panic is unmistakable in the other direction**: the whole surface goes red
-for a second and then returns to `home`.
+⛔ **A panic is not one of them.** `m_launchpad` does not see `panic` at all, so the surface survives
+it — item 251, on [launchpad.md](../device/launchpad.md) — and `display-assert.sh` asserts the grid
+keeps painting across one. **A panic is unmistakable in the other direction**: the whole surface goes
+red for a second and then returns to `home` (item 296).
 
 ⚠️ **The watchdog gives up at about 70 seconds** and writes `fail m_launchpad grid-lost` to `err`.
 After that a replug will not recover the grid. See [launchpad.md](../device/launchpad.md).
@@ -371,8 +365,8 @@ that have to be correlated.
 ### The first frame after ownership rises IS the clear
 
 `m_launchpad` owns the Programmer/Live switch; `g_grid` owns the LEDs. Different surfaces, one writer
-each — which is what let the old 89-note clear loop be deleted outright. **The arbiter repaints from
-live state**, so a replug brings the grid back in the correct state rather than restoring a frame.
+each, and no clear loop anywhere. **The arbiter repaints from live state**, so a replug brings the
+grid back in the correct state rather than restoring a frame.
 
 ### The ALERT buffer works and is unused anyway
 

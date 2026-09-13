@@ -130,10 +130,9 @@ patch at load time and store it — `[symbol $1]` in an *object* box, banged whe
 
 ⚠️ **And `$0` has the same trap, which is easier to miss because `$0-name` is everywhere.** In a
 *message* box `$0` is **not** the patch id — it resolves to **0**. A `write -wave … $0-buf`
-message silently addressed a table called `0-buf`, every write failed with `no such table`, and
-because a failed write is *fast* the timing it reported looked excellent. Only a
-`FRAMES-WRITTEN: 0` control made it visible. **Object box: `$0` and `$1` mean what you expect.
-Message box: neither does.** Measured while building Phase 8.
+message addresses a table called `0-buf`, every write fails with `no such table`, and because a
+failed write is *fast* its timing looks excellent — only a frames-written count makes it visible.
+**Object box: `$0` and `$1` mean what you expect. Message box: neither does.**
 
 ✅ **What DOES work in an object box is composing an argument**: `[u_store $1/cut-it-auto.txt]`
 expands correctly, which is how `u_state` hands each of its two stores a path.
@@ -190,12 +189,12 @@ Two consequences bind whoever writes an `m_` layer, and both are deliberate:
   Everything else about the map — the row format, the destinations, the divisor, the boot races —
   is on [map.md](module/map.md).
 
-✅ **`mode` got its driver in Phase 6**: the nanoKONTROL's six transport keys, shown as a lit
-lamp on the Launchpad's top row — the only device Pd can light, so the state is visible rather
-than remembered. It carries **two atoms**, a class and a sub-mode, which is why `u_err`'s
-`[route compose perform]` still works untouched: `route` matches the selector and its branches
-feed message boxes, which fire on anything. `u_map` seeds one at load behind a spigot that any
-real mode closes, so the seed fills a silence rather than setting a default.
+✅ **`mode` is driven from the Launchpad's top row**, CC 91–96, which `g_grid` lights as the mode
+lamps — the only device Pd can light, so the state is visible rather than remembered. It carries
+**two atoms**, a class and a sub-mode, which is why `u_err`'s `[route compose perform]` works
+untouched: `route` matches the selector and its branches feed message boxes, which fire on
+anything. `u_map` seeds one at load behind a spigot that any real mode closes, so the seed fills a
+silence rather than setting a default.
 
 **`tempo` and `clock` are the master reference, not "the clock".** See *Poly-tempo* below —
 this distinction is load-bearing and easy to lose.
@@ -352,8 +351,8 @@ envelopes from `vline~`. Never `metro` or `line~` at grain rate.
 time once per block, so *any* non-zero debounce costs a full 1.45 ms per state change — and a
 trigger/rest pair costs two. This is what caps a `phasor~`-derived pulse train: **at zero debounce
 the limit is two blocks per cycle, measured at 344 Hz = 44100/64/2**; at 2 ms it drops to about
-170 Hz, silently. ✅ Found the hard way in Phase 5, where the clock lost pulses above 430 BPM and
-looked fine at every tempo anyone had tried. A `phasor~` cannot bounce, so set the debounces to 0.
+170 Hz, silently — a clock that looks fine at every ordinary tempo and loses pulses above about
+430 BPM. A `phasor~` cannot bounce, so set the debounces to 0.
 
 **Signal-domain feedback requires a block boundary** — `[send~]`/`[receive~]` or
 `[delwrite~]`/`[delread~]`. A direct signal loop is a DSP-sort error, not a sound.
@@ -421,9 +420,8 @@ a `list` whose first element is. `[list prepend in-l]` produces the second kind,
 and the display just shows zero. A message box typed `in-l 42 dB` is already the right shape;
 anything assembled with `[list …]` is not.
 
-**2 — receiving.** Measured in 0.49, and **wider than this document once claimed** — the old
-wording said the trap applied only when the remainder was a single symbol. The real rule: when
-`route` matches, **the remainder is emitted as a message whenever its first atom is a symbol**,
+**2 — receiving.** Measured in 0.49: when `route` matches, **the remainder is emitted as a message
+whenever its first atom is a symbol**,
 that symbol becoming the selector. So `status v0.3-ready` arrives as selector `v0.3-ready`, and
 `alert warn u_init x` as selector `warn` with two arguments; only a remainder starting with a
 **float** is really a list. This is why every branch out of `g_oled`'s `route` begins with
@@ -435,10 +433,9 @@ be cleared on every message, not written on some.**
 
 **4 — not `route`-specific, but the same shape.** A **reject, left, or non-matching outlet
 carries the data that failed to match**, not a bang — `route`, `select`, `moses` and `spigot`
-all do this. Four separate instances in this repo's history, every one silent: `[select 1 2 3 4 5 6]`'s
-reject overwrote a stored CC through an `[f]`'s hot inlet, and `moses`'s left outlet passed
-`text search`'s `-1` into `text set` as a line number. **Anything behind such an outlet that
-expects a bang gets a `[t b]` in front of it.**
+all do this, and every instance is silent: a `[select …]` reject overwrites a stored value through
+an `[f]`'s hot inlet, and `moses`'s left outlet passes `text search`'s `-1` into `text set` as a
+line number. **Anything behind such an outlet that expects a bang gets a `[t b]` in front of it.**
 
 **Rate limiting belongs to the display, not the caller.** Senders push whenever they have
 something to say; the display redraws on its own clock. ✅ And because every layer holds
@@ -502,8 +499,7 @@ whatever the display is doing.
 
 ⛔ **`info` is not a quieter `warn` — it is the level for detail that would otherwise drown the
 screen.** `u_present` forks `wire.sh` up to eight times per recovery episode and every one belongs
-in the log; nine alerts on a 21-character display mid-set does not. It was built as `warn` first and
-`oled-assert.sh` caught it drawing over a modal inside one run.
+in the log; nine alerts on a 21-character display mid-set does not.
 
 ⚠️ **A level that is none of the three is a real error**, printed on `err-BAD-LEVEL` rather than
 swallowed — a typo must not silently disable a report.
@@ -535,29 +531,28 @@ effort. Don't tidy and change behaviour in the same commit.
 ⛔ **C-14 — a `#X text` record cannot be edited by scanning for the next `;`.** Pd splits a file
 into records on **unescaped** semicolons, and a comment legitimately contains escaped ones (`\;`).
 Anything that rewrites a comment by finding "the next `;`" stops in the middle of it, and the tail
-becomes a record with no `#X` prefix. **This has broken the patch three times.**
+becomes a record with no `#X` prefix.
 
-**Fix:** replace the whole line. `test/gate/pd-layout-check.py` now reports
+**Fix:** replace the whole line. `test/gate/pd-layout-check.py` reports
 `MALFORMED RECORD -- does not start with '#'` on the signature, so the fault is named rather than
 showing up as a canvas-size complaint.
 
-The format is a flat, ordered record list, and three of its properties are traps. All three have
-bitten this project, most of them more than once.
+The format is a flat, ordered record list, and three of its properties are traps.
 
 - **A `#X connect` names boxes by INDEX, and the index is position in the file.** Inserting or
   deleting *anything* — including a comment — shifts every later box and silently rewires the
   patch. **Append at the end**, honouring `#N canvas` / `#X restore` nesting: a top-level object
   goes before the first connect *at depth 1*. If a box really must be replaced, replace it in
   place so no index moves. `test/gate/pd-layout-check.py` reports the damage as *"indices are
-  probably off by one"*, which is how it was caught each time.
+  probably off by one"*.
 - **Records are processed strictly in order**, so a `#X connect` that appears *before* its target
   box is defined fails at load with `connection failed` — and Pd still exits 0. When you append
   boxes, the connects have to move down with them.
 - **A comma or semicolon in a message box is a message separator**, whatever the file does with
   escaping. `\,` satisfies the *parser*; the message box still splits on the comma atom. Keep
   both out of any assembled string — a `PASS IF` line in a bench is the usual casualty.
-- ⚠️ **AND AN UNESCAPED `;` ENDS A RECORD — INCLUDING A COMMENT.** This bit twice in one session,
-  both times in ordinary prose: `Outlet 1 is the beat bang; outlet 0 is a signal phase` **ends the
+- ⚠️ **AND AN UNESCAPED `;` ENDS A RECORD — INCLUDING A COMMENT.** In ordinary prose,
+  `Outlet 1 is the beat bang; outlet 0 is a signal phase` **ends the
   `#X text` at the semicolon** and turns the remainder into a new record, which Pd then tries to
   instantiate — `error: outlet: no such object`. ⚠️ **In a message box it is worse**: `; pd quit`
   ends the box early and **takes every following `#X connect` with it**, so the patch loads, runs,
@@ -571,10 +566,9 @@ check quits before it fires while the by-hand console still sees it.
 ✅ **Measured: `-send "pd quit"` returns in 735 ms**, with an undelayed control print appearing and
 a delayed one not. ⚠️ **This covers more than `[print]`.** Pd's *own* file errors go to the same
 stream — `[text read]` of a missing file prints three lines, and `[text write]` to a missing
-directory prints `write failed` rather than failing silently, which a plan in this repo asserted
-it did. **Anything that touches a file that may not exist belongs behind the same delay**, which
-is why the state restore is staged rather than run at `loadbang`.
-item 143.
+directory prints `write failed` rather than failing silently. **Anything that touches a file that
+may not exist belongs behind the same delay**, which is why the state restore is staged rather than
+run at `loadbang`. Item 143.
 
 **Never open or save any of this in plugdata** — see [CLAUDE.md](CLAUDE.md).
 

@@ -78,7 +78,7 @@ working and the patch can clip the converter. Nothing reports it.
 a list's first element — so without the trim every `disp` message is silently rejected and **the
 display just shows zero** (C-6).
 
-**Fix:** `[list trim]` after the prepend. Verified the hard way on the device.
+**Fix:** `[list trim]` after the prepend.
 
 ### `env~` is polled, never pushed
 
@@ -92,8 +92,8 @@ rate-limiting the *draw* is the display's job, not this one's.
 
 ⚠️ mother's `pd init` fires `; pd dsp 1` 200 ms after load. A second one is at best redundant.
 
-**Fix:** leave it alone. `tools/dsp.sh` turns it off on a running patch, which is how item 75's real
-cause was isolated.
+**Fix:** leave it alone. `tools/dsp.sh` turns it off on a running patch, for measuring what the
+audio engine costs (item 75).
 
 ## Design
 
@@ -123,9 +123,8 @@ wrong level is audible immediately rather than failing silently. See
 
 ### Organelle audio back into the 404 was scrapped
 
-It would have used the mixer's FX SEND as a variable-gain feedback path. Scrapped outright on
-2026-08-08, item 264 — not "dropped, but it is only one cable, so try it", which is how it had been
-carried and what kept it costing attention on every read.
+It would have used the mixer's FX SEND as a variable-gain feedback path. Scrapped outright, not
+deferred — item 264.
 
 ## Open
 

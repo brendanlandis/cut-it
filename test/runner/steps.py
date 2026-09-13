@@ -115,6 +115,7 @@ DEPS = {
                     "Cut It/u_present.pd", "Cut It/c_presence.pd",
                     "Cut It/c_devid.pd"],
     "midi":        ["Cut It/m_404.pd", "Cut It/m_volca.pd", "Cut It/u_map.pd",
+                    "Cut It/c_mapped.pd",
                     "Cut It/cut-it-map.txt", "Cut It/g_oled.pd",
                     "Cut It/u_present.pd", "Cut It/c_presence.pd",
                     "Cut It/c_devid.pd"],
@@ -134,7 +135,10 @@ DEPS = {
                     "Cut It/cut-it-map.txt", "Cut It/u_tempo.pd",
                     "Cut It/state-dir.sh"],
     "state":       ["Cut It/u_state.pd", "Cut It/u_store.pd", "Cut It/u_init.pd"],
-    "tempo":       ["Cut It/u_tempo.pd", "Cut It/c_clock.pd", "Cut It/u_map.pd"],
+    # ⚠️ c_mapped IS HERE FOR THE ROW. The tempo bench reads bpm 57 (10) and
+    # bpm 500 off the OLED, and that row is built by u_map's c_mapped instance.
+    "tempo":       ["Cut It/u_tempo.pd", "Cut It/c_clock.pd", "Cut It/u_map.pd",
+                    "Cut It/c_mapped.pd"],
 }
 
 

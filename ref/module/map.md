@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The map
 
-**Files:** `Cut It/u_map.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh`, `test/gate/recover-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
+**Files:** `Cut It/u_map.pd`, `Cut It/c_mapped.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh`, `test/gate/recover-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
 
 ## What it is
 
@@ -77,6 +77,27 @@ idempotent, and the counts stay exactly assertable: **one on a tap, two on a hol
 raising `panic` is the *handler's* business. `map-assert.py` asserts the rule directly, because a
 control anyone could reach for must not be able to silence the instrument mid-set.
 
+### What the screen shows for each destination
+
+**Every destination that carries a value draws its own row on `disp`, named for the destination
+and scaled into its units.** The row says what the control *means*, not which fader moved. Each is a
+`c_mapped` instance inside `u_map` — `[c_mapped <name-format> <mul> <add>]` — and the scaling exists
+there and nowhere else.
+
+| Destination | Live row | Held row | Evidence | Item |
+|-------------|----------|----------|----------|------|
+| `tempo` | `bpm 157` | `bpm 57 (120)` | verified | 316 |
+| `volca-cc` | `volca-cc41 64` | `volca-cc41 64 (114)` | verified | 316 |
+| `volca-note` | `volca-note60 100` | same shape | verified | 316 |
+| `404-pad` | `404-pad5 90` | same shape | verified | 316 |
+| `volca-prog` | `volca-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
+| `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
+| the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the footer, the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
+
+⚠️ **The held row's second number rides in the UNIT field.** `g_oled` runs a row's value through
+`makefilename %g`, which refuses a symbol, so `(120)` cannot be the value — it is a free symbol in
+the third slot.
+
 ### Values are normalised to 0–1, and the divisor is not uniform
 
 ⚠️ **`param` values are not one unit.** Every handler sees **0 to 1**, and everything is divided by
@@ -135,7 +156,7 @@ then hands it authority.
 | Whether that arming survives | `u_map` **reads `knobs.txt` itself** at 2000 ms. `[text size]` answers 1 when the file is there and 0 when it is not | verified | 239 |
 | With **no** `knobs.txt` | every slot is written straight to LIVE and no knob is ever held | verified | 239 |
 | **After a `recover`** | the breadcrumb is read in the same 2000 ms pass and every slot goes straight to LIVE, `knobs.txt` or not | verified | 299 |
-| The held row is drawn for **knob 1 only** | it is built inside the pickup machine, which cannot know what a held knob maps to. Knobs 2–4 are held *silently* | verified | 240 |
+| The held row is drawn by the **destination**, for any knob mapped to one that carries a value | `c_mapped` gets the latched target and the live flag with every message and draws `name <latched> (<knob>)` in its own units | verified | 316 |
 | **Reaching** the target releases, not only passing it | a target on a rail has no beyond: armed above a target of `0`, the flip test waits for `value < 0` | verified | 241 |
 | An **unmapped** control reports `<name> <raw>` on `disp` | `[moses 0]`'s left outlet — `[text search]` answers `-1`. Silent on every bus, never on the screen | verified | 242 |
 | …**except `og-key-*`**, which is silent on the screen too | 25 controls that also report their releases would evict a five-row screen twice per note. See *Traps* | verified | 293 |
@@ -301,23 +322,26 @@ between them tells you which way to turn.
 ⛔ **The value must be a float** — `g_oled` runs it through `makefilename %g`, which refuses a
 symbol. So the second number rides in the **unit** field, which is a free symbol.
 
-⛔ **A held value never reaches the tempo branch**, because pickup gates the control *name* and the
-lookup never runs. The held readout is therefore built inside the pickup machine, which is why the
-0–1 → BPM scaling exists twice in `u_map`.
+⛔ **The held row has to be built where the scaling is.** Built beside the pickup arrays it cannot
+know what the knob maps to, so it is hardcoded to one destination's units and every armed knob
+announces itself in them (item 240) — and the scaling then exists twice, once for the action and once
+for the row.
 
-**Fix:** nothing to do here. ⚠️ But when this pattern reaches the other destinations, each scaling
-must live **with its destination** — otherwise every destination that gains a held readout duplicates
-it again.
+**Fix:** the message that reaches the destination `route` carries the latched target and the live
+flag, and each `c_mapped` draws its own held row from them. One scaling per destination, as that
+instance's creation arguments.
 
-### Pickup gates the control NAME, never the value
+### Pickup gates the assembled message, never the value
 
 `[list append]` holds the value in its **cold** inlet. Suppressing the value would leave the
 *previous* one parked and the name would still fire it — re-sending a stale BPM for `tempo`, and
 firing a **note** on every suppressed step for a knob mapped to `volca-note`, carrying a value that
 could have come from another surface entirely.
 
-**Fix:** the spigot sits between the name split and the lookup. Nothing downstream runs when it is
-shut.
+**Fix:** the message reaches the destination whole, with a live flag as its last atom, and
+`c_mapped`'s spigot sits on the assembled `arg value` pair. A button destination's `unpack f f`
+reads the first two atoms and drops the rest — measured in 0.49 — so a button is never held, which
+is what the gate asserts of PLAY and STOP.
 
 ### An unmapped control is silent on every bus, but not on the screen
 
@@ -348,16 +372,14 @@ dead for the whole session, and nothing reports it (item 241).
 **Fix:** release on the flip **or** on `value == target`. Equality can never fire spuriously — a knob
 sitting exactly on its stored value *is* in sync, which is the entire definition of pickup.
 
-### An armed knob that is mapped to nothing must stay silent
+### An armed knob that is mapped to nothing draws its raw row, not a held one
 
-⛔ The held row is assembled **inside the pickup machine**, because a held value never reaches the
-lookup — so it cannot know what the knob maps to, and it is hardcoded to `bpm` and the tempo scaling.
-Drawn for every armed knob, it announces the three mapped to nothing as tempos too: `bpm 10 (60)`
-from knob 2 (item 240).
+⛔ A held row built for every armed knob announces the knobs mapped to nothing in whatever units it
+was hardcoded to — `bpm 10 (60)` from a knob that drives no tempo (item 240).
 
-**Fix:** the row is gated on slot 0. Knobs 2–4 are still held, they are just silent about it.
-⚠️ That is the *same* tempo-only assumption already carried by the `bpm` prefix and the `× 490 + 10`
-beside it — made once more rather than newly, and it goes when the row moves to its destination.
+**Fix:** the held row is the destination's, so a knob that reaches no destination draws none. It is
+still held, and it still reports `og-knob-2 0.75` through the unmapped path above, so it cannot be
+told from a broken one.
 
 ### A boot push is not proof that anything was restored
 
@@ -429,6 +451,19 @@ releases are **real note-offs** `volca-key` must act on (item 293) — a value t
 swallow every one and hang notes on the Volca. `[select 0]`'s reject carries anything that is not a
 release, which is the value the message box wanted anyway (C-8).
 
+### Each scaling lives with its destination
+
+The message that reaches the destination `route` is five atoms — `<dest> <arg> <value> <target>
+<live>` — and a destination that carries a value is a `c_mapped` instance that reads all five. It
+scales the value once, passes `arg scaled` to the handler beside it only while live, and draws its
+own row, live or held, in its own units. The alternative — one scaling in the handler and another in
+a shared readout — is the duplication item 240 was, and it grows with every destination.
+
+⚠️ **The row is named for the destination, and the `m_` layers still post their own rows.** A real
+nanoKONTROL fader mapped to `volca-cc 41` therefore draws two rows, `slider-1 64` from `m_nano` and
+`volca-cc41 64` from here. The Organelle's knobs draw one, because `m_organelle` posts none. Whether
+`m_nano` should stop posting raw rows for mapped controls is a taste call: a loosie on `cut-it/inbox`.
+
 ### The value is parked and the name does the work
 
 `[list split 1]` fires its **remainder** first, so the value is normalised and stored in `[list
@@ -484,10 +519,6 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
   and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **The mode names are placeholders.** `mode-1`…`mode-6` say nothing about what each mode is for,
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **Only `tempo` shows its mapped value.** An *unmapped* control now reports raw (item 242), so
-  nothing is silent — but a control mapped to anything **other than tempo** still shows nothing,
-  because the mapped row and the held `(n)` bracket both carry the tempo scaling. Making it universal
-  is decided and scoped: a loosie, `cut-it/inbox`.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
   would jump once per change. Not reachable today — `og-knob-1` is `tempo` in all six modes. **It
   closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.

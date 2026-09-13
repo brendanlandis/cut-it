@@ -232,8 +232,9 @@ cheaper than retrofitting it once the filter logic exists, which is why `mode` a
 | `c_` | **Instantiable** — there is more than one | Its creation arguments |
 | `e_` | An effect stage (v0.4) | Signal in, signal out |
 
-⛔ **A `c_` prefix means instances, and a `$0-` on everything inside it (C-1).** `c_clock` is the
-only one today; the v0.4 filter stages are the reason the prefix exists.
+⛔ **A `c_` prefix means instances, and a `$0-` on everything inside it (C-1).** Four exist:
+`c_clock`, `c_presence` and `c_devid` inside the `m_` layers, and `c_mapped` inside `u_map`, one per
+destination that carries a value. The v0.4 filter stages are the reason the prefix exists.
 
 ## Open
 

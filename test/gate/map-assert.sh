@@ -45,12 +45,20 @@ WORK=${TMPDIR:-/tmp}/cutit-map-$$
 # numbers. Both windows below send two values to a knob and count what comes out
 # -- one expects exactly one event and the other expects two -- so a leak between
 # them has to be visible as a different controller, not as a duplicate.
+#
+# ⚠️ gk-note, gk-pad AND gk-prog EXIST ONLY FOR THE SCREEN. Every value
+# destination draws its own row on disp through a c_mapped instance, and the
+# shipped map reaches only tempo and volca-cc -- so without these three rows
+# the note, pad and program rows would never be exercised by anything.
 gate_rows() {
     echo "mode-1 gk-cc volca-cc 41"
     echo "mode-1 gk-bad no-such-destination 0"
     echo "mode-1 og-knob-2 volca-cc 42"
     echo "mode-1 og-knob-3 volca-cc 43"
     echo "mode-1 og-knob-4 volca-cc 44"
+    echo "mode-1 gk-note volca-note 60"
+    echo "mode-1 gk-pad 404-pad 5"
+    echo "mode-1 gk-prog volca-prog 20"
 }
 
 # ⛔ THE GATE RUNS TWICE, AND THE ONLY DIFFERENCE IS ONE FILE. Pickup arms a knob

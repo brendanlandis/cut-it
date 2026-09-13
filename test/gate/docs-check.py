@@ -39,6 +39,11 @@ THE CHECKS
               since been deleted; without this check every one of those
               references rots in silence.
 
+  project-ref every `cut-it/<slug>` named anywhere -- the form the `!projects`
+              board produces -- must resolve to a file in that repo, which sits
+              beside this one. Open work moved there, so an owner can be a plan
+              file, a `!projects` ref or `NO PLAN OWNS THIS`.
+
   shape       every page in `ref/` declares a schema on line 1 and keeps to it.
               The cheapest checks here, because a heading structure is already a
               parse tree -- and the two that matter most are the ones that make
@@ -103,6 +108,16 @@ MDLINK = re.compile(r'\]\(<?([^)>#]+\.md)(?:#[^)>]*)?>?\)')
 
 TEXT_SUFFIXES = ('.md', '.pd', '.sh', '.py', '.txt')
 SKIP_DIRS = {'.git', '__pycache__', 'device-state', 'node_modules'}
+
+# ⛔ OPEN WORK LIVES IN `!projects`, THE REPO BESIDE THIS ONE, and a page cites it
+# by the form that repo's own board produces: `cut-it/<slug>` for a file under
+# active/ or done/, `cut-it/<slug>#<step>` for one step of it, `cut-it/inbox` for
+# a loosie. A ref is resolved against the filesystem like any other pointer.
+# ⚠️ The directory is REQUIRED, not optional -- if it is missing the check
+# raises rather than finding nothing, because "no refs to resolve" and "could
+# not look" are different findings and only one of them is a pass.
+PROJECTS = ROOT.parent / '!projects' / 'cut-it'
+PROJ_REF = re.compile(r'(?<![\w/.-])cut-it/([a-z0-9-]+)(?:#[a-z0-9-]+)?\b')
 
 
 class CheckFailed(Exception):
@@ -590,7 +605,10 @@ def open_span(marked):
     return start, end
 
 
-OWNER = re.compile(r'\bplan-v[0-9.]+\.md|\bNO PLAN OWNS THIS\b')
+# An owner is a plan file, a `!projects` ref (see PROJ_REF), or the literal
+# escape hatch. The ref is resolved by check_project_refs; here it only has
+# to be named.
+OWNER = re.compile(r'\bplan-v[0-9.]+\.md|\bcut-it/[a-z0-9-]+|\bNO PLAN OWNS THIS\b')
 
 
 def _check_open_items(rel, marked):
@@ -638,7 +656,7 @@ def _check_open_items(rel, marked):
         elif not any(OWNER.search(marked[j][0])
                      for j in range(i, min(i + 4, end))):
             out.append(f'{rel}:{i + 1}  ⬜ in Open names no owner -- link the '
-                       f'plan-*.md that closes it, or say NO PLAN OWNS THIS')
+                       f'plan-*.md or cut-it/<slug> that closes it, or say NO PLAN OWNS THIS')
     return out
 
 
@@ -882,9 +900,47 @@ def check_closers(verbose):
             window = ' '.join(marked[j][0] for j in range(i, min(i + 4, len(marked))))
             if not CLOSER.search(window):
                 out.append(f'{rel}:{i + 1}  ⬜ names no plan, owner or version that '
-                           f'closes it. Link the plan-*.md, or say NO PLAN OWNS THIS')
+                           f'closes it. Link the plan-*.md or cut-it/<slug>, or say NO PLAN OWNS THIS')
     if verbose:
         print(f'  {checked} open item(s) checked for a closer')
+    return out
+
+
+def check_project_refs(verbose):
+    """Every `cut-it/<slug>` named anywhere resolves to a file in `!projects`.
+
+    Same walk and same rule as check_dangling_docs: in a .pd, .sh or .py a bare
+    mention IS the pointer, and in .md too, since the ref form has no link
+    syntax of its own. A slug resolves to active/<slug>.md or done/<slug>.md;
+    `inbox` is the loosie file, and resolves while that file exists.
+
+    ⛔ FAILS IF `!projects` IS NOT THERE. A ref that cannot be looked up is not
+    a ref that resolved, and a gate that skips the lookup passes vacuously --
+    the fourth way, and the one this file has been bitten by before.
+    """
+    if not PROJECTS.is_dir():
+        return [f'{PROJECTS} is not a directory -- the !projects repo must sit '
+                f'beside this one for cut-it/<slug> refs to resolve']
+    out, seen = [], 0
+    for src in sorted(ROOT.rglob('*')):
+        if not src.is_file() or src.suffix not in TEXT_SUFFIXES:
+            continue
+        if any(p in SKIP_DIRS for p in src.relative_to(ROOT).parts):
+            continue
+        try:
+            body = src.read_text(encoding='utf-8')
+        except UnicodeDecodeError:
+            continue
+        for slug in sorted(set(PROJ_REF.findall(body))):
+            seen += 1
+            if slug == 'inbox' and (PROJECTS / slug).with_suffix('.md').exists():
+                continue
+            if any((PROJECTS / d / f'{slug}.md').exists() for d in ('active', 'done')):
+                continue
+            out.append(f'{src.relative_to(ROOT)}  cites cut-it/{slug}, which is not '
+                       f'in {PROJECTS}/active or done')
+    if verbose:
+        print(f'  {seen} project ref(s) resolved against {PROJECTS.name}/')
     return out
 
 
@@ -893,7 +949,8 @@ def main():
     problems = (check_anchors(verbose) + check_dangling_docs(verbose)
                 + check_shape(verbose) + check_index(verbose)
                 + check_rule_ids(verbose) + check_skill_rules(verbose)
-                + check_dangling_paths(verbose) + check_closers(verbose))
+                + check_dangling_paths(verbose) + check_closers(verbose)
+                + check_project_refs(verbose))
     if problems:
         print('\n'.join(problems))
         print(f'\n{len(problems)} problem(s).')

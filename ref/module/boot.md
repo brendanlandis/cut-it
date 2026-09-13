@@ -277,6 +277,6 @@ channel block. What is still unverified about that lives on its own page rather 
 - ⬜ **What the load-time `.sh` scripts DO is untested.** Each invocation is gated; the effects
   cannot be, on a Mac. Each needs a device step reading its own echo — `wire.sh: N connections`,
   `logroll: carried N line(s)`, `state-dir.sh` against an existing save, and `phone-ip.sh` with the
-  phone on the Organelle's own AP. See [plan-v04.md](../../plan-v04.md) §3. ⚠️ **`recover.sh` is the
+  phone on the Organelle's own AP. Filed as a loosie, `cut-it/inbox`. ⚠️ **`recover.sh` is the
   exception and is covered**: its two OSC commands are statically linted, and holding CC 90 on the
   rig is a bench step — see [launchpad.md](../device/launchpad.md).

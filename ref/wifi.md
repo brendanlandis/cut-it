@@ -6,17 +6,10 @@ why.** It is narrowed, not solved. The fault matters because the phone display i
 second screen — [device/phone.md](device/phone.md) — and a dead display mid-set is the failure
 being designed against.
 
-⛔ **THIS PAGE IS THE ONLY PLACE ANY OF IT LIVES.** No plan carries a wifi section, and none should
-gain one — a plan is deleted when it lands and this is not. **Everything here: the mechanics, the
-evidence, the stage procedure, and what to try if it misbehaves.**
-
-⏸ **PARKED 2026-08-12.** ⚠️ **Do not spend session time on this unless it recurs.** The device has
-been behaving and **no router configuration has been tried.**
-
-⛔ **Parked is not closed.** Item 81 is open and the stopping rule has not fired, so **a quiet spell
-is not evidence for won't-fix.** ✅ **The baseline to resume from was taken before the pause** —
-items **298**, **299** and **300** below. ⚠️ **Re-take item 300 first**: it is a scan cache and goes
-stale.
+**This page holds the facts: the mechanics, the evidence, the tools, and the stage procedure.**
+What is still open, what to try when it recurs and when to stop is `cut-it/wifi-roam-fault` in
+`!projects` — parked 2026-08-12, blocked on the fault recurring. ⚠️ **Do not spend session time on
+this unless it recurs.**
 
 **The boot hang that used to look like a wifi fault is not one** — it is a USB mass-storage fault
 with wifi as its most visible casualty, and it lives on [device-os.md](device-os.md).
@@ -194,12 +187,6 @@ after a real power cycle rather than assumed. The supplicant comes up **29 s aft
 is the only version of the fault worth reproducing — a hand-started supplicant is a different
 configuration and was always the weaker test.
 
-⛔ **Ruled out, so nobody walks them again:** the Orbi satellite being at fault (overturned by a
-two-arm test 30 minutes later — item 182), `option rapid_commit`, `require dhcp_server_identifier`,
-the ARP duplicate-address probe / `noarp`, swapping the wifi card (two link probes, 0% loss), and
-`--dbdir /sdcard/dhcpcd`. ⚠️ **All were queued to explain a lease that expires, and the lease does
-not expire** — the association changes underneath it.
-
 ⚠️ **Two pieces of evidence are weaker than they look.** Item 180's *"the REQUEST is never ACKed"*
 came from a capture cut off by a `timeout 20` with the retry schedule still running — the failure
 is at **DISCOVER**. And **`dhcpcd -T` stops at the OFFER** and never sends a REQUEST, so it
@@ -213,37 +200,16 @@ exercises only the half that works.
 - ⚠️ **NEVER `pgrep -f wifi-watch`**, and never let one command both scan and relaunch — that
   self-match kills the ssh session doing the sweeping. Item 163.
 
-## ⚠️ If it recurs — what to try, and when to stop
+## If it recurs
 
-**Everything below is decided rather than open, and all of it is expensive to relearn.**
-
-**The requirement, as Brendan states it: the Organelle must stop dropping wifi.** ⛔ **Not "recover
-fast"** — a dead phone display mid-set is the failure, and a recovery ladder that works is not the
-same as a fault that does not happen. That distinction is what makes the stopping rule below
-reasonable rather than defeatist.
-
-**Two configuration attacks, in order, and both are router-side** — everything on the device is
-exonerated:
-
-1. **Separate the two radios** so a roam stops being possible. ⛔ **Not per-band — item 298 rules
-   that out.** What is left is a difference the device can still see on 2.4 GHz: **a distinct SSID,
-   a distinct channel per node, or one node's 2.4 GHz radio switched off.** ⚠️ **One Orbi setting
-   moves both mesh nodes**, which is why this has never been trivial.
-2. **Disable fast roaming / band steering** if the Orbi exposes them. Weaker than separation — it
-   makes a roam less eager rather than impossible, so a quiet spell afterwards proves less.
-
-⛔ **THE STOPPING RULE, AND IT IS BINDING. If two configuration changes do not stop the roam, close
-item 81 as won't-fix and let AP mode be the answer.** AP mode satisfies the requirement by
-construction, because there is no client association to hand off. ⚠️ **Continuing past that point has
-already produced the two confident wrong answers and the six wrong turns above.**
+**What to try, in what order, and when to stop are on `cut-it/wifi-roam-fault`** in `!projects`:
+two router-side changes, then a binding stopping rule that closes item 81 as won't-fix and lets AP
+mode be the answer. Verify against the repro above, not against a quiet spell.
 
 ⛔ **DO NOT RE-ENABLE THE PREFERRED-AP STEER, and it is tempting precisely because it looks like a
 fallback.** It **drops IPv4 itself on every fire**, so it manufactures the symptom it is meant to
 avoid — and worse, **it hides the answer by preventing recurrence**, leaving nothing to measure.
 Item 214 is why it stopped being trusted.
-
-⚠️ **Verify against the repro above, not against a quiet spell** — and discount the session's first
-`TRANSITION` (item 299) before reading the log as evidence either way.
 
 ## The Organelle as its own access point
 
@@ -310,17 +276,9 @@ house network by itself. Nothing about this is sticky.
 
 ⬜ **Why nothing answers a DISCOVER after a roam.** **Not established**, and the one thing that
 would turn the roam fault from narrowed into solved. ⚠️ Say so plainly — this investigation has
-already produced two confident wrong answers. **NO PLAN OWNS THIS**: ⏸ parked, and *If it recurs*
-above is what to do about it.
+already produced two confident wrong answers. Owned by `cut-it/wifi-roam-fault`.
 
-⬜ **Three drops on 2026-08-08 that did NOT match the roam signature.** **NO PLAN OWNS THIS** —
-recorded because they
-contradict it, and a future session will otherwise re-derive them. From the Mac, `ssh` failed at
-**name resolution** and `find-organelle.sh` returned **ABSENT** — no IPv4 and no IPv6 neighbour,
-while it found another host at `.14` happily. On the device afterwards: associated, `192.168.1.9`
-held, −31 to −41 dBm, **uptime unbroken across all three**, and both radios in the log.
-⛔ **That is not the documented signature** — item 81 leaves the device reachable over IPv6
-link-local throughout, and here nothing answered on either protocol. Whether the lease was lost is
-not established: the watcher was not running, and the device was reconnected by hand, so the
-recovery proves nothing either. ⚠️ **Do not fold these into the roam fault without new evidence.**
-Item 244 now exists so the *next* one is recorded.
+⬜ **Three drops on 2026-08-08 that did NOT match the roam signature** — nothing answered on
+either protocol from the Mac, yet the device was associated with the lease held and uptime
+unbroken. Not item 81's signature, and not to be folded into it without new evidence. The record
+is on `cut-it/wifi-roam-fault`; item 244 exists so the *next* one is recorded.

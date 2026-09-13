@@ -182,17 +182,24 @@ is master tempo. Nothing on the instrument can detect it. See
 
 ## How the documentation works
 
-**`ref/` states what IS. A `plan-` document states what is OPEN.** If you find yourself writing "we
-should…" in a `ref/` page, it belongs in a plan. If you find yourself writing "and it works" in a
-plan, that section should have left the file.
+**`ref/` states what IS. What is OPEN lives in `!projects/cut-it`, the repo beside this one, and
+in [plan-v04.md](plan-v04.md) until it is moved there.** If you find yourself writing "we should…"
+in a `ref/` page, it belongs in a project file or a loosie. If you find yourself writing "and it
+works" there, that step should have been ticked.
+
+**A page cites its owner by the form the `!projects` board produces**: `cut-it/<slug>` for a file
+under `active/` or `done/`, `cut-it/<slug>#<step>` for one step of it, `cut-it/inbox` for a
+loosie. ⚠️ **It works in a `.pd` comment too**, since it needs no link syntax, and
+`test/gate/docs-check.py` resolves every one against the filesystem — and fails if `!projects` is
+not beside this repo.
 
 ⚠️ **A plan is scoped to one piece of work and is DELETED when the work lands** — `plan-v02` and
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
 is where everything unscoped waits.
 
 ✅ **[plan-v04.md](plan-v04.md) is the only plan again**, which is what a scoped plan being deleted
-looks like. ⛔ **Every remaining ⬜ either sits inside a `plan-` file, which owns it, says
-`NO PLAN OWNS THIS` on purpose, or names the version that closes it** — and
+looks like. ⛔ **Every remaining ⬜ either sits inside a `plan-` file, which owns it, names a `cut-it/<slug>`,
+says `NO PLAN OWNS THIS` on purpose, or names the version that closes it** — and
 `test/gate/docs-check.py` enforces that on every run rather than leaving it to be remembered.
 
 ✅ **Plan 0, the test runner, the v0.3.2 cleanup, v0.3.3 coverage, hot-swap, the bench session and
@@ -201,7 +208,7 @@ plan-v0.3.4.1 are all gone** — the measurement session ran on 2026-08-08, `tes
 **all seven benches were run and judged on 2026-08-11**, and panic became `recover` the same day.
 The facts are on `ref/` pages and the reasoning is in `git log`.
 
-⛔ **Every ⬜ must name the plan, the owner or the version that closes it**, and `check_closers`
+⛔ **Every ⬜ must name the plan, the `!projects` ref or the version that closes it**, and `check_closers`
 enforces it unconditionally — it ran behind `--strict` only while the v0.3.5 batch was in flight.
 ⚠️ **An open item LEADS with the glyph**; a sentence that merely mentions ⬜ mid-line is read as prose
 about the marker, except inside an `## Open` section where the lead test is dropped. `NO PLAN OWNS

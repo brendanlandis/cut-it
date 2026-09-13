@@ -476,22 +476,11 @@ aftertouch afterwards rather than trusting the old numbers.
 
 ## Open
 
-- ✅ **Item 235 is closed, and verified on this hardware 2026-08-10.** Booted with the Launchpad
-  unplugged and plugged it in after: five `wire.sh` attempts missed it, the sixth caught it, and it
-  came back **completely** — re-enumerated, Programmer Mode re-asserted by the watchdog heartbeat at
-  a device the init SysEx had never reached, ownership restored, `g_grid` repainting the mode lamp.
-  No `warn` was raised while it had never answered, which is the arming gate holding, and the safe
-  exit still returns it to Live Mode through `/loadPatch`. See
-  [presence.md](../module/presence.md).
 - ⬜ **`[polytouchin]` has no stub, so the pressure path is uncovered.** See
   [plan-v04.md](../../plan-v04.md) §3. It was in neither MIDI
   inventory list in `test/gate/lib-scratch.sh` until a closed-question scan found it, and this
   page's own text calls aftertouch the most expressive control on the rig. A `t_polytouchin` would
   be the same shape as `t_ctlin`.
-- ✅ **Item 77 is closed, and the question turned out not to apply.** It asked where the animation
-  rate stops tracking, above and below. There is no tracking to lose: in Programmer Mode the device
-  ignores incoming clock at any tempo. Measured with `tools/stage-patches/Anim Probe/` — item 257,
-  under **Facts**.
 - ⬜ **What every layout ID means.** `02`, `03` and `04` were seen; the full set and their names are
   not established. See [plan-v04.md](../../plan-v04.md) §3. ✅ *That it announces at all* is now
   answered — item 100 is closed, see *Mode changes are announced* under **Facts**.

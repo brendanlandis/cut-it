@@ -505,6 +505,3 @@ table and nothing else, since a commit from a Launchpad pad would have no screen
 **Nothing.** The last one — whether the serial overruns and the OLED lag shared a cause — closed as
 item 253, and the finding is under *The OLED lags the audio by ~200 ms* in **Traps**, where the
 ruled-out cause is useful to the next person who spots `Rx FIFO overrun` in `dmesg`.
-
-⚠️ This is the first page in the project with an empty `Open`, and that is a claim rather than an
-achievement: it says only that nothing about **this device** is currently recorded as unknown.

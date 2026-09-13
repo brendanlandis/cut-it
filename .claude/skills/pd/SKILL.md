@@ -113,7 +113,7 @@ on its first can-it-fail run. Reintroduce the bug, watch it go red, revert.
 | `ref/device/<name>.md` | Everything about one device — messages, traps, how Cut It uses it |
 | `ref/module/<name>.md` | One instrument concern |
 | `CLAUDE.md` | Repo layout, working notes, the device itself |
-| `plan-v04.md` | The **standing** plan — §3 is every open question. ⚠️ Not the only one: scoped `plan-v03.N.md` documents come and go beside it |
+| `!projects/cut-it/` | **What is open** — the repo beside this one. A comment cites a file as `cut-it/<slug>`, a loosie as `cut-it/inbox`; the docs gate resolves both. `plan-v04.md` is the last plan document and is being moved there by hand |
 
 **Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and the
 whole instrument is there — `u_mother-stub` draws the front panel inline and fakes the knobs, keys,

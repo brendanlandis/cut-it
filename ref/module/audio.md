@@ -121,10 +121,11 @@ save with the project and recall, cables carry the paths, and the mixer's knobs 
 wrong level is audible immediately rather than failing silently. See
 [sp404.md](../device/sp404.md).
 
-### Organelle audio back into the 404 was dropped
+### Organelle audio back into the 404 was scrapped
 
-Considered and dropped. It would have used the mixer's FX send as a variable-gain feedback path.
-Revisit if wanted; it needs no rewiring beyond one cable from FX SEND.
+It would have used the mixer's FX SEND as a variable-gain feedback path. Scrapped outright on
+2026-08-08, item 264 — not "dropped, but it is only one cable, so try it", which is how it had been
+carried and what kept it costing attention on every read.
 
 ## Open
 

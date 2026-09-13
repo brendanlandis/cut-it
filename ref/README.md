@@ -50,7 +50,8 @@ python3 test/gate/docs-check.py -v
 | index | The table above lists exactly the pages that exist |
 | dangling | Every pointer to a document resolves |
 | `C-NN` | Every rule cited anywhere exists, and the `pd` skill's copy matches the doc |
-| ⬜ | Every open item sits under `Open`, on every page, whatever its schema |
+| ⬜ | Every open item sits under `Open`, on every page, whatever its schema, and names its owner |
+| `cut-it/<slug>` | Every `!projects` ref resolves to a file in that repo, which must sit beside this one |
 
 ## The standard for v0.4
 

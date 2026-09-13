@@ -303,23 +303,9 @@ toggled *off*.
 
 ## Open
 
-- ⬜ **Whether the wifi dongle's draw contributes to the wifi fault — item 255.**
-  **NO PLAN OWNS THIS**, and ⚠️ **the fault it speculates about is [wifi.md](wifi.md)'s**, which says
-  not to spend time on it unless it recurs. It is the only thing on the Organelle's own 9 V 1000 mA rail,
-  declaring 450 mA on a separate root bus from the powered hub. ⚠️ **A hypothesis and nothing
-  more**: `MaxPower` is a declared maximum, the adapter has headroom on paper, and no drop has ever
-  been correlated with load. ⛔ The obvious test — move the dongle onto the powered hub — carries a
-  known hazard, because that hub has one controller the Launchpad will not configure on at all
-  (item 256, the `-32` below). **Worth one deliberate trial only if the fault recurs.**
-- ✅ **The 404 pre-set checklist is short, and it is short for a reason — item 263.** The question
-  assumed that ExtIn monitoring, bus assignments, input FX and pad play mode were things to *set
-  before* a set. **They are not: they are played.** Brendan switches input monitoring on and off
-  throughout a performance, sets pad play modes ad hoc, and treats bus assignment as mixer work.
-  ⛔ **Nothing that gets varied on purpose belongs on a checklist.** What is left is under
-  *Before a set — the 404* below.
-**Nothing.** Organelle audio back into the 404 — the mixer's FX SEND as a variable-gain feedback
-path — was **scrapped on 2026-08-08**, item 264. It had been carried as *"considered and dropped, but
-it is only one cable, so try it"*; it is now dropped outright and is not waiting on a session.
-
-⚠️ An idea kept alive because it is *cheap to test* is still an open item, and it still costs
-attention every time someone reads this page. Scrapping it is a result.
+- ⬜ **Whether the wifi dongle's draw contributes to the wifi fault — item 255.** A step on
+  `cut-it/wifi-roam-fault`, to be taken only if the fault recurs. It is the only thing on the
+  Organelle's own 9 V 1000 mA rail, declaring 450 mA on a separate root bus from the powered hub.
+  ⚠️ **A hypothesis and nothing more**: `MaxPower` is a declared maximum, the adapter has headroom
+  on paper, and no drop has ever been correlated with load. The one trial worth making — the dongle
+  on the powered hub — carries item 256's hazard.

@@ -281,4 +281,4 @@ as decisions rather than left to whoever writes the capture.
 - ⬜ **`state-dir.sh` is invoked but never exercised.** Its invocation is gated; `[shell]` is a
   do-nothing stub on the Mac, so the gates hand-create the two files and the script never runs.
   Proving `touch` does not truncate needs a device step against an existing save. See
-  [boot.md](boot.md) and [plan-v04.md](../../plan-v04.md) §3.
+  [boot.md](boot.md); filed with its three siblings as one loosie, `cut-it/inbox`.

@@ -446,5 +446,4 @@ moved, so the same knob can mean different things in different modes without the
 
 ## Open
 
-**Nothing.** Rate limiting, the `nbx` chrome and the Organelle-hosted access point are all done, and
-the venue sequence runs with no laptop and no venue WiFi, with the phone in airplane mode.
+**Nothing.**

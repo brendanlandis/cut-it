@@ -28,7 +28,8 @@ python3 test/gate/docs-check.py -v
 | `ref/device/` | One physical thing each. **Fixed set** — the hardware decides it | `module` |
 | `ref/module/` | One instrument concern each. **This is what v0.4 grows** | `module` |
 | `ref/` | Cross-cutting: `conventions`, `architecture`, `README` | `rules` / `freeform` |
-| `plan-*.md` | Everything open. **`ref/` states what IS; a plan states what's OPEN.** A plan is scoped to one piece of work and is **deleted when it lands** — `plan-v04.md` is the standing one | — |
+| `!projects/cut-it/` | Everything open. **`ref/` states what IS; `!projects` states what's OPEN.** The repo beside this one: one file per project under `active/`, loosies in `inbox.md`. A page cites one as `cut-it/<slug>` or `cut-it/inbox`, and the gate resolves it | — |
+| `plan-*.md` | The old home of what's open. `plan-v04.md` is the last one and is being moved into `!projects` by hand; do not add to it | — |
 
 ⚠️ Adding a page means adding it to `ref/README.md`'s index. The gate asserts the index lists
 exactly what exists.
@@ -47,7 +48,7 @@ Line 1 declares the schema. `##` is the fixed skeleton and must appear exactly, 
 ## Facts          schema'd tables, every one with Evidence and Item columns
 ## Traps          what will bite you
 ## Design         how Cut It uses it, and why
-## Open           unknowns only, each linking to plan-v04.md §3
+## Open           unknowns only, each naming its owner: `cut-it/<slug>`, `cut-it/inbox`, or NO PLAN OWNS THIS
 ```
 
 **What it is / Facts / Traps are about the THING. Design is about US.** That distinction is why
@@ -63,7 +64,7 @@ not the clock"*, `state` opens *"it knows nothing about what any key MEANS"*, `m
 of parts.** This one is a form, not a gate — nothing can check that the right decision was chosen.
 
 ⚠️ **`Design` holds what is DECIDED, not what is planned.** A table of features that do not exist is
-intent, and belongs in `plan-v04.md`.
+intent, and belongs in a `!projects` file.
 
 ⚠️ **Every path on that line must exist**, so a page cannot outlive the abstraction it documents.
 `none` is a legitimate answer to `Gate` or `Bench`.

@@ -361,7 +361,7 @@ presence and it did not move.
 **Surfacing is the `warn` and the `fail`, and nothing else.** ⚠️ A dark grid already means two
 different things — nothing changed, or the watchdog gave up — and only the OLED tells them apart. A
 third ambiguous grid state would make the display less informative, not more. The diagnostic screen
-that reads all of this is `g_oled`'s **diag** layer — [display.md](display.md).
+that reads all of this is `g_oled`'s **diag** layer — item 301, on [display.md](display.md).
 
 ⛔ **This paragraph listed a third cause, "panic handed the surface back", and it had been false
 since item 251.** Panic does not touch the Launchpad's ownership at all now, and since item 296 it
@@ -370,15 +370,7 @@ paints the surface **red** for a second — a state nothing could mistake for da
 
 ## Open
 
-✅ **Two of the four are closed.** The bound is asserted by **reaching** it — `presence-assert.sh`'s
-second run — and the eight bench steps exist, two per device, across the three benches named at the
-top of this page. Both were plan-v0.3.4's, and that plan is gone.
-
-✅ **Every hot-swap bench step has now been run as written** — all eight, through the runner, on
-  2026-08-11, with verdicts in `test/results/latest.json`. ⛔ **The Volca still cannot be tested
-  alone**: it registers `none`, so pulling its interface loses nothing, forks nothing and recovers
-  nothing, and both its steps unplug the interface and lean on a detectable device beside it.
-
-✅ **A passive layer's last-heard is published AND READ.** `g_oled`'s diag layer is the consumer
-  `seen` was written for — item 301, on [display.md](display.md). Building the reader is also what
-  found item 303 above, which had made the passive publish silent for the one source that matters.
+- ⬜ **The Volca cannot be tested alone.** It registers `none`, so pulling its interface loses
+  nothing, forks nothing and recovers nothing, and both its bench steps unplug the interface and
+  lean on a detectable device beside it. Permanent, for a device that can never be lost, so
+  **NO PLAN OWNS THIS**.

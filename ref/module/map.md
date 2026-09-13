@@ -493,11 +493,7 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
 - ⬜ **Only `tempo` shows its mapped value.** An *unmapped* control now reports raw (item 242), so
   nothing is silent — but a control mapped to anything **other than tempo** still shows nothing,
   because the mapped row and the held `(n)` bracket both carry the tempo scaling. Making it universal
-  is decided and scoped — see [plan-v04.md](../../plan-v04.md) §3.
-- ✅ **`u_map` no longer accepts a `mode` it cannot use** — item 297, the Trap above. The key-setter
-  refuses anything that is not two atoms, raises `fail u_map bad-mode`, and the state store is fed
-  from the same guard so a bad value can no longer survive a power cycle. **The file now repairs
-  itself**, where the old note said a mode selection had to be made by hand.
+  is decided and scoped: a loosie, `cut-it/inbox`.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
   would jump once per change. Not reachable today — `og-knob-1` is `tempo` in all six modes. **It
   closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.

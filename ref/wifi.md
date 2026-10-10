@@ -8,8 +8,8 @@ being designed against.
 
 **This page holds the facts: the mechanics, the evidence, the tools, and the stage procedure.**
 What is still open, what to try when it recurs and when to stop is `cut-it/wifi-roam-fault` in
-`!projects` — parked 2026-08-12, blocked on the fault recurring. ⚠️ **Do not spend session time on
-this unless it recurs.**
+`!projects` — closed 2026-10-10 after two months without a recurrence, and reopened (moved back to
+`active/`) if it recurs. ⚠️ **Do not spend session time on this unless it recurs.**
 
 **The boot hang that used to look like a wifi fault is not one** — it is a USB mass-storage fault
 with wifi as its most visible casualty, and it lives on [device-os.md](device-os.md).
@@ -197,8 +197,8 @@ exercises only the half that works.
 
 ## If it recurs
 
-**What to try, in what order, and when to stop are on `cut-it/wifi-roam-fault`** in `!projects`:
-two router-side changes, then a binding stopping rule that closes item 81 as won't-fix and lets AP
+**Reopen `cut-it/wifi-roam-fault`** in `!projects` first: it holds what to try, in what order,
+and when to stop: two router-side changes, then a binding stopping rule that closes item 81 as won't-fix and lets AP
 mode be the answer. Verify against the repro above, not against a quiet spell.
 
 ⛔ **DO NOT RE-ENABLE THE PREFERRED-AP STEER, and it is tempting precisely because it looks like a

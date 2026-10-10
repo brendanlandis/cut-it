@@ -9,7 +9,7 @@ rules that keep a Pd project legible past a few hundred objects.
 away from.
 
 Companion to [architecture.md](architecture.md) (how the modules compose), [rig.md](rig.md) (the
-boxes and cables) and the pages under [device/](device/) (the wire format). Hard constraints — Pd version, plugdata, vanilla-only — are in [CLAUDE.md](CLAUDE.md).
+boxes and cables) and the pages under [device/](device/) (the wire format). Hard constraints — Pd version, plugdata, vanilla-only — are in [AGENTS.md](AGENTS.md).
 
 ## The rules, in one screen
 
@@ -570,7 +570,7 @@ directory prints `write failed` rather than failing silently. **Anything that to
 may not exist belongs behind the same delay**, which is why the state restore is staged rather than
 run at `loadbang`. Item 143.
 
-**Never open or save any of this in plugdata** — see [CLAUDE.md](CLAUDE.md).
+**Never open or save any of this in plugdata** — see [AGENTS.md](AGENTS.md).
 
 ---
 
@@ -587,8 +587,8 @@ run at `loadbang`. Item 143.
 | **Copying a subpatch to reuse it** | Two codebases, silent divergence |
 | **`adc~` / `dac~` in a deployed patch** | `mother.pd` owns the sound card; `dac~` bypasses the volume knob and the limiter — see *Audio I/O* |
 | **`oscOut` / `screenLine*` / `led` outside their display abstraction** | Two writers, one surface |
-| **Saving from plugdata** | Corrupts the file format for Pd 0.49 — see [CLAUDE.md](CLAUDE.md) |
-| **Objects newer than Pd 0.49** | The device can never be upgraded — see [CLAUDE.md](CLAUDE.md) |
+| **Saving from plugdata** | Corrupts the file format for Pd 0.49 — see [AGENTS.md](AGENTS.md) |
+| **Objects newer than Pd 0.49** | The device can never be upgraded — see [AGENTS.md](AGENTS.md) |
 
 ---
 

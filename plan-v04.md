@@ -4,7 +4,7 @@
 first and in full. It says what the project is, what is already true, what is unresolved, and what
 gets built next.
 
-⛔ **Read [CLAUDE.md](CLAUDE.md) before writing a single line of Pd**, and invoke the **`pd`** skill.
+⛔ **Read [AGENTS.md](AGENTS.md) before writing a single line of Pd**, and invoke the **`pd`** skill.
 The target is **Pd vanilla 0.49 permanently** — the hardware cannot be upgraded — and **opening any
 device-bound patch in plugdata corrupts it**.
 
@@ -18,7 +18,7 @@ reasoning is in `git log`.
 
 ✅ **The test runner, the v0.3.2 cleanup, the v0.3.3 coverage pass, hot-swap and panic becoming
 `recover` have all landed** — the first three on 2026-08-09, hot-swap on 2026-08-10 and `recover` on
-2026-08-11. **Read [CLAUDE.md](CLAUDE.md)'s table for the order and the dependencies.**
+2026-08-11. **Read [AGENTS.md](AGENTS.md)'s table for the order and the dependencies.**
 
 ⛔ **§3 below is being emptied by those three.** Every open question in it is assigned to one of them,
 and when they land this section holds **only v0.4 code**. Do not start work on a
@@ -72,7 +72,7 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 
 | Document | How much | Why |
 |---|---|---|
-| **[CLAUDE.md](CLAUDE.md)** | **All of it** | The router. Hard constraints, where everything is, working notes |
+| **[AGENTS.md](AGENTS.md)** | **All of it** | The router. Hard constraints, where everything is, working notes |
 | **This file** | **§3 in full** | The single place to look for what is unresolved |
 | **The `pd` / `docs` / `gate` skills** | Invoked, not read | ⛔ Invoke the matching one before writing Pd, documentation or a test |
 | **[ref/README.md](ref/README.md)** | All of it | How `ref/` is organised, the page schema, and the standard for a v0.4 page |

@@ -112,7 +112,7 @@ on its first can-it-fail run. Reintroduce the bug, watch it go red, revert.
 | `ref/README.md` | How the documentation is organised, and the page schema |
 | `ref/device/<name>.md` | Everything about one device — messages, traps, how Cut It uses it |
 | `ref/module/<name>.md` | One instrument concern |
-| `CLAUDE.md` | Repo layout, working notes, the device itself |
+| `AGENTS.md` | Repo layout, working notes, the device itself |
 | `!projects/cut-it/` | **What is open** — the repo beside this one. A comment cites a file as `cut-it/<slug>`, a loosie as `cut-it/inbox`; the docs gate resolves both. `plan-v04.md` is the last plan document and is being moved there by hand |
 
 **Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and the

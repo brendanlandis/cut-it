@@ -79,7 +79,7 @@ import sys
 # appeared, and the run still said ok). Moving this file changes the depth, so
 # the depth is checked rather than trusted.
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-if not (ROOT / 'CLAUDE.md').exists():
+if not (ROOT / 'AGENTS.md').exists():
     sys.exit(f'docs-check: {ROOT} is not the repo root -- has this file moved? '
              'Every check globs from there and would silently find nothing.')
 
@@ -538,7 +538,7 @@ def check_shape(verbose):
 def _is_marker_gloss(line):
     """A ⬜ that is DEFINING the glyph rather than using it.
 
-    ⛔ Count STRUCTURE, not characters. CLAUDE.md's marker table and the `docs`
+    ⛔ Count STRUCTURE, not characters. AGENTS.md's marker table and the `docs`
     skill's both have a row whose whole job is to say what ⬜ means, and a
     substring blacklist of those exact lines would rot the moment either was
     reworded. The structural fact is what makes them different: a gloss row is a
@@ -564,7 +564,7 @@ def is_open_item(line, in_open=False):
     ⛔ AN OPEN ITEM LEADS WITH THE GLYPH; PROSE NAMES IT MID-SENTENCE. That is the
     structural difference, and it is the only one available -- `_is_marker_gloss`
     catches the two-cell definition rows and misses everything else, so
-    CLAUDE.md's four sentences ABOUT the marker were being counted as four open
+    AGENTS.md's four sentences ABOUT the marker were being counted as four open
     items with no owner.
 
         ⬜ **Why nothing answers a DISCOVER after a roam.**   <- an open item
@@ -875,7 +875,7 @@ def check_closers(verbose):
     to section 3's laptop-free debugging item.
 
     SCOPE IS EVERY OTHER .md, REPO-WIDE -- not just ref/. Open items live in
-    CLAUDE.md, tools/README.md and test/README.md too. ⛔ A ⬜ in a .pd or .sh
+    AGENTS.md, tools/README.md and test/README.md too. ⛔ A ⬜ in a .pd or .sh
     comment is deliberately NOT covered: forcing a plan citation into a Pd comment
     is exactly the write-twice trap this batch removed.
     """

@@ -1,6 +1,6 @@
 ---
 name: docs
-description: Writing or editing documentation for Cut It — anything under ref/, CLAUDE.md, or a plan- document. Carries the page schema, how a Trap is written, the five permitted markers, the anchor syntax for facts the patch also holds, and what to do with material that fits no section. Use before adding or restructuring any documentation page.
+description: Writing or editing documentation for Cut It — anything under ref/, AGENTS.md, or a plan- document. Carries the page schema, how a Trap is written, the five permitted markers, the anchor syntax for facts the patch also holds, and what to do with material that fits no section. Use before adding or restructuring any documentation page.
 ---
 
 # Writing documentation for Cut It

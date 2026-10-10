@@ -19,5 +19,5 @@ Phases 5 and 6 are **rewrites, not ports**.
 
 `three.aiff` is the sample `playfile.pd` loaded. Nothing in v0.2 uses it yet.
 
-These are Pd 0.49 files — the plugdata rule in [CLAUDE.md](../../CLAUDE.md) still applies if you
+These are Pd 0.49 files — the plugdata rule in [AGENTS.md](../../AGENTS.md) still applies if you
 open them.

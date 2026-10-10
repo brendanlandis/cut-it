@@ -97,7 +97,7 @@ class Desync(Exception):
 # the fourth way a gate passes vacuously, and docs-check.py has already been
 # bitten by it once. Same guard, same reason.
 ROOT = os.path.dirname(os.path.dirname(HERE))
-if not os.path.exists(os.path.join(ROOT, "CLAUDE.md")):
+if not os.path.exists(os.path.join(ROOT, "AGENTS.md")):
     sys.exit("run.py: %s is not the repo root -- has this file moved?" % ROOT)
 os.chdir(ROOT)
 

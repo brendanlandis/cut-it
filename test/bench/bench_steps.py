@@ -527,9 +527,14 @@ STEPS_LAUNCHPAD = [
   # (2026-08-11) and it was correct behaviour.
   ),
  ('Pads and releases',
-  'PASS IF: Every pad you press reports pad-NN on the OLED with its velocity. Releasing it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressure on a held pad reports nothing and that is correct.',
+  'PASS IF: Every pad you press reports pad-NN on the OLED with its velocity. Releasing it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressing harder on a held pad draws no row of its own -- with aftertouch on or off -- and that is correct.',
   [],
-  {'do': 'Press pads and release them.'}),
+  # ⚠️ "PRESSURE REPORTS NOTHING" WAS TRUE ONLY WHILE AFTERTOUCH WAS OFF. With
+  # polyphonic aftertouch on, an unmapped pad-NN-at reached the screen through
+  # u_map's raw row. u_map exempts a name ending -at now, as it exempts the
+  # keys (item 318), so the sentence holds either way. Mapped pressure would
+  # draw its destination's row, and nothing ships mapped.
+  {'do': 'Press pads and release them. Press harder on one you are holding.'}),
  ('Ring buttons',
   'PASS IF: Each ring button reports lp-cc-NN on the OLED except the seven the map binds -- they draw no row. The top left corner raises panic and the first six of the top row move the mode lamp. The bottom row runs from 101 to 108 in order. One button stays dark and reports nothing -- index 0 -- SETUP.',
   [],

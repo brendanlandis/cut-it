@@ -165,6 +165,7 @@ then hands it authority.
 | **Reaching** the target releases, not only passing it | a target on a rail has no beyond: armed above a target of `0`, the flip test waits for `value < 0` | verified | 241 |
 | An **unmapped** control reports `<name> <raw>` on `disp` | `[moses 0]`'s left outlet — `[text search]` answers `-1`. Silent on every bus, never on the screen | verified | 242 |
 | …**except `og-key-*`**, which is silent on the screen too | 25 controls that also report their releases would evict a five-row screen twice per note. See *Traps* | verified | 293 |
+| …**and pressure**, any name ending `-at` — `m_launchpad`'s `pad-NN-at`, and nothing else | A stream per held pad would fill the screen under four fingers. Only the raw row is gated: pressure the mode maps still draws its destination's row. See *Design* | verified | 318 |
 | The pickup gate sits **below** the lookup | so a held control still knows whether it is mapped. The lookup is a pure read | verified | 242 |
 | State | Five, per knob, in two 4-element arrays | verified | 236 |
 | mother pushes **once** at load and then says nothing | One `og-knob-1` in twelve seconds, untouched, on the device | verified | 237 |
@@ -469,6 +470,22 @@ a shared readout — is the duplication item 240 was, and it grows with every de
 `param` alone and leave the screen to this file, as `m_organelle` always did for the knobs. One row
 per control, so two faders moving are two rows rather than four (item 317).
 
+### Pressure draws no raw row, like the keys
+
+**An unmapped `pad-NN-at` draws nothing** — decided 2026-10-20 (item 318). Pad pressure is a
+continuous stream per held pad, which is why `m_launchpad` keeps it off `disp`; the unmapped report
+put it back on the screen the moment polyphonic aftertouch was on, four fingers filling all five
+rows. The keys were exempted for the same reason (item 293).
+
+The test is a **suffix**, `-at`, because only `m_launchpad`'s pressure names carry it: `[list
+length]` minus 3 sets `[list split]`'s point from its right inlet, so the right outlet is always the
+last three characters. ⛔ **It runs after the key test and only ever closes the spigot** — the key
+test writes it either way, so in the other order it would reopen it for every pressure name.
+
+⚠️ **Only the raw row is exempt.** A pressure name the mode maps still reaches its destination and
+draws that destination's row; `map-assert` drives one mapped and one unmapped, with a pad's own press
+beside them as proof the test is not too wide.
+
 ### The value is parked and the name does the work
 
 `[list split 1]` fires its **remainder** first, so the value is normalised and stored in `[list
@@ -522,10 +539,6 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
 
 - ⬜ **Live re-assignment — editing a mapping from the instrument rather than the file — is v0.4**,
   and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **An unmapped Launchpad pad's pressure draws a raw row**, because the unmapped report exempts
-  only `og-key-*` — and pressure is a continuous stream per held pad, which `m_launchpad` keeps off
-  `disp` for exactly that reason. Measured on the Mac: `pad-11-at 64` reaches the screen. Latent
-  until polyphonic aftertouch is enabled on the device. See `cut-it/inbox`.
 - ⬜ **The mode names are placeholders.** `mode-1`…`mode-6` say nothing about what each mode is for,
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode

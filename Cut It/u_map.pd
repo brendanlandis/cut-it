@@ -1,4 +1,4 @@
-#N canvas 20 20 5300 6700 12;
+#N canvas 20 20 5700 6700 12;
 #X obj 20 300 r param;
 #X obj 20 360 route lp-cc-91 lp-cc-92 lp-cc-93 lp-cc-94 lp-cc-95 lp-cc-96;
 #X obj 20 480 list;
@@ -213,7 +213,7 @@
 #X obj 3800 3970 ||;
 #X text 3800 4640 ⛔ REACHING THE TARGET IS A CROSSING \, AND WITHOUT THIS ONE A TARGET ON A RAIL IS A DEAD KNOB. The release test is a side FLIP: a knob armed above a target waits for target <= value to go false \, which is value < target -- and if the target is 0 that is unreachable no matter how far the knob is turned down. Saving with knob 1 at the bottom killed master tempo for the whole session. The == makes equality release too \, in both directions \, and it can never fire spuriously because a knob sitting exactly on its stored value is BY DEFINITION in sync -- which is the entire definition of pickup., f 40;
 #X obj 4200 3560 t f f;
-#X obj 4200 3620 t a a a;
+#X obj 4200 3620 t a a a a;
 #X obj 4200 3690 t b;
 #X obj 4200 3760 f;
 #X obj 4200 3830 list prepend;
@@ -236,7 +236,7 @@
 #X obj 4900 3930 t b;
 #X msg 4900 3990 1;
 #X obj 4200 3720 spigot 1;
-#X text 4700 4060 ⛔ THE KEYS ARE THE ONE EXCEPTION TO THE RAW ROW ABOVE \, and item 242's reasoning is what says so rather than what forbids it. That rule -- a control that does nothing and says nothing cannot be told from a broken one -- was written about FOUR KNOBS. A keyboard is 25 controls that also report their releases \, so a two-handed chord in a mode with no key rows would write up to 50 rows and evict everything else on a screen that holds five. ⚠️ AND A KEY IS NOT SILENT WHEN IT IS UNMAPPED ANYWAY -- you can hear that nothing happened \, which is the whole thing a knob cannot do. ✅ Measured in 0.49: list fromsymbol then split 6 then tosymbol gives og-key for og-key-60 and og-key-84 \, and og-aux (exactly six) and slider-1 both take the reject. ⛔ THE THIRD OUTLET OF list split IS WIRED because a name SHORTER than six leaves the left outlet silent (C-7) \, and a spigot nobody set keeps whatever the previous control left it at., f 62;
+#X text 4700 4060 ⛔ THE KEYS ARE AN EXCEPTION TO THE RAW ROW ABOVE -- pressure is the other \, beside this -- and item 242's reasoning is what says so rather than what forbids it. That rule -- a control that does nothing and says nothing cannot be told from a broken one -- was written about FOUR KNOBS. A keyboard is 25 controls that also report their releases \, so a two-handed chord in a mode with no key rows would write up to 50 rows and evict everything else on a screen that holds five. ⚠️ AND A KEY IS NOT SILENT WHEN IT IS UNMAPPED ANYWAY -- you can hear that nothing happened \, which is the whole thing a knob cannot do. ✅ Measured in 0.49: list fromsymbol then split 6 then tosymbol gives og-key for og-key-60 and og-key-84 \, and og-aux (exactly six) and slider-1 both take the reject. ⛔ THE THIRD OUTLET OF list split IS WIRED because a name SHORTER than six leaves the left outlet silent (C-7) \, and a spigot nobody set keeps whatever the previous control left it at., f 62;
 #X obj 3600 250 t l l;
 #X obj 3860 320 list length;
 #X obj 3860 380 select 2;
@@ -301,6 +301,15 @@
 #X msg 460 940 0;
 #X text 20 6250 ⛔ THE MESSAGE THAT REACHES THE ROUTE IS FIVE ATOMS \, NOT THREE: <dest> <arg> <value> <target> <live>. The two list appends between the lookup and the route add the pickup machine's latched target and its live flag \, both decided in the identity phase before the name ever asks for the lookup -- and the loadbang seeds the target with 0 so the first message from a fader \, which never touches a knob slot \, is still five atoms wide. A c_mapped destination reads all five. A button destination's unpack f f reads the first two and drops the rest \, measured in 0.49 -- so a button is never held \, which is what the map gate already asserted of PLAY and STOP., f 62;
 #X text 20 6420 ⛔ THE HELD ROW MOVED OUT OF THIS FILE AND INTO c_mapped. It used to be built beside the pickup arrays with the tempo scaling hardcoded \, because a held value never reached the lookup -- so it could not know what the knob mapped to \, only knob 1 was allowed to draw it \, and the 490 lived in two places (item 240). The lookup runs for a held knob now and the live flag rides with the message \, so every value destination draws its own held row and the scaling exists once \, as that instance's creation arguments., f 62;
+#X obj 5180 3690 list fromsymbol;
+#X obj 5180 3750 t a a;
+#X obj 5380 3790 list length;
+#X obj 5380 3840 - 3;
+#X obj 5180 3890 list split;
+#X obj 5180 3950 list tosymbol;
+#X obj 5180 4010 select -at;
+#X msg 5180 4070 0;
+#X text 5180 4140 ⛔ PRESSURE IS THE OTHER EXCEPTION -- a name ending -at \, which is m_launchpad's pad-NN-at and nothing else. Aftertouch is a continuous stream PER HELD PAD \, so an unmapped one reporting raw would fill the five-row screen under four fingers -- the reason m_launchpad keeps it off disp in the first place. Only the RAW row is gated: a pressure name the mode maps still draws its destination's row. ⚠️ THE TEST IS A SUFFIX. list length minus 3 sets list split from its right inlet before the list arrives on the left \, so the right outlet is always the last three characters. ⚠️ AND IT RUNS SECOND \, off outlet 2: the key test on outlet 3 writes the spigot either way \, and this one only ever closes it. Item 318., f 40;
 #X connect 0 0 1 0;
 #X connect 4 0 10 0;
 #X connect 5 0 10 0;
@@ -512,7 +521,6 @@
 #X connect 225 0 226 0;
 #X connect 226 0 227 0;
 #X connect 227 0 93 0;
-#X connect 214 2 229 0;
 #X connect 229 0 230 0;
 #X connect 230 0 231 0;
 #X connect 231 0 232 0;
@@ -601,3 +609,14 @@
 #X connect 296 0 297 0;
 #X connect 190 0 145 1;
 #X connect 153 3 210 1;
+#X connect 214 3 229 0;
+#X connect 214 2 302 0;
+#X connect 302 0 303 0;
+#X connect 303 1 304 0;
+#X connect 304 0 305 0;
+#X connect 305 0 306 1;
+#X connect 303 0 306 0;
+#X connect 306 1 307 0;
+#X connect 307 0 308 0;
+#X connect 308 0 309 0;
+#X connect 309 0 236 1;

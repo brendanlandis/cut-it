@@ -140,7 +140,7 @@
 #X obj 20 840 list trim;
 #X obj 20 900 s param;
 #X obj 700 720 r \$0-at-name;
-#X text 20 960 PARAM ONLY \, LIKE EVERY m_ LAYER -- none posts a control's row to disp \, because the row is u_map's. Pressure is the control that row suits least: a continuous stream PER HELD PAD \, so a chord of four fingers would fill the OLED's five param rows and refuse everything else on the bus for as long as they were down. ⚠️ AND u_map'S RAW ROW FOR AN UNMAPPED CONTROL EXEMPTS ONLY og-key-* \, so an unmapped pad-NN-at reaches the screen that way once polyphonic aftertouch is on -- measured on the Mac. See cut-it/inbox. What the pressure MEANS is still u_map's business \, and u_map listens on param., f 90;
+#X text 20 960 PARAM ONLY \, LIKE EVERY m_ LAYER -- none posts a control's row to disp \, because the row is u_map's. Pressure is the control that row suits least: a continuous stream PER HELD PAD \, so a chord of four fingers would fill the OLED's five param rows and refuse everything else on the bus for as long as they were down. AND u_map KEEPS IT THAT WAY: its raw row for an unmapped control exempts a name ending -at \, as it exempts og-key-* \, so an unmapped pad-NN-at draws nothing while a mapped one draws its destination's row. Item 318. What the pressure MEANS is still u_map's business \, and u_map listens on param., f 90;
 #X connect 2 0 3 0;
 #X connect 2 1 5 1;
 #X connect 2 2 8 0;

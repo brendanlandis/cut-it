@@ -196,7 +196,7 @@
 #X obj 20 7420 select 19;
 #X obj 240 7420 t b b b;
 #X msg 700 7420 === STEP-19-of-27 === Pads and releases;
-#X msg 700 7470 PASS IF: Every pad you press reports pad-NN on the OLED with its velocity. Releasing it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressure on a held pad reports nothing and that is correct.;
+#X msg 700 7470 PASS IF: Every pad you press reports pad-NN on the OLED with its velocity. Releasing it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressing harder on a held pad draws no row of its own -- with aftertouch on or off -- and that is correct.;
 #X msg 700 7520 >>> press GO to run step 19 of 27;
 #X obj 240 7590 s \$0-say;
 #X obj 20 7680 select 20;

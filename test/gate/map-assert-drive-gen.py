@@ -150,6 +150,15 @@ SEQ = [
     # (item 293), so the key path is the deliberate exception -- and a c_mapped
     # slipped in front of it by mistake would draw volca-key60 on every press.
     (7800, "ROW-KEY", ["\\; param og-key-60 100"], GAP),
+    # ⛔ PRESSURE IS THE SECOND EXCEPTION TO THE RAW ROW. A pad's aftertouch is a
+    # continuous stream per held pad, so an unmapped pad-NN-at reporting raw would
+    # fill the five-row screen under four fingers -- the reason m_launchpad keeps
+    # it off disp. pad-12 rides along as the liveness witness AND as the proof the
+    # test is not too wide: a pad's own press must still draw its raw row.
+    (8000, "PRESSURE", ["\\; param pad-11-at 64", "\\; param pad-12 100"], GAP),
+    # ⛔ AND MAPPED PRESSURE STILL DRAWS ITS DESTINATION'S ROW. The exemption
+    # gates the raw row only; a gate row maps pad-13-at to volca-cc 45.
+    (8200, "PRESSURE-MAPPED", ["\\; param pad-13-at 64"], GAP),
 ]
 QUIT_MS = 8800
 

@@ -12,7 +12,7 @@ span of 1–108.
 
 `m_launchpad.pd` is the only file that talks to it: Programmer Mode, the safe exit, pads, ring and
 pressure onto `param`, and the replug watchdog. The row a pad or ring button draws is `u_map`'s
-(item 317). `g_grid.pd` owns its
+(item 317); pressure draws none unless the mode maps it (item 318). `g_grid.pd` owns its
 LEDs and nothing else does.
 
 The unit is a **MK3** (announced Jan 2020; a 09/2020 build date rules out MK1). Use the MK3

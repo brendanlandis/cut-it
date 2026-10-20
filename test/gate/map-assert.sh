@@ -59,6 +59,9 @@ gate_rows() {
     echo "mode-1 gk-note volca-note 60"
     echo "mode-1 gk-pad 404-pad 5"
     echo "mode-1 gk-prog volca-prog 20"
+    # ⚠️ PRESSURE, MAPPED, so the exemption below is proven to be about the RAW
+    # row only: a pressure name the mode maps must still draw its destination's.
+    echo "mode-1 pad-13-at volca-cc 45"
 }
 
 # ⛔ THE GATE RUNS TWICE, AND THE ONLY DIFFERENCE IS ONE FILE. Pickup arms a knob

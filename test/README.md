@@ -35,7 +35,7 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 63 | `module/map` |
+| `map-assert.sh` | 66 | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 42 | `module/presence` |
@@ -47,9 +47,9 @@ were false.
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 
-**700 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**703 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **693**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **696**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 42 come from TWO Pd runs and one tally**, which is the only entry here
@@ -373,7 +373,7 @@ halt the clock** — the transport pauses the subscribers, it does not clear the
 ## `map-assert.sh`, `sp404-assert.sh`, `volca-assert.sh` — the map and the output devices
 
 ```sh
-./test/gate/map-assert.sh            63 checks, ~7 s — the lookup, and the static lint
+./test/gate/map-assert.sh            66 checks, ~7 s — the lookup, and the static lint
 ./test/gate/sp404-assert.sh          17 checks, ~7 s — the 404 in BOTH directions
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
@@ -429,6 +429,9 @@ two triggers **2 ms apart** was added, which straddles the 5 ms gate: 1 armed, 2
 that still posted their own rows: four red in `nano-assert` — an unmapped slider drawn twice, a
 mapped one drawn as `slider-1` beside `volca-cc41`, the 404's CTRL knob and a Launchpad ring button —
 two in `sp404-assert`, and the static count; the file-set check went red on a stray `m_` file.
+**The pressure exemption** (item 318) went red against the `u_map` without it, with the key and
+pressure tests swapped so the key test reopened the spigot, and — on the `pad-12` witness — with a
+test wide enough to silence every raw row.
 
 ⛔ **It also HUNG once instead of failing** — the driver generator errored, its exit status was
 unchecked, Pd was handed a file that did not exist, and the `; pd quit` that lives *inside that file*

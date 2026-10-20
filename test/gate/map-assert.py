@@ -39,7 +39,7 @@ WINDOWS = ["EARLY", "EARLY-2", "RAIL-ARM", "SUPPRESS", "MAPPED", "AWAY", "CROSS"
            "RAIL-UP", "RAIL-BACK", "MODE-4", "MODE-DEP", "MODE-4-RELEASE",
            "UNMAPPED", "BAD-MODE", "AFTER-BAD", "DIAG-DEST", "DIAG-RELEASE",
            "SHIFT-STOP", "MODE-1", "ROW-CC", "ROW-NOTE", "ROW-PAD", "ROW-PROG",
-           "ROW-KEY"]
+           "ROW-KEY", "PRESSURE", "PRESSURE-MAPPED"]
 
 
 # --------------------------------------------------------------- static lint
@@ -408,6 +408,20 @@ def run_asserts(cap):
     A.check("... and the key still sounds -- the window was live",
             any(e[0] == "NOTEOUT" and e[1][:2] == [60, 100] for e in W("ROW-KEY")),
             repr(W("ROW-KEY")))
+    # ⛔ THE SECOND EXCEPTION: PRESSURE. An unmapped pad-NN-at draws no raw row,
+    # because a continuous stream per held pad would fill the five-row screen --
+    # the reason m_launchpad keeps it off disp, which u_map's raw row used to
+    # undo. pad-12 in the same window is the liveness witness, and it also
+    # proves the test is not too wide: a pad's own press still draws raw.
+    A.check("⛔ an UNMAPPED pad's pressure draws NO row -- pad-11-at is exempt",
+            not [d for d in rows("PRESSURE") if d[:1] == ["pad-11-at"]],
+            "disp in that window: %s" % disp("PRESSURE"))
+    A.check("... while the pad's own press still draws its raw row -- pad-12 100",
+            [d for d in rows("PRESSURE") if d[:1] == ["pad-12"]] == [["pad-12", "100"]],
+            "disp in that window: %s" % disp("PRESSURE"))
+    A.check("⛔ MAPPED pressure still draws its destination's row -- volca-cc45 64",
+            rows("PRESSURE-MAPPED") == [["volca-cc45", "64"]],
+            "disp in that window: %s" % disp("PRESSURE-MAPPED"))
 
 
 # --------------------------------------------------------------- the no-Save run

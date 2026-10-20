@@ -764,7 +764,10 @@ STEPS_STATE = [
  ('Change the mode',
   'PASS IF: The lit lamp moves to the fourth position. Nothing else is visible yet and that is correct.',
   [],
-  {'do': 'Press transport key 4 on the nanoKONTROL.'}),
+  # ⚠️ THE MODE KEYS ARE THE LAUNCHPAD'S TOP ROW. This said "transport key 4 on
+  # the nanoKONTROL", which stopped selecting a mode when the selector moved onto
+  # the Launchpad -- that key is xport-4 now, a raw row and no mode change.
+  {'do': 'Press the fourth button of the Launchpad top row.'}),
  ('The change reached the disk',
   'PASS IF: Cut-it-auto.txt reads mode perform mode-4. The file is the only evidence -- nothing on the instrument shows it. The old mode still being there is the failure.',
   [],

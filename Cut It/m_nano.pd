@@ -1,5 +1,5 @@
 #N canvas 20 20 2900 1560 12;
-#X text 20 20 m_nano -- the nanoKONTROL mapping layer. Decodes CC into named parameters on the disp bus and nothing else. It knows NOTHING about what it controls: that is the point of the m_ layer and the one boundary that is genuinely expensive to retrofit. See ref/device/nanokontrol.md., f 58;
+#X text 20 20 m_nano -- the nanoKONTROL mapping layer. Decodes CC into named parameters on the param bus and nothing else. It knows NOTHING about what it controls: that is the point of the m_ layer and the one boundary that is genuinely expensive to retrofit. See ref/device/nanokontrol.md., f 58;
 #X text 20 130 creation arg 1: the Pd channel that the nano's OWN channel 1 lands on. REQUIRED -- without it nothing decodes. The transport row is that channel plus one \, and this accepts BOTH. inlets: none. outlets: none., f 58;
 #X text 20 240 THE CHANNEL BLOCK IS PD'S INPUT SLOT \, not the device's position in the system MIDI list. Pd gives input slot n the channels (n-1)*16+1 upward \, so the nano is 17 on the Organelle (slot 2 \, per .pdsettings) and 1 on the Mac when it is the only input opened. MEASURED both ways rather than inferred -- and that is exactly why this is an argument and not a constant., f 58;
 #X obj 20 400 ctlin;
@@ -108,14 +108,12 @@
 #X obj 20 570 list prepend;
 #X obj 560 530 r \$0-name;
 #X obj 20 620 list trim;
-#X obj 20 730 s disp;
 #X text 820 400 The decode runs off the RIGHTMOST outlet \, so it has finished before either gate sees the value. That is why this needs no delay object anywhere., f 46;
 #X text 20 810 ONE EMIT CHAIN \, FED BY TWO GATES. A fan-IN needs no trigger -- only a fan-out does -- so the continuous value and the button's 1 converge on the same list prepend \, whose cold inlet already holds the name., f 46;
 #X text 420 810 EVERY BUTTON EMITS ON PRESS ONLY \, the transport row included. They are momentary \, 127 then 0 \, measured on this unit. Pd owns any state because the mk1 has no host-controllable LEDs \, so device-side state would silently desync., f 46;
-#X text 820 810 THE list trim IS LOAD-BEARING. list prepend makes a LIST \, and g_oled's route matches a SELECTOR \, so without it every parameter is silently rejected and the display just shows zero., f 46;
-#X obj 20 670 t a a;
-#X obj 300 730 s param;
-#X text 560 620 TWO BUSES OFF ONE TRIGGER \, added in Phase 5. param is the control CHANGING \; disp is a request to SHOW it. The action goes out of the right outlet first and the report second -- the same order u_init uses for its stages. Duplicating the data here beats teaching a hardware-verified display file a second bus., f 46;
+#X text 820 810 THE list trim STAYS -- C-6. list prepend makes a LIST \, and u_map's first route -- the six mode keys -- matches a SELECTOR \, so an untrimmed control reaches it as list slider-1 64 and can never match by name., f 46;
+#X obj 20 670 s param;
+#X text 560 620 param ONLY \, AND NO ROW OF ITS OWN. What a control draws on the OLED is u_map's: the destination's row when the current mode maps it -- volca-cc41 64 for slider-1 in mode 1 -- and <name> <raw> when nothing does. Posting a raw row here as well drew a mapped fader TWICE. m_organelle never posted one \, and m_404 and m_launchpad no longer do. Item 317 \, ref/module/map.md., f 46;
 #X connect 1 0 2 0;
 #X connect 3 0 2 1;
 #X connect 2 0 4 0;
@@ -130,9 +128,7 @@
 #X connect 11 0 12 0;
 #X connect 13 0 12 1;
 #X connect 12 0 14 0;
-#X connect 14 0 20 0;
-#X connect 20 0 15 0;
-#X connect 20 1 21 0;
+#X connect 14 0 19 0;
 #X restore 20 540 pd controls;
 #X obj 1180 400 loadbang;
 #X obj 1180 440 del 2000;

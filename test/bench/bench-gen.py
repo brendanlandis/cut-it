@@ -249,7 +249,7 @@ def lint_agreement(meta, pass_if, where):
 
     ⚠️ WORD BY WORD RATHER THAN WHOLE-STRING, and that is not laziness. A
     predicate reads the wire and prose reads as English: the bus carries
-    `sp-pad 5` and the sentence says "sp-pad reads 5". Demanding the exact
+    `warn m_nano` and the sentence says "reads warn and then m_nano". Demanding the exact
     string would force the prose to be rewritten into wire format, and these
     sentences are written for a person to read.
     """

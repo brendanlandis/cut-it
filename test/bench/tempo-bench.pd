@@ -120,13 +120,13 @@
 #X obj 20 4160 select 9;
 #X obj 240 4160 t b b b;
 #X msg 700 4160 === STEP-09-of-13 === The 404 follows a tempo change;
-#X msg 700 4210 PASS IF: The 404's EXT slides up to 180 rather than snapping and its pattern speeds up to match. The OLED fills with sp-pad rows -- that is the 404 reporting what it plays and it is correct. Those rows cover the footer so the new tempo is not readable there until the transport stops.;
+#X msg 700 4210 PASS IF: The 404's EXT slides up to 180 rather than snapping and its pattern speeds up to match. The OLED fills with rows named for the pads it plays -- sp-a1 and the like -- and that is correct. Those rows cover the footer so the new tempo is not readable there until the transport stops.;
 #X msg 700 4260 >>> press GO to run step 9 of 13;
 #X obj 240 4330 s \$0-say;
 #X obj 20 4420 select 10;
 #X obj 240 4420 t b b b;
 #X msg 700 4420 === STEP-10-of-13 === Stop the transport;
-#X msg 700 4470 PASS IF: The aux LED goes dark blue and the 404 stops but its screen still reads EXT. Falling back to BPM is the failure. The sp-pad rows stop arriving and the OLED settles back to the meters with 120-bpm in the footer.;
+#X msg 700 4470 PASS IF: The aux LED goes dark blue and the 404 stops but its screen still reads EXT. Falling back to BPM is the failure. The pad rows stop arriving and the OLED settles back to the meters with 120-bpm in the footer.;
 #X msg 700 4520 >>> press GO to run step 10 of 13;
 #X obj 240 4590 s \$0-say;
 #X obj 20 4680 select 11;

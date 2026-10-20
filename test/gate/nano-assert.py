@@ -145,32 +145,49 @@ def run_asserts(cap):
             "wanted exactly one slider-7 30; a second entry means CC 55's value "
             "reached the instrument. Got %s" % param("STALE-CONT"))
 
-    # ---- two buses off one trigger, in that order -------------------------
-    # param is the control CHANGING; disp is a request to SHOW it. The action
-    # goes out of the trigger's right outlet first and the report second -- the
-    # same order u_init uses for its stages, and the reason this file needs no
-    # delay object anywhere.
+    # ---- one bus, and one row per control ---------------------------------
+    # param is the control CHANGING; disp is a request to SHOW it -- and m_nano
+    # makes no such request any more. What a control draws is u_map's alone: the
+    # destination's row when the current mode maps it, <name> <raw> when nothing
+    # does (item 317). m_nano used to post its own raw row as well, which drew a
+    # mapped fader TWICE -- slider-1 64 beside volca-cc41 64.
     #
-    # ⚠️ THE WINDOW HOLDS MORE DISP ROWS THAN m_nano SENDS, and that is correct.
-    # u_map posts its own raw-value row for a control on the way past, so the
-    # screen can tell a control that does nothing from a broken one -- u_map.pd
-    # says so beside the box, and says m_nano's row lands AFTER it and wins,
-    # because g_oled updates a row in place by name. So the assertion here is
-    # about CONTENT rather than count: whoever posted them, every row in this
-    # window must agree with param. Counting them instead would make this gate go
-    # red whenever cut-it-map.txt changed, which is the map gate's business.
-    print("\n--- param first, disp second ---")
+    # ⛔ SO THESE COUNT ROWS BY NAME, AND EXACTLY. A duplicate of an UNMAPPED
+    # control's row is invisible on the screen -- g_oled updates a row in place by
+    # name -- so "every row agrees with param" passed with m_nano still posting.
+    # Only a count sees it. Filtering by name keeps the boot traffic that shares
+    # disp (u_init's stages, u_tempo's footer) out of the count.
+    # ⚠️ TWO OF THESE LEAN ON THE SHIPPED MAP: slider-3 has no row in mode 1, and
+    # slider-1 is volca-cc 41 there. Change either and the check says which.
+    print("\n--- param only, and ONE row per control ---")
+    rows = lambda k, *names: [d for d in disp(k) if d[:1] and d[0] in names]
     kinds = [k for k, _ in W("SLIDER")]
     A.check("⛔ param goes out BEFORE anything reacts to it",
             kinds[:1] == ["PARAM"],
-            "the window opens with %s. m_nano's trigger must fire the action out "
-            "of its right outlet and the report out of its left" % (kinds[:1] or "nothing"))
-    ds = disp("SLIDER")
-    A.check("every disp row for the control agrees with param",
-            bool(ds) and all(d == param("SLIDER")[0] for d in ds),
-            "param %s vs disp %s" % (param("SLIDER"), ds))
-    A.note("%d disp row(s) for one slider move -- u_map posts one and m_nano "
-           "posts one, and g_oled merges them by name" % len(ds))
+            "the window opens with %s -- nothing may reach disp before the control "
+            "reaches param, which is where u_map hears it" % (kinds[:1] or "nothing"))
+    A.check("⛔ an UNMAPPED slider draws ONE row -- u_map's slider-3 21, and none from m_nano",
+            rows("SLIDER", "slider-3") == [["slider-3", "21"]],
+            "rows for slider-3: %s. Two identical rows means an m_ layer is posting "
+            "its own again (item 317); none means slider-3 gained a mode-1 row in "
+            "cut-it-map.txt" % rows("SLIDER", "slider-3"))
+    A.check("⛔ a MAPPED fader draws ONE row, the destination's -- volca-cc41 64 and no slider-1",
+            rows("EARLY", "slider-1", "volca-cc41") == [["volca-cc41", "64"]],
+            "rows for slider-1 and volca-cc41 at 300 ms: %s. A slider-1 row is the "
+            "double row this gate exists to keep out; no volca-cc41 row means the "
+            "shipped mode-1 slider-1 volca-cc 41 row moved"
+            % rows("EARLY", "slider-1", "volca-cc41"))
+
+    # ⛔ THE OTHER TWO [ctlin] PATHS, THROUGH THE SAME STUB. m_404's CTRL knobs and
+    # m_launchpad's ring stopped posting their rows in the same change, and the
+    # two windows below already reach both -- so the one-row claim is asserted of
+    # every device layer that had a row to lose, not only this one.
+    A.check("⛔ the 404's CTRL knob draws ONE row too -- u_map's sp-cc-20 77",
+            rows("CH-404", "sp-cc-20") == [["sp-cc-20", "77"]],
+            "rows for sp-cc-20: %s" % rows("CH-404", "sp-cc-20"))
+    A.check("⛔ ... and so does a Launchpad ring button -- lp-cc-30 55",
+            rows("CH-LP", "lp-cc-30") == [["lp-cc-30", "55"]],
+            "rows for lp-cc-30: %s" % rows("CH-LP", "lp-cc-30"))
 
     # ---- ⛔ CROSS-TALK BETWEEN THE THREE CHANNEL BLOCKS -------------------
     # One t-ctlin reaches all three rewritten [ctlin] boxes, so every message in

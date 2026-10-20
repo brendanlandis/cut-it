@@ -17,6 +17,7 @@
 
 Reads the capture on stdin. Exits non-zero on any failure.
 """
+import glob
 import os
 import re
 import sys
@@ -26,6 +27,9 @@ import lib_assert as A                                         # noqa: E402
 
 MAP = "Cut It/cut-it-map.txt"
 UMAP = "Cut It/u_map.pd"
+# Every m_ file and its exact [s disp] count. Only m_organelle has one, and it
+# carries aux's modal, never a control's row.
+DISP_EXPECT = {"m_404": 0, "m_launchpad": 0, "m_nano": 0, "m_organelle": 1, "m_volca": 0}
 MODES = ["mode-%d" % n for n in range(1, 7)]
 # ⛔ ONE LIST, USED BY BOTH RUNS. The two analysers used to carry their own
 # copies and a window added to one and not the other would have let the no-Save
@@ -108,6 +112,28 @@ def static_lint():
             "; ".join("line %d: %r" % b for b in panic_rows))
     A.note("%d rows, %d distinct controls" % (len(rows), len({f[1] for _, f in rows if len(f) > 1})))
 
+    # ⛔ A CONTROL'S ROW IS u_map's ALONE, so no device layer may post one. m_nano,
+    # m_404 and m_launchpad each used to send <control> <value> to disp beside
+    # param, and a fader mapped to volca-cc 41 drew TWO rows -- slider-1 64 from
+    # m_nano and volca-cc41 64 from here. Item 317. ⚠️ A DUPLICATE OF AN UNMAPPED
+    # control's row is invisible on the screen, because g_oled updates a row in
+    # place by name, so this is read off the files rather than watched for.
+    # ⛔ EXACT PER FILE, AND THE SET OF FILES IS CHECKED TOO: m_organelle keeps
+    # its one [s disp] for aux's `modal shift`, which is not a control row, and a
+    # new m_ file nobody listed here would otherwise be checked by nobody.
+    found = {}
+    for path in sorted(glob.glob("Cut It/m_*.pd")):
+        name = os.path.basename(path)[:-3]
+        found[name] = sum(1 for line in open(path)
+                          if re.match(r"^#X obj \d+ \d+ (s|send) disp( [^;]*)?;$", line.strip()))
+    A.check("every m_ file is one this check knows", sorted(found) == sorted(DISP_EXPECT),
+            "found %s, expected %s" % (sorted(found), sorted(DISP_EXPECT)))
+    bad = ["%s has %d, want %d" % (n, found[n], w)
+           for n, w in sorted(DISP_EXPECT.items()) if found.get(n) != w]
+    A.check("⛔ no device layer posts a control's row to disp -- the row is u_map's (item 317)",
+            not bad, "; ".join(bad))
+    A.note("[s disp] per m_ file: %s" % " ".join("%s:%d" % kv for kv in sorted(found.items())))
+
 
 # ⚠️ OTHER MODULES SHARE THE disp BUS IN EVERY WINDOW -- u_tempo's footer, g_led's
 # state, u_init's modal-off, u_net's alert -- so "u_map drew nothing" has to be
@@ -150,9 +176,9 @@ def run_asserts(cap):
             any(e[0] == "CTLOUT" and e[1][1] == 41 for e in W("MAPPED")),
             repr(W("MAPPED")))
     # ⛔ AND SAYS SO ON THE SCREEN, NAMED FOR THE DESTINATION. The row is what
-    # the control MEANS -- volca-cc41 64 -- not which fader moved. m_nano still
-    # posts slider-1 64 for a real fader; here the driver writes param directly
-    # so the only disp traffic is u_map's own.
+    # the control MEANS -- volca-cc41 64 -- not which fader moved, and it is the
+    # only row: no m_ layer posts one (item 317, read off the files above, and
+    # watched through a real m_nano by nano-assert).
     A.check("⛔ ... and draws its MAPPED row on disp -- volca-cc41 64",
             any(d == ["volca-cc41", "64"] for d in [e[1] for e in W("MAPPED") if e[0] == "DISP"]),
             "disp in that window: %s" % [e[1] for e in W("MAPPED") if e[0] == "DISP"])
@@ -176,9 +202,8 @@ def run_asserts(cap):
     # SILENCE, and that asymmetry is what let item 294 live for an unknown number
     # of sessions. A stored `compose` with no mode name empties the lookup key,
     # text search hunts for og-knob-1 in the MODE column where it can never
-    # match, and every Organelle knob draws its raw row where a BPM belongs --
-    # visible on exactly one surface, because m_organelle is the only device file
-    # that posts no disp row of its own. Item 297 is the fix.
+    # match, and every mapped control draws its raw row where its destination's
+    # belongs -- og-knob-1 0.6 where a BPM should be. Item 297 is the fix.
     A.check("⛔ a mode that is not two atoms is REFUSED, and says so",
             any(e[0] == "ERR" and "bad-mode" in " ".join(e[1]) for e in W("BAD-MODE")),
             repr(W("BAD-MODE")))

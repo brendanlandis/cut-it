@@ -219,7 +219,7 @@
 #X obj 4200 3830 list prepend;
 #X obj 4200 3890 list trim;
 #X obj 4200 3950 s disp;
-#X text 4200 4030 ⛔ AN UNMAPPED CONTROL REPORTS ITS RAW VALUE \, and moses's LEFT outlet is where that lives -- text search answers -1 for a name with no row. It stays silent on every BUS \, which is the rule \, but it is NOT silent on the screen: a control that does nothing and says nothing cannot be told from a broken one. ⚠️ THE VALUE IS THE PRE-DIVISOR ONE -- what the device actually sent. The name is stashed in list prepend's right inlet and the value in the f \, both loaded before the lookup runs \, because list split fires its remainder first and the name second. ⚠️ m_nano \, m_404 and m_launchpad still post their own rows for the same controls and theirs land AFTER this one \, so they win and nothing about those surfaces changes. g_oled updates a row IN PLACE by name \, so the duplicate costs nothing., f 40;
+#X text 4200 4030 ⛔ AN UNMAPPED CONTROL REPORTS ITS RAW VALUE \, and moses's LEFT outlet is where that lives -- text search answers -1 for a name with no row. It stays silent on every BUS \, which is the rule \, but it is NOT silent on the screen: a control that does nothing and says nothing cannot be told from a broken one. ⚠️ THE VALUE IS THE PRE-DIVISOR ONE -- what the device actually sent. The name is stashed in list prepend's right inlet and the value in the f \, both loaded before the lookup runs \, because list split fires its remainder first and the name second. ⚠️ IT IS THE ONLY ROW THE CONTROL GETS. No m_ layer posts one of its own -- they used to \, and a mapped fader drew twice: slider-1 64 beside volca-cc41 64. Item 317., f 40;
 #X obj 3400 1160 unpack f f;
 #X obj 3400 1230 * 127;
 #X obj 3400 1280 + 0.5;

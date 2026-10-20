@@ -72,7 +72,7 @@
 #X obj 20 2080 select 1;
 #X obj 240 2080 t b b b;
 #X msg 700 2080 === STEP-01-of-07 === Every slider and knob;
-#X msg 700 2130 PASS IF: Each control names itself on the OLED -- slider-1 to slider-9 then knob-1 to knob-9. None reports another's name.;
+#X msg 700 2130 PASS IF: Each control draws one row named for itself -- slider-1 to slider-9 then knob-1 to knob-9 -- unless the current mode maps it. In mode 1 slider-1 reads volca-cc41 and no slider-1 row appears. None reports another's name.;
 #X msg 700 2180 >>> press GO to run step 1 of 7;
 #X obj 240 2250 s \$0-say;
 #X obj 20 2340 select 2;
@@ -84,7 +84,7 @@
 #X obj 20 2600 select 3;
 #X obj 240 2600 t b b b;
 #X msg 700 2600 === STEP-03-of-07 === Every button and transport key;
-#X msg 700 2650 PASS IF: All 18 buttons name themselves on press and nothing on release. REW FF LOOP and REC report xport-1 xport-3 xport-4 and xport-6 as raw rows. PLAY starts the clock and STOP stops it. No toggle.;
+#X msg 700 2650 PASS IF: All 18 buttons name themselves on press and nothing on release. REW FF LOOP and REC report xport-1 xport-3 xport-4 and xport-6 as raw rows. PLAY starts the clock and STOP stops it and neither draws a row. No toggle.;
 #X msg 700 2700 >>> press GO to run step 3 of 7;
 #X obj 240 2770 s \$0-say;
 #X obj 20 2860 select 4;
@@ -108,7 +108,7 @@
 #X obj 20 3640 select 7;
 #X obj 240 3640 t b b b;
 #X msg 700 3640 === STEP-07-of-07 === Hot-swap -- unplugged and plugged back in;
-#X msg 700 3690 PASS IF: The OLED draws a slider-1 row again when you move it.;
+#X msg 700 3690 PASS IF: Slider 1 draws a value row on the OLED again when you move it.;
 #X msg 700 3740 >>> press GO to run step 7 of 7;
 #X obj 240 3810 s \$0-say;
 #X obj 20 3900 t b;

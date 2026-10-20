@@ -110,18 +110,26 @@ DEPS = {
     # ⛔ ADDING IT STALES 26 VERDICTS ONCE. That is the bill for a signal that
     # tells the truth from here on, and it is the cheaper half of the trade:
     # fresh forever is worse than stale forever, because it is believed.
+    # ⚠️ u_map AND THE MAP ARE HERE FOR THE ROWS. m_launchpad posts no row of
+    # its own (item 317): the pad-NN and lp-cc-NN rows those steps read are
+    # u_map's raw row for an unmapped control, and the ring step names the
+    # buttons the map binds -- CC 90 and the six mode keys -- by what they do.
     "launchpad":   ["Cut It/g_grid.pd", "Cut It/m_launchpad.pd",
                     "Cut It/c_clock.pd", "Cut It/u_tempo.pd", "Cut It/u_err.pd",
                     "Cut It/u_present.pd", "Cut It/c_presence.pd",
-                    "Cut It/c_devid.pd"],
+                    "Cut It/c_devid.pd", "Cut It/u_map.pd",
+                    "Cut It/cut-it-map.txt"],
     "midi":        ["Cut It/m_404.pd", "Cut It/m_volca.pd", "Cut It/u_map.pd",
                     "Cut It/c_mapped.pd",
                     "Cut It/cut-it-map.txt", "Cut It/g_oled.pd",
                     "Cut It/u_present.pd", "Cut It/c_presence.pd",
                     "Cut It/c_devid.pd"],
+    # ⚠️ AND THE SAME FOR THE NANO: every row the first step reads is u_map's,
+    # and slider-1's in mode 1 is c_mapped's volca-cc41 rather than its name.
     "nanokontrol": ["Cut It/m_nano.pd", "Cut It/g_oled.pd", "Cut It/u_err.pd",
                     "Cut It/u_present.pd", "Cut It/c_presence.pd",
-                    "Cut It/c_devid.pd"],
+                    "Cut It/c_devid.pd", "Cut It/u_map.pd",
+                    "Cut It/c_mapped.pd", "Cut It/cut-it-map.txt"],
     # ⚠️ THE TWO OUTPUT LAYERS ARE IN HERE FOR THE TEST-NOTE STEPS. The phone can
     # fire a probe note at each of them through a cord out of u_net, and those
     # two verdicts are "the Volca sounded" and "the 404 sounded" -- so a change to

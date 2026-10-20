@@ -12,7 +12,8 @@
 # MIDI input. lib-scratch.sh carried a ⬜ naming that stub as the blocker.
 #
 # ⚠️ NO DSP. Nothing here needs a clock: every assertion is about decoding a
-# controller number into a name and putting it on two buses.
+# controller number into a name, putting it on param, and the ONE row u_map
+# draws for it.
 set -u
 set +m 2>/dev/null || true
 

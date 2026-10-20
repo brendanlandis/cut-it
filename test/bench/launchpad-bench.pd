@@ -202,13 +202,13 @@
 #X obj 20 7680 select 20;
 #X obj 240 7680 t b b b;
 #X msg 700 7680 === STEP-20-of-27 === Ring buttons;
-#X msg 700 7730 PASS IF: Each ring button reports lp-cc-NN on the OLED. The top left corner reads 90 and the bottom row runs from 101 to 108 in order. One button stays dark and reports nothing -- index 0 -- SETUP.;
+#X msg 700 7730 PASS IF: Each ring button reports lp-cc-NN on the OLED except the seven the map binds -- they draw no row. The top left corner raises panic and the first six of the top row move the mode lamp. The bottom row runs from 101 to 108 in order. One button stays dark and reports nothing -- index 0 -- SETUP.;
 #X msg 700 7780 >>> press GO to run step 20 of 27;
 #X obj 240 7850 s \$0-say;
 #X obj 20 7940 select 21;
 #X obj 240 7940 t b b b;
-#X msg 700 7940 === STEP-21-of-27 === Transport keys change mode;
-#X msg 700 7990 PASS IF: Each of the six keys moves the bright lamp to its own position.;
+#X msg 700 7940 === STEP-21-of-27 === The top row changes mode;
+#X msg 700 7990 PASS IF: Each of the six buttons moves the bright lamp to its own position.;
 #X msg 700 8040 >>> press GO to run step 21 of 27;
 #X obj 240 8110 s \$0-say;
 #X obj 20 8200 select 22;

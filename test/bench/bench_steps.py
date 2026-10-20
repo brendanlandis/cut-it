@@ -215,15 +215,20 @@ STEPS_DISPLAY = [
 
 STEPS_NANOKONTROL = [
  ('Every slider and knob',
-  "PASS IF: Each control names itself on the OLED -- slider-1 to slider-9 then knob-1 to knob-9. None reports another's name.",
+  "PASS IF: Each control draws one row named for itself -- slider-1 to slider-9 then knob-1 to knob-9 -- unless the current mode maps it. In mode 1 slider-1 reads volca-cc41 and no slider-1 row appears. None reports another's name.",
   [],
+  # ⛔ ONE ROW PER CONTROL, AND IT IS u_map's (item 317). m_nano posts nothing to
+  # disp: an unmapped control draws u_map's raw row under its own name, and a
+  # mapped one draws its DESTINATION's row instead. slider-1 is volca-cc 41 in
+  # mode 1, so a slider-1 row beside volca-cc41 there is the double row this
+  # step exists to catch.
   {'do': 'Sweep every slider and every knob. Watch slider 9 and knob 1 especially.'}),
  ('Several faders at once',
   'PASS IF: Two faders draw as stacked pairs. Three to five draw as small lines. Nine draws the five you touched first and refuses the rest. No row reshuffles while you are moving them.',
   [],
   {'do': 'Move two faders at once, then three, then all nine.'}),
  ('Every button and transport key',
-  'PASS IF: All 18 buttons name themselves on press and nothing on release. REW FF LOOP and REC report xport-1 xport-3 xport-4 and xport-6 as raw rows. PLAY starts the clock and STOP stops it. No toggle.',
+  'PASS IF: All 18 buttons name themselves on press and nothing on release. REW FF LOOP and REC report xport-1 xport-3 xport-4 and xport-6 as raw rows. PLAY starts the clock and STOP stops it and neither draws a row. No toggle.',
   [],
   # ⚠️ FOUR OF THE SIX DRAW A RAW ROW NOW AND NONE OF THEM DID BEFORE. The row
   # used to be consumed by u_map's hardcoded mode route, above the table, so it
@@ -232,6 +237,9 @@ STEPS_NANOKONTROL = [
   # there, and the other four miss and report their raw value, which is item
   # 242's rule and the right behaviour: a control that does nothing and says
   # nothing cannot be told from a broken one.
+  # ⚠️ AND PLAY AND STOP DRAW NOTHING. They are mapped to button destinations,
+  # which draw no row -- the aux LED and the footer already say what happened --
+  # and m_nano posts no raw row of its own any more (item 317).
   {'do': 'Press every button, then all six transport keys.'}),
 
  # ⛔ HOT-SWAP, THREE CASES, AND ITEM 235 IS THE PROOF THE FIRST TWO ARE NOT THE
@@ -289,7 +297,7 @@ STEPS_NANOKONTROL = [
  # the way back in. It ran last so the device is plugged in from the step above,
  # and so nothing after it depends on a cable being out.
  ('Hot-swap -- unplugged and plugged back in',
-  'PASS IF: The OLED draws a slider-1 row again when you move it.',
+  'PASS IF: Slider 1 draws a value row on the OLED again when you move it.',
   [],
   # ⚠️ FIFTEEN SECONDS OUT, AND THAT IS NOT PADDING. The loss is three missed
   # presence ticks behind the unplug, so pulling it and pushing it straight back
@@ -376,18 +384,18 @@ STEPS_TEMPO = [
   {'need': ['The SP-404 on Pattern Select with a pattern loaded and nothing '
             'playing.']}),
  ('The 404 follows a tempo change',
-  "PASS IF: The 404's EXT slides up to 180 rather than snapping and its pattern speeds up to match. The OLED fills with sp-pad rows -- that is the 404 reporting what it plays and it is correct. Those rows cover the footer so the new tempo is not readable there until the transport stops.",
+  "PASS IF: The 404's EXT slides up to 180 rather than snapping and its pattern speeds up to match. The OLED fills with rows named for the pads it plays -- sp-a1 and the like -- and that is correct. Those rows cover the footer so the new tempo is not readable there until the transport stops.",
   [('180', 'tempo')],
   # ⛔ 180 AND NOT 240, BECAUSE THE 404 FOLLOWS ONLY BETWEEN 40 AND 200 BPM and
   # pins outside that window -- ref/device/sp404.md, verified. At 240 the step
   # asked the hardware for something it cannot do and read as an instrument
-  # failure. ⛔ AND THE FOOTER CLAIM WENT WITH IT: this step's own sp-pad rows
+  # failure. ⛔ AND THE FOOTER CLAIM WENT WITH IT: this step's own pad rows
   # raise g_oled's param layer, which REPLACES home and therefore the footer, so
   # the step asserted a reading its own text guarantees is hidden. The footer is
   # asserted by `Stop the transport` instead, once the rows have stopped.
   ),
  ('Stop the transport',
-  'PASS IF: The aux LED goes dark blue and the 404 stops but its screen still reads EXT. Falling back to BPM is the failure. The sp-pad rows stop arriving and the OLED settles back to the meters with 120-bpm in the footer.',
+  'PASS IF: The aux LED goes dark blue and the 404 stops but its screen still reads EXT. Falling back to BPM is the failure. The pad rows stop arriving and the OLED settles back to the meters with 120-bpm in the footer.',
   [('120', 'tempo'), ('bang', 'stop')]),
  ('Panic',
   'PASS IF: The aux LED turns red and the footer reads panic.',
@@ -523,13 +531,21 @@ STEPS_LAUNCHPAD = [
   [],
   {'do': 'Press pads and release them.'}),
  ('Ring buttons',
-  'PASS IF: Each ring button reports lp-cc-NN on the OLED. The top left corner reads 90 and the bottom row runs from 101 to 108 in order. One button stays dark and reports nothing -- index 0 -- SETUP.',
+  'PASS IF: Each ring button reports lp-cc-NN on the OLED except the seven the map binds -- they draw no row. The top left corner raises panic and the first six of the top row move the mode lamp. The bottom row runs from 101 to 108 in order. One button stays dark and reports nothing -- index 0 -- SETUP.',
   [],
+  # ⛔ THE ROWS ARE u_map's, SO THE BOUND BUTTONS DRAW NONE (item 317). m_launchpad
+  # posts nothing to disp: an unbound button draws u_map's raw row, CC 90 is
+  # `recover` and the six mode keys are u_map's own route, and none of those
+  # draws a row. The corner and the top row used to report lp-cc-90 and lp-cc-91
+  # through m_launchpad's own row, which is why this step once read them.
   {'do': 'Press the ring buttons, including the top left corner and the bottom row.'}),
- ('Transport keys change mode',
-  'PASS IF: Each of the six keys moves the bright lamp to its own position.',
+ # ⚠️ IT TOLD A PERSON TO PRESS THE NANO'S TRANSPORT KEYS, which stopped
+ # selecting a mode when the selector moved onto this surface -- those keys are
+ # xport-1 to xport-6 now and only PLAY and STOP mean anything.
+ ('The top row changes mode',
+  'PASS IF: Each of the six buttons moves the bright lamp to its own position.',
   [],
-  {'do': 'Press each of the six nanoKONTROL transport keys.'}),
+  {'do': 'Press each of the first six buttons on the top row, left to right.'}),
  # ⛔ THESE TWO REPLACED THE REPLUG HAZARD STEP, WHICH DESCRIBED A HAZARD THAT NO
  # LONGER EXISTS. It read "the device returns in Live Mode but m_launchpad still
  # believes it owns the surface -- press a few pads and watch pad-NN names appear
@@ -557,7 +573,7 @@ STEPS_LAUNCHPAD = [
   # ⛔ IT SETS COMPOSE ITSELF, AND WITHOUT THAT THE STEP IS UNJUDGEABLE. u_err
   # shows every error in compose and only `fail` in perform -- so a warn is
   # correctly INVISIBLE on the OLED in perform. The step before this one asks a
-  # person to press all six transport keys, which leaves the rig on mode-6 and
+  # person to press all six mode keys, which leaves the rig on mode-6 and
   # therefore in perform, and this step then asked them to look for an alert the
   # instrument was right to suppress. The bus carried it and the eyes did not,
   # which is exactly the disagreement the runner records both halves of.
@@ -911,20 +927,25 @@ STEPS_MIDI = [
  ('Get to mode 1',
   'PASS IF: The lit lamp moves to the first position. Nothing below works until it does.',
   [],
-  {'do': 'Press transport key 1 on the nanoKONTROL.'}),
+  # ⚠️ THE MODE KEYS ARE THE LAUNCHPAD'S TOP ROW, not the nano's transport row.
+  {'do': 'Press the first button of the Launchpad top row -- the leftmost mode lamp.'}),
 
+ # ⛔ ONE ROW PER HIT, AND IT IS u_map's (item 317). m_404 used to post sp-pad
+ # and sp-bank beside u_map's row named for the pad, which made one hit three
+ # rows. Now the pad's own name is the row -- sp-a1 is bank A pad 1 -- with the
+ # velocity beside it, and the release draws the same row at 0.
  ('SP-404 pad 1',
-  'PASS IF: The OLED shows sp-bank 1 and sp-pad 1 together.',
+  'PASS IF: The OLED shows one row for the pad -- sp-a1 with the velocity beside it. No sp-pad or sp-bank row appears.',
   [],
   # ⚠️ THE 404 LIGHTS ONLY THE BANK IT IS ON, so which bank is selected is not
   # readable at a glance and every 404 step says it out loud instead.
   {'do': 'Press enter first. Check which bank the 404 is lit on -- it lights only the selected one -- then select bank A and press pad 1.'}),
 
  ('SP-404 pad 5',
-  'PASS IF: sp-pad reads 5 on the OLED. Anything else is the failure.',
+  'PASS IF: A row reads sp-a5 with the velocity beside it. Anything else is the failure.',
   [],
-  # ⛔ THE PAD THAT CATCHES `47 + n`. Under the old formula pad 5 reads 13, and
-  # 13 is a plausible-looking number on an OLED -- which is how that bug lived
+  # ⛔ THE PAD THAT CATCHES `47 + n`. Under the old formula pad 5 reads sp-a13,
+  # and that is a plausible-looking name on an OLED -- which is how that bug lived
   # in this repo's own docs for months. A person reads two digits; this reads
   # the bus.
   #
@@ -939,27 +960,37 @@ STEPS_MIDI = [
   # a predicate now holds the window open long enough for a hand to move.
   {'do': 'Press enter first. Check the 404 is lit on bank A -- it lights only the selected one -- then press pad 5. There are about ten seconds to do it.',
    'wait': 10,
-   'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-pad 5']}}),
+   # ⚠️ `has` IS A SUBSTRING TEST, and sp-a5 is safe under it: no other pad's
+   # name contains it, sp-a13 included.
+   'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-a5']}}),
 
  ('All sixteen pads',
-  'PASS IF: sp-pad counts 1 2 3 up to 16 in step with your finger while sp-bank stays at 1 throughout. A run that counts 1 2 3 4 and then jumps is the failure.',
+  'PASS IF: Each pad draws a row named for itself as you press it -- sp-a1 then sp-a2 up to sp-a16. A run that goes sp-a1 to sp-a4 and then jumps is the failure.',
   [],
-  {'do': 'Press enter first. Then press pads 1 through 16 in order on bank A.'}),
+  # ⚠️ ABOUT TWO A SECOND, AND THE PACE IS NOT DECORATION. Every pad is a NEW
+  # name, and the param layer holds five and refuses a sixth until one ages out
+  # about 1.3 s after it last moved. A fast run fills the screen and the later
+  # pads are refused, which is the display working rather than the decode
+  # failing. The stable sp-pad row that used to dodge this is gone (item 317).
+  {'do': 'Press enter first. Then press pads 1 through 16 in order on bank A, about two a second.'}),
 
  ('Bank B',
-  'PASS IF: sp-pad still reads 1 but sp-bank changes from 1 to 2 as you switch banks.',
+  'PASS IF: The row reads sp-b1 -- the same pad on bank B has a name of its own.',
   [],
   # ⛔ THE WINDOW HAS TO OUTLAST THE HAND -- see step 4.
   {'do': 'Press enter first. Then select bank B and press pad 1. The 404 lights only the bank it is on. There are about ten seconds to do it.',
    'wait': 10,
-   'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-pad 1', 'sp-bank 2']}}),
+   # ⚠️ sp-b1 IS ALSO A SUBSTRING OF sp-b10 TO sp-b16, so this proves the BANK
+   # and not the pad -- pad 5's step above is the one that owns the pad decode.
+   'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-b1']}}),
 
- ('A release is not a press',
-  'PASS IF: The sp-pad and sp-bank rows update on the press and neither updates again on the release. Exactly one sp-pad row per hit -- two is the failure. A third row named for the pad itself -- sp-b3 for bank b pad 3 -- carries the velocity and does change on the release. That row is correct and belongs to u_map.',
+ ('One row for a press and its release',
+  'PASS IF: One row named for the pad -- sp-b3 for bank b pad 3 -- shows the velocity on the press and 0 on the release. It is the same row both times and no sp-pad or sp-bank row appears.',
   [],
-  # ⛔ EXACTLY ONE sp-pad ROW FOR ONE HIT. Two means the velocity test on the
-  # disp side has gone and every pad is reporting itself twice -- which on a
-  # screen that redraws looks like nothing at all.
+  # ⛔ EXACTLY TWO sp- LINES FOR ONE HIT: u_map's row on the press and the same
+  # row at velocity 0 on the release. m_404 posts nothing to disp any more (item
+  # 317), so four -- sp-pad and sp-bank back beside the press -- is the failure,
+  # and so is one, which is a release that never arrived.
   # ⚠️ AND IT CARRIED A `watch` THAT SAID THE PASS IF AGAIN IN OTHER WORDS.
   # A second copy of a sentence is a second copy free to drift, and this one
   # was displayed INSTEAD of the sentence the verdict is recorded against.
@@ -974,24 +1005,24 @@ STEPS_MIDI = [
   # AT ALL on the rig, which is what an exact count of 1 reads as a fail against.
   {'do': 'Press enter first. Then press and hold any pad and let go. There are about ten seconds to do it -- one hit only.',
    'wait': 10,
-   'check': {'kind': 'bus-count', 'bus': 'DISP', 'match': 'sp-pad', 'n': 1}}),
+   'check': {'kind': 'bus-count', 'bus': 'DISP', 'match': 'sp-', 'n': 2}}),
 
  ('Fader 1 in mode 1',
-  'PASS IF: The Volca tone changes as you move it.',
+  'PASS IF: The Volca tone changes as you move it. The OLED shows one row for the fader -- volca-cc41 and the value -- and no slider-1 row.',
   [],
   {'do': 'In mode 1 move fader 1 on the nanoKONTROL.',
    'need': ['The Volca audible. It transmits nothing so this step and the two '
             'after it are judged by ear with no readback of any kind.']}),
 
  ('Fader 1 in mode 4',
-  'PASS IF: The Volca does not change -- no change is the pass. The OLED still shows the fader moving and that is correct.',
+  'PASS IF: The Volca does not change -- no change is the pass. The OLED shows slider-1 and its raw value because nothing maps it in mode 4 and that is correct.',
   [],
-  {'do': 'Press transport key 4 then move fader 1.'}),
+  {'do': 'Press the fourth button of the Launchpad top row then move fader 1.'}),
 
  ('Fader 1 back in mode 1',
   'PASS IF: The Volca responds again. Still silent means the mode did not change back -- check the lit lamp.',
   [],
-  {'do': 'Press transport key 1 then move fader 1 again.'}),
+  {'do': 'Press the first button of the Launchpad top row then move fader 1 again.'}),
 
  ('Tempo from knob 1',
   'PASS IF: The footer BPM follows the knob over roughly 10 to 500 BPM once the knob has crossed the restored value. Nothing at all happens before it crosses.',
@@ -1001,8 +1032,8 @@ STEPS_MIDI = [
  ('Transport from the aux button',
   'PASS IF: The aux LED goes green on the first press and dark blue on the second.',
   [],
-  # ⛔ THE FOOTER CLAIM WENT, FOR THE FOURTH TIME IN THIS SUITE. The 404's own
-  # sp-pad rows raise g_oled's param layer and that REPLACES home -- so by this
+  # ⛔ THE FOOTER CLAIM WENT, FOR THE FOURTH TIME IN THIS SUITE. The 404's pad
+  # rows raise g_oled's param layer and that REPLACES home -- so by this
   # point in the bench the footer is buried under the traffic of the steps
   # above, and it only ever carried the BPM anyway. The aux LED is the readout
   # this step is about and it is on the front panel where nothing covers it.
@@ -1050,7 +1081,7 @@ STEPS_MIDI = [
    'wait': 20,
    'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_404']}}),
  ('Hot-swap -- SP-404 absent at load',
-  'PASS IF: The OLED shows an sp-pad row.',
+  'PASS IF: The OLED shows a row for the pad -- sp-a1.',
   [],
   # ⚠️ A PAD IS THE ORACLE AND NOT THE ABSENCE OF A WARN. The 404's detection is
   # proven by its silence at boot -- it can only stay quiet by matching byte 65 on
@@ -1071,7 +1102,7 @@ STEPS_MIDI = [
  # step below already has its own, because a `none` device can only be recovered
  # this way (item 275), which is why this gap read as covered for so long.
  ('Hot-swap -- SP-404 unplugged and plugged back in',
-  'PASS IF: The OLED shows an sp-pad row again.',
+  'PASS IF: The OLED shows a row for the pad again -- sp-a1.',
   [],
   {'do': 'Press enter first. Unplug the SP-404 and count to fifteen, then plug '
          'it back in and wait up to 60 seconds before pressing pad 1 on bank A.'}),

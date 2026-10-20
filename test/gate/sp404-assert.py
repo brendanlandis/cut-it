@@ -8,8 +8,9 @@ that is two paths, one rate limiter and a panic.
 
   transmit   all sixteen pads of bank A, the bank choosing the channel, matched
              note-offs, the 5 ms limiter from two sides, and All Notes Off
-  receive    a press naming its bank and pad, a release that reaches param but
-             not the display, and a channel outside the ten being ignored
+  receive    a press naming its bank and pad, a press and its release each
+             drawing ONE row -- u_map's, never m_404's -- and a channel outside
+             the ten being ignored
 """
 import os
 import sys
@@ -76,26 +77,29 @@ def run_asserts(cap):
     # --- receive -----------------------------------------------------------
     print("\n--- receive (only t_notein can reach this) ---")
     p = [e for e in W("RX-B5") if e[0] == "PARAM"]
-    d = [e for e in W("RX-B5") if e[0] == "DISP"]
     A.check("a pad press names its BANK and PAD",
             bool(p) and p[0][1] == ["sp-b5", "90"], repr(p))
-    # ⛔ TWO ROWS, AND BOTH FLOATS. g_oled formats a parameter value with
-    # makefilename %g, which REFUSES a symbol -- so "sp-hit b5" is impossible and
-    # the bank has to be its own numeric row.
-    A.check("... and reports TWO stable disp rows, both FLOAT values",
-            ["sp-bank", "2"] in [e[1] for e in d] and ["sp-pad", "5"] in [e[1] for e in d],
-            repr(d))
+    # ⛔ ONE ROW PER EVENT, AND IT IS u_map's. m_404 posts nothing to disp: the
+    # pad reaches the screen through u_map's raw row for an unmapped control --
+    # sp-b5 90, one name carrying bank AND pad -- or as its destination's row
+    # when a mode maps it (item 317). m_404 used to add sp-pad and sp-bank, which
+    # made one hit three rows. Every sp-* row in the window is counted, so either
+    # of those coming back is a second row and goes red.
+    sp = lambda k: [e[1] for e in W(k) if e[0] == "DISP" and e[1] and e[1][0].startswith("sp-")]
+    A.check("⛔ ... and draws ONE row -- u_map's sp-b5 90, no sp-pad or sp-bank",
+            sp("RX-B5") == [["sp-b5", "90"]], repr(sp("RX-B5")))
     pr = [e for e in W("RX-RELEASE") if e[0] == "PARAM"]
-    dr = [e for e in W("RX-RELEASE") if e[0] == "DISP"]
     A.check("a RELEASE reaches param", bool(pr) and pr[0][1] == ["sp-b5", "0"], repr(pr))
-    A.check("... and does NOT reach disp",
-            not [e for e in dr if e[1] and e[1][0] in ("sp-bank", "sp-pad")], repr(dr))
+    # ⚠️ THE RELEASE DRAWS TOO, and that is u_map's rule rather than a leak: its
+    # raw row carries the control's value, and a release is velocity 0. It
+    # updates the press's row in place, so the screen still holds one.
+    A.check("... and its row is the SAME one at velocity 0 -- sp-b5 0",
+            sp("RX-RELEASE") == [["sp-b5", "0"]], repr(sp("RX-RELEASE")))
     pa = [e for e in W("RX-A1") if e[0] == "PARAM"]
     A.check("a different bank gives a different name",
             bool(pa) and pa[0][1] == ["sp-a1", "77"], repr(pa))
-    da = [e for e in W("RX-A1") if e[0] == "DISP"]
-    A.check("... and the BANK is now on the display too, not just on param",
-            ["sp-bank", "1"] in [e[1] for e in da], repr(da))
+    A.check("... and that name is the row -- sp-a1 77, and only that",
+            sp("RX-A1") == [["sp-a1", "77"]], repr(sp("RX-A1")))
     # only sp-* names are m_404's; other disp traffic in the window is unrelated
     A.check("⛔ a channel outside the 404's ten is IGNORED",
             not [e for e in W("RX-REJECT")

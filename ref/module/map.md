@@ -100,7 +100,7 @@ the third slot.
 
 | | Evidence | Item |
 |---|----------|------|
-| **A control draws exactly one row, and it is `u_map`'s.** No `m_` file sends a control's row to `disp` — `m_nano`, `m_404` and `m_launchpad` publish on `param` alone, as `m_organelle` always has. A fader mapped to `volca-cc 41` draws `volca-cc41 64` and nothing beside it; an unmapped control draws `<name> <raw>` (*Traps*); a mapped button draws nothing | verified | 317 |
+| **A control draws exactly one row, and it is `u_map`'s.** No `m_` file sends a control's row to `disp` — `m_nano`, `m_404` and `m_launchpad` publish on `param` alone, as `m_organelle` always has. A fader mapped to `volca-cc 41` draws `volca-cc41 64` and nothing beside it; an unmapped control draws `<name> <raw>` (*Traps*); a mapped button draws nothing. **The SP-404 included:** its `sp-pad` and `sp-bank` rows are gone too, and a hit draws `sp-b5 90`, one name carrying bank and pad — decided 2026-10-20, at the cost of a fast run of pads meeting the five-row limit with no stable row to fall back on | verified | 317 |
 | `map-assert.py` reads every `m_` file's `[s disp]` count, exactly — `m_organelle`'s one carries aux's `modal shift`, never a control | verified | 317 |
 
 ### Values are normalised to 0–1, and the divisor is not uniform

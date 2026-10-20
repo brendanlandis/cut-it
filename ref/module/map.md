@@ -35,7 +35,7 @@ mode-1 slider-1  volca-cc 41
 | Field | Is | Evidence | Item |
 |-------|----|----------|------|
 | `<mode>` | The **second** atom of the `mode` bus message — `mode-1`, not `compose mode-1`. The class is `u_err`'s business | verified | — |
-| `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `sp-hit` | verified | — |
+| `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `sp-a1` | verified | — |
 | `<dest>` | One of the **twelve** below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
 
@@ -97,6 +97,11 @@ there and nowhere else.
 ⚠️ **The held row's second number rides in the UNIT field.** `g_oled` runs a row's value through
 `makefilename %g`, which refuses a symbol, so `(120)` cannot be the value — it is a free symbol in
 the third slot.
+
+| | Evidence | Item |
+|---|----------|------|
+| **A control draws exactly one row, and it is `u_map`'s.** No `m_` file sends a control's row to `disp` — `m_nano`, `m_404` and `m_launchpad` publish on `param` alone, as `m_organelle` always has. A fader mapped to `volca-cc 41` draws `volca-cc41 64` and nothing beside it; an unmapped control draws `<name> <raw>` (*Traps*); a mapped button draws nothing | verified | 317 |
+| `map-assert.py` reads every `m_` file's `[s disp]` count, exactly — `m_organelle`'s one carries aux's `modal shift`, never a control | verified | 317 |
 
 ### Values are normalised to 0–1, and the divisor is not uniform
 
@@ -246,9 +251,9 @@ bus goes straight back into the store, so the truncated value is re-saved; the a
 **by the restore**, so the correct `mode-1` the seed stored at 500 ms is replaced before it ever
 reaches the disk. Every boot reads the bad value, re-stores it and writes it back.
 
-⚠️ **It is invisible on every surface but one.** `m_nano`, `m_404` and `m_launchpad` post their own
-`disp` rows and theirs land *after* `u_map`'s, so they win; `m_organelle` is the only device file
-that posts none (item 242). A dead lookup therefore shows up **only** on the Organelle's own knobs.
+⚠️ **On screen it reads as every mapped control drawing its raw row** — `og-knob-1 0` where a BPM
+belongs, `slider-1 64` where `volca-cc41 64` does — because a control's only row is `u_map`'s and a
+dead lookup sends every control down the unmapped branch (item 317). Nothing else reports it.
 
 **Fix:** **the key-setter refuses a `mode` that is not two atoms and says `fail u_map bad-mode`**,
 the way an unknown *destination* does — item 297.
@@ -358,9 +363,9 @@ it is equally safe and blind — a held knob never reaches the lookup, so nothin
 control from a suppressed one. The lookup is a pure read and always runs; only the emission is
 gated.
 
-⚠️ `m_nano`, `m_404` and `m_launchpad` still post their own rows for the same controls, and theirs
-land **after** this one, so they win and nothing about those surfaces changes. `g_oled` updates a row
-in place by name, so the duplicate costs nothing.
+⚠️ **It is the only row the control gets.** No `m_` layer posts one of its own (item 317), so this
+report is what makes `slider-3`, `sp-b5` and `pad-43` name themselves on the screen — a release
+included, at velocity 0, wherever the device layer publishes one.
 
 ### A target sitting on a rail can never be crossed
 
@@ -459,10 +464,10 @@ scales the value once, passes `arg scaled` to the handler beside it only while l
 own row, live or held, in its own units. The alternative — one scaling in the handler and another in
 a shared readout — is the duplication item 240 was, and it grows with every destination.
 
-⚠️ **The row is named for the destination, and the `m_` layers still post their own rows.** A real
-nanoKONTROL fader mapped to `volca-cc 41` therefore draws two rows, `slider-1 64` from `m_nano` and
-`volca-cc41 64` from here. The Organelle's knobs draw one, because `m_organelle` posts none. Whether
-`m_nano` should stop posting raw rows for mapped controls is a taste call: a loosie on `cut-it/inbox`.
+**The row is named for the destination, and it is the only one.** A nanoKONTROL fader mapped to
+`volca-cc 41` draws `volca-cc41 64` and never `slider-1 64` beside it: the `m_` layers publish on
+`param` alone and leave the screen to this file, as `m_organelle` always did for the knobs. One row
+per control, so two faders moving are two rows rather than four (item 317).
 
 ### The value is parked and the name does the work
 
@@ -517,6 +522,10 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
 
 - ⬜ **Live re-assignment — editing a mapping from the instrument rather than the file — is v0.4**,
   and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **An unmapped Launchpad pad's pressure draws a raw row**, because the unmapped report exempts
+  only `og-key-*` — and pressure is a continuous stream per held pad, which `m_launchpad` keeps off
+  `disp` for exactly that reason. Measured on the Mac: `pad-11-at 64` reaches the screen. Latent
+  until polyphonic aftertouch is enabled on the device. See `cut-it/inbox`.
 - ⬜ **The mode names are placeholders.** `mode-1`…`mode-6` say nothing about what each mode is for,
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode

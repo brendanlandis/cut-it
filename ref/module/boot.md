@@ -130,7 +130,8 @@ Each is a claim and its fix. How any of them was found is in the git history.
 
 ⛔ `alsaconnect.sh` wires the **lowest-numbered** MIDI client to Pd's Midi-In 1, and when the
 nanoKONTROL enumerates below the Launchpad that puts the nano on `m_launchpad`'s channel block. One
-fader move then publishes **both `slider-1` and a phantom `lp-cc-1`** to `param` and `disp`.
+fader move then publishes **both `slider-1` and a phantom `lp-cc-1`** to `param`, and both draw a
+row.
 
 **Nothing in Pd can fix it.** Once two devices share Midi-In 1 they are both genuinely "channel 1";
 `m_launchpad`'s channel test is correct and powerless.

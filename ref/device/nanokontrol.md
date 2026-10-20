@@ -15,8 +15,10 @@ Internal/External switch is a nanoKONTROL2 feature. ✅ Tested on this hardware 
 item 245. Pd cannot light anything here, which is why every button is momentary and all visible state
 lives on the Launchpad or the OLED.
 
-`m_nano.pd` takes its Pd channel block as a creation argument and decodes every control onto `param`
-and `disp`.
+`m_nano.pd` takes its Pd channel block as a creation argument and decodes every control onto
+`param`. It posts no row of its own: what the OLED shows for a control is `u_map`'s — the
+destination's row when the mode maps it, the raw row when nothing does. See
+[map.md](../module/map.md), item 317.
 
 ## Facts
 

@@ -169,9 +169,10 @@ and `disp` are — so the Source column names the consumer. `u_tempo` owns the B
 transport state; it does not own the right to change them. **`clock` is the exception**: only
 `u_tempo` writes it, because it is a publication of something already decided.
 
-**`param` is a control changing; `disp` is a request to show it**, and an `m_` layer publishes to
-both off one `[t a a]`, action first and report second. **Why there are two buses rather than one**
-is on [architecture.md](architecture.md) under *Request buses and publications*.
+**`param` is a control changing; `disp` is a request to show it**, and an `m_` layer publishes a
+control on `param` only. **The row a control draws is `u_map`'s alone**, because it is the only file
+that knows what the control means — item 317. **Why there are two buses rather than one** is on
+[architecture.md](architecture.md) under *Request buses and publications*.
 
 Two consequences bind whoever writes an `m_` layer, and both are deliberate:
 

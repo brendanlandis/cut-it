@@ -142,9 +142,11 @@ allowlist does not say is that **they are not all the same kind of thing.**
 `clock` is the exception because it is a publication of something already decided.
 
 **`param` is a control changing; `disp` is a request to show it**, and the distinction is the whole
-reason for a second bus. `m_nano` and `m_organelle` publish to both off one `[t a a]`, action first
-and report second. That duplicates the data where teaching `g_oled` to listen on `param` would not,
-and it was the right trade: **not touching a hardware-verified display file beat saving a send.**
+reason for a second bus. **A device layer publishes on `param` alone, and `u_map` makes the
+request**, because it is the only file that knows what a control means: the row it draws is the
+destination's — `volca-cc41 64`, `bpm 157` — or `<name> <raw>` for a control nothing maps. When the
+`m_` layers posted their own row as well, a mapped fader drew two (item 317). `g_oled` still listens
+on `disp` alone, so no display file has had to learn that `param` exists.
 
 ## Output devices are WIRED, not given a bus
 
@@ -226,7 +228,7 @@ cheaper than retrofitting it once the filter logic exists, which is why `mode` a
 
 | Prefix | Is | Talks on |
 |--------|-----|----------|
-| `m_` | One physical device | Publishes `param` and `disp`; knows no meaning |
+| `m_` | One physical device | Publishes `param`, never a control's row; knows no meaning |
 | `u_` | One instrument-wide utility | Buses, and owns one of them |
 | `g_` | One display surface, and its sole owner | Consumes `disp` |
 | `c_` | **Instantiable** — there is more than one | Its creation arguments |

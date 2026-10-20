@@ -35,21 +35,21 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 48 | `module/map` |
+| `map-assert.sh` | 63 | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 42 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
-| `nano-assert.sh` | 23 | `device/nanokontrol` |
+| `nano-assert.sh` | 26 | `device/nanokontrol` |
 | `organelle-assert.sh` | 21 | `device/organelle` |
 | `phone-assert.sh` | 55 | `device/phone` |
 | `sp404-assert.sh` | 17 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 
-**682 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**700 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **675**; the difference is
+total cannot be derived from a run by summing. Totalling the run gives **693**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 42 come from TWO Pd runs and one tally**, which is the only entry here
@@ -373,7 +373,7 @@ halt the clock** — the transport pauses the subscribers, it does not clear the
 ## `map-assert.sh`, `sp404-assert.sh`, `volca-assert.sh` — the map and the output devices
 
 ```sh
-./test/gate/map-assert.sh            38 checks, ~7 s — the lookup, and the static lint
+./test/gate/map-assert.sh            63 checks, ~7 s — the lookup, and the static lint
 ./test/gate/sp404-assert.sh          17 checks, ~7 s — the 404 in BOTH directions
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
@@ -391,7 +391,10 @@ somewhere; what the destination then does with the value is the device gate's bu
 out of `cut-it-map.txt` and asserts that **every destination a row can name exists as an argument on
 that route** — the allowlist guard, enforced by reading, exactly the way this project audits its
 global sends. It also catches a **duplicate `(mode, control)` pair**, which `text search` resolves
-to the *first* match only, so a repeat is dead and silent. That half runs without Pd at all.
+to the *first* match only, so a repeat is dead and silent. And it reads every `m_` file's `[s disp]`
+count, **exactly** — zero everywhere but `m_organelle`'s one, which carries aux's modal — because a
+device layer posting a control's row beside `u_map`'s draws that control twice, and a duplicate of an
+*unmapped* control's row is invisible on the screen (item 317). That half runs without Pd at all.
 
 The other half of each gate rewrites the MIDI object boxes in a scratch copy — **all seven classes, from the one
 `MIDI_EXPECT` in `test/gate/lib-scratch.sh`**, shared with every other gate that makes a copy. ⛔
@@ -421,6 +424,11 @@ non-existent destination, and a duplicate row. ⛔ **It PASSED a disarmed rate l
 try** — the burst window fires in one logical instant and `[del 0]` still defers to the next
 scheduler tick, so it proved *drops-rather-than-queues* and nothing about the interval. A window of
 two triggers **2 ms apart** was added, which straddles the 5 ms gate: 1 armed, 2 disarmed.
+
+**One row per control** (item 317) was made to fail against the `m_nano`, `m_404` and `m_launchpad`
+that still posted their own rows: four red in `nano-assert` — an unmapped slider drawn twice, a
+mapped one drawn as `slider-1` beside `volca-cc41`, the 404's CTRL knob and a Launchpad ring button —
+two in `sp404-assert`, and the static count; the file-set check went red on a stray `m_` file.
 
 ⛔ **It also HUNG once instead of failing** — the driver generator errored, its exit status was
 unchecked, Pd was handed a file that did not exist, and the `; pd quit` that lives *inside that file*

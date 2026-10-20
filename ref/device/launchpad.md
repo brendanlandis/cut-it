@@ -10,8 +10,9 @@ in **Programmer Mode**, where every built-in behaviour is disabled and each butt
 CC number the patch defines. 96 button LEDs plus the logo — 97 addressable — painted across an index
 span of 1–108.
 
-`m_launchpad.pd` is the only file that talks to it: Programmer Mode, the safe exit, pads and ring
-onto `param` and `disp`, pressure onto `param` alone, and the replug watchdog. `g_grid.pd` owns its
+`m_launchpad.pd` is the only file that talks to it: Programmer Mode, the safe exit, pads, ring and
+pressure onto `param`, and the replug watchdog. The row a pad or ring button draws is `u_map`'s
+(item 317). `g_grid.pd` owns its
 LEDs and nothing else does.
 
 The unit is a **MK3** (announced Jan 2020; a 09/2020 build date rules out MK1). Use the MK3

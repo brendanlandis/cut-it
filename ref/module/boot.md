@@ -149,8 +149,8 @@ so far would leave a hole the next reboot could walk through.
 ### Shutting mother's own MIDI off is the FIRST thing, and it takes two sends
 
 ⛔ mother's OMNI CC mapping collides head-on with the nanoKONTROL, and mother's MIDI **out** echoes
-the Organelle's keys and knobs to every port. Both are on
-[organelle.md](../device/organelle.md) — what belongs here is only the **when**: `midiInGate 0` and
+the Organelle's keys and knobs to every port. Both are in
+Reference (`~/Sites/!reference/critter-guitari-organelle-1.md`) — what belongs here is only the **when**: `midiInGate 0` and
 `midiOutGate 0` at `loadbang`, then `midiInGate 0` **again at 2 s**, because the mother binary pushes
 its own `1` over OSC about half a second in and silently overwrites the first send.
 

@@ -1,52 +1,27 @@
 <!-- schema: freeform -->
 # Wifi
 
-**The Organelle drops its wifi on house networks, and this page is everything established about
-why.** It is narrowed, not solved. The fault matters because the phone display is the instrument's
-second screen — [device/phone.md](device/phone.md) — and a dead display mid-set is the failure
-being designed against.
+**The Organelle drops its wifi on house networks, and what is established about why is in Reference:**
+`~/Sites/!reference/critter-guitari-organelle-1.md` (under *Wifi*: where the credentials live, the roam
+fault and its reproduction, the evidence ledger by item number, and the Organelle as its own access
+point). It is narrowed, not solved. The fault matters because the phone display is the instrument's
+second screen — [device/phone.md](device/phone.md) — and a dead display mid-set is the failure being
+designed against. **Item numbers still resolve by `grep` — now in `~/Sites/!reference/`.**
 
-**This page holds the facts: the mechanics, the evidence, the tools, and the stage procedure.**
-What is still open, what to try when it recurs and when to stop is `cut-it/wifi-roam-fault` in
-`!projects` — closed 2026-10-10 after two months without a recurrence, and reopened (moved back to
+**This page holds Cut It's side: the tools that watch it, what to do when it recurs, and the stage
+procedure.** What is still open, what to try when it recurs and when to stop is `cut-it/wifi-roam-fault`
+in `!projects` — closed 2026-10-10 after two months without a recurrence, and reopened (moved back to
 `active/`) if it recurs. ⚠️ **Do not spend session time on this unless it recurs.**
 
-**The boot hang that used to look like a wifi fault is not one** — it is a USB mass-storage fault
-with wifi as its most visible casualty, and it lives on [device-os.md](device-os.md).
+**The boot hang that used to look like a wifi fault is not one** — it is a USB mass-storage fault with
+wifi as its most visible casualty, and it lives on [device-os.md](device-os.md).
 
-## Where the credentials actually live
+## Credentials
 
-**`$USER_DIR/wifi.txt` — plain text, alternating SSID and password lines, two per network.**
-Measured on the device in Phase 7. `USER_DIR` resolves to **`/sdcard`** in normal operation, which
-is mounted `rw`, so **adding a network is appending two lines and needs no `remount-rw.sh`** — that
-is only for the `ro` rootfs.
-
-⚠️ **`/etc/wpa_supplicant/wpa_supplicant.conf` is a red herring.** It is the stock 55 KB example
-file dated 2015, still carrying `ssid="example"` and `ssid="eap-sim-test"`. **Nothing reads it.**
-The real path is `wifi_setup.py` → `wifi.txt` → the front panel's own `wifi_control.py`, which
-builds a `wpa_supplicant` config inline with `wpa_passphrase` from the credentials in `wifi.txt`.
-
-⚠️ **AND `/root/fw_dir/scripts/wifi-config.sh` IS A SECOND RED HERRING — do not call it.** ✅
-Measured (item 161): on this device it is a **stale factory template** dated Feb 2020, hardcoded to
-`wpa_passphrase "name" "pass"`. The SSID is literally `name`, and the passphrase is 4 characters
-where `wpa_passphrase` rejects anything under 8 — so it emits **nothing** and the supplicant gets
-an empty config. Running it **kills a working `wpa_supplicant` and puts nothing in its place.**
-`tools/wifi-reassociate.sh` is the correct sequence — it mirrors what the front panel does, with
-the real credentials.
-
-```sh
-ssh root@organelle.local 'printf "SSID\nPASSWORD\n" >> /sdcard/wifi.txt'
-```
-
-⚠️ **The passwords are stored in the clear** — that is the device's design, not a choice available
-to us. **`wifi.txt` must never be copied into this repo**, and [device/](../device/) deliberately does
-not back it up.
-
-**Adding a second network is the cheap way to a self-contained stage link**, and much lower risk
-than `hostapd`: the Organelle simply joins whichever is present and **SSH survives**, where
-bringing up an AP drops it. ⚠️ **An iPhone Personal Hotspot needs cellular**, so it cannot be
-combined with airplane mode — the two are mutually exclusive, which is why the AP the Organelle
-hosts is the stage answer rather than a hotspot.
+`$USER_DIR/wifi.txt` is plaintext, never copied into this repo, and [device/](../device/) deliberately
+does not back it up. ⚠️ `/root/fw_dir/scripts/wifi-config.sh` is a stale template and
+`/etc/wpa_supplicant/wpa_supplicant.conf` is a red herring (Reference): `tools/wifi-reassociate.sh` is
+the correct sequence — it mirrors what the front panel does, with the real credentials.
 
 ## The tools that watch it
 
@@ -99,95 +74,7 @@ drop** — its opening block reads `ipv4:` empty followed by `TRANSITION NONE ->
 otherwise a configuration change is credited or blamed for a transition that is only somebody
 pressing Connect.
 
-## ⚠️ The roam fault — what is known, and how to reproduce it
-
-**On house wifi the device loses its IPv4 lease and does not get it back.**
-
-✅ **The fault is a ROAM breaking a RUNNING `dhcpcd`.** The device roams between the two AP radios,
-and a `dhcpcd` running across that association change never re-acquires.
-
-✅ **`dhcpcd` is EXONERATED** — caught in full with `-d` running *through* a roam. It detects the
-carrier going, deconfigures through its own hooks, detects re-acquisition, re-solicits at once and
-backs off correctly. **It sends DISCOVER and nothing ever answers.** ⚠️ **`syslogd` is not running
-on this device**, so `dhcpcd`'s own log goes nowhere — run it with `-d` in the foreground.
-
-| Established | |
-|---|---|
-| **The link is never the problem** | A static address reaches the gateway with **0% loss**, on either AP |
-| **A fresh `dhcpcd` on a SETTLED association succeeds** | On *either* AP, first DISCOVER, in seconds. That is why only the reassociate rung ever worked |
-| ⛔ **The interval was never a timer or a lease expiry** | 2 h 09 m, 3 h 12 m, 13 h 32 m — it is *how long until the AP hands the device off*. **Stop asking for the router's lease time** |
-
-**Why nothing answers a DISCOVER after a roam is not established** — see *Open* below.
-
-**The repro — three seconds, no waiting:**
-
-```sh
-wpa_cli -i wlan0 scan ; sleep 4      # ⚠️ required: roam only targets a cached BSS
-wpa_cli -i wlan0 roam <other-bssid>  # IPv4 gone within 3 s
-```
-
-**And the one-line check for whether the fault is present right now:**
-
-```sh
-ssh root@organelle.local 'ip addr show wlan0 | grep "inet "'   # NO OUTPUT == this fault
-```
-
-⚠️ The device is still **associated** when this returns nothing — that is the whole point. "Drops its
-wifi" describes the symptom and misdescribes the cause.
-
-## The evidence, item by item
-
-Every measurement the investigation rests on, and the six that were overturned. ⛔ **The tools cite
-these numbers by bare item — `wifi-watch.sh` alone names seven — and `grep item N` is the only
-thing that resolves them. Never delete a row; never reuse a number.**
-
-| Item | Finding | Evidence |
-|------|---------|----------|
-| 81 | **The Organelle drops its wifi after a while.** The original observation — the symptom, not the cause | verified |
-| 133 | **Item 81 caught in the act, and it is NOT the radio dropping the network.** `iw dev wlan0 link` stayed associated throughout | verified |
-| 169 | ⛔ **The trigger is a roam to a DIFFERENT BSSID**, and "same BSSID" was wrong. Thirteen hours of healthy heartbeats on `…a2:01`; the transition record reads `…c9:25` | verified |
-| 175 | ✅ **The fault reproduces on demand in three seconds.** `hildegard` is served by two APs; forcing a handoff reproduces it exactly | verified |
-| 180 | **Where DHCP stops.** ⚠️ **`syslogd` is NOT running on this device**, so `dhcpcd` logged into a void for the whole investigation. Its "the REQUEST is never ACKed" is **weaker than it looks** — see below | verified |
-| 159 | ✅ **The fault is DHCP-side, so a card swap would prove nothing.** The link probe assigned the last-known-good address and route and reached the gateway. ⚠️ Second occurrence at **2 h 09 m** after boot against the first at ~3 h 12 m — **not a fixed interval** | verified |
-| 184 | ✅✅ **`dhcpcd` is EXONERATED.** Caught with `-d -B` running *through* a forced roam on a 150 s budget: DISCOVER ×3, **no OFFER, ever**. It detects, deconfigures, re-solicits and backs off correctly | verified |
-| 214 | ⚠️ **A failure happened on the ROUTER, not the satellite** — which overturns the standing claim `wifi-watch.sh`'s own comment is built on | verified |
-| 215 | ⚠️ **The two DHCP probes gave OPPOSITE answers** seven hours apart, same script, same client, same SSID. Nothing in the record predicted it | verified |
-| 220 | ✅ **The outage is ~132 seconds, measured** — and the "~20 s" in `wifi-watch.sh`'s own comment is **wrong** | verified |
-| 212 | ✅ **The ladder fired on two real failures and recovered both**, rung 1, first try, no other rung attempted | verified |
-| 213 | ⛔ **The fault SURVIVED firmware 2.7.6.6 — twice in 15 hours.** This is the answer the leave-it-running task was waiting for, and it is the negative one | verified |
-| 221 | ✅ **Channel 1 took, and helped throughput enormously** — 14.4 MBit/s MCS 1 → **72.2 MBit/s MCS 7**. But it did **not** separate the two APs, exactly as predicted | verified |
-| 298 | ⛔ **THE DONGLE IS 2.4 GHz ONLY, so per-band separation cannot work.** `iw phy` lists **Band 1 and nothing else** — zero 5 GHz channels. Both `hildegard` radios the Organelle can reach are on 2.4 GHz by necessity, and moving one to 5 GHz would not separate the pair, it would make one **invisible** | verified |
-| 299 | ⛔ **A hand-connected boot logs a phantom `TRANSITION`**, because the lease arrives after `ExecStartPre`'s 120 s bound expires — see *The tools that watch it* | verified |
-| 300 | **The Phase B baseline, measured 2026-08-12 before any router change.** Both `hildegard` BSSIDs on **freq 2412 — channel 1, co-channel**: `a6:40:a0:5e:a2:01` at −31 dBm and `a6:40:a0:5e:c9:25` at −43 dBm, 12 dB apart. ⚠️ The second appears **only after an active scan**; `scan dump` alone shows just the associated one | verified |
-
-**Six overturned findings.** The rows stay because the tools cite the numbers; the third column is
-what replaced each one. ⚠️ **Four of them were defects in the measuring rig, not in the device.**
-
-| Item | Was claimed | Overturned by |
-|------|-------------|---------------|
-| 179 | *"The Organelle cannot get a lease on the satellite"* | **Item 182**, thirty minutes later — a controlled two-arm test **on the satellite** leased twice, in seconds, on the first DISCOVER. ⛔ **Over-claimed from a single A/B** |
-| 178 | `UNRECOVERED` in the watcher's log | A **false negative** — the rung worked and the timeout was too short. The device had an address shortly afterwards |
-| 161 | The recovery ladder's own verdict | ⚠️ **Two faults in our own measuring rig.** Rung 3 ran `/root/fw_dir/scripts/wifi-config.sh`, a **stale factory template** — see *Where the credentials actually live* above |
-| 167 | The watcher's single-instance guard | ⚠️ **Only as good as the pidfile, and deleting it by hand disarms it.** Twice in one session two watchers ran, both times after a manual pidfile removal, because `wifi-poll.sh` relaunches whenever the stamp goes stale |
-| 187 | The AP-visibility guard in the steer | ⚠️ **A sixth defect in the measuring rig: `iw scan` is not `iw scan dump`.** `iw dev wlan0 scan` **triggers a new scan**, so run right after a `wpa_cli scan` the two contend — and it reported NOT VISIBLE for an AP sitting at **−47 dBm** |
-| 163 | A rewritten self-match check | ⛔ **The self-match trap bit a THIRD time, through a check written to avoid it.** A `/proc/*/cmdline` scan and a `case` pattern have the same flaw — **any** check whose own command line contains the string matches itself |
-
-✅ **A boot-started `wpa_supplicant` DOES have a working `ctrl_interface`** — item 246, measured
-after a real power cycle rather than assumed. The supplicant comes up **29 s after boot** as
-`wpa_supplicant -B -D nl80211,wext -i wlan0 -c /dev/fd/63`, the socket exists at
-`/var/run/wpa_supplicant/wlan0`, and `wpa_cli -i wlan0 status` answers with the live BSSID and SSID.
-
-⛔ **So the roam repro needs no special setup and restarts nothing.** `wpa_cli -i wlan0 scan` then
-`wpa_cli -i wlan0 roam <other-bssid>` can be run against the supplicant the device booted with, which
-is the only version of the fault worth reproducing — a hand-started supplicant is a different
-configuration and was always the weaker test.
-
-⚠️ **Two pieces of evidence are weaker than they look.** Item 180's *"the REQUEST is never ACKed"*
-came from a capture cut off by a `timeout 20` with the retry schedule still running — the failure
-is at **DISCOVER**. And **`dhcpcd -T` stops at the OFFER** and never sends a REQUEST, so it
-exercises only the half that works.
-
-**Operating the watcher:**
+## Operating the watcher
 
 - **Run `./tools/wifi-report.sh --mark`** once a finding is written up, or the report reads the
   same before and after the next failure.
@@ -206,14 +93,9 @@ fallback.** It **drops IPv4 itself on every fire**, so it manufactures the sympt
 avoid — and worse, **it hides the answer by preventing recurrence**, leaving nothing to measure.
 Item 214 is why it stopped being trusted.
 
-## The Organelle as its own access point
+## The stage procedure
 
-**This is the stage configuration**, and it is the vendor's own path rather than a `hostapd`
-project. `start-ap.sh` reads `$USER_DIR/ap.txt` — first line network, last line password — and
-calls `create_ap --no-virt -n wlan0 $NET $PW`, defaulting to `Organelle` / `coolmusic`. This rig
-uses **`organelle`**, with the password in `/sdcard/ap.txt` on the device, and the phone leases **192.168.12.109** from it.
-
-### ⛔ THE VENUE SEQUENCE — this is the operating procedure, not one option among several
+**The venue sequence is the operating procedure, not one option among several.**
 
 **No laptop, no venue wifi, phone in airplane mode:**
 
@@ -230,42 +112,16 @@ service to write and none should be added.** ⚠️ The consequences are already
 to mistake for faults: a hand-connected boot logs a phantom `TRANSITION` (item 299), and **a set run
 without step 1 is a client on house wifi again**, carrying the roam fault onto the stage.
 
-✅ **And it removes the roaming fault outright, which is a second reason to host the network.**
-`start-ap.sh` runs `killall wpa_supplicant` before `create_ap`, so in AP mode the Organelle has
-**no client association at all** — it serves DHCP rather than requesting it. The fault that drops
-the IPv4 lease (items 169–172) requires a client association being handed off to another BSSID,
-and **none of that exists here.** ⚠️ **That is immunity to that one fault, not proof the stage
-link is solid** — see *Open*. And it only holds if the AP is actually started: **a set run on
-house wifi is a client again.**
-
-⚠️ **Start the AP from the SYSTEM MENU, not from a patch.** A patch that launches `start-ap.sh`
-loses it the moment the next patch loads — `create_ap`, `hostapd` and `dnsmasq` all die with the
-Pd that spawned them, **even behind `setsid nohup`**. Measured; item 129.
+⚠️ **Start the AP from the SYSTEM MENU, not from a patch** (Reference, item 129):
 `tools/stage-patches/Start AP/` is kept only as the record of why.
 
-⚠️ **The passphrase must be 8–63 characters.** `create_ap` rejects anything shorter — and
-`start-ap.sh` runs `killall wpa_supplicant` *before* calling it, so a rejected passphrase leaves
-the device with **no wifi and no AP**, recoverable only by power cycle.
+⛔ **SO AN AP SESSION HAS TO BE SELF-SUFFICIENT BEFORE IT STARTS.** Staged on the device beforehand:
 
-⚠️ **`$NET` and `$PW` are passed unquoted**, so an AP name with spaces breaks — unlike `wifi.txt`,
-which handles them. Keep the AP name one word.
-
-⚠️ **The AP has no internet** — `create_ap` is called with `-n`, and one radio cannot be both AP
-and client. **A Mac joined to it is offline**, so an AP session cannot be driven from a laptop that
-needs a network.
-
-⛔ **SO AN AP SESSION HAS TO BE SELF-SUFFICIENT BEFORE IT STARTS.** Bringing the AP up drops the
-house link, the ssh session and every Mac-side tool at once, and there is no getting them back
-without ending the session. Staged on the device beforehand:
-
-- **`/sdcard/ap.txt`**, passphrase valid — see the 8–63 rule and the unquoted-`$NET` trap above.
+- **`/sdcard/ap.txt`**, passphrase valid (8–63 characters, one-word name — Reference).
 - **The instrument deployed and loaded**, and the phone's scene open.
 - **Anything the session needs to record written to `/sdcard/`** — the `AP Probe` pattern, read
   afterwards; it is indexed in [tools/README.md](../tools/README.md). ⚠️ **Nothing has to be caught
   live**, which is the same reasoning as `u_err`'s persistent log.
-
-✅ **Recovery is a power cycle.** `createap.service` is `disabled`, so the device comes back on the
-house network by itself. Nothing about this is sticky.
 
 ## Open
 

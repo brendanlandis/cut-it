@@ -25,7 +25,8 @@ python3 test/gate/docs-check.py -v
 
 | Where | Holds | Schema |
 |-------|-------|--------|
-| `ref/device/` | One physical thing each. **Fixed set** — the hardware decides it | `module` |
+| `ref/device/` | How Cut It **uses** one physical thing each. **Fixed set** — the hardware decides it. What the thing *is* is in Reference, below | `module` |
+| `~/Sites/!reference/` | **What is true of an outside device, app, plugin or service, whoever uses it** — specs, MIDI, behavior, measurements, traps. One page per thing, `used_by: [cut-it]`. Not in this repo and not gated; save, never commit there. A new device fact goes here, never on a `ref/device/` page | frontmatter + free |
 | `ref/module/` | One instrument concern each. **This is what v0.4 grows** | `module` |
 | `ref/` | Cross-cutting: `conventions`, `architecture`, `README` | `rules` / `freeform` |
 | `!projects/cut-it/` | Everything open. **`ref/` states what IS; `!projects` states what's OPEN.** The repo beside this one: one file per project under `active/`, loosies in `inbox.md`. A page cites one as `cut-it/<slug>` or `cut-it/inbox`, and the gate resolves it | — |
@@ -51,8 +52,11 @@ Line 1 declares the schema. `##` is the fixed skeleton and must appear exactly, 
 ## Open           unknowns only, each naming its owner: `cut-it/<slug>`, `cut-it/inbox`, or NO PLAN OWNS THIS
 ```
 
-**What it is / Facts / Traps are about the THING. Design is about US.** That distinction is why
-`Design` exists — the Launchpad's three-tier decision and the 404's accepted mic bleed are neither
+**On a `ref/device/` page the same four sections are about CUT IT'S USE of the thing:** the outside
+device's own facts and traps are on its Reference page (`~/Sites/!reference/<slug>.md`), which the page
+links by that path in backticks (a markdown link would fail the gate's dangling check). If a section
+has nothing of Cut It's, say so in a line. **What it is / Facts / Traps are about the THING. Design is
+about US.** That distinction is why `Design` exists — the Launchpad's three-tier decision and the 404's accepted mic bleed are neither
 measured behaviour nor something that will bite you, and they were being crammed into `Facts`.
 
 ⚠️ **`Design` is last because most of it is forward-referencing** — "the reject outlet is the normal
@@ -129,8 +133,9 @@ pad map and the gate goes red **at pad 5** — before deploy, before hardware.
 
 ## Item numbers are FACT IDS
 
-`item 228` is not "the 228th thing measured" — it is the ID of the `pgmout` row in
-`ref/device/volca.md`. About 180 citations across the project resolve by grep. **Never reuse a
+`item 228` is not "the 228th thing measured" — it is the ID of the `pgmout` row (now in Reference,
+`~/Sites/!reference/pure-data.md`). About 180 citations across the project resolve by grep, in this repo
+and in `~/Sites/!reference/`; the device facts' item numbers moved there unchanged. **Never reuse a
 number**; new facts take the next one.
 
 ## Material that fits no section

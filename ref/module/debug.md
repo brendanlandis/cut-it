@@ -163,7 +163,7 @@ trade for a tool whose content is six words and four numbers.
 ⛔ **It deliberately does not take the encoder, although it is allowed to.** Asking means banging
 `enableSubMenu`, and that is an **override which takes the click as well** — the press that leaves a
 running patch. **A debug tool you cannot get out of at a venue is worse than one you steer with the
-keys.** Items 313 and 314 on [organelle.md](../device/organelle.md). The lowest key sends `goHome`
+keys.** Items 313 and 314 in Reference (`~/Sites/!reference/critter-guitari-organelle-1.md`). The lowest key sends `goHome`
 and every screen's help row says so, so the encoder would buy scrolling and cost the exit.
 
 **The keyboard is the menu because it is the one surface that cannot go missing.** Knobs, the aux

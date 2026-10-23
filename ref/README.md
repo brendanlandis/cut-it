@@ -1,8 +1,12 @@
 <!-- schema: freeform -->
 # `ref/` — one page per module
 
-**A module is either a physical device or one instrument concern.** Everything about it lives on its
-page: what it is, what was measured, what will bite you, and how Cut It chooses to use it.
+**A module is either a physical device or one instrument concern.** Its page here holds how Cut It
+uses it and what Cut It chose. ⛔ **What is true of an outside device or program — what it is, its
+specs and MIDI, what was measured, what will bite you — lives in Reference** (`~/Sites/!reference/`,
+one Markdown page per thing, shown on Back Office's /reference page), and a `ref/device/` page links
+to it. **A new device fact goes on its Reference page, not here.** `grep -l "used_by:.*cut-it"
+~/Sites/!reference/*.md` lists Cut It's.
 
 **A device-major layout gives a fact exactly one place it can go**, which is the only thing that
 resists drift, because the docs are written by agents who cannot know what the other files already
@@ -14,7 +18,7 @@ say — a topic-major layout spreads one device over four files, one session at 
 
 | Kind | Where | Pages |
 |------|-------|-------|
-| **Devices** — one physical thing each | `ref/device/` | `launchpad` · `nanokontrol` · `organelle` · `phone` · `sp404` · `volca` |
+| **Devices** — how Cut It uses one physical thing each | `ref/device/` | `launchpad` · `nanokontrol` · `organelle` · `phone` · `sp404` · `volca` |
 | **Modules** — one instrument concern each | `ref/module/` | `audio` · `boot` · `debug` · `display` · `error` · `map` · `presence` · `state` · `tempo` |
 | **Cross-cutting** | `ref/` | `architecture` · `conventions` · `workflow` · `device-os` · `wifi` · `rig` · `README` |
 | **Parking** | `ref/` | `_unfiled` — must be empty |
@@ -65,6 +69,7 @@ did.** v0.4 grows `ref/module/` — one page per filter stage, the drum mode, th
   comment has no link syntax, so it cites a bare `item NNN` or a bare page path — which is what
   makes the number write-once instead of write-twice.
 
-⚠️ **This standard is for NEW material only.** The existing device and module pages describe
-hardware that cannot be re-derived from the code, and an agent handed this project cold has no
-other source for it. **They stay as they are.**
+⚠️ **This standard is for NEW material only.** The module pages describe code that is mostly
+re-derivable; the hardware facts that cannot be re-derived from the code are in Reference, which an
+agent handed this project cold must read (`used_by: [cut-it]`). **Item numbers are carried over there
+unchanged:** `item NNN` resolves by `grep` in `ref/` and in `~/Sites/!reference/`.

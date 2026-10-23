@@ -6,7 +6,10 @@
 ## What it is
 
 An iPhone running PdParty on the same network, used as **an unlimited plain-English display** — and,
-more valuable, as the answer to the Organelle having no Pd console.
+more valuable, as the answer to the Organelle having no Pd console. What PdParty and the phone are —
+ports, scene structure, rendering quirks, the OSC bridge, network behavior — is in Reference:
+`~/Sites/!reference/pdparty.md` (and the Pd objects it exercises in `~/Sites/!reference/pure-data.md`).
+This page is the status link Cut It builds on them.
 
 `u_net.pd` is the fourth display surface and the only file that talks to it. It consumes `disp` like
 the `g_` arbiters but **owns no selector on it**, so adding it cost `g_oled`'s route nothing. It
@@ -16,7 +19,7 @@ repeats it, and rebuilds its own socket — which a phone leaving the network de
 **The link runs both ways.** Outbound it carries four addresses — parameters, status, a heartbeat and
 a held alert. Inbound it takes **a closed vocabulary of three diagnostic commands**, acknowledges
 each one, and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
-the heartbeat counter and measured under *Broadcast* below; that is the evidence anything
+the heartbeat counter and measured under *Broadcast* in Reference and below; that is the evidence anything
 time-critical would have to answer to.
 
 **The one decision this page turns on: the inbound vocabulary is closed, and the closure is the
@@ -24,6 +27,8 @@ feature.** An inbound socket is an attack surface on a shared network, and a set
 in one line is what makes the first one safe to reason about.
 
 ## Facts
+
+What the app and phone do is in Reference. This is what is true of the link.
 
 ### Addresses and ports
 
@@ -41,20 +46,12 @@ changes** — the Organelle is `192.168.12.1` and hands the phone `192.168.12.10
 
 | Port | Status | Evidence | Item |
 |------|--------|----------|------|
-| 9000 | **Do not use for OSC** — it is PdParty's WebDAV server (`GCDWebDAVServer`) | verified | — |
 | 4001–4003 | **Do not use** — they belong to `mother` | verified | — |
-| 8000 | PdParty's OSC receive | verified | — |
 | 9001 | The Organelle's OSC receive. `u_root` passes it to `u_net` as arg 3 | verified | — |
 | 9002 | **The Mac's**, so `main-dev.pd` and a suite run cannot fight over one socket | verified | 307 |
 
-⛔ **PdParty's OSC *send* host and port have to be set to the Organelle before any button does
-anything**, and nothing on either end says so when they are not. It is the one piece of phone-side
-configuration the scene cannot carry.
-
-⛔ **And it must be a LITERAL ADDRESS — PdParty does not resolve `organelle.local`.** ✅ With the host
-set to the name, taps produce nothing at all and the Organelle's UDP counter does not move; with the
-same port and the literal address the next tap completes the round trip. **The failure is completely
-silent on both ends.** Item 312.
+PdParty's own ports (8000 OSC receive, 9000 WebDAV) and its OSC *send* settings, including that the
+host must be a literal address, are in Reference (item 312).
 
 ⚠️ **Which makes the house network the awkward one, and the stage network the easy one.** The
 Organelle's lease moves — seen as `.15`, `.18` and `.6` — so the phone has to be re-pointed whenever
@@ -121,37 +118,11 @@ easy to identify. Item 311.
 Organelle and nothing at all on the phone — this scales to the nanoKONTROL's 18 continuous controls
 without redesign.
 
-### The network
-
-| Fact | Evidence | Item |
-|------|----------|------|
-| The Organelle hosts the network itself — `start-ap.sh` reads `$USER_DIR/ap.txt` and calls `create_ap`, and **`Start AP` is already in System → WiFi Setup**. It is the vendor's own path, not a hostapd project | verified | — |
-| The rig runs `organelle`, password in `/sdcard/ap.txt`; two clients joined and the phone display worked over it | verified | — |
-| **The AP has no internet** — `create_ap` is called with `-n` and the Organelle has one radio, so it cannot be both AP and client | verified | — |
-| Airplane mode then re-enabling WiFi is standard iOS behaviour — cellular stays off, WiFi works, the setting persists | verified | — |
-
-**Why not USB.** iOS will not present itself as a USB MIDI device or network interface to a Linux
-host — Apple's USB MIDI support is host-side only. Personal Hotspot over USB requires cellular, which
-defeats airplane mode. `usbmuxd`/`iproxy` could tunnel TCP over Lightning but would mean installing
-libimobiledevice on a 2015-vintage Arch ARM with a read-only rootfs. 📄
-
-**An AP the Organelle hosts needs neither cellular nor anything else in the room**, which is what
-makes airplane mode workable — and airplane mode suppresses notifications at the source, so Do Not
-Disturb is not the answer to them.
-
-### Scene structure and layout
-
-| Property | Value | Evidence | Item |
-|----------|-------|----------|------|
-| A scene | A **folder containing `_main.pd`**. A bare `.pd` also works as a "patch scene", but without background image support | doc | — |
-| Orientation | Inferred from the canvas aspect ratio — wider than tall gives landscape, and PdParty locks the device to match. There is no `info.json` key for it | doc | — |
-| `info.json` keys | *author*, *description*, *name*, *category* — that is all | doc | — |
-| iPhone 11 landscape | **896×414 points.** A canvas of **448×207** — exactly half — fills the screen edge to edge, everything rendering at 2× | verified | — |
-| iOS 14+ | Requires Settings → Privacy → **Local Network** permission, and the entry only appears after the app first attempts an outbound local connection. Until granted, OSC fails silently | doc | — |
-
 ## Traps
 
-Each is a claim and its fix. How any of them was found is in the git history.
+Each is a claim and its fix. How any of them was found is in the git history. The app's and Pd's own
+traps (a UDP `connect` that survives one datagram, `#osc-out`/`#osc-in`, invisible iemguis, `[print]`,
+canvas space, the notch, WebDAV, `[route 404]`, the bng loop, the unit field) are in Reference.
 
 ### Two instruments will fight over one phone
 
@@ -179,7 +150,7 @@ the 124/s noise floor. Item 121.
 The alert names the *link*, the Organelle's only link is wireless, and
 [wifi.md](../wifi.md) documents a real fault that drops it — so the obvious reading is that the
 network has gone. It is almost always wrong. **`u_net`'s watchdog watches a SOCKET**, and the
-socket dies the moment nothing is listening on the phone's port (item 114 below): PdParty closed,
+socket dies the moment nothing is listening on the phone's port (item 114, in Reference): PdParty closed,
 backgrounded by the phone, or on the wrong scene. The wifi can be perfectly healthy — verifiable in
 one line, because `ssh root@organelle.local` uses the same radio.
 
@@ -191,92 +162,44 @@ which is what makes it easy to read as a symptom of something worsening.
 phone, not the wifi. ⚠️ **The real roam fault has a different signature** — the *whole device* goes
 unreachable, `ssh` included — and it is on [wifi.md](../wifi.md) with a reproduction.
 
-### A UDP `connect` to a port with nothing listening survives EXACTLY ONE datagram
+### Rebuild the socket
 
-⛔ Twenty datagrams at 5 Hz to a port with no listener (item 114): the `connect` **succeeds**, the first datagram **goes out**, and then the socket dies —
-`error: recv: Connection refused` — and everything after it is silently discarded.
+A UDP `connect` to a port with nothing listening survives exactly one datagram (Pure Data, in
+Reference), so a socket that reports connected proves nothing, and a phone that leaves the network
+destroys the link without the patch hearing about it. `u_net` reconnects on a timer.
 
-**So a socket that reports connected proves nothing**, and a phone that leaves the network destroys
-the link without the patch hearing about it.
+### The unit field is written on every param message
 
-**Fix:** rebuild the socket rather than trusting it. `u_net` reconnects on a timer.
+`disp` treats the unit as optional, and `[list split 3]` on exactly three atoms never fires its right
+outlet (Pure Data, in Reference). **Fix:** `u_net` appends the dash *before* splitting, making the
+optional field mandatory by construction. The unit is written on every message, as `-` when there is
+none.
 
-### `[s #osc-out]` takes raw OSC bytes, and the obvious alternative sends nothing
+### `test-note` takes symbols
 
-⛔ A message with the address as selector — `[list prepend /cutit/fader]` → `[list trim]` — sends
-**nothing at all, silently.**
+`[route 404]` matches a float and can never match the device name (Pure Data, in Reference, item
+308). **Fix:** the devices are `m_volca` and `m_404`, which are symbols whatever else is true. That is
+also the name the `presence` bus and `err`'s `source` field already carry across the `m_` boundary.
 
-**Fix:** use `[oscformat]`.
+### The button and its lamp are two objects
 
-```
-[r $0-fader-out]  →  [oscformat cutit fader]  →  [s #osc-out]
-```
+A `bng` re-sends when it receives (Pure Data, in Reference, item 309), so a button lit by its own ack
+would loop. The button sends on `-press` and receives on `-nc`, which nothing ever writes; the lamp
+receives on `-ack` and sends to `-lamp`, which nothing reads. Both carry both names because PdParty
+renders neither without them. `phone-assert.sh` asserts that no `bng` in the scene both transmits and
+is lit.
 
-PdParty's own `tests/pdparty/Osc` scene is the reference; the message boxes in it that resemble the
-wrong approach are labelled *"test that sending other message types doesn't crash pdparty"*.
+### The inbound port is armed late, and the Mac has its own
 
-### `[r #osc-in]` delivers the address as bare symbols, with no slashes
+A second bind of the same UDP port prints a real line on stdout (Pure Data, in Reference, item 307),
+and **stdout is the oracle** both `tools/deploy.sh` and the suite's silence gate use, so a patch that
+bound at `loadbang` would turn every run red whenever a copy was already open in Pd.
 
-`/cutit/hb 210` arrives as `cutit hb 210`.
-
-**Fix:** route as `[route cutit]` → `[route hb]`, never `[route /cutit/hb]`.
-
-### PdParty only renders iemguis that have send/receive names
-
-⛔ With `empty` or `-` they parse, instantiate, participate in the patch — and are **invisible**.
-The symptom is a scene showing only comments. This is documented nowhere.
-
-**Fix:** give every GUI object both names, `$0-` prefixed, exactly as PdParty's bundled
-`tests/all_pd_guis.pd` does.
-
-### `[print]` is transmitted as `/pdparty/print` OSC
-
-⛔ Accidentally a free remote console, and accidentally a flood — a single `[print]` on a 2 Hz
-message stream produced **138 packets** in the time it took to drag a fader once.
-
-**Fix:** do not leave prints in a running scene.
-
-### Non-GUI objects still occupy canvas space
-
-A column of `[r]`, `[route]` and `[unpack]` objects down the left of the canvas produces a large
-empty region on the phone and pushes the visible content downward. Long comments do the same thing
-horizontally, and get clipped.
-
-**Fix:** keep the main canvas GUI-only and put all plumbing in a `[pd guts]` subpatch — which is what
-PdParty's own bundled scenes do.
-
-### The notch eats the edge, and PdParty does not inset for it
-
-⛔ In landscape the iPhone 11's speaker and camera cover roughly **44 points — 22 canvas units** off
-one end of a full-width row. A scene laid out edge to edge loses whatever is under it, **silently,
-and only in landscape.**
-
-**Fix:** inset **one** side, not both — which edge the notch lands on depends on which way the phone
-is turned, so pick an orientation and hold it. `CutItRemote` keeps content at `x = 4` and stops at
-`x = 426`, leaving the 22 units on the right, worth 26 units of extra width over insetting
-symmetrically. Leave the bottom clear too; 17 canvas units clears the home indicator.
-
-### The WebDAV server is not running just because PdParty is
-
-⚠️ With the app open and demonstrably listening — a `[netsend -u -b]` delivered 20 datagrams to port
-8000 with no ICMP teardown, which is positive proof of a listener — **port 9000 refused the
-connection outright.** It has to be switched on in the app, and it does not necessarily survive the
-app being backgrounded. So the phone deploy path has a precondition.
-
-**Fix:** `nc -z <phone> 9000` before assuming a scene was updated. The failure is at least loud —
-`curl` exits 7.
-
-⚠️ **`nc -z` on port 8000 proves nothing** — OSC is UDP and a bare `nc -z` tests TCP. Use a real
-datagram and watch for the ICMP teardown instead.
-
-### The unit field must be written on every param message
-
-⛔ `disp` treats the unit as optional, and **`[list split 3]` on exactly three atoms never fires its
-right outlet** — so a field written on some messages and not others keeps its old value.
-`chop-size 43 %` followed by `grain 12` draws as `grain 12 %`.
-
-**Fix:** `u_net` appends the dash *before* splitting, making the optional field mandatory by
-construction. The unit is written on every message, as `-` when there is none.
+**Fix:** two things, each independently sufficient for its own case. The `listen` is armed at
+**2000 ms**, past the ~735 ms at which the deploy check quits, so neither it nor the syntax gate ever
+binds at all. And `main-dev.pd` takes **9002** where `main.pd` takes 9001, so a long-running gate
+cannot collide with the dev patch. ⚠️ **The phone's buttons therefore drive the device, not the Mac**
+— point PdParty at 9002 if you want them to reach `main-dev.pd`.
 
 ### An AP session cannot be driven interactively
 
@@ -284,42 +207,6 @@ construction. The unit is written on every message, as `-` when there is none.
 phone or the device during a stage session.
 
 **Fix:** stage everything beforehand — the checklist is on [wifi.md](../wifi.md).
-
-### `[route 404]` matches a float and can never match the device name
-
-⛔ Pd parses a bare `404` in an object box as a **number**, and `[oscparse]` hands a string argument
-over as a **symbol** — so `[route volca 404]` rejects `test-note 404` while accepting `test-note
-volca`. Both spellings driven over a real socket, item 308. The failure is silent and looks exactly
-like a broken route.
-
-**Fix:** the devices are `m_volca` and `m_404`, which are symbols whatever else is true. That is also
-the name the `presence` bus and `err`'s `source` field already carry across the `m_` boundary, so
-nothing new enters the world for it.
-
-### A bng RE-SENDS when it receives, so a button lit by its own ack loops
-
-⛔ An iemgui `bng` whose send and receive names differ fires **both its outlet and its send name**
-when a bang arrives on its receive name — measured in 0.49, item 309. Feeding the acknowledgement
-back into the button that sent the command therefore sends the command again, which produces another
-acknowledgement, **for ever, at network speed.**
-
-**Fix:** the button and its lamp are two objects. The button sends on `-press` and receives on `-nc`,
-which nothing ever writes; the lamp receives on `-ack` and sends to `-lamp`, which nothing reads.
-Both carry both names because PdParty renders neither without them. `phone-assert.sh` asserts that no
-`bng` in the scene both transmits and is lit.
-
-### Only one process on a machine can hold the inbound port
-
-⛔ A second bind of the same UDP port prints `error: bind: Address already in use (48)` — measured on
-macOS in 0.49, item 307. That is a real line on stdout, and **stdout is the oracle** both
-`tools/deploy.sh` and the suite's silence gate use, so a patch that bound at `loadbang` would turn
-every run red whenever a copy was already open in Pd.
-
-**Fix:** two things, each independently sufficient for its own case. The `listen` is armed at
-**2000 ms**, past the ~735 ms at which the deploy check quits, so neither it nor the syntax gate ever
-binds at all. And `main-dev.pd` takes **9002** where `main.pd` takes 9001, so a long-running gate
-cannot collide with the dev patch. ⚠️ **The phone's buttons therefore drive the device, not the Mac**
-— point PdParty at 9002 if you want them to reach `main-dev.pd`.
 
 ## Design
 
@@ -331,18 +218,9 @@ silently wrong. UDP will drop packets; the protocol has to not care.
 
 ### Broadcast was tried and rejected, and the reason is latency not throughput
 
-⛔ `255.255.255.255` **works** — Linux permits it, PdParty accepts it, and 19–20 of 20 datagrams
-arrive. **But wifi access points buffer broadcast frames and release them on beacon boundaries.**
-
-| | Unicast | Broadcast |
-|---|---|---|
-| Arrival | Every 200 ms, as sent | Bursts of three or four |
-| Worst gap | — | ⛔ **up to 819 ms** |
-| Throughput | identical | identical |
-
-**Throughput is identical and latency is not**, which is why a delivery test saw nothing wrong and a
-person moving a knob saw it immediately. One 819 ms gap also eats most of the phone's **1500 ms**
-`NO-LINK` margin.
+It works and 19–20 of 20 datagrams arrive, but access points release broadcast frames on beacon
+boundaries: bursts of three or four, up to **819 ms** between them (Reference). Throughput is identical
+and latency is not, and one 819 ms gap eats most of the phone's **1500 ms** `NO-LINK` margin.
 
 ### The address resolves at 1550 ms on the device and 2200 on the Mac
 
@@ -391,7 +269,7 @@ read**, with everything else falling out of an unconnected reject. That is the s
 can reach stays the set of boxes you can read.
 
 ⚠️ **Nothing here may be built on a sender identity that is not available** — `[netreceive]` in
-0.49 cannot supply one (above), and a bidirectional link does not change that.
+0.49 cannot supply one (Reference, *Pure Data*), and a bidirectional link does not change that.
 
 ⛔ **A fourth command was considered and rejected: a full status dump.** Parameters and status re-send
 every two seconds and the alert repeats at 2 Hz, so a phone joining late repopulates on its own in

@@ -468,7 +468,7 @@ and `all` broadcasts. Each instance still gets its own `$0`.
   policies, the file format and every trap in them are on [state.md](module/state.md).
 - ⛔ **Nothing writes into the patch folder.** The instrument's data lives in `/sdcard/cut-it-state/`,
   outside it, so a deploy cannot touch it. A **relative** `[text write]` mutates the deployed patch
-  immediately — see [organelle.md](device/organelle.md) under *Saving*.
+  immediately — see `~/Sites/!reference/critter-guitari-organelle-1.md` under *Saving*.
 
 ---
 

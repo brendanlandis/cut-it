@@ -2,7 +2,7 @@
 # The rig — boxes, cables and signal flow
 
 **The physical instrument.** What connects to what, why, and the handful of hardware facts that
-decide the shape. What each *device* can do is on its own page under [device/](device/); what the
+decide the shape. What each *device* can do is in Reference (`~/Sites/!reference/`); how Cut It uses it is on its page under [device/](device/); what the
 Organelle is as a *computer* — SSH, paths, deploying, wifi — is in
 [device-os.md](device-os.md).
 
@@ -102,24 +102,18 @@ their own 3-band EQ and one-knob compressor.
 
 ### The jack asymmetry is why the Y-cable is required
 
-📄 Quoted from the official Organelle 1 manual:
-
-> The single `In`(put) `LR` port is a 1/4" TRS (stereo) jack.
-> The `L`(eft) and `R`(ight) `Out`(put) ports are both 1/4" TS (mono) jacks.
-
-**One stereo input jack, two mono output jacks.** The 404's two discrete mono outputs have to merge
-into one input; the output side needs only two ordinary patch cables.
+The Organelle has **one stereo input jack and two mono output jacks**, quoted from its manual in
+`~/Sites/!reference/critter-guitari-organelle-1.md`, so the 404's two discrete mono outputs have to merge into one input;
+the output side needs only two ordinary patch cables.
 
 ### The input split is verified on hardware
 
-✅ The **tip** is `inL` and the **ring** is `inR`, and they are genuinely independent — a mono TS
-cable drives the tip to the 90s on `env~`'s scale while the ring stays at the 18–19 noise floor.
-Measured with `tools/audio-probe/`; item 11.
+✅ The **tip** is `inL` and the **ring** is `inR`, and they are genuinely independent (the measurement, taken with
+`tools/audio-probe/`, is in Reference, item 11).
 
 The noise floor and the gate window that follows from it are on
 [module/audio.md](module/audio.md), item 11 — one place, because three pages used to write the
-number out. What belongs here is the gear consequence: **a passive bass reaches the 90s**, so there
-is ample gain and headroom for instrument-level sources.
+number out.
 
 ⛔ **A patch never touches `adc~` or `dac~`** (C-4). See [audio.md](module/audio.md).
 
@@ -137,9 +131,9 @@ is ample gain and headroom for instrument-level sources.
     └── VOLCA FM ......... Korg KA-350 9V (or 6×AA)
 ```
 
-⛔ **Do not bus-power the 404.** Roland requires USB-C-to-C at 5V/1.5A for bus power and does not
-guarantee operation through hubs. A USB-A→C cable from the hub carries **data only**, which is what
-we want — the 404 runs off its own adapter and costs the hub nothing.
+⛔ **Do not bus-power the 404** (Reference: `~/Sites/!reference/roland-sp-404mkii.md`). The USB-A→C
+cable from the hub carries **data only**, which is what we want — the 404 runs off its own adapter and
+costs the hub nothing.
 
 ### There is no shared rail for a brownout to happen on — items 5 and 95
 
@@ -147,14 +141,8 @@ we want — the 404 runs off its own adapter and costs the hub nothing.
 (the tree above), and every USB hub in the chain reports **`Self Powered`, `MaxPower 0mA`**, so no
 hub draws its downstream budget from upstream. Declared draw on the whole USB tree:
 
-| Device | `MaxPower` | On |
-|--------|-----------|-----|
-| Launchpad Pro MK3 | **500 mA** | the hub |
-| nanoKONTROL | 100 mA | the hub |
-| SP-404MKII (2 interfaces) | 100 mA + 2 mA | the hub — nominal, it is self-powered |
-| M-Audio Uno | 0 mA | the hub |
-| **RT5370 wifi dongle** | **450 mA** | ⚠️ **its own root bus, `2-1`** |
-| Every hub | 0 mA | — |
+Each device's declared `MaxPower` is on its Reference page, and the wifi dongle's (450 mA, on its own
+root bus) on the Organelle's. Every hub declares 0 mA.
 
 **~700 mA across three self-powered hubs is not a budget problem**, and item 248 had already
 exonerated power empirically from the other direction: the Launchpad failed to configure *with almost
@@ -195,17 +183,14 @@ controller they hang off. Item 248 measured the behaviour; this is its explanati
 
 ### The Launchpad is fussy about which controller it sits on
 
-⛔ **`can't set config #1, error -32`, and it is per-socket.** Measured three times on `1-1.1` — at
-boot and on two replugs — and never since the Launchpad moved.
+⛔ **`can't set config #1, error -32`, and it is per-socket.** What it looks like, and what was ruled
+out (power, device, cable), is in Reference: `~/Sites/!reference/novation-launchpad-pro-mk3.md` (item
+248). On this hub:
 
 | | |
 |---|---|
 | ✅ **Works** | The Realtek `0bda:5411` controller — **the bottommost socket, the one with the lock icon** |
 | ⛔ **Fails** | At least one socket on the first Generic `43f2:1211` controller |
-| ✅ Power is exonerated | It failed with almost nothing attached and configured with the entire rig live. Not a current budget |
-| ✅ Device and cable exonerated | The same cable enumerates on a Mac in 142 ms |
-| ⚠️ It survives everything short of moving it | Reproduced across a cold boot, a hub replug, and a forced `authorized` re-enumeration — three independent attempts, same error. **Only the socket changes it** |
-| ⚠️ Consistent with the chip | The Launchpad is a **full-speed** device with three MIDI interfaces **plus** mass storage. The SP-404 and nano are full-speed too and simpler, and they never fail — a weak transaction translator stalling `SET_CONFIGURATION` fits |
 
 ⚠️ **The fix is a labelled socket, not a topology rule.** Put the Launchpad in the lock-icon port and
 mark it, because nothing in the patch can tell a half-enumerated Launchpad from an absent one.
@@ -216,16 +201,13 @@ recovery runs `wire.sh` and gives up after ~70 s, because there is nothing to wi
 Cut It it is indistinguishable from a Launchpad that was never plugged in. ⚠️ **This is a venue
 failure mode**, and the only thing that distinguishes it from a dead patch is the OLED.
 
-⚠️ **The nanoKONTROL spontaneously re-enumerates** — three times in one evening, seconds apart, on a
-settled bus. Milder, unexplained, and on the same tree (item 248).
-
 ## Gear
 
 | Item | Role |
 |---|---|
 | Organelle (original) | Brains — Pd, USB MIDI host, clock master |
 | Roland SP-404MK2 | Sample store, mic/line front end, drums + fx source |
-| Behringer Xenyx Q802USB | Mixer, and free session recording over USB |
+| Behringer Xenyx Q802USB | Mixer, and free session recording over USB (`~/Sites/!reference/behringer-xenyx-q802usb.md`) |
 | Korg Volca FM | Pitched voice (DIN MIDI in only) |
 | Korg nanoKONTROL (mk1) | Continuous control — 9 faders, 9 knobs, 18 buttons, transport |
 | Novation Launchpad Pro MK3 | Cut It interface (Programmer Mode) + compose-time sequencing |
@@ -234,9 +216,8 @@ settled bus. Milder, unexplained, and on the same tree (item 248).
 
 ### The original cubit does not work here
 
-It is a **thru box only**: 1 DIN in → 4 DIN out. Its USB port supplies **power only and carries no
-data**, so it cannot act as a USB MIDI interface for the Organelle. That capability came later, in
-the cubit *go* and cubit *duo*.
+It is a thru box only with no USB data (Reference: `~/Sites/!reference/meeblip-cubit.md`), so it cannot
+act as a USB MIDI interface for the Organelle.
 
 **Keep it.** It becomes useful the moment a second or third DIN-only synth arrives — put it
 downstream of the MIDI interface and fan out to four destinations. Today only the Volca needs DIN, so
@@ -246,17 +227,16 @@ a 1×1 interface is enough.
 
 Its sequencer is beaten by the Launchpad's (4 tracks × 32 steps × 8-note poly vs 16 steps mono), its
 16 pads are beaten comprehensively by 64 RGB pressure-sensitive ones, and its CV/Gate outputs are
-irrelevant with no modular in the rig.
+irrelevant with no modular in the rig. What it is: `~/Sites/!reference/arturia-beatstep.md`.
 
-It does have host-controllable pad LEDs (red, on/off) which the nanoKONTROL mk1 lacks — **the one
-axis where it wins.** But the Launchpad covers every state-display need in the rig, and visible knob
-position plus a bank of faders is worth more here than a second grid of red lights.
+Its one win is host-controllable pad LEDs, which the nanoKONTROL mk1 lacks. But the Launchpad covers
+every state-display need in the rig, and visible knob position plus a bank of faders is worth more here
+than a second grid of red lights.
 
 ### The pedal jack is deliberately unused
 
-`mother.pd` exposes `fs` / `fsRaw` / `footSwitchPolarity` and `exp` / `expRaw` / `expOverride` on the
-1/4" pedal jack — a sustain-style switch **or** an expression pedal, one or the other, not both.
-Recorded so it is not rediscovered as news.
+The Organelle's pedal jack (Reference) takes a sustain-style switch **or** an expression pedal, one or
+the other, not both. Recorded so it is not rediscovered as news.
 
 ## Cabling
 
@@ -272,9 +252,8 @@ are all covered.
 | **XLR female → 1/4" TRS** | Mic → 404 MIC/GUITAR IN. The 404 has no XLR, so a plain mic cable will not do it; an adapter on a normal one works |
 | **2× 1/4" TS** | Mixer MAIN OUT → PA |
 
-**Already in the box, do not buy:** the Launchpad ships with USB-C→USB-A *and* USB-C→USB-C cables, a
-power adapter and 3× TRS-minijack→DIN MIDI adapters; the nanoKONTROL is bus-powered over its own
-cable; the 404 has its PSD adapter.
+**Already in the box, do not buy:** what each device ships with is on its Reference page — the
+Launchpad's cables and adapters, the nanoKONTROL's own cable, the 404's PSD adapter.
 
 ⚠️ **Label the cables.** With this many identical 1/4" jacks it is worth the ten minutes.
 
@@ -285,8 +264,8 @@ performance: input monitoring, pad play modes and bus assignment are all varied 
 playing, so putting them on a checklist would be telling you to undo your own settings.
 
 ⛔ **Verify the MIDI tab against the recorded values.** If one of these drifts, Cut It stops driving
-the 404 and nothing anywhere reports it. The route and the full table are on
-[device/sp404.md](device/sp404.md) — `[SHIFT]` + pad 13 → SYSTEM → `[CTRL 3]` to MIDI.
+the 404 and nothing anywhere reports it. The route and the full table are in Reference:
+`~/Sites/!reference/roland-sp-404mkii.md` — `[SHIFT]` + pad 13 → SYSTEM → `[CTRL 3]` to MIDI.
 
 The four that actually matter:
 

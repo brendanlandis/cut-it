@@ -28,23 +28,24 @@ They load on demand, so they cost nothing in a session that does none of those t
 **The three Pd constraints that are not negotiable**, repeated here because they are expensive to
 learn late:
 
-- **Pd vanilla 0.49, permanently.** The Organelle 1 runs OS 4.0 and **that is the end of the line
-  for this hardware** — 4.1 was Organelle M only, and 4.2 / 4.4 / OS 5 are M/S/S2. Do not suggest
-  any object newer than 0.49.
-- **Never save an Organelle-bound patch from plugdata.** It is built on Pd 0.55+ and rewrites `.pd`
-  files into a format 0.49 cannot parse. This has already happened once here.
+- **Pd vanilla 0.49, permanently.** The Organelle 1's OS 4.0 is the end of the line for that hardware
+  (details in `~/Sites/!reference/critter-guitari-organelle-1.md`). Do not suggest any object newer
+  than 0.49.
+- **Never save an Organelle-bound patch from plugdata.** It rewrites `.pd` files into a format 0.49
+  cannot parse (`~/Sites/!reference/pure-data.md`). This has already happened once here.
 - **Vanilla objects only** — the Organelle ships neither ELSE nor cyclone.
 
-⚠️ **The `critterandguitari/Organelle_OS` GitHub repo targets CM3/CM4 hardware — the Organelle M and
-S2, not this device.** Its paths are wrong here (`/home/music`, an `audioinjector-pi-soundcard`).
-The mechanisms are the same lineage; verify against the actual device before relying on them.
+⚠️ **The public `Organelle_OS` repo documents the M and S2, not this device** — verify paths against
+the actual device (Reference, Organelle page).
 
 
 ## Where everything is
 
-**[ref/](ref/README.md) is one page per module**, and the directory is the kind. A page holds
-everything about its module: what it is, what was measured, what will bite you, and how Cut It
-chooses to use it.
+**[ref/](ref/README.md) is one page per module**, and the directory is the kind. A page holds how Cut It
+uses its module and what Cut It chose. ⛔ **What is true of an outside device or program — what it is,
+what was measured, what will bite you — lives in Reference** (`~/Sites/!reference/`, one page per thing,
+shown on Back Office's /reference page); a `ref/device/` page links to it and keeps only Cut It's side.
+**One fact, one place:** a new device fact goes on its Reference page, not here.
 
 | Looking for | Go to |
 |---|---|
@@ -52,17 +53,18 @@ chooses to use it.
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
-| One physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
+| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo: `~/Sites/!reference/` — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `critter-guitari-organelle-1` `pdparty` `roland-sp-404mkii` `korg-volca-fm` `pure-data` (and `meeblip-cubit` `arturia-beatstep` `behringer-xenyx-q802usb`). Find a repo's with `grep -l "used_by:.*cut-it" ~/Sites/!reference/*.md` |
+| How Cut It **uses** one physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
 | One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `debug` `display` `error` `map` `presence` `state` `tempo` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
-| The Organelle as a **computer** — SSH, paths, how Pd launches, the boot hang | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
-| The wifi fault — the roam signature, the watchers, AP mode | [ref/wifi.md](ref/wifi.md) ⚠️ background, not blocking |
-| A cited `item NNN` | `grep` it — item numbers are **fact IDs**, not log entries |
+| How Cut It lives on the Organelle as a **computer** — its data, measuring, deploying (the Organelle itself: Reference) | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
+| The wifi fault — Cut It's watchers and the stage procedure (the fault itself: Reference) | [ref/wifi.md](ref/wifi.md) ⚠️ background, not blocking |
+| A cited `item NNN` | `grep` it here **and in `~/Sites/!reference/`** — item numbers are **fact IDs**, not log entries; the device facts moved there |
 | **Every test** — the headless gates, the hands-on benches, the stubs | [test/README.md](test/README.md) |
 | What each operational tool and probe does | [tools/README.md](tools/README.md) |
 
 ✅ **Both journals are gone.** Phases 0–8 as built and every measurement behind them are in
-`git log`; every fact they produced is on a `ref/` page. **`item NNN` still resolves** — grep for it.
+`git log`; every fact they produced is on a `ref/` page or in Reference. **`item NNN` still resolves** — grep for it, in both.
 
 
 ## The patch
@@ -177,7 +179,7 @@ cannot touch it. `tools/fetch-state.sh` copies it back. See [ref/module/state.md
 ⛔ **`knobs.txt` is four saved knob positions, not knob labels**, and **the saved file beats the
 physical knob** — so after any Save the first touch of a knob jumps, up to the full range, and knob 1
 is master tempo. Nothing on the instrument can detect it. See
-[ref/device/organelle.md](ref/device/organelle.md) under *Saving*.
+`~/Sites/!reference/critter-guitari-organelle-1.md` under *Saving*.
 
 
 ## How the documentation works
@@ -255,7 +257,7 @@ Links to paths containing spaces use the angle-bracket form:
   condition than a rig session, because nobody was perturbing it. **Before booking a measurement
   against a session with hands on the hardware, ask what it actually needs**: eyes, fingers, a
   cable, or only a reachable device.
-- ⛔ **Before diagnosing a hardware symptom, grep `ref/` for its literal error string.** A Launchpad
+- ⛔ **Before diagnosing a hardware symptom, grep `ref/` and `~/Sites/!reference/` for its literal error string.** A Launchpad
   that would not enumerate — `can't set config #1, error -32` — was diagnosed from scratch across
   five physical tests on 2026-08-08, and [ref/rig.md](ref/rig.md) had already written it up **with
   that exact code in the text**. Symptoms are as greppable as `item NNN`, and cost more to re-derive.

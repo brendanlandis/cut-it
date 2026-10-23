@@ -235,7 +235,7 @@ saves per-*instance* parameters, which is a different problem from a keyed store
 
 `u_state` writes straight to `/sdcard` with an **absolute** path, so nothing it does has to finish
 inside mother's sleep. What `Storage → Save` actually does — and the `saveState` bang, the sleep
-budget and `knobs.txt` — is on [organelle.md](../device/organelle.md); the only part that reaches
+budget and `knobs.txt` — is in Reference (`~/Sites/!reference/critter-guitari-organelle-1.md`, *Saving*); the only part that reaches
 this file is that `saveState` is what triggers a `manual` commit.
 
 ⛔ **`Storage → Save New` is dropped and is not part of this design.** It duplicates the entire patch

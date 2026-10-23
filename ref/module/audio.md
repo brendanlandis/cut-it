@@ -119,7 +119,7 @@ Drums hard-panned left, fx hard-panned right — two independent mono streams ou
 with the mic summing to both. **No routing depends on a knob position**: the 404's per-sample pans
 save with the project and recall, cables carry the paths, and the mixer's knobs only set levels — a
 wrong level is audible immediately rather than failing silently. See
-[sp404.md](../device/sp404.md).
+[sp404.md](../device/sp404.md) and `~/Sites/!reference/roland-sp-404mkii.md`.
 
 ### Organelle audio back into the 404 was scrapped
 

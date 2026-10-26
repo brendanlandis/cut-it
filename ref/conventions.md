@@ -226,28 +226,18 @@ carries the same names across the same boundary.
 The kinds, the manufacturer bytes, the bounded re-wire and its arithmetic are on
 [presence.md](module/presence.md).
 
-**Owned by `mother.pd`** — not ours to rename, and reserved:
+**Owned by `mother.pd`** — not ours to rename, and reserved: every name it sends or receives,
+enumerated from the file itself on the Organelle's Reference page
+(`~/Sites/!reference/critter-guitari-organelle-1.md`, under *The `mother.pd` interface*).
 
-| Direction | Names |
-|---|---|
-| To the patch | `knob1`–`knob4` (+`Raw`/`Override`), `notes`, `notesRaw`, `enc`, `encbut`, `aux`, `auxRaw`, `vol`, `exp`/`expRaw`/`expOverride`, `fs`/`fsRaw`, `saveState`, `recallState`, `oscIn`, **`quitting`** |
-| From the patch | `screenLine1`–`screenLine5`, `led`, `goHome`, `oscIn`, `oscOut`, `enableSubMenu`, `footSwitchPolarity`, **`midiInGate`** / `midiOutGate` / `midiCh` / `midiOutCh` |
-
-✅ Enumerated from `mother.pd` itself rather than from documentation — every `[s]` and `[r]` in
-the file.
-
-**`quitting` is the shutdown hook, and it is the only one.** `mother.pd` sends it on
-`/quitpd`, then waits **100 ms** before `; pd quit`. `killpatch.sh` then SIGTERMs after 120 ms.
-That is the entire budget for putting hardware back in a sane state — enough for a nine-byte
-SysEx, not for anything clever. **Pd 0.49 has no `closebang`** (Reference), so `[r quitting]` is
-it.
+**`[r quitting]` is the shutdown hook, and it is the only one** (Pd 0.49 has no `closebang`). Its
+budget is mother's ~100 ms before Pd quits (same page, under *`quitting`, and how long a patch
+has*): enough for a nine-byte SysEx, not for anything clever.
 
 ⛔ **`quitting` fires on every PATCH LOAD, not only on shutdown, and that is what makes menu
-probes safe.** `/loadPatch` calls `MainMenu::runPatch`, which runs `killpatch.sh` *before* launching
-anything — and that script's first line is `oscsend localhost 4000 /quitpd i 1`, straight into the
-send above. So swapping patches from the menu gives the outgoing patch the same ~100 ms to hand
-hardware back that a shutdown does, and **Pd is then killed and relaunched** rather than reused
-(item 252). Read from `mother.pd`, `MainMenu.cpp` and `killpatch.sh` on the device, not inferred.
+probes safe.** Swapping patches from the menu gives the outgoing patch the same ~100 ms to hand
+hardware back that a shutdown does, and Pd is then killed and relaunched rather than reused (item
+252, same page).
 
 **One abstraction is allowed to send on the `mother.pd` names: `u_mother-stub`.** It exists to
 impersonate `mother.pd` when the patch runs on the Mac, where `mother.pd` does not exist, so
@@ -357,13 +347,12 @@ the parameter, not throughout the patch.
 **`mother.pd` owns the sound card.** A patch that reaches for `adc~` or `dac~` is going around it.
 The interface is four names — `[r~ inL]` / `[r~ inR]` in, `[throw~ outL]` / `[throw~ outR]` out.
 
-⛔ **`adc~` in a patch happens to work; `dac~` is a real bug.** The output path applies the volume
-knob and a `clip~ -1 1` limiter, and writing to `dac~` bypasses both — the knob stops working and
-the patch can clip the converter. Nothing reports it.
+⛔ **`adc~` in a patch happens to work; `dac~` is a real bug**: it bypasses the volume knob and
+mother's limiter, and nothing reports it. **And mother turns DSP on**, so a patch must not. Both,
+and mother's whole audio path, are on the Organelle's Reference page
+(`~/Sites/!reference/critter-guitari-organelle-1.md`, under *Audio*).
 
-**mother enables DSP.** `pd init` fires `; pd dsp 1` 200 ms after load. A patch must not.
-
-The full chain, the measured level scale and the rest are on [audio.md](module/audio.md).
+The I/O contract, the measured level scale and the rest are on [audio.md](module/audio.md).
 
 ---
 

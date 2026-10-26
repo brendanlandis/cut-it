@@ -230,8 +230,7 @@ both `route` boxes and requires them to carry exactly the same selectors.
 
 ### `text get` errors if you ask for more fields than a line holds
 
-⛔ Measured: `text get x 1 3` on a two-field line gives `field request (1 3) out of range` — and it
-prints.
+⛔ It prints an error rather than handing on the fields there are (Pure Data, in Reference).
 
 **Fix:** the draw path never requests fields. It takes the whole line and strips the stamp with
 `[list split 1]`, which is safe because every stored line has at least three atoms.

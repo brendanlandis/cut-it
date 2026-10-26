@@ -229,8 +229,8 @@ and latency is not, and one 819 ms gap eats most of the phone's **1500 ms** `NO-
 store **before resolution** sends `connect` with an empty host and prints `bad host?` on **every
 boot** — harmless, and invisible to `tools/deploy.sh` because the syntax check quits first.
 
-**Fix:** arm at **3000 ms**, past both platforms. `[metro]` fires the instant it is started, so
-"armed at" means "fires at". On the Mac a `[del 700]` fallback covers a `[shell]` that never answers.
+**Fix:** arm at **3000 ms**, past both platforms. A `[metro]` fires the moment it starts (Pure
+Data, in Reference), so "armed at" means "fires at". On the Mac a `[del 700]` fallback covers a `[shell]` that never answers.
 
 ### The phone cannot announce itself, so the Organelle looks the address up
 

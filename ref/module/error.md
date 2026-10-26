@@ -68,22 +68,21 @@ raise, which is most of what actually goes wrong.
 
 ### A float stamp rots after 16 minutes 40 seconds
 
-⛔ `[text]` writes a float with `%g`, which caps at **six significant figures** and switches to
-exponential above 999999 — so a millisecond stamp starts losing precision 16 min 40 s into a
-session. ✅ **Measured in Pd 0.49 both ways**, and both forms are in the device's own log:
-`387600` written exactly, `2104000` written as `2.104e+06`. That is 1-second precision in the second
-hour and 10-second beyond about three. **The log is the only record of when anything happened on
-this instrument, and a set runs for hours.**
+⛔ `[text]` writes a float with `%g`, six significant figures, so a millisecond stamp loses
+precision 16 min 40 s into a session: 10 ms from then, 100 ms from 2 h 46 min (Pure Data, in
+Reference). Both forms are in the device's own log. **The log is the only record of when anything
+happened on this instrument, and a set runs for hours.**
 
 **Fix:** `[makefilename %d]` between `[timer]` and the `[list prepend]` that builds the line, so
-`[text]` stores a symbol it cannot reformat. Exact forever.
+`[text]` stores a symbol it cannot reformat. Exact to the millisecond for 4 h 39 min, where a Pd
+float stops holding every integer, and to 2 ms after (Pure Data, in Reference).
 
 ⚠️ **Not a change of unit, and the arithmetic is the reason.** Logging tenths of a second would be
 exact for only 27.8 hours and whole seconds for 11.6 days, and every stamp already cited in `ref/`
 and in `git log` is in milliseconds.
 
-⚠️ **`makefilename %g` is the bug wearing the fix's clothes** — it reformats exactly as `[text]`
-would, so the box being present proves nothing. `err-assert.sh` asserts the **format**, not the
+⚠️ **`makefilename %g` is the bug wearing the fix's clothes** — it formats as `[text]` does, so
+the box being present proves nothing. `err-assert.sh` asserts the **format**, not the
 object.
 
 ### Anything built with `list prepend` is a list, and `route` will reject it

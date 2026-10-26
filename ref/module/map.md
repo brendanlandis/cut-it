@@ -279,9 +279,9 @@ matches nothing.
 
 ### The `[list trim]` before the destination `route` is load-bearing
 
-⛔ `[list split 1]` emits `symbol og-knob-1`, whose selector is `symbol` rather than the name, and
-`route` matches a **selector** (C-6). Without the trim the route never matches, every control takes
-the reject, and the Organelle's 0–1 knobs are divided by 127 into nothing.
+⛔ The name `[list split 1]` hands on has the selector `symbol`, not the name, and `route` matches a
+**selector** (C-6; Pure Data, in Reference). Without the trim the route never matches, every control
+takes the reject, and the Organelle's 0–1 knobs are divided by 127 into nothing.
 
 **Fix:** `[list trim]` between them. Silent in both directions if you forget.
 

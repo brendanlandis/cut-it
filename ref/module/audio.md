@@ -28,21 +28,10 @@ watch: **it has no signal outlet and does not alter the audio.**
 | `[r~ inR]` | Input, the ring — the 404's hard-panned **fx**. The mic sums to both | verified | 11 |
 | `[throw~ outL]`, `[throw~ outR]` | Everything the patch wants heard | verified | — |
 
-```
-mother:  [adc~] ─→ [s~ inL] [s~ inR]
-patch:   [r~ inL] [r~ inR] ─→ … ─→ [throw~ outL] [throw~ outR]
-mother:  [catch~ outL/outR] ─→ [*~ vol²] ← [lop~ 5] ─→ [clip~ -1 1] ─→ [dac~]
-```
-
-✅ Read off the device from `mother.pd`'s `pd audioIO`, and cross-checked against **every** stock
-effect in `/sdcard/Patches/Effects/` — they all use exactly this.
-
-| Fact | Evidence | Item |
-|------|----------|------|
-| The output path applies the volume knob — a **square law**, smoothed at 5 Hz — and a `clip~ -1 1` limiter | verified | — |
-| `throw~`/`catch~` **sums**, so several stages can feed the output with no mixer | verified | — |
-| **mother enables DSP**: `pd init` fires `; pd dsp 1` 200 ms after load. A patch must not | verified | — |
-| mother drives the VU meter from `inL`, `inR` and the *post-volume* outputs, via `/oled/vumeter`. A patch never sends it | verified | — |
+What `mother.pd` does on the other side of those names (its own `adc~` and `dac~`, the volume knob's
+square law, the limiter, turning DSP on, the VU meter) is on the Organelle's Reference page
+(`~/Sites/!reference/critter-guitari-organelle-1.md`, under *Audio*). Several stages can feed `outL`
+and `outR` with no mixer, since every `throw~` into one `catch~` is summed (Pure Data, in Reference).
 
 ### `u_level`
 
@@ -67,8 +56,8 @@ Each is a claim and its fix. How any of them was found is in the git history.
 
 ### `dac~` is a real bug; `adc~` merely happens to work
 
-⛔ Writing to `dac~` bypasses **both** the volume knob and the `clip~` limiter — the knob stops
-working and the patch can clip the converter. Nothing reports it.
+⛔ Writing to `dac~` bypasses **both** the volume knob and mother's limiter, and nothing reports it
+(the Organelle, in Reference).
 
 **Fix:** `[throw~ outL]` / `[throw~ outR]`, always (C-4).
 
@@ -90,7 +79,8 @@ rate-limiting the *draw* is the display's job, not this one's.
 
 ### A patch must never enable DSP
 
-⚠️ mother's `pd init` fires `; pd dsp 1` 200 ms after load. A second one is at best redundant.
+⚠️ mother turns DSP on itself, just after load (the Organelle, in Reference). A second one is at
+best redundant.
 
 **Fix:** leave it alone. `tools/dsp.sh` turns it off on a running patch, for measuring what the
 audio engine costs (item 75).

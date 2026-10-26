@@ -29,10 +29,10 @@ the correct sequence — it mirrors what the front panel does, with the real cre
 |---|---|---|
 | `tools/wifi-watch.sh` | **the device** | Polls `wlan0`, and on a failure runs a **link probe** and a **DHCP probe** before a recovery ladder |
 | `tools/wifi-poll.sh` | the Mac | Watches from outside, so a device that has gone silent still produces a record |
-| `tools/wifi-report.sh` | the Mac | Summarises `wifi-watch.log` |
+| `tools/wifi-report.sh` | the Mac | Summarizes `wifi-watch.log` |
 | `tools/wifi-reassociate.sh` | the device | The recovery rung that mirrors what the front panel does. **The only one that has ever worked** |
 
-⚠️ **`--mark` goes AFTER a finding is written up, never before.** It draws the analysed-to-here line,
+⚠️ **`--mark` goes AFTER a finding is written up, never before.** It draws the analyzed-to-here line,
 so running it first erases the event you were about to read.
 
 ⛔ **NEVER `pgrep -f wifi-watch`.** It matches the `ssh` command doing the checking, so a sweep that

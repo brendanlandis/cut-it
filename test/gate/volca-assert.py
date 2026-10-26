@@ -99,7 +99,7 @@ def run_asserts(cap):
     # hardware is a Volca that ignores half of what it is sent.
     # ⚠️ VOLCA-PANIC IS DELIBERATELY NOT IN THIS LIST. panic is a bus message,
     # so that window legitimately carries m_404's ten channels as well, and a
-    # sweep including it would report correct 404 behaviour as a Volca fault.
+    # sweep including it would report correct 404 behavior as a Volca fault.
     wrong = [e for k in ("VOLCA-CC", "VOLCA-NOTE", "VOLCA-PROG",
                          "VOLCA-KEY-ON", "VOLCA-KEY-HELD", "VOLCA-KEY-OFF")
              for e in W(k)

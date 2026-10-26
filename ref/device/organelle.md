@@ -32,16 +32,16 @@ around it.
 
 ### What Cut It puts on the LED
 
-`g_led` owns `led`, and callers send a **state** on the `disp` bus — `led running` — never a colour.
+`g_led` owns `led`, and callers send a **state** on the `disp` bus — `led running` — never a color.
 
-| State | `led` | Colour | Means | Evidence | Item |
+| State | `led` | Color | Means | Evidence | Item |
 |-------|-------|--------|-------|----------|------|
 | `off` | 0 | off | Nothing claims it | verified | — |
 | `stopped` | 5 | dark blue | Patch up, transport stopped | verified | — |
 | `running` | 3 | green | Transport running | verified | — |
 | `panic` | 1 | red | Panic raised — cleared by the next start or stop | verified | — |
 
-Anything `g_led` does not recognise raises `warn g_led unknown-led-state` and **leaves the LED
+Anything `g_led` does not recognize raises `warn g_led unknown-led-state` and **leaves the LED
 alone**, so a typo cannot silently blank the only non-screen indicator in the rig.
 
 ### What `m_organelle` publishes
@@ -200,7 +200,7 @@ dark stage that is the difference between a pause and a problem.
 ### Design against the patch-facing LED numbers, not the bitmask
 
 They are the sensible ordering, they are what `[s led]` takes, and they are stable. The bitmask is
-only interesting for composing a colour from components, and that needs the raw path — `oscOut` —
+only interesting for composing a color from components, and that needs the raw path — `oscOut` —
 which belongs to `g_oled`.
 
 ### `/led/flash` is deliberately unused

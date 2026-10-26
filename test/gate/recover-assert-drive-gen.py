@@ -17,7 +17,7 @@ asked for.
 
 ⚠️ THE WINDOW BOUNDARIES DODGE THREE COINCIDENCES, all of them deliberate. The
 grid's modal-off lands exactly 1000 ms after each panic; u_init's fork lands 300
-ms after recover; and the tap's cancelled timer would have expired 2000 ms after
+ms after recover; and the tap's canceled timer would have expired 2000 ms after
 its press. A window opening on any of those instants would make the assertion a
 coin toss rather than a test.
 

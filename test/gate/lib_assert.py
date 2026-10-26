@@ -10,7 +10,7 @@ Imported, never run:
 ⚠️ THE MODULE NAME HAS AN UNDERSCORE and every other file here has a hyphen.
 That is not inconsistency -- a hyphen is not a legal Python identifier, so a
 module that is IMPORTED cannot have one, while a script that is only ever RUN
-can. The bench tooling loads its hyphenated neighbours through importlib for
+can. The bench tooling loads its hyphenated neighbors through importlib for
 exactly this reason; a library does not have to.
 
 WHY IT EXISTS. Splitting the old phase 9 gate into three -- the map, the SP-404

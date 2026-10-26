@@ -74,7 +74,7 @@ wifi log is just the first thing to try writing.
 rootfs remounted rw, or scp `mount.sh.orig` from this folder.
 
 **Side effect worth knowing:** a genuinely write-protected USB stick will no longer mount as
-`/usbdrive`. That is arguably correct here, but it is a behaviour change.
+`/usbdrive`. That is arguably correct here, but it is a behavior change.
 
 ⚠️ **Turning the drive off at the Launchpad instead was considered and declined** — it requires a
 firmware update that would invalidate every measured fact on

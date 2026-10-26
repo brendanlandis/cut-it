@@ -2,7 +2,7 @@
 """Generates the timed driver for the OLED gate, into the scratch path given.
 
 ⛔ g_oled IS THE DENSEST FILE IN THE PATCH -- 783 lines, four layers, a five-row
-store with its own ageing -- AND UNTIL NOW ITS ENTIRE COVERAGE WAS THAT THE FILE
+store with its own aging -- AND UNTIL NOW ITS ENTIRE COVERAGE WAS THAT THE FILE
 EXISTS. Everything else about it has been judged by eye off a panel.
 
 ⚠️ WHAT MAKES IT TESTABLE IS THE TAP ON oscOut. Pd cannot ask a screen what it is
@@ -52,7 +52,7 @@ SEQ = [
 
     # ⛔ AND IT MUST NOT COME BACK. The store ages entries at 13 frames while
     # the layer flag clears at 1200 ms, so the store deliberately outlives the
-    # flag by one frame -- if the ageing were broken, a new parameter would raise
+    # flag by one frame -- if the aging were broken, a new parameter would raise
     # the layer again and redraw the OLD one beside it.
     (8200, "PARAM-AGAIN", ["\\; disp gate-p2 22"], GAP),
 
@@ -101,7 +101,7 @@ SEQ = [
 
     # --- ⛔ THE TWO RESERVED SELECTORS THAT ARE NOT THE OLED'S ------------
     # g_oled routes led and grid and throws them away. Everything it does not
-    # recognise is a parameter BY DEFINITION, so without those two arguments on
+    # recognize is a parameter BY DEFINITION, so without those two arguments on
     # the route an LED request would draw as a nonsense parameter row.
     (24800, "RESERVED", ["\\; disp led running", "\\; disp grid modal 45"], GAP),
 

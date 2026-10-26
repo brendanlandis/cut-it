@@ -23,7 +23,7 @@
 #X obj 900 790 t a a;
 #X obj 1140 840 print WIRE;
 #X obj 900 840 s screenLine4;
-#X text 900 900 ⛔ THE COMMAND LIVES IN A SCRIPT \, NOT IN A MESSAGE BOX. Pd atomises a message on spaces and shell rejoins it \, so quoting and redirection do not survive the trip., f 44;
+#X text 900 900 ⛔ THE COMMAND LIVES IN A SCRIPT \, NOT IN A MESSAGE BOX. Pd atomizes a message on spaces and shell rejoins it \, so quoting and redirection do not survive the trip., f 44;
 #X msg 1500 690 symbol INQUIRY-PROBE;
 #X obj 1500 740 s screenLine1;
 #X msg 1800 690 symbol see-sdcard-log;

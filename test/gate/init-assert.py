@@ -129,17 +129,17 @@ def run_asserts(cap):
             "nowhere -- item 266" % (i_wiring, i_wire, i_lp_stage))
 
     # ---- ⛔ OUTLET 1: THE LAUNCHPAD STAGE ---------------------------------
-    # u_init decides WHEN the Launchpad is initialised and no longer knows HOW,
+    # u_init decides WHEN the Launchpad is initialized and no longer knows HOW,
     # so the outlet itself is invisible from a bus -- but its consequence is not.
     # m_launchpad sends Programmer Mode when it fires, and that reaches [midiout].
-    print("\n--- outlet 1: when the Launchpad is initialised ---")
+    print("\n--- outlet 1: when the Launchpad is initialized ---")
     i_lp = first_index(lambda ln: ln == "DISP: modal launchpad")
     i_sysex = first_index(lambda ln: ln.startswith("MIDIOUT: 240 "))
-    A.check("the Launchpad was initialised at all", i_sysex is not None,
+    A.check("the Launchpad was initialized at all", i_sysex is not None,
             "no SysEx anywhere -- outlet 1 never fired, or it fired into nothing")
     A.check("⛔ ...only AFTER the launchpad stage is reached",
             i_lp is not None and i_sysex is not None and i_lp < i_sysex,
-            "the first SysEx is at line %s and the stage is at line %s. Initialising "
+            "the first SysEx is at line %s and the stage is at line %s. Initializing "
             "before ALSA is up is what the whole timed sequence exists to avoid"
             % (i_sysex, i_lp))
 
@@ -183,12 +183,12 @@ def run_asserts(cap):
     # either outlet fires, so both orderings satisfy it. The discriminator is
     # that the two outlets belong to DIFFERENT stages 500 ms apart, so the
     # Launchpad's SysEx must land between the stage name and the restore.
-    A.check("⛔ the Launchpad is initialised BEFORE the state is restored",
+    A.check("⛔ the Launchpad is initialized BEFORE the state is restored",
             None not in (i_sysex, i_restore) and i_sysex < i_restore,
             "SysEx at line %s, restore at line %s. Swapped, the instrument still "
             "boots and still restores -- both inlets take a bare bang -- so the "
             "only symptom is a restore that publishes into a Launchpad which has "
-            "not been initialised yet" % (i_sysex, i_restore))
+            "not been initialized yet" % (i_sysex, i_restore))
 
     # ⚠️ AND THE WHOLE TIMELINE AT ONCE, which is the check that would have
     # caught the outlet swap on its own. Each of the individual assertions above

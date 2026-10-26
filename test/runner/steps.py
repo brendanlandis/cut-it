@@ -8,7 +8,7 @@ was generated but NEVER FIDELITY-CHECKED. A third copy here would reintroduce
 exactly that, one layer up: a bench that generates, verifies, and is invisible to
 the runner.
 
-⚠️ THE HYPHENATED NEIGHBOURS LOAD THROUGH importlib. A hyphen is not a legal
+⚠️ THE HYPHENATED NEIGHBORS LOAD THROUGH importlib. A hyphen is not a legal
 Python identifier, so bench-gen.py and bench-extract.py cannot be imported by
 name; bench_steps.py and this file can, and that is the whole reason for the
 inconsistent punctuation across test/.
@@ -59,7 +59,7 @@ MEASURE_SUFFIX = _steps.MEASURE_SUFFIX
 # between the generator that writes these lines and the runner that reads them,
 # and it lives in bench_steps.py beside the format strings it has to match.
 # Writing the regexes again here would be the second copy, and the failure it
-# produces is the nastiest kind: the runner stops recognising a step, reports a
+# produces is the nastiest kind: the runner stops recognizing a step, reports a
 # stall, and the bench on the other end is working perfectly.
 SAY_STEP = _steps.SAY_STEP
 SAY_PROMPT = _steps.SAY_PROMPT
@@ -171,7 +171,7 @@ class Step(object):
         """What to look for: the PASS IF with its prefix stripped, always.
 
         ⛔ meta HAD A `watch` THAT REPLACED THIS, and it is gone. A step could
-        put anything it liked on the line labelled PASS IF, so the label was a
+        put anything it liked on the line labeled PASS IF, so the label was a
         promise the runner did not keep -- which is the only reason the prompt
         ever needed a [?] key to show the real one. The last two overrides were
         removed on 2026-08-11: midi 7's restated its PASS IF in other words, and

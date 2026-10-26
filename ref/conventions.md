@@ -334,7 +334,7 @@ any debounce caps the pulse train it makes — 344 Hz at zero, about 170 Hz at 2
 Pd's: Reference) — and 2 ms is a clock that looks fine at every ordinary tempo and loses pulses
 above about 430 BPM. A `phasor~` cannot bounce.
 
-**Normalise time units to Hz at the edge.** BPM-mode and MS-mode are a *units* choice, not two
+**Normalize time units to Hz at the edge.** BPM-mode and MS-mode are a *units* choice, not two
 engines: `bpm/60 × subdivisions` or `1000/ms`, then one `phasor~`. Do the conversion once, at
 the parameter, not throughout the patch.
 
@@ -365,7 +365,7 @@ The I/O contract, the measured level scale and the rest are on [audio.md](module
 asks by sending to `disp` and **does not know or care how it is drawn** — including `u_err`, which
 filters and forwards rather than drawing.
 
-**Callers send semantics, never layout.** `led running`, not a colour. `modal wiring`, not a font
+**Callers send semantics, never layout.** `led running`, not a color. `modal wiring`, not a font
 size.
 
 ⚠️ **A new selector on `disp` costs one `route` argument in every consumer that has a fallthrough**,
@@ -485,7 +485,7 @@ Layout is not cosmetic in Pd; it is the only structural documentation the langua
 
 **`.pd` files store absolute coordinates**, so moving a box is a real diff. Two consequences:
 small abstractions diff better than large canvases, and gratuitous rearranging costs review
-effort. Don't tidy and change behaviour in the same commit.
+effort. Don't tidy and change behavior in the same commit.
 
 ### Editing a `.pd` file by hand
 

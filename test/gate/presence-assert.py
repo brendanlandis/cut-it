@@ -7,7 +7,7 @@
 the schedule at the shipped tick; the second scales the settle and the tick by ten
 and leaves the counts alone, which is the only way anything here ever reaches the
 give-up. Two analysers would print two `N checks` lines, and the count is this
-suite's whole defence against an assertion quietly going missing -- test/README.md
+suite's whole defense against an assertion quietly going missing -- test/README.md
 adds them up. So there is one report(), at the bottom, covering both.
 
 ⛔ THE CLAIM: A DEVICE THAT WAS NEVER THERE STILL GETS RECOVERED. The run it reads

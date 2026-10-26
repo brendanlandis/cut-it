@@ -233,7 +233,7 @@ beat.**
   Each grain clock, sequencer and sampler owns a `c_clock` with its own rate, optionally slaved to
   master by a ratio.
 - **Time signature is a `c_clock` concern** — bar length, accent pattern — not a global.
-- *Normalise BPM and ms to Hz at the edge, feed one `phasor~`* generalises cleanly: N clocks is
+- *Normalize BPM and ms to Hz at the edge, feed one `phasor~`* generalizes cleanly: N clocks is
   N `phasor~` objects, and ms-based versus beat-based parts stop being a special case (C-11).
 
 **MIDI clock carries exactly one tempo**, so the SP-404 and Volca always follow master. Poly-tempo

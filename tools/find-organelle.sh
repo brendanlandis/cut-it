@@ -80,9 +80,9 @@ say "=== 3. IPv6 link-local -- WHERE THE DOCUMENTED FAULT HIDES ==============="
 # ⛔ This is the rung that distinguishes item 81 from a dead device. With no IPv4
 # lease the host is invisible to every check above and still answers here.
 ping6 -c 3 -i 0.4 "ff02::1%$IFACE" >/dev/null 2>&1
-# ⛔ A NEIGHBOUR THAT ALREADY HAS IPv4 IS NOT THIS FAULT, and skipping this test
+# ⛔ A NEIGHBOR THAT ALREADY HAS IPv4 IS NOT THIS FAULT, and skipping this test
 # is not a nuance -- the first version reported a NAS with ssh open as the
-# documented fault, because it probed every fe80 neighbour and believed whichever
+# documented fault, because it probed every fe80 neighbor and believed whichever
 # answered first. A lying diagnostic is worse than none.
 V4MACS=$(arp -a -n 2>/dev/null | sed -n 's/.* at \([0-9a-f:]*\) .*/\1/p' | tr 'A-Z' 'a-z')
 for a in $(ndp -an 2>/dev/null | awk -v i="$IFACE" '$3==i && $1 ~ /^fe80/ {print $1}'); do
@@ -97,7 +97,7 @@ for a in $(ndp -an 2>/dev/null | awk -v i="$IFACE" '$3==i && $1 ~ /^fe80/ {print
     *)  say "    $a has ssh but is not the Organelle:  $BAN" ;;
     esac
 done
-[ "$VERDICT" = ABSENT ] && say "  no IPv4-less IPv6 neighbour looks like the Organelle."
+[ "$VERDICT" = ABSENT ] && say "  no IPv4-less IPv6 neighbor looks like the Organelle."
 fi
 
 if [ "$VERDICT" = ABSENT ]; then

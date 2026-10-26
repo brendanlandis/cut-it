@@ -101,7 +101,7 @@ while true; do
 
     # ⚠️ ONCE PER OUTAGE, NOT ONCE EVER. The guard used to be [ "$FOUND" = 0 ],
     # so the first event of the run silenced every one after it -- and a fault
-    # you are characterising across repeated occurrences is exactly the thing
+    # you are characterizing across repeated occurrences is exactly the thing
     # that needs each one recorded.
     if [ "$REACH" = no ] && [ -z "$REPORTED_DOWN" ]; then
         REPORTED_DOWN=1

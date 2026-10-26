@@ -88,7 +88,7 @@
 #X connect 33 0 34 0;
 #X connect 34 0 29 0;
 #X connect 29 0 36 0;
-#X text 1180 620 THE LAUNCHPAD STAGE IS NOW AN OUTLET \, not a subpatch. Phase 6 moved Programmer Mode and the safe exit into m_launchpad \, and what stays here is the ORDER: this file still decides WHEN the Launchpad is initialised \, it just no longer knows HOW. The stage still reports modal launchpad to the screen at the same moment \, so a boot stuck on that name still means the same thing., f 44;
+#X text 1180 620 THE LAUNCHPAD STAGE IS NOW AN OUTLET \, not a subpatch. Phase 6 moved Programmer Mode and the safe exit into m_launchpad \, and what stays here is the ORDER: this file still decides WHEN the Launchpad is initialized \, it just no longer knows HOW. The stage still reports modal launchpad to the screen at the same moment \, so a boot stuck on that name still means the same thing., f 44;
 #X obj 1180 850 outlet;
 #X text 2000 680 OUTLET 2 -- RESTORE THE SAVED STATE \, wired to u_state in u_root. It fires at the LAST stage \, about 3.5s in \, which is the earliest moment every m_ layer and u_map exist to receive what comes back. Earlier and a restore would publish into nothing., f 44;
 #X text 2000 860 WHY IT IS HERE AND NOT A del INSIDE u_state. Startup ORDER is this file's job and the restore is a stage of it \, so putting a timer in u_state would mean two files owning the same sequence and neither one saying so -- exactly what the launchpad outlet above exists to avoid. It also fires FIRST of the three \, before modal-off and the footer \, so the screen settles after the state does rather than during it., f 44;

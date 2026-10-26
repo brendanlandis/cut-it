@@ -17,7 +17,7 @@
 #X obj 150 150 print INIT;
 #X text 30 450 loadbang waits 3s for ALSA connections \, then sends;
 #X text 30 470 Programmer Mode SysEx out MIDI port 1.;
-#X text 30 490 Pressing a pad echoes it back as an LED (velocity = colour).;
+#X text 30 490 Pressing a pad echoes it back as an LED (velocity = color).;
 #X text 30 510 PAD prints: pitch velocity. PRESSURE prints: value note.;
 #X obj 800 290 sysexin;
 #X obj 800 340 print SYSEX;

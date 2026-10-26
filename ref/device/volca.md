@@ -30,7 +30,7 @@ neither `param` (device-to-map) nor `disp` (display) fits a sounding note, so it
 ### Presence: `none`, and that is a fact rather than a gap
 
 `m_volca` registers as `none` on the presence bus and stops there — no poll, no last-heard clock, no
-ageing, and it can never be declared lost or back. **The Volca transmits nothing at all**
+aging, and it can never be declared lost or back. **The Volca transmits nothing at all**
 (Reference), so there is no evidence of its presence for any amount of code to find, and the
 alternative to recording that is a silence that reads as an oversight.
 
@@ -67,7 +67,7 @@ seconds produce nothing at all, across a patch reload included. Item 279.
 master tempo is wrong.
 
 **Fix, for the transport half only:** ✅ **`panic`'s realtime STOP reaches port 4**, through a
-receive that the panic branch is the sole writer of — item 295. A synthesiser with a sequencer that
+receive that the panic branch is the sole writer of — item 295. A synthesizer with a sequencer that
 keeps running through a panic is the case panic exists for, and the mixer's master fader cannot stop
 it. ⛔ **The clock is deliberately NOT widened with it.** Which devices Cut It intends to *drive* is
 a v0.4 sound question — the Launchpad ignores incoming clock in Programmer Mode, so one of the two
@@ -123,7 +123,7 @@ the ALSA **client names** and runs `wire.sh` only when they change, so a device 
 whether or not anything was ever lost. ✅ **So the bench steps pull the interface ALONE** — pulling a
 detectable device alongside it goes through the loss path and proves nothing about the heartbeat.
 
-| | Behaviour | Evidence | Item |
+| | Behavior | Evidence | Item |
 |---|---|---|---|
 | `none` device absent at load | enumerated, unsubscribed, never re-wired — 120 s observed | verified | 285 |
 | …and seen again, unprompted | `USB Uno MIDI Interface` bare on a session up **1 day 21 h** — no `Connecting To`, no `Connected From`, both Pd ports unattached | verified | 285 |

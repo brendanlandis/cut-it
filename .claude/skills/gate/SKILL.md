@@ -100,7 +100,7 @@ written, Pd loads a file that does not exist, the `; pd quit` inside it never fi
 hangs forever instead of failing.** A gate that hangs is worse than one that fails. Status-check it
 and put a watchdog on every headless run.
 
-⛔ **TIME THE WINDOWS FROM BEHAVIOUR, NOT FROM THE IMPLEMENTATION.** The old map gate had 23 green
+⛔ **TIME THE WINDOWS FROM BEHAVIOR, NOT FROM THE IMPLEMENTATION.** The old map gate had 23 green
 checks and missed a boot-time race, because its windows started at 2400 ms *for the reason the code
 read its table at 2000*. **A test whose schedule is derived from the implementation cannot falsify
 it**, and item 234 was found by hardware instead. Every driver in `test/gate/` now opens a window

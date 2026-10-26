@@ -1,5 +1,5 @@
 #N canvas 30 30 2500 1900 12;
-#X text 20 20 State Probe -- Phase 8's Step 0 \, and it must be SELECTED FROM THE MENU rather than deploy-loaded. It answers S0-1 through S0-4 in one press of System -> Save \, and it deliberately touches nothing in Cut It: mother's save behaviour is mother's \, so a separate patch measures it without dirtying the instrument., f 58;
+#X text 20 20 State Probe -- Phase 8's Step 0 \, and it must be SELECTED FROM THE MENU rather than deploy-loaded. It answers S0-1 through S0-4 in one press of System -> Save \, and it deliberately touches nothing in Cut It: mother's save behavior is mother's \, so a separate patch measures it without dirtying the instrument., f 58;
 #X text 900 20 IT RECORDS ITSELF BECAUSE THERE IS NO CONSOLE. A menu-launched patch sends stdout to tty1 \, so every finding goes to /sdcard/phase8-probe.log and is read back over ssh afterwards. Same reasoning as u_err's persistent log and AP Probe's., f 58;
 #X text 1780 20 HOW TO RUN. Select State Probe from the menu. Wait for STATE PROBE on the screen. Press System -> Save. The second line should read SAVESTATE HIT. Then System -> Save New. Everything else is read off the device afterwards., f 58;
 #X obj 20 340 loadbang;

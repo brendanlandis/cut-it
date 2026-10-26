@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Panic's second tier, analysed -- ref/module/map.md and ref/module/boot.md.
+"""Panic's second tier, analyzed -- ref/module/map.md and ref/module/boot.md.
 
 Three halves, and the FIRST NEEDS NO Pd AT ALL.
 

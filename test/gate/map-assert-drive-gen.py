@@ -46,7 +46,7 @@ SEQ = [
     (3200, "LIVE", ["\\; param og-knob-1 0.3"], GAP),
     # ⛔ PLAY AND STOP ARE BUTTONS AND NEVER PICK UP. The transport moved off
     # og-aux onto the nano's own PLAY and STOP -- xport-2 and xport-5, which is
-    # what those two are physically labelled -- so that the aux button could
+    # what those two are physically labeled -- so that the aux button could
     # become the keyboard's modifier. If either were ever given a pickup slot
     # the repeat would latch and vanish, and the transport would stick.
     (3400, "PLAY-1", ["\\; param xport-2 1"], GAP),

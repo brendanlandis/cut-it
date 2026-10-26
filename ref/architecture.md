@@ -187,7 +187,7 @@ The four that shape everything else.
 
 | Decision | Consequence |
 |---|---|
-| **Grain timing must be audio-domain** | Pd's message clock is quantised to a 64-sample block (~1.45 ms), ~20% of a 256th note at 120 BPM. `phasor~` and `vline~`, never `metro`/`line~` at grain rate (C-11). Built that way from the first line — see [tempo.md](module/tempo.md) |
+| **Grain timing must be audio-domain** | Pd's message clock is quantized to a 64-sample block (~1.45 ms), ~20% of a 256th note at 120 BPM. `phasor~` and `vline~`, never `metro`/`line~` at grain rate (C-11). Built that way from the first line — see [tempo.md](module/tempo.md) |
 | **Pd sequences everything** | Timing rides in note events, not MIDI clock. No external device runs its own sequencer during a performance |
 | **Two independent input channels** | `inL` = drums (the tip), `inR` = fx (the ring), from the 404's hard-panned pair through a TRS Y-cable — see [audio.md](module/audio.md) |
 | **Compose and perform are separate modes** | Both the Launchpad and the Organelle's keyboard serve different roles in each, so this shapes the top level of the patch |
@@ -204,7 +204,7 @@ three were borne out:
 3. **Timing is architectural.** Grain clocks must be audio-domain from the first line, not converted
    later.
 
-## Division of labour between the surfaces
+## Division of labor between the surfaces
 
 Nothing overlaps, and that is deliberate:
 

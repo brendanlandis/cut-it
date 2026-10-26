@@ -14,7 +14,7 @@
 #X obj 1400 710 print PROBE;
 #X msg 620 760 sendtyped /oled/setscreen i 3;
 #X obj 620 800 s oscOut;
-#X text 20 870 WHAT IT SHOWED. BUFFER-4 appeared for six seconds and the live meters came back after it \, so writing \, flipping and switching an off-screen buffer all work. The alert layer did NOT move there. There was nothing to optimise -- g_oled rebuilds screen 3 from state ten times a second \, so nothing underneath needs preserving -- and switching is edge-triggered where every layer is state-driven \, so one lost setscreen strands the display on a device with no console. A dropped frame today self-corrects in 100 ms., f 90;
+#X text 20 870 WHAT IT SHOWED. BUFFER-4 appeared for six seconds and the live meters came back after it \, so writing \, flipping and switching an off-screen buffer all work. The alert layer did NOT move there. There was nothing to optimize -- g_oled rebuilds screen 3 from state ten times a second \, so nothing underneath needs preserving -- and switching is edge-triggered where every layer is state-driven \, so one lost setscreen strands the display on a device with no console. A dropped frame today self-corrects in 100 ms., f 90;
 #X connect 2 0 3 0;
 #X connect 3 0 4 0;
 #X connect 4 2 5 0;

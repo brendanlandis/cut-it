@@ -17,7 +17,7 @@
 #X obj 560 890 s \$0-dirty;
 #X text 760 720 OWNERSHIP GOES THROUGH change -1 \, so re-asserting it costs nothing \, and a 0 to 1 transition sets the dirty flag -- because while we did not own the surface the device was redrawing it and whatever we last sent is gone. THE -1 IS LOAD-BEARING for the same reason it is in u_level and m_organelle: a bare change starts life holding 0 and would swallow a real 0., f 50;
 #X obj 20 1080 array define \$0-surface 109;
-#X text 20 1140 THE FRAME BUFFER \, one cell per Programmer-Mode index. 1 to 108 are used -- cell 0 is allocated and deliberately never written \, because the Setup button is measured to take no colour. The paint subpatch says why., f 58;
+#X text 20 1140 THE FRAME BUFFER \, one cell per Programmer-Mode index. 1 to 108 are used -- cell 0 is allocated and deliberately never written \, because the Setup button is measured to take no color. The paint subpatch says why., f 58;
 #N canvas 30 30 1900 1000 disp-in 0;
 #X text 20 20 g_grid RIDES THE disp BUS under ONE reserved selector \, grid \, and routes its own vocabulary underneath. That costs two lines in g_oled -- grid appended to its route and the reject moved along -- exactly what led cost in Phase 5 \, and it keeps every display request for every surface in one log stamped with one frame number., f 58;
 #X text 20 150 NO list append BEFORE THE SECOND ROUTE. grid modal 45 arrives out of the first route with modal already AS the selector \, which is the shape the second route wants. Same fact as g_led \, and a list append here would break every match., f 58;
@@ -72,7 +72,7 @@
 #X msg 200 560 1;
 #X obj 200 620 s \$0-dirty;
 #X text 20 700 TWO ROUTES AND NO list append BETWEEN THEM. mode carries class then sub-mode -- compose mode-1 -- so the remainder out of the first route is mode-1 already AS a selector. THE CLASS IS DELIBERATELY DISCARDED HERE: u_err is what cares whether we are in compose or perform \, and what this surface shows is WHICH of the six is live., f 58;
-#X text 900 200 A mode this file does not recognise falls out of the second route's reject and changes nothing \, which is the right failure: the grid keeps showing the last mode it understood rather than going blank or inventing one., f 50;
+#X text 900 200 A mode this file does not recognize falls out of the second route's reject and changes nothing \, which is the right failure: the grid keeps showing the last mode it understood rather than going blank or inventing one., f 50;
 #X connect 1 0 2 0;
 #X connect 2 0 3 0;
 #X connect 2 1 3 0;
@@ -245,7 +245,7 @@
 #X obj 1280 620 tabwrite \$0-surface;
 #X text 20 880 THE MODE ROW IS CC 91 TO 96 \, six of the eight along the top \, so all 64 pads stay free. Those numbers are MEASURED on this unit rather than taken from the documentation -- which turned out to be missing a whole row of buttons and the corner at 90., f 58;
 #X text 860 880 THE BEAT ROW IS GRID ROW 1 \, indices 11 to 18 \, the BOTTOM row of pads -- row 1 at the bottom is the device's own numbering and it happens to read the right way round for a playhead. THE TWO BRANCHES ADD DIFFERENT NUMBERS AND THAT IS NOT A TYPO: the dim loop counts 0 to 7 so it adds 11 \, while c_clock's beat number is ONE-BASED \, 1 to 8 \, so the bright one adds 10. MEASURED \, not assumed -- with 11 on both \, beat 8 landed on index 19 \, lighting a ring button and blanking the row once per bar. Seven beats out of eight looked perfect., f 58;
-#X text 1280 700 tabwrite TAKES THE VALUE ON THE LEFT AND THE INDEX ON THE RIGHT \, measured rather than assumed \, so every one of these is t b f: the index first into the cold inlet \, then the colour., f 46;
+#X text 1280 700 tabwrite TAKES THE VALUE ON THE LEFT AND THE INDEX ON THE RIGHT \, measured rather than assumed \, so every one of these is t b f: the index first into the cold inlet \, then the color., f 46;
 #X connect 1 0 2 0;
 #X connect 2 3 3 0;
 #X connect 2 2 14 0;
@@ -292,7 +292,7 @@
 #X connect 36 0 37 0;
 #X connect 37 0 38 0;
 #X restore 900 330 pd regions;
-#X text 900 430 THE FILL IS THE CLEAR. Every frame writes all 108 cells before anything else \, so there is no separate blank step to forget and no way for a stale pad to survive a layer change. t b b f sets the colour into its cold store FIRST \, off the rightmost outlet \, then resets the counter \, then runs the loop., f 50;
+#X text 900 430 THE FILL IS THE CLEAR. Every frame writes all 108 cells before anything else \, so there is no separate blank step to forget and no way for a stale pad to survive a layer change. t b b f sets the color into its cold store FIRST \, off the rightmost outlet \, then resets the counter \, then runs the loop., f 50;
 #X text 900 600 The counter reset is a message box into the cold inlet off the trigger's rightmost outlet \, so a loop can never start from wherever the last one stopped -- the reset-to-23 lesson from u_tempo \, in its simplest form., f 50;
 #X connect 1 0 4 0;
 #X connect 2 0 5 0;
@@ -319,7 +319,7 @@
 #X restore 20 1580 pd prepare;
 #X text 280 1614 fills the frame buffer from whichever layer won -- emits nothing, f 50;
 #N canvas 30 30 2000 1150 paint 0;
-#X text 20 20 THE ONLY THING IN Cut It THAT SENDS TO THESE LEDs. One SysEx per repaint \, carrying the whole span: the header \, then 108 times a type byte \, an index and a colour \, then 247. 332 bytes., f 58;
+#X text 20 20 THE ONLY THING IN Cut It THAT SENDS TO THESE LEDs. One SysEx per repaint \, carrying the whole span: the header \, then 108 times a type byte \, an index and a color \, then 247. 332 bytes., f 58;
 #X text 20 140 THE SPAN IS 1 TO 108 -- 108 SPECS -- AND IT IS EVERY BUTTON THE DEVICE WILL TAKE. It used to stop at 10 on the belief that 120 specs were REJECTED OUTRIGHT and that 106 was a documented cliff which failed silently. BOTH WERE WRONG: that came from three broken probes \, and a clean 120-spec message paints the whole surface. items 105 and 109. THE REASON TO COVER THE WHOLE SPAN IS NOT NEATNESS \, IT IS THAT AN INDEX OUTSIDE IT CAN NEVER BE CLEARED. LED state survives the Programmer Mode switch \, so whatever Live Mode last drew on CC 1 to 8 persisted into every session and no repaint could touch it -- measured twice \, green one run and dark the next \, with nothing here changing between them. INDEX 0 \, THE SETUP BUTTON \, IS OUTSIDE ON PURPOSE AND THAT ONE IS MEASURED: a valid one-spec frame addressing it lights nothing and the button transmits nothing in Programmer Mode. Item 110., f 90;
 #X obj 20 420 inlet;
 #X obj 20 480 t b b b b;
@@ -339,7 +339,7 @@
 #X obj 1120 870 s \$0-byte;
 #X obj 900 870 tabread \$0-surface;
 #X obj 900 930 s \$0-byte;
-#X text 20 1000 t f f b EMITS THE THREE BYTES OF A SPEC IN THE RIGHT ORDER BY FIRING RIGHT TO LEFT: the type \, then the index \, then the colour read back out of the buffer. Taking that order from one trigger rather than from three separate chains is what makes it impossible to send a spec with its bytes swapped., f 90;
+#X text 20 1000 t f f b EMITS THE THREE BYTES OF A SPEC IN THE RIGHT ORDER BY FIRING RIGHT TO LEFT: the type \, then the index \, then the color read back out of the buffer. Taking that order from one trigger rather than from three separate chains is what makes it impossible to send a spec with its bytes swapped., f 90;
 #X connect 2 0 3 0;
 #X connect 3 3 8 0;
 #X connect 3 2 6 0;

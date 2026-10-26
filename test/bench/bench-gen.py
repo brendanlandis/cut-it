@@ -324,7 +324,7 @@ CAPS_OK = {
     "OLED", "LED", "BPM", "DSP", "USB", "CC", "TTL", "MIDI", "NN", "SD", "OSC",
     "ALSA",
     "SP-404", "EXT", "NO-LINK", "SETUP", "GO",
-    # Moulded on the nanoKONTROL's transport row, left to right. Two of them
+    # Molded on the nanoKONTROL's transport row, left to right. Two of them
     # mean what they say again since start and stop moved off the aux button.
     "REW", "PLAY", "LOOP", "STOP", "REC",
     "BEATS", "M-BEATS", "C1-BEATS", "C2-BEATS",
@@ -339,7 +339,7 @@ CAPS_OK = {
 # ⚠️ WHOLE WHITESPACE TOKENS, NEVER A REGEX OVER THE LINE. A pattern anchored on
 # word boundaries splits `C1-BEATS-ratio-1` at the hyphen and reports the
 # `C1-BEATS-` half as shouting. A token carrying any lower case is an identifier
-# and is not shouting at all, whatever is capitalised inside it.
+# and is not shouting at all, whatever is capitalized inside it.
 CAPS_STRIP = ".,:;%()[]"
 
 
@@ -359,7 +359,7 @@ def lint_caps(title, passif, meta, where):
     A step is read by a person in a hurry with the rig in front of them. If
     capitals mean both "match this string exactly" and "I mean it", they mean
     neither. `CAPS_OK` is the literal set -- screen text, printed counter
-    names, moulded labels, acronyms -- and anything else in capitals is
+    names, molded labels, acronyms -- and anything else in capitals is
     emphasis, which is what this refuses.
     """
     fields = [("title", title), ("pass_if", passif)]
@@ -369,7 +369,7 @@ def lint_caps(title, passif, meta, where):
         for word in _shouted(text):
             assert False, (
                 "%s %s shouts %r. Capitals are reserved for what is literally "
-                "printed on a screen or moulded on a device -- add it to "
+                "printed on a screen or molded on a device -- add it to "
                 "CAPS_OK if it is one of those, otherwise write it as a "
                 "sentence: %s" % (where, label, word, text))
 
@@ -426,7 +426,7 @@ def lint_selfcontained(steps, name):
 def lint_modal(steps, name):
     """⛔ A MODAL COVERS THE WHOLE SURFACE AND OUTLIVES THE STEP THAT RAISED IT.
 
-    `grid modal N` paints every pad, ring button and mode lamp one colour, and
+    `grid modal N` paints every pad, ring button and mode lamp one color, and
     the only things that take it down are an explicit `grid modal-off` and a
     thirty-second safety timeout. So a step that raises one and does not clear
     it has decided what the NEXT step is judged against -- and the next step's
@@ -468,7 +468,7 @@ def lint_modal(steps, name):
         assert any(s.startswith("modal") for s in nxt), (
             "%s step %d raises a modal and never clears it, and step %d does "
             "not clear or re-raise one either. The whole surface stays that "
-            "colour for thirty seconds -- run in order a person waits the "
+            "color for thirty seconds -- run in order a person waits the "
             "timeout out, but a --from walk fires these back to back and step "
             "%d is judged through it. Send `grid modal-off` from step %d."
             % (name, i, i + 1, i + 1, i + 1))

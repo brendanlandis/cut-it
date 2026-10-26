@@ -57,7 +57,7 @@ MEASURE_SUFFIX = "-zero"
 # A bench announces itself on Pd's console and test/runner/ reads those lines
 # back to know which step is running -- so the generator's format strings and the
 # runner's regexes are two halves of ONE agreement. Written apart they drift
-# silently and in the worst possible way: the runner stops recognising a step,
+# silently and in the worst possible way: the runner stops recognizing a step,
 # calls it a stall, and the bench is fine. Written together, a change to the
 # wording has to pass runner-assert, which checks each regex against the string
 # its own format produces.
@@ -235,7 +235,7 @@ STEPS_NANOKONTROL = [
   # never reached the lookup at all. Mode moved to the Launchpad's lit top row,
   # so these fall through to the table -- PLAY and STOP find start and stop
   # there, and the other four miss and report their raw value, which is item
-  # 242's rule and the right behaviour: a control that does nothing and says
+  # 242's rule and the right behavior: a control that does nothing and says
   # nothing cannot be told from a broken one.
   # ⚠️ AND PLAY AND STOP DRAW NOTHING. They are mapped to button destinations,
   # which draw no row -- the aux LED and the footer already say what happened --
@@ -524,7 +524,7 @@ STEPS_LAUNCHPAD = [
   # new tempo takes effect on the next tick -- the only thing on this rig that
   # slides is the SP-404 chasing an external clock, which is a fact about the
   # 404 rather than about anything here. Read from the rig as a possible fault
-  # (2026-08-11) and it was correct behaviour.
+  # (2026-08-11) and it was correct behavior.
   ),
  ('Pads and releases',
   'PASS IF: Every pad you press reports pad-NN on the OLED with its velocity. Releasing it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressing harder on a held pad draws no row of its own -- with aftertouch on or off -- and that is correct.',
@@ -608,7 +608,7 @@ STEPS_LAUNCHPAD = [
   # the mode (item 276). A dark grid after sixty seconds is the failure.
   {'do': 'Press enter first. Unplug the Launchpad USB and count to fifteen, then '
          'plug it back in and wait up to 60 seconds without touching anything.'}),
- # ⛔ THESE THREE ASSERTED BEHAVIOUR THAT WAS DELIBERATELY REMOVED, and the patch
+ # ⛔ THESE THREE ASSERTED BEHAVIOR THAT WAS DELIBERATELY REMOVED, and the patch
  # says so in capitals: m_launchpad's comment reads "PANIC USED TO COME IN HERE
  # TOO, AND IT WAS WRONG ... DO NOT WIRE r panic BACK IN". Handing the surface
  # back set want 0, the watchdog stopped re-asserting Programmer Mode, and the
@@ -616,7 +616,7 @@ STEPS_LAUNCHPAD = [
  # instrument. Worse, in Live Mode the device floods MIDI port 1 with clock and
  # wire.sh connects that port to Pd's Midi-In 1, so a panic also buried Cut It's
  # primary MIDI input. Item 250. display-assert has asserted the current
- # behaviour all along -- "⛔ the grid SURVIVES a panic -- it must keep painting"
+ # behavior all along -- "⛔ the grid SURVIVES a panic -- it must keep painting"
  # -- so the gate and the bench were testing opposite claims and only the bench
  # could be wrong.
  ('Panic keeps the surface',
@@ -849,7 +849,7 @@ STEPS_RECOVER = [
  ('Short press -- the Volca stops too',
   'PASS IF: The Volca stops sequencing. Before this was built its transport never heard anything at all -- it kept running through a panic and the mixer could only mute it.',
   [],
-  # 📄 KORG'S DOCUMENTATION, NOT A MEASUREMENT. The Volca honours Start/Stop only
+  # 📄 KORG'S DOCUMENTATION, NOT A MEASUREMENT. The Volca honors Start/Stop only
   # when its own MIDI Clock src is Auto; set to Internal it ignores them and a
   # perfectly correct patch looks broken. That is why the setting is a `need`
   # rather than something to discover halfway through. ref/device/volca.md.
@@ -871,7 +871,7 @@ STEPS_RECOVER = [
   # ⛔ THE KNOB IS THE OTHER HALF AND IT IS EASY TO SKIP. After an emergency the
   # knobs you are holding are the truth, so the reload deliberately does NOT arm
   # parameter pickup. A knob that needs a sweep to wake up is a failure here even
-  # though it is correct behaviour on an ordinary boot.
+  # though it is correct behavior on an ordinary boot.
   {'do': 'Hold the top left corner button for a full two seconds and let go. Then watch the screen, and afterwards turn knob 1 a little.',
    'need': ['A Save done at some point, so knobs.txt exists. Without one '
             'nothing would be held on an ordinary boot either and the last '
@@ -1008,7 +1008,7 @@ STEPS_MIDI = [
   # what is supposed to happen. The per-pad name comes from u_map's generic
   # echo and carries the control's VALUE, so a release is velocity 0 and the row
   # changes (ref/device/sp404.md, item 283). A step that describes less of the
-  # screen than the screen shows makes correct behaviour read as a fault.
+  # screen than the screen shows makes correct behavior read as a fault.
   # ⛔ THE WINDOW HAS TO OUTLAST THE HAND -- see step 4. This one held NOTHING
   # AT ALL on the rig, which is what an exact count of 1 reads as a fail against.
   {'do': 'Press enter first. Then press and hold any pad and let go. There are about ten seconds to do it -- one hit only.',

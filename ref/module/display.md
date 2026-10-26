@@ -28,9 +28,9 @@ why it cost nothing to add.
 | Surface | Plain English? | Owner | Verdict | Evidence | Item |
 |---------|----------------|-------|---------|----------|------|
 | Organelle OLED | yes | `g_oled` | The primary performance surface. 128×64 graphics, not five text lines | verified | — |
-| Organelle aux LED | no | `g_led` | One RGB LED, **seven colours and off**. The only state display that is not a screen | verified | — |
+| Organelle aux LED | no | `g_led` | One RGB LED, **seven colors and off**. The only state display that is not a screen | verified | — |
 | Launchpad Pro MK3 | no | `g_grid` | **96 button LEDs + the logo** = 97 addressable, painted across an index span of **1–108**. Spatial state only | verified | — |
-| iPhone / PdParty | yes | `u_net` | Unlimited size and colour, over WiFi. Development and diagnostics, **not** performance | verified | — |
+| iPhone / PdParty | yes | `u_net` | Unlimited size and color, over WiFi. Development and diagnostics, **not** performance | verified | — |
 
 Three devices in the rig can display nothing at all: the nanoKONTROL mk1 has no host-controllable
 LEDs, the Volca is receive-only, and the SP-404 has **the best screen in the rig and it is
@@ -101,7 +101,7 @@ to five entries** in `[text define $0-params]`, one line of `<frame-stamp> <name
 | | Evidence | Item |
 |---|----------|------|
 | A control already on screen is updated **in place** — only its value changes. A new one is appended **below**. A **sixth is refused** until a row frees up | verified | — |
-| Ageing: each entry records the frame it last moved in, and anything **13 frames** behind is dropped every frame | verified | — |
+| Aging: each entry records the frame it last moved in, and anything **13 frames** behind is dropped every frame | verified | — |
 | The scan walks from the **last index toward 0**, because deleting a line shifts everything below it and going downward makes that harmless. `until`'s own count bounds the loop | verified | — |
 | **13 and not 12 is deliberate** — `pd layers` clears `$0-a-param` on a 1200 ms delay, so the store is guaranteed to outlive the flag by a frame. Otherwise a rounding difference leaves the param layer winning with nothing to draw, which looks exactly like a dead patch | verified | — |
 
@@ -154,7 +154,7 @@ and `recover`. See [organelle.md](../device/organelle.md).
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
 | `home` | 0 | Always active | Never | **Regions** — six mode lamps on CC 91–96, the beat row on grid indices 11–18 | verified | — |
-| `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | The whole surface, one colour | verified | — |
+| `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | The whole surface, one color | verified | — |
 | `alert` | 2 | `disp` → `alert …`, **`fail` only** | 2 s | The whole surface, red | verified | — |
 
 **`panic` raises `modal` with palette 5, red, and clears it with an explicit `grid modal-off` one
@@ -167,7 +167,7 @@ addressed at all, so panic still never hands the surface back.
 | | Evidence | Item |
 |---|----------|------|
 | The frame clock runs at **50 Hz** but paints only when a **dirty flag** is set — nothing at all when idle, about two frames a second at 120 BPM | verified | 94 |
-| Every repaint is one SysEx of **108 colour specs covering indices 1–108**, 332 bytes | verified | — |
+| Every repaint is one SysEx of **108 color specs covering indices 1–108**, 332 bytes | verified | — |
 | The frame clock **costs nothing**: it checks the flag rather than painting. 10 Hz and 50 Hz measured identical on the device | verified | 94 |
 | Raised from 10 Hz because at 240 BPM a 250 ms beat does not divide into 100 ms, so the beat row swung **±50 ms** | verified | — |
 | **Every raise AND every expiry sets the dirty flag** — a layer falling away changes the frame as much as one arriving | verified | — |
@@ -211,7 +211,7 @@ already the right shape and needs nothing.
 
 ### A new selector on `disp` costs one `route` argument in every consumer that has a fallthrough
 
-⚠️ Everything a consumer does not recognise is a **parameter by definition**, so a selector with no
+⚠️ Everything a consumer does not recognize is a **parameter by definition**, so a selector with no
 branch falls out of the reject and is drawn as a nonsense parameter row. `led` had to be added to
 `g_oled`'s `route` and left unconnected; `grid` cost the same two lines.
 
@@ -249,7 +249,7 @@ read is worth nothing.
 ⛔ 16px fits about ten characters across 128 px, so `slider-1 43` clips to `slider-1 4` — **a silent
 failure that looks like a working display.** Real names like `chop-size` are no shorter.
 
-**Fix:** a small name over a mid-size value. It clips nothing and generalises.
+**Fix:** a small name over a mid-size value. It clips nothing and generalizes.
 
 ### `g_grid` must not copy `g_oled`'s unconditional repaint
 
@@ -276,7 +276,7 @@ After that a replug will not recover the grid. See [launchpad.md](../device/laun
 
 ### Callers send semantics, never layout
 
-Nothing outside a `g_` file knows a pixel, a colour or a layer. A caller sends `led running`, not a
+Nothing outside a `g_` file knows a pixel, a color or a layer. A caller sends `led running`, not a
 number; `modal wiring`, not a font size. **That is what makes the arbiter replaceable** and what lets
 a new control appear on screen with no change to any display file.
 
@@ -376,7 +376,7 @@ meters back. Drawing off-screen, `gFlip`-ing and switching both directions all w
 **`g_oled` still draws everything to screen 3 and never switches**, for two reasons a passing probe
 does not change:
 
-- **There is nothing to optimise.** `g_oled` clears and rebuilds screen 3 from stored state ten times
+- **There is nothing to optimize.** `g_oled` clears and rebuilds screen 3 from stored state ten times
   a second, so nothing needs preserving and restore is automatic on the next frame. The saving would
   be an alert dropping from ~70 messages/second to about five, for a 2–4 second event, against a home
   screen that sustains that rate continuously.

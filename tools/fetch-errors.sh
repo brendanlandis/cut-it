@@ -179,7 +179,7 @@ awk '
 echo
 echo "── detail, newest session first ──────────────────────────────"
 awk '
-    # n MUST be initialised. An uninitialised awk variable used as a subscript
+    # n MUST be initialized. An uninitialised awk variable used as a subscript
     # is the empty STRING, not 0, so lines before the first BOOT would land in
     # body[""] and never be printed — they would silently vanish from a log
     # whose entire purpose is not losing things.

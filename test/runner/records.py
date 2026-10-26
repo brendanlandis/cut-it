@@ -41,7 +41,7 @@ RUNS = os.path.join(RESULTS, "runs")
 LATEST = os.path.join(RESULTS, "latest.json")
 SCHEMA = 1
 
-# ⚠️ THIRTY DAYS, AND IT IS A JUDGEMENT RATHER THAN A MEASUREMENT. Long enough
+# ⚠️ THIRTY DAYS, AND IT IS A JUDGMENT RATHER THAN A MEASUREMENT. Long enough
 # that a bench run survives a normal week of patch work, short enough that a
 # verdict from a machine nobody has touched since is not quietly believed.
 MAX_AGE_DAYS = 30

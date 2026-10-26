@@ -9,7 +9,7 @@ plan-v04.md notes the mode split is weighted toward perform, so the first place
 anyone would find out is a venue.
 
 ⚠️ IT ASSERTS ON THE FILTER, NOT ON THE DRAWING. Whether an alert outranks a
-modal, how long it stays and what colour it is are display-assert's and
+modal, how long it stays and what color it is are display-assert's and
 oled-assert's; this one is only about what u_err lets THROUGH.
 
 TWO HALVES, and the first needs no Pd at all: a static lint over every error
@@ -288,7 +288,7 @@ def run_asserts(cap):
     # quietly asserted a SECOND claim it was never meant to make: that the patch
     # itself raises nothing during the run. It does -- u_net's link watchdog says
     # `warn u_net net-link-down` on any machine with no phone answering, which is
-    # correct behaviour and not this gate's business. The check passed only
+    # correct behavior and not this gate's business. The check passed only
     # because that watchdog happened to fire just outside the window, and it
     # moved inside as soon as an unrelated change shifted the load by a few
     # milliseconds. Worse, it moved to a DIFFERENT position on different runs, so

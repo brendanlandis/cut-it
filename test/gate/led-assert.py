@@ -2,12 +2,12 @@
 """The aux LED's analyser -- ref/device/organelle.md. Reads a capture on stdin.
 
 g_led owns the one display surface in the rig that is not a screen. Callers send
-a STATE on the disp bus -- `led running` -- and never a colour, so the whole
+a STATE on the disp bus -- `led running` -- and never a color, so the whole
 subject of this gate is the four-row translation table and what happens to a row
 that is not in it.
 
 ⛔ IT ASSERTS ON WHAT MOTHER IS TOLD, NOT ON WHAT LIGHTS UP. Pd cannot ask an LED
-what colour it is, and the permutation from the patch-facing 0..7 to the
+what color it is, and the permutation from the patch-facing 0..7 to the
 hardware's RGB bitmask happens inside mother.pd, which is not here. The value
 sent to `led` is completely knowable, and it is the level our own code works at.
 """
@@ -70,7 +70,7 @@ def run_asserts(cap):
             "values in state order were %s" % vals)
 
     # ---- a state g_led does not know --------------------------------------
-    print("\n--- a state it does not recognise ---")
+    print("\n--- a state it does not recognize ---")
     A.check("an unknown state raises warn g_led unknown-led-state",
             err("UNKNOWN") == [["warn", "g_led", "unknown-led-state"]],
             "got %s" % err("UNKNOWN"))
@@ -81,7 +81,7 @@ def run_asserts(cap):
 
     # ---- a disp message that is not the LED's -----------------------------
     # g_led shares disp with g_oled, g_grid and u_net, and Pd delivers every
-    # message to every receiver, so ignoring what is not its own is behaviour
+    # message to every receiver, so ignoring what is not its own is behavior
     # rather than a formality.
     print("\n--- a disp selector that is not its own ---")
     A.check("the driver's non-led message did reach the bus",

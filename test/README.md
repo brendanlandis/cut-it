@@ -6,7 +6,7 @@ who or what says pass:
 | | Verdict from | Runs |
 |---|---|---|
 | `gate/` | **a program**, unattended | every commit, in ~5 minutes, on the Mac |
-| `bench/` | **a person**, with the rig plugged in | when hardware behaviour needs judging |
+| `bench/` | **a person**, with the rig plugged in | when hardware behavior needs judging |
 
 ⛔ **A gate is not trusted until it has FAILED.** Reintroduce the bug, watch it go red, revert. This
 project has shipped a gate that passed a broken patch 15/15, and one that had run its own driver
@@ -18,7 +18,7 @@ word.
 
 ## One gate per module
 
-Twenty-one gates, and each answers for exactly one page under `ref/`. That is the whole organising
+Twenty-one gates, and each answers for exactly one page under `ref/`. That is the whole organizing
 principle: **a page that names a gate should be able to name one whose entire subject is that page**,
 or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
@@ -49,7 +49,7 @@ were false.
 
 **703 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totalling the run gives **696**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **696**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 42 come from TWO Pd runs and one tally**, which is the only entry here
@@ -223,7 +223,7 @@ to press), `watch`, `check` (a predicate), `wait`, and `targets`. ⛔ **It never
 emitting it would reopen every hardware-verified step text to the comma/semicolon fragmentation
 hazard the generator exists to prevent, so `bench-verify.py` still diffs three fields.
 
-⛔ **`watch` is gone entirely.** It replaced the line labelled `PASS IF:` with something else, so on
+⛔ **`watch` is gone entirely.** It replaced the line labeled `PASS IF:` with something else, so on
 two steps that label named text the verdict was not recorded against — which is the only reason the
 prompt ever needed a `[?]` key. `midi` 7's restated its PASS IF in other words and `launchpad` 14's
 explained the Mac dev panel to somebody standing at the rig. **The count a predicate wants is printed
@@ -480,9 +480,9 @@ commands *into* 9994 to drive the inbound half. `Cut It/` is never touched.
 `u_net` are deployed by two different mechanisms — `tools/deploy.sh` and a WebDAV copy — so their
 spellings can drift a long way apart with nothing failing until somebody is at the rig. The lint
 reads the scene's command message boxes **off the graph** and requires them to equal `u_net`'s route
-arguments exactly. It also mechanises two traps that were prose: every `bng` must carry both a send
+arguments exactly. It also mechanizes two traps that were prose: every `bng` must carry both a send
 and a receive name, and **no `bng` may both transmit and be lit** — a bng re-sends when it receives,
-so a button lit by its own acknowledgement would ping-pong for ever. See
+so a button lit by its own acknowledgment would ping-pong for ever. See
 [../ref/device/phone.md](../ref/device/phone.md).
 
 | Piece | |
@@ -711,7 +711,7 @@ Mode the device floods MIDI port 1 with clock and `wire.sh` connects that port t
 a panic also buried Cut It's primary MIDI input (item 250). Silencing notes has nothing to do with
 surrendering a surface.
 
-⛔ **Three bench steps asserted the old behaviour until 2026-08-11 and failed on the rig**, while
+⛔ **Three bench steps asserted the old behavior until 2026-08-11 and failed on the rig**, while
 `display-assert` had asserted the current one all along — *"the grid SURVIVES a panic — it must keep
 painting"*. **A gate and a bench testing opposite claims is the disagreement worth catching**, and
 only the bench could be wrong: the patch carries a comment forbidding the old wiring in capitals.
@@ -899,7 +899,7 @@ connects while an EDITED one still sits in the original block, hundreds of lines
 now names. Pd replays a canvas top to bottom, finds no such object, drops the cord, and **loads
 anyway**. The patch is simply not wired.
 
-⚠️ **Pd does print `connect: no such object`, and that is not a defence.** A menu-launched patch
+⚠️ **Pd does print `connect: no such object`, and that is not a defense.** A menu-launched patch
 runs `-nogui` with stdout on tty1, `tools/deploy.sh` gates on output only before ~735 ms, and a gate
 reading a capture is not looking for it. It caused two silent miswirings in one session — a presence
 publish that never fired, and mode selection that stopped working outright — and both looked exactly

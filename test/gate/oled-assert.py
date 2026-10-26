@@ -3,7 +3,7 @@
 
 ⛔ g_oled IS 783 LINES AND ITS ENTIRE COVERAGE WAS THAT THE FILE EXISTS. Four
 layers with priorities and time-to-live, a five-row parameter store with its own
-ageing, three type sizes -- every bit of it judged by eye off a panel until now.
+aging, three type sizes -- every bit of it judged by eye off a panel until now.
 
 ⚠️ IT ASSERTS ON WHAT THE SCREEN WAS TOLD, NOT ON WHAT IT LOOKS LIKE. Pd cannot
 ask a screen what it is showing, but every byte sent to it is knowable, and that
@@ -136,7 +136,7 @@ def run_asserts(cap):
 
     # ⛔ AND THE STORE AGED OUT TOO, NOT JUST THE LAYER. The two are separate:
     # `pd layers` clears the param flag on a 1200 ms delay while the store drops
-    # entries 13 frames behind. If the ageing were broken the flag would be
+    # entries 13 frames behind. If the aging were broken the flag would be
     # raised again by the NEW parameter and the OLD one would be redrawn beside
     # it -- a value under no one's hand, which is worse than a blank row.
     if live("PARAM-AGAIN"):
@@ -257,7 +257,7 @@ def run_asserts(cap):
                 "drew %s" % drawn)
 
     # ⛔ led AND grid ARE ROUTED AND THROWN AWAY. Everything g_oled does not
-    # recognise is a parameter BY DEFINITION -- that is what lets a new control
+    # recognize is a parameter BY DEFINITION -- that is what lets a new control
     # need no change to any display -- so without those two arguments on the
     # route an LED request would draw as a nonsense parameter row.
     if live("RESERVED"):
@@ -363,7 +363,7 @@ def run_asserts(cap):
                 "drew %s. The alert's TTL fired at 2 s and diag's own 8 s is "
                 "still running, so the screen must come back to the roster "
                 "rather than to home" % words(first("DIAG-BACK")))
-    # ⚠️ HOME IS RECOGNISED BY ITS METERS, NOT BY ITS FOOTER. The knob moved in
+    # ⚠️ HOME IS RECOGNIZED BY ITS METERS, NOT BY ITS FOOTER. The knob moved in
     # DIAG-SEEN is master tempo, so u_tempo has since written a BPM into the
     # status -- asserting on `gate-home` here would fail for a reason that has
     # nothing to do with the TTL.

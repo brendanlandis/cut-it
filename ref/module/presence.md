@@ -172,7 +172,7 @@ as shipped, so the eighth fork and the give-up genuinely happen — at 7.0 s and
 what carries over to the shipped tick is *counter 32* and *counter 33*, not the seconds. Nothing in
 `test/run.sh` runs for seventy seconds and nothing needs to.
 
-### Behaviour on the rig
+### Behavior on the rig
 
 | Claim | Evidence | Item |
 |---|---|---|

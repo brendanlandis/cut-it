@@ -119,7 +119,7 @@ def _oled_text(args_str):
     if tag and set(tag) <= set("ifs"):
         n = tag.count("s")
         return " ".join(args[len(args) - n:]) if n else ""
-    # No recognisable typetag: keep it, so a malformed frame shows up in the
+    # No recognizable typetag: keep it, so a malformed frame shows up in the
     # `got` rather than vanishing.
     return " ".join(atoms)
 

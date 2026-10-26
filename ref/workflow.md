@@ -61,7 +61,7 @@ A bare `Cut It` loads nothing, silently. `tools/deploy.sh` derives this from `DE
 
 Neither needs a cable. See [device/phone.md](device/phone.md) for addresses and ports.
 
-**What the check cannot catch** is runtime behaviour — wrong message types, silent OSC
+**What the check cannot catch** is runtime behavior — wrong message types, silent OSC
 failures, logic errors. That is what the error bus (`C-12`) and the PdParty remote console are
 for — and the run-it-yourself trick immediately below, which is better than both.
 

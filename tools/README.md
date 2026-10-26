@@ -74,7 +74,7 @@ is a trap.
 
 ⚠️ **"Cannot reach it" is the most misread observation in this project.** Four states all present as
 a failed `ssh`, and they want opposite responses. This runs the ladder — mDNS, an IPv4 sweep of the
-Mac's own `/24`, IPv6 neighbour discovery, and an AP-mode SSID scan — and names one of
+Mac's own `/24`, IPv6 neighbor discovery, and an AP-mode SSID scan — and names one of
 **REACHABLE** · **ASSOCIATED-NO-LEASE** · **AP-MODE** · **ABSENT**.
 
 ⛔ **`ASSOCIATED-NO-LEASE` is the documented fault and `ABSENT` is not.** Item 81 leaves the device
@@ -85,7 +85,7 @@ means powered off, adapter down, or a different SSID. Telling those two apart is
 this network answers 8.2 or newer. It is a heuristic; override with `ORG_BANNER=` if the image
 changes. ⛔ The first version tried mother's OSC port 4001 instead, and `nc -z` tests **TCP** while
 4001 is **UDP** — so it found the Organelle and dismissed it. The first version also reported a NAS
-as the documented fault, because it probed every IPv6 neighbour and believed whichever answered
+as the documented fault, because it probed every IPv6 neighbor and believed whichever answered
 first. **Both bugs were found by running it against the live network, not by reading it.**
 
 ⬜ Only the `REACHABLE` and `ABSENT` branches have been exercised against real hardware.
@@ -106,7 +106,7 @@ restate any of it here.**
 | `wifi-watch.sh` | **Runs ON the device.** Polls `wlan0` every 20 s and logs every IPv4 transition with `dmesg`, association and process state. On a failure it runs **two probes** and then a **recovery ladder**, recording which rung works. Copy to `/sdcard/` and launch with `setsid`. Also carries an **optional preferred-AP steer**, off by default — see below. |
 | `wifi-reassociate.sh` | **Rung 3, and runnable by hand.** Mirrors what the front panel's own `wifi_control.py` does, with the real credentials from `/sdcard/wifi.txt`. ⚠️ **bash, not sh** — it uses process substitution and the device's `/bin/sh` is busybox ash. |
 | `wifi-poll.sh` | **Runs on the Mac.** Leave it in a terminal. Redraws a small block every minute and answers one question: *anything new since I started, y/n.* Rings the bell and raises a macOS notification. |
-| `wifi-report.sh` | Pulls the evidence off the device and summarises it. **`--mark` first**, then it reports only what happened after the mark. |
+| `wifi-report.sh` | Pulls the evidence off the device and summarizes it. **`--mark` first**, then it reports only what happened after the mark. |
 | `../ref/wifi.md` | What each outcome **means** and what to do about it. Hand it to an agent along with `wifi-report.sh`'s output. |
 
 **The two probes are the point of the current rig**, because they split the fault before anything
@@ -285,7 +285,7 @@ and `mode`, exactly as a controller would.
 
 ### `lp-step0.pd` — the Launchpad index map, items 82–87
 
-Everything Phase 6 needed to stop guessing about: the ring's CC numbers, how many colour specs
+Everything Phase 6 needed to stop guessing about: the ring's CC numbers, how many color specs
 one SysEx really carries, whether that SysEx lights the ring as well as the pads, and what the
 layout-select command actually does. All of it is now recorded in
 the git history. Keep it as the re-check if a Launchpad is ever
@@ -308,7 +308,7 @@ the phone side and is not an Organelle patch at all.
 Findings from all of them are written up in [../ref/module/display.md](../ref/module/display.md).
 
 **They stay, and the question is settled rather than open.** The argument for deleting them was
-that the claim on the `ref/` page is now the artefact and the patch is not — reasonable, and wrong
+that the claim on the `ref/` page is now the artifact and the patch is not — reasonable, and wrong
 here, because **each one is a working reference for something the project is about to build again**.
 ✅ `oled-probe/` and `osc-bridge/` were both read while
 [the debug patch](../ref/module/debug.md) was written, within the week, and `audio-probe/` is still
@@ -421,14 +421,14 @@ fallback that needs no running patch at all.
 
 ## Things these patches taught us
 
-Findings specific to working *in this folder*. The Launchpad's own behaviour — palette,
-animation modes, LED state, `polytouchin` ordering — is catalogued in
+Findings specific to working *in this folder*. The Launchpad's own behavior — palette,
+animation modes, LED state, `polytouchin` ordering — is cataloged in
 [../ref/device/](../ref/device/). Pd message-discipline traps (`[list trim]`, `route`'s
 selector rules, `sendtyped` arity, `quitting`) are in
 [../ref/conventions.md](../ref/conventions.md), and the OSC ones in
 [../ref/module/display.md](../ref/module/display.md).
 
-- **`loadbang` fires before ALSA connections exist.** Initialisation SysEx sent on `loadbang`
+- **`loadbang` fires before ALSA connections exist.** Initialization SysEx sent on `loadbang`
   goes nowhere. Use `[loadbang] → [del 2000]` or longer. Repeated here because every patch in
   this folder has to obey it.
 - **`aconnect` by name, never by client number.** Client 28 was the Launchpad, then became the

@@ -7,7 +7,7 @@
 #
 # ⛔ g_oled IS THE DENSEST FILE IN THE PATCH AND ITS ENTIRE COVERAGE WAS THAT THE
 # FILE EXISTS. 783 lines, four layers with priorities and time-to-live, a
-# five-row parameter store with its own ageing -- all of it judged by eye off a
+# five-row parameter store with its own aging -- all of it judged by eye off a
 # panel until now.
 #
 # ⚠️ WHAT MADE IT TESTABLE IS THE TAP ON oscOut. Pd cannot ask a screen what it is

@@ -270,7 +270,7 @@ def main():
 
     # -- ⛔ THE TWO disp CONSUMERS MUST MATCH, AND THIS NEEDS NO Pd AT ALL ----
     # A new selector costs one route argument in EVERY consumer that has a
-    # fallthrough, because everything a consumer does not recognise is a
+    # fallthrough, because everything a consumer does not recognize is a
     # parameter by definition. There are two -- g_oled and u_net -- and the
     # only reliable way to keep them in step is to read both boxes.
     #

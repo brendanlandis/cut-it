@@ -15,7 +15,7 @@ WHY THIS IS ONE PROGRAM AND NOT TWO. It was two: check-all.sh ran the gates and
 nothing ran the benches. The obvious shape -- a new runner that shells out to
 check-all.sh -- needs the gate half to suppress its own verdict so the runner can
 own the only line matching "RESULT:", and check-all.sh printed TWO of those, one
-on each path. Labelling the pass path and forgetting the fail path would have put
+on each path. Labeling the pass path and forgetting the fail path would have put
 two RESULT: lines in front of a failing run, which is the exact defect the rule
 exists to prevent, on the path nobody rehearses. One program means one summary
 and one RESULT: line STRUCTURALLY, with nothing to plumb and nothing to forget.
@@ -155,7 +155,7 @@ def gate_half():
 #           unchanged shas until a session ended on them (2026-08-11).
 #   [u]ndo  did nothing at all on six of the seven benches. A driven bench has
 #           already advanced and nothing can walk a running patch backwards, so
-#           it printed a refusal and asked again; only paper mode could honour
+#           it printed a refusal and asked again; only paper mode could honor
 #           it. `--from N` re-runs a step properly.
 #   [?]     reprinted the PASS IF that is already on the screen above it.
 #   [s]kip  answered "I cannot judge this today", and a bench run assumes the
@@ -210,7 +210,7 @@ def describe(bench, step):
     need = step.meta.get("need", [])
     if need:
         print(_field("NEED:   ", " ".join(need)))
-    # ⛔ AND A FIELD WITH NOTHING TO SAY IS LEFT OUT. Synthesising "nothing to do
+    # ⛔ AND A FIELD WITH NOTHING TO SAY IS LEFT OUT. Synthesizing "nothing to do
     # here" onto every bench-driven step put the same sentence down seventeen of
     # display's eighteen steps, which is how a field stops being read at all. No
     # DO line means there is nothing for you to do.
@@ -1101,7 +1101,7 @@ def bench_summary(name, rows, total):
     return counts
 
 
-def summarise(gate_failed, gate_ran, bench_rows):
+def summarize(gate_failed, gate_ran, bench_rows):
     """The one summary, and the one RESULT: line.
 
     ⛔ RESULT: PASS REQUIRES failed == skipped == stale == 0, and a record for
@@ -1219,7 +1219,7 @@ def main(argv):
         src = stream.Replay(a.replay)
         rows, ok = run_bench_driven(b, a.target or "replay", a.auto_only,
                                     a.start, src)
-        rc = summarise([], 0, [(a.bench, rows, len(b.steps))])
+        rc = summarize([], 0, [(a.bench, rows, len(b.steps))])
         # ⚠️ `ok` is belt AND braces. A stall or a desync already shows up in the
         # summary as steps not run, so rc is normally enough -- but a failure
         # path that produced a full set of records and still went wrong must not
@@ -1269,7 +1269,7 @@ def main(argv):
         records.roll_up(rows)
         bench_rows.append((name, rows, len(b.steps)))
 
-    return summarise(gate_failed, gate_ran, bench_rows)
+    return summarize(gate_failed, gate_ran, bench_rows)
 
 
 if __name__ == "__main__":

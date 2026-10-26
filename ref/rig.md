@@ -121,7 +121,7 @@ number out.
 
 ```
   power strip
-    ├── ORGANELLE ........ 9VDC 1000mA centre-positive   (included)
+    ├── ORGANELLE ........ 9VDC 1000mA center-positive   (included)
     ├── SP-404MK2 ........ Roland PSD adapter            (included)
     ├── XENYX Q802USB .... own PSU                       (included)
     ├── POWERED USB HUB .. own PSU                       (comes with hub)
@@ -179,7 +179,7 @@ controllers reporting one enclosure is ordinary construction for a hub with more
 
 ⛔ **So the fault is NOT depth and NOT chaining.** The socket that fails (`1-1.1`) and the socket that
 works (`1-1.4.4.4`) are **both sockets on the same physical hub** — they differ only in which internal
-controller they hang off. Item 248 measured the behaviour; this is its explanation.
+controller they hang off. Item 248 measured the behavior; this is its explanation.
 
 ### The Launchpad is fussy about which controller it sits on
 
@@ -192,7 +192,7 @@ out (power, device, cable), is in Reference: `~/Sites/!reference/novation-launch
 | ✅ **Works** | The Realtek `0bda:5411` controller — **the bottommost socket, the one with the lock icon** |
 | ⛔ **Fails** | At least one socket on the first Generic `43f2:1211` controller |
 
-⚠️ **The fix is a labelled socket, not a topology rule.** Put the Launchpad in the lock-icon port and
+⚠️ **The fix is a labeled socket, not a topology rule.** Put the Launchpad in the lock-icon port and
 mark it, because nothing in the patch can tell a half-enumerated Launchpad from an absent one.
 
 ⛔ **A Launchpad that half-enumerates is invisible to the patch.** It answers control transfers, so

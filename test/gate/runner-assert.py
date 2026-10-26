@@ -267,7 +267,7 @@ class Trickle(stream.Source):
     def readline(self, timeout):
         if not self.left:
             return None
-        # ⚠️ IT HONOURS THE TIMEOUT. A source that always returned a line would
+        # ⚠️ IT HONORS THE TIMEOUT. A source that always returned a line would
         # pass whatever wait_for did with its clock, which is the whole subject.
         if timeout < self.gap:
             time.sleep(max(0.0, timeout))
@@ -733,7 +733,7 @@ def _interrupt_before_fire(bench):
                 "%d rows: %s"
                 % (len(rows), [(r["step"], r["verdict"]) for r in rows]))
         # ⚠️ ok IS FALSE HERE AND TRUE FOR AN ORDERLY END, and neither decides
-        # anything: what keeps a run off PASS is summarise() counting a step
+        # anything: what keeps a run off PASS is summarize() counting a step
         # with no row at all as not run. The assertion belongs on the rows.
         A.check("Ctrl-C before firing: the bench is left unfinished rather than "
                 "reported complete",
@@ -744,7 +744,7 @@ def _interrupt_before_fire(bench):
         # ⛔ THE STEP RAN AND NOBODY ANSWERED IT, which is a real observation
         # about a real firing and must still be recorded. Suppressing this one
         # would let a resumed run quietly inherit the verdict of a step whose
-        # behaviour has since changed.
+        # behavior has since changed.
         src = Fake(bench)
         stream.use(interrupt_after(_keys(bench, stop_after=stop) + [""]))
         try:
@@ -811,7 +811,7 @@ def _mirror():
     import predicates as P
     import run as R
 
-    # The kind question first, because the runner's behaviour rests on it.
+    # The kind question first, because the runner's behavior rests on it.
     A.check("needs_mirror: an osc predicate needs the mirror",
             P.needs_mirror({"kind": "osc", "addr": "/x"})[0])
     A.check("needs_mirror: a bus predicate does not",
@@ -1042,7 +1042,7 @@ def main():
 
     # -- the protocol's two halves must agree ------------------------------
     # ⛔ THE GENERATOR'S FORMAT STRINGS AND THE RUNNER'S REGEXES ARE ONE
-    # AGREEMENT. Drift makes the runner stop recognising a step, call it a
+    # AGREEMENT. Drift makes the runner stop recognizing a step, call it a
     # stall, and be wrong about a bench that is working perfectly.
     m = S.RE_STEP.search("print: " + S.SAY_STEP % (3, 14, "a title"))
     A.check("protocol: the step regex reads what the step format writes",
@@ -1612,7 +1612,7 @@ def _keys(bench, verdict="p", note=None, stop_after=None):
     reported "not run" over nothing at all.
 
     ⛔ EVERY STEP CONSUMES A READ PROMPT NOW, AND THIS LINE IS THE FIXTURE THAT
-    ENCODED THE OLD BEHAVIOUR. It used to be `if step.hands`, matching a runner
+    ENCODED THE OLD BEHAVIOR. It used to be `if step.hands`, matching a runner
     that prompted only for steps carrying a `do` -- and that was the defect:
     every other step fired GO on the line after its watch text printed, so the
     thing you were told to look at had already happened. The guard is gone from

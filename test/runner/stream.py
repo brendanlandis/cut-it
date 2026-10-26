@@ -176,7 +176,7 @@ class Source(object):
         return 0
 
     def close(self, quiet=False):
-        """⚠️ `quiet` is honoured by targets.Process -- see there."""
+        """⚠️ `quiet` is honored by targets.Process -- see there."""
 
     # -- shared -------------------------------------------------------------
     def wait_for(self, pattern, timeout, collect=None):

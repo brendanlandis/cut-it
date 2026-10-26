@@ -207,15 +207,15 @@ Reference; whether it bears on this rig:
 | Performance Velocity, Probability and Mutation | No — same, and ⚠️ **v0.4 is building sequencing, probability and mutation in Pd on purpose.** The firmware's versions are not merely unused, they are the thing being replaced |
 | **Pad Trigger Threshold** (new setting) | ⚠️ **Yes** — a threshold change can move measured velocity |
 | Legacy Mode brought in line with Launchpad X / Mini MK3 | No |
-| **Aftertouch threshold fix** | ⚠️ **Yes** — `m_launchpad`'s `pressure` subpatch depends on aftertouch behaviour |
+| **Aftertouch threshold fix** | ⚠️ **Yes** — `m_launchpad`'s `pressure` subpatch depends on aftertouch behavior |
 | Crash fix, multiple Novation devices connected then disconnected | No — one Novation device here |
 
 ⛔ **Nothing in it touches MIDI clock, tempo sync or LED animation**, so it would not be expected to
-fix item 257 — the device ignoring incoming clock — which is the only Launchpad behaviour this
+fix item 257 — the device ignoring incoming clock — which is the only Launchpad behavior this
 project actually wants changed. **The update offers nothing needed and risks two things measured**
 (items 193 and 204, velocity and aftertouch).
 
-**So the trade is bad and the decision is to stop asking.** The drive is neutralised on the device
+**So the trade is bad and the decision is to stop asking.** The drive is neutralized on the device
 side instead, by a guard in `mount.sh` — see [device/README.md](../../device/README.md).
 ⚠️ **Revisit only if an update is being done for another reason** — then re-measure velocity and
 aftertouch afterwards rather than trusting the old numbers.

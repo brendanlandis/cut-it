@@ -119,8 +119,8 @@ def main():
     fs = window("modal-45")
     if A.check("modal-45: the grid repainted", bool(fs), "no frame in the window"):
         A.check("modal-45: all %d specs are palette %d" % (G.NSPEC, MODAL),
-                set(fs[-1].colours()) == {MODAL},
-                "colours present: %s" % sorted(set(fs[-1].colours()))[:6])
+                set(fs[-1].colors()) == {MODAL},
+                "colors present: %s" % sorted(set(fs[-1].colors()))[:6])
 
     # ---- a warn must never reach the grid ---------------------------------
     # ⛔ THE LIVENESS WITNESS IS NOT OPTIONAL, AND THIS ONE USED TO SAY `if fs else
@@ -134,7 +134,7 @@ def main():
                "here, so silence means the run died rather than that the warn was "
                "ignored"):
         A.check("a warn changes nothing -- the modal is still up",
-                all(set(f.colours()) == {MODAL} for f in fs),
+                all(set(f.colors()) == {MODAL} for f in fs),
                 "a warn repainted the surface")
 
     # ---- alert outranks the modal, then gives it back ---------------------
@@ -143,18 +143,18 @@ def main():
     fs = window("alert-red")
     if A.check("alert-red: the grid repainted", bool(fs), "no frame in the window"):
         A.check("alert-red: all %d specs are red (%d)" % (G.NSPEC, G.ALERT_RED),
-                set(fs[0].colours()) == {G.ALERT_RED},
-                "colours present: %s" % sorted(set(fs[0].colours()))[:6])
+                set(fs[0].colors()) == {G.ALERT_RED},
+                "colors present: %s" % sorted(set(fs[0].colors()))[:6])
         A.check("alert-red: the alert expires inside its own window",
-                set(fs[-1].colours()) != {G.ALERT_RED},
+                set(fs[-1].colors()) != {G.ALERT_RED},
                 "still red at the end of the window -- the TTL never fired")
     fs = window("alert-expired")
     if A.check("alert-expired: the grid repainted", bool(fs),
                "NO FRAME AFTER THE ALERT TTL -- the grid would stay red forever"):
         A.check("alert-expired: the surface returns to the MODAL underneath",
-                set(fs[-1].colours()) == {MODAL},
+                set(fs[-1].colors()) == {MODAL},
                 "expected %d everywhere, got %s"
-                % (MODAL, sorted(set(fs[-1].colours()))[:6]))
+                % (MODAL, sorted(set(fs[-1].colors()))[:6]))
 
     # ---- the beat row, which is where the one-based bug lived -------------
     fs = window("beat-row")

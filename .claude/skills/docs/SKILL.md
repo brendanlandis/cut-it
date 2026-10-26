@@ -57,7 +57,7 @@ device's own facts and traps are on its Reference page (`~/Sites/!reference/<slu
 links by that path in backticks (a markdown link would fail the gate's dangling check). If a section
 has nothing of Cut It's, say so in a line. **What it is / Facts / Traps are about the THING. Design is
 about US.** That distinction is why `Design` exists — the Launchpad's three-tier decision and the 404's accepted mic bleed are neither
-measured behaviour nor something that will bite you, and they were being crammed into `Facts`.
+measured behavior nor something that will bite you, and they were being crammed into `Facts`.
 
 ⚠️ **`Design` is last because most of it is forward-referencing** — "the reject outlet is the normal
 path in `u_store`" means nothing before `Facts` says what `u_store` matches. **But the ONE decision

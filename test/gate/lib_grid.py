@@ -11,7 +11,7 @@ everything between F0 and F7 would corrupt every frame it built and the failure
 would look like a broken grid.
 
 FRAME SHAPE: 332 bytes = 7 header + 108 * 3 + terminator. Spec k holds type at
-7+3k, LED index at 8+3k and colour at 9+3k, so the colour at LED index i is byte
+7+3k, LED index at 8+3k and color at 9+3k, so the color at LED index i is byte
 9 + 3*(i-1). Indices run 1..108.
 
 THAT SPAN WIDENED FROM 10..108 AND THE OLD REASON WAS MEASURED FALSE. It stopped
@@ -27,7 +27,7 @@ addressing it lights nothing and the button transmits nothing (item 110).
 """
 import re
 
-HEADER = [240, 0, 32, 41, 2, 14, 3]              # 03 command: batch LED colour
+HEADER = [240, 0, 32, 41, 2, 14, 3]              # 03 command: batch LED color
 MODE_SYSEX = [240, 0, 32, 41, 2, 14, 14]         # 0E command: Programmer / Live
 TERM = 247
 NSPEC = 108
@@ -55,10 +55,10 @@ class Frame(object):
     def is_mode(self):
         return self.data[:7] == MODE_SYSEX
 
-    def colour(self, index):
+    def color(self, index):
         return self.data[9 + 3 * (index - FIRST_INDEX)]
 
-    def colours(self):
+    def colors(self):
         return [self.data[9 + 3 * k] for k in range(NSPEC)]
 
     def indices(self):
@@ -107,24 +107,24 @@ def home_shape(frame):
     the beat row once a bar: SEVEN BEATS OUT OF EIGHT LOOKED PERFECT.
     """
     lamp, beat, stray = None, None, []
-    for k, colour in enumerate(frame.colours()):
+    for k, color in enumerate(frame.colors()):
         idx = FIRST_INDEX + k
         if LAMP_LO <= idx <= LAMP_HI:
-            if colour == LAMP_ON:
+            if color == LAMP_ON:
                 if lamp is not None:
                     return ("two mode lamps lit: %d and %d" % (lamp, idx)), lamp, beat
                 lamp = idx
-            elif colour != DIM:
-                return ("mode lamp %d is colour %d" % (idx, colour)), lamp, beat
+            elif color != DIM:
+                return ("mode lamp %d is color %d" % (idx, color)), lamp, beat
         elif BEAT_LO <= idx <= BEAT_HI:
-            if colour == BEAT_ON:
+            if color == BEAT_ON:
                 if beat is not None:
                     return ("two beat cells lit: %d and %d" % (beat, idx)), lamp, beat
                 beat = idx
-            elif colour != DIM:
-                return ("beat cell %d is colour %d" % (idx, colour)), lamp, beat
-        elif colour != 0:
-            stray.append((idx, colour))
+            elif color != DIM:
+                return ("beat cell %d is color %d" % (idx, color)), lamp, beat
+        elif color != 0:
+            stray.append((idx, color))
     if stray:
         return ("lit outside every region: %s" % stray[:6]), lamp, beat
     return None, lamp, beat

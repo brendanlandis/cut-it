@@ -1,10 +1,10 @@
 #!/bin/sh
 # wifi-report -- pull the evidence off the device once wifi-poll.sh has found
-# something, and summarise it into the shape the analysis actually needs.
+# something, and summarize it into the shape the analysis actually needs.
 #
 #   ./tools/wifi-report.sh              summary of everything SINCE THE LAST MARK
 #   ./tools/wifi-report.sh --all        the whole log, marks ignored
-#   ./tools/wifi-report.sh --mark       draw a line: everything above is analysed
+#   ./tools/wifi-report.sh --mark       draw a line: everything above is analyzed
 #   ./tools/wifi-report.sh --full       and the raw log
 #
 # ⚠️ WHY MARKS EXIST. The log ACCUMULATES, so a cumulative summary can only ever
@@ -28,7 +28,7 @@
 set -u
 HOST=${HOST:-root@organelle.local}
 LOG=/sdcard/wifi-watch.log
-MARK="=== ANALYSED UP TO HERE"
+MARK="=== ANALYZED UP TO HERE"
 SINCE=1
 case "${1:-}" in
     --all)  SINCE=0 ;;

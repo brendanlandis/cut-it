@@ -75,7 +75,7 @@ def main():
 
     # ⛔ THE NEW HALF, AS AN EXACT COUNT rather than a window test. The driver
     # fires panic and THEN quitting, and Live Mode is sent nowhere else -- so the
-    # old behaviour produced TWO of these frames and the correct one produces
+    # old behavior produced TWO of these frames and the correct one produces
     # exactly ONE. The check above is this one's liveness witness: together they
     # say "a handback happened, and only the right one did".
     A.check("⛔ panic does NOT hand the surface back -- exactly ONE Live Mode frame",

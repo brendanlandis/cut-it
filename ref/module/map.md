@@ -103,7 +103,7 @@ the third slot.
 | **A control draws exactly one row, and it is `u_map`'s.** No `m_` file sends a control's row to `disp` — `m_nano`, `m_404` and `m_launchpad` publish on `param` alone, as `m_organelle` always has. A fader mapped to `volca-cc 41` draws `volca-cc41 64` and nothing beside it; an unmapped control draws `<name> <raw>` (*Traps*); a mapped button draws nothing. **The SP-404 included:** its `sp-pad` and `sp-bank` rows are gone too, and a hit draws `sp-b5 90`, one name carrying bank and pad — decided 2026-10-20, at the cost of a fast run of pads meeting the five-row limit with no stable row to fall back on | verified | 317 |
 | `map-assert.py` reads every `m_` file's `[s disp]` count, exactly — `m_organelle`'s one carries aux's `modal shift`, never a control | verified | 317 |
 
-### Values are normalised to 0–1, and the divisor is not uniform
+### Values are normalized to 0–1, and the divisor is not uniform
 
 ⚠️ **`param` values are not one unit.** Every handler sees **0 to 1**, and everything is divided by
 127 *except* five controls that already arrive that way.
@@ -260,7 +260,7 @@ dead lookup sends every control down the unmapped branch (item 317). Nothing els
 the way an unknown *destination* does — item 297.
 
 ⛔ **The guard is BEFORE `[list split 1]`, not after it.** What that object does with a one-atom list
-is exactly the behaviour this bug turns on, so testing the length of the whole message is the one
+is exactly the behavior this bug turns on, so testing the length of the whole message is the one
 shape that cannot depend on it. `[list length]` → `[select 2]` opens a spigot; anything else raises.
 
 ⛔ **And the store is fed from that spigot rather than from its own `[r mode]`**, which is what stops
@@ -398,7 +398,7 @@ started. Reachable on a fresh install and after any `tools/deploy.sh --clean` (i
 `[text size]` — 1 when present, 0 when absent — and on absent it writes every pickup slot to LIVE.
 
 ⛔ **Do not answer it from the timing.** The push lands at 100 ms with the file and at ~223 ms
-without, and that gap is an artefact of the error path taking longer, not a promised signal.
+without, and that gap is an artifact of the error path taking longer, not a promised signal.
 ⛔ **Do not answer it with `[shell]` either.** It forks and replies hundreds of milliseconds later,
 it is a do-nothing stub on the Mac, and a gate could then only ever reach one of the two branches. A
 `[text]` read behaves identically on both machines, so the gate creates the file or does not and
@@ -488,7 +488,7 @@ beside them as proof the test is not too wide.
 
 ### The value is parked and the name does the work
 
-`[list split 1]` fires its **remainder** first, so the value is normalised and stored in `[list
+`[list split 1]` fires its **remainder** first, so the value is normalized and stored in `[list
 append]`'s right inlet before the name has even started the lookup. The looked-up destination then
 arrives on the **left** and picks the parked value back up.
 
@@ -501,7 +501,7 @@ guarantee `m_volca`'s `[t b f]` had to be built by hand to get.
 ### The spigot is one uniform trigger test
 
 A nano button sends 1, a pad sends 127, an Organelle aux sends 1, a 404 pad sends a real velocity —
-**all non-zero after normalising, and a release is zero.** So the gate opens on non-zero and the arg
+**all non-zero after normalizing, and a release is zero.** So the gate opens on non-zero and the arg
 passes through it: one test, not a different threshold per surface.
 
 `volca-prog` uses the value as a gate rather than as data, because a program number is the *arg* —

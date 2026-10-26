@@ -55,7 +55,7 @@ def _size(kind, rest, fw):
         try:               return int(rest.split()[2]), int(rest.split()[3])
         except Exception:  return 100, 60
     # iemguis carry their own dimensions -- read them rather than guessing, or a
-    # 25-cell hradio reports the footprint of a 3-cell one and its neighbours look clear
+    # 25-cell hradio reports the footprint of a 3-cell one and its neighbors look clear
     a = rest.split()
     def _n(i, d):
         try:    return int(float(a[i]))
@@ -132,7 +132,7 @@ def forward_refs(ctxs):
     names. Pd replays the file in order, finds no such object, and drops the
     cord. Everything still loads. The patch is simply not wired.
 
-    ⚠️ Pd does print `connect: no such object`, and that is not a defence: a
+    ⚠️ Pd does print `connect: no such object`, and that is not a defense: a
     menu-launched patch runs -nogui with stdout on tty1, tools/deploy.sh gates on
     output only before ~735 ms, and a gate reading a capture is not looking for
     it. It cost two silent miswirings in one session -- one where a shifted

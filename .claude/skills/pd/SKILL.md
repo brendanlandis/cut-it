@@ -12,7 +12,7 @@ description: Writing, editing or reviewing Pure Data for the Cut It Organelle pa
 Organelle M only; 4.2 / 4.4 / OS 5 are M/S/S2. **Do not suggest any object newer than 0.49.**
 
 **2. Never save an Organelle-bound patch from plugdata.** plugdata is built on Pd 0.55+ and rewrites
-`.pd` files into a newer format — iemgui colours become hex (`#fcfcfc` instead of `-262144`),
+`.pd` files into a newer format — iemgui colors become hex (`#fcfcfc` instead of `-262144`),
 floatatoms gain a trailing arg. **Pd 0.49 cannot parse that.** It has already happened once in this
 repo. Edit with vanilla Pd 0.49 for anything that ships.
 
@@ -111,7 +111,7 @@ on its first can-it-fail run. Reintroduce the bug, watch it go red, revert.
 | `ref/conventions.md` | The rules in full, with reasoning |
 | `~/Sites/!reference/pure-data.md` | What Pd 0.49 itself does — the behavior and the traps the rules work around |
 | `ref/workflow.md` | How the loop is run — deploy, the by-hand SSH console, how a phase runs |
-| `ref/README.md` | How the documentation is organised, and the page schema |
+| `ref/README.md` | How the documentation is organized, and the page schema |
 | `ref/device/<name>.md` | How Cut It uses one device; the device itself is on its page in `~/Sites/!reference/` |
 | `ref/module/<name>.md` | One instrument concern |
 | `AGENTS.md` | Repo layout, working notes, the device itself |

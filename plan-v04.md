@@ -75,7 +75,7 @@ to put the answer. **It can now**: that sentence is one row of `Cut It/cut-it-ma
 | **[AGENTS.md](AGENTS.md)** | **All of it** | The router. Hard constraints, where everything is, working notes |
 | **This file** | **§3 in full** | The single place to look for what is unresolved |
 | **The `pd` / `docs` / `gate` skills** | Invoked, not read | ⛔ Invoke the matching one before writing Pd, documentation or a test |
-| **[ref/README.md](ref/README.md)** | All of it | How `ref/` is organised, the page schema, and the standard for a v0.4 page |
+| **[ref/README.md](ref/README.md)** | All of it | How `ref/` is organized, the page schema, and the standard for a v0.4 page |
 | **[ref/conventions.md](ref/conventions.md)** | The rules table, then the sections it links | `C-1`…`C-14`. **Read before writing Pd** |
 | **[ref/workflow.md](ref/workflow.md)** | Only when you are about to run something | The deploy loop, the by-hand SSH console, how a phase runs |
 | **[ref/architecture.md](ref/architecture.md)** | All of it | How the modules compose, and the four load-bearing decisions |
@@ -135,7 +135,7 @@ patch reload at either end.
 until this was measured — *"clock and transport … already reach every port"*.
 
 ⚠️ **It is not obviously a bug for the nano**, which is a controller with nothing to sync. It is
-plainly one for the Volca, which is a synthesiser with a sequencer.
+plainly one for the Volca, which is a synthesizer with a sequencer.
 
 ✅ **The TRANSPORT half is closed** — item 295. `panic`'s realtime STOP now reaches port 4 through
 `$0-rt4`, a receive the panic branch is the sole writer of, so a Volca sequencing through a panic
@@ -363,7 +363,7 @@ the rig.
 
 The README says the controls *"will take some practice and memorization."* The RGB grid is
 the direct antidote to half of that: which filters are on, which of the five sample slots are
-filled, which pattern is queued, where the playhead is — all visible rather than memorised.
+filled, which pattern is queued, where the playhead is — all visible rather than memorized.
 
 ⚠️ **The six modes are placeholders but their 3/3 ratio is not.** `u_err` routes on
 `compose`/`perform`, so a split weighted toward `perform` silently quietens the error display.

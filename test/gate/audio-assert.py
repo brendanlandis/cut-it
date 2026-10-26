@@ -49,7 +49,7 @@ AMP, SEGMENTS, GUARD = _ns.AMP, _ns.SEGMENTS, _ns.GUARD
 # against -- the input is known exactly, so the output can be too.
 WANT_RMS = AMP / (2 ** 0.5)
 
-# 2% on the level. Wide enough for 16-bit quantisation and a partial cycle at
+# 2% on the level. Wide enough for 16-bit quantization and a partial cycle at
 # the window edges, far tighter than any gain error worth having.
 RMS_TOL = 0.02
 

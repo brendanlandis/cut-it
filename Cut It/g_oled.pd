@@ -298,7 +298,7 @@
 #X obj 880 300 t b;
 #X obj 980 380 outlet;
 #X text 20 1120 Outlet order is x position \, so left to right these are alert \, diag \, modal \, param \, home -- highest priority first \, which is also the order they are tested in. ⛔ THE NEW OUTLET IS PLACED BY ITS X \, NOT BY ITS INDEX IN THE FILE: the boxes are appended at the end (C-10) so no existing index moves \, and x=180 is the whole of what makes diag outlet 1. Every connect from this subpatch in the parent renumbered when it landed., f 46;
-#X text 420 1120 f with no argument starts at 0 \, so before anything has ever fired \, every layer is down and home draws. That is the correct cold-start behaviour and it costs nothing., f 46;
+#X text 420 1120 f with no argument starts at 0 \, so before anything has ever fired \, every layer is down and home draws. That is the correct cold-start behavior and it costs nothing., f 46;
 #X text 820 1120 The t b is not decoration: select's right outlet emits the float it did not match \, and f wants a bang on its hot inlet \, not a 0 -- a 0 would overwrite the flag it is about to read., f 46;
 #X obj 460 700 t b;
 #X obj 460 760 f;
@@ -729,7 +729,7 @@
 #X text 1000 620 ONE moses DECIDES UPDATE-OR-APPEND. text search returns the row for a name already on screen and -1 for one it has never seen -- measured \, not assumed. A hit is the row to overwrite \; a miss falls through to the current size \, which text set treats as an append., f 40;
 #X text 1000 1000 THE SIXTH CONTROL IS REFUSED \, not rotated in. Once five rows are live \, a new name is dropped until one ages out -- so nothing ever shifts under your eyes while you are reading it. The cost is honest: move nine faders and you see the five you touched first \, not the five most recent. Rotating instead is what made this unreadable in the first place., f 40;
 #X text 20 2120 13 FRAMES \, NOT 12 \, and that is deliberate. pd layers still clears \$0-a-param on a 1200 ms delay \, so the store outlives the flag by one frame. Otherwise a rounding difference could leave the param layer winning with nothing to draw -- a blank screen \, which looks exactly like a dead patch., f 46;
-#X text 620 2120 AGEING SCANS \, AND COUNTS DOWN. With rows held in place the expired ones are no longer all at the tail \, so every line is checked -- from the LAST index toward 0 \, because deleting a line shifts everything below it and walking downward is what makes that harmless. until's own count bounds the loop \, so a size of 0 runs it zero times and text get is never handed a line that does not exist -- which ERRORS \, and prints., f 40;
+#X text 620 2120 AGING SCANS \, AND COUNTS DOWN. With rows held in place the expired ones are no longer all at the tail \, so every line is checked -- from the LAST index toward 0 \, because deleting a line shifts everything below it and walking downward is what makes that harmless. until's own count bounds the loop \, so a size of 0 runs it zero times and text get is never handed a line that does not exist -- which ERRORS \, and prints., f 40;
 #X obj 20 810 t b;
 #X text 620 1000 THE t b IS A BUG FIX. moses's left outlet emits the VALUE it did not match -- the -1 text search returned for a name it has never seen -- and text size passes a float straight through \, so -1 arrived at text set as a line number: error text set: line number (-1) < 0. Second time this shape has bitten: a reject or moses outlet carries data \, never a bang., f 46;
 #X connect 2 0 3 0;
@@ -791,7 +791,7 @@
 #X connect 53 0 46 0;
 #X connect 46 0 54 0;
 #X restore 1450 660 pd params;
-#X text 1450 700 the parameter store and its ageing, f 30;
+#X text 1450 700 the parameter store and its aging, f 30;
 #N canvas 30 30 3100 1300 diag-store 0;
 #X text 20 20 THE DIAG ROSTER. One line per source \, <src> <code> \, where the code is 0 NEVER SEEN \, 1 HERE \, 2 GONE and 3 UNCHECKED. Numbers rather than words \, so every transition below is a comparison instead of a symbol match \, and the four words are chosen once in pd draw-diag where they are drawn., f 58;
 #X text 20 170 ⛔ THE SOURCE NAME IS THE ABSTRACTION'S -- m_nano \, never nanoKONTROL. That is what crosses the presence bus and it is what the screen draws \, because g_oled is below the m_ boundary and must not learn which hardware anything is. See ref/module/presence.md., f 58;

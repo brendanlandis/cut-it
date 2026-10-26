@@ -9,7 +9,7 @@ there is no bus behind a MIDI input. test/stubs/t_ctlin.pd is what changed that.
 transmits is measured on hardware and written down in the page's Facts table
 (item 31); this gate is about what m_nano DOES with those numbers -- which
 channels it admits, which names it builds, which events it refuses to emit for,
-and what it says when it recognises nothing.
+and what it says when it recognizes nothing.
 
 ⛔ THE CHANNEL BLOCK IS PD'S INPUT SLOT, not the device's place in the system MIDI
 list. main-dev.pd passes 17, so the two channels under test are 17 and 18. Drive

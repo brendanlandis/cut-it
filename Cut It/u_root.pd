@@ -13,7 +13,7 @@
 #X text 20 800 adc~ and dac~ appear NOWHERE in this patch \, and must not. mother.pd owns both -- it publishes the inputs on inL / inR and collects the output from outL / outR \, then applies the volume knob and a limiter. A patch that writes to dac~ silently bypasses both. See C-4., f 58;
 #X text 470 1050 The level taps are a SIGNAL fan-out \, which needs no trigger: signal connections all run every block \, so there is no firing order to get wrong. The trigger rule is about messages., f 46;
 #X obj 900 340 u_init \$3;
-#X text 1120 340 owns startup ORDER -- MIDI wiring \, the stage reports \, when the Launchpad is initialised and when saved state is restored. Outlet 1 fires at the launchpad stage \, outlet 2 at the last stage about 3.5s in., f 34;
+#X text 1120 340 owns startup ORDER -- MIDI wiring \, the stage reports \, when the Launchpad is initialized and when saved state is restored. Outlet 1 fires at the launchpad stage \, outlet 2 at the last stage about 3.5s in., f 34;
 #X obj 900 600 m_launchpad \$2;
 #X text 1120 600 the Launchpad Pro MK3 \, and the only file allowed to talk to it: the Programmer/Live switch and the safe exit. Pads out on param \, like any other device \, and surface ownership out of its one outlet., f 34;
 #X obj 900 860 m_nano \$1;
@@ -29,10 +29,10 @@
 #X obj 2300 340 g_oled;
 #X text 2300 390 owns the OLED -- four layers \, each with a priority and a time to live. Everything else asks by sending to disp., f 34;
 #X obj 2300 600 g_led;
-#X text 2300 650 owns the aux button LED. Callers send led and a STATE on disp \, never a colour -- one writer per display surface \, and this is the surface that is not a screen., f 34;
+#X text 2300 650 owns the aux button LED. Callers send led and a STATE on disp \, never a color -- one writer per display surface \, and this is the surface that is not a screen., f 34;
 #X text 2300 860 g_grid IS NOT IN THIS COLUMN \, and that is on purpose -- it sits at the bottom left \, next to the two boxes it is WIRED to. Where a file has cords \, the cords decide where it goes \; the column is only for the ones that talk on buses alone., f 34;
 #X text 900 1300 THE COLUMNS ARE THE ARCHITECTURE DIAGRAM. Left is the m_ layer \, device by device \; middle is the buses and the map \; right is the display owners. THE ONLY WIRES ON THIS CANVAS COME OUT OF u_init -- to m_launchpad and to u_state -- and they are wires rather than sends because the boot ORDER is u_init's while the ACTION is the other file's. That seam is worth being able to see \, and both would be invisible as a send. Everything else here talks on the allowlisted buses., f 90;
-#X text 900 1420 RE-LAID OUT IN PHASE 6 \, with no behaviour change beyond the new box and the new wire. The audio chain has not moved. The control area was three ragged columns with cords that could not reach a new box without being drawn through a comment., f 90;
+#X text 900 1420 RE-LAID OUT IN PHASE 6 \, with no behavior change beyond the new box and the new wire. The audio chain has not moved. The control area was three ragged columns with cords that could not reach a new box without being drawn through a comment., f 90;
 #X obj 20 1200 c_clock 1 8;
 #X obj 20 1320 g_grid \$2;
 #X text 300 1200 THE FIRST c_clock INSTANCE IN THE DEPLOYED PATCH \, and a real milestone: until now u_tempo published a master reference that nothing consumed. Ratio 1 \, eight beats to the bar \, so its beat-number outlet indexes the grid's bottom row directly. NOTHING DOWNSTREAM MAY ASSUME THE GLOBAL clock IS ITS CLOCK -- this instance is the grid's \, and the next consumer gets its own., f 58;

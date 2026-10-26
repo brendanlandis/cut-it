@@ -1,7 +1,7 @@
 #N canvas 40 40 1400 1000 12;
 #X text 20 20 Start AP -- brings up the Organelle's own access point from the FRONT PANEL. This is the piece that makes a venue with no wifi workable: without it the AP can only be started over ssh \, and ssh needs a network \, which is the thing you do not have., f 58;
 #X text 620 20 IT IS NOT AN INSTRUMENT. It makes no sound and touches no bus -- it runs one script and puts instructions on the screen. Select it \, join the phone \, then select Cut It. THE ACCESS POINT OUTLIVES THIS PATCH \, which is the whole trick -- see ap-up.sh., f 58;
-#X text 20 180 THE COMMAND LIVES IN A SHELL SCRIPT \, NOT A MESSAGE BOX. Pd atomises a message on spaces and the shell external rejoins it \, so quoting and redirection do not survive the trip. tools/README.md records that as a rule after it bit once already., f 58;
+#X text 20 180 THE COMMAND LIVES IN A SHELL SCRIPT \, NOT A MESSAGE BOX. Pd atomizes a message on spaces and the shell external rejoins it \, so quoting and redirection do not survive the trip. tools/README.md records that as a rule after it bit once already., f 58;
 #X obj 20 340 loadbang;
 #X obj 20 390 t b b;
 #X obj 20 460 del 800;

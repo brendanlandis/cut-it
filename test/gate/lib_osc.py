@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """OSC decoding, shared by the phone gate and the test runner. Imported, never run.
 
-⚠️ THE MODULE NAME HAS AN UNDERSCORE and its neighbours have hyphens. A hyphen is
+⚠️ THE MODULE NAME HAS AN UNDERSCORE and its neighbors have hyphens. A hyphen is
 not a legal Python identifier, so a module that is IMPORTED cannot have one,
 while a script that is only ever RUN can.
 

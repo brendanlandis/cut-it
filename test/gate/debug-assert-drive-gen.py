@@ -19,7 +19,7 @@ strict.
 fork is on a 1500 ms delay because loadbang fires before the ALSA connections
 exist, so a window at 600 ms proves the screen is not being drawn from something
 that only happens after the fork -- and the window at 2200 ms proves the fork
-happened at all. Timing the window from the behaviour rather than from the
+happened at all. Timing the window from the behavior rather than from the
 implementation is what the map gate learned the hard way (item 234).
 """
 import os

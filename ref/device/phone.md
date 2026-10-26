@@ -170,15 +170,16 @@ destroys the link without the patch hearing about it. `u_net` reconnects on a ti
 
 ### The unit field is written on every param message
 
-`disp` treats the unit as optional, and `[list split 3]` on exactly three atoms never fires its right
-outlet (Pure Data, in Reference). **Fix:** `u_net` appends the dash *before* splitting, making the
+`disp` treats the unit as optional, and a message without one is too short for `u_net`'s
+`[list split 3]`, which passes it out of its rightmost outlet alone (Pure Data, in Reference). **Fix:** `u_net` appends the dash *before* splitting, making the
 optional field mandatory by construction. The unit is written on every message, as `-` when there is
 none.
 
 ### `test-note` takes symbols
 
 `[route 404]` matches a float and can never match the device name (Pure Data, in Reference, item
-308). **Fix:** the devices are `m_volca` and `m_404`, which are symbols whatever else is true. That is
+308): `[route volca 404]` rejected `test-note 404` while accepting `test-note volca`, both spellings
+driven over a real socket. **Fix:** the devices are `m_volca` and `m_404`, which are symbols whatever else is true. That is
 also the name the `presence` bus and `err`'s `source` field already carry across the `m_` boundary.
 
 ### The button and its lamp are two objects

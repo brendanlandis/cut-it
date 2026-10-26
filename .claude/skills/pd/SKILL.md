@@ -35,7 +35,7 @@ comment is the only documentation visible while editing in Pd and it has no link
 | C-4 | **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out |
 | C-5 | **One owner per display surface** — `oscOut` / `screenLine*` are `g_oled`'s, `led` is its own. Everything else asks via `disp` |
 | C-6 | **Finish assembled messages with `[list trim]`**, and `[list append]` after a `route` |
-| C-7 | **Clear optional fields on every message** — `[list split n]` on exactly *n* atoms never fires |
+| C-7 | **Clear optional fields on every message** — `[list split n]` on exactly *n* atoms sends an empty remainder, which a `[symbol]` store refuses |
 | C-8 | **`[t b]` in front of anything behind a reject outlet** — a reject carries DATA, not a bang |
 | C-9 | **Every `[print]` in a deployed abstraction sits behind `[del 2000]`** — `tools/deploy.sh` gates on output |
 | C-10 | **Append boxes at the end of a `.pd`, and move the `#X connect`s with them** |
@@ -75,7 +75,8 @@ Comments count. `#X declare` does not. Subpatch contents do not, but the `#X res
 ⚠️ **A reject outlet carries the data that failed to match, not a bang** — `route`, `select`,
 `moses`, `spigot`. Put `[t b]` in front of anything downstream (C-8).
 
-⚠️ **`[list split n]` on exactly *n* atoms never fires its right outlet.** Silent non-event (C-7).
+⚠️ **`[list split n]` on exactly *n* atoms sends an empty remainder**, which a `[symbol]` or `[f]`
+store refuses, so a field left off keeps its old value (C-7).
 
 ⚠️ **`[list trim]` before `route`** — `route` matches a *selector*, and `[list prepend]`/`[list
 append]` produce a `list` selector (C-6).
@@ -108,9 +109,10 @@ on its first can-it-fail run. Reintroduce the bug, watch it go red, revert.
 | | |
 |---|---|
 | `ref/conventions.md` | The rules in full, with reasoning |
+| `~/Sites/!reference/pure-data.md` | What Pd 0.49 itself does — the behavior and the traps the rules work around |
 | `ref/workflow.md` | How the loop is run — deploy, the by-hand SSH console, how a phase runs |
 | `ref/README.md` | How the documentation is organised, and the page schema |
-| `ref/device/<name>.md` | Everything about one device — messages, traps, how Cut It uses it |
+| `ref/device/<name>.md` | How Cut It uses one device; the device itself is on its page in `~/Sites/!reference/` |
 | `ref/module/<name>.md` | One instrument concern |
 | `AGENTS.md` | Repo layout, working notes, the device itself |
 | `!projects/cut-it/` | **What is open** — the repo beside this one. A comment cites a file as `cut-it/<slug>`, a loosie as `cut-it/inbox`; the docs gate resolves both. `plan-v04.md` is the last plan document and is being moved there by hand |

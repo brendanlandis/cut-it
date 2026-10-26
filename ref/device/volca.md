@@ -83,6 +83,16 @@ A Pd fact, in `~/Sites/!reference/pure-data.md`. **Fix here:** `m_volca.pd` carr
 `[pgmout]`, so its `program <n>` inlet means the **wire** number that Korg, Pajen and every other
 measurement in this project use.
 
+The measurement that found it, `tools/stage-patches/PGM Probe/` on this Volca (its display names the
+program; [tools/README.md](../../tools/README.md) says how the probe runs):
+
+| Sent | Volca selected | Evidence | Item |
+|------|----------------|----------|------|
+| raw `0xC0 19` | LilChorus | verified | 228 |
+| raw `0xC0 20` | Mouthlead | verified | 228 |
+| `pgmout 20` | **LilChorus** — i.e. wire 19 | verified | 228 |
+| `pgmout 21` | **Mouthlead**, and it held through three raw `0xC0 20` interleaves | verified | 228 |
+
 ### `slider-1` is CC 41, and it can silence the device
 
 `mode-1 slider-1 volca-cc 41`, and CC 41 is Velocity, a global parameter (Reference, item 284). Leave

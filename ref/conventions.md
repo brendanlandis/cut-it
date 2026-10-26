@@ -10,6 +10,8 @@ away from.
 
 Companion to [architecture.md](architecture.md) (how the modules compose), [rig.md](rig.md) (the
 boxes and cables) and the pages under [device/](device/) (the wire format). Hard constraints — Pd version, plugdata, vanilla-only — are in [AGENTS.md](AGENTS.md).
+What Pd itself does, which most of these rules work around, is on its Reference page,
+`~/Sites/!reference/pure-data.md`: a rule here says why in a line and points there.
 
 ## The rules, in one screen
 
@@ -23,7 +25,7 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | **C-4** | **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out | [→](#audio-io--never-adc-never-dac) |
 | **C-5** | **One owner per display surface** — `oscOut` / `screenLine*` are `g_oled`'s, `led` is its own. Everything else asks via `disp` | [→](#the-display-bus-and-who-owns-the-screen) |
 | **C-6** | **Finish assembled messages with `[list trim]`**, and `[list append]` after a `route` | [→](#four-traps-around-route-every-one-silent) |
-| **C-7** | **Clear optional fields on every message** — `[list split n]` on exactly *n* atoms never fires | [→](#four-traps-around-route-every-one-silent) |
+| **C-7** | **Clear optional fields on every message** — `[list split n]` on exactly *n* atoms sends an empty remainder, which a `[symbol]` store refuses | [→](#four-traps-around-route-every-one-silent) |
 | **C-8** | **`[t b]` in front of anything behind a reject outlet** — a reject carries DATA, not a bang | [→](#four-traps-around-route-every-one-silent) |
 | **C-9** | **Every `[print]` in a deployed abstraction sits behind `[del 2000]`** — `tools/deploy.sh` gates on output | [→](#editing-a-pd-file-by-hand) |
 | **C-10** | **Append boxes at the end of a `.pd`, and move the `#X connect`s with them** | [→](#editing-a-pd-file-by-hand) |
@@ -68,8 +70,9 @@ The analogy breaks in five places, and each one causes real bugs:
 
 ## File naming
 
-Abstraction names occupy a **global namespace and shadow built-in objects**. A file named
-`filter.pd` redefines `filter` for the whole patch. So everything is prefixed.
+Abstraction names are looked up along the same path as externals, and **a built-in always wins
+over a file of the same name** (Reference, *A built-in always wins*): a `moses.pd` would never load,
+and a `shell.pd` in the patch folder would shadow the real external. So everything is prefixed.
 
 Cut It uses **rjlib's type prefixes** — battle-tested, self-documenting, and they happen to map
 cleanly onto this rig's structure:
@@ -123,24 +126,13 @@ invisible, intermittent, and looks like a DSP bug.
 
 Framing to keep in mind: **`$0` is private, `$1…$n` are public.**
 
-**The `$1` trap:** in an *object* box `$1` is a creation argument, resolved once at load. In a
-*message* box `$1` is the first element of the incoming message, resolved per message. Same
-glyph, unrelated meaning. When a message box needs a creation argument, capture it into the
-patch at load time and store it — `[symbol $1]` in an *object* box, banged when needed.
+⚠️ **Object box: `$0` and `$1` mean what you expect. Message box: neither does** — there `$1` is
+the incoming message's first atom and `$0` is **0**, which is easier to miss because `$0-name` is
+everywhere. Measured, and Pd's: Reference, *`$` arguments*. When a message box needs a creation
+argument, capture it at load — `[symbol $1]` in an *object* box, banged when needed.
 
-⚠️ **And `$0` has the same trap, which is easier to miss because `$0-name` is everywhere.** In a
-*message* box `$0` is **not** the patch id — it resolves to **0**. A `write -wave … $0-buf`
-message addresses a table called `0-buf`, every write fails with `no such table`, and because a
-failed write is *fast* its timing looks excellent — only a frames-written count makes it visible.
-**Object box: `$0` and `$1` mean what you expect. Message box: neither does.**
-
-✅ **What DOES work in an object box is composing an argument**: `[u_store $1/cut-it-auto.txt]`
-expands correctly, which is how `u_state` hands each of its two stores a path.
-
-### `polytouchin`'s outlets are value, note, channel
-
-⚠️ **Not the note-first order the name suggests**, and the odd one out — `[ctlin]` is channel,
-controller, value (item 23) and `[notein]` is channel, velocity, pitch. Measured, item 86.
+What does work in an object box is composing an argument: `[u_store $1/cut-it-auto.txt]` is how
+`u_state` hands each of its two stores a path.
 
 ### The global name allowlist
 
@@ -247,8 +239,8 @@ the file.
 **`quitting` is the shutdown hook, and it is the only one.** `mother.pd` sends it on
 `/quitpd`, then waits **100 ms** before `; pd quit`. `killpatch.sh` then SIGTERMs after 120 ms.
 That is the entire budget for putting hardware back in a sane state — enough for a nine-byte
-SysEx, not for anything clever. **Pd 0.49 has no `closebang`** (checked: `closebang` and
-`initbang` both fail to create), so `[r quitting]` is it.
+SysEx, not for anything clever. **Pd 0.49 has no `closebang`** (Reference), so `[r quitting]` is
+it.
 
 ⛔ **`quitting` fires on every PATCH LOAD, not only on shutdown, and that is what makes menu
 probes safe.** `/loadPatch` calls `MainMenu::runPatch`, which runs `killpatch.sh` *before* launching
@@ -314,10 +306,9 @@ Two limits stay hard:
 - The names in question are `mother.pd`'s reserved ones, so it lives inside `u_mother-stub` —
   still the one sanctioned exception, unchanged.
 
-The payoff is not tidiness. **Graph-on-parent renders iemguis and atom boxes and nothing
-else** — no message boxes, no object boxes, no comments — so removing the cords is exactly what
-lets `u_mother-stub`'s panel appear inline on `main-dev.pd`. ✅ `$0` expands in iemgui `send` and
-`receive` names, verified in 0.49 with two instances of a test abstraction rather than assumed.
+The payoff is not tidiness. **Graph-on-parent draws no object or message boxes and no cords**
+(Reference), so binding by name rather than by cord is exactly what lets `u_mother-stub`'s panel
+appear inline on `main-dev.pd`.
 
 ---
 
@@ -325,8 +316,8 @@ lets `u_mother-stub`'s panel appear inline on `main-dev.pd`. ✅ `$0` expands in
 
 **Rule C-3.** Cite it by ID from a `.pd` comment, where a link cannot be followed.
 
-When one outlet connects to several destinations, firing order is **creation order** — invisible
-in the patch and unrecoverable from reading it.
+When one outlet connects to several destinations, they fire in **creation order**, which the patch
+does not show (Reference, *Order*).
 
 **Every fan-out goes through `[t]`.** `[t b f]`, `[t f f]`, `[t b b]`. Even when the current
 order happens to work.
@@ -344,19 +335,14 @@ two values before it acts, the cold ones are set first — which means they come
 
 **Rule C-11.** Cite it by ID from a `.pd` comment, where a link cannot be followed.
 
-**Grain timing is audio-domain, always.** Pd's message clock is quantised to a 64-sample block
-(~1.45 ms), which is ~20% of a 256th note at 120 BPM. Grain clocks come from `phasor~`;
+**Grain timing is audio-domain, always.** Pd's message clock moves a 64-sample block at a time
+(~1.45 ms; Reference), which is ~20% of a 256th note at 120 BPM. Grain clocks come from `phasor~`;
 envelopes from `vline~`. Never `metro` or `line~` at grain rate.
 
-⚠️ **`threshold~`'s debounce is counted in DSP blocks, not milliseconds.** It decrements its dead
-time once per block, so *any* non-zero debounce costs a full 1.45 ms per state change — and a
-trigger/rest pair costs two. This is what caps a `phasor~`-derived pulse train: **at zero debounce
-the limit is two blocks per cycle, measured at 344 Hz = 44100/64/2**; at 2 ms it drops to about
-170 Hz, silently — a clock that looks fine at every ordinary tempo and loses pulses above about
-430 BPM. A `phasor~` cannot bounce, so set the debounces to 0.
-
-**Signal-domain feedback requires a block boundary** — `[send~]`/`[receive~]` or
-`[delwrite~]`/`[delread~]`. A direct signal loop is a DSP-sort error, not a sound.
+⚠️ **`threshold~` behind a `phasor~` takes debounces of 0.** Its debounce is counted in blocks, so
+any debounce caps the pulse train it makes — 344 Hz at zero, about 170 Hz at 2 ms (measured, and
+Pd's: Reference) — and 2 ms is a clock that looks fine at every ordinary tempo and loses pulses
+above about 430 BPM. A `phasor~` cannot bounce.
 
 **Normalise time units to Hz at the edge.** BPM-mode and MS-mode are a *units* choice, not two
 engines: `bpm/60 × subdivisions` or `1000/ms`, then one `phasor~`. Do the conversion once, at
@@ -404,39 +390,30 @@ The message format, the reserved names, the layer model and every trap around th
 
 **Rule C-6, C-7 and C-8.** Cite it by ID from a `.pd` comment, where a link cannot be followed.
 
-All four cost real debugging time on this project. The first two are the same underlying
-fact — Pd distinguishes a message's **selector** from its **arguments**, and the `list` objects
-move an atom across that boundary.
+All four cost real debugging time on this project. Why each happens is Pd's, measured in 0.49:
+Reference, *Selectors, lists and `route`*.
 
 | You have | You get | Fix |
 |---|---|---|
 | `[list prepend foo]` → `route foo` | no match, silent | `[list trim]` before sending |
 | `route foo` → `[symbol]` / `[t l l]` | `expected 'symbol'` / `can only convert 's'` | `[list append]` after route |
-| `[list split n]` on exactly *n* atoms | right outlet **never fires** — the old value stays | write the field unconditionally first |
+| `[list split n]` on exactly *n* atoms | an **empty** remainder, which a `[symbol]` or `[f]` store refuses — the old value stays | write the field unconditionally first |
 | a **reject** outlet feeding something that wants a bang | the rejected **data** arrives instead | `[t b]` in between |
 
-**1 — sending.** `[route in-l]` matches a message whose *selector* is `in-l`; it does not match
-a `list` whose first element is. `[list prepend in-l]` produces the second kind, so finish with
-`[list trim]`. Without it every message leaves `route`'s rightmost outlet, usually into nothing,
-and the display just shows zero. A message box typed `in-l 42 dB` is already the right shape;
-anything assembled with `[list …]` is not.
+**1 — sending.** Without the `[list trim]`, every message assembled with `[list …]` leaves
+`route`'s rightmost outlet, usually into nothing, and the display just shows zero.
 
-**2 — receiving.** Measured in 0.49: when `route` matches, **the remainder is emitted as a message
-whenever its first atom is a symbol**,
-that symbol becoming the selector. So `status v0.3-ready` arrives as selector `v0.3-ready`, and
-`alert warn u_init x` as selector `warn` with two arguments; only a remainder starting with a
-**float** is really a list. This is why every branch out of `g_oled`'s `route` begins with
-`[list append]`.
+**2 — receiving.** `status v0.3-ready` arrives as selector `v0.3-ready`. This is why every branch
+out of `g_oled`'s `route` begins with `[list append]`.
 
-**3 — the nasty one**, because it is a silent non-event rather than a wrong value. It is what
-makes `chop-size 43 %` followed by `grain 12` draw as `grain 12 %`. **Any optional field must
-be cleared on every message, not written on some.**
+**3 — the nasty one**, because nothing on the screen says anything went wrong. It is what made
+`chop-size 43 %` followed by `grain 12` draw as `grain 12 %`. **Any optional field must be cleared
+on every message, not written on some.**
 
-**4 — not `route`-specific, but the same shape.** A **reject, left, or non-matching outlet
-carries the data that failed to match**, not a bang — `route`, `select`, `moses` and `spigot`
-all do this, and every instance is silent: a `[select …]` reject overwrites a stored value through
-an `[f]`'s hot inlet, and `moses`'s left outlet passes `text search`'s `-1` into `text set` as a
-line number. **Anything behind such an outlet that expects a bang gets a `[t b]` in front of it.**
+**4 — not `route`-specific, but the same shape**, and every instance here was silent: a `[select …]`
+reject overwrote a stored value through an `[f]`'s hot inlet, and `moses`'s left outlet passed
+`text search`'s `-1` into `text set` as a line number. **Anything behind such an outlet that expects
+a bang gets a `[t b]` in front of it.**
 
 **Rate limiting belongs to the display, not the caller.** Senders push whenever they have
 something to say; the display redraws on its own clock. ✅ And because every layer holds
@@ -451,12 +428,8 @@ The guaranteed trailing edge falls out for free.
 Use `[clone]` for anything needing N copies — sample slots, voices, per-stage duplicates — before
 hand-rolling allocation.
 
-`[clone e_chop 4]` creates four instances; messages are routed by prepending the instance index,
-and `all` broadcasts. Each instance still gets its own `$0`.
-
-**Verified available:** `[clone]` ships from Pd **0.47** onward. Checked by listing
-`doc/5.reference` in the `pure-data/pure-data` repo at tags `0.47-0` and `0.49-0` —
-`clone-help.pd` is present in both.
+`[clone e_chop 4]` creates four instances, each with its own `$0`. That it is in 0.49, and how a
+message reaches one instance or all of them, are Pd's: Reference, *`[clone]` is in 0.49*.
 
 ---
 
@@ -529,47 +502,38 @@ effort. Don't tidy and change behaviour in the same commit.
 
 **Rules C-9, C-10 and C-14.** Cite them by ID from a `.pd` comment, where a link cannot be followed.
 
-⛔ **C-14 — a `#X text` record cannot be edited by scanning for the next `;`.** Pd splits a file
-into records on **unescaped** semicolons, and a comment legitimately contains escaped ones (`\;`).
-Anything that rewrites a comment by finding "the next `;`" stops in the middle of it, and the tail
-becomes a record with no `#X` prefix.
+⛔ **C-14 — a `#X text` record cannot be edited by scanning for the next `;`**: a comment can hold
+an escaped `\;`, so the scan stops in the middle of it and the tail becomes a record with no `#X`
+prefix.
 
 **Fix:** replace the whole line. `test/gate/pd-layout-check.py` reports
 `MALFORMED RECORD -- does not start with '#'` on the signature, so the fault is named rather than
 showing up as a canvas-size complaint.
 
-The format is a flat, ordered record list, and three of its properties are traps.
+The format's traps are Pd's: Reference, *The `.pd` file*. What each one asks of an edit here:
 
-- **A `#X connect` names boxes by INDEX, and the index is position in the file.** Inserting or
-  deleting *anything* — including a comment — shifts every later box and silently rewires the
-  patch. **Append at the end**, honouring `#N canvas` / `#X restore` nesting: a top-level object
-  goes before the first connect *at depth 1*. If a box really must be replaced, replace it in
-  place so no index moves. `test/gate/pd-layout-check.py` reports the damage as *"indices are
-  probably off by one"*.
-- **Records are processed strictly in order**, so a `#X connect` that appears *before* its target
-  box is defined fails at load with `connection failed` — and Pd still exits 0. When you append
-  boxes, the connects have to move down with them.
-- **A comma or semicolon in a message box is a message separator**, whatever the file does with
-  escaping. `\,` satisfies the *parser*; the message box still splits on the comma atom. Keep
-  both out of any assembled string — a `PASS IF` line in a bench is the usual casualty.
-- ⚠️ **AND AN UNESCAPED `;` ENDS A RECORD — INCLUDING A COMMENT.** In ordinary prose,
-  `Outlet 1 is the beat bang; outlet 0 is a signal phase` **ends the
-  `#X text` at the semicolon** and turns the remainder into a new record, which Pd then tries to
-  instantiate — `error: outlet: no such object`. ⚠️ **In a message box it is worse**: `; pd quit`
-  ends the box early and **takes every following `#X connect` with it**, so the patch loads, runs,
-  and does nothing at all — indistinguishable from a negative result. **Write `\;`, or use a dash;
-  it reads the same and cannot break anything.**
+- **A `#X connect` names boxes by position, so append at the end**, honoring `#N canvas` /
+  `#X restore` nesting: a top-level object goes before the first connect *at depth 1*. If a box
+  really must be replaced, replace it in place so no index moves. `test/gate/pd-layout-check.py`
+  reports the damage as *"indices are probably off by one"*.
+- **Records are read in order, so when you append boxes, the connects move down with them** — a
+  connect above its target fails at load, and Pd still exits 0.
+- **Keep commas and semicolons out of any assembled string** — a message box splits on them however
+  the file escapes them, and a `PASS IF` line in a bench is the usual casualty.
+- ⚠️ **AN UNESCAPED `;` ENDS A RECORD — INCLUDING A COMMENT**, and in a message box `; pd quit`
+  takes every following `#X connect` with it, so the patch loads, runs, and does nothing at all —
+  indistinguishable from a negative result. **Write `\;`, or use a dash; it reads the same and
+  cannot break anything.**
 
 **Every `[print]` in a deployed abstraction sits behind `[del 2000]`.** `tools/deploy.sh` gates on
 *output*, so a diagnostic that fires at `loadbang` breaks the deploy; behind a delay the syntax
 check quits before it fires while the by-hand console still sees it.
 
 ✅ **Measured: `-send "pd quit"` returns in 735 ms**, with an undelayed control print appearing and
-a delayed one not. ⚠️ **This covers more than `[print]`.** Pd's *own* file errors go to the same
-stream — `[text read]` of a missing file prints three lines, and `[text write]` to a missing
-directory prints `write failed` rather than failing silently. **Anything that touches a file that
-may not exist belongs behind the same delay**, which is why the state restore is staged rather than
-run at `loadbang`. Item 143.
+a delayed one not. ⚠️ **This covers more than `[print]`.** Pd's *own* file errors print too — a
+`[text read]` of a missing file, a `[text write]` to a missing directory (Reference, item 143). **Anything
+that touches a file that may not exist belongs behind the same delay**, which is why the state
+restore is staged rather than run at `loadbang`.
 
 **Never open or save any of this in plugdata** — see [AGENTS.md](AGENTS.md).
 

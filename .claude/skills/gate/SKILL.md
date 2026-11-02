@@ -106,7 +106,7 @@ it**, and item 234 was found by hardware instead. Every driver in `test/gate/` n
 **before** the thing it is assuming — `map-assert` at 300 ms, `sp404-assert` at 300 and 700 in both
 directions, `display-assert` at 300 with a mode nothing else in the run sets.
 
-⚠️ **`[del 0]` adds no time** (`~/Sites/!reference/pure-data.md`). A burst fired in one logical
+⚠️ **`[del 0]` defers to the next tick but adds no logical time** (`~/Sites/!reference/pure-data.md`). A burst fired in one logical
 instant proves *drops-not-queues* and nothing about an interval. Test an interval with two events a
 real millisecond or two apart.
 

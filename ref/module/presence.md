@@ -76,13 +76,14 @@ policy — and it is what lets an `m_` written long after `u_present` be covered
 ### The manufacturer byte, which is what `c_devid` matches
 
 All three detectable devices answer a universal device inquiry — `F0 7E 7F 06 01 F7` — and byte 5 of
-the reply discriminates all three. Measured on these units.
+the reply, the manufacturer, discriminates all three. Each full reply is on its device's Reference
+page.
 
-| Device | Reply | Byte 5 | `c_devid` arg | Evidence | Item |
-|---|---|---|---|---|---|
-| Launchpad Pro MK3 | `F0 7E 00 06 02 00 20 29 23 01 00 00 00 04 06 05 F7` | `00` | `0` | verified | 249 |
-| nanoKONTROL | `F0 7E 00 06 02 42 04 01 00 00 23 00 00 00 F7` | `42` | `66` | verified | 249 |
-| SP-404MKII | `F0 7E 10 06 02 41 08 04 00 00 00 03 00 00 F7` | `41` | `65` | verified | 249 |
+| Device | Byte 5 | `c_devid` arg | Evidence | Item |
+|---|---|---|---|---|
+| Launchpad Pro MK3 | `00` | `0` | verified | 249 |
+| nanoKONTROL | `42` | `66` | verified | 249 |
+| SP-404MKII | `41` | `65` | verified | 249 |
 
 ⛔ **The argument is decimal and the reply is hex.** `42` is 66 and `41` is 65. Passing `[c_devid 42]`
 for the nano matches manufacturer `0x2A`, which is nobody, and the device is then never detected —

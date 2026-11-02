@@ -168,9 +168,7 @@ then hands it authority.
 | …**and pressure**, any name ending `-at` — `m_launchpad`'s `pad-NN-at`, and nothing else | A stream per held pad would fill the screen under four fingers. Only the raw row is gated: pressure the mode maps still draws its destination's row. See *Design* | verified | 318 |
 | The pickup gate sits **below** the lookup | so a held control still knows whether it is mapped. The lookup is a pure read | verified | 242 |
 | State | Five, per knob, in two 4-element arrays | verified | 236 |
-| mother pushes **once** at load and then says nothing | One `og-knob-1` in twelve seconds, untouched, on the device | verified | 237 |
-| With `knobs.txt`, the push is the **saved** value, at **100 ms** | Three consecutive boots, identical | verified | 239 |
-| With **no** `knobs.txt`, mother pushes the **live physical position**, at ~223 ms | `0.373412` against a saved `0.0957967` | verified | 239 |
+| mother pushes **once** at load and then says nothing: the saved position at ~100 ms with a `knobs.txt`, the live one at ~223 ms without | `~/Sites/!reference/critter-guitari-organelle-1.md`, *Panel messages* | verified | 237, 239 |
 
 **The five states.** `0` virgin, never seen a value · `1` armed, side not yet known · `2` armed
 **above** the target, waiting for a fall · `3` armed **below** it, waiting for a rise · `4` live.

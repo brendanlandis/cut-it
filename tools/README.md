@@ -270,8 +270,8 @@ so the grid stops walking and the transport stops counting. Expected, not a faul
 item 94. Wraps the `/proc` arithmetic from [../ref/device-os.md](../ref/device-os.md)
 → *Measuring the running patch* and says WITHIN or OVER against a budget of one point above the
 newest baseline row on that page. ⛔ **The budget is stated there, not here** — it went stale once
-by being written in three places at once. ⚠️ `pgrep -nx pd`, never a bare `pgrep`: the substring
-match hits a kernel thread on this device.
+by being written in three places at once. ⚠️ `pgrep -nx pd`, never a bare `pgrep`
+(Reference, `~/Sites/!reference/critter-guitari-organelle-1.md`, *Measuring the running patch*).
 
 ### `display-diag.pd` — a real console for the display arbiter
 
@@ -419,8 +419,8 @@ port **9996** and the device is handed back:
 python3 -c "import socket; socket.socket(socket.AF_INET, socket.SOCK_DGRAM).sendto(b'live;', ('organelle.local', 9996))"
 ```
 
-⛔ **Not `nc`.** BSD `nc -u -w0` on macOS exits before the datagram is flushed and looks exactly like
-a dead patch — the same reason `dsp.sh` and the runner's GO are Python. `tools/lp-live.sh` remains the
+⛔ **Not `nc`**, which sends nothing and looks exactly like a dead patch (Reference, Organelle page,
+*Sending the device a UDP datagram*) — the same reason `dsp.sh` and the runner's GO are Python. `tools/lp-live.sh` remains the
 fallback that needs no running patch at all.
 
 ## Things these patches taught us

@@ -39,7 +39,7 @@ needs to be typed by hand.
 
 ### Durable device state — three things live outside the patch folder
 
-**`/sdcard` is ext4 and survives a power cycle; `/tmp` is tmpfs and does not.** Everything the
+**`/sdcard` survives a power cycle and `/tmp` does not** (Reference, *Paths and storage*). Everything the
 instrument writes for itself is therefore on `/sdcard`, deliberately *outside*
 `/sdcard/Patches/!/Cut It/`, so that `./tools/deploy.sh`, `./tools/deploy.sh --clean` and a power cycle cannot
 touch any of it:
@@ -50,10 +50,9 @@ touch any of it:
 | `/sdcard/cut-it-err.log` / `.cur` | `u_err`, on a 2 s dirty flag | `tools/fetch-errors.sh` |
 | `/sdcard/wifi.txt`, `/sdcard/ap.txt` | the System menu | — |
 
-⚠️ **`/tmp/patch` is a SYMLINK to the patch folder, and it is Pd's working directory.** So a
-**relative** `[text write]` from inside a patch does not land in `/tmp/state` and does not wait for
-mother's copy — it **mutates the deployed patch immediately**. Item 140. Use absolute paths for
-anything meant to persist, which is what `u_state` does and why it needs no Save at all.
+⚠️ **A relative `[text write]` mutates the deployed patch immediately**, because `/tmp/patch` is a
+symlink to the patch folder and Pd's working directory (Reference, item 140). So `u_state` writes
+absolute paths, which is also why it needs no Save at all.
 
 ### Measuring the running patch
 

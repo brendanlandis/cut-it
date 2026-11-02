@@ -172,7 +172,7 @@ clean syntax check proves nothing about arity.
 
 ⛔ `u_tempo` drops the BPM into the footer at 4 s, deliberately **after** the ready line lands at
 ~3.5 s. The status is sticky and something else has to clear it — without the handover you could
-press aux, watch the LED go green and the 404 start, and still be told PANIC.
+press PLAY, watch the LED go green and the 404 start, and still be told PANIC.
 
 **Fix:** `u_tempo` bangs the stored BPM back out on every start and stop, so the footer always
 describes the state you are actually in.

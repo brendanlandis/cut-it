@@ -272,10 +272,12 @@ STEPS_TEMPO = [
  ('Panic',
   'PASS IF: The aux LED turns red and the footer reads panic.',
   [('bang', 'panic')]),
- ('Aux button transport',
-  'PASS IF: The first press turns the aux LED green and the 404 starts. The second press turns it dark blue and the 404 stops.',
+ ('Transport from PLAY and STOP',
+  'PASS IF: PLAY turns the aux LED green and the 404 starts. STOP turns it dark blue and the 404 stops.',
   [],
-  {'do': 'Press the aux button twice.'}),
+  # The aux button is the keyboard's modifier now (item 305); the nano's PLAY
+  # and STOP are the transport in every mode.
+  {'do': 'Press PLAY on the nanoKONTROL, then STOP.'}),
  ('Knob 1 tempo sweep',
   'PASS IF: The row reads bpm and a number that tracks the knob between 10 and 500 BPM. It never reads og-knob-1 and never a raw 0-to-1 decimal. The 404 follows the sweep.',
   [],
@@ -727,12 +729,12 @@ STEPS_MIDI = [
   [],
   {'do': 'Sweep knob 1 all the way and back.'}),
 
- ('Transport from the aux button',
-  'PASS IF: The aux LED goes green on the first press and dark blue on the second.',
+ ('Transport from PLAY and STOP',
+  'PASS IF: The aux LED goes green on PLAY and dark blue on STOP.',
   [],
   # No footer claim: the pad rows from the steps above raise the param layer
   # over it. The aux LED is the readout.
-  {'do': 'Press the aux button twice.'}),
+  {'do': 'Press PLAY on the nanoKONTROL, then STOP.'}),
 
  ('Panic is unbound',
   'PASS IF: The aux LED never turns red however many controls you press.',

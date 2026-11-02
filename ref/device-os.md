@@ -123,7 +123,7 @@ contradiction** — which is the rule this table already states.
 
 `./tools/deploy.sh` does the whole loop — syntax check, copy, reload the patch list, load the patch —
 with no physical interaction. Flags and the reasoning are in
-[ref/conventions.md](conventions.md). Because there is **no rsync**, locally-deleted files
+[ref/workflow.md](workflow.md). Because there is **no rsync**, locally-deleted files
 linger remotely: use `./tools/deploy.sh --clean` after renaming or removing an abstraction, or a stale
 `.pd` will shadow the new one.
 

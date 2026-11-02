@@ -137,8 +137,8 @@
 #X obj 240 4850 s \$0-say;
 #X obj 20 4940 select 12;
 #X obj 240 4940 t b b b;
-#X msg 700 4940 === STEP-12-of-13 === Aux button transport;
-#X msg 700 4990 PASS IF: The first press turns the aux LED green and the 404 starts. The second press turns it dark blue and the 404 stops.;
+#X msg 700 4940 === STEP-12-of-13 === Transport from PLAY and STOP;
+#X msg 700 4990 PASS IF: PLAY turns the aux LED green and the 404 starts. STOP turns it dark blue and the 404 stops.;
 #X msg 700 5040 >>> press GO to run step 12 of 13;
 #X obj 240 5110 s \$0-say;
 #X obj 20 5200 select 13;

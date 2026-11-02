@@ -137,8 +137,8 @@
 #X obj 240 4850 s \$0-say;
 #X obj 20 4940 select 12;
 #X obj 240 4940 t b b b;
-#X msg 700 4940 === STEP-12-of-18 === Transport from the aux button;
-#X msg 700 4990 PASS IF: The aux LED goes green on the first press and dark blue on the second.;
+#X msg 700 4940 === STEP-12-of-18 === Transport from PLAY and STOP;
+#X msg 700 4990 PASS IF: The aux LED goes green on PLAY and dark blue on STOP.;
 #X msg 700 5040 >>> press GO to run step 12 of 18;
 #X obj 240 5110 s \$0-say;
 #X obj 20 5200 select 13;

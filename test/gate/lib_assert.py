@@ -22,6 +22,8 @@ to remove.
 import re
 import sys
 
+import lib_drive
+
 fails = 0
 total = 0
 verbose = "-v" in sys.argv
@@ -59,29 +61,12 @@ def report():
 
 # ---------------------------------------------------------------------------
 _MIDI = re.compile(r"^(NOTEOUT|CTLOUT|PGMOUT|MIDIOUT):\s+(-?[\d.]+(?:\s+-?[\d.]+)*)$")
-# ⛔ THIS MUST MATCH EVERY LABEL IN lib_drive.TAP_LABELS. A tap whose label has
-# no pattern here produces lines this parser silently drops, and every assertion
+# ⛔ BUILT FROM lib_drive.TAP_LABELS, NEVER TYPED. A tap whose label has no
+# pattern here produces lines this parser silently drops, and every assertion
 # about that bus is then answered by an empty list rather than by a fact -- the
-# first way a gate passes vacuously, arrived at by punctuation.
-# ⚠️ MODE was added with test/bench/bench-tap.pd. No existing driver taps mode,
-# so no capture written before that change can contain a MODE: line.
-# ⚠️ AND LED, STATE, OLED, MIDIINGATE, MIDIOUTGATE ARE MOTHER'S NAMES, added for
-# the g_led, u_init and g_oled gates. They are how a test reads back what a
-# display surface or mother's MIDI gating was TOLD -- see lib_drive.TAP_LABELS,
-# which this must always match.
-# ⛔ PRESENCE WAS MISSING FOR A DAY AND THE WARNING ABOVE IS WHY IT MATTERED. The
-# label went into TAP_LABELS with the hot-swap work and never arrived here, so
-# every `PRESENCE:` line this parser was handed went silently on the floor --
-# exactly the failure the comment above describes, applied to the very next label
-# anyone added. presence-assert.py did not notice because it carries its own
-# regex for that bus; the next gate would have.
-# ⚠️ AND SL1..SL5 AND GOHOME ARRIVED WITH THE DEBUG PATCH, which draws with
-# mother's screenLine names rather than through a g_oled it does not have. Same
-# rule as every label above: it goes in both places or the lines are dropped in
-# silence.
-_BUS = re.compile(r"^(PARAM|DISP|ERR|TEMPO|START|STOP|MODE"
-                  r"|LED|STATE|OLED|MIDIINGATE|MIDIOUTGATE|PRESENCE"
-                  r"|SL[1-5]|GOHOME):\s+(.*)$")
+# first way a gate passes vacuously, arrived at by punctuation. A hand-typed copy
+# did exactly that to PRESENCE for a day.
+_BUS = re.compile(r"^(%s):\s+(.*)$" % lib_drive.TAP_LABEL_RE)
 
 
 def parse(cap, tag):

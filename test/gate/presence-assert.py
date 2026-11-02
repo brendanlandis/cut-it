@@ -39,6 +39,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 import lib_grid as G                                           # noqa: E402
+import lib_drive as D                                          # noqa: E402
 
 MARKS = ("BOOT", "BEFORE-LOSS", "AFTER-LOSS", "WAITING", "AFTER-REWIRE",
          "FOREIGN", "STILL-LOST", "OWN-REPLY", "RECOVERED", "DROPPED",
@@ -88,7 +89,7 @@ ERR_RE = re.compile(r"^err:\s+(.*\S)\s*$")
 # everything the screen is filtered out of. `PRESENCE:` lines come from the
 # DRIVER's tap, and lib_drive labels those from TAP_LABELS in upper case. Two
 # different mechanisms that happen to look alike in a capture.
-BUS_RE = re.compile(r"^PRESENCE:\s+(.*\S)\s*$")
+BUS_RE = re.compile(r"^%s:\s+(.*\S)\s*$" % re.escape(D.TAP_LABELS["presence"]))
 # ⚠️ THE TRAILING ARGUMENTS ARE NOT OPTIONAL IN THIS REGEX -- two of the four
 # scripts carry one. u_state forks `sh state-dir.sh <dir>` and u_net forks
 # `sh phone-ip.sh <fallback>`, so an end-anchored pattern matches logroll.sh and

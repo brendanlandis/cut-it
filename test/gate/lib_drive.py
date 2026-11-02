@@ -28,12 +28,14 @@ labels. Triggers fire right to left.
 MIDI only, and every assertion about param, disp or err is answered by an empty
 list rather than by a fact -- a pass, and a meaningless one.
 """
+import re
 
-# ⛔ THE BUS -> PRINT LABEL MAP, AND IT IS SHARED WITH lib_assert's PARSER.
-# These labels are what test/gate/lib_assert.py's _BUS regex matches, so the two
-# have to be changed together: a label with no matching pattern produces lines
-# the parser silently drops, and every assertion about that bus is then answered
-# by an empty list rather than by a fact.
+# ⛔ THE BUS -> PRINT LABEL MAP, AND THE ONE LIST OF LABELS. Both parsers that
+# read a tap back -- test/gate/lib_assert.py's _BUS and test/runner/predicates.py's
+# _BUS_LINE -- are built from TAP_LABEL_RE below, so a label added here is read
+# back the moment it exists. They used to be hand-typed copies: PRESENCE went
+# missing from both, and the bench copy never had LED, STATE, OLED or the
+# debug patch's labels, so a dropped line was answered by an empty list.
 #
 # ⚠️ `mode` WAS ADDED FOR test/bench/bench-tap.pd, which the runner loads beside
 # a bench so a step can assert on what reached a bus. Inert for every gate here:
@@ -68,6 +70,9 @@ TAP_LABELS = {"param": "PARAM", "disp": "DISP", "err": "ERR", "tempo": "TEMPO",
               "presence": "PRESENCE",
               "screenLine1": "SL1", "screenLine2": "SL2", "screenLine3": "SL3",
               "screenLine4": "SL4", "screenLine5": "SL5", "goHome": "GOHOME"}
+
+# Every label as one regex alternation, for the parsers that read the taps back.
+TAP_LABEL_RE = "|".join(re.escape(label) for label in TAP_LABELS.values())
 
 
 def build(path, seq, tag, taps, quit_ms, blurb, burst=None, notes=()):

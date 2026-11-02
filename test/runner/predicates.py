@@ -15,6 +15,12 @@ marker closing it shows up.
 import os
 import re
 import subprocess
+import sys
+
+# ⛔ ONE LIST OF TAP LABELS, shared with every headless gate's driver and parser.
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gate"))
+import lib_drive                                                # noqa: E402
 
 KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled",
          "osc", "osc-rate", "file", "all")
@@ -48,17 +54,13 @@ OFFLINE_KINDS = ("file",)
 # goes stale the first time a step gains an osc predicate.
 MIRROR_KINDS = ("osc", "osc-rate")
 
-# ⛔ THE BUS KINDS READ WHAT lib_assert's PARSER ALREADY MATCHES. bench-tap.pd
-# emits lib_drive.TAP_LABELS, which is the same map every headless gate's driver
-# taps with, so there is one parser for both. Two would be how a fix reaches one
-# and not the other.
-# ⚠️ PRESENCE ARRIVED WITH THE HOT-SWAP WORK AND WAS MISSING FROM BOTH PARSERS
-# UNTIL THE BENCH STEPS NEEDED IT. A label with no pattern here does not error --
-# the line is simply dropped, so a `bus` predicate naming it reads an empty list
-# and reports the step failed. The hot-swap steps read ERR rather than presence,
-# but they read it by choice now instead of by necessity.
+# ⛔ THE BUS KINDS READ EVERY LABEL bench-tap.pd EMITS, because both are built
+# from lib_drive.TAP_LABELS. A hand-typed copy here knew eight of the nineteen,
+# so the first `bus` predicate on led or state would have read an empty window
+# and failed a working rig. A label with no pattern does not error -- the line
+# is simply dropped.
 _BUS_LINE = re.compile(
-    r"(?:^|\s)(PARAM|DISP|ERR|TEMPO|START|STOP|MODE|PRESENCE):\s+(.*?)\s*$")
+    r"(?:^|\s)(%s):\s+(.*?)\s*$" % lib_drive.TAP_LABEL_RE)
 
 # The OLED as u_mother-stub decodes it: g_oled writes rows through oscOut, and
 # the stub's oled-decode subpatch turns /oled/gPrintln into the eight cnv rows

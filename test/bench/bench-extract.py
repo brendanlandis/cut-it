@@ -1,19 +1,13 @@
 #!/usr/bin/env python3
-"""Read a bench .pd and recover its step table: title, PASS IF, and each action
-message with the bus it is sent to.
-
-Why this exists. phase3/4/5-bench.pd were hand-authored and are verified on the
-Organelle. Converting them to the manually-stepped form in bench-gen.py rebuilds
-their box graph completely, so the only way to be sure nothing was lost is to
-extract the step TEXT from the old file and from the new one and diff the two.
-Zero differences is the gate.
+"""Reads a bench .pd back into its step table: title, PASS IF, and each action
+message with the bus it is sent to. bench-verify.py diffs it against
+bench_steps.py.
 
     python3 test/bench/bench-extract.py test/bench/tempo-bench.pd            # python source
     python3 test/bench/bench-extract.py test/bench/tempo-bench.pd --json     # for diffing
 
 Steps are found by their "=== STEP-NN-of-M ===" marker, never by counting
-"PASS IF" strings -- the counts do not match, because some PASS IF lines live in
-header comments rather than in steps.
+"PASS IF" strings: the bench's header text says PASS IF too.
 """
 import json
 import os
@@ -119,8 +113,8 @@ def extract(path):
         passif, actions = "", []
         for text, bus in outputs_of(boxes, dst_of, trig, skip=idx):
             if bus == SAY:
-                # prose. The ">>> press GO" prompt is generated per run and is
-                # deliberately not part of the step table, so only PASS IF counts.
+                # Prose: only the PASS IF is part of the step table, not the
+                # >>> prompt.
                 if text.startswith("PASS IF"):
                     passif = text
             else:

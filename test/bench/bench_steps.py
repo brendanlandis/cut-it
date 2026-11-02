@@ -1,69 +1,34 @@
-"""Step tables for the seven benches -- the DATA half of bench-gen.py.
+"""Step tables for the benches -- the data half of bench-gen.py.
 
 Each step is (title, pass_if, [(message, bus), ...]) and optionally a fourth
 element, a dict -- see norm() below.
 
-⛔ A STEP SAYS WHAT TO SEE AND WHAT TO DO. NOTHING ELSE.
-No mechanism, no rationale, no history, no "this step exists because". A person
-reads this with the rig in front of them and one question -- did that happen or
-not. Why it happens is on the module's ref/ page; why it is tested this way is
-in git log. Both were in here, and they buried the sentence that mattered.
+A step says what to see and what to do, nothing else: why it happens is on the
+module's ref/ page. Capitals mean literally on a screen or a label, never
+emphasis; bench-gen.py's lint_caps holds the literal set. bench-verify.py diffs
+the generated benches' text against these tables.
 
-⛔ CAPITALS MEAN "THIS IS LITERALLY ON THE SCREEN OR THE LABEL", never emphasis.
-`EXT` is printed on the 404, `NO-LINK` on the phone, `SETUP` on the Launchpad;
-`NOTHING CHANGES` was just loud. With capitals doing both jobs they did neither.
-bench-gen.py's `lint_caps` holds the literal set and refuses anything else.
-
-⛔ WHAT A STEP CLAIMS IS FIXED. HOW IT READS IS NOT. Every one of these was
-transcribed out of a hand-authored .pd by test/bench/bench-extract.py, and the
-benches behind them are verified on the Organelle -- so a change here may never
-alter what a step ASSERTS. Wording is a different question, and it was rewritten
-in full on 2026-08-10. test/bench/bench-verify.py re-extracts from the
-regenerated files and diffs against these tables.
-
-⛔ NO COMMA AND NO SEMICOLON IN A `title` OR A `pass_if`. A message box treats
-either as a message SEPARATOR whatever the escaping -- `\\,` satisfies the .pd
-parser and still printed one PASS IF as THREE fragments, and the same defect
-produced fourteen on the first Phase 6 run. Full stops are safe; a full stop
-straight after a digit is not, because Pd reads `12.` as the float 12 and the
-stop disappears (item 122). That is why these read as short sentences joined by
-` -- ` rather than as ordinary prose, and why bench-gen.py asserts it rather
-than trusting review.
-
-⚠️ `need` and `do` NEVER REACH A .pd -- see norm() -- so they carry ordinary
-commas and are written as plain instructions.
+A `title` or `pass_if` takes no comma, no semicolon and no sentence ending on a
+bare number (the gate skill, Benches); bench-gen.py asserts it. `need` and `do`
+never reach a .pd, so they take ordinary commas.
 """
 import re
 
 # ---------------------------------------------------------------------------
-# ⛔ THE MEASUREMENT WINDOW LIVES HERE AND NOWHERE ELSE. bench-gen.py builds the
-# [del] from it and test/runner/ opens its predicate window from it, and until
-# this existed the same 10000 was written in the generator and would have been
-# written again in the runner -- two copies of one number, which is exactly the
-# drift this project keeps eliminating. The generator's own prose is derived from
-# it too, so "TEN SECOND" in a bench header cannot go stale either.
+# One window for the bench's [del], its header prose and test/runner/'s
+# predicate window.
 WINDOW_MS = 10000
 
-# ⛔ AND WHAT MARKS A MEASURE STEP. A step that sends to a bus ending in this is
-# arming a timed count, so the prompt tells the person to WAIT for the printed
-# number and the runner holds its window open for WINDOW_MS instead of judging
-# immediately. Same reason as above: the generator and the runner must agree, so
-# there is one definition rather than two spellings of "-zero".
+# A step that sends to a bus ending in this arms a timed count: the prompt says
+# to wait for the printed number, and the runner holds its window open for
+# WINDOW_MS instead of judging at once.
 MEASURE_SUFFIX = "-zero"
 
 # ---------------------------------------------------------------------------
-# ⛔ THE CONSOLE PROTOCOL, AND BOTH HALVES OF IT LIVE HERE.
-#
-# A bench announces itself on Pd's console and test/runner/ reads those lines
-# back to know which step is running -- so the generator's format strings and the
-# runner's regexes are two halves of ONE agreement. Written apart they drift
-# silently and in the worst possible way: the runner stops recognizing a step,
-# calls it a stall, and the bench is fine. Written together, a change to the
-# wording has to pass runner-assert, which checks each regex against the string
-# its own format produces.
-#
-# ⚠️ THE REGEXES ARE UNANCHORED ON PURPOSE. These reach the console through a
-# bare [print], so every line arrives with Pd's own "print: " in front of it.
+# The console protocol, both halves: bench-gen.py's format strings and
+# test/runner/'s regexes, kept together so runner-assert can check each regex
+# against what its format writes. A drift reads as a stall on a working bench.
+# The regexes are unanchored because a bare [print] puts `print: ` in front.
 SAY_STEP = "=== STEP-%02d-of-%02d === %s"
 SAY_PROMPT = ">>> press GO to run step %d of %d"
 SAY_FIRED = ("--- step %d fired --- judge it against the PASS IF above --- "
@@ -77,19 +42,11 @@ RE_STEP = re.compile(r"=== STEP-(\d+)-of-(\d+) === (.*?)\s*$")
 RE_FIRED = re.compile(r"--- step (\d+) fired ---")
 RE_COMPLETE = re.compile(r"=== BENCH COMPLETE ===")
 
-# ⛔ WHERE THE BENCH THINKS IT IS, AND IT IS THE ONLY QUESTION THE RUNNER CAN ASK.
-# Every other word in the protocol is an instruction -- go, rerun, show -- and an
-# instruction that goes missing cannot be told from one the bench ignored. GO
-# travels as a single UDP datagram, which has no delivery guarantee of any kind,
-# so a lost one and a dead patch produce the SAME silence: no fired line, no
-# described step, nothing. `where` is what tells them apart, because the answer
-# names the step and the phase and so says whether the last GO landed.
-#
-# ⚠️ IT IS A [print] PREFIX RATHER THAN A SENTENCE, unlike every marker above.
-# The numbers are live -- they come out of the two [f] stores -- and a message
-# box cannot carry `$1` through the generator's escaping, which turns every `$`
-# into `\$` precisely so step prose cannot smuggle one in. `print bench-at` needs
-# no escaping and no format string at all.
+# `where` is the one question the runner can ask. GO is a single UDP datagram,
+# so a lost GO and a dead patch are the same silence; the answer names the step
+# and the phase, which says whether the last GO landed. A [print] prefix rather
+# than a format string, because the numbers are live and the generator escapes
+# every `$`.
 SAY_WHERE = "bench-at"
 RE_WHERE = re.compile(r"\bbench-at: (\d+) (\d+)\b")
 
@@ -97,17 +54,10 @@ RE_WHERE = re.compile(r"\bbench-at: (\d+) (\d+)\b")
 def norm(step):
     """A step is 3 or 4 long -> (title, pass_if, actions, meta).
 
-    ⛔ THE FOURTH ELEMENT IS RUNNER-SIDE ONLY AND NEVER REACHES A .pd. It carries
-    what a person needs (`need` and `do`) and what a program needs
-    (`check`, `wait`, `targets`) -- and keeping it out of the patch is not
-    tidiness. Emitting it would reopen every hardware-verified step text to the
-    comma/semicolon fragmentation hazard the generator exists to prevent, which
-    produced fourteen fragments on the first Phase 6 run. It buys nothing either:
-    with the runner in place the person reads the runner's terminal, not Pd's
-    console.
-
-    ⚠️ SO bench-verify.py STILL DIFFS THREE FIELDS. Its round trip proves the
-    step TEXT survived generation, and meta is not text that gets generated.
+    The fourth element is the runner's -- what a person needs (`need`, `do`)
+    and what the program needs (`check`, `wait`, `targets` ...) -- and never
+    reaches a .pd, where it would face the comma and semicolon split. So
+    bench-verify.py diffs three fields.
     """
     title, pass_if, actions = step[0], step[1], list(step[2])
     return title, pass_if, actions, dict(step[3]) if len(step) > 3 else {}
@@ -123,15 +73,9 @@ STEPS_DISPLAY = [
  ('Parameter with no unit',
   'PASS IF: grain and then a big 12 with no percent sign left over from the last step.',
   [('grain 12', 'disp')],
-  # ⛔ EXACT ROWS, NOT SUBSTRINGS, AND NOT A TIMED WINDOW. g_oled draws a
-  # parameter as two rows -- the name, then the value -- and the stale unit shows
-  # up as a VALUE ROW reading `12 %` where it must read `12`. Asserting exact
-  # rows catches that whatever else is on screen, which matters because g_oled
-  # stacks up to five parameters: for about 1.3 s after the previous step the
-  # screen correctly shows chop-size 43 % as well, so a screen-wide `no %` test
-  # reports a failure that is really the runner outpacing the fade. Tried that
-  # first, both ways -- judging at once saw the %, waiting 2.5 s saw grain fade
-  # away too. An exact row does not care.
+  # Exact rows: g_oled draws a parameter as a name row and a value row, so the
+  # stale unit is a value row reading `12 %`. A screen-wide `no %` fails on the
+  # previous step's chop-size 43 %, still on screen for about 1.3 s.
   {'check': {'kind': 'oled', 'has_row': ['grain', '12']}}),
  ('Two parameters',
   'PASS IF: Two stacked pairs -- chop-size over 43 % on top and grain over 12 below. First touched on top. The values are mid-sized.',
@@ -175,35 +119,23 @@ STEPS_DISPLAY = [
  ('Modal safety timeout',
   'PASS IF: stuck appears in mid-size text and stays.',
   [('modal stuck', 'disp')],
-  # ⛔ NOT HELD, AND THE TIMER IT WOULD RESET IS THE NEXT STEP'S. The hold
-  # exemption is derived from a step's own prose claiming a decay -- and this
-  # step no longer makes that claim, because the decay moved to the step after
-  # it. Re-firing `modal stuck` every 0.8 s while this verdict is open restarts
-  # the 30 s safety TTL each time, so the step that judges it would be waiting on
-  # a timer that never got to run. The refusal has to be explicit here.
+  # Not held: re-firing `modal stuck` every 0.8 s would restart the 30 s TTL
+  # that the next step waits out.
   {'hold': False}),
  ('Modal safety timeout -- the wait',
   'PASS IF: The screen went back to the meters on its own with nothing touched.',
   [],
-  # ⛔ THE WAIT IS THE STEP. The instruction used to sit in the step before it
-  # as "do not answer until it has" -- an instruction inside a PASS IF, and in
-  # the wrong step, so the thing you had to do arrived while you were judging
-  # something else.
   {'do': 'Wait 30 seconds without touching anything.'}),
- # ⛔ THIS IS THE HALF NO GATE CAN REACH. oled-assert proves the roster draws
- # the right words in the right order; whether five 8px rows are READABLE at
- # arm's length is a person's judgment, and m_launchpad unchecked is 21
- # characters -- the whole width of a row -- so the longest line clips silently
- # if anything about the names or the state words ever grows.
- # ⛔ THE POINT OF THE WHOLE SHIFT LAYER, and it can only be judged with a
- # device actually gone. The nano carries start and stop now, so this is the
- # step that proves the panel alone can still silence the rig.
+ # Judged with a device actually gone: the panel alone can still stop the rig.
  ('Shifted stop with the nano unplugged',
   'PASS IF: The clock stops. The beat row on the Launchpad stops walking.',
   [],
   {'do': 'Hold the aux button and press the middle key.',
    'need': ['The nanoKONTROL unplugged.',
             'The clock running -- press PLAY on the nano before unplugging it.']}),
+ # oled-assert proves the roster's words and order; whether five 8px rows read
+ # at arm's length, and the 21-character m_launchpad unchecked line is not
+ # clipped, is a person's call (ref/module/display.md).
  ('The diag roster',
   'PASS IF: Five small lines naming m_launchpad m_nano m_organelle m_volca and m_404 -- each with here or gone or never or unchecked beside it. Every line is readable at arm reach and none is cut off at the right edge. About eight seconds later the meters come back on their own.',
   [],
@@ -217,11 +149,9 @@ STEPS_NANOKONTROL = [
  ('Every slider and knob',
   "PASS IF: Each control draws one row named for itself -- slider-1 to slider-9 then knob-1 to knob-9 -- unless the current mode maps it. In mode 1 slider-1 reads volca-cc41 and no slider-1 row appears. None reports another's name.",
   [],
-  # ⛔ ONE ROW PER CONTROL, AND IT IS u_map's (item 317). m_nano posts nothing to
-  # disp: an unmapped control draws u_map's raw row under its own name, and a
-  # mapped one draws its DESTINATION's row instead. slider-1 is volca-cc 41 in
-  # mode 1, so a slider-1 row beside volca-cc41 there is the double row this
-  # step exists to catch.
+  # One row per control, and it is u_map's (item 317): an unmapped control draws
+  # its own raw row, a mapped one its destination's. slider-1 is volca-cc 41 in
+  # mode 1, so a slider-1 row beside volca-cc41 there is a double row.
   {'do': 'Sweep every slider and every knob. Watch slider 9 and knob 1 especially.'}),
  ('Several faders at once',
   'PASS IF: Two faders draw as stacked pairs. Three to five draw as small lines. Nine draws the five you touched first and refuses the rest. No row reshuffles while you are moving them.',
@@ -230,55 +160,35 @@ STEPS_NANOKONTROL = [
  ('Every button and transport key',
   'PASS IF: All 18 buttons name themselves on press and nothing on release. REW FF LOOP and REC report xport-1 xport-3 xport-4 and xport-6 as raw rows. PLAY starts the clock and STOP stops it and neither draws a row. No toggle.',
   [],
-  # ⚠️ FOUR OF THE SIX DRAW A RAW ROW NOW AND NONE OF THEM DID BEFORE. The row
-  # used to be consumed by u_map's hardcoded mode route, above the table, so it
-  # never reached the lookup at all. Mode moved to the Launchpad's lit top row,
-  # so these fall through to the table -- PLAY and STOP find start and stop
-  # there, and the other four miss and report their raw value, which is item
-  # 242's rule and the right behavior: a control that does nothing and says
-  # nothing cannot be told from a broken one.
-  # ⚠️ AND PLAY AND STOP DRAW NOTHING. They are mapped to button destinations,
-  # which draw no row -- the aux LED and the footer already say what happened --
-  # and m_nano posts no raw row of its own any more (item 317).
+  # REW FF LOOP and REC miss the table and draw raw rows (item 242: a control
+  # that does nothing must say so). PLAY and STOP map to start and stop, button
+  # destinations that draw no row, and m_nano posts no row of its own (item 317).
   {'do': 'Press every button, then all six transport keys.'}),
 
- # ⛔ HOT-SWAP, THREE CASES, AND ITEM 235 IS THE PROOF THE FIRST TWO ARE NOT THE
- # SAME TEST. The transition case needs the device to have ANSWERED at least
- # once, because c_presence's warn is armed by a reply -- a device that was never
- # there is ABSENT rather than lost, and absent raises nothing. The absent-at-load
- # case needs a fresh load and can see what no transition ever shows: that a
- # device missing at boot is recovered at all.
- #
- # ⛔ AND THE THIRD IS RECOVERY FROM A TRANSITION -- out and back in mid-session,
- # which is what a knocked cable does and the only one of the three that happens
- # by accident. It read as covered because the other two sit either side of it:
- # one proves the loss is SEEN and the other proves a recovery happens, and
- # neither proves the device you were playing comes back. See the last step.
+ # Hot-swap, three cases (item 235): lost mid-session, absent at load, and out
+ # and back in. Only a device that has answered can be lost -- c_presence's warn
+ # is armed by a reply -- so absent at load is its own case, and only a fresh
+ # load shows it recovered.
  ('Hot-swap -- unplugged mid-session',
   'PASS IF: A bordered alert on the OLED reads warn and then m_nano.',
   [],
-  # ⚠️ wait 12 IS LOAD-BEARING -- the warn is three missed ticks behind the
-  # unplug, up to 8 s, and the runner's default drain is 0.4 s.
+  # wait 20: the warn is three missed ticks behind the unplug, up to 8 s, and
+  # the runner's default drain is 0.4 s.
   {'do': 'Press enter first, then unplug the nanoKONTROL and leave it out.',
    'wait': 20,
    'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_nano']}}),
  ('Hot-swap -- absent at load',
   'PASS IF: Slider 1 draws a value row on the OLED.',
   [],
-  # ⚠️ 60 SECONDS AND NOT 10 -- the nano needed two of the eight attempts on the
-  # bench because the device was still enumerating when the first landed (item
-  # 277). ⛔ AND THE SLIDER IS THE ORACLE, not the absence of a warn: the nano is
-  # PASSIVE to look at, so the only proof the subscription came back is traffic
-  # arriving through it.
+  # 60 s: a replug can miss the first re-wires while the device enumerates (item
+  # 277). The slider is the oracle: the nano is passive, so only traffic arriving
+  # proves the subscription came back.
   {'do': 'Plug it back in, wait 60 seconds, then move slider 1.',
    'reload': True,
    'need': ['The nanoKONTROL still unplugged from the last step.']}),
 
- # ⛔ THE STEP THE WHOLE DIAG LAYER EXISTS FOR, and it has to live in a bench
- # where a device is genuinely missing. The warn two steps up proves the loss
- # was DETECTED and lasts two seconds; this proves you can ask afterwards, which
- # is the thing that was impossible before. ⚠️ It runs BEFORE the device goes
- # back in, so it sits between the unplug and the replug rather than at the end.
+ # Between the unplug and the replug on purpose: the warn shows the loss was
+ # seen, and this shows you can ask about it afterwards.
  ('Hot-swap -- the diag roster names it',
   'PASS IF: The m_nano line reads gone. The other four lines are unchanged and none of them reads gone.',
   [],
@@ -288,40 +198,21 @@ STEPS_NANOKONTROL = [
          'rather than a miss.',
    'need': ['The nanoKONTROL still unplugged from the last step.']}),
 
- # ⛔ THE THIRD CASE, AND IT IS THE ONE THAT HAPPENS IN A ROOM. The two above
- # are loss DETECTED and absent-at-load RECOVERED -- neither of them watches a
- # device that was working, went away, and came back, which is what a knocked
- # cable does mid-set. The recovery path is not the same one: absent-at-load has
- # nothing to lose and no transition to fire on, while this arms u_present's
- # counter on the way out and has to land one of the eight re-wire attempts on
- # the way back in. It ran last so the device is plugged in from the step above,
- # and so nothing after it depends on a cable being out.
+ # Out and back in mid-session, as a knocked cable does. Not the absent-at-load
+ # path: this arms u_present's counter on the way out and has to land one of the
+ # eight re-wires on the way back. Last, so nothing after it needs a cable out.
  ('Hot-swap -- unplugged and plugged back in',
   'PASS IF: Slider 1 draws a value row on the OLED again when you move it.',
   [],
-  # ⚠️ FIFTEEN SECONDS OUT, AND THAT IS NOT PADDING. The loss is three missed
-  # presence ticks behind the unplug, so pulling it and pushing it straight back
-  # never registers as a loss at all and the step would prove nothing.
-  # ⚠️ AND UP TO 60 SECONDS BACK, for the same reason as the step above: the
-  # eight attempts are spread over about seventy seconds and the nano needed two
-  # of them on the bench because it was still enumerating (item 277).
+  # Fifteen seconds out, because the loss is three missed ticks behind the
+  # unplug; up to 60 s back, as in the step above (item 277).
   {'do': 'Press enter first. Unplug the nanoKONTROL and count to fifteen, then '
          'plug it back in and wait up to 60 seconds before moving slider 1.'}),
 ]
 
-# ⛔ THE THREE BEAT-COUNT STEPS ARE GONE AND THE COUNTERS WITH THEM. `Beat counts
-# while stopped` and `Beat counts after stopping` asserted the c_clock ratio and
-# that a stop does not halt the timer -- both already owned, more tightly and in
-# ~16 s, by clock-assert.py ("the two instances run at 1.5x each other") and
-# tempo-assert.py ("the clock KEEPS RUNNING after a stop"). Neither touched a
-# device: the counters live in the bench patch and print to the runner's own
-# terminal, so the step text had to admit there was nothing on the instrument to
-# look at. By this project's own test -- could this run with the named device
-# unplugged -- they were not bench steps. `Zero the beat counters` armed them and
-# nothing else, and its one other claim (dark blue is stopped) is step 1's.
-# ⚠️ THE COST OF KEEPING THEM WAS latest.json: one claim judged twice under two
-# names reports more coverage than exists, which is the nanokontrol duplication
-# again one level up.
+# No beat-count steps: the c_clock ratio and the clock running on after a stop
+# are clock-assert's and tempo-assert's, and the counts appear on no screen. One
+# claim judged in two places reports more coverage than exists.
 STEPS_TEMPO = [
  ('Resting display at 120 BPM',
   'PASS IF: Two meter bars each with a small gate mark under it and 120-bpm in the footer. The aux LED is dark blue.',
@@ -329,32 +220,21 @@ STEPS_TEMPO = [
  ('Knob pickup on the first touch',
   'PASS IF: The row reads bpm 57 (10) -- the position knob 1 was saved at first and where the bench has just moved it to in brackets -- and the footer stays 120-bpm. The tempo is held until the real knob is turned back past where it was saved. If this rig has no knobs.txt the row reads bpm 10 and the footer follows down to 10-bpm instead. The row must never read og-knob-1 and never a raw 0-to-1 decimal.',
   [('120', 'tempo'), ('og-knob-1 0', 'param')],
-  # ⛔ THE FIRST NUMBER IS THE SAVED KNOB POSITION, NOT THE TEMPO IN FORCE, and
-  # this line read 120 until hardware said otherwise. u_map builds the held row
-  # from [tabread $0-pk-t] -- the pickup TARGET -- scaled x490+10, while the
-  # incoming value takes the parallel chain into makefilename (%g) and rides in
-  # the unit field. So a knobs.txt of 0.0957967 draws `bpm 57 (10)` however many
-  # times the bench sends 120 to tempo first. ⚠️ BRANCH (a) NEEDS AN ARMED KNOB,
-  # which needs a knobs.txt saved off the rail -- with 0 0 0 0 the equality
-  # release fires and only (b) is reachable, which is why this text went two
-  # rewrites without once being exercised.
+  # The first number is the saved knob position, not the tempo: u_map draws the
+  # held row from the pickup target ([tabread $0-pk-t], x490+10) with the
+  # incoming value in the unit field, so a knobs.txt of 0.0957967 draws
+  # `bpm 57 (10)`. Branch (a) needs a knob saved off the rail; with 0 0 0 0
+  # pickup releases at once and only (b) is reachable.
   #
-  # ⛔ NOT HELD. The runner re-fires a step every 0.8 s while its verdict is
-  # open, so a parameter row survives g_oled's 1.3 s life -- but this step sends
-  # a tempo AND a knob that maps to tempo, so each re-fire walks the footer from
-  # 120 back down to 10 under the eyes of whoever is reading it. Measured on the
-  # Mac: six full round trips in five seconds. [r]epeat still works and is the
-  # right control for it, because a person asks for that one deliberately.
+  # Not held: each re-fire sends a tempo and a knob mapped to tempo, so the
+  # footer would walk 120 to 10 and back while being read (six round trips in
+  # five seconds on the Mac). [r]epeat still works.
   {'hold': False}),
  ('Knob pickup crosses over',
   'PASS IF: The row reads bpm 500 and about a second later it ages out to show the footer underneath reading 500-bpm. The knob has crossed where it was saved and is live from here on.',
   [('og-knob-1 1', 'param')],
-  # ⛔ THE ROW IS WHAT YOU SEE AND THE FOOTER IS UNDERNEATH IT. This asked for a
-  # footer reading while its own param message raises g_oled's param layer, which
-  # REPLACES home -- the same defect as the 404 step, found the same way. ⛔ AND
-  # NOTHING SLIDES: the old text asked for a slide rather than a snap, which is
-  # what a HAND turning a knob produces. The bench sends one discrete value, so
-  # there is exactly one jump and no slide to see.
+  # The row covers the footer (the param layer replaces home), so the footer is
+  # read once the row ages out. One value is sent: one jump, no slide.
   ),
  ('Knob tracking after pickup',
   'PASS IF: The row reads bpm 10 and the footer underneath reads 10-bpm once it ages out. A row still reading 500 means the knob is stuck.',
@@ -362,10 +242,8 @@ STEPS_TEMPO = [
  ('Tempo above range',
   'PASS IF: The footer reads 600-bpm and exactly one alert appears -- a bordered box naming u_tempo. The second 5000 is silent.',
   [('5000', 'tempo'), ('5000', 'tempo')],
-  # ⛔ EXACTLY ONE, and that is the whole step. The second 5000 must be silent
-  # because the VALUE did not change -- "one or more alerts" is satisfied by two
-  # and would pass the bug. A person counting bordered boxes on an OLED that
-  # redraws is exactly the oracle a machine should replace.
+  # Exactly one: the second 5000 is the same value and must be silent, and
+  # "one or more" would pass the bug.
   {'check': {'kind': 'bus-count', 'bus': 'ERR', 'match': 'u_tempo', 'n': 1}}),
  ('Tempo below range',
   'PASS IF: The footer reads 5-bpm and a second alert appears.',
@@ -376,23 +254,17 @@ STEPS_TEMPO = [
  ('Start the transport',
   "PASS IF: The aux LED turns green and the 404 starts its selected pattern in time with it. The 404's screen shows an EXT tempo. The number beside a pad never moves.",
   [('bang', 'start')],
-  # ⛔ A PATTERN HAS TO BE SELECTED AND STOPPED OR THERE IS NOTHING TO START, and
-  # the step read as an instrument failure without it -- the aux button goes
-  # green, the 404 sits there, and nothing on either device says why. Start (250)
-  # moves the sequencer on its own (ref/device/sp404.md) but only once the
-  # sequencer has a pattern loaded. The two steps after it inherit this state.
+  # Start (250) moves the 404's sequencer only with a pattern loaded
+  # (ref/device/sp404.md); without one nothing on either device says why. The
+  # two steps after this one inherit the state.
   {'need': ['The SP-404 on Pattern Select with a pattern loaded and nothing '
             'playing.']}),
  ('The 404 follows a tempo change',
   "PASS IF: The 404's EXT slides up to 180 rather than snapping and its pattern speeds up to match. The OLED fills with rows named for the pads it plays -- sp-a1 and the like -- and that is correct. Those rows cover the footer so the new tempo is not readable there until the transport stops.",
   [('180', 'tempo')],
-  # ⛔ 180 AND NOT 240, BECAUSE THE 404 FOLLOWS ONLY BETWEEN 40 AND 200 BPM and
-  # pins outside that window -- ref/device/sp404.md, verified. At 240 the step
-  # asked the hardware for something it cannot do and read as an instrument
-  # failure. ⛔ AND THE FOOTER CLAIM WENT WITH IT: this step's own pad rows
-  # raise g_oled's param layer, which REPLACES home and therefore the footer, so
-  # the step asserted a reading its own text guarantees is hidden. The footer is
-  # asserted by `Stop the transport` instead, once the rows have stopped.
+  # 180, not 240: the 404 follows only between 40 and 200 BPM
+  # (ref/device/sp404.md). No footer claim: the pad rows raise the param layer,
+  # which hides it, so `Stop the transport` reads the footer instead.
   ),
  ('Stop the transport',
   'PASS IF: The aux LED goes dark blue and the 404 stops but its screen still reads EXT. Falling back to BPM is the failure. The pad rows stop arriving and the OLED settles back to the meters with 120-bpm in the footer.',
@@ -403,20 +275,12 @@ STEPS_TEMPO = [
  ('Aux button transport',
   'PASS IF: The first press turns the aux LED green and the 404 starts. The second press turns it dark blue and the 404 stops.',
   [],
-  # ⛔ WHICH CONTROL TO PRESS IS `do`, NOT THE PASS IF. Both fields carried the
-  # Mac/device sentence, so the runner printed it twice on consecutive lines --
-  # and the PASS IF opened on two instructions before it reached anything to
-  # look at. A PASS IF says what you can SEE.
   {'do': 'Press the aux button twice.'}),
  ('Knob 1 tempo sweep',
   'PASS IF: The row reads bpm and a number that tracks the knob between 10 and 500 BPM. It never reads og-knob-1 and never a raw 0-to-1 decimal. The 404 follows the sweep.',
   [],
-  # ⛔ NO BRACKETED SECOND NUMBER IS ASSERTED HERE AND THAT AMBIGUITY WAS THE
-  # DEFECT. The old text described the HELD row -- `bpm 57 (120) or similar` --
-  # as something you might or might not see, so a person who saw no bracket had
-  # no way to tell a pass from a failure. By this step the knob was released
-  # three steps ago and is live, so there is no bracket to see. The held format
-  # is asserted where it actually happens, in `Knob pickup on the first touch`.
+  # No bracketed second number: the knob was released three steps ago and is
+  # live. The held format is judged in `Knob pickup on the first touch`.
   {'do': 'Sweep knob 1 all the way and back.'}),
 ]
 
@@ -436,13 +300,9 @@ STEPS_LAUNCHPAD = [
  ('Mode lamp 6',
   'PASS IF: The bright lamp lands on the sixth and last position.',
   [('perform mode-6', 'mode')]),
- # ⛔ THE LAMP IS NOW THE BUTTON, which is the whole reason the mode selector
- # moved here off the nano's transport row. The five steps above drive the mode
- # bus directly and judge the PAINTING; this one judges the SELECTION, which
- # nothing above it touches.
- # ⚠️ The half a person cannot see is that the RELEASE selects nothing -- a
- # Launchpad CC button sends 127 then 0 and re-selecting the same mode is
- # idempotent, so a doubled selection looks identical. map-assert owns that.
+ # The steps above judge the painting, off the mode bus; this one judges the
+ # selection, off the lamp itself. That the release selects nothing is
+ # map-assert's, since a doubled selection looks identical.
  ('Pressing a mode lamp selects it',
   'PASS IF: The bright lamp moves to the pad you pressed and stays there after you let go. The OLED does not change.',
   [],
@@ -475,25 +335,9 @@ STEPS_LAUNCHPAD = [
  ('Start the transport',
   'PASS IF: The white pad walks along the bottom row twice a second and the aux LED goes green. A BEATS line prints about ten seconds from now.',
   [('grid modal-off', 'disp'), ('bang', 'start'), ('bang', '\\$0-zero')],
-  # ⛔ THE modal-off IS THIS STEP'S OWN PRECONDITION AND IT IS NOT DECORATION.
-  # Step 13 paints the whole surface GREEN and is cleared only by its own
-  # thirty-second safety timeout -- that IS what step 13 tests. Run in order a
-  # person sits out that timeout, because 13's `do` tells them to. A `--from`
-  # walk does not: it fires every earlier step as fast as the console answers,
-  # so 13 goes up and 14 arrives seconds later with the beat row buried under
-  # it. Every step sets up its own preconditions and a modal is one.
-  # ⚠️ FOUND ON HARDWARE, on `--from 16`: the grid was "stuck in all-green" and
-  # then "changed to the passing state as I typed this" -- the timeout expiring
-  # mid-verdict, read as a fault in a bench that was working (2026-08-11).
-  # The eyes still judge the walking pad and the aux LED. What the machine can
-  # judge is the number underneath them, which is the same evidence and is not
-  # subject to anyone counting flashes.
-  # ⛔ AND IT DOES NOT NEED SAYING TWICE. This carried a `watch` restating the
-  # PASS IF, naming the count the predicate wants, and explaining what to tick
-  # on the Mac dev panel -- printed at a person standing at the rig, where none
-  # of it applied. The runner prints `want BEATS between 19 and 22` and `got
-  # BEATS = 20` on the line above the verdict prompt, so the number was already
-  # on screen from the only source that cannot drift from the predicate.
+  # The modal-off is this step's own precondition: the step before paints the
+  # surface green and only its 30 s timeout clears it, which a person sits out
+  # in order and a --from walk does not (bench-gen.py's lint_modal).
   {'check': {'kind': 'print', 'name': 'BEATS', 'min': 19, 'max': 22}}),
  ('Beat row wrapping',
   'PASS IF: The white pad reaches the eighth pad and the next beat is back to the first -- with no gap and no stray light anywhere else.',
@@ -502,51 +346,28 @@ STEPS_LAUNCHPAD = [
  ('Beat row at 240 BPM',
   'PASS IF: The white pad moves twice as fast and keeps an even step. A visible swing is the failure.',
   [('240', 'tempo')],
-  # ⛔ THE SWING IS FIXED AND THIS STEP WAS STILL EXCUSING IT. The frame clock
-  # ran at 10 Hz once and a 250 ms beat does not divide into 100 ms, so the row
-  # swung +/-50 ms at this tempo -- which is why the clock was raised to 50 Hz
-  # (ref/module/display.md, verified). At 20 ms boundaries there is nothing to
-  # see. So the old text asked a person to accept the symptom of a bug that had
-  # already been repaired, and would have passed just as readily if it came
-  # back. ⚠️ A STEP THAT EXCUSES A FAILURE MODE CANNOT DETECT IT.
-  # ⛔ THE BEATS CLAIM WENT BECAUSE NOTHING SHOWED IT. A counter reaches Pd's
-  # console and the runner only ever displays one through a predicate, so these
-  # two steps asked a person to check a number that never appeared anywhere. The
-  # generator refuses a step whose predicate names a number its prose omits -- it
-  # cannot catch the reverse, which is this. The rate claim is gate-owned anyway:
-  # tempo-assert counts 24 PPQN at two tempos and the ratio between them. What is
-  # left here is the visible beat row, which is what a bench is for.
+  # No swing to excuse: the frame clock runs at 50 Hz (ref/module/display.md),
+  # and a step that excuses a failure cannot detect it. The rate is
+  # tempo-assert's; a count appears on no screen, so it is not claimed here.
   ),
  ('Back to 120 and stopped',
   'PASS IF: The beat row goes back to two a second at once and the pad keeps walking after the stop. The change is a snap and not a slide.',
   [('120', 'tempo'), ('bang', 'stop')],
-  # ⚠️ "SLOWS BACK" READ AS GRADUAL AND IT IS NOT. The row follows c_clock and a
-  # new tempo takes effect on the next tick -- the only thing on this rig that
-  # slides is the SP-404 chasing an external clock, which is a fact about the
-  # 404 rather than about anything here. Read from the rig as a possible fault
-  # (2026-08-11) and it was correct behavior.
+  # A snap: the row follows c_clock and a new tempo takes effect on the next
+  # tick. Only the SP-404 slides, chasing an external clock.
   ),
  ('Pads and releases',
   'PASS IF: Every pad you press reports pad-NN on the OLED with its velocity. Releasing it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressing harder on a held pad draws no row of its own -- with aftertouch on or off -- and that is correct.',
   [],
-  # ⚠️ "PRESSURE REPORTS NOTHING" WAS TRUE ONLY WHILE AFTERTOUCH WAS OFF. With
-  # polyphonic aftertouch on, an unmapped pad-NN-at reached the screen through
-  # u_map's raw row. u_map exempts a name ending -at now, as it exempts the
-  # keys (item 318), so the sentence holds either way. Mapped pressure would
-  # draw its destination's row, and nothing ships mapped.
+  # Pressure draws no row with aftertouch on or off: u_map exempts a name ending
+  # -at, as it exempts the keys (item 318).
   {'do': 'Press pads and release them. Press harder on one you are holding.'}),
  ('Ring buttons',
   'PASS IF: Each ring button reports lp-cc-NN on the OLED except the seven the map binds -- they draw no row. The top left corner raises panic and the first six of the top row move the mode lamp. The bottom row runs from 101 to 108 in order. One button stays dark and reports nothing -- index 0 -- SETUP.',
   [],
-  # ⛔ THE ROWS ARE u_map's, SO THE BOUND BUTTONS DRAW NONE (item 317). m_launchpad
-  # posts nothing to disp: an unbound button draws u_map's raw row, CC 90 is
-  # `recover` and the six mode keys are u_map's own route, and none of those
-  # draws a row. The corner and the top row used to report lp-cc-90 and lp-cc-91
-  # through m_launchpad's own row, which is why this step once read them.
+  # The rows are u_map's (item 317), so the bound buttons draw none: CC 90 is
+  # `recover` and the six mode keys are u_map's own route.
   {'do': 'Press the ring buttons, including the top left corner and the bottom row.'}),
- # ⚠️ IT TOLD A PERSON TO PRESS THE NANO'S TRANSPORT KEYS, which stopped
- # selecting a mode when the selector moved onto this surface -- those keys are
- # xport-1 to xport-6 now and only PLAY and STOP mean anything.
  ('The top row changes mode',
   'PASS IF: Each of the six buttons moves the bright lamp to its own position.',
   [],
@@ -560,65 +381,42 @@ STEPS_LAUNCHPAD = [
  # so the step asserted the opposite of what the instrument does, and pointed at a
  # plan-v04 section that had already gone.
  #
- # ⛔ TWO CASES, AND ITEM 235 IS THE PROOF THEY ARE NOT THE SAME TEST. "Lost" was
- # built as a transition from present to absent, and never-present is not a
- # transition -- so a device that was missing when the patch loaded could not be
- # recovered at all, however long you waited. Only the second step below can see
- # that, and only from a fresh load.
+ # Two cases (item 235): a device missing at load is not a transition, so only a
+ # fresh load -- the second step below -- shows it recovered.
  ('Hot-swap -- unplugged mid-session',
   'PASS IF: A bordered alert on the OLED reads warn and then m_launchpad. The grid goes dark.',
   [('compose mode-1', 'mode')],
-  # ⚠️ THE PREDICATE READS err AND THE EYES READ THE GRID, and neither covers the
-  # other. c_presence publishes the warn; g_grid going dark is m_launchpad
-  # dropping ownership two boxes further on, and no bus carries "the grid stopped
-  # painting".
-  # ⚠️ wait 12 IS LOAD-BEARING. The warn is three missed ticks behind the unplug
-  # -- up to 8 s at the shipped 2000 ms tick -- and the runner's default drain is
-  # 0.4 s, which would miss it on entirely correct hardware.
-  # ⛔ IT SETS COMPOSE ITSELF, AND WITHOUT THAT THE STEP IS UNJUDGEABLE. u_err
-  # shows every error in compose and only `fail` in perform -- so a warn is
-  # correctly INVISIBLE on the OLED in perform. The step before this one asks a
-  # person to press all six mode keys, which leaves the rig on mode-6 and
-  # therefore in perform, and this step then asked them to look for an alert the
-  # instrument was right to suppress. The bus carried it and the eyes did not,
-  # which is exactly the disagreement the runner records both halves of.
+  # The predicate reads err and the eyes read the grid; no bus says the grid
+  # stopped painting.
+  # wait 20: the warn is three missed ticks behind the unplug, up to 8 s at the
+  # shipped 2000 ms tick, and the runner's default drain is 0.4 s.
+  # It sets compose itself: u_err shows a warn only in compose, and the step
+  # before leaves the rig on mode-6, in perform.
   {'do': 'Press enter first, then unplug the Launchpad USB and leave it out.',
    'wait': 20,
    'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_launchpad']}}),
  ('Hot-swap -- absent at load',
   'PASS IF: The grid ends up lit with one bright lamp on the top row. Only where it settles is the test -- what the Launchpad does on the way back is its own. The beat row runs at the tempo restored from knobs.txt rather than the one the earlier steps set.',
   [],
-  # ⚠️ 60 SECONDS AND NOT 10. A replug is routinely missed by the FIRST re-wire
-  # because the device is still enumerating -- the Launchpad used six of its eight
-  # attempts on the bench, item 277 -- and the eight are spread over seventy
-  # seconds. Anything under about 50 s fails intermittently on correct code.
+  # 60 s: a replug often misses the first re-wires while the device enumerates
+  # -- the Launchpad once used six of its eight, spread over seventy seconds
+  # (item 277). Under about 50 s fails intermittently on correct code.
   {'do': 'Plug the Launchpad back in and wait up to 60 seconds without touching anything.',
    'reload': True,
    'need': ['The Launchpad still unplugged from the last step.']}),
 
- # ⛔ THE THIRD HOT-SWAP CASE -- see the nanoKONTROL bench for why the two above
- # are not it. ⚠️ IT SITS BEFORE THE PANIC DELIBERATELY: the panic hands the
- # surface back and nothing after it can check the grid.
+ # The third hot-swap case -- see the nanoKONTROL bench.
  ('Hot-swap -- unplugged and plugged back in',
   'PASS IF: The grid lights again and the top row shows one bright lamp.',
   [],
-  # ⚠️ THE GRID COMING BACK IS THE WHOLE ORACLE, and it is a stronger one than it
-  # looks: the surface only paints when m_launchpad owns it AND the device is in
-  # Programmer Mode, so a lit grid says presence re-wired the port and re-asserted
-  # the mode (item 276). A dark grid after sixty seconds is the failure.
+  # A lit grid is the oracle: the surface paints only while m_launchpad owns it
+  # and the device is in Programmer Mode, so it proves the re-wire and the mode
+  # both came back (item 276).
   {'do': 'Press enter first. Unplug the Launchpad USB and count to fifteen, then '
          'plug it back in and wait up to 60 seconds without touching anything.'}),
- # ⛔ THESE THREE ASSERTED BEHAVIOR THAT WAS DELIBERATELY REMOVED, and the patch
- # says so in capitals: m_launchpad's comment reads "PANIC USED TO COME IN HERE
- # TOO, AND IT WAS WRONG ... DO NOT WIRE r panic BACK IN". Handing the surface
- # back set want 0, the watchdog stopped re-asserting Programmer Mode, and the
- # grid stayed dead until a reload -- at the one moment you most need the
- # instrument. Worse, in Live Mode the device floods MIDI port 1 with clock and
- # wire.sh connects that port to Pd's Midi-In 1, so a panic also buried Cut It's
- # primary MIDI input. Item 250. display-assert has asserted the current
- # behavior all along -- "⛔ the grid SURVIVES a panic -- it must keep painting"
- # -- so the gate and the bench were testing opposite claims and only the bench
- # could be wrong.
+ # Panic keeps the surface (item 250): handing it back left the grid dead until
+ # a reload, and Live Mode's clock flooded Midi-In 1. display-assert asserts the
+ # same.
  ('Panic keeps the surface',
   'PASS IF: The grid keeps painting and the Launchpad stays in Programmer Mode. Its own display does not come back.',
   [('bang', 'panic')]),
@@ -633,35 +431,22 @@ STEPS_LAUNCHPAD = [
 
 
 
-# Phase 7 -- the phone. Every PASS IF here describes what the PHONE shows, which
-# makes this the first bench whose subject is not the Organelle. Three steps are
-# hands-only and one of them (closing PdParty) is the only way to reach item 114's
-# ICMP teardown on real hardware.
-#
-# THE RATE LIMIT IS NOT TESTED HERE AND CANNOT BE. A step table pushes discrete
-# messages; a flood needs a metro. test/gate/phone-assert.sh is what proves the
-# coalescer, and step 12 is the closest a person can get -- a real fader, and the
-# question of whether the phone SETTLES on the value you stopped at.
+# Every PASS IF here describes the phone, not the Organelle. Closing PdParty is
+# the only way to reach item 114's ICMP teardown on hardware. The rate limit is
+# phone-assert's -- a step table cannot flood -- and the fast fader sweep is the
+# closest a person gets.
 STEPS_PHONE = [
  ('The link is up',
   'PASS IF: The bottom line of the phone reads ok rather than NO-LINK.',
   [('compose mode-1', 'mode')],
-  # ⚠️ EVERY STEP BELOW DEPENDS ON THIS ONE, so the consequence of a NO-LINK is a
-  # precondition rather than something to read in a PASS IF.
   {'need': ['PdParty open on the CutItRemote scene and on the same network. '
             'A NO-LINK here means nothing below can be judged.']}),
  ('One parameter',
   'PASS IF: The top line reads chop-size and the big number reads 43 on its own. The unit is not drawn and that is correct.',
   [('chop-size 43 %', 'disp')],
-  # ⚠️ THE MAC RUN IS A MIRROR AND ANSWERS A DIFFERENT QUESTION FROM THE DEVICE.
-  # With u_net repointed at localhost the datagrams are readable here, so what
-  # u_net FILTERS can be judged with no phone at all. What no Mac can judge is
-  # what the PHONE then draws -- so the device run keeps its human verdict.
-  # ⛔ AND IT DID NOT, BECAUSE THIS SAID `targets: ('mac',)` -- which skips the
-  # whole STEP off the Mac, so the sentence above was false for as long as it
-  # had been written and this step was never judged on the rig by anyone. The
-  # runner now skips the PREDICATE where the mirror is absent and asks the
-  # person, which is what that comment always described.
+  # The Mac run reads u_net's datagrams, so it judges what u_net filters; what
+  # the phone then draws is the device run's, and there the runner skips the
+  # predicate and asks the person.
   {'check': {'kind': 'osc', 'addr': '/cutit/param', 'has': ['chop-size', '43']}}),
  ('A second parameter',
   'PASS IF: The top line changes to grain and the number to 12 with it.',
@@ -681,12 +466,8 @@ STEPS_PHONE = [
  ('Meters must not appear',
   'PASS IF: Nothing on the phone changes at all. A line reading in-l or in-r is the failure.',
   [('in-l 42 dB', 'disp'), ('in-r 7 dB', 'disp')],
-  # ⛔ THE has HALF IS THE WITNESS, not decoration. "in-l never appears" is
-  # satisfied by a u_net that emitted nothing at all -- which is what a broken
-  # one looks like -- so the heartbeat proves the link was live while the
-  # meters were being dropped. The lint refuses this predicate without it.
-  # ⛔ AND IT CARRIED `targets: ('mac',)` TOO -- see step 2. Skipped whole on the
-  # device, which is the target whose eyes can answer it.
+  # The heartbeat `has` is the witness: a dead u_net also never sends in-l
+  # (bench-gen.py's _positive).
   {'check': {'kind': 'all', 'of': [
        {'kind': 'osc', 'addr': '/cutit/hb', 'has': []},
        {'kind': 'osc', 'addr': '/cutit/param', 'has_not': ['in-l', 'in-r']}]}}),
@@ -705,25 +486,14 @@ STEPS_PHONE = [
   {'do': 'Sweep a nanoKONTROL fader as fast as you can. Two at once if you have the fingers -- both must settle.'}),
  ('Link lost',
   'PASS IF: A bordered box reads warn then u_net then net-link-down. Nothing else on the Organelle changes.',
-  # ⛔ IT ASKED FOR THE ABSENCE OF AN AUDIO GLITCH AND THERE IS NO AUDIO. v0.4 is
-  # the sound -- no effect stage exists yet -- so nobody could hear a glitch or
-  # its absence and the clause was unjudgeable. Put it back when there is
-  # something to hear.
+  # No audio claim: there is nothing to hear until v0.4.
   #
-  # ⛔ AND IT ASKED FOR NO ERROR ON THE OLED, WHICH IS THE OPPOSITE OF WHAT
-  # CLOSING PdParty DOES. u_net's watchdog watches a SOCKET, and the socket dies
-  # the moment nothing is listening on the phone's port -- so `warn u_net
-  # net-link-down` IS this step's action working. ref/device/phone.md says so
-  # under its own heading, and it is the most common line in the error log by a
-  # wide margin. Step 1 leaves the rig in compose, where u_err shows every
-  # error, so the warn could not even be suppressed: the step could never pass
-  # on the device. Failed on the rig 2026-08-11 against a working instrument.
+  # The warn is the action working: u_net's watchdog watches the socket, which
+  # dies when nothing listens on the phone's port (ref/device/phone.md). Step 1
+  # leaves the rig in compose, where u_err shows it.
   #
-  # ⚠️ THE WARN IS SENT ONCE PER LOAD -- u_net's $0-warngate closes behind it,
-  # so a phone switched off does not warn every five seconds for the rest of the
-  # set. Every device bench run relaunches Pd, so a fresh run always sees it;
-  # a second link loss inside one load does not. That belongs in `do`, which is
-  # free to change, and not in the PASS IF, which would stale the verdict.
+  # It warns once per load ($0-warngate), which `do` says rather than the
+  # PASS IF, so rewording it does not stale the verdict.
   [],
   {'do': 'Close PdParty on the phone and count to ten. u_net warns once per load, so this has to be the first time the link has dropped since the run started.'}),
  ('Link recovers',
@@ -736,17 +506,11 @@ STEPS_PHONE = [
   'PASS IF: The small lamp beside the button flashes. Nothing else on the Organelle changes.',
   [],
   {'do': 'Tap re-wire on the phone.',
-   # ⛔ THE LAMP IS THE ONLY EVIDENCE THERE IS, which is why this step exists at
-   # all. The lamp is lit by the Organelle's answer rather than by your finger, so
-   # a flash means the datagram arrived and the command was accepted.
+   # The lamp is lit by the Organelle's answer, so a flash means the command
+   # arrived and was accepted.
    'need': ['PdParty OSC send host and port pointed at the Organelle, port 9001. '
             'Without it every button below is silent and nothing says so.']}),
- # ⛔ THERE IS NO STEP HERE ASSERTING THAT THE FORK REACHED THE LOG, and there was
- # one for about an hour. It read "run tools/fetch-errors.sh and read the tail",
- # which is the instruction a state step had already been rewritten to remove --
- # and presence-assert.sh proves the same claim headlessly, exactly once, in a
- # window where nothing else can fork. A bench step that duplicates a gate is a
- # bench step that costs a person time for nothing.
+ # No step for the fork reaching the log: presence-assert proves it headlessly.
  ('The clear-alert button',
   'PASS IF: The fourth line goes back to none on the left and a dash on the right. The lamp beside the button flashes.',
   [],
@@ -769,20 +533,12 @@ STEPS_STATE = [
  ('Change the mode',
   'PASS IF: The lit lamp moves to the fourth position. Nothing else is visible yet and that is correct.',
   [],
-  # ⚠️ THE MODE KEYS ARE THE LAUNCHPAD'S TOP ROW. This said "transport key 4 on
-  # the nanoKONTROL", which stopped selecting a mode when the selector moved onto
-  # the Launchpad -- that key is xport-4 now, a raw row and no mode change.
   {'do': 'Press the fourth button of the Launchpad top row.'}),
  ('The change reached the disk',
   'PASS IF: Cut-it-auto.txt reads mode perform mode-4. The file is the only evidence -- nothing on the instrument shows it. The old mode still being there is the failure.',
   [],
-  # ⛔ THIS STEP USED TO INSTRUCT A PERSON TO RUN A SHELL COMMAND AND READ THE
-  # OUTPUT. The file is the only evidence there is -- nothing on the instrument
-  # displays what has been saved, deliberately -- so the runner fetches it and
-  # compares the string, which is exactly what the person was doing by eye.
-  # ⛔ NO `do`, AND THAT IS WHAT MAKES THE [HANDS] TAG TRUE. A `do` reading
-  # "nothing to do here" marked this step as wanting fingers when the runner
-  # does all of it.
+  # The file is the only evidence, so the runner fetches it and compares. No
+  # `do`, because the runner does all of it and the step is not [HANDS].
   {'targets': ('device', 'paper'),
    'check': {'kind': 'file', 'fetch': 'state',
              'path': 'device-state/cut-it-auto.txt',
@@ -790,19 +546,11 @@ STEPS_STATE = [
  ('Front-panel Save',
   'PASS IF: The screen shows Saving briefly and returns. Then cut-it-manual.txt has a new timestamp even though it is still empty. An unchanged timestamp is the failure.',
   [],
-  # ⚠️ A TIMESTAMP, NOT CONTENTS, AND IT HAS TO BE. cut-it-manual.txt is still
-  # EMPTY -- no shipped contributor uses the manual policy yet -- so there is
-  # nothing in it to compare. An UNCHANGED timestamp means saveState never
-  # arrived and the commit path is dead, which is the whole assertion.
-  # ⛔ THIS STEP REWRITES knobs.txt, AND TWO OTHER BENCHES REST ON WHAT IS IN IT.
-  # mother uses Save for the four knob positions, so EVERY Save creates knobs.txt
-  # from where the knobs physically are (item 139) -- and midi 1 asserts the
-  # footer reads 57 BPM at boot while tempo 2 needs a knob saved off the rail to
-  # reach the held branch of parameter pickup at all. Saving with knob 1
-  # somewhere else silently destroys both preconditions. ⚠️ AND NEITHER VERDICT
-  # WOULD GO STALE: knobs.txt lives on the device and is in no bench's DEPS, so
-  # both would stay green over a rig that could no longer produce them. Fresh
-  # forever is worse than stale forever, because it is believed.
+  # A timestamp, because cut-it-manual.txt is still empty (nothing uses the
+  # manual policy yet): unchanged means saveState never arrived.
+  # Every Save rewrites knobs.txt from the physical knobs (item 139), and midi 1
+  # and tempo 2 rest on knob 1 at 57 BPM, hence the `need`. knobs.txt is in no
+  # bench's DEPS, so a wrong one would stale neither verdict.
   {'do': 'Press Storage then Save on the Organelle. Storage is a top-level menu, not a System submenu.',
    'need': ['Knob 1 parked where the footer reads 57 BPM. Every Save rewrites '
             'knobs.txt from the physical knobs, and midi 1 and tempo 2 both '
@@ -815,29 +563,18 @@ STEPS_STATE = [
  ('Survives a power cycle',
   'PASS IF: The same mode lamp is lit as before the power cycle.',
   [],
-  # ⚠️ LAST IN A SESSION, and the reason is not about this bench: a power cycle
-  # resets the wifi fault uptime clock and that fault needs about three hours to
-  # reappear. That is a scheduling constraint on the whole run.
+  # Last in a session: a power cycle resets the wifi fault's uptime clock, and
+  # the fault takes about three hours to reappear.
   {'do': 'Power cycle the Organelle and wait for it to come back.',
    'need': ['Every other bench already run. This power cycle resets the wifi '
             'fault uptime clock.']}),
 ]
 
 
-# ⛔ THIS BENCH IS PAPER, AND IT HAS TO BE. Step 3 holds CC 90, which reloads the
-# patch -- and targets.device launches the bench as a THIRD PATCH inside the
-# instrument's own Pd, so /loadPatch kills the bench along with everything else.
-# A driven bench would end there with every later step stranded. With no actions,
-# no `reload` and only offline predicates the runner launches nothing at all: the
-# person runs these against the real deployed instrument, and the one thing under
-# test cannot take the runner down with it.
-#
-# ⚠️ SO THERE IS NOTHING TO DRIVE AND NOTHING TO DRAIN. `press enter first` and
-# `wait` are meaningless here -- they exist for predicates whose traffic a person
-# makes, and every predicate below reads a FILE.
-#
-# ⛔ STEP 5 LEAVES THE RIG WITH NO PATCH. Step 6 puts it back, and says so in its
-# own `need` and `do` rather than trusting the order to be remembered.
+# Paper: step 3 reloads the patch, and a driven bench runs as a third patch in
+# the instrument's own Pd, so the reload would kill it and strand every later
+# step. Every predicate reads a file, so there is nothing to drive or drain.
+# Step 5 leaves the rig with no patch; step 7 puts it back and says so itself.
 STEPS_RECOVER = [
  ('Short press -- panic and nothing more',
   'PASS IF: Everything sounding stops the instant the button goes down -- not when you let go. The whole Launchpad flashes red and clears itself about a second later. The aux LED is red and the footer reads panic. The patch is still running: the grid comes back and the beat row still walks.',
@@ -849,13 +586,9 @@ STEPS_RECOVER = [
  ('Short press -- the Volca stops too',
   'PASS IF: The Volca stops sequencing. Before this was built its transport never heard anything at all -- it kept running through a panic and the mixer could only mute it.',
   [],
-  # 📄 KORG'S DOCUMENTATION, NOT A MEASUREMENT. The Volca honors Start/Stop only
-  # when its own MIDI Clock src is Auto; set to Internal it ignores them and a
-  # perfectly correct patch looks broken. That is why the setting is a `need`
-  # rather than something to discover halfway through. ref/device/volca.md.
-  # ⛔ AND THE CLOCK IS STILL NOT SENT THERE. Only the panic STOP reaches port 4
-  # -- the Volca cannot sync to the master tempo and this step does not claim it
-  # can. Item 279, item 295.
+  # The Volca honors Start/Stop only with MIDI Clock src on Auto -- Korg's
+  # documentation, not measured (ref/device/volca.md) -- hence the `need`. Only
+  # the panic stop reaches port 4, never the clock (items 279, 295).
   {'do': 'Set the Volca sequencing on its own, then tap the top left corner button once.',
    'need': ['The Volca powered and its own sequencer running.',
             "The Volca's MIDI Clock src set to Auto. Set to Internal it ignores "
@@ -864,14 +597,10 @@ STEPS_RECOVER = [
  ('Hold -- the patch reloads and comes back whole',
   'PASS IF: Silence at once. About two seconds later the screen goes through its boot sequence again and the instrument comes back with every device working -- the Launchpad lit and answering and both output devices reachable. A few seconds in a bordered alert reads warn and then u_map and then recovered. Knob 1 moves the tempo on the first touch with no dead sweep.',
   [],
-  # ⛔ THIS STEP KILLS ANY BENCH IT IS RUN FROM, which is why this one is paper.
-  # ⚠️ THE ALERT IS LATE AND BRIEF. It is deferred to about 4.5 s after the
-  # reload -- clear of the boot stages, which would bury it -- and it lasts about
-  # two seconds. Watch the screen from the moment the boot sequence ends.
-  # ⛔ THE KNOB IS THE OTHER HALF AND IT IS EASY TO SKIP. After an emergency the
-  # knobs you are holding are the truth, so the reload deliberately does NOT arm
-  # parameter pickup. A knob that needs a sweep to wake up is a failure here even
-  # though it is correct behavior on an ordinary boot.
+  # The alert is deferred to about 4.5 s after the reload, clear of the boot
+  # stages, and lasts about two seconds. The reload does not arm pickup -- after
+  # an emergency the knobs in hand are the truth -- so a knob that needs a sweep
+  # fails here.
   {'do': 'Hold the top left corner button for a full two seconds and let go. Then watch the screen, and afterwards turn knob 1 a little.',
    'need': ['A Save done at some point, so knobs.txt exists. Without one '
             'nothing would be held on an ordinary boot either and the last '
@@ -888,11 +617,8 @@ STEPS_RECOVER = [
  ('Break it deliberately -- a reload that cannot land',
   'PASS IF: Everything goes quiet and then nothing comes back at all. The screen stays dark or frozen and the Launchpad stops answering. That is the failure this is meant to produce.',
   [],
-  # ⛔ DESIGN FOR THE FAILURE, BECAUSE IT IS WORSE THAN THE FAULT. If the load
-  # does not take there is no patch at all, and a patch cannot report on its own
-  # reload because it is dead by then. The breadcrumb is the only thing that
-  # survives to say an attempt was made -- and the step after this one is where
-  # it gets read.
+  # A dead patch cannot report its own failed reload; the breadcrumb survives
+  # to say one was tried, and the next step reads it.
   {'do': 'Over ssh run: mv "/sdcard/Patches/!/Cut It" "/sdcard/Patches/!/Cut It away" -- then hold the top left corner button for two seconds.',
    'need': ['An ssh session to the Organelle already open. The patch is about '
             'to stop existing, so this is not the moment to go looking for one.',
@@ -910,14 +636,9 @@ STEPS_RECOVER = [
  ('Put it back -- and the safe exit still works',
   'PASS IF: The instrument loads and runs normally again. When you leave it the Launchpad returns to Live Mode -- its pads show a built-in layout and its Setup button responds. A Launchpad still dark and ignoring Setup is the failure.',
   [],
-  # ⚠️ THROUGH THE MENU OR /loadPatch, NEVER killall pd. quitting comes from
-  # mother rather than from a shell signal, so a killed Pd skips m_launchpad's
-  # safe exit entirely and strands the surface in Programmer Mode -- where the
-  # device's own Settings menu is locked out. tools/lp-live.sh rescues one, but
-  # the point of this step is that it should not be needed. Item 96.
-  # ⛔ THIS STEP RESTORES THE RIG. Step 5 left it with no patch at all, and a
-  # step sets up its own preconditions -- including the ones the step before it
-  # destroyed.
+  # Through the menu or /loadPatch, never killall pd: a killed Pd skips
+  # m_launchpad's safe exit and strands the surface in Programmer Mode (item 96).
+  # This step restores the rig step 5 removed.
   {'do': 'Over ssh run: mv "/sdcard/Patches/!/Cut It away" "/sdcard/Patches/!/Cut It" -- then load Cut It from the Organelle menu, let it settle, and leave it by selecting a different patch.',
    'need': ['The renamed folder from the step before, still renamed.']}),
 ]
@@ -926,60 +647,41 @@ STEPS_MIDI = [
  ('Restored tempo at boot',
   'PASS IF: The footer reads 57 BPM and not 120 BPM. The lit mode lamp is wherever you left it -- note which one it is.',
   [],
-  # ⚠️ ONLY ON THE DEVICE. 57 comes from knobs.txt, which mother reads at boot
-  # and which no Mac has -- on a Mac this legitimately reads 120 and the
-  # predicate would be asserting the absence of hardware.
+  # Device only: 57 comes from knobs.txt, which no Mac has.
   {'targets': ('device',),
    'check': {'kind': 'oled', 'has': ['57'], 'has_not': ['120']}}),
 
  ('Get to mode 1',
   'PASS IF: The lit lamp moves to the first position. Nothing below works until it does.',
   [],
-  # ⚠️ THE MODE KEYS ARE THE LAUNCHPAD'S TOP ROW, not the nano's transport row.
   {'do': 'Press the first button of the Launchpad top row -- the leftmost mode lamp.'}),
 
- # ⛔ ONE ROW PER HIT, AND IT IS u_map's (item 317). m_404 used to post sp-pad
- # and sp-bank beside u_map's row named for the pad, which made one hit three
- # rows. Now the pad's own name is the row -- sp-a1 is bank A pad 1 -- with the
- # velocity beside it, and the release draws the same row at 0.
  ('SP-404 pad 1',
   'PASS IF: The OLED shows one row for the pad -- sp-a1 with the velocity beside it. No sp-pad or sp-bank row appears.',
   [],
-  # ⚠️ THE 404 LIGHTS ONLY THE BANK IT IS ON, so which bank is selected is not
-  # readable at a glance and every 404 step says it out loud instead.
+  # The 404 lights only the selected bank, so every 404 step names it.
   {'do': 'Press enter first. Check which bank the 404 is lit on -- it lights only the selected one -- then select bank A and press pad 1.'}),
 
  ('SP-404 pad 5',
   'PASS IF: A row reads sp-a5 with the velocity beside it. Anything else is the failure.',
   [],
-  # ⛔ THE PAD THAT CATCHES `47 + n`. Under the old formula pad 5 reads sp-a13,
-  # and that is a plausible-looking name on an OLED -- which is how that bug lived
-  # in this repo's own docs for months. A person reads two digits; this reads
-  # the bus.
+  # Pad 5 catches `47 + n`: the old formula draws sp-a13, which looks plausible
+  # on an OLED.
   #
-  # ⛔ `wait` IS THE OTHER HALF OF "PRESS ENTER FIRST", AND WITHOUT IT THE
-  # INSTRUCTION FIXES NOTHING. The window opens at GO and closes SETTLE later --
-  # 0.4 s, four tenths of a second -- so a step that asks a person to press
-  # enter and THEN reach for a pad judges an empty window however correctly
-  # worded it is. Measured on the rig 2026-08-11: this window held seven
-  # level-meter rows and nothing else, 6 held four, and 7 held none at all,
-  # while a person passed all three by eye. Two runs reported AUTO FAIL against
-  # a working 404 before the missing half was found. Every pad step that carries
-  # a predicate now holds the window open long enough for a hand to move.
+  # `wait` is the other half of "press enter first": the window opens at GO and
+  # closes 0.4 s later, so a hand reaching for the pad after enter lands in an
+  # empty window. On the rig three pad windows held only meter rows while a
+  # person passed all three by eye.
   {'do': 'Press enter first. Check the 404 is lit on bank A -- it lights only the selected one -- then press pad 5. There are about ten seconds to do it.',
    'wait': 10,
-   # ⚠️ `has` IS A SUBSTRING TEST, and sp-a5 is safe under it: no other pad's
-   # name contains it, sp-a13 included.
+   # `has` is a substring test; no other pad's name contains sp-a5.
    'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-a5']}}),
 
  ('All sixteen pads',
   'PASS IF: Each pad draws a row named for itself as you press it -- sp-a1 then sp-a2 up to sp-a16. A run that goes sp-a1 to sp-a4 and then jumps is the failure.',
   [],
-  # ⚠️ ABOUT TWO A SECOND, AND THE PACE IS NOT DECORATION. Every pad is a NEW
-  # name, and the param layer holds five and refuses a sixth until one ages out
-  # about 1.3 s after it last moved. A fast run fills the screen and the later
-  # pads are refused, which is the display working rather than the decode
-  # failing. The stable sp-pad row that used to dodge this is gone (item 317).
+  # About two a second: each pad is a new name, and the param layer holds five
+  # and refuses a sixth until one ages out about 1.3 s after it last moved.
   {'do': 'Press enter first. Then press pads 1 through 16 in order on bank A, about two a second.'}),
 
  ('Bank B',
@@ -988,29 +690,17 @@ STEPS_MIDI = [
   # ⛔ THE WINDOW HAS TO OUTLAST THE HAND -- see step 4.
   {'do': 'Press enter first. Then select bank B and press pad 1. The 404 lights only the bank it is on. There are about ten seconds to do it.',
    'wait': 10,
-   # ⚠️ sp-b1 IS ALSO A SUBSTRING OF sp-b10 TO sp-b16, so this proves the BANK
-   # and not the pad -- pad 5's step above is the one that owns the pad decode.
+   # sp-b1 is also a substring of sp-b10 to sp-b16, so this proves the bank;
+   # step 4 owns the pad decode.
    'check': {'kind': 'bus', 'bus': 'DISP', 'has': ['sp-b1']}}),
 
  ('One row for a press and its release',
   'PASS IF: One row named for the pad -- sp-b3 for bank b pad 3 -- shows the velocity on the press and 0 on the release. It is the same row both times and no sp-pad or sp-bank row appears.',
   [],
-  # ⛔ EXACTLY TWO sp- LINES FOR ONE HIT: u_map's row on the press and the same
-  # row at velocity 0 on the release. m_404 posts nothing to disp any more (item
-  # 317), so four -- sp-pad and sp-bank back beside the press -- is the failure,
-  # and so is one, which is a release that never arrived.
-  # ⚠️ AND IT CARRIED A `watch` THAT SAID THE PASS IF AGAIN IN OTHER WORDS.
-  # A second copy of a sentence is a second copy free to drift, and this one
-  # was displayed INSTEAD of the sentence the verdict is recorded against.
-  # ⛔ THE THIRD ROW IS NAMED NOW BECAUSE THE SCREEN HAS ALWAYS HAD THREE. The
-  # step described two, so a person reading it correctly reported a failure --
-  # "only sp-b3 updates when I lift my finger off the pad", which is exactly
-  # what is supposed to happen. The per-pad name comes from u_map's generic
-  # echo and carries the control's VALUE, so a release is velocity 0 and the row
-  # changes (ref/device/sp404.md, item 283). A step that describes less of the
-  # screen than the screen shows makes correct behavior read as a fault.
-  # ⛔ THE WINDOW HAS TO OUTLAST THE HAND -- see step 4. This one held NOTHING
-  # AT ALL on the rig, which is what an exact count of 1 reads as a fail against.
+  # Exactly two sp- lines: u_map's row on the press and again at velocity 0 on
+  # the release (items 283, 317). Four means m_404's sp-pad and sp-bank rows are
+  # back; one means the release never arrived. The window has to outlast the
+  # hand -- see step 4.
   {'do': 'Press enter first. Then press and hold any pad and let go. There are about ten seconds to do it -- one hit only.',
    'wait': 10,
    'check': {'kind': 'bus-count', 'bus': 'DISP', 'match': 'sp-', 'n': 2}}),
@@ -1040,122 +730,73 @@ STEPS_MIDI = [
  ('Transport from the aux button',
   'PASS IF: The aux LED goes green on the first press and dark blue on the second.',
   [],
-  # ⛔ THE FOOTER CLAIM WENT, FOR THE FOURTH TIME IN THIS SUITE. The 404's pad
-  # rows raise g_oled's param layer and that REPLACES home -- so by this
-  # point in the bench the footer is buried under the traffic of the steps
-  # above, and it only ever carried the BPM anyway. The aux LED is the readout
-  # this step is about and it is on the front panel where nothing covers it.
+  # No footer claim: the pad rows from the steps above raise the param layer
+  # over it. The aux LED is the readout.
   {'do': 'Press the aux button twice.'}),
 
  ('Panic is unbound',
   'PASS IF: The aux LED never turns red however many controls you press.',
   [],
-  # ⛔ IT USED TO SAY "Nothing on the rig can raise panic and nothing is meant
-  # to", which is a claim about the map with nothing to do and nothing to look
-  # at -- read at the rig as "this is not even a test", correctly. The map half
-  # is a STATIC fact and map-assert owns it now: no row may name panic as a
-  # destination, proved by reading cut-it-map.txt with no Pd at all. What is
-  # left here is the half only fingers can answer -- that no control anybody
-  # would actually reach for raises it.
+  # That no map row names panic is map-assert's, read from cut-it-map.txt; this
+  # asks only what fingers can answer -- that no control anyone reaches for
+  # raises it.
   {'do': 'Press every transport key on the nanoKONTROL and every button on the '
          'Organelle. Turn the encoder. Nothing should ever go red.'}),
 
- # ⛔ HOT-SWAP FOR BOTH OUTPUT DEVICES, AND THE TWO ARE NOT ALIKE. The SP-404 is
- # `active` -- it answers a device inquiry, so it has a last-heard clock and can
- # be declared lost. The Volca is `none`: it transmits nothing at all, can never
- # be polled, and its recovery is PARASITIC on a detectable device being missing
- # in the same moment. Step 7 below is what that costs.
+ # Hot-swap for both output devices, which differ: the SP-404 is `active` and can
+ # be declared lost; the Volca is `none`, transmits nothing and can never be
+ # polled, so u_present's re-wire heartbeat is what brings it back.
  ('Hot-swap -- SP-404 unplugged',
   'PASS IF: A bordered alert on the OLED reads warn then m_404 then device-lost.',
   [],
-  # ⚠️ wait 20 IS LOAD-BEARING -- the warn is three missed ticks behind the
-  # unplug, up to 8 s, and the runner's default drain is 0.4 s.
-  #
-  # ⛔ AND THE ALERT IS BRIEF AND LATE, SO THE STEP HAS TO SAY WHERE TO LOOK AND
-  # WHEN. It told a person to pull a cable and judge an alert that fires about
-  # eight seconds later and clears itself about two seconds after that -- while
-  # their hands and eyes were on the cable. Reported from the rig as "no alert
-  # on the OLED" 2026-08-11, and /sdcard/cut-it-err.log has
-  # `332000 warn m_404 device-lost` at exactly that moment. ⚠️ THE STEP AFTER
-  # IT SHOWED THE WARN and this one did not, off the same physical action, which
-  # is what named the cause: step 16 has you counting to fifteen with the cable
-  # out, so you are still watching when it lands.
-  #
-  # ⛔ AND A FAILURE HERE INVITES THE ONE ACTION THAT DESTROYS STEP 15. Seeing no
-  # alert, a person plugs the 404 back in to check it still works -- which it
-  # does -- and 15 then reloads with the device PRESENT and tests nothing. Same
-  # sentence as step 17, which has said so all along.
+  # wait 20: the warn is up to 8 s behind the unplug and the runner's default
+  # drain is 0.4 s. The alert lands about eight seconds after the cable is out
+  # and lasts about two, so `do` says where and when to look.
+  # Leave it out: plugged back in to check, the next step would reload with the
+  # device present and test nothing.
   {'do': 'Press enter first, then unplug the SP-404 and watch the OLED. The alert arrives about eight seconds after the cable is out and clears itself about two seconds later. Leave it unplugged when you answer -- the next step loads without it.',
    'wait': 20,
    'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_404']}}),
  ('Hot-swap -- SP-404 absent at load',
   'PASS IF: The OLED shows a row for the pad -- sp-a1.',
   [],
-  # ⚠️ A PAD IS THE ORACLE AND NOT THE ABSENCE OF A WARN. The 404's detection is
-  # proven by its silence at boot -- it can only stay quiet by matching byte 65 on
-  # port 3 -- but silence cannot tell a working subscription from a dead one. A
-  # pad under a finger can.
-  # ⛔ `need` DESCRIBES THE STATE THE RELOAD ALREADY PUT THE RIG IN, NOT A THING
-  # TO GO AND DO. It read "The SP-404 still unplugged from the last step" directly
-  # above a `do` reading "Plug it back in", and the two land on screen together
-  # after the reload has happened -- so they read as a contradiction and were
-  # reported as one. NEED is what you must HAVE, DO is what you must do.
+  # A pad is the oracle: the 404's silence at boot proves detection, but silence
+  # cannot tell a working subscription from a dead one.
+  # `need` is the state the runner's reload already made, not a thing to do.
   {'do': 'Plug it back in, wait 60 seconds, then press pad 1 on bank A.',
    'reload': True,
    'need': ['The SP-404 unplugged, and the patch just reloaded without it. '
             'The runner has already done the reload -- that absence is what '
             'this step tests.']}),
 
- # ⛔ THE THIRD HOT-SWAP CASE for the 404 -- see the nanoKONTROL bench. The Volca
- # step below already has its own, because a `none` device can only be recovered
- # this way (item 275), which is why this gap read as covered for so long.
+ # The third hot-swap case for the 404 -- see the nanoKONTROL bench.
  ('Hot-swap -- SP-404 unplugged and plugged back in',
   'PASS IF: The OLED shows a row for the pad again -- sp-a1.',
   [],
   {'do': 'Press enter first. Unplug the SP-404 and count to fifteen, then plug '
          'it back in and wait up to 60 seconds before pressing pad 1 on bank A.'}),
 
- # ⛔ THE ORACLE IS THE FADER CHANGING THE SOUND \, NEVER THE VOLCA MAKING ONE.
- # Both of these steps used to read "PASS IF the Volca sounds -- BY EAR" \, which
- # is satisfied by a Volca with no MIDI cable in it at all: it is a synth with its
- # own keyboard and it sounds whenever it is powered. Measured on the rig
- # 2026-08-10 -- the interface was enumerated and completely unsubscribed for two
- # minutes and the keys still played. ref/device/volca.md said so before the step
- # was written: its only mapping is a CC that needs the device ALREADY SOUNDING.
- # ⚠️ THE TEXT CAME VERBATIM FROM THE PLAN and was checked against the punctuation
- # rules rather than against what this device can demonstrate.
+ # The oracle is the fader changing the sound, never the Volca sounding: it plays
+ # from its own keys with no MIDI connected at all (ref/device/volca.md).
  ('Hot-swap -- Volca unplugged and plugged back in',
   'PASS IF: Holding a Volca key and sweeping slider 1 changes the sound -- by ear.',
   [],
-  # ⛔ THE VOLCA USED TO NEED A SECOND DEVICE PULLED WITH IT, AND NO LONGER DOES.
-  # It registers `none` -- it transmits nothing, can never be polled, and so has
-  # no clock to run out. Its recovery rode a DETECTABLE device being missing at
-  # the same moment, which is why this step pulled the nanoKONTROL too (item
-  # 275). u_present's re-wire heartbeat closed that: wire-watch.sh fires every
-  # eight ticks whatever is or is not lost, hashes the client names, and re-wires
-  # when they change. So the Volca alone is now the honest test, and it is the
-  # one that exercises the heartbeat -- pulling a second device would go back
-  # through the loss path and prove nothing about it.
-  # ⚠️ THIRTY SECONDS COVERS THE HEARTBEAT: u_root passes [u_present 4000 2000 33
-  # 8], so the watch interval is eight 2000 ms ticks -- 16 s -- plus enumeration.
-  # ⚠️ AND IT IS BY EAR AND ALWAYS WILL BE. The Volca transmits nothing, so there
-  # is no readback and no predicate is possible -- see ref/device/volca.md.
-  # ⛔ IT HAS TO COME BACK OUT AT THE END, and it did not say so -- the step
-  # after this one loads the patch with the Volca ABSENT, and the runner does
-  # that reload the moment this verdict is given. So its `need` read "still
-  # unplugged from the last step" against a step that had just told you to plug
-  # it in. Reported from the rig on 2026-08-11.
+  # The Volca alone is the test: it registers `none` and comes back through
+  # u_present's re-wire heartbeat (wire-watch.sh every eight ticks, re-wiring
+  # when the client names change); pulling a second device would go through the
+  # loss path instead (item 275).
+  # 30 s covers the heartbeat: u_root passes [u_present 4000 2000 33 8], so it
+  # is eight 2000 ms ticks -- 16 s -- plus enumeration.
+  # By ear, always: the Volca transmits nothing, so no predicate is possible.
+  # Unplugged again at the end, because the next step reloads without it.
   {'do': 'Press enter first. Unplug the Volca interface alone and count to fifteen, then plug it back in and wait up to 30 seconds before sweeping slider 1 while holding a Volca key. Unplug it again before you answer -- the next step loads without it.',
    'need': ['Mode 1. Slider 1 is the only control bound to the Volca.']}),
  ('Hot-swap -- Volca absent at load',
   'PASS IF: Holding a Volca key and sweeping slider 1 changes the sound -- by ear. Sweep it up -- slider 1 is velocity.',
   [],
-  # ⛔ ABSENT AT LOAD IS STILL ITS OWN CASE, and for a `none` device it is the
-  # likelier one in a room: you power the rig up and then plug the Volca in.
-  # Nothing is wrong from the instrument's point of view, so nothing warns -- and
-  # before the heartbeat the remedy was a reload, or unplugging a detectable
-  # device to trick the recovery into running, which nobody would guess. Item
-  # 285, ✅ seen on the rig after 1 day 21 hours up.
+  # Absent at load is the likelier case in a room: nothing is wrong as far as
+  # the instrument knows, so nothing warns, and the heartbeat recovers it (item
+  # 285).
   {'do': 'Plug the Volca interface in, wait up to 30 seconds, then hold a Volca key and sweep slider 1.',
    'reload': True,
    'need': ['The Volca interface still unplugged from the last step.',
@@ -1163,22 +804,10 @@ STEPS_MIDI = [
 ]
 
 
-# ⛔ THIS BENCH IS PAPER, AND IT HAS TO BE. A driven bench runs as a THIRD PATCH
-# inside the instrument's own Pd -- targets.py launches mother.pd, main.pd and the
-# bench together over one ssh -- and step 1 here LOADS ANOTHER PATCH, which is a
-# Pd restart. It would take the bench down with it and strand every step after.
-# test/bench/recover is paper for exactly the same reason, and it got there the
-# same way: the one thing under test cannot be allowed to kill the runner.
-#
-# ⛔ EVERY STEP IS EYES, AND THERE IS NOT ONE FILE PREDICATE. That is honest
-# rather than lazy: this patch writes nothing to disk -- its output IS the OLED,
-# which is the whole point of a tool for a venue with no laptop -- and inventing a
-# logfile purely so a predicate had something to read would be building a test
-# hook and calling it a feature. Everything machine-checkable about the patch is
-# already in test/gate/debug-assert.sh, which asserts all five rows.
-#
-# ⛔ AND IT LEAVES THE RIG WITHOUT THE INSTRUMENT. The last step puts Cut It back
-# and says so in its own `do`, rather than trusting the order to be remembered.
+# Paper, like recover: step 2 loads another patch, which restarts Pd and would
+# take a driven bench down with it. Every step is eyes: the patch's output is
+# the OLED and it writes nothing to disk, and what a machine can check is
+# debug-assert.sh's. The last step puts Cut It back.
 STEPS_DEBUG = [
  ('It is in the menu -- under debug and not under the instrument',
   'PASS IF: The Organelle menu has a debug folder beside the one holding Cut It -- and Cut It Debug is inside it. Finding it in the same folder as the instrument is the failure. At a venue you should scroll past nothing to reach what you play.',
@@ -1189,57 +818,47 @@ STEPS_DEBUG = [
  ('It loads and comes up on the MIDI screen',
   'PASS IF: Within a couple of seconds the screen reads 1-MIDI-IN with four rows under it -- lp nano sp404 and ch -- all reading zero. A screen that stays on the menu or goes blank is the failure.',
   [],
-  # ⚠️ LOADING IT STOPS THE INSTRUMENT. That is what selecting any patch means on
-  # this device, and it is why this tool is for "Cut It is broken and I am not
-  # playing right now" rather than for mid-set.
   {'do': 'Select Cut It Debug and wait.',
    'need': ['You are not in the middle of a set. This stops the instrument.']}),
 
  ('It wired itself -- and proving that is the whole bench',
   'PASS IF: Moving a nanoKONTROL fader makes the nano row count up. This is the step everything else rests on: loading any patch drops the ALSA connections and the patch runs wire.sh itself to put them back. A nano row stuck on zero means the patch is measuring silence and would report a healthy rig as dead.',
   [],
-  # ⛔ PROVE THE PROBE BEFORE BELIEVING THE SILENCE. The nanoKONTROL is the right
-  # device to prove it with: it transmits the moment you touch it, needs no mode
-  # and has nothing to go wrong at the far end. If this row does not move, nothing
-  # any later step reports about any other device means anything at all.
+  # The nano proves the probe: it transmits the moment it is touched and needs
+  # no mode. If its row does not move, nothing a later step reports means
+  # anything.
   {'do': 'Move fader 1 on the nanoKONTROL a few times and watch the nano row.',
    'need': ['The nanoKONTROL plugged in and its scene loaded.']}),
 
  ('Each device lands on its own row',
   "PASS IF: A Launchpad pad moves only the lp row. An SP-404 pad moves only the sp404 row. Each one also changes the ch row to a number in that device's own block -- ch 1 to 16 for the Launchpad and 33 to 42 for the 404 bank. Two devices sharing one row is the fault this patch exists to find.",
   [],
-  # ⛔ THE ROW IS THE PORT AND THE PORT IS THE DEVICE, which only holds while
-  # wire.sh has undone mother's own auto-connect -- alsaconnect.sh wires the
-  # LOWEST-numbered client to Pd's Midi-In 1, and the nano has enumerated below
-  # the Launchpad before now. When that goes wrong two devices really are both
-  # channel 1 and nothing in Pd can tell them apart. Item 274.
+  # The row is the port and the port is the device only while wire.sh has undone
+  # mother's auto-connect, which wires the lowest-numbered client to Midi-In 1
+  # (item 274).
   {'do': 'Press a Launchpad pad and then an SP-404 pad on bank A. Watch which row moves.',
    'need': ['The Launchpad and the SP-404 both plugged in and powered.']}),
 
  ('The error log screen shows what the instrument left behind',
   'PASS IF: The screen reads 3-ERR-LOG and the four rows under it hold the last four lines of the instrument s own log with dots where the spaces were. Four dashes mean the log was empty or missing -- which is a real answer and not a failure if the instrument has not raised anything.',
   [],
-  # ⚠️ THE LOG IS u_err's AND NOT THIS PATCH'S. logroll.sh rolls the current
-  # session into the durable file once per load -- and loading this patch IS a
-  # load -- so the session that went wrong is already in cut-it-err.log by the
-  # time you read it here. ref/module/error.md.
+  # The log is u_err's: loading this patch rolls the session that went wrong
+  # into cut-it-err.log (ref/module/error.md).
   {'do': 'Press the fourth key from the bottom to select the error log screen.'}),
 
  ('The network screen shows the address you type into the phone',
   "PASS IF: The screen reads 4-NETWORK and the row under it reads ip- followed by this Organelle's own address. That is the number PdParty needs -- it will not resolve the name -- and reading it here is what removes the last reason this rig needs a laptop to fix the phone link.",
   [],
-  # ⛔ ITEM 312. PdParty's OSC send host has to be a literal address, the lease has
-  # been seen at three different numbers, and the failure is completely silent on
-  # both ends. On the Organelle's own access point it is always the same address,
-  # so the house network is the awkward one. ref/device/phone.md.
+  # Item 312: PdParty needs a literal address, and on the house network the
+  # lease moves (the addresses seen are on the Organelle's Reference page). On
+  # the access point it is always the same. ref/device/phone.md.
   {'do': 'Press the fifth key from the bottom. Read the ip row and check it against what the phone is pointed at.'}),
 
  ('Both output devices answer when you fire at them',
   'PASS IF: The C an octave up plays a note on the Volca. The D above it plays pad A1 on the SP-404. The sent counter goes up by exactly one per press -- two for one finger would mean a key release is firing as well as the press.',
   [],
-  # ⚠️ PAD A1 MAY HOLD A LOOPING SAMPLE AND NOTHING IN THE PATCH CAN STOP IT. The
-  # note-off is scheduled correctly and the loop is the 404's own sample setting,
-  # so All Notes Off will not end it either. Press the pad on the device. Item 311.
+  # Pad A1 may hold a looping sample that nothing in the patch can stop, All
+  # Notes Off included (item 311).
   {'do': 'Press the second key from the bottom to see the test screen -- then press the C an octave up and the D above it. Listen.',
    'need': ['The Volca powered and audible.',
             'The SP-404 powered and audible. Pad A1 may hold a looping sample -- '
@@ -1248,21 +867,16 @@ STEPS_DEBUG = [
  ('A re-wire by hand reports how many links it made',
   'PASS IF: The re-wire screen reads 5-RE-WIRE and the links row shows a number rather than a dash -- nine on the full rig. The runs row goes up by one each time you press the key. A links row still reading dash means wire.sh ran but said nothing back.',
   [],
-  # ⛔ IT FORKS wire.sh DIRECTLY AND MUST NOT ASK THE presence BUS. That bus gained
-  # a re-wire selector for the phone, but it lives inside the Pd instance that
-  # loading this patch has already killed.
+  # It forks wire.sh itself: the presence bus's re-wire lives in the Pd this
+  # patch's load has already killed.
   {'do': 'Press the sixth key from the bottom for the re-wire screen, then press the E an octave up twice.'}),
 
  ('You can get out of it -- and the instrument comes back',
   'PASS IF: The lowest key returns you to the Organelle menu. Cut It then loads and runs normally -- and when you leave it the Launchpad goes back to Live Mode with its Setup button responding. A Launchpad still dark and ignoring Setup is the failure.',
   [],
-  # ⛔ THE LOWEST KEY IS THE ONLY WAY OUT THAT IS GUARANTEED, and that is a design
-  # decision rather than a convenience. Asking mother for the encoder is an
-  # OVERRIDE which takes the click as well -- the press that normally leaves a
-  # running patch -- so this patch deliberately never asks, and the key stands in
-  # for it anyway. Items 313 and 314.
-  # ⛔ THIS STEP RESTORES THE RIG. Everything above ran with the instrument
-  # stopped.
+  # The lowest key is the only guaranteed way out: asking mother for the
+  # encoder would take the click too (items 313 and 314). This step restores
+  # the rig.
   {'do': 'Press the lowest key. Then load Cut It from the menu and leave it once it is up.',
    'need': ['Nothing else queued on the rig -- this is the step that puts the '
             'instrument back.']}),

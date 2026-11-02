@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
-"""THE FIDELITY GATE for the bench conversion.
+"""The fidelity gate: proves every bench's step text survived generation.
 
     python3 test/bench/bench-verify.py
 
-The display, nanoKONTROL and tempo benches were hand-authored and are verified on the Organelle.
-bench-gen.py rebuilds their box graph completely, so the only honest way to be
-sure the conversion changed how a step is DRIVEN and not what it CLAIMS is to
-read the step text back out of the generated file and diff it against the table
-it was generated from. Zero differences is the pass.
-
-Exits non-zero on any difference, so it can gate a commit.
+Reads title, PASS IF and actions back out of each generated .pd and diffs them
+against bench_steps.py. Exits non-zero on any difference.
 """
 import importlib.util
 import json
@@ -28,26 +23,16 @@ def _load(name, path):
 
 
 be = _load("bench_extract", os.path.join(HERE, "bench-extract.py"))
-# ⛔ THE LIST OF BENCHES IS DERIVED, NEVER RETYPED. This file used to carry a
-# hand-maintained tuple (3, 4, 5, 6, 7, 8, 9) -- a third copy of a list that also
-# lived in bench-gen.py's table and in bench_steps.py's names -- and the gate skill
-# had to warn that missing it meant a bench was generated but NEVER
-# FIDELITY-CHECKED. Reading bench-gen's own table makes that impossible instead of
-# merely documented: a bench that can be generated is a bench that gets verified.
-# ⚠️ bench-gen.py writes files only under `if __name__ == "__main__"`, so importing
-# it here generates nothing.
+# The bench list is bench-gen's own table, never retyped (the gate skill,
+# Benches). bench-gen writes files only under __main__, so importing it
+# generates nothing.
 gen = _load("bench_gen", os.path.join(HERE, "bench-gen.py"))
 steps_mod = _load("bench_steps", os.path.join(HERE, "bench_steps.py"))
 
 
 def norm(table):
-    """A step table -> the three fields a .pd actually carries.
-
-    ⚠️ A STEP MAY BE 3 OR 4 LONG, and the fourth is the runner's meta -- what to
-    have at hand, what to press, and any machine predicate. None of it is emitted
-    into a .pd, so this round trip cannot see it and must not try: extracting
-    three fields from a four-field step is the whole point, not an oversight.
-    What is verified here is that the step TEXT survived generation.
+    """A step table -> the three fields a .pd carries. The fourth, meta, never
+    reaches a .pd, so it is not compared.
     """
     out = []
     for step in table:
@@ -59,8 +44,7 @@ def norm(table):
 def main():
     bad = 0
     names = sorted(gen.BENCHES)
-    # ⛔ AND THE COUNT IS PRINTED, because a verifier that silently checked zero
-    # benches would also print no differences and exit 0.
+    # The count is printed: a verifier that checked no bench would also pass.
     print("verifying %d bench(es): %s\n" % (len(names), " ".join(names)))
     for name in names:
         want = norm(gen.BENCHES[name]["steps"])

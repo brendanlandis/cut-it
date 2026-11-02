@@ -1,56 +1,33 @@
 #!/usr/bin/env python3
-"""Generates all four acceptance benches from test/bench/bench_steps.py.
+"""Generates every acceptance bench from test/bench/bench_steps.py.
 
     python3 test/bench/bench-gen.py
 
-Replaces launchpad-bench-gen.py, which generated one bench. Four near-identical
-files of fifteen-odd near-identical steps is exactly where hand-authored box
-indices drift, and it did -- see C-10, and the git history.
-
-THE INTERACTION, and why it changed. Every bench up to now drove itself on a
-ten-second timer, so the console text and the physical device moved at the same
-moment -- you cannot read one while watching the other. These are stepped BY HAND:
+A bench is stepped by hand, so the PASS IF is on screen and still before
+anything moves:
 
     press GO   ->  the described step runs
     press GO   ->  the next step is described, and nothing moves
-    press GO   ->  that step runs
 
-so the PASS IF is always on screen and still, before anything happens. The prompt
-line states what the next press will do, so one control is enough -- which matters
-on the Organelle, where the encoder click is the only free control there is.
+GO is the bng at the top of the patch or the encoder click, both Mac only, or
+./test/run.sh --bench <name>, the only one that works on the device. Turning the
+encoder, or the runner's [r]epeat, re-runs the current step without advancing.
 
-GO is:
-  * the bng at the top of the patch                     (Mac)
-  * the encoder click, via [r encbut]                   (MAC ONLY -- see below)
-  * ./test/run.sh --bench <name>                        (THE ONLY ONE THAT WORKS
-                                                         ON THE DEVICE)
-Turning the encoder REPEATS the current step without advancing (Mac only), and
-test/run.sh's [r]epeat does the same over the network on either target -- it
-sends `rerun` rather than `go`, so a step whose result is on the OLED for about
-a second can be looked at as many times as it takes.
+The encoder cannot drive a bench on the Organelle: mother forwards encbut only
+after a patch bangs enableSubMenu, which Cut It never does, and asking is an
+override that takes the click that leaves the patch too (items 313 and 314,
+ref/device/organelle.md). u_mother-stub sends encbut unconditionally, which
+hides this on the Mac.
 
-!! THE ENCODER DOES NOT DRIVE THIS BENCH ON THE ORGANELLE, and the plan that
-chose a single alternating control assumed it did. mother forwards encbut only
-after a patch bangs enableSubMenu, and nothing in Cut It ever does -- m_organelle
-leaves the encoder out deliberately. On the Mac u_mother-stub sends encbut
-unconditionally, which is what hid this. Use test/run.sh on the device. Making the
-bench ask mother to enable the encoder is NOT the fix, and the reason is worse than
-it looks: it is an OVERRIDE that takes the CLICK as well, so the bench would eat
-the press that leaves the patch. Items 313 and 314, ref/device/organelle.md.
-
-TIMED ASSERTIONS still mean something because the window starts at RUN rather than
-at the press that follows it: a step that zeroes a beat counter arms a 10 s timer
-which latches and prints the count. However long you take to judge the step, the
-number covers exactly ten seconds.
+A timed count starts at RUN, not at the next press, so it covers exactly
+bench_steps.WINDOW_MS however long the step takes to judge.
 """
 import os
 import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-# ⛔ THE TAP LABELS ARE THE GATES', NOT A SECOND SET. lib_drive.TAP_LABELS
-# is what lib_assert's parser matches, so bench-tap.pd emits exactly the
-# labels every headless gate already reads.
+# The tap labels are lib_drive.TAP_LABELS, the ones lib_assert's parser reads.
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gate"))
 import bench_steps as S  # noqa: E402
@@ -102,15 +79,8 @@ def width(text):
 
 def check(steps, name):
     """A comma or a semicolon in a printed line splits it into fragments at
-    runtime. This assertion is the whole reason these files are generated.
-
-    ⛔ AND A FULL STOP STRAIGHT AFTER A DIGIT IS THE QUIETER VERSION OF THE SAME
-    BUG. `43.` is a valid Pd float literal, so the atom is parsed as the number
-    and the stop DISAPPEARS from the printed line -- the sentence runs into the
-    next one and nothing reports it. It was a warning here for as long as the
-    step text was hardware-transcribed prose that carried eleven of them; the
-    2026-08-10 copy-edit removed every one, so it is an assertion now and the
-    fix is always the same -- do not end a sentence on a bare number. item 122."""
+    runtime, and a full stop straight after a digit vanishes: Pd reads `43.` as
+    a float (item 122). Asserting both is why these files are generated."""
     lint_selfcontained(steps, name)
     lint_modal(steps, name)
     for i, step in enumerate(steps, 1):
@@ -140,7 +110,7 @@ def check(steps, name):
 
 
 # --------------------------------------------------------------------------
-# ⛔ THE VACUITY LINT -- a predicate that cannot fail must never be generated
+# The vacuity lint: a predicate that cannot fail is never generated
 # --------------------------------------------------------------------------
 KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled",
          "osc", "osc-rate", "file", "all")
@@ -156,10 +126,9 @@ LABEL_OF = {b: l for b, l in D.TAP_LABELS.items()}
 def _positive(spec):
     """Does this predicate assert that something IS there?
 
-    ⛔ A PURELY NEGATIVE PREDICATE PASSES ON AN EMPTY STREAM. "the OLED must not
-    say %" is satisfied by an OLED that said nothing, by a patch that failed to
-    load, and by a window the runner opened in the wrong place. It needs an
-    independent witness that the stream was live at all.
+    A purely negative one passes on an empty stream -- an OLED that said
+    nothing, a patch that failed to load, a window in the wrong place -- so it
+    needs a witness that the stream was live.
     """
     k = spec.get("kind")
     if k == "all":
@@ -169,11 +138,9 @@ def _positive(spec):
     if k == "oled":
         return bool(spec.get("has") or spec.get("has_row"))
     if k == "osc":
-        # ⛔ Same trap as oled: "this address never carries in-l" is satisfied by
-        # an address that carried nothing, which is what a dead u_net looks like.
-        # ⚠️ `has` PRESENT BUT EMPTY IS STILL POSITIVE -- it asserts that the
-        # address carried traffic at all, which is precisely the liveness
-        # witness a has_not needs beside it (phone 8 uses the heartbeat).
+        # As for oled. `has` present but empty still counts: it asserts the
+        # address carried traffic at all, the witness a has_not needs beside it
+        # (phone 8 uses the heartbeat).
         return "has" in spec
     return True
 
@@ -190,18 +157,16 @@ def lint_check(spec, actions, where):
         return
 
     if kind == "bus-count":
-        # ⛔ EXACTLY n. "at least" cannot catch a count that has drifted, which
-        # is the failure this project keeps finding -- and the steps that use
-        # this kind exist precisely because a SECOND event must not happen.
+        # Exactly n: these steps exist because a second event must not happen,
+        # and a range cannot catch a count that has drifted.
         assert "n" in spec, "%s: bus-count needs an exact n" % where
         assert "min" not in spec and "max" not in spec, (
             "%s: bus-count asserts EXACTLY n, never a range. A count that has "
             "drifted is the failure this catches, and a range cannot." % where)
 
     if kind in BUS_KINDS:
-        # ⛔ A TAP ON A BUS THE STEP ITSELF WRITES IS VACUOUS. The bench sent the
-        # traffic, bench-tap read it back, and the patch under test was never
-        # involved -- the predicate proves only that Pd delivers messages.
+        # A tap on a bus the step itself writes reads the bench's own traffic
+        # and proves only that Pd delivers messages.
         written = {LABEL_OF.get(b.lstrip("\\$"), b) for _m, b in actions}
         assert spec["bus"] not in written, (
             "%s: the predicate reads %s but this step WRITES to it, so it would "
@@ -238,20 +203,13 @@ def _claims(spec):
 
 
 def lint_agreement(meta, pass_if, where):
-    """⛔ THE PREDICATE AND THE PROSE MUST AGREE.
+    """The predicate and the prose must agree.
 
-    A step has two oracles now -- a person reading the PASS IF, and a program
-    reading the bus -- and nothing stops them drifting apart. Change the
-    predicate without the prose and the run goes green while the sentence
-    describing it is false; change the prose without the predicate and a person
-    marks off something the machine never checked. Either way the step still
-    LOOKS covered, which is worse than not being covered at all.
-
-    ⚠️ WORD BY WORD RATHER THAN WHOLE-STRING, and that is not laziness. A
-    predicate reads the wire and prose reads as English: the bus carries
-    `warn m_nano` and the sentence says "reads warn and then m_nano". Demanding the exact
-    string would force the prose to be rewritten into wire format, and these
-    sentences are written for a person to read.
+    A step has two oracles, a person reading the PASS IF and a program reading
+    the bus; changed apart, the step still looks covered while one of them is
+    false. Word by word rather than whole string, because the prose is English:
+    the bus carries `warn m_nano` and the sentence says "reads warn and then
+    m_nano".
     """
     spec = meta.get("check")
     if not spec:
@@ -267,19 +225,11 @@ def lint_agreement(meta, pass_if, where):
                 % (where, claim, word))
 
 
-# ⛔ A NUMBER ONLY THE RUNNER CAN SEE MUST SAY SO.
-#
-# `print` and `ratio` predicates read COUNTERS THE BENCH KEEPS -- M-BEATS and the
-# two c_clock lines. Those go to Pd's console, which the runner captures and the
-# person never sees; the only place they appear is the runner's own `got` line.
-# So a PASS IF written as though the number were somewhere on the instrument
-# sends somebody hunting the OLED for a value that was never going to be there.
-# Both tempo steps did exactly that, and it cost a real bench session:
-# "M-BEATS reads 20 or 21" against a screen that says nothing of the kind.
-#
-# ⚠️ THE WORD IS THE CHECK, and it is deliberately a dumb one. Anything cleverer
-# would be a guess at English; requiring `print` in the prose of a step judged on
-# a printed number is a fact the writer has to have thought about.
+# A number only the runner sees must say so. `print` and `ratio` read counters
+# the bench prints to Pd's console, which the person never sees, so a PASS IF
+# written as a claim about the instrument sends somebody hunting the OLED. The
+# check is the word `print` in the prose, deliberately: anything cleverer would
+# be a guess at English.
 PRINTED_KINDS = ("print", "ratio")
 
 
@@ -308,38 +258,24 @@ def lint_printed(meta, pass_if, where):
         "number that was never there." % where)
 
 
-# ⛔ CAPITALS MEAN "THIS IS LITERALLY WHAT IS ON THE SCREEN OR THE LABEL".
-# Nothing else. Emphasis by shouting was the house style and it made every step
-# read as a wall of alarm with no way to tell a value you must match from a
-# sentence somebody felt strongly about -- `EXT` is on the 404's display and
-# `NOTHING CHANGES` was just loud. One convention, and it is checkable.
+# Capitals mean literally on a screen or a label, nothing else: the literal set.
 CAPS_OK = {
     "PASS", "IF",                      # the protocol marker itself
-    # ⚠️ OSC joined the acronyms when the phone gained buttons: it is what
-    # PdParty's own settings screen calls the section you have to point at the
-    # Organelle before any of them do anything.
-    # ⚠️ ALSA joined them with the debug patch: it is the layer wire.sh actually
-    # operates on, and "the alsa connections" reads like a typo rather than like
-    # the name of the thing.
+    # OSC is PdParty's own name for the settings section the buttons need; ALSA
+    # is the layer wire.sh works on.
     "OLED", "LED", "BPM", "DSP", "USB", "CC", "TTL", "MIDI", "NN", "SD", "OSC",
     "ALSA",
     "SP-404", "EXT", "NO-LINK", "SETUP", "GO",
-    # Molded on the nanoKONTROL's transport row, left to right. Two of them
-    # mean what they say again since start and stop moved off the aux button.
+    # Molded on the nanoKONTROL's transport row, left to right.
     "REW", "PLAY", "LOOP", "STOP", "REC",
     "BEATS", "M-BEATS", "C1-BEATS", "C2-BEATS",
     "C1-BEATS-ratio-1", "C2-BEATS-ratio-1.5",
-    # ⚠️ THE DEBUG PATCH'S SCREEN TITLES, drawn exactly like this. It has no
-    # g_oled and draws every row as a single symbol with dashes where you want
-    # spaces -- so its rows are the most literally-printed text in the project
-    # and quoting them any other way would make a bench step describe a screen
-    # nobody can find.
+    # The debug patch's screen titles, each row drawn as one symbol, exactly so.
     "1-MIDI-IN", "2-TEST-OUT", "3-ERR-LOG", "4-NETWORK", "5-RE-WIRE", "6-HELP",
 }
-# ⚠️ WHOLE WHITESPACE TOKENS, NEVER A REGEX OVER THE LINE. A pattern anchored on
-# word boundaries splits `C1-BEATS-ratio-1` at the hyphen and reports the
-# `C1-BEATS-` half as shouting. A token carrying any lower case is an identifier
-# and is not shouting at all, whatever is capitalized inside it.
+# Whole whitespace tokens, never a regex: word boundaries split
+# `C1-BEATS-ratio-1` at the hyphen. A token with any lower case is an
+# identifier, not shouting.
 CAPS_STRIP = ".,:;%()[]"
 
 
@@ -354,13 +290,9 @@ def _shouted(text):
 
 
 def lint_caps(title, passif, meta, where):
-    """⛔ ONE MEANING FOR CAPITALS, ACROSS EVERY BENCH.
-
-    A step is read by a person in a hurry with the rig in front of them. If
-    capitals mean both "match this string exactly" and "I mean it", they mean
-    neither. `CAPS_OK` is the literal set -- screen text, printed counter
-    names, molded labels, acronyms -- and anything else in capitals is
-    emphasis, which is what this refuses.
+    """One meaning for capitals, across every bench. `CAPS_OK` is the literal
+    set -- screen text, printed counter names, molded labels, acronyms -- and
+    anything else in capitals is emphasis, which this refuses.
     """
     fields = [("title", title), ("pass_if", passif)]
     fields += [("do", str(meta.get("do", "")))]
@@ -374,15 +306,11 @@ def lint_caps(title, passif, meta, where):
                 "sentence: %s" % (where, label, word, text))
 
 
-# ⛔ EVERY STEP SETS UP ITS OWN PRECONDITIONS. Nothing on the OLED survives the
-# time it takes to read the next step -- a parameter row ages out in ~1.3 s and a
-# modal in 30 s -- so a step that judges state the step BEFORE it established is
-# judging an empty screen, and passes. `Clearing the modal` sent nothing but
-# modal-off: by the time anyone pressed ENTER the modal had cleared itself, so
-# modal-off cleared nothing and the step could not fail however broken it was.
-# ⚠️ NAMES ONLY, AND ONLY WHERE THE STEP SENDS SOMETHING. A hands step names what
-# YOU are about to move; `warn` and `fail` are what the patch emits, not what the
-# bench sends; and "do not fail the step for it" is English.
+# Every step sets up its own preconditions: a parameter row ages out in about
+# 1.3 s and a modal in 30 s, so a step judging what the step before put up is
+# judging an empty screen, and passes.
+# Names only, and only where the step sends something: a hands step names what
+# you are about to move, and `warn` and `fail` are what the patch emits.
 NOT_A_NAME = {"modal", "grid", "bang", "compose", "perform", "stop", "start",
               "panic", "led", "status", "warn", "fail", "info"}
 
@@ -401,10 +329,8 @@ def _sends(actions):
 
 
 def lint_selfcontained(steps, name):
-    """⛔ A STEP THAT LEANS ON THE ONE BEFORE IT CANNOT FAIL.
-
-    Checked per bench, because the vocabulary is the bench's own: anything any
-    of its steps sends is a name a later step could be leaning on.
+    """A step that leans on the one before it cannot fail. Checked per bench:
+    anything any of its steps sends is a name a later step could lean on.
     """
     vocab = set()
     for step in steps:
@@ -424,36 +350,17 @@ def lint_selfcontained(steps, name):
 
 
 def lint_modal(steps, name):
-    """⛔ A MODAL COVERS THE WHOLE SURFACE AND OUTLIVES THE STEP THAT RAISED IT.
+    """A modal covers the whole surface and outlives the step that raised it.
 
-    `grid modal N` paints every pad, ring button and mode lamp one color, and
-    the only things that take it down are an explicit `grid modal-off` and a
-    thirty-second safety timeout. So a step that raises one and does not clear
-    it has decided what the NEXT step is judged against -- and the next step's
-    prose knows nothing about it.
+    `grid modal N` paints every pad, ring button and mode lamp, and only `grid
+    modal-off` or the 30 s safety timeout takes it down. Walked in order a
+    person sits the timeout out; a `--from` walk fires the earlier steps back to
+    back, so the next step is judged through it.
 
-    ⚠️ IN ORDER THIS IS INVISIBLE, WHICH IS WHY IT SURVIVED. launchpad 13 is the
-    timeout itself and its `do` says to watch the grid for thirty seconds, so a
-    person walking the bench in order sits the modal out and never sees the
-    problem. `--from` does not sit anything out: _walk_to fires every earlier
-    step as fast as the console answers, so a resumed run arrives at 14 with the
-    surface still green. Reported from the rig as "stuck in all-green" and then
-    "changed to the passing state as I typed this" -- the timeout expiring
-    mid-verdict (2026-08-11).
-
-    ⛔ RE-RAISING COUNTS AS HANDLING IT. launchpad 7 to 9 each send `grid modal`
-    again because the modal staying up IS their subject -- that is a step
-    setting up its own preconditions, which is exactly what this asks for.
-
-    ⛔ AND A NEXT STEP THAT SENDS NOTHING IS EXEMPT, which this lint learned on
-    its first run by flagging a step that is right. `display` 18 is *Modal
-    safety timeout -- the wait*: no actions at all, and what it judges is the
-    modal from 17 clearing itself. A step that puts nothing on the surface is
-    judging the picture it inherited, so the modal is not in its way -- it is
-    its subject. Same exemption, and the same wording, as lint_selfcontained.
-    ⚠️ IT IS DELIBERATELY NOT CLEVERER THAN THAT. Reading the prose to decide
-    whether a step "means" to sit under a modal would be a guess at English, and
-    this file does not make those.
+    Re-raising counts as handling it (launchpad 8 to 10 keep it up on purpose).
+    A next step that sends nothing is exempt, since it judges the picture it
+    inherited (display 18 judges the modal clearing itself). Nothing cleverer:
+    reading the prose for intent would be a guess at English.
     """
     for i, step in enumerate(steps, 1):
         sends = _sends(S.norm(step)[2])
@@ -478,18 +385,10 @@ RESUME_RE = re.compile(r"--from\s+(\d+)")
 
 
 def lint_resume(meta, n, where):
-    """⛔ A STEP NUMBER WRITTEN INSIDE STEP TEXT GOES WRONG SILENTLY.
-
-    Four `need` lines say "reload first then resume this bench with `--from 22`",
-    and that number is the step's own index. Insert one step above any of them
-    and every later number is wrong -- the text still reads perfectly, the
-    generator still writes, the bench still loads, and a person following it
-    resumes at the wrong step and judges the wrong questions against the right
-    prose. Self-inflicted on 2026-08-10.
-
-    ⚠️ IT IS THE ONE NUMBER A STEP CAN KNOW ABOUT ITSELF, which is what makes it
-    checkable at all. Nothing else in this prose is derivable, and nothing else
-    here tries to be.
+    """A step number written into step text goes wrong silently: a `--from N`
+    in a `do` or `need` is the step's own index, and inserting a step above it
+    makes it wrong without changing a word. It is the one number a step can know
+    about itself, so it is the one checked.
     """
     for field in ("do",):
         for m in RESUME_RE.finditer(str(meta.get(field, ""))):
@@ -519,10 +418,8 @@ def lint_meta(meta, actions, where):
     if not spec:
         return
     lint_check(spec, actions, where)
-    # ⚠️ `oled` IS EXEMPT FROM THE SELF-WRITE RULE ABOVE and must be: display
-    # step 3 writes to disp and then asserts on what g_oled DREW, which is
-    # downstream of the patch rather than an echo of the bench. Refusing that
-    # would refuse every screen assertion there is.
+    # `oled` is not a bus kind, so the self-write rule leaves it alone: display
+    # step 3 writes disp and asserts what g_oled drew, downstream of the patch.
     assert _positive(spec), (
         "%s: this predicate only says what must NOT be there, so an empty "
         "window satisfies it -- a patch that failed to load would pass. Put it "
@@ -536,15 +433,10 @@ def lint_meta(meta, actions, where):
 def counters(p, specs, x0, y0):
     """specs is [(print_name, source)] where source is 'r clock' or 'c_clock A B'.
 
-    Each block counts beats freely, and a bang on $0-zero resets it AND arms a
-    timer of bench_steps.WINDOW_MS that latches the count and prints it. $0-read
-    reprints the latched value, so the number always covers exactly that window
-    no matter when the step that reads it is reached.
-
-    ⛔ THE WINDOW IS NOT WRITTEN DOWN HERE. It is bench_steps.WINDOW_MS, because
-    test/runner/ has to open its predicate window over the same span -- and the
-    prose below is derived from it too, so a bench header cannot come to say TEN
-    while the [del] says something else.
+    Each block counts beats freely; a bang on $0-zero resets it and arms a
+    bench_steps.WINDOW_MS timer that latches and prints the count, and $0-read
+    reprints the latch. The window is bench_steps', which test/runner/ and the
+    header prose read too.
     """
     if not specs:
         return y0
@@ -679,17 +571,10 @@ def build(name, cfg):
     p.con(net_rt, 0, net_t, 0)
     p.con(net_t, 0, net_s, 0)
 
-    # ⛔ RERUN FIRES THE CURRENT STEP AGAIN AND ADVANCES NOTHING, because a person
-    # cannot read an OLED in the time one is on it. g_oled ages a parameter row
-    # out after about 1.3 s -- by design -- so a visual step shows the thing you
-    # are asked to compare for barely longer than it takes to look up. The
-    # verdict menu has always offered [r]epeat and the runner refused it on the
-    # only target a bench actually runs on.
-    # ⚠️ IT BANGS THE SAME STORE THE FIRST FIRE DID, so a repeat is the step
-    # running again exactly as it ran the first time -- no separate path that
-    # could drift from it, and nothing that can disturb an assertion.
-    # ⚠️ [t b] BECAUSE A route REJECT CARRIES DATA (C-8): the outlet hands on the
-    # word that failed to match, and `run_store` must see a bang.
+    # rerun fires the current step again and advances nothing, because g_oled
+    # ages a parameter row out after about 1.3 s. It bangs the store the first
+    # fire did, so a repeat is the step itself. [t b] because a route reject
+    # carries data (C-8) and run_store needs a bang.
     rr_t = p.obj(620, Y + 380, "t b")
     rr_s = p.obj(620, Y + 440, "s \\$0-rerun")
     p.con(net_rt, 1, rr_t, 0)
@@ -699,17 +584,10 @@ def build(name, cfg):
           "step can be looked at more than once. [r]epeat in test/run.sh sends "
           "it.", 46)
 
-    # ⛔ where AND show ARE THE TWO WORDS THAT MOVE NOTHING, and that is the
-    # whole point of them. GO is a single UDP datagram with no delivery
-    # guarantee: if one goes missing the bench simply never hears it, and what
-    # the runner sees -- no fired line \, no described step -- is EXACTLY what a
-    # dead patch looks like. It has no safe response either \, because a second
-    # GO sent on the guess that the first was lost ADVANCES a bench that in fact
-    # heard the first \, and the runner then judges the wrong step.
-    # ⚠️ SO ASK BEFORE ACTING. `where` prints the step and the phase \, which
-    # says whether the last GO landed \; `show` re-describes the current step
-    # without running or advancing anything. Between them a stalled runner can
-    # work out which of the two it is in and recover into the right one.
+    # where and show move nothing. GO is one UDP datagram, so a lost GO looks
+    # exactly like a dead patch, and a second GO sent on that guess advances a
+    # bench that heard the first. `where` prints step and phase, which says
+    # whether the last GO landed; `show` re-describes the current step.
     wh_t = p.obj(1500, Y + 380, "t b b")
     p.con(net_rt, 2, wh_t, 0)
     wh_phase = p.obj(1680, Y + 440, "f")
@@ -721,10 +599,8 @@ def build(name, cfg):
     p.con(wh_phase, 0, wh_pk, 1)
     wh_pr = p.obj(1500, Y + 560, "print %s" % S.SAY_WHERE)
     p.con(wh_pk, 0, wh_pr, 0)
-    # ⚠️ THE TWO STORES ARE FED BY NAME FROM THE SAME SENDS THE STATE MACHINE
-    # WRITES \, so this cannot report a position the bench is not in. Reading
-    # the machine's own [f] boxes would need cords drawn the width of the
-    # patch \; a second pair written by the same two sends cannot drift.
+    # Fed by name from the sends the state machine writes, so it cannot report a
+    # position the bench is not in.
     wh_sr = p.obj(1500, Y + 320, "r \\$0-set-step")
     wh_pr2 = p.obj(1680, Y + 320, "r \\$0-set-phase")
     p.con(wh_sr, 0, wh_step, 1)
@@ -775,9 +651,7 @@ def build(name, cfg):
     p.con(run_t, 0, run_store, 0)
     run_go = p.obj(20, Y + 370, "s \\$0-do-run")
     p.con(run_store, 0, run_go, 0)
-    # ⚠️ THE REPEAT LANDS ON THE SAME STORE THE NORMAL FIRE DOES, so a repeated
-    # step is the step -- not a second copy of it that could drift. It does not
-    # touch the phase or the step number, so the bench does not advance.
+    # A repeat lands on the same store and touches neither phase nor step.
     rerun_r = p.obj(20, Y + 250, "r \\$0-rerun")
     p.con(rerun_r, 0, run_store, 0)
 
@@ -798,9 +672,8 @@ def build(name, cfg):
     set_r = p.obj(1700, Y, "r \\$0-set-step")
     set_t = p.obj(1700, Y + 60, "t f f f")
     p.con(set_r, 0, set_t, 0)
-    # both stores are written by name for the same reason as the phase above: a
-    # cord back to boxes 1700px to the left would be drawn through the branch
-    # between them. They cannot drift, because one trigger writes both.
+    # Written by name, as the phase is: a cord back 1700px would cross the
+    # branch between. One trigger writes both, so they cannot drift.
     set_inc = p.obj(1700, Y + 130, "s \\$0-set-inc")
     set_run = p.obj(1980, Y + 130, "s \\$0-set-run")
     p.con(set_t, 2, set_inc, 0)
@@ -812,15 +685,10 @@ def build(name, cfg):
     show_s = p.obj(2260, Y + 130, "s \\$0-do-show")
     p.con(set_t, 0, show_s, 0)
 
-    # ⛔ $0-do-show CARRIES THE STEP NUMBER \, NOT A BANG -- the describe chain is
-    # one [select N] per step and a bang matches none of them. This sent a bang
-    # for as long as it existed \, so the encoder's repeat did NOTHING on the Mac
-    # and nothing said so: the console simply stayed as it was \, which is also
-    # what a repeat of a step whose text is already on screen looks like. It was
-    # caught the day `show` was added and inherited the same wire.
-    # ⚠️ THE STORE READS $0-set-run \, which the same trigger writes one outlet
-    # before it fires this one \, so a repeat can never describe a step the bench
-    # has left.
+    # $0-do-show carries the step number, not a bang: the describe chain is one
+    # [select N] per step and a bang matches none (runner-assert checks it).
+    # The store reads $0-set-run, which the same trigger writes first, so a
+    # repeat never describes a step the bench has left.
     rep_rr = p.obj(2600, Y, "r \\$0-repeat")
     rep_f = p.obj(2600, Y + 60, "f")
     rep_fr = p.obj(2780, Y, "r \\$0-set-run")
@@ -861,10 +729,8 @@ def build(name, cfg):
         t3 = p.obj(240, y, "t b b b")
         p.con(sel, 0, t3, 0)
 
-        # ⚠️ THE SUBSTRING TEST IS KNOWN TO BE WRONG and is kept only until the
-        # runner's meta carries the flag: measured, it misses NINE hands-on steps
-        # -- all three `THE NANO --`, both tempo `BY HAND`, and four of the six
-        # state steps. A flag has to be a field, not a guess at prose.
+        # No title says HANDS any more, so this never adds the note; the runner's
+        # own [HANDS] tag comes from a step's `do` (test/runner/steps.py).
         hands = "HANDS" in title.upper()
         measure = any(b.endswith(S.MEASURE_SUFFIX) for _m, b in _a)
         prompt = S.SAY_PROMPT % (i, len(steps))
@@ -942,15 +808,8 @@ def build(name, cfg):
     return n, len(p.B), len(p.C)
 
 
-# ⛔ THE KEY IS THE OUTPUT FILENAME, and it is the only list of benches there is.
-# bench-verify.py derives its own list from these keys rather than repeating them,
-# because it used to carry a hand-typed tuple (3, 4, 5, 6, 7, 8, 9) -- a third
-# copy of the same list, alongside this table and the STEPS_ names -- and missing
-# it meant a bench was generated but NEVER FIDELITY-CHECKED. That trap is gone
-# rather than documented.
-#
-# ⚠️ These are named for MODULES now, not phases. What a bench asks a person to do
-# has not changed by one word; only which page can honestly point at it.
+# The key is the output filename and the only list of benches; bench-verify.py
+# derives its own from it (the gate skill, Benches).
 BENCHES = {
     "display": dict(steps=S.STEPS_DISPLAY, counters=[],
                     blurb="the display acceptance run: the display arbiter and "
@@ -958,10 +817,6 @@ BENCHES = {
     "nanokontrol": dict(steps=S.STEPS_NANOKONTROL, counters=[],
                         blurb="the nanoKONTROL acceptance run: every fader \\, knob "
                         "and transport key \\, and the multi-parameter display."),
-    # ⛔ NO COUNTERS, AND THEREFORE NO declare. The three beat counters existed
-    # for two steps that duplicated clock-assert and tempo-assert -- see the note
-    # above STEPS_TEMPO. c_clock was the only abstraction tempo-bench loaded, so
-    # the search path it needed goes with it.
     "tempo": dict(steps=S.STEPS_TEMPO, counters=[],
                   blurb="the tempo acceptance run: the transport \\, the map \\, "
                   "the 404 link and the aux LED."),
@@ -981,11 +836,7 @@ BENCHES = {
                   "front-panel Save \\, a REAL power cycle \\, and the mode lamp. Six "
                   "steps rather than a padded twenty \\, because a bench proves the "
                   "cases it contains and nothing else."),
-    # ⛔ PAPER, AND DELIBERATELY SO. Step 3 holds CC 90, which reloads the patch
-    # -- and a driven bench runs as a third patch inside the instrument's own Pd,
-    # so /loadPatch would kill the bench along with it and strand every later
-    # step. No actions, no reload, only offline predicates: the runner launches
-    # nothing and the person runs these against the real deployed instrument.
+    # Paper -- see STEPS_RECOVER.
     "recover": dict(steps=S.STEPS_RECOVER, counters=[],
                     blurb="panic's second tier. MOST OF IT IS PROVEN HEADLESSLY "
                     "-- test/gate/recover-assert.sh lints the two-step OSC by "
@@ -993,13 +844,7 @@ BENCHES = {
                     "shell. WHAT IT CANNOT DO is load a patch \\, so the reload "
                     "itself is here and only here \\, along with the one case "
                     "that matters most: a reload that CANNOT land."),
-    # ⛔ PAPER, AND FOR THE SAME REASON recover IS. Step 2 LOADS ANOTHER PATCH,
-    # which is a Pd restart -- and a driven bench runs as a third patch inside
-    # the instrument's own Pd, so it would go down with it and strand every step
-    # after. ⚠️ It is also the only bench with no predicate at all: this patch
-    # writes nothing to disk because its output IS the screen, and inventing a
-    # logfile so a predicate had something to read would be a test hook wearing a
-    # feature's clothes. Everything machine-checkable is in debug-assert.sh.
+    # Paper, and the only bench with no predicate -- see STEPS_DEBUG.
     "debug": dict(steps=S.STEPS_DEBUG, counters=[],
                   blurb="the debug patch acceptance run. IT STOPS THE INSTRUMENT "
                   "-- selecting any patch restarts Pd \\, which is exactly why this "
@@ -1024,20 +869,13 @@ BENCHES = {
 def build_tap():
     """bench-tap.pd -- a fourth patch the runner loads beside a bench.
 
-    ⛔ IT LISTENS AND SENDS NOTHING. Not one message box, not one [s], nothing.
-    C-5 gives g_oled sole ownership of oscOut and g_grid its own surface, but
-    that rule governs WRITING: adding a [receive] cannot change what any other
-    subscriber gets, because Pd delivers a message to every receiver of a name.
-    ⚠️ SO DO NOT "FIX" THIS FILE BY ROUTING ITS OUTPUT ANYWHERE. Its whole value
-    is that loading it cannot change what the bench under it does.
+    It listens and sends nothing, so loading it cannot change what the bench
+    under it does: C-5's ownership governs writing, and Pd delivers a message
+    to every receiver of a name. Do not route its output anywhere.
 
-    ⛔ THE LABELS COME FROM lib_drive.TAP_LABELS, which is also what
-    lib_assert.parse() matches -- so the runner reuses the gates' parser instead
-    of growing a second one. Two parsers is how a fix reaches one and not the
-    other, which is the failure the whole test refactor existed to remove.
-
-    ⛔ `clock` IS NOT TAPPED. It carries a beat twice a second forever and would
-    bury every window in noise no predicate wants.
+    Its labels are lib_drive.TAP_LABELS, which lib_assert.parse() matches, so
+    the runner reuses the gates' parser. `clock` is not tapped: a beat twice a
+    second forever would bury every window.
     """
     p = Patch()
     p.txt(20, 20,
@@ -1056,11 +894,6 @@ def build_tap():
           "lib_drive.TAP_LABELS \\, which is the same map "
           "test/gate/lib_assert.py's parser matches -- so the runner reuses the "
           "gates' parser rather than growing a second one.", 120)
-    # ⛔ EVERY TAP, AND NO SPECIAL CASE. oscOut used to be appended here rather
-    # than living in TAP_LABELS, which made this function the second home for a
-    # label -- exactly what the comment above says the map exists to prevent, and
-    # the one bus a g_oled gate would most want to reuse. It is in TAP_LABELS now
-    # and this loop reads the whole map.
     taps = sorted(D.TAP_LABELS.items())
     for k, (bus, label) in enumerate(taps):
         r = p.obj(20 + k * 220, 320, "r %s" % bus)

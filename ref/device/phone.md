@@ -107,6 +107,7 @@ easy to identify. Item 311.
 | `param` and `status` | Repeated every 2 s **on top of** their event-driven sends | verified | — |
 | Late or returning phone | Repopulates in about two seconds with nothing moving | verified | — |
 | Rate limiting | 401 `disp` messages a second measured down to **42 datagrams** | verified | — |
+| `status` | Coalesced into **one slot** like a parameter: `u_tempo` writes the BPM into the footer, so one sweep of knob 1 put **201** `status` messages on `disp` in a second, as many as every parameter together | verified | — |
 | Socket recovery | `u_net` rebuilds within about five seconds of the phone coming back, nothing touched on the instrument | verified | 119 |
 | Backgrounding PdParty | Costs the link nothing; only a full quit closes the port (Reference, item 120) | verified | 120 |
 

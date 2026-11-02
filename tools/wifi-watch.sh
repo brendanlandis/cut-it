@@ -173,11 +173,9 @@ dhcpprobe() {
             echo "     => link is FINE and even a restarted daemon has no lease."
             echo "        Points UPSTREAM."
         fi
-        # -U prints only `dhcp_dump: No such file or directory`: it reads a lease
-        # file, and /var/lib/dhcpcd is on the read-only rootfs. Kept because that
-        # line is the evidence. With no lease store dhcpcd cannot rebind after a
-        # carrier change, only DISCOVER; --dbdir was ruled out with the expiring-
-        # lease model, never on its own merits.
+        # -U finds no lease file, and that line is kept as the evidence
+        # (Reference, critter-guitari-organelle-1, wpa_supplicant and dhcpcd;
+        # the lease-file lead is under Not known).
         echo "     dhcpcd -U wlan0:"
         dhcpcd -U wlan0 2>&1 | head -12 | sed 's/^/       /'
     fi
@@ -269,8 +267,8 @@ while true; do
                 DOWN_AT=$(date +%s)
                 # 60 lines, to reach what precedes `authenticate with <bssid>`:
                 # a deauth or beacon-loss line would tell a disconnect from a
-                # voluntary roam. With no bgscan configured, it does not hunt
-                # for better APs on its own.
+                # voluntary roam (Reference, critter-guitari-organelle-1,
+                # wpa_supplicant and dhcpcd).
                 echo "  --- dmesg tail (kernel view of the dongle) ---"
                 dmesg 2>/dev/null | tail -60 | sed 's/^/    /'
                 echo "  --- arp ---"; sed 's/^/    /' /proc/net/arp 2>/dev/null

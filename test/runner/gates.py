@@ -81,11 +81,9 @@ INPORT_BASE = 9100
 JOBS = int(os.environ.get("CUTIT_JOBS") or 0) or len(MODULES)
 
 # Every gate's Pd runs with HOME pointed at an empty directory, so it never reads
-# the Mac's Pd preferences. Pd 0.49 sets a `loading` flag there while it starts,
-# and one starting meanwhile prints "Pd seems to have crashed on startup" and
-# skips them. -noprefs does not stop it (measured, eight at a time: 6 of 40
-# startups with it, 5 of 40 without); an empty HOME, 0 of 40. Every gate already
-# passes -noaudio, -nomidi and its own -path.
+# the Mac's Pd preferences, which Pds starting side by side trip over (Reference,
+# pure-data, Preferences). Every gate already passes -noaudio, -nomidi and its
+# own -path.
 
 
 def _syntax(env):

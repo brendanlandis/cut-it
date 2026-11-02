@@ -1,46 +1,28 @@
 #!/usr/bin/env python3
-"""Where a bench's console lines come from, and how GO is sent.
+"""Where a bench's console lines come from, and how GO is sent. Imported by
+run.py.
 
-Imported by run.py. One interface, three implementations -- a replay file today,
-a Pd process on the Mac and one over ssh in Phase B -- so the step loop is written
-once and never learns which it is talking to.
-
-⛔ REPLAY IS NOT A TOY, IT IS THE ONLY THING THAT EVER EXERCISES THE FAILURE
-PATHS. A successful hardware run never stalls, never desyncs and is never
-interrupted, so on hardware alone the code handling those three could be dead
-and every run would look exactly the same. Reading the stream from a file lets a
-gate drive a truncated transcript, an out-of-order one and an empty one in under
-a second, on a Mac, with no device.
+One interface and three sources: a replay file, a Pd on the Mac, a Pd over ssh.
+The replay is what lets runner-assert drive the truncated, out-of-order and
+empty transcripts that a good hardware run never produces.
 """
 import collections
 import socket
 import sys
 import time
 
-# How many of the last console lines a stall report shows. Enough to see which
-# step the patch thought it was on, short enough to read.
+# How many of the last console lines a stall report shows.
 TAIL = 6
 
-# ⛔ HOW MANY LINES A PATCH MAY SAY WITHOUT ANSWERING before wait_for gives up.
-# ⚠️ AND IT COUNTS ONLY WHAT ARRIVED AFTER THE QUESTION WAS ASKED. run.py flushes
-# the queue before every GO, so this is never spent on a backlog somebody's hands
-# built up during a verdict -- which is what it WAS spent on the first time it
-# fired: nine faders swept during one prompt left 4141 lines queued, the wait ate
-# 2000 of them and called a working bench a stall. The bound is real, the thing
-# being bounded was not.
+# How many lines a patch may say without answering before wait_for gives up.
+# Only lines after the question count: run.py flushes the queue before every GO.
 LINE_CAP = 2000
 
 
 class Stalled(Exception):
-    """Nothing answered. ⚠️ THE REASON IS PART OF IT, because the two causes want
-    opposite responses and reporting them alike sends the next person after the
-    wrong one. `silence` means the console is dead -- the patch is gone. `cap`
-    means it is alive and talking and has not answered, which is a wedged bench
-    or a runner asking the wrong question.
-
-    ⚠️ AND SEPARATELY: "the bench never loaded" and "stalled mid-run" get
-    different advice in run.py, because those have different causes too.
-    """
+    """Nothing answered, and why. `silence` is a dead console: the patch is
+    gone. `cap` is a console still talking that has not answered: a wedged
+    bench, or the wrong question. They want opposite responses."""
 
     def __init__(self, why="silence"):
         Exception.__init__(self, why)
@@ -51,39 +33,22 @@ class Source(object):
     """The interface. `readline` returns a line without its newline, or None
     when nothing arrived before the deadline."""
 
-    # ⛔ HOW LONG THE INSTRUMENT TAKES TO FINISH BOOTING, BEFORE THE FIRST GO.
-    # u_init wires MIDI, restores saved state at about 3.5 s and hands the OLED
-    # footer over at about four seconds -- and the bench announces step 1 half a
-    # second after load. A person takes long enough to read a PASS IF that this
-    # never arises; a runner does not, and the first three steps then get judged
-    # against a screen still saying `booting` and `wiring`. Measured that way:
-    # display 3's OLED predicate reported the boot frames as its evidence.
+    # How long the instrument takes to finish booting before the first GO:
+    # u_init restores state at ~3.5 s and hands over the OLED footer at ~4 s,
+    # while a bench announces step 1 half a second after load. Without it the
+    # first steps are judged against a screen still saying `booting`.
     boot_settle = 0.0
 
-    # ⛔ IS THERE REAL TIME ON THE OTHER END? A live Pd makes the runner WAIT for
-    # a screen to redraw or a ten-second counter to latch. A recording has
-    # already happened: every line is available at once, so a wall-clock drain
-    # against it does not wait -- it swallows the whole rest of the transcript
-    # and every later step reports "not run". Measured exactly that way.
+    # Is there real time on the other end? A recording has every line at once,
+    # so a wall-clock drain against it would swallow the rest of the transcript.
     realtime = True
 
-    # ⛔ WHAT A STALL REPORT IS MADE OF, and none of it existed until a real one
-    # said nothing. The only bench verdict this project has ever recorded is a
-    # launchpad step-1 `interrupted` reading "stalled mid-run: GO sent, no fired
-    # line" -- which names the symptom and not one thing about the cause. A
-    # stall has three plausible causes and they are told apart by three
-    # different facts: GO never left (the sender), the patch is not there (an
-    # empty tail), or the runner is reading faster than the patch is printing (a
-    # backlog). Report all three and the next one diagnoses itself.
+    # A stall report tells three causes apart: GO never left (gos), the patch
+    # is not there (an empty tail), the runner is ahead of the patch (a backlog).
     gos = 0
 
-    # ⛔ WHEN THE LAST LINE ARRIVED, and both stall reports this project has
-    # collected were unreadable without it. One showed a queue of 3 and a tail of
-    # fader traffic; the other a queue of 0 and a tail of the resting screen --
-    # and neither says the thing that decides the diagnosis, which is whether the
-    # console was still ALIVE. A patch that has said nothing for five seconds is
-    # gone; one still printing every 40 ms simply has not answered yet, and those
-    # want opposite responses.
+    # A console quiet for five seconds is gone; one printing every 40 ms has
+    # simply not answered yet.
     last_at = None
 
     def _note(self, line):
@@ -115,9 +80,7 @@ class Source(object):
             out.append("    the last %d line(s) seen:" % len(seen))
             out.extend("      %s" % ln.strip() for ln in seen)
         else:
-            # ⛔ AN EMPTY TAIL IS THE MOST DIAGNOSTIC CASE OF ALL. Nothing has
-            # been read at any point, so this is not a stall in a running bench
-            # -- it is a bench that is not on the other end.
+            # Not a stall in a running bench: a bench that is not there.
             out.append("    NOTHING has been read on this stream at all")
         return "\n".join(out)
 
@@ -129,27 +92,16 @@ class Source(object):
 
     def rerun(self):
         """Fire the current step again without advancing. -> did it happen?
-
-        ⚠️ FALSE FROM A REPLAY, and honestly so: a recorded console cannot be
-        asked to do anything twice. The caller says so rather than pretending
-        the step ran again.
-        """
+        False from a replay: a recording cannot do anything twice."""
         return False
 
     def hold(self, on):
         """Keep the current step's result on screen while a verdict is open.
-
-        ⚠️ A NO-OP WHERE THERE IS NOTHING TO RE-FIRE -- a replay, and paper mode.
-        Overridden by targets.Process, which is the only Source with a patch on
-        the other end.
-        """
+        Nothing to re-fire here; targets.Process overrides it."""
 
     def where(self):
-        """Ask the bench which step it is on. -> did it happen?
-
-        ⚠️ FALSE FROM A REPLAY for the same reason `rerun` is: a recording
-        cannot be asked anything. The caller falls back to reporting the stall.
-        """
+        """Ask the bench which step it is on. -> did it happen? False from a
+        replay, as `rerun` is."""
         return False
 
     def show(self):
@@ -159,52 +111,30 @@ class Source(object):
     def flush(self):
         """Throw away everything already queued. -> how many lines went.
 
-        ⛔ EVERYTHING IN THE QUEUE BELONGS TO WHAT CAME BEFORE, and on a hands
-        step that is a person's own traffic: a sweep of nine faders is three
-        console lines per CC and the device console runs at about 98 lines a
-        second. It piles up while a verdict is open, because nothing reads the
-        console except a wait. Carried into the next step it does two things,
-        both bad -- the wait after GO has to chew through thousands of stale
-        lines before it reaches the answer, and every one of them lands in the
-        PREDICATE WINDOW, so a step is judged partly on the traffic of the step
-        before it. Measured: 4141 lines queued after two hands-on steps.
-
-        ⚠️ A RECORDING HAS NOTHING TO DISCARD and must never try. Its queue IS
-        the rest of the run, so flushing one would swallow every step that has
-        not been described yet -- the same trap _drain guards against.
+        What is queued belongs to what came before, on a hands step the
+        person's own traffic: three console lines per CC at ~98 lines a second
+        on the device, 4141 lines after two hands-on steps. Carried over it
+        spends the next wait's line cap and lands in that step's predicate
+        window. A recording has nothing to discard: its queue is the rest of
+        the run.
         """
         return 0
 
     def close(self, quiet=False):
-        """⚠️ `quiet` is honored by targets.Process -- see there."""
+        """`quiet` is honored by targets.Process."""
 
     # -- shared -------------------------------------------------------------
     def wait_for(self, pattern, timeout, collect=None):
         """Read until `pattern` matches. -> (match, line).
 
-        Every line seen on the way is appended to `collect` if given -- that
-        list is the predicate window, so nothing between two markers is thrown
-        away before a predicate has had the chance to look at it.
+        Every line seen on the way goes into `collect` if given: that list is
+        the predicate window.
 
-        ⛔ A STALL IS SILENCE, NOT SLOWNESS, and this used to have it the other
-        way round: `end` was fixed before the loop, so the deadline was the
-        total time the call was allowed to take however much the patch was
-        saying. It cost a hands-on bench session. A hands step prints what to do
-        BEFORE the prompt, so a person sweeps every fader and THEN presses
-        enter; each CC is three console lines and the device's console runs at
-        about 98 lines a second, so the fired line lands behind five seconds of
-        traffic the person generated themselves. The runner gave up while lines
-        were still arriving and reported a working bench as a stall.
-
-        ⚠️ SO THE DEADLINE IS PER LINE. `timeout` is now how long the patch may
-        stay SILENT, which is what the stall message has always claimed to
-        measure.
-
-        ⛔ AND THERE IS STILL A CAP, because "prints forever and never answers"
-        is a real failure and silence alone would wait for it all night. It
-        counts LINES rather than seconds on purpose: a wall-clock cap cannot be
-        tested against a replay, which hands over its whole transcript at once,
-        so the one bound that matters would be the one bound with no gate.
+        A stall is silence, not slowness: `timeout` is per line, how long the
+        patch may stay silent, since a person's own sweep can put seconds of
+        traffic ahead of the answer. The cap on a patch that talks forever
+        counts lines rather than seconds, so a replay, which hands over its
+        whole transcript at once, can test it.
         """
         seen = 0
         while True:
@@ -222,12 +152,9 @@ class Source(object):
 
 
 class Replay(Source):
-    """A recorded console, read as if it were live.
-
-    ⚠️ END OF FILE IS A STALL, NOT A CLEAN FINISH, and that is the whole point of
-    the truncated fixture: a transcript that stops at step 7 must make the runner
-    say STALL rather than quietly report a pass on the seven it did see.
-    """
+    """A recorded console, read as if it were live. End of file is a stall,
+    not a clean finish: a transcript that stops at step 7 must not pass the
+    seven it saw."""
 
     realtime = False
 
@@ -252,20 +179,11 @@ class Replay(Source):
 
 
 class Go(object):
-    """The GO sender, and there is one implementation of it.
+    """The GO sender. Every bench binds [netreceive 9998 1], on the Mac as on
+    the device, so one UDP datagram drives every target.
 
-    A bench binds [netreceive 9998 1] unconditionally -- on the Mac exactly as on
-    the device -- so one UDP datagram drives every target and the host is the
-    only thing that changes.
-
-    ⛔ THE TRAILING NEWLINE IS REQUIRED. `b'live ;'` with a space and no newline
-    is accepted by the socket and DROPPED by netreceive, which looks precisely
-    like a dead bench (item 250).
-
-    ⚠️ AND IT IS NOT netcat. BSD nc with -w0 exits before the datagram is
-    flushed, and -w1 was measured to fail here too, while the port IS bound and
-    the bench IS fine. The device cannot send to itself either: its busybox has
-    no nc at all. A socket send is deterministic.
+    A socket send with a trailing newline, never netcat: the Organelle's
+    Reference page, Sending the device a UDP datagram (item 250).
     """
 
     def __init__(self, host, port=9998):
@@ -273,12 +191,8 @@ class Go(object):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def send(self, word="go"):
-        """`go` advances the bench. `rerun` fires the CURRENT step again.
-
-        ⚠️ Both go to the same [netreceive], and the bench routes them apart --
-        so a repeat travels the path a GO already proved works, rather than a
-        second mechanism that only ever runs when somebody presses r.
-        """
+        """`go` advances the bench, `rerun` fires the current step again. One
+        [netreceive] takes both, so a repeat travels the path GO proved."""
         self.sock.sendto(("%s;\n" % word).encode(), (self.host, self.port))
 
     def close(self):
@@ -286,13 +200,9 @@ class Go(object):
 
 
 def keystrokes(path):
-    """--keys: the verdicts, scripted, for the self-test.
-
-    ⛔ IT RUNS OUT RATHER THAN REPEATING. A provider that returned its last key
-    forever would let a fixture pass by accident once the runner asked one more
-    question than the fixture answered -- so exhaustion raises EOF, which the
-    prompt already treats as quit.
-    """
+    """--keys: the verdicts, scripted, for the self-test. It runs out rather
+    than repeating, raising EOF, so a fixture cannot pass by answering one
+    more question than it scripted."""
     with open(path, encoding="utf-8") as fh:
         pending = fh.read().splitlines()
 
@@ -312,21 +222,16 @@ ask_line = console
 
 
 def use(provider):
-    """⛔ EVERY VERDICT COMES THROUGH HERE, so the self-test drives exactly the
-    code a person drives. A separate scripted path would be a second
-    implementation, and the one that never runs is the one that rots."""
+    """Every verdict comes through here, so the self-test drives the code a
+    person drives."""
     global ask_line
     ask_line = provider
 
 
 def prompt(text):
-    """⚠️ THE PROMPT IS WRITTEN AND FLUSHED BEFORE THE READ BLOCKS.
-
-    input(text) writes its argument without a newline, and a partial line can
-    sit in the buffer until something else flushes it -- so the runner appears
-    to hang silently at a step it has in fact already described and is waiting
-    on. Harmless at a terminal, wrong down a pipe, and it made the interrupt
-    fixture wait out its whole deadline for a prompt that had been issued.
+    """Write and flush the prompt before the read blocks: input() can leave a
+    partial line in the buffer, and down a pipe the runner then looks hung at a
+    step it has already described.
     """
     sys.stdout.write(text)
     sys.stdout.flush()

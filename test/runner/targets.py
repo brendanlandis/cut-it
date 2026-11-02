@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-"""Where a bench actually runs: a Pd on this Mac, or one on the Organelle.
+"""Where a bench runs: a Pd on this Mac, or one on the Organelle.
 
 Imported by run.py. Each target hands back a stream.Source, so the step loop
-never learns which it is talking to -- the same loop the replay fixtures drive.
+never learns which it is talking to.
 
-⛔ THE TARGET SAYS WHERE THE PATCH RUNS. IT DOES NOT SAY WHETHER A PERSON IS
-WATCHING -- that is --auto-only, and the two are separate on purpose. Welded
-together they make an unattended run on the real rig unreachable, which is a
-thing worth having: the predicates can be collected on hardware with nobody in
-the room, and the steps only eyes can judge say so instead of being invented.
+The target says where the patch runs, not whether a person is watching: that is
+--auto-only, kept separate so an unattended run on the rig stays possible.
 """
 import os
 import queue
@@ -21,8 +18,7 @@ import time
 
 import stream
 
-# ⛔ ONE OSC DECODER, shared with test/gate/phone-assert.py -- and ONE SCRATCH
-# COPY, the one every gate makes, from test/gate/lib_scratch.py.
+# The OSC decoder phone-assert uses, and the scratch copy every gate makes.
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gate"))
 import lib_osc                                                  # noqa: E402
@@ -32,21 +28,16 @@ PD = os.environ.get(
     "PD", "/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd")
 
 HOST = os.environ.get("ORGANELLE", "root@organelle.local")
-# ⚠️ /sdcard, NEVER /tmp. /tmp is wiped on reboot, and a bench copied there
-# vanishes with a restart -- the by-hand launch then runs mother.pd + main.pd
-# with NO BENCH, the GO port is never bound, and it looks exactly like a bench
-# frozen on step 1. Item 134.
+# /sdcard, never /tmp: /tmp empties on reboot, and a launch with no bench looks
+# exactly like a bench frozen on step 1 (item 134).
 REMOTE_DIR = "/sdcard"
 PATCH_DIR = "/sdcard/Patches/!/Cut It"
 
 
 class Process(stream.Source):
-    """A Pd whose console we read line by line.
-
-    ⚠️ THE READER IS A THREAD BECAUSE THERE IS NO PORTABLE TIMED readline. The
-    loop needs "a line, or nothing within N seconds" -- a bare readline() blocks
-    forever, which turns every stall into a hang, and a gate that hangs is worse
-    than one that fails.
+    """A Pd whose console we read line by line, on a thread: there is no
+    portable timed readline, and a bare readline() turns every stall into a
+    hang.
     """
 
     # The real instrument boots; a recording does not. See Source.boot_settle.
@@ -54,12 +45,8 @@ class Process(stream.Source):
 
     def __init__(self, argv, go, teardown=None, label="", osc_port=None):
         self.q = queue.Queue()
-        # ⛔ THE SOCKET IS BOUND BEFORE Pd STARTS. Measured: a UDP connect to a
-        # port with nothing listening survives exactly ONE datagram -- the ICMP
-        # port-unreachable that comes back tears the socket down and every later
-        # send is discarded in silence (item 114). Bind after launching and you
-        # get one packet and then nothing, which looks exactly like a broken
-        # rate limiter. phone-assert.py owns its lifecycle for the same reason.
+        # Bound before Pd starts: a UDP socket dies on the first datagram
+        # nobody hears, and every later send vanishes (item 114).
         self.osc = None
         if osc_port is not None:
             self.osc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -70,16 +57,9 @@ class Process(stream.Source):
         self._holding = False
         self.label = label
         self.log = []
-        # ⛔ stdin=DEVNULL, AND IT IS THE WHOLE REASON A DEVICE BENCH COULD NOT
-        # BE STEPPED BY A PERSON. Popen INHERITS stdin by default, and `ssh`
-        # reads stdin greedily to forward it to the remote command -- so the
-        # child and the runner's own prompt were both reading the same terminal
-        # and racing for every keystroke. Down a pipe ssh swallows the lot and
-        # the first prompt gets EOF; at a tty the Enter meant for the prompt
-        # goes to a Pd that has no use for it, and the step never fires. It
-        # presents as "GO was sent and nothing fired", which is a lie: the
-        # prompt never returned, so no GO was sent at all. Neither Pd reads
-        # stdin for anything, so closing it costs nothing.
+        # ⛔ stdin=DEVNULL: ssh reads stdin greedily to forward it, so an
+        # inherited one races the runner's own prompt for every keystroke and
+        # the step never fires. runner-assert checks for it.
         self.proc = subprocess.Popen(
             argv, stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -88,10 +68,8 @@ class Process(stream.Source):
         self.reader = threading.Thread(target=self._pump, daemon=True)
         self.reader.start()
         if self.osc:
-            # ⚠️ THE DATAGRAMS JOIN THE SAME QUEUE as the console lines, decoded
-            # into the same "LABEL: rest" shape bench-tap.pd prints. One window
-            # format rather than a second one only OSC uses -- so a predicate,
-            # a stall and the step loop all read one stream.
+            # Decoded into the "LABEL: rest" shape bench-tap.pd prints, on the
+            # same queue, so predicates and the step loop read one stream.
             threading.Thread(target=self._pump_osc, daemon=True).start()
 
     def _pump(self):
@@ -137,9 +115,8 @@ class Process(stream.Source):
             n += 1
 
     def pending(self):
-        """⚠️ THE QUEUE, NOT THE LOG. A backlog here means the reader is behind
-        the patch, which is the one stall cause that is not a fault at all --
-        the lines are coming, just later than STEP_TIMEOUT allows."""
+        """The queue, not the log: a backlog means the reader is behind the
+        patch, the one stall cause that is no fault."""
         return self.q.qsize()
 
     def go(self):
@@ -147,17 +124,14 @@ class Process(stream.Source):
         self.gosender.send()
 
     def rerun(self):
-        # ⚠️ NOT COUNTED AS A GO. `gos` is what the stall diagnosis reports, and
-        # a repeat advances nothing -- counting it would make the diagnostic
-        # claim the runner had driven the bench further than it has.
+        # Not counted as a GO: `gos` is what a stall report cites, and a
+        # repeat advances nothing.
         self.gosender.send("rerun")
         return True
 
     def where(self):
-        # ⚠️ NOT COUNTED AS A GO EITHER, and for a sharper reason than rerun: the
-        # count is what a stall report uses to argue the GO went out at all, and
-        # a question asked BECAUSE of a stall must not inflate the evidence about
-        # what caused it.
+        # Nor this: a question asked because of a stall must not add to the
+        # evidence about it.
         self.gosender.send("where")
         return True
 
@@ -168,24 +142,17 @@ class Process(stream.Source):
     def hold(self, on):
         """Keep re-firing the current step while a verdict is open.
 
-        ⛔ IT IS A THREAD BECAUSE THE PROMPT BLOCKS. Firing a fixed burst before
-        asking would delay the question by as long as the hold lasts, on every
-        step, whether or not anyone needed it -- and then stop holding at exactly
-        the moment the person starts reading. This way the question appears at
-        once and the screen stays alive underneath it.
-
-        ⚠️ IT STOPS ITSELF. A hold that outlived its step would re-fire into the
-        next one, and the extra lines would be read as that step's console.
+        A thread, because the prompt blocks: the question appears at once and
+        the screen stays alive under it. It ends when told to or after
+        HOLD_MAX; one that outlived its step would re-fire into the next and be
+        read as that step's console.
         """
         if not on:
             self._holding = False
             return
         self._holding = True
-        # ⛔ ONE IMMEDIATELY, THEN THE LOOP. The hold starts after the fired line
-        # and the settle window -- about a second into the row's ~1.3 s life --
-        # so waiting a full interval before the first re-send let the row expire
-        # first. What you saw was the result, a flash of the resting screen, and
-        # then the result again. Refreshing on entry closes that gap.
+        # One now, then the loop: the hold starts about a second into the
+        # row's ~1.3 s life, so waiting a full interval let it expire first.
         self.gosender.send("rerun")
 
         def loop():
@@ -197,10 +164,8 @@ class Process(stream.Source):
         threading.Thread(target=loop, daemon=True).start()
 
     def close(self, quiet=False):
-        """⚠️ `quiet` IS FOR A RELOAD, not for saving a line. The teardown notice
-        says the Launchpad is stranded and names the two commands that fix it --
-        true at the END of a session, and alarming nonsense in the middle of one
-        when the runner is about to relaunch the patch itself."""
+        """`quiet` is for a reload: the stranded-Launchpad notice is true at
+        the end of a session and noise in the middle of one."""
         try:
             self.proc.terminate()
             self.proc.wait(timeout=5)
@@ -219,21 +184,12 @@ class Process(stream.Source):
 
 # ---------------------------------------------------------------------------
 def _scratch(work):
-    """A throwaway copy of the patch, through the SAME harness every gate uses.
+    """A throwaway copy of the patch, through the harness every gate uses.
 
-    ⛔ state_dir IS NOT OPTIONAL. main-dev.pd passes /tmp, which every
-    run on this machine shares, and u_init restores saved state at about 3.5 s
-    -- so a previous run that changed mode silently rewrites the starting
-    conditions of this one, mid-bench. It cost a wrong diagnosis once: item 232.
-
-    ⛔ AND midi_rewrite IS NOT CALLED. Every headless gate swaps the MIDI objects
-    for printing stubs; a BENCH wants the opposite. Its whole point is a real
-    Volca you can hear and a real 404 under a real finger, and a bench run
-    against stubs would be a very thorough test of nothing.
-
-    ⚠️ state_dir's u_net sink is a socket in THIS process, held until teardown,
-    so it lasts as long as the bench does. The shell's was a sleeper that died
-    two minutes in, and a hands-on bench runs far longer than that.
+    state_dir is required: main-dev.pd's /tmp is shared, and u_init restores
+    saved state mid-run (item 232, the gate skill). midi_rewrite is not called:
+    a bench wants the real Volca and 404, not printing stubs. state_dir's u_net
+    sink is a socket in this process, so it lasts as long as the bench does.
     """
     s = lib_scratch.Scratch(work).make()
     s.state_dir()
@@ -242,7 +198,7 @@ def _scratch(work):
 
 def _tap():
     """bench-tap.pd, loaded beside every bench so a predicate has something to
-    read. ⛔ It listens and sends nothing -- see build_tap in bench-gen.py."""
+    read. It listens and sends nothing: build_tap in bench-gen.py."""
     p = os.path.abspath("test/bench/bench-tap.pd")
     if not os.path.exists(p):
         sys.exit("targets: %s does not exist -- run bench-gen.py. Without it "
@@ -251,10 +207,9 @@ def _tap():
     return p
 
 
-# ⚠️ A ROW LIVES ~1.3 s ON THE OLED, so the hold has to re-send well inside
-# that or the picture blinks. 0.8 s leaves room for the datagram and for
-# g_oled's 10 Hz repaint without the screen ever going dark. HOLD_MAX caps a walk-away at about five minutes rather than
-# leaving a bench firing into an empty room all night.
+# A row lives ~1.3 s on the OLED, so the hold re-sends well inside that; 0.8 s
+# leaves room for the datagram and g_oled's 10 Hz repaint. HOLD_MAX caps a
+# walk-away at four minutes.
 HOLD_EVERY = 0.8
 HOLD_MAX = 300
 
@@ -264,11 +219,8 @@ PHONE_PORT = 9995
 def mac(bench_name, auto_only, work):
     """main-dev.pd plus the bench, in a scratch copy, on this machine."""
     copy = _scratch(work)
-    # ⚠️ THE PHONE BENCH ON THIS MACHINE IS A MIRROR, AND IT ANSWERS A DIFFERENT
-    # QUESTION FROM A DEVICE RUN. Repointed at localhost, u_net's real datagrams
-    # are readable here -- so what it FILTERS can be judged with no phone in the
-    # room. What it cannot judge is anything about the phone itself, which is
-    # why the device run keeps its human verdict rather than being replaced.
+    # Here the phone bench is a mirror, u_net repointed at localhost: what it
+    # filters can be judged with no phone, nothing about the phone itself.
     osc_port = None
     if bench_name == "phone":
         copy.phone_mirror(PHONE_PORT)
@@ -279,20 +231,13 @@ def mac(bench_name, auto_only, work):
     if not os.path.exists(bench_pd):
         sys.exit("targets: %s does not exist -- run bench-gen.py" % bench_pd)
 
-    # ⚠️ -stderr IS WHAT MAKES A GUI RUN READABLE. With a GUI and without it,
-    # every [print] goes to Pd's own console window and the runner is blind --
-    # it would see nothing, call it a stall, and be wrong about a bench that is
-    # working. Under --auto-only there is nobody to look at a window, so -nogui
-    # is both cheaper and free of that dependency.
+    # With a GUI, [print] goes to Pd's own window unless -stderr, and the runner
+    # would see nothing. --auto-only has nobody to look at a window: -nogui.
     mode = ["-nogui"] if auto_only else ["-stderr"]
 
-    # ⛔ DSP ON, AND IT IS NOT OPTIONAL. Every beat counter hangs off threshold~
-    # reading a phasor~, so with DSP off EVERY COUNT READS 0 -- which looks
-    # exactly like a dead clock rather than a setting, and would make the tempo
-    # predicates fail for a reason that has nothing to do with the patch. On the
-    # device mother turns DSP on 200 ms after load and this never arises; on the
-    # Mac it is the panel toggle a person is told to tick, and nobody is here to
-    # tick it. -send runs after the patches are loaded.
+    # DSP on: every beat counter is threshold~ on a phasor~, so with it off
+    # every count reads 0. On the device mother turns it on; here it is a panel
+    # toggle nobody is present to tick. -send runs after the patches load.
     argv = [PD] + mode + ["-send", "pd dsp 1",
                           "-path", os.path.join(work, "patch"),
                           os.path.join(work, "patch", "main-dev.pd"),
@@ -310,11 +255,9 @@ def mac(bench_name, auto_only, work):
 def device(bench_name, auto_only, work):
     """The real rig: mother.pd, main.pd and the bench, as a third patch.
 
-    ⚠️ IT KILLS THE RUNNING INSTRUMENT. That is what loading a bench has always
-    meant here, and `killall pd` STRANDS THE LAUNCHPAD IN PROGRAMMER MODE -- its
-    own Settings menu is locked out in that state, so the front panel cannot
-    recover it. The teardown says so every time rather than trusting anyone to
-    remember.
+    It kills the running instrument, and `killall pd` strands the Launchpad in
+    Programmer Mode with its own Settings menu locked out, so the teardown says
+    how to restore it every time.
     """
     bench_pd = "test/bench/%s-bench.pd" % bench_name
     remote_pd = "%s/%s-bench.pd" % (REMOTE_DIR, bench_name)
@@ -323,15 +266,8 @@ def device(bench_name, auto_only, work):
     subprocess.run(["scp", "-q", bench_pd, _tap(),
                     "%s:%s/" % (HOST, REMOTE_DIR)], check=True)
 
-    # ⚠️ THE SECOND -path IS NOT OPTIONAL. tempo-bench's own declare is
-    # `../../Cut It`, which resolves from test/bench/ on the Mac and from
-    # nowhere useful on the device -- without this c_clock fails to create and
-    # both its counts read 0, which looks exactly like a dead clock rather than
-    # a missing search path.
-    #
-    # ⚠️ SINGLE QUOTES AROUND THE PATCH PATH. The folder is /sdcard/Patches/!/…
-    # and `!` inside double quotes is a history event in an interactive zsh --
-    # you get `zsh: event not found` before anything reaches the device.
+    # The patch path in single quotes: the folder is /sdcard/Patches/!/..., and
+    # `!` inside double quotes is a history event in an interactive zsh.
     remote = ("killall pd 2>/dev/null; sleep 1; cd '%s' && "
               "exec pd -nogui -rt -audiobuf 6 -path /root/Pd/externals "
               "-path '%s' /root/fw_dir/mother.pd main.pd %s %s 2>&1"

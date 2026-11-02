@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 """The bench tables, as the runner sees them. Imported by run.py.
 
-⛔ THE LIST OF BENCHES IS DERIVED, NEVER RETYPED. bench-gen.py's BENCHES table is
-the only list there is, and bench-verify.py already reads it rather than carrying
-its own copy -- because it used to carry one, and missing an entry meant a bench
-was generated but NEVER FIDELITY-CHECKED. A third copy here would reintroduce
-exactly that, one layer up: a bench that generates, verifies, and is invisible to
-the runner.
+The list of benches is bench-gen.py's BENCHES, never a copy: a bench missing
+from a copy would generate and verify and be invisible here.
 
-⚠️ THE HYPHENATED NEIGHBORS LOAD THROUGH importlib. A hyphen is not a legal
-Python identifier, so bench-gen.py and bench-extract.py cannot be imported by
-name; bench_steps.py and this file can, and that is the whole reason for the
-inconsistent punctuation across test/.
+bench-gen.py and bench-extract.py load through importlib, since a hyphen is not
+a legal Python identifier.
 """
 import importlib.util
 import os
@@ -19,17 +13,13 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-# ⚠️ KIND KNOWLEDGE STAYS IN predicates.py. `paper` has to know whether a
-# predicate can be judged with no console, and asking the module that owns the
-# kinds is what stops a second list of them growing here.
+# What a predicate kind needs stays in predicates.py, so `paper` asks it rather
+# than keeping a second list.
 import predicates                                               # noqa: E402
 
-# ⛔ THE SIGNATURE OF A STEP THAT TESTS A TIMEOUT, and it is deliberately wide.
-# A false positive costs one step its hold and a person presses r; a false
-# NEGATIVE re-fires a decay test forever and it can never fail again. When in
-# doubt this must say "decay", so it matches the word forms the step text
-# actually uses -- digits and spelled-out numbers both, because the Launchpad
-# bench says "about two seconds" where the display bench says "about 2 s".
+# Deliberately wide: a false positive costs a step its hold, a false negative
+# re-fires a decay test until it can never fail. Digits and spelled-out numbers
+# both, since the steps say "about two seconds" and "about 2 s".
 DECAY_RE = re.compile(
     r"\b(later|fades?|fade out|vanish\w*|clears? itself|on its own|"
     r"by itself|returns? after|times? out|timed out|settles?|persists?|"
@@ -47,20 +37,16 @@ def _load(name, path):
     return mod
 
 
-# ⚠️ bench-gen.py writes files only under `if __name__ == "__main__"`, so
-# importing it here generates nothing.
+# bench-gen.py writes only under __main__, so importing it generates nothing.
 _gen = _load("bench_gen", os.path.join(BENCH_DIR, "bench-gen.py"))
 _steps = _load("bench_steps", os.path.join(BENCH_DIR, "bench_steps.py"))
 
 WINDOW_MS = _steps.WINDOW_MS
 MEASURE_SUFFIX = _steps.MEASURE_SUFFIX
 
-# ⛔ RE-EXPORTED, NEVER RE-DECLARED. The console protocol is one agreement
-# between the generator that writes these lines and the runner that reads them,
-# and it lives in bench_steps.py beside the format strings it has to match.
-# Writing the regexes again here would be the second copy, and the failure it
-# produces is the nastiest kind: the runner stops recognizing a step, reports a
-# stall, and the bench on the other end is working perfectly.
+# Re-exported, never re-declared: the console protocol lives in bench_steps.py
+# beside the format strings it must match, and a drifted copy would report a
+# working bench as stalled.
 SAY_STEP = _steps.SAY_STEP
 SAY_PROMPT = _steps.SAY_PROMPT
 SAY_FIRED = _steps.SAY_FIRED
@@ -73,47 +59,21 @@ SAY_WHERE = _steps.SAY_WHERE
 RE_WHERE = _steps.RE_WHERE
 
 # ---------------------------------------------------------------------------
-# ⛔ WHAT EACH BENCH'S VERDICTS ACTUALLY DEPEND ON, and it is PER BENCH.
-#
-# The obvious implementation -- hash all of "Cut It/" -- makes every bench stale
-# on every patch commit. A staleness signal that is always lit is one nobody
-# reads, which is the same disease as a gate that lies, so the dependency is
-# named rather than assumed. Then "you changed u_tempo.pd" can say exactly whose
-# verdicts stopped applying.
-#
-# ⚠️ ERR ON THE SIDE OF LISTING. A dependency left out means a verdict stays
-# green across a change that invalidated it, which is the failure that matters;
-# one listed too many costs a re-run.
-#
-# ⚠️ THE THREE PRESENCE FILES ARE ON THREE BENCHES BECAUSE THREE BENCHES NOW ASK
-# A HOT-SWAP QUESTION. u_present owns the shared bound, c_presence is the
-# per-device clock inside each m_, and c_devid is the manufacturer-byte matcher
-# that decides whether a reply was this device's -- so a change to any of them
-# invalidates "the warn appeared" and "it came back within 60 seconds" on every
-# one of them.
+# What each bench's verdicts depend on (records.deps_sha). Err on the side of
+# listing: a dependency left out keeps a verdict green across a change that
+# invalidated it, and one too many costs a re-run. The three presence files are
+# on every bench that asks a hot-swap question.
 DEPS = {
-    # ⚠️ THE ONLY ENTRY THAT NAMES NOTHING UNDER "Cut It", and that is right:
-    # the debug patch is a second deployable and a change to the instrument
-    # cannot invalidate a verdict about it. The two SHELL SCRIPTS ARE IN HERE
-    # DELIBERATELY -- steps 5 and 6 judge what err-tail.sh and net-probe.sh put on
-    # the screen, so an edit to either is an edit to what those steps asserted.
-    # ⚠️ wire.sh is here as the debug patch's COPY, not the instrument's. The two
-    # are held identical by debug-assert.sh, so editing the instrument's does
-    # reach this list -- through the copy that has to follow it.
+    # Nothing under "Cut It": a change to the instrument cannot invalidate a
+    # verdict about the debug patch. Steps 5 and 6 judge what err-tail.sh and
+    # net-probe.sh draw. debug-assert.sh holds this wire.sh identical to the
+    # instrument's, so an edit to either reaches this list.
     "debug":       ["Cut It Debug/main.pd", "Cut It Debug/wire.sh",
                     "Cut It Debug/err-tail.sh", "Cut It Debug/net-probe.sh"],
     "display":     ["Cut It/g_oled.pd", "Cut It/u_err.pd"],
-    # ⚠️ u_tempo WAS MISSING HERE AND THE OMISSION WAS PRE-EXISTING. Step 14
-    # counts BEATS off `r clock`, and u_tempo is the only writer of that bus --
-    # so every beat-row verdict would have stayed green across a change to the
-    # clock's own source. Found while editing u_tempo for something unrelated.
-    # ⛔ ADDING IT STALES 26 VERDICTS ONCE. That is the bill for a signal that
-    # tells the truth from here on, and it is the cheaper half of the trade:
-    # fresh forever is worse than stale forever, because it is believed.
-    # ⚠️ u_map AND THE MAP ARE HERE FOR THE ROWS. m_launchpad posts no row of
-    # its own (item 317): the pad-NN and lp-cc-NN rows those steps read are
-    # u_map's raw row for an unmapped control, and the ring step names the
-    # buttons the map binds -- CC 90 and the six mode keys -- by what they do.
+    # u_tempo is the only writer of `clock`, which the beat-row step counts.
+    # u_map and the map for the rows: m_launchpad posts none of its own (item
+    # 317), and the ring step names the buttons the map binds.
     "launchpad":   ["Cut It/g_grid.pd", "Cut It/m_launchpad.pd",
                     "Cut It/c_clock.pd", "Cut It/u_tempo.pd", "Cut It/u_err.pd",
                     "Cut It/u_present.pd", "Cut It/c_presence.pd",
@@ -124,27 +84,22 @@ DEPS = {
                     "Cut It/cut-it-map.txt", "Cut It/g_oled.pd",
                     "Cut It/u_present.pd", "Cut It/c_presence.pd",
                     "Cut It/c_devid.pd"],
-    # ⚠️ AND THE SAME FOR THE NANO: every row the first step reads is u_map's,
-    # and slider-1's in mode 1 is c_mapped's volca-cc41 rather than its name.
+    # Every row the first step reads is u_map's, and slider-1's in mode 1 is
+    # c_mapped's volca-cc41.
     "nanokontrol": ["Cut It/m_nano.pd", "Cut It/g_oled.pd", "Cut It/u_err.pd",
                     "Cut It/u_present.pd", "Cut It/c_presence.pd",
                     "Cut It/c_devid.pd", "Cut It/u_map.pd",
                     "Cut It/c_mapped.pd", "Cut It/cut-it-map.txt"],
-    # ⚠️ THE TWO OUTPUT LAYERS ARE IN HERE FOR THE TEST-NOTE STEPS. The phone can
-    # fire a probe note at each of them through a cord out of u_net, and those
-    # two verdicts are "the Volca sounded" and "the 404 sounded" -- so a change to
-    # either layer invalidates them. u_present is here for the re-wire button.
+    # The two output layers for the test-note steps ("the Volca sounded", "the
+    # 404 sounded"); u_present for the re-wire button.
     "phone":       ["Cut It/u_net.pd", "Cut It/u_err.pd", "Cut It/u_present.pd",
                     "Cut It/m_volca.pd", "Cut It/m_404.pd"],
-    # ⚠️ u_tempo IS IN HERE FOR THE VOLCA STEP, not for the tempo. panic's STOP
-    # is the only thing u_tempo sends to port 4, and step 2 is the only place
-    # anything asserts that the Volca hears it.
+    # u_tempo for the Volca step: panic's stop is all it sends to port 4.
     "recover":     ["Cut It/u_map.pd", "Cut It/u_init.pd", "Cut It/recover.sh",
                     "Cut It/cut-it-map.txt", "Cut It/u_tempo.pd",
                     "Cut It/state-dir.sh"],
     "state":       ["Cut It/u_state.pd", "Cut It/u_store.pd", "Cut It/u_init.pd"],
-    # ⚠️ c_mapped IS HERE FOR THE ROW. The tempo bench reads bpm 57 (10) and
-    # bpm 500 off the OLED, and that row is built by u_map's c_mapped instance.
+    # c_mapped builds the bpm row this bench reads off the OLED.
     "tempo":       ["Cut It/u_tempo.pd", "Cut It/c_clock.pd", "Cut It/u_map.pd",
                     "Cut It/c_mapped.pd"],
 }
@@ -160,26 +115,15 @@ class Step(object):
 
     @property
     def hands(self):
-        """⛔ THE FLAG IS A FIELD, NEVER A SUBSTRING TEST ON PROSE. bench-gen's
-        `"HANDS" in title.upper()` is measurably wrong: it misses all three
-        `THE NANO --` steps, both tempo `BY HAND` steps and four of the six state
-        steps -- nine in total. The presence of a `do` is the authority."""
+        """A field, never a substring test on prose: bench-gen's
+        `"HANDS" in title.upper()` misses steps whose title says otherwise. A
+        `do` is the authority."""
         return bool(self.meta.get("do"))
 
     @property
     def watch(self):
-        """What to look for: the PASS IF with its prefix stripped, always.
-
-        ⛔ meta HAD A `watch` THAT REPLACED THIS, and it is gone. A step could
-        put anything it liked on the line labeled PASS IF, so the label was a
-        promise the runner did not keep -- which is the only reason the prompt
-        ever needed a [?] key to show the real one. The last two overrides were
-        removed on 2026-08-11: midi 7's restated its PASS IF in other words, and
-        launchpad 14's explained the Mac dev panel to a person standing at the
-        rig. The count a predicate wants is printed by the predicate itself, on
-        the line above the verdict prompt, from the only source that cannot
-        drift from it.
-        """
+        """What to look for: the PASS IF with its prefix stripped, always. A
+        predicate prints the count it wants itself, above the verdict prompt."""
         p = self.pass_if
         return p[len("PASS IF:"):].strip() if p.startswith("PASS IF:") else p
 
@@ -193,32 +137,16 @@ class Step(object):
     def holds(self):
         """May the runner re-fire this step while a person reads it?
 
-        ⛔ AND A STEP MAY REFUSE OUTRIGHT WITH `hold: False`. The derivation
-        below asks whether the step is ABOUT a decay; it cannot ask whether the
-        step's own actions are idempotent. tempo 4 sends `120` to tempo and then
-        a knob that maps to tempo, so every re-fire walks the footer from 120
-        back down to 10 in front of somebody trying to read it -- measured, six
-        times in five seconds. That is a property of the action list and it
-        belongs beside the action list, not in a pattern over prose.
+        A parameter row is on the OLED for about 1.3 s, so re-sending holds the
+        picture up while the verdict is open. A step whose subject is the decay
+        ("about 2 s later it vanishes") would keep resetting the timer under
+        test and pass forever, so that exemption is derived from the prose
+        (DECAY_RE): a hand-kept list would fail silently.
 
-        ⛔ A PARAMETER ROW IS ON THE OLED FOR ABOUT 1.3 s. g_oled ages it out --
-        the instrument working, and what stops a performance screen filling with
-        stale rows -- so a step whose result is a row gives you barely a glance.
-        Re-sending resets that timer, so the runner holds the picture up while
-        the verdict is open.
-
-        ⛔ AND FOR ROUGHLY TEN STEPS THAT WOULD DESTROY THE ASSERTION, because
-        the thing being tested IS the decay: "about 2 s later it vanishes",
-        "clears itself after 30 s", "the other four fade out". Re-firing those
-        keeps resetting the very timer under test and they would pass forever.
-        ⚠️ SO THE EXEMPTION IS DERIVED FROM THE TEXT RATHER THAN HAND-KEPT. A
-        hand-maintained list is a second place to forget, and forgetting here
-        does not fail loudly -- it makes a timeout test unfalsifiable.
-
-        Three ways out, and the first two are structural:
-          * no actions at all -- there is nothing to re-send
-          * a measure step -- re-firing re-arms or re-reads a beat counter
-          * the prose claims something happens after a delay
+        Not held: no actions, a measure step (re-firing re-arms the counter),
+        prose claiming a delay, or `hold: False` for actions that are not
+        idempotent (tempo 4 would walk the footer from 120 down to 10 on every
+        re-fire).
         """
         if not self.actions or self.measure:
             return False
@@ -238,22 +166,11 @@ class Bench(object):
 
     @property
     def paper(self):
-        """Can this bench run with NO PATCH ON THE OTHER END at all?
+        """Can this bench run with no patch on the other end: no Pd, no ssh, no
+        `killall pd`, no Launchpad stranded in Programmer Mode?
 
-        ⛔ NO PD, NO ssh, NO `killall pd`, and therefore no Launchpad stranded in
-        Programmer Mode. `state` is like this, which is five steps that can be
-        run with none of the device machinery. Phase 8's run was driven this way
-        by hand and that is exactly why it was painless.
-
-        ⛔ AND "NO ACTIONS" IS NOT THE SAME QUESTION, which is what this used to
-        ask. Three separate things need a patch, and only the first is an
-        action: a PREDICATE that reads a console has nothing to read, and a
-        `reload` step is the runner OWNING the process it is asked to restart.
-        The proxy held only while those two happened to travel with actions --
-        and it broke the moment nanokontrol was cut back to its six hands-on
-        steps, which have no actions at all and are entirely about a running
-        instrument. `midi` had the same shape already and every recorded run of
-        it passed `--target device` by hand to work around exactly this.
+        Not the same question as "no actions": a predicate that reads a console
+        and a `reload` step need a running patch too.
         """
         if any(s.actions for s in self.steps):
             return False
@@ -275,13 +192,8 @@ def load(name):
 
 
 def check_inventory():
-    """⛔ EVERY BENCH MUST DECLARE ITS DEPENDENCIES.
-
-    Without this a bench added to bench-gen's table gets no deps entry, and the
-    obvious implementation -- default to [] -- would make its verdicts
-    permanently fresh: never stale, whatever changes in the patch. Fresh forever
-    is worse than stale forever, because it is believed.
-    """
+    """Every bench declares its dependencies: one defaulting to [] would be
+    fresh forever, which is worse than stale forever because it is believed."""
     missing = sorted(set(names()) - set(DEPS))
     extra = sorted(set(DEPS) - set(names()))
     problems = []

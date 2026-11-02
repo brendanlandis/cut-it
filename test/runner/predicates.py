@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
-"""What a step can assert about itself, as DATA rather than as code.
+"""What a step can assert about itself, as data. Imported by run.py.
 
-Imported by run.py. A predicate is a dict in a step's meta, so the vacuity lint
-in bench-gen.py can read it before a patch is ever generated, and so the whole
-thing survives into the result file -- "want 20..22, got 0" a month later is
-worth more than "failed".
+A predicate is a dict in a step's meta, so bench-gen.py's vacuity lint can read
+it before a patch is generated, and it survives into the result file: "want
+20..22, got 0" a month later says more than "failed".
 
-⛔ THE WINDOW ENDS AT THE FIRED LINE, AND THAT IS NOT ARBITRARY. bench-gen sends
-a step's actions off the trigger's high outlets and the "--- step N fired ---"
-line off outlet 0, LAST, precisely so the line cannot arrive before the thing it
-describes. So everything a step caused is already in the window by the time the
-marker closing it shows up.
+The window ends at the fired line, which bench-gen sends last, so everything a
+step caused synchronously is already in it.
 """
 import os
 import re
 import subprocess
 import sys
 
-# ⛔ ONE LIST OF TAP LABELS, shared with every headless gate's driver and parser.
+# One list of tap labels, shared with every headless gate's driver and parser.
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gate"))
 import lib_drive                                                # noqa: E402
@@ -25,65 +21,36 @@ import lib_drive                                                # noqa: E402
 KINDS = ("print", "ratio", "bus", "bus-count", "bus-not", "oled",
          "osc", "osc-rate", "file", "all")
 
-# ⛔ WHICH KINDS CAN BE JUDGED WITH NO CONSOLE AT ALL. Every kind but `file`
-# reads the WINDOW -- lines Pd printed -- so in paper mode, where there is no Pd
-# and no stream, it is handed an empty list. An empty window is not a verdict:
-# _bus_lines returns nothing, `has` finds nothing, and the step reports AUTO
-# FAIL on a rig that is working perfectly. `file` is the exception because its
-# evidence is on DISK, which exists whether or not anything is running.
-#
-# ⛔ AND THE LIST LIVES HERE RATHER THAN IN run.py. What a predicate can read is
-# a fact about the predicate; a runner that carried its own copy of this would
-# be the second list, and the one that rots is always the copy.
+# Which kinds can be judged with no console. Every kind but `file` reads lines
+# Pd printed, and paper mode has none: against an empty window they would fail
+# a working rig.
 OFFLINE_KINDS = ("file",)
 
-# ⛔ AND WHICH KINDS NEED THE OSC MIRROR, WHICH ONLY THE MAC TARGET HAS. `u_net`
-# sends to the phone; on the Mac it is repointed at 127.0.0.1 and the runner
-# binds that port, so a datagram is readable there and nowhere else. On the
-# device there is no socket to read and the window carries no `OSC:` line at all.
-#
-# ⚠️ TWO PHONE STEPS CARRIED `targets: ('mac',)` FOR THIS and it was the wrong
-# lever: it skipped the whole STEP, so phone 2 and 8 were never judged on the rig
-# by anybody -- and the comment beside them said the opposite, that "the device
-# run keeps its human verdict". A person watching the phone is a perfectly good
-# oracle for both. What is unavailable on the device is the PREDICATE, so that is
-# what gets skipped, exactly as paper mode skips a predicate needing a console.
-#
-# ⛔ DERIVED FROM THE KIND, NEVER LISTED PER STEP. The alternative was a
-# `check_targets` key beside `targets`, which is a second thing to remember and
-# goes stale the first time a step gains an osc predicate.
+# Which kinds need the OSC mirror, which only the Mac target has (u_net
+# repointed at a socket the runner binds). On the device the predicate is
+# skipped and a person still judges the step. Derived from the kind, never
+# listed per step.
 MIRROR_KINDS = ("osc", "osc-rate")
 
-# ⛔ THE BUS KINDS READ EVERY LABEL bench-tap.pd EMITS, because both are built
-# from lib_drive.TAP_LABELS. A hand-typed copy here knew eight of the nineteen,
-# so the first `bus` predicate on led or state would have read an empty window
-# and failed a working rig. A label with no pattern does not error -- the line
-# is simply dropped.
+# Built from lib_drive.TAP_LABELS, as bench-tap.pd is, so the bus kinds read
+# every label it emits. A label with no pattern is dropped without an error.
 _BUS_LINE = re.compile(
     r"(?:^|\s)(%s):\s+(.*?)\s*$" % lib_drive.TAP_LABEL_RE)
 
 # The OLED as u_mother-stub decodes it: g_oled writes rows through oscOut, and
-# the stub's oled-decode subpatch turns /oled/gPrintln into the eight cnv rows
-# drawn on the panel. That decode is what makes a screen assertion possible at
-# all -- Pd cannot ask an OLED what it is showing, but what it was TOLD to show
-# is completely knowable.
+# the stub turns /oled/gPrintln into the panel's eight rows.
 _OLED_ANY = re.compile(r"/oled/(gPrintln|gClear|gFlip)\b(.*?)\s*$")
 
 
 class BadSpec(Exception):
-    """⛔ A predicate that cannot be understood is a FAILURE, never a skip and
-    never a silent pass. A typo in a kind name would otherwise disable an
-    assertion while leaving the step looking checked."""
+    """A predicate that cannot be understood fails, never skips or passes: a
+    typo in a kind would otherwise disable an assertion and leave the step
+    looking checked."""
 
 
 def _numbers(window, name):
-    """Every value Pd printed under `[print NAME]`, in order.
-
-    ⚠️ THE LABEL IS ANCHORED AT A WORD BOUNDARY, not searched loosely. `BEATS`
-    appears inside `M-BEATS`, `C1-BEATS-ratio-1` and `C2-BEATS-ratio-1.5`, so a
-    loose match on the Launchpad bench's `BEATS` would silently read the tempo
-    bench's counters as well and average three clocks into one number.
-    """
+    """Every value Pd printed under `[print NAME]`, in order. The label is
+    anchored, so `BEATS` does not also read a counter named `M-BEATS`."""
     rx = re.compile(r"(?:^|\s)%s:\s+(-?[\d.]+)\s*$" % re.escape(name))
     out = []
     for line in window:
@@ -104,15 +71,11 @@ def _bus_lines(window, bus):
 
 
 def _oled_text(args_str):
-    """The WORDS of one gPrintln, with the geometry discarded.
+    """The words of one gPrintln, with the geometry discarded.
 
-    ⛔ AND DISCARDING IT IS THE WHOLE POINT. A gPrintln reads
-    `/oled/gPrintln iiiiiss 3 2 12 24 1 43 %` -- x, y, size, and only then the
-    text. Matching a predicate against the raw line would let `12` be satisfied
-    by a FONT SIZE, so a screen showing nothing of the sort would pass. The
-    typetag says how many trailing atoms are symbols, and g_oled builds that
-    typetag itself with one letter per word, so counting its `s` letters is
-    exactly as authoritative as the message.
+    `/oled/gPrintln iiiiiss 3 2 12 24 1 43 %` is x, y, size and then the text,
+    so a raw match would let `12` be satisfied by a font size. g_oled builds
+    the typetag with one letter per word, so its `s` count is exact.
     """
     atoms = args_str.split()
     if not atoms:
@@ -127,18 +90,10 @@ def _oled_text(args_str):
 
 
 def _oled_rows(window):
-    """The rows of the LAST COMPLETE FRAME, not of the whole window.
-
-    ⛔ A WINDOW HOLDS SEVERAL FRAMES AND THEY CONTRADICT EACH OTHER. g_oled
-    repaints on a [metro 100] and brackets every frame with gClear ... gFlip, so
-    a window opened around one step spans the repaint boundary: the frames
-    before the step still show what was there, the frames after show the result.
-    Evaluated together, display step 3 reported BOTH `grain 12` and the previous
-    step's `43 %` -- and its whole point is that the % must be gone. Measured
-    exactly that way before this existed.
-
-    ⚠️ COMPLETE means gClear ... gFlip. A half-written frame at the end of the
-    window is the repaint we interrupted, not the screen.
+    """The rows of the last complete frame (gClear ... gFlip), not the whole
+    window: g_oled repaints on a [metro 100], so a window holds frames from
+    before the step and after it, and they contradict each other. A
+    half-written frame at the end is the repaint we interrupted.
     """
     frames, cur, closed = [], None, []
     for line in window:
@@ -190,11 +145,8 @@ def _one(spec, window, ctx=None):
         got = _numbers(window, name)
         want = "%s between %g and %g" % (name, lo, hi)
         if not got:
-            # ⛔ NOTHING PRINTED IS A FAILURE, NOT AN EMPTY PASS. This is the
-            # single most likely way this predicate would go vacuous: the
-            # counter never fired, the window was read too early, or DSP is off
-            # -- and "no number" answered as "no number outside the range" is
-            # exactly the shape of a gate that lies.
+            # Nothing printed fails: the counter never fired, the window was
+            # read too early, or DSP is off.
             return False, want, "%s never printed" % name
         v = got[-1]
         return lo <= v <= hi, want, "%s = %g" % (name, v)
@@ -211,10 +163,8 @@ def _one(spec, window, ctx=None):
                      % (", ".join(repr(s) for s in missing),
                         _sample(lines))) if missing else _sample(lines))
         if kind == "bus-count":
-            # ⛔ EXACTLY n, NEVER "at least". A count that has drifted is the
-            # failure this project keeps catching, and "at least" cannot catch
-            # it: the whole point of tempo's double-5000 step is that the SECOND
-            # one must be silent, and "one or more alerts" is satisfied by two.
+            # Exactly n, never "at least": tempo's second 5000 must be silent,
+            # and "one or more alerts" is satisfied by two.
             match, n = spec["match"], spec["n"]
             hits = [ln for ln in lines if match in ln]
             return (len(hits) == n,
@@ -232,12 +182,8 @@ def _one(spec, window, ctx=None):
         blob = " | ".join(rows)
         has = spec.get("has", [])
         has_not = spec.get("has_not", [])
-        # ⛔ has_row IS EXACT AND has IS A SUBSTRING, AND THE DIFFERENCE MATTERS.
-        # g_oled draws a parameter as two rows, the name and the value, so the
-        # stale-unit bug shows up as a VALUE ROW reading `12 %` where it should
-        # read `12`. A substring test for `12` is satisfied by both. An exact row
-        # is also independent of what else is on screen, which a screen showing
-        # up to five parameters at once very much is.
+        # has_row is exact and has a substring: the stale-unit bug is a value
+        # row reading `12 %` where it should read `12`, and `12` is in both.
         has_row = spec.get("has_row", [])
         missing = ([s for s in has if s not in blob]
                    + [s for s in has_row if s not in rows])
@@ -248,10 +194,8 @@ def _one(spec, window, ctx=None):
         if has_not:
             want += " and NOT %s" % ", ".join(repr(s) for s in has_not)
         if not rows:
-            # ⛔ AN EMPTY SCREEN IS A FAILURE, NOT A SATISFIED has_not. This is
-            # the one way an OLED predicate goes vacuous: nothing was drawn, so
-            # every "must not contain" is trivially true and the step passes
-            # having proved nothing at all.
+            # An empty screen fails rather than satisfying has_not, which
+            # nothing drawn would make trivially true.
             return False, want, "the OLED wrote nothing in this window"
         bad = []
         if missing:
@@ -269,14 +213,9 @@ def _one(spec, window, ctx=None):
             need = spec.get("has", [])
             absent = spec.get("has_not", [])
             if not mine and "has" in spec:
-                # ⛔ NO DATAGRAM WHERE TRAFFIC WAS ASSERTED IS A FAILURE. u_net
-                # absent, failed to create, or never connected all look like
-                # this.
-                # ⚠️ BUT SILENCE SATISFIES A PURELY NEGATIVE SPEC, and must: "the
-                # meters never reach the phone" is answered correctly by an
-                # address that carried nothing. That is only safe because the
-                # lint refuses a bare has_not -- the liveness witness is its
-                # sibling, not this branch.
+                # No datagram where traffic was asserted fails. A purely
+                # negative spec is satisfied by silence, which is safe only
+                # because the lint refuses a bare has_not.
                 return (False, "%s carries %s" % (addr, need or "traffic"),
                         "nothing arrived on %s" % addr)
             blob = " | ".join(mine)
@@ -291,7 +230,7 @@ def _one(spec, window, ctx=None):
             if present:
                 bad.append("should not be there: " + ", ".join(map(repr, present)))
             return not bad, want, ("; ".join(bad) + " -- saw: " + blob) if bad else blob
-        # osc-rate: the coalescer's whole job is that a flood does NOT become a
+        # osc-rate: the coalescer's job is that a flood does not become a
         # flood on the wire.
         secs = spec.get("over", 1.0)
         hz = len(mine) / float(secs)
@@ -301,16 +240,9 @@ def _one(spec, window, ctx=None):
 
     if kind == "file":
         path = spec["path"]
-        # ⛔ A TIMESTAMP MUST BE READ ON THE DEVICE, NEVER OFF THE FETCHED COPY.
-        # tools/fetch-state.sh copies with scp and no -p, so the local file's
-        # mtime is the moment it was FETCHED -- always newer than the step that
-        # asked, so the predicate passes whatever the instrument did. Caught by
-        # running it: state 4 reported AUTO PASS with nobody having touched
-        # Storage or Save.
-        #
-        # ⚠️ EPOCH SECONDS, WHICH ARE ABSOLUTE. The device runs UTC and the Mac
-        # runs local time, and comparing formatted stamps across that boundary
-        # once produced an apparent 5.5-hour clock jump that did not exist.
+        # A timestamp is read on the device, never off the fetched copy:
+        # fetch-state.sh's scp has no -p, so the local mtime is the fetch.
+        # Epoch seconds, since the device runs UTC and the Mac local time.
         if spec.get("remote"):
             rpath = spec["remote"]
             host = os.environ.get("ORGANELLE", "root@organelle.local")
@@ -329,11 +261,8 @@ def _one(spec, window, ctx=None):
             return (int(got) > int(ref), want,
                     "device mtime is %+ds relative to the start of this step"
                     % age)
-        # ⛔ THE RUNNER FETCHES IT. This is the step that used to read, in its own
-        # PASS IF, "from the Mac run ./tools/fetch-state.sh --show" -- an
-        # instruction to a person to run a shell command and compare its output
-        # by eye. The instrument writes to /sdcard/cut-it-state/, off the device
-        # and outside the patch folder, so the file has to come across first.
+        # The runner fetches it: the instrument writes to /sdcard/cut-it-state/,
+        # outside the patch folder.
         if spec.get("fetch") == "state":
             rc = subprocess.run(["./tools/fetch-state.sh"],
                                 stdout=subprocess.DEVNULL,
@@ -352,19 +281,16 @@ def _one(spec, window, ctx=None):
             return (want in body, "%s contains %r" % (os.path.basename(path), want),
                     (body.strip() or "(empty)")[:200])
         if "newer_than" in spec:
-            # ⚠️ A TIMESTAMP COMPARISON, WHICH IS WHAT A PERSON WAS DOING BY EYE.
-            # An UNCHANGED timestamp means saveState never arrived and the
-            # commit path is dead -- and an empty file is the expected state
-            # here, so contents cannot answer it.
+            # An unchanged timestamp means saveState never arrived; the file
+            # may legitimately be empty, so its contents cannot say.
             try:
                 mtime = os.path.getmtime(path)
             except OSError as e:
                 return False, "a fresh %s" % path, "could not stat it: %s" % e
             ref = spec["newer_than"]
-            # ⚠️ `step-start` IS RESOLVED BY THE RUNNER, not written as a number.
-            # The question is whether the file was rewritten BY THIS STEP, and a
-            # literal timestamp in a step table would answer a different one the
-            # moment anybody ran the bench twice.
+            # `step-start` is resolved by the runner: the question is whether
+            # this step rewrote the file, and a literal timestamp in the table
+            # would stop meaning that on a second run.
             if ref == "step-start":
                 ref = (ctx or {}).get("step_start", 0)
             return (mtime > ref,
@@ -382,9 +308,7 @@ def _one(spec, window, ctx=None):
             return False, want, "%s printed %s, %s printed %s" % (
                 a, va or "nothing", b, vb or "nothing")
         if vb[-1] == 0:
-            # ⚠️ A ZERO DENOMINATOR IS THE DSP-OFF SIGNATURE, and it must fail
-            # loudly rather than raise: under -noaudio every count reads 0,
-            # which looks exactly like a dead clock.
+            # Zero is a dead clock or DSP off: fail, rather than raise.
             return False, want, "%s = 0 -- a dead clock, or DSP is off" % b
         r = va[-1] / vb[-1]
         return abs(r - want_r) <= tol, want, "%s / %s = %g / %g = %.3f" % (
@@ -396,41 +320,28 @@ def _one(spec, window, ctx=None):
 def offline(spec):
     """Can this predicate be judged with no console? -> (ok, [kinds that cannot]).
 
-    ⛔ ASKED BEFORE evaluate, NEVER INSTEAD OF A VERDICT. A step whose oracle is
-    absent is a SKIP WITH A REASON -- the same rule the runner already applies to
-    `targets` and to --auto-only -- and the reason has to name WHICH kinds needed
-    a console, or the skip is as uninformative as the false failure it replaced.
-
-    ⚠️ AN `all` IS OFFLINE ONLY IF EVERY LEAF IS. One bus predicate inside an
-    `all` is enough to make the whole thing unjudgeable, and answering "mostly"
-    would evaluate the rest against an empty window and fail them.
+    Asked before evaluate, never instead of a verdict: an absent oracle is a
+    skip whose reason names the kinds. An `all` is offline only if every leaf
+    is, or the rest would be judged against an empty window and fail.
     """
     kind = spec.get("kind")
     if kind == "all":
         bad = []
         for part in spec.get("of", []):
             bad.extend(offline(part)[1])
-        # dict.fromkeys rather than set(): the reason string reads better in the
-        # order the step wrote them, and these lists are three items long.
+        # dict.fromkeys keeps the step's own order in the reason.
         bad = list(dict.fromkeys(bad))
         return (not bad), bad
     if kind not in KINDS:
-        # ⛔ NOT OUR QUESTION TO ANSWER QUIETLY. A typo in a kind name must reach
-        # BadSpec in evaluate() and fail the step, not be skipped here as
-        # "needs a console" -- a skip would leave the assertion disabled and the
-        # step still looking checked.
+        # Not ours to answer: a typo in a kind must reach BadSpec in evaluate()
+        # and fail the step, not be skipped here.
         return True, []
     return (kind in OFFLINE_KINDS), ([] if kind in OFFLINE_KINDS else [kind])
 
 
 def needs_mirror(spec):
     """Does this predicate need the OSC mirror? -> (needs, [kinds that do]).
-
-    ⚠️ SAME SHAPE AS offline() AND ASKED THE SAME WAY -- before evaluate, never
-    instead of a verdict. An `all` needs the mirror if ANY leaf does: phone 8 is
-    an `osc` heartbeat beside an `osc` filter check, and evaluating either half
-    against a window with no OSC in it reports AUTO FAIL on a working rig.
-    """
+    Asked as offline() is; an `all` needs it if any leaf does."""
     kind = spec.get("kind")
     if kind == "all":
         bad = []
@@ -449,13 +360,9 @@ def evaluate(spec, window, ctx=None):
 def report(spec, window, ctx=None):
     """-> (ok, want, got, rows). `rows` is [(ok, got, want)], one per leaf.
 
-    ⛔ THE JOINED STRINGS ARE WHAT latest.json KEEPS and the rows are what a
-    person reads. An `all` of four leaves ran to two lines of ` AND ` and ` / `
-    on one row each, which is the whole conjunction in the order it was written
-    and unreadable at a terminal -- the numbers a person has to compare are at
-    opposite ends of two long lines. Splitting them here rather than in the
-    runner keeps the record's shape exactly as it was: change the display and no
-    verdict already on disk means something different.
+    The joined strings are what latest.json keeps; the rows are what a person
+    reads. Split here rather than in the runner, so a record's shape is as it
+    always was.
     """
     if spec.get("kind") == "all":
         parts = spec["of"]

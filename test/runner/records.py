@@ -1,49 +1,30 @@
 #!/usr/bin/env python3
-"""THE VERDICT CHANNEL -- what was judged, when, on what machine, against what code.
+"""The verdict channel: what was judged, when, on what machine, against what
+code. Imported by run.py.
 
-Imported by run.py, never run on its own.
+Per-run records are gitignored; the roll-up, latest.json, is committed, so
+`git log` can say when a step last passed and against what code.
 
-WHY IT EXISTS. Until now a bench run left no trace at all. Seven benches and a
-hundred-odd steps were judged by a person reading prose, and the answer to "when
-did phone step 12 last pass, and against what code?" was nowhere -- not in git,
-not on disk, not in anybody's head. A suite whose results evaporate is a suite
-that gets re-run from scratch or, more often, not re-run.
-
-⛔ PER-RUN RECORDS ARE GITIGNORED AND THE ROLL-UP IS COMMITTED. The individual
-runs are noise -- one file per invocation, most of them partial. latest.json is
-the answer to the question above, and it is committed precisely so `git log` can
-be asked it.
-
-⛔ APPEND AND FSYNC BEFORE THE NEXT STEP. A bench is a twenty-minute human loop
-and the machine it runs on gets closed, unplugged and carried to a venue. Losing
-the whole run to a crash at step 19 is how a suite teaches people not to bother;
-losing at most the step in flight is survivable.
-
-⚠️ THE FILE IS APPEND-ONLY AND THE LAST RECORD FOR A STEP WINS. That is what
-makes [u]ndo and [r]epeat safe without rewriting history mid-run -- a rewrite is
-the one operation that could corrupt what has already been fsynced.
+Each record is appended and fsynced before the next step is described: a bench
+is a long loop by hand on a machine that gets closed and carried, and a crash
+should cost at most the step in flight. The last record for a step wins, so a
+repeat never rewrites what is already on disk.
 """
 import datetime
 import hashlib
 import json
 import os
 
-# ⛔ REDIRECTABLE SO A FIXTURE CAN NEVER WRITE THE COMMITTED ROLL-UP. latest.json
-# is a record of what HARDWARE was seen to do; a gate fixture is a recording of a
-# fiction written to exercise a failure path, and one invented verdict in there
-# destroys the only value the file has. The replay path already refuses to roll
-# up at all, but paper mode is a NORMAL run -- run.py calls roll_up on it -- so
-# the runner's own gate cannot exercise paper mode without this.
-# ⚠️ An env var rather than a flag: a flag would be a production affordance for
-# "do not record", which is a thing no person running a bench should ever want.
+# Redirectable so a fixture never writes the committed roll-up: latest.json is
+# what hardware did, and paper mode is a normal run that rolls up. An env var
+# rather than a flag, so "do not record" is no option a bench run offers.
 RESULTS = os.environ.get("CUTIT_RESULTS", "test/results")
 RUNS = os.path.join(RESULTS, "runs")
 LATEST = os.path.join(RESULTS, "latest.json")
 SCHEMA = 1
 
-# ⚠️ THIRTY DAYS, AND IT IS A JUDGMENT RATHER THAN A MEASUREMENT. Long enough
-# that a bench run survives a normal week of patch work, short enough that a
-# verdict from a machine nobody has touched since is not quietly believed.
+# A judgment, not a measurement: a week of patch work survives it, a verdict
+# from a machine untouched for a month does not.
 MAX_AGE_DAYS = 30
 
 
@@ -52,12 +33,8 @@ def now():
 
 
 def step_sha(title, pass_if):
-    """⛔ THE QUESTION THE VERDICT ANSWERED, not the verdict.
-
-    Reword a step and the old pass is worthless -- it answered something else.
-    Hashing title and pass_if together is what makes that automatic instead of
-    remembered.
-    """
+    """The question the verdict answered, not the verdict: reword a step and
+    its old pass no longer applies."""
     h = hashlib.sha1()
     h.update(title.encode("utf-8"))
     h.update(b"\0")
@@ -66,17 +43,9 @@ def step_sha(title, pass_if):
 
 
 def deps_sha(paths):
-    """⛔ PER BENCH, NEVER THE WHOLE TREE.
-
-    Hashing all of "Cut It/" would make every bench stale on every patch commit,
-    and a signal that is always red is a signal that gets ignored -- the mirror
-    image of a gate that lies. Per-bench, staleness is actionable: "you changed
-    u_tempo.pd, so the tempo bench's verdicts no longer apply."
-
-    ⚠️ A MISSING DEPENDENCY IS HASHED AS MISSING, NOT SKIPPED. A path that has
-    been renamed away must change the sha -- silently ignoring it would keep
-    every verdict fresh across exactly the change most likely to invalidate them.
-    """
+    """Per bench, never the whole tree, or every patch commit would stale every
+    bench. A missing dependency hashes as missing, so renaming one away stales
+    the verdicts that rest on it."""
     h = hashlib.sha1()
     for p in sorted(paths):
         h.update(p.encode("utf-8"))
@@ -91,9 +60,8 @@ def deps_sha(paths):
 
 
 def key(bench, step, target):
-    """⚠️ THE TARGET IS PART OF THE KEY. A verdict from the Mac is not a verdict
-    about the rig -- that is the whole reason `mac` exists as a separate target
-    rather than as a cheaper way of answering the same question."""
+    """The target is part of the key: a verdict from the Mac is not one about
+    the rig."""
     return "%s/%d/%s" % (bench, step, target)
 
 
@@ -114,8 +82,8 @@ class Recorder(object):
                    target=self.target)
         self.rows.append(row)
         self._fh.write(json.dumps(row, sort_keys=True) + "\n")
-        # ⛔ BOTH, AND IN THIS ORDER. flush() only moves it out of Python's
-        # buffer; fsync is what puts it on the card.
+        # Both, in this order: flush() empties Python's buffer, fsync puts it
+        # on the card.
         self._fh.flush()
         os.fsync(self._fh.fileno())
         return row
@@ -135,16 +103,9 @@ def load_latest():
 def roll_up(rows):
     """Merge this run's records into the committed latest.json.
 
-    ⛔ LAST WRITE WINS PER KEY, AND THAT IS WHY A ROW IS WRITTEN ONLY WHEN
-    SOMETHING WAS ACTUALLY LEARNED. There is no merge policy here to soften it:
-    whatever this run says about a step replaces what the file said, so a row
-    carrying the ABSENCE of a verdict destroys a real one. run.py owes this
-    function that discipline -- see `ran` in run_bench_driven, which is what
-    stops an interrupted step that never fired from being recorded at all.
-
-    ⚠️ IT USED TO CARRY AN `undone` BRANCH, deleting a key on the [u]ndo key.
-    Undo is gone -- it could never work against a driven bench, because nothing
-    can walk a running patch backwards, and `--from N` re-runs a step properly.
+    Last write wins per key, with no merge policy, so a row carrying no verdict
+    destroys a real one. run.py writes a row only when something was learned:
+    see `ran` in run_bench_driven.
     """
     doc = load_latest()
     doc["schema"] = SCHEMA
@@ -158,12 +119,11 @@ def roll_up(rows):
 
 
 def freshness(doc, bench, step_n, target, sha, dsha):
-    """-> (fresh, why_not). All four conditions, and the first failure names itself.
+    """-> (fresh, why_not), the first failed condition naming itself.
 
-    ⚠️ IT KEYS ON TARGET BUT NOT ON --auto-only. A predicate and a person answer
-    the same question about the same machine, so either verdict is fresh for the
-    other; the record still carries `auto` because which oracle answered is
-    provenance worth keeping even when it does not change validity.
+    Keyed on target but not on --auto-only: a predicate and a person answer the
+    same question about the same machine, so either verdict is fresh for the
+    other. `auto` stays in the record as provenance.
     """
     row = doc.get("records", {}).get(key(bench, step_n, target))
     if row is None:

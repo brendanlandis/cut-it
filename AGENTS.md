@@ -88,7 +88,7 @@ stops the instrument**, because loading any patch restarts Pd. See
 | `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` |
 | `e_` | An effect stage — **v0.4, none yet** | — |
 | `.sh` | Run through `[shell]` — the first four once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `recover.sh` |
-| `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` |
+| `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` |
 
 **The prefix table above is `Cut It/`'s.** `Cut It Debug/` is flat and has no prefixes — one
 `main.pd` and three scripts — because it is one screen deep and nothing in it is reused.
@@ -119,7 +119,7 @@ under `ref/`. Nothing in either is deployed.
 ⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-one gates and 709 checks**, and what each one protects is in
+**Twenty-one gates and 710 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.

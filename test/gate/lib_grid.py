@@ -116,3 +116,69 @@ def home_shape(frame):
     if stray:
         return ("lit outside every region: %s" % stray[:6]), lamp, beat
     return None, lamp, beat
+
+
+# ---------------------------------------------------------------------------
+# The drum page, mode 1. Which cell is which comes from the layout table that
+# g_grid and u_map both read, never typed here; the colors are g_grid's.
+DRUM_PAGE = "Cut It/cut-it-drum-page.txt"
+PICKED = 9                      # the selected velocity button and pad
+PLAYHEAD = 3                    # white, over whatever the step holds
+STEP_RAMP = (11, 10, 9, 8)      # one hue, dark to bright, by velocity quarter
+
+
+def drum_layout(path=DRUM_PAGE):
+    """-> {grid index: (role, n)} from the layout table."""
+    lay = {}
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            f = line.split()
+            if f:
+                lay[int(f[0])] = (f[1], int(f[2]))
+    return lay
+
+
+def step_color(velocity):
+    """The color a step at this velocity paints, off the playhead."""
+    if velocity <= 0:
+        return DIM
+    return STEP_RAMP[(int(velocity) - 1) // 32]
+
+
+def drum_page(frame, lay):
+    """-> (problem_or_None, lit_lamp_index, page) for a mode-1 HOME frame.
+
+    page is {"step": {n: color}, "vel": {n: color}, "pad": {n: color}}. The
+    page is: the six mode lamps as home has them, every layout cell in a color
+    its role can take, and everything else dark -- the beat row included, since
+    it gives way here, and the bottom-right 4x4, which no row names.
+    """
+    allowed = {"step": {DIM, PLAYHEAD} | set(STEP_RAMP), "vel": {DIM, PICKED},
+               "pad": {DIM, PICKED}}
+    lamp, page, stray = None, {"step": {}, "vel": {}, "pad": {}}, []
+    for k, color in enumerate(frame.colors()):
+        idx = FIRST_INDEX + k
+        if idx in LAMPS:
+            if color == LAMP_ON:
+                if lamp is not None:
+                    return ("two mode lamps lit: %d and %d" % (lamp, idx)), lamp, page
+                lamp = idx
+            elif color != DIM:
+                return ("mode lamp %d is color %d" % (idx, color)), lamp, page
+        elif idx in lay:
+            role, n = lay[idx]
+            if color not in allowed[role]:
+                return ("%s %d (index %d) is color %d" % (role, n, idx, color)), lamp, page
+            page[role][n] = color
+        elif color != 0:
+            stray.append((idx, color))
+    if stray:
+        return ("lit outside the lamps and the page: %s" % stray[:6]), lamp, page
+    for role, many in (("vel", "velocity buttons"), ("pad", "pads")):
+        lit = [n for n, c in page[role].items() if c == PICKED]
+        if len(lit) > 1:
+            return ("%d %s lit: %s" % (len(lit), many, sorted(lit))), lamp, page
+    heads = [n for n, c in page["step"].items() if c == PLAYHEAD]
+    if len(heads) > 1:
+        return ("%d playheads: steps %s" % (len(heads), sorted(heads))), lamp, page
+    return None, lamp, page

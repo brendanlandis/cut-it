@@ -30,7 +30,7 @@ were false.
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
-| `display-assert.sh` | 31 | `module/display` — the grid |
+| `display-assert.sh` | 32 | `module/display` — the grid |
 | `oled-assert.sh` | 63 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
@@ -47,9 +47,9 @@ were false.
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 
-**709 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**710 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **702**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **703**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 43 come from TWO Pd runs and one tally**, which is the only entry here
@@ -305,7 +305,7 @@ signal that is always lit is one nobody reads.
 ## `display-assert.sh` and `launchpad-assert.sh` — no eyes and no hardware
 
 ```sh
-./test/gate/display-assert.sh          31 checks, ~46 s — the ARBITER
+./test/gate/display-assert.sh          32 checks, ~46 s — the ARBITER
 ./test/gate/launchpad-assert.sh         8 checks, ~4 s  — the DEVICE
 ```
 
@@ -342,8 +342,8 @@ rewriting the box. **`Cut It/` is never touched**; the scratch copy is thrown aw
 The script counts the boxes it rewrote and **refuses to run if it found none** — otherwise every
 assertion would pass vacuously, which is worse than failing.
 
-**31 checks**: frame shape and the 1–108 span, the mode lamp index, the modal claiming all 108
-specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
+**32 checks**: frame shape and the 1–108 span, the mode lamp index, mode 1's drum page with the
+beat row giving way to it, the modal claiming all 108 specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
 underneath, the beat row never leaving 11–18, the grid SURVIVING a panic, and
 `m_launchpad`'s Programmer and Live SysEx.
 

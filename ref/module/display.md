@@ -154,7 +154,7 @@ and `recover`. See [organelle.md](../device/organelle.md).
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
-| `home` | 0 | Always active | Never | **Regions** — six mode lamps down the left column, CC 80 to 30, and the beat row on grid indices 11–18 | unknown | — |
+| `home` | 0 | Always active | Never | **Regions** — six mode lamps down the left column, CC 80 to 30, and the beat row on grid indices 11–18; in mode 1 the **drum page** instead of the beat row | unknown | — |
 | `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | The whole surface, one color | verified | — |
 | `alert` | 2 | `disp` → `alert …`, **`fail` only** | 2 s | The whole surface, red | verified | — |
 
@@ -172,6 +172,39 @@ addressed at all, so panic still never hands the surface back.
 | The frame clock **costs nothing**: it checks the flag rather than painting. 10 Hz and 50 Hz measured identical on the device | verified | 94 |
 | Raised from 10 Hz because at 240 BPM a 250 ms beat does not divide into 100 ms, so the beat row swung **±50 ms** | verified | — |
 | **Every raise AND every expiry sets the dirty flag** — a layer falling away changes the frame as much as one arriving | verified | — |
+
+### `g_grid`'s drum page, mode 1
+
+**One layout table, `Cut It/cut-it-drum-page.txt`, says which cell is which**: a row per cell,
+`<index> <role> <n>`, read with `-c` at load by `g_grid` to paint and by `u_map` to know what a
+press means, so a press and its lamp cannot disagree. Its 48 rows:
+
+| Rows from the top | Cells | Role | Evidence |
+|---|---|---|---|
+| 1–2 | 81–88, 71–78 | `step` 1–8, then 9–16 | unknown |
+| 3–4 | 61–68, 51–58 | `vel` 1–16, lowest top left, highest bottom right | unknown |
+| 5–8, left 4×4 | 41–44, 31–34, 21–24, 11–14 | `pad` 1–16, laid out like the 404's, pad 1 top left | unknown |
+| 5–8, right 4×4 | — | in no row, so dark | unknown |
+
+**The caller is `c_steps`, on `g_grid`'s third inlet, and it sends meaning, never a cell** (C-5):
+`steps <16 velocities>` for the selected track, `play <step>` (0 while stopped), `vel <level>`, and
+`track <pad>`. Every message sets the dirty flag.
+
+| A cell | Paints, as a palette index | Evidence |
+|---|---|---|
+| A step that is off | 1, dim | unknown |
+| A step that is on | 11, 10, 9 or 8 by velocity quarter (1–32, 33–64, 65–96, 97–127) — one hue, darkest to brightest | unknown |
+| The playhead's step | 3, white, over whatever the step holds | unknown |
+| The selected velocity button and pad | 9 | unknown |
+| Every other velocity button and pad | 1, dim | unknown |
+
+**The beat row gives way**, and the bottom-right 4×4 stays dark. The mode lamps are drawn as in
+every mode.
+
+⚠️ **Brightness is four palette entries, not a level.** The palette is a color table (Reference),
+and Novation's lays each hue out as four entries, light, full, dim and darkest; the ramp is that
+hue's last three read upward and then its light entry. Whether the four read as a ramp on this unit
+is the bench's to say.
 
 ### Seeing it off-device
 
@@ -312,7 +345,21 @@ that is an event, needs a TTL, and is the case this decision does not cover.
 Whole-surface arbitration is right for a 128×64 screen and **wrong for a grid**, where the natural
 idiom is *regions*. So the mode lamps and the beat row coexist inside the layer that never expires,
 while `modal` and `alert` still take everything. **The cascade is untouched; the composition happens
-below it.**
+below it.** The drum page is one more region, chosen by the mode, so a panic or a `fail` still takes
+the whole surface over it.
+
+### The drum page's state rides a cord, not `disp`
+
+The playhead moves sixteen times a bar, and on `disp` every move would land in the dev panel's screen
+log, which records the whole bus. `c_clock`'s beat row is the precedent: a cord into `g_grid`, from
+the one file that has the state, and the bus stays for requests a person would want to read back.
+
+### The layout is a file both sides read
+
+**A press and its lamp come from one table.** `u_map` turns `pad-81` into *step 1* and `g_grid`
+lights step 1 at index 81 from the same row, so moving the velocity rows is one edit and cannot
+leave a button lit in one place and acting in another. `c_steps` never reads it: it knows steps,
+velocities and pads, never where they are.
 
 ### A `warn` never reaches the grid
 

@@ -88,7 +88,7 @@
 #X obj 20 2740 select 1;
 #X obj 240 2740 t b b b;
 #X msg 700 2740 === STEP-01-of-27 === Resting grid;
-#X msg 700 2790 PASS IF: The left column shows one bright green lamp at the top and five dim ones below it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct -- a frozen pad is the failure. Everything else on the surface is dark.;
+#X msg 700 2790 PASS IF: The left column shows one bright green lamp second from the top and five dim ones around it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct -- a frozen pad is the failure. Everything else on the surface is dark.;
 #X msg 700 2840 >>> press GO to run step 1 of 27;
 #X obj 240 2910 s \$0-say;
 #X obj 20 3000 select 2;
@@ -238,7 +238,7 @@
 #X obj 20 9240 select 26;
 #X obj 240 9240 t b b b;
 #X msg 700 9240 === STEP-26-of-27 === The grid still answers after a panic;
-#X msg 700 9290 PASS IF: The bright lamp moves to the top position -- the panic silenced notes and did not surrender the surface.;
+#X msg 700 9290 PASS IF: The bright lamp moves to the third position -- the panic silenced notes and did not surrender the surface.;
 #X msg 700 9340 >>> press GO to run step 26 of 27;
 #X obj 240 9410 s \$0-say;
 #X obj 20 9500 select 27;
@@ -258,7 +258,7 @@
 #X obj 480 10105 s tempo;
 #X msg 480 10170 bang;
 #X obj 480 10215 s stop;
-#X msg 480 10280 compose mode-1;
+#X msg 480 10280 compose mode-2;
 #X obj 480 10325 s mode;
 #X msg 480 10460 --- step 1 fired --- judge it against the PASS IF above --- press GO for step 2;
 #X obj 240 10520 s \$0-say;
@@ -388,7 +388,7 @@
 #X obj 240 17940 s \$0-say;
 #X obj 20 18060 select 22;
 #X obj 240 18060 t b b;
-#X msg 480 18060 compose mode-1;
+#X msg 480 18060 compose mode-2;
 #X obj 480 18105 s mode;
 #X msg 480 18240 --- step 22 fired --- judge it against the PASS IF above --- press GO for step 23;
 #X obj 240 18300 s \$0-say;
@@ -408,7 +408,7 @@
 #X obj 240 19160 s \$0-say;
 #X obj 20 19280 select 26;
 #X obj 240 19280 t b b;
-#X msg 480 19280 compose mode-1;
+#X msg 480 19280 compose mode-3;
 #X obj 480 19325 s mode;
 #X msg 480 19460 --- step 26 fired --- judge it against the PASS IF above --- press GO for step 27;
 #X obj 240 19520 s \$0-say;

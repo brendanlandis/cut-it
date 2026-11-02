@@ -288,8 +288,10 @@ STEPS_TEMPO = [
 
 STEPS_LAUNCHPAD = [
  ('Resting grid',
-  'PASS IF: The left column shows one bright green lamp at the top and five dim ones below it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct -- a frozen pad is the failure. Everything else on the surface is dark.',
-  [('120', 'tempo'), ('bang', 'stop'), ('compose mode-1', 'mode')]),
+  'PASS IF: The left column shows one bright green lamp second from the top and five dim ones around it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct -- a frozen pad is the failure. Everything else on the surface is dark.',
+  [('120', 'tempo'), ('bang', 'stop'), ('compose mode-2', 'mode')],
+  # Mode 2, not 1: mode 1 is the drum page, where the beat row gives way.
+  ),
  ('Mode lamp 4',
   'PASS IF: The bright lamp moves to the fourth position down and the other five go dim. Nothing else on the grid changes.',
   [('perform mode-4', 'mode')]),
@@ -308,7 +310,7 @@ STEPS_LAUNCHPAD = [
  ('Pressing a mode lamp selects it',
   'PASS IF: The bright lamp moves to the pad you pressed and stays there after you let go. The OLED does not change.',
   [],
-  {'do': 'Press the third button down the left column, then the top one.'}),
+  {'do': 'Press the third button down the left column, then the second.'}),
  ('Grid vocabulary stays off the OLED',
   'PASS IF: Nothing happens on either surface. In particular no parameter row called grid appears on the OLED.',
   [('grid no-such-thing', 'disp')]),
@@ -387,9 +389,10 @@ STEPS_LAUNCHPAD = [
  # fresh load -- the second step below -- shows it recovered.
  ('Hot-swap -- unplugged mid-session',
   'PASS IF: A bordered alert on the OLED reads warn and then m_launchpad. The grid goes dark.',
-  [('compose mode-1', 'mode')],
+  [('compose mode-2', 'mode')],
   # The predicate reads err and the eyes read the grid; no bus says the grid
-  # stopped painting.
+  # stopped painting. Mode 2 rather than 1, so the reload in the next step
+  # restores a mode with a beat row.
   # wait 20: the warn is three missed ticks behind the unplug, up to 8 s at the
   # shipped 2000 ms tick, and the runner's default drain is 0.4 s.
   # It sets compose itself: u_err shows a warn only in compose, and the step
@@ -423,8 +426,11 @@ STEPS_LAUNCHPAD = [
   'PASS IF: The grid keeps painting and the Launchpad stays in Programmer Mode. Its own display does not come back.',
   [('bang', 'panic')]),
  ('The grid still answers after a panic',
-  'PASS IF: The bright lamp moves to the top position -- the panic silenced notes and did not surrender the surface.',
-  [('compose mode-1', 'mode')]),
+  'PASS IF: The bright lamp moves to the third position -- the panic silenced notes and did not surrender the surface.',
+  [('compose mode-3', 'mode')],
+  # Not mode 1: there the pads are the drum page, so the next step's press
+  # would draw no row.
+  ),
  ('Pads still reach the OLED after a panic',
   'PASS IF: A pad press still reports pad-NN on the OLED.',
   [],
@@ -582,7 +588,8 @@ STEPS_RECOVER = [
   'PASS IF: Everything sounding stops the instant the button goes down -- not when you let go. The whole Launchpad flashes red and clears itself about a second later. The aux LED is red and the footer reads panic. The patch is still running: the grid comes back and the beat row still walks.',
   [],
   {'do': 'Start the transport, play something on the SP-404 so there is a sound to stop, then tap the top left corner button on the Launchpad once and let go straight away.',
-   'need': ['The Launchpad lit and in Programmer Mode.',
+   'need': ['The Launchpad lit and in Programmer Mode, in any mode but 1 -- '
+            'mode 1 is the drum page, where the beat row gives way.',
             'Something audible running -- the 404 sequencer is easiest.']}),
 
  ('Short press -- the Volca stops too',

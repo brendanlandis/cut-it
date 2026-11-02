@@ -81,8 +81,21 @@ def main():
                 lamp == G.LAMPS[4], "lit lamp was %s, wanted %d (mode-5)"
                 % (lamp, G.LAMPS[4]))
 
-    for mark, expect_lamp in (("home-mode-1", G.LAMPS[0]), ("home-mode-4", G.LAMPS[3]),
-                              ("home-again", G.LAMPS[3])):
+    # Mode 1 is the drum page: the beat row gives way to it while the clock
+    # still runs, so every frame of the window is asked, not only the last.
+    fs = window("home-mode-1")
+    if A.check("home-mode-1: the grid repainted", bool(fs), "no frame in the window"):
+        problem, lamp, _page = G.drum_page(fs[-1], G.drum_layout())
+        A.check("home-mode-1: the drum page, and nothing lit outside it and the lamps",
+                problem is None, problem or "")
+        A.check("home-mode-1: the lit mode lamp is index %d" % G.LAMPS[0],
+                lamp == G.LAMPS[0], "lit lamp was %s" % lamp)
+        beats = sorted({i for f in fs for i in range(G.BEAT_LO, G.BEAT_HI + 1)
+                        if f.color(i) == G.BEAT_ON})
+        A.check("⛔ home-mode-1: the beat row gives way -- no beat cell lit in %d frames"
+                % len(fs), not beats, "beat cells lit: %s" % beats)
+
+    for mark, expect_lamp in (("home-mode-4", G.LAMPS[3]), ("home-again", G.LAMPS[3])):
         fs = window(mark)
         if not A.check("%s: the grid repainted" % mark, bool(fs), "no frame in the window"):
             continue

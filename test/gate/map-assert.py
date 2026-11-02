@@ -24,6 +24,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
+import lib_pd                                                  # noqa: E402
 
 MAP = "Cut It/cut-it-map.txt"
 UMAP = "Cut It/u_map.pd"
@@ -45,8 +46,8 @@ WINDOWS = ["EARLY", "EARLY-2", "RAIL-ARM", "SUPPRESS", "MAPPED", "AWAY", "CROSS"
 # --------------------------------------------------------------- static lint
 def route_destinations():
     """The literal allowlist: the arguments of u_map's destination route box."""
-    for line in open(UMAP):
-        m = re.match(r"^#X obj \d+ \d+ route (tempo .*);$", line.strip())
+    for line in lib_pd.read(UMAP):
+        m = re.match(r"^#X obj \d+ \d+ route (tempo .*);$", line)
         if m:
             return m.group(1).split()
     return None
@@ -124,8 +125,8 @@ def static_lint():
     found = {}
     for path in sorted(glob.glob("Cut It/m_*.pd")):
         name = os.path.basename(path)[:-3]
-        found[name] = sum(1 for line in open(path)
-                          if re.match(r"^#X obj \d+ \d+ (s|send) disp( [^;]*)?;$", line.strip()))
+        found[name] = sum(1 for line in lib_pd.read(path)
+                          if re.match(r"^#X obj \d+ \d+ (s|send) disp( [^;]*)?;$", line))
     A.check("every m_ file is one this check knows", sorted(found) == sorted(DISP_EXPECT),
             "found %s, expected %s" % (sorted(found), sorted(DISP_EXPECT)))
     bad = ["%s has %d, want %d" % (n, found[n], w)

@@ -42,6 +42,8 @@ treat a couple of pixels either way as noise -- it is a smell detector, not a
 renderer.
 """
 import re, sys
+
+import lib_pd
 CW, LH = 7.0, 18.0
 
 def _size(kind, rest, fw):
@@ -83,8 +85,8 @@ def parse(path):
     root = {'label': path, 'boxes': [], 'conns': []}
     ctxs, stack = [root], [root]
     depth = 0
-    for ln in open(path):
-        ln = ln.rstrip('\n').rstrip(';')
+    for ln in lib_pd.read(path):
+        ln = ln.rstrip(';')
         if ln.startswith('#N canvas'):
             depth += 1
             if depth > 1:

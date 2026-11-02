@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # so the decode lives in lib_osc.py rather than here -- two copies is how a
 # fix reaches one caller and not the other.
 import lib_osc                                                  # noqa: E402
+import lib_pd                                                   # noqa: E402
 
 decode = lib_osc.decode
 
@@ -134,10 +135,11 @@ def windows(packets):
 def _route_args(path):
     """The arguments of the one `route in-l ...` box in a file, or None."""
     try:
-        src = open(path, encoding="utf-8").read()
+        recs = lib_pd.read(path)
     except OSError:
         return None
-    hits = re.findall(r"^#X obj \d+ \d+ route (in-l .*);$", src, re.M)
+    hits = [m.group(1) for m in (re.match(r"^#X obj \d+ \d+ route (in-l .*);$", r)
+                                 for r in recs) if m]
     return hits[0].split() if len(hits) == 1 else None
 
 
@@ -162,11 +164,12 @@ def _route_of(path, first):
     pd-route anchor is, because C-10 makes box indices move.
     """
     try:
-        src = open(path, encoding="utf-8").read()
+        recs = lib_pd.read(path)
     except OSError:
         return None
-    hits = re.findall(r"^#X obj -?\d+ -?\d+ route (" + re.escape(first)
-                      + r"(?: [^;]*)?);$", src, re.M)
+    want = re.compile(r"^#X obj -?\d+ -?\d+ route (" + re.escape(first)
+                      + r"(?: [^;]*)?);$")
+    hits = [m.group(1) for m in (want.match(r) for r in recs) if m]
     return hits[0].split() if len(hits) == 1 else None
 
 
@@ -176,7 +179,7 @@ def _guts(path):
     boxes are (kind, text) in file order -- which is the index a connect names.
     """
     boxes, cons, depth, want, inside = [], [], 0, None, False
-    for ln in open(path, encoding="utf-8").read().splitlines():
+    for ln in lib_pd.read(path):
         if ln.startswith("#N canvas"):
             depth += 1
             if " guts " in ln and not inside:
@@ -221,7 +224,7 @@ def scene_msgs():
 def scene_iemguis():
     """(send, receive) for every bng on the scene's MAIN canvas."""
     out = []
-    for ln in open(SCENE, encoding="utf-8").read().splitlines():
+    for ln in lib_pd.read(SCENE):
         m = re.match(r"^#X obj -?\d+ -?\d+ bng \d+ \d+ \d+ \d+ (\S+) (\S+) ", ln)
         if m:
             out.append((m.group(1), m.group(2)))
@@ -230,9 +233,11 @@ def scene_iemguis():
 
 def scene_names():
     """(names written by an [s ...], names read by an [r ...]) anywhere in the scene."""
-    src = open(SCENE, encoding="utf-8").read()
-    w = set(re.findall(r"^#X obj -?\d+ -?\d+ s (\S+);$", src, re.M))
-    r = set(re.findall(r"^#X obj -?\d+ -?\d+ r (\S+);$", src, re.M))
+    recs = lib_pd.read(SCENE)
+    w = {m.group(1) for m in (re.match(r"^#X obj -?\d+ -?\d+ s (\S+);$", x)
+                              for x in recs) if m}
+    r = {m.group(1) for m in (re.match(r"^#X obj -?\d+ -?\d+ r (\S+);$", x)
+                              for x in recs) if m}
     return w, r
 
 

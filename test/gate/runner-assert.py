@@ -32,6 +32,7 @@ sys.path.insert(0, os.path.join(ROOT, "test", "runner"))
 sys.path.insert(0, HERE)
 
 import lib_assert as A                                          # noqa: E402
+import lib_pd                                                   # noqa: E402
 import steps as S                                               # noqa: E402
 import stream                                                   # noqa: E402
 
@@ -870,7 +871,7 @@ def _boxes(src):
     box for every cord.
     """
     return [ln.split(" ", 4)[-1].rstrip(";")
-            for ln in src.splitlines()
+            for ln in lib_pd.records(src)
             if ln.startswith(("#X obj ", "#X msg ", "#X text "))]
 
 
@@ -879,7 +880,7 @@ def _feeds(src, pattern):
     boxes = _boxes(src)
     want = [i for i, b in enumerate(boxes) if re.fullmatch(pattern, b)]
     out = []
-    for ln in src.splitlines():
+    for ln in lib_pd.records(src):
         if not ln.startswith("#X connect "):
             continue
         a, _ao, b, _bi = ln[len("#X connect "):].rstrip(";").split()

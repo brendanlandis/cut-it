@@ -72,6 +72,8 @@ import pathlib
 import re
 import sys
 
+import lib_pd
+
 # ⛔ THE REPO ROOT, AND IT IS ASSERTED. Every check below globs from here, so a
 # ROOT one level off finds nothing, reports nothing and exits ok -- the fourth
 # way a gate passes vacuously, and the one this file has already been bitten by
@@ -165,7 +167,7 @@ def pd_text(path, name):
     src = (ROOT / path)
     if not src.exists():
         raise CheckFailed(f'{path} does not exist')
-    lines = src.read_text(encoding='utf-8').splitlines()
+    lines = lib_pd.read(src)
     want = re.compile(r'^#X obj \d+ \d+ text define .*' + re.escape(name) + r';$')
     for i, ln in enumerate(lines):
         if want.match(ln):
@@ -194,8 +196,7 @@ def pd_route(path, first):
     want = re.compile(r'^#X obj -?\d+ -?\d+ route ('
                       + re.escape(first) + r'(?: [^;]*)?);$')
     found = [m.group(1).split()
-             for m in (want.match(ln)
-                       for ln in src.read_text(encoding='utf-8').splitlines())
+             for m in (want.match(ln) for ln in lib_pd.read(src))
              if m]
     if not found:
         raise CheckFailed(f'no [route {first} ...] in {path}')

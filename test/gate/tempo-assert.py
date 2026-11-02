@@ -26,6 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
+import lib_pd                                                  # noqa: E402
 
 UTEMPO = "Cut It/u_tempo.pd"
 CLOCK, START, CONTINUE, STOP = 248, 250, 251, 252
@@ -51,9 +52,10 @@ def static_lint():
     than merely present in the file. Two checks, two different failure modes.
     """
     print("\n=== A. the constants, checked by READING -- no Pd involved ===")
-    src = open(UTEMPO).read()
+    src = lib_pd.read(UTEMPO)
 
-    m = re.search(r"^#X obj \d+ \d+ clip (-?[\d.]+) (-?[\d.]+);$", src, re.M)
+    m = next((m for m in (re.match(r"^#X obj \d+ \d+ clip (-?[\d.]+) (-?[\d.]+);$", rec)
+                          for rec in src) if m), None)
     if A.check("u_tempo still clamps the BPM with a literal [clip]", m is not None,
                "expected a 'clip <lo> <hi>' box in " + UTEMPO):
         lo, hi = float(m.group(1)), float(m.group(2))
@@ -63,7 +65,8 @@ def static_lint():
 
     # BPM / 60 * 24 -- the 24 is PPQN, and it is the one number in this file that
     # every synced device agrees on by standard rather than by choice.
-    mults = re.findall(r"^#X obj \d+ \d+ \* (\d+);$", src, re.M)
+    mults = [m.group(1) for m in (re.match(r"^#X obj \d+ \d+ \* (\d+);$", rec)
+                                  for rec in src) if m]
     A.check("⛔ the pulse multiplier is %d -- PPQN, and it is a STANDARD" % PPQN,
             str(PPQN) in mults, "the [* n] boxes in the file are %s" % mults)
 

@@ -22,6 +22,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
+import lib_pd                                                  # noqa: E402
 
 # ⛔ THE NUMBER OF WINDOWS err-assert-drive-gen.py's SEQ OPENS.
 MARKS = 10
@@ -54,18 +55,16 @@ def run_lint():
     for name in sorted(os.listdir(os.path.join(root, "Cut It"))):
         if not name.endswith(".pd"):
             continue
-        with open(os.path.join(root, "Cut It", name)) as fh:
-            for line in fh:
-                line = line.rstrip("\n")
-                if not re.match(r"^#X msg \d+ \d+ (%s) " % "|".join(LEVELS), line):
-                    continue
-                seen += 1
-                m = ERR_MSG.match(line)
-                if not m:
-                    malformed.append((name, line[:70]))
-                    continue
-                if len(m.group(3)) > TEXT_LIMIT:
-                    over.append((name, m.group(3), len(m.group(3))))
+        for line in lib_pd.read(os.path.join(root, "Cut It", name)):
+            if not re.match(r"^#X msg \d+ \d+ (%s) " % "|".join(LEVELS), line):
+                continue
+            seen += 1
+            m = ERR_MSG.match(line)
+            if not m:
+                malformed.append((name, line[:70]))
+                continue
+            if len(m.group(3)) > TEXT_LIMIT:
+                over.append((name, m.group(3), len(m.group(3))))
 
     # ⛔ AND THE COUNT IS ASSERTED, not merely printed. A lint that stops finding
     # files reports a clean sweep over nothing -- the fourth way a gate passes

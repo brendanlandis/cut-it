@@ -16,31 +16,18 @@ Steps are found by their "=== STEP-NN-of-M ===" marker, never by counting
 header comments rather than in steps.
 """
 import json
+import os
 import re
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "gate"))
+import lib_pd                                                   # noqa: E402
+
 
 def records(path):
-    """Split a .pd into records. A record ends at an unescaped ';'. Pd wraps long
-    records across lines at spaces, so newlines inside one become spaces."""
+    """A .pd's records without their closing ';' (lib_pd keeps it)."""
     src = open(path, encoding="utf-8", errors="replace").read()
-    out, buf, i = [], [], 0
-    while i < len(src):
-        ch = src[i]
-        if ch == "\\" and i + 1 < len(src):
-            buf.append(src[i:i + 2])
-            i += 2
-            continue
-        if ch == ";":
-            out.append("".join(buf).replace("\n", " ").replace("\r", " ").strip())
-            buf = []
-            i += 1
-            continue
-        buf.append(ch)
-        i += 1
-    if "".join(buf).strip():
-        out.append("".join(buf).replace("\n", " ").strip())
-    return [r for r in out if r]
+    return [r[:-1] if r.endswith(";") else r for r in lib_pd.records(src)]
 
 
 BOX_KINDS = ("obj", "msg", "text", "floatatom", "symbolatom")

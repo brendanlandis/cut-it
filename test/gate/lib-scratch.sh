@@ -157,15 +157,19 @@ scratch_state_dir() {
 
     # ⛔ AND KEEP u_net OFF THE HOUSE NETWORK. u_root.pd sends to the phone at
     # 192.168.1.5:8000, so a copy left alone sends its OSC there for the whole
-    # run, and draws on the phone if PdParty is up. Port 9 on loopback has
-    # nothing bound, which u_net treats as a phone with PdParty closed: its
-    # ordinary case. scratch_phone_mirror repoints it again for the gates that
-    # read what u_net sends.
-    sed -i '' "s|u_net 192.168.1.5 8000 |u_net 127.0.0.1 9 |" "$_w/patch/u_root.pd"
-    grep -q "u_net 127.0.0.1 9 " "$_w/patch/u_root.pd" || {
+    # run, and draws on the phone if PdParty is up. It goes to a sink on this
+    # machine instead, 1000 above the inbound port so gates side by side each
+    # have their own. ⚠️ THE SINK IS NOT OPTIONAL: with nothing bound, loopback
+    # answers with ICMP and u_net raises `warn u_net net-link-down` in every
+    # gate (scratch_udp_sink below). scratch_phone_mirror repoints it again for
+    # the gates that read what u_net sends.
+    _sink=$((_port + 1000))
+    sed -i '' "s|u_net 192.168.1.5 8000 |u_net 127.0.0.1 $_sink |" "$_w/patch/u_root.pd"
+    grep -q "u_net 127.0.0.1 $_sink " "$_w/patch/u_root.pd" || {
         echo "FAIL: could not point u_net away from the phone." >&2
         exit 2
     }
+    scratch_udp_sink "$_sink" 120 >/dev/null
 }
 
 scratch_watch_fast() {

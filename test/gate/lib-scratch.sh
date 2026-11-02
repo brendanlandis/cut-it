@@ -154,6 +154,18 @@ scratch_state_dir() {
         echo "      and gates run side by side fight over one UDP port." >&2
         exit 2
     }
+
+    # ⛔ AND KEEP u_net OFF THE HOUSE NETWORK. u_root.pd sends to the phone at
+    # 192.168.1.5:8000, so a copy left alone sends its OSC there for the whole
+    # run, and draws on the phone if PdParty is up. Port 9 on loopback has
+    # nothing bound, which u_net treats as a phone with PdParty closed: its
+    # ordinary case. scratch_phone_mirror repoints it again for the gates that
+    # read what u_net sends.
+    sed -i '' "s|u_net 192.168.1.5 8000 |u_net 127.0.0.1 9 |" "$_w/patch/u_root.pd"
+    grep -q "u_net 127.0.0.1 9 " "$_w/patch/u_root.pd" || {
+        echo "FAIL: could not point u_net away from the phone." >&2
+        exit 2
+    }
 }
 
 scratch_watch_fast() {
@@ -231,7 +243,7 @@ scratch_phone_mirror() {
     # real address on the network and the predicate would read an empty socket,
     # which looks exactly like u_net being broken.
     _w=$1; _port=${2:-9995}
-    sed -i '' "s|u_net 192.168.1.5 8000|u_net 127.0.0.1 $_port|" "$_w/patch/u_root.pd"
+    sed -i '' "s|u_net [0-9.][0-9.]* [0-9][0-9]* |u_net 127.0.0.1 $_port |" "$_w/patch/u_root.pd"
     grep -q "u_net 127.0.0.1 $_port" "$_w/patch/u_root.pd" || {
         echo "FAIL: could not repoint u_net at localhost." >&2
         echo "      Without that every datagram goes to a real address and the" >&2

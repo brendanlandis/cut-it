@@ -183,18 +183,32 @@ def main_run(cap):
             "was found the first time -- 7 of 24 checks")
 
     # --- cross-talk: another device's reply is not this device's ------------
-    # A KORG reply lands in FOREIGN. With one shared recovery this count sees
-    # cross-talk only if every lost layer takes the reply: while m_404 is still
-    # lost the fork at 22000 comes anyway. The device-lost warns below catch it
-    # per device.
+    # A KORG reply lands in FOREIGN with all three layers lost, and a layer
+    # that takes a reply publishes `back` at once (and `seen`, the first time),
+    # so the bus answers per device. The fork count can't: m_404 keeps the
+    # shared counter running whatever the other two take.
+    foreign = bus.get("FOREIGN", [])
+    took = [(w, m) for w in ("FOREIGN", "STILL-LOST") for m in bus.get(w, [])
+            if m in ("back m_launchpad", "seen m_launchpad")]
     A.check("⛔ a nanoKONTROL reply does NOT mark the Launchpad present",
+            "back m_nano" in foreign and not took,
+            ("the presence bus held %s after the KORG reply (manufacturer byte "
+             "66). m_launchpad took it as its own, so the watchdog believes a "
+             "Launchpad that is gone: item 235 un-fixed in the worst direction, "
+             "and what 'ANY SysEx counts as presence' becomes the moment more "
+             "than one device answers" % (took,)) if took else
+            ("no `back m_nano` in FOREIGN, which held %s. Nothing took the KORG "
+             "reply at all, so 'the Launchpad did not take it' proves nothing"
+             % (foreign,)))
+
+    # m_nano is back but m_404 never answered, so the fork due at 22000 comes.
+    A.check("⛔ one device answering does not reset the shared recovery -- the "
+            "second re-wire still comes",
             wire_in(by, "STILL-LOST") == 1,
-            "%d wire.sh fork(s) in STILL-LOST, wanted exactly 1. A KORG reply "
-            "(manufacturer byte 66) was accepted as this device's. That is item "
-            "235 un-fixed in the worst direction -- the watchdog believing a "
-            "device that is gone -- and it is what 'ANY SysEx counts as "
-            "presence' becomes the moment more than one device answers"
-            % wire_in(by, "STILL-LOST"))
+            "%d wire.sh fork(s) in STILL-LOST, wanted exactly 1. Zero means a "
+            "partial return reset the counter, so a rig with one device back "
+            "and another still out stops being re-wired; more than one means "
+            "the four-tick interval has gone" % wire_in(by, "STILL-LOST"))
 
     # The positive controls, since a c_devid that matches nothing also ignores
     # the nano's reply. c_presence warns `device-lost` only for a device that
@@ -214,9 +228,11 @@ def main_run(cap):
     A.check("⛔ ...and so is the Novation reply -- by m_launchpad, and only after ITS own",
             lp_lost == ["RECOVERED"],
             "warn m_launchpad device-lost appeared in %s, wanted exactly "
-            "RECOVERED. This is the second positive control and it is aimed at "
-            "the other matcher: [c_devid 0] must accept byte 0 and must have "
-            "rejected the KORG byte 66 that arrived seven seconds earlier"
+            "RECOVERED. The second positive control, aimed at the other "
+            "matcher: [c_devid 0] must take its own byte 0 at 24000, which arms "
+            "the warn for the loss at 30000. STILL-LOST in the list is "
+            "cross-talk: the KORG reply at 17000 armed it and it was lost again "
+            "at 22000. No RECOVERED means it never took its own"
             % (lp_lost,))
 
     # And the negative control: m_404 (byte 65) saw two foreign replies and none

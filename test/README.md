@@ -38,7 +38,7 @@ were false.
 | `map-assert.sh` | 66 | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
-| `presence-assert.sh` | 42 | `module/presence` |
+| `presence-assert.sh` | 43 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
 | `nano-assert.sh` | 26 | `device/nanokontrol` |
 | `organelle-assert.sh` | 21 | `device/organelle` |
@@ -47,12 +47,12 @@ were false.
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 
-**706 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**707 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **699**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **700**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
-⚠️ **`presence-assert.sh`'s 42 come from TWO Pd runs and one tally**, which is the only entry here
+⚠️ **`presence-assert.sh`'s 43 come from TWO Pd runs and one tally**, which is the only entry here
 that does. The first run is the schedule at the shipped tick; the second scales `u_present`'s settle
 and tick by ten and leaves its **counts** exactly as shipped, so the eighth re-wire and the give-up
 actually happen — inside nine seconds rather than seventy-two. ⛔ **One analyzer reads both

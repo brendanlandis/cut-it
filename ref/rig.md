@@ -139,13 +139,12 @@ costs the hub nothing.
 ### There is no shared rail for a brownout to happen on — items 5 and 95
 
 ✅ **Read off the device rather than reasoned about** — item 255. Every box has its own mains supply
-(the tree above), and every USB hub in the chain reports **`Self Powered`, `MaxPower 0mA`**, so no
-hub draws its downstream budget from upstream. Declared draw on the whole USB tree:
+(the tree above), and the powered hub is self-powered, so it draws nothing from the Organelle. Each
+device's declared `MaxPower` is on its Reference page, the hub's on
+`~/Sites/!reference/powered-usb-hub.md`, and the wifi dongle's (450 mA, on its own root bus) on the
+Organelle's.
 
-Each device's declared `MaxPower` is on its Reference page, and the wifi dongle's (450 mA, on its own
-root bus) on the Organelle's. Every hub declares 0 mA.
-
-**~700 mA across three self-powered hubs is not a budget problem**, and item 248 had already
+**~700 mA through one self-powered hub is not a budget problem**, and item 248 had already
 exonerated power empirically from the other direction: the Launchpad failed to configure *with almost
 nothing attached* and configured *with the entire rig live*, so it was never a current ceiling.
 
@@ -154,59 +153,35 @@ dongle sits on a **separate root bus from the powered hub**, so its declared 450
 9 V 1000 mA adapter rather than the hub's PSU. **Whether that contributes to the wifi fault is
 untested — see *Open* below.**
 
-### ⛔ THERE IS ONE PHYSICAL HUB, AND `lsusb` MAKES IT LOOK LIKE THREE
+### ⛔ There is one physical hub, and `lsusb` makes it look like three
 
-**Item 256.** `lsusb -t` counts hub *controllers*, not boxes on the desk, and both the hub and the
-SP-404 contain more than one. The
-authoritative discriminator is the **parent hub's own port descriptor**, which sysfs exposes as
-`removable`:
+**Item 256.** The hub holds three hub controllers in one box, and the SP-404 adds one of its own, so
+`lsusb -t` shows a chain that is not on the desk. How to tell them apart, and which controller each
+socket hangs off, is on `~/Sites/!reference/powered-usb-hub.md`. ⛔ **So the Launchpad's fault is NOT
+depth and NOT chaining**: the socket that fails and the one that works are on the same box.
 
-```sh
-ssh root@organelle.local 'for p in 1-1 1-1.2 1-1.4 1-1.4.4; do \
-  echo "$p $(cat /sys/bus/usb/devices/$p/idVendor):$(cat /sys/bus/usb/devices/$p/idProduct) \
-  $(cat /sys/bus/usb/devices/$p/removable)"; done'
-```
+### The Launchpad goes in the lock-icon socket
 
-| Path | Chip | `removable` | What it actually is | Evidence | Item |
-|------|------|-------------|---------------------|----------|------|
-| `1-1` | `43f2:1211` | — | **The hub**, plugged into the Organelle | verified | 256 |
-| `1-1.4` | `43f2:1211` | **`fixed`** | ⛔ A second controller **soldered inside the same enclosure** | verified | 256 |
-| `1-1.4.4` | `0bda:5411` | **`fixed`** | ⛔ A third, also inside it | verified | 256 |
-| `1-1.2` | `0424:2422` | `removable` | ⛔ **Inside the SP-404** — the 404 is two USB devices behind its own hub, on one cable | verified | 256 |
-| `1-1.3`, `1-1.4.1` | — | `removable` | Real sockets — the Uno and the nanoKONTROL | verified | 256 |
-
-**`fixed` means the parent hub declares the downstream device permanently attached.** Three
-controllers reporting one enclosure is ordinary construction for a hub with more than four sockets.
-
-⛔ **So the fault is NOT depth and NOT chaining.** The socket that fails (`1-1.1`) and the socket that
-works (`1-1.4.4.4`) are **both sockets on the same physical hub** — they differ only in which internal
-controller they hang off. Item 248 measured the behavior; this is its explanation.
-
-### The Launchpad is fussy about which controller it sits on
-
-⛔ **`can't set config #1, error -32`, and it is per-socket.** What it looks like, and what was ruled
-out (power, device, cable), is in Reference: `~/Sites/!reference/novation-launchpad-pro-mk3.md` (item
-248). On this hub:
-
-| | |
-|---|---|
-| ✅ **Works** | The Realtek `0bda:5411` controller — **the bottommost socket, the one with the lock icon** |
-| ⛔ **Fails** | At least one socket on the first Generic `43f2:1211` controller |
+⛔ **`can't set config #1, error -32`, and it is per-socket** — what it looks like and what was ruled
+out are on `~/Sites/!reference/novation-launchpad-pro-mk3.md` (item 248), and which sockets are which
+on the hub's page. On this rig the Launchpad works in **the bottommost socket, the one with the lock
+icon**, on the hub's Realtek controller.
 
 ⚠️ **The fix is a labeled socket, not a topology rule.** Put the Launchpad in the lock-icon port and
 mark it, because nothing in the patch can tell a half-enumerated Launchpad from an absent one.
 
-⛔ **A Launchpad that half-enumerates is invisible to the patch.** It answers control transfers, so
-`lsusb` lists it with its serial number, but no ALSA port is ever created — and `m_launchpad`'s
-recovery runs `wire.sh` and gives up after ~70 s, because there is nothing to wire to. From inside
-Cut It it is indistinguishable from a Launchpad that was never plugged in. ⚠️ **This is a venue
-failure mode**, and the only thing that distinguishes it from a dead patch is the OLED.
+⛔ **A Launchpad that half-enumerates is invisible to the patch.** `lsusb` lists it but no ALSA port
+is ever created, so `m_launchpad`'s recovery runs `wire.sh` and gives up after ~70 s, because there
+is nothing to wire to. From inside Cut It it is indistinguishable from a Launchpad that was never
+plugged in. ⚠️ **This is a venue failure mode**, and the only thing that distinguishes it from a dead
+patch is the OLED.
 
 ## Gear
 
 | Item | Role |
 |---|---|
 | Organelle (original) | Brains — Pd, USB MIDI host, clock master |
+| Powered USB hub | Connects the controllers, on its own supply (`~/Sites/!reference/powered-usb-hub.md`) |
 | Roland SP-404MK2 | Sample store, mic/line front end, drums + fx source |
 | Behringer Xenyx Q802USB | Mixer, and free session recording over USB (`~/Sites/!reference/behringer-xenyx-q802usb.md`) |
 | Korg Volca FM | Pitched voice (DIN MIDI in only) |

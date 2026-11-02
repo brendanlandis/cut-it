@@ -236,7 +236,8 @@ def _records_replace(path, pattern, repl, why):
     recs = lib_pd.read(path)
     hits = 0
     for i, rec in enumerate(recs):
-        new, n = re.subn(pattern, repl, rec)
+        # repl is literal text -- a path, a port -- never a template for re
+        new, n = re.subn(pattern, lambda m: repl, rec)
         if n:
             recs[i], hits = new, hits + n
     if hits != 1:

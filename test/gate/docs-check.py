@@ -70,6 +70,8 @@ noticing; a gate that passes vacuously is worse than no gate, because it is
 BELIEVED. Every lookup below raises rather than returning empty.
 """
 import pathlib
+import pwd
+import os
 import re
 import sys
 
@@ -110,7 +112,12 @@ DOCNAME = re.compile(r'(?<![\w/.-])((?:[a-z0-9_-]+/)*[a-zA-Z0-9_.-]+\.md)\b')
 MDLINK = re.compile(r'\]\(<?([^)>#]+\.md)(?:#[^)>]*)?>?\)')
 
 TEXT_SUFFIXES = ('.md', '.pd', '.sh', '.py', '.txt')
-SKIP_DIRS = {'.git', '__pycache__', 'device-state', 'node_modules'}
+# The plans (two folders, and plan-v04.md until Brendan's move of it lands) are
+# archives he is converting into !projects by hand (2026-11-02), and they go when
+# he's done: their names for retired files are history. Matched by name, as a
+# directory or a file.
+SKIP_DIRS = {'.git', '__pycache__', 'device-state', 'node_modules',
+             '! v0.1 plans', '! v0.2 plans', 'plan-v04.md'}
 
 # ⛔ OPEN WORK LIVES IN `!projects`, THE REPO BESIDE THIS ONE, and a page cites it
 # by the form that repo's own board produces: `cut-it/<slug>` for a file under
@@ -121,7 +128,10 @@ SKIP_DIRS = {'.git', '__pycache__', 'device-state', 'node_modules'}
 # not look" are different findings and only one of them is a pass.
 # ~/Sites, where !projects and !reference sit beside this repo. From a worktree
 # elsewhere the repo's parent is not it, so fall back to the home path.
-SITES = ROOT.parent if (ROOT.parent / '!projects').is_dir() else pathlib.Path.home() / 'Sites'
+# The account's home from the password database, not $HOME: test/runner/gates.py
+# runs every gate with HOME pointed at an empty directory.
+SITES = (ROOT.parent if (ROOT.parent / '!projects').is_dir()
+         else pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir) / 'Sites')
 PROJECTS = SITES / '!projects' / 'cut-it'
 PROJ_REF = re.compile(r'(?<![\w/.-])cut-it/([a-z0-9-]+)(?:#[a-z0-9-]+)?\b')
 

@@ -51,7 +51,7 @@ Recorded so it is not rediscovered as news.
 
 ### The LED was deliberately not claimed for mode or for saving
 
-Mode is on the Launchpad's top row — the surface with six lamps rather than one. A "save in
+Mode is on the Launchpad's left column — the surface with six lamps rather than one. A "save in
 progress" state was rejected: `Storage → Save` already flips the OLED to mother's own "Saving…"
 screen, so the confirmation exists for free.
 

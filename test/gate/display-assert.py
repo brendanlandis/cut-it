@@ -78,10 +78,11 @@ def main():
     if A.check("home-early-mode: the grid repainted", bool(fs), "no frame in the window"):
         _problem, lamp, _beat = G.home_shape(fs[-1])
         A.check("⛔ a mode set at 300 ms -- before the grid painted at all -- SURVIVES",
-                lamp == 95, "lit lamp was %s, wanted 95 (mode-5)" % lamp)
+                lamp == G.LAMPS[4], "lit lamp was %s, wanted %d (mode-5)"
+                % (lamp, G.LAMPS[4]))
 
-    for mark, expect_lamp in (("home-mode-1", 91), ("home-mode-4", 94),
-                              ("home-again", 94)):
+    for mark, expect_lamp in (("home-mode-1", G.LAMPS[0]), ("home-mode-4", G.LAMPS[3]),
+                              ("home-again", G.LAMPS[3])):
         fs = window(mark)
         if not A.check("%s: the grid repainted" % mark, bool(fs), "no frame in the window"):
             continue

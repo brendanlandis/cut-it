@@ -22,8 +22,9 @@ NSPEC = 108
 FIRST_INDEX = 1
 FRAME_LEN = len(HEADER) + NSPEC * 3 + 1          # 332
 
-# read out of g_grid.pd rather than guessed
-LAMP_LO, LAMP_HI = 91, 96
+# read out of g_grid.pd rather than guessed. The mode lamps are the top six of
+# the left column, mode 1 at the top: LAMPS[m - 1] is mode m's.
+LAMPS = (80, 70, 60, 50, 40, 30)
 BEAT_LO, BEAT_HI = 11, 18
 DIM, LAMP_ON, BEAT_ON, ALERT_RED = 1, 21, 3, 5
 
@@ -96,7 +97,7 @@ def home_shape(frame):
     lamp, beat, stray = None, None, []
     for k, color in enumerate(frame.colors()):
         idx = FIRST_INDEX + k
-        if LAMP_LO <= idx <= LAMP_HI:
+        if idx in LAMPS:
             if color == LAMP_ON:
                 if lamp is not None:
                     return ("two mode lamps lit: %d and %d" % (lamp, idx)), lamp, beat

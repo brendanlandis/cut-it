@@ -20,7 +20,7 @@ import lib_drive as D                                          # noqa: E402
 GAP = 20
 
 SEQ = [
-    # Nothing else in this run uses mode-5, so a lamp at index 95 can only have
+    # Nothing else in this run uses mode-5, so a lamp at index 40 can only have
     # come from here.
     (300, "EARLY-MODE", ["\\; mode perform mode-5"], GAP),
     (4000, "idle-dsp-off", [], GAP),

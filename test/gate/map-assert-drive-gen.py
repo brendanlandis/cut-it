@@ -59,11 +59,14 @@ SEQ = [
     # After 3.5 s: u_init's restore republishes mode then and would overwrite an
     # earlier switch (item 232). 127, then 0 on release, is what a Launchpad CC
     # button sends.
-    (5000, "MODE-4", ["\\; param lp-cc-94 127"], GAP),
+    (5000, "MODE-4", ["\\; param lp-cc-50 127"], GAP),
     # The release must select nothing. A second selection is idempotent, so the
     # screen looks right while every mode message and state write doubles.
-    (5100, "MODE-4-RELEASE", ["\\; param lp-cc-94 0"], GAP),
+    (5100, "MODE-4-RELEASE", ["\\; param lp-cc-50 0"], GAP),
     (5200, "MODE-DEP", ["\\; param gk-cc 64"], GAP),
+    # The top row's first button selected mode 1 until the modes moved to the
+    # left column: it is free now, so it selects nothing and names itself.
+    (5300, "TOP-ROW-FREE", ["\\; param lp-cc-91 127"], GAP),
     # Held and unmapped at once: knob 2 has never crossed, and its row is keyed
     # mode-1, so in mode-4 it maps to nothing and must still report (item 242).
     (5400, "UNMAPPED", ["\\; param og-knob-2 0.75"], GAP),
@@ -84,7 +87,7 @@ SEQ = [
     (6600, "SHIFT-STOP", ["\\; param og-shift-72 100"], GAP),
     # Back to mode-1, since every gate row is keyed mode-1. Press and release,
     # as the pad sends.
-    (6800, "MODE-1", ["\\; param lp-cc-91 127", "\\; param lp-cc-91 0"], GAP),
+    (6800, "MODE-1", ["\\; param lp-cc-80 127", "\\; param lp-cc-80 0"], GAP),
     # Every value destination draws its mapped row. The shipped map reaches only
     # tempo and volca-cc, so note, pad and program go through gate rows
     # (scratch-gates.py). 64 in is 64 out for a 0-127 control.

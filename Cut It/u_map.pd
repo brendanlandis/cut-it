@@ -1,6 +1,6 @@
 #N canvas 20 20 5700 6700 12;
 #X obj 20 300 r param;
-#X obj 20 360 route lp-cc-91 lp-cc-92 lp-cc-93 lp-cc-94 lp-cc-95 lp-cc-96;
+#X obj 20 360 route lp-cc-80 lp-cc-70 lp-cc-60 lp-cc-50 lp-cc-40 lp-cc-30;
 #X obj 20 480 list;
 #X obj 20 540 t l l;
 #X msg 900 420 compose mode-1;
@@ -107,7 +107,7 @@
 #X text 700 20 The map is a table \, and mode-dependent: cut-it-map.txt \, one row per mapping \, four atoms always -- <mode> <control> <dest> <arg>., f 76;
 #X text 1400 20 The allowlist guard is what makes a table acceptable: a row names a destination that must be a literal argument on the route below \, feeding a handler on this canvas \, and never a send. Skip it and nothing fails., f 76;
 #X text 2200 20 A row naming a destination not on the route is a real error \, unknown-dest on err. An unmapped control \, the moses miss below \, is normal and silent on every bus., f 62;
-#X text 20 1700 The six mode keys stay hardcoded and come first \, so a mode change never depends on the mode and a broken table cannot strand you. They are the Launchpad's top row \, CC 91-96 \, which g_grid lights as the mode lamps. See the select 0 gates beside them., f 62;
+#X text 20 1700 The six mode keys stay hardcoded and come first \, so a mode change never depends on the mode and a broken table cannot strand you. They are the top six of the Launchpad's left column \, CC 80 down to 30 \, which g_grid lights as the mode lamps. See the select 0 gates beside them., f 62;
 #X text 1080 1700 The divisor: param values are not one unit. Everything is 0-127 except mother's controls \, which are 0-1 \, so all but those are divided by 127 and every handler sees the same 0 to 1 range., f 62;
 #X text 2140 1700 C-6: list split emits symbol og-knob-1 \, and route matches a selector \, so without the trim every control would take the reject., f 62;
 #X text 20 1930 The reject is the normal path here: almost every control is 0-127. C-8, f 62;

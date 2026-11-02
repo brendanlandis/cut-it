@@ -35,7 +35,7 @@ Through the real patch, slider 1 → CC 1 … PLAY → CC 42 and LOOP → CC 44 
 toggle — and names them by physical position, because what a control *means* is not knowable at the
 `m_` layer.
 
-**Mode selection is the Launchpad's top row**, where the lit lamp already is — see
+**Mode selection is the Launchpad's left column**, where the lit lamp already is — see
 [map.md](../module/map.md).
 
 ✅ `xport-2` is **PLAY** and drives `start`; `xport-5` is **STOP** and drives `stop`, in all six

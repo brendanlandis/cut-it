@@ -143,7 +143,7 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 
 | Name | Carries | Source |
 |---|---|---|
-| `mode` | **`<class> <name>`** — `compose`/`perform` then the sub-mode, e.g. `compose mode-1` | ✅ `u_map`, from the Launchpad's top row |
+| `mode` | **`<class> <name>`** — `compose`/`perform` then the sub-mode, e.g. `compose mode-1` | `u_map`, from the Launchpad's left column |
 | `tempo` | **master reference** BPM, as a float | any → `u_tempo` |
 | `clock` | **master reference** beat bang | `u_tempo` |
 | `start` / `stop` | transport, carried as a **bang** | any → `u_tempo` |
@@ -182,8 +182,9 @@ Two consequences bind whoever writes an `m_` layer, and both are deliberate:
   Everything else about the map — the row format, the destinations, the divisor, the boot races —
   is on [map.md](module/map.md).
 
-✅ **`mode` is driven from the Launchpad's top row**, CC 91–96, which `g_grid` lights as the mode
-lamps — the only device Pd can light, so the state is visible rather than remembered. It carries
+**`mode` is driven from the Launchpad's left column**, its top six buttons, CC 80 down to 30, which
+`g_grid` lights as the mode lamps — the only device Pd can light, so the state is visible rather
+than remembered. It carries
 **two atoms**, a class and a sub-mode, which is why `u_err`'s `[route compose perform]` works
 untouched: `route` matches the selector and its branches feed message boxes, which fire on
 anything. `u_map` seeds one at load behind a spigot that any real mode closes, so the seed fills a

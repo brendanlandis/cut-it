@@ -288,10 +288,10 @@ STEPS_TEMPO = [
 
 STEPS_LAUNCHPAD = [
  ('Resting grid',
-  'PASS IF: The top row shows one bright green lamp at the far left and five dim ones beside it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct -- a frozen pad is the failure. Everything else on the surface is dark.',
+  'PASS IF: The left column shows one bright green lamp at the top and five dim ones below it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct -- a frozen pad is the failure. Everything else on the surface is dark.',
   [('120', 'tempo'), ('bang', 'stop'), ('compose mode-1', 'mode')]),
  ('Mode lamp 4',
-  'PASS IF: The bright lamp moves to the fourth position and the other five go dim. Nothing else on the grid changes.',
+  'PASS IF: The bright lamp moves to the fourth position down and the other five go dim. Nothing else on the grid changes.',
   [('perform mode-4', 'mode')]),
  ('Mode lamp 2',
   'PASS IF: The bright lamp lands on the second position.',
@@ -308,12 +308,12 @@ STEPS_LAUNCHPAD = [
  ('Pressing a mode lamp selects it',
   'PASS IF: The bright lamp moves to the pad you pressed and stays there after you let go. The OLED does not change.',
   [],
-  {'do': 'Press the third pad along in the top row, then the first.'}),
+  {'do': 'Press the third button down the left column, then the top one.'}),
  ('Grid vocabulary stays off the OLED',
   'PASS IF: Nothing happens on either surface. In particular no parameter row called grid appears on the OLED.',
   [('grid no-such-thing', 'disp')]),
  ('Modal claims the surface',
-  'PASS IF: Every pad and every ring button turns blue including the top row. The mode lamps are covered too. The OLED must not change.',
+  'PASS IF: Every pad and every ring button turns blue including the left column. The mode lamps are covered too. The OLED must not change.',
   [('grid modal 45', 'disp')]),
  ('Mode change under a modal',
   'PASS IF: Nothing happens. The surface stays blue. The mode really does change underneath and you will see it two steps from now.',
@@ -365,15 +365,15 @@ STEPS_LAUNCHPAD = [
   # -at, as it exempts the keys (item 318).
   {'do': 'Press pads and release them. Press harder on one you are holding.'}),
  ('Ring buttons',
-  'PASS IF: Each ring button reports lp-cc-NN on the OLED except the seven the map binds -- they draw no row. The top left corner raises panic and the first six of the top row move the mode lamp. The bottom row runs from 101 to 108 in order. One button stays dark and reports nothing -- index 0 -- SETUP.',
+  'PASS IF: Each ring button reports lp-cc-NN on the OLED except the seven the map binds -- they draw no row. The top left corner raises panic and the top six of the left column move the mode lamp. The bottom row runs from 101 to 108 in order. One button stays dark and reports nothing -- index 0 -- SETUP.',
   [],
   # The rows are u_map's (item 317), so the bound buttons draw none: CC 90 is
-  # `recover` and the six mode keys are u_map's own route.
+  # `recover` and the six mode keys are u_map's own route. The top row is free.
   {'do': 'Press the ring buttons, including the top left corner and the bottom row.'}),
- ('The top row changes mode',
-  'PASS IF: Each of the six buttons moves the bright lamp to its own position.',
+ ('The left column changes mode',
+  'PASS IF: Each of the six buttons moves the bright lamp to its own position. The top row moves nothing.',
   [],
-  {'do': 'Press each of the first six buttons on the top row, left to right.'}),
+  {'do': 'Press each of the top six buttons of the left column, top to bottom. Then press the top row.'}),
  # ⛔ THESE TWO REPLACED THE REPLUG HAZARD STEP, WHICH DESCRIBED A HAZARD THAT NO
  # LONGER EXISTS. It read "the device returns in Live Mode but m_launchpad still
  # believes it owns the surface -- press a few pads and watch pad-NN names appear
@@ -398,7 +398,7 @@ STEPS_LAUNCHPAD = [
    'wait': 20,
    'check': {'kind': 'bus', 'bus': 'ERR', 'has': ['warn m_launchpad']}}),
  ('Hot-swap -- absent at load',
-  'PASS IF: The grid ends up lit with one bright lamp on the top row. Only where it settles is the test -- what the Launchpad does on the way back is its own. The beat row runs at the tempo restored from knobs.txt rather than the one the earlier steps set.',
+  'PASS IF: The grid ends up lit with one bright lamp in the left column. Only where it settles is the test -- what the Launchpad does on the way back is its own. The beat row runs at the tempo restored from knobs.txt rather than the one the earlier steps set.',
   [],
   # 60 s: a replug often misses the first re-wires while the device enumerates
   # -- the Launchpad once used six of its eight, spread over seventy seconds
@@ -409,7 +409,7 @@ STEPS_LAUNCHPAD = [
 
  # The third hot-swap case -- see the nanoKONTROL bench.
  ('Hot-swap -- unplugged and plugged back in',
-  'PASS IF: The grid lights again and the top row shows one bright lamp.',
+  'PASS IF: The grid lights again and the left column shows one bright lamp.',
   [],
   # A lit grid is the oracle: the surface paints only while m_launchpad owns it
   # and the device is in Programmer Mode, so it proves the re-wire and the mode
@@ -423,7 +423,7 @@ STEPS_LAUNCHPAD = [
   'PASS IF: The grid keeps painting and the Launchpad stays in Programmer Mode. Its own display does not come back.',
   [('bang', 'panic')]),
  ('The grid still answers after a panic',
-  'PASS IF: The bright lamp moves to the first position -- the panic silenced notes and did not surrender the surface.',
+  'PASS IF: The bright lamp moves to the top position -- the panic silenced notes and did not surrender the surface.',
   [('compose mode-1', 'mode')]),
  ('Pads still reach the OLED after a panic',
   'PASS IF: A pad press still reports pad-NN on the OLED.',
@@ -529,13 +529,13 @@ STEPS_PHONE = [
 
 STEPS_STATE = [
  ('Restored mode at boot',
-  'PASS IF: The Launchpad top row shows exactly one lit mode lamp -- on mode-1 for a fresh install and wherever you left it for a restored one. A dark grid means nothing below can be read.',
+  'PASS IF: The Launchpad left column shows exactly one lit mode lamp -- on mode-1 for a fresh install and wherever you left it for a restored one. A dark grid means nothing below can be read.',
   [],
-  {'do': 'Look at the Launchpad top row. Press nothing.'}),
+  {'do': 'Look at the Launchpad left column. Press nothing.'}),
  ('Change the mode',
-  'PASS IF: The lit lamp moves to the fourth position. Nothing else is visible yet and that is correct.',
+  'PASS IF: The lit lamp moves to the fourth position down. Nothing else is visible yet and that is correct.',
   [],
-  {'do': 'Press the fourth button of the Launchpad top row.'}),
+  {'do': 'Press the fourth button down the Launchpad left column.'}),
  ('The change reached the disk',
   'PASS IF: Cut-it-auto.txt reads mode perform mode-4. The file is the only evidence -- nothing on the instrument shows it. The old mode still being there is the failure.',
   [],
@@ -654,9 +654,9 @@ STEPS_MIDI = [
    'check': {'kind': 'oled', 'has': ['57'], 'has_not': ['120']}}),
 
  ('Get to mode 1',
-  'PASS IF: The lit lamp moves to the first position. Nothing below works until it does.',
+  'PASS IF: The lit lamp moves to the top position. Nothing below works until it does.',
   [],
-  {'do': 'Press the first button of the Launchpad top row -- the leftmost mode lamp.'}),
+  {'do': 'Press the top button of the Launchpad left column -- the top mode lamp.'}),
 
  ('SP-404 pad 1',
   'PASS IF: The OLED shows one row for the pad -- sp-a1 with the velocity beside it. No sp-pad or sp-bank row appears.',
@@ -717,12 +717,12 @@ STEPS_MIDI = [
  ('Fader 1 in mode 4',
   'PASS IF: The Volca does not change -- no change is the pass. The OLED shows slider-1 and its raw value because nothing maps it in mode 4 and that is correct.',
   [],
-  {'do': 'Press the fourth button of the Launchpad top row then move fader 1.'}),
+  {'do': 'Press the fourth button down the Launchpad left column then move fader 1.'}),
 
  ('Fader 1 back in mode 1',
   'PASS IF: The Volca responds again. Still silent means the mode did not change back -- check the lit lamp.',
   [],
-  {'do': 'Press the first button of the Launchpad top row then move fader 1 again.'}),
+  {'do': 'Press the top button of the Launchpad left column then move fader 1 again.'}),
 
  ('Tempo from knob 1',
   'PASS IF: The footer BPM follows the knob over roughly 10 to 500 BPM once the knob has crossed the restored value. Nothing at all happens before it crosses.',

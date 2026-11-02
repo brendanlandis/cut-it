@@ -441,8 +441,9 @@ They **are** the mode selector, so a mode change can never itself be mode-depend
 table were empty or broken you could still change mode on a device with no console. Everything the
 mode `route` does not match falls out of its reject and goes to the table.
 
-**They are the Launchpad's top row, `lp-cc-91`…`lp-cc-96`** — the six pads `g_grid` already lights
-as the mode lamps, so the thing you look at is the thing you press. See
+**They are the top six of the Launchpad's left column, `lp-cc-80` down to `lp-cc-30`**, mode 1 at the
+top — the six buttons `g_grid` lights as the mode lamps, so the thing you look at is the thing you
+press. The top row, CC 91–98, is free. See
 [launchpad.md](../device/launchpad.md).
 
 ⛔ **Each of the six branches carries a `[select 0]`, and that is not decoration.** A Launchpad CC

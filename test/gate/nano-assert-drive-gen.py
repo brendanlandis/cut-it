@@ -58,7 +58,7 @@ SEQ = [
 
     # --- the other two devices' channel blocks, through the same stub ------
     (14100, "CH-404", ["\\; t-ctlin 77 20 33"], GAP),
-    (14800, "CH-LP", ["\\; t-ctlin 55 30 1"], GAP),
+    (14800, "CH-LP", ["\\; t-ctlin 55 20 1"], GAP),
 
     (15500, "DONE", [], GAP),
 ]

@@ -133,7 +133,7 @@
 #X obj 1180 480 f \$1;
 #X obj 1180 520 print m_nano-control-channel;
 #X text 1180 570 C-9, f 40;
-#X text 20 940 Nothing here drives mode \, start or stop. The mode is the Launchpad's top row \, and the map gives xport-2 start and xport-5 stop., f 58;
+#X text 20 940 Nothing here drives mode \, start or stop. The mode is the Launchpad's left column \, and the map gives xport-2 start and xport-5 stop., f 58;
 #X text 860 900 ctlin fires right to left: channel \, controller \, then the value that triggers (item 23)., f 46;
 #X obj 2100 300 c_devid 66;
 #X obj 2380 300 r \$0-nano-on;

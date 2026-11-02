@@ -134,9 +134,9 @@ def run_asserts(cap):
     A.check("⛔ the 404's CTRL knob draws ONE row too -- u_map's sp-cc-20 77",
             rows("CH-404", "sp-cc-20") == [["sp-cc-20", "77"]],
             "rows for sp-cc-20: %s" % rows("CH-404", "sp-cc-20"))
-    A.check("⛔ ... and so does a Launchpad ring button -- lp-cc-30 55",
-            rows("CH-LP", "lp-cc-30") == [["lp-cc-30", "55"]],
-            "rows for lp-cc-30: %s" % rows("CH-LP", "lp-cc-30"))
+    A.check("⛔ ... and so does a Launchpad ring button -- lp-cc-20 55",
+            rows("CH-LP", "lp-cc-20") == [["lp-cc-20", "55"]],
+            "rows for lp-cc-20: %s" % rows("CH-LP", "lp-cc-20"))
 
     # ---- cross-talk between the three channel blocks ----------------------
     # One t-ctlin reaches all three rewritten [ctlin] boxes; these two are the
@@ -148,8 +148,8 @@ def run_asserts(cap):
             "cross-talk checks below have no liveness witness" % param("CH-404"))
     lp = [v for v in param("CH-LP") if v and v[0].startswith("lp-cc-")]
     A.check("the Launchpad's block admits its own channel",
-            len(lp) == 1 and lp[0][0] == "lp-cc-30",
-            "wanted one lp-cc-30 on channel 1, got %s" % param("CH-LP"))
+            len(lp) == 1 and lp[0][0] == "lp-cc-20",
+            "wanted one lp-cc-20 on channel 1, got %s" % param("CH-LP"))
 
     strays = [(m, v) for m in NANO_WINDOWS for v in param(m) + disp(m)
               if v and v[0].startswith(FOREIGN)]

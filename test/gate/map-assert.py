@@ -32,7 +32,7 @@ MODES = ["mode-%d" % n for n in range(1, 7)]
 WINDOWS = ["EARLY", "EARLY-2", "RAIL-ARM", "SUPPRESS", "MAPPED", "AWAY", "CROSS",
            "LIVE", "PLAY-1", "STOP-1", "PLAY-2", "KNOB-2", "LATE-KNOB", "BAD-DEST",
            "RAIL-UP", "RAIL-BACK", "MODE-4", "MODE-DEP", "MODE-4-RELEASE",
-           "UNMAPPED", "BAD-MODE", "AFTER-BAD", "DIAG-DEST", "DIAG-RELEASE",
+           "TOP-ROW-FREE", "UNMAPPED", "BAD-MODE", "AFTER-BAD", "DIAG-DEST", "DIAG-RELEASE",
            "SHIFT-STOP", "MODE-1", "ROW-CC", "ROW-NOTE", "ROW-PAD", "ROW-PROG",
            "ROW-KEY", "PRESSURE", "PRESSURE-MAPPED"]
 
@@ -279,10 +279,10 @@ def run_asserts(cap):
             "cc 44 in that window: %s -- a dead knob for the whole session"
             % cc("RAIL-BACK", 44))
 
-    # The Launchpad's top row publishes both edges, so the release has to be
+    # The Launchpad's left column publishes both edges, so the release has to be
     # gated out before the six mode branches, which have no test of their own.
     modes = lambda k: [e[1] for e in W(k) if e[0] == "MODE"]
-    A.check("⛔ a lit top-row pad selects its mode",
+    A.check("⛔ a lit left-column button selects its mode",
             modes("MODE-4") == [["perform", "mode-4"]],
             "mode in that window: %s" % modes("MODE-4"))
     A.check("⛔ ... and its RELEASE selects nothing at all",
@@ -291,6 +291,13 @@ def run_asserts(cap):
             "so an ungated branch fires the same mode twice per press. It is "
             "idempotent, which is exactly why nothing would look wrong"
             % modes("MODE-4-RELEASE"))
+    # The top row held the six mode keys before they moved to the left column.
+    A.check("the top row's first button selects no mode any more",
+            modes("TOP-ROW-FREE") == [],
+            "mode in that window: %s" % modes("TOP-ROW-FREE"))
+    A.check("... and, unmapped, it names itself -- lp-cc-91 127",
+            ["lp-cc-91", "127"] in umap_rows(W("TOP-ROW-FREE")),
+            "u_map's rows in that window: %s" % umap_rows(W("TOP-ROW-FREE")))
 
     # The lint proves diag is on the route; this proves the row reaches it.
     # og-shift-60 is mapped to diag in all six modes, so no mode change first.

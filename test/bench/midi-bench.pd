@@ -78,7 +78,7 @@
 #X obj 20 2340 select 2;
 #X obj 240 2340 t b b b;
 #X msg 700 2340 === STEP-02-of-18 === Get to mode 1;
-#X msg 700 2390 PASS IF: The lit lamp moves to the first position. Nothing below works until it does.;
+#X msg 700 2390 PASS IF: The lit lamp moves to the top position. Nothing below works until it does.;
 #X msg 700 2440 >>> press GO to run step 2 of 18;
 #X obj 240 2510 s \$0-say;
 #X obj 20 2600 select 3;

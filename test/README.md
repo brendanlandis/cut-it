@@ -35,7 +35,7 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 66 | `module/map` |
+| `map-assert.sh` | 68 | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 43 | `module/presence` |
@@ -47,9 +47,9 @@ were false.
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 
-**707 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**709 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **700**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **702**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 43 come from TWO Pd runs and one tally**, which is the only entry here
@@ -387,7 +387,7 @@ halt the clock** — the transport pauses the subscribers, it does not clear the
 ## `map-assert.sh`, `sp404-assert.sh`, `volca-assert.sh` — the map and the output devices
 
 ```sh
-./test/gate/map-assert.sh            66 checks, ~7 s — the lookup, and the static lint
+./test/gate/map-assert.sh            68 checks, ~7 s — the lookup, and the static lint
 ./test/gate/sp404-assert.sh          17 checks, ~7 s — the 404 in BOTH directions
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```

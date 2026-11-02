@@ -138,12 +138,20 @@ scratch_state_dir() {
     # that file, the restore republishes it mid-run, and every row keyed to
     # another mode stops matching from that instant. It cost a wrong diagnosis
     # once already: item 232.
-    _w=$1
-    sed -i '' "s|u_root 17 1 /tmp |u_root 17 1 $_w/state |" "$_w/patch/main-dev.pd"
-    grep -q "u_root 17 1 $_w/state " "$_w/patch/main-dev.pd" || {
-        echo "FAIL: could not repoint main-dev.pd's state directory." >&2
+    #
+    # ⛔ AND OWN YOUR INBOUND PORT, on the same line. u_net listens on
+    # main-dev.pd's last argument, 9002, and only one process can hold a UDP
+    # port, so gates run side by side would print `bind: Address already in
+    # use`. test/runner/gates.py hands each gate its own in CUTIT_INPORT; a gate
+    # run by hand keeps 9002.
+    _w=$1; _port=${CUTIT_INPORT:-9002}
+    sed -i '' "s|u_root 17 1 /tmp 33 49 9002;|u_root 17 1 $_w/state 33 49 $_port;|" \
+        "$_w/patch/main-dev.pd"
+    grep -q "u_root 17 1 $_w/state 33 49 $_port;" "$_w/patch/main-dev.pd" || {
+        echo "FAIL: could not repoint main-dev.pd's state directory and port." >&2
         echo "      Without that, a previous run's saved mode changes what the map" >&2
-        echo "      does at 3.5 s and half the windows go silent -- item 232." >&2
+        echo "      does at 3.5 s and half the windows go silent -- item 232 --" >&2
+        echo "      and gates run side by side fight over one UDP port." >&2
         exit 2
     }
 }

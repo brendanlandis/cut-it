@@ -131,7 +131,7 @@ whole instrument is *there* — `u_mother-stub` draws the front panel inline and
 aux and encoder. **Most work should never need the Organelle powered on.**
 
 ```sh
-./test/run.sh            # every gate, ~5 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
+./test/run.sh            # every gate, ~2 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
 ./test/run.sh --all      # and then the benches -- needs the rig, and a person
 ./tools/deploy.sh              # syntax check -> scp BOTH patches -> reload -> load Cut It
 ./tools/deploy.sh --debug      # the same push, but loads Cut It Debug instead
@@ -146,16 +146,16 @@ the per-gate `--- FAILED:` lines, and a broken patch has been committed that way
 safe with the device off. The benches are behind `--all` / `--bench` on purpose: ⚠️ **a check that
 costs twenty minutes stops being run**, which is the failure this command was built to fix.
 
-⛔ **It takes ~5 minutes and only about a minute of that is computation** — measured, 302.7 s real
-against 64.5 s user+sys. The rest is Pd instances running **DSP in real time** so a `phasor~` clock and a beat
-row can actually tick. **A faster machine will not help.** Three consequences:
+⛔ **It takes under two minutes because the gates run side by side** — measured 2026-11-02, 104 s
+against 461 s one after another. Each one is a Pd instance running **DSP in real time** so a `phasor~` clock and a beat
+row can actually tick, so the longest gate sets the floor. **A faster machine will not help.** Three consequences:
 
 - ⛔ **Never start a second run while one is in flight.** They contend for CPU and MIDI, every run in
   the window slows down, and the results stop meaning anything. Six were once stacked here by accident
   and two "failures" were nothing but the cleanup kill.
 - **Documentation-only changes do not need it.** `python3 test/gate/docs-check.py` covers those and
   returns in under a second. Save the full suite for when a `.pd` actually changed.
-- **Run it once per batch of work, not after every edit.** It is a gate, not a linter.
+- **It is cheap enough to run after each `.pd` change**, but it is still a gate, not a linter.
 
 **Nothing reports itself unless the patch reports it.** Two things make that survivable:
 

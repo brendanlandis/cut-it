@@ -26,9 +26,12 @@ rebuilt out of argument lists. `"Cut It"/*.pd` expands in the shell here exactly
 as it did there; rebuilding it as a Python glob would introduce an ordering
 question that did not previously exist.
 """
+import concurrent.futures
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
 # ---------------------------------------------------------------------------
 # ⛔ THE INVENTORY, AND ITS LENGTH IS ASSERTED. run.py prints "N gates" on every
@@ -40,12 +43,23 @@ import sys
 # MIDI_EXPECT in test/gate/lib-scratch.sh, and for the same reason.
 EXPECT = 25
 
+# ⛔ THE GATES RUN SIDE BY SIDE, IN TWO BLOCKS, AND PRINT IN TABLE ORDER. Most
+# of a gate's time is a Pd instance ticking in real time, so one after another
+# the suite took ~5 minutes for about one minute of CPU. Each gate's output is
+# buffered and printed whole, in the order below, so the log reads exactly as a
+# serial run's did and there is still one RESULT: line.
+#
+# ⛔ STRUCTURE FINISHES BEFORE ANY MODULE GATE STARTS. docs-check reads every
+# .pd, .py and .sh in the repo, and state-assert and phone-assert write their
+# drivers into test/gate/ -- a half-written driver read mid-write is a false
+# failure that would come and go.
+#
 # ⛔ THE INVENTORY RUNS FIRST because every gate below it rewrites the same MIDI
 # object boxes, so a count that has drifted explains all of them at once. Then
 # the instrument-wide concerns, then one gate per physical device -- the same
 # axis ref/ uses, because a page that names a gate should be able to name one
 # whose whole subject is that page.
-GATES = [
+STRUCTURE = [
     # --- 1. structure ------------------------------------------------------
     # pd-layout-check separates PROBLEM (structural -- a cord onto a comment
     # means indices are off by one, which is how every one of the five silent
@@ -86,8 +100,11 @@ GATES = [
     # the bare run nothing and takes nothing away from its guarantee.
     ("the runner's own failure paths", "./test/gate/runner-assert.sh"),
 
-    # --- 4. one gate per module --------------------------------------------
     ("the MIDI inventory", "./test/gate/midi-emitters-assert.sh"),
+]
+
+MODULES = [
+    # --- 4. one gate per module --------------------------------------------
     ("the boot sequence", "./test/gate/init-assert.sh"),
     # ⛔ THE ONLY GATE WHOSE STIMULUS IS A SILENCE. It withholds the device
     # inquiry reply rather than sending one, which is the absent-at-load case of
@@ -121,8 +138,32 @@ GATES = [
     ("the debug patch", "./test/gate/debug-assert.sh"),
 ]
 
+GATES = STRUCTURE + MODULES
 
-def _syntax():
+# ⛔ EACH GATE GETS ITS OWN INBOUND UDP PORT, base + its place in the table.
+# Every scratch copy of main-dev.pd runs u_net, which listens on one port, and
+# only one process can hold it: two gates side by side on 9002 would print
+# `bind: Address already in use`. scratch_state_dir in test/gate/lib-scratch.sh
+# writes CUTIT_INPORT into the copy, and a gate run by hand keeps 9002.
+# ⚠️ CLEAR OF 9001/9002 (the device and main-dev.pd) and of 9992-9998, which the
+# OSC mirrors, phone-assert and the bench stream bind.
+INPORT_BASE = 9100
+
+# How many gates run at once. CUTIT_JOBS=1 runs them one at a time again.
+JOBS = int(os.environ.get("CUTIT_JOBS") or 0) or len(MODULES)
+
+# ⛔ AND NO GATE'S Pd READS THE MAC'S Pd PREFERENCES. Pd 0.49 sets a `loading`
+# flag in them while it starts, and one that starts while another is still
+# starting prints "Pd seems to have crashed on startup" and skips them -- which
+# failed state-assert's silence check the first time the gates ran side by
+# side. -noprefs does not stop it: measured, 6 of 40 startups eight at a time
+# printed it with -noprefs and 5 of 40 without. Pd only reads the flag when
+# $HOME holds org.puredata.pd.plist, so every gate runs with HOME pointed at an
+# empty directory: 0 of 40. Nothing is lost, because every gate already passes
+# -noaudio, -nomidi and its own -path.
+
+
+def _syntax(env):
     """tools/deploy.sh's own gate: both entry points must load in SILENCE.
 
     ⛔ THE ORACLE IS OUTPUT, NOT EXIT STATUS. Pd returns 0 even when half the
@@ -130,7 +171,7 @@ def _syntax():
     patch that does nothing at all.
     """
     pd = os.environ["PD"]
-    rc = 0
+    rc, out_lines = 0, []
     # ⛔ THREE ENTRY POINTS, NOT TWO. "Cut It Debug/main.pd" is menu-launched on
     # the same device with the same -nogui and the same absent console, so a
     # load-time error there is exactly as silent as one in the instrument -- and
@@ -138,37 +179,73 @@ def _syntax():
     for f in ("Cut It/main.pd", "Cut It/main-dev.pd", "Cut It Debug/main.pd"):
         p = subprocess.run([pd, "-nogui", "-noaudio", "-nomidi",
                             "-path", "mac-stubs", "-send", "pd quit", f],
+                           env=env,
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         # $(...) strips every trailing newline and `echo` puts exactly one back
         out = p.stdout.decode("utf-8", "replace").rstrip("\n")
         if out:
-            print("  %s produced output:" % f)
-            print(out)
+            out_lines.append("  %s produced output:" % f)
+            out_lines.append(out)
             rc = 1
         else:
-            print("  silent: %s" % f)
-    return rc
+            out_lines.append("  silent: %s" % f)
+    return rc, ("\n".join(out_lines) + "\n").encode("utf-8")
 
 
-def run_one(label, command):
-    """One gate. Prints the banner, runs it, prints the verdict. -> ok."""
-    print("\n=== %s" % label)
-    sys.stdout.flush()          # the child inherits our stdout; order matters
+def run_one(index, label, command, env):
+    """One gate, its output held back. -> (ok, output as bytes).
+
+    ⚠️ stderr IS FOLDED INTO stdout so a gate's FAIL lines stay where it printed
+    them, and PYTHONUNBUFFERED keeps a Python gate's print() from being reordered
+    against them in the pipe.
+    """
     if command is None:
-        ok = _syntax() == 0
-    else:
-        ok = subprocess.run(command, shell=True).returncode == 0
+        rc, out = _syntax(env)
+        return rc == 0, out
+    env = dict(env, CUTIT_INPORT=str(INPORT_BASE + index))
+    p = subprocess.run(command, shell=True, env=env,
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    return p.returncode == 0, p.stdout
+
+
+def report_one(label, ok, out):
+    """The banner, the gate's own output, the verdict -- what a serial run
+    printed, byte for byte."""
+    print("\n=== %s" % label)
     sys.stdout.flush()
+    sys.stdout.buffer.write(out)
+    sys.stdout.buffer.flush()
     print("--- %s: %s" % ("ok" if ok else "FAILED", label))
-    return ok
+    sys.stdout.flush()
 
 
 def run_all():
-    """Every gate, in order. -> list of the labels that failed."""
+    """Every gate, STRUCTURE then MODULES, each block side by side.
+    -> list of the labels that failed."""
     if len(GATES) != EXPECT:
         # Not a check that can be deferred to the summary: if the table is the
         # wrong length the run about to happen is not the run anyone asked for.
         sys.exit("gates.py: EXPECT is %d but the table holds %d. Update it "
                  "deliberately -- a gate that vanishes is otherwise silent."
                  % (EXPECT, len(GATES)))
-    return [label for label, cmd in GATES if not run_one(label, cmd)]
+    failed = []
+    home = tempfile.mkdtemp(prefix="cutit-home-")
+    env = dict(os.environ, HOME=home, PYTHONUNBUFFERED="1")
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=JOBS)
+    try:
+        start = 0
+        for block in (STRUCTURE, MODULES):
+            futures = [pool.submit(run_one, start + i, label, cmd, env)
+                       for i, (label, cmd) in enumerate(block)]
+            # In table order: a gate that finishes early waits its turn to print.
+            for (label, _), fut in zip(block, futures):
+                ok, out = fut.result()
+                report_one(label, ok, out)
+                if not ok:
+                    failed.append(label)
+            start += len(block)
+    finally:
+        # ⚠️ A Ctrl-C must not leave queued gates to start after it.
+        pool.shutdown(wait=True, cancel_futures=True)
+        shutil.rmtree(home, ignore_errors=True)
+    return failed

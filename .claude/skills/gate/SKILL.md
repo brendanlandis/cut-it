@@ -82,9 +82,9 @@ comes back 0"* — and both produced **byte-identical output** with and without 
 included. Item 280, measured both ways.
 
 **Pass it.** A gate that opens a Mac audio device it has no use for is slower and can collide with
-whatever else is using the interface. ⛔ **But do not read this as "DSP is free"** — the suite still
-takes ~5 minutes because the graph runs in REAL TIME, and that is what a `phasor~` clock needs. A
-faster machine will not help.
+whatever else is using the interface. ⛔ **But do not read this as "DSP is free"** — every gate still
+takes as long as its schedule because the graph runs in REAL TIME, and that is what a `phasor~` clock
+needs. A faster machine will not help.
 
 ## Three things that have cost real time
 

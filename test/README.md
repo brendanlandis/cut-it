@@ -5,7 +5,7 @@ who or what says pass:
 
 | | Verdict from | Runs |
 |---|---|---|
-| `gate/` | **a program**, unattended | every commit, in ~5 minutes, on the Mac |
+| `gate/` | **a program**, unattended | every commit, in ~2 minutes, on the Mac |
 | `bench/` | **a person**, with the rig plugged in | when hardware behavior needs judging |
 
 ⛔ **A gate is not trusted until it has FAILED.** Reintroduce the bug, watch it go red, revert. This
@@ -116,9 +116,15 @@ drifted and nothing noticed.
 ## Running everything
 
 ```sh
-./test/run.sh                every gate in one command, ~5 min, exit non-zero on any failure
+./test/run.sh                every gate in one command, ~2 min, exit non-zero on any failure
 ./test/run.sh --all          and then the benches -- needs the rig, and a person
 ```
+
+**The gates run side by side**: the structure gates first, then every module gate at once, each
+printed whole in table order, so the log reads as a serial run's did. `CUTIT_JOBS=1 ./test/run.sh`
+runs them one at a time. Each module gate's `main-dev.pd` copy gets its own inbound UDP port
+(`CUTIT_INPORT`), and each gate's Pd runs with an empty `HOME` so it skips the Mac's Pd preferences —
+see `test/runner/gates.py`.
 
 Layout and graph structure, all three entry points loading in silence, the bench step text, the MIDI
 inventory, and one gate per module — the boot sequence, the audio path, the error bus, the display
@@ -140,7 +146,7 @@ them: they are probes a person runs, not tests with an oracle.
 ## `test/run.sh` — the entry point, and both halves
 
 ```sh
-./test/run.sh                              the gates. Mac-only, ~5 min, the default
+./test/run.sh                              the gates. Mac-only, ~2 min, the default
 ./test/run.sh --all                        the gates, then every bench
 ./test/run.sh --bench midi                 one bench
 ./test/run.sh --bench tempo --target mac   run the patch here rather than on the device

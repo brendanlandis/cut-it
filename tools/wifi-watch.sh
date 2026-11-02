@@ -212,8 +212,8 @@ prefer_router() {
     {
         echo
         echo "  ~~ PREFERRED-AP STEER: on $CUR, moving to $PREFER_BSSID"
-        echo "     (the satellite is where every observed failure happened; the"
-        echo "      router is stronger AND reliable -- items 179-184)"
+        echo "     (PREFER_BSSID is set, though the steer is meant to stay off: the"
+        echo "      roam drops IPv4 itself -- ref/wifi.md, If it recurs; item 214)"
         wpa_cli -i wlan0 roam "$PREFER_BSSID" 2>&1 | sed 's/^/     /'
         sleep 6
         A=$(ipv4); B=$(curbssid)

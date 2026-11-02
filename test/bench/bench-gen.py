@@ -513,15 +513,13 @@ def build(name, cfg):
           "repeats the current step without advancing \\, which is what to do when you looked "
           "away.", 120)
     p.txt(2400, 200,
-          "⚠️ GO ON THE DEVICE IS NOT THE ENCODER -- IT IS netcat \\, AND THE DIFFERENCE IS NOT "
-          "OPTIONAL. mother only forwards encbut once a patch has banged enableSubMenu \\, "
-          "and NOTHING IN Cut It EVER ASKS -- m_organelle leaves the encoder out on purpose. So "
-          "the click that drives this bench on the Mac is silently dead on the Organelle. Send "
-          "instead with ./test/run.sh --bench <name> from the Mac. ⚠️ NOT netcat: the line this file "
-          "used to print does nothing on macOS -- BSD nc exits before the datagram is flushed at "
-          "-w0 \\, and -w1 was measured to fail too \\, while the port IS bound and the bench is "
-          "fine. It looks exactly like a dead bench. The device cannot send to itself either: "
-          "busybox here has no nc at all. Asking mother to enable the encoder is NOT the fix "
+          "⚠️ GO ON THE DEVICE IS NOT THE ENCODER -- IT IS ./test/run.sh --bench <name> FROM THE "
+          "MAC \\, WHICH SENDS GO ITSELF. mother only forwards encbut once a patch has banged "
+          "enableSubMenu \\, and NOTHING IN Cut It EVER ASKS -- m_organelle leaves the encoder "
+          "out on purpose. So the click that drives this bench on the Mac is silently dead on the "
+          "Organelle. ⚠️ NOT netcat: it sends nothing from macOS and the device has none \\, "
+          "while the port IS bound and the bench is fine. It looks exactly like a dead bench "
+          "(the Organelle's Reference page). Asking mother to enable the encoder is NOT the fix "
           "either: it is an OVERRIDE that takes the turn AND the click \\, so the bench would eat "
           "the press that leaves the patch. Items 313 and 314 \\, ref/device/organelle.md.", 120)
     p.txt(20, 280,
@@ -547,7 +545,8 @@ def build(name, cfg):
     # ---------------------------------------------------------------- GO
     Y = 420
     p.txt(20, Y - 60, "GO -- click here \\, or the dev panel's encoder button. "
-                      "MAC ONLY -- on the device use netcat \\, top right.", 60)
+                      "MAC ONLY -- on the device ./test/run.sh --bench sends it \\, top "
+                      "right.", 60)
     go_b = p.bng(20, Y, 40)
     go_s = p.obj(20, Y + 80, "s \\$0-go")
     p.con(go_b, 0, go_s, 0)

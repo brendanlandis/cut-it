@@ -853,6 +853,14 @@ BENCHES = {
                   "thirteen seconds. What is left here is what only hardware can "
                   "show -- that the patch WIRED ITSELF \\, which is step 3 and the "
                   "one everything else rests on."),
+    "sequencer": dict(steps=S.STEPS_SEQUENCER, counters=[],
+                      blurb="the drum machine acceptance run: mode 1's drum page on the "
+                      "Launchpad \\, the sequencer playing the SP-404 \\, and the pattern "
+                      "surviving a reload. MOST OF IT IS PROVEN HEADLESSLY -- "
+                      "test/gate/sequencer-assert.sh asserts the notes \\, the frames and "
+                      "the file in about fifteen seconds. What is left here is what only the "
+                      "rig can show: whether the page reads \\, and what the 404 does with "
+                      "the notes."),
     "midi": dict(steps=S.STEPS_MIDI, counters=[],
                  blurb="the MIDI acceptance run: the mode-dependent map \\, both "
                  "output devices and the SP-404 in both directions. MOST OF THIS IS "

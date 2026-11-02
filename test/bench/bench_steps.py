@@ -890,3 +890,71 @@ STEPS_DEBUG = [
    'need': ['Nothing else queued on the rig -- this is the step that puts the '
             'instrument back.']}),
 ]
+
+
+# The drum machine on the rig: what only a person in front of the Launchpad and
+# the 404 can judge -- whether the page reads, and what the 404 does with the
+# notes. The notes, the frames and the file are sequencer-assert's.
+STEPS_SEQUENCER = [
+ ('The drum page',
+  'PASS IF: The left column has its top lamp bright. The top two rows of pads are the steps and the next two rows the velocity buttons -- all dim but one velocity button. The bottom-left four by four is dim with its top-left pad lit and the bottom-right four by four is dark. No white pad walks along the bottom row.',
+  [('bang', 'stop'), ('compose mode-1', 'mode')],
+  # Level 13 is the second velocity row's fifth button; track 1 is the
+  # top-left drum pad. Both reset at every load (ref/module/sequencer.md).
+  {'need': ['A fresh load of the patch with no saved pattern -- the selection '
+            'resets at every load and a saved step would be lit.']}),
+ ('A drum pad plays and selects',
+  'PASS IF: The 404 plays bank A pad 13 at once -- louder for a harder press. That pad lights and the top-left one goes dim. The OLED draws no row for it.',
+  [],
+  {'do': 'Press the bottom-left drum pad.',
+   'need': ['Sounds in bank A of the 404 -- the starter kit or anything else.',
+            'The 404 on bank A so its pad lights too.']}),
+ ('Velocity buttons',
+  'PASS IF: Each press lights the button pressed and only that one. Nothing sounds and the OLED draws nothing.',
+  [],
+  {'do': 'Press the top-left velocity button, then the bottom-right one.'}),
+ ('Steps light by velocity',
+  'PASS IF: Step 1 is bright and step 2 dark with step 3 between them -- one color getting brighter with velocity. The steps left off stay dim.',
+  [],
+  {'do': 'With the bottom-right velocity button lit press step 1. Pick the '
+         'top-left velocity button and press step 2. Pick a velocity button in '
+         'the middle and press step 3.'}),
+ ('The step rule',
+  'PASS IF: The first press turns step 1 off and the second turns it back on bright. The third makes it dark and leaves it on.',
+  [],
+  {'do': 'Pick the bottom-right velocity button and press step 1 twice. Then '
+         'pick the top-left velocity button and press step 1 again.'}),
+ ('PLAY from step 1',
+  'PASS IF: A white pad walks the top two rows from step 1 at four steps a beat. Pad 13 sounds on the steps you lit -- softer on the dark ones. The white pad passes over a lit step and the step is still lit behind it.',
+  [('120', 'tempo'), ('bang', 'start')]),
+ ('Two tracks on one step',
+  'PASS IF: Pad 1 sounds alone on step 9 and with pad 13 on step 1 -- both are heard there and neither is dropped.',
+  [],
+  {'do': 'Press the top-left drum pad. Then press step 1 and step 9.'}),
+ ('STOP',
+  'PASS IF: The sound stops and the white pad goes out. The steps stay lit.',
+  [('bang', 'stop')]),
+ ('Panic stops it too',
+  'PASS IF: Everything stops at once and the grid flashes red. When it clears the white pad is gone and the steps are still lit.',
+  [],
+  {'do': 'Press PLAY on the nanoKONTROL. Then tap the top-left corner button of the Launchpad.'}),
+ # The blueprint's open question for the rig (cut-it/drum-machine): a looping
+ # pad toggles on a second note-on, and fast hats need a one-shot pad to
+ # restart instead.
+ ('A one-shot pad on every step',
+  'PASS IF: Every step is heard as a fresh hit -- a hit cut short by the next one is fine. A step that falls silent is the failure: it means a one-shot pad toggles like a looping one.',
+  [('bang', 'start')],
+  {'do': 'Select pad 13. Light all sixteen of its steps. Listen for a bar or two then turn knob 1 up and listen again.',
+   'need': ['Pad 13 of bank A set to one-shot on the 404 -- not loop.']}),
+ ('The pattern survives a reload',
+  'PASS IF: After the reload the drum page shows the same steps lit as before it.',
+  [('bang', 'stop')],
+  # u_state flushes within 2 s of a change, so the wait is part of the step.
+  {'do': 'Look at which steps are lit. Wait two seconds then reload the patch.',
+   'reload': True,
+   'need': ['Steps lit on the drum page from the steps before.']}),
+ ('Other modes keep their grid',
+  'PASS IF: The second lamp lights and the drum page gives way to the beat row along the bottom. A pad press draws a pad-NN row on the OLED again.',
+  [('compose mode-2', 'mode')],
+  {'do': 'Press a pad in the top two rows.'}),
+]

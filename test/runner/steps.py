@@ -98,6 +98,11 @@ DEPS = {
     "recover":     ["Cut It/u_map.pd", "Cut It/u_init.pd", "Cut It/recover.sh",
                     "Cut It/cut-it-map.txt", "Cut It/u_tempo.pd",
                     "Cut It/state-dir.sh"],
+    # The page is g_grid's and the layout's, a press u_map's, the notes m_404's.
+    "sequencer":   ["Cut It/c_steps.pd", "Cut It/g_grid.pd", "Cut It/u_map.pd",
+                    "Cut It/cut-it-map.txt", "Cut It/cut-it-drum-page.txt",
+                    "Cut It/m_404.pd", "Cut It/c_clock.pd", "Cut It/u_state.pd",
+                    "Cut It/u_store.pd"],
     "state":       ["Cut It/u_state.pd", "Cut It/u_store.pd", "Cut It/u_init.pd"],
     # c_mapped builds the bpm row this bench reads off the OLED.
     "tempo":       ["Cut It/u_tempo.pd", "Cut It/c_clock.pd", "Cut It/u_map.pd",

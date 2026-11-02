@@ -854,7 +854,7 @@ def _where_wiring():
     # Exact, like EXPECT and MIDI_EXPECT, so a bench that stops being generated
     # cannot leave this checking fewer files. Change it deliberately.
     A.check("every bench file is checked -- %d of them" % len(files),
-            len(files) == 9, "found %d" % len(files))
+            len(files) == 10, "found %d" % len(files))
     for path in files:
         src = open(path, encoding="utf-8").read()
         name = os.path.basename(path)

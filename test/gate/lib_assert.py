@@ -31,8 +31,10 @@ verbose = "-v" in sys.argv
 
 def check(name, ok, detail=""):
     """One assertion. Prints PASS or FAIL, and the detail whenever it is useful
-    -- always on a failure, and on a pass only under -v."""
+    -- always on a failure, and on a pass only under -v. The detail may be any
+    value: a list handed in raw must not turn a failing check into a traceback."""
     global fails, total
+    detail = str(detail) if detail is not None else ""
     total += 1
     if not ok:
         fails += 1

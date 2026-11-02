@@ -1,6 +1,11 @@
-# Generates test/gate/phone-assert-drive.pd -- the timed driver for the phone link's headless
-# assertion run. It instantiates u_net POINTED AT LOCALHOST and pushes synthetic
-# traffic onto disp, exactly as the m_ layers and u_err would.
+# Generates the timed driver for the phone link's headless assertion run, into
+# the gate's scratch directory:
+#
+#     python3 test/gate/phone-assert-drive-gen.py <out.pd>
+#
+# phone-assert.py runs it on every run; the driver is never committed. It
+# instantiates u_net POINTED AT LOCALHOST and pushes synthetic traffic onto disp,
+# exactly as the m_ layers and u_err would.
 #
 # Unlike Phase 6's gate this needs NO scratch copy and NO source rewriting.
 # [midiout] is a built-in class with no side channel, so Phase 6 had to rewrite
@@ -16,14 +21,21 @@
 # would make each wait the SUM of everything before it, which is the kind of
 # arithmetic that silently drifts as steps are added.
 #
-# NOTE: "#X declare" does NOT occupy a box index, so it lives in the header
-# string rather than in B. Putting it in B would shift every connect by one --
-# the exact failure pd-layout-check.py exists to catch.
+# NO "#X declare": the driver lives in a scratch directory, so phone-assert.py
+# puts "Cut It" on the path itself. ⚠️ Should one come back, a declare occupies
+# no box index, so it belongs in the header string rather than in B -- in B it
+# would shift every connect by one, the exact failure pd-layout-check.py exists
+# to catch.
 #
 # LAYOUT: the loadbang and the row of del boxes sit in a clear band across the
 # TOP, so the fan-out from one loadbang to eight windows is never drawn through
 # anything. Everything else is either the left column (x < 1000) or a window
 # column (x >= 1200), and the two never meet.
+import sys
+
+if len(sys.argv) < 2:
+    sys.exit("usage: phone-assert-drive-gen.py <out.pd>")
+
 PORT = 9995
 # ⚠️ u_net's OWN listening port, and it is a gate-only number. The device uses
 # 9001 and main-dev.pd 9002 -- both are held for a whole session by a patch
@@ -73,8 +85,8 @@ txt(20, 400,
     "and every later send is discarded in silence. Start this by hand and you get one "
     "packet and then nothing \\, which looks exactly like a broken rate limiter.", 70)
 txt(20, 600,
-    "IT TESTS u_net IN ISOLATION \\, not the whole instrument. The declare at the top of "
-    "the file is what finds the abstraction from test/gate/. Driving the real u_tempo would "
+    "IT TESTS u_net IN ISOLATION \\, not the whole instrument. phone-assert.py puts Cut It "
+    "on the path \\, which is what finds the abstraction. Driving the real u_tempo would "
     "make the status window depend on rounding that belongs to u_map \\, and the contract "
     "under test here is only that u_net consumes disp and rate-limits what leaves.", 70)
 
@@ -314,8 +326,7 @@ for i, (when, mark, actions) in enumerate(SEQ):
 
 W = 1200 + len(SEQ) * PITCH + 400
 H = TOP + 2000
-open("test/gate/phone-assert-drive.pd", "w").write(
+open(sys.argv[1], "w").write(
     "#N canvas 20 20 %d %d 12;\n" % (W, H)
-    + "#X declare -path ../../Cut\\ It;\n"
     + "\n".join(B + C) + "\n")
 print("boxes", len(B), "connects", len(C), "port", PORT)

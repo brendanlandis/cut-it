@@ -52,7 +52,7 @@ class Gate:
     def pd(self, s, dog, *files):
         """Pd on files with this copy on its path; -> the capture's path."""
         cap = s.path("capture.txt")
-        s.run(cap, dog, *FLAGS, "-path", s.patch, *files)
+        S.run(cap, dog, *FLAGS, "-path", s.patch, *files)
         return cap
 
     def analyze(self, script, *args, stdin=None):
@@ -85,7 +85,7 @@ def _instrument(g, dog, rows=(), say=None):
     if rows:
         s.map_rows(rows)
     g.rewrite(s)
-    s.drive(GEN % (g.name + "-assert"), s.path("drive.pd"))
+    S.drive(GEN % (g.name + "-assert"), s.path("drive.pd"))
     if say:
         print(say)
     return g.pd(s, dog, main_dev(s), s.path("drive.pd"))
@@ -189,7 +189,7 @@ def init(g):
     with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
         fh.write("init-probe 42\n")
     g.rewrite(s)
-    s.drive(GEN % "init-assert", s.path("drive.pd"))
+    S.drive(GEN % "init-assert", s.path("drive.pd"))
     # ⛔ THE DRIVER LOADS FIRST HERE, AND IT IS THE ONLY GATE THAT DOES. Pd opens
     # these in order, so a driver named second has its [r disp] taps created
     # AFTER main-dev.pd's loadbang has already fired -- and u_init's FIRST stage
@@ -216,7 +216,7 @@ def _harness_gate(g, dog, *gen_args, why):
     """
     s = g.copy()
     harness = s.path("harness.pd")
-    s.drive(GEN % (g.name + "-assert"), s.path("drive.pd"), harness,
+    S.drive(GEN % (g.name + "-assert"), s.path("drive.pd"), harness,
             *[a(s) if callable(a) else a for a in gen_args], also=[(harness, why)])
     return s, g.pd(s, dog, harness, s.path("drive.pd"))
 
@@ -291,7 +291,7 @@ def debug(g):
     # swallows the fork and the single most important assertion in the file --
     # that the patch wires itself -- is answered by silence.
     s.shell_stub()
-    s.drive(GEN % "debug-assert", s.path("drive.pd"))
+    S.drive(GEN % "debug-assert", s.path("drive.pd"))
     cap = g.pd(s, 40, os.path.join(s.patch, "main.pd"), s.path("drive.pd"))
     print()
     if g.analyze("test/gate/debug-assert.py", *g.args, stdin=cap) != 0:
@@ -350,7 +350,7 @@ def map_(g):
         if which == "save":
             with open(os.path.join(s.patch, "knobs.txt"), "w") as fh:
                 fh.write("0.0957967 0.5 0.5 0.5;\n")
-        s.drive(GEN % "map-assert", s.path("drive.pd"))
+        S.drive(GEN % "map-assert", s.path("drive.pd"))
         caps.append(g.pd(s, 40, main_dev(s), s.path("drive.pd")))
         if which == "save":
             print("\n".join(inventory))
@@ -386,7 +386,7 @@ def recover(g):
             open(crumb, "w").close()
         out = []
         g.rewrite(s, out=out)
-        s.drive(GEN % "recover-assert", s.path("drive.pd"), which)
+        S.drive(GEN % "recover-assert", s.path("drive.pd"), which)
         g.pd(s, 40, main_dev(s), s.path("drive.pd"))
         if which == "a":
             print("\n".join(out))
@@ -413,7 +413,7 @@ def presence(g):
     # The re-wires are the entire subject, so the counting shell stub.
     s.shell_stub()
     g.rewrite(s)
-    s.drive(GEN % "presence-assert", s.path("drive.pd"))
+    S.drive(GEN % "presence-assert", s.path("drive.pd"))
     print("   running the schedule (about 38 s -- the three re-wires are at "
           "14 s, 22 s and 30 s) ...")
     cap = g.pd(s, 60, main_dev(s), s.path("drive.pd"))
@@ -435,7 +435,7 @@ def presence(g):
     s2.scale_present()
     s2.shell_stub()
     g.rewrite(s2)
-    s2.drive("test/gate/presence-bound-drive-gen.py", s2.path("drive.pd"))
+    S.drive("test/gate/presence-bound-drive-gen.py", s2.path("drive.pd"))
     print("   running the bound (about 9 s -- the eighth fork is at 7 s and the "
           "give-up at 7.2) ...")
     cap2 = g.pd(s2, 30, main_dev(s2), s2.path("drive.pd"))

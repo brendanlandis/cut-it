@@ -4,8 +4,9 @@
     S.require("Cut It/u_map.pd")
     s = S.Scratch("/tmp/cutit-map-123")
     s.make(); s.state_dir(); s.midi_rewrite()
-    s.drive("test/gate/map-assert-drive-gen.py", s.path("drive.pd"))
-    s.run(s.path("capture.txt"), 40, "-nogui", ...)
+    S.drive("test/gate/map-assert-drive-gen.py", s.path("drive.pd"))
+    S.run(s.path("capture.txt"), 40, "-nogui", ...)
+    S.close()
 
 WHY IT EXISTS. Every gate needs the same five things -- a scratch copy of the
 patch, MIDI object boxes rewritten to printing stubs, a private state directory,
@@ -253,7 +254,7 @@ def _write(path, recs):
 
 class Scratch:
     """One throwaway copy of a patch folder: work/patch and work/state. The UDP
-    sink its u_net talks to stays open until close()."""
+    sink its u_net talks to stays open until the module's close()."""
 
     def __init__(self, work, src="Cut It"):
         # ⛔ NO WHITESPACE IN THE WORK DIR. Its state path goes into a Pd box as a
@@ -331,13 +332,12 @@ class Scratch:
         # answers with ICMP and u_net raises `warn u_net net-link-down` in every
         # gate (sink() below). phone_mirror repoints it again for a bench that
         # reads what u_net sends.
-        sink = port + 1000
         _records_replace(
             os.path.join(self.patch, "u_root.pd"),
             re.escape("u_net 192.168.1.5 8000 "),
-            "u_net 127.0.0.1 %d " % sink,
+            "u_net 127.0.0.1 %d " % (port + 1000),
             ["      Could not point u_net away from the phone."])
-        self.sink(sink)
+        sink(port + 1000)
         return self
 
     def watch_fast(self):
@@ -416,9 +416,6 @@ class Scratch:
              "      predicate reads an empty socket -- which looks exactly like",
              "      u_net being broken."])
 
-    def sink(self, port):
-        return sink(port)
-
     def map_rows(self, rows):
         """Rows APPENDED to the scratch map rather than replacing it, so the
         shipped rows stay under test too."""
@@ -490,52 +487,50 @@ class Scratch:
                 _write(f, recs)
         return ok
 
-    def drive(self, gen, out, *args, also=()):
-        """Run a driver generator and prove it wrote what the run will load.
 
-        ⛔ CHECK THE GENERATOR SUCCEEDED. Unchecked, the failure mode is the worst
-        kind: the driver is never written, Pd loads a file that does not exist,
-        the "; pd quit" that lives in that file never fires, and the gate HANGS
-        FOREVER instead of failing. A gate that hangs is worse than one that
-        fails.
+def drive(gen, out, *args, also=()):
+    """Run a driver generator and prove it wrote what the run will load.
 
-        `also` is (path, why) for each further file the generator must write --
-        a harness beside the driver, whose absence is the worst failure of all:
-        Pd loads a driver that talks to nothing and every count comes back 0.
-        """
-        rc = subprocess.call([sys.executable, os.path.join(ROOT, gen), out]
-                             + [str(a) for a in args],
-                             stdout=subprocess.DEVNULL, cwd=ROOT)
-        if rc != 0:
-            fail("FAIL: %s errored -- see the traceback above." % gen)
-        if not os.path.isfile(out):
-            fail("FAIL: %s wrote no driver to %s." % (gen, out))
-        for p, why in also:
-            if not os.path.isfile(p):
-                fail("FAIL: the generator wrote no harness to %s." % p, *why)
+    ⛔ CHECK THE GENERATOR SUCCEEDED. Unchecked, the failure mode is the worst
+    kind: the driver is never written, Pd loads a file that does not exist,
+    the "; pd quit" that lives in that file never fires, and the gate HANGS
+    FOREVER instead of failing. A gate that hangs is worse than one that
+    fails.
 
-    def run(self, cap, dog, *argv):
-        """Pd with argv, its console into cap, killed at `dog` seconds.
+    `also` is (path, why) for each further file the generator must write --
+    a harness beside the driver, whose absence is the worst failure of all:
+    Pd loads a driver that talks to nothing and every count comes back 0.
+    """
+    rc = subprocess.call([sys.executable, os.path.join(ROOT, gen), out]
+                         + [str(a) for a in args],
+                         stdout=subprocess.DEVNULL, cwd=ROOT)
+    if rc != 0:
+        fail("FAIL: %s errored -- see the traceback above." % gen)
+    if not os.path.isfile(out):
+        fail("FAIL: %s wrote no driver to %s." % (gen, out))
+    for p, why in also:
+        if not os.path.isfile(p):
+            fail("FAIL: the generator wrote no harness to %s." % p, *why)
 
-        ...and a watchdog on every headless run, so that no future variant of the
-        generator mistake above can hang instead of failing. A run the watchdog
-        had to end is said out loud: its capture stops wherever Pd was, and the
-        analyzer's window count is what fails it.
-        """
-        with open(cap, "wb") as fh:
-            p = subprocess.Popen([PD] + list(argv), stdout=fh,
-                                 stderr=subprocess.STDOUT, cwd=ROOT)
-            try:
-                p.wait(timeout=dog)
-            except subprocess.TimeoutExpired:
-                p.kill()
-                p.wait()
-                print("watchdog: Pd was still running after %d s and was killed "
-                      "-- its driver never reached `pd quit`." % dog, file=sys.stderr)
-        return p.returncode
+def run(cap, dog, *argv):
+    """Pd with argv, its console into cap, killed at `dog` seconds.
 
-    def close(self):
-        close()
+    ...and a watchdog on every headless run, so that no future variant of the
+    generator mistake above can hang instead of failing. A run the watchdog
+    had to end is said out loud: its capture stops wherever Pd was, and the
+    analyzer's window count is what fails it.
+    """
+    with open(cap, "wb") as fh:
+        p = subprocess.Popen([PD] + list(argv), stdout=fh,
+                             stderr=subprocess.STDOUT, cwd=ROOT)
+        try:
+            p.wait(timeout=dog)
+        except subprocess.TimeoutExpired:
+            p.kill()
+            p.wait()
+            print("watchdog: Pd was still running after %d s and was killed "
+                  "-- its driver never reached `pd quit`." % dog, file=sys.stderr)
+    return p.returncode
 
 
 def sink(port):

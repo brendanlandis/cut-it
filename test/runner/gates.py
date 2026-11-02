@@ -17,7 +17,7 @@ import tempfile
 # ---------------------------------------------------------------------------
 # The table's length is asserted, since a gate dropped in an edit is otherwise
 # silent. Update it deliberately, never to make a red run green (as MIDI_EXPECT).
-EXPECT = 25
+EXPECT = 26
 
 # The gates all run side by side and print whole in table order, so the log
 # reads as a serial run's and has one RESULT: line. None waits for another: no
@@ -64,6 +64,7 @@ GATES = [
     ("the phone link", "./test/gate/phone-assert.sh"),
     ("the SP-404, both directions", "./test/gate/sp404-assert.sh"),
     ("the Volca", "./test/gate/volca-assert.sh"),
+    ("the sequencer and its drum page", "./test/gate/sequencer-assert.sh"),
     ("the debug patch", "./test/gate/debug-assert.sh"),
 ]
 

@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The sequencer
 
-**Files:** `Cut It/c_steps.pd` · **Gate:** none · **Bench:** none
+**Files:** `Cut It/c_steps.pd` · **Gate:** `test/gate/sequencer-assert.sh` · **Bench:** none
 
 ## What it is
 

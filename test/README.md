@@ -18,7 +18,7 @@ word.
 
 ## One gate per module
 
-Twenty-one gates, and each answers for exactly one page under `ref/`. That is the whole organizing
+Twenty-two gates, and each answers for exactly one page under `ref/`. That is the whole organizing
 principle: **a page that names a gate should be able to name one whose entire subject is that page**,
 or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
@@ -46,10 +46,11 @@ were false.
 | `sp404-assert.sh` | 19 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
+| `sequencer-assert.sh` | 28 | `module/sequencer` |
 
-**712 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**740 checks.** ⚠️ **Twenty-one of the twenty-two gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **705**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **733**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 43 come from TWO Pd runs and one tally**, which is the only entry here

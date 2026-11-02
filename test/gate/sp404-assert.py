@@ -4,7 +4,7 @@
 The device in both directions:
 
   transmit   all sixteen pads of bank A, the bank choosing the channel, matched
-             note-offs, the 5 ms limiter from two sides, and All Notes Off
+             note-offs, the trigger budget from two sides, and All Notes Off
   receive    a press naming its bank and pad, a press and its release each
              drawing ONE row -- u_map's, never m_404's -- and a channel outside
              the ten being ignored
@@ -52,15 +52,23 @@ def run_asserts(cap):
     A.check("every bank-A note-on is matched by a note-off ON THE SAME CHANNEL",
             len(offs) == 16, "%d offs on channel %d" % (len(offs), BANK_A))
 
-    print("\n--- the rate limit ---")
+    print("\n--- the trigger budget ---")
+    # Sixteen at once is a sequencer step with every drum track on.
     n = len(ons("BURST"))
-    A.check("⛔ 20 triggers in ONE logical instant emit exactly 1 -- it DROPS, never queues",
-            n == 1, "emitted %d" % n)
-    # The burst proves drops-not-queues and nothing more; only the pair can see a
-    # disarmed limiter.
-    pair = len(ons("PAIR"))
-    A.check("⛔ two triggers 2 ms apart emit exactly 1 -- the INTERVAL is real",
-            pair == 1, "emitted %d" % pair)
+    A.check("⛔ 20 triggers in ONE logical instant emit exactly 16 -- a whole step "
+            "passes, the excess DROPS", n == 16, "emitted %d" % n)
+    # The burst proves drops-not-queues and nothing more; only triggers a real
+    # millisecond apart can see the refill.
+    note = lambda k, p: len([e for e in ons(k) if int(e[1][0]) == p])
+    A.check("the drain in the refill window is a whole step too -- 16 of pad 1",
+            note("REFILL", PADS_A[0]) == 16, "pad 1 (note %d) emitted %d"
+            % (PADS_A[0], note("REFILL", PADS_A[0])))
+    A.check("⛔ drained, a trigger 2 ms later is DROPPED -- the budget refills at "
+            "200 a second, not at once", note("REFILL", PADS_A[1]) == 0,
+            "pad 2 (note %d) emitted %d" % (PADS_A[1], note("REFILL", PADS_A[1])))
+    A.check("... and one 12 ms later passes -- the bucket does refill",
+            note("REFILL", PADS_A[2]) == 1,
+            "pad 3 (note %d) emitted %d" % (PADS_A[2], note("REFILL", PADS_A[2])))
 
     print("\n--- receive (only t_notein can reach this) ---")
     p = [e for e in W("RX-B5") if e[0] == "PARAM"]

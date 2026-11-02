@@ -43,13 +43,13 @@ were false.
 | `nano-assert.sh` | 26 | `device/nanokontrol` |
 | `organelle-assert.sh` | 21 | `device/organelle` |
 | `phone-assert.sh` | 55 | `device/phone` |
-| `sp404-assert.sh` | 17 | `device/sp404` |
+| `sp404-assert.sh` | 19 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 
-**710 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**712 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **703**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **705**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 43 come from TWO Pd runs and one tally**, which is the only entry here
@@ -388,7 +388,7 @@ halt the clock** — the transport pauses the subscribers, it does not clear the
 
 ```sh
 ./test/gate/map-assert.sh            68 checks, ~7 s — the lookup, and the static lint
-./test/gate/sp404-assert.sh          17 checks, ~7 s — the 404 in BOTH directions
+./test/gate/sp404-assert.sh          19 checks, ~7 s — the 404 in BOTH directions
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
 
@@ -436,8 +436,10 @@ cost a wrong diagnosis once: item 232.
 **Proven to fail** — the shared gate was, on a `47 + n` pad map (12 of 16 pads, both directions), a row naming a
 non-existent destination, and a duplicate row. ⛔ **It PASSED a disarmed rate limiter on the first
 try** — the burst window fires in one logical instant and `[del 0]` still defers to the next
-scheduler tick, so it proved *drops-rather-than-queues* and nothing about the interval. A window of
-two triggers **2 ms apart** was added, which straddles the 5 ms gate: 1 armed, 2 disarmed.
+scheduler tick, so it proved *drops-rather-than-queues* and nothing about the interval. Since the
+limiter became a token bucket (16 at once, one per 5 ms), the burst asserts exactly 16 of 20, and a
+refill window drains the bucket and fires two more pads 2 and 12 ms after it: the first must drop
+and the second pass. Red against the old 5 ms gap, an instant refill, and an uncapped bucket.
 
 **One row per control** (item 317) was made to fail against the `m_nano`, `m_404` and `m_launchpad`
 that still posted their own rows: four red in `nano-assert` — an unmapped slider drawn twice, a

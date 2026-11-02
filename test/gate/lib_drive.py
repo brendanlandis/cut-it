@@ -7,12 +7,14 @@
 
 A WINDOW is `(absolute_ms, MARK, [message bodies], gap_ms)`. The driver prints
 the MARK, then fires each body on its own delay, and the analyzer reads the
-capture back one window at a time.
+capture back one window at a time. A body may be `(offset_ms, text)` instead,
+for a window whose actions are not evenly spaced: it fires `offset_ms` after
+the first, and bodies with the same offset share a logical instant.
 
 Every window's delay hangs off the one loadbang with an absolute time, so one
 slow window cannot shift the rest. Each action inside a window gets its own
-delay too: off one trigger they would share a logical instant, and m_404's rate
-limiter would rightly collapse sixteen pads to one. ⚠️ That inner delay is
+delay too: off one trigger they would share a logical instant, and m_404's
+trigger budget would rightly drop everything past sixteen. ⚠️ That inner delay is
 relative to the window's `ms`, which banged it; an absolute time there lands
 the action in a later window.
 
@@ -77,8 +79,9 @@ def build(path, seq, tag, taps, quit_ms, blurb, burst=None, notes=()):
         pr = obj(x, 330, "print %s" % tag)
         C.append((t, len(bodies), mk, 0)); C.append((mk, 0, pr, 0))
         for j, body in enumerate(bodies):
-            dj = obj(x + 20, 380 + j * 42, "del %d" % (20 + j * gap))
-            m = msg(x + 110, 380 + j * 42, body)
+            off, text = body if isinstance(body, tuple) else (j * gap, body)
+            dj = obj(x + 20, 380 + j * 42, "del %d" % (20 + off))
+            m = msg(x + 110, 380 + j * 42, text)
             C.append((t, len(bodies) - 1 - j, dj, 0)); C.append((dj, 0, m, 0))
         x += 300
 

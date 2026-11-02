@@ -143,7 +143,7 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 
 | Name | Carries | Source |
 |---|---|---|
-| `mode` | **`<class> <name>`** — `compose`/`perform` then the sub-mode, e.g. `compose mode-1` | ✅ `u_map`, from the nano's transport row |
+| `mode` | **`<class> <name>`** — `compose`/`perform` then the sub-mode, e.g. `compose mode-1` | ✅ `u_map`, from the Launchpad's top row |
 | `tempo` | **master reference** BPM, as a float | any → `u_tempo` |
 | `clock` | **master reference** beat bang | `u_tempo` |
 | `start` / `stop` | transport, carried as a **bang** | any → `u_tempo` |

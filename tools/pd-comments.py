@@ -24,7 +24,9 @@ import sys
 BOXES = ("obj", "msg", "text", "floatatom", "symbolatom", "listbox", "restore",
          "array", "scalar")
 CONNECT = re.compile(r"^#X connect (\d+) (\d+) (\d+) (\d+);\s*$")
-WIDTH = re.compile(r" \\, f (\d+)$")
+# Pd writes a comment's width as an UNESCAPED `, f 58` after the text; an
+# escaped ` \, ` is a comma in the text itself.
+WIDTH = re.compile(r"(?<!\\), f (\d+)$")
 
 
 def raw_records(src):
@@ -113,7 +115,7 @@ def rewrite(rec, text):
     width = WIDTH.search(head)
     new = "#X text %s %s %s" % (parts[2], parts[3], escape(text))
     if width:
-        new += " \\, f %s" % width.group(1)
+        new += ", f %s" % width.group(1)
     trail = rec[len(rec.rstrip()):]
     return new + ";" + trail
 

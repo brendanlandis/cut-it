@@ -86,7 +86,7 @@ pressing Connect.
 
 **Reopen `cut-it/wifi-roam-fault`** in `!projects` first: it holds what to try, in what order,
 and when to stop: two router-side changes, then a binding stopping rule that closes item 81 as won't-fix and lets AP
-mode be the answer. Verify against the repro above, not against a quiet spell.
+mode be the answer. Verify against the repro (*The roam fault* on the Organelle's Reference page (`~/Sites/!reference/critter-guitari-organelle-1.md`)), not against a quiet spell.
 
 ⛔ **DO NOT RE-ENABLE THE PREFERRED-AP STEER, and it is tempting precisely because it looks like a
 fallback.** It **drops IPv4 itself on every fire**, so it manufactures the symptom it is meant to

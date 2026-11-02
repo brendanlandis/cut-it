@@ -132,7 +132,7 @@ linger remotely: use `./tools/deploy.sh --clean` after renaming or removing an a
 test is whether Pd is younger than the files just pushed — `/proc/<pid>`'s mtime is the process
 start time, which needs one `test -nt` and no `ps` flags that differ between busybox and procps.
 ⚠️ Both sides of that comparison are **device-side**, which is the only safe way to compare
-timestamps here — see *The clock* above.
+timestamps here — see *The clock* on the Organelle's Reference page (`~/Sites/!reference/critter-guitari-organelle-1.md`).
 
 ⚠️ **The check cannot be skipped by `NOLOAD=1`** — that flag skips the load itself, so there is
 nothing to verify. If you use it, select the patch from the front panel and know that until you do,

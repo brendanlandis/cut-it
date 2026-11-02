@@ -604,8 +604,8 @@ control there is.
 | GO | |
 |---|---|
 | the `bng` at the top of the patch | Mac |
-| **the Organelle's encoder click** | both — `u_mother-stub` sends `encbut` on the Mac, and nothing in Cut It consumes it |
-| `echo "go;" \| nc -u -w0 organelle.local 9998` | device, from the SSH window |
+| **the Organelle's encoder click** | Mac only — `u_mother-stub` sends `encbut`; on the device `mother` never forwards it (below) |
+| `./test/run.sh --bench <name> --target device` | device — the runner sends GO itself (below) |
 
 Turning the encoder **repeats** the current step without advancing — for when you looked away.
 

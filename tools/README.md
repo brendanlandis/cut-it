@@ -26,7 +26,7 @@ matters because the Organelle launches Pd with `-nogui` and there is no console 
 ⚠️ **Eighteen one-off probes were deleted on 2026-08-07** — seven for the SP-404 rate ceiling alone,
 three July MIDI probes superseded by the `m_` layers, and a `wire.sh` here that was a 42-line-behind
 ancestor of `Cut It/wire.sh` with no `|| true` on any line. Every finding is on a `ref/` page and
-most are now asserted by a gate. They are all in git history; `plan-cleanup.md` lists them.
+most are now asserted by a gate. They are all in git history.
 
 ⛔ **The test was "would you run it again", not "is it used".** A script mentioned in no document is
 fine.
@@ -96,9 +96,9 @@ is the fixture, and it is a step there.
 
 ### Chasing it
 
-⛔ **WHAT THE FAULT IS, WHAT IT IS NOT, AND WHAT TO TRY ARE ALL ON
-[../ref/wifi.md](../ref/wifi.md)** — the evidence ledger, the reproduction and the wrong turns; what
-to try next and the binding stopping rule are on `cut-it/wifi-roam-fault` in `!projects`. **This page is how to RUN the tools; that page is the subject.** ⚠️ **Do not
+⛔ **What the fault is, what it is not, the evidence ledger, the reproduction and the wrong turns
+are under *Wifi* on the Organelle's Reference page (`~/Sites/!reference/critter-guitari-organelle-1.md`)**; the tools and the stage procedure are on
+[../ref/wifi.md](../ref/wifi.md); what to try next and the binding stopping rule are on `cut-it/wifi-roam-fault` in `!projects`. **This page is how to RUN the tools; the Reference page is the subject.** ⚠️ **Do not
 restate any of it here.**
 
 | | |
@@ -107,7 +107,7 @@ restate any of it here.**
 | `wifi-reassociate.sh` | **Rung 3, and runnable by hand.** Mirrors what the front panel's own `wifi_control.py` does, with the real credentials from `/sdcard/wifi.txt`. ⚠️ **bash, not sh** — it uses process substitution and the device's `/bin/sh` is busybox ash. |
 | `wifi-poll.sh` | **Runs on the Mac.** Leave it in a terminal. Redraws a small block every minute and answers one question: *anything new since I started, y/n.* Rings the bell and raises a macOS notification. |
 | `wifi-report.sh` | Pulls the evidence off the device and summarizes it. **`--mark` first**, then it reports only what happened after the mark. |
-| `../ref/wifi.md` | What each outcome **means** and what to do about it. Hand it to an agent along with `wifi-report.sh`'s output. |
+| The Organelle's Reference page (`~/Sites/!reference/critter-guitari-organelle-1.md`), *Wifi* | What each outcome **means**, item by item. Hand it to an agent along with `wifi-report.sh`'s output. |
 
 **The two probes are the point of the current rig**, because they split the fault before anything
 tries to repair it:
@@ -133,7 +133,7 @@ made these captures readable.
 
 ⚠️ **THREE SEPARATE DEFECTS HAVE PRODUCED A WRONG `UNRECOVERED` VERDICT** — read every historical
 one as *"no address within the timeout"*, never as *"recovery failed"*. All three are in
-[../ref/wifi.md](../ref/wifi.md)'s wrong-turns table, items 161 and 178.
+*The evidence, item by item* on the Organelle's Reference page (`~/Sites/!reference/critter-guitari-organelle-1.md`), items 161 and 178.
 
 ### The preferred-AP steer — present, proven, and OFF
 
@@ -186,8 +186,8 @@ so an edit under a live interpreter is genuinely unsafe — restart the poll aft
 It fired one UDP datagram at a bench's `[netreceive 9998]`, and `-n N` walked a bench forward
 without judging the steps on the way. **The runner does both better**: it sends GO at the right
 moment rather than needing a second window, and `--from N` *records* that the skipped steps were
-not run instead of passing over them in silence. The netcat lesson it carried is on
-[ref/device-os.md](../ref/device-os.md).
+not run instead of passing over them in silence. The netcat lesson it carried is under *Sending the device a UDP datagram* on
+the Organelle's Reference page (`~/Sites/!reference/critter-guitari-organelle-1.md`).
 
 ### `tidy.sh` — what has accumulated on the device, and what is safe to remove
 
@@ -422,8 +422,8 @@ fallback that needs no running patch at all.
 ## Things these patches taught us
 
 Findings specific to working *in this folder*. The Launchpad's own behavior — palette,
-animation modes, LED state, `polytouchin` ordering — is cataloged in
-[../ref/device/](../ref/device/). Pd message-discipline traps (`[list trim]`, `route`'s
+animation modes, LED state, `polytouchin` ordering — is on its Reference page
+(`~/Sites/!reference/novation-launchpad-pro-mk3.md`). Pd message-discipline traps (`[list trim]`, `route`'s
 selector rules, `sendtyped` arity, `quitting`) are in
 [../ref/conventions.md](../ref/conventions.md), and the OSC ones in
 [../ref/module/display.md](../ref/module/display.md).

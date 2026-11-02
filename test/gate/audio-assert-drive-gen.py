@@ -89,10 +89,11 @@ def write_harness(path, statedir):
 
     txt(20, 20, HARNESS_BLURB, 92)
 
-    # main-dev.pd's creation arguments with the state directory changed, all but
-    # the sixth (u_net's inbound port), which this harness does not pass. Pd 0.49
-    # does not warn about a wrong count.
-    root = obj(20, 260, "u_root 17 1 %s 33 49" % statedir)
+    # main-dev.pd's creation arguments with the state directory changed, and the
+    # gate's own inbound port as the sixth, as lib_scratch's state_dir gives it.
+    # Pd 0.49 does not warn about a missing one: u_net got 0 and never listened.
+    root = obj(20, 260, "u_root 17 1 %s 33 49 %d"
+               % (statedir, int(os.environ.get("CUTIT_INPORT") or 9002)))
 
     osc_l = obj(20, 420, "osc~ 220")
     amp_l = obj(20, 470, "*~ 0")

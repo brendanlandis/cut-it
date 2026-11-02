@@ -174,14 +174,18 @@ def init(g):
     return g.analyze("test/gate/init-assert.py", *g.args, stdin=cap)
 
 
-def _harness_gate(g, dog, *gen_args, why):
+def _harness_gate(g, dog, *gen_args, why, prep=None):
     """A gate that loads a generated harness rather than main-dev.pd.
 
     No state_dir and no midi_rewrite, on purpose: the harness is generated, so
-    there is no u_root line to repoint, and nothing in the run reads MIDI.
+    there is no main-dev.pd line to repoint, and nothing in the run reads MIDI.
+    A harness that holds u_root passes prep=net_off, or its u_net would send to
+    the phone.
     drive() checks the harness was written as well as the driver.
     """
     s = g.copy()
+    if prep:
+        prep(s)
     harness = s.path("harness.pd")
     S.drive(GEN % (g.name + "-assert"), s.path("drive.pd"), harness,
             *[a(s) if callable(a) else a for a in gen_args], also=[(harness, why)])
@@ -193,8 +197,9 @@ def audio(g):
     # u_mother-stub already holds catch~ outL and outR, so a second pair would
     # fail to create and record silence. The state directory is u_root's arg.
     S.require("Cut It/u_root.pd", "Cut It/u_level.pd")
+    # Its u_root holds u_net, so its OSC goes to a sink here, not to the phone.
     s, cap = _harness_gate(
-        g, 45, lambda s: s.state, lambda s: s.path("out.wav"),
+        g, 45, lambda s: s.state, lambda s: s.path("out.wav"), prep=lambda s: s.net_off(),
         why=["      Without it nothing instantiates u_root, nothing records, and",
              "      the gate would report a silent audio path rather than a",
              "      broken test."])

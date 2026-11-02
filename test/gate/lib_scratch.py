@@ -240,10 +240,15 @@ class Scratch:
              "      Without that, a previous run's saved mode changes what the map",
              "      does at 3.5 s and half the windows go silent -- item 232 --",
              "      and gates run side by side fight over one UDP port."])
+        return self.net_off(port)
 
-        # Keep u_net's OSC off the house network (and the phone): send it to a
-        # sink here, 1000 above the inbound port. The sink has to be bound
-        # (sink() below). phone_mirror repoints it again for a bench.
+    def net_off(self, port=None):
+        """Keep u_net's OSC off the house network (and the phone): send it to a
+        sink here, 1000 above the inbound port. The sink has to be bound (sink()
+        below). state_dir does this; a gate that builds its own harness around
+        u_root calls it alone. phone_mirror repoints it again for a bench.
+        """
+        port = int(port or os.environ.get("CUTIT_INPORT") or 9002)
         _records_replace(
             os.path.join(self.patch, "u_root.pd"),
             re.escape("u_net 192.168.1.5 8000 "),

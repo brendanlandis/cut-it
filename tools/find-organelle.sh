@@ -101,7 +101,7 @@ ASSOCIATED-NO-LEASE)
     echo "     to a continued failure. Capture first, then recover:"
     echo "      ssh root@$WHERE 'ip addr show wlan0; wpa_cli -i wlan0 status; dmesg | tail -40'"
     echo "      ./tools/wifi-report.sh"
-    echo "      ssh root@$WHERE 'sh /sdcard/wifi-reassociate.sh'   # rung 1, the one that works" ;;
+    echo "      ssh root@$WHERE 'bash /sdcard/wifi-reassociate.sh' # rung 1, the one that works" ;;
 AP-MODE)
     echo "VERDICT: AP-MODE"
     echo "  Join the Organelle's own network. It is 192.168.12.1 there, and that"

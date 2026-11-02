@@ -19,12 +19,12 @@ import tempfile
 # silent. Update it deliberately, never to make a red run green (as MIDI_EXPECT).
 EXPECT = 25
 
-# The gates run side by side, one block at a time, and print whole in table
-# order, so the log reads as a serial run's and has one RESULT: line. Nothing
-# needs STRUCTURE to finish first any more (no gate writes inside the repo); it
-# costs the run ~5 s. The MIDI inventory is in it because every module gate
+# The gates all run side by side and print whole in table order, so the log
+# reads as a serial run's and has one RESULT: line. None waits for another: no
+# gate writes inside the repo, so none can read another's half-written file.
+# The MIDI inventory prints before the module gates because every one of them
 # rewrites the same MIDI boxes, so a drifted count explains them all at once.
-STRUCTURE = [
+GATES = [
     # --- 1. structure ------------------------------------------------------
     ("layout and graph structure",
      'python3 test/gate/pd-layout-check.py "Cut It"/*.pd "Cut It Debug"/*.pd'),
@@ -44,9 +44,7 @@ STRUCTURE = [
     ("the runner's own failure paths", "./test/gate/runner-assert.sh"),
 
     ("the MIDI inventory", "./test/gate/midi-emitters-assert.sh"),
-]
 
-MODULES = [
     # --- 4. one gate per module --------------------------------------------
     ("the boot sequence", "./test/gate/init-assert.sh"),
     ("device presence and the bounded re-wire", "./test/gate/presence-assert.sh"),
@@ -69,8 +67,6 @@ MODULES = [
     ("the debug patch", "./test/gate/debug-assert.sh"),
 ]
 
-GATES = STRUCTURE + MODULES
-
 # Each gate's main-dev.pd copy runs u_net on its own inbound port, base + its
 # place in the table (lib_scratch's state_dir writes CUTIT_INPORT); a gate run
 # by hand keeps 9002. Clear of 9001/9002 (the device, main-dev.pd) and of
@@ -78,7 +74,7 @@ GATES = STRUCTURE + MODULES
 INPORT_BASE = 9100
 
 # CUTIT_JOBS=1 runs them one at a time.
-JOBS = int(os.environ.get("CUTIT_JOBS") or 0) or len(MODULES)
+JOBS = int(os.environ.get("CUTIT_JOBS") or 0) or len(GATES)
 
 # Every gate's Pd runs with HOME pointed at an empty directory, so it never reads
 # the Mac's Pd preferences, which Pds starting side by side trip over (Reference,
@@ -136,8 +132,7 @@ def report_one(label, ok, out):
 
 
 def run_all():
-    """Every gate, STRUCTURE then MODULES, each block side by side.
-    -> list of the labels that failed."""
+    """Every gate, side by side. -> list of the labels that failed."""
     if len(GATES) != EXPECT:
         # Before anything runs: the wrong table is not the run anyone asked for.
         sys.exit("gates.py: EXPECT is %d but the table holds %d. Update it "
@@ -148,17 +143,14 @@ def run_all():
     env = dict(os.environ, HOME=home, PYTHONUNBUFFERED="1")
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=JOBS)
     try:
-        start = 0
-        for block in (STRUCTURE, MODULES):
-            futures = [pool.submit(run_one, start + i, label, cmd, env)
-                       for i, (label, cmd) in enumerate(block)]
-            # In table order: a gate that finishes early waits its turn to print.
-            for (label, _), fut in zip(block, futures):
-                ok, out = fut.result()
-                report_one(label, ok, out)
-                if not ok:
-                    failed.append(label)
-            start += len(block)
+        futures = [pool.submit(run_one, i, label, cmd, env)
+                   for i, (label, cmd) in enumerate(GATES)]
+        # In table order: a gate that finishes early waits its turn to print.
+        for (label, _), fut in zip(GATES, futures):
+            ok, out = fut.result()
+            report_one(label, ok, out)
+            if not ok:
+                failed.append(label)
     finally:
         # A Ctrl-C must not leave queued gates to start after it.
         pool.shutdown(wait=True, cancel_futures=True)

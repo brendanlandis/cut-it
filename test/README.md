@@ -127,8 +127,8 @@ drifted and nothing noticed.
 ./test/run.sh --all          and then the benches -- needs the rig, and a person
 ```
 
-**The gates run side by side**: the structure gates first, then every module gate at once, each
-printed whole in table order, so the log reads as a serial run's did. `CUTIT_JOBS=1 ./test/run.sh`
+**The gates run side by side**, all of them at once, each printed whole in table order, so the log
+reads as a serial run's did. `CUTIT_JOBS=1 ./test/run.sh`
 runs them one at a time. Each module gate's `main-dev.pd` copy gets its own inbound UDP port
 (`CUTIT_INPORT`), and each gate's Pd runs with an empty `HOME` so it skips the Mac's Pd preferences —
 see `test/runner/gates.py`.

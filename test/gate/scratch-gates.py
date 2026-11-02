@@ -4,16 +4,9 @@ and reads -- one recipe per gate, on test/gate/lib_scratch.py.
 
     python3 test/gate/scratch-gates.py <gate> [-v] [--keep]
 
-⚠️ RUN IT THROUGH test/gate/<gate>-assert.sh. That is the path test/runner/gates.py
-and every ref/ page names; the shell file keeps the gate's header and hands over
-to the recipe here. -v reaches the analyzer and shows the detail behind every
+Run it through test/gate/<gate>-assert.sh, the path test/runner/gates.py and
+the ref/ pages name. -v reaches the analyzer and shows the detail behind every
 check; --keep leaves the scratch directories, the drivers and the captures.
-
-WHY ONE FILE. The seventeen shell wrappers this replaced repeated the same 30-60
-lines and differed only in required files, extra map rows, a port and the
-watchdog -- so three of them dropped -v without anyone noticing, and the t_shell
-install was pasted five times. What a gate does differently is all a recipe
-says; everything they share is lib_scratch's.
 """
 import os
 import shutil
@@ -98,17 +91,9 @@ def _stdin_gate(g, dog, blank=False, **kw):
     return g.analyze("test/gate/%s-assert.py" % g.name, *g.args, stdin=cap)
 
 
-# ⚠️ THE REWRITE IS NOT FOR THESE GATES' BENEFIT -- u_err, g_oled, g_led and
-# m_organelle emit no MIDI. It runs because every scratch-copy gate enforces the
-# whole inventory, so a new emitter cannot be added anywhere without some gate
-# going red.
-#
-# ⛔ err AND oled ARE THE TWO THAT READ WHAT A DEAD u_net SOCKET RAISES. A
-# `warn u_net net-link-down` takes the OLED footer and lands in the error log,
-# failing either gate on whichever window it hits, for a reason that has nothing
-# to do with what it tests. state_dir's sink is what keeps it out of every
-# gate: each of these two once bound a sink of its own on 9992 and 9993 on top
-# of it, and that second one was redundant from the day state_dir got its own.
+# These four emit no MIDI; the rewrite runs anyway, to enforce the inventory.
+# err and oled are the two a dead u_net socket would fail (net-link-down takes
+# the footer and the log); state_dir's sink keeps it away.
 def err(g):
     S.require("Cut It/u_err.pd")
     return _stdin_gate(g, 30)
@@ -130,10 +115,8 @@ def organelle(g):
 
 
 def nano(g):
-    # ⛔ m_404 AND m_launchpad ARE REQUIRED HERE TOO, and not by accident: the
-    # last two windows drive their channel blocks through the same t-ctlin, which
-    # is what gives "the nano's channel produces nothing of theirs" a liveness
-    # witness.
+    # m_404 and m_launchpad too: the last two windows drive their channels
+    # through the same t-ctlin, the witness that the nano's produces none of theirs.
     S.require("Cut It/m_nano.pd", "Cut It/m_404.pd", "Cut It/m_launchpad.pd",
               "test/stubs/t_ctlin.pd")
     return _stdin_gate(g, 40)
@@ -141,8 +124,7 @@ def nano(g):
 
 def sp404(g):
     S.require("Cut It/m_404.pd", "Cut It/cut-it-map.txt")
-    # All sixteen pads of bank A, plus one in bank C -- the bank is what chooses
-    # the channel, and a gate that only ever drove bank A could not see that.
+    # All sixteen pads of bank A, plus one in bank C: the bank picks the channel.
     rows = ["mode-1 gk-p%d 404-pad %d" % (n, n) for n in range(1, 17)]
     rows.append("mode-1 gk-pc1 404-pad 33")
     return _stdin_gate(g, 40, rows=rows)
@@ -178,26 +160,16 @@ def init(g):
     s = g.copy()
     s.state_dir()
     s.shell_stub()
-    # ⛔ SEED BOTH STATE FILES. The restore is u_init's last outlet, and against
-    # empty files it publishes nothing at all -- so "the restore fired" would be
-    # answered by silence, which is also what a restore that never fired looks
-    # like. ⚠️ manual FIRST in the analyzer's expectation, because u_state
-    # replays the manual store before the auto one: the trigger's right outlet
-    # fires first.
+    # Both state files seeded, or an empty restore and a restore that never
+    # fired look the same. u_state replays manual before auto.
     with open(os.path.join(s.state, "cut-it-manual.txt"), "w") as fh:
         fh.write("init-mprobe 7\n")
     with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
         fh.write("init-probe 42\n")
     g.rewrite(s)
     S.drive(GEN % "init-assert", s.path("drive.pd"))
-    # ⛔ THE DRIVER LOADS FIRST HERE, AND IT IS THE ONLY GATE THAT DOES. Pd opens
-    # these in order, so a driver named second has its [r disp] taps created
-    # AFTER main-dev.pd's loadbang has already fired -- and u_init's FIRST stage
-    # is at loadbang. Named second, this gate saw four stages instead of five and
-    # one midiInGate instead of two, and every one of those absences looked
-    # exactly like the patch not doing it. Every other gate gets away with the
-    # usual order because its first window opens at 300 ms and it drives what it
-    # asserts.
+    # ⛔ The driver loads first here, alone among the gates: u_init's first stage
+    # is at loadbang, and a driver opened second creates its taps after it.
     cap = g.pd(s, 40, s.path("drive.pd"), main_dev(s))
     return g.analyze("test/gate/init-assert.py", *g.args, stdin=cap)
 
@@ -205,14 +177,9 @@ def init(g):
 def _harness_gate(g, dog, *gen_args, why):
     """A gate that loads a generated harness rather than main-dev.pd.
 
-    ⚠️ NO state_dir AND NO midi_rewrite, and both omissions are deliberate
-    rather than forgotten: there is no `u_root 17 1 /tmp` line to rewrite -- the
-    harness is GENERATED -- and nothing in the run reads or asserts a MIDI byte.
-    The inventory is enforced by every other copy.
-
-    ⛔ drive() IS TOLD ABOUT THE HARNESS TOO. The generator writes two files,
-    and a missing harness is the worst kind of failure: Pd loads a driver that
-    talks to nothing and the gate reports a dead subject with total confidence.
+    No state_dir and no midi_rewrite, on purpose: the harness is generated, so
+    there is no u_root line to repoint, and nothing in the run reads MIDI.
+    drive() checks the harness was written as well as the driver.
     """
     s = g.copy()
     harness = s.path("harness.pd")
@@ -222,28 +189,22 @@ def _harness_gate(g, dog, *gen_args, why):
 
 
 def audio(g):
-    # ⛔ IT LOADS A HARNESS HOLDING u_root ALONE, NOT main-dev.pd. catch~ must be
-    # uniquely defined and u_mother-stub already holds catch~ outL and catch~
-    # outR, so a second pair beside it would fail to create and the recording
-    # would be silent -- which is also what a broken audio path sounds like.
-    # The private state directory is handed to u_root as a creation argument.
+    # A harness holding u_root alone, not main-dev.pd: catch~ must be unique and
+    # u_mother-stub already holds catch~ outL and outR, so a second pair would
+    # fail to create and record silence. The state directory is u_root's arg.
     S.require("Cut It/u_root.pd", "Cut It/u_level.pd")
     s, cap = _harness_gate(
         g, 45, lambda s: s.state, lambda s: s.path("out.wav"),
         why=["      Without it nothing instantiates u_root, nothing records, and",
              "      the gate would report a silent audio path rather than a",
              "      broken test."])
-    # ⛔ THE ANALYZER READS THE WAV, NOT stdin. It is the only one here that does,
-    # because it is the only one whose subject is samples rather than messages.
-    # The capture goes with it so u_level's disp reports -- the other file on the
-    # page -- can be asserted in the same run.
+    # The analyzer reads the wav, and the capture for u_level's disp reports.
     return g.analyze("test/gate/audio-assert.py", s.path("out.wav"), cap, *g.args)
 
 
 def clock(g):
-    # ⛔ A HARNESS AND NOT main-dev.pd, and that is the whole shape of it: c_clock
-    # publishes on no bus -- its output is four outlets -- so only a [print]
-    # wired to an outlet can see it. Three instances, nothing else running.
+    # A harness: c_clock publishes on no bus, so only a [print] on an outlet
+    # sees it. Three instances, nothing else running.
     S.require("Cut It/c_clock.pd")
     s, cap = _harness_gate(
         g, 40,
@@ -257,13 +218,8 @@ def debug(g):
               "Cut It Debug/err-tail.sh", "Cut It Debug/net-probe.sh",
               "Cut It/wire.sh")
     rc = 0
-    # ⛔ THE COPY IS CHECKED BEFORE ANY Pd RUNS, and this is the cheapest real
-    # check in the file. The debug patch carries its own wire.sh because at a
-    # venue the instrument's folder may have been moved or deleted -- that is
-    # literally step 5 of the recover bench -- and the two menu directories are
-    # separate. But a second INDEPENDENT copy of nine aconnect lines is precisely
-    # the drift this project keeps removing, so the copy is allowed and the
-    # divergence is not.
+    # The debug patch's wire.sh is a copy, so it works with the instrument's
+    # folder gone (AGENTS.md); the copy may not diverge.
     print("=== wire.sh is a copy, not a second implementation ===")
     with open("Cut It/wire.sh", "rb") as a, open("Cut It Debug/wire.sh", "rb") as b:
         same = a.read() == b.read()
@@ -282,14 +238,7 @@ def debug(g):
                         stdout=sys.stderr)
         rc = 2
     s = g.copy(src="Cut It Debug")
-    # ⛔ THE DEBUG PATCH'S OWN THREE, NOT THE INSTRUMENT'S TWENTY-ONE. MIDI_EXPECT
-    # here would fail on every class the debug patch legitimately does not have,
-    # and dropping the count entirely would give back the "not zero" check that
-    # let the old phase 6 gate drift from five boxes to six in silence.
     g.rewrite(s, S.MIDI_DEBUG_EXPECT)
-    # ⛔ t_shell IS COPIED OVER shell.pd, NOT BESIDE IT, or mac-stubs/shell.pd
-    # swallows the fork and the single most important assertion in the file --
-    # that the patch wires itself -- is answered by silence.
     s.shell_stub()
     S.drive(GEN % "debug-assert", s.path("drive.pd"))
     cap = g.pd(s, 40, os.path.join(s.patch, "main.pd"), s.path("drive.pd"))
@@ -301,24 +250,12 @@ def debug(g):
 
 def map_(g):
     S.require("Cut It/u_map.pd", "Cut It/cut-it-map.txt")
-    # The gate's own rows, APPENDED so the shipped rows stay under test too. The
-    # static lint checks the SHIPPED file; these give the run a destination that
-    # exists and one that does not.
-    #
-    # ⛔ og-knob-2 AND og-knob-3 ARE HERE FOR PICKUP, and they must be DISTINCT
-    # CC numbers. Both windows send two values to a knob and count what comes
-    # out -- one expects exactly one event and the other expects two -- so a leak
-    # between them has to be visible as a different controller, not as a
-    # duplicate.
-    #
-    # ⚠️ gk-note, gk-pad AND gk-prog EXIST ONLY FOR THE SCREEN. Every value
-    # destination draws its own row on disp through a c_mapped instance, and the
-    # shipped map reaches only tempo and volca-cc -- so without these three rows
-    # the note, pad and program rows would never be exercised by anything.
-    #
-    # ⚠️ pad-13-at is PRESSURE, MAPPED, so the exemption is proven to be about
-    # the RAW row only: a pressure name the mode maps must still draw its
-    # destination's.
+    # Appended to the shipped rows. gk-bad names a destination that does not
+    # exist. The pickup knobs get distinct CCs, so a leak between their windows
+    # shows as the wrong controller rather than a duplicate. gk-note, gk-pad and
+    # gk-prog exist for their disp rows, which the shipped map never reaches.
+    # pad-13-at is pressure, mapped: the raw-row exemption must not hide a
+    # mapped destination's row.
     rows = ["mode-1 gk-cc volca-cc 41",
             "mode-1 gk-bad no-such-destination 0",
             "mode-1 og-knob-2 volca-cc 42",
@@ -329,16 +266,9 @@ def map_(g):
             "mode-1 gk-prog volca-prog 20",
             "mode-1 pad-13-at volca-cc 45"]
 
-    # ⛔ THE GATE RUNS TWICE, AND THE ONLY DIFFERENCE IS ONE FILE. Pickup arms a
-    # knob because mother replayed a SAVED position; it must NOT arm when mother
-    # pushed the knob's LIVE position, which is what happens when no Save has
-    # ever run. u_map tells the two apart by reading knobs.txt at load, so the
-    # branch is selected here by creating that file or not -- the real path
-    # either way, on both machines, with no stub answering for it. Item 239.
-    #
-    # ⚠️ TWO COPIES, NOT ONE REUSED. u_state restores at about 3.5 s from the
-    # state directory the run before it wrote, and that is item 232 -- a mode
-    # left behind changes what the map does mid-run and half the windows go quiet.
+    # Twice, differing only in knobs.txt: u_map arms pickup for a saved knob
+    # position and not for a live one, and tells them apart by that file (item
+    # 239). Two copies, never one reused (item 232).
     caps, inventory = [], []
     for which in ("save", "nosave"):
         s = g.copy("map-" + which)
@@ -361,12 +291,9 @@ def map_(g):
 def recover(g):
     S.require("Cut It/u_map.pd", "Cut It/u_init.pd", "Cut It/recover.sh",
               "test/stubs/t_shell.pd")
-    # ⛔ TWO RUNS, TWO COPIES, AND THE ONLY DIFFERENCE IS WHAT IS ON DISK. Run A
-    # boots clean and drives the button. Run B boots with a breadcrumb already
-    # there -- the state the next boot after a real recover is in. ⚠️ Never one
-    # copy reused: u_state restores at about 3.5 s from the state directory the
-    # previous run wrote, and a leftover mode changes what the map does mid-run.
-    # Item 232.
+    # Two copies differing only on disk: A boots clean and drives the button, B
+    # boots with a breadcrumb, as the boot after a real recover does. Never one
+    # copy reused (item 232).
     copies = {}
     for which in ("a", "b"):
         s = copies[which] = g.copy("recover-" + which)
@@ -374,10 +301,8 @@ def recover(g):
         s.shell_stub()
         crumb = os.path.join(s.state, "cut-it-recover.txt")
         if which == "b":
-            # ⛔ THE ONLY DIFFERENCE BETWEEN THE RUNS. An armed breadcrumb, and a
-            # knobs.txt beside it so that pickup has something to arm -- without
-            # the second file nothing would be held even without a breadcrumb,
-            # and the override would be proved by a knob that was never captured.
+            # And knobs.txt, or nothing would be held even without a breadcrumb
+            # and the override would prove nothing.
             with open(crumb, "w") as fh:
                 fh.write("recover 8123.4\n")
             with open(os.path.join(s.patch, "knobs.txt"), "w") as fh:
@@ -399,18 +324,13 @@ def recover(g):
 
 
 def presence(g):
-    # g_grid is required and not by accident: it is the only readable evidence
-    # of surface OWNERSHIP. m_launchpad keeps that in a $0- send, so the one way
-    # to see it from outside is that the grid does or does not paint.
+    # g_grid: whether it paints is the only outside evidence of surface
+    # ownership, which m_launchpad keeps in a $0- send.
     S.require("Cut It/m_launchpad.pd", "Cut It/g_grid.pd", "Cut It/wire.sh",
               "test/stubs/t_shell.pd", "test/stubs/t_sysexin.pd")
     s = g.copy()
     s.state_dir()
-    # ⛔ THE HEARTBEAT FIRES EVERY TICK IN THIS COPY, so "it runs while nothing is
-    # lost" is observable in every window rather than wherever 16 s happens to
-    # land in a 40 s run. The SHIPPED interval is asserted statically.
     s.watch_fast()
-    # The re-wires are the entire subject, so the counting shell stub.
     s.shell_stub()
     g.rewrite(s)
     S.drive(GEN % "presence-assert", s.path("drive.pd"))
@@ -418,18 +338,8 @@ def presence(g):
           "14 s, 22 s and 30 s) ...")
     cap = g.pd(s, 60, main_dev(s), s.path("drive.pd"))
 
-    # ⛔ THE SECOND RUN, AND IT IS THE ONLY ONE THAT REACHES THE BOUND. The run
-    # above proves the INTERVAL and the COALESCING inside 38 s; it never sees
-    # tick 33, because at the shipped tick the give-up is 72 seconds away.
-    #
-    # ⛔ A SECOND COPY, NOT THE FIRST ONE REWRITTEN. Scaling u_root.pd would change
-    # the patch the run above is being judged against; and the run above sets a
-    # mode, u_state flushes it, and u_init would restore it into this run at what
-    # is now the middle of the recovery -- item 232.
-    #
-    # ⚠️ THE FULL REWRITE, EVEN THOUGH THIS RUN DRIVES NO MIDI AT ALL, so the
-    # second copy enforces MIDI_EXPECT exactly like the first and a new emitter
-    # cannot slip in behind a gate that happens to make two copies.
+    # The bound, which the run above never reaches (the give-up is 72 s away),
+    # in a second copy scaled by scale_present (item 232 again).
     s2 = g.copy("presence-bound")
     s2.state_dir()
     s2.scale_present()

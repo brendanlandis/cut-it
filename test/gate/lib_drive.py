@@ -6,63 +6,32 @@
             blurb="...")
 
 A WINDOW is `(absolute_ms, MARK, [message bodies], gap_ms)`. The driver prints
-the MARK, then fires each body on its own delay, and the analyser reads the
+the MARK, then fires each body on its own delay, and the analyzer reads the
 capture back one window at a time.
 
-⛔ EVERY DELAY HANGS OFF THE ONE loadbang WITH AN ABSOLUTE TIME. Chaining them
-would make each window wait the SUM of everything before it, so one slow window
-silently shifts every window after it and the failure looks like the LAST window
-misbehaving.
+Every window's delay hangs off the one loadbang with an absolute time, so one
+slow window cannot shift the rest. Each action inside a window gets its own
+delay too: off one trigger they would share a logical instant, and m_404's rate
+limiter would rightly collapse sixteen pads to one. ⚠️ That inner delay is
+relative to the window's `ms`, which banged it; an absolute time there lands
+the action in a later window.
 
-⛔ EACH ACTION INSIDE A WINDOW GETS ITS OWN DELAY TOO. Firing a window's actions
-off one trigger puts them all in a SINGLE LOGICAL INSTANT, and m_404's rate
-limiter then correctly collapses sixteen pads to one -- which reads exactly like
-a broken pad map. ⚠️ That inner delay is RELATIVE: it is banged at `ms` by the
-window trigger, so its argument is the offset from there. Writing the absolute
-time fires it at ms+ms and lands the action in a LATER window.
-
-⚠️ THE MARK FIRES ON THE HIGHEST OUTLET so it prints BEFORE the actions it
-labels. Triggers fire right to left.
-
-⚠️ THE TAPS ARE NOT OPTIONAL. Without a [print] on each bus the capture holds
-MIDI only, and every assertion about param, disp or err is answered by an empty
-list rather than by a fact -- a pass, and a meaningless one.
+The MARK fires on the trigger's highest outlet, so it prints before the actions
+it labels (triggers fire right to left). A bus with no tap is a bus whose every
+assertion is answered by an empty list.
 """
 import re
 
-# ⛔ THE BUS -> PRINT LABEL MAP, AND THE ONE LIST OF LABELS. Both parsers that
-# read a tap back -- test/gate/lib_assert.py's _BUS and test/runner/predicates.py's
-# _BUS_LINE -- are built from TAP_LABEL_RE below, so a label added here is read
-# back the moment it exists. They used to be hand-typed copies: PRESENCE went
-# missing from both, and the bench copy never had LED, STATE, OLED or the
-# debug patch's labels, so a dropped line was answered by an empty list.
+# The bus -> print label map, and the one list of labels: lib_assert's _BUS and
+# test/runner/predicates.py's _BUS_LINE are both built from TAP_LABEL_RE. `mode`
+# is for test/bench/bench-tap.pd. `clock` is left out: a beat twice a second
+# forever would bury every capture.
 #
-# ⚠️ `mode` WAS ADDED FOR test/bench/bench-tap.pd, which the runner loads beside
-# a bench so a step can assert on what reached a bus. Inert for every gate here:
-# each names its taps explicitly and none asks for mode, so no existing capture
-# can gain a MODE: line.
-#
-# ⛔ `clock` IS DELIBERATELY ABSENT. It carries a beat twice a second forever,
-# which no assertion wants and which would bury every capture it appeared in.
-#
-# ⚠️ NOT EVERY NAME HERE IS ON THE C-2 ALLOWLIST, and that is the point. led,
-# oscOut, midiInGate and midiOutGate are MOTHER's names, and they are the only
-# way to read back what the aux LED, the OLED and mother's MIDI gating were told
-# -- Pd cannot ask a screen what it is showing, but the messages sent to it are
-# completely knowable. ⛔ C-5's one-owner rule governs WRITING: Pd delivers a
-# message to every receiver of a name, so tapping one cannot change what g_oled
-# or g_led sees. Nothing built from this map ever writes.
-#
-# ⚠️ oscOut USED TO BE APPENDED BY bench-gen.build_tap INSTEAD OF LIVING HERE,
-# which made "the labels are in one place" false for the one bus whose label a
-# gate would most want to reuse. It is here now, and build_tap has no special
-# case left.
-#
-# ⚠️ screenLine1..5 AND goHome ARE MOTHER'S NAMES TOO, added for the debug patch.
-# Cut It never writes either -- g_oled owns the OLED through oscOut and nothing
-# in the instrument leaves its own patch -- so these five labels exist for the
-# SECOND deployable, which draws with screenLine because it has no g_oled and
-# leaves with goHome because it steers itself from the keyboard.
+# Not every name is on the C-2 allowlist. led, oscOut, midiInGate, midiOutGate,
+# screenLine1-5 and goHome are mother's, the only way to read what the LED, the
+# OLED and the MIDI gating were told (screenLine and goHome are the debug
+# patch's). Tapping a name never changes what its owner receives (C-5 governs
+# writing), and nothing built from this map writes.
 TAP_LABELS = {"param": "PARAM", "disp": "DISP", "err": "ERR", "tempo": "TEMPO",
               "start": "START", "stop": "STOP", "mode": "MODE",
               "led": "LED", "state": "STATE", "oscOut": "OLED",
@@ -78,11 +47,9 @@ TAP_LABEL_RE = "|".join(re.escape(label) for label in TAP_LABELS.values())
 def build(path, seq, tag, taps, quit_ms, blurb, burst=None, notes=()):
     """Write the driver. Returns (windows, boxes, connects).
 
-    burst, if given, is (ms, n, body) -- n triggers of one body inside a SINGLE
-    logical instant, via [until]. ⚠️ That proves a limiter DROPS rather than
-    queues and NOTHING MORE: [del 0] still defers to the next scheduler tick, so
-    the gate never reopens inside one instant and a disarmed limiter passes it.
-    Two triggers a real millisecond or two apart is what tests an interval.
+    burst, if given, is (ms, n, body) -- n triggers of one body inside a single
+    logical instant, via [until]. ⚠️ That proves a limiter drops rather than
+    queues and nothing about its interval (the gate skill, `[del 0]`).
     """
     B, C = [], []
 

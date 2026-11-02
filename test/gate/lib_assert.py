@@ -1,23 +1,11 @@
 #!/usr/bin/env python3
-"""What every capture-reading analyser needs: the check tally, and the parser.
+"""What every capture-reading analyzer needs: the check tally, and the parser.
 
 Imported, never run:
 
     import lib_assert as A
     A.check("the thing holds", ok, detail)
     sys.exit(1 if A.report() else 0)
-
-⚠️ THE MODULE NAME HAS AN UNDERSCORE and every other file here has a hyphen.
-That is not inconsistency -- a hyphen is not a legal Python identifier, so a
-module that is IMPORTED cannot have one, while a script that is only ever RUN
-can. The bench tooling loads its hyphenated neighbors through importlib for
-exactly this reason; a library does not have to.
-
-WHY IT EXISTS. Splitting the old phase 9 gate into three -- the map, the SP-404
-and the Volca -- would otherwise have made three copies of the tally, the parser
-and the window index. Three copies of a parser is how a fix reaches one gate and
-not the other two, which is the same failure the documentation refactor existed
-to remove.
 """
 import re
 import sys
@@ -44,18 +32,14 @@ def check(name, ok, detail=""):
 
 
 def note(text):
-    """Something worth printing that is NOT an assertion. ⛔ A note must never
-    stand in for a check -- if it can be wrong, it should be a check."""
+    """Something worth printing that is not an assertion. If it can be wrong,
+    it should be a check."""
     print("  note  " + text)
 
 
 def report():
-    """Print the tally and return the failure count, for sys.exit.
-
-    ⛔ IT PRINTS THE TOTAL, NOT ONLY THE FAILURES. A gate that says "0 failed"
-    says nothing about whether it ran twelve checks or none -- and this suite has
-    been split and re-split, so the count is what proves no assertion was lost on
-    the way. Watch it go UP.
+    """Print the tally and return the failure count, for sys.exit. The total is
+    what proves no assertion went missing; "0 failed" alone could mean none ran.
     """
     print("\n%d checks, %d failed" % (total, fails))
     return fails
@@ -63,11 +47,8 @@ def report():
 
 # ---------------------------------------------------------------------------
 _MIDI = re.compile(r"^(NOTEOUT|CTLOUT|PGMOUT|MIDIOUT):\s+(-?[\d.]+(?:\s+-?[\d.]+)*)$")
-# ⛔ BUILT FROM lib_drive.TAP_LABELS, NEVER TYPED. A tap whose label has no
-# pattern here produces lines this parser silently drops, and every assertion
-# about that bus is then answered by an empty list rather than by a fact -- the
-# first way a gate passes vacuously, arrived at by punctuation. A hand-typed copy
-# did exactly that to PRESENCE for a day.
+# Built from lib_drive's labels, never typed: a label with no pattern here is a
+# bus whose lines are silently dropped.
 _BUS = re.compile(r"^(%s):\s+(.*)$" % lib_drive.TAP_LABEL_RE)
 
 
@@ -75,14 +56,10 @@ def parse(cap, tag):
     """-> (marks in order, {mark: [(kind, values)]})
 
     `tag` is the driver's print label -- the MARK lines read "<tag>: MARK NAME".
+    Only the MARK separates one window from the next, so lib_drive prints it
+    before the actions it labels.
 
-    ⚠️ THE MARK IS THE ONLY THING SEPARATING ONE WINDOW FROM THE NEXT, and the
-    driver fires it on its trigger's HIGHEST outlet so it lands in the capture
-    BEFORE the actions it labels. Triggers fire right to left. Get that wrong and
-    every assertion is reading the previous window's traffic.
-
-    MIDI values come back as floats and bus traffic as a list of atoms, because
-    that is what each is: a note number is arithmetic, a parameter name is not.
+    MIDI values come back as floats and bus traffic as a list of atoms.
     """
     mark_re = re.compile(r"^%s:\s+MARK\s+(\S+)$" % re.escape(tag))
     order, by, cur = [], {}, "PRE"
@@ -104,15 +81,11 @@ def parse(cap, tag):
 
 
 def windows(cap, tag, expected):
-    """parse(), plus the bookkeeping check that the driver got all the way through.
+    """parse(), plus the check that the driver reached every window.
 
-    ⛔ WITHOUT THIS EVERY OTHER ASSERTION CAN PASS VACUOUSLY IN THE SAME WAY: a
-    driver that died at window three leaves windows four onward empty, and an
-    assertion of the form "no MIDI in this window" is then answered by an empty
-    list rather than by a fact. Every gate here has at least one of those.
-
-    ⛔ EXACT, NOT "AT LEAST". A hand-kept count that fell behind its driver (the
-    organelle gate's said 12 of 20) can't notice a driver that stops early.
+    A driver that died early leaves the later windows empty, and every "nothing
+    in this window" assertion then passes. Exact, not "at least", so a count
+    that falls behind its driver is caught too.
     """
     order, by = parse(cap, tag)
     check("the driver reached every window", len(order) == expected,

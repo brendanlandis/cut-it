@@ -1,29 +1,17 @@
 #!/usr/bin/env python3
 """Reassembles Launchpad SysEx out of a capture. Imported, never run.
 
-Both gates that read the Launchpad's wire need this: display-assert cares about
-the LIGHTING frames and launchpad-assert about the MODE frames, and they arrive
+display-assert reads the lighting frames and launchpad-assert the mode frames,
 interleaved in one byte stream.
 
-⛔ REALTIME BYTES ARE SKIPPED, NOT STORED. Bytes >= 248 are legal INSIDE a SysEx
-stream and u_tempo emits 96 of them a second, so a reassembler that appended
-everything between F0 and F7 would corrupt every frame it built and the failure
-would look like a broken grid.
+⛔ Realtime bytes (>= 248) are skipped, not stored: they are legal inside a
+SysEx stream and u_tempo sends 96 a second, so keeping them corrupts every frame.
 
-FRAME SHAPE: 332 bytes = 7 header + 108 * 3 + terminator. Spec k holds type at
+Frame shape: 332 bytes = 7 header + 108 * 3 + terminator. Spec k holds type at
 7+3k, LED index at 8+3k and color at 9+3k, so the color at LED index i is byte
-9 + 3*(i-1). Indices run 1..108.
-
-THAT SPAN WIDENED FROM 10..108 AND THE OLD REASON WAS MEASURED FALSE. It stopped
-at 10 on the belief that ~106 specs approached a documented cliff and that 120
-was REJECTED OUTRIGHT -- a whole message dropped, which on a frame clock reads as
-a frozen grid. Three broken probes produced that; a clean 120-spec message paints
-the whole surface (items 105, 109). The reason to cover the span is that an index
-OUTSIDE it can never be cleared: LED state survives the Programmer Mode switch,
-so whatever Live Mode drew on CC 1-8 persisted into every session.
-
-Index 0 -- Setup -- stays out, and that one IS measured: a valid one-spec frame
-addressing it lights nothing and the button transmits nothing (item 110).
+9 + 3*(i-1). Indices run 1..108, the whole span the Launchpad can paint; index
+0 (Setup) is outside it (the Launchpad's Reference page,
+The Programmer Mode index map).
 """
 import re
 
@@ -102,9 +90,8 @@ def home_shape(frame):
 
     Home is: everything dark, the six mode lamps dim with one lit, the eight beat
     cells dim with one lit. Anything else lit anywhere is the problem this
-    returns -- and it is how the one-based beat bug would have been caught in a
-    single run. That bug lit index 19, a right-column ring button, and blanked
-    the beat row once a bar: SEVEN BEATS OUT OF EIGHT LOOKED PERFECT.
+    returns, so an off-by-one that lights a ring button once a bar is caught
+    though seven beats of eight look right.
     """
     lamp, beat, stray = None, None, []
     for k, color in enumerate(frame.colors()):

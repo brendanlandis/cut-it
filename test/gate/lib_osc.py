@@ -1,18 +1,7 @@
 #!/usr/bin/env python3
 """OSC decoding, shared by the phone gate and the test runner. Imported, never run.
 
-⚠️ THE MODULE NAME HAS AN UNDERSCORE and its neighbors have hyphens. A hyphen is
-not a legal Python identifier, so a module that is IMPORTED cannot have one,
-while a script that is only ever RUN can.
-
-WHY IT EXISTS. This was inside phone-assert.py, and test/runner/ needs exactly
-the same decode to judge a phone step from the datagrams u_net actually emits.
-Copying it would make two decoders, which is how a fix reaches one and not the
-other -- the same failure the whole test refactor existed to remove, and the
-reason lib_assert.py and lib_grid.py exist at all.
-
-⛔ IT DECODES ONLY. No sockets, no lifecycle, no opinions about what an address
-means -- both callers have different and legitimate views on that.
+It decodes only: what an address means is each caller's business.
 """
 import struct
 

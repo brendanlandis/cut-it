@@ -160,7 +160,7 @@ message the device layer routes internally: `notes 48 100 200`, `cc 41 64`, `pro
 | | |
 |---|---|
 | A new capability | Costs **one `route` argument inside that device** and nothing anywhere else — not `u_map`'s outlet count, not `u_root`'s cords |
-| ⚠️ The device's `route` **reject** | A **real error**, straight to `[s err]` — an unrecognised selector means `u_map` and the device layer disagree about the interface, and nothing else would notice |
+| ⚠️ The device's `route` **reject** | A **real error**, straight to `[s err]` — an unrecognized selector means `u_map` and the device layer disagree about the interface, and nothing else would notice |
 
 ⛔ **That is the opposite of `u_map`'s own reject**, where an unmapped control is normal and silent.
 Two rejects, opposite meanings, one layer apart.

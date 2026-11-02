@@ -55,7 +55,7 @@ that gate. Worth knowing before trusting an arithmetic check of this number agai
 ⚠️ **`presence-assert.sh`'s 42 come from TWO Pd runs and one tally**, which is the only entry here
 that does. The first run is the schedule at the shipped tick; the second scales `u_present`'s settle
 and tick by ten and leaves its **counts** exactly as shipped, so the eighth re-wire and the give-up
-actually happen — inside nine seconds rather than seventy-two. ⛔ **One analyser reads both
+actually happen — inside nine seconds rather than seventy-two. ⛔ **One analyzer reads both
 captures**, because two would print two `N checks` lines and this number is what proves no assertion
 went missing.
 
@@ -338,7 +338,7 @@ underneath, the beat row never leaving 11–18, the grid SURVIVING a panic, and
 beat-row offset back to `+ 11` — makes it report `lit outside every region: [(19, 3)]` and exit 1.
 ⚠️ **The three `home-*` checks still passed under that mutation**, which is exactly why *seven
 beats out of eight looked perfect*: only the six-second beat-row window catches it. A gate that
-cannot fail is worth nothing, so re-run that mutation if you ever change the analyser.
+cannot fail is worth nothing, so re-run that mutation if you ever change the analyzer.
 
 ## `tempo-assert.sh` — two kinds of check, because neither is enough
 
@@ -491,7 +491,7 @@ so a button lit by its own acknowledgment would ping-pong for ever. See
 | `phone-assert-drive.pd` | instantiates `u_net` and pushes synthetic traffic onto `disp` |
 | `phone-assert.py` | binds the port, launches Pd, decodes OSC, does the reasoning |
 
-⚠️ **The analyser owns the lifecycle, and that is not tidiness.** It binds the socket *before*
+⚠️ **The analyzer owns the lifecycle, and that is not tidiness.** It binds the socket *before*
 Pd starts, because a UDP connect to a port with nothing listening survives exactly one datagram
 (item 114). Start the driver by hand and you get one packet and then silence — which looks
 exactly like a broken rate limiter.

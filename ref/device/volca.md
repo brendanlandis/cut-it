@@ -138,7 +138,7 @@ routed inside the device layer. The alternative — one outlet per inlet — mak
 the sum of every device's capabilities, and crosses the "revisit past about four output devices"
 threshold with two devices.
 
-⛔ **An unrecognised selector is a real error**, reported as `fail m_volca bad-selector` on `err`. It
+⛔ **An unrecognized selector is a real error**, reported as `fail m_volca bad-selector` on `err`. It
 means `u_map` and this file disagree about the interface, and nothing else would notice.
 
 ### `makenote` is safe here, and only here

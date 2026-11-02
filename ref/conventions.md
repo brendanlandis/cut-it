@@ -369,7 +369,7 @@ filters and forwards rather than drawing.
 size.
 
 ⚠️ **A new selector on `disp` costs one `route` argument in every consumer that has a fallthrough**,
-because everything unrecognised is a parameter by definition. Today that is two: `g_oled` and
+because everything unrecognized is a parameter by definition. Today that is two: `g_oled` and
 `u_net`.
 
 The message format, the reserved names, the layer model and every trap around them are on

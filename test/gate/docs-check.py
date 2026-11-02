@@ -106,7 +106,7 @@ SPEC = re.compile(r'^(pd-text|pd-route|sh-aconnect)\s+"([^"]+)"\s+(\S+)$')
 # level -- so every two-level path was invisible too, and `ref/module/*.md` is
 # how this project refers to nine of its own pages. Cut It Debug/main.pd cites
 # one in a comment, which is precisely the kind of reference that rots quietly.
-DOCNAME = re.compile(r'(?<![\w/.-])((?:[a-z0-9_-]+/)*[a-zA-Z0-9_.-]+\.md)\b')
+DOCNAME = re.compile(r'(?<![\w/.!-])((?:[a-z0-9_-]+/)*[a-zA-Z0-9_.-]+\.md)\b')
 # A markdown link target. The angle-bracket form carries paths containing
 # spaces -- `[README.md](<! v0.1 plans/README.md>)` -- which this repo uses.
 MDLINK = re.compile(r'\]\(<?([^)>#]+\.md)(?:#[^)>]*)?>?\)')

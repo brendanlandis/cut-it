@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 
 # ⛔ THE NUMBER OF WINDOWS organelle-assert-drive-gen.py's SEQ OPENS.
-MARKS = 12
+MARKS = 20
 
 
 def run_asserts(cap):

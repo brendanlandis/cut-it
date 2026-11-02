@@ -110,9 +110,12 @@ def windows(cap, tag, expected):
     driver that died at window three leaves windows four onward empty, and an
     assertion of the form "no MIDI in this window" is then answered by an empty
     list rather than by a fact. Every gate here has at least one of those.
+
+    ⛔ EXACT, NOT "AT LEAST". A hand-kept count that fell behind its driver (the
+    organelle gate's said 12 of 20) can't notice a driver that stops early.
     """
     order, by = parse(cap, tag)
-    check("the driver reached every window", len(order) >= expected,
+    check("the driver reached every window", len(order) == expected,
           "saw %d of %d marks: %s" % (len(order), expected, " ".join(order)))
     return order, by
 

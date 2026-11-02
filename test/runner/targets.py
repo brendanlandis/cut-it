@@ -21,10 +21,12 @@ import time
 
 import stream
 
-# ⛔ ONE OSC DECODER, shared with test/gate/phone-assert.py.
+# ⛔ ONE OSC DECODER, shared with test/gate/phone-assert.py -- and ONE SCRATCH
+# COPY, the one every gate makes, from test/gate/lib_scratch.py.
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gate"))
 import lib_osc                                                  # noqa: E402
+import lib_scratch                                              # noqa: E402
 
 PD = os.environ.get(
     "PD", "/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd")
@@ -217,10 +219,9 @@ class Process(stream.Source):
 
 # ---------------------------------------------------------------------------
 def _scratch(work):
-    """A throwaway copy of the patch, through the SAME shell functions every
-    gate uses.
+    """A throwaway copy of the patch, through the SAME harness every gate uses.
 
-    ⛔ scratch_state_dir IS NOT OPTIONAL. main-dev.pd passes /tmp, which every
+    ⛔ state_dir IS NOT OPTIONAL. main-dev.pd passes /tmp, which every
     run on this machine shares, and u_init restores saved state at about 3.5 s
     -- so a previous run that changed mode silently rewrites the starting
     conditions of this one, mid-bench. It cost a wrong diagnosis once: item 232.
@@ -229,12 +230,14 @@ def _scratch(work):
     for printing stubs; a BENCH wants the opposite. Its whole point is a real
     Volca you can hear and a real 404 under a real finger, and a bench run
     against stubs would be a very thorough test of nothing.
+
+    ⚠️ state_dir's u_net sink is a socket in THIS process, held until teardown,
+    so it lasts as long as the bench does. The shell's was a sleeper that died
+    two minutes in, and a hands-on bench runs far longer than that.
     """
-    subprocess.run(
-        ["sh", "-c",
-         '. test/gate/lib-scratch.sh; scratch_make "$1"; scratch_state_dir "$1"',
-         "_", work],
-        check=True)
+    s = lib_scratch.Scratch(work).make()
+    s.state_dir()
+    return s
 
 
 def _tap():
@@ -260,7 +263,7 @@ PHONE_PORT = 9995
 
 def mac(bench_name, auto_only, work):
     """main-dev.pd plus the bench, in a scratch copy, on this machine."""
-    _scratch(work)
+    copy = _scratch(work)
     # ⚠️ THE PHONE BENCH ON THIS MACHINE IS A MIRROR, AND IT ANSWERS A DIFFERENT
     # QUESTION FROM A DEVICE RUN. Repointed at localhost, u_net's real datagrams
     # are readable here -- so what it FILTERS can be judged with no phone in the
@@ -268,10 +271,7 @@ def mac(bench_name, auto_only, work):
     # why the device run keeps its human verdict rather than being replaced.
     osc_port = None
     if bench_name == "phone":
-        subprocess.run(
-            ["sh", "-c",
-             '. test/gate/lib-scratch.sh; scratch_phone_mirror "$1" "$2"',
-             "_", work, str(PHONE_PORT)], check=True)
+        copy.phone_mirror(PHONE_PORT)
         osc_port = PHONE_PORT
         stream.say("  u_net repointed at 127.0.0.1:%d -- no phone involved"
                    % PHONE_PORT)
@@ -299,6 +299,7 @@ def mac(bench_name, auto_only, work):
                           bench_pd, _tap()]
 
     def teardown():
+        lib_scratch.close()
         shutil.rmtree(work, ignore_errors=True)
 
     stream.say("  launching Pd%s ..." % ("" if auto_only else " with the GUI"))

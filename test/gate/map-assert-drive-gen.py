@@ -97,9 +97,10 @@ SEQ = [
     (7600, "ROW-PROG", ["\\; param gk-prog 1"], GAP),
     # volca-key draws nothing (item 293).
     (7800, "ROW-KEY", ["\\; param og-key-60 100"], GAP),
-    # Unmapped pressure draws no raw row (item 318); pad-12 is the witness and
-    # proves the test is not too wide.
-    (8000, "PRESSURE", ["\\; param pad-11-at 64", "\\; param pad-12 100"], GAP),
+    # Unmapped pressure draws no raw row (item 318); pad-15 is the witness and
+    # proves the test is not too wide. It sits in the drum page's dark corner,
+    # since mode 1 maps the page's 48 pads.
+    (8000, "PRESSURE", ["\\; param pad-11-at 64", "\\; param pad-15 100"], GAP),
     # Mapped pressure still draws its row: a gate row maps pad-13-at to
     # volca-cc 45.
     (8200, "PRESSURE-MAPPED", ["\\; param pad-13-at 64"], GAP),

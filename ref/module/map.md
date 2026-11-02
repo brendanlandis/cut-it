@@ -18,8 +18,9 @@ means. Telling the instrument "in mode 2, this fader plays the Volca" is one row
 on a `route` box inside `u_map`, feeding a handler you can see on the canvas — the **allowlist
 guard**, and the whole of what makes a table acceptable here. See *Design*.
 
-`u_map` has no creation arguments and no inlets. It has **one outlet per output device**, wired in
-`u_root`, because no bus carries a sounding note.
+`u_map` has no inlets. It has **one outlet per output device**, wired in `u_root`, because no bus
+carries a sounding note — and a third, to `c_steps`, for what a press on mode 1's drum page means
+([sequencer.md](sequencer.md)).
 
 ## Facts
 
@@ -36,7 +37,7 @@ mode-1 slider-1  volca-cc 41
 |-------|----|----------|------|
 | `<mode>` | The **second** atom of the `mode` bus message — `mode-1`, not `compose mode-1`. The class is `u_err`'s business | verified | — |
 | `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `sp-a1` | verified | — |
-| `<dest>` | One of the **twelve** below, and **only** those | verified | 229 |
+| `<dest>` | One of the **thirteen** below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
 
 **A row with any other width is a lint failure**, not a runtime one — `map-assert.py` reads the
@@ -60,6 +61,7 @@ file and rejects it before Pd ever does.
 | `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key | verified | 293 |
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, in all six modes** | verified | 301 |
+| `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | Non-zero is a press: `<role> <n> <velocity>` to `c_steps`, the pad's own velocity. A release does nothing; an index the layout lacks is `fail u_map layout-miss` | unknown | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -92,6 +94,7 @@ there and nowhere else.
 | `404-pad` | `404-pad5 90` | same shape | verified | 316 |
 | `volca-prog` | `volca-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
 | `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
+| `drum-page` | **nothing** — the grid is the feedback, and 48 pads in use would bury the screen | none | unknown | — |
 | the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the footer, the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
 
 ⚠️ **The held row's second number rides in the UNIT field.** `g_oled` runs a row's value through
@@ -131,8 +134,8 @@ One destination fed from two surfaces would otherwise need two scalings.
 | Empty table | Reported on `err` as `map-empty` | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Six modes × 92
-controls is 552 possible rows and the shipped file has **68** — seven, plus the keyboard's 25 in
-mode 1, plus CC 90, PLAY, STOP and the three shifted keys in all six.
+controls is 552 possible rows and the shipped file has **116** — seven, plus the keyboard's 25 and
+the drum page's 48 pads in mode 1, plus CC 90, PLAY, STOP and the three shifted keys in all six.
 
 ### What happens at load
 
@@ -468,6 +471,15 @@ a shared readout — is the duplication item 240 was, and it grows with every de
 `volca-cc 41` draws `volca-cc41 64` and never `slider-1 64` beside it: the `m_` layers publish on
 `param` alone and leave the screen to this file, as `m_organelle` always did for the knobs. One row
 per control, so two faders moving are two rows rather than four (item 317).
+
+### The drum page is one destination and a layout table
+
+Mode 1's 48 drum-page pads are 48 rows, `mode-1 pad-81 drum-page 81`, and the arg is the grid
+index because the handler never sees the control's name — the `volca-key` precedent. The handler
+looks the index up in `cut-it-drum-page.txt`, the table `g_grid` paints the page from
+([display.md](display.md)), so `c_steps` receives `step 1 100` and never a cell. **The map says
+which pads are the drum page in which mode; the layout says what each one is.** A row the layout
+lacks is a real error, `layout-miss`, as an unknown destination is.
 
 ### Pressure draws no raw row, like the keys
 

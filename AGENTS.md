@@ -56,7 +56,7 @@ shown on Back Office's /reference page); a `ref/device/` page links to it and ke
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
 | What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo: `~/Sites/!reference/` — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `critter-guitari-organelle-1` `pdparty` `roland-sp-404mkii` `korg-volca-fm` `pure-data` (and `meeblip-cubit` `arturia-beatstep` `behringer-xenyx-q802usb`). Find a repo's with `grep -l "used_by:.*cut-it" ~/Sites/!reference/*.md` |
 | How Cut It **uses** one physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
-| One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `debug` `display` `error` `map` `presence` `state` `tempo` |
+| One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `debug` `display` `error` `map` `presence` `sequencer` `state` `tempo` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
 | How Cut It lives on the Organelle as a **computer** — its data, measuring, deploying (the Organelle itself: Reference) | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
 | The wifi fault — Cut It's watchers and the stage procedure (the fault itself: Reference) | [ref/wifi.md](ref/wifi.md) ⚠️ background, not blocking |
@@ -85,7 +85,7 @@ stops the instrument**, because loading any patch restarts Pd. See
 | `m_` | One physical device, publishing named controls | `m_nano` `m_launchpad` `m_organelle` `m_404` `m_volca` |
 | `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_err` `u_net` `u_level` `u_present` `u_mother-stub` |
 | `g_` | One display surface, and its sole owner | `g_oled` `g_grid` `g_led` |
-| `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` |
+| `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` |
 | `e_` | An effect stage — **v0.4, none yet** | — |
 | `.sh` | Run through `[shell]` — the first four once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `recover.sh` |
 | `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` |

@@ -12,7 +12,8 @@ master by a `start`.
 
 `u_root` holds the first instance, `c_clock 1 8` — ratio 1, eight beats to the bar, so its
 beat-number outlet indexes the grid's bottom row directly. **Nothing downstream may assume the
-global `clock` is its clock**; that instance is the grid's, and the next consumer gets its own.
+global `clock` is its clock**; that instance is the grid's, and the next consumer gets its own:
+`c_steps` holds `c_clock 1 4` and cuts its sixteenths from the phase ([sequencer.md](sequencer.md)).
 
 `u_tempo` has no creation arguments, no inlets and no outlets. It talks on `tempo`, `clock`, `start`,
 `stop`, `panic`, `disp` and `err`, and out of **three** MIDI ports — two carry the clock and the

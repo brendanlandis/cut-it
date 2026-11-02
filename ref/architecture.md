@@ -59,8 +59,11 @@ file decides what that means; and nothing below that file knows what hardware ex
 **Two things the diagram cannot show, and both are load-bearing:**
 
 - ⛔ **`c_clock` is instantiated, not global.** `u_root` holds `c_clock 1 8` driving the grid's beat
-  row, and **nothing downstream may assume the global `clock` is its clock** — Cut It runs
-  poly-tempo. See [tempo.md](module/tempo.md).
+  row, `c_steps` holds its own `c_clock 1 4`, and **nothing downstream may assume the global `clock`
+  is its clock** — Cut It runs poly-tempo. See [tempo.md](module/tempo.md).
+- **`c_steps`, mode 1's drum machine, hangs off `u_map` by a cord** — its third outlet, carrying
+  what a drum-page press means — and its own two outlets reach `m_404` with the notes and `g_grid`
+  with the page. See [sequencer.md](module/sequencer.md).
 - **`u_state` owns two `u_store` instances**, one per persistence policy. See
   [state.md](module/state.md).
 - ⛔ **`c_presence` and `c_devid` are instantiated INSIDE the `m_` layers**, one pair per pollable
@@ -74,11 +77,12 @@ is the buses and the map; right is the display owners. **Where a file has cords,
 where it goes** — which is why `m_volca` and `m_404` sit under `u_map` rather than in the `m_`
 column. Everything without cords talks on the allowlisted buses alone.
 
-**Four kinds of cord exist on that canvas, and each one is a seam worth seeing.** `u_init` reaches
+**Five kinds of cord exist on that canvas, and each one is a seam worth seeing.** `u_init` reaches
 `m_launchpad` and `u_state`, because the boot *order* is `u_init`'s while the *action* belongs to the
 file at the other end. `u_map` and `u_net` each reach the two output devices, because no bare global
-name carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`. And `c_clock`
-feeds `g_grid`'s beat row.
+name carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`. `c_clock`
+feeds `g_grid`'s beat row. And `c_steps` sits between `u_map` and both `m_404` and `g_grid`: told
+what a press means, it plays notes and says what the drum page shows.
 
 ## Creation arguments — the contract between the two entry points
 
@@ -240,9 +244,10 @@ cheaper than retrofitting it once the filter logic exists, which is why `mode` a
 | `c_` | **Instantiable** — there is more than one | Its creation arguments |
 | `e_` | An effect stage (v0.4) | Signal in, signal out |
 
-⛔ **A `c_` prefix means instances, and a `$0-` on everything inside it (C-1).** Four exist:
-`c_clock`, `c_presence` and `c_devid` inside the `m_` layers, and `c_mapped` inside `u_map`, one per
-destination that carries a value. The v0.4 filter stages are the reason the prefix exists.
+⛔ **A `c_` prefix means instances, and a `$0-` on everything inside it (C-1).** Five exist:
+`c_clock`, `c_presence` and `c_devid` inside the `m_` layers, `c_mapped` inside `u_map`, one per
+destination that carries a value, and `c_steps`, the sequencer, whose bank and stored part are its
+creation arguments. The v0.4 filter stages are the reason the prefix exists.
 
 ## Open
 

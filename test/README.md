@@ -446,7 +446,7 @@ that still posted their own rows: four red in `nano-assert` — an unmapped slid
 mapped one drawn as `slider-1` beside `volca-cc41`, the 404's CTRL knob and a Launchpad ring button —
 two in `sp404-assert`, and the static count; the file-set check went red on a stray `m_` file.
 **The pressure exemption** (item 318) went red against the `u_map` without it, with the key and
-pressure tests swapped so the key test reopened the spigot, and — on the `pad-12` witness — with a
+pressure tests swapped so the key test reopened the spigot, and — on the witness pad, `pad-15` — with a
 test wide enough to silence every raw row.
 
 ⛔ **It also HUNG once instead of failing** — the driver generator errored, its exit status was

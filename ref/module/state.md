@@ -91,6 +91,7 @@ wrong** — the same class of noise as mother's own `knobs.txt: can't open`.
 | Key | Policy | Written by | Evidence | Item |
 |-----|--------|------------|----------|------|
 | `mode` | `auto` | `u_map` — a running value, pushed whenever it changes | verified | — |
+| `section-1-drums` | `auto` | `c_steps` — the drum pattern, 256 velocities, pushed on every change and put back on restore ([sequencer.md](sequencer.md)) | unknown | — |
 
 ## Traps
 
@@ -178,6 +179,16 @@ produces are silent — a MIDI port that is never set, a `soundfiler` write to a
 
 **Fix:** `[symbol $1]` in an *object* box holds the path, and the message box below substitutes it
 in.
+
+### A contributor must put back what it restores
+
+⛔ A load reads the file into a **separate** `[text]` and replays it, so the store `u_state` writes
+holds only what contributors have put since load. A contributor that takes its restore and puts
+nothing loses its key at the next flush — which any other key's change triggers — and the file looks
+fine until the boot after.
+
+**Fix:** put the restored value straight back. `u_map` does it by re-storing every `mode` that
+reaches the bus; `c_steps` puts its pattern back the moment it is restored.
 
 ### Two files, because they have different lifecycles
 

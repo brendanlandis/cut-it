@@ -495,7 +495,8 @@ effort. Don't tidy and change behavior in the same commit.
 an escaped `\;`, so the scan stops in the middle of it and the tail becomes a record with no `#X`
 prefix.
 
-**Fix:** replace the whole line. `test/gate/pd-layout-check.py` reports
+**Fix:** replace the whole line, or let `tools/pd-comments.py` do it: it lists a patch's comments,
+deletes or rewrites the ones you name, and renumbers the cords to match. `test/gate/pd-layout-check.py` reports
 `MALFORMED RECORD -- does not start with '#'` on the signature, so the fault is named rather than
 showing up as a canvas-size complaint.
 

@@ -22,6 +22,7 @@ matters because the Organelle launches Pd with `-nogui` and there is no console 
 | **Worked examples** — a technique, kept as the proof | `audio-probe/` `oled-probe/` `osc-bridge/` `status-display/` |
 | **The phone side** | `pdparty-scene/` — a PdParty scene, not an Organelle patch |
 | **Menu patches** | `stage-patches/` — see below |
+| **Editing a patch's comments** — delete or rewrite them and keep every cord | `pd-comments.py` |
 
 ⚠️ **Eighteen one-off probes were deleted on 2026-08-07** — seven for the SP-404 rate ceiling alone,
 three July MIDI probes superseded by the `m_` layers, and a `wire.sh` here that was a 42-line-behind

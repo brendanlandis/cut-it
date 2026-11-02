@@ -13,10 +13,10 @@
 #X obj 340 260 loadbang;
 #X obj 340 290 del 200;
 #X obj 340 320 metro 100;
-#X text 340 360 POLLED \, not pushed. env~ reports on its own analysis window \, which is both faster than anything can read and unrelated to when a display wants to redraw. Storing into the cold inlet and banging it at a fixed rate is the pattern from tools/audio-probe/., f 46;
-#X text 340 500 10 Hz is the SAMPLING rate. Rate limiting the DRAW is the display's job \, not this one's -- see C-5., f 46;
-#X text 20 600 THE list trim IS LOAD-BEARING. list prepend makes a LIST \, and route with symbol arguments matches the SELECTOR \, not a list's first element -- so without the trim every disp message is silently rejected and the display just shows zero. Verified the hard way on the device., f 58;
-#X text 20 700 env~ reports RMS on a 0 to 100 dB scale \, 100 being full scale. Measured on this hardware (item 11): input noise floor 18-19 \, a passive bass reaches the 90s. change -1 means a steady signal stops reporting., f 58;
+#X text 340 360 Polled \, not pushed: env~ reports on its own window \, so its value is stored cold and banged at a fixed rate., f 46;
+#X text 340 500 10 Hz is the sampling rate. Rate-limiting the draw is the display's job. C-5, f 46;
+#X text 20 600 C-6, f 58;
+#X text 20 700 env~ is RMS on a 0 to 100 dB scale (item 11 \, ref/module/audio.md). change -1: a steady signal stops reporting., f 58;
 #X connect 2 0 3 0;
 #X connect 3 0 4 1;
 #X connect 4 0 5 0;

@@ -1,43 +1,30 @@
 #!/bin/sh
-# The three network facts you cannot get at a venue without a laptop.
+# The three network facts you cannot get at a venue without a laptop. Always
+# exactly three lines, in this order, one atom each, because main.pd routes them
+# to screenLine2, 3 and 4 by position:
 #
-# ⛔ IT ALWAYS EMITS EXACTLY THREE LINES, in this order, one atom each:
-#
-#   1  this Organelle's OWN IPv4 address     ip-<addr>     or ip-none
+#   1  this Organelle's own IPv4 address     ip-<addr>     or ip-none
 #   2  whether it is hosting its access point ap-up        or ap-down
 #   3  the phone's address, if there is one   phone-<addr> or phone-none
 #
-# main.pd routes them to screenLine2, 3 and 4 by POSITION, so a variable line
-# count would silently shuffle the display. The same contract as err-tail.sh,
-# and for the same reason.
+# Line 1 is the point: PdParty will not resolve organelle.local (item 312), so
+# the phone needs a literal address, and on the house network the lease moves
+# (the addresses seen are on the Organelle's Reference page, Reaching it). On
+# the access point it is always 192.168.12.1.
+# ref/module/debug.md
 #
-# ⛔ LINE 1 IS THE WHOLE POINT OF THIS SCREEN. PdParty will not resolve
-# organelle.local -- item 312, measured on the rig -- so its OSC send host has
-# to be a literal address, and the lease has been seen at .15, .18 and .6. This
-# is the number you type into the phone, and reading it off the Organelle's own
-# screen is what removes the last reason this rig needs a laptop to fix the
-# phone link. See ref/device/phone.md.
-#
-# ⚠️ ON THE ACCESS POINT IT IS ALWAYS 192.168.12.1, which is the easy case. It
-# is the HOUSE network that moves, so this matters most where the rig is least
-# like a gig.
-#
-# ⚠️ busybox, NOT GNU -- ash, and ip/grep/awk are applets. No --color, no -P.
+# busybox, not GNU: ash, and ip, grep and awk are applets.
 
 # ---- 1: our own address ----------------------------------------------------
-# ⚠️ NOT `hostname -i`. On this image that answers from /etc/hosts and returns
-# a loopback address, which is a plausible-looking number that is no use to the
-# phone at all.
+# Not `hostname -i`, which answers a loopback address from /etc/hosts here.
 IP=$(ip -4 addr show wlan0 2>/dev/null \
      | awk '/inet /{ sub("/.*", "", $2); print $2; exit }')
 [ -z "$IP" ] && IP=none
 echo "ip-$IP"
 
 # ---- 2: are we hosting the access point? -----------------------------------
-# ⚠️ create_ap IS THE VENDOR'S OWN PATH here -- System -> WiFi Setup -> Start AP
-# runs it. hostapd and dnsmasq are its children, so any of the three being alive
-# means the AP is up. ⛔ An AP cannot be started from a patch: all three die with
-# the Pd that spawned them even behind setsid nohup. Item 129, ref/wifi.md.
+# create_ap is the system menu's AP, with hostapd and dnsmasq as its children,
+# so any of them alive means the AP is up (item 129, ref/wifi.md).
 if ps w 2>/dev/null | grep -v grep | grep -qE "create_ap|hostapd"; then
     echo "ap-up"
 else
@@ -45,12 +32,8 @@ else
 fi
 
 # ---- 3: the phone ----------------------------------------------------------
-# ⛔ TWO STRATEGIES, AND THE SECOND ONE IS NOT THEORETICAL. The lease file is
-# written when the address is handed out, so a client that rejoined an
-# already-running AP can be absent from it while very much present -- and in the
-# first AP Probe run dnsmasq had already exited and arp was the only thing that
-# knew. A single-strategy probe would have returned none and taught us nothing.
-# Item 129. Same pair as Cut It/phone-ip.sh, which is u_net's.
+# The lease file, then arp, as in Cut It/phone-ip.sh: a client that rejoined a
+# running AP can be missing from the lease file (item 129).
 PHONE=""
 for f in /tmp/create_ap.wlan0.conf.*/dnsmasq.leases; do
     [ -f "$f" ] || continue

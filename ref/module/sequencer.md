@@ -110,7 +110,7 @@ time. **The restore is put straight back**, as every contributor's must be ([sta
 ## Open
 
 - ⬜ **Nothing here has run on the rig.** Whether a one-shot pad restarts on a second note-on —
-  fast hats depend on it — and whether the page reads as intended. See `cut-it/drum-machine`, its
-  rig step.
+  fast hats depend on it — and whether the page reads as intended; `sequencer-bench.pd` asks both.
+  See `cut-it/drum-machine`, its rig step.
 - ⬜ **The selected track and velocity are not saved**; every boot starts at track 1, level 13.
   See `cut-it/drum-machine`.

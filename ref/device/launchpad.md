@@ -113,11 +113,18 @@ paints 1–108 rather than a subset.
 The three tiers are described in Reference ("Modes: three tiers"). Which world the surface is in is
 something the patch decides at runtime rather than once.
 
-**Do not rebuild the built-ins.** Note mode's scale tables, root selection and isomorphic layout
-maths are genuinely fiddly in Pd and Novation's are good. Chord mode is worse to replicate. The
-Sequencer is a substantial project on its own, and it is already the compose-time authoring tool.
-Projects handles save/recall of that data. Anything needing "empty / loaded / queued / playing" as four
-distinct states needs Programmer Mode; a plain CC grid or a scaled keyboard does not.
+**Do not rebuild Note and Chord mode.** Note mode's scale tables, root selection and isomorphic
+layout maths are genuinely fiddly in Pd and Novation's are good. Chord mode is worse to replicate.
+Anything needing "empty / loaded / queued / playing" as four distinct states needs Programmer Mode;
+a plain CC grid or a scaled keyboard does not.
+
+**The Sequencer is rebuilt, in Pd** — decided 2026-11-02 (Brendan), overturning the rule that it
+was the compose-time authoring tool. It cannot do what the drum machine is for: randomizers, and
+switching subdivision for a whole or part of a bar, for all tracks or only some. And **Pd sequences
+everything** ([architecture.md](../architecture.md)): a pattern in the Launchpad's own memory would
+be a second sequencer the patch cannot see, store per section, or keep in step with its own clocks.
+Mode 1 is the drum page, drawn in Programmer Mode by `g_grid` and played by `c_steps`
+([sequencer.md](../module/sequencer.md)); its layout is on [display.md](../module/display.md).
 
 ### CC 90 is the panic button, and it has two tiers
 

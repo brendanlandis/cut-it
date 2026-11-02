@@ -220,13 +220,13 @@ Nothing overlaps, and that is deliberate:
 
 | Surface | Role |
 |---|---|
-| **Launchpad** | Pads, grid state, compose-time sequencing. Anything needing state you can *see* |
+| **Launchpad** | Pads, grid state, sequencing — mode 1 is the drum page. Anything needing state you can *see* |
 | **nanoKONTROL** | Continuous control, with position visible on the panel. Momentary buttons only |
 | **Organelle keyboard** | Note entry at compose time; filter control at perform time |
 
-⚠️ **The Launchpad mode conflict evaporates because of this split.** Authoring uses
-Note/Chord/Sequencer; performance uses Programmer Mode. They never coexist, so there is no mid-set
-SysEx flipping.
+⚠️ **The Launchpad mode conflict evaporates because of this split.** Authoring that needs Note or
+Chord mode uses them; everything Cut It draws, the drum page's sequencing included, is Programmer
+Mode. They never coexist, so there is no mid-set SysEx flipping.
 
 ⛔ **Two surfaces are DOUBLE-BOOKED, and that is what forces explicit modes.** The Launchpad *and*
 the Organelle's own keyboard both serve two roles — the keyboard is **four filter groups during

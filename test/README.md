@@ -5,7 +5,7 @@ who or what says pass:
 
 | | Verdict from | Runs |
 |---|---|---|
-| `gate/` | **a program**, unattended | every commit, in ~2 minutes, on the Mac |
+| `gate/` | **a program**, unattended | every commit, in ~1 minutes, on the Mac |
 | `bench/` | **a person**, with the rig plugged in | when hardware behavior needs judging |
 
 ⛔ **A gate is not trusted until it has FAILED.** Reintroduce the bug, watch it go red, revert. This
@@ -123,7 +123,7 @@ drifted and nothing noticed.
 ## Running everything
 
 ```sh
-./test/run.sh                every gate in one command, ~2 min, exit non-zero on any failure
+./test/run.sh                every gate in one command, ~1 min, exit non-zero on any failure
 ./test/run.sh --all          and then the benches -- needs the rig, and a person
 ```
 
@@ -153,7 +153,7 @@ them: they are probes a person runs, not tests with an oracle.
 ## `test/run.sh` — the entry point, and both halves
 
 ```sh
-./test/run.sh                              the gates. Mac-only, ~2 min, the default
+./test/run.sh                              the gates. Mac-only, ~1 min, the default
 ./test/run.sh --all                        the gates, then every bench
 ./test/run.sh --bench midi                 one bench
 ./test/run.sh --bench tempo --target mac   run the patch here rather than on the device

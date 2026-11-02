@@ -92,7 +92,7 @@ perfect silence, so a clean syntax check proves nothing about arity.
 
 ```sh
 python3 test/gate/pd-layout-check.py "Cut It"/*.pd    # after every edit -- PROBLEM = fail
-./test/run.sh                                    # ~2 min, every gate in one command
+./test/run.sh                                    # ~1 min, every gate in one command
 ```
 
 ⚠️ **Read `run.sh`'s result, do not grep for it.** Exactly one line matches `RESULT:`, and the

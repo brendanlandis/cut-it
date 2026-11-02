@@ -132,7 +132,7 @@ whole instrument is *there* — `u_mother-stub` draws the front panel inline and
 aux and encoder. **Most work should never need the Organelle powered on.**
 
 ```sh
-./test/run.sh            # every gate, ~2 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
+./test/run.sh            # every gate, ~1 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
 ./test/run.sh --all      # and then the benches -- needs the rig, and a person
 ./tools/deploy.sh              # syntax check -> scp BOTH patches -> reload -> load Cut It
 ./tools/deploy.sh --debug      # the same push, but loads Cut It Debug instead
@@ -147,7 +147,7 @@ the per-gate `--- FAILED:` lines, and a broken patch has been committed that way
 safe with the device off. The benches are behind `--all` / `--bench` on purpose: ⚠️ **a check that
 costs twenty minutes stops being run**, which is the failure this command was built to fix.
 
-⛔ **It takes under two minutes because the gates run side by side** — measured 2026-11-02, 104 s
+⛔ **It takes about a minute because the gates run side by side** — measured 2026-11-02, 53 s
 against 461 s one after another. Each one is a Pd instance running **DSP in real time** so a `phasor~` clock and a beat
 row can actually tick, so the longest gate sets the floor. **A faster machine will not help.** Three consequences:
 

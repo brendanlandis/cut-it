@@ -67,7 +67,7 @@ traffic into nothing.
 | Directory | `/sdcard/cut-it-state/` on the device; `main-dev.pd` passes an existing directory on the Mac | verified | — |
 | Files | `cut-it-auto.txt`, `cut-it-manual.txt` — and `cut-it-recover.txt`, which is **not `u_state`'s** | verified | 299 |
 | Format | One line per key, first atom is the key. Written and read with **`-c`** | verified | — |
-| Made at load | `state-dir.sh` via `[shell]`, once per load. It **`mkdir -p`s the directory and `touch`es all three files** | verified | 143, 147, 299 |
+| Made at load | `state-dir.sh` via `[shell]`, once per load. It **`mkdir -p`s the directory and `touch`es all three files**, and leaves a saved file byte for byte as it was (checksummed before and after on the device, 2026-11-02) | verified | 143, 147, 299 |
 | A write into a missing directory | **Prints `write failed`** — it does not fail silently | verified | 143 |
 | A read of a missing file | Prints **three lines** | verified | 147 |
 
@@ -278,7 +278,3 @@ as decisions rather than left to whoever writes the capture.
   [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **Nothing uses the `manual` policy yet.** It is proven by the gate and by a deliberately-late
   test contributor, not by a real one. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **`state-dir.sh` is invoked but never exercised.** Its invocation is gated; `[shell]` is a
-  do-nothing stub on the Mac, so the gates hand-create the two files and the script never runs.
-  Proving `touch` does not truncate needs a device step against an existing save. See
-  [boot.md](boot.md); filed with its three siblings as one loosie, `cut-it/inbox`.

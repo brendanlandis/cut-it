@@ -147,7 +147,7 @@
 #X obj 2100 630 div 16;
 #X obj 2100 680 + 1;
 #X text 1700 860 c_devid 66 is KORG's manufacturer byte \, 0x42 (item 249). The 60 ms stagger keeps three inquiry replies from interleaving on the one sysexin (ref/module/presence.md)., f 64;
-#X text 1700 1120 The port is derived from the channel block \, (block-1)/16+1 \, rather than passed in: a second argument would be a second source of truth. m_launchpad's literal port 1 works only because its block is 1 too \, so do not copy it., f 64;
+#X text 1700 1120 The port is derived from the channel block \, (block-1)/16+1 \, rather than passed in: a second argument would be a second source of truth. m_launchpad uses its block as its port \, which works only because both are 1 \, so do not copy it., f 64;
 #X text 2500 860 The second source of liveness: any CC in this file's own block \, so a nano being played stays present. The select's reject goes nowhere on purpose: ctlin is omni \, and a 0 is evidence about another device., f 44;
 #X text 2500 1300 c_presence's second outlet stays unconnected: this file owns no surface and no per-event state \, so a loss has nothing to drop. c_presence reports it and u_present re-wires., f 44;
 #X connect 2 0 11 0;

@@ -99,6 +99,12 @@ On the device that ordering comes from `/root/.pdsettings`; set the Mac's MIDI i
 order — Launchpad first, nano second — and both entry points pass the same two numbers, which is the
 point of doing it that way round.
 
+⛔ **The Launchpad goes first in the Mac's MIDI output list too.** Argument 2 is a channel block, but
+`m_launchpad`'s watchdog and `g_grid` (which `u_root` hands the same `$2`) use it as the Launchpad's
+output **port**, and `m_launchpad`'s init sends to a literal port 1. That holds only while the
+Launchpad is input slot 1 and output port 1, as it is on the device. `m_nano` derives its port from
+its block instead, `(block-1)/16+1`.
+
 ⛔ **Argument 3 is a genuine platform difference, and it is not an oversight.** There is no
 `/sdcard` on a Mac. The device path survives `tools/deploy.sh`, `--clean` and a power cycle, which
 the patch folder does not — **the instrument's data is deliberately outside the code**. See

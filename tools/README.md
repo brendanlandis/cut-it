@@ -82,10 +82,11 @@ Mac's own `/24`, IPv6 neighbor discovery, and an AP-mode SSID scan — and names
 associated, so ssh over IPv6 link-local keeps working the whole time — nothing answering *anywhere*
 means powered off, adapter down, or a different SSID. Telling those two apart is the whole point.
 
-⚠️ **The identity signal is the ssh banner** — OS 4.0 ships **OpenSSH 7.1** and everything else on
-this network answers 8.2 or newer. It is a heuristic; override with `ORG_BANNER=` if the image
-changes. ⛔ The first version tried mother's OSC port 4001 instead, and `nc -z` tests **TCP** while
-4001 is **UDP** — so it found the Organelle and dismissed it. The first version also reported a NAS
+⚠️ **The identity signal is the ssh banner**, OpenSSH 7.1 against 8.2 or newer for everything else
+on this network (Reference, `~/Sites/!reference/critter-guitari-organelle-1.md`, *Reaching it*). It
+is a heuristic; override with `ORG_BANNER=` if the image changes. ⛔ The first version tried mother's
+OSC port 4001 instead, which is UDP where `nc -z` tests TCP (Reference, *Ports*), so it found the
+Organelle and dismissed it. The first version also reported a NAS
 as the documented fault, because it probed every IPv6 neighbor and believed whichever answered
 first. **Both bugs were found by running it against the live network, not by reading it.**
 
@@ -227,7 +228,7 @@ bug in the script — it refuses and exits 3 without deleting anything.
 ```
 
 Sends the Live Mode SysEx with `amidi`, **needs no Pd at all**, and looks the port up by name
-because `hw:N` numbering shifts like the ALSA client numbers do.
+because `hw:N` numbering shifts (Reference, *mother's autoconnect, and ALSA numbers that move*).
 
 **Why it is needed.** `m_launchpad`'s safe exit hooks `[r quitting]`, which only `mother.pd` sends
 — right before mother itself quits Pd, with a 100 ms budget. Pd 0.49 has no `closebang`, so that is
@@ -341,9 +342,12 @@ and cannot ever have worked.
 
 | | |
 |---|---|
-| ⚠️ **WebDAV is not on just because PdParty is** | It is switched on in the app and does not reliably survive backgrounding. `curl` exits **7** if it is off, which is at least loud. The trap is on [../ref/device/phone.md](../ref/device/phone.md) |
-| ⛔ **The scene folder must already exist** | A `PUT` into a missing parent is a **409**. `MKCOL` first, once |
-| ⛔ **There is no live reload** | The scene is instantiated when it opens, so an upload under a running scene changes nothing you can see. Back out of it and reopen |
+| ⚠️ **WebDAV is not on just because PdParty is** | `nc -z` first; `curl` exits **7** if it is off |
+| ⛔ **The scene folder must already exist** | A `PUT` into a missing one is a **409**: step 2, once |
+| ⛔ **There is no live reload** | Back out of the scene and reopen it after an upload |
+
+Each is on PdParty's Reference page (`~/Sites/!reference/pdparty.md`, *The WebDAV server* and
+*Uploading a scene over WebDAV*).
 
 ⚠️ **And the phone's OSC send host must be a literal address** — PdParty will not resolve
 `organelle.local`, and the failure is silent at both ends. Item 312. The Organelle's lease has been
@@ -381,10 +385,9 @@ recovery afterwards. `oscsend localhost 4001 /loadPatch s "!/<name>"` swaps the 
 with no signal, so `quitting` fires normally and the Launchpad is never touched. Use it for anything
 that only needs MIDI **sent**; use the console when you need `[print]` output back.
 
-⚠️ **One side effect.** Loading this way leaves `!/Cut It` in `/tmp/curpatchname` where a menu
-selection would leave `Cut It`, so **System → Save New afterwards makes a folder called `! 2`**.
-Select the patch from the menu once before using Save New. Plain Save is unaffected — it works off
-the `/tmp/patch` symlink. Same caveat as `tools/deploy.sh`'s own load.
+⚠️ **One side effect: System → Save New afterwards makes a folder called `! 2`** (Reference,
+`~/Sites/!reference/critter-guitari-organelle-1.md`, *Loading a patch from the shell*). Select the
+patch from the menu once before using Save New. Same caveat as `tools/deploy.sh`'s own load.
 
 ### Running one of these by hand
 
@@ -423,24 +426,23 @@ fallback that needs no running patch at all.
 ## Things these patches taught us
 
 Findings specific to working *in this folder*. The Launchpad's own behavior — palette,
-animation modes, LED state, `polytouchin` ordering — is on its Reference page
-(`~/Sites/!reference/novation-launchpad-pro-mk3.md`). Pd message-discipline traps (`[list trim]`, `route`'s
-selector rules, `sendtyped` arity, `quitting`) are in
+animation modes, LED state — is on its Reference page
+(`~/Sites/!reference/novation-launchpad-pro-mk3.md`); Pd's (`loadbang` before ALSA, `polytouchin`
+ordering, what `route` passes on, `[random]`) on `~/Sites/!reference/pure-data.md`; the Organelle's
+ALSA (names that stay put, numbers that move, `amidi` against Pd) on
+`~/Sites/!reference/critter-guitari-organelle-1.md`. Pd message-discipline rules (`[list trim]`,
+`route`'s selector rules, `sendtyped` arity, `quitting`) are in
 [../ref/conventions.md](../ref/conventions.md), and the OSC ones in
 [../ref/module/display.md](../ref/module/display.md).
 
-- **`loadbang` fires before ALSA connections exist.** Initialization SysEx sent on `loadbang`
-  goes nowhere. Use `[loadbang] → [del 2000]` or longer. Repeated here because every patch in
-  this folder has to obey it.
-- **`aconnect` by name, never by client number.** Client 28 was the Launchpad, then became the
-  SP-404 when devices were swapped. Names are stable, numbers are not.
-- **`amidi` and Pd cannot both hold a port.** Once ALSA seq has subscribed a device,
-  `amidi -p hw:x,y,z` fails with "Device or resource busy". Use `aseqdump`, which coexists.
-- **`[random]` takes a bang, not a float.** Feeding it a float errors once per event, which at
-  grid-refresh rates produced 2,500 errors/sec.
+- **Every patch here sends its init SysEx behind `[loadbang] → [del 2000]` or longer**, because
+  `loadbang` fires before ALSA connections exist.
+- **`aconnect` and `amidi` by name, never by number**, and **`aseqdump` to watch a port Pd holds**:
+  `amidi` cannot open it.
+- **`[random]` is banged, never fed a float**: at grid-refresh rates a float there produced 2,500
+  errors a second.
 - **A patch can wire its own `aconnect` calls** via `[shell]`, but put the commands in a shell
   script — Pd message boxes and shell quoting do not mix well.
-- **`route` passes the matched message's ARGUMENTS on, and they are rarely what you want next.**
-  `route /oled/gClear` emits `ii 3 1` — the typetag and its args. Feeding that to a float inlet
-  prints `float: no method for 'ii'` on every message, which at a 10 Hz redraw is an endless
-  console scroll. Put `[t b]` in between when you only care that the message happened.
+- **`[t b]` after a `route` whose match you only need to count.** `route /oled/gClear` passes on
+  `ii 3 1`, which a float inlet answers with `float: no method for 'ii'` on every message: an
+  endless console scroll at a 10 Hz redraw.

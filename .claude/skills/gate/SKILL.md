@@ -75,11 +75,10 @@ gates something a gate can assert** rather than assume.
 
 ## `-noaudio` does not turn DSP off
 
-⚠️ **It disables the audio DEVICE, not the graph.** Pd falls back to its internal scheduler and
-`phasor~`, `threshold~` and `writesf~` all keep working. Two gates carried comments asserting the
-reverse — *"NO -noaudio, the subject is a signal"* and *"without DSP nothing ticks and every count
-comes back 0"* — and both produced **byte-identical output** with and without it, peaks and counts
-included. Item 280, measured both ways.
+⚠️ **It disables the audio DEVICE, not the graph**, and the signal objects a gate reads keep working:
+measured both ways, item 280, in `~/Sites/!reference/pure-data.md`. Two gates carried comments
+asserting the reverse — *"NO -noaudio, the subject is a signal"* and *"without DSP nothing ticks and
+every count comes back 0"* — and neither was true.
 
 **Pass it.** A gate that opens a Mac audio device it has no use for is slower and can collide with
 whatever else is using the interface. ⛔ **But do not read this as "DSP is free"** — every gate still
@@ -107,9 +106,9 @@ it**, and item 234 was found by hardware instead. Every driver in `test/gate/` n
 **before** the thing it is assuming — `map-assert` at 300 ms, `sp404-assert` at 300 and 700 in both
 directions, `display-assert` at 300 with a mode nothing else in the run sets.
 
-⚠️ **`[del 0]` still defers to the next tick.** A burst fired in one logical instant proves
-*drops-not-queues* and nothing about an interval. Test an interval with two events a real
-millisecond or two apart.
+⚠️ **`[del 0]` adds no time** (`~/Sites/!reference/pure-data.md`). A burst fired in one logical
+instant proves *drops-not-queues* and nothing about an interval. Test an interval with two events a
+real millisecond or two apart.
 
 ## Two ways a measurement lies
 

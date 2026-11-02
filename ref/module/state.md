@@ -223,13 +223,14 @@ console still sees the line, which is where you look when the data directory is 
 
 ### `[savestate]` was evaluated and not used
 
-⚠️ **It is available in 0.49-0** — `savestate-help.pd` is present at tag `0.49-0` and absent at
-`0.47-0`. A widely-repeated forum claim that it arrived in 0.49.1 is **wrong**; do not let it talk
-you out of using it later.
+⚠️ **It is available in 0.49**, whatever the forum says, and it works end to end
+(`~/Sites/!reference/pure-data.md`, *`[savestate]` is in 0.49*): do not let the forum claim talk you
+out of using it later.
 
-But it writes into the **parent patch file** and needs a `menusave` that nothing on the device
-triggers (item 145). It is **orthogonal** to the `state` bus rather than an alternative to it: it
-saves per-*instance* parameters, which is a different problem from a keyed store.
+But it writes into the **parent patch file**, and nothing on the Organelle ever saves one (item 145,
+`~/Sites/!reference/critter-guitari-organelle-1.md`, *Saving*). It is **orthogonal** to the `state`
+bus rather than an alternative to it: it saves per-*instance* parameters, which is a different
+problem from a keyed store.
 
 ### The instrument's data is not delivered by the Organelle's own save mechanism
 

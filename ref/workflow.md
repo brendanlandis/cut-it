@@ -42,17 +42,16 @@ refuses to copy anything if either is non-empty. This catches the entire class o
 errors — misspelled objects, malformed iemgui lines, bad connections — that would otherwise
 vanish into tty1 on a device with no console.
 
-**Refresh with `/reloadNoRemount`, never `reload.sh`.** `reload.sh` sends `/reload`, which also
-runs `mount.sh`, which mounts the last `/dev/sd*` on `/usbdrive`. With a Launchpad attached that
-is its write-protected onboarding drive, and mounting it moves `USER_DIR` onto a read-only
-volume — breaking wifi config, Save and Save New. The guard that stops it, and how to revert it,
-are in [device/README.md](../device/README.md).
+**Refresh with `/reloadNoRemount`, never `reload.sh`.** `/reload` runs `mount.sh`, which with a
+Launchpad attached mounts its write-protected onboarding drive as `USER_DIR` and breaks wifi config,
+Save and Save New (Reference, `~/Sites/!reference/critter-guitari-organelle-1.md`, *Booting with a
+Launchpad Pro MK3 attached*). The guard that stops it, and how to revert it, are in
+[device/README.md](../device/README.md).
 
-**The load step needs the category folder in the name.** `mother`'s `/loadPatch` resolves
-against its *current* patch directory (`MainMenu::runPatch` builds `getPatchDir() + "/" + arg`),
-and `/reload` resets that to the default — `/usbdrive/Patches` if it exists, else
-`/sdcard/Patches`. Since the patch lives in `/sdcard/Patches/!`, the argument is `!/Cut It`.
-A bare `Cut It` loads nothing, silently. `tools/deploy.sh` derives this from `DEST`.
+**The load step needs the category folder in the name**: `/loadPatch` resolves against mother's
+current patch directory, and a bare name loads nothing (Reference, *Loading a patch from the shell*).
+The patch lives in `/sdcard/Patches/!`, so the argument is `!/Cut It`, and `tools/deploy.sh` derives
+it from `DEST`.
 
 | Target | Deploy |
 |---|---|

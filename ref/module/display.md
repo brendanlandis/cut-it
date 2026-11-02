@@ -325,7 +325,9 @@ SURFACE.**
 Every line on the OLED goes through `pd text-out`, which counts the words and picks `iiiiis` …
 `iiiiissss` to match. **Hand-typed typetags are the single most repeated silent failure in this
 API**; this makes an arity mistake impossible rather than merely unlikely. Values are stringified
-with `[makefilename %g]`, because `packOSC` will not accept a float under an `s` tag.
+with `[makefilename %g]`, because `packOSC` refuses a float under an `s` tag (Reference,
+`~/Sites/!reference/critter-guitari-organelle-1.md`, *The typetag must match the argument count
+exactly*).
 
 ### The stale-unit trap is structurally impossible in the param path
 

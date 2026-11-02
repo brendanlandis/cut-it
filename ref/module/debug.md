@@ -46,9 +46,9 @@ back.
 | So one `[notein]` and one `[ctlin]`, both OMNI, cover the whole rig | verified | 315 |
 | Within the SP-404's block the channel **is** the bank, so the `ch-` row reads bank A as 33 | verified | 315 |
 
-⛔ **It only holds while `wire.sh` has undone mother's own auto-connect.** `alsaconnect.sh` wires the
-lowest-numbered client to Pd's Midi-In 1, and the nanoKONTROL has enumerated below the Launchpad
-before now — when that happens two devices really are both channel 1 and nothing in Pd can tell them
+⛔ **It only holds while `wire.sh` has undone mother's own autoconnect**, which puts whichever device
+enumerates lowest on Pd's Midi-In 1 (Reference, `~/Sites/!reference/critter-guitari-organelle-1.md`).
+When that is the nanoKONTROL, two devices really are both channel 1 and nothing in Pd can tell them
 apart. Item 274, and it is the fault this screen is most likely to be looking for.
 
 ⚠️ **The USB Uno block has no counter row of its own.** The Volca behind it is receive-only, so a row

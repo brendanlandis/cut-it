@@ -42,10 +42,11 @@ Everything is USB. The Organelle is a USB host; all four devices are class compl
                                                      └───────────────┘
 ```
 
-**Why no MIDI merge box.** Pd namespaces each input device into its own block of 16 channels, so
-**which device a message came from is free information**. A merge box would flatten everything into
-one stream and throw that away. `MAXMIDIINDEV` is 16 in Pd — verified in both 0.49 and 0.53 source —
-so four devices is nowhere near the limit.
+**Why no MIDI merge box.** Pd gives each input device its own block of 16 channels, so **which
+device a message came from is free information**, and its limit is 16 devices
+(`~/Sites/!reference/pure-data.md`, *Each MIDI device is its own block of 16 channels*). A merge box
+would flatten everything into one stream and throw that away, and four devices is nowhere near the
+limit.
 
 The ALSA wiring, the port map and the channel blocks are on [boot.md](module/boot.md).
 

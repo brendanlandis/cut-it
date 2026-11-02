@@ -130,9 +130,9 @@ run, so one device event costs one re-wire.
 one-fork-per-load rule is actually about. The heartbeat costs one 50 ms probe; the 247 ms re-wire
 happens only when the rig has actually changed.
 
-⛔ **Pd 0.49 cannot read `/proc` and that was measured, not assumed.** Watching
-`/proc/asound/seq/clients` with `[text read]` would have cost no fork at all — but procfs reports
-size 0, Pd `lseek`s, and the read fails outright: `lseek: Invalid argument`, `text size` 0.
+⛔ **The watcher forks because Pd 0.49 cannot read `/proc`.** Watching `/proc/asound/seq/clients`
+with `[text read]` would have cost no fork at all, but the read fails outright, measured on the
+device (`~/Sites/!reference/pure-data.md`, *`[text read]` can't read procfs*).
 
 ### Every fork says which kind it is, on `err`
 

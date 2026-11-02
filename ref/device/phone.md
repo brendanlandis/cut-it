@@ -46,7 +46,7 @@ changes** — the Organelle is `192.168.12.1` and hands the phone `192.168.12.10
 
 | Port | Status | Evidence | Item |
 |------|--------|----------|------|
-| 4001–4003 | **Do not use** — they belong to `mother` | verified | — |
+| 4001–4003 | **Do not use** — mother's (Reference, `~/Sites/!reference/critter-guitari-organelle-1.md`, *Ports*) | verified | — |
 | 9001 | The Organelle's OSC receive. `u_root` passes it to `u_net` as arg 3 | verified | — |
 | 9002 | **The Mac's**, so `main-dev.pd` and a suite run cannot fight over one socket | verified | 307 |
 

@@ -90,8 +90,9 @@ comes from.
 | `SP-404MKII:0` | `Pure Data:0` | verified | — |
 | `USB Uno MIDI Interface:0` | `Pure Data:0` | verified | — |
 
-`/root/fw_dir/scripts/alsaconnect.sh` wires the **lowest-numbered MIDI client** to Pd's Midi-In 1.
-See *Traps*.
+mother's autoconnect wires whichever device enumerates lowest to Pd's Midi-In 1
+(`~/Sites/!reference/critter-guitari-organelle-1.md`, *mother's autoconnect*), so this list undoes it
+for every device that is not the Launchpad. See *Traps*.
 
 ### The creation arguments
 
@@ -128,28 +129,22 @@ Each is a claim and its fix. How any of them was found is in the git history.
 
 ### mother's autoconnect puts the wrong device on the Launchpad's channel block
 
-⛔ `alsaconnect.sh` wires the **lowest-numbered** MIDI client to Pd's Midi-In 1, and when the
-nanoKONTROL enumerates below the Launchpad that puts the nano on `m_launchpad`'s channel block. One
-fader move then publishes **both `slider-1` and a phantom `lp-cc-1`** to `param`, and both draw a
-row.
+⛔ mother wires the lowest-numbered MIDI client to Pd's Midi-In 1, and which device that is moves
+from boot to boot (Reference, *mother's autoconnect, and ALSA numbers that move*). When the
+nanoKONTROL lands there, it is on `m_launchpad`'s channel block: one fader move publishes **both
+`slider-1` and a phantom `lp-cc-1`** to `param`, and both draw a row. `m_launchpad`'s channel test is
+correct and powerless, since both devices really are channel 1.
 
-**Nothing in Pd can fix it.** Once two devices share Midi-In 1 they are both genuinely "channel 1";
-`m_launchpad`'s channel test is correct and powerless.
-
-**Fix:** `aconnect -d` at the ALSA level, in `wire.sh`. It costs no extra fork — `wire.sh` already
-runs once per load.
-
-⚠️ **The client numbers move, which is why the undo list must cover every device that is not the
-Launchpad.** Measured across two boots: the order was nano 32 / 404 36, then 404 32 / Uno 36 /
-nano 40. **Whichever device enumerates lowest is the one mother grabs**, so undoing only the two seen
-so far would leave a hole the next reboot could walk through.
+**Fix:** `aconnect -d` at the ALSA level, in `wire.sh`, for **every device that is not the
+Launchpad** — undoing only the ones seen so far would leave a hole the next reboot could walk
+through. It costs no extra fork: `wire.sh` already runs once per load.
 
 ⚠️ **Invisible on the Mac**, which has explicit device slots and no mother.
 
 ### Shutting mother's own MIDI off is the FIRST thing, and it takes two sends
 
 ⛔ mother's OMNI CC mapping collides head-on with the nanoKONTROL, and mother's MIDI **out** echoes
-the Organelle's keys and knobs to every port. Both are in
+the Organelle's keys and knobs to every port, Launchpad and SP-404 included. Both are in
 Reference (`~/Sites/!reference/critter-guitari-organelle-1.md`) — what belongs here is only the **when**: `midiInGate 0` and
 `midiOutGate 0` at `loadbang`, then `midiInGate 0` **again at 2 s**, because the mother binary pushes
 its own `1` over OSC about half a second in and silently overwrites the first send.
@@ -157,11 +152,11 @@ its own `1` over OSC about half a second in and silently overwrites the first se
 **Fix:** both stages, and do not remove the `loadbang` copy — it costs nothing and closes the window
 in between.
 
-### Outlets are ordered by x COORDINATE, not by creation order
+### `u_init`'s restore outlet sits right of the Launchpad's
 
-⛔ The restore outlet had to go to the **right** of the launchpad outlet. Placing it left of x=900
-would silently have made it outlet 1 and sent the Launchpad init to `u_state`. **Nothing would have
-errored.**
+An abstraction's outlets are numbered by x position, not creation order (`~/Sites/!reference/pure-data.md`).
+Placing the restore outlet left of x=900 would silently have made it outlet 1 and sent the Launchpad
+init to `u_state`.
 
 **Fix:** place a new outlet by where it must appear in the order, not by where there is room.
 

@@ -20,7 +20,7 @@
 #X msg 1300 660 0;
 #X obj 1500 610 list split 1;
 #X obj 1500 660 list trim;
-#X obj 1500 720 route og-knob-1 og-knob-2 og-knob-3 og-knob-4 og-aux;
+#X obj 1500 720 route og-knob-1 og-knob-2 og-knob-3 og-knob-4;
 #X obj 1500 790 t b;
 #X msg 1500 840 1;
 #X obj 2150 790 t b;
@@ -134,7 +134,7 @@
 #X msg 2820 300 mode-1;
 #X text 2820 360 The lookup key gets its mode at load \, synchronously \, not from the 500 ms seed: mother pushes knobs.txt before either \, and a key with no mode missed every row (item 234 \, ref/module/map.md). A real mode still overwrites it., f 62;
 #X obj 1900 665 t a a;
-#X obj 20 3620 route og-knob-1 og-knob-2 og-knob-3 og-knob-4 og-aux;
+#X obj 20 3620 route og-knob-1 og-knob-2 og-knob-3 og-knob-4;
 #X obj 1140 3700 t b;
 #X msg 1140 3760 -1;
 #X msg 20 3700 0;
@@ -332,8 +332,7 @@
 #X connect 21 1 22 0;
 #X connect 21 2 22 0;
 #X connect 21 3 22 0;
-#X connect 21 4 22 0;
-#X connect 21 5 24 0;
+#X connect 21 4 24 0;
 #X connect 22 0 23 0;
 #X connect 24 0 25 0;
 #X connect 23 0 27 1;
@@ -431,7 +430,6 @@
 #X connect 135 2 140 0;
 #X connect 135 3 141 0;
 #X connect 135 4 136 0;
-#X connect 135 5 136 0;
 #X connect 136 0 137 0;
 #X connect 137 0 142 0;
 #X connect 138 0 142 0;

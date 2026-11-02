@@ -32,12 +32,8 @@ that regex finds **one** `ctlout` where there are **two**.
 
 **3. It asserted non-zero instead of exact.** Its comment claimed five `[midiout]` where the patch
 has six. **The count drifted and nothing noticed**, because "not zero" cannot notice. There is one
-`MIDI_EXPECT` now, in `test/gate/lib-scratch.sh`, and every gate that makes a scratch copy enforces
-all of it:
-
-```sh
-MIDI_EXPECT="midiout:6 noteout:2 ctlout:2 pgmout:1 notein:2 ctlin:3"
-```
+`MIDI_EXPECT` now, an exact count per class in `test/gate/lib_scratch.py`, and every gate that makes
+a scratch copy enforces all of it.
 
 A lower count means assertions have gone vacuous; a higher one means a new emitter the gate does not
 know about. `test/gate/midi-emitters-assert.sh` asserts it on its own without Pd, so the claim has an
@@ -52,6 +48,14 @@ and watch it go **up**, never down.
 ```
 scratch-copy "Cut It/"  →  rewrite objects to printing stubs  →  drive it  →  assert in Python
 ```
+
+**The first three are `test/gate/lib_scratch.py`**, and a new gate is a recipe of a few lines in
+`test/gate/scratch-gates.py` plus a `<gate>-assert.sh` that is its header and one `exec` into it.
+⛔ **It reads and rewrites the patch by record, through `lib_pd.py`**, never a line at a time: Pd
+wraps a long box across lines when it saves, and a box saved with a width (`[bendout, f 8]`) is
+invisible to a line grep for the class. Every rewrite proves it landed exactly once. ⛔ **Drivers
+are generated into the scratch directory, never into `test/`**: a driver rewritten in the repo on
+every run is a file `docs-check.py` can read half-written.
 
 ⚠️ **`Cut It/` is never touched.** A built-in class has no side channel and Pd resolves the class
 table before it looks for a file, so the only way to read back what a patch emitted is to swap the

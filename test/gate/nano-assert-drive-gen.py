@@ -3,8 +3,8 @@
 
 ⛔ IT DRIVES [t_ctlin], WHICH IS WHY THIS GATE CAN EXIST AT ALL. m_nano has no
 inlets and reads no bus: its entire surface arrives through [ctlin], and there is
-no bus behind a MIDI input. test/gate/lib-scratch.sh named the missing stub as
-the blocker in writing for as long as this gate did not exist.
+no bus behind a MIDI input. The shell scratch harness, lib-scratch.sh then, named
+the missing stub as the blocker in writing for as long as this gate did not exist.
 
 ⚠️ THE ATOMS ARE IN OUTLET ORDER -- `t-ctlin <value> <controller> <channel>` --
 because t_ctlin is an [unpack f f f] wired outlet-for-outlet, exactly like

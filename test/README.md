@@ -100,13 +100,19 @@ redirect held rather than merely being passed.
 
 | | |
 |---|---|
-| `lib-scratch.sh` | sourced by every gate that copies the patch. Holds the **one** `MIDI_EXPECT`, the stub rewrite, the private state directory, the generator status check and the watchdog |
+| `lib_scratch.py` | imported by every gate that copies the patch, and by the runner for a Mac bench's copy. Holds the **one** `MIDI_EXPECT`, the stub rewrite, the private state directory and port, `u_net`'s sink, the generator status check and the watchdog. ⛔ It counts and rewrites boxes **by record**, through `lib_pd.py`, and forks nothing to do it |
+| `scratch-gates.py` | one short recipe per scratch-copy gate: its required files, map rows, rewrites, driver and watchdog. Each `<gate>-assert.sh` is its header and one `exec` into it, so the path every page names still runs it |
 | `lib_assert.py` | the check tally, the capture parser, and `require_capture` — a gate handed an empty capture must FAIL, not report nothing and exit 0 |
 | `lib_drive.py` | window table → driver patch. Absolute delays off one `loadbang`, one delay per action, the `MARK` on the highest outlet |
 | `lib_grid.py` | reassembles Launchpad SysEx. ⛔ Skips realtime bytes ≥ 248, which are legal *inside* a SysEx stream — `u_tempo` emits 96 a second |
 
-⚠️ **The underscore in three of those is not a slip.** A hyphen is not a legal Python identifier, so
-a module that is *imported* cannot have one; a script that is only *run* can.
+⚠️ **The underscore in the four `lib_` files is not a slip.** A hyphen is not a legal Python
+identifier, so a module that is *imported* cannot have one; a script that is only *run* can.
+
+⚠️ **`u_net`'s sink is a socket in the gate's own process**, bound before Pd starts and held until
+the gate exits. With nothing bound on the port it sends to, loopback answers with ICMP and `u_net`
+raises `net-link-down` mid-run. The shell harness forked a sleeper for it that died two minutes in,
+and on macOS a second bind on a held port fails even with `SO_REUSEADDR`, so the bind is checked.
 
 ⛔ **`MIDI_EXPECT` is an EXACT count per class, never "not zero".** A lower count means assertions
 have gone vacuous; a higher one means an emitter no gate knows about. The gate it replaced checked
@@ -403,13 +409,13 @@ device layer posting a control's row beside `u_map`'s draws that control twice, 
 *unmapped* control's row is invisible on the screen (item 317). That half runs without Pd at all.
 
 The other half of each gate rewrites the MIDI object boxes in a scratch copy — **all seven classes, from the one
-`MIDI_EXPECT` in `test/gate/lib-scratch.sh`**, shared with every other gate that makes a copy. ⛔
+`MIDI_EXPECT` in `test/gate/lib_scratch.py`**, shared with every other gate that makes a copy. ⛔
 **`[midiout]` alone was never enough**: `m_volca` and `m_404` emit through `noteout` / `ctlout` /
 `pgmout`, so a rewrite of `midiout` only finds nothing in them and every assertion about them passes
 **vacuously**. ⛔ **And the two input stubs are not optional**: every *output* path can be driven from
 a bus, but `m_404`'s receive side sits behind `[notein]` and `m_nano`'s *entire surface* sits behind
 `[ctlin]`, and **no bus reaches a MIDI input**. ⛔ **`[polytouchin]` is the one class left with no
-stub, and it was in NEITHER list until `midi_scan_unknown` asked the question as a closed one** —
+stub, and it was in NEITHER list until `scan_unknown` asked the question as a closed one** —
 walking every MIDI class Pd has and checking it against the inventory, rather than checking the
 inventory against itself. `[sysexin]` had no stub either until `t_sysexin` landed with the
 hot-swap work, because a device-inquiry reply is the only evidence of presence there is and it
@@ -455,7 +461,7 @@ Each driver is an OUTPUT, generated into the scratch directory on every run — 
 
 `u_state` writes a **file**, so this gate reads what landed on disk. No scratch copy (Phase 6
 needed one, because `[midiout]` is a built-in class with no side channel), no socket (Phase 7's
-trick), no hardware. It works entirely inside `/tmp/cut-it-state-gate` and never touches
+trick), no hardware. It works entirely inside its own scratch directory and never touches
 `Cut It/`, `/sdcard/cut-it-state` or the device.
 
 **What it protects, stated as properties rather than proxies:** the two policies never leak into
@@ -467,8 +473,9 @@ points load in **silence**, which is `tools/deploy.sh`'s own gate.
 ⚠️ **It passed the broken patch on its first can-it-fail run** — the driver banged the restore at
 600 ms when the bug needs it after 3000 ms, and the final check asserted against a value nothing
 drove. **The 3600 ms in the driver is load-bearing**; shortening it re-blinds the gate. Proven
-both ways now: 15/15 clean, 2 failures with the bug reintroduced. `state-assert-drive.pd` is an
-OUTPUT — edit `state-assert-drive-gen.py`, never the `.pd`.
+both ways now: 15/15 clean, 2 failures with the bug reintroduced. The driver is an OUTPUT,
+generated into the scratch directory on every run — edit `state-assert-drive-gen.py`. None is
+committed.
 
 ## `phone-assert.sh` — the same idea, and much cheaper
 
@@ -493,8 +500,7 @@ so a button lit by its own acknowledgment would ping-pong for ever. See
 
 | Piece | |
 |---|---|
-| `phone-assert-drive-gen.py` | generates the driver. **Edit this, never the `.pd`** |
-| `phone-assert-drive.pd` | instantiates `u_net` and pushes synthetic traffic onto `disp` |
+| `phone-assert-drive-gen.py` | generates the driver into the scratch directory on every run — it instantiates `u_net` and pushes synthetic traffic onto `disp`. **Edit this**; no driver is committed |
 | `phone-assert.py` | binds the port, launches Pd, decodes OSC, does the reasoning |
 
 ⚠️ **The analyzer owns the lifecycle, and that is not tidiness.** It binds the socket *before*

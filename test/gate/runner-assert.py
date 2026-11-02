@@ -1006,7 +1006,7 @@ def _where_wiring():
     import glob
     files = sorted(glob.glob(os.path.join(ROOT, "test/bench/*-bench.pd")))
     # ⚠️ THE COUNT IS ASSERTED SO IT CAN ONLY GO UP DELIBERATELY, the same rule
-    # as gates.py's EXPECT and lib-scratch.sh's MIDI_EXPECT. A bench that stopped
+    # as gates.py's EXPECT and lib_scratch.py's MIDI_EXPECT. A bench that stopped
     # being generated would otherwise leave this loop quietly checking fewer
     # files and still saying ok.
     # ⚠️ 8 -> 9 WHEN THE DEBUG PATCH GAINED ITS BENCH. Updated deliberately, which

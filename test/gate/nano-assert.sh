@@ -9,7 +9,8 @@
 # ⛔ IT IS THE FIRST GATE THAT COULD NOT EXIST BEFORE t_ctlin. m_nano is the main
 # control surface of the instrument and it had no headless coverage at all,
 # because every one of its paths sits behind [ctlin] and there is no bus behind a
-# MIDI input. lib-scratch.sh carried a ⬜ naming that stub as the blocker.
+# MIDI input. The shell scratch harness, lib-scratch.sh then, carried a ⬜
+# naming that stub as the blocker.
 #
 # ⚠️ NO DSP. Nothing here needs a clock: every assertion is about decoding a
 # controller number into a name, putting it on param, and the ONE row u_map

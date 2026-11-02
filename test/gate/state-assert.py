@@ -23,9 +23,9 @@ import lib_assert as A                                          # noqa: E402
 import lib_scratch as S                                         # noqa: E402
 
 # ⛔ ITS OWN SCRATCH DIRECTORY, NOT /tmp/cut-it-state-gate. That fixed path was
-# shared by every run on the machine, and the driver was rewritten inside
-# test/gate/ on every run -- which is why gates.py had to finish the structure
-# gates, docs-check among them, before this one could start. The driver and the
+# shared by every run on the machine, and the driver was rewritten inside the
+# repo (test/gate/) on every run, which is why gates.py had to finish the
+# structure gates, docs-check among them, before this one could start. The driver and the
 # state files now live and die in TMPDIR/cutit-state-<pid>; --keep leaves them.
 KEEP = "--keep" in sys.argv
 WORK = S.work_dir("state")

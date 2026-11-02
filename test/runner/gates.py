@@ -40,7 +40,7 @@ import tempfile
 # and the tally is the only witness. Watch it go UP.
 #
 # ⚠️ UPDATE THIS DELIBERATELY, NEVER TO MAKE A RED RUN GREEN -- the same rule as
-# MIDI_EXPECT in test/gate/lib-scratch.sh, and for the same reason.
+# MIDI_EXPECT in test/gate/lib_scratch.py, and for the same reason.
 EXPECT = 25
 
 # ⛔ THE GATES RUN SIDE BY SIDE, IN TWO BLOCKS, AND PRINT IN TABLE ORDER. Most
@@ -49,10 +49,13 @@ EXPECT = 25
 # buffered and printed whole, in the order below, so the log reads exactly as a
 # serial run's did and there is still one RESULT: line.
 #
-# ⛔ STRUCTURE FINISHES BEFORE ANY MODULE GATE STARTS. docs-check reads every
-# .pd, .py and .sh in the repo, and state-assert and phone-assert write their
-# drivers into test/gate/ -- a half-written driver read mid-write is a false
-# failure that would come and go.
+# ⚠️ STRUCTURE FINISHES BEFORE ANY MODULE GATE STARTS. That was for docs-check,
+# which reads every .pd, .py and .sh in the repo, while state-assert and
+# phone-assert rewrote their drivers inside test/gate/: a half-written driver
+# read mid-write was a false failure that came and went. Since 2026-11-02 every
+# driver is generated into a scratch directory and no gate writes inside the
+# repo, so the order no longer protects anything. It costs the run the
+# structure block's ~5 s, most of it runner-assert.
 #
 # ⛔ THE INVENTORY RUNS FIRST because every gate below it rewrites the same MIDI
 # object boxes, so a count that has drifted explains all of them at once. Then
@@ -143,8 +146,8 @@ GATES = STRUCTURE + MODULES
 # ⛔ EACH GATE GETS ITS OWN INBOUND UDP PORT, base + its place in the table.
 # Every scratch copy of main-dev.pd runs u_net, which listens on one port, and
 # only one process can hold it: two gates side by side on 9002 would print
-# `bind: Address already in use`. scratch_state_dir in test/gate/lib-scratch.sh
-# writes CUTIT_INPORT into the copy, and a gate run by hand keeps 9002.
+# `bind: Address already in use`. state_dir in test/gate/lib_scratch.py writes
+# CUTIT_INPORT into the copy, and a gate run by hand keeps 9002.
 # ⚠️ CLEAR OF 9001/9002 (the device and main-dev.pd) and of 9992-9998, which the
 # OSC mirrors, phone-assert and the bench stream bind.
 INPORT_BASE = 9100

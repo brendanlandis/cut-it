@@ -19,13 +19,19 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(ROOT, "test", "runner"))
 sys.path.insert(0, HERE)
 
+WORK = os.path.join(os.environ.get("TMPDIR", "/tmp"),
+                    "cutit-runner-assert-%d" % os.getpid())
+# Every record a fixture writes, run files and roll-up alike, goes to WORK:
+# the real ones describe hardware. Set before anything imports records, which
+# reads it once, and inherited by every run.py this starts. Check 8 proves the
+# real directory was left alone.
+os.environ["CUTIT_RESULTS"] = os.path.join(WORK, "results")
+REAL_RESULTS = os.path.join(ROOT, "test", "results")
+
 import lib_assert as A                                          # noqa: E402
 import lib_pd                                                   # noqa: E402
 import steps as S                                               # noqa: E402
 import stream                                                   # noqa: E402
-
-WORK = os.path.join(os.environ.get("TMPDIR", "/tmp"),
-                    "cutit-runner-assert-%d" % os.getpid())
 # No actions anywhere, so the one table drives both of the runner's loops: the
 # driven one and paper mode.
 BENCH = "midi"
@@ -111,16 +117,14 @@ def run_paper(keys):
     No transcript: paper mode has no stream. The only fixture that drives
     run_bench rather than run_bench_driven.
 
-    CUTIT_RESULTS is not optional. A paper run rolls its verdicts up into the
-    committed latest.json, which describes hardware; check 8 proves the
-    redirect held.
+    A paper run rolls its verdicts up, so it inherits CUTIT_RESULTS from the
+    top of this file like every other run.
     """
     kp = write("paper.keys", keys)
-    env = dict(os.environ, CUTIT_RESULTS=os.path.join(WORK, "results"))
     p = subprocess.run(
         [sys.executable, os.path.join(ROOT, "test", "runner", "run.py"),
          "--bench", BENCH, "--target", "paper", "--keys", kp],
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60, env=env)
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
     return p.returncode, p.stdout.decode("utf-8", "replace")
 
 
@@ -421,11 +425,9 @@ def _recovery(bench):
     want opposite responses, resend or stop; `where` tells them apart.
     """
     print("\n--- recovering a lost GO ---")
-    import records
     import run as R
 
-    saved_runs, saved_ask = records.RUNS, stream.ask_line
-    records.RUNS = os.path.join(WORK, "runs")
+    saved_ask = stream.ask_line
 
     def drive(cls=Fake, start=1, **kw):
         src = cls(bench, **kw)
@@ -561,7 +563,6 @@ def _recovery(bench):
                 not ok and len(rows) < len(bench.steps),
                 "%d rows of %d, ok=%s" % (len(rows), len(bench.steps), ok))
     finally:
-        records.RUNS = saved_runs
         stream.use(saved_ask)
 
 
@@ -576,11 +577,9 @@ def _interrupt_before_fire(bench):
     no replay can.
     """
     print("\n--- Ctrl-C before a step runs ---")
-    import records
     import run as R
 
-    saved_runs, saved_ask = records.RUNS, stream.ask_line
-    records.RUNS = os.path.join(WORK, "runs")
+    saved_ask = stream.ask_line
 
     def interrupt_after(keys):
         """A person at a keyboard who answers `keys` and then presses Ctrl-C."""
@@ -664,7 +663,6 @@ def _interrupt_before_fire(bench):
         A.check("and the prompt offers exactly the three that are left",
                 R.HELP == "[p]ass  [f]ail  [r]epeat", "HELP is %r" % R.HELP)
     finally:
-        records.RUNS = saved_runs
         stream.use(saved_ask)
 
 
@@ -677,7 +675,6 @@ def _mirror():
     FAIL. The phone bench is driven here because midi has no osc predicate.
     """
     print("\n--- a predicate that needs the OSC mirror ---")
-    import records
     import predicates as P
     import run as R
 
@@ -700,8 +697,7 @@ def _mirror():
             "without one this fixture proves nothing",
             len(mirrored) > 0, "found %s" % mirrored)
 
-    saved_runs, saved_ask = records.RUNS, stream.ask_line
-    records.RUNS = os.path.join(WORK, "runs")
+    saved_ask = stream.ask_line
     try:
         src = Fake(bench)
         stream.use(stream.keystrokes(write("mirror.keys", _keys(bench))))
@@ -728,7 +724,6 @@ def _mirror():
                 len(rows) == len(bench.steps) and ok,
                 "%d rows of %d, ok=%s" % (len(rows), len(bench.steps), ok))
     finally:
-        records.RUNS = saved_runs
         stream.use(saved_ask)
 
 
@@ -879,9 +874,27 @@ def _where_wiring():
                          "step is silently not re-described" % bad)
 
 
+def _bytes(path):
+    try:
+        with open(path, "rb") as fh:
+            return fh.read()
+    except OSError:
+        return None
+
+
+def _real_results():
+    """-> (latest.json's bytes, the run files' names) in the real test/results."""
+    try:
+        runs = sorted(os.listdir(os.path.join(REAL_RESULTS, "runs")))
+    except OSError:
+        runs = []
+    return _bytes(os.path.join(REAL_RESULTS, "latest.json")), runs
+
+
 def main():
     os.makedirs(WORK, exist_ok=True)
     os.chdir(ROOT)
+    real_before = _real_results()
     bench = S.load(BENCH)
     n = len(bench.steps)
 
@@ -1133,18 +1146,39 @@ def main():
     A.check("paper: skips keep RESULT off PASS", rc != 0 and "RESULT: PASS"
             not in out, "rc=%d / %s" % (rc, _tail(out)))
 
-    # -- 8. and the roll-up was never touched -------------------------------
-    # latest.json is committed and describes hardware. A replay refuses to
-    # roll up; a paper run does roll up, redirected by CUTIT_RESULTS, and this
-    # proves the redirect held.
+    # -- 8. and the real results were never touched --------------------------
+    # latest.json is committed and the run files beside it are the benches'
+    # record; both describe hardware. With the scratch roll-up removed, a
+    # replay must leave it absent and a paper run must write it. By presence,
+    # not content: two runs in one second write identical bytes.
     import records
-    before = len(records.load_latest().get("records", {}))
+    if os.path.exists(records.LATEST):
+        os.remove(records.LATEST)
     run(write("clean2.txt", clean), _keys(bench))
+    after_replay = os.path.exists(records.LATEST)
     run_paper(_paper_keys(bench))
-    after = len(records.load_latest().get("records", {}))
-    A.check("neither a replay nor a redirected paper run writes to the "
-            "committed latest.json",
-            before == after, "%d records before, %d after" % (before, after))
+    after_paper = os.path.exists(records.LATEST)
+    A.check("a replay rolls nothing up", not after_replay,
+            "%s was written by a replay" % records.LATEST)
+    runs = os.listdir(records.RUNS) if os.path.isdir(records.RUNS) else []
+    A.check("...and the fixtures' records went to scratch: run files, and the "
+            "paper run's roll-up",
+            bool(runs) and after_paper,
+            "%d run file(s) in %s, and the paper run %s the roll-up there. "
+            "Nothing written at all also passes the two checks below"
+            % (len(runs), records.RUNS,
+               "wrote" if after_paper else "did not write"))
+    real_after = _real_results()
+    A.check("⛔ the committed latest.json is byte for byte what it was",
+            real_after[0] == real_before[0],
+            "%s/latest.json changed while this gate ran" % REAL_RESULTS)
+    leaked = sorted(set(real_after[1]) - set(real_before[1]))
+    gone = sorted(set(real_before[1]) - set(real_after[1]))
+    A.check("⛔ test/results/runs/ holds exactly the files it held before",
+            not leaked and not gone,
+            "%d new run file(s), %s; %d gone. A fixture's invented verdicts "
+            "are now beside the benches' real ones"
+            % (len(leaked), leaked[:3], len(gone)))
 
     print()
     rc = A.report()

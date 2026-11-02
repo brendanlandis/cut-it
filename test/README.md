@@ -25,7 +25,7 @@ were false.
 
 | Gate | Checks | Answers for |
 |---|---|---|
-| `runner-assert.sh` | 172 | **no page** — it answers for this one |
+| `runner-assert.sh` | 175 | **no page** — it answers for this one |
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
@@ -47,9 +47,9 @@ were false.
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 
-**703 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**706 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **696**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **699**; the difference is
 that gate. Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 42 come from TWO Pd runs and one tally**, which is the only entry here
@@ -91,10 +91,11 @@ two guards tests one of them.**
 
 ⚠️ **And every fixture drove `run_bench_driven`, so the OTHER loop was ungated.** `run_bench` — paper
 mode, no stream at all — had no fixture until it was found evaluating predicates against an empty
-window. There is one now, and it needs `CUTIT_RESULTS` pointed at a scratch directory: ⛔ **a paper
-run is a NORMAL run and rolls its verdicts up into `latest.json`**, which is committed and describes
-hardware. The replay path refuses to roll up at all; this one is redirected, and a check proves the
-redirect held rather than merely being passed.
+window. There is one now. ⛔ **A paper run is a NORMAL run and rolls its verdicts up into
+`latest.json`**, which is committed and describes hardware, and every run, replays included, writes
+its run file into `test/results/runs/`. So the gate points `CUTIT_RESULTS` at a scratch directory
+for all of them, and checks prove `latest.json` and `runs/` came through untouched rather than
+trusting the variable to have been passed.
 
 ### The shared machinery
 

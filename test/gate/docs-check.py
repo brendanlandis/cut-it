@@ -116,8 +116,16 @@ SKIP_DIRS = {'.git', '__pycache__', 'device-state', 'node_modules'}
 # ⚠️ The directory is REQUIRED, not optional -- if it is missing the check
 # raises rather than finding nothing, because "no refs to resolve" and "could
 # not look" are different findings and only one of them is a pass.
-PROJECTS = ROOT.parent / '!projects' / 'cut-it'
+# ~/Sites, where !projects and !reference sit beside this repo. From a worktree
+# elsewhere the repo's parent is not it, so fall back to the home path.
+SITES = ROOT.parent if (ROOT.parent / '!projects').is_dir() else pathlib.Path.home() / 'Sites'
+PROJECTS = SITES / '!projects' / 'cut-it'
 PROJ_REF = re.compile(r'(?<![\w/.-])cut-it/([a-z0-9-]+)(?:#[a-z0-9-]+)?\b')
+
+# A Reference page, named as `~/Sites/!reference/<slug>.md`: what's true of an
+# outside device or app lives there, and the docs point at it by path.
+REFERENCE = SITES / '!reference'
+REF_PAGE = re.compile(r'!reference/([a-z0-9-]+)\.md')
 
 
 class CheckFailed(Exception):
@@ -944,13 +952,42 @@ def check_project_refs(verbose):
     return out
 
 
+def check_reference_refs(verbose):
+    """Every `!reference/<slug>.md` named anywhere is a page that exists.
+
+    Same walk as check_project_refs, and it fails the same way when the
+    directory isn't there: a pointer that could not be looked up did not resolve.
+    """
+    if not REFERENCE.is_dir():
+        return [f'{REFERENCE} is not a directory -- the !reference folder must sit '
+                f'beside this repo for its pages to resolve']
+    out, seen = [], 0
+    for src in sorted(ROOT.rglob('*')):
+        if not src.is_file() or src.suffix not in TEXT_SUFFIXES:
+            continue
+        if any(p in SKIP_DIRS for p in src.relative_to(ROOT).parts):
+            continue
+        try:
+            body = src.read_text(encoding='utf-8')
+        except UnicodeDecodeError:
+            continue
+        for slug in sorted(set(REF_PAGE.findall(body))):
+            seen += 1
+            if not (REFERENCE / f'{slug}.md').exists():
+                out.append(f'{src.relative_to(ROOT)}  points at !reference/{slug}.md, '
+                           f'which is not a Reference page')
+    if verbose:
+        print(f'  {seen} Reference page(s) resolved')
+    return out
+
+
 def main():
     verbose = '-v' in sys.argv
     problems = (check_anchors(verbose) + check_dangling_docs(verbose)
                 + check_shape(verbose) + check_index(verbose)
                 + check_rule_ids(verbose) + check_skill_rules(verbose)
                 + check_dangling_paths(verbose) + check_closers(verbose)
-                + check_project_refs(verbose))
+                + check_project_refs(verbose) + check_reference_refs(verbose))
     if problems:
         print('\n'.join(problems))
         print(f'\n{len(problems)} problem(s).')

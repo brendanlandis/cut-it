@@ -1,9 +1,7 @@
-<!-- schema: module -->
+<!-- schema: device -->
 # Novation Launchpad Pro MK3
 
 **Files:** `Cut It/m_launchpad.pd`, `Cut It/g_grid.pd` · **Gate:** `test/gate/launchpad-assert.sh` · **Bench:** `test/bench/launchpad-bench.pd`
-
-## What it is
 
 **The only device in the rig that is a genuine blank slate, and the only one Pd can light.** What the
 device is, its MIDI, its Programmer Mode index map, lighting, quirks and measurements are in
@@ -16,10 +14,7 @@ pressure onto `param`, and the replug watchdog. The row a pad or ring button dra
 (item 317); pressure draws none unless the mode maps it (item 318). `g_grid.pd` owns its
 LEDs and nothing else does.
 
-## Facts
-
-What the device does is in Reference, under the same item numbers. This is what is true of the
-patch around it.
+## Design
 
 ### Addresses and counts in the patch
 
@@ -29,15 +24,15 @@ patch around it.
 | Port wired | `wire.sh` connects **port 0 only**, so the layout announcements on port 3 never reach Pd | verified | 250 |
 | What `g_grid` sends | 108 specs per message, indices 1–108 | verified | — |
 
-`g_grid` paints **indices 1–108**, CC 1–8 included. The span is a choice, not a limit: an index
-outside it would hold whatever Live Mode last drew there, forever.
+`g_grid` paints **indices 1–108**, CC 1–8 included: the whole span, which Reference shows is a
+choice rather than a limit (see *The grid paints the full span on init*, below).
 
 ⛔ **Four counts are in play and they are four different quantities.** `g_grid.pd` uses all of them.
 
 | Count | Is | Evidence | Item |
 |---|---|---|---|
 | **96** | **Physical buttons** on the device — 64 pads plus 32 edge | verified | — |
-| **108** | **Specs sent per frame**, indices 1–108, per the index map below | verified | — |
+| **108** | **Specs sent per frame**, indices 1–108, per the index map in Reference | verified | — |
 | **109** | **Array cells** — `[array define $0-surface 109]`, indices 0–108. Cell 0 is allocated and deliberately never written, so an index maps straight to a cell with no arithmetic | verified | — |
 | **~96/s** | **ALSA MIDI writes per second** at the frame clock. ⚠️ Unrelated to the first 96 — a rate, not a count, and the number `g_grid`'s dirty-flag gating exists to hold down | verified | 75 |
 
@@ -91,12 +86,6 @@ cascades without limit. Three forks tied to one cable event cannot.
 
 **All three are measured**, which is the only reason bending the rule is allowed.
 
-## Traps
-
-Each is a claim and its fix. How any of them was found is in the git history. The device's own traps
-(the Settings lockout, LED state surviving a mode switch, 7-bit data bytes, a dirty SysEx pipe, the
-dead mode buttons) are in Reference.
-
 ### The Live Mode SysEx is sent on `quitting`, and only there
 
 `m_launchpad` returns the device to Live Mode on **`quitting`**, and it is the only file allowed to.
@@ -118,8 +107,6 @@ invisible to the poll alone. `m_launchpad` runs the heartbeat and the poll.
 
 Because LED state survives mode switches (Reference), `g_grid` clears the whole span on init and
 paints 1–108 rather than a subset.
-
-## Design
 
 ### Three tiers, and Cut It only builds the top one
 

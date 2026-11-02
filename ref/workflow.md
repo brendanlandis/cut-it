@@ -156,9 +156,10 @@ The shape every piece of multi-session work here takes:
    through the `docs` skill, with `test/gate/docs-check.py` green; superseded designs are replaced,
    not annotated beside their replacement; the `!projects` file has its steps ticked and its `next:`
    rewritten, or moves to `done/`; anything unresolved goes to that file or to `cut-it/inbox`, not
-   to a page's *Open* section unless it is a genuine unknown about the thing. Items are numbered
-   **after the last used number anywhere** — numbers are cited bare across documents and from the
-   patch, so **never reuse one**.
+   to a page's *Open* section unless it is a genuine unknown about the thing. A fact about an
+   outside device or program goes on its Reference page. ⛔ **Item numbers are frozen**
+   (Brendan, 2026-11-02): the existing ones stay as IDs, cited bare across documents and from the
+   patch, and a new fact takes none — cite it by its page and heading.
 7. **The phase ends with a procedure, not a summary** — expected result stated *before* each
    action, for both machines.
 

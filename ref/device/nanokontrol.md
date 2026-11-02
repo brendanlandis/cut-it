@@ -1,9 +1,7 @@
-<!-- schema: module -->
+<!-- schema: device -->
 # Korg nanoKONTROL (mk1)
 
 **Files:** `Cut It/m_nano.pd` · **Gate:** `test/gate/nano-assert.sh` · **Bench:** `test/bench/nanokontrol-bench.pd`
-
-## What it is
 
 The rig's fader bank. What the device is, the CC numbers it sends as configured, its configuration,
 LEDs and traps are in Reference: `~/Sites/!reference/korg-nanokontrol-mk1.md`. This page is how Cut It
@@ -17,9 +15,7 @@ on the Launchpad or the OLED.
 destination's row when the mode maps it, the raw row when nothing does. See
 [map.md](../module/map.md), item 317.
 
-## Facts
-
-What the device sends is in Reference, under the same item numbers. This is how it arrives in Pd.
+## Design
 
 ### Channels and decoding
 
@@ -65,11 +61,6 @@ stays present even if one reply is dropped. The inquiry leaves on **port 2**, de
 `(17-1)/16+1` from the channel block this file already takes as its one argument rather than passed
 in separately. See [presence.md](../module/presence.md).
 
-## Traps
-
-Each is a claim and its fix. How any of them was found is in the git history. The device's own traps
-(the hidden SCENE state, the factory reset, the unknowable transport defaults) are in Reference.
-
 ### The CC numbers collide with the Volca's parameter range
 
 The nano's transport row is CC 41–46; the Volca's parameters are CC 40–50.
@@ -77,8 +68,6 @@ The nano's transport row is CC 41–46; the Volca's parameters are CC 40–50.
 **Fix:** nothing to do — harmless. The Volca is device 4 on channel 49+, the nano is device 2, and
 Pd separates by channel long before a CC number is examined. Recorded so the collision is not
 mistaken for a bug.
-
-## Design
 
 ### Moved off the factory map
 

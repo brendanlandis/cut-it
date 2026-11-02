@@ -1,34 +1,22 @@
-<!-- schema: module -->
+<!-- schema: device -->
 # Organelle 1 — the panel, the OLED and the aux LED
 
 **Files:** `Cut It/m_organelle.pd`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/organelle-assert.sh`, `test/gate/led-assert.sh` · **Bench:** `test/bench/display-bench.pd`
 
-## What it is
-
-The host device and its own control surface: **four knobs, an encoder, an aux button, a keyboard, a
-128×64 monochrome OLED and one RGB LED.** What the Organelle 1 is — its OS, paths, SSH, the
+The host device and its own control surface. What the Organelle 1 is — its OS, paths, SSH, the
 `mother.pd` interface, the OLED and LED APIs, how it saves, its MIDI quirks and traps, and its wifi —
 is in Reference: `~/Sites/!reference/critter-guitari-organelle-1.md`. This page is how Cut It uses its
 panel, OLED and aux LED. ([device-os.md](../device-os.md) is how Cut It lives on the box as a computer.)
 
-⛔ **The panel is not MIDI** (Reference): keys, knobs, encoder, aux button and the OLED all arrive as
-ordinary Pd messages from `mother.pd`. All MIDI in this rig is Pd talking to the four attached
-controllers.
-
-Three abstractions divide it: `m_organelle` reads the panel onto `param` and `disp`, `g_oled` owns
-the screen and is the only file allowed to send `oscOut` or `screenLine*`, and `g_led` owns the aux
-LED. The display *arbiter* they share with `g_grid` is instrument architecture, not device fact —
+**The panel is not MIDI** (Reference), so all MIDI in this rig is Pd talking to the four attached
+controllers, and the panel is read like any other device: mother's reserved names in, named controls
+out. Three abstractions divide it: `m_organelle` reads the panel onto `param` and `disp`, `g_oled`
+owns the screen and is the only file allowed to send `oscOut` or `screenLine*`, and `g_led` owns the
+aux LED. The display *arbiter* they share with `g_grid` is instrument architecture, not device fact —
 see [display.md](../module/display.md). The reserved names mother uses are enumerated in
 [conventions.md](../conventions.md) under *The global name allowlist*.
 
-## Facts
-
-What the device does is in Reference, under the same item numbers. This is what is true of the patch
-around it.
-
-| Property | Value | Evidence | Item |
-|----------|-------|----------|------|
-| Repaint rate | `g_oled` rebuilds screen 3 at **10 Hz** | verified | — |
+## Design
 
 ### What Cut It puts on the LED
 
@@ -44,17 +32,60 @@ around it.
 Anything `g_led` does not recognize raises `warn g_led unknown-led-state` and **leaves the LED
 alone**, so a typo cannot silently blank the only non-screen indicator in the rig.
 
+### `stopped` is lit rather than dark
+
+*(judgment call)* A stopped patch and a dead patch look identical if `stopped` is `off` — and on a
+dark stage that is the difference between a pause and a problem.
+
+### Design against the patch-facing LED numbers, not the bitmask
+
+They are the sensible ordering, they are what `[s led]` takes, and they are stable. The bitmask
+(Reference) is only interesting for composing a color from components, and that needs the raw path —
+`oscOut` — which belongs to `g_oled`.
+
+### `/led/flash` is deliberately unused
+
+mother.pd does not expose it (Reference), so reaching it means sending raw OSC to `oscOut`, and
+**only one abstraction may send on that name** — adopting flash would put a second writer on it.
+Recorded so it is not rediscovered as news.
+
+### The LED was deliberately not claimed for mode or for saving
+
+Mode is on the Launchpad's top row — the surface with six lamps rather than one. A "save in
+progress" state was rejected: `Storage → Save` already flips the OLED to mother's own "Saving…"
+screen, so the confirmation exists for free.
+
+It remains the cheapest candidate if a *performable* commit is ever added — one row in the state
+table and nothing else, since a commit from a Launchpad pad would have no screen of its own.
+
+### `g_oled` repaints screen 3 at 10 Hz, the info bar is off, and `g_*` owns all 128×64
+
+`g_oled` rebuilds screen 3 ten times a second from stored state, and sends `gShowInfoBar 3 0` on
+**every** redraw rather than once from `u_init`, because mother restores the info bar after a patch
+load (Reference).
+
+`gShowInfoBar` toggles mother's VU meters (Reference). **Cut It turns it off.** The four meters are
+only 11 segments each and Cut It shows its own input levels far more legibly at 24 px; battery and wifi
+are not worth a permanent eighth of the screen on a device that mostly runs on mains. **The cost is
+that nothing shows signal presence when the display is doing something else — accepted.**
+
+### Anything rhythmic goes on the Launchpad, not the OLED
+
+The OLED trails the audio by ~200 ms (Reference, *The OLED lags the audio by ~200 ms*); the audio,
+the Launchpad's beat row and the footer BPM all agree, and the OLED does not. So a playhead, a beat
+indicator or a step position belongs on **the Launchpad**, which `g_grid` repaints over ALSA MIDI at
+50 Hz when dirty. The OLED is for state, values and text.
+
 ### What `m_organelle` publishes
 
-The front panel is mapped like any other device: mother's reserved names in, named controls out, and
-**no notion anywhere in the file of what any of them does.** Same layer and the same silence about
-meaning as `m_nano`.
+The front panel is mapped like any other device, with **no notion anywhere in the file of what any
+control does.** Same layer and the same silence about meaning as `m_nano`.
 
 | Fact | Evidence | Item |
 |------|----------|------|
 | The four knobs publish `og-knob-1`…`og-knob-4`. ⛔ **The aux button publishes NO control at all** — it is the keyboard's modifier, and a modifier is not a control | verified | 305 |
 | **The `og-` prefix is not decoration** — `m_nano` already publishes `knob-1` to `knob-9`, and a single hyphen is not a distinction anyone can be trusted to read inside a `route` box | verified | — |
-| **Every knob goes through `[change -1]`**, and mother pushes once at load and then says nothing — one `KNOB1` print in twelve seconds untouched. Parameter pickup depends on it: if mother streamed, the first value would be spent on its own reading and pickup would never arm | verified | 237 |
+| **Every knob goes through `[change -1]`**, because mother pushes the knobs once at load and then says nothing (Reference, item 237). Parameter pickup depends on that: if mother streamed, the first value would be spent on its own reading and pickup would never arm | verified | 237 |
 | ⛔ **The `-1` is load-bearing.** A bare `[change]` starts life holding 0, so a knob parked at 0 would never publish at all and whatever it feeds would sit at its default. `-1` cannot be a real value, because mother's knobs are 0 to 1 | verified | 237 |
 | ⛔ **The knobs reach `param` and NOT `disp`.** A knob's raw 0-to-1 position is not a readable parameter row — `og-knob-1 0.245` where a BPM belongs — and the param layer replaces the footer, so the tempo it maps to would vanish while you turned it. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
 | ⛔ **`aux` uses BOTH edges.** A modifier you cannot let go of is not a modifier | verified | 305 |
@@ -103,11 +134,12 @@ two keys held across a change of modifier keep their own layers independently.
 ### The keyboard — 25 controls, one per key
 
 `param` carries exactly one value per control, and mother packs the keyboard into one two-float list
-(Reference). So the **pitch rides in the control NAME** and the velocity is the value.
+whose lowest key is note 60 (Reference, item 293). So the **pitch rides in the control NAME** and the
+velocity is the value.
 
 | Fact | Evidence | Item |
 |------|----------|------|
-| 25 keys, publishing `og-key-60` … `og-key-84` — the lowest key is note **60** | verified | 293 |
+| 25 keys, publishing `og-key-60` … `og-key-84` | verified | 293 |
 | The value is that key's **velocity** | verified | 293 |
 | ⛔ **A release publishes too, as velocity 0.** A note-off is a real event a destination must act on | verified | 293 |
 | **Held under `aux` the same 25 keys publish `og-shift-60`…`og-shift-84`** — a second layer, and the only controls on the rig that can never go missing | verified | 305 |
@@ -123,100 +155,39 @@ encoder costs the instrument its own way out** — item 314, in Reference — wh
 neither of the others has anything to drive yet. They belong here when they do — it is one device,
 so it is one `m_` abstraction.
 
+### `u_init` sends `midiInGate 0` at load, and again at 2 s
+
+mother's OMNI CC 21–26 collide with the nano's top button row (CC 21–29 by this project's by-tens
+scheme), and the mother *binary* overwrites a value sent at `loadbang` about half a second in
+(Reference). **Fix:** `u_init` sends `midiInGate 0` at load **and** again at 2 s. The sequence is on
+[boot.md](../module/boot.md).
+
 ### Saving, as Cut It meets it
 
-Reference has how `Storage → Save` works.
-
-⛔ **So after any Save every knob is desynced from its value, and the first touch would jump** — up
-to the full range, and knob 1 is master tempo: **a 443 BPM lurch, measured**, on a control nobody
-has touched. **Nothing on the instrument can detect this** (Reference). It happens on every boot, and it is what `u_map`'s parameter pickup
-exists for — see [map.md](../module/map.md).
+After any Save every knob is desynced from its saved value until it is touched, and nothing on the
+instrument can detect it (Reference, *Saving*). **Knob 1 is master tempo**, so the first touch would
+lurch the tempo: that is what `u_map`'s parameter pickup exists for — see
+[map.md](../module/map.md).
 
 ⚠️ **Cut It does not deliver its data this way.** `u_state` writes straight to `/sdcard` with an
-absolute path, so nothing it does has to finish inside the sleep. The only part that reaches the
+absolute path, so nothing it does has to finish inside mother's sleep. The only part that reaches the
 patch is that `saveState` triggers a `manual` commit — see [state.md](../module/state.md). The 250 ms
 still binds anything that writes into `/tmp/state/` and relies on the copy, which today is only
 `knobs.txt`.
 
-⚠️ **`knobs.txt`:** Cut It ships without one and `Storage → Save` creates it; until then mother logs
-`knobs.txt: can't open` at boot, which is expected and harmless. `./tools/deploy.sh` will not remove it
-once it exists — `--clean` will.
+⚠️ **`knobs.txt`:** Cut It ships without one and `Storage → Save` creates it. `./tools/deploy.sh`
+will not remove it once it exists — `--clean` will.
 
 ### Presence: `passive`
 
 `m_organelle` registers as `passive` on the presence bus and publishes `seen m_organelle` whenever
 mother sends anything. It holds no last-heard clock and **can never be declared lost**.
 
-⛔ **A passive layer must not age.** ✅ mother pushes the knobs once at load and then says nothing —
-item 237, measured — so a clock here would run out a few seconds into *every* boot and put a
+⛔ **A passive layer must not age.** mother pushes the knobs once at load and then says nothing
+(Reference, item 237), so a clock here would run out a few seconds into *every* boot and put a
 `device-lost` warning on the screen for hardware that is bolted to the instrument. What a passive
 layer can offer is *last heard*; it cannot tell unplugged from untouched, and the operator supplies
 that. See [presence.md](../module/presence.md).
-
-## Traps
-
-Each is a claim and its fix. How any of them was found is in the git history. The device's own traps
-(the encoder override, the OLED lag, mother's OMNI CCs, the typetag rules, `gFlip`, the info bar, blobs)
-are in Reference.
-
-### `u_init` sends `midiInGate 0` at load, and again at 2 s
-
-mother's OMNI CC 21–26 collide with the nano's top button row (CC 21–29 by this project's by-tens
-scheme), and the mother *binary* overwrites a value sent at `loadbang` about half a second in
-(Reference). **Fix:** `u_init` sends `midiInGate 0` at load **and** again at 2 s.
-
-### The OLED is not a rhythmic display
-
-It trails the audio by ~200 ms (Reference): the audio, the Launchpad's beat row and the footer BPM
-all agree, and the OLED does not.
-
-| Surface | Path | Result |
-|---------|------|--------|
-| Launchpad | `g_grid` → ALSA MIDI, repaints at 50 Hz when dirty | tight |
-| OLED | `g_oled` → `oscOut` → UDP → the `mother` binary → **serial to the front-panel MCU**, redrawn at 10 Hz | **~200 ms behind** |
-
-The 10 Hz frame clock alone is up to 100 ms of it. **Fix:** anything that must agree with what you
-*hear* — a playhead, a beat indicator, step position — belongs on **the Launchpad**.
-
-### `gShowInfoBar 3 0` goes in every redraw
-
-mother restores the info bar after a patch load (Reference), so `g_oled` sends it on **every** redraw
-and it does not belong in `u_init`.
-
-## Design
-
-### The info bar is off, and `g_*` owns all 128×64
-
-`gShowInfoBar` toggles mother's VU meters (Reference). **Cut It turns it off.** The four meters are
-only 11 segments each and Cut It shows its own input levels far more legibly at 24 px; battery and wifi
-are not worth a permanent eighth of the screen on a device that mostly runs on mains. **The cost is
-that nothing shows signal presence when the display is doing something else — accepted.**
-
-### `stopped` is lit rather than dark
-
-*(judgment call)* A stopped patch and a dead patch look identical if `stopped` is `off` — and on a
-dark stage that is the difference between a pause and a problem.
-
-### Design against the patch-facing LED numbers, not the bitmask
-
-They are the sensible ordering, they are what `[s led]` takes, and they are stable. The bitmask is
-only interesting for composing a color from components, and that needs the raw path — `oscOut` —
-which belongs to `g_oled`.
-
-### `/led/flash` is deliberately unused
-
-`flashLED(OSCMessage&)` is in the `mother` binary and `mother.pd` does not expose it at all. Reaching
-it means sending raw OSC to `oscOut`, and **only one abstraction may send on that name** — adopting
-flash would put a second writer on it. Recorded so it is not rediscovered as news.
-
-### The LED was deliberately not claimed for mode or for saving
-
-Mode is on the Launchpad's top row — the surface with six lamps rather than one. A "save in
-progress" state was rejected: `Storage → Save` already flips the OLED to mother's own "Saving…"
-screen, so the confirmation exists for free.
-
-It remains the cheapest candidate if a *performable* commit is ever added — one row in the state
-table and nothing else, since a commit from a Launchpad pad would have no screen of its own.
 
 ## Open
 

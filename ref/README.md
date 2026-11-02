@@ -5,7 +5,8 @@
 uses it and what Cut It chose. ⛔ **What is true of an outside device or program — what it is, its
 specs and MIDI, what was measured, what will bite you — lives in Reference** (`~/Sites/!reference/`,
 one Markdown page per thing, shown on Back Office's /reference page), and a `ref/device/` page links
-to it. **A new device fact goes on its Reference page, not here.** `grep -l "used_by:.*cut-it"
+to it and holds **only Cut It's side**: its design and its own unknowns. **A new device fact goes on
+its Reference page, not here.** `grep -l "used_by:.*cut-it"
 ~/Sites/!reference/*.md` lists Cut It's.
 
 **A device-major layout gives a fact exactly one place it can go**, which is the only thing that
@@ -24,7 +25,7 @@ say — a topic-major layout spreads one device over four files, one session at 
 | **Parking** | `ref/` | `_unfiled` — must be empty |
 
 **The directory is the kind**, so `ls` answers the question and `docs-check.py` asserts that
-`device/` and `module/` hold only `schema: module` pages. The table above is checked against what
+`device/` holds only `schema: device` pages (Design and Open) and `module/` only `schema: module`. The table above is checked against what
 actually exists, so it cannot go stale.
 
 ⚠️ **v0.4 grows `module/`, not `device/`.** The device set is fixed by the hardware; the filter
@@ -66,8 +67,9 @@ did.** v0.4 grows `ref/module/` — one page per filter stage, the drum mode, th
   ledger, no history — **git is the journal**.
 - **A rejected alternative gets one sentence, not a section.**
 - **A measured number goes on the page and is cited from the patch**, never the reverse. A `.pd`
-  comment has no link syntax, so it cites a bare `item NNN` or a bare page path — which is what
-  makes the number write-once instead of write-twice.
+  comment has no link syntax, so it cites a bare page path — which is what makes the number
+  write-once instead of write-twice. ⛔ **Item numbers are frozen** (Brendan, 2026-11-02): the
+  existing `item NNN` IDs still resolve, and a new fact takes none.
 
 ⚠️ **This standard is for NEW material only.** The module pages describe code that is mostly
 re-derivable; the hardware facts that cannot be re-derived from the code are in Reference, which an

@@ -25,7 +25,7 @@ python3 test/gate/docs-check.py -v
 
 | Where | Holds | Schema |
 |-------|-------|--------|
-| `ref/device/` | How Cut It **uses** one physical thing each. **Fixed set** — the hardware decides it. What the thing *is* is in Reference, below | `module` |
+| `ref/device/` | How Cut It **uses** one physical thing each, and nothing else. **Fixed set** — the hardware decides it. What the thing *is* is in Reference, below | `device` |
 | `~/Sites/!reference/` | **What is true of an outside device, app, plugin or service, whoever uses it** — specs, MIDI, behavior, measurements, traps. One page per thing, `used_by: [cut-it]`. Not in this repo and not gated; save, never commit there. A new device fact goes here, never on a `ref/device/` page | frontmatter + free |
 | `ref/module/` | One instrument concern each. **This is what v0.4 grows** | `module` |
 | `ref/` | Cross-cutting: `conventions`, `architecture`, `README` | `rules` / `freeform` |
@@ -35,31 +35,50 @@ python3 test/gate/docs-check.py -v
 ⚠️ Adding a page means adding it to `ref/README.md`'s index. The gate asserts the index lists
 exactly what exists.
 
-## The page schema
+## The page schemas
 
 Line 1 declares the schema. `##` is the fixed skeleton and must appear exactly, in this order;
-`###` inside a section is free.
+`###` inside a section is free. The directory decides which: `ref/module/` pages are `module`,
+`ref/device/` pages are `device`.
 
 ```markdown
 <!-- schema: module -->
-# Roland SP-404MKII
-**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/sp404-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
+# Tempo
+**Files:** `Cut It/u_tempo.pd` · **Gate:** `test/gate/tempo-assert.sh` · **Bench:** `test/bench/tempo-bench.pd`
 
 ## What it is     one or two paragraphs
-## Facts          schema'd tables, every one with Evidence and Item columns
+## Facts          schema'd tables, every one with an Evidence column
 ## Traps          what will bite you
-## Design         how Cut It uses it, and why
+## Design         how Cut It builds it, and why
 ## Open           unknowns only, each naming its owner: `cut-it/<slug>`, `cut-it/inbox`, or NO PLAN OWNS THIS
 ```
 
-**On a `ref/device/` page the same four sections are about CUT IT'S USE of the thing:** the outside
-device's own facts and traps are on its Reference page (`~/Sites/!reference/<slug>.md`), which the page
-links by that path in backticks (a markdown link would fail the gate's dangling check). If a section
-has nothing of Cut It's, say so in a line. **What it is / Facts / Traps are about the THING. Design is
-about US.** That distinction is why `Design` exists — the Launchpad's three-tier decision and the 404's accepted mic bleed are neither
-measured behavior nor something that will bite you, and they were being crammed into `Facts`.
+**What it is / Facts / Traps are about the THING. Design is about US.** That distinction is why
+`Design` exists — decisions are neither measured behavior nor something that will bite you, and they
+were being crammed into `Facts`.
 
-⚠️ **`Design` is last because most of it is forward-referencing** — "the reject outlet is the normal
+### A device page is Cut It's side only
+
+⛔ **Decided 2026-11-02 (Brendan): a `ref/device/` page holds only how Cut It uses the device.** What
+the device *is* — its facts, its measurements, its traps — is on its Reference page
+(`~/Sites/!reference/<slug>.md`), which the page links by that path in backticks (a markdown link
+would fail the gate's dangling check). So a device page has no What it is, Facts or Traps:
+
+```markdown
+<!-- schema: device -->
+# Roland SP-404MKII
+**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/sp404-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
+
+A paragraph: which Reference page is the device, and the one decision this page turns on.
+
+## Design         how Cut It uses it, and why; a trap in Cut It's own code is written here, as a Trap
+## Open           Cut It's own unknowns, each naming its owner
+```
+
+A device fact found while working on Cut It goes on the Reference page, never here, even when only
+Cut It cares about it today.
+
+⚠️ **On a module page `Design` is last because most of it is forward-referencing** — "the reject outlet is the normal
 path in `u_store`" means nothing before `Facts` says what `u_store` matches. **But the ONE decision
 that makes the page legible goes in `What it is`, at the top**, and is then stated properly in
 `Design`. Every page does this already: `tempo` opens *"`u_tempo` is the master REFERENCE, and it is
@@ -131,12 +150,15 @@ Anchor them and the two cannot drift:
 The table immediately below must equal that `[text define]`'s contents. Reintroduce the old `47 + n`
 pad map and the gate goes red **at pad 5** — before deploy, before hardware.
 
-## Item numbers are FACT IDS
+## Item numbers are FACT IDS, and frozen
 
 `item 228` is not "the 228th thing measured" — it is the ID of the `pgmout` row (now in Reference,
 `~/Sites/!reference/pure-data.md`). About 180 citations across the project resolve by grep, in this repo
-and in `~/Sites/!reference/`; the device facts' item numbers moved there unchanged. **Never reuse a
-number**; new facts take the next one.
+and in `~/Sites/!reference/`; the device facts' item numbers moved there unchanged.
+
+⛔ **Item numbers are frozen (Brendan, 2026-11-02).** The ones that exist stay as IDs and keep
+resolving; **a new fact takes no number** — it is cited by its page and heading. So the `Item`
+column is optional: keep it where it holds an existing number, and leave it off a new table.
 
 ## Material that fits no section
 

@@ -1,9 +1,7 @@
-<!-- schema: module -->
+<!-- schema: device -->
 # Korg Volca FM
 
 **Files:** `Cut It/m_volca.pd` · **Gate:** `test/gate/volca-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
-
-## What it is
 
 **Receive-only, and the first output-only device layer in the rig.** What the Volca FM is, what it
 receives, the Pajen 1.09 firmware, its global settings and its traps are in Reference:
@@ -16,7 +14,7 @@ Volca's own channel 1.
 neither `param` (device-to-map) nor `disp` (display) fits a sounding note, so it is wired from
 `u_map` rather than fed by a bus.
 
-## Facts
+## Design
 
 ### Addressing and the interface
 
@@ -50,11 +48,6 @@ inquiry is the signal that enumeration has finished.
 ⚠️ **Nothing in the patch can confirm the Volca came back.** The heartbeat can say it re-wired —
 `info u_present rewire-try` reaches the log — but whether the Volca is *sounding* is still only your
 ears, which is why its bench step is judged by ear. See [presence.md](../module/presence.md).
-
-## Traps
-
-Each is a claim and its fix. How any of them was found is in the git history. The device's own traps
-(by-ear evidence, local keyboard, program-name display, `PCnot` against `PCMId`, CC 41) are in Reference.
 
 ### No MIDI clock reaches this device
 
@@ -129,8 +122,6 @@ detectable device alongside it goes through the loss path and proves nothing abo
 | …and seen again, unprompted | `USB Uno MIDI Interface` bare on a session up **1 day 21 h** — no `Connecting To`, no `Connected From`, both Pd ports unattached | verified | 285 |
 | The heartbeat closes it | `wire-watch.sh` fires while **nothing** is lost, which no other fork in `u_present` can do | verified | 292 |
 
-## Design
-
 ### One selector-prefixed inlet, not one inlet per capability
 
 `u_map` reaches the Volca on **one cord** carrying `notes 48 100 200`, `cc 41 64` or `program 3`,
@@ -145,7 +136,7 @@ means `u_map` and this file disagree about the interface, and nothing else would
 
 The Volca has **one** channel, set cold at load, so `[makenote]` → `[noteout]` cannot send a note-off
 to the wrong place. **The SP-404 has ten and cannot use this** — see
-[ref/device/sp404.md](sp404.md) → *Traps*.
+[ref/device/sp404.md](sp404.md) → *The note-off must carry its own channel*.
 
 ### The `note` selector bypasses `makenote`, and pays for it with a panic
 

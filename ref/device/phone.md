@@ -1,9 +1,7 @@
-<!-- schema: module -->
+<!-- schema: device -->
 # The phone — PdParty and the status link
 
 **Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/pdparty-scene/CutItRemote/` · **Gate:** `test/gate/phone-assert.sh` · **Bench:** `test/bench/phone-bench.pd`
-
-## What it is
 
 An iPhone running PdParty on the same network, used as **an unlimited plain-English display** — and,
 more valuable, as the answer to the Organelle having no Pd console. What PdParty and the phone are —
@@ -26,16 +24,14 @@ time-critical would have to answer to.
 feature.** An inbound socket is an attack surface on a shared network, and a set small enough to read
 in one line is what makes the first one safe to reason about.
 
-## Facts
-
-What the app and phone do is in Reference. This is what is true of the link.
+## Design
 
 ### Addresses and ports
 
 | Device | Address | Notes | Evidence | Item |
 |--------|---------|-------|----------|------|
 | Organelle | `organelle.local` | Listens on **9001**. The IPv4 address is DHCP-assigned and **not stable**. Use the name | verified | — |
-| iPhone | `192.168.1.5` | OSC receive **8000**, WebDAV **9000** | verified | — |
+| iPhone | `192.168.1.5` | `u_net` sends to PdParty's OSC receive, **8000** | verified | — |
 | Mac | `192.168.1.16` | Dev machine | verified | — |
 
 ⚠️ **Those are HOUSE-NETWORK addresses. On the Organelle's own access point the whole subnet
@@ -117,12 +113,6 @@ easy to identify. Item 311.
 **One address for all parameters.** Adding a parameter costs one `[list prepend <name>]` on the
 Organelle and nothing at all on the phone — this scales to the nanoKONTROL's 18 continuous controls
 without redesign.
-
-## Traps
-
-Each is a claim and its fix. How any of them was found is in the git history. The app's and Pd's own
-traps (a UDP `connect` that survives one datagram, `#osc-out`/`#osc-in`, invisible iemguis, `[print]`,
-canvas space, the notch, WebDAV, `[route 404]`, the bng loop, the unit field) are in Reference.
 
 ### Two instruments will fight over one phone
 
@@ -209,8 +199,6 @@ cannot collide with the dev patch. ⚠️ **The phone's buttons therefore drive 
 phone or the device during a stage session.
 
 **Fix:** stage everything beforehand — the checklist is on [wifi.md](../wifi.md).
-
-## Design
 
 ### Send state, never events
 

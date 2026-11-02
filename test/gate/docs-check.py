@@ -44,7 +44,8 @@ THE CHECKS
               beside this one. Open work moved there, so an owner can be a plan
               file, a `!projects` ref or `NO PLAN OWNS THIS`.
 
-  shape       every page in `ref/` declares a schema on line 1 and keeps to it.
+  shape       every page in `ref/` declares a schema on line 1 and keeps to it:
+              `module` in ref/module/, `device` in ref/device/.
               The cheapest checks here, because a heading structure is already a
               parse tree -- and the two that matter most are the ones that make
               a DECISION PERMANENT rather than a one-time sweep:
@@ -397,11 +398,19 @@ def check_dangling_docs(verbose):
     return out
 
 
-# What it is / Facts / Traps are about the DEVICE. Design is about us -- how Cut
-# It chooses to use it and why -- which is neither a measured fact nor something
-# that will bite you, and had no home until two pages in a row needed one.
+# A module page: What it is / Facts / Traps are about the module. Design is about
+# us -- how Cut It chooses to build it and why -- which is neither a measured fact
+# nor something that will bite you, and had no home until two pages in a row
+# needed one.
 MODULE_SKELETON = ['What it is', 'Facts', 'Traps', 'Design', 'Open']
-SCHEMAS = ('module', 'rules', 'freeform')
+# A device page holds only how Cut It uses the device (Brendan, 2026-11-02): what
+# the device IS, its facts and its traps are on its Reference page, so the page
+# is Cut It's design and Cut It's own unknowns, and nothing else.
+DEVICE_SKELETON = ['Design', 'Open']
+SKELETONS = {'module': MODULE_SKELETON, 'device': DEVICE_SKELETON}
+# The directory is the kind, so it names the schema a page in it must declare.
+DIR_SCHEMA = {'module': 'module', 'device': 'device'}
+SCHEMAS = ('module', 'device', 'rules', 'freeform')
 SCHEMA_LINE = re.compile(r'^<!--\s*schema:\s*(\w+)\s*-->\s*$')
 PATHS = re.compile(r'`([^`]+)`')
 
@@ -446,11 +455,12 @@ def check_shape(verbose):
         pages += 1
         rel = doc.relative_to(ROOT)
         # the directory IS the kind, so it can be asserted
-        if doc.parent.name in ('device', 'module'):
+        want = DIR_SCHEMA.get(doc.parent.name)
+        if want:
             first = doc.read_text(encoding='utf-8').split('\n', 1)[0]
-            if 'schema: module' not in first:
+            if f'schema: {want}' not in first:
                 out.append(f'{rel}  lives in {doc.parent.name}/ but is not '
-                           f'schema:module. Those directories hold module pages only')
+                           f'schema:{want}. That directory holds {want} pages only')
         lines = doc.read_text(encoding='utf-8').splitlines()
         marked = _strip_fences(lines)
 
@@ -480,13 +490,14 @@ def check_shape(verbose):
         # needs no Open.
         out += _check_open_items(rel, marked)
 
-        if schema != 'module':
+        skeleton = SKELETONS.get(schema)
+        if skeleton is None:
             continue
 
         heads = [(i, ln[3:].strip()) for i, (ln, f) in enumerate(marked)
                  if not f and ln.startswith('## ')]
-        if [h for _, h in heads] != MODULE_SKELETON:
-            out.append(f'{rel}  schema:module wants exactly {MODULE_SKELETON}, '
+        if [h for _, h in heads] != skeleton:
+            out.append(f'{rel}  schema:{schema} wants exactly {skeleton}, '
                        f'found {[h for _, h in heads]}')
             continue
 
@@ -511,6 +522,11 @@ def check_shape(verbose):
                     out.append(f'{rel}  the **Files:** line declares no {field} '
                                f'-- say `none` if there is not one')
 
+        # ⚠️ A device page has no Facts section to hold a table: what is measured
+        # about the device is on its Reference page, not here.
+        if schema != 'module':
+            continue
+
         bounds = {h: heads[n][0] for n, (_, h) in enumerate(heads)}
         ends = {h: (heads[n + 1][0] if n + 1 < len(heads) else len(marked))
                 for n, (_, h) in enumerate(heads)}
@@ -532,12 +548,15 @@ def check_shape(verbose):
         if not headers:
             out.append(f'{rel}  the Facts section holds no table -- facts stated only '
                        f'in prose cannot be checked against anything')
+        # ⚠️ Evidence only. Item numbers are FROZEN (Brendan, 2026-11-02): the
+        # ones that exist stay as fact IDs and still resolve by grep, and a new
+        # fact takes none -- so an Item column is optional, kept where it holds
+        # an existing number.
         for h in headers:
             cells = [c.strip() for c in h.strip().strip('|').split('|')]
-            missing = [c for c in ('Evidence', 'Item') if c not in cells]
-            if missing:
-                out.append(f'{rel}  a Facts table is missing the {" and ".join(missing)} '
-                           f'column(s): {h.strip()[:60]}')
+            if 'Evidence' not in cells:
+                out.append(f'{rel}  a Facts table is missing the Evidence '
+                           f'column: {h.strip()[:60]}')
 
     if verbose and pages:
         print(f'  {pages} ref/ page(s) matched their schema')

@@ -16,10 +16,12 @@ Organelle M only; 4.2 / 4.4 / OS 5 are M/S/S2. **Do not suggest any object newer
 floatatoms gain a trailing arg. **Pd 0.49 cannot parse that.** It has already happened once in this
 repo. Edit with vanilla Pd 0.49 for anything that ships.
 
-**3. Vanilla objects only, by default.** The Organelle ships neither ELSE nor cyclone. Bundling them
-is possible — the device is armv7 — but current ELSE needs Pd 0.56+, and 0.49 expects the
-`.pd_linux` extension rather than `.l_arm`. Pure-Pd abstractions drop into the patch folder with no
-such concerns. Prefer vanilla unless a specific object is worth the dependency.
+**3. Vanilla objects only, by default.** The Organelle ships neither ELSE nor cyclone; its only
+externals are a factory dozen in `/root/Pd/externals`, of which Cut It uses `[shell]`
+(`~/Sites/!reference/critter-guitari-organelle-1.md`, *Externals*). Bundling a library is possible —
+the device is armv7 — but what 0.49 can load is narrow (`~/Sites/!reference/pure-data.md`,
+*Externals for 0.49*). Pure-Pd abstractions drop into the patch folder with no such concerns. Prefer
+vanilla unless a specific object is worth the dependency.
 
 ## The rules
 

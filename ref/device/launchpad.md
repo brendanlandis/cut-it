@@ -213,7 +213,7 @@ Reference; whether it bears on this rig:
 ⛔ **Nothing in it touches MIDI clock, tempo sync or LED animation**, so it would not be expected to
 fix item 257 — the device ignoring incoming clock — which is the only Launchpad behavior this
 project actually wants changed. **The update offers nothing needed and risks two things measured**
-(items 193 and 204, velocity and aftertouch).
+(velocity and polyphonic aftertouch: the pad rows under *Transmits* in Reference, aftertouch item 86).
 
 **So the trade is bad and the decision is to stop asking.** The drive is neutralized on the device
 side instead, by a guard in `mount.sh` — see [device/README.md](../../device/README.md).

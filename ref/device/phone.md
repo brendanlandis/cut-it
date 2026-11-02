@@ -54,8 +54,8 @@ PdParty's own ports (8000 OSC receive, 9000 WebDAV) and its OSC *send* settings,
 host must be a literal address, are in Reference (item 312).
 
 ⚠️ **Which makes the house network the awkward one, and the stage network the easy one.** The
-Organelle's lease moves — seen as `.15`, `.18` and `.6` — so the phone has to be re-pointed whenever
-it does. **On the Organelle's own access point it is always `192.168.12.1`**, so the configuration
+Organelle's lease moves (the addresses seen are in Reference, *Reaching it*), so the phone has to be
+re-pointed whenever it does. **On the Organelle's own access point it is always `192.168.12.1`**, so the configuration
 that matters at a gig is the stable one. The instrument still discovers the *phone* by itself;
 `phone-ip.sh` is unaffected, and this is the one direction that cannot be discovered — see *The phone
 cannot announce itself* under **Design**.
@@ -112,7 +112,7 @@ easy to identify. Item 311.
 | Late or returning phone | Repopulates in about two seconds with nothing moving | verified | — |
 | Rate limiting | 401 `disp` messages a second measured down to **42 datagrams** | verified | — |
 | Socket recovery | `u_net` rebuilds within about five seconds of the phone coming back, nothing touched on the instrument | verified | 119 |
-| Backgrounding PdParty | Costs nothing — iOS keeps the app running and the UDP port bound. Only a full quit closes it | verified | — |
+| Backgrounding PdParty | Costs the link nothing; only a full quit closes the port (Reference, item 120) | verified | 120 |
 
 **One address for all parameters.** Adding a parameter costs one `[list prepend <name>]` on the
 Organelle and nothing at all on the phone — this scales to the nanoKONTROL's 18 continuous controls
@@ -150,14 +150,15 @@ the 124/s noise floor. Item 121.
 The alert names the *link*, the Organelle's only link is wireless, and
 [wifi.md](../wifi.md) documents a real fault that drops it — so the obvious reading is that the
 network has gone. It is almost always wrong. **`u_net`'s watchdog watches a SOCKET**, and the
-socket dies the moment nothing is listening on the phone's port (item 114, in Reference): PdParty closed,
-backgrounded by the phone, or on the wrong scene. The wifi can be perfectly healthy — verifiable in
-one line, because `ssh root@organelle.local` uses the same radio.
+socket dies the moment nothing is listening on the phone's port (item 114, in Reference): PdParty
+quit, or the phone off or off the network. Backgrounding the app or leaving the scene does not do it:
+PdParty keeps the port bound while it runs at all (item 120, in Reference). The wifi can be perfectly
+healthy — verifiable in one line, because `ssh root@organelle.local` uses the same radio.
 
 **It is also the most common line in the error log by a wide margin**, appearing in most sessions,
 which is what makes it easy to read as a symptom of something worsening.
 
-**Fix:** before suspecting the network, check that PdParty is open on the `CutItRemote` scene, then
+**Fix:** before suspecting the network, check that PdParty is running on the phone, then
 `ping organelle.local` or `ssh` to it. A reachable device with `net-link-down` on screen is the
 phone, not the wifi. ⚠️ **The real roam fault has a different signature** — the *whole device* goes
 unreachable, `ssh` included — and it is on [wifi.md](../wifi.md) with a reproduction.

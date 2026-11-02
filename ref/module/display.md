@@ -33,8 +33,9 @@ why it cost nothing to add.
 | iPhone / PdParty | yes | `u_net` | Unlimited size and color, over WiFi. Development and diagnostics, **not** performance | verified | — |
 
 Three devices in the rig can display nothing at all: the nanoKONTROL mk1 has no host-controllable
-LEDs, the Volca is receive-only, and the SP-404 has **the best screen in the rig and it is
-permanently unreachable** — no SysEx in either direction.
+LEDs, the Volca is receive-only, and the SP-404 has **the best screen in the rig and nothing known
+reaches it**: it answers a device inquiry and nothing else has been found over SysEx (Reference,
+`~/Sites/!reference/roland-sp-404mkii.md`).
 
 ### The `disp` message
 

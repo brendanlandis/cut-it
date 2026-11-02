@@ -33,7 +33,8 @@ learn late:
   than 0.49.
 - **Never save an Organelle-bound patch from plugdata.** It rewrites `.pd` files into a format 0.49
   cannot parse (`~/Sites/!reference/pure-data.md`). This has already happened once here.
-- **Vanilla objects only** — the Organelle ships neither ELSE nor cyclone.
+- **Vanilla objects only, plus `[shell]`** — the Organelle ships neither ELSE nor cyclone, only a
+  dozen factory externals, of which Cut It uses `[shell]` (Reference, Organelle page, *Externals*).
 
 ⚠️ **The public `Organelle_OS` repo documents the M and S2, not this device** — verify paths against
 the actual device (Reference, Organelle page).

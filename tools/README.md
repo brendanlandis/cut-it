@@ -350,9 +350,9 @@ Each is on PdParty's Reference page (`~/Sites/!reference/pdparty.md`, *The WebDA
 *Uploading a scene over WebDAV*).
 
 ⚠️ **And the phone's OSC send host must be a literal address** — PdParty will not resolve
-`organelle.local`, and the failure is silent at both ends. Item 312. The Organelle's lease has been
-seen at `.15`, `.18` and `.6`; on its own access point it is always `192.168.12.1`, which is why the
-stage network is the easy one and the house network is not.
+`organelle.local`, and the failure is silent at both ends. Item 312. The Organelle's lease moves on
+the house network (the addresses seen are on its Reference page); on its own access point it is
+always `192.168.12.1`, which is why the stage network is the easy one and the house network is not.
 
 ### `stage-patches/` — menu patches for the venue
 

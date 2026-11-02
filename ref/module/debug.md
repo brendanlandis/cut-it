@@ -77,8 +77,9 @@ there could only ever read zero; anything that does appear on the interface's DI
 | `err-tail.sh` on the device, against a real log | **4 lines**, dot-flattened, cut to 21 | verified | 315 |
 | `net-probe.sh` on the device | **3 lines** — `ip-192.168.1.6`, `ap-down`, `phone-none` | verified | 315 |
 
-⚠️ **The Organelle's lease address moves** — `.6`, `.15` and `.18` have all been seen — which is the
-whole argument for the Network screen. See [phone.md](../device/phone.md), item 312.
+⚠️ **The Organelle's lease address moves** (the addresses seen are on its Reference page,
+`~/Sites/!reference/critter-guitari-organelle-1.md`, *Reaching it*), which is the whole argument for
+the Network screen. See [phone.md](../device/phone.md), item 312.
 
 ### Where it lives
 

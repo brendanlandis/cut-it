@@ -117,7 +117,8 @@ Restore normal operation with `./tools/deploy.sh`, which reloads and relaunches 
 
 **It is the only tool here that sees a `route` silently rejecting a message** (`C-6`) — on the
 OLED that shows as a plausible-looking zero. Expect `error: /tmp/patch/knobs.txt: can't open` in
-the output; that is mother looking for the optional knob-label file and is harmless.
+the output until a Save has created that file of knob positions; it is harmless (Reference, Organelle
+page, *Saving*).
 
 ## How a phase runs
 

@@ -1,37 +1,22 @@
 #!/usr/bin/env python3
 """Panic's second tier, analyzed -- ref/module/map.md and ref/module/boot.md.
 
-Three halves, and the FIRST NEEDS NO Pd AT ALL.
+Three halves, the first with no Pd:
 
-  1. THE STATIC LINT reads Cut It/recover.sh and proves the two-step OSC is
-     well formed and in the right order. That is the half most likely to be
-     silently wrong -- oscsend is fire-and-forget UDP and a bare /loadPatch
-     name loads nothing and says nothing -- and it is also the half no driver
-     could ever reach, because [shell] is stubbed on a Mac.
+  1. The static lint reads Cut It/recover.sh and proves the two-step OSC is
+     well formed and in order. oscsend is fire-and-forget UDP, and no driver
+     can reach it, since [shell] is stubbed on a Mac.
 
-  2. RUN A drives the button with no breadcrumb on disk: a tap must raise panic
-     and reach recover NOT AT ALL, a hold must raise panic and then fork.
+  2. Run A, no breadcrumb on disk: a tap raises panic and never reaches
+     recover, a hold raises panic and then forks.
 
-  3. RUN B boots with a breadcrumb already there, which is the state the next
-     boot after a real recover is in: nothing may be held, the attempt must be
-     reported once, and the file must be left cleared.
+  3. Run B boots with a breadcrumb already there: nothing may be held, the
+     attempt is reported once, and the file is left cleared.
 
-⛔ WHAT THIS GATE CANNOT DO, stated here rather than implied away.
-
-  - IT CANNOT ASSERT THE RELOAD HAPPENED. [shell] is stubbed, so no OSC leaves
-    the process and no patch is loaded. It proves the command was FORMED and
-    forked, in order, behind the silence. The reload is a bench step.
-
-  - IT CANNOT ASSERT quitting STILL FIRES. quitting comes from mother.pd, and
-    u_mother-stub deliberately never sends it, so on the Mac neither receiver
-    ever runs. What it proves instead is the half that would break it -- that
-    this path never touches m_launchpad's ownership, so the safe exit is still
-    there to run when mother does send it. Item 251, and the bench is the
-    oracle for the rest.
-
-  - IT CANNOT SEE THE GRID. `grid modal 5` is asserted as a REQUEST on disp;
-    whether the surface turns red is launchpad-bench's, and the palette index
-    is a thing only eyes can confirm.
+What it cannot assert, so the bench does: that the reload happened ([shell] is
+stubbed), that quitting still fires (u_mother-stub never sends it; this proves
+only that the path leaves m_launchpad's ownership alone, item 251), and that
+the grid turns red (`grid modal 5` is asserted as a request on disp).
 """
 import os
 import re
@@ -45,8 +30,7 @@ RECOVER_SH = "Cut It/recover.sh"
 MARKS_A = 11
 MARKS_B = 6
 
-# The palette index u_init asks for on a panic. Red, in the same 128-entry
-# palette where 21 is green and 45 is blue.
+# The palette index u_init asks for on a panic: red.
 RED = 5
 
 _SHELL = re.compile(r"^SHELL:\s+sh\s+(\S+)")
@@ -69,10 +53,9 @@ def static_lint():
     if len(sends) != 2:
         return
 
-    # ⛔ ORDER IS THE WHOLE THING. /reloadNoRemount resets mother's current patch
-    # directory to the default; /loadPatch then takes a name relative to it. The
-    # other way round, the name is resolved against whatever directory the last
-    # load left behind, and nothing reports the miss.
+    # /reloadNoRemount resets mother's patch directory, and /loadPatch's name is
+    # relative to it. The other way round, it resolves against wherever the last
+    # load left, and nothing reports the miss.
     A.check("⛔ /reloadNoRemount comes FIRST",
             "/reloadNoRemount" in sends[0] and "/loadPatch" in sends[1],
             "the order is %s" % sends)
@@ -80,15 +63,12 @@ def static_lint():
     A.check("both go to mother's OSC port, 4001",
             all(" 4001 " in s for s in sends), repr(sends))
 
-    # ⛔ NOT /reload. That one runs mount.sh, which with a Launchpad attached
-    # mounts its write-protected onboarding drive and takes USER_DIR with it.
+    # Not /reload, which runs mount.sh (the Organelle's Reference page).
     A.check("⛔ it is /reloadNoRemount and never a bare /reload",
             "/reload " not in body and "/reload\n" not in body,
             "a bare /reload would run mount.sh -- see tools/deploy.sh")
 
-    # ⛔ A BARE NAME LOADS NOTHING AND SAYS NOTHING. /loadPatch resolves against
-    # mother's patch directory and Cut It lives in a category folder under it,
-    # so the argument has to carry that folder.
+    # Cut It sits in a category folder, so a bare name loads nothing, silently.
     m = re.search(r"/loadPatch\s+s\s+'([^']*)'", sends[1])
     A.check("the /loadPatch argument is quoted, so the space survives",
             m is not None, "could not find a single-quoted argument in %r" % sends[1])
@@ -110,9 +90,8 @@ def run_a(cap, crumb_path):
     def disp(k, want):
         return [v for lb, v in W(k) if lb == "DISP" and " ".join(v) == want]
 
-    # ⚠️ THE FORK IS NOT ON A BUS, so lib_assert does not bucket it. The shell
-    # stub prints `SHELL: sh <script>` as plain text, and a window is located by
-    # slicing the capture between its MARK and the next one.
+    # The fork is on no bus, so lib_assert does not bucket it: the stub prints
+    # `SHELL: sh <script>`, and a window is the capture between two MARKs.
     marks = [i for i, ln in enumerate(lines) if ln.startswith("REC: MARK ")]
     names = [ln.split("MARK ", 1)[1].strip() for ln in lines if ln.startswith("REC: MARK ")]
 
@@ -128,9 +107,7 @@ def run_a(cap, crumb_path):
                 and _SHELL.match(ln).group(1) == script]
 
     print("\n--- a boot on its own never recovers ---")
-    # ⚠️ THE LIVENESS WITNESS FOR EVERY NEGATIVE BELOW. An empty window is also
-    # what a driver that died looks like, and A.windows only proves the MARK
-    # landed -- not that the run reached this far with a working patch.
+    # The liveness witness for every negative below.
     A.check("the four load-time scripts forked, so the shell stub is live",
             sorted(set(_SHELL.match(ln).group(1) for ln in lines if _SHELL.match(ln)
                        )) [:4] != [],
@@ -152,9 +129,6 @@ def run_a(cap, crumb_path):
             repr(sh_in("TAP-DOWN", "recover.sh")))
 
     print("\n--- ...and the release CANCELS the timer ---")
-    # ⛔ THE ONE THAT MATTERS. The tap armed a 2000 ms timer at 5000, which would
-    # fire at 7000 -- inside AFTER-TAP. Cut the release cord and two recovers
-    # come out of a run with one hold in it.
     A.check("⛔ the tap's timer expires with NOTHING behind it",
             not sh_in("AFTER-TAP", "recover.sh"),
             "recover.sh forked at about 7000 ms, 2000 ms after a press that "
@@ -169,10 +143,8 @@ def run_a(cap, crumb_path):
     A.check("⛔ recover forks recover.sh, exactly once",
             len(sh_in("HOLD-WAIT", "recover.sh")) == 1,
             "recover.sh in HOLD-WAIT: %s" % sh_in("HOLD-WAIT", "recover.sh"))
-    # ⛔ SILENCE LANDS BEFORE THE RELOAD. Killing Pd mid-note never sends the
-    # note-off, so a reload with no panic in front of it CREATES a stuck note on
-    # the 404. u_init raises panic itself so recover is self-contained whatever
-    # reaches it -- which is why a hold shows TWO panics and a tap shows one.
+    # Silence before the reload: killing Pd mid-note sends no note-off. u_init
+    # raises panic itself, which is why a hold shows two panics.
     A.check("⛔ ...and panic is raised again FIRST, in the same window",
             len(disp("HOLD-WAIT", "led panic")) == 1,
             "led panic in HOLD-WAIT: %s. recover must silence before it "
@@ -194,12 +166,8 @@ def run_a(cap, crumb_path):
             "%s %s" % (sh_in("HOLD-UP", "recover.sh"), sh_in("DONE", "recover.sh")))
 
     print("\n--- and the breadcrumb is on disk BEFORE the fork ---")
-    # ⛔ DESIGN FOR THE FAILURE, BECAUSE IT IS WORSE THAN THE FAULT. If the load
-    # does not take there is no patch at all, and the patch cannot verify its own
-    # reload because it is dead by then. The breadcrumb is the only thing that
-    # survives to say an attempt was made -- so it is written first, and a
-    # recover that never completed is visible on the next boot instead of being
-    # a silent brick.
+    # Written before the fork: a reload that does not take leaves no patch to
+    # say so, and the breadcrumb is what the next boot reads.
     try:
         left = open(crumb_path).read().strip()
     except OSError as e:
@@ -210,10 +178,8 @@ def run_a(cap, crumb_path):
     A.check("...and it carries a stamp", len(left.split()) == 2,
             "the file reads %r -- wanted `recover <ms>`" % left)
 
-    # ⛔ THE SAFE EXIT'S HALF THAT A MAC CAN SEE. quitting comes from mother and
-    # u_mother-stub never sends it, so the handback itself is unreachable here.
-    # What is reachable is the thing that used to break it: panic surrendering
-    # the surface. Item 251.
+    # The half of the safe exit a Mac can see: the path never surrenders the
+    # surface (item 251). quitting itself never arrives here.
     print("\n--- the surface is never handed back on this path ---")
     A.check("⛔ nothing on the recover path asks the Launchpad for Live Mode",
             not [ln for ln in lines if "grid own" in ln or "want 0" in ln],
@@ -230,10 +196,8 @@ def run_b(cap, crumb_path):
     temps = lambda k: [v for lb, v in W(k) if lb == "TEMPO"]
 
     print("\n--- the attempt is reported, late enough to be seen ---")
-    # ⛔ DEFERRED TO 4500 ON PURPOSE. A warn raised during the boot stages is
-    # buried by modal launchpad at 3000 and the footer hand-over at 4000, so it
-    # waits until both are done. It is also the liveness witness for the whole
-    # run: it can only appear if the breadcrumb was read.
+    # Deferred to 4500 (ref/module/map.md). Also the run's liveness witness: it
+    # appears only if the breadcrumb was read.
     A.check("⛔ the breadcrumb is reported on err",
             "warn u_map recovered" in errs("AFTER-PROBE"),
             "err in AFTER-PROBE: %s" % errs("AFTER-PROBE"))
@@ -244,23 +208,15 @@ def run_b(cap, crumb_path):
             "it repeated: %s" % (errs("REPORTED") + errs("KNOB") + errs("DONE")))
 
     print("\n--- and NOTHING is held ---")
-    # ⛔ AFTER AN EMERGENCY THE KNOBS YOU ARE HOLDING ARE THE TRUTH. mother
-    # replayed a saved position inside the boot window, which normally arms
-    # pickup and holds the knob until it crosses. The breadcrumb overrides that.
-    # ⚠️ THE NEGATIVE HALF -- that a knob IS held without a breadcrumb -- is
-    # map-assert's, run against the same knobs.txt. This run only proves the
-    # override, and the warn above proves the run got far enough to make it.
-    # ⚠️ A CAPTURE IS TEXT. lib_assert hands back the atoms as strings, so a
-    # comparison against the number 255 is quietly false however right the patch
-    # is -- which is exactly how this check failed on its first run.
+    # The breadcrumb overrides pickup's arming. That a knob is held without one
+    # is map-assert's, against the same knobs.txt. Atoms are strings, hence the
+    # float().
     bpm = [float(v[0]) for v in temps("KNOB") if v]
     A.check("⛔ the knob is LIVE, not held -- 0.5 is 255 bpm", bpm == [255.0],
             "tempo in KNOB: %s. Held, this window is empty" % temps("KNOB"))
 
     print("\n--- and the breadcrumb is cleared, so it reports once and never again ---")
-    # ⛔ CLEARED BY OVERWRITING, NEVER DELETED. Vanilla Pd cannot delete a file,
-    # [shell] forks and is stubbed here, and how [text] writes an empty table has
-    # never been measured. A sentinel makes the read decide on CONTENT.
+    # Cleared by overwriting with a sentinel, never deleted (ref/module/map.md).
     try:
         left = open(crumb_path).read().strip()
     except OSError as e:

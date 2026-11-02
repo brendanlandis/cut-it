@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """The SP-404's analyser -- ref/device/sp404.md. Reads a capture on stdin.
 
-⛔ THE ONLY GATE HERE THAT TESTS A DEVICE IN BOTH DIRECTIONS, and it is the whole
-argument for splitting the old phase 9 gate along the module axis rather than
-along transmit/receive: a page says what its device does, and for this device
-that is two paths, one rate limiter and a panic.
+The device in both directions:
 
   transmit   all sixteen pads of bank A, the bank choosing the channel, matched
              note-offs, the 5 ms limiter from two sides, and All Notes Off
@@ -20,9 +17,8 @@ import lib_assert as A                                         # noqa: E402
 
 BANK_A = 33                     # bank A's Pd channel; each bank is the next one up
 BANKS = list(range(33, 43))     # ten banks, A..J
-# ⛔ NOT 47 + n. The pad map is four rows of four counting UPWARD from the bottom,
-# so it runs 48..51, 44..47, 40..43, 36..39 -- and the 47+n formula that reads so
-# plausibly is right for pads 1-4 and wrong for the other twelve.
+# Not 47 + n: the pads are four rows of four counting upward from the bottom row,
+# so 47 + n is right for pads 1-4 only.
 PADS_A = [48, 49, 50, 51, 44, 45, 46, 47, 40, 41, 42, 43, 36, 37, 38, 39]
 
 
@@ -31,18 +27,14 @@ def run_asserts(cap):
     W = lambda k: by.get(k, [])
     ons = lambda k: [e for e in W(k) if e[0] == "NOTEOUT" and e[1][1] > 0]
 
-    # --- from load ---------------------------------------------------------
     print("\n--- before u_map reads its table ---")
-    # ⛔ Both directions at 300 and 700 ms. The gate this was split out of started
-    # every window at 2400 because the code was ready at 2000, which is why it
-    # could not see the boot race the hardware found. Item 234.
+    # Item 234: windows that open before the code is ready.
     A.check("⛔ a pad mapped at 300 ms ALREADY reaches the 404",
             bool(ons("EARLY-TX")), repr(W("EARLY-TX")))
     A.check("⛔ an incoming pad at 700 ms is ALREADY decoded",
             any(e[0] == "PARAM" and e[1] and e[1][0] == "sp-a1" for e in W("EARLY-RX")),
             repr(W("EARLY-RX")))
 
-    # --- transmit ----------------------------------------------------------
     print("\n--- transmit ---")
     got = [int(e[1][0]) for e in ons("PADS-A")]
     if not A.check("⛔ ALL SIXTEEN pads of bank A map to the right notes", got == PADS_A,
@@ -54,45 +46,35 @@ def run_asserts(cap):
     c1 = ons("PADS-C")
     A.check("bank C pad 1 is note 48 on CHANNEL 35 (bank sets the channel)",
             bool(c1) and c1[0][1][0] == 48 and c1[0][1][2] == 35, repr(c1))
-    # ⚠️ CHANNEL-SPECIFIC ON PURPOSE. A note-off from an earlier window can land in
-    # this one, 200 ms behind its own note-on; counting every off would count that.
+    # Channel-specific: an earlier window's note-off can land here, 200 ms late.
     offs = [e for e in W("PADS-A")
             if e[0] == "NOTEOUT" and e[1][1] == 0 and e[1][2] == BANK_A]
     A.check("every bank-A note-on is matched by a note-off ON THE SAME CHANNEL",
             len(offs) == 16, "%d offs on channel %d" % (len(offs), BANK_A))
 
-    # --- the rate limit ----------------------------------------------------
     print("\n--- the rate limit ---")
     n = len(ons("BURST"))
     A.check("⛔ 20 triggers in ONE logical instant emit exactly 1 -- it DROPS, never queues",
             n == 1, "emitted %d" % n)
-    # ⚠️ The burst above proves it drops rather than queues, and NOTHING MORE. It
-    # cannot see a disarmed limiter: [del 0] still defers to the next scheduler
-    # tick, so the gate stays shut for the whole logical instant either way. Two
-    # triggers 2 ms apart straddle the 5 ms interval and can.
+    # The burst proves drops-not-queues and nothing more; only the pair can see a
+    # disarmed limiter.
     pair = len(ons("PAIR"))
     A.check("⛔ two triggers 2 ms apart emit exactly 1 -- the INTERVAL is real",
             pair == 1, "emitted %d" % pair)
 
-    # --- receive -----------------------------------------------------------
     print("\n--- receive (only t_notein can reach this) ---")
     p = [e for e in W("RX-B5") if e[0] == "PARAM"]
     A.check("a pad press names its BANK and PAD",
             bool(p) and p[0][1] == ["sp-b5", "90"], repr(p))
-    # ⛔ ONE ROW PER EVENT, AND IT IS u_map's. m_404 posts nothing to disp: the
-    # pad reaches the screen through u_map's raw row for an unmapped control --
-    # sp-b5 90, one name carrying bank AND pad -- or as its destination's row
-    # when a mode maps it (item 317). m_404 used to add sp-pad and sp-bank, which
-    # made one hit three rows. Every sp-* row in the window is counted, so either
-    # of those coming back is a second row and goes red.
+    # One row per event, u_map's raw row (item 317): m_404 posts nothing to disp,
+    # and every sp-* row in the window is counted.
     sp = lambda k: [e[1] for e in W(k) if e[0] == "DISP" and e[1] and e[1][0].startswith("sp-")]
     A.check("⛔ ... and draws ONE row -- u_map's sp-b5 90, no sp-pad or sp-bank",
             sp("RX-B5") == [["sp-b5", "90"]], repr(sp("RX-B5")))
     pr = [e for e in W("RX-RELEASE") if e[0] == "PARAM"]
     A.check("a RELEASE reaches param", bool(pr) and pr[0][1] == ["sp-b5", "0"], repr(pr))
-    # ⚠️ THE RELEASE DRAWS TOO, and that is u_map's rule rather than a leak: its
-    # raw row carries the control's value, and a release is velocity 0. It
-    # updates the press's row in place, so the screen still holds one.
+    # u_map's raw row carries the value, so the release updates the press's row
+    # to 0 in place.
     A.check("... and its row is the SAME one at velocity 0 -- sp-b5 0",
             sp("RX-RELEASE") == [["sp-b5", "0"]], repr(sp("RX-RELEASE")))
     pa = [e for e in W("RX-A1") if e[0] == "PARAM"]
@@ -106,13 +88,8 @@ def run_asserts(cap):
                  if e[0] in ("PARAM", "DISP") and e[1] and e[1][0].startswith("sp-")],
             repr(W("RX-REJECT")))
 
-    # --- panic -------------------------------------------------------------
     print("\n--- panic ---")
-    # ⚠️ SCOPED TO THIS DEVICE'S OWN CHANNEL BLOCK, because panic is a BUS
-    # message and m_volca answers it too now -- correctly, on channel 49. An
-    # unscoped sweep reads another device's All Notes Off as a bank of this one,
-    # and the list this asserts is exact, so it went red the day the Volca
-    # gained a panic path of its own.
+    # Scoped to this device's channels: m_volca answers panic too, on 49.
     ch = sorted(int(e[1][2]) for e in W("PANIC")
                 if e[0] == "CTLOUT" and e[1][1] == 123
                 and 33 <= int(e[1][2]) <= 42)

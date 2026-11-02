@@ -6,12 +6,7 @@
 #     ./test/gate/launchpad-assert.sh -v         # and show the detail behind every check
 #     ./test/gate/launchpad-assert.sh --keep     # and leave the capture behind
 #
-# ⚠️ NO DSP AND NO 46 SECONDS. It asserts on two SysEx messages -- the mode switch
-# at boot and the one on panic -- and on the ORDER between them and the painted
-# frames. None of that needs a clock. It shared a gate with the display arbiter
-# for no better reason than that both watch [midiout], and paid that gate's DSP
-# bill for two checks.
-#
-# ⚠️ WHAT THE ARBITER DOES WITH THE SURFACE IS NOT TESTED HERE. That is
-# display-assert.sh's, next door.
+# No DSP: it asserts on the two mode switches, Programmer Mode at boot and Live
+# Mode on quit, and their order against the painted frames. What the arbiter
+# does with the surface is display-assert.sh's.
 exec python3 "$(dirname "$0")/scratch-gates.py" launchpad "$@"

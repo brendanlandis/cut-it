@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
 """Generates the timed driver for the map gate, into the scratch path it is given.
 
-It pushes onto `param` and `mode` exactly as the m_ layers would. It asserts
-nothing about any DEVICE -- it uses volca-cc only because a lookup has to land
-somewhere, and what that destination then does with the value is
-volca-assert's business.
+It pushes onto `param` and `mode` as the m_ layers would. volca-cc is only where
+a lookup lands; what the destination does with the value is volca-assert's.
 
-⛔ 300 ms IS THE POINT OF THIS DRIVER, not a detail of it. Every window in the
-gate this was split out of started at 2400 ms, and the comment said why: u_map
-read its table at 2000. A schedule derived from the implementation cannot
-falsify it -- so the gate had 23 green checks and could not see the boot race
-that the hardware found. mother pushes knobs.txt at BOOT, the table and the mode
-key were both still unset, the restored tempo was silently dropped, and the
-instrument came up at 120 instead of the saved 57. Item 234.
+The first window is at 300 ms, before u_map reads its table, because mother
+pushes knobs.txt at boot (item 234). Windows timed from when the code reads the
+table could not see that race.
 """
 import os
 import sys
@@ -23,141 +17,88 @@ import lib_drive as D                                          # noqa: E402
 GAP = 20
 
 SEQ = [
-    # ⛔ BEFORE u_map reads its table. The map must work from load.
-    # ⛔ AND IT IS ALSO KNOB 1's FIRST VALUE EVER, inside u_map's boot window, so
-    # pickup must TAKE it and arm against it. If pickup ever swallows this the
-    # instrument boots at u_tempo's fallback 120 -- item 234's exact symptom.
+    # Before u_map reads its table. Also knob 1's first value, inside the boot
+    # window, so pickup must take it and arm against it.
     (300, "EARLY", ["\\; param og-knob-1 0.0958"], GAP),
     # Knob 2's first value, also inside the boot window. Armed independently.
     (400, "EARLY-2", ["\\; param og-knob-2 0.5"], GAP),
-    # Knob 4's first value is 0 -- its target lands ON the bottom rail. See
-    # RAIL-UP below for what that costs without an equality release.
+    # Knob 4's first value is 0, a target on the bottom rail (RAIL-UP).
     (500, "RAIL-ARM", ["\\; param og-knob-4 0"], GAP),
-    # ⛔ ARMED AT 0.0958 AND MOVED WITHOUT CROSSING -- nothing may reach tempo.
-    # gk-cc rides along as the LIVENESS WITNESS: without it "no tempo here" is
-    # answered by a dead driver rather than by a fact.
+    # Armed at 0.0958 and moved without crossing: nothing may reach tempo. gk-cc
+    # is the liveness witness.
     (2400, "SUPPRESS", ["\\; param og-knob-1 0.5", "\\; param gk-cc 64"], GAP),
     (2600, "MAPPED", ["\\; param gk-cc 64"], GAP),
     # Further away is still not a crossing. Same witness.
     (2800, "AWAY", ["\\; param og-knob-1 0.9", "\\; param gk-cc 64"], GAP),
-    # THROUGH it from above. 0.02 is 20 bpm.
+    # Through it from above. 0.02 is 20 bpm.
     (3000, "CROSS", ["\\; param og-knob-1 0.02"], GAP),
     # ... and it tracks normally from then on. 0.3 is 157 bpm.
     (3200, "LIVE", ["\\; param og-knob-1 0.3"], GAP),
-    # ⛔ PLAY AND STOP ARE BUTTONS AND NEVER PICK UP. The transport moved off
-    # og-aux onto the nano's own PLAY and STOP -- xport-2 and xport-5, which is
-    # what those two are physically labeled -- so that the aux button could
-    # become the keyboard's modifier. If either were ever given a pickup slot
-    # the repeat would latch and vanish, and the transport would stick.
+    # The nano's PLAY and STOP (xport-2 and xport-5) are buttons and never pick
+    # up: given a slot, the repeat would latch.
     (3400, "PLAY-1", ["\\; param xport-2 1"], GAP),
     (3600, "STOP-1", ["\\; param xport-5 1"], GAP),
-    # ⛔ THE REPEAT IS THE POINT. start is not a toggle -- pressing PLAY twice
-    # must start twice, where a latched control would be silent the second time.
+    # start is not a toggle: PLAY twice starts twice.
     (3800, "PLAY-2", ["\\; param xport-2 1"], GAP),
-    # ⛔ STATE IS PER KNOB. Knob 2 armed at 400 ms and knob 1 has long since gone
-    # live, so knob 2 is still held: EXACTLY ONE cc 42, from its first value.
-    # ⛔ AND AN UNMAPPED KNOB SAYS NOTHING. Knob 2 is held, and the held row is
-    # built in the pickup machine rather than at the destination -- so without a
-    # slot gate every armed knob announced itself as a bpm on the OLED. gk-cc is
-    # the witness: the window has to be alive for "no bpm row here" to mean
-    # anything. Item 240.
+    # State is per knob: knob 1 is live and knob 2 still held, so exactly one
+    # cc 42, its first value. Held, it draws its own destination's row and never
+    # a bpm (item 240); gk-cc is the witness.
     (4000, "KNOB-2", ["\\; param og-knob-2 0.9", "\\; param gk-cc 64"], GAP),
-    # ⛔ THE NO-SAVE CASE, and the mirror image of KNOB-2. Knob 3's FIRST value
-    # arrives long after the boot window, so it was a hand rather than a restore
-    # -- it must go straight to LIVE and its second value must pass too. TWO
-    # cc 43 events. mother pushes knobs.txt only if a Save has ever happened, so
-    # this is a fresh install or any tools/deploy.sh --clean.
+    # Knob 3's first value comes after the boot window: a hand, not a restore,
+    # so it goes straight to live and both values pass. mother pushes knobs.txt
+    # only after a Save, so this is a fresh install or tools/deploy.sh --clean.
     (4200, "LATE-KNOB", ["\\; param og-knob-3 0.5", "\\; param og-knob-3 0.9"], GAP),
-    # ⛔ BEFORE the mode switch. The bad row is keyed mode-1, so testing it after
-    # switching to mode-4 makes it a LOOKUP MISS -- correctly silent, and nothing
-    # to do with the guard it is meant to exercise.
+    # Before the mode switch: the bad row is keyed mode-1, and in mode-4 it would
+    # be a lookup miss, silent for the wrong reason.
     (4400, "BAD-DEST", ["\\; param gk-bad 100"], GAP),
-    # ⛔ A TARGET ON A RAIL, AND IT IS A DEAD KNOB WITHOUT THE EQUALITY RELEASE.
-    # Knob 4 arms at 0 inside the boot window. The release test is a side FLIP,
-    # and a knob armed ABOVE a target of 0 waits for value < 0 -- unreachable
-    # however far it is turned down. Reachable on knob 1, which is master tempo:
-    # Save with it at the bottom and the tempo knob is dead for the session.
-    # RAIL-BACK returns to the target EXACTLY and must hand over. Item 241.
+    # A target on a rail (item 241): the release test is a side flip, so a knob
+    # armed at 0 would wait for value < 0 forever without the equality release.
+    # RAIL-BACK returns to the target exactly and must hand over.
     (4600, "RAIL-UP", ["\\; param og-knob-4 0.5", "\\; param gk-cc 64"], GAP),
     (4800, "RAIL-BACK", ["\\; param og-knob-4 0"], GAP),
-    # ⚠️ AFTER 3.5 s ON PURPOSE. u_init restores saved state around then and
-    # republishes mode; a switch before that is overwritten mid-run and the
-    # mode-dependence check reads as broken when it is not. Item 232's other half.
-    # ⛔ 127 AND NOT 1, because that is what a Launchpad CC button sends. The
-    # mode selector moved onto the top row -- the six pads g_grid already lights
-    # as the mode lamps -- and those send 127 on the press and 0 on the release
-    # where the nano transport row it replaced sent only the press.
+    # After 3.5 s: u_init's restore republishes mode then and would overwrite an
+    # earlier switch (item 232). 127, then 0 on release, is what a Launchpad CC
+    # button sends.
     (5000, "MODE-4", ["\\; param lp-cc-94 127"], GAP),
-    # ⛔ AND THE RELEASE MUST SELECT NOTHING. Without a gate below the route
-    # every mode selection fires twice, once per edge -- idempotent, so the
-    # screen looks right while every mode message, state-store write and grid
-    # repaint silently doubles. This is the window that can tell.
+    # The release must select nothing. A second selection is idempotent, so the
+    # screen looks right while every mode message and state write doubles.
     (5100, "MODE-4-RELEASE", ["\\; param lp-cc-94 0"], GAP),
     (5200, "MODE-DEP", ["\\; param gk-cc 64"], GAP),
-    # ⛔ HELD AND UNMAPPED AT THE SAME TIME, which is the case that shipped wrong.
-    # Knob 2 armed at 400 ms and has never crossed, and its row is keyed mode-1 so
-    # in mode-4 it maps to nothing. It must still say what it IS: a control that
-    # does nothing and reports nothing cannot be told from a broken one. The
-    # lookup runs for a held knob now -- only the emission is gated. Item 242.
+    # Held and unmapped at once: knob 2 has never crossed, and its row is keyed
+    # mode-1, so in mode-4 it maps to nothing and must still report (item 242).
     (5400, "UNMAPPED", ["\\; param og-knob-2 0.75"], GAP),
-    # ⛔ A mode THE KEY-SETTER CANNOT USE, driven onto the bus directly. This is
-    # what u_state replays at about 3.5 s when cut-it-auto.txt holds a truncated
-    # value, and it had been live for an unknown number of sessions before the
-    # rig found it: list split 1's remainder is empty, list prepend's cold inlet
-    # is emptied with it, and the lookup key becomes the control name alone. text
-    # search then hunts for og-knob-1 in the MODE column where it can never
-    # match, and EVERY Organelle knob draws its raw 0-to-1 row where a BPM
-    # belongs. Item 294, fixed by item 297.
-    #
-    # ⚠️ NOTHING DROVE ONE UNTIL THIS WINDOW EXISTED, which is why the bug
-    # shipped: the static lint proves every ROW is well formed and has nothing to
-    # say about a mode arriving at runtime.
+    # A mode the key-setter cannot use, as u_state replays a truncated
+    # cut-it-auto.txt: one atom empties the lookup key, and every knob would
+    # draw its raw row (item 294, fixed by 297). The static lint cannot see a
+    # mode that arrives at runtime.
     (5600, "BAD-MODE", ["\\; mode compose"], GAP),
-    # ⛔ THE HALF THAT MATTERS. An error alone would be satisfied by a patch that
-    # raised and then broke anyway. og-knob-1 is tempo in ALL SIX modes and is
-    # long since live, so it must still reach the tempo bus -- 0.6 is 304 bpm.
+    # The key must survive: og-knob-1 is tempo in all six modes and long since
+    # live, so 0.6 must still reach tempo as 304 bpm.
     (5800, "AFTER-BAD", ["\\; param og-knob-1 0.6"], GAP),
-    # ⛔ THE SHIPPED ROWS, DRIVEN. diag, stop and recover all sit on the
-    # Organelle's own shifted keys -- hold aux and the 25 keys publish
-    # og-shift-60..84 -- because that panel is the only one that can never be
-    # the missing device. These drive the REAL rows rather than a gate row, so
-    # what is under test is what ships.
+    # The shipped rows on the Organelle's shifted keys (og-shift-60..84, aux
+    # held), the one panel that can never be the missing device.
     (6200, "DIAG-DEST", ["\\; param og-shift-60 100"], GAP),
-    # ⛔ AND A RELEASE MUST NOT SUMMON IT AGAIN. A shifted key publishes both
-    # edges, so every button destination's non-zero gate is load-bearing here
-    # in a way it never was for a nano button that only sent the press.
+    # A shifted key publishes both edges; the release must not summon it again.
     (6400, "DIAG-RELEASE", ["\\; param og-shift-60 0"], GAP),
-    # ⛔ THE PANEL'S OWN STOP, which is what moving the transport to the nano
-    # cost and what this row buys back: with the nano unplugged this is the
-    # only way left to silence the instrument.
+    # With the nano unplugged, this is the only stop left.
     (6600, "SHIFT-STOP", ["\\; param og-shift-72 100"], GAP),
-    # ⛔ BACK TO mode-1 FOR THE ROWS. Every gate row is keyed mode-1 and the run
-    # has been in mode-4 since 5000 ms, so without this every window below would
-    # be a lookup MISS -- correctly silent, and proving nothing about a row.
-    # Press and release, because that is what the pad sends.
+    # Back to mode-1, since every gate row is keyed mode-1. Press and release,
+    # as the pad sends.
     (6800, "MODE-1", ["\\; param lp-cc-91 127", "\\; param lp-cc-91 0"], GAP),
-    # ⛔ EVERY VALUE DESTINATION DRAWS ITS MAPPED ROW, named for the DESTINATION
-    # and scaled into its units -- c_mapped, one instance per destination. The
-    # shipped map reaches only tempo and volca-cc, so the note, pad and program
-    # rows are driven through the gate's own rows above. 64 in is 64 out for a
-    # 0-127 control: the divisor and the multiplier cancel exactly.
+    # Every value destination draws its mapped row. The shipped map reaches only
+    # tempo and volca-cc, so note, pad and program go through gate rows
+    # (scratch-gates.py). 64 in is 64 out for a 0-127 control.
     (7000, "ROW-CC", ["\\; param gk-cc 64"], GAP),
     (7200, "ROW-NOTE", ["\\; param gk-note 100"], GAP),
     (7400, "ROW-PAD", ["\\; param gk-pad 90"], GAP),
     (7600, "ROW-PROG", ["\\; param gk-prog 1"], GAP),
-    # ⛔ AND volca-key IS THE ONE VALUE DESTINATION THAT DRAWS NOTHING. 25 keys
-    # reporting both edges would evict the five-row screen twice per note
-    # (item 293), so the key path is the deliberate exception -- and a c_mapped
-    # slipped in front of it by mistake would draw volca-key60 on every press.
+    # volca-key draws nothing (item 293).
     (7800, "ROW-KEY", ["\\; param og-key-60 100"], GAP),
-    # ⛔ PRESSURE IS THE SECOND EXCEPTION TO THE RAW ROW. A pad's aftertouch is a
-    # continuous stream per held pad, so an unmapped pad-NN-at reporting raw would
-    # fill the five-row screen under four fingers -- the reason m_launchpad keeps
-    # it off disp. pad-12 rides along as the liveness witness AND as the proof the
-    # test is not too wide: a pad's own press must still draw its raw row.
+    # Unmapped pressure draws no raw row (item 318); pad-12 is the witness and
+    # proves the test is not too wide.
     (8000, "PRESSURE", ["\\; param pad-11-at 64", "\\; param pad-12 100"], GAP),
-    # ⛔ AND MAPPED PRESSURE STILL DRAWS ITS DESTINATION'S ROW. The exemption
-    # gates the raw row only; a gate row maps pad-13-at to volca-cc 45.
+    # Mapped pressure still draws its row: a gate row maps pad-13-at to
+    # volca-cc 45.
     (8200, "PRESSURE-MAPPED", ["\\; param pad-13-at 64"], GAP),
 ]
 QUIT_MS = 8800
@@ -168,16 +109,9 @@ BLURB = ("map-assert-drive -- GENERATED by map-assert-drive-gen.py. Do not edit 
          "and a row naming a destination that is not on u_map's route.")
 
 NOTES = [
-    "⚠️ RUN IT THROUGH test/gate/map-assert.sh \\, never by hand. The gate appends its "
-    "own rows to the mapping table in a SCRATCH COPY and rewrites the MIDI objects to "
-    "printing stubs. Loaded on its own against the real patch it would emit real MIDI "
-    "to whatever is plugged in \\, and half the windows would find no mapping at all.",
-
-    "⚠️ THE STATE DIRECTORY IS THE GATE'S OWN AND MUST BE EMPTY. main-dev.pd passes "
-    "/tmp \\, which every run on the machine shares -- and u_init restores saved state at "
-    "about 3.5 s. A previous test that changed mode leaves mode in that file \\, the "
-    "restore republishes it mid-run \\, and every row keyed to another mode stops matching "
-    "from that instant. It cost a wrong diagnosis once already: item 232.",
+    "Run it through test/gate/map-assert.sh: the gate adds its own map rows in a "
+    "scratch copy. Against the real patch it emits real MIDI and half the windows "
+    "find no mapping.",
 ]
 
 if __name__ == "__main__":

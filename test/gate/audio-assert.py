@@ -1,26 +1,16 @@
 #!/usr/bin/env python3
-"""The audio path's analyser -- ref/module/audio.md. Reads a SOUNDFILE, not stdin.
+"""The audio path's analyzer -- ref/module/audio.md. Reads a soundfile, not stdin.
 
     audio-assert.py OUT.wav [CAPTURE.txt] [-v]
 
-⛔ THE FIRST SIGNAL-DOMAIN GATE IN THIS PROJECT, and the only analyser here that
-does not read a capture on stdin: its subject is a file of samples. Everything
-else asserts on messages, which is why ref/module/audio.md declared `Gate: none`
-honestly for as long as it did -- a broken rewiring of the four cords at the end
-of u_root.pd is completely silent, and would surface as no sound at a venue.
-
-THREE CLAIMS, and the middle one is the reason this exists:
+Three claims:
 
     1. the output is not silent
-    2. ⛔ L and R are NOT SWAPPED -- the TRS Y-cable makes L the SP-404's drums
-       and R its fx, and adc~ 1 is the tip (item 11). Amplitude cannot see a
-       swap, because both channels carry the same level; the FREQUENCIES can
-    3. the passthrough is unity, not attenuated -- there is no gain anywhere in
-       u_root's audio path and there must not be one
+    2. L and R are not swapped: L is the SP-404's drums (item 11). Both
+       channels carry the same level, so only the frequencies can see a swap
+    3. the passthrough is unity: u_root's audio path has no gain
 
-⚠️ NO numpy. The standard library reads a WAV and the arithmetic is a sum, a
-count of sign changes and a comparison. A dependency for that would be a
-dependency this project's one measuring rig had and nothing else did.
+Standard library only: a WAV, a sum and a count of sign changes need no numpy.
 """
 import os
 import struct
@@ -30,12 +20,8 @@ import wave
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 
-# ⛔ THE SEGMENT TABLE IS LOADED FROM THE GENERATOR, NOT RETYPED. Two copies of a
-# schedule is how a gate comes to measure the wrong span of a file and report it
-# with total confidence. It is loaded through importlib rather than imported
-# outright because the generator's name has a hyphen, which is not a legal
-# Python identifier -- the same reason lib_assert and lib_drive have underscores
-# and every script beside them does not. The bench tooling does this too.
+# The segment table is the generator's, never retyped. Loaded by path because a
+# hyphen is not legal in a module name.
 import importlib.util                                          # noqa: E402
 
 _gen = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -45,8 +31,7 @@ _ns = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_ns)
 AMP, SEGMENTS, GUARD = _ns.AMP, _ns.SEGMENTS, _ns.GUARD
 
-# A sine of amplitude a has RMS a/sqrt(2). This is what "unity" is measured
-# against -- the input is known exactly, so the output can be too.
+# A sine of amplitude a has RMS a/sqrt(2).
 WANT_RMS = AMP / (2 ** 0.5)
 
 # 2% on the level. Wide enough for 16-bit quantization and a partial cycle at
@@ -132,12 +117,7 @@ def main():
             "L rms %.4f, R rms %.4f. u_root's audio path is four cords and no "
             "gain; silence here means one of them is gone" % (rms(l), rms(r)))
 
-    # ---- 2. ⛔ L AND R ARE NOT SWAPPED ------------------------------------
-    # ⛔ MEASURED BY FREQUENCY, WHICH IS THE ONLY THING THAT CAN SEE IT. Both
-    # channels carry the same level by construction, so a swap is invisible to
-    # any amplitude check -- and a swap is the failure that matters most here:
-    # the TRS Y-cable makes L the SP-404's drums and R its fx, so a swapped
-    # passthrough puts the drums through the fx chain and nothing errors.
+    # ---- 2. L and R are not swapped ---------------------------------------
     print("\n--- 2. L and R are not swapped ---")
     for name, chan, want in (("left", 0, 220.0), ("right", 1, 330.0)):
         l, r, span = seg("both")
@@ -149,11 +129,8 @@ def main():
                 "the right, so this is what a swapped pair looks like" % (f, span))
 
     # ---- ...and there is no bleed between them ----------------------------
-    # ⚠️ THE TWO ONE-SIDED SEGMENTS ARE THE OTHER HALF OF THE SWAP CHECK. Both
-    # channels being right when both are driven does not prove they are
-    # independent -- a chain that summed L and R into both would pass the
-    # frequency checks above on neither, and one that copied L into both would
-    # fail them; only a silent channel proves the cords do not cross.
+    # Right frequencies with both driven do not prove the channels independent;
+    # only a silent channel proves the cords do not cross.
     for name, silent_chan in (("left", 1), ("right", 0)):
         l, r, _ = seg(name)
         loud, quiet = ((l, r) if silent_chan else (r, l))
@@ -162,9 +139,6 @@ def main():
                 "driven %.4f, other %.4f" % (rms(loud), rms(quiet)))
 
     # ---- 3. the passthrough is unity --------------------------------------
-    # There is no gain anywhere in u_root's audio path -- r~ straight into
-    # throw~, with the level taps hanging off as a signal fan-out that reads and
-    # does not alter. So the output must equal the input, and the input is known.
     print("\n--- 3. the passthrough is unity ---")
     l, r, _ = seg("both")
     for name, got in (("left", rms(l)), ("right", rms(r))):
@@ -175,8 +149,7 @@ def main():
                 "has appeared where there is meant to be none" % (got, WANT_RMS))
 
     # ---- silence in, silence out ------------------------------------------
-    # ⚠️ THE ONE ASSERTION THAT CANNOT PASS VACUOUSLY BY THE FILE BEING EMPTY,
-    # because everything above has already proved the file is not.
+    # Cannot pass on an empty file: everything above proved it is not.
     print("\n--- and nothing arrives unasked ---")
     for name in ("silence", "tail"):
         l, r, _ = seg(name)
@@ -185,10 +158,8 @@ def main():
                 "L %.4f R %.4f -- something is generating on its own" % (rms(l), rms(r)))
 
     # ---- u_level, which shares the page -----------------------------------
-    # ⚠️ THE ONE MESSAGE-DOMAIN CHECK HERE, and it belongs to this page: u_level
-    # is the other file on ref/module/audio.md's Files line. env~ reports RMS on
-    # a 0-100 dB scale with a measured noise floor of 18-19, so a tone must put
-    # it well clear of that.
+    # u_level is the page's other file. Its noise floor is 18-19 on the 0-100
+    # scale (ref/module/audio.md), so a tone must clear it.
     if len(args) > 1 and os.path.exists(args[1]):
         print("\n--- u_level, on the disp bus ---")
         with open(args[1]) as fh:

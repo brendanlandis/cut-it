@@ -1,23 +1,11 @@
 #!/usr/bin/env python3
-"""Generates the SECOND driver for the device-presence gate -- the one that reaches
-the bound.
+"""Generates the second driver for the device-presence gate, the one that reaches
+the bound. At the shipped tick the give-up is 72 s away, so lib_scratch's
+scale_present divides the settle and tick by ten and leaves the counts as shipped:
 
-⛔ WHY THERE ARE TWO DRIVERS. presence-assert-drive-gen.py proves the INTERVAL and
-the COALESCING: the re-wire waits for the fourth tick, and three lost sources
-share one counter rather than three. What it cannot prove is where the counting
-STOPS, because at the shipped tick the give-up is 72 seconds away and no gate in
-this suite runs that long. So that half of the bound was arithmetic read off
-[moses 33] -- a claim about a box, not about a run.
+    u_present 4000 2000 33 8   ->   u_present 400 200 33 8
 
-⛔ THE COUNTS ARE THE SHIPPED COUNTS AND ONLY THE TIMES MOVE.
-test/gate/lib_scratch.py's scale_present rewrites the scratch u_root.pd:
-
-    u_present 4000 2000 33   ->   u_present 400 200 33
-
-3 (c_presence's missed-tick threshold) and 33 (the give-up) are untouched. A gate
-that scaled those would be asserting a different patch than the one that ships.
-
-THE SCHEDULE, AND IT IS u_present's OWN ARITHMETIC AT ONE TENTH THE CLOCK:
+The schedule, u_present's own arithmetic at a tenth of the clock:
 
      400 ms   the settle expires -- [metro 200] starts and fires immediately, so
               the ticks are 400, 600, 800, ...
@@ -30,23 +18,14 @@ THE SCHEDULE, AND IT IS u_present's OWN ARITHMETIC AT ONE TENTH THE CLOCK:
     7200 ms   counter 33 -- moses stops it dead and `fail u_present rewire-gaveup`
               reaches err, once
 
-⚠️ u_init's 1500 ms FORK LANDS BETWEEN RECOVERY FORKS 1 AND 2, and that is the
-one thing scaling breaks. The 4000 ms settle exists so the first re-wire lands
-past u_init's last stage -- see ref/module/boot.md -- and at 400 ms it does not.
-Nothing here is wrong because of it; the windows below are drawn knowing it, and
-the analyser's EARLY count says "u_init's plus five" rather than "five".
+The 4000 ms settle exists to land past u_init's last stage (ref/module/boot.md);
+at 400 it doesn't, so u_init's fork falls between recovery forks 1 and 2, and
+EARLY counts six.
 
-⛔ THE WINDOWS ARE DRAWN FOR MARGIN, NOT FOR ISOLATION, and that is a deliberate
-departure from the first driver. At one tenth the clock the events are 200 ms
-apart, so a boundary between the last fork (7000) and the give-up (7200) would
-have 100 ms of slack on each side -- and a gate whose verdict turns on 100 ms of
-scheduler jitter is a gate that goes red for reasons that have nothing to do with
-the patch. So the give-up is not isolated by a boundary at all. It is pinned by
-WHICH WINDOW IT FALLS IN, and every boundary here has at least 400 ms of slack.
-
-⚠️ AFTER EXISTS TO BE EMPTY, and it is 1.4 seconds -- seven ticks -- rather than
-one. A bound that SLOWED the forks instead of STOPPING them would be due at 7800
-and 8600, and both land in here. One tick of silence could not tell those apart.
+The windows are drawn for margin, not isolation: events are 200 ms apart, so
+every boundary keeps at least 400 ms of slack and the give-up is pinned by the
+window it falls in. AFTER is seven ticks long so that a bound which slowed the
+forks (due at 7800 and 8600) rather than stopping them lands inside it.
 """
 import os
 import sys
@@ -57,53 +36,30 @@ import lib_drive as D                                          # noqa: E402
 GAP = 40
 
 SEQ = [
-    # ⛔ u_init's boot fork plus recovery forks 1 through 5 -- SIX, not five.
-    # Every other count in this file is of recovery forks alone; this one is not,
-    # because at the scaled settle u_init's own 1500 ms fork lands inside it.
-    #
-    # ⚠️ IT IS ALSO THE LIVENESS WITNESS FOR THE WHOLE RUN. The two assertions
-    # that matter here are "the give-up arrived" and "nothing forked afterwards",
-    # and the second of those is answered just as well by a scratch copy that
-    # never loaded. A count that must be exactly six is not.
+    # u_init's boot fork plus recovery forks 1 to 5: six.
     (300, "EARLY", [], GAP),
 
-    # Forks 6, 7 and 8 -- at 5400, 6200 and 7000 -- and then the give-up at 7200.
-    # ⛔ THE GIVE-UP MUST BE IN HERE AND NOWHERE ELSE. That is the whole assertion
-    # about WHEN the bound fires, and it is why this window ends at 7600 rather
-    # than splitting the last fork off from it: 400 ms of slack on each side
-    # instead of 100.
+    # Forks 6, 7 and 8 at 5400, 6200 and 7000, then the give-up at 7200.
     (5000, "LATE", [], GAP),
 
-    # ⛔ AND IT EXISTS TO BE EMPTY. moses sends everything from 33 upward out its
-    # right outlet, which is connected to nothing, so the counter keeps counting
-    # and nothing acts on it. Counters 36 and 40 fall in here, which are exactly
-    # where mod 4 would fire if the bound had been widened rather than reached.
+    # Empty. Counters 36 and 40 fall here, where mod 4 would fire had the bound
+    # been widened rather than reached.
     (7600, "AFTER", [], GAP),
 ]
 QUIT_MS = 9000
 
 BLURB = ("presence-bound-drive -- GENERATED by presence-bound-drive-gen.py. Do not edit "
-         "this file. It is the second of the presence gate's two runs \\, and the only "
-         "one that REACHES the bound: the scratch copy's u_present has had its settle "
-         "and its tick divided by ten and its COUNTS left exactly as shipped \\, so the "
-         "eighth and last wire.sh lands at 7 seconds and the give-up at 7.2. What it "
-         "asserts is that there are exactly eight \\, that the give-up reports \\, and "
-         "that nothing forks after it -- the bound stopping DEAD rather than slowing "
-         "down.")
+         "this file. The presence gate's second run: u_present's settle and tick are "
+         "divided by ten and its counts left as shipped \\, so the eighth wire.sh lands "
+         "at 7 s and the give-up at 7.2. Exactly eight \\, the give-up reports \\, and "
+         "nothing forks after it.")
 
 NOTES = [
-    "⚠️ RUN IT THROUGH test/gate/presence-assert.sh \\, never by hand. The gate copies "
-    "t_shell.pd over shell.pd inside a scratch copy so every wire.sh fork PRINTS \\, and "
-    "calls scale_present to rewrite u_root.pd. Run against the real Cut It "
-    "nothing prints \\, the give-up is 72 seconds away \\, and every count here is "
-    "answered by an empty list rather than by a fact.",
+    "Run it through test/gate/presence-assert.sh: against the real Cut It nothing "
+    "prints and the give-up is 72 s away.",
 
-    "⛔ NO DEVICE-INQUIRY REPLY IS EVER SENT \\, exactly as in the first run. Every "
-    "pollable layer is absent for the whole nine seconds \\, which is what keeps the "
-    "lost count above zero and the counter running all the way to 33. ⚠️ THAT ALSO "
-    "MEANS THERE IS NO TRAILING FORK HERE: the trailing fork rides the transition to "
-    "nothing-lost \\, and nothing ever comes back \\, so every fork in this capture is "
-    "either u_init's or one of the eight.",
+    "No device-inquiry reply is ever sent \\, so the counter runs to 33 and there is "
+    "no trailing fork: every fork is u_init's or one of the eight.",
 ]
 
 if __name__ == "__main__":

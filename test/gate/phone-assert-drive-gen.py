@@ -3,44 +3,28 @@
 #
 #     python3 test/gate/phone-assert-drive-gen.py <out.pd>
 #
-# phone-assert.py runs it on every run; the driver is never committed. It
-# instantiates u_net POINTED AT LOCALHOST and pushes synthetic traffic onto disp,
-# exactly as the m_ layers and u_err would.
+# phone-assert.py runs it on every run. It instantiates u_net pointed at
+# localhost and pushes synthetic traffic onto disp; no scratch copy is needed,
+# since u_net already emits to a socket.
 #
-# Unlike Phase 6's gate this needs NO scratch copy and NO source rewriting.
-# [midiout] is a built-in class with no side channel, so Phase 6 had to rewrite
-# boxes in a throwaway copy of the patch. u_net already emits to a socket -- so
-# the gate just points it at 127.0.0.1 and reads the real datagrams.
+# Each window's MARK is a datagram to the same port, so it arrives in true order
+# with the data around it. Every delay hangs off the one loadbang with an
+# absolute time.
 #
-# The MARK that separates one window from the next is itself sent as a datagram,
-# to the SAME port, through the driver's own netsend. That is deliberate: a mark
-# on stdout would have to be correlated with socket timestamps after the fact,
-# whereas a mark in the stream arrives in true order with the data around it.
+# No "#X declare": phone-assert.py puts "Cut It" on the path. Should one come
+# back, it belongs in the header string, not in B: it takes no box index, and in
+# B it would shift every connect by one.
 #
-# Every delay hangs off the ONE loadbang with an absolute time. Chaining them
-# would make each wait the SUM of everything before it, which is the kind of
-# arithmetic that silently drifts as steps are added.
-#
-# NO "#X declare": the driver lives in a scratch directory, so phone-assert.py
-# puts "Cut It" on the path itself. ⚠️ Should one come back, a declare occupies
-# no box index, so it belongs in the header string rather than in B -- in B it
-# would shift every connect by one, the exact failure pd-layout-check.py exists
-# to catch.
-#
-# LAYOUT: the loadbang and the row of del boxes sit in a clear band across the
-# TOP, so the fan-out from one loadbang to eight windows is never drawn through
-# anything. Everything else is either the left column (x < 1000) or a window
-# column (x >= 1200), and the two never meet.
+# Layout: the loadbang and the del row are a band across the top; below it, the
+# left column (x < 1000) and the window columns (x >= 1200) never meet.
 import sys
 
 if len(sys.argv) < 2:
     sys.exit("usage: phone-assert-drive-gen.py <out.pd>")
 
 PORT = 9995
-# ⚠️ u_net's OWN listening port, and it is a gate-only number. The device uses
-# 9001 and main-dev.pd 9002 -- both are held for a whole session by a patch
-# somebody has open, and only one process on a machine can hold a UDP port.
-# A gate that reused either would go red because the dev patch was running.
+# u_net's own listening port, a gate-only number: the device's 9001 and
+# main-dev.pd's 9002 are held by whatever patch is open.
 INPORT = 9994
 
 B, C = [], []
@@ -74,21 +58,16 @@ con(qd, 0, qm, 0)
 
 # ------------------------------------------------------------- the left column
 txt(20, 260,
-    "phone-assert-drive -- the driver half of the phone link's headless assertion run. It "
+    "phone-assert-drive -- the driver half of the phone link's headless gate. It "
     "instantiates u_net pointed at 127.0.0.1 and pushes synthetic traffic onto disp \\, "
-    "exactly as m_nano \\, m_organelle and u_err would. Nothing in the deployed patch is "
-    "touched or rewritten.", 70)
+    "as the rest of the instrument would. Nothing in the deployed patch is touched.", 70)
 txt(20, 400,
-    "RUN IT THROUGH test/gate/phone-assert.sh \\, never by hand -- the analyser has to be "
-    "bound to the port BEFORE u_net connects. Measured in Step 0: a UDP connect to a port "
-    "with nothing listening survives exactly ONE datagram \\, then ICMP kills the socket "
-    "and every later send is discarded in silence. Start this by hand and you get one "
-    "packet and then nothing \\, which looks exactly like a broken rate limiter.", 70)
+    "Run it through test/gate/phone-assert.sh: the analyzer must be bound to the port "
+    "before u_net connects. A UDP connect to a port with nothing listening survives one "
+    "datagram (item 114) \\, which by hand looks like a broken rate limiter.", 70)
 txt(20, 600,
-    "IT TESTS u_net IN ISOLATION \\, not the whole instrument. phone-assert.py puts Cut It "
-    "on the path \\, which is what finds the abstraction. Driving the real u_tempo would "
-    "make the status window depend on rounding that belongs to u_map \\, and the contract "
-    "under test here is only that u_net consumes disp and rate-limits what leaves.", 70)
+    "It tests u_net alone: the contract is that u_net consumes disp and rate-limits what "
+    "leaves. The real u_tempo would make the status window depend on u_map's rounding.", 70)
 
 unet = obj(20, 780, "u_net 127.0.0.1 %d %d" % (PORT, INPORT))
 tap_v = obj(20, 880, "s \\$0-tap-volca")
@@ -96,10 +75,9 @@ tap_4 = obj(300, 880, "s \\$0-tap-p404")
 con(unet, 0, tap_v, 0)
 con(unet, 1, tap_4, 0)
 txt(560, 600,
-    "THE ABSTRACTION UNDER TEST. Creation args are the phone's host and port and then THIS "
-    "end's inbound port \\, so pointing all three at the analyser costs nothing and exercises "
-    "exactly the code path the phone gets. ITS TWO OUTLETS ARE THE VOLCA AND THE SP-404 \\, "
-    "and they leave here by NAME so no cord has to be drawn the length of the canvas.", 40)
+    "The abstraction under test. Args: the phone's host and port \\, then this end's "
+    "inbound port. Its two outlets are the Volca and the SP-404 \\, sent on by name so no "
+    "cord runs the length of the canvas.", 40)
 
 # the mark path, and the driver's own socket
 mark_r = obj(20, 960, "r \\$0-mark")
@@ -116,9 +94,8 @@ con(mark_l, 0, mark_o, 0)
 con(mark_o, 0, mark_s, 0)
 con(mark_s, 0, mark_m, 0)
 txt(560, 1180,
-    "list append BEFORE oscformat: a message box holding one word sends that word as a "
-    "SELECTOR \\, and oscformat wants a list. The same trap every branch out of g_oled's "
-    "route has to dodge.", 70)
+    "list append before oscformat: a message box holding one word sends it as a selector \\, "
+    "and oscformat wants a list.", 70)
 
 nlb = obj(560, 1390, "loadbang")
 nd = obj(560, 1440, "del 300")
@@ -128,8 +105,7 @@ con(nlb, 0, nd, 0)
 con(nd, 0, nm, 0)
 con(nm, 0, net_o, 0)
 con(mark_m, 0, net_o, 0)
-# the three probes converge here rather than each drawing its own cord the
-# height of the canvas -- same reason the marks travel by $0-mark.
+# the three probes converge here by name, as the marks do.
 prb_r = obj(300, 1390, "r \\$0-probebytes")
 prb_p = obj(300, 1440, "list prepend send")
 prb_t = obj(300, 1490, "list trim")
@@ -137,25 +113,15 @@ con(prb_r, 0, prb_p, 0)
 con(prb_p, 0, prb_t, 0)
 con(prb_t, 0, net_o, 0)
 txt(20, 1610,
-    "THE DRIVER'S OWN NETSEND CONNECTS AT 300 ms \\, u_net's at 1500 -- so the first mark "
-    "is already in the stream before the thing being measured has said anything. Both "
-    "point at the same port \\, and the analyser tells them apart by OSC address.", 70)
+    "This netsend connects at 300 ms and u_net's at 1500 \\, so the first mark is in the "
+    "stream before u_net says anything. Both use one port \\, told apart by OSC address.", 70)
 
-# --------------------------------------------------------------- the INBOUND half
-# A second socket, pointed at u_net's own listening port, which is what makes the
-# phone's buttons testable with no phone.
-#
-# ⛔ IT CONNECTS AT 2600 ms AND NOT EARLIER. u_net arms its `listen` at 2000 --
-# deliberately, so the syntax check and tools/deploy.sh quit before anything binds
-# -- and item 114 says a UDP connect to a port with NOTHING LISTENING survives
-# exactly one datagram before ICMP tears the socket down. Connect at 300 like the
-# outbound one and every command in this run would be discarded in silence, which
-# looks exactly like an inbound path that was never built.
-#
-# ⚠️ AND THE COMMANDS REACH IT BY NAME, NOT BY CORD -- $0-cmdbytes, exactly as the
-# marks reach the outbound socket through $0-mark. A cord from a window column
-# back to the left column would be drawn straight through everything between
-# them, which is the one thing this file's layout rule forbids.
+# --------------------------------------------------------------- the inbound half
+# A second socket, at u_net's own listening port, so the phone's buttons are
+# testable with no phone. It connects at 2600 ms because u_net's `listen` arms
+# at 2000 (so the syntax check quits before anything binds), and a connect to a
+# port with nothing listening survives one datagram (item 114). Commands reach it
+# by name, $0-cmdbytes, so no cord crosses from a window column to this one.
 ilb = obj(20, 2400, "loadbang")
 idl = obj(20, 2450, "del 2600")
 imm = msg(20, 2500, "connect 127.0.0.1 %d" % INPORT)
@@ -171,12 +137,9 @@ con(icp, 0, ict, 0)
 con(ict, 0, in_o, 0)
 
 # --------------------------------------------------------------------- the probes
-# ⛔ WHAT THE INBOUND HALF DID IS NOT VISIBLE ON THE WIRE OTHERWISE. re-wire
-# leaves on the presence bus and a test note leaves through a CORD, so both are
-# invisible to an analyser that only reads datagrams. Each is tapped here and
-# re-sent to the SAME analyser port under its own /probe address, so it arrives in
-# true order with the marks around it -- the same argument that put the marks in
-# the stream rather than on stdout.
+# re-wire leaves on the presence bus and a test note through a cord, so neither
+# reaches the wire. Each is tapped and re-sent to the analyzer's port under its
+# own /probe address, in order with the marks.
 def probe(x, y, name, src):
     rc = obj(x, y, src)
     la = obj(x, y + 50, "list append")
@@ -191,10 +154,8 @@ probe(20, 1900, "presence", "r presence")
 probe(400, 1900, "volca", "r \\$0-tap-volca")
 probe(700, 1900, "p404", "r \\$0-tap-p404")
 txt(20, 2180,
-    "u_net IS THE ONLY ABSTRACTION IN THIS RUN \\, so nothing else can write presence and a "
-    "re-wire seen here came from the inbound path or from nowhere. The two cords are the "
-    "output devices -- wired rather than bussed \\, per C-2 \\, which is exactly why they need "
-    "a tap at all.", 70)
+    "u_net is the only abstraction in this run \\, so a re-wire seen here came from the "
+    "inbound path. The two cords are the output devices \\, wired per C-2 \\, hence the taps.", 70)
 
 # ------------------------------------------------------------------- the windows
 # (absolute_ms, mark, [action, ...])
@@ -203,10 +164,8 @@ txt(20, 2180,
 #   ("statussweep", (count, ms))     the same, as status <n>-bpm symbols
 #   ("cmd", (root, "<text>"))        one OSC datagram INTO u_net's own port
 #
-# ⛔ EVERY COMMAND WINDOW SITS AFTER idle2, AND THAT IS NOT ARBITRARY. clear-alert
-# destroys the held alert, and idle2 is where "the alert PERSISTS as state" is
-# asserted -- so a clear anywhere above would make that check pass or fail for a
-# reason that has nothing to do with the repeat it is testing.
+# Every command window sits after idle2: clear-alert destroys the held alert,
+# and idle2 is where the alert is asserted to persist.
 SEQ = [
     (3000,  "idle",     []),
     (6000,  "sweep1",   [("sweep", ("grain", 400, 5))]),
@@ -219,16 +178,13 @@ SEQ = [
                          ("disp", "modal hello"), ("disp", "modal-off"),
                          ("disp", "diag")]),
     (19000, "idle2",    []),
-    # -- the inbound half. One command per window, so a stray effect cannot be
-    #    attributed to the wrong button.
+    # -- the inbound half, one command per window so a stray effect can't be
+    #    blamed on the wrong button.
     (22000, "cmdwire",  [("cmd", ("cutit", "re-wire"))]),
     (23400, "cmdvolca", [("cmd", ("cutit", "test-note m_volca"))]),
     (24800, "cmd404",   [("cmd", ("cutit", "test-note m_404"))]),
-    # ⛔ THE NEGATIVES, AND THEY MATTER MORE THAN THE POSITIVES HERE. Four ways of
-    # being wrong: a command off the list, a second one, a DEVICE off its own list,
-    # and a well-formed command under a different OSC root. Every one of them must
-    # reach nothing at all -- and the heartbeat in this window is the witness that
-    # the link was live while they were being ignored.
+    # Five wrong commands, each of which must reach nothing; the heartbeat in
+    # this window is the witness that the link was live.
     (26200, "cmdbogus", [("cmd", ("cutit", "panic")),
                          ("cmd", ("cutit", "reload")),
                          ("cmd", ("cutit", "test-note m_launchpad")),
@@ -246,9 +202,8 @@ for i, (when, mark, actions) in enumerate(SEQ):
     items = [("MARK", mark)] + actions
     tr = obj(x, 860, "t " + " ".join(["b"] * len(items)))
     con(d, 0, tr, 0)
-    # outlets fire right to left, so the MARK is on the highest outlet and is in
-    # the stream before anything it describes happens. Items sit in a ROW at one
-    # y, so the trigger's cords all run above them rather than across them.
+    # Outlets fire right to left, so the MARK, on the highest, goes first. Items
+    # sit in a row at one y, so the trigger's cords run above them.
     bx = x
     for j, item in enumerate(items):
         outlet = len(items) - 1 - j
@@ -269,10 +224,8 @@ for i, (when, mark, actions) in enumerate(SEQ):
             bx += 240
             continue
         if kind == "cmd":
-            # exactly the shape the PdParty scene uses: one message box, a list
-            # append to turn its selector into a list, and one oscformat. If the
-            # two ever disagree this gate is testing something the phone cannot
-            # send -- which is what the static parity check below refuses.
+            # The PdParty scene's shape: message box, list append, oscformat.
+            # phone-assert.py's static check holds the spellings to the scene.
             root, text = item[1]
             cm = msg(bx, by, text)
             cla = obj(bx, by + 50, "list append")
@@ -284,13 +237,11 @@ for i, (when, mark, actions) in enumerate(SEQ):
             con(cof, 0, csn, 0)
             bx += 300
             continue
-        # a ramp: metro-driven counter, one distinct value per tick, stopping
-        # itself at count. Two of these run at once in the sweep2 window.
+        # A ramp: a metro-driven counter, one value per tick, stopping at count.
         name, count, period = (item[1] if kind == "sweep"
                                else (None, item[1][0], item[1][1]))
-        # the stop travels by name, not by cord: a cord from the select back up
-        # to the metro runs straight through the counter's own column, which is
-        # the one thing pd-layout-check.py is loudest about
+        # The stop travels by name: a cord back up to the metro would cross the
+        # counter's own column.
         sid = "\\$0-stop%d" % len(B)
         go = msg(bx, by, "1")
         rstop = obj(bx + 180, by, "r %s" % sid)

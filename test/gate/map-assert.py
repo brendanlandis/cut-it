@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
-"""The map's analyser -- ref/module/map.md. Two halves, and the FIRST NEEDS NO Pd.
+"""The map's analyzer -- ref/module/map.md. Two halves, and the first needs no Pd.
 
-  1. THE STATIC LINT reads Cut It/cut-it-map.txt and the literal route box in
-     Cut It/u_map.pd and checks that every destination a row can name exists as
-     an argument on that route. THAT IS THE ALLOWLIST GUARD, ENFORCED BY READING
-     -- the same way the project audits its global sends. It is the cheapest and
-     strongest check here, ~200 ms, and it is the one that stays true as the
-     table grows. The gate skill says to reach for this before reaching for a
-     driver; this is the example it is drawn from.
+  1. The static lint reads Cut It/cut-it-map.txt and the literal route box in
+     Cut It/u_map.pd and checks that every destination a row names is on that
+     route: the allowlist guard, enforced by reading, in ~200 ms.
 
-  2. THE RUN ASSERTIONS read a capture from map-assert.sh. They test the LOOKUP
-     -- that a control maps at all, that it maps to a different thing in a
-     different mode, and that a row naming a destination off the route emits
-     nothing and says so. What each destination then DOES with the value belongs
-     to that device's gate, not here.
+  2. The run assertions read a capture from map-assert.sh and test the lookup:
+     a control maps at load, maps differently in another mode, and a row naming
+     a destination off the route emits nothing and says so. What a destination
+     does with the value is its device gate's.
 
 Reads the capture on stdin. Exits non-zero on any failure.
 """
@@ -32,9 +27,8 @@ UMAP = "Cut It/u_map.pd"
 # carries aux's modal, never a control's row.
 DISP_EXPECT = {"m_404": 0, "m_launchpad": 0, "m_nano": 0, "m_organelle": 1, "m_volca": 0}
 MODES = ["mode-%d" % n for n in range(1, 7)]
-# ⛔ ONE LIST, USED BY BOTH RUNS. The two analysers used to carry their own
-# copies and a window added to one and not the other would have let the no-Save
-# run pass with a driver that died early.
+# Both runs are counted against this one list, so neither passes a driver that
+# died early.
 WINDOWS = ["EARLY", "EARLY-2", "RAIL-ARM", "SUPPRESS", "MAPPED", "AWAY", "CROSS",
            "LIVE", "PLAY-1", "STOP-1", "PLAY-2", "KNOB-2", "LATE-KNOB", "BAD-DEST",
            "RAIL-UP", "RAIL-BACK", "MODE-4", "MODE-DEP", "MODE-4-RELEASE",
@@ -98,30 +92,18 @@ def static_lint():
                       for n, k, o in dupes))
     if dupes:
         A.note("text search returns only the FIRST match, so a repeat is DEAD and silent -- item 229")
-    # ⛔ NOTHING ON THE RIG MAY BE BOUND TO panic. It is a destination on u_map's
-    # route -- the bench reaches it and u_err's own tests need it -- but a
-    # CONTROL wired to it means a finger on a fader can silence the instrument
-    # mid-set with no way back but a reload. ⚠️ THE MAP IS THE ONLY THING THAT
-    # COULD BIND ONE, which is what makes this readable rather than something a
-    # person has to go looking for: the midi bench asked "nothing on the rig can
-    # raise panic and nothing is meant to" with no action and nothing to see,
-    # and a claim about a text file is not a thing eyes can answer. What the
-    # bench keeps is the half fingers can -- that no control anybody would reach
-    # for turns the aux LED red.
+    # panic is on u_map's route for the bench and u_err's tests, but a control
+    # bound to it could silence the instrument mid-set with no way back but a
+    # reload. Only the map could bind one, so it is checked by reading.
     panic_rows = [(n, " ".join(f)) for n, f in rows if len(f) > 2 and f[2] == "panic"]
     A.check("⛔ no map row binds a control to panic", not panic_rows,
             "; ".join("line %d: %r" % b for b in panic_rows))
     A.note("%d rows, %d distinct controls" % (len(rows), len({f[1] for _, f in rows if len(f) > 1})))
 
-    # ⛔ A CONTROL'S ROW IS u_map's ALONE, so no device layer may post one. m_nano,
-    # m_404 and m_launchpad each used to send <control> <value> to disp beside
-    # param, and a fader mapped to volca-cc 41 drew TWO rows -- slider-1 64 from
-    # m_nano and volca-cc41 64 from here. Item 317. ⚠️ A DUPLICATE OF AN UNMAPPED
-    # control's row is invisible on the screen, because g_oled updates a row in
-    # place by name, so this is read off the files rather than watched for.
-    # ⛔ EXACT PER FILE, AND THE SET OF FILES IS CHECKED TOO: m_organelle keeps
-    # its one [s disp] for aux's `modal shift`, which is not a control row, and a
-    # new m_ file nobody listed here would otherwise be checked by nobody.
+    # A control's row is u_map's alone (item 317). A duplicate of an unmapped
+    # control's row is invisible on the screen, since g_oled updates rows in
+    # place by name, so it is read off the files. The file set is checked too,
+    # so a new m_ file can't go unchecked.
     found = {}
     for path in sorted(glob.glob("Cut It/m_*.pd")):
         name = os.path.basename(path)[:-3]
@@ -136,10 +118,9 @@ def static_lint():
     A.note("[s disp] per m_ file: %s" % " ".join("%s:%d" % kv for kv in sorted(found.items())))
 
 
-# ⚠️ OTHER MODULES SHARE THE disp BUS IN EVERY WINDOW -- u_tempo's footer, g_led's
-# state, u_init's modal-off, u_net's alert -- so "u_map drew nothing" has to be
-# asked of u_map's rows alone. Everything g_oled reserves is somebody else's, and
-# a gk-* row is the raw-value report for an UNMAPPED gate control, not a mapped row.
+# Other modules share disp in every window (u_tempo's footer, g_led, u_init's
+# modal-off, u_net's alert), so "u_map drew nothing" is asked of u_map's rows
+# alone. A gk-* row is an unmapped gate control's raw report.
 RESERVED = {"in-l", "in-r", "status", "modal", "modal-off", "alert", "led", "grid", "diag"}
 
 
@@ -154,21 +135,12 @@ def run_asserts(cap):
     print("\n=== B. the lookup, driven ===")
     order, by = A.windows(cap, "MAP", len(WINDOWS))
     W = lambda k: by.get(k, [])
-    # ⛔ MIDIOUT IS DELIBERATELY NOT EVIDENCE HERE, and the reason is worth the
-    # three lines. g_grid repaints the Launchpad off a [metro 100] that runs with
-    # or without DSP and with or without anything being mapped, so there is
-    # ALWAYS raw [midiout] traffic in every window. An assertion of the form
-    # "this window emitted no MIDI" that counted it could never be true.
-    # ⚠️ It only became visible when every gate started rewriting all five
-    # classes: the gate this was split out of rewrote four, so the grid's frames
-    # were invisible to it and the distinction never had to be made.
-    # A mapped destination reaches a device through noteout, ctlout or pgmout.
+    # [midiout] is not evidence: g_grid repaints the Launchpad off a [metro 100]
+    # in every window. A mapped destination goes out by noteout, ctlout or pgmout.
     midi = lambda k: [e for e in W(k) if e[0] in ("NOTEOUT", "CTLOUT", "PGMOUT")]
 
-    # ⛔ THE REGRESSION TEST FOR ITEM 234. mother pushes knobs.txt at BOOT, long
-    # before any window in the old gate started, and the map has to be usable by
-    # then -- both the table AND the lookup key's mode. It was not: the instrument
-    # booted at u_tempo's own 120 instead of the saved 57, and NOTHING reported it.
+    # Item 234: mother pushes knobs.txt at boot, and the table and the lookup
+    # key's mode must both be ready for it.
     early = [e for e in W("EARLY") if e[0] == "TEMPO"]
     A.check("⛔ a control moved at 300 ms ALREADY MAPS -- table and mode key ready at load",
             any(abs(float(e[1][0]) - 57) < 1.5 for e in early if e[1]),
@@ -176,18 +148,13 @@ def run_asserts(cap):
     A.check("a mapped control reaches its destination",
             any(e[0] == "CTLOUT" and e[1][1] == 41 for e in W("MAPPED")),
             repr(W("MAPPED")))
-    # ⛔ AND SAYS SO ON THE SCREEN, NAMED FOR THE DESTINATION. The row is what
-    # the control MEANS -- volca-cc41 64 -- not which fader moved, and it is the
-    # only row: no m_ layer posts one (item 317, read off the files above, and
-    # watched through a real m_nano by nano-assert).
+    # The row is named for what the control means, and it is the only row.
     A.check("⛔ ... and draws its MAPPED row on disp -- volca-cc41 64",
             any(d == ["volca-cc41", "64"] for d in [e[1] for e in W("MAPPED") if e[0] == "DISP"]),
             "disp in that window: %s" % [e[1] for e in W("MAPPED") if e[0] == "DISP"])
     A.check("⛔ the SAME control in another mode does NOTHING (mode-dependence)",
             not midi("MODE-DEP"), repr(midi("MODE-DEP")))
-    # ⛔ AND THAT NEGATIVE NOW HAS A WITNESS IN ITS OWN WINDOW. An unmapped control
-    # is silent on every BUS and says so on the SCREEN, so "no MIDI here" can no
-    # longer be answered by a window that never happened.
+    # The negative's witness: an unmapped control reports its raw value.
     A.check("... and it reports its RAW value on disp -- the witness for the line above",
             any(d[:2] == ["gk-cc", "64"]
                 for d in [e[1] for e in W("MODE-DEP") if e[0] == "DISP"]),
@@ -199,18 +166,13 @@ def run_asserts(cap):
             repr(W("BAD-DEST")))
 
     # ------------------------------------------ a mode the key-setter cannot use
-    # ⛔ AN UNKNOWN DESTINATION ALREADY RAISED WHILE AN UNUSABLE MODE PASSED IN
-    # SILENCE, and that asymmetry is what let item 294 live for an unknown number
-    # of sessions. A stored `compose` with no mode name empties the lookup key,
-    # text search hunts for og-knob-1 in the MODE column where it can never
-    # match, and every mapped control draws its raw row where its destination's
-    # belongs -- og-knob-1 0.6 where a BPM should be. Item 297 is the fix.
+    # Items 294 and 297, ref/module/map.md: a stored `compose` with no mode name
+    # once emptied the lookup key, and every mapped control drew its raw row.
     A.check("⛔ a mode that is not two atoms is REFUSED, and says so",
             any(e[0] == "ERR" and "bad-mode" in " ".join(e[1]) for e in W("BAD-MODE")),
             repr(W("BAD-MODE")))
-    # ⛔ THE HALF THAT MATTERS, and an error on its own would not have caught the
-    # bug: what shipped was a patch that accepted the value and then broke. The
-    # lookup key has to SURVIVE. og-knob-1 is tempo in all six modes.
+    # The error alone would not catch it; the key must survive. og-knob-1 is
+    # tempo in all six modes.
     A.check("⛔ ... and the lookup KEY SURVIVES IT -- 0.6 is still 304 bpm",
             any(e[0] == "TEMPO" and e[1] == ["304"] for e in W("AFTER-BAD")),
             "tempo in that window: %s -- a poisoned key sends nothing here and "
@@ -223,14 +185,9 @@ def run_asserts(cap):
             % [e[1] for e in W("AFTER-BAD") if e[0] == "DISP"])
 
     # ------------------------------------------------------- parameter pickup
-    # mother replays knobs.txt at boot, so the patch believes a knob is somewhere
-    # the knob physically is not, and the first touch JUMPS -- measured at 443 BPM
-    # on knob 1, which is master tempo. Pickup holds the control until its value
-    # passes THROUGH the stored one. See ref/module/map.md.
-    #
-    # ⛔ EVERY NEGATIVE HERE CARRIES A LIVENESS WITNESS IN ITS OWN WINDOW. "This
-    # window emitted no tempo" is also true of a window that never happened, and
-    # A.windows only proves the MARK landed -- not that the actions after it did.
+    # Pickup holds a restored knob until it passes through its stored value
+    # (ref/module/map.md). Every negative has a liveness witness in its own
+    # window: A.windows proves only that the MARK landed, not the actions after.
     print("\n=== C. parameter pickup ===")
     tempos = lambda k: [float(e[1][0]) for e in W(k) if e[0] == "TEMPO" and e[1]]
     cc = lambda k, n: [e[1] for e in W(k) if e[0] == "CTLOUT" and e[1][1] == n]
@@ -252,13 +209,10 @@ def run_asserts(cap):
             any(abs(t - 157) < 1.5 for t in tempos("LIVE")),
             "tempo in that window: %s" % tempos("LIVE"))
 
-    # ⛔ PLAY AND STOP ARE BUTTONS AND NEVER PICK UP. Pickup is for og-knob-1..4
-    # and nothing else; a button given a slot would latch on its repeat and the
-    # transport would stick wherever it was.
+    # Buttons never pick up: a button given a slot would latch on its repeat.
     A.check("⛔ PLAY reaches start", any(e[0] == "START" for e in W("PLAY-1")),
             repr(W("PLAY-1")))
-    # ⛔ A BUTTON DESTINATION DRAWS NO ROW. The footer, the aux LED and the grid
-    # already say what a transport did; a `start 1` row would be a third voice.
+    # A button destination draws no row: the footer, LED and grid already say it.
     A.check("⛔ ... and a button destination draws NO row",
             not umap_rows(W("PLAY-1")),
             "u_map's disp in that window: %s" % umap_rows(W("PLAY-1")))
@@ -269,18 +223,14 @@ def run_asserts(cap):
             "%s. A latched control would be silent the second time, and the "
             "transport would stick wherever it was" % (W("PLAY-2"),))
 
-    # ⛔ EXACT COUNTS, never "at least". Knob 2 armed at 400 ms inside the boot
-    # window and has not crossed, so its second value is held. Knob 3's FIRST
-    # value arrived at 4200 ms -- long after the window -- so it was a hand and
-    # not a restore, and it must never arm at all.
+    # Knob 2 armed at 400 ms, inside the boot window, and has not crossed. Knob
+    # 3's first value comes at 4200 ms, after it: a hand, not a restore, so it
+    # never arms.
     A.check("⛔ pickup state is PER KNOB -- knob 2 is still held while knob 1 is live",
             len(cc("KNOB-2", 42)) == 0, "cc 42 in that window: %s" % cc("KNOB-2", 42))
     A.check("... and knob 2's window was live -- its first value DID land at 400 ms",
             len(cc("EARLY-2", 42)) == 1, repr(W("EARLY-2")))
-    # ⛔ THE SCREEN MUST SHOW THE MAPPED VALUE, NOT THE RAW POSITION. m_organelle
-    # stopped reporting knobs to disp because a 0-to-1 number where a BPM belongs
-    # is not feedback -- and the param layer REPLACES the footer, so the tempo
-    # vanished while the knob was being turned. Item 238.
+    # The screen shows the mapped value, not the raw position (item 238).
     disp = lambda k: [e[1] for e in W(k) if e[0] == "DISP"]
     A.check("⛔ while HELD the row carries BOTH numbers -- bpm <latched> (<knob>)",
             any(d[:2] == ["bpm", "57"] and d[2:] == ["(255)"] for d in disp("SUPPRESS")),
@@ -298,12 +248,8 @@ def run_asserts(cap):
             "cc 43 in that window: %s -- expected two, the no-Save case"
             % cc("LATE-KNOB", 43))
 
-    # ⛔ THE HELD ROW LIVES WITH ITS DESTINATION. Knob 2 is armed at 0.5 and mapped
-    # to volca-cc 42 in mode-1, so while held it draws volca-cc42 64 (114) -- its
-    # OWN scaling, both numbers -- and never a bpm. Item 240 was the held row
-    # built in the pickup machine with the tempo scaling hardcoded, announcing
-    # every armed knob as a tempo; the bpm check is what would go red if that
-    # column ever came back.
+    # The held row uses its destination's scaling (item 240): knob 2 is armed at
+    # 0.5 and mapped to volca-cc 42 in mode-1, so it never draws a bpm.
     A.check("⛔ a held knob draws ITS OWN destination's row -- volca-cc42 64 (114)",
             any(d == ["volca-cc42", "64", "(114)"] for d in disp("KNOB-2")),
             "disp in that window: %s" % disp("KNOB-2"))
@@ -313,18 +259,14 @@ def run_asserts(cap):
     A.check("... and that window was live -- another control reached its destination",
             len(cc("KNOB-2", 41)) == 1, repr(W("KNOB-2")))
 
-    # ⛔ A TARGET ON A RAIL. Knob 4 armed at 0, so "crossed" -- a flip of
-    # target <= value -- would need value < 0 and can never happen. EXACT counts:
-    # the hold and the release are one event each, and a gate that accepted "at
-    # least one" would pass whether or not the release ever came.
+    # Knob 4 armed at 0, so "crossed" (target <= value flipping) can never
+    # happen, and returning to the target must release it.
     A.check("⛔ a knob armed against a target of 0 is still HELD on the way up",
             len(cc("RAIL-UP", 44)) == 0, "cc 44 in that window: %s" % cc("RAIL-UP", 44))
     A.check("... and that window was live too",
             len(cc("RAIL-UP", 41)) == 1, repr(W("RAIL-UP")))
-    # ⛔ HELD AND UNMAPPED AT ONCE. Knob 2 is still armed from 400 ms and its row is
-    # mode-1, so in mode-4 it maps to nothing -- and it must still report. The gate
-    # used to sit ABOVE the lookup, so a held knob never reached text search and an
-    # unassigned knob could not be told from a broken one. Item 242.
+    # Held and unmapped at once: knob 2 is still armed and maps to nothing in
+    # mode-4, and must still report (item 242).
     A.check("⛔ a HELD and UNMAPPED knob still reports its raw value",
             any(d[:2] == ["og-knob-2", "0.75"]
                 for d in [e[1] for e in W("UNMAPPED") if e[0] == "DISP"]),
@@ -337,10 +279,8 @@ def run_asserts(cap):
             "cc 44 in that window: %s -- a dead knob for the whole session"
             % cc("RAIL-BACK", 44))
 
-    # ⛔ THE MODE SELECTOR MOVED TO THE LAUNCHPAD'S LIT TOP ROW, and with it a
-    # second edge nothing upstream had ever sent. The six branches feed their
-    # message boxes with no non-zero test of their own, which was safe only
-    # while a nano transport button published on the press alone.
+    # The Launchpad's top row publishes both edges, so the release has to be
+    # gated out before the six mode branches, which have no test of their own.
     modes = lambda k: [e[1] for e in W(k) if e[0] == "MODE"]
     A.check("⛔ a lit top-row pad selects its mode",
             modes("MODE-4") == [["perform", "mode-4"]],
@@ -352,17 +292,14 @@ def run_asserts(cap):
             "idempotent, which is exactly why nothing would look wrong"
             % modes("MODE-4-RELEASE"))
 
-    # ⛔ THE SHIPPED ROWS, FROM THE RUNNING SIDE. The static lint above proves
-    # diag is on the route by reading; this proves the row that names it really
-    # reaches it. og-shift-60 is the lowest key held under aux, in all six
-    # modes, which is why this needs no mode change first.
+    # The lint proves diag is on the route; this proves the row reaches it.
+    # og-shift-60 is mapped to diag in all six modes, so no mode change first.
     diag = lambda k: [e[1] for e in W(k) if e[0] == "DISP" and e[1][:1] == ["diag"]]
     A.check("⛔ a row naming diag summons the diagnostic layer",
             len(diag("DIAG-DEST")) == 1,
             "disp in that window: %s" % [e[1] for e in W("DIAG-DEST")
                                          if e[0] == "DISP"])
-    # ⛔ EXACTLY ONE, NOT AT LEAST ONE. A handler that fired on the release too
-    # would summon twice per press and reset the TTL on the way up, so the
+    # Exactly one: firing on the release too would reset the TTL, and the
     # screen would outlive the button by its whole eight seconds.
     A.check("⛔ ... and the RELEASE does not summon it again",
             len(diag("DIAG-RELEASE")) == 0,
@@ -370,18 +307,15 @@ def run_asserts(cap):
             "every button destination's non-zero gate is load-bearing here in a "
             "way it never was for a nano button that only sent the press"
             % diag("DIAG-RELEASE"))
-    # ⛔ THE PANEL'S OWN STOP. The transport lives on the nano now, so with the
-    # nano unplugged this shifted key is the only way left to silence the
-    # instrument -- which is what moving start and stop off the aux button cost
-    # and what this row buys back.
+    # The transport is on the nano, so with it unplugged this shifted key is the
+    # only stop left.
     A.check("⛔ a shifted key reaches stop, on the panel that cannot go missing",
             any(e[0] == "STOP" for e in W("SHIFT-STOP")), repr(W("SHIFT-STOP")))
 
     # ------------------------------------------------ every destination's row
-    # ⛔ ONE c_mapped PER VALUE DESTINATION, AND EACH DRAWS ITS OWN ROW in its own
-    # units, named for the destination with the map row's arg in the name.
-    # EXACT lists, not "contains": a second row in the window would mean two
-    # instances answered one control, or the raw-row path fired for a mapped one.
+    # One c_mapped per value destination, each drawing its own row in its own
+    # units. Exact lists: a second row means two instances answered one control,
+    # or the raw-row path fired for a mapped one.
     print("\n=== E. every value destination draws its mapped row ===")
     rows = lambda k: umap_rows(W(k))
     A.check("mode-1 is back for the rows",
@@ -401,19 +335,16 @@ def run_asserts(cap):
             "disp in that window: %s" % disp("ROW-PROG"))
     A.check("... and the program change still fires",
             any(e[0] == "PGMOUT" for e in W("ROW-PROG")), repr(W("ROW-PROG")))
-    # ⛔ THE ONE EXCEPTION, ASSERTED. A key is a value destination and must draw
-    # nothing: 25 controls reporting both edges would evict the five-row screen
-    # twice per note. Item 293. The note is the liveness witness.
+    # The exception: a key draws nothing, since 25 keys reporting both edges
+    # would evict the five-row screen twice per note (item 293).
     A.check("⛔ volca-key draws NOTHING -- the keyboard exception, item 293",
             not disp("ROW-KEY"), "disp in that window: %s" % disp("ROW-KEY"))
     A.check("... and the key still sounds -- the window was live",
             any(e[0] == "NOTEOUT" and e[1][:2] == [60, 100] for e in W("ROW-KEY")),
             repr(W("ROW-KEY")))
-    # ⛔ THE SECOND EXCEPTION: PRESSURE. An unmapped pad-NN-at draws no raw row,
-    # because a continuous stream per held pad would fill the five-row screen --
-    # the reason m_launchpad keeps it off disp, which u_map's raw row used to
-    # undo. pad-12 in the same window is the liveness witness, and it also
-    # proves the test is not too wide: a pad's own press still draws raw.
+    # Pressure: an unmapped pad-NN-at draws no raw row, since a stream per held
+    # pad would fill the screen (item 318). pad-12 is the witness, and proves
+    # the test is not too wide.
     A.check("⛔ an UNMAPPED pad's pressure draws NO row -- pad-11-at is exempt",
             not [d for d in rows("PRESSURE") if d[:1] == ["pad-11-at"]],
             "disp in that window: %s" % disp("PRESSURE"))
@@ -427,14 +358,11 @@ def run_asserts(cap):
 
 # --------------------------------------------------------------- the no-Save run
 def nosave_asserts(cap):
-    """The SAME drive against a patch folder with NO knobs.txt.
+    """The same drive against a patch folder with no knobs.txt (item 239).
 
-    ⛔ THIS IS THE MIRROR IMAGE, AND THAT IS THE WHOLE POINT. mother pushes a
-    knob value at boot either way -- the SAVED position when knobs.txt exists,
-    the LIVE PHYSICAL position when it does not. Only the first is a desync, so
-    only the first may arm. Every assertion below is a window the run above
-    asserts the OPPOSITE of; if both expect the same thing, u_map is not reading
-    the file and nothing here is testing anything. Item 239.
+    mother pushes a value at boot either way, the saved position or the live
+    one, and only the first may arm. Each check here is the opposite of one
+    above; if both runs agree, u_map is not reading the file.
     """
     print("\n=== D. no knobs.txt -- nothing may be held ===")
     order, by = A.windows(cap, "MAP", len(WINDOWS))
@@ -443,8 +371,6 @@ def nosave_asserts(cap):
     cc = lambda k, n: [e[1] for e in W(k) if e[0] == "CTLOUT" and e[1][1] == n]
     disp = lambda k: [e[1] for e in W(k) if e[0] == "DISP"]
 
-    # The value is still TAKEN. Both branches pass it through -- neither can
-    # produce silence, which is what made item 234 expensive to find.
     A.check("⛔ the boot push is still TAKEN with no knobs.txt -- 0.0958 is 57 bpm",
             any(abs(t - 57) < 1.5 for t in tempos("EARLY")),
             "tempo in that window: %s" % tempos("EARLY"))
@@ -456,8 +382,6 @@ def nosave_asserts(cap):
             len(cc("SUPPRESS", 41)) == 1, repr(W("SUPPRESS")))
     A.check("⛔ knob 2 is live too -- exactly one cc 42, where the armed run has none",
             len(cc("KNOB-2", 42)) == 1, "cc 42 in that window: %s" % cc("KNOB-2", 42))
-    # ⛔ THE MIRROR OF THE HELD ROW. Live, the same knob draws the mapped value
-    # alone -- no bracket, because there is nothing latched to show.
     A.check("⛔ ... and its row is the mapped value ALONE -- volca-cc42 114, no bracket",
             any(d == ["volca-cc42", "114"] for d in disp("KNOB-2"))
             and not any(len(d) > 2 for d in disp("KNOB-2") if d[:1] == ["volca-cc42"]),

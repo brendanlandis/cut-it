@@ -3,20 +3,13 @@
 
     python3 test/gate/phone-assert.py [-v] [--keep]     (run it as phone-assert.sh)
 
-Generates its driver into its own scratch directory, binds the UDP port FIRST,
-then launches Pd with that driver, then reasons about the datagrams that
-actually arrived. -v also prints every decoded datagram; --keep leaves the
-driver and Pd's console behind.
+Generates its driver into its own scratch directory, binds the UDP port, then
+launches Pd and reasons about the datagrams that arrived. -v also prints every
+decoded datagram; --keep leaves the driver and Pd's console behind.
 
-Why binding first is not optional: measured in Step 0, a UDP connect to a port
-with nothing listening survives exactly ONE datagram. The ICMP port-unreachable
-that comes back tears the socket down, and every later send is discarded in
-silence. So the analyser owns the lifecycle -- there is no window in which the
-driver can start before the listener is up.
-
-This is the part that asserts what the phone is actually being told. Pd cannot
-ask a phone what it is displaying, but the bytes u_net emits are completely
-knowable, and that is the right level to test our own code at.
+The port is bound before Pd starts: a UDP connect to a port with nothing
+listening survives exactly one datagram (item 114), and the rest are dropped in
+silence.
 """
 import atexit
 import os
@@ -28,23 +21,18 @@ import threading
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-# ⛔ ONE DECODER. test/runner/ judges phone steps from the same datagrams,
-# so the decode lives in lib_osc.py rather than here -- two copies is how a
-# fix reaches one caller and not the other.
 import lib_assert as A                                         # noqa: E402
 import lib_osc                                                  # noqa: E402
 import lib_pd                                                   # noqa: E402
 import lib_scratch as S                                         # noqa: E402
 
+# The one decoder: test/runner/ judges phone steps from the same datagrams.
 decode = lib_osc.decode
 
 PORT = 9995
 ROOT = S.ROOT
 UNET = os.path.join(ROOT, "Cut It", "u_net.pd")
 GOLED = os.path.join(ROOT, "Cut It", "g_oled.pd")
-# ⛔ THE DRIVER IS GENERATED INTO THIS RUN'S OWN SCRATCH DIRECTORY. It used to be
-# rewritten inside test/gate/ on every run, which is why gates.py had to finish
-# the structure gates, docs-check among them, before this one could start.
 KEEP = "--keep" in sys.argv
 WORK = S.work_dir("phone")
 DRIVE = os.path.join(WORK, "drive.pd")
@@ -55,14 +43,12 @@ LIMIT_HZ = 20.0
 HB_HZ = 2.0
 ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert",
          "/cutit/ack", "/mark",
-         # the driver's taps -- what the INBOUND half did. re-wire leaves on the
-         # presence bus and a test note leaves through a cord, so neither is on
-         # the wire at all without them.
+         # the driver's taps for the inbound half: re-wire leaves on the
+         # presence bus and a test note through a cord, neither on the wire.
          "/probe/presence", "/probe/volca", "/probe/p404"}
 SCENE = os.path.join(ROOT, "tools", "pdparty-scene", "CutItRemote", "_main.pd")
-# every selector g_oled routes that is NOT a parameter. u_net matches all of
-# them and leaves them unconnected; if one ever reaches the wire as a parameter
-# name, the reserved branch is broken.
+# Every selector g_oled routes that is not a parameter. u_net leaves them
+# unconnected, so one on the wire as a parameter name means the branch broke.
 RESERVED = {"in-l", "in-r", "led", "grid", "modal", "modal-off", "alert",
             "status", "diag"}
 
@@ -139,17 +125,11 @@ def goled_route():
     return _route_args(GOLED)
 
 
-# --------------------------------------------------------- the INBOUND vocabulary
-# ⛔ THE PHONE IS THE ONLY SENDER THERE IS, so a command it spells differently from
-# the way u_net routes it is dropped in silence and nothing anywhere says so. The
-# two spellings live in two files that are deployed by two different mechanisms --
-# tools/deploy.sh and a WebDAV copy -- so they can drift a long way apart. Reading
-# both is the only thing that can notice.
+# --------------------------------------------------------- the inbound vocabulary
 def _route_of(path, first):
     """The arguments of the one `route <first> ...` box in a file, or None.
 
-    Keyed on the FIRST argument rather than a position, exactly as docs-check.py's
-    pd-route anchor is, because C-10 makes box indices move.
+    Keyed on the first argument, not a position, because box indices move (C-10).
     """
     try:
         recs = lib_pd.read(path)
@@ -193,10 +173,8 @@ def _guts(path):
 def scene_msgs():
     """Every message box in the scene that REACHES the shared [oscformat cutit].
 
-    ⚠️ Read off the GRAPH rather than off a naming convention. "every msg box in
-    the file" would also collect the two `label` messages the link row uses, and
-    a convention like "the ones next to an [r ...-press]" is a fact about layout
-    rather than about what can actually be sent.
+    Read off the graph, not a naming convention: every msg box in the file would
+    also collect the link row's two `label` messages.
     """
     boxes, cons = _guts(SCENE)
     tgt = [i for i, (k, t) in enumerate(boxes)
@@ -281,19 +259,11 @@ def main():
                 d[g[0]] = g[1]
         return d
 
-    # -- ⛔ THE TWO disp CONSUMERS MUST MATCH, AND THIS NEEDS NO Pd AT ALL ----
-    # A new selector costs one route argument in EVERY consumer that has a
-    # fallthrough, because everything a consumer does not recognize is a
-    # parameter by definition. There are two -- g_oled and u_net -- and the
-    # only reliable way to keep them in step is to read both boxes.
-    #
-    # ⛔ THE DATAGRAM CHECKS BELOW CANNOT SEE THIS, AND THAT IS WHY THIS
-    # EXISTS. `diag` carries no arguments, so on the reject it becomes the
-    # two atoms `diag -` and dies on [list split 3]'s too-short outlet --
-    # nothing reaches the wire whether the route argument is there or not.
-    # Removing it from u_net was measured against the reserved window and
-    # every check still passed. A selector that carries a value would leak;
-    # this one would not, so the property has to be asserted where it lives.
+    # -- the two disp consumers route the same selectors, no Pd -------------
+    # Whatever a consumer doesn't route is a parameter, so g_oled and u_net must
+    # agree. The datagram checks can't see it for `diag`: with no arguments it
+    # dies on [list split 3]'s short outlet either way (measured: removing it
+    # from u_net passed every datagram check).
     A.check("the two disp route boxes are both still readable",
             unet_route() is not None and goled_route() is not None,
             "u_net: %r  g_oled: %r" % (unet_route(), goled_route()))
@@ -304,11 +274,9 @@ def main():
                 "selector fall out of its reject and be treated as a parameter"
                 % (" ".join(unet_route()), " ".join(goled_route())))
 
-    # -- ⛔ THE INBOUND VOCABULARY, READ FROM BOTH ENDS, STILL NO Pd -----------
-    # The strongest half of this gate. Everything below needs a driver, a socket
-    # and 30 s; this needs none of them and catches the failure that costs the
-    # most -- a button that spells its command differently from the way u_net
-    # routes it, which is dropped in silence with the rig in front of you.
+    # -- the inbound vocabulary, read from both ends, no Pd -----------------
+    # The scene and u_net deploy by different routes and can drift; a command
+    # spelled differently is dropped in silence (test/README.md).
     ucmd, udev = _route_of(UNET, "re-wire"), _route_of(UNET, "m_volca")
     smsg = scene_msgs()
     A.check("the inbound route boxes and the scene's commands are all readable",
@@ -335,7 +303,7 @@ def main():
                 _route_of(SCENE, "m_volca") == udev,
                 "scene: %r" % (_route_of(SCENE, "m_volca"),))
 
-    # -- ⛔ THE TWO TRAPS THE SCENE CANNOT REPORT ON ITSELF --------------------
+    # -- the two traps the scene cannot report on itself --------------------
     guis = scene_iemguis()
     writes, reads = scene_names()
     A.check("⛔ every bng carries BOTH a send and a receive name",
@@ -376,10 +344,7 @@ def main():
             hbs == sorted(hbs) and len(set(hbs)) == len(hbs),
             "%d beats" % len(hbs))
 
-    # -- the property the reserved branch actually has to have -----------------
-    # Asserted globally rather than per window. Counting packets in the reserved
-    # window used to stand in for this, and stopped working the moment u_net
-    # gained a 2 s repeat -- a count is a proxy, a name is the real thing.
+    # -- the reserved branch, asserted by name over the whole run -----------
     allnames = {g[0] for _, rowset in wins for _, a, g in rowset
                 if a == "/cutit/param" and g}
     A.check("NO reserved selector EVER becomes a parameter name",
@@ -397,15 +362,13 @@ def main():
             A.check("%s: %s traffic is the 2 s repeat and no more" % (win, label), n <= 3,
                     "%d packets in %.1f s" % (n, t))
 
-    # nothing has been sent yet in the first idle window, so the repeat fires
-    # against an empty store -- measured as safe, and this is what proves it
+    # Nothing has been sent yet in the first idle window, so the repeat fires
+    # against an empty store.
     A.check("idle: the repeat carries NO arguments before anything has been sent",
             all(len(g) == 0 for _, _, g in rows("idle", "/cutit/param")),
             "%d packets, args %s" % (len(rows("idle", "/cutit/param")),
                                      [len(g) for _, _, g in rows("idle", "/cutit/param")]))
 
-    # by idle2 real parameters have gone out, so every repeat must be the SAME
-    # value -- a repeat, not new data invented by the repeat path
     seen = {(g[0], g[1]) for _, _, g in rows("idle2", "/cutit/param") if len(g) >= 2}
     A.check("idle2: every repeat carries one identical value -- a repeat, not new data",
             len(seen) <= 1,
@@ -471,9 +434,7 @@ def main():
                                      len(rows("reserved", "/cutit/status"))))
 
     # -- the inbound half, window by window -----------------------------------
-    # ⚠️ EXACT COUNTS, NEVER non-zero. "at least one ack" is satisfied by a route
-    # that fires every branch on every command, which is precisely the bug the
-    # negatives below exist to catch.
+    # Exact counts: "at least one ack" passes a route that fires every branch.
     def args(win, addr):
         return [g for _, a, g in rows(win, addr) if a == addr]
 
@@ -509,16 +470,12 @@ def main():
     none_of("cmd404", ["/probe/volca", "/probe/presence"],
             "it touched neither the Volca nor the re-wire")
 
-    # ⛔ THE NEGATIVES. Five malformed commands in one window: two selectors off
-    # the list, a DEVICE off its own list, the bare `404` spelling that route
-    # reads as a float and can never match, and a well-formed command under a
-    # different OSC root.
+    # Five malformed commands: two selectors off the list, a device off its
+    # list, a bare `404` (route reads it as a float and can never match), and a
+    # well-formed command under another OSC root.
     none_of("cmdbogus", CMD,
             "⛔ FIVE WRONG COMMANDS REACH NOTHING AT ALL -- no ack, no bus, "
             "neither outlet")
-    # ⛔ AND THE WITNESS THAT THE LINK WAS LIVE WHILE THEY WERE BEING IGNORED.
-    # Without it "nothing happened" is also satisfied by a patch that had died,
-    # by a socket that was never bound, and by a window opened in the wrong place.
     A.check("cmdbogus: the link was LIVE while they were ignored",
             len(args("cmdbogus", "/cutit/hb")) >= 2,
             "%d heartbeats in that window" % len(args("cmdbogus", "/cutit/hb")))

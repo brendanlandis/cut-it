@@ -1,24 +1,9 @@
 #!/usr/bin/env python3
 """The tempo reference's analyser -- ref/module/tempo.md. Reads a capture on stdin.
 
-u_tempo is the instrument's master reference and NOT its clock: it owns the BPM,
-the pulse oscillator that MIDI clock is cut from, and the transport. Every part
-that needs a beat owns a c_clock instance aligned to it.
-
-WHAT WAS UNTESTED UNTIL THIS EXISTED. Every other gate asserts on messages, and
-u_tempo's most important output is not a message -- it is a RATE on a wire that
-nothing in the patch reads back. A clock running at half speed, or on one port
-instead of two, or one that stopped when the transport did, would be silent on
-the Mac and obvious only at a gig.
-
-⛔ IT COUNTS SYSTEM REAL-TIME BYTES, WHICH ARE UNAMBIGUOUS. Anything >= 248 in a
-MIDI stream is System Real-Time; SysEx data bytes are 0-127 and its framing is
-240 and 247. So the Launchpad's 332-byte grid frames can share this capture
-without a single byte of them ever being mistaken for clock.
-
-⚠️ Do NOT reach for lib_grid.parse here. That one deliberately SKIPS bytes >= 248
-while reassembling SysEx, because they are legal inside a SysEx stream. This gate
-wants exactly what that one discards.
+It counts System Real-Time bytes (>= 248), which no SysEx byte can be, so the
+Launchpad's grid frames can share the capture. Not lib_grid.parse, which skips
+the bytes >= 248 this gate wants.
 """
 import os
 import re
@@ -36,20 +21,13 @@ BPM_LO, BPM_HI = 5, 600         # the LEGAL range, wider than knob 1's 10..500
 TOLERANCE = 0.12                # +/- 12 % on a real-time count
 
 
-# ----------------------------------------------------------- the static lint
 def static_lint():
-    """The two constants, read out of the patch. No Pd, about a millisecond.
+    """The two constants, read out of the patch.
 
-    ⛔ THIS EXISTS BECAUSE THE RATE CHECK BELOW CANNOT DO IT. Measured: the pulse
-    ceiling is about 344 Hz -- threshold~ decrements its dead time once per DSP
-    block, so 44100/64/2 is the floor of two blocks per pulse. 600 BPM is 240 Hz
-    and 5000 BPM SATURATES at ~338 rather than reaching 2000. So a clamp widened
-    to 5000 is caught easily, and a clamp widened to 650 (260 Hz, inside a 12 %
-    band on 240) is NOT. The wire simply cannot resolve it.
-
-    Pinning the literal here makes the bound exact, and the rate check keeps the
-    job it is uniquely good at: proving the clamp is in the SIGNAL PATH rather
-    than merely present in the file. Two checks, two different failure modes.
+    The wire cannot pin the bound: the pulse ceiling is 344 Hz
+    (ref/module/tempo.md), so 5000 BPM saturates at ~338, and a clamp widened to
+    650 BPM (260 Hz) sits inside a 12 % band on 240. Reading the literal makes the
+    bound exact; the rate check proves the clamp is in the signal path.
     """
     print("\n=== A. the constants, checked by READING -- no Pd involved ===")
     src = lib_pd.read(UTEMPO)
@@ -63,8 +41,6 @@ def static_lint():
                 (lo, hi) == (float(BPM_LO), float(BPM_HI)),
                 "the patch says %g..%g" % (lo, hi))
 
-    # BPM / 60 * 24 -- the 24 is PPQN, and it is the one number in this file that
-    # every synced device agrees on by standard rather than by choice.
     mults = [m.group(1) for m in (re.match(r"^#X obj \d+ \d+ \* (\d+);$", rec)
                                   for rec in src) if m]
     A.check("⛔ the pulse multiplier is %d -- PPQN, and it is a STANDARD" % PPQN,
@@ -102,12 +78,9 @@ def main():
     print("\n=== B. the clock, measured on the wire ===")
     order, by = A.windows(cap, "CLK", 13)
     W = lambda k: by.get(k, [])
-    # ⚠️ Report the ERR traffic only, never the whole window. A tempo window holds
-    # every grid repaint byte too, and a failing check that dumps 900 of them
-    # buries the one line that explains it.
+    # Report only the ERR traffic: a window also holds every grid repaint byte.
     errs = lambda k: [e for e in W(k) if e[0] == "ERR"]
 
-    # ---- the rate ---------------------------------------------------------
     print("\n--- 24 PPQN, measured on the wire ---")
     counts = {}
     for mark, bpm, seconds in (("RATE-120", 120, 2.0), ("RATE-60", 60, 2.0)):
@@ -119,10 +92,8 @@ def main():
                 lo <= n <= hi,
                 "counted %d, wanted %.0f (%.0f..%.0f)" % (n, want, lo, hi))
 
-    # ⛔ THE RATIO IS THE STRONGER HALF. An absolute count depends on a real-time
-    # scheduler and a machine that might be busy; the ratio between two windows
-    # of the same length cancels all of that, and a clock that ignored tempo
-    # entirely would sit at 1.0 with both counts individually plausible.
+    # The stronger half: a ratio of two equal windows cancels the scheduler, and
+    # a clock that ignored tempo would sit at 1.0 with both counts plausible.
     if counts["RATE-60"]:
         ratio = counts["RATE-120"] / float(counts["RATE-60"])
         A.check("⛔ halving the tempo halves the pulse rate",
@@ -132,19 +103,14 @@ def main():
         A.check("⛔ halving the tempo halves the pulse rate", False,
                 "no pulses at all in the 60 BPM window")
 
-    # ⚠️ TWO PORTS, COUNTED SEPARATELY. A fan-out that quietly lost one would look
-    # perfect on the other, and the failure on hardware is one device following
-    # the tempo while the other does not.
+    # Counted separately: a fan-out that lost one port looks perfect on the other.
     per_port = [len(rt(W("RATE-120"), byte=CLOCK, port=p)) for p in PORTS]
     A.check("the clock leaves on BOTH MIDI ports, not one",
             per_port[0] > 0 and per_port[0] == per_port[1],
             "port 1 saw %d, port 3 saw %d" % tuple(per_port))
 
-    # ---- the clamp, proven on the wire ------------------------------------
     print("\n--- the clamp ---")
-    # ⚠️ THIS PROVES THE CLAMP IS IN THE SIGNAL PATH, not what its bound is -- the
-    # static lint above owns the bound, because the wire cannot resolve it. See
-    # static_lint's note on the ~344 Hz ceiling.
+    # In the signal path; static_lint owns the bound.
     n = len(rt(W("TOO-HIGH"), byte=CLOCK, port=PORTS[0]))
     want = nominal(BPM_HI, 1.0)
     A.check("⛔ 5000 BPM reaches the wire CLAMPED -- the clip is in the signal path",
@@ -154,13 +120,11 @@ def main():
             repr(errs("TOO-HIGH")))
     A.check("0 BPM warns too -- the clamp reports at BOTH ends",
             bool(warned(W("TOO-LOW"))), repr(errs("TOO-LOW")))
-    # ⛔ [change] SITS ON THE VALUE, NOT ON THE VERDICT, and getting that backwards
-    # was a real bug: filtering the out-of-range FLAG means 500 warns and a 5 sent
-    # straight after it does not, because the flag never changed.
+    # [change] sits on the value, not the verdict: filtering the flag would warn
+    # on a 500 and not on a 5 sent straight after it.
     A.check("⛔ an IN-RANGE tempo does not warn at all", not warned(W("IN-RANGE")),
             repr(errs("IN-RANGE")))
 
-    # ---- the transport ----------------------------------------------------
     print("\n--- the transport ---")
     A.check("start sends %d (FA)" % START, bool(rt(W("START"), byte=START)),
             repr(rt(W("START"))))
@@ -185,19 +149,14 @@ def main():
             stop_ports == [1, 3],
             "saw ports %s. Widening the clock and transport to all four is a "
             "v0.4 sound question parked in plan-v04, NOT this" % stop_ports)
-    # ⛔ CONTINUE IS NEVER SENT, ANYWHERE IN THE RUN. A device that receives FB
-    # resumes from where it was rather than from the top, and this instrument has
-    # no concept of a resume position -- so sending it would be a lie about state
-    # that only shows up as a sequencer starting in the wrong place.
+    # Continue resumes from a stored position, which nothing here has
+    # (ref/module/tempo.md).
     cont = [v for m in order for v in rt(W(m), byte=CONTINUE)]
     A.check("⛔ Continue (%d) is NEVER sent" % CONTINUE, not cont, repr(cont))
 
-    # ---- and the thing that reads as a bug until you know it ---------------
     print("\n--- stop does not halt the clock ---")
-    # ⛔ THE TRANSPORT PAUSES THE SUBSCRIBERS, IT DOES NOT CLEAR THE TIMER. A
-    # running phasor nobody reads is silent, and halting it is the consumer's
-    # business -- the same contract c_clock states. If this ever goes red the
-    # symptom on hardware is every synced device losing tempo the moment you stop.
+    # The transport pauses the subscribers, not the timer: a synced device would
+    # lose tempo the moment you stop.
     n = len(rt(W("AFTER-STOP"), byte=CLOCK, port=PORTS[0]))
     want = nominal(120, 1.5)
     A.check("⛔ the clock KEEPS RUNNING after a stop",

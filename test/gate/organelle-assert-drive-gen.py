@@ -1,22 +1,12 @@
 #!/usr/bin/env python3
 """Generates the timed driver for the Organelle front-panel gate.
 
-⚠️ IT DRIVES MOTHER'S OWN NAMES DIRECTLY -- `; knob1 0.25`, `; aux 1` -- because
-that is exactly what mother.pd does on the device. m_organelle has no inlets and
-no MIDI: five [r] boxes on reserved names is its entire input surface, so this is
-the one m_ layer that needs no stub at all.
+It sends mother's own names, `; knob1 0.25`, `; aux 1`, as mother.pd does on
+the device: five [r] boxes are m_organelle's whole input, so it needs no stub.
 
-⛔ KNOB 1 IS MAPPED TO TEMPO IN EVERY MODE and knob 4 is mapped to nothing. Both
-are deliberate choices of subject: knob 1 is the only way to assert item 242 --
-that a knob's RAW position never reaches the screen, because the mapped value
-belongs there -- and knob 4 is the only knob free to be driven to a bare 0
-without a mapping reacting to it.
-
-⚠️ THE 0 IS THE POINT OF THE KNOB-4 WINDOW. `change -1` rather than a bare
-`change` is load-bearing: a bare change starts life holding 0, so a knob parked
-at 0 would never publish and the parameter it feeds would sit at its default
-forever. -1 cannot be a real value because mother's knobs are 0 to 1. Item 237,
-measured rather than reasoned.
+Knob 1 is mapped to tempo in every mode, which is what lets item 242 be asserted
+(the raw position never reaches the screen, the mapped value does). Knob 4 is
+mapped to nothing, so it can be driven to a bare 0 for [change -1].
 """
 import os
 import sys
@@ -27,59 +17,39 @@ import lib_drive as D                                          # noqa: E402
 GAP = 40
 
 SEQ = [
-    # ⛔ BEFORE THE BOOT SEQUENCE HAS FINISHED. mother pushes knobs.txt at boot,
-    # long before u_map's table used to be read -- which is precisely how item
-    # 234 happened. m_organelle needs nothing from boot and must say so.
+    # Before the boot finishes, as mother's knobs.txt push is (item 234).
     (300, "EARLY", ["\\; aux 1"], GAP),
 
-    # --- a mapped knob: param gets the control, the screen gets the meaning ---
     (5000, "KNOB1", ["\\; knob1 0.25"], GAP),
-    # ⚠️ THE SAME VALUE AGAIN, in its own window, so the filter has something to
-    # filter. Sent inside the window above it would be indistinguishable from one
-    # message arriving late.
+    # The same value again, in its own window so it cannot pass for a late
+    # first message.
     (5700, "KNOB1-SAME", ["\\; knob1 0.25"], GAP),
     (6400, "KNOB1-NEW", ["\\; knob1 0.5"], GAP),
 
-    # --- ⛔ A KNOB PARKED AT ZERO STILL PUBLISHES -------------------------
     (7100, "KNOB4-ZERO", ["\\; knob4 0"], GAP),
 
-    # --- the other two, so all four names are asserted --------------------
     (7800, "KNOB23", ["\\; knob2 0.1", "\\; knob3 0.2"], GAP),
 
-    # --- the aux button, which is the one control that still reports -------
     (8500, "AUX-PRESS", ["\\; aux 1"], GAP),
     (9200, "AUX-RELEASE", ["\\; aux 0"], GAP),
 
-    # --- ⛔ THE KEYBOARD: ONE CONTROL PER KEY, AND A RELEASE IS A REAL EVENT ---
-    # mother packs the keyboard into ONE two-float list -- pitch then velocity --
-    # and param carries one value per control, so the pitch rides in the NAME.
+    # mother sends a key as one list, pitch then velocity, so the pitch rides
+    # in the control name.
     (9900, "KEY-ON", ["\\; notes 60 100"], GAP),
-    # ⛔ VELOCITY 0 IS THE NOTE-OFF AND IT MUST PUBLISH. aux is press-only because
-    # a button release means nothing; a key release is the event that stops the
-    # sound, and a destination cannot act on what it is never told.
+    # Velocity 0 is the note-off, and the event that stops the sound.
     (10600, "KEY-OFF", ["\\; notes 60 0"], GAP),
-    # ⚠️ THE TOP KEY, because 60 alone would pass on a decode that ignored the
-    # pitch entirely and hardcoded the lowest note.
+    # 60 alone would pass a decode that hardcoded the lowest note.
     (11300, "KEY-TOP", ["\\; notes 84 40"], GAP),
 
-
-    # --- ⛔ THE SHIFT LAYER, AND THE ONE CASE THAT STRANDS A NOTE ---------
-    # aux is a MODIFIER now, not a control: it publishes no name on param at
-    # all, and while it is held the keyboard publishes og-shift-NN instead of
-    # og-key-NN. That is what puts diag, stop and recover on the only panel
-    # that can never be the missing device.
+    # aux publishes no name; while it is held the keys publish og-shift-NN.
     (12000, "SHIFT-ON", ["\\; aux 1"], GAP),
     (12700, "SHIFT-KEY", ["\\; notes 72 100", "\\; notes 72 0"], GAP),
     (13400, "SHIFT-OFF", ["\\; aux 0"], GAP),
     (14100, "AFTER-SHIFT", ["\\; notes 72 100"], GAP),
 
-    # ⛔ THE STRADDLE. Press a shifted key, LET GO OF AUX, then let go of the
-    # key. If the layer were read at release time the press published
-    # og-shift-65 and the release would publish og-key-65 -- the shifted
-    # control never sees its note-off, and an unshifted one gets a note-off it
-    # never had a note-on for. In mode 1 that is a stuck note on the Volca and
-    # nothing anywhere reports it. Four windows because each edge has to be
-    # its own instant.
+    # The straddle: a shifted key, aux let go, then the key. Read at release,
+    # the note-off would be og-key-65, a stuck Volca note in mode 1. Each edge
+    # is its own window.
     (14800, "STRADDLE-DOWN", ["\\; aux 1"], GAP),
     (15200, "STRADDLE-KEY", ["\\; notes 65 100"], GAP),
     (15600, "STRADDLE-UP", ["\\; aux 0"], GAP),
@@ -90,19 +60,16 @@ QUIT_MS = 17500
 
 BLURB = ("organelle-assert-drive -- GENERATED by organelle-assert-drive-gen.py. Do "
          "not edit this file. It drives m_organelle over mother's own names: the four "
-         "knobs through their change filters \\, a knob parked at zero \\, and the aux "
-         "button on press only \\, and the 25-key keyboard on both press and release.")
+         "knobs through their change filters \\, a knob parked at zero \\, aux as the "
+         "keyboard's modifier \\, and the 25-key keyboard on press and release.")
 
 NOTES = [
-    "⚠️ RUN IT THROUGH test/gate/organelle-assert.sh \\, never by hand. It asserts on "
-    "param and disp \\, and without the taps every check is answered by an empty list.",
+    "Run it through test/gate/organelle-assert.sh: it asserts on the param and "
+    "disp taps.",
 
-    "⛔ THE KNOBS DO NOT REPORT TO disp AND og-aux DOES. A knob's raw 0-to-1 position "
-    "is not a readable parameter row -- the screen said og-knob-1 0.245 where a BPM "
-    "belonged \\, and the param layer replaces the footer \\, so the tempo it was "
-    "mapped to vanished while you turned it. u_map reports the value instead \\, "
-    "because it is the only file that knows what a control MEANS. Item 242 \\, and "
-    "until this gate existed it was written down in one #X text and nowhere else.",
+    "⛔ The knobs do not report to disp (item 242): a raw 0-to-1 position is not a "
+    "readable row \\, so u_map reports the mapped value. aux publishes no control at "
+    "all: holding it puts shift on the screen as a modal.",
 ]
 
 if __name__ == "__main__":

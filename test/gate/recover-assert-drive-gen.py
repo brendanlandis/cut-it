@@ -1,30 +1,20 @@
 #!/usr/bin/env python3
 """Generates the two timed drivers for the recover gate.
 
-⛔ TWO RUNS, AND THE ONLY DIFFERENCE IS WHAT IS ON DISK. Run A boots with no
-breadcrumb and drives the button: a tap must reach panic and nothing else, a
-hold must reach recover as well. Run B boots with a breadcrumb ALREADY there,
-which is the state the next boot after a real recover is in -- so it asserts the
-arming override, the deferred report and the clear.
+Run A boots with no breadcrumb and drives the button: a tap must reach panic
+and nothing else, a hold must reach recover as well. Run B boots with a
+breadcrumb already there, the state after a real recover: the arming override,
+the deferred report and the clear.
 
-⛔ THE TAP AND THE HOLD ARE SEPARATE WINDOWS APART, NOT ONE INSTANT. A press and
-a release fired in the same logical instant would prove that [del] can be
-stopped and nothing about a THRESHOLD -- [del 0] still defers to the next
-scheduler tick, so a zero-length press is not a short press. Both gestures here
-are two real events seconds apart, and the tap's timer is given room to expire
-in a window of its own so that a missing `stop` shows up as a recover nobody
-asked for.
+Press and release are real events apart, never one logical instant, which would
+prove nothing about a threshold (the gate skill, on [del 0]). The tap's timer
+gets a window of its own to expire in, so a missing `stop` shows as a recover.
 
-⚠️ THE WINDOW BOUNDARIES DODGE THREE COINCIDENCES, all of them deliberate. The
-grid's modal-off lands exactly 1000 ms after each panic; u_init's fork lands 300
-ms after recover; and the tap's canceled timer would have expired 2000 ms after
-its press. A window opening on any of those instants would make the assertion a
-coin toss rather than a test.
-
-⛔ THE WINDOWS ARE NOT DERIVED FROM THE IMPLEMENTATION. The hold is held for
-longer than the threshold and the tap is far shorter, so both stay right if the
-2000 ms is ever retuned; only TAP-EXPIRED knows the number, and it knows it in
-the direction that makes the test STRICTER rather than vacuous.
+No window opens on an instant where something else lands: the grid's
+modal-off 1000 ms after each panic, u_init's fork 300 ms after recover, and
+the tap's canceled timer 2000 ms after its press. The hold is far longer than
+the threshold and the tap far shorter, so both stay right if 2000 ms is
+retuned.
 """
 import os
 import sys
@@ -37,34 +27,28 @@ GAP = 40
 # ---------------------------------------------------------------- run A
 # No breadcrumb on disk. Drive the button and watch the two tiers.
 SEQ_A = [
-    # Before anything is touched. Every "nothing happened" assertion needs a
-    # window that provably ran, and this is also the one that proves a boot on
-    # its own never reaches recover.
+    # Before anything is touched: a boot on its own never reaches recover.
     (300, "EARLY", [], GAP),
 
-    # THE TAP. Down, then up 300 ms later -- far short of the threshold.
+    # The tap: down, then up 300 ms later.
     (5000, "TAP-DOWN", ["\\; param lp-cc-90 127"], GAP),
     (5300, "TAP-UP", ["\\; param lp-cc-90 0"], GAP),
 
-    # ⛔ 6500 AND NOT 6000. The grid's modal-off lands at exactly 6000, 1000 ms
-    # after the tap's panic, so a window opening there could take it either way.
+    # 6500, not 6000, where the grid's modal-off lands.
     (6500, "AFTER-TAP", [], GAP),
 
-    # ⛔ THE WINDOW THE WHOLE CANCEL RESTS ON. The tap pressed at 5000 armed a
-    # 2000 ms timer that would fire at 7000, inside AFTER-TAP. If the release
-    # did not stop it, a recover appears with nobody holding anything.
+    # The tap's timer would fire at 7000, inside AFTER-TAP, if the release did
+    # not stop it.
     (7500, "TAP-EXPIRED", [], GAP),
 
-    # THE HOLD. Down at 9000, so the timer completes at 11000.
+    # The hold: down at 9000, so the timer completes at 11000.
     (9000, "HOLD-DOWN", [], GAP),
     (9100, "HOLD-PRESS", ["\\; param lp-cc-90 127"], GAP),
 
-    # Opened before the timer completes, so the recover cannot be read out of a
-    # window that had already started.
+    # Opened before the timer completes.
     (10800, "HOLD-WAIT", [], GAP),
 
-    # ⛔ 11800 AND NOT 11300. u_init waits 300 ms after panic before forking, so
-    # the fork lands at 11300 exactly.
+    # 11800, not 11300, where u_init's fork lands.
     (11800, "HOLD-FIRED", [], GAP),
 
     (12500, "HOLD-UP", ["\\; param lp-cc-90 0"], GAP),
@@ -73,25 +57,22 @@ SEQ_A = [
 QUIT_A = 14200
 
 # ---------------------------------------------------------------- run B
-# A breadcrumb IS on disk, and so is a knobs.txt. This is the boot after a
-# recover: nothing may be held, and the attempt must be reported once.
+# A breadcrumb and a knobs.txt on disk: nothing may be held, and the attempt is
+# reported once.
 SEQ_B = [
     (300, "EARLY", [], GAP),
 
-    # Stands in for mother replaying knobs.txt inside the 1000 ms boot window.
-    # Without it nothing arms and the run would prove nothing either way --
-    # a knob that was never held is not evidence that a knob was released.
+    # Stands in for mother replaying knobs.txt inside the 1000 ms boot window,
+    # so there is something the breadcrumb must stop from arming.
     (400, "PUSH", ["\\; param og-knob-1 0.0957967"], GAP),
 
-    # Opens after the 2000 ms probe and before the 4500 ms report, so the two
-    # halves of one read land in windows of their own.
+    # After the 2000 ms probe and before the 4500 ms report.
     (2500, "AFTER-PROBE", [], GAP),
 
-    # ⛔ 5000 AND NOT 4500. The report is deferred to exactly 4500.
+    # 5000, not 4500, where the deferred report lands.
     (5000, "REPORTED", [], GAP),
 
-    # The knob is moved well past the boot window. With the breadcrumb read it
-    # must reach the tempo bus; held, it would reach nothing at all.
+    # Past the boot window: live, it reaches the tempo bus; held, nothing.
     (5500, "KNOB", ["\\; param og-knob-1 0.5"], GAP),
 
     (6500, "DONE", [], GAP),
@@ -109,21 +90,12 @@ BLURB_B = ("recover-assert-drive -- GENERATED by recover-assert-drive-gen.py. Do
            "the attempt must be reported once and then cleared.")
 
 NOTES = [
-    "⚠️ RUN IT THROUGH test/gate/recover-assert.sh \\, never by hand. The gate copies a "
-    "counting stub over shell.pd in its scratch copy \\, which is the only way to see "
-    "that recover.sh was forked at all -- the real [shell] does not exist on a Mac and "
-    "mac-stubs/shell.pd deliberately swallows the command.",
+    "Run it through test/gate/recover-assert.sh \\, which copies a counting stub "
+    "over shell.pd: mac-stubs/shell.pd swallows the command \\, so the stub is the "
+    "only way to see recover.sh forked.",
 
-    "⛔ THIS GATE CANNOT ASSERT THAT THE RELOAD HAPPENED \\, and no future edit should "
-    "imply that it can. [shell] is stubbed \\, so nothing is sent to mother and nothing "
-    "is loaded. What it proves is that the right command was formed \\, in the right "
-    "order \\, behind the silence -- and that the breadcrumb was on disk before the fork. "
-    "The reload itself is a bench step and only a bench step.",
-
-    "⛔ NOR CAN IT ASSERT THAT quitting STILL FIRES. quitting comes from mother.pd and "
-    "u_mother-stub deliberately never sends it \\, so on the Mac neither receiver ever "
-    "runs. What it CAN prove is the half that would break it: this path never touches "
-    "m_launchpad's ownership \\, so the safe exit is still there to run. Item 251.",
+    "It cannot assert the reload happened or that quitting still fires: [shell] is "
+    "stubbed and u_mother-stub never sends quitting. Both are bench steps.",
 ]
 
 if __name__ == "__main__":

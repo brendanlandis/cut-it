@@ -1,26 +1,18 @@
 #!/usr/bin/env python3
-"""The OLED's analyser -- ref/module/display.md. Reads a capture on stdin.
+"""The OLED's analyzer -- ref/module/display.md. Reads a capture on stdin.
 
-⛔ g_oled IS 783 LINES AND ITS ENTIRE COVERAGE WAS THAT THE FILE EXISTS. Four
-layers with priorities and time-to-live, a five-row parameter store with its own
-aging, three type sizes -- every bit of it judged by eye off a panel until now.
+It asserts on what the screen was told, not on how it looks: legibility and the
+meters are test/bench/display-bench.pd's.
 
-⚠️ IT ASSERTS ON WHAT THE SCREEN WAS TOLD, NOT ON WHAT IT LOOKS LIKE. Pd cannot
-ask a screen what it is showing, but every byte sent to it is knowable, and that
-is the level our own code works at. What a person still has to judge is the part
-this cannot reach: whether 24px is legible at arm's length, and whether the
-meters read as meters. That is what test/bench/display-bench.pd is for.
-
-THE MESSAGE, read off a real capture rather than assumed:
+The message, read off a real capture:
 
     sendtyped /oled/gPrintln iiiiis 3 2 12 24 1 43
                              ^tag   ^s ^x ^y ^sz ^col ^words...
 
-A FRAME is everything between two gFlips. ⛔ ASSERT ON THE RIGHT ONE: a layer
-raised inside a window does not appear until the NEXT repaint, so the first frame
-of a window still shows what came before it -- and a layer with a TTL shorter
-than the window has already expired by the last. display-assert learned the same
-lesson; here it is both ways round in one file.
+A frame is everything between two gFlips. Pick the frame with care: a layer
+raised in a window appears only at the next repaint, so the first frame still
+shows what came before, and a TTL shorter than the window has expired by the
+last.
 """
 import os
 import re
@@ -29,17 +21,14 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 
-# ⛔ THE NUMBER OF WINDOWS oled-assert-drive-gen.py's SEQ OPENS.
+# The number of windows oled-assert-drive-gen.py's SEQ opens.
 MARKS = 25
 
 # The five rows the store holds, in the order they are first touched.
 FIVE = ["gate-a", "gate-b", "gate-c", "gate-d", "gate-e"]
 
-# ⛔ EVERY SOURCE THAT PUBLISHES `expect` -- the diag roster, and the count is
-# exact rather than "some". A layer added without one, or one that stops
-# registering, is invisible on this screen and the whole point of the screen is
-# that nothing is invisible on it. presence-assert.sh asserts the same five from
-# the other side.
+# Every source that publishes `expect`, exactly: a layer missing here is
+# invisible on the diag screen. presence-assert.sh asserts the same five.
 DIAG_SOURCES = ["m_launchpad", "m_nano", "m_organelle", "m_volca", "m_404"]
 
 # The three that are POLLED, and therefore the three a `lost` can name.
@@ -56,12 +45,8 @@ def run_asserts(cap):
     W = lambda k: by.get(k, [])
 
     def frames(mark):
-        """Complete frames in the window -- gFlip closes one.
-
-        ⚠️ THE LEADING PARTIAL IS DROPPED. A window opens mid-frame, so its first
-        few messages belong to a repaint that started before the mark and would
-        report the previous window's content as this one's.
-        """
+        """Complete frames in the window -- gFlip closes one. The leading
+        partial belongs to a repaint begun before the mark, so it is dropped."""
         out, cur, started = [], [], False
         for lab, v in W(mark):
             if lab != "OLED":
@@ -113,12 +98,7 @@ def run_asserts(cap):
 
     # ---- a parameter, and its 1200 ms TTL ---------------------------------
     print("\n--- the param layer, and its TTL ---")
-    # ⚠️ ONE MOVER IS A TWO-LINE LAYOUT, NOT A ROW. Type size follows how many
-    # controls are moving: alone, a parameter gets its name at 8px on the top
-    # line and its value at 24px below -- the biggest thing on the screen,
-    # because with one hand on one control that is what you are looking at.
-    # Three to five share a line each at 8px. Asserting the geometry rather than
-    # just the words is what makes this a check on the layout at all.
+    # One mover is a two-line layout, not a row, so the geometry is asserted.
     if live("PARAM"):
         A.check("a lone parameter draws name 8px at y=0 and value 24px at y=12",
                 rows(last("PARAM")) == [(0, 8, ["gate-p1"]), (12, 24, ["11"])],
@@ -134,11 +114,8 @@ def run_asserts(cap):
                 "drew %s -- home is priority 0 and is never cleared, so it must "
                 "be what is left" % words(last("PARAM-GONE")))
 
-    # ⛔ AND THE STORE AGED OUT TOO, NOT JUST THE LAYER. The two are separate:
-    # `pd layers` clears the param flag on a 1200 ms delay while the store drops
-    # entries 13 frames behind. If the aging were broken the flag would be
-    # raised again by the NEW parameter and the OLD one would be redrawn beside
-    # it -- a value under no one's hand, which is worse than a blank row.
+    # The store ages separately from the layer flag (13 frames against
+    # 1200 ms), so a broken aging redraws the old row beside the new one.
     if live("PARAM-AGAIN"):
         drawn = words(last("PARAM-AGAIN"))
         A.check("a new parameter draws", "gate-p2" in drawn, "drew %s" % drawn)
@@ -157,10 +134,7 @@ def run_asserts(cap):
         got = [ws[0] for _, _, ws in rows(last("FIVE")) if ws]
         A.check("five controls moving at once give five rows, in touch order",
                 got == FIVE, "drew %s" % got)
-        # ⚠️ AND AT 8px ON THE DOCUMENTED PITCH. The param area is y=0..46 and
-        # the meter strips at y=48 and y=56 are untouched throughout -- a row
-        # pitch that drifted would push the fifth row into the meters, where it
-        # would overlap rather than error.
+        # The meters start at y=48: a drifted pitch overlaps them, silently.
         A.check("...at 8px, on the y=0 9 18 27 36 pitch, clear of the meters",
                 [(y, sz) for y, sz, _ in rows(last("FIVE"))]
                 == [(0, 8), (9, 8), (18, 8), (27, 8), (36, 8)],
@@ -173,10 +147,7 @@ def run_asserts(cap):
                 "push one out -- with 18 continuous controls, moving two faders "
                 "together is ordinary use" % got)
 
-    # ⛔ ROWS ARE STABLE, AND THIS IS WHY THE STORE IS A LIST RATHER THAN A
-    # QUEUE. A store that reordered on update would move a re-touched control to
-    # the bottom, so a row would jump under your hand mid-performance -- the
-    # value would be right and the screen would be unreadable.
+    # Rows are stable: a re-touched control must not jump to the bottom.
     if live("IN-PLACE"):
         drawn = [ws for _, _, ws in rows(last("IN-PLACE"))]
         got = [ws[0] for ws in drawn if ws]
@@ -204,10 +175,7 @@ def run_asserts(cap):
                 "bottom in exactly priority order" % drawn)
 
     # ---- alert outranks modal, and hands it back --------------------------
-    # ⚠️ FIRST FRAME AND LAST FRAME OF THE SAME WINDOW. The window is longer than
-    # the 2 s warn TTL on purpose: the first frame proves the alert won the
-    # surface and the last proves it gave it back, which is one window doing the
-    # work of two.
+    # The window outlasts the 2 s warn: its first frame and its last.
     print("\n--- layer priority: alert over modal, and the TTL ---")
     if live("ALERT"):
         drawn = words(first("ALERT"))
@@ -229,9 +197,7 @@ def run_asserts(cap):
                 and "gate-alert" not in words(last("ALERT-GONE")),
                 "drew %s" % words(last("ALERT-GONE")))
 
-    # ⛔ A fail LASTS TWICE AS LONG AS A warn, and without this window the two
-    # TTLs are indistinguishable: a file that used 2 s for both would pass every
-    # alert check above.
+    # Without these, a g_oled using 2 s for both levels would pass.
     print("\n--- and a fail lasts twice as long ---")
     if live("FAIL"):
         A.check("a fail claims the screen too",
@@ -256,10 +222,9 @@ def run_asserts(cap):
                 "gate-modal" not in drawn and "gate-home" in drawn,
                 "drew %s" % drawn)
 
-    # ⛔ led AND grid ARE ROUTED AND THROWN AWAY. Everything g_oled does not
-    # recognize is a parameter BY DEFINITION -- that is what lets a new control
-    # need no change to any display -- so without those two arguments on the
-    # route an LED request would draw as a nonsense parameter row.
+    # led and grid are routed and thrown away: anything g_oled does not
+    # recognize is a parameter, so without them on the route an LED request
+    # would draw as a parameter row.
     if live("RESERVED"):
         drawn = words(last("RESERVED"))
         strays = [w for w in ("led", "running", "grid", "45") if w in drawn]
@@ -273,10 +238,9 @@ def run_asserts(cap):
                 "from a dead screen" % drawn)
 
     # ---- the diag layer ----------------------------------------------------
-    # ⚠️ WHAT MAKES THIS ASSERTABLE ON A MAC IS THAT EVERY DEVICE IS ABSENT.
-    # The three active layers are declared lost by their own c_presence around
-    # 10 s and have never answered, so the roster's honest state at 26 s is
-    # three NEVER, one UNCHECKED, and m_organelle silent until something moves.
+    # On a Mac every device is absent: by 26 s the three active layers have been
+    # declared lost without ever answering, so the roster is three `never`, one
+    # `unchecked`, and m_organelle silent until something moves.
     print("\n--- the diag layer, and the roster it draws ---")
 
     def state(mark, which=last):
@@ -289,17 +253,12 @@ def run_asserts(cap):
                 sorted(state("DIAG")) == sorted(DIAG_SOURCES),
                 "drew %s -- the roster is whatever `expect` published at load, "
                 "and every m_ layer publishes exactly one" % state("DIAG"))
-        # ⚠️ THE SAME 8px PITCH THE 3-TO-5-MOVER LAYOUT USES, and the same
-        # reason: the meter strips start at y=48, so a drifted pitch would put
-        # the fifth row into them and overlap rather than error.
+        # The same pitch, and the same reason, as the five-row store.
         A.check("...at 8px on the y=0 9 18 27 36 pitch, clear of the meters",
                 [(y, sz) for y, sz, ws in rows(last("DIAG"))
                  if ws and ws[0] in DIAG_SOURCES]
                 == [(0, 8), (9, 8), (18, 8), (27, 8), (36, 8)],
                 "drew %s" % [(y, sz) for y, sz, _ in rows(last("DIAG"))])
-        # ⛔ THE ROW THAT COSTS NOTHING AND SAYS THE MOST. All three active
-        # devices have been LOST by now and none has ever answered, so a `lost`
-        # that wrote GONE unconditionally would show it right here.
         A.check("⛔ a device that has never answered reads `never`, not `gone`",
                 [state("DIAG").get(s) for s in ACTIVE] == ["never"] * 3,
                 "drew %s. c_presence publishes `lost` UNARMED because that is "
@@ -316,9 +275,6 @@ def run_asserts(cap):
         A.check("`seen` moves an active source to `here`",
                 state("DIAG-SEEN").get("m_nano") == "here",
                 "drew %s" % state("DIAG-SEEN"))
-        # ⛔ THE PASSIVE PUBLISHER, WHICH NOTHING HAS EVER READ UNTIL NOW.
-        # m_organelle holds no c_presence and publishes `seen` on every decode;
-        # this screen is the reader that message was written for.
         A.check("⛔ ...and so does the PASSIVE layer's own `seen`, off one knob",
                 state("DIAG-SEEN").get("m_organelle") == "here",
                 "drew %s. m_organelle publishes `seen` on the bus rather than "
@@ -334,8 +290,7 @@ def run_asserts(cap):
                 state("DIAG-GONE").get("m_nano") == "gone",
                 "drew %s" % state("DIAG-GONE"))
 
-    # ⛔ THE DISCRIMINATING NEGATIVE, AND THE ONLY CHECK HERE THAT A LAYER WHICH
-    # ALWAYS WRITES GONE WOULD FAIL.
+    # The only check here a layer that always wrote `gone` would fail.
     if live("DIAG-NEVER"):
         got = state("DIAG-NEVER")
         A.check("⛔ `lost` on a source that never answered leaves it `never`",
@@ -347,7 +302,6 @@ def run_asserts(cap):
                 "drew %s -- if the write had landed on the wrong row this is "
                 "where it would show" % got)
 
-    # ⛔ AND THE CASCADE IN THE DIRECTION THAT MATTERS.
     print("\n--- and an alert covers the diagnostic ---")
     if live("DIAG-ALERT"):
         drawn = words(first("DIAG-ALERT"))
@@ -363,10 +317,8 @@ def run_asserts(cap):
                 "drew %s. The alert's TTL fired at 2 s and diag's own 8 s is "
                 "still running, so the screen must come back to the roster "
                 "rather than to home" % words(first("DIAG-BACK")))
-    # ⚠️ HOME IS RECOGNIZED BY ITS METERS, NOT BY ITS FOOTER. The knob moved in
-    # DIAG-SEEN is master tempo, so u_tempo has since written a BPM into the
-    # status -- asserting on `gate-home` here would fail for a reason that has
-    # nothing to do with the TTL.
+    # Home is recognized by its meters, not its footer: knob1 in DIAG-SEEN is
+    # master tempo, so u_tempo has since written a BPM over `gate-home`.
     if live("DIAG-TTL"):
         drawn = words(last("DIAG-TTL"))
         A.check("...and diag expires on its own TTL and gives home back",

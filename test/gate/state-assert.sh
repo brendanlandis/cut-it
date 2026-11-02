@@ -6,13 +6,7 @@
 #   ./test/gate/state-assert.sh -v       and show the detail behind every check
 #   ./test/gate/state-assert.sh --keep   leave the scratch dir, driver and captures
 #
-# THE CHEAPEST ORACLE IN THE SUITE. The MIDI gates rewrite object boxes in a
-# scratch copy, because a built-in class has no side channel. phone-assert
-# points u_net at 127.0.0.1 and reads datagrams. u_state writes a FILE, so this
-# one just reads what landed on disk. "Cut It/" is never touched and nothing is
-# rewritten.
-#
-# The driver is generated into the gate's own scratch directory on every run,
-# and u_state writes there too -- edit state-assert-drive-gen.py, never a .pd.
-# It never touches /sdcard/cut-it-state, and never the device.
+# u_state writes files, so this reads what landed on disk, with nothing
+# rewritten. The driver is generated into the gate's own scratch directory,
+# where u_state writes too: edit state-assert-drive-gen.py, never a .pd.
 exec python3 "$(dirname "$0")/state-assert.py" "$@"

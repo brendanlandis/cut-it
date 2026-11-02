@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 """The aux LED's analyser -- ref/device/organelle.md. Reads a capture on stdin.
 
-g_led owns the one display surface in the rig that is not a screen. Callers send
-a STATE on the disp bus -- `led running` -- and never a color, so the whole
-subject of this gate is the four-row translation table and what happens to a row
-that is not in it.
-
-⛔ IT ASSERTS ON WHAT MOTHER IS TOLD, NOT ON WHAT LIGHTS UP. Pd cannot ask an LED
-what color it is, and the permutation from the patch-facing 0..7 to the
-hardware's RGB bitmask happens inside mother.pd, which is not here. The value
-sent to `led` is completely knowable, and it is the level our own code works at.
+Callers send g_led a state on the disp bus, `led running`, never a color, so the
+subject is the four-row table and what happens to a state not in it. It asserts
+on the value mother is sent: the mapping to the hardware's RGB bitmask happens
+inside mother.pd, which is not here.
 """
 import os
 import sys
@@ -17,12 +12,10 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 
-# ⛔ THE NUMBER OF WINDOWS led-assert-drive-gen.py's SEQ OPENS. Update it when
-# that table changes, deliberately.
+# The number of windows led-assert-drive-gen.py's SEQ opens.
 MARKS = 8
 
-# ref/device/organelle.md, "What Cut It puts on the LED". Four states, four
-# mother values, and NOT ONE OF THEM IS SHARED -- which is the point.
+# ref/device/organelle.md, "What Cut It puts on the LED".
 STATES = (("OFF", "off", "0"),
           ("STOPPED", "stopped", "5"),
           ("RUNNING", "running", "3"),
@@ -36,40 +29,30 @@ def run_asserts(cap):
     err = lambda k: [v for kind, v in W(k) if kind == "ERR"]
     disp = lambda k: [v for kind, v in W(k) if kind == "DISP"]
 
-    # ---- before the boot sequence has finished ----------------------------
     print("\n--- before the boot sequence has finished ---")
     A.check("⛔ a state set at 300 ms already reaches the LED",
             led("EARLY") == [["3"]],
             "wanted one led 3, got %s. g_led needs neither the map nor the "
             "restore, so it must answer from the first millisecond" % led("EARLY"))
 
-    # ---- the four states --------------------------------------------------
-    # ⚠️ EXACT VALUES, ONE WINDOW EACH. The four are asserted separately rather
-    # than as a set because the failure that matters is a SWAP -- two states
-    # sharing a value, or two values swapped between states, both of which a set
-    # comparison would pass.
+    # One window each, not a set: a set comparison passes two values swapped
+    # between states.
     print("\n--- the four states, and the four values they mean ---")
     for mark, state, want in STATES:
         A.check("led %s is mother value %s" % (state, want),
                 led(mark) == [[want]], "got %s" % led(mark))
 
-    # ⛔ AND stopped IS LIT. This is the one row where a plausible-looking value
-    # would defeat the purpose of the state existing: a patch that is up but not
-    # running must not look identical to a patch that has died, and nothing else
-    # in the rig reports the difference -- the OLED goes dark for both.
+    # A stopped patch must not look dead: the OLED goes dark for both.
     A.check("⛔ stopped is LIT, not dark -- a stopped patch must not look dead",
             led("STOPPED") == [["5"]] and led("STOPPED") != led("OFF"),
             "stopped sent %s and off sent %s" % (led("STOPPED"), led("OFF")))
 
-    # ⚠️ ALL FOUR DISTINCT, stated once rather than implied four times. Three
-    # states that agreed would still pass every row above if the table were
-    # written with the same value twice.
+    # The rows above would pass if STATES itself held one value twice.
     vals = [led(m)[0][0] if led(m) else None for m, _, _ in STATES]
     A.check("the four states carry four DIFFERENT values",
             len(set(vals)) == 4 and None not in vals,
             "values in state order were %s" % vals)
 
-    # ---- a state g_led does not know --------------------------------------
     print("\n--- a state it does not recognize ---")
     A.check("an unknown state raises warn g_led unknown-led-state",
             err("UNKNOWN") == [["warn", "g_led", "unknown-led-state"]],
@@ -79,10 +62,6 @@ def run_asserts(cap):
             "must not be able to blank the only non-screen indicator in the rig"
             % led("UNKNOWN"))
 
-    # ---- a disp message that is not the LED's -----------------------------
-    # g_led shares disp with g_oled, g_grid and u_net, and Pd delivers every
-    # message to every receiver, so ignoring what is not its own is behavior
-    # rather than a formality.
     print("\n--- a disp selector that is not its own ---")
     A.check("the driver's non-led message did reach the bus",
             disp("NOT-LED") == [["status", "v0-test"]],

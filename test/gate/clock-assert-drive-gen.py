@@ -1,33 +1,20 @@
 #!/usr/bin/env python3
-"""Generates BOTH files the c_clock gate needs: the timed driver and a harness.
+"""Generates both files the c_clock gate needs: the timed driver and a harness.
 
     clock-assert-drive-gen.py OUT-DRIVE.pd OUT-HARNESS.pd
 
-⛔ c_clock PUBLISHES ON NO BUS, WHICH IS WHY THIS GATE NEEDS A HARNESS. Its whole
-output is four outlets and one `[s err]`, so there is nothing for a tap to
-listen to -- every other gate here asserts on a bus because every other subject
-writes to one. The harness instantiates three c_clocks and puts a [print] on each
-message outlet, which is the only way to read an outlet from outside.
+c_clock's output is four outlets and an `[s err]`, so the harness puts a [print]
+on each message outlet of three instances and loads nothing else; c_clock takes
+its tempo from a bus the driver writes directly.
 
-⛔ AND IT DOES NOT LOAD main-dev.pd AT ALL. Three instances of the subject and
-nothing else: no u_tempo publishing its own tempo, no g_grid consuming a beat, no
-boot sequence. c_clock takes its tempo from a bus the driver can write directly,
-so the whole instrument would be scenery -- and scenery is what makes a gate slow
-and its failures ambiguous.
+    c_clock 1 8      the deployed shape, as in u_root
+    c_clock 1.5 4    another rate and bar: its beat count against the first is
+                     the strongest check, because a ratio cancels the scheduler
+    c_clock 0 0      both arguments nonsense: corrected to 1 and 4 at once and
+                     reported on err at 2 s, so it must beat in step with the first
 
-THE THREE INSTANCES, and each one is a different question:
-
-    c_clock 1 8      the deployed shape -- u_root holds exactly this
-    c_clock 1.5 4    a DIFFERENT rate and a different bar, which is what poly-
-                     tempo means. Its beat count against the first is the
-                     strongest check here, because a ratio cancels the scheduler
-    c_clock 0 0      both arguments nonsense. Corrected to 1 and 4 immediately
-                     and reported on err at 2 s, so it must end up beating in
-                     step with the first one
-
-⚠️ clk-snap IS A BARE GLOBAL OUTSIDE THE C-2 ALLOWLIST, exactly like t-notein and
-t-ctlin, and for the same reason: it exists only in a generated harness that
-lives in a scratch directory and is thrown away. Nothing in Cut It/ contains it.
+clk-snap is a bare global outside the C-2 allowlist, like t-notein: it exists
+only in the scratch harness.
 """
 import os
 import sys
@@ -37,49 +24,36 @@ import lib_drive as D                                          # noqa: E402
 
 GAP = 40
 
-# ⛔ THE COUNTING WINDOW, AND IT IS LONG ON PURPOSE. threshold~ fires once per
-# DSP block, so a window's edges are not sample-aligned and a short window turns
-# a one-block boundary effect into a large fraction of the count. Six seconds at
-# 120 BPM is 12 beats at ratio 1, where +/-1 is noise rather than a verdict.
+# Long on purpose: threshold~ fires once per DSP block, so window edges are not
+# sample-aligned. Six seconds at 120 BPM is 12 beats at ratio 1, where +/-1 is
+# noise rather than a verdict.
 RATE_MS = 6000
 
-# 20 snapshots 30 ms apart = 600 ms = 1.2 beats at 120 BPM, so the ramp is
-# guaranteed to be caught at both ends of its sweep rather than sampled by luck.
+# 20 snapshots 30 ms apart span 1.2 beats at 120 BPM, so the ramp is caught at
+# both ends of its sweep.
 SNAPS = 20
 
 SEQ = [
-    # ⚠️ DSP FIRST, AND IT IS NOT OPTIONAL. Everything below hangs off phasor~
-    # through threshold~; with DSP off the whole run is silent and every count is
-    # zero, which is a very confident way of asserting nothing.
+    # With DSP off every count below is zero.
     (300, "DSP", ["\\; pd dsp 1", "\\; tempo 120"], GAP),
 
-    # ⛔ start IS WHAT ALIGNS THE THREE INSTANCES TO EACH OTHER. After it, the
-    # next pulse is pulse 0 of beat 1 of bar 1 in all three, so the counts below
-    # are measured from a common origin rather than from whenever each was born.
+    # start aligns the three: the next pulse is pulse 0 of beat 1 of bar 1 in
+    # all of them, so the counts share an origin.
     (2000, "START", ["\\; start bang"], GAP),
 
     (2500, "RATE", [], GAP),
     (2500 + RATE_MS, "RATE-END", [], GAP),
 
-    # --- the signal outlet, sampled across more than one full cycle --------
     (9200, "PHASE", ["\\; clk-snap bang"] * SNAPS, 30),
 
-    # --- ⛔ stop DOES NOT HALT ---------------------------------------------
-    # A running phasor nobody reads is silent, and halting it is the consumer's
-    # business -- the same reason u_tempo keeps sending clock while stopped.
+    # stop does not halt: that is the consumer's business, as with u_tempo.
     (10200, "STOP", ["\\; stop bang"], GAP),
     (10700, "AFTER-STOP", [], GAP),
     (12700, "AFTER-STOP-END", [], GAP),
 
-    # --- and start resets the beat number ----------------------------------
-    # ⛔ 13250 IS ARITHMETIC, NOT A ROUND NUMBER. The start at 2000 ms reset the
-    # phase, so beats land on 2000 + k*500 at 120 BPM; 13250 is 22.5 beats past
-    # it, which is as far from a beat as this schedule can put a window edge.
-    # That matters because the reset beat arrives ~10 ms after the start message
-    # -- the pulse counter is set to 23, so the very next pulse is pulse 0 of
-    # beat 1 -- and the assertion is that this window contains that beat and
-    # nothing else. A window edge landing on a beat would put a stray number in
-    # front of it and the gate would be reporting the schedule, not the reset.
+    # 13250 is 22.5 beats past the start at 2000, as far from a beat as a window
+    # edge can sit. The reset beat arrives ~10 ms after start, and this window
+    # must hold it and nothing else; an edge on a beat would add a stray one.
     (13250, "RESTART", ["\\; start bang"], GAP),
     (13600, "AFTER-RESTART", [], GAP),
 
@@ -93,31 +67,25 @@ BLURB = ("clock-assert-drive -- GENERATED by clock-assert-drive-gen.py. Do not e
          "and a stop that must NOT halt anything.")
 
 NOTES = [
-    "⚠️ RUN IT THROUGH test/gate/clock-assert.sh \\, never by hand. It needs the "
-    "harness patch loaded alongside it -- on its own it drives three buses that "
-    "nothing is listening to \\, and every count comes back zero.",
+    "Run it through test/gate/clock-assert.sh: it needs the harness loaded beside "
+    "it \\, or it drives buses nothing listens to.",
 
-    "⛔ THIS GATE RUNS WITH DSP ON \\, which is why it is one of the slower ones. "
-    "The beat comes out of threshold~ on a wrap~ of a phasor~ \\, so a -noaudio run "
-    "would assert on a clock that never ticks. A faster machine does not help: the "
-    "sixteen seconds are real time by construction.",
+    "It needs DSP: the beat is threshold~ on a wrap~ of a phasor~. -noaudio leaves "
+    "DSP running (item 280) \\, and the sixteen seconds are real time.",
 ]
 
 # ---------------------------------------------------------------------------
 HARNESS_BLURB = (
     "clock-assert-harness -- GENERATED by clock-assert-drive-gen.py. Do not edit "
-    "this file. THREE c_clock INSTANCES AND A PRINT ON EVERY MESSAGE OUTLET \\, "
-    "which is the only way to read an outlet from outside: c_clock publishes on no "
-    "bus \\, so unlike every other subject in test/gate/ it cannot be tapped.")
+    "this file. Three c_clock instances and a print on every message outlet \\, "
+    "since c_clock publishes on no bus.")
 
 HARNESS_NOTE = (
-    "⛔ OUTLET ORDER IS THE CONTRACT AND IT IS POSITIONAL. Left to right: the raw "
-    "beat PHASE as a signal \\, a beat bang \\, the beat number within the bar \\, "
-    "and a bar bang. Pd orders an abstraction's outlets by the X POSITION of its "
-    "outlet boxes \\, not by the order they appear in the file \\, so a box moved "
-    "sideways in c_clock.pd silently renumbers all four. That is what these prints "
-    "are pinned to. ⚠️ clk-snap is a bare global outside the C-2 allowlist \\, and "
-    "that is safe: this file exists only in a scratch copy.")
+    "⛔ The prints are pinned to c_clock's outlet order \\, left to right: the beat "
+    "phase as a signal \\, a beat bang \\, the beat number in the bar \\, a bar "
+    "bang. Pd numbers outlets by x position \\, so a box moved sideways in "
+    "c_clock.pd renumbers them. clk-snap is outside the C-2 allowlist: this file "
+    "exists only in a scratch copy.")
 
 
 def write_harness(path):

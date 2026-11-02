@@ -1,24 +1,12 @@
 #!/usr/bin/env python3
-"""THE RUNNER'S OWN GATE -- ref/module/... none; it answers for test/README.md.
+"""The runner's own gate. It answers for test/README.md, not a ref/ page.
 
     python3 test/gate/runner-assert.py        # ~1 s, no Pd, no device
     python3 test/gate/runner-assert.py -v
 
-⛔ THIS IS THE ONLY THING THAT EVER EXERCISES THE RUNNER'S FAILURE PATHS. A
-successful hardware bench run never stalls, never desyncs, is never interrupted
-and never meets an empty console -- so on hardware alone every one of those
-branches could be dead code and every run would look exactly the same, green.
-That is the shape of a gate that lies, and this project has shipped it twice.
-
-⛔ THE FIXTURES ARE GENERATED FROM THE REAL STEP TABLE, never hand-typed. A
-hand-written transcript is a guess at what a bench prints, and a guess that
-drifts makes this gate assert the runner agrees with a fiction. Generating from
-bench_steps means the day somebody rewords a step, these fixtures reword with it
--- and the one fixture that must NOT match (the desync) is built by deliberately
-corrupting a generated one, so it stays wrong in exactly one known way.
-
-⚠️ IT IS MAC-ONLY, HEADLESS AND UNDER A SECOND, which is what lets it sit in the
-gate table without costing the bare `./test/run.sh` its guarantee.
+The only thing that exercises the runner's failure paths (test/README.md). The
+fixtures are generated from the real step table, never hand-typed, so they
+reword with it; the desync fixtures corrupt a generated one in one known way.
 """
 import os
 import re
@@ -38,11 +26,8 @@ import stream                                                   # noqa: E402
 
 WORK = os.path.join(os.environ.get("TMPDIR", "/tmp"),
                     "cutit-runner-assert-%d" % os.getpid())
-# ⚠️ 18 steps, no actions anywhere -- the cheapest table to recite, and the only
-# one that is ALSO a paper bench, which is what lets the fixtures below drive
-# both of the runner's two loops from one step table. (This comment said 14 for
-# as long as it took three hot-swap steps to be added above it, and 17 for as
-# long as it took the fourth.)
+# No actions anywhere, so the one table drives both of the runner's loops: the
+# driven one and paper mode.
 BENCH = "midi"
 
 
@@ -51,16 +36,10 @@ def transcript(bench, upto=None, stop_before_fired=False,
                marker_n=None, of=None, retitle=None, fired_n=None):
     """What that bench prints on Pd's console.
 
-    ⚠️ EVERY LINE CARRIES Pd's OWN "print: " PREFIX, because the bench says
-    everything through a bare [print]. Leaving it off would let the runner's
-    regexes be anchored at the start of a line and still pass here, then fail on
-    real hardware -- a fixture that is easier than reality is worse than none.
+    Every line carries Pd's own "print: " prefix, so the runner's regexes cannot
+    be anchored at line start and still pass here.
 
-    ⛔ THE CORRUPTIONS ARE SEPARATE KNOBS, and that is the lesson of the first
-    mutation run. One combined "desync" fixture renumbered the marker AND the
-    fired line together, so it was always caught by the fired-line check and the
-    marker check underneath it was never exercised at all -- deleting that check
-    outright left this gate fully green. A fixture that trips two guards at once
+    Each corruption is a separate knob: a fixture that trips two guards at once
     only ever tests the first one to fire.
     """
     out = []
@@ -71,12 +50,8 @@ def transcript(bench, upto=None, stop_before_fired=False,
         out.append("print: " + S.SAY_STEP % (mi, of or n, title))
         out.append("print: " + step.pass_if)
         out.append("print: " + S.SAY_PROMPT % (mi, of or n))
-        # ⛔ A STEP WITH A PREDICATE NEEDS TRAFFIC TO JUDGE, or the loop fixtures
-        # stop being about the loop and start failing on the absence of a bus.
-        # These emit the stream a PASSING step would have produced -- which is
-        # circular as a test OF the predicate, and is not one: _predicates()
-        # tests those directly, both ways, against synthetic windows. Here the
-        # question is only whether the loop records what the predicate said.
+        # The traffic a passing predicate would have seen, so the loop fixtures
+        # test the loop. The predicates themselves are _predicates()'s.
         out.extend(_satisfy(step.meta.get("check")))
         if stop_before_fired and upto is not None and step.n >= upto:
             return out                  # GO will be sent and nothing will fire
@@ -131,19 +106,14 @@ def write(name, lines):
 
 
 def run_paper(keys):
-    """Drive a real PAPER-mode run. -> (exit code, output).
+    """Drive a real paper-mode run. -> (exit code, output).
 
-    ⛔ NO TRANSCRIPT, BECAUSE PAPER MODE HAS NO STREAM. That is the whole point
-    of it: `midi` and `state` have no actions anywhere, so nothing has to be
-    driven -- no Pd, no ssh, and no Launchpad left stranded in Programmer Mode.
-    This is the only fixture here that exercises run_bench rather than
-    run_bench_driven, and until it existed that loop had no gate at all.
+    No transcript: paper mode has no stream. The only fixture that drives
+    run_bench rather than run_bench_driven.
 
-    ⛔ CUTIT_RESULTS IS NOT OPTIONAL. Paper mode is a NORMAL run, so run.py rolls
-    its verdicts up into latest.json -- and latest.json is committed and
-    describes hardware. A fixture writing invented verdicts there would destroy
-    the one property that file has. The replay path refuses to roll up at all;
-    this one is redirected instead, and check 8 proves the redirect held.
+    CUTIT_RESULTS is not optional. A paper run rolls its verdicts up into the
+    committed latest.json, which describes hardware; check 8 proves the
+    redirect held.
     """
     kp = write("paper.keys", keys)
     env = dict(os.environ, CUTIT_RESULTS=os.path.join(WORK, "results"))
@@ -161,10 +131,8 @@ def run(transcript_path, keys, auto_only=False):
         [sys.executable, os.path.join(ROOT, "test", "runner", "run.py"),
          "--bench", BENCH, "--replay", transcript_path, "--keys", kp]
         + (["--auto-only"] if auto_only else []) + [
-         # ⚠️ A TRANSCRIPT IS A RECORDING OF A DEVICE RUN, so it is replayed as
-         # one. Without this, every step carrying `targets: ('device',)` is
-         # skipped -- correctly -- and each one shifts the counts these fixtures
-         # assert, so adding a device-only predicate would break them all.
+         # A transcript is a recording of a device run, so it replays as one;
+         # otherwise device-only steps are skipped and shift every count.
          "--target", "device"],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
     return p.returncode, p.stdout.decode("utf-8", "replace")
@@ -172,14 +140,13 @@ def run(transcript_path, keys, auto_only=False):
 
 # ---------------------------------------------------------------------------
 def _holds():
-    """⛔ WHICH STEPS MAY BE HELD ON SCREEN, and the direction of every error.
+    """Which steps may be held on screen.
 
     The runner re-fires a step while its verdict is open, because g_oled ages a
-    parameter row out after ~1.3 s and a person cannot read one in that. For a
-    step whose subject IS that decay, re-firing resets the timer under test and
-    the step can never fail again -- so this asserts the exemptions hold, and
-    that at least one real parameter step still gets its hold. Both halves are
-    needed: "nothing holds" would satisfy the safety check on its own.
+    parameter row out after ~1.3 s. For a step whose subject is that decay,
+    re-firing resets the timer under test. So the exemptions must hold, and at
+    least one parameter step must still be held: "nothing holds" would satisfy
+    the exemptions on its own.
     """
     print("\n--- which steps may be held on screen ---")
     disp, nano, lp = S.load("display"), S.load("nanokontrol"), S.load("launchpad")
@@ -196,14 +163,9 @@ def _holds():
             "display 3 %s / display 4 %s -- these are the OLED rows that "
             "vanish in 1.3 s" % (disp.steps[2].holds, disp.steps[3].holds))
 
-    # ⛔ EACH OF THESE ASSERTS A TIMEOUT. Re-firing resets it.
-    # ⚠️ THE NUMBERS ARE POSITIONS AND THEY MOVE WHEN A STEP IS INSERTED ABOVE
-    # THEM. Both launchpad numbers shifted by one when `Pressing a mode lamp
-    # selects it` was added -- the check caught it, which is the point, but read
-    # the prose in the third column rather than trusting the number.
-    # ⚠️ ALL THREE USED TO NAME nanokontrol OR A LOWER display NUMBER. The OLED
-    # steps that had been copied into the nanokontrol bench were folded back
-    # into display, which is what they were always about -- see test/README.md.
+    # Each of these asserts a timeout, which re-firing resets. The numbers are
+    # positions and move when a step is inserted above; the third column says
+    # which step is meant.
     for b, n, why in ((disp, 10, "about 2 s later it vanishes"),
                       (disp, 13, "recording returns after about 4 s"),
                       (disp, 17, "the 30 s TTL that the step AFTER it judges"),
@@ -215,13 +177,8 @@ def _holds():
                 "holding it re-sends the message that starts the timer under "
                 "test\n     %s" % st.pass_if)
 
-    # ⛔ A STEP MAY REFUSE THE HOLD OUTRIGHT, and the derivation cannot work it
-    # out: `hold: False` is about whether the ACTIONS are idempotent, or about a
-    # timer the NEXT step judges, and neither is visible in this step's prose.
-    # ⚠️ FOUND BY SEARCHING RATHER THAN BY INDEX, because this named `tempo 4`
-    # and broke the day two tempo steps were cut. A can-it-fail check pinned to a
-    # step NUMBER is the same brittleness as a runner that trusts the step count,
-    # and this file argues against that in three other places.
+    # `hold: False` is for what the derivation cannot see: actions that are not
+    # idempotent, or a timer the next step judges. Found by search, not index.
     refusers = [(b.name, st) for b in ALL_BENCHES for st in b.steps
                 if st.meta.get("hold") is False]
     A.check("at least one step still refuses the hold outright -- otherwise "
@@ -234,8 +191,8 @@ def _holds():
                 "holds=%s -- and it must be the meta doing it, not a decay word "
                 "that happens to be in the prose" % st.holds)
 
-    # ⛔ STRUCTURAL, NOT PROSE. A measure step re-arms or re-reads a beat
-    # counter; a step with no actions has nothing to re-send in the first place.
+    # A measure step re-arms or re-reads a beat counter; a step with no actions
+    # has nothing to re-send.
     for b in ALL_BENCHES:
         bad = [st.n for st in b.steps if st.holds and (st.measure or not st.actions)]
         A.check("%s: no measure step and no action-less step is held" % b.name,
@@ -245,18 +202,9 @@ def _holds():
 class Trickle(stream.Source):
     """A source that says something every `gap` seconds and answers late.
 
-    ⛔ IT EXISTS TO PROVE A STALL IS SILENCE AND NOT SLOWNESS. wait_for used to
-    fix its deadline before the loop, so `timeout` was the total time the call
-    could take however much the patch was saying -- and that ended a hands-on
-    bench session on nanokontrol 15, which asks a person to sweep every fader
-    BEFORE pressing enter. Each CC is three console lines and the device's
-    console was measured at about 98 lines a second, so the fired line arrived
-    behind five seconds of the person's own traffic and the runner called a
-    working bench a stall.
-
-    ⚠️ NO REPLAY CAN SHOW THIS. Replay hands over its whole transcript at once,
-    so every deadline in it is met trivially; the defect only exists where lines
-    arrive over TIME, which is every real target and no fixture until this one.
+    Proves a stall is silence, not slowness: the deadline is per line, so a
+    person sweeping faders before pressing enter cannot outlast it. No replay
+    can show this, because a replay hands over its transcript at once.
     """
 
     realtime = True
@@ -268,8 +216,7 @@ class Trickle(stream.Source):
     def readline(self, timeout):
         if not self.left:
             return None
-        # ⚠️ IT HONORS THE TIMEOUT. A source that always returned a line would
-        # pass whatever wait_for did with its clock, which is the whole subject.
+        # It honors the timeout, or it would pass whatever wait_for did with it.
         if timeout < self.gap:
             time.sleep(max(0.0, timeout))
             return None
@@ -282,9 +229,8 @@ class Trickle(stream.Source):
 class Chatter(stream.Source):
     """A patch that says something forever and never answers.
 
-    ⛔ IT HAS NO END, which is the point: the bound under test is wait_for's,
-    not the fixture's. LIMIT is the GATE's safety net -- reaching it means the
-    cap did nothing and the check reports that rather than hanging.
+    Endless, so the bound under test is wait_for's line cap. LIMIT is only the
+    gate's safety net: reaching it means the cap did nothing.
     """
 
     realtime = True
@@ -305,16 +251,11 @@ class Chatter(stream.Source):
 class Fake(stream.Source):
     """The bench's state machine, in Python, on the other end of a fake wire.
 
-    ⛔ THIS IS THE ONLY THING THAT EVER EXERCISES GO RECOVERY. A lost datagram
-    cannot be provoked on demand on real hardware, and a replay cannot answer a
-    question at all -- so `where`, `show`, _ask_where, _regain_fired and
-    _next_step would every one of them be dead code that no run could
-    distinguish from working code.
+    The only thing that exercises GO recovery: a lost datagram cannot be
+    provoked on hardware, and a replay cannot answer a question.
 
-    ⚠️ `drop` IS A SET OF GO NUMBERS, counted the way the runner counts them, so
-    a fixture can say "the third datagram never arrived" and mean it.
-    ⚠️ `lose` IS A SET OF STEP NUMBERS whose DESCRIBE line goes missing -- the
-    other half, where the GO did land and the answer to it did not.
+    `drop` is a set of GO numbers, counted as the runner counts them; `lose` a
+    set of step numbers whose describe line goes missing.
     """
 
     realtime = False        # so _drain returns at once rather than sleeping
@@ -395,21 +336,13 @@ JUNK = "print: PARAM: slider-3 0.5"
 
 
 class Noisy(Fake):
-    """A bench with a PERSON in front of it, which is the case that broke.
+    """A bench with a person in front of it.
 
-    ⛔ NOTHING READS THE CONSOLE EXCEPT A WAIT, so everything the instrument
-    says while a verdict is open piles up in the queue. On a hands step that is
-    the person's own doing -- a sweep of nine faders is three lines per CC at
-    about 98 lines a second -- and it was 4141 lines deep after two steps of a
-    real run. Carried into the next step it does two things: the wait burns its
-    line cap on console that was already judged, and every one of those lines
-    lands in the next step's PREDICATE WINDOW.
-
-    ⚠️ THE BACKLOG IS DEEPER THAN TWICE THE CAP ON PURPOSE. Shallower and the
-    GO-recovery path rescues the run by accident -- `where` gets asked and
-    answered from under the pile -- which is luck, not the flush working, and a
-    fixture that passes on luck proves nothing. The real one was 4141 against a
-    cap of 2000 and the recovery drowned in it too.
+    Nothing reads the console except a wait, so a person's own traffic during
+    an open verdict piles up, and carried into the next step it burns the wait's
+    line cap and lands in that step's predicate window. The backlog is deeper
+    than twice the cap, as the real one was (4141 lines against 2000):
+    shallower, and GO recovery rescues the run by accident.
     """
 
     def __init__(self, *a, **kw):
@@ -428,17 +361,14 @@ class Noisy(Fake):
 
 
 def _stall():
-    """⛔ A STALL IS SILENCE. Slowness is not a fault and must not be reported
-    as one."""
+    """A stall is silence; slowness is not a fault."""
     print("\n--- what counts as a stall ---")
     marker = "print: " + S.SAY_FIRED % (7, 8)
     filler = ["print: PARAM: slider-3 0.5"] * 40
 
     t0 = time.time()
     src = Trickle(filler, marker, gap=0.05)
-    # ⚠️ CAUGHT RATHER THAN LET FLY. Reverting the fix makes this raise, and an
-    # uncaught Stalled ends the gate with a traceback -- red, but red in a way
-    # that names a Python line instead of the property that broke.
+    # Caught, so a regression fails the check rather than raising a traceback.
     try:
         m, _ = src.wait_for(S.RE_FIRED, 0.5)
     except stream.Stalled:
@@ -467,16 +397,9 @@ def _stall():
                 "it stalled for %r, and the two causes read nothing alike to "
                 "whoever has to act on the report" % e.why)
 
-    # ⛔ AND THE OTHER END OF IT. A patch that prints forever and never answers
-    # would wait all night on silence alone, so the cap is what bounds it -- and
-    # it counts LINES, which is the only bound a replay can be made to hit.
-    # ⛔ AND THE OTHER END OF IT. A patch that prints forever and never answers
-    # would wait all night on silence alone, so the cap is what bounds it -- and
-    # it counts LINES, which is the only bound a replay can be made to hit.
-    # ⚠️ THE SOURCE IS ENDLESS ON PURPOSE. Any finite fixture stalls at its own
-    # end whether or not the cap exists, so asserting Stalled against one would
-    # be green with the bound deleted. Chatter has only the gate's own safety
-    # net, far above LINE_CAP, and the check is WHERE it stopped.
+    # The other end: a patch that prints forever is bounded by the line cap.
+    # The source is endless, since any finite fixture stalls at its own end
+    # with or without the cap; the check is where it stopped.
     src = Chatter()
     try:
         src.wait_for(S.RE_FIRED, 0.2)
@@ -492,12 +415,10 @@ def _stall():
 
 
 def _recovery(bench):
-    """⛔ A LOST GO MUST NOT END THE SESSION, and must not be guessed at either.
+    """A lost GO must not end the session, and must not be guessed at.
 
-    GO travels as one UDP datagram and UDP guarantees nothing. A lost one and a
-    dead patch produce identical silence, and the two want opposite responses --
-    resend, or stop. `where` is what separates them, and these are the only
-    checks that ever run that path.
+    GO is one UDP datagram. A lost one and a dead patch are the same silence and
+    want opposite responses, resend or stop; `where` tells them apart.
     """
     print("\n--- recovering a lost GO ---")
     import records
@@ -525,27 +446,24 @@ def _recovery(bench):
                 "must cost nothing on a healthy run",
                 src.asked == 0, "asked %d time(s)" % src.asked)
 
-        # ⛔ THE GO THAT RUNS STEP 3. The bench is left in phase 0, so the
-        # recovery is to send it again -- and a runner that sent GO blindly
-        # would be right here and catastrophically wrong in the arm below.
+        # The GO that runs step 3: the bench is in phase 0, so resend it. A
+        # runner that resent blindly would pass here and fail the next arm.
         src, rows, ok = drive(drop=[5])
         A.check("⛔ a lost GO before a step runs is resent, and the run finishes",
                 len(rows) == len(bench.steps) and ok,
                 "%d rows of %d, ok=%s -- the session ended on a dropped "
                 "datagram" % (len(rows), len(bench.steps), ok))
 
-        # ⛔ THE GO THAT ADVANCES. Identical silence, opposite cause: the bench
-        # is in phase 1 and a second GO would advance it TWICE.
+        # The GO that advances: the same silence, but the bench is in phase 1
+        # and a second GO would advance it twice.
         src, rows, ok = drive(drop=[6])
         A.check("⛔ a lost GO before an advance is resent, and no step is "
                 "skipped", len(rows) == len(bench.steps) and ok
                 and [r["step"] for r in rows] == [s.n for s in bench.steps],
                 "steps recorded: %s" % [r["step"] for r in rows])
 
-        # ⛔ THE OTHER HALF: the GO landed and its ANSWER did not. Resending GO
-        # here would advance a bench that is already where it should be, and
-        # every verdict after it would answer the wrong question. `show` is what
-        # makes that recoverable without moving anything.
+        # The GO landed and its answer did not. Resending GO would advance the
+        # bench past the step; `show` recovers without moving anything.
         src, rows, ok = drive(lose=[4])
         A.check("⛔ a lost DESCRIBE line is asked for again rather than "
                 "re-driven", len(rows) == len(bench.steps) and ok
@@ -554,10 +472,7 @@ def _recovery(bench):
         A.check("and it had to ask -- otherwise the check above is vacuous",
                 src.asked > 0, "asked %d time(s)" % src.asked)
 
-        # ⛔ A PERSON'S OWN TRAFFIC MUST NOT COUNT AGAINST THE PATCH. This is
-        # the failure exactly as it happened: two hands-on steps, 4141 lines
-        # queued, and the wait spent its whole line cap on a backlog that was
-        # already judged.
+        # A person's own traffic must not count against the patch.
         src, rows, ok = drive(cls=Noisy)
         A.check("⛔ a backlog from the previous step does not stall the next one",
                 len(rows) == len(bench.steps) and ok,
@@ -565,23 +480,16 @@ def _recovery(bench):
                 "chewing through console that was already judged, and every "
                 "line of it lands in the next step's predicate window too"
                 % (len(rows), len(bench.steps), ok, src.pending()))
-        # ⛔ AND NOT ONE LINE OF IT WAS READ. Completing is the weaker half:
-        # the runner could grind through the whole backlog and still finish,
-        # having put every stale line in a predicate window on the way. Zero is
-        # the claim that matters, and it is what the flush buys.
+        # Finishing is the weaker half: a runner could grind through the whole
+        # backlog and still finish. Zero lines read is what the flush buys.
         A.check("⛔ and not one line of the previous step's console was read "
                 "into this step", src.read_junk == 0,
                 "%d stale line(s) reached the step loop, and a predicate window "
                 "is built out of exactly those" % src.read_junk)
 
-        # ⛔ AND THE SAME BACKLOG AGAINST --from, WHICH IS A SECOND LOOP. The
-        # flush above landed in the step loop only, so the walk that `--from`
-        # does kept everything the steps it fires print and each wait spent its
-        # cap on the backlog of the ones before it. ⚠️ IT PRESENTED AS AN
-        # UNCAUGHT Stalled -- a traceback, no verdict, no resume line -- and it
-        # looked intermittent, because whether 2000 lines had accumulated by any
-        # given step is a race. Measured on the device: `--from 11` died walking
-        # past step 7 where `--from 10` had survived the same walk.
+        # The same backlog against a --from walk, which is a second loop. On
+        # the device it showed as an uncaught Stalled that looked intermittent,
+        # since whether 2000 lines had piled up by a given step is a race.
         src, rows, ok = drive(cls=Noisy, start=len(bench.steps))
         A.check("⛔ a --from walk survives a backlog the same way the step loop "
                 "does", len(rows) == 1 and ok,
@@ -593,14 +501,9 @@ def _recovery(bench):
                 "%d stale line(s) reached the walk" % src.read_junk)
 
         # -- and the same losses INSIDE A --from WALK -------------------------
-        # ⛔ THE WALK HAD NO RECOVERY AT ALL, and it is where a lost GO costs
-        # most: the step loop loses one step, a walk loses the whole run with
-        # nothing judged and nothing to resume from. ⚠️ AND ON THE DEVICE IT
-        # CANNOT EVEN TIME OUT -- the level meters redraw forever, so wait_for
-        # never sees silence and burns its whole 2000-line cap instead, about
-        # eighteen seconds, then reports "the patch said 2000 lines without ever
-        # answering" over a bench sitting happily on step 1. Seen on the rig
-        # walking to launchpad 16 on 2026-08-11.
+        # A lost GO costs a walk the whole run, not one step. On the device it
+        # cannot time out either: the level meters redraw forever, so wait_for
+        # sees no silence and burns its 2000-line cap, about eighteen seconds.
         start = 4
         src, rows, ok = drive(start=start, drop=[1])
         A.check("⛔ a GO lost walking PAST a step is resent and the walk "
@@ -611,19 +514,15 @@ def _recovery(bench):
         A.check("a lost GO in the walk costs one `where` and no more",
                 src.asked == 1, "asked %d time(s)" % src.asked)
 
-        # ⛔ THE OTHER HALF OF THE WALK, and it is a different datagram: GO 2 is
-        # the one that asks the bench to DESCRIBE the step after the one just
-        # fired. One fixture covering both would prove only whichever guard
-        # fires first.
+        # GO 2 is a different datagram: the one that asks the bench to describe
+        # the step after the one just fired.
         src, rows, ok = drive(start=start, drop=[2])
         A.check("⛔ a GO lost between two walked steps is resent too",
                 len(rows) == len(bench.steps) - (start - 1) and ok,
                 "%d rows for steps %d..%d, ok=%s"
                 % (len(rows), start, len(bench.steps), ok))
 
-        # ⛔ AND A WALK THAT CANNOT BE RECOVERED STILL FAILS, judging nothing.
-        # A retry loop that turned a dead patch into a green run would be worse
-        # than the stall it replaced.
+        # A walk that cannot be recovered still fails, judging nothing.
         class DeafWalk(Fake):
             def go(self):
                 self.gos += 1
@@ -642,9 +541,8 @@ def _recovery(bench):
                 not ok and not rows,
                 "%d row(s), ok=%s" % (len(rows), ok))
 
-        # ⛔ A BENCH THAT WILL NOT ANSWER IS STILL A STALL. Recovery must not
-        # turn a dead patch into a green run, which is the failure mode of every
-        # retry ever written.
+        # A bench that will not answer is still a stall: recovery must not turn
+        # a dead patch into a green run.
         class Deaf(Fake):
             def go(self):
                 self.gos += 1
@@ -668,25 +566,14 @@ def _recovery(bench):
 
 
 def _interrupt_before_fire(bench):
-    """⛔ Ctrl-C MUST NOT WRITE A VERDICT FOR A STEP THAT NEVER RAN.
+    """Ctrl-C must not write a verdict for a step that never ran.
 
-    roll_up is last-write-wins, so `interrupted` is not a harmless nothing: it
-    REPLACES whatever that step last really answered. And Ctrl-C is the only way
-    out of a session, so it arrives wherever the person happened to be -- most
-    often at the read prompt of the step after the ones they came to re-run.
-    Three fresh passes went that way in one afternoon on 2026-08-11: tempo 5,
-    launchpad 8 and launchpad 17, all against unchanged shas.
-
-    ⚠️ THE TWO ARMS ARE THE WHOLE POINT. A runner that recorded nothing on any
-    interrupt would pass the first arm and lose a real observation in the
-    second, where the step DID fire and the person saw it and simply did not
-    answer. `ran` is what separates them, and only a fixture that tests both
-    proves it is being read rather than ignored.
-
-    ⚠️ THE STATE OF THE BENCH IS THE ASSERTION, not the count of anything. Fake
-    holds phase 0 for a step described and not fired, so "the patch was left
-    where it stood" is readable directly -- and it is the half no replay can
-    see, because a transcript has already decided what the patch did.
+    roll_up is last-write-wins, so `interrupted` replaces whatever that step
+    last really answered, and Ctrl-C usually lands on the read prompt of the
+    step after the ones a person came to re-run. Two arms, because a runner
+    that recorded nothing on any interrupt would lose the second: the step did
+    fire and nobody answered. Fake's phase shows where the patch was left, which
+    no replay can.
     """
     print("\n--- Ctrl-C before a step runs ---")
     import records
@@ -705,9 +592,8 @@ def _interrupt_before_fire(bench):
             return pending.pop(0)
         return provider
 
-    # ⚠️ THE STEP IS CHOSEN FROM THE TABLE, never hardcoded. What matters is that
-    # something was judged before it, so a run that recorded nothing at all
-    # cannot satisfy these by accident.
+    # Something is judged before the interrupted step, so a run that recorded
+    # nothing at all cannot satisfy these.
     stop = 2
     at = stop + 1
     try:
@@ -733,19 +619,15 @@ def _interrupt_before_fire(bench):
                 any(r["step"] == stop and r["verdict"] == "pass" for r in rows),
                 "%d rows: %s"
                 % (len(rows), [(r["step"], r["verdict"]) for r in rows]))
-        # ⚠️ ok IS FALSE HERE AND TRUE FOR AN ORDERLY END, and neither decides
-        # anything: what keeps a run off PASS is summarize() counting a step
-        # with no row at all as not run. The assertion belongs on the rows.
+        # ok decides nothing: summarize() counting a step with no row as not
+        # run is what keeps the run off PASS, so this asserts on the rows.
         A.check("Ctrl-C before firing: the bench is left unfinished rather than "
                 "reported complete",
                 len(rows) < len(bench.steps),
                 "%d rows of %d, ok=%s" % (len(rows), len(bench.steps), ok))
 
         # -- arm 2: the interrupt lands on the VERDICT prompt, after GO -------
-        # ⛔ THE STEP RAN AND NOBODY ANSWERED IT, which is a real observation
-        # about a real firing and must still be recorded. Suppressing this one
-        # would let a resumed run quietly inherit the verdict of a step whose
-        # behavior has since changed.
+        # The step ran and nobody answered it, which must still be recorded.
         src = Fake(bench)
         stream.use(interrupt_after(_keys(bench, stop_after=stop) + [""]))
         try:
@@ -764,11 +646,8 @@ def _interrupt_before_fire(bench):
                 src.phase == 1, "the fake bench is at phase %d" % src.phase)
 
         # -- and the four keys that were removed ------------------------------
-        # ⛔ NONE OF THESE MAY BE A VERDICT AGAIN. [q]uit was Ctrl-C with a worse
-        # failure mode, [u]ndo did nothing on a driven bench, [?] reprinted the
-        # PASS IF already on screen, and [s]kip answered a question a bench run
-        # does not ask -- the rig is plugged in or there is no session. ⚠️ THE
-        # AUTOMATIC SKIPS ARE A DIFFERENT THING and are checked in section 7c.
+        # None of these may be a verdict again. The automatic skips are a
+        # different thing, checked in section 7c.
         for gone in ("q", "u", "?", "s"):
             src = Fake(bench)
             stream.use(interrupt_after(["", gone, "p"]))
@@ -790,22 +669,12 @@ def _interrupt_before_fire(bench):
 
 
 def _mirror():
-    """⛔ A PREDICATE NEEDING THE OSC MIRROR IS SKIPPED. THE STEP IS NOT.
+    """A predicate needing the OSC mirror is skipped on the device; the step is
+    not, since a person watching the phone can judge it.
 
-    Only --target mac repoints u_net at a socket the runner binds. On the device
-    the datagrams go to the phone, so the window carries no OSC line and every
-    `has` finds nothing -- an AUTO FAIL on a rig that is working perfectly.
-
-    ⛔ AND THE STEP STILL GETS A VERDICT, which is the half that was wrong for
-    longer. phone 2 and 8 carried `targets: ('mac',)` to dodge this, and that
-    skips the whole STEP: two steps of the one bench whose subject is a screen in
-    your hand, never judged by anybody on the rig, while the comment beside them
-    said "the device run keeps its human verdict". A person watching the phone
-    answers both perfectly well.
-
-    ⚠️ THE PHONE BENCH IS DRIVEN HERE AND NOWHERE ELSE IN THIS FILE, because
-    `midi` -- the table every other fixture recites -- has no osc predicate at
-    all and never could prove this.
+    Only --target mac repoints u_net at a socket the runner binds, so on the
+    device the window carries no OSC and the predicate would be a false AUTO
+    FAIL. The phone bench is driven here because midi has no osc predicate.
     """
     print("\n--- a predicate that needs the OSC mirror ---")
     import records
@@ -864,12 +733,8 @@ def _mirror():
 
 
 def _boxes(src):
-    """Every box in a .pd, in file order -- which is what #X connect indexes.
-
-    ⚠️ COMMENTS COUNT AND #X connect DOES NOT. Same rule as C-10 and as
-    pd-layout-check.py, and getting it wrong here would silently read the wrong
-    box for every cord.
-    """
+    """Every box in a .pd, in file order, which is what #X connect indexes:
+    comments count (C-10)."""
     return [ln.split(" ", 4)[-1].rstrip(";")
             for ln in lib_pd.records(src)
             if ln.startswith(("#X obj ", "#X msg ", "#X text "))]
@@ -896,13 +761,8 @@ def _emits_float(box):
 
 
 def _wrapping():
-    """⛔ A PASS IF IS A PARAGRAPH AND HAS TO READ AS ONE.
-
-    Several run past two hundred characters. Printed as one line the terminal
-    folds them at whatever width it happens to be, every continuation starts
-    hard against the left margin, and there is nothing to tell one from the
-    start of the next field.
-    """
+    """A PASS IF runs past two hundred characters, so it is wrapped and
+    indented rather than left to the terminal to fold."""
     print("\n--- how a step's prose is laid out ---")
     import run as R
 
@@ -916,8 +776,7 @@ def _wrapping():
             max(len(x) for x in out) <= R.WRAP,
             "longest is %d against a width of %d" % (max(len(x) for x in out),
                                                      R.WRAP))
-    # ⛔ UNDER THE TEXT, NOT UNDER THE LABEL. A continuation at the left margin
-    # is indistinguishable from the next field down.
+    # Under the text, not the label: at the margin it reads as the next field.
     col = out[0].index("Touch")
     A.check("⛔ every continuation is indented under the text it continues",
             all(x.startswith(" " * col) and x[col:col + 1] != " "
@@ -932,13 +791,8 @@ def _wrapping():
 
 
 def _auto_format():
-    """⛔ THE EVIDENCE HAS TO BE READABLE OR IT IS NOT EVIDENCE.
-
-    A four-leaf `all` printed as two joined lines carries the whole conjunction
-    in write order on each -- so reading it means counting terms in one line and
-    counting again in the other to pair a number with its bound. A person hit
-    exactly that on tempo 3 and could not tell what the step was claiming.
-    """
+    """A predicate's evidence reads one line per leaf, a number beside its
+    bound, rather than the whole conjunction on each of two lines."""
     print("\n--- how a predicate's evidence reads ---")
     import run as R
 
@@ -958,19 +812,16 @@ def _auto_format():
             "the mark is on the rows that are fine, which hides the one that is "
             "not:\n%s" % out)
 
-    # ⛔ THE NAME IS SAID ONCE. Both halves of a `print` predicate open on it,
-    # and leaving it in both is what pushed the two numbers to opposite ends.
+    # Both halves of a `print` predicate open on the name; it is said once.
     A.check("a counter's name appears once on its row, not twice",
             body[0].count("M-BEATS") == 1, body[0])
 
-    # ⛔ AND A LABEL NEVER ENDS ON AN OPERATOR. The shared run of a ratio is
-    # `C2 / C1 =`; hanging the `=` on the name starts both halves mid-expression.
+    # A ratio's shared run is `C2 / C1 =`; the label stops before the `=`.
     label, _w, _g = R._split("A / B = 1.5 +/- 0.15", "A / B = 30 / 20 = 1.500")
     A.check("a label does not end on an operator", label == "A / B",
             "label is %r" % label)
 
-    # ⛔ ONE ASSERTION IS NOT A TABLE, and a satisfied one says the same words
-    # twice -- which took all but the LAST TOKEN for a label the first time.
+    # A satisfied single assertion has want and got identical: say it once.
     same = "DISP carries 'sp-pad 5'"
     out = _capture(R._say_auto, True, [(True, same, same)])
     body = [ln.strip() for ln in out.splitlines() if ln.strip()][1:]
@@ -995,8 +846,8 @@ def _capture(fn, *a):
 
 
 def _where_wiring():
-    """⛔ THE QUERY HAS TO BE IN THE PATCH, in every bench, or the recovery above
-    is a conversation with nobody."""
+    """Every generated bench answers `where` and `show`, or GO recovery talks
+    to nobody."""
     print("\n--- where and show, in the generated benches ---")
     m = S.RE_WHERE.search("print: %s: 16 1" % S.SAY_WHERE)
     A.check("protocol: the where regex reads what [print %s] writes" % S.SAY_WHERE,
@@ -1005,12 +856,8 @@ def _where_wiring():
 
     import glob
     files = sorted(glob.glob(os.path.join(ROOT, "test/bench/*-bench.pd")))
-    # ⚠️ THE COUNT IS ASSERTED SO IT CAN ONLY GO UP DELIBERATELY, the same rule
-    # as gates.py's EXPECT and lib_scratch.py's MIDI_EXPECT. A bench that stopped
-    # being generated would otherwise leave this loop quietly checking fewer
-    # files and still saying ok.
-    # ⚠️ 8 -> 9 WHEN THE DEBUG PATCH GAINED ITS BENCH. Updated deliberately, which
-    # is the only way this number is ever allowed to move.
+    # Exact, like EXPECT and MIDI_EXPECT, so a bench that stops being generated
+    # cannot leave this checking fewer files. Change it deliberately.
     A.check("every bench file is checked -- %d of them" % len(files),
             len(files) == 9, "found %d" % len(files))
     for path in files:
@@ -1022,12 +869,9 @@ def _where_wiring():
                 "session exactly as it did before")
         A.check("%s prints its position" % name,
                 "print %s" % S.SAY_WHERE in src)
-        # ⛔ $0-do-show CARRIES THE STEP NUMBER, NOT A BANG. The describe chain
-        # is one [select N] per step, so a bang matches none of them and the
-        # re-describe is a silent no-op -- indistinguishable from a step whose
-        # text is already on screen, which is why the encoder's repeat was dead
-        # from the day it was written and nothing noticed. `show` inherited the
-        # same wire and a probe against real Pd caught it.
+        # $0-do-show carries the step number: the describe chain is one
+        # [select N] per step, so a bang matches none and the re-describe is a
+        # silent no-op.
         bad = [_boxes(src)[a] for a, b in _feeds(src, r"s \\\$0-do-show")
                if not _emits_float(_boxes(src)[a])]
         A.check("%s feeds $0-do-show a float and never a bang" % name,
@@ -1042,9 +886,8 @@ def main():
     n = len(bench.steps)
 
     # -- the protocol's two halves must agree ------------------------------
-    # ⛔ THE GENERATOR'S FORMAT STRINGS AND THE RUNNER'S REGEXES ARE ONE
-    # AGREEMENT. Drift makes the runner stop recognizing a step, call it a
-    # stall, and be wrong about a bench that is working perfectly.
+    # The generator's format strings and the runner's regexes are one
+    # agreement; drift reads as a stall on a working bench.
     m = S.RE_STEP.search("print: " + S.SAY_STEP % (3, 14, "a title"))
     A.check("protocol: the step regex reads what the step format writes",
             bool(m) and m.group(1) == "03" and m.group(2) == "14"
@@ -1068,15 +911,9 @@ def main():
     _interrupt_before_fire(bench)
     _mirror()
 
-    # ⛔ THE CHILD MUST NEVER INHERIT stdin, AND NO REPLAY FIXTURE CAN SEE THIS.
-    # Every check in this file drives stream.Replay, which launches nothing --
-    # so the one thing that only a real subprocess does went unguarded, and it
-    # broke the device target completely: Popen inherits stdin by default and
-    # `ssh` reads it greedily to forward to the remote command, so the runner's
-    # own prompt and the ssh child raced for every keystroke. Down a pipe the
-    # first prompt gets EOF; at a terminal the Enter that should send GO is
-    # eaten by a Pd with no use for it. It is a static check because making it a
-    # live one would need the rig.
+    # The child must not inherit stdin: ssh reads it greedily, so the runner's
+    # prompt and the ssh child race for every keystroke. Static, because only a
+    # real subprocess shows it and a live check would need the rig.
     tsrc = open(os.path.join(ROOT, "test/runner/targets.py"), encoding="utf-8").read()
     A.check("⛔ the launched child gets stdin=DEVNULL -- ssh must not eat the "
             "runner's keystrokes",
@@ -1096,35 +933,20 @@ def main():
     A.check("clean: every step passed",
             ("%d passed" % n) in out, _tail(out))
 
-    # ⛔ EVERY STEP IS READ BEFORE IT IS RUN, INCLUDING THE ONES WITH NOTHING TO
-    # DO. The prompt used to be guarded on `step.hands`, so a step carrying no
-    # `do` had GO sent on the line after its watch text printed -- you were told
-    # what to look at after it had happened. launchpad 1-17 are all like that.
-    # ⚠️ COUNTED AGAINST THE STEP TABLE, NOT A LITERAL. A hardcoded 17 would go
-    # red the day somebody adds a step, which is not a defect; restoring the
-    # guard IS one, and that is what this catches.
-    # ⚠️ ANCHORED AT THE START OF A LINE, NOT SEARCHED LOOSELY -- and it had to
-    # be. A bare out.count("press enter") read 18 for 17 steps, because midi
-    # step 14's own `do` text says "then press enter straight away" and
-    # describe() prints it. Same shape as the BEATS-inside-M-BEATS anchor in
-    # predicates.py: a loose match answered by prose instead of by a prompt.
+    # Every step is read before it is run, including one with nothing to do,
+    # or GO fires before its watch text is read. Counted against the step
+    # table, and anchored at line start, since a step's own `do` text can say
+    # "press enter".
     prompts = len(re.findall(r"(?m)^  Press ENTER", out))
     A.check("clean: every step gets a read prompt before GO -- not just hands "
             "steps", prompts == n, "%d prompts for %d steps" % (prompts, n))
 
-    # ⛔ [r]epeat MUST ASK AGAIN AND ADVANCE NOTHING. It fires the current step a
-    # second time so a person can actually read an OLED that ages a row out in
-    # ~1.3 s. The first implementation looped the whole STEP rather than the
-    # verdict prompt, so it re-described the step AND sent a second GO -- the
-    # patch moved on while the runner still thought it was here, and the only
-    # thing that noticed was the desync guard. Against a replay there is nothing
-    # to fire again, and the run must carry on regardless rather than desync.
-    # ⚠️ THE STEP COUNT IS THE ASSERTION. If a repeat consumed a GO, the marker
-    # for step 2 would be read as step 1's fire and the run would abort.
-    # ⚠️ INJECTED AT THE FIRST PROMPT THAT ACTUALLY ASKS A PERSON. Dropping "r"
-    # at a fixed index put it on a READ prompt instead -- midi step 1 is judged
-    # by a predicate and never asks for a verdict, so the key was swallowed as
-    # an enter and the fixture tested nothing while looking green.
+    # [r]epeat asks again and advances nothing: it fires the current step a
+    # second time so a person can read an OLED row that ages out in ~1.3 s.
+    # Against a replay nothing fires again and the run must carry on. The step
+    # count is the assertion: a repeat that consumed a GO would desync. The "r"
+    # goes to the first prompt that asks a person; a read prompt would swallow
+    # it as an enter.
     rkeys, done = [], False
     for step in bench.steps:
         rkeys.append("")
@@ -1145,13 +967,8 @@ def main():
             out.count("not available against a recorded console") == 1,
             _tail(out))
 
-    # ⛔ A PREDICATE IS EVIDENCE AND A PERSON IS THE VERDICT. The predicate reads
-    # a BUS; the PASS IF beside it describes a SCREEN. `warn m_nano` can be on
-    # err while the OLED shows nothing at all -- a display bug, and exactly what
-    # a bench exists to catch -- so a green predicate must not close the step.
-    # ⚠️ IT ALSO SWALLOWED A KEYSTROKE: with no verdict prompt on a predicate
-    # step, the key a person typed anyway was eaten by the NEXT step's read
-    # prompt and fired that step without them.
+    # A predicate is evidence and a person is the verdict: the predicate reads a
+    # bus, the PASS IF describes a screen, and the two can disagree.
     checks = [st for st in bench.steps if st.meta.get("check")]
     A.check("this bench still has predicate steps to prove it with",
             len(checks) >= 3, "%d steps carry a check" % len(checks))
@@ -1165,9 +982,7 @@ def main():
             "%d disagreements reported for %d predicate steps"
             % (out.count("the bus said"), len(checks)))
 
-    # ⛔ --auto-only IS THE UNATTENDED RUN and there the predicate IS the verdict,
-    # because nobody is there to give one. Without this, "the person decides"
-    # would have quietly broken the one mode that has no person.
+    # --auto-only is the unattended run, where the predicate is the verdict.
     rc, out = run(write("clean.txt", clean), [], auto_only=True)
     A.check("--auto-only: a predicate still answers with nobody in the room",
             ("%d passed" % len(checks)) in out, _tail(out))
@@ -1175,17 +990,13 @@ def main():
             "no predicate, and --auto-only" in out, _tail(out))
 
     # -- 2. truncated at step 7 --------------------------------------------
-    # ⛔ MUST NOT PASS. Seven good verdicts and a console that stops is a run
-    # that did not happen, and reporting the seven as a result is the whole
-    # failure this fixture exists for.
+    # Must not pass: seven good verdicts and a console that stops is not a run.
     rc, out = run(write("truncated.txt", transcript(bench, upto=7)), _keys(bench))
     A.check("truncated: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("truncated: says STALLED rather than reporting a pass",
             "STALLED" in out and "RESULT: PASS" not in out, _tail(out))
-    # ⛔ A STALL THAT SAYS ONLY "STALLED" IS A REPORT NOBODY CAN ACT ON. The only
-    # bench verdict this project has ever recorded is a launchpad step-1 stall
-    # whose note read "GO sent, no fired line" -- true, and naming nothing that
-    # would let anyone work out why. Three causes, told apart by three facts.
+    # A bare "STALLED" is a report nobody can act on; three facts tell the
+    # causes apart.
     A.check("truncated: the stall says whether GO was sent",
             "GO sent" in out, _tail(out, 12))
     A.check("truncated: ...and how far behind the reader was",
@@ -1194,11 +1005,8 @@ def main():
             "the last" in out and "line(s) seen:" in out, _tail(out, 12))
 
     # -- 2b. GO sent and nothing fires -------------------------------------
-    # ⛔ A DIFFERENT STALL FROM THE ONE ABOVE, and it took a mutation to notice.
-    # Truncating after a fired line stalls waiting for the NEXT description;
-    # truncating before one stalls waiting for the step to fire. Two handlers,
-    # and with only the first fixture the second could be -- and was -- changed
-    # to report success with this gate staying green.
+    # A different handler from the one above: this stalls waiting for the step
+    # to fire, not for the next description.
     rc, out = run(write("nofire.txt",
                         transcript(bench, upto=7, stop_before_fired=True)),
                   _keys(bench))
@@ -1209,13 +1017,9 @@ def main():
             "6 passed" in out, _tail(out))
 
     # -- 3. step numbers out of order --------------------------------------
-    # ⛔ MUST ABORT, NOT SHIFT. A runner that resyncs silently records every
-    # later verdict against the wrong question and still says PASS.
-    #
-    # ⚠️ THE MARKER ALONE IS RENUMBERED HERE. The fired lines stay correct, so
-    # the ONLY guard that can catch this is the step-number check in
-    # check_marker -- which is the point. The previous version of this fixture
-    # renumbered both and was caught downstream, leaving check_marker untested.
+    # Must abort, not shift: a silent resync records every later verdict
+    # against the wrong question. Only the marker is renumbered, so only
+    # check_marker can catch it.
     rc, out = run(write("desync-marker.txt",
                         transcript(bench, marker_n=lambda i: i + 1 if i > 1 else i)),
                   _keys(bench))
@@ -1225,10 +1029,8 @@ def main():
             ("%d passed" % n) not in out, _tail(out))
 
     # -- 3b. the right number, the wrong question --------------------------
-    # ⛔ THE NUMBER IS NOT ENOUGH. A bench regenerated from a REORDERED table
-    # still counts 1, 2, 3 while every title has moved, so a runner checking
-    # only the count records a full set of verdicts against the wrong questions
-    # and reports PASS. Nothing but the title can catch that.
+    # A bench regenerated from a reordered table still counts 1, 2, 3; only
+    # the title catches it.
     rc, out = run(write("desync-title.txt",
                         transcript(bench, retitle=lambda i, t:
                                    "a step that is not in the table" if i == 4 else t)),
@@ -1244,11 +1046,8 @@ def main():
             "DESYNC" in out, _tail(out))
 
     # -- 3d. the step described is not the step that ran --------------------
-    # ⛔ THE OTHER HALF OF THE MARKER CHECK, and also found by mutation. Every
-    # fixture above corrupts the DESCRIPTION, so all of them are caught before
-    # the fired line is ever compared -- deleting that comparison left this gate
-    # green. This one describes step N correctly and then fires step N+1, which
-    # is the shape of a bench whose run branch and describe branch disagree.
+    # Every fixture above corrupts the description, so all are caught before
+    # the fired line is compared. This one describes step N and fires N+1.
     rc, out = run(write("desync-fired.txt",
                         transcript(bench, fired_n=lambda i: i + 1 if i > 1 else i)),
                   _keys(bench))
@@ -1263,26 +1062,16 @@ def main():
     A.check("empty: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("empty: names the cause -- the bench never loaded",
             "NEVER LOADED" in out.upper(), _tail(out))
-    # ⛔ AN EMPTY TAIL IS THE MOST DIAGNOSTIC CASE THERE IS, and it is a
-    # different claim from "the bench never loaded" -- that one is inferred from
-    # a timeout, this one is the direct evidence for it. Nothing was read on the
-    # stream at any point, so this is not a stall in a running bench.
+    # "Never loaded" is inferred from a timeout; nothing read at all is the
+    # direct evidence for it.
     A.check("empty: the report says nothing was read at all, rather than "
             "showing a tail of lines that do not exist",
             "NOTHING has been read" in out, _tail(out, 12))
 
     # -- 5. interrupted part-way -------------------------------------------
-    # ⚠️ THESE ASSERT PROPERTIES, NOT ARITHMETIC. An earlier version hardcoded
-    # "4 passed" and "--from 5", which was only true while every step needed a
-    # keystroke -- the moment midi 1, 4, 6 and 7 gained predicates and stopped
-    # consuming keys, four fixtures went red over nothing at all. A loop fixture
-    # must not break when a step becomes machine-checkable.
-    #
-    # ⚠️ IT USED TO END ON A LITERAL "q" AND NOW ENDS ON RUNNING OUT. That key
-    # was a verdict once; it is an ordinary character at a read prompt now, so
-    # spelling it here would have made this fixture pass on the EOF underneath
-    # rather than on the thing it names. What ends this run is the keys being
-    # exhausted, which is what the last two lines of _keys already do.
+    # These assert properties, not arithmetic, so a step becoming
+    # machine-checkable cannot break them. The run ends on the keys running
+    # out; "q" is no longer a key.
     rc, out = run(write("interrupt.txt", clean), _keys(bench, stop_after=4))
     A.check("interrupted: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("interrupted: keeps the verdicts it did get rather than discarding",
@@ -1293,22 +1082,16 @@ def main():
             _resumes_at_last_step(out), _tail(out))
 
     # -- 6. every verdict failed --------------------------------------------
-    # ⛔ A SKIP IS NEVER A PASS, and this fixture used to prove it by typing `s`
-    # at every step. That key is gone -- a bench run assumes the whole rig is
-    # plugged in and reachable, so "I cannot judge this today" is not an answer
-    # it offers. ⚠️ THE CHECK BEHIND IT DID NOT GO WITH THE KEY: the AUTOMATIC
-    # skips are the ones that matter, and section 7c drives all three of them.
-    # What is left here is the other absolute -- a bench of failures must never
-    # come out green.
+    # A bench of failures must never come out green. That a skip is never a
+    # pass is section 7c's.
     rc, out = run(write("allfail.txt", clean), _keys(bench, "f", "x"))
     A.check("all failed: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("all failed: RESULT is FAIL, never PASS",
             "RESULT: FAIL" in out and "RESULT: PASS" not in out, _tail(out))
 
     # -- 7. the runner runs out of scripted answers -------------------------
-    # ⚠️ The fixture provider must EXHAUST rather than repeat its last key: a
-    # provider that repeated would let a transcript longer than its key list
-    # pass by accident, which is a fixture grading itself.
+    # The provider exhausts rather than repeating its last key, or a transcript
+    # longer than its key list would pass by accident.
     rc, out = run(write("shortkeys.txt", clean), _keys(bench, stop_after=2))
     A.check("exhausted keys: exits non-zero rather than inventing verdicts",
             rc != 0, "rc=%d" % rc)
@@ -1316,16 +1099,8 @@ def main():
             _tally(out)["pass"] > 0 and _tally(out)["notrun"] > 0, _tail(out))
 
     # -- 7b. a real SIGINT, at a real prompt --------------------------------
-    # ⛔ Ctrl-C IS NOT quit AND IT IS NOT fail. It arrives while a person is
-    # looking at hardware and deciding, so the step in flight has no verdict --
-    # recording a failure would put a red mark against working code, and a skip
-    # would claim somebody decided to pass over it.
-    #
-    # ⚠️ IT IS DRIVEN BY PID, NOT BY pkill. Trying this from the shell first,
-    # `pkill -INT -f "runner/run.py"` matched the harness script running it --
-    # the pattern appears in the script's own text -- which tore down the pipe
-    # and produced an EOF the runner correctly read as quit. The measurement was
-    # of the harness, not the runner. Popen hands back the exact pid.
+    # Ctrl-C is neither quit nor fail: the step in flight has no verdict. It is
+    # sent by pid, not pkill -f, whose pattern also matches the harness.
     rc, out = _sigint(write("sigint.txt", clean))
     A.check("SIGINT: exits non-zero", rc != 0, "rc=%d" % rc)
     A.check("SIGINT: says INTERRUPTED rather than quit or fail",
@@ -1336,12 +1111,8 @@ def main():
             _tally(out)["fail"] == 0 and _tally(out)["notrun"] > 0, _tail(out))
 
     # -- 7c. paper mode: an absent oracle is a SKIP, never a FAIL -----------
-    # ⛔ THIS IS THE ONLY FIXTURE THAT DRIVES run_bench, and until it existed
-    # that loop was ungated -- which is how it came to evaluate every predicate
-    # against an EMPTY WINDOW and report AUTO FAIL. There is no Pd in paper mode,
-    # so _bus_lines finds nothing, `has` finds nothing, and four steps of a
-    # working `midi` bench failed. Every recorded midi run had used
-    # `--target device`, so nobody had met it.
+    # There is no Pd in paper mode, so a predicate needing a console has an
+    # empty window and must be skipped, not failed.
     import predicates as P
     console = [s for s in bench.steps
                if s.meta.get("check")
@@ -1352,28 +1123,20 @@ def main():
             out.count("reads the console") == len(console),
             "%d skips for %d console predicates -- %s"
             % (out.count("reads the console"), len(console), _tail(out)))
-    # ⛔ THE NEGATIVE HALF, AND IT IS THE ONE THAT REGRESSES. A skip and a fail
-    # both keep RESULT off PASS, so counting skips alone would stay green if the
-    # empty-window evaluation came back beside it.
+    # A skip and a fail both keep RESULT off PASS, so counting skips alone
+    # would stay green if the empty-window failure came back beside them.
     A.check("paper: nothing reports AUTO FAIL out of an empty window",
             "AUTO FAIL" not in out, _tail(out))
     A.check("paper: the reason names the kind that could not be judged",
             "`bus`" in out or "`bus-count`" in out, _tail(out))
-    # ⛔ AND A SKIP IS STILL NOT A PASS. Turning four false failures into four
-    # skips must not turn the run green -- those steps remain unjudged, and a
-    # suite that reported PASS over them would be the exact disease this fix was
-    # meant to cure, one level up.
+    # And a skip is still not a pass: those steps remain unjudged.
     A.check("paper: skips keep RESULT off PASS", rc != 0 and "RESULT: PASS"
             not in out, "rc=%d / %s" % (rc, _tail(out)))
 
     # -- 8. and the roll-up was never touched -------------------------------
-    # ⛔ latest.json IS COMMITTED AND DESCRIBES HARDWARE. A fixture is a
-    # fiction; letting one write there would put invented verdicts in the one
-    # file whose entire value is that it contains none.
-    # ⚠️ THE PAPER RUN ABOVE IS THE REASON THIS NOW MATTERS TWICE. A replay
-    # refuses to roll up at all, but paper mode is a normal run and DOES -- it is
-    # redirected with CUTIT_RESULTS instead, and this is what proves the redirect
-    # held rather than merely being passed.
+    # latest.json is committed and describes hardware. A replay refuses to
+    # roll up; a paper run does roll up, redirected by CUTIT_RESULTS, and this
+    # proves the redirect held.
     import records
     before = len(records.load_latest().get("records", {}))
     run(write("clean2.txt", clean), _keys(bench))
@@ -1394,13 +1157,9 @@ def main():
 
 
 def _predicates():
-    """Every predicate kind, against a synthetic window. Each one BOTH ways.
-
-    ⛔ A PREDICATE THAT HAS NEVER BEEN SEEN TO FAIL IS NOT A CHECK. Proving these
-    on hardware costs a rig session each and reintroducing a real bug to do it;
-    proving them here costs a millisecond, and it is the same question -- given
-    this stream, does the predicate say yes or no. The hardware run then asks
-    the different and equally necessary question of whether the stream is real.
+    """Every predicate kind, against a synthetic window, each one both ways: a
+    predicate never seen to fail is not a check. The hardware run asks the
+    separate question of whether the stream is real.
     """
     import predicates as P
 
@@ -1426,8 +1185,8 @@ def _predicates():
     A.check("oled: an empty window FAILS rather than passing vacuously",
             not ok, got)
 
-    # ⛔ THE LAST COMPLETE FRAME, NOT THE WHOLE WINDOW. A window spans a repaint,
-    # so the frames before a step still show what was there.
+    # The last complete frame: a window spans a repaint, so earlier frames
+    # still show what was there before the step.
     ok, _, got = P.evaluate({"kind": "oled", "has_row": ["12"], },
                             frame("chop-size", "43 %") + good)
     A.check("oled: judged on the LAST frame, not on every frame in the window",
@@ -1437,9 +1196,7 @@ def _predicates():
     A.check("oled: and an earlier frame's content does NOT count",
             not ok, got)
 
-    # ⛔ THE GEOMETRY IS NOT THE TEXT. `8` and `16` are the font size and the y
-    # coordinate in every line above -- a predicate satisfied by those would
-    # pass against a screen showing nothing of the sort.
+    # `8` and `16` are the font size and y in every line above, not text.
     ok, _, got = P.evaluate({"kind": "oled", "has_row": ["16"]}, good)
     A.check("oled: a font size or coordinate never satisfies a text assertion",
             not ok, got)
@@ -1474,8 +1231,7 @@ def _predicates():
                              "min": 19, "max": 22}, [])
     A.check("print: a counter that never printed fails rather than passing "
             "vacuously", not ok, got)
-    # ⚠️ `BEATS` is a substring of all three names above. A loose match would
-    # read the tempo bench's three counters as the Launchpad bench's one.
+    # `BEATS` is a substring of all three names above.
     ok, _, got = P.evaluate({"kind": "print", "name": "BEATS",
                              "min": 19, "max": 22}, counts)
     A.check("print: the label is anchored -- BEATS does not match M-BEATS",
@@ -1497,10 +1253,8 @@ def _predicates():
                              "has": ["grain"]}, [])
     A.check("osc: silence FAILS where traffic was asserted -- a dead u_net "
             "looks exactly like this", not ok, got)
-    # ⛔ THE ASYMMETRY IS DELIBERATE AND IS THE SUBTLE PART. A purely negative
-    # spec is SATISFIED by silence -- "the meters never reach the phone" is
-    # answered correctly by an address that carried nothing -- and that is only
-    # safe because the lint refuses a bare has_not. Its witness is a sibling.
+    # A purely negative spec is satisfied by silence, which is safe only
+    # because the lint refuses a bare has_not: its witness is a sibling.
     ok, _, got = P.evaluate({"kind": "osc", "addr": "/cutit/param",
                              "has_not": ["in-l"]}, [])
     A.check("osc: silence SATISFIES a purely negative spec", ok, got)
@@ -1519,10 +1273,8 @@ def _predicates():
 def _sigint(transcript_path):
     """Block the runner at a verdict prompt, then interrupt it. -> (rc, output).
 
-    ⚠️ NO --keys HERE, DELIBERATELY. A scripted key list that runs out raises
-    EOF, which the prompt reads as quit -- a different path with a similar
-    outcome, and using it would test the wrong branch. An open pipe nobody
-    writes to is what actually blocks a person's prompt.
+    No --keys: a key list that runs out raises EOF, a different branch. An
+    open pipe nobody writes to is what blocks a person's prompt.
     """
     import selectors
     import signal
@@ -1532,25 +1284,9 @@ def _sigint(transcript_path):
         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
 
-    # Wait for whichever prompt comes first rather than sleeping a guessed
-    # interval -- a fixed sleep is a race that passes on a fast machine and
-    # fails on a loaded one.
-    #
-    # ⛔ AND THE READ MUST BE ABLE TO TIME OUT. This was a blocking read(1) in a
-    # `while ... time.time() < deadline` loop, which cannot work: with the child
-    # blocked on a prompt there is no byte to return, read() waits forever, and
-    # the deadline is never evaluated. The whole suite hung -- and A GATE THAT
-    # HANGS IS WORSE THAN ONE THAT FAILS, because a failure is at least a
-    # verdict. selectors gives the wait a real deadline.
-    #
-    # ⚠️ IT WATCHES FOR BOTH PROMPTS. Waiting only for "verdict?" broke the day
-    # the hands-on steps gained a `do`, because the runner then asks "press
-    # enter when you are ready" first and never reaches the other one.
-    # ⚠️ os.read ON THE RAW fd, NEVER p.stdout.read(). select() answers about the
-    # FILE DESCRIPTOR while a buffered reader keeps its own buffer in front of
-    # it -- so bytes that have already arrived sit unseen in Python while select
-    # reports nothing new, and the loop waits out its whole deadline for a
-    # prompt that was delivered immediately. That cost this fixture 20 s a run.
+    # Wait for whichever prompt comes first, not a guessed sleep. The read must
+    # time out, or a blocked child hangs the suite; and it reads the raw fd with
+    # os.read, since a buffered reader hides bytes select() has already seen.
     sel = selectors.DefaultSelector()
     sel.register(p.stdout.fileno(), selectors.EVENT_READ)
     buf = b""
@@ -1575,8 +1311,7 @@ def _sigint(transcript_path):
 
 
 def _tally(out):
-    """The summary line's counts, so a fixture can assert a property of the run
-    rather than an arithmetic that shifts whenever a step becomes automatic."""
+    """The summary line's counts, so a fixture asserts a property of the run."""
     import re
     m = re.search(r"Steps\s+(\d+) passed, (\d+) failed, (\d+) skipped, "
                   r"(\d+) not run", out)
@@ -1587,15 +1322,9 @@ def _tally(out):
 
 
 def _resumes_at_last_step(out):
-    """The resume command must name the step the runner said it stopped on.
-
-    ⚠️ AGAINST THE RUNNER'S OWN STATEMENT, not against the last header it
-    printed. Those are usually the same and are not always: a step is described,
-    then interrupted at its prompt, and whether its header reached the pipe
-    before the signal did is a buffering question rather than a correctness one.
-    What must be true is that "stopped at step N" and "--from N" agree -- a
-    resume command pointing anywhere else is the actual defect.
-    """
+    """The resume command must name the step the runner said it stopped on,
+    not the last header printed: whether that reached the pipe before the
+    signal is a buffering question."""
     import re
     m = re.findall(r"(?:INTERRUPTED at step|stopped at step|stopped before "
                    r"step) (\d+)", out)
@@ -1603,44 +1332,17 @@ def _resumes_at_last_step(out):
 
 
 def _keys(bench, verdict="p", note=None, stop_after=None):
-    """The keystrokes a person would type to give every step `verdict`.
-
-    ⛔ IT IS DERIVED FROM THE BENCH, NOT A FLAT LIST OF n. How many inputs a step
-    consumes depends on the step: one with a predicate asks nothing more after
-    the read prompt, one judged by a person asks again for the verdict. A flat
-    ["p"] * n was right only while every step was judged by hand, and the moment
-    the hands-on steps gained instructions it ran short and four fixtures
-    reported "not run" over nothing at all.
-
-    ⛔ EVERY STEP CONSUMES A READ PROMPT NOW, AND THIS LINE IS THE FIXTURE THAT
-    ENCODED THE OLD BEHAVIOR. It used to be `if step.hands`, matching a runner
-    that prompted only for steps carrying a `do` -- and that was the defect:
-    every other step fired GO on the line after its watch text printed, so the
-    thing you were told to look at had already happened. The guard is gone from
-    run.py and it is gone from here, deliberately, because the runner now asks
-    every step to be READ before it is run. ⚠️ Changed to follow a fix, never to
-    turn a red run green: the prompt-count check in main() is what would go red
-    if that guard came back, and it is asserted against the step table rather
-    than against this list.
+    """The keystrokes a person would type to give every step `verdict`,
+    derived from the bench: every step takes a read prompt, then a verdict.
+    The prompt-count check in main() is what guards the read prompt, against
+    the step table rather than this list.
     """
     out = []
     for step in bench.steps:
         if stop_after is not None and step.n > stop_after:
             break
-        # ⚠️ THE TWO QUESTIONS ARE INDEPENDENT. Every step asks "press enter"
-        # before GO -- a step with a `do` because the finger has to be on the pad
-        # or the predicate reads an empty console, a step without one because it
-        # still has to be read -- and only then does a predicate answer for it or
-        # a person. midi 4, 6 and 7 are both at once, and treating "has a
-        # predicate" as "asks nothing" left exactly those three short.
         out.append("")                   # the read prompt, every step
-        # ⛔ EVERY STEP ASKS A PERSON NOW, PREDICATE OR NOT. This used to skip
-        # the verdict key for a step carrying a `check`, matching a runner where
-        # the predicate recorded its own verdict and never asked -- and that was
-        # the defect: the predicate reads a BUS while the PASS IF beside it
-        # describes a SCREEN, and the keystroke a person typed anyway was
-        # swallowed by the next step's read prompt. The predicate is evidence
-        # now and the person answers, so every step consumes both keys.
+        # A person answers every step; a predicate is evidence.
         out.append(verdict)
         if note is not None:
             out.append(note)
@@ -1648,14 +1350,9 @@ def _keys(bench, verdict="p", note=None, stop_after=None):
 
 
 def _paper_keys(bench, verdict="p"):
-    """The keystrokes a paper-mode run of `bench` consumes.
-
-    ⛔ A DIFFERENT SHAPE FROM _keys, BECAUSE run_bench IS A DIFFERENT LOOP. There
-    is no GO and nothing to fire, so there is no read prompt: a step is either
-    skipped outright (its target, or a predicate needing a console), judged from
-    disk by a `file` predicate, or asked of a person. Only the last consumes a
-    key, and deriving that from the table is what stops this list going stale the
-    day a step gains a predicate.
+    """The keystrokes a paper-mode run of `bench` consumes. run_bench has no GO
+    and so no read prompt: a step is skipped, judged by a predicate, or asked
+    of a person, and only the last takes a key.
     """
     import predicates as P
     out = []

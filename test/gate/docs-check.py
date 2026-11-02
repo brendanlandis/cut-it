@@ -4,70 +4,18 @@
     python3 test/gate/docs-check.py           check, exit non-zero on any failure
     python3 test/gate/docs-check.py -v        and list every check that passed
 
-WHAT IT IS FOR. This project's documentation restates the same fact in up to ten
-files -- `47 + n` was in eight, `pgmout` is 1-based in seven -- and every copy
-was written by an agent that had no way to know the others existed. Nothing
-connects them, so a correction lands in one file and the other seven quietly go
-stale. That is not fixable by discipline; the copies have to be MECHANICALLY
-tied together, which is what this does.
+Where a fact exists twice in machine-readable form -- a markdown table and a
+patch's `text define`, `route` box or wire.sh's aconnect lines -- it parses both
+and compares them. It resolves every pointer the repo makes: *.md names, script
+and patch paths, C-NN rule IDs, `cut-it/<slug>` refs and Reference pages. And it
+holds each ref/ page to its schema and each ⬜ to an Open section and an owner.
+The anchor syntax and the schemas are the `docs` skill's. A ⬜ must sit in an
+`Open` section, so open work keeps exactly one home: three documents pointed at
+`plan-v04.md` §4 for months while that section did not exist.
 
-The idea is small: THE SAME FACT ALREADY EXISTS TWICE IN MACHINE-READABLE FORM.
-A markdown table is parseable. A Pd `#A set` line is parseable. Nobody was
-reading either. This parses both and compares them.
-
-THE CHECKS
-
-  pd-text     a markdown table must equal the contents of a `text define` in a
-              patch. Anchored by an HTML comment, which does not render:
-
-                  <!-- check: pd-text "Cut It/m_404.pd" $0-pad -->
-
-                  | Pad | Note | Evidence | Item |
-                  |-----|------|----------|------|
-                  | 1   | 48   | verified | 190  |
-
-              The table's first N columns are compared against the N atoms on
-              each line of the text; later columns are documentation and are
-              ignored. Reintroduce `47 + n` and this goes red AT PAD 5 and stays
-              green on pads 1-4 -- the exact shape that let that bug survive in
-              this repo's own docs for months.
-
-  no-dangling-doc
-              every `*.md` named anywhere in the repo -- including inside `.pd`
-              comments and `tools/` scripts -- must exist. Both journals were
-              named from eight files that are NOT documentation and both have
-              since been deleted; without this check every one of those
-              references rots in silence.
-
-  project-ref every `cut-it/<slug>` named anywhere -- the form the `!projects`
-              board produces -- must resolve to a file in that repo, which sits
-              beside this one. Open work moved there, so an owner can be a plan
-              file, a `!projects` ref or `NO PLAN OWNS THIS`.
-
-  shape       every page in `ref/` declares a schema on line 1 and keeps to it:
-              `module` in ref/module/, `device` in ref/device/.
-              The cheapest checks here, because a heading structure is already a
-              parse tree -- and the two that matter most are the ones that make
-              a DECISION PERMANENT rather than a one-time sweep:
-
-                no ⬜ outside an `Open` section, so open work keeps exactly one
-                home. Three documents pointed at `plan-v04.md` §4 for months
-                while that section did not exist.
-
-                no ✅ in any heading. An evidence marker never rots; a
-                COMPLETION marker silently becomes false. The old conventions doc
-                asserted `u_map` used no lookup table right up until Phase 9
-                contradicted it.
-
-              Scoped to `ref/` only. The root documents predate all of this and
-              are dissolved rather than corrected.
-
-⛔ A CHECK THAT CANNOT FIND WHAT IT IS CHECKING MUST FAIL, NOT PASS. An anchor
-naming a table that is not there, or an array that is not in the patch, is a
-FAILURE here. the old phase 6 gate asserted only that its rewrite count was
-non-zero and its own comment drifted from five boxes to six with nothing
-noticing; a gate that passes vacuously is worse than no gate, because it is
-BELIEVED. Every lookup below raises rather than returning empty.
+A check that cannot find what it is checking fails: an anchor naming a table or
+an array that is not there is a failure, so every lookup raises rather than
+returning empty.
 """
 import pathlib
 import pwd
@@ -77,12 +25,8 @@ import sys
 
 import lib_pd
 
-# ⛔ THE REPO ROOT, AND IT IS ASSERTED. Every check below globs from here, so a
-# ROOT one level off finds nothing, reports nothing and exits ok -- the fourth
-# way a gate passes vacuously, and the one this file has already been bitten by
-# (globbing ref/*.md stopped seeing seven of nine pages when subdirectories
-# appeared, and the run still said ok). Moving this file changes the depth, so
-# the depth is checked rather than trusted.
+# Asserted: every check globs from here, and a root one level off would find
+# nothing and pass.
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 if not (ROOT / 'AGENTS.md').exists():
     sys.exit(f'docs-check: {ROOT} is not the repo root -- has this file moved? '
@@ -97,18 +41,11 @@ SPEC = re.compile(r'^(pd-text|pd-route|sh-aconnect)\s+"([^"]+)"\s+(\S+)$')
 # check_dangling_docs while a bare `plan-v04.md` was caught: the match started at
 # the `plan-vNN` part, needed `.md` next, failed -- and every later start position
 # was refused by the lookbehind, which sees the dot inside the version.
-# ⚠️ THAT SENTENCE NO LONGER SPELLS THE NAME OUT, and the reason is this check:
-# the plan is deleted, so a literal mention here would be a dangling pointer the
-# gate reports against itself. It did, the first time this ran after the delete. So this batch's
-# Pd-comment references to a plan that was about to be deleted had to be found by
-# grep, which is exactly the rot this check exists to stop.
-# ⛔ AND THE DIRECTORY GROUP REPEATS. It was `(?:[a-z0-9_-]+/)?` -- at most ONE
-# level -- so every two-level path was invisible too, and `ref/module/*.md` is
-# how this project refers to nine of its own pages. Cut It Debug/main.pd cites
-# one in a comment, which is precisely the kind of reference that rots quietly.
+# That plan is deleted and this check reads this file too, so its name is not
+# spelled out here.
+# The directory group repeats, so a two-level path (ref/module/*.md) is matched.
 DOCNAME = re.compile(r'(?<![\w/.!-])((?:[a-z0-9_-]+/)*[a-zA-Z0-9_.-]+\.md)\b')
-# A markdown link target. The angle-bracket form carries paths containing
-# spaces -- `[README.md](<! v0.1 plans/README.md>)` -- which this repo uses.
+# A markdown link target, including the angle-bracket form for paths with spaces.
 MDLINK = re.compile(r'\]\(<?([^)>#]+\.md)(?:#[^)>]*)?>?\)')
 
 TEXT_SUFFIXES = ('.md', '.pd', '.sh', '.py', '.txt')
@@ -119,24 +56,16 @@ TEXT_SUFFIXES = ('.md', '.pd', '.sh', '.py', '.txt')
 SKIP_DIRS = {'.git', '__pycache__', 'device-state', 'node_modules',
              '! v0.1 plans', '! v0.2 plans', 'plan-v04.md'}
 
-# ⛔ OPEN WORK LIVES IN `!projects`, THE REPO BESIDE THIS ONE, and a page cites it
-# by the form that repo's own board produces: `cut-it/<slug>` for a file under
-# active/ or done/, `cut-it/<slug>#<step>` for one step of it, `cut-it/inbox` for
-# a loosie. A ref is resolved against the filesystem like any other pointer.
-# ⚠️ The directory is REQUIRED, not optional -- if it is missing the check
-# raises rather than finding nothing, because "no refs to resolve" and "could
-# not look" are different findings and only one of them is a pass.
-# ~/Sites, where !projects and !reference sit beside this repo. From a worktree
-# elsewhere the repo's parent is not it, so fall back to the home path.
-# The account's home from the password database, not $HOME: test/runner/gates.py
-# runs every gate with HOME pointed at an empty directory.
+# Open work lives in !projects and Reference pages in !reference, both in
+# ~/Sites beside this repo. A missing directory fails the check rather than
+# finding nothing. From a worktree elsewhere the repo's parent is not ~/Sites,
+# so fall back to the account's home from the password database, not $HOME:
+# test/runner/gates.py runs every gate with HOME pointed at an empty directory.
 SITES = (ROOT.parent if (ROOT.parent / '!projects').is_dir()
          else pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir) / 'Sites')
 PROJECTS = SITES / '!projects' / 'cut-it'
 PROJ_REF = re.compile(r'(?<![\w/.-])cut-it/([a-z0-9-]+)(?:#[a-z0-9-]+)?\b')
 
-# A Reference page, named as `~/Sites/!reference/<slug>.md`: what's true of an
-# outside device or app lives there, and the docs point at it by path.
 REFERENCE = SITES / '!reference'
 REF_PAGE = re.compile(r'!reference/([a-z0-9-]+)\.md')
 
@@ -195,12 +124,8 @@ def pd_text(path, name):
 
 
 def pd_route(path, first):
-    """The arguments of a `route` box, identified by its FIRST argument.
-
-    Named by its first argument rather than by position, because C-10 makes box
-    indices move: appending anything to the patch renumbers nothing here, but a
-    check keyed to "the fourth route box" would rot the first time one is added.
-    """
+    """The arguments of a `route` box, identified by its first argument
+    rather than by position, since box indices move (C-10)."""
     src = (ROOT / path)
     if not src.exists():
         raise CheckFailed(f'{path} does not exist')
@@ -220,9 +145,9 @@ def pd_route(path, first):
 def sh_aconnect(path, which):
     """The `aconnect` calls in a shell script, as (source, destination) pairs.
 
-    `which` is `connect` or `disconnect` -- wire.sh does both, and they mean
-    opposite things: the connects are the rig, the disconnects UNDO mother's own
-    autoconnect. A check that lumped them would pass with the rig unwired.
+    `which` is `connect` or `disconnect`, kept apart because they mean
+    opposite things: the connects are the rig, the disconnects undo mother's
+    autoconnect. Lumped together, they would pass with the rig unwired.
     """
     if which not in ('connect', 'disconnect'):
         raise CheckFailed(f'sh-aconnect takes connect or disconnect, not {which}')
@@ -270,11 +195,9 @@ def check_pd_text(doc, lineno, rows, path, name):
 def check_pd_route(doc, lineno, rows, path, first):
     """Compare a table's first column against a `route` box's arguments, in order.
 
-    This is the ALLOWLIST GUARD read from the other side. `map-assert.py`
-    proves every row of `cut-it-map.txt` names a destination on the route; this
-    proves the DOCUMENTED set is that same set. A destination added to the patch
-    and not to the page makes the page quietly incomplete, which nothing else
-    would say.
+    The allowlist guard from the other side: map-assert.py proves every map
+    row names a destination on the route, and this proves the documented set is
+    the same set.
     """
     have = pd_route(path, first)
     want = [r[0].strip().strip('`') for r in rows]
@@ -294,12 +217,7 @@ def check_pd_route(doc, lineno, rows, path, first):
 
 
 def check_sh_aconnect(doc, lineno, rows, path, which):
-    """Compare a table's first two columns against a script's `aconnect` calls.
-
-    The ALSA wiring is restated in wire.sh, main.pd, u_root.pd and here, and it
-    is the fact most likely to be edited in one place -- a port number moves the
-    whole channel block that the m_ layers test against.
-    """
+    """Compare a table's first two columns against a script's `aconnect` calls."""
     have = sh_aconnect(path, which)
     want = [(r[0].strip().strip('`'), r[1].strip().strip('`')) for r in rows]
     if want == have:
@@ -337,7 +255,7 @@ def check_anchors(verbose):
             if not m:
                 continue
             rel = doc.relative_to(ROOT)
-            # anchors carry a KIND. `index` is verified by check_index, not here.
+            # `index` is verified by check_index, not here.
             if m.group(1).strip() == 'index':
                 continue
             seen += 1
@@ -362,24 +280,13 @@ def check_anchors(verbose):
 
 def check_dangling_docs(verbose):
     """Every pointer to a *.md must resolve. What counts as a pointer differs by
-    file type, and the distinction is the whole reason this check is usable:
+    file type:
 
       .md            only a markdown LINK, `](target)`. A bare mention is prose,
                      and prose legitimately names files that no longer exist.
-                     Two files say the v0.2 plan "was dissolved when the last
-                     phase landed" -- accurate history, not a broken pointer.
-      .pd .sh .py    EVERY name mentioned. There is no link syntax in a Pd
-                     comment, so a bare name IS the pointer, and no comment has
-                     a narrative reason to name a document that is gone.
-
-    ⛔ That second rule is the one that matters. The two journals were named
-    from eight files that are NOT documentation -- u_level.pd, u_net.pd,
-    u_root.pd, g_grid.pd, bench-gen.py, fetch-errors.sh, fetch-state.sh,
-    display-assert.py -- and both journals have since been deleted. Every one of
-    those references was repointed at a bare item number in the same commit.
-    Without this check they would have rotted in silence, which is the exact
-    failure the whole refactor exists to stop.
-"""
+      .pd .sh .py    every name mentioned. A comment has no link syntax, so a
+                     bare name is the pointer.
+    """
     out, seen = [], 0
     known = {p.relative_to(ROOT).as_posix() for p in ROOT.rglob('*.md')}
     basenames = {pathlib.PurePath(n).name for n in known}
@@ -408,14 +315,10 @@ def check_dangling_docs(verbose):
     return out
 
 
-# A module page: What it is / Facts / Traps are about the module. Design is about
-# us -- how Cut It chooses to build it and why -- which is neither a measured fact
-# nor something that will bite you, and had no home until two pages in a row
-# needed one.
+# What each section holds is the `docs` skill's.
 MODULE_SKELETON = ['What it is', 'Facts', 'Traps', 'Design', 'Open']
-# A device page holds only how Cut It uses the device (Brendan, 2026-11-02): what
-# the device IS, its facts and its traps are on its Reference page, so the page
-# is Cut It's design and Cut It's own unknowns, and nothing else.
+# A device page is only how Cut It uses the device (Brendan, 2026-11-02); the
+# rest is on its Reference page.
 DEVICE_SKELETON = ['Design', 'Open']
 SKELETONS = {'module': MODULE_SKELETON, 'device': DEVICE_SKELETON}
 # The directory is the kind, so it names the schema a page in it must declare.
@@ -455,10 +358,8 @@ def check_shape(verbose):
                        'a shape decision, so the refactor is not done. Propose a shape for '
                        'it and ask; do not cram it into the nearest section')
 
-    # ⛔ rglob, NOT glob. When ref/ gained device/ and module/ subdirectories a
-    # plain glob stopped seeing seven of the nine pages, and the run still said
-    # "ok" -- coverage vanished with no failure, which is the worst shape a gate
-    # can take. The count printed under -v is the guard: watch it go UP.
+    # rglob, not glob, or the subdirectories' pages go unseen; the -v count is
+    # the guard.
     for doc in sorted(refdir.rglob('*.md')):
         if doc.name == '_unfiled.md':
             continue
@@ -484,20 +385,14 @@ def check_shape(verbose):
                        f'{", ".join(SCHEMAS)}')
             continue
 
-        # ⛔ A completion marker silently becomes false; an evidence marker never does.
+        # A completion marker silently becomes false; an evidence marker never does.
         for i, (ln, fenced) in enumerate(marked):
             if not fenced and ln.startswith('#') and '✅' in ln:
                 out.append(f'{rel}:{i + 1}  ✅ in a heading. It reads as "built", which rots. '
                            f'Evidence belongs in an Evidence column or in prose')
 
-        # ⛔ EVERY SCHEMA, NOT JUST module. This rule sat inside the module branch
-        # below for its whole life, so conventions.md, architecture.md, rig.md and
-        # device-os.md were unpoliced -- which is how device-os.md came to carry
-        # FIVE live open items with no Open section at all, one of them buried in a
-        # table cell. A freeform page has no enforced skeleton, so the rule is
-        # stated in terms of the section rather than the skeleton: a page with any
-        # ⬜ must have a ## Open, and every ⬜ must be inside it. A page with no ⬜
-        # needs no Open.
+        # Every schema, not just module. A freeform page has no skeleton, so the
+        # rule is by section: a page with any ⬜ has a ## Open holding all of them.
         out += _check_open_items(rel, marked)
 
         skeleton = SKELETONS.get(schema)
@@ -521,19 +416,14 @@ def check_shape(verbose):
                 if p != 'none' and not (ROOT / p).exists():
                     out.append(f'{rel}  **Files:**/**Gate:**/**Bench:** names {p}, '
                                f'which does not exist')
-            # ⛔ A GATE AND A BENCH ARE DIFFERENT ORACLES, so a page must declare
-            # both. A gate's verdict comes from a program and runs unattended; a
-            # bench's comes from a person's eyes with the rig plugged in. Naming
-            # only one leaves the other kind of coverage invisible -- and five
-            # pages claimed the old phase 6 gate while nothing said which of them a
-            # bench had ever touched. `none` is a legitimate answer to either.
+            # A gate and a bench are different oracles, so a page declares both;
+            # `none` is an answer to either.
             for field in ('**Gate:**', '**Bench:**'):
                 if field not in decl:
                     out.append(f'{rel}  the **Files:** line declares no {field} '
                                f'-- say `none` if there is not one')
 
-        # ⚠️ A device page has no Facts section to hold a table: what is measured
-        # about the device is on its Reference page, not here.
+        # A device page has no Facts section.
         if schema != 'module':
             continue
 
@@ -544,9 +434,8 @@ def check_shape(verbose):
         facts = [(i, ln) for i, (ln, f) in enumerate(marked)
                  if not f and bounds['Facts'] < i < ends['Facts']]
         # A header is a row whose NEXT line is the |---| separator.
-        # ⛔ The separator test must require a dash. `set('') <= set('-:| ')` is
-        # True, so a blank line after a table's LAST row read as a separator and
-        # every table reported its final row as a header.
+        # The separator must contain a dash: set('') <= set('-:| ') is True, so
+        # a blank line after the last row would read as one.
         def _is_sep(s):
             s = s.strip()
             return '-' in s and set(s.strip('|')) <= set('-:| ')
@@ -558,10 +447,8 @@ def check_shape(verbose):
         if not headers:
             out.append(f'{rel}  the Facts section holds no table -- facts stated only '
                        f'in prose cannot be checked against anything')
-        # ⚠️ Evidence only. Item numbers are FROZEN (Brendan, 2026-11-02): the
-        # ones that exist stay as fact IDs and still resolve by grep, and a new
-        # fact takes none -- so an Item column is optional, kept where it holds
-        # an existing number.
+        # Evidence only: item numbers are frozen (Brendan, 2026-11-02), so an
+        # Item column is optional.
         for h in headers:
             cells = [c.strip() for c in h.strip().strip('|').split('|')]
             if 'Evidence' not in cells:
@@ -574,13 +461,9 @@ def check_shape(verbose):
 
 
 def _is_marker_gloss(line):
-    """A ⬜ that is DEFINING the glyph rather than using it.
-
-    ⛔ Count STRUCTURE, not characters. AGENTS.md's marker table and the `docs`
-    skill's both have a row whose whole job is to say what ⬜ means, and a
-    substring blacklist of those exact lines would rot the moment either was
-    reworded. The structural fact is what makes them different: a gloss row is a
-    two-cell table row whose FIRST cell is the bare glyph and nothing else.
+    """A ⬜ that is defining the glyph rather than using it: a two-cell table
+    row whose first cell is the bare glyph, like the marker tables in AGENTS.md
+    and the `docs` skill. By structure, so rewording those rows cannot break it.
 
         | ⬜ | Unknown or unverified |     <- a definition, not an open item
         | 45 | ⬜ AP link quality    |     <- an open item in a table cell
@@ -597,13 +480,8 @@ _ORNAMENT = '-*#0123456789. |'
 
 
 def is_open_item(line, in_open=False):
-    """A ⬜ that IS an open item, rather than prose about the marker.
-
-    ⛔ AN OPEN ITEM LEADS WITH THE GLYPH; PROSE NAMES IT MID-SENTENCE. That is the
-    structural difference, and it is the only one available -- `_is_marker_gloss`
-    catches the two-cell definition rows and misses everything else, so
-    AGENTS.md's four sentences ABOUT the marker were being counted as four open
-    items with no owner.
+    """A ⬜ that is an open item, rather than prose about the marker: an open
+    item leads with the glyph, prose names it mid-sentence.
 
         ⬜ **Why nothing answers a DISCOVER after a roam.**   <- an open item
         - ⬜ Whether the dongle's draw contributes                <- an open item
@@ -611,16 +489,10 @@ def is_open_item(line, in_open=False):
         | 45 | ⬜ AP link quality |                             <- an open item
         so read that checklist before adding a ⬜ anywhere.    <- prose
 
-    ⚠️ MEASURED BEFORE IT WAS TRUSTED, because the generous direction here is
-    silent: of the 42 non-gloss marks in the repo on 2026-08-12, 35 led with the
-    glyph and ALL SEVEN that did not were prose about the marker, in the only two
-    files that discuss it. Not one real open item is written mid-sentence.
-
-    ⛔ AND `in_open` CLOSES THE HOLE THAT MEASUREMENT LEAVES. Inside an `## Open`
-    section the lead test is dropped, because there is no such thing as prose
-    about the marker under a heading whose entire job is to list open items -- so
-    a real item written mid-sentence is still caught where it is most likely to be
-    written. Outside one, the lead is all there is to go on.
+    Measured on 2026-08-12: of 42 non-gloss marks, all seven that did not lead
+    with the glyph were prose about the marker. Inside an `## Open` section
+    (`in_open`) the lead test is dropped, so an item written mid-sentence is
+    still caught where items are written.
     """
     if '⬜' not in line or _is_marker_gloss(line):
         return False
@@ -630,10 +502,8 @@ def is_open_item(line, in_open=False):
 
 
 def open_span(marked):
-    """(first, last) line indices of the `## Open` section, or None.
-
-    Shared so `_check_open_items` and `check_closers` agree on what is inside one.
-    """
+    """(first, last) line indices of the `## Open` section, or None. Shared so
+    `_check_open_items` and `check_closers` agree on what is inside one."""
     start = next((i for i, (ln, f) in enumerate(marked)
                   if not f and ln.strip() == '## Open'), None)
     if start is None:
@@ -702,11 +572,7 @@ RULE_ID = re.compile(r'(?<![\w-])(C-\d+)(?![\w-])')
 
 
 def check_index(verbose):
-    """ref/README.md's index must list exactly the pages that exist.
-
-    Same two-copies-and-compare idea as everything else here: the index is
-    written by hand and would otherwise rot the first time a page is added.
-    """
+    """ref/README.md's index must list exactly the pages that exist."""
     out = []
     readme = ROOT / 'ref' / 'README.md'
     refdir = ROOT / 'ref'
@@ -716,19 +582,14 @@ def check_index(verbose):
     if '<!-- check: index -->' not in body:
         return ['ref/README.md has no <!-- check: index --> anchor, so its index '
                 'is not being verified against what exists']
-    # ⚠️ [A-Za-z], not [a-z]: the index lists `README` and a lowercase-only class
-    # silently failed to see it the moment the top level started being checked.
+    # [A-Za-z]: the index lists `README`.
     listed = set(re.findall(r'`([A-Za-z0-9_-]+)`', body[body.index('<!-- check: index -->'):]
                             .split('## The page schema')[0]))
     for sub in ('device', 'module'):
         actual = {f.stem for f in (refdir / sub).glob('*.md')} if (refdir / sub).is_dir() else set()
         for name in sorted(actual - listed):
             out.append(f'ref/{sub}/{name}.md exists but ref/README.md\'s index does not list it')
-    # ⛔ AND THE TOP LEVEL, which this check could not see for its whole life. Only
-    # device/ and module/ were compared, so ref/workflow.md and ref/wifi.md were
-    # both added and the index still reported "matches what exists" -- the two
-    # pages it could not see were exactly the two being added. Cross-cutting pages
-    # are the rarest kind and therefore the ones a hand-maintained index forgets.
+    # And the top level, whose pages are the rarest and the easiest to forget.
     top = {f.stem for f in refdir.glob('*.md')} - {'_unfiled'}
     for name in sorted(top - listed):
         out.append(f'ref/{name}.md exists but ref/README.md\'s index does not list it')
@@ -738,11 +599,8 @@ def check_index(verbose):
 
 
 SKILLS = '.claude/skills'
-# ⛔ EVERY DIRECTORY THIS PROJECT KEEPS CODE IN HAS TO BE LISTED HERE. A path in a
-# directory the regex does not name is not "unchecked" -- it is INVISIBLE, and it
-# stays green while it rots. test/ was added when the gates and benches moved out
-# of tools/; the count printed at the end of this check is what proves the list is
-# still complete, and it must go UP as the repo grows, never down.
+# Every directory the project keeps code in must be listed: a path in one that
+# is not is invisible, not unchecked. The -v count should only go up.
 DIRS = ('tools/', 'test/', 'Cut It/', 'Cut It Debug/', 'device/', 'mac-stubs/',
         r'\.claude/')
 PATHREF = re.compile(
@@ -751,29 +609,10 @@ PATHREF = re.compile(
 
 
 def check_dangling_paths(verbose):
-    """Scripts and patches named anywhere must exist.
-
-    ⛔ THE SKILLS ARE THE REASON THIS EXISTS. A skill is procedure -- every path
-    in one is an instruction to run or read something -- and the `gate` skill
-    names the old phase 6 gate, state-assert.sh and map-assert.py, all of which
-    the coming test refactor renames onto a module axis. Without this, three
-    skills quietly start instructing people to run files that are gone.
-
-    ⚠️ UNLIKE check_dangling_docs, THIS CHECKS EVERY FILE TYPE INCLUDING .md.
-    That rule is looser for documents because prose legitimately names a doc
-    that is gone -- "the v0.2 plan was dissolved" is history, not a broken
-    pointer. A SCRIPT is different: naming one is nearly always a live
-    instruction to run or read it, and a doc describing a renamed tool is
-    simply wrong. Measured before widening: including .md cost exactly one
-    false positive across the whole repo.
-
-    Renaming test/gate/state-assert.sh goes red in six places -- the conventions,
-    tools/README.md, bench-gen.py, run.sh, state-bench.pd and the script
-    itself. That is the point: the test refactor renames every gate onto a
-    module axis, and this is what makes those renames impossible to half-finish.
-
-    ⚠️ A path containing a capital placeholder -- phaseN-bench.pd -- is a
-    pattern, not a reference, and is skipped.
+    """Scripts and patches named anywhere must exist, in every file type
+    including .md: naming a script is nearly always an instruction to run or
+    read it, and in a skill always. A name with a capital letter in it
+    (phaseN-bench.pd) is a pattern, not a reference, and is skipped.
     """
     out, seen = [], 0
     for f in sorted(ROOT.rglob('*')):
@@ -804,14 +643,9 @@ def check_dangling_paths(verbose):
 def check_skill_rules(verbose):
     """The pd skill's rule table must match ref/conventions.md.
 
-    ⛔ A SKILL THAT RESTATES A DOC IS THE DUPLICATION THIS REFACTOR EXISTS TO
-    REMOVE. The skill carries the rule table because a link cannot be followed
-    from inside a loaded skill any more than from a Pd comment -- so the copy is
-    justified, but only if it cannot drift. Same two-copies-and-compare as the
-    pad map: both are markdown tables, so parse both and compare.
-
-    Compares the ID set and the rule text, ignoring emphasis and the trailing
-    link column that only the doc has.
+    The skill carries a copy because a loaded skill cannot follow a link; this
+    keeps the copy from drifting. Compares the ID set and the rule text,
+    ignoring emphasis and the link column only the doc has.
     """
     out = []
     skill = ROOT / '.claude' / 'skills' / 'pd' / 'SKILL.md'
@@ -848,13 +682,8 @@ def check_skill_rules(verbose):
 
 
 def check_rule_ids(verbose):
-    """Every C-NN cited anywhere must be a rule that exists.
-
-    ⛔ This is what makes a `.pd` comment able to cite the conventions at all. A
-    comment is the only documentation visible while editing in Pd and it has no
-    link syntax, so the citation is a bare ID -- and a bare ID that resolves to
-    nothing is exactly the rot this gate exists to stop.
-    """
+    """Every C-NN cited anywhere must be a rule that exists. A Pd comment
+    cites the conventions by bare ID, having no link syntax."""
     out = []
     src = ROOT / 'ref' / 'conventions.md'
     if not src.exists():
@@ -952,9 +781,8 @@ def check_project_refs(verbose):
     syntax of its own. A slug resolves to active/<slug>.md or done/<slug>.md;
     `inbox` is the loosie file, and resolves while that file exists.
 
-    ⛔ FAILS IF `!projects` IS NOT THERE. A ref that cannot be looked up is not
-    a ref that resolved, and a gate that skips the lookup passes vacuously --
-    the fourth way, and the one this file has been bitten by before.
+    Fails if `!projects` is not there: a ref that could not be looked up did
+    not resolve.
     """
     if not PROJECTS.is_dir():
         return [f'{PROJECTS} is not a directory -- the !projects repo must sit '

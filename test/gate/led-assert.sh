@@ -5,10 +5,5 @@
 #   ./test/gate/led-assert.sh -v       and show the detail behind every check
 #   ./test/gate/led-assert.sh --keep   leave the scratch dir and capture behind
 #
-# ⛔ g_led HAD ZERO REFERENCES ANYWHERE UNDER test/ BEFORE THIS FILE. Its page
-# named display-assert.sh, which asserts on Launchpad SysEx and never touches the
-# LED -- so the one display surface in the rig that is not a screen was the least
-# covered thing in the patch while looking covered.
-#
-# ⚠️ NO DSP AND NO MIDI. g_led is 34 lines of route and four message boxes.
+# No DSP and no MIDI: g_led is a route and four message boxes on the disp bus.
 exec python3 "$(dirname "$0")/scratch-gates.py" led "$@"

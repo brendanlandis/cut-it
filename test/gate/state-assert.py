@@ -3,15 +3,9 @@
 
     python3 test/gate/state-assert.py [-v] [--keep]     (run it as state-assert.sh)
 
-It asserts on the FILES u_state leaves on disk, plus the console output, which
-is the right level to test our own code at: what a performer eventually loses is
-a file, not a message.
-
-⚠️ THE CHECKS ASSERT PROPERTIES, NOT PROXIES. phone-assert had seven checks
-that asserted "zero packets in an idle window" as a stand-in for a property they
-never named, and they all broke the moment a legitimate feature added traffic.
-They were rewritten to assert the real property and the gate came out stronger.
-So every check below names the thing it is actually protecting.
+It asserts on the files u_state leaves on disk, plus the console: what a
+performer loses is a file, not a message. Every check names the property it
+protects, not a proxy for it.
 """
 import atexit
 import os
@@ -22,11 +16,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                          # noqa: E402
 import lib_scratch as S                                         # noqa: E402
 
-# ⛔ ITS OWN SCRATCH DIRECTORY, NOT /tmp/cut-it-state-gate. That fixed path was
-# shared by every run on the machine, and the driver was rewritten inside the
-# repo (test/gate/) on every run, which is why gates.py had to finish the
-# structure gates, docs-check among them, before this one could start. The driver and the
-# state files now live and die in TMPDIR/cutit-state-<pid>; --keep leaves them.
+# The driver and the state files live in the gate's own scratch directory, never a
+# path another run shares; --keep leaves them.
 KEEP = "--keep" in sys.argv
 WORK = S.work_dir("state")
 DIR = os.path.join(WORK, "state")
@@ -43,9 +34,8 @@ def fresh_dir():
 
 
 def run_driver(name):
-    """Run the driver to completion. It quits itself -- -send 'pd quit' would
-    return before any [del] fired, which is the same fact that lets
-    tools/deploy.sh ignore a [print] behind [del 2000]."""
+    """Run the driver to completion. It quits itself: -send 'pd quit' would
+    return before any [del] fired."""
     cap = os.path.join(WORK, "capture-%s.txt" % name)
     S.run(cap, 60, *PD_ARGS, "-path", "Cut It", DRIVE)
     return open(cap, encoding="utf-8", errors="replace").read()
@@ -76,18 +66,15 @@ os.makedirs(WORK)
 atexit.register(cleanup)
 S.drive("test/gate/state-assert-drive-gen.py", DRIVE, DIR)
 
-# ---------------------------------------------------------------------------
 print("=== A. the tools/deploy.sh gate: both entry points load in SILENCE ===")
-# This is tools/deploy.sh's own command, not an approximation of it. u_state reads two
-# files at boot and a missing file PRINTS three lines (item 143) -- so this is
-# the check that would catch the state store breaking every deploy.
+# tools/deploy.sh's own command. u_state reads two files at boot, and a missing
+# one prints three lines (item 143), which would fail every deploy.
 for entry in ("main.pd", "main-dev.pd"):
     cap = os.path.join(WORK, "load-%s.txt" % entry)
     S.run(cap, 60, *PD_ARGS, "-send", "pd quit", os.path.join("Cut It", entry))
     out = open(cap, encoding="utf-8", errors="replace").read()
     A.check("%s loads with no output" % entry, out.strip() == "", out.strip())
 
-# ---------------------------------------------------------------------------
 print("=== B. a fresh install: auto and manual are separate stores ===")
 fresh_dir()
 run_driver("b")
@@ -109,19 +96,18 @@ A.check("a save broadcast is answered and written to manual.txt",
 A.check("a manual answer does NOT leak into auto.txt",
         not any(l.startswith("take-1 ") for l in auto), auto)
 
-# THE CONTRACT. Not a proxy: this is the rule itself.
+# The synchronous contract itself.
 A.check("a contributor answering behind a [del] is ABSENT from the file",
         not any("late-key" in l for l in manual + auto),
         "manual=%s auto=%s" % (manual, auto))
 
-# THE REPLACE CASE. A store that appended would pass everything above.
+# A store that appended would pass everything above.
 mode_lines = [l for l in auto if l.startswith("mode ")]
 A.check("re-putting a key REPLACES its line rather than appending",
         len(mode_lines) == 1, mode_lines)
 A.check("the surviving line is the LAST value put",
         mode_lines == ["mode perform mode-4"], mode_lines)
 
-# ---------------------------------------------------------------------------
 print("=== C. restore: order, and a key present in both files ===")
 fresh_dir()
 with open(AUTO, "w") as fh:
@@ -134,8 +120,7 @@ restores = [l.split(":", 1)[1].strip()
             for l in out2.split("\n") if l.startswith("RESTORE:")]
 A.check("every line of both files is replayed", len(restores) >= 4, restores)
 
-# manual FIRST, auto SECOND -- so that where a key appears in both, the running
-# value is the one left standing.
+# Manual first, auto second, so where a key is in both the running value wins.
 i_manual = next((i for i, r in enumerate(restores) if "from-manual" in r), None)
 i_auto = next((i for i, r in enumerate(restores) if "from-auto" in r), None)
 A.check("manual is replayed BEFORE auto, so auto wins a duplicate key",
@@ -145,15 +130,9 @@ A.check("manual is replayed BEFORE auto, so auto wins a duplicate key",
 A.check("a manual line survives a restart and is replayed intact",
         any("take-1 kick 36 snare 38" in r for r in restores), restores)
 
-# ⚠️ THE BUG THIS EXISTS TO CATCH, and it shipped once already: the flush used to
-# be armed by a loadbang, so the boot default was written over the saved file
-# BEFORE the restore ever read it. Saved state could never survive a boot, and
-# the file looked entirely plausible throughout.
-# The property: the restore replayed what was ON DISK AT BOOT. With the bug,
-# the flush fires first and overwrites the file with the running values, so the
-# restore replays those instead and `mode perform mode-6` never appears.
+# The restore replays what was on disk at boot. A flush armed by a loadbang
+# writes the running values over the file first, and mode-6 never appears.
 A.check("a boot does NOT overwrite saved state before reading it",
         any("mode perform mode-6" in r for r in restores), restores)
 
-# ---------------------------------------------------------------------------
 sys.exit(1 if A.report() else 0)

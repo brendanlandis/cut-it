@@ -4,42 +4,16 @@
     python3 test/gate/pd-layout-check.py "Cut It"/*.pd     check
     python3 test/gate/pd-layout-check.py --boxes FILE      list box INDICES
 
-⚠️ TWO SEVERITIES, AND CONFLATING THEM WASTES TIME. Everything used to be
-counted as one "N problems", so a catastrophic rewiring and a cosmetic crossed
-cord looked identical and every run had to be triaged by eye.
-
-  PROBLEM -- structural. Exits non-zero. Your patch is or will be WRONG.
+A PROBLEM is structural and exits non-zero:
     BAD CONNECT      a cord names a box that does not exist
-    CONNECT/COMMENT  a cord lands on a comment -- indices are off by one, which
-                     is how every silent rewiring in this project was caught
-    TOO SMALL        content extends past the saved canvas, so boxes are off
-                     screen and invisible when the patch is opened
+    CONNECT/COMMENT  a cord lands on a comment -- indices are off by one
+    FORWARD CONNECT  a cord names a box defined later in the file (C-10)
+    TOO SMALL        content extends past the saved canvas
+    MALFORMED RECORD a record that does not start with '#' (C-14)
+A note (BOX/BOX, CORD/BOX) is cosmetic and does not fail the run.
 
-  note -- cosmetic. Does NOT fail the run.
-    BOX/BOX          two boxes overlap
-    CORD/BOX         a cord is drawn through an unrelated box
-
-Layout is the only structural documentation Pd has, so the notes are still worth
-clearing -- but they never mean the patch is broken, and treating them as though
-they did is what made this tool tiring to use.
-
---boxes IS THE OTHER HALF OF THE OFF-BY-ONE PROBLEM. `#X connect` names boxes by
-POSITION IN THE FILE, and hand-writing a connect block means counting records by
-eye -- comments included, `#X declare` excluded, subpatch contents excluded but
-the `#X restore` line counted. That has bitten this project five times, and cost
-two more near-misses while Phase 8 was written. Ask instead of counting.
-
-Layout is the only structural documentation Pd has, and a comment placed
-between the logic and a message column gets cords drawn through it. That is
-invisible until you open the patch and look, which on this project means a
-round trip. Run this instead:
-
-    python3 test/gate/pd-layout-check.py "Cut It"/*.pd
-
-Exits non-zero if anything is wrong. Box sizes are ESTIMATED from the text
-(7 px/char, 18 px/line) since Pd computes them from font metrics at load, so
-treat a couple of pixels either way as noise -- it is a smell detector, not a
-renderer.
+Box sizes are estimated from the text (7 px/char, 18 px/line), not Pd's font
+metrics, so a couple of pixels either way is noise. test/README.md has the rest.
 """
 import re, sys
 
@@ -105,14 +79,10 @@ def parse(path):
         c = re.match(r'#X connect (\d+) (\d+) (\d+) (\d+)$', ln)
         if c:
             cur['conns'].append(tuple(int(g) for g in c.groups()))
-            # ⛔ HOW MANY BOXES EXISTED WHEN Pd READ THIS LINE. Pd builds a canvas
-            # by replaying the file top to bottom, so a connect naming a box that
-            # is defined FURTHER DOWN is dropped -- see forward_refs below.
+            # How many boxes existed when Pd read this line, for forward_refs.
             cur.setdefault('cseen', []).append(len(cur['boxes']))
             continue
-        # symbolatom IS a box in Pd's index. Leaving it out of this regex does not
-        # merely skip it -- it shifts every later box number, so #X connect lines
-        # get resolved against the wrong objects and the report is quietly fiction.
+        # symbolatom is a box in Pd's index; leaving it out shifts every later one.
         m = re.match(r'#X (obj|msg|text|floatatom|symbolatom) (-?\d+) (-?\d+) ?(.*)$', ln)
         if not m: continue
         kind, x, y, rest = m.group(1), int(m.group(2)), int(m.group(3)), m.group(4)
@@ -125,24 +95,9 @@ def parse(path):
     return ctxs
 
 def forward_refs(ctxs):
-    """Connects that name a box defined LATER in the file. Pd drops them.
-
-    ⛔ THIS IS THE C-10 TRAP'S SECOND HALF, AND IT IS COMPLETELY SILENT HERE.
-    The rule says append boxes at the end of a .pd and move the connects with
-    them -- and it is easy to move only the NEW connects while an EDITED one
-    still sits in the original block, hundreds of lines above the box it now
-    names. Pd replays the file in order, finds no such object, and drops the
-    cord. Everything still loads. The patch is simply not wired.
-
-    ⚠️ Pd does print `connect: no such object`, and that is not a defense: a
-    menu-launched patch runs -nogui with stdout on tty1, tools/deploy.sh gates on
-    output only before ~735 ms, and a gate reading a capture is not looking for
-    it. It cost two silent miswirings in one session -- one where a shifted
-    presence publish never fired, one where mode selection stopped working
-    entirely -- and both looked exactly like a logic error in the new code.
-
-    The count is exact: this is not a heuristic, it is what Pd itself does.
-    """
+    """Connects that name a box defined later in the file, which Pd drops while
+    loading the rest without complaint worth reading (C-10, test/README.md).
+    Exact, not a heuristic: it is what Pd itself does."""
     out = []
     for ctx in ctxs:
         for (src, _, dst, _), nseen in zip(ctx['conns'], ctx.get('cseen', [])):
@@ -179,23 +134,8 @@ def seg_rect(p, q, r):
 def malformed_records(path):
     """Records that do not begin with '#'. There should never be any.
 
-    ⛔ THE UNESCAPED-SEMICOLON BUG, NAMED RATHER THAN GUESSED AT. Pd splits a
-    file into records on unescaped ';'. A comment legitimately contains escaped
-    ones -- '\\;' -- so anything that rewrites a '#X text' by scanning for "the
-    next ';'" stops in the MIDDLE of the comment, and the tail becomes a record
-    of its own with no '#X' prefix. Pd then errors on load.
-
-    This has broken the patch three times (item 207 twice, then once more while
-    the documentation refactor was rewriting a stale c_clock comment).
-
-    ⚠️ IT WAS ALREADY BEING CAUGHT, AND THAT IS THE POINT OF NAMING IT. The
-    orphaned fragment parses as a box far to the right, so the extent check
-    reported TOO SMALL -- a canvas-size complaint, which sends you looking at
-    the canvas. The fault is a broken comment. Cheap to detect exactly: split on
-    unescaped ';' and every record must start with '#'. Zero false positives
-    across all 21 patches.
-
-    C-14: edit a '#X text' by replacing the WHOLE LINE, never by scanning.
+    The signature of a '#X text' rewritten by scanning for the next ';' (C-14),
+    named here because otherwise the orphaned tail shows up only as TOO SMALL.
     """
     src = open(path, encoding='utf-8').read()
     out = []
@@ -281,12 +221,9 @@ def check(path):
     return allok
 
 def list_boxes(path):
-    """Print the index of every box, exactly as `#X connect` counts them.
-
-    Pd numbers boxes by their order in the FILE at each canvas depth. Comments
-    count. `#X declare` does NOT. A subpatch's contents do not, but the closing
-    `#X restore` does -- it IS the box on the parent canvas. Getting any of that
-    wrong shifts every later index and silently rewires the patch."""
+    """Print the index of every box, exactly as `#X connect` counts them:
+    comments count, `#X declare` does not, a subpatch's contents do not but its
+    `#X restore` does."""
     for ctx in parse(path):
         if not ctx['boxes']: continue
         print(f"--- {ctx['label']}")
@@ -301,13 +238,8 @@ if args and args[0] == "--boxes":
         list_boxes(f)
     sys.exit(0)
 
-# ⛔ AN EMPTY ARGUMENT LIST IS A FAILURE, NOT A PASS. `all([])` is True, so this
-# file used to print nothing and exit 0 when it was handed no patches at all --
-# and it is invoked from test/runner/gates.py through a SHELL GLOB. A glob that
-# stops matching (the folder renamed, the run started from the wrong directory)
-# would then read as a clean gate over zero files. That is the fourth way a gate
-# passes vacuously, and docs-check.py already guards the same shape with its
-# "no anchors found anywhere" check.
+# No patches is a failure, not a pass: all([]) is True, and gates.py feeds this
+# through a shell glob that can stop matching.
 if not args:
     sys.exit("pd-layout-check: no patches to check. The glob that feeds this "
              "matched nothing, which is a failure and not a pass -- run it from "
@@ -315,7 +247,6 @@ if not args:
 
 ok = all([check(f) for f in args])
 
-# ⚠️ AND PRINT THE COUNT, so it can be watched going UP. A silent drop from nine
-# patches to two is otherwise indistinguishable from a clean run.
+# The count, so a drop in files checked is visible.
 print(f"\n{len(args)} patch(es) checked")
 sys.exit(0 if ok else 1)

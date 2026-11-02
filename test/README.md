@@ -374,7 +374,8 @@ clamp widened to **650** reads 260 Hz, inside a 12 % band on 240, and is caught 
 Widening the tolerance would not have helped. The wire cannot resolve it.
 
 ⚠️ **It needs DSP**, like `display-assert`, because the pulse is a `[phasor~]` read by a
-`[threshold~]`. Under `-noaudio` every count is zero, which reads exactly like a dead clock.
+`[threshold~]`. With DSP off every count is zero, which reads exactly like a dead clock; `-noaudio`
+does not turn it off (item 280).
 
 **What it protects:** 24 PPQN at two tempos and the **ratio** between them (which cancels the
 real-time scheduler entirely); that the clock leaves on **both** ports, since a fan-out that lost one

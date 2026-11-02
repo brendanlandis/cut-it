@@ -6,16 +6,8 @@
 #   ./tools/fetch-errors.sh --clear      read it, then truncate both files (asks first)
 #   HOST=root@192.168.1.15 ./tools/...   target by IP if mDNS is flaky
 #
-# WHY TWO FILES. u_err can only write the CURRENT session, because Pd's text
-# write rewrites the whole file. logroll.sh carries the previous session into
-# the durable log at each patch load. So the durable log holds every session
-# that has been rolled, and .cur holds the one running now (or the last one, if
-# the patch has not been reloaded since -- which is the normal case, because
-# power-cycling the Organelle does not reload the patch). READING BOTH is what
-# makes a fetch correct either way.
-#
-# Follows tools/deploy.sh's conventions: set -eu, HOST/DEST overridable, and every
-# failure explained in prose rather than left as a status code.
+# Both files, because .cur reaches .log only when the patch is next loaded, and
+# a power cycle does not reload it (ref/module/error.md).
 
 set -eu
 
@@ -48,13 +40,10 @@ if ! ssh -o ConnectTimeout=5 -o BatchMode=no "$HOST" true 2>/dev/null; then
 fi
 
 # --- Is the patch running, and for how long? -------------------------------
-# So a log line can be placed relative to now. Without this, "the error
-# happened 40 seconds in" tells you nothing about which run you are looking at.
+# So a stamp of ms since load can be placed against now.
 echo "── the device ────────────────────────────────────────────────"
 pdstat=$(ssh "$HOST" '
-    # -x is load-bearing: a bare "pgrep pd" matches any process whose name merely
-    # CONTAINS pd, and on this device that is a kernel thread (pid 48). Without it
-    # this cheerfully reports pd running, with a 1h47m uptime, when it is not.
+    # -x: a bare pgrep matches a kernel thread here (item 36).
     pid=$(pgrep -nx pd 2>/dev/null || true)
     if [ -z "$pid" ]; then
         echo "pd: NOT RUNNING"
@@ -67,9 +56,7 @@ pdstat=$(ssh "$HOST" '
 echo "$pdstat"
 
 # --- Does the deployed patch still match the repo? -------------------------
-# An error raised by a build you no longer have is a trap: you read the log
-# against source that never produced it. This is the md5 check from
-# item 21, made automatic.
+# An error from a build you no longer have is read against the wrong source.
 echo
 echo "── deployed vs repo ──────────────────────────────────────────"
 if ssh "$HOST" "cd '$DEST/$PATCH' 2>/dev/null && md5sum *.pd *.sh 2>/dev/null" \
@@ -100,10 +87,8 @@ else
 fi
 
 # --- Follow mode -----------------------------------------------------------
-# The patch REWRITES .cur on every flush rather than appending, so this cannot
-# be `tail -f`. It polls and prints whatever is past what it has already shown.
-# When the 200-line cap starts dropping lines from the front, line numbers
-# shift under us; that is detected and announced rather than silently skipped.
+# Not `tail -f`: the patch rewrites .cur on every flush. Fewer lines than last
+# time means the 200-line cap dropped some from the front.
 if [ "$FOLLOW" = 1 ]; then
     echo
     echo "── following $CUR (flushes every 2s; Ctrl-C to stop) ─────────"
@@ -150,8 +135,6 @@ if [ ! -s "$TMP/all" ]; then
 fi
 
 # --- Summary first --------------------------------------------------------
-# Counts before detail, because the first question is always "how bad" and the
-# second is "what", and 200 lines of detail answers neither at a glance.
 echo
 echo "── summary ───────────────────────────────────────────────────"
 awk '
@@ -172,17 +155,13 @@ awk '
 ' "$TMP/all"
 
 # --- Detail, newest session first -----------------------------------------
-# Newest first because you are almost always here about the run that just
-# happened. Sessions are delimited by the BOOT line logroll.sh writes, which
-# is also the only wall clock in the file — every other stamp is milliseconds
-# since that session loaded, so BOOT + ms is the real time of an error.
+# Sessions are delimited by logroll.sh's BOOT line, the file's only wall clock;
+# every other stamp is ms since that load.
 echo
 echo "── detail, newest session first ──────────────────────────────"
 awk '
-    # n MUST be initialized. An uninitialised awk variable used as a subscript
-    # is the empty STRING, not 0, so lines before the first BOOT would land in
-    # body[""] and never be printed — they would silently vanish from a log
-    # whose entire purpose is not losing things.
+    # n starts at 0: unset, it is the subscript "", and lines before the first
+    # BOOT would land in body[""] and never print.
     BEGIN { n = 0 }
     /^BOOT / { n++; hdr[n] = $0; next }
     { body[n] = body[n] "    " $0 "\n" }
@@ -203,8 +182,7 @@ awk '
 ' "$TMP/all"
 
 # --- Optional truncate ----------------------------------------------------
-# Destructive, so it shows what it is about to discard and asks. Set FORCE=1 to
-# skip the prompt in a script.
+# Asks first; FORCE=1 skips the prompt.
 if [ "$CLEAR" = 1 ]; then
     echo "── clear ─────────────────────────────────────────────────────"
     echo "  About to truncate BOTH files on $HOST:"

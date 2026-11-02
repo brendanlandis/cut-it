@@ -4,36 +4,17 @@
 #   ./tools/find-organelle.sh          the whole ladder, then a named verdict
 #   ./tools/find-organelle.sh -q       the verdict line only
 #
-# WHY IT EXISTS. ⚠️ "Cannot reach it" is the single most misread observation in
-# this project, and ref/device-os.md says so in three places. Four different
-# states all present as a failed ssh, they want opposite responses, and telling
-# them apart by hand takes five commands nobody remembers under pressure:
-#
-#   REACHABLE            it is fine and mDNS was just slow
-#   ASSOCIATED-NO-LEASE  ⛔ THE DOCUMENTED FAULT -- item 81. Still on the wifi,
-#                        IPv4 lease gone, and SSH STILL WORKS OVER IPv6
-#   AP-MODE              it is running its own access point -- join that network
-#   ABSENT               nothing anywhere: powered off, adapter down, or on
-#                        another network. NOT the documented fault
-#
-# ⛔ THE DIFFERENCE THAT COSTS THE MOST. The documented fault leaves the device
-# ASSOCIATED, so ssh over IPv6 link-local keeps working throughout -- which means
-# a successful login proves nothing about IPv4, and a failed *name* lookup proves
-# nothing about the device. Item 172 adds the other half: a RECOVERY presents
-# exactly like a continued failure, because the address changes and mDNS lags
-# minutes behind. ⚠️ A POWER CYCLE AT THAT MOMENT DESTROYS THE EVIDENCE.
-#
-# It changes nothing on the device and needs no credentials -- it only looks.
+# Four states present as a failed ssh and want opposite responses: REACHABLE,
+# ASSOCIATED-NO-LEASE (the documented fault, item 81: ssh still works over IPv6),
+# AP-MODE and ABSENT. tools/README.md has what each means. It only looks.
 set -u
 
 QUIET=0
 [ "${1:-}" = "-q" ] && QUIET=1
 IFACE=${IFACE:-en0}
-# ⚠️ THE IDENTITY SIGNAL IS THE SSH BANNER, and it is a heuristic rather than a
-# proof. Organelle OS 4.0 is a 2018 image and ships OpenSSH 7.1; every other host
-# on this network answers 8.2 or newer. ⛔ The first version tried mother's OSC
-# port 4001 instead -- and `nc -z` tests TCP while 4001 is UDP, so it found the
-# Organelle at .9 and dismissed it. Override if the image is ever updated.
+# The ssh banner is the identity, a heuristic: OS 4.0 ships OpenSSH 7.1 and the
+# rest of this network 8.2 or newer. Not mother's port 4001, which is UDP where
+# `nc -z` tests TCP. Override if the image is ever updated.
 ORG_BANNER=${ORG_BANNER:-OpenSSH_7.1}
 say() { [ "$QUIET" = 1 ] || printf '%s\n' "$*"; }
 
@@ -41,8 +22,7 @@ VERDICT=ABSENT
 WHERE=""
 
 say "=== 1. mDNS ============================================================="
-# -t is dns-sd's own timeout; macOS has no timeout(1), which is why nothing here
-# pipes through one.
+# -t is dns-sd's own timeout; macOS has no timeout(1).
 MDNS=$(dns-sd -t 4 -G v4v6 organelle.local 2>/dev/null \
        | awk '/organelle/ {print $6}' | grep -v '^$' | head -2)
 if [ -n "$MDNS" ]; then
@@ -77,13 +57,10 @@ fi
 
 if [ "$VERDICT" = ABSENT ]; then
 say "=== 3. IPv6 link-local -- WHERE THE DOCUMENTED FAULT HIDES ==============="
-# ⛔ This is the rung that distinguishes item 81 from a dead device. With no IPv4
-# lease the host is invisible to every check above and still answers here.
+# With no IPv4 lease the device is invisible above and still answers here.
 ping6 -c 3 -i 0.4 "ff02::1%$IFACE" >/dev/null 2>&1
-# ⛔ A NEIGHBOR THAT ALREADY HAS IPv4 IS NOT THIS FAULT, and skipping this test
-# is not a nuance -- the first version reported a NAS with ssh open as the
-# documented fault, because it probed every fe80 neighbor and believed whichever
-# answered first. A lying diagnostic is worse than none.
+# A neighbor that already has IPv4 is not this fault; without the skip, any host
+# with ssh open (a NAS, once) is reported as it.
 V4MACS=$(arp -a -n 2>/dev/null | sed -n 's/.* at \([0-9a-f:]*\) .*/\1/p' | tr 'A-Z' 'a-z')
 for a in $(ndp -an 2>/dev/null | awk -v i="$IFACE" '$3==i && $1 ~ /^fe80/ {print $1}'); do
     MAC=$(ndp -an 2>/dev/null | awk -v A="$a" '$1==A {print $2; exit}' | tr 'A-Z' 'a-z')

@@ -1,37 +1,21 @@
 #!/bin/sh
-# item 94 -- the Phase 6 repaint budget, measured on the device.
+# The running patch's CPU against its budget, on the device (item 94).
 #
 #     ./tools/display-cpu.sh              # one reading
 #     ./tools/display-cpu.sh -n 3         # three, so you can see it settle
 #     HOST=root@192.168.1.15 ./tools/display-cpu.sh
 #
-# Wraps the /proc arithmetic from ref/device-os.md -> Measuring the running patch,
-# which reads /proc rather than using top because the device has busybox. Takes
-# the reading over five seconds WITHOUT disturbing the running patch.
-#
-# THE BUDGET IS A BASELINE PLUS ONE POINT, AND THE BASELINE LIVES ON THE PAGE,
-# NOT HERE. ref/device-os.md -> Measuring the running patch carries one row per
-# phase; BUDGET below tracks the newest row that matches the rig you are
-# measuring. ⛔ It read 11.2 for three phases after Phase 5 set it, so the
-# script reported OVER BUDGET as a matter of course and the verdict stopped
-# meaning anything. When the table gains a row, move this number and say which
-# row it came from -- do not re-derive the baseline here.
-#
-# g_grid should come nowhere near the budget, because it repaints only when
-# something changed -- nothing at all when idle, about two SysEx a second at
-# 120 BPM. If this is over budget, the dirty flag is not gating.
-#
-# Take three readings, per item 94: idle and stopped, transport running with the
-# beat row walking, and during the bench's alert step.
+# The /proc arithmetic of ref/device-os.md, Measuring the running patch, over
+# five seconds. Over budget usually means g_grid's dirty flag is not gating:
+# idle, it repaints nothing.
 set -e
 
 HOST=${HOST:-root@organelle.local}
 N=1
 [ "$1" = "-n" ] && N=$2
 
-# Phase 7's 11.7 % -- the newest full-rig row, phone up, five ALSA links --
-# plus one point. Phase 8's 10.4-10.7 % is LOWER and not comparable: four links
-# and no phone. Item 156.
+# The newest full-rig row in ref/device-os.md (Phase 7, 11.7 %) plus one point.
+# When that table gains a row, move this and name the row.
 BUDGET=12.7
 BASELINE="Phase 7 full rig 11.7 % plus one point"
 
@@ -41,9 +25,7 @@ echo
 
 i=1
 while [ "$i" -le "$N" ]; do
-    # -nx, never a bare pgrep: the substring match hits a KERNEL THREAD on this
-    # device, which is the bug that had fetch-errors.sh reporting pd alive while
-    # it was killed (item 36).
+    # -nx: a bare pgrep matches a kernel thread here (item 36).
     out=$(ssh "$HOST" '
         P=$(pgrep -nx pd) || { echo "NOPD"; exit 0; }
         col() { awk "/^Udp:/{ if(h==\"\"){h=1; for(i=1;i<=NF;i++) if(\$i==\"OutDatagrams\") c=i; next} print \$c }" /proc/net/snmp; }

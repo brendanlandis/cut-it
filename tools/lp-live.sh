@@ -5,25 +5,10 @@
 #     HOST=root@192.168.1.15 ./tools/lp-live.sh
 #     LOCAL=1 ./tools/lp-live.sh         # run it ON the device itself
 #
-# WHY THIS EXISTS. Entering Programmer Mode by SysEx locks out the Launchpad's
-# own Settings menu, so a device left in that state cannot be recovered from its
-# front panel. m_launchpad's safe exit handles the ONE case it can: [r quitting],
-# which mother.pd sends before it quits Pd, with a 100 ms budget. Pd 0.49 has no
-# closebang, so that is the only shutdown hook there is.
-#
-# EVERY OTHER WAY OF ENDING A SESSION STRANDS THE DEVICE:
-#   * `killall pd` over SSH -- which the by-hand console workflow in
-#     ref/conventions.md does every single time
-#   * a Pd crash
-#   * power loss mid-session
-# Measured 2026-08-03: killall left the grid frozen in Programmer Mode, and this
-# script brought it back with no power cycle.
-#
-# tools/deploy.sh is NOT affected -- it loads through mother's /loadPatch, so `quitting`
-# fires and the safe exit runs normally.
-#
-# THE PORT IS LOOKED UP BY NAME. amidi's hw:N numbering shifts as devices come and
-# go, exactly like the ALSA client numbers wire.sh warns about.
+# Any end of a session but mother's `quitting` (killall pd, a crash, power loss)
+# leaves the Launchpad in Programmer Mode, whose Settings menu is locked out:
+# tools/README.md. The port is looked up by name: amidi's hw:N shifts as devices
+# come and go.
 set -eu
 
 HOST=${HOST:-root@organelle.local}

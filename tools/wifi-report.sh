@@ -1,30 +1,15 @@
 #!/bin/sh
-# wifi-report -- pull the evidence off the device once wifi-poll.sh has found
-# something, and summarize it into the shape the analysis actually needs.
+# Pull the wifi watcher's evidence off the device once wifi-poll.sh has found
+# something, and summarize it.
 #
 #   ./tools/wifi-report.sh              summary of everything SINCE THE LAST MARK
 #   ./tools/wifi-report.sh --all        the whole log, marks ignored
 #   ./tools/wifi-report.sh --mark       draw a line: everything above is analyzed
 #   ./tools/wifi-report.sh --full       and the raw log
 #
-# ⚠️ WHY MARKS EXIST. The log ACCUMULATES, so a cumulative summary can only ever
-# answer "has this ever happened", and the question actually being asked is "has
-# it happened AGAIN, since I last looked". Without a mark the report reads
-# identically before and after the very failure you are waiting for. Run --mark
-# once you have written a finding up, and the next report starts from there.
-#
-# What matters in the output, in order:
-#
-#   1. HOW LONG IT SURVIVED before the first drop -- compare against the router's
-#      DHCP lease time. If they match, the fault is lease renewal and the dongle
-#      is innocent.
-#   2. WHETHER IT STAYED ASSOCIATED across the drop. Item 133 says it does: the
-#      SSID and BSSID hold while the IPv4 address goes. That is the whole reason
-#      this is a DHCP question rather than a radio one.
-#   3. WHICH RECOVERY RUNG WORKED. The ladder tries renew, then release+restart,
-#      then a wpa_supplicant restart. `UNRECOVERED` on every rung is itself the
-#      finding -- it would mean only a reboot fixes it, which is what has been
-#      observed by hand.
+# The log accumulates, so a mark is what lets a report answer "again, since I
+# last looked?". What each outcome means is on the Organelle's Reference page,
+# Wifi.
 set -u
 HOST=${HOST:-root@organelle.local}
 LOG=/sdcard/wifi-watch.log
@@ -57,8 +42,7 @@ if ! ssh -o ConnectTimeout=8 "$HOST" true 2>/dev/null; then
     exit 1
 fi
 
-# Slice the log to everything after the LAST mark, and work on that from here.
-# Doing it remotely keeps every grep below unchanged.
+# Sliced on the device, so every grep below reads the slice unchanged.
 if [ "$SINCE" = 1 ]; then
     if ssh "$HOST" "grep -q '^$MARK' $LOG" 2>/dev/null; then
         ssh "$HOST" "awk '/^$MARK/{buf=\"\"; next} {buf = buf \$0 ORS} END{printf \"%s\", buf}' $LOG > /tmp/wifi-slice.log"

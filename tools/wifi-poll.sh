@@ -1,26 +1,15 @@
 #!/bin/sh
-# wifi-poll -- leave this running in a terminal and forget about it.
-#
-# Answers ONE question at a glance: has the Organelle's wifi dropped since you
-# started watching? It redraws a small block every minute, and when it finds
-# something it rings the bell and raises a macOS notification, so you do not have
-# to keep tabbing over.
+# Has the Organelle's wifi dropped since you started watching? Leave it in a
+# terminal; it rings and notifies when it finds something.
 #
 #   ./tools/wifi-poll.sh              check every 60s
 #   POLL=30 ./tools/wifi-poll.sh      faster
 #   HOST=root@192.168.1.15 ./tools/wifi-poll.sh
 #
-# ⚠️ IT DOES NOT RELY ON REACHABILITY ALONE. The fault (items 81/133) can drop
-# and recover between two polls, and the Mac would never see it. So this reads
-# the TRANSITION COUNT out of the device-side watcher's log -- any increase means
-# a drop happened, whether or not this script was looking at the time.
-#
-# It therefore needs /sdcard/wifi-watch.sh running on the Organelle. It says so
-# loudly if that is not true, because a quiet "no drops" from a dead watcher is
-# the worst possible output.
-#
-# Findings are appended to ~/cut-it-wifi-findings.log so nothing is lost when the
-# terminal scrolls or the session ends.
+# It counts TRANSITION lines in the device watcher's log rather than trusting
+# reachability, since a drop can recover between two polls (tools/README.md),
+# so it says loudly when that watcher is dead. Findings go to
+# ~/cut-it-wifi-findings.log.
 set -u
 
 HOST=${HOST:-root@organelle.local}
@@ -49,9 +38,8 @@ hms() {    # seconds -> compact duration
 }
 
 probe() {  # one ssh round trip; prints "ipv4|transitions|stampage" or nothing
-    # ⚠️ grep -c EXITS NON-ZERO when the count is zero, so `|| echo 0` fires as
-    # well as the count and you get "0\n0" -- which broke the arithmetic below
-    # and printed stray digits into the display. No fallbacks here for that reason.
+    # No `|| echo 0` after grep -c: it exits non-zero on a zero count and prints
+    # the 0 anyway, so the fallback would make it "0\n0".
     ssh -o ConnectTimeout=8 -o BatchMode=yes "$HOST" '
         IP=$(ip -4 addr show wlan0 2>/dev/null | grep -o "inet [0-9.]*" | cut -d" " -f2 | head -1)
         T=$(grep -c TRANSITION /sdcard/wifi-watch.log 2>/dev/null); T=$(echo "$T" | head -1)
@@ -82,10 +70,7 @@ while true; do
     # --- the actual detection -------------------------------------------------
     if [ -n "$TRANS" ]; then
         if [ -z "$LAST_TRANS" ]; then
-            # ⚠️ TRANSITIONS ALREADY IN THE LOG ARE A BASELINE, NOT A FIND.
-            # This used to set FOUND=1 immediately, so once the log had ever
-            # recorded anything the display read "*** YES ***" forever and could
-            # never answer the only question being asked: did it happen AGAIN?
+            # What is already in the log is the baseline, not a find.
             LAST_TRANS=$TRANS
             BASELINE=$TRANS
             [ "$TRANS" -gt 0 ] && LAST_EVENT="baseline: $TRANS transition(s) already logged before this run"
@@ -99,10 +84,7 @@ while true; do
         fi
     fi
 
-    # ⚠️ ONCE PER OUTAGE, NOT ONCE EVER. The guard used to be [ "$FOUND" = 0 ],
-    # so the first event of the run silenced every one after it -- and a fault
-    # you are characterizing across repeated occurrences is exactly the thing
-    # that needs each one recorded.
+    # Once per outage, not once per run.
     if [ "$REACH" = no ] && [ -z "$REPORTED_DOWN" ]; then
         REPORTED_DOWN=1
         FOUND=1
@@ -123,19 +105,10 @@ while true; do
         D=$(hms $(( $(date +%s) - ${DOWN_SINCE:-$(date +%s)} )))
         echo "  organelle      UNREACHABLE   for $D"
     fi
-    # THE WATCHER DOES NOT SURVIVE A REBOOT, and a reboot is how this very fault
-    # gets recovered -- so recovering used to disarm the detection for the NEXT
-    # failure. ✅ SINCE ITEM 244 THAT IS SYSTEMD'S JOB: device/wifi-watch.service
-    # starts it at boot. This relaunch is now the BACKSTOP for a watcher that
-    # died mid-session, not the primary mechanism.
-    #
-    # ⛔ AND IT COUNTS ITS OWN FAILURES, because it silently did nothing for five
-    # and a half hours on 2026-08-08 while three drops went unrecorded, and the
-    # only reason anybody noticed was a six-hour hole in the log read back
-    # afterwards. A relaunch that does not take now says so on the screen instead
-    # of being retried forever in silence. ⚠️ Why it did nothing that day is
-    # STILL NOT ESTABLISHED -- this makes the next occurrence visible, it does
-    # not explain the last one.
+    # The backstop for a watcher that died mid-session; systemd starts it at
+    # boot (ref/wifi.md, item 244). It counts consecutive tries and says when
+    # they are not taking: on 2026-08-08 a relaunch did nothing for five and a
+    # half hours, for a reason still not known.
     if [ "$REACH" = yes ] && [ -n "$STAMP" ] && [ "$STAMP" -gt 120 ]; then
         ssh -o ConnectTimeout=8 -o BatchMode=yes "$HOST" \
             'setsid sh /sdcard/wifi-watch.sh recover >/dev/null 2>&1 </dev/null &' 2>/dev/null
@@ -143,8 +116,7 @@ while true; do
         echo "$(date '+%Y-%m-%d %H:%M:%S')  watcher was dead -- relaunched (try $TRIES)" >> "$FIND"
         RELAUNCHED="$(date '+%H:%M:%S')"
     fi
-    # A fresh tick means the last relaunch took. Reset, so TRIES only ever counts
-    # CONSECUTIVE failures rather than a lifetime total.
+    # A fresh tick means the last relaunch took.
     [ -n "$STAMP" ] && [ "$STAMP" -lt 60 ] && TRIES=0
 
     if [ -n "$STAMP" ]; then

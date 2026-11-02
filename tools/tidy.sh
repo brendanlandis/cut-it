@@ -5,21 +5,8 @@
 #   ./tools/tidy.sh --delete     the same list, then asks before removing it
 #   HOST=root@192.168.1.6 ./tools/tidy.sh
 #
-# ⛔ IT IS NOT A FLAG ON tools/deploy.sh, DELIBERATELY. deploy.sh is run twenty
-# times a day and must stay boring; this one deletes things. Bundling a
-# destructive capability into the command you type most often is how the
-# accident eventually happens, and the two have nothing in common but an ssh
-# connection.
-#
-# ⛔ NOTHING IS DELETED WITHOUT A POSITIVE MATCH AND A KEEP CHECK. A candidate
-# has to match one of the CRUFT patterns below AND survive the KEEP guard, which
-# is a hard refusal rather than an omission. Belt and braces on purpose: the
-# device holds the only copy of the wifi investigation's evidence, and this is a
-# script whose whole job is `rm`.
-#
-# ⚠️ IT NEVER TOUCHES A PATCH FOLDER. Files deleted locally are `deploy.sh
-# --clean`'s business, which is a question about one folder you are looking at,
-# not a sweep. This only ever looks at LOOSE FILES in /sdcard.
+# Only loose files in /sdcard, never a patch folder. A candidate has to match a
+# pattern below and pass the KEEP guard; tools/README.md has why.
 set -eu
 
 HOST="${HOST:-root@organelle.local}"
@@ -39,39 +26,16 @@ done
 cd "$(dirname "$0")/.."
 
 # ---------------------------------------------------------------------------
-# ⛔ THE KEEP GUARD, AND IT IS CHECKED AFTER THE CANDIDATE LIST IS BUILT rather
-# than instead of building one. Every name here is something the device holds
-# that nothing in this repo can regenerate:
-#
-#   wifi-*        the fault investigation's watcher, its log, its pid and its
-#                 heartbeat. ⚠️ wifi-watch.sh RUNS ON THE DEVICE and its log is
-#                 the evidence ledger -- ref/wifi.md is written out of it.
-#   wifi.txt      the house credentials. ap.txt the access point's.
-#   cut-it-*      the instrument's own error log, and its state directory, which
-#                 lives outside the patch folder precisely so a deploy cannot
-#                 touch it (ref/module/state.md).
-#   the rest      the vendor's, and older than this project.
+# The KEEP guard: what the device holds and nothing here can regenerate. The
+# wifi watcher's log is the fault's evidence (ref/wifi.md).
 KEEP='wifi-watch.sh wifi-watch.log wifi-watch.pid wifi-watch.alive
 wifi-reassociate.sh wifi.txt wifi.txt.bak wifi_log.txt ap.txt
 cut-it-err.log cut-it-err.cur cut-it-state
 MIDI-Config.txt postfw.log Patches'
 
-# ⛔ IT SPLITS ON DEFAULT IFS -- WHITESPACE -- NOT ON NEWLINES. The first version
-# forced IFS to a newline, so each LINE of KEEP became one element and every
-# comparison ran against the whole line: "wifi-watch.sh wifi-watch.log ..." is
-# not equal to "wifi.txt", so the guard matched nothing and quietly passed
-# everything. Caught by deliberately widening a cruft pattern to swallow *.txt --
-# the run then offered to delete ap.txt, wifi.txt, wifi.txt.bak and wifi_log.txt,
-# which is the credentials and the fault log. ⚠️ A guard that cannot fail is not
-# a guard, and this one could not fail until it was made to.
-#
-# ⛔ AND IT SETS IFS ITSELF RATHER THAN INHERITING IT, which was the SECOND
-# version of the same bug. Fixing the split here was not enough: the loop that
-# calls this has already set IFS to a newline so it can walk the candidate list,
-# and a function inherits that -- so KEEP went back to splitting by line and the
-# guard went back to matching nothing. It reads the same either way from inside
-# the function, which is exactly why it needed a test that fires rather than an
-# argument that it should.
+# ⛔ KEEP splits on whitespace, and this sets IFS itself: its caller has IFS at
+# a newline, and inheriting that makes each line of KEEP one word, so the guard
+# matches nothing and lets everything through.
 kept() {
     _kifs=$IFS
     IFS=' 	
@@ -84,17 +48,11 @@ kept() {
 }
 
 # ---------------------------------------------------------------------------
-# ⚠️ NO ESCAPE CODES. Output from this gets pasted into commit messages and
-# read out of pipes, and a bold sequence survives both as literal `[1m`. The
-# rest of tools/ uses plain banners for the same reason.
+# No escape codes: this output gets pasted and piped.
 say() { printf '\n=== %s\n' "$1"; }
 
-# ⛔ EVERY ssh TAKES -n, WHICH IS stdin FROM /dev/null. ssh reads stdin greedily
-# to forward it to the remote command, so the `read` that asks for confirmation
-# below was answered by nothing -- the ssh calls above it had already swallowed
-# the keystroke, and --delete simply fell through to "nothing deleted" every
-# time with no error at all. test/runner/targets.py carries the same fix for the
-# same reason, where it presented as "GO was sent and nothing fired".
+# ⛔ Every ssh takes -n. ssh reads stdin greedily, and without it the
+# confirmation `read` below gets nothing and --delete deletes nothing.
 
 REMOTE_LS=$(ssh -n "$HOST" 'cd /sdcard && ls -1p | grep -v /$' 2>/dev/null) || {
     echo "cannot reach $HOST" >&2; exit 2; }
@@ -104,10 +62,7 @@ add() { CAND="$CAND$1
 "; }
 
 say "1. bench outputs -- regenerated by every device bench run"
-# ⚠️ test/runner/targets.py scps whichever bench it needs to /sdcard on every
-# run, along with bench-tap.pd. So these are not merely droppable, they are
-# SUPPOSED to be transient -- and a stale one on the device is a copy of a
-# question nobody is asking any more.
+# test/runner/targets.py copies whichever it needs on every device run.
 FOUND=0
 for f in $REMOTE_LS; do
     case "$f" in
@@ -117,10 +72,8 @@ done
 [ "$FOUND" = "1" ] || echo "   none"
 
 say "2. probe logs -- the findings are on ref/ pages, the logs are not"
-# ⚠️ Each stage probe writes /sdcard/<name>-probe.log because a menu-launched
-# patch has no console. Once the answer is written up with an item number the
-# log is a transcript of a question that has been closed -- ap-probe.log is
-# item 129, inquiry-probe.log item 249, anim-probe.log items 77 and 257.
+# A stage probe's console, once its answer has an item number: ap-probe.log is
+# item 129, inquiry-probe.log 249, anim-probe.log 77 and 257.
 FOUND=0
 for f in $REMOTE_LS; do
     case "$f" in
@@ -130,9 +83,7 @@ done
 [ "$FOUND" = "1" ] || echo "   none"
 
 say "3. loose patches that also live in tools/"
-# ⛔ ONLY IF THE REPO HAS ONE OF THE SAME NAME. A .pd on /sdcard that this repo
-# has never heard of is not cruft -- it is something you put there and did not
-# write down, and deleting it would be this script guessing.
+# Only if tools/ has one of the same name; anything else was put there by hand.
 FOUND=0
 for f in $REMOTE_LS; do
     case "$f" in
@@ -149,11 +100,8 @@ done
 
 # ---------------------------------------------------------------------------
 say "4. deployed folders that have DRIFTED from the repo -- reported, never deleted"
-# ⛔ DRIFT IS NOT CRUFT AND THE FIX IS A PUSH, NOT AN rm. deploy.sh sends both
-# patch folders every time, so those two stay level by construction -- but the
-# stage probes in `! debug` are copied BY HAND and nothing re-sends them. One sat
-# there for four days carrying a comment citing a deleted plan, which is exactly
-# the rot this project keeps removing from its documents.
+# The stage probes are copied by hand and nothing re-sends them; deploy.sh keeps
+# the two patch folders level itself.
 DRIFT=0
 for d in tools/stage-patches/*/; do
     name=$(basename "$d")
@@ -186,9 +134,7 @@ _oifs=$IFS; IFS='
 '
 for f in $CAND; do
     [ -n "$f" ] || continue
-    # ⛔ THE GUARD FIRES HERE, on the assembled list, so a pattern that grew too
-    # greedy is caught before anything is removed rather than being relied on
-    # never to grow. A collision is a BUG in this script and it stops the run.
+    # On the assembled list, so a pattern grown too greedy stops the run.
     if kept "$f"; then
         echo >&2
         echo "⛔ REFUSING TO CONTINUE: '$f' matched a cruft pattern AND is on the" >&2

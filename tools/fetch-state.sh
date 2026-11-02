@@ -6,33 +6,9 @@
 #   ./tools/fetch-state.sh --diff       show what would change, copy nothing
 #   HOST=root@192.168.1.15 ./tools/...  target by IP if mDNS is flaky
 #
-# WHY THIS EXISTS. u_state deliberately writes OUTSIDE the patch folder, to
-# /sdcard/cut-it-state/, so that tools/deploy.sh, tools/deploy.sh --clean and a power cycle
-# cannot touch the instrument's data. The cost of that choice is that the data
-# is then in exactly one place, on an SD card, in a device that has already
-# lost its network once. This is the other half of the bargain.
-#
-# THREE FILES, AND THEY ARE NOT THE SAME KIND OF THING:
-#
-#   cut-it-auto.txt    running values -- the mode, and later the working
-#                      pattern. Rewritten on a timer whenever something
-#                      changes, so it is always the CURRENT state.
-#   cut-it-manual.txt  committed takes -- written ONLY when you press
-#                      Storage -> Save. This is the one you would be sad to
-#                      lose, and the one worth committing to git.
-#   cut-it-recover.txt the recover breadcrumb, and NOT u_state's. u_init
-#                      writes it just before a held CC 90 reloads the patch
-#                      and u_map clears it once it has reported. Reading
-#                      `recover` here means a reload was attempted and never
-#                      landed -- which is the only account of it there is,
-#                      because the patch was dead before it could say so.
-#
-# Contributor-owned files (a future sampler's .wav) live in the same directory
-# and are copied too -- u_state records them as manifest lines in the text
-# files, so the pair only makes sense together.
-#
-# Follows tools/deploy.sh and fetch-errors.sh conventions: set -eu, HOST overridable,
-# and every failure explained in prose rather than left as a status code.
+# The data lives outside the patch folder, so a deploy cannot touch it, and so
+# only on the SD card until this copies it (ref/module/state.md). A `recover`
+# line in cut-it-recover.txt means a reload was attempted and never landed.
 set -eu
 
 HOST="${HOST:-root@organelle.local}"

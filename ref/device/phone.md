@@ -138,39 +138,21 @@ redraws held state every frame. **`u_net` is the one surface where a late viewer
 **Fix:** a 2 s repeat of the last parameter and status, on top of the event-driven sends — well below
 the 124/s noise floor. Item 121.
 
-### ⛔ `warn u_net net-link-down` is not a wifi fault, and it reads exactly like one
+### A lost phone is the phone's to report
 
-The alert names the *link*, the Organelle's only link is wireless, and
-[wifi.md](../wifi.md) documents a real fault that drops it — so the obvious reading is that the
-network has gone. It is almost always wrong. **`u_net`'s watchdog watches a SOCKET**, and the
-socket dies the moment nothing is listening on the phone's port (item 114, in Reference): PdParty
-quit, or the phone off or off the network. Backgrounding the app or leaving the scene does not do it:
-PdParty keeps the port bound while it runs at all (item 120, in Reference). The wifi can be perfectly
-healthy — verifiable in one line, because `ssh root@organelle.local` uses the same radio.
-
-**It is also the most common line in the error log by a wide margin**, appearing in most sessions,
-which is what makes it easy to read as a symptom of something worsening.
-
-**Fix:** before suspecting the network, check that PdParty is running on the phone, then
-`ping organelle.local` or `ssh` to it. A reachable device with `net-link-down` on screen is the
-phone, not the wifi. ⚠️ **The real roam fault has a different signature** — the *whole device* goes
-unreachable, `ssh` included — and it is on [wifi.md](../wifi.md) with a reproduction.
-
-⛔ **All of this is 0.49's: under Pd 0.57 `net-link-down` no longer fires, on the device either.**
-Measured 2026-11-03: a throwaway Pd 0.57 on the Organelle, in its own network namespace, ran
-`u_net` at a loopback port nothing bound for 15 s and never warned; the factory 0.49 in the same
-harness logged `netsend: Connection refused` and warned within two seconds. The socket survives the
-refusal (Pure Data, in Reference), so a closed PdParty draws nothing on the Organelle, and the
-phone's own NO-LINK is the only report. How Cut It should notice a lost phone now is Brendan's to
-decide (`cut-it/inbox`); the phone checklist's step 13 fails until then.
+**The Organelle does not warn when the phone goes** (Brendan, 2026-11-03). Under Pd 0.49 `u_net`
+warned `net-link-down` once per load when its socket died with nothing listening on the phone's port.
+Under 0.57 the socket survives that, on the device too (measured 2026-11-03: a throwaway 0.57 sent at
+a port nothing bound for 15 s and never noticed, where 0.49 warned within two seconds), so the
+warning could no longer fire and was taken out. The phone's own NO-LINK, from the heartbeat's
+silence, is the report: the phone is the display that went.
 
 ### Rebuild the socket
 
-A UDP `connect` to a port with nothing listening survives exactly one datagram (Pure Data, in
-Reference), so a socket that reports connected proves nothing, and a phone that leaves the network
-destroys the link without the patch hearing about it. `u_net` reconnects on a timer. ⚠️ That is
-0.49's behavior: 0.57 on the Mac keeps the socket and delivers again once something listens (Pure
-Data, in Reference); untested on the device.
+Under 0.49 a UDP `connect` to a port with nothing listening survived exactly one datagram (Pure
+Data, in Reference), and the socket died. Under 0.57 it survives and delivers again once something
+listens, on the Mac and on the device. `u_net` still reconnects on a timer until a connect first
+succeeds, for a phone that was not on the network at load.
 
 ### The unit field is written on every param message
 

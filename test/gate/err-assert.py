@@ -230,9 +230,9 @@ def run_asserts(cap):
               "fail u_gate perform-fail", "warn u_gate back-warn",
               "warn u_gate two-atom", "warn u_gate info-witness",
               "info u_gate info-quiet", "chatty u_gate bad-level"]
-    # Exact order and count of the driver's own errors only. The patch raises
-    # its own too (u_net's net-link-down with no phone answering), at a point
-    # that moves from run to run; those are noted, not asserted.
+    # Exact order and count of the driver's own errors only. The patch can
+    # raise its own too, at a point that moves from run to run; those are
+    # noted, not asserted.
     mine = [ln for ln in logged if " u_gate " in ln]
     A.check("every error raised reaches the log, in order and whatever the mode",
             mine == raised, "logged %s" % mine)

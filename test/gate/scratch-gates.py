@@ -92,8 +92,8 @@ def _stdin_gate(g, dog, blank=False, **kw):
 
 
 # These four emit no MIDI; the rewrite runs anyway, to enforce the inventory.
-# err and oled are the two a dead u_net socket would fail (net-link-down takes
-# the footer and the log); state_dir's sink keeps it away.
+# err and oled were the two a dead u_net socket failed under Pd 0.49 (its
+# net-link-down warning, gone since 2026-11-03); state_dir's sink is kept.
 def err(g):
     S.require("Cut It/u_err.pd")
     return _stdin_gate(g, 30)

@@ -13,7 +13,7 @@ the verdict file went, and every step's text came here. A rig session means open
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
 | [tempo](tempo.md) | 13 | the transport, knob 1's pickup, the clamp, the 404 following |
 | [launchpad](launchpad.md) | 27 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |
-| [phone](phone.md) | 23 | what PdParty shows, the link dropping and coming back, its buttons, the checklist page and test mode |
+| [phone](phone.md) | 22 | what PdParty shows, the link dropping and coming back, its buttons, the checklist page and test mode |
 | [state](state.md) | 5 | the front-panel Save, a power cycle, the mode surviving it |
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
 | [midi](midi.md) | 18 | the map by mode, the SP-404 both ways, the Volca by ear, hot-swap |

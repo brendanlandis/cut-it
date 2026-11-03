@@ -93,9 +93,10 @@ SP-404's business or the Volca's, but very much the instrument's. It needs no Pd
 identifier, so a module that is *imported* cannot have one; a script that is only *run* can.
 
 ⚠️ **`u_net`'s sink is a socket in the gate's own process**, bound before Pd starts and held until
-the gate exits. With nothing bound on the port it sends to, loopback answers with ICMP and `u_net`
-raises `net-link-down` mid-run. The shell harness forked a sleeper for it that died two minutes in,
-and on macOS a second bind on a held port fails even with `SO_REUSEADDR`, so the bind is checked.
+the gate exits, so its OSC lands somewhere known. Under Pd 0.49 a port with nothing bound answered
+with ICMP and `u_net` raised `net-link-down` mid-run; 0.57 keeps the socket and that warning is gone
+(2026-11-03). On macOS a second bind on a held port fails even with `SO_REUSEADDR`, so the bind is
+checked.
 
 ⛔ **`MIDI_EXPECT` is an EXACT count per class, never "not zero".** A lower count means assertions
 have gone vacuous; a higher one means an emitter no gate knows about. The gate it replaced checked

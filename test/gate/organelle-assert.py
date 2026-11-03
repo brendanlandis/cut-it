@@ -113,8 +113,8 @@ def run_asserts(cap):
             param("KEY-TOP") == [["og-key-84", "40"]],
             "wanted one og-key-84 40, got %s" % param("KEY-TOP"))
 
-    # og-key rows, not silence: disp is shared, and u_net's net-link-down
-    # landed in these windows one run in three when this asked for silence.
+    # og-key rows, not silence: disp is shared, and under Pd 0.49 u_net's
+    # net-link-down warning landed in these windows one run in three.
     stray = [r for k in ("KEY-ON", "KEY-OFF", "KEY-TOP") for r in disp(k)
              if r and str(r[0]).startswith("og-key")]
     A.check("⛔ the keys reach param and NOT disp", not stray,

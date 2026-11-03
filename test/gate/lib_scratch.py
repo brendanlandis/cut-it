@@ -431,10 +431,10 @@ def sink(port):
     process, so a gate that makes two copies (map, presence, recover) hands
     both the same socket.
 
-    ⚠️ Repointing u_net is not enough on its own. With nothing bound, loopback
-    answers with ICMP at once, which tears u_net's socket down (item 114) and
-    raises `warn u_net net-link-down` mid-run. So the socket exists before Pd
-    starts, and the bind is checked (test/README.md, the shared machinery).
+    Under Pd 0.49, with nothing bound, loopback answered with ICMP, which tore
+    u_net's socket down (item 114) and raised its net-link-down warning mid-run.
+    0.57 keeps the socket and the warning is gone (2026-11-03); the sink stays,
+    so u_net's OSC lands somewhere known (test/README.md, the shared machinery).
     """
     port = int(port)
     if port in _SINKS:
@@ -445,8 +445,7 @@ def sink(port):
     except OSError as e:
         s.close()
         fail("FAIL: could not bind u_net's sink on 127.0.0.1:%d -- %s." % (port, e),
-             "      With nothing listening there, loopback answers with ICMP and",
-             "      u_net raises net-link-down in the middle of the run.")
+             "      Another process holds it: two gates were given one port.")
     _SINKS[port] = s
     return s
 

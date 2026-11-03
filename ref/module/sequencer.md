@@ -196,10 +196,9 @@ short or malformed line.
 
 ## Open
 
-- ⬜ **Most of this has not run on the rig.** Whether a one-shot pad restarts on a second note-on —
-  fast hats depend on it — and whether the page, the knobs and the drum buttons read as intended;
-  [the sequencer checklist](../../test/checklists/sequencer.md) asks. See `cut-it/drum-machine`,
-  its rig step.
+- ✅ **On the rig** (Brendan, 2026-11-03): the knobs' latch, a track's own last step, the drum
+  screen's pads and its two buttons, and a one-shot pad restarting on every step, which fast hats
+  depend on (the SP-404's Reference page).
 - ⬜ **The selected track and velocity are not saved**; every boot starts at track 1, level 6.
   See `cut-it/drum-machine`.
 - ⬜ **The Lua version has not played on the rig**: its CPU beside the Pd version's 11.2% with the

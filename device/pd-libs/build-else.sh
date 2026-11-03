@@ -16,34 +16,9 @@ mkdir -p $O
 stamp make-c;   $MK c;   echo "make-c rc=$?"
 stamp make-cpp; $MK cpp; echo "make-cpp rc=$?"
 
-# FFmpeg as Source/Shared/ffmpeg/build_ffmpeg.sh configures it on Linux, less --enable-openssl
-# (upstream wants OpenSSL 3, for https; the device has 1.0.2, and local files need none)
-if [ ! -f $FF/libavutil/libavutil.a ]; then
-  stamp ffmpeg-extract
-  [ -d $FF ] || tar xjf $S/Source/Shared/ffmpeg/ffmpeg-7.0.1.tar.bz2 -C $BD
-  rm -f $FF/VERSION
-  cd $FF
-  stamp ffmpeg-configure
-  ./configure --disable-asm --disable-libxcb --disable-bzlib --disable-lzma --disable-sdl2 --disable-libdrm --disable-vaapi --enable-static --disable-shared --enable-optimizations --disable-debug \
-            --disable-programs --disable-iconv --disable-avdevice --disable-postproc \
-            --disable-everything --enable-avcodec --enable-avformat --enable-avutil \
-            --enable-encoder=vorbis,flac,mp3,mpeg4,aac,alac,pcm_mulaw,pcm_alaw \
-            --enable-decoder=mp3*,pcm*,aac*,flac,vorbis,opus,alac,mulaw,alaw,aac,h264 \
-            --enable-decoder=mpeg4,mpeg1video,mpeg2video \
-            --enable-decoder=mjpeg  \
-            --enable-muxer=ogg,flac,mp3,mp4,avi,mov,flv,asf,caf,au \
-            --enable-demuxer=mp3,wav,aiff,flac,aac,ogg,pcm*,caf,au \
-            --enable-demuxer=avi,mov,mp3,flv,asf \
-            --enable-filter=aresample --enable-protocol=file \
-            --enable-parser=mpegaudio,aac,mpeg4video \
-            --enable-network --enable-protocol=http,https \
-            --enable-swresample \
-            --enable-pic \
-    || stamp FAILED-ffmpeg-configure
-  stamp ffmpeg-make
-  make || stamp FAILED-ffmpeg-make
-  cd $BD
-fi
+# FFmpeg, as small as play.file~, sfload and sfinfo need (upstream's build_ffmpeg.sh builds
+# encoders, video and https too, and wants OpenSSL 3): build-ffmpeg.sh, beside this script
+[ -f $FF/libavutil/libavutil.a ] || bash $BD/build-ffmpeg.sh $BD
 stamp make-ff; $MK ffobjs; echo "make-ff rc=$?"
 
 # gcc 5.2 and C++17, which sfizz (sfz~) requires

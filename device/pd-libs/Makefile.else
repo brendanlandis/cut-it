@@ -64,14 +64,17 @@ $(OUT)/lua$(EXT): $(LUADIR)/pdlua.c $(LUADIR)/lua/onelua.c | $(OUT)
 $(OUT)/else$(EXT): $(SRC)/Control/else.c $(OUT)/lua$(EXT) | $(SHARED)
 	$(CC) $(CFLAGS) -o $@ $< $(LDEXT) $(OUT)/lua$(EXT) -lelse_shared -lm
 
-# FFmpeg users (FFmpeg itself is built by build-else.sh, without OpenSSL)
-FFLINK := $(FF)/libavformat/libavformat.a $(FF)/libavcodec/libavcodec.a $(FF)/libswresample/libswresample.a $(FF)/libavutil/libavutil.a
-$(OUT)/play.file~$(EXT): $(SRC)/Audio/play.file~.c | $(SHARED)
-	$(CC) $(CFLAGS) -I$(FF) -o $@ $< $(LDEXT) $(FFLINK) -lelse_shared -lz -lpthread -lm
-$(OUT)/sfload$(EXT): $(SRC)/Control/sfload.c | $(SHARED)
-	$(CC) $(CFLAGS) -I$(FF) -o $@ $< $(LDEXT) $(FFLINK) -lelse_shared -lz -lpthread -lm
-$(OUT)/sfinfo$(EXT): $(SRC)/Control/sfinfo.c | $(SHARED)
-	$(CC) $(CFLAGS) -I$(FF) -o $@ $< $(LDEXT) $(FFLINK) -lelse_shared -lz -lpthread -lm
+# FFmpeg's users, each linked whole against build-ffmpeg.sh's static libraries, as upstream links
+# them. --exclude-libs keeps FFmpeg's symbols inside each external: Pd loads externals into one
+# global namespace, so otherwise the second of them to load would call into the first one's copy.
+FFLIBS := $(FF)/libavformat/libavformat.a $(FF)/libavcodec/libavcodec.a $(FF)/libswresample/libswresample.a $(FF)/libavutil/libavutil.a
+FFLINK := $(FFLIBS) -Wl,--exclude-libs,ALL -lelse_shared -lpthread -lm
+$(OUT)/play.file~$(EXT): $(SRC)/Audio/play.file~.c $(FFLIBS) | $(SHARED)
+	$(CC) $(CFLAGS) -I$(FF) -o $@ $< $(LDEXT) $(FFLINK)
+$(OUT)/sfload$(EXT): $(SRC)/Control/sfload.c $(FFLIBS) | $(SHARED)
+	$(CC) $(CFLAGS) -I$(FF) -o $@ $< $(LDEXT) $(FFLINK)
+$(OUT)/sfinfo$(EXT): $(SRC)/Control/sfinfo.c $(FFLIBS) | $(SHARED)
+	$(CC) $(CFLAGS) -I$(FF) -o $@ $< $(LDEXT) $(FFLINK)
 
 # pdlink / pdlink~: the C++ link library, and opus for pdlink~
 LINK_OBJ := $(patsubst $(SRC)/%.cpp,$(B)/%.o,$(SRC)/Shared/link/udp/udp_discovery_peer.cpp $(SRC)/Shared/link/udp/udp_discovery_protocol.cpp $(SRC)/Shared/link/link.cpp)

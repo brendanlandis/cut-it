@@ -66,9 +66,12 @@ call each other that way, so the folder *holding* `else/` must be on the path, a
   `knob`, `numbox~`, `popmenu`, `scope~`, `keyboard` and the rest of its GUI objects, which send Tcl
   to a GUI that isn't there, and `del~` and `trig.delay2~`, deprecated. The list is in
   `~/Sites/!reference/pure-data.md`, *pdlua and ELSE*.
-- **Missing:** `play.file~`, `sfload`, `sfinfo` (FFmpeg) and the abstractions built on them —
-  `player~`, `gran.player~`, `pvoc.player~`, `sample~` — and `circuit~`, `pdlink`, `pdlink~`, `sfz~`
-  (C++17, which the device's gcc 5.2 lacks).
+- **Missing:** `circuit~`, `pdlink`, `pdlink~`, `sfz~` (C++17, which the device's gcc 5.2 lacks).
+- ⚠️ **The file players read WAV, AIFF, MP3 and FLAC only there** (`play.file~`, `sfload`, `sfinfo`,
+  and `player~`, `gran.player~`, `pvoc.player~`, `sample~` through them): the device's FFmpeg is
+  built for those four, while upstream's, which the Mac's ELSE has, also reads Ogg, Opus, AAC, ALAC
+  and more: a sample in any other format works on the Mac and fails on the device. `sfload`
+  loading an MP3 prints two FFmpeg warnings on stderr, which a load-time check takes as a failure.
 - ⚠️ **Too big for 495 MB:** `grain.live~`, `grain.sampler~` and `grain.synth~` take ~72 MB each.
 - ⚠️ **CPU on one core:** a reverb costs ~11–14%; `freeze~` at its defaults doesn't fit.
 - Every new ELSE object is a dependency the gates exercise only on the Mac's build; check it

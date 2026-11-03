@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""The gate half: every headless check, as data. Imported by run.py.
+"""Every headless check, as data. Imported by run.py.
 
-Mac-side only: no ssh, no deploy, no device, so a bare ./test/run.sh is safe
-with the device off. The benches stay behind a flag (test/README.md).
+Mac-side only: no ssh, no deploy, no device, so ./test/run.sh is safe with the
+device off. The hands-on checks are test/checklists/ (test/README.md).
 
 The commands are shell strings so `"Cut It"/*.pd` expands in the shell, in the
 order it always has.
@@ -17,7 +17,7 @@ import tempfile
 # ---------------------------------------------------------------------------
 # The table's length is asserted, since a gate dropped in an edit is otherwise
 # silent. Update it deliberately, never to make a red run green (as MIDI_EXPECT).
-EXPECT = 26
+EXPECT = 24
 
 # The gates all run side by side and print whole in table order, so the log
 # reads as a serial run's and has one RESULT: line. None waits for another: no
@@ -36,13 +36,7 @@ GATES = [
     # --- 2. the deploy gate, _syntax below ---------------------------------
     ("both entry points load in silence (tools/deploy.sh's own gate)", None),
 
-    # --- 3. the benches are generated, not hand-written --------------------
-    ("bench step text survived generation",
-     "python3 test/bench/bench-verify.py"),
-
-    # --- 3b. the runner itself ---------------------------------------------
-    ("the runner's own failure paths", "./test/gate/runner-assert.sh"),
-
+    # --- 3. the MIDI inventory ---------------------------------------------
     ("the MIDI inventory", "./test/gate/midi-emitters-assert.sh"),
 
     # --- 4. one gate per module --------------------------------------------
@@ -71,7 +65,7 @@ GATES = [
 # Each gate's main-dev.pd copy runs u_net on its own inbound port, base + its
 # place in the table (lib_scratch's state_dir writes CUTIT_INPORT); a gate run
 # by hand keeps 9002. Clear of 9001/9002 (the device, main-dev.pd) and of
-# 9992-9998, which the OSC mirrors, phone-assert and the bench stream bind.
+# 9994/9995, which phone-assert binds.
 INPORT_BASE = 9100
 
 # CUTIT_JOBS=1 runs them one at a time.

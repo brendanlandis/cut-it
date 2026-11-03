@@ -14,8 +14,7 @@ a built-in class has no side channel, so the only way to read what a patch
 emitted is to swap the box out in a copy (the gate skill).
 
 test/gate/scratch-gates.py holds what each gate does with this; the phone and
-state gates drive it from their own analyzers; test/runner/targets.py makes a
-bench's copy with it.
+state gates drive it from their own analyzers.
 """
 import os
 import re
@@ -253,7 +252,7 @@ class Scratch:
         """Keep u_net's OSC off the house network (and the phone): send it to a
         sink here, 1000 above the inbound port. The sink has to be bound (sink()
         below). state_dir does this; a gate that builds its own harness around
-        u_root calls it alone. phone_mirror repoints it again for a bench.
+        u_root calls it alone.
         """
         port = int(port or os.environ.get("CUTIT_INPORT") or 9002)
         _records_replace(
@@ -293,20 +292,6 @@ class Scratch:
              "      and every count below is answered by a recovery that never",
              "      got started -- which looks exactly like a bound that fires",
              "      nothing."])
-
-    def phone_mirror(self, port):
-        """u_net pointed at localhost, so a bench reads what it sent after its
-        filtering rather than what it was offered. Not a substitute for a run
-        with the real phone.
-        """
-        _records_replace(
-            os.path.join(self.patch, "u_root.pd"),
-            r"u_net [0-9.]+ [0-9]+ ",
-            "u_net 127.0.0.1 %d " % port,
-            ["      Could not repoint u_net at localhost.",
-             "      Without that every datagram goes to a real address and the",
-             "      predicate reads an empty socket -- which looks exactly like",
-             "      u_net being broken."])
 
     def map_rows(self, rows):
         """Rows APPENDED to the scratch map rather than replacing it, so the

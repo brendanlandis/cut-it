@@ -24,9 +24,8 @@ assertion is answered by an empty list.
 """
 import re
 
-# The bus -> print label map, and the one list of labels: lib_assert's _BUS and
-# test/runner/predicates.py's _BUS_LINE are both built from TAP_LABEL_RE. `mode`
-# is for test/bench/bench-tap.pd. `clock` is left out: a beat twice a second
+# The bus -> print label map, and the one list of labels: lib_assert's _BUS is
+# built from TAP_LABEL_RE. `clock` is left out: a beat twice a second
 # forever would bury every capture.
 #
 # Not every name is on the C-2 allowlist. led, oscOut, midiInGate, midiOutGate,

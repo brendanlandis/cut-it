@@ -5,7 +5,7 @@
 #   ./test/gate/recover-assert.sh -v       and show the detail behind every check
 #   ./test/gate/recover-assert.sh --keep   leave the scratch dirs and captures
 #
-# [shell] is stubbed, so the reload itself is a bench step: this proves the
+# [shell] is stubbed, so the reload itself is a checklist step: this proves the
 # command was formed and forked, in order, behind the silence, plus a static
 # lint of recover.sh. What it cannot claim is in recover-assert.py's header.
 #

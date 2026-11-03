@@ -7,5 +7,5 @@
 #
 # It taps oscOut, since Pd cannot ask a screen what it shows, and the analyzer
 # parses that stream as u_mother-stub does. No DSP: the frame clock is a
-# [metro 100], and the meters, silent here, are the display bench's to judge.
+# [metro 100], and the meters, silent here, are the display checklist's to judge.
 exec python3 "$(dirname "$0")/scratch-gates.py" oled "$@"

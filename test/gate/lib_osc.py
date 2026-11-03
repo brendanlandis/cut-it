@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""OSC decoding, shared by the phone gate and the test runner. Imported, never run.
+"""OSC decoding, for the phone gate. Imported, never run.
 
 It decodes only: what an address means is each caller's business.
 """
@@ -45,15 +45,3 @@ def decode(buf):
     except Exception:
         return None
 
-
-def as_text(addr, args):
-    """One decoded datagram as a line a predicate can read, in the same shape
-    as bench-tap.pd's bus lines -- so the runner has one window format rather
-    than a second one that only OSC uses."""
-    return "OSC: %s %s" % (addr, " ".join(_atom(a) for a in args))
-
-
-def _atom(a):
-    if isinstance(a, float) and a == int(a):
-        return "%g" % a
-    return str(a)

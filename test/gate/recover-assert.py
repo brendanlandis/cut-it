@@ -13,7 +13,7 @@ Three halves, the first with no Pd:
   3. Run B boots with a breadcrumb already there: nothing may be held, the
      attempt is reported once, and the file is left cleared.
 
-What it cannot assert, so the bench does: that the reload happened ([shell] is
+What it cannot assert, so the recover checklist does: that the reload happened ([shell] is
 stubbed), that quitting still fires (u_mother-stub never sends it; this proves
 only that the path leaves m_launchpad's ownership alone, item 251), and that
 the grid turns red (`grid modal 5` is asserted as a request on disp).

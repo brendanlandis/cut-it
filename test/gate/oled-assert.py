@@ -2,7 +2,7 @@
 """The OLED's analyzer -- ref/module/display.md. Reads a capture on stdin.
 
 It asserts on what the screen was told, not on how it looks: legibility and the
-meters are test/bench/display-bench.pd's.
+meters are the display checklist's (test/checklists/display.md).
 
 The message, read off a real capture:
 

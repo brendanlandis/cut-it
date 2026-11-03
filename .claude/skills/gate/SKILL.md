@@ -1,6 +1,6 @@
 ---
 name: gate
-description: Building or changing a test for Cut It — a headless gate, a hardware bench, or a measurement on the device. Carries the scratch-copy and stub-rewrite pattern, why counts must be exact rather than non-zero, the ways a gate passes vacuously, and the rule that a gate is not trusted until it has been made to fail. Use before writing anything under test/.
+description: Building or changing a test for Cut It — a headless gate, a hands-on checklist, or a measurement on the device. Carries the scratch-copy and stub-rewrite pattern, why counts must be exact rather than non-zero, the ways a gate passes vacuously, and the rule that a gate is not trusted until it has been made to fail. Use before writing anything under test/.
 ---
 
 # Building a gate for Cut It
@@ -140,32 +140,21 @@ timing, ~200 ms, and it enforces the allowlist guard by reading.
 `docs-check.py` is the same idea — the fact exists twice in machine-readable form, so parse both and
 compare. **Reach for that before reaching for a driver.**
 
-## Benches
+## Checklists
 
-Hands-on hardware steps, and they are **generated**:
+The hands-on half is [test/checklists/](../../../test/checklists/README.md): one Markdown file per
+area, one checkbox per step, read by a person at the rig. Its README has the rules for a step; the
+ones that bite a gate's author too:
 
-```sh
-python3 test/bench/bench-gen.py        # from test/bench/bench_steps.py, run from the repo root
-python3 test/bench/bench-verify.py     # re-extracts the text to prove it survived
-```
+- **Include the steps whose correct result is that nothing happens.**
+- **Every step sets up its own preconditions.** A row ages out in about 1.3 s and a modal in 30, so a
+  step judging what the step before put up judges an empty screen and passes.
+- **Leave to a gate what a gate can prove.** A checklist step is for eyes, ears and fingers; one claim
+  judged in both places reports more coverage than exists.
 
-⛔ **Never edit a bench `.pd` — it is an output.** Add `STEPS_<MODULE>` to `bench_steps.py` and a
-`BENCHES` entry to `bench-gen.py`, keyed by the output filename. **That is the whole list** —
-`bench-verify.py` derives its own from those keys, so a bench that can be generated is a bench that
-gets verified. It used to carry a hand-typed tuple as well, and missing it meant a bench was
-generated but never fidelity-checked.
-
-Step text: no `,` `;` or `$`; every `pass_if` starts with `PASS IF:`; include the steps whose correct
-result is that **nothing happens**.
-
-⛔ **A `title` and a `pass_if` are rendered into Pd message boxes and a `need` / `do` / `watch` is
-not**, so only the first two carry those restrictions — the rest take ordinary commas. Write short
-sentences with capitals and full stops, joined by ` -- ` where a comma would normally go, and
-**never end a sentence on a bare number**: Pd reads `40.` as the float 40 and the stop vanishes
-(item 122, asserted since 2026-08-10).
-
-⚠️ **On the device, `./test/run.sh --bench <name>` drives a bench** — it sends GO itself. The
-encoder does not advance one, and netcat does not work on macOS.
+⚠️ **A Send line reaches the buses only from the Mac**, through Pd's message window with
+`main-dev.pd` open. Nothing on the Organelle takes one, so a step that needs a bus message and a
+device's own answer has no rig route (the checklists' README).
 
 ## Running everything
 

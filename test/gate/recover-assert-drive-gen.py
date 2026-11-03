@@ -95,7 +95,7 @@ NOTES = [
     "only way to see recover.sh forked.",
 
     "It cannot assert the reload happened or that quitting still fires: [shell] is "
-    "stubbed and u_mother-stub never sends quitting. Both are bench steps.",
+    "stubbed and u_mother-stub never sends quitting. Both are checklist steps.",
 ]
 
 if __name__ == "__main__":

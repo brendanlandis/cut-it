@@ -1,10 +1,6 @@
 #!/bin/sh
-# Every gate, and every bench, in one command.
-#
-#   ./test/run.sh                 the gates. Mac-only, ~1 min, the default
-#   ./test/run.sh --all           the gates, then every bench
-#   ./test/run.sh --bench midi    one bench, no gates
-#   ./test/run.sh --help          the rest
+# Every gate, in one command. Mac-only, ~1 min. The hands-on checks are
+# test/checklists/, run by a person at the rig.
 #
 # Read the RESULT: line or the exit status. `grep -E 'ALL|FAILED'` also matches
 # the per-gate "--- FAILED:" lines.

@@ -26,7 +26,6 @@ import lib_osc                                                  # noqa: E402
 import lib_pd                                                   # noqa: E402
 import lib_scratch as S                                         # noqa: E402
 
-# The one decoder: test/runner/ judges phone steps from the same datagrams.
 decode = lib_osc.decode
 
 PORT = 9995

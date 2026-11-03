@@ -92,7 +92,7 @@ def static_lint():
                       for n, k, o in dupes))
     if dupes:
         A.note("text search returns only the FIRST match, so a repeat is DEAD and silent -- item 229")
-    # panic is on u_map's route for the bench and u_err's tests, but a control
+    # panic is on u_map's route for the tests and u_err's, but a control
     # bound to it could silence the instrument mid-set with no way back but a
     # reload. Only the map could bind one, so it is checked by reading.
     panic_rows = [(n, " ".join(f)) for n, f in rows if len(f) > 2 and f[2] == "panic"]

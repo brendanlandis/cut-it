@@ -66,7 +66,7 @@ shown on Back Office's /reference page); a `ref/device/` page links to it and ke
 | How Cut It lives on the Organelle as a **computer** — its data, measuring, deploying (the Organelle itself: Reference) | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
 | The wifi fault — Cut It's watchers and the stage procedure (the fault itself: Reference) | [ref/wifi.md](ref/wifi.md) ⚠️ background, not blocking |
 | A cited `item NNN` | `grep` it here **and in `~/Sites/!reference/`** — item numbers are **fact IDs**, not log entries; the device facts moved there |
-| **Every test** — the headless gates, the hands-on benches, the stubs | [test/README.md](test/README.md) |
+| **Every test** — the headless gates, the hands-on checklists, the stubs | [test/README.md](test/README.md) |
 | What each operational tool and probe does | [tools/README.md](tools/README.md) |
 
 ✅ **Both journals are gone.** Phases 0–8 as built and every measurement behind them are in
@@ -114,17 +114,16 @@ under `ref/`. Nothing in either is deployed.
 
 | Where | Is | Oracle |
 |---|---|---|
-| `test/run.sh` | **the entry point** — the gates bare, the benches with `--all` | — |
-| `test/runner/` | What `run.sh` is. The gate table, the bench loop, the verdict record | — |
+| `test/run.sh` | **the entry point** — every gate | — |
+| `test/runner/` | What `run.sh` is. The gate table | — |
 | `test/gate/` | Headless gates. One per module, named for it | a program, unattended |
-| `test/bench/` | Hands-on acceptance runs, and the three scripts that **generate** them | a person, with the rig plugged in |
+| `test/checklists/` | Hands-on acceptance runs, one Markdown checklist per area | a person, with the rig plugged in |
 | `test/stubs/` | `t_*` stand-ins a gate swaps in inside a scratch copy | — |
 | `tools/` | Operational scripts and one-off probes — `fetch-*.sh`, the wifi tooling | — |
 
-⛔ **A bench `.pd` is an OUTPUT.** Edit `test/bench/bench_steps.py` and regenerate; never the `.pd`.
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-two gates and 744 checks**, and what each one protects is in
+**Twenty-one gates and 565 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.
@@ -138,7 +137,6 @@ aux and encoder. **Most work should never need the Organelle powered on.**
 
 ```sh
 ./test/run.sh            # every gate, ~1 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
-./test/run.sh --all      # and then the benches -- needs the rig, and a person
 ./tools/deploy.sh              # syntax check -> scp BOTH patches -> reload -> load Cut It
 ./tools/deploy.sh --debug      # the same push, but loads Cut It Debug instead
 ./tools/tidy.sh                # what has accumulated on the device. --delete to remove it
@@ -148,9 +146,10 @@ ssh root@organelle.local # password: organelle. Root fs is read-only -- remount-
 ⚠️ **Read `run.sh`'s `RESULT:` line; do not grep for it.** `grep -E 'ALL|FAILED'` also matches
 the per-gate `--- FAILED:` lines, and a broken patch has been committed that way.
 
-⛔ **Run bare it is the gate half and nothing else** — Mac-only, touching nothing on the Organelle,
-safe with the device off. The benches are behind `--all` / `--bench` on purpose: ⚠️ **a check that
-costs twenty minutes stops being run**, which is the failure this command was built to fix.
+⛔ **It is the gates and nothing else** — Mac-only, touching nothing on the Organelle, safe with the
+device off. The hands-on checks are [test/checklists/](test/checklists/README.md), read by a person
+at the rig and kept out of it on purpose: ⚠️ **a check that costs twenty minutes stops being run**,
+which is the failure this command was built to fix.
 
 ⛔ **It takes about a minute because the gates run side by side** — measured 2026-11-02, 53 s
 against 461 s one after another. Each one is a Pd instance running **DSP in real time** so a `phasor~` clock and a beat

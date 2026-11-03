@@ -31,8 +31,8 @@ in one line is what makes the first one safe to reason about.
 | Device | Address | Notes | Evidence | Item |
 |--------|---------|-------|----------|------|
 | Organelle | `192.168.1.15` | Listens on **9001**. Reserved for it on the house router, and its own access point takes the same address (`device/start-ap.sh`), so PdParty's send host is set once | verified | — |
-| iPhone | `192.168.1.5` | `u_net` sends to PdParty's OSC receive, **8000** | verified | — |
-| Mac | `192.168.1.16` | Dev machine | verified | — |
+| iPhone | `192.168.1.9` | `u_net` sends to PdParty's OSC receive, **8000**. Reserved for it on the house router (Brendan, 2026-11-03); `192.168.1.5` until then, which turned out to be the printer | unknown | — |
+| Mac | `192.168.1.6` | Dev machine, by DHCP and not reserved (seen 2026-11-03; `192.168.1.16` earlier) | verified | — |
 
 **The Organelle is `192.168.1.15` on both networks**: the house router reserves it, and its own
 access point uses it too (from 2026-11-03; the factory AP was `192.168.12.1`). The phone's address is

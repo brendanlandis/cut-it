@@ -112,7 +112,7 @@ def driver(seq):
     q = box("#X obj 20 200 del %d;" % (t + 400))
     qm = box("#X msg 20 240 \\; pd quit;")
     c += ["#X connect %d 0 %d 0;" % (lb, q), "#X connect %d 0 %d 0;" % (q, qm)]
-    taps = ["mark"] + ["%s-in" % n for n in ("name", "pos", "mark", "pill", "title", "ack")] \
+    taps = ["mark"] + ["%s-in" % n for n in ("name", "pos", "mark", "pill", "title", "btn-send")] \
         + ["l%d-in" % (k + 1) for k in range(B.LINES)]
     for k, n in enumerate(taps):
         r = box("#X obj %d 400 r ck-%s;" % (20 + k * 120, n))
@@ -183,8 +183,22 @@ def main():
     A.check("nothing under the notch: 22 units clear on the right, 17 at the bottom",
             all(x + w <= 448 - 22 and y + h <= 207 - 17 for _, x, y, w, h, _, _ in sizes),
             [(k, x, y, w, h) for k, x, y, w, h, _, _ in sizes if x + w > 426 or y + h > 190])
-    A.check("seven buttons and a lamp", sum(1 for s in sizes if s[0] == "bng") == 8,
-            [s[5] for s in sizes if s[0] == "bng"])
+    # a bng draws a circle, so each button is a rectangle drawn after (over) the
+    # bngs that take its touch: every bng sits inside the rectangle of its name
+    order = [(k, kind, x, y, w, h, snd) for k, (kind, x, y, w, h, snd, _r) in enumerate(sizes)]
+    rects = {snd[len("ck-btn-"):-len("-out")]: (k, x, y, w, h) for k, kind, x, y, w, h, snd in order
+             if kind == "cnv" and snd.startswith("ck-btn-")}
+    bngs = [(k, x, y, w, snd[len("ck-"):-len("-press")]) for k, kind, x, y, w, h, snd in order
+            if kind == "bng"]
+    covered = [b for b in bngs if b[4] in rects
+               and rects[b[4]][0] > b[0]
+               and rects[b[4]][1] <= b[1] and b[1] + b[3] <= rects[b[4]][1] + rects[b[4]][3]
+               and rects[b[4]][2] <= b[2] and b[2] + b[3] <= rects[b[4]][2] + rects[b[4]][4]]
+    A.check("seven buttons, each a rectangle drawn over the Pd buttons that take its touch",
+            len(rects) == 7 and len(bngs) == 8 and covered == bngs
+            and {b[4] for b in bngs} == set(rects),
+            "%d rectangles, %d bngs, uncovered: %s" % (len(rects), len(bngs),
+                                                       [b for b in bngs if b not in covered]))
 
     # -- the page, driven --------------------------------------------------------
     seq, data, names, titles, sends, multi, nosend, many = plan()
@@ -252,8 +266,12 @@ def main():
             lab("hbon", "pill-in") == "test mode on", lab("hbon", "pill-in"))
     A.check("and off draws it off", lab("hboff", "pill-in") == "test mode off",
             lab("hboff", "pill-in"))
-    A.check("ack send lights the lamp", [k for k, _ in win.get("ack", [])] == ["ack-in"],
-            win.get("ack"))
+    A.check("ack send turns Send green",
+            [t for k, t in win.get("ack", []) if k == "btn-send-in"]
+            == ["color %d %d" % (B.GREEN, B.INK)], win.get("ack"))
+    A.check("a press darkens its button",
+            ("btn-send-in", "color %d %d" % (B.PRESS, B.INK)) in win.get("send", []),
+            win.get("send"))
     A.check("1.5 s with nothing heard says no link",
             lab("silence", "pill-in") == "no link", win.get("silence"))
     A.check("and the next heartbeat restores the state, though it did not change",

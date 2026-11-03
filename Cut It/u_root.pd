@@ -24,8 +24,8 @@
 #X obj 20 1200 c_clock 1 8;
 #X obj 20 1320 g_grid \$2;
 #X text 300 1200 The grid's own clock \, since nothing may assume the global clock is its own (poly-tempo \, ref/module/tempo.md). Ratio 1 and eight beats \, so its beat number indexes the grid's bottom row., f 58;
-#X obj 2300 1120 u_net 192.168.1.5 8000 \$6;
-#X text 2300 1170 192.168.1.5 is only the fallback: on the Organelle's own access point phone-ip.sh finds the phone itself (ref/device/phone.md)., f 58;
+#X obj 2300 1120 u_net 192.168.1.9 8000 \$6;
+#X text 2300 1170 192.168.1.9 is the phone at home \, reserved on the house router \; on the Organelle's own access point phone-ip.sh finds the phone itself (ref/device/phone.md)., f 58;
 #X obj 1450 180 u_state \$3;
 #X obj 1700 1150 m_volca \$5;
 #X obj 2050 1400 m_404 \$4;

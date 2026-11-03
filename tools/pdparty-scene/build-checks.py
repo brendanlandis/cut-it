@@ -176,44 +176,55 @@ def col(r, g, b):
     return -(((r >> 2) << 12) | ((g >> 2) << 6) | (b >> 2)) - 1
 
 
-BG, INK, GREEN, GRAY, RED, LAMP = (col(224, 224, 224), col(64, 64, 64), col(160, 220, 160),
-                                   col(200, 200, 200), col(240, 180, 180), col(0, 252, 64))
+BG, INK, GREEN, GRAY, RED, PAPER, PRESS = (
+    col(224, 224, 224), col(64, 64, 64), col(160, 220, 160), col(200, 200, 200),
+    col(240, 180, 180), col(252, 252, 252), col(176, 176, 176))
+
+# The buttons, (name, label, x, y, w, h): a plain rectangle, drawn over Pd
+# buttons that take the touch through it. A bng is square and draws a circle,
+# so the rectangle is what shows, and a wide one sits over two.
+BUTTONS = [("cprev", "‹", 4, 4, 20, 20), ("cnext", "›", 124, 4, 20, 20),
+           ("send", "Send", 316, 28, 106, 50),
+           ("pass", "Pass", 316, 83, 50, 50), ("fail", "Fail", 372, 83, 50, 50),
+           ("back", "Back", 316, 138, 50, 50), ("next", "Next", 372, 138, 50, 50)]
 
 
-def cnv(x, y, w, h, name, label, fs, bg=BG, xoff=6):
+def cnv(x, y, w, h, name, label, fs, bg=PAPER, xoff=6):
     return "cnv 1 %d %d ck-%s-out ck-%s-in %s %d %d 0 %d %d %d 0" % (
         w, h, name, name, label, xoff, h // 2, fs, bg, INK)
 
 
-def bng(size, name, label, fs=12, recv=None):
-    """A button sends on ck-<name>-press and receives on a name nothing writes:
-    a bng whose two names differ re-sends what it receives (the remote's loop
-    guard). A lamp is the other way round: it receives the ack, and sends to a
-    name nothing reads."""
-    recv = recv or "ck-%s-nc" % name
-    xoff = max(2, size // 2 - len(label) * fs * 3 // 10)
-    return "bng %d 250 50 0 ck-%s-press %s %s %d %d 0 %d %d %d %d" % (
-        size, name, recv, label, xoff, size // 2, fs, BG, INK, INK)
+def bng(size, name):
+    """The touch under a button: sends on ck-<name>-press and receives on a name
+    nothing writes, since a bng whose two names differ re-sends what it
+    receives (the remote's loop guard). Unlabeled: the rectangle over it is
+    what shows."""
+    return "bng %d 250 50 0 ck-%s-press ck-%s-nc empty 0 -8 0 10 %d %d %d" % (
+        size, name, name, BG, INK, INK)
+
+
+def button(name, label, w, h, fs):
+    """The rectangle a button shows, its label centered (0.6 em a character)."""
+    xoff = max(2, int(w / 2 - len(label) * fs * 0.3))
+    return "cnv 1 %d %d ck-btn-%s-out ck-btn-%s-in %s %d %d 0 %d %d %d 0" % (
+        w, h, name, name, label, xoff, h // 2, fs, BG, INK)
 
 
 def build_patch():
     top, g = Canvas(), Canvas()
     # ---------------------------------------------------------- the face
-    top.obj(4, 5, bng(18, "cprev", "‹", 14))
+    # each button's Pd buttons first, so its rectangle draws over them
+    for name, label, x, y, w, h in BUTTONS:
+        for bx in range(x, x + w - h + 1, h + 6) if w > h else [x]:
+            top.obj(bx, y, bng(h, name))
+        top.obj(x, y, button(name, label, w, h, 14 if h < 30 else 13))
     top.obj(26, 4, cnv(26, 4, 96, 20, "name", "-", 12))
-    top.obj(124, 5, bng(18, "cnext", "›", 14))
     top.obj(146, 4, cnv(146, 4, 100, 20, "pos", "-", 10))
     top.obj(248, 4, cnv(248, 4, 62, 20, "mark", NBSP, 10))
     top.obj(316, 4, cnv(316, 4, 110, 20, "pill", "no" + NBSP + "link", 10, bg=RED))
     top.obj(4, 28, cnv(4, 28, 306, 18, "title", "-", 11, xoff=4))
     for k in range(LINES):
         top.obj(4, 48 + 15 * k, cnv(4, 48 + 15 * k, 306, 15, "l%d" % (k + 1), NBSP, 9, xoff=4))
-    top.obj(316, 28, bng(50, "send", "Send", 13))
-    top.obj(372, 28, "bng 50 250 50 0 ck-ack-lamp ck-ack-in ack 16 25 0 11 %d %d %d" % (BG, LAMP, INK))
-    top.obj(316, 84, bng(50, "pass", "Pass", 13))
-    top.obj(372, 84, bng(50, "fail", "Fail", 13))
-    top.obj(316, 140, bng(50, "back", "Back", 13))
-    top.obj(372, 140, bng(50, "next", "Next", 13))
 
     # ---------------------------------------------------------- the guts
     # State is in [value]s, $0-local: c the checklist, i the step, p the page,
@@ -527,14 +538,35 @@ def build_patch():
     g.con(on, 0, pill)
     ack = g.obj(1100, y3 + 160, "route send")
     g.con(rt[1], 1, ack)
-    g.con(ack, 0, g.obj(1100, y3 + 200, "s ck-ack-in"))
+    g.con(ack, 0, g.obj(1100, y3 + 200, "s ck-acked"))
+
+    # every button darkens while pressed, and Send goes green on the ack
+    y4 = 3900
+    for k, (name, *_rest) in enumerate(BUTTONS):
+        x = 20 + k * 260
+        r_ = g.chain(x, y4, "r ck-%s-press" % name, "t b b")
+        dn = g.msg(x, y4 + 80, "color %d %d" % (PRESS, INK))
+        g.con(r_[1], 1, dn)
+        d_ = g.obj(x + 120, y4 + 120, "del 150")
+        g.con(r_[1], 0, d_)
+        up = g.msg(x + 120, y4 + 160, "color %d %d" % (BG, INK))
+        g.con(d_, 0, up)
+        out_ = g.obj(x, y4 + 200, "s ck-btn-%s-in" % name)
+        g.con(dn, 0, out_)
+        g.con(up, 0, out_)
+        if name == "send":
+            ra = g.chain(x, y4 + 260, "r ck-acked", "t b b")
+            gr = g.msg(x, y4 + 340, "color %d %d" % (GREEN, INK))
+            g.con(ra[1], 1, gr)
+            g.con(ra[1], 0, d_)        # the same restore, so a press and an ack never fight
+            g.con(gr, 0, out_)
     g.txt(20, y3 + 500, "The pill is the Organelle's own test mode \\, from the heartbeat's second "
           "argument \\, and says no link when 1500 ms pass with nothing heard. The change is "
-          "reset by the no-link \\, so the state comes back when the link does. The ack lamp "
-          "lights on ack send \\, the Organelle's answer \\, not on the press.", 90)
+          "reset by the no-link \\, so the state comes back when the link does. Send goes "
+          "green on ack send \\, the Organelle's answer \\, not on the press.", 90)
 
     top_txt = ["#N canvas 60 60 448 207 10;"] + top.b
-    guts = ["#N canvas 520 120 3600 3800 guts 0;"] + g.b + g.c + ["#X restore 4 194 pd guts;"]
+    guts = ["#N canvas 520 120 3600 4400 guts 0;"] + g.b + g.c + ["#X restore 4 194 pd guts;"]
     return "\n".join(top_txt + guts + top.c) + "\n"
 
 

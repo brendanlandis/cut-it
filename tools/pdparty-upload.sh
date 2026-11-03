@@ -2,7 +2,7 @@
 # Put both phone scenes on PdParty, over its WebDAV server: CutItRemote, and
 # CutItChecks, the checklist page with its data.
 #
-#   ./tools/pdparty-upload.sh                  the phone at 192.168.1.5
+#   ./tools/pdparty-upload.sh                  the phone at 192.168.1.9
 #   PHONE=192.168.1.20 ./tools/pdparty-upload.sh
 #
 # PdParty's WebDAV server has to be switched on in the app first, and does not
@@ -13,7 +13,7 @@
 
 set -eu
 
-PHONE="${PHONE:-192.168.1.5}"
+PHONE="${PHONE:-192.168.1.9}"
 URL="http://$PHONE:9000"
 cd "$(dirname "$0")/pdparty-scene"
 

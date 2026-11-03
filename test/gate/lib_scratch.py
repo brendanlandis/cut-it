@@ -290,7 +290,7 @@ class Scratch:
         port = int(port or os.environ.get("CUTIT_INPORT") or 9002)
         _records_replace(
             os.path.join(self.patch, "u_root.pd"),
-            re.escape("u_net 192.168.1.5 8000 "),
+            re.escape("u_net 192.168.1.9 8000 "),
             "u_net 127.0.0.1 %d " % (port + 1000),
             ["      Could not point u_net away from the phone."])
         sink(port + 1000)

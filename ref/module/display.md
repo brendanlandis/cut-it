@@ -200,7 +200,7 @@ button is selected.
 | A step that is off | 1, dim; 0, dark, past the last step | unknown |
 | A step that is on | Its velocity's level, (*v* − 1) div 16 + 1, in that level's RGB color: white for level 1, falling evenly to bright red for level 8. Past the last step too: the note is kept, unplayed | unknown |
 | The playhead's step | 21, green, over whatever the step holds | unknown |
-| A velocity button | Its own level's color: full when selected, a quarter otherwise | unknown |
+| A velocity button | Its own level's color: full when selected, a quarter otherwise | verified |
 | The selected pad | The selected level's color, full | unknown |
 | Every other pad | 1, dim | unknown |
 
@@ -211,7 +211,7 @@ lamps are drawn as in every mode.
 even white-to-red ramp in it (Reference), so `g_grid`'s surface holds 128 + *k* for entry *k* of its
 own RGB table, and the paint loop sends those cells as type 3, red, green and blue: red 127, and
 green and blue 127, 109, 91, 73, 54, 36, 18, 0 for levels 1 to 8; the quarter is each over four.
-Whether the eight read as eight on the rig is the sequencer checklist's to say.
+✅ On the rig the eight read as eight, white to red (Brendan, 2026-11-03).
 
 ### Seeing it off-device
 

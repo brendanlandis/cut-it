@@ -191,18 +191,19 @@ plausible accident deploys it.
 
 ### The `.sh` scripts: invoked once on the Mac, checked on the device
 
-**Four of the five run once per patch load through `[shell]`, never per event**, and that much is
+**Five of the six run once per patch load through `[shell]`, never per event**, and that much is
 asserted: `test/gate/init-assert.sh` swaps in a counting stub and requires exactly one invocation of
-each. What they **do** can only happen on the device, where all but one case was checked by hand
-on 2026-11-02; the open case is in `Open` below.
+each. What they **do** can only happen on the device, where all but two cases were checked by hand
+on 2026-11-02; the open cases are in `Open` below.
 
-| Script | Asserted on the Mac | On the device, 2026-11-02 |
-|--------|---------------------|---------------------------|
+| Script | Asserted on the Mac | On the device |
+|--------|---------------------|---------------|
 | `wire.sh` | Invoked once, **inside** the `modal wiring` stage. Its `aconnect` lines are also statically parsed against the two tables above | `wire.sh: 9 connections`: all four devices wired in and out, plus ALSA's own announce link |
 | `state-dir.sh` | Invoked once. The gates work around it by hand-creating the files — see [state.md](state.md) | Run against a real save, all three files byte for byte unchanged; at load it touched them and left their contents |
 | `logroll.sh` | Invoked once | At load it stamped the session's `BOOT` line and carried the previous session's six lines into the durable log |
 | `phone-ip.sh` | Invoked once, with the fallback address as its argument | On house wifi it printed the fallback. On the Organelle's own access point: not yet checked |
-| `recover.sh` | ⛔ **Not at load, and that is the point.** Never invoked during a boot, which is what keeps `init-assert`'s exactly-four check green. Item 300 | — |
+| `codec-gain.sh` | Invoked once, at `u_root`'s `loadbang` | Not yet run from the patch. Its settings were made by hand with `amixer` on 2026-11-03, and its readback ran against the chip with every `set` stubbed out. What it sets: [audio.md](audio.md) |
+| `recover.sh` | ⛔ **Not at load, and that is the point.** Never invoked during a boot, which is what keeps `init-assert`'s one-of-each check green. Item 300 | — |
 
 ⛔ **`recover.sh` is the one that forks on an EVENT**, and it bends Phase 4's rule deliberately — the
 same terms as `u_present`'s trailing fork. It is rare, user-initiated, bounded at exactly one per
@@ -271,7 +272,10 @@ also undoes the phantom-control case, where a device enumerating late lands on a
 channel block. What is still unverified about that lives on its own page rather than here.
 
 - ⬜ **`phone-ip.sh` on the Organelle's own access point is unchecked**: the case where it reads the
-  phone's address from the AP's lease file. The other load-time scripts were checked on the device
-  on 2026-11-02 (the table above). Filed as a loosie, `cut-it/inbox`. ⚠️ **`recover.sh` is the
-  exception and is covered**: its two OSC commands are statically linted, and holding CC 90 on the
-  rig is a bench step — see [launchpad.md](../device/launchpad.md).
+  phone's address from the AP's lease file. The other load-time scripts but `codec-gain.sh` (below)
+  were checked on the device on 2026-11-02 (the table above). Filed as a loosie, `cut-it/inbox`.
+  ⚠️ **`recover.sh` is the exception and is covered**: its two OSC commands are statically linted,
+  and holding CC 90 on the rig is a bench step — see [launchpad.md](../device/launchpad.md).
+- ⬜ **`codec-gain.sh` run from the patch is unchecked on the device.** After a reboot and a load,
+  `amixer -c Codec` should read `PCM` 192, `Headphone` 105 and `Capture` 4, and the by-hand console
+  should show its one line. The settings themselves were heard on 2026-11-03. `cut-it/inbox`.

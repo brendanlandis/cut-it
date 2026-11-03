@@ -87,7 +87,7 @@ stops the instrument**, because loading any patch restarts Pd. See
 | `g_` | One display surface, and its sole owner | `g_oled` `g_grid` `g_led` |
 | `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` |
 | `e_` | An effect stage — **v0.4, none yet** | — |
-| `.sh` | Run through `[shell]` — the first four once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `recover.sh` |
+| `.sh` | Run through `[shell]` — the first five once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `codec-gain.sh` `recover.sh` |
 | `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` |
 
 **The prefix table above is `Cut It/`'s.** `Cut It Debug/` is flat and has no prefixes — one

@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The audio chain
 
-**Files:** `Cut It/u_root.pd`, `Cut It/u_level.pd` · **Gate:** `test/gate/audio-assert.sh` · **Bench:** `none`
+**Files:** `Cut It/u_root.pd`, `Cut It/u_level.pd`, `Cut It/codec-gain.sh` · **Gate:** `test/gate/audio-assert.sh` · **Bench:** `none`
 
 ## What it is
 
@@ -18,6 +18,10 @@ is where v0.4 goes** — `e_chop`, `e_pitch`, `e_trem`, `e_verb`.
 `u_level` reports the level of any signal onto the `disp` bus. Tap it off anything you want to
 watch: **it has no signal outlet and does not alter the audio.**
 
+**The audio chip's own gains are Cut It's too.** The factory stages them backwards for noise and
+restores that at every boot, so `u_root` re-stages them at every load through `codec-gain.sh`: the
+DAC at full scale, the headphone amp down to match, the line input 12 dB quieter.
+
 ## Facts
 
 ### The I/O contract
@@ -33,6 +37,21 @@ square law, the limiter, turning DSP on, the VU meter) is on the Organelle's Ref
 (`~/Sites/!reference/critter-guitari-organelle-1.md`, under *Audio*). Several stages can feed `outL`
 and `outR` with no mixer, since every `throw~` into one `catch~` is summed (Pure Data, in Reference).
 
+### The codec's gains
+
+`codec-gain.sh` sets four of the SGTL5000's controls and echoes what the chip reads back. The chip,
+its dB scales, the factory's values and the hiss are on the Organelle's Reference page
+(`~/Sites/!reference/critter-guitari-organelle-1.md`, *SGTL5000*).
+
+| Control | Cut It sets | Evidence |
+|---------|-------------|----------|
+| `Headphone` | 105, +1 dB | verified |
+| `PCM` | 192, 0 dB | verified |
+| `Capture Attenuate Switch (-6dB)` | on, as the factory leaves it, but set rather than assumed | verified |
+| `Capture` | 4, 12 dB below the factory's 12. The SP-404 is turned up to make it up ([rig.md](../rig.md)) | verified |
+
+Verified by ear on 2026-11-03, set by hand with `amixer`: the hiss goes, at the same overall level.
+
 ### `u_level`
 
 | | | Evidence | Item |
@@ -41,8 +60,8 @@ and `outR` with no mixer, since every `throw~` into one `catch~` is summed (Pure
 | Inlet 1 | One signal | verified | — |
 | Outlets | **None** | verified | — |
 | Scale | `env~` reports **RMS on a 0–100 dB scale**, 100 being full scale | verified | 11 |
-| Input noise floor | **18–19** on that scale | verified | 11 |
-| A passive bass | Reaches the **90s** | verified | 11 |
+| Input noise floor | **18–19** on that scale, at the factory's input gain | verified | 11 |
+| A passive bass | Reaches the **90s**, at the factory's input gain | verified | 11 |
 | Sampling rate | **10 Hz** — `[metro 100]` banging a stored value | verified | — |
 | `[change -1]` | A **steady signal stops reporting** | verified | — |
 
@@ -85,6 +104,15 @@ best redundant.
 **Fix:** leave it alone. `tools/dsp.sh` turns it off on a running patch, for measuring what the
 audio engine costs (item 75).
 
+### `PCM` raised before `Headphone` comes down is 11 dB louder
+
+⚠️ The factory's overall level is -11 dB at the DAC and +12 dB in the amp. Raise `PCM` first and,
+on the first load after a boot, the output is 11 dB louder than either end until `Headphone` follows,
+and for good if that second `amixer` fails.
+
+**Fix:** `Headphone` first, and `PCM` only if that succeeded (`&&`), so the step between them and
+any failure are quieter instead.
+
 ## Design
 
 ### The audio path is wires and the control path is buses
@@ -92,6 +120,15 @@ audio engine costs (item 75).
 Every control path in Cut It travels on an allowlisted bus; the audio chain is the one place that
 uses cords instead. **A signal chain you can read off the canvas is worth more than the uniformity**,
 and the four v0.4 stages go into the gap right to left so it stays that way.
+
+### The codec is set from `u_root`, at `loadbang`
+
+`u_root` holds the audio chain, and the codec's gains are its two analog ends, so the invocation
+sits beside `[r~ inL]` and `[throw~ outL]`: the file that owns a concern runs its script at load,
+as `u_err` runs `logroll.sh` and `u_state` runs `state-dir.sh`. **No `u_init` stage is needed**:
+the factory's `setup.sh` has finished before Pd starts, and a patch load leaves the mixer alone
+(the Organelle, in Reference). It runs at every load because a reboot undoes it. `setup.sh` itself
+stays as the factory shipped it, on the read-only root and outside anything Cut It deploys.
 
 ### The level taps need no `[trigger]`
 
@@ -122,3 +159,6 @@ deferred — item 264.
   the drum mode and the sampler are v0.4. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **Nothing measures the output side.** Both `u_level` instances are on the input; a tap before
   `throw~` would need the stages to exist first. See [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **The input levels above were measured at the factory's input gain.** The noise floor and the
+  passive bass are item 11's, taken before `Capture` came down 12 dB, and the OLED's gate marks are
+  drawn from them ([display.md](display.md)). Re-measure with `tools/audio-probe/`. `cut-it/inbox`.

@@ -231,7 +231,7 @@ The kinds, the manufacturer bytes, the bounded re-wire and its arithmetic are on
 enumerated from the file itself on the Organelle's Reference page
 (`~/Sites/!reference/critter-guitari-organelle-1.md`, under *The `mother.pd` interface*).
 
-**`[r quitting]` is the shutdown hook, and it is the only one** (Pd 0.49 has no `closebang`). Its
+**`[r quitting]` is the shutdown hook, and it is the only one** (Pd has no `closebang`, 0.49 or 0.57). Its
 budget is mother's ~100 ms before Pd quits (same page, under *`quitting`, and how long a patch
 has*): enough for a nine-byte SysEx, not for anything clever.
 
@@ -380,8 +380,8 @@ The message format, the reserved names, the layer model and every trap around th
 
 **Rule C-6, C-7 and C-8.** Cite it by ID from a `.pd` comment, where a link cannot be followed.
 
-All four cost real debugging time on this project. Why each happens is Pd's, measured in 0.49:
-Reference, *Selectors, lists and `route`*.
+All four cost real debugging time on this project. Why each happens is Pd's, measured in 0.49 and
+the same in 0.57: Reference, *Selectors, lists and `route`*.
 
 | You have | You get | Fix |
 |---|---|---|
@@ -543,8 +543,8 @@ restore is staged rather than run at `loadbang`.
 | **Copying a subpatch to reuse it** | Two codebases, silent divergence |
 | **`adc~` / `dac~` in a deployed patch** | `mother.pd` owns the sound card; `dac~` bypasses the volume knob and the limiter — see *Audio I/O* |
 | **`oscOut` / `screenLine*` / `led` outside their display abstraction** | Two writers, one surface |
-| **Saving from plugdata** | Corrupts the file format for Pd 0.49 — see [AGENTS.md](AGENTS.md) |
-| **Objects newer than Pd 0.49** | The device can never be upgraded — see [AGENTS.md](AGENTS.md) |
+| **Saving from plugdata** | Its format is newer than vanilla's, and whether 0.57 reads all of it is untested — see [AGENTS.md](AGENTS.md) |
+| **Objects newer than Pd 0.57** | The device runs 0.57, falling back to 0.49 if its files are missing — see [AGENTS.md](AGENTS.md) |
 
 ---
 

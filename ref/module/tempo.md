@@ -207,8 +207,8 @@ create a loop if left on.
 `u_tempo` uses the cold-inlet pattern — port into the right inlet, byte into the left — and item 63
 fired a real 404 pad through it.
 
-⚠️ **The obvious experiment is invalid:** Pd 0.49 does not warn about extra creation arguments at
-all, so `[midiout 7]` loads silently and a clean syntax check proves nothing either way. Recorded so
+⚠️ **The obvious experiment is invalid:** Pd does not warn about extra creation arguments at all,
+0.49 or 0.57, so `[midiout 7]` loads silently and a clean syntax check proves nothing either way. Recorded so
 the question is not reopened.
 
 ## Design

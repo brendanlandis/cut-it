@@ -59,7 +59,7 @@ raise, which is most of what actually goes wrong.
 | **Capture is unconditional.** The mode filter decides what reaches the SCREEN, never what reaches the log | verified | — |
 | `/sdcard/cut-it-err.cur` is the current session, bounded at **200 lines** from inside the patch | verified | — |
 | `/sdcard/cut-it-err.log` is the durable one, bounded at **400 lines** and trimmed to 300 by `logroll.sh` | verified | — |
-| `logroll.sh` runs **once per load** through `[shell]`, rolls `.cur` into `.log` and writes a `BOOT` line — the wall clock Pd 0.49 does not have. It echoes how many lines it carried, because a silent roll is indistinguishable from a missing script | verified | — |
+| `logroll.sh` runs **once per load** through `[shell]`, rolls `.cur` into `.log` and writes a `BOOT` line — the wall clock Pd does not have, 0.49 or 0.57. It echoes how many lines it carried, because a silent roll is indistinguishable from a missing script | verified | — |
 | `[r quitting]` forces a last flush, so the final seconds of a session are not lost | verified | — |
 | Each line is stamped with `[timer]` — **milliseconds since load**, and there is no other clock in the patch | verified | — |
 | ⛔ The stamp reaches `[text]` as a **symbol**, through `[makefilename %d]`, and must | verified | 290 |

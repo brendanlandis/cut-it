@@ -1,27 +1,34 @@
 ---
 name: pd
-description: Writing, editing or reviewing Pure Data for the Cut It Organelle patch. Vanilla Pd 0.49 constraints, the C-1..C-14 conventions, how to edit a .pd file by hand without breaking it, and the gates that must pass. Use whenever touching anything under "Cut It/" or tools/*.pd.
+description: Writing, editing or reviewing Pure Data for the Cut It Organelle patch. Vanilla Pd 0.57 constraints, the C-1..C-14 conventions, how to edit a .pd file by hand without breaking it, and the gates that must pass. Use whenever touching anything under "Cut It/" or tools/*.pd.
 ---
 
 # Writing Pd for Cut It
 
 ## The three constraints that are not negotiable
 
-**1. Target is Pd vanilla 0.49, permanently.** Verified on the device: `Pd-0.49.0, compiled Oct 9
-2018`. The Organelle 1 runs OS 4.0, **which is the end of the line for this hardware** — 4.1 was
-Organelle M only; 4.2 / 4.4 / OS 5 are M/S/S2. **Do not suggest any object newer than 0.49.**
+**1. Target is Pd vanilla 0.57**, on the device and on the Mac, from 2026-11-03. The Organelle 1's
+factory Pd is 0.49 (`Pd-0.49.0, compiled Oct 9 2018`), and its OS 4.0 is **the end of the line for
+this hardware** — 4.1 was Organelle M only; 4.2 / 4.4 / OS 5 are M/S/S2. So 0.57 is our own build,
+in `/sdcard/pd-0.57-0`: `/usr/bin/pd`, the path `mother` launches, is a script that runs it and
+falls back to the factory 0.49, kept as `/usr/bin/pd-0.49`, if those files are missing
+(`device/README.md`). **Do not suggest any object newer than 0.57**; one newer than 0.49 fails to
+create on the fallback.
 
 **2. Never save an Organelle-bound patch from plugdata.** plugdata is built on Pd 0.55+ and rewrites
 `.pd` files into a newer format — iemgui colors become hex (`#fcfcfc` instead of `-262144`),
-floatatoms gain a trailing arg. **Pd 0.49 cannot parse that.** It has already happened once in this
-repo. Edit with vanilla Pd 0.49 for anything that ships.
+floatatoms gain a trailing arg. **Vanilla 0.57 writes and reads its own version of that format, but
+whether plugdata adds anything 0.57 cannot read is untested.** It broke a patch here once, under 0.49.
+Edit with vanilla Pd for anything that ships. ⚠️ A file 0.57 re-saves picks up that format beyond the
+edit (hex colors, a number-box argument); 0.49 reads it, so it is diff noise (`cut-it/pd-057`).
 
 **3. Vanilla objects only, by default.** The Organelle ships neither ELSE nor cyclone; its only
 externals are a factory dozen in `/root/Pd/externals`, of which Cut It uses `[shell]`
 (`~/Sites/!reference/critter-guitari-organelle-1.md`, *Externals*). Bundling a library is possible —
-the device is armv7 — but what 0.49 can load is narrow (`~/Sites/!reference/pure-data.md`,
-*Externals for 0.49*). Pure-Pd abstractions drop into the patch folder with no such concerns. Prefer
-vanilla unless a specific object is worth the dependency.
+the device is armv7 — and 0.57 widens it: current ELSE needs 0.56 or later, so it is within reach,
+built on the device (`cut-it/pd-057`; `~/Sites/!reference/pure-data.md`, *Externals for 0.49 and
+0.57*). Pure-Pd abstractions drop into the patch folder with no such concerns. Prefer vanilla unless
+a specific object is worth the dependency.
 
 ## The rules
 
@@ -83,8 +90,8 @@ store refuses, so a field left off keeps its old value (C-7).
 ⚠️ **`[list trim]` before `route`** — `route` matches a *selector*, and `[list prepend]`/`[list
 append]` produce a `list` selector (C-6).
 
-⚠️ **Pd 0.49 does not warn about extra creation arguments at all.** A wrong arg count loads in
-perfect silence, so a clean syntax check proves nothing about arity.
+⚠️ **Pd does not warn about extra creation arguments at all**, 0.49 or 0.57. A wrong arg count loads
+in perfect silence, so a clean syntax check proves nothing about arity.
 
 ## The gates
 
@@ -111,7 +118,7 @@ on its first can-it-fail run. Reintroduce the bug, watch it go red, revert.
 | | |
 |---|---|
 | `ref/conventions.md` | The rules in full, with reasoning |
-| `~/Sites/!reference/pure-data.md` | What Pd 0.49 itself does — the behavior and the traps the rules work around |
+| `~/Sites/!reference/pure-data.md` | What Pd itself does — the behavior and the traps the rules work around, measured in 0.49 and marked where 0.57 differs |
 | `ref/workflow.md` | How the loop is run — deploy, the by-hand SSH console, how a phase runs |
 | `ref/README.md` | How the documentation is organized, and the page schema |
 | `ref/device/<name>.md` | How Cut It uses one device; the device itself is on its page in `~/Sites/!reference/` |
@@ -119,7 +126,7 @@ on its first can-it-fail run. Reintroduce the bug, watch it go red, revert.
 | `AGENTS.md` | Repo layout, working notes, the device itself |
 | `!projects/cut-it/` | **What is open** — the repo beside this one. A comment cites a file as `cut-it/<slug>`, a loosie as `cut-it/inbox`; the docs gate resolves both. `plan-v04.md` is the last plan document and is being moved there by hand |
 
-**Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and the
+**Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.57 on the Mac and the
 whole instrument is there — `u_mother-stub` draws the front panel inline and fakes the knobs, keys,
 aux and encoder. Most work should never need the Organelle powered on.
 

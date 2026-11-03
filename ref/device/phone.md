@@ -154,11 +154,17 @@ which is what makes it easy to read as a symptom of something worsening.
 phone, not the wifi. ⚠️ **The real roam fault has a different signature** — the *whole device* goes
 unreachable, `ssh` included — and it is on [wifi.md](../wifi.md) with a reproduction.
 
+⚠️ **All of this is 0.49's.** Under Pd 0.57 the socket survives an ICMP refusal, measured on the Mac
+(2026-11-03; Pure Data, in Reference), so if the device's 0.57 does the same, `net-link-down` no
+longer fires, and closing PdParty can't reach it. Untested on the device.
+
 ### Rebuild the socket
 
 A UDP `connect` to a port with nothing listening survives exactly one datagram (Pure Data, in
 Reference), so a socket that reports connected proves nothing, and a phone that leaves the network
-destroys the link without the patch hearing about it. `u_net` reconnects on a timer.
+destroys the link without the patch hearing about it. `u_net` reconnects on a timer. ⚠️ That is
+0.49's behavior: 0.57 on the Mac keeps the socket and delivers again once something listens (Pure
+Data, in Reference); untested on the device.
 
 ### The unit field is written on every param message
 
@@ -226,6 +232,8 @@ Data, in Reference), so "armed at" means "fires at". On the Mac a `[del 700]` fa
 
 ⚠️ **`[netreceive]` in 0.49 cannot tell you who sent a datagram.** Checked before designing around
 it, and it is why the obvious answer — the phone announcing its own address — was not available.
+**0.57 can**: `[netreceive -u -b -f]` puts the sender's address and port on a second outlet
+(measured on the Mac, 2026-11-03; Pure Data, in Reference).
 
 `phone-ip.sh` reads the DHCP lease the Organelle handed out on its own access point, and falls back
 to the creation argument on any other network. **There was never a discovery problem to solve; the
@@ -261,6 +269,7 @@ can reach stays the set of boxes you can read.
 
 ⚠️ **Nothing here may be built on a sender identity that is not available** — `[netreceive]` in
 0.49 cannot supply one (Reference, *Pure Data*), and a bidirectional link does not change that.
+0.57's can, with `-f` (above); the fallback 0.49's cannot.
 
 ⛔ **A fourth command was considered and rejected: a full status dump.** Parameters and status re-send
 every two seconds and the alert repeats at 2 Hz, so a phone joining late repopulates on its own in

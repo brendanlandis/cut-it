@@ -120,9 +120,9 @@ so one number for both would print `bind: Address already in use` and fail the s
 suite run. ⚠️ **It also means the phone's buttons drive the device rather than the Mac.** See
 [phone.md](device/phone.md).
 
-⛔ **Pd 0.49 does not warn about a missing or extra creation argument, and positional arguments
-cannot be skipped.** A wrong count loads in perfect silence, so a clean syntax check proves nothing
-about arity — and omitting one would silently shift every argument after it. **That is why each
+⛔ **Pd does not warn about a missing or extra creation argument, 0.49 or 0.57, and positional
+arguments cannot be skipped.** A wrong count loads in perfect silence, so a clean syntax check
+proves nothing about arity — and omitting one would silently shift every argument after it. **That is why each
 `m_` layer prints the channel it actually received**, a couple of seconds in, behind `[del 2000]`
 (C-9).
 

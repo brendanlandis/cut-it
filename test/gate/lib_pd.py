@@ -1,9 +1,10 @@
 """Reading a .pd file the way Pd does: by record, not by line.
 
 A record ends at an unescaped `;`. Pd 0.49 wraps a long record across lines when
-it saves, at about 65 columns, so a lint that reads one line at a time cuts a long
-box short or misses it outright the first time a patch is saved from Pd rather
-than written by a script. u_map's destination `route` is about 120 characters.
+it saves, at about 65 columns (0.57 keeps each on one line), so a lint that reads
+one line at a time cuts a long box short or misses it outright the first time a
+patch is saved from 0.49 rather than written by a script. u_map's destination
+`route` is about 120 characters.
 """
 
 

@@ -160,11 +160,11 @@ init to `u_state`.
 
 **Fix:** place a new outlet by where it must appear in the order, not by where there is room.
 
-### Positional creation arguments cannot be skipped, and Pd 0.49 does not warn
+### Positional creation arguments cannot be skipped, and Pd does not warn
 
 ⛔ An unused position still has to be passed: omitting argument 4 would silently deliver the Volca's
-channel as arg 4. **Pd 0.49 does not warn about a missing or extra creation argument at all**, so a
-clean syntax check proves nothing about arity.
+channel as arg 4. **Pd does not warn about a missing or extra creation argument at all**, 0.49 or
+0.57, so a clean syntax check proves nothing about arity.
 
 **Fix:** pass every position, even the unused ones, and say in the comment that it is unused.
 
@@ -254,7 +254,7 @@ one nobody opens.
 
 ### Off-device development is the default
 
-Open `main-dev.pd` in Pd 0.49 and the whole instrument is there. **Reach for the hardware when the
+Open `main-dev.pd` in Pd 0.57 and the whole instrument is there. **Reach for the hardware when the
 thing you are testing is the hardware** — a bench can pass on the Mac twice and still ship bugs the
 device finds in minutes.
 

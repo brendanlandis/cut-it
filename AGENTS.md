@@ -28,11 +28,16 @@ They load on demand, so they cost nothing in a session that does none of those t
 **The three Pd constraints that are not negotiable**, repeated here because they are expensive to
 learn late:
 
-- **Pd vanilla 0.49, permanently.** The Organelle 1's OS 4.0 is the end of the line for that hardware
-  (details in `~/Sites/!reference/critter-guitari-organelle-1.md`). Do not suggest any object newer
-  than 0.49.
-- **Never save an Organelle-bound patch from plugdata.** It rewrites `.pd` files into a format 0.49
-  cannot parse (`~/Sites/!reference/pure-data.md`). This has already happened once here.
+- **Pd vanilla 0.57, on the device and on the Mac** (from 2026-11-03). The Organelle 1's factory Pd
+  is 0.49 and its OS 4.0 is the end of the line for that hardware, so 0.57 is our own build, in
+  `/sdcard/pd-0.57-0`: `/usr/bin/pd`, which `mother` launches, is a script that runs it and falls
+  back to the factory 0.49, kept as `/usr/bin/pd-0.49`, if those files are missing
+  ([device/README.md](device/README.md), with the rollback). Do not suggest any object newer than
+  0.57; one newer than 0.49 fails to create on the fallback.
+- **Never save an Organelle-bound patch from plugdata.** It rewrites `.pd` files into its newer
+  format. Vanilla 0.57's own version of that format is native, but whether plugdata adds anything
+  0.57 cannot read is untested (`~/Sites/!reference/pure-data.md`). It broke a patch here once,
+  under 0.49.
 - **Vanilla objects only, plus `[shell]`** — the Organelle ships neither ELSE nor cyclone, only a
   dozen factory externals, of which Cut It uses `[shell]` (Reference, Organelle page, *Externals*).
 
@@ -127,7 +132,7 @@ project asserts on messages, which is what kept the audio path invisible for so 
 
 ## Working on it
 
-**Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.49 on the Mac and the
+**Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.57 on the Mac and the
 whole instrument is *there* — `u_mother-stub` draws the front panel inline and fakes the knobs, keys,
 aux and encoder. **Most work should never need the Organelle powered on.**
 
@@ -258,6 +263,6 @@ Links to paths containing spaces use the angle-bracket form:
   five physical tests on 2026-08-08, and [ref/rig.md](ref/rig.md) had already written it up **with
   that exact code in the text**. Symptoms are as greppable as `item NNN`, and cost more to re-derive.
 - **Configuration that lives only on a device is one accident from being lost.** The nanoKONTROL
-  scene and `/root/.pdsettings` are both backed up in [device/](device/), verified current against
-  the hardware. `.pdsettings` is load-bearing: `path1: /root/Pd/externals` is what makes `[shell]`,
+  scene, `/root/.pdsettings` and the `/usr/bin/pd` launcher are backed up in [device/](device/),
+  verified current against the hardware. `.pdsettings` is load-bearing: `path1: /root/Pd/externals` is what makes `[shell]`,
   `packOSC` and `routeOSC` resolve in the menu-launched patch.

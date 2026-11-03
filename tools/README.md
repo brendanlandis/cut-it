@@ -231,8 +231,8 @@ Sends the Live Mode SysEx with `amidi`, **needs no Pd at all**, and looks the po
 because `hw:N` numbering shifts (Reference, *mother's autoconnect, and ALSA numbers that move*).
 
 **Why it is needed.** `m_launchpad`'s safe exit hooks `[r quitting]`, which only `mother.pd` sends
-— right before mother itself quits Pd, with a 100 ms budget. Pd 0.49 has no `closebang`, so that is
-the only shutdown hook there is. **Every other way a session can end leaves the device stranded**: a
+— right before mother itself quits Pd, with a 100 ms budget. Pd has no `closebang`, 0.49 or 0.57, so
+that is the only shutdown hook there is. **Every other way a session can end leaves the device stranded**: a
 crash, power loss, or `killall pd` — which the by-hand console workflow does every single time.
 Programmer Mode locks out the Launchpad's own Settings menu, so the front panel cannot recover it.
 
@@ -406,7 +406,7 @@ ssh root@organelle.local
 ```
 
 Stop with `killall pd`. ⚠️ **Then run `./tools/lp-live.sh`** — `killall pd` strands the Launchpad in
-Programmer Mode every time, because Pd 0.49 has no `closebang` and only `mother.pd` sends `quitting`.
+Programmer Mode every time, because Pd has no `closebang` and only `mother.pd` sends `quitting`.
 
 ✅ **`lp-monitor.pd` was repaired on 2026-08-08 and prints three things it did not before.** It had
 **no `[sysexin]`**, so a device-inquiry reply — or an announcement of a mode change made *by hand* —

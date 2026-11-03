@@ -33,6 +33,7 @@ OUT = os.path.join(HERE, "CutItRemote", "_main.pd")
 NBSP = " "
 X0 = 500            # the drum screen's left edge; the remote screen is 0 to 448
 VIEW = 448          # one screen, half the iPhone 11's landscape points
+HEIGHT = 207
 NOTCH = 22          # kept clear on the right (rig-faces-away-from-the-mac)
 
 
@@ -150,8 +151,10 @@ def drums():
     m0 = g.msg(220, 360, "0")
     ch = g.obj(120, 400, "change -1")
     se = g.obj(120, 440, "select 1 0")
-    pd = g.msg(120, 480, "pos %d 0" % X0)
-    pr = g.msg(220, 480, "pos 0 0")
+    # vis_size first: PdParty keeps the viewport's size when it moves it, and that
+    # size starts at zero, so pos alone scales the scene out of sight.
+    pd = g.msg(120, 480, "vis_size %d %d \\, pos %d 0" % (VIEW, HEIGHT, X0))
+    pr = g.msg(220, 480, "vis_size %d %d \\, pos 0 0" % (VIEW, HEIGHT))
     sv = g.obj(120, 530, "s ViewPort")
     for a, ao, b in ((rm, 0, la), (la, 0, sp), (sp, 1, tr), (tr, 0, ro), (ro, 0, m1),
                      (ro, 1, m0), (m1, 0, ch), (m0, 0, ch), (ch, 0, se), (se, 0, pd),

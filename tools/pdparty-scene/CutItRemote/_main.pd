@@ -217,8 +217,8 @@
 #X msg 220 360 0;
 #X obj 120 400 change -1;
 #X obj 120 440 select 1 0;
-#X msg 120 480 pos 500 0;
-#X msg 220 480 pos 0 0;
+#X msg 120 480 vis_size 448 207 \, pos 500 0;
+#X msg 220 480 vis_size 448 207 \, pos 0 0;
 #X obj 120 530 s ViewPort;
 #X text 600 20 The state: playing \, the global last step \, the selected track \, a pending sync or snap \, then each track's last step and whether it is its own. list split 36 drops anything short \, as the empty repeat before the first state. t b a a: the arrays first \, then the header \, which gives expr the track \, then the sixteen cells., f 60;
 #X obj 600 160 r dr-state-in;

@@ -70,8 +70,8 @@ clock and it stretches to a stale local value.
 
                     ┌───────────────────────────────┐
                     │        SP-404MK2              │
-                    │  drum samples → pan MONO L    │
-                    │  fx samples   → pan MONO R    │
+                    │  drum samples → hard L (L:50) │
+                    │  fx samples   → hard R (R:50) │
                     │  use BUS 1/2 only             │
                     └────────┬─────────────┬────────┘
                         OUT L│             │OUT R

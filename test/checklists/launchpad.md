@@ -87,7 +87,7 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
 - [ ] **19. Pads and releases**
   - **Do:** Press pads and release them. Press harder on one you are holding.
   - **Pass if:** Every pad you press reports pad-NN on the OLED with its velocity. Releasing it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressing harder on a held pad draws no row of its own — with aftertouch on or off — and that is correct.
-  - **Note:** Pressure draws no row with aftertouch on or off: `u_map` exempts a name ending `-at`, as it exempts the keys (item 318).
+  - **Note:** Pressure arrives as `pad-NN-at`, and `u_map` draws no raw row for a name ending `-at`, as it draws none for the keys (item 318).
 
 - [ ] **20. Ring buttons**
   - **Do:** Press the ring buttons, including the top left corner and the bottom row.

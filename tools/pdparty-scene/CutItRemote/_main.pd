@@ -435,10 +435,12 @@
 #X obj 764 141 cnv 1 33 33 dr-p16-out dr-p16-in 16 8 16 0 14 -208051 -41611 0;
 #X obj 802 28 cnv 1 122 54 dr-edge-sync-out dr-edge-sync-in empty 6 27 0 10 -99865 -24967 0;
 #X obj 804 30 bng 50 250 50 0 dr-sync-press dr-sync-nc empty 0 -8 0 10 -241339 -24967 -24967;
+#X obj 838 30 bng 50 250 50 0 dr-sync-press dr-sync-nc empty 0 -8 0 10 -241339 -24967 -24967;
 #X obj 872 30 bng 50 250 50 0 dr-sync-press dr-sync-nc empty 0 -8 0 10 -241339 -24967 -24967;
 #X obj 804 30 cnv 1 118 50 dr-btn-sync-out dr-btn-sync-in sync first steps 6 25 0 11 -262144 -24967 0;
 #X obj 802 90 cnv 1 122 54 dr-edge-snap-out dr-edge-snap-in empty 6 27 0 10 -99865 -24967 0;
 #X obj 804 92 bng 50 250 50 0 dr-snap-press dr-snap-nc empty 0 -8 0 10 -241339 -24967 -24967;
+#X obj 838 92 bng 50 250 50 0 dr-snap-press dr-snap-nc empty 0 -8 0 10 -241339 -24967 -24967;
 #X obj 872 92 bng 50 250 50 0 dr-snap-press dr-snap-nc empty 0 -8 0 10 -241339 -24967 -24967;
 #X obj 804 92 cnv 1 118 50 dr-btn-snap-out dr-btn-snap-in snap to global 12 25 0 11 -262144 -24967 0;
 #X obj 804 152 cnv 1 118 22 dr-pend-out dr-pend-in   6 11 0 10 -241339 -24967 0;

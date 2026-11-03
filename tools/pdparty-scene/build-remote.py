@@ -122,12 +122,13 @@ def face():
         w.append(bng(x, y, 33, "dr-p%d" % n))
         w.append(cnv(x, y, 33, 33, "dr-p%d-out" % n, "dr-p%d-in" % n, "16",
                      14, PAD[0][0], PAD[0][1], centered(33, "16", 14)))
-    # the buttons: an edge, two bngs under the width, and the face over them
+    # the buttons: an edge, bngs across the whole width, and the face over them.
+    # Two at the ends left the middle, under the label, dead (Brendan, 2026-11-03).
     for name, label, y in BUTTONS:
         w.append(cnv(BX - 2, y - 2, BW + 4, BH + 4, "dr-edge-%s-out" % name,
                      "dr-edge-%s-in" % name, "empty", 10, EDGE))
-        w.append(bng(BX, y, BH, "dr-%s" % name))
-        w.append(bng(BX + BW - BH, y, BH, "dr-%s" % name))
+        for x in (BX, BX + (BW - BH) // 2, BX + BW - BH):
+            w.append(bng(x, y, BH, "dr-%s" % name))
         w.append(cnv(BX, y, BW, BH, "dr-btn-%s-out" % name, "dr-btn-%s-in" % name, label, 11,
                      BTN, INK, centered(BW, label, 11)))
     w.append(cnv(BX, 152, BW, 22, "dr-pend-out", "dr-pend-in", NBSP, 10, PAPER))

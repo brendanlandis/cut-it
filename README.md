@@ -1,6 +1,6 @@
 # Cut It
 
-A cut-up / harsh-noise instrument for the original Critter & Guitari Organelle (Organelle 1),
+An electronic instrument for the original Critter & Guitari Organelle (Organelle 1),
 written in Pure Data. How to work on it is in [AGENTS.md](AGENTS.md).
 
 ## Changelog

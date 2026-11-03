@@ -140,6 +140,7 @@ drums]` sends it only when the mode changes, since `u_net` repeats the mode twic
 
 | | | Evidence |
 |---|---|---|
+| Switching | `vis_size 448 207` then `pos`, every time: PdParty starts its viewport at zero by zero and keeps the size when `pos` moves it, so `pos` alone blanked the page. With both, the phone shows the drum screen on the drum page (2026-11-03) | verified |
 | The ViewPort is the scene's first object | So it sits under every widget: PdParty draws it clear, and a view over the others could take their touches | unknown |
 | The drum screen | Left: playing or stopped, the tempo (the status), `last <n>`, the alert, the link. Middle: the sixteen pads as the Launchpad lays them out, each labeled with its last step: grey following the global one, amber with its own, dark when selected; a tap selects. Right: sync first steps, snap to global, and a line while one waits for step 1 | unknown |
 | `/cutit/drums` | `c_steps`' `R.phone`: playing, the global last step, the selected track, pending (0, 1 sync, 2 snap), the sixteen last steps, then 1 for each track with its own. Sent by `c_steps` when it changes, through `u_root`'s cord into `u_net`'s second inlet | verified |

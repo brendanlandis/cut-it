@@ -1,0 +1,150 @@
+-- u_map.lua -- the map's rules: the table, the lookup key's mode, the lookup, the divisor,
+-- parameter pickup and the raw row an unmapped control draws. Plain Lua with no Pd in it, so
+-- test/gate/lua/u_map_test.lua runs it on the Mac with lua.org's interpreter.
+-- u_map-lua.pd_lua is its Pd face, and u_map.pd keeps the mode keys, the destination route and
+-- its handlers, the boot timers and the files pickup reads. ref/module/map.md.
+--
+-- The state is a plain table and every rule a function of it. Every rule returns what leaves,
+-- in order, as {outlet, selector, atoms}:
+--   {"route", "list", {dest, arg, value, target, live}}  to u_map.pd's destination route
+--   {"disp", "list", {control, raw}}                     an unmapped control's row
+--   {"store", "list", {class, mode}}                     the mode, to u_state as an auto key
+--   {"err", "fail", {"u_map", text}}                     to err (C-12)
+
+local R = {}
+
+-- The lookup key's mode until the mode bus says otherwise: set when the state is made, not by
+-- the 500 ms seed, since mother pushes knobs.txt before that (item 234).
+R.BOOT_MODE = "mode-1"
+
+-- The Organelle's knobs: the only controls that arrive 0-1 already (mother's own scale), and
+-- the only ones pickup holds.
+R.KNOBS = { ["og-knob-1"] = 1, ["og-knob-2"] = 2, ["og-knob-3"] = 3, ["og-knob-4"] = 4 }
+
+-- A number from a message, as Pd's [f] reads one: a symbol or nothing is 0.
+local function num(x)
+  return type(x) == "number" and x or 0
+end
+
+-- A message as Pd's list objects see it: its selector first, unless that is list, float or
+-- symbol. `compose mode-1` is {compose, mode-1}; a bang is {}.
+local function as_list(sel, atoms)
+  if sel == "list" then return atoms end
+  if sel == "float" or sel == "symbol" then return { atoms[1] } end
+  if sel == "bang" then return {} end
+  local l = { sel }
+  for i = 1, #atoms do l[i + 1] = atoms[i] end
+  return l
+end
+
+-- cut-it-map.txt's text, read as `read -c` did: a line or a ; ends a row, and a row is
+-- <mode> <control> <dest> <arg>. The first row for a mode and control wins, as [text search]
+-- found only the first, so a duplicate is dead: map-assert's lint catches it, and a row of any
+-- other width, which is skipped here. -> the table by mode and control, and the rows counted.
+function R.parse(text)
+  local map, rows = {}, 0
+  for line in (text or ""):gmatch("[^\n;]+") do
+    local f = {}
+    for w in line:gmatch("%S+") do f[#f + 1] = w end
+    if #f > 0 then rows = rows + 1 end
+    if #f == 4 then
+      map[f[1]] = map[f[1]] or {}
+      if not map[f[1]][f[2]] then
+        map[f[1]][f[2]] = { dest = f[3], arg = tonumber(f[4]) or f[4] }
+      end
+    end
+  end
+  return map, rows
+end
+
+-- A knob's pickup: "virgin" has never seen a value; "armed" has been restored, side unknown;
+-- "above" sat above (or on) its target and waits for a fall, "below" waits for a rise; "live"
+-- passes everything. The window is the boot's first 1000 ms, when a first value is a restore.
+function R.new(text)
+  local st = { mode = R.BOOT_MODE, window = true, knob = {} }
+  st.map, st.rows = R.parse(text)
+  for k = 1, 4 do st.knob[k] = { state = "virgin", target = 0 } end
+  return st
+end
+
+-- Knob k's pickup, given its value: mother replays knobs.txt at boot, so a knob is held until
+-- its value passes through the stored one, or the first touch would jump (item 236).
+-- -> the target the message carries, and 1 if the knob is live or 0 if held.
+function R.pickup(st, k, value)
+  local p = st.knob[k]
+  local above = p.target <= value
+  if p.state == "virgin" then
+    -- A first value passes either way; inside the window it is a restore, and arms. mother
+    -- pushes a value with or without knobs.txt, which is why u_map.pd asks that file (item 239).
+    p.target, p.state = value, st.window and "armed" or "live"
+    return p.target, 1
+  end
+  if p.state == "armed" then
+    p.state = above and "above" or "below"
+  elseif p.state ~= "live" and ((p.state == "above") ~= above or value == p.target) then
+    -- The side flipped, or the knob reached the target, which is in sync by definition: a
+    -- target on a rail has no beyond to cross to (item 241).
+    p.state = "live"
+  end
+  return p.target, p.state == "live" and 1 or 0
+end
+
+-- An unmapped control that draws no raw row: the Organelle's keys, 25 of them reporting both
+-- edges (item 293), and pressure, a stream per held pad (item 318).
+function R.quiet(name)
+  local s = tostring(name)
+  return s:sub(1, 6) == "og-key" or s:sub(-3) == "-at"
+end
+
+-- A control on param: <name> <value>. The value is divided into 0-1, pickup decides whether a
+-- knob is held, and then the lookup. A mapped control leaves for its destination with its
+-- target and live flag, held or not, so c_mapped can draw a held row; an unmapped one draws its
+-- raw value on the screen and is silent on every bus (item 242).
+function R.control(st, sel, atoms)
+  local m = as_list(sel, atoms)
+  if #m == 0 then return {} end
+  local name, raw = m[1], num(m[2])
+  local k = R.KNOBS[name]
+  local value = k and raw or raw / 127
+  local target, live = value, 1
+  if k then target, live = R.pickup(st, k, value) end
+  local row = st.map[st.mode] and st.map[st.mode][name]
+  if row then return { { "route", "list", { row.dest, row.arg, value, target, live } } } end
+  if R.quiet(name) then return {} end
+  return { { "disp", "list", { name, raw } } }
+end
+
+-- The mode bus: <class> <mode-name>, of which the key takes the name. Anything that is not two
+-- atoms is refused: a saved `compose` with no name once made the key the control's name alone,
+-- and every control missed (item 294). The store gets only what the key took, so a bad mode is
+-- never saved to come back after a power cycle (item 297).
+function R.mode(st, sel, atoms)
+  local m = as_list(sel, atoms)
+  if #m ~= 2 then return { R.fail("bad-mode") } end
+  st.mode = m[2]
+  return { { "store", "list", m } }
+end
+
+-- What u_map.pd itself sends: the load, the boot window shutting at 1000 ms, and every knob
+-- straight to live when there is no knobs.txt or the boot follows a recover (items 239, 299).
+R.internal = {
+  init = function(st)
+    if st.rows == 0 then return { R.fail("map-empty") } end
+    return {}
+  end,
+  ["window-shut"] = function(st)
+    st.window = false
+    return {}
+  end,
+  live = function(st)
+    for k = 1, 4 do st.knob[k].state = "live" end
+    return {}
+  end,
+}
+
+-- A report on err, C-12: one symbol of 21 characters or fewer.
+function R.fail(text)
+  return { "err", "fail", { "u_map", string.sub(text, 1, 21) } }
+end
+
+return R

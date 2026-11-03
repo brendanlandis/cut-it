@@ -254,7 +254,13 @@ def debug(g):
 
 
 def map_(g):
-    S.require("Cut It/u_map.pd", "Cut It/cut-it-map.txt")
+    S.require("Cut It/u_map.pd", "Cut It/u_map.lua", "Cut It/u_map-lua.pd_lua",
+              "Cut It/cut-it-map.txt", "test/gate/lua/u_map_test.lua")
+    # The rules first, in Lua and without Pd: the table, the lookup, pickup and the raw row.
+    # Then the Pd half: the patch around them, running.
+    print("   the rules, in Lua ...")
+    rc_lua = S.lua("test/gate/lua/u_map_test.lua", *g.args)
+    print("\n   the patch, in Pd ...")
     # Appended to the shipped rows. gk-bad names a destination that does not
     # exist. The pickup knobs get distinct CCs, so a leak between their windows
     # shows as the wrong controller rather than a duplicate. gk-note, gk-pad and
@@ -289,8 +295,8 @@ def map_(g):
         caps.append(g.pd(s, 40, main_dev(s), s.path("drive.pd")))
         if which == "save":
             print("\n".join(inventory))
-    return g.analyze("test/gate/map-assert.py", *g.args, "--nosave", caps[1],
-                     stdin=caps[0])
+    rc = g.analyze("test/gate/map-assert.py", *g.args, "--nosave", caps[1], stdin=caps[0])
+    return rc or rc_lua
 
 
 def recover(g):

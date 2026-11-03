@@ -75,11 +75,12 @@ function T.load_class(path, prefix)
   return registered
 end
 
--- An object of a class from load_class, as pdlua makes one. -> the object, or nil if its
--- initialize refused.
-function T.new(class, args)
+-- An object of a class from load_class, as pdlua makes one. `canvas` stands in for the folder
+-- of the patch it is made in, pdlua's _canvaspath; the class's own folder if not given.
+-- -> the object, or nil if its initialize refused.
+function T.new(class, args, canvas)
   local o = class:new()
-  o.sent, o.console = {}, {}
+  o.sent, o.console, o._canvaspath = {}, {}, canvas or class._loadpath
   if not o:initialize(class._name, args or {}) then return nil end
   return o
 end

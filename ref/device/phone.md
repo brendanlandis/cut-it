@@ -15,8 +15,8 @@ coalesces per name at 20 Hz with a guaranteed trailing edge, holds the last aler
 repeats it, and rebuilds its own socket — which a phone leaving the network destroys outright.
 
 **The link runs both ways.** Outbound it carries four addresses — parameters, status, a heartbeat and
-a held alert. Inbound it takes **a closed vocabulary of three diagnostic commands**, acknowledges
-each one, and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
+a held alert. Inbound it takes **a closed vocabulary of five commands** (three diagnostic, two for the
+checklist page), acknowledges each one, and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
 the heartbeat counter and measured under *Broadcast* in Reference and below; that is the evidence anything
 time-critical would have to answer to.
 
@@ -62,7 +62,7 @@ that cannot be discovered — see *The phone cannot announce itself* under **Des
 Organelle -> phone
 /cutit/param   <name> <value> <unit>              coalesced per NAME at 20 Hz
 /cutit/status  <symbol>                           coalesced, one slot
-/cutit/hb      <counter>                          every 500 ms
+/cutit/hb      <counter> <test mode, 0 or 1>      every 500 ms
 /cutit/alert   <count> <level> <source> <text>    every 500 ms, always present
 /cutit/ack     <command> [<device>]               once per command accepted
 
@@ -84,6 +84,8 @@ button.
 | `re-wire` | Publishes `re-wire` on the `presence` bus, and `u_present` forks `wire.sh` — see [presence.md](../module/presence.md) | verified | 306 |
 | `clear-alert` | Writes the empty alert to `u_net`'s held store, so the 2 Hz repeat goes back to `none` / `-` | verified | 306 |
 | `test-note` | Fires one probe at a sounding device, out a cord. Takes the device below | verified | 306 |
+| `send` | A checklist's Send line, one message, `<bus> <message>`, from the phone's checklist page: out a cord to `u_inject` **in test mode only**, answered `ack send`, or `ack test-off` while it is off | unknown | — |
+| `result` | A step's verdict, `<checklist>-<n>-<pass or fail>`, logged as `info phone <verdict>`, in test mode or not; answered `ack result` | unknown | — |
 
 <!-- check: pd-route "Cut It/u_net.pd" m_volca -->
 
@@ -262,7 +264,7 @@ identically.**
 
 ### The inbound vocabulary is closed, and the closure is the design
 
-Three commands and two device names, every one of them a **literal argument on a `route` box you can
+Five commands and two device names, every one of them a **literal argument on a `route` box you can
 read**, with everything else falling out of an unconnected reject. That is the same allowlist guard
 `u_map` uses for its destinations and it is here for the same reason: the set of things a datagram
 can reach stays the set of boxes you can read.
@@ -271,7 +273,14 @@ can reach stays the set of boxes you can read.
 0.49 cannot supply one (Reference, *Pure Data*), and a bidirectional link does not change that.
 0.57's can, with `-f` (above).
 
-⛔ **A fourth command was considered and rejected: a full status dump.** Parameters and status re-send
+⛔ **`send` is the one that reaches further, so it has a switch of its own** (Brendan, 2026-11-03).
+It carries a checklist's Send line to `u_inject`'s eight buses (`test/checklists/README.md`), so the
+phone can run a rig checklist alone. `u_net` passes it only in **test mode**, which is flipped at the
+Organelle itself (`aux` and the second key from the bottom, `og-shift-61`), starts off at every load,
+and rides on the heartbeat so the phone shows the Organelle's own state. Turning it on warns, so
+the OLED says so in compose and the log keeps it.
+
+⛔ **A full status dump was considered and rejected as a command.** Parameters and status re-send
 every two seconds and the alert repeats at 2 Hz, so a phone joining late repopulates on its own in
 about two seconds — item 121. It would have been a button that does what waiting does.
 

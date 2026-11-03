@@ -68,6 +68,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, in all six modes** | verified | 301 |
 | `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | Non-zero is a press: `<role> <n> <velocity>` to `c_steps`, the pad's own velocity. A release does nothing; an index the layout lacks is `fail u_map layout-miss` | unknown | — |
+| `test-mode` | unused | Non-zero flips `u_net`'s test mode, in which the phone's checklist page may send Send lines ([phone.md](../device/phone.md)). **`og-shift-61`, in all six modes**; out `u_map`'s fourth outlet, a cord to `u_net` | unknown | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.

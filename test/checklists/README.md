@@ -86,6 +86,28 @@ can be done by hand instead:
 | `start bang` · `stop bang` | PLAY · STOP on the nanoKONTROL |
 | `panic bang` | a short tap on the Launchpad's top-left corner button |
 
+## On the phone
+
+**The checklist page runs a checklist alone, at the rig**: PdParty's `CutItChecks` scene, beside
+`CutItRemote` (Brendan, 2026-11-03: the Mac faces away from the rig, the phone sits at it).
+
+1. **Test mode on, at the Organelle:** hold `aux` and press the second key from the bottom. The
+   page's pill says `test mode on` (it is the Organelle's own state, from the heartbeat), and the
+   OLED warns in compose. Every load of Cut It turns it off again.
+2. **Pick a checklist** with ‹ and ›. Each step shows its title and, from the file, Need, Send, Do,
+   Check and Pass if; the Notes stay here. A step too long for one page has a second, and Next
+   shows it first.
+3. **Send** puts the step's Send line on the buses, one `send` command a message, through `u_net`
+   to `u_inject`; the lamp beside it lights on the Organelle's answer. With test mode off the
+   Organelle refuses it and the pill says so.
+4. **Pass** or **Fail** logs the verdict on the Organelle as `info phone <checklist>-<n>-pass` (read
+   it with `tools/fetch-errors.sh`), marks the step and goes on to the next. **Back** and **Next**
+   move without logging.
+
+The page is generated from these files by `tools/pdparty-scene/build-checks.py` and goes to the
+phone with `tools/pdparty-upload.sh`; edit a checklist, rebuild, upload. **Gate:**
+`test/gate/checks-assert.sh`, which also fails while the committed page is stale.
+
 ## Writing a step
 
 A step is a promise about one thing a person can see, hear or read, so the rules are about keeping

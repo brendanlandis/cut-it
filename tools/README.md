@@ -21,7 +21,7 @@ matters because the Organelle launches Pd with `-nogui` and there is no console 
 | **Answering a device** — does it reply at all | `stage-patches/Inquiry Probe/` |
 | **Watching a device animate** — does it still track the clock | `stage-patches/Anim Probe/` |
 | **Worked examples** — a technique, kept as the proof | `audio-probe/` `oled-probe/` `osc-bridge/` `status-display/` |
-| **The phone side** | `pdparty-scene/` — a PdParty scene, not an Organelle patch |
+| **The phone side** | `pdparty-scene/` — two PdParty scenes, not Organelle patches: `CutItRemote`, and `CutItChecks`, the checklist page, built by `build-checks.py`; `pdparty-upload.sh` puts both on the phone |
 | **Menu patches** | `stage-patches/` — see below |
 | **Editing a patch's comments** — delete or rewrite them and keep every cord | `pd-comments.py` |
 
@@ -297,6 +297,7 @@ the phone side and is not an Organelle patch at all.
 | `status-display/` | The performance status protocol: four knobs sending **named parameters** (`chop-size`, `grain`, `speed`, `drunk`) plus a heartbeat. |
 | `audio-probe/` | `env~` levels for `adc~ 1` and `adc~ 2` drawn large on the OLED. Used to verify the TRS input split; still the quickest way to check what is arriving at the inputs. |
 | `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection, and **four buttons** that send back. **Not** an Organelle patch: deploy over WebDAV — the command and its three preconditions are below. |
+| `pdparty-scene/CutItChecks/` | The checklist page — a rig checklist run alone from the phone, in test mode ([the checklists' README](../test/checklists/README.md), *On the phone*). **Generated** by `pdparty-scene/build-checks.py` from `test/checklists/`, never edited by hand. `./tools/pdparty-upload.sh` uploads both scenes with the preconditions below. |
 
 Findings from all of them are written up in [../ref/module/display.md](../ref/module/display.md).
 

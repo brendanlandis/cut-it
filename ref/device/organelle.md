@@ -100,6 +100,7 @@ controls on the rig that can never be the missing device.**
 | Shifted key | Does | Why there | Evidence | Item |
 |---|---|---|---|---|
 | **lowest**, `og-shift-60` | `diag` | An end of the keyboard, findable by feel without looking | verified | 305 |
+| **second from the bottom**, `og-shift-61` | `test-mode` | The first black key, findable by feel beside `diag`. Flips test mode, in which the phone's checklist page may send Send lines ([phone.md](phone.md)) | unknown | — |
 | **middle**, `og-shift-72` | `stop` | ⛔ The panel keeps a way to silence the rig when the nano is unplugged, which is what moving the transport off `aux` cost | verified | 305 |
 | **highest**, `og-shift-84` | `recover` | The destructive one, as far from `diag` as the keyboard allows. It reloads the patch | verified | 305 |
 

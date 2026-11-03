@@ -44,8 +44,15 @@ ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert",
          "/cutit/ack", "/mark",
          # the driver's taps for the inbound half: re-wire leaves on the
          # presence bus and a test note through a cord, neither on the wire.
-         "/probe/presence", "/probe/volca", "/probe/p404"}
+         "/probe/presence", "/probe/volca", "/probe/p404",
+         # and the checklist page's: a Send line leaves u_net through a cord to
+         # u_inject, and test mode and a result report on err.
+         "/probe/inject", "/probe/err"}
 SCENE = os.path.join(ROOT, "tools", "pdparty-scene", "CutItRemote", "_main.pd")
+# The checklist page, a second scene: it sends send and result, built by
+# list prepend from its data rather than typed in a message box.
+CHECKS = os.path.join(ROOT, "tools", "pdparty-scene", "CutItChecks", "_main.pd")
+PAGE_CMDS = ["send", "result"]
 # Every selector g_oled routes that is not a parameter. u_net leaves them
 # unconnected, so one on the wire as a parameter name means the branch broke.
 RESERVED = {"in-l", "in-r", "led", "grid", "modal", "modal-off", "alert",
@@ -169,6 +176,16 @@ def _guts(path):
     return boxes, cons
 
 
+def checks_cmds():
+    """The commands the checklist page prepends before its [oscformat cutit]."""
+    try:
+        recs = lib_pd.read(CHECKS)
+    except OSError:
+        return None
+    return sorted({m.group(1) for m in (re.match(r"^#X obj -?\d+ -?\d+ list prepend (\S+);$", r)
+                                          for r in recs) if m} & set(PAGE_CMDS))
+
+
 def scene_msgs():
     """Every message box in the scene that REACHES the shared [oscformat cutit].
 
@@ -284,19 +301,21 @@ def main():
     if ucmd and udev and smsg is not None:
         scmd = sorted({m.split()[0] for m in smsg})
         sdev = sorted({m.split()[1] for m in smsg if len(m.split()) > 1})
-        A.check("⛔ the scene sends EXACTLY the commands u_net routes",
-                scmd == sorted(ucmd),
-                "scene sends %s, u_net routes %s -- whichever side is short is a "
-                "button that does nothing at all" % (" ".join(scmd), " ".join(ucmd)))
+        ccmd = checks_cmds() or []
+        A.check("⛔ the two scenes send EXACTLY the commands u_net routes",
+                sorted(scmd + ccmd) == sorted(ucmd),
+                "the remote sends %s, the checklist page %s, u_net routes %s -- "
+                "whichever side is short is a button that does nothing at all"
+                % (" ".join(scmd), " ".join(ccmd), " ".join(ucmd)))
         A.check("⛔ the scene names EXACTLY the devices u_net routes",
                 sdev == sorted(udev),
                 "scene names %s, u_net routes %s" % (" ".join(sdev), " ".join(udev)))
         A.check("one button per command, and one per sounding device",
-                len(smsg) == len(ucmd) - 1 + len(udev),
+                len(smsg) == len(set(ucmd) - set(PAGE_CMDS)) - 1 + len(udev),
                 "%d message boxes: %s" % (len(smsg), ", ".join(smsg)))
         # and the ack must be able to light every one of them
         A.check("the scene's ACK route covers every command u_net can acknowledge",
-                _route_of(SCENE, "re-wire") == ucmd,
+                _route_of(SCENE, "re-wire") == [c for c in ucmd if c not in PAGE_CMDS],
                 "scene: %r" % (_route_of(SCENE, "re-wire"),))
         A.check("the scene's ACK route covers every device",
                 _route_of(SCENE, "m_volca") == udev,
@@ -330,11 +349,12 @@ def main():
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})
     A.check("shape: only known OSC addresses", all(a in ADDRS for a in seen),
             "saw " + ", ".join(seen))
-    A.check("shape: all thirteen windows arrived",
+    A.check("shape: all nineteen windows arrived",
             [n for n, _ in wins] == ["idle", "sweep1", "sweep2", "statussw",
                                      "alert", "reserved", "idle2", "cmdwire",
                                      "cmdvolca", "cmd404", "cmdbogus", "cmdclear",
-                                     "done"],
+                                     "sendoff", "tmon", "sendon", "result", "tmoff",
+                                     "sendoff2", "done"],
             ", ".join(n for n, _ in wins))
 
     hbs = [g[0] for _, rowset in wins for _, a, g in rowset
@@ -447,7 +467,8 @@ def main():
         A.check("%s: %s" % (win, label), not any(got.values()),
                 "; ".join("%s %s" % (a, v) for a, v in got.items() if v) or "(silent)")
 
-    CMD = ["/probe/presence", "/probe/volca", "/probe/p404", "/cutit/ack"]
+    CMD = ["/probe/presence", "/probe/volca", "/probe/p404", "/probe/inject",
+           "/cutit/ack"]
 
     one("cmdwire", "/cutit/ack", ["re-wire"], "re-wire is acknowledged")
     one("cmdwire", "/probe/presence", ["re-wire"],
@@ -490,6 +511,48 @@ def main():
             "%d repeats carrying %s" % (len(after), [g[1:] for g in after]))
     none_of("cmdclear", ["/probe/volca", "/probe/p404", "/probe/presence"],
             "clearing the alert sounded nothing and re-wired nothing")
+
+    # -- test mode, and the checklist page's two commands ---------------------
+    def hb_flags(win):
+        return [g[1] if len(g) > 1 else None for g in args(win, "/cutit/hb")]
+
+    for win in ("idle", "cmdclear", "sendoff"):
+        f = hb_flags(win)
+        A.check("%s: the heartbeat says test mode is off" % win,
+                f and all(v == 0 for v in f), f)
+    one("sendoff", "/cutit/ack", ["test-off"],
+        "⛔ a Send line with test mode off is refused, and says so")
+    none_of("sendoff", ["/probe/inject"], "and reaches nothing")
+
+    one("tmon", "/probe/err", ["warn", "u_net", "test-mode-on"],
+        "flipping test mode on warns, so the OLED and the log both say so")
+    for win in ("tmon", "sendon", "result"):
+        f = hb_flags(win)
+        A.check("%s: the heartbeat says test mode is on" % win,
+                f and all(v == 1 for v in f), f)
+    A.check("sendon: both Send lines are acknowledged",
+            args("sendon", "/cutit/ack") == [["send"], ["send"]],
+            args("sendon", "/cutit/ack"))
+    A.check("sendon: both reach u_inject's cord, whole and in order",
+            args("sendon", "/probe/inject") == [["disp", "chop-size", 43.0, "%"],
+                                                ["tempo", 120.0]],
+            args("sendon", "/probe/inject"))
+    none_of("sendon", ["/probe/volca", "/probe/p404", "/probe/presence"],
+            "a Send line sounds nothing and re-wires nothing on its own")
+
+    one("result", "/probe/err", ["info", "phone", "tempo-2-pass"],
+        "a result is logged as info phone <verdict>")
+    one("result", "/cutit/ack", ["result"], "and acknowledged")
+    none_of("result", ["/probe/inject"], "a result is not a Send line")
+
+    one("tmoff", "/probe/err", ["info", "u_net", "test-mode-off"],
+        "flipping it off is logged, and draws nothing")
+    for win in ("sendoff2", "done"):
+        f = hb_flags(win)
+        A.check("%s: the heartbeat says test mode is off again" % win,
+                f and all(v == 0 for v in f), f)
+    one("sendoff2", "/cutit/ack", ["test-off"], "⛔ and a Send line is refused again")
+    none_of("sendoff2", ["/probe/inject"], "reaching nothing")
 
     rc = 1 if A.report() else 0
     if rc:

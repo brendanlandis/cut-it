@@ -51,7 +51,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 31500")
+qd = obj(20, 120, "del 40500")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -74,6 +74,11 @@ tap_v = obj(20, 880, "s \\$0-tap-volca")
 tap_4 = obj(300, 880, "s \\$0-tap-p404")
 con(unet, 0, tap_v, 0)
 con(unet, 1, tap_4, 0)
+tap_i = obj(560, 880, "s \\$0-tap-inject")
+con(unet, 2, tap_i, 0)
+# test mode's flip arrives by name, as u_map's cord would bring it in u_root.
+tm_r = obj(20, 720, "r \\$0-tm")
+con(tm_r, 0, unet, 0)
 txt(560, 600,
     "The abstraction under test. Args: the phone's host and port \\, then this end's "
     "inbound port. Its two outlets are the Volca and the SP-404 \\, sent on by name so no "
@@ -153,6 +158,8 @@ def probe(x, y, name, src):
 probe(20, 1900, "presence", "r presence")
 probe(400, 1900, "volca", "r \\$0-tap-volca")
 probe(700, 1900, "p404", "r \\$0-tap-p404")
+probe(20, 2700, "inject", "r \\$0-tap-inject")
+probe(400, 2700, "err", "r err")
 txt(20, 2180,
     "u_net is the only abstraction in this run \\, so a re-wire seen here came from the "
     "inbound path. The two cords are the output devices \\, wired per C-2 \\, hence the taps.", 70)
@@ -163,6 +170,7 @@ txt(20, 2180,
 #   ("sweep", (name, count, ms))     count+1 distinct values for one param name
 #   ("statussweep", (count, ms))     the same, as status <n>-bpm symbols
 #   ("cmd", (root, "<text>"))        one OSC datagram INTO u_net's own port
+#   ("tm", None)                     a bang into u_net's inlet: flip test mode
 #
 # Every command window sits after idle2: clear-alert destroys the held alert,
 # and idle2 is where the alert is asserted to persist.
@@ -191,7 +199,17 @@ SEQ = [
                          ("cmd", ("cutit", "test-note 404")),
                          ("cmd", ("other", "re-wire"))]),
     (28000, "cmdclear", [("cmd", ("cutit", "clear-alert"))]),
-    (30500, "done",     []),
+    # -- the checklist page's two commands, and test mode between them. A Send
+    #    line is refused while test mode is off, on either side of the window
+    #    where it is on.
+    (29400, "sendoff",  [("cmd", ("cutit", "send disp chop-size 43 %"))]),
+    (30800, "tmon",     [("tm", None)]),
+    (32200, "sendon",   [("cmd", ("cutit", "send disp chop-size 43 %")),
+                         ("cmd", ("cutit", "send tempo 120"))]),
+    (33600, "result",   [("cmd", ("cutit", "result tempo-2-pass"))]),
+    (35000, "tmoff",    [("tm", None)]),
+    (36400, "sendoff2", [("cmd", ("cutit", "send disp grain 12"))]),
+    (38500, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940
@@ -221,6 +239,11 @@ for i, (when, mark, actions) in enumerate(SEQ):
             asnd = obj(bx, by + 50, "s disp")
             con(tr, outlet, am, 0)
             con(am, 0, asnd, 0)
+            bx += 240
+            continue
+        if kind == "tm":
+            ts = obj(bx, by, "s \\$0-tm")
+            con(tr, outlet, ts, 0)
             bx += 240
             continue
         if kind == "cmd":

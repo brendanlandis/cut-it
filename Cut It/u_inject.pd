@@ -1,6 +1,6 @@
 #N canvas 20 20 2300 1400 12;
 #X text 20 20 u_inject -- puts a checklist's Send lines onto the buses they name \, for tools/send.sh. It listens on 127.0.0.1 only \, so a line has to start on the device itself: send.sh carries it there over SSH \, and nothing on the network reaches it. test/checklists/README.md, f 58;
-#X text 700 20 creation arg 1: u_net's inbound UDP port \, which this listens 2000 above: 11001 on the device \, 11002 from main-dev.pd \, and 11100 up in the gates \, clear of every u_net port and sink. inlets: none. outlets: none., f 58;
+#X text 700 20 creation arg 1: u_net's inbound UDP port \, which this listens 2000 above: 11001 on the device \, 11002 from main-dev.pd \, and 11100 up in the gates \, clear of every u_net port and sink. inlet 1: the phone's Send lines \, from u_net \, which passes them only in test mode. outlets: none., f 58;
 #X obj 20 300 loadbang;
 #X obj 20 350 del 2000;
 #X obj 20 400 f \$1;
@@ -23,10 +23,11 @@
 #X obj 546 960 s stop;
 #X obj 587 900 s tempo;
 #X text 1400 300 The listen is armed at 2000 ms \, as u_net's is \, and for the same reason: a second bind of one UDP port prints an error \, and the silence gate quits at about 735 ms. The port is \$1 \, so object boxes \, not a message box., f 58;
-#X text 1400 500 127.0.0.1 is the whole access rule. u_net's inbound vocabulary is closed because the phone's network can reach it \; this one is open to eight buses because only a login on the device can., f 58;
+#X text 1400 500 Two ways in \, each with its own rule. The socket is 127.0.0.1 only \, so only a login on the device reaches it. The inlet is the phone's \, through u_net \, which passes a line only in test mode \, and that is switched on at the Organelle itself. Both meet the same eight buses., f 58;
 #X text 1400 700 Eight buses \, the ones the checklists' Send lines name \, all literal route arguments: clock \, state \, presence \, recover and anything else leave by the unconnected reject \, and so does pd \, so a line can never quit or reload Pd. C-2, f 58;
 #X text 1400 900 Each branch goes straight into its send: the message leaves route in the form Pd's message window gives it \, so a receiver cannot tell a Send line from the control that sends the same thing., f 58;
 #X text 20 700 A missing port is made loud \, as in u_net. C-8, f 30;
+#X obj 700 720 inlet;
 #X connect 2 0 3 0;
 #X connect 3 0 4 0;
 #X connect 4 0 5 0;
@@ -47,3 +48,4 @@
 #X connect 14 5 20 0;
 #X connect 14 6 21 0;
 #X connect 14 7 22 0;
+#X connect 28 0 14 0;

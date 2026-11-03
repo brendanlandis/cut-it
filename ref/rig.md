@@ -109,7 +109,7 @@ Reference page. A single stereo plug into one mono channel would not do: that ch
 balanced TRS input would hear left minus right.
 
 ⚠️ **The 404's volume sits well past 10 o'clock**, set so the Organelle's `in-l` peaks around
--6 dBFS. Cut It turns the Organelle's input gain 12 dB down at every load, against the hiss, and the
+94 on its screen (Pd's scale, where 100 is full scale, so 6 dB under). Cut It turns the Organelle's input gain 12 dB down at every load, against the hiss, and the
 404 makes it up ([audio.md](module/audio.md), *The codec's gains*). **Until Cut It has loaded once
 after a power-on, the input has the factory's gain**, 12 dB hotter, so a patch loaded first gets the
 404 that much louder.

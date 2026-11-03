@@ -18,9 +18,9 @@ word.
 
 ## One gate per module
 
-Twenty-one gates, and each answers for exactly one page under `ref/`. That is the whole organizing
-principle: **a page that names a gate should be able to name one whose entire subject is that page**,
-or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
+Twenty-two gates, and each answers for exactly one page: under `ref/`, or for `u_inject`, the
+checklists' guide. That is the whole organizing principle: **a page that names a gate should be able
+to name one whose entire subject is that page**, or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
 
 | Gate | Checks | Answers for |
@@ -42,14 +42,15 @@ were false.
 | `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
 | `phone-assert.sh` | 55 | `device/phone` |
+| `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 67: 39 in Lua, 28 in Pd | `module/sequencer` |
 
-**791 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**800 checks.** ⚠️ **Twenty-one of the twenty-two gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **784**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **793**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's.
 Worth knowing before trusting an arithmetic check of this number against a log.

@@ -55,3 +55,5 @@
 #X connect 33 0 34 0;
 #X connect 34 0 35 0;
 #X connect 35 0 36 0;
+#X obj 2300 1260 u_inject \$6;
+#X text 2480 1260 u_inject puts the checklists' Send lines on the buses \, from the device itself only \, 2000 above u_net's port (test/checklists/README.md)., f 44;

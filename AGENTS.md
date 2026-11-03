@@ -130,7 +130,7 @@ under `ref/`. Nothing in either is deployed.
 
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-one gates and 791 checks**, and what each one protects is in
+**Twenty-two gates and 800 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.

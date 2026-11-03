@@ -45,27 +45,39 @@ Mode (`tools/lp-live.sh` rescues it).
 
 ## Send lines
 
-A **Send** line is what the bench patches used to put on the buses: each message's first word is the
-receive name, and a `;` separates messages. `disp chop-size 43 %` sends `chop-size 43 %` to `disp`.
+A **Send** line puts messages on the instrument's buses, as its controls do: each message's first
+word is the bus, and a `;` separates messages. `disp chop-size 43 %` sends `chop-size 43 %` to `disp`.
+
+**On the rig**, from the Mac:
+
+```bash
+./tools/send.sh 'disp chop-size 43 %; disp grain 12'
+```
+
+In a walkthrough, Claude sends each step's line and you say what you see. `HOST=` targets the
+Organelle by IP, as for `tools/deploy.sh`.
+
+**`u_inject` takes it**, in the instrument. It listens on `127.0.0.1` only, at `u_net`'s inbound
+port plus 2000 (11001 on the device), so a line has to start on the device itself: `send.sh`
+carries it over SSH to the device's own `pdsend`, one datagram a message, since Pd's `netreceive`
+delivers only the first message in a datagram (Reference, *Pure Data*). Nothing on the network
+reaches it, the phone included.
+
+**Eight buses and nothing else:** `disp`, `err`, `mode`, `panic`, `param`, `start`, `stop` and
+`tempo`, the ones the checklists name. `clock`, `state`, `presence`, `recover`, `pd` and any other
+name are dropped, so a line can never quit or reload Pd. **Gate:** `test/gate/inject-assert.sh`.
 
 **On the Mac**, open `Cut It/main-dev.pd` in Pd 0.57 and tick **enable-DSP** on its dev panel
 (`c_clock` hangs off `threshold~`, so with DSP off the beat row never moves and every count reads
-0). Then open Pd's *Send a Pd message* window (Cmd-Shift-M, or File > Message), paste the whole
-line, and press Return. `u_mother-stub` draws the OLED and the aux LED in the dev panel.
+0). Then `HOST=mac ./tools/send.sh '…'`, or paste the line into Pd's *Send a Pd message* window
+(Cmd-Shift-M, or File > Message). `u_mother-stub` draws the OLED and the aux LED in the dev panel.
 
 ⚠️ On the Mac every step that sends `err` also prints `/sdcard/cut-it-err.cur: write failed`, and
 that is not a failure: `u_err` keeps its durable log on the Organelle's SD card, which no Mac has.
 On the device that line must never appear.
 
-⛔ **On the Organelle nothing takes a Send line.** Its Pd runs `-nogui`, so there is no message
-window, and `u_net`'s inbound vocabulary is closed (three commands and two device names). The bench
-patches reached the buses by running as a third patch inside the instrument's own Pd, and they went
-with the runner. So a step with a Send line runs on the Mac. That covers what is judged on the OLED
-and the aux LED; a step judged on the Launchpad, the SP-404 or the phone needs that device reaching
-the Mac's Pd, which is untested.
-
-**Except where a control on the rig sends the same message**, which these do, through `u_map` and
-the map:
+**Some Send lines have a control on the rig behind them**, through `u_map` and the map, and these
+can be done by hand instead:
 
 | Send | On the rig |
 |---|---|
@@ -73,9 +85,6 @@ the map:
 | `mode perform mode-4` to `mode perform mode-6` | the fourth to sixth button down it |
 | `start bang` · `stop bang` | PLAY · STOP on the nanoKONTROL |
 | `panic bang` | a short tap on the Launchpad's top-left corner button |
-
-A step whose Send line is only those runs on the rig by hand. Anything else (`disp`, `err`, `param`,
-`grid`, a `tempo` value, `perform mode-3`) has no control behind it.
 
 ## Writing a step
 

@@ -56,7 +56,7 @@ file decides what that means; and nothing below that file knows what hardware ex
  OLED    aux LED        Launchpad    phone
 ```
 
-**Two things the diagram cannot show, and both are load-bearing:**
+**What the diagram cannot show, all of it load-bearing:**
 
 - ⛔ **`c_clock` is instantiated, not global.** `u_root` holds `c_clock 1 8` driving the grid's beat
   row, `c_steps` holds its own `c_clock 1 4`, and **nothing downstream may assume the global `clock`
@@ -65,6 +65,9 @@ file decides what that means; and nothing below that file knows what hardware ex
   what a drum-page press means — and its own two outlets reach `m_404` with the notes and `g_grid`
   with the page. Its rules are Lua, in `c_steps.lua`, behind one pdlua object; its clock and cords
   are Pd. See [sequencer.md](module/sequencer.md).
+- **`u_inject` takes the checklists' Send lines** from the device itself and puts them on eight
+  buses, so a rig check can fake what no control sends. It has no cords: it listens on `127.0.0.1`
+  alone. See [test/checklists/README.md](../test/checklists/README.md), *Send lines*.
 - **`u_state` owns two `u_store` instances**, one per persistence policy. See
   [state.md](module/state.md).
 - ⛔ **`c_presence` and `c_devid` are instantiated INSIDE the `m_` layers**, one pair per pollable

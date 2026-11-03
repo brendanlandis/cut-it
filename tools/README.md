@@ -15,6 +15,7 @@ matters because the Organelle launches Pd with `-nogui` and there is no console 
 | **Getting data back off the device** | `fetch-state.sh` `fetch-errors.sh` |
 | **The wifi investigation** — an OPEN fault | `find-organelle.sh` `wifi-watch.sh` `wifi-poll.sh` `wifi-report.sh` `wifi-reassociate.sh` |
 | **Driving and rescuing hardware** | `lp-live.sh` `dsp.sh` + `dsp-toggle.pd` |
+| **A checklist's Send lines**, onto the instrument's buses | `send.sh` ([the checklists' README](../test/checklists/README.md), *Send lines*) |
 | **Measuring the device** | `display-cpu.sh` `display-diag.pd` |
 | **Probes still worth running** | `lp-monitor.pd` `lp-step0.pd` `alert-buffer-probe.pd` |
 | **Answering a device** — does it reply at all | `stage-patches/Inquiry Probe/` |

@@ -128,7 +128,7 @@ stuck note on the Volca, and nothing anywhere reports it.**
 
 **A 25-element array indexed by `pitch - 60`**, written only when the velocity is non-zero and read
 on **both** edges. A release then cannot disagree with its own press however the modifier moves
-underneath it. Same shape as `u_map`'s pickup arrays, and ⚠️ **it is what makes a CHORD safe too**:
+underneath it. ⚠️ **It is what makes a CHORD safe too**:
 two keys held across a change of modifier keep their own layers independently.
 
 ### The keyboard — 25 controls, one per key

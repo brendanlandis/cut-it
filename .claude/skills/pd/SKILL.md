@@ -38,7 +38,8 @@ the path; on the Mac in `~/Library/Pd`, Pd's standard user folder, which every P
 each costs and what is missing on the device: the Organelle's Reference page, *Externals*.
 
 **pdlua 0.12.24, Lua 5.4.7.** Logic goes to Lua where it is clearly simpler than boxes and cords:
-the sequencer's rules are the worked example (`ref/module/sequencer.md`).
+the sequencer's rules and the map's lookup are the worked examples (`ref/module/sequencer.md`,
+`ref/module/map.md`).
 
 - **Two files beside the abstraction**: `<name>.lua`, the rules in plain Lua that never call Pd,
   each a function of a state table returning what leaves; and `<name>-lua.pd_lua`, the pdlua class
@@ -47,8 +48,12 @@ the sequencer's rules are the worked example (`ref/module/sequencer.md`).
 - ⛔ **Never `<name>.pd_lua` for an abstraction's name**: pdlua's loader runs before Pd looks for
   the `.pd`, so it would replace the abstraction everywhere.
 - ⛔ **A Lua error must reach `err`, not just the console**: run each rule under `pcall` and send
-  `fail <source> lua-<selector>` out of an outlet corded to `[s err]`; and answer an `init` at load
+  `fail <source> lua-<selector>` out of an outlet corded to `[s err]` (`lua-<bus>` where an
+  inlet's selectors are data, as `u_map`'s controls are: `lua-param`); and answer an `init` at load
   with a bang, so the abstraction can say `no-lua` when the Lua never loaded (C-12).
+- **A class every control passes through answers `dispatch` itself**, by inlet: pdlua's own builds
+  and tries method names from each selector first, a large share of a message's cost on the
+  device (`u_map-lua.pd_lua`; `ref/module/map.md`).
 - **Test the rules without Pd**: a `test/gate/lua/<name>_test.lua` on `test/gate/lua/lib_test.lua`
   (its tally, and a stand-in for pdlua that loads the class), run by its module's gate through
   `lib_scratch.lua()` with lua.org's Lua 5.4 (`~/.local/bin/lua`; `LUA` overrides).

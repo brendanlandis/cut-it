@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The map
 
-**Files:** `Cut It/u_map.pd`, `Cut It/c_mapped.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh`, `test/gate/recover-assert.sh` · **Checklist:** `test/checklists/midi.md`, `test/checklists/recover.md`
+**Files:** `Cut It/u_map.pd`, `Cut It/u_map.lua`, `Cut It/u_map-lua.pd_lua`, `Cut It/c_mapped.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh`, `test/gate/recover-assert.sh` · **Checklist:** `test/checklists/midi.md`, `test/checklists/recover.md`
 
 ## What it is
 
@@ -13,6 +13,12 @@ that keeps that true.
 Since v0.3 the map is **table-driven and mode-dependent**. `Cut It/cut-it-map.txt` sits beside the
 patch, one row per mapping, and a control means whatever the row for the *current* mode says it
 means. Telling the instrument "in mode 2, this fader plays the Volca" is one row of a text file.
+
+**Its lookup is Lua, and its destinations are Pd.** `u_map.lua` reads the table and holds the
+lookup key's mode, the lookup, the divisor, parameter pickup and the raw row an unmapped control
+draws, as plain Lua that runs on the Mac without Pd; `u_map.pd` keeps the six mode keys, the
+destination route and every handler behind it, the boot timers and the files pickup reads, and asks
+the Lua through one pdlua object, `[u_map-lua]` (`cut-it/logic-as-text`).
 
 ⛔ **The table never names a `[send]`.** It names a destination that must exist as a literal argument
 on a `route` box inside `u_map`, feeding a handler you can see on the canvas — the **allowlist
@@ -41,7 +47,7 @@ mode-1 slider-1  volca-cc 41
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
 
 **A row with any other width is a lint failure**, not a runtime one — `map-assert.py` reads the
-file and rejects it before Pd ever does.
+file and rejects it before Pd ever does, and the Lua skips it.
 
 ### The destinations — the allowlist, in order
 
@@ -120,33 +126,48 @@ the third slot.
 | **Organelle knobs 1–4** | **0–1** — mother's own scale | **no** | verified | — |
 | **Organelle aux** | **0–1** | **no** | verified | — |
 
-One destination fed from two surfaces would otherwise need two scalings.
+One destination fed from two surfaces would otherwise need two scalings. The four knobs are one
+table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 
 ### The lookup
 
 | Step | Detail | Evidence | Item |
 |------|--------|----------|------|
-| Key | `<mode> <control>`, two atoms | verified | 229 |
-| `[text search $0-map]` | A two-atom key matches leading fields **0 and 1 with no field arguments at all** | verified | 229 |
-| Hit | The row number, into `[text get $0-map 2 2]` → `<dest> <arg>` | verified | 229 |
-| Miss | Returns **-1**, into `[moses 0]`, and **nothing is connected to the left outlet** | verified | 229 |
-| Read | `read -c cut-it-map.txt` at `loadbang`, **no delay**. Relative, so it resolves against the patch folder on the Mac, on the device and inside the gate's scratch copy | verified | 229, 234 |
-| Empty table | Reported on `err` as `map-empty` | verified | 234 |
+| Key | The key's mode and the control's name: `mode-1` and `og-knob-1` | verified | — |
+| Table | `u_map.lua`'s, by mode and then control, read from `cut-it-map.txt` when `[u_map-lua]` is made, before any `loadbang`. Relative to the folder of the patch that holds it, so the same on the Mac, on the device and inside the gate's scratch copy | verified | 234 |
+| Hit | `<dest> <arg>`, which leaves for the destination route as `<dest> <arg> <value> <target> <live>` | verified | — |
+| Miss | The control's raw row on `disp`, or nothing for a key or pressure (*Parameter pickup*, below) | verified | 242 |
+| A duplicate row | The first for a mode and control wins; the rest are dead | verified | — |
+| Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Six modes × 92
 controls is 552 possible rows and the shipped file has **116** — seven, plus the keyboard's 25 and
 the drum page's 48 pads in mode 1, plus CC 90, PLAY, STOP and the three shifted keys in all six.
 
+### Where each part lives
+
+| | Lives in | Evidence |
+|---|---|---|
+| The table, the key's mode and its guard, the lookup, the divisor, pickup's five states and the raw row with its two exemptions | `u_map.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
+| Reading the table, turning messages into those calls and their answers into outlets | `u_map-lua.pd_lua`, the class `u_map-lua`: three inlets (every control the mode keys pass on; the `mode` bus; `u_map.pd`'s own `init`, `window-shut` and `live`), five outlets (the destination route, an unmapped control's row, the mode to store, `err`, a bang on `init`) | verified |
+| The six mode keys and their release gates, the 500 ms seed, the destination route and its handlers, `c_mapped`, the 1000 ms boot window, the 2000 ms `knobs.txt` probe, the recover breadcrumb, `put auto mode` and the restore | `u_map.pd` | verified |
+| The Lua's answers | The Pd version's, exactly: 38 controls and modes through `u_map` printed the same 42 lines from the Pd version and the Lua, on the Mac and on the Organelle (2026-11-03) | verified |
+| What it costs in memory | About 0.1 MB more peak resident in a test Pd loading `main.pd` on the Organelle (3.31–3.42 MB before, 3.44–3.48 after), since `c_steps` loads pdlua already | verified |
+| What it costs per control | About twice the Pd version's on the Organelle, in a test Pd niced beside the live one: 9000 mixed controls in 2.9–3.4 s against 1.35 s, and 9000 unmapped pressure messages in 1.6–1.8 s against 0.7–0.9 s (2026-11-03) | verified |
+
 ### What happens at load
 
 | ~Time | Event | Evidence | Item |
 |-------|-------|----------|------|
-| 0 ms | The table is read, and the lookup key's mode is set to `mode-1` **synchronously** | verified | 234 |
+| 0 ms, as the patch is made | `[u_map-lua]` reads the table, and its lookup key's mode is `mode-1` | verified | 234 |
+| 0 ms, `loadbang` | `init`: `map-empty` if the table holds nothing, then the bang that proves the Lua loaded | verified | — |
 | before 500 ms | mother pushes `knobs.txt`, if a Save has ever happened | verified | 139, 200 |
 | 500 ms | The `mode` seed fires — `compose mode-1` — behind a spigot any real mode has already closed | verified | — |
+| 1000 ms | `window-shut`: from now on a knob's first value is a hand, not a restore | verified | 236 |
+| 2000 ms | The `knobs.txt` probe and the recover breadcrumb, either of which may say `live` | verified | 239, 299 |
 | ~3500 ms | `u_state` restores, and a saved `mode` arrives as a real selection | verified | — |
 
-⛔ **Both the read and the key-seed have to land before mother's push.** See *Traps*.
+⛔ **Both the read and the key's mode have to be there before mother's push.** See *Traps*.
 
 ### Parameter pickup — a restored control is held until it crosses
 
@@ -162,27 +183,27 @@ then hands it authority.
 | Never applies to | any control that is not an Organelle knob — the keys and the shifted keys included | verified | 236 |
 | Boot window | 1000 ms. A first value inside it is a restore and **arms**; after it, a hand, and goes straight to live | verified | 236 |
 | Whether that arming survives | `u_map` **reads `knobs.txt` itself** at 2000 ms. `[text size]` answers 1 when the file is there and 0 when it is not | verified | 239 |
-| With **no** `knobs.txt` | every slot is written straight to LIVE and no knob is ever held | verified | 239 |
-| **After a `recover`** | the breadcrumb is read in the same 2000 ms pass and every slot goes straight to LIVE, `knobs.txt` or not | verified | 299 |
+| With **no** `knobs.txt` | `u_map.pd` sends the Lua `live`: every knob goes straight to live and none is ever held | verified | 239 |
+| **After a `recover`** | the breadcrumb is read in the same 2000 ms pass and sends the same `live`, `knobs.txt` or not | verified | 299 |
 | The held row is drawn by the **destination**, for any knob mapped to one that carries a value | `c_mapped` gets the latched target and the live flag with every message and draws `name <latched> (<knob>)` in its own units | verified | 316 |
 | **Reaching** the target releases, not only passing it | a target on a rail has no beyond: armed above a target of `0`, the flip test waits for `value < 0` | verified | 241 |
-| An **unmapped** control reports `<name> <raw>` on `disp` | `[moses 0]`'s left outlet — `[text search]` answers `-1`. Silent on every bus, never on the screen | verified | 242 |
+| An **unmapped** control reports `<name> <raw>` on `disp` | The Lua's miss, out of `u_map-lua`'s second outlet. Silent on every bus, never on the screen | verified | 242 |
 | …**except `og-key-*`**, which is silent on the screen too | 25 controls that also report their releases would evict a five-row screen twice per note. See *Traps* | verified | 293 |
 | …**and pressure**, any name ending `-at` — `m_launchpad`'s `pad-NN-at`, and nothing else | A stream per held pad would fill the screen under four fingers. Only the raw row is gated: pressure the mode maps still draws its destination's row. See *Design* | verified | 318 |
-| The pickup gate sits **below** the lookup | so a held control still knows whether it is mapped. The lookup is a pure read | verified | 242 |
-| State | Five, per knob, in two 4-element arrays | verified | 236 |
+| Pickup never stops the lookup | so a held control still knows whether it is mapped, and a held, unmapped knob still draws its raw row | verified | 242 |
+| State | Five, per knob, in the Lua's state table, with the knob's target | verified | 236 |
 | mother pushes **once** at load and then says nothing: the saved position at ~100 ms with a `knobs.txt`, the live one at ~223 ms without | `~/Sites/!reference/critter-guitari-organelle-1.md`, *Panel messages* | verified | 237, 239 |
 
-**The five states.** `0` virgin, never seen a value · `1` armed, side not yet known · `2` armed
-**above** the target, waiting for a fall · `3` armed **below** it, waiting for a rise · `4` live.
-States 2 and 3 *are* the answer they wait for offset by two, so one comparison releases both.
+**The five states.** `virgin`, never seen a value · `armed`, side not yet known · `above`, armed
+**above** (or on) the target, waiting for a fall · `below`, armed **below** it, waiting for a rise ·
+`live`. The first value after arming is held and decides the side.
 
 **Arming takes two answers, and the boot window is only the first.** A first value inside the window
 is a restore rather than a hand, so it arms; a first value after it is a hand and goes straight to
 live. ⛔ **But mother pushes a value either way** — the *saved* position when `knobs.txt` exists, the
 *live physical* position when it does not, both inside the window — so the window alone armed knobs
 that were already in sync. `u_map` therefore **reads `knobs.txt` itself**, and if the file is absent
-it writes every slot to LIVE. Nothing is held on a machine that has never been Saved.
+it sends `live`. Nothing is held on a machine that has never been Saved.
 
 ⚠️ **Both branches pass the value through, which is the only reason a timer is tolerable here.** Item
 234 was two boot races that shipped silently. A window too short costs the old jump; one too long
@@ -198,7 +219,7 @@ costs a knob that needs one sweep to free it. **Neither can produce silence.**
 | Armed contents | `recover <ms>` — the stamp is elapsed milliseconds since load, from `[realtime]` | verified | 299 |
 | Cleared contents | `none`, written back over line 0 | verified | 299 |
 | A missing file | `[text size]` answers **0** and nothing happens, exactly as a missing `knobs.txt` does | verified | 299 |
-| The arming override | Every slot straight to **4, LIVE** — it bangs the same `msg 4` the no-save probe uses | verified | 299 |
+| The arming override | Every knob straight to **live** — the same `live` the no-save probe sends | verified | 299 |
 | The report | `warn u_map recovered`, deferred to **4500 ms** | verified | 299 |
 
 ⛔ **The override must land at 2000 ms and the report must not.** After an emergency the knobs you
@@ -221,32 +242,31 @@ by reading it.
 
 Each is a claim and its fix. How any of them was found is in the git history.
 
-### The map must be read at `loadbang` with no delay
+### The map must be read at load, with no delay
 
 ⛔ A read behind `[del 2000]` — to keep a missing file's error clear of `tools/deploy.sh`'s 735 ms
 output gate — lands after **mother pushes `knobs.txt` at boot**, so the restored tempo knob hits an
 **empty table** and is silently dropped. The instrument boots at `u_tempo`'s fallback 120 instead of
 the saved value, and nothing reports it (item 234).
 
-**Fix:** read at `loadbang`. A missing map *should* fail a deploy, so that error is welcome rather
-than something to hide from — and an empty table is reported on `err` for the same reason.
+**Fix:** `[u_map-lua]` reads the table when it is made, before any `loadbang`. A missing map
+*should* fail a deploy, so its console error is welcome rather than something to hide from — and an
+empty table is reported on `err` for the same reason.
 
 ### The lookup key gets its mode at load, not from the seed
 
 ⛔ The same symptom, a second cause. The `mode` bus is seeded at 500 ms and mother's push arrives
 before that, so a key that waits for the seed has **no mode at all** and misses every row.
 
-**Fix:** set the key to `mode-1` synchronously at load, so a lookup is never waiting on a clock. Any
-real mode still overwrites it, from the seed or from a restore.
+**Fix:** the key's mode is `mode-1` from the moment the Lua's state is made, so a lookup is never
+waiting on a clock. Any real mode still overwrites it, from the seed or from a restore.
 
 ### A restored `mode` carrying no name empties the key again, and a reboot does not clear it
 
 ⛔ The same symptom, a **third** cause, and the only one that survives a power cycle. `u_state`
-replays the saved `mode` at ~3500 ms; a stored value of `compose` with **no mode name** leaves
-`[list split 1]`'s remainder empty, so `[list prepend]`'s cold inlet is emptied and the key becomes
-the control name alone. `[text search]` then hunts for `og-knob-1` in the **mode** column, where it
-can never match, and every Organelle knob falls to the raw-row branch — `og-knob-1 0` on screen
-where a BPM belongs (item 294).
+replays the saved `mode` at ~3500 ms; a stored value of `compose` with **no mode name** gives the
+key no mode, and every Organelle knob falls to the raw-row branch — `og-knob-1 0` on screen where a
+BPM belongs (item 294).
 
 ⛔ **Fed from its own `[r mode]`, the store repairs it in the wrong direction.** Whatever reaches the
 bus goes straight back into the store, so the truncated value is re-saved; the auto flush is armed
@@ -257,39 +277,27 @@ reaches the disk. Every boot reads the bad value, re-stores it and writes it bac
 belongs, `slider-1 64` where `volca-cc41 64` does — because a control's only row is `u_map`'s and a
 dead lookup sends every control down the unmapped branch (item 317). Nothing else reports it.
 
-**Fix:** **the key-setter refuses a `mode` that is not two atoms and says `fail u_map bad-mode`**,
-the way an unknown *destination* does — item 297.
+**Fix:** **the Lua refuses a `mode` that is not two atoms and says `fail u_map bad-mode`**, the
+way an unknown *destination* does — item 297.
 
-⛔ **The guard is BEFORE `[list split 1]`, not after it.** What that object does with a one-atom list
-is exactly the behavior this bug turns on, so testing the length of the whole message is the one
-shape that cannot depend on it. `[list length]` → `[select 2]` opens a spigot; anything else raises.
-
-⛔ **And the store is fed from that spigot rather than from its own `[r mode]`**, which is what stops
-a bad value surviving a power cycle. The store never sees it, keeps the seed's `compose mode-1`, and
-**the auto flush repairs the file on its own** — measured: a `cut-it-auto.txt` holding `mode compose`
-came back reading `mode compose mode-1` after one boot, with the knobs mapping correctly throughout.
-⚠️ **It is a cord and not a second receive** — two `[r mode]` boxes have no defined order between
-them, so a spigot set by one could be read stale by the other.
-
-### `read -c` takes the flag first
-
-⛔ `read cut-it-map.txt -c` warns and then reads the whole file as **one line** — a table that
-matches nothing.
-
-**Fix:** `read -c cut-it-map.txt`.
+⛔ **And the store gets the mode from the Lua, only when the key took it**, never from its own
+`[r mode]`, which is what stops a bad value surviving a power cycle. The store never sees it, keeps
+the seed's `compose mode-1`, and **the auto flush repairs the file on its own** — measured: a
+`cut-it-auto.txt` holding `mode compose` came back reading `mode compose mode-1` after one boot, with
+the knobs mapping correctly throughout.
 
 ### The `[list trim]` before the destination `route` is load-bearing
 
-⛔ The name `[list split 1]` hands on has the selector `symbol`, not the name, and `route` matches a
-**selector** (C-6; Pure Data, in Reference). Without the trim the route never matches, every control
-takes the reject, and the Organelle's 0–1 knobs are divided by 127 into nothing.
+⛔ The Lua sends the looked-up row as a list, so its selector is `list`, and `route` matches a
+**selector** (C-6; Pure Data, in Reference). Without the trim the route never matches, and every
+mapped control takes the reject as `unknown-dest`.
 
-**Fix:** `[list trim]` between them. Silent in both directions if you forget.
+**Fix:** `[list trim]` between them.
 
 ### A duplicate `<mode> <control>` pair silently loses
 
-⚠️ `[text search]` returns only the **first** match, so a second row for the same pair is dead and
-nothing says so.
+⚠️ The Lua keeps the **first** row for a mode and control, as `[text search]` did before it, so a
+second row for the same pair is dead and nothing says so.
 
 **Fix:** none available in the patch — **the gate's static lint is what catches it**, because a
 running instrument cannot.
@@ -299,8 +307,8 @@ running instrument cannot.
 ⚠️ It goes to `err` as `fail u_map unknown-dest` and emits nothing. **This is the one failure this
 design can have that nothing else would catch.**
 
-⛔ **Contrast the `[moses]` miss, which is normal and silent.** Two rejects in this file mean
-opposite things: an unmapped *control* is expected, an unmapped *destination* is a bug.
+⛔ **Contrast the lookup's miss, which is normal and silent.** The two mean opposite things: an
+unmapped *control* is expected, an unmapped *destination* is a bug.
 
 ### Renaming or re-balancing the six modes is not cosmetic
 
@@ -329,8 +337,8 @@ between them tells you which way to turn.
 ⛔ **The value must be a float** — `g_oled` runs it through `makefilename %g`, which refuses a
 symbol. So the second number rides in the **unit** field, which is a free symbol.
 
-⛔ **The held row has to be built where the scaling is.** Built beside the pickup arrays it cannot
-know what the knob maps to, so it is hardcoded to one destination's units and every armed knob
+⛔ **The held row has to be built where the scaling is.** Built beside pickup it cannot know what
+the knob maps to, so it is hardcoded to one destination's units and every armed knob
 announces itself in them (item 240) — and the scaling then exists twice, once for the action and once
 for the row.
 
@@ -338,12 +346,10 @@ for the row.
 flag, and each `c_mapped` draws its own held row from them. One scaling per destination, as that
 instance's creation arguments.
 
-### Pickup gates the assembled message, never the value
+### Pickup holds the action, never the message
 
-`[list append]` holds the value in its **cold** inlet. Suppressing the value would leave the
-*previous* one parked and the name would still fire it — re-sending a stale BPM for `tempo`, and
-firing a **note** on every suppressed step for a knob mapped to `volca-note`, carrying a value that
-could have come from another surface entirely.
+A held knob that sent nothing would draw nothing either, so the gap between the latched value and
+the knob could never be shown.
 
 **Fix:** the message reaches the destination whole, with a live flag as its last atom, and
 `c_mapped`'s spigot sits on the assembled `arg value` pair. A button destination's `unpack f f`
@@ -356,14 +362,12 @@ is what the gate asserts of PLAY and STOP.
 produces a control that does nothing and says nothing — indistinguishable from a broken one
 (item 242).
 
-**Fix:** `[text search]` answers `-1` for a name with no row, so `[moses 0]`'s left outlet is the
-miss. It reports `<control-name> <raw value>` on `disp` — the **pre-divisor** value, what the device
-actually sent.
+**Fix:** the Lua's miss reports `<control-name> <raw value>` on `disp` — the **pre-divisor** value,
+what the device actually sent.
 
-⛔ **This is why the pickup gate sits BELOW the lookup.** On the control NAME, above `[text search]`,
-it is equally safe and blind — a held knob never reaches the lookup, so nothing can tell an unmapped
-control from a suppressed one. The lookup is a pure read and always runs; only the emission is
-gated.
+⛔ **This is why pickup never stops the lookup.** A held knob that skipped it would be equally
+safe and blind: nothing could tell an unmapped control from a suppressed one. The lookup always
+runs; only the destination's action is held.
 
 ⚠️ **It is the only row the control gets.** No `m_` layer posts one of its own (item 317), so this
 report is what makes `slider-3`, `sp-b5` and `pad-43` name themselves on the screen — a release
@@ -371,8 +375,8 @@ included, at velocity 0, wherever the device layer publishes one.
 
 ### A target sitting on a rail can never be crossed
 
-⛔ The release test is a **side flip** — `[<=]` computes `target <= value`, and a knob armed *above*
-the target waits for that to go false, which is `value < target`. **With a target of `0` that is
+⛔ The release test is a **side flip** — a knob armed *above* the target, `target <= value`, waits
+for that to go false, which is `value < target`. **With a target of `0` that is
 unreachable however far the knob is turned down.** Save with knob 1 at the bottom and master tempo is
 dead for the whole session, and nothing reports it (item 241).
 
@@ -396,7 +400,7 @@ already agreed with the hardware, and they then stayed dead until turned back pa
 started. Reachable on a fresh install and after any `tools/deploy.sh --clean` (item 239).
 
 **Fix:** ask the direct question. `u_map` reads `knobs.txt` into a `[text define]` and takes
-`[text size]` — 1 when present, 0 when absent — and on absent it writes every pickup slot to LIVE.
+`[text size]` — 1 when present, 0 when absent — and on absent it sends the Lua `live`.
 
 ⛔ **Do not answer it from the timing.** The push lands at 100 ms with the file and at ~223 ms
 without, and that gap is an artifact of the error path taking longer, not a promised signal.
@@ -410,11 +414,16 @@ fails a check on any output before ~735 ms (C-9). Deferring costs nothing: mothe
 the virgin branch either way, and a knob turned inside the first two seconds is released the instant
 the probe fires.
 
-### The reject is the normal path in the divisor test
+### A Lua that never loads leaves only the mode keys
 
-⚠️ Opposite of the `route` above the handlers: almost every control in the rig is 0–127, and the five
-that are not are the exception being tested for. The `[t b]` in front of anything downstream is still
-the reject-outlet rule (C-8) — a reject carries the **data** that failed to match, never a bang.
+⛔ Without pdlua — the 0.49 fallback, or pdlua missing from the path — or with an error in the Lua,
+`[u_map-lua]` fails to create, and every control but the six mode keys is dead: no tempo knob, no
+PLAY or STOP, no keyboard.
+
+**Fix:** `u_map.pd` sends `init` at load and says `fail u_map no-lua` on the screen when no bang
+comes back; a throwing rule says `fail u_map lua-<rule>` — `lua-param`, `lua-mode` — and the object
+carries on. The gates' side of it is the sequencer's trap, *A Lua that never loads is invisible to
+the gate's Pd half* ([sequencer.md](sequencer.md)).
 
 ## Design
 
@@ -438,11 +447,16 @@ one-branch-per-mapping rule existed to protect, kept while the mappings became d
 checked from three sides — `map-assert.py` against the map's rows, `docs-check.py` against the
 table on this page, and a runtime `unknown-dest` on `err`.
 
+**The guard stayed a Pd `route` when the lookup moved to Lua.** The route is what cords each
+destination to a handler you can see, so it is the allowlist and the dispatch at once; in Lua the
+list of destinations and the handlers they reach would be two things to keep in step, and the lint
+and the docs gate would have to read the Lua instead of the box.
+
 ### The six mode keys stay hardcoded, and they come first
 
 They **are** the mode selector, so a mode change can never itself be mode-dependent — and if the
-table were empty or broken you could still change mode on a device with no console. Everything the
-mode `route` does not match falls out of its reject and goes to the table.
+table were empty or broken, or the Lua never loaded, you could still change mode on a device with no
+console. Everything the mode `route` does not match falls out of its reject and goes to the Lua.
 
 **They are the top six of the Launchpad's left column, `lp-cc-80` down to `lp-cc-30`**, mode 1 at the
 top — the six buttons `g_grid` lights as the mode lamps, so the thing you look at is the thing you
@@ -488,20 +502,12 @@ continuous stream per held pad, which is why `m_launchpad` keeps it off `disp`; 
 put it back on the screen the moment polyphonic aftertouch was on, four fingers filling all five
 rows. The keys were exempted for the same reason (item 293).
 
-The test is a **suffix**, `-at`, because only `m_launchpad`'s pressure names carry it: `[list
-length]` minus 3 sets `[list split]`'s point from its right inlet, so the right outlet is always the
-last three characters. ⛔ **It runs after the key test and only ever closes the spigot** — the key
-test writes it either way, so in the other order it would reopen it for every pressure name.
+The test is a **suffix**, `-at`, because only `m_launchpad`'s pressure names carry it, beside the
+keys' prefix, `og-key`, in one rule of `u_map.lua`.
 
 ⚠️ **Only the raw row is exempt.** A pressure name the mode maps still reaches its destination and
 draws that destination's row; `map-assert` drives one mapped and one unmapped, with a pad's own press
 beside them as proof the test is not too wide.
-
-### The value is parked and the name does the work
-
-`[list split 1]` fires its **remainder** first, so the value is normalized and stored in `[list
-append]`'s right inlet before the name has even started the lookup. The looked-up destination then
-arrives on the **left** and picks the parked value back up.
 
 ### Arg then value, always — and `[unpack]` gives them in the right order for free
 
@@ -518,11 +524,12 @@ passes through it: one test, not a different threshold per surface.
 `volca-prog` uses the value as a gate rather than as data, because a program number is the *arg* —
 so a fader release cannot select a patch.
 
-### A file, not `[text define -k]`
+### A file, not a table in the code
 
 The rows live in `cut-it-map.txt` so the map **diffs one row at a time** and can be edited without
-opening Pd. The read is relative — no path, no creation argument, nothing absolute — so one file
-works on the Mac, on the device and inside the gate's scratch copy (item 229).
+opening Pd or the Lua. The read is relative — from the folder of the patch that holds
+`[u_map-lua]`, no path, no creation argument, nothing absolute — so one file works on the Mac, on
+the device and inside the gate's scratch copy (item 229).
 
 ### The Volca handlers build the message `m_volca` expects
 
@@ -546,6 +553,34 @@ Nothing else writes `mode` at load, so without the seed the grid boots with no m
 incoming mode closes the spigot, so a real selection always wins — including the seed's own send,
 harmlessly, because Pd is synchronous and the bang has already passed through.
 
+### The lookup in Lua, the destinations in Pd
+
+What moved is what was hardest to read as boxes: pickup's five states were two arrays and forty
+boxes, the divisor and the pickup slots were two routes that had to name the same four knobs, and the
+key and pressure tests were each a chain of `list` objects taking a name apart. In `u_map.lua` they
+are a few dozen lines, tested without Pd: `test/gate/lua/u_map_test.lua` drives the rules, and the
+Pd face through a stand-in for pdlua, in the map gate before its Pd half. What stayed is I/O and
+timing, and the two things that must not depend on the Lua: the mode keys, and the route that is
+the allowlist (*The allowlist guard*, above).
+
+**`u_map.lua` never calls Pd**, and every rule takes the state and returns what leaves, as
+`c_steps.lua` does ([sequencer.md](sequencer.md), *The rules in Lua, the timing in Pd*). The face is
+`u_map-lua.pd_lua`, never `u_map.pd_lua`, which would replace the abstraction
+([conventions.md](../conventions.md), *File naming*).
+
+**Every control passes through the Lua, so its cost is per message**, about twice the Pd version's
+on the Organelle (*Where each part lives*). `u_map-lua` answers pdlua's `dispatch` itself, by inlet:
+pdlua's own builds and tries two method names from each selector first, and skipping that took
+between a fifth and two fifths off a control's time there.
+
+### Editing the rules
+
+1. Edit `Cut It/u_map.lua`; `lua test/gate/lua/u_map_test.lua` checks it in a second, without Pd.
+2. In a running Pd, `; pdluax reload u_map-lua` re-reads the rules, as for `c_steps`
+   ([sequencer.md](sequencer.md), *Editing the rules*). The table is read when the object is made,
+   so a change to `cut-it-map.txt` needs the patch reopened.
+3. `./test/run.sh`, then `./tools/deploy.sh`, which reloads the patch on the device.
+
 ## Open
 
 - ⬜ **Live re-assignment — editing a mapping from the instrument rather than the file — is v0.4**,
@@ -557,4 +592,10 @@ harmlessly, because Pd is synchronous and the bang has already passed through.
   closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.
   ⚠️ Doing it *cheaply* is worse than nothing — re-arming to the knob's last position puts the next
   move on the far side and suppresses until you turn back. Doing it right needs a per-`(mode, knob)`
-  value memory, and the arrays widen 4 → 24 with one index term.
+  value memory: pickup's state in `u_map.lua` keyed by mode as well as knob.
+- ⬜ **The Lua map has not been played on the rig.** The gates and a test Pd prove it answers as the
+  Pd version did and loads in silence; what it costs under four fingers of pressure, at the live
+  Pd's priority, is unmeasured. `cut-it/logic-as-text`.
+- ⬜ **On the 0.49 fallback the map is dead but for the mode keys**, since pdlua does not load
+  there (*A Lua that never loads leaves only the mode keys*); whether the fallback must keep a
+  playable instrument is not decided. `cut-it/logic-as-text`.

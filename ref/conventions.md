@@ -95,7 +95,8 @@ these abstractions ever leave the repo — which they won't.
 **One abstraction per file, named for what it is.** No `utils.pd` grab-bags.
 
 **Rules in Lua sit beside their abstraction under its name**: `c_steps.lua` holds `c_steps`'s
-rules as plain Lua, and `c_steps-lua.pd_lua` is the pdlua class that carries them into Pd. ⛔ Never
+rules as plain Lua, and `c_steps-lua.pd_lua` is the pdlua class that carries them into Pd; `u_map`'s
+are `u_map.lua` and `u_map-lua.pd_lua`. ⛔ Never
 `<abstraction>.pd_lua`: pdlua's loader is asked before Pd looks for an abstraction, so it would
 replace the `.pd` everywhere it is used ([sequencer.md](module/sequencer.md)).
 
@@ -458,8 +459,9 @@ carries the level as its selector; anything built with `[list prepend]` needs `[
 
 **Lua reports the same way**, out of an outlet corded to `[s err]`, with the abstraction as its
 source: pdlua prints a script's errors on the console the device lacks, so the Pd face catches every
-rule's error and sends `fail <source> lua-<selector>`, and the abstraction says `no-lua` when its Lua
-never loaded ([sequencer.md](module/sequencer.md)).
+rule's error and sends `fail <source> lua-<selector>` — `lua-<bus>` where an inlet's selectors are
+data, as `u_map`'s `lua-param` — and the abstraction says `no-lua` when its Lua never loaded
+([sequencer.md](module/sequencer.md)).
 
 **Three levels, and they differ only in what the SCREEN does.** Every one of them is logged:
 `u_err`'s logfile tap hangs off the trigger *above* the mode route, so the bus is unfiltered

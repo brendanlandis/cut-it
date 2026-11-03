@@ -34,7 +34,7 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 68 | `module/map` |
+| `map-assert.sh` | 138: 70 in Lua, 68 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 43 | `module/presence` |
@@ -47,10 +47,11 @@ were false.
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 67: 39 in Lua, 28 in Pd | `module/sequencer` |
 
-**604 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**674 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **597**; the difference is
-that gate. `sequencer-assert.sh` prints two, one per half: its Lua tests', then its analyzer's.
+total cannot be derived from a run by summing. Totaling the run gives **667**; the difference is
+that gate. `sequencer-assert.sh` and `map-assert.sh` print two each, one per half: the Lua tests',
+then the analyzer's.
 Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 43 come from TWO Pd runs and one tally**, which is the only entry here
@@ -218,7 +219,7 @@ halt the clock** — the transport pauses the subscribers, it does not clear the
 ## `map-assert.sh`, `sp404-assert.sh`, `volca-assert.sh` — the map and the output devices
 
 ```sh
-./test/gate/map-assert.sh            68 checks, ~7 s — the lookup, and the static lint
+./test/gate/map-assert.sh            70 + 68 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
 ./test/gate/sp404-assert.sh          19 checks, ~7 s — the 404 in BOTH directions
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
@@ -232,11 +233,19 @@ had no window for.
 ⚠️ **`map-assert` uses `volca-cc` and asserts nothing about the Volca.** A lookup has to land
 somewhere; what the destination then does with the value is the device gate's business.
 
-**Half of `map-assert` is a STATIC LINT.** It parses the literal `route` box out of `u_map.pd` and the rows
+**`map-assert` runs the map's Lua tests first**: `test/gate/lua/u_map_test.lua`, with lua.org's Lua
+5.4 and no Pd, drives the rules in `Cut It/u_map.lua` (the table, the lookup per mode, the divisor,
+the mode guard, every pickup transition, the raw row and its two exemptions) and `u_map-lua.pd_lua`
+through `test/gate/lua/lib_test.lua`'s stand-in for pdlua (reading the table from its patch's
+folder, `map-empty`, `bad-selector`, a throwing rule caught as `fail u_map lua-param`). The Pd half
+below is unchanged since the lookup was Pd: **it is the proof the Lua port changed nothing.** The
+gate fails if either half does.
+
+**Half of the Pd half is a STATIC LINT.** It parses the literal `route` box out of `u_map.pd` and the rows
 out of `cut-it-map.txt` and asserts that **every destination a row can name exists as an argument on
 that route** — the allowlist guard, enforced by reading, exactly the way this project audits its
-global sends. It also catches a **duplicate `(mode, control)` pair**, which `text search` resolves
-to the *first* match only, so a repeat is dead and silent. And it reads every `m_` file's `[s disp]`
+global sends. It also catches a **duplicate `(mode, control)` pair**, which the lookup resolves
+to the *first* row only, so a repeat is dead and silent. And it reads every `m_` file's `[s disp]`
 count, **exactly** — zero everywhere but `m_organelle`'s one, which carries aux's modal — because a
 device layer posting a control's row beside `u_map`'s draws that control twice, and a duplicate of an
 *unmapped* control's row is invisible on the screen (item 317). That half runs without Pd at all.
@@ -279,6 +288,15 @@ two in `sp404-assert`, and the static count; the file-set check went red on a st
 **The pressure exemption** (item 318) went red against the `u_map` without it, with the key and
 pressure tests swapped so the key test reopened the spigot, and — on the witness pad, `pad-15` — with a
 test wide enough to silence every raw row.
+
+✅ **And again against the Lua**, both halves red on each of six mutations of `u_map.lua` (Lua
+failures, then Pd): the lookup reading mode 1's rows in every mode (3, 3), pickup arming on the wrong
+side (2, 2), the mode guard taking one atom (6, 5), pressure drawing a raw row (1, 1), no release on
+reaching a rail target (1, 1) and the boot window never shutting (2, 1); a `live` that sets nothing
+turned the Lua (2) and the Pd half's no-`knobs.txt` run (3) red, and `recover-assert` (1). The
+allowlist stayed a Pd `route`, so its mutations are there: the reject cut from `unknown-dest` turned
+the Pd half red (1), and a destination added to the route that nothing handles turned `docs-check`
+red, as the guard's three sides intend.
 
 ⛔ **It also HUNG once instead of failing** — the driver generator errored, its exit status was
 unchecked, Pd was handed a file that did not exist, and the `; pd quit` that lives *inside that file*

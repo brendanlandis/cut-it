@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import socket
+import subprocess
 import sys
 import threading
 import time
@@ -49,8 +50,11 @@ ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert",
          # u_inject, and test mode and a result report on err.
          "/probe/inject", "/probe/err",
          # and the two drum buttons: out a cord to c_steps.
-         "/probe/drums"}
+         "/probe/drums",
+         # and what the drum screen shows: the mode, and c_steps' state.
+         "/cutit/mode", "/cutit/drums"}
 SCENE = os.path.join(ROOT, "tools", "pdparty-scene", "CutItRemote", "_main.pd")
+BUILD_REMOTE = os.path.join(ROOT, "tools", "pdparty-scene", "build-remote.py")
 # The checklist page, a second scene: it sends send and result, built by
 # list prepend from its data rather than typed in a message box.
 CHECKS = os.path.join(ROOT, "tools", "pdparty-scene", "CutItChecks", "_main.pd")
@@ -317,10 +321,15 @@ def main():
         A.check("⛔ the scene's drums buttons are EXACTLY the ones u_net routes",
                 udrums is not None and sdrums == sorted(udrums),
                 "scene sends drums %s, u_net routes %s" % (" ".join(sdrums), udrums))
+        keys = {tuple(m.split()[:2]) for m in smsg}
         A.check("one button per command, one per sounding device, one per drums action",
-                len(smsg) == len(set(ucmd) - set(PAGE_CMDS)) - 2 + len(udev)
+                len(keys) == len(set(ucmd) - set(PAGE_CMDS)) - 2 + len(udev)
                 + len(udrums or []),
-                "%d message boxes: %s" % (len(smsg), ", ".join(smsg)))
+                "%d kinds of message box: %s" % (len(keys), sorted(keys)))
+        A.check("... and the drum screen's sixteen pads select tracks 1 to 16",
+                sorted(m for m in smsg if m.startswith("drums select ")) ==
+                sorted("drums select %d" % n for n in range(1, 17)),
+                [m for m in smsg if m.startswith("drums select ")])
         # and the ack must be able to light every one of them
         A.check("the scene's ACK route covers every command u_net can acknowledge",
                 _route_of(SCENE, "re-wire") == [c for c in ucmd if c not in PAGE_CMDS],
@@ -331,6 +340,10 @@ def main():
         A.check("the scene's ACK route covers every drums action",
                 _route_of(SCENE, "sync") == udrums,
                 "scene: %r" % (_route_of(SCENE, "sync"),))
+
+    A.check("the remote scene is build-remote.py's output, from remote-template.pd",
+            subprocess.call([sys.executable, BUILD_REMOTE, "--check"]) == 0,
+            "run tools/pdparty-scene/build-remote.py")
 
     # -- the two traps the scene cannot report on itself --------------------
     guis = scene_iemguis()
@@ -360,13 +373,13 @@ def main():
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})
     A.check("shape: only known OSC addresses", all(a in ADDRS for a in seen),
             "saw " + ", ".join(seen))
-    A.check("shape: all twenty-three windows arrived",
+    A.check("shape: all twenty-five windows arrived",
             [n for n, _ in wins] == ["idle", "sweep1", "sweep2", "statussw",
                                      "alert", "reserved", "idle2", "cmdwire",
                                      "cmdvolca", "cmd404", "cmdbogus", "cmdclear",
                                      "sendoff", "tmon", "sendon", "result", "tmoff",
                                      "sendoff2", "tmtwice", "tmoff2", "cmdsync",
-                                     "cmdsnap", "done"],
+                                     "cmdsnap", "cmdselect", "drumstate", "done"],
             ", ".join(n for n, _ in wins))
 
     hbs = [g[0] for _, rowset in wins for _, a, g in rowset
@@ -573,6 +586,20 @@ def main():
         "a flip after the 300 ms turns it off")
     f = hb_flags("done")
     A.check("done: the heartbeat says off", f and all(v == 0 for v in f), f)
+
+    one("cmdselect", "/probe/drums", ["select", 3.0], "drums select 3 leaves for c_steps")
+    one("cmdselect", "/cutit/ack", ["drums", "select"], "and is acknowledged")
+    state = [float(v) for v in "1 12 2 1 16 5 16 16 16 16 16 16 16 16 16 16 16 16 16 16 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0".split()]
+    sent = args("drumstate", "/cutit/drums")
+    A.check("drumstate: c_steps' state leaves as /cutit/drums, at once and on the heartbeat",
+            len(sent) >= 2 and all(g == state for g in sent),
+            "%d sent: %s" % (len(sent), sent[:1]))
+    sent = args("drumstate", "/cutit/mode")
+    A.check("drumstate: the mode leaves as /cutit/mode, at once and on the heartbeat",
+            len(sent) >= 2 and all(g == ["compose", "mode-1"] for g in sent), sent[:3])
+    A.check("done: both still repeat, so a phone that comes back late catches up",
+            len(args("done", "/cutit/drums")) >= 2 and len(args("done", "/cutit/mode")) >= 2,
+            "%d and %d" % (len(args("done", "/cutit/drums")), len(args("done", "/cutit/mode"))))
 
     for win, cmd in (("cmdsync", "sync"), ("cmdsnap", "snap")):
         one(win, "/probe/drums", [cmd], "drums %s leaves for c_steps as %s" % (cmd, cmd))

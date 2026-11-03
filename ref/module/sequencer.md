@@ -30,9 +30,10 @@ It is mode 1's drum machine (`cut-it/drum-machine`), and the first part of a son
 |---|---|---|
 | Creation arg 1 | The 404 bank its tracks play, 1–10, 1 for A. Track *n* plays pad *n* of that bank | unknown |
 | Creation arg 2 | The part its pattern is stored as: `drums` keys it `section-1-drums` | unknown |
-| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, from `u_map`'s `drum-page` destination; `last <0-1>` and `track-last <0-1>`, knobs 2 and 3, from its `last-step` and `track-last`; `sync` and `snap`, the drum buttons on the phone, from `u_net`'s fourth outlet. Anything else is `fail c_steps bad-selector` | unknown |
+| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, from `u_map`'s `drum-page` destination; `last <0-1>` and `track-last <0-1>`, knobs 2 and 3, from its `last-step` and `track-last`; `sync`, `snap` and `select <n>`, the phone's drum screen, from `u_net`'s fourth outlet. Anything else is `fail c_steps bad-selector` | unknown |
 | Outlet 1 | `pad <1..160> <velocity>`, to `m_404`'s pad path | unknown |
 | Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <32 velocities>` for the selected track, `play <step>` (0 while stopped), `vel <level>`, `track <pad>`, `last <step>` for the selected track | unknown |
+| Outlet 3 | The drum screen's state, to `u_net`'s second inlet: 36 numbers, `R.phone`, sent by the Pd face only when they change ([phone.md](../device/phone.md)) | verified |
 | `disp` | Knobs 2 and 3's rows: `last-step 12`, `pad2-last 6`, and held, `last-step 16 (7)` | unknown |
 
 ### What it does
@@ -59,7 +60,7 @@ It is mode 1's drum machine (`cut-it/drum-machine`), and the first part of a son
 | | Lives in | Evidence |
 |---|---|---|
 | The pattern, the step rule, the velocity levels, the selected track and level, the last steps and the knobs' latch, each track's place in its loop, sync and snap, which pads fire on a step, the playhead, the restore | `c_steps.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
-| Turning messages into those calls and their answers into outlets | `c_steps-lua.pd_lua`, the class `c_steps-lua`: two inlets (the presses, knobs and drum buttons; `c_steps.pd`'s own `tick`, `start`, `stop`, `restore` and `init`), six outlets (notes, page, the pattern to save, `err`, a bang on `init`, the knobs' rows) | verified |
+| Turning messages into those calls and their answers into outlets | `c_steps-lua.pd_lua`, the class `c_steps-lua`: two inlets (the presses, knobs and drum buttons; `c_steps.pd`'s own `tick`, `start`, `stop`, `restore` and `init`), seven outlets (notes, page, the pattern to save, `err`, a bang on `init`, the knobs' rows, the drum screen's state) | verified |
 | The clock, PLAY, STOP and panic, the cords to `m_404`, `g_grid`, `u_state` and `disp`, `put auto section-1-<part>` | `c_steps.pd` | verified |
 | The Lua's answers on the device | Identical to the Mac's: twenty messages through `c_steps-lua` in a test Pd on the Organelle and on the Mac printed the same 37 lines (2026-11-03) | verified |
 | What it costs | About 0.4 MB more peak memory than the Pd version, in a test Pd loading `main.pd` on the Organelle (3.0 to 3.4 MB); pdlua itself is on the Organelle's Reference page | verified |

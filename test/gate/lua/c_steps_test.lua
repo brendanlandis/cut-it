@@ -44,6 +44,14 @@ end
 -- A knob position for a step: what R.knob_step reads back as n.
 local function at(n) return (n - 1) / 31 end
 
+-- The drum screen's 36 numbers, from the few that differ: lasts and owns by track.
+local function phone(playing, last, track, pending, lasts, owns)
+  local p = { playing, last, track, pending }
+  for t = 1, 16 do p[#p + 1] = lasts[t] or last end
+  for t = 1, 16 do p[#p + 1] = owns[t] or 0 end
+  return p
+end
+
 -- The playhead and the pads that sound on each of n ticks.
 local function run(st, n)
   local out = {}
@@ -183,6 +191,26 @@ print("\n--- sync and snap, from the drum screen ---")
 equal("sync and snap answer nothing at once: they wait for the global loop's step 1",
       { R.presses.sync(R.new(1), {}), R.presses.snap(R.new(1), {}) }, { {}, {} })
 
+print("\n--- the drum screen ---")
+st = R.new(1)
+equal("its state: stopped, global 16, track 1, nothing pending, every track at 16 and following",
+      R.phone(st), phone(0, 16, 1, 0, {}, {}))
+R.presses.pad(st, { 2, 90 })
+R.presses["track-last"](st, { at(16) })
+R.presses["track-last"](st, { at(5) })
+R.internal.start(st, {})
+R.presses.snap(st, {})
+equal("... playing, track 2 selected with its own 5, a snap pending",
+      R.phone(st), phone(1, 16, 2, 2, { [2] = 5 }, { [2] = 1 }))
+st = R.new(1)
+equal("select picks a track without playing it, and knob 3 is held at its last step",
+      { R.presses.select(st, { 7 }), R.presses["track-last"](st, { at(3) }) },
+      { { { "page", "track", { 7 } }, { "page", "last", { 16 } }, { "page", "steps", zeros(32) } },
+        { { "disp", "pad7-last", { 16, "(3)" } } } })
+equal("... clipped to 1..16, and a select with no number does nothing",
+      { R.presses.select(R.new(1), { 40 })[1], R.presses.select(R.new(1), {}) },
+      { { "page", "track", { 16 } }, {} })
+
 print("\n--- the loops ---")
 st = R.new(1)
 R.presses.last(st, { at(16) })
@@ -268,11 +296,13 @@ local class = T.load_class(DIR .. "c_steps-lua.pd_lua", DIR)
 check("c_steps-lua.pd_lua registers the class c_steps-lua", class and class._name == "c_steps-lua",
       class and class._name)
 local o = T.new(class, { 1 })
-check("an object has two inlets and six outlets", o and o.inlets == 2 and o.outlets == 6,
+check("an object has two inlets and seven outlets", o and o.inlets == 2 and o.outlets == 7,
       o and (o.inlets .. " " .. o.outlets))
-equal("init: the page's selection on outlet 2, then the bang on outlet 5 that says it loaded",
+equal("init: the page's selection on outlet 2, the drum screen's state on outlet 7, then the "
+      .. "bang on outlet 5 that says it loaded",
       T.send(o, 2, "init", {}), { { 2, "vel", { 6 } }, { 2, "track", { 1 } }, { 2, "last", { 16 } },
-                                  { 2, "steps", zeros(32) }, { 5, "bang", {} } })
+                                  { 2, "steps", zeros(32) }, { 7, "list", phone(0, 16, 1, 0, {}, {}) },
+                                  { 5, "bang", {} } })
 equal("knob 2 held: its row on outlet 6", T.send(o, 1, "last", { at(9) }),
       { { 6, "last-step", { 16, "(9)" } } })
 local sent = T.send(o, 1, "step", { 1, 100 })
@@ -280,10 +310,16 @@ want = zeros(CELLS)
 want[1] = 95
 equal("a step press: the pattern on outlet 3, then the page on outlet 2",
       sent, { { 3, "list", line(want) }, { 2, "steps", row(want, 1) } })
-T.send(o, 2, "start", {})
-equal("a tick: its notes on outlet 1, then the playhead on outlet 2", T.send(o, 2, "tick", {}),
-      { { 1, "pad", { 1, 95 } }, { 2, "play", { 1 } } })
-equal("sync from the drum screen, on inlet 1: nothing at once", T.send(o, 1, "sync", {}), {})
+equal("PLAY: the drum screen hears it is playing", T.send(o, 2, "start", {}),
+      { { 7, "list", phone(1, 16, 1, 0, {}, {}) } })
+equal("a tick: its notes on outlet 1, then the playhead on outlet 2, and nothing for the phone",
+      T.send(o, 2, "tick", {}), { { 1, "pad", { 1, 95 } }, { 2, "play", { 1 } } })
+equal("sync from the drum screen, on inlet 1: only the phone's state, a sync pending",
+      T.send(o, 1, "sync", {}), { { 7, "list", phone(1, 16, 1, 1, {}, {}) } })
+equal("select from the drum screen: the track and its steps, and the phone's state, with no note",
+      T.send(o, 1, "select", { 3 }), { { 2, "track", { 3 } }, { 2, "last", { 16 } },
+                                        { 2, "steps", zeros(32) },
+                                        { 7, "list", phone(1, 16, 3, 1, {}, {}) } })
 for _, m in ipairs({ { 1, "float", { 3 } }, { 1, "beat", { 1 } }, { 1, "tick", {} },
                      { 2, "step", { 1, 100 } }, { 2, "fire", { 1 } } }) do
   equal(string.format("%s on inlet %d is fail c_steps bad-selector on outlet 4", m[2], m[1]),
@@ -301,7 +337,7 @@ local broken = T.new(T.load_class(DIR .. "c_steps-lua.pd_lua", tmp .. "-"), { 1 
 os.remove(tmp .. "-c_steps.lua")
 os.remove(tmp)
 equal("a Lua error leaves outlet 4 as fail c_steps lua-tick, for the error log",
-      T.send(broken, 2, "tick", {}), { { 4, "fail", { "c_steps", "lua-tick" } } })
+      T.send(broken, 2, "tick", {})[1], { 4, "fail", { "c_steps", "lua-tick" } })
 check("... with its text on the console", #broken.console == 1
       and broken.console[1]:find("a bug in tick", 1, true) ~= nil, T.show(broken.console))
 equal("... and the object carries on: a press still answers",

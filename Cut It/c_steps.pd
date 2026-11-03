@@ -1,7 +1,7 @@
 #N canvas 20 20 2600 2200 12;
 #X declare -lib pdlua;
 #X text 20 20 c_steps -- a 32-step sequencer: sixteen tracks of 32 steps \, each with its own last step \, a velocity per step \, played on its own c_clock. It knows steps \, velocity levels and pads \, never where they sit on a surface: that is the m_ boundary. ref/module/sequencer.md, f 58;
-#X text 20 150 creation arg 1: the 404 bank its sixteen tracks play \, 1 for A. creation arg 2: the part its pattern is stored as \, drums for section-1-drums. inlet: step <n> <velocity> \, vel <level> <velocity> \, pad <n> <velocity> \, last and track-last <0-1> from knobs 2 and 3 \, follow and resync from the phone. outlet 1: pad <1..160> <velocity> \, to m_404. outlet 2: the drum page's state \, to g_grid -- steps <32 velocities> \, play <step> \, vel <level> \, track <pad> \, last <n>. Knobs 2 and 3 draw their rows on disp from here., f 58;
+#X text 20 150 creation arg 1: the 404 bank its sixteen tracks play \, 1 for A. creation arg 2: the part its pattern is stored as \, drums for section-1-drums. inlet: step <n> <velocity> \, vel <level> <velocity> \, pad <n> <velocity> \, last and track-last <0-1> from knobs 2 and 3 \, follow and resync from the phone. outlet 1: pad <1..160> <velocity> \, to m_404. outlet 2: the drum page's state \, to g_grid -- steps <32 velocities> \, play <step> \, vel <level> \, track <pad> \, last <n>. Knobs 2 and 3 draw their rows on disp from here. outlet 3: the drum screen's state \, to u_net \, 36 numbers whenever it changes., f 58;
 #X obj 20 420 c_clock 1 4;
 #X obj 20 470 *~ 4;
 #X obj 20 510 wrap~;
@@ -106,3 +106,5 @@
 #X connect 16 0 26 1;
 #X connect 20 0 26 1;
 #X connect 26 5 58 0;
+#X obj 2400 1750 outlet;
+#X connect 26 6 59 0;

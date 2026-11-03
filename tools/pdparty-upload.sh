@@ -1,6 +1,7 @@
 #!/bin/sh
-# Put both phone scenes on PdParty, over its WebDAV server: CutItRemote, and
-# CutItChecks, the checklist page with its data.
+# Put both phone scenes on PdParty, over its WebDAV server: CutItRemote, the
+# remote and drum screens, and CutItChecks, the checklist page with its data.
+# Both are built (build-remote.py, build-checks.py), and a stale one stops this.
 #
 #   ./tools/pdparty-upload.sh                  the phone at 192.168.1.9
 #   PHONE=192.168.1.20 ./tools/pdparty-upload.sh
@@ -18,6 +19,7 @@ URL="http://$PHONE:9000"
 cd "$(dirname "$0")/pdparty-scene"
 
 python3 build-checks.py --check
+python3 build-remote.py --check
 
 if ! nc -z -G 3 "$PHONE" 9000 2>/dev/null; then
     echo "PdParty's WebDAV server is not answering at $PHONE:9000." >&2

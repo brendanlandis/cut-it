@@ -8,7 +8,7 @@
 -- inlet 2: c_steps.pd's own -- tick, start, stop, restore <the saved line>, init.
 -- outlet 1: pad <pad> <velocity>, to m_404. outlet 2: the page, to g_grid. outlet 3: the pattern
 -- to save. outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded. outlet 6: a knob's
--- row, to disp.
+-- row, to disp. outlet 7: the drum screen's state, R.phone's 36 numbers, whenever it changes.
 --
 -- A Lua error leaves outlet 4 as fail c_steps lua-<selector>, and its text goes to Pd's console
 -- where there is one: the device has none (C-12).
@@ -22,7 +22,7 @@ local R = dofile(StepsLua._loadpath .. "c_steps.lua")
 local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6 }
 
 function StepsLua:initialize(_, atoms)
-  self.inlets, self.outlets = 2, 6
+  self.inlets, self.outlets = 2, 7
   self.state = R.new(atoms[1])
   return true
 end
@@ -36,6 +36,19 @@ function StepsLua:answer(rules, sel, atoms)
     out = { R.fail("lua-" .. sel) }
   end
   for _, e in ipairs(out) do self:outlet(OUTLET[e[1]], e[2], e[3]) end
+  self:phone()
+end
+
+-- The drum screen's state, out the last outlet only when it differs from the last one sent: a
+-- tick changes nothing the phone shows, eight times a second.
+function StepsLua:phone()
+  local ok, now = pcall(R.phone, self.state)
+  if not ok then return end
+  local key = table.concat(now, " ")
+  if key ~= self.phone_sent then
+    self.phone_sent = key
+    self:outlet(7, "list", now)
+  end
 end
 
 function StepsLua:in_1(sel, atoms)

@@ -11,6 +11,7 @@
 --   {"save", "list", {512 velocities, 16 last steps}}         to u_state, as section-1-<part>
 --   {"err", "fail", {"c_steps", text}}                        to err (C-12)
 --   {"disp", <row name>, {value[, unit]}}                     a knob's row, to disp
+-- and R.phone(st), the drum screen's state, which the Pd face sends to u_net when it changes.
 
 local R = {}
 
@@ -59,7 +60,7 @@ end
 function R.new(bank)
   local st = { bank = math.floor(clip(num(bank), 1, 10)), pattern = {}, own = {}, pos = {},
                track = R.BOOT_TRACK, level = R.BOOT_LEVEL, last = R.BOOT_LAST,
-               master = 0, sync = false, snap = false,
+               master = 0, sync = false, snap = false, playing = false,
                knob = { last = { held = true }, track = { held = true } } }
   for i = 1, R.TRACKS * R.STEPS do st.pattern[i] = 0 end
   for t = 1, R.TRACKS do st.own[t], st.pos[t] = 0, 0 end
@@ -194,6 +195,23 @@ local function land_snap(st)
   return { R.save(st), R.page_last(st) }
 end
 
+-- The drum screen selects a track without playing it, as a pad press does otherwise.
+function R.select(st, track)
+  st.track = math.floor(clip(num(track), 1, R.TRACKS))
+  rearm(st.knob.track)
+  return { { "page", "track", { st.track } }, R.page_last(st), R.steps(st) }
+end
+
+-- The drum screen's state, for the phone: playing (1 or 0), the global last step, the selected
+-- track, a pending sync or snap (0 none, 1 sync, 2 snap), then each track's last step, then 1 for
+-- each track with a last step of its own. 36 numbers.
+function R.phone(st)
+  local out = { st.playing and 1 or 0, st.last, st.track, st.snap and 2 or (st.sync and 1 or 0) }
+  for t = 1, R.TRACKS do out[#out + 1] = R.last_of(st, t) end
+  for t = 1, R.TRACKS do out[#out + 1] = st.own[t] >= 1 and 1 or 0 end
+  return out
+end
+
 -- A pad press plays the pad now, at the press's own velocity, and selects its track; knob 3 is
 -- then held at that track's last step.
 function R.press_pad(st, track, velocity)
@@ -228,7 +246,7 @@ end
 -- PLAY: every loop, the global one included, starts again at step 1 on the next step, which is
 -- a sync already; a pending snap lands now.
 function R.start(st)
-  st.master, st.sync = 0, false
+  st.master, st.sync, st.playing = 0, false, true
   for t = 1, R.TRACKS do st.pos[t] = 0 end
   if st.snap then return land_snap(st) end
   return {}
@@ -236,6 +254,7 @@ end
 
 -- STOP and panic: the playhead goes out.
 function R.stop(st)
+  st.playing = false
   return { { "page", "play", { 0 } } }
 end
 
@@ -260,8 +279,8 @@ function R.restore(st, values)
 end
 
 -- What arrives on the first inlet: u_map's drum-page presses, <selector> <n> <velocity>; its
--- knobs, last and track-last with the knob's 0-1; and the drum screen's sync and snap, through
--- u_net. A press or a knob with no number in it does nothing.
+-- knobs, last and track-last with the knob's 0-1; and the drum screen's sync, snap and select,
+-- through u_net. A press, a knob or a select with no number in it does nothing.
 R.presses = {
   step = function(st, a) return a[1] and R.press_step(st, a[1]) or {} end,
   vel = function(st, a) return a[1] and R.press_vel(st, a[1]) or {} end,
@@ -270,6 +289,7 @@ R.presses = {
   ["track-last"] = function(st, a) return a[1] and R.knob_track(st, a[1]) or {} end,
   sync = function(st) return R.sync(st) end,
   snap = function(st) return R.snap(st) end,
+  select = function(st, a) return a[1] and R.select(st, a[1]) or {} end,
 }
 
 -- What c_steps.pd itself sends: the clock's step, PLAY, STOP, u_state's restore, and the load.

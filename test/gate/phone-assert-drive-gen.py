@@ -51,7 +51,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 45400")
+qd = obj(20, 120, "del 48200")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -78,6 +78,9 @@ tap_i = obj(560, 880, "s \\$0-tap-inject")
 con(unet, 2, tap_i, 0)
 tap_d = obj(820, 880, "s \\$0-tap-drums")
 con(unet, 3, tap_d, 0)
+# c_steps' drum screen state arrives by name, as its cord would bring it in u_root.
+ds_r = obj(300, 720, "r \\$0-ds")
+con(ds_r, 0, unet, 1)
 # test mode's flip arrives by name, as u_map's cord would bring it in u_root.
 tm_r = obj(20, 720, "r \\$0-tm")
 con(tm_r, 0, unet, 0)
@@ -174,6 +177,8 @@ txt(20, 2180,
 #   ("statussweep", (count, ms))     the same, as status <n>-bpm symbols
 #   ("cmd", (root, "<text>"))        one OSC datagram INTO u_net's own port
 #   ("tm", None)                     a bang into u_net's inlet: flip test mode
+#   ("ds", "<36 numbers>")           c_steps' drum screen state, into u_net's second inlet
+#   ("bus", (name, "<message>"))     one message onto a bus, as the mode bus
 #
 # Every command window sits after idle2: clear-alert destroys the held alert,
 # and idle2 is where the alert is asserted to persist.
@@ -220,7 +225,11 @@ SEQ = [
     # -- the two drum buttons, out the fourth outlet to c_steps
     (40600, "cmdsync",  [("cmd", ("cutit", "drums sync"))]),
     (42000, "cmdsnap",  [("cmd", ("cutit", "drums snap"))]),
-    (43400, "done",     []),
+    (43400, "cmdselect", [("cmd", ("cutit", "drums select 3"))]),
+    # -- what the drum screen shows: the mode, and c_steps' state, each sent at
+    #    once and again on every heartbeat
+    (44800, "drumstate", [("ds", "1 12 2 1 16 5 16 16 16 16 16 16 16 16 16 16 16 16 16 16 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0"), ("bus", ("mode", "compose mode-1"))]),
+    (46200, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940
@@ -256,6 +265,14 @@ for i, (when, mark, actions) in enumerate(SEQ):
             ts = obj(bx, by, "s \\$0-tm")
             con(tr, outlet, ts, 0)
             bx += 240
+            continue
+        if kind in ("ds", "bus"):
+            text, dest = (item[1], "\\$0-ds") if kind == "ds" else (item[1][1], item[1][0])
+            dm = msg(bx, by, text)
+            dsn = obj(bx, by + 50, "s %s" % dest)
+            con(tr, outlet, dm, 0)
+            con(dm, 0, dsn, 0)
+            bx += 300
             continue
         if kind == "cmd":
             # The PdParty scene's shape: message box, list append, oscformat.

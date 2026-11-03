@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # The phone — PdParty and the status link
 
-**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/pdparty-scene/CutItRemote/` · **Gate:** `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/phone.md`
+**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/pdparty-scene/CutItRemote/`, `tools/pdparty-scene/build-remote.py`, `tools/pdparty-scene/remote-template.pd` · **Gate:** `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/phone.md`
 
 An iPhone running PdParty on the same network, used as **an unlimited plain-English display** — and,
 more valuable, as the answer to the Organelle having no Pd console. What PdParty and the phone are —
@@ -14,9 +14,12 @@ the `g_` arbiters but **owns no selector on it**, so adding it cost `g_oled`'s r
 coalesces per name at 20 Hz with a guaranteed trailing edge, holds the last alert as *state* and
 repeats it, and rebuilds its own socket — which a phone leaving the network destroys outright.
 
-**The link runs both ways.** Outbound it carries four addresses — parameters, status, a heartbeat and
-a held alert. Inbound it takes **a closed vocabulary of five commands** (three diagnostic, two for the
-checklist page), acknowledges each one, and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
+**The phone is part of the instrument** (Brendan, 2026-11-03), no longer only a monitor: its screen
+follows the Launchpad's mode. In mode 1 it shows the drum screen, beside the drum page; in every other
+mode, the remote screen. **The link runs both ways.** Outbound it carries six addresses — parameters,
+status, a heartbeat, a held alert, the mode and the drum screen's state. Inbound it takes **a closed
+vocabulary of six commands** (three diagnostic, two for the checklist page, one for the drum screen),
+acknowledges each one, and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
 the heartbeat counter and measured under *Broadcast* in Reference and below; that is the evidence anything
 time-critical would have to answer to.
 
@@ -64,6 +67,8 @@ Organelle -> phone
 /cutit/status  <symbol>                           coalesced, one slot
 /cutit/hb      <counter> <test mode, 0 or 1>      every 500 ms
 /cutit/alert   <count> <level> <source> <text>    every 500 ms, always present
+/cutit/mode    <class> <mode-n>                   on change and every 500 ms
+/cutit/drums   <36 numbers>                       c_steps' state, on change and every 500 ms
 /cutit/ack     <command> [<device>]               once per command accepted
 
 phone -> Organelle
@@ -101,6 +106,7 @@ button.
 |-------------|------|----------|------|
 | `sync` | "sync first steps": every track back to its step 1 together when the global loop next comes round to its own, each keeping its own last step ([sequencer.md](../module/sequencer.md)) | verified | — |
 | `snap` | "snap to global": the same, and at that step every track takes the global last step | verified | — |
+| `select` | A pad on the drum screen, `select <n>`: selects track *n* without playing it | verified | — |
 
 **The two sounding devices are the whole set**, and it is `u_map`'s: the Launchpad and the
 nanoKONTROL are inputs. ⛔ **A device name off that list is dropped exactly like an unknown command.**
@@ -124,6 +130,20 @@ easy to identify. Item 311.
 **One address for all parameters.** Adding a parameter costs one `[list prepend <name>]` on the
 Organelle and nothing at all on the phone — this scales to the nanoKONTROL's 18 continuous controls
 without redesign.
+
+### The screen follows the mode, through PdParty's ViewPort
+
+**Both screens are one scene, side by side**: the remote screen at 0 to 448, the drum screen from 500.
+A cnv whose receive name is `ViewPort` sets which area of the scene PdParty shows, and `pos 500 0` or
+`pos 0 0` to it switches screens (Reference, PdParty, *The ViewPort canvas*). The scene's `[pd
+drums]` sends it only when the mode changes, since `u_net` repeats the mode twice a second.
+
+| | | Evidence |
+|---|---|---|
+| The ViewPort is the scene's first object | So it sits under every widget: PdParty draws it clear, and a view over the others could take their touches | unknown |
+| The drum screen | Left: playing or stopped, the tempo (the status), `last <n>`, the alert, the link. Middle: the sixteen pads as the Launchpad lays them out, each labeled with its last step: grey following the global one, amber with its own, dark when selected; a tap selects. Right: sync first steps, snap to global, and a line while one waits for step 1 | unknown |
+| `/cutit/drums` | `c_steps`' `R.phone`: playing, the global last step, the selected track, pending (0, 1 sync, 2 snap), the sixteen last steps, then 1 for each track with its own. Sent by `c_steps` when it changes, through `u_root`'s cord into `u_net`'s second inlet | verified |
+| A short or empty state | Dropped by `[list split 36]`, so the empty repeat before the first state draws nothing | verified |
 
 ### Two instruments will fight over one phone
 

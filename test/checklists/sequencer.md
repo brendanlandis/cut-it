@@ -2,7 +2,7 @@
 
 Mode 1's drum page on the Launchpad, the sequencer playing the SP-404, and the pattern surviving a reload. `sequencer-assert` proves the notes, the frames and the file; what is left is what only the rig can show — whether the page reads, and what the 404 does with the notes.
 
-17 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
+18 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
 
 - [ ] **1. The drum page**
   - **Need:** A fresh load of the patch with no saved pattern — the selection resets at every load and a saved step would be lit.
@@ -47,37 +47,42 @@ Mode 1's drum page on the Launchpad, the sequencer playing the SP-404, and the p
   - **Do:** Select the top-left drum pad. Turn knob 3 until the screen reads pad1-last 3, through the brackets if they show. Then select the bottom-left drum pad.
   - **Pass if:** Pad 1 now repeats every three steps against pad 13's sixteen, drifting against it. With pad 1 selected the steps past 3 are dark and the green pad walks 1 to 3. With pad 13 selected the grid shows its sixteen, and turning knob 3 a little reads pad13-last 16 with brackets: held until turned through 16.
 
-- [ ] **11. Sync first steps**
+- [ ] **11. The drum screen**
+  - **Need:** PdParty open on the remote scene. Back out of it and reopen it if it was open before this load.
+  - **Do:** Look at the phone. Then tap the pad on the phone in the second row's first place.
+  - **Pass if:** The phone shows the drum screen: playing, the tempo and last 16 down the left, sixteen pads in the middle labeled 16 but the top-left one, amber and labeled 3, and the two buttons on the right. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 turns dark.
+
+- [ ] **12. Sync first steps**
   - **Do:** Tap sync first steps on the phone and listen.
-  - **Pass if:** At the next step 1 of the sixteen, pad 1 starts again on its step 1 together with pad 13, then goes on repeating every three. The phone's lamp beside the button flashes.
+  - **Pass if:** The button flashes green and the line under it reads syncing at step 1. At the next step 1 of the sixteen, pad 1 starts again on its step 1 together with pad 13, then goes on repeating every three, and the line clears.
 
-- [ ] **12. Snap to global**
+- [ ] **13. Snap to global**
   - **Do:** Tap snap to global on the phone.
-  - **Pass if:** At the next step 1 of the sixteen, pad 1 starts on step 1 with pad 13 and from then on plays all sixteen steps. Selecting pad 1 shows its sixteen. The lamp flashes.
+  - **Pass if:** The button flashes and the line reads snapping at step 1. At the next step 1 of the sixteen, pad 1 starts on step 1 with pad 13 and from then on plays all sixteen steps, and on the phone it turns grey and reads 16.
 
-- [ ] **13. STOP**
+- [ ] **14. STOP**
   - **Send:** `stop bang`
   - **Pass if:** The sound stops and the green pad goes out. The steps stay lit.
 
-- [ ] **14. Panic stops it too**
+- [ ] **15. Panic stops it too**
   - **Do:** Press PLAY on the nanoKONTROL. Then tap the top-left corner button of the Launchpad.
   - **Pass if:** Everything stops at once and the grid flashes red. When it clears the green pad is gone and the steps are still lit.
 
-- [ ] **15. A one-shot pad on every step**
+- [ ] **16. A one-shot pad on every step**
   - **Need:** Pad 13 of bank A set to one-shot on the 404 — not loop.
   - **Send:** `start bang`
   - **Do:** Select pad 13. Light all sixteen of its steps. Listen for a bar or two then turn knob 1 up and listen again.
   - **Pass if:** Every step is heard as a fresh hit — a hit cut short by the next one is fine. A step that falls silent is the failure: it means a one-shot pad toggles like a looping one.
   - **Note:** The blueprint's open question (cut-it/drum-machine): a looping pad toggles on a second note-on, and fast hats need a one-shot pad to restart instead.
 
-- [ ] **16. The pattern survives a reload**
+- [ ] **17. The pattern survives a reload**
   - **Need:** Steps lit on the drum page from the steps before.
   - **Send:** `stop bang`
   - **Do:** Look at which steps are lit. Wait two seconds, then load Cut It again from the Organelle menu.
   - **Pass if:** After the reload the drum page shows the same steps lit as before it.
   - **Note:** `u_state` flushes within 2 seconds of a change, so the wait is part of the step.
 
-- [ ] **17. Other modes keep their grid**
+- [ ] **18. Other modes keep their grid**
   - **Send:** `mode compose mode-2`
   - **Do:** Press a pad in the top two rows.
-  - **Pass if:** The second lamp lights and the drum page gives way to the beat row along the bottom. A pad press draws a pad-NN row on the OLED again.
+  - **Pass if:** The second lamp lights and the drum page gives way to the beat row along the bottom. A pad press draws a pad-NN row on the OLED again, and the phone goes back to the remote screen.

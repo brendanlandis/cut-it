@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # Korg Volca FM
 
-**Files:** `Cut It/m_volca.pd` · **Gate:** `test/gate/volca-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
+**Files:** `Cut It/m_volca.pd` · **Gate:** `test/gate/volca-assert.sh` · **Checklist:** `test/checklists/midi.md`
 
 **Receive-only, and the first output-only device layer in the rig.** What the Volca FM is, what it
 receives, the Pajen 1.09 firmware, its global settings and its traps are in Reference:
@@ -47,7 +47,7 @@ inquiry is the signal that enumeration has finished.
 
 ⚠️ **Nothing in the patch can confirm the Volca came back.** The heartbeat can say it re-wired —
 `info u_present rewire-try` reaches the log — but whether the Volca is *sounding* is still only your
-ears, which is why its bench step is judged by ear. See [presence.md](../module/presence.md).
+ears, which is why its checklist steps are judged by ear. See [presence.md](../module/presence.md).
 
 ### No MIDI clock reaches this device
 
@@ -92,7 +92,7 @@ program; [tools/README.md](../../tools/README.md) says how the probe runs):
 the fader at the bottom and the Volca goes silent to its own keyboard, which looks exactly like a
 dead link. **Fix:** before diagnosing silence, **sweep `slider-1` to the top**. It is also the only
 mapping there is, so it is the only audible evidence of the link: the oracle is the fader changing the
-sound, never the sound existing. ⚠️ **A bench step reading `PASS IF the Volca sounds` passes with the
+sound, never the sound existing. ⚠️ **A checklist step passing if the Volca sounds passes with the
 cable out.**
 
 | | Value | Evidence | Item |
@@ -113,7 +113,7 @@ There is no warning, because nothing is wrong from the instrument's point of vie
 
 **Fix:** `u_present` forks **`wire-watch.sh`** on a heartbeat — every 8 ticks, so ~16 s. It hashes
 the ALSA **client names** and runs `wire.sh` only when they change, so a device appearing is wired
-whether or not anything was ever lost. ✅ **So the bench steps pull the interface ALONE** — pulling a
+whether or not anything was ever lost. ✅ **So the checklist steps pull the interface ALONE** — pulling a
 detectable device alongside it goes through the loss path and proves nothing about the heartbeat.
 
 | | Behavior | Evidence | Item |

@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The audio chain
 
-**Files:** `Cut It/u_root.pd`, `Cut It/u_level.pd`, `Cut It/codec-gain.sh` · **Gate:** `test/gate/audio-assert.sh` · **Bench:** `none`
+**Files:** `Cut It/u_root.pd`, `Cut It/u_level.pd`, `Cut It/codec-gain.sh` · **Gate:** `test/gate/audio-assert.sh` · **Checklist:** `none`
 
 ## What it is
 

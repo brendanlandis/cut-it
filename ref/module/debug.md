@@ -1,12 +1,12 @@
 <!-- schema: module -->
 # The debug patch
 
-**Files:** `Cut It Debug/main.pd`, `Cut It Debug/wire.sh`, `Cut It Debug/err-tail.sh`, `Cut It Debug/net-probe.sh` · **Gate:** `test/gate/debug-assert.sh` · **Bench:** `test/bench/debug-bench.pd`
+**Files:** `Cut It Debug/main.pd`, `Cut It Debug/wire.sh`, `Cut It Debug/err-tail.sh`, `Cut It Debug/net-probe.sh` · **Gate:** `test/gate/debug-assert.sh` · **Checklist:** `test/checklists/debug.md`
 
 ## What it is
 
 **A second deployable, and the whole design follows from being separate.** Every other diagnostic
-this project has is driven from the Mac over SSH — `test/run.sh`, `tools/fetch-errors.sh`,
+this project has is driven from the Mac over SSH — `tools/fetch-errors.sh`, `tools/fetch-state.sh`,
 `tools/display-cpu.sh` — and SSH needs a network, which is the exact thing that is missing when it
 matters. At a venue, three questions used to need a laptop: what MIDI is arriving from each device
 and on what channel, whether each device answers when you fire something at it, and what the error
@@ -107,7 +107,7 @@ thing it ever runs is that fork.
 monitor works — move a nanoKONTROL fader, which transmits the moment you touch it and has nothing to
 go wrong at the far end — and only then conclude anything about the device you were worried about.
 
-**Fix:** the bench makes this step 3 and says every later step depends on it.
+**Fix:** [the debug checklist](../../test/checklists/debug.md) makes this step 3 and says every later step depends on it.
 
 ### It must not ask the `presence` bus for a re-wire
 
@@ -118,7 +118,7 @@ lives inside Cut It's Pd instance, and **loading this patch is what killed that 
 
 ### Its `wire.sh` is a copy, and a copy can drift
 
-⛔ At a venue the instrument's folder may not be there. `test/bench/recover` step 5 literally moves it
+⛔ At a venue the instrument's folder may not be there. The recover checklist's step 5 literally moves it
 away, and the two menu directories are separate anyway — so the debug patch carries its own
 `wire.sh`. But two independent copies of nine `aconnect` lines is exactly the drift this project keeps
 removing: the tool would report a rig wired one way while the instrument wires it another.
@@ -144,8 +144,8 @@ all" passes a repaint-driven fork happily.
 
 ⚠️ `links-` is parsed out of `wire.sh`'s own last line, `wire.sh: N connections`. **If that line ever
 changes shape the screen shows a dash forever rather than going red**, and no gate can see it: on the
-Mac `t_shell` reports the command and emits nothing, so there is no output to parse. Only the bench
-can judge this row.
+Mac `t_shell` reports the command and emits nothing, so there is no output to parse. Only the
+checklist can judge this row.
 
 ## Design
 
@@ -178,5 +178,5 @@ owning them.
 ## Open
 
 No unknowns. What the gate cannot reach — the `links-` parse, and whether a real device answers a
-real probe — is [debug-bench.pd](../../test/bench/debug-bench.pd)'s, and that is a difference of
+real probe — is [the debug checklist](../../test/checklists/debug.md)'s, and that is a difference of
 oracle rather than a gap in coverage.

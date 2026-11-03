@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Device presence and the bounded re-wire
 
-**Files:** `Cut It/u_present.pd`, `Cut It/c_presence.pd`, `Cut It/c_devid.pd` · **Gate:** `test/gate/presence-assert.sh` · **Bench:** `test/bench/launchpad-bench.pd`, `test/bench/nanokontrol-bench.pd`, `test/bench/midi-bench.pd`
+**Files:** `Cut It/u_present.pd`, `Cut It/c_presence.pd`, `Cut It/c_devid.pd` · **Gate:** `test/gate/presence-assert.sh` · **Checklist:** `test/checklists/launchpad.md`, `test/checklists/nanokontrol.md`, `test/checklists/midi.md`
 
 ## What it is
 
@@ -211,7 +211,7 @@ only about giving a person time to reseat a cable — a single-shot recovery fai
 because the device is still enumerating when the first attempt lands.
 
 ⚠️ **A run longer than ~70 s with a device unplugged now raises a real `fail` on `err`.** That is the
-feature working. Nothing in `test/run.sh` runs that long; a hands-on bench for another device will
+feature working. Nothing in `test/run.sh` runs that long; a hands-on checklist for another device will
 see it.
 
 ### The inquiry leaves through the `m_`'s own port
@@ -354,6 +354,6 @@ paints the surface **red** for a second (item 296) — a state nothing could mis
 ## Open
 
 - ⬜ **The Volca cannot be tested alone.** It registers `none`, so pulling its interface loses
-  nothing, forks nothing and recovers nothing, and both its bench steps unplug the interface and
+  nothing, forks nothing and recovers nothing, and both its checklist steps unplug the interface and
   lean on a detectable device beside it. Permanent, for a device that can never be lost, so
   **NO PLAN OWNS THIS**.

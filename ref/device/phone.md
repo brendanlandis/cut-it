@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # The phone — PdParty and the status link
 
-**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/pdparty-scene/CutItRemote/` · **Gate:** `test/gate/phone-assert.sh` · **Bench:** `test/bench/phone-bench.pd`
+**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/pdparty-scene/CutItRemote/` · **Gate:** `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/phone.md`
 
 An iPhone running PdParty on the same network, used as **an unlimited plain-English display** — and,
 more valuable, as the answer to the Organelle having no Pd console. What PdParty and the phone are —
@@ -308,7 +308,7 @@ attempts are spent or not. Item 310.
 What the button covers is the case the heartbeat cannot see: **the client names are unchanged and the
 subscriptions are still wrong.** That is mother's own autoconnect landing a late device on the
 Launchpad's channel block, a bystander whose subscription dipped, or simply not wanting to wait out
-the interval. ⚠️ **So a bench step of the form "unplug it, spend the bound, press the button" cannot
+the interval. ⚠️ **So a checklist step of the form "unplug it, spend the bound, press the button" cannot
 attribute anything** — the heartbeat gets there first.
 
 `presence-assert.sh` is what proves the button forks at all, in the one window where nothing is

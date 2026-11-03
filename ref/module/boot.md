@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Boot and wiring
 
-**Files:** `Cut It/u_init.pd`, `Cut It/wire.sh`, `Cut It/recover.sh`, `Cut It/main.pd`, `Cut It/main-dev.pd`, `Cut It/u_root.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/init-assert.sh`, `test/gate/recover-assert.sh` · **Bench:** `test/bench/display-bench.pd`
+**Files:** `Cut It/u_init.pd`, `Cut It/wire.sh`, `Cut It/recover.sh`, `Cut It/main.pd`, `Cut It/main-dev.pd`, `Cut It/u_root.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/init-assert.sh`, `test/gate/recover-assert.sh` · **Checklist:** `test/checklists/display.md`, `test/checklists/recover.md`
 
 ## What it is
 
@@ -212,7 +212,7 @@ whose effect is to kill the process that ran it. It is the second tier of `panic
 [map.md](map.md) has the control, [launchpad.md](../device/launchpad.md) has the button.
 
 ⚠️ **Each of them echoes exactly one summary line, and that is why** — a silent run is
-indistinguishable from a missing script, and the echo is the only thing a bench step could judge.
+indistinguishable from a missing script, and the echo is the only thing a checklist step could judge.
 
 ### Every `aconnect` is allowed to fail
 
@@ -255,7 +255,7 @@ one nobody opens.
 ### Off-device development is the default
 
 Open `main-dev.pd` in Pd 0.57 and the whole instrument is there. **Reach for the hardware when the
-thing you are testing is the hardware** — a bench can pass on the Mac twice and still ship bugs the
+thing you are testing is the hardware** — a gate can pass on the Mac twice and still ship bugs the
 device finds in minutes.
 
 ### `wire.sh` reports what connected
@@ -275,4 +275,4 @@ channel block. What is still unverified about that lives on its own page rather 
   phone's address from the AP's lease file. The other load-time scripts were checked on the device on
   2026-11-02 and 2026-11-03 (the table above). Filed as a loosie, `cut-it/inbox`.
   ⚠️ **`recover.sh` is the exception and is covered**: its two OSC commands are statically linted,
-  and holding CC 90 on the rig is a bench step — see [launchpad.md](../device/launchpad.md).
+  and holding CC 90 on the rig is [the recover checklist](../../test/checklists/recover.md)'s step 3.

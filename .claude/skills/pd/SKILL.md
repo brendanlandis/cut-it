@@ -65,8 +65,8 @@ times.** Replace the whole line.
 instantiate — `error: outlet: no such object`. **Escape it as `\;` or rewrite the sentence.** Item
 207, and it has happened twice in one session.
 
-⚠️ **A digit followed by a full stop is a FLOAT, and the stop vanishes.** `43.` in a bench `PASS IF`
-string prints as `43` — Pd parses the atom as the number 43. Cosmetic rather than structural, unlike
+⚠️ **A digit followed by a full stop is a FLOAT, and the stop vanishes.** `43.` in a message box's
+sentence prints as `43` — Pd parses the atom as the number 43. Cosmetic rather than structural, unlike
 the comma, which splits the line into fragments. Item 122.
 
 ⛔ **C-10 — `#X connect` names boxes by POSITION IN THE FILE.** Inserting a box mid-file renumbers

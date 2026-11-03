@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Tempo and clocks
 
-**Files:** `Cut It/u_tempo.pd`, `Cut It/c_clock.pd` · **Gate:** `test/gate/tempo-assert.sh`, `test/gate/clock-assert.sh` · **Bench:** `test/bench/tempo-bench.pd`
+**Files:** `Cut It/u_tempo.pd`, `Cut It/c_clock.pd` · **Gate:** `test/gate/tempo-assert.sh`, `test/gate/clock-assert.sh` · **Checklist:** `test/checklists/tempo.md`
 
 ## What it is
 
@@ -70,7 +70,7 @@ at 60.
 | The port | Set into `[midiout]`'s **cold inlet at load**, `u_init`'s proven pattern. A nonexistent port is silently dropped, so port 3 on the Mac costs nothing and prints nothing | verified | 63 |
 
 The control range and the legal range are **different decisions**, and the legal one is wider at both
-ends so a bench, a tap tempo or an LFO is not limited by what one knob chose.
+ends so a test, a tap tempo or an LFO is not limited by what one knob chose.
 
 ### `c_clock`
 

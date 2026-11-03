@@ -510,7 +510,7 @@ The format's traps are Pd's: Reference, *The `.pd` file*. What each one asks of 
 - **Records are read in order, so when you append boxes, the connects move down with them** — a
   connect above its target fails at load, and Pd still exits 0.
 - **Keep commas and semicolons out of any assembled string** — a message box splits on them however
-  the file escapes them, and a `PASS IF` line in a bench is the usual casualty.
+  the file escapes them, so a sentence of prose in a message box breaks at its first comma.
 - ⚠️ **AN UNESCAPED `;` ENDS A RECORD — INCLUDING A COMMENT**, and in a message box `; pd quit`
   takes every following `#X connect` with it, so the patch loads, runs, and does nothing at all —
   indistinguishable from a negative result. **Write `\;`, or use a dash; it reads the same and

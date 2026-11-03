@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The sequencer
 
-**Files:** `Cut It/c_steps.pd` · **Gate:** `test/gate/sequencer-assert.sh` · **Bench:** `test/bench/sequencer-bench.pd`
+**Files:** `Cut It/c_steps.pd` · **Gate:** `test/gate/sequencer-assert.sh` · **Checklist:** `test/checklists/sequencer.md`
 
 ## What it is
 
@@ -110,7 +110,8 @@ time. **The restore is put straight back**, as every contributor's must be ([sta
 ## Open
 
 - ⬜ **Nothing here has run on the rig.** Whether a one-shot pad restarts on a second note-on —
-  fast hats depend on it — and whether the page reads as intended; `sequencer-bench.pd` asks both.
+  fast hats depend on it — and whether the page reads as intended; [the sequencer
+  checklist](../../test/checklists/sequencer.md) asks both.
   See `cut-it/drum-machine`, its rig step.
 - ⬜ **The selected track and velocity are not saved**; every boot starts at track 1, level 13.
   See `cut-it/drum-machine`.

@@ -33,9 +33,8 @@ Cut It's own places on the device (the rest of the layout is in Reference):
 | Error log | `/sdcard/cut-it-err.log` (rolled) and `.cur` (running session) |
 | Wifi credentials | `/sdcard/wifi.txt` — **never copy into the repo** |
 
-**`test/run.sh` sends its own GO** to the benches (a UDP datagram to the device; see Reference for why it
-is never `nc`) and is the normal way to drive a bench; `tools/dsp.sh` does the same for DSP. Nothing
-needs to be typed by hand.
+**`tools/dsp.sh` sends its datagram itself**, from Python (see Reference for why it is never `nc`).
+Nothing needs to be typed by hand.
 
 ### Durable device state — three things live outside the patch folder
 

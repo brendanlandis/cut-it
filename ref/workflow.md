@@ -140,15 +140,12 @@ The shape every piece of multi-session work here takes:
    ~/Applications/Pd-0.57-0.app/Contents/Resources/bin/pd -nogui -noaudio -r 44100 \
        -path mac-stubs -send "pd quit" "Cut It/main-dev.pd"     # silence == pass
    ```
-4. **A bench** — a printed `PASS IF` *before* each step **including the ones whose correct result
-   is that nothing happens**, and honest about which steps need hands. **Stepped by hand, never on
-   a timer**: a self-driving bench moves the console text and the physical device at the same
-   moment, so you can read one or watch the other and not both. Press GO to run the described step,
-   press GO again to describe the next. Every bench is generated from the step tables in
-   `test/bench/bench_steps.py` — edit those and re-run `test/bench/bench-gen.py`.
+4. **A checklist** — a **Pass if** read *before* each step, **including the ones whose correct
+   result is that nothing happens**, and honest about which steps need hands. One per area, in
+   [test/checklists/](../test/checklists/README.md), run by a person at the rig.
 
    ⚠️ **A measuring rig is code and gets the same scrutiny as the thing it measures.** A probe with
-   a bug in it produces a confident wrong answer, and a bench assertion that nothing drives passes
+   a bug in it produces a confident wrong answer, and an assertion that nothing drives passes
    forever. **Where the rig can assert without eyes, make it** — `test/gate/display-assert.sh`
    rewrites `[midiout]` in a scratch copy so a headless run can read back every byte the patch
    emits — and **a gate is not trusted until it has been made to fail** by reintroducing a real bug.
@@ -165,6 +162,6 @@ The shape every piece of multi-session work here takes:
 7. **The phase ends with a procedure, not a summary** — expected result stated *before* each
    action, for both machines.
 
-**The bench proves the cases it contains and nothing else.** The stickiest bugs are found by a
+**A checklist proves the cases it contains and nothing else.** The stickiest bugs are found by a
 person doing what a performer would do — a stale footer, a filter on the verdict instead of the
-value. Budget hands-on time *after* the bench passes, not instead of it.
+value. Budget hands-on time *after* the checklist passes, not instead of it.

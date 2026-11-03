@@ -183,14 +183,6 @@ so an edit under a live interpreter is genuinely unsafe — restart the poll aft
 
 ## Driving and rescuing hardware
 
-### ✅ `go.sh` is gone — `test/run.sh` sends GO itself
-
-It fired one UDP datagram at a bench's `[netreceive 9998]`, and `-n N` walked a bench forward
-without judging the steps on the way. **The runner does both better**: it sends GO at the right
-moment rather than needing a second window, and `--from N` *records* that the skipped steps were
-not run instead of passing over them in silence. The netcat lesson it carried is under *Sending the device a UDP datagram* on
-the Organelle's Reference page (`~/Sites/!reference/critter-guitari-organelle-1.md`).
-
 ### `tidy.sh` — what has accumulated on the device, and what is safe to remove
 
 ```sh
@@ -198,9 +190,9 @@ the Organelle's Reference page (`~/Sites/!reference/critter-guitari-organelle-1.
 ./tools/tidy.sh --delete     # the same list, then asks before removing it
 ```
 
-**Four categories, and only the first three are ever deleted:** bench outputs (`*-bench.pd`,
-`bench-tap.pd` — `test/runner/targets.py` re-copies whichever it needs on every device run, so they
-are meant to be transient), probe logs whose findings already carry an item number, and loose `.pd`
+**Four categories, and only the first three are ever deleted:** bench patches (`*-bench.pd`,
+`bench-tap.pd`) that the bench runner copied to the device until it was retired for
+[checklists](../test/checklists/README.md) on 2026-11-03, probe logs whose findings already carry an item number, and loose `.pd`
 files on `/sdcard` **that also exist in `tools/`**. ⛔ A `.pd` this repo has never heard of is left
 alone — it is something you put there and did not write down, and removing it would be the script
 guessing.
@@ -275,13 +267,11 @@ by being written in three places at once. ⚠️ `pgrep -nx pd`, never a bare `p
 
 ### `display-diag.pd` — a real console for the display arbiter
 
-These three load **alongside** a running `mother.pd` + `main.pd` (see *Running one* below).
-None of them touches the deployed patch: they only read `oscOut` or push onto `disp`, `err`
-and `mode`, exactly as a controller would.
+These two load **alongside** a running `mother.pd` + `main.pd` (see *Running one* below).
+Neither touches the deployed patch.
 
 | Patch | What it does |
 |---|---|
-| `display-bench.pd` | **The acceptance run.** Fourteen steps, **stepped by hand** — see *The benches are stepped by hand* below. Each prints what it is sending and a **PASS IF** line *before* the screen moves, including the steps whose correct result is that nothing happens. Run it in the **foreground** and watch the OLED. |
 | `display-diag.pd` | Counts rather than dumps. `FRAMES` and `MESSAGES` are cumulative totals printed once a second, so the rate is the gap between lines — expect +10 and +100. Printing every OSC message instead would slow down the thing being measured. |
 | `alert-buffer-probe.pd` | ✅ **Answered:** draws into the ALERT buffer (screen 4), `setscreen 4`, waits six seconds, `setscreen 3`. All of it works — but `g_oled` still doesn't use buffer 4, for the reasons in [ref-display.md](../ref/module/display.md). Keep it as the re-check if that ever gets revisited. |
 
@@ -420,7 +410,7 @@ python3 -c "import socket; socket.socket(socket.AF_INET, socket.SOCK_DGRAM).send
 ```
 
 ⛔ **Not `nc`**, which sends nothing and looks exactly like a dead patch (Reference, Organelle page,
-*Sending the device a UDP datagram*) — the same reason `dsp.sh` and the runner's GO are Python. `tools/lp-live.sh` remains the
+*Sending the device a UDP datagram*) — the same reason `dsp.sh` is Python. `tools/lp-live.sh` remains the
 fallback that needs no running patch at all.
 
 ## Things these patches taught us

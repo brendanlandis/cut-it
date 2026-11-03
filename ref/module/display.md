@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The display arbiter
 
-**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_led.pd`, `Cut It/u_net.pd` · **Gate:** `test/gate/display-assert.sh`, `test/gate/oled-assert.sh`, `test/gate/led-assert.sh` · **Bench:** `test/bench/display-bench.pd`, `test/bench/nanokontrol-bench.pd`, `test/bench/launchpad-bench.pd`
+**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_led.pd`, `Cut It/u_net.pd` · **Gate:** `test/gate/display-assert.sh`, `test/gate/oled-assert.sh`, `test/gate/led-assert.sh` · **Checklist:** `test/checklists/display.md`, `test/checklists/nanokontrol.md`, `test/checklists/launchpad.md`
 
 ## What it is
 
@@ -204,7 +204,7 @@ every mode.
 ⚠️ **Brightness is four palette entries, not a level.** The palette is a color table (Reference),
 and Novation's lays each hue out as four entries, light, full, dim and darkest; the ramp is that
 hue's last three read upward and then its light entry. Whether the four read as a ramp on this unit
-is the bench's to say.
+is [the sequencer checklist](../../test/checklists/sequencer.md)'s to say.
 
 ### Seeing it off-device
 

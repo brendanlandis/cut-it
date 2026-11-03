@@ -44,7 +44,7 @@ Line 1 declares the schema. `##` is the fixed skeleton and must appear exactly, 
 ```markdown
 <!-- schema: module -->
 # Tempo
-**Files:** `Cut It/u_tempo.pd` · **Gate:** `test/gate/tempo-assert.sh` · **Bench:** `test/bench/tempo-bench.pd`
+**Files:** `Cut It/u_tempo.pd` · **Gate:** `test/gate/tempo-assert.sh` · **Checklist:** `test/checklists/tempo.md`
 
 ## What it is     one or two paragraphs
 ## Facts          schema'd tables, every one with an Evidence column
@@ -67,7 +67,7 @@ would fail the gate's dangling check). So a device page has no What it is, Facts
 ```markdown
 <!-- schema: device -->
 # Roland SP-404MKII
-**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/sp404-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
+**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/sp404-assert.sh` · **Checklist:** `test/checklists/midi.md`
 
 A paragraph: which Reference page is the device, and the one decision this page turns on.
 
@@ -90,12 +90,12 @@ of parts.** This one is a form, not a gate — nothing can check that the right 
 intent, and belongs in a `!projects` file.
 
 ⚠️ **Every path on that line must exist**, so a page cannot outlive the abstraction it documents.
-`none` is a legitimate answer to `Gate` or `Bench`.
+`none` is a legitimate answer to `Gate` or `Checklist`.
 
-⛔ **A GATE AND A BENCH ARE DIFFERENT ORACLES, which is why the page declares both.** A gate's verdict
-comes from a **program** — headless, on the Mac, unattended, any output is a failure. A bench's comes
-from a **person's eyes**, on the device, with the rig plugged in, judging *"PASS IF the third pad is
-green"*. Neither substitutes for the other: **Phase 6 passed 25/25 on the Mac twice and shipped three
+⛔ **A GATE AND A CHECKLIST ARE DIFFERENT ORACLES, which is why the page declares both.** A gate's
+verdict comes from a **program** — headless, on the Mac, unattended, any output is a failure. A
+checklist's comes from a **person's eyes**, on the device, with the rig plugged in, judging *"Pass if
+the third pad is green"*. Neither substitutes for the other: **Phase 6 passed 25/25 on the Mac twice and shipped three
 bugs.** Declaring only one leaves the other kind of coverage invisible, and the gate now fails if a
 page names neither.
 

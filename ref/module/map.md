@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The map
 
-**Files:** `Cut It/u_map.pd`, `Cut It/c_mapped.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh`, `test/gate/recover-assert.sh` · **Bench:** `test/bench/midi-bench.pd`
+**Files:** `Cut It/u_map.pd`, `Cut It/c_mapped.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh`, `test/gate/recover-assert.sh` · **Checklist:** `test/checklists/midi.md`, `test/checklists/recover.md`
 
 ## What it is
 

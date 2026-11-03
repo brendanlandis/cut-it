@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Errors and the error bus
 
-**Files:** `Cut It/u_err.pd`, `Cut It/logroll.sh` · **Gate:** `test/gate/err-assert.sh` · **Bench:** `test/bench/display-bench.pd`
+**Files:** `Cut It/u_err.pd`, `Cut It/logroll.sh` · **Gate:** `test/gate/err-assert.sh` · **Checklist:** `test/checklists/display.md`
 
 ## What it is
 

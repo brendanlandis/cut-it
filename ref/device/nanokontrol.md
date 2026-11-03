@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # Korg nanoKONTROL (mk1)
 
-**Files:** `Cut It/m_nano.pd` · **Gate:** `test/gate/nano-assert.sh` · **Bench:** `test/bench/nanokontrol-bench.pd`
+**Files:** `Cut It/m_nano.pd` · **Gate:** `test/gate/nano-assert.sh` · **Checklist:** `test/checklists/nanokontrol.md`
 
 The rig's fader bank. What the device is, the CC numbers it sends as configured, its configuration,
 LEDs and traps are in Reference: `~/Sites/!reference/korg-nanokontrol-mk1.md`. This page is how Cut It

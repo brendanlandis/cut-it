@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # Organelle 1 — the panel, the OLED and the aux LED
 
-**Files:** `Cut It/m_organelle.pd`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/organelle-assert.sh`, `test/gate/led-assert.sh` · **Bench:** `test/bench/display-bench.pd`
+**Files:** `Cut It/m_organelle.pd`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/organelle-assert.sh`, `test/gate/led-assert.sh` · **Checklist:** `test/checklists/display.md`
 
 The host device and its own control surface. What the Organelle 1 is — its OS, paths, SSH, the
 `mother.pd` interface, the OLED and LED APIs, how it saves, its MIDI quirks and traps, and its wifi —

@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # Novation Launchpad Pro MK3
 
-**Files:** `Cut It/m_launchpad.pd`, `Cut It/g_grid.pd` · **Gate:** `test/gate/launchpad-assert.sh` · **Bench:** `test/bench/launchpad-bench.pd`
+**Files:** `Cut It/m_launchpad.pd`, `Cut It/g_grid.pd` · **Gate:** `test/gate/launchpad-assert.sh` · **Checklist:** `test/checklists/launchpad.md`
 
 **The only device in the rig that is a genuine blank slate, and the only one Pd can light.** What the
 device is, its MIDI, its Programmer Mode index map, lighting, quirks and measurements are in

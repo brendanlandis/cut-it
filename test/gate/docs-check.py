@@ -414,11 +414,11 @@ def check_shape(verbose):
         else:
             for p in PATHS.findall(decl):
                 if p != 'none' and not (ROOT / p).exists():
-                    out.append(f'{rel}  **Files:**/**Gate:**/**Bench:** names {p}, '
+                    out.append(f'{rel}  **Files:**/**Gate:**/**Checklist:** names {p}, '
                                f'which does not exist')
-            # A gate and a bench are different oracles, so a page declares both;
-            # `none` is an answer to either.
-            for field in ('**Gate:**', '**Bench:**'):
+            # A gate and a checklist are different oracles, so a page declares
+            # both; `none` is an answer to either.
+            for field in ('**Gate:**', '**Checklist:**'):
                 if field not in decl:
                     out.append(f'{rel}  the **Files:** line declares no {field} '
                                f'-- say `none` if there is not one')
@@ -612,7 +612,7 @@ def check_dangling_paths(verbose):
     """Scripts and patches named anywhere must exist, in every file type
     including .md: naming a script is nearly always an instruction to run or
     read it, and in a skill always. A name with a capital letter in it
-    (phaseN-bench.pd) is a pattern, not a reference, and is skipped.
+    (phaseN-assert.sh) is a pattern, not a reference, and is skipped.
     """
     out, seen = [], 0
     for f in sorted(ROOT.rglob('*')):
@@ -629,7 +629,7 @@ def check_dangling_paths(verbose):
         found = set(PATHREF.findall(body))
         for p in sorted(found):
             if re.search(r'[A-Z]', pathlib.PurePath(p).name):
-                continue                  # a placeholder like phaseN-bench.pd
+                continue                  # a placeholder like phaseN-assert.sh
             seen += 1
             if not (ROOT / p).exists():
                 out.append(f'{rel}  names {p}, which does not exist'

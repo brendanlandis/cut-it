@@ -14,14 +14,6 @@
 76 step 14
 77 step 15
 78 step 16
-61 vel 1
-62 vel 2
-63 vel 3
-64 vel 4
-65 vel 5
-66 vel 6
-67 vel 7
-68 vel 8
 41 pad 1
 42 pad 2
 43 pad 3
@@ -38,3 +30,11 @@
 12 pad 14
 13 pad 15
 14 pad 16
+25 vel 1
+26 vel 2
+27 vel 3
+28 vel 4
+15 vel 5
+16 vel 6
+17 vel 7
+18 vel 8

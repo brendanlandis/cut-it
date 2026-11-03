@@ -44,10 +44,11 @@ end)(), T.show(got))
 print("\n--- at load ---")
 local st = R.new(1)
 equal("a new sequencer holds 256 zeros", st.pattern, zeros(256))
-equal("... and starts on track 1 at level 6", { st.track, st.level }, { 1, 6 })
-equal("init draws the selection: vel 6, track 1, then track 1's steps",
+equal("... and starts on track 1 at level 6, all sixteen steps played",
+      { st.track, st.level, st.last }, { 1, 6, 16 })
+equal("init draws the selection: vel 6, track 1, last 16, then track 1's steps",
       R.internal.init(st, {}), { { "page", "vel", { 6 } }, { "page", "track", { 1 } },
-                                 { "page", "steps", zeros(16) } })
+                                 { "page", "last", { 16 } }, { "page", "steps", zeros(16) } })
 equal("the bank is clipped to 1..10, as [clip 1 10]",
       { R.new(0).bank, R.new(11).bank, R.new(nil).bank, R.new(3).bank }, { 1, 10, 1, 3 })
 
@@ -93,6 +94,19 @@ equal("pads are clipped to 1..16 and levels to 1..8",
 equal("a press with no number in it does nothing",
       { R.presses.step(R.new(1), {}), R.presses.vel(R.new(1), {}), R.presses.pad(R.new(1), {}) },
       { {}, {}, {} })
+
+print("\n--- the last step ---")
+st = R.new(1)
+R.presses.step(st, { 12, 100 })
+local before = {}
+for i = 1, 256 do before[i] = st.pattern[i] end
+equal("knob 2's last 12 answers only last 12, for the page and the counter",
+      R.presses.last(st, { 12 }), { { "page", "last", { 12 } } })
+equal("... and keeps every note, the steps past it included", st.pattern, before)
+equal("it is clipped to 1..16 and floored, and a last with no number does nothing",
+      { R.presses.last(R.new(1), { 0 })[1], R.presses.last(R.new(1), { 40 })[1],
+        R.presses.last(R.new(1), { 7.9 })[1], R.presses.last(R.new(1), {}) },
+      { { "page", "last", { 1 } }, { "page", "last", { 16 } }, { "page", "last", { 7 } }, {} })
 
 print("\n--- which notes fire ---")
 st = R.new(1)
@@ -141,8 +155,10 @@ local o = T.new(class, { 1 })
 check("an object has two inlets and five outlets", o and o.inlets == 2 and o.outlets == 5,
       o and (o.inlets .. " " .. o.outlets))
 equal("init: the page's selection on outlet 2, then the bang on outlet 5 that says it loaded",
-      T.send(o, 2, "init", {}), { { 2, "vel", { 6 } }, { 2, "track", { 1 } },
+      T.send(o, 2, "init", {}), { { 2, "vel", { 6 } }, { 2, "track", { 1 } }, { 2, "last", { 16 } },
                                   { 2, "steps", zeros(16) }, { 5, "bang", {} } })
+equal("knob 2's last on inlet 1: the page's last on outlet 2", T.send(o, 1, "last", { 9 }),
+      { { 2, "last", { 9 } } })
 local sent = T.send(o, 1, "step", { 1, 100 })
 want = zeros(256)
 want[1] = 95

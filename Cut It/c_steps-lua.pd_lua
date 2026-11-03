@@ -3,7 +3,8 @@
 -- the sequencer does is in c_steps.lua. ref/module/sequencer.md.
 --
 -- creation arg: the 404 bank its tracks play, 1 for A.
--- inlet 1: the presses, from u_map -- step <n> <vel>, vel <level> <vel>, pad <n> <vel>.
+-- inlet 1: the presses, from u_map -- step <n> <vel>, vel <level> <vel>, pad <n> <vel>, and
+-- knob 2's last <n>.
 -- inlet 2: c_steps.pd's own -- fire <step>, restore <velocities>, init.
 -- outlet 1: pad <pad> <velocity>, to m_404. outlet 2: the page, to g_grid. outlet 3: the 256
 -- velocities to save. outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded.

@@ -69,6 +69,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, in all six modes** | verified | 301 |
 | `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | Non-zero is a press: `<role> <n> <velocity>` to `c_steps`, the pad's own velocity. A release does nothing; an index the layout lacks is `fail u_map layout-miss` | unknown | — |
 | `test-mode` | unused | Non-zero flips `u_net`'s test mode, in which the phone's checklist page may send Send lines ([phone.md](../device/phone.md)). **`og-shift-61`, in all six modes**; out `u_map`'s fourth outlet, a cord to `u_net` | unknown | — |
+| `last-step` | unused | The sequencer's last step, scaled over **1–16**, rounded: `last <n>` to `c_steps` on the drum page's outlet. **`og-knob-2`, in mode 1** | unknown | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -100,6 +101,7 @@ there and nowhere else.
 | `volca-note` | `volca-note60 100` | same shape | verified | 316 |
 | `404-pad` | `404-pad5 90` | same shape | verified | 316 |
 | `volca-prog` | `volca-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
+| `last-step` | `last-step 12` | `last-step 12 (16)` | unknown | — |
 | `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
 | `drum-page` | **nothing** — the grid is the feedback, and 40 pads in use would bury the screen | none | unknown | — |
 | the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the footer, the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
@@ -142,7 +144,7 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 | Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Six modes × 92
-controls is 552 possible rows and the shipped file has **114** — seven, plus the keyboard's 25 and
+controls is 552 possible rows and the shipped file has **115** — eight, plus the keyboard's 25 and
 the drum page's 40 pads in mode 1, plus CC 90, PLAY, STOP and the four shifted keys in all six.
 
 ### Where each part lives

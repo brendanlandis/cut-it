@@ -168,7 +168,7 @@ addressed at all, so panic still never hands the surface back.
 | | Evidence | Item |
 |---|----------|------|
 | The frame clock runs at **50 Hz** but paints only when a **dirty flag** is set — nothing at all when idle, about two frames a second at 120 BPM | verified | 94 |
-| Every repaint is one SysEx of **108 color specs covering indices 1–108**, 332 bytes | verified | — |
+| Every repaint is one SysEx of **108 color specs covering indices 1–108**: 332 bytes when every spec is a palette color, two more for each RGB one (the drum page's, below) | verified | — |
 | The frame clock **costs nothing**: it checks the flag rather than painting. 10 Hz and 50 Hz measured identical on the device | verified | 94 |
 | Raised from 10 Hz because at 240 BPM a 250 ms beat does not divide into 100 ms, so the beat row swung **±50 ms** | verified | — |
 | **Every raise AND every expiry sets the dirty flag** — a layer falling away changes the frame as much as one arriving | verified | — |
@@ -182,30 +182,36 @@ press means, so a press and its lamp cannot disagree. Its 40 rows:
 | Rows from the top | Cells | Role | Evidence |
 |---|---|---|---|
 | 1–2 | 81–88, 71–78 | `step` 1–8, then 9–16 | unknown |
-| 3 | 61–68 | `vel` 1–8, lowest at the left (Brendan, 2026-11-03: one row, not two) | unknown |
-| 4 | — | in no row, so dark: free for later | unknown |
+| 3–4 | — | in no row, so dark: free for later | unknown |
 | 5–8, left 4×4 | 41–44, 31–34, 21–24, 11–14 | `pad` 1–16, laid out like the 404's, pad 1 top left | unknown |
-| 5–8, right 4×4 | — | in no row, so dark | unknown |
+| 5–6, right half | — | in no row, so dark | unknown |
+| 7–8, right half | 25–28, 15–18 | `vel` 1–4, then 5–8 (Brendan, 2026-11-03) | unknown |
 
 **The caller is `c_steps`, on `g_grid`'s third inlet, and it sends meaning, never a cell** (C-5):
-`steps <16 velocities>` for the selected track, `play <step>` (0 while stopped), `vel <level>`, and
-`track <pad>`. Every message sets the dirty flag.
+`steps <16 velocities>` for the selected track, `play <step>` (0 while stopped), `vel <level>`,
+`track <pad>` and `last <step>`. Every message sets the dirty flag.
 
-| A cell | Paints, as a palette index | Evidence |
+**A velocity level is a color, and everything that means that level shows it** (Brendan,
+2026-11-03): a step lit at a velocity, the button that gives it, and the selected pad while that
+button is selected.
+
+| A cell | Paints | Evidence |
 |---|---|---|
-| A step that is off | 1, dim | unknown |
-| A step that is on | 8, 9, 10 or 11 by velocity quarter (1–32, 33–64, 65–96, 97–127) — one hue, white for the softest to red for the loudest (Brendan, 2026-11-03, the other way round before) | unknown |
-| The playhead's step | 3, white, over whatever the step holds | unknown |
-| The selected velocity button and pad | 9 | unknown |
-| Every other velocity button and pad | 1, dim | unknown |
+| A step that is off | 1, dim; 0, dark, past the last step | unknown |
+| A step that is on | Its velocity's level, (*v* − 1) div 16 + 1, in that level's RGB color: white for level 1, falling evenly to bright red for level 8. Past the last step too: the note is kept, unplayed | unknown |
+| The playhead's step | 21, green, over whatever the step holds | unknown |
+| A velocity button | Its own level's color: full when selected, a quarter otherwise | unknown |
+| The selected pad | The selected level's color, full | unknown |
+| Every other pad | 1, dim | unknown |
 
-**The beat row gives way**, and row 4 and the bottom-right 4×4 stay dark. The mode lamps are drawn
-as in every mode.
+**The beat row gives way**, and rows 3 and 4 and the top half of the right 4×4 stay dark. The mode
+lamps are drawn as in every mode.
 
-⚠️ **The ramp is four palette entries, not a level.** The palette is a color table (Reference),
-and Novation's lays each hue out as four entries, light, full, dim and darkest; the ramp reads them
-in that order, softest to loudest. On this unit the light entry reads white and the darkest red
-(Brendan, 2026-11-03), so a loud step is the darker lamp.
+⚠️ **The levels' colors are RGB specs, not palette entries.** The palette is a color table with no
+even white-to-red ramp in it (Reference), so `g_grid`'s surface holds 128 + *k* for entry *k* of its
+own RGB table, and the paint loop sends those cells as type 3, red, green and blue: red 127, and
+green and blue 127, 109, 91, 73, 54, 36, 18, 0 for levels 1 to 8; the quarter is each over four.
+Whether the eight read as eight on the rig is the sequencer checklist's to say.
 
 ### Seeing it off-device
 
@@ -289,7 +295,7 @@ failure that looks like a working display.** Real names like `chop-size` are no 
 ### `g_grid` must not copy `g_oled`'s unconditional repaint
 
 ⛔ The OLED redraws at 10 Hz because its frames are cheap local UDP. **The grid's are ALSA MIDI
-writes** — a 332-byte SysEx per frame — and nothing about the grid needs one when nothing changed.
+writes** — a SysEx of 332 bytes or more per frame — and nothing about the grid needs one when nothing changed.
 
 **Fix:** a dirty flag. The frame clock checks it rather than painting, so the frame count is bounded
 by the beat rate and never by the metro.

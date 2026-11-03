@@ -7,4 +7,4 @@ state 5;
 recover 7;
 midi 18;
 debug 9;
-sequencer 12;
+sequencer 13;

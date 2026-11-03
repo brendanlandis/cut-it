@@ -7,15 +7,17 @@
 -- The state is a plain table and every rule a function of it, so a live reload of the rules keeps
 -- the pattern. Every rule returns what leaves, in order, as {outlet, selector, atoms}:
 --   {"note", "pad", {pad, velocity}}                    to m_404
---   {"page", "steps" | "vel" | "track", {...}}          to g_grid's third inlet
+--   {"page", "steps" | "vel" | "track" | "last", {...}}  to g_grid's third inlet, and
+--                                                       last to c_steps.pd's counter too
 --   {"save", "list", {256 velocities}}                  to u_state, as section-1-<part>
 --   {"err", "fail", {"c_steps", text}}                  to err (C-12)
 
 local R = {}
 
 R.TRACKS, R.STEPS, R.LEVELS = 16, 16, 8
--- At load: level 6 (95) and track 1, so the page has a selection before anything is pressed.
-R.BOOT_LEVEL, R.BOOT_TRACK = 6, 1
+-- At load: level 6 (95), track 1 and all sixteen steps, so the page has a selection before
+-- anything is pressed. Knob 2 sets the last step as soon as mother reports it.
+R.BOOT_LEVEL, R.BOOT_TRACK, R.BOOT_LAST = 6, 1, 16
 
 local function clip(x, lo, hi)
   if x < lo then return lo end
@@ -45,7 +47,7 @@ end
 
 function R.new(bank)
   local st = { bank = math.floor(clip(num(bank), 1, 10)), pattern = {},
-               track = R.BOOT_TRACK, level = R.BOOT_LEVEL }
+               track = R.BOOT_TRACK, level = R.BOOT_LEVEL, last = R.BOOT_LAST }
   for i = 1, R.TRACKS * R.STEPS do st.pattern[i] = 0 end
   return st
 end
@@ -66,7 +68,8 @@ end
 
 -- At load: the page's selection, before anything is pressed.
 function R.boot(st)
-  return { { "page", "vel", { st.level } }, { "page", "track", { st.track } }, R.steps(st) }
+  return { { "page", "vel", { st.level } }, { "page", "track", { st.track } },
+           { "page", "last", { st.last } }, R.steps(st) }
 end
 
 -- A step press, on the selected track. The step rule: off takes the selected velocity; on, at
@@ -81,6 +84,13 @@ end
 function R.press_vel(st, level)
   st.level = clip(num(level), 1, R.LEVELS)
   return { { "page", "vel", { st.level } } }
+end
+
+-- Knob 2 sets the last step, for every track: the counter wraps after it, and the page darkens the
+-- steps past it. The steps past it keep their notes. It is not saved: the knob is its own memory.
+function R.press_last(st, n)
+  st.last = math.floor(clip(num(n), 1, R.STEPS))
+  return { { "page", "last", { st.last } } }
 end
 
 -- A pad press plays the pad now, at the press's own velocity, and selects its track.
@@ -109,12 +119,13 @@ function R.restore(st, values)
   return { R.save(st), R.steps(st) }
 end
 
--- What arrives from u_map's drum-page destination: <selector> <n> <velocity>.
--- A press with no number in it does nothing, as before.
+-- What arrives from u_map's drum-page destination, <selector> <n> <velocity>, and its last-step
+-- destination, last <n>. A press with no number in it does nothing, as before.
 R.presses = {
   step = function(st, a) return a[1] and R.press_step(st, a[1]) or {} end,
   vel = function(st, a) return a[1] and R.press_vel(st, a[1]) or {} end,
   pad = function(st, a) return a[1] and R.press_pad(st, a[1], a[2]) or {} end,
+  last = function(st, a) return a[1] and R.press_last(st, a[1]) or {} end,
 }
 
 -- What c_steps.pd itself sends: the clock's step, u_state's restore, and the load.

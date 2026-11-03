@@ -36,14 +36,17 @@ def main():
                    "no frame ever reached [midiout] -- is the scratch copy rewritten?"):
         return A.report()
 
-    bad_len = [len(f.data) for f in lighting if len(f.data) != G.FRAME_LEN]
-    A.check("every frame is %d bytes" % G.FRAME_LEN, not bad_len,
-            "saw lengths %s" % sorted(set(bad_len))[:5])
+    # A spec is 3 bytes for a palette color and 5 for RGB, so a frame is read
+    # spec by spec rather than by its length: 332 bytes when every cell is a
+    # palette color, two more for each RGB one (the drum page's levels).
+    bad = sorted({len(f.data) for f in lighting if not f.whole})
+    A.check("every frame reads as %d whole specs" % G.NSPEC, not bad,
+            "frames of these lengths did not: %s" % bad[:5])
     A.check("every frame ends with %d" % G.TERM,
             all(f.data[-1] == G.TERM for f in lighting), "a frame was not terminated")
-    ok_len = [f for f in lighting if len(f.data) == G.FRAME_LEN]
-    A.check("every spec is a static type byte 0",
-            all(set(f.types()) == {0} for f in ok_len), "a spec had a non-zero type")
+    ok_len = [f for f in lighting if f.whole]
+    A.check("every spec is static: type 0, a palette color, or 3, RGB",
+            all(set(f.types()) <= {0, 3} for f in ok_len), "a spec flashed or pulsed")
     want = list(range(G.FIRST_INDEX, G.FIRST_INDEX + G.NSPEC))
     A.check("every frame spans LED index %d..%d" % (want[0], want[-1]),
             all(f.indices() == want for f in ok_len),

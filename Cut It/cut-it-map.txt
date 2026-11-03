@@ -4,6 +4,7 @@ mode-3 og-knob-1 tempo 0
 mode-4 og-knob-1 tempo 0
 mode-5 og-knob-1 tempo 0
 mode-6 og-knob-1 tempo 0
+mode-1 og-knob-2 last-step 0
 mode-1 xport-2 start 0
 mode-2 xport-2 start 0
 mode-3 xport-2 start 0
@@ -88,14 +89,6 @@ mode-1 pad-75 drum-page 75
 mode-1 pad-76 drum-page 76
 mode-1 pad-77 drum-page 77
 mode-1 pad-78 drum-page 78
-mode-1 pad-61 drum-page 61
-mode-1 pad-62 drum-page 62
-mode-1 pad-63 drum-page 63
-mode-1 pad-64 drum-page 64
-mode-1 pad-65 drum-page 65
-mode-1 pad-66 drum-page 66
-mode-1 pad-67 drum-page 67
-mode-1 pad-68 drum-page 68
 mode-1 pad-41 drum-page 41
 mode-1 pad-42 drum-page 42
 mode-1 pad-43 drum-page 43
@@ -112,3 +105,11 @@ mode-1 pad-11 drum-page 11
 mode-1 pad-12 drum-page 12
 mode-1 pad-13 drum-page 13
 mode-1 pad-14 drum-page 14
+mode-1 pad-25 drum-page 25
+mode-1 pad-26 drum-page 26
+mode-1 pad-27 drum-page 27
+mode-1 pad-28 drum-page 28
+mode-1 pad-15 drum-page 15
+mode-1 pad-16 drum-page 16
+mode-1 pad-17 drum-page 17
+mode-1 pad-18 drum-page 18

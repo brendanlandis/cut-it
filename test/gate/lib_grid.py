@@ -7,11 +7,12 @@ interleaved in one byte stream.
 ⛔ Realtime bytes (>= 248) are skipped, not stored: they are legal inside a
 SysEx stream and u_tempo sends 96 a second, so keeping them corrupts every frame.
 
-Frame shape: 332 bytes = 7 header + 108 * 3 + terminator. Spec k holds type at
-7+3k, LED index at 8+3k and color at 9+3k, so the color at LED index i is byte
-9 + 3*(i-1). Indices run 1..108, the whole span the Launchpad can paint; index
-0 (Setup) is outside it (the Launchpad's Reference page,
-The Programmer Mode index map).
+Frame shape: 7 header bytes, 108 specs, then the terminator. A spec is type 0,
+the LED index and a palette color (3 bytes), or type 3, the index and red, green
+and blue (5 bytes), so an all-palette frame is 332 bytes and each RGB cell adds
+two. A palette color reads as an int and an RGB one as an (r, g, b) tuple.
+Indices run 1..108, the whole span the Launchpad can paint; index 0 (Setup) is
+outside it (the Launchpad's Reference page, The Programmer Mode index map).
 """
 import re
 
@@ -20,7 +21,8 @@ MODE_SYSEX = [240, 0, 32, 41, 2, 14, 14]         # 0E command: Programmer / Live
 TERM = 247
 NSPEC = 108
 FIRST_INDEX = 1
-FRAME_LEN = len(HEADER) + NSPEC * 3 + 1          # 332
+FRAME_LEN = len(HEADER) + NSPEC * 3 + 1          # 332, every cell a palette color
+SPEC_LEN = {0: 3, 1: 4, 2: 3, 3: 5}              # by type: static, flash, pulse, RGB
 
 # read out of g_grid.pd rather than guessed. The mode lamps are the top six of
 # the left column, mode 1 at the top: LAMPS[m - 1] is mode m's.
@@ -35,6 +37,7 @@ class Frame(object):
     def __init__(self, data, mark):
         self.data = data
         self.mark = mark
+        self.specs = self._specs() if self.is_lighting else None
 
     @property
     def is_lighting(self):
@@ -44,17 +47,36 @@ class Frame(object):
     def is_mode(self):
         return self.data[:7] == MODE_SYSEX
 
+    def _specs(self):
+        """-> [(type, index, color)] read spec by spec to the terminator, or None
+        when a type is unknown or a spec runs into it."""
+        out, k, end = [], len(HEADER), len(self.data) - 1
+        while k < end:
+            n = SPEC_LEN.get(self.data[k])
+            if n is None or k + n > end:
+                return None
+            body = self.data[k + 2:k + n]
+            out.append((self.data[k], self.data[k + 1],
+                        body[0] if len(body) == 1 else tuple(body)))
+            k += n
+        return out
+
+    @property
+    def whole(self):
+        """Every spec read cleanly and there are 108 of them."""
+        return self.specs is not None and len(self.specs) == NSPEC
+
     def color(self, index):
-        return self.data[9 + 3 * (index - FIRST_INDEX)]
+        return {i: c for _t, i, c in self.specs or []}.get(index)
 
     def colors(self):
-        return [self.data[9 + 3 * k] for k in range(NSPEC)]
+        return [c for _t, _i, c in self.specs or []]
 
     def indices(self):
-        return [self.data[8 + 3 * k] for k in range(NSPEC)]
+        return [i for _t, i, _c in self.specs or []]
 
     def types(self):
-        return [self.data[7 + 3 * k] for k in range(NSPEC)]
+        return [t for t, _i, _c in self.specs or []]
 
 
 def parse(stream, tag):
@@ -122,9 +144,15 @@ def home_shape(frame):
 # The drum page, mode 1. Which cell is which comes from the layout table that
 # g_grid and u_map both read, never typed here; the colors are g_grid's.
 DRUM_PAGE = "Cut It/cut-it-drum-page.txt"
-PICKED = 9                      # the selected velocity button and pad
-PLAYHEAD = 3                    # white, over whatever the step holds
-STEP_RAMP = (8, 9, 10, 11)      # one hue, softest to loudest, by velocity quarter
+PLAYHEAD = 21                   # green, over whatever the step holds
+OUT = 0                         # an off step past the last step: dark
+# g_grid's RGB table: velocity level n's color at full brightness, white for
+# level 1 falling evenly to red for level 8, and the same at a quarter, for the
+# velocity buttons not selected.
+LEVEL_RGB = ((127, 127, 127), (127, 109, 109), (127, 91, 91), (127, 73, 73),
+             (127, 54, 54), (127, 36, 36), (127, 18, 18), (127, 0, 0))
+LEVEL_DIM = ((32, 32, 32), (32, 27, 27), (32, 23, 23), (32, 18, 18),
+             (32, 14, 14), (32, 9, 9), (32, 4, 4), (32, 0, 0))
 
 
 def drum_layout(path=DRUM_PAGE):
@@ -138,11 +166,16 @@ def drum_layout(path=DRUM_PAGE):
     return lay
 
 
-def step_color(velocity):
+def level_of(velocity):
+    """The velocity level, 1..8, whose color a step at this velocity takes."""
+    return (int(velocity) - 1) // 16 + 1
+
+
+def step_color(velocity, step=1, last=16):
     """The color a step at this velocity paints, off the playhead."""
-    if velocity <= 0:
-        return DIM
-    return STEP_RAMP[(int(velocity) - 1) // 32]
+    if velocity < 1:
+        return DIM if step <= last else OUT
+    return LEVEL_RGB[level_of(velocity) - 1]
 
 
 def drum_page(frame, lay):
@@ -153,8 +186,8 @@ def drum_page(frame, lay):
     its role can take, and everything else dark -- the beat row included, since
     it gives way here, and the bottom-right 4x4, which no row names.
     """
-    allowed = {"step": {DIM, PLAYHEAD} | set(STEP_RAMP), "vel": {DIM, PICKED},
-               "pad": {DIM, PICKED}}
+    allowed = {"step": {DIM, OUT, PLAYHEAD} | set(LEVEL_RGB),
+               "vel": set(LEVEL_RGB) | set(LEVEL_DIM), "pad": {DIM} | set(LEVEL_RGB)}
     lamp, page, stray = None, {"step": {}, "vel": {}, "pad": {}}, []
     for k, color in enumerate(frame.colors()):
         idx = FIRST_INDEX + k
@@ -174,10 +207,15 @@ def drum_page(frame, lay):
             stray.append((idx, color))
     if stray:
         return ("lit outside the lamps and the page: %s" % stray[:6]), lamp, page
-    for role, many in (("vel", "velocity buttons"), ("pad", "pads")):
-        lit = [n for n, c in page[role].items() if c == PICKED]
-        if len(lit) > 1:
-            return ("%d %s lit: %s" % (len(lit), many, sorted(lit))), lamp, page
+    full = [n for n, c in page["vel"].items() if c == LEVEL_RGB[n - 1]]
+    wrong = [n for n, c in page["vel"].items() if c not in (LEVEL_RGB[n - 1], LEVEL_DIM[n - 1])]
+    if wrong:
+        return ("velocity buttons %s are not their own level's color" % wrong), lamp, page
+    if len(full) > 1:
+        return ("%d velocity buttons selected: %s" % (len(full), sorted(full))), lamp, page
+    lit = [n for n, c in page["pad"].items() if c != DIM]
+    if len(lit) > 1:
+        return ("%d pads lit: %s" % (len(lit), sorted(lit))), lamp, page
     heads = [n for n, c in page["step"].items() if c == PLAYHEAD]
     if len(heads) > 1:
         return ("%d playheads: steps %s" % (len(heads), sorted(heads))), lamp, page

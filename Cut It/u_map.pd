@@ -17,7 +17,7 @@
 #X obj 1300 560 r mode;
 #X obj 1300 610 t b;
 #X msg 1300 660 0;
-#X obj 20 1070 route tempo transport start stop panic volca-note volca-cc volca-prog 404-pad volca-key recover diag drum-page test-mode;
+#X obj 20 1070 route tempo transport start stop panic volca-note volca-cc volca-prog 404-pad volca-key recover diag drum-page test-mode last-step;
 #X obj 20 1160 c_mapped bpm 490 10;
 #X obj 20 1220 unpack f f;
 #X obj 20 1430 s tempo;
@@ -73,7 +73,7 @@
 #X obj 700 3350 route mode;
 #X obj 700 3400 s mode;
 #X text 20 20 u_map -- the map \, and the only file in Cut It that says what a control means. Devices publish named controls on param \; this turns them into the buses and the output devices' cords \, so nothing in e_ or c_ learns that a nanoKONTROL exists. ref/module/map.md, f 58;
-#X text 20 165 creation arg 1: the state directory \, the \$3 u_state takes: the recover breadcrumb lives beside the state files. inlets: none. outlet 1: the Volca \, selector-prefixed -- notes <n> <v> <d> \, cc <c> <v> \, program <n> \, note <n> <v>. outlet 2: the SP-404 \, pad <n> <vel>. One outlet per output device \, wired in u_root (C-2). outlet 3: c_steps \, what a press on the drum page means -- step \, vel or pad \, <n> <velocity>. outlet 4: u_net \, a bang that flips test mode., f 58;
+#X text 20 165 creation arg 1: the state directory \, the \$3 u_state takes: the recover breadcrumb lives beside the state files. inlets: none. outlet 1: the Volca \, selector-prefixed -- notes <n> <v> <d> \, cc <c> <v> \, program <n> \, note <n> <v>. outlet 2: the SP-404 \, pad <n> <vel>. One outlet per output device \, wired in u_root (C-2). outlet 3: c_steps \, what a press on the drum page means -- step \, vel or pad \, <n> <velocity> -- and last <n> \, the last step. outlet 4: u_net \, a bang that flips test mode., f 58;
 #X text 700 20 The map is a table \, and mode-dependent: cut-it-map.txt \, one row per mapping \, four atoms always -- <mode> <control> <dest> <arg>. u_map-lua reads it and looks each control up., f 76;
 #X text 1400 20 The allowlist guard is what makes a table acceptable: a row names a destination that must be a literal argument on the route below \, feeding a handler on this canvas \, and never a send. Skip it and nothing fails., f 76;
 #X text 2200 20 A row naming a destination not on the route is a real error \, unknown-dest on err. An unmapped control is normal: the Lua draws its raw row \, and it is silent on every bus., f 62;
@@ -361,7 +361,7 @@
 #X connect 164 0 165 0;
 #X connect 165 0 166 0;
 #X connect 166 0 167 0;
-#X connect 17 14 61 0;
+#X connect 17 15 61 0;
 #X connect 17 12 169 0;
 #X connect 169 1 170 0;
 #X connect 170 0 171 0;
@@ -406,3 +406,13 @@
 #X connect 204 0 206 0;
 #X connect 206 0 207 0;
 #X connect 207 0 208 0;
+#X obj 6300 1160 c_mapped last-step 15 1;
+#X obj 6300 1220 unpack f f;
+#X obj 6300 1280 list prepend last;
+#X obj 6300 1340 list trim;
+#X text 6300 1420 last-step: the sequencer's last step \, 1 to 16 \, as c_mapped last-step 15 1 scales knob 2's 0-1. It draws last-step <n> and \, while live \, sends c_steps last <n> on the drum page's outlet. Mode 1 only., f 40;
+#X connect 17 14 210 0;
+#X connect 210 0 211 0;
+#X connect 211 1 212 0;
+#X connect 212 0 213 0;
+#X connect 213 0 181 0;

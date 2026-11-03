@@ -327,15 +327,14 @@ class Scratch:
              "      nothing."])
 
     def map_rows(self, rows):
-        """Rows APPENDED to the scratch map rather than replacing it, so the
-        shipped rows stay under test too."""
+        """Rows put BEFORE the scratch map's own rather than replacing it, so the
+        shipped rows stay under test too, and a gate's row wins over a shipped
+        one for the same mode and control: the first row wins (map.md)."""
         p = os.path.join(self.patch, "cut-it-map.txt")
         with open(p, encoding="utf-8") as fh:
             body = fh.read()
-        if body and not body.endswith("\n"):
-            body += "\n"            # or the first row joins the shipped last one
         with open(p, "w", encoding="utf-8") as fh:
-            fh.write(body + "".join(r + "\n" for r in rows))
+            fh.write("".join(r + "\n" for r in rows) + body)
 
     def shell_stub(self):
         """The counting shell stub, over mac-stubs/shell.pd (which swallows the

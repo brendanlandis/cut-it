@@ -29,9 +29,9 @@ It is mode 1's drum machine (`cut-it/drum-machine`), and the first part of a son
 |---|---|---|
 | Creation arg 1 | The 404 bank its tracks play, 1–10, 1 for A. Track *n* plays pad *n* of that bank | unknown |
 | Creation arg 2 | The part its pattern is stored as: `drums` keys it `section-1-drums` | unknown |
-| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, from `u_map`'s `drum-page` destination. Anything else is `fail c_steps bad-selector` | unknown |
+| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, from `u_map`'s `drum-page` destination, and `last <n>` from its `last-step`. Anything else is `fail c_steps bad-selector` | unknown |
 | Outlet 1 | `pad <1..160> <velocity>`, to `m_404`'s pad path | unknown |
-| Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <16 velocities>` for the selected track, `play <step>` (0 while stopped), `vel <level>`, `track <pad>` | unknown |
+| Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <16 velocities>` for the selected track, `play <step>` (0 while stopped), `vel <level>`, `track <pad>`, `last <step>` | unknown |
 
 ### What it does
 
@@ -45,7 +45,8 @@ It is mode 1's drum machine (`cut-it/drum-machine`), and the first part of a son
 | A pad press | Plays that pad now, at the Launchpad pad's own velocity, and selects it as the track being edited | unknown |
 | A velocity press | Selects level *n*, velocity round(127·*n*/8): 16 32 48 64 79 95 111 127 | unknown |
 | A step press | Off takes the selected velocity; on, at any velocity, turns off (Brendan, 2026-11-03) | unknown |
-| At load | Track 1, level 6 (95), stopped | unknown |
+| The last step | Knob 2 in mode 1, 1–16 (Brendan, 2026-11-03), for every track at once: the counter wraps after it. The steps past it keep their notes, unplayed. Not saved: the knob's own position is its memory, pushed by mother at load like knob 1's tempo | unknown |
+| At load | Track 1, level 6 (95), last step 16 until knob 2 reports, stopped | unknown |
 
 ### Where each part lives
 
@@ -149,14 +150,16 @@ the table's roles and nothing about the surface.
 
 ### One counter, and room for a multiplier per track
 
-Every track reads one step counter cut from one phase. Per-track subdivision would give a track its
-own multiplier on the same phase in place of the ×4, and its own counter; the rules would then be
-asked about each track's own step.
+Every track reads one step counter cut from one phase, and it wraps after the last step: `[mod]`'s
+right inlet takes the Lua's `last`, from the page outlet. Per-track subdivision would give a track
+its own multiplier on the same phase in place of the ×4, and its own counter; the rules would then
+be asked about each track's own step, and a last step per track would go with it.
 
 ### PLAY parks the counter, and the run gate shuts for an instant
 
-The counter parks at 15, so the next step is step 1, and `c_clock`'s own `start` resets the phase in
-the same instant. The run gate shuts for one logical instant (`[del 0]`): a step cut from the old
+The counter parks at −1, so the next step is step 1 whatever the last step, and `c_clock`'s own
+`start` resets the phase in the same instant. (Parked at 15, it came round to step 1 only when the
+last step divided 16.) The run gate shuts for one logical instant (`[del 0]`): a step cut from the old
 phase in the block before PLAY can still be waiting in Pd's scheduler, and it would play as step 1
 and push the downbeat to step 2.
 

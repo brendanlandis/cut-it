@@ -11,7 +11,7 @@ state bus and the file u_state writes. Nothing inside c_steps is read.
                  the step rule's three cases, nothing on the free row, and nothing
                  at all in another mode
   the transport  every step plays exactly its tracks, from step 1, on PLAY and
-                 on PLAY again; STOP and panic stop it
+                 on PLAY again; STOP and panic stop it; knob 2's last step
   the disk       the pattern reaches cut-it-auto.txt as one line
 
 A note's step is the playhead in the frame painted after it: c_steps sends a
@@ -34,7 +34,7 @@ PAD_NOTE = [48, 49, 50, 51, 44, 45, 46, 47, 40, 41, 42, 43, 36, 37, 38, 39]
 WINDOWS = ["EARLY", "RESTORE", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
            "RULE-ON", "RULE-SAME", "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER",
            "FREE-ROW", "MODE-2", "OTHER-MODE", "MODE-1", "PLAY", "STOP", "STOPPED",
-           "REPLAY", "PANIC", "AFTER-PANIC", "DONE"]
+           "LAST-3", "REPLAY", "PANIC", "AFTER-PANIC", "DONE"]
 EDITS = ["VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
 
@@ -95,7 +95,7 @@ def events(cap):
             buf.append(byte)
             if byte == G.TERM:
                 f = G.Frame(buf, mark)
-                if f.is_lighting and len(buf) == G.FRAME_LEN:
+                if f.whole:
                     out.append((mark, "FRAME", f))
                 buf, collecting = [], False
     return out
@@ -123,25 +123,27 @@ def played(evs, marks, lay):
     return out
 
 
-def page_check(frame, lay, pat, track, lvl, head=None):
-    """-> None if the frame is the drum page for this pattern, track and level
-    (and playhead, if given), else what differs."""
+def page_check(frame, lay, pat, track, lvl, head=None, last=16):
+    """-> None if the frame is the drum page for this pattern, track, level and
+    last step (and playhead, if given), else what differs."""
     problem, lamp, page = G.drum_page(frame, lay)
     if problem:
         return problem
     if lamp != G.LAMPS[0]:
         return "lit mode lamp is %s, not mode 1's %d" % (lamp, G.LAMPS[0])
-    want = [G.step_color(pat[idx(track, s)]) for s in range(1, 17)]
+    want = [G.step_color(pat[idx(track, s)], s, last) for s in range(1, 17)]
     if head:
         want[head - 1] = G.PLAYHEAD
     got = [page["step"].get(s) for s in range(1, 17)]
     if got != want:
         return "track %d's steps: want %s got %s" % (track, want, got)
-    lit = lambda role: sorted(n for n, c in page[role].items() if c == G.PICKED)
-    if lit("vel") != [lvl]:
-        return "velocity buttons lit %s, want [%d]" % (lit("vel"), lvl)
-    if lit("pad") != [track]:
-        return "pads lit %s, want [%d]" % (lit("pad"), track)
+    vel = {n: c == G.LEVEL_RGB[n - 1] for n, c in page["vel"].items()}
+    if sorted(n for n, full in vel.items() if full) != [lvl] or len(vel) != 8:
+        return "velocity buttons at full %s, want [%d]" % (
+            sorted(n for n, full in vel.items() if full), lvl)
+    pads = {n: c for n, c in page["pad"].items() if c != G.DIM}
+    if pads != {track: G.LEVEL_RGB[lvl - 1]}:
+        return "pads lit %s, want pad %d in level %d's color" % (pads, track, lvl)
     return None
 
 
@@ -236,11 +238,11 @@ def main():
             not rows, rows)
 
     print("\n--- the free row ---")
-    A.check("the row under the velocity buttons is not the drum page: no put and no note",
+    A.check("the row the velocity buttons left is not the drum page: no put and no note",
             not puts("FREE-ROW") and not ons("FREE-ROW"),
             "puts %d, note-ons %s" % (len(puts("FREE-ROW")), ons("FREE-ROW")))
-    A.check("... and it names itself, as an unmapped control does -- pad-54 100",
-            raw("FREE-ROW") == [["pad-54", "100"]], raw("FREE-ROW"))
+    A.check("... and it names itself, as an unmapped control does -- pad-64 100",
+            raw("FREE-ROW") == [["pad-64", "100"]], raw("FREE-ROW"))
 
     print("\n--- another mode ---")
     A.check("in mode 2 a step pad is not the drum page: no put and no note",
@@ -281,12 +283,28 @@ def main():
             shown >= 16 and not off, off[:2] or "only %d frames showed one" % shown)
     A.check("⛔ STOP stops it -- no note-on after STOP",
             not ons("STOPPED"), "note-ons: %s" % ons("STOPPED"))
-    lit = [f for f in frames("STOPPED") if page_check(f, lay, final, 2, 2)]
-    A.check("... and the playhead goes out", frames("STOPPED") and not lit,
+    # STOP's own window ends with a frame painted after it; STOPPED may hold none.
+    after = frames("STOP")[-1:] + frames("STOPPED")
+    lit = [f for f in after if page_check(f, lay, final, 2, 2)]
+    A.check("... and the playhead goes out", after and not lit,
             page_check(lit[0], lay, final, 2, 2) if lit else "no frame")
+    print("\n--- the last step ---")
+    rows = [e[1] for e in W("LAST-3") if e[0] == "DISP" and e[1][:1] == ["last-step"]]
+    A.check("knob 2 sets the last step and draws it -- last-step 3", rows == [["last-step", "3"]],
+            rows)
+    prob = page_check(frames("LAST-3")[-1], lay, final, 2, 2, last=3) if frames("LAST-3") \
+        else "no frame in the window"
+    A.check("... the page darkens the empty steps past it, and the lit ones keep their color",
+            prob is None, prob)
+    A.check("... and it is not saved: no put", not puts("LAST-3"),
+            "puts: %d" % len(puts("LAST-3")))
     again = [r for r in played(evs, {"REPLAY", "PANIC"}, lay) if r[0] is not None]
     A.check("⛔ PLAY again starts at step 1, not where STOP left it",
             bool(again) and again[0] == (1, want[1]), "first: %s" % (again[:1],))
+    walk = [s for s, _n in again]
+    bad = [(s, n, want.get(s)) for s, n in again if n != want.get(s)]
+    A.check("⛔ with the last step at 3 it walks 1 to 3 and wraps -- 1 2 3 1 2 in 0.6 s",
+            walk == [1, 2, 3, 1, 2] and not bad, "steps %s, wrong %s" % (walk, bad[:3]))
     A.check("⛔ a panic stops it too -- no note-on after it",
             not ons("AFTER-PANIC") and not ons("DONE"),
             "note-ons: %s" % (ons("AFTER-PANIC") + ons("DONE")))

@@ -10,24 +10,22 @@ description: Writing, editing or reviewing Pure Data for the Cut It Organelle pa
 **1. Target is Pd vanilla 0.57**, on the device and on the Mac, from 2026-11-03. The Organelle 1's
 factory Pd is 0.49 (`Pd-0.49.0, compiled Oct 9 2018`), and its OS 4.0 is **the end of the line for
 this hardware** — 4.1 was Organelle M only; 4.2 / 4.4 / OS 5 are M/S/S2. So 0.57 is our own build,
-in `/sdcard/pd-0.57-0`: `/usr/bin/pd`, the path `mother` launches, is a script that runs it and
-falls back to the factory 0.49, kept as `/usr/bin/pd-0.49`, if those files are missing
-(`device/README.md`). **Do not suggest any object newer than 0.57**; one newer than 0.49 fails to
-create on the fallback.
+in `/sdcard/pd-0.57-0`: `/usr/bin/pd`, the path `mother` launches, is a script that runs it, with
+no fallback to 0.49 (`device/README.md`). **Do not suggest any object newer than 0.57.**
 
 **2. Never save an Organelle-bound patch from plugdata.** plugdata is built on Pd 0.55+ and rewrites
 `.pd` files into a newer format — iemgui colors become hex (`#fcfcfc` instead of `-262144`),
 floatatoms gain a trailing arg. **Vanilla 0.57 writes and reads its own version of that format, but
 whether plugdata adds anything 0.57 cannot read is untested.** It broke a patch here once, under 0.49.
 Edit with vanilla Pd for anything that ships. ⚠️ A file 0.57 re-saves picks up that format beyond the
-edit (hex colors, a number-box argument); 0.49 reads it, so it is diff noise (`cut-it/pd-057`).
+edit (hex colors, a number-box argument), which is diff noise (`cut-it/pd-057`).
 
 **3. Vanilla objects, plus `[shell]`, pdlua and ELSE.** The Organelle's own externals are a factory
 dozen in `/root/Pd/externals`, of which Cut It uses `[shell]`
 (`~/Sites/!reference/critter-guitari-organelle-1.md`, *Externals*). Two libraries are ours, built
 for 0.57 (from 2026-11-03): **pdlua**, for rules written in Lua, and **ELSE**, whose objects may
-replace hand-built parts where they clearly help (*Lua and ELSE*, below). Neither loads on the 0.49
-fallback. Nothing else: no cyclone, no other library, without a build and a decision.
+replace hand-built parts where they clearly help (*Lua and ELSE*, below). Nothing else: no cyclone,
+no other library, without a build and a decision.
 
 ## Lua and ELSE
 

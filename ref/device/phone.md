@@ -269,7 +269,7 @@ can reach stays the set of boxes you can read.
 
 ⚠️ **Nothing here may be built on a sender identity that is not available** — `[netreceive]` in
 0.49 cannot supply one (Reference, *Pure Data*), and a bidirectional link does not change that.
-0.57's can, with `-f` (above); the fallback 0.49's cannot.
+0.57's can, with `-f` (above).
 
 ⛔ **A fourth command was considered and rejected: a full status dump.** Parameters and status re-send
 every two seconds and the alert repeats at 2 Hz, so a phone joining late repopulates on its own in

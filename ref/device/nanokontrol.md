@@ -100,7 +100,7 @@ so presence works without the Lua. The same split as the sequencer's and the map
 |---|---|
 | **The face**, `m_nano-lua.pd_lua`: inlet 1 `<controller> <value>` from the gate's `[spigot]` and a `[list prepend]` holding the controller, inlet 2 `init` at load; outlet 1 `param`, outlet 2 `err`, outlet 3 a bang on `init` | verified |
 | **What it replaced:** three nested subpatches — the decode, its two kind flags and the name in private sends, and the unmapped path that had to clear both flags before warning, or the next value went out under the last control's name. The Lua keeps no state between messages, so that trap is gone rather than guarded | verified |
-| **A Lua that never loads** says `fail m_nano no-lua` on `err` at load, and every control on the nano is dead; presence is not. On the 0.49 fallback that loses nothing more: the map that reads the controls is Lua too ([map.md](../module/map.md)) | verified |
+| **A Lua that never loads** says `fail m_nano no-lua` on `err` at load, and every control on the nano is dead; presence is not. | verified |
 | **A rule that throws** says `fail m_nano lua-ctlin`, and the object carries on | verified |
 | **Load and memory:** the patch loads in silence in a test Pd on the Organelle, and its peak resident size is 3492 kB against 3480 without the nano's Lua, three runs each (2026-11-03) | verified |
 | **Cost per CC:** about 0.07–0.09 ms on the Organelle against the Pd decode's 0.014 — 9000 CCs in 0.64–0.84 s against 0.13 s, in a test Pd niced beside the live one; another device's CC, which the gate refuses before the Lua, costs what it did (2026-11-03) | verified |

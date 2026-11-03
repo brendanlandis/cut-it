@@ -31,7 +31,7 @@ No walking to the device, no Storage → Reload, no selecting from the menu.
 
 **The syntax check is built in and blocking.** Pd 0.57-0 on the Mac
 (`~/Applications/Pd-0.57-0.app`) is the same version the Organelle runs, from 2026-11-03; `PD=`
-points it at another, such as the 0.49-1 still in `/Applications`. Every Pd the check and the gates
+points it at another. Every Pd the check and the gates
 start runs at the device's 44100 Hz, since 0.56 made 48000 the default, and gets `~/Library/Pd` on
 its path, as the device's gets `/sdcard/PdExtraLibs`, so `c_steps` finds pdlua:
 

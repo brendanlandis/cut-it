@@ -416,7 +416,7 @@ the probe fires.
 
 ### A Lua that never loads leaves only the mode keys
 
-⛔ Without pdlua — the 0.49 fallback, or pdlua missing from the path — or with an error in the Lua,
+⛔ Without pdlua on the path, or with an error in the Lua,
 `[u_map-lua]` fails to create, and every control but the six mode keys is dead: no tempo knob, no
 PLAY or STOP, no keyboard.
 
@@ -596,6 +596,3 @@ between a fifth and two fifths off a control's time there.
 - ⬜ **The Lua map has not been played on the rig.** The gates and a test Pd prove it answers as the
   Pd version did and loads in silence; what it costs under four fingers of pressure, at the live
   Pd's priority, is unmeasured. `cut-it/logic-as-text`.
-- ⬜ **On the 0.49 fallback the map is dead but for the mode keys**, since pdlua does not load
-  there (*A Lua that never loads leaves only the mode keys*); whether the fallback must keep a
-  playable instrument is not decided. `cut-it/logic-as-text`.

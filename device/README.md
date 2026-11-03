@@ -11,7 +11,7 @@ factory.
 | `wifi-watch.service` | `/etc/systemd/system/wifi-watch.service`, then `systemctl daemon-reload && systemctl enable wifi-watch.service` | **Added, not factory.** Starts the wifi watcher at boot so a recovery stops disarming the detection for the next failure (item 244). `/` is read-only — `remount-rw.sh` first, `remount-ro.sh` after, because `enable` writes a symlink. |
 | `mount.sh` | `/root/fw_dir/scripts/mount.sh` | **Modified from factory** — see below. On-device backup also kept at `mount.sh.orig`. |
 | `mount.sh.orig` | — | The factory version, for reverting. |
-| `usr-bin-pd` | `/usr/bin/pd` on the Organelle, mode 755 | **Modified from factory** — the launcher that runs Pd 0.57, where the factory 0.49 binary was. That binary is kept on the device as `/usr/bin/pd-0.49`; see below. |
+| `usr-bin-pd` | `/usr/bin/pd` on the Organelle, mode 755 | **Modified from factory** — the launcher that runs Pd 0.57, where the factory 0.49 binary was. That binary is kept on the device as `/usr/bin/pd-0.49`, for the rollback only; see below. |
 | `wifi_control.py` | — | Not modified; captured because it is the script the modification exists to protect. |
 | `OS-VERSION` | — | What `/root/fw_dir/version` reported when this was captured. |
 | `pdsettings.orig` | — | The **factory** `/root/.pdsettings`, copied from the device's own `.pdsettings.bak`. The missing half of the `mount.sh` / `mount.sh.orig` pair. |
@@ -89,16 +89,17 @@ firmware update that would invalidate every measured fact on the Launchpad's Ref
 into its launch line, `( cd /tmp/patch ; /usr/bin/pd %s "%s" main.pd )&`, so that path is where the
 change has to be. 0.57 is installed on the writable card, at `/sdcard/pd-0.57-0`; the factory binary
 (`Pd-0.49.0, compiled Oct 9 2018`) was moved to `/usr/bin/pd-0.49`, and `/usr/bin/pd` became
-`usr-bin-pd`, a script that execs 0.57 and falls back to the factory 0.49 if the 0.57 binary is
-missing. Root is mounted read-only again afterwards. How 0.57 was built, and what it was checked
-against, is on Reference (`~/Sites/!reference/pure-data.md`, *Newer versions on the Organelle*).
+`usr-bin-pd`, a script that execs 0.57. Root is mounted read-only again afterwards. How 0.57 was
+built, and what it was checked against, is on Reference (`~/Sites/!reference/pure-data.md`, *Newer
+versions on the Organelle*).
 
 ✅ The script here is the device's, read back after the switch. 0.57 passed a supervised test on the
 rig on 2026-11-03: clean audio, screen, grid and MIDI, nothing logged, and 11.2% CPU against 0.49's
 12.2% with the drum machine playing.
 
-**The fallback is automatic:** with `/sdcard/pd-0.57-0/bin/pd` missing or not executable, the next
-patch load runs 0.49 with no change to `/`.
+**There is no fallback** (Brendan, 2026-11-03): the sequencer, the map and three device layers need
+pdlua, which 0.49 cannot load. With `/sdcard/pd-0.57-0/bin/pd` missing, no patch starts until it is
+copied back.
 
 **To revert** to the factory Pd, which also removes the script:
 
@@ -108,9 +109,9 @@ mv /usr/bin/pd-0.49 /usr/bin/pd
 /root/fw_dir/scripts/remount-ro.sh
 ```
 
-The next patch load runs 0.49. To switch again, the same remount around moving `/usr/bin/pd` back to
-`/usr/bin/pd-0.49` and copying `usr-bin-pd` in as `/usr/bin/pd`, mode 755. The 0.49 binary itself is
-not kept here: an OS 4.0 image restores it.
+The next patch load runs 0.49, where Cut It starts but does not play (no pdlua). To switch again,
+the same remount around moving `/usr/bin/pd` back to `/usr/bin/pd-0.49` and copying `usr-bin-pd` in
+as `/usr/bin/pd`, mode 755. The 0.49 binary itself is not kept here: an OS 4.0 image restores it.
 
 ## Lua and ELSE
 

@@ -162,7 +162,7 @@ in Lua, and I/O in Pd ([sequencer.md](../module/sequencer.md), *The rules in Lua
 |---|---|
 | **The face**, `m_organelle-lua.pd_lua`: inlet 1 mother's `notes`, inlet 2 `shift 0` or `shift 1` from `aux` and `init` at load; outlet 1 `param`, outlet 2 `err`, outlet 3 a bang on `init` | verified |
 | **What it replaced:** the press and pitch stores, the 25-element array with its write and read, two `makefilename`s and the `pack` that met them — 25 boxes | verified |
-| **A Lua that never loads** says `fail m_organelle no-lua` on `err` at load, and the keys are dead while the knobs and `aux` are not. On the 0.49 fallback that loses nothing more: the map that reads the keys is Lua too ([map.md](../module/map.md)) | verified |
+| **A Lua that never loads** says `fail m_organelle no-lua` on `err` at load, and the keys are dead while the knobs and `aux` are not. | verified |
 | **A rule that throws** says `fail m_organelle lua-notes` (or `lua-shift`, `lua-init`), and the object carries on | verified |
 | **Load and memory:** the patch loads in silence in a test Pd on the Organelle, and its peak resident size went from 3512 to 3480 kB, three runs each (2026-11-03) | verified |
 | **Cost per key:** about 0.09 ms on the Organelle against the Pd version's 0.008 — 9000 keys in 0.80–0.90 s against 0.07 s, in a test Pd niced beside the live one (2026-11-03). Nothing at a hand's rate: fifty keys a second is under half a percent of the CPU | verified |

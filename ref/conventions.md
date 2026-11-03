@@ -557,7 +557,7 @@ restore is staged rather than run at `loadbang`.
 | **`adc~` / `dac~` in a deployed patch** | `mother.pd` owns the sound card; `dac~` bypasses the volume knob and the limiter — see *Audio I/O* |
 | **`oscOut` / `screenLine*` / `led` outside their display abstraction** | Two writers, one surface |
 | **Saving from plugdata** | Its format is newer than vanilla's, and whether 0.57 reads all of it is untested — see [AGENTS.md](AGENTS.md) |
-| **Objects newer than Pd 0.57** | The device runs 0.57, falling back to 0.49 if its files are missing — see [AGENTS.md](AGENTS.md) |
+| **Objects newer than Pd 0.57** | The device runs 0.57 — see [AGENTS.md](AGENTS.md) |
 
 ---
 

@@ -1,6 +1,5 @@
 #!/bin/sh
-# Cut It runs Pd 0.57, installed on /sdcard; the factory 0.49 stays as /usr/bin/pd-0.49 and is the
-# fallback if the 0.57 files are missing. mother has this path compiled into its launch line.
-NEW=/sdcard/pd-0.57-0/bin/pd
-[ -x "$NEW" ] && exec "$NEW" "$@"
-exec /usr/bin/pd-0.49 "$@"
+# Cut It runs Pd 0.57, installed on /sdcard; mother has this path compiled into its launch line.
+# No fallback (Brendan, 2026-11-03): if the 0.57 files are missing, no patch starts. The factory 0.49
+# stays on the device as /usr/bin/pd-0.49, for the manual rollback in device/README.md.
+exec /sdcard/pd-0.57-0/bin/pd "$@"

@@ -30,10 +30,10 @@ learn late:
 
 - **Pd vanilla 0.57, on the device and on the Mac** (from 2026-11-03). The Organelle 1's factory Pd
   is 0.49 and its OS 4.0 is the end of the line for that hardware, so 0.57 is our own build, in
-  `/sdcard/pd-0.57-0`: `/usr/bin/pd`, which `mother` launches, is a script that runs it and falls
-  back to the factory 0.49, kept as `/usr/bin/pd-0.49`, if those files are missing
-  ([device/README.md](device/README.md), with the rollback). Do not suggest any object newer than
-  0.57; one newer than 0.49 fails to create on the fallback.
+  `/sdcard/pd-0.57-0`: `/usr/bin/pd`, which `mother` launches, is a script that runs it. There is
+  no fallback (Brendan, 2026-11-03): if those files go missing, no patch starts until they are
+  copied back ([device/README.md](device/README.md), with the rollback). Do not suggest any object
+  newer than 0.57.
 - **Never save an Organelle-bound patch from plugdata.** It rewrites `.pd` files into its newer
   format. Vanilla 0.57's own version of that format is native, but whether plugdata adds anything
   0.57 cannot read is untested (`~/Sites/!reference/pure-data.md`). It broke a patch here once,
@@ -44,10 +44,7 @@ learn late:
   lookup and the decoding in three device layers (the nano, the SP-404, the Organelle's keys), and
   ELSE 1.0-0 rc14 may replace hand-built parts; both are built for 0.57 and live in
   `/sdcard/PdExtraLibs` on the device and `~/Library/Pd` on the Mac
-  ([device/README.md](device/README.md), *Lua and ELSE*). Neither loads on the 0.49 fallback, where
-  the sequencer, the map, `m_nano`, `m_404` and `m_organelle` say `no-lua` and every control but the six mode keys is
-  dead. The
-  **`pd`** skill has how to use them.
+  ([device/README.md](device/README.md), *Lua and ELSE*). The **`pd`** skill has how to use them.
 
 ⚠️ **The public `Organelle_OS` repo documents the M and S2, not this device** — verify paths against
 the actual device (Reference, Organelle page).

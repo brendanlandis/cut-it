@@ -60,3 +60,12 @@ function MapLua:in_3(sel, atoms)
   self:answer(sel, R.internal[sel], atoms)
   if sel == "init" then self:outlet(5, "bang", {}) end
 end
+
+-- Every control passes through here, so a message goes straight to its inlet's method. pdlua's
+-- own dispatch first builds and tries two method names from the selector, a large share of a
+-- control's cost on the Organelle (ref/module/map.md). A pdlua that stopped calling dispatch
+-- would lose only the shortcut.
+local INLET = { "in_1", "in_2", "in_3" }
+function MapLua:dispatch(inlet, sel, atoms)
+  return self[INLET[inlet]](self, sel, atoms)
+end

@@ -210,6 +210,17 @@ equal("window-shut on inlet 3: a knob's first value now goes straight to live",
       { 1, 1 })
 equal("anything else on inlet 3 is fail u_map bad-selector", T.send(o, 3, "beat", { 1 }),
       { { 4, "fail", { "u_map", "bad-selector" } } })
+-- pdlua hands every message to dispatch, which this class answers itself.
+local function dispatched(inlet, sel, atoms)
+  o.sent = {}
+  o:dispatch(inlet, sel, atoms)
+  return o.sent
+end
+equal("dispatch takes each inlet's messages to its method: a control, a mode, init",
+      { dispatched(1, "gk-x", { 7 }), dispatched(2, "compose", { "mode-1" }),
+        dispatched(3, "init", {}) },
+      { { { 2, "list", { "gk-x", 7 } } }, { { 3, "list", { "compose", "mode-1" } } },
+        { { 5, "bang", {} } } })
 os.remove(tmp .. "-cut-it-map.txt")
 
 local missing = T.new(class, {}, tmp .. "-nowhere-")

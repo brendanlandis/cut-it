@@ -9,8 +9,8 @@
 #
 # Line 1 is the point: PdParty will not resolve organelle.local (item 312), so
 # the phone needs a literal address, and on the house network the lease moves
-# (the addresses seen are on the Organelle's Reference page, Reaching it). On
-# the access point it is always 192.168.12.1.
+# unless the router reserves it: this Organelle's is 192.168.1.15, and its own
+# access point takes the same address (device/start-ap.sh).
 # ref/module/debug.md
 #
 # busybox, not GNU: ash, and ip, grep and awk are applets.
@@ -25,25 +25,25 @@ echo "ip-$IP"
 # ---- 2: are we hosting the access point? -----------------------------------
 # create_ap is the system menu's AP, with hostapd and dnsmasq as its children,
 # so any of them alive means the AP is up (item 129, ref/wifi.md).
-if ps w 2>/dev/null | grep -v grep | grep -qE "create_ap|hostapd"; then
-    echo "ap-up"
-else
-    echo "ap-down"
-fi
+AP=down
+ps w 2>/dev/null | grep -v grep | grep -qE "create_ap|hostapd" && AP=up
+echo "ap-$AP"
 
 # ---- 3: the phone ----------------------------------------------------------
-# The lease file, then arp, as in Cut It/phone-ip.sh: a client that rejoined a
-# running AP can be missing from the lease file (item 129).
+# On the access point only, as in Cut It/phone-ip.sh: the lease file, then arp,
+# since a client that rejoined a running AP can be missing from the lease file
+# (item 129). The house network shares the AP's subnet, so arp there would name
+# whatever else is on it.
 PHONE=""
-for f in /tmp/create_ap.wlan0.conf.*/dnsmasq.leases; do
-    [ -f "$f" ] || continue
-    PHONE=$(awk '{print $3}' "$f" 2>/dev/null \
-            | grep -E '^192\.168\.' | grep -v '^192\.168\.12\.1$' | head -n1)
-    [ -n "$PHONE" ] && break
-done
-if [ -z "$PHONE" ]; then
-    PHONE=$(awk 'NR>1 && $1 ~ /^192\.168\.12\./ && $1 != "192.168.12.1" {print $1}' \
-            /proc/net/arp 2>/dev/null | head -n1)
+SELF=192.168.1.15
+if [ "$AP" = up ]; then
+    for f in /tmp/create_ap.wlan0.conf.*/dnsmasq.leases; do
+        [ -f "$f" ] || continue
+        PHONE=$(awk -v self="$SELF" '$3 != self {print $3}' "$f" 2>/dev/null | head -n1)
+        [ -n "$PHONE" ] && break
+    done
+    [ -z "$PHONE" ] && PHONE=$(awk -v self="$SELF" 'NR>1 && $6 == "wlan0" && $1 != self {print $1}' \
+        /proc/net/arp 2>/dev/null | head -n1)
 fi
 [ -z "$PHONE" ] && PHONE=none
 echo "phone-$PHONE"

@@ -30,12 +30,13 @@ in one line is what makes the first one safe to reason about.
 
 | Device | Address | Notes | Evidence | Item |
 |--------|---------|-------|----------|------|
-| Organelle | `organelle.local` | Listens on **9001**. The IPv4 address is DHCP-assigned and **not stable**. Use the name | verified | — |
+| Organelle | `192.168.1.15` | Listens on **9001**. Reserved for it on the house router, and its own access point takes the same address (`device/start-ap.sh`), so PdParty's send host is set once | verified | — |
 | iPhone | `192.168.1.5` | `u_net` sends to PdParty's OSC receive, **8000** | verified | — |
 | Mac | `192.168.1.16` | Dev machine | verified | — |
 
-⚠️ **Those are HOUSE-NETWORK addresses. On the Organelle's own access point the whole subnet
-changes** — the Organelle is `192.168.12.1` and hands the phone `192.168.12.109`.
+**The Organelle is `192.168.1.15` on both networks**: the house router reserves it, and its own
+access point uses it too (from 2026-11-03; the factory AP was `192.168.12.1`). The phone's address is
+the house network's at home and whatever the access point leases it at a gig.
 
 **Nothing in the patch is configured with either** — `phone-ip.sh` resolves it at load. See
 *The phone cannot announce itself* under **Design** for why, and what it costs to change.
@@ -49,12 +50,11 @@ changes** — the Organelle is `192.168.12.1` and hands the phone `192.168.12.10
 PdParty's own ports (8000 OSC receive, 9000 WebDAV) and its OSC *send* settings, including that the
 host must be a literal address, are in Reference (item 312).
 
-⚠️ **Which makes the house network the awkward one, and the stage network the easy one.** The
-Organelle's lease moves (the addresses seen are in Reference, *Reaching it*), so the phone has to be
-re-pointed whenever it does. **On the Organelle's own access point it is always `192.168.12.1`**, so the configuration
-that matters at a gig is the stable one. The instrument still discovers the *phone* by itself;
-`phone-ip.sh` is unaffected, and this is the one direction that cannot be discovered — see *The phone
-cannot announce itself* under **Design**.
+**So PdParty's send host is `192.168.1.15` everywhere**, set once. PdParty cannot send to the
+broadcast address or resolve a name (Reference), so a fixed address is the only way to stop
+re-pointing it; on the house network that took the router's reservation (Brendan, 2026-11-03). The
+instrument still discovers the *phone* by itself, with `phone-ip.sh`, and this is the one direction
+that cannot be discovered — see *The phone cannot announce itself* under **Design**.
 
 ### The wire format
 

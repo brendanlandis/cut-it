@@ -100,7 +100,8 @@ Item 214 is why it stopped being trusted.
 **No laptop, no venue wifi, phone in airplane mode:**
 
 1. Organelle: **System → WiFi Setup → Start AP**
-2. Phone: airplane mode on, wifi back on, join **`organelle`**
+2. Phone: airplane mode on, wifi back on, join **`organelle`**. PdParty's send host stays `192.168.1.15`: the access point uses the
+   address the house router reserves ([device/README.md](../device/README.md))
 3. Organelle: load **Cut It** — `phone-ip.sh` finds the phone's address from the DHCP lease
 
 ✅ Verified end to end. Airplane mode is what makes this worth doing: a phone *hotspot* needs

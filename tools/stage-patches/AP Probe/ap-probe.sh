@@ -51,15 +51,16 @@ LOG=/sdcard/ap-probe.log
 
 # ---- Q3: extract the phone -------------------------------------------------
 # dnsmasq lease lines are: <expiry> <mac> <ip> <hostname> <clientid>
-# The AP itself is 192.168.12.1, so anything else on that subnet is a client.
+# The AP itself is 192.168.1.15 (device/start-ap.sh; 192.168.12.1 before
+# 2026-11-03), so anything else it leased, or that arp saw on wlan0, is a client.
 PHONE=""
+SELF=192.168.1.15
 if [ -n "$LEASE" ] && [ -f "$LEASE" ]; then
-    PHONE=$(awk '{print $3}' "$LEASE" 2>/dev/null \
-            | grep -E '^192\.168\.' | grep -v '^192\.168\.12\.1$' | head -n1)
+    PHONE=$(awk -v self="$SELF" '$3 != self {print $3}' "$LEASE" 2>/dev/null | head -n1)
 fi
 # then the arp table: dnsmasq may have exited already (item 129)
 if [ -z "$PHONE" ]; then
-    PHONE=$(awk 'NR>1 && $1 ~ /^192\.168\.12\./ && $1 != "192.168.12.1" {print $1}' \
+    PHONE=$(awk -v self="$SELF" 'NR>1 && $6 == "wlan0" && $1 != self {print $1}' \
             /proc/net/arp 2>/dev/null | head -n1)
 fi
 [ -z "$PHONE" ] && PHONE=none

@@ -81,7 +81,7 @@ if [ "$VERDICT" = ABSENT ]; then
 say "=== 4. is it running its own access point? =============================="
 if system_profiler SPAirPortDataType 2>/dev/null | grep -qi organelle; then
     VERDICT=AP-MODE
-    say "  an Organelle-like SSID is visible. Join it -- the device is 192.168.12.1 there."
+    say "  an Organelle-like SSID is visible. Join it -- the device is 192.168.1.15 there."
 else
     say "  no Organelle-like SSID among $(system_profiler SPAirPortDataType 2>/dev/null \
          | grep -c 'PHY Mode') visible networks."
@@ -104,7 +104,7 @@ ASSOCIATED-NO-LEASE)
     echo "      ssh root@$WHERE 'bash /sdcard/wifi-reassociate.sh' # rung 1, the one that works" ;;
 AP-MODE)
     echo "VERDICT: AP-MODE"
-    echo "  Join the Organelle's own network. It is 192.168.12.1 there, and that"
+    echo "  Join the Organelle's own network. It is 192.168.1.15 there, and that"
     echo "  network has no internet -- item 129." ;;
 *)
     echo "VERDICT: ABSENT -- not on this network in any form"

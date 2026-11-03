@@ -73,7 +73,7 @@ def wifi_connected():
     global ap_state,ip_address, current_net
     ret = False
     if ap_state == AP_RUNNING :
-        ip_address = "192.168.12.1"
+        ip_address = "192.168.1.15"  # Cut It: start-ap.sh passes -g 192.168.1.15
         current_net = "AP Mode"
         return True
 

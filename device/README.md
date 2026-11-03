@@ -12,7 +12,10 @@ factory.
 | `mount.sh` | `/root/fw_dir/scripts/mount.sh` | **Modified from factory** — see below. On-device backup also kept at `mount.sh.orig`. |
 | `mount.sh.orig` | — | The factory version, for reverting. |
 | `usr-bin-pd` | `/usr/bin/pd` on the Organelle, mode 755 | **Modified from factory** — the launcher that runs Pd 0.57, where the factory 0.49 binary was. That binary is kept on the device as `/usr/bin/pd-0.49`, for the rollback only; see below. |
-| `wifi_control.py` | — | Not modified; captured because it is the script the modification exists to protect. |
+| `wifi_control.py` | `/root/fw_dir/scripts/wifi_control.py` | **Modified from factory** — one line: the address the WiFi menu shows in AP mode, `192.168.1.15`. Also captured because it is the script the `mount.sh` modification exists to protect. On-device backup kept at `wifi_control.py.orig`. |
+| `wifi_control.py.orig` | — | The factory version, for reverting. |
+| `start-ap.sh` | `/root/fw_dir/scripts/start-ap.sh` | **Modified from factory** — the access point takes `192.168.1.15`; see below. On-device backup kept at `start-ap.sh.orig`. |
+| `start-ap.sh.orig` | — | The factory version, for reverting. |
 | `OS-VERSION` | — | What `/root/fw_dir/version` reported when this was captured. |
 | `pdsettings.orig` | — | The **factory** `/root/.pdsettings`, copied from the device's own `.pdsettings.bak`. The missing half of the `mount.sh` / `mount.sh.orig` pair. |
 | `pd-libs/` | `/sdcard/PdExtraLibs/pdlua` and `/sdcard/PdExtraLibs/else` on the Organelle, and `~/Library/Pd` on the Mac | **Added, not factory.** How pdlua and ELSE, with the FFmpeg that ELSE's file players read through, were built for Pd 0.57 on the device, and the check that a patch still loads beside them; see *Lua and ELSE* below. |
@@ -82,6 +85,18 @@ rootfs remounted rw, or scp `mount.sh.orig` from this folder.
 firmware update that would invalidate every measured fact on the Launchpad's Reference page
 (`~/Sites/!reference/novation-launchpad-pro-mk3.md`). Item 265, reasoning on
 [ref/device/launchpad.md](../ref/device/launchpad.md).
+
+## The access point's address
+
+**Why:** PdParty sends to one literal address, and cannot resolve a name or broadcast (Reference,
+PdParty). So the Organelle has one address on both networks (Brendan, 2026-11-03): the house router
+(a Netgear Orbi) reserves `192.168.1.15` for its `wlan0`, `70:f1:1c:26:bd:ee`, and `start-ap.sh` passes
+`create_ap` `-g 192.168.1.15`, where the factory AP was `192.168.12.1`. The AP's DHCP range follows
+the gateway's subnet. `wifi_control.py` shows the same address on the WiFi menu in AP mode. Both
+networks share the subnet, so `Cut It/phone-ip.sh` tells them apart by `hostapd` running.
+
+To revert, put both `.orig` files back, between `remount-rw.sh` and `remount-ro.sh`, and set PdParty's
+send host per network again.
 
 ## The `/usr/bin/pd` change
 

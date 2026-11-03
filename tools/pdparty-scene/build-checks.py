@@ -176,14 +176,16 @@ def col(r, g, b):
     return -(((r >> 2) << 12) | ((g >> 2) << 6) | (b >> 2)) - 1
 
 
-BG, INK, GREEN, GRAY, RED, PAPER, PRESS = (
-    col(224, 224, 224), col(64, 64, 64), col(160, 220, 160), col(200, 200, 200),
-    col(240, 180, 180), col(252, 252, 252), col(176, 176, 176))
+BG, INK, GREEN, AMBER, RED, PAPER, PRESS = (
+    col(232, 232, 232), col(24, 24, 24), col(140, 210, 140), col(248, 208, 112),
+    col(236, 140, 140), col(252, 252, 252), col(184, 184, 184))
+# the edge drawn round every button, so it reads as one
+EDGE = col(96, 96, 96)
 
 # The buttons, (name, label, x, y, w, h): a plain rectangle, drawn over Pd
 # buttons that take the touch through it. A bng is square and draws a circle,
 # so the rectangle is what shows, and a wide one sits over two.
-BUTTONS = [("cprev", "‹", 4, 4, 20, 20), ("cnext", "›", 124, 4, 20, 20),
+BUTTONS = [("cprev", "◀", 4, 3, 30, 22), ("cnext", "▶", 136, 3, 30, 22),
            ("send", "Send", 316, 28, 106, 50),
            ("pass", "Pass", 316, 83, 50, 50), ("fail", "Fail", 372, 83, 50, 50),
            ("back", "Back", 316, 138, 50, 50), ("next", "Next", 372, 138, 50, 50)]
@@ -203,6 +205,12 @@ def bng(size, name):
         size, name, name, BG, INK, INK)
 
 
+def edge(name, w, h):
+    """The edge under a button, two units wider each way: Pd draws no outline."""
+    return "cnv 1 %d %d ck-edge-%s-out ck-edge-%s-in empty 0 -8 0 10 %d %d 0" % (
+        w + 4, h + 4, name, name, EDGE, INK)
+
+
 def button(name, label, w, h, fs):
     """The rectangle a button shows, its label centered (0.6 em a character)."""
     xoff = max(2, int(w / 2 - len(label) * fs * 0.3))
@@ -214,14 +222,16 @@ def build_patch():
     top, g = Canvas(), Canvas()
     # ---------------------------------------------------------- the face
     # each button's Pd buttons first, so its rectangle draws over them
+    # the edge, then the bngs, then the face over them
     for name, label, x, y, w, h in BUTTONS:
+        top.obj(x - 2, y - 2, edge(name, w, h))
         for bx in range(x, x + w - h + 1, h + 6) if w > h else [x]:
             top.obj(bx, y, bng(h, name))
-        top.obj(x, y, button(name, label, w, h, 14 if h < 30 else 13))
-    top.obj(26, 4, cnv(26, 4, 96, 20, "name", "-", 12))
-    top.obj(146, 4, cnv(146, 4, 100, 20, "pos", "-", 10))
-    top.obj(248, 4, cnv(248, 4, 62, 20, "mark", NBSP, 10))
-    top.obj(316, 4, cnv(316, 4, 110, 20, "pill", "no" + NBSP + "link", 10, bg=RED))
+        top.obj(x, y, button(name, label, w, h, 16 if h < 30 else 14))
+    top.obj(38, 3, cnv(38, 3, 96, 22, "name", "-", 12))
+    top.obj(170, 3, cnv(170, 3, 92, 22, "pos", "-", 10))
+    top.obj(264, 3, cnv(264, 3, 46, 22, "mark", NBSP, 10))
+    top.obj(314, 1, cnv(314, 1, 112, 24, "pill", "no" + NBSP + "link", 12, bg=RED))
     top.obj(4, 28, cnv(4, 28, 306, 18, "title", "-", 11, xoff=4))
     for k in range(LINES):
         top.obj(4, 48 + 15 * k, cnv(4, 48 + 15 * k, 306, 15, "l%d" % (k + 1), NBSP, 9, xoff=4))
@@ -530,7 +540,7 @@ def build_patch():
     g.con(rs_, 0, ch)
     sel = g.obj(600, y3 + 240, "select 0 1")
     g.con(ch, 0, sel)
-    off = g.msg(600, y3 + 300, "label test" + NBSP + "mode" + NBSP + "off, color %d %d" % (GRAY, INK))
+    off = g.msg(600, y3 + 300, "label test" + NBSP + "mode" + NBSP + "off, color %d %d" % (AMBER, INK))
     on = g.msg(700, y3 + 340, "label test" + NBSP + "mode" + NBSP + "on, color %d %d" % (GREEN, INK))
     g.con(sel, 0, off)
     g.con(sel, 1, on)

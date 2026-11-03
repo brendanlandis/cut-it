@@ -51,7 +51,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 40500")
+qd = obj(20, 120, "del 43500")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -209,7 +209,11 @@ SEQ = [
     (33600, "result",   [("cmd", ("cutit", "result tempo-2-pass"))]),
     (35000, "tmoff",    [("tm", None)]),
     (36400, "sendoff2", [("cmd", ("cutit", "send disp grain 12"))]),
-    (38500, "done",     []),
+    # one press of the key can arrive twice, 5 ms apart: the second flip is
+    # dropped, so two in one window leave test mode on, and one more turns it off
+    (37800, "tmtwice",  [("tm", None), ("tm", None)]),
+    (39200, "tmoff2",   [("tm", None)]),
+    (41500, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940

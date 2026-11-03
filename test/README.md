@@ -41,7 +41,7 @@ were false.
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
 | `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 75 | `device/phone` |
+| `phone-assert.sh` | 78 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
 | `checks-assert.sh` | 25 | `test/checklists/README.md`, *On the phone* — the checklist page |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
@@ -49,9 +49,9 @@ were false.
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 67: 39 in Lua, 28 in Pd | `module/sequencer` |
 
-**845 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**848 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **838**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **841**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's.
 Worth knowing before trusting an arithmetic check of this number against a log.

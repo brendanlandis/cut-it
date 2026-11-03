@@ -349,12 +349,12 @@ def main():
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})
     A.check("shape: only known OSC addresses", all(a in ADDRS for a in seen),
             "saw " + ", ".join(seen))
-    A.check("shape: all nineteen windows arrived",
+    A.check("shape: all twenty-one windows arrived",
             [n for n, _ in wins] == ["idle", "sweep1", "sweep2", "statussw",
                                      "alert", "reserved", "idle2", "cmdwire",
                                      "cmdvolca", "cmd404", "cmdbogus", "cmdclear",
                                      "sendoff", "tmon", "sendon", "result", "tmoff",
-                                     "sendoff2", "done"],
+                                     "sendoff2", "tmtwice", "tmoff2", "done"],
             ", ".join(n for n, _ in wins))
 
     hbs = [g[0] for _, rowset in wins for _, a, g in rowset
@@ -547,12 +547,20 @@ def main():
 
     one("tmoff", "/probe/err", ["info", "u_net", "test-mode-off"],
         "flipping it off is logged, and draws nothing")
-    for win in ("sendoff2", "done"):
-        f = hb_flags(win)
-        A.check("%s: the heartbeat says test mode is off again" % win,
-                f and all(v == 0 for v in f), f)
+    f = hb_flags("sendoff2")
+    A.check("sendoff2: the heartbeat says test mode is off again",
+            f and all(v == 0 for v in f), f)
     one("sendoff2", "/cutit/ack", ["test-off"], "⛔ and a Send line is refused again")
     none_of("sendoff2", ["/probe/inject"], "reaching nothing")
+
+    one("tmtwice", "/probe/err", ["warn", "u_net", "test-mode-on"],
+        "⛔ two flips at once are one: a doubled key press turns test mode on and leaves it")
+    f = hb_flags("tmtwice")
+    A.check("tmtwice: and the heartbeat says on", f and all(v == 1 for v in f), f)
+    one("tmoff2", "/probe/err", ["info", "u_net", "test-mode-off"],
+        "a flip after the 300 ms turns it off")
+    f = hb_flags("done")
+    A.check("done: the heartbeat says off", f and all(v == 0 for v in f), f)
 
     rc = 1 if A.report() else 0
     if rc:

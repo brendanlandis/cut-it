@@ -171,9 +171,18 @@ class Canvas:
         return ids
 
 
-# Pd's old iemgui colors: -(r6 << 12 | g6 << 6 | b6) - 1, six bits a channel.
+# Pd's iemgui colors as a saved file holds them: -(r6 << 12 | g6 << 6 | b6) - 1,
+# six bits a channel.
 def col(r, g, b):
     return -(((r >> 2) << 12) | ((g >> 2) << 6) | (b >> 2)) - 1
+
+
+# ...and as a color MESSAGE takes them, eight bits a channel: the file's form
+# in a message turned red light blue on the phone (2026-11-03).
+def mcol(c):
+    v = -c - 1
+    r, g, b = (v >> 12) & 63, (v >> 6) & 63, v & 63
+    return -(((r << 2) << 16) | ((g << 2) << 8) | (b << 2)) - 1
 
 
 BG, INK, GREEN, AMBER, RED, PAPER, PRESS = (
@@ -523,9 +532,11 @@ def build_patch():
     ri = g.chain(600, y3, "r #osc-in", "t a b")
     lt3 = g.obj(600, y3 + 40, "list trim")
     g.con(ri[1], 0, lt3)
-    dl = g.obj(800, y3 + 80, "del 1500")
+    # 3 s, six heartbeats: the iPhone's wifi power saving delays and drops enough
+    # (6% lost, up to 450 ms late, 2026-11-03) that 1.5 s flickered
+    dl = g.obj(800, y3 + 80, "del 3000")
     g.con(ri[1], 1, dl)
-    nl_ = g.msg(800, y3 + 120, "label no" + NBSP + "link, color %d %d" % (RED, INK))
+    nl_ = g.msg(800, y3 + 120, "label no" + NBSP + "link, color %d %d" % (mcol(RED), mcol(INK)))
     g.con(dl, 0, nl_)
     pill = g.obj(800, y3 + 400, "s ck-pill-in")
     g.con(nl_, 0, pill)
@@ -540,8 +551,8 @@ def build_patch():
     g.con(rs_, 0, ch)
     sel = g.obj(600, y3 + 240, "select 0 1")
     g.con(ch, 0, sel)
-    off = g.msg(600, y3 + 300, "label test" + NBSP + "mode" + NBSP + "off, color %d %d" % (AMBER, INK))
-    on = g.msg(700, y3 + 340, "label test" + NBSP + "mode" + NBSP + "on, color %d %d" % (GREEN, INK))
+    off = g.msg(600, y3 + 300, "label test" + NBSP + "mode" + NBSP + "off, color %d %d" % (mcol(AMBER), mcol(INK)))
+    on = g.msg(700, y3 + 340, "label test" + NBSP + "mode" + NBSP + "on, color %d %d" % (mcol(GREEN), mcol(INK)))
     g.con(sel, 0, off)
     g.con(sel, 1, on)
     g.con(off, 0, pill)
@@ -555,23 +566,23 @@ def build_patch():
     for k, (name, *_rest) in enumerate(BUTTONS):
         x = 20 + k * 260
         r_ = g.chain(x, y4, "r ck-%s-press" % name, "t b b")
-        dn = g.msg(x, y4 + 80, "color %d %d" % (PRESS, INK))
+        dn = g.msg(x, y4 + 80, "color %d %d" % (mcol(PRESS), mcol(INK)))
         g.con(r_[1], 1, dn)
         d_ = g.obj(x + 120, y4 + 120, "del 150")
         g.con(r_[1], 0, d_)
-        up = g.msg(x + 120, y4 + 160, "color %d %d" % (BG, INK))
+        up = g.msg(x + 120, y4 + 160, "color %d %d" % (mcol(BG), mcol(INK)))
         g.con(d_, 0, up)
         out_ = g.obj(x, y4 + 200, "s ck-btn-%s-in" % name)
         g.con(dn, 0, out_)
         g.con(up, 0, out_)
         if name == "send":
             ra = g.chain(x, y4 + 260, "r ck-acked", "t b b")
-            gr = g.msg(x, y4 + 340, "color %d %d" % (GREEN, INK))
+            gr = g.msg(x, y4 + 340, "color %d %d" % (mcol(GREEN), mcol(INK)))
             g.con(ra[1], 1, gr)
             g.con(ra[1], 0, d_)        # the same restore, so a press and an ack never fight
             g.con(gr, 0, out_)
     g.txt(20, y3 + 500, "The pill is the Organelle's own test mode \\, from the heartbeat's second "
-          "argument \\, and says no link when 1500 ms pass with nothing heard. The change is "
+          "argument \\, and says no link when 3 s pass with nothing heard. The change is "
           "reset by the no-link \\, so the state comes back when the link does. Send goes "
           "green on ack send \\, the Organelle's answer \\, not on the press.", 90)
 

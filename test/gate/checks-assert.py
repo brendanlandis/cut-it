@@ -100,7 +100,7 @@ def driver(seq):
     lb = box("#X obj 20 20 loadbang;")
     t = 300
     for k, (mark, actions) in enumerate(seq):
-        t += 1700 if mark == "relink" else 120     # the link times out in between
+        t += 3300 if mark == "relink" else 120     # the link times out in between
         d = box("#X obj %d 80 del %d;" % (20 + k * 10, t))
         c.append("#X connect %d 0 %d 0;" % (lb, d))
         body = ["\\; ck-mark %s" % mark]
@@ -268,11 +268,11 @@ def main():
             lab("hboff", "pill-in"))
     A.check("ack send turns Send green",
             [t for k, t in win.get("ack", []) if k == "btn-send-in"]
-            == ["color %d %d" % (B.GREEN, B.INK)], win.get("ack"))
+            == ["color %g %g" % (B.mcol(B.GREEN), B.mcol(B.INK))], win.get("ack"))
     A.check("a press darkens its button",
-            ("btn-send-in", "color %d %d" % (B.PRESS, B.INK)) in win.get("send", []),
+            ("btn-send-in", "color %g %g" % (B.mcol(B.PRESS), B.mcol(B.INK))) in win.get("send", []),
             win.get("send"))
-    A.check("1.5 s with nothing heard says no link",
+    A.check("3 s with nothing heard says no link",
             lab("silence", "pill-in") == "no link", win.get("silence"))
     A.check("and the next heartbeat restores the state, though it did not change",
             lab("relink", "pill-in") == "test mode off", win.get("relink"))

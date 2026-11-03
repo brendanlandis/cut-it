@@ -21,6 +21,26 @@ R.BOOT_MODE = "mode-1"
 -- the only ones pickup holds.
 R.KNOBS = { ["og-knob-1"] = 1, ["og-knob-2"] = 2, ["og-knob-3"] = 3, ["og-knob-4"] = 4 }
 
+-- Knob 1's tempo curve (Brendan, 2026-11-03): 50 to 200 BPM, where most music sits, take the
+-- knob from about 9 o'clock to 3 o'clock, 0.2 to 0.8 of its turn; 10 to 50 BPM take the start and
+-- 200 to 500 the end, for flourishes. Three straight pieces. -> the 0-1 that c_mapped bpm 490 10
+-- scales into those BPM, so its held row reads the same curve.
+function R.tempo_curve(x)
+  local bpm
+  if x <= 0.2 then
+    bpm = 10 + 200 * x
+  elseif x <= 0.8 then
+    bpm = 50 + 250 * (x - 0.2)
+  else
+    bpm = 200 + 1500 * (x - 0.8)
+  end
+  return (bpm - 10) / 490
+end
+
+-- A destination's curve, applied to its value and target as they leave: pickup compares the
+-- knob's own positions, and the curve only changes what they mean.
+R.CURVES = { tempo = R.tempo_curve }
+
 -- A number from a message, as Pd's [f] reads one: a symbol or nothing is 0.
 local function num(x)
   return type(x) == "number" and x or 0
@@ -109,7 +129,11 @@ function R.control(st, sel, atoms)
   local target, live = value, 1
   if k then target, live = R.pickup(st, k, value) end
   local row = st.map[st.mode] and st.map[st.mode][name]
-  if row then return { { "route", "list", { row.dest, row.arg, value, target, live } } } end
+  if row then
+    local curve = R.CURVES[row.dest]
+    if curve then value, target = curve(value), curve(target) end
+    return { { "route", "list", { row.dest, row.arg, value, target, live } } }
+  end
   if R.quiet(name) then return {} end
   return { { "disp", "list", { name, raw } } }
 end

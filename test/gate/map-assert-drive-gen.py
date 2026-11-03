@@ -30,9 +30,9 @@ SEQ = [
     (2600, "MAPPED", ["\\; param gk-cc 64"], GAP),
     # Further away is still not a crossing. Same witness.
     (2800, "AWAY", ["\\; param og-knob-1 0.9", "\\; param gk-cc 64"], GAP),
-    # Through it from above. 0.02 is 20 bpm.
+    # Through it from above. 0.02 is 14 bpm, on knob 1's curve (u_map.lua).
     (3000, "CROSS", ["\\; param og-knob-1 0.02"], GAP),
-    # ... and it tracks normally from then on. 0.3 is 157 bpm.
+    # ... and it tracks normally from then on. 0.3 is 75 bpm.
     (3200, "LIVE", ["\\; param og-knob-1 0.3"], GAP),
     # The nano's PLAY and STOP (xport-2 and xport-5) are buttons and never pick
     # up: given a slot, the repeat would latch.
@@ -76,7 +76,7 @@ SEQ = [
     # mode that arrives at runtime.
     (5600, "BAD-MODE", ["\\; mode compose"], GAP),
     # The key must survive: og-knob-1 is tempo in all six modes and long since
-    # live, so 0.6 must still reach tempo as 304 bpm.
+    # live, so 0.6 must still reach tempo as 150 bpm.
     (5800, "AFTER-BAD", ["\\; param og-knob-1 0.6"], GAP),
     # The shipped rows on the Organelle's shifted keys (og-shift-60..84, aux
     # held), the one panel that can never be the missing device.
@@ -99,7 +99,7 @@ SEQ = [
     (7800, "ROW-KEY", ["\\; param og-key-60 100"], GAP),
     # Unmapped pressure draws no raw row (item 318); pad-45 is the witness and
     # proves the test is not too wide. It sits in the drum page's free corner,
-    # since mode 1 maps the page's 40 pads.
+    # since mode 1 maps the page's 56 pads.
     (8000, "PRESSURE", ["\\; param pad-11-at 64", "\\; param pad-45 100"], GAP),
     # Mapped pressure still draws its row: a gate row maps pad-13-at to
     # volca-cc 45.

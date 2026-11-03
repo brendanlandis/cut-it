@@ -51,7 +51,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 43500")
+qd = obj(20, 120, "del 45400")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -76,6 +76,8 @@ con(unet, 0, tap_v, 0)
 con(unet, 1, tap_4, 0)
 tap_i = obj(560, 880, "s \\$0-tap-inject")
 con(unet, 2, tap_i, 0)
+tap_d = obj(820, 880, "s \\$0-tap-drums")
+con(unet, 3, tap_d, 0)
 # test mode's flip arrives by name, as u_map's cord would bring it in u_root.
 tm_r = obj(20, 720, "r \\$0-tm")
 con(tm_r, 0, unet, 0)
@@ -160,6 +162,7 @@ probe(400, 1900, "volca", "r \\$0-tap-volca")
 probe(700, 1900, "p404", "r \\$0-tap-p404")
 probe(20, 2700, "inject", "r \\$0-tap-inject")
 probe(400, 2700, "err", "r err")
+probe(700, 2700, "drums", "r \\$0-tap-drums")
 txt(20, 2180,
     "u_net is the only abstraction in this run \\, so a re-wire seen here came from the "
     "inbound path. The two cords are the output devices \\, wired per C-2 \\, hence the taps.", 70)
@@ -197,6 +200,7 @@ SEQ = [
                          ("cmd", ("cutit", "reload")),
                          ("cmd", ("cutit", "test-note m_launchpad")),
                          ("cmd", ("cutit", "test-note 404")),
+                         ("cmd", ("cutit", "drums reload")),
                          ("cmd", ("other", "re-wire"))]),
     (28000, "cmdclear", [("cmd", ("cutit", "clear-alert"))]),
     # -- the checklist page's two commands, and test mode between them. A Send
@@ -213,7 +217,10 @@ SEQ = [
     # dropped, so two in one window leave test mode on, and one more turns it off
     (37800, "tmtwice",  [("tm", None), ("tm", None)]),
     (39200, "tmoff2",   [("tm", None)]),
-    (41500, "done",     []),
+    # -- the two drum buttons, out the fourth outlet to c_steps
+    (40600, "cmdsync",  [("cmd", ("cutit", "drums sync"))]),
+    (42000, "cmdsnap",  [("cmd", ("cutit", "drums snap"))]),
+    (43400, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940

@@ -18,7 +18,7 @@ the verdict file went, and every step's text came here. A rig session means open
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
 | [midi](midi.md) | 18 | the map by mode, the SP-404 both ways, the Volca by ear, hot-swap |
 | [debug](debug.md) | 9 | the debug patch, with the instrument stopped |
-| [sequencer](sequencer.md) | 13 | mode 1's drum page and what the 404 does with it |
+| [sequencer](sequencer.md) | 17 | mode 1's drum page and what the 404 does with it |
 
 ⚠️ **The Mac is not the device.** The Phase 6 gate passed 25/25 on the Mac twice and shipped three
 bugs; a checklist on the rig is the last word.

@@ -4,10 +4,11 @@
 --
 -- creation arg: the 404 bank its tracks play, 1 for A.
 -- inlet 1: the presses, from u_map -- step <n> <vel>, vel <level> <vel>, pad <n> <vel>, and
--- knob 2's last <n>.
--- inlet 2: c_steps.pd's own -- fire <step>, restore <velocities>, init.
--- outlet 1: pad <pad> <velocity>, to m_404. outlet 2: the page, to g_grid. outlet 3: the 256
--- velocities to save. outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded.
+-- knobs 2 and 3, last <0-1> and track-last <0-1> -- and the phone's follow and resync, from u_net.
+-- inlet 2: c_steps.pd's own -- tick, start, stop, restore <the saved line>, init.
+-- outlet 1: pad <pad> <velocity>, to m_404. outlet 2: the page, to g_grid. outlet 3: the pattern
+-- to save. outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded. outlet 6: a knob's
+-- row, to disp.
 --
 -- A Lua error leaves outlet 4 as fail c_steps lua-<selector>, and its text goes to Pd's console
 -- where there is one: the device has none (C-12).
@@ -18,10 +19,10 @@ local StepsLua = pd.Class:new():register("c_steps-lua")
 -- (`; pdluax reload c_steps-lua`) reloads them too, and every object keeps its pattern.
 local R = dofile(StepsLua._loadpath .. "c_steps.lua")
 
-local OUTLET = { note = 1, page = 2, save = 3, err = 4 }
+local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6 }
 
 function StepsLua:initialize(_, atoms)
-  self.inlets, self.outlets = 2, 5
+  self.inlets, self.outlets = 2, 6
   self.state = R.new(atoms[1])
   return true
 end

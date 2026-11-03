@@ -92,7 +92,7 @@
 9 0 mode compose mode-1;
 9 5 tempo 120;
 9 5 start bang;
-9 8 stop bang;
-9 10 start bang;
-9 11 stop bang;
-9 12 mode compose mode-2;
+9 12 stop bang;
+9 14 start bang;
+9 15 stop bang;
+9 16 mode compose mode-2;

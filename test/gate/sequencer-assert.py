@@ -11,7 +11,10 @@ state bus and the file u_state writes. Nothing inside c_steps is read.
                  the step rule's three cases, nothing on the free row, and nothing
                  at all in another mode
   the transport  every step plays exactly its tracks, from step 1, on PLAY and
-                 on PLAY again; STOP and panic stop it; knob 2's last step
+                 on PLAY again; STOP and panic stop it
+  the last steps knob 2's, held at 16 until turned through it; knob 3's for the
+                 selected track; two tracks looping on their own; the drum
+                 screen's snap, over OSC through u_net, landing at PLAY
   the disk       the pattern reaches cut-it-auto.txt as one line
 
 A note's step is the playhead in the frame painted after it: c_steps sends a
@@ -34,7 +37,8 @@ PAD_NOTE = [48, 49, 50, 51, 44, 45, 46, 47, 40, 41, 42, 43, 36, 37, 38, 39]
 WINDOWS = ["EARLY", "RESTORE", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
            "RULE-ON", "RULE-SAME", "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER",
            "FREE-ROW", "MODE-2", "OTHER-MODE", "MODE-1", "PLAY", "STOP", "STOPPED",
-           "LAST-3", "REPLAY", "PANIC", "AFTER-PANIC", "DONE"]
+           "KNOB2-HELD", "LAST-3", "REPLAY", "PANIC", "AFTER-PANIC", "KNOB3",
+           "PAST-LAST", "POLY", "POLY-STOP", "SNAP", "SNAP-PLAY", "SNAP-STOP", "DONE"]
 EDITS = ["VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
 
@@ -42,13 +46,15 @@ MARK = re.compile(r"^SEQ:\s+MARK\s+(\S+)$")
 NOTE = re.compile(r"^NOTEOUT:\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)$")
 
 
-def level(n):
-    """A velocity button's velocity: 127n/8, rounded."""
-    return int(127 * n / 8 + 0.5)
+CELLS = 16 * 32                 # then the 16 tracks' own last steps: 528 in a line
 
 
 def idx(track, step):
-    return (track - 1) * 16 + (step - 1)
+    return (track - 1) * 32 + (step - 1)
+
+
+def own(line, track):
+    return line[CELLS + track - 1]
 
 
 def args():
@@ -131,17 +137,17 @@ def page_check(frame, lay, pat, track, lvl, head=None, last=16):
         return problem
     if lamp != G.LAMPS[0]:
         return "lit mode lamp is %s, not mode 1's %d" % (lamp, G.LAMPS[0])
-    want = [G.step_color(pat[idx(track, s)], s, last) for s in range(1, 17)]
+    want = [G.step_color(pat[idx(track, s)], s, last) for s in range(1, 33)]
     if head:
         want[head - 1] = G.PLAYHEAD
-    got = [page["step"].get(s) for s in range(1, 17)]
+    got = [page["step"].get(s) for s in range(1, 33)]
     if got != want:
         return "track %d's steps: want %s got %s" % (track, want, got)
     vel = {n: c == G.LEVEL_RGB[n - 1] for n, c in page["vel"].items()}
     if sorted(n for n, full in vel.items() if full) != [lvl] or len(vel) != 8:
         return "velocity buttons at full %s, want [%d]" % (
             sorted(n for n, full in vel.items() if full), lvl)
-    pads = {n: c for n, c in page["pad"].items() if c != G.DIM}
+    pads = {n: c for n, c in page["pad"].items() if c != G.PAD_DIM}
     if pads != {track: G.LEVEL_RGB[lvl - 1]}:
         return "pads lit %s, want pad %d in level %d's color" % (pads, track, lvl)
     return None
@@ -152,8 +158,8 @@ def main():
     cap = A.require_capture(sys.stdin.read())
     lay = G.drum_layout()
     seed = read_key(opt.seed)
-    if not A.check("the seed holds %s and 256 velocities" % KEY,
-                   seed is not None and len(seed) == 256, "seed: %s" % seed):
+    if not A.check("the seed holds %s, 512 velocities and 16 last steps" % KEY,
+                   seed is not None and len(seed) == CELLS + 16, "seed: %s" % seed):
         return A.report()
 
     order, by = A.windows(cap, "SEQ", len(WINDOWS))
@@ -166,6 +172,8 @@ def main():
                       if e[0] == "STATE" and e[1][:3] == ["put", "auto", KEY]]
     raw = lambda k: [e[1] for e in W(k)
                      if e[0] == "DISP" and e[1] and e[1][0].startswith("pad-")]
+    knob_rows = lambda k, name: [e[1] for e in W(k)
+                                 if e[0] == "DISP" and e[1][:1] == [name]]
 
     # The pattern after each window, step by step through the driver's presses.
     pat = {"RESTORE": list(seed)}
@@ -195,7 +203,7 @@ def main():
             ons("EARLY") == [(48, 90, BANK_A)], "note-ons: %s" % ons("EARLY"))
 
     print("\n--- the restore ---")
-    A.check("⛔ the restored pattern is put straight back -- once, the seeded 256 exactly",
+    A.check("⛔ the restored pattern is put straight back -- once, the seeded 528 exactly",
             puts("RESTORE") == [seed],
             "%d put(s) of %s; the first holds %s values" % (
                 len(puts("RESTORE")), KEY, len(puts("RESTORE")[0]) if puts("RESTORE") else 0))
@@ -237,12 +245,12 @@ def main():
     A.check("⛔ no drum-page press draws a raw pad-NN row -- the grid is the feedback",
             not rows, rows)
 
-    print("\n--- the free row ---")
-    A.check("the row the velocity buttons left is not the drum page: no put and no note",
+    print("\n--- the free corner ---")
+    A.check("the top of the right 4x4 is not the drum page: no put and no note",
             not puts("FREE-ROW") and not ons("FREE-ROW"),
             "puts %d, note-ons %s" % (len(puts("FREE-ROW")), ons("FREE-ROW")))
-    A.check("... and it names itself, as an unmapped control does -- pad-64 100",
-            raw("FREE-ROW") == [["pad-64", "100"]], raw("FREE-ROW"))
+    A.check("... and it names itself, as an unmapped control does -- pad-46 100",
+            raw("FREE-ROW") == [["pad-46", "100"]], raw("FREE-ROW"))
 
     print("\n--- another mode ---")
     A.check("in mode 2 a step pad is not the drum page: no put and no note",
@@ -279,7 +287,7 @@ def main():
             shown += 1
             off.append(page_check(f, lay, final, 2, 2, h[0]))
     off = [o for o in off if o]
-    A.check("the playhead is one white step over the pattern, in %d frames" % shown,
+    A.check("the playhead is one green step over the pattern, in %d frames" % shown,
             shown >= 16 and not off, off[:2] or "only %d frames showed one" % shown)
     A.check("⛔ STOP stops it -- no note-on after STOP",
             not ons("STOPPED"), "note-ons: %s" % ons("STOPPED"))
@@ -289,9 +297,12 @@ def main():
     A.check("... and the playhead goes out", after and not lit,
             page_check(lit[0], lay, final, 2, 2) if lit else "no frame")
     print("\n--- the last step ---")
-    rows = [e[1] for e in W("LAST-3") if e[0] == "DISP" and e[1][:1] == ["last-step"]]
-    A.check("knob 2 sets the last step and draws it -- last-step 3", rows == [["last-step", "3"]],
-            rows)
+    rows = knob_rows("KNOB2-HELD", "last-step")
+    A.check("⛔ knob 2 starts HELD at 16: at step 7 it draws last-step 16 (7) and changes nothing",
+            rows == [["last-step", "16", "(7)"]] and not puts("KNOB2-HELD"), rows)
+    rows = knob_rows("LAST-3", "last-step")
+    A.check("turned through 16 it is live -- last-step 17, then last-step 3",
+            rows == [["last-step", "17"], ["last-step", "3"]], rows)
     prob = page_check(frames("LAST-3")[-1], lay, final, 2, 2, last=3) if frames("LAST-3") \
         else "no frame in the window"
     A.check("... the page darkens the empty steps past it, and the lit ones keep their color",
@@ -306,15 +317,57 @@ def main():
     A.check("⛔ with the last step at 3 it walks 1 to 3 and wraps -- 1 2 3 1 2 in 0.6 s",
             walk == [1, 2, 3, 1, 2] and not bad, "steps %s, wrong %s" % (walk, bad[:3]))
     A.check("⛔ a panic stops it too -- no note-on after it",
-            not ons("AFTER-PANIC") and not ons("DONE"),
-            "note-ons: %s" % (ons("AFTER-PANIC") + ons("DONE")))
+            not ons("AFTER-PANIC"), "note-ons: %s" % ons("AFTER-PANIC"))
+
+    print("\n--- knob 3, track 2's own last step ---")
+    rows = knob_rows("KNOB3", "pad2-last")
+    A.check("⛔ held at track 2's last step, 3, then turned through it -- 3 (7), then 1, then 6",
+            rows == [["pad2-last", "3", "(7)"], ["pad2-last", "1"], ["pad2-last", "6"]], rows)
+    got = [own(l, 2) for l in puts("KNOB3")]
+    A.check("... and saved with the pattern, each time it changed -- 1, then 6", got == [1, 6],
+            "track 2's own last step in the puts: %s" % got)
+    prob = page_check(frames("KNOB3")[-1], lay, final, 2, 2, last=6) if frames("KNOB3") \
+        else "no frame in the window"
+    A.check("... and the page shows six steps, the rest dark", prob is None, prob)
+    A.check("a press past the last step does nothing: no put, no note, no raw row",
+            not puts("PAST-LAST") and not ons("PAST-LAST") and not raw("PAST-LAST"),
+            "puts %d, note-ons %s, rows %s" % (len(puts("PAST-LAST")), ons("PAST-LAST"),
+                                                raw("PAST-LAST")))
+
+    print("\n--- the loops ---")
+    # Every track loops on its own: the global last step is 3, track 2's is 6
+    # and track 16's 24, as seeded. Steps k = 1, 2, ... from PLAY.
+    lasts = {t: own(final, t) or 3 for t in range(1, 17)}
+    lasts[2] = 6
+
+    def tick(k):
+        notes = sorted((PAD_NOTE[t - 1], final[idx(t, (k - 1) % lasts[t] + 1)], BANK_A)
+                       for t in range(1, 17) if final[idx(t, (k - 1) % lasts[t] + 1)] > 0)
+        return ((k - 1) % 6 + 1, notes)
+    poly = [r for r in played(evs, {"POLY", "POLY-STOP"}, lay) if r[0] is not None]
+    A.check("⛔ track 1 loops every 3 and track 2 every 6, the playhead track 2's -- "
+            "the first nine steps", len(poly) >= 9 and poly[:9] == [tick(k) for k in range(1, 10)],
+            "got %s, want %s" % (poly[:9], [tick(k) for k in range(1, 10)]))
+
+    print("\n--- the drum screen's snap ---")
+    A.check("snap, sent to u_net over OSC while stopped, waits: no put",
+            not puts("SNAP"), "puts: %d" % len(puts("SNAP")))
+    landed = puts("SNAP-PLAY")
+    A.check("⛔ ... and lands at PLAY: every track on the global last step, saved",
+            len(landed) == 1 and [own(landed[0], t) for t in range(1, 17)] == [0] * 16,
+            "puts %s" % [[own(l, t) for t in range(1, 17)] for l in landed])
+    snapped = [r for r in played(evs, {"SNAP-PLAY", "SNAP-STOP"}, lay) if r[0] is not None]
+    A.check("... and track 2 then walks the global loop -- 1 2 3 1",
+            [s for s, _n in snapped][:4] == [1, 2, 3, 1], "steps %s" % [s for s, _n in snapped])
+    A.check("STOP stops it again", not ons("DONE"), "note-ons: %s" % ons("DONE"))
 
     print("\n--- the disk ---")
     disk = read_key(os.path.join(opt.state, "cut-it-auto.txt"))
     with open(os.path.join(opt.state, "cut-it-auto.txt"), encoding="utf-8") as fh:
         lines = [l for l in fh.read().splitlines() if l.split()[:1] == [KEY]]
-    A.check("⛔ %s reaches cut-it-auto.txt as ONE line, the final 256 exactly" % KEY,
-            disk == final and len(lines) == 1 and len(lines[0].split()) == 257,
+    snapped = final[:CELLS] + [0] * 16
+    A.check("⛔ %s reaches cut-it-auto.txt as ONE line, the final 528 exactly" % KEY,
+            disk == snapped and len(lines) == 1 and len(lines[0].split()) == CELLS + 17,
             "on disk: %s" % (disk if disk is None else "%d values" % len(disk)))
 
     errs = [e[1] for k in order for e in W(k) if e[0] == "ERR"

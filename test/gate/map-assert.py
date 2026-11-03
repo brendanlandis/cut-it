@@ -140,10 +140,11 @@ def run_asserts(cap):
     midi = lambda k: [e for e in W(k) if e[0] in ("NOTEOUT", "CTLOUT", "PGMOUT")]
 
     # Item 234: mother pushes knobs.txt at boot, and the table and the lookup
-    # key's mode must both be ready for it.
+    # key's mode must both be ready for it. Knob 1's tempo is u_map.lua's
+    # curve: 0.0958 is 29 bpm, 0.5 is 125, 0.9 is 350.
     early = [e for e in W("EARLY") if e[0] == "TEMPO"]
     A.check("⛔ a control moved at 300 ms ALREADY MAPS -- table and mode key ready at load",
-            any(abs(float(e[1][0]) - 57) < 1.5 for e in early if e[1]),
+            any(abs(float(e[1][0]) - 29) < 1.5 for e in early if e[1]),
             "tempo in that window: %s" % [e[1] for e in early])
     A.check("a mapped control reaches its destination",
             any(e[0] == "CTLOUT" and e[1][1] == 41 for e in W("MAPPED")),
@@ -173,8 +174,8 @@ def run_asserts(cap):
             repr(W("BAD-MODE")))
     # The error alone would not catch it; the key must survive. og-knob-1 is
     # tempo in all six modes.
-    A.check("⛔ ... and the lookup KEY SURVIVES IT -- 0.6 is still 304 bpm",
-            any(e[0] == "TEMPO" and e[1] == ["304"] for e in W("AFTER-BAD")),
+    A.check("⛔ ... and the lookup KEY SURVIVES IT -- 0.6 is still 150 bpm",
+            any(e[0] == "TEMPO" and e[1] == ["150"] for e in W("AFTER-BAD")),
             "tempo in that window: %s -- a poisoned key sends nothing here and "
             "draws og-knob-1 0.6 on the screen instead"
             % [e[1] for e in W("AFTER-BAD") if e[0] == "TEMPO"])
@@ -202,11 +203,11 @@ def run_asserts(cap):
     A.check("... and that window was live too",
             len(cc("AWAY", 41)) == 1, repr(W("AWAY")))
 
-    A.check("⛔ CROSSING the stored value hands over -- 0.02 is 20 bpm",
-            any(abs(t - 20) < 1.5 for t in tempos("CROSS")),
+    A.check("⛔ CROSSING the stored value hands over -- 0.02 is 14 bpm",
+            any(abs(t - 14) < 1.5 for t in tempos("CROSS")),
             "tempo in that window: %s" % tempos("CROSS"))
-    A.check("and it tracks normally from then on -- 0.3 is 157 bpm",
-            any(abs(t - 157) < 1.5 for t in tempos("LIVE")),
+    A.check("and it tracks normally from then on -- 0.3 is 75 bpm",
+            any(abs(t - 75) < 1.5 for t in tempos("LIVE")),
             "tempo in that window: %s" % tempos("LIVE"))
 
     # Buttons never pick up: a button given a slot would latch on its repeat.
@@ -233,13 +234,13 @@ def run_asserts(cap):
     # The screen shows the mapped value, not the raw position (item 238).
     disp = lambda k: [e[1] for e in W(k) if e[0] == "DISP"]
     A.check("⛔ while HELD the row carries BOTH numbers -- bpm <latched> (<knob>)",
-            any(d[:2] == ["bpm", "57"] and d[2:] == ["(255)"] for d in disp("SUPPRESS")),
+            any(d[:2] == ["bpm", "29"] and d[2:] == ["(125)"] for d in disp("SUPPRESS")),
             "disp in that window: %s" % disp("SUPPRESS"))
-    A.check("... and it follows the knob while still held -- 0.9 is 451",
-            any(d[:2] == ["bpm", "57"] and d[2:] == ["(451)"] for d in disp("AWAY")),
+    A.check("... and it follows the knob while still held -- 0.9 is 350",
+            any(d[:2] == ["bpm", "29"] and d[2:] == ["(350)"] for d in disp("AWAY")),
             "disp in that window: %s" % disp("AWAY"))
     A.check("⛔ once LIVE the row is the mapped value alone -- no raw og-knob-1",
-            any(d == ["bpm", "157"] for d in disp("LIVE"))
+            any(d == ["bpm", "75"] for d in disp("LIVE"))
             and not any(d and d[0].startswith("og-knob") for d in disp("LIVE")),
             "disp in that window: %s" % disp("LIVE"))
 
@@ -378,11 +379,11 @@ def nosave_asserts(cap):
     cc = lambda k, n: [e[1] for e in W(k) if e[0] == "CTLOUT" and e[1][1] == n]
     disp = lambda k: [e[1] for e in W(k) if e[0] == "DISP"]
 
-    A.check("⛔ the boot push is still TAKEN with no knobs.txt -- 0.0958 is 57 bpm",
-            any(abs(t - 57) < 1.5 for t in tempos("EARLY")),
+    A.check("⛔ the boot push is still TAKEN with no knobs.txt -- 0.0958 is 29 bpm",
+            any(abs(t - 29) < 1.5 for t in tempos("EARLY")),
             "tempo in that window: %s" % tempos("EARLY"))
-    A.check("⛔ ... and NOTHING is held -- knob 1 moves the tempo at 2400 ms, 0.5 is 255",
-            any(abs(t - 255) < 1.5 for t in tempos("SUPPRESS")),
+    A.check("⛔ ... and NOTHING is held -- knob 1 moves the tempo at 2400 ms, 0.5 is 125",
+            any(abs(t - 125) < 1.5 for t in tempos("SUPPRESS")),
             "tempo in that window: %s -- armed against its own live position?"
             % tempos("SUPPRESS"))
     A.check("... and that window was live -- another control reached its destination",

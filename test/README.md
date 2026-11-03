@@ -34,24 +34,24 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 138: 70 in Lua, 68 in Pd | `module/map` |
+| `map-assert.sh` | 141: 73 in Lua, 68 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 43 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
 | `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 78 | `device/phone` |
+| `phone-assert.sh` | 86 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
 | `checks-assert.sh` | 25 | `test/checklists/README.md`, *On the phone* — the checklist page |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 77: 43 in Lua, 34 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 110: 66 in Lua, 44 in Pd | `module/sequencer` |
 
-**858 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**902 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **851**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **895**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's.
 Worth knowing before trusting an arithmetic check of this number against a log.
@@ -382,7 +382,7 @@ equivalent.
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      43 + 34 checks, ~15 s — c_steps' rules in Lua, then the drum page and the pattern on disk
+./test/gate/sequencer-assert.sh      66 + 44 checks, ~18 s — c_steps' rules in Lua, then the drum page and the pattern on disk
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
@@ -399,7 +399,10 @@ state bus and `cut-it-auto.txt`. **A note's step is the playhead of the frame pa
 `c_steps` sends a step's notes and its playhead in one logical instant, and the frame clock paints
 within 20 ms, six times inside a sixteenth at 120 BPM — so every step's exact notes are asserted
 without a timestamp. The tempo is set by the driver, and PLAY to STOP is counted: 21 steps. Knob 2
-sets the last step to 3 before PLAY again, which must walk 1 2 3 1 2.
+is held at 16 and then sets the last step to 3 before PLAY again, which must walk 1 2 3 1 2. Then
+knob 3 gives track 2 a last step of 6, and nine steps are checked against two loops, 3 and 6, note
+by note. Last, the drum screen's `snap` is sent as the phone sends it, OSC to `u_net`'s own port
+(`CUTIT_INPORT`), so the cord from `u_net` to `c_steps` in `u_root` is under test too.
 
 ✅ **Proven red before it was trusted**: with `c_steps` absent (the known exit 2), against the patch
 before the sequencer was wired (20 of 28), and on eight mutations — the step rule inverted, PLAY not
@@ -412,7 +415,8 @@ on `err`, and a syntax error with silence (18 failed); the Lua half dies on both
 ✅ **And for one velocity row** (2026-11-03), against the old step rule and the old color ramp
 together: Lua 1 failed, Pd 12; with the old map, a press on the freed row was a `layout-miss`.
 ✅ **And for the last step**: PLAY parking the counter at 15, as it did, started PLAY again on step 2
-with the last step at 3 (4 failed). 3, not 4, because a last step that divides 16 hides it.
+with the last step at 3 (4 failed). 3, not 4, because a last step that divides 16 hides it. Without
+`u_root`'s cord from `u_net` to `c_steps`, the snap never landed (3 failed).
 
 ⚠️ **The layout table is read, not restated**, so a frame is decoded with the same table the patch
 paints from. The analyzer's expectations are what keeps that honest: the driver presses `pad-26`

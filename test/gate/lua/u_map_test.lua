@@ -97,15 +97,27 @@ equal("... and the key survives every one of them", st.mode, "mode-2")
 equal("a list of two atoms is a mode too", R.mode(st, "list", { "perform", "mode-5" }),
       { { "store", "list", { "perform", "mode-5" } } })
 
+print("\n--- the tempo curve ---")
+local C = R.tempo_curve
+local bpm = function(x) return math.floor(490 * C(x) + 10 + 0.5) end
+equal("knob 1: 10 BPM at the bottom, 50 at 9 o'clock, 125 at noon, 200 at 3 o'clock, 500 at the top",
+      { bpm(0), bpm(0.2), bpm(0.5), bpm(0.8), bpm(1) }, { 10, 50, 125, 200, 500 })
+check("... rising all the way, with no step back at the joins", (function()
+  for i = 1, 1000 do if C(i / 1000) <= C((i - 1) / 1000) then return false end end
+  return true
+end)(), "")
+equal("... and only the tempo has a curve: a mapped CC passes its knob's value as it is",
+      R.CURVES["volca-cc"], nil)
+
 print("\n--- pickup ---")
 st = R.new(MAP)
 equal("a knob's first value inside the boot window passes",
-      R.control(st, "og-knob-1", { 0.0958 }), route("tempo", 0, 0.0958, 0.0958, 1))
+      R.control(st, "og-knob-1", { 0.0958 }), route("tempo", 0, C(0.0958), C(0.0958), 1))
 equal("... and arms it: the next value is HELD, carrying the stored target",
-      R.control(st, "og-knob-1", { 0.5 }), route("tempo", 0, 0.5, 0.0958, 0))
+      R.control(st, "og-knob-1", { 0.5 }), route("tempo", 0, C(0.5), C(0.0958), 0))
 equal("moving further away is still held", R.control(st, "og-knob-1", { 0.9 })[1][3][5], 0)
 equal("CROSSING the target releases it, at the crossing value",
-      R.control(st, "og-knob-1", { 0.02 }), route("tempo", 0, 0.02, 0.0958, 1))
+      R.control(st, "og-knob-1", { 0.02 }), route("tempo", 0, C(0.02), C(0.0958), 1))
 equal("... and it is live from then on", R.control(st, "og-knob-1", { 0.3 })[1][3][5], 1)
 
 st = R.new(MAP)

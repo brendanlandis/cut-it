@@ -145,7 +145,7 @@ def home_shape(frame):
 # g_grid and u_map both read, never typed here; the colors are g_grid's.
 DRUM_PAGE = "Cut It/cut-it-drum-page.txt"
 PLAYHEAD = 21                   # green, over whatever the step holds
-OUT = 0                         # an off step past the last step: dark
+OUT = 0                         # a step past the last step, lit or not: dark
 # g_grid's RGB table: velocity level n's color at full brightness, white for
 # level 1 falling evenly to red for level 8, and the same at a quarter, for the
 # velocity buttons not selected.
@@ -153,6 +153,7 @@ LEVEL_RGB = ((127, 127, 127), (127, 109, 109), (127, 91, 91), (127, 73, 73),
              (127, 54, 54), (127, 36, 36), (127, 18, 18), (127, 0, 0))
 LEVEL_DIM = ((32, 32, 32), (32, 27, 27), (32, 23, 23), (32, 18, 18),
              (32, 14, 14), (32, 9, 9), (32, 4, 4), (32, 0, 0))
+PAD_DIM = (6, 6, 6)             # a drum pad not selected: dimmer than any button
 
 
 def drum_layout(path=DRUM_PAGE):
@@ -173,8 +174,10 @@ def level_of(velocity):
 
 def step_color(velocity, step=1, last=16):
     """The color a step at this velocity paints, off the playhead."""
+    if step > last:
+        return OUT
     if velocity < 1:
-        return DIM if step <= last else OUT
+        return DIM
     return LEVEL_RGB[level_of(velocity) - 1]
 
 
@@ -187,7 +190,7 @@ def drum_page(frame, lay):
     it gives way here, and the bottom-right 4x4, which no row names.
     """
     allowed = {"step": {DIM, OUT, PLAYHEAD} | set(LEVEL_RGB),
-               "vel": set(LEVEL_RGB) | set(LEVEL_DIM), "pad": {DIM} | set(LEVEL_RGB)}
+               "vel": set(LEVEL_RGB) | set(LEVEL_DIM), "pad": {PAD_DIM} | set(LEVEL_RGB)}
     lamp, page, stray = None, {"step": {}, "vel": {}, "pad": {}}, []
     for k, color in enumerate(frame.colors()):
         idx = FIRST_INDEX + k
@@ -213,7 +216,7 @@ def drum_page(frame, lay):
         return ("velocity buttons %s are not their own level's color" % wrong), lamp, page
     if len(full) > 1:
         return ("%d velocity buttons selected: %s" % (len(full), sorted(full))), lamp, page
-    lit = [n for n, c in page["pad"].items() if c != DIM]
+    lit = [n for n, c in page["pad"].items() if c != PAD_DIM]
     if len(lit) > 1:
         return ("%d pads lit: %s" % (len(lit), sorted(lit))), lamp, page
     heads = [n for n, c in page["step"].items() if c == PLAYHEAD]

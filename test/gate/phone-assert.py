@@ -47,7 +47,9 @@ ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert",
          "/probe/presence", "/probe/volca", "/probe/p404",
          # and the checklist page's: a Send line leaves u_net through a cord to
          # u_inject, and test mode and a result report on err.
-         "/probe/inject", "/probe/err"}
+         "/probe/inject", "/probe/err",
+         # and the two drum buttons: out a cord to c_steps.
+         "/probe/drums"}
 SCENE = os.path.join(ROOT, "tools", "pdparty-scene", "CutItRemote", "_main.pd")
 # The checklist page, a second scene: it sends send and result, built by
 # list prepend from its data rather than typed in a message box.
@@ -298,9 +300,11 @@ def main():
     A.check("the inbound route boxes and the scene's commands are all readable",
             ucmd is not None and udev is not None and smsg is not None,
             "u_net: %r / %r   scene: %r" % (ucmd, udev, smsg))
+    udrums = _route_of(UNET, "sync")
     if ucmd and udev and smsg is not None:
         scmd = sorted({m.split()[0] for m in smsg})
-        sdev = sorted({m.split()[1] for m in smsg if len(m.split()) > 1})
+        sdev = sorted({m.split()[1] for m in smsg if m.split()[0] == "test-note"})
+        sdrums = sorted({m.split()[1] for m in smsg if m.split()[0] == "drums"})
         ccmd = checks_cmds() or []
         A.check("⛔ the two scenes send EXACTLY the commands u_net routes",
                 sorted(scmd + ccmd) == sorted(ucmd),
@@ -310,8 +314,12 @@ def main():
         A.check("⛔ the scene names EXACTLY the devices u_net routes",
                 sdev == sorted(udev),
                 "scene names %s, u_net routes %s" % (" ".join(sdev), " ".join(udev)))
-        A.check("one button per command, and one per sounding device",
-                len(smsg) == len(set(ucmd) - set(PAGE_CMDS)) - 1 + len(udev),
+        A.check("⛔ the scene's drums buttons are EXACTLY the ones u_net routes",
+                udrums is not None and sdrums == sorted(udrums),
+                "scene sends drums %s, u_net routes %s" % (" ".join(sdrums), udrums))
+        A.check("one button per command, one per sounding device, one per drums action",
+                len(smsg) == len(set(ucmd) - set(PAGE_CMDS)) - 2 + len(udev)
+                + len(udrums or []),
                 "%d message boxes: %s" % (len(smsg), ", ".join(smsg)))
         # and the ack must be able to light every one of them
         A.check("the scene's ACK route covers every command u_net can acknowledge",
@@ -320,6 +328,9 @@ def main():
         A.check("the scene's ACK route covers every device",
                 _route_of(SCENE, "m_volca") == udev,
                 "scene: %r" % (_route_of(SCENE, "m_volca"),))
+        A.check("the scene's ACK route covers every drums action",
+                _route_of(SCENE, "sync") == udrums,
+                "scene: %r" % (_route_of(SCENE, "sync"),))
 
     # -- the two traps the scene cannot report on itself --------------------
     guis = scene_iemguis()
@@ -349,12 +360,13 @@ def main():
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})
     A.check("shape: only known OSC addresses", all(a in ADDRS for a in seen),
             "saw " + ", ".join(seen))
-    A.check("shape: all twenty-one windows arrived",
+    A.check("shape: all twenty-three windows arrived",
             [n for n, _ in wins] == ["idle", "sweep1", "sweep2", "statussw",
                                      "alert", "reserved", "idle2", "cmdwire",
                                      "cmdvolca", "cmd404", "cmdbogus", "cmdclear",
                                      "sendoff", "tmon", "sendon", "result", "tmoff",
-                                     "sendoff2", "tmtwice", "tmoff2", "done"],
+                                     "sendoff2", "tmtwice", "tmoff2", "cmdsync",
+                                     "cmdsnap", "done"],
             ", ".join(n for n, _ in wins))
 
     hbs = [g[0] for _, rowset in wins for _, a, g in rowset
@@ -468,7 +480,7 @@ def main():
                 "; ".join("%s %s" % (a, v) for a, v in got.items() if v) or "(silent)")
 
     CMD = ["/probe/presence", "/probe/volca", "/probe/p404", "/probe/inject",
-           "/cutit/ack"]
+           "/probe/drums", "/cutit/ack"]
 
     one("cmdwire", "/cutit/ack", ["re-wire"], "re-wire is acknowledged")
     one("cmdwire", "/probe/presence", ["re-wire"],
@@ -494,7 +506,7 @@ def main():
     # list, a bare `404` (route reads it as a float and can never match), and a
     # well-formed command under another OSC root.
     none_of("cmdbogus", CMD,
-            "⛔ FIVE WRONG COMMANDS REACH NOTHING AT ALL -- no ack, no bus, "
+            "⛔ SIX WRONG COMMANDS REACH NOTHING AT ALL -- no ack, no bus, "
             "neither outlet")
     A.check("cmdbogus: the link was LIVE while they were ignored",
             len(args("cmdbogus", "/cutit/hb")) >= 2,
@@ -561,6 +573,12 @@ def main():
         "a flip after the 300 ms turns it off")
     f = hb_flags("done")
     A.check("done: the heartbeat says off", f and all(v == 0 for v in f), f)
+
+    for win, cmd in (("cmdsync", "sync"), ("cmdsnap", "snap")):
+        one(win, "/probe/drums", [cmd], "drums %s leaves for c_steps as %s" % (cmd, cmd))
+        one(win, "/cutit/ack", ["drums", cmd], "and is acknowledged")
+        none_of(win, ["/probe/volca", "/probe/p404", "/probe/presence", "/probe/inject"],
+                "and reaches nothing else")
 
     rc = 1 if A.report() else 0
     if rc:

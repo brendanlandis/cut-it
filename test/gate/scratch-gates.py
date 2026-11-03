@@ -170,7 +170,7 @@ def launchpad(g):
 
 def tempo(g):
     S.require("Cut It/u_tempo.pd", "Cut It/main-dev.pd")
-    return _stdin_gate(g, 60, blank=True, say="   running (about 16 s -- DSP is "
+    return _stdin_gate(g, 60, blank=True, say="   running (about 18 s -- DSP is "
                        "on, the clock is a phasor~) ...")
 
 
@@ -386,9 +386,11 @@ def presence(g):
                      stdin=cap)
 
 
-# The pattern the state directory starts with, as (track, step): velocity. The
-# analyzer reads it back from seed.txt rather than holding a second copy.
-SEQ_SEED = {(1, 3): 20, (1, 9): 77, (2, 7): 50, (16, 16): 127}
+# The pattern the state directory starts with, as (track, step): velocity, and
+# the tracks with a last step of their own. The analyzer reads it back from
+# seed.txt rather than holding a second copy.
+SEQ_SEED = {(1, 3): 20, (1, 9): 77, (2, 7): 50, (16, 32): 127}
+SEQ_OWN = {16: 24}
 
 
 def sequencer(g):
@@ -403,18 +405,20 @@ def sequencer(g):
     s = g.copy()
     s.state_dir()
     # A saved pattern, so the restore at ~3.5 s is under test as well as the
-    # edits after it, and its last cell, track 16's step 16, proves the whole
-    # 257-atom line came back.
-    pat = [0] * 256
+    # edits after it, and its last cell, track 16's own last step, proves the
+    # whole 529-atom line came back.
+    pat = [0] * 528
     for (track, step), v in SEQ_SEED.items():
-        pat[(track - 1) * 16 + step - 1] = v
+        pat[(track - 1) * 32 + step - 1] = v
+    for track, n in SEQ_OWN.items():
+        pat[512 + track - 1] = n
     body = "mode compose mode-1\nsection-1-drums %s\n" % " ".join(map(str, pat))
     for path in (os.path.join(s.state, "cut-it-auto.txt"), s.path("seed.txt")):
         with open(path, "w") as fh:
             fh.write(body)
     g.rewrite(s)
     S.drive(GEN % "sequencer-assert", s.path("drive.pd"))
-    print("   running (about 14 s -- DSP is on, the steps are cut from a phasor~) ...")
+    print("   running (about 18 s -- DSP is on, the steps are cut from a phasor~) ...")
     cap = g.pd(s, 40, main_dev(s), s.path("drive.pd"))
     print()
     rc = g.analyze("test/gate/sequencer-assert.py", *g.args, "--seed", s.path("seed.txt"),

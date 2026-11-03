@@ -63,7 +63,7 @@ at 60.
 
 | Property | Value | Evidence | Item |
 |----------|-------|----------|------|
-| Control range | **10–500 BPM** from knob 1 | verified | — |
+| Control range | **10–500 BPM** from knob 1, on a curve that gives 50–200 BPM the middle of its turn, 9 o'clock to 3 o'clock (`tempo` in [map.md](map.md)) | verified | — |
 | Legal range | **5–600 BPM**, clamped | verified | — |
 | Outgoing jitter | **~1.45 ms** — Pd emits on 64-sample block boundaries, about 7% of a pulse interval at 120 BPM. Not fixable in vanilla Pd | verified | — |
 | Start alignment | Within **half a pulse** — `threshold~` fires at phase 0.5, so the first pulse after a start arrives ~10.4 ms later at 120 BPM. A constant offset shared by every clock in the patch | verified | — |

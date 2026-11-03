@@ -86,6 +86,7 @@ button.
 | `test-note` | Fires one probe at a sounding device, out a cord. Takes the device below | verified | 306 |
 | `send` | A checklist's Send line, one message, `<bus> <message>`, from the phone's checklist page: out a cord to `u_inject` **in test mode only**, answered `ack send`, or `ack test-off` while it is off | unknown | — |
 | `result` | A step's verdict, `<checklist>-<n>-<pass or fail>`, logged as `info phone <verdict>`, in test mode or not; answered `ack result` | unknown | — |
+| `drums` | A drum button, the action below: out `u_net`'s fourth outlet to `c_steps`, answered `ack drums <action>` | verified | — |
 
 <!-- check: pd-route "Cut It/u_net.pd" m_volca -->
 
@@ -93,6 +94,13 @@ button.
 |--------|-------|----------|------|
 | `m_volca` | `notes 60 100 200` — middle C, 200 ms, released by `makenote` | verified | 306 |
 | `m_404` | `pad 1 100` — bank A pad 1 | verified | 306 |
+
+<!-- check: pd-route "Cut It/u_net.pd" sync -->
+
+| Drum action | Does | Evidence | Item |
+|-------------|------|----------|------|
+| `sync` | "sync first steps": every track back to its step 1 together when the global loop next comes round to its own, each keeping its own last step ([sequencer.md](../module/sequencer.md)) | verified | — |
+| `snap` | "snap to global": the same, and at that step every track takes the global last step | verified | — |
 
 **The two sounding devices are the whole set**, and it is `u_map`'s: the Launchpad and the
 nanoKONTROL are inputs. ⛔ **A device name off that list is dropped exactly like an unknown command.**

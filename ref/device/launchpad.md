@@ -189,6 +189,21 @@ The pads are polyphonic-aftertouch sensitive, and that channel is free panel spa
 parameter can ride pad pressure while a pad is held. It is the most expressive control on the rig
 and costs no buttons.
 
+### The layer stays Pd
+
+**`m_launchpad` keeps its decode in Pd** (2026-11-03), where the nano, the SP-404 and the
+Organelle's keys moved theirs to Lua ([nanokontrol.md](nanokontrol.md), *The decode is Lua*). Three
+reasons, each enough:
+
+- **The ring carries the mode keys**, which must work when the Lua does not: `u_map` keeps them in
+  Pd so a missing pdlua or a broken table cannot strand you ([map.md](../module/map.md)), and they
+  reach it as `lp-cc-80` to `lp-cc-30` from this file.
+- **Pressure is the densest stream on the rig**, a message per held pad as often as the device
+  sends one, and it already crosses the map's Lua. A pdlua call costs about 0.1 ms on the Organelle,
+  where `makefilename pad-%d-at` costs a few microseconds.
+- **There is little to decode.** A pad is its note number and a ring button its CC number, each one
+  `makefilename`; the rest of the file is I/O, ownership, the safe exit and the watchdog's timing.
+
 ### The firmware update is DECLINED, and the onboarding drive stays on
 
 ✅ **Item 265.** Novation Components refuses to open the Launchpad at all until a **firmware update**

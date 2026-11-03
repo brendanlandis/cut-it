@@ -96,7 +96,8 @@ these abstractions ever leave the repo — which they won't.
 
 **Rules in Lua sit beside their abstraction under its name**: `c_steps.lua` holds `c_steps`'s
 rules as plain Lua, and `c_steps-lua.pd_lua` is the pdlua class that carries them into Pd; `u_map`'s
-are `u_map.lua` and `u_map-lua.pd_lua`. ⛔ Never
+are `u_map.lua` and `u_map-lua.pd_lua`, and a device layer's decoding sits beside it the same way
+(`m_nano.lua`, `m_nano-lua.pd_lua`). ⛔ Never
 `<abstraction>.pd_lua`: pdlua's loader is asked before Pd looks for an abstraction, so it would
 replace the `.pd` everywhere it is used ([sequencer.md](module/sequencer.md)).
 

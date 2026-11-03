@@ -158,6 +158,15 @@ and All Notes Off is what replaces it. `m_404` has the same box for the same rea
 to inlet 1 it sets the controller instead — the device receives `CC 49` on channel 1 and panic
 silently does nothing. `volca-assert.sh` asserts the channel.
 
+### The layer stays Pd
+
+**`m_volca` has nothing to decode, so it has no Lua** (2026-11-03), where the nano, the SP-404 and
+the Organelle's keys do ([nanokontrol.md](nanokontrol.md), *The decode is Lua*). It is a `route`, two
+`unpack`s, a `+ 1`, `[makenote]`, the three MIDI objects and panic: what Lua would take is the route
+and the `+ 1`, and the MIDI objects would still need their channels and controllers set cold in Pd,
+in the order the file's `[t b f]` keeps. That is no simpler, and a pdlua call costs about 0.1 ms on the
+Organelle where these boxes cost a few microseconds.
+
 ## Open
 
 - ⬜ **The Volca made a sound three times on 2026-08-10 and it has never been reproduced.** See

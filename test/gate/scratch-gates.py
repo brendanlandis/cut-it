@@ -365,8 +365,14 @@ SEQ_SEED = {(1, 3): 20, (1, 9): 77, (2, 7): 50, (16, 16): 127}
 
 
 def sequencer(g):
-    S.require("Cut It/c_steps.pd", "Cut It/cut-it-drum-page.txt", "Cut It/g_grid.pd",
-              "Cut It/u_map.pd")
+    S.require("Cut It/c_steps.pd", "Cut It/c_steps.lua", "Cut It/c_steps-lua.pd_lua",
+              "Cut It/cut-it-drum-page.txt", "Cut It/g_grid.pd", "Cut It/u_map.pd",
+              "test/gate/lua/c_steps_test.lua")
+    # The rules first, in Lua and without Pd: what each press, step and restore
+    # answers. Then the Pd half: the patch around them, running.
+    print("   the rules, in Lua ...")
+    rc_lua = S.lua("test/gate/lua/c_steps_test.lua", *g.args)
+    print("\n   the patch, in Pd ...")
     s = g.copy()
     s.state_dir()
     # A saved pattern, so the restore at ~3.5 s is under test as well as the
@@ -384,8 +390,9 @@ def sequencer(g):
     print("   running (about 14 s -- DSP is on, the steps are cut from a phasor~) ...")
     cap = g.pd(s, 40, main_dev(s), s.path("drive.pd"))
     print()
-    return g.analyze("test/gate/sequencer-assert.py", *g.args, "--seed", s.path("seed.txt"),
-                     "--state", s.state, stdin=cap)
+    rc = g.analyze("test/gate/sequencer-assert.py", *g.args, "--seed", s.path("seed.txt"),
+                   "--state", s.state, stdin=cap)
+    return rc or rc_lua
 
 
 RECIPES = {

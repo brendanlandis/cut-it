@@ -48,7 +48,9 @@ DOCNAME = re.compile(r'(?<![\w/.!-])((?:[a-z0-9_-]+/)*[a-zA-Z0-9_.-]+\.md)\b')
 # A markdown link target, including the angle-bracket form for paths with spaces.
 MDLINK = re.compile(r'\]\(<?([^)>#]+\.md)(?:#[^)>]*)?>?\)')
 
-TEXT_SUFFIXES = ('.md', '.pd', '.sh', '.py', '.txt')
+# The Lua beside the patch is code too, and its comments name pages, paths and
+# rules as a .pd comment does.
+TEXT_SUFFIXES = ('.md', '.pd', '.sh', '.py', '.txt', '.lua', '.pd_lua')
 # The plans (two folders, and plan-v04.md until Brendan's move of it lands) are
 # archives he is converting into !projects by hand (2026-11-02), and they go when
 # he's done: their names for retired files are history. Matched by name, as a
@@ -605,7 +607,7 @@ DIRS = ('tools/', 'test/', 'Cut It/', 'Cut It Debug/', 'device/', 'mac-stubs/',
         r'\.claude/')
 PATHREF = re.compile(
     r'(?<![\w.-])\.?/?((?:' + '|'.join(DIRS) + r')[\w /.-]*?'
-    r'\.(?:sh|py|pd|txt))(?![\w.-])')
+    r'\.(?:sh|py|pd|txt|lua|pd_lua))(?![\w.-])')
 
 
 def check_dangling_paths(verbose):
@@ -616,7 +618,7 @@ def check_dangling_paths(verbose):
     """
     out, seen = [], 0
     for f in sorted(ROOT.rglob('*')):
-        if not f.is_file() or f.suffix not in ('.md', '.pd', '.sh', '.py'):
+        if not f.is_file() or f.suffix not in ('.md', '.pd', '.sh', '.py', '.lua', '.pd_lua'):
             continue
         rel = f.relative_to(ROOT)
         if any(p in SKIP_DIRS for p in rel.parts):

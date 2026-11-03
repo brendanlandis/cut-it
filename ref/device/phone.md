@@ -156,9 +156,13 @@ which is what makes it easy to read as a symptom of something worsening.
 phone, not the wifi. ⚠️ **The real roam fault has a different signature** — the *whole device* goes
 unreachable, `ssh` included — and it is on [wifi.md](../wifi.md) with a reproduction.
 
-⚠️ **All of this is 0.49's.** Under Pd 0.57 the socket survives an ICMP refusal, measured on the Mac
-(2026-11-03; Pure Data, in Reference), so if the device's 0.57 does the same, `net-link-down` no
-longer fires, and closing PdParty can't reach it. Untested on the device.
+⛔ **All of this is 0.49's: under Pd 0.57 `net-link-down` no longer fires, on the device either.**
+Measured 2026-11-03: a throwaway Pd 0.57 on the Organelle, in its own network namespace, ran
+`u_net` at a loopback port nothing bound for 15 s and never warned; the factory 0.49 in the same
+harness logged `netsend: Connection refused` and warned within two seconds. The socket survives the
+refusal (Pure Data, in Reference), so a closed PdParty draws nothing on the Organelle, and the
+phone's own NO-LINK is the only report. How Cut It should notice a lost phone now is Brendan's to
+decide (`cut-it/inbox`); the phone checklist's step 13 fails until then.
 
 ### Rebuild the socket
 

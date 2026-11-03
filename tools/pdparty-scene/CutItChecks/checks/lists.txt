@@ -2,7 +2,7 @@ display 20;
 nanokontrol 7;
 tempo 13;
 launchpad 27;
-phone 18;
+phone 23;
 state 5;
 recover 7;
 midi 18;

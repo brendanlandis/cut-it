@@ -85,7 +85,7 @@ clock and it stretches to a stale local value.
                     │    ring = fx     → [r~ inR]   │
                     │  ─────── Cut It ───────       │
                     └───────┬───────────────┬───────┘
-                       OUT L│               │OUT R
+                PHONES L (tip)│               │PHONES R (ring)
                             ▼               ▼
                     ┌──────────────────────────────────┐
                     │  XENYX Q802USB                   │
@@ -100,6 +100,13 @@ clock and it stretches to a stale local value.
 
 **Organelle L/R go to the two MONO channels (1 and 2)**, not a stereo pair, so drums and fx each get
 their own 3-band EQ and one-knob compressor.
+
+⛔ **They leave by the Organelle's ⅛" headphone jack, split to two TS plugs, not by its 1/4" outs.**
+Into the mixer's line input, the 1/4" L out sounded far thinner, with harsh transients when turned
+up; the headphone jack sounded about as good as the 404's own headphone jack into the same channel
+(by ear, 2026-11-02). It matches a forum report about the Organelle's line outs; see the Organelle's
+Reference page. A single stereo plug into one mono channel would not do: that channel is mono, and its
+balanced TRS input would hear left minus right.
 
 ### The jack asymmetry is why the Y-cable is required
 
@@ -223,7 +230,7 @@ are all covered.
 |---|---|
 | **1/4" TRS male → 2× 1/4" TS male** ("insert cable") | 404 OUT L/R → the Organelle's single stereo input. ⚠️ **The critical cable in the rig** — nothing else does this job |
 | **USB-A → USB-C** | Hub → SP-404MK2, **data only**. The 404 ships without one |
-| **2× 1/4" TS** | Organelle OUT L/R → mixer ch1/ch2 |
+| **⅛" TRS male → 2× 1/4" TS male** | Organelle headphone jack → mixer ch1 (tip, drums) and ch2 (ring, fx). Not the 1/4" outs: see above |
 | **3.5mm TRS → 2× 1/4" TS** | Volca FM → mixer ch3/4. ⚠️ Its output runs hot — start with channel gain low |
 | **XLR female → 1/4" TRS** | Mic → 404 MIC/GUITAR IN. The 404 has no XLR, so a plain mic cable will not do it; an adapter on a normal one works |
 | **2× 1/4" TS** | Mixer MAIN OUT → PA |

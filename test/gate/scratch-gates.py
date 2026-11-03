@@ -135,11 +135,18 @@ def nano(g):
 
 
 def sp404(g):
-    S.require("Cut It/m_404.pd", "Cut It/cut-it-map.txt")
+    S.require("Cut It/m_404.pd", "Cut It/m_404.lua", "Cut It/m_404-lua.pd_lua",
+              "Cut It/cut-it-map.txt", "test/gate/lua/m_404_test.lua")
+    # The decode first, in Lua and without Pd: the pad map both ways, the bank and channel
+    # arithmetic, and the budget. Then the Pd half: both directions through the running
+    # instrument, on Pd's own clock.
+    print("   the decode, in Lua ...")
+    rc_lua = S.lua("test/gate/lua/m_404_test.lua", *g.args)
+    print("\n   the patch, in Pd ...")
     # All sixteen pads of bank A, plus one in bank C: the bank picks the channel.
     rows = ["mode-1 gk-p%d 404-pad %d" % (n, n) for n in range(1, 17)]
     rows.append("mode-1 gk-pc1 404-pad 33")
-    return _stdin_gate(g, 40, rows=rows)
+    return _stdin_gate(g, 40, rows=rows) or rc_lua
 
 
 def volca(g):

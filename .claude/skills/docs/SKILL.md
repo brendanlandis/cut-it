@@ -140,15 +140,17 @@ once the false claim is gone; the trap that produced it survives, the retraction
 Anchor them and the two cannot drift:
 
 ```markdown
-<!-- check: pd-text "Cut It/m_404.pd" $0-pad -->
+<!-- check: lua-list "Cut It/m_404.lua" R.NOTE -->
 
 | Pad | Note | Evidence | Item |
 |-----|------|----------|------|
 | 1   | 48   | verified | 190  |
 ```
 
-The table immediately below must equal that `[text define]`'s contents. Reintroduce the old `47 + n`
-pad map and the gate goes red **at pad 5** — before deploy, before hardware.
+The table immediately below must equal that Lua list, row n its item n. Reintroduce the old `47 + n`
+pad map and the gate goes red **at pad 5** — before deploy, before hardware. The other kinds read a
+patch's `[text define]` (`pd-text`), a `route` box's arguments (`pd-route`) and `wire.sh`'s
+`aconnect` lines (`sh-aconnect`).
 
 ## Item numbers are FACT IDS, and frozen
 

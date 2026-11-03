@@ -48,7 +48,7 @@ python3 test/gate/docs-check.py -v
 
 | Check | What it asserts |
 |-------|-----------------|
-| `pd-text` | An anchored table equals the `[text define]` in the patch |
+| `pd-text`, `pd-route`, `lua-list`, `sh-aconnect` | An anchored table equals what the code holds: a `[text define]`, a `route` box's arguments, a Lua list, or `wire.sh`'s `aconnect` lines |
 | shape | Every `ref/` page declares a schema and keeps to it |
 | index | The table above lists exactly the pages that exist |
 | dangling | Every pointer to a document resolves |

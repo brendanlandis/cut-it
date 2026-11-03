@@ -41,10 +41,11 @@ learn late:
 - **Vanilla objects, plus `[shell]` and two libraries we build: pdlua and ELSE** (from 2026-11-03).
   The Organelle ships only a dozen factory externals, of which Cut It uses `[shell]` (Reference,
   Organelle page, *Externals*). pdlua 0.12.24 (Lua 5.4.7) runs the sequencer's rules, the map's
-  lookup and the nano's and the Organelle keyboard's decoding, and ELSE 1.0-0 rc14 may replace hand-built parts; both are built for 0.57 and live in
+  lookup and the decoding in three device layers (the nano, the SP-404, the Organelle's keys), and
+  ELSE 1.0-0 rc14 may replace hand-built parts; both are built for 0.57 and live in
   `/sdcard/PdExtraLibs` on the device and `~/Library/Pd` on the Mac
   ([device/README.md](device/README.md), *Lua and ELSE*). Neither loads on the 0.49 fallback, where
-  the sequencer, the map, `m_nano` and `m_organelle` say `no-lua` and every control but the six mode keys is
+  the sequencer, the map, `m_nano`, `m_404` and `m_organelle` say `no-lua` and every control but the six mode keys is
   dead. The
   **`pd`** skill has how to use them.
 
@@ -101,7 +102,7 @@ stops the instrument**, because loading any patch restarts Pd. See
 | `e_` | An effect stage — **v0.4, none yet** | — |
 | `.sh` | Run through `[shell]` — the first five once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `codec-gain.sh` `recover.sh` |
 | `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` |
-| `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua` |
+| `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_404.lua` `m_404-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua` |
 
 **The prefix table above is `Cut It/`'s.** `Cut It Debug/` is flat and has no prefixes — one
 `main.pd` and three scripts — because it is one screen deep and nothing in it is reused.
@@ -132,7 +133,7 @@ under `ref/`. Nothing in either is deployed.
 
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-one gates and 748 checks**, and what each one protects is in
+**Twenty-one gates and 791 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.
@@ -149,6 +150,7 @@ aux and encoder. **Most work should never need the Organelle powered on.**
 lua test/gate/lua/c_steps_test.lua   # the sequencer's rules alone: a second, no Pd
 lua test/gate/lua/u_map_test.lua     # the map's, the same way
 lua test/gate/lua/m_nano_test.lua    # the nano's decode, the same way
+lua test/gate/lua/m_404_test.lua     # the SP-404's, both ways
 lua test/gate/lua/m_organelle_test.lua   # and the Organelle keyboard's
 ./tools/deploy.sh              # syntax check -> scp BOTH patches -> reload -> load Cut It
 ./tools/deploy.sh --debug      # the same push, but loads Cut It Debug instead

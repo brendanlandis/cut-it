@@ -5,7 +5,7 @@
     python3 test/gate/docs-check.py -v        and list every check that passed
 
 Where a fact exists twice in machine-readable form -- a markdown table and a
-patch's `text define`, `route` box or wire.sh's aconnect lines -- it parses both
+patch's `text define`, `route` box, a Lua list or wire.sh's aconnect lines -- it parses both
 and compares them. It resolves every pointer the repo makes: *.md names, script
 and patch paths, C-NN rule IDs, `cut-it/<slug>` refs and Reference pages. And it
 holds each ref/ page to its schema and each ⬜ to an Open section and an owner.
@@ -33,7 +33,7 @@ if not (ROOT / 'AGENTS.md').exists():
              'Every check globs from there and would silently find nothing.')
 
 ANCHOR = re.compile(r'<!--\s*check:\s*(.+?)\s*-->')
-SPEC = re.compile(r'^(pd-text|pd-route|sh-aconnect)\s+"([^"]+)"\s+(\S+)$')
+SPEC = re.compile(r'^(pd-text|pd-route|lua-list|sh-aconnect)\s+"([^"]+)"\s+(\S+)$')
 # Only names that look like this project's own docs. A bare "README.md" inside a
 # URL or a shell heredoc is not worth a false positive.
 # ⛔ THE NAME CLASS CARRIES DOTS, and it did not until 2026-08-12. Without one a
@@ -125,6 +125,24 @@ def pd_text(path, name):
     raise CheckFailed(f'no [text define {name}] in {path}')
 
 
+def lua_list(path, name):
+    """A flat list assigned in a Lua file, `<name> = { a, b, ... }`, as rows of
+    [index, value] counting from 1, as Lua does. Only numbers and plain words:
+    anything else in the braces is a list this reader cannot vouch for."""
+    src = (ROOT / path)
+    if not src.exists():
+        raise CheckFailed(f'{path} does not exist')
+    text = src.read_text(encoding='utf-8')
+    m = re.search(r'^\s*(?:local\s+)?' + re.escape(name) + r'\s*=\s*\{([^{}]*)\}', text, re.M)
+    if not m:
+        raise CheckFailed(f'no list {name} = {{ ... }} in {path}')
+    body = re.sub(r'--[^\n]*', '', m.group(1))
+    items = [a.strip() for a in body.split(',') if a.strip()]
+    if not items or not all(re.fullmatch(r'-?[\w.]+', a) for a in items):
+        raise CheckFailed(f'{name} in {path} is not a flat list of numbers or words')
+    return [[str(i + 1), a] for i, a in enumerate(items)]
+
+
 def pd_route(path, first):
     """The arguments of a `route` box, identified by its first argument
     rather than by position, since box indices move (C-10)."""
@@ -171,7 +189,17 @@ def sh_aconnect(path, which):
 
 def check_pd_text(doc, lineno, rows, path, name):
     """Compare a table against a patch's text array, row by row."""
-    have = pd_text(path, name)
+    return check_rows(doc, lineno, rows, path, name, pd_text(path, name),
+                      f'[text define {name}]')
+
+
+def check_lua_list(doc, lineno, rows, path, name):
+    """Compare a table's first two columns against a Lua list: row n is item n."""
+    return check_rows(doc, lineno, rows, path, name, lua_list(path, name), name)
+
+
+def check_rows(doc, lineno, rows, path, name, have, what):
+    """A table against rows read from the code, keyed by the first column."""
     arity = len(have[0])
     by_key = {tuple(r[:1]): r for r in have}
     problems = []
@@ -180,16 +208,16 @@ def check_pd_text(doc, lineno, rows, path, name):
         want = [c for c in cells[:arity]]
         got = by_key.get(key)
         if got is None:
-            problems.append(f'{want[0]}: in the table, absent from [{name}]')
+            problems.append(f'{want[0]}: in the table, absent from {what}')
         elif got[:arity] != want:
             problems.append(f'{want[0]}: doc says {" ".join(want[1:])}, '
                             f'patch says {" ".join(got[1:arity])}')
     table_keys = {tuple(r[:1]) for r in rows}
     for key in by_key:
         if key not in table_keys:
-            problems.append(f'{key[0]}: in [{name}], absent from the table')
+            problems.append(f'{key[0]}: in {what}, absent from the table')
     if problems:
-        head = f'{doc}:{lineno}  table vs [text define {name}] in {path}'
+        head = f'{doc}:{lineno}  table vs {what} in {path}'
         return [head] + [f'    {p}' for p in problems]
     return []
 
@@ -266,6 +294,7 @@ def check_anchors(verbose):
                 out.append(f'{rel}:{i + 1}  unreadable check spec: {m.group(1)}')
                 continue
             kind = {'pd-text': check_pd_text, 'pd-route': check_pd_route,
+                    'lua-list': check_lua_list,
                     'sh-aconnect': check_sh_aconnect}[spec.group(1)]
             try:
                 rows = md_table(lines, i + 1)

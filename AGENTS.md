@@ -38,8 +38,13 @@ learn late:
   format. Vanilla 0.57's own version of that format is native, but whether plugdata adds anything
   0.57 cannot read is untested (`~/Sites/!reference/pure-data.md`). It broke a patch here once,
   under 0.49.
-- **Vanilla objects only, plus `[shell]`** — the Organelle ships neither ELSE nor cyclone, only a
-  dozen factory externals, of which Cut It uses `[shell]` (Reference, Organelle page, *Externals*).
+- **Vanilla objects, plus `[shell]` and two libraries we build: pdlua and ELSE** (from 2026-11-03).
+  The Organelle ships only a dozen factory externals, of which Cut It uses `[shell]` (Reference,
+  Organelle page, *Externals*). pdlua 0.12.24 (Lua 5.4.7) runs the sequencer's rules, and ELSE
+  1.0-0 rc14 may replace hand-built parts; both are built for 0.57 and live in
+  `/sdcard/PdExtraLibs` on the device and `~/Library/Pd` on the Mac
+  ([device/README.md](device/README.md), *Lua and ELSE*). Neither loads on the 0.49 fallback, where
+  the sequencer says `fail c_steps no-lua`. The **`pd`** skill has how to use them.
 
 ⚠️ **The public `Organelle_OS` repo documents the M and S2, not this device** — verify paths against
 the actual device (Reference, Organelle page).
@@ -94,6 +99,7 @@ stops the instrument**, because loading any patch restarts Pd. See
 | `e_` | An effect stage — **v0.4, none yet** | — |
 | `.sh` | Run through `[shell]` — the first five once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `codec-gain.sh` `recover.sh` |
 | `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` |
+| `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` |
 
 **The prefix table above is `Cut It/`'s.** `Cut It Debug/` is flat and has no prefixes — one
 `main.pd` and three scripts — because it is one screen deep and nothing in it is reused.
@@ -117,13 +123,14 @@ under `ref/`. Nothing in either is deployed.
 | `test/run.sh` | **the entry point** — every gate | — |
 | `test/runner/` | What `run.sh` is. The gate table | — |
 | `test/gate/` | Headless gates. One per module, named for it | a program, unattended |
+| `test/gate/lua/` | The Lua halves of gates: rules tested with lua.org's Lua 5.4, no Pd | a program, unattended |
 | `test/checklists/` | Hands-on acceptance runs, one Markdown checklist per area | a person, with the rig plugged in |
 | `test/stubs/` | `t_*` stand-ins a gate swaps in inside a scratch copy | — |
 | `tools/` | Operational scripts and one-off probes — `fetch-*.sh`, the wifi tooling | — |
 
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-one gates and 565 checks**, and what each one protects is in
+**Twenty-one gates and 604 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.
@@ -137,6 +144,7 @@ aux and encoder. **Most work should never need the Organelle powered on.**
 
 ```sh
 ./test/run.sh            # every gate, ~1 min, Mac only. RUN IT BEFORE CALLING ANYTHING DONE
+lua test/gate/lua/c_steps_test.lua   # the sequencer's rules alone: a second, no Pd
 ./tools/deploy.sh              # syntax check -> scp BOTH patches -> reload -> load Cut It
 ./tools/deploy.sh --debug      # the same push, but loads Cut It Debug instead
 ./tools/tidy.sh                # what has accumulated on the device. --delete to remove it
@@ -263,5 +271,6 @@ Links to paths containing spaces use the angle-bracket form:
   that exact code in the text**. Symptoms are as greppable as `item NNN`, and cost more to re-derive.
 - **Configuration that lives only on a device is one accident from being lost.** The nanoKONTROL
   scene, `/root/.pdsettings` and the `/usr/bin/pd` launcher are backed up in [device/](device/),
-  verified current against the hardware. `.pdsettings` is load-bearing: `path1: /root/Pd/externals` is what makes `[shell]`,
+  verified current against the hardware, and so is the recipe that builds pdlua and ELSE into
+  `/sdcard/PdExtraLibs`. `.pdsettings` is load-bearing: `path1: /root/Pd/externals` is what makes `[shell]`,
   `packOSC` and `routeOSC` resolve in the menu-launched patch.

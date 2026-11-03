@@ -27,11 +27,13 @@ No walking to the device, no Storage → Reload, no selecting from the menu.
 | `NORELOAD=1` | skip refreshing the patch list (which uses `/reloadNoRemount` — see below) |
 | `NOLOAD=1` | push but leave the running patch alone |
 | `HOST=` `DEST=` `PD=` | target, destination, Pd binary |
+| `CUTIT_PD_LIBS=` | the folder holding pdlua and ELSE, `~/Library/Pd` by default ([device/README.md](../device/README.md), *Lua and ELSE*) |
 
 **The syntax check is built in and blocking.** Pd 0.57-0 on the Mac
 (`~/Applications/Pd-0.57-0.app`) is the same version the Organelle runs, from 2026-11-03; `PD=`
 points it at another, such as the 0.49-1 still in `/Applications`. Every Pd the check and the gates
-start runs at the device's 44100 Hz, since 0.56 made 48000 the default:
+start runs at the device's 44100 Hz, since 0.56 made 48000 the default, and gets `~/Library/Pd` on
+its path, as the device's gets `/sdcard/PdExtraLibs`, so `c_steps` finds pdlua:
 
 ```sh
 ~/Applications/Pd-0.57-0.app/Contents/Resources/bin/pd \
@@ -97,7 +99,7 @@ to undo. Keep this section's console for when you need `[print]` output *back*.
 ssh root@organelle.local
   killall pd; sleep 1        # ⚠️ then ./tools/lp-live.sh when you are done
   cd /tmp/patch
-  nohup pd -nogui -rt -audiobuf 6 -path /root/Pd/externals \
+  nohup pd -nogui -rt -audiobuf 6 -path /root/Pd/externals -path /sdcard/PdExtraLibs \
       -path '/sdcard/Patches/!/Cut It' \
       /root/fw_dir/mother.pd main.pd /tmp/diag.pd > /tmp/diag.txt 2>&1 &
   sleep 6; killall pd

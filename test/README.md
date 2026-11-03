@@ -45,12 +45,13 @@ were false.
 | `sp404-assert.sh` | 19 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 28 | `module/sequencer` |
+| `sequencer-assert.sh` | 67: 39 in Lua, 28 in Pd | `module/sequencer` |
 
-**565 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**604 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **558**; the difference is
-that gate. Worth knowing before trusting an arithmetic check of this number against a log.
+total cannot be derived from a run by summing. Totaling the run gives **597**; the difference is
+that gate. `sequencer-assert.sh` prints two, one per half: its Lua tests', then its analyzer's.
+Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 43 come from TWO Pd runs and one tally**, which is the only entry here
 that does. The first run is the schedule at the shipped tick; the second scales `u_present`'s settle
@@ -360,8 +361,16 @@ equivalent.
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      28 checks, ~15 s — c_steps, the drum page and the pattern on disk
+./test/gate/sequencer-assert.sh      39 + 28 checks, ~15 s — c_steps' rules in Lua, then the drum page and the pattern on disk
 ```
+
+**Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
+Pd: the rules in `Cut It/c_steps.lua` press by press (the levels, the step rule's three cases, the
+selected track, which pads fire, the restore), and `c_steps-lua.pd_lua` through
+`test/gate/lua/lib_test.lua`'s stand-in for pdlua (its inlets and outlets, `bad-selector`, a
+throwing rule caught as `fail c_steps lua-fire`). Then the Pd half below, on a running copy of the
+instrument, which is unchanged since the rules were Pd: **it is the proof the Lua port changed
+nothing.** The gate fails if either half does.
 
 It plays mode 1's drum page on `param`, as `m_launchpad` publishes it, from a state directory
 seeded with a pattern, and reads only what leaves the patch: the 404's notes, the grid's frames, the
@@ -374,6 +383,10 @@ without a timestamp. The tempo is set by the driver, and PLAY to STOP is counted
 before the sequencer was wired (20 of 28), and on eight mutations — the step rule inverted, PLAY not
 parking the counter, no put after a restore, panic ignored, eighths for sixteenths, `m_404`'s old
 5 ms gap, the brightness ramp one hue off, and two velocity rows swapped in the layout table.
+✅ **And again against the Lua**, both halves red on each of three mutations of `c_steps.lua`: the
+step rule inverted (Lua 6 failed, Pd 12), the velocity levels off by one (5, 9), and a step reading
+the next step's notes (5, 3). A rule that throws turns the Pd half red with `fail c_steps lua-fire`
+on `err`, and a syntax error with silence (18 failed); the Lua half dies on both with a traceback.
 
 ⚠️ **The layout table is read, not restated**, so a frame is decoded with the same table the patch
 paints from. The analyzer's expectations are what keeps that honest: the driver presses `pad-64`

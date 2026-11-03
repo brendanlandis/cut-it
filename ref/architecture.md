@@ -63,7 +63,8 @@ file decides what that means; and nothing below that file knows what hardware ex
   is its clock** — Cut It runs poly-tempo. See [tempo.md](module/tempo.md).
 - **`c_steps`, mode 1's drum machine, hangs off `u_map` by a cord** — its third outlet, carrying
   what a drum-page press means — and its own two outlets reach `m_404` with the notes and `g_grid`
-  with the page. See [sequencer.md](module/sequencer.md).
+  with the page. Its rules are Lua, in `c_steps.lua`, behind one pdlua object; its clock and cords
+  are Pd. See [sequencer.md](module/sequencer.md).
 - **`u_state` owns two `u_store` instances**, one per persistence policy. See
   [state.md](module/state.md).
 - ⛔ **`c_presence` and `c_devid` are instantiated INSIDE the `m_` layers**, one pair per pollable

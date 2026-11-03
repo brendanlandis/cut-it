@@ -94,6 +94,11 @@ these abstractions ever leave the repo — which they won't.
 
 **One abstraction per file, named for what it is.** No `utils.pd` grab-bags.
 
+**Rules in Lua sit beside their abstraction under its name**: `c_steps.lua` holds `c_steps`'s
+rules as plain Lua, and `c_steps-lua.pd_lua` is the pdlua class that carries them into Pd. ⛔ Never
+`<abstraction>.pd_lua`: pdlua's loader is asked before Pd looks for an abstraction, so it would
+replace the `.pd` everywhere it is used ([sequencer.md](module/sequencer.md)).
+
 ---
 
 ## Abstraction or subpatch
@@ -451,6 +456,11 @@ failure mode for a wrong message is to print and continue.
 the abstraction, text **one symbol of ≤ 21 characters**. Use a **message box**, which already
 carries the level as its selector; anything built with `[list prepend]` needs `[list trim]` (C-6).
 
+**Lua reports the same way**, out of an outlet corded to `[s err]`, with the abstraction as its
+source: pdlua prints a script's errors on the console the device lacks, so the Pd face catches every
+rule's error and sends `fail <source> lua-<selector>`, and the abstraction says `no-lua` when its Lua
+never loaded ([sequencer.md](module/sequencer.md)).
+
 **Three levels, and they differ only in what the SCREEN does.** Every one of them is logged:
 `u_err`'s logfile tap hangs off the trigger *above* the mode route, so the bus is unfiltered
 whatever the display is doing.
@@ -571,7 +581,8 @@ that a nanoKONTROL exists.** Why it is the expensive one, and what it costs to g
    nothing would report it, because a do-nothing `[shell]` creates cleanly and returns nothing.
 
 **It has exactly one member and always will.** Everything else the patch needs is a built-in
-class, and a built-in cannot be shadowed by a file at all — which is why `test/stubs/` exists as a
+class or comes from pdlua or ELSE, which the Mac has for real ([device/README.md](../device/README.md),
+*Lua and ELSE*), and a built-in cannot be shadowed by a file at all — which is why `test/stubs/` exists as a
 separate mechanism with a different shape: a gate swaps *those* in by rewriting object boxes inside
 a scratch copy, because there is no path trick that would work. **One directory per mechanism, and
 the two mechanisms are not interchangeable.**

@@ -1,6 +1,6 @@
 ---
 name: pd
-description: Writing, editing or reviewing Pure Data for the Cut It Organelle patch. Vanilla Pd 0.57 constraints, the C-1..C-14 conventions, how to edit a .pd file by hand without breaking it, and the gates that must pass. Use whenever touching anything under "Cut It/" or tools/*.pd.
+description: Writing, editing or reviewing Pure Data for the Cut It Organelle patch, and the Lua beside it. Vanilla Pd 0.57 constraints, pdlua and ELSE, the C-1..C-14 conventions, how to edit a .pd file by hand without breaking it, and the gates that must pass. Use whenever touching anything under "Cut It/" (.pd, .lua, .pd_lua) or tools/*.pd.
 ---
 
 # Writing Pd for Cut It
@@ -22,13 +22,52 @@ whether plugdata adds anything 0.57 cannot read is untested.** It broke a patch 
 Edit with vanilla Pd for anything that ships. ⚠️ A file 0.57 re-saves picks up that format beyond the
 edit (hex colors, a number-box argument); 0.49 reads it, so it is diff noise (`cut-it/pd-057`).
 
-**3. Vanilla objects only, by default.** The Organelle ships neither ELSE nor cyclone; its only
-externals are a factory dozen in `/root/Pd/externals`, of which Cut It uses `[shell]`
-(`~/Sites/!reference/critter-guitari-organelle-1.md`, *Externals*). Bundling a library is possible —
-the device is armv7 — and 0.57 widens it: current ELSE needs 0.56 or later, so it is within reach,
-built on the device (`cut-it/pd-057`; `~/Sites/!reference/pure-data.md`, *Externals for 0.49 and
-0.57*). Pure-Pd abstractions drop into the patch folder with no such concerns. Prefer vanilla unless
-a specific object is worth the dependency.
+**3. Vanilla objects, plus `[shell]`, pdlua and ELSE.** The Organelle's own externals are a factory
+dozen in `/root/Pd/externals`, of which Cut It uses `[shell]`
+(`~/Sites/!reference/critter-guitari-organelle-1.md`, *Externals*). Two libraries are ours, built
+for 0.57 (from 2026-11-03): **pdlua**, for rules written in Lua, and **ELSE**, whose objects may
+replace hand-built parts where they clearly help (*Lua and ELSE*, below). Neither loads on the 0.49
+fallback. Nothing else: no cyclone, no other library, without a build and a decision.
+
+## Lua and ELSE
+
+**Where they come from:** `device/README.md`, *Lua and ELSE*, has the build recipe, the sources and
+the install. On the device both live in `/sdcard/PdExtraLibs`, which `mother`'s launch line puts on
+the path; on the Mac in `~/Library/Pd`, Pd's standard user folder, which every Pd the suite and
+`tools/deploy.sh` start gets as `-path` (`CUTIT_PD_LIBS` overrides; the suite empties `HOME`). What
+each costs and what is missing on the device: the Organelle's Reference page, *Externals*.
+
+**pdlua 0.12.24, Lua 5.4.7.** Logic goes to Lua where it is clearly simpler than boxes and cords:
+the sequencer's rules are the worked example (`ref/module/sequencer.md`).
+
+- **Two files beside the abstraction**: `<name>.lua`, the rules in plain Lua that never call Pd,
+  each a function of a state table returning what leaves; and `<name>-lua.pd_lua`, the pdlua class
+  that maps messages to those calls and their answers to outlets. The abstraction loads pdlua with
+  `[declare -lib pdlua]` and makes `[<name>-lua …]`.
+- ⛔ **Never `<name>.pd_lua` for an abstraction's name**: pdlua's loader runs before Pd looks for
+  the `.pd`, so it would replace the abstraction everywhere.
+- ⛔ **A Lua error must reach `err`, not just the console**: run each rule under `pcall` and send
+  `fail <source> lua-<selector>` out of an outlet corded to `[s err]`; and answer an `init` at load
+  with a bang, so the abstraction can say `no-lua` when the Lua never loaded (C-12).
+- **Test the rules without Pd**: a `test/gate/lua/<name>_test.lua` on `test/gate/lua/lib_test.lua`
+  (its tally, and a stand-in for pdlua that loads the class), run by its module's gate through
+  `lib_scratch.lua()` with lua.org's Lua 5.4 (`~/.local/bin/lua`; `LUA` overrides).
+- **Reload without restarting Pd:** `; pdluax reload <name>-lua` re-runs the class file and the rules
+  it reads; objects keep their state.
+- pdlua's three load lines are moved to `-verbose` in our build, so the entry points stay silent.
+  A stock pdlua, or ELSE's own copy, would print and fail the deploy check.
+
+**ELSE 1.0-0 rc14.** Name its objects with the folder: `[else/knob]`, never bare. Its abstractions
+call each other that way, so the folder *holding* `else/` must be on the path, and it is;
+`[declare -path else]` does not find it there in 0.57. ⛔ **Never load the `[else]` library binary**
+(`-lib else`, `[declare -lib else]`): it prints ~35 lines at every load. On the device:
+
+- **Missing:** `play.file~`, `sfload`, `sfinfo` (FFmpeg) and the abstractions built on them —
+  `player~`, `gran.player~`, `pvoc.player~`, `sample~` — and `circuit~`, `pdlink`, `pdlink~`, `sfz~`.
+- ⚠️ **Too big for 495 MB:** `grain.live~`, `grain.sampler~` and `grain.synth~` take ~72 MB each.
+- ⚠️ **CPU on one core:** a reverb costs ~11–14%; `freeze~` at its defaults doesn't fit.
+- Every new ELSE object is a dependency the gates exercise only on the Mac's build; check it
+  creates on the device too (`device/pd-libs/loadcheck.sh`).
 
 ## The rules
 

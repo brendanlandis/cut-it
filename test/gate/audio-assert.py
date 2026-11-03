@@ -44,6 +44,11 @@ SILENT = 0.001
 
 FREQ_TOL = 0.05
 
+# The device's rate, its .pdsettings' `rate: 44100`. writesf~ stamps the file
+# with the rate Pd runs at, so this is what proves lib_scratch's -r reached Pd:
+# 0.56 made 48000 the default, and a gate's Pd reads no preferences.
+DEVICE_RATE = 44100
+
 
 def read_wav(path):
     with wave.open(path, "rb") as w:
@@ -97,9 +102,10 @@ def main():
     print("--- the recording ---")
     want_dur = SEGMENTS[-1][2]
     A.check("the recording is about %.0f s of stereo at %d Hz" % (want_dur, rate),
-            abs(dur - want_dur) < 0.5,
-            "got %.2f s. A short file means writesf~ was killed before its stop "
-            "and the header length is a lie" % dur)
+            abs(dur - want_dur) < 0.5 and rate == DEVICE_RATE,
+            "got %.2f s at %d Hz, wanted %d Hz. A short file means writesf~ was "
+            "killed before its stop and the header length is a lie; another rate "
+            "means Pd ran without -r 44100" % (dur, rate, DEVICE_RATE))
 
     def seg(name):
         for n, a, b in SEGMENTS:

@@ -15,7 +15,7 @@
 set -eu
 
 HOST="${HOST:-root@organelle.local}"
-PD="${PD:-/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd}"
+PD="${PD:-$HOME/Applications/Pd-0.57-0.app/Contents/Resources/bin/pd}"
 
 # --- Which deployable ------------------------------------------------------
 CLEAN=0
@@ -72,8 +72,9 @@ fi
 # silence means every object instantiated (ref/workflow.md). -nomidi because
 # the Mac's saved MIDI preferences print a device error whenever the hardware
 # they name is not plugged in; objects create without a device either way.
+# -r 44100 is the device's rate: Pd 0.56 made 48000 the default.
 check_patch() {
-    out=$("$PD" -nogui -noaudio -nomidi -path mac-stubs -send "pd quit" "$1" 2>&1) || true
+    out=$("$PD" -nogui -noaudio -nomidi -r 44100 -path mac-stubs -send "pd quit" "$1" 2>&1) || true
     if [ -n "$out" ]; then
         echo "syntax check FAILED: $1" >&2
         echo "$out" >&2
@@ -86,7 +87,7 @@ if [ "${NOCHECK:-}" = "1" ]; then
     echo "skipped syntax check (NOCHECK=1)"
 elif [ ! -x "$PD" ]; then
     echo "warning: no Pd at $PD — skipping syntax check" >&2
-    echo "         set PD=... to point at a Pd 0.49 binary" >&2
+    echo "         set PD=... to point at a Pd 0.57 binary" >&2
 else
     echo "syntax checking ..."
     # Every patch about to be pushed, not just the loaded one. IFS, not a pipe

@@ -67,8 +67,8 @@ if not os.path.exists(os.path.join(ROOT, "AGENTS.md")):
     sys.exit("run.py: %s is not the repo root -- has this file moved?" % ROOT)
 os.chdir(ROOT)
 
-os.environ.setdefault(
-    "PD", "/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd")
+os.environ.setdefault("PD", os.path.expanduser(
+    "~/Applications/Pd-0.57-0.app/Contents/Resources/bin/pd"))
 
 BAR = "=" * 66
 

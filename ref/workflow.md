@@ -4,7 +4,7 @@
 Two devices, neither with a usable console, both reachable over the network.
 
 **Most work happens on the Mac, with the Organelle switched off.** Open `Cut It/main-dev.pd` in
-Pd 0.49: `u_mother-stub` supplies `knob1`–`knob4`, `vol`, `notes`, `aux`, `enc` and `encbut` as
+Pd 0.57: `u_mother-stub` supplies `knob1`–`knob4`, `vol`, `notes`, `aux`, `enc` and `encbut` as
 GUI controls, and previews everything the patch writes to `screenLine1`–`5` and `oscOut`. It
 shows *what* is drawn, not *where* — pixel-accurate OLED rendering is deliberately out of
 scope. Reach for the hardware when the thing you are testing is the hardware.
@@ -28,12 +28,14 @@ No walking to the device, no Storage → Reload, no selecting from the menu.
 | `NOLOAD=1` | push but leave the running patch alone |
 | `HOST=` `DEST=` `PD=` | target, destination, Pd binary |
 
-**The syntax check is built in and blocking.** Pd 0.49-1 on the Mac is the same version the
-Organelle runs:
+**The syntax check is built in and blocking.** Pd 0.57-0 on the Mac
+(`~/Applications/Pd-0.57-0.app`) is the same version the Organelle runs, from 2026-11-03; `PD=`
+points it at another, such as the 0.49-1 still in `/Applications`. Every Pd the check and the gates
+start runs at the device's 44100 Hz, since 0.56 made 48000 the default:
 
 ```sh
-/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd \
-    -nogui -noaudio -send "pd quit" path/to/main.pd
+~/Applications/Pd-0.57-0.app/Contents/Resources/bin/pd \
+    -nogui -noaudio -r 44100 -send "pd quit" path/to/main.pd
 ```
 
 Silence means it parsed and every object instantiated. **Pd exits 0 even when objects fail to
@@ -135,7 +137,7 @@ The shape every piece of multi-session work here takes:
 
    ```sh
    python3 test/gate/pd-layout-check.py "Cut It"/*.pd
-   /Applications/Pd-0.49-1.app/Contents/Resources/bin/pd -nogui -noaudio \
+   ~/Applications/Pd-0.57-0.app/Contents/Resources/bin/pd -nogui -noaudio -r 44100 \
        -path mac-stubs -send "pd quit" "Cut It/main-dev.pd"     # silence == pass
    ```
 4. **A bench** — a printed `PASS IF` *before* each step **including the ones whose correct result

@@ -24,8 +24,7 @@ sys.path.insert(0, os.path.join(
 import lib_osc                                                  # noqa: E402
 import lib_scratch                                              # noqa: E402
 
-PD = os.environ.get(
-    "PD", "/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd")
+PD = lib_scratch.PD
 
 HOST = os.environ.get("ORGANELLE", "root@organelle.local")
 # /sdcard, never /tmp: /tmp empties on reboot, and a launch with no bench looks
@@ -238,7 +237,7 @@ def mac(bench_name, auto_only, work):
     # DSP on: every beat counter is threshold~ on a phasor~, so with it off
     # every count reads 0. On the device mother turns it on; here it is a panel
     # toggle nobody is present to tick. -send runs after the patches load.
-    argv = [PD] + mode + ["-send", "pd dsp 1",
+    argv = [PD] + list(lib_scratch.RATE) + mode + ["-send", "pd dsp 1",
                           "-path", os.path.join(work, "patch"),
                           os.path.join(work, "patch", "main-dev.pd"),
                           bench_pd, _tap()]

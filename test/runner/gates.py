@@ -80,7 +80,7 @@ JOBS = int(os.environ.get("CUTIT_JOBS") or 0) or len(GATES)
 # Every gate's Pd runs with HOME pointed at an empty directory, so it never reads
 # the Mac's Pd preferences, which Pds starting side by side trip over (Reference,
 # pure-data, Preferences). Every gate already passes -noaudio, -nomidi and its
-# own -path.
+# own -path, and lib_scratch adds the device's rate, -r 44100.
 
 
 def _syntax(env):
@@ -93,7 +93,7 @@ def _syntax(env):
     rc, out_lines = 0, []
     # The debug patch too: menu-launched on the device, with no console.
     for f in ("Cut It/main.pd", "Cut It/main-dev.pd", "Cut It Debug/main.pd"):
-        p = subprocess.run([pd, "-nogui", "-noaudio", "-nomidi",
+        p = subprocess.run([pd, "-nogui", "-noaudio", "-nomidi", "-r", "44100",
                             "-path", "mac-stubs", "-send", "pd quit", f],
                            env=env,
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

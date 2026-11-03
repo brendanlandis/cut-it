@@ -27,7 +27,14 @@ import sys
 import lib_pd
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PD = os.environ.get("PD", "/Applications/Pd-0.49-1.app/Contents/Resources/bin/pd")
+# The Mac's Pd is 0.57, the version the Organelle runs (ref/workflow.md); PD=
+# points a run at another.
+PD = os.environ.get("PD", os.path.expanduser(
+    "~/Applications/Pd-0.57-0.app/Contents/Resources/bin/pd"))
+
+# Every Pd a gate starts runs at the device's rate, the 44100 its .pdsettings
+# sets. Pd 0.56 made 48000 the default, and a gate's Pd reads no preferences.
+RATE = ("-r", "44100")
 
 # ---------------------------------------------------------------------------
 # The one MIDI inventory: an exact count per class, never "not zero", updated
@@ -382,13 +389,14 @@ def drive(gen, out, *args, also=()):
             fail("FAIL: the generator wrote no harness to %s." % p, *why)
 
 def run(cap, dog, *argv):
-    """Pd with argv, its console into cap, killed at `dog` seconds.
+    """Pd with argv at the device's rate, its console into cap, killed at `dog`
+    seconds.
 
     A run the watchdog ends is said out loud; its capture stops wherever Pd
     was, and the analyzer's window count fails it.
     """
     with open(cap, "wb") as fh:
-        p = subprocess.Popen([PD] + list(argv), stdout=fh,
+        p = subprocess.Popen([PD] + list(RATE) + list(argv), stdout=fh,
                              stderr=subprocess.STDOUT, cwd=ROOT)
         try:
             p.wait(timeout=dog)

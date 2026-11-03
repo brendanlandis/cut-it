@@ -17,6 +17,7 @@ test/gate/scratch-gates.py holds what each gate does with this; the phone and
 state gates drive it from their own analyzers.
 """
 import os
+import pwd
 import re
 import shutil
 import socket
@@ -34,6 +35,21 @@ PD = os.environ.get("PD", os.path.expanduser(
 # Every Pd a gate starts runs at the device's rate, the 44100 its .pdsettings
 # sets. Pd 0.56 made 48000 the default, and a gate's Pd reads no preferences.
 RATE = ("-r", "44100")
+
+# The externals beyond vanilla, pdlua and ELSE, built for the Mac and kept in
+# Pd's own user folder, ~/Library/Pd, as the device keeps them in
+# /sdcard/PdExtraLibs (device/README.md, Lua and ELSE). Every Pd the suite
+# starts gets the folder on its -path: the suite empties HOME, so Pd would not
+# find it there, and this reads the account's home, not $HOME, for the same
+# reason. CUTIT_PD_LIBS= points a run at another folder.
+HOME = pwd.getpwuid(os.getuid()).pw_dir
+LIBS = os.environ.get("CUTIT_PD_LIBS") or os.path.join(HOME, "Library", "Pd")
+LIBS_PATH = ("-path", LIBS)
+
+# lua.org's Lua 5.4, which runs the Lua halves of the gates (test/gate/lua/);
+# LUA= points a run at another.
+LUA = (os.environ.get("LUA") or shutil.which("lua5.4") or shutil.which("lua")
+       or os.path.join(HOME, ".local", "bin", "lua"))
 
 # ---------------------------------------------------------------------------
 # The one MIDI inventory: an exact count per class, never "not zero", updated
@@ -91,6 +107,23 @@ def require(*paths):
 def require_pd():
     if not os.access(PD, os.X_OK):
         fail("no Pd at %s -- set PD=..." % PD)
+    if not os.path.isdir(os.path.join(LIBS, "pdlua")):
+        fail("no pdlua in %s -- device/README.md, Lua and ELSE, builds it;" % LIBS,
+             "set CUTIT_PD_LIBS=... to point at another folder.")
+
+
+def lua(script, *args):
+    """A Lua half of a gate, run from the repo root; -> its exit status."""
+    try:
+        version = subprocess.run([LUA, "-v"], stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT).stdout.decode()
+    except OSError:
+        version = ""
+    if not version.startswith("Lua 5.4"):
+        fail("no Lua 5.4 at %s -- device/README.md, Lua and ELSE, builds one;" % LUA,
+             "set LUA=... to point at another.")
+    sys.stdout.flush()
+    return subprocess.call([LUA, script] + [str(a) for a in args], cwd=ROOT)
 
 
 # ---------------------------------------------------------------------------
@@ -374,15 +407,15 @@ def drive(gen, out, *args, also=()):
             fail("FAIL: the generator wrote no harness to %s." % p, *why)
 
 def run(cap, dog, *argv):
-    """Pd with argv at the device's rate, its console into cap, killed at `dog`
-    seconds.
+    """Pd with argv at the device's rate and the libs on its path, its console
+    into cap, killed at `dog` seconds.
 
     A run the watchdog ends is said out loud; its capture stops wherever Pd
     was, and the analyzer's window count fails it.
     """
     with open(cap, "wb") as fh:
-        p = subprocess.Popen([PD] + list(RATE) + list(argv), stdout=fh,
-                             stderr=subprocess.STDOUT, cwd=ROOT)
+        p = subprocess.Popen([PD] + list(RATE) + list(LIBS_PATH) + list(argv),
+                             stdout=fh, stderr=subprocess.STDOUT, cwd=ROOT)
         try:
             p.wait(timeout=dog)
         except subprocess.TimeoutExpired:

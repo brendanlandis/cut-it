@@ -16,6 +16,9 @@ set -eu
 
 HOST="${HOST:-root@organelle.local}"
 PD="${PD:-$HOME/Applications/Pd-0.57-0.app/Contents/Resources/bin/pd}"
+# pdlua and ELSE, built for the Mac, as /sdcard/PdExtraLibs holds them on the device
+# (device/README.md, Lua and ELSE). CUTIT_PD_LIBS points at another folder.
+LIBS="${CUTIT_PD_LIBS:-$HOME/Library/Pd}"
 
 # --- Which deployable ------------------------------------------------------
 CLEAN=0
@@ -72,9 +75,11 @@ fi
 # silence means every object instantiated (ref/workflow.md). -nomidi because
 # the Mac's saved MIDI preferences print a device error whenever the hardware
 # they name is not plugged in; objects create without a device either way.
-# -r 44100 is the device's rate: Pd 0.56 made 48000 the default.
+# -r 44100 is the device's rate: Pd 0.56 made 48000 the default. The libs folder
+# is on the path as mother's -path puts /sdcard/PdExtraLibs on the device's.
 check_patch() {
-    out=$("$PD" -nogui -noaudio -nomidi -r 44100 -path mac-stubs -send "pd quit" "$1" 2>&1) || true
+    out=$("$PD" -nogui -noaudio -nomidi -r 44100 -path mac-stubs -path "$LIBS" \
+          -send "pd quit" "$1" 2>&1) || true
     if [ -n "$out" ]; then
         echo "syntax check FAILED: $1" >&2
         echo "$out" >&2

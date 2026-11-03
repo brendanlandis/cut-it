@@ -14,6 +14,12 @@ import subprocess
 import sys
 import tempfile
 
+# lib_scratch says where pdlua and ELSE are, for the deploy gate's Pd as for
+# every other gate's.
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gate"))
+import lib_scratch                                              # noqa: E402
+
 # ---------------------------------------------------------------------------
 # The table's length is asserted, since a gate dropped in an edit is otherwise
 # silent. Update it deliberately, never to make a red run green (as MIDI_EXPECT).
@@ -74,7 +80,8 @@ JOBS = int(os.environ.get("CUTIT_JOBS") or 0) or len(GATES)
 # Every gate's Pd runs with HOME pointed at an empty directory, so it never reads
 # the Mac's Pd preferences, which Pds starting side by side trip over (Reference,
 # pure-data, Preferences). Every gate already passes -noaudio, -nomidi and its
-# own -path, and lib_scratch adds the device's rate, -r 44100.
+# own -path, and lib_scratch adds the device's rate, -r 44100, and the -path of
+# the libs folder, which an empty HOME would hide.
 
 
 def _syntax(env):
@@ -88,7 +95,8 @@ def _syntax(env):
     # The debug patch too: menu-launched on the device, with no console.
     for f in ("Cut It/main.pd", "Cut It/main-dev.pd", "Cut It Debug/main.pd"):
         p = subprocess.run([pd, "-nogui", "-noaudio", "-nomidi", "-r", "44100",
-                            "-path", "mac-stubs", "-send", "pd quit", f],
+                            "-path", "mac-stubs", *lib_scratch.LIBS_PATH,
+                            "-send", "pd quit", f],
                            env=env,
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out = p.stdout.decode("utf-8", "replace").rstrip("\n")

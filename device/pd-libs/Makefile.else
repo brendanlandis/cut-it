@@ -1,0 +1,146 @@
+# ELSE 1.0-0 rc14 for the Organelle 1 (armv7 hard-float, gcc 5.2, Pd 0.57-0), without CMake
+# (the device has none). Mirrors upstream's CMakeLists.txt target by target; run with -k so one
+# object's failure doesn't stop the rest. Externals get .pd_linux, which every Linux Pd loads.
+TOP   ?= /sdcard/libs-trial/build/pd-else-v.1.0-rc14
+SRC   := $(TOP)/Source
+PDSRC ?= /sdcard/pd-build/pd-0.57-0/src
+OUT   ?= /sdcard/libs-trial/else
+B     ?= /sdcard/libs-trial/build/obj
+FF    ?= /sdcard/libs-trial/build/ffmpeg-7.0.1
+EXT   := .pd_linux
+
+ARCH     := -mcpu=cortex-a9 -mfpu=neon
+INC      := -I$(PDSRC) -I$(SRC)/Shared -I$(SRC)/Shared/aubio/src
+CFLAGS   := -D_FORTIFY_SOURCE=2 -O3 -DNDEBUG -fPIC -std=gnu11 $(ARCH) $(INC)
+CXXFLAGS := -D_FORTIFY_SOURCE=2 -O3 -DNDEBUG -fPIC -std=c++14 -D_GLIBCXX_USE_CXX11_ABI=0 $(ARCH) $(INC)
+LDEXT    := -shared -Wl,-rpath,'$$ORIGIN' -L$(OUT)
+SHARED   := $(OUT)/libelse_shared.so
+
+CTRL  := $(wildcard $(SRC)/Control/*.c)
+AUD   := $(wildcard $(SRC)/Audio/*.c)
+ALI   := $(wildcard $(SRC)/Extra/Aliases/*.c)
+NAMES := $(notdir $(basename $(CTRL) $(AUD) $(ALI)))
+SPECIAL := else beat~ play.file~ sfload sfinfo pdlink pdlink~
+PLAIN := $(filter-out $(SPECIAL),$(NAMES))
+ext = $(addprefix $(OUT)/,$(addsuffix $(EXT),$(1)))
+
+.PHONY: c cpp ffobjs
+# c: everything upstream builds from C alone; cpp: the C++ parts and their friends
+c: $(SHARED) $(call ext,$(PLAIN) lua else beat~)
+cpp: $(call ext,plaits~ circuit~ sfont~ pdlink pdlink~)
+ffobjs: $(call ext,play.file~ sfload sfinfo)
+
+$(OUT):
+	mkdir -p $@
+
+$(B)/%.o: $(SRC)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(XCFLAGS) -c -o $@ $<
+$(B)/%.o: $(SRC)/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(XCXXFLAGS) -c -o $@ $<
+
+# else_shared: Shared/*.c + libsamplerate, as shared.cmake
+SH_OBJ := $(patsubst $(SRC)/%.c,$(B)/%.o,$(wildcard $(SRC)/Shared/*.c $(SRC)/Shared/libsamplerate/*.c))
+$(SHARED): $(SH_OBJ) | $(OUT)
+	$(CC) -shared -Wl,-soname,libelse_shared.so -o $@ $^ -lm
+
+$(OUT)/%$(EXT): $(SRC)/Control/%.c | $(SHARED)
+	$(CC) $(CFLAGS) -o $@ $< $(LDEXT) -lelse_shared -lm
+$(OUT)/%$(EXT): $(SRC)/Audio/%.c | $(SHARED)
+	$(CC) $(CFLAGS) -o $@ $< $(LDEXT) -lelse_shared -lm
+$(OUT)/%$(EXT): $(SRC)/Extra/Aliases/%.c | $(SHARED)
+	$(CC) $(CFLAGS) -o $@ $< $(LDEXT) -lelse_shared -lm
+
+# beat~ carries aubio
+AUBIO_OBJ := $(patsubst $(SRC)/%.c,$(B)/%.o,$(wildcard $(SRC)/Shared/aubio/src/*.c $(SRC)/Shared/aubio/src/*/*.c))
+$(OUT)/beat~$(EXT): $(SRC)/Audio/beat~.c $(AUBIO_OBJ) | $(SHARED)
+	$(CC) $(CFLAGS) -o $@ $< $(AUBIO_OBJ) $(LDEXT) -lelse_shared -lm
+
+# [lua]: ELSE's pdlua with its bundled Lua (onelua.c); [else] links it, as upstream
+LUADIR := $(SRC)/Control/lua
+$(OUT)/lua$(EXT): $(LUADIR)/pdlua.c $(LUADIR)/lua/onelua.c | $(OUT)
+	$(CC) $(CFLAGS) -I$(LUADIR)/lua -DLUA_USE_LINUX=1 -DMAKE_LIB=1 -DPDLUA_VERSION='"1.0.0"' -o $@ $^ -shared -Wl,-soname,lua$(EXT) -ldl -lm
+$(OUT)/else$(EXT): $(SRC)/Control/else.c $(OUT)/lua$(EXT) | $(SHARED)
+	$(CC) $(CFLAGS) -o $@ $< $(LDEXT) $(OUT)/lua$(EXT) -lelse_shared -lm
+
+# FFmpeg users (FFmpeg itself is built by build-else.sh, without OpenSSL)
+FFLINK := $(FF)/libavformat/libavformat.a $(FF)/libavcodec/libavcodec.a $(FF)/libswresample/libswresample.a $(FF)/libavutil/libavutil.a
+$(OUT)/play.file~$(EXT): $(SRC)/Audio/play.file~.c | $(SHARED)
+	$(CC) $(CFLAGS) -I$(FF) -o $@ $< $(LDEXT) $(FFLINK) -lelse_shared -lz -lpthread -lm
+$(OUT)/sfload$(EXT): $(SRC)/Control/sfload.c | $(SHARED)
+	$(CC) $(CFLAGS) -I$(FF) -o $@ $< $(LDEXT) $(FFLINK) -lelse_shared -lz -lpthread -lm
+$(OUT)/sfinfo$(EXT): $(SRC)/Control/sfinfo.c | $(SHARED)
+	$(CC) $(CFLAGS) -I$(FF) -o $@ $< $(LDEXT) $(FFLINK) -lelse_shared -lz -lpthread -lm
+
+# pdlink / pdlink~: the C++ link library, and opus for pdlink~
+LINK_OBJ := $(patsubst $(SRC)/%.cpp,$(B)/%.o,$(SRC)/Shared/link/udp/udp_discovery_peer.cpp $(SRC)/Shared/link/udp/udp_discovery_protocol.cpp $(SRC)/Shared/link/link.cpp)
+$(LINK_OBJ): XCXXFLAGS := -I$(SRC)/Shared/link
+OPUS := $(SRC)/Shared/opus/libopus.a
+$(OPUS):
+	cd $(SRC)/Shared/opus && CFLAGS="-fPIC $(ARCH)" $(MAKE) -f Makefile.unix lib
+$(OUT)/pdlink$(EXT): $(SRC)/Control/pdlink.c $(LINK_OBJ) | $(SHARED)
+	$(CC) $(CFLAGS) -I$(SRC)/Shared/link -o $@ $< $(LINK_OBJ) $(LDEXT) -lelse_shared -lstdc++ -lpthread -lm
+$(OUT)/pdlink~$(EXT): $(SRC)/Audio/pdlink~.c $(LINK_OBJ) $(OPUS) | $(SHARED)
+	$(CC) $(CFLAGS) -I$(SRC)/Shared/link -I$(SRC)/Shared/libsamplerate -I$(SRC)/Shared/opus -I$(SRC)/Shared/opus/include -o $@ $< $(LINK_OBJ) $(OPUS) $(LDEXT) -lelse_shared -lstdc++ -lpthread -lm
+
+# circuit~: C + Simulator.cpp + KLU
+CIR := $(SRC)/Audio/circuit~
+KLU_OBJ := $(patsubst $(SRC)/%.c,$(B)/%.o,$(wildcard $(CIR)/Libraries/KLU/*.c $(CIR)/Libraries/COLAMD/*.c $(CIR)/Libraries/AMD/*.c $(CIR)/Libraries/BTF/*.c $(CIR)/Libraries/SuiteSparse_config/*.c))
+SIM_OBJ := $(B)/Audio/circuit~/Source/Simulator.o
+$(KLU_OBJ): XCFLAGS := -I$(CIR)/Libraries
+$(SIM_OBJ): XCXXFLAGS := -I$(CIR)/Libraries
+$(OUT)/circuit~$(EXT): $(CIR)/Source/circuit~.c $(SIM_OBJ) $(KLU_OBJ) | $(SHARED)
+	$(CC) $(CFLAGS) -I$(CIR)/Libraries -o $@ $< $(SIM_OBJ) $(KLU_OBJ) $(LDEXT) -lelse_shared -lstdc++ -lm
+
+# plaits~: Mutable Instruments' Plaits (C++)
+PL := $(SRC)/Audio/plaits~
+PLAITS_CC := stmlib/dsp/units.cc stmlib/utils/random.cc stmlib/dsp/atan.cc plaits/dsp/voice.cc \
+  plaits/dsp/engine/additive_engine.cc plaits/dsp/engine/bass_drum_engine.cc plaits/dsp/engine/chord_engine.cc \
+  plaits/dsp/engine/fm_engine.cc plaits/dsp/engine/grain_engine.cc plaits/dsp/engine/hi_hat_engine.cc \
+  plaits/dsp/engine/modal_engine.cc plaits/dsp/engine/noise_engine.cc plaits/dsp/engine/particle_engine.cc \
+  plaits/dsp/engine/snare_drum_engine.cc plaits/dsp/engine/speech_engine.cc plaits/dsp/engine/string_engine.cc \
+  plaits/dsp/engine/swarm_engine.cc plaits/dsp/engine/virtual_analog_engine.cc plaits/dsp/engine/waveshaping_engine.cc \
+  plaits/dsp/engine/wavetable_engine.cc plaits/dsp/speech/lpc_speech_synth.cc plaits/dsp/speech/lpc_speech_synth_controller.cc \
+  plaits/dsp/speech/lpc_speech_synth_phonemes.cc plaits/dsp/speech/lpc_speech_synth_words.cc plaits/dsp/speech/naive_speech_synth.cc \
+  plaits/dsp/speech/sam_speech_synth.cc plaits/dsp/physical_modelling/modal_voice.cc plaits/dsp/physical_modelling/resonator.cc \
+  plaits/dsp/physical_modelling/string.cc plaits/dsp/physical_modelling/string_voice.cc plaits/dsp/engine2/chiptune_engine.cc \
+  plaits/dsp/engine2/phase_distortion_engine.cc plaits/dsp/engine2/six_op_engine.cc plaits/dsp/engine2/string_machine_engine.cc \
+  plaits/dsp/engine2/virtual_analog_vcf_engine.cc plaits/dsp/engine2/wave_terrain_engine.cc plaits/dsp/fm/algorithms.cc \
+  plaits/dsp/fm/dx_units.cc plaits/dsp/chords/chord_bank.cc plaits/resources.cc
+PL_OBJ := $(patsubst %.cc,$(B)/plaits/%.o,$(PLAITS_CC))
+PLFLAGS := -I$(PL) -DTEST=1 -D_USE_MATH_DEFINES=1 -Wno-unused-local-typedefs
+$(B)/plaits/%.o: $(PL)/%.cc
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(PLFLAGS) -c -o $@ $<
+$(OUT)/plaits~$(EXT): $(PL)/plaits~.cpp $(PL_OBJ) | $(OUT)
+	$(CXX) $(CXXFLAGS) $(PLFLAGS) -o $@ $< $(PL_OBJ) $(LDEXT) -lm
+
+# sfont~: FluidLite + vorbis + ogg
+SF := $(SRC)/Audio/sfont~
+FL_C := FluidLite/src/fluid_init.c FluidLite/src/fluid_chan.c FluidLite/src/fluid_chorus.c FluidLite/src/fluid_conv.c \
+  FluidLite/src/fluid_defsfont.c FluidLite/src/fluid_dsp_float.c FluidLite/src/fluid_gen.c FluidLite/src/fluid_hash.c \
+  FluidLite/src/fluid_list.c FluidLite/src/fluid_mod.c FluidLite/src/fluid_ramsfont.c FluidLite/src/fluid_rev.c \
+  FluidLite/src/fluid_settings.c FluidLite/src/fluid_synth.c FluidLite/src/fluid_sys.c FluidLite/src/fluid_tuning.c \
+  FluidLite/src/fluid_voice.c FluidLite/libvorbis-1.3.5/lib/vorbisenc.c FluidLite/libvorbis-1.3.5/lib/info.c \
+  FluidLite/libvorbis-1.3.5/lib/analysis.c FluidLite/libvorbis-1.3.5/lib/bitrate.c FluidLite/libvorbis-1.3.5/lib/block.c \
+  FluidLite/libvorbis-1.3.5/lib/codebook.c FluidLite/libvorbis-1.3.5/lib/envelope.c FluidLite/libvorbis-1.3.5/lib/floor0.c \
+  FluidLite/libvorbis-1.3.5/lib/floor1.c FluidLite/libvorbis-1.3.5/lib/lookup.c FluidLite/libvorbis-1.3.5/lib/lpc.c \
+  FluidLite/libvorbis-1.3.5/lib/lsp.c FluidLite/libvorbis-1.3.5/lib/mapping0.c FluidLite/libvorbis-1.3.5/lib/mdct.c \
+  FluidLite/libvorbis-1.3.5/lib/psy.c FluidLite/libvorbis-1.3.5/lib/registry.c FluidLite/libvorbis-1.3.5/lib/res0.c \
+  FluidLite/libvorbis-1.3.5/lib/sharedbook.c FluidLite/libvorbis-1.3.5/lib/smallft.c FluidLite/libvorbis-1.3.5/lib/vorbisfile.c \
+  FluidLite/libvorbis-1.3.5/lib/window.c FluidLite/libvorbis-1.3.5/lib/synthesis.c FluidLite/libogg-1.3.2/src/bitwise.c \
+  FluidLite/libogg-1.3.2/src/framing.c
+FL_OBJ := $(patsubst %.c,$(B)/sfont/%.o,$(FL_C))
+SFINC := -DHAVE_STRUCT_TIMESPEC -I$(SF)/FluidLite/libvorbis-1.3.5/include -I$(SF)/FluidLite/libvorbis-1.3.5/lib -I$(SF)/FluidLite/libogg-1.3.2/include -I$(SF)/FluidLite/include
+$(B)/sfont/%.o: $(SF)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(SFINC) -c -o $@ $<
+$(OUT)/sfont~$(EXT): $(SF)/sfont~.c $(FL_OBJ) | $(SHARED)
+	$(CC) $(CFLAGS) $(SFINC) -o $@ $< $(FL_OBJ) $(LDEXT) -lelse_shared -lm
+
+# Every external upstream builds, for the summary (sfz~ needs sfizz: CMake and C++17)
+ALL_EXPECTED := $(NAMES) lua plaits~ circuit~ sfont~ sfz~
+.PHONY: expected
+expected:
+	@echo $(ALL_EXPECTED) | tr ' ' '\n'

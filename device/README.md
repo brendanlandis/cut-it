@@ -15,6 +15,7 @@ factory.
 | `wifi_control.py` | — | Not modified; captured because it is the script the modification exists to protect. |
 | `OS-VERSION` | — | What `/root/fw_dir/version` reported when this was captured. |
 | `pdsettings.orig` | — | The **factory** `/root/.pdsettings`, copied from the device's own `.pdsettings.bak`. The missing half of the `mount.sh` / `mount.sh.orig` pair. |
+| `pd-libs/` | `/sdcard/PdExtraLibs/pdlua` and `/sdcard/PdExtraLibs/else` on the Organelle, and `~/Library/Pd` on the Mac | **Added, not factory.** How pdlua and ELSE were built for Pd 0.57 on the device, and the check that a patch still loads beside them; see *Lua and ELSE* below. |
 
 ## What was changed from factory
 
@@ -110,6 +111,88 @@ mv /usr/bin/pd-0.49 /usr/bin/pd
 The next patch load runs 0.49. To switch again, the same remount around moving `/usr/bin/pd` back to
 `/usr/bin/pd-0.49` and copying `usr-bin-pd` in as `/usr/bin/pd`, mode 755. The 0.49 binary itself is
 not kept here: an OS 4.0 image restores it.
+
+## Lua and ELSE
+
+**Why:** the sequencer's rules run in Lua inside Pd, through the pdlua external
+([ref/module/sequencer.md](../ref/module/sequencer.md)), and ELSE's objects may replace hand-built
+parts. The Organelle ships neither, and current builds of both need Pd 0.56 or later, so both are
+built on the device against Cut It's 0.57. They live in `/sdcard/PdExtraLibs`, which `mother`'s own
+launch line puts on Pd's path (`-path /sdcard/PdExtraLibs`), so a patch finds them with no change to
+`/`. What each one is on the device, what it costs and what is missing: the Organelle's Reference
+page (`~/Sites/!reference/critter-guitari-organelle-1.md`, *Externals*).
+
+| On the device | What | Built by |
+|---|---|---|
+| `/sdcard/PdExtraLibs/pdlua/` | pdlua 0.12.24, Lua 5.4.7 compiled in | `pd-libs/build-pdlua.sh`, ~5 min at `nice 19` |
+| `/sdcard/PdExtraLibs/else/` | ELSE 1.0-0 rc14: 325 of its 332 externals, its abstractions and help files | `pd-libs/build-else.sh` with `pd-libs/Makefile.else` |
+
+**Sources:**
+
+| File | From |
+|---|---|
+| `pd-lua-0.12.24.tar.gz` | `github.com/ben-wes/pd-lua/archive/refs/tags/0.12.24.tar.gz`: a fork, since upstream's 0.12.23 fails on 0.57 |
+| `lua-v5.4.7-git.tar.gz` | `github.com/lua/lua/archive/refs/tags/v5.4.7.tar.gz`: pdlua's `lua/` submodule, which a GitHub archive leaves empty |
+| `lua-5.4.7.tar.gz` | `www.lua.org/ftp/lua-5.4.7.tar.gz`: the `lua` interpreter, for the Lua tests on the Mac |
+| `pd-else-rc14.tar.gz` | `github.com/porres/pd-else/archive/refs/tags/v.1.0-rc14.tar.gz` |
+
+The files built from on 2026-11-03, as `sha256sum -c` reads them (`build-pdlua.sh` checks its three):
+
+```
+7c14cf9cddc7722b33e85dc63862452caef6ed145e1259b6b7694a801ca9d626  pd-lua-0.12.24.tar.gz
+5c39111b3fc4c1c9e56671008955a1730f54a15b95e1f1bd0752b868b929d8e3  lua-v5.4.7-git.tar.gz
+9fbf5e28ef86c69858f6d3d34eccc32e911c1a28b4120ff3e84aaa70cfbf1e30  lua-5.4.7.tar.gz
+ad725a4bc9a50a1b9071cf2f97a30b29910ac22ee5fbc92db999d5fcaaaffd91  pd-else-rc14.tar.gz
+```
+
+**One change from upstream pdlua:** `build-pdlua.sh` moves the three lines it prints when it loads
+to Pd's `-verbose` level. Cut It's entry points must load in silence, since `tools/deploy.sh` and the
+suite take any output as a failure, and those lines would be the only output.
+
+**pdlua on its own, not ELSE's copy.** ELSE carries a modified pdlua 0.12.23 inside its `[else]`
+library binary, which works, but loading it loads the whole library: ~35 lines of banner at every
+load, a GUI plugin installed, and Cut It's Lua tied to ELSE's release candidates. pdlua alone is one
+~400 KB binary that loads quietly once the banner moves.
+
+**ELSE's build:** rc14's own needs CMake 3.15 and OpenSSL 3, which the device lacks, so
+`Makefile.else` mirrors its `CMakeLists.txt` target by target and gives every external the
+`.pd_linux` suffix any Linux Pd loads. Built 2026-11-03 under `/sdcard/libs-trial`, the paths both
+files still name (`T` in the script, the `?=` defaults in the Makefile). Missing, and why: `play.file~`,
+`sfload` and `sfinfo` need FFmpeg, and the four abstractions built on them with them (`player~`,
+`gran.player~`, `pvoc.player~`, `sample~`); `circuit~`, `pdlink`, `pdlink~` and `sfz~` didn't build
+with gcc 5.2.
+
+**Installing on the device**, with the tarballs and `pd-libs/` copied to `/sdcard/libs-build` and the
+Pd 0.57 source tree the device was built from in `/sdcard/pd-build`:
+
+```sh
+cd /sdcard/libs-build
+nohup nice -n 19 ionice -c3 bash build-pdlua.sh /sdcard/libs-build \
+    /sdcard/pd-build/pd-0.57-0/src /sdcard/PdExtraLibs > build-pdlua.log 2>&1 &
+# ELSE: build-else.sh as above, then
+cp -a /sdcard/libs-trial/else /sdcard/PdExtraLibs/else
+sh loadcheck.sh "/sdcard/Patches/!/Cut It/main.pd"
+```
+
+⚠️ **Both builds cap their own memory** (`ulimit -v`, `oom_score_adj 1000`), as must anything else
+run beside the live Pd: one test Pd ran the device out of memory on 2026-11-03.
+
+**`loadcheck.sh`** loads patches in a second Pd beside the live one, isolated from it and capped, and
+prints Pd's output; a clean load of Cut It prints only two lines, from `[shell]`'s load-time scripts
+not being in its empty working directory. `LIBS= sh loadcheck.sh …` loads without
+`/sdcard/PdExtraLibs`, to compare.
+
+**On the Mac** the same two live in `~/Library/Pd`, on Pd's standard path, so Pd's own window finds
+them with no preference set: `~/Library/Pd/pdlua` from `build-pdlua.sh` (Pd source:
+`~/Applications/Pd-0.57-0.app/Contents/Resources/src`), and `~/Library/Pd/else` from Deken's rc14 build
+for the Mac, `else[v1.0-0_rc14-with_live_electronics_tutorial](Darwin-amd64-32)(…).dek` from
+`puredata.info/Members/porres/software/else`, a zip. The same `build-pdlua.sh` leaves lua.org's `lua`
+in its `build/lua-5.4.7/src`, copied to `~/.local/bin/lua` for the Lua tests. The suite empties
+`HOME`, so every Pd it and `tools/deploy.sh` start gets `-path ~/Library/Pd` from the account's real
+home; `CUTIT_PD_LIBS=…` points them at another folder, and `LUA=…` at another interpreter.
+
+**To remove** them from the device: `rm -rf /sdcard/PdExtraLibs/pdlua /sdcard/PdExtraLibs/else`.
+Cut It's sequencer then fails to create, and says `fail c_steps no-lua` on the screen and in the log.
 
 ## Restoring the nanoKONTROL
 

@@ -159,8 +159,8 @@ load, a GUI plugin installed, and Cut It's Lua tied to ELSE's release candidates
 `.pd_linux` suffix any Linux Pd loads. Built 2026-11-03 under `/sdcard/libs-trial`, the paths both
 files still name (`T` in the script, the `?=` defaults in the Makefile). Missing, and why: `play.file~`,
 `sfload` and `sfinfo` need FFmpeg, and the four abstractions built on them with them (`player~`,
-`gran.player~`, `pvoc.player~`, `sample~`); `circuit~`, `pdlink`, `pdlink~` and `sfz~` didn't build
-with gcc 5.2.
+`gran.player~`, `pvoc.player~`, `sample~`); `circuit~`, `pdlink`, `pdlink~` and `sfz~` are C++17,
+which gcc 5.2 lacks.
 
 **Installing on the device**, with the tarballs and `pd-libs/` copied to `/sdcard/libs-build` and the
 Pd 0.57 source tree the device was built from in `/sdcard/pd-build`:

@@ -110,8 +110,14 @@ def led(g):
 
 
 def organelle(g):
-    S.require("Cut It/m_organelle.pd")
-    return _stdin_gate(g, 30)
+    S.require("Cut It/m_organelle.pd", "Cut It/m_organelle.lua",
+              "Cut It/m_organelle-lua.pd_lua", "test/gate/lua/m_organelle_test.lua")
+    # The keyboard's rules first, in Lua and without Pd: each key's name and the layer it
+    # latched. Then the Pd half: mother's names through the running instrument.
+    print("   the keyboard's rules, in Lua ...")
+    rc_lua = S.lua("test/gate/lua/m_organelle_test.lua", *g.args)
+    print("\n   the patch, in Pd ...")
+    return _stdin_gate(g, 30) or rc_lua
 
 
 def nano(g):

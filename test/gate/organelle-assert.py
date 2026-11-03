@@ -92,8 +92,8 @@ def run_asserts(cap):
             "got %s" % param("STRADDLE-KEY"))
     A.check("⛔ ...and its release carries THE SAME NAME after aux is released",
             param("STRADDLE-OFF") == [["og-shift-65", "0"]],
-            "got %s. The layer is latched per key AT PRESS TIME, in a "
-            "25-element array -- a release read from the live modifier would "
+            "got %s. The layer is latched per key AT PRESS TIME, in "
+            "m_organelle.lua -- a release read from the live modifier would "
             "say og-key-65 here and hang the note it never turned off"
             % param("STRADDLE-OFF"))
 

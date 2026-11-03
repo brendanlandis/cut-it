@@ -40,18 +40,18 @@ were false.
 | `presence-assert.sh` | 43 | `module/presence` |
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
 | `nano-assert.sh` | 26 | `device/nanokontrol` |
-| `organelle-assert.sh` | 21 | `device/organelle` |
+| `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
 | `phone-assert.sh` | 55 | `device/phone` |
 | `sp404-assert.sh` | 19 | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 67: 39 in Lua, 28 in Pd | `module/sequencer` |
 
-**674 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
+**709 checks.** ⚠️ **Twenty of the twenty-one gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **667**; the difference is
-that gate. `sequencer-assert.sh` and `map-assert.sh` print two each, one per half: the Lua tests',
-then the analyzer's.
+total cannot be derived from a run by summing. Totaling the run gives **702**; the difference is
+that gate. `sequencer-assert.sh`, `map-assert.sh` and `organelle-assert.sh` print two each, one per half:
+the Lua tests', then the analyzer's.
 Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 43 come from TWO Pd runs and one tally**, which is the only entry here
@@ -409,6 +409,23 @@ on `err`, and a syntax error with silence (18 failed); the Lua half dies on both
 ⚠️ **The layout table is read, not restated**, so a frame is decoded with the same table the patch
 paints from. The analyzer's expectations are what keeps that honest: the driver presses `pad-64`
 and expects level 4, so a table that moves the button is caught.
+
+## The device layers' Lua halves
+
+```sh
+./test/gate/organelle-assert.sh      35 + 21 checks, ~20 s — the keyboard's names in Lua, then the panel
+```
+
+**A device layer whose decoding is Lua runs its Lua tests first**, as the map and the sequencer do:
+`test/gate/lua/m_organelle_test.lua` drives `Cut It/m_organelle.lua` (each key's name, the layer
+`aux` held when it went down, a chord across a change of modifier) and `m_organelle-lua.pd_lua`
+through `lib_test.lua`'s stand-in for pdlua (its inlets and outlets, `bad-selector`, a throwing rule
+caught as `fail m_organelle lua-notes`). The Pd half is unchanged since the keys were Pd: **it is the
+proof the port changed nothing.**
+
+✅ **Both halves red on each of three mutations of `m_organelle.lua`** (Lua failures, then Pd): no
+latch, the live modifier naming every edge (3, 1); the latch rewritten on the release (3, 1); and the
+release dropped (7, 3).
 
 ## `stubs/` — stand-ins the gates need
 

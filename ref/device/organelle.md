@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # Organelle 1 — the panel, the OLED and the aux LED
 
-**Files:** `Cut It/m_organelle.pd`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/organelle-assert.sh`, `test/gate/led-assert.sh` · **Checklist:** `test/checklists/display.md`
+**Files:** `Cut It/m_organelle.pd`, `Cut It/m_organelle.lua`, `Cut It/m_organelle-lua.pd_lua`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/organelle-assert.sh`, `test/gate/led-assert.sh` · **Checklist:** `test/checklists/display.md`
 
 The host device and its own control surface. What the Organelle 1 is — its OS, paths, SSH, the
 `mother.pd` interface, the OLED and LED APIs, how it saves, its MIDI quirks and traps, and its wifi —
@@ -110,12 +110,12 @@ and force a reload, whichever controller has gone.
 
 ⚠️ **`recover` reads the RELEASE** — item 298, two tiers on one control. A shifted key publishes both
 edges, so it works unchanged; **the release carries the latched name**, which is exactly what the
-per-key array below guarantees. Without it the hold could never complete.
+per-key latch below guarantees. Without it the hold could never complete.
 
 | | Evidence | Item |
 |---|----------|------|
 | `aux` publishes **no control name**. A modifier is not a control: a name here could be bound in the map, and an unmapped one would draw a raw row on the OLED every time you reached for a shifted key | verified | 305 |
-| It holds `$0-shift` — **1 on the press, 0 on the release** | verified | 305 |
+| It sends `$0-shift` — **1 on the press, 0 on the release** — which the Lua keeps as the layer the next key goes down on | verified | 305 |
 | Holding it puts `shift` on the OLED as a **modal**, cleared on release. ⚠️ A missed release leaves the word up for the 30 s safety TTL, which is what that TTL is for | verified | 305 |
 | **A modal is priority 2 and `diag` is 3**, so a shifted key that summons the roster still draws over the word. See [display.md](../module/display.md) | verified | 305 |
 | It is not a transport — start and stop are the nano's PLAY and STOP, [nanokontrol.md](nanokontrol.md) | verified | 305 |
@@ -126,7 +126,7 @@ Press a shifted key, let go of `aux`, then let go of the key: read live, the pre
 note-off, and an unshifted one gets a note-off it never had a note-on for — **in mode 1 that is a
 stuck note on the Volca, and nothing anywhere reports it.**
 
-**A 25-element array indexed by `pitch - 60`**, written only when the velocity is non-zero and read
+**One entry per key, in `m_organelle.lua`**, written only when the velocity is non-zero and read
 on **both** edges. A release then cannot disagree with its own press however the modifier moves
 underneath it. ⚠️ **It is what makes a CHORD safe too**:
 two keys held across a change of modifier keep their own layers independently.
@@ -149,6 +149,28 @@ velocity is the value.
 ⚠️ **`notes` is one of mother's own reserved names, not a C-2 allowlist name.** Reading it here is
 the same legitimate move `led` and `oscOut` are: mother publishes on reserved globals and the `m_`
 layer that owns the device is the file allowed to read them.
+
+### The keys are Lua
+
+**`m_organelle.lua` names each key, and `m_organelle.pd` does everything else.** The Lua holds the
+per-key latch and answers a key with `og-key-NN` or `og-shift-NN` and its velocity, as plain Lua that
+runs on the Mac without Pd; the Pd keeps mother's names, the knobs and their `[change -1]`, `aux`'s
+modal and `$0-shift`, and presence. It is the same split as the sequencer's and the map's: the rules
+in Lua, and I/O in Pd ([sequencer.md](../module/sequencer.md), *The rules in Lua, the timing in Pd*).
+
+| | Evidence |
+|---|---|
+| **The face**, `m_organelle-lua.pd_lua`: inlet 1 mother's `notes`, inlet 2 `shift 0` or `shift 1` from `aux` and `init` at load; outlet 1 `param`, outlet 2 `err`, outlet 3 a bang on `init` | verified |
+| **What it replaced:** the press and pitch stores, the 25-element array with its write and read, two `makefilename`s and the `pack` that met them — 25 boxes | verified |
+| **A Lua that never loads** says `fail m_organelle no-lua` on `err` at load, and the keys are dead while the knobs and `aux` are not. On the 0.49 fallback that loses nothing more: the map that reads the keys is Lua too ([map.md](../module/map.md)) | verified |
+| **A rule that throws** says `fail m_organelle lua-notes` (or `lua-shift`, `lua-init`), and the object carries on | verified |
+| **Load and memory:** the patch loads in silence in a test Pd on the Organelle, and its peak resident size went from 3512 to 3480 kB, three runs each (2026-11-03) | verified |
+| **Cost per key:** about 0.09 ms on the Organelle against the Pd version's 0.008 — 9000 keys in 0.80–0.90 s against 0.07 s, in a test Pd niced beside the live one (2026-11-03). Nothing at a hand's rate: fifty keys a second is under half a percent of the CPU | verified |
+
+`test/gate/lua/m_organelle_test.lua` tests the rules and the face without Pd, and the Organelle gate
+runs it before its Pd half, which is unchanged since the keys were Pd. Edit the rules in
+`Cut It/m_organelle.lua`; `; pdluax reload m_organelle-lua` re-reads them in a running Pd, as for
+the sequencer.
 
 ⚠️ **Not in the file, deliberately:** the encoder, `encbut` and the pedal jack. ⛔ **Taking the
 encoder costs the instrument its own way out** — item 314, in Reference — which is a bad trade mid-set, and

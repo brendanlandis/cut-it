@@ -101,7 +101,7 @@ there and nowhere else.
 | `404-pad` | `404-pad5 90` | same shape | verified | 316 |
 | `volca-prog` | `volca-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
 | `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
-| `drum-page` | **nothing** — the grid is the feedback, and 48 pads in use would bury the screen | none | unknown | — |
+| `drum-page` | **nothing** — the grid is the feedback, and 40 pads in use would bury the screen | none | unknown | — |
 | the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the footer, the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
 
 ⚠️ **The held row's second number rides in the UNIT field.** `g_oled` runs a row's value through
@@ -142,8 +142,8 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 | Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Six modes × 92
-controls is 552 possible rows and the shipped file has **116** — seven, plus the keyboard's 25 and
-the drum page's 48 pads in mode 1, plus CC 90, PLAY, STOP and the three shifted keys in all six.
+controls is 552 possible rows and the shipped file has **114** — seven, plus the keyboard's 25 and
+the drum page's 40 pads in mode 1, plus CC 90, PLAY, STOP and the four shifted keys in all six.
 
 ### Where each part lives
 
@@ -489,7 +489,7 @@ per control, so two faders moving are two rows rather than four (item 317).
 
 ### The drum page is one destination and a layout table
 
-Mode 1's 48 drum-page pads are 48 rows, `mode-1 pad-81 drum-page 81`, and the arg is the grid
+Mode 1's 40 drum-page pads are 40 rows, `mode-1 pad-81 drum-page 81`, and the arg is the grid
 index because the handler never sees the control's name — the `volca-key` precedent. The handler
 looks the index up in `cut-it-drum-page.txt`, the table `g_grid` paints the page from
 ([display.md](display.md)), so `c_steps` receives `step 1 100` and never a cell. **The map says

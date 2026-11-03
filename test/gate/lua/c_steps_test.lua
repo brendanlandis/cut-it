@@ -12,7 +12,7 @@ local DIR = "Cut It/"
 local R = dofile(DIR .. "c_steps.lua")
 local check, equal = T.check, T.equal
 
-local LEVELS = { 8, 16, 24, 32, 40, 48, 56, 64, 71, 79, 87, 95, 103, 111, 119, 127 }
+local LEVELS = { 16, 32, 48, 64, 79, 95, 111, 127 }
 
 local function zeros(n)
   local z = {}
@@ -34,27 +34,27 @@ end
 
 print("\n--- the velocity levels ---")
 local got = {}
-for n = 1, 16 do got[n] = R.velocity(n) end
-equal("level n is round(127n/16): 8 16 24 ... 119 127", got, LEVELS)
+for n = 1, 8 do got[n] = R.velocity(n) end
+equal("level n is round(127n/8): 16 32 48 ... 111 127", got, LEVELS)
 check("... and every one is a whole number", (function()
-  for n = 1, 16 do if math.type(R.velocity(n)) ~= "integer" then return false end end
+  for n = 1, 8 do if math.type(R.velocity(n)) ~= "integer" then return false end end
   return true
 end)(), T.show(got))
 
 print("\n--- at load ---")
 local st = R.new(1)
 equal("a new sequencer holds 256 zeros", st.pattern, zeros(256))
-equal("... and starts on track 1 at level 13", { st.track, st.level }, { 1, 13 })
-equal("init draws the selection: vel 13, track 1, then track 1's steps",
-      R.internal.init(st, {}), { { "page", "vel", { 13 } }, { "page", "track", { 1 } },
+equal("... and starts on track 1 at level 6", { st.track, st.level }, { 1, 6 })
+equal("init draws the selection: vel 6, track 1, then track 1's steps",
+      R.internal.init(st, {}), { { "page", "vel", { 6 } }, { "page", "track", { 1 } },
                                  { "page", "steps", zeros(16) } })
 equal("the bank is clipped to 1..10, as [clip 1 10]",
       { R.new(0).bank, R.new(11).bank, R.new(nil).bank, R.new(3).bank }, { 1, 10, 1, 3 })
 
 print("\n--- the step rule ---")
 st = R.new(1)
-equal("a velocity press selects its level and answers only vel 4",
-      R.presses.vel(st, { 4, 100 }), { { "page", "vel", { 4 } } })
+equal("a velocity press selects its level and answers only vel 2",
+      R.presses.vel(st, { 2, 100 }), { { "page", "vel", { 2 } } })
 equal("... and changes no step", st.pattern, zeros(256))
 local want = zeros(256)
 want[5] = 32
@@ -64,12 +64,14 @@ want[5] = 0
 equal("the same step at the same velocity turns off -- 0",
       R.presses.step(st, { 5, 100 }), edited(want, 1))
 R.presses.step(st, { 5, 100 })
-R.presses.vel(st, { 12, 100 })
-want[5] = 95
-equal("an on step at another velocity takes the selected one and stays on -- 95, not off",
+R.presses.vel(st, { 6, 100 })
+want[5] = 0
+equal("an on step at another velocity turns off too -- 0, not 95",
       R.presses.step(st, { 5, 100 }), edited(want, 1))
-check("the rule never leaves anything but 0 or the selected velocity",
-      st.pattern[5] == R.velocity(st.level), T.show(st.pattern[5]))
+st.pattern[5] = 0.5
+want[5] = 95
+equal("a rest below 1 is off: a press gives it the selected velocity -- 95",
+      R.presses.step(st, { 5, 100 }), edited(want, 1))
 
 print("\n--- the selected track ---")
 st = R.new(1)
@@ -78,16 +80,16 @@ equal("a pad press plays its pad now at the press's velocity, then selects its t
                                       { "page", "steps", zeros(16) } })
 R.presses.step(st, { 1, 100 })
 want = zeros(256)
-want[17] = R.velocity(13)
+want[17] = R.velocity(6)
 equal("a step press edits the SELECTED track -- track 2's step 1, track 1 untouched",
       st.pattern, want)
 local st3 = R.new(3)
 equal("bank C's track 2 is pad 34", R.presses.pad(st3, { 2, 90 })[1],
       { "note", "pad", { 34, 90 } })
-equal("presses are clipped to 1..16, as [clip 1 16]",
+equal("pads are clipped to 1..16 and levels to 1..8",
       { R.presses.pad(R.new(1), { 0, 90 })[1], R.presses.pad(R.new(1), { 20, 90 })[1],
         R.presses.vel(R.new(1), { 40, 0 })[1] },
-      { { "note", "pad", { 1, 90 } }, { "note", "pad", { 16, 90 } }, { "page", "vel", { 16 } } })
+      { { "note", "pad", { 1, 90 } }, { "note", "pad", { 16, 90 } }, { "page", "vel", { 8 } } })
 equal("a press with no number in it does nothing",
       { R.presses.step(R.new(1), {}), R.presses.vel(R.new(1), {}), R.presses.pad(R.new(1), {}) },
       { {}, {}, {} })
@@ -139,15 +141,15 @@ local o = T.new(class, { 1 })
 check("an object has two inlets and five outlets", o and o.inlets == 2 and o.outlets == 5,
       o and (o.inlets .. " " .. o.outlets))
 equal("init: the page's selection on outlet 2, then the bang on outlet 5 that says it loaded",
-      T.send(o, 2, "init", {}), { { 2, "vel", { 13 } }, { 2, "track", { 1 } },
+      T.send(o, 2, "init", {}), { { 2, "vel", { 6 } }, { 2, "track", { 1 } },
                                   { 2, "steps", zeros(16) }, { 5, "bang", {} } })
 local sent = T.send(o, 1, "step", { 1, 100 })
 want = zeros(256)
-want[1] = 103
+want[1] = 95
 equal("a step press: the pattern on outlet 3, then the page on outlet 2",
       sent, { { 3, "list", want }, { 2, "steps", row(want, 1) } })
 equal("a step of the clock: its notes on outlet 1", T.send(o, 2, "fire", { 1 }),
-      { { 1, "pad", { 1, 103 } } })
+      { { 1, "pad", { 1, 95 } } })
 for _, m in ipairs({ { 1, "float", { 3 } }, { 1, "beat", { 1 } }, { 1, "fire", { 1 } },
                      { 2, "step", { 1, 100 } } }) do
   equal(string.format("%s on inlet %d is fail c_steps bad-selector on outlet 4", m[2], m[1]),

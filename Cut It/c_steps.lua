@@ -13,9 +13,9 @@
 
 local R = {}
 
-R.TRACKS, R.STEPS, R.LEVELS = 16, 16, 16
--- At load: level 13 (103) and track 1, so the page has a selection before anything is pressed.
-R.BOOT_LEVEL, R.BOOT_TRACK = 13, 1
+R.TRACKS, R.STEPS, R.LEVELS = 16, 16, 8
+-- At load: level 6 (95) and track 1, so the page has a selection before anything is pressed.
+R.BOOT_LEVEL, R.BOOT_TRACK = 6, 1
 
 local function clip(x, lo, hi)
   if x < lo then return lo end
@@ -28,9 +28,9 @@ local function num(x)
   return type(x) == "number" and x or 0
 end
 
--- Level n's velocity: 127n/16, rounded. 8 at 1, 127 at 16.
+-- Level n's velocity: 127n/8, rounded. 16 at 1, 127 at 8.
 function R.velocity(level)
-  return math.floor(127 * level / 16 + 0.5)
+  return math.floor(127 * level / R.LEVELS + 0.5)
 end
 
 -- The pattern's index of a track's step, both 1-based: track 1's sixteen steps come first.
@@ -69,12 +69,11 @@ function R.boot(st)
   return { { "page", "vel", { st.level } }, { "page", "track", { st.track } }, R.steps(st) }
 end
 
--- A step press, on the selected track. The step rule: off takes the selected velocity; on at
--- the selected velocity turns off; on at another takes the selected one.
+-- A step press, on the selected track. The step rule: off takes the selected velocity; on, at
+-- any velocity, turns off.
 function R.press_step(st, step)
   local i = R.index(st.track, math.floor(clip(num(step), 1, R.STEPS)))
-  local v = R.velocity(st.level)
-  if st.pattern[i] == v then st.pattern[i] = 0 else st.pattern[i] = v end
+  if st.pattern[i] >= 1 then st.pattern[i] = 0 else st.pattern[i] = R.velocity(st.level) end
   return { R.save(st), R.steps(st) }
 end
 

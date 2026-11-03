@@ -124,7 +124,7 @@ def home_shape(frame):
 DRUM_PAGE = "Cut It/cut-it-drum-page.txt"
 PICKED = 9                      # the selected velocity button and pad
 PLAYHEAD = 3                    # white, over whatever the step holds
-STEP_RAMP = (11, 10, 9, 8)      # one hue, dark to bright, by velocity quarter
+STEP_RAMP = (8, 9, 10, 11)      # one hue, softest to loudest, by velocity quarter
 
 
 def drum_layout(path=DRUM_PAGE):

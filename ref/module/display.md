@@ -177,12 +177,13 @@ addressed at all, so panic still never hands the surface back.
 
 **One layout table, `Cut It/cut-it-drum-page.txt`, says which cell is which**: a row per cell,
 `<index> <role> <n>`, read with `-c` at load by `g_grid` to paint and by `u_map` to know what a
-press means, so a press and its lamp cannot disagree. Its 48 rows:
+press means, so a press and its lamp cannot disagree. Its 40 rows:
 
 | Rows from the top | Cells | Role | Evidence |
 |---|---|---|---|
 | 1–2 | 81–88, 71–78 | `step` 1–8, then 9–16 | unknown |
-| 3–4 | 61–68, 51–58 | `vel` 1–16, lowest top left, highest bottom right | unknown |
+| 3 | 61–68 | `vel` 1–8, lowest at the left (Brendan, 2026-11-03: one row, not two) | unknown |
+| 4 | — | in no row, so dark: free for later | unknown |
 | 5–8, left 4×4 | 41–44, 31–34, 21–24, 11–14 | `pad` 1–16, laid out like the 404's, pad 1 top left | unknown |
 | 5–8, right 4×4 | — | in no row, so dark | unknown |
 
@@ -193,18 +194,18 @@ press means, so a press and its lamp cannot disagree. Its 48 rows:
 | A cell | Paints, as a palette index | Evidence |
 |---|---|---|
 | A step that is off | 1, dim | unknown |
-| A step that is on | 11, 10, 9 or 8 by velocity quarter (1–32, 33–64, 65–96, 97–127) — one hue, darkest to brightest | unknown |
+| A step that is on | 8, 9, 10 or 11 by velocity quarter (1–32, 33–64, 65–96, 97–127) — one hue, white for the softest to red for the loudest (Brendan, 2026-11-03, the other way round before) | unknown |
 | The playhead's step | 3, white, over whatever the step holds | unknown |
 | The selected velocity button and pad | 9 | unknown |
 | Every other velocity button and pad | 1, dim | unknown |
 
-**The beat row gives way**, and the bottom-right 4×4 stays dark. The mode lamps are drawn as in
-every mode.
+**The beat row gives way**, and row 4 and the bottom-right 4×4 stay dark. The mode lamps are drawn
+as in every mode.
 
-⚠️ **Brightness is four palette entries, not a level.** The palette is a color table (Reference),
-and Novation's lays each hue out as four entries, light, full, dim and darkest; the ramp is that
-hue's last three read upward and then its light entry. Whether the four read as a ramp on this unit
-is [the sequencer checklist](../../test/checklists/sequencer.md)'s to say.
+⚠️ **The ramp is four palette entries, not a level.** The palette is a color table (Reference),
+and Novation's lays each hue out as four entries, light, full, dim and darkest; the ramp reads them
+in that order, softest to loudest. On this unit the light entry reads white and the darkest red
+(Brendan, 2026-11-03), so a loud step is the darker lamp.
 
 ### Seeing it off-device
 
@@ -357,7 +358,7 @@ the one file that has the state, and the bus stays for requests a person would w
 ### The layout is a file both sides read
 
 **A press and its lamp come from one table.** `u_map` turns `pad-81` into *step 1* and `g_grid`
-lights step 1 at index 81 from the same row, so moving the velocity rows is one edit and cannot
+lights step 1 at index 81 from the same row, so moving the velocity row is one edit and cannot
 leave a button lit in one place and acting in another. `c_steps` never reads it: it knows steps,
 velocities and pads, never where they are.
 

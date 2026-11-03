@@ -22,14 +22,6 @@
 66 vel 6
 67 vel 7
 68 vel 8
-51 vel 9
-52 vel 10
-53 vel 11
-54 vel 12
-55 vel 13
-56 vel 14
-57 vel 15
-58 vel 16
 41 pad 1
 42 pad 2
 43 pad 3

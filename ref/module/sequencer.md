@@ -43,9 +43,9 @@ It is mode 1's drum machine (`cut-it/drum-machine`), and the first part of a son
 | PLAY (`start`) | Starts at step 1 | unknown |
 | STOP (`stop`) and `panic` | Stop it, and put the playhead out | unknown |
 | A pad press | Plays that pad now, at the Launchpad pad's own velocity, and selects it as the track being edited | unknown |
-| A velocity press | Selects level *n*, velocity round(127·*n*/16): 8 16 24 32 40 48 56 64 71 79 87 95 103 111 119 127 | unknown |
-| A step press | Off takes the selected velocity; on at the selected velocity turns off; on at another takes the selected one | unknown |
-| At load | Track 1, level 13 (103), stopped | unknown |
+| A velocity press | Selects level *n*, velocity round(127·*n*/8): 16 32 48 64 79 95 111 127 | unknown |
+| A step press | Off takes the selected velocity; on, at any velocity, turns off (Brendan, 2026-11-03) | unknown |
+| At load | Track 1, level 6 (95), stopped | unknown |
 
 ### Where each part lives
 
@@ -180,7 +180,7 @@ short or malformed line.
   fast hats depend on it — and whether the page reads as intended; [the sequencer
   checklist](../../test/checklists/sequencer.md) asks both.
   See `cut-it/drum-machine`, its rig step.
-- ⬜ **The selected track and velocity are not saved**; every boot starts at track 1, level 13.
+- ⬜ **The selected track and velocity are not saved**; every boot starts at track 1, level 6.
   See `cut-it/drum-machine`.
 - ⬜ **The Lua version has not played on the rig**: its CPU beside the Pd version's 11.2% with the
   drum machine playing (`~/Sites/!reference/pure-data.md`, *Newer versions on the Organelle*) is unmeasured. See `cut-it/logic-as-text`.

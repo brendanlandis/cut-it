@@ -7,8 +7,8 @@ Mode 1's drum page on the Launchpad, the sequencer playing the SP-404, and the p
 - [ ] **1. The drum page**
   - **Need:** A fresh load of the patch with no saved pattern — the selection resets at every load and a saved step would be lit.
   - **Send:** `stop bang; mode compose mode-1`
-  - **Pass if:** The left column has its top lamp bright. The top two rows of pads are the steps and the next two rows the velocity buttons — all dim but one velocity button. The bottom-left four by four is dim with its top-left pad lit and the bottom-right four by four is dark. No white pad walks along the bottom row.
-  - **Note:** Level 13 is the second velocity row's fifth button; track 1 is the top-left drum pad. Both reset at every load ([sequencer](../../ref/module/sequencer.md)).
+  - **Pass if:** The left column has its top lamp bright. The top two rows of pads are the steps and the next row the velocity buttons — all dim but one velocity button. The row under them is dark. The bottom-left four by four is dim with its top-left pad lit and the bottom-right four by four is dark. No white pad walks along the bottom row.
+  - **Note:** Level 6 is the velocity row's sixth button; track 1 is the top-left drum pad. Both reset at every load ([sequencer](../../ref/module/sequencer.md)).
 
 - [ ] **2. A drum pad plays and selects**
   - **Need:** Sounds in bank A of the 404 — the starter kit or anything else. The 404 on bank A so its pad lights too.
@@ -16,20 +16,20 @@ Mode 1's drum page on the Launchpad, the sequencer playing the SP-404, and the p
   - **Pass if:** The 404 plays bank A pad 13 at once — louder for a harder press. That pad lights and the top-left one goes dim. The OLED draws no row for it.
 
 - [ ] **3. Velocity buttons**
-  - **Do:** Press the top-left velocity button, then the bottom-right one.
+  - **Do:** Press the leftmost velocity button, then the rightmost one.
   - **Pass if:** Each press lights the button pressed and only that one. Nothing sounds and the OLED draws nothing.
 
 - [ ] **4. Steps light by velocity**
-  - **Do:** With the bottom-right velocity button lit press step 1. Pick the top-left velocity button and press step 2. Pick a velocity button in the middle and press step 3.
-  - **Pass if:** Step 1 is bright and step 2 dark with step 3 between them — one color getting brighter with velocity. The steps left off stay dim.
+  - **Do:** With the rightmost velocity button lit press step 1. Pick the leftmost velocity button and press step 2. Pick a velocity button in the middle and press step 3.
+  - **Pass if:** Step 2 is white and step 1 red with step 3 between them — one hue going from white to red as velocity rises. The steps left off stay dim.
 
 - [ ] **5. The step rule**
-  - **Do:** Pick the bottom-right velocity button and press step 1 twice. Then pick the top-left velocity button and press step 1 again.
-  - **Pass if:** The first press turns step 1 off and the second turns it back on bright. The third makes it dark and leaves it on.
+  - **Do:** Pick the rightmost velocity button and press step 1 twice. Then pick the leftmost velocity button and press step 1 twice more.
+  - **Pass if:** The first press turns step 1 off and the second turns it back on red. The third turns it off though another velocity is picked, and the fourth turns it back on white.
 
 - [ ] **6. PLAY from step 1**
   - **Send:** `tempo 120; start bang`
-  - **Pass if:** A white pad walks the top two rows from step 1 at four steps a beat. Pad 13 sounds on the steps you lit — softer on the dark ones. The white pad passes over a lit step and the step is still lit behind it.
+  - **Pass if:** A white pad walks the top two rows from step 1 at four steps a beat. Pad 13 sounds on the steps you lit — softer on the white ones. The white pad passes over a lit step and the step is still lit behind it.
 
 - [ ] **7. Two tracks on one step**
   - **Do:** Press the top-left drum pad. Then press step 1 and step 9.

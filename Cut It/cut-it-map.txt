@@ -96,14 +96,6 @@ mode-1 pad-65 drum-page 65
 mode-1 pad-66 drum-page 66
 mode-1 pad-67 drum-page 67
 mode-1 pad-68 drum-page 68
-mode-1 pad-51 drum-page 51
-mode-1 pad-52 drum-page 52
-mode-1 pad-53 drum-page 53
-mode-1 pad-54 drum-page 54
-mode-1 pad-55 drum-page 55
-mode-1 pad-56 drum-page 56
-mode-1 pad-57 drum-page 57
-mode-1 pad-58 drum-page 58
 mode-1 pad-41 drum-page 41
 mode-1 pad-42 drum-page 42
 mode-1 pad-43 drum-page 43

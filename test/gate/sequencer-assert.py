@@ -8,7 +8,8 @@ state bus and the file u_state writes. Nothing inside c_steps is read.
 
   the restore    the seeded pattern comes back, is put straight back, and shows
   editing        a velocity, steps on two tracks, a pad that plays and selects,
-                 the step rule's three cases, and nothing at all in another mode
+                 the step rule's three cases, nothing on the free row, and nothing
+                 at all in another mode
   the transport  every step plays exactly its tracks, from step 1, on PLAY and
                  on PLAY again; STOP and panic stop it
   the disk       the pattern reaches cut-it-auto.txt as one line
@@ -30,20 +31,20 @@ KEY = "section-1-drums"
 BANK_A = 33
 # The 404's pad map (ref/device/sp404.md): track n plays pad n of bank A.
 PAD_NOTE = [48, 49, 50, 51, 44, 45, 46, 47, 40, 41, 42, 43, 36, 37, 38, 39]
-WINDOWS = ["EARLY", "RESTORE", "VEL-4", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-12",
-           "RULE-ON", "RULE-SAME", "RULE-ON-AGAIN", "VEL-4-AGAIN", "RULE-OTHER",
-           "MODE-2", "OTHER-MODE", "MODE-1", "PLAY", "STOP", "STOPPED", "REPLAY",
-           "PANIC", "AFTER-PANIC", "DONE"]
-EDITS = ["VEL-4", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-12", "RULE-ON", "RULE-SAME",
-         "RULE-ON-AGAIN", "VEL-4-AGAIN", "RULE-OTHER"]
+WINDOWS = ["EARLY", "RESTORE", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
+           "RULE-ON", "RULE-SAME", "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER",
+           "FREE-ROW", "MODE-2", "OTHER-MODE", "MODE-1", "PLAY", "STOP", "STOPPED",
+           "REPLAY", "PANIC", "AFTER-PANIC", "DONE"]
+EDITS = ["VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
+         "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
 
 MARK = re.compile(r"^SEQ:\s+MARK\s+(\S+)$")
 NOTE = re.compile(r"^NOTEOUT:\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)$")
 
 
 def level(n):
-    """A velocity button's velocity: 127n/16, rounded."""
-    return int(127 * n / 16 + 0.5)
+    """A velocity button's velocity: 127n/8, rounded."""
+    return int(127 * n / 8 + 0.5)
 
 
 def idx(track, step):
@@ -167,18 +168,18 @@ def main():
     # The pattern after each window, step by step through the driver's presses.
     pat = {"RESTORE": list(seed)}
     p = list(seed)
-    for k, edits in (("VEL-4", {}), ("STEPS-T1", {(1, 1): 32, (1, 5): 32}), ("PAD-2", {}),
-                     ("STEP-T2", {(2, 1): 32}), ("VEL-12", {}), ("RULE-ON", {(2, 13): 95}),
+    for k, edits in (("VEL-2", {}), ("STEPS-T1", {(1, 1): 32, (1, 5): 32}), ("PAD-2", {}),
+                     ("STEP-T2", {(2, 1): 32}), ("VEL-6", {}), ("RULE-ON", {(2, 13): 95}),
                      ("RULE-SAME", {(2, 13): 0}), ("RULE-ON-AGAIN", {(2, 13): 95}),
-                     ("VEL-4-AGAIN", {}), ("RULE-OTHER", {(2, 13): 32})):
+                     ("VEL-2-AGAIN", {}), ("RULE-OTHER", {(2, 13): 0})):
         for (t, s), v in edits.items():
             p[idx(t, s)] = v
         pat[k] = list(p)
     final = pat["RULE-OTHER"]
-    track = {"RESTORE": 1, "VEL-4": 1, "STEPS-T1": 1}
-    lvl = {"RESTORE": 13, "VEL-4": 4, "STEPS-T1": 4, "PAD-2": 4, "STEP-T2": 4,
-           "VEL-12": 12, "RULE-ON": 12, "RULE-SAME": 12, "RULE-ON-AGAIN": 12,
-           "VEL-4-AGAIN": 4, "RULE-OTHER": 4}
+    track = {"RESTORE": 1, "VEL-2": 1, "STEPS-T1": 1}
+    lvl = {"RESTORE": 6, "VEL-2": 2, "STEPS-T1": 2, "PAD-2": 2, "STEP-T2": 2,
+           "VEL-6": 6, "RULE-ON": 6, "RULE-SAME": 6, "RULE-ON-AGAIN": 6,
+           "VEL-2-AGAIN": 2, "RULE-OTHER": 2}
 
     def page_in(k, t=None):
         fs = frames(k)
@@ -197,13 +198,13 @@ def main():
             "%d put(s) of %s; the first holds %s values" % (
                 len(puts("RESTORE")), KEY, len(puts("RESTORE")[0]) if puts("RESTORE") else 0))
     prob = page_in("RESTORE")
-    A.check("... and the page shows it: track 1's seeded steps, level 13 and pad 1 lit",
+    A.check("... and the page shows it: track 1's seeded steps, level 6 and pad 1 lit",
             prob is None, prob)
 
     print("\n--- editing ---")
-    prob = page_in("VEL-4")
-    A.check("a velocity button selects its level -- level 4 lit, the steps as they were",
-            prob is None and not puts("VEL-4"), prob or "puts: %d" % len(puts("VEL-4")))
+    prob = page_in("VEL-2")
+    A.check("a velocity button selects its level -- level 2 lit, the steps as they were",
+            prob is None and not puts("VEL-2"), prob or "puts: %d" % len(puts("VEL-2")))
     A.check("two step presses put the pattern with track 1's steps 1 and 5 at 32",
             puts("STEPS-T1")[-1:] == [pat["STEPS-T1"]] and len(puts("STEPS-T1")) == 2,
             "%d put(s)" % len(puts("STEPS-T1")))
@@ -221,8 +222,7 @@ def main():
 
     for k, what in (("RULE-ON", "an off step takes the selected velocity -- 95"),
                     ("RULE-SAME", "the selected velocity again turns it off -- 0"),
-                    ("RULE-OTHER", "another velocity takes the selected one and stays "
-                                   "on -- 32, not off")):
+                    ("RULE-OTHER", "another velocity turns it off too -- 0, not 32")):
         prob = page_in(k)
         got = puts(k)[-1][idx(2, 13)] if puts(k) else None
         A.check("⛔ the step rule: %s" % what,
@@ -234,6 +234,13 @@ def main():
     rows = [(k, raw(k)) for k in EDITS if raw(k)]
     A.check("⛔ no drum-page press draws a raw pad-NN row -- the grid is the feedback",
             not rows, rows)
+
+    print("\n--- the free row ---")
+    A.check("the row under the velocity buttons is not the drum page: no put and no note",
+            not puts("FREE-ROW") and not ons("FREE-ROW"),
+            "puts %d, note-ons %s" % (len(puts("FREE-ROW")), ons("FREE-ROW")))
+    A.check("... and it names itself, as an unmapped control does -- pad-54 100",
+            raw("FREE-ROW") == [["pad-54", "100"]], raw("FREE-ROW"))
 
     print("\n--- another mode ---")
     A.check("in mode 2 a step pad is not the drum page: no put and no note",
@@ -268,15 +275,15 @@ def main():
         h = [n for n, c in page["step"].items() if c == G.PLAYHEAD]
         if h:
             shown += 1
-            off.append(page_check(f, lay, final, 2, 4, h[0]))
+            off.append(page_check(f, lay, final, 2, 2, h[0]))
     off = [o for o in off if o]
     A.check("the playhead is one white step over the pattern, in %d frames" % shown,
             shown >= 16 and not off, off[:2] or "only %d frames showed one" % shown)
     A.check("⛔ STOP stops it -- no note-on after STOP",
             not ons("STOPPED"), "note-ons: %s" % ons("STOPPED"))
-    lit = [f for f in frames("STOPPED") if page_check(f, lay, final, 2, 4)]
+    lit = [f for f in frames("STOPPED") if page_check(f, lay, final, 2, 2)]
     A.check("... and the playhead goes out", frames("STOPPED") and not lit,
-            page_check(lit[0], lay, final, 2, 4) if lit else "no frame")
+            page_check(lit[0], lay, final, 2, 2) if lit else "no frame")
     again = [r for r in played(evs, {"REPLAY", "PANIC"}, lay) if r[0] is not None]
     A.check("⛔ PLAY again starts at step 1, not where STOP left it",
             bool(again) and again[0] == (1, want[1]), "first: %s" % (again[:1],))

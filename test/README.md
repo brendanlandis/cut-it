@@ -47,11 +47,11 @@ were false.
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 67: 39 in Lua, 28 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 69: 39 in Lua, 30 in Pd | `module/sequencer` |
 
-**848 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**850 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **841**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **843**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's.
 Worth knowing before trusting an arithmetic check of this number against a log.
@@ -382,7 +382,7 @@ equivalent.
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      39 + 28 checks, ~15 s — c_steps' rules in Lua, then the drum page and the pattern on disk
+./test/gate/sequencer-assert.sh      39 + 30 checks, ~15 s — c_steps' rules in Lua, then the drum page and the pattern on disk
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
@@ -408,10 +408,12 @@ parking the counter, no put after a restore, panic ignored, eighths for sixteent
 step rule inverted (Lua 6 failed, Pd 12), the velocity levels off by one (5, 9), and a step reading
 the next step's notes (5, 3). A rule that throws turns the Pd half red with `fail c_steps lua-fire`
 on `err`, and a syntax error with silence (18 failed); the Lua half dies on both with a traceback.
+✅ **And for one velocity row** (2026-11-03), against the old step rule and the old color ramp
+together: Lua 1 failed, Pd 12; with the old map, a press on the freed row was a `layout-miss`.
 
 ⚠️ **The layout table is read, not restated**, so a frame is decoded with the same table the patch
-paints from. The analyzer's expectations are what keeps that honest: the driver presses `pad-64`
-and expects level 4, so a table that moves the button is caught.
+paints from. The analyzer's expectations are what keeps that honest: the driver presses `pad-62`
+and expects level 2, so a table that moves the button is caught.
 
 ## The device layers' Lua halves
 

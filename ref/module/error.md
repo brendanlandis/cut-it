@@ -91,8 +91,8 @@ Callers use a **message box**, which already carries `warn` or `fail` as its sel
 assembled with `[list prepend]` has the selector `list` instead, so `u_err`'s `route` drops it — and
 the error that was raised to stop something being silent is itself silent.
 
-**Fix:** finish an assembled error with `[list trim]` (C-6). `m_nano`'s unmapped-CC path is the
-worked example.
+**Fix:** finish an assembled error with `[list trim]` (C-6). `c_presence`'s `device-lost` warning
+is the worked example.
 
 ### The text does not wrap
 

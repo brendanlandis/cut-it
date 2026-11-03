@@ -123,9 +123,15 @@ def organelle(g):
 def nano(g):
     # m_404 and m_launchpad too: the last two windows drive their channels
     # through the same t-ctlin, the witness that the nano's produces none of theirs.
-    S.require("Cut It/m_nano.pd", "Cut It/m_404.pd", "Cut It/m_launchpad.pd",
-              "test/stubs/t_ctlin.pd")
-    return _stdin_gate(g, 40)
+    S.require("Cut It/m_nano.pd", "Cut It/m_nano.lua", "Cut It/m_nano-lua.pd_lua",
+              "Cut It/m_404.pd", "Cut It/m_launchpad.pd", "test/stubs/t_ctlin.pd",
+              "test/gate/lua/m_nano_test.lua")
+    # The decode first, in Lua and without Pd: every CC's name, value and warning. Then the
+    # Pd half: the channel gate and the buses, through the running instrument.
+    print("   the decode, in Lua ...")
+    rc_lua = S.lua("test/gate/lua/m_nano_test.lua", *g.args)
+    print("\n   the patch, in Pd ...")
+    return _stdin_gate(g, 40) or rc_lua
 
 
 def sp404(g):

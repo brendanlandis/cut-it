@@ -92,10 +92,11 @@ def run_asserts(cap):
             % param("UNMAPPED"))
 
     # ---- the stale-flag trap ----------------------------------------------
-    # Only the is-btn clear is load-bearing, measured by deleting both: an
-    # unmapped CC has kind >= 2, so decode-name has already cleared is-cont
-    # before route rejects it. STALE-CONT asserts what is reachable instead: an
-    # unrecognized controller leaves the continuous path shut.
+    # Written against the Pd decode, whose kind flags and name were stores an
+    # unmapped CC had to clear. The decode is m_nano.lua now and keeps no state
+    # between messages, so these hold by construction; they stay as the outside
+    # view of the same promise: an unmapped CC never goes out under the last
+    # control's name, nor with its value.
     print("\n--- the flag clears behind the unmapped path ---")
     A.check("⛔ a stale is-btn cannot leak a second press under the last name",
             param("STALE-BTN") == [["btn-t-6", "1"]],

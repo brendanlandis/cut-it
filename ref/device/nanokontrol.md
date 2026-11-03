@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # Korg nanoKONTROL (mk1)
 
-**Files:** `Cut It/m_nano.pd` · **Gate:** `test/gate/nano-assert.sh` · **Checklist:** `test/checklists/nanokontrol.md`
+**Files:** `Cut It/m_nano.pd`, `Cut It/m_nano.lua`, `Cut It/m_nano-lua.pd_lua` · **Gate:** `test/gate/nano-assert.sh` · **Checklist:** `test/checklists/nanokontrol.md`
 
 The rig's fader bank. What the device is, the CC numbers it sends as configured, its configuration,
 LEDs and traps are in Reference: `~/Sites/!reference/korg-nanokontrol-mk1.md`. This page is how Cut It
@@ -71,8 +71,8 @@ mistaken for a bug.
 
 ### Moved off the factory map
 
-The regular CC layout (sliders 1–9, knobs 11–19, buttons 21–29 and 31–39) is what makes `div 10` /
-`mod 10` decode the entire surface with no lookup table. Reading the factory assignment would have
+The regular CC layout (sliders 1–9, knobs 11–19, buttons 21–29 and 31–39) is what lets the tens and
+units digits decode the entire surface, with no table to keep by hand. Reading the factory assignment would have
 needed `[sysexin]` and a byte-matching state machine if it was MMC, which Reference explains.
 
 ### Momentary only — the host cannot reach the LEDs
@@ -86,6 +86,34 @@ whole nano configuration rests on.
 
 Trigger off the **value** outlet, which fires last — a Pd fact, in `~/Sites/!reference/pure-data.md`
 (item 23).
+
+### The decode is Lua
+
+**`m_nano.lua` decodes a CC, and `m_nano.pd` decides which CCs it sees.** The Lua answers
+`<controller> <value>` with the control's name and value, a button's press as 1 and its release as
+nothing, or `warn m_nano cc-N-unmapped` for a CC with no kind, as plain Lua that runs on the Mac
+without Pd. The Pd keeps `[ctlin]`, the two-channel gate, the liveness tap and the device inquiry,
+so presence works without the Lua. The same split as the sequencer's and the map's
+([sequencer.md](../module/sequencer.md), *The rules in Lua, the timing in Pd*).
+
+| | Evidence |
+|---|---|
+| **The face**, `m_nano-lua.pd_lua`: inlet 1 `<controller> <value>` from the gate's `[spigot]` and a `[list prepend]` holding the controller, inlet 2 `init` at load; outlet 1 `param`, outlet 2 `err`, outlet 3 a bang on `init` | verified |
+| **What it replaced:** three nested subpatches — the decode, its two kind flags and the name in private sends, and the unmapped path that had to clear both flags before warning, or the next value went out under the last control's name. The Lua keeps no state between messages, so that trap is gone rather than guarded | verified |
+| **A Lua that never loads** says `fail m_nano no-lua` on `err` at load, and every control on the nano is dead; presence is not. On the 0.49 fallback that loses nothing more: the map that reads the controls is Lua too ([map.md](../module/map.md)) | verified |
+| **A rule that throws** says `fail m_nano lua-ctlin`, and the object carries on | verified |
+| **Load and memory:** the patch loads in silence in a test Pd on the Organelle, and its peak resident size is 3492 kB against 3480 without the nano's Lua, three runs each (2026-11-03) | verified |
+| **Cost per CC:** about 0.07–0.09 ms on the Organelle against the Pd decode's 0.014 — 9000 CCs in 0.64–0.84 s against 0.13 s, in a test Pd niced beside the live one; another device's CC, which the gate refuses before the Lua, costs what it did (2026-11-03) | verified |
+
+**A moving fader is a stream, so this cost is per message.** Every CC the nano sends also passes
+through the map's Lua, about 0.33 ms ([map.md](../module/map.md), *Where each part lives*), so the
+decode adds about a fifth to a fader's cost: a fast sweep of a few hundred CCs a second takes a few
+percent more of the CPU while the hand moves. Pressure, the densest stream on the rig, stays in Pd
+([launchpad.md](launchpad.md)).
+
+`test/gate/lua/m_nano_test.lua` tests the decode and the face without Pd, and the nano gate runs it
+before its Pd half, which is unchanged since the decode was Pd. Edit the rules in
+`Cut It/m_nano.lua`; `; pdluax reload m_nano-lua` re-reads them in a running Pd.
 
 ## Open
 

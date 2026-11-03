@@ -69,13 +69,14 @@ def run_asserts(cap):
             "saw %s. The two sends share a message box, so a count that differs "
             "from midiInGate's means one of them has been re-wired" % gate_out)
 
-    # ---- the four load-time scripts --------------------------------------
+    # ---- the five load-time scripts --------------------------------------
     # The invocation, not the effect: what they do needs the device, and
     # ref/module/boot.md says so.
-    print("\n--- the four shell scripts, once each, at load ---")
+    print("\n--- the five shell scripts, once each, at load ---")
     shell = [ln.split()[2] for ln in lines if ln.startswith("SHELL: sh ")]
-    want = ["logroll.sh", "phone-ip.sh", "state-dir.sh", "wire.sh"]
-    A.check("⛔ every one of the four is invoked, exactly once, per load",
+    want = ["codec-gain.sh", "logroll.sh", "phone-ip.sh", "state-dir.sh",
+            "wire.sh"]
+    A.check("⛔ every one of the five is invoked, exactly once, per load",
             sorted(shell) == want,
             "the shell stub saw %s, wanted one each of %s. Running one per event "
             "rather than per load is the failure this ordering prevents"

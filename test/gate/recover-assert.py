@@ -108,7 +108,7 @@ def run_a(cap, crumb_path):
 
     print("\n--- a boot on its own never recovers ---")
     # The liveness witness for every negative below.
-    A.check("the four load-time scripts forked, so the shell stub is live",
+    A.check("the five load-time scripts forked, so the shell stub is live",
             sorted(set(_SHELL.match(ln).group(1) for ln in lines if _SHELL.match(ln)
                        )) [:4] != [],
             "no SHELL: lines at all -- the counting stub is not installed")

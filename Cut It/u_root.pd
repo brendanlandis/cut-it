@@ -47,3 +47,11 @@
 #X connect 18 2 32 0;
 #X connect 32 0 29 0;
 #X connect 32 1 23 2;
+#X obj 620 340 loadbang;
+#X msg 620 390 sh codec-gain.sh;
+#X obj 620 440 shell;
+#X obj 620 490 print codec-gain;
+#X text 620 170 The audio chip's gains \, re-staged against the hiss at every load: setup.sh resets them at each boot. Loadbang is late enough \, since setup.sh finishes before Pd starts (ref/module/audio.md)., f 36;
+#X connect 33 0 34 0;
+#X connect 34 0 35 0;
+#X connect 35 0 36 0;

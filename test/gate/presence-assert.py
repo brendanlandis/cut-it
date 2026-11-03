@@ -58,6 +58,9 @@ BUS_RE = re.compile(r"^%s:\s+(.*\S)\s*$" % re.escape(D.TAP_LABELS["presence"]))
 # Not end-anchored: u_state forks `sh state-dir.sh <dir>` and u_net
 # `sh phone-ip.sh <fallback>`, and an anchored pattern reports both as never run.
 SHELL_RE = re.compile(r"^SHELL:\s+sh\s+(\S+)")
+# Forked once each at loadbang, by u_root, u_err, u_net and u_state: the
+# liveness witness for every "nothing forked" count.
+LOADBANG_SCRIPTS = ["codec-gain.sh", "logroll.sh", "phone-ip.sh", "state-dir.sh"]
 
 
 def by_window(cap, rx, tag="PRES"):
@@ -109,16 +112,16 @@ def main_run(cap):
     A.windows(cap, "PRES", len(MARKS))
 
     # Liveness: a copy with no shell stub forks nothing, which every "nothing
-    # forked" check below also accepts. The three loadbang scripts land before
+    # forked" check below also accepts. The four loadbang scripts land before
     # the first mark and prove the stub; wire.sh, at u_init's 1500 ms, lands in
     # BOOT and proves the windowing too. wire-watch.sh is a heartbeat for the
     # whole run, so it is left out here and asserted below.
     quiet = sorted(s for v in by.values() for s in v
                    if s not in ("wire.sh", "wire-watch.sh"))
-    if not A.check("⛔ the shell stub is installed -- the three loadbang scripts fired",
-                   quiet == ["logroll.sh", "phone-ip.sh", "state-dir.sh"],
-                   "saw %s, wanted one each of logroll.sh, phone-ip.sh and "
-                   "state-dir.sh. Without a working [shell] stub every count "
+    if not A.check("⛔ the shell stub is installed -- the four loadbang scripts fired",
+                   quiet == LOADBANG_SCRIPTS,
+                   "saw %s, wanted one each of codec-gain.sh, logroll.sh, "
+                   "phone-ip.sh and state-dir.sh. Without a working [shell] stub every count "
                    "below is answered by silence rather than by a fact" % (quiet,)):
         return False
 
@@ -445,9 +448,9 @@ def bound_run(cap):
     quiet = sorted(s for v in by.values() for s in v
                    if s not in ("wire.sh", "wire-watch.sh"))
     if not A.check("⛔ the shell stub is installed in the scaled copy too",
-                   quiet == ["logroll.sh", "phone-ip.sh", "state-dir.sh"],
-                   "saw %s, wanted one each of logroll.sh, phone-ip.sh and "
-                   "state-dir.sh. This is a SECOND scratch copy and it gets its "
+                   quiet == LOADBANG_SCRIPTS,
+                   "saw %s, wanted one each of codec-gain.sh, logroll.sh, "
+                   "phone-ip.sh and state-dir.sh. This is a SECOND scratch copy and it gets its "
                    "own stub; without it every fork count below is answered by "
                    "silence" % (quiet,)):
         return False

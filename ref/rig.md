@@ -6,91 +6,32 @@ decide the shape. What each *device* can do is in Reference (`~/Sites/!reference
 Organelle is as a *computer* — SSH, paths, deploying, wifi — is in
 [device-os.md](device-os.md).
 
-The Organelle is the brains: it runs the patch, hosts every controller over USB, and is **clock
-master** for the whole rig. The SP-404MK2 is the sample store and the front end — it holds the drum
-and fx samples, takes the mic and any arbitrary input, and feeds **two independent mono streams**
-into the Organelle.
+The Organelle is the brains: it runs the patch, **plays the drums** (`c_kit`,
+[module/sequencer.md](module/sequencer.md)), hosts every controller over USB, and is **clock
+master** for the whole rig. **The mic goes straight into its one input jack**, on the tip, with no
+preamp (2026-11-04). The SP-404MK2 is out of the audio path; it stays on USB for its pads and CTRL
+knobs until it leaves the rig (`cut-it/drum-machine`).
 
-⛔ **Two channels through one stereo cable is the trick that makes this work.** The Organelle has a
-single 1/4" TRS input jack, so the 404's L and R arrive as the **tip** and the **ring**.
-
-## Signal flow — MIDI
-
-Everything is USB. The Organelle is a USB host; all four devices are class compliant.
-
-```
-                  ┌──────────────────────────────────┐
-                  │  ORGANELLE                       │
-                  │  Pd / Cut It — CLOCK MASTER      │
-                  └────────────────┬─────────────────┘
-                                   │ USB-A
-                  ┌────────────────▼─────────────────┐
-                  │       POWERED USB HUB            │
-                  └──┬─────────┬─────────┬────────┬──┘
-          USB-A→C ┌──┘         │         │        └──┐ USB-A
-                  ▼            ▼ USB-A   ▼ USB-A→C   ▼
-        ┌──────────────┐  ┌─────────┐  ┌──────────┐  ┌───────────────┐
-        │ LAUNCHPAD    │  │ nano    │  │SP-404MK2 │  │ USB→DIN MIDI  │
-        │ PRO MK3      │  │ KONTROL │  │          │  │ INTERFACE     │
-        │ ch 1–16      │  │ch 17–32 │  │ ch 33–48 │  │ ch 49–64      │
-        └──────────────┘  └─────────┘  └──────────┘  └───────┬───────┘
-                                                             │ DIN
-                                                             ▼
-                                                     ┌───────────────┐
-                                                     │  VOLCA FM     │
-                                                     │ (receive only)│
-                                                     └───────────────┘
-```
-
-**Why no MIDI merge box.** Pd gives each input device its own block of 16 channels, so **which
-device a message came from is free information**, and its limit is 16 devices
-(`~/Sites/!reference/pure-data.md`, *Each MIDI device is its own block of 16 channels*). A merge box
-would flatten everything into one stream and throw that away, and four devices is nowhere near the
-limit.
-
-The ALSA wiring, the port map and the channel blocks are on [boot.md](module/boot.md).
-
-**The Launchpad runs over USB.** Its TRS MIDI jacks go unused and the three TRS→DIN adapters in its
-box are not needed here. USB gives it its own 16-channel block, keeps Programmer Mode on the
-documented path, and means one cable does both power and data — at the cost of hub current, which is
-what the powered hub is for.
-
-⚠️ **Disable clock-out on every other device**, particularly the 404's **MIDI Sync Out**, which will
-otherwise echo clock back and create a loop.
-
-⚠️ **Keep sending clock — it is not decorative.** The 404's **BPM SYNC time-stretch follows its
-tempo**, and the only way it learns the tempo is by measuring incoming clock intervals. Stop the
-clock and it stretches to a stale local value.
 
 ## Signal flow — audio
 
 ```
-  [mic] ──────────────► SP-404 MIC/GUITAR IN  (1/4" TRS, mono)
-  [arbitrary source] ─► SP-404 LINE IN
+  [SM58] ── XLR → TS ──► ORGANELLE IN  (1/4" TRS: a TS plug is the tip)
 
                     ┌───────────────────────────────┐
-                    │        SP-404MK2              │
-                    │  drum samples → hard L (L:50) │
-                    │  fx samples   → hard R (R:50) │
-                    │  use BUS 1/2 only             │
-                    └────────┬─────────────┬────────┘
-                        OUT L│             │OUT R
-                      (drums)│             │(fx)
-                             ▼             ▼
-                    ╔════════ Y-CABLE (2×TS → 1×TRS) ════════╗
-                                     │
-                    ┌────────────────▼──────────────┐
                     │  ORGANELLE   IN (TRS stereo)  │
-                    │    tip  = drums  → [r~ inL]   │
-                    │    ring = fx     → [r~ inR]   │
+                    │    tip  = mic   → [r~ inL]    │
+                    │    ring = none  → [r~ inR]    │
                     │  ─────── Cut It ───────       │
+                    │  input passed through         │
+                    │  c_kit: the drums → outL      │
                     └───────┬───────────────┬───────┘
                 PHONES L (tip)│               │PHONES R (ring)
                             ▼               ▼
                     ┌──────────────────────────────────┐
                     │  XENYX Q802USB                   │
-                    │   ch1  Organelle L  (drums)      │
-                    │   ch2  Organelle R  (fx)         │
+                    │   ch1  Organelle L (drums, mic)  │
+                    │   ch2  Organelle R               │
                     │   ch3/4  Volca FM                │
                     │   ch5/6  spare                   │
                     └────────────────┬─────────────────┘
@@ -98,8 +39,8 @@ clock and it stretches to a stale local value.
                                    [ PA ]
 ```
 
-**Organelle L/R go to the two MONO channels (1 and 2)**, not a stereo pair, so drums and fx each get
-their own 3-band EQ and one-knob compressor.
+**Organelle L/R go to the two MONO channels (1 and 2)**, not a stereo pair, so each gets its own
+3-band EQ and one-knob compressor. Today the drums and the mic share channel 1.
 
 ⛔ **They leave by the Organelle's ⅛" headphone jack, split to two TS plugs, not by its 1/4" outs.**
 Into the mixer's line input, the 1/4" L out sounded far thinner, with harsh transients when turned
@@ -108,17 +49,10 @@ up; the headphone jack sounded about as good as the 404's own headphone jack int
 Reference page. A single stereo plug into one mono channel would not do: that channel is mono, and its
 balanced TRS input would hear left minus right.
 
-⚠️ **The 404's volume sits well past 10 o'clock**, set so the Organelle's `in-l` peaks around
-94 on its screen (Pd's scale, where 100 is full scale, so 6 dB under). Cut It turns the Organelle's input gain 12 dB down at every load, against the hiss, and the
-404 makes it up ([audio.md](module/audio.md), *The codec's gains*). **Until Cut It has loaded once
-after a power-on, the input has the factory's gain**, 12 dB hotter, so a patch loaded first gets the
-404 that much louder.
-
-### The jack asymmetry is why the Y-cable is required
-
-The Organelle has **one stereo input jack and two mono output jacks**, quoted from its manual in
-`~/Sites/!reference/critter-guitari-organelle-1.md`, so the 404's two discrete mono outputs have to merge into one input;
-the output side needs only two ordinary patch cables.
+⚠️ **The mic needs the input's whole gain**, and Cut It sets it at every load: `Capture` 15 with the
+−6 dB attenuator off ([audio.md](module/audio.md), *The codec's gains*). **Until Cut It has loaded
+once after a power-on, the input has the factory's gain**, 10.5 dB lower, so a patch loaded first
+hears the mic that much quieter.
 
 ### The input split is verified on hardware
 
@@ -195,7 +129,7 @@ patch is the OLED.
 |---|---|
 | Organelle (original) | Brains — Pd, USB MIDI host, clock master |
 | Powered USB hub | Connects the controllers, on its own supply (`~/Sites/!reference/powered-usb-hub.md`) |
-| Roland SP-404MK2 | Sample store, mic/line front end, drums + fx source |
+| Roland SP-404MK2 | Its pads and CTRL knobs, over USB MIDI. Out of the audio path since 2026-11-04 |
 | Behringer Xenyx Q802USB | Mixer, and free session recording over USB (`~/Sites/!reference/behringer-xenyx-q802usb.md`) |
 | Korg Volca FM | Pitched voice (DIN MIDI in only) |
 | Korg nanoKONTROL (mk1) | Continuous control — 9 faders, 9 knobs, 18 buttons, transport |
@@ -234,11 +168,10 @@ are all covered.
 
 | Cable | Connects |
 |---|---|
-| **1/4" TRS male → 2× 1/4" TS male** ("insert cable") | 404 OUT L/R → the Organelle's single stereo input. ⚠️ **The critical cable in the rig** — nothing else does this job |
 | **USB-A → USB-C** | Hub → SP-404MK2, **data only**. The 404 ships without one |
-| **⅛" TRS male → 2× 1/4" TS male** | Organelle headphone jack → mixer ch1 (tip, drums) and ch2 (ring, fx). Not the 1/4" outs: see above |
+| **⅛" TRS male → 2× 1/4" TS male** | Organelle headphone jack → mixer ch1 (tip: the drums and the mic) and ch2 (ring). Not the 1/4" outs: see above |
 | **3.5mm TRS → 2× 1/4" TS** | Volca FM → mixer ch3/4. ⚠️ Its output runs hot — start with channel gain low |
-| **XLR female → 1/4" TRS** | Mic → 404 MIC/GUITAR IN. The 404 has no XLR, so a plain mic cable will not do it; an adapter on a normal one works |
+| **XLR female → 1/4" TS** | The SM58 → the Organelle's input, on the tip. Unbalanced, so keep it short |
 | **2× 1/4" TS** | Mixer MAIN OUT → PA |
 
 **Already in the box, do not buy:** what each device ships with is on its Reference page — the

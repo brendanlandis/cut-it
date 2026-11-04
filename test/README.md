@@ -18,7 +18,7 @@ word.
 
 ## One gate per module
 
-Twenty-three gates, and each answers for exactly one page: under `ref/`, or for `u_inject` and the
+Twenty-four gates, and each answers for exactly one page: under `ref/`, or for `u_inject` and the
 phone's line check page, the checklists' guide. That is the whole organizing principle: **a page that names a gate should be able
 to name one whose entire subject is that page**, or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
@@ -48,10 +48,11 @@ were false.
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
+| `kit-assert.sh` | 16 | `module/sequencer` — the kit, as a signal |
 
-**1034 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**1050 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **1027**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **1043**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's;
 `touchosc-assert.sh` two as well, the reading first.
@@ -71,10 +72,11 @@ master reference and the clock cut from it, and `device/organelle` covers a fron
 surfaces gets two gates for the same reason.
 
 **No page declares `Gate: none` any more.** `module/audio`, `device/nanokontrol` and
-`device/organelle` were the last three, and each has its own gate now. ⛔ **`audio-assert.sh` is the
-only one that reads a SIGNAL back** — it records `u_root`'s output to a soundfile and asserts the
-passthrough is not silent, not swapped and not attenuated. Every other gate here asserts on messages,
-which is what made the audio path invisible for as long as it was.
+`device/organelle` were the last three, and each has its own gate now. ⛔ **`audio-assert.sh` and
+`kit-assert.sh` are the two that read a SIGNAL back** — the first records `u_root`'s output to a
+soundfile and asserts the passthrough is not silent, not swapped and not attenuated; the second
+records `c_kit`'s drums and asserts their levels, silences and retrigger. Every other gate here
+asserts on messages, which is what made the audio path invisible for as long as it was.
 
 **`midi-emitters-assert.sh` belongs to no device on purpose.** Its only claim is structural — *these
 are all the MIDI objects in the patch* — and a new `[noteout]` in some future `e_` stage is not the

@@ -95,7 +95,7 @@ stops the instrument**, because loading any patch restarts Pd. See
 | `m_` | One physical device, publishing named controls | `m_nano` `m_launchpad` `m_organelle` `m_404` `m_volca` |
 | `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_err` `u_net` `u_level` `u_present` `u_mother-stub` |
 | `g_` | One display surface, and its sole owner | `g_oled` `g_grid` `g_led` |
-| `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` |
+| `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` `c_kit` `c_voice` |
 | `e_` | An effect stage — **v0.4, none yet** | — |
 | `.sh` | Run through `[shell]` — the first five once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `codec-gain.sh` `recover.sh` |
 | `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` |
@@ -108,6 +108,10 @@ folder still existing at a venue, and `test/gate/debug-assert.sh` runs `cmp` on 
 
 **What each one does is on its module page**, not here. `mac-stubs/` stands in for device-only
 externals during the local syntax check and is never deployed.
+
+**The drum samples are not in git**, since this repo is public: `samples/drums/` holds Brendan's, one a
+pad, and `tools/samples.sh` converts them into `Cut It/samples/drums/`, which `tools/deploy.sh` runs and
+copies with the patch ([ref/module/sequencer.md](ref/module/sequencer.md), *The kit*).
 
 `device/` backs up config that lives only on hardware; `device-state/` backs up what the *instrument*
 wrote. Neither is deployed.
@@ -130,9 +134,9 @@ under `ref/`. Nothing in either is deployed.
 
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-three gates and 1017 checks**, and what each one protects is in
-[test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **One of them reads
-a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile; every other gate in the
+**Twenty-four gates and 1050 checks**, and what each one protects is in
+[test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **Two of them read
+a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile and `kit-assert.sh` the drums; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.
 
 

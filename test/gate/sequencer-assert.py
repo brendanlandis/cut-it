@@ -3,7 +3,7 @@
 
     sequencer-assert.py --seed SEED --state DIR [-v]  < capture
 
-It asserts on what leaves the patch: the 404's notes, the grid's frames, the
+It asserts on what leaves the patch: the drums sent to c_kit, the grid's frames, the
 state bus and the file u_state writes. Nothing inside c_steps is read.
 
   the restore    the seeded pattern comes back, is put straight back, and shows
@@ -31,9 +31,6 @@ import lib_assert as A                                         # noqa: E402
 import lib_grid as G                                           # noqa: E402
 
 KEY = "section-1-drums"
-BANK_A = 33
-# The 404's pad map (ref/device/sp404.md): track n plays pad n of bank A.
-PAD_NOTE = [48, 49, 50, 51, 44, 45, 46, 47, 40, 41, 42, 43, 36, 37, 38, 39]
 WINDOWS = ["EARLY", "RESTORE", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
            "RULE-ON", "RULE-SAME", "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER",
            "FREE-ROW", "MODE-2", "OTHER-MODE", "MODE-1", "PLAY", "STOP", "STOPPED",
@@ -46,7 +43,8 @@ EDITS = ["VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
 
 MARK = re.compile(r"^SEQ:\s+MARK\s+(\S+)$")
-NOTE = re.compile(r"^NOTEOUT:\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)$")
+# t_kit, c_kit's stand-in, prints each hit c_steps sends: track n plays pad n.
+NOTE = re.compile(r"^KITOUT:\s+(-?[\d.]+)\s+(-?[\d.]+)$")
 
 
 CELLS = 16 * 32                 # then the 16 tracks' own last steps, their skip and move
@@ -176,7 +174,7 @@ def main():
     evs = events(cap)
     frames = lambda k: [x for m, kind, x in evs if m == k and kind == "FRAME"]
     ons = lambda k: [tuple(int(v) for v in e[1]) for e in W(k)
-                     if e[0] == "NOTEOUT" and e[1][1] > 0]
+                     if e[0] == "KITOUT" and e[1][1] > 0]
     puts = lambda k: [[int(float(v)) for v in e[1][3:]] for e in W(k)
                       if e[0] == "STATE" and e[1][:3] == ["put", "auto", KEY]]
     raw = lambda k: [e[1] for e in W(k)
@@ -207,9 +205,9 @@ def main():
         return page_check(fs[-1], lay, pat[k], t or track.get(k, 2), lvl[k])
 
     print("\n--- before the restore ---")
-    A.check("a pad plays at 300 ms, before anything is restored -- 48 90 on "
-            "channel %d and nothing else" % BANK_A,
-            ons("EARLY") == [(48, 90, BANK_A)], "note-ons: %s" % ons("EARLY"))
+    A.check("a pad plays at 300 ms, before anything is restored -- pad 1 at 90 "
+            "and nothing else",
+            ons("EARLY") == [(1, 90)], "note-ons: %s" % ons("EARLY"))
 
     print("\n--- the restore ---")
     A.check("⛔ the restored pattern is put straight back -- once, the seeded 563 exactly",
@@ -229,8 +227,8 @@ def main():
             "%d put(s)" % len(puts("STEPS-T1")))
     prob = page_in("STEPS-T1")
     A.check("... and the page lights them in 32's color beside the seed's", prob is None, prob)
-    A.check("⛔ a drum pad plays NOW at its own velocity -- 49 90 on channel %d, once"
-            % BANK_A, ons("PAD-2") == [(49, 90, BANK_A)], "note-ons: %s" % ons("PAD-2"))
+    A.check("⛔ a drum pad plays NOW at its own velocity -- pad 2 at 90, once",
+            ons("PAD-2") == [(2, 90)], "note-ons: %s" % ons("PAD-2"))
     prob = page_in("PAD-2")
     A.check("... and selects its track -- pad 2 lit, the steps shown are track 2's",
             prob is None and not puts("PAD-2"), prob or "puts: %d" % len(puts("PAD-2")))
@@ -269,7 +267,7 @@ def main():
             raw("OTHER-MODE") == [["pad-81", "100"]], raw("OTHER-MODE"))
 
     print("\n--- the transport ---")
-    want = {s: sorted((PAD_NOTE[t - 1], final[idx(t, s)], BANK_A)
+    want = {s: sorted((t, final[idx(t, s)])
                       for t in range(1, 17) if final[idx(t, s)] > 0)
             for s in range(1, 17)}
     run = [r for r in played(evs, {"PLAY", "STOP"}, lay)
@@ -278,7 +276,7 @@ def main():
             "pads 1 and 2 at 32", bool(run) and run[0] == (1, want[1]),
             "first: %s" % (run[:1],))
     bad = [(s, n, want.get(s)) for s, n in run if s not in want or n != want[s]]
-    A.check("⛔ every step plays exactly its tracks -- channel, note and velocity, "
+    A.check("⛔ every step plays exactly its tracks -- pad and velocity, "
             "%d steps" % len(run), bool(run) and not bad, "wrong: %s" % bad[:4])
     # PLAY at 7220 ms and STOP at 9820, at 120 BPM: eight sixteenths a second
     # from about 10 ms in is 21 steps, with most of a step's margin either side.
@@ -350,7 +348,7 @@ def main():
     lasts[2] = 6
 
     def tick(k):
-        notes = sorted((PAD_NOTE[t - 1], final[idx(t, (k - 1) % lasts[t] + 1)], BANK_A)
+        notes = sorted((t, final[idx(t, (k - 1) % lasts[t] + 1)])
                        for t in range(1, 17) if final[idx(t, (k - 1) % lasts[t] + 1)] > 0)
         return ((k - 1) % 6 + 1, notes)
     poly = [r for r in played(evs, {"POLY", "POLY-STOP"}, lay) if r[0] is not None]
@@ -399,7 +397,7 @@ def main():
             "steps %s" % moved("REP-PLAY", "REP-PRESS"))
     A.check("⛔ repeat pad 1 held: the playhead stays on 3 and track 1's step 3 plays on every "
             "step -- four times", moved("REP-HELD") == [] and
-            ons("REP-HELD") == [(PAD_NOTE[0], final[idx(1, 3)], BANK_A)] * 4,
+            ons("REP-HELD") == [(1, final[idx(1, 3)])] * 4,
             "steps %s, note-ons %s" % (moved("REP-HELD"), ons("REP-HELD")))
     A.check("⛔ let go, the loop goes on from where it would have been -- 2 then 3, not 1",
             moved("REP-OFF") == [2, 3], "steps %s" % moved("REP-OFF"))

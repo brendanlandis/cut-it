@@ -70,6 +70,14 @@ if [ ! -d "$PATCH" ]; then
     exit 1
 fi
 
+# --- Drum samples ----------------------------------------------------------
+# samples/drums becomes "Cut It/samples/drums", which the copy below takes with the patch
+# (tools/samples.sh). Without ffmpeg the device keeps the samples it has.
+SAMPLES=0
+if ./tools/samples.sh; then SAMPLES=1; else
+    echo "warning: drum samples not converted; the device keeps the ones it has" >&2
+fi
+
 # --- Syntax check ----------------------------------------------------------
 # Pd exits 0 even when objects fail to create, so the check is the output:
 # silence means every object instantiated (ref/workflow.md). -nomidi because
@@ -126,6 +134,10 @@ for p in $ALL_PATCHES; do
         echo "deploying '$p' -> $HOST:$d/"
     fi
     ssh "$HOST" "mkdir -p '$d'"
+    # The samples go first, so a pad removed on the Mac goes silent on the device too.
+    if [ "$p" = "Cut It" ] && [ "$SAMPLES" = "1" ]; then
+        ssh "$HOST" "rm -rf '$d/$p/samples'"
+    fi
     scp -rq "$p" "$HOST:$d/"
 done
 IFS=$_oifs

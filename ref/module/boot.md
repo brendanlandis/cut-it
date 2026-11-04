@@ -203,7 +203,7 @@ on 2026-11-02; the open cases are in `Open` below.
 | `state-dir.sh` | Invoked once. The gates work around it by hand-creating the files — see [state.md](state.md) | Run against a real save, all three files byte for byte unchanged; at load it touched them and left their contents |
 | `logroll.sh` | Invoked once | At load it stamped the session's `BOOT` line and carried the previous session's six lines into the durable log |
 | `phone-ip.sh` | Invoked once, with the fallback address as its argument | On house wifi it printed the fallback. On the Organelle's own access point: not yet checked |
-| `codec-gain.sh` | Invoked once, at `u_root`'s `loadbang` | From the factory's values (170/127/12) set by hand, a Cut It load left the chip at `PCM` 192, `Headphone` 105, `Capture` 4 (2026-11-03): the order a power-on gives. What it sets: [audio.md](audio.md) |
+| `codec-gain.sh` | Invoked once, at `u_root`'s `loadbang` | From the factory's values (170/127/12) set by hand, a Cut It load left the chip at `PCM` 192 and `Headphone` 105 (2026-11-03): the order a power-on gives. What it sets: [audio.md](audio.md) |
 | `recover.sh` | ⛔ **Not at load, and that is the point.** Never invoked during a boot, which is what keeps `init-assert`'s one-of-each check green. Item 300 | — |
 
 ⛔ **`recover.sh` is the one that forks on an EVENT**, and it bends Phase 4's rule deliberately — the

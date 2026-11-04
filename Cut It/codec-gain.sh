@@ -4,9 +4,8 @@
 #
 # The factory's setup.sh cuts the DAC digitally (PCM 170, -11 dB) and makes it
 # up in the headphone amp (127, +12 dB, its maximum), which turns the
-# converter's own noise up with it, and the line input runs about 12 dB hot.
-# These settings took the hiss out at the same overall level, by ear on the rig
-# (2026-11-03). They last until a reboot, when setup.sh puts the factory's
+# converter's own noise up with it. Re-staged, the hiss went at the same overall
+# level, by ear on the rig (2026-11-03). They last until a reboot, when setup.sh puts the factory's
 # back, hence every load. The chip's scales and the measurements: Reference,
 # critter-guitari-organelle-1, under SGTL5000. ref/module/audio.md
 #
@@ -21,10 +20,13 @@ CARD=Codec
 amixer -c $CARD set Headphone 105 >/dev/null 2>&1 \
     && amixer -c $CARD set PCM 192 >/dev/null 2>&1 || true   # +1 dB, then 0 dB
 
-# The attenuator set rather than assumed, so Capture's steps mean the same
-# thing at every load. 4 is 12 dB below the factory's 12; the SP-404 makes it up.
-amixer -c $CARD set 'Capture Attenuate Switch (-6dB)' on >/dev/null 2>&1 || true
-amixer -c $CARD set Capture 4 >/dev/null 2>&1 || true
+# The input is a dynamic mic with no preamp (2026-11-04), so it gets all the
+# gain the chip has: the -6 dB attenuator off and Capture 15, +22.5 dB. Sung
+# close, an SM58 peaked about 3 dB under full scale against hiss at -71 dBFS
+# (Reference, critter-guitari-organelle-1). Set rather than assumed, so the
+# steps mean the same thing at every load.
+amixer -c $CARD set 'Capture Attenuate Switch (-6dB)' off >/dev/null 2>&1 || true
+amixer -c $CARD set Capture 15 >/dev/null 2>&1 || true
 
 # What the chip reads back, for the by-hand console: a silent run looks like a
 # missing script, and a failed one like the factory's numbers.

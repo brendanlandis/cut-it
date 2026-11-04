@@ -62,8 +62,8 @@ file decides what that means; and nothing below that file knows what hardware ex
   row, `c_steps` holds its own `c_clock 1 4`, and **nothing downstream may assume the global `clock`
   is its clock** — Cut It runs poly-tempo. See [tempo.md](module/tempo.md).
 - **`c_steps`, mode 1's drum machine, hangs off `u_map` by a cord** — its third outlet, carrying
-  what a drum-page press means — and its own two outlets reach `m_404` with the notes and `g_grid`
-  with the page. Its rules are Lua, in `c_steps.lua`, behind one pdlua object; its clock and cords
+  what a drum-page press means — and its own two outlets reach `c_kit`, which plays the drums,
+  and `g_grid` with the page. Its rules are Lua, in `c_steps.lua`, behind one pdlua object; its clock and cords
   are Pd. See [sequencer.md](module/sequencer.md).
 - **`u_inject` takes the checklists' Send lines** and puts them on eight buses, so a rig check can
   fake what no control sends: from the device itself, on `127.0.0.1` alone, where `tools/send.sh`
@@ -204,7 +204,7 @@ The four that shape everything else.
 |---|---|
 | **Grain timing must be audio-domain** | Pd's message clock is quantized to a 64-sample block (~1.45 ms), ~20% of a 256th note at 120 BPM. `phasor~` and `vline~`, never `metro`/`line~` at grain rate (C-11). Built that way from the first line — see [tempo.md](module/tempo.md) |
 | **Pd sequences everything** | Timing rides in note events, not MIDI clock. No external device runs its own sequencer during a performance |
-| **Two independent input channels** | `inL` = drums (the tip), `inR` = fx (the ring), from the 404's hard-panned pair through a TRS Y-cable — see [audio.md](module/audio.md) |
+| **Two independent input channels** | `inL` = the tip, `inR` = the ring of the one input jack: the mic on the tip since 2026-11-04 — see [audio.md](module/audio.md) |
 | **Compose and perform are separate modes** | Both the Launchpad and the Organelle's keyboard serve different roles in each, so this shapes the top level of the patch |
 
 ### Why the infrastructure was built before any DSP

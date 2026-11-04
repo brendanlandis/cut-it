@@ -1,3 +1,5 @@
 .DS_Store
 stock/
 __pycache__/
+# The drum samples converted for the patch, from samples/drums (tools/samples.sh).
+Cut It/samples/

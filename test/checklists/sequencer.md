@@ -1,6 +1,6 @@
 # Sequencer checklist
 
-Mode 1's drum page on the Launchpad, the sequencer playing the SP-404, and the pattern surviving a reload. `sequencer-assert` proves the notes, the frames and the file; what is left is what only the rig can show — whether the page reads, and what the 404 does with the notes.
+Mode 1's drum page on the Launchpad, the sequencer playing the drum samples from the Organelle, and the pattern surviving a reload. `sequencer-assert` proves the notes, the frames and the file; what is left is what only the rig can show — whether the page reads, and what the 404 does with the notes.
 
 23 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
 
@@ -11,9 +11,9 @@ Mode 1's drum page on the Launchpad, the sequencer playing the SP-404, and the p
   - **Note:** Level 6 is the bottom row's second velocity button; track 1 is the top-left drum pad. Both reset at every load ([sequencer](../../ref/module/sequencer.md)).
 
 - [ ] **2. A drum pad plays and selects**
-  - **Need:** Sounds in bank A of the 404 — the starter kit or anything else. The 404 on bank A so its pad lights too.
+  - **Need:** Drum samples in `samples/drums/`, deployed with the patch (`tools/samples.sh`).
   - **Do:** Press the bottom-left drum pad.
-  - **Pass if:** The 404 plays bank A pad 13 at once — louder for a harder press. That pad lights in the selected velocity's color and the top-left one goes dim. The OLED draws no row for it.
+  - **Pass if:** Pad 13's sample plays at once through mixer channel 1 — louder for a harder press. That pad lights in the selected velocity's color and the top-left one goes dim. The OLED draws no row for it.
 
 - [ ] **3. Velocity buttons**
   - **Do:** Press the top-left velocity button, then the bottom-right one.
@@ -89,11 +89,11 @@ Mode 1's drum page on the Launchpad, the sequencer playing the SP-404, and the p
   - **Pass if:** Everything stops at once and the grid flashes red. When it clears the green pad is gone and the steps are still lit.
 
 - [ ] **21. A one-shot pad on every step**
-  - **Need:** Pad 13 of bank A set to one-shot on the 404 — not loop.
+  - **Need:** A sample on pad 13, `samples/drums/13…`, deployed with the patch.
   - **Send:** `start bang`
   - **Do:** Select pad 13. Light all sixteen of its steps. Listen for a bar or two then turn knob 1 up and listen again.
-  - **Pass if:** Every step is heard as a fresh hit — a hit cut short by the next one is fine. A step that falls silent is the failure: it means a one-shot pad toggles like a looping one.
-  - **Note:** The blueprint's open question (cut-it/drum-machine): a looping pad toggles on a second note-on, and fast hats need a one-shot pad to restart instead.
+  - **Pass if:** Every step is heard as a fresh hit, with no click where one cuts the last short. A step that falls silent is the failure.
+  - **Note:** Each pad restarts its sample on every hit (the sequencer's page, *The kit*); `kit-assert` proves it on the Mac, and this is the same on the device.
 
 - [ ] **22. The pattern survives a reload**
   - **Need:** Steps lit on the drum page from the steps before.

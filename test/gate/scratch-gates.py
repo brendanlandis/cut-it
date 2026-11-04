@@ -226,6 +226,18 @@ def audio(g):
     return g.analyze("test/gate/audio-assert.py", s.path("out.wav"), cap, *g.args)
 
 
+def kit(g):
+    # A harness holding c_kit alone, with two samples the generator writes into
+    # the copy's samples/drums: lib_scratch leaves the Mac's own out, so the run
+    # hears these and nothing else.
+    S.require("Cut It/c_kit.pd", "Cut It/c_voice.pd", "Cut It/u_root.pd")
+    s, cap = _harness_gate(
+        g, 30, lambda s: s.patch, lambda s: s.path("out.wav"),
+        why=["      Without it nothing instantiates c_kit, nothing records, and",
+             "      the gate would report a silent kit rather than a broken test."])
+    return g.analyze("test/gate/kit-assert.py", s.path("out.wav"), *g.args, stdin=cap)
+
+
 def clock(g):
     # A harness: c_clock publishes on no bus, so only a [print] on an outlet
     # sees it. Three instances, nothing else running.
@@ -420,6 +432,16 @@ def sequencer(g):
         with open(path, "w") as fh:
             fh.write(body)
     g.rewrite(s)
+    # The drums go to c_kit, a signal no message tap sees: t_kit in its place
+    # prints each pad and velocity c_steps sends (test/stubs/t_kit.pd).
+    root = os.path.join(s.patch, "u_root.pd")
+    with open(root) as fh:
+        text = fh.read()
+    if text.count(" c_kit;") != 1:
+        S.fail("FAIL: u_root.pd holds %d c_kit boxes, wanted 1 to swap for t_kit."
+               % text.count(" c_kit;"))
+    with open(root, "w") as fh:
+        fh.write(text.replace(" c_kit;", " t_kit;"))
     S.drive(GEN % "sequencer-assert", s.path("drive.pd"))
     print("   running (about 18 s -- DSP is on, the steps are cut from a phasor~) ...")
     cap = g.pd(s, 40, main_dev(s), s.path("drive.pd"))
@@ -434,7 +456,7 @@ RECIPES = {
     "display": display, "oled": oled, "led": led, "tempo": tempo,
     "clock": clock, "map": map_, "recover": recover, "launchpad": launchpad,
     "nano": nano, "organelle": organelle, "sp404": sp404, "volca": volca,
-    "debug": debug, "sequencer": sequencer,
+    "debug": debug, "sequencer": sequencer, "kit": kit,
 }
 
 

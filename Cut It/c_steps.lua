@@ -2,11 +2,11 @@
 -- selected track and level, the last steps, each track's place in its loop, the time signature,
 -- swing, drunkenness, the repeats, each track's chances, and which notes fire on a step. Plain Lua with no Pd in it, so test/gate/lua/c_steps_test.lua runs it on the Mac with
 -- lua.org's interpreter. c_steps-lua.pd_lua is its Pd face, and c_steps.pd keeps the clock, the
--- transport and the cords to m_404, g_grid and u_state. ref/module/sequencer.md.
+-- transport and the cords to c_kit, g_grid and u_state. ref/module/sequencer.md.
 --
 -- The state is a plain table and every rule a function of it, so a live reload of the rules keeps
 -- the pattern. Every rule returns what leaves, in order, as {outlet, selector, atoms}:
---   {"note", "pad", {pad, velocity}}                          to m_404
+--   {"note", "pad", {pad, velocity}}                          to c_kit
 --   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep", {...}}
 --                                                             to g_grid's third inlet
 --   {"save", "list", {563 numbers, R.save}}                   to u_state, as section-1-<part>

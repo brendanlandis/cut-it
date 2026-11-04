@@ -242,7 +242,9 @@ class Scratch:
         """Copy the patch, the stubs and mac-stubs; leave the state dir with its
         two files, empty."""
         os.makedirs(self.state, exist_ok=True)
-        shutil.copytree(os.path.join(ROOT, self.src), self.patch)
+        # Not the drum samples: a gate hears none, whatever is on this Mac (tools/samples.sh).
+        shutil.copytree(os.path.join(ROOT, self.src), self.patch,
+                        ignore=shutil.ignore_patterns("samples"))
 
         stubs = os.path.join(ROOT, "test", "stubs")
         names = sorted(f for f in os.listdir(stubs)

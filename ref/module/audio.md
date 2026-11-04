@@ -28,9 +28,9 @@ DAC at full scale, the headphone amp down to match, the line input 12 dB quieter
 
 | Patch uses | Carries | Evidence | Item |
 |------------|---------|----------|------|
-| `[r~ inL]` | Input, the **tip** of the TRS Y-cable — the 404's hard-panned **drums** | verified | 11 |
-| `[r~ inR]` | Input, the ring — the 404's hard-panned **fx**. The mic sums to both | verified | 11 |
-| `[throw~ outL]`, `[throw~ outR]` | Everything the patch wants heard | verified | — |
+| `[r~ inL]` | Input, the **tip** of the input jack: the **mic**, an SM58 on an XLR-to-TS cable, since 2026-11-04 (the Organelle's Reference page) | verified | 11 |
+| `[r~ inR]` | Input, the ring: nothing, with a TS plug in the jack | verified | 11 |
+| `[throw~ outL]`, `[throw~ outR]` | Everything the patch wants heard: the input passed through, and `c_kit`'s drums on `outL` ([sequencer.md](sequencer.md), *The kit*) | verified | — |
 
 What `mother.pd` does on the other side of those names (its own `adc~` and `dac~`, the volume knob's
 square law, the limiter, turning DSP on, the VU meter) is on the Organelle's Reference page
@@ -47,10 +47,11 @@ its dB scales, the factory's values and the hiss are on the Organelle's Referenc
 |---------|-------------|----------|
 | `Headphone` | 105, +1 dB | verified |
 | `PCM` | 192, 0 dB | verified |
-| `Capture Attenuate Switch (-6dB)` | on, as the factory leaves it, but set rather than assumed | verified |
-| `Capture` | 4, 12 dB below the factory's 12. The SP-404 is turned up to make it up ([rig.md](../rig.md)) | verified |
+| `Capture Attenuate Switch (-6dB)` | off, so the mic gets the chip's whole gain | verified |
+| `Capture` | 15, its top: +22.5 dB with the attenuator off. A dynamic mic sung close peaks about 3 dB under full scale, against the input's hiss at −71 dBFS (2026-11-04) | verified |
 
-Verified by ear on 2026-11-03, set by hand with `amixer`: the hiss goes, at the same overall level.
+`Headphone` and `PCM` verified by ear on 2026-11-03, set by hand with `amixer`: the hiss goes, at
+the same overall level. `Capture` measured with the Mic Probe (`tools/stage-patches/Mic Probe/`).
 
 ### `u_level`
 
@@ -140,13 +141,13 @@ all run every block — so tapping `u_level` off `[r~ inL]` alongside the main c
 No signal outlet, by design. It is a probe you can attach anywhere without thinking about what it
 does to the sound, which is the only way a level meter is worth having mid-chain.
 
-### The 404 carries the audio split
+### The mic goes straight in, and the drums are Pd's
 
-Drums hard-panned left, fx hard-panned right — two independent mono streams out of one stereo pair,
-with the mic summing to both. **No routing depends on a knob position**: the 404's per-sample pans
-save with the project and recall, cables carry the paths, and the mixer's knobs only set levels — a
-wrong level is audible immediately rather than failing silently. See
-[sp404.md](../device/sp404.md) and `~/Sites/!reference/roland-sp-404mkii.md`.
+The mic is the input's tip, with no preamp in front of it: the Organelle's own input gain, turned
+all the way up, is enough for a voice (the Organelle's Reference page). The drums no longer come
+in at all: `c_kit` plays them and throws them to `outL`, where the 404's hard-panned drums used to
+arrive ([sequencer.md](sequencer.md)). **No routing depends on a knob position**: cables carry the
+paths, and the mixer's knobs only set levels.
 
 ### Organelle audio back into the 404 was scrapped
 

@@ -8,7 +8,7 @@
 #X obj 170 400 u_level in-l;
 #X obj 480 400 u_level in-r;
 #X text 70 490 v0.4: e_chop \, e_pitch \, e_trem \, e_verb go in this gap., f 30;
-#X text 20 700 inL is drums (the tip) and inR is fx: the SP-404's hard-panned pair on a TRS Y-cable (item 11)., f 34;
+#X text 20 700 inL and inR are the input jack's tip and ring \, passed straight through: the mic goes in on the tip. The drums are c_kit's \, thrown to outL., f 34;
 #X text 20 800 C-4, f 58;
 #X text 470 1050 A signal fan-out needs no trigger: every signal cord runs every block. C-3 is for messages., f 46;
 #X obj 900 340 u_init \$3;
@@ -20,7 +20,7 @@
 #X obj 1700 860 u_map \$3;
 #X obj 2300 340 g_oled;
 #X obj 2300 600 g_led;
-#X text 900 1300 The columns are ref/architecture.md's diagram: the m_ layers \, then the buses and the map \, then the display owners. A file with cords sits by its cords instead: u_init's to m_launchpad and u_state (u_init owns when \, they own what) \, u_map's and u_net's to the two output devices (C-2: no bus carries a sounding note) \, u_map's test-mode to u_net \, g_grid's from m_launchpad (surface ownership) and c_clock (the beat) \, and c_steps between u_map \, m_404 and g_grid (ref/module/sequencer.md)., f 90;
+#X text 900 1300 The columns are ref/architecture.md's diagram: the m_ layers \, then the buses and the map \, then the display owners. A file with cords sits by its cords instead: u_init's to m_launchpad and u_state (u_init owns when \, they own what) \, u_map's and u_net's to the two output devices (C-2: no bus carries a sounding note) \, u_map's test-mode to u_net \, g_grid's from m_launchpad (surface ownership) and c_clock (the beat) \, and c_steps between u_map \, c_kit and g_grid (ref/module/sequencer.md)., f 90;
 #X obj 20 1200 c_clock 1 8;
 #X obj 20 1320 g_grid \$2;
 #X text 300 1200 The grid's own clock \, since nothing may assume the global clock is its own (poly-tempo \, ref/module/tempo.md). Ratio 1 and eight beats \, so its beat number indexes the grid's bottom row., f 58;
@@ -45,7 +45,6 @@
 #X connect 25 1 29 0;
 #X obj 1850 1600 c_steps 1 drums;
 #X connect 18 2 32 0;
-#X connect 32 0 29 0;
 #X connect 32 1 23 2;
 #X obj 620 340 loadbang;
 #X msg 620 390 sh codec-gain.sh;
@@ -60,3 +59,5 @@
 #X connect 18 3 25 0;
 #X connect 25 2 32 0;
 #X connect 32 2 25 1;
+#X obj 1850 1680 c_kit;
+#X connect 32 0 40 0;

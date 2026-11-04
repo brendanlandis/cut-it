@@ -1,0 +1,6 @@
+# The samples themselves stay out of git: this repo is public, and they may not be Brendan's to
+# publish. Only this file and the README are tracked.
+*
+!.gitignore
+!README.md
+!*/

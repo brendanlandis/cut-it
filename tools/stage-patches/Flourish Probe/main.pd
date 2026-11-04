@@ -45,6 +45,11 @@
 #X text 20 1080 KNOBS: 1 run length 1 to 6 s. 2 first gap 10 to 150 ms. 3 last gap 80 to 800 ms. 4 the looper's final SPEED 5 to 100 percent. Strike a pad on the 404 to select it. The looper's CCs go on the 404's channel 1 (BUS 1): CC 17 SPEED and CC 18 LOOP SW \, per the v3.00 MIDI chart., f 120;
 #X text 300 380 midiOutGate 0 and midiInGate 0 after mother's own push half a second in: mother echoes the keys to every port \, and the 404's pads would come back as keys (ref/module/boot.md)., f 34;
 #X text 1100 420 notein fires right to left \, so the channel and velocity are in before the note arrives hot., f 40;
+#X obj 1500 300 r~ inL;
+#X obj 1500 350 throw~ outL;
+#X obj 1650 300 r~ inR;
+#X obj 1650 350 throw~ outR;
+#X text 1500 400 The 404 is heard only through the Organelle: its outputs come in on inL and inR \, so the probe passes them through as Cut It does (C-4)., f 40;
 #X connect 1 0 2 0;
 #X connect 2 2 3 0;
 #X connect 2 1 5 0;
@@ -86,3 +91,5 @@
 #X connect 4 6 37 0;
 #X connect 38 0 39 0;
 #X connect 39 0 4 0;
+#X connect 45 0 46 0;
+#X connect 47 0 48 0;

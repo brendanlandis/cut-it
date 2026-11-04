@@ -9,10 +9,10 @@ tab bar, black, with bright red the lead accent and teal the second, monospaced 
 value and TouchOSC's default font for every label, and every pairing at WCAG AA, which
 test/gate/touchosc-assert.py audits from this file.
 
-The tab bar has two tabs, and the last is always the checklist page (Brendan, 2026-11-04). The
-first is the mode's: the drum screen in mode 1, the remote screen in every other mode. The tabs
-follow the mode u_net sends; test mode coming on brings up the checklists, and going off, the
-first tab.
+The tab bar holds the mode's screen: the drum screen in mode 1, the remote screen in every other
+mode, following the mode u_net sends. The checklist page is a page of its own, not a tab: test mode,
+a tap on the Launchpad's Setup, puts it in place of the tabs, and going off takes it away
+(Brendan, 2026-11-04).
 
 It speaks u_net's OSC (ref/device/phone.md): it sends /cutit <command> ... to the Organelle's 9001
 and shows what comes back to its 8000. Each control sends from a script of its own; the root's
@@ -283,6 +283,25 @@ def sends(args):
             "end\n" % ", ".join(lua(a) for a in args))
 
 
+def pad_script(n):
+    """A drum pad: a press selects its track, and the state lights the one selected with
+    notify('lit'), which a lit pad never answers. When it did, four pads pressed at once lit in
+    turn on the phone, each selecting itself again, and the selection bounced between Cut It and
+    the phone for as long as they were held (Brendan, 2026-11-04)."""
+    return ("local lit = 0\n"
+            "function onReceiveNotify(key, value)\n"
+            "  if key == 'lit' then\n"
+            "    lit = value\n"
+            "    self.values.x = value\n"
+            "  end\n"
+            "end\n"
+            "function onValueChanged(key)\n"
+            "  if key == 'x' and self.values.x == 1 and lit ~= 1 then\n"
+            "    sendOSC('/cutit', 'drums', 'select', %d)\n"
+            "  end\n"
+            "end\n" % n)
+
+
 def tells(what, which):
     """The script of a button the root answers: root:notify(what, which) on its press."""
     return ("function onValueChanged(key)\n"
@@ -319,7 +338,7 @@ def knob(name, cx, cy, d, caption):
             label(name + "c", (cx - 60, cy + d / 2 + 2, 120, 20), caption, 14, GREY)]
 
 
-def box(name, f, steps, cmd):
+def box(name, f, steps, cmd, factor):
     """A time signature box: a native fader with no bar, dragged up or down, one step at a time.
     c_steps takes the time signature a step at a time, num or den <-1 or 1>, so a drag across n
     steps sends n of them; the state hands it back its step, 1 to steps."""
@@ -334,8 +353,11 @@ def box(name, f, steps, cmd):
         "  for _ = 1, math.abs(d) do sendOSC('/cutit', 'drums', '%s', d > 0 and 1 or -1) end\n"
         "  root:notify('touched', '%s')\n"
         "end\n" % (steps, steps, cmd, name))
+    # response 1 is relative, and responseFactor scales the drag: at 100 one box's height
+    # moves the whole range, which made the top number's 32 steps 2 points each (Brendan,
+    # 2026-11-04: hard to settle on one number)
     return node("FADER", name, f, color=RED, outlineStyle=0, bar=False, cursor=False,
-                response=1, script=script)
+                response=1, responseFactor=factor, script=script)
 
 
 def group(name, kids, visible=True):
@@ -367,7 +389,7 @@ def drums():
     for n in range(1, 17):
         r, c = (n - 1) // 4, (n - 1) % 4
         f = (x0 + c * (size + gap), y(TOP + r * (size + gap)), size, size)
-        k.append(button("pad%d" % n, f, RED, sends(["drums", "select", n])))
+        k.append(button("pad%d" % n, f, RED, pad_script(n)))
         k.append(label("pad%dl" % n, f, "16", 20))
     # right: sync and snap, the line saying one waits, three knobs, the time signature
     rx, rw = 536, W - R - 536
@@ -382,10 +404,10 @@ def drums():
     ty = TOP + 206
     k.append(label("timec", (rx, y(ty), 100, 18), "time", 14, GREY, align=1))
     bw, bh, by = 84, 64, ty + 26
-    k.append(box("numbox", (rx + 20, y(by), bw, bh), MAX_NUM, "num"))
+    k.append(box("numbox", (rx + 20, y(by), bw, bh), MAX_NUM, "num", 10))
     k.append(label("num", (rx + 20, y(by), bw, bh), "4", 32))
     k.append(label("slash", (rx + 20 + bw, y(by), 56, bh), "/", 32, GREY))
-    k.append(box("denbox", (rx + 76 + bw, y(by), bw, bh), len(DENS), "den"))
+    k.append(box("denbox", (rx + 76 + bw, y(by), bw, bh), len(DENS), "den", 50))
     k.append(label("den", (rx + 76 + bw, y(by), bw, bh), "4", 32))
     return group("drums", k, visible=False)
 
@@ -477,12 +499,7 @@ end
 -- ---------------------------------------------------------------- the tabs and test mode
 local mode, testOn = nil, nil
 
-local function tab(p)
-  get('pager').values.page = p
-end
-
--- A mode fills the first tab with its screen; the same mode again, as u_net repeats it, leaves
--- the tab chosen alone.
+-- A mode fills the tab with its screen, and names it.
 local function setMode(m)
   if m == mode then return end
   mode = m
@@ -490,15 +507,14 @@ local function setMode(m)
   get('drums').visible = main == 'drums'
   get('remote').visible = main == 'remote'
   get('main').tabLabel = main
-  tab(testOn and 1 or 0)
 end
 
--- Test mode coming on brings up the checklists; going off, the first tab.
+-- Test mode puts the checklist page in place of the tabs, and going off takes it away.
 local function setTest(on)
-  local was = testOn
-  if on == was then return end
+  if on == testOn then return end
   testOn = on
-  if on then tab(1) elseif was then tab(0) end
+  get('pager').visible = not on
+  get('checkpager').visible = on
 end
 
 -- ---------------------------------------------------------------- flashes
@@ -539,7 +555,8 @@ local function drums(a)
   for n = 1, 16 do
     local own, sel = arg(a, 20 + n) == 1, n == track
     color('pad' .. n, own and TEAL or RED)
-    lit('pad' .. n, sel)
+    local want = sel and 1 or 0
+    if get('pad' .. n).values.x ~= want then get('pad' .. n):notify('lit', want) end
     text('pad' .. n .. 'l', (own and '• ' or '') .. math.floor(arg(a, 4 + n)))
     ink('pad' .. n .. 'l', sel and BLACK or WHITE)
   end
@@ -694,10 +711,13 @@ def build():
     checks_, bad = checklists()
     if bad:
         sys.exit("build: the checklists don't fit the page:\n  " + "\n  ".join(bad))
-    main = page("main", "remote", [drums(), remote()])
-    pager = node("PAGER", "pager", (0, 0, W, H), [main, page("checks", "checklists", checks())],
-                 color=BLACK, background=False, tabbarSize=TAB, textSizeOff=22, textSizeOn=22)
-    root = node("GROUP", "root", (0, 0, W, H), [pager], color=BLACK,
+    tabs = dict(color=BLACK, background=False, tabbarSize=TAB, textSizeOff=22, textSizeOn=22)
+    pager = node("PAGER", "pager", (0, 0, W, H), [page("main", "remote", [drums(), remote()])],
+                 **tabs)
+    # the checklist page, under its own one-tab bar, over the tabs in test mode
+    checkpager = node("PAGER", "checkpager", (0, 0, W, H),
+                      [page("checks", "checklists", checks())], visible=False, **tabs)
+    root = node("GROUP", "root", (0, 0, W, H), [pager, checkpager], color=BLACK,
                 script=root_script(checks_))
     return '<?xml version="1.0" encoding="UTF-8"?><lexml version="6">' + root + "</lexml>"
 

@@ -2,14 +2,14 @@
 
 Every **Pass if** here describes the phone, not the Organelle. Steps 8 to 11 are the ones whose correct result is that nothing happens: the meters, the grid vocabulary and the aux LED are all on `disp` and all dropped by `u_net`, so a line reading in-l means the rate budget has gone to a meter the phone does not draw.
 
-The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast sweep is the closest a person gets. Step 13 is the link going and coming back, reported by the phone's own no link. Steps 18 to 22 are the checklist page, the last tab in every mode, and test mode; run them from that tab. Step 23 is the tabs following the mode.
+The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast sweep is the closest a person gets. Step 13 is the link going and coming back, reported by the phone's own no link. Steps 1 to 17 judge the phone's screens, which the checklist page covers in test mode, so send their lines from the Mac with `tools/send.sh`, which needs no test mode. Steps 18 to 22 are the checklist page and test mode; run them from the page. Step 23 is the tab following the mode.
 
 23 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [phone](../../ref/device/phone.md).
 
 - [ ] **1. The link is up**
   - **Need:** TouchOSC open on the phone with Cut It's layout, on the same network. A no link here means nothing below can be judged.
   - **Send:** `mode compose mode-2`
-  - **Pass if:** The phone's first tab reads remote and shows the remote screen, checklists beside it, and its link lamp is lit teal beside the word link rather than no link.
+  - **Pass if:** The phone's tab reads remote and shows the remote screen, and its link lamp is lit teal beside the word link rather than no link.
 
 - [ ] **2. One parameter**
   - **Send:** `disp chop-size 43 %`
@@ -77,15 +77,15 @@ The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast
   - **Do:** Tap test-404 on the phone and listen.
   - **Pass if:** The SP-404 plays pad A1. The button flashes teal.
 
-- [ ] **18. A Send line is refused while test mode is off**
-  - **Need:** Cut It just loaded from the Organelle menu, which turns test mode off, and this step open on the phone's checklist tab.
-  - **Send:** `disp chop-size 43 %`
-  - **Pass if:** Nothing on the Organelle changes: no chop-size row. The page's label at the top right still reads test mode off, its lamp out, and the Send button flashes grey, not teal: the Organelle refused the line.
-  - **Note:** The label is the Organelle's own state, carried on the heartbeat, so it reads no link until the first heartbeat arrives and after 1.5 s with none. That a refused line reaches nothing is `phone-assert`'s; this is the page and the rig agreeing.
+- [ ] **18. Setup turns the checklist page off and on**
+  - **Need:** Test mode on, this step open on the phone's checklist page.
+  - **Do:** Tap Setup, the Launchpad's bottom-left button. Then tap it again.
+  - **Pass if:** At the first tap the page gives way to the phone's screen at once, and at the second it comes back at this step, reading test mode on beside a lit teal lamp, again at once rather than half a second later.
+  - **Note:** The page shows only in test mode, so a Send line from it can't meet test mode off any more; that the Organelle refuses one is `phone-assert`'s. A flip sends a heartbeat at once, which is the "at once".
 
 - [ ] **19. Test mode on, from the panel**
-  - **Do:** On the Organelle hold aux, press the second key from the bottom (the first black key), then let go of both. Watch the page's label for ten seconds.
-  - **Pass if:** The phone stays on (or comes to) the checklist tab, and the label reads test mode on beside a lit teal lamp, and still reads it ten seconds later. In compose the OLED shows a bordered box reading warn then u_net then test-mode-on for about two seconds; in perform it shows nothing.
+  - **Do:** Tap Setup to leave test mode. Then on the Organelle hold aux, press the second key from the bottom (the first black key), then let go of both. Watch the phone for ten seconds.
+  - **Pass if:** The checklist page comes back at this step, its label reading test mode on beside a lit teal lamp, and still reads it ten seconds later. In compose the OLED shows a bordered box reading warn then u_net then test-mode-on for about two seconds; in perform it shows nothing.
   - **Note:** One press of the key can reach Cut It twice, 5 ms apart, which once turned test mode on and straight back off; a second flip within 300 ms is dropped (`phone-assert` holds it), and the ten seconds are this step's check that it held.
 
 - [ ] **20. A Send line goes through in test mode**
@@ -102,9 +102,9 @@ The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast
 - [ ] **22. A reload turns test mode off**
   - **Need:** Test mode on.
   - **Do:** Load Cut It again from the Organelle menu, and watch the page's label.
-  - **Pass if:** The label reads no link while Cut It restarts. When the link is back, test mode is off, and the phone goes to the mode's first tab; tap checklists to come back and mark this step.
+  - **Pass if:** The label reads no link while Cut It restarts. When the link is back, test mode is off and the page gives way to the phone's screen. Tap Setup to bring it back and mark this step.
 
-- [ ] **23. The tabs follow the mode**
-  - **Send:** `mode compose mode-1`
-  - **Pass if:** The first tab reads drums and shows the drum screen, checklists beside it. Tapping checklists shows this page, and drums the drum screen again.
-  - **Note:** Then send `mode compose mode-3`: the first tab reads remote and shows the remote screen. The same mode sent twice leaves the tab you chose alone, since `u_net` repeats it twice a second.
+- [ ] **23. The tab follows the mode**
+  - **Do:** Tap Setup to leave test mode. Press the Launchpad's mode 1 button, the top of the left column, then mode 3, the third.
+  - **Pass if:** In mode 1 the tab reads drums and shows the drum screen; in mode 3 it reads remote and shows the remote screen.
+  - **Note:** Tap Setup to come back and mark this step.

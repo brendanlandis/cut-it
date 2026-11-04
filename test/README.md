@@ -41,17 +41,17 @@ were false.
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 97 | `device/phone` |
+| `phone-assert.sh` | 99 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 61: 9 read, 52 in Lua | `device/phone` — the phone's TouchOSC layout, the checklist page included |
+| `touchosc-assert.sh` | 60: 9 read, 51 in Lua | `device/phone` — the phone's TouchOSC layout, the checklist page included |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 
-**1037 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**1038 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **1030**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **1031**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's;
 `touchosc-assert.sh` two as well, the reading first.
@@ -391,7 +391,7 @@ equivalent.
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       9 + 52 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       9 + 51 checks, ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
@@ -418,6 +418,9 @@ phone checklist is the oracle for that.
 ✅ **And again for the redesign**: grey text too dim for AA (read 1, Lua 1), a time signature box
 sending one step for a drag across two (Lua 1), and answers lighting a button by its value rather
 than its color, which sends its command again (Lua 9).
+✅ **And for the pads** (2026-11-04): a pad sending when the state lights it, which bounced four
+selections between Cut It and the phone, failed 2; the old `u_net`, with no heartbeat on a flip of
+test mode, failed `phone-assert`'s two "at once" checks, 299 and 99 ms late.
 
 ## `sequencer-assert.sh` — the drum machine, from the outside
 

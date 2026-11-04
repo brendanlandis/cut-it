@@ -13,15 +13,16 @@ local w = L.load(dir)
 local C = w.controls
 local function hb(test) L.osc(w, "/cutit/hb", 1, test and 1 or 0) end
 local function mode(m) L.osc(w, "/cutit/mode", "compose", m) end
--- Where the phone is: the tab showing, and which screen the first tab holds.
+-- Where the phone is: the tab's name, its screen, and whether the checklists stand in for it.
 local function where()
-  return { C.pager.values.page, C.main.tabLabel, C.drums.visible and "drums" or "remote" }
+  return { C.main.tabLabel, C.drums.visible and "drums" or "remote",
+           (C.checkpager.visible and not C.pager.visible) and "checklists" or "tabs" }
 end
 local function teal(c) return c[2] > 0.7 and c[1] < 0.3 end
 local function red(c) return c[1] > 0.9 and c[2] < 0.2 end
 
 print("\n--- the tabs, the mode and test mode ---")
-equal("before any mode: the first tab, the remote screen", where(), { 0, "remote", "remote" })
+equal("before any mode: the tab, the remote screen", where(), { "remote", "remote", "tabs" })
 L.update(w)
 equal("no heartbeat yet: no link, on both screens and the checklists",
       { L.text(w, "rlink"), L.text(w, "link"), L.text(w, "tmode") }, { "no link", "no link", "no link" })
@@ -31,30 +32,20 @@ equal("a heartbeat: link, its lamps lit, and test mode off",
       { L.text(w, "rlink"), C.rlinkled.values.x, C.linkled.values.x, L.text(w, "tmode") },
       { "link", 1, 1, "test mode off" })
 mode("mode-1")
-equal("mode 1: the first tab holds the drum screen, and says drums", where(), { 0, "drums", "drums" })
-C.pager.values.page = 1
-mode("mode-1")
-equal("the same mode again, as u_net repeats it twice a second, leaves the tab chosen alone",
-      C.pager.values.page, 1)
+equal("mode 1: the tab holds the drum screen, and says drums", where(), { "drums", "drums", "tabs" })
 mode("mode-2")
-equal("mode 2: the first tab, holding the remote screen", where(), { 0, "remote", "remote" })
+equal("mode 2: the remote screen", where(), { "remote", "remote", "tabs" })
 hb(true)
 L.update(w)
-equal("test mode on: the checklists come up, its lamp lit",
-      { C.pager.values.page, L.text(w, "tmode"), C.tled.values.x }, { 1, "test mode on", 1 })
+equal("test mode on: the checklist page in place of the tabs, its lamp lit",
+      { where()[3], L.text(w, "tmode"), C.tled.values.x }, { "checklists", "test mode on", 1 })
 mode("mode-1")
-equal("... and stay up through a change of mode", where(), { 1, "drums", "drums" })
-C.pager.values.page = 0
+equal("... staying through a change of mode, which fills the tab behind it",
+      where(), { "drums", "drums", "checklists" })
 hb(true)
-equal("a heartbeat still saying test mode leaves a tab chosen by hand alone", C.pager.values.page, 0)
+equal("a heartbeat still saying test mode changes nothing", where()[3], "checklists")
 hb(false)
-C.pager.values.page = 1
-hb(false)
-equal("test mode off, then the checklists chosen: the heartbeat leaves them alone",
-      C.pager.values.page, 1)
-hb(true)
-hb(false)
-equal("test mode going off: the first tab", C.pager.values.page, 0)
+equal("test mode off: the tabs again", where(), { "drums", "drums", "tabs" })
 
 print("\n--- the drum screen ---")
 local st = { 1, 12, 2, 1 }
@@ -74,10 +65,16 @@ check("pad 3 is teal, pad 1 red", teal(C.pad3.color) and red(C.pad1.color),
       T.show({ C.pad3.color, C.pad1.color }))
 equal("pad 2, selected, is lit and the rest not",
       { C.pad2.values.x, C.pad1.values.x, C.pad3.values.x }, { 1, 0, 0 })
-local sent = {}
-for i, m in ipairs(w.sent) do sent[i] = table.concat(m, " ") end
-equal("lighting the selected pad says select 2 again, which selects it again and nothing more",
-      sent, { "/cutit drums select 2" })
+equal("lighting the selected pad sends nothing", #w.sent, 0)
+-- four pads pressed at once: four states, a track each, as fast as they come
+for _, t in ipairs({ 11, 12, 15, 16 }) do
+  st[3] = t
+  L.osc(w, "/cutit/drums", table.unpack(st))
+end
+equal("states selecting one track after another light each in turn and send nothing back",
+      { C.pad16.values.x, C.pad11.values.x, #w.sent }, { 1, 0, 0 })
+st[3] = 2
+L.osc(w, "/cutit/drums", table.unpack(st))
 w.sent = {}
 equal("the knobs and boxes take the state, and send nothing back",
       { C.drunk.values.x, C.skip.values.x, L.text(w, "drunkv"), #w.sent },
@@ -135,7 +132,6 @@ check("test 404's answer flashes it, and not test Volca", teal(C.t404.color) and
       T.show({ C.t404.color, C.tvolca.color }))
 
 print("\n--- the checklist page ---")
-C.pager.values.page = 1
 equal("the first checklist, step 1", { L.text(w, "cname"), L.text(w, "cpos"):match("^%d+ of %d+") },
       { E.lists[1].name, "1 of " .. E.lists[1].steps })
 L.press(w, "cnext")

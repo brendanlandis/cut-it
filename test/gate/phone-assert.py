@@ -96,6 +96,9 @@ def collect():
 
 
 # ----------------------------------------------------------------------- checks
+MARK_T = {}     # each window's mark, when it arrived
+
+
 def windows(packets):
     """Split the stream into [(mark, [(t, addr, args), ...]), ...]."""
     out, cur, name = [], [], None
@@ -108,6 +111,7 @@ def windows(packets):
             if name is not None:
                 out.append((name, cur))
             name, cur = (args[0] if args else "?"), []
+            MARK_T[name] = t
         else:
             cur.append((t, addr, args))
     if name is not None:
@@ -393,6 +397,15 @@ def main():
 
     one("tmon", "/probe/err", ["warn", "u_net", "test-mode-on"],
         "flipping test mode on warns, so the OLED and the log both say so")
+    # A flip sends a heartbeat at once, so the phone turns to its checklists at the tap; the
+    # 2 Hz beat alone left it waiting up to half a second.
+    for win, flag in (("tmon", 1), ("tmoff", 0)):
+        first = next((t for t, a, g in got.get(win, []) if a == "/cutit/hb"
+                      and len(g) > 1 and g[1] == flag), None)
+        A.check("%s: the heartbeat saying so arrives at once, not at the next beat" % win,
+                first is not None and first - MARK_T[win] < 0.06,
+                "%s ms after the flip" % (None if first is None
+                                          else round((first - MARK_T[win]) * 1000)))
     for win in ("tmon", "sendon", "result"):
         f = hb_flags(win)
         A.check("%s: the heartbeat says test mode is on" % win,

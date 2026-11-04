@@ -450,3 +450,9 @@
 #X connect 220 0 221 0;
 #X connect 220 1 223 0;
 #X connect 220 2 236 0;
+#X obj 180 1290 r \$0-test;
+#X obj 180 1340 t b f;
+#X text 380 1290 A flip of test mode sends a heartbeat at once \, its new state in it \, so the phone turns to its checklists at the tap rather than at the next of the 2 Hz beats., f 44;
+#X connect 239 0 240 0;
+#X connect 240 1 210 1;
+#X connect 240 0 30 0;

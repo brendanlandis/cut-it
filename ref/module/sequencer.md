@@ -231,8 +231,9 @@ short or malformed line.
   depend on (the SP-404's Reference page).
 - ⬜ **The selected track and velocity are not saved**; every boot starts at track 1, level 6.
   See `cut-it/drum-machine`.
-- ⬜ **Swing, drunkenness, the repeat pads and the chances have not played on the rig**, nor have
-  the drum screen's controls for them or the page's blue bars and purple repeat pads. See
-  `cut-it/drum-timing`.
+- ✅ **On the rig, a repeat pad holds for as long as it is held** (Brendan, 2026-11-04), once the
+  Launchpad's heartbeat waited for it ([launchpad](../device/launchpad.md)).
+- ⬜ **Swing, drunkenness and the chances have not played on the rig**, nor have the drum screen's
+  controls for them or the page's blue bars. See `cut-it/drum-timing`.
 - ⬜ **The Lua version has not played on the rig**: its CPU beside the Pd version's 11.2% with the
   drum machine playing (`~/Sites/!reference/pure-data.md`, *Newer versions on the Organelle*) is unmeasured. See `cut-it/logic-as-text`.

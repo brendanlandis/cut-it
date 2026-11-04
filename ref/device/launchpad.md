@@ -105,7 +105,8 @@ invisible to the poll alone. `m_launchpad` runs the heartbeat and the poll.
 
 **The heartbeat waits while anything is held.** Entering Programmer Mode makes the device let go
 of every held pad, a note off at once (Reference), so a repeat pad held across a tick stopped
-repeating within two seconds (Brendan, 2026-11-04). `m_launchpad` keeps a table of what is down,
+repeating within two seconds (Brendan, 2026-11-04); with the heartbeat waiting, one held five
+seconds and more kept repeating on the rig. `m_launchpad` keeps a table of what is down,
 notes and then CCs from 128, and skips a tick while any is. A pad unplugged while held stays held
 in it until it is pressed and let go again; on a Mac the heartbeat waits that long.
 

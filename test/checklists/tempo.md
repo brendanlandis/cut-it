@@ -13,7 +13,7 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
 - [ ] **2. Knob pickup on the first touch**
   - **Send:** `tempo 120; param og-knob-1 0`
   - **Pass if:** The row reads bpm 57 (10) — the position knob 1 was saved at first and where the Send line has just put it in brackets — and the footer stays 120-bpm. The tempo is held until the real knob is turned back past where it was saved. If this rig has no knobs.txt the row reads bpm 120 (10) instead: knob 1 is held at 120 until it is turned through it. Either way the footer stays 120-bpm. The row must never read og-knob-1 and never a raw 0-to-1 decimal.
-  - **Note:** The first number is the saved knob position, not the tempo: `u_map` draws the held row from the pickup target with the incoming value in the unit field, so a `knobs.txt` of 0.0957967 draws `bpm 57 (10)`. The held case needs a knob saved off the rail: with `0 0 0 0` pickup releases at once, and the row and the footer read as if there were no `knobs.txt`.
+  - **Note:** The first number is the saved knob position, not the tempo: `u_map` draws the held row from the pickup target with the incoming value in the unit field, so knob 1 saved at 57 BPM draws `bpm 57 (10)`. The held case needs a knob saved off the rail: with `0 0 0 0` pickup releases at once, and the row and the footer read as if there were no `knobs.txt`.
 
 - [ ] **3. Knob pickup crosses over**
   - **Send:** `param og-knob-1 1`

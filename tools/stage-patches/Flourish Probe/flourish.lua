@@ -35,7 +35,7 @@ local function num(x) return type(x) == "number" and x or 0 end
 function R.new()
   return {
     base = 33,          -- Pd's channel for the 404's channel 1 (port 3 on the device)
-    bank = 0, pad = 15, -- A15, the starter kit's snare
+    bank = 0, pad = 11, -- A11, the pad Brendan compares the methods on
     vel = 100,
     dur = 3500,         -- ms, knob 1
     gap0 = 30,          -- ms, knob 2

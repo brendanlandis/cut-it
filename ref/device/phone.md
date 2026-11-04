@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # The phone — PdParty and the status link
 
-**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/pdparty-scene/CutItRemote/`, `tools/pdparty-scene/build-remote.py`, `tools/pdparty-scene/remote-template.pd` · **Gate:** `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/phone.md`
+**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/pdparty-scene/CutItRemote/`, `tools/pdparty-scene/build-remote.py`, `tools/pdparty-scene/remote-template.pd`, `tools/touchosc/` · **Gate:** `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/phone.md`
 
 An iPhone running PdParty on the same network, used as **an unlimited plain-English display** — and,
 more valuable, as the answer to the Organelle having no Pd console. What PdParty and the phone are —
@@ -153,6 +153,21 @@ drums]` sends it only when the mode changes, since `u_net` repeats the mode twic
 | `/cutit/drums` | `c_steps`' `R.phone`: playing, the global last step, the selected track, pending (0, 1 sync, 2 snap), the sixteen last steps, then 1 for each track with its own, then the time signature's two numbers, the drunkenness, and the selected track's skip and move chances. Sent by `c_steps` when it changes, through `u_root`'s cord into `u_net`'s second inlet | verified |
 | A short or empty state | Dropped by `[list split 41]`, so the empty repeat before the first state draws nothing | verified |
 
+### TouchOSC, a proof of concept beside PdParty
+
+**The drum screen also exists as a TouchOSC layout** (Brendan, 2026-11-04): the same screen at twice
+the size, 896 by 414 points, speaking the same OSC, so Cut It needs no change for it. What TouchOSC
+is and does is on its Reference page (`~/Sites/!reference/touchosc.md`).
+
+| | | Evidence |
+|---|---|---|
+| The layout | `tools/touchosc/CutItDrums.tosc`, **generated** by `tools/touchosc/build-drums.py`: edit that, never the file. Each control sends from its own script; the root's script takes everything that comes in | verified |
+| Deploying it | `./tools/touchosc/push.sh` rebuilds it and opens it in the Mac's TouchOSC, restarting that with its editor server on if it is off; the phone, connected once as an editor client of the Mac, takes it live | verified |
+| The phone's setup, once | Editor network: a client of the Mac (port 6666). OSC connection 1: UDP, host `192.168.1.15`, send port 9001, receive port 8000. PdParty quit first: both receive on 8000 | verified |
+| A slider | Sends whole percents when it moves off the last value it knows, its own or the one the state handed it, so the state is never sent back; for a second after a touch the state leaves it alone | verified |
+| Ack flashes, the time signature's buttons, the pads | Built as on PdParty's screen; not yet tried on the phone | unknown |
+| Only the drum screen | The remote screen and the checklist page are PdParty's alone | — |
+
 ### Two instruments will fight over one phone
 
 ⛔ With the Organelle running Cut It **and** `main-dev.pd` running on the Mac, both connect to the
@@ -286,10 +301,12 @@ identically.**
 
 ### The inbound vocabulary is closed, and the closure is the design
 
-Five commands and two device names, every one of them a **literal argument on a `route` box you can
+Six commands and two device names, every one of them a **literal argument on a `route` box you can
 read**, with everything else falling out of an unconnected reject. That is the same allowlist guard
 `u_map` uses for its destinations and it is here for the same reason: the set of things a datagram
-can reach stays the set of boxes you can read.
+can reach stays the set of boxes you can read. **`drums` is the one that passes on what follows it**:
+`c_steps` holds that list and refuses the rest as `bad-selector`, so a new drum control needs nothing
+here (Brendan, 2026-11-04).
 
 ⚠️ **Nothing here may be built on a sender identity that is not available** — `[netreceive]` in
 0.49 cannot supply one (Reference, *Pure Data*), and a bidirectional link does not change that.

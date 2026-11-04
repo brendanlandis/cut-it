@@ -64,7 +64,7 @@ shown on Back Office's /reference page); a `ref/device/` page links to it and ke
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
-| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo: `~/Sites/!reference/` — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `critter-guitari-organelle-1` `pdparty` `roland-sp-404mkii` `korg-volca-fm` `pure-data` (and `meeblip-cubit` `arturia-beatstep` `behringer-xenyx-q802usb`). Find a repo's with `grep -l "used_by:.*cut-it" ~/Sites/!reference/*.md` |
+| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo: `~/Sites/!reference/` — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `critter-guitari-organelle-1` `pdparty` `roland-sp-404mkii` `korg-volca-fm` `pure-data` `touchosc` (and `meeblip-cubit` `arturia-beatstep` `behringer-xenyx-q802usb`). Find a repo's with `grep -l "used_by:.*cut-it" ~/Sites/!reference/*.md` |
 | How Cut It **uses** one physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `sp404` `volca` |
 | One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `debug` `display` `error` `map` `presence` `sequencer` `state` `tempo` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |

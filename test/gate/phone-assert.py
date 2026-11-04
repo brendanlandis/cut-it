@@ -55,6 +55,7 @@ ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert",
          "/cutit/mode", "/cutit/drums"}
 SCENE = os.path.join(ROOT, "tools", "pdparty-scene", "CutItRemote", "_main.pd")
 BUILD_REMOTE = os.path.join(ROOT, "tools", "pdparty-scene", "build-remote.py")
+BUILD_TOSC = os.path.join(ROOT, "tools", "touchosc", "build-drums.py")
 # The checklist page, a second scene: it sends send and result, built by
 # list prepend from its data rather than typed in a message box.
 CHECKS = os.path.join(ROOT, "tools", "pdparty-scene", "CutItChecks", "_main.pd")
@@ -369,6 +370,9 @@ def main():
     A.check("the remote scene is build-remote.py's output, from remote-template.pd",
             subprocess.call([sys.executable, BUILD_REMOTE, "--check"]) == 0,
             "run tools/pdparty-scene/build-remote.py")
+    A.check("the TouchOSC drum screen is build-drums.py's output",
+            subprocess.call([sys.executable, BUILD_TOSC, "--check"]) == 0,
+            "run tools/touchosc/build-drums.py")
 
     # -- the two traps the scene cannot report on itself --------------------
     guis = scene_iemguis()

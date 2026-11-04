@@ -21,7 +21,7 @@ matters because the Organelle launches Pd with `-nogui` and there is no console 
 | **Answering a device** — does it reply at all | `stage-patches/Inquiry Probe/` |
 | **Watching a device animate** — does it still track the clock | `stage-patches/Anim Probe/` |
 | **Worked examples** — a technique, kept as the proof | `audio-probe/` `oled-probe/` `osc-bridge/` `status-display/` |
-| **The phone side** | `pdparty-scene/` — two PdParty scenes, not Organelle patches: `CutItRemote`, the remote and drum screens, built by `build-remote.py` from `remote-template.pd`, and `CutItChecks`, the checklist page, built by `build-checks.py`; `pdparty-upload.sh` puts both on the phone |
+| **The phone side** | `pdparty-scene/` — two PdParty scenes, not Organelle patches: `CutItRemote`, the remote and drum screens, built by `build-remote.py` from `remote-template.pd`, and `CutItChecks`, the checklist page, built by `build-checks.py`; `pdparty-upload.sh` puts both on the phone. `touchosc/` — the drum screen as a TouchOSC layout, a proof of concept: `CutItDrums.tosc`, built by `build-drums.py`; `push.sh` puts it on the phone through the Mac's TouchOSC ([the phone](../ref/device/phone.md), *TouchOSC*) |
 | **Menu patches** | `stage-patches/` — see below |
 | **Editing a patch's comments** — delete or rewrite them and keep every cord | `pd-comments.py` |
 

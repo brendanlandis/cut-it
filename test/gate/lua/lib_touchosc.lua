@@ -19,8 +19,9 @@ function L.load(dir)
   _G.sendOSC = function(...) w.sent[#w.sent + 1] = { ... } end
   local manifest = dofile(dir .. "/controls.lua")
   for _, m in ipairs(manifest) do
-    local vals = { x = 0, touch = false, text = m.text or "" }
-    local c = { name = m.name, type = m.type, visible = m.visible }
+    local vals = { x = m.x or 0, page = 0, touch = false, text = m.text or "" }
+    local c = { name = m.name, type = m.type, visible = m.visible, color = m.color,
+                tabLabel = m.tabLabel }
     c.values = setmetatable({}, {
       __index = vals,
       __newindex = function(_, k, v)

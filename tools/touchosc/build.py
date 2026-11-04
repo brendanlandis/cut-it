@@ -4,14 +4,22 @@
     python3 tools/touchosc/build.py           write it
     python3 tools/touchosc/build.py --check   exit 1 if the committed copy is stale
 
-Each Launchpad mode has its own row of tabs along the top, and the last tab of every mode is the
-checklist page (Brendan, 2026-11-04). Mode 1 has the drum screen and the checklists; every other
-mode, the remote screen and the checklists. The tabs follow the mode u_net sends; test mode coming
-on brings up the checklist tab, and going off, the mode's first tab.
+The design is Brendan's, iterated from mockups on 2026-11-04: TouchOSC's own controls and its own
+tab bar, black, with bright red the lead accent and teal the second, monospaced type for every
+value and TouchOSC's default font for every label, and every pairing at WCAG AA, which
+test/gate/touchosc-assert.py audits from this file.
+
+The tab bar has two tabs, and the last is always the checklist page (Brendan, 2026-11-04). The
+first is the mode's: the drum screen in mode 1, the remote screen in every other mode. The tabs
+follow the mode u_net sends; test mode coming on brings up the checklists, and going off, the
+first tab.
 
 It speaks u_net's OSC (ref/device/phone.md): it sends /cutit <command> ... to the Organelle's 9001
 and shows what comes back to its 8000. Each control sends from a script of its own; the root's
 script takes everything that comes in, and the checklist page's buttons, which it answers itself.
+A button that the Organelle answers flashes teal by its color, never its value, so an answer can't
+send anything again; a knob or a time signature box takes a value from Cut It without sending it
+back.
 
 A .tosc file is zlib-compressed XML (~/Sites/!reference/touchosc.md). The checklist page carries
 test/checklists/ as data, so a checklist edited means a rebuild, and push.sh puts the result on the
@@ -30,51 +38,41 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(HERE, "CutIt.tosc")
 CHECKLISTS = os.path.join(ROOT, "test", "checklists")
 
-W, H = 896, 414         # an iPhone 11 in landscape, in points
-RIGHT, FOOT = 44, 34    # kept clear: the notch on the right, the home indicator at the bottom
-TAB_H = 30              # the tab bar along the top
-# The screens are drawn in the units the PdParty scenes used, 426 by 190, and scaled into what
-# the tab bar leaves, centered across the width.
-S = (H - TAB_H - 4 - FOOT) / 190
-X0 = round((W - RIGHT - 426 * S) / 2)
-Y0 = TAB_H + 4
+W, H, TAB = 896, 414, 44    # an iPhone 11 in landscape, in points, and the tab bar
+L, R = 14, 44               # kept clear: the left edge, the notch on the right
+TOP = TAB + 10              # where a page's content starts, from the top of the screen
 
 
 def rgb(r, g, b, a=1.0):
     return (r / 255, g / 255, b / 255, a)
 
 
-INK, PAPER, BTN, LIT = rgb(24, 24, 24), rgb(232, 232, 232), rgb(252, 252, 252), rgb(140, 210, 140)
-DOWN, AMBER, TABOFF = rgb(232, 140, 140), rgb(248, 208, 112), rgb(90, 90, 90)
-GROUND = rgb(40, 40, 40)
-PRESS = rgb(255, 255, 255, 0.35)
-# A pad: following the global last step, with its own, selected, selected with its own.
-PADS = [(rgb(200, 200, 200), rgb(40, 40, 40)), (rgb(248, 208, 112), rgb(60, 40, 0)),
-        (rgb(60, 60, 60), rgb(255, 255, 255)), (rgb(150, 100, 20), rgb(255, 255, 255))]
+RED, TEAL = rgb(255, 31, 63), rgb(52, 200, 190)
+WHITE, GREY, BLACK = rgb(240, 240, 240), rgb(140, 140, 140), rgb(0, 0, 0)
+TABOFF = rgb(34, 34, 34)
+INK, BTN = BLACK, RED       # the XML's defaults
 
-# The tabs each mode has, the last always the checklists, and what each tab says.
-TABS = {"mode-1": ["drums", "checks"]}
-DEFAULT_TABS = ["remote", "checks"]
-TAB_LABELS = {"drums": "drums", "remote": "remote", "checks": "checklists"}
-TABMAX = 4
-SCREENS = ["remote", "drums", "checks"]
+# The first tab's screen in each mode; every other mode has the remote screen.
+MAIN = {"mode-1": "drums"}
 
-# The remote screen's four commands: the cell that is pressed, and what it sends after /cutit.
-REMOTE = [("rewire", "re-wire", ["re-wire"]), ("clear", "clear-alert", ["clear-alert"]),
-          ("tvolca", "test-volca", ["test-note", "m_volca"]),
-          ("t404", "test-404", ["test-note", "m_404"])]
-# What each acknowledgment u_net sends lights: /cutit/ack <what> [<which>] -> the cell, and the
-# color it flashes. test-off is a Send refused while test mode is off.
-ACKS = {"re-wire": ("rewire", LIT), "clear-alert": ("clear", LIT),
-        "test-note m_volca": ("tvolca", LIT), "test-note m_404": ("t404", LIT),
-        "drums sync": ("sync", LIT), "drums snap": ("snap", LIT),
-        "send": ("csend", LIT), "test-off": ("csend", DOWN), "result": ("verdict", LIT)}
+# The remote screen's four commands: the button, its label, and what it sends after /cutit.
+REMOTE = [("rewire", "re-wire", ["re-wire"]), ("clear", "clear alert", ["clear-alert"]),
+          ("tvolca", "test Volca", ["test-note", "m_volca"]),
+          ("t404", "test 404", ["test-note", "m_404"])]
+# What each acknowledgment u_net sends flashes: /cutit/ack <what> [<which>] -> the button, and
+# the color. test-off is a Send refused while test mode is off; result, the verdict just given.
+ACKS = {"re-wire": ("rewire", TEAL), "clear-alert": ("clear", TEAL),
+        "test-note m_volca": ("tvolca", TEAL), "test-note m_404": ("t404", TEAL),
+        "drums sync": ("sync", TEAL), "drums snap": ("snap", TEAL),
+        "send": ("csend", TEAL), "test-off": ("csend", GREY), "result": ("verdict", WHITE)}
+DENS = [1, 2, 4, 8, 16]     # c_steps.lua's R.DENS
+MAX_NUM = 32                # c_steps.lua's R.MAX_NUM
 
 
 # ------------------------------------------------------------------ the checklists
-LINES = 9           # text lines on one page of a step
-WIDTH = 55          # characters on a line
-TITLE_WIDTH = 46
+LINES = 11          # text lines on one page of a step
+WIDTH = 64          # characters on a line
+TITLE_WIDTH = 50
 PAGES = 3           # at most, per step
 # The buses u_inject takes (test/checklists/README.md, Send lines).
 BUSES = {"disp", "err", "mode", "panic", "param", "start", "stop", "tempo"}
@@ -197,21 +195,44 @@ KINDS = {
               "gridColor": ("c", rgb(0, 0, 0, 0.25)), "gridSteps": ("i", 10),
               "interactive": ("b", True), "outline": ("b", True), "response": ("i", 0),
               "responseFactor": ("i", 100)},
+    "RADIO": {"interactive": ("b", True), "outline": ("b", True), "radioType": ("i", 0),
+              "steps": ("i", 5)},
+    "PAGER": {"interactive": ("b", True), "outlineStyle": ("i", 0), "tabLabels": ("b", True),
+              "tabbar": ("b", True), "tabbarDoubleTap": ("b", False), "tabbarSize": ("i", 40),
+              "textSizeOff": ("i", 14), "textSizeOn": ("i", 14)},
 }
+KINDS["RADIAL"] = dict(KINDS["FADER"])
+KINDS["TEXT"] = dict(KINDS["LABEL"], textWrap=("b", True))
+
+
+def kind_of(v):
+    """A property's type in the file, from its value: what node() writes for a key the kind
+    doesn't list (a pager page's tabLabel and tab colors, a script)."""
+    if isinstance(v, bool):
+        return "b"
+    if isinstance(v, int):
+        return "i"
+    if isinstance(v, float):
+        return "f"
+    if isinstance(v, tuple):
+        return "c" if all(isinstance(c, float) and 0 <= c <= 1 for c in v) else "r"
+    return "s"
 LEFT = 1    # textAlignH: 2, the editor's default, centers
 
 
-def node(kind, name, frame, children=(), text=None, **over):
+def node(kind, name, frame, children=(), text=None, x=0, **over):
     props = dict(COMMON)
     props.update(KINDS.get(kind, {}))
     props["name"] = ("s", name)
     props["frame"] = ("r", tuple(int(round(v)) for v in frame))
     for k, v in over.items():
-        props[k] = (props[k][0] if k in props else ("s" if k == "script" else "b"), v)
+        props[k] = (props[k][0] if k in props else kind_of(v), v)
     vals = []
-    if kind in ("BUTTON", "FADER"):
-        vals.append(value("x", 0))
-    if kind == "LABEL":
+    if kind in ("BUTTON", "FADER", "RADIAL", "RADIO"):
+        vals.append(value("x", x))
+    if kind == "PAGER":
+        vals.append(value("page", 0))
+    if kind in ("LABEL", "TEXT"):
         vals.append(value("text", text if text is not None else name, 1))
     vals.append(value("touch", "false"))
     out = ['<node ID="%s" type="%s">' % (uuid.uuid4(), kind)]
@@ -226,184 +247,207 @@ def node(kind, name, frame, children=(), text=None, **over):
     return "".join(out)
 
 
-def at(x, y, w, h):
-    """The screens' units as points, below the tab bar."""
-    return (X0 + x * S, Y0 + y * S, w * S, h * S)
+def y(v):
+    """A y on the screen as a page's own, since a page starts under the tab bar."""
+    return v - TAB
 
 
-# TouchOSC draws a label's or a button's background faint and a box at full strength
-# (~/Sites/!reference/touchosc.md), so a colored cell is a box, <name>bg, under a label with no
-# background, <name>, which holds the text.
-def cell(name, frame, text, size, fill=PAPER, ink=INK, align=2):
-    return [node("BOX", name + "bg", frame, color=fill),
-            node("LABEL", name, frame, text=text, background=False, textColor=ink,
-                 textSize=round(size), textAlignH=align)]
+# The labels that show a value, anything Cut It's state changes: monospaced. The rest, the
+# captions and button names, take TouchOSC's default font (Brendan, 2026-11-04).
+VALUES = {"tempo", "play", "glob", "link", "alert", "pending", "num", "den", "drunkv", "skipv",
+          "movev", "pname", "pvalue", "rstatus", "ralert", "rlink", "cname", "cpos", "tmode"}
+MONO = 1
 
 
-def words(name, frame, text, size, ink=PAPER, align=2):
-    """Text straight on the screen."""
-    return node("LABEL", name, frame, text=text, background=False, textColor=ink,
-                textSize=round(size), textAlignH=align)
+def label(name, f, text, size, ink=WHITE, align=2):
+    mono = name in VALUES or re.fullmatch(r"pad\d+l", name) is not None
+    return node("LABEL", name, f, text=text, background=False, textColor=ink, textSize=size,
+                textAlignH=align, font=MONO if mono else 0)
+
+
+def button(name, f, col, script=None, x=0):
+    """A native button with a whole outline, so where it ends reads at 3:1 whatever its fill."""
+    over = {"script": script} if script else {}
+    return node("BUTTON", name, f, color=col, x=x, outlineStyle=0, **over)
+
+
+def led(name, f, col, on=0):
+    """A lamp: a button no finger moves, lit by its value."""
+    return node("BUTTON", name, f, color=col, x=on, interactive=False, outline=False, shape=2)
 
 
 def sends(args):
-    """The script of a touch that sends /cutit <args> on its press."""
+    """The script of a button that sends /cutit <args> on its press."""
     return ("function onValueChanged(key)\n"
             "  if key == 'x' and self.values.x == 1 then sendOSC('/cutit', %s) end\n"
             "end\n" % ", ".join(lua(a) for a in args))
 
 
 def tells(what, which):
-    """The script of a touch the root answers: root:notify(what, which) on its press."""
+    """The script of a button the root answers: root:notify(what, which) on its press."""
     return ("function onValueChanged(key)\n"
             "  if key == 'x' and self.values.x == 1 then root:notify(%s, %s) end\n"
             "end\n" % (lua(what), lua(which)))
 
 
-def touch(name, frame, script):
-    """The touch over a cell: no background, so the cell shows through, a flash while pressed."""
-    return node("BUTTON", name, frame, background=False, outline=False, color=PRESS,
-                script=script)
+# A value Cut It's state hands a control with notify('state', v) is the one it knows, so setting
+# it sends nothing; a value a finger moves it to sends, and tells the root it was touched, so the
+# root leaves it alone for a second while Cut It catches up.
+KNOWS = ("local known\n"
+         "function onReceiveNotify(key, value)\n"
+         "  if key == 'state' then\n"
+         "    known = value\n"
+         "    self.values.x = %s\n"
+         "  end\n"
+         "end\n")
 
 
-def fader(name, x, y, w, h):
-    """A slider, 0 to 100, its percent beside it. It sends whole percents when its value moves
-    off the last one it knows, its own or one the root hands it from Cut It's state with
-    notify('state'), so a value from Cut It is never sent back; and it tells the root it was
-    touched, so the root leaves it alone for a second."""
-    script = ("local known\n"
-              "function onReceiveNotify(key, value)\n"
-              "  if key == 'state' then\n"
-              "    known = value\n"
-              "    self.values.x = value / 100\n"
-              "  end\n"
-              "end\n"
-              "function onValueChanged(key)\n"
-              "  if key ~= 'x' then return end\n"
-              "  local v = math.floor(self.values.x * 100 + 0.5)\n"
-              "  if v == known then return end\n"
-              "  known = v\n"
-              "  sendOSC('/cutit', 'drums', '%s', v)\n"
-              "  root:notify('touched', '%s')\n"
-              "end\n" % (name, name))
-    lw = 46
-    return [words(name + "v", at(x, y, lw, h), name + " 0%", 10 * S),
-            node("FADER", name, at(x + lw, y, w - lw, h), color=LIT, orientation=1,
-                 script=script)]
+def knob(name, cx, cy, d, caption):
+    """A ring knob, 0 to 100, its value in its middle and its name under it."""
+    script = (KNOWS % "value / 100") + (
+        "function onValueChanged(key)\n"
+        "  if key ~= 'x' then return end\n"
+        "  local v = math.floor(self.values.x * 100 + 0.5)\n"
+        "  if v == known then return end\n"
+        "  known = v\n"
+        "  sendOSC('/cutit', 'drums', '%s', v)\n"
+        "  root:notify('touched', '%s')\n"
+        "end\n" % (name, name))
+    f = (cx - d / 2, cy - d / 2, d, d)
+    return [node("RADIAL", name, f, color=RED, outlineStyle=0, script=script),
+            label(name + "v", f, "0%", 14),
+            label(name + "c", (cx - 60, cy + d / 2 + 2, 120, 20), caption, 14, GREY)]
 
 
-def group(name, children, visible):
-    return node("GROUP", name, (0, 0, W, H), children, background=False, visible=visible)
+def box(name, f, steps, cmd):
+    """A time signature box: a native fader with no bar, dragged up or down, one step at a time.
+    c_steps takes the time signature a step at a time, num or den <-1 or 1>, so a drag across n
+    steps sends n of them; the state hands it back its step, 1 to steps."""
+    script = (KNOWS % ("(value - 0.5) / %d" % steps)) + (
+        "function onValueChanged(key)\n"
+        "  if key ~= 'x' then return end\n"
+        "  local i = math.max(1, math.min(%d, math.floor(self.values.x * %d) + 1))\n"
+        "  if known == nil then known = i return end\n"
+        "  local d = i - known\n"
+        "  if d == 0 then return end\n"
+        "  known = i\n"
+        "  for _ = 1, math.abs(d) do sendOSC('/cutit', 'drums', '%s', d > 0 and 1 or -1) end\n"
+        "  root:notify('touched', '%s')\n"
+        "end\n" % (steps, steps, cmd, name))
+    return node("FADER", name, f, color=RED, outlineStyle=0, bar=False, cursor=False,
+                response=1, script=script)
 
 
-# ------------------------------------------------------------------ the screens
-def tab_bar():
-    """TABMAX tab slots and the mode's name; the root labels and shows them per mode."""
-    c, tw, gap = [], 150, 6
-    for i in range(1, TABMAX + 1):
-        f = (8 + (i - 1) * (tw + gap), 2, tw, TAB_H - 2)
-        c += cell("tab%d" % i, f, "-", 15, TABOFF, PAPER)
-        c.append(touch("tab%dt" % i, f, tells("tab", i)))
-    c.append(words("mode", (W - RIGHT - 160, 2, 160, TAB_H - 2), "-", 13))
-    return c
+def group(name, kids, visible=True):
+    return node("GROUP", name, (0, 0, W, H - TAB), kids, background=False, visible=visible)
 
 
-def remote_screen():
-    """Left: the last parameter's name and value, the status, the alert and the link. Right: the
-    four commands, each cell flashing on the Organelle's answer."""
-    c = []
-    for name, y, h, text, size in (("rname", 4, 32, "READY", 18), ("rvalue", 38, 60, "-", 40),
-                                   ("rstatus", 100, 28, "-", 16)):
-        c += cell(name, at(4, y, 250, h), text, size * S)
-    c += cell("ralvl", at(4, 130, 82, 26), "-", 12 * S)
-    c += cell("ralert", at(90, 130, 164, 26), "no-alerts", 12 * S)
-    c += cell("rlink", at(4, 158, 250, 32), "NO-LINK", 16 * S, DOWN)
-    for k, (name, text, args) in enumerate(REMOTE):
-        f = at(262, 4 + 47 * k, 160, 44)
-        c += cell(name, f, text, 14 * S, BTN)
-        c.append(touch(name + "t", f, sends(args)))
-    return c
+def page(name, tab, kids):
+    return node("GROUP", name, (0, TAB, W, H - TAB), kids, color=rgb(0, 0, 0, 0.0),
+                tabLabel=tab, tabColorOff=TABOFF, tabColorOn=RED, textColorOff=WHITE,
+                textColorOn=BLACK)
 
 
-PAD, PITCH = 33, 35
-BX, BW, BH = 304, 118, 34
-
-
-def drum_screen():
-    c = []
-    # down the left: the transport, the tempo, the global last step, the alert and the link
-    for name, y, h, text, size in (("play", 4, 30, "stopped", 14), ("status", 38, 44, "-", 20),
-                                   ("glob", 86, 34, "last 16", 16),
-                                   ("alert", 124, 28, "no-alerts", 12),
-                                   ("link", 156, 32, "NO-LINK", 16)):
-        c += cell(name, at(4, y, 146, h), text, size * S, DOWN if name == "link" else PAPER)
-    # the pads, as the Launchpad lays them out, pad 1 at the top left: the cell shows the
-    # track's last step and its state, the touch over it selects the track
+# ------------------------------------------------------------------ the drum screen (mode 1)
+def drums():
+    k = []
+    # left: the tempo, the transport, the global last step, the link, the alert
+    k.append(label("tempo", (L, y(TOP), 190, 70), "-", 64, RED, align=1))
+    k.append(label("tempoc", (L + 2, y(TOP + 70), 190, 18), "bpm", 14, GREY, align=1))
+    k.append(led("playled", (L, y(TOP + 108), 18, 18), TEAL))
+    k.append(label("play", (L + 28, y(TOP + 104), 160, 26), "stopped", 18, WHITE, align=1))
+    k.append(label("glob", (L, y(TOP + 146), 190, 44), "16", 36, WHITE, align=1))
+    k.append(label("globc", (L + 2, y(TOP + 190), 190, 18), "last step", 14, GREY, align=1))
+    k.append(led("linkled", (L, y(TOP + 232), 14, 14), TEAL))
+    k.append(label("link", (L + 24, y(TOP + 226), 160, 26), "no link", 16, GREY, align=1))
+    k.append(label("alert", (L, y(TOP + 262), 190, 40), "no alerts", 14, GREY, align=1))
+    # middle: the sixteen pads as the Launchpad lays them out, pad 1 at the top left. Teal
+    # with a dot has its own last step; the selected track is lit; each shows its last step.
+    size, gap, x0 = 68, 8, 214
     for n in range(1, 17):
-        r, k = (n - 1) // 4, (n - 1) % 4
-        f = at(156 + k * PITCH, 4 + r * PITCH, PAD, PAD)
-        c += cell("pad%d" % n, f, "16", 14 * S, PADS[0][0], PADS[0][1])
-        c.append(touch("tap%d" % n, f, sends(["drums", "select", n])))
-    # the selected track's chances under the pads
-    for name, y in (("skip", 146), ("move", 170)):
-        c += fader(name, 156, y, 3 * PITCH + PAD, 20)
-    # down the right: sync and snap, the line saying one waits, the time signature, drunk
-    for name, y, text in (("sync", 4, "sync first steps"), ("snap", 42, "snap to global")):
-        f = at(BX, y, BW, BH)
-        c += cell(name, f, text, 12 * S, BTN)
-        c.append(touch(name + "t", f, sends(["drums", name])))
-    c.append(words("pending", at(BX, 78, BW, 14), "", 9 * S))
-    for name, y in (("num", 95), ("den", 127)):
-        f = at(BX, y, 28, 28)
-        c += cell(name + "m", f, "−", 16 * S, BTN)
-        c.append(touch(name + "mt", f, sends(["drums", name, -1])))
-        c += cell(name, at(BX + 32, y, 54, 28), "4", 16 * S)
-        f = at(BX + 90, y, 28, 28)
-        c += cell(name + "p", f, "+", 16 * S, BTN)
-        c.append(touch(name + "pt", f, sends(["drums", name, 1])))
-    c += fader("drunk", BX, 160, BW, 30)
-    return c
+        r, c = (n - 1) // 4, (n - 1) % 4
+        f = (x0 + c * (size + gap), y(TOP + r * (size + gap)), size, size)
+        k.append(button("pad%d" % n, f, RED, sends(["drums", "select", n])))
+        k.append(label("pad%dl" % n, f, "16", 20))
+    # right: sync and snap, the line saying one waits, three knobs, the time signature
+    rx, rw = 536, W - R - 536
+    for i, (name, text) in enumerate((("sync", "sync first steps"), ("snap", "snap to global"))):
+        f = (rx + i * (rw / 2 + 4), y(TOP), rw / 2 - 4, 50)
+        k.append(button(name, f, RED, sends(["drums", name])))
+        k.append(label(name + "l", f, text, 15))
+    k.append(label("pending", (rx, y(TOP + 54), rw, 18), "", 13, TEAL))
+    d = 78
+    for i, name in enumerate(("drunk", "skip", "move")):
+        k += knob(name, rx + rw / 6 + i * rw / 3, y(TOP + 84 + d / 2), d, name)
+    ty = TOP + 206
+    k.append(label("timec", (rx, y(ty), 100, 18), "time", 14, GREY, align=1))
+    bw, bh, by = 84, 64, ty + 26
+    k.append(box("numbox", (rx + 20, y(by), bw, bh), MAX_NUM, "num"))
+    k.append(label("num", (rx + 20, y(by), bw, bh), "4", 32))
+    k.append(label("slash", (rx + 20 + bw, y(by), 56, bh), "/", 32, GREY))
+    k.append(box("denbox", (rx + 76 + bw, y(by), bw, bh), len(DENS), "den"))
+    k.append(label("den", (rx + 76 + bw, y(by), bw, bh), "4", 32))
+    return group("drums", k, visible=False)
 
 
-# The checklist page's buttons: name, text, x, y, w, h, in the screens' units.
-CHECK_BUTTONS = [("cprev", "◀", 4, 3, 30, 22), ("cnext", "▶", 136, 3, 30, 22),
-                 ("csend", "Send", 316, 28, 106, 50),
-                 ("cpass", "Pass", 316, 83, 50, 50), ("cfail", "Fail", 372, 83, 50, 50),
-                 ("cback", "Back", 316, 138, 50, 50), ("cnext2", "Next", 372, 138, 50, 50)]
+# ------------------------------------------------------------------ the remote screen (modes 2-6)
+def remote():
+    k = []
+    k.append(label("pname", (L, y(TOP), 470, 30), "ready", 22, GREY, align=1))
+    k.append(label("pvalue", (L, y(TOP + 30), 470, 110), "-", 96, RED, align=1))
+    k.append(label("rstatus", (L, y(TOP + 160), 220, 44), "-", 30, WHITE, align=1))
+    k.append(label("rstatusc", (L + 2, y(TOP + 204), 220, 18), "tempo", 14, GREY, align=1))
+    k.append(led("ralertled", (L, y(TOP + 248), 16, 16), RED))
+    k.append(label("ralert", (L + 26, y(TOP + 242), 440, 28), "no alerts", 18, GREY, align=1))
+    k.append(led("rlinkled", (L, y(TOP + 288), 14, 14), TEAL))
+    k.append(label("rlink", (L + 24, y(TOP + 282), 160, 26), "no link", 16, GREY, align=1))
+    rx, rw = 500, W - R - 500
+    bw, bh = rw / 2 - 6, 140
+    for i, (name, text, args) in enumerate(REMOTE):
+        r, c = i // 2, i % 2
+        f = (rx + c * (bw + 12), y(TOP + r * (bh + 12)), bw, bh)
+        k.append(button(name, f, RED, sends(args)))
+        k.append(label(name + "l", f, text, 20))
+    return group("remote", k)
 
 
-def checks_screen():
-    """A checklist, a step at a time: its title, its Need, Send, Do, Check and Pass if, and
-    Send, Pass, Fail, Back and Next. The pill says whether the link is up and test mode on."""
-    c = []
-    c += cell("cname", at(38, 3, 96, 22), "-", 12 * S)
-    c += cell("cpos", at(170, 3, 92, 22), "-", 10 * S)
-    c += cell("cmark", at(264, 3, 46, 22), "", 10 * S)
-    c += cell("pill", at(314, 1, 112, 24), "no link", 12 * S, DOWN)
-    c += cell("ctitle", at(4, 28, 306, 18), "-", 11 * S, align=LEFT)
-    for k in range(1, LINES + 1):
-        c.append(words("cl%d" % k, at(4, 48 + 15 * (k - 1), 306, 15), "", 9 * S, align=LEFT))
-    for name, text, x, y, w, h in CHECK_BUTTONS:
-        f = at(x, y, w, h)
-        c += cell(name, f, text, (16 if len(text) == 1 else 13) * S, BTN)
-        c.append(touch(name + "t", f, tells("press", name)))
-    return c
+# ------------------------------------------------------------------ the checklist page
+def checks():
+    k = []
+    k.append(button("cprev", (L, y(TOP), 44, 40), RED, tells("press", "cprev")))
+    k.append(label("cprevl", (L, y(TOP), 44, 40), "◀", 18))
+    k.append(label("cname", (L + 50, y(TOP), 150, 40), "-", 22, WHITE))
+    k.append(button("cnext", (L + 206, y(TOP), 44, 40), RED, tells("press", "cnext")))
+    k.append(label("cnextl", (L + 206, y(TOP), 44, 40), "▶", 18))
+    k.append(label("cpos", (L + 264, y(TOP), 340, 40), "-", 16, GREY, align=1))
+    k.append(led("tled", (W - R - 170, y(TOP + 13), 14, 14), TEAL))
+    k.append(label("tmode", (W - R - 148, y(TOP), 148, 40), "no link", 16, GREY, align=1))
+    k.append(label("ctitle", (L, y(TOP + 52), 600, 30), "-", 22, WHITE, align=1))
+    k.append(node("TEXT", "cbody", (L, y(TOP + 88), 600, 236), text="", background=False,
+                  textColor=rgb(210, 210, 210), textSize=16, textAlignH=1, textAlignV=1))
+    rx, rw = 640, W - R - 640
+    k.append(button("csend", (rx, y(TOP + 52), rw, 70), RED, tells("press", "csend")))
+    k.append(label("csendl", (rx, y(TOP + 52), rw, 70), "Send", 22))
+    hw = rw / 2 - 5
+    for i, (name, text, col) in enumerate((("cpass", "Pass", TEAL), ("cfail", "Fail", RED))):
+        f = (rx + i * (hw + 10), y(TOP + 134), hw, 80)
+        k.append(button(name, f, col, tells("press", name)))
+        k.append(label(name + "l", f, text, 22))
+    for i, (name, text) in enumerate((("cback", "Back"), ("cfwd", "Next"))):
+        f = (rx + i * (hw + 10), y(TOP + 226), hw, 80)
+        k.append(button(name, f, GREY, tells("press", name)))
+        k.append(label(name + "l", f, text, 20))
+    return k
 
 
 # ------------------------------------------------------------------ the root's script
-ROOT_LUA = r"""-- Cut It on the phone: the tabs each Launchpad mode has, and what u_net sends, onto the
--- screens (ref/device/phone.md). Generated by tools/touchosc/build.py.
-local TABS = %(tabs)s
-local DEFAULT_TABS = %(default_tabs)s
-local TAB_LABELS = %(tab_labels)s
-local SCREENS = %(screens)s
-local TABMAX = %(tabmax)d
+ROOT_LUA = r"""-- Cut It on the phone: the tabs, and what u_net sends, onto the screens
+-- (ref/device/phone.md). Generated by tools/touchosc/build.py.
+local MAIN = %(main)s
 local ACKS = %(acks)s
 local CHECKS = %(checks)s
-local LINES = %(lines)d
-local PADS = %(pads)s
-local INK, PAPER, BTN, LIT = %(ink)s, %(paper)s, %(btn)s, %(lit)s
-local DOWN, AMBER, TABOFF = %(down)s, %(amber)s, %(taboff)s
+local DENS = %(dens)s
+local RED, TEAL, WHITE, GREY, BLACK = %(red)s, %(teal)s, %(white)s, %(grey)s, %(black)s
 local unpack = table.unpack or unpack
 
 local found, shown = {}, {}
@@ -412,56 +456,55 @@ local function get(name)
   if not c then c = root:findByName(name, true); found[name] = c end
   return c
 end
--- Set a text or a color only when it differs, since update() runs every frame.
+-- Set a text, a color or a value only when it differs, since update() runs every frame.
 local function text(name, t)
   if shown[name] ~= t then shown[name] = t; get(name).values.text = t end
 end
-local function paint(name, col)
-  if shown[name .. ':c'] ~= col then shown[name .. ':c'] = col; get(name .. 'bg').color = col end
+local function color(name, c)
+  if shown[name .. ':c'] ~= c then shown[name .. ':c'] = c; get(name).color = c end
 end
-local function ink(name, col)
-  if shown[name .. ':i'] ~= col then shown[name .. ':i'] = col; get(name).textColor = col end
+local function ink(name, c)
+  if shown[name .. ':i'] ~= c then shown[name .. ':i'] = c; get(name).textColor = c end
+end
+local function lit(name, on)
+  local x = on and 1 or 0
+  if get(name).values.x ~= x then get(name).values.x = x end
 end
 local function arg(a, i)
   return a[i] and a[i].value or 0
 end
 
--- ---------------------------------------------------------------- tabs, mode and test mode
-local mode, tabs, tab, testOn = nil, DEFAULT_TABS, 1, nil
+-- ---------------------------------------------------------------- the tabs and test mode
+local mode, testOn = nil, nil
 
-local function showTab(k)
-  tab = k
-  for _, s in ipairs(SCREENS) do get(s).visible = (s == tabs[k]) end
-  for i = 1, TABMAX do
-    local on = i <= #tabs
-    get('tab' .. i .. 'bg').visible, get('tab' .. i).visible, get('tab' .. i .. 't').visible = on, on, on
-    if on then
-      text('tab' .. i, TAB_LABELS[tabs[i]])
-      paint('tab' .. i, i == k and PAPER or TABOFF)
-      ink('tab' .. i, i == k and INK or PAPER)
-    end
-  end
+local function tab(p)
+  get('pager').values.page = p
 end
 
+-- A mode fills the first tab with its screen; the same mode again, as u_net repeats it, leaves
+-- the tab chosen alone.
 local function setMode(m)
   if m == mode then return end
-  mode, tabs = m, TABS[m] or DEFAULT_TABS
-  text('mode', m)
-  showTab(testOn and #tabs or 1)
+  mode = m
+  local main = MAIN[m] or 'remote'
+  get('drums').visible = main == 'drums'
+  get('remote').visible = main == 'remote'
+  get('main').tabLabel = main
+  tab(testOn and 1 or 0)
 end
 
--- Test mode coming on brings up the checklists; going off, the mode's first tab.
+-- Test mode coming on brings up the checklists; going off, the first tab.
 local function setTest(on)
   local was = testOn
   if on == was then return end
   testOn = on
-  if on then showTab(#tabs) elseif was then showTab(1) end
+  if on then tab(1) elseif was then tab(0) end
 end
 
 -- ---------------------------------------------------------------- flashes
 local flash = {}
-local BASE = { rewire = BTN, clear = BTN, tvolca = BTN, t404 = BTN, sync = BTN, snap = BTN,
-               csend = BTN, cpass = BTN, cfail = BTN }
+local BASE = { rewire = RED, clear = RED, tvolca = RED, t404 = RED, sync = RED, snap = RED,
+               csend = RED, cpass = TEAL, cfail = RED }
 local verdict = 'cpass'
 
 local function ack(a)
@@ -475,10 +518,11 @@ end
 -- ---------------------------------------------------------------- the drum screen
 local touchedAt = {}
 
-local function setFader(k, v)
-  local f = get(k)
-  if f.values.touch or getMillis() - (touchedAt[k] or -100000) < 1000 then return end
-  f:notify('state', v)
+-- A value from the state, to a control that knows it, unless a finger was just on it.
+local function hand(name, v)
+  local c = get(name)
+  if c.values.touch or getMillis() - (touchedAt[name] or -100000) < 1000 then return end
+  c:notify('state', v)
 end
 
 -- c_steps' 41 numbers: playing, the global last step, the selected track, a pending sync or
@@ -488,21 +532,25 @@ local function drums(a)
   if #a < 41 then return end
   local playing, track, pending = arg(a, 1) == 1, math.floor(arg(a, 3)), arg(a, 4)
   text('play', playing and 'playing' or 'stopped')
-  paint('play', playing and LIT or PAPER)
-  text('glob', 'last ' .. math.floor(arg(a, 2)))
+  lit('playled', playing)
+  text('glob', tostring(math.floor(arg(a, 2))))
   text('pending', pending == 2 and 'snap waits for step 1'
        or (pending == 1 and 'sync waits for step 1' or ''))
   for n = 1, 16 do
-    local c = PADS[(n == track and 2 or 0) + (arg(a, 20 + n) == 1 and 1 or 0) + 1]
-    paint('pad' .. n, c[1])
-    ink('pad' .. n, c[2])
-    text('pad' .. n, tostring(math.floor(arg(a, 4 + n))))
+    local own, sel = arg(a, 20 + n) == 1, n == track
+    color('pad' .. n, own and TEAL or RED)
+    lit('pad' .. n, sel)
+    text('pad' .. n .. 'l', (own and '• ' or '') .. math.floor(arg(a, 4 + n)))
+    ink('pad' .. n .. 'l', sel and BLACK or WHITE)
   end
-  text('num', tostring(math.floor(arg(a, 37))))
-  text('den', tostring(math.floor(arg(a, 38))))
-  setFader('drunk', math.floor(arg(a, 39)))
-  setFader('skip', math.floor(arg(a, 40)))
-  setFader('move', math.floor(arg(a, 41)))
+  local num, den = math.floor(arg(a, 37)), math.floor(arg(a, 38))
+  text('num', tostring(num))
+  text('den', tostring(den))
+  hand('numbox', num)
+  for i, d in ipairs(DENS) do if d == den then hand('denbox', i) end end
+  hand('drunk', math.floor(arg(a, 39)))
+  hand('skip', math.floor(arg(a, 40)))
+  hand('move', math.floor(arg(a, 41)))
 end
 
 -- ---------------------------------------------------------------- the checklist page
@@ -514,27 +562,24 @@ local function paintCheck()
   local st = list.steps[si]
   text('cname', list.name)
   local pos = si .. ' of ' .. #list.steps
-  if #st.pages > 1 then pos = pos .. '  ' .. pg .. '/' .. #st.pages end
-  text('cpos', pos)
+  if #st.pages > 1 then pos = pos .. '   ' .. pg .. '/' .. #st.pages end
   local m = marks[ci .. '-' .. si]
-  text('cmark', m == 'pass' and 'passed' or (m == 'fail' and 'failed' or ''))
-  paint('cmark', m == 'pass' and LIT or (m == 'fail' and DOWN or PAPER))
+  if m then pos = pos .. '   ' .. (m == 'pass' and 'passed' or 'failed') end
+  text('cpos', pos)
   text('ctitle', st.title)
-  local lines = st.pages[pg] or {}
-  for k = 1, LINES do text('cl' .. k, lines[k] or '') end
-  text('csend', #st.sends > 0 and 'Send' or '')
-end
-
-local function nextStep()
-  local st = CHECKS[ci].steps[si]
-  if pg < #st.pages then pg = pg + 1
-  elseif si < #CHECKS[ci].steps then si, pg = si + 1, 1 end
+  text('cbody', table.concat(st.pages[pg] or {}, '\n'))
+  local send = #st.sends > 0
+  get('csend').visible, get('csendl').visible = send, send
 end
 
 local PRESS = {
   cprev = function() ci, si, pg = (ci > 1 and ci - 1 or #CHECKS), 1, 1 end,
   cnext = function() ci, si, pg = ci %% #CHECKS + 1, 1, 1 end,
-  cnext2 = nextStep,
+  cfwd = function()
+    local st = CHECKS[ci].steps[si]
+    if pg < #st.pages then pg = pg + 1
+    elseif si < #CHECKS[ci].steps then si, pg = si + 1, 1 end
+  end,
   cback = function()
     if pg > 1 then pg = pg - 1 elseif si > 1 then si, pg = si - 1, 1 end
   end,
@@ -559,20 +604,17 @@ end
 local lastHb = -100000
 
 function init()
-  showTab(1)
   paintCheck()
-  for _, k in ipairs({ 'skip', 'move', 'drunk' }) do
-    if Orientation then get(k).orientation = Orientation.EAST end
-  end
 end
 
 local function alert(a)
-  local level = tostring(arg(a, 2))
-  local t = level == 'none' and 'no-alerts' or tostring(arg(a, 4))
-  text('alert', t)
-  text('ralert', t)
-  text('ralvl', level == 'none' and '-' or level)
-  paint('ralvl', level == 'fail' and DOWN or (level == 'warn' and AMBER or PAPER))
+  local level, t = tostring(arg(a, 2)), tostring(arg(a, 4))
+  local none = level == 'none'
+  text('alert', none and 'no alerts' or t)
+  text('ralert', none and 'no alerts' or (level .. '  ' .. t))
+  ink('alert', none and GREY or RED)
+  ink('ralert', none and GREY or RED)
+  lit('ralertled', not none)
 end
 
 function onReceiveOSC(message, connections)
@@ -587,12 +629,15 @@ function onReceiveOSC(message, connections)
   elseif path == '/cutit/param' then
     local unit = a[3] and tostring(a[3].value) or '-'
     local v = arg(a, 2)
-    text('rname', tostring(arg(a, 1)))
-    text('rvalue', (type(v) == 'number' and string.format('%%g', v) or tostring(v))
+    text('pname', tostring(arg(a, 1)))
+    text('pvalue', (type(v) == 'number' and string.format('%%g', v) or tostring(v))
          .. ((unit ~= '-' and unit ~= '') and (' ' .. unit) or ''))
   elseif path == '/cutit/status' then
-    text('status', tostring(arg(a, 1)))
-    text('rstatus', tostring(arg(a, 1)))
+    -- u_tempo's status is <bpm>-bpm; anything else is shown as it came
+    local s = tostring(arg(a, 1))
+    local bpm = s:match('^([%%d.]+)%%-bpm$')
+    text('tempo', bpm or s)
+    text('rstatus', bpm and (bpm .. ' bpm') or s)
   elseif path == '/cutit/alert' then
     alert(a)
   elseif path == '/cutit/ack' then
@@ -603,8 +648,6 @@ end
 function onReceiveNotify(key, value)
   if key == 'touched' then
     touchedAt[value] = getMillis()
-  elseif key == 'tab' then
-    showTab(value)
   elseif key == 'press' and PRESS[value] then
     PRESS[value]()
     paintCheck()
@@ -614,18 +657,18 @@ end
 function update()
   local now = getMillis()
   local up = now - lastHb < 1500
-  text('link', up and 'link' or 'NO-LINK')
-  text('rlink', up and 'link' or 'NO-LINK')
-  paint('link', up and LIT or DOWN)
-  paint('rlink', up and LIT or DOWN)
-  text('pill', not up and 'no link' or (testOn and 'test mode on' or 'test mode off'))
-  paint('pill', not up and DOWN or (testOn and LIT or AMBER))
-  for _, k in ipairs({ 'skip', 'move', 'drunk' }) do
-    text(k .. 'v', k .. ' ' .. math.floor(get(k).values.x * 100 + 0.5) .. '%%')
+  for _, k in ipairs({ 'link', 'rlink' }) do text(k, up and 'link' or 'no link') end
+  lit('linkled', up)
+  lit('rlinkled', up)
+  lit('tled', up and testOn)
+  text('tmode', not up and 'no link' or (testOn and 'test mode on' or 'test mode off'))
+  ink('tmode', (up and testOn) and TEAL or GREY)
+  for _, k in ipairs({ 'drunk', 'skip', 'move' }) do
+    text(k .. 'v', math.floor(get(k).values.x * 100 + 0.5) .. '%%')
   end
   for name, base in pairs(BASE) do
     local f = flash[name]
-    paint(name, (f and now < f[1]) and f[2] or base)
+    color(name, (f and now < f[1]) and f[2] or base)
   end
 end
 """
@@ -635,31 +678,27 @@ def lua_color(c):
     return "Color(%g, %g, %g)" % c[:3]
 
 
-def root_script(checks):
+def root_script(checks_):
     lua_checks = [{"name": c["name"],
                    "steps": [{"n": s["n"], "title": s["title"], "pages": s["pages"],
-                              "sends": s["sends"]} for s in c["steps"]]} for c in checks]
+                              "sends": s["sends"]} for s in c["steps"]]} for c in checks_]
     acks = "{ " + ", ".join("[%s] = { %s, %s }" % (lua(k), lua(v[0]), lua_color(v[1]))
                             for k, v in ACKS.items()) + " }"
     return ROOT_LUA % {
-        "tabs": lua(TABS), "default_tabs": lua(DEFAULT_TABS), "tab_labels": lua(TAB_LABELS),
-        "screens": lua(SCREENS), "tabmax": TABMAX, "acks": acks, "checks": lua(lua_checks),
-        "lines": LINES,
-        "pads": "{ " + ", ".join("{ %s, %s }" % (lua_color(f), lua_color(t)) for f, t in PADS)
-                + " }",
-        "ink": lua_color(INK), "paper": lua_color(PAPER), "btn": lua_color(BTN),
-        "lit": lua_color(LIT), "down": lua_color(DOWN), "amber": lua_color(AMBER),
-        "taboff": lua_color(TABOFF)}
+        "main": lua(MAIN), "acks": acks, "checks": lua(lua_checks), "dens": lua(DENS),
+        "red": lua_color(RED), "teal": lua_color(TEAL), "white": lua_color(WHITE),
+        "grey": lua_color(GREY), "black": lua_color(BLACK)}
 
 
 def build():
-    checks, bad = checklists()
+    checks_, bad = checklists()
     if bad:
         sys.exit("build: the checklists don't fit the page:\n  " + "\n  ".join(bad))
-    kids = tab_bar() + [group("remote", remote_screen(), True),
-                        group("drums", drum_screen(), False),
-                        group("checks", checks_screen(), False)]
-    root = node("GROUP", "root", (0, 0, W, H), kids, color=GROUND, script=root_script(checks))
+    main = page("main", "remote", [drums(), remote()])
+    pager = node("PAGER", "pager", (0, 0, W, H), [main, page("checks", "checklists", checks())],
+                 color=BLACK, background=False, tabbarSize=TAB, textSizeOff=22, textSizeOn=22)
+    root = node("GROUP", "root", (0, 0, W, H), [pager], color=BLACK,
+                script=root_script(checks_))
     return '<?xml version="1.0" encoding="UTF-8"?><lexml version="6">' + root + "</lexml>"
 
 
@@ -667,7 +706,7 @@ def strip_ids(s):
     return re.sub(r'ID="[^"]+"', 'ID=""', s)
 
 
-def main():
+def main_():
     xml = build()
     if "--check" in sys.argv:
         try:
@@ -681,4 +720,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main_()

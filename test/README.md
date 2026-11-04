@@ -43,15 +43,15 @@ were false.
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
 | `phone-assert.sh` | 97 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 53: 8 read, 45 in Lua | `device/phone` — the phone's TouchOSC layout, the checklist page included |
+| `touchosc-assert.sh` | 61: 9 read, 52 in Lua | `device/phone` — the phone's TouchOSC layout, the checklist page included |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 
-**1029 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**1037 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **1022**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **1030**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's;
 `touchosc-assert.sh` two as well, the reading first.
@@ -391,7 +391,7 @@ equivalent.
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       8 + 45 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       9 + 52 checks, ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
@@ -400,7 +400,10 @@ returns the first of two; and what its buttons send equals what `u_net` routes a
 **the inbound vocabulary read from both ends**. The phone is the only sender there is, and the
 layout and `u_net` deploy by different routes, `push.sh` and `tools/deploy.sh`, so their spellings
 could drift apart with nothing failing until somebody is at the rig. Every acknowledgment `u_net`
-sends must light a cell.
+sends must light a button. **And every pairing meets WCAG AA contrast as TouchOSC draws it**: each
+label against what lies under it, 4.5:1 or 3:1 for large text, each control's outline against the
+page, 3:1, and each tab's text and states, from the resting fill TouchOSC draws at 26% of a color
+(measured, TouchOSC's Reference page).
 
 Then the layout's own scripts, unpacked into the scratch directory and run by
 `test/gate/lua/touchosc_test.lua` under `test/gate/lua/lib_touchosc.lua`, a stand-in for TouchOSC as
@@ -412,6 +415,9 @@ phone checklist is the oracle for that.
 
 ✅ **Proven red** (2026-11-04): test mode never changing the tab (Lua 1 failed), a pad sending
 `drums selec` (read 2, Lua 1), and the checklist page sending a Send line's numbers as text (Lua 1).
+✅ **And again for the redesign**: grey text too dim for AA (read 1, Lua 1), a time signature box
+sending one step for a drag across two (Lua 1), and answers lighting a button by its value rather
+than its color, which sends its command again (Lua 9).
 
 ## `sequencer-assert.sh` — the drum machine, from the outside
 

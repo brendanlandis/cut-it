@@ -50,19 +50,19 @@ Mode 1's drum page on the Launchpad, the sequencer playing the SP-404, and the p
 - [ ] **11. The drum screen**
   - **Need:** TouchOSC open on the phone with Cut It's layout, linked.
   - **Do:** Look at the phone. Then tap the pad on the phone in the second row's first place.
-  - **Pass if:** The phone shows the drum screen: playing, the tempo and last 16 down the left, sixteen pads in the middle labeled 16 but the top-left one, amber and labeled 3, with skip 0% and move 0% under them, and on the right the two buttons, 4 over 4 with a minus and a plus beside each number, and drunk 0%. Nothing sits low enough to touch the home bar. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 turns dark.
+  - **Pass if:** The phone's first tab reads drums and shows the drum screen: the tempo, playing and the last step 16 down the left; sixteen pads in the middle labeled 16 but the top-left one, teal and labeled • 3; on the right the two buttons, three knobs, drunk, skip and move, at 0%, and the time signature as 4 / 4. Nothing sits low enough to touch the home bar. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 lights.
 
 - [ ] **12. Sync first steps**
   - **Do:** Tap sync first steps on the phone and listen.
-  - **Pass if:** The button flashes green and the line under it reads syncing at step 1. At the next step 1 of the sixteen, pad 1 starts again on its step 1 together with pad 13, then goes on repeating every three, and the line clears.
+  - **Pass if:** The button flashes teal and the line under it reads sync waits for step 1. At the next step 1 of the sixteen, pad 1 starts again on its step 1 together with pad 13, then goes on repeating every three, and the line clears.
 
 - [ ] **13. Snap to global**
   - **Do:** Tap snap to global on the phone.
-  - **Pass if:** The button flashes and the line reads snapping at step 1. At the next step 1 of the sixteen, pad 1 starts on step 1 with pad 13 and from then on plays all sixteen steps, and on the phone it turns grey and reads 16.
+  - **Pass if:** The button flashes teal and the line reads snap waits for step 1. At the next step 1 of the sixteen, pad 1 starts on step 1 with pad 13 and from then on plays all sixteen steps, and on the phone it turns red and reads 16, its dot gone.
 
 - [ ] **14. The time signature**
-  - **Do:** On the phone tap the plus beside the bottom number once, then the plus beside the top number three times.
-  - **Pass if:** The phone reads 4 over 8, then 7 over 8. With 7 over 8 the Launchpad's steps 1 and 15 are blue where they are not lit. The playing does not change.
+  - **Do:** On the phone drag the bottom number's box up one step, then the top number's box up three.
+  - **Pass if:** The phone reads 4 / 8, then 7 / 8. With 7 over 8 the Launchpad's steps 1 and 15 are blue where they are not lit. The playing does not change.
 
 - [ ] **15. Swing on knob 4**
   - **Do:** Turn knob 4 a little either way without passing noon. Then turn it all the way right, all the way left, and back to noon.
@@ -74,7 +74,7 @@ Mode 1's drum page on the Launchpad, the sequencer playing the SP-404, and the p
 
 - [ ] **17. Skip and move**
   - **Do:** Select pad 13. On the phone drag skip to about 50% and listen for a few bars. Drag it back to 0%, drag move to about 50% and listen. Then select another pad and pad 13 again.
-  - **Pass if:** The slider stays where you let go and reads what it shows. With skip about half of pad 13's hits drop out, different ones each bar. With move about half of them land a step early or late, and none drop out. The other pad shows 0% on both, and pad 13 its own again.
+  - **Pass if:** The knob stays where you let go and reads what it shows. With skip about half of pad 13's hits drop out, different ones each bar. With move about half of them land a step early or late, and none drop out. The other pad shows 0% on both, and pad 13 its own again.
 
 - [ ] **18. Drunkenness**
   - **Do:** Drag move back to 0%. Drag drunk to 100% and listen for a few bars, then drag it back to 0%.
@@ -99,7 +99,7 @@ Mode 1's drum page on the Launchpad, the sequencer playing the SP-404, and the p
   - **Need:** Steps lit on the drum page from the steps before.
   - **Send:** `stop bang`
   - **Do:** On the phone select pad 13 and drag its skip to about 30% and drunk to about 20%. Look at which steps are lit. Wait two seconds, then load Cut It again from the Organelle menu, and select pad 13 on the phone.
-  - **Pass if:** After the reload the drum page shows the same steps lit as before it, steps 1 and 15 blue. The phone shows 7 over 8, drunk at what you left it, and pad 13's skip at what you left it. Knob 4's swing is back at 50%.
+  - **Pass if:** After the reload the drum page shows the same steps lit as before it, steps 1 and 15 blue. The phone shows 7 / 8, drunk at what you left it, and pad 13's skip at what you left it. Knob 4's swing is back at 50%.
   - **Note:** `u_state` flushes within 2 seconds of a change, so the wait is part of the step.
 
 - [ ] **23. Other modes keep their grid**

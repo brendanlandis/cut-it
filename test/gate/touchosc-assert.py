@@ -36,6 +36,133 @@ B = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(B)
 
 
+# ------------------------------------------------------------------ contrast, WCAG AA
+# What TouchOSC draws, measured on the Mac (2026-11-04, ~/Sites/!reference/touchosc.md): a
+# control's resting fill at 26% of its color over black, its pressed or lit fill at full color.
+DIM = 66 / 255          # a resting fill's share of its color
+LARGE = 24              # text size, in points, from which 3:1 is enough
+
+
+def lin(c):
+    return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def lum(c):
+    return 0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2])
+
+
+def ratio(a, b):
+    la, lb = sorted((lum(a), lum(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def over(c, a, bg):
+    return tuple(c[i] * a + bg[i] * (1 - a) for i in range(3))
+
+
+def props(n):
+    out = {}
+    for p in n.getElementsByTagName("properties")[0].childNodes:
+        k = p.getElementsByTagName("key")[0].firstChild.data
+        v = p.getElementsByTagName("value")[0]
+        t = p.getAttribute("type")
+        if t == "c":
+            out[k] = tuple(float(v.getElementsByTagName(x)[0].firstChild.data) for x in "rgba")
+        elif t == "r":
+            out[k] = tuple(float(v.getElementsByTagName(x)[0].firstChild.data) for x in "xywh")
+        else:
+            out[k] = v.firstChild.data if v.firstChild is not None and hasattr(v.firstChild, "data") else ""
+    vals = {}
+    for v in n.getElementsByTagName("values")[0].childNodes:
+        k = v.getElementsByTagName("key")[0].firstChild.data
+        d = v.getElementsByTagName("default")[0].firstChild
+        vals[k] = d.data if d is not None else ""
+    return out, vals
+
+
+def walk(n, ox=0, oy=0, out=None, page=None, pager=False):
+    """[(type, name, absolute frame, props, values, page)] for every node, in drawing order;
+    page is the pager page it is on, since only one of those shows at a time."""
+    out = [] if out is None else out
+    p, v = props(n)
+    f = p.get("frame", (0, 0, 0, 0))
+    a = (ox + f[0], oy + f[1], f[2], f[3])
+    if pager:
+        page = p.get("name")
+    out.append((n.getAttribute("type"), p.get("name"), a, p, v, page))
+    for c in n.childNodes:
+        if c.nodeName == "children":
+            for k in c.childNodes:
+                if k.nodeName == "node":
+                    walk(k, a[0], a[1], out, page, n.getAttribute("type") == "PAGER")
+    return out
+
+
+def inside(f, x, y):
+    return f[0] <= x <= f[0] + f[2] and f[1] <= y <= f[1] + f[3]
+
+
+def under(nodes, i, x, y):
+    """The color drawn at (x, y) before node i: the last filled control there, over black."""
+    bg = (0.0, 0.0, 0.0)
+    here = nodes[i][5]
+    for t, name, f, p, v, page in nodes[:i]:
+        if page not in (None, here) or not inside(f, x, y) or p.get("visible") == "0":
+            continue
+        col = p.get("color")
+        if t == "BOX":
+            bg = over(col, col[3], bg)
+        elif t == "BUTTON" and p.get("background") != "0":
+            on = float(v.get("x") or 0) >= 0.5
+            bg = over(col, 1.0 if on else DIM * col[3], bg)
+        elif t == "RADIO":
+            steps = int(p.get("steps") or 1)
+            seg = int((x - f[0]) / (f[2] / steps)) if p.get("orientation") == "1" else 0
+            bg = over(col, 1.0 if seg == int(float(v.get("x") or 0)) else DIM, bg)
+        elif t in ("LABEL", "TEXT") and p.get("background") == "1":
+            bg = over(col, DIM * col[3], bg)
+    return bg
+
+
+def audit(doc):
+    nodes = walk(doc.getElementsByTagName("node")[0])
+    bad, n = [], 0
+    for i, (t, name, f, p, v, _page) in enumerate(nodes):
+        if t in ("LABEL", "TEXT") and (v.get("text") or "").strip():
+            cx, cy = f[0] + f[2] / 2, f[1] + f[3] / 2
+            bg = under(nodes, i, cx, cy)
+            if p.get("background") == "1":
+                bg = over(p["color"], DIM * p["color"][3], bg)
+            r = ratio(p["textColor"], bg)
+            need = 3.0 if float(p.get("textSize") or 15) >= LARGE else 4.5
+            n += 1
+            if r < need:
+                bad.append("text %-10s %-24r %.2f < %.1f" % (name, v.get("text")[:24], r, need))
+        if t in ("BUTTON", "RADIO", "RADIAL", "FADER") and p.get("interactive") == "1":
+            bg = under(nodes, i, f[0] + 1, f[1] + 1)
+            # the edge is the full color only where a whole outline is drawn; corner marks
+            # leave the resting fill to show where the control ends
+            full = p.get("outline") == "1" and p.get("outlineStyle") == "0"
+            r = ratio(p["color"] if full else over(p["color"], DIM, bg), bg)
+            n += 1
+            if r < 3.0:
+                bad.append("edge %-10s %.2f < 3.0" % (name, r))
+        if t == "GROUP" and "tabLabel" in p:
+            for state in ("On", "Off"):
+                r = ratio(p["textColor" + state], p["tabColor" + state])
+                n += 1
+                if r < 4.5:
+                    bad.append("tab  %-10s text %s %.2f < 4.5" % (name, state, r))
+            # a tab is told by its text; its state, active or not, must differ by 3:1
+            r = ratio(p["tabColorOn"], p["tabColorOff"])
+            n += 1
+            if r < 3.0:
+                bad.append("tab  %-10s active against inactive %.2f < 3.0" % (name, r))
+    return n, bad
+
+
+
+
 def route_of(path, first):
     """The arguments of the one `route <first> ...` box in a file, or None."""
     want = re.compile(r"^#X obj -?\d+ -?\d+ route (" + re.escape(first) + r"(?: [^;]*)?);$")
@@ -63,13 +190,20 @@ def controls(doc):
             v = p.getElementsByTagName("value")[0]
             first = v.firstChild
             props[k] = first.data if first is not None and hasattr(first, "data") else ""
-        text = None
+        text, x = None, None
         for v in n.getElementsByTagName("values")[0].childNodes:
-            if v.getElementsByTagName("key")[0].firstChild.data == "text":
-                d = v.getElementsByTagName("default")[0].firstChild
+            key = v.getElementsByTagName("key")[0].firstChild.data
+            d = v.getElementsByTagName("default")[0].firstChild
+            if key == "text":
                 text = d.data if d is not None else ""
+            if key == "x" and d is not None:
+                x = float(d.data)
+        col = [p for p in n.getElementsByTagName("properties")[0].childNodes
+               if p.getElementsByTagName("key")[0].firstChild.data == "color"]
+        color = (tuple(float(col[0].getElementsByTagName(c)[0].firstChild.data) for c in "rgba")
+                 if col else None)
         out.append((props.get("name"), n.getAttribute("type"), props.get("visible") == "1",
-                    props.get("script"), text))
+                    props.get("script"), text, x, color, props.get("tabLabel")))
     return out
 
 
@@ -101,12 +235,15 @@ def expect(lists):
                 if s["sends"] and si + 1 < len(c["steps"]))
     multi = next((ci, si, s) for ci, c in enumerate(lists) for si, s in enumerate(c["steps"])
                  if len(s["pages"]) > 1 and si + 1 < len(c["steps"]))
+    nosend = next((ci, si) for ci, c in enumerate(lists) for si, s in enumerate(c["steps"])
+                  if not s["sends"])
     ci, si, s = send
     msgs = [["/cutit", "send"] + [float(t) if re.fullmatch(r"-?\d+(\.\d+)?", t) else t
                                   for t in m.split()] for m in s["sends"]]
     e = {"lists": names,
          "send": {"ci": ci + 1, "si": si + 1, "title": s["title"], "sent": msgs,
                   "verdict": "%s-%d-pass" % (lists[ci]["name"], s["n"])}}
+    e["nosend"] = {"ci": nosend[0] + 1, "si": nosend[1] + 1}
     ci, si, s = multi
     e["multi"] = {"ci": ci + 1, "si": si + 1, "steps": len(lists[ci]["steps"]),
                   "pages": len(s["pages"]), "verdict": "%s-%d-fail" % (lists[ci]["name"], s["n"])}
@@ -121,13 +258,13 @@ def main():
             "run tools/touchosc/build.py")
     doc = xml.dom.minidom.parseString(zlib.decompress(open(LAYOUT, "rb").read()))
     nodes = controls(doc)
-    names = [n for n, _t, _v, _s, _x in nodes]
+    names = [r[0] for r in nodes]
     dupes = sorted({n for n in names if names.count(n) > 1})
     A.check("⛔ every control has a name of its own", not dupes and None not in names,
             "named twice: %s" % dupes)
     A.note("%d controls, %d with a script" % (len(nodes), sum(1 for x in nodes if x[3])))
 
-    msgs = [m for _n, _t, _v, s, _x in nodes for m in sent(s)]
+    msgs = [m for r in nodes for m in sent(r[3])]
     ucmd, udev = route_of(UNET, "re-wire"), route_of(UNET, "m_volca")
     uacks = route_of(UNET, "sync")
     takes = steps_cmds()
@@ -160,15 +297,27 @@ def main():
                 sorted(acked) == sorted(B.ACKS),
                 "u_net acknowledges %s, the layout lights %s" % (sorted(acked), sorted(B.ACKS)))
 
+    pairs, low = audit(doc)
+    A.check("⛔ every text and control meets WCAG AA contrast, as TouchOSC draws it",
+            pairs > 50 and not low, "%d pairs; below AA:\n    %s" % (pairs, "\n    ".join(low)))
+    A.note("%d pairs at AA" % pairs)
+
     print("\n=== B. its scripts, run under a stand-in for TouchOSC ===")
     work = S.work_dir("touchosc")
     os.makedirs(work, exist_ok=True)
     rows = []
-    for n, t, v, s, x in nodes:
+    for n, t, v, s, text, x, color, tab in nodes:
         if s:
             with open(os.path.join(work, n + ".lua"), "w", encoding="utf-8") as fh:
                 fh.write(s)
-        rows.append({"name": n, "type": t, "visible": v, "script": bool(s), "text": x or ""})
+        row = {"name": n, "type": t, "visible": v, "script": bool(s), "text": text or ""}
+        if x is not None:
+            row["x"] = x
+        if color:
+            row["color"] = list(color)
+        if tab:
+            row["tabLabel"] = tab
+        rows.append(row)
     with open(os.path.join(work, "controls.lua"), "w", encoding="utf-8") as fh:
         fh.write("return " + lua(rows) + "\n")
     lists, _bad = B.checklists()

@@ -141,20 +141,26 @@ easy to identify. Item 311.
 Organelle and nothing at all on the phone — this scales to the nanoKONTROL's 18 continuous controls
 without redesign.
 
-### The screens: one TouchOSC layout, a row of tabs per mode
+### The screens: one TouchOSC layout, its own tabs
 
 **Every screen is one layout**, `tools/touchosc/CutIt.tosc`, **generated** by `tools/touchosc/build.py`:
-edit that, never the file. Along the top, the mode's tabs; under them, the screen of the tab chosen.
-Each control sends from a script of its own; the root's script takes everything that comes in.
+edit that, never the file. Each control sends from a script of its own; the root's script takes
+everything that comes in.
+
+**The design is Brendan's** (2026-11-04, iterated from mockups): TouchOSC's own controls and its own
+tab bar, never a stack of shapes standing in for one; black, with bright red (`#FF1F3F`) the lead
+accent and teal the second; monospaced type for every value, TouchOSC's default font for every label;
+and every text and control at **WCAG AA**, which `touchosc-assert` audits from the file.
 
 | | | Evidence |
 |---|---|---|
-| The tabs | Mode 1: drums, checklists. Every other mode: remote, checklists. The last is always the checklist page (Brendan, 2026-11-04). They follow `/cutit/mode`, and the same mode again, as `u_net` repeats it, leaves the tab chosen alone | unknown |
-| Test mode | Coming on, from the heartbeat, brings up the checklists, through a change of mode too; going off, the mode's first tab. A tab tapped meanwhile stays | unknown |
-| The drum screen | Left: playing or stopped, the tempo (the status), `last <n>`, the alert, the link. Middle: the sixteen pads as the Launchpad lays them out, each labeled with its last step: grey following the global one, amber with its own, dark when selected; a tap selects; under them, sliders for the selected track's skip and move chances. Right: sync first steps, snap to global, a line while one waits for step 1, the time signature with a minus and a plus beside each number, and a drunkenness slider (Brendan, from a mockup, 2026-11-04). Everything stays above the home indicator | verified |
-| The remote screen | Left: the last parameter's name, its value with its unit (`120 (29)` for a held tempo), the status, the alert's level and text, the link. Right: re-wire, clear-alert, test-volca, test-404 | unknown |
-| The checklist page | A checklist a step at a time, from `test/checklists/` ([the checklists' README](../../test/checklists/README.md), *On the phone*) | unknown |
-| A slider | Sends whole percents when it moves off the last value it knows, its own or the one the state handed it, so the state is never sent back; for a second after a touch the state leaves it alone | verified |
+| The tabs | Two, TouchOSC's own. The first holds the mode's screen and says which: drums in mode 1, remote in every other mode. The last is always the checklist page (Brendan, 2026-11-04). The same mode again, as `u_net` repeats it, leaves the tab chosen alone | unknown |
+| Test mode | Coming on, from the heartbeat, brings up the checklists, through a change of mode too; going off, the first tab. A tab tapped meanwhile stays | unknown |
+| The drum screen | Left: the tempo, large, playing or stopped with its lamp, the global last step, the link lamp, the alert. Middle: the sixteen pads as the Launchpad lays them out, each labeled with its last step: red following the global one, teal with a dot (• 5) with its own, lit when selected; a tap selects. Right: sync first steps and snap to global, a line while one waits for step 1, ring knobs for drunk and the selected track's skip and move, and the time signature as [n] / [d], each box dragged up or down a step at a time (Brendan, 2026-11-04) | unknown |
+| The remote screen | Left: the last parameter's name and its value large, with its unit (`120 (29)` for a held tempo), the tempo, the alert with its lamp, the link. Right: re-wire, clear alert, test Volca, test 404 | unknown |
+| The checklist page | A checklist a step at a time, from `test/checklists/` ([the checklists' README](../../test/checklists/README.md), *On the phone*); Send hides on a step with no Send line | unknown |
+| An answer | `/cutit/ack` flashes its button teal for 300 ms, by its color, never its value, so it can't send the command again; a refused Send line flashes grey | unknown |
+| A knob or a time signature box | Sends when a finger moves it off the value it knows, its own or the one the state handed it, so the state is never sent back; for a second after a touch the state leaves it alone. A box sends `num` or `den` once a step, as `c_steps` takes them | unknown |
 | `/cutit/drums` | `c_steps`' `R.phone`: playing, the global last step, the selected track, pending (0, 1 sync, 2 snap), the sixteen last steps, then 1 for each track with its own, then the time signature's two numbers, the drunkenness, and the selected track's skip and move chances. Sent by `c_steps` when it changes, through `u_root`'s cord into `u_net`'s second inlet | verified |
 | A short or empty state | Fewer than 41 numbers draws nothing, so the empty repeat before the first state leaves the screen as it was | unknown |
 | Deploying | `./tools/touchosc/push.sh` rebuilds the layout and opens it in the Mac's TouchOSC, restarting that with its editor server on if it is off; the phone, connected once as an editor client of the Mac, takes it live | verified |
@@ -187,7 +193,7 @@ the 124/s noise floor. Item 121.
 warned `net-link-down` once per load when its socket died with nothing listening on the phone's port.
 Under 0.57 the socket survives that, on the device too (measured 2026-11-03: a throwaway 0.57 sent at
 a port nothing bound for 15 s and never noticed, where 0.49 warned within two seconds), so the
-warning could no longer fire and was taken out. The phone's own NO-LINK, from the heartbeat's
+warning could no longer fire and was taken out. The phone's own no link, from the heartbeat's
 silence, is the report: the phone is the display that went.
 
 ### Rebuild the socket
@@ -247,7 +253,7 @@ silently wrong. UDP will drop packets; the protocol has to not care.
 
 It works and 19–20 of 20 datagrams arrive, but access points release broadcast frames on beacon
 boundaries: bursts of three or four, up to **819 ms** between them (Reference). Throughput is identical
-and latency is not, and one 819 ms gap eats most of the phone's **1500 ms** `NO-LINK` margin.
+and latency is not, and one 819 ms gap eats most of the phone's **1500 ms** `no link` margin.
 
 ### The address resolves at 1550 ms on the device and 2200 on the Mac
 
@@ -277,9 +283,9 @@ is the property worth protecting if this is ever changed.
 
 **A frozen display looks exactly like a working one**, and mid-performance you will read it and act
 on it. The phone's script checks every frame how long it is since the last heartbeat; past 1500 ms
-the display says `NO-LINK` rather than continuing to present a stale value as current.
+the display says `no link` rather than continuing to present a stale value as current.
 
-⚠️ **The default label is `NO-LINK`, not `ok`.** It must assume the worst until traffic proves
+⚠️ **The default label is `no link`, not `link`.** It must assume the worst until traffic proves
 otherwise, or a layout opened before the Organelle is running looks connected when it is not.
 
 The heartbeat keeps flowing even when nothing is happening, because it is the only thing

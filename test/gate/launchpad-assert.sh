@@ -7,6 +7,7 @@
 #     ./test/gate/launchpad-assert.sh --keep     # and leave the capture behind
 #
 # No DSP: it asserts on the two mode switches, Programmer Mode at boot and Live
-# Mode on quit, and their order against the painted frames. What the arbiter
-# does with the surface is display-assert.sh's.
+# Mode on quit, and their order against the painted frames, and on a tap on
+# Setup told from the announcement every entry makes. What the arbiter does
+# with the surface is display-assert.sh's.
 exec python3 "$(dirname "$0")/scratch-gates.py" launchpad "$@"

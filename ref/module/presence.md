@@ -230,14 +230,16 @@ both 1.** Do not copy that into a new layer.
 
 ## Traps
 
-### One `[sysexin]` hears every device in the rig
+### Every `[sysexin]` hears every device in the rig
 
-There is exactly one `[sysexin]` box in the patch, inside `c_devid`, and every instance of `c_devid`
-reads the same stream. Treating **any** SysEx as proof of one device's presence holds only while
+There are two `[sysexin]` boxes in the patch, `c_devid`'s and the one `m_launchpad` reads a tap on
+Setup from ([launchpad.md](../device/launchpad.md)), and every instance of either reads the same
+stream. Treating **any** SysEx as proof of one device's presence holds only while
 nothing else in the rig transmits any. Poll all three and the Launchpad reads as present whenever the
 *nano* answers, with the watchdog believing a device that is gone.
 
-**Fix:** `[c_devid <byte>]` per device, never a bare `[sysexin]`. `presence-assert.sh` drives a KORG
+**Fix:** `[c_devid <byte>]` per device, never a bare `[sysexin]`, for presence; anything else read
+off the stream matches its whole frame, as the Setup tap does. `presence-assert.sh` drives a KORG
 reply and asserts the Launchpad stays lost — **and** drives the Launchpad's own and asserts it does
 not, because a matcher that accepts nothing passes the first check for the wrong reason.
 
@@ -278,11 +280,16 @@ drop for one that answered and then went away.
 
 `u_present` broadcasts **one** `tick` and every `c_presence` hears it in the same logical instant, so
 three inquiries would leave together and three replies could come back interleaved byte by byte on
-the single `[sysexin]`. `c_devid`'s index would then be counting one device's frame with another
+the one stream. `c_devid`'s index would then be counting one device's frame with another
 device's bytes in it.
 
 **Fix:** `c_presence`'s third argument delays the poll — 0, 60 and 120 ms. It costs nothing and makes
 the interleave impossible.
+
+⚠️ **The Launchpad's heartbeat leaves on the same tick as its inquiry**, so its layout announcement
+comes back beside its reply: one device, two ports, one stream. An interleave there would cost one
+reply, of the three misses allowed, and one echo, which is forgotten rather than read as a tap on
+Setup ([launchpad.md](../device/launchpad.md)).
 
 ### The settle is coupled to `u_init`'s last stage
 

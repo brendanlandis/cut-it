@@ -62,6 +62,7 @@ sequence is still bringing it up. See [presence.md](presence.md).
 | From | To | Carries | Evidence | Item |
 |------|----|---------|----------|------|
 | `Launchpad Pro MK3:0` | `Pure Data:0` | Pads and CCs in, Pd channels 1–16 | verified | — |
+| `Launchpad Pro MK3:2` | `Pure Data:0` | The layout announcement a tap on Setup makes, beside port 0 on Midi-In 1 ([launchpad.md](../device/launchpad.md)) | unknown | — |
 | `Pure Data:4` | `Launchpad Pro MK3:0` | LEDs and SysEx out | verified | — |
 | `nanoKONTROL:0` | `Pure Data:1` | Faders, knobs, transport, Pd channels 17–32 | verified | — |
 | `Pure Data:5` | `nanoKONTROL:0` | The device inquiry, and nothing else | verified | 274 |

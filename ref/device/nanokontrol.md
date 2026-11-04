@@ -54,7 +54,7 @@ both channels through one path.
 `m_nano` registers as `active` on the presence bus and is polled every two seconds with a universal
 device inquiry. **The nano answers** — manufacturer byte `42`, KORG, item 249 — so `[c_devid 66]`
 inside `m_nano` is what tells its reply apart from the Launchpad's and the 404's on the one
-`[sysexin]` the whole patch shares. ⚠️ **The argument is decimal and the byte is hex**: `42` is 66.
+SysEx stream the whole patch shares. ⚠️ **The argument is decimal and the byte is hex**: `42` is 66.
 
 Any CC landing in this file's own channel block counts as liveness as well, so a nano being *played*
 stays present even if one reply is dropped. The inquiry leaves on **port 2**, derived as

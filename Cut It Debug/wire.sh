@@ -15,7 +15,12 @@
 # The nanoKONTROL output carries only the device inquiry, which is how m_nano
 # tells an unplugged nano from an untouched one. Without it m_nano is declared
 # lost a few seconds into every boot (item 274, ref/module/boot.md).
+#
+# The Launchpad's third port carries one thing in Programmer Mode: the layout
+# announcement a tap on Setup makes, which m_launchpad reads as lp-setup
+# (ref/device/launchpad.md). It shares Midi-In 1 with the first.
 aconnect "Launchpad Pro MK3":0 "Pure Data":0 2>/dev/null || true  # -> Pd ch 1-16
+aconnect "Launchpad Pro MK3":2 "Pure Data":0 2>/dev/null || true  # Setup's announcement
 aconnect "Pure Data":4 "Launchpad Pro MK3":0 2>/dev/null || true  # LEDs + SysEx out
 aconnect "nanoKONTROL":0 "Pure Data":1       2>/dev/null || true  # -> Pd ch 17-32
 aconnect "Pure Data":5 "nanoKONTROL":0       2>/dev/null || true  # device inquiry out

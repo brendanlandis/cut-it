@@ -1,10 +1,10 @@
 # Launchpad checklist
 
-The grid, the grid arbiter's layers and their timeouts, the mode lamps, the beat row, the ring map, hot-swap and panic keeping the surface. `display-assert` and `launchpad-assert` prove the bytes the patch sends; this is what the surface shows.
+The grid, the grid arbiter's layers and their timeouts, the mode lamps, the beat row, the ring map, hot-swap, panic keeping the surface, and a tap on SETUP. `display-assert` and `launchpad-assert` prove the bytes the patch sends; this is what the surface shows.
 
 Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol.md). Every step sets up its own preconditions, a mode among them: step 22 sets compose because a warn is correctly invisible in perform.
 
-27 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [launchpad](../../ref/device/launchpad.md), [display](../../ref/module/display.md), [presence](../../ref/module/presence.md).
+28 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [launchpad](../../ref/device/launchpad.md), [display](../../ref/module/display.md), [presence](../../ref/module/presence.md).
 
 - [ ] **1. Resting grid**
   - **Send:** `tempo 120; stop bang; mode compose mode-2`
@@ -90,8 +90,8 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
   - **Note:** Pressure arrives as `pad-NN-at`, and `u_map` draws no raw row for a name ending `-at`, as it draws none for the keys (item 318).
 
 - [ ] **20. Ring buttons**
-  - **Do:** Press the ring buttons, including the top left corner and the bottom row.
-  - **Pass if:** Each ring button reports lp-cc-NN on the OLED except the seven the map binds — they draw no row. The top left corner raises panic and the top six of the left column move the mode lamp. The bottom row runs from 101 to 108 in order. One button stays dark and reports nothing — index 0 — SETUP.
+  - **Do:** Press the ring buttons, including the top left corner and the bottom row. Leave SETUP, the bottom left corner, for step 28.
+  - **Pass if:** Each ring button reports lp-cc-NN on the OLED except the seven the map binds — they draw no row. The top left corner raises panic and the top six of the left column move the mode lamp. The bottom row runs from 101 to 108 in order. SETUP stays dark.
   - **Note:** The rows are `u_map`'s (item 317), so the bound buttons draw none: CC 90 is `recover` and the six mode keys are `u_map`'s own route. The top row is free.
 
 - [ ] **21. The left column changes mode**
@@ -128,3 +128,10 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
 - [ ] **27. Pads still reach the OLED after a panic**
   - **Do:** Press a pad.
   - **Pass if:** A pad press still reports pad-NN on the OLED.
+
+- [ ] **28. A tap on SETUP flips test mode**
+  - **Need:** Test mode off, as every load leaves it and no step before this one changes it. If in doubt, load Cut It again.
+  - **Send:** `mode compose mode-2`
+  - **Do:** Tap SETUP, the bottom left corner, once, and watch the OLED for ten seconds. Tap it again. Then hold it for four seconds and let go.
+  - **Pass if:** The first tap puts up a bordered alert reading warn then u_net then test-mode-on for about two seconds, and no other alert appears in the ten seconds after it. The second tap and the hold put up no alert. SETUP stays dark and the grid keeps painting throughout.
+  - **Note:** The second tap turns test mode off, which is logged and not drawn; the hold sends nothing at all ([launchpad](../../ref/device/launchpad.md)). An alert every few seconds with no tap means the announcement each Programmer Mode heartbeat makes is being read as a tap: `launchpad-assert` proves it is not on the Mac, and this is the rig's wiring and timing. Compose, because `u_err` draws a warn only there.

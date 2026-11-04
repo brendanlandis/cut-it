@@ -211,7 +211,7 @@
 #X obj 520 3600 s \$0-in-result;
 #X obj 20 1555 list append;
 #X obj 180 1530 r \$0-test;
-#X text 20 4800 Test mode: a bang on the inlet flips it \, from u_map's test-mode \, held aux and the second key from the bottom. A second flip within 300 ms is dropped: one press of the key can arrive twice \, 5 ms apart (2026-11-03). Every load starts with it off. The heartbeat carries it \, so the phone's checklist page shows the Organelle's own state \, and turning it on warns \, so the OLED says so in compose and the log keeps it., f 66;
+#X text 20 4800 Test mode: a bang on the inlet flips it \, from u_map's test-mode \, held aux and the second key from the bottom or a tap on the Launchpad's Setup. A second flip within 300 ms is dropped: one press of the key can arrive twice \, 5 ms apart (2026-11-03). Every load starts with it off. The heartbeat carries it \, so the phone's checklist page shows the Organelle's own state \, and turning it on warns \, so the OLED says so in compose and the log keeps it., f 66;
 #X text 1300 4800 send <bus> <message> is a checklist's Send line from the phone's page \, passed to u_inject in test mode only and answered with ack send \, or ack test-off when it is off. result <checklist>-<n>-<verdict> logs a step's verdict as info phone \, in test mode or not \, and is answered with ack result. Each trigger acks before it forwards., f 66;
 #X obj 900 4420 s \$0-test;
 #X obj 300 4320 spigot 1;

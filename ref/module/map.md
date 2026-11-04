@@ -68,7 +68,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, in all six modes** | verified | 301 |
 | `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad; an index the layout lacks is `fail u_map layout-miss` | verified | — |
-| `test-mode` | unused | Non-zero flips `u_net`'s test mode, in which the phone's checklist page may send Send lines ([phone.md](../device/phone.md)). **`og-shift-61`, in all six modes**; out `u_map`'s fourth outlet, a cord to `u_net` | unknown | — |
+| `test-mode` | unused | Non-zero flips `u_net`'s test mode, in which the phone's checklist page may send Send lines ([phone.md](../device/phone.md)). **`og-shift-61` and `lp-setup`, the Launchpad's Setup, in all six modes**; `lp-setup` has no release, and needs none; out `u_map`'s fourth outlet, a cord to `u_net` | unknown | — |
 | `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1–32**, **`og-knob-2`**; `track-last` the selected track's own, **`og-knob-3`**; `swing` the sequencer's, 25% to 75%, **`og-knob-4`**, all in mode 1. A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
@@ -144,8 +144,9 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 | Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Six modes × 92
-controls is 552 possible rows and the shipped file has **132** — nine, plus the keyboard's 25 and
-the drum page's 56 pads in mode 1, plus CC 90, PLAY, STOP and the four shifted keys in all six.
+controls is 552 possible rows and the shipped file has **143** — knob 1 in all six modes; knobs 2
+to 4, slider 1, the keyboard's 25 and the drum page's 60 pads in mode 1; and CC 90, PLAY, STOP, the
+four shifted keys and Setup in all six.
 
 ### Where each part lives
 

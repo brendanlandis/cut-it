@@ -38,7 +38,7 @@ were false.
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 43 | `module/presence` |
-| `launchpad-assert.sh` | 11 | `device/launchpad` |
+| `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
 | `phone-assert.sh` | 97 | `device/phone` |
@@ -49,9 +49,9 @@ were false.
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 
-**1021 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**1029 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **1014**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **1022**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's;
 `touchosc-assert.sh` two as well, the reading first.
@@ -142,7 +142,7 @@ and the verdict file in `results/` all went, and every step's text is in the che
 
 ```sh
 ./test/gate/display-assert.sh          32 checks, ~46 s — the ARBITER
-./test/gate/launchpad-assert.sh        11 checks, ~15 s — the DEVICE
+./test/gate/launchpad-assert.sh        19 checks, ~15 s — the DEVICE
 ```
 
 Both take `--keep` to leave the byte capture behind to read. **They were one gate**, which is why
@@ -163,7 +163,7 @@ painted first and switched second would send both messages and still come up dar
 
 | Piece | |
 |---|---|
-| `test/stubs/t_midiout.pd` | a stand-in for `[midiout]` that prints every byte with its port |
+| `test/stubs/t_midiout.pd` | a stand-in for `[midiout]` that prints every byte with its port, and sends it on `t-midiout` for a driver playing the device |
 | the drivers | generated into the scratch directory on every run by `display-assert-drive-gen.py` and `launchpad-assert-drive-gen.py`. Not committed |
 | `test/gate/lib_grid.py` | reassembles the SysEx frames — shared, because both gates read the same byte stream and want different frames out of it |
 | `display-assert.py` | the arbiter: which layer owns the surface, and what happens when one gives it up |
@@ -188,6 +188,15 @@ beat-row offset back to `+ 11` — makes it report `lit outside every region: [(
 ⚠️ **The three `home-*` checks still passed under that mutation**, which is exactly why *seven
 beats out of eight looked perfect*: only the six-second beat-row window catches it. A gate that
 cannot fail is worth nothing, so re-run that mutation if you ever change the analyzer.
+
+**`launchpad-assert` plays the device for the Setup tap** (2026-11-04). Its driver watches
+`t-midiout` and answers every Programmer Mode entry 1 ms later with the announcement the Launchpad
+makes, until a window mutes it; between, it sends the announcement unasked, and three frames that
+are not it. ✅ **Red on each of eight mutations:** the heartbeat raising no expected echo (1
+failed: the echoes published), the init raising none (3), the 250 ms forget cut (2), the match
+waiting for another layout (4), a mismatch never clearing the match (2), mode 1's `lp-setup` row
+gone from the map (2), `t_midiout` not sending on `t-midiout` (1: nothing was answered) and the
+driver never muting (1: the forget's witness).
 
 ## `tempo-assert.sh` — two kinds of check, because neither is enough
 
@@ -482,7 +491,9 @@ throwing rule.
 
 ## `stubs/` — stand-ins the gates need
 
-`t_midiout.pd` replaces `[midiout]` so a headless run can read back every byte the patch emits.
+`t_midiout.pd` replaces `[midiout]` so a headless run can read back every byte the patch emits,
+and sends each on `t-midiout`, so a driver can answer as a device would: `launchpad-assert`'s
+answers every Programmer Mode entry with the announcement the Launchpad makes.
 ⚠️ **It cannot be supplied by search path**, which is why `display-assert.sh` rewrites boxes in a
 scratch copy — see that gate below.
 

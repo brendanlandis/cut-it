@@ -9,8 +9,8 @@ Reference: `~/Sites/!reference/novation-launchpad-pro-mk3.md`. This page is how 
 
 It runs in **Programmer Mode**, where each button becomes a note or CC number the patch defines.
 
-`m_launchpad.pd` is the only file that talks to it: Programmer Mode, the safe exit, pads, ring and
-pressure onto `param`, and the replug watchdog. The row a pad or ring button draws is `u_map`'s
+`m_launchpad.pd` is the only file that talks to it: Programmer Mode, the safe exit, pads, ring,
+pressure and a tap on Setup onto `param`, and the replug watchdog. The row a pad or ring button draws is `u_map`'s
 (item 317); pressure draws none unless the mode maps it (item 318). `g_grid.pd` owns its
 LEDs and nothing else does.
 
@@ -21,7 +21,7 @@ LEDs and nothing else does.
 | Property | Value | Evidence | Item |
 |----------|-------|----------|------|
 | Pd channel block | 1–16 (input slot 1) | verified | — |
-| Port wired | `wire.sh` connects **port 0 only**, so the layout announcements on port 3 never reach Pd | verified | 250 |
+| Ports wired | `wire.sh` connects **port 0 and port 2** (`MIDI 1` and `MIDI 3`), both to Midi-In 1: port 2 for the layout announcement a tap on Setup makes (*A tap on Setup flips test mode*, below). Port 1 is not wired | unknown | — |
 | What `g_grid` sends | 108 specs per message, indices 1–108 | verified | — |
 
 `g_grid` paints **indices 1–108**, CC 1–8 included: the whole span, which Reference shows is a
@@ -47,10 +47,11 @@ file's — see [presence.md](../module/presence.md).
 
 ⛔ **AND THE REPLY MUST BE MATCHED, NOT MERELY COUNTED.** Treating *any* SysEx as proof of presence
 holds only while nothing else in the rig transmits any. All three detectable devices answer the same
-inquiry (item 249) and there is exactly one `[sysexin]` box in the whole patch, so that shortcut
+inquiry (item 249) and every `[sysexin]` in the patch hears all of them, so that shortcut
 reports the Launchpad present whenever the **nano** answers. `[c_devid 0]` matches byte 5 of the
 reply — `00`, Novation — and byte 5 discriminates all three. The `[sysexin]` port outlet is unused for
-the reason in `~/Sites/!reference/pure-data.md`.
+the reason in `~/Sites/!reference/pure-data.md`. The Launchpad's own layout announcement shares the
+stream since port 2 was wired, and its byte 5 is `0E`, so `c_devid` never takes it for a reply.
 
 ### Live Mode, ownership and the handback
 
@@ -190,6 +191,34 @@ whether there are eight modes is open (`cut-it/songs-and-sections`).
 Organelle's keyboard is where the controls you reach for when a device has died belong. Anything put
 on a free button should be something you would not miss if the Launchpad were the thing that went.
 
+### A tap on Setup flips test mode
+
+**Setup, the bottom left corner, publishes `lp-setup`, and the map binds it to `test-mode` in all
+six modes**, beside `og-shift-61` ([map.md](../module/map.md)): asked for by Brendan, 2026-11-04.
+Test mode is on the Organelle's keyboard too, so it passes the test above. In Programmer Mode the
+button sends nothing on port 0; a tap makes the device announce its layout on port 2, and a hold
+sends nothing at all (Reference, *The Setup button in Programmer Mode*). So `wire.sh` joins port 2
+to Midi-In 1, and `m_launchpad`'s `setup` subpatch matches that announcement as a whole frame,
+`F0 00 20 29 02 0E 00 11 00 00 F7`. There is no release, so a tap is published as `lp-setup 127`,
+a ring button's press.
+
+⛔ **Every Programmer Mode entry makes the same announcement**, within a millisecond, and the
+heartbeat enters it every two seconds. Read as taps, the echoes would flip test mode every two
+seconds. **So each entry `m_launchpad` sends, at init and on the heartbeat, first raises an
+expected echo**, and an announcement that arrives while one is expected is taken as that echo.
+Only an announcement nothing expected is a tap.
+
+⚠️ **An expected echo is forgotten 250 ms after the last entry**, so one the device never sent
+cannot swallow a tap made later. The price is a tap inside those 250 ms whose entry's echo was
+lost, which is taken for the echo. A tap in the same millisecond as an entry still publishes once:
+whichever arrives first is the echo.
+
+Other layouts' announcements, which port 2 carries in Live Mode (Reference, *Mode changes are
+announced*), never match, and `c_devid` never takes an announcement for an inquiry reply: its byte 5
+is `0E`. `launchpad-assert.sh` answers each entry as the device does and proves the echoes publish
+nothing, a tap publishes `lp-setup` and flips test mode through the map, other frames do not, and
+an echo that never came is forgotten. The wiring and the device's timing are the checklist's.
+
 ### Pressure is the forgotten input
 
 The pads are polyphonic-aftertouch sensitive, and that channel is free panel space: any continuous
@@ -245,9 +274,16 @@ aftertouch afterwards rather than trusting the old numbers.
 - ⬜ **`[polytouchin]` has no stub, so the pressure path is uncovered.** See
   [plan-v04.md](../../plan-v04.md) §3. This page's own text calls aftertouch the most expressive
   control on the rig. A `t_polytouchin` would be the same shape as `t_ctlin`.
-- ⬜ **What every layout ID means.** `02`, `03` and `04` were seen; the full set and their names are
-  not established. See [plan-v04.md](../../plan-v04.md) §3. *That it announces at all* is
-  established (item 100) — see *Mode changes are announced* in Reference.
+- ⬜ **What every layout ID means.** `02`, `03` and `04` were seen in Live Mode and `11` is
+  Programmer Mode's; the full set and their names are not established. See
+  [plan-v04.md](../../plan-v04.md) §3. *That it announces at all* is established (item 100) — see
+  *Mode changes are announced* in Reference.
+- ⬜ **The Setup tap has not run on the rig**: port 2 joined to Midi-In 1, and the device's echo
+  inside the 250 ms. Step 28 of [the Launchpad checklist](../../test/checklists/launchpad.md), with
+  the rest of it (`cut-it/inbox`).
+- ⬜ **What port 2 carries in Live Mode beyond the layout announcements.** Wired, it reaches
+  Midi-In 1 whenever the device is out of Programmer Mode: at boot before the init, and after a Mac
+  replug until the next heartbeat. NO PLAN OWNS THIS.
 - ⬜ **What firmware version this unit is on, in Novation's terms.** Item 98, and
   [plan-v04.md](../../plan-v04.md) §3. The device inquiry returns firmware bytes `00 04 06 05`
   and nothing published maps that to a marketing version, so *how far behind* this unit is cannot

@@ -55,8 +55,10 @@ LUA = (os.environ.get("LUA") or shutil.which("lua5.4") or shutil.which("lua")
 # The one MIDI inventory: an exact count per class, never "not zero", updated
 # deliberately and never to make a red run green (the gate skill). It is every
 # class that gets rewritten, inputs included: notein and ctlin have source stubs.
+# Two [sysexin]: c_devid's, every device's inquiry reply, and m_launchpad's, the
+# announcement a tap on Setup makes (launchpad-assert drives it).
 MIDI_EXPECT = {"midiout": 9, "noteout": 2, "ctlout": 3, "pgmout": 1,
-               "notein": 2, "ctlin": 3, "sysexin": 1}
+               "notein": 2, "ctlin": 3, "sysexin": 2}
 
 # The MIDI objects with no stub: counted, so a new one cannot appear unannounced,
 # and never rewritten. polytouchin's pressure path is uncovered

@@ -63,6 +63,12 @@ mode-3 og-shift-61 test-mode 0
 mode-4 og-shift-61 test-mode 0
 mode-5 og-shift-61 test-mode 0
 mode-6 og-shift-61 test-mode 0
+mode-1 lp-setup test-mode 0
+mode-2 lp-setup test-mode 0
+mode-3 lp-setup test-mode 0
+mode-4 lp-setup test-mode 0
+mode-5 lp-setup test-mode 0
+mode-6 lp-setup test-mode 0
 mode-1 og-shift-72 stop 0
 mode-2 og-shift-72 stop 0
 mode-3 og-shift-72 stop 0

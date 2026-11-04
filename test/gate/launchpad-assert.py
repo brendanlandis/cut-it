@@ -15,8 +15,14 @@ while a pad is held: re-entering it makes the device let go of every held pad
 Panic must not hand the surface back: that kills the grid until a reload, and
 in Live Mode the device floods Pd's Midi-In 1 with clock (item 250). What g_grid
 does with the surface is display-assert's.
+
+And a tap on Setup. The device announces Programmer Mode unasked when Setup is
+tapped, and the same frame after every entry the patch sends, so m_launchpad
+publishes lp-setup only for an announcement no entry is waiting on. The driver
+answers each entry as the device does, until MUTE (the drive-gen's device()).
 """
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -26,7 +32,23 @@ import lib_grid as G                                           # noqa: E402
 PROGRAMMER, LIVE = 1, 0
 
 
-MARKS = ("SETTLED", "PANIC", "HELD", "SWAP", "LET-GO", "QUIT")
+MARKS = ("SETTLED", "PANIC", "HELD", "SWAP", "LET-GO", "TAP", "OTHER", "MUTE", "LOST",
+         "QUIT")
+TAP = ["lp-setup", "127"]
+ECHO_RE = re.compile(r"^LPECHO:\s+bang\s*$")
+MARK_RE = re.compile(r"^LP:\s+MARK\s+(\S+)\s*$")
+
+
+def echoes(cap):
+    """{mark: the device's answers in that window}, read in capture order."""
+    out, cur = {}, "PRE"
+    for line in cap.splitlines():
+        m = MARK_RE.match(line.strip())
+        if m:
+            cur = m.group(1)
+        elif ECHO_RE.match(line.strip()):
+            out[cur] = out.get(cur, 0) + 1
+    return out
 
 
 def main():
@@ -39,7 +61,7 @@ def main():
 
     # A Pd that died after SETTLED would leave PANIC and QUIT empty, and the
     # exact counts below would be answered by an empty list.
-    A.windows(cap, "LP", len(MARKS))
+    _order, by = A.windows(cap, "LP", len(MARKS))
 
     # Nothing below can tell an unrewritten scratch copy from a device that was
     # never told anything.
@@ -107,6 +129,50 @@ def main():
     A.check("... and let go, the heartbeat comes back", beats["LET-GO"] >= 1,
             "no heartbeat in the 4 s after the pad was let go -- a replugged Launchpad on "
             "the Mac would stay in Live Mode")
+
+    # The Setup tap. The device model's answers first: without them every
+    # "no lp-setup" below is answered by a run in which nothing was echoed.
+    echo = echoes(cap)
+    before = MARKS[:MARKS.index("MUTE")]
+    sent = len([f for f in prog if f.mark in before])
+    heard = sum(echo.get(m, 0) for m in before)
+    A.check("the device answered every Programmer Mode entry, the init's among them",
+            sent >= 3 and heard == sent,
+            "%d entries sent before MUTE, %d answered -- is t_midiout sending on "
+            "t-midiout, and the driver's device matching?" % (sent, heard))
+
+    def taps(m):
+        return [v for k, v in by.get(m, []) if k == "PARAM" and v[:1] == ["lp-setup"]]
+
+    def test_mode(m):
+        return [v for k, v in by.get(m, []) if k == "ERR" and v[1:2] == ["u_net"]
+                and v[2:3] in (["test-mode-on"], ["test-mode-off"])]
+
+    stray = {m: taps(m) for m in MARKS if m not in ("TAP", "OTHER", "LOST") and taps(m)}
+    A.check("⛔ an entry's echo is not a tap -- no lp-setup outside TAP and LOST",
+            not stray,
+            "lp-setup in %s: the announcement each Programmer Mode entry makes was "
+            "read as a tap on Setup, which flips test mode every two seconds" % stray)
+    A.check("a tap on Setup publishes lp-setup 127, once", taps("TAP") == [TAP],
+            "TAP saw %s" % taps("TAP"))
+    A.check("... and through the map it flips test mode on",
+            test_mode("TAP") == [["warn", "u_net", "test-mode-on"]],
+            "TAP saw %s on err -- is the lp-setup row in cut-it-map.txt?" % test_mode("TAP"))
+    A.check("⛔ only that frame is a tap -- another layout's, and it a byte short or "
+            "long, are not", not taps("OTHER"),
+            "OTHER saw %s: the match is looser than the whole frame" % taps("OTHER"))
+    muted = len([f for f in prog if f.mark == "MUTE"])
+    A.check("muted, the device leaves an entry unanswered",
+            muted >= 1 and echo.get("MUTE", 0) == 0,
+            "%d entries and %d answers in MUTE: the next check needs one "
+            "unanswered" % (muted, echo.get("MUTE", 0)))
+    A.check("⛔ an echo that never came is forgotten -- a tap after it is a tap",
+            taps("LOST") == [TAP],
+            "LOST saw %s: the unanswered entry still swallows a tap made long after "
+            "it" % taps("LOST"))
+    A.check("... and flips test mode off again",
+            test_mode("LOST") == [["info", "u_net", "test-mode-off"]],
+            "LOST saw %s on err" % test_mode("LOST"))
 
     A.note("%d mode switch(es) in the run: %s"
            % (len(mode), " ".join("programmer" if f.data[7:8] == [PROGRAMMER] else "live"

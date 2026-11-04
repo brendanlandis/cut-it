@@ -66,8 +66,11 @@ sequence is still bringing it up. See [presence.md](presence.md).
 | `Pure Data:4` | `Launchpad Pro MK3:0` | LEDs and SysEx out | verified | — |
 | `nanoKONTROL:0` | `Pure Data:1` | Faders, knobs, transport, Pd channels 17–32 | verified | — |
 | `Pure Data:5` | `nanoKONTROL:0` | The device inquiry, and nothing else | verified | 274 |
+| `Streichfett:0` | `Pure Data:2` | Its replies and its panel, Pd channels 33–48; nothing reads them yet | unknown | — |
+| `Pure Data:6` | `Streichfett:0` | Notes, CC and SysEx out to the Streichfett | unknown | — |
 | `USB Uno MIDI Interface:0` | `Pure Data:3` | Nothing today — the DIN IN jack, for a future device. Pd channels 49–64 | verified | — |
 | `Pure Data:7` | `USB Uno MIDI Interface:0` | Notes and CC out to the Volca | verified | — |
+| `nanoKEY:0` | `Pure Data:3` | Its keys, Pd channels 49–64, sharing Midi-In 4 with the DIN IN, which carries nothing | unknown | — |
 
 **The port map, from `/root/.pdsettings` — four in, four out:**
 
@@ -79,10 +82,11 @@ sequence is still bringing it up. See [presence.md](presence.md).
 **Slot *n* gets channels (n−1)×16+1 upward.** That is where every `m_` layer's channel-block argument
 comes from.
 
-⚠️ **Pd's port 3 is wired to nothing** — `Pure Data:2` in, channels 33–48, and `Pure Data:6` out. It
-was the SP-404's until the 404 left the rig (Brendan, 2026-11-04), and is reserved for the Waldorf
-Streichfett. Nothing in Cut It sends there: `tempo-assert` holds the clock and the STOPs off it,
-`debug-assert` the debug patch's keys, and `nano-assert` that nothing listens on channel 33.
+⚠️ **Pd's port 3 is the Waldorf Streichfett's** — `Pure Data:2` in, channels 33–48, and `Pure Data:6`
+out — since 2026-11-04; it was the SP-404's until the 404 left the rig (Brendan, 2026-11-04). The
+nanoKEY came in with it and shares Midi-In 4. Nothing in Cut It sends to the Streichfett yet:
+`tempo-assert` holds the clock and the STOPs off its port, `debug-assert` the debug patch's keys,
+and `nano-assert` that nothing listens on channel 33.
 
 ### Undoing mother's autoconnect
 
@@ -91,6 +95,8 @@ Streichfett. Nothing in Cut It sends there: `tempo-assert` holds the clock and t
 | From | To | Evidence | Item |
 |------|----|----------|------|
 | `nanoKONTROL:0` | `Pure Data:0` | verified | — |
+| `Streichfett:0` | `Pure Data:0` | ✅ needed: after the reboot of 2026-11-04 the Streichfett was the lowest client and sat on Midi-In 1, the Launchpad's channel block | — |
+| `nanoKEY:0` | `Pure Data:0` | unknown | — |
 | `USB Uno MIDI Interface:0` | `Pure Data:0` | verified | — |
 
 mother's autoconnect wires whichever device enumerates lowest to Pd's Midi-In 1

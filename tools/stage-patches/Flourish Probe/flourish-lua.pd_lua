@@ -2,12 +2,11 @@
 -- into calls on the rules and plays the plans they return on a clock; what a plan holds is in
 -- flourish.lua.
 --
--- inlet 1: init | key <pitch> <velocity> | knob <n> <0..1> | pad <note> <velocity> <channel> |
--- wire <words...> | quit
+-- inlet 1: init | key <pitch> <velocity> | knob <n> <0..1> | wire <words...> | quit
 -- outlet 1: <note> <velocity> <channel>, to noteout. outlet 2: <value> <number> <channel>, to
 -- ctlout. outlets 3-7: a symbol, to screenLine1-5.
 --
--- A key's plan replaces the one running; a knob's or a pad's only adds its screen line now. A
+-- A key's plan replaces the one running; a knob's only adds its screen line now. A
 -- Lua error shows as "lua error" on line 5 and its text goes to the console where there is one.
 
 local P = pd.Class:new():register("flourish-lua")
@@ -67,8 +66,6 @@ function P:in_1(sel, atoms)
       if plan then self:run(plan) end
     elseif sel == "knob" then
       self:now_only(R.knob(self.st, atoms[1], atoms[2]))
-    elseif sel == "pad" then
-      self:now_only(R.pad(self.st, atoms[1], atoms[2], atoms[3]))
     elseif sel == "init" then
       self:now_only(R.init(self.st))
     elseif sel == "wire" then

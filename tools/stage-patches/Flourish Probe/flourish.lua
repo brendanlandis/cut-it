@@ -10,18 +10,18 @@
 -- (Brendan heard A1 after A11, 2026-11-04). In the plain one every hit is A11, so the stutter can
 -- be heard without the pitch.
 --
--- Method B, looper: Pd loads DJFX Looper on BUS 3 and switches it on, fires A11 once, switches
+-- Method B, looper: Pd loads DJFX Looper on BUS 1 and switches it on, fires A11 once, switches
 -- LOOP SW on and lowers SPEED over the run, so the loop repeats slower and lower together; then
--- it puts SPEED back and switches the loop and the effect off. BUS 3 is a master bus, so it
--- catches A11 whatever bus the pad sends to. From the 404's manual (v5.50): BUS 3 is MIDI
--- channel 3, CC 83 picks its effect and 35 is DJFX Looper, and (v3.00 chart) CC 19 switches the
--- effect and CC 16-18 are CTRL 1-3. That LENGTH, SPEED and LOOP SW are CTRL 1, 2 and 3, and how
--- a CC value maps to LENGTH, are guesses.
+-- it puts SPEED back and switches the loop and the effect off. On channel 1: CC 83 = 5 picks
+-- BUS 1's Direct FX5, the DJFX Looper button; CC 19 switches the effect; CC 18 is LOOP SW and
+-- CC 17 SPEED (recorded looping, its pitch falling, 2026-11-04). The same messages on channel 3,
+-- BUS 3, did nothing. That CC 16 is LENGTH, and how its value maps to milliseconds, are guesses.
 --
 -- Every rule returns a plan: events in time order, each {t, kind, ...}, t in ms from now.
 --   {t, "note", note, velocity, channel}   to noteout, channel as Pd numbers it (33 = 404 ch 1)
 --   {t, "cc", value, number, channel}      to ctlout
 --   {t, "line", n, text}                   to screenLine<n>, at most 21 characters
+--   {t, "rec", selector, atoms}            to writesf~, which records the Organelle's input
 -- A new plan replaces whatever is still running.
 
 local R = {}
@@ -42,13 +42,15 @@ function R.new()
     gap1 = 400,         -- ms, knob 3
     speed_end = 20,     -- percent of normal, knob 4
     chrom_chan = 16, chrom_top = 48, chrom_drop = 12,
-    bus = 3, fx = 35,   -- BUS 3's channel, and DJFX Looper's number there
+    bus = 1, fx = 5,    -- BUS 1's channel, and its Direct FX5, the DJFX Looper button
     cc_fx = 83, cc_fx_sw = 19,
     cc_len = 16, cc_speed = 17, cc_loop = 18,
     settle = 50,        -- ms between loading the effect and the hit
     late = 230,         -- ms: DJFX Looper's longest LENGTH
     step = 20,          -- ms between SPEED changes
     looped = false,     -- once the looper has run, every plan starts by resetting it
+    rec_dir = "/tmp",   -- each run is recorded to <rec_dir>/flourish-<job>.wav
+    rec_tail = 700,     -- ms recorded past a run's last event
   }
 end
 
@@ -171,10 +173,7 @@ local function looper(st, on)
   return plan
 end
 
--- A key: <pitch> <velocity>. A release, or a key with no job, plans nothing (nil).
-function R.key(st, pitch, vel)
-  if num(vel) <= 0 then return nil end
-  local job = R.KEYS[num(pitch)]
+local function plan_for(st, job)
   if job == "chrom" then return retrigger(st, true)
   elseif job == "plain" then return retrigger(st, false)
   elseif job == "loop" then return looper(st, 10)
@@ -191,6 +190,26 @@ function R.key(st, pitch, vel)
     return plan
   end
   return nil
+end
+
+-- A key: <pitch> <velocity>. A release, or a key with no job, plans nothing (nil). Every run
+-- but stop is recorded from the Organelle's input, the 404 as it reaches the Organelle, so a
+-- run can be heard back off the device: the Mac's own recording of the rig is not available to
+-- Claude's tools (2026-11-04).
+function R.key(st, pitch, vel)
+  if num(vel) <= 0 then return nil end
+  local job = R.KEYS[num(pitch)]
+  local plan = plan_for(st, job)
+  if not plan or job == "stop" then return plan end
+  local last = 0
+  for _, e in ipairs(plan) do if e[1] > last then last = e[1] end end
+  local rec = {
+    { 0, "rec", "open", { "-bytes", 2, st.rec_dir .. "/flourish-" .. job .. ".wav" } },
+    { 0, "rec", "start", {} },
+  }
+  for _, e in ipairs(plan) do rec[#rec + 1] = e end
+  rec[#rec + 1] = { last + st.rec_tail, "rec", "stop", {} }
+  return rec
 end
 
 -- A knob: <n> <position 0..1>. Changes the next run, never the one in flight; plans only the

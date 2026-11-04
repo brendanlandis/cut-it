@@ -4,7 +4,7 @@
 --
 -- inlet 1: init | key <pitch> <velocity> | knob <n> <0..1> | wire <words...> | quit
 -- outlet 1: <note> <velocity> <channel>, to noteout. outlet 2: <value> <number> <channel>, to
--- ctlout. outlets 3-7: a symbol, to screenLine1-5.
+-- ctlout. outlets 3-7: a symbol, to screenLine1-5. outlet 8: open, start or stop, to writesf~.
 --
 -- A key's plan replaces the one running; a knob's only adds its screen line now. A
 -- Lua error shows as "lua error" on line 5 and its text goes to the console where there is one.
@@ -13,7 +13,7 @@ local P = pd.Class:new():register("flourish-lua")
 local R = dofile(P._loadpath .. "flourish.lua")
 
 function P:initialize(_, _)
-  self.inlets, self.outlets = 1, 7
+  self.inlets, self.outlets = 1, 8
   self.st = R.new()
   self.plan, self.i, self.now = {}, 1, 0
   self.clock = pd.Clock:new():register(self, "tick")
@@ -31,6 +31,8 @@ function P:emit(e)
     self:outlet(2, "list", { e[3], e[4], e[5] })
   elseif e[2] == "line" then
     self:outlet(2 + e[3], "symbol", { e[4] })
+  elseif e[2] == "rec" then
+    self:outlet(8, e[3], e[4])
   end
 end
 

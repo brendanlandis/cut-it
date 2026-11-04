@@ -233,7 +233,9 @@ def node(kind, name, frame, children=(), text=None, x=0, **over):
     if kind in ("LABEL", "TEXT"):
         vals.append(value("text", text if text is not None else name, 1))
     vals.append(value("touch", "false"))
-    out = ['<node ID="%s" type="%s">' % (uuid.uuid4(), kind)]
+    # Every control's name is its own (touchosc-assert holds it), so its ID comes from its name:
+    # the same layout builds to the same bytes, and git shows only what really changed.
+    out = ['<node ID="%s" type="%s">' % (uuid.uuid5(uuid.NAMESPACE_URL, "cut-it/" + name), kind)]
     if kind == "GROUP" and name == "root":
         out.append("<includes/>")
     out.append("<properties>" + "".join(prop(t, k, v) for k, (t, v) in sorted(props.items()))

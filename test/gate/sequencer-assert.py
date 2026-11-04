@@ -38,7 +38,10 @@ WINDOWS = ["EARLY", "RESTORE", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
            "RULE-ON", "RULE-SAME", "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER",
            "FREE-ROW", "MODE-2", "OTHER-MODE", "MODE-1", "PLAY", "STOP", "STOPPED",
            "KNOB2-HELD", "LAST-3", "REPLAY", "PANIC", "AFTER-PANIC", "KNOB3",
-           "PAST-LAST", "POLY", "POLY-STOP", "SNAP", "SNAP-PLAY", "SNAP-STOP", "DONE"]
+           "PAST-LAST", "POLY", "POLY-STOP", "SNAP", "SNAP-PLAY", "SNAP-STOP",
+           "SWING", "SW-PLAY", "SW-GAP", "SW-LATE", "SW-ON", "SW-STOP",
+           "REP-PLAY", "REP-PRESS", "REP-HELD", "REP-OFF", "REP-STOP", "DRUNK", "DR-PLAY"] + \
+    ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DONE"]
 EDITS = ["VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
 
@@ -46,7 +49,9 @@ MARK = re.compile(r"^SEQ:\s+MARK\s+(\S+)$")
 NOTE = re.compile(r"^NOTEOUT:\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)$")
 
 
-CELLS = 16 * 32                 # then the 16 tracks' own last steps: 528 in a line
+CELLS = 16 * 32                 # then the 16 tracks' own last steps, their skip and move
+LINE = CELLS + 16 * 3 + 3       # chances, the time signature and the drunkenness: 563
+BAR = 7 * 16 // 8               # the seed's 7/8: a bar of 14 steps
 
 
 def idx(track, step):
@@ -129,15 +134,16 @@ def played(evs, marks, lay):
     return out
 
 
-def page_check(frame, lay, pat, track, lvl, head=None, last=16):
+def page_check(frame, lay, pat, track, lvl, head=None, last=16, rep=0):
     """-> None if the frame is the drum page for this pattern, track, level and
-    last step (and playhead, if given), else what differs."""
+    last step (and playhead and repeat pad held, if given), else what differs.
+    The seed's 7/8 makes a bar BAR steps, so steps 1, 15 and 29 are blue when off."""
     problem, lamp, page = G.drum_page(frame, lay)
     if problem:
         return problem
     if lamp != G.LAMPS[0]:
         return "lit mode lamp is %s, not mode 1's %d" % (lamp, G.LAMPS[0])
-    want = [G.step_color(pat[idx(track, s)], s, last) for s in range(1, 33)]
+    want = [G.step_color(pat[idx(track, s)], s, last, BAR) for s in range(1, 33)]
     if head:
         want[head - 1] = G.PLAYHEAD
     got = [page["step"].get(s) for s in range(1, 33)]
@@ -150,6 +156,9 @@ def page_check(frame, lay, pat, track, lvl, head=None, last=16):
     pads = {n: c for n, c in page["pad"].items() if c != G.PAD_DIM}
     if pads != {track: G.LEVEL_RGB[lvl - 1]}:
         return "pads lit %s, want pad %d in level %d's color" % (pads, track, lvl)
+    reps = {n: G.REP_HELD if n == rep else G.REP_DIM for n in range(1, 5)}
+    if page["rep"] != reps:
+        return "repeat pads %s, want %s" % (page["rep"], reps)
     return None
 
 
@@ -158,8 +167,8 @@ def main():
     cap = A.require_capture(sys.stdin.read())
     lay = G.drum_layout()
     seed = read_key(opt.seed)
-    if not A.check("the seed holds %s, 512 velocities and 16 last steps" % KEY,
-                   seed is not None and len(seed) == CELLS + 16, "seed: %s" % seed):
+    if not A.check("the seed holds %s, 512 velocities, 16 last steps, 32 chances, 7/8 and "
+                   "sober" % KEY, seed is not None and len(seed) == LINE, "seed: %s" % seed):
         return A.report()
 
     order, by = A.windows(cap, "SEQ", len(WINDOWS))
@@ -203,7 +212,7 @@ def main():
             ons("EARLY") == [(48, 90, BANK_A)], "note-ons: %s" % ons("EARLY"))
 
     print("\n--- the restore ---")
-    A.check("⛔ the restored pattern is put straight back -- once, the seeded 528 exactly",
+    A.check("⛔ the restored pattern is put straight back -- once, the seeded 563 exactly",
             puts("RESTORE") == [seed],
             "%d put(s) of %s; the first holds %s values" % (
                 len(puts("RESTORE")), KEY, len(puts("RESTORE")[0]) if puts("RESTORE") else 0))
@@ -246,11 +255,11 @@ def main():
             not rows, rows)
 
     print("\n--- the free corner ---")
-    A.check("the top of the right 4x4 is not the drum page: no put and no note",
+    A.check("the second row of the right 4x4 is not the drum page: no put and no note",
             not puts("FREE-ROW") and not ons("FREE-ROW"),
             "puts %d, note-ons %s" % (len(puts("FREE-ROW")), ons("FREE-ROW")))
-    A.check("... and it names itself, as an unmapped control does -- pad-46 100",
-            raw("FREE-ROW") == [["pad-46", "100"]], raw("FREE-ROW"))
+    A.check("... and it names itself, as an unmapped control does -- pad-36 100",
+            raw("FREE-ROW") == [["pad-36", "100"]], raw("FREE-ROW"))
 
     print("\n--- another mode ---")
     A.check("in mode 2 a step pad is not the drum page: no put and no note",
@@ -359,15 +368,64 @@ def main():
     snapped = [r for r in played(evs, {"SNAP-PLAY", "SNAP-STOP"}, lay) if r[0] is not None]
     A.check("... and track 2 then walks the global loop -- 1 2 3 1",
             [s for s, _n in snapped][:4] == [1, 2, 3, 1], "steps %s" % [s for s, _n in snapped])
+    A.check("STOP stops it again", not ons("SWING"), "note-ons: %s" % ons("SWING"))
+
+    # Each time the playhead moves, from the frames: [(window, step)].
+    heads, last_head = [], None
+    for mark, kind, x in evs:
+        if kind != "FRAME":
+            continue
+        _p, _l, page = G.drum_page(x, lay)
+        h = [n for n, c in page["step"].items() if c == G.PLAYHEAD]
+        h = h[0] if len(h) == 1 else None
+        if h is not None and h != last_head:
+            heads.append((mark, h))
+        last_head = h
+    moved = lambda *ks: [n for m, n in heads if m in ks]
+
+    print("\n--- knob 4, swing ---")
+    rows = knob_rows("SWING", "swing")
+    A.check("⛔ knob 4 starts HELD at 50%: at 25% it draws swing 50 (25), then turned through "
+            "it, swing 75 %", rows == [["swing", "50", "(25)"], ["swing", "75", "%"]], rows)
+    A.check("... and it is not saved: no put", not puts("SWING"), "puts: %d" % len(puts("SWING")))
+    A.check("⛔ at 75% step 2 waits three quarters of the pair: not painted by 190 ms, and "
+            "painted by 260", moved("SW-PLAY", "SW-GAP") == [1] and moved("SW-LATE") == [2],
+            "by window: %s" % [(m, n) for m, n in heads if m.startswith("SW-")])
+    A.check("... and step 3 lands on the beat after it", moved("SW-ON") == [3],
+            "SW-ON: %s" % moved("SW-ON"))
+
+    print("\n--- a repeat pad ---")
+    A.check("PLAY walks 1 2 3 before the repeat pad", moved("REP-PLAY", "REP-PRESS") == [1, 2, 3],
+            "steps %s" % moved("REP-PLAY", "REP-PRESS"))
+    A.check("⛔ repeat pad 1 held: the playhead stays on 3 and track 1's step 3 plays on every "
+            "step -- four times", moved("REP-HELD") == [] and
+            ons("REP-HELD") == [(PAD_NOTE[0], final[idx(1, 3)], BANK_A)] * 4,
+            "steps %s, note-ons %s" % (moved("REP-HELD"), ons("REP-HELD")))
+    A.check("⛔ let go, the loop goes on from where it would have been -- 2 then 3, not 1",
+            moved("REP-OFF") == [2, 3], "steps %s" % moved("REP-OFF"))
+    held = [G.drum_page(f, lay)[2]["rep"] for f in frames("REP-HELD")[-1:]]
+    A.check("⛔ held, repeat pad 1 is bright purple and the other three dim",
+            held == [{1: G.REP_HELD, 2: G.REP_DIM, 3: G.REP_DIM, 4: G.REP_DIM}], held)
+    gone = [G.drum_page(f, lay)[2]["rep"] for f in frames("REP-OFF")[-1:]]
+    A.check("... and let go, all four dim", gone == [{k: G.REP_DIM for k in range(1, 5)}], gone)
+
+    print("\n--- drunkenness ---")
+    got = [l[LINE - 1] for l in puts("DRUNK")]
+    A.check("drunk 100, sent to u_net over OSC as the phone sends it, is saved", got == [100],
+            "drunkenness in the puts: %s" % got)
+    counts = [len(moved("DR-%d" % k)) for k in range(1, 97)]
+    A.check("⛔ drunk, the steps leave the grid: sober, each of 96 windows a sixteenth "
+            "wide holds one step", sum(counts) >= 24 and counts != [1] * 96,
+            "steps per window: %s" % counts)
     A.check("STOP stops it again", not ons("DONE"), "note-ons: %s" % ons("DONE"))
 
     print("\n--- the disk ---")
     disk = read_key(os.path.join(opt.state, "cut-it-auto.txt"))
     with open(os.path.join(opt.state, "cut-it-auto.txt"), encoding="utf-8") as fh:
         lines = [l for l in fh.read().splitlines() if l.split()[:1] == [KEY]]
-    snapped = final[:CELLS] + [0] * 16
-    A.check("⛔ %s reaches cut-it-auto.txt as ONE line, the final 528 exactly" % KEY,
-            disk == snapped and len(lines) == 1 and len(lines[0].split()) == CELLS + 17,
+    snapped = final[:CELLS] + [0] * 48 + [7, 8, 100]
+    A.check("⛔ %s reaches cut-it-auto.txt as ONE line, the final 563 exactly" % KEY,
+            disk == snapped and len(lines) == 1 and len(lines[0].split()) == LINE + 1,
             "on disk: %s" % (disk if disk is None else "%d values" % len(disk)))
 
     errs = [e[1] for k in order for e in W(k) if e[0] == "ERR"

@@ -67,10 +67,11 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key | verified | 293 |
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, in all six modes** | verified | 301 |
-| `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | Non-zero is a press: `<role> <n> <velocity>` to `c_steps`, the pad's own velocity. A release does nothing; an index the layout lacks is `fail u_map layout-miss` | unknown | — |
+| `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad; an index the layout lacks is `fail u_map layout-miss` | verified | — |
 | `test-mode` | unused | Non-zero flips `u_net`'s test mode, in which the phone's checklist page may send Send lines ([phone.md](../device/phone.md)). **`og-shift-61`, in all six modes**; out `u_map`'s fourth outlet, a cord to `u_net` | unknown | — |
 | `last-step` | unused | The knob's 0–1, as it is, held or not: `last <0-1>` to `c_steps` on the drum page's outlet, which scales it to the global last step, **1–32**, latches it and draws its row. **`og-knob-2`, in mode 1** | verified | — |
 | `track-last` | unused | The same for the selected track's own last step: `track-last <0-1>`. **`og-knob-3`, in mode 1** | verified | — |
+| `swing` | unused | The same for the sequencer's swing, 25% to 75%: `swing <0-1>`. **`og-knob-4`, in mode 1** | verified | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -102,7 +103,7 @@ there and nowhere else.
 | `volca-note` | `volca-note60 100` | same shape | verified | 316 |
 | `404-pad` | `404-pad5 90` | same shape | verified | 316 |
 | `volca-prog` | `volca-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
-| `last-step`, `track-last` | `last-step 12`, `pad2-last 6`: drawn by `c_steps`, which holds the latch | `last-step 16 (7)` | verified | — |
+| `last-step`, `track-last`, `swing` | `last-step 12`, `pad2-last 6`, `swing 62 %`: drawn by `c_steps`, which holds the latch | `last-step 16 (7)`, `swing 50 (25)` | verified | — |
 | `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
 | `drum-page` | **nothing** — the grid is the feedback, and 56 pads in use would bury the screen | none | unknown | — |
 | the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the footer, the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
@@ -492,7 +493,7 @@ per control, so two faders moving are two rows rather than four (item 317).
 
 ### The drum page is one destination and a layout table
 
-Mode 1's 56 drum-page pads are 56 rows, `mode-1 pad-81 drum-page 81`, and the arg is the grid
+Mode 1's 60 drum-page pads are 60 rows, `mode-1 pad-81 drum-page 81`, and the arg is the grid
 index because the handler never sees the control's name — the `volca-key` precedent. The handler
 looks the index up in `cut-it-drum-page.txt`, the table `g_grid` paints the page from
 ([display.md](display.md)), so `c_steps` receives `step 1 100` and never a cell. **The map says

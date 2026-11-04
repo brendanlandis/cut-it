@@ -10,17 +10,22 @@ which the phone shows while the Launchpad is in mode 1 (Brendan, 2026-11-03):
 whether it plays, the tempo, the global last step, the alert and the link down
 the left; the sixteen pads as the Launchpad lays them out, each showing its
 last step, amber with a last step of its own, dark when selected, and a tap
-selects it; sync first steps and snap to global on the right, with a line
-saying one is waiting for the global loop's step 1.
+selects it, with the selected track's skip and move chances under them; sync
+first steps and snap to global on the right, with a line saying one is waiting
+for the global loop's step 1, then the time signature, two numbers with a minus
+and a plus each, and the drunkenness (Brendan, from a mockup, 2026-11-04).
 
 The two screens sit side by side in one scene, the drum screen 500 units to the
 right, and PdParty shows the one under its ViewPort canvas: the mode moves it
 (the PdParty Reference page, The ViewPort canvas). What the drum screen shows
-comes from u_net as /cutit/drums, c_steps' 36 numbers (ref/device/phone.md).
+comes from u_net as /cutit/drums, c_steps' 41 numbers (ref/device/phone.md).
 
-The pads' and buttons' commands are message boxes in [pd guts], corded to its
-one [oscformat cutit], so the phone gate reads them off the graph as it reads
-the remote's; their display logic is a [pd drums] of its own.
+The pads', buttons' and sliders' commands are message boxes in [pd guts],
+corded to its one [oscformat cutit], so the phone gate reads them off the graph
+as it reads the remote's; their display logic is a [pd drums] of its own. A
+slider sends whole percents, only when they change, and for a second after a
+touch it ignores the state coming back, which would pull it back to where it
+was while the Organelle catches up.
 """
 import os
 import re
@@ -35,6 +40,7 @@ X0 = 500            # the drum screen's left edge; the remote screen is 0 to 448
 VIEW = 448          # one screen, half the iPhone 11's landscape points
 HEIGHT = 207
 NOTCH = 22          # kept clear on the right (rig-faces-away-from-the-mac)
+FOOT = 17           # kept clear at the bottom: the home indicator (the PdParty Reference page)
 
 
 # Pd's iemgui colors as a saved file holds them, six bits a channel, and as a
@@ -51,7 +57,7 @@ def mcol(r, g, b):
 INK, PAPER, BTN, LIT, EDGE = (24, 24, 24), (232, 232, 232), (252, 252, 252), (140, 210, 140), \
     (96, 96, 96)
 # A pad: following the global last step, with its own, selected, selected with its own.
-PAD = [((200, 200, 200), (40, 40, 40)), ((248, 208, 112), (60, 40, 0)),
+PADS = [((200, 200, 200), (40, 40, 40)), ((248, 208, 112), (60, 40, 0)),
        ((60, 60, 60), (255, 255, 255)), ((150, 100, 20), (255, 255, 255))]
 
 
@@ -95,44 +101,97 @@ def centered(w, text, fs):
     return max(2, int(w / 2 - len(text) * fs * 0.3))
 
 
+PAD, PITCH, PAD_Y = 33, 35, 4
+
+
 def pad_xy(n):
     """Pad n, 1 to 16, laid out as the Launchpad's drum pads: 1 at the top left."""
     r, c = (n - 1) // 4, (n - 1) % 4
-    return X0 + 156 + c * 36, 33 + r * 36
+    return X0 + 156 + c * PITCH, PAD_Y + r * PITCH
 
 
-BUTTONS = [("sync", "sync" + NBSP + "first" + NBSP + "steps", 30),
-           ("snap", "snap" + NBSP + "to" + NBSP + "global", 92)]
-BX, BW, BH = X0 + 304, 118, 50
+def hsl(x, y, w, h, name, label):
+    """A slider, 0 to 100, that jumps to the touch: it sends on <name>-press and
+    takes set and label on <name>-in."""
+    return "#X obj %d %d hsl %d %d 0 100 0 0 %s-press %s-in %s 5 %d 0 11 %d %d %d 0 0;" % (
+        x, y, w, h, name, name, label, h // 2, col(*BTN), col(*INK), col(*INK))
+
+
+BUTTONS = [("sync", "sync" + NBSP + "first" + NBSP + "steps", 4),
+           ("snap", "snap" + NBSP + "to" + NBSP + "global", 42)]
+BX, BW, BH = X0 + 304, 118, 34
+# What the drum screen sends after "drums", as u_net routes them, and c_steps' state's length.
+ACTIONS = ["sync", "snap", "select", "num", "den", "drunk", "skip", "move"]
+# The ones u_net acknowledges: the rest show in the state that comes back.
+ACKED = ACTIONS[:3]
+STATE = 41
+# The sliders: the selected track's chances under the pads, the drunkenness on the right.
+SLIDERS = [("skip", X0 + 156, 146, 3 * PITCH + PAD, 20),
+           ("move", X0 + 156, 170, 3 * PITCH + PAD, 20),
+           ("drunk", BX, 160, BW, 30)]
+# The time signature: a row each for the top and bottom numbers, a minus, the number, a plus.
+SIG = [("num", 95), ("den", 127)]
+STEP, NUM_W = 28, 54
+MINUS = "\u2212"
 
 
 def face():
     """The drum screen's widgets, for the main canvas: no cords, only names."""
-    w = []
+    w, rects = [], []
+
+    def put(rec, x, y, wd, h):
+        w.append(rec)
+        rects.append((x, y, wd, h))
+
     # down the left: the transport, the tempo (u_net's status), the global last
     # step, the alert and the link, the last three sharing the remote's names
-    w.append(cnv(X0 + 4, 4, 146, 30, "dr-play-out", "dr-play-in", "stopped", 14, PAPER))
-    w.append(cnv(X0 + 4, 38, 146, 44, "\\$0-status2-out", "\\$0-status-in", "-", 20, PAPER))
-    w.append(cnv(X0 + 4, 86, 146, 34, "dr-glob-out", "dr-glob-in", "last" + NBSP + "16", 16, PAPER))
-    w.append(cnv(X0 + 4, 124, 146, 28, "\\$0-atxt2-out", "\\$0-atxt-in", "no-alerts", 12, PAPER))
-    w.append(cnv(X0 + 4, 156, 146, 32, "\\$0-link2-out", "\\$0-link-in", "NO-LINK", 16, PAPER))
+    for y, h, out, inn, label, fs in (
+            (4, 30, "dr-play-out", "dr-play-in", "stopped", 14),
+            (38, 44, "\\$0-status2-out", "\\$0-status-in", "-", 20),
+            (86, 34, "dr-glob-out", "dr-glob-in", "last" + NBSP + "16", 16),
+            (124, 28, "\\$0-atxt2-out", "\\$0-atxt-in", "no-alerts", 12),
+            (156, 32, "\\$0-link2-out", "\\$0-link-in", "NO-LINK", 16)):
+        put(cnv(X0 + 4, y, 146, h, out, inn, label, fs, PAPER), X0 + 4, y, 146, h)
     # the pads: a bng each, and the cell drawn over it, which the touch passes through
     for n in range(1, 17):
         x, y = pad_xy(n)
-        w.append(bng(x, y, 33, "dr-p%d" % n))
-        w.append(cnv(x, y, 33, 33, "dr-p%d-out" % n, "dr-p%d-in" % n, "16",
-                     14, PAD[0][0], PAD[0][1], centered(33, "16", 14)))
-    # the buttons: an edge, bngs across the whole width, and the face over them.
-    # Two at the ends left the middle, under the label, dead (Brendan, 2026-11-03).
+        put(bng(x, y, PAD, "dr-p%d" % n), x, y, PAD, PAD)
+        put(cnv(x, y, PAD, PAD, "dr-p%d-out" % n, "dr-p%d-in" % n, "16",
+                14, PADS[0][0], PADS[0][1], centered(PAD, "16", 14)),
+            x, y, PAD, PAD)
+    for name, x, y, wd, h in SLIDERS:
+        put(hsl(x, y, wd, h, "dr-" + name, name + NBSP + "0%"), x, y, wd, h)
+    # the buttons: an edge, bngs across the whole width inside it, and the face
+    # over them. Two at the ends left the middle, under the label, dead (Brendan,
+    # 2026-11-03), so as many as it takes to cover it.
     for name, label, y in BUTTONS:
-        w.append(cnv(BX - 2, y - 2, BW + 4, BH + 4, "dr-edge-%s-out" % name,
-                     "dr-edge-%s-in" % name, "empty", 10, EDGE))
-        for x in (BX, BX + (BW - BH) // 2, BX + BW - BH):
-            w.append(bng(x, y, BH, "dr-%s" % name))
-        w.append(cnv(BX, y, BW, BH, "dr-btn-%s-out" % name, "dr-btn-%s-in" % name, label, 11,
-                     BTN, INK, centered(BW, label, 11)))
-    w.append(cnv(BX, 152, BW, 22, "dr-pend-out", "dr-pend-in", NBSP, 10, PAPER))
-    assert max(int(r.split()[2]) + 118 for r in w if "dr-btn-" in r) <= X0 + VIEW - NOTCH
+        put(cnv(BX, y, BW, BH, "dr-edge-%s-out" % name, "dr-edge-%s-in" % name, "empty", 10,
+                EDGE), BX, y, BW, BH)
+        side, span = BH - 4, BW - 4
+        k = -(-span // side)
+        for i in range(k):
+            put(bng(BX + 2 + i * (span - side) // (k - 1), y + 2, side, "dr-%s" % name),
+                BX + 2, y + 2, side, side)
+        put(cnv(BX + 2, y + 2, span, side, "dr-btn-%s-out" % name, "dr-btn-%s-in" % name,
+                label, 11, BTN, INK, centered(span, label, 11)), BX + 2, y + 2, span, side)
+    put(cnv(BX, 78, BW, 14, "dr-pend-out", "dr-pend-in", NBSP, 10, PAPER), BX, 78, BW, 14)
+    # the time signature: the top number over a rule, as a fraction, and the bottom one
+    for name, y in SIG:
+        for side, x, label in (("down", BX, MINUS), ("up", BX + BW - STEP, "+")):
+            put(cnv(x, y, STEP, STEP, "dr-edge-%s-%s-out" % (name, side),
+                    "dr-edge-%s-%s-in" % (name, side), "empty", 10, EDGE), x, y, STEP, STEP)
+            put(bng(x + 2, y + 2, STEP - 4, "dr-%s-%s" % (name, side)), x + 2, y + 2,
+                STEP - 4, STEP - 4)
+            put(cnv(x + 2, y + 2, STEP - 4, STEP - 4, "dr-%s-%s-face-out" % (name, side),
+                    "dr-%s-%s-face-in" % (name, side), label, 16, BTN, INK,
+                    centered(STEP - 4, "+", 16)), x + 2, y + 2, STEP - 4, STEP - 4)
+        h = STEP - 2 if name == "num" else STEP
+        put(cnv(BX + 32, y, NUM_W, h, "dr-%s-out" % name, "dr-%s-in" % name, "4", 20, PAPER,
+                INK, centered(NUM_W, "4", 20)), BX + 32, y, NUM_W, h)
+    put(cnv(BX + 32, SIG[0][1] + STEP - 2, NUM_W, 2, "dr-rule-out", "dr-rule-in", "empty", 10,
+            INK), BX + 32, SIG[0][1] + STEP - 2, NUM_W, 2)
+    for x, y, wd, h in rects:
+        assert x + wd <= X0 + VIEW - NOTCH and y + h <= HEIGHT - FOOT, (x, y, wd, h)
     return w
 
 
@@ -161,14 +220,16 @@ def drums():
                      (ro, 1, m0), (m1, 0, ch), (m0, 0, ch), (ch, 0, se), (se, 0, pd),
                      (se, 1, pr), (pd, 0, sv), (pr, 0, sv)):
         g.con(a, ao, b)
-    # -- c_steps' state: playing, global, track, pending, 16 lasts, 16 owns
+    # -- c_steps' state: playing, global, track, pending, 16 lasts, 16 owns, num, den,
+    #    drunk, skip, move
     g.txt(600, 20, "The state: playing \\, the global last step \\, the selected track \\, "
-          "a pending sync or snap \\, then each track's last step and whether it is its own. "
-          "list split 36 drops anything short \\, as the empty repeat before the first state. "
+          "a pending sync or snap \\, then each track's last step and whether it is its own \\, "
+          "then the time signature \\, the drunkenness and the selected track's skip and move. "
+          "list split 41 drops anything short \\, as the empty repeat before the first state. "
           "t b a a: the arrays first \\, then the header \\, which gives expr the track \\, "
           "then the sixteen cells.", 60)
     rs = g.obj(600, 160, "r dr-state-in")
-    ls = g.obj(500, 200, "list split 36")
+    ls = g.obj(500, 200, "list split %d" % STATE)
     t3 = g.obj(600, 240, "t b a a")
     s4 = g.obj(900, 280, "list split 4")
     s16 = g.obj(900, 320, "list split 16")
@@ -178,9 +239,64 @@ def drums():
     do = g.obj(1100, 400, "array define \\$0-do 16")
     h4 = g.obj(750, 280, "list split 4")
     un = g.obj(750, 320, "unpack f f f f")
+    so = g.obj(1060, 320, "list split 16")
+    tail = g.obj(1300, 360, "unpack f f f f f")
     for a, ao, b in ((rs, 0, ls), (ls, 0, t3), (t3, 2, s4), (s4, 1, s16), (s16, 0, al),
-                     (s16, 1, ao_), (t3, 1, h4), (h4, 0, un)):
+                     (s16, 1, so), (so, 0, ao_), (so, 1, tail), (t3, 1, h4), (h4, 0, un)):
         g.con(a, ao, b)
+    # -- the time signature: each number as its readout's label, centered for one
+    #    digit or two
+    g.txt(1700, 20, "The time signature's numbers: the label \\, and its x for one digit or two. "
+          "A slider takes the state with set \\, so it sends nothing back \\, and sets the "
+          "change its touches go through \\, so a touch to the value it had still sends. A "
+          "touch shuts the spigot for a second: the state coming back meanwhile is the old "
+          "value \\, and would pull the slider back from under the finger.", 60)
+    for k, name in enumerate(("num", "den")):
+        x = 1700 + k * 320
+        ch_ = g.obj(x, 600, "change -1")
+        t_ = g.obj(x, 640, "t f f")
+        mf_ = g.obj(x, 680, "makefilename %d")
+        lp_ = g.obj(x, 720, "list prepend label")
+        lt_ = g.obj(x, 760, "list trim")
+        mo = g.obj(x + 120, 680, "moses 10")
+        h = STEP - 2 if name == "num" else STEP
+        p1 = g.msg(x + 120, 720, "label_pos %d %d" % (centered(NUM_W, "4", 20), h // 2))
+        p2 = g.msg(x + 200, 760, "label_pos %d %d" % (centered(NUM_W, "16", 20), h // 2))
+        sn_ = g.obj(x, 820, "s dr-%s-in" % name)
+        for a, ao, b in ((tail, k, ch_), (ch_, 0, t_), (t_, 1, mo), (mo, 0, p1), (mo, 1, p2),
+                         (p1, 0, sn_), (p2, 0, sn_), (t_, 0, mf_), (mf_, 0, lp_), (lp_, 0, lt_),
+                         (lt_, 0, sn_)):
+            g.con(a, ao, b)
+    # -- the sliders: drunk, skip, move, outlets 2 to 4 of the tail
+    for k, name in enumerate(("drunk", "skip", "move")):
+        x = 2400 + k * 420
+        sp_ = g.obj(x, 600, "spigot 1")
+        t_ = g.obj(x, 640, "t f f f")
+        ms_ = g.msg(x + 200, 680, "set \\$1")
+        mc_ = g.msg(x + 100, 680, "set \\$1")
+        mf_ = g.obj(x, 860, "makefilename %s%s%%d%%%%" % (name, NBSP))
+        lp_ = g.obj(x, 900, "list prepend label")
+        lt_ = g.obj(x, 940, "list trim")
+        sn_ = g.obj(x, 1000, "s dr-%s-in" % name)
+        rp = g.obj(x + 100, 460, "r dr-%s-press" % name)
+        tb = g.obj(x + 100, 500, "t f b")
+        tg = g.obj(x + 260, 540, "t b b")
+        z_ = g.msg(x + 340, 580, "0")
+        dl_ = g.obj(x + 260, 580, "del 1000")
+        o_ = g.msg(x + 260, 620, "1")
+        hf = g.obj(x + 100, 560, "+ 0.5")
+        i_ = g.obj(x + 100, 600, "i")
+        ch_ = g.obj(x + 100, 760, "change -1")
+        t2 = g.obj(x + 100, 800, "t f f")
+        ss = g.obj(x + 200, 860, "s dr-%s-send" % name)
+        for a, ao, b, bi in ((tail, 2 + k, sp_, 0), (sp_, 0, t_, 0), (t_, 2, ms_, 0),
+                             (ms_, 0, sn_, 0), (t_, 1, mc_, 0), (mc_, 0, ch_, 0), (t_, 0, mf_, 0),
+                             (mf_, 0, lp_, 0), (lp_, 0, lt_, 0), (lt_, 0, sn_, 0),
+                             (rp, 0, tb, 0), (tb, 1, tg, 0), (tg, 1, z_, 0), (z_, 0, sp_, 1),
+                             (tg, 0, dl_, 0), (dl_, 0, o_, 0), (o_, 0, sp_, 1), (tb, 0, hf, 0),
+                             (hf, 0, i_, 0), (i_, 0, ch_, 0), (ch_, 0, t2, 0), (t2, 1, mf_, 0),
+                             (t2, 0, ss, 0)):
+            g.con(a, ao, b, bi)
     # playing
     cp = g.obj(600, 600, "change -1")
     sp1 = g.obj(600, 640, "select 0 1")
@@ -244,7 +360,7 @@ def drums():
     g.con(ti, 0, ex)
     sel = g.obj(20, 1240, "select 0 1 2 3")
     g.con(ex, 0, sel)
-    for k, (bg, fg) in enumerate(PAD):
+    for k, (bg, fg) in enumerate(PADS):
         mm = g.msg(20 + k * 140, 1280, "color %d %d" % (mcol(*bg), mcol(*fg)))
         g.con(sel, k, mm)
         g.con(mm, 0, pc)
@@ -272,7 +388,7 @@ def guts_part(first, append_at, ack_route):
     """What [pd guts] gains: each pad's and button's command, corded to its one
     [list append] before [oscformat cutit], and the drums acknowledgment."""
     g = Canvas(first)
-    ra = g.obj(1730, 282, "route sync snap select")
+    ra = g.obj(1730, 282, "route " + " ".join(ACKED))
     g.con(ack_route, 3, ra)
     for k, name in enumerate(("sync", "snap")):
         s = g.obj(1730 + k * 200, 342, "s dr-ack-%s" % name)
@@ -288,9 +404,26 @@ def guts_part(first, append_at, ack_route):
         m = g.msg(x, 2250, "drums select %d" % n)
         g.con(r, 0, m)
         g.con(m, 0, append_at)
-    g.txt(12, 2320, "The drum screen's commands \\, GENERATED by build-remote.py: its two buttons "
-          "and its sixteen pads \\, each a message box corded to the list append above \\, so "
-          "the phone gate reads them off the graph with the remote's.", 80)
+    k = 0
+    for name, _y in SIG:
+        for side, d in (("down", -1), ("up", 1)):
+            x = 12 + k * 200
+            r = g.obj(x, 2400, "r dr-%s-%s-press" % (name, side))
+            m = g.msg(x, 2450, "drums %s %d" % (name, d))
+            g.con(r, 0, m)
+            g.con(m, 0, append_at)
+            k += 1
+    for name, *_rest in SLIDERS:
+        x = 12 + k * 200
+        r = g.obj(x, 2400, "r dr-%s-send" % name)
+        m = g.msg(x, 2450, "drums %s \\$1" % name)
+        g.con(r, 0, m)
+        g.con(m, 0, append_at)
+        k += 1
+    g.txt(12, 2520, "The drum screen's commands \\, GENERATED by build-remote.py: its two buttons "
+          "\\, its sixteen pads \\, the time signature's minus and plus \\, and its three "
+          "sliders \\, each a message box corded to the list append above \\, so the phone gate "
+          "reads them off the graph with the remote's.", 80)
     return g
 
 

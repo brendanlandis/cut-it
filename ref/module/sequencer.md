@@ -7,14 +7,16 @@
 
 **`c_steps` knows steps, velocities and pads, and never where they are.** It is a 32-step
 sequencer — sixteen tracks of 32 steps, a velocity per step, 0 for off, and a last step for the
-whole pattern or for one track — that plays the SP-404's pads on its own `c_clock`. What a press means arrives already translated from `u_map`
+whole pattern or for one track — that plays the SP-404's pads on its own `c_clock`, with swing,
+drunkenness, a time signature, four repeat pads, and a skip and a move chance per track
+(`cut-it/drum-timing`). What a press means arrives already translated from `u_map`
 (`step 5`, `vel 3`, `pad 13`), and what the page shows leaves as meaning for `g_grid` (`steps …`,
 `play 5`); the layout table that turns one into a cell is theirs, not its. That is the `m_`
 boundary, and it is why another surface could drive it unchanged.
 
 **Its rules are Lua, and its timing is Pd.** `c_steps.lua` holds the pattern, the step rule, the
 velocity levels, the selection, the last steps and the knobs' latch, each track's place in its
-loop, and which pads fire on a step, as plain Lua that runs on the Mac without Pd; `c_steps.pd`
+loop, the repeats, the chances, each step's drunk length, and which pads fire on a step, as plain Lua that runs on the Mac without Pd; `c_steps.pd`
 keeps the clock, the transport and the cords to `m_404`, `g_grid`, `u_state` and `disp`, and asks
 the Lua through one pdlua object, `[c_steps-lua $1]` (`cut-it/logic-as-text`).
 
@@ -30,38 +32,43 @@ It is mode 1's drum machine (`cut-it/drum-machine`), and the first part of a son
 |---|---|---|
 | Creation arg 1 | The 404 bank its tracks play, 1–10, 1 for A. Track *n* plays pad *n* of that bank | unknown |
 | Creation arg 2 | The part its pattern is stored as: `drums` keys it `section-1-drums` | unknown |
-| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, from `u_map`'s `drum-page` destination; `last <0-1>` and `track-last <0-1>`, knobs 2 and 3, from its `last-step` and `track-last`; `sync`, `snap` and `select <n>`, the phone's drum screen, from `u_net`'s fourth outlet. Anything else is `fail c_steps bad-selector` | unknown |
+| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, `rep <n> <vel>`, from `u_map`'s `drum-page` destination, presses and releases (velocity 0); `last`, `track-last` and `swing <0-1>`, knobs 2 to 4, from its `last-step`, `track-last` and `swing`; `sync`, `snap`, `select <n>`, `num` and `den <-1 or 1>`, and `drunk`, `skip` and `move <0-100>`, the phone's drum screen, from `u_net`'s fourth outlet. Anything else is `fail c_steps bad-selector` | unknown |
 | Outlet 1 | `pad <1..160> <velocity>`, to `m_404`'s pad path | unknown |
-| Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <32 velocities>` for the selected track, `play <step>` (0 while stopped), `vel <level>`, `track <pad>`, `last <step>` for the selected track | unknown |
-| Outlet 3 | The drum screen's state, to `u_net`'s second inlet: 36 numbers, `R.phone`, sent by the Pd face only when they change ([phone.md](../device/phone.md)) | verified |
-| `disp` | Knobs 2 and 3's rows: `last-step 12`, `pad2-last 6`, and held, `last-step 16 (7)` | unknown |
+| Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <32 velocities>` for the selected track, `play <step>` (0 while stopped), `vel <level>`, `track <pad>`, `last <step>` for the selected track, `bar <steps>`, a bar of the time signature, and `rep <pad>`, the repeat pad held, 0 for none | unknown |
+| Outlet 3 | The drum screen's state, to `u_net`'s second inlet: 41 numbers, `R.phone`, sent by the Pd face only when they change ([phone.md](../device/phone.md)) | verified |
+| `disp` | Knobs 2 to 4's rows: `last-step 12`, `pad2-last 6`, `swing 62 %`, and held, `last-step 16 (7)` | unknown |
 
 ### What it does
 
 | | | Evidence |
 |---|---|---|
-| A step | Sixteen to a bar, cut from `c_clock 1 4`'s beat phase: ×4, `wrap~`, `threshold~ 0.0833333 0 0.04 0`, and sent to the Lua as `tick` | unknown |
-| When it fires | A twelfth of a step after the boundary, in the block of `u_tempo`'s MIDI pulse for that sixteenth: the offset every clock in the patch shares (*Start alignment*, [tempo.md](tempo.md)) | unknown |
-| On a step | The global loop moves on, then every track moves on in its own loop, wrapping after its own last step; every track whose velocity at its step is 1 or more plays its pad at it, track 1 first, all in one logical instant. Then the playhead moves, to the selected track's step | verified |
-| PLAY (`start`) | Starts every loop at step 1 | unknown |
+| A step | Sixteen to a bar, cut from the sequencer's own phase, a pair of steps a cycle, which runs at `c_clock 1 4`'s rate times the Lua's: swung, then ×2, `wrap~`, and a `threshold~` on its fall, and sent to the Lua as `tick` (*One phase of its own*, below) | verified |
+| When it fires | Straight and sober, a twelfth of a step after the boundary, in the block of `u_tempo`'s MIDI pulse for that sixteenth: the offset every clock in the patch shares (*Start alignment*, [tempo.md](tempo.md)). Within a block, ±1.45 ms, at 120 BPM in a test Pd (2026-11-03) | verified |
+| Swing | Knob 4 in mode 1, 25% to 75%, straight at 50%: the share of each pair of sixteenths the first one takes, so above 50% every second sixteenth comes later and below it earlier (Brendan, 2026-11-03). Taken at the next pair. Held at 50% at load, as knob 2 at 16; not saved. 66% at 120 BPM measured 165 and 85 ms, 25% 62 and 188 | verified |
+| Drunkenness | 0 to 100 from the drum screen: most steps stay on time (Brendan, 2026-11-04): at 100 one step in three strays, at 50 one in six, and a step that strays lasts up to that share of a step longer or shorter, at random, never less than an eighth of a step. The error stays: its own drift becomes the clock, and only PLAY puts it back on `u_tempo`'s (Brendan, 2026-11-03). Saved | verified |
+| The time signature | Two numbers from the drum screen, the top 1 to 32 and the bottom one of 1 2 4 8 16, 4/4 at first: a bar is top × 16 / bottom steps, which the page marks. Saved | verified |
+| The repeat pads | The top row of the right 4×4, 1 to 4 from the left: held, every track replays the last 1 to 4 steps it played, while the loops go on underneath unheard; let go, every track plays on from where it would have been (Brendan, 2026-11-03). PLAY lets go | verified |
+| A track's chances | Skip and move, 0 to 100 each, for the selected track from the drum screen: a note is skipped, or moved a step early or late at random, rolled a step ahead so it can go early, fresh on every pass. The first step after PLAY can only go late. Saved | verified |
+| On a step | The global loop moves on, then every track moves on in its own loop, wrapping after its own last step; every track plays the step it is heard at (a repeat's, while one is held): a note moved late from the step before, then its own note at its velocity if 1 or more, as its chances say, track 1 first, all in one logical instant. Then each track's next note is rolled, and one moved early plays now. Then the playhead moves, to the selected track's step, and the step's drunk length goes to the clock | verified |
+| PLAY (`start`) | Starts every loop at step 1, the phase on the beat at its own rate, and lets go of a held repeat | verified |
 | STOP (`stop`) and `panic` | Stop it, and put the playhead out | unknown |
 | A pad press | Plays that pad now, at the Launchpad pad's own velocity, and selects it as the track being edited | unknown |
 | A velocity press | Selects level *n*, velocity round(127·*n*/8): 16 32 48 64 79 95 111 127 | unknown |
-| A step press | Off takes the selected velocity; on, at any velocity, turns off (Brendan, 2026-11-03). Past the selected track's last step, nothing | unknown |
+| A step press | Off takes the selected velocity; on, at any velocity, turns off (Brendan, 2026-11-03). Past the selected track's last step, nothing. A release of a step, a velocity or a pad does nothing | unknown |
 | The global last step | Knob 2 in mode 1, 1–32, for every track that has no last step of its own (Brendan, 2026-11-03). Steps past it keep their notes, unplayed and dark. Not saved | unknown |
 | A track's own last step | Knob 3 in mode 1, 1–32, for the selected track, saved with the pattern. Released at the step a following track already has, it goes on following | unknown |
 | The knobs' latch | At load both are held at 16, and knob 3 again whenever another track is selected, or the global last step moves while the selected track follows it: held until turned to or through the step it stands for. A held knob changes nothing and draws its row with its own step in brackets | verified |
 | `sync` (the drum screen's "sync first steps") | When the global loop next comes round to its step 1, every track goes back to its own step 1 there, keeping its own last step | verified |
 | `snap` (its "snap to global") | The same, and at that step every track gives up its own last step, saved. Stopped, it lands at PLAY | verified |
-| At load | Track 1, level 6 (95), last step 16 with both knobs held there, stopped | unknown |
+| At load | Track 1, level 6 (95), last step 16 with knobs 2 and 3 held there, swing 50% with knob 4 held there, stopped | unknown |
 
 ### Where each part lives
 
 | | Lives in | Evidence |
 |---|---|---|
 | The pattern, the step rule, the velocity levels, the selected track and level, the last steps and the knobs' latch, each track's place in its loop, sync and snap, which pads fire on a step, the playhead, the restore | `c_steps.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
-| Turning messages into those calls and their answers into outlets | `c_steps-lua.pd_lua`, the class `c_steps-lua`: two inlets (the presses, knobs and drum buttons; `c_steps.pd`'s own `tick`, `start`, `stop`, `restore` and `init`), seven outlets (notes, page, the pattern to save, `err`, a bang on `init`, the knobs' rows, the drum screen's state) | verified |
-| The clock, PLAY, STOP and panic, the cords to `m_404`, `g_grid`, `u_state` and `disp`, `put auto section-1-<part>` | `c_steps.pd` | verified |
+| Turning messages into those calls and their answers into outlets | `c_steps-lua.pd_lua`, the class `c_steps-lua`: two inlets (the presses, knobs and drum buttons; `c_steps.pd`'s own `tick`, `start`, `stop`, `restore` and `init`), eight outlets (notes, page, the pattern to save, `err`, a bang on `init`, the knobs' rows, the drum screen's state, the clock's `swing` and `rate`) | verified |
+| The clock and its swing and rate, PLAY, STOP and panic, the cords to `m_404`, `g_grid`, `u_state` and `disp`, `put auto section-1-<part>` | `c_steps.pd` | verified |
 | The Lua's answers on the device | Identical to the Mac's: twenty messages through `c_steps-lua` in a test Pd on the Organelle and on the Mac printed the same 37 lines (2026-11-03) | verified |
 | What it costs | About 0.4 MB more peak memory than the Pd version, in a test Pd loading `main.pd` on the Organelle (3.0 to 3.4 MB); pdlua itself is on the Organelle's Reference page | verified |
 
@@ -70,12 +77,12 @@ It is mode 1's drum machine (`cut-it/drum-machine`), and the first part of a son
 | | | Evidence |
 |---|---|---|
 | Key | `section-1-<part>`, an `auto` key in `cut-it-auto.txt` ([state.md](state.md)) | unknown |
-| Line | The key, 512 velocities, track 1's 32 steps first, then the sixteen tracks' own last steps, 0 for one that follows the global one: 529 atoms, zeros included | unknown |
+| Line | The key, 512 velocities, track 1's 32 steps first, then the sixteen tracks' own last steps, 0 for one that follows the global one, their skip chances, their move chances, the time signature's two numbers and the drunkenness: 564 atoms, zeros included. The knobs' values are not in it | verified |
 | Written | `put auto` on every change; `u_state` flushes it within 2 s | unknown |
 | Restored | At ~3.5 s by `u_state`, and put straight back | unknown |
 | A line of exactly 256 | The 16-step pattern this replaced: each track's sixteen go to its first sixteen steps, and the put after it writes the new line | verified |
-| A short or long line | The Lua takes what the line holds, as far as 512 velocities and 16 last steps, a symbol as 0, and leaves the rest as they were; the put after it writes all of it | verified |
-| A 529-atom line | Written and read whole, since both sides use `-c` (`~/Sites/!reference/pure-data.md`, *`[text write]` writes Pd's own format unless told `-c`*); the sequencer gate's seed ends in a last step of its own, which comes back | verified |
+| A short or long line | The Lua takes what the line holds, as far as the drunkenness, a symbol as 0, and leaves the rest as they were; the put after it writes all of it. A line of 528, from before the drum screen's settings, comes back at 4/4, sober, with no chances | verified |
+| A 564-atom line | Written and read whole, since both sides use `-c` (`~/Sites/!reference/pure-data.md`, *`[text write]` writes Pd's own format unless told `-c`*); the sequencer gate's seed holds a last step of its own and 7/8, which come back | verified |
 
 ## Traps
 
@@ -156,6 +163,29 @@ object fails to create and the sequencer says `no-lua`.
 step into a cell, from the same table ([display.md](display.md)), so the sequencer's vocabulary is
 the table's roles and nothing about the surface.
 
+### One phase of its own
+
+The steps are cut from a phase of the sequencer's own, not `c_clock`'s, because drunkenness moves
+it off the beat for good. `rzero~ 1` and `wrap~` read `c_clock`'s phase as its increment per
+sample, so the phase follows `c_clock`'s rate and ratio without a second copy of the tempo; an
+`expr~` drops the one large increment a `start` makes, and `samplerate~` turns the increment back
+into a frequency for a `phasor~` at two steps a cycle, times the rate the Lua sends. At rate 1 it
+is `c_clock`'s beat phase times two to within a sample, so the steps land where they did; PLAY
+resets both in the same block.
+
+**Swing bends each pair.** The phase is shifted back a twelfth of a step first, so the offset
+that lands a step in its MIDI pulse's block stays a fixed time and not a share of a swung step;
+`samphold~` takes the swing as the pair begins, so a turn never moves a step already cut; and an
+`expr~` gives the first step the swing's share of the pair and the second the rest. Then ×2,
+`wrap~`, and the threshold on `1 −` that: a step is the phase's fall from near 1 to 0. A
+threshold on a rising phase was not re-armed by a `start` landing mid-step, and PLAY's first step
+came a step late.
+
+**Drunk, the rate changes once a step.** The Lua rolls on each `tick` whether the step coming
+strays and, if it does, its length, and sends `rate <1/length>` when that differs from the last; the phase runs at that rate until the next. The error is never paid back, so
+the drum machine wanders off `u_tempo`'s clock and the 404's: nothing the 404 plays follows that
+clock (Brendan, 2026-11-03).
+
 ### One clock, a loop per track
 
 One phase is cut into steps, and each `tick` moves every track on in its own loop, so a track with
@@ -201,5 +231,8 @@ short or malformed line.
   depend on (the SP-404's Reference page).
 - ⬜ **The selected track and velocity are not saved**; every boot starts at track 1, level 6.
   See `cut-it/drum-machine`.
+- ⬜ **Swing, drunkenness, the repeat pads and the chances have not played on the rig**, nor have
+  the drum screen's controls for them or the page's blue bars and purple repeat pads. See
+  `cut-it/drum-timing`.
 - ⬜ **The Lua version has not played on the rig**: its CPU beside the Pd version's 11.2% with the
   drum machine playing (`~/Sites/!reference/pure-data.md`, *Newer versions on the Organelle*) is unmeasured. See `cut-it/logic-as-text`.

@@ -68,7 +68,7 @@ Organelle -> phone
 /cutit/hb      <counter> <test mode, 0 or 1>      every 500 ms
 /cutit/alert   <count> <level> <source> <text>    every 500 ms, always present
 /cutit/mode    <class> <mode-n>                   on change and every 500 ms
-/cutit/drums   <36 numbers>                       c_steps' state, on change and every 500 ms
+/cutit/drums   <41 numbers>                       c_steps' state, on change and every 500 ms
 /cutit/ack     <command> [<device>]               once per command accepted
 
 phone -> Organelle
@@ -91,7 +91,7 @@ button.
 | `test-note` | Fires one probe at a sounding device, out a cord. Takes the device below | verified | 306 |
 | `send` | A checklist's Send line, one message, `<bus> <message>`, from the phone's checklist page: out a cord to `u_inject` **in test mode only**, answered `ack send`, or `ack test-off` while it is off | unknown | — |
 | `result` | A step's verdict, `<checklist>-<n>-<pass or fail>`, logged as `info phone <verdict>`, in test mode or not; answered `ack result` | unknown | — |
-| `drums` | A drum button, the action below: out `u_net`'s fourth outlet to `c_steps`, answered `ack drums <action>` | verified | — |
+| `drums` | A drum screen control, the action below: out `u_net`'s fourth outlet to `c_steps`; `sync`, `snap` and `select` answered `ack drums <action>`, the settings not, since the state shows them | verified | — |
 
 <!-- check: pd-route "Cut It/u_net.pd" m_volca -->
 
@@ -107,6 +107,11 @@ button.
 | `sync` | "sync first steps": every track back to its step 1 together when the global loop next comes round to its own, each keeping its own last step ([sequencer.md](../module/sequencer.md)) | verified | — |
 | `snap` | "snap to global": the same, and at that step every track takes the global last step | verified | — |
 | `select` | A pad on the drum screen, `select <n>`: selects track *n* without playing it | verified | — |
+| `num` | The time signature's top number, `num <-1 or 1>`: one down or up, 1 to 32 | verified | — |
+| `den` | Its bottom number, `den <-1 or 1>`: one down or up through 1 2 4 8 16 | verified | — |
+| `drunk` | Drunkenness, `drunk <0-100>`: how often a step strays, up to one in three, and how far, up to a whole step | verified | — |
+| `skip` | The selected track's skip chance, `skip <0-100>` | verified | — |
+| `move` | The selected track's move chance, `move <0-100>`: a step early or late | verified | — |
 
 **The two sounding devices are the whole set**, and it is `u_map`'s: the Launchpad and the
 nanoKONTROL are inputs. ⛔ **A device name off that list is dropped exactly like an unknown command.**
@@ -142,9 +147,10 @@ drums]` sends it only when the mode changes, since `u_net` repeats the mode twic
 |---|---|---|
 | Switching | `vis_size 448 207` then `pos`, every time: PdParty starts its viewport at zero by zero and keeps the size when `pos` moves it, so `pos` alone blanked the page. With both, the phone shows the drum screen on the drum page (2026-11-03) | verified |
 | The ViewPort is the scene's first object | So it sits under every widget: PdParty draws it clear, and a view over the others could take their touches | unknown |
-| The drum screen | Left: playing or stopped, the tempo (the status), `last <n>`, the alert, the link. Middle: the sixteen pads as the Launchpad lays them out, each labeled with its last step: grey following the global one, amber with its own, dark when selected; a tap selects. Right: sync first steps, snap to global, and a line while one waits for step 1 | unknown |
-| `/cutit/drums` | `c_steps`' `R.phone`: playing, the global last step, the selected track, pending (0, 1 sync, 2 snap), the sixteen last steps, then 1 for each track with its own. Sent by `c_steps` when it changes, through `u_root`'s cord into `u_net`'s second inlet | verified |
-| A short or empty state | Dropped by `[list split 36]`, so the empty repeat before the first state draws nothing | verified |
+| The drum screen | Left: playing or stopped, the tempo (the status), `last <n>`, the alert, the link. Middle: the sixteen pads as the Launchpad lays them out, each labeled with its last step: grey following the global one, amber with its own, dark when selected; a tap selects; under them, sliders for the selected track's skip and move chances. Right: sync first steps, snap to global, a line while one waits for step 1, the time signature as a fraction with a minus and a plus beside each number, and a drunkenness slider (Brendan, from a mockup, 2026-11-04). Everything stays above the bottom 17 units, clear of the home indicator | unknown |
+| A slider | Sends whole percents, only when they change; the state sets it with `set`, so it sends nothing back, and sets the `[change]` its touches go through, so a touch back to the value it had still sends. For a second after a touch it ignores the state, which would otherwise pull it back to the old value while the Organelle catches up. ⚠️ PdParty taking `set` on a slider is read from Pd, not seen on the phone | unknown |
+| `/cutit/drums` | `c_steps`' `R.phone`: playing, the global last step, the selected track, pending (0, 1 sync, 2 snap), the sixteen last steps, then 1 for each track with its own, then the time signature's two numbers, the drunkenness, and the selected track's skip and move chances. Sent by `c_steps` when it changes, through `u_root`'s cord into `u_net`'s second inlet | verified |
+| A short or empty state | Dropped by `[list split 41]`, so the empty repeat before the first state draws nothing | verified |
 
 ### Two instruments will fight over one phone
 

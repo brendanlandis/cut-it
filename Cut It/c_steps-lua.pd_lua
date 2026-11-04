@@ -3,12 +3,14 @@
 -- the sequencer does is in c_steps.lua. ref/module/sequencer.md.
 --
 -- creation arg: the 404 bank its tracks play, 1 for A.
--- inlet 1: the presses, from u_map -- step <n> <vel>, vel <level> <vel>, pad <n> <vel>, and
--- knobs 2 and 3, last <0-1> and track-last <0-1> -- and the phone's follow and resync, from u_net.
+-- inlet 1: the presses and releases, from u_map -- step <n> <vel>, vel <level> <vel>, pad <n>
+-- <vel>, rep <n> <vel>, and knobs 2 to 4, last, track-last and swing <0-1> -- and the drum
+-- screen's sync, snap, select, num, den, drunk, skip and move, from u_net.
 -- inlet 2: c_steps.pd's own -- tick, start, stop, restore <the saved line>, init.
 -- outlet 1: pad <pad> <velocity>, to m_404. outlet 2: the page, to g_grid. outlet 3: the pattern
 -- to save. outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded. outlet 6: a knob's
--- row, to disp. outlet 7: the drum screen's state, R.phone's 36 numbers, whenever it changes.
+-- row, to disp. outlet 7: the drum screen's state, R.phone's 41 numbers, whenever it changes.
+-- outlet 8: the step clock's swing <0.25-0.75> and rate <x>, to c_steps.pd's clock.
 --
 -- A Lua error leaves outlet 4 as fail c_steps lua-<selector>, and its text goes to Pd's console
 -- where there is one: the device has none (C-12).
@@ -19,10 +21,10 @@ local StepsLua = pd.Class:new():register("c_steps-lua")
 -- (`; pdluax reload c_steps-lua`) reloads them too, and every object keeps its pattern.
 local R = dofile(StepsLua._loadpath .. "c_steps.lua")
 
-local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6 }
+local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6, clock = 8 }
 
 function StepsLua:initialize(_, atoms)
-  self.inlets, self.outlets = 2, 7
+  self.inlets, self.outlets = 2, 8
   self.state = R.new(atoms[1])
   return true
 end

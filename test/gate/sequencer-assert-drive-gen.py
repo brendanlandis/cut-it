@@ -39,8 +39,8 @@ SEQ = [
     (5900, "RULE-ON-AGAIN", [P("pad-75")], GAP),                  # off: 95
     (6100, "VEL-2-AGAIN", [P("pad-26")], GAP),                    # level 2: 32
     (6300, "RULE-OTHER", [P("pad-75")], GAP),                     # 95, another: off
-    # The top of the right 4x4 is in no row of the layout table.
-    (6400, "FREE-ROW", [P("pad-46")], GAP),
+    # The second row of the right 4x4 is in no row of the layout table.
+    (6400, "FREE-ROW", [P("pad-36")], GAP),
     # The page is mode 1's: in mode 2 a step pad is an unmapped control.
     (6500, "MODE-2", [P("lp-cc-70", 127), P("lp-cc-70", 0)], GAP),
     (6700, "OTHER-MODE", [P("pad-81")], GAP),
@@ -71,9 +71,35 @@ SEQ = [
     (14300, "SNAP", ["\\; seqgate-osc drums snap"], GAP),
     (14500, "SNAP-PLAY", ["\\; start bang"], GAP),
     (15000, "SNAP-STOP", ["\\; stop bang"], GAP),
-    (16700, "DONE", [], GAP),
+    # Knob 4 is swing, held at 50% until turned through it: 0 is 25%, held; 1 is
+    # 75%, through it. PLAY then puts step 2 three quarters of the way through
+    # the pair: at 120 BPM, about 198 ms after step 1 rather than 125, so it
+    # paints in SW-LATE, not SW-GAP; step 3 lands on the beat, 260 ms in.
+    (15100, "SWING", ["\\; param og-knob-4 0", "\\; param og-knob-4 1"], GAP),
+    (15300, "SW-PLAY", ["\\; start bang"], GAP),
+    (15400, "SW-GAP", [], GAP),
+    (15490, "SW-LATE", [], GAP),
+    (15560, "SW-ON", [], GAP),
+    (15700, "SW-STOP", ["\\; stop bang", "\\; param og-knob-4 0.5"], GAP),
+    # Repeat pad 1, the top left of the right 4x4, held after step 3: the
+    # playhead stays on 3 and track 1's step 3 plays on every step; let go, the
+    # loop goes on from where it would have been, 2 then 3, not from 1.
+    (15800, "REP-PLAY", ["\\; start bang"], GAP),
+    (16120, "REP-PRESS", [P("pad-45")], GAP),
+    (16200, "REP-HELD", [], GAP),
+    (16600, "REP-OFF", [P("pad-45", 0)], GAP),
+    (16900, "REP-STOP", ["\\; stop bang"], GAP),
+    # Drunkenness at its top, from the drum screen over OSC, then 96 windows a
+    # sixteenth wide, each holding one step when sober. Drunk, a third of the
+    # steps stray, at random; one shift across a window's edge shows it, and
+    # 96 steps without one is less than one run in a million.
+    (17000, "DRUNK", ["\\; seqgate-osc drums drunk 100"], GAP),
+    (17100, "DR-PLAY", ["\\; start bang"], GAP),
+] + [(17180 + 125 * k, "DR-%d" % (k + 1), [], GAP) for k in range(96)] + [
+    (29180, "DR-STOP", ["\\; stop bang"], GAP),
+    (29400, "DONE", [], GAP),
 ]
-QUIT_MS = 17200
+QUIT_MS = 29900
 
 # The phone's way in: OSC to u_net's own port, which the gate runner hands each
 # gate in CUTIT_INPORT (lib_scratch's state_dir does the same), connected after

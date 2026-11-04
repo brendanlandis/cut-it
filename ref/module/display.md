@@ -177,18 +177,20 @@ addressed at all, so panic still never hands the surface back.
 
 **One layout table, `Cut It/cut-it-drum-page.txt`, says which cell is which**: a row per cell,
 `<index> <role> <n>`, read with `-c` at load by `g_grid` to paint and by `u_map` to know what a
-press means, so a press and its lamp cannot disagree. Its 56 rows:
+press means, so a press and its lamp cannot disagree. Its 60 rows:
 
 | Rows from the top | Cells | Role | Evidence |
 |---|---|---|---|
 | 1–4 | 81–88, 71–78, 61–68, 51–58 | `step` 1–8, 9–16, 17–24, 25–32 (Brendan, 2026-11-03: 32 steps) | unknown |
 | 5–8, left 4×4 | 41–44, 31–34, 21–24, 11–14 | `pad` 1–16, laid out like the 404's, pad 1 top left | unknown |
-| 5–6, right half | — | in no row, so dark | unknown |
+| 5, right half | 45–48 | `rep` 1–4, the repeat pads (Brendan, 2026-11-03) | unknown |
+| 6, right half | — | in no row, so dark | unknown |
 | 7–8, right half | 25–28, 15–18 | `vel` 1–4, then 5–8 (Brendan, 2026-11-03) | unknown |
 
 **The caller is `c_steps`, on `g_grid`'s third inlet, and it sends meaning, never a cell** (C-5):
 `steps <32 velocities>` for the selected track, `play <step>` (0 while stopped), `vel <level>`,
-`track <pad>` and `last <step>`, the selected track's. Every message sets the dirty flag.
+`track <pad>` and `last <step>`, the selected track's, `bar <steps>`, a bar of the time signature,
+and `rep <pad>`, the repeat pad held, 0 for none. Every message sets the dirty flag.
 
 **A velocity level is a color, and everything that means that level shows it** (Brendan,
 2026-11-03): a step lit at a velocity, the button that gives it, and the selected pad while that
@@ -197,21 +199,23 @@ button is selected.
 | A cell | Paints | Evidence |
 |---|---|---|
 | A step past the last step | 0, dark, lit or not: its note is kept, unplayed (Brendan, 2026-11-03) | unknown |
-| A step that is off | 1, dim | unknown |
+| A step that is off | 1, dim; blue, RGB 16, 40, 127, if it starts a bar: step 1, then every `bar` steps (Brendan, from a mockup, 2026-11-04) | unknown |
 | A step that is on | Its velocity's level, (*v* − 1) div 16 + 1, in that level's RGB color: white for level 1, falling evenly to bright red for level 8 | unknown |
 | The playhead's step | 21, green, over whatever the step holds | unknown |
 | A velocity button | Its own level's color: full when selected, a quarter otherwise | verified |
 | The selected pad | The selected level's color, full | unknown |
 | Every other pad | RGB 6, 6, 6: dimmer than any velocity button (Brendan, 2026-11-03: palette 1 read the same as the dimmest button) | unknown |
+| A repeat pad | Purple: RGB 20, 8, 32, and 80, 24, 127 while it is held (Brendan, from a mockup, 2026-11-04) | unknown |
 
-**The beat row gives way**, and the top half of the right 4×4 stays dark. The mode lamps are drawn
+**The beat row gives way**, and the right 4×4's second row stays dark. The mode lamps are drawn
 as in every mode.
 
 ⚠️ **The levels' colors are RGB specs, not palette entries.** The palette is a color table with no
 even white-to-red ramp in it (Reference), so `g_grid`'s surface holds 128 + *k* for entry *k* of its
 own RGB table, and the paint loop sends those cells as type 3, red, green and blue: red 127, and
 green and blue 127, 109, 91, 73, 54, 36, 18, 0 for levels 1 to 8; the quarter is each over four;
-and 6, 6, 6 for a pad not selected.
+6, 6, 6 for a pad not selected; 16, 40, 127 for a bar's first step; and 20, 8, 32 and 80, 24,
+127 for a repeat pad and the one held.
 ✅ On the rig the eight read as eight, white to red (Brendan, 2026-11-03).
 
 ### Seeing it off-device

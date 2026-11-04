@@ -351,13 +351,13 @@ def run_asserts(cap):
             any(e[0] == "NOTEOUT" and e[1][:2] == [60, 100] for e in W("ROW-KEY")),
             repr(W("ROW-KEY")))
     # Pressure: an unmapped pad-NN-at draws no raw row, since a stream per held
-    # pad would fill the screen (item 318). pad-45 is the witness, and proves
+    # pad would fill the screen (item 318). pad-36 is the witness, and proves
     # the test is not too wide.
     A.check("⛔ an UNMAPPED pad's pressure draws NO row -- pad-11-at is exempt",
             not [d for d in rows("PRESSURE") if d[:1] == ["pad-11-at"]],
             "disp in that window: %s" % disp("PRESSURE"))
-    A.check("... while the pad's own press still draws its raw row -- pad-45 100",
-            [d for d in rows("PRESSURE") if d[:1] == ["pad-45"]] == [["pad-45", "100"]],
+    A.check("... while the pad's own press still draws its raw row -- pad-36 100",
+            [d for d in rows("PRESSURE") if d[:1] == ["pad-36"]] == [["pad-36", "100"]],
             "disp in that window: %s" % disp("PRESSURE"))
     A.check("⛔ MAPPED pressure still draws its destination's row -- volca-cc45 64",
             rows("PRESSURE-MAPPED") == [["volca-cc45", "64"]],

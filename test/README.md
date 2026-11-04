@@ -41,17 +41,17 @@ were false.
 | `launchpad-assert.sh` | 8 | `device/launchpad` |
 | `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 93 | `device/phone` |
+| `phone-assert.sh` | 108 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
 | `checks-assert.sh` | 25 | `test/checklists/README.md`, *On the phone* — the checklist page |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 116: 72 in Lua, 44 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 166: 110 in Lua, 56 in Pd | `module/sequencer` |
 
-**915 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**980 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **908**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **973**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's.
 Worth knowing before trusting an arithmetic check of this number against a log.
@@ -336,7 +336,7 @@ committed.
 ## `phone-assert.sh` — the same idea, and much cheaper
 
 ```sh
-./test/gate/phone-assert.sh            # ~35 s, exits non-zero on any failure
+./test/gate/phone-assert.sh            # ~57 s, exits non-zero on any failure
 ```
 
 **Phase 7's gate needs no scratch copy and rewrites nothing.** `[midiout]` is a built-in class
@@ -382,7 +382,7 @@ equivalent.
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      72 + 44 checks, ~18 s — c_steps' rules in Lua, then the drum page and the pattern on disk
+./test/gate/sequencer-assert.sh      110 + 56 checks, ~31 s — c_steps' rules in Lua, then the drum page and the pattern on disk
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no

@@ -59,6 +59,9 @@ BUILD_REMOTE = os.path.join(ROOT, "tools", "pdparty-scene", "build-remote.py")
 # list prepend from its data rather than typed in a message box.
 CHECKS = os.path.join(ROOT, "tools", "pdparty-scene", "CutItChecks", "_main.pd")
 PAGE_CMDS = ["send", "result"]
+# The drum screen's settings: u_net does not acknowledge them, since the state
+# the drum screen shows says each.
+DRUMS_QUIET = ["num", "den", "drunk", "skip", "move"]
 # Every selector g_oled routes that is not a parameter. u_net leaves them
 # unconnected, so one on the wire as a parameter name means the branch broke.
 RESERVED = {"in-l", "in-r", "led", "grid", "modal", "modal-off", "alert",
@@ -337,8 +340,8 @@ def main():
         A.check("the scene's ACK route covers every device",
                 _route_of(SCENE, "m_volca") == udev,
                 "scene: %r" % (_route_of(SCENE, "m_volca"),))
-        A.check("the scene's ACK route covers every drums action",
-                _route_of(SCENE, "sync") == udrums,
+        A.check("the scene's ACK route covers every drums action u_net acknowledges",
+                _route_of(SCENE, "sync") == [c for c in (udrums or []) if c not in DRUMS_QUIET],
                 "scene: %r" % (_route_of(SCENE, "sync"),))
 
     A.check("the remote scene is build-remote.py's output, from remote-template.pd",
@@ -373,13 +376,14 @@ def main():
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})
     A.check("shape: only known OSC addresses", all(a in ADDRS for a in seen),
             "saw " + ", ".join(seen))
-    A.check("shape: all twenty-five windows arrived",
+    A.check("shape: all thirty windows arrived",
             [n for n, _ in wins] == ["idle", "sweep1", "sweep2", "statussw",
                                      "alert", "reserved", "idle2", "cmdwire",
                                      "cmdvolca", "cmd404", "cmdbogus", "cmdclear",
                                      "sendoff", "tmon", "sendon", "result", "tmoff",
                                      "sendoff2", "tmtwice", "tmoff2", "cmdsync",
-                                     "cmdsnap", "cmdselect", "drumstate", "done"],
+                                     "cmdsnap", "cmdselect", "cmdnum", "cmdden",
+                                     "cmddrunk", "cmdskip", "cmdmove", "drumstate", "done"],
             ", ".join(n for n, _ in wins))
 
     hbs = [g[0] for _, rowset in wins for _, a, g in rowset
@@ -589,7 +593,8 @@ def main():
 
     one("cmdselect", "/probe/drums", ["select", 3.0], "drums select 3 leaves for c_steps")
     one("cmdselect", "/cutit/ack", ["drums", "select"], "and is acknowledged")
-    state = [float(v) for v in "1 12 2 1 16 5 16 16 16 16 16 16 16 16 16 16 16 16 16 16 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0".split()]
+    state = [float(v) for v in ("1 12 2 1 16 5 " + "16 " * 14 + "0 1 " + "0 " * 14
+                                + "7 8 30 20 0").split()]
     sent = args("drumstate", "/cutit/drums")
     A.check("drumstate: c_steps' state leaves as /cutit/drums, at once and on the heartbeat",
             len(sent) >= 2 and all(g == state for g in sent),
@@ -601,9 +606,16 @@ def main():
             len(args("done", "/cutit/drums")) >= 2 and len(args("done", "/cutit/mode")) >= 2,
             "%d and %d" % (len(args("done", "/cutit/drums")), len(args("done", "/cutit/mode"))))
 
-    for win, cmd in (("cmdsync", "sync"), ("cmdsnap", "snap")):
-        one(win, "/probe/drums", [cmd], "drums %s leaves for c_steps as %s" % (cmd, cmd))
-        one(win, "/cutit/ack", ["drums", cmd], "and is acknowledged")
+    for win, cmd, rest in (("cmdsync", "sync", []), ("cmdsnap", "snap", []),
+                           ("cmdnum", "num", [1.0]), ("cmdden", "den", [-1.0]),
+                           ("cmddrunk", "drunk", [30.0]), ("cmdskip", "skip", [20.0]),
+                           ("cmdmove", "move", [0.0])):
+        said = " ".join([cmd] + ["%g" % v for v in rest])
+        one(win, "/probe/drums", [cmd] + rest, "drums %s leaves for c_steps as %s" % (said, said))
+        if cmd in DRUMS_QUIET:
+            none_of(win, ["/cutit/ack"], "and is not acknowledged: the drum screen's state says it")
+        else:
+            one(win, "/cutit/ack", ["drums", cmd], "and is acknowledged")
         none_of(win, ["/probe/volca", "/probe/p404", "/probe/presence", "/probe/inject"],
                 "and reaches nothing else")
 

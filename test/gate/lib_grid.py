@@ -154,6 +154,8 @@ LEVEL_RGB = ((127, 127, 127), (127, 109, 109), (127, 91, 91), (127, 73, 73),
 LEVEL_DIM = ((32, 32, 32), (32, 27, 27), (32, 23, 23), (32, 18, 18),
              (32, 14, 14), (32, 9, 9), (32, 4, 4), (32, 0, 0))
 PAD_DIM = (6, 6, 6)             # a drum pad not selected: dimmer than any button
+BAR_START = (16, 40, 127)       # a bar's first step, off: blue
+REP_DIM, REP_HELD = (20, 8, 32), (80, 24, 127)   # a repeat pad, and the one held: purple
 
 
 def drum_layout(path=DRUM_PAGE):
@@ -172,26 +174,29 @@ def level_of(velocity):
     return (int(velocity) - 1) // 16 + 1
 
 
-def step_color(velocity, step=1, last=16):
-    """The color a step at this velocity paints, off the playhead."""
+def step_color(velocity, step=1, last=16, bar=16):
+    """The color a step at this velocity paints, off the playhead, in bars of
+    this many steps."""
     if step > last:
         return OUT
     if velocity < 1:
-        return DIM
+        return BAR_START if (step - 1) % bar == 0 else DIM
     return LEVEL_RGB[level_of(velocity) - 1]
 
 
 def drum_page(frame, lay):
     """-> (problem_or_None, lit_lamp_index, page) for a mode-1 HOME frame.
 
-    page is {"step": {n: color}, "vel": {n: color}, "pad": {n: color}}. The
+    page is {"step": {n: color}, "vel": {n: color}, "pad": {n: color}, "rep": {n:
+    color}}. The
     page is: the six mode lamps as home has them, every layout cell in a color
     its role can take, and everything else dark -- the beat row included, since
     it gives way here, and the bottom-right 4x4, which no row names.
     """
-    allowed = {"step": {DIM, OUT, PLAYHEAD} | set(LEVEL_RGB),
-               "vel": set(LEVEL_RGB) | set(LEVEL_DIM), "pad": {PAD_DIM} | set(LEVEL_RGB)}
-    lamp, page, stray = None, {"step": {}, "vel": {}, "pad": {}}, []
+    allowed = {"step": {DIM, OUT, PLAYHEAD, BAR_START} | set(LEVEL_RGB),
+               "vel": set(LEVEL_RGB) | set(LEVEL_DIM), "pad": {PAD_DIM} | set(LEVEL_RGB),
+               "rep": {REP_DIM, REP_HELD}}
+    lamp, page, stray = None, {"step": {}, "vel": {}, "pad": {}, "rep": {}}, []
     for k, color in enumerate(frame.colors()):
         idx = FIRST_INDEX + k
         if idx in LAMPS:
@@ -219,6 +224,9 @@ def drum_page(frame, lay):
     lit = [n for n, c in page["pad"].items() if c != PAD_DIM]
     if len(lit) > 1:
         return ("%d pads lit: %s" % (len(lit), sorted(lit))), lamp, page
+    held = [n for n, c in page["rep"].items() if c == REP_HELD]
+    if len(held) > 1:
+        return ("%d repeat pads held: %s" % (len(held), sorted(held))), lamp, page
     heads = [n for n, c in page["step"].items() if c == PLAYHEAD]
     if len(heads) > 1:
         return ("%d playheads: steps %s" % (len(heads), sorted(heads))), lamp, page

@@ -51,7 +51,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 48200")
+qd = obj(20, 120, "del 55200")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -177,11 +177,14 @@ txt(20, 2180,
 #   ("statussweep", (count, ms))     the same, as status <n>-bpm symbols
 #   ("cmd", (root, "<text>"))        one OSC datagram INTO u_net's own port
 #   ("tm", None)                     a bang into u_net's inlet: flip test mode
-#   ("ds", "<36 numbers>")           c_steps' drum screen state, into u_net's second inlet
+#   ("ds", "<41 numbers>")           c_steps' drum screen state, into u_net's second inlet
 #   ("bus", (name, "<message>"))     one message onto a bus, as the mode bus
 #
 # Every command window sits after idle2: clear-alert destroys the held alert,
 # and idle2 is where the alert is asserted to persist.
+# Playing, last step 12, track 2 selected, a sync pending, the sixteen last
+# steps, track 2's its own, then 7/8, drunk 30, and track 2's skip 20 and move 0.
+DRUM_STATE = "1 12 2 1 16 5 " + "16 " * 14 + "0 1 " + "0 " * 14 + "7 8 30 20 0"
 SEQ = [
     (3000,  "idle",     []),
     (6000,  "sweep1",   [("sweep", ("grain", 400, 5))]),
@@ -226,10 +229,17 @@ SEQ = [
     (40600, "cmdsync",  [("cmd", ("cutit", "drums sync"))]),
     (42000, "cmdsnap",  [("cmd", ("cutit", "drums snap"))]),
     (43400, "cmdselect", [("cmd", ("cutit", "drums select 3"))]),
+    # -- the time signature's minus and plus, and the three sliders, as the
+    #    drum screen sends them
+    (44800, "cmdnum",   [("cmd", ("cutit", "drums num 1"))]),
+    (46200, "cmdden",   [("cmd", ("cutit", "drums den -1"))]),
+    (47600, "cmddrunk", [("cmd", ("cutit", "drums drunk 30"))]),
+    (49000, "cmdskip",  [("cmd", ("cutit", "drums skip 20"))]),
+    (50400, "cmdmove",  [("cmd", ("cutit", "drums move 0"))]),
     # -- what the drum screen shows: the mode, and c_steps' state, each sent at
     #    once and again on every heartbeat
-    (44800, "drumstate", [("ds", "1 12 2 1 16 5 16 16 16 16 16 16 16 16 16 16 16 16 16 16 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0"), ("bus", ("mode", "compose mode-1"))]),
-    (46200, "done",     []),
+    (51800, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "compose mode-1"))]),
+    (53200, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940

@@ -70,18 +70,22 @@ SEQ = [
     # Held and unmapped at once: knob 2 has never crossed, and its row is keyed
     # mode-1, so in mode-4 it maps to nothing and must still report (item 242).
     (5400, "UNMAPPED", ["\\; param og-knob-2 0.75"], GAP),
+    # The left column's bottom key, press and release: page 8. What follows runs
+    # there, on rows only the last page's own would answer.
+    (5500, "MODE-8", ["\\; param lp-cc-10 127", "\\; param lp-cc-10 0"], GAP),
     # A mode the key-setter cannot use, as u_state replays an old
     # cut-it-auto.txt truncated to `mode compose`: one atom, but no page, and
     # as the key it would miss every row, so every knob would draw its raw row
     # (item 294, fixed by 297). The static lint cannot see a mode that arrives
     # at runtime.
     (5600, "BAD-MODE", ["\\; mode compose"], GAP),
-    # The key must survive: og-knob-1 is tempo in every mode and long since
-    # live, so 0.6 must still reach tempo as 150 bpm.
+    # The key must survive: og-knob-1 is tempo on every page, page 8 here, and
+    # long since live, so 0.6 must still reach tempo as 150 bpm.
 
     (5800, "AFTER-BAD", ["\\; param og-knob-1 0.6"], GAP),
     # The shipped rows on the Organelle's shifted keys (og-shift-60..84, aux
-    # held), the one panel that can never be the missing device.
+    # held), the one panel that can never be the missing device, on page 8.
+
     (6200, "DIAG-DEST", ["\\; param og-shift-60 100"], GAP),
     # A shifted key publishes both edges; the release must not summon it again.
     (6400, "DIAG-RELEASE", ["\\; param og-shift-60 0"], GAP),

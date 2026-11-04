@@ -164,14 +164,14 @@ are the *handler's* business. The mechanism is on [map.md](../module/map.md), th
 on the way out because `/loadPatch` runs `killpatch.sh` first (item 252) — so the safe exit
 still returns the device to Live Mode. Item 251 stays closed.
 
-### The left column's top six are the mode selector, and they are the lamps
+### The left column is the page selector, and it is the lamps
 
-**CC 80 down to 30, mode 1 at the top** (the up arrow), and `g_grid` lights them as the mode lamps —
-so this is one surface rather than press-here-look-there. Pressing one selects that mode; the lamp it
-paints is the confirmation. Decided 2026-11-02 (Brendan), when the top row was given to song
-sections (`cut-it/songs-and-sections`).
+**CC 80 down to 10, page 1 at the top** (the up arrow), eight pages, and `g_grid` lights them as the
+mode lamps — so this is one surface rather than press-here-look-there. Pressing one selects that
+page; the lamp it paints is the confirmation. Decided 2026-11-02 (Brendan), when the top row was given
+to song sections (`cut-it/songs-and-sections`), and the column's bottom two joined on 2026-11-04.
 
-⛔ **`u_map` gates each of the six on the press.** A CC button here sends **127 then 0**, where a
+⛔ **`u_map` gates each of the eight on the press.** A CC button here sends **127 then 0**, where a
 nanoKONTROL button sends only the press — so an ungated branch would select the same mode twice per
 push. Idempotent, therefore invisible. The mechanism is on [map.md](../module/map.md).
 
@@ -181,11 +181,10 @@ CC**, so a control here that named the missing device would be dead in exactly t
 exists for. `diag` lives on the Organelle's own keyboard, under the aux modifier — see
 [organelle.md](organelle.md).
 
-### The top row and the left column's bottom two are free
+### The top row is free
 
 **CC 91–98 select nothing** and report a raw `lp-cc-NN` row, as every unmapped control does; they
-held the mode selector until it moved. **CC 20 and 10**, the left column's bottom two, are free too:
-whether there are eight modes is open (`cut-it/songs-and-sections`).
+held the mode selector until it moved.
 
 ⚠️ **The objection above applies to everything on this surface**, `recover` on CC 90 included; the
 Organelle's keyboard is where the controls you reach for when a device has died belong. Anything put
@@ -193,8 +192,8 @@ on a free button should be something you would not miss if the Launchpad were th
 
 ### A tap on Setup flips test mode
 
-**Setup, the bottom left corner, publishes `lp-setup`, and the map binds it to `test-mode` in all
-six modes**, beside `og-shift-61` ([map.md](../module/map.md)): asked for by Brendan, 2026-11-04.
+**Setup, the bottom left corner, publishes `lp-setup`, and the map binds it to `test-mode` on
+every page**, beside `og-shift-61` ([map.md](../module/map.md)): asked for by Brendan, 2026-11-04.
 Test mode is on the Organelle's keyboard too, so it passes the test above. In Programmer Mode the
 button sends nothing on port 0; a tap makes the device announce its layout on port 2, and a hold
 sends nothing at all (Reference, *The Setup button in Programmer Mode*). So `wire.sh` joins port 2
@@ -234,7 +233,8 @@ reasons, each enough:
 
 - **The ring carries the mode keys**, which must work when the Lua does not: `u_map` keeps them in
   Pd so a missing pdlua or a broken table cannot strand you ([map.md](../module/map.md)), and they
-  reach it as `lp-cc-80` to `lp-cc-30` from this file.
+  reach it as `lp-cc-80` to `lp-cc-10` from this file.
+
 - **Pressure is the densest stream on the rig**, a message per held pad as often as the device
   sends one, and it already crosses the map's Lua. A pdlua call costs about 0.1 ms on the Organelle,
   where `makefilename pad-%d-at` costs a few microseconds.

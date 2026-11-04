@@ -8,24 +8,24 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
 
 - [ ] **1. Resting grid**
   - **Send:** `tempo 120; stop bang; mode mode-2`
-  - **Pass if:** The left column shows one bright green lamp second from the top and five dim ones around it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct — a frozen pad is the failure. Everything else on the surface is dark.
+  - **Pass if:** The left column shows one bright green lamp second from the top and seven dim ones around it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct — a frozen pad is the failure. Everything else on the surface is dark.
   - **Note:** Mode 2, not 1: mode 1 is the drum page, where the beat row gives way.
 
 - [ ] **2. Mode lamp 4**
   - **Send:** `mode mode-4`
-  - **Pass if:** The bright lamp moves to the fourth position down and the other five go dim. Nothing else on the grid changes.
+  - **Pass if:** The bright lamp moves to the fourth position down and the other seven go dim. Nothing else on the grid changes.
 
 - [ ] **3. Mode lamp 2**
   - **Send:** `mode mode-2`
   - **Pass if:** The bright lamp lands on the second position.
 
-- [ ] **4. Mode lamp 5**
-  - **Send:** `mode mode-5`
-  - **Pass if:** The bright lamp lands on the fifth position and the other five go dim.
+- [ ] **4. Mode lamp 7**
+  - **Send:** `mode mode-7`
+  - **Pass if:** The bright lamp lands on the seventh position and the other seven go dim.
 
-- [ ] **5. Mode lamp 6**
-  - **Send:** `mode mode-6`
-  - **Pass if:** The bright lamp lands on the sixth and last position.
+- [ ] **5. Mode lamp 8**
+  - **Send:** `mode mode-8`
+  - **Pass if:** The bright lamp lands on the eighth and last position, the bottom of the left column, just above SETUP.
 
 - [ ] **6. Pressing a mode lamp selects it**
   - **Do:** Press the third button down the left column, then the second.
@@ -91,12 +91,13 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
 
 - [ ] **20. Ring buttons**
   - **Do:** Press the ring buttons, including the top left corner and the bottom row. Leave SETUP, the bottom left corner, for step 28.
-  - **Pass if:** Each ring button reports lp-cc-NN on the OLED except the seven the map binds — they draw no row. The top left corner raises panic and the top six of the left column move the mode lamp. The bottom row runs from 101 to 108 in order. SETUP stays dark.
-  - **Note:** The rows are `u_map`'s (item 317), so the bound buttons draw none: CC 90 is `recover` and the six mode keys are `u_map`'s own route. The top row is free.
+  - **Pass if:** Each ring button reports lp-cc-NN on the OLED except the nine the map binds — they draw no row. The top left corner raises panic and the left column's eight move the mode lamp. The bottom row runs from 101 to 108 in order. SETUP stays dark.
+  - **Note:** The rows are `u_map`'s (item 317), so the bound buttons draw none: CC 90 is `recover` and the eight mode keys are `u_map`'s own route. The top row is free.
 
 - [ ] **21. The left column changes mode**
-  - **Do:** Press each of the top six buttons of the left column, top to bottom. Then press the top row.
-  - **Pass if:** Each of the six buttons moves the bright lamp to its own position. The top row moves nothing.
+  - **Do:** Press each of the eight buttons of the left column, top to bottom. Then press the top row.
+  - **Pass if:** Each of the eight buttons moves the bright lamp to its own position. The top row moves nothing.
+
 
 - [ ] **22. Hot-swap — unplugged mid-session**
   - **Send:** `mode mode-2`

@@ -1,7 +1,7 @@
 #N canvas 20 20 7300 6700 12;
 #X declare -lib pdlua;
 #X obj 20 300 r param;
-#X obj 20 360 route lp-cc-80 lp-cc-70 lp-cc-60 lp-cc-50 lp-cc-40 lp-cc-30;
+#X obj 20 360 route lp-cc-80 lp-cc-70 lp-cc-60 lp-cc-50 lp-cc-40 lp-cc-30 lp-cc-20 lp-cc-10;
 #X msg 900 420 mode-1;
 #X msg 1100 420 mode-2;
 #X msg 1300 420 mode-3;
@@ -77,10 +77,10 @@
 #X text 700 20 The map is a table \, and mode-dependent: cut-it-map.txt \, one row per mapping \, four atoms always -- <mode> <control> <dest> <arg>. u_map-lua reads it and looks each control up., f 76;
 #X text 1400 20 The allowlist guard is what makes a table acceptable: a row names a destination that must be a literal argument on the route below \, feeding a handler on this canvas \, and never a send. Skip it and nothing fails., f 76;
 #X text 2200 20 A row naming a destination not on the route is a real error \, unknown-dest on err. An unmapped control is normal: the Lua draws its raw row \, and it is silent on every bus., f 62;
-#X text 20 1700 The six mode keys stay hardcoded and come first \, so a mode change never depends on the mode and a broken table cannot strand you. They are the top six of the Launchpad's left column \, CC 80 down to 30 \, which g_grid lights as the mode lamps. See the select 0 gates beside them., f 62;
+#X text 20 1700 The eight mode keys stay hardcoded and come first \, so a page change never depends on the page and a broken table cannot strand you. They are the Launchpad's left column \, CC 80 down to 10 \, which g_grid lights as the mode lamps. See the select 0 gates beside them., f 62;
 #X text 1080 1700 The lookup is Lua: u_map-lua reads cut-it-map.txt when it is made \, keeps the key's mode \, divides each value into 0-1 \, holds a restored knob until it crosses (pickup) \, and looks the control up. A mapped control leaves as five atoms for the route below \, an unmapped one as its raw row. The rules are u_map.lua \, tested without Pd by test/gate/lua/u_map_test.lua (ref/module/map.md)., f 62;
 #X text 2140 1700 C-6: the Lua sends the looked-up row as a list \, and route matches a selector \, so without the list trim every control would take the reject as unknown-dest., f 62;
-#X text 20 1930 At load the Lua answers init with a bang on its last outlet \, which shuts the spigot. No bang means it never loaded -- pdlua missing \, or an error in the Lua -- and fail u_map no-lua says so on the screen: every control is dead but the six mode keys., f 62;
+#X text 20 1930 At load the Lua answers init with a bang on its last outlet \, which shuts the spigot. No bang means it never loaded -- pdlua missing \, or an error in the Lua -- and fail u_map no-lua says so on the screen: every control is dead but the eight mode keys., f 62;
 #X text 1080 1930 Pickup's rules are the Lua's and its clock and files are here: the boot window shuts at 1000 ms \, and the breadcrumb at 2000 says live when the boot follows a recover. Whether a Save left a knobs.txt is the Lua's \, asked as it is made (items 236 \, 239 and 299)., f 62;
 #X text 1080 2160 Arg then value \, always: unpack fires right to left \, so the value is in a cold inlet or a gate before the arg triggers., f 62;
 #X text 2140 2160 Value destinations are c_mapped instances \, and the scaling lives there: tempo is c_mapped bpm 490 10 \, 0-1 over 10 to 500 BPM. Each draws its own row and passes arg and scaled value on only while live. The transport chain holds no state: it reads back r start and r stop., f 62;
@@ -150,7 +150,7 @@
 #X obj 1500 350 select 0;
 #X obj 1700 350 select 0;
 #X obj 1900 350 select 0;
-#X text 3000 180 A Launchpad CC button sends 127 then 0 \, so these six gates stop each selection firing twice. They cannot go above the route: og-key releases there are real note-offs (item 293). C-8, f 62;
+#X text 3000 180 A Launchpad CC button sends 127 then 0 \, so these eight gates stop each selection firing twice. They cannot go above the route: og-key releases there are real note-offs (item 293). C-8, f 62;
 #X obj 20 1010 list trim;
 #X obj 2380 1330 t f f;
 #X obj 2380 1390 list prepend volca-prog;
@@ -195,7 +195,7 @@
 #X obj 6000 1290 spigot;
 #X obj 6000 1350 t b;
 #X obj 6000 1730 outlet;
-#X text 6200 1160 test-mode flips u_net's test mode \, which puts the phone's line check up in place of its screens. A press flips it and a release does nothing \, as diag. og-shift-61 and lp-setup \, the Launchpad's Setup \, which has no release \, in all six modes (ref/module/map.md)., f 40;
+#X text 6200 1160 test-mode flips u_net's test mode \, which puts the phone's line check up in place of its screens. A press flips it and a release does nothing \, as diag. og-shift-61 and lp-setup \, the Launchpad's Setup \, which has no release \, on every page (ref/module/map.md)., f 40;
 #X connect 0 0 1 0;
 #X connect 2 0 8 0;
 #X connect 3 0 8 0;
@@ -351,7 +351,7 @@
 #X connect 169 0 170 0;
 #X connect 171 0 172 0;
 #X connect 172 0 173 0;
-#X connect 1 6 175 0;
+#X connect 1 8 175 0;
 #X connect 176 0 175 1;
 #X connect 177 0 178 0;
 #X connect 178 1 179 0;
@@ -388,3 +388,13 @@
 #X connect 199 0 71 0;
 #X connect 199 1 71 0;
 #X connect 199 2 71 0;
+#X obj 2100 300 select 0;
+#X obj 2300 300 select 0;
+#X msg 2100 420 mode-7;
+#X msg 2300 420 mode-8;
+#X connect 1 6 200 0;
+#X connect 1 7 201 0;
+#X connect 200 1 202 0;
+#X connect 201 1 203 0;
+#X connect 202 0 8 0;
+#X connect 203 0 8 0;

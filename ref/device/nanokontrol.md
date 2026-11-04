@@ -38,8 +38,9 @@ toggle — and names them by physical position, because what a control *means* i
 **Mode selection is the Launchpad's left column**, where the lit lamp already is — see
 [map.md](../module/map.md).
 
-✅ `xport-2` is **PLAY** and drives `start`; `xport-5` is **STOP** and drives `stop`, in all six
-modes. The Organelle's `aux` is the keyboard's modifier, not a transport — see
+✅ `xport-2` is **PLAY** and drives `start`; `xport-5` is **STOP** and drives `stop`, on every
+page.
+ The Organelle's `aux` is the keyboard's modifier, not a transport — see
 [organelle.md](organelle.md).
 
 ⚠️ **The other four report a raw row on the OLED**, because they fall through to the table and miss

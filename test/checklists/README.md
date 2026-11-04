@@ -117,7 +117,8 @@ can be done by hand instead:
 
 | Send | On the rig |
 |---|---|
-| `mode mode-1` to `mode mode-6` | the first to sixth button down the Launchpad's left column |
+| `mode mode-1` to `mode mode-8` | the first to eighth button down the Launchpad's left column |
+
 | `start bang` · `stop bang` | PLAY · STOP on the nanoKONTROL |
 | `panic bang` | a short tap on the Launchpad's top-left corner button |
 

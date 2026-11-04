@@ -20,9 +20,10 @@ import lib_drive as D                                          # noqa: E402
 GAP = 20
 
 SEQ = [
-    # Nothing else in this run uses mode-5, so a lamp at index 40 can only have
-    # come from here.
-    (300, "EARLY-MODE", ["\\; mode mode-5"], GAP),
+    # Nothing else in this run uses mode-8, so a lamp at index 10, the bottom
+    # of the left column, can only have come from here.
+    (300, "EARLY-MODE", ["\\; mode mode-8"], GAP),
+
     (4000, "idle-dsp-off", [], GAP),
     (8000, "dsp-on", ["\\; pd dsp 1"], GAP),
     # The mode is not re-sent: the next window asserts the one set at 300 ms

@@ -137,7 +137,7 @@ y = 0, 9, 18, 27, 36**, one per source, plus the shrunk meter strip.
 | ⛔ **The loop is bounded at FIVE rows, not at the roster size.** A sixth would draw at y=45 and run into the meter strip at y=48 | verified | 301 |
 | ⚠️ **`m_launchpad unchecked` is 21 characters** — the whole width of an 8px row. A longer state word or a longer abstraction name clips silently | verified | 301 |
 | Summoned by `disp` → `diag`, which carries nothing. Cleared by a retriggered `[del 8000]`, so pressing again while it is up buys another eight seconds | verified | 301 |
-| The control is **`og-shift-60` in all six modes** — hold `aux` and press the lowest key. One row of `cut-it-map.txt` per mode | verified | 304 |
+| The control is **`og-shift-60` on every page** — hold `aux` and press the lowest key. One row of `cut-it-map.txt` per page | verified | 304 |
 | The state lives in a `[text define $0-diag]` as `<src> <code>` — **numbers, not words**, so every transition is a comparison and the words are chosen once, where they are drawn | verified | 301 |
 
 ⚠️ **Presence is *last heard*, not *alive*, and the labels are chosen to say so.** A nanoKONTROL
@@ -153,7 +153,8 @@ and `recover`. See [organelle.md](../device/organelle.md).
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
-| `home` | 0 | Always active | Never | **Regions** — six mode lamps down the left column, CC 80 to 30, and the beat row on grid indices 11–18; in mode 1 the **drum page** instead of the beat row | unknown | — |
+| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10,
+ and the beat row on grid indices 11–18; in mode 1 the **drum page** instead of the beat row | unknown | — |
 | `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | The whole surface, one color | verified | — |
 | `alert` | 2 | `disp` → `alert …`, **`fail` only** | 2 s | The whole surface, red | verified | — |
 

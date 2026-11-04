@@ -75,14 +75,15 @@ def main():
                    "the time ownership rises at ~3 s. Tracked in plan-v04.md"
                    % problem)
 
-    # mode-5 was set at 300 ms and never again: a first painted frame without it
+    # mode-8 was set at 300 ms and never again: a first painted frame without it
     # means the mode was dropped or the grid painted a default of its own.
     fs = window("home-early-mode")
     if A.check("home-early-mode: the grid repainted", bool(fs), "no frame in the window"):
         _problem, lamp, _beat = G.home_shape(fs[-1])
         A.check("⛔ a mode set at 300 ms -- before the grid painted at all -- SURVIVES",
-                lamp == G.LAMPS[4], "lit lamp was %s, wanted %d (mode-5)"
-                % (lamp, G.LAMPS[4]))
+                lamp == G.LAMPS[7], "lit lamp was %s, wanted %d (mode-8)"
+                % (lamp, G.LAMPS[7]))
+
 
     # Mode 1 is the drum page: the beat row gives way to it while the clock
     # still runs, so every frame of the window is asked, not only the last.

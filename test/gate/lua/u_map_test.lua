@@ -51,12 +51,13 @@ local fh = assert(io.open(DIR .. "cut-it-map.txt"))
 local shipped = R.new(fh:read("a"))
 fh:close()
 local tempo_everywhere = true
-for n = 1, 6 do
+for n = 1, R.PAGES do
   local r = shipped.map["mode-" .. n]["og-knob-1"]
   tempo_everywhere = tempo_everywhere and r and r.dest == "tempo"
 end
-check("the shipped table parses: og-knob-1 is tempo in all six modes", tempo_everywhere,
-      T.show(shipped.map["mode-1"]["og-knob-1"]))
+check("the shipped table parses: og-knob-1 is tempo on all " .. R.PAGES .. " pages",
+      tempo_everywhere, T.show(shipped.map["mode-1"]["og-knob-1"]))
+
 
 print("\n--- the lookup ---")
 local st = R.new(MAP)

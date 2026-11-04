@@ -133,9 +133,9 @@ def run_asserts(cap):
             % rows("EARLY", "slider-1", "volca-cc41"))
 
     # The other [ctlin] layer, through the same stub.
-    A.check("⛔ ... and so does a Launchpad ring button -- lp-cc-20 55",
-            rows("CH-LP", "lp-cc-20") == [["lp-cc-20", "55"]],
-            "rows for lp-cc-20: %s" % rows("CH-LP", "lp-cc-20"))
+    A.check("⛔ ... and so does a Launchpad ring button -- lp-cc-19 55",
+            rows("CH-LP", "lp-cc-19") == [["lp-cc-19", "55"]],
+            "rows for lp-cc-19: %s" % rows("CH-LP", "lp-cc-19"))
 
     # ---- cross-talk between the channel blocks ----------------------------
     # One t-ctlin reaches both rewritten [ctlin] boxes; the Launchpad's is the
@@ -150,8 +150,9 @@ def run_asserts(cap):
             "published sp-cc-20 77 here" % (param("CH-33"), disp("CH-33")))
     lp = [v for v in param("CH-LP") if v and v[0].startswith("lp-cc-")]
     A.check("the Launchpad's block admits its own channel",
-            len(lp) == 1 and lp[0][0] == "lp-cc-20",
-            "wanted one lp-cc-20 on channel 1, got %s" % param("CH-LP"))
+            len(lp) == 1 and lp[0][0] == "lp-cc-19",
+            "wanted one lp-cc-19 on channel 1, got %s" % param("CH-LP"))
+
 
     strays = [(m, v) for m in NANO_WINDOWS for v in param(m) + disp(m)
               if v and v[0].startswith(FOREIGN)]

@@ -16,7 +16,7 @@ means. Telling the instrument "in mode 2, this fader plays the Volca" is one row
 
 **Its lookup is Lua, and its destinations are Pd.** `u_map.lua` reads the table and holds the
 lookup key's mode, the lookup, the divisor, parameter pickup and the raw row an unmapped control
-draws, as plain Lua that runs on the Mac without Pd; `u_map.pd` keeps the six mode keys, the
+draws, as plain Lua that runs on the Mac without Pd; `u_map.pd` keeps the eight mode keys, the
 destination route and every handler behind it, the boot timers and the files pickup reads, and asks
 the Lua through one pdlua object, `[u_map-lua]` (`cut-it/logic-as-text`).
 
@@ -42,7 +42,7 @@ mode-1 slider-1  volca-cc 41
 
 | Field | Is | Evidence | Item |
 |-------|----|----------|------|
-| `<mode>` | The `mode` bus message, one atom: the page, `mode-1` to `mode-6` | verified | — |
+| `<mode>` | The `mode` bus message, one atom: the page, `mode-1` to `mode-8` | verified | — |
 | `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `pad-43` | verified | — |
 | `<dest>` | One of the **fourteen** below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
@@ -66,9 +66,9 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `volca-prog` | The program number | A **gate only** — it decides whether the press counts | verified | — |
 | `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key | verified | 293 |
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
-| `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, in all six modes** | verified | 301 |
+| `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, on every page** | verified | 301 |
 | `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad; an index the layout lacks is `fail u_map layout-miss` | verified | — |
-| `test-mode` | unused | Non-zero flips `u_net`'s test mode, which puts the phone's line check up ([phone.md](../device/phone.md)). **`og-shift-61` and `lp-setup`, the Launchpad's Setup, in all six modes**; `lp-setup` has no release, and needs none; out `u_map`'s third outlet, a cord to `u_net`. Choosing a mode turns test mode off, in `u_net` | unknown | — |
+| `test-mode` | unused | Non-zero flips `u_net`'s test mode, which puts the phone's line check up ([phone.md](../device/phone.md)). **`og-shift-61` and `lp-setup`, the Launchpad's Setup, on every page**; `lp-setup` has no release, and needs none; out `u_map`'s third outlet, a cord to `u_net`. Choosing a mode turns test mode off, in `u_net` | unknown | — |
 | `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1–32**, **`og-knob-2`**; `track-last` the selected track's own, **`og-knob-3`**; `swing` the sequencer's, 25% to 75%, **`og-knob-4`**, all in mode 1. A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
@@ -141,10 +141,12 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 | A duplicate row | The first for a mode and control wins; the rest are dead | verified | — |
 | Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
-**An unmapped control is the normal state of most controls and must stay silent.** Six modes × 92
-controls is 552 possible rows and the shipped file has **143** — knob 1 in all six modes; knobs 2
+**An unmapped control is the normal state of most controls and must stay silent.** Eight pages × 92
+controls is 736 possible rows and the shipped file has **161** — knob 1 on all eight; knobs 2
 to 4, slider 1, the keyboard's 25 and the drum page's 60 pads in mode 1; and CC 90, PLAY, STOP, the
-four shifted keys and Setup in all six.
+four shifted keys and Setup on all eight. ⛔ **Those nine rows are on every page**, so no page
+strands you without a stop or a recover but the Launchpad's own, and `map-assert.py` reads that off
+the file.
 
 ### Where each part lives
 
@@ -152,7 +154,7 @@ four shifted keys and Setup in all six.
 |---|---|---|
 | The table, the key's mode and its guard, the lookup, the divisor, pickup's five states and the raw row with its two exemptions | `u_map.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
 | Reading the table and asking whether a `knobs.txt` is there, turning messages into those calls and their answers into outlets | `u_map-lua.pd_lua`, the class `u_map-lua`: three inlets (every control the mode keys pass on; the `mode` bus; `u_map.pd`'s own `init`, `window-shut` and `live`), five outlets (the destination route, an unmapped control's row, the mode to store, `err`, a bang on `init`) | verified |
-| The six mode keys and their release gates, the 500 ms seed, the destination route and its handlers, `c_mapped`, the 1000 ms boot window, the recover breadcrumb at 2000 ms, `put auto mode` and the restore | `u_map.pd` | verified |
+| The eight mode keys and their release gates, the 500 ms seed, the destination route and its handlers, `c_mapped`, the 1000 ms boot window, the recover breadcrumb at 2000 ms, `put auto mode` and the restore | `u_map.pd` | verified |
 | The Lua's answers | The Pd version's, exactly: 38 controls and modes through `u_map` printed the same 42 lines from the Pd version and the Lua, on the Mac and on the Organelle (2026-11-03) | verified |
 | What it costs in memory | About 0.1 MB more peak resident in a test Pd loading `main.pd` on the Organelle (3.31–3.42 MB before, 3.44–3.48 after), since `c_steps` loads pdlua already | verified |
 | What it costs per control | About twice the Pd version's on the Organelle, in a test Pd niced beside the live one: 9000 mixed controls in 2.9–3.4 s against 1.35 s, and 9000 unmapped pressure messages in 1.6–1.8 s against 0.7–0.9 s (2026-11-03) | verified |
@@ -378,7 +380,7 @@ safe and blind: nothing could tell an unmapped control from a suppressed one. Th
 runs; only the destination's action is held.
 
 ⚠️ **It is the only row the control gets.** No `m_` layer posts one of its own (item 317), so this
-report is what makes `slider-3`, `lp-cc-20` and `pad-43` name themselves on the screen — a release
+report is what makes `slider-3`, `lp-cc-19` and `pad-43` name themselves on the screen — a release
 included, at velocity 0, wherever the device layer publishes one.
 
 ### A target sitting on a rail can never be crossed
@@ -425,7 +427,7 @@ tempo from wherever knob 1 sat until the answer came. Lua's `io.open` fails in s
 ### A Lua that never loads leaves only the mode keys
 
 ⛔ Without pdlua on the path, or with an error in the Lua,
-`[u_map-lua]` fails to create, and every control but the six mode keys is dead: no tempo knob, no
+`[u_map-lua]` fails to create, and every control but the eight mode keys is dead: no tempo knob, no
 PLAY or STOP, no keyboard.
 
 **Fix:** `u_map.pd` sends `init` at load and says `fail u_map no-lua` on the screen when no bang
@@ -438,8 +440,8 @@ the gate's Pd half* ([sequencer.md](sequencer.md)).
 ### Why a table at all
 
 The old rule was one `route` branch per mapping, with a written condition to revisit past about ten
-mappings. **42 controls × six modes is far past it**, and the mode dependency alone would have
-multiplied the branch count by six.
+mappings. **42 controls × eight pages is far past it**, and the page dependency alone would have
+multiplied the branch count by eight.
 
 ### The allowlist guard
 
@@ -460,18 +462,19 @@ destination to a handler you can see, so it is the allowlist and the dispatch at
 list of destinations and the handlers they reach would be two things to keep in step, and the lint
 and the docs gate would have to read the Lua instead of the box.
 
-### The six mode keys stay hardcoded, and they come first
+### The eight mode keys stay hardcoded, and they come first
 
 They **are** the mode selector, so a mode change can never itself be mode-dependent — and if the
 table were empty or broken, or the Lua never loaded, you could still change mode on a device with no
 console. Everything the mode `route` does not match falls out of its reject and goes to the Lua.
 
-**They are the top six of the Launchpad's left column, `lp-cc-80` down to `lp-cc-30`**, mode 1 at the
-top — the six buttons `g_grid` lights as the mode lamps, so the thing you look at is the thing you
-press. The top row, CC 91–98, is free. See
+**They are the Launchpad's left column, `lp-cc-80` down to `lp-cc-10`**, page 1 at the top — eight
+pages (Brendan, 2026-11-04), the eight buttons `g_grid` lights as the mode lamps, so the thing you
+look at is the thing you press. `u_map.lua`'s `R.PAGES` takes the same eight, and `map-assert.py`
+checks the two agree. The top row, CC 91–98, is free. See
 [launchpad.md](../device/launchpad.md).
 
-⛔ **Each of the six branches carries a `[select 0]`, and that is not decoration.** A Launchpad CC
+⛔ **Each of the eight branches carries a `[select 0]`, and that is not decoration.** A Launchpad CC
 button sends **127 on the press and 0 on the release**, where a nanoKONTROL button sends only the
 press. Ungated, every mode selection fires **twice** — idempotent, so nothing on screen looks wrong,
 while every `mode` message, every state-store write and every `g_grid` repaint silently doubles.
@@ -594,10 +597,11 @@ between a fifth and two fifths off a control's time there.
 
 - ⬜ **Live re-assignment — editing a mapping from the instrument rather than the file — is v0.4**,
   and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **The mode names are placeholders.** `mode-1`…`mode-6` say nothing about what each mode is for,
+- ⬜ **The mode names are placeholders.** `mode-1`…`mode-8` say nothing about what each mode is for,
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
-  would jump once per change. Not reachable today — `og-knob-1` is `tempo` in all six modes. **It
+  would jump once per change. Not reachable today — `og-knob-1` is `tempo` on every page. **It
+
   closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.
   ⚠️ Doing it *cheaply* is worse than nothing — re-arming to the knob's last position puts the next
   move on the far side and suppresses until you turn back. Doing it right needs a per-`(mode, knob)`

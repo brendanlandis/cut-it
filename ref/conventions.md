@@ -152,7 +152,7 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 
 | Name | Carries | Source |
 |---|---|---|
-| `mode` | **`<page>`**, one atom — `mode-1` to `mode-6` | `u_map`, from the Launchpad's left column |
+| `mode` | **`<page>`**, one atom — `mode-1` to `mode-8` | `u_map`, from the Launchpad's left column |
 | `tempo` | **master reference** BPM, as a float | any → `u_tempo` |
 | `clock` | **master reference** beat bang | `u_tempo` |
 | `start` / `stop` | transport, carried as a **bang** | any → `u_tempo` |
@@ -191,7 +191,8 @@ Two consequences bind whoever writes an `m_` layer, and both are deliberate:
   Everything else about the map — the row format, the destinations, the divisor, the boot races —
   is on [map.md](module/map.md).
 
-**`mode` is driven from the Launchpad's left column**, its top six buttons, CC 80 down to 30, which
+**`mode` is driven from the Launchpad's left column**, its eight buttons, CC 80 down to 10, which
+
 `g_grid` lights as the mode lamps — the only device Pd can light, so the state is visible rather
 than remembered. It carries
 **one atom, the page**, as its selector, so a reader's `route` matches it and its branches feed

@@ -24,9 +24,9 @@ FIRST_INDEX = 1
 FRAME_LEN = len(HEADER) + NSPEC * 3 + 1          # 332, every cell a palette color
 SPEC_LEN = {0: 3, 1: 4, 2: 3, 3: 5}              # by type: static, flash, pulse, RGB
 
-# read out of g_grid.pd rather than guessed. The mode lamps are the top six of
-# the left column, mode 1 at the top: LAMPS[m - 1] is mode m's.
-LAMPS = (80, 70, 60, 50, 40, 30)
+# read out of g_grid.pd rather than guessed. The mode lamps are the left
+# column's eight, page 1 at the top: LAMPS[m - 1] is page m's.
+LAMPS = (80, 70, 60, 50, 40, 30, 20, 10)
 BEAT_LO, BEAT_HI = 11, 18
 DIM, LAMP_ON, BEAT_ON, ALERT_RED = 1, 21, 3, 5
 
@@ -111,7 +111,7 @@ def parse(stream, tag):
 def home_shape(frame):
     """-> (problem_or_None, lit_lamp_index, lit_beat_index) for a HOME frame.
 
-    Home is: everything dark, the six mode lamps dim with one lit, the eight beat
+    Home is: everything dark, the eight mode lamps dim with one lit, the eight beat
     cells dim with one lit. Anything else lit anywhere is the problem this
     returns, so an off-by-one that lights a ring button once a bar is caught
     though seven beats of eight look right.
@@ -191,7 +191,8 @@ def drum_page(frame, lay):
 
     page is {"step": {n: color}, "vel": {n: color}, "pad": {n: color}, "rep": {n:
     color}}. The
-    page is: the six mode lamps as home has them, every layout cell in a color
+    page is: the eight mode lamps as home has them, every layout cell in a color
+
     its role can take, and everything else dark -- the beat row included, since
     it gives way here, and the bottom-right 4x4, which no row names.
     """

@@ -134,7 +134,8 @@ under `ref/`. Nothing in either is deployed.
 
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-three gates and 992 checks**
+**Twenty-three gates and 994 checks**
+
 , and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **Two of them read
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile and `kit-assert.sh` the drums; every other gate in the

@@ -60,7 +60,9 @@ SEQ = [
     # --- the other two channel blocks, through the same stub ---------------
     # 33 is Pd's port 3, the SP-404's until it left the rig: nothing listens.
     (14100, "CH-33", ["\\; t-ctlin 77 20 33"], GAP),
-    (14800, "CH-LP", ["\\; t-ctlin 55 20 1"], GAP),
+    # CC 19, the bottom of the right column: the left column's are mode keys.
+    (14800, "CH-LP", ["\\; t-ctlin 55 19 1"], GAP),
+
 
     (15500, "DONE", [], GAP),
 ]

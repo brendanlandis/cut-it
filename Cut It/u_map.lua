@@ -17,8 +17,9 @@ local R = {}
 -- the 500 ms seed, since mother pushes knobs.txt before that (item 234).
 R.BOOT_MODE = "mode-1"
 
--- The pages, mode-1 to mode-6, one per key down the Launchpad's left column (ref/module/map.md).
-R.PAGES = 6
+-- The pages, mode-1 to mode-8, one per key down the Launchpad's left column, CC 80 to 10
+-- (Brendan, 2026-11-04; ref/module/map.md).
+R.PAGES = 8
 
 -- The Organelle's knobs: the only controls that arrive 0-1 already (mother's own scale), and
 -- the only ones pickup holds.

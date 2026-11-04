@@ -28,12 +28,18 @@ UMAP = "Cut It/u_map.pd"
 # went with the SP-404 (2026-11-04).
 DISP_EXPECT = {"m_launchpad": 0, "m_nano": 0, "m_organelle": 1, "m_volca": 0}
 ULUA = "Cut It/u_map.lua"
+# The rows every page has (map.md): <control> <dest> <arg>.
+EVERY_PAGE = [("og-knob-1", "tempo", "0"), ("xport-2", "start", "0"), ("xport-5", "stop", "0"),
+              ("lp-cc-90", "recover", "0"), ("og-shift-60", "diag", "0"),
+              ("og-shift-61", "test-mode", "0"), ("lp-setup", "test-mode", "0"),
+              ("og-shift-72", "stop", "0"), ("og-shift-84", "recover", "0")]
 # Both runs are counted against this one list, so neither passes a driver that
 # died early.
 WINDOWS = ["EARLY", "EARLY-2", "RAIL-ARM", "SUPPRESS", "MAPPED", "AWAY", "CROSS",
            "LIVE", "PLAY-1", "STOP-1", "PLAY-2", "KNOB-2", "LATE-KNOB", "BAD-DEST",
            "RAIL-UP", "RAIL-BACK", "MODE-4", "MODE-DEP", "MODE-4-RELEASE",
-           "TOP-ROW-FREE", "UNMAPPED", "BAD-MODE", "AFTER-BAD", "DIAG-DEST", "DIAG-RELEASE",
+           "TOP-ROW-FREE", "UNMAPPED", "MODE-8", "BAD-MODE", "AFTER-BAD", "DIAG-DEST",
+           "DIAG-RELEASE",
            "SHIFT-STOP", "MODE-1", "ROW-CC", "ROW-NOTE", "ROW-PROG",
            "ROW-KEY", "PRESSURE", "PRESSURE-MAPPED"]
 
@@ -86,8 +92,8 @@ def static_lint():
     # takes them. A key the Lua refuses says bad-mode; a page with no key can
     # never be chosen.
     keys, n = mode_keys(), pages()
-    A.check("u_map's mode keys are the left column, CC 80 down, in steps of ten",
-            keys and keys == ["lp-cc-%d" % (80 - 10 * i) for i in range(len(keys))],
+    A.check("u_map's mode keys are the left column's eight, CC 80 down to 10",
+            keys == ["lp-cc-%d" % c for c in range(80, 0, -10)],
             "route box: %s" % keys)
     A.check("⛔ u_map.lua takes exactly the pages the keys choose -- R.PAGES is %s"
             % len(keys or []), n is not None and keys and n == len(keys),
@@ -115,6 +121,13 @@ def static_lint():
             "; ".join("line %d names %r" % b for b in bad_dest))
     A.check("every row's mode is one of the %d pages" % len(modes), not bad_mode,
             "; ".join("line %d: %r" % b for b in bad_mode))
+    # What works on every page: the tempo, the transport, recover, diag and test
+    # mode. A page that lacked one would strand you there with no stop or recover
+    # but the Launchpad's own, on a device that can be unplugged.
+    missing = ["%s %s %s on %s" % (c, d, a, p) for c, d, a in EVERY_PAGE for p in modes
+               if [p, c, d, a] not in [f for _, f in rows]]
+    A.check("⛔ every page carries the %d rows every page shares" % len(EVERY_PAGE),
+            modes and not missing, "missing: %s" % missing[:6])
     # drums passes its arg to c_steps as the command, so a misspelt one is a
     # knob that only says bad-selector when turned.
     takes = steps_cmds()
@@ -218,7 +231,7 @@ def run_asserts(cap):
             any(e[0] == "ERR" and "bad-mode" in " ".join(e[1]) for e in W("BAD-MODE")),
             repr(W("BAD-MODE")))
     # The error alone would not catch it; the key must survive. og-knob-1 is
-    # tempo in every mode.
+    # tempo on every page, page 8 here.
     A.check("⛔ ... and the lookup KEY SURVIVES IT -- 0.6 is still 150 bpm",
             any(e[0] == "TEMPO" and e[1] == ["150"] for e in W("AFTER-BAD")),
             "tempo in that window: %s -- a poisoned key sends nothing here and "
@@ -345,7 +358,13 @@ def run_asserts(cap):
     A.check("⛔ a mode the old code saved, compose mode-1, restores as mode-1 alone",
             restored == [["mode-1"]],
             "mode between 3.2 and 5 s: %s" % restored)
-    # The top row held the six mode keys before they moved to the left column.
+    # The bottom key of the left column, a press and its release in one window:
+    # page 8, once. The windows after it run there, so the shipped rows every
+    # page shares are driven on the last page.
+    A.check("⛔ the left column's bottom key selects page 8, once for a press and release",
+            modes("MODE-8") == [["mode-8"]],
+            "mode in that window: %s" % modes("MODE-8"))
+    # The top row held the mode keys before they moved to the left column.
     A.check("the top row's first button selects no mode any more",
             modes("TOP-ROW-FREE") == [],
             "mode in that window: %s" % modes("TOP-ROW-FREE"))
@@ -354,7 +373,8 @@ def run_asserts(cap):
             "u_map's rows in that window: %s" % umap_rows(W("TOP-ROW-FREE")))
 
     # The lint proves diag is on the route; this proves the row reaches it.
-    # og-shift-60 is mapped to diag in every mode, so no mode change first.
+    # og-shift-60 is mapped to diag on every page, page 8 here.
+
     diag = lambda k: [e[1] for e in W(k) if e[0] == "DISP" and e[1][:1] == ["diag"]]
     A.check("⛔ a row naming diag summons the diagnostic layer",
             len(diag("DIAG-DEST")) == 1,

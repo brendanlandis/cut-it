@@ -3,6 +3,7 @@
 
     python3 tools/touchosc/build.py           write it
     python3 tools/touchosc/build.py --check   exit 1 if the committed copy is stale
+    python3 tools/touchosc/build.py --force   write it over a copy saved from TouchOSC's editor
 
 The design is Brendan's, iterated from mockups on 2026-11-04: TouchOSC's own controls and its own
 tab bar, black, with bright red the lead accent and teal the second, monospaced type for every
@@ -25,9 +26,11 @@ back.
 A .tosc file is zlib-compressed XML (~/Sites/!reference/touchosc.md). The checklist page carries
 the line check as data, so an edit to it means a rebuild, and push.sh puts the result on the phone.
 """
+import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import textwrap
 import uuid
@@ -36,6 +39,7 @@ import zlib
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(HERE, "CutIt.tosc")
+STAMP = os.path.join(HERE, ".built")   # what the last build wrote, untracked
 CHECKLISTS = os.path.join(ROOT, "test", "checklists")
 DRUM_PAGE = os.path.join(ROOT, "Cut It", "cut-it-drum-page.txt")
 
@@ -701,6 +705,32 @@ def strip_ids(s):
     return re.sub(r'ID="[^"]+"', 'ID=""', s)
 
 
+def digest(xml):
+    return hashlib.sha256(strip_ids(xml).encode("utf-8")).hexdigest()
+
+
+def saved_from_editor(new):
+    """True when CutIt.tosc is none of what this build would write, what the last build wrote
+    and what git holds: TouchOSC's editor saved it, and writing over it would lose the change."""
+    try:
+        cur = zlib.decompress(open(OUT, "rb").read()).decode("utf-8")
+    except OSError:
+        return False
+    if strip_ids(cur) == strip_ids(new):
+        return False
+    try:
+        if open(STAMP).read().strip() == digest(cur):
+            return False
+    except OSError:
+        pass
+    head = subprocess.run(["git", "-C", ROOT, "show", "HEAD:tools/touchosc/CutIt.tosc"],
+                          capture_output=True).stdout
+    try:
+        return not head or strip_ids(zlib.decompress(head).decode("utf-8")) != strip_ids(cur)
+    except zlib.error:
+        return True
+
+
 def main_():
     xml = build()
     if "--check" in sys.argv:
@@ -709,8 +739,14 @@ def main_():
         except OSError:
             sys.exit(1)
         sys.exit(0 if strip_ids(old) == strip_ids(xml) else 1)
+    if saved_from_editor(xml) and "--force" not in sys.argv:
+        sys.exit("build: CutIt.tosc was saved from TouchOSC's editor since the last build, and "
+                 "writing it would lose that.\n  See what changed: python3 tools/touchosc/diff.py"
+                 "\n  Put it in build.py and build again, or discard it with --force.")
     with open(OUT, "wb") as fh:
         fh.write(zlib.compress(xml.encode("utf-8"), 9))
+    with open(STAMP, "w") as fh:
+        fh.write(digest(xml) + "\n")
     print("wrote %s (%d bytes of XML)" % (os.path.relpath(OUT), len(xml)))
 
 

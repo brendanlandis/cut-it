@@ -3,3 +3,5 @@ stock/
 __pycache__/
 # The drum samples converted for the patch, from samples/drums (tools/samples.sh).
 Cut It/samples/
+# What tools/touchosc/build.py last wrote, so it can tell a layout saved from TouchOSC.
+tools/touchosc/.built

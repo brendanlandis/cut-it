@@ -324,7 +324,26 @@ names it as a `Files:` entry, so it is live by definition.
 It rebuilds `touchosc/CutIt.tosc` and opens it in the Mac's TouchOSC, whose editor server pushes it
 to the phone live (TouchOSC's Reference page, *Editor network sync*). TouchOSC's server is off after
 every launch unless it is started with `--editor.network.state=SERVER`, so when it runs without it,
-`push.sh` quits and relaunches it with it, in the background.
+`push.sh` quits and relaunches it with it, in the background. Then it checks the phone is still
+connected, and says so when it isn't (exit 3): a phone that dropped off keeps the old layout and
+shows nothing wrong.
+
+### Working on the layout
+
+**The workflow** (Brendan, 2026-11-04), for while the phone's screens are being built:
+
+```sh
+python3 tools/touchosc/watch.py
+```
+
+- **The phone follows the code.** Every save of `build.py`, the line check or
+  `Cut It/cut-it-drum-page.txt` rebuilds the layout and pushes it.
+- **A dropped phone is told**, in a line and a Mac notification, as it happens and as it comes back.
+- **A change made in TouchOSC's editor comes back into the code.** Move, resize or recolor something
+  in the Mac's TouchOSC and save: the watcher lists the change (`python3 tools/touchosc/diff.py`
+  does the same by hand), it goes into `build.py`, and the next build writes the file again.
+  `build.py` refuses to write over a `CutIt.tosc` saved from the editor until then (`--force`
+  discards the change), so a tweak is never lost, and stops the watcher pushing.
 
 **The phone's setup, once:** in TouchOSC, connect to the Mac as an editor client (port 6666), and set
 OSC connection 1: UDP, host `192.168.1.15`, send port 9001, receive port 8000.

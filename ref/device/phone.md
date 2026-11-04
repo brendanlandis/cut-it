@@ -305,8 +305,9 @@ here (Brendan, 2026-11-04).
 
 ⛔ **`send` is the one that reaches further, so it has a switch of its own** (Brendan, 2026-11-03).
 It carries a checklist's Send line to `u_inject`'s eight buses (`test/checklists/README.md`), so the
-phone can run a rig checklist alone. `u_net` passes it only in **test mode**, which is flipped at the
-Organelle itself (`aux` and the second key from the bottom, `og-shift-61`), starts off at every load,
+phone can run a rig checklist alone. `u_net` passes it only in **test mode**, which is flipped with a
+tap on the Launchpad's Setup button (`lp-setup`) or at the Organelle itself (`aux` and the second key
+from the bottom, `og-shift-61`), starts off at every load,
 and rides on the heartbeat so the phone shows the Organelle's own state. Turning it on warns, so
 the OLED says so in compose and the log keeps it.
 

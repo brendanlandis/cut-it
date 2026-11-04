@@ -12,7 +12,7 @@ the verdict file went, and every step's text came here. A rig session means open
 | [display](display.md) | 20 | the OLED's layers and the error bus |
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
 | [tempo](tempo.md) | 13 | the transport, knob 1's pickup, the clamp, the 404 following |
-| [launchpad](launchpad.md) | 27 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |
+| [launchpad](launchpad.md) | 28 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |
 | [phone](phone.md) | 23 | what the phone shows, its tabs, the link dropping and coming back, its buttons, the checklist page and test mode |
 | [state](state.md) | 5 | the front-panel Save, a power cycle, the mode surviving it |
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
@@ -92,8 +92,8 @@ can be done by hand instead:
 TouchOSC layout (Brendan, 2026-11-03: the Mac faces away from the rig, the phone sits at it;
 2026-11-04: a tab in every mode).
 
-1. **Test mode on, at the Organelle:** hold `aux` and press the second key from the bottom. The
-   phone switches to the checklist tab, its pill says `test mode on` (the Organelle's own state,
+1. **Test mode on:** tap Setup, the Launchpad's bottom-left button, or at the Organelle hold `aux`
+   and press the second key from the bottom. The phone switches to the checklist tab, its pill says `test mode on` (the Organelle's own state,
    from the heartbeat), and the OLED warns in compose. Every load of Cut It turns it off again, and
    turning it off takes the phone back to the mode's first tab.
 2. **Pick a checklist** with ◀ and ▶. Each step shows its title and, from the file, Need, Send, Do,

@@ -103,6 +103,12 @@ exist (use `[del 2000]` or longer here), and `[polytouchin]` emits note before v
 The device answers the inquiry in either mode, so a Mac replug that drops it back to Live Mode is
 invisible to the poll alone. `m_launchpad` runs the heartbeat and the poll.
 
+**The heartbeat waits while anything is held.** Entering Programmer Mode makes the device let go
+of every held pad, a note off at once (Reference), so a repeat pad held across a tick stopped
+repeating within two seconds (Brendan, 2026-11-04). `m_launchpad` keeps a table of what is down,
+notes and then CCs from 128, and skips a tick while any is. A pad unplugged while held stays held
+in it until it is pressed and let go again; on a Mac the heartbeat waits that long.
+
 ### The grid paints the full span on init
 
 Because LED state survives mode switches (Reference), `g_grid` clears the whole span on init and

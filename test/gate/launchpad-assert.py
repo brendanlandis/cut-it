@@ -8,6 +8,10 @@ Two SysEx messages and the order between them:
   Live Mode on quit         ⛔ a Launchpad left in Programmer Mode is stranded,
                             and nothing on the Organelle can put it back
 
+And the heartbeat that re-enters Programmer Mode every presence tick waits
+while a pad is held: re-entering it makes the device let go of every held pad
+(Brendan, 2026-11-04: the repeat pads gave up after a second or so).
+
 Panic must not hand the surface back: that kills the grid until a reload, and
 in Live Mode the device floods Pd's Midi-In 1 with clock (item 250). What g_grid
 does with the surface is display-assert's.
@@ -22,7 +26,7 @@ import lib_grid as G                                           # noqa: E402
 PROGRAMMER, LIVE = 1, 0
 
 
-MARKS = ("SETTLED", "PANIC", "QUIT")
+MARKS = ("SETTLED", "PANIC", "HELD", "SWAP", "LET-GO", "QUIT")
 
 
 def main():
@@ -90,6 +94,19 @@ def main():
                 False, "NO Live Mode frame was ever sent, so there is no handback "
                        "to paint after -- the device is STRANDED in Programmer Mode "
                        "and this check cannot be answered")
+
+    # The heartbeat: none while pad 45 is down, then ring button 91, a tick each,
+    # and back once both are let go, which is also the witness that it runs at all.
+    beats = {m: len([f for f in prog if f.mark == m]) for m in ("HELD", "SWAP", "LET-GO")}
+    A.check("⛔ a held pad holds the Programmer Mode heartbeat off -- none while it is down",
+            beats["HELD"] == 0,
+            "%d heartbeat(s) while pad 45 was held: each one makes the device let go of "
+            "the pad, and a held repeat pad stops repeating" % beats["HELD"])
+    A.check("... nor while a ring button is held", beats["SWAP"] == 0,
+            "%d heartbeat(s) while button 91 was held" % beats["SWAP"])
+    A.check("... and let go, the heartbeat comes back", beats["LET-GO"] >= 1,
+            "no heartbeat in the 4 s after the pad was let go -- a replugged Launchpad on "
+            "the Mac would stay in Live Mode")
 
     A.note("%d mode switch(es) in the run: %s"
            % (len(mode), " ".join("programmer" if f.data[7:8] == [PROGRAMMER] else "live"

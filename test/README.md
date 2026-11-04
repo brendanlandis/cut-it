@@ -38,7 +38,7 @@ were false.
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 43 | `module/presence` |
-| `launchpad-assert.sh` | 8 | `device/launchpad` |
+| `launchpad-assert.sh` | 11 | `device/launchpad` |
 | `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
 | `phone-assert.sh` | 108 | `device/phone` |
@@ -49,9 +49,9 @@ were false.
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 166: 110 in Lua, 56 in Pd | `module/sequencer` |
 
-**980 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**983 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **973**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **976**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's.
 Worth knowing before trusting an arithmetic check of this number against a log.
@@ -141,7 +141,7 @@ and the verdict file in `results/` all went, and every step's text is in the che
 
 ```sh
 ./test/gate/display-assert.sh          32 checks, ~46 s — the ARBITER
-./test/gate/launchpad-assert.sh         8 checks, ~4 s  — the DEVICE
+./test/gate/launchpad-assert.sh        11 checks, ~15 s — the DEVICE
 ```
 
 Both take `--keep` to leave the byte capture behind to read. **They were one gate**, which is why

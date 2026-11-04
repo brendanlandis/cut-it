@@ -4,10 +4,11 @@
 -- Pd. main.pd says which key and knob does what.
 --
 -- Method A, retrigger: Pd fires A11 again and again, the gap between hits widening from a first
--- gap to a last one over the run. In the chromatic variant the first hit is A11 itself, which
--- may make it chromatic mode's sample, and every later hit goes to chromatic mode's channel 16,
--- a semitone lower as the run goes on (48 down to 36). In the plain one every hit is A11, so the
--- stutter can be heard without the pitch.
+-- gap to a last one over the run. In the chromatic variant every hit goes to chromatic mode's
+-- channel 16, a semitone lower as the run goes on (48 down to 36). That plays chromatic mode's
+-- own sample, which only the 404's front panel sets: a pad fired over MIDI does not change it
+-- (Brendan heard A1 after A11, 2026-11-04). In the plain one every hit is A11, so the stutter can
+-- be heard without the pitch.
 --
 -- Method B, looper: Pd loads DJFX Looper on BUS 3 and switches it on, fires A11 once, switches
 -- LOOP SW on and lowers SPEED over the run, so the loop repeats slower and lower together; then
@@ -118,9 +119,9 @@ local function retrigger(st, chrom)
   local hits = R.hits(st)
   local pad_ch, chrom_ch = st.base, st.base + st.chrom_chan - 1
   local prev, prev_ch
-  for k, t in ipairs(hits) do
+  for _, t in ipairs(hits) do
     local note, ch = st.note, pad_ch
-    if chrom and k > 1 then
+    if chrom then
       note = st.chrom_top - math.floor(st.chrom_drop * t / st.dur + 0.5)
       ch = chrom_ch
     end

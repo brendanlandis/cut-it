@@ -43,16 +43,16 @@ were false.
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
 | `phone-assert.sh` | 97 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 58: 11 read, 47 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `touchosc-assert.sh` | 59: 12 read, 47 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 16 | `module/sequencer` — the kit, as a signal |
 
-**1050 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one does
+**1051 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **1043**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **1044**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's;
 `touchosc-assert.sh` two as well, the reading first.
@@ -393,7 +393,7 @@ equivalent.
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       11 + 47 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       12 + 47 checks, ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
@@ -423,7 +423,8 @@ sending one step for a drag across two (Lua 1), and answers lighting a button by
 than its color, which sends its command again (Lua 9).
 ✅ **And for the line check** (2026-11-04): a Send line in it failed read 1, and the old `u_net`,
 still taking `send`, failed `phone-assert` 12 (three for the command, nine for the drum outlet
-moving down one).
+moving down one). The phone's pads laid out with pad 1 top left, after the drum page put it
+bottom left, failed read 1.
 ✅ **And for the pads** (2026-11-04): a pad sending when the state lights it, which bounced four
 selections between Cut It and the phone, failed 2; the old `u_net`, with no heartbeat on a flip of
 test mode, failed `phone-assert`'s two "at once" checks, 299 and 99 ms late; and with no cord

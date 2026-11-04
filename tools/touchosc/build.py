@@ -37,6 +37,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(HERE, "CutIt.tosc")
 CHECKLISTS = os.path.join(ROOT, "test", "checklists")
+DRUM_PAGE = os.path.join(ROOT, "Cut It", "cut-it-drum-page.txt")
 
 W, H, TAB = 896, 414, 44    # an iPhone 11 in landscape, in points, and the tab bar
 L, R = 14, 44               # kept clear: the left edge, the notch on the right
@@ -77,6 +78,20 @@ PAGES = 3           # at most, per step
 LIST = "linecheck"  # the checklist the page carries: test/checklists/linecheck.md
 FIELDS = ("Need", "Do", "Check", "Pass if")   # Note stays on the Mac, and the line check has
                                               # no Send lines: the phone sends none
+
+
+def pad_cells():
+    """{pad: (row, column)} on the Launchpad, from the drum page's own layout file, rows
+    counted from the bottom: the phone's pads sit as the Launchpad's do."""
+    cells = {}
+    for line in open(DRUM_PAGE, encoding="utf-8"):
+        m = re.match(r"^(\d)(\d) pad (\d+)\s*$", line)
+        if m:
+            cells[int(m.group(3))] = (int(m.group(1)), int(m.group(2)))
+    if sorted(cells) != list(range(1, 17)):
+        sys.exit("build: %s has pads %s, not 1 to 16" % (os.path.relpath(DRUM_PAGE, ROOT),
+                                                         sorted(cells)))
+    return cells
 
 
 def plain(text):
@@ -362,11 +377,14 @@ def drums():
     k.append(led("linkled", (L, y(TOP + 232), 14, 14), TEAL))
     k.append(label("link", (L + 24, y(TOP + 226), 160, 26), "no link", 16, GREY, align=1))
     k.append(label("alert", (L, y(TOP + 262), 190, 40), "no alerts", 14, GREY, align=1))
-    # middle: the sixteen pads as the Launchpad lays them out, pad 1 at the top left. Teal
-    # with a dot has its own last step; the selected track is lit; each shows its last step.
+    # middle: the sixteen pads where the drum page puts them on the Launchpad, pad 1 at the
+    # bottom left (Brendan, 2026-11-04). Teal with a dot has its own last step; the selected
+    # track is lit; each shows its last step.
     size, gap, x0 = 68, 8, 214
+    cells = pad_cells()
+    top, left = max(r for r, _ in cells.values()), min(c for _, c in cells.values())
     for n in range(1, 17):
-        r, c = (n - 1) // 4, (n - 1) % 4
+        r, c = top - cells[n][0], cells[n][1] - left
         f = (x0 + c * (size + gap), y(TOP + r * (size + gap)), size, size)
         k.append(button("pad%d" % n, f, RED, pad_script(n)))
         k.append(label("pad%dl" % n, f, "16", 20))

@@ -304,6 +304,25 @@ def main():
             pairs > 50 and not low, "%d pairs; below AA:\n    %s" % (pairs, "\n    ".join(low)))
     A.note("%d pairs at AA" % pairs)
 
+    # The phone's pads sit as the Launchpad's do, read here from the drum page's file on its
+    # own: a pad's column and its row from the bottom, ranked, against its cell's.
+    cells = {int(m.group(3)): (int(m.group(1)), int(m.group(2))) for m in
+             re.finditer(r"^(\d)(\d) pad (\d+)\s*$",
+                         open(os.path.join(ROOT, "Cut It", "cut-it-drum-page.txt"),
+                              encoding="utf-8").read(), re.M)}
+    frames = {name: f for _t, name, f, _p, _v, _pg in walk(doc.getElementsByTagName("node")[0])
+              if name and re.fullmatch(r"pad\d+", name)}
+    xs = sorted({f[0] for f in frames.values()})
+    ys = sorted({f[1] for f in frames.values()}, reverse=True)
+    phone = {int(n[3:]): (ys.index(f[1]) + 1, xs.index(f[0]) + 1) for n, f in frames.items()}
+    rows = sorted({r for r, _ in cells.values()})
+    cols = sorted({c for _, c in cells.values()})
+    pad = {n: (rows.index(r) + 1, cols.index(c) + 1) for n, (r, c) in cells.items()}
+    A.check("⛔ the phone's sixteen pads sit as the drum page's do: pad 1 bottom left",
+            len(pad) == 16 and phone == pad,
+            "pad 1: phone row %s, Launchpad row %s (rows from the bottom)"
+            % (phone.get(1, ("?",))[0], pad.get(1, ("?",))[0]))
+
     lc = open(os.path.join(B.CHECKLISTS, B.LIST + ".md"), encoding="utf-8").read()
     A.check("⛔ the line check, the page's checklist, has no Send line: the phone sends none",
             "**Send:**" not in lc, "%s has a Send line" % (B.LIST + ".md"))

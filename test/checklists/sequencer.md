@@ -49,8 +49,8 @@ Mode 1's drum page on the Launchpad, the sequencer playing the drum samples from
 
 - [ ] **11. The drum screen**
   - **Need:** TouchOSC open on the phone with Cut It's layout, linked.
-  - **Do:** Look at the phone. Then tap the pad on the phone in the second row's first place.
-  - **Pass if:** The phone's first tab reads drums and shows the drum screen: the tempo, playing and the last step 16 down the left; sixteen pads in the middle labeled 16 but the top-left one, teal and labeled • 3; on the right the two buttons, three knobs, drunk, skip and move, at 0%, and the time signature as 4 / 4. Nothing sits low enough to touch the home bar. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 lights.
+  - **Do:** Look at the phone. Then tap the phone's pad in the second row from the bottom, first place.
+  - **Pass if:** The phone's first tab reads drums and shows the drum screen: the tempo, playing and the last step 16 down the left; sixteen pads in the middle labeled 16 but the bottom-left one, pad 1, teal and labeled • 3; on the right the two buttons, three knobs, drunk, skip and move, at 0%, and the time signature as 4 / 4. Nothing sits low enough to touch the home bar. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 lights.
 
 - [ ] **12. Sync first steps**
   - **Do:** Tap sync first steps on the phone and listen.

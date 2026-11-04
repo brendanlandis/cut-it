@@ -165,7 +165,7 @@ is and does is on its Reference page (`~/Sites/!reference/touchosc.md`).
 | Deploying it | `./tools/touchosc/push.sh` rebuilds it and opens it in the Mac's TouchOSC, restarting that with its editor server on if it is off; the phone, connected once as an editor client of the Mac, takes it live | verified |
 | The phone's setup, once | Editor network: a client of the Mac (port 6666). OSC connection 1: UDP, host `192.168.1.15`, send port 9001, receive port 8000. PdParty quit first: both receive on 8000 | verified |
 | A slider | Sends whole percents when it moves off the last value it knows, its own or the one the state handed it, so the state is never sent back; for a second after a touch the state leaves it alone | verified |
-| Ack flashes, the time signature's buttons, the pads | Built as on PdParty's screen; not yet tried on the phone | unknown |
+| The pads, sync and snap, the time signature | As on PdParty's screen, and they work on the phone (Brendan, 2026-11-04) | verified |
 | Only the drum screen | The remote screen and the checklist page are PdParty's alone | — |
 
 ### Two instruments will fight over one phone

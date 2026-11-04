@@ -131,7 +131,7 @@ was the compose-time authoring tool. It cannot do what the drum machine is for: 
 switching subdivision for a whole or part of a bar, for all tracks or only some. And **Pd sequences
 everything** ([architecture.md](../architecture.md)): a pattern in the Launchpad's own memory would
 be a second sequencer the patch cannot see, store per section, or keep in step with its own clocks.
-Mode 1 is the drum page, drawn in Programmer Mode by `g_grid` and played by `c_steps`
+Page 2 is the drum page, drawn in Programmer Mode by `g_grid` and played by `c_steps`
 ([sequencer.md](../module/sequencer.md)); its layout is on [display.md](../module/display.md).
 
 ### CC 90 is the panic button, and it has two tiers

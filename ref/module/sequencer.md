@@ -20,7 +20,7 @@ loop, the repeats, the chances, each step's drunk length, and which pads fire on
 keeps the clock, the transport and the cords to `c_kit`, `g_grid`, `u_state` and `disp`, and asks
 the Lua through one pdlua object, `[c_steps-lua $1]` (`cut-it/logic-as-text`).
 
-It is mode 1's drum machine (`cut-it/drum-machine`), and the first part of a song's sections
+It is page 2's drum machine (`cut-it/drum-machine`), and the first part of a song's sections
 (`cut-it/songs-and-sections`): its pattern is stored as section 1's drum part from the start.
 `u_root` holds one instance, `c_steps 1 drums` — bank A, stored as `section-1-drums`.
 
@@ -48,7 +48,7 @@ kit*, below.
 |---|---|---|
 | A step | Sixteen to a bar, cut from the sequencer's own phase, a pair of steps a cycle, which runs at `c_clock 1 4`'s rate times the Lua's: swung, then ×2, `wrap~`, and a `threshold~` on its fall, and sent to the Lua as `tick` (*One phase of its own*, below) | verified |
 | When it fires | Straight and sober, a twelfth of a step after the boundary, in the block of `u_tempo`'s MIDI pulse for that sixteenth: the offset every clock in the patch shares (*Start alignment*, [tempo.md](tempo.md)). Within a block, ±1.45 ms, at 120 BPM in a test Pd (2026-11-03) | verified |
-| Swing | Knob 4 in mode 1, 25% to 75%, straight at 50%: the share of each pair of sixteenths the first one takes, so above 50% every second sixteenth comes later and below it earlier (Brendan, 2026-11-03). Taken at the next pair. Held at 50% at load, as knob 2 at 16; not saved. 66% at 120 BPM measured 165 and 85 ms, 25% 62 and 188 | verified |
+| Swing | Knob 4 on page 2, 25% to 75%, straight at 50%: the share of each pair of sixteenths the first one takes, so above 50% every second sixteenth comes later and below it earlier (Brendan, 2026-11-03). Taken at the next pair. Held at 50% at load, as knob 2 at 16; not saved. 66% at 120 BPM measured 165 and 85 ms, 25% 62 and 188 | verified |
 | Drunkenness | 0 to 100 from the drum screen: most steps stay on time (Brendan, 2026-11-04): at 100 one step in three strays, at 50 one in six, and a step that strays lasts up to that share of a step longer or shorter, at random, never less than an eighth of a step. The error stays: its own drift becomes the clock, and only PLAY puts it back on `u_tempo`'s (Brendan, 2026-11-03). Saved | verified |
 | The time signature | Two numbers from the drum screen, the top 1 to 32 and the bottom one of 1 2 4 8 16, 4/4 at first: a bar is top × 16 / bottom steps, which the page marks. Saved | verified |
 | The repeat pads | The top row of the right 4×4, 1 to 4 from the left: held, every track replays the last 1 to 4 steps it played, while the loops go on underneath unheard; let go, every track plays on from where it would have been (Brendan, 2026-11-03). PLAY lets go | verified |
@@ -60,8 +60,8 @@ kit*, below.
 | A velocity press | Selects level *n*, velocity round(127·*n*/8): 16 32 48 64 79 95 111 127 | unknown |
 | A step's level, whose color it takes | (*v* − 1) div 16 + 1, 0 for off, so each level's own velocity is that level. Worked out here and sent to `g_grid`, the one place the rule is | verified |
 | A step press | Off takes the selected velocity; on, at any velocity, turns off (Brendan, 2026-11-03). Past the selected track's last step, nothing. A release of a step, a velocity or a pad does nothing | unknown |
-| The global last step | Knob 2 in mode 1, 1–32, for every track that has no last step of its own (Brendan, 2026-11-03). Steps past it keep their notes, unplayed and dark. Not saved | unknown |
-| A track's own last step | Knob 3 in mode 1, 1–32, for the selected track, saved with the pattern. Released at the step a following track already has, it goes on following | unknown |
+| The global last step | Knob 2 on page 2, 1–32, for every track that has no last step of its own (Brendan, 2026-11-03). Steps past it keep their notes, unplayed and dark. Not saved | unknown |
+| A track's own last step | Knob 3 on page 2, 1–32, for the selected track, saved with the pattern. Released at the step a following track already has, it goes on following | unknown |
 | The knobs' latch | At load both are held at 16, and knob 3 again whenever another track is selected, or the global last step moves while the selected track follows it: held until turned to or through the step it stands for. A held knob changes nothing and draws its row with its own step in brackets | verified |
 | `sync` (the drum screen's "sync first steps") | When the global loop next comes round to its step 1, every track goes back to its own step 1 there, keeping its own last step | verified |
 | `snap` (its "snap to global") | The same, and at that step every track gives up its own last step, saved. Stopped, it lands at PLAY | verified |

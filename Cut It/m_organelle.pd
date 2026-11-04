@@ -45,7 +45,7 @@
 #X obj 20 360 t f f f;
 #X obj 20 440 s \$0-shift;
 #X msg 560 480 modal-off;
-#X text 20 1950 The layer is latched per key at press time \, so a release carries the name its press did. Read live \, letting go of aux before the key would send og-key-72 after og-shift-72: a stuck Volca note in mode 1 (ref/device/organelle.md). The latch is the Lua's \, one entry per key \, so a chord's keys keep their own layers., f 84;
+#X text 20 1950 The layer is latched per key at press time \, so a release carries the name its press did. Read live \, letting go of aux before the key would send og-key-72 after og-shift-72: a press its release never reaches \, a stuck note wherever the keys play one (ref/device/organelle.md). The latch is the Lua's \, one entry per key \, so a chord's keys keep their own layers., f 84;
 #X obj 1330 360 t a b;
 #X obj 1330 560 m_organelle-lua;
 #X obj 1500 420 r \$0-shift;

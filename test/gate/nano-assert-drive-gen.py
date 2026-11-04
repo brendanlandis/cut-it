@@ -25,7 +25,9 @@ GAP = 40
 
 SEQ = [
     # --- before anything has settled ---------------------------------------
-    (300, "EARLY", ["\\; t-ctlin 64 1 17"], GAP),
+    # Page 3 first, the synths page, where the shipped map binds slider 1
+    # (Brendan, 2026-11-04): the analyzer reads its row.
+    (300, "EARLY", ["\\; mode mode-3", "\\; t-ctlin 64 1 17"], GAP),
 
     # --- the channel gate: 17 and 18 in, everything else out ---------------
     # A distinct value each, so the analyzer can say which channel emitted.

@@ -10,8 +10,8 @@ tab bar, black, with bright red the lead accent and teal the second, monospaced 
 value and TouchOSC's default font for every label, and every pairing at WCAG AA, which
 test/gate/touchosc-assert.py audits from this file.
 
-The tab bar holds the mode's screen: the drum screen in mode 1, the remote screen in every other
-mode, following the mode u_net sends. The checklist page is a page of its own, not a tab: test mode,
+The tab bar holds the page's screen: the drum screen on page 2, the drum page, the remote screen on
+every other page, following the mode u_net sends. The checklist page is a page of its own, not a tab: test mode,
 a tap on the Launchpad's Setup, puts it in place of the tabs, and going off, or choosing a mode,
 takes it away (Brendan, 2026-11-04). It carries the line check alone, test/checklists/linecheck.md:
 the development checklists are run with the Mac at hand, which sends their Send lines.
@@ -57,8 +57,9 @@ WHITE, GREY, BLACK = rgb(240, 240, 240), rgb(140, 140, 140), rgb(0, 0, 0)
 TABOFF = rgb(34, 34, 34)
 INK, BTN = BLACK, RED       # the XML's defaults
 
-# The first tab's screen in each mode; every other mode has the remote screen.
-MAIN = {"mode-1": "drums"}
+# The first tab's screen on each page; every other page has the remote screen. Page 2 is the drums
+# (Brendan, 2026-11-04: 1 the arrangement, 2 the drums, 3 the synths, 8 the songs).
+MAIN = {"mode-2": "drums"}
 
 # The remote screen's three commands: the button, its label, and what it sends after /cutit.
 # test 404 went with the SP-404 (Brendan, 2026-11-04).
@@ -370,7 +371,7 @@ def page(name, tab, kids):
                 textColorOn=BLACK)
 
 
-# ------------------------------------------------------------------ the drum screen (mode 1)
+# ------------------------------------------------------------------ the drum screen (page 2)
 def drums():
     k = []
     # left: the tempo, the transport, the global last step, the link, the alert
@@ -415,7 +416,7 @@ def drums():
     return group("drums", k, visible=False)
 
 
-# ------------------------------------------------------------------ the remote screen (modes 2-6)
+# ------------------------------------------------------------------ the remote screen (other pages)
 def remote():
     k = []
     k.append(label("pname", (L, y(TOP), 470, 30), "ready", 22, GREY, align=1))

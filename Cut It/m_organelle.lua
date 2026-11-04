@@ -28,8 +28,8 @@ end
 
 -- A key: <pitch> <velocity>, mother's notes list, a release at velocity 0. The layer is latched
 -- per key at press time, and the release reads it: let go of aux before the key and the release
--- still says og-shift-NN, or the shifted control never sees its note-off (a stuck Volca note in
--- mode 1). Per key, so a chord's keys keep their own layers.
+-- still says og-shift-NN, or the shifted control never sees its note-off (a stuck note, wherever
+-- the keys play one). Per key, so a chord's keys keep their own layers.
 function R.key(st, pitch, velocity)
   pitch, velocity = num(pitch), num(velocity)
   if velocity ~= 0 then st.layer[pitch] = st.shift end

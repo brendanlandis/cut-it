@@ -15,7 +15,7 @@ coalesces per name at 20 Hz with a guaranteed trailing edge, holds the last aler
 repeats it, and rebuilds its own socket — which a phone leaving the network destroys outright.
 
 **The phone is part of the instrument** (Brendan, 2026-11-03), no longer only a monitor: its screen
-follows the Launchpad's mode: in mode 1 the drum screen, beside the drum page; in every other mode,
+follows the Launchpad's page: on page 2 the drum screen, beside the drum page; on every other page,
 the remote screen. The checklist page is a page of its own, holding the line check, which test mode
 puts in their place (Brendan, 2026-11-04). **The link runs both ways.** Outbound it carries six addresses — parameters,
 status, a heartbeat, a held alert, the mode and the drum screen's state. Inbound it takes **a closed
@@ -149,7 +149,7 @@ and every text and control at **WCAG AA**, which `touchosc-assert` audits from t
 
 | | | Evidence |
 |---|---|---|
-| The tabs | TouchOSC's own tab bar, holding the mode's screen and saying which: drums in mode 1, remote in every other mode. One tab each for now; a mode may have more | unknown |
+| The tabs | TouchOSC's own tab bar, holding the page's screen and saying which: drums on page 2, remote on every other page. One tab each for now; a page may have more | unknown |
 | Test mode | Coming on, the checklist page, under a tab bar of its own, stands in for the tabs; going off takes it away (Brendan, 2026-11-04). A mode chosen on the Launchpad turns it off, so the mode's tab is what shows next (Brendan, 2026-11-04). A flip sends a heartbeat at once, so the page turns with the tap rather than at the next of the 2 Hz beats | unknown |
 | The drum screen | Left: the tempo, large, playing or stopped with its lamp, the global last step, the link lamp, the alert. Middle: the sixteen pads as the Launchpad lays them out, pad 1 at the bottom left (Brendan, 2026-11-04), read from `cut-it-drum-page.txt`, each labeled with its last step: red following the global one, teal with a dot (• 5) with its own, lit when selected; a tap selects. ⛔ A pad the state lights never sends: when it did, four pads pressed at once on the Launchpad lit in turn on the phone, each selecting itself again, and the selection bounced between Cut It and the phone for as long as they were held (2026-11-04). Right: sync first steps and snap to global, a line while one waits for step 1, ring knobs for drunk and the selected track's skip and move, and the time signature as [n] / [d], each box dragged up or down a step at a time (Brendan, 2026-11-04), about 20 points a step for the top number's 32, 26 for the bottom's 5 | unknown |
 | The remote screen | Left: the last parameter's name and its value large, with its unit (`120 (29)` for a held tempo), the tempo, the alert with its lamp, the link. Right: re-wire, clear alert, test Volca | unknown |

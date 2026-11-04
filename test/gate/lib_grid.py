@@ -125,14 +125,14 @@ def home_shape(frame):
                     return ("two mode lamps lit: %d and %d" % (lamp, idx)), lamp, beat
                 lamp = idx
             elif color != DIM:
-                return ("mode lamp %d is color %d" % (idx, color)), lamp, beat
+                return ("mode lamp %d is color %s" % (idx, color)), lamp, beat
         elif BEAT_LO <= idx <= BEAT_HI:
             if color == BEAT_ON:
                 if beat is not None:
                     return ("two beat cells lit: %d and %d" % (beat, idx)), lamp, beat
                 beat = idx
             elif color != DIM:
-                return ("beat cell %d is color %d" % (idx, color)), lamp, beat
+                return ("beat cell %d is color %s" % (idx, color)), lamp, beat
         elif color != 0:
             stray.append((idx, color))
     if stray:
@@ -141,7 +141,7 @@ def home_shape(frame):
 
 
 # ---------------------------------------------------------------------------
-# The drum page, mode 1. Which cell is which comes from the layout table that
+# The drum page, page 2. Which cell is which comes from the layout table that
 # g_grid and u_map both read, never typed here; the colors are g_grid's.
 DRUM_PAGE = "Cut It/cut-it-drum-page.txt"
 PLAYHEAD = 21                   # green, over whatever the step holds
@@ -187,7 +187,7 @@ def step_color(velocity, step=1, last=16, bar=16):
 
 
 def drum_page(frame, lay):
-    """-> (problem_or_None, lit_lamp_index, page) for a mode-1 HOME frame.
+    """-> (problem_or_None, lit_lamp_index, page) for a page-2 HOME frame.
 
     page is {"step": {n: color}, "vel": {n: color}, "pad": {n: color}, "rep": {n:
     color}}. The

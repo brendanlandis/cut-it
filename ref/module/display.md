@@ -153,7 +153,7 @@ and `recover`. See [organelle.md](../device/organelle.md).
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
-| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10, and the beat row on grid indices 11–18; in mode 1 the **drum page** instead of the beat row | unknown | — |
+| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10, and the beat row on grid indices 11–18; on page 2 the **drum page** instead of the beat row | unknown | — |
 | `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | The whole surface, one color | verified | — |
 | `alert` | 2 | `disp` → `alert …`, **`fail` only** | 2 s | The whole surface, red | verified | — |
 
@@ -172,7 +172,7 @@ addressed at all, so panic still never hands the surface back.
 | Raised from 10 Hz because at 240 BPM a 250 ms beat does not divide into 100 ms, so the beat row swung **±50 ms** | verified | — |
 | **Every raise AND every expiry sets the dirty flag** — a layer falling away changes the frame as much as one arriving | verified | — |
 
-### `g_grid`'s drum page, mode 1
+### `g_grid`'s drum page, page 2
 
 **One layout table, `Cut It/cut-it-drum-page.txt`, says which cell is which**: a row per cell,
 `<index> <role> <n>`, read with `-c` at load by `g_grid` to paint and by `u_map` to know what a

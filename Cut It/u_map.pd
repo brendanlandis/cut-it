@@ -377,7 +377,7 @@
 #X connect 193 0 194 0;
 #X obj 6300 1160 list split 2;
 #X obj 6300 1340 list trim;
-#X text 6300 1420 drums: knobs 2 \, 3 and 4 in mode 1 \, each map row's arg naming what it is to c_steps -- last \, track-last \, swing. The arg and the knob's 0-1 go on as <arg> <value> \, held or not: c_steps scales it \, holds it until it is turned through the step it stands for \, and draws its row \, since only it knows the selected track's last step and the swing it holds. A new drum control is a map row \, not a route argument here: c_steps refuses one it does not know as bad-selector., f 40;
+#X text 6300 1420 drums: knobs 2 \, 3 and 4 on page 2 \, the drum page \, each map row's arg naming what it is to c_steps -- last \, track-last \, swing. The arg and the knob's 0-1 go on as <arg> <value> \, held or not: c_steps scales it \, holds it until it is turned through the step it stands for \, and draws its row \, since only it knows the selected track's last step and the swing it holds. A new drum control is a map row \, not a route argument here: c_steps refuses one it does not know as bad-selector., f 40;
 #X connect 17 13 196 0;
 #X connect 197 0 167 0;
 #X connect 157 0 162 0;

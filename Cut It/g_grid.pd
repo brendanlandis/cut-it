@@ -1,7 +1,7 @@
 #N canvas 20 20 2600 1800 12;
 #X text 20 20 g_grid -- the Launchpad's 108 addressable LEDs \, and their sole owner (C-5). g_oled's arbiter shape: layers with a priority and a time to live \, redrawn by a frame clock. ref/module/display.md, f 58;
 #X text 20 170 creation arg 1: the Launchpad's Pd MIDI output port (1 on the device). inlet 0: surface ownership from m_launchpad \, 1 while in Programmer Mode. inlet 1: the beat number within the bar \, from u_root's c_clock. inlet 2: the drum page's state \, from c_steps. outlets: none., f 58;
-#X text 20 320 One deviation from g_oled: home is a composite of regions \, the mode lamps down the left column and the beat row along the bottom -- in mode 1 the drum page instead of the beat row -- while modal and alert take the whole surface., f 58;
+#X text 20 320 One deviation from g_oled: home is a composite of regions \, the mode lamps down the left column and the beat row along the bottom -- on page 2 the drum page instead of the beat row -- while modal and alert take the whole surface., f 58;
 #X text 20 520 g_grid owns the LEDs and m_launchpad owns the mode. The first frame after ownership paints all 108 indices \, so that frame is the init clear., f 58;
 #X obj 20 720 inlet;
 #X obj 400 720 inlet;
@@ -294,7 +294,7 @@
 #X connect 43 0 18 0;
 #X obj 1040 180 f;
 #X obj 1140 140 r \$0-mode;
-#X obj 1040 220 select 1;
+#X obj 1040 220 select 2;
 #X obj 1100 255 t b b;
 #X connect 2 1 44 0;
 #X connect 45 0 44 1;
@@ -393,8 +393,8 @@
 #X connect 86 1 88 0;
 #X connect 88 0 89 0;
 #X connect 89 0 90 0;
-#X text 1300 170 C-8: select 1's reject carries the mode itself \, so t b b turns it into the beat row's two bangs., f 40;
-#X text 2100 1420 Mode 1 is the drum page: the beat row gives way \, and each row of the layout table paints one cell. A step is dim when off \, its velocity's color when on \, white for the softest to red for the loudest \, green under the playhead \, and dark past the selected track's last step. Each velocity button is its own color \, the selected pad the selected velocity's \, the other pads dimmer than any button. A bar's first step is blue \, unless it is lit \, and dark past the last step like the rest. The top row of the right 4x4 is the repeat pads \, dim purple \, the one held bright., f 60;
+#X text 1300 170 C-8: select 2's reject carries the page itself \, so t b b turns it into the beat row's two bangs., f 40;
+#X text 2100 1420 Page 2 is the drum page: the beat row gives way \, and each row of the layout table paints one cell. A step is dim when off \, its velocity's color when on \, white for the softest to red for the loudest \, green under the playhead \, and dark past the selected track's last step. Each velocity button is its own color \, the selected pad the selected velocity's \, the other pads dimmer than any button. A bar's first step is blue \, unless it is lit \, and dark past the last step like the rest. The top row of the right 4x4 is the repeat pads \, dim purple \, the one held bright., f 60;
 #X obj 2100 1000 t f f f;
 #X obj 2180 1100 <= 16;
 #X obj 2280 1060 r \$0-dlast;

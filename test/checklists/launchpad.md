@@ -7,17 +7,17 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
 28 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [launchpad](../../ref/device/launchpad.md), [display](../../ref/module/display.md), [presence](../../ref/module/presence.md).
 
 - [ ] **1. Resting grid**
-  - **Send:** `tempo 120; stop bang; mode mode-2`
-  - **Pass if:** The left column shows one bright green lamp second from the top and seven dim ones around it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct — a frozen pad is the failure. Everything else on the surface is dark.
-  - **Note:** Mode 2, not 1: mode 1 is the drum page, where the beat row gives way.
+  - **Send:** `tempo 120; stop bang; mode mode-1`
+  - **Pass if:** The left column shows one bright green lamp at the top and seven dim ones below it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct — a frozen pad is the failure. Everything else on the surface is dark.
+  - **Note:** Page 1, not 2: page 2 is the drum page, where the beat row gives way.
 
 - [ ] **2. Mode lamp 4**
   - **Send:** `mode mode-4`
   - **Pass if:** The bright lamp moves to the fourth position down and the other seven go dim. Nothing else on the grid changes.
 
-- [ ] **3. Mode lamp 2**
-  - **Send:** `mode mode-2`
-  - **Pass if:** The bright lamp lands on the second position.
+- [ ] **3. Mode lamp 3**
+  - **Send:** `mode mode-3`
+  - **Pass if:** The bright lamp lands on the third position.
 
 - [ ] **4. Mode lamp 7**
   - **Send:** `mode mode-7`
@@ -28,7 +28,7 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
   - **Pass if:** The bright lamp lands on the eighth and last position, the bottom of the left column, just above SETUP.
 
 - [ ] **6. Pressing a mode lamp selects it**
-  - **Do:** Press the third button down the left column, then the second.
+  - **Do:** Press the third button down the left column, then the first.
   - **Pass if:** The bright lamp moves to the pad you pressed and stays there after you let go. The OLED does not change.
   - **Note:** Steps 2 to 5 judge the painting, off the mode bus; this one judges the selection, off the lamp itself. That the release selects nothing is `map-assert`'s, since a doubled selection looks identical.
 
@@ -99,10 +99,10 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
   - **Pass if:** Each of the eight buttons moves the bright lamp to its own position. The top row moves nothing.
 
 - [ ] **22. Hot-swap — unplugged mid-session**
-  - **Send:** `mode mode-2`
+  - **Send:** `mode mode-1`
   - **Do:** Unplug the Launchpad USB and leave it out.
   - **Pass if:** A bordered alert on the OLED reads warn and then m_launchpad. The grid goes dark.
-  - **Note:** The alert is up to 8 seconds behind the unplug, at the shipped 2000 ms presence tick. Mode 2 rather than 1, so the reload in step 23 restores a mode with a beat row.
+  - **Note:** The alert is up to 8 seconds behind the unplug, at the shipped 2000 ms presence tick. Page 1 rather than 2, so the reload in step 23 restores a page with a beat row.
 
 - [ ] **23. Hot-swap — absent at load**
   - **Need:** The Launchpad still unplugged from the last step.
@@ -123,7 +123,7 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
 - [ ] **26. The grid still answers after a panic**
   - **Send:** `mode mode-3`
   - **Pass if:** The bright lamp moves to the third position — the panic silenced notes and did not surrender the surface.
-  - **Note:** Not mode 1: there the pads are the drum page, so step 27's press would draw no row.
+  - **Note:** Not page 2: there the pads are the drum page, so step 27's press would draw no row.
 
 - [ ] **27. Pads still reach the OLED after a panic**
   - **Do:** Press a pad.

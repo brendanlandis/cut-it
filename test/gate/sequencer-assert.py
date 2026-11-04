@@ -33,7 +33,7 @@ import lib_grid as G                                           # noqa: E402
 KEY = "section-1-drums"
 WINDOWS = ["EARLY", "RESTORE", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
            "RULE-ON", "RULE-SAME", "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER",
-           "FREE-ROW", "MODE-2", "OTHER-MODE", "MODE-1", "PLAY", "STOP", "STOPPED",
+           "FREE-ROW", "PAGE-1", "OTHER-PAGE", "PAGE-2", "PLAY", "STOP", "STOPPED",
            "KNOB2-HELD", "LAST-3", "REPLAY", "PANIC", "AFTER-PANIC", "KNOB3",
            "PAST-LAST", "POLY", "POLY-STOP", "SNAP", "SNAP-PLAY", "SNAP-STOP",
            "SWING", "SW-PLAY", "SW-GAP", "SW-LATE", "SW-ON", "SW-STOP",
@@ -139,8 +139,8 @@ def page_check(frame, lay, pat, track, lvl, head=None, last=16, rep=0):
     problem, lamp, page = G.drum_page(frame, lay)
     if problem:
         return problem
-    if lamp != G.LAMPS[0]:
-        return "lit mode lamp is %s, not mode 1's %d" % (lamp, G.LAMPS[0])
+    if lamp != G.LAMPS[1]:
+        return "lit mode lamp is %s, not page 2's %d" % (lamp, G.LAMPS[1])
     want = [G.step_color(pat[idx(track, s)], s, last, BAR) for s in range(1, 33)]
     if head:
         want[head - 1] = G.PLAYHEAD
@@ -259,12 +259,13 @@ def main():
     A.check("... and it names itself, as an unmapped control does -- pad-36 100",
             raw("FREE-ROW") == [["pad-36", "100"]], raw("FREE-ROW"))
 
-    print("\n--- another mode ---")
-    A.check("in mode 2 a step pad is not the drum page: no put and no note",
-            not puts("OTHER-MODE") and not ons("OTHER-MODE"),
-            "puts %d, note-ons %s" % (len(puts("OTHER-MODE")), ons("OTHER-MODE")))
+    print("\n--- another page ---")
+    A.check("⛔ on page 1, which held the drum page until 2026-11-04, a step pad is not "
+            "the drum page: no put and no note",
+            not puts("OTHER-PAGE") and not ons("OTHER-PAGE"),
+            "puts %d, note-ons %s" % (len(puts("OTHER-PAGE")), ons("OTHER-PAGE")))
     A.check("... and it names itself, as an unmapped control does -- pad-81 100",
-            raw("OTHER-MODE") == [["pad-81", "100"]], raw("OTHER-MODE"))
+            raw("OTHER-PAGE") == [["pad-81", "100"]], raw("OTHER-PAGE"))
 
     print("\n--- the transport ---")
     want = {s: sorted((t, final[idx(t, s)])

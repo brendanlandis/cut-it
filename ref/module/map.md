@@ -26,7 +26,7 @@ guard**, and the whole of what makes a table acceptable here. See *Design*.
 
 `u_map` has no inlets. It has **one outlet per output device**, wired in `u_root`, because no bus
 carries a sounding note — the Volca's, the one since the SP-404 left the rig (Brendan, 2026-11-04) —
-then one to `c_steps`, for what a press on mode 1's drum page means ([sequencer.md](sequencer.md)),
+then one to `c_steps`, for what a press on page 2's drum page means ([sequencer.md](sequencer.md)),
 and one to `u_net`, which flips test mode.
 
 ## Facts
@@ -37,7 +37,7 @@ and one to `u_net`, which flips test mode.
 <mode> <control> <dest> <arg>
 
 mode-1 og-knob-1 tempo    0
-mode-1 slider-1  volca-cc 41
+mode-3 slider-1  volca-cc 41
 ```
 
 | Field | Is | Evidence | Item |
@@ -64,12 +64,12 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `volca-note` | The note number | Velocity. Duration is a fixed **200 ms** | verified | — |
 | `volca-cc` | The CC number | The CC value | verified | — |
 | `volca-prog` | The program number | A **gate only** — it decides whether the press counts | verified | — |
-| `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key | verified | 293 |
+| `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key. ⚠️ **No shipped row names it** since the Organelle's keys left the map (2026-11-04) | verified | 293 |
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, on every page** | verified | 301 |
 | `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad; an index the layout lacks is `fail u_map layout-miss` | verified | — |
 | `test-mode` | unused | Non-zero flips `u_net`'s test mode, which puts the phone's line check up ([phone.md](../device/phone.md)). **`og-shift-61` and `lp-setup`, the Launchpad's Setup, on every page**; `lp-setup` has no release, and needs none; out `u_map`'s third outlet, a cord to `u_net`. Choosing a mode turns test mode off, in `u_net` | unknown | — |
-| `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1–32**, **`og-knob-2`**; `track-last` the selected track's own, **`og-knob-3`**; `swing` the sequencer's, 25% to 75%, **`og-knob-4`**, all in mode 1. A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
+| `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1–32**, **`og-knob-2`**; `track-last` the selected track's own, **`og-knob-3`**; `swing` the sequencer's, 25% to 75%, **`og-knob-4`**, all on page 2. A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -142,11 +142,12 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 | Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Eight pages × 92
-controls is 736 possible rows and the shipped file has **161** — knob 1 on all eight; knobs 2
-to 4, slider 1, the keyboard's 25 and the drum page's 60 pads in mode 1; and CC 90, PLAY, STOP, the
-four shifted keys and Setup on all eight. ⛔ **Those nine rows are on every page**, so no page
-strands you without a stop or a recover but the Launchpad's own, and `map-assert.py` reads that off
-the file.
+controls is 736 possible rows and the shipped file has **136** — knob 1 on all eight; knobs 2
+to 4 and the drum page's 60 pads on page 2; slider 1 on page 3; and CC 90, PLAY, STOP, the
+four shifted keys and Setup on all eight. **The Organelle's own keys have no row**: they will
+choose songs, and until then they play nothing (Brendan, 2026-11-04). ⛔ **Those nine rows are on
+every page**, so no page strands you without a stop or a recover but the Launchpad's own, and
+`map-assert.py` reads that off the file.
 
 ### Where each part lives
 
@@ -437,6 +438,21 @@ the gate's Pd half* ([sequencer.md](sequencer.md)).
 
 ## Design
 
+### The pages
+
+**Eight pages, one per key down the Launchpad's left column, and what each is for** (Brendan,
+2026-11-04). A page is a set of rows in the map and, on the grid, either the beat row or a page of
+its own; there is no compose and perform split, and every page draws every warning
+([error.md](error.md)).
+
+| Page | Is | Rows today, beside the nine every page has |
+|------|----|------------|
+| 1 | The arrangement | None. The boot page, `R.BOOT_MODE` |
+| 2 | The drums | The drum page's 60 pads and knobs 2 to 4, for `c_steps` |
+| 3 | The synths | Fader 1, the Volca's CC 41 |
+| 4–7 | Nothing yet | None |
+| 8 | The songs | None |
+
 ### Why a table at all
 
 The old rule was one `route` branch per mapping, with a written condition to revisit past about ten
@@ -499,7 +515,7 @@ per control, so two faders moving are two rows rather than four (item 317).
 
 ### The drum page is one destination and a layout table
 
-Mode 1's 60 drum-page pads are 60 rows, `mode-1 pad-81 drum-page 81`, and the arg is the grid
+Page 2's 60 drum-page pads are 60 rows, `mode-2 pad-81 drum-page 81`, and the arg is the grid
 index because the handler never sees the control's name — the `volca-key` precedent. The handler
 looks the index up in `cut-it-drum-page.txt`, the table `g_grid` paints the page from
 ([display.md](display.md)), so `c_steps` receives `step 1 100` and never a cell. **The map says
@@ -596,7 +612,8 @@ between a fifth and two fifths off a control's time there.
 
 - ⬜ **Live re-assignment — editing a mapping from the instrument rather than the file — is v0.4**,
   and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **The mode names are placeholders.** `mode-1`…`mode-8` say nothing about what each mode is for,
+- ⬜ **The page names are placeholders, and pages 4 to 7 have no role yet.** `mode-1`…`mode-8` say
+  nothing about what each page is for, though four now have one (*The pages*, above),
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
   would jump once per change. Not reachable today — `og-knob-1` is `tempo` on every page. **It

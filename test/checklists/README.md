@@ -21,7 +21,7 @@ is sent from anywhere.
 |---|---|---|
 | [linecheck](linecheck.md) | 7 | the phone's link, the roster, the drums, the mic and the Volca through the PA, the transport |
 
-1. **Choose mode 1, then tap Setup**, the Launchpad's bottom-left button (or at the Organelle hold
+1. **Choose page 2, the drum page, then tap Setup**, the Launchpad's bottom-left button (or at the Organelle hold
    `aux` and press the second key from the bottom). That turns test mode on, and the phone's screens
    give way to the checklist page, reading `test mode on` (the Organelle's own state, from the
    heartbeat); the OLED warns.
@@ -53,7 +53,7 @@ session means opening one.
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
 | [midi](midi.md) | 10 | the map by mode, the Volca by ear, hot-swap |
 | [debug](debug.md) | 9 | the debug patch, with the instrument stopped |
-| [sequencer](sequencer.md) | 23 | mode 1's drum page and the drums it plays |
+| [sequencer](sequencer.md) | 23 | page 2's drum page and the drums it plays |
 
 ⚠️ **The Mac is not the device.** The Phase 6 gate passed 25/25 on the Mac twice and shipped three
 bugs; a checklist on the rig is the last word.

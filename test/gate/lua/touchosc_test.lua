@@ -31,15 +31,15 @@ L.update(w)
 equal("a heartbeat: link, its lamps lit, and test mode off",
       { L.text(w, "rlink"), C.rlinkled.values.x, C.linkled.values.x, L.text(w, "tmode") },
       { "link", 1, 1, "test mode off" })
-mode("mode-1")
-equal("mode 1: the tab holds the drum screen, and says drums", where(), { "drums", "drums", "tabs" })
 mode("mode-2")
-equal("mode 2: the remote screen", where(), { "remote", "remote", "tabs" })
+equal("page 2: the tab holds the drum screen, and says drums", where(), { "drums", "drums", "tabs" })
+mode("mode-1")
+equal("page 1: the remote screen", where(), { "remote", "remote", "tabs" })
 hb(true)
 L.update(w)
 equal("test mode on: the checklist page in place of the tabs, its lamp lit",
       { where()[3], L.text(w, "tmode"), C.tled.values.x }, { "checklists", "test mode on", 1 })
-mode("mode-1")
+mode("mode-2")
 equal("... staying through a change of mode, which fills the tab behind it",
       where(), { "drums", "drums", "checklists" })
 hb(true)
@@ -108,7 +108,7 @@ L.update(w, 400)
 check("... for a moment, then red again", red(C.sync.color), T.show(C.sync.color))
 
 print("\n--- the remote screen ---")
-mode("mode-2")
+mode("mode-3")
 L.osc(w, "/cutit/param", "bpm", 120, "(29)")
 equal("a parameter: its name, and its value with the unit",
       { L.text(w, "pname"), L.text(w, "pvalue") }, { "bpm", "120 (29)" })

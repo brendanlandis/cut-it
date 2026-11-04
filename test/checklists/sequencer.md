@@ -1,13 +1,13 @@
 # Sequencer checklist
 
-Mode 1's drum page on the Launchpad, the sequencer playing the drum samples from the Organelle, and the pattern surviving a reload. `sequencer-assert` proves the notes, the frames and the file; what is left is what only the rig can show — whether the page reads, and how the drums sound.
+Page 2's drum page on the Launchpad, the sequencer playing the drum samples from the Organelle, and the pattern surviving a reload. `sequencer-assert` proves the notes, the frames and the file; what is left is what only the rig can show — whether the page reads, and how the drums sound.
 
 23 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
 
 - [ ] **1. The drum page**
   - **Need:** A fresh load of the patch with no saved pattern — the selection resets at every load and a saved step would be lit.
-  - **Send:** `stop bang; mode mode-1`
-  - **Pass if:** The left column has its top lamp bright. The top four rows of pads are the steps: the top two dim but the first, which is blue as a bar's first step, and the two under them dark, since the last step is 16. The bottom-left four by four is very dim — dimmer than any velocity button — with its bottom-left pad lit. The right halves of the bottom two rows are the eight velocity buttons — white at the top left to red at the bottom right, with the second one on the bottom row brighter than the rest and the lit drum pad in its color. The top row of the right four by four is dim purple and the row under it dark, and nothing walks along the bottom row.
+  - **Send:** `stop bang; mode mode-2`
+  - **Pass if:** The left column has its second lamp down bright. The top four rows of pads are the steps: the top two dim but the first, which is blue as a bar's first step, and the two under them dark, since the last step is 16. The bottom-left four by four is very dim — dimmer than any velocity button — with its bottom-left pad lit. The right halves of the bottom two rows are the eight velocity buttons — white at the top left to red at the bottom right, with the second one on the bottom row brighter than the rest and the lit drum pad in its color. The top row of the right four by four is dim purple and the row under it dark, and nothing walks along the bottom row.
   - **Note:** Level 6 is the bottom row's second velocity button; track 1 is the bottom-left drum pad. Both reset at every load ([sequencer](../../ref/module/sequencer.md)).
 
 - [ ] **2. A drum pad plays and selects**
@@ -102,7 +102,7 @@ Mode 1's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Pass if:** After the reload the drum page shows the same steps lit as before it, steps 1 and 15 blue. The phone shows 7 / 8, drunk at what you left it, and pad 13's skip at what you left it. Knob 4's swing is back at 50%.
   - **Note:** `u_state` flushes within 2 seconds of a change, so the wait is part of the step.
 
-- [ ] **23. Other modes keep their grid**
-  - **Send:** `mode mode-2`
+- [ ] **23. Other pages keep their grid**
+  - **Send:** `mode mode-1`
   - **Do:** Press a pad in the top two rows.
-  - **Pass if:** The second lamp lights and the drum page gives way to the beat row along the bottom. A pad press draws a pad-NN row on the OLED again, and the phone goes back to the remote screen.
+  - **Pass if:** The top lamp lights and the drum page gives way to the beat row along the bottom. A pad press draws a pad-NN row on the OLED again, and the phone goes back to the remote screen.

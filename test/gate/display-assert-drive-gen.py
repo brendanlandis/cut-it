@@ -29,7 +29,10 @@ SEQ = [
     # survived.
     (8600, "settling", ["\\; tempo 120"], GAP),
     (11000, "home-early-mode", [], GAP),
-    (14000, "home-mode-1", ["\\; mode mode-1"], GAP),
+    # Page 2 is the drum page (Brendan, 2026-11-04), and page 1, which held it
+    # until then, has the beat row like every other page.
+    (14000, "home-mode-2", ["\\; mode mode-2"], GAP),
+    (15500, "home-mode-1", ["\\; mode mode-1"], GAP),
     (17000, "home-mode-4", ["\\; mode mode-4"], GAP),
     (20000, "modal-45", ["\\; disp grid modal 45"], GAP),
     # u_err draws a warn on every page, so it reaches disp here: the grid must

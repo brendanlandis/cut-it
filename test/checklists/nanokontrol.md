@@ -8,8 +8,8 @@ Hot-swap is three cases (item 235): lost mid-session (4), absent at load (6), an
 
 - [ ] **1. Every slider and knob**
   - **Do:** Sweep every slider and every knob. Watch slider 9 and knob 1 especially.
-  - **Pass if:** Each control draws one row named for itself — slider-1 to slider-9 then knob-1 to knob-9 — unless the current mode maps it. In mode 1 slider-1 reads volca-cc41 and no slider-1 row appears. None reports another's name.
-  - **Note:** One row per control, and it is `u_map`'s (item 317): an unmapped control draws its own raw row, a mapped one its destination's. slider-1 is volca-cc 41 in mode 1, so a slider-1 row beside volca-cc41 there is a double row.
+  - **Pass if:** Each control draws one row named for itself — slider-1 to slider-9 then knob-1 to knob-9 — unless the current mode maps it. On page 3 slider-1 reads volca-cc41 and no slider-1 row appears. None reports another's name.
+  - **Note:** One row per control, and it is `u_map`'s (item 317): an unmapped control draws its own raw row, a mapped one its destination's. slider-1 is volca-cc 41 on page 3, so a slider-1 row beside volca-cc41 there is a double row.
 
 - [ ] **2. Several faders at once**
   - **Do:** Move two faders at once, then three, then all nine.

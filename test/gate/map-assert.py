@@ -307,7 +307,7 @@ def run_asserts(cap):
             % cc("LATE-KNOB", 43))
 
     # The held row uses its destination's scaling (item 240): knob 2 is armed at
-    # 0.5 and mapped to volca-cc 42 in mode-1, so it never draws a bpm.
+    # 0.5 and mapped to volca-cc 42 in mode-1 by a gate row, so it never draws a bpm.
     A.check("⛔ a held knob draws ITS OWN destination's row -- volca-cc42 64 (114)",
             any(d == ["volca-cc42", "64", "(114)"] for d in disp("KNOB-2")),
             "disp in that window: %s" % disp("KNOB-2"))
@@ -419,6 +419,11 @@ def run_asserts(cap):
     A.check("... and the key still sounds -- the window was live",
             any(e[0] == "NOTEOUT" and e[1][:2] == [60, 100] for e in W("ROW-KEY")),
             repr(W("ROW-KEY")))
+    notes = [e[1] for e in W("ROW-KEY") if e[0] == "NOTEOUT" and e[1][1:2] != [0]]
+    A.check("⛔ ... and the Organelle's own key plays nothing -- one note, gk-key's",
+            len(notes) == 1,
+            "note-ons in that window: %s. The keys have no row until they choose "
+            "songs (Brendan, 2026-11-04)" % notes)
     # Pressure: an unmapped pad-NN-at draws no raw row, since a stream per held
     # pad would fill the screen (item 318). pad-36 is the witness, and proves
     # the test is not too wide.

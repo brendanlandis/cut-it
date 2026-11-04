@@ -48,8 +48,8 @@ SEQ = [
     (14100, "AFTER-SHIFT", ["\\; notes 72 100"], GAP),
 
     # The straddle: a shifted key, aux let go, then the key. Read at release,
-    # the note-off would be og-key-65, a stuck Volca note in mode 1. Each edge
-    # is its own window.
+    # the note-off would be og-key-65, a stuck note wherever the keys play one.
+    # Each edge is its own window.
     (14800, "STRADDLE-DOWN", ["\\; aux 1"], GAP),
     (15200, "STRADDLE-KEY", ["\\; notes 65 100"], GAP),
     (15600, "STRADDLE-UP", ["\\; aux 0"], GAP),

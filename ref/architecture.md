@@ -60,7 +60,7 @@ file decides what that means; and nothing below that file knows what hardware ex
 - ⛔ **`c_clock` is instantiated, not global.** `u_root` holds `c_clock 1 8` driving the grid's beat
   row, `c_steps` holds its own `c_clock 1 4`, and **nothing downstream may assume the global `clock`
   is its clock** — Cut It runs poly-tempo. See [tempo.md](module/tempo.md).
-- **`c_steps`, mode 1's drum machine, hangs off `u_map` by a cord** — its second outlet, carrying
+- **`c_steps`, page 2's drum machine, hangs off `u_map` by a cord** — its second outlet, carrying
   what a drum-page press means — and its own two outlets reach `c_kit`, which plays the drums,
   and `g_grid` with the page. Its rules are Lua, in `c_steps.lua`, behind one pdlua object; its clock and cords
   are Pd. See [sequencer.md](module/sequencer.md).
@@ -204,7 +204,7 @@ The four that shape everything else.
 | **Grain timing must be audio-domain** | Pd's message clock is quantized to a 64-sample block (~1.45 ms), ~20% of a 256th note at 120 BPM. `phasor~` and `vline~`, never `metro`/`line~` at grain rate (C-11). Built that way from the first line — see [tempo.md](module/tempo.md) |
 | **Pd sequences everything** | Timing rides in note events, not MIDI clock. No external device runs its own sequencer during a performance |
 | **Two independent input channels** | `inL` = the tip, `inR` = the ring of the one input jack: the mic on the tip since 2026-11-04 — see [audio.md](module/audio.md) |
-| **Pages, not a compose and perform split** | The Launchpad's left column chooses a page, and `u_map` looks every control up per page, so one surface serves a different role on each (Brendan, 2026-11-04). This shapes the top level of the patch |
+| **Pages, not a compose and perform split** | The Launchpad's left column chooses one of eight pages, and `u_map` looks every control up per page, so one surface serves a different role on each: 1 the arrangement, 2 the drums, 3 the synths, 8 the songs, 4 to 7 nothing yet (Brendan, 2026-11-04). This shapes the top level of the patch |
 
 ### Why the infrastructure was built before any DSP
 
@@ -224,9 +224,9 @@ Nothing overlaps, and that is deliberate:
 
 | Surface | Role |
 |---|---|
-| **Launchpad** | Pads, grid state, sequencing — mode 1 is the drum page. Anything needing state you can *see* |
+| **Launchpad** | Pads, grid state, sequencing — page 2 is the drum page. Anything needing state you can *see* |
 | **nanoKONTROL** | Continuous control, with position visible on the panel. Momentary buttons only |
-| **Organelle keyboard** | The Volca's notes on page 1. Under aux, the four keys every page shares: diag, test mode, stop and recover |
+| **Organelle keyboard** | Choosing songs, once there are songs: until then its keys play nothing (Brendan, 2026-11-04). Under aux, the four keys every page shares: diag, test mode, stop and recover |
 
 ⚠️ **The Launchpad mode conflict evaporates because of this split.** Authoring that needs Note or
 Chord mode uses them; everything Cut It draws, the drum page's sequencing included, is Programmer

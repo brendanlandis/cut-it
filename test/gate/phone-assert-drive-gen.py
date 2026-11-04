@@ -241,7 +241,7 @@ SEQ = [
     #    back on the phone
     (53200, "tmmodeon", [("tm", None)]),
     (54600, "tmmode",   [("bus", ("mode", "mode-2"))]),
-    (56000, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "mode-1"))]),
+    (56000, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "mode-2"))]),
     (57400, "done",     []),
 ]
 

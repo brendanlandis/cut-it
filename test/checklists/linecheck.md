@@ -4,7 +4,8 @@
 sound reach the PA? It judges cables, power and settings, never code. That is the development
 checklists' work, so a step that fails here points at a connection rather than a bug.
 
-Run it from the phone's checklist page: choose mode 1 on the Launchpad, then tap Setup. No step
+Run it from the phone's checklist page: choose page 2, the drum page, the second button down the
+Launchpad's left column, then tap Setup. No step
 presses a mode button, because choosing a mode ends test mode and takes the page away. When it's
 done, tap Setup again.
 
@@ -12,8 +13,8 @@ done, tap Setup again.
 [rig](../../ref/rig.md).
 
 - [ ] **1. The phone and the Launchpad**
-  - **Need:** Everything powered and cabled as in rig.md, Cut It loaded, mode 1 chosen, then Setup tapped.
-  - **Pass if:** This page reads test mode on beside a lit teal lamp. The Launchpad's top mode lamp is lit, and its grid shows the drum page. Pass flashes as you tap it.
+  - **Need:** Everything powered and cabled as in rig.md, Cut It loaded, page 2 chosen, then Setup tapped.
+  - **Pass if:** This page reads test mode on beside a lit teal lamp. The Launchpad's second mode lamp down is lit, and its grid shows the drum page. Pass flashes as you tap it.
   - **Note:** The page coming up proves that Setup reached Cut It and that Cut It's heartbeat reached the phone. Pass flashing is the Organelle answering the phone, so the link works both ways.
 
 - [ ] **2. Every device on the roster**
@@ -33,11 +34,11 @@ done, tap Setup again.
   - **Pass if:** The PA plays your voice. On the OLED, in-l moves with it and never reaches 100.
   - **Note:** The mic goes in on the input's tip, and Cut It passes it straight to its left output beside the drums, so both come through the mixer's channel 1.
 
-- [ ] **5. The Organelle's keys play the Volca**
+- [ ] **5. The Volca through the PA**
   - **Need:** The Volca on; the mixer's channels 3 and 4 up.
-  - **Do:** Play a few Organelle keys. Then hold one and move the nanoKONTROL's fader 1.
-  - **Pass if:** The PA plays the Volca for each key, and its tone changes as the fader moves. The OLED shows a volca-cc41 row for the fader.
-  - **Note:** The Volca sends nothing back, so the ear is the only readout. A volca-cc41 row with no change in the sound points at the MIDI interface or its DIN cable.
+  - **Do:** Play a few keys on the Volca itself.
+  - **Pass if:** The PA plays the Volca for each key.
+  - **Note:** This hears the Volca's audio path, not its MIDI link. Nothing on the drum page reaches the Volca: the Organelle's keys play nothing until they choose songs, and fader 1 drives it on page 3, the synths page (Brendan, 2026-11-04), which this check cannot choose without ending test mode. A silent Volca can be its Velocity, CC 41, left at 0 by fader 1 ([volca](../../ref/device/volca.md)).
 
 - [ ] **6. PLAY and STOP**
   - **Do:** Press PLAY on the nanoKONTROL. After a bar, press STOP.

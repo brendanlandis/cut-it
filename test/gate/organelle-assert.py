@@ -85,8 +85,8 @@ def run_asserts(cap):
             "got %s" % param("AFTER-SHIFT"))
 
     # The straddle: pressed under the modifier, released after it. A release
-    # read from the live modifier strands the shifted note (a stuck Volca note
-    # in mode 1).
+    # read from the live modifier strands the shifted note (a stuck note,
+    # wherever the keys play one).
     A.check("⛔ a shifted press publishes og-shift-NN",
             param("STRADDLE-KEY") == [["og-shift-65", "100"]],
             "got %s" % param("STRADDLE-KEY"))

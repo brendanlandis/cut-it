@@ -278,11 +278,12 @@ def map_(g):
     rc_lua = S.lua("test/gate/lua/u_map_test.lua", *g.args)
     print("\n   the patch, in Pd ...")
     # Put before the shipped rows, so each wins over a shipped row for the same
-    # mode and control (knob 2 is drums last in mode 1). gk-bad names a
+    # mode and control. gk-bad names a
     # destination that does not exist. The pickup knobs get distinct CCs, so a
     # leak between their windows shows as the wrong controller rather than a
-    # duplicate. gk-note and gk-prog exist for their disp rows, which the
-    # shipped map never reaches.
+    # duplicate. gk-note, gk-prog and gk-key exist for what the shipped map
+    # never reaches: their disp rows, and a key, since the Organelle's own keys
+    # play nothing until they choose songs (Brendan, 2026-11-04).
     # pad-13-at is pressure, mapped: the raw-row exemption must not hide a
     # mapped destination's row.
     rows = ["mode-1 gk-cc volca-cc 41",
@@ -292,6 +293,7 @@ def map_(g):
             "mode-1 og-knob-4 volca-cc 44",
             "mode-1 gk-note volca-note 60",
             "mode-1 gk-prog volca-prog 20",
+            "mode-1 gk-key volca-key 60",
             "mode-1 pad-13-at volca-cc 45"]
 
     # Twice, differing only in knobs.txt: u_map arms pickup for a saved knob
@@ -416,7 +418,8 @@ def sequencer(g):
     for track, n in SEQ_OWN.items():
         pat[512 + track - 1] = n
     pat[560], pat[561] = SEQ_SIG
-    body = "mode mode-1\nsection-1-drums %s\n" % " ".join(map(str, pat))
+    # Page 2, the drum page, restored at about 3.5 s, before the first press.
+    body = "mode mode-2\nsection-1-drums %s\n" % " ".join(map(str, pat))
     for path in (os.path.join(s.state, "cut-it-auto.txt"), s.path("seed.txt")):
         with open(path, "w") as fh:
             fh.write(body)

@@ -99,11 +99,13 @@ SEQ = [
     (7000, "ROW-CC", ["\\; param gk-cc 64"], GAP),
     (7200, "ROW-NOTE", ["\\; param gk-note 100"], GAP),
     (7600, "ROW-PROG", ["\\; param gk-prog 1"], GAP),
-    # volca-key draws nothing (item 293).
-    (7800, "ROW-KEY", ["\\; param og-key-60 100"], GAP),
+    # volca-key draws nothing (item 293). gk-key is a gate row: the Organelle's
+    # own keys play nothing until they choose songs (Brendan, 2026-11-04), so
+    # og-key-60 beside it must add no note.
+    (7800, "ROW-KEY", ["\\; param gk-key 100", "\\; param og-key-60 100"], GAP),
     # Unmapped pressure draws no raw row (item 318); pad-36 is the witness and
     # proves the test is not too wide. It sits in the drum page's free corner,
-    # since mode 1 maps the page's 56 pads.
+    # and the drum page is page 2's.
     (8000, "PRESSURE", ["\\; param pad-11-at 64", "\\; param pad-36 100"], GAP),
     # Mapped pressure still draws its row: a gate row maps pad-13-at to
     # volca-cc 45.

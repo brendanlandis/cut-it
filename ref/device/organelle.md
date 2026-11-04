@@ -124,8 +124,9 @@ per-key latch below guarantees. Without it the hold could never complete.
 ⛔ **The layer is latched PER KEY, AT PRESS TIME, and that is the whole of what makes it safe.**
 Press a shifted key, let go of `aux`, then let go of the key: read live, the press published
 `og-shift-72` and the release would publish `og-key-72`. The shifted control never sees its
-note-off, and an unshifted one gets a note-off it never had a note-on for — **in mode 1 that is a
-stuck note on the Volca, and nothing anywhere reports it.**
+note-off, and an unshifted one gets a note-off it never had a note-on for — **wherever the keys
+play notes, that is a stuck note, and nothing anywhere reports it.** They play nothing today: the
+map gives them no row until they choose songs (Brendan, 2026-11-04).
 
 **One entry per key, in `m_organelle.lua`**, written only when the velocity is non-zero and read
 on **both** edges. A release then cannot disagree with its own press however the modifier moves

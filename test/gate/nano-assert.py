@@ -111,8 +111,8 @@ def run_asserts(cap):
     # ---- one bus, and one row per control ---------------------------------
     # What a control draws is u_map's alone (item 317). Rows are counted by
     # name, exactly: g_oled redraws a row in place by name, so a duplicate is
-    # invisible on screen. Two lean on the shipped map: slider-3 has no mode-1
-    # row, and slider-1 is volca-cc 41 there.
+    # invisible on screen. Two lean on the shipped map, on page 3, which the
+    # EARLY window chooses: slider-3 has no row there, and slider-1 is volca-cc 41.
     print("\n--- param only, and ONE row per control ---")
     rows = lambda k, *names: [d for d in disp(k) if d[:1] and d[0] in names]
     kinds = [k for k, _ in W("SLIDER")]
@@ -123,13 +123,13 @@ def run_asserts(cap):
     A.check("⛔ an UNMAPPED slider draws ONE row -- u_map's slider-3 21, and none from m_nano",
             rows("SLIDER", "slider-3") == [["slider-3", "21"]],
             "rows for slider-3: %s. Two identical rows means an m_ layer is posting "
-            "its own again (item 317); none means slider-3 gained a mode-1 row in "
+            "its own again (item 317); none means slider-3 gained a mode-3 row in "
             "cut-it-map.txt" % rows("SLIDER", "slider-3"))
     A.check("⛔ a MAPPED fader draws ONE row, the destination's -- volca-cc41 64 and no slider-1",
             rows("EARLY", "slider-1", "volca-cc41") == [["volca-cc41", "64"]],
             "rows for slider-1 and volca-cc41 at 300 ms: %s. A slider-1 row is the "
             "double row this gate exists to keep out; no volca-cc41 row means the "
-            "shipped mode-1 slider-1 volca-cc 41 row moved"
+            "shipped mode-3 slider-1 volca-cc 41 row moved"
             % rows("EARLY", "slider-1", "volca-cc41"))
 
     # The other [ctlin] layer, through the same stub.

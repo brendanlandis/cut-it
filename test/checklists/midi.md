@@ -14,22 +14,22 @@ Hot-swap for the Volca, which is `none`: it transmits nothing and can never be p
   - **Pass if:** The footer reads 57 BPM and not 120 BPM. The lit mode lamp is wherever you left it — note which one it is.
   - **Note:** Rig only: 57 comes from `knobs.txt`, which no Mac has.
 
-- [ ] **2. Get to mode 1**
-  - **Do:** Press the top button of the Launchpad left column — the top mode lamp.
-  - **Pass if:** The lit lamp moves to the top position. Nothing below works until it does.
+- [ ] **2. Get to page 3**
+  - **Do:** Press the third button down the Launchpad left column — page 3, the synths page.
+  - **Pass if:** The lit lamp moves to the third position. Nothing below works until it does.
 
-- [ ] **3. Fader 1 in mode 1**
+- [ ] **3. Fader 1 on page 3**
   - **Need:** The Volca audible. It transmits nothing so this step and the two after it are judged by ear with no readback of any kind.
-  - **Do:** In mode 1 move fader 1 on the nanoKONTROL.
+  - **Do:** On page 3 move fader 1 on the nanoKONTROL.
   - **Pass if:** The Volca tone changes as you move it. The OLED shows one row for the fader — volca-cc41 and the value — and no slider-1 row.
 
-- [ ] **4. Fader 1 in mode 4**
+- [ ] **4. Fader 1 on page 4**
   - **Do:** Press the fourth button down the Launchpad left column then move fader 1.
-  - **Pass if:** The Volca does not change — no change is the pass. The OLED shows slider-1 and its raw value because nothing maps it in mode 4 and that is correct.
+  - **Pass if:** The Volca does not change — no change is the pass. The OLED shows slider-1 and its raw value because nothing maps it on page 4 and that is correct.
 
-- [ ] **5. Fader 1 back in mode 1**
-  - **Do:** Press the top button of the Launchpad left column then move fader 1 again.
-  - **Pass if:** The Volca responds again. Still silent means the mode did not change back — check the lit lamp.
+- [ ] **5. Fader 1 back on page 3**
+  - **Do:** Press the third button down the Launchpad left column then move fader 1 again.
+  - **Pass if:** The Volca responds again. Still silent means the page did not change back — check the lit lamp.
 
 - [ ] **6. Tempo from knob 1**
   - **Do:** Sweep knob 1 all the way and back.
@@ -46,13 +46,13 @@ Hot-swap for the Volca, which is `none`: it transmits nothing and can never be p
   - **Note:** That no map row names panic is `map-assert`'s, read from `cut-it-map.txt`; this asks only what fingers can answer — that no control anyone reaches for raises it.
 
 - [ ] **9. Hot-swap — Volca unplugged and plugged back in**
-  - **Need:** Mode 1. Slider 1 is the only control bound to the Volca.
+  - **Need:** Page 3. Slider 1 is the only control bound to the Volca.
   - **Do:** Unplug the Volca interface alone and count to fifteen, then plug it back in and wait up to 30 seconds before sweeping slider 1 while holding a Volca key. Then unplug it again: the next step loads without it.
   - **Pass if:** Holding a Volca key and sweeping slider 1 changes the sound — by ear.
   - **Note:** The oracle is the fader changing the sound, never the Volca sounding: it plays from its own keys with no MIDI connected at all ([volca](../../ref/device/volca.md)). The Volca alone, because it registers `none` and comes back through `u_present`'s re-wire heartbeat (`wire-watch.sh` every eight ticks, re-wiring when the client names change); pulling a second device would go through the loss path instead (item 275). 30 seconds covers the heartbeat: `u_root` passes `[u_present 4000 2000 33 8]`, eight 2000 ms ticks, 16 seconds, plus enumeration.
 
 - [ ] **10. Hot-swap — Volca absent at load**
-  - **Need:** The Volca interface still unplugged from the last step. Mode 1. Slider 1 is the only control bound to the Volca.
+  - **Need:** The Volca interface still unplugged from the last step. Page 3. Slider 1 is the only control bound to the Volca.
   - **Do:** Load Cut It again from the Organelle menu, with the Volca interface still unplugged, and let it boot. Plug the Volca interface in, wait up to 30 seconds, then hold a Volca key and sweep slider 1.
   - **Pass if:** Holding a Volca key and sweeping slider 1 changes the sound — by ear. Sweep it up — slider 1 is velocity.
   - **Note:** Absent at load is the likelier case in a room: nothing is wrong as far as the instrument knows, so nothing warns, and the heartbeat recovers it (item 285).

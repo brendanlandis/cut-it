@@ -448,7 +448,7 @@ def main():
             "%d sent: %s" % (len(sent), sent[:1]))
     sent = args("drumstate", "/cutit/mode")
     A.check("drumstate: the page leaves alone as /cutit/mode, at once and on the heartbeat",
-            len(sent) >= 2 and all(g == ["mode-1"] for g in sent), sent[:3])
+            len(sent) >= 2 and all(g == ["mode-2"] for g in sent), sent[:3])
     A.check("done: both still repeat, so a phone that comes back late catches up",
             len(args("done", "/cutit/drums")) >= 2 and len(args("done", "/cutit/mode")) >= 2,
             "%d and %d" % (len(args("done", "/cutit/drums")), len(args("done", "/cutit/mode"))))

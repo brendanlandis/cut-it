@@ -29,12 +29,12 @@ were false.
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
-| `display-assert.sh` | 32 | `module/display` — the grid |
+| `display-assert.sh` | 35 | `module/display` — the grid |
 | `oled-assert.sh` | 63 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 166: 91 in Lua, 75 in Pd | `module/map` |
+| `map-assert.sh` | 167: 91 in Lua, 76 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 42 | `module/presence` |
@@ -49,9 +49,9 @@ were false.
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 16 | `module/sequencer` — the kit, as a signal |
 
-**994 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**998 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **987**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **991**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh` and `organelle-assert.sh` print
 two each, one per half: the Lua tests', then the analyzer's; `touchosc-assert.sh` two as well, the
 reading first.
@@ -73,6 +73,18 @@ else* failed on a second cord out of `c_steps`' pad outlet, and `presence-assert
 with three others, on `c_presence` publishing `seen` on a poll. `debug-assert` failed five against the
 old debug patch, and its probe count with the velocity gate broken. The tempo, phone and layout
 checks are under their own gates below.
+
+✅ **The page checks were each made to fail** when the mode bus lost its class, the pages became
+eight and the drum page moved to page 2 (Brendan, 2026-11-04), each against the code before its
+step: `u_map_test.lua`'s mode bus on the old two-atom rule (15) and on a rule that counted the atom
+without naming a page (6); `err-assert` on the old `u_err` (3: no mode receive, the old `perform
+mode-6`, the info witness); `map-assert` with the class-dropping route bypassed (the old save came
+back as `compose mode-1`), `R.PAGES` one short, the six-key route (2), a page-8 row missing, and
+the map before the drum page moved (the Organelle's key played a second note); `display-assert` on
+the grid before the bus change (9), before eight lamps (9) and before the drum page moved (5, and
+a traceback in `lib_grid`'s message for an RGB cell, fixed); `touchosc-assert` on the phone's old
+handler (3) and old `MAIN` (4); `nano-assert`'s fader and `sequencer-assert` (34, its page 1
+among them) on the map before the drum page moved.
 
  ⚠️ Three pages name more than one gate, and that is the rule working rather than
 bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
@@ -189,8 +201,8 @@ rewriting the box. **`Cut It/` is never touched**; the scratch copy is thrown aw
 The script counts the boxes it rewrote and **refuses to run if it found none** — otherwise every
 assertion would pass vacuously, which is worse than failing.
 
-**32 checks**: frame shape and the 1–108 span, the mode lamp index, mode 1's drum page with the
-beat row giving way to it, the modal claiming all 108 specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
+**35 checks**: frame shape and the 1–108 span, the mode lamp index, page 2's drum page with the
+beat row giving way to it and page 1's beat row, the modal claiming all 108 specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
 underneath, the beat row never leaving 11–18, the grid SURVIVING a panic, and
 `m_launchpad`'s Programmer and Live SysEx.
 
@@ -459,7 +471,7 @@ throwing rule caught as `fail c_steps lua-fire`). Then the Pd half below, on a r
 instrument, which is unchanged since the rules were Pd: **it is the proof the Lua port changed
 nothing.** The gate fails if either half does.
 
-It plays mode 1's drum page on `param`, as `m_launchpad` publishes it, from a state directory
+It plays page 2's drum page on `param`, as `m_launchpad` publishes it, from a state directory
 seeded with a pattern, and reads only what leaves the patch: the pads for `c_kit`, the grid's frames, the
 state bus and `cut-it-auto.txt`. **A note's step is the playhead of the frame painted after it** —
 `c_steps` sends a step's notes and its playhead in one logical instant, and the frame clock paints

@@ -8,7 +8,7 @@ The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast
 
 - [ ] **1. The link is up**
   - **Need:** TouchOSC open on the phone with Cut It's layout, on the same network. A no link here means nothing below can be judged.
-  - **Send:** `mode mode-2`
+  - **Send:** `mode mode-1`
   - **Pass if:** The phone's tab reads remote and shows the remote screen, and its link lamp is lit teal beside the word link rather than no link.
 
 - [ ] **2. One parameter**
@@ -102,6 +102,6 @@ The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast
 
 - [ ] **22. A mode ends test mode, and the tab follows it**
   - **Need:** Test mode on, the phone's checklist page up.
-  - **Do:** Press the Launchpad's mode 1 button, the top of the left column. Then press mode 3, the third.
-  - **Pass if:** At mode 1 the checklist page gives way at once to the drum screen, its tab reading drums; at mode 3 the tab reads remote and shows the remote screen.
+  - **Do:** Press the Launchpad's page 2 button, the second down the left column. Then press page 3, the third.
+  - **Pass if:** At page 2 the checklist page gives way at once to the drum screen, its tab reading drums; at page 3 the tab reads remote and shows the remote screen.
   - **Note:** That a mode turns test mode off is `phone-assert`'s too (Brendan, 2026-11-04: staying on the checklists after a mode press was the weird part).

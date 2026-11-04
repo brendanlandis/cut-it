@@ -90,7 +90,8 @@ program; [tools/README.md](../../tools/README.md) says how the probe runs):
 
 ### `slider-1` is CC 41, and it can silence the device
 
-`mode-1 slider-1 volca-cc 41`, and CC 41 is Velocity, a global parameter (Reference, item 284). Leave
+`mode-3 slider-1 volca-cc 41`, on page 3, the synths page (Brendan, 2026-11-04), and CC 41 is
+Velocity, a global parameter (Reference, item 284). Leave
 the fader at the bottom and the Volca goes silent to its own keyboard, which looks exactly like a
 dead link. **Fix:** before diagnosing silence, **sweep `slider-1` to the top**. It is also the only
 mapping there is, so it is the only audible evidence of the link: the oracle is the fader changing the
@@ -99,7 +100,7 @@ cable out.**
 
 | | Value | Evidence | Item |
 |---|---|---|---|
-| `slider-1` in mode 1 | Volca **CC 41 — Velocity**, global, silences the device at 0 | verified | 284 |
+| `slider-1` on page 3 | Volca **CC 41 — Velocity**, global, silences the device at 0 | verified | 284 |
 
 ### ⛔ Absent at load, only the heartbeat ever wires this device
 
@@ -179,7 +180,7 @@ Organelle where these boxes cost a few microseconds.
   re-enumerating the interface. Everything in the software path is excluded by direct measurement:
   `start`, `stop` and `panic` never fire at load; `aseqdump` on Pd's Midi-Out 4 and a loopback
   monitor inside the patch both caught nothing across a reload; no clock reaches the port (item 279),
-  so Pd sends this device nothing but one CC in mode-1; and `dmesg` logged no USB event alongside any
+  so Pd sends this device nothing but fader 1's one CC; and `dmesg` logged no USB event alongside any
   of the three. ⚠️ **The leading explanation needs no software at all** — handling a DIN cable can
   inject noise into an opto-isolated input. ⛔ **It is recorded rather than closed** because three
   occurrences are not nothing, and because the only observer that could settle it is a MIDI monitor

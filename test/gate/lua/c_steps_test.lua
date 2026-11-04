@@ -430,11 +430,14 @@ equal("drunk 100, most steps stay on time: a roll of 0.34 is past the third that
 st.rand = dice(0, 0.5)
 equal("a stray of the middle is a step as written: no rate sent",
       #R.internal.tick(st, {}), 1)
-local strays = 0
-st.rand = math.random
+-- On a sequencer of its own: the last roll leaves the rate wherever it fell.
+local strays, d = 0, R.new(1)
+R.internal.start(d, {})
+R.presses.drunk(d, { 100 })
+d.rand = math.random
 for _ = 1, 3000 do
-  R.internal.tick(st, {})
-  if st.rate ~= 1 then strays = strays + 1 end
+  R.internal.tick(d, {})
+  if d.rate ~= 1 then strays = strays + 1 end
 end
 equal("drunk 100, over 3000 steps about a third stray: between 850 and 1150",
       strays >= 850 and strays <= 1150 or strays, true)

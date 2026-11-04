@@ -25,8 +25,9 @@ on a `route` box inside `u_map`, feeding a handler you can see on the canvas —
 guard**, and the whole of what makes a table acceptable here. See *Design*.
 
 `u_map` has no inlets. It has **one outlet per output device**, wired in `u_root`, because no bus
-carries a sounding note — and a third, to `c_steps`, for what a press on mode 1's drum page means
-([sequencer.md](sequencer.md)).
+carries a sounding note — the Volca's, the one since the SP-404 left the rig (Brendan, 2026-11-04) —
+then one to `c_steps`, for what a press on mode 1's drum page means ([sequencer.md](sequencer.md)),
+and one to `u_net`, which flips test mode.
 
 ## Facts
 
@@ -42,8 +43,8 @@ mode-1 slider-1  volca-cc 41
 | Field | Is | Evidence | Item |
 |-------|----|----------|------|
 | `<mode>` | The **second** atom of the `mode` bus message — `mode-1`, not `compose mode-1`. The class is `u_err`'s business | verified | — |
-| `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `sp-a1` | verified | — |
-| `<dest>` | One of the **thirteen** below, and **only** those | verified | 229 |
+| `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `pad-43` | verified | — |
+| `<dest>` | One of the **fourteen** below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
 
 **A row with any other width is a lint failure**, not a runtime one — `map-assert.py` reads the
@@ -63,12 +64,11 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `volca-note` | The note number | Velocity. Duration is a fixed **200 ms** | verified | — |
 | `volca-cc` | The CC number | The CC value | verified | — |
 | `volca-prog` | The program number | A **gate only** — it decides whether the press counts | verified | — |
-| `404-pad` | The pad number | Velocity | verified | — |
 | `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key | verified | 293 |
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, in all six modes** | verified | 301 |
 | `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad; an index the layout lacks is `fail u_map layout-miss` | verified | — |
-| `test-mode` | unused | Non-zero flips `u_net`'s test mode, which puts the phone's line check up ([phone.md](../device/phone.md)). **`og-shift-61` and `lp-setup`, the Launchpad's Setup, in all six modes**; `lp-setup` has no release, and needs none; out `u_map`'s fourth outlet, a cord to `u_net`. Choosing a mode turns test mode off, in `u_net` | unknown | — |
+| `test-mode` | unused | Non-zero flips `u_net`'s test mode, which puts the phone's line check up ([phone.md](../device/phone.md)). **`og-shift-61` and `lp-setup`, the Launchpad's Setup, in all six modes**; `lp-setup` has no release, and needs none; out `u_map`'s third outlet, a cord to `u_net`. Choosing a mode turns test mode off, in `u_net` | unknown | — |
 | `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1–32**, **`og-knob-2`**; `track-last` the selected track's own, **`og-knob-3`**; `swing` the sequencer's, 25% to 75%, **`og-knob-4`**, all in mode 1. A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
@@ -99,7 +99,6 @@ there and nowhere else.
 | `tempo` | `bpm 75` | `bpm 29 (120)` | verified | 316 |
 | `volca-cc` | `volca-cc41 64` | `volca-cc41 64 (114)` | verified | 316 |
 | `volca-note` | `volca-note60 100` | same shape | verified | 316 |
-| `404-pad` | `404-pad5 90` | same shape | verified | 316 |
 | `volca-prog` | `volca-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
 | `drums` | `last-step 12`, `pad2-last 6`, `swing 62 %`: drawn by `c_steps`, which holds the latch | `last-step 16 (7)`, `swing 50 (25)` | verified | — |
 | `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
@@ -112,8 +111,8 @@ the third slot.
 
 | | Evidence | Item |
 |---|----------|------|
-| **A control draws exactly one row, and it is `u_map`'s.** No `m_` file sends a control's row to `disp` — `m_nano`, `m_404` and `m_launchpad` publish on `param` alone, as `m_organelle` always has. A fader mapped to `volca-cc 41` draws `volca-cc41 64` and nothing beside it; an unmapped control draws `<name> <raw>` (*Traps*); a mapped button draws nothing. **The SP-404 included:** its `sp-pad` and `sp-bank` rows are gone too, and a hit draws `sp-b5 90`, one name carrying bank and pad — decided 2026-10-20, at the cost of a fast run of pads meeting the five-row limit with no stable row to fall back on | verified | 317 |
-| `map-assert.py` reads every `m_` file's `[s disp]` count, exactly — `m_organelle`'s one carries aux's `modal shift`, never a control | verified | 317 |
+| **A control draws exactly one row, and it is `u_map`'s.** No `m_` file sends a control's row to `disp` — `m_nano` and `m_launchpad` publish on `param` alone, as `m_organelle` always has, and as `m_404` did until the SP-404 left the rig (2026-11-04). A fader mapped to `volca-cc 41` draws `volca-cc41 64` and nothing beside it; an unmapped control draws `<name> <raw>` (*Traps*); a mapped button draws nothing | verified | 317 |
+| `map-assert.py` reads every `m_` file's `[s disp]` count, exactly, and the set of `m_` files with it — `m_organelle`'s one carries aux's `modal shift`, never a control | verified | 317 |
 
 ### Values are normalized to 0–1, and the divisor is not uniform
 
@@ -125,7 +124,6 @@ the third slot.
 | nano faders and knobs | 0–127 | yes | verified | — |
 | nano buttons | 1 | yes | verified | — |
 | Launchpad pads | 0 or 127 | yes | verified | — |
-| 404 pads | a real velocity | yes | verified | — |
 | **Organelle knobs 1–4** | **0–1** — mother's own scale | **no** | verified | — |
 | **Organelle aux** | **0–1** | **no** | verified | — |
 
@@ -377,7 +375,7 @@ safe and blind: nothing could tell an unmapped control from a suppressed one. Th
 runs; only the destination's action is held.
 
 ⚠️ **It is the only row the control gets.** No `m_` layer posts one of its own (item 317), so this
-report is what makes `slider-3`, `sp-b5` and `pad-43` name themselves on the screen — a release
+report is what makes `slider-3`, `lp-cc-20` and `pad-43` name themselves on the screen — a release
 included, at velocity 0, wherever the device layer publishes one.
 
 ### A target sitting on a rail can never be crossed
@@ -524,7 +522,7 @@ guarantee `m_volca`'s `[t b f]` had to be built by hand to get.
 
 ### The spigot is one uniform trigger test
 
-A nano button sends 1, a pad sends 127, an Organelle aux sends 1, a 404 pad sends a real velocity —
+A nano button sends 1, a pad sends 127 and an Organelle aux sends 1 —
 **all non-zero after normalizing, and a release is zero.** So the gate opens on non-zero and the arg
 passes through it: one test, not a different threshold per surface.
 

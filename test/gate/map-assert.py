@@ -24,8 +24,9 @@ import lib_pd                                                  # noqa: E402
 MAP = "Cut It/cut-it-map.txt"
 UMAP = "Cut It/u_map.pd"
 # Every m_ file and its exact [s disp] count. Only m_organelle has one, and it
-# carries aux's modal, never a control's row.
-DISP_EXPECT = {"m_404": 0, "m_launchpad": 0, "m_nano": 0, "m_organelle": 1, "m_volca": 0}
+# carries aux's modal, never a control's row. The file set is exact too: m_404
+# went with the SP-404 (2026-11-04).
+DISP_EXPECT = {"m_launchpad": 0, "m_nano": 0, "m_organelle": 1, "m_volca": 0}
 MODES = ["mode-%d" % n for n in range(1, 7)]
 # Both runs are counted against this one list, so neither passes a driver that
 # died early.
@@ -33,7 +34,7 @@ WINDOWS = ["EARLY", "EARLY-2", "RAIL-ARM", "SUPPRESS", "MAPPED", "AWAY", "CROSS"
            "LIVE", "PLAY-1", "STOP-1", "PLAY-2", "KNOB-2", "LATE-KNOB", "BAD-DEST",
            "RAIL-UP", "RAIL-BACK", "MODE-4", "MODE-DEP", "MODE-4-RELEASE",
            "TOP-ROW-FREE", "UNMAPPED", "BAD-MODE", "AFTER-BAD", "DIAG-DEST", "DIAG-RELEASE",
-           "SHIFT-STOP", "MODE-1", "ROW-CC", "ROW-NOTE", "ROW-PAD", "ROW-PROG",
+           "SHIFT-STOP", "MODE-1", "ROW-CC", "ROW-NOTE", "ROW-PROG",
            "ROW-KEY", "PRESSURE", "PRESSURE-MAPPED"]
 
 
@@ -353,8 +354,6 @@ def run_asserts(cap):
     A.check("... and the note itself still fires",
             any(e[0] == "NOTEOUT" and e[1][:2] == [60, 100] for e in W("ROW-NOTE")),
             repr(W("ROW-NOTE")))
-    A.check("⛔ 404-pad draws 404-pad5 90", rows("ROW-PAD") == [["404-pad5", "90"]],
-            "disp in that window: %s" % disp("ROW-PAD"))
     A.check("⛔ volca-prog draws volca-prog 20 -- the ARG, because the value is only a gate",
             rows("ROW-PROG") == [["volca-prog", "20"]],
             "disp in that window: %s" % disp("ROW-PROG"))

@@ -24,8 +24,10 @@ aconnect "Launchpad Pro MK3":2 "Pure Data":0 2>/dev/null || true  # Setup's anno
 aconnect "Pure Data":4 "Launchpad Pro MK3":0 2>/dev/null || true  # LEDs + SysEx out
 aconnect "nanoKONTROL":0 "Pure Data":1       2>/dev/null || true  # -> Pd ch 17-32
 aconnect "Pure Data":5 "nanoKONTROL":0       2>/dev/null || true  # device inquiry out
-aconnect "SP-404MKII":0 "Pure Data":2        2>/dev/null || true  # -> Pd ch 33-48
-aconnect "Pure Data":6 "SP-404MKII":0        2>/dev/null || true  # pad triggers out
+
+# Pd's port 3, "Pure Data":2 in (Pd ch 33-48) and "Pure Data":6 out, is wired
+# to nothing: it was the SP-404's until the 404 left the rig (2026-11-04), and
+# it is reserved for the Waldorf Streichfett.
 
 # The USB->DIN interface is one bidirectional port. The Volca behind it only
 # receives; the input is for whatever the interface's DIN IN may carry later.
@@ -37,7 +39,6 @@ aconnect "Pure Data":7 "USB Uno MIDI Interface":0 2>/dev/null || true  # notes +
 # that is not the Launchpad, because the order moves between boots
 # (ref/module/boot.md, Traps).
 aconnect -d "nanoKONTROL":0 "Pure Data":0    2>/dev/null || true
-aconnect -d "SP-404MKII":0 "Pure Data":0     2>/dev/null || true
 aconnect -d "USB Uno MIDI Interface":0 "Pure Data":0 2>/dev/null || true
 
 # Report what actually connected, for the run-it-by-hand console.

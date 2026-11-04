@@ -22,9 +22,9 @@ a gate can be right about one fault and blind to another.
 Every one of these has happened here, and the first three were all in one gate — the phase 6 grid
 gate, since split into `display-assert` and `launchpad-assert`.
 
-**1. It rewrote the wrong thing.** It rewrote `[midiout]` only. `m_volca` and `m_404` emit through
-`noteout` / `ctlout` / `pgmout`, so it found nothing in them and every assertion about them would
-have passed silently.
+**1. It rewrote the wrong thing.** It rewrote `[midiout]` only. `m_volca`, and `m_404` while the
+SP-404 was in the rig, emit through `noteout` / `ctlout` / `pgmout`, so it found nothing in them and
+every assertion about them would have passed silently.
 
 **2. Its regex was anchored so arguments were skipped.** `'^#X obj [0-9]* [0-9]* midiout;$'` requires
 the class name to end the line, so `[ctlout 123]` is invisible to it — and measured on this patch,
@@ -72,10 +72,10 @@ it, so a receive path goes untested. Rewrite the **inputs** too: `t_notein` is `
 ⚠️ **`t-notein` and `t-ctlin` are bare global names outside the allowlist, and that is fine** — they
 exist only in the scratch copy. State it, so nobody "fixes" it.
 
-⚠️ **One receive name reaches every rewritten box of its class.** All three `[ctlin]` become
-`[t_ctlin]`, so a driver aimed at the nano's channel block is also offered to `m_404` and
-`m_launchpad`. That is not a leak to work around — it makes **cross-talk between the three channel
-gates something a gate can assert** rather than assume.
+⚠️ **One receive name reaches every rewritten box of its class.** Both `[ctlin]` become
+`[t_ctlin]`, so a driver aimed at the nano's channel block is also offered to `m_launchpad`. That is
+not a leak to work around — it makes **cross-talk between the channel gates something a gate can
+assert** rather than assume, and that nothing answers on a block no layer owns.
 
 ## `-noaudio` does not turn DSP off
 
@@ -107,8 +107,8 @@ and put a watchdog on every headless run.
 checks and missed a boot-time race, because its windows started at 2400 ms *for the reason the code
 read its table at 2000*. **A test whose schedule is derived from the implementation cannot falsify
 it**, and item 234 was found by hardware instead. Every driver in `test/gate/` now opens a window
-**before** the thing it is assuming — `map-assert` at 300 ms, `sp404-assert` at 300 and 700 in both
-directions, `display-assert` at 300 with a mode nothing else in the run sets.
+**before** the thing it is assuming — `map-assert` at 300 ms, `nano-assert` at 300,
+`display-assert` at 300 with a mode nothing else in the run sets.
 
 ⚠️ **`[del 0]` defers to the next tick but adds no logical time** (`~/Sites/!reference/pure-data.md`). A burst fired in one logical
 instant proves *drops-not-queues* and nothing about an interval. Test an interval with two events a

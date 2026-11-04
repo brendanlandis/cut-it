@@ -6,7 +6,7 @@
 Three claims:
 
     1. the output is not silent
-    2. L and R are not swapped: L is the SP-404's drums (item 11). Both
+    2. L and R are not swapped: L is the tip, the mic's (item 11). Both
        channels carry the same level, so only the frequencies can see a swap
     3. the passthrough is unity: u_root's audio path has no gain
 

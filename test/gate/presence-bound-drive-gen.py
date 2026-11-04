@@ -9,7 +9,7 @@ The schedule, u_present's own arithmetic at a tenth of the clock:
 
      400 ms   the settle expires -- [metro 200] starts and fires immediately, so
               the ticks are 400, 600, 800, ...
-     800 ms   c_presence's third missed tick. All three active sources are
+     800 ms   c_presence's third missed tick. Both active sources are
               declared lost, and the recovery counter starts in the SAME tick
     1400 ms   counter 4 -- mod 4 hits 0 and wire.sh is forked for the first time
     1500 ms   ⚠️ u_init's OWN boot fork, which is not on this schedule at all

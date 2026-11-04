@@ -20,8 +20,9 @@ MARKS = 17
 # The five name families m_nano builds from the div 10 kind.
 FAMILIES = ("slider-", "knob-", "btn-t-", "btn-b-", "xport-")
 
-# What the other two devices' [ctlin] boxes build. One t-ctlin reaches all three.
-FOREIGN = ("sp-cc-", "lp-cc-")
+# What the other [ctlin] box, m_launchpad's, builds. One t-ctlin reaches both.
+# The SP-404's sp-cc- went with it (2026-11-04).
+FOREIGN = ("lp-cc-",)
 
 # Every window whose messages are addressed to the nanoKONTROL's own channels.
 NANO_WINDOWS = ("EARLY", "CH-16", "CH-17", "CH-18", "CH-19", "SLIDER", "KNOB",
@@ -54,7 +55,7 @@ def run_asserts(cap):
             "the block below the nano leaked: %s. The Launchpad sits 16 below "
             "this one" % param("CH-16"))
     A.check("⛔ Pd channel 19 is refused", not param("CH-19"),
-            "the block above the nano leaked: %s. The SP-404 sits 16 above "
+            "the block above the nano leaked: %s. Pd's port 3 sits 16 above "
             "this one" % param("CH-19"))
 
     # ---- div 10 / mod 10, and the five name families ----------------------
@@ -131,22 +132,22 @@ def run_asserts(cap):
             "shipped mode-1 slider-1 volca-cc 41 row moved"
             % rows("EARLY", "slider-1", "volca-cc41"))
 
-    # The other two [ctlin] layers, through the same stub.
-    A.check("⛔ the 404's CTRL knob draws ONE row too -- u_map's sp-cc-20 77",
-            rows("CH-404", "sp-cc-20") == [["sp-cc-20", "77"]],
-            "rows for sp-cc-20: %s" % rows("CH-404", "sp-cc-20"))
+    # The other [ctlin] layer, through the same stub.
     A.check("⛔ ... and so does a Launchpad ring button -- lp-cc-20 55",
             rows("CH-LP", "lp-cc-20") == [["lp-cc-20", "55"]],
             "rows for lp-cc-20: %s" % rows("CH-LP", "lp-cc-20"))
 
-    # ---- cross-talk between the three channel blocks ----------------------
-    # One t-ctlin reaches all three rewritten [ctlin] boxes; these two are the
-    # liveness witness for the checks after them.
-    print("\n--- the other two channel blocks, through the same stub ---")
-    A.check("the SP-404's block admits its own channel",
-            param("CH-404") == [["sp-cc-20", "77"]],
-            "wanted one sp-cc-20 77 on channel 33, got %s. Without this the "
-            "cross-talk checks below have no liveness witness" % param("CH-404"))
+    # ---- cross-talk between the channel blocks ----------------------------
+    # One t-ctlin reaches both rewritten [ctlin] boxes; the Launchpad's is the
+    # liveness witness for the checks after it.
+    print("\n--- the other channel blocks, through the same stub ---")
+    # Channel 33 is Pd's port 3, the SP-404's until it left the rig
+    # (2026-11-04): nothing in Cut It listens there now, and a layer that did
+    # would be one no gate knows about.
+    A.check("⛔ Pd's port 3 reaches NOTHING -- channel 33 makes no param and no row",
+            not param("CH-33") and not disp("CH-33"),
+            "channel 33 made param %s and disp %s. The SP-404's layer, m_404, "
+            "published sp-cc-20 77 here" % (param("CH-33"), disp("CH-33")))
     lp = [v for v in param("CH-LP") if v and v[0].startswith("lp-cc-")]
     A.check("the Launchpad's block admits its own channel",
             len(lp) == 1 and lp[0][0] == "lp-cc-20",
@@ -154,10 +155,10 @@ def run_asserts(cap):
 
     strays = [(m, v) for m in NANO_WINDOWS for v in param(m) + disp(m)
               if v and v[0].startswith(FOREIGN)]
-    A.check("⛔ nothing on the nano's channels reaches the other two devices",
+    A.check("⛔ nothing on the nano's channels reaches the Launchpad's layer",
             not strays, "%d foreign emit(s): %s" % (len(strays), strays[:4]))
 
-    invaders = [(m, v) for m in ("CH-404", "CH-LP") for v in param(m) + disp(m)
+    invaders = [(m, v) for m in ("CH-33", "CH-LP") for v in param(m) + disp(m)
                 if v and v[0].startswith(FAMILIES)]
     A.check("⛔ nothing on the other two channels reaches m_nano",
             not invaders, "%d nano emit(s) from a foreign channel: %s"

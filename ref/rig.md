@@ -9,8 +9,7 @@ Organelle is as a *computer* — SSH, paths, deploying, wifi — is in
 The Organelle is the brains: it runs the patch, **plays the drums** (`c_kit`,
 [module/sequencer.md](module/sequencer.md)), hosts every controller over USB, and is **clock
 master** for the whole rig. **The mic goes straight into its one input jack**, on the tip, with no
-preamp (2026-11-04). The SP-404MK2 is out of the audio path; it stays on USB for its pads and CTRL
-knobs until it leaves the rig (`cut-it/drum-machine`).
+preamp (2026-11-04). **The SP-404MK2 has left the rig** (Brendan, 2026-11-04) — see below.
 
 
 ## Signal flow — audio
@@ -70,7 +69,6 @@ number out.
 ```
   power strip
     ├── ORGANELLE ........ 9VDC 1000mA center-positive   (included)
-    ├── SP-404MK2 ........ Roland PSD adapter            (included)
     ├── XENYX Q802USB .... own PSU                       (included)
     ├── POWERED USB HUB .. own PSU                       (comes with hub)
     │     ├── Launchpad Pro MK3
@@ -78,10 +76,6 @@ number out.
     │     └── USB→DIN MIDI interface
     └── VOLCA FM ......... Korg KA-350 9V (or 6×AA)
 ```
-
-⛔ **Do not bus-power the 404** (Reference: `~/Sites/!reference/roland-sp-404mkii.md`). The USB-A→C
-cable from the hub carries **data only**, which is what we want — the 404 runs off its own adapter and
-costs the hub nothing.
 
 ### There is no shared rail for a brownout to happen on — items 5 and 95
 
@@ -102,8 +96,8 @@ untested — see *Open* below.**
 
 ### ⛔ There is one physical hub, and `lsusb` makes it look like three
 
-**Item 256.** The hub holds three hub controllers in one box, and the SP-404 adds one of its own, so
-`lsusb -t` shows a chain that is not on the desk. How to tell them apart, and which controller each
+**Item 256.** The hub holds three hub controllers in one box, and the SP-404 added one of its own
+while it was in the rig, so `lsusb -t` shows a chain that is not on the desk. How to tell them apart, and which controller each
 socket hangs off, is on `~/Sites/!reference/powered-usb-hub.md`. ⛔ **So the Launchpad's fault is NOT
 depth and NOT chaining**: the socket that fails and the one that works are on the same box.
 
@@ -129,12 +123,12 @@ patch is the OLED.
 |---|---|
 | Organelle (original) | Brains — Pd, USB MIDI host, clock master |
 | Powered USB hub | Connects the controllers, on its own supply (`~/Sites/!reference/powered-usb-hub.md`) |
-| Roland SP-404MK2 | Its pads and CTRL knobs, over USB MIDI. Out of the audio path since 2026-11-04 |
 | Behringer Xenyx Q802USB | Mixer, and free session recording over USB (`~/Sites/!reference/behringer-xenyx-q802usb.md`) |
 | Korg Volca FM | Pitched voice (DIN MIDI in only) |
 | Korg nanoKONTROL (mk1) | Continuous control — 9 faders, 9 knobs, 18 buttons, transport |
 | Novation Launchpad Pro MK3 | Cut It interface (Programmer Mode) + compose-time sequencing |
 | MeeBlip cubit (original) | Kept, unused — see below |
+| Roland SP-404MK2 | **Left the rig on 2026-11-04** — see below |
 | Arturia BeatStep | **Retired from the plan** — see below |
 
 ### The original cubit does not work here
@@ -145,6 +139,17 @@ act as a USB MIDI interface for the Organelle.
 **Keep it.** It becomes useful the moment a second or third DIN-only synth arrives — put it
 downstream of the MIDI interface and fan out to four destinations. Today only the Volca needs DIN, so
 a 1×1 interface is enough.
+
+### The SP-404 has left the rig
+
+Brendan took it out on 2026-11-04. It had been the rig's drum machine and its audio front end; that
+day the drums moved into Pd, `c_kit` playing the sequencer's samples
+([module/sequencer.md](module/sequencer.md)), and the mic went straight into the Organelle, so nothing
+in Cut It needs it. Its layer, `m_404`, went with it, along with its map destination, the phone's
+test 404 button and its presence on the diag roster. What it is: `~/Sites/!reference/roland-sp-404mkii.md`.
+
+**Its MIDI slot, Pd's port 3 (channels 33–48), is wired to nothing**, and reserved for the Waldorf
+Streichfett ([module/boot.md](module/boot.md), *The ALSA wiring*).
 
 ### The BeatStep is retired
 
@@ -168,38 +173,15 @@ are all covered.
 
 | Cable | Connects |
 |---|---|
-| **USB-A → USB-C** | Hub → SP-404MK2, **data only**. The 404 ships without one |
 | **⅛" TRS male → 2× 1/4" TS male** | Organelle headphone jack → mixer ch1 (tip: the drums and the mic) and ch2 (ring). Not the 1/4" outs: see above |
 | **3.5mm TRS → 2× 1/4" TS** | Volca FM → mixer ch3/4. ⚠️ Its output runs hot — start with channel gain low |
 | **XLR female → 1/4" TS** | The SM58 → the Organelle's input, on the tip. Unbalanced, so keep it short |
 | **2× 1/4" TS** | Mixer MAIN OUT → PA |
 
 **Already in the box, do not buy:** what each device ships with is on its Reference page — the
-Launchpad's cables and adapters, the nanoKONTROL's own cable, the 404's PSD adapter.
+Launchpad's cables and adapters, the nanoKONTROL's own cable.
 
 ⚠️ **Label the cables.** With this many identical 1/4" jacks it is worth the ten minutes.
-
-## Before a set — the 404
-
-**One check, and it is the one that breaks the instrument silently.** Everything else on this box is
-performance: input monitoring, pad play modes and bus assignment are all varied deliberately while
-playing, so putting them on a checklist would be telling you to undo your own settings.
-
-⛔ **Verify the MIDI tab against the recorded values.** If one of these drifts, Cut It stops driving
-the 404 and nothing anywhere reports it. The route and the full table are in Reference:
-`~/Sites/!reference/roland-sp-404mkii.md` — `[SHIFT]` + pad 13 → SYSTEM → `[CTRL 3]` to MIDI.
-
-The four that actually matter:
-
-| Setting | Must be | If it is wrong |
-|---------|---------|----------------|
-| **MIDI Mode** | **A** | Bank-equals-channel breaks, and `m_404` is built on it — every pad addresses the wrong bank |
-| **Soft Through** | Off | MIDI echo loop |
-| **USB-MIDI Thru** | Off | Same |
-| **MIDI Sync Out** | Off | Clock echoed back at the Organelle, which is clock master |
-
-⚠️ **Read, do not press.** Pressing `[VALUE]` on a setting that is already correct is how it gets
-toggled *off*.
 
 ## Open
 

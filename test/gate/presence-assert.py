@@ -45,9 +45,10 @@ REWIRE_PHONE = "info u_present rewire-phone"
 
 # Every m_ registers, m_organelle (passive) and m_volca (none) included, though
 # neither ages. The total is asserted because a layer that stopped registering
-# would stop being watched, and every "nothing was lost" check would still pass.
-ROSTER = 5
-ACTIVE = 3
+# would stop being watched, and every "nothing was lost" check would still pass;
+# exactly, so m_404, gone with the SP-404 (2026-11-04), cannot come back unnoticed.
+ROSTER = 4
+ACTIVE = 2
 
 ROSTER_RE = re.compile(r"^u_present-sources:\s+(\d+)\s*$")
 ERR_RE = re.compile(r"^err:\s+(.*\S)\s*$")
@@ -186,10 +187,10 @@ def main_run(cap):
             "was found the first time -- 7 of 24 checks")
 
     # --- cross-talk: another device's reply is not this device's ------------
-    # A KORG reply lands in FOREIGN with all three layers lost, and a layer
-    # that takes a reply publishes `back` at once (and `seen`, the first time),
-    # so the bus answers per device. The fork count can't: m_404 keeps the
-    # shared counter running whatever the other two take.
+    # A KORG reply lands in FOREIGN with both layers lost, and a layer that
+    # takes a reply publishes `back` at once (and `seen`, the first time), so
+    # the bus answers per device. The fork count can't: m_launchpad, still
+    # lost, keeps the shared counter running whatever m_nano takes.
     foreign = bus.get("FOREIGN", [])
     took = [(w, m) for w in ("FOREIGN", "STILL-LOST") for m in bus.get(w, [])
             if m in ("back m_launchpad", "seen m_launchpad")]
@@ -204,7 +205,7 @@ def main_run(cap):
              "reply at all, so 'the Launchpad did not take it' proves nothing"
              % (foreign,)))
 
-    # m_nano is back but m_404 never answered, so the fork due at 22000 comes.
+    # m_nano is back but m_launchpad has not answered, so the fork due at 22000 comes.
     A.check("⛔ one device answering does not reset the shared recovery -- the "
             "second re-wire still comes",
             wire_in(by, "STILL-LOST") == 1,
@@ -238,17 +239,6 @@ def main_run(cap):
             "at 22000. No RECOVERED means it never took its own"
             % (lp_lost,))
 
-    # And the negative control: m_404 (byte 65) saw two foreign replies and none
-    # of its own, so it must never warn. Red if c_devid ignores its argument.
-    p404_lost = lost_in(errs, "m_404", *MARKS)
-    A.check("⛔ a device that answered NEITHER reply never reports -- m_404 stays quiet",
-            p404_lost == [],
-            "warn m_404 device-lost appeared in %s. Nothing ever matched byte "
-            "65, so the arming latch was never set and this warn is unreachable "
-            "-- unless c_devid is matching on something other than its argument, "
-            "in which case all three matchers are the same matcher"
-            % (p404_lost,))
-
     # --- the arming gate opens ---------------------------------------------
     # A gate welded shut passes every check above. The Launchpad answered at
     # 24 s and is lost again at 30 s, so the mode change in DROPPED must not paint.
@@ -270,8 +260,8 @@ def main_run(cap):
             "$0-want and NOT $0-own precisely so that this stays answerable")
 
     # --- the trailing fork -------------------------------------------------
-    # Only here does the lost count reach zero: every other window leaves m_404
-    # missing.
+    # Only here does the lost count reach zero: from 8000 on, one layer or the
+    # other is always missing until both answer at once.
     A.check("⛔ the last device returning fires ONE trailing re-wire",
             wire_in(by, "ALL-BACK") == 1,
             "%d wire.sh fork(s) in ALL-BACK, wanted exactly 1. Zero means the "
@@ -373,9 +363,9 @@ def main_run(cap):
             "the report is tapped below the point where the two paths meet and "
             "the distinction it exists to draw is gone" % (REWIRE_LAST, stray))
 
-    # The trailing fork's positive control: three replies on one [sysexin] in
-    # one instant, each taken by its own matcher, or the count never hit zero.
-    for src in ("m_launchpad", "m_nano", "m_404"):
+    # The trailing fork's positive control: three frames on one [sysexin] in
+    # one instant, two taken by their own matchers, or the count never hit zero.
+    for src in ("m_launchpad", "m_nano"):
         A.check("...because %s accepted its own reply in ALL-BACK" % src,
                 ("back %s" % src) in bus.get("ALL-BACK", []),
                 "no `back %s` on the presence bus in ALL-BACK -- saw %s. Three "
@@ -383,6 +373,19 @@ def main_run(cap):
                 "matcher did not take its own, so the lost count reaching zero "
                 "cannot be what fired the trailing re-wire"
                 % (src, bus.get("ALL-BACK", [])))
+
+    # The third frame is a Roland reply, byte 65: the SP-404's, which left the
+    # rig on 2026-11-04. No layer may take it -- a c_devid matching on anything
+    # but its argument would, and so would an m_404 that came back. The negative
+    # control the two matchers' own replies cannot give.
+    stray = [m for m in bus.get("ALL-BACK", [])
+             if m.split()[:1] in (["back"], ["seen"])
+             and m.split()[1:2] not in (["m_launchpad"], ["m_nano"])]
+    A.check("⛔ ...and the Roland reply beside them is taken by NOBODY -- no SP-404 layer",
+            not stray,
+            "%s on the presence bus in ALL-BACK. Nothing in the rig answers with "
+            "manufacturer byte 65 any more, so whatever took it is either a "
+            "matcher that ignores its argument or the SP-404's layer back" % stray)
 
     # --- `seen`, once per active source, ever (item 302) --------------------
     # Exactly one, not at least one: a publish per reply passes any non-zero test.
@@ -395,14 +398,15 @@ def main_run(cap):
                 "apart from one that has never answered; more than one means it "
                 "publishes per reply, which is a message every two seconds "
                 "forever" % n)
-    # m_404 answers only in ALL-BACK, so a `seen` earlier is not gated on a reply.
-    n404 = allbus.count("seen m_404")
-    A.check("⛔ ...and a device only says it before its FIRST reply, not before",
-            n404 == 1 and "seen m_404" in bus.get("ALL-BACK", []),
-            "saw %d `seen m_404` and ALL-BACK held %s. m_404 answers nothing "
-            "until that window, so a `seen` before it is published on a poll "
-            "rather than on an answer -- and every device on a Mac would then "
-            "read as present" % (n404, bus.get("ALL-BACK", [])))
+    # Each layer's first reply lands in a window of its own, so a `seen` in any
+    # other window is published on a poll rather than on an answer.
+    first = {src: [w for w in MARKS if ("seen %s" % src) in bus.get(w, [])]
+             for src in ("m_nano", "m_launchpad")}
+    A.check("⛔ ...and a device says it on its FIRST reply, not before",
+            first == {"m_nano": ["FOREIGN"], "m_launchpad": ["OWN-REPLY"]},
+            "`seen` landed in %s, wanted m_nano's in FOREIGN and m_launchpad's in "
+            "OWN-REPLY, where each first answers. Earlier is a `seen` on a poll, and "
+            "every device on a Mac would then read as present" % first)
 
     # --- one bound, not one per device --------------------------------------
     total = sum(v.count("wire.sh") for v in by.values())
@@ -414,7 +418,7 @@ def main_run(cap):
             "per lost source per "
             "interval, which is "
             "what the recovery did before Phase 4 moved it out of m_launchpad "
-            "and into u_present -- three copies of a bound is not a bound. Fewer "
+            "and into u_present -- a copy of a bound per device is not a bound. Fewer "
             "than 6 means the interval, the loss test, the trailing fork or the "
             "phone's request has gone"
             % (total, 1 + 3 * ACTIVE))
@@ -423,7 +427,7 @@ def main_run(cap):
            % " ".join("%s=%d" % (m, wire_in(by, m)) for m in MARKS))
     A.note("device-lost warnings: %s"
            % " ".join("%s=%s" % (s, lost_in(errs, s, *MARKS) or "never")
-                      for s in ("m_launchpad", "m_nano", "m_404")))
+                      for s in ("m_launchpad", "m_nano")))
     A.note("%d lighting frame(s), %d mode frame(s)"
            % (len([f for f in frames if f.is_lighting]),
               len([f for f in frames if f.is_mode])))

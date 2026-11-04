@@ -8,7 +8,7 @@ and u_mother-stub already holds catch~ outL and outR. u_root loads clean on its
 own, since every mother name its children use is an ordinary receive.
 
 220 Hz left and 330 Hz right, as u_mother-stub has them, because a swap is the
-failure that matters (L is the SP-404's drums, item 11) and only the frequencies
+failure that matters (L is the tip, the mic's, item 11) and only the frequencies
 can see one: both channels carry the same level.
 
 One recording, cut by time into segments, with 300 ms guard bands either side of

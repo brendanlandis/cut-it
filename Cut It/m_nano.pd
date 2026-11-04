@@ -9,7 +9,7 @@
 #X obj 820 570 < 2;
 #X obj 660 620 *;
 #X obj 660 670 s \$0-nano-on;
-#X text 660 720 Two channels \, one flag: the offset is 0 for the control groups and 1 for the transport row \, so the gate is 0 <= offset < 2 and the Launchpad (16 below) and the 404 (16 above) fall outside it., f 44;
+#X text 660 720 Two channels \, one flag: the offset is 0 for the control groups and 1 for the transport row \, so the gate is 0 <= offset < 2 and the Launchpad (16 below) and Pd's port 3 (16 above) fall outside it., f 44;
 #X obj 1180 400 loadbang;
 #X obj 1180 440 del 2000;
 #X obj 1180 480 f \$1;
@@ -28,7 +28,7 @@
 #X obj 2100 580 - 1;
 #X obj 2100 630 div 16;
 #X obj 2100 680 + 1;
-#X text 1700 860 c_devid 66 is KORG's manufacturer byte \, 0x42 (item 249). The 60 ms stagger keeps three inquiry replies from interleaving on the one sysexin (ref/module/presence.md)., f 64;
+#X text 1700 860 c_devid 66 is KORG's manufacturer byte \, 0x42 (item 249). The 60 ms stagger keeps the two inquiry replies \, the Launchpad's and this one \, from interleaving on the one sysexin (ref/module/presence.md)., f 64;
 #X text 1700 1120 The port is derived from the channel block \, (block-1)/16+1 \, rather than passed in: a second argument would be a second source of truth. m_launchpad uses its block as its port \, which works only because both are 1 \, so do not copy it., f 64;
 #X text 2500 860 The second source of liveness: any CC in this file's own block \, so a nano being played stays present. The select's reject goes nowhere on purpose: ctlin is omni \, and a 0 is evidence about another device., f 44;
 #X text 2500 1300 c_presence's second outlet stays unconnected: this file owns no surface and no per-event state \, so a loss has nothing to drop. c_presence reports it and u_present re-wires., f 44;

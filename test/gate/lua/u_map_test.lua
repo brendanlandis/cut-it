@@ -18,7 +18,7 @@ local MAP = table.concat({
   "mode-2 og-knob-1 tempo 0",
   "mode-1 og-knob-2 volca-cc 42",
   "mode-1 slider-1 volca-cc 41",
-  "mode-2 slider-1 404-pad 5",
+  "mode-2 slider-1 volca-note 48",
   "mode-1 og-key-60 volca-key 60",
   "mode-1 pad-13-at volca-cc 45",
   "mode-1 gk-bad no-such-destination 0",
@@ -64,8 +64,8 @@ equal("the key's mode is mode-1 from the start, before any mode arrives", st.mod
 equal("a mapped control leaves for its destination: <dest> <arg> <value> <target> <live>",
       R.control(st, "slider-1", { 64 }), route("volca-cc", 41, 64 / 127, 64 / 127, 1))
 R.mode(st, "compose", { "mode-2" })
-equal("the same control in another mode means that mode's row -- 404-pad 5",
-      R.control(st, "slider-1", { 64 }), route("404-pad", 5, 64 / 127, 64 / 127, 1))
+equal("the same control in another mode means that mode's row -- volca-note 48",
+      R.control(st, "slider-1", { 64 }), route("volca-note", 48, 64 / 127, 64 / 127, 1))
 R.mode(st, "perform", { "mode-4" })
 equal("a mode with no row for it: the control is unmapped, and draws its raw row",
       R.control(st, "slider-1", { 64 }), raw("slider-1", 64))

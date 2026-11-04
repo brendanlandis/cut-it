@@ -259,8 +259,8 @@ Everything else is `$0-`, or a wire.
 
 ### Output devices are WIRED from `u_map`, not given a bus
 
-⛔ **No bare global name carries a sounding note**, and none is being added. `m_volca` and `m_404`
-are told what to play on a **cord** from `u_map`, one outlet per output device, carrying a
+⛔ **No bare global name carries a sounding note**, and none is being added. `m_volca` is told what
+to play on a **cord** from `u_map`, one outlet per output device, carrying a
 selector-prefixed message. The reasoning and the two rejected alternatives are on
 [architecture.md](architecture.md).
 

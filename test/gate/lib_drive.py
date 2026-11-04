@@ -13,8 +13,8 @@ the first, and bodies with the same offset share a logical instant.
 
 Every window's delay hangs off the one loadbang with an absolute time, so one
 slow window cannot shift the rest. Each action inside a window gets its own
-delay too: off one trigger they would share a logical instant, and m_404's
-trigger budget would rightly drop everything past sixteen. ⚠️ That inner delay is
+delay too: off one trigger they would share a logical instant, which a layer
+with a rate budget (m_404's dropped everything past sixteen) would rightly drop. ⚠️ That inner delay is
 relative to the window's `ms`, which banged it; an absolute time there lands
 the action in a later window.
 

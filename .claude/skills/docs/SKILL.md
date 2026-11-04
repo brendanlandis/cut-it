@@ -66,8 +66,8 @@ would fail the gate's dangling check). So a device page has no What it is, Facts
 
 ```markdown
 <!-- schema: device -->
-# Roland SP-404MKII
-**Files:** `Cut It/m_404.pd` · **Gate:** `test/gate/sp404-assert.sh` · **Checklist:** `test/checklists/midi.md`
+# Korg nanoKONTROL (mk1)
+**Files:** `Cut It/m_nano.pd` · **Gate:** `test/gate/nano-assert.sh` · **Checklist:** `test/checklists/nanokontrol.md`
 
 A paragraph: which Reference page is the device, and the one decision this page turns on.
 
@@ -112,8 +112,8 @@ where the fix needs it; drop the history, the cost, and what the docs used to sa
 **Fix:** <what to do instead>
 ```
 
-⚠️ **This is a form, not a line-count target.** Applied to `ref/device/sp404.md` it came out exactly
-line-neutral. Pages get more scannable, not shorter.
+⚠️ **This is a form, not a line-count target.** Applied to the SP-404's device page (gone with the
+device, 2026-11-04) it came out exactly line-neutral. Pages get more scannable, not shorter.
 
 ## The markers — the project's only permitted emoji
 
@@ -140,16 +140,17 @@ once the false claim is gone; the trap that produced it survives, the retraction
 Anchor them and the two cannot drift:
 
 ```markdown
-<!-- check: lua-list "Cut It/m_404.lua" R.NOTE -->
+<!-- check: pd-route "Cut It/u_map.pd" tempo -->
 
-| Pad | Note | Evidence | Item |
-|-----|------|----------|------|
-| 1   | 48   | verified | 190  |
+| Destination | `<arg>` means | Value means | Evidence | Item |
+|-------------|---------------|-------------|----------|------|
+| `tempo`     | unused        | 10–500 BPM  | verified | —    |
 ```
 
-The table immediately below must equal that Lua list, row n its item n. Reintroduce the old `47 + n`
-pad map and the gate goes red **at pad 5** — before deploy, before hardware. The other kinds read a
-patch's `[text define]` (`pd-text`), a `route` box's arguments (`pd-route`) and `wire.sh`'s
+The table immediately below must equal that `route` box's arguments, row n its argument n. Add a
+destination to the route and not to the page, or the other way round, and the gate goes red —
+before deploy, before hardware. The other kinds read a patch's `[text define]` (`pd-text`), a Lua
+list (`lua-list`; the SP-404's pad map was the one, until the device left the rig) and `wire.sh`'s
 `aconnect` lines (`sh-aconnect`).
 
 ## Item numbers are FACT IDS, and frozen

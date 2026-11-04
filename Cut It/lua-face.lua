@@ -1,5 +1,5 @@
--- lua-face.lua -- what the five pdlua classes share: c_steps-lua, u_map-lua, m_nano-lua,
--- m_404-lua and m_organelle-lua. Each loads it beside its rules and calls F.carry; the rules
+-- lua-face.lua -- what the four pdlua classes share: c_steps-lua, u_map-lua, m_nano-lua and
+-- m_organelle-lua. Each loads it beside its rules and calls F.carry; the rules
 -- stay plain Lua with no Pd in them. It sits beside no abstraction, so it is named for what it
 -- is (ref/conventions.md, File naming).
 

@@ -28,11 +28,12 @@ MARKS = 25
 FIVE = ["gate-a", "gate-b", "gate-c", "gate-d", "gate-e"]
 
 # Every source that publishes `expect`, exactly: a layer missing here is
-# invisible on the diag screen. presence-assert.sh asserts the same five.
-DIAG_SOURCES = ["m_launchpad", "m_nano", "m_organelle", "m_volca", "m_404"]
+# invisible on the diag screen, and m_404's line went with the SP-404
+# (2026-11-04). presence-assert.sh asserts the same four.
+DIAG_SOURCES = ["m_launchpad", "m_nano", "m_organelle", "m_volca"]
 
-# The three that are POLLED, and therefore the three a `lost` can name.
-ACTIVE = ["m_launchpad", "m_nano", "m_404"]
+# The two that are POLLED, and therefore the two a `lost` can name.
+ACTIVE = ["m_launchpad", "m_nano"]
 
 # The alert layer's border, read off g_oled.pd rather than guessed.
 BORDER = ["sendtyped", "/oled/gBox", "iiiiii", "3", "0", "0", "127", "63", "1"]
@@ -238,8 +239,8 @@ def run_asserts(cap):
                 "from a dead screen" % drawn)
 
     # ---- the diag layer ----------------------------------------------------
-    # On a Mac every device is absent: by 26 s the three active layers have been
-    # declared lost without ever answering, so the roster is three `never`, one
+    # On a Mac every device is absent: by 26 s the two active layers have been
+    # declared lost without ever answering, so the roster is two `never`, one
     # `unchecked`, and m_organelle silent until something moves.
     print("\n--- the diag layer, and the roster it draws ---")
 
@@ -248,19 +249,24 @@ def run_asserts(cap):
         return {ws[0]: ws[1] for _, _, ws in rows(which(mark))
                 if len(ws) == 2 and ws[0] in DIAG_SOURCES}
 
+    # Every row shaped like a roster line, known source or not: filtered to
+    # DIAG_SOURCES, a fifth line (m_404's, put back) drew unseen and passed.
+    WORDS = ("here", "gone", "never", "unchecked")
+    roster = lambda mark: [(y, sz, ws[0]) for y, sz, ws in rows(last(mark))
+                           if len(ws) == 2 and ws[1] in WORDS]
+
     if live("DIAG"):
-        A.check("the diag layer draws one row per registered source",
-                sorted(state("DIAG")) == sorted(DIAG_SOURCES),
+        A.check("the diag layer draws one row per registered source, and no other",
+                sorted(s for _, _, s in roster("DIAG")) == sorted(DIAG_SOURCES),
                 "drew %s -- the roster is whatever `expect` published at load, "
-                "and every m_ layer publishes exactly one" % state("DIAG"))
+                "and every m_ layer publishes exactly one" % roster("DIAG"))
         # The same pitch, and the same reason, as the five-row store.
-        A.check("...at 8px on the y=0 9 18 27 36 pitch, clear of the meters",
-                [(y, sz) for y, sz, ws in rows(last("DIAG"))
-                 if ws and ws[0] in DIAG_SOURCES]
-                == [(0, 8), (9, 8), (18, 8), (27, 8), (36, 8)],
+        A.check("...at 8px on the y=0 9 18 27 pitch, clear of the meters",
+                [(y, sz) for y, sz, _ in roster("DIAG")]
+                == [(0, 8), (9, 8), (18, 8), (27, 8)],
                 "drew %s" % [(y, sz) for y, sz, _ in rows(last("DIAG"))])
         A.check("⛔ a device that has never answered reads `never`, not `gone`",
-                [state("DIAG").get(s) for s in ACTIVE] == ["never"] * 3,
+                [state("DIAG").get(s) for s in ACTIVE] == ["never"] * len(ACTIVE),
                 "drew %s. c_presence publishes `lost` UNARMED because that is "
                 "what drives the re-wire, so on the bus an absent device and a "
                 "vanished one are identical -- telling them apart is the whole "
@@ -281,8 +287,8 @@ def run_asserts(cap):
                 "through a c_presence, and this is the only consumer it has" %
                 state("DIAG-SEEN"))
         A.check("...and no other row moved with it",
-                [state("DIAG-SEEN").get(s) for s in ("m_launchpad", "m_404")]
-                == ["never", "never"],
+                [state("DIAG-SEEN").get(s) for s in ("m_launchpad", "m_volca")]
+                == ["never", "unchecked"],
                 "drew %s" % state("DIAG-SEEN"))
 
     if live("DIAG-GONE"):

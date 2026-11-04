@@ -34,9 +34,9 @@ kit*, below.
 
 | | Is | Evidence |
 |---|---|---|
-| Creation arg 1 | Its bank, 1–10, 1 for A, from when the SP-404 played the drums: track *n* is pad (bank − 1) × 16 + *n*, and `c_kit` plays pads 1–16 only | unknown |
+| Creation arg 1 | Its bank, 1–10, 1 for A, **vestigial**: from when the SP-404 played the drums, which left the rig on 2026-11-04. Track *n* is pad (bank − 1) × 16 + *n*, and `c_kit` plays pads 1–16 only. It stays because dropping it would move arg 2 and the state key named for it | unknown |
 | Creation arg 2 | The part its pattern is stored as: `drums` keys it `section-1-drums` | unknown |
-| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, `rep <n> <vel>`, from `u_map`'s `drum-page` destination, presses and releases (velocity 0); `last`, `track-last` and `swing <0-1>`, knobs 2 to 4, from its `drums` destination, whose map rows name each; `sync`, `snap`, `select <n>`, `num` and `den <-1 or 1>`, and `drunk`, `skip` and `move <0-100>`, the phone's drum screen, from `u_net`'s fourth outlet. Anything else is `fail c_steps bad-selector` | unknown |
+| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, `rep <n> <vel>`, from `u_map`'s `drum-page` destination, presses and releases (velocity 0); `last`, `track-last` and `swing <0-1>`, knobs 2 to 4, from its `drums` destination, whose map rows name each; `sync`, `snap`, `select <n>`, `num` and `den <-1 or 1>`, and `drunk`, `skip` and `move <0-100>`, the phone's drum screen, from `u_net`'s second outlet. Anything else is `fail c_steps bad-selector` | unknown |
 | Outlet 1 | `pad <1..160> <velocity>`, to `c_kit` | unknown |
 | Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <32 levels>` for the selected track, each step's velocity level, 0 for off, `play <step>` (0 while stopped), `vel <level>`, `track <pad>`, `last <step>` for the selected track, `bar <steps>`, a bar of the time signature, and `rep <pad>`, the repeat pad held, 0 for none | unknown |
 | Outlet 3 | The drum screen's state, to `u_net`'s second inlet: 41 numbers, `R.phone`, sent by the Pd face only when they change ([phone.md](../device/phone.md)) | verified |
@@ -108,7 +108,9 @@ kit*, below.
 ⛔ Every track on a step fires in one logical instant, and a minimum-interval rate limit keeps the
 first note and drops the rest: a kick and a hat on the same sixteenth would play one.
 
-**Fix:** `m_404`'s budget is a token bucket that passes sixteen at once ([sp404.md](../device/sp404.md)).
+**Fix:** nothing between the sequencer and the drums limits the rate: `c_kit` plays every pad of a
+step, a voice each. While the SP-404 played them, `m_404`'s budget was a token bucket that passed
+sixteen at once; anything that takes the pads out as MIDI again needs the same.
 
 ### Never cut steps from `c_clock`'s beat bang
 
@@ -149,7 +151,8 @@ or a retrigger per step is a message here, where the 404 offered a note and its 
 flourish he wants (a pad retriggered slower and lower over a few seconds) has no way to be played
 on the 404 over MIDI (the SP-404's Reference page). A voice costs little on the Organelle, about
 0.65% of its core while it sounds, and the mic needs no preamp in front of the Organelle's input,
-so the 404 is no longer the rig's audio front end.
+so the 404 is no longer the rig's audio front end. The same day it left the rig altogether
+([rig.md](../rig.md)).
 
 **One `c_voice` a pad, as an abstraction**, since a copied subpatch is not allowed (C-13). It
 reads its sample once, at load, from `samples/drums/` in the patch's own folder, found with
@@ -171,8 +174,8 @@ instrument. Not `m_`: it must not know a device. Not `g_`: it draws nothing itse
 The rules are a few dozen lines of Lua where they were a hundred boxes and cords, and they are
 tested without Pd: `test/gate/lua/c_steps_test.lua` drives them, and the Pd face through a stand-in
 for pdlua, with lua.org's interpreter, in the sequencer gate before its Pd half. What stays in Pd is
-what Pd is for: the phase-cut clock, the transport, MIDI out through `m_404` (dropping, never
-queuing), the page through `g_grid` and the pattern through `u_state`. The randomizers and per-track
+what Pd is for: the phase-cut clock, the transport, the pads out to `c_kit`, the page through
+`g_grid` and the pattern through `u_state`. The randomizers and per-track
 subdivisions go into `c_steps.lua` from the start (`cut-it/drum-machine`).
 
 **`c_steps.lua` never calls Pd.** Every rule takes the state and returns what leaves, in order, so a
@@ -217,8 +220,8 @@ came a step late.
 
 **Drunk, the rate changes once a step.** The Lua rolls on each `tick` whether the step coming
 strays and, if it does, its length, and sends `rate <1/length>` when that differs from the last; the phase runs at that rate until the next. The error is never paid back, so
-the drum machine wanders off `u_tempo`'s clock and the 404's: nothing the 404 plays follows that
-clock (Brendan, 2026-11-03).
+the drum machine wanders off `u_tempo`'s clock, and nothing that follows that clock follows it
+(Brendan, 2026-11-03).
 
 ### One clock, a loop per track
 

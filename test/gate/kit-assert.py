@@ -6,7 +6,7 @@ stdin and the recording.
 
 Five claims:
 
-    1. u_root sends the sequencer's pads to c_kit, and not to the SP-404
+    1. u_root sends the sequencer's pads to c_kit, and to nothing else
     2. c_kit reports how many samples it found, exactly
     3. a hit plays its pad's own sample, at its velocity's level
     4. no sample, a pad past 16 and velocity 0 are silent
@@ -104,16 +104,18 @@ def main():
     # ---- 1. the wiring, read rather than run --------------------------------
     print("--- 1. the sequencer's pads go to c_kit ---")
     boxes, cons = top_boxes(os.path.join(ROOT, "Cut It", "u_root.pd"))
-    steps, kits, m404 = find(boxes, "c_steps"), find(boxes, "c_kit"), find(boxes, "m_404")
-    A.check("u_root holds one c_steps, one c_kit and one m_404",
-            len(steps) == 1 and len(kits) == 1 and len(m404) == 1,
-            "c_steps %s, c_kit %s, m_404 %s" % (steps, kits, m404))
-    if len(steps) == 1 and len(kits) == 1 and len(m404) == 1:
+    steps, kits = find(boxes, "c_steps"), find(boxes, "c_kit")
+    A.check("u_root holds one c_steps and one c_kit",
+            len(steps) == 1 and len(kits) == 1,
+            "c_steps %s, c_kit %s" % (steps, kits))
+    if len(steps) == 1 and len(kits) == 1:
         out0 = [(a, b, c, d) for a, b, c, d in cons if a == steps[0] and b == 0]
         A.check("c_steps' pad outlet is corded to c_kit",
                 (steps[0], 0, kits[0], 0) in out0, "its cords: %s" % out0)
-        A.check("and not to m_404, so no drum goes to the SP-404",
-                not any(c == m404[0] for _, _, c, _ in out0), "its cords: %s" % out0)
+        # The SP-404 played them until 2026-11-04 and is gone: a drum leaving
+        # the instrument as MIDI is a cord this gate exists to see.
+        A.check("⛔ and to nothing else, so no drum leaves the instrument",
+                out0 == [(steps[0], 0, kits[0], 0)], "its cords: %s" % out0)
 
     # ---- 2. the count -------------------------------------------------------
     print("\n--- 2. c_kit reports the samples it found ---")

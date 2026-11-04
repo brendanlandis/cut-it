@@ -66,8 +66,6 @@ sequence is still bringing it up. See [presence.md](presence.md).
 | `Pure Data:4` | `Launchpad Pro MK3:0` | LEDs and SysEx out | verified | — |
 | `nanoKONTROL:0` | `Pure Data:1` | Faders, knobs, transport, Pd channels 17–32 | verified | — |
 | `Pure Data:5` | `nanoKONTROL:0` | The device inquiry, and nothing else | verified | 274 |
-| `SP-404MKII:0` | `Pure Data:2` | Pad presses in, Pd channels 33–48 | verified | — |
-| `Pure Data:6` | `SP-404MKII:0` | Pad triggers out | verified | — |
 | `USB Uno MIDI Interface:0` | `Pure Data:3` | Nothing today — the DIN IN jack, for a future device. Pd channels 49–64 | verified | — |
 | `Pure Data:7` | `USB Uno MIDI Interface:0` | Notes and CC out to the Volca | verified | — |
 
@@ -81,6 +79,11 @@ sequence is still bringing it up. See [presence.md](presence.md).
 **Slot *n* gets channels (n−1)×16+1 upward.** That is where every `m_` layer's channel-block argument
 comes from.
 
+⚠️ **Pd's port 3 is wired to nothing** — `Pure Data:2` in, channels 33–48, and `Pure Data:6` out. It
+was the SP-404's until the 404 left the rig (Brendan, 2026-11-04), and is reserved for the Waldorf
+Streichfett. Nothing in Cut It sends there: `tempo-assert` holds the clock and the STOPs off it,
+`debug-assert` the debug patch's keys, and `nano-assert` that nothing listens on channel 33.
+
 ### Undoing mother's autoconnect
 
 <!-- check: sh-aconnect "Cut It/wire.sh" disconnect -->
@@ -88,7 +91,6 @@ comes from.
 | From | To | Evidence | Item |
 |------|----|----------|------|
 | `nanoKONTROL:0` | `Pure Data:0` | verified | — |
-| `SP-404MKII:0` | `Pure Data:0` | verified | — |
 | `USB Uno MIDI Interface:0` | `Pure Data:0` | verified | — |
 
 mother's autoconnect wires whichever device enumerates lowest to Pd's Midi-In 1
@@ -104,7 +106,7 @@ for every device that is not the Launchpad. See *Traps*.
 | 1 | The Pd channel the nanoKONTROL's own channel 1 lands on | `17` | whatever slot it fills | verified | — |
 | 2 | The same for the Launchpad | `1` | `1` | verified | — |
 | 3 | `u_state`'s **data directory**, absolute, no trailing slash | `/sdcard/cut-it-state` | `/tmp` | verified | — |
-| 4 | The same for the SP-404 | `33` | `33` | verified | — |
+| 4 | **Unused**: the SP-404's, until it left the rig (2026-11-04). Still passed, since a position cannot be skipped (*Traps*) | `33` | `33` | verified | — |
 | 5 | The same for the Volca | `49` | `49` | verified | — |
 | 6 | `u_net`'s inbound UDP port | `9001` | `9002` | verified | 307 |
 
@@ -145,7 +147,7 @@ through. It costs no extra fork: `wire.sh` already runs once per load.
 ### Shutting mother's own MIDI off is the FIRST thing, and it takes two sends
 
 ⛔ mother's OMNI CC mapping collides head-on with the nanoKONTROL, and mother's MIDI **out** echoes
-the Organelle's keys and knobs to every port, Launchpad and SP-404 included. Both are in
+the Organelle's keys and knobs to every port, the Launchpad's included. Both are in
 Reference (`~/Sites/!reference/critter-guitari-organelle-1.md`) — what belongs here is only the **when**: `midiInGate 0` and
 `midiOutGate 0` at `loadbang`, then `midiInGate 0` **again at 2 s**, because the mother binary pushes
 its own `1` over OSC about half a second in and silently overwrites the first send.
@@ -173,7 +175,7 @@ channel as arg 4. **Pd does not warn about a missing or extra creation argument 
 
 ⛔ `u_tempo` drops the BPM into the footer at 4 s, deliberately **after** the ready line lands at
 ~3.5 s. The status is sticky and something else has to clear it — without the handover you could
-press PLAY, watch the LED go green and the 404 start, and still be told PANIC.
+press PLAY, watch the LED go green and the drums start, and still be told PANIC.
 
 **Fix:** `u_tempo` bangs the stored BPM back out on every start and stop, so the footer always
 describes the state you are actually in.
@@ -199,7 +201,7 @@ on 2026-11-02; the open cases are in `Open` below.
 
 | Script | Asserted on the Mac | On the device |
 |--------|---------------------|---------------|
-| `wire.sh` | Invoked once, **inside** the `modal wiring` stage. Its `aconnect` lines are also statically parsed against the two tables above | `wire.sh: 9 connections`: all four devices wired in and out, plus ALSA's own announce link |
+| `wire.sh` | Invoked once, **inside** the `modal wiring` stage. Its `aconnect` lines are also statically parsed against the two tables above | `wire.sh: 9 connections`: all four devices wired in and out, plus ALSA's own announce link — the SP-404 among them, two links that went with it on 2026-11-04 |
 | `state-dir.sh` | Invoked once. The gates work around it by hand-creating the files — see [state.md](state.md) | Run against a real save, all three files byte for byte unchanged; at load it touched them and left their contents |
 | `logroll.sh` | Invoked once | At load it stamped the session's `BOOT` line and carried the previous session's six lines into the durable log |
 | `phone-ip.sh` | Invoked once, with the fallback address as its argument | On house wifi it printed the fallback. On the Organelle's own access point: not yet checked |

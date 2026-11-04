@@ -152,7 +152,8 @@ paths, and the mixer's knobs only set levels.
 ### Organelle audio back into the 404 was scrapped
 
 It would have used the mixer's FX SEND as a variable-gain feedback path. Scrapped outright, not
-deferred — item 264.
+deferred — item 264. The SP-404 has since left the rig altogether (Brendan, 2026-11-04;
+[rig.md](../rig.md)).
 
 ## Open
 

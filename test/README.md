@@ -18,7 +18,7 @@ word.
 
 ## One gate per module
 
-Twenty-four gates, and each answers for exactly one page: under `ref/`, or for `u_inject` and the
+Twenty-three gates, and each answers for exactly one page: under `ref/`, or for `u_inject` and the
 phone's line check page, the checklists' guide. That is the whole organizing principle: **a page that names a gate should be able
 to name one whose entire subject is that page**, or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
@@ -34,36 +34,45 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 157: 86 in Lua, 71 in Pd | `module/map` |
+| `map-assert.sh` | 156: 86 in Lua, 70 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
-| `presence-assert.sh` | 43 | `module/presence` |
+| `presence-assert.sh` | 42 | `module/presence` |
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
-| `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
+| `nano-assert.sh` | 64: 39 in Lua, 25 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
 | `phone-assert.sh` | 96 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
 | `touchosc-assert.sh` | 59: 12 read, 47 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
-| `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 16 | `module/sequencer` — the kit, as a signal |
 
-**1049 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one does
+**984 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **1042**; the difference is
-that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
-`sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's;
-`touchosc-assert.sh` two as well, the reading first.
+total cannot be derived from a run by summing. Totaling the run gives **977**; the difference is
+that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh` and `organelle-assert.sh` print
+two each, one per half: the Lua tests', then the analyzer's; `touchosc-assert.sh` two as well, the
+reading first.
 Worth knowing before trusting an arithmetic check of this number against a log.
 
-⚠️ **`presence-assert.sh`'s 43 come from TWO Pd runs and one tally**, which is the only entry here
+⚠️ **`presence-assert.sh`'s 42 come from TWO Pd runs and one tally**, which is the only entry here
 that does. The first run is the schedule at the shipped tick; the second scales `u_present`'s settle
 and tick by ten and leaves its **counts** exactly as shipped, so the eighth re-wire and the give-up
 actually happen — inside nine seconds rather than seventy-two. ⛔ **One analyzer reads both
 captures**, because two would print two `N checks` lines and this number is what proves no assertion
 went missing.
+
+✅ **The checks that keep the SP-404 out were each made to fail** when it left the rig (Brendan,
+2026-11-04), with `m_404` put back in the patch: `presence-assert`'s roster in both runs, and, with
+the roster let be five, the Roland reply's taker; `oled-assert`'s roster and its pitch, which had
+filtered the drawn rows to the known sources and passed a fifth line until they read every row shaped
+like one; `map-assert`'s `m_` file set; and `nano-assert`'s channel 33. `kit-assert`'s *to nothing
+else* failed on a second cord out of `c_steps`' pad outlet, and `presence-assert`'s first-reply check,
+with three others, on `c_presence` publishing `seen` on a poll. `debug-assert` failed five against the
+old debug patch, and its probe count with the velocity gate broken. The tempo, phone and layout
+checks are under their own gates below.
 
  ⚠️ Three pages name more than one gate, and that is the rule working rather than
 bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
@@ -80,7 +89,7 @@ asserts on messages, which is what made the audio path invisible for as long as 
 
 **`midi-emitters-assert.sh` belongs to no device on purpose.** Its only claim is structural — *these
 are all the MIDI objects in the patch* — and a new `[noteout]` in some future `e_` stage is not the
-SP-404's business or the Volca's, but very much the instrument's. It needs no Pd and takes ~200 ms.
+Volca's business, but very much the instrument's. It needs no Pd and takes ~200 ms.
 
 ### The shared machinery
 
@@ -121,7 +130,7 @@ see `test/runner/gates.py`.
 Layout and graph structure, the documentation, all three entry points loading in silence, the MIDI
 inventory, and one gate per module — the boot sequence, the audio path, the error bus, the display
 arbiter, the OLED, the aux LED, the tempo reference, the clock, the map, panic's second tier, the
-data store, the Launchpad, the nanoKONTROL, the Organelle's own panel, the phone, the SP-404, the
+data store, the Launchpad, the nanoKONTROL, the Organelle's own panel, the phone and its layout, the
 Volca and the debug patch. **Mac
 only — it touches no device**, so it is safe to run at any time, including with the Organelle
 switched off.
@@ -232,11 +241,10 @@ rig; the clamp warning at both ends and *not* warning in range; start 250, stop 
 ⛔ that **Continue (251) is never sent**; and ⛔ that **stop does not halt the clock** — the transport
 pauses the subscribers, it does not clear the timer.
 
-## `map-assert.sh`, `sp404-assert.sh`, `volca-assert.sh` — the map and the output devices
+## `map-assert.sh` and `volca-assert.sh` — the map and the output device
 
 ```sh
-./test/gate/map-assert.sh            86 + 71 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
-./test/gate/sp404-assert.sh          43 + 19 checks, ~7 s — the 404's decode in Lua, then BOTH directions
+./test/gate/map-assert.sh            86 + 70 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
 
@@ -244,7 +252,8 @@ Each takes `-v` for the detail behind every check and `--keep` to leave the scra
 capture behind. **They were one gate, and it claimed three pages at once** — the map's page, the
 404's and the Volca's — which is exactly the false-coverage this refactor exists to remove. The
 split reconciles upward: 28 checks became 34, because each gate could then say things the shared one
-had no window for.
+had no window for. The third, `sp404-assert`, went with the SP-404 when it left the rig
+(Brendan, 2026-11-04), and so did `map-assert`'s `404-pad` row.
 
 ⚠️ **`map-assert` uses `volca-cc` and asserts nothing about the Volca.** A lookup has to land
 somewhere; what the destination then does with the value is the device gate's business.
@@ -268,10 +277,10 @@ device layer posting a control's row beside `u_map`'s draws that control twice, 
 
 The other half of each gate rewrites the MIDI object boxes in a scratch copy — **all seven classes, from the one
 `MIDI_EXPECT` in `test/gate/lib_scratch.py`**, shared with every other gate that makes a copy. ⛔
-**`[midiout]` alone was never enough**: `m_volca` and `m_404` emit through `noteout` / `ctlout` /
-`pgmout`, so a rewrite of `midiout` only finds nothing in them and every assertion about them passes
+**`[midiout]` alone was never enough**: `m_volca` emits through `noteout` / `ctlout` / `pgmout`, as
+`m_404` did, so a rewrite of `midiout` only finds nothing in it and every assertion about it passes
 **vacuously**. ⛔ **And the two input stubs are not optional**: every *output* path can be driven from
-a bus, but `m_404`'s receive side sits behind `[notein]` and `m_nano`'s *entire surface* sits behind
+a bus, but the Launchpad's pads sit behind `[notein]` and `m_nano`'s *entire surface* sits behind
 `[ctlin]`, and **no bus reaches a MIDI input**. ⛔ **`[polytouchin]` is the one class left with no
 stub, and it was in NEITHER list until `scan_unknown` asked the question as a closed one** —
 walking every MIDI class Pd has and checking it against the inventory, rather than checking the
@@ -291,16 +300,15 @@ cost a wrong diagnosis once: item 232.
 
 **Proven to fail** — the shared gate was, on a `47 + n` pad map (12 of 16 pads, both directions), a row naming a
 non-existent destination, and a duplicate row. ⛔ **It PASSED a disarmed rate limiter on the first
-try** — the burst window fires in one logical instant and `[del 0]` still defers to the next
-scheduler tick, so it proved *drops-rather-than-queues* and nothing about the interval. Since the
-limiter became a token bucket (16 at once, one per 5 ms), the burst asserts exactly 16 of 20, and a
-refill window drains the bucket and fires two more pads 2 and 12 ms after it: the first must drop
-and the second pass. Red against the old 5 ms gap, an instant refill, and an uncapped bucket.
+try** — the SP-404's, whose burst window fired in one logical instant, and `[del 0]` still defers to
+the next scheduler tick, so it proved *drops-rather-than-queues* and nothing about the interval. Any
+rate limit tested again needs two events a real millisecond or two apart.
 
 **One row per control** (item 317) was made to fail against the `m_nano`, `m_404` and `m_launchpad`
 that still posted their own rows: four red in `nano-assert` — an unmapped slider drawn twice, a
 mapped one drawn as `slider-1` beside `volca-cc41`, the 404's CTRL knob and a Launchpad ring button —
-two in `sp404-assert`, and the static count; the file-set check went red on a stray `m_` file.
+two in `sp404-assert`, and the static count; the file-set check went red on a stray `m_` file, and
+again with `m_404.pd` put back after the SP-404 left the rig (2026-11-04).
 **The pressure exemption** (item 318) went red against the `u_map` without it, with the key and
 pressure tests swapped so the key test reopened the spigot, and — on the witness pad, then `pad-15` and now `pad-45` — with a
 test wide enough to silence every raw row.
@@ -321,7 +329,7 @@ unchecked, Pd was handed a file that did not exist, and the `; pd quit` that liv
 never fired. **A gate that hangs is worse than one that fails.** The generator's status and the
 driver's existence are checked now, behind a 40 s watchdog.
 
-Each driver is an OUTPUT, generated into the scratch directory on every run — edit `map-assert-drive-gen.py`, `sp404-assert-drive-gen.py` or `volca-assert-drive-gen.py`. None is committed.
+Each driver is an OUTPUT, generated into the scratch directory on every run — edit `map-assert-drive-gen.py` or `volca-assert-drive-gen.py`. None is committed.
 
 ## `state-assert.sh` — the data store, and the cheapest oracle in the suite
 
@@ -452,7 +460,7 @@ instrument, which is unchanged since the rules were Pd: **it is the proof the Lu
 nothing.** The gate fails if either half does.
 
 It plays mode 1's drum page on `param`, as `m_launchpad` publishes it, from a state directory
-seeded with a pattern, and reads only what leaves the patch: the 404's notes, the grid's frames, the
+seeded with a pattern, and reads only what leaves the patch: the pads for `c_kit`, the grid's frames, the
 state bus and `cut-it-auto.txt`. **A note's step is the playhead of the frame painted after it** —
 `c_steps` sends a step's notes and its playhead in one logical instant, and the frame clock paints
 within 20 ms, six times inside a sixteenth at 120 BPM — so every step's exact notes are asserted
@@ -485,9 +493,8 @@ and expects level 2, so a table that moves the button is caught.
 ## The device layers' Lua halves
 
 ```sh
-./test/gate/nano-assert.sh           39 + 26 checks, ~17 s — the decode in Lua, then the channel gate
+./test/gate/nano-assert.sh           39 + 25 checks, ~17 s — the decode in Lua, then the channel gate
 ./test/gate/organelle-assert.sh      35 + 21 checks, ~20 s — the keyboard's names in Lua, then the panel
-./test/gate/sp404-assert.sh          43 + 19 checks, ~7 s — the pad map both ways and the budget, then the 404
 ```
 
 **A device layer whose decoding is Lua runs its Lua tests first**, as the map and the sequencer do,
@@ -495,9 +502,8 @@ with lua.org's Lua 5.4 and no Pd. `test/gate/lua/m_nano_test.lua` drives `Cut It
 fifty names by tens and units, a button's press as 1 and its release as nothing, the unmapped
 warning, and that no name outlives its message. `test/gate/lua/m_organelle_test.lua` drives
 `Cut It/m_organelle.lua`: each key's name, the layer `aux` held when it went down, a chord across a
-change of modifier. `test/gate/lua/m_404_test.lua` drives `Cut It/m_404.lua`: the pad map read both
-ways, the ten bank letters, a note outside the map naming nothing, the bank's channel, and the
-budget's size, refill and cap. Each also drives its face through `lib_test.lua`'s stand-in for pdlua: its
+change of modifier. The SP-404's layer had a third, until it left the rig (2026-11-04). Each also
+drives its face through `lib_test.lua`'s stand-in for pdlua: its
 inlets and outlets, `bad-selector`, and a throwing rule caught as `fail <layer> lua-<bus>`. Each Pd
 half is unchanged since its layer was Pd: **it is the proof the port changed nothing.**
 
@@ -505,13 +511,11 @@ half is unchanged since its layer was Pd: **it is the proof the port changed not
 release passed (4, 1), the units digit off by one (18, 14), the transport row continuous (2, 2) and
 an unmapped CC silent (8, 1). **On each of three of `m_organelle.lua`**: no latch, the live
 modifier naming every edge (3, 1); the latch rewritten on the release (3, 1); and the release dropped
-(7, 3). **And on each of five of `m_404.lua`**: the `47 + n` map (12, 5, and `docs-check` red from
-pad 5), a bucket of 20 (2, 2), the bank one channel high (10, 3), the bank
-letters shifted (10, 7), and the refill added only after a drop (7, 5).
+(7, 3).
 
-✅ **And `lua-face.lua`, which all five faces share** (2026-11-04): with no bang on `init`, each of
-the five Lua tests went red (1 to 3 failed); with a rule run outside `pcall`, each died on its
-throwing rule.
+✅ **And `lua-face.lua`, which all the faces share** (2026-11-04): with no bang on `init`, each of
+the five Lua tests there were then, the SP-404's among them, went red (1 to 3 failed); with a rule
+run outside `pcall`, each died on its throwing rule.
 
 ## `stubs/` — stand-ins the gates need
 
@@ -530,17 +534,17 @@ scratch copy — see that gate below.
 | `t_pgmout.pd` | `[pgmout]` — prints `program channel`. ⚠️ **It cannot answer the 0-based/1-based question** (item 228): it prints what Pd was *given*, not the byte on the wire |
 | `t_notein.pd` | ⛔ **a SOURCE, not a sink** — the only way to test a receive path. Drive it with `; t-notein <pitch> <velocity> <channel>` |
 
-⛔ **`m_volca` and `m_404` emit through `noteout`/`ctlout`/`pgmout`, not `midiout`**, so
-`display-assert.sh`'s rewrite finds nothing in them and every assertion about them would pass
+⛔ **`m_volca` emits through `noteout`/`ctlout`/`pgmout`, not `midiout`**, as `m_404` did, so
+`display-assert.sh`'s rewrite finds nothing in it and every assertion about it would pass
 **vacuously**. ⚠️ **And phase 6's regex is anchored so the class name must END the line** — it
-silently skips any box carrying creation arguments, of which the patch has one:
-`[ctlout 123 33]`. A phase 9 rewriter has to take a trailing argument list, and the stubs
+silently skips any box carrying creation arguments, of which the patch has one: `m_volca`'s
+`[ctlout 123]`. A phase 9 rewriter has to take a trailing argument list, and the stubs
 therefore read creation args too.
 
 ⛔ **`t_notein` exists because the receive side is otherwise untestable.** Every *output* path can
-be driven from a bus, but `m_404`'s entire receive side sits behind `[notein]` and **there is no
-bus behind a MIDI input** — the channel gate, the note-to-pad lookup, the bank name builder and
-the `param`/`disp` split would all go unexercised. Its outlet order reproduces the real object's
+be driven from a bus, but the Launchpad's pads sit behind `[notein]`, as `m_404`'s whole receive
+side did, and **there is no bus behind a MIDI input** — a channel gate and the decode behind it
+would go unexercised. Its outlet order reproduces the real object's
 (channel, then velocity, then pitch) rather than approximating it; get that backwards and the
 stub tests itself instead of the patch.
 

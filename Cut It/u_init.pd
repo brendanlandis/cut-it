@@ -58,7 +58,7 @@
 #X obj 1320 330 del 2000;
 #X text 1550 680 Sent twice: the mother binary pushes its own midiInGate 1 about half a second in \, so the 2 s copy is the one that works (ref/module/boot.md)., f 44;
 #X obj 1350 420 s midiOutGate;
-#X text 1550 900 midiOutGate 0: mother echoes the keys and knobs to every output port \, lighting Launchpad pads and firing 404 pads. Our own midiout is untouched., f 50;
+#X text 1550 900 midiOutGate 0: mother echoes the keys and knobs to every output port \, lighting Launchpad pads and playing whatever listens on the others. Our own midiout is untouched., f 50;
 #X connect 3 0 4 0;
 #X connect 4 1 10 0;
 #X connect 4 0 5 0;

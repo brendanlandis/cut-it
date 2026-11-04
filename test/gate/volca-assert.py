@@ -64,7 +64,8 @@ def run_asserts(cap):
             "a held key releases itself, which is exactly why volca-note cannot "
             "be a keyboard" % (held,))
 
-    # Scoped to this channel: m_404 answers panic too, on its ten banks.
+    # Scoped to this channel, so another device layer answering panic on its
+    # own channels (m_404 did, on ten, until the SP-404 left) cannot pass it.
     pan = [e for e in W("VOLCA-PANIC")
            if e[0] == "CTLOUT" and e[1][-1] == float(CHANNEL)]
     A.check("⛔ panic sends All Notes Off -- CC 123, on the Volca's channel",
@@ -73,7 +74,7 @@ def run_asserts(cap):
             "so this is the only thing that can silence a stuck note"
             % (CHANNEL, pan))
 
-    # Not VOLCA-PANIC, which carries m_404's ten channels too.
+    # Not VOLCA-PANIC, where another device layer's panic would be its own.
     wrong = [e for k in ("VOLCA-CC", "VOLCA-NOTE", "VOLCA-PROG",
                          "VOLCA-KEY-ON", "VOLCA-KEY-HELD", "VOLCA-KEY-OFF")
              for e in W(k)

@@ -65,27 +65,28 @@ that a source which has answered nothing has published none.
 
 | Kind | Layers | Polled | Ages | Can be lost | Evidence | Item |
 |---|---|---|---|---|---|---|
-| `active` | `m_launchpad` `m_nano` `m_404` | yes | yes | yes | verified | 270 |
+| `active` | `m_launchpad` `m_nano` | yes | yes | yes | verified | 270 |
 | `passive` | `m_organelle` | no | **no** | no | verified | 270 |
 | `none` | `m_volca` | no | no | no | verified | 270 |
 
 **Self-registration is `state`'s shape** — a contributor names its own key and declares its own
 policy — and it is what lets an `m_` written long after `u_present` be covered with no change to
-`u_present`. The roster is five, and `presence-assert.sh` asserts the number rather than printing it.
+`u_present`. The roster is four, and `presence-assert.sh` asserts the number rather than printing it:
+`m_404` was the fifth, `active`, until the SP-404 left the rig (Brendan, 2026-11-04).
 
 ### The manufacturer byte, which is what `c_devid` matches
 
-All three detectable devices answer a universal device inquiry — `F0 7E 7F 06 01 F7` — and byte 5 of
-the reply, the manufacturer, discriminates all three. Each full reply is on its device's Reference
-page.
+Both detectable devices answer a universal device inquiry — `F0 7E 7F 06 01 F7` — and byte 5 of the
+reply, the manufacturer, tells them apart. Each full reply is on its device's Reference page. The
+SP-404 answered too, with Roland's `41`; `presence-assert.sh` still sends that reply and requires that
+nothing take it.
 
 | Device | Byte 5 | `c_devid` arg | Evidence | Item |
 |---|---|---|---|---|
 | Launchpad Pro MK3 | `00` | `0` | verified | 249 |
 | nanoKONTROL | `42` | `66` | verified | 249 |
-| SP-404MKII | `41` | `65` | verified | 249 |
 
-⛔ **The argument is decimal and the reply is hex.** `42` is 66 and `41` is 65. Passing `[c_devid 42]`
+⛔ **The argument is decimal and the reply is hex.** `42` is 66. Passing `[c_devid 42]`
 for the nano matches manufacturer `0x2A`, which is nobody, and the device is then never detected —
 silently, because a matcher that matches nothing looks exactly like a device that is not there.
 
@@ -98,7 +99,7 @@ silently, because a matcher that matches nothing looks exactly like a device tha
 | settle | 4000 ms | past `u_init`'s last stage — see [boot.md](boot.md) | verified | 271 |
 | tick | 2000 ms | one poll per device per 2 s | verified | 271 |
 | miss threshold | 3 ticks | `c_presence`'s second argument | verified | 271 |
-| stagger | 0 / 60 / 120 ms | `c_presence`'s third argument, one per instance | verified | 271 |
+| stagger | 0 / 60 ms | `c_presence`'s third argument, one per instance | verified | 271 |
 | fork interval | every 4th tick | `[mod 4]` in `u_present` | verified | 271 |
 | give-up | tick 33 | `[moses 33]`, so **8 forks** at ticks 4…32 | verified | 271 |
 | trailing fork | **one**, off the transition to nothing-lost | not on the interval — see *Design* | verified | 275 |
@@ -194,7 +195,7 @@ touch.** It is also an argument for the shared re-wire — the recovery is not o
 went missing.
 
 ⚠️ **The renumbering row is the phantom-control hazard NOT happening.** Wired by number, the SP-404
-would land on the Volca's channel block and vice versa. ⛔ **But a renumbering that happens while the
+would have landed on the Volca's channel block and the Volca on its. ⛔ **But a renumbering that happens while the
 bound is spent leaves the rig wired to nothing until something re-runs `wire.sh`** — the heartbeat
 hashes client *names*, which a renumbering does not change, so that something is the phone's
 `re-wire` button or a reload.
@@ -223,7 +224,6 @@ the channel, so each `m_` derives it from the channel block it already takes as 
 |---|---|---|---|---|---|
 | `m_launchpad` | literal `1` | 1 | 1 | verified | 272 |
 | `m_nano` | `(n-1)/16+1` | 17 | 2 | verified | 272 |
-| `m_404` | `(n-1)/16+1` | 33 | 3 | verified | 272 |
 
 ⚠️ **`m_launchpad` hardcodes its port and gets away with it only because its block and its port are
 both 1.** Do not copy that into a new layer.
@@ -235,7 +235,7 @@ both 1.** Do not copy that into a new layer.
 There are two `[sysexin]` boxes in the patch, `c_devid`'s and the one `m_launchpad` reads a tap on
 Setup from ([launchpad.md](../device/launchpad.md)), and every instance of either reads the same
 stream. Treating **any** SysEx as proof of one device's presence holds only while
-nothing else in the rig transmits any. Poll all three and the Launchpad reads as present whenever the
+nothing else in the rig transmits any. Poll both and the Launchpad reads as present whenever the
 *nano* answers, with the watchdog believing a device that is gone.
 
 **Fix:** `[c_devid <byte>]` per device, never a bare `[sysexin]`, for presence; anything else read
@@ -279,12 +279,12 @@ drop for one that answered and then went away.
 ### The stagger is not cosmetic
 
 `u_present` broadcasts **one** `tick` and every `c_presence` hears it in the same logical instant, so
-three inquiries would leave together and three replies could come back interleaved byte by byte on
-the one stream. `c_devid`'s index would then be counting one device's frame with another
-device's bytes in it.
+the inquiries would leave together and the replies could come back interleaved byte by byte on the
+one stream. `c_devid`'s index would then be counting one device's frame with another device's bytes
+in it.
 
-**Fix:** `c_presence`'s third argument delays the poll — 0, 60 and 120 ms. It costs nothing and makes
-the interleave impossible.
+**Fix:** `c_presence`'s third argument delays the poll — 0 and 60 ms (and 120 for the SP-404's, while
+it was in the rig). It costs nothing and makes the interleave impossible.
 
 ⚠️ **The Launchpad's heartbeat leaves on the same tick as its inquiry**, so its layout announcement
 comes back beside its reply: one device, two ports, one stream. An interleave there would cost one
@@ -321,15 +321,15 @@ lost, nothing forks, and nothing recovers — the trailing fork only helps when 
 went down alongside it. See [volca.md](../device/volca.md).
 
 **One bound, coalesced.** The counter runs while **any** source is lost and resets when **none** is,
-so the rig gets eight attempts whether one cable came out or three. Two devices unplugged together
-must not double the fork rate, and the gate asserts it by counting: three lost sources produce three
-forks over the run, not nine.
+so the rig gets eight attempts whether one cable came out or several. Two devices unplugged together
+must not double the fork rate, and the gate asserts it by counting: two lost sources produce three
+forks over the run, not six.
 
 **⚠️ The bound is seventy seconds because nobody reseats a cable in twelve.** `wire.sh` is
 idempotent and ten forks back to back produce no audio complaint, which is what makes bending the
 *one fork per load* rule permissible. **Its cost is in the heartbeat table above.**
 
-**The shared re-wire also fixes the phantom-control case, and it needs no code.** `wire.sh`'s three
+**The shared re-wire also fixes the phantom-control case, and it needs no code.** `wire.sh`'s two
 `aconnect -d` lines undo mother's own autoconnect — but that undo has **already run** by the time a
 device enumerates late, so a device plugged in after boot can land on the Launchpad's channel block.
 Re-running `wire.sh` fixes it, which is an argument for one shared owner rather than a recovery per
@@ -342,7 +342,7 @@ harder rather than easier.
 
 **`c_presence`'s second outlet is connected in exactly one place.** `m_launchpad` uses it to drop
 ownership of the grid, because a surface the patch no longer owns must stop being painted. The other
-two layers hold nothing that goes stale while their device is away, so they leave it unconnected —
+layer, `m_nano`, holds nothing that goes stale while its device is away, so it leaves it unconnected —
 the loss is reported by `c_presence` itself and the re-wire is `u_present`'s.
 
 **The Programmer Mode heartbeat stayed in `m_launchpad`.** It re-asserts a *mode* rather than

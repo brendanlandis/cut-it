@@ -1,8 +1,8 @@
 #N canvas 20 20 2300 2500 12;
 #X text 20 20 c_devid -- one device's answer to a universal device inquiry: it bangs once per reply whose manufacturer byte matches its argument. One inside each m_ layer that polls., f 84;
 #X text 20 170 creation arg 1: the MANUFACTURER BYTE to match -- byte 5 of the reply \, counting the leading F0 as byte 0. REQUIRED. inlets: none -- it owns its own [sysexin]. outlet 1: a bang per matching reply., f 84;
-#X text 20 290 It exists because one [sysexin] hears every device and all three polled devices reply \, so a reply must be matched \, not counted: counting would report the Launchpad present when the nano answered (ref/device/launchpad.md)., f 84;
-#X text 20 470 Byte 5 per device (item 249): 0 Novation \, 66 (0x42) KORG \, 65 (0x41) Roland. The full replies are on each device's Reference page., f 84;
+#X text 20 290 It exists because one [sysexin] hears every device and both polled devices reply \, so a reply must be matched \, not counted: counting would report the Launchpad present when the nano answered (ref/device/launchpad.md)., f 84;
+#X text 20 470 Byte 5 per device (item 249): 0 Novation \, 66 (0x42) KORG. The full replies are on each device's Reference page., f 84;
 #X text 20 700 Arg 0 is the weakest: a manufacturer byte of 00 means a three-byte ID follows \, so 0 matches every such manufacturer. It is unambiguous only while the Launchpad is the only one in the rig \, and a second would need bytes 6 and 7 matched too., f 84;
 #X text 20 880 The port outlet is unused: whether it counts from 0 or from 1 is not measured (Reference \, pure-data \, item 273). A port gate would be exact where the manufacturer byte is only sufficient., f 84;
 #X text 20 1060 Realtime bytes (>= 248) are dropped: they are legal inside a SysEx stream \, and counted as frame bytes they would move byte 5 \, failing the match at a rate that depends on the tempo., f 84;

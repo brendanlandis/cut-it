@@ -27,8 +27,8 @@ Hot-swap is three cases (item 235): lost mid-session (4), absent at load (6), an
 
 - [ ] **5. Hot-swap — the diag roster names it**
   - **Need:** The nanoKONTROL still unplugged from the last step.
-  - **Do:** Hold the aux button and press the lowest key. Check m_launchpad and m_404 as well as m_nano: pulling one USB cable can knock a bystander off the bus, so a second line reading gone is worth knowing about rather than a miss.
-  - **Pass if:** The m_nano line reads gone. The other four lines are unchanged and none of them reads gone.
+  - **Do:** Hold the aux button and press the lowest key. Check m_launchpad as well as m_nano: pulling one USB cable can knock a bystander off the bus, so a second line reading gone is worth knowing about rather than a miss.
+  - **Pass if:** The m_nano line reads gone. The other three lines are unchanged and none of them reads gone.
   - **Note:** Between the unplug and the replug on purpose: the warn shows the loss was seen, and this shows you can ask about it afterwards.
 
 - [ ] **6. Hot-swap — absent at load**

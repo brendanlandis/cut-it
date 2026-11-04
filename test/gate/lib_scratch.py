@@ -56,9 +56,11 @@ LUA = (os.environ.get("LUA") or shutil.which("lua5.4") or shutil.which("lua")
 # deliberately and never to make a red run green (the gate skill). It is every
 # class that gets rewritten, inputs included: notein and ctlin have source stubs.
 # Two [sysexin]: c_devid's, every device's inquiry reply, and m_launchpad's, the
-# announcement a tap on Setup makes (launchpad-assert drives it).
-MIDI_EXPECT = {"midiout": 8, "noteout": 2, "ctlout": 3, "pgmout": 1,
-               "notein": 2, "ctlin": 3, "sysexin": 2}
+# announcement a tap on Setup makes (launchpad-assert drives it). m_404's five
+# (notein, ctlin, noteout, ctlout and its inquiry's midiout) went with the
+# SP-404 (2026-11-04).
+MIDI_EXPECT = {"midiout": 7, "noteout": 1, "ctlout": 2, "pgmout": 1,
+               "notein": 1, "ctlin": 2, "sysexin": 2}
 
 # The MIDI objects with no stub: counted, so a new one cannot appear unannounced,
 # and never rewritten. polytouchin's pressure path is uncovered
@@ -78,7 +80,7 @@ MIDI_ALL_CLASSES = ("notein ctlin pgmin bendin touchin polytouchin midiin sysexi
 
 # An object box and its class. The class ends at a space, the `;`, or the `,`
 # before a box width (`midiout, f 12;`), so a box with arguments ([ctlout 123] in
-# m_404) is not skipped; and negative coordinates count.
+# m_volca) is not skipped; and negative coordinates count.
 _OBJ = re.compile(r"^(#X obj -?\d+ -?\d+ )([^\s;,]+)(?=[\s;,])")
 
 

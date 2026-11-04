@@ -82,7 +82,7 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
 - [ ] **18. Back to 120 and stopped**
   - **Send:** `tempo 120; stop bang`
   - **Pass if:** The beat row goes back to two a second at once and the pad keeps walking after the stop. The change is a snap and not a slide.
-  - **Note:** A snap: the row follows `c_clock`, and a new tempo takes effect on the next tick. Only the SP-404 slides, chasing an external clock.
+  - **Note:** A snap: the row follows `c_clock`, and a new tempo takes effect on the next tick. Only a device chasing an external clock slides.
 
 - [ ] **19. Pads and releases**
   - **Do:** Press pads and release them. Press harder on one you are holding.

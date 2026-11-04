@@ -89,11 +89,11 @@ SEQ = [
     # as the pad sends.
     (6800, "MODE-1", ["\\; param lp-cc-80 127", "\\; param lp-cc-80 0"], GAP),
     # Every value destination draws its mapped row. The shipped map reaches only
-    # tempo and volca-cc, so note, pad and program go through gate rows
-    # (scratch-gates.py). 64 in is 64 out for a 0-127 control.
+    # tempo and volca-cc, so note and program go through gate rows
+    # (scratch-gates.py). 64 in is 64 out for a 0-127 control. 404-pad's window
+    # went with the destination (2026-11-04), and the others kept their times.
     (7000, "ROW-CC", ["\\; param gk-cc 64"], GAP),
     (7200, "ROW-NOTE", ["\\; param gk-note 100"], GAP),
-    (7400, "ROW-PAD", ["\\; param gk-pad 90"], GAP),
     (7600, "ROW-PROG", ["\\; param gk-prog 1"], GAP),
     # volca-key draws nothing (item 293).
     (7800, "ROW-KEY", ["\\; param og-key-60 100"], GAP),

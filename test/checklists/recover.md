@@ -7,9 +7,9 @@ Steps 1 and 2 are the short press, step 3 the hold, step 4 the breadcrumb consum
 7 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [map](../../ref/module/map.md), [boot](../../ref/module/boot.md).
 
 - [ ] **1. Short press — panic and nothing more**
-  - **Need:** The Launchpad lit and in Programmer Mode, in any mode but 1 — mode 1 is the drum page, where the beat row gives way. Something audible running — the 404 sequencer is easiest.
-  - **Do:** Start the transport, play something on the SP-404 so there is a sound to stop, then tap the top left corner button on the Launchpad once and let go straight away.
-  - **Pass if:** Everything sounding stops the instant the button goes down — not when you let go. The whole Launchpad flashes red and clears itself about a second later. The aux LED is red and the footer reads panic. The patch is still running: the grid comes back and the beat row still walks.
+  - **Need:** The Launchpad lit and in Programmer Mode, in any mode but 1 — mode 1 is the drum page, where the beat row gives way. Something audible running — the drums, with a pattern stored, are easiest.
+  - **Do:** Start the transport so the drums play, then tap the top left corner button on the Launchpad once and let go straight away.
+  - **Pass if:** The drums stop the instant the button goes down — not when you let go — and no new hit sounds after it. The whole Launchpad flashes red and clears itself about a second later. The aux LED is red and the footer reads panic. The patch is still running: the grid comes back and the beat row still walks.
 
 - [ ] **2. Short press — the Volca stops too**
   - **Need:** The Volca powered and its own sequencer running. The Volca's MIDI Clock src set to Auto. Set to Internal it ignores Start and Stop entirely and this step cannot pass.

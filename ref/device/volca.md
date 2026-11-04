@@ -38,8 +38,9 @@ detectable device is missing at the same time**. Unplug the interface on its own
 lost, nothing forks. **The re-wire heartbeat is what covers the Volca**: it watches the ALSA client
 list and does not care whether anything was lost — see [presence.md](../module/presence.md).
 
-⚠️ **Even the shared path can miss it.** Pulling the interface can knock the SP-404 off the shared
-USB bus too, which *does* start a recovery — but the 404 answers first, the lost count hits zero,
+⚠️ **Even the shared path can miss it.** Pulling the interface can knock a detectable device off the
+shared USB bus too — it was the SP-404, on the rig before it left — which *does* start a recovery,
+but that device answers first, the lost count hits zero,
 the counter resets, and the Volca is left disconnected if the one attempt that ran landed while it
 was still enumerating (item 275). `u_present` therefore fires **one trailing `wire.sh` at the moment
 the last device returns**, which is the best-informed instant available: a device answering its
@@ -136,8 +137,10 @@ means `u_map` and this file disagree about the interface, and nothing else would
 ### `makenote` is safe here, and only here
 
 The Volca has **one** channel, set cold at load, so `[makenote]` → `[noteout]` cannot send a note-off
-to the wrong place. **The SP-404 has ten and cannot use this** — see
-[ref/device/sp404.md](sp404.md) → *The note-off must carry its own channel*.
+to the wrong place. ⛔ **A device with several channels cannot use this**: `makenote` schedules the
+note-off, and by the time it fires `[noteout]`'s cold channel holds whatever the latest note set, so
+two channels overlapping send the off to the wrong one. `m_404` carried the channel with the delayed
+off through a `[pipe]`, for the SP-404's ten, until it left the rig (2026-11-04).
 
 ### The `note` selector bypasses `makenote`, and pays for it with a panic
 
@@ -148,12 +151,12 @@ selector goes straight to the same `[noteout]`, and the note-off comes from the 
 | | | Evidence | Item |
 |---|---|---|---|
 | `note <pitch> <velocity>` | a real note-on; velocity **0 is a real note-off** | verified | 293 |
-| It reuses the **same** `[noteout]` | one channel, one object, so `MIDI_EXPECT` stays at `noteout:2` | verified | 293 |
+| It reuses the **same** `[noteout]` | one channel, one object, so `MIDI_EXPECT` stays at `noteout:1` | verified | 293 |
 | `panic` → **CC 123**, All Notes Off | `[ctlout 123]`, channel cold from the loadbang chain | verified | 293 |
 
 ⛔ **The panic belongs with the `note` inlet, not after it.** `makenote` owns the note-offs, which is
 what stops a dropped cord or a reload leaving the Volca droning; bypassing it brings that risk back,
-and All Notes Off is what replaces it. `m_404` has the same box for the same reason.
+and All Notes Off is what replaces it.
 
 ⚠️ **`[ctlout 123]`'s creation argument is the CONTROLLER, so the channel goes to inlet 2.** Wired
 to inlet 1 it sets the controller instead — the device receives `CC 49` on channel 1 and panic
@@ -161,8 +164,8 @@ silently does nothing. `volca-assert.sh` asserts the channel.
 
 ### The layer stays Pd
 
-**`m_volca` has nothing to decode, so it has no Lua** (2026-11-03), where the nano, the SP-404 and
-the Organelle's keys do ([nanokontrol.md](nanokontrol.md), *The decode is Lua*). It is a `route`, two
+**`m_volca` has nothing to decode, so it has no Lua** (2026-11-03), where the nano and the
+Organelle's keys do ([nanokontrol.md](nanokontrol.md), *The decode is Lua*). It is a `route`, two
 `unpack`s, a `+ 1`, `[makenote]`, the three MIDI objects and panic: what Lua would take is the route
 and the `+ 1`, and the MIDI objects would still need their channels and controllers set cold in Pd,
 in the order the file's `[t b f]` keeps. That is no simpler, and a pdlua call costs about 0.1 ms on the

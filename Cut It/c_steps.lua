@@ -67,7 +67,8 @@ function R.index(track, step)
   return (track - 1) * R.STEPS + step
 end
 
--- A track's pad: track n plays pad n of the bank, 1 for A (pads 1..160 across ten banks).
+-- A track's pad: track n plays pad n of the bank, 1 for A (pads 1..160 across ten banks, the
+-- SP-404's addressing; c_kit plays 1..16, so only bank 1 sounds).
 function R.pad(st, track)
   return (st.bank - 1) * R.TRACKS + track
 end

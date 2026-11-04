@@ -19,7 +19,7 @@ is sent from anywhere.
 
 | Checklist | Steps | Judges |
 |---|---|---|
-| [linecheck](linecheck.md) | 8 | the phone's link, the roster, the 404's MIDI settings, the drums, the mic and the Volca through the PA, the transport |
+| [linecheck](linecheck.md) | 7 | the phone's link, the roster, the drums, the mic and the Volca through the PA, the transport |
 
 1. **Choose mode 1, then tap Setup**, the Launchpad's bottom-left button (or at the Organelle hold
    `aux` and press the second key from the bottom). That turns test mode on, and the phone's screens
@@ -51,7 +51,7 @@ session means opening one.
 | [phone](phone.md) | 22 | what the phone shows, its tabs, the link dropping and coming back, its buttons, the checklist page and test mode |
 | [state](state.md) | 5 | the front-panel Save, a power cycle, the mode surviving it |
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
-| [midi](midi.md) | 18 | the map by mode, the SP-404 both ways, the Volca by ear, hot-swap |
+| [midi](midi.md) | 10 | the map by mode, the Volca by ear, hot-swap |
 | [debug](debug.md) | 9 | the debug patch, with the instrument stopped |
 | [sequencer](sequencer.md) | 23 | mode 1's drum page and the drums it plays |
 

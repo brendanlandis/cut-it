@@ -37,8 +37,8 @@ each costs and what is missing on the device: the Organelle's Reference page, *E
 
 **pdlua 0.12.24, Lua 5.4.7.** Logic goes to Lua where it is clearly simpler than boxes and cords:
 the sequencer's rules and the map's lookup are the worked examples (`ref/module/sequencer.md`,
-`ref/module/map.md`), and the decoding in three device layers (`ref/device/nanokontrol.md`,
-`ref/device/sp404.md`, `ref/device/organelle.md`). ⚠️ **Weigh the message rate:** a call into Lua
+`ref/module/map.md`), and the decoding in two device layers (`ref/device/nanokontrol.md`,
+`ref/device/organelle.md`). ⚠️ **Weigh the message rate:** a call into Lua
 costs about 0.1 ms on the Organelle, several times the few Pd boxes it replaces (its Reference
 page, *pdlua and ELSE in `/sdcard/PdExtraLibs`*), so a dense stream stays Pd, and so does what must
 work when the Lua does not: the Launchpad's pressure and mode keys (`ref/device/launchpad.md`,

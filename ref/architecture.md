@@ -27,27 +27,26 @@ file decides what that means; and nothing below that file knows what hardware ex
   mode · tempo · clock · start/stop · panic · param · err · disp · state
                        · presence
                    │
-   ┌───────────────┼───────────────┬───────────────┐
-   │               │               │               │
- m_nano       m_launchpad     m_organelle       m_404            ← device mapping,
- ch 17          ch 1          aux + knobs 1-4   ch 33-42            INPUT side
- c_presence   c_presence      passive           c_presence        ← and each one
- c_devid 66   c_devid 0       seen only         c_devid 65           knows if it
-                                                                     is THERE
-   │               │               │               │
-   └───────────────┼───────────────┴───────────────┘
+   ┌───────────────┼───────────────┐
+   │               │               │
+ m_nano       m_launchpad     m_organelle         ← device mapping,
+ ch 17          ch 1          aux + knobs 1-4        INPUT side
+ c_presence   c_presence      passive             ← and each one
+ c_devid 66   c_devid 0       seen only              knows if it
+                                                     is THERE
+   │               │               │
+   └───────────────┼───────────────┘
                    │
                  u_map  ←── cut-it-map.txt         ← the ONLY file that says
                    │        <mode> <control>          what a control MEANS.
                    │        <dest> <arg>              Table-driven, guarded by
                    │                                  a literal route box
-       ┌───────────┴───────────┐
-       │  CORDS, not a bus     │                   ← output devices are TOLD
-    m_404                  m_volca                    what to play. No bus
-    ch 33-42               ch 49                      carries that. u_net has
-    pad <n> <vel>          notes/cc/program           a cord to each too, for
-       ↑                       ↑                      the phone's test note.
-       └────── u_net ──────────┘
+                   │  a CORD, not a bus            ← an output device is TOLD
+                m_volca                               what to play. No bus
+                ch 49                                 carries that. u_net has
+                notes/cc/program                      a cord to it too, for
+                   ↑                                  the phone's test note.
+                 u_net
                    │
             (v0.4: e_chop, e_pitch, e_trem, e_verb)
                    │
@@ -61,7 +60,7 @@ file decides what that means; and nothing below that file knows what hardware ex
 - ⛔ **`c_clock` is instantiated, not global.** `u_root` holds `c_clock 1 8` driving the grid's beat
   row, `c_steps` holds its own `c_clock 1 4`, and **nothing downstream may assume the global `clock`
   is its clock** — Cut It runs poly-tempo. See [tempo.md](module/tempo.md).
-- **`c_steps`, mode 1's drum machine, hangs off `u_map` by a cord** — its third outlet, carrying
+- **`c_steps`, mode 1's drum machine, hangs off `u_map` by a cord** — its second outlet, carrying
   what a drum-page press means — and its own two outlets reach `c_kit`, which plays the drums,
   and `g_grid` with the page. Its rules are Lua, in `c_steps.lua`, behind one pdlua object; its clock and cords
   are Pd. See [sequencer.md](module/sequencer.md).
@@ -79,15 +78,14 @@ file decides what that means; and nothing below that file knows what hardware ex
 
 **The layout of `u_root`'s canvas is this diagram.** Left is the `m_` layer, device by device; middle
 is the buses and the map; right is the display owners. **Where a file has cords, the cords decide
-where it goes** — which is why `m_volca` and `m_404` sit under `u_map` rather than in the `m_`
-column. Everything without cords talks on the allowlisted buses alone.
+where it goes** — which is why `m_volca` sits under `u_map` rather than in the `m_` column. Everything without cords talks on the allowlisted buses alone.
 
 **Five kinds of cord exist on that canvas, and each one is a seam worth seeing.** `u_init` reaches
 `m_launchpad` and `u_state`, because the boot *order* is `u_init`'s while the *action* belongs to the
-file at the other end. `u_map` and `u_net` each reach the two output devices, because no bare global
-name carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`. `c_clock`
-feeds `g_grid`'s beat row. And `c_steps` sits between `u_map` and both `m_404` and `g_grid`: told
-what a press means, it plays notes and says what the drum page shows.
+file at the other end. `u_map` and `u_net` each reach the output device, `m_volca`, because no bare
+global name carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`.
+`c_clock` feeds `g_grid`'s beat row. And `c_steps` sits between `u_map` and both `c_kit` and
+`g_grid`: told what a press means, it plays the drums and says what the drum page shows.
 
 ## Creation arguments — the contract between the two entry points
 
@@ -99,7 +97,7 @@ and the device is absorbed by these six arguments to `u_root`.
 | 1 | Pd channel the **nanoKONTROL**'s own channel 1 lands on | `17` | whatever slot it fills |
 | 2 | The same for the **Launchpad** | `1` | " |
 | 3 | **`u_state`'s data directory** — absolute, no trailing slash | `/sdcard/cut-it-state` | `/tmp` |
-| 4 | Pd channel for the **SP-404**'s channel 1 | `33` | " |
+| 4 | **Unused** — the SP-404's channel block until it left the rig (Brendan, 2026-11-04), still passed because positions cannot be skipped | `33` | " |
 | 5 | Pd channel for the **Volca**'s channel 1 | `49` | " |
 | 6 | **`u_net`'s inbound UDP port** | `9001` | `9002` |
 
@@ -165,12 +163,12 @@ on `disp` alone, so no display file has had to learn that `param` exists.
 
 ## Output devices are WIRED, not given a bus
 
-`m_volca` and `m_404` are **told what to play**. No bus carries a sounding note — `param` is
-device-to-map and `disp` is display, and a note is neither.
+`m_volca` is **told what to play**, as `m_404` was until the SP-404 left the rig (Brendan,
+2026-11-04). No bus carries a sounding note — `param` is device-to-map and `disp` is display, and a
+note is neither.
 
 **`u_map` grows one outlet per output DEVICE**, wired in `u_root`, carrying a **selector-prefixed**
-message the device layer routes internally: `notes 48 100 200`, `cc 41 64`, `program 20`,
-`pad 23 96`.
+message the device layer routes internally: `notes 48 100 200`, `cc 41 64`, `program 20`.
 
 | | |
 |---|---|
@@ -251,8 +249,8 @@ cheaper than retrofitting it once the filter logic exists, which is why `mode` a
 
 ⛔ **A `c_` prefix means instances, and a `$0-` on everything inside it (C-1).** Five exist:
 `c_clock`, `c_presence` and `c_devid` inside the `m_` layers, `c_mapped` inside `u_map`, one per
-destination that carries a value, and `c_steps`, the sequencer, whose bank and stored part are its
-creation arguments. The v0.4 filter stages are the reason the prefix exists.
+destination that carries a value, and `c_steps`, the sequencer, whose bank (vestigial since the
+SP-404 left the rig) and stored part are its creation arguments. The v0.4 filter stages are the reason the prefix exists.
 
 ## Open
 

@@ -142,7 +142,7 @@ is visible on the surface itself.
 
 | Gesture | Raises | What happens |
 |---------|--------|--------------|
-| **Short press** | `panic` | All Notes Off to the SP-404 on all ten channels and to the Volca; realtime STOP on ports 1 and 4; the aux LED goes red; the whole grid flashes red for a second; the OLED footer reads `panic` |
+| **Short press** | `panic` | All Notes Off to the Volca; the drums stop; realtime STOP on ports 1 and 4; the aux LED goes red; the whole grid flashes red for a second; the OLED footer reads `panic` |
 | **Held 2000 ms** | `recover` | `panic` again, then the patch **reloads** — every device re-enumerated and `wire.sh` run fresh |
 
 ⛔ **`panic` fires on the PRESS, not the release, and that is what makes the hold length free.** You
@@ -227,8 +227,9 @@ and costs no buttons.
 
 ### The layer stays Pd
 
-**`m_launchpad` keeps its decode in Pd** (2026-11-03), where the nano, the SP-404 and the
-Organelle's keys moved theirs to Lua ([nanokontrol.md](nanokontrol.md), *The decode is Lua*). Three
+**`m_launchpad` keeps its decode in Pd** (2026-11-03), where the nano and the Organelle's keys
+moved theirs to Lua, as the SP-404's had before it left the rig ([nanokontrol.md](nanokontrol.md),
+*The decode is Lua*). Three
 reasons, each enough:
 
 - **The ring carries the mode keys**, which must work when the Lua does not: `u_map` keeps them in

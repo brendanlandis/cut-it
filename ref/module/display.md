@@ -32,10 +32,9 @@ why it cost nothing to add.
 | Launchpad Pro MK3 | no | `g_grid` | **96 button LEDs + the logo** = 97 addressable, painted across an index span of **1–108**. Spatial state only | verified | — |
 | iPhone / TouchOSC | yes | `u_net` | Unlimited size and color, over WiFi. Development and diagnostics, **not** performance | verified | — |
 
-Three devices in the rig can display nothing at all: the nanoKONTROL mk1 has no host-controllable
-LEDs, the Volca is receive-only, and the SP-404 has **the best screen in the rig and nothing known
-reaches it**: it answers a device inquiry and nothing else has been found over SysEx (Reference,
-`~/Sites/!reference/roland-sp-404mkii.md`).
+Two devices in the rig can display nothing at all: the nanoKONTROL mk1 has no host-controllable
+LEDs, and the Volca is receive-only. The SP-404, until it left the rig (2026-11-04), had **the best
+screen in it and nothing known reached it** (Reference, `~/Sites/!reference/roland-sp-404mkii.md`).
 
 ### The `disp` message
 
@@ -132,7 +131,7 @@ y = 0, 9, 18, 27, 36**, one per source, plus the shrunk meter strip.
 
 | | Evidence | Item |
 |---|----------|------|
-| One row per source on the presence bus, drawn as `<src> <state>`. The roster is whatever `expect` published at load — today **five** | verified | 301 |
+| One row per source on the presence bus, drawn as `<src> <state>`. The roster is whatever `expect` published at load — today **four**: `m_launchpad`, `m_nano`, `m_organelle`, `m_volca`, since `m_404` went with the SP-404 (2026-11-04) | verified | 301 |
 | ⛔ **`<src>` is the ABSTRACTION's name** — `m_nano`, never "nanoKONTROL". `g_oled` sits below the `m_` boundary, so this is the only name it has. See [presence.md](presence.md) | verified | 301 |
 | Four states: `here` · `gone` · `never` · `unchecked`. **`m_volca` registers `none` and reads `unchecked`** — it is never polled and can never be lost, so drawing it as healthy would be a claim nothing has tested | verified | 301 |
 | ⛔ **The loop is bounded at FIVE rows, not at the roster size.** A sixth would draw at y=45 and run into the meter strip at y=48 | verified | 301 |

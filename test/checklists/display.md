@@ -83,5 +83,5 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
 
 - [ ] **20. The diag roster**
   - **Do:** Hold the aux button and press the lowest key. Look hardest at the longest line: m_launchpad unchecked is exactly as wide as a row gets, so that is where clipping would show first. The word shift is on screen while aux is held and the roster draws over it.
-  - **Pass if:** Five small lines naming m_launchpad m_nano m_organelle m_volca and m_404 — each with here or gone or never or unchecked beside it. Every line is readable at arm reach and none is cut off at the right edge. About eight seconds later the meters come back on their own.
-  - **Note:** `oled-assert` proves the roster's words and their order; whether five 8px rows read at arm's length, and whether the 21-character `m_launchpad unchecked` line is clipped, is a person's call ([display](../../ref/module/display.md)).
+  - **Pass if:** Four small lines naming m_launchpad m_nano m_organelle and m_volca — each with here or gone or never or unchecked beside it. Every line is readable at arm reach and none is cut off at the right edge. About eight seconds later the meters come back on their own.
+  - **Note:** `oled-assert` proves the roster's words and their order; whether four 8px rows read at arm's length, and whether the 21-character `m_launchpad unchecked` line is clipped, is a person's call ([display](../../ref/module/display.md)).

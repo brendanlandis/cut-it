@@ -121,10 +121,10 @@ def organelle(g):
 
 
 def nano(g):
-    # m_404 and m_launchpad too: the last two windows drive their channels
+    # m_launchpad too: the last two windows drive its channel and Pd's port 3's
     # through the same t-ctlin, the witness that the nano's produces none of theirs.
     S.require("Cut It/m_nano.pd", "Cut It/m_nano.lua", "Cut It/m_nano-lua.pd_lua",
-              "Cut It/m_404.pd", "Cut It/m_launchpad.pd", "test/stubs/t_ctlin.pd",
+              "Cut It/m_launchpad.pd", "test/stubs/t_ctlin.pd",
               "test/gate/lua/m_nano_test.lua")
     # The decode first, in Lua and without Pd: every CC's name, value and warning. Then the
     # Pd half: the channel gate and the buses, through the running instrument.
@@ -132,21 +132,6 @@ def nano(g):
     rc_lua = S.lua("test/gate/lua/m_nano_test.lua", *g.args)
     print("\n   the patch, in Pd ...")
     return _stdin_gate(g, 40) or rc_lua
-
-
-def sp404(g):
-    S.require("Cut It/m_404.pd", "Cut It/m_404.lua", "Cut It/m_404-lua.pd_lua",
-              "Cut It/cut-it-map.txt", "test/gate/lua/m_404_test.lua")
-    # The decode first, in Lua and without Pd: the pad map both ways, the bank and channel
-    # arithmetic, and the budget. Then the Pd half: both directions through the running
-    # instrument, on Pd's own clock.
-    print("   the decode, in Lua ...")
-    rc_lua = S.lua("test/gate/lua/m_404_test.lua", *g.args)
-    print("\n   the patch, in Pd ...")
-    # All sixteen pads of bank A, plus one in bank C: the bank picks the channel.
-    rows = ["mode-1 gk-p%d 404-pad %d" % (n, n) for n in range(1, 17)]
-    rows.append("mode-1 gk-pc1 404-pad 33")
-    return _stdin_gate(g, 40, rows=rows) or rc_lua
 
 
 def volca(g):
@@ -296,8 +281,8 @@ def map_(g):
     # mode and control (knob 2 is drums last in mode 1). gk-bad names a
     # destination that does not exist. The pickup knobs get distinct CCs, so a
     # leak between their windows shows as the wrong controller rather than a
-    # duplicate. gk-note, gk-pad and
-    # gk-prog exist for their disp rows, which the shipped map never reaches.
+    # duplicate. gk-note and gk-prog exist for their disp rows, which the
+    # shipped map never reaches.
     # pad-13-at is pressure, mapped: the raw-row exemption must not hide a
     # mapped destination's row.
     rows = ["mode-1 gk-cc volca-cc 41",
@@ -306,7 +291,6 @@ def map_(g):
             "mode-1 og-knob-3 volca-cc 43",
             "mode-1 og-knob-4 volca-cc 44",
             "mode-1 gk-note volca-note 60",
-            "mode-1 gk-pad 404-pad 5",
             "mode-1 gk-prog volca-prog 20",
             "mode-1 pad-13-at volca-cc 45"]
 
@@ -455,7 +439,7 @@ RECIPES = {
     "init": init, "presence": presence, "audio": audio, "err": err,
     "display": display, "oled": oled, "led": led, "tempo": tempo,
     "clock": clock, "map": map_, "recover": recover, "launchpad": launchpad,
-    "nano": nano, "organelle": organelle, "sp404": sp404, "volca": volca,
+    "nano": nano, "organelle": organelle, "volca": volca,
     "debug": debug, "sequencer": sequencer, "kit": kit,
 }
 

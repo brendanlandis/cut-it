@@ -30,7 +30,7 @@ why it cost nothing to add.
 | Organelle OLED | yes | `g_oled` | The primary performance surface. 128×64 graphics, not five text lines | verified | — |
 | Organelle aux LED | no | `g_led` | One RGB LED, **seven colors and off**. The only state display that is not a screen | verified | — |
 | Launchpad Pro MK3 | no | `g_grid` | **96 button LEDs + the logo** = 97 addressable, painted across an index span of **1–108**. Spatial state only | verified | — |
-| iPhone / PdParty | yes | `u_net` | Unlimited size and color, over WiFi. Development and diagnostics, **not** performance | verified | — |
+| iPhone / TouchOSC | yes | `u_net` | Unlimited size and color, over WiFi. Development and diagnostics, **not** performance | verified | — |
 
 Three devices in the rig can display nothing at all: the nanoKONTROL mk1 has no host-controllable
 LEDs, the Volca is receive-only, and the SP-404 has **the best screen in the rig and nothing known

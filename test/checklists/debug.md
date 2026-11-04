@@ -35,8 +35,8 @@ Every step runs with Cut It stopped — selecting any patch restarts Pd — so t
 
 - [ ] **6. The network screen shows the address you type into the phone**
   - **Do:** Press the fifth key from the bottom. Read the ip row and check it against what the phone is pointed at.
-  - **Pass if:** The screen reads 4-NETWORK and the row under it reads ip- followed by this Organelle's own address. That is the number PdParty needs — it will not resolve the name — and reading it here is what removes the last reason this rig needs a laptop to fix the phone link.
-  - **Note:** Item 312: PdParty needs a literal address, and on the house network the lease moves (the addresses seen are on the Organelle's Reference page). On the access point it is always the same ([phone](../../ref/device/phone.md)).
+  - **Pass if:** The screen reads 4-NETWORK and the row under it reads ip- followed by this Organelle's own address. That is the number the phone's TouchOSC sends to, set as a literal address, and reading it here is what removes the last reason this rig needs a laptop to fix the phone link.
+  - **Note:** Item 312: the phone is set to a literal address (PdParty could not resolve the name), and on the house network the lease moves (the addresses seen are on the Organelle's Reference page). On the access point it is always the same ([phone](../../ref/device/phone.md)).
 
 - [ ] **7. Both output devices answer when you fire at them**
   - **Need:** The Volca powered and audible. The SP-404 powered and audible. Pad A1 may hold a looping sample — if it starts one, press the pad on the device to stop it.

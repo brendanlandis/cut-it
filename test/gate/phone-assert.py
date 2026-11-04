@@ -53,13 +53,6 @@ ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert",
          "/probe/drums",
          # and what the drum screen shows: the mode, and c_steps' state.
          "/cutit/mode", "/cutit/drums"}
-SCENE = os.path.join(ROOT, "tools", "pdparty-scene", "CutItRemote", "_main.pd")
-BUILD_REMOTE = os.path.join(ROOT, "tools", "pdparty-scene", "build-remote.py")
-BUILD_TOSC = os.path.join(ROOT, "tools", "touchosc", "build-drums.py")
-# The checklist page, a second scene: it sends send and result, built by
-# list prepend from its data rather than typed in a message box.
-CHECKS = os.path.join(ROOT, "tools", "pdparty-scene", "CutItChecks", "_main.pd")
-PAGE_CMDS = ["send", "result"]
 # The drum screen's settings: u_net does not acknowledge them, since the state
 # the drum screen shows says each.
 DRUMS_QUIET = ["num", "den", "drunk", "skip", "move"]
@@ -141,114 +134,6 @@ def goled_route():
     return _route_args(GOLED)
 
 
-# --------------------------------------------------------- the inbound vocabulary
-def _route_of(path, first):
-    """The arguments of the one `route <first> ...` box in a file, or None.
-
-    Keyed on the first argument, not a position, because box indices move (C-10).
-    """
-    try:
-        recs = lib_pd.read(path)
-    except OSError:
-        return None
-    want = re.compile(r"^#X obj -?\d+ -?\d+ route (" + re.escape(first)
-                      + r"(?: [^;]*)?);$")
-    hits = [m.group(1) for m in (want.match(r) for r in recs) if m]
-    return hits[0].split() if len(hits) == 1 else None
-
-
-def _guts(path):
-    """The scene's `[pd guts]` subcanvas as (boxes, connects).
-
-    boxes are (kind, text) in file order -- which is the index a connect names.
-    """
-    boxes, cons, depth, want, inside = [], [], 0, None, False
-    for ln in lib_pd.read(path):
-        if ln.startswith("#N canvas"):
-            depth += 1
-            if " guts " in ln and not inside:
-                inside, want = True, depth
-            continue
-        if ln.startswith("#X restore"):
-            if inside and depth == want:
-                break
-            depth -= 1
-            continue
-        if not inside:
-            continue
-        m = re.match(r"^#X (obj|msg|text) -?\d+ -?\d+ (.*);$", ln)
-        if m:
-            boxes.append((m.group(1), m.group(2)))
-            continue
-        m = re.match(r"^#X connect (\d+) (\d+) (\d+) (\d+);$", ln)
-        if m:
-            cons.append(tuple(int(g) for g in m.groups()))
-    return boxes, cons
-
-
-def checks_cmds():
-    """The commands the checklist page prepends before its [oscformat cutit]."""
-    try:
-        recs = lib_pd.read(CHECKS)
-    except OSError:
-        return None
-    return sorted({m.group(1) for m in (re.match(r"^#X obj -?\d+ -?\d+ list prepend (\S+);$", r)
-                                          for r in recs) if m} & set(PAGE_CMDS))
-
-
-STEPS_LUA = os.path.join(ROOT, "Cut It", "c_steps.lua")
-
-
-def steps_cmds():
-    """The commands c_steps takes on its inlet: the keys of c_steps.lua's R.presses."""
-    try:
-        src = open(STEPS_LUA, encoding="utf-8").read()
-    except OSError:
-        return None
-    m = re.search(r"^R\.presses = \{\n(.*?)^\}", src, re.M | re.S)
-    if not m:
-        return None
-    keys = re.findall(r'^  (?:\["([\w-]+)"\]|(\w+)) = function', m.group(1), re.M)
-    return sorted(a or b for a, b in keys)
-
-
-def scene_msgs():
-    """Every message box in the scene that REACHES the shared [oscformat cutit].
-
-    Read off the graph, not a naming convention: every msg box in the file would
-    also collect the link row's two `label` messages.
-    """
-    boxes, cons = _guts(SCENE)
-    tgt = [i for i, (k, t) in enumerate(boxes)
-           if k == "obj" and t == "oscformat cutit"]
-    if len(tgt) != 1:
-        return None
-    reach = set(tgt)
-    for _ in range(4):
-        reach |= {a for a, _ao, b, _bi in cons if b in reach}
-    return sorted(boxes[i][1] for i in sorted(reach) if boxes[i][0] == "msg")
-
-
-def scene_iemguis():
-    """(send, receive) for every bng on the scene's MAIN canvas."""
-    out = []
-    for ln in lib_pd.read(SCENE):
-        m = re.match(r"^#X obj -?\d+ -?\d+ bng \d+ \d+ \d+ \d+ (\S+) (\S+) ", ln)
-        if m:
-            out.append((m.group(1), m.group(2)))
-    return out
-
-
-def scene_names():
-    """(names written by an [s ...], names read by an [r ...]) anywhere in the scene."""
-    recs = lib_pd.read(SCENE)
-    w = {m.group(1) for m in (re.match(r"^#X obj -?\d+ -?\d+ s (\S+);$", x)
-                              for x in recs) if m}
-    r = {m.group(1) for m in (re.match(r"^#X obj -?\d+ -?\d+ r (\S+);$", x)
-                              for x in recs) if m}
-    return w, r
-
-
 def cleanup():
     if KEEP:
         print("kept " + WORK)
@@ -316,87 +201,8 @@ def main():
                 "selector fall out of its reject and be treated as a parameter"
                 % (" ".join(unet_route()), " ".join(goled_route())))
 
-    # -- the inbound vocabulary, read from both ends, no Pd -----------------
-    # The scene and u_net deploy by different routes and can drift; a command
-    # spelled differently is dropped in silence (test/README.md).
-    ucmd, udev = _route_of(UNET, "re-wire"), _route_of(UNET, "m_volca")
-    smsg = scene_msgs()
-    A.check("the inbound route boxes and the scene's commands are all readable",
-            ucmd is not None and udev is not None and smsg is not None,
-            "u_net: %r / %r   scene: %r" % (ucmd, udev, smsg))
-    # u_net passes drums on whole, so the scene's drums actions are checked
-    # against what c_steps takes; u_net's own drums route is the acks'.
-    udrums = _route_of(UNET, "sync")
-    csteps = steps_cmds()
-    if ucmd and udev and smsg is not None:
-        scmd = sorted({m.split()[0] for m in smsg})
-        sdev = sorted({m.split()[1] for m in smsg if m.split()[0] == "test-note"})
-        sdrums = sorted({m.split()[1] for m in smsg if m.split()[0] == "drums"})
-        ccmd = checks_cmds() or []
-        A.check("⛔ the two scenes send EXACTLY the commands u_net routes",
-                sorted(scmd + ccmd) == sorted(ucmd),
-                "the remote sends %s, the checklist page %s, u_net routes %s -- "
-                "whichever side is short is a button that does nothing at all"
-                % (" ".join(scmd), " ".join(ccmd), " ".join(ucmd)))
-        A.check("⛔ the scene names EXACTLY the devices u_net routes",
-                sdev == sorted(udev),
-                "scene names %s, u_net routes %s" % (" ".join(sdev), " ".join(udev)))
-        A.check("⛔ every drums action the scene sends is one c_steps takes",
-                csteps and sdrums and set(sdrums) <= set(csteps),
-                "scene sends drums %s, c_steps takes %s" % (" ".join(sdrums), csteps))
-        A.check("... and u_net acknowledges only drums actions the scene sends",
-                udrums is not None and set(udrums) <= set(sdrums),
-                "u_net acks %s, scene sends %s" % (udrums, " ".join(sdrums)))
-        keys = {tuple(m.split()[:2]) for m in smsg}
-        A.check("one button per command, one per sounding device, one per drums action",
-                len(keys) == len(set(ucmd) - set(PAGE_CMDS)) - 2 + len(udev)
-                + len(sdrums),
-                "%d kinds of message box: %s" % (len(keys), sorted(keys)))
-        A.check("... and the drum screen's sixteen pads select tracks 1 to 16",
-                sorted(m for m in smsg if m.startswith("drums select ")) ==
-                sorted("drums select %d" % n for n in range(1, 17)),
-                [m for m in smsg if m.startswith("drums select ")])
-        # and the ack must be able to light every one of them
-        A.check("the scene's ACK route covers every command u_net can acknowledge",
-                _route_of(SCENE, "re-wire") == [c for c in ucmd if c not in PAGE_CMDS],
-                "scene: %r" % (_route_of(SCENE, "re-wire"),))
-        A.check("the scene's ACK route covers every device",
-                _route_of(SCENE, "m_volca") == udev,
-                "scene: %r" % (_route_of(SCENE, "m_volca"),))
-        A.check("the scene's ACK route covers every drums action u_net acknowledges",
-                _route_of(SCENE, "sync") == [c for c in (udrums or []) if c not in DRUMS_QUIET],
-                "scene: %r" % (_route_of(SCENE, "sync"),))
-
-    A.check("the remote scene is build-remote.py's output, from remote-template.pd",
-            subprocess.call([sys.executable, BUILD_REMOTE, "--check"]) == 0,
-            "run tools/pdparty-scene/build-remote.py")
-    A.check("the TouchOSC drum screen is build-drums.py's output",
-            subprocess.call([sys.executable, BUILD_TOSC, "--check"]) == 0,
-            "run tools/touchosc/build-drums.py")
-
-    # -- the two traps the scene cannot report on itself --------------------
-    guis = scene_iemguis()
-    writes, reads = scene_names()
-    A.check("⛔ every bng carries BOTH a send and a receive name",
-            len(guis) >= 8 and all(s not in ("empty", "-") and r not in ("empty", "-")
-                                   for s, r in guis),
-            "PdParty renders no iemgui that is missing either -- it parses, "
-            "instantiates, participates and is INVISIBLE. saw %d: %s"
-            % (len(guis), guis))
-    senders = [(s, r) for s, r in guis if s in reads]
-    lamps = [(s, r) for s, r in guis if r in writes]
-    A.check("the scene still has both transmitting buttons and lit lamps",
-            bool(senders) and bool(lamps),
-            "%d transmit, %d are lit" % (len(senders), len(lamps)))
-    A.check("⛔ NO bng BOTH TRANSMITS AND IS LIT -- the ack cannot re-fire the command",
-            not [b for b in senders if b[1] in writes],
-            "a bng whose send and receive names differ RE-SENDS when it receives, so "
-            "one that transmits and is also lit by the ack would ping-pong for ever: %s"
-            % [b for b in senders if b[1] in writes])
-    A.check("no [print] anywhere in the scene",
-            "print" not in [t.split()[0] for _k, t in _guts(SCENE)[0] if t],
-            "PdParty transmits print as /pdparty/print OSC -- 138 packets in the "
-            "time it takes to drag a fader once")
+    # The inbound vocabulary's other end, what the phone's buttons send, is
+    # touchosc-assert's: it reads the layout against u_net's route boxes.
 
     # -- shape ---------------------------------------------------------------
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})

@@ -88,14 +88,14 @@ firmware update that would invalidate every measured fact on the Launchpad's Ref
 
 ## The access point's address
 
-**Why:** PdParty sends to one literal address, and cannot resolve a name or broadcast (Reference,
-PdParty). So the Organelle has one address on both networks (Brendan, 2026-11-03): the house router
+**Why:** the phone sends to one literal address: PdParty could not resolve a name or broadcast
+(Reference, PdParty), and TouchOSC is set up the same way. So the Organelle has one address on both networks (Brendan, 2026-11-03): the house router
 (a Netgear Orbi) reserves `192.168.1.15` for its `wlan0`, `70:f1:1c:26:bd:ee`, and `start-ap.sh` passes
 `create_ap` `-g 192.168.1.15`, where the factory AP was `192.168.12.1`. The AP's DHCP range follows
 the gateway's subnet. `wifi_control.py` shows the same address on the WiFi menu in AP mode. Both
 networks share the subnet, so `Cut It/phone-ip.sh` tells them apart by `hostapd` running.
 
-To revert, put both `.orig` files back, between `remount-rw.sh` and `remount-ro.sh`, and set PdParty's
+To revert, put both `.orig` files back, between `remount-rw.sh` and `remount-ro.sh`, and set TouchOSC's
 send host per network again.
 
 ## The `/usr/bin/pd` change

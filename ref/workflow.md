@@ -60,12 +60,12 @@ it from `DEST`.
 | Target | Deploy |
 |---|---|
 | Organelle | `./tools/deploy.sh` |
-| iPhone (PdParty) | `curl -T <file> http://<phone>:9000/<scene>/_main.pd` over WebDAV |
+| iPhone (TouchOSC) | `./tools/touchosc/push.sh`, through the Mac's TouchOSC ([device/phone.md](device/phone.md)) |
 
 Neither needs a cable. See [device/phone.md](device/phone.md) for addresses and ports.
 
 **What the check cannot catch** is runtime behavior — wrong message types, silent OSC
-failures, logic errors. That is what the error bus (`C-12`) and the PdParty remote console are
+failures, logic errors. That is what the error bus (`C-12`) and the phone's remote screen are
 for — and the run-it-yourself trick immediately below, which is better than both.
 
 ## Small macOS gotchas

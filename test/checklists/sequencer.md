@@ -48,7 +48,7 @@ Mode 1's drum page on the Launchpad, the sequencer playing the SP-404, and the p
   - **Pass if:** Pad 1 now repeats every three steps against pad 13's sixteen, drifting against it. With pad 1 selected the steps past 3 are dark and the green pad walks 1 to 3. With pad 13 selected the grid shows its sixteen, and turning knob 3 a little reads pad13-last 16 with brackets: held until turned through 16.
 
 - [ ] **11. The drum screen**
-  - **Need:** PdParty open on the remote scene. Back out of it and reopen it if it was open before this load.
+  - **Need:** TouchOSC open on the phone with Cut It's layout, linked.
   - **Do:** Look at the phone. Then tap the pad on the phone in the second row's first place.
   - **Pass if:** The phone shows the drum screen: playing, the tempo and last 16 down the left, sixteen pads in the middle labeled 16 but the top-left one, amber and labeled 3, with skip 0% and move 0% under them, and on the right the two buttons, 4 over 4 with a minus and a plus beside each number, and drunk 0%. Nothing sits low enough to touch the home bar. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 turns dark.
 

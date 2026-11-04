@@ -13,7 +13,7 @@ the verdict file went, and every step's text came here. A rig session means open
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
 | [tempo](tempo.md) | 13 | the transport, knob 1's pickup, the clamp, the 404 following |
 | [launchpad](launchpad.md) | 27 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |
-| [phone](phone.md) | 22 | what PdParty shows, the link dropping and coming back, its buttons, the checklist page and test mode |
+| [phone](phone.md) | 23 | what the phone shows, its tabs, the link dropping and coming back, its buttons, the checklist page and test mode |
 | [state](state.md) | 5 | the front-panel Save, a power cycle, the mode surviving it |
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
 | [midi](midi.md) | 18 | the map by mode, the SP-404 both ways, the Volca by ear, hot-swap |
@@ -88,25 +88,27 @@ can be done by hand instead:
 
 ## On the phone
 
-**The checklist page runs a checklist alone, at the rig**: PdParty's `CutItChecks` scene, beside
-`CutItRemote` (Brendan, 2026-11-03: the Mac faces away from the rig, the phone sits at it).
+**The checklist page runs a checklist alone, at the rig**: the last tab of every mode in the phone's
+TouchOSC layout (Brendan, 2026-11-03: the Mac faces away from the rig, the phone sits at it;
+2026-11-04: a tab in every mode).
 
 1. **Test mode on, at the Organelle:** hold `aux` and press the second key from the bottom. The
-   page's pill says `test mode on` (it is the Organelle's own state, from the heartbeat), and the
-   OLED warns in compose. Every load of Cut It turns it off again.
-2. **Pick a checklist** with ‹ and ›. Each step shows its title and, from the file, Need, Send, Do,
+   phone switches to the checklist tab, its pill says `test mode on` (the Organelle's own state,
+   from the heartbeat), and the OLED warns in compose. Every load of Cut It turns it off again, and
+   turning it off takes the phone back to the mode's first tab.
+2. **Pick a checklist** with ◀ and ▶. Each step shows its title and, from the file, Need, Send, Do,
    Check and Pass if; the Notes stay here. A step too long for one page has a second, and Next
    shows it first.
 3. **Send** puts the step's Send line on the buses, one `send` command a message, through `u_net`
-   to `u_inject`; the lamp beside it lights on the Organelle's answer. With test mode off the
-   Organelle refuses it and the pill says so.
+   to `u_inject`; the button lights green on the Organelle's answer, and red when it refuses the
+   line because test mode is off.
 4. **Pass** or **Fail** logs the verdict on the Organelle as `info phone <checklist>-<n>-pass` (read
    it with `tools/fetch-errors.sh`), marks the step and goes on to the next. **Back** and **Next**
    move without logging.
 
-The page is generated from these files by `tools/pdparty-scene/build-checks.py` and goes to the
-phone with `tools/pdparty-upload.sh`; edit a checklist, rebuild, upload. **Gate:**
-`test/gate/checks-assert.sh`, which also fails while the committed page is stale.
+The page is generated from these files by `tools/touchosc/build.py` and goes to the phone with
+`tools/touchosc/push.sh`; edit a checklist, push. **Gate:** `test/gate/touchosc-assert.sh`, which
+also fails while the committed layout is stale.
 
 ## Writing a step
 

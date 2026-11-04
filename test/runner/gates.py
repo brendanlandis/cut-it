@@ -63,7 +63,7 @@ GATES = [
     ("the Organelle's own front panel", "./test/gate/organelle-assert.sh"),
     ("the phone link", "./test/gate/phone-assert.sh"),
     ("the checklists' Send lines", "./test/gate/inject-assert.sh"),
-    ("the phone's checklist page", "./test/gate/checks-assert.sh"),
+    ("the phone's TouchOSC layout", "./test/gate/touchosc-assert.sh"),
     ("the SP-404, both directions", "./test/gate/sp404-assert.sh"),
     ("the Volca", "./test/gate/volca-assert.sh"),
     ("the sequencer and its drum page", "./test/gate/sequencer-assert.sh"),

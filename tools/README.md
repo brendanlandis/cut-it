@@ -21,7 +21,7 @@ matters because the Organelle launches Pd with `-nogui` and there is no console 
 | **Answering a device** — does it reply at all | `stage-patches/Inquiry Probe/` |
 | **Watching a device animate** — does it still track the clock | `stage-patches/Anim Probe/` |
 | **Worked examples** — a technique, kept as the proof | `audio-probe/` `oled-probe/` `osc-bridge/` `status-display/` |
-| **The phone side** | `pdparty-scene/` — two PdParty scenes, not Organelle patches: `CutItRemote`, the remote and drum screens, built by `build-remote.py` from `remote-template.pd`, and `CutItChecks`, the checklist page, built by `build-checks.py`; `pdparty-upload.sh` puts both on the phone. `touchosc/` — the drum screen as a TouchOSC layout, a proof of concept: `CutItDrums.tosc`, built by `build-drums.py`; `push.sh` puts it on the phone through the Mac's TouchOSC ([the phone](../ref/device/phone.md), *TouchOSC*) |
+| **The phone side** | `touchosc/` — the phone's TouchOSC layout, every screen and the checklist page: `CutIt.tosc`, built by `build.py` from its own code and `test/checklists/`; `push.sh` puts it on the phone through the Mac's TouchOSC (below) |
 | **Menu patches** | `stage-patches/` — see below |
 | **Editing a patch's comments** — delete or rewrite them and keep every cord | `pd-comments.py` |
 
@@ -293,11 +293,9 @@ the phone side and is not an Organelle patch at all.
 | Patch | What it proves |
 |---|---|
 | `oled-probe/` | The OLED **graphics** API is reachable from a patch via `[s oscOut]`. Measures the font (21 chars, monospace, 8px) and redraws live from knob 1. |
-| `osc-bridge/` | Bidirectional OSC between Organelle and an iPhone running PdParty. Sends a heartbeat and `knob1`; draws whatever arrives on `/cutit/fader` big on the OLED. |
+| `osc-bridge/` | Bidirectional OSC between Organelle and an iPhone running PdParty, the phone app until 2026-11-04. Sends a heartbeat and `knob1`; draws whatever arrives on `/cutit/fader` big on the OLED. |
 | `status-display/` | The performance status protocol: four knobs sending **named parameters** (`chop-size`, `grain`, `speed`, `drunk`) plus a heartbeat. |
 | `audio-probe/` | `env~` levels for `adc~ 1` and `adc~ 2` drawn large on the OLED. Used to verify the TRS input split; still the quickest way to check what is arriving at the inputs. |
-| `pdparty-scene/CutItRemote/` | The phone side — landscape, big text, link-loss detection, **four buttons** that send back, and the drum screen it switches to in mode 1. **Generated** by `pdparty-scene/build-remote.py` from `pdparty-scene/remote-template.pd`, the remote screen by hand: edit those, never the output. **Not** an Organelle patch: deploy over WebDAV — the command and its three preconditions are below. |
-| `pdparty-scene/CutItChecks/` | The checklist page — a rig checklist run alone from the phone, in test mode ([the checklists' README](../test/checklists/README.md), *On the phone*). **Generated** by `pdparty-scene/build-checks.py` from `test/checklists/`, never edited by hand. `./tools/pdparty-upload.sh` uploads both scenes with the preconditions below. |
 
 Findings from all of them are written up in [../ref/module/display.md](../ref/module/display.md).
 
@@ -312,39 +310,28 @@ the quickest way to see what is arriving at the inputs.
 fine if you would reach for it; a patch nobody would open again is dead weight even if three pages
 cite it. That is what retired `self-wire.pd` and keeps these four.
 
-⚠️ **`pdparty-scene/` was never part of that question** — [../ref/device/phone.md](../ref/device/phone.md)
+⚠️ **`touchosc/` was never part of that question** — [../ref/device/phone.md](../ref/device/phone.md)
 names it as a `Files:` entry, so it is live by definition.
 
-### Deploying the phone scene
-
-**A scene is a folder containing `_main.pd`**, and it goes over PdParty's WebDAV server:
+### Deploying the phone's layout
 
 ```sh
-nc -z <phone> 9000                                        # 1. is WebDAV even up
-curl -X MKCOL "http://<phone>:9000/CutItRemote"           # 2. first install only
-curl -T "pdparty-scene/CutItRemote/_main.pd" \
-     "http://<phone>:9000/CutItRemote/_main.pd"           # 3. upload
+./tools/touchosc/push.sh
 ```
 
-⛔ **`curl -T` takes the LOCAL FILE FIRST and then the URL.** This page carried a one-argument
-version — `curl -T http://<phone>:9000/…` — until 2026-08-12, which uploads a file *named* `http://…`
-and cannot ever have worked.
+It rebuilds `touchosc/CutIt.tosc` and opens it in the Mac's TouchOSC, whose editor server pushes it
+to the phone live (TouchOSC's Reference page, *Editor network sync*). TouchOSC's server is off after
+every launch unless it is started with `--editor.network.state=SERVER`, so when it runs without it,
+`push.sh` quits and relaunches it with it, in the background.
 
-**Three preconditions, and each fails in its own way:**
+**The phone's setup, once:** in TouchOSC, connect to the Mac as an editor client (port 6666), and set
+OSC connection 1: UDP, host `192.168.1.15`, send port 9001, receive port 8000.
 
-| | |
-|---|---|
-| ⚠️ **WebDAV is not on just because PdParty is** | `nc -z` first; `curl` exits **7** if it is off |
-| ⛔ **The scene folder must already exist** | A `PUT` into a missing one is a **409**: step 2, once |
-| ⛔ **There is no live reload** | Back out of the scene and reopen it after an upload |
-
-Each is on PdParty's Reference page (`~/Sites/!reference/pdparty.md`, *The WebDAV server* and
-*Uploading a scene over WebDAV*).
-
-⚠️ **And the phone's OSC send host must be a literal address** — PdParty will not resolve
-`organelle.local`, and the failure is silent at both ends. Item 312. It is `192.168.1.15` on both
-networks: the house router reserves it, and the Organelle's own access point uses it too
-(`device/start-ap.sh`).
+⛔ **The send host must be right, and a wrong one fails silently while receiving still works**: the
+phone shows everything, so the link looks fine, and nothing it sends arrives (2026-11-04). It is
+`192.168.1.15` on both networks: the house router reserves it, and the Organelle's own access point
+uses it too (`device/start-ap.sh`). Item 312: PdParty would not resolve `organelle.local`, so the
+address has been literal since.
 
 ### `stage-patches/` — menu patches for the venue
 

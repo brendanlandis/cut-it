@@ -20,6 +20,6 @@ else
 fi
 
 # Cut It: the AP takes the address the house router reserves for this Organelle, so the phone's
-# PdParty has one address everywhere (cut-it device/README.md). Factory: no -g, 192.168.12.1.
+# The phone has one address everywhere (cut-it device/README.md). Factory: no -g, 192.168.12.1.
 $FW_DIR/scripts/create_ap --no-virt -g 192.168.1.15 -n wlan0 $NET $PW
 

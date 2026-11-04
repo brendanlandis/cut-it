@@ -287,8 +287,8 @@ for i, (when, mark, actions) in enumerate(SEQ):
             bx += 300
             continue
         if kind == "cmd":
-            # The PdParty scene's shape: message box, list append, oscformat.
-            # phone-assert.py's static check holds the spellings to the scene.
+            # A command as the phone sends it: /cutit and its atoms, through
+            # oscformat. touchosc-assert holds the spellings to the layout's.
             root, text = item[1]
             cm = msg(bx, by, text)
             cla = obj(bx, by + 50, "list append")

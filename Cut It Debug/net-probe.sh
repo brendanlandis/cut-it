@@ -7,7 +7,7 @@
 #   2  whether it is hosting its access point ap-up        or ap-down
 #   3  the phone's address, if there is one   phone-<addr> or phone-none
 #
-# Line 1 is the point: PdParty will not resolve organelle.local (item 312), so
+# Line 1 is the point: the phone sends to a literal address (item 312), so
 # the phone needs a literal address, and on the house network the lease moves
 # unless the router reserves it: this Organelle's is 192.168.1.15, and its own
 # access point takes the same address (device/start-ap.sh).

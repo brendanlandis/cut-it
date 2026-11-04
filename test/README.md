@@ -41,19 +41,20 @@ were false.
 | `launchpad-assert.sh` | 11 | `device/launchpad` |
 | `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 113 | `device/phone` |
+| `phone-assert.sh` | 97 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `checks-assert.sh` | 25 | `test/checklists/README.md`, *On the phone* — the checklist page |
+| `touchosc-assert.sh` | 53: 8 read, 45 in Lua | `device/phone` — the phone's TouchOSC layout, the checklist page included |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 
-**1009 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**1021 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **1002**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **1014**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
-`sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's.
+`sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's;
+`touchosc-assert.sh` two as well, the reading first.
 Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 43 come from TWO Pd runs and one tally**, which is the only entry here
@@ -347,14 +348,8 @@ in a throwaway copy of the patch. **`u_net` already emits to a socket** — so t
 `127.0.0.1:9995`, instantiates `u_net 127.0.0.1 9995 9994` and reads the real datagrams, then sends
 commands *into* 9994 to drive the inbound half. `Cut It/` is never touched.
 
-⛔ **Its strongest half needs no Pd at all.** The phone is the only sender there is, and the scene and
-`u_net` are deployed by two different mechanisms — `tools/deploy.sh` and a WebDAV copy — so their
-spellings can drift a long way apart with nothing failing until somebody is at the rig. The lint
-reads the scene's command message boxes **off the graph** and requires them to equal `u_net`'s route
-arguments exactly. It also mechanizes two traps that were prose: every `bng` must carry both a send
-and a receive name, and **no `bng` may both transmit and be lit** — a bng re-sends when it receives,
-so a button lit by its own acknowledgment would ping-pong for ever. See
-[../ref/device/phone.md](../ref/device/phone.md).
+**The other end of the inbound vocabulary, what the phone's buttons send, is `touchosc-assert`'s**
+(below): the layout and `u_net` deploy by different routes, and their spellings must not drift.
 
 | Piece | |
 |---|---|
@@ -383,6 +378,31 @@ equivalent.
 ✅ **And for the drums lane** (2026-11-04): `u_net`'s cord from it to `c_steps` cut, 9 failed. In
 `map-assert` a drums row naming `lastt` failed its lint, and `u_map` dropping the knob's value
 (`list split 1`) failed `sequencer-assert`'s Pd half (14).
+
+## `touchosc-assert.sh` — the phone's layout, read and run
+
+```sh
+./test/gate/touchosc-assert.sh       8 + 45 checks, ~1 s — the layout read, then its scripts run
+```
+
+**Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
+output; every control has a name of its own, since a script finds a control by name and TouchOSC
+returns the first of two; and what its buttons send equals what `u_net` routes and `c_steps` takes,
+**the inbound vocabulary read from both ends**. The phone is the only sender there is, and the
+layout and `u_net` deploy by different routes, `push.sh` and `tools/deploy.sh`, so their spellings
+could drift apart with nothing failing until somebody is at the rig. Every acknowledgment `u_net`
+sends must light a cell.
+
+Then the layout's own scripts, unpacked into the scratch directory and run by
+`test/gate/lua/touchosc_test.lua` under `test/gate/lua/lib_touchosc.lua`, a stand-in for TouchOSC as
+`lib_test.lua` is for pdlua: the tabs following the mode, test mode bringing up the checklists and
+sending them back, the drum screen's state and sliders (a value from Cut It never sent back), the
+remote screen's rows and buttons, the checklist page's Send, Pass, Fail, Back and Next, worked out
+from the checklists themselves, and NO-LINK. **What it cannot judge is how TouchOSC draws**; the
+phone checklist is the oracle for that.
+
+✅ **Proven red** (2026-11-04): test mode never changing the tab (Lua 1 failed), a pad sending
+`drums selec` (read 2, Lua 1), and the checklist page sending a Send line's numbers as text (Lua 1).
 
 ## `sequencer-assert.sh` — the drum machine, from the outside
 

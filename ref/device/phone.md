@@ -1,13 +1,13 @@
 <!-- schema: device -->
-# The phone — PdParty and the status link
+# The phone — TouchOSC and the status link
 
-**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/pdparty-scene/CutItRemote/`, `tools/pdparty-scene/build-remote.py`, `tools/pdparty-scene/remote-template.pd`, `tools/touchosc/` · **Gate:** `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/phone.md`
+**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/touchosc/build.py`, `tools/touchosc/push.sh` · **Gate:** `test/gate/phone-assert.sh`, `test/gate/touchosc-assert.sh` · **Checklist:** `test/checklists/phone.md`
 
-An iPhone running PdParty on the same network, used as **an unlimited plain-English display** — and,
-more valuable, as the answer to the Organelle having no Pd console. What PdParty and the phone are —
-ports, scene structure, rendering quirks, the OSC bridge, network behavior — is in Reference:
-`~/Sites/!reference/pdparty.md` (and the Pd objects it exercises in `~/Sites/!reference/pure-data.md`).
-This page is the status link Cut It builds on them.
+An iPhone running TouchOSC on the same network (from 2026-11-04; PdParty until then), used as **an
+unlimited plain-English display** — and, more valuable, as the answer to the Organelle having no Pd
+console. What TouchOSC is and does — its file, how it draws, its scripts, its connections, the editor
+sync that deploys to it — is in Reference: `~/Sites/!reference/touchosc.md`; what was measured with
+PdParty stays on `~/Sites/!reference/pdparty.md`. This page is the status link Cut It builds on them.
 
 `u_net.pd` is the fourth display surface and the only file that talks to it. It consumes `disp` like
 the `g_` arbiters but **owns no selector on it**, so adding it cost `g_oled`'s route nothing. It
@@ -15,8 +15,9 @@ coalesces per name at 20 Hz with a guaranteed trailing edge, holds the last aler
 repeats it, and rebuilds its own socket — which a phone leaving the network destroys outright.
 
 **The phone is part of the instrument** (Brendan, 2026-11-03), no longer only a monitor: its screen
-follows the Launchpad's mode. In mode 1 it shows the drum screen, beside the drum page; in every other
-mode, the remote screen. **The link runs both ways.** Outbound it carries six addresses — parameters,
+follows the Launchpad's mode. Each mode has its own row of tabs, the last always the checklist page
+(Brendan, 2026-11-04): in mode 1 the drum screen, beside the drum page; in every other mode, the remote
+screen. **The link runs both ways.** Outbound it carries six addresses — parameters,
 status, a heartbeat, a held alert, the mode and the drum screen's state. Inbound it takes **a closed
 vocabulary of six commands** (three diagnostic, two for the checklist page, one for the drum screen),
 acknowledges each one, and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
@@ -33,8 +34,8 @@ in one line is what makes the first one safe to reason about.
 
 | Device | Address | Notes | Evidence | Item |
 |--------|---------|-------|----------|------|
-| Organelle | `192.168.1.15` | Listens on **9001**. Reserved for it on the house router, and its own access point takes the same address (`device/start-ap.sh`), so PdParty's send host is set once | verified | — |
-| iPhone | `192.168.1.9` | `u_net` sends to PdParty's OSC receive, **8000**. Reserved for it on the house router (Brendan, 2026-11-03); `192.168.1.5` until then, which turned out to be the printer | unknown | — |
+| Organelle | `192.168.1.15` | Listens on **9001**. Reserved for it on the house router, and its own access point takes the same address (`device/start-ap.sh`), so the phone's send host is set once | verified | — |
+| iPhone | `192.168.1.9` | `u_net` sends to TouchOSC's OSC receive, **8000**. Reserved for it on the house router (Brendan, 2026-11-03); `192.168.1.5` until then, which turned out to be the printer | unknown | — |
 | Mac | `192.168.1.6` | Dev machine, by DHCP and not reserved (seen 2026-11-03; `192.168.1.16` earlier) | verified | — |
 
 **The Organelle is `192.168.1.15` on both networks**: the house router reserves it, and its own
@@ -50,12 +51,15 @@ the house network's at home and whatever the access point leases it at a gig.
 | 9001 | The Organelle's OSC receive. `u_root` passes it to `u_net` as arg 3 | verified | — |
 | 9002 | **The Mac's**, so `main-dev.pd` and a suite run cannot fight over one socket | verified | 307 |
 
-PdParty's own ports (8000 OSC receive, 9000 WebDAV) and its OSC *send* settings, including that the
-host must be a literal address, are in Reference (item 312).
+TouchOSC's connections are set in the app, not in the layout (Reference): OSC connection 1, UDP,
+host `192.168.1.15`, send port 9001, receive port 8000. ⛔ **A wrong send host fails silently while
+receiving still works**: the phone shows everything, so the link looks fine, and nothing it sends
+arrives (2026-11-04).
 
-**So PdParty's send host is `192.168.1.15` everywhere**, set once. PdParty cannot send to the
-broadcast address or resolve a name (Reference), so a fixed address is the only way to stop
-re-pointing it; on the house network that took the router's reservation (Brendan, 2026-11-03). The
+**So the phone's send host is `192.168.1.15` everywhere**, set once. PdParty could not send to the
+broadcast address or resolve a name (Reference, item 312), so a fixed address was the only way to
+stop re-pointing it, and TouchOSC is set the same way; on the house network that took the router's
+reservation (Brendan, 2026-11-03). The
 instrument still discovers the *phone* by itself, with `phone-ip.sh`, and this is the one direction
 that cannot be discovered — see *The phone cannot announce itself* under **Design**.
 
@@ -101,7 +105,7 @@ button.
 | `m_404` | `pad 1 100` — bank A pad 1 | verified | 306 |
 
 What the drum screen sends after `drums`, each one `c_steps`' own (`R.presses` in `c_steps.lua`).
-`phone-assert` checks the scene against that table, and `u_net`'s acknowledgments against the scene.
+`touchosc-assert` checks the layout against that table, and `u_net`'s acknowledgments against the layout.
 
 | Drum action | Does | Evidence | Item |
 |-------------|------|----------|------|
@@ -131,42 +135,30 @@ easy to identify. Item 311.
 | Rate limiting | 401 `disp` messages a second measured down to **42 datagrams** | verified | — |
 | `status` | Coalesced into **one slot** like a parameter: `u_tempo` writes the BPM into the footer, so one sweep of knob 1 put **201** `status` messages on `disp` in a second, as many as every parameter together | verified | — |
 | Socket recovery | `u_net` rebuilds within about five seconds of the phone coming back, nothing touched on the instrument | verified | 119 |
-| Backgrounding PdParty | Costs the link nothing; only a full quit closes the port (Reference, item 120) | verified | 120 |
+| Backgrounding the phone's app | PdParty's cost the link nothing, only a full quit closed the port (Reference, item 120); TouchOSC's is untested | unknown | 120 |
 
 **One address for all parameters.** Adding a parameter costs one `[list prepend <name>]` on the
 Organelle and nothing at all on the phone — this scales to the nanoKONTROL's 18 continuous controls
 without redesign.
 
-### The screen follows the mode, through PdParty's ViewPort
+### The screens: one TouchOSC layout, a row of tabs per mode
 
-**Both screens are one scene, side by side**: the remote screen at 0 to 448, the drum screen from 500.
-A cnv whose receive name is `ViewPort` sets which area of the scene PdParty shows, and `pos 500 0` or
-`pos 0 0` to it switches screens (Reference, PdParty, *The ViewPort canvas*). The scene's `[pd
-drums]` sends it only when the mode changes, since `u_net` repeats the mode twice a second.
-
-| | | Evidence |
-|---|---|---|
-| Switching | `vis_size 448 207` then `pos`, every time: PdParty starts its viewport at zero by zero and keeps the size when `pos` moves it, so `pos` alone blanked the page. With both, the phone shows the drum screen on the drum page (2026-11-03) | verified |
-| The ViewPort is the scene's first object | So it sits under every widget: PdParty draws it clear, and a view over the others could take their touches | unknown |
-| The drum screen | Left: playing or stopped, the tempo (the status), `last <n>`, the alert, the link. Middle: the sixteen pads as the Launchpad lays them out, each labeled with its last step: grey following the global one, amber with its own, dark when selected; a tap selects; under them, sliders for the selected track's skip and move chances. Right: sync first steps, snap to global, a line while one waits for step 1, the time signature as a fraction with a minus and a plus beside each number, and a drunkenness slider (Brendan, from a mockup, 2026-11-04). Everything stays above the bottom 17 units, clear of the home indicator | unknown |
-| A slider | Sends whole percents, only when they change; the state sets it with `set`, so it sends nothing back, and sets the `[change]` its touches go through, so a touch back to the value it had still sends. For a second after a touch it ignores the state, which would otherwise pull it back to the old value while the Organelle catches up. ⚠️ PdParty taking `set` on a slider is read from Pd, not seen on the phone | unknown |
-| `/cutit/drums` | `c_steps`' `R.phone`: playing, the global last step, the selected track, pending (0, 1 sync, 2 snap), the sixteen last steps, then 1 for each track with its own, then the time signature's two numbers, the drunkenness, and the selected track's skip and move chances. Sent by `c_steps` when it changes, through `u_root`'s cord into `u_net`'s second inlet | verified |
-| A short or empty state | Dropped by `[list split 41]`, so the empty repeat before the first state draws nothing | verified |
-
-### TouchOSC, a proof of concept beside PdParty
-
-**The drum screen also exists as a TouchOSC layout** (Brendan, 2026-11-04): the same screen at twice
-the size, 896 by 414 points, speaking the same OSC, so Cut It needs no change for it. What TouchOSC
-is and does is on its Reference page (`~/Sites/!reference/touchosc.md`).
+**Every screen is one layout**, `tools/touchosc/CutIt.tosc`, **generated** by `tools/touchosc/build.py`:
+edit that, never the file. Along the top, the mode's tabs; under them, the screen of the tab chosen.
+Each control sends from a script of its own; the root's script takes everything that comes in.
 
 | | | Evidence |
 |---|---|---|
-| The layout | `tools/touchosc/CutItDrums.tosc`, **generated** by `tools/touchosc/build-drums.py`: edit that, never the file. Each control sends from its own script; the root's script takes everything that comes in | verified |
-| Deploying it | `./tools/touchosc/push.sh` rebuilds it and opens it in the Mac's TouchOSC, restarting that with its editor server on if it is off; the phone, connected once as an editor client of the Mac, takes it live | verified |
-| The phone's setup, once | Editor network: a client of the Mac (port 6666). OSC connection 1: UDP, host `192.168.1.15`, send port 9001, receive port 8000. PdParty quit first: both receive on 8000 | verified |
+| The tabs | Mode 1: drums, checklists. Every other mode: remote, checklists. The last is always the checklist page (Brendan, 2026-11-04). They follow `/cutit/mode`, and the same mode again, as `u_net` repeats it, leaves the tab chosen alone | unknown |
+| Test mode | Coming on, from the heartbeat, brings up the checklists, through a change of mode too; going off, the mode's first tab. A tab tapped meanwhile stays | unknown |
+| The drum screen | Left: playing or stopped, the tempo (the status), `last <n>`, the alert, the link. Middle: the sixteen pads as the Launchpad lays them out, each labeled with its last step: grey following the global one, amber with its own, dark when selected; a tap selects; under them, sliders for the selected track's skip and move chances. Right: sync first steps, snap to global, a line while one waits for step 1, the time signature with a minus and a plus beside each number, and a drunkenness slider (Brendan, from a mockup, 2026-11-04). Everything stays above the home indicator | verified |
+| The remote screen | Left: the last parameter's name, its value with its unit (`120 (29)` for a held tempo), the status, the alert's level and text, the link. Right: re-wire, clear-alert, test-volca, test-404 | unknown |
+| The checklist page | A checklist a step at a time, from `test/checklists/` ([the checklists' README](../../test/checklists/README.md), *On the phone*) | unknown |
 | A slider | Sends whole percents when it moves off the last value it knows, its own or the one the state handed it, so the state is never sent back; for a second after a touch the state leaves it alone | verified |
-| The pads, sync and snap, the time signature | As on PdParty's screen, and they work on the phone (Brendan, 2026-11-04) | verified |
-| Only the drum screen | The remote screen and the checklist page are PdParty's alone | — |
+| `/cutit/drums` | `c_steps`' `R.phone`: playing, the global last step, the selected track, pending (0, 1 sync, 2 snap), the sixteen last steps, then 1 for each track with its own, then the time signature's two numbers, the drunkenness, and the selected track's skip and move chances. Sent by `c_steps` when it changes, through `u_root`'s cord into `u_net`'s second inlet | verified |
+| A short or empty state | Fewer than 41 numbers draws nothing, so the empty repeat before the first state leaves the screen as it was | unknown |
+| Deploying | `./tools/touchosc/push.sh` rebuilds the layout and opens it in the Mac's TouchOSC, restarting that with its editor server on if it is off; the phone, connected once as an editor client of the Mac, takes it live | verified |
+| The phone's setup, once | Editor network: a client of the Mac (port 6666). OSC connection 1 as above | verified |
 
 ### Two instruments will fight over one phone
 
@@ -182,7 +174,7 @@ powered** — close one of them.
 
 ### A phone joining mid-session saw blanks
 
-⛔ Sent only on change, parameters and status leave a scene opened later showing **empty rows until
+⛔ Sent only on change, parameters and status leave a screen opened later showing **empty rows until
 something moves**. The alert never has this problem, and the OLED never has it either, because it
 redraws held state every frame. **`u_net` is the one surface where a late viewer could see nothing.**
 
@@ -219,13 +211,12 @@ none.
 driven over a real socket. **Fix:** the devices are `m_volca` and `m_404`, which are symbols whatever else is true. That is
 also the name the `presence` bus and `err`'s `source` field already carry across the `m_` boundary.
 
-### The button and its lamp are two objects
+### A button's lamp is its own cell, lit by the answer
 
-A `bng` re-sends when it receives (Pure Data, in Reference, item 309), so a button lit by its own ack
-would loop. The button sends on `-press` and receives on `-nc`, which nothing ever writes; the lamp
-receives on `-ack` and sends to `-lamp`, which nothing reads. Both carry both names because PdParty
-renders neither without them. `phone-assert.sh` asserts that no `bng` in the scene both transmits and
-is lit.
+Each button is a box under its label, with a touch over both: the touch sends and never receives,
+and the root script lights the box when the Organelle acknowledges, so no answer can re-send a
+command. (PdParty's `bng` re-sent what it received, item 309, which once made this a rule with a
+gate of its own.) `touchosc-assert.sh` checks every acknowledgment `u_net` sends lights a cell.
 
 ### The inbound port is armed late, and the Mac has its own
 
@@ -237,7 +228,7 @@ bound at `loadbang` would turn every run red whenever a copy was already open in
 **2000 ms**, past the ~735 ms at which the deploy check quits, so neither it nor the syntax gate ever
 binds at all. And `main-dev.pd` takes **9002** where `main.pd` takes 9001, so a long-running gate
 cannot collide with the dev patch. ⚠️ **The phone's buttons therefore drive the device, not the Mac**
-— point PdParty at 9002 if you want them to reach `main-dev.pd`.
+— point the phone's TouchOSC at 9002 if you want them to reach `main-dev.pd`.
 
 ### An AP session cannot be driven interactively
 
@@ -285,11 +276,11 @@ is the property worth protecting if this is ever changed.
 ### The display must show its own staleness
 
 **A frozen display looks exactly like a working one**, and mid-performance you will read it and act
-on it. The phone restarts a 1500 ms timer on every incoming message; if it ever fires, the display
-says `NO-LINK` rather than continuing to present a stale value as current.
+on it. The phone's script checks every frame how long it is since the last heartbeat; past 1500 ms
+the display says `NO-LINK` rather than continuing to present a stale value as current.
 
 ⚠️ **The default label is `NO-LINK`, not `ok`.** It must assume the worst until traffic proves
-otherwise, or a scene opened before the Organelle is running looks connected when it is not.
+otherwise, or a layout opened before the Organelle is running looks connected when it is not.
 
 The heartbeat keeps flowing even when nothing is happening, because it is the only thing
 distinguishing *idle* from *dead*.

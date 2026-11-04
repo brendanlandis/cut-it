@@ -456,3 +456,14 @@
 #X connect 239 0 240 0;
 #X connect 240 1 210 1;
 #X connect 240 0 30 0;
+#X obj 2300 4300 r mode;
+#X obj 2300 4350 t b;
+#X obj 2300 4400 f;
+#X obj 2420 4350 r \$0-test;
+#X obj 2300 4450 select 1;
+#X text 2300 4520 A mode chosen while test mode is on turns it off \, by the same flip: the phone's checklist page stands in for its screens in test mode \, and a mode button should bring that mode's screen back (Brendan \, 2026-11-04). Past the 300 ms spigot \, since it only ever turns test mode off., f 44;
+#X connect 242 0 243 0;
+#X connect 243 0 244 0;
+#X connect 245 0 244 1;
+#X connect 244 0 246 0;
+#X connect 246 0 179 0;

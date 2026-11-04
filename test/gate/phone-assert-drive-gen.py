@@ -51,7 +51,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 56600")
+qd = obj(20, 120, "del 59400")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -240,8 +240,12 @@ SEQ = [
     # A drums command u_net has never heard of still goes to c_steps, which
     # refuses what it doesn't know: u_net passes drums on whole.
     (51800, "cmddrumsnew", [("cmd", ("cutit", "drums reload 2"))]),
-    (53200, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "compose mode-1"))]),
-    (54600, "done",     []),
+    # -- a mode chosen in test mode ends it, so a mode button brings its screen
+    #    back on the phone
+    (53200, "tmmodeon", [("tm", None)]),
+    (54600, "tmmode",   [("bus", ("mode", "compose mode-2"))]),
+    (56000, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "compose mode-1"))]),
+    (57400, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940

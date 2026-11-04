@@ -2,7 +2,7 @@
 
 Every **Pass if** here describes the phone, not the Organelle. Steps 8 to 11 are the ones whose correct result is that nothing happens: the meters, the grid vocabulary and the aux LED are all on `disp` and all dropped by `u_net`, so a line reading in-l means the rate budget has gone to a meter the phone does not draw.
 
-The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast sweep is the closest a person gets. Step 13 is the link going and coming back, reported by the phone's own no link. Steps 1 to 17 judge the phone's screens, which the checklist page covers in test mode, so send their lines from the Mac with `tools/send.sh`, which needs no test mode. Steps 18 to 22 are the checklist page and test mode; run them from the page. Step 23 is the tab following the mode.
+The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast sweep is the closest a person gets. Step 13 is the link going and coming back, reported by the phone's own no link. Steps 1 to 17 judge the phone's screens, which the checklist page covers in test mode, so send their lines from the Mac with `tools/send.sh`, which needs no test mode. Steps 18 to 22 are the checklist page and test mode; run them from the page. Step 23 is the tab following the mode, and a mode ending test mode.
 
 23 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [phone](../../ref/device/phone.md).
 
@@ -104,7 +104,8 @@ The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast
   - **Do:** Load Cut It again from the Organelle menu, and watch the page's label.
   - **Pass if:** The label reads no link while Cut It restarts. When the link is back, test mode is off and the page gives way to the phone's screen. Tap Setup to bring it back and mark this step.
 
-- [ ] **23. The tab follows the mode**
-  - **Do:** Tap Setup to leave test mode. Press the Launchpad's mode 1 button, the top of the left column, then mode 3, the third.
-  - **Pass if:** In mode 1 the tab reads drums and shows the drum screen; in mode 3 it reads remote and shows the remote screen.
-  - **Note:** Tap Setup to come back and mark this step.
+- [ ] **23. A mode ends test mode, and the tab follows it**
+  - **Need:** Test mode on, this step open on the phone's checklist page.
+  - **Do:** Press the Launchpad's mode 1 button, the top of the left column. Then press mode 3, the third.
+  - **Pass if:** At mode 1 the checklist page gives way at once to the drum screen, its tab reading drums; at mode 3 the tab reads remote and shows the remote screen.
+  - **Note:** Tap Setup to come back and mark this step. That a mode turns test mode off is `phone-assert`'s too (Brendan, 2026-11-04: staying on the checklists after a mode press was the weird part).

@@ -212,7 +212,7 @@ def main():
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})
     A.check("shape: only known OSC addresses", all(a in ADDRS for a in seen),
             "saw " + ", ".join(seen))
-    A.check("shape: all thirty-one windows arrived",
+    A.check("shape: all thirty-three windows arrived",
             [n for n, _ in wins] == ["idle", "sweep1", "sweep2", "statussw",
                                      "alert", "reserved", "idle2", "cmdwire",
                                      "cmdvolca", "cmd404", "cmdbogus", "cmdclear",
@@ -220,7 +220,7 @@ def main():
                                      "sendoff2", "tmtwice", "tmoff2", "cmdsync",
                                      "cmdsnap", "cmdselect", "cmdnum", "cmdden",
                                      "cmddrunk", "cmdskip", "cmdmove", "cmddrumsnew",
-                                     "drumstate", "done"],
+                                     "tmmodeon", "tmmode", "drumstate", "done"],
             ", ".join(n for n, _ in wins))
 
     hbs = [g[0] for _, rowset in wins for _, a, g in rowset
@@ -406,6 +406,12 @@ def main():
                 first is not None and first - MARK_T[win] < 0.06,
                 "%s ms after the flip" % (None if first is None
                                           else round((first - MARK_T[win]) * 1000)))
+    f = hb_flags("tmmodeon")
+    A.check("tmmodeon: test mode on again", f and all(v == 1 for v in f), f)
+    f = hb_flags("tmmode")
+    A.check("⛔ tmmode: a mode chosen in test mode turns it off, so its screen comes back",
+            f and all(v == 0 for v in f), f)
+    one("tmmode", "/probe/err", ["info", "u_net", "test-mode-off"], "and says so, as a flip does")
     for win in ("tmon", "sendon", "result"):
         f = hb_flags(win)
         A.check("%s: the heartbeat says test mode is on" % win,

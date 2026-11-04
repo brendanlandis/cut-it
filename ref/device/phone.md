@@ -155,7 +155,7 @@ and every text and control at **WCAG AA**, which `touchosc-assert` audits from t
 | | | Evidence |
 |---|---|---|
 | The tabs | TouchOSC's own tab bar, holding the mode's screen and saying which: drums in mode 1, remote in every other mode. One tab each for now; a mode may have more | unknown |
-| Test mode | Coming on, the checklist page, under a tab bar of its own, stands in for the tabs; going off takes it away (Brendan, 2026-11-04). A flip sends a heartbeat at once, so the page turns with the tap rather than at the next of the 2 Hz beats | unknown |
+| Test mode | Coming on, the checklist page, under a tab bar of its own, stands in for the tabs; going off takes it away (Brendan, 2026-11-04). A mode chosen on the Launchpad turns it off, so the mode's tab is what shows next (Brendan, 2026-11-04). A flip sends a heartbeat at once, so the page turns with the tap rather than at the next of the 2 Hz beats | unknown |
 | The drum screen | Left: the tempo, large, playing or stopped with its lamp, the global last step, the link lamp, the alert. Middle: the sixteen pads as the Launchpad lays them out, each labeled with its last step: red following the global one, teal with a dot (• 5) with its own, lit when selected; a tap selects. ⛔ A pad the state lights never sends: when it did, four pads pressed at once on the Launchpad lit in turn on the phone, each selecting itself again, and the selection bounced between Cut It and the phone for as long as they were held (2026-11-04). Right: sync first steps and snap to global, a line while one waits for step 1, ring knobs for drunk and the selected track's skip and move, and the time signature as [n] / [d], each box dragged up or down a step at a time (Brendan, 2026-11-04), about 20 points a step for the top number's 32, 26 for the bottom's 5 | unknown |
 | The remote screen | Left: the last parameter's name and its value large, with its unit (`120 (29)` for a held tempo), the tempo, the alert with its lamp, the link. Right: re-wire, clear alert, test Volca, test 404 | unknown |
 | The checklist page | A checklist a step at a time, from `test/checklists/` ([the checklists' README](../../test/checklists/README.md), *On the phone*); Send hides on a step with no Send line | unknown |
@@ -314,7 +314,7 @@ It carries a checklist's Send line to `u_inject`'s eight buses (`test/checklists
 phone can run a rig checklist alone. `u_net` passes it only in **test mode**, which is flipped with a
 tap on the Launchpad's Setup button (`lp-setup`) or at the Organelle itself (`aux` and the second key
 from the bottom, `og-shift-61`), starts off at every load,
-and rides on the heartbeat so the phone shows the Organelle's own state; a flip sends a heartbeat at
+goes off when a mode is chosen, and rides on the heartbeat so the phone shows the Organelle's own state; a flip sends a heartbeat at
 once rather than waiting for the next. Turning it on warns, so
 the OLED says so in compose and the log keeps it.
 

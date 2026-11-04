@@ -95,7 +95,7 @@ phone sits at it; 2026-11-04: its own page, up with Setup).
 1. **Test mode on:** tap Setup, the Launchpad's bottom-left button, or at the Organelle hold `aux`
    and press the second key from the bottom. The phone shows the checklist page, which says `test mode on`
    (the Organelle's own state, from the heartbeat), and the OLED warns in compose. Every load of
-   Cut It turns it off again, and turning it off puts the phone's screens back. A step that looks at
+   Cut It turns it off again, and so does choosing a mode; turning it off puts the phone's screens back. A step that looks at
    the phone's drum or remote screen needs a Setup tap to see it, and another to come back.
 2. **Pick a checklist** with ◀ and ▶. Each step shows its title and, from the file, Need, Send, Do,
    Check and Pass if; the Notes stay here. A step too long for one page has a second, and Next

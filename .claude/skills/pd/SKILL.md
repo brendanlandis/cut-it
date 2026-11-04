@@ -50,13 +50,17 @@ work when the Lua does not: the Launchpad's pressure and mode keys (`ref/device/
   `[declare -lib pdlua]` and makes `[<name>-lua …]`.
 - ⛔ **Never `<name>.pd_lua` for an abstraction's name**: pdlua's loader runs before Pd looks for
   the `.pd`, so it would replace the abstraction everywhere.
-- ⛔ **A Lua error must reach `err`, not just the console**: run each rule under `pcall` and send
-  `fail <source> lua-<selector>` out of an outlet corded to `[s err]` (`lua-<bus>` where an
-  inlet's selectors are data, as `u_map`'s controls are: `lua-param`); and answer an `init` at load
-  with a bang, so the abstraction can say `no-lua` when the Lua never loaded (C-12).
-- **A class every control passes through answers `dispatch` itself**, by inlet: pdlua's own builds
-  and tries method names from each selector first, a large share of a message's cost on the
-  device (`u_map-lua.pd_lua`; `ref/module/map.md`).
+- **Every class carries its rules through `lua-face.lua`**: load it beside the rules and call
+  `F.carry(class, R, outlets, inlets, proof)`, and the class gets `answer`, `internal` and
+  `dispatch`. What that gives, and must keep giving:
+  - ⛔ **A Lua error reaches `err`, not just the console**: each rule runs under `pcall`, and a
+    throw leaves `fail <source> lua-<name>` out the outlet corded to `[s err]` (`lua-<bus>` where
+    an inlet's selectors are data, as `u_map`'s controls are: `lua-param`); `init` is answered with
+    a bang, so the abstraction can say `no-lua` when the Lua never loaded (C-12).
+  - **`dispatch` by inlet**, skipping pdlua's own, which builds and tries method names from each
+    selector first, a large share of a message's cost on the device (`ref/module/map.md`).
+  - A test that loads a broken copy of the rules from a temp prefix needs the face there too
+    (`test/gate/lua/u_map_test.lua`, the last section).
 - **Test the rules without Pd**: a `test/gate/lua/<name>_test.lua` on `test/gate/lua/lib_test.lua`
   (its tally, and a stand-in for pdlua that loads the class), run by its module's gate through
   `lib_scratch.lua()` with lua.org's Lua 5.4 (`~/.local/bin/lua`; `LUA` overrides).

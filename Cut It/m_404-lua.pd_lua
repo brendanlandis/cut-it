@@ -21,43 +21,27 @@ local R = dofile(PadsLua._loadpath .. "m_404.lua")
 
 local OUTLET = { note = 1, off = 2, param = 3, err = 4 }
 
+-- Answering under pcall, the proof bang on init and the dispatch shortcut are lua-face.lua's,
+-- shared by every class that carries rules into Pd.
+local F = dofile(PadsLua._loadpath .. "lua-face.lua")
+F.carry(PadsLua, R, OUTLET, 3, 5)
+
 function PadsLua:initialize(_, atoms)
   self.inlets, self.outlets = 3, 5
   self.state = R.new(atoms[1])
   return true
 end
 
--- One rule's answer, or fail m_404 lua-<name> if it threw, or bad-selector if there is none.
-function PadsLua:answer(name, rule, ...)
-  local ok, out = true, { R.fail("bad-selector") }
-  if rule then ok, out = pcall(rule, self.state, ...) end
-  if not ok then
-    self:error("m_404-lua: " .. tostring(out))
-    out = { R.fail("lua-" .. name) }
-  end
-  for _, e in ipairs(out) do self:outlet(OUTLET[e[1]], e[2], e[3]) end
-end
-
 function PadsLua:in_1(sel, atoms)
   if sel ~= "list" then return self:answer(sel, nil) end
-  self:answer("notein", R.rx, atoms[1], atoms[2], atoms[3])
+  self:answer("notein", R.rx, self.state, atoms[1], atoms[2], atoms[3])
 end
 
 function PadsLua:in_2(sel, atoms)
   if sel ~= "list" then return self:answer(sel, nil) end
-  self:answer("pad", R.tx, atoms[1], atoms[2], atoms[3])
+  self:answer("pad", R.tx, self.state, atoms[1], atoms[2], atoms[3])
 end
 
 function PadsLua:in_3(sel, atoms)
-  self:answer(sel, R.internal[sel], atoms)
-  if sel == "init" then self:outlet(5, "bang", {}) end
-end
-
--- Every pad played and every pad struck passes through here, so a message goes straight to its
--- inlet's method: pdlua's own dispatch first builds and tries two method names from the
--- selector (ref/module/map.md). A pdlua that stopped calling dispatch would lose only the
--- shortcut.
-local INLET = { "in_1", "in_2", "in_3" }
-function PadsLua:dispatch(inlet, sel, atoms)
-  return self[INLET[inlet]](self, sel, atoms)
+  self:internal(sel, atoms)
 end

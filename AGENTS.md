@@ -99,7 +99,7 @@ stops the instrument**, because loading any patch restarts Pd. See
 | `e_` | An effect stage — **v0.4, none yet** | — |
 | `.sh` | Run through `[shell]` — the first five once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `codec-gain.sh` `recover.sh` |
 | `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` |
-| `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_404.lua` `m_404-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua` |
+| `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_404.lua` `m_404-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua`, and `lua-face.lua`, what every one of those classes shares |
 
 **The prefix table above is `Cut It/`'s.** `Cut It Debug/` is flat and has no prefixes — one
 `main.pd` and three scripts — because it is one screen deep and nothing in it is reused.

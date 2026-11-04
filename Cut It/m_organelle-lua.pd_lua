@@ -18,38 +18,22 @@ local R = dofile(OrgLua._loadpath .. "m_organelle.lua")
 
 local OUTLET = { param = 1, err = 2 }
 
+-- Answering under pcall, the proof bang on init and the dispatch shortcut are lua-face.lua's,
+-- shared by every class that carries rules into Pd.
+local F = dofile(OrgLua._loadpath .. "lua-face.lua")
+F.carry(OrgLua, R, OUTLET, 2, 3)
+
 function OrgLua:initialize()
   self.inlets, self.outlets = 2, 3
   self.state = R.new()
   return true
 end
 
--- One rule's answer, or fail m_organelle lua-<name> if it threw, or bad-selector if there is
--- none.
-function OrgLua:answer(name, rule, ...)
-  local ok, out = true, { R.fail("bad-selector") }
-  if rule then ok, out = pcall(rule, self.state, ...) end
-  if not ok then
-    self:error("m_organelle-lua: " .. tostring(out))
-    out = { R.fail("lua-" .. name) }
-  end
-  for _, e in ipairs(out) do self:outlet(OUTLET[e[1]], e[2], e[3]) end
-end
-
 function OrgLua:in_1(sel, atoms)
   if sel ~= "list" then return self:answer(sel, nil) end
-  self:answer("notes", R.key, atoms[1], atoms[2])
+  self:answer("notes", R.key, self.state, atoms[1], atoms[2])
 end
 
 function OrgLua:in_2(sel, atoms)
-  self:answer(sel, R.internal[sel], atoms)
-  if sel == "init" then self:outlet(3, "bang", {}) end
-end
-
--- A key goes straight to its inlet's method: pdlua's own dispatch first builds and tries two
--- method names from the selector (ref/module/map.md). A pdlua that stopped calling dispatch
--- would lose only the shortcut.
-local INLET = { "in_1", "in_2" }
-function OrgLua:dispatch(inlet, sel, atoms)
-  return self[INLET[inlet]](self, sel, atoms)
+  self:internal(sel, atoms)
 end

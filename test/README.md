@@ -47,11 +47,11 @@ were false.
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 169: 113 in Lua, 56 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 
-**1006 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**1008 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **999**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **1001**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's.
 Worth knowing before trusting an arithmetic check of this number against a log.
@@ -387,7 +387,7 @@ equivalent.
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      113 + 56 checks, ~31 s — c_steps' rules in Lua, then the drum page and the pattern on disk
+./test/gate/sequencer-assert.sh      115 + 56 checks, ~31 s — c_steps' rules in Lua, then the drum page and the pattern on disk
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
@@ -455,6 +455,10 @@ modifier naming every edge (3, 1); the latch rewritten on the release (3, 1); an
 (7, 3). **And on each of five of `m_404.lua`**: the `47 + n` map (12, 5, and `docs-check` red from
 pad 5), a bucket of 20 (2, 2), the bank one channel high (10, 3), the bank
 letters shifted (10, 7), and the refill added only after a drop (7, 5).
+
+✅ **And `lua-face.lua`, which all five faces share** (2026-11-04): with no bang on `init`, each of
+the five Lua tests went red (1 to 3 failed); with a rule run outside `pcall`, each died on its
+throwing rule.
 
 ## `stubs/` — stand-ins the gates need
 

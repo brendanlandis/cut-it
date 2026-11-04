@@ -20,6 +20,11 @@ local R = dofile(MapLua._loadpath .. "u_map.lua")
 
 local OUTLET = { route = 1, disp = 2, store = 3, err = 4 }
 
+-- Answering under pcall, the proof bang on init and the dispatch shortcut are lua-face.lua's,
+-- shared by every class that carries rules into Pd.
+local F = dofile(MapLua._loadpath .. "lua-face.lua")
+F.carry(MapLua, R, OUTLET, 3, 5)
+
 -- The table is read when the object is made, before any loadbang, from the folder of the patch
 -- that holds it, as u_map.pd's `read -c cut-it-map.txt` was. A missing file is an error on the
 -- console, which fails a deploy, and map-empty on err at init. Whether a Save has left a
@@ -41,35 +46,14 @@ function MapLua:initialize()
   return true
 end
 
--- One rule's answer, or fail u_map lua-<name> if it threw, or bad-selector if there is none.
-function MapLua:answer(name, rule, ...)
-  local ok, out = true, { R.fail("bad-selector") }
-  if rule then ok, out = pcall(rule, self.state, ...) end
-  if not ok then
-    self:error("u_map-lua: " .. tostring(out))
-    out = { R.fail("lua-" .. name) }
-  end
-  for _, e in ipairs(out) do self:outlet(OUTLET[e[1]], e[2], e[3]) end
-end
-
 function MapLua:in_1(sel, atoms)
-  self:answer("param", R.control, sel, atoms)
+  self:answer("param", R.control, self.state, sel, atoms)
 end
 
 function MapLua:in_2(sel, atoms)
-  self:answer("mode", R.mode, sel, atoms)
+  self:answer("mode", R.mode, self.state, sel, atoms)
 end
 
 function MapLua:in_3(sel, atoms)
-  self:answer(sel, R.internal[sel], atoms)
-  if sel == "init" then self:outlet(5, "bang", {}) end
-end
-
--- Every control passes through here, so a message goes straight to its inlet's method. pdlua's
--- own dispatch first builds and tries two method names from the selector, a large share of a
--- control's cost on the Organelle (ref/module/map.md). A pdlua that stopped calling dispatch
--- would lose only the shortcut.
-local INLET = { "in_1", "in_2", "in_3" }
-function MapLua:dispatch(inlet, sel, atoms)
-  return self[INLET[inlet]](self, sel, atoms)
+  self:internal(sel, atoms)
 end

@@ -132,8 +132,13 @@ local fh = assert(io.open(tmp .. "-m_404.lua", "w"))
 fh:write('local R = dofile("' .. DIR .. 'm_404.lua")\n',
          'R.tx = function() error("a bug in tx") end\nreturn R\n')
 fh:close()
+-- The face too, which the class reads from the same prefix.
+fh = assert(io.open(tmp .. "-lua-face.lua", "w"))
+fh:write('return dofile("' .. DIR .. 'lua-face.lua")\n')
+fh:close()
 local broken = T.new(T.load_class(DIR .. "m_404-lua.pd_lua", tmp .. "-"), { 33 })
 os.remove(tmp .. "-m_404.lua")
+os.remove(tmp .. "-lua-face.lua")
 os.remove(tmp)
 equal("a Lua error leaves outlet 4 as fail m_404 lua-pad, for the error log",
       T.send(broken, 2, "list", { 1, 100, 1000 }), { { 4, "fail", { "m_404", "lua-pad" } } })

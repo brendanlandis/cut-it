@@ -18,20 +18,14 @@ local R = dofile(NanoLua._loadpath .. "m_nano.lua")
 
 local OUTLET = { param = 1, err = 2 }
 
+-- Answering under pcall, the proof bang on init and the dispatch shortcut are lua-face.lua's,
+-- shared by every class that carries rules into Pd.
+local F = dofile(NanoLua._loadpath .. "lua-face.lua")
+F.carry(NanoLua, R, OUTLET, 2, 3)
+
 function NanoLua:initialize()
   self.inlets, self.outlets = 2, 3
   return true
-end
-
--- One rule's answer, or fail m_nano lua-<name> if it threw, or bad-selector if there is none.
-function NanoLua:answer(name, rule, ...)
-  local ok, out = true, { R.fail("bad-selector") }
-  if rule then ok, out = pcall(rule, ...) end
-  if not ok then
-    self:error("m_nano-lua: " .. tostring(out))
-    out = { R.fail("lua-" .. name) }
-  end
-  for _, e in ipairs(out) do self:outlet(OUTLET[e[1]], e[2], e[3]) end
 end
 
 function NanoLua:in_1(sel, atoms)
@@ -40,15 +34,5 @@ function NanoLua:in_1(sel, atoms)
 end
 
 function NanoLua:in_2(sel, atoms)
-  self:answer(sel, R.internal[sel], atoms)
-  if sel == "init" then self:outlet(3, "bang", {}) end
-end
-
--- Every CC on the nano's channels passes through here, a stream while a fader moves, so a
--- message goes straight to its inlet's method: pdlua's own dispatch first builds and tries two
--- method names from the selector (ref/module/map.md). A pdlua that stopped calling dispatch
--- would lose only the shortcut.
-local INLET = { "in_1", "in_2" }
-function NanoLua:dispatch(inlet, sel, atoms)
-  return self[INLET[inlet]](self, sel, atoms)
+  self:internal(sel, atoms)
 end

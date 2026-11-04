@@ -23,27 +23,20 @@ local R = dofile(StepsLua._loadpath .. "c_steps.lua")
 
 local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6, clock = 8 }
 
+-- Answering under pcall, the proof bang on init and the dispatch shortcut are lua-face.lua's,
+-- shared by every class that carries rules into Pd.
+local F = dofile(StepsLua._loadpath .. "lua-face.lua")
+F.carry(StepsLua, R, OUTLET, 2, 5)
+
 function StepsLua:initialize(_, atoms)
   self.inlets, self.outlets = 2, 8
   self.state = R.new(atoms[1])
   return true
 end
 
--- One message, answered by the rule of its name in `rules`, or reported.
-function StepsLua:answer(rules, sel, atoms)
-  local rule, ok, out = rules[sel], true, { R.fail("bad-selector") }
-  if rule then ok, out = pcall(rule, self.state, atoms) end
-  if not ok then
-    self:error("c_steps-lua: " .. tostring(out))
-    out = { R.fail("lua-" .. sel) }
-  end
-  for _, e in ipairs(out) do self:outlet(OUTLET[e[1]], e[2], e[3]) end
-  self:phone()
-end
-
--- The drum screen's state, out the last outlet only when it differs from the last one sent: a
--- tick changes nothing the phone shows, eight times a second.
-function StepsLua:phone()
+-- After every answer, the drum screen's state, out the seventh outlet only when it differs from
+-- the last one sent: a tick changes nothing the phone shows, eight times a second.
+function StepsLua:answered()
   local ok, now = pcall(R.phone, self.state)
   if not ok then return end
   local key = table.concat(now, " ")
@@ -54,10 +47,9 @@ function StepsLua:phone()
 end
 
 function StepsLua:in_1(sel, atoms)
-  self:answer(R.presses, sel, atoms)
+  self:answer(sel, R.presses[sel], self.state, atoms)
 end
 
 function StepsLua:in_2(sel, atoms)
-  self:answer(R.internal, sel, atoms)
-  if sel == "init" then self:outlet(5, "bang", {}) end
+  self:internal(sel, atoms)
 end

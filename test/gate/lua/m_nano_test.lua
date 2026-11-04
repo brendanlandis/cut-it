@@ -95,8 +95,13 @@ local fh = assert(io.open(tmp .. "-m_nano.lua", "w"))
 fh:write('local R = dofile("' .. DIR .. 'm_nano.lua")\n',
          'R.cc = function() error("a bug in cc") end\nreturn R\n')
 fh:close()
+-- The face too, which the class reads from the same prefix.
+fh = assert(io.open(tmp .. "-lua-face.lua", "w"))
+fh:write('return dofile("' .. DIR .. 'lua-face.lua")\n')
+fh:close()
 local broken = T.new(T.load_class(DIR .. "m_nano-lua.pd_lua", tmp .. "-"), {})
 os.remove(tmp .. "-m_nano.lua")
+os.remove(tmp .. "-lua-face.lua")
 os.remove(tmp)
 equal("a Lua error leaves outlet 2 as fail m_nano lua-ctlin, for the error log",
       T.send(broken, 1, "list", { 1, 64 }), { { 2, "fail", { "m_nano", "lua-ctlin" } } })

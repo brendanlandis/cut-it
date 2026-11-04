@@ -292,8 +292,13 @@ fh = assert(io.open(tmp .. "-u_map.lua", "w"))
 fh:write('local R = dofile("' .. DIR .. 'u_map.lua")\n',
          'R.control = function() error("a bug in control") end\nreturn R\n')
 fh:close()
+-- The face too, which the class reads from the same prefix.
+fh = assert(io.open(tmp .. "-lua-face.lua", "w"))
+fh:write('return dofile("' .. DIR .. 'lua-face.lua")\n')
+fh:close()
 local broken = T.new(T.load_class(DIR .. "u_map-lua.pd_lua", tmp .. "-"), {}, DIR)
 os.remove(tmp .. "-u_map.lua")
+os.remove(tmp .. "-lua-face.lua")
 os.remove(tmp)
 equal("a Lua error leaves outlet 4 as fail u_map lua-param, for the error log",
       T.send(broken, 1, "slider-1", { 64 }), { { 4, "fail", { "u_map", "lua-param" } } })

@@ -536,6 +536,18 @@ for _, m in ipairs({ { 1, "float", { 3 } }, { 1, "beat", { 1 } }, { 1, "tick", {
         T.send(o, m[1], m[2], m[3]), { { 4, "fail", { "c_steps", "bad-selector" } } })
 end
 
+-- pdlua hands every message to dispatch, which the class answers itself (lua-face.lua): a knob
+-- turn and every tick pass through it.
+local function dispatched(inlet, sel, atoms)
+  o.sent = {}
+  o:dispatch(inlet, sel, atoms)
+  return o.sent
+end
+equal("dispatch takes each inlet's messages to its method, which refuses a stray one",
+      { dispatched(1, "beat", { 1 }), dispatched(2, "beat", {}) },
+      { { { 4, "fail", { "c_steps", "bad-selector" } } }, { { 4, "fail", { "c_steps", "bad-selector" } } } })
+check("... and it is the class's own, not pdlua's", rawget(class, "dispatch") ~= nil, "")
+
 -- A Lua error, made by a copy of the rules whose tick throws: the class reads its rules as
 -- prefix .. "c_steps.lua", so the copy sits at a temporary prefix.
 local tmp = os.tmpname()
@@ -543,8 +555,13 @@ local fh = assert(io.open(tmp .. "-c_steps.lua", "w"))
 fh:write('local R = dofile("' .. DIR .. 'c_steps.lua")\n',
          'R.internal.tick = function() error("a bug in tick") end\nreturn R\n')
 fh:close()
+-- The face too, which the class reads from the same prefix.
+fh = assert(io.open(tmp .. "-lua-face.lua", "w"))
+fh:write('return dofile("' .. DIR .. 'lua-face.lua")\n')
+fh:close()
 local broken = T.new(T.load_class(DIR .. "c_steps-lua.pd_lua", tmp .. "-"), { 1 })
 os.remove(tmp .. "-c_steps.lua")
+os.remove(tmp .. "-lua-face.lua")
 os.remove(tmp)
 equal("a Lua error leaves outlet 4 as fail c_steps lua-tick, for the error log",
       T.send(broken, 2, "tick", {})[1], { 4, "fail", { "c_steps", "lua-tick" } })

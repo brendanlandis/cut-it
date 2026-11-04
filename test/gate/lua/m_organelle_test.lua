@@ -108,8 +108,13 @@ local fh = assert(io.open(tmp .. "-m_organelle.lua", "w"))
 fh:write('local R = dofile("' .. DIR .. 'm_organelle.lua")\n',
          'R.key = function() error("a bug in key") end\nreturn R\n')
 fh:close()
+-- The face too, which the class reads from the same prefix.
+fh = assert(io.open(tmp .. "-lua-face.lua", "w"))
+fh:write('return dofile("' .. DIR .. 'lua-face.lua")\n')
+fh:close()
 local broken = T.new(T.load_class(DIR .. "m_organelle-lua.pd_lua", tmp .. "-"), {})
 os.remove(tmp .. "-m_organelle.lua")
+os.remove(tmp .. "-lua-face.lua")
 os.remove(tmp)
 equal("a Lua error leaves outlet 2 as fail m_organelle lua-notes, for the error log",
       T.send(broken, 1, "list", { 60, 100 }), { { 2, "fail", { "m_organelle", "lua-notes" } } })

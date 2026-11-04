@@ -99,7 +99,9 @@ rules as plain Lua, and `c_steps-lua.pd_lua` is the pdlua class that carries the
 are `u_map.lua` and `u_map-lua.pd_lua`, and a device layer's decoding sits beside it the same way
 (`m_nano.lua`, `m_nano-lua.pd_lua`). ⛔ Never
 `<abstraction>.pd_lua`: pdlua's loader is asked before Pd looks for an abstraction, so it would
-replace the `.pd` everywhere it is used ([sequencer.md](module/sequencer.md)).
+replace the `.pd` everywhere it is used ([sequencer.md](module/sequencer.md)). What every such
+class shares, answering under `pcall`, the `init` bang and the `dispatch` shortcut, is
+`lua-face.lua`: it sits beside no abstraction, so it is named for what it is.
 
 ---
 

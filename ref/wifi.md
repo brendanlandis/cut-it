@@ -99,6 +99,11 @@ Item 214 is why it stopped being trusted.
 
 **No laptop, no venue wifi, phone in airplane mode:**
 
+0. **Before leaving, at home:** the phone's TouchOSC layout has to travel on the phone, since the
+   Mac and its editor server stay behind. With the phone connected to the Mac, push the final
+   layout (`tools/touchosc/push.sh`), then on the phone disconnect from the Mac's editor and save
+   the document there. ⬜ Unverified: that TouchOSC opens the saved document again at its next
+   launch with no Mac around (Brendan, 2026-11-04: development and performance are two workflows).
 1. Organelle: **System → WiFi Setup → Start AP**
 2. Phone: airplane mode on, wifi back on, join **`organelle`**. TouchOSC's send host stays `192.168.1.15`: the access point uses the
    address the house router reserves ([device/README.md](../device/README.md))

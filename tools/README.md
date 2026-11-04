@@ -330,7 +330,12 @@ shows nothing wrong.
 
 ### Working on the layout
 
-**The workflow** (Brendan, 2026-11-04), for while the phone's screens are being built:
+**Two workflows** (Brendan, 2026-11-04). This one is for development, at home, with the Mac and
+the house WiFi. At a performance there is neither: the phone joins the Organelle's own access point
+and runs the layout saved on it before leaving ([../ref/wifi.md](../ref/wifi.md), *The stage
+procedure*).
+
+**The development workflow**, for while the phone's screens are being built:
 
 ```sh
 python3 tools/touchosc/watch.py

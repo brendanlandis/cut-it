@@ -66,9 +66,9 @@ file decides what that means; and nothing below that file knows what hardware ex
   with the page. Its rules are Lua, in `c_steps.lua`, behind one pdlua object; its clock and cords
   are Pd. See [sequencer.md](module/sequencer.md).
 - **`u_inject` takes the checklists' Send lines** and puts them on eight buses, so a rig check can
-  fake what no control sends: from the device itself, on `127.0.0.1` alone, and from the phone's
-  checklist page through a cord from `u_net`, which passes them only in test mode. `u_map`'s
-  `test-mode` reaches `u_net` by a cord too. See [test/checklists/README.md](../test/checklists/README.md), *Send lines*.
+  fake what no control sends: from the device itself, on `127.0.0.1` alone, where `tools/send.sh`
+  carries them over SSH. Nothing from the phone reaches it (Brendan, 2026-11-04). `u_map`'s
+  `test-mode` reaches `u_net` by a cord, and puts the phone's line check up. See [test/checklists/README.md](../test/checklists/README.md), *Send lines*.
 - **`u_state` owns two `u_store` instances**, one per persistence policy. See
   [state.md](module/state.md).
 - ⛔ **`c_presence` and `c_devid` are instantiated INSIDE the `m_` layers**, one pair per pollable

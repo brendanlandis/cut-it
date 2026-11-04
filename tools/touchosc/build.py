@@ -11,8 +11,9 @@ test/gate/touchosc-assert.py audits from this file.
 
 The tab bar holds the mode's screen: the drum screen in mode 1, the remote screen in every other
 mode, following the mode u_net sends. The checklist page is a page of its own, not a tab: test mode,
-a tap on the Launchpad's Setup, puts it in place of the tabs, and going off takes it away
-(Brendan, 2026-11-04).
+a tap on the Launchpad's Setup, puts it in place of the tabs, and going off, or choosing a mode,
+takes it away (Brendan, 2026-11-04). It carries the line check alone, test/checklists/linecheck.md:
+the development checklists are run with the Mac at hand, which sends their Send lines.
 
 It speaks u_net's OSC (ref/device/phone.md): it sends /cutit <command> ... to the Organelle's 9001
 and shows what comes back to its 8000. Each control sends from a script of its own; the root's
@@ -22,8 +23,7 @@ send anything again; a knob or a time signature box takes a value from Cut It wi
 back.
 
 A .tosc file is zlib-compressed XML (~/Sites/!reference/touchosc.md). The checklist page carries
-test/checklists/ as data, so a checklist edited means a rebuild, and push.sh puts the result on the
-phone.
+the line check as data, so an edit to it means a rebuild, and push.sh puts the result on the phone.
 """
 import json
 import os
@@ -60,11 +60,11 @@ REMOTE = [("rewire", "re-wire", ["re-wire"]), ("clear", "clear alert", ["clear-a
           ("tvolca", "test Volca", ["test-note", "m_volca"]),
           ("t404", "test 404", ["test-note", "m_404"])]
 # What each acknowledgment u_net sends flashes: /cutit/ack <what> [<which>] -> the button, and
-# the color. test-off is a Send refused while test mode is off; result, the verdict just given.
+# the color. result is the verdict just given, and flashes Pass or Fail, whichever it was.
 ACKS = {"re-wire": ("rewire", TEAL), "clear-alert": ("clear", TEAL),
         "test-note m_volca": ("tvolca", TEAL), "test-note m_404": ("t404", TEAL),
         "drums sync": ("sync", TEAL), "drums snap": ("snap", TEAL),
-        "send": ("csend", TEAL), "test-off": ("csend", GREY), "result": ("verdict", WHITE)}
+        "result": ("verdict", WHITE)}
 DENS = [1, 2, 4, 8, 16]     # c_steps.lua's R.DENS
 MAX_NUM = 32                # c_steps.lua's R.MAX_NUM
 
@@ -74,18 +74,9 @@ LINES = 11          # text lines on one page of a step
 WIDTH = 64          # characters on a line
 TITLE_WIDTH = 50
 PAGES = 3           # at most, per step
-# The buses u_inject takes (test/checklists/README.md, Send lines).
-BUSES = {"disp", "err", "mode", "panic", "param", "start", "stop", "tempo"}
-FIELDS = ("Need", "Send", "Do", "Check", "Pass if")   # Note stays on the Mac
-
-
-def order():
-    """The checklists, in the README's table order."""
-    names = re.findall(r"^\| \[(\w+)\]\(\w+[.]md\) \|",
-                       open(os.path.join(CHECKLISTS, "README.md"), encoding="utf-8").read(), re.M)
-    if not names:
-        sys.exit("build: no checklist table in test/checklists/README.md")
-    return names
+LIST = "linecheck"  # the checklist the page carries: test/checklists/linecheck.md
+FIELDS = ("Need", "Do", "Check", "Pass if")   # Note stays on the Mac, and the line check has
+                                              # no Send lines: the phone sends none
 
 
 def plain(text):
@@ -95,7 +86,7 @@ def plain(text):
 
 
 def steps(name):
-    """[(n, title, {field: text}, [send message, ...])] for one checklist."""
+    """[(n, title, {field: text})] for one checklist."""
     md = open(os.path.join(CHECKLISTS, name + ".md"), encoding="utf-8").read()
     out = []
     for block in re.split(r"\n- \[ \] ", md)[1:]:
@@ -103,45 +94,33 @@ def steps(name):
         if not head:
             sys.exit("build: %s: a step with no **<n>. <title>**" % (name + ".md"))
         fields = dict(re.findall(r"^\s+- \*\*([\w ]+):\*\* (.*)$", block, re.M))
-        sends = []
-        if "Send" in fields:
-            line = re.search(r"`([^`]+)`", fields["Send"])
-            if not line:
-                sys.exit("build: %s step %s: a Send with no `line`" % (name + ".md", head.group(1)))
-            sends = [m.strip() for m in line.group(1).split(";") if m.strip()]
-        out.append((int(head.group(1)), plain(head.group(2)), fields, sends))
+        out.append((int(head.group(1)), plain(head.group(2)), fields))
     return out
 
 
-def checklists():
-    """[{name, steps: [{n, title, pages, sends}]}], and the problems that make one unfit."""
-    lists, bad = [], []
-    for name in order():
-        st = []
-        for i, (n, title, fields, sends) in enumerate(steps(name)):
-            if n != i + 1:
-                bad.append("%s: step %d is numbered %d" % (name, i + 1, n))
-            lines = []
-            for f in FIELDS:
-                if f in fields:
-                    lines += textwrap.wrap("%s: %s" % (f, plain(fields[f])), WIDTH,
-                                           break_on_hyphens=False)
-            pages = [lines[k:k + LINES] for k in range(0, max(1, len(lines)), LINES)]
-            if len(pages) > PAGES:
-                bad.append("%s %d: %d lines, more than %d pages" % (name, n, len(lines), PAGES))
-            for v in ("pass", "fail"):
-                if len("%s-%d-%s" % (name, n, v)) > 21:
-                    bad.append("%s %d: its verdict is over the 21 characters an err text may be"
-                               % (name, n))
-            for m in sends:
-                if m.split()[0] not in BUSES:
-                    bad.append("%s %d: Send names %s, which u_inject refuses" % (name, n, m.split()[0]))
-            t = "%d. %s" % (n, title)
-            if len(t) > TITLE_WIDTH:
-                t = t[:TITLE_WIDTH - 1] + "…"
-            st.append({"n": n, "title": t, "pages": pages, "sends": sends})
-        lists.append({"name": name, "steps": st})
-    return lists, bad
+def checklist(name=LIST):
+    """{name, steps: [{n, title, pages}]}, and the problems that make it unfit for the page."""
+    st, bad = [], []
+    for i, (n, title, fields) in enumerate(steps(name)):
+        if n != i + 1:
+            bad.append("%s: step %d is numbered %d" % (name, i + 1, n))
+        lines = []
+        for f in FIELDS:
+            if f in fields:
+                lines += textwrap.wrap("%s: %s" % (f, plain(fields[f])), WIDTH,
+                                       break_on_hyphens=False)
+        pages = [lines[k:k + LINES] for k in range(0, max(1, len(lines)), LINES)]
+        if len(pages) > PAGES:
+            bad.append("%s %d: %d lines, more than %d pages" % (name, n, len(lines), PAGES))
+        for v in ("pass", "fail"):
+            if len("%s-%d-%s" % (name, n, v)) > 21:
+                bad.append("%s %d: its verdict is over the 21 characters an err text may be"
+                           % (name, n))
+        t = "%d. %s" % (n, title)
+        if len(t) > TITLE_WIDTH:
+            t = t[:TITLE_WIDTH - 1] + "…"
+        st.append({"n": n, "title": t, "pages": pages})
+    return {"name": name, "steps": st}, bad
 
 
 def lua(v):
@@ -255,7 +234,7 @@ def y(v):
 # The labels that show a value, anything Cut It's state changes: monospaced. The rest, the
 # captions and button names, take TouchOSC's default font (Brendan, 2026-11-04).
 VALUES = {"tempo", "play", "glob", "link", "alert", "pending", "num", "den", "drunkv", "skipv",
-          "movev", "pname", "pvalue", "rstatus", "ralert", "rlink", "cname", "cpos", "tmode"}
+          "movev", "pname", "pvalue", "rstatus", "ralert", "rlink", "cpos", "tmode"}
 MONO = 1
 
 
@@ -436,27 +415,20 @@ def remote():
 # ------------------------------------------------------------------ the checklist page
 def checks():
     k = []
-    k.append(button("cprev", (L, y(TOP), 44, 40), RED, tells("press", "cprev")))
-    k.append(label("cprevl", (L, y(TOP), 44, 40), "◀", 18))
-    k.append(label("cname", (L + 50, y(TOP), 150, 40), "-", 22, WHITE))
-    k.append(button("cnext", (L + 206, y(TOP), 44, 40), RED, tells("press", "cnext")))
-    k.append(label("cnextl", (L + 206, y(TOP), 44, 40), "▶", 18))
-    k.append(label("cpos", (L + 264, y(TOP), 340, 40), "-", 16, GREY, align=1))
+    k.append(label("cpos", (L, y(TOP), 340, 40), "-", 16, GREY, align=1))
     k.append(led("tled", (W - R - 170, y(TOP + 13), 14, 14), TEAL))
     k.append(label("tmode", (W - R - 148, y(TOP), 148, 40), "no link", 16, GREY, align=1))
     k.append(label("ctitle", (L, y(TOP + 52), 600, 30), "-", 22, WHITE, align=1))
     k.append(node("TEXT", "cbody", (L, y(TOP + 88), 600, 236), text="", background=False,
                   textColor=rgb(210, 210, 210), textSize=16, textAlignH=1, textAlignV=1))
     rx, rw = 640, W - R - 640
-    k.append(button("csend", (rx, y(TOP + 52), rw, 70), RED, tells("press", "csend")))
-    k.append(label("csendl", (rx, y(TOP + 52), rw, 70), "Send", 22))
     hw = rw / 2 - 5
     for i, (name, text, col) in enumerate((("cpass", "Pass", TEAL), ("cfail", "Fail", RED))):
-        f = (rx + i * (hw + 10), y(TOP + 134), hw, 80)
+        f = (rx + i * (hw + 10), y(TOP + 52), hw, 140)
         k.append(button(name, f, col, tells("press", name)))
         k.append(label(name + "l", f, text, 22))
     for i, (name, text) in enumerate((("cback", "Back"), ("cfwd", "Next"))):
-        f = (rx + i * (hw + 10), y(TOP + 226), hw, 80)
+        f = (rx + i * (hw + 10), y(TOP + 204), hw, 102)
         k.append(button(name, f, GREY, tells("press", name)))
         k.append(label(name + "l", f, text, 20))
     return k
@@ -467,10 +439,9 @@ ROOT_LUA = r"""-- Cut It on the phone: the tabs, and what u_net sends, onto the 
 -- (ref/device/phone.md). Generated by tools/touchosc/build.py.
 local MAIN = %(main)s
 local ACKS = %(acks)s
-local CHECKS = %(checks)s
+local CHECK = %(check)s
 local DENS = %(dens)s
 local RED, TEAL, WHITE, GREY, BLACK = %(red)s, %(teal)s, %(white)s, %(grey)s, %(black)s
-local unpack = table.unpack or unpack
 
 local found, shown = {}, {}
 local function get(name)
@@ -520,7 +491,7 @@ end
 -- ---------------------------------------------------------------- flashes
 local flash = {}
 local BASE = { rewire = RED, clear = RED, tvolca = RED, t404 = RED, sync = RED, snap = RED,
-               csend = RED, cpass = TEAL, cfail = RED }
+               cpass = TEAL, cfail = RED }
 local verdict = 'cpass'
 
 local function ack(a)
@@ -571,49 +542,36 @@ local function drums(a)
 end
 
 -- ---------------------------------------------------------------- the checklist page
-local ci, si, pg = 1, 1, 1
+local si, pg = 1, 1
 local marks = {}
 
 local function paintCheck()
-  local list = CHECKS[ci]
-  local st = list.steps[si]
-  text('cname', list.name)
-  local pos = si .. ' of ' .. #list.steps
+  local st = CHECK.steps[si]
+  local pos = si .. ' of ' .. #CHECK.steps
   if #st.pages > 1 then pos = pos .. '   ' .. pg .. '/' .. #st.pages end
-  local m = marks[ci .. '-' .. si]
+  local m = marks[si]
   if m then pos = pos .. '   ' .. (m == 'pass' and 'passed' or 'failed') end
   text('cpos', pos)
   text('ctitle', st.title)
   text('cbody', table.concat(st.pages[pg] or {}, '\n'))
-  local send = #st.sends > 0
-  get('csend').visible, get('csendl').visible = send, send
 end
 
 local PRESS = {
-  cprev = function() ci, si, pg = (ci > 1 and ci - 1 or #CHECKS), 1, 1 end,
-  cnext = function() ci, si, pg = ci %% #CHECKS + 1, 1, 1 end,
   cfwd = function()
-    local st = CHECKS[ci].steps[si]
+    local st = CHECK.steps[si]
     if pg < #st.pages then pg = pg + 1
-    elseif si < #CHECKS[ci].steps then si, pg = si + 1, 1 end
+    elseif si < #CHECK.steps then si, pg = si + 1, 1 end
   end,
   cback = function()
     if pg > 1 then pg = pg - 1 elseif si > 1 then si, pg = si - 1, 1 end
   end,
-  csend = function()
-    for _, m in ipairs(CHECKS[ci].steps[si].sends) do
-      local args = {}
-      for tok in m:gmatch('%%S+') do args[#args + 1] = tonumber(tok) or tok end
-      sendOSC('/cutit', 'send', unpack(args))
-    end
-  end,
 }
 for _, v in ipairs({ 'pass', 'fail' }) do
   PRESS['c' .. v] = function()
-    local list, st = CHECKS[ci], CHECKS[ci].steps[si]
-    sendOSC('/cutit', 'result', list.name .. '-' .. st.n .. '-' .. v)
-    marks[ci .. '-' .. si], verdict = v, 'c' .. v
-    if si < #list.steps then si, pg = si + 1, 1 end
+    local st = CHECK.steps[si]
+    sendOSC('/cutit', 'result', CHECK.name .. '-' .. st.n .. '-' .. v)
+    marks[si], verdict = v, 'c' .. v
+    if si < #CHECK.steps then si, pg = si + 1, 1 end
   end
 end
 
@@ -695,30 +653,29 @@ def lua_color(c):
     return "Color(%g, %g, %g)" % c[:3]
 
 
-def root_script(checks_):
-    lua_checks = [{"name": c["name"],
-                   "steps": [{"n": s["n"], "title": s["title"], "pages": s["pages"],
-                              "sends": s["sends"]} for s in c["steps"]]} for c in checks_]
+def root_script(check):
     acks = "{ " + ", ".join("[%s] = { %s, %s }" % (lua(k), lua(v[0]), lua_color(v[1]))
                             for k, v in ACKS.items()) + " }"
     return ROOT_LUA % {
-        "main": lua(MAIN), "acks": acks, "checks": lua(lua_checks), "dens": lua(DENS),
+        "main": lua(MAIN), "acks": acks, "check": lua(check), "dens": lua(DENS),
         "red": lua_color(RED), "teal": lua_color(TEAL), "white": lua_color(WHITE),
         "grey": lua_color(GREY), "black": lua_color(BLACK)}
 
 
-def build():
-    checks_, bad = checklists()
+def build(name=LIST):
+    """The layout, its checklist page carrying the checklist named, from test/checklists/: the
+    line check, but for the gate, which runs the page on a longer checklist too."""
+    check, bad = checklist(name)
     if bad:
-        sys.exit("build: the checklists don't fit the page:\n  " + "\n  ".join(bad))
+        sys.exit("build: %s doesn't fit the page:\n  " % (name + ".md") + "\n  ".join(bad))
     tabs = dict(color=BLACK, background=False, tabbarSize=TAB, textSizeOff=22, textSizeOn=22)
     pager = node("PAGER", "pager", (0, 0, W, H), [page("main", "remote", [drums(), remote()])],
                  **tabs)
     # the checklist page, under its own one-tab bar, over the tabs in test mode
     checkpager = node("PAGER", "checkpager", (0, 0, W, H),
-                      [page("checks", "checklists", checks())], visible=False, **tabs)
+                      [page("checks", "line check", checks())], visible=False, **tabs)
     root = node("GROUP", "root", (0, 0, W, H), [pager, checkpager], color=BLACK,
-                script=root_script(checks_))
+                script=root_script(check))
     return '<?xml version="1.0" encoding="UTF-8"?><lexml version="6">' + root + "</lexml>"
 
 

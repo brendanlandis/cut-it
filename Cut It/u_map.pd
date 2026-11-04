@@ -200,7 +200,7 @@
 #X obj 6000 1290 spigot;
 #X obj 6000 1350 t b;
 #X obj 6000 1730 outlet;
-#X text 6200 1160 test-mode flips u_net's test mode \, in which the phone's checklist page may send Send lines. A press flips it and a release does nothing \, as diag. og-shift-61 and lp-setup \, the Launchpad's Setup \, which has no release \, in all six modes (ref/module/map.md)., f 40;
+#X text 6200 1160 test-mode flips u_net's test mode \, which puts the phone's line check up in place of its screens. A press flips it and a release does nothing \, as diag. og-shift-61 and lp-setup \, the Launchpad's Setup \, which has no release \, in all six modes (ref/module/map.md)., f 40;
 #X connect 0 0 1 0;
 #X connect 2 0 8 0;
 #X connect 3 0 8 0;

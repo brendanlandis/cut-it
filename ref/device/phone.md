@@ -16,10 +16,10 @@ repeats it, and rebuilds its own socket — which a phone leaving the network de
 
 **The phone is part of the instrument** (Brendan, 2026-11-03), no longer only a monitor: its screen
 follows the Launchpad's mode: in mode 1 the drum screen, beside the drum page; in every other mode,
-the remote screen. The checklist page is a page of its own, which test mode puts in their place
-(Brendan, 2026-11-04). **The link runs both ways.** Outbound it carries six addresses — parameters,
+the remote screen. The checklist page is a page of its own, holding the line check, which test mode
+puts in their place (Brendan, 2026-11-04). **The link runs both ways.** Outbound it carries six addresses — parameters,
 status, a heartbeat, a held alert, the mode and the drum screen's state. Inbound it takes **a closed
-vocabulary of six commands** (three diagnostic, two for the checklist page, one for the drum screen),
+vocabulary of five commands** (three diagnostic, one for the checklist page, one for the drum screen),
 acknowledges each one, and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
 the heartbeat counter and measured under *Broadcast* in Reference and below; that is the evidence anything
 time-critical would have to answer to.
@@ -93,9 +93,8 @@ button.
 | `re-wire` | Publishes `re-wire` on the `presence` bus, and `u_present` forks `wire.sh` — see [presence.md](../module/presence.md) | verified | 306 |
 | `clear-alert` | Writes the empty alert to `u_net`'s held store, so the 2 Hz repeat goes back to `none` / `-` | verified | 306 |
 | `test-note` | Fires one probe at a sounding device, out a cord. Takes the device below | verified | 306 |
-| `send` | A checklist's Send line, one message, `<bus> <message>`, from the phone's checklist page: out a cord to `u_inject` **in test mode only**, answered `ack send`, or `ack test-off` while it is off | unknown | — |
 | `result` | A step's verdict, `<checklist>-<n>-<pass or fail>`, logged as `info phone <verdict>`, in test mode or not; answered `ack result` | unknown | — |
-| `drums` | A drum screen control, passed on whole: whatever follows `drums` goes out `u_net`'s fourth outlet to `c_steps`, which refuses one it does not know as `fail c_steps bad-selector`, so a new drum control needs nothing in `u_net` (Brendan, 2026-11-04). `sync`, `snap` and `select` are answered `ack drums <action>`, the rest not, since the state shows them | verified | — |
+| `drums` | A drum screen control, passed on whole: whatever follows `drums` goes out `u_net`'s third outlet to `c_steps`, which refuses one it does not know as `fail c_steps bad-selector`, so a new drum control needs nothing in `u_net` (Brendan, 2026-11-04). `sync`, `snap` and `select` are answered `ack drums <action>`, the rest not, since the state shows them | verified | — |
 
 <!-- check: pd-route "Cut It/u_net.pd" m_volca -->
 
@@ -158,8 +157,8 @@ and every text and control at **WCAG AA**, which `touchosc-assert` audits from t
 | Test mode | Coming on, the checklist page, under a tab bar of its own, stands in for the tabs; going off takes it away (Brendan, 2026-11-04). A mode chosen on the Launchpad turns it off, so the mode's tab is what shows next (Brendan, 2026-11-04). A flip sends a heartbeat at once, so the page turns with the tap rather than at the next of the 2 Hz beats | unknown |
 | The drum screen | Left: the tempo, large, playing or stopped with its lamp, the global last step, the link lamp, the alert. Middle: the sixteen pads as the Launchpad lays them out, each labeled with its last step: red following the global one, teal with a dot (• 5) with its own, lit when selected; a tap selects. ⛔ A pad the state lights never sends: when it did, four pads pressed at once on the Launchpad lit in turn on the phone, each selecting itself again, and the selection bounced between Cut It and the phone for as long as they were held (2026-11-04). Right: sync first steps and snap to global, a line while one waits for step 1, ring knobs for drunk and the selected track's skip and move, and the time signature as [n] / [d], each box dragged up or down a step at a time (Brendan, 2026-11-04), about 20 points a step for the top number's 32, 26 for the bottom's 5 | unknown |
 | The remote screen | Left: the last parameter's name and its value large, with its unit (`120 (29)` for a held tempo), the tempo, the alert with its lamp, the link. Right: re-wire, clear alert, test Volca, test 404 | unknown |
-| The checklist page | A checklist a step at a time, from `test/checklists/` ([the checklists' README](../../test/checklists/README.md), *On the phone*); Send hides on a step with no Send line | unknown |
-| An answer | `/cutit/ack` flashes its button teal for 300 ms, by its color, never its value, so it can't send the command again; a refused Send line flashes grey | unknown |
+| The checklist page | The line check a step at a time, from `test/checklists/linecheck.md` ([the checklists' README](../../test/checklists/README.md), *The line check*): its position and title, its text, Pass and Fail, Back and Next | unknown |
+| An answer | `/cutit/ack` flashes its button teal for 300 ms, by its color, never its value, so it can't send the command again | unknown |
 | A knob or a time signature box | Sends when a finger moves it off the value it knows, its own or the one the state handed it, so the state is never sent back; for a second after a touch the state leaves it alone. A box sends `num` or `den` once a step, as `c_steps` takes them | unknown |
 | `/cutit/drums` | `c_steps`' `R.phone`: playing, the global last step, the selected track, pending (0, 1 sync, 2 snap), the sixteen last steps, then 1 for each track with its own, then the time signature's two numbers, the drunkenness, and the selected track's skip and move chances. Sent by `c_steps` when it changes, through `u_root`'s cord into `u_net`'s second inlet | verified |
 | A short or empty state | Fewer than 41 numbers draws nothing, so the empty repeat before the first state leaves the screen as it was | unknown |
@@ -309,14 +308,16 @@ here (Brendan, 2026-11-04).
 0.49 cannot supply one (Reference, *Pure Data*), and a bidirectional link does not change that.
 0.57's can, with `-f` (above).
 
-⛔ **`send` is the one that reaches further, so it has a switch of its own** (Brendan, 2026-11-03).
-It carries a checklist's Send line to `u_inject`'s eight buses (`test/checklists/README.md`), so the
-phone can run a rig checklist alone. `u_net` passes it only in **test mode**, which is flipped with a
-tap on the Launchpad's Setup button (`lp-setup`) or at the Organelle itself (`aux` and the second key
-from the bottom, `og-shift-61`), starts off at every load,
-goes off when a mode is chosen, and rides on the heartbeat so the phone shows the Organelle's own state; a flip sends a heartbeat at
-once rather than waiting for the next. Turning it on warns, so
-the OLED says so in compose and the log keeps it.
+⛔ **Nothing from the phone reaches the buses** (Brendan, 2026-11-04). A `send` command once carried
+a checklist's Send line to `u_inject`, in test mode only, so the phone could run any checklist
+alone; it went when the checklists split into two suites, since the line check, the one the phone
+carries, sends nothing, and the development checklists' lines go from the Mac.
+
+**Test mode puts the line check up.** It is flipped with a tap on the Launchpad's Setup button
+(`lp-setup`) or at the Organelle itself (`aux` and the second key from the bottom, `og-shift-61`),
+starts off at every load, goes off when a mode is chosen, and rides on the heartbeat so the phone
+shows the Organelle's own state; a flip sends a heartbeat at once rather than waiting for the next.
+Turning it on warns, so the OLED says so in compose and the log keeps it.
 
 ⛔ **A full status dump was considered and rejected as a command.** Parameters and status re-send
 every two seconds and the alert repeats at 2 Hz, so a phone joining late repopulates on its own in

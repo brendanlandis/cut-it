@@ -1,17 +1,52 @@
 # Checklists
 
-**The hands-on half of the tests: a person at the rig is the oracle.** One checklist per area, each
-step something to do and a sentence that says what passes. The headless half, where a program is the
-oracle, is the gates: [test/README.md](../README.md).
+**The hands-on half of the tests: a person at the rig is the oracle.** Each step is something to do
+and a sentence that says what passes. The headless half, where a program is the oracle, is the gates:
+[test/README.md](../README.md).
 
 They replaced the bench runner on 2026-11-03: `test/run.sh --bench`, the generated bench patches and
-the verdict file went, and every step's text came here. A rig session means opening a checklist.
+the verdict file went, and every step's text came here.
+
+**Two suites** (Brendan, 2026-11-04). The **line check**, before a set, asks whether every device is
+there and talking to the next. The **development checklists**, after a change, ask whether Cut It
+does what it should. A failure in the first points at a cable, a power supply or a setting; in the
+second, at the code.
+
+## The line check
+
+**Before a set, from the phone, alone at the rig.** One short list, with every step hands-on: nothing
+is sent from anywhere.
+
+| Checklist | Steps | Judges |
+|---|---|---|
+| [linecheck](linecheck.md) | 9 | the phone's link, the roster, the 404's MIDI settings and its clock, sound from the 404 and the Volca through the PA, the transport |
+
+1. **Choose mode 1, then tap Setup**, the Launchpad's bottom-left button (or at the Organelle hold
+   `aux` and press the second key from the bottom). That turns test mode on, and the phone's screens
+   give way to the checklist page, reading `test mode on` (the Organelle's own state, from the
+   heartbeat); the OLED warns in compose.
+2. Each step shows its title and, from the file, Need, Do, Check and Pass if; the Notes stay here. A
+   step too long for one page has a second, and Next shows it first.
+3. **Pass** or **Fail** logs the verdict on the Organelle as `info phone linecheck-<n>-pass` (read it
+   with `tools/fetch-errors.sh`), flashes, and goes on to the next step. **Back** and **Next** move
+   without logging.
+4. **Tap Setup again when it's done.** Choosing a mode also turns test mode off and brings the
+   phone's screens back, as does every load of Cut It, so no step presses a mode button.
+
+The page is generated from linecheck.md by `tools/touchosc/build.py` and goes to the phone with
+`tools/touchosc/push.sh`; edit it, push. **Gate:** `test/gate/touchosc-assert.sh`, which also fails
+while the committed layout is stale or the line check has a Send line.
+
+## The development checklists
+
+**After a change, with the Mac at hand.** One per area. Their Send lines go from the Mac (below). A rig
+session means opening one.
 
 | Checklist | Steps | Judges |
 |---|---|---|
 | [display](display.md) | 20 | the OLED's layers and the error bus |
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
-| [tempo](tempo.md) | 13 | the transport, knob 1's pickup, the clamp, the 404 following |
+| [tempo](tempo.md) | 14 | the transport, knob 1's pickup, the clamp, the 404 following |
 | [launchpad](launchpad.md) | 28 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |
 | [phone](phone.md) | 23 | what the phone shows, its tabs, the link dropping and coming back, its buttons, the checklist page and test mode |
 | [state](state.md) | 5 | the front-panel Save, a power cycle, the mode surviving it |
@@ -86,36 +121,14 @@ can be done by hand instead:
 | `start bang` · `stop bang` | PLAY · STOP on the nanoKONTROL |
 | `panic bang` | a short tap on the Launchpad's top-left corner button |
 
-## On the phone
-
-**The checklist page runs a checklist alone, at the rig**: a page of the phone's TouchOSC layout that
-test mode puts in place of its screens (Brendan, 2026-11-03: the Mac faces away from the rig, the
-phone sits at it; 2026-11-04: its own page, up with Setup).
-
-1. **Test mode on:** tap Setup, the Launchpad's bottom-left button, or at the Organelle hold `aux`
-   and press the second key from the bottom. The phone shows the checklist page, which says `test mode on`
-   (the Organelle's own state, from the heartbeat), and the OLED warns in compose. Every load of
-   Cut It turns it off again, and so does choosing a mode; turning it off puts the phone's screens back. A step that looks at
-   the phone's drum or remote screen needs a Setup tap to see it, and another to come back.
-2. **Pick a checklist** with ◀ and ▶. Each step shows its title and, from the file, Need, Send, Do,
-   Check and Pass if; the Notes stay here. A step too long for one page has a second, and Next
-   shows it first.
-3. **Send** puts the step's Send line on the buses, one `send` command a message, through `u_net`
-   to `u_inject`; the button lights green on the Organelle's answer, and red when it refuses the
-   line because test mode is off.
-4. **Pass** or **Fail** logs the verdict on the Organelle as `info phone <checklist>-<n>-pass` (read
-   it with `tools/fetch-errors.sh`), marks the step and goes on to the next. **Back** and **Next**
-   move without logging.
-
-The page is generated from these files by `tools/touchosc/build.py` and goes to the phone with
-`tools/touchosc/push.sh`; edit a checklist, push. **Gate:** `test/gate/touchosc-assert.sh`, which
-also fails while the committed layout is stale.
-
 ## Writing a step
 
 A step is a promise about one thing a person can see, hear or read, so the rules are about keeping
 it honest:
 
+- **A step belongs to one suite.** The line check's judge a connection, a device or a setting, with
+  no code under test; they send nothing and press no mode button, since a mode ends test mode and
+  takes the page away. Whether Cut It does what it should goes in a development checklist.
 - **A step belongs to whatever it touches.** Before adding one, ask: could it run with the named
   device unplugged? Then it is not that device's step. The nanoKONTROL's checklist once carried
   fourteen steps that never touched the controller, nine of them display steps under another name,

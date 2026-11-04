@@ -152,9 +152,9 @@ ones that bite a gate's author too:
 - **Leave to a gate what a gate can prove.** A checklist step is for eyes, ears and fingers; one claim
   judged in both places reports more coverage than exists.
 
-⚠️ **A Send line reaches the buses only from the Mac**, through Pd's message window with
-`main-dev.pd` open. Nothing on the Organelle takes one, so a step that needs a bus message and a
-device's own answer has no rig route (the checklists' README).
+⚠️ **A Send line reaches the buses only from the Mac**: `tools/send.sh` carries it over SSH to the
+Organelle's own `u_inject`, or with `HOST=mac` to `main-dev.pd`. Nothing from the phone does, and
+the line check, the phone's checklist, has none (the checklists' README).
 
 ## Running everything
 

@@ -132,53 +132,36 @@ check("test 404's answer flashes it, and not test Volca", teal(C.t404.color) and
       T.show({ C.t404.color, C.tvolca.color }))
 
 print("\n--- the checklist page ---")
-equal("the first checklist, step 1", { L.text(w, "cname"), L.text(w, "cpos"):match("^%d+ of %d+") },
-      { E.lists[1].name, "1 of " .. E.lists[1].steps })
-L.press(w, "cnext")
-equal("the next checklist", L.text(w, "cname"), E.lists[2].name)
-L.press(w, "cprev")
-L.press(w, "cprev")
-equal("back past the first: the last", L.text(w, "cname"), E.lists[#E.lists].name)
--- To a checklist and step, by the page's own buttons.
-local function go(ci, si)
-  L.press(w, "cnext")
-  for _ = 1, #E.lists do
-    if L.text(w, "cname") == E.lists[ci].name then break end
-    L.press(w, "cnext")
-  end
-  for _ = 1, 100 do
-    if L.text(w, "cpos"):find("^" .. si .. " of ") then break end
-    L.press(w, "cfwd")
-  end
-end
-go(E.send.ci, E.send.si)
-equal("the step with a Send line: its title, and Send showing",
-      { L.text(w, "ctitle"), C.csend.visible }, { E.send.title, true })
-equal("Send: one /cutit send a message, numbers as numbers", L.press(w, "csend"), E.send.sent)
-L.osc(w, "/cutit/ack", "test-off")
-L.update(w)
-check("refused, test mode off: Send flashes grey", C.csend.color[1] > 0.4 and C.csend.color[1] < 0.7,
-      T.show(C.csend.color))
-L.update(w, 400)
+-- E is the checklist the gate built the page on, one with a step on several pages.
+equal("step 1 of the checklist, its title",
+      { L.text(w, "cpos"), L.text(w, "ctitle") }, { "1 of " .. E.steps, E.title })
+equal("no Send button, and no checklist to pick: the page holds one, which sends nothing",
+      { C.csend, C.cprev, C.cnext }, {})
 equal("Pass: the verdict, and on to the next step", L.press(w, "cpass"),
-      { { "/cutit", "result", E.send.verdict } })
-check("... step " .. (E.send.si + 1), L.text(w, "cpos"):find("^" .. (E.send.si + 1) .. " of ") ~= nil,
-      L.text(w, "cpos"))
+      { { "/cutit", "result", E.pass } })
+check("... step 2", L.text(w, "cpos"):find("^2 of ") ~= nil, L.text(w, "cpos"))
 L.press(w, "cback")
 check("Back: the step just passed, marked passed", L.text(w, "cpos"):find("passed$") ~= nil,
       L.text(w, "cpos"))
-go(E.nosend.ci, E.nosend.si)
-equal("a step with no Send line hides Send", C.csend.visible, false)
-go(E.multi.ci, E.multi.si)
+L.osc(w, "/cutit/ack", "result")
+L.update(w)
+check("... and the answer to it flashes Pass", C.cpass.color[1] > 0.9 and C.cpass.color[2] > 0.9,
+      T.show(C.cpass.color))
+L.update(w, 400)
+-- To a step, by the page's own button.
+for _ = 1, 100 do
+  if L.text(w, "cpos"):find("^" .. E.multi.si .. " of ") then break end
+  L.press(w, "cfwd")
+end
 equal("a step on " .. E.multi.pages .. " pages shows its first",
-      L.text(w, "cpos"), E.multi.si .. " of " .. E.multi.steps .. "   1/" .. E.multi.pages)
+      L.text(w, "cpos"), E.multi.si .. " of " .. E.steps .. "   1/" .. E.multi.pages)
 check("... its text, a line at a time", L.text(w, "cbody"):find("\n") ~= nil, L.text(w, "cbody"))
 L.press(w, "cfwd")
 equal("Next shows its second page before the next step",
-      L.text(w, "cpos"), E.multi.si .. " of " .. E.multi.steps .. "   2/" .. E.multi.pages)
+      L.text(w, "cpos"), E.multi.si .. " of " .. E.steps .. "   2/" .. E.multi.pages)
 L.press(w, "cback")
 equal("... and Back the first again",
-      L.text(w, "cpos"), E.multi.si .. " of " .. E.multi.steps .. "   1/" .. E.multi.pages)
+      L.text(w, "cpos"), E.multi.si .. " of " .. E.steps .. "   1/" .. E.multi.pages)
 equal("Fail: its verdict", L.press(w, "cfail"), { { "/cutit", "result", E.multi.verdict } })
 L.osc(w, "/cutit/ack", "result")
 L.update(w)

@@ -19,7 +19,7 @@ word.
 ## One gate per module
 
 Twenty-three gates, and each answers for exactly one page: under `ref/`, or for `u_inject` and the
-phone's checklist page, the checklists' guide. That is the whole organizing principle: **a page that names a gate should be able
+phone's line check page, the checklists' guide. That is the whole organizing principle: **a page that names a gate should be able
 to name one whose entire subject is that page**, or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
 
@@ -41,17 +41,17 @@ were false.
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 102 | `device/phone` |
+| `phone-assert.sh` | 97 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 60: 9 read, 51 in Lua | `device/phone` — the phone's TouchOSC layout, the checklist page included |
+| `touchosc-assert.sh` | 58: 11 read, 47 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 
-**1041 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**1034 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **1034**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **1027**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's;
 `touchosc-assert.sh` two as well, the reading first.
@@ -391,7 +391,7 @@ equivalent.
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       9 + 51 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       11 + 47 checks, ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
@@ -409,8 +409,9 @@ Then the layout's own scripts, unpacked into the scratch directory and run by
 `test/gate/lua/touchosc_test.lua` under `test/gate/lua/lib_touchosc.lua`, a stand-in for TouchOSC as
 `lib_test.lua` is for pdlua: the tabs following the mode, test mode bringing up the checklists and
 sending them back, the drum screen's state and sliders (a value from Cut It never sent back), the
-remote screen's rows and buttons, the checklist page's Send, Pass, Fail, Back and Next, worked out
-from the checklists themselves, and NO-LINK. **What it cannot judge is how TouchOSC draws**; the
+remote screen's rows and buttons, the checklist page's Pass, Fail, Back and Next, and NO-LINK. The
+page is driven on a development checklist with a step on two pages, built for the run, since every
+line-check step may fit on one; the reading half holds the line check to having no Send line. **What it cannot judge is how TouchOSC draws**; the
 phone checklist is the oracle for that.
 
 ✅ **Proven red** (2026-11-04): test mode never changing the tab (Lua 1 failed), a pad sending
@@ -418,6 +419,9 @@ phone checklist is the oracle for that.
 ✅ **And again for the redesign**: grey text too dim for AA (read 1, Lua 1), a time signature box
 sending one step for a drag across two (Lua 1), and answers lighting a button by its value rather
 than its color, which sends its command again (Lua 9).
+✅ **And for the line check** (2026-11-04): a Send line in it failed read 1, and the old `u_net`,
+still taking `send`, failed `phone-assert` 12 (three for the command, nine for the drum outlet
+moving down one).
 ✅ **And for the pads** (2026-11-04): a pad sending when the state lights it, which bounced four
 selections between Cut It and the phone, failed 2; the old `u_net`, with no heartbeat on a flip of
 test mode, failed `phone-assert`'s two "at once" checks, 299 and 99 ms late; and with no cord

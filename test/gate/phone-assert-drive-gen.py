@@ -74,10 +74,8 @@ tap_v = obj(20, 880, "s \\$0-tap-volca")
 tap_4 = obj(300, 880, "s \\$0-tap-p404")
 con(unet, 0, tap_v, 0)
 con(unet, 1, tap_4, 0)
-tap_i = obj(560, 880, "s \\$0-tap-inject")
-con(unet, 2, tap_i, 0)
-tap_d = obj(820, 880, "s \\$0-tap-drums")
-con(unet, 3, tap_d, 0)
+tap_d = obj(560, 880, "s \\$0-tap-drums")
+con(unet, 2, tap_d, 0)
 # c_steps' drum screen state arrives by name, as its cord would bring it in u_root.
 ds_r = obj(300, 720, "r \\$0-ds")
 con(ds_r, 0, unet, 1)
@@ -163,7 +161,6 @@ def probe(x, y, name, src):
 probe(20, 1900, "presence", "r presence")
 probe(400, 1900, "volca", "r \\$0-tap-volca")
 probe(700, 1900, "p404", "r \\$0-tap-p404")
-probe(20, 2700, "inject", "r \\$0-tap-inject")
 probe(400, 2700, "err", "r err")
 probe(700, 2700, "drums", "r \\$0-tap-drums")
 txt(20, 2180,
@@ -210,9 +207,9 @@ SEQ = [
                          ("cmd", ("cutit", "test-note 404")),
                          ("cmd", ("other", "re-wire"))]),
     (28000, "cmdclear", [("cmd", ("cutit", "clear-alert"))]),
-    # -- the checklist page's two commands, and test mode between them. A Send
-    #    line is refused while test mode is off, on either side of the window
-    #    where it is on.
+    # -- send, a command no longer (Brendan, 2026-11-04: the line check sends
+    #    nothing), with test mode off, on and off again; result; and test mode
+    #    between them.
     (29400, "sendoff",  [("cmd", ("cutit", "send disp chop-size 43 %"))]),
     (30800, "tmon",     [("tm", None)]),
     (32200, "sendon",   [("cmd", ("cutit", "send disp chop-size 43 %")),
@@ -224,7 +221,7 @@ SEQ = [
     # dropped, so two in one window leave test mode on, and one more turns it off
     (37800, "tmtwice",  [("tm", None), ("tm", None)]),
     (39200, "tmoff2",   [("tm", None)]),
-    # -- the two drum buttons, out the fourth outlet to c_steps
+    # -- the two drum buttons, out the third outlet to c_steps
     (40600, "cmdsync",  [("cmd", ("cutit", "drums sync"))]),
     (42000, "cmdsnap",  [("cmd", ("cutit", "drums snap"))]),
     (43400, "cmdselect", [("cmd", ("cutit", "drums select 3"))]),

@@ -226,27 +226,29 @@ def lua(v):
     return B.lua(v)
 
 
-def expect(lists):
-    """What the Lua test needs to know about the checklists, worked out here from the same
-    data the layout carries: a step with a Send line that is not its checklist's last, and a
-    step on more than one page that is not either."""
-    names = [{"name": c["name"], "steps": len(c["steps"])} for c in lists]
-    send = next((ci, si, s) for ci, c in enumerate(lists) for si, s in enumerate(c["steps"])
-                if s["sends"] and si + 1 < len(c["steps"]))
-    multi = next((ci, si, s) for ci, c in enumerate(lists) for si, s in enumerate(c["steps"])
-                 if len(s["pages"]) > 1 and si + 1 < len(c["steps"]))
-    nosend = next((ci, si) for ci, c in enumerate(lists) for si, s in enumerate(c["steps"])
-                  if not s["sends"])
-    ci, si, s = send
-    msgs = [["/cutit", "send"] + [float(t) if re.fullmatch(r"-?\d+(\.\d+)?", t) else t
-                                  for t in m.split()] for m in s["sends"]]
-    e = {"lists": names,
-         "send": {"ci": ci + 1, "si": si + 1, "title": s["title"], "sent": msgs,
-                  "verdict": "%s-%d-pass" % (lists[ci]["name"], s["n"])}}
-    e["nosend"] = {"ci": nosend[0] + 1, "si": nosend[1] + 1}
-    ci, si, s = multi
-    e["multi"] = {"ci": ci + 1, "si": si + 1, "steps": len(lists[ci]["steps"]),
-                  "pages": len(s["pages"]), "verdict": "%s-%d-fail" % (lists[ci]["name"], s["n"])}
+def longest():
+    """The checklist the gate runs the page on: the line check's steps may all fit one page, so
+    the first development checklist with a step on more than one page, not its last, stands in
+    for it. The page holds any checklist the same way; only the data differs."""
+    for f in sorted(os.listdir(B.CHECKLISTS)):
+        name = f[:-3]
+        if not f.endswith(".md") or name in ("README", B.LIST):
+            continue
+        check, bad = B.checklist(name)
+        if not bad and any(len(s["pages"]) > 1 for s in check["steps"][:-1]):
+            return check
+    return None
+
+
+def expect(check):
+    """What the Lua test needs to know about the checklist the page carries, worked out here
+    from the same data: its first step, and a step on more than one page that is not its last."""
+    si, s = next((i, s) for i, s in enumerate(check["steps"])
+                 if len(s["pages"]) > 1 and i + 1 < len(check["steps"]))
+    e = {"name": check["name"], "steps": len(check["steps"]), "title": check["steps"][0]["title"],
+         "pass": "%s-1-pass" % check["name"],
+         "multi": {"si": si + 1, "pages": len(s["pages"]),
+                   "verdict": "%s-%d-fail" % (check["name"], s["n"])}}
     return "return " + lua(e) + "\n"
 
 
@@ -290,8 +292,8 @@ def main():
                 [m for m in msgs if m.startswith("drums select ")])
         # Every acknowledgment u_net sends has a cell to light, but select's: a pad's
         # selection shows in the state that comes back.
-        acked = ([c for c in ucmd if c not in ("test-note", "drums", "send")]
-                 + ["test-note " + d for d in udev] + ["send", "test-off"]
+        acked = ([c for c in ucmd if c not in ("test-note", "drums")]
+                 + ["test-note " + d for d in udev]
                  + ["drums " + a for a in uacks if a != "select"])
         A.check("every acknowledgment u_net sends lights a cell",
                 sorted(acked) == sorted(B.ACKS),
@@ -302,7 +304,19 @@ def main():
             pairs > 50 and not low, "%d pairs; below AA:\n    %s" % (pairs, "\n    ".join(low)))
     A.note("%d pairs at AA" % pairs)
 
+    lc = open(os.path.join(B.CHECKLISTS, B.LIST + ".md"), encoding="utf-8").read()
+    A.check("⛔ the line check, the page's checklist, has no Send line: the phone sends none",
+            "**Send:**" not in lc, "%s has a Send line" % (B.LIST + ".md"))
+
     print("\n=== B. its scripts, run under a stand-in for TouchOSC ===")
+    # The page on a checklist with a step on two pages, so paging through one is driven too.
+    check = longest()
+    A.check("a development checklist has a step on more than one page, to drive the page with",
+            check is not None, "none has: the Lua test can't page through a step")
+    if check is None:
+        return 1
+    nodes = controls(xml.dom.minidom.parseString(B.build(check["name"])))
+    A.note("the page's scripts run on %s" % (check["name"] + ".md"))
     work = S.work_dir("touchosc")
     os.makedirs(work, exist_ok=True)
     rows = []
@@ -320,9 +334,8 @@ def main():
         rows.append(row)
     with open(os.path.join(work, "controls.lua"), "w", encoding="utf-8") as fh:
         fh.write("return " + lua(rows) + "\n")
-    lists, _bad = B.checklists()
     with open(os.path.join(work, "expect.lua"), "w", encoding="utf-8") as fh:
-        fh.write(expect(lists))
+        fh.write(expect(check))
     rc_lua = S.lua("test/gate/lua/touchosc_test.lua", work, *[a for a in sys.argv[1:]
                                                               if a == "-v"])
     if not KEEP:

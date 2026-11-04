@@ -46,9 +46,8 @@ ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert",
          # the driver's taps for the inbound half: re-wire leaves on the
          # presence bus and a test note through a cord, neither on the wire.
          "/probe/presence", "/probe/volca", "/probe/p404",
-         # and the checklist page's: a Send line leaves u_net through a cord to
-         # u_inject, and test mode and a result report on err.
-         "/probe/inject", "/probe/err",
+         # and the checklist page's: test mode and a result report on err.
+         "/probe/err",
          # and the two drum buttons: out a cord to c_steps.
          "/probe/drums",
          # and what the drum screen shows: the mode, and c_steps' state.
@@ -333,8 +332,7 @@ def main():
         A.check("%s: %s" % (win, label), not any(got.values()),
                 "; ".join("%s %s" % (a, v) for a, v in got.items() if v) or "(silent)")
 
-    CMD = ["/probe/presence", "/probe/volca", "/probe/p404", "/probe/inject",
-           "/probe/drums", "/cutit/ack"]
+    CMD = ["/probe/presence", "/probe/volca", "/probe/p404", "/probe/drums", "/cutit/ack"]
 
     one("cmdwire", "/cutit/ack", ["re-wire"], "re-wire is acknowledged")
     one("cmdwire", "/probe/presence", ["re-wire"],
@@ -365,7 +363,7 @@ def main():
     one("cmddrumsnew", "/probe/drums", ["reload", 2.0],
         "⛔ a drums command u_net has never heard of goes to c_steps whole, to refuse")
     none_of("cmddrumsnew", ["/cutit/ack"], "and is not acknowledged")
-    none_of("cmddrumsnew", ["/probe/volca", "/probe/p404", "/probe/presence", "/probe/inject"],
+    none_of("cmddrumsnew", ["/probe/volca", "/probe/p404", "/probe/presence"],
             "and reaches nothing else")
     A.check("cmdbogus: the link was LIVE while they were ignored",
             len(args("cmdbogus", "/cutit/hb")) >= 2,
@@ -391,9 +389,8 @@ def main():
         f = hb_flags(win)
         A.check("%s: the heartbeat says test mode is off" % win,
                 f and all(v == 0 for v in f), f)
-    one("sendoff", "/cutit/ack", ["test-off"],
-        "⛔ a Send line with test mode off is refused, and says so")
-    none_of("sendoff", ["/probe/inject"], "and reaches nothing")
+    none_of("sendoff", CMD, "⛔ send is no command now: with test mode off it reaches nothing, "
+            "and nothing answers")
 
     one("tmon", "/probe/err", ["warn", "u_net", "test-mode-on"],
         "flipping test mode on warns, so the OLED and the log both say so")
@@ -416,28 +413,19 @@ def main():
         f = hb_flags(win)
         A.check("%s: the heartbeat says test mode is on" % win,
                 f and all(v == 1 for v in f), f)
-    A.check("sendon: both Send lines are acknowledged",
-            args("sendon", "/cutit/ack") == [["send"], ["send"]],
-            args("sendon", "/cutit/ack"))
-    A.check("sendon: both reach u_inject's cord, whole and in order",
-            args("sendon", "/probe/inject") == [["disp", "chop-size", 43.0, "%"],
-                                                ["tempo", 120.0]],
-            args("sendon", "/probe/inject"))
-    none_of("sendon", ["/probe/volca", "/probe/p404", "/probe/presence"],
-            "a Send line sounds nothing and re-wires nothing on its own")
+    none_of("sendon", CMD, "⛔ nor with it on: nothing from the phone reaches the buses "
+            "(Brendan, 2026-11-04)")
 
     one("result", "/probe/err", ["info", "phone", "tempo-2-pass"],
         "a result is logged as info phone <verdict>")
     one("result", "/cutit/ack", ["result"], "and acknowledged")
-    none_of("result", ["/probe/inject"], "a result is not a Send line")
 
     one("tmoff", "/probe/err", ["info", "u_net", "test-mode-off"],
         "flipping it off is logged, and draws nothing")
     f = hb_flags("sendoff2")
     A.check("sendoff2: the heartbeat says test mode is off again",
             f and all(v == 0 for v in f), f)
-    one("sendoff2", "/cutit/ack", ["test-off"], "⛔ and a Send line is refused again")
-    none_of("sendoff2", ["/probe/inject"], "reaching nothing")
+    none_of("sendoff2", CMD, "and send still reaches nothing")
 
     one("tmtwice", "/probe/err", ["warn", "u_net", "test-mode-on"],
         "⛔ two flips at once are one: a doubled key press turns test mode on and leaves it")
@@ -473,7 +461,7 @@ def main():
             none_of(win, ["/cutit/ack"], "and is not acknowledged: the drum screen's state says it")
         else:
             one(win, "/cutit/ack", ["drums", cmd], "and is acknowledged")
-        none_of(win, ["/probe/volca", "/probe/p404", "/probe/presence", "/probe/inject"],
+        none_of(win, ["/probe/volca", "/probe/p404", "/probe/presence"],
                 "and reaches nothing else")
 
     rc = 1 if A.report() else 0

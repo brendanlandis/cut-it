@@ -91,7 +91,7 @@ The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast
 - [ ] **20. The page holds the line check**
   - **Need:** Test mode on, as step 19 left it.
   - **Do:** On the page, tap Back until it stops, then Next through every step.
-  - **Pass if:** Its tab reads line check. It starts at 1 of 9, The phone and the Launchpad, and ends at 9 of 9, each step's text whole on its page. No Send button shows on any step, and nothing picks another checklist.
+  - **Pass if:** Its tab reads line check. It starts at 1 of 8, The phone and the Launchpad, and ends at 8 of 8, each step's text whole on its page. No Send button shows on any step, and nothing picks another checklist.
   - **Note:** The page carries test/checklists/linecheck.md alone, and the phone sends nothing onto Cut It's buses (Brendan, 2026-11-04); that `send` is no command any more is `phone-assert`'s. Steps 18 to 23 here run from the Mac, like the rest.
 
 - [ ] **21. Pass is logged on the Organelle**

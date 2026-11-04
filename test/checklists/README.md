@@ -19,7 +19,7 @@ is sent from anywhere.
 
 | Checklist | Steps | Judges |
 |---|---|---|
-| [linecheck](linecheck.md) | 9 | the phone's link, the roster, the 404's MIDI settings and its clock, sound from the 404 and the Volca through the PA, the transport |
+| [linecheck](linecheck.md) | 8 | the phone's link, the roster, the 404's MIDI settings, the drums, the mic and the Volca through the PA, the transport |
 
 1. **Choose mode 1, then tap Setup**, the Launchpad's bottom-left button (or at the Organelle hold
    `aux` and press the second key from the bottom). That turns test mode on, and the phone's screens

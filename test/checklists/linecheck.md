@@ -25,7 +25,8 @@ done, tap Setup again.
   - **Need:** The mixer's channel 1 up, and the PA on.
   - **Do:** Press the Launchpad's bottom-left drum pad, pad 1, a few times.
   - **Pass if:** The PA plays pad 1's sample each time, as loud however hard you press.
-  - **Note:** The drums are Cut It's own, played on the Organelle and out its left output to the mixer's channel 1 (Brendan, 2026-11-04). A silent pad is its sample missing: the deploy copies the sixteen from samples/drums/. At load Cut It warns in compose when only some are there; with none, every pad is silent and nothing is drawn.
+  - **Note:** The drums are Cut It's own, played on the Organelle and out its left output to the mixer's channel 1 (Brendan, 2026-11-04). A silent pad is its sample missing: the deploy copies the sixteen from samples/drums/. At load Cut It warns when only some are there;
+ with none, every pad is silent and nothing is drawn.
 
 - [ ] **4. The mic**
   - **Need:** The SM58 in the Organelle's input.

@@ -6,7 +6,7 @@ Mode 1's drum page on the Launchpad, the sequencer playing the drum samples from
 
 - [ ] **1. The drum page**
   - **Need:** A fresh load of the patch with no saved pattern — the selection resets at every load and a saved step would be lit.
-  - **Send:** `stop bang; mode compose mode-1`
+  - **Send:** `stop bang; mode mode-1`
   - **Pass if:** The left column has its top lamp bright. The top four rows of pads are the steps: the top two dim but the first, which is blue as a bar's first step, and the two under them dark, since the last step is 16. The bottom-left four by four is very dim — dimmer than any velocity button — with its bottom-left pad lit. The right halves of the bottom two rows are the eight velocity buttons — white at the top left to red at the bottom right, with the second one on the bottom row brighter than the rest and the lit drum pad in its color. The top row of the right four by four is dim purple and the row under it dark, and nothing walks along the bottom row.
   - **Note:** Level 6 is the bottom row's second velocity button; track 1 is the bottom-left drum pad. Both reset at every load ([sequencer](../../ref/module/sequencer.md)).
 
@@ -103,6 +103,7 @@ Mode 1's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Note:** `u_state` flushes within 2 seconds of a change, so the wait is part of the step.
 
 - [ ] **23. Other modes keep their grid**
-  - **Send:** `mode compose mode-2`
+  - **Send:** `mode mode-2`
+
   - **Do:** Press a pad in the top two rows.
   - **Pass if:** The second lamp lights and the drum page gives way to the beat row along the bottom. A pad press draws a pad-NN row on the OLED again, and the phone goes back to the remote screen.

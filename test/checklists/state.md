@@ -14,7 +14,8 @@ Most of the data store is deliberately invisible: state is files, and `state-ass
 
 - [ ] **3. The change reached the disk**
   - **Check:** `./tools/fetch-state.sh --show` and read `cut-it-auto.txt`.
-  - **Pass if:** Cut-it-auto.txt reads mode perform mode-4. The file is the only evidence — nothing on the instrument shows it. The old mode still being there is the failure.
+  - **Pass if:** Cut-it-auto.txt reads mode mode-4.
+ The file is the only evidence — nothing on the instrument shows it. The old mode still being there is the failure.
 
 - [ ] **4. Front-panel Save**
   - **Need:** Knob 1 parked where the footer reads 57 BPM. Every Save rewrites knobs.txt from the physical knobs, and midi 1 and tempo 2 both assert that restored value.

@@ -132,7 +132,7 @@ value replaces it and the flush then writes the restored one back. A malformed l
 survives every power cycle — a `mode` of `compose` with its name missing kills the map lookup on
 every boot (item 294, [map.md](map.md)).
 
-✅ **`u_map` refuses one** — item 297. A `mode` that is not two atoms never reaches the store, so
+✅ **`u_map` refuses one** — item 297. A `mode` that is not one atom naming a page never reaches the store, so
 the store keeps the seed's good value and **the flush writes that back instead**, repairing the file
 on the next boot with no user action. ⚠️ **That is the contributor's job, not `u_state`'s**, which
 knows nothing about what any key means; a contributor that does not validate still inherits the
@@ -162,7 +162,8 @@ namespace are the same namespace.
 **Fix:** `[list append]` between the bus and the store.
 
 ⚠️ The same trap one level down: `[text set]` and `[text search]` both answer a bare selector with
-"no method for `mode`". A message box typed `mode compose mode-1` carries `mode` as its **selector**,
+"no method for `mode`". A message box typed `mode mode-1` carries `mode` as its **selector**,
+
 not as data.
 
 ### A `[text search]` miss reaches the wrong inlet as -1

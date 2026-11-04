@@ -70,13 +70,15 @@ SEQ = [
     # Held and unmapped at once: knob 2 has never crossed, and its row is keyed
     # mode-1, so in mode-4 it maps to nothing and must still report (item 242).
     (5400, "UNMAPPED", ["\\; param og-knob-2 0.75"], GAP),
-    # A mode the key-setter cannot use, as u_state replays a truncated
-    # cut-it-auto.txt: one atom empties the lookup key, and every knob would
-    # draw its raw row (item 294, fixed by 297). The static lint cannot see a
-    # mode that arrives at runtime.
+    # A mode the key-setter cannot use, as u_state replays an old
+    # cut-it-auto.txt truncated to `mode compose`: one atom, but no page, and
+    # as the key it would miss every row, so every knob would draw its raw row
+    # (item 294, fixed by 297). The static lint cannot see a mode that arrives
+    # at runtime.
     (5600, "BAD-MODE", ["\\; mode compose"], GAP),
-    # The key must survive: og-knob-1 is tempo in all six modes and long since
+    # The key must survive: og-knob-1 is tempo in every mode and long since
     # live, so 0.6 must still reach tempo as 150 bpm.
+
     (5800, "AFTER-BAD", ["\\; param og-knob-1 0.6"], GAP),
     # The shipped rows on the Organelle's shifted keys (og-shift-60..84, aux
     # held), the one panel that can never be the missing device.

@@ -8,7 +8,7 @@ The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast
 
 - [ ] **1. The link is up**
   - **Need:** TouchOSC open on the phone with Cut It's layout, on the same network. A no link here means nothing below can be judged.
-  - **Send:** `mode compose mode-2`
+  - **Send:** `mode mode-2`
   - **Pass if:** The phone's tab reads remote and shows the remote screen, and its link lamp is lit teal beside the word link rather than no link.
 
 - [ ] **2. One parameter**
@@ -81,7 +81,8 @@ The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast
 
 - [ ] **18. Test mode on, from the panel**
   - **Do:** Tap Setup to leave test mode. Then on the Organelle hold aux, press the second key from the bottom (the first black key), then let go of both. Watch the phone for ten seconds.
-  - **Pass if:** The checklist page comes back at the step it was on, its label reading test mode on beside a lit teal lamp, and still reads it ten seconds later. In compose the OLED shows a bordered box reading warn then u_net then test-mode-on for about two seconds; in perform it shows nothing.
+  - **Pass if:** The checklist page comes back at the step it was on, its label reading test mode on beside a lit teal lamp, and still reads it ten seconds later. The OLED shows a bordered box reading warn then u_net then test-mode-on for about two seconds.
+
   - **Note:** One press of the key can reach Cut It twice, 5 ms apart, which once turned test mode on and straight back off; a second flip within 300 ms is dropped (`phone-assert` holds it), and the ten seconds are this step's check that it held.
 
 - [ ] **19. The page holds the line check**

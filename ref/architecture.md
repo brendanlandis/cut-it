@@ -137,7 +137,7 @@ on `param`; what that control means is decided in `u_map`, above everything it c
 ⛔ **Names on `param` are physical, never functional** — the rule, and what it binds when you write
 an `m_` layer, are in [conventions.md](conventions.md) under *The global name allowlist*.
 
-This is what makes the compose/perform split tractable, and **it is the one boundary that is
+This is what makes a control's meaning per page tractable, and **it is the one boundary that is
 genuinely expensive to retrofit.** If `e_chop` ever learns about the nanoKONTROL, that is permanent.
 
 ## Request buses and publications
@@ -187,11 +187,12 @@ rejected** — `u_root` could serve several device layers the way `disp` serves 
 
 **The Organelle runs Pd with `-nogui`, so an error you cannot see is a silent failure.** `u_err` is
 the one filter that decides what a problem is allowed to interrupt, and it is the only file that
-decides it: any abstraction reports with `[s err]` and none of them knows what mode the instrument is
-in. It never draws — C-5 gives `g_oled` the screen, so this forwards onto `disp`.
+decides it, by level alone: every warning and every failure is drawn, on every page. Any abstraction
+reports with `[s err]` and none of them knows which page the instrument is on. It never draws — C-5
+gives `g_oled` the screen, so this forwards onto `disp`.
 
-**Everything about it is on [module/error.md](module/error.md)** — the mode filter, the durable log,
-and why the default is verbose. The message format is rule C-12; the four display surfaces and how an
+**Everything about it is on [module/error.md](module/error.md)** — the levels, why no page hides a
+warning, and the durable log. The message format is rule C-12; the four display surfaces and how an
 alert is arbitrated are on [display.md](module/display.md).
 
 ## Load-bearing decisions
@@ -203,7 +204,7 @@ The four that shape everything else.
 | **Grain timing must be audio-domain** | Pd's message clock is quantized to a 64-sample block (~1.45 ms), ~20% of a 256th note at 120 BPM. `phasor~` and `vline~`, never `metro`/`line~` at grain rate (C-11). Built that way from the first line — see [tempo.md](module/tempo.md) |
 | **Pd sequences everything** | Timing rides in note events, not MIDI clock. No external device runs its own sequencer during a performance |
 | **Two independent input channels** | `inL` = the tip, `inR` = the ring of the one input jack: the mic on the tip since 2026-11-04 — see [audio.md](module/audio.md) |
-| **Compose and perform are separate modes** | Both the Launchpad and the Organelle's keyboard serve different roles in each, so this shapes the top level of the patch |
+| **Pages, not a compose and perform split** | The Launchpad's left column chooses a page, and `u_map` looks every control up per page, so one surface serves a different role on each (Brendan, 2026-11-04). This shapes the top level of the patch |
 
 ### Why the infrastructure was built before any DSP
 
@@ -225,17 +226,18 @@ Nothing overlaps, and that is deliberate:
 |---|---|
 | **Launchpad** | Pads, grid state, sequencing — mode 1 is the drum page. Anything needing state you can *see* |
 | **nanoKONTROL** | Continuous control, with position visible on the panel. Momentary buttons only |
-| **Organelle keyboard** | Note entry at compose time; filter control at perform time |
+| **Organelle keyboard** | The Volca's notes on page 1. Under aux, the four keys every page shares: diag, test mode, stop and recover |
+
 
 ⚠️ **The Launchpad mode conflict evaporates because of this split.** Authoring that needs Note or
 Chord mode uses them; everything Cut It draws, the drum page's sequencing included, is Programmer
 Mode. They never coexist, so there is no mid-set SysEx flipping.
 
-⛔ **Two surfaces are DOUBLE-BOOKED, and that is what forces explicit modes.** The Launchpad *and*
-the Organelle's own keyboard both serve two roles — the keyboard is **four filter groups during
-performance and a note-entry surface during composition**. Designing that in from the start is much
-cheaper than retrofitting it once the filter logic exists, which is why `mode` and a mode-dependent
-`u_map` exist before any filter does.
+⛔ **Every surface is shared between pages, and that is what forces explicit pages.** A control
+means what the current page's row says, so the Launchpad's grid is the drum page on one page and a
+beat row on the rest. Designing that in from the start is much cheaper than retrofitting it once the
+filter logic exists, which is why `mode` and a page-dependent `u_map` exist before any filter does.
+
 
 ## The naming, and what it tells you
 

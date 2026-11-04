@@ -6,10 +6,11 @@
 ## What it is
 
 **The Organelle runs Pd with `-nogui`, so an error you cannot see is a silent failure** — and Pd's
-own failure mode for a wrong message is to print and continue. `u_err` is the one filter that decides
-what a problem is allowed to interrupt, and **it is the only file that decides it**: any abstraction
-reports with `[s err]` and a message box, and none of them knows or cares what mode the instrument is
-in.
+own failure mode for a wrong message is to print and continue. **`u_err` draws every warning and
+every failure, on every page** (Brendan, 2026-11-04). It is the only file that decides what a
+problem is allowed to interrupt, and it decides by level alone: any abstraction reports with
+`[s err]` and a message box, and neither the callers nor `u_err` know or care which page the
+instrument is on.
 
 *(judgment call)* It is an architecture requirement, not a debugging convenience — built in from
 the start rather than retrofitted.
@@ -26,7 +27,7 @@ looks like.
 
 | Level | Logged | Drawn | Evidence | Item |
 |-------|--------|-------|----------|------|
-| `warn` | yes | compose only | verified | — |
+| `warn` | yes | **always** | verified | — |
 | `fail` | yes | **always** | verified | — |
 | `info` | yes | **never** | verified | 291 |
 
@@ -38,14 +39,13 @@ hangs off the trigger **above** the route, so every level reaches the log whatev
 forks `wire.sh` up to eight times per recovery episode and every one belongs in the log; nine alerts
 on a 21-character screen mid-set does not.
 
-### What the filter does
+### What it does
 
 | | Evidence | Item |
 |---|---|---|
-| **Filters by `mode`** — compose shows everything, perform only `fail`. One place, same bus, same callers | verified | — |
-| **Defaults to verbose**, which is the state before any `mode` arrives. `route` matches on the selector, so the two-atom `compose mode-1` sets verbose exactly as a bare `compose` does | verified | — |
+| **Decides by level alone** — `warn` and `fail` are drawn on every page, `info` never. Nothing in it reads the `mode` bus, and `err-assert.sh` reads that off the patch as well as driving it | verified | — |
 | ⛔ **It never draws.** C-5 gives `g_oled` sole ownership of `oscOut`, so this forwards onto `disp` as `alert <level> <source> <text>` | verified | — |
-| **The bus is unfiltered; only the SCREEN is filtered.** An unconditional `[print err]` means the by-hand SSH console sees every error raised, even in perform mode | verified | — |
+| **An unconditional `[print err]`** means the by-hand SSH console sees every error raised, `info` included | verified | — |
 | **A level that is neither `warn` nor `fail`** falls out of `route`'s reject and is printed as `err-BAD-LEVEL` rather than displayed. Swallowing it would be the exact failure this file exists to prevent | verified | — |
 | **Errors time out; they are never modal.** A stuck error covering the display mid-set is worse than a missed warning | verified | — |
 
@@ -56,7 +56,7 @@ raise, which is most of what actually goes wrong.
 
 | | Evidence | Item |
 |---|---|---|
-| **Capture is unconditional.** The mode filter decides what reaches the SCREEN, never what reaches the log | verified | — |
+| **Capture is unconditional.** The level decides what reaches the SCREEN, never what reaches the log | verified | — |
 | `/sdcard/cut-it-err.cur` is the current session, bounded at **200 lines** from inside the patch | verified | — |
 | `/sdcard/cut-it-err.log` is the durable one, bounded at **400 lines** and trimmed to 300 by `logroll.sh` | verified | — |
 | `logroll.sh` runs **once per load** through `[shell]`, rolls `.cur` into `.log` and writes a `BOOT` line — the wall clock Pd does not have, 0.49 or 0.57. It echoes how many lines it carried, because a silent roll is indistinguishable from a missing script | verified | — |
@@ -101,28 +101,17 @@ for you.
 
 **Fix:** keep the text to 21 characters at the call site (C-12).
 
-### `route`, not `select`, for the mode
-
-`mode` arrives as a bare selector — `compose`, not `symbol compose` — and `select` has no method for
-that. Same underlying fact as the `list trim` trap: Pd distinguishes a message's selector from its
-arguments.
-
-**Fix:** `[route compose perform]`.
-
 ## Design
 
-**One filter, one place.** The alternative was every caller deciding whether its own problem was
-worth showing, which puts the mode in every abstraction and makes a change to the policy a change to
-all of them.
+**One filter, one place, by level.** The alternative was every caller deciding whether its own
+problem was worth showing, which makes a change to the policy a change to all of them.
 
-**Defaulting to verbose degrades safely** — the worst case is an error you did not need. The reverse
-default fails in the direction of silence, which is what the file exists to prevent.
-
-⚠️ **A mode split weighted toward `perform` silently quietens the error display.** The six modes are
-placeholders but their 3/3 ratio is not, and the sound work is what will name them — see
-[plan-v04.md](../plan-v04.md).
+**No page hides a warning** (Brendan, 2026-11-04: any warnings or errors that come up should be
+displayed). A filter on the screen fails in the direction of silence, which is what this file exists
+to prevent, and the worst case of drawing everything is an error you did not need.
 
 ## Open
 
-No unknowns. The filter, the log and the levels are all asserted by
+No unknowns. The levels, the log and the screen drawing on every page are all asserted by
 [test/gate/err-assert.sh](../../test/gate/err-assert.sh).
+

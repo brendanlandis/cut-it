@@ -34,7 +34,7 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 156: 86 in Lua, 70 in Pd | `module/map` |
+| `map-assert.sh` | 164: 91 in Lua, 73 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 42 | `module/presence` |
@@ -49,9 +49,10 @@ were false.
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 16 | `module/sequencer` — the kit, as a signal |
 
-**984 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**992 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **977**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **985**;
+ the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh` and `organelle-assert.sh` print
 two each, one per half: the Lua tests', then the analyzer's; `touchosc-assert.sh` two as well, the
 reading first.

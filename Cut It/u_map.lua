@@ -8,7 +8,7 @@
 -- in order, as {outlet, selector, atoms}:
 --   {"route", "list", {dest, arg, value, target, live}}  to u_map.pd's destination route
 --   {"disp", "list", {control, raw}}                     an unmapped control's row
---   {"store", "list", {class, mode}}                     the mode, to u_state as an auto key
+--   {"store", "list", {mode}}                            the page, to u_state as an auto key
 --   {"err", "fail", {"u_map", text}}                     to err (C-12)
 
 local R = {}
@@ -16,6 +16,9 @@ local R = {}
 -- The lookup key's mode until the mode bus says otherwise: set when the state is made, not by
 -- the 500 ms seed, since mother pushes knobs.txt before that (item 234).
 R.BOOT_MODE = "mode-1"
+
+-- The pages, mode-1 to mode-6, one per key down the Launchpad's left column (ref/module/map.md).
+R.PAGES = 6
 
 -- The Organelle's knobs: the only controls that arrive 0-1 already (mother's own scale), and
 -- the only ones pickup holds.
@@ -47,7 +50,7 @@ local function num(x)
 end
 
 -- A message as Pd's list objects see it: its selector first, unless that is list, float or
--- symbol. `compose mode-1` is {compose, mode-1}; a bang is {}.
+-- symbol. `mode-1` is {mode-1}, `og-knob-1 0.5` is {og-knob-1, 0.5}; a bang is {}.
 local function as_list(sel, atoms)
   if sel == "list" then return atoms end
   if sel == "float" or sel == "symbol" then return { atoms[1] } end
@@ -154,15 +157,24 @@ function R.control(st, sel, atoms)
   return { { "disp", "list", { name, raw } } }
 end
 
--- The mode bus: <class> <mode-name>, of which the key takes the name. Anything that is not two
--- atoms is refused: a saved `compose` with no name once made the key the control's name alone,
--- and every control missed (item 294). The store gets only what the key took, so a bad mode is
--- never saved to come back after a power cycle (item 297).
+-- A page's name, mode-1 to mode-<R.PAGES>, or nil for anything else.
+function R.page(x)
+  local n = type(x) == "string" and x:match("^mode%-(%d+)$")
+  n = n and tonumber(n)
+  if n and n >= 1 and n <= R.PAGES then return x end
+  return nil
+end
+
+-- The mode bus: one atom, the page. Anything else is refused, and the atom must name a page:
+-- a saved `compose` with its name missing once became the key, and every control missed (item
+-- 294). The store gets only what the key took, so a bad mode is never saved to come back after
+-- a power cycle (item 297). A mode the old code saved, <class> <page>, comes back as its page
+-- alone: u_map.pd's restore drops the class before the bus.
 function R.mode(st, sel, atoms)
   local m = as_list(sel, atoms)
-  if #m ~= 2 then return { R.fail("bad-mode") } end
-  st.mode = m[2]
-  return { { "store", "list", m } }
+  if #m ~= 1 or not R.page(m[1]) then return { R.fail("bad-mode") } end
+  st.mode = m[1]
+  return { { "store", "list", { m[1] } } }
 end
 
 -- What u_map.pd itself sends: the load, the boot window shutting at 1000 ms, and every knob

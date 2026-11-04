@@ -240,8 +240,9 @@ SEQ = [
     # -- a mode chosen in test mode ends it, so a mode button brings its screen
     #    back on the phone
     (53200, "tmmodeon", [("tm", None)]),
-    (54600, "tmmode",   [("bus", ("mode", "compose mode-2"))]),
-    (56000, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "compose mode-1"))]),
+    (54600, "tmmode",   [("bus", ("mode", "mode-2"))]),
+    (56000, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "mode-1"))]),
+
     (57400, "done",     []),
 ]
 

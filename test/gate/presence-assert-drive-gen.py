@@ -52,7 +52,7 @@ SEQ = [
 
     # A mode change dirties g_grid, which paints only while it owns the surface:
     # a frame here proves a detector that never saw a reply didn't drop it.
-    (15000, "AFTER-REWIRE", ["\\; mode compose mode-3"], GAP),
+    (15000, "AFTER-REWIRE", ["\\; mode mode-3"], GAP),
 
     # Cross-talk: a KORG reply (byte 66, item 249) on the [sysexin] every layer
     # reads. Only m_nano may take it.
@@ -74,7 +74,8 @@ SEQ = [
 
     # The arming gate opens: the Launchpad answered at 24000 and is lost again
     # at 30000, so ownership drops and this mode change must not paint.
-    (31000, "DROPPED", ["\\; mode compose mode-1"], GAP),
+    (31000, "DROPPED", ["\\; mode mode-1"], GAP),
+
 
     # Both devices answer at once, the only way to a lost count of zero, which
     # fires the trailing fork (item 275). Counter 16 is not due until 38000, so

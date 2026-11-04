@@ -28,8 +28,8 @@
 #X obj 540 400 bng 24 250 50 0 \$0-b-modx empty modx 0 -13 0 11 -262144 -1 -1;
 #X obj 640 400 bng 24 250 50 0 \$0-b-warn empty warn 0 -13 0 11 -262144 -1 -1;
 #X obj 740 400 bng 24 250 50 0 \$0-b-fail empty fail 0 -13 0 11 -262144 -1 -1;
-#X obj 840 400 bng 24 250 50 0 \$0-b-comp empty comp 0 -13 0 11 -262144 -1 -1;
-#X obj 940 400 bng 24 250 50 0 \$0-b-perf empty perf 0 -13 0 11 -262144 -1 -1;
+#X obj 840 400 bng 24 250 50 0 \$0-b-pg1 empty pg1 0 -13 0 11 -262144 -1 -1;
+#X obj 940 400 bng 24 250 50 0 \$0-b-pg2 empty pg2 0 -13 0 11 -262144 -1 -1;
 #X floatatom 1080 300 9 0 0 1 frames-drawn \$0-frames -;
 #X obj 1080 400 bng 24 250 50 0 \$0-openlog empty open-screen-log 28 8 0 12 -262144 -1 -1;
 #X obj 40 470 tgl 24 0 \$0-dsp empty enable-DSP 28 8 0 12 -262144 -1 -1 0 1;
@@ -444,7 +444,7 @@
 #X connect 5 0 6 0;
 #X restore 580 620 pd controls;
 #N canvas 40 40 1980 800 bench 0;
-#X text 20 20 The display bench \, one button per case: levels \, a parameter with a unit and one without \, a modal \, both error levels through u_err's mode filter \, and the mode., f 58;
+#X text 20 20 The display bench \, one button per case: levels \, a parameter with a unit and one without \, a modal \, both error levels \, and pages 1 and 2 \, which the Launchpad's left column chooses on the rig., f 58;
 #X obj 20 130 r \$0-b-lvl;
 #X msg 20 170 in-l 43 dB;
 #X obj 20 210 s disp;
@@ -469,11 +469,11 @@
 #X obj 640 290 r \$0-b-fail;
 #X msg 640 330 fail u_root test-fail;
 #X obj 640 370 s err;
-#X obj 950 290 r \$0-b-comp;
-#X msg 950 330 compose;
+#X obj 950 290 r \$0-b-pg1;
+#X msg 950 330 mode-1;
 #X obj 950 370 s mode;
-#X obj 1260 290 r \$0-b-perf;
-#X msg 1260 330 perform;
+#X obj 1260 290 r \$0-b-pg2;
+#X msg 1260 330 mode-2;
 #X obj 1260 370 s mode;
 #X text 20 470 Each button is a bng whose send name is the receive here \, so the panel needs no cords., f 58;
 #X text 20 590 chop-size 43 % then grain 12 is the one that matters: the second must draw with no %. C-7, f 58;

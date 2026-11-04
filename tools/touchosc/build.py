@@ -624,7 +624,7 @@ function onReceiveOSC(message, connections)
     lastHb = getMillis()
     setTest(arg(a, 2) == 1)
   elseif path == '/cutit/mode' then
-    setMode(tostring(arg(a, 2)))
+    setMode(tostring(arg(a, 1)))
   elseif path == '/cutit/param' then
     local unit = a[3] and tostring(a[3].value) or '-'
     local v = arg(a, 2)

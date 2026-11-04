@@ -63,10 +63,10 @@ local st = R.new(MAP)
 equal("the key's mode is mode-1 from the start, before any mode arrives", st.mode, "mode-1")
 equal("a mapped control leaves for its destination: <dest> <arg> <value> <target> <live>",
       R.control(st, "slider-1", { 64 }), route("volca-cc", 41, 64 / 127, 64 / 127, 1))
-R.mode(st, "compose", { "mode-2" })
+R.mode(st, "mode-2", {})
 equal("the same control in another mode means that mode's row -- volca-note 48",
       R.control(st, "slider-1", { 64 }), route("volca-note", 48, 64 / 127, 64 / 127, 1))
-R.mode(st, "perform", { "mode-4" })
+R.mode(st, "mode-4", {})
 equal("a mode with no row for it: the control is unmapped, and draws its raw row",
       R.control(st, "slider-1", { 64 }), raw("slider-1", 64))
 st = R.new(MAP)
@@ -84,18 +84,29 @@ equal("anything else is 0-127 and is divided -- og-aux included, it is no knob",
 
 print("\n--- the mode bus ---")
 st = R.new(MAP)
-equal("compose mode-2: the key takes mode-2, and the store gets the two atoms",
-      R.mode(st, "compose", { "mode-2" }), { { "store", "list", { "compose", "mode-2" } } })
+equal("mode-2: the key takes mode-2, and the store gets it alone",
+      R.mode(st, "mode-2", {}), { { "store", "list", { "mode-2" } } })
 equal("... and the key is mode-2", st.mode, "mode-2")
-for _, m in ipairs({ { "compose", {}, "compose alone" }, { "compose", { "mode-1", "x" }, "three atoms" },
-                     { "float", { 3 }, "a float" }, { "bang", {}, "a bang" },
-                     { "list", { "compose" }, "a one-atom list" } }) do
+for _, m in ipairs({ { "compose", {}, "compose alone, the name lost (item 294)" },
+                     { "compose", { "mode-1" }, "the old two-atom form" },
+                     { "mode-1", { "x" }, "a page with more after it" },
+                     { "mode-0", {}, "mode-0" }, { "mode-" .. (R.PAGES + 1), {}, "a page past the last" },
+                     { "mode-1x", {}, "mode-1x" }, { "float", { 3 }, "a float" },
+                     { "bang", {}, "a bang" } }) do
   equal(m[3] .. " is refused: bad-mode, and nothing stored",
         R.mode(st, m[1], m[2]), { { "err", "fail", { "u_map", "bad-mode" } } })
 end
 equal("... and the key survives every one of them", st.mode, "mode-2")
-equal("a list of two atoms is a mode too", R.mode(st, "list", { "perform", "mode-5" }),
-      { { "store", "list", { "perform", "mode-5" } } })
+equal("a one-atom list naming a page is a mode too", R.mode(st, "list", { "mode-5" }),
+      { { "store", "list", { "mode-5" } } })
+equal("... and so is a symbol", R.mode(st, "symbol", { "mode-3" }),
+      { { "store", "list", { "mode-3" } } })
+local every, want = {}, {}
+for n = 1, R.PAGES do
+  every[n] = R.mode(st, "mode-" .. n, {})
+  want[n] = { { "store", "list", { "mode-" .. n } } }
+end
+equal("every page from mode-1 to mode-" .. R.PAGES .. " is taken", every, want)
 
 print("\n--- the tempo curve ---")
 local C = R.tempo_curve
@@ -143,7 +154,7 @@ R.control(st, "og-knob-1", { 0.1 })
 equal("pickup is per knob: knob 1 crossed and is live, knob 2 is still held",
       { R.control(st, "og-knob-1", { 0.4 })[1][3][5], R.control(st, "og-knob-2", { 0.9 })[1][3][5] },
       { 1, 0 })
-R.mode(st, "perform", { "mode-4" })
+R.mode(st, "mode-4", {})
 equal("a HELD knob unmapped in this mode still draws its raw row",
       R.control(st, "og-knob-2", { 0.75 }), raw("og-knob-2", 0.75))
 check("... and is still held", st.knob[2].state == "above", T.show(st.knob[2]))
@@ -251,11 +262,11 @@ equal("it read the table from its patch's folder: slider-1 is volca-cc 41, on ou
       T.send(o, 1, "slider-1", { 64 }), { { 1, "list", { "volca-cc", 41, 64 / 127, 64 / 127, 1 } } })
 equal("an unmapped control's raw row on outlet 2", T.send(o, 1, "gk-x", { 64 }),
       { { 2, "list", { "gk-x", 64 } } })
-equal("a mode on inlet 2: the store on outlet 3", T.send(o, 2, "perform", { "mode-4" }),
-      { { 3, "list", { "perform", "mode-4" } } })
-equal("a bad one: err on outlet 4", T.send(o, 2, "compose", {}),
+equal("a mode on inlet 2: the store on outlet 3", T.send(o, 2, "mode-4", {}),
+      { { 3, "list", { "mode-4" } } })
+equal("a bad one: err on outlet 4", T.send(o, 2, "compose", { "mode-1" }),
       { { 4, "fail", { "u_map", "bad-mode" } } })
-T.send(o, 2, "compose", { "mode-1" })
+T.send(o, 2, "mode-1", {})
 T.send(o, 3, "window-shut", {})
 equal("window-shut on inlet 3: a knob's first value now goes straight to live",
       { T.send(o, 1, "og-knob-1", { 0.5 })[1][3][5], T.send(o, 1, "og-knob-1", { 0.9 })[1][3][5] },
@@ -269,9 +280,9 @@ local function dispatched(inlet, sel, atoms)
   return o.sent
 end
 equal("dispatch takes each inlet's messages to its method: a control, a mode, init",
-      { dispatched(1, "gk-x", { 7 }), dispatched(2, "compose", { "mode-1" }),
+      { dispatched(1, "gk-x", { 7 }), dispatched(2, "mode-1", {}),
         dispatched(3, "init", {}) },
-      { { { 2, "list", { "gk-x", 7 } } }, { { 3, "list", { "compose", "mode-1" } } },
+      { { { 2, "list", { "gk-x", 7 } } }, { { 3, "list", { "mode-1" } } },
         { { 5, "bang", {} } } })
 equal("a knobs.txt where its patch is: mother's first push is a restore, and passes",
       T.send(T.new(class, {}, tmp .. "-"), 1, "og-knob-1", { 0.0958 }),
@@ -305,6 +316,6 @@ equal("a Lua error leaves outlet 4 as fail u_map lua-param, for the error log",
 check("... with its text on the console", #broken.console == 1
       and broken.console[1]:find("a bug in control", 1, true) ~= nil, T.show(broken.console))
 equal("... and the object carries on: a mode still answers",
-      T.send(broken, 2, "compose", { "mode-2" }), { { 3, "list", { "compose", "mode-2" } } })
+      T.send(broken, 2, "mode-2", {}), { { 3, "list", { "mode-2" } } })
 
 os.exit(T.report() == 0)

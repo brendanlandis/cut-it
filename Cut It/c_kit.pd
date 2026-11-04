@@ -34,7 +34,7 @@
 #X msg 1650 660 warn c_kit samples-\$1;
 #X msg 1800 660 info c_kit samples-\$1;
 #X obj 1500 720 s err;
-#X text 1300 780 The count waits 2 s \, as a print does (C-9): u_err may log it \, and the deploy check fails on any output before about 735 ms. None found is info \, not warn: the Mac and the gates have no samples \, and a silent drum page says so on the rig. Some but not all is a warn \, drawn in compose., f 50;
+#X text 1300 780 The count waits 2 s \, as a print does (C-9): u_err may log it \, and the deploy check fails on any output before about 735 ms. None found is info \, not warn: the Mac and the gates have no samples \, and a silent drum page says so on the rig. Some but not all is a warn \, drawn on every page., f 50;
 #X connect 2 0 3 0;
 #X connect 3 0 4 0;
 #X connect 4 0 5 0;

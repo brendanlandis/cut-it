@@ -106,12 +106,12 @@ mode_lines = [l for l in auto if l.startswith("mode ")]
 A.check("re-putting a key REPLACES its line rather than appending",
         len(mode_lines) == 1, mode_lines)
 A.check("the surviving line is the LAST value put",
-        mode_lines == ["mode perform mode-4"], mode_lines)
+        mode_lines == ["mode mode-4"], mode_lines)
 
 print("=== C. restore: order, and a key present in both files ===")
 fresh_dir()
 with open(AUTO, "w") as fh:
-    fh.write("mode perform mode-6\ndupe from-auto\n")
+    fh.write("mode mode-6\ndupe from-auto\n")
 with open(MANUAL, "w") as fh:
     fh.write("take-1 kick 36 snare 38\ndupe from-manual\n")
 out2 = run_driver("c")
@@ -133,6 +133,7 @@ A.check("a manual line survives a restart and is replayed intact",
 # The restore replays what was on disk at boot. A flush armed by a loadbang
 # writes the running values over the file first, and mode-6 never appears.
 A.check("a boot does NOT overwrite saved state before reading it",
-        any("mode perform mode-6" in r for r in restores), restores)
+        any("mode mode-6" in r for r in restores), restores)
+
 
 sys.exit(1 if A.report() else 0)

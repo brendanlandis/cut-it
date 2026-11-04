@@ -42,7 +42,7 @@ mode-1 slider-1  volca-cc 41
 
 | Field | Is | Evidence | Item |
 |-------|----|----------|------|
-| `<mode>` | The **second** atom of the `mode` bus message — `mode-1`, not `compose mode-1`. The class is `u_err`'s business | verified | — |
+| `<mode>` | The `mode` bus message, one atom: the page, `mode-1` to `mode-6` | verified | — |
 | `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `pad-43` | verified | — |
 | `<dest>` | One of the **fourteen** below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
@@ -164,10 +164,10 @@ four shifted keys and Setup in all six.
 | 0 ms, as the patch is made | `[u_map-lua]` reads the table and asks whether a `knobs.txt` is there, and its lookup key's mode is `mode-1` | verified | 234, 239 |
 | 0 ms, `loadbang` | `init`: `map-empty` if the table holds nothing, then the bang that proves the Lua loaded | verified | — |
 | before 500 ms | mother pushes `knobs.txt`, if a Save has ever happened | verified | 139, 200 |
-| 500 ms | The `mode` seed fires — `compose mode-1` — behind a spigot any real mode has already closed | verified | — |
+| 500 ms | The `mode` seed fires — `mode-1` — behind a spigot any real mode has already closed | verified | — |
 | 1000 ms | `window-shut`: from now on a knob's first value is a hand, not a restore | verified | 236 |
 | 2000 ms | The recover breadcrumb, which may say `live` | verified | 299 |
-| ~3500 ms | `u_state` restores, and a saved `mode` arrives as a real selection | verified | — |
+| ~3500 ms | `u_state` restores, and a saved `mode` arrives as a real selection, its page alone | verified | — |
 
 ⛔ **Both the read and the key's mode have to be there before mother's push.** See *Traps*.
 
@@ -282,14 +282,25 @@ reaches the disk. Every boot reads the bad value, re-stores it and writes it bac
 belongs, `slider-1 64` where `volca-cc41 64` does — because a control's only row is `u_map`'s and a
 dead lookup sends every control down the unmapped branch (item 317). Nothing else reports it.
 
-**Fix:** **the Lua refuses a `mode` that is not two atoms and says `fail u_map bad-mode`**, the
-way an unknown *destination* does — item 297.
+**Fix:** **the Lua refuses a `mode` that is not one atom naming a page, and says `fail u_map
+bad-mode`**, the way an unknown *destination* does — item 297. ⚠️ The name is checked as well as
+the count: a lone `compose` is one atom too.
 
 ⛔ **And the store gets the mode from the Lua, only when the key took it**, never from its own
 `[r mode]`, which is what stops a bad value surviving a power cycle. The store never sees it, keeps
-the seed's `compose mode-1`, and **the auto flush repairs the file on its own** — measured: a
-`cut-it-auto.txt` holding `mode compose` came back reading `mode compose mode-1` after one boot, with
-the knobs mapping correctly throughout.
+the seed's `mode-1`, and **the auto flush repairs the file on its own** — measured on the device
+while the bus still carried a class: a `cut-it-auto.txt` holding `mode compose` came back whole
+after one boot, with the knobs mapping correctly throughout.
+
+### A mode saved before 2026-11-04 carries a class
+
+⛔ Until then the bus carried `<class> <page>`, and `cut-it-auto.txt` keeps what was saved: `mode
+compose mode-4`. A restore puts it on the bus as it stands, a selector no reader knows, so the grid
+keeps its old lamp, the phone its old screen and the Lua says `bad-mode`.
+
+**Fix:** `[route compose perform]` between the restore and `[s mode]` drops the class, so a mode
+saved either way comes back as its page alone, and the next flush writes it back that way.
+`map-assert.sh` restores one.
 
 ### The `[list trim]` before the destination `route` is load-bearing
 
@@ -314,14 +325,6 @@ design can have that nothing else would catch.**
 
 ⛔ **Contrast the lookup's miss, which is normal and silent.** The two mean opposite things: an
 unmapped *control* is expected, an unmapped *destination* is a bug.
-
-### Renaming or re-balancing the six modes is not cosmetic
-
-⚠️ `u_err` routes on `compose` / `perform` — compose shows every error, perform only `fail`. **A
-split weighted toward `perform` makes most mode selections silently quieten the error display.**
-
-**Fix:** the current 3/3 split is a decision, not a placeholder. The mode *names* are placeholders;
-the ratio is not.
 
 ### A knob's raw position is not a readable parameter row
 
@@ -546,8 +549,9 @@ why that reject exists. See [volca.md](../device/volca.md).
 
 `u_map` is the first contributor to the state store, and `mode` is an **auto** key: a running value
 rather than a committed take, pushed whenever it changes and flushed on `u_state`'s own clock. A
-restore arrives as `compose mode-1` with `compose` as its selector, which is exactly the shape
-`s mode` wants — so no `[list trim]` on that side.
+restore arrives as `mode-1`, the page as its selector, which is exactly the shape `s mode` wants —
+so no `[list trim]` on that side. One saved as `<class> <page>` loses its class first (*Traps*).
+
 
 ⚠️ **The table is code, not state.** Nothing rewrites it at runtime, so persisting it would store a
 constant, and a restore could silently override the shipped file.

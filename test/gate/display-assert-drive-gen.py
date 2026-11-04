@@ -22,17 +22,20 @@ GAP = 20
 SEQ = [
     # Nothing else in this run uses mode-5, so a lamp at index 40 can only have
     # come from here.
-    (300, "EARLY-MODE", ["\\; mode perform mode-5"], GAP),
+    (300, "EARLY-MODE", ["\\; mode mode-5"], GAP),
     (4000, "idle-dsp-off", [], GAP),
     (8000, "dsp-on", ["\\; pd dsp 1"], GAP),
     # The mode is not re-sent: the next window asserts the one set at 300 ms
     # survived.
     (8600, "settling", ["\\; tempo 120"], GAP),
     (11000, "home-early-mode", [], GAP),
-    (14000, "home-mode-1", ["\\; mode compose mode-1"], GAP),
-    (17000, "home-mode-4", ["\\; mode perform mode-4"], GAP),
+    (14000, "home-mode-1", ["\\; mode mode-1"], GAP),
+    (17000, "home-mode-4", ["\\; mode mode-4"], GAP),
     (20000, "modal-45", ["\\; disp grid modal 45"], GAP),
+    # u_err draws a warn on every page, so it reaches disp here: the grid must
+    # ignore it, since it draws fails alone.
     (23000, "warn-ignored", ["\\; err warn u_bench quiet"], GAP),
+
     (26000, "alert-red", ["\\; err fail u_bench boom"], GAP),
     # the alert TTL is 2 s, so this window opens after it has expired
     (28500, "alert-expired", [], GAP),

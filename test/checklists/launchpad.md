@@ -2,29 +2,29 @@
 
 The grid, the grid arbiter's layers and their timeouts, the mode lamps, the beat row, the ring map, hot-swap, panic keeping the surface, and a tap on SETUP. `display-assert` and `launchpad-assert` prove the bytes the patch sends; this is what the surface shows.
 
-Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol.md). Every step sets up its own preconditions, a mode among them: step 22 sets compose because a warn is correctly invisible in perform.
+Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol.md). Every step sets up its own preconditions, a mode among them.
 
 28 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [launchpad](../../ref/device/launchpad.md), [display](../../ref/module/display.md), [presence](../../ref/module/presence.md).
 
 - [ ] **1. Resting grid**
-  - **Send:** `tempo 120; stop bang; mode compose mode-2`
+  - **Send:** `tempo 120; stop bang; mode mode-2`
   - **Pass if:** The left column shows one bright green lamp second from the top and five dim ones around it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct — a frozen pad is the failure. Everything else on the surface is dark.
   - **Note:** Mode 2, not 1: mode 1 is the drum page, where the beat row gives way.
 
 - [ ] **2. Mode lamp 4**
-  - **Send:** `mode perform mode-4`
+  - **Send:** `mode mode-4`
   - **Pass if:** The bright lamp moves to the fourth position down and the other five go dim. Nothing else on the grid changes.
 
 - [ ] **3. Mode lamp 2**
-  - **Send:** `mode compose mode-2`
+  - **Send:** `mode mode-2`
   - **Pass if:** The bright lamp lands on the second position.
 
 - [ ] **4. Mode lamp 5**
-  - **Send:** `mode perform mode-5`
+  - **Send:** `mode mode-5`
   - **Pass if:** The bright lamp lands on the fifth position and the other five go dim.
 
 - [ ] **5. Mode lamp 6**
-  - **Send:** `mode perform mode-6`
+  - **Send:** `mode mode-6`
   - **Pass if:** The bright lamp lands on the sixth and last position.
 
 - [ ] **6. Pressing a mode lamp selects it**
@@ -41,7 +41,7 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
   - **Pass if:** Every pad and every ring button turns blue including the left column. The mode lamps are covered too. The OLED must not change.
 
 - [ ] **9. Mode change under a modal**
-  - **Send:** `disp grid modal 45; mode perform mode-3`
+  - **Send:** `disp grid modal 45; mode mode-3`
   - **Pass if:** Nothing happens. The surface stays blue. The mode really does change underneath and you will see it two steps from now.
 
 - [ ] **10. Alert over a modal**
@@ -57,7 +57,7 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
   - **Pass if:** The whole surface turns red and then goes back to the mode lamps by itself after about two seconds. A grid that stays red is the failure.
 
 - [ ] **13. A warn does not**
-  - **Send:** `mode compose mode-3; err warn u_bench quiet`
+  - **Send:** `err warn u_bench quiet`
   - **Pass if:** Nothing happens on the grid and the OLED does show the warning.
 
 - [ ] **14. Modal safety timeout**
@@ -99,10 +99,10 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
   - **Pass if:** Each of the six buttons moves the bright lamp to its own position. The top row moves nothing.
 
 - [ ] **22. Hot-swap — unplugged mid-session**
-  - **Send:** `mode compose mode-2`
+  - **Send:** `mode mode-2`
   - **Do:** Unplug the Launchpad USB and leave it out.
   - **Pass if:** A bordered alert on the OLED reads warn and then m_launchpad. The grid goes dark.
-  - **Note:** The alert is up to 8 seconds behind the unplug, at the shipped 2000 ms presence tick. Mode 2 rather than 1, so the reload in step 23 restores a mode with a beat row. It sets compose itself: `u_err` shows a warn only in compose, and step 21 leaves the rig on mode-6, in perform.
+  - **Note:** The alert is up to 8 seconds behind the unplug, at the shipped 2000 ms presence tick. Mode 2 rather than 1, so the reload in step 23 restores a mode with a beat row.
 
 - [ ] **23. Hot-swap — absent at load**
   - **Need:** The Launchpad still unplugged from the last step.
@@ -121,7 +121,7 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
   - **Note:** Panic keeps the surface (item 250): handing it back left the grid dead until a reload, and Live Mode's clock flooded Midi-In 1. `display-assert` asserts the same.
 
 - [ ] **26. The grid still answers after a panic**
-  - **Send:** `mode compose mode-3`
+  - **Send:** `mode mode-3`
   - **Pass if:** The bright lamp moves to the third position — the panic silenced notes and did not surrender the surface.
   - **Note:** Not mode 1: there the pads are the drum page, so step 27's press would draw no row.
 
@@ -131,7 +131,7 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
 
 - [ ] **28. A tap on SETUP flips test mode**
   - **Need:** Test mode off, as every load leaves it and no step before this one changes it. If in doubt, load Cut It again.
-  - **Send:** `mode compose mode-2`
   - **Do:** Tap SETUP, the bottom left corner, once, and watch the OLED for ten seconds. Tap it again. Then hold it for four seconds and let go.
   - **Pass if:** The first tap puts up a bordered alert reading warn then u_net then test-mode-on for about two seconds, and no other alert appears in the ten seconds after it. The second tap and the hold put up no alert. SETUP stays dark and the grid keeps painting throughout.
-  - **Note:** The second tap turns test mode off, which is logged and not drawn; the hold sends nothing at all ([launchpad](../../ref/device/launchpad.md)). An alert every few seconds with no tap means the announcement each Programmer Mode heartbeat makes is being read as a tap: `launchpad-assert` proves it is not on the Mac, and this is the rig's wiring and timing. Compose, because `u_err` draws a warn only there.
+  - **Note:** The second tap turns test mode off, which is logged and not drawn; the hold sends nothing at all ([launchpad](../../ref/device/launchpad.md)). An alert every few seconds with no tap means the announcement each Programmer Mode heartbeat makes is being read as a tap: `launchpad-assert` proves it is not on the Mac, and this is the rig's wiring and timing.
+

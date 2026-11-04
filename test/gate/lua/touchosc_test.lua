@@ -12,7 +12,7 @@ local E = dofile(dir .. "/expect.lua")
 local w = L.load(dir)
 local C = w.controls
 local function hb(test) L.osc(w, "/cutit/hb", 1, test and 1 or 0) end
-local function mode(m) L.osc(w, "/cutit/mode", "compose", m) end
+local function mode(m) L.osc(w, "/cutit/mode", m) end
 -- Where the phone is: the tab's name, its screen, and whether the checklists stand in for it.
 local function where()
   return { C.main.tabLabel, C.drums.visible and "drums" or "remote",

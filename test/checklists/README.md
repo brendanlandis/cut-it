@@ -24,7 +24,7 @@ is sent from anywhere.
 1. **Choose mode 1, then tap Setup**, the Launchpad's bottom-left button (or at the Organelle hold
    `aux` and press the second key from the bottom). That turns test mode on, and the phone's screens
    give way to the checklist page, reading `test mode on` (the Organelle's own state, from the
-   heartbeat); the OLED warns in compose.
+   heartbeat); the OLED warns.
 2. Each step shows its title and, from the file, Need, Do, Check and Pass if; the Notes stay here. A
    step too long for one page has a second, and Next shows it first.
 3. **Pass** or **Fail** logs the verdict on the Organelle as `info phone linecheck-<n>-pass` (read it
@@ -44,7 +44,8 @@ session means opening one.
 
 | Checklist | Steps | Judges |
 |---|---|---|
-| [display](display.md) | 20 | the OLED's layers and the error bus |
+| [display](display.md) | 16 | the OLED's layers and the error bus |
+
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
 | [tempo](tempo.md) | 13 | the transport, knob 1's pickup, the clamp |
 | [launchpad](launchpad.md) | 28 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |
@@ -116,8 +117,7 @@ can be done by hand instead:
 
 | Send | On the rig |
 |---|---|
-| `mode compose mode-1` to `mode compose mode-3` | the first to third button down the Launchpad's left column |
-| `mode perform mode-4` to `mode perform mode-6` | the fourth to sixth button down it |
+| `mode mode-1` to `mode mode-6` | the first to sixth button down the Launchpad's left column |
 | `start bang` · `stop bang` | PLAY · STOP on the nanoKONTROL |
 | `panic bang` | a short tap on the Launchpad's top-left corner button |
 

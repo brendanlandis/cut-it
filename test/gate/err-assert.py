@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """The error bus's analyzer -- ref/module/error.md. Reads a capture on stdin.
 
-⛔ WHAT THIS IS FOR, AND IT WAS BENCH PROSE UNTIL NOW: perform mode suppresses
-`warn` and NEVER suppresses `fail`. u_err's spigot sits on the warn branch only
-and the fail branch is unspigoted -- a one-cord distinction that nothing on the
-instrument would report if it were wrong. The display would simply go quiet, and
-plan-v04.md notes the mode split is weighted toward perform, so the first place
-anyone would find out is a venue.
+⛔ WHAT THIS IS FOR: every warn and every fail is drawn, on every page
+(Brendan, 2026-11-04). A filter on the screen fails in the direction of silence:
+the display would simply go quiet, and the first place anyone would find out is a
+venue. Until 2026-11-04 a perform class of modes hid warnings; nothing in u_err
+reads the mode now, which the lint below reads off the patch.
 
 It asserts on what u_err lets through, not on the drawing, which is
 display-assert's and oled-assert's.
@@ -23,7 +22,7 @@ import lib_assert as A                                         # noqa: E402
 import lib_pd                                                  # noqa: E402
 
 # The number of windows err-assert-drive-gen.py's SEQ opens.
-MARKS = 10
+MARKS = 9
 
 # C-12: <level> <source> <text>, the text one symbol of at most 21 characters,
 # because gPrintln does not wrap.
@@ -65,7 +64,25 @@ def run_lint():
     A.check("every error text is one symbol of %d characters or fewer" % TEXT_LIMIT,
             not over, "%d over the limit: %s" % (len(over), over[:3]))
     A.note("%d error message box(es) linted across Cut It/" % seen)
+    lint_unfiltered(root)
     lint_stamp(root)
+
+
+def lint_unfiltered(root):
+    """Nothing in u_err reads the mode, so no page can hide what it draws.
+
+    Read off the boxes as well as driven below, since a filter keyed to a
+    page the driver never chose would pass every window.
+    """
+    print("\n--- no page filters the screen (static, no Pd) ---")
+    path = os.path.join(root, "Cut It", "u_err.pd")
+    boxes = [line for line in lib_pd.read(path) if line.startswith("#X obj ")]
+    A.check("u_err still has boxes to read", len(boxes) > 5, "%d boxes in %s" % (len(boxes), path))
+    reads = [b for b in boxes if re.match(r"^#X obj \d+ \d+ (r|receive) mode;$", b)]
+    gates = [b for b in boxes if re.match(r"^#X obj \d+ \d+ spigot( |;)", b)]
+    A.check("⛔ u_err reads no mode bus -- every page draws every warning",
+            not reads and not gates,
+            "found %s -- a page can hide what the screen shows again" % (reads + gates))
 
 
 def lint_stamp(root):
@@ -147,57 +164,42 @@ def run_asserts(cap):
     def alerts(k):
         return [v for kind, v in W(k) if kind == "DISP" and v[:1] == ["alert"]]
 
-    # ---- the default, and there is no way back to it ----------------------
-    print("\n--- before any mode has arrived ---")
-    A.check("⛔ the default is VERBOSE -- a warn shows before any mode is set",
+    # ---- before any page ------------------------------------------------
+    print("\n--- before any page has arrived ---")
+    A.check("⛔ a warn shows before any page is chosen",
             alerts("DEFAULT") == [["alert", "warn", "u_gate", "before-mode"]],
-            "got %s. The reverse default fails in the direction of silence, "
+            "got %s. Quiet here fails in the direction of silence, "
             "which is the failure this file exists to prevent" % alerts("DEFAULT"))
 
-    # ---- compose shows everything -----------------------------------------
-    print("\n--- compose ---")
-    A.check("compose passes a warn",
-            alerts("COMPOSE-WARN") == [["alert", "warn", "u_gate", "compose-warn"]],
-            "got %s" % alerts("COMPOSE-WARN"))
-    A.check("compose passes a fail",
-            alerts("COMPOSE-FAIL") == [["alert", "fail", "u_gate", "compose-fail"]],
-            "got %s" % alerts("COMPOSE-FAIL"))
+    # ---- every page draws both --------------------------------------------
+    print("\n--- every page draws warn and fail ---")
+    for page in ("1", "4"):
+        for level in ("warn", "fail"):
+            k = "PAGE-%s-%s" % (page, level.upper())
+            A.check("%spage %s draws a %s" % ("⛔ " if page == "4" else "", page, level),
+                    alerts(k) == [["alert", level, "u_gate", "page-%s-%s" % (page, level)]],
+                    "got %s" % alerts(k))
 
-    # ---- perform drops warn and must not drop fail ------------------------
-    print("\n--- perform ---")
-    A.check("perform DROPS a warn", not alerts("PERFORM-WARN"),
-            "a warn reached the screen in perform mode: %s" % alerts("PERFORM-WARN"))
-    A.check("⛔ perform PASSES a fail -- the whole point of the split",
-            alerts("PERFORM-FAIL") == [["alert", "fail", "u_gate", "perform-fail"]],
-            "got %s. A fail suppressed in perform means the instrument goes "
-            "silent about its own failures at exactly the moment it is least "
-            "able to tell you any other way" % alerts("PERFORM-FAIL"))
-
-    # ---- and the filter is reversible -------------------------------------
-    # A filter that shut and stayed shut would pass every check above.
-    A.check("returning to compose lets warnings through again",
-            alerts("BACK-TO-COMPOSE") == [["alert", "warn", "u_gate", "back-warn"]],
-            "got %s -- the filter shut and did not reopen" % alerts("BACK-TO-COMPOSE"))
-
-    # ---- the two-atom mode, which is what u_map actually sends -------------
-    print("\n--- the two-atom mode form ---")
-    A.check("⛔ `perform mode-6` filters exactly as bare `perform` does",
-            not alerts("TWO-ATOM-MODE"),
-            "a warn got through under the two-atom mode form: %s. route matches "
-            "the selector, so the trailing atom must be irrelevant"
-            % alerts("TWO-ATOM-MODE"))
+    # ---- the old perform shape hides nothing -------------------------------
+    # u_map refuses `perform mode-6` as bad-mode, which is drawn too, so only
+    # the gate's own alerts are read.
+    mine_drawn = [a for a in alerts("OLD-PERFORM") if a[2:3] == ["u_gate"]]
+    A.check("⛔ the old `perform mode-6` hides nothing -- the warn draws",
+            mine_drawn == [["alert", "warn", "u_gate", "old-perform"]],
+            "got %s. The old filter read perform as a reason to drop a warn"
+            % alerts("OLD-PERFORM"))
 
     # ---- info: logged and never drawn -------------------------------------
     print("\n--- info is logged and never drawn ---")
     drew = [a for a in alerts("INFO") if "info-quiet" in " ".join(map(str, a))]
-    A.check("⛔ an info NEVER reaches the screen, even in compose",
+    A.check("⛔ an info NEVER reaches the screen",
             not drew,
             "info drew %s. Its route outlet is meant to be connected to nothing "
             "-- if this is drawing, u_present's eight recovery attempts land on "
             "the OLED during every unplug" % (drew,))
 
-    # Without this witness the check above is vacuous: a dead display, a shut
-    # spigot or a filtering mode also draws nothing.
+    # Without this witness the check above is vacuous: a dead display also
+    # draws nothing.
     witness = [a for a in alerts("INFO") if "info-witness" in " ".join(map(str, a))]
     A.check("...and the screen was demonstrably willing to draw at that moment",
             witness,
@@ -220,30 +222,26 @@ def run_asserts(cap):
             "no err-BAD-LEVEL line in the capture. Swallowing a malformed error "
             "silently is the exact failure this file exists to prevent")
 
-    # ---- the log is unfiltered; only the screen is filtered ---------------
+    # ---- the log holds every error ----------------------------------------
     # u_err's [print err] hangs off the trigger before the route.
-    print("\n--- the log is never filtered, even when the screen is ---")
+    print("\n--- the log holds every error ---")
     logged = [ln.strip()[len("err: "):] for ln in cap.splitlines()
               if ln.strip().startswith("err: ")]
-    raised = ["warn u_gate before-mode", "warn u_gate compose-warn",
-              "fail u_gate compose-fail", "warn u_gate perform-warn",
-              "fail u_gate perform-fail", "warn u_gate back-warn",
-              "warn u_gate two-atom", "warn u_gate info-witness",
-              "info u_gate info-quiet", "chatty u_gate bad-level"]
+    raised = ["warn u_gate before-mode", "warn u_gate page-1-warn",
+              "fail u_gate page-1-fail", "warn u_gate page-4-warn",
+              "fail u_gate page-4-fail", "warn u_gate old-perform",
+              "warn u_gate info-witness", "info u_gate info-quiet",
+              "chatty u_gate bad-level"]
     # Exact order and count of the driver's own errors only. The patch can
     # raise its own too, at a point that moves from run to run; those are
     # noted, not asserted.
     mine = [ln for ln in logged if " u_gate " in ln]
-    A.check("every error raised reaches the log, in order and whatever the mode",
+    A.check("every error raised reaches the log, in order and on every page",
             mine == raised, "logged %s" % mine)
     others = [ln for ln in logged if " u_gate " not in ln]
     if others:
         A.note("%d error(s) from the patch itself during the run: %s"
                % (len(others), others))
-    A.check("⛔ including the two the SCREEN was never shown",
-            "warn u_gate perform-warn" in logged and "warn u_gate two-atom" in logged,
-            "a suppressed warning was suppressed on the bus as well as on the "
-            "screen, so it is gone from the log too")
 
     A.note("windows reached: %s" % " ".join(order))
 

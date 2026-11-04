@@ -71,7 +71,7 @@ Organelle -> phone
 /cutit/status  <symbol>                           coalesced, one slot
 /cutit/hb      <counter> <test mode, 0 or 1>      every 500 ms
 /cutit/alert   <count> <level> <source> <text>    every 500 ms, always present
-/cutit/mode    <class> <mode-n>                   on change and every 500 ms
+/cutit/mode    <page>                             on change and every 500 ms
 /cutit/drums   <41 numbers>                       c_steps' state, on change and every 500 ms
 /cutit/ack     <command> [<device>]               once per command accepted
 
@@ -313,7 +313,8 @@ carries, sends nothing, and the development checklists' lines go from the Mac.
 (`lp-setup`) or at the Organelle itself (`aux` and the second key from the bottom, `og-shift-61`),
 starts off at every load, goes off when a mode is chosen, and rides on the heartbeat so the phone
 shows the Organelle's own state; a flip sends a heartbeat at once rather than waiting for the next.
-Turning it on warns, so the OLED says so in compose and the log keeps it.
+Turning it on warns, so the OLED says so and the log keeps it.
+
 
 ⛔ **A full status dump was considered and rejected as a command.** Parameters and status re-send
 every two seconds and the alert repeats at 2 Hz, so a phone joining late repopulates on its own in

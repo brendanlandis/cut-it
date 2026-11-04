@@ -30,7 +30,7 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | **C-9** | **Every `[print]` in a deployed abstraction sits behind `[del 2000]`** — `tools/deploy.sh` gates on output | [→](#editing-a-pd-file-by-hand) |
 | **C-10** | **Append boxes at the end of a `.pd`, and move the `#X connect`s with them** | [→](#editing-a-pd-file-by-hand) |
 | **C-11** | **Grain timing is audio-domain** — `phasor~` and `vline~`, never `metro` / `line~` | [→](#timing-and-the-two-domains) |
-| **C-12** | **Report on `[s err]`** as `<level> <source> <text>` — `info` logs, `warn` draws in compose, `fail` always. Text one symbol ≤ 21 chars | [→](#errors-must-reach-the-oled--built) |
+| **C-12** | **Report on `[s err]`** as `<level> <source> <text>` — `info` logs, `warn` and `fail` draw on every page. Text one symbol ≤ 21 chars | [→](#errors-must-reach-the-oled--built) |
 | **C-13** | **No dynamic patching, no `[value]`, no copied subpatches** | [→](#banned) |
 | **C-14** | **Edit a `#X text` by replacing the WHOLE LINE** — escaped `\;` is legal inside one, so scanning for "the next `;`" splits the comment | [→](#editing-a-pd-file-by-hand) |
 
@@ -152,7 +152,7 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 
 | Name | Carries | Source |
 |---|---|---|
-| `mode` | **`<class> <name>`** — `compose`/`perform` then the sub-mode, e.g. `compose mode-1` | `u_map`, from the Launchpad's left column |
+| `mode` | **`<page>`**, one atom — `mode-1` to `mode-6` | `u_map`, from the Launchpad's left column |
 | `tempo` | **master reference** BPM, as a float | any → `u_tempo` |
 | `clock` | **master reference** beat bang | `u_tempo` |
 | `start` / `stop` | transport, carried as a **bang** | any → `u_tempo` |
@@ -194,10 +194,11 @@ Two consequences bind whoever writes an `m_` layer, and both are deliberate:
 **`mode` is driven from the Launchpad's left column**, its top six buttons, CC 80 down to 30, which
 `g_grid` lights as the mode lamps — the only device Pd can light, so the state is visible rather
 than remembered. It carries
-**two atoms**, a class and a sub-mode, which is why `u_err`'s `[route compose perform]` works
-untouched: `route` matches the selector and its branches feed message boxes, which fire on
-anything. `u_map` seeds one at load behind a spigot that any real mode closes, so the seed fills a
-silence rather than setting a default.
+**one atom, the page**, as its selector, so a reader's `route` matches it and its branches feed
+message boxes, which fire on anything. There is no compose and perform split (Brendan, 2026-11-04):
+a page is a page, and every one of them shows every warning. `u_map` seeds one at load behind a
+spigot that any real mode closes, so the seed fills a silence rather than setting a default. A mode
+saved before then as `<class> <page>` comes back as its page alone ([map.md](module/map.md)).
 
 **`tempo` and `clock` are the master reference, not "the clock".** See *Poly-tempo* below —
 this distinction is load-bearing and easy to lose.
@@ -467,13 +468,13 @@ data, as `u_map`'s `lua-param` — and the abstraction says `no-lua` when its Lu
 ([sequencer.md](module/sequencer.md)).
 
 **Three levels, and they differ only in what the SCREEN does.** Every one of them is logged:
-`u_err`'s logfile tap hangs off the trigger *above* the mode route, so the bus is unfiltered
+`u_err`'s logfile tap hangs off the trigger *above* the level route, so the bus is unfiltered
 whatever the display is doing.
 
 | Level | Logged | Drawn | For |
 |-------|--------|-------|-----|
 | `info` | yes | **never** | Diagnostic detail — a thing that happened, not a thing to act on |
-| `warn` | yes | compose only | Something is wrong and the operator may want to know |
+| `warn` | yes | **always** | Something is wrong and the operator may want to know |
 | `fail` | yes | **always** | Something is wrong and the operator must know |
 
 ⛔ **`info` is not a quieter `warn` — it is the level for detail that would otherwise drown the
@@ -483,8 +484,9 @@ in the log; nine alerts on a 21-character display mid-set does not.
 ⚠️ **A level that is none of the three is a real error**, printed on `err-BAD-LEVEL` rather than
 swallowed — a typo must not silently disable a report.
 
-`u_err` filters by mode, never draws, and leaves the bus itself unfiltered — the design and its
-reasoning are on [architecture.md](architecture.md).
+`u_err` decides by level alone, on every page, never draws, and leaves the bus itself unfiltered —
+the design and its reasoning are on [error.md](module/error.md).
+
 
 ---
 

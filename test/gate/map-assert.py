@@ -27,7 +27,7 @@ UMAP = "Cut It/u_map.pd"
 # carries aux's modal, never a control's row. The file set is exact too: m_404
 # went with the SP-404 (2026-11-04).
 DISP_EXPECT = {"m_launchpad": 0, "m_nano": 0, "m_organelle": 1, "m_volca": 0}
-MODES = ["mode-%d" % n for n in range(1, 7)]
+ULUA = "Cut It/u_map.lua"
 # Both runs are counted against this one list, so neither passes a driver that
 # died early.
 WINDOWS = ["EARLY", "EARLY-2", "RAIL-ARM", "SUPPRESS", "MAPPED", "AWAY", "CROSS",
@@ -46,6 +46,21 @@ def route_destinations():
         if m:
             return m.group(1).split()
     return None
+
+
+def mode_keys():
+    """The mode keys: the arguments of u_map's first route, the Launchpad's left column."""
+    for line in lib_pd.read(UMAP):
+        m = re.match(r"^#X obj \d+ \d+ route (lp-cc-\d+(?: lp-cc-\d+)*);$", line)
+        if m:
+            return m.group(1).split()
+    return None
+
+
+def pages():
+    """R.PAGES in u_map.lua: how many pages the Lua takes, mode-1 to mode-<n>."""
+    m = re.search(r"^R\.PAGES = (\d+)$", open(ULUA, encoding="utf-8").read(), re.M)
+    return int(m.group(1)) if m else None
 
 
 def steps_cmds():
@@ -67,6 +82,18 @@ def static_lint():
         return
     A.note("allowlist is %d destinations: %s" % (len(dests), " ".join(dests)))
 
+    # The pages, counted twice: the keys that choose them and the Lua that
+    # takes them. A key the Lua refuses says bad-mode; a page with no key can
+    # never be chosen.
+    keys, n = mode_keys(), pages()
+    A.check("u_map's mode keys are the left column, CC 80 down, in steps of ten",
+            keys and keys == ["lp-cc-%d" % (80 - 10 * i) for i in range(len(keys))],
+            "route box: %s" % keys)
+    A.check("⛔ u_map.lua takes exactly the pages the keys choose -- R.PAGES is %s"
+            % len(keys or []), n is not None and keys and n == len(keys),
+            "R.PAGES = %s, %d keys" % (n, len(keys or [])))
+    modes = ["mode-%d" % k for k in range(1, (n or 0) + 1)]
+
     rows, bad_width, bad_dest, bad_mode = [], [], [], []
     for n, raw in enumerate(open(MAP), 1):
         line = raw.strip()
@@ -79,14 +106,14 @@ def static_lint():
             continue
         if f[2] not in dests:
             bad_dest.append((n, f[2]))
-        if f[0] not in MODES:
+        if f[0] not in modes:
             bad_mode.append((n, f[0]))
 
     A.check("every row is exactly 4 atoms", not bad_width,
             "; ".join("line %d: %r" % b for b in bad_width))
     A.check("⛔ every destination exists on u_map's route (THE GUARD)", not bad_dest,
             "; ".join("line %d names %r" % b for b in bad_dest))
-    A.check("every mode is one of the six", not bad_mode,
+    A.check("every row's mode is one of the %d pages" % len(modes), not bad_mode,
             "; ".join("line %d: %r" % b for b in bad_mode))
     # drums passes its arg to c_steps as the command, so a misspelt one is a
     # knob that only says bad-selector when turned.
@@ -187,11 +214,11 @@ def run_asserts(cap):
     # ------------------------------------------ a mode the key-setter cannot use
     # Items 294 and 297, ref/module/map.md: a stored `compose` with no mode name
     # once emptied the lookup key, and every mapped control drew its raw row.
-    A.check("⛔ a mode that is not two atoms is REFUSED, and says so",
+    A.check("⛔ a mode that names no page is REFUSED, and says so",
             any(e[0] == "ERR" and "bad-mode" in " ".join(e[1]) for e in W("BAD-MODE")),
             repr(W("BAD-MODE")))
     # The error alone would not catch it; the key must survive. og-knob-1 is
-    # tempo in all six modes.
+    # tempo in every mode.
     A.check("⛔ ... and the lookup KEY SURVIVES IT -- 0.6 is still 150 bpm",
             any(e[0] == "TEMPO" and e[1] == ["150"] for e in W("AFTER-BAD")),
             "tempo in that window: %s -- a poisoned key sends nothing here and "
@@ -299,10 +326,10 @@ def run_asserts(cap):
             % cc("RAIL-BACK", 44))
 
     # The Launchpad's left column publishes both edges, so the release has to be
-    # gated out before the six mode branches, which have no test of their own.
+    # gated out before the mode branches, which have no test of their own.
     modes = lambda k: [e[1] for e in W(k) if e[0] == "MODE"]
-    A.check("⛔ a lit left-column button selects its mode",
-            modes("MODE-4") == [["perform", "mode-4"]],
+    A.check("⛔ a lit left-column button selects its page, alone on the bus",
+            modes("MODE-4") == [["mode-4"]],
             "mode in that window: %s" % modes("MODE-4"))
     A.check("⛔ ... and its RELEASE selects nothing at all",
             modes("MODE-4-RELEASE") == [],
@@ -310,6 +337,14 @@ def run_asserts(cap):
             "so an ungated branch fires the same mode twice per press. It is "
             "idempotent, which is exactly why nothing would look wrong"
             % modes("MODE-4-RELEASE"))
+    # A mode the old code saved, <class> <page>, restored at about 3.5 s:
+    # scratch-gates.py leaves `mode compose mode-1` in the auto file. The class
+    # goes before the bus, or every reader of it would take compose for a page.
+    restored = [m for k in ("LIVE", "PLAY-1", "STOP-1", "PLAY-2", "KNOB-2", "LATE-KNOB",
+                            "BAD-DEST", "RAIL-UP", "RAIL-BACK") for m in modes(k)]
+    A.check("⛔ a mode the old code saved, compose mode-1, restores as mode-1 alone",
+            restored == [["mode-1"]],
+            "mode between 3.2 and 5 s: %s" % restored)
     # The top row held the six mode keys before they moved to the left column.
     A.check("the top row's first button selects no mode any more",
             modes("TOP-ROW-FREE") == [],
@@ -319,7 +354,7 @@ def run_asserts(cap):
             "u_map's rows in that window: %s" % umap_rows(W("TOP-ROW-FREE")))
 
     # The lint proves diag is on the route; this proves the row reaches it.
-    # og-shift-60 is mapped to diag in all six modes, so no mode change first.
+    # og-shift-60 is mapped to diag in every mode, so no mode change first.
     diag = lambda k: [e[1] for e in W(k) if e[0] == "DISP" and e[1][:1] == ["diag"]]
     A.check("⛔ a row naming diag summons the diagnostic layer",
             len(diag("DIAG-DEST")) == 1,
@@ -345,7 +380,8 @@ def run_asserts(cap):
     print("\n=== E. every value destination draws its mapped row ===")
     rows = lambda k: umap_rows(W(k))
     A.check("mode-1 is back for the rows",
-            modes("MODE-1") == [["compose", "mode-1"]],
+            modes("MODE-1") == [["mode-1"]],
+
             "mode in that window: %s" % modes("MODE-1"))
     A.check("⛔ volca-cc draws volca-cc41 64", rows("ROW-CC") == [["volca-cc41", "64"]],
             "disp in that window: %s" % disp("ROW-CC"))

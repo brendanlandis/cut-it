@@ -127,7 +127,7 @@
 #X obj 2280 225 r tempo;
 #X obj 2280 270 t b;
 #X msg 2280 315 0;
-#X text 2280 380 The 120 is a fallback \, not a default: it races mother's knob push \, so any tempo closes the spigot and the seed only fills a silence (ref/module/tempo.md)., f 50;
+#X text 2280 380 The 120 is a fallback: it races mother's knob push \, so any tempo closes the spigot and the seed only fills a silence. With nothing Saved it is the tempo \, since u_map holds knob 1 at this same 120 (R.UNSAVED in u_map.lua \, ref/module/tempo.md)., f 50;
 #X msg 1220 990 252;
 #X obj 1220 1035 s \$0-rt4;
 #X text 620 1810 The same 252 on a receive nothing else writes \, so no clock byte can reach the port-4 box. It fires first \, off the panic trigger's rightmost outlet: the Volca is the longest path in the rig., f 44;

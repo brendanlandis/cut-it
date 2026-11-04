@@ -3,8 +3,8 @@
 -- what the map does is in u_map.lua. ref/module/map.md.
 --
 -- inlet 1: param, every control the mode keys pass on. inlet 2: the mode bus.
--- inlet 3: u_map.pd's own -- init at load, window-shut at 1000 ms, live from the knobs.txt
--- probe and the recover breadcrumb.
+-- inlet 3: u_map.pd's own -- init at load, window-shut at 1000 ms, live from the recover
+-- breadcrumb.
 -- outlet 1: <dest> <arg> <value> <target> <live>, to the destination route. outlet 2: an
 -- unmapped control's raw row, to disp. outlet 3: the mode, to the state store. outlet 4: err.
 -- outlet 5: a bang on init, the proof the Lua loaded.
@@ -22,7 +22,9 @@ local OUTLET = { route = 1, disp = 2, store = 3, err = 4 }
 
 -- The table is read when the object is made, before any loadbang, from the folder of the patch
 -- that holds it, as u_map.pd's `read -c cut-it-map.txt` was. A missing file is an error on the
--- console, which fails a deploy, and map-empty on err at init.
+-- console, which fails a deploy, and map-empty on err at init. Whether a Save has left a
+-- knobs.txt there is asked then too, before mother's push: without one, knob 1 is held at 120
+-- (u_map.lua's R.UNSAVED). Its absence is silent, as it is on a machine never Saved.
 function MapLua:initialize()
   self.inlets, self.outlets = 3, 5
   local fh, why = io.open(self._canvaspath .. "cut-it-map.txt", "r")
@@ -33,7 +35,9 @@ function MapLua:initialize()
   else
     self:error("u_map-lua: " .. tostring(why))
   end
-  self.state = R.new(text)
+  local saved = io.open(self._canvaspath .. "knobs.txt", "r")
+  if saved then saved:close() end
+  self.state = R.new(text, not saved)
   return true
 end
 

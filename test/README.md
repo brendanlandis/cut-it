@@ -296,7 +296,9 @@ test wide enough to silence every raw row.
 failures, then Pd): the lookup reading mode 1's rows in every mode (3, 3), pickup arming on the wrong
 side (2, 2), the mode guard taking one atom (6, 5), pressure drawing a raw row (1, 1), no release on
 reaching a rail target (1, 1) and the boot window never shutting (2, 1); a `live` that sets nothing
-turned the Lua (2) and the Pd half's no-`knobs.txt` run (3) red, and `recover-assert` (1). The
+turned the Lua (3) and `recover-assert` (1) red. Knob 1 held at 120 with no `knobs.txt`
+(2026-11-04): the face never asking for the file turned the Lua (1) and the Pd half's no-`knobs.txt`
+run (5) red, and an empty `R.UNSAVED` the Lua (an error) and that run (2). The
 allowlist stayed a Pd `route`, so its mutations are there: the reject cut from `unknown-dest` turned
 the Pd half red (1), and a destination added to the route that nothing handles turned `docs-check`
 red, as the guard's three sides intend.

@@ -369,32 +369,36 @@ def nosave_asserts(cap):
     """The same drive against a patch folder with no knobs.txt (item 239).
 
     mother pushes a value at boot either way, the saved position or the live
-    one, and only the first may arm. Each check here is the opposite of one
-    above; if both runs agree, u_map is not reading the file.
+    one, and only the first is a restore. With none, knob 1 is held at 120,
+    u_tempo's own, until it is turned through it (u_map.lua's R.UNSAVED), and
+    every other knob is live. Each check here is the opposite of one above; if
+    both runs agree, u_map is not reading the file.
     """
-    print("\n=== D. no knobs.txt -- nothing may be held ===")
+    print("\n=== D. no knobs.txt -- knob 1 held at 120, nothing else held ===")
     order, by = A.windows(cap, "MAP", len(WINDOWS))
     W = lambda k: by.get(k, [])
     tempos = lambda k: [float(e[1][0]) for e in W(k) if e[0] == "TEMPO" and e[1]]
     cc = lambda k, n: [e[1] for e in W(k) if e[0] == "CTLOUT" and e[1][1] == n]
     disp = lambda k: [e[1] for e in W(k) if e[0] == "DISP"]
 
-    A.check("⛔ the boot push is still TAKEN with no knobs.txt -- 0.0958 is 29 bpm",
-            any(abs(t - 29) < 1.5 for t in tempos("EARLY")),
-            "tempo in that window: %s" % tempos("EARLY"))
-    A.check("⛔ ... and NOTHING is held -- knob 1 moves the tempo at 2400 ms, 0.5 is 125",
+    A.check("⛔ the boot push is HELD with no knobs.txt -- 0.0958 (29 bpm) reaches no tempo",
+            not tempos("EARLY"), "tempo in that window: %s" % tempos("EARLY"))
+    A.check("⛔ ... and draws the held row at 120 -- bpm 120 (29)",
+            any(d == ["bpm", "120", "(29)"] for d in disp("EARLY")),
+            "disp in that window: %s" % disp("EARLY"))
+    A.check("... and that window was live -- knob 2's first value reached its destination",
+            len(cc("EARLY-2", 42)) == 1, repr(W("EARLY-2")))
+    A.check("⛔ turning knob 1 THROUGH 120 releases it -- 0.5 at 2400 ms is 125",
             any(abs(t - 125) < 1.5 for t in tempos("SUPPRESS")),
-            "tempo in that window: %s -- armed against its own live position?"
-            % tempos("SUPPRESS"))
+            "tempo in that window: %s -- still held at 120?" % tempos("SUPPRESS"))
     A.check("... and that window was live -- another control reached its destination",
             len(cc("SUPPRESS", 41)) == 1, repr(W("SUPPRESS")))
-    A.check("⛔ knob 2 is live too -- exactly one cc 42, where the armed run has none",
+    A.check("⛔ knob 2 is live -- exactly one cc 42, where the armed run has none",
             len(cc("KNOB-2", 42)) == 1, "cc 42 in that window: %s" % cc("KNOB-2", 42))
     A.check("⛔ ... and its row is the mapped value ALONE -- volca-cc42 114, no bracket",
             any(d == ["volca-cc42", "114"] for d in disp("KNOB-2"))
             and not any(len(d) > 2 for d in disp("KNOB-2") if d[:1] == ["volca-cc42"]),
             "disp in that window: %s" % disp("KNOB-2"))
-
 
 if __name__ == "__main__":
     static_lint()

@@ -77,13 +77,29 @@ function R.parse(text)
   return map, rows
 end
 
+-- Where a knob is held when nothing has been Saved (Brendan, 2026-11-04): knob 1 is tempo in
+-- every mode, and stays at 120 BPM, u_tempo's own, until it is turned through 0.48, where the
+-- curve puts 120. A knob not named here is live from its first value.
+R.UNSAVED = { [1] = 0.48 }
+
 -- A knob's pickup: "virgin" has never seen a value; "armed" has been restored, side unknown;
 -- "above" sat above (or on) its target and waits for a fall, "below" waits for a rise; "live"
 -- passes everything. The window is the boot's first 1000 ms, when a first value is a restore.
-function R.new(text)
+-- unsaved: the patch's folder holds no knobs.txt, so mother's boot push is where each knob
+-- physically sits, not a restore (item 239).
+function R.new(text, unsaved)
   local st = { mode = R.BOOT_MODE, window = true, knob = {} }
   st.map, st.rows = R.parse(text)
-  for k = 1, 4 do st.knob[k] = { state = "virgin", target = 0 } end
+  for k = 1, 4 do
+    local at = R.UNSAVED[k]
+    if not unsaved then
+      st.knob[k] = { state = "virgin", target = 0 }
+    elseif at then
+      st.knob[k] = { state = "armed", target = at }
+    else
+      st.knob[k] = { state = "live", target = 0 }
+    end
+  end
   return st
 end
 
@@ -150,7 +166,7 @@ function R.mode(st, sel, atoms)
 end
 
 -- What u_map.pd itself sends: the load, the boot window shutting at 1000 ms, and every knob
--- straight to live when there is no knobs.txt or the boot follows a recover (items 239, 299).
+-- straight to live when the boot follows a recover (item 299).
 R.internal = {
   init = function(st)
     if st.rows == 0 then return { R.fail("map-empty") } end

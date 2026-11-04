@@ -154,8 +154,8 @@ the drum page's 56 pads in mode 1, plus CC 90, PLAY, STOP and the four shifted k
 | | Lives in | Evidence |
 |---|---|---|
 | The table, the key's mode and its guard, the lookup, the divisor, pickup's five states and the raw row with its two exemptions | `u_map.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
-| Reading the table, turning messages into those calls and their answers into outlets | `u_map-lua.pd_lua`, the class `u_map-lua`: three inlets (every control the mode keys pass on; the `mode` bus; `u_map.pd`'s own `init`, `window-shut` and `live`), five outlets (the destination route, an unmapped control's row, the mode to store, `err`, a bang on `init`) | verified |
-| The six mode keys and their release gates, the 500 ms seed, the destination route and its handlers, `c_mapped`, the 1000 ms boot window, the 2000 ms `knobs.txt` probe, the recover breadcrumb, `put auto mode` and the restore | `u_map.pd` | verified |
+| Reading the table and asking whether a `knobs.txt` is there, turning messages into those calls and their answers into outlets | `u_map-lua.pd_lua`, the class `u_map-lua`: three inlets (every control the mode keys pass on; the `mode` bus; `u_map.pd`'s own `init`, `window-shut` and `live`), five outlets (the destination route, an unmapped control's row, the mode to store, `err`, a bang on `init`) | verified |
+| The six mode keys and their release gates, the 500 ms seed, the destination route and its handlers, `c_mapped`, the 1000 ms boot window, the recover breadcrumb at 2000 ms, `put auto mode` and the restore | `u_map.pd` | verified |
 | The Lua's answers | The Pd version's, exactly: 38 controls and modes through `u_map` printed the same 42 lines from the Pd version and the Lua, on the Mac and on the Organelle (2026-11-03) | verified |
 | What it costs in memory | About 0.1 MB more peak resident in a test Pd loading `main.pd` on the Organelle (3.31–3.42 MB before, 3.44–3.48 after), since `c_steps` loads pdlua already | verified |
 | What it costs per control | About twice the Pd version's on the Organelle, in a test Pd niced beside the live one: 9000 mixed controls in 2.9–3.4 s against 1.35 s, and 9000 unmapped pressure messages in 1.6–1.8 s against 0.7–0.9 s (2026-11-03) | verified |
@@ -164,12 +164,12 @@ the drum page's 56 pads in mode 1, plus CC 90, PLAY, STOP and the four shifted k
 
 | ~Time | Event | Evidence | Item |
 |-------|-------|----------|------|
-| 0 ms, as the patch is made | `[u_map-lua]` reads the table, and its lookup key's mode is `mode-1` | verified | 234 |
+| 0 ms, as the patch is made | `[u_map-lua]` reads the table and asks whether a `knobs.txt` is there, and its lookup key's mode is `mode-1` | verified | 234, 239 |
 | 0 ms, `loadbang` | `init`: `map-empty` if the table holds nothing, then the bang that proves the Lua loaded | verified | — |
 | before 500 ms | mother pushes `knobs.txt`, if a Save has ever happened | verified | 139, 200 |
 | 500 ms | The `mode` seed fires — `compose mode-1` — behind a spigot any real mode has already closed | verified | — |
 | 1000 ms | `window-shut`: from now on a knob's first value is a hand, not a restore | verified | 236 |
-| 2000 ms | The `knobs.txt` probe and the recover breadcrumb, either of which may say `live` | verified | 239, 299 |
+| 2000 ms | The recover breadcrumb, which may say `live` | verified | 299 |
 | ~3500 ms | `u_state` restores, and a saved `mode` arrives as a real selection | verified | — |
 
 ⛔ **Both the read and the key's mode have to be there before mother's push.** See *Traps*.
@@ -187,9 +187,9 @@ then hands it authority.
 | Applies to | `og-knob-1`…`og-knob-4` only | verified | 236 |
 | Never applies to | any control that is not an Organelle knob — the keys and the shifted keys included | verified | 236 |
 | Boot window | 1000 ms. A first value inside it is a restore and **arms**; after it, a hand, and goes straight to live | verified | 236 |
-| Whether that arming survives | `u_map` **reads `knobs.txt` itself** at 2000 ms. `[text size]` answers 1 when the file is there and 0 when it is not | verified | 239 |
-| With **no** `knobs.txt` | `u_map.pd` sends the Lua `live`: every knob goes straight to live and none is ever held | verified | 239 |
-| **After a `recover`** | the breadcrumb is read in the same 2000 ms pass and sends the same `live`, `knobs.txt` or not | verified | 299 |
+| Whether the push is a restore at all | `[u_map-lua]` **asks whether `knobs.txt` is there** as it is made, before mother's push, beside the table it reads | verified | 239 |
+| With **no** `knobs.txt` | **Knob 1 is held at 120 BPM**, `u_tempo`'s own, until it is turned through 0.48, where the curve puts 120 (Brendan, 2026-11-04): its first push draws `bpm 120 (29)` and moves nothing. Every other knob is live from its first value | verified | — |
+| **After a `recover`** | the breadcrumb, read at 2000 ms, sends `live`, `knobs.txt` or not: every knob, knob 1 included | verified | 299 |
 | The held row is drawn by the **destination**, for any knob mapped to one that carries a value | `c_mapped` gets the latched target and the live flag with every message and draws `name <latched> (<knob>)` in its own units | verified | 316 |
 | **Reaching** the target releases, not only passing it | a target on a rail has no beyond: armed above a target of `0`, the flip test waits for `value < 0` | verified | 241 |
 | An **unmapped** control reports `<name> <raw>` on `disp` | The Lua's miss, out of `u_map-lua`'s second outlet. Silent on every bus, never on the screen | verified | 242 |
@@ -207,35 +207,38 @@ then hands it authority.
 is a restore rather than a hand, so it arms; a first value after it is a hand and goes straight to
 live. ⛔ **But mother pushes a value either way** — the *saved* position when `knobs.txt` exists, the
 *live physical* position when it does not, both inside the window — so the window alone armed knobs
-that were already in sync. `u_map` therefore **reads `knobs.txt` itself**, and if the file is absent
-it sends `live`. Nothing is held on a machine that has never been Saved.
+that were already in sync. `[u_map-lua]` therefore **asks whether `knobs.txt` is there** when it is
+made, and without one the push is no restore: knob 1 is held at 120 and the rest are live
+(`u_map.lua`'s `R.UNSAVED`).
 
-⚠️ **Both branches pass the value through, which is the only reason a timer is tolerable here.** Item
+⚠️ **A restore passes the value through, which is the only reason a timer is tolerable here.** Item
 234 was two boot races that shipped silently. A window too short costs the old jump; one too long
-costs a knob that needs one sweep to free it. **Neither can produce silence.**
+costs a knob that needs one sweep to free it. **Neither can produce silence.** Knob 1 held at 120
+with nothing Saved is silent on `tempo` by design: `u_tempo`'s fallback 120 is the tempo then
+([tempo.md](tempo.md)).
 
 ### The recover breadcrumb, and why `u_map` reads it
 
 **`u_init` writes `<state-dir>/cut-it-recover.txt` immediately before it fires the reload**, and
-`u_map`'s 2000 ms probe reads it in the same pass that reads `knobs.txt`. Item 299.
+`u_map` reads it at 2000 ms. Item 299.
 
 | | | Evidence | Item |
 |---|---|---|---|
 | Armed contents | `recover <ms>` — the stamp is elapsed milliseconds since load, from `[realtime]` | verified | 299 |
 | Cleared contents | `none`, written back over line 0 | verified | 299 |
-| A missing file | `[text size]` answers **0** and nothing happens, exactly as a missing `knobs.txt` does | verified | 299 |
-| The arming override | Every knob straight to **live** — the same `live` the no-save probe sends | verified | 299 |
+| A missing file | `[text size]` answers **0** and nothing happens | verified | 299 |
+| The arming override | Every knob straight to **live**, knob 1 held at 120 included | verified | 299 |
 | The report | `warn u_map recovered`, deferred to **4500 ms** | verified | 299 |
 
-⛔ **The override must land at 2000 ms and the report must not.** After an emergency the knobs you
-are *holding* are the truth, so nothing may be held — but arming is decided at 2000, and an override
-any later would simply be undone by the knobs probe. The **report** goes the other way: a `warn`
+⛔ **The override lands at 2000 ms and the report must not.** After an emergency the knobs you are
+*holding* are the truth, so nothing may be held; the read waits for `[del 2000]` only because a
+missing file prints three lines (C-9). The **report** goes the other way: a `warn`
 raised during the boot stages is buried by `modal launchpad` at 3000 and the footer hand-over at
 4000, so it waits until 4500. One read, two deadlines.
 
 ⛔ **The file is cleared by OVERWRITING it, never by deleting it.** Vanilla Pd cannot delete a file;
 `[shell]` forks, is a do-nothing stub on the Mac, and would let a gate reach only one branch — the
-same argument that already forbids it in the no-save probe. A one-line sentinel makes the read decide
+same argument that forbade it for `knobs.txt` (*Traps*). A one-line sentinel makes the read decide
 on **content**, so nothing depends on how `[text]` writes an empty table, which has never been
 measured here.
 
@@ -404,20 +407,20 @@ it does, the knob's own live position when it does not. Arming on the push alone
 already agreed with the hardware, and they then stayed dead until turned back past where they
 started. Reachable on a fresh install and after any `tools/deploy.sh --clean` (item 239).
 
-**Fix:** ask the direct question. `u_map` reads `knobs.txt` into a `[text define]` and takes
-`[text size]` — 1 when present, 0 when absent — and on absent it sends the Lua `live`.
+**Fix:** ask the direct question. `[u_map-lua]` opens `knobs.txt` beside the table as it is made,
+before mother's push, and with none the push is where each knob physically sits: knob 1 is held at
+120 and the rest are live.
 
 ⛔ **Do not answer it from the timing.** The push lands at 100 ms with the file and at ~223 ms
 without, and that gap is an artifact of the error path taking longer, not a promised signal.
 ⛔ **Do not answer it with `[shell]` either.** It forks and replies hundreds of milliseconds later,
 it is a do-nothing stub on the Mac, and a gate could then only ever reach one of the two branches. A
-`[text]` read behaves identically on both machines, so the gate creates the file or does not and
+file read behaves identically on both machines, so the gate creates the file or does not and
 exercises the real path either way.
 
-⚠️ **The read sits behind `[del 2000]` because a missing file prints three lines**, and `tools/deploy.sh`
-fails a check on any output before ~735 ms (C-9). Deferring costs nothing: mother's push is taken by
-the virgin branch either way, and a knob turned inside the first two seconds is released the instant
-the probe fires.
+⚠️ **Ask it in the Lua, not with `[text define]`.** A `[text]` read of a missing file prints three
+lines, so it had to sit behind `[del 2000]` (C-9), long after mother's push: the push then set the
+tempo from wherever knob 1 sat until the answer came. Lua's `io.open` fails in silence.
 
 ### A Lua that never loads leaves only the mode keys
 

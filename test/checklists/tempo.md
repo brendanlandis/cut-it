@@ -1,10 +1,10 @@
 # Tempo checklist
 
-The transport, knob 1's pickup, the clamp and the SP-404 following the clock. Steps 1 to 11 set their tempo with **Send** lines; 12 and 13 are hands on the nanoKONTROL and knob 1.
+The transport, knob 1's pickup, the clamp and the SP-404 following the clock. Steps 1 to 11 set their tempo with **Send** lines; 12 to 14 are hands on the nanoKONTROL and knob 1.
 
 No beat-count steps: the `c_clock` ratio and the clock running on after a stop are `clock-assert`'s and `tempo-assert`'s, and the counts appear on no screen. One claim judged in two places reports more coverage than exists.
 
-13 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [tempo](../../ref/module/tempo.md), [sp404](../../ref/device/sp404.md).
+14 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [tempo](../../ref/module/tempo.md), [sp404](../../ref/device/sp404.md).
 
 - [ ] **1. Resting display at 120 BPM**
   - **Send:** `tempo 120; stop bang`
@@ -12,7 +12,7 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
 
 - [ ] **2. Knob pickup on the first touch**
   - **Send:** `tempo 120; param og-knob-1 0`
-  - **Pass if:** The row reads bpm 57 (10) — the position knob 1 was saved at first and where the Send line has just put it in brackets — and the footer stays 120-bpm. The tempo is held until the real knob is turned back past where it was saved. If this rig has no knobs.txt the row reads bpm 10 and the footer follows down to 10-bpm instead. The row must never read og-knob-1 and never a raw 0-to-1 decimal.
+  - **Pass if:** The row reads bpm 57 (10) — the position knob 1 was saved at first and where the Send line has just put it in brackets — and the footer stays 120-bpm. The tempo is held until the real knob is turned back past where it was saved. If this rig has no knobs.txt the row reads bpm 120 (10) instead: knob 1 is held at 120 until it is turned through it. Either way the footer stays 120-bpm. The row must never read og-knob-1 and never a raw 0-to-1 decimal.
   - **Note:** The first number is the saved knob position, not the tempo: `u_map` draws the held row from the pickup target with the incoming value in the unit field, so a `knobs.txt` of 0.0957967 draws `bpm 57 (10)`. The held case needs a knob saved off the rail: with `0 0 0 0` pickup releases at once, and the row and the footer read as if there were no `knobs.txt`.
 
 - [ ] **3. Knob pickup crosses over**
@@ -64,3 +64,9 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
   - **Do:** Sweep knob 1 all the way and back.
   - **Pass if:** The row reads bpm and a number that tracks the knob between 10 and 500 BPM. It never reads og-knob-1 and never a raw 0-to-1 decimal. The 404 follows the sweep.
   - **Note:** No bracketed second number: the knob was released in step 3 and is live. The held format is step 2's.
+
+- [ ] **14. Nothing Saved: knob 1 starts held at 120**
+  - **Need:** No knobs.txt in Cut It's folder: no Save since the last `tools/deploy.sh --clean`. Knob 1 turned well down, toward 8 o'clock.
+  - **Do:** Load Cut It from the Organelle's menu, wait for the footer, then turn knob 1 slowly up past 12 o'clock.
+  - **Pass if:** The footer reads 120-bpm wherever knob 1 sits. Turning it, the row reads bpm 120 and the knob's own tempo in brackets, and the 404 stays at 120, until the knob passes just before 12 o'clock; from there the row and the 404 follow the knob.
+  - **Note:** 0.48 of the knob's turn is 120 on its curve ([map](../../ref/module/map.md), *Parameter pickup*). With a knobs.txt the saved position is restored instead, as in step 2.

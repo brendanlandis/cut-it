@@ -245,11 +245,17 @@ sequences everything, timing rides in note events" decision in
 ⛔ **So `u_tempo` must be a master reference *plus* an instantiable `c_clock`, never a singleton.**
 The cost of getting that wrong is tracked as a standing risk in [plan-v04.md](../../plan-v04.md).
 
-### The 120 is a fallback, not a default
+### The 120 is a fallback, and with nothing Saved the tempo
 
-mother pushes the real knob positions at load, so knob 1 usually sets the tempo before the fallback
-fires — but **which arrives first is a race**, and it has been seen going both ways. A spigot makes
-the fallback publish only if nothing else already has.
+After a Save, mother pushes knob 1's saved position at load, so knob 1 usually sets the tempo before
+the fallback fires — but **which arrives first is a race**, and it has been seen going both ways. A
+spigot makes the fallback publish only if nothing else already has.
+
+**With nothing Saved, the 120 is the tempo** (Brendan, 2026-11-04): `u_map` holds knob 1 at 120
+until it is turned through it, so nothing else writes `tempo` and the fallback fills the silence
+([map.md](map.md), *Parameter pickup*). The hold's 120 and this one are the same number in two
+files, `u_map.lua`'s `R.UNSAVED` and `u_tempo.pd`'s message box, and `u_map_test.lua` checks they
+agree.
 
 ### Note-silencing is each device layer's own
 

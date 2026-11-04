@@ -5,7 +5,7 @@
 --   lua test/gate/lua/u_map_test.lua [-v]
 --
 -- What the destinations do with a looked-up control, and the timing of the boot window and the
--- knobs.txt probe, are map-assert.py's, on a running copy of the instrument. ref/module/map.md.
+-- knobs.txt read, are map-assert.py's, on a running copy of the instrument. ref/module/map.md.
 
 local T = dofile("test/gate/lua/lib_test.lua")
 local DIR = "Cut It/"
@@ -110,6 +110,7 @@ equal("... and only the tempo has a curve: a mapped CC passes its knob's value a
       R.CURVES["volca-cc"], nil)
 
 print("\n--- pickup ---")
+-- R.new(MAP) is a boot after a Save: there is a knobs.txt, and mother's push is a restore.
 st = R.new(MAP)
 equal("a knob's first value inside the boot window passes",
       R.control(st, "og-knob-1", { 0.0958 }), route("tempo", 0, C(0.0958), C(0.0958), 1))
@@ -162,6 +163,35 @@ equal("... and so is one that had never moved", R.control(st, "og-knob-2", { 0.4
 check("... every slot", st.knob[3].state == "live" and st.knob[4].state == "live",
       T.show(st.knob))
 
+print("\n--- nothing Saved: knob 1 held at 120 ---")
+equal("0.48 is where the curve puts 120 BPM", { R.UNSAVED[1], bpm(R.UNSAVED[1]) }, { 0.48, 120 })
+fh = assert(io.open(DIR .. "u_tempo.pd"))
+local fallback = tonumber(fh:read("a"):match("#X msg %d+ %d+ (%d+);\n#X obj %d+ %d+ s tempo;"))
+fh:close()
+equal("... the same 120 u_tempo publishes when nothing else has", fallback, 120)
+equal("... and no other knob has a place to be held at", { R.UNSAVED[2], R.UNSAVED[3], R.UNSAVED[4] },
+      {})
+st = R.new(MAP, true)
+equal("mother's push of where knob 1 sits is HELD, at 120: the tempo stays u_tempo's",
+      R.control(st, "og-knob-1", { 0.0958 }), route("tempo", 0, C(0.0958), C(0.48), 0))
+equal("... moving it without reaching 120 is still held", R.control(st, "og-knob-1", { 0.3 }),
+      route("tempo", 0, C(0.3), C(0.48), 0))
+equal("... and turning it THROUGH 120 releases it, at the crossing value",
+      R.control(st, "og-knob-1", { 0.5 }), route("tempo", 0, C(0.5), C(0.48), 1))
+equal("... and it is live from then on", R.control(st, "og-knob-1", { 0.3 })[1][3][5], 1)
+st = R.new(MAP, true)
+equal("from above, it is held until it comes down through 120",
+      { R.control(st, "og-knob-1", { 0.9 })[1][3][5], R.control(st, "og-knob-1", { 0.6 })[1][3][5],
+        R.control(st, "og-knob-1", { 0.4 })[1][3][5] }, { 0, 0, 1 })
+st = R.new(MAP, true)
+local function passed(out) return { out[1][3][3], out[1][3][5] } end
+equal("every other knob is live from its first value, inside the boot window or not",
+      { passed(R.control(st, "og-knob-2", { 0.5 })), passed(R.control(st, "og-knob-2", { 0.9 })) },
+      { { 0.5, 1 }, { 0.9, 1 } })
+R.internal.live(st)
+equal("a recover's live frees knob 1 too: after an emergency nothing is held",
+      R.control(st, "og-knob-1", { 0.1 })[1][3][5], 1)
+
 st = R.new("mode-1 xport-2 start 0\n")
 equal("a button is never held: PLAY twice is live twice",
       { R.control(st, "xport-2", { 1 })[1][3][5], R.control(st, "xport-2", { 1 })[1][3][5] },
@@ -194,10 +224,20 @@ equal("a report is one symbol of 21 characters or fewer",
       R.fail("lua-" .. string.rep("x", 30))[3][2], "lua-" .. string.rep("x", 17))
 
 print("\n--- the Pd face ---")
--- A patch folder of its own: the face reads cut-it-map.txt from there, as Pd's read did.
+-- A patch folder of its own: the face reads cut-it-map.txt from there, as Pd's read did, and
+-- asks whether a Save left a knobs.txt there.
 local tmp = os.tmpname()
 fh = assert(io.open(tmp .. "-cut-it-map.txt", "w"))
 fh:write(MAP)
+fh:close()
+local unsaved_class = T.load_class(DIR .. "u_map-lua.pd_lua", DIR)
+local fresh = T.new(unsaved_class, {}, tmp .. "-")
+equal("no knobs.txt where its patch is: knob 1 is held at 120 from mother's first push",
+      T.send(fresh, 1, "og-knob-1", { 0.0958 }),
+      { { 1, "list", { "tempo", 0, C(0.0958), C(0.48), 0 } } })
+check("... and that absence is silent on the console", #fresh.console == 0, T.show(fresh.console))
+fh = assert(io.open(tmp .. "-knobs.txt", "w"))
+fh:write("0.0957967 0.5 0.5 0.5;\n")
 fh:close()
 local class = T.load_class(DIR .. "u_map-lua.pd_lua", DIR)
 check("u_map-lua.pd_lua registers the class u_map-lua", class and class._name == "u_map-lua",
@@ -233,7 +273,11 @@ equal("dispatch takes each inlet's messages to its method: a control, a mode, in
         dispatched(3, "init", {}) },
       { { { 2, "list", { "gk-x", 7 } } }, { { 3, "list", { "compose", "mode-1" } } },
         { { 5, "bang", {} } } })
+equal("a knobs.txt where its patch is: mother's first push is a restore, and passes",
+      T.send(T.new(class, {}, tmp .. "-"), 1, "og-knob-1", { 0.0958 }),
+      { { 1, "list", { "tempo", 0, C(0.0958), C(0.0958), 1 } } })
 os.remove(tmp .. "-cut-it-map.txt")
+os.remove(tmp .. "-knobs.txt")
 
 local missing = T.new(class, {}, tmp .. "-nowhere-")
 check("no table where its patch is: an error on the console at load",

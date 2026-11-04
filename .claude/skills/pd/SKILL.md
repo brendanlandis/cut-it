@@ -109,7 +109,6 @@ comment is the only documentation visible while editing in Pd and it has no link
 | C-10 | **Append boxes at the end of a `.pd`, and move the `#X connect`s with them** |
 | C-11 | **Grain timing is audio-domain** — `phasor~` and `vline~`, never `metro` / `line~` |
 | C-12 | **Report on `[s err]`** as `<level> <source> <text>` — `info` logs, `warn` and `fail` draw on every page. Text one symbol ≤ 21 chars |
-
 | C-13 | **No dynamic patching, no `[value]`, no copied subpatches** |
 | C-14 | **Edit a `#X text` by replacing the WHOLE LINE** — escaped `\;` is legal inside one, so scanning for "the next `;`" splits the comment |
 

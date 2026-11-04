@@ -104,6 +104,5 @@ Mode 1's drum page on the Launchpad, the sequencer playing the drum samples from
 
 - [ ] **23. Other modes keep their grid**
   - **Send:** `mode mode-2`
-
   - **Do:** Press a pad in the top two rows.
   - **Pass if:** The second lamp lights and the drum page gives way to the beat row along the bottom. A pad press draws a pad-NN row on the OLED again, and the phone goes back to the remote screen.

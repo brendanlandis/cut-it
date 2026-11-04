@@ -192,7 +192,6 @@ def drum_page(frame, lay):
     page is {"step": {n: color}, "vel": {n: color}, "pad": {n: color}, "rep": {n:
     color}}. The
     page is: the eight mode lamps as home has them, every layout cell in a color
-
     its role can take, and everything else dark -- the beat row included, since
     it gives way here, and the bottom-right 4x4, which no row names.
     """

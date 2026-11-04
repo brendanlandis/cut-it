@@ -163,7 +163,6 @@ namespace are the same namespace.
 
 ⚠️ The same trap one level down: `[text set]` and `[text search]` both answer a bare selector with
 "no method for `mode`". A message box typed `mode mode-1` carries `mode` as its **selector**,
-
 not as data.
 
 ### A `[text search]` miss reaches the wrong inlet as -1

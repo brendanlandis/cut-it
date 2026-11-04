@@ -315,7 +315,6 @@ starts off at every load, goes off when a mode is chosen, and rides on the heart
 shows the Organelle's own state; a flip sends a heartbeat at once rather than waiting for the next.
 Turning it on warns, so the OLED says so and the log keeps it.
 
-
 ⛔ **A full status dump was considered and rejected as a command.** Parameters and status re-send
 every two seconds and the alert repeats at 2 Hz, so a phone joining late repopulates on its own in
 about two seconds — item 121. It would have been a button that does what waiting does.

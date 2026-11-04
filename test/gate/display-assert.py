@@ -84,7 +84,6 @@ def main():
                 lamp == G.LAMPS[7], "lit lamp was %s, wanted %d (mode-8)"
                 % (lamp, G.LAMPS[7]))
 
-
     # Mode 1 is the drum page: the beat row gives way to it while the clock
     # still runs, so every frame of the window is asked, not only the last.
     fs = window("home-mode-1")

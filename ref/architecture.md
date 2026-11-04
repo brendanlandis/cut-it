@@ -228,7 +228,6 @@ Nothing overlaps, and that is deliberate:
 | **nanoKONTROL** | Continuous control, with position visible on the panel. Momentary buttons only |
 | **Organelle keyboard** | The Volca's notes on page 1. Under aux, the four keys every page shares: diag, test mode, stop and recover |
 
-
 ⚠️ **The Launchpad mode conflict evaporates because of this split.** Authoring that needs Note or
 Chord mode uses them; everything Cut It draws, the drum page's sequencing included, is Programmer
 Mode. They never coexist, so there is no mid-set SysEx flipping.
@@ -237,7 +236,6 @@ Mode. They never coexist, so there is no mid-set SysEx flipping.
 means what the current page's row says, so the Launchpad's grid is the drum page on one page and a
 beat row on the rest. Designing that in from the start is much cheaper than retrofitting it once the
 filter logic exists, which is why `mode` and a page-dependent `u_map` exist before any filter does.
-
 
 ## The naming, and what it tells you
 

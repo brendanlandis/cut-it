@@ -45,7 +45,6 @@ session means opening one.
 | Checklist | Steps | Judges |
 |---|---|---|
 | [display](display.md) | 16 | the OLED's layers and the error bus |
-
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
 | [tempo](tempo.md) | 13 | the transport, knob 1's pickup, the clamp |
 | [launchpad](launchpad.md) | 28 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |
@@ -118,7 +117,6 @@ can be done by hand instead:
 | Send | On the rig |
 |---|---|
 | `mode mode-1` to `mode mode-8` | the first to eighth button down the Launchpad's left column |
-
 | `start bang` · `stop bang` | PLAY · STOP on the nanoKONTROL |
 | `panic bang` | a short tap on the Launchpad's top-left corner button |
 

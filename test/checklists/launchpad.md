@@ -98,7 +98,6 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
   - **Do:** Press each of the eight buttons of the left column, top to bottom. Then press the top row.
   - **Pass if:** Each of the eight buttons moves the bright lamp to its own position. The top row moves nothing.
 
-
 - [ ] **22. Hot-swap — unplugged mid-session**
   - **Send:** `mode mode-2`
   - **Do:** Unplug the Launchpad USB and leave it out.
@@ -135,4 +134,3 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
   - **Do:** Tap SETUP, the bottom left corner, once, and watch the OLED for ten seconds. Tap it again. Then hold it for four seconds and let go.
   - **Pass if:** The first tap puts up a bordered alert reading warn then u_net then test-mode-on for about two seconds, and no other alert appears in the ten seconds after it. The second tap and the hold put up no alert. SETUP stays dark and the grid keeps painting throughout.
   - **Note:** The second tap turns test mode off, which is logged and not drawn; the hold sends nothing at all ([launchpad](../../ref/device/launchpad.md)). An alert every few seconds with no tap means the announcement each Programmer Mode heartbeat makes is being read as a tap: `launchpad-assert` proves it is not on the Mac, and this is the rig's wiring and timing.
-

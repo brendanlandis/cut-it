@@ -58,7 +58,6 @@ end
 check("the shipped table parses: og-knob-1 is tempo on all " .. R.PAGES .. " pages",
       tempo_everywhere, T.show(shipped.map["mode-1"]["og-knob-1"]))
 
-
 print("\n--- the lookup ---")
 local st = R.new(MAP)
 equal("the key's mode is mode-1 from the start, before any mode arrives", st.mode, "mode-1")

@@ -42,7 +42,6 @@ LINE = ("disp chop-size 43 %; err warn u_root test-warn; mode mode-1; "
         "panic bang; param og-knob-1 0; start bang; stop bang; tempo 120")
 WANT = ["got-disp: chop-size 43 %", "got-err: warn u_root test-warn",
         "got-mode: mode-1", "got-panic: bang", "got-param: og-knob-1 0",
-
         "got-start: bang", "got-stop: bang", "got-tempo: 120"]
 # pd quit first: if it got through, nothing after it would arrive.
 REFUSE_LINE = ("pd quit; pd dsp 1; clock 1; state section-1-drums 0; "

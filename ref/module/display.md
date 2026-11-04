@@ -153,8 +153,7 @@ and `recover`. See [organelle.md](../device/organelle.md).
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
-| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10,
- and the beat row on grid indices 11–18; in mode 1 the **drum page** instead of the beat row | unknown | — |
+| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10, and the beat row on grid indices 11–18; in mode 1 the **drum page** instead of the beat row | unknown | — |
 | `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | The whole surface, one color | verified | — |
 | `alert` | 2 | `disp` → `alert …`, **`fail` only** | 2 s | The whole surface, red | verified | — |
 

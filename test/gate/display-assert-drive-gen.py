@@ -23,7 +23,6 @@ SEQ = [
     # Nothing else in this run uses mode-8, so a lamp at index 10, the bottom
     # of the left column, can only have come from here.
     (300, "EARLY-MODE", ["\\; mode mode-8"], GAP),
-
     (4000, "idle-dsp-off", [], GAP),
     (8000, "dsp-on", ["\\; pd dsp 1"], GAP),
     # The mode is not re-sent: the next window asserts the one set at 300 ms
@@ -36,7 +35,6 @@ SEQ = [
     # u_err draws a warn on every page, so it reaches disp here: the grid must
     # ignore it, since it draws fails alone.
     (23000, "warn-ignored", ["\\; err warn u_bench quiet"], GAP),
-
     (26000, "alert-red", ["\\; err fail u_bench boom"], GAP),
     # the alert TTL is 2 s, so this window opens after it has expired
     (28500, "alert-expired", [], GAP),

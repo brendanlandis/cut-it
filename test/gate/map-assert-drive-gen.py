@@ -81,11 +81,9 @@ SEQ = [
     (5600, "BAD-MODE", ["\\; mode compose"], GAP),
     # The key must survive: og-knob-1 is tempo on every page, page 8 here, and
     # long since live, so 0.6 must still reach tempo as 150 bpm.
-
     (5800, "AFTER-BAD", ["\\; param og-knob-1 0.6"], GAP),
     # The shipped rows on the Organelle's shifted keys (og-shift-60..84, aux
     # held), the one panel that can never be the missing device, on page 8.
-
     (6200, "DIAG-DEST", ["\\; param og-shift-60 100"], GAP),
     # A shifted key publishes both edges; the release must not summon it again.
     (6400, "DIAG-RELEASE", ["\\; param og-shift-60 0"], GAP),

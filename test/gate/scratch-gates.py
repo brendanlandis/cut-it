@@ -307,7 +307,6 @@ def map_(g):
         # still hold after it lands at about 3.5 s.
         with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
             fh.write("mode compose mode-1\n")
-
         out = []
         g.rewrite(s, out=out)
         inventory = inventory or out
@@ -418,7 +417,6 @@ def sequencer(g):
         pat[512 + track - 1] = n
     pat[560], pat[561] = SEQ_SIG
     body = "mode mode-1\nsection-1-drums %s\n" % " ".join(map(str, pat))
-
     for path in (os.path.join(s.state, "cut-it-auto.txt"), s.path("seed.txt")):
         with open(path, "w") as fh:
             fh.write(body)

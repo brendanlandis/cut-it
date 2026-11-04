@@ -153,7 +153,6 @@ def run_asserts(cap):
             len(lp) == 1 and lp[0][0] == "lp-cc-19",
             "wanted one lp-cc-19 on channel 1, got %s" % param("CH-LP"))
 
-
     strays = [(m, v) for m in NANO_WINDOWS for v in param(m) + disp(m)
               if v and v[0].startswith(FOREIGN)]
     A.check("⛔ nothing on the nano's channels reaches the Launchpad's layer",

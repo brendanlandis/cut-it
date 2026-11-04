@@ -555,7 +555,6 @@ rather than a committed take, pushed whenever it changes and flushed on `u_state
 restore arrives as `mode-1`, the page as its selector, which is exactly the shape `s mode` wants —
 so no `[list trim]` on that side. One saved as `<class> <page>` loses its class first (*Traps*).
 
-
 ⚠️ **The table is code, not state.** Nothing rewrites it at runtime, so persisting it would store a
 constant, and a restore could silently override the shipped file.
 
@@ -601,7 +600,6 @@ between a fifth and two fifths off a control's time there.
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
   would jump once per change. Not reachable today — `og-knob-1` is `tempo` on every page. **It
-
   closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.
   ⚠️ Doing it *cheaply* is worse than nothing — re-arming to the knob's last position puts the next
   move on the far side and suppresses until you turn back. Doing it right needs a per-`(mode, knob)`

@@ -99,7 +99,6 @@ def static_lint():
             % len(keys or []), n is not None and keys and n == len(keys),
             "R.PAGES = %s, %d keys" % (n, len(keys or [])))
     modes = ["mode-%d" % k for k in range(1, (n or 0) + 1)]
-
     rows, bad_width, bad_dest, bad_mode = [], [], [], []
     for n, raw in enumerate(open(MAP), 1):
         line = raw.strip()
@@ -374,7 +373,6 @@ def run_asserts(cap):
 
     # The lint proves diag is on the route; this proves the row reaches it.
     # og-shift-60 is mapped to diag on every page, page 8 here.
-
     diag = lambda k: [e[1] for e in W(k) if e[0] == "DISP" and e[1][:1] == ["diag"]]
     A.check("⛔ a row naming diag summons the diagnostic layer",
             len(diag("DIAG-DEST")) == 1,
@@ -401,7 +399,6 @@ def run_asserts(cap):
     rows = lambda k: umap_rows(W(k))
     A.check("mode-1 is back for the rows",
             modes("MODE-1") == [["mode-1"]],
-
             "mode in that window: %s" % modes("MODE-1"))
     A.check("⛔ volca-cc draws volca-cc41 64", rows("ROW-CC") == [["volca-cc41", "64"]],
             "disp in that window: %s" % disp("ROW-CC"))

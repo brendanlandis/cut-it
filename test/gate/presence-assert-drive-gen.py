@@ -76,7 +76,6 @@ SEQ = [
     # at 30000, so ownership drops and this mode change must not paint.
     (31000, "DROPPED", ["\\; mode mode-1"], GAP),
 
-
     # Both devices answer at once, the only way to a lost count of zero, which
     # fires the trailing fork (item 275). Counter 16 is not due until 38000, so
     # a fork here can only be the trailing one. The third frame is a Roland

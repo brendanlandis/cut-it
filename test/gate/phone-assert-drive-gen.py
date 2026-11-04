@@ -242,7 +242,6 @@ SEQ = [
     (53200, "tmmodeon", [("tm", None)]),
     (54600, "tmmode",   [("bus", ("mode", "mode-2"))]),
     (56000, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "mode-1"))]),
-
     (57400, "done",     []),
 ]
 

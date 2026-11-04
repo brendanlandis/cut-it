@@ -127,7 +127,6 @@ patch is the OLED.
 | Korg Volca FM | Pitched voice (DIN MIDI in only) |
 | Korg nanoKONTROL (mk1) | Continuous control — 9 faders, 9 knobs, 18 buttons, transport |
 | Novation Launchpad Pro MK3 | Cut It interface (Programmer Mode): the pages, and the drum page's sequencing |
-
 | MeeBlip cubit (original) | Kept, unused — see below |
 | Roland SP-404MK2 | **Left the rig on 2026-11-04** — see below |
 | Arturia BeatStep | **Retired from the plan** — see below |

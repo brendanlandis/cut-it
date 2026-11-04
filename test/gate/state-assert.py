@@ -135,5 +135,4 @@ A.check("a manual line survives a restart and is replayed intact",
 A.check("a boot does NOT overwrite saved state before reading it",
         any("mode mode-6" in r for r in restores), restores)
 
-
 sys.exit(1 if A.report() else 0)

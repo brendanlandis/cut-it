@@ -51,9 +51,7 @@ were false.
 
 **994 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **987**;
-
- the difference is
+total cannot be derived from a run by summing. Totaling the run gives **987**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh` and `organelle-assert.sh` print
 two each, one per half: the Lua tests', then the analyzer's; `touchosc-assert.sh` two as well, the
 reading first.

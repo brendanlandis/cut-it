@@ -192,7 +192,6 @@ Two consequences bind whoever writes an `m_` layer, and both are deliberate:
   is on [map.md](module/map.md).
 
 **`mode` is driven from the Launchpad's left column**, its eight buttons, CC 80 down to 10, which
-
 `g_grid` lights as the mode lamps — the only device Pd can light, so the state is visible rather
 than remembered. It carries
 **one atom, the page**, as its selector, so a reader's `route` matches it and its branches feed
@@ -487,7 +486,6 @@ swallowed — a typo must not silently disable a report.
 
 `u_err` decides by level alone, on every page, never draws, and leaves the bus itself unfiltered —
 the design and its reasoning are on [error.md](module/error.md).
-
 
 ---
 

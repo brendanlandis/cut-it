@@ -63,7 +63,6 @@ SEQ = [
     # CC 19, the bottom of the right column: the left column's are mode keys.
     (14800, "CH-LP", ["\\; t-ctlin 55 19 1"], GAP),
 
-
     (15500, "DONE", [], GAP),
 ]
 QUIT_MS = 16200

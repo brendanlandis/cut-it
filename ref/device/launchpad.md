@@ -234,7 +234,6 @@ reasons, each enough:
 - **The ring carries the mode keys**, which must work when the Lua does not: `u_map` keeps them in
   Pd so a missing pdlua or a broken table cannot strand you ([map.md](../module/map.md)), and they
   reach it as `lp-cc-80` to `lp-cc-10` from this file.
-
 - **Pressure is the densest stream on the rig**, a message per held pad as often as the device
   sends one, and it already crosses the map's Lua. A pdlua call costs about 0.1 ms on the Organelle,
   where `makefilename pad-%d-at` costs a few microseconds.

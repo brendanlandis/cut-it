@@ -114,4 +114,3 @@ to prevent, and the worst case of drawing everything is an error you did not nee
 
 No unknowns. The levels, the log and the screen drawing on every page are all asserted by
 [test/gate/err-assert.sh](../../test/gate/err-assert.sh).
-

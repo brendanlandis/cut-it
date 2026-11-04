@@ -82,7 +82,6 @@ The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast
 - [ ] **18. Test mode on, from the panel**
   - **Do:** Tap Setup to leave test mode. Then on the Organelle hold aux, press the second key from the bottom (the first black key), then let go of both. Watch the phone for ten seconds.
   - **Pass if:** The checklist page comes back at the step it was on, its label reading test mode on beside a lit teal lamp, and still reads it ten seconds later. The OLED shows a bordered box reading warn then u_net then test-mode-on for about two seconds.
-
   - **Note:** One press of the key can reach Cut It twice, 5 ms apart, which once turned test mode on and straight back off; a second flip within 300 ms is dropped (`phone-assert` holds it), and the ten seconds are this step's check that it held.
 
 - [ ] **19. The page holds the line check**

@@ -74,7 +74,6 @@ STEPS = [
     (150, "put auto tempo 128", "state"),
     # the same key again: the replace case
     (200, "put auto mode mode-4", "state"),
-
 ]
 x = 20
 for ms, m, bus in STEPS:

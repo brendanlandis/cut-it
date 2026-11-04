@@ -281,7 +281,7 @@ def map_(g):
     rc_lua = S.lua("test/gate/lua/u_map_test.lua", *g.args)
     print("\n   the patch, in Pd ...")
     # Put before the shipped rows, so each wins over a shipped row for the same
-    # mode and control (knob 2 is last-step in mode 1). gk-bad names a
+    # mode and control (knob 2 is drums last in mode 1). gk-bad names a
     # destination that does not exist. The pickup knobs get distinct CCs, so a
     # leak between their windows shows as the wrong controller rather than a
     # duplicate. gk-note, gk-pad and

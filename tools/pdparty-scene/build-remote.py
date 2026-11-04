@@ -120,7 +120,8 @@ def hsl(x, y, w, h, name, label):
 BUTTONS = [("sync", "sync" + NBSP + "first" + NBSP + "steps", 4),
            ("snap", "snap" + NBSP + "to" + NBSP + "global", 42)]
 BX, BW, BH = X0 + 304, 118, 34
-# What the drum screen sends after "drums", as u_net routes them, and c_steps' state's length.
+# What the drum screen sends after "drums", which u_net passes to c_steps whole, and c_steps'
+# state's length.
 ACTIONS = ["sync", "snap", "select", "num", "den", "drunk", "skip", "move"]
 # The ones u_net acknowledges: the rest show in the state that comes back.
 ACKED = ACTIONS[:3]

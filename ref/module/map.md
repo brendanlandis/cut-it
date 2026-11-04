@@ -69,9 +69,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, in all six modes** | verified | 301 |
 | `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad; an index the layout lacks is `fail u_map layout-miss` | verified | — |
 | `test-mode` | unused | Non-zero flips `u_net`'s test mode, in which the phone's checklist page may send Send lines ([phone.md](../device/phone.md)). **`og-shift-61`, in all six modes**; out `u_map`'s fourth outlet, a cord to `u_net` | unknown | — |
-| `last-step` | unused | The knob's 0–1, as it is, held or not: `last <0-1>` to `c_steps` on the drum page's outlet, which scales it to the global last step, **1–32**, latches it and draws its row. **`og-knob-2`, in mode 1** | verified | — |
-| `track-last` | unused | The same for the selected track's own last step: `track-last <0-1>`. **`og-knob-3`, in mode 1** | verified | — |
-| `swing` | unused | The same for the sequencer's swing, 25% to 75%: `swing <0-1>`. **`og-knob-4`, in mode 1** | verified | — |
+| `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1–32**, **`og-knob-2`**; `track-last` the selected track's own, **`og-knob-3`**; `swing` the sequencer's, 25% to 75%, **`og-knob-4`**, all in mode 1. A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -103,7 +101,7 @@ there and nowhere else.
 | `volca-note` | `volca-note60 100` | same shape | verified | 316 |
 | `404-pad` | `404-pad5 90` | same shape | verified | 316 |
 | `volca-prog` | `volca-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
-| `last-step`, `track-last`, `swing` | `last-step 12`, `pad2-last 6`, `swing 62 %`: drawn by `c_steps`, which holds the latch | `last-step 16 (7)`, `swing 50 (25)` | verified | — |
+| `drums` | `last-step 12`, `pad2-last 6`, `swing 62 %`: drawn by `c_steps`, which holds the latch | `last-step 16 (7)`, `swing 50 (25)` | verified | — |
 | `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
 | `drum-page` | **nothing** — the grid is the feedback, and 56 pads in use would bury the screen | none | unknown | — |
 | the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the footer, the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |

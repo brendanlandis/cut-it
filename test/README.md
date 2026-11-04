@@ -34,14 +34,14 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 156: 86 in Lua, 70 in Pd | `module/map` |
+| `map-assert.sh` | 157: 86 in Lua, 71 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 43 | `module/presence` |
 | `launchpad-assert.sh` | 11 | `device/launchpad` |
 | `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 108 | `device/phone` |
+| `phone-assert.sh` | 112 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
 | `checks-assert.sh` | 25 | `test/checklists/README.md`, *On the phone* — the checklist page |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
@@ -49,9 +49,9 @@ were false.
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 169: 113 in Lua, 56 in Pd | `module/sequencer` |
 
-**1001 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**1006 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **994**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **999**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's.
 Worth knowing before trusting an arithmetic check of this number against a log.
@@ -222,7 +222,7 @@ halt the clock** — the transport pauses the subscribers, it does not clear the
 ## `map-assert.sh`, `sp404-assert.sh`, `volca-assert.sh` — the map and the output devices
 
 ```sh
-./test/gate/map-assert.sh            86 + 70 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
+./test/gate/map-assert.sh            86 + 71 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
 ./test/gate/sp404-assert.sh          43 + 19 checks, ~7 s — the 404's decode in Lua, then BOTH directions
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
@@ -380,6 +380,9 @@ with no coalescer, and that build failed exactly three checks — the three rate
 401, 802 and 401 packets, while every shape check passed. Adding the store took those to 42, 84
 and 42. No mutation had to be invented afterwards, which is the one weakness of Phase 6's
 equivalent.
+✅ **And for the drums lane** (2026-11-04): `u_net`'s cord from it to `c_steps` cut, 9 failed. In
+`map-assert` a drums row naming `lastt` failed its lint, and `u_map` dropping the knob's value
+(`list split 1`) failed `sequencer-assert`'s Pd half (14).
 
 ## `sequencer-assert.sh` — the drum machine, from the outside
 

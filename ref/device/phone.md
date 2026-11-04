@@ -91,7 +91,7 @@ button.
 | `test-note` | Fires one probe at a sounding device, out a cord. Takes the device below | verified | 306 |
 | `send` | A checklist's Send line, one message, `<bus> <message>`, from the phone's checklist page: out a cord to `u_inject` **in test mode only**, answered `ack send`, or `ack test-off` while it is off | unknown | — |
 | `result` | A step's verdict, `<checklist>-<n>-<pass or fail>`, logged as `info phone <verdict>`, in test mode or not; answered `ack result` | unknown | — |
-| `drums` | A drum screen control, the action below: out `u_net`'s fourth outlet to `c_steps`; `sync`, `snap` and `select` answered `ack drums <action>`, the settings not, since the state shows them | verified | — |
+| `drums` | A drum screen control, passed on whole: whatever follows `drums` goes out `u_net`'s fourth outlet to `c_steps`, which refuses one it does not know as `fail c_steps bad-selector`, so a new drum control needs nothing in `u_net` (Brendan, 2026-11-04). `sync`, `snap` and `select` are answered `ack drums <action>`, the rest not, since the state shows them | verified | — |
 
 <!-- check: pd-route "Cut It/u_net.pd" m_volca -->
 
@@ -100,7 +100,8 @@ button.
 | `m_volca` | `notes 60 100 200` — middle C, 200 ms, released by `makenote` | verified | 306 |
 | `m_404` | `pad 1 100` — bank A pad 1 | verified | 306 |
 
-<!-- check: pd-route "Cut It/u_net.pd" sync -->
+What the drum screen sends after `drums`, each one `c_steps`' own (`R.presses` in `c_steps.lua`).
+`phone-assert` checks the scene against that table, and `u_net`'s acknowledgments against the scene.
 
 | Drum action | Does | Evidence | Item |
 |-------------|------|----------|------|

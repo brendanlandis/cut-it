@@ -47,6 +47,16 @@ def route_destinations():
     return None
 
 
+def steps_cmds():
+    """The commands c_steps takes on its inlet: the keys of c_steps.lua's R.presses."""
+    src = open(os.path.join(os.path.dirname(UMAP), "c_steps.lua"), encoding="utf-8").read()
+    m = re.search(r"^R\.presses = \{\n(.*?)^\}", src, re.M | re.S)
+    if not m:
+        return None
+    keys = re.findall(r'^  (?:\["([\w-]+)"\]|(\w+)) = function', m.group(1), re.M)
+    return sorted(a or b for a, b in keys)
+
+
 def static_lint():
     print("\n=== A. the map, checked by READING -- no Pd involved ===")
     dests = route_destinations()
@@ -77,6 +87,13 @@ def static_lint():
             "; ".join("line %d names %r" % b for b in bad_dest))
     A.check("every mode is one of the six", not bad_mode,
             "; ".join("line %d: %r" % b for b in bad_mode))
+    # drums passes its arg to c_steps as the command, so a misspelt one is a
+    # knob that only says bad-selector when turned.
+    takes = steps_cmds()
+    drums = [(n, f[3]) for n, f in rows if len(f) == 4 and f[2] == "drums"]
+    A.check("⛔ every drums row names a command c_steps takes",
+            takes is not None and drums and all(a in takes for _, a in drums),
+            "rows %s, c_steps takes %s" % (drums, takes))
 
     seen, dupes = {}, []
     for n, f in rows:

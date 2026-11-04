@@ -195,6 +195,22 @@ def checks_cmds():
                                           for r in recs) if m} & set(PAGE_CMDS))
 
 
+STEPS_LUA = os.path.join(ROOT, "Cut It", "c_steps.lua")
+
+
+def steps_cmds():
+    """The commands c_steps takes on its inlet: the keys of c_steps.lua's R.presses."""
+    try:
+        src = open(STEPS_LUA, encoding="utf-8").read()
+    except OSError:
+        return None
+    m = re.search(r"^R\.presses = \{\n(.*?)^\}", src, re.M | re.S)
+    if not m:
+        return None
+    keys = re.findall(r'^  (?:\["([\w-]+)"\]|(\w+)) = function', m.group(1), re.M)
+    return sorted(a or b for a, b in keys)
+
+
 def scene_msgs():
     """Every message box in the scene that REACHES the shared [oscformat cutit].
 
@@ -307,7 +323,10 @@ def main():
     A.check("the inbound route boxes and the scene's commands are all readable",
             ucmd is not None and udev is not None and smsg is not None,
             "u_net: %r / %r   scene: %r" % (ucmd, udev, smsg))
+    # u_net passes drums on whole, so the scene's drums actions are checked
+    # against what c_steps takes; u_net's own drums route is the acks'.
     udrums = _route_of(UNET, "sync")
+    csteps = steps_cmds()
     if ucmd and udev and smsg is not None:
         scmd = sorted({m.split()[0] for m in smsg})
         sdev = sorted({m.split()[1] for m in smsg if m.split()[0] == "test-note"})
@@ -321,13 +340,16 @@ def main():
         A.check("⛔ the scene names EXACTLY the devices u_net routes",
                 sdev == sorted(udev),
                 "scene names %s, u_net routes %s" % (" ".join(sdev), " ".join(udev)))
-        A.check("⛔ the scene's drums buttons are EXACTLY the ones u_net routes",
-                udrums is not None and sdrums == sorted(udrums),
-                "scene sends drums %s, u_net routes %s" % (" ".join(sdrums), udrums))
+        A.check("⛔ every drums action the scene sends is one c_steps takes",
+                csteps and sdrums and set(sdrums) <= set(csteps),
+                "scene sends drums %s, c_steps takes %s" % (" ".join(sdrums), csteps))
+        A.check("... and u_net acknowledges only drums actions the scene sends",
+                udrums is not None and set(udrums) <= set(sdrums),
+                "u_net acks %s, scene sends %s" % (udrums, " ".join(sdrums)))
         keys = {tuple(m.split()[:2]) for m in smsg}
         A.check("one button per command, one per sounding device, one per drums action",
                 len(keys) == len(set(ucmd) - set(PAGE_CMDS)) - 2 + len(udev)
-                + len(udrums or []),
+                + len(sdrums),
                 "%d kinds of message box: %s" % (len(keys), sorted(keys)))
         A.check("... and the drum screen's sixteen pads select tracks 1 to 16",
                 sorted(m for m in smsg if m.startswith("drums select ")) ==
@@ -376,14 +398,15 @@ def main():
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})
     A.check("shape: only known OSC addresses", all(a in ADDRS for a in seen),
             "saw " + ", ".join(seen))
-    A.check("shape: all thirty windows arrived",
+    A.check("shape: all thirty-one windows arrived",
             [n for n, _ in wins] == ["idle", "sweep1", "sweep2", "statussw",
                                      "alert", "reserved", "idle2", "cmdwire",
                                      "cmdvolca", "cmd404", "cmdbogus", "cmdclear",
                                      "sendoff", "tmon", "sendon", "result", "tmoff",
                                      "sendoff2", "tmtwice", "tmoff2", "cmdsync",
                                      "cmdsnap", "cmdselect", "cmdnum", "cmdden",
-                                     "cmddrunk", "cmdskip", "cmdmove", "drumstate", "done"],
+                                     "cmddrunk", "cmdskip", "cmdmove", "cmddrumsnew",
+                                     "drumstate", "done"],
             ", ".join(n for n, _ in wins))
 
     hbs = [g[0] for _, rowset in wins for _, a, g in rowset
@@ -523,8 +546,13 @@ def main():
     # list, a bare `404` (route reads it as a float and can never match), and a
     # well-formed command under another OSC root.
     none_of("cmdbogus", CMD,
-            "⛔ SIX WRONG COMMANDS REACH NOTHING AT ALL -- no ack, no bus, "
+            "⛔ FIVE WRONG COMMANDS REACH NOTHING AT ALL -- no ack, no bus, "
             "neither outlet")
+    one("cmddrumsnew", "/probe/drums", ["reload", 2.0],
+        "⛔ a drums command u_net has never heard of goes to c_steps whole, to refuse")
+    none_of("cmddrumsnew", ["/cutit/ack"], "and is not acknowledged")
+    none_of("cmddrumsnew", ["/probe/volca", "/probe/p404", "/probe/presence", "/probe/inject"],
+            "and reaches nothing else")
     A.check("cmdbogus: the link was LIVE while they were ignored",
             len(args("cmdbogus", "/cutit/hb")) >= 2,
             "%d heartbeats in that window" % len(args("cmdbogus", "/cutit/hb")))

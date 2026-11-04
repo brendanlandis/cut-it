@@ -51,7 +51,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 55200")
+qd = obj(20, 120, "del 56600")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -208,7 +208,6 @@ SEQ = [
                          ("cmd", ("cutit", "reload")),
                          ("cmd", ("cutit", "test-note m_launchpad")),
                          ("cmd", ("cutit", "test-note 404")),
-                         ("cmd", ("cutit", "drums reload")),
                          ("cmd", ("other", "re-wire"))]),
     (28000, "cmdclear", [("cmd", ("cutit", "clear-alert"))]),
     # -- the checklist page's two commands, and test mode between them. A Send
@@ -238,8 +237,11 @@ SEQ = [
     (50400, "cmdmove",  [("cmd", ("cutit", "drums move 0"))]),
     # -- what the drum screen shows: the mode, and c_steps' state, each sent at
     #    once and again on every heartbeat
-    (51800, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "compose mode-1"))]),
-    (53200, "done",     []),
+    # A drums command u_net has never heard of still goes to c_steps, which
+    # refuses what it doesn't know: u_net passes drums on whole.
+    (51800, "cmddrumsnew", [("cmd", ("cutit", "drums reload 2"))]),
+    (53200, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "compose mode-1"))]),
+    (54600, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940

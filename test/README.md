@@ -46,13 +46,13 @@ were false.
 | `touchosc-assert.sh` | 59: 12 read, 47 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
-| `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
+| `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 16 | `module/sequencer` — the kit, as a signal |
 
-**1050 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one does
+**1049 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **1043**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **1042**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's;
 `touchosc-assert.sh` two as well, the reading first.

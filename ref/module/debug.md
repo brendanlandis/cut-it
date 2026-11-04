@@ -18,8 +18,8 @@ from the menu, which restarts Pd — so it starts from nothing, and nothing that
 previous instance can reach it.
 
 **Six screens, steered from the 25 keys.** The lowest key sends `goHome` and leaves. `k2`–`k7` pick
-a screen; `k13`, `k15` and `k17` fire the Volca probe, the SP-404 probe and a re-wire, and those
-three work from any screen.
+a screen; `k13` and `k17` fire the Volca probe and a re-wire, and both work from any screen. `k15`
+fired the SP-404's probe until the 404 left the rig (Brendan, 2026-11-04), and is unbound.
 
 ## Facts
 
@@ -27,8 +27,8 @@ three work from any screen.
 
 | Key | Screen | Rows | Evidence | Item |
 |-----|--------|------|----------|------|
-| `k2` | `1-MIDI-IN` | `lp-` `nano-` `sp404-` counts, and `ch-` — the last channel seen | verified | 315 |
-| `k3` | `2-TEST-OUT` | which key fires which device, `sent-` and the looping-pad warning | verified | 315 |
+| `k2` | `1-MIDI-IN` | `lp-` `nano-` `port3-` counts, and `ch-` — the last channel seen | verified | 315 |
+| `k3` | `2-TEST-OUT` | which key fires the Volca, and `sent-` | verified | 315 |
 | `k4` | `3-ERR-LOG` | the last four lines of `/sdcard/cut-it-err.log` | verified | 315 |
 | `k5` | `4-NETWORK` | `ip-` this Organelle's own address, `ap-`, `phone-` | verified | 315 |
 | `k6` | `5-RE-WIRE` | `links-` from `wire.sh`'s own report, and `runs-` | verified | 315 |
@@ -44,7 +44,6 @@ back.
 |---|---|---|
 | **`(channel - 1) / 16` names the box an event came out of**, with no device having to identify itself | verified | 315 |
 | So one `[notein]` and one `[ctlin]`, both OMNI, cover the whole rig | verified | 315 |
-| Within the SP-404's block the channel **is** the bank, so the `ch-` row reads bank A as 33 | verified | 315 |
 
 ⛔ **It only holds while `wire.sh` has undone mother's own autoconnect**, which puts whichever device
 enumerates lowest on Pd's Midi-In 1 (Reference, `~/Sites/!reference/critter-guitari-organelle-1.md`).
@@ -55,13 +54,17 @@ apart. Item 274, and it is the fault this screen is most likely to be looking fo
 there could only ever read zero; anything that does appear on the interface's DIN IN jack shows up in
 `ch-` as a channel between 49 and 64.
 
+⚠️ **Port 3's row reads zero for now, and stays.** It was `sp404-`, counting the SP-404, until the
+404 left the rig (Brendan, 2026-11-04); the port is held for the Streichfett, which transmits, so the
+row is kept for it under the port's own name.
+
 ### What it costs to run
 
 | Fact | Evidence | Item |
 |---|---|---|
 | **Selecting it stops the instrument.** Loading any patch restarts Pd | verified | — |
 | It forks `wire.sh` itself, ~1.5 s after load — `loadbang` fires before the ALSA connections exist | verified | 315 |
-| The probes are the phone's: `notes 60 100 200` at the Volca, `pad 1 100` at the SP-404 | verified | 306 |
+| The probe is the phone's: `notes 60 100 200` at the Volca. `k15` sends nothing, so nothing leaves for port 3 | verified | 306 |
 | What `u_state` wrote is untouched — it lives in `/sdcard/cut-it-state/`, outside both patch folders | verified | — |
 | It repaints the current screen at **3.3 Hz**, so the counters are live rather than frozen | verified | 315 |
 | `err-tail.sh` and `net-probe.sh` fork **once per selection**, never per repaint | verified | 315 |
@@ -72,7 +75,7 @@ there could only ever read zero; anything that does appear on the interface's DI
 
 | Measured | Value | Evidence | Item |
 |---|---|---|---|
-| ALSA links with Cut It running, then after this patch loaded and re-wired | **9, then 9** — it put back exactly what the reload dropped | verified | 315 |
+| ALSA links with Cut It running, then after this patch loaded and re-wired | **9, then 9** — it put back exactly what the reload dropped, the SP-404's two among them | verified | 315 |
 | `wire.sh` under the debug patch's own copy | `wire.sh: 9 connections` | verified | 315 |
 | `err-tail.sh` on the device, against a real log | **4 lines**, dot-flattened, cut to 21 | verified | 315 |
 | `net-probe.sh` on the device | **3 lines** — `ip-192.168.1.6`, `ap-down`, `phone-none` | verified | 315 |
@@ -171,7 +174,7 @@ and every screen's help row says so, so the encoder would buy scrolling and cost
 button and 25 keys all arrive from mother whatever the USB bus is doing — and the rig fault most
 likely to bring you here is a device that stopped enumerating.
 
-**Three action keys work from any screen.** Firing a probe is something you want while looking at the
+**The action keys work from any screen.** Firing a probe is something you want while looking at the
 MIDI monitor, not after navigating away from it; screens 2 and 5 document the keys rather than
 owning them.
 

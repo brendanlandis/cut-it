@@ -67,8 +67,8 @@ MIDI_INVENTORY = {"polytouchin": 1}
 
 # The debug patch is a second deployable, and the counts above are scoped to
 # "Cut It", so it needs its own. Three is all it takes: notein and ctlin are
-# omni, and noteout's channel picks the port, so one reaches the Volca and the
-# SP-404 both.
+# omni, and noteout's channel picks the port, so one reaches the Volca, and
+# reached the SP-404 too until it left the rig.
 MIDI_DEBUG_EXPECT = {"notein": 1, "ctlin": 1, "noteout": 1}
 
 # Every MIDI class Pd has, so scan_unknown can ask a closed question.

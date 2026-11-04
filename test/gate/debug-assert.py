@@ -14,9 +14,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                          # noqa: E402
 
 # The windows debug-assert-drive-gen.py fires, in order.
-WINDOWS = ["EARLY", "BOOTED", "LP-LOW", "LP-HIGH", "NANO", "SP404", "UNO",
+WINDOWS = ["EARLY", "BOOTED", "LP-LOW", "LP-HIGH", "NANO", "PORT3", "UNO",
            "HELP", "ERRLOG", "NETWORK", "REWIRE-SCREEN", "TESTOUT",
-           "VOLCA", "SP404-PROBE", "REWIRE-KEY", "REWIRE-VIEW", "UNBOUND",
+           "VOLCA", "K15", "REWIRE-KEY", "REWIRE-VIEW", "UNBOUND",
            "EXIT", "DONE"]
 
 
@@ -84,9 +84,11 @@ def main():
     A.check("and the Launchpad's count did not move with it",
             drew(by, "NANO", "SL2", "lp-2"),
             "SL2: %s" % rows(by, "NANO", "SL2")[:2])
-    A.check("channel 33 is the SP-404",
-            drew(by, "SP404", "SL4", "sp404-1"),
-            "SL4: %s" % rows(by, "SP404", "SL4")[:2])
+    # Port 3 was the SP-404's (gone 2026-11-04) and keeps its counter, so a
+    # device that takes it shows up there.
+    A.check("channel 33 counts on port 3's row",
+            drew(by, "PORT3", "SL4", "port3-1"),
+            "SL4: %s" % rows(by, "PORT3", "SL4")[:2])
 
     # The Uno block has no counter (its Volca is receive-only), so its traffic
     # must show on the channel row.
@@ -95,7 +97,7 @@ def main():
             "SL5: %s" % rows(by, "UNO", "SL5")[:2])
     A.check("and it incremented no device counter",
             drew(by, "UNO", "SL2", "lp-2") and drew(by, "UNO", "SL3", "nano-1")
-            and drew(by, "UNO", "SL4", "sp404-1"),
+            and drew(by, "UNO", "SL4", "port3-1"),
             "SL2 %s SL3 %s SL4 %s" % (rows(by, "UNO", "SL2")[:1],
                                       rows(by, "UNO", "SL3")[:1],
                                       rows(by, "UNO", "SL4")[:1]))
@@ -116,28 +118,34 @@ def main():
             all(rows(by, "HELP", "SL%d" % n) for n in range(1, 6)),
             "empty rows: %s" % [n for n in range(1, 6)
                                 if not rows(by, "HELP", "SL%d" % n)])
-    A.check("the test screen warns that pad A1 may loop",
-            drew(by, "TESTOUT", "SL5", "A1-may-LOOP"),
-            "SL5: %s" % rows(by, "TESTOUT", "SL5")[:2])
+    # The SP-404's probe and its loop warning went with it, so rows 3 and 5
+    # are a dash: a row the chain stopped writing would show the last screen's.
+    A.check("the test screen writes its two spare rows, as a dash",
+            drew(by, "TESTOUT", "SL3", "-") and drew(by, "TESTOUT", "SL5", "-"),
+            "SL3 %s SL5 %s" % (rows(by, "TESTOUT", "SL3")[:1],
+                               rows(by, "TESTOUT", "SL5")[:1]))
 
-    # The probes are the phone's (item 306), and the notes are the assertion: a
+    # The probe is the phone's (item 306), and the notes are the assertion: a
     # probe with the wrong note is a noise nobody can identify.
     volca = [v for k, v in by.get("VOLCA", []) if k == "NOTEOUT"]
     A.check("k13 plays the Volca middle C on channel 49",
             [60.0, 100.0, 49.0] in volca, "NOTEOUT: %s" % volca)
     A.check("and it releases the note",
             [60.0, 0.0, 49.0] in volca, "NOTEOUT: %s" % volca)
-    sp = [v for k, v in by.get("SP404-PROBE", []) if k == "NOTEOUT"]
-    A.check("k15 fires SP-404 bank A pad 1, which is note 48 on channel 33",
-            [48.0, 100.0, 33.0] in sp, "NOTEOUT: %s" % sp)
-    A.check("and it releases that note too",
-            [48.0, 0.0, 33.0] in sp, "NOTEOUT: %s" % sp)
+    # k15 fired the SP-404's pad A1 on channel 33 until the 404 left the rig
+    # (2026-11-04). Port 3 is held for another device, which must not be sent a
+    # probe meant for the 404.
+    k15 = [v for k, v in by.get("K15", []) if k == "NOTEOUT"]
+    A.check("⛔ k15 sends nothing now -- no note leaves for port 3",
+            not k15, "NOTEOUT: %s" % k15)
 
     # Every key in the driver is released at velocity 0; without the velocity
-    # gate one press would count, and play, twice.
-    A.check("one press fires one probe, not two",
-            drew(by, "SP404-PROBE", "SL4", "sent-2"),
-            "SL4 after two probes: %s" % rows(by, "SP404-PROBE", "SL4")[:2])
+    # gate one press would count, and play, twice. k13 was the only probe, so
+    # the counter reads 1 across the whole of the next window.
+    sent = rows(by, "K15", "SL4")
+    A.check("one press fires one probe, not two -- sent-1, and k15 adds none",
+            sent and all(r == "symbol sent-1" for r in sent),
+            "SL4 after the Volca's probe and k15: %s" % sorted(set(sent)))
 
     # k17 does not change screen, so the count is read on screen 5 afterwards.
     A.check("k17 does not move you off the screen you were on",

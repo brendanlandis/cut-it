@@ -60,14 +60,14 @@ INK, BTN = BLACK, RED       # the XML's defaults
 # The first tab's screen in each mode; every other mode has the remote screen.
 MAIN = {"mode-1": "drums"}
 
-# The remote screen's four commands: the button, its label, and what it sends after /cutit.
+# The remote screen's three commands: the button, its label, and what it sends after /cutit.
+# test 404 went with the SP-404 (Brendan, 2026-11-04).
 REMOTE = [("rewire", "re-wire", ["re-wire"]), ("clear", "clear alert", ["clear-alert"]),
-          ("tvolca", "test Volca", ["test-note", "m_volca"]),
-          ("t404", "test 404", ["test-note", "m_404"])]
+          ("tvolca", "test Volca", ["test-note", "m_volca"])]
 # What each acknowledgment u_net sends flashes: /cutit/ack <what> [<which>] -> the button, and
 # the color. result is the verdict just given, and flashes Pass or Fail, whichever it was.
 ACKS = {"re-wire": ("rewire", TEAL), "clear-alert": ("clear", TEAL),
-        "test-note m_volca": ("tvolca", TEAL), "test-note m_404": ("t404", TEAL),
+        "test-note m_volca": ("tvolca", TEAL),
         "drums sync": ("sync", TEAL), "drums snap": ("snap", TEAL),
         "result": ("verdict", WHITE)}
 DENS = [1, 2, 4, 8, 16]     # c_steps.lua's R.DENS
@@ -512,7 +512,7 @@ end
 
 -- ---------------------------------------------------------------- flashes
 local flash = {}
-local BASE = { rewire = RED, clear = RED, tvolca = RED, t404 = RED, sync = RED, snap = RED,
+local BASE = { rewire = RED, clear = RED, tvolca = RED, sync = RED, snap = RED,
                cpass = TEAL, cfail = RED }
 local verdict = 'cpass'
 

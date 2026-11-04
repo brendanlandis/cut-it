@@ -94,14 +94,13 @@ button.
 | `clear-alert` | Writes the empty alert to `u_net`'s held store, so the 2 Hz repeat goes back to `none` / `-` | verified | 306 |
 | `test-note` | Fires one probe at a sounding device, out a cord. Takes the device below | verified | 306 |
 | `result` | A step's verdict, `<checklist>-<n>-<pass or fail>`, logged as `info phone <verdict>`, in test mode or not; answered `ack result` | unknown | — |
-| `drums` | A drum screen control, passed on whole: whatever follows `drums` goes out `u_net`'s third outlet to `c_steps`, which refuses one it does not know as `fail c_steps bad-selector`, so a new drum control needs nothing in `u_net` (Brendan, 2026-11-04). `sync`, `snap` and `select` are answered `ack drums <action>`, the rest not, since the state shows them | verified | — |
+| `drums` | A drum screen control, passed on whole: whatever follows `drums` goes out `u_net`'s second outlet to `c_steps`, which refuses one it does not know as `fail c_steps bad-selector`, so a new drum control needs nothing in `u_net` (Brendan, 2026-11-04). `sync`, `snap` and `select` are answered `ack drums <action>`, the rest not, since the state shows them | verified | — |
 
 <!-- check: pd-route "Cut It/u_net.pd" m_volca -->
 
 | Device | Probe | Evidence | Item |
 |--------|-------|----------|------|
 | `m_volca` | `notes 60 100 200` — middle C, 200 ms, released by `makenote` | verified | 306 |
-| `m_404` | `pad 1 100` — bank A pad 1 | verified | 306 |
 
 What the drum screen sends after `drums`, each one `c_steps`' own (`R.presses` in `c_steps.lua`).
 `touchosc-assert` checks the layout against that table, and `u_net`'s acknowledgments against the layout.
@@ -117,14 +116,11 @@ What the drum screen sends after `drums`, each one `c_steps`' own (`R.presses` i
 | `skip` | The selected track's skip chance, `skip <0-100>` | verified | — |
 | `move` | The selected track's move chance, `move <0-100>`: a step early or late | verified | — |
 
-**The two sounding devices are the whole set**, and it is `u_map`'s: the Launchpad and the
-nanoKONTROL are inputs. ⛔ **A device name off that list is dropped exactly like an unknown command.**
-
-⚠️ **The 404 probe starts whatever pad A1 holds, and a LOOPING sample keeps playing.** `m_404`
-schedules its note-off correctly — the loop is the 404's own sample setting, not a stuck note — so
-nothing in the patch can end it and All Notes Off will not either. **Press the pad on the device to
-stop it.** Pad A1 is kept anyway: the probe's job is to make a noise you can identify, and a loop is
-easy to identify. Item 311.
+**The Volca is the whole set**, the one sounding device outside the Organelle, and the set is
+`u_map`'s: the Launchpad and the nanoKONTROL are inputs. The SP-404 was the second, with its own
+probe and button, until it left the rig (Brendan, 2026-11-04). ⛔ **A device name off that list is
+dropped exactly like an unknown command** — `test-note m_404` included, which `phone-assert` sends
+and requires to reach nothing.
 
 | Property | Value | Evidence | Item |
 |----------|-------|----------|------|
@@ -156,7 +152,7 @@ and every text and control at **WCAG AA**, which `touchosc-assert` audits from t
 | The tabs | TouchOSC's own tab bar, holding the mode's screen and saying which: drums in mode 1, remote in every other mode. One tab each for now; a mode may have more | unknown |
 | Test mode | Coming on, the checklist page, under a tab bar of its own, stands in for the tabs; going off takes it away (Brendan, 2026-11-04). A mode chosen on the Launchpad turns it off, so the mode's tab is what shows next (Brendan, 2026-11-04). A flip sends a heartbeat at once, so the page turns with the tap rather than at the next of the 2 Hz beats | unknown |
 | The drum screen | Left: the tempo, large, playing or stopped with its lamp, the global last step, the link lamp, the alert. Middle: the sixteen pads as the Launchpad lays them out, pad 1 at the bottom left (Brendan, 2026-11-04), read from `cut-it-drum-page.txt`, each labeled with its last step: red following the global one, teal with a dot (• 5) with its own, lit when selected; a tap selects. ⛔ A pad the state lights never sends: when it did, four pads pressed at once on the Launchpad lit in turn on the phone, each selecting itself again, and the selection bounced between Cut It and the phone for as long as they were held (2026-11-04). Right: sync first steps and snap to global, a line while one waits for step 1, ring knobs for drunk and the selected track's skip and move, and the time signature as [n] / [d], each box dragged up or down a step at a time (Brendan, 2026-11-04), about 20 points a step for the top number's 32, 26 for the bottom's 5 | unknown |
-| The remote screen | Left: the last parameter's name and its value large, with its unit (`120 (29)` for a held tempo), the tempo, the alert with its lamp, the link. Right: re-wire, clear alert, test Volca, test 404 | unknown |
+| The remote screen | Left: the last parameter's name and its value large, with its unit (`120 (29)` for a held tempo), the tempo, the alert with its lamp, the link. Right: re-wire, clear alert, test Volca | unknown |
 | The checklist page | The line check a step at a time, from `test/checklists/linecheck.md` ([the checklists' README](../../test/checklists/README.md), *The line check*): its position and title, its text, Pass and Fail, Back and Next | unknown |
 | An answer | `/cutit/ack` flashes its button teal for 300 ms, by its color, never its value, so it can't send the command again | unknown |
 | A knob or a time signature box | Sends when a finger moves it off the value it knows, its own or the one the state handed it, so the state is never sent back; for a second after a touch the state leaves it alone. A box sends `num` or `den` once a step, as `c_steps` takes them | unknown |
@@ -213,7 +209,7 @@ none.
 
 `[route 404]` matches a float and can never match the device name (Pure Data, in Reference, item
 308): `[route volca 404]` rejected `test-note 404` while accepting `test-note volca`, both spellings
-driven over a real socket. **Fix:** the devices are `m_volca` and `m_404`, which are symbols whatever else is true. That is
+driven over a real socket. **Fix:** a device is named by its layer, `m_volca` (and `m_404` while the SP-404 was in the rig), a symbol whatever else is true. That is
 also the name the `presence` bus and `err`'s `source` field already carry across the `m_` boundary.
 
 ### A button's lamp is its own cell, lit by the answer

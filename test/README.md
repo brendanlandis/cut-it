@@ -41,7 +41,7 @@ were false.
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 65: 39 in Lua, 26 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 97 | `device/phone` |
+| `phone-assert.sh` | 96 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
 | `touchosc-assert.sh` | 59: 12 read, 47 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
@@ -50,9 +50,9 @@ were false.
 | `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 16 | `module/sequencer` — the kit, as a signal |
 
-**1051 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one does
+**1050 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **1044**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **1043**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's;
 `touchosc-assert.sh` two as well, the reading first.
@@ -390,6 +390,9 @@ equivalent.
 ✅ **And for the drums lane** (2026-11-04): `u_net`'s cord from it to `c_steps` cut, 9 failed. In
 `map-assert` a drums row naming `lastt` failed its lint, and `u_map` dropping the knob's value
 (`list split 1`) failed `sequencer-assert`'s Pd half (14).
+✅ **And for the SP-404 leaving** (2026-11-04): the old `u_net`, its `test-note m_404` branch back,
+failed 10 — `cmd404`'s, which requires that command to reach nothing now, on an ack and a pad out
+the outlet `c_steps` has taken over, and nine for the drum outlet moving back up one.
 
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
@@ -422,6 +425,9 @@ phone checklist is the oracle for that.
 ✅ **And again for the redesign**: grey text too dim for AA (read 1, Lua 1), a time signature box
 sending one step for a drag across two (Lua 1), and answers lighting a button by its value rather
 than its color, which sends its command again (Lua 9).
+✅ **And for test 404 going with the SP-404** (2026-11-04): the old layout, the button still on it,
+failed read 2 — the devices it names against `u_net`'s, and the acknowledgments it lights — and
+Lua 1, the remote screen's three commands.
 ✅ **And for the line check** (2026-11-04): a Send line in it failed read 1, and the old `u_net`,
 still taking `send`, failed `phone-assert` 12 (three for the command, nine for the drum outlet
 moving down one). The phone's pads laid out with pad 1 top left, after the drum page put it

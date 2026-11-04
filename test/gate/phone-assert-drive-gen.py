@@ -71,11 +71,9 @@ txt(20, 600,
 
 unet = obj(20, 780, "u_net 127.0.0.1 %d %d" % (PORT, INPORT))
 tap_v = obj(20, 880, "s \\$0-tap-volca")
-tap_4 = obj(300, 880, "s \\$0-tap-p404")
 con(unet, 0, tap_v, 0)
-con(unet, 1, tap_4, 0)
 tap_d = obj(560, 880, "s \\$0-tap-drums")
-con(unet, 2, tap_d, 0)
+con(unet, 1, tap_d, 0)
 # c_steps' drum screen state arrives by name, as its cord would bring it in u_root.
 ds_r = obj(300, 720, "r \\$0-ds")
 con(ds_r, 0, unet, 1)
@@ -84,7 +82,7 @@ tm_r = obj(20, 720, "r \\$0-tm")
 con(tm_r, 0, unet, 0)
 txt(560, 600,
     "The abstraction under test. Args: the phone's host and port \\, then this end's "
-    "inbound port. Its two outlets are the Volca and the SP-404 \\, sent on by name so no "
+    "inbound port. Its two outlets are the Volca and c_steps \\, sent on by name so no "
     "cord runs the length of the canvas.", 40)
 
 # the mark path, and the driver's own socket
@@ -160,12 +158,12 @@ def probe(x, y, name, src):
 
 probe(20, 1900, "presence", "r presence")
 probe(400, 1900, "volca", "r \\$0-tap-volca")
-probe(700, 1900, "p404", "r \\$0-tap-p404")
 probe(400, 2700, "err", "r err")
 probe(700, 2700, "drums", "r \\$0-tap-drums")
 txt(20, 2180,
     "u_net is the only abstraction in this run \\, so a re-wire seen here came from the "
-    "inbound path. The two cords are the output devices \\, wired per C-2 \\, hence the taps.", 70)
+    "inbound path. The two cords are the Volca and c_steps \\, wired per C-2 \\, hence the "
+    "taps.", 70)
 
 # ------------------------------------------------------------------- the windows
 # (absolute_ms, mark, [action, ...])
@@ -198,6 +196,8 @@ SEQ = [
     #    blamed on the wrong button.
     (22000, "cmdwire",  [("cmd", ("cutit", "re-wire"))]),
     (23400, "cmdvolca", [("cmd", ("cutit", "test-note m_volca"))]),
+    # The SP-404's own test note, from before it left the rig (2026-11-04): a
+    # device u_net no longer has, so it must reach nothing at all.
     (24800, "cmd404",   [("cmd", ("cutit", "test-note m_404"))]),
     # Five wrong commands, each of which must reach nothing; the heartbeat in
     # this window is the witness that the link was live.

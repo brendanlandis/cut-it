@@ -45,7 +45,7 @@ ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert",
          "/cutit/ack", "/mark",
          # the driver's taps for the inbound half: re-wire leaves on the
          # presence bus and a test note through a cord, neither on the wire.
-         "/probe/presence", "/probe/volca", "/probe/p404",
+         "/probe/presence", "/probe/volca",
          # and the checklist page's: test mode and a result report on err.
          "/probe/err",
          # and the two drum buttons: out a cord to c_steps.
@@ -332,27 +332,29 @@ def main():
         A.check("%s: %s" % (win, label), not any(got.values()),
                 "; ".join("%s %s" % (a, v) for a, v in got.items() if v) or "(silent)")
 
-    CMD = ["/probe/presence", "/probe/volca", "/probe/p404", "/probe/drums", "/cutit/ack"]
+    CMD = ["/probe/presence", "/probe/volca", "/probe/drums", "/cutit/ack"]
 
     one("cmdwire", "/cutit/ack", ["re-wire"], "re-wire is acknowledged")
     one("cmdwire", "/probe/presence", ["re-wire"],
         "re-wire reaches u_present ON THE BUS -- one owner of the recovery")
-    none_of("cmdwire", ["/probe/volca", "/probe/p404"],
-            "re-wire sounded nothing")
+    none_of("cmdwire", ["/probe/volca", "/probe/drums"],
+            "re-wire left by neither outlet")
 
     one("cmdvolca", "/probe/volca", ["notes", 60.0, 100.0, 200.0],
         "test-note m_volca fires ONE note out the Volca's own outlet")
     one("cmdvolca", "/cutit/ack", ["test-note", "m_volca"],
         "and acknowledges the device it fired at")
-    none_of("cmdvolca", ["/probe/p404", "/probe/presence"],
-            "it touched neither the 404 nor the re-wire")
+    none_of("cmdvolca", ["/probe/drums", "/probe/presence"],
+            "it touched neither c_steps nor the re-wire")
 
-    one("cmd404", "/probe/p404", ["pad", 1.0, 100.0],
-        "test-note m_404 fires ONE pad out the 404's own outlet")
-    one("cmd404", "/cutit/ack", ["test-note", "m_404"],
-        "and acknowledges the device it fired at")
-    none_of("cmd404", ["/probe/volca", "/probe/presence"],
-            "it touched neither the Volca nor the re-wire")
+    # The SP-404 left the rig (2026-11-04), and its test note with it: u_net
+    # routes one device now, so the old button's command is an unknown one.
+    none_of("cmd404", CMD,
+            "⛔ test-note m_404 REACHES NOTHING now the 404 is gone -- no ack, no bus, "
+            "neither outlet")
+    A.check("cmd404: the link was LIVE while it was ignored",
+            len(args("cmd404", "/cutit/hb")) >= 2,
+            "%d heartbeats in that window" % len(args("cmd404", "/cutit/hb")))
 
     # Five malformed commands: two selectors off the list, a device off its
     # list, a bare `404` (route reads it as a float and can never match), and a
@@ -363,7 +365,7 @@ def main():
     one("cmddrumsnew", "/probe/drums", ["reload", 2.0],
         "⛔ a drums command u_net has never heard of goes to c_steps whole, to refuse")
     none_of("cmddrumsnew", ["/cutit/ack"], "and is not acknowledged")
-    none_of("cmddrumsnew", ["/probe/volca", "/probe/p404", "/probe/presence"],
+    none_of("cmddrumsnew", ["/probe/volca", "/probe/presence"],
             "and reaches nothing else")
     A.check("cmdbogus: the link was LIVE while they were ignored",
             len(args("cmdbogus", "/cutit/hb")) >= 2,
@@ -378,7 +380,7 @@ def main():
     A.check("⛔ clear-alert: and the repeat carries the EMPTY alert afterwards",
             bool(after) and all(g[1] == "none" and g[3] == "-" for g in after),
             "%d repeats carrying %s" % (len(after), [g[1:] for g in after]))
-    none_of("cmdclear", ["/probe/volca", "/probe/p404", "/probe/presence"],
+    none_of("cmdclear", ["/probe/volca", "/probe/drums", "/probe/presence"],
             "clearing the alert sounded nothing and re-wired nothing")
 
     # -- test mode, and the checklist page's two commands ---------------------
@@ -461,7 +463,7 @@ def main():
             none_of(win, ["/cutit/ack"], "and is not acknowledged: the drum screen's state says it")
         else:
             one(win, "/cutit/ack", ["drums", cmd], "and is acknowledged")
-        none_of(win, ["/probe/volca", "/probe/p404", "/probe/presence"],
+        none_of(win, ["/probe/volca", "/probe/presence"],
                 "and reaches nothing else")
 
     rc = 1 if A.report() else 0

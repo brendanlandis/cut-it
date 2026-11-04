@@ -121,15 +121,15 @@ equal("an alert: its level and text, its lamp lit, and the text on the drum scre
       { "warn  bpm-out-of-range", 1, "bpm-out-of-range" })
 L.osc(w, "/cutit/alert", 0, "none", "-", "-")
 equal("... and none", { L.text(w, "ralert"), C.ralertled.values.x }, { "no alerts", 0 })
-equal("the four commands",
-      { L.press(w, "rewire")[1], L.press(w, "clear")[1], L.press(w, "tvolca")[1],
-        L.press(w, "t404")[1] },
+equal("the three commands, and no test 404 since the SP-404 left the rig",
+      { L.press(w, "rewire")[1], L.press(w, "clear")[1], L.press(w, "tvolca")[1], C.t404 },
       { { "/cutit", "re-wire" }, { "/cutit", "clear-alert" },
-        { "/cutit", "test-note", "m_volca" }, { "/cutit", "test-note", "m_404" } })
-L.osc(w, "/cutit/ack", "test-note", "m_404")
+        { "/cutit", "test-note", "m_volca" } })
+L.osc(w, "/cutit/ack", "test-note", "m_volca")
 L.update(w)
-check("test 404's answer flashes it, and not test Volca", teal(C.t404.color) and red(C.tvolca.color),
-      T.show({ C.t404.color, C.tvolca.color }))
+check("test Volca's answer flashes it, and not re-wire or clear alert",
+      teal(C.tvolca.color) and red(C.rewire.color) and red(C.clear.color),
+      T.show({ C.tvolca.color, C.rewire.color, C.clear.color }))
 
 print("\n--- the checklist page ---")
 -- E is the checklist the gate built the page on, one with a step on several pages.

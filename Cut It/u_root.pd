@@ -42,7 +42,6 @@
 #X connect 12 1 27 0;
 #X connect 18 1 29 0;
 #X connect 25 0 28 0;
-#X connect 25 1 29 0;
 #X obj 1850 1600 c_steps 1 drums;
 #X connect 18 2 32 0;
 #X connect 32 1 23 2;
@@ -57,7 +56,7 @@
 #X obj 2300 1260 u_inject \$6;
 #X text 2480 1260 u_inject puts the checklists' Send lines on the buses \, from the device itself \, 2000 above u_net's port: tools/send.sh carries a line there over SSH (test/checklists/README.md)., f 44;
 #X connect 18 3 25 0;
-#X connect 25 2 32 0;
+#X connect 25 1 32 0;
 #X connect 32 2 25 1;
 #X obj 1850 1680 c_kit;
 #X connect 32 0 40 0;

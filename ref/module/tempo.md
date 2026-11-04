@@ -16,8 +16,9 @@ global `clock` is its clock**; that instance is the grid's, and the next consume
 `c_steps` holds `c_clock 1 4` and cuts its sixteenths from the phase ([sequencer.md](sequencer.md)).
 
 `u_tempo` has no creation arguments, no inlets and no outlets. It talks on `tempo`, `clock`, `start`,
-`stop`, `panic`, `disp` and `err`, and out of **three** MIDI ports — two carry the clock and the
-transport, and a third takes `panic`'s STOP alone.
+`stop`, `panic`, `disp` and `err`, and out of **two** MIDI ports — port 1 carries the clock and the
+transport, and port 4 takes `panic`'s STOP alone. **Port 3 gets nothing**: it was the SP-404's,
+which left the rig on 2026-11-04 (Brendan).
 
 ## Facts
 
@@ -34,19 +35,20 @@ Clock is **24 PPQN** — 24 pulses per quarter note, one every 20.8 ms at 120 BP
 
 | Transport event | Sends | Evidence | Item |
 |-----------------|-------|----------|------|
-| `start` | 250, on ports **1 and 3** | verified | — |
-| `stop` | 252, on ports **1 and 3** | verified | — |
-| `panic` | 252 on ports **1, 3 and 4**, plus the aux LED. **Note-silencing is each device layer's own** | verified | 231, 295 |
+| `start` | 250, on port **1** | verified | — |
+| `stop` | 252, on port **1** | verified | — |
+| `panic` | 252 on ports **1 and 4**, plus the aux LED. **Note-silencing is each device layer's own** | verified | 231, 295 |
 
 ⛔ **`panic` reaches one more port than the transport does, and that asymmetry is the point.** Port 4
 is the Volca's DIN interface, and item 279 measured it receiving nothing at all — so a Volca
 sequencing through a panic kept sequencing. It is fed from `$0-rt4`, a receive the panic branch is
 the **sole writer of**, so no clock byte can reach it however this file is edited later.
-⚠️ **Widening the CLOCK to all four ports is a different question** and stays in
-[plan-v04.md](../../plan-v04.md) §3: the Launchpad ignores incoming clock in Programmer Mode, so one
-of the two ports already fed is pointless, and which devices Cut It intends to *drive* is a v0.4
-sound decision. `tempo-assert.py` asserts both port sets **exactly**, because a check for either one
-alone passes over the bug in the other direction.
+⚠️ **Widening the CLOCK to more ports is a different question** and stays in
+[plan-v04.md](../../plan-v04.md) §3: the Launchpad ignores incoming clock in Programmer Mode, so the
+one port fed is pointless while it is in that mode, and which devices Cut It intends to *drive* is a
+v0.4 sound decision. `tempo-assert.py` asserts the clock's port and both STOPs' **exactly**, because
+a check for either STOP alone passes over the bug in the other direction, and an exact set is what
+keeps port 3 empty.
 
 ### How the clock is built
 
@@ -55,7 +57,7 @@ alone passes over the bug in the other direction.
 | BPM ÷ 60 × 24 → `[phasor~]` at the pulse rate | 48 Hz at 120 BPM | verified | 48 |
 | `[threshold~ 0.5 0 0.1 0]` → one bang per cycle | The phasor crosses 0.5 once per ramp and falls below 0.1 on the wrap | verified | 48 |
 | Every pulse emits 248 and increments a counter | `[mod 24]` = 0 is the beat, published on `clock` | verified | 48 |
-| Out on Pd MIDI ports **1 and 3** | The Launchpad (`Pure Data:4`) and the SP-404 (`Pure Data:6`), already in `wire.sh` | verified | — |
+| Out on Pd MIDI port **1** | The Launchpad (`Pure Data:4`), in `wire.sh`. Port 3 (`Pure Data:6`) carried it to the SP-404 until the 404 left the rig | verified | — |
 
 **Counting the pulses rather than running a second oscillator is what makes the beat and the MIDI
 pulse the same clock by construction.** Measured under real DSP: 6 beats in 3 s at 120 BPM, 3 in 3 s
@@ -67,7 +69,7 @@ at 60.
 | Legal range | **5–600 BPM**, clamped | verified | — |
 | Outgoing jitter | **~1.45 ms** — Pd emits on 64-sample block boundaries, about 7% of a pulse interval at 120 BPM. Not fixable in vanilla Pd | verified | — |
 | Start alignment | Within **half a pulse** — `threshold~` fires at phase 0.5, so the first pulse after a start arrives ~10.4 ms later at 120 BPM. A constant offset shared by every clock in the patch | verified | — |
-| The port | Set into `[midiout]`'s **cold inlet at load**, `u_init`'s proven pattern. A nonexistent port is silently dropped, so port 3 on the Mac costs nothing and prints nothing | verified | 63 |
+| The port | Set into `[midiout]`'s **cold inlet at load**, `u_init`'s proven pattern. A nonexistent port is silently dropped, so a port the Mac lacks costs nothing and prints nothing | verified | 63 |
 
 The control range and the legal range are **different decisions**, and the legal one is wider at both
 ends so a test, a tap tempo or an LFO is not limited by what one knob chose.
@@ -98,14 +100,14 @@ pulses.
 | Change | What slaved gear does | Evidence | Item |
 |--------|-----------------------|----------|------|
 | Gradual | Tracks fine everywhere | verified | — |
-| Instant jump | Takes several pulses to propagate. Large ones can make the 404 or Volca **stutter or briefly drop sync** | verified | — |
+| Instant jump | Takes several pulses to propagate. Large ones can make slaved gear **stutter or briefly drop sync** | verified | — |
 
 ⚠️ **So internal and external timing diverge under fast modulation.** The Organelle's own grain
 clocks are `phasor~`-based — a frequency change is instant and glitch-free, and the phase simply
 continues. Slaved gear lags several pulses behind. **Modulate tempo quickly and the Organelle is
-somewhere the 404 has not reached yet.**
+somewhere slaved gear has not reached yet.**
 
-### The four rate ceilings
+### The three rate ceilings
 
 ⚠️ **These get confused with each other constantly.** They stack, and the one that bites is whichever
 is lowest on the path you are actually using.
@@ -114,12 +116,12 @@ is lowest on the path you are actually using.
 |---------|-------|----------------|----------|------|
 | `threshold~` pulse | **344 Hz** = 44100/64/2 | The raw 24 PPQN pulse | verified | 58 |
 | `c_clock`'s **bang** outlet | **14.3/s** = 344 ÷ 24 | Beat bangs. The ×24 that buys provable alignment costs a factor of 24 in headroom | verified | 58 |
-| MIDI triggers to the 404 | ~360–400/s | Note-on/off pairs. Perceptual, not a hard edge | verified | 208, 209 |
 | Pd's own wall | ~689/s | One message per 64-sample scheduler tick, a compile-time constant. **Never reached** — something downstream saturates first | verified | — |
 
 ### What the clock actually costs, isolated
 
-⛔ **The clock's cost is DSP, not the 96 ALSA MIDI writes a second.** Toggling DSP on a running
+⛔ **The clock's cost is DSP, not its ALSA MIDI writes** — 96 a second when this was measured, on two
+ports. Toggling DSP on a running
 patch settles it:
 
 | | pd CPU | Evidence | Item |
@@ -131,8 +133,8 @@ patch settles it:
 **So ~7 points are the audio engine and the MIDI rate is not it** — varying tempo moves the MIDI rate
 while leaving DSP cost identical. `tools/dsp.sh` is what performs the toggle.
 
-⛔ **No clock-driven path can produce an audio-rate MIDI stream.** At 14.3 bangs/s, `c_clock` is two
-orders of magnitude below the trigger ceiling. A dense machine-gun trigger stream needs a plain
+⛔ **No clock-driven path can produce an audio-rate MIDI stream.** At 14.3 bangs/s, `c_clock` is
+the lowest ceiling here by a factor of 24. A dense machine-gun trigger stream needs a plain
 `[metro]`, not a clock ratio — **measured by trying, and the clock ran out first.**
 
 **But the audio-domain path has no ceiling at all.** `c_clock` outlet 0 is the raw phase as a
@@ -172,9 +174,9 @@ Sending it would be a lie that some future device might believe.
 
 ### The clock must keep running when the transport stops
 
-⛔ Stop the stream and the 404 stretches every sample to whatever tempo it **last measured** — so a
-stopped clock is a *wrong* tempo rather than no tempo. The Launchpad likewise falls back to a stale
-animation rate.
+⛔ Stop the stream and a device following it keeps whatever tempo it **last measured** — so a
+stopped clock is a *wrong* tempo rather than no tempo. The Launchpad falls back to a stale animation
+rate, as the SP-404 stretched its samples while it was in the rig.
 
 **Fix:** 248 flows whether or not anything is playing; only 250 and 252 mark transport. `panic` sends
 252 and leaves the clock running.
@@ -199,8 +201,8 @@ what it hears. An instance created later never hears a tempo, and its phasor sit
 
 ### Every other device's clock output must be off
 
-⚠️ The Organelle is clock master. The 404's **MIDI Sync Out** in particular will echo clock back and
-create a loop if left on.
+⚠️ The Organelle is clock master. A device that sends clock of its own — a **MIDI Sync Out** left
+on — echoes it back and makes a loop.
 
 ### `[midiout]` needs no port creation argument
 
@@ -237,7 +239,7 @@ beat.**
 - *Normalize BPM and ms to Hz at the edge, feed one `phasor~`* generalizes cleanly: N clocks is
   N `phasor~` objects, and ms-based versus beat-based parts stop being a special case (C-11).
 
-**MIDI clock carries exactly one tempo**, so the SP-404 and Volca always follow master. Poly-tempo
+**MIDI clock carries exactly one tempo**, so a device that follows it always follows master. Poly-tempo
 is internal-only for anything leaving the box — which reinforces rather than contradicts the "Pd
 sequences everything, timing rides in note events" decision in
 [architecture.md](../architecture.md).
@@ -260,8 +262,8 @@ agree.
 ### Note-silencing is each device layer's own
 
 An All Notes Off from here could only ever reach the channels this file knows about — one channel of
-the 404's ten, say — and which channels a device has is its owner's business. The device's owner
-owns its panic.
+a device's several, say — and which channels a device has is its owner's business. The device's
+owner owns its panic.
 
 ⚠️ **`u_tempo` owns the 252**, the realtime STOP, and nothing per-device. Which ports it reaches is
 counted under *Transport* above.
@@ -269,13 +271,14 @@ counted under *Transport* above.
 ### The footer is redrawn on every transport change
 
 `status` is **sticky**, so without a redraw `panic` would sit in the footer through a restart — LED
-green, the 404 running, and the screen still reading PANIC. Redrawing on every transport change is
+green, the drums running, and the screen still reading PANIC. Redrawing on every transport change is
 not cosmetic.
 
 ### Clock is not decorative
 
-It is how the 404 learns tempo for BPM SYNC time-stretch, and how the Launchpad paces its own LED
-flash and pulse animations. Stop sending it and both fall back to stale values.
+It is how the Launchpad paces its own LED flash and pulse animations, as it was how the SP-404 learned
+tempo for BPM SYNC time-stretch while it was in the rig. Stop sending it and it falls back to stale
+values.
 
 ## Open
 

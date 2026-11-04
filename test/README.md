@@ -226,10 +226,11 @@ Widening the tolerance would not have helped. The wire cannot resolve it.
 does not turn it off (item 280).
 
 **What it protects:** 24 PPQN at two tempos and the **ratio** between them (which cancels the
-real-time scheduler entirely); that the clock leaves on **both** ports, since a fan-out that lost one
-would look perfect on the other; the clamp warning at both ends and *not* warning in range; start
-250, stop 252, panic 252, and ⛔ that **Continue (251) is never sent**; and ⛔ that **stop does not
-halt the clock** — the transport pauses the subscribers, it does not clear the timer.
+real-time scheduler entirely); ⛔ that the clock leaves on **port 1 alone**, and the transport's STOP
+too, with panic's on 1 and 4 — exact sets, so nothing reaches port 3, the SP-404's until it left the
+rig; the clamp warning at both ends and *not* warning in range; start 250, stop 252, panic 252, and
+⛔ that **Continue (251) is never sent**; and ⛔ that **stop does not halt the clock** — the transport
+pauses the subscribers, it does not clear the timer.
 
 ## `map-assert.sh`, `sp404-assert.sh`, `volca-assert.sh` — the map and the output devices
 

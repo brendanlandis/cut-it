@@ -46,7 +46,7 @@ session means opening one.
 |---|---|---|
 | [display](display.md) | 20 | the OLED's layers and the error bus |
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
-| [tempo](tempo.md) | 14 | the transport, knob 1's pickup, the clamp, the 404 following |
+| [tempo](tempo.md) | 13 | the transport, knob 1's pickup, the clamp |
 | [launchpad](launchpad.md) | 28 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |
 | [phone](phone.md) | 23 | what the phone shows, its tabs, the link dropping and coming back, its buttons, the checklist page and test mode |
 | [state](state.md) | 5 | the front-panel Save, a power cycle, the mode surviving it |

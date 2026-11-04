@@ -1,10 +1,10 @@
 # Tempo checklist
 
-The transport, knob 1's pickup, the clamp and the SP-404 following the clock. Steps 1 to 11 set their tempo with **Send** lines; 12 to 14 are hands on the nanoKONTROL and knob 1.
+The transport, knob 1's pickup and the clamp. Steps 1 to 10 set their tempo with **Send** lines; 11 to 13 are hands on the nanoKONTROL and knob 1.
 
-No beat-count steps: the `c_clock` ratio and the clock running on after a stop are `clock-assert`'s and `tempo-assert`'s, and the counts appear on no screen. One claim judged in two places reports more coverage than exists.
+No beat-count steps: the `c_clock` ratio and the clock running on after a stop are `clock-assert`'s and `tempo-assert`'s, and the counts appear on no screen. One claim judged in two places reports more coverage than exists. No device follows the clock by ear since the SP-404 left the rig (2026-11-04), so no step listens for one.
 
-14 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [tempo](../../ref/module/tempo.md), [sp404](../../ref/device/sp404.md).
+13 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [tempo](../../ref/module/tempo.md).
 
 - [ ] **1. Resting display at 120 BPM**
   - **Send:** `tempo 120; stop bang`
@@ -37,36 +37,29 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
   - **Pass if:** The footer reads 120-bpm and no alert appears at all.
 
 - [ ] **8. Start the transport**
-  - **Need:** The SP-404 on Pattern Select with a pattern loaded and nothing playing.
   - **Send:** `start bang`
-  - **Pass if:** The aux LED turns green and the 404 starts its selected pattern in time with it. The 404's screen shows an EXT tempo. The number beside a pad never moves.
-  - **Note:** Start (250) moves the 404's sequencer only with a pattern loaded ([sp404](../../ref/device/sp404.md)); without one nothing on either device says why. The two steps after this one inherit the state.
+  - **Pass if:** The aux LED turns green and the footer still reads 120-bpm.
 
-- [ ] **9. The 404 follows a tempo change**
-  - **Send:** `tempo 180`
-  - **Pass if:** The 404's EXT slides up to 180 rather than snapping and its pattern speeds up to match. The OLED fills with rows named for the pads it plays — sp-a1 and the like — and that is correct. Those rows cover the footer so the new tempo is not readable there until the transport stops.
-  - **Note:** 180, not 240: the 404 follows only between 40 and 200 BPM ([sp404](../../ref/device/sp404.md)). No footer claim here: the pad rows raise the param layer, which hides it, so step 10 reads the footer instead.
+- [ ] **9. Stop the transport**
+  - **Send:** `stop bang`
+  - **Pass if:** The aux LED goes dark blue and the footer reads 120-bpm.
 
-- [ ] **10. Stop the transport**
-  - **Send:** `tempo 120; stop bang`
-  - **Pass if:** The aux LED goes dark blue and the 404 stops but its screen still reads EXT. Falling back to BPM is the failure. The pad rows stop arriving and the OLED settles back to the meters with 120-bpm in the footer.
-
-- [ ] **11. Panic**
+- [ ] **10. Panic**
   - **Send:** `panic bang`
   - **Pass if:** The aux LED turns red and the footer reads panic.
 
-- [ ] **12. Transport from PLAY and STOP**
+- [ ] **11. Transport from PLAY and STOP**
   - **Do:** Press PLAY on the nanoKONTROL, then STOP.
-  - **Pass if:** PLAY turns the aux LED green and the 404 starts. STOP turns it dark blue and the 404 stops.
+  - **Pass if:** PLAY turns the aux LED green and STOP turns it dark blue.
   - **Note:** The aux button is the keyboard's modifier (item 305); the nano's PLAY and STOP are the transport in every mode.
 
-- [ ] **13. Knob 1 tempo sweep**
+- [ ] **12. Knob 1 tempo sweep**
   - **Do:** Sweep knob 1 all the way and back.
-  - **Pass if:** The row reads bpm and a number that tracks the knob between 10 and 500 BPM. It never reads og-knob-1 and never a raw 0-to-1 decimal. The 404 follows the sweep.
+  - **Pass if:** The row reads bpm and a number that tracks the knob between 10 and 500 BPM. It never reads og-knob-1 and never a raw 0-to-1 decimal.
   - **Note:** No bracketed second number: the knob was released in step 3 and is live. The held format is step 2's.
 
-- [ ] **14. Nothing Saved: knob 1 starts held at 120**
+- [ ] **13. Nothing Saved: knob 1 starts held at 120**
   - **Need:** No knobs.txt in Cut It's folder: no Save since the last `tools/deploy.sh --clean`. Knob 1 turned well down, toward 8 o'clock.
   - **Do:** Load Cut It from the Organelle's menu, wait for the footer, then turn knob 1 slowly up past 12 o'clock.
-  - **Pass if:** The footer reads 120-bpm wherever knob 1 sits. Turning it, the row reads bpm 120 and the knob's own tempo in brackets, and the 404 stays at 120, until the knob passes just before 12 o'clock; from there the row and the 404 follow the knob.
+  - **Pass if:** The footer reads 120-bpm wherever knob 1 sits. Turning it, the row reads bpm 120 and the knob's own tempo in brackets until the knob passes just before 12 o'clock; from there the row follows the knob.
   - **Note:** 0.48 of the knob's turn is 120 on its curve ([map](../../ref/module/map.md), *Parameter pickup*). With a knobs.txt the saved position is restored instead, as in step 2.

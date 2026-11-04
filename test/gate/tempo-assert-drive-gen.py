@@ -59,9 +59,8 @@ NOTES = [
     "It needs DSP: u_tempo's pulse is a [phasor~] read by [threshold~]. -noaudio "
     "leaves DSP running (item 280).",
 
-    "The clock goes out on port 1 for the Launchpad's animations and port 3 for the "
-    "SP-404's BPM SYNC \\, and each is counted: a fan-out that lost one port would "
-    "look perfect on the other.",
+    "The clock goes out on port 1 alone \\, for the Launchpad's animations: port 3 "
+    "was the SP-404's \\, and the set of ports it reaches is asserted exactly.",
 ]
 
 if __name__ == "__main__":

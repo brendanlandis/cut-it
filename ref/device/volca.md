@@ -51,9 +51,10 @@ ears, which is why its checklist steps are judged by ear. See [presence.md](../m
 
 ### No MIDI clock reaches this device
 
-`u_tempo`'s `realtime-out` feeds exactly **two** `[midiout]` objects, set at loadbang to ports **1
-and 3** — the Launchpad and the SP-404. The Volca is port 4 and the nanoKONTROL is port 2, so
-neither receives a clock byte from Cut It. ✅ Measured with `aseqdump` on Pd's Midi-Out 4: five
+`u_tempo`'s `realtime-out` feeds exactly **one** `[midiout]` with the clock, set at loadbang to
+port **1**, the Launchpad; port 3, the SP-404's, had it too until the 404 left the rig
+(2026-11-04). The Volca is port 4 and the nanoKONTROL is port 2, so neither receives a clock byte
+from Cut It. ✅ Measured with `aseqdump` on Pd's Midi-Out 4: five
 seconds produce nothing at all, across a patch reload included. Item 279.
 
 ⚠️ **So the Volca cannot sync to the instrument**, and anything that assumes it is following the

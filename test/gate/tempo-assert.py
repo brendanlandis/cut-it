@@ -15,7 +15,7 @@ import lib_pd                                                  # noqa: E402
 
 UTEMPO = "Cut It/u_tempo.pd"
 CLOCK, START, CONTINUE, STOP = 248, 250, 251, 252
-PORTS = [1, 3]                  # 1 = the Launchpad, 3 = the SP-404
+PORTS = [1]                     # the Launchpad. Port 3 was the SP-404's, and gets nothing
 PPQN = 24
 BPM_LO, BPM_HI = 5, 600         # the LEGAL range, wider than knob 1's 10..500
 TOLERANCE = 0.12                # +/- 12 % on a real-time count
@@ -103,11 +103,11 @@ def main():
         A.check("⛔ halving the tempo halves the pulse rate", False,
                 "no pulses at all in the 60 BPM window")
 
-    # Counted separately: a fan-out that lost one port looks perfect on the other.
-    per_port = [len(rt(W("RATE-120"), byte=CLOCK, port=p)) for p in PORTS]
-    A.check("the clock leaves on BOTH MIDI ports, not one",
-            per_port[0] > 0 and per_port[0] == per_port[1],
-            "port 1 saw %d, port 3 saw %d" % tuple(per_port))
+    # An exact set: port 3 was the SP-404's until it left the rig (2026-11-04), and
+    # whatever takes it next must not be handed a clock it never asked for.
+    clock_ports = sorted({v[1] for v in rt(W("RATE-120"), byte=CLOCK)})
+    A.check("⛔ the clock leaves on port 1 ALONE -- nothing on port 3",
+            clock_ports == PORTS, "saw the clock on ports %s" % clock_ports)
 
     print("\n--- the clamp ---")
     # In the signal path; static_lint owns the bound.
@@ -132,7 +132,7 @@ def main():
             repr(rt(W("STOP"))))
     A.check("panic sends %d too" % STOP, bool(rt(W("PANIC"), byte=STOP)),
             repr(rt(W("PANIC"))))
-    # ⛔ PANIC REACHES A THIRD PORT AND THE TRANSPORT DOES NOT, and the pair of
+    # ⛔ PANIC REACHES ONE MORE PORT THAN THE TRANSPORT DOES, and the pair of
     # checks below is the whole of that claim -- one of them alone would pass
     # over the bug in either direction. Item 279 measured realtime-out feeding
     # ports 1 and 3 only, so the Volca on port 4 kept sequencing through a panic
@@ -140,14 +140,15 @@ def main():
     # branch alone. ⚠️ EXACT PORT SETS, never "at least one": a fan-out that
     # accidentally handed the CLOCK to port 4 as well would satisfy any
     # non-zero test here and would be exactly the widening plan-v04 parks.
+    # Port 3 is in neither set: it was the SP-404's.
     panic_ports = sorted({v[1] for v in rt(W("PANIC"), byte=STOP)})
-    A.check("⛔ panic's STOP reaches ports 1, 3 AND 4", panic_ports == [1, 3, 4],
+    A.check("⛔ panic's STOP reaches ports 1 AND 4, and not 3", panic_ports == [1, 4],
             "saw ports %s -- port 4 is the Volca's DIN interface, item 279"
             % panic_ports)
     stop_ports = sorted({v[1] for v in rt(W("STOP"), byte=STOP)})
-    A.check("⛔ ...and the plain transport STOP still reaches ONLY 1 and 3",
-            stop_ports == [1, 3],
-            "saw ports %s. Widening the clock and transport to all four is a "
+    A.check("⛔ ...and the plain transport STOP still reaches ONLY port 1",
+            stop_ports == PORTS,
+            "saw ports %s. Widening the clock and transport to more ports is a "
             "v0.4 sound question parked in plan-v04, NOT this" % stop_ports)
     # Continue resumes from a stored position, which nothing here has
     # (ref/module/tempo.md).

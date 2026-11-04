@@ -26,11 +26,11 @@ P = lambda name, v=100: "\\; param %s %d" % (name, v)
 
 SEQ = [
     # Before the restore, and before anything else in the run: a pad plays now.
-    (300, "EARLY", ["\\; pd dsp 1", P("pad-41", 90)], GAP),
+    (300, "EARLY", ["\\; pd dsp 1", P("pad-11", 90)], GAP),
     (2500, "RESTORE", [], GAP),
     (4500, "VEL-2", [P("pad-26")], GAP),                          # level 2: 32
     (4700, "STEPS-T1", [P("pad-81"), P("pad-85")], GAP),          # track 1, steps 1 and 5
-    (4900, "PAD-2", [P("pad-42", 90)], GAP),                      # plays pad 2, selects it
+    (4900, "PAD-2", [P("pad-12", 90)], GAP),                      # plays pad 2, selects it
     (5100, "STEP-T2", [P("pad-81")], GAP),                        # track 2, step 1
     (5300, "VEL-6", [P("pad-16")], GAP),                          # level 6: 95
     # The step rule on track 2's step 13, all three cases.

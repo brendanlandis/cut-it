@@ -335,12 +335,13 @@ function R.phone(st)
   return out
 end
 
--- A pad press plays the pad now, at the press's own velocity, and selects its track; knob 3 is
--- then held at that track's last step.
+-- A pad press plays the pad now, at full velocity however hard it is pressed (Brendan,
+-- 2026-11-04), and selects its track; knob 3 is then held at that track's last step.
+R.TAP = 127
 function R.press_pad(st, track, velocity)
   st.track = math.floor(clip(num(track), 1, R.TRACKS))
   rearm(st.knob.track)
-  return { { "note", "pad", { R.pad(st, st.track), num(velocity) } },
+  return { { "note", "pad", { R.pad(st, st.track), R.TAP } },
            { "page", "track", { st.track } }, R.page_last(st), R.steps(st) }
 end
 

@@ -145,8 +145,8 @@ equal("a step past the last step is dark, and a press there does nothing -- step
 
 print("\n--- the selected track ---")
 st = R.new(1)
-equal("a pad press plays its pad now, selects its track, and draws its last step and row",
-      R.presses.pad(st, { 2, 90 }), { { "note", "pad", { 2, 90 } }, { "page", "track", { 2 } },
+equal("a pad press plays its pad now at full velocity, selects its track, and draws its last step and row",
+      R.presses.pad(st, { 2, 90 }), { { "note", "pad", { 2, 127 } }, { "page", "track", { 2 } },
                                       { "page", "last", { 16 } }, { "page", "steps", zeros(32) } })
 R.presses.step(st, { 1, 100 })
 want = zeros(CELLS)
@@ -155,11 +155,11 @@ equal("a step press edits the SELECTED track -- track 2's step 1, track 1 untouc
       st.pattern, want)
 local st3 = R.new(3)
 equal("bank C's track 2 is pad 34", R.presses.pad(st3, { 2, 90 })[1],
-      { "note", "pad", { 34, 90 } })
+      { "note", "pad", { 34, 127 } })
 equal("pads are clipped to 1..16 and levels to 1..8",
       { R.presses.pad(R.new(1), { 0, 90 })[1], R.presses.pad(R.new(1), { 20, 90 })[1],
         R.presses.vel(R.new(1), { 40, 100 })[1] },
-      { { "note", "pad", { 1, 90 } }, { "note", "pad", { 16, 90 } }, { "page", "vel", { 8 } } })
+      { { "note", "pad", { 1, 127 } }, { "note", "pad", { 16, 127 } }, { "page", "vel", { 8 } } })
 equal("a press or a knob with no number in it does nothing",
       { R.presses.step(R.new(1), {}), R.presses.vel(R.new(1), {}), R.presses.pad(R.new(1), {}),
         R.presses.last(R.new(1), {}), R.presses["track-last"](R.new(1), {}) },

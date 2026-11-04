@@ -205,9 +205,9 @@ def main():
         return page_check(fs[-1], lay, pat[k], t or track.get(k, 2), lvl[k])
 
     print("\n--- before the restore ---")
-    A.check("a pad plays at 300 ms, before anything is restored -- pad 1 at 90 "
-            "and nothing else",
-            ons("EARLY") == [(1, 90)], "note-ons: %s" % ons("EARLY"))
+    A.check("a pad plays at 300 ms, before anything is restored -- pad 1, the bottom-left, "
+            "at 127 for a press at 90, and nothing else",
+            ons("EARLY") == [(1, 127)], "note-ons: %s" % ons("EARLY"))
 
     print("\n--- the restore ---")
     A.check("⛔ the restored pattern is put straight back -- once, the seeded 563 exactly",
@@ -227,8 +227,8 @@ def main():
             "%d put(s)" % len(puts("STEPS-T1")))
     prob = page_in("STEPS-T1")
     A.check("... and the page lights them in 32's color beside the seed's", prob is None, prob)
-    A.check("⛔ a drum pad plays NOW at its own velocity -- pad 2 at 90, once",
-            ons("PAD-2") == [(2, 90)], "note-ons: %s" % ons("PAD-2"))
+    A.check("⛔ a drum pad plays NOW at full velocity -- pad 2 at 127 for a press at 90, once",
+            ons("PAD-2") == [(2, 127)], "note-ons: %s" % ons("PAD-2"))
     prob = page_in("PAD-2")
     A.check("... and selects its track -- pad 2 lit, the steps shown are track 2's",
             prob is None and not puts("PAD-2"), prob or "puts: %d" % len(puts("PAD-2")))

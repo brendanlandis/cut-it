@@ -7,13 +7,13 @@ Mode 1's drum page on the Launchpad, the sequencer playing the drum samples from
 - [ ] **1. The drum page**
   - **Need:** A fresh load of the patch with no saved pattern — the selection resets at every load and a saved step would be lit.
   - **Send:** `stop bang; mode compose mode-1`
-  - **Pass if:** The left column has its top lamp bright. The top four rows of pads are the steps: the top two dim but the first, which is blue as a bar's first step, and the two under them dark, since the last step is 16. The bottom-left four by four is very dim — dimmer than any velocity button — with its top-left pad lit. The right halves of the bottom two rows are the eight velocity buttons — white at the top left to red at the bottom right, with the second one on the bottom row brighter than the rest and the lit drum pad in its color. The top row of the right four by four is dim purple and the row under it dark, and nothing walks along the bottom row.
-  - **Note:** Level 6 is the bottom row's second velocity button; track 1 is the top-left drum pad. Both reset at every load ([sequencer](../../ref/module/sequencer.md)).
+  - **Pass if:** The left column has its top lamp bright. The top four rows of pads are the steps: the top two dim but the first, which is blue as a bar's first step, and the two under them dark, since the last step is 16. The bottom-left four by four is very dim — dimmer than any velocity button — with its bottom-left pad lit. The right halves of the bottom two rows are the eight velocity buttons — white at the top left to red at the bottom right, with the second one on the bottom row brighter than the rest and the lit drum pad in its color. The top row of the right four by four is dim purple and the row under it dark, and nothing walks along the bottom row.
+  - **Note:** Level 6 is the bottom row's second velocity button; track 1 is the bottom-left drum pad. Both reset at every load ([sequencer](../../ref/module/sequencer.md)).
 
 - [ ] **2. A drum pad plays and selects**
   - **Need:** Drum samples in `samples/drums/`, deployed with the patch (`tools/samples.sh`).
-  - **Do:** Press the bottom-left drum pad.
-  - **Pass if:** Pad 13's sample plays at once through mixer channel 1 — louder for a harder press. That pad lights in the selected velocity's color and the top-left one goes dim. The OLED draws no row for it.
+  - **Do:** Press the top-left drum pad.
+  - **Pass if:** Pad 13's sample plays at once through mixer channel 1, at full volume however hard it is pressed. That pad lights in the selected velocity's color and the bottom-left one goes dim. The OLED draws no row for it.
 
 - [ ] **3. Velocity buttons**
   - **Do:** Press the top-left velocity button, then the bottom-right one.
@@ -32,7 +32,7 @@ Mode 1's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Pass if:** A green pad walks the top two rows from step 1 at four steps a beat. Pad 13 sounds on the steps you lit — softer on the white ones. The green pad passes over a lit step and the step is still lit behind it.
 
 - [ ] **7. Two tracks on one step**
-  - **Do:** Press the top-left drum pad. Then press step 1 and step 9.
+  - **Do:** Press the bottom-left drum pad. Then press step 1 and step 9.
   - **Pass if:** Pad 1 sounds alone on step 9 and with pad 13 on step 1 — both are heard there and neither is dropped.
 
 - [ ] **8. Knob 2 starts held at 16**
@@ -44,7 +44,7 @@ Mode 1's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Pass if:** At 4 the green pad walks steps 1 to 4 only, and steps 5 to 32 are dark, lit ones included, and silent. At 24 the third row lights up to step 24 and the walk covers it. At 16 it is the top two rows again.
 
 - [ ] **10. A track's own last step**
-  - **Do:** Select the top-left drum pad. Turn knob 3 until the screen reads pad1-last 3, through the brackets if they show. Then select the bottom-left drum pad.
+  - **Do:** Select the bottom-left drum pad. Turn knob 3 until the screen reads pad1-last 3, through the brackets if they show. Then select the top-left drum pad.
   - **Pass if:** Pad 1 now repeats every three steps against pad 13's sixteen, drifting against it. With pad 1 selected the steps past 3 are dark and the green pad walks 1 to 3. With pad 13 selected the grid shows its sixteen, and turning knob 3 a little reads pad13-last 16 with brackets: held until turned through 16.
 
 - [ ] **11. The drum screen**

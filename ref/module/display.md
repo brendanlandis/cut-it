@@ -182,7 +182,7 @@ press means, so a press and its lamp cannot disagree. Its 60 rows:
 | Rows from the top | Cells | Role | Evidence |
 |---|---|---|---|
 | 1–4 | 81–88, 71–78, 61–68, 51–58 | `step` 1–8, 9–16, 17–24, 25–32 (Brendan, 2026-11-03: 32 steps) | unknown |
-| 5–8, left 4×4 | 41–44, 31–34, 21–24, 11–14 | `pad` 1–16, laid out like the 404's, pad 1 top left | unknown |
+| 5–8, left 4×4 | 41–44, 31–34, 21–24, 11–14 | `pad` 13–16, 9–12, 5–8, 1–4: counted from the bottom left, pad 1 there and four a row upward (Brendan, 2026-11-04) | unknown |
 | 5, right half | 45–48 | `rep` 1–4, the repeat pads (Brendan, 2026-11-03) | unknown |
 | 6, right half | — | in no row, so dark | unknown |
 | 7–8, right half | 25–28, 15–18 | `vel` 1–4, then 5–8 (Brendan, 2026-11-03) | unknown |

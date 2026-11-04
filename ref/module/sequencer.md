@@ -56,7 +56,7 @@ kit*, below.
 | On a step | The global loop moves on, then every track moves on in its own loop, wrapping after its own last step; every track plays the step it is heard at (a repeat's, while one is held): a note moved late from the step before, then its own note at its velocity if 1 or more, as its chances say, track 1 first, all in one logical instant. Then each track's next note is rolled, and one moved early plays now. Then the playhead moves, to the selected track's step, and the step's drunk length goes to the clock | verified |
 | PLAY (`start`) | Starts every loop at step 1, the phase on the beat at its own rate, and lets go of a held repeat | verified |
 | STOP (`stop`) and `panic` | Stop it, and put the playhead out | unknown |
-| A pad press | Plays that pad now, at the Launchpad pad's own velocity, and selects it as the track being edited | unknown |
+| A pad press | Plays that pad now, at full velocity however hard it is pressed (Brendan, 2026-11-04), and selects it as the track being edited | unknown |
 | A velocity press | Selects level *n*, velocity round(127·*n*/8): 16 32 48 64 79 95 111 127 | unknown |
 | A step's level, whose color it takes | (*v* − 1) div 16 + 1, 0 for off, so each level's own velocity is that level. Worked out here and sent to `g_grid`, the one place the rule is | verified |
 | A step press | Off takes the selected velocity; on, at any velocity, turns off (Brendan, 2026-11-03). Past the selected track's last step, nothing. A release of a step, a velocity or a pad does nothing | unknown |

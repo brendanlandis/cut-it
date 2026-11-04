@@ -34,7 +34,7 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 141: 73 in Lua, 68 in Pd | `module/map` |
+| `map-assert.sh` | 156: 86 in Lua, 70 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 43 | `module/presence` |
@@ -47,11 +47,11 @@ were false.
 | `sp404-assert.sh` | 62: 43 in Lua, 19 in Pd | `device/sp404` |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 35 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 166: 110 in Lua, 56 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 169: 113 in Lua, 56 in Pd | `module/sequencer` |
 
-**983 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
+**1001 checks.** ⚠️ **Twenty-two of the twenty-three gates print their own `N checks` line and one does
 not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and the
-total cannot be derived from a run by summing. Totaling the run gives **976**; the difference is
+total cannot be derived from a run by summing. Totaling the run gives **994**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
 `sp404-assert.sh` print two each, one per half: the Lua tests', then the analyzer's.
 Worth knowing before trusting an arithmetic check of this number against a log.
@@ -222,7 +222,7 @@ halt the clock** — the transport pauses the subscribers, it does not clear the
 ## `map-assert.sh`, `sp404-assert.sh`, `volca-assert.sh` — the map and the output devices
 
 ```sh
-./test/gate/map-assert.sh            70 + 68 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
+./test/gate/map-assert.sh            86 + 70 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
 ./test/gate/sp404-assert.sh          43 + 19 checks, ~7 s — the 404's decode in Lua, then BOTH directions
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
@@ -384,7 +384,7 @@ equivalent.
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      110 + 56 checks, ~31 s — c_steps' rules in Lua, then the drum page and the pattern on disk
+./test/gate/sequencer-assert.sh      113 + 56 checks, ~31 s — c_steps' rules in Lua, then the drum page and the pattern on disk
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
@@ -414,6 +414,8 @@ parking the counter, no put after a restore, panic ignored, eighths for sixteent
 step rule inverted (Lua 6 failed, Pd 12), the velocity levels off by one (5, 9), and a step reading
 the next step's notes (5, 3). A rule that throws turns the Pd half red with `fail c_steps lua-fire`
 on `err`, and a syntax error with silence (18 failed); the Lua half dies on both with a traceback.
+✅ **And for the level `c_steps` sends** (2026-11-04): velocities sent to the page as they were
+before (Lua 5 failed, Pd 12), and every level one too high (3, 12).
 ✅ **And for one velocity row** (2026-11-03), against the old step rule and the old color ramp
 together: Lua 1 failed, Pd 12; with the old map, a press on the freed row was a `layout-miss`.
 ✅ **And for the last step**: PLAY parking the counter at 15, as it did, started PLAY again on step 2

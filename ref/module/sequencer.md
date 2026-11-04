@@ -34,7 +34,7 @@ It is mode 1's drum machine (`cut-it/drum-machine`), and the first part of a son
 | Creation arg 2 | The part its pattern is stored as: `drums` keys it `section-1-drums` | unknown |
 | Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, `rep <n> <vel>`, from `u_map`'s `drum-page` destination, presses and releases (velocity 0); `last`, `track-last` and `swing <0-1>`, knobs 2 to 4, from its `last-step`, `track-last` and `swing`; `sync`, `snap`, `select <n>`, `num` and `den <-1 or 1>`, and `drunk`, `skip` and `move <0-100>`, the phone's drum screen, from `u_net`'s fourth outlet. Anything else is `fail c_steps bad-selector` | unknown |
 | Outlet 1 | `pad <1..160> <velocity>`, to `m_404`'s pad path | unknown |
-| Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <32 velocities>` for the selected track, `play <step>` (0 while stopped), `vel <level>`, `track <pad>`, `last <step>` for the selected track, `bar <steps>`, a bar of the time signature, and `rep <pad>`, the repeat pad held, 0 for none | unknown |
+| Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <32 levels>` for the selected track, each step's velocity level, 0 for off, `play <step>` (0 while stopped), `vel <level>`, `track <pad>`, `last <step>` for the selected track, `bar <steps>`, a bar of the time signature, and `rep <pad>`, the repeat pad held, 0 for none | unknown |
 | Outlet 3 | The drum screen's state, to `u_net`'s second inlet: 41 numbers, `R.phone`, sent by the Pd face only when they change ([phone.md](../device/phone.md)) | verified |
 | `disp` | Knobs 2 to 4's rows: `last-step 12`, `pad2-last 6`, `swing 62 %`, and held, `last-step 16 (7)` | unknown |
 
@@ -54,6 +54,7 @@ It is mode 1's drum machine (`cut-it/drum-machine`), and the first part of a son
 | STOP (`stop`) and `panic` | Stop it, and put the playhead out | unknown |
 | A pad press | Plays that pad now, at the Launchpad pad's own velocity, and selects it as the track being edited | unknown |
 | A velocity press | Selects level *n*, velocity round(127·*n*/8): 16 32 48 64 79 95 111 127 | unknown |
+| A step's level, whose color it takes | (*v* − 1) div 16 + 1, 0 for off, so each level's own velocity is that level. Worked out here and sent to `g_grid`, the one place the rule is | verified |
 | A step press | Off takes the selected velocity; on, at any velocity, turns off (Brendan, 2026-11-03). Past the selected track's last step, nothing. A release of a step, a velocity or a pad does nothing | unknown |
 | The global last step | Knob 2 in mode 1, 1–32, for every track that has no last step of its own (Brendan, 2026-11-03). Steps past it keep their notes, unplayed and dark. Not saved | unknown |
 | A track's own last step | Knob 3 in mode 1, 1–32, for the selected track, saved with the pattern. Released at the step a following track already has, it goes on following | unknown |

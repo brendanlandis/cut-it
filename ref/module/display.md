@@ -188,7 +188,7 @@ press means, so a press and its lamp cannot disagree. Its 60 rows:
 | 7–8, right half | 25–28, 15–18 | `vel` 1–4, then 5–8 (Brendan, 2026-11-03) | unknown |
 
 **The caller is `c_steps`, on `g_grid`'s third inlet, and it sends meaning, never a cell** (C-5):
-`steps <32 velocities>` for the selected track, `play <step>` (0 while stopped), `vel <level>`,
+`steps <32 levels>` for the selected track, 0 for off, `play <step>` (0 while stopped), `vel <level>`,
 `track <pad>` and `last <step>`, the selected track's, `bar <steps>`, a bar of the time signature,
 and `rep <pad>`, the repeat pad held, 0 for none. Every message sets the dirty flag.
 
@@ -200,7 +200,7 @@ button is selected.
 |---|---|---|
 | A step past the last step | 0, dark, lit or not: its note is kept, unplayed (Brendan, 2026-11-03) | unknown |
 | A step that is off | 1, dim; blue, RGB 16, 40, 127, if it starts a bar: step 1, then every `bar` steps (Brendan, from a mockup, 2026-11-04) | unknown |
-| A step that is on | Its velocity's level, (*v* − 1) div 16 + 1, in that level's RGB color: white for level 1, falling evenly to bright red for level 8 | unknown |
+| A step that is on | Its level, which `c_steps` works out from its velocity ([sequencer.md](sequencer.md)), in that level's RGB color: white for level 1, falling evenly to bright red for level 8 | unknown |
 | The playhead's step | 21, green, over whatever the step holds | unknown |
 | A velocity button | Its own level's color: full when selected, a quarter otherwise | verified |
 | The selected pad | The selected level's color, full | unknown |

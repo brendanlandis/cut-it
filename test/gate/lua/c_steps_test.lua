@@ -21,10 +21,10 @@ local function zeros(n)
   return z
 end
 
--- The selected track's row as the page gets it, from a pattern.
+-- The selected track's row as the page gets it, from a pattern: each step's level.
 local function row(pat, track)
   local r = {}
-  for s = 1, 32 do r[s] = pat[(track - 1) * 32 + s] end
+  for s = 1, 32 do r[s] = R.level(pat[(track - 1) * 32 + s]) end
   return r
 end
 
@@ -93,6 +93,18 @@ check("... and every one is a whole number", (function()
   for n = 1, 8 do if math.type(R.velocity(n)) ~= "integer" then return false end end
   return true
 end)(), T.show(got))
+got = {}
+for n = 1, 8 do got[n] = R.level(R.velocity(n)) end
+equal("each level's own velocity is that level, so a step lit at it takes its color",
+      got, { 1, 2, 3, 4, 5, 6, 7, 8 })
+equal("off is level 0; 1 to 16 is level 1, 17 is 2, 127 is 8",
+      { R.level(0), R.level(1), R.level(16), R.level(17), R.level(127) }, { 0, 1, 1, 2, 8 })
+equal("the page gets levels, never velocities: a step at 95 goes as 6",
+      (function()
+        local s = R.new(1)
+        s.pattern[R.index(1, 3)] = 95
+        return R.steps(s)[3][3]
+      end)(), 6)
 
 print("\n--- at load ---")
 local st = R.new(1)

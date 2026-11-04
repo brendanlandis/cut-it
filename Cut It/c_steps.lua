@@ -54,6 +54,14 @@ function R.velocity(level)
   return math.floor(127 * level / R.LEVELS + 0.5)
 end
 
+-- A velocity's level, whose color its step takes: 0 for off, else (v - 1) div 16 + 1, so each
+-- level's own velocity is that level, and a pattern saved at any other velocity looks as it did
+-- when g_grid worked this out.
+function R.level(velocity)
+  if velocity < 1 then return 0 end
+  return clip((velocity - 1) // 16 + 1, 1, R.LEVELS)
+end
+
 -- The pattern's index of a track's step, both 1-based: track 1's 32 steps come first.
 function R.index(track, step)
   return (track - 1) * R.STEPS + step
@@ -91,10 +99,10 @@ function R.new(bank)
   return st
 end
 
--- The selected track's 32 velocities, as the page shows them.
+-- The selected track's 32 steps as the page shows them: each one's level, 0 for off.
 function R.steps(st)
   local row = {}
-  for s = 1, R.STEPS do row[s] = st.pattern[R.index(st.track, s)] end
+  for s = 1, R.STEPS do row[s] = R.level(st.pattern[R.index(st.track, s)]) end
   return { "page", "steps", row }
 end
 

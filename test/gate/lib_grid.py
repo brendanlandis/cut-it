@@ -170,7 +170,9 @@ def drum_layout(path=DRUM_PAGE):
 
 
 def level_of(velocity):
-    """The velocity level, 1..8, whose color a step at this velocity takes."""
+    """The velocity level, 1..8, whose color a step at this velocity takes: c_steps.lua's
+    R.level, which c_steps sends the page. A copy, so a change to that rule turns the
+    sequencer gate red until this follows it."""
     return (int(velocity) - 1) // 16 + 1
 
 
@@ -205,11 +207,11 @@ def drum_page(frame, lay):
                     return ("two mode lamps lit: %d and %d" % (lamp, idx)), lamp, page
                 lamp = idx
             elif color != DIM:
-                return ("mode lamp %d is color %d" % (idx, color)), lamp, page
+                return ("mode lamp %d is color %s" % (idx, color)), lamp, page
         elif idx in lay:
             role, n = lay[idx]
             if color not in allowed[role]:
-                return ("%s %d (index %d) is color %d" % (role, n, idx, color)), lamp, page
+                return ("%s %d (index %d) is color %s" % (role, n, idx, color)), lamp, page
             page[role][n] = color
         elif color != 0:
             stray.append((idx, color))

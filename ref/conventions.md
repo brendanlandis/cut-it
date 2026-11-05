@@ -160,7 +160,7 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 | `recover` | a **bang** — panic, then reload the patch. Panic's second tier | `u_map` → `u_init` |
 | `param` | `<name> <value>` — a control **changed** | any `m_` → `u_map` |
 | `err` | `<level> <source> <text>`, level ∈ `warn` `fail` | any → `u_err` |
-| `disp` | display requests: `<name> <value> [unit]` | any → `g_oled`, `g_led`, `g_grid`, `u_net` |
+| `disp` | display requests: `<name> <value> [unit]` | any → `g_oled`, `g_led`, `g_grid` |
 | `state` | persistence, **three selectors** — see below | any ↔ `u_state` |
 | `presence` | device presence, **six selectors** — see below | any ↔ `u_present` |
 
@@ -224,8 +224,8 @@ The message table, the two stores, the file format and the rest of the traps are
 An `m_` layer registers itself once at load with `expect <src> <kind>`; `u_present` broadcasts
 `tick`; a `c_presence` inside the `m_` answers with `lost <src>` or `back <src>` on the transition
 only. A **passive** layer — one that cannot be polled — publishes `seen <src>` instead. **The sixth
-is `re-wire`**, the phone's button, and it is the only selector written by a file that owns no
-device — see [phone.md](device/phone.md).
+is `re-wire`**, a person asking, and it is the only selector no device's file writes: the phone's
+button until 2026-11-04, a Send line now — see [presence.md](module/presence.md).
 
 **Self-registration is what makes it extensible**: an `m_` written long after `u_present` is covered
 with no change to `u_present`, exactly as a `state` contributor is.
@@ -380,8 +380,8 @@ filters and forwards rather than drawing.
 size.
 
 ⚠️ **A new selector on `disp` costs one `route` argument in every consumer that has a fallthrough**,
-because everything unrecognized is a parameter by definition. Today that is two: `g_oled` and
-`u_net`.
+because everything unrecognized is a parameter by definition. Today that is one, `g_oled`:
+`u_net` stopped reading `disp` when the phone stopped copying the OLED (2026-11-04).
 
 The message format, the reserved names, the layer model and every trap around them are on
 [display.md](module/display.md).

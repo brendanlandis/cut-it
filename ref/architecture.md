@@ -45,18 +45,19 @@ file decides what that means; and nothing below that file knows what hardware ex
           ┌────────┴─────────┐                        what to play. No bus
           │              c_synth ◄── m_nanokey        carries that. u_net has
           │           fm │     │ strings   ch 49      cords too: the phone's
-          ▼              │     ▼                      test note, and the
-       m_volca ◄─────────┘   m_streich                synth choice
+          ▼              │     ▼                      synth choice, its drum
+       m_volca ◄─────────┘   m_streich                controls and its tempo
        ch 49                 ch 33, polled:
        notes/cc/program/note c_presence, c_devid 62
-          ↑
-        u_net
                    │
             (v0.4: e_chop, e_pitch, e_trem, e_verb)
                    │
-   ┌───────┬───────┴───────┬───────────┐
- g_oled  g_led          g_grid       u_net         ← the four display surfaces
- OLED    aux LED        Launchpad    phone
+   ┌───────┬───────┴───────┐
+ g_oled  g_led          g_grid                     ← the three display surfaces
+ OLED    aux LED        Launchpad
+
+ u_net ── phone                                    ← the Launchpad's page, on cords:
+                                                     state in, commands out
 ```
 
 **What the diagram cannot show, all of it load-bearing:**
@@ -71,8 +72,13 @@ file decides what that means; and nothing below that file knows what hardware ex
 - **`c_synth` holds the synth choice on every page**, and the nanoKEY's keys reach it by a cord
   from `m_nanokey`, not on `param`: a key means the chosen synth's note whichever page is up. It
   sends each key to `m_volca` or `m_streich`, a release to the synth its press went to, and the
-  choice to `u_net` and `g_grid`, by cords. Page 3's pads choose through `u_map`. See
-  [synths.md](module/synths.md).
+  choice to `u_net` and `g_grid`, and its velocity switch to `u_net`, by cords. Page 3's pads
+  choose through `u_map`. See [synths.md](module/synths.md).
+- **The phone reads nothing on `disp`** (Brendan, 2026-11-04): `u_net` takes each module's state on
+  a cord — `c_steps`', `c_synth`'s and `u_tempo`'s BPM — and hands the phone's commands back out by
+  cords to `c_steps`, `c_synth` and `u_tempo`. Page 1's tap pad reaches `u_tempo` from `u_map` by a
+  cord too, and `u_tempo` flashes it through `g_grid`. See [phone.md](device/phone.md) and
+  [tempo.md](module/tempo.md).
 - **`u_inject` takes the checklists' Send lines** and puts them on eight buses, so a rig check can
   fake what no control sends: from the device itself, on `127.0.0.1` alone, where `tools/send.sh`
   carries them over SSH. Nothing from the phone reaches it (Brendan, 2026-11-04). `u_map`'s
@@ -89,14 +95,16 @@ file decides what that means; and nothing below that file knows what hardware ex
 is the buses and the map; right is the display owners. **Where a file has cords, the cords decide
 where it goes** — which is why `m_volca` sits under `u_map` rather than in the `m_` column. Everything without cords talks on the allowlisted buses alone.
 
-**Six kinds of cord exist on that canvas, and each one is a seam worth seeing.** `u_init` reaches
+**Seven kinds of cord exist on that canvas, and each one is a seam worth seeing.** `u_init` reaches
 `m_launchpad` and `u_state`, because the boot *order* is `u_init`'s while the *action* belongs to the
-file at the other end. `u_map` and `u_net` each reach the output device, `m_volca`, because no bare
-global name carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`.
+file at the other end. `u_map` reaches the output device, `m_volca`, because no bare global name
+carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`.
 `c_clock` feeds `g_grid`'s beat row. `c_steps` sits between `u_map` and both `c_kit` and
 `g_grid`: told what a press means, it plays the drums and says what the drum page shows. And
 `c_synth` sits between `m_nanokey`, `u_map` and `u_net` on one side and the two synths, `u_net` and
-`g_grid` on the other: it plays the nanoKEY's keys on the chosen synth and says which that is.
+`g_grid` on the other: it plays the nanoKEY's keys on the chosen synth and says which that is. And
+`u_tempo` sits between `u_map`'s tap pad and `u_net`'s tempo on one side and `u_net` and `g_grid`
+on the other: it turns taps and the phone's drag into the tempo, and says what it is.
 
 ## Creation arguments — the contract between the two entry points
 

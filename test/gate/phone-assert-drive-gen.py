@@ -4,8 +4,9 @@
 #     python3 test/gate/phone-assert-drive-gen.py <out.pd>
 #
 # phone-assert.py runs it on every run. It instantiates u_net pointed at
-# localhost and pushes synthetic traffic onto disp; no scratch copy is needed,
-# since u_net already emits to a socket.
+# localhost, feeds its inlets as u_root's cords would, sends it the phone's
+# commands, and puts the OLED's traffic on disp to show u_net no longer reads
+# it; no scratch copy is needed, since u_net already emits to a socket.
 #
 # Each window's MARK is a datagram to the same port, so it arrives in true order
 # with the data around it. Every delay hangs off the one loadbang with an
@@ -51,7 +52,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 60800")
+qd = obj(20, 120, "del 58600")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -66,16 +67,20 @@ txt(20, 400,
     "before u_net connects. A UDP connect to a port with nothing listening survives one "
     "datagram (item 114) \\, which by hand looks like a broken rate limiter.", 70)
 txt(20, 600,
-    "It tests u_net alone: the contract is that u_net consumes disp and rate-limits what "
-    "leaves. The real u_tempo would make the status window depend on u_map's rounding.", 70)
+    "It tests u_net alone: the contract is that u_net sends the phone the state its inlets "
+    "hand it \\, rate-limits the tempo \\, and passes the phone's commands out of its "
+    "outlets. The real u_tempo would make the tempo windows depend on u_map's rounding.", 70)
 
 unet = obj(20, 780, "u_net 127.0.0.1 %d %d" % (PORT, INPORT))
-tap_v = obj(20, 880, "s \\$0-tap-volca")
-con(unet, 0, tap_v, 0)
-tap_d = obj(560, 880, "s \\$0-tap-drums")
-con(unet, 1, tap_d, 0)
-tap_s = obj(820, 880, "s \\$0-tap-synth")
-con(unet, 2, tap_s, 0)
+tap_d = obj(20, 880, "s \\$0-tap-drums")
+con(unet, 0, tap_d, 0)
+tap_s = obj(300, 880, "s \\$0-tap-synth")
+con(unet, 1, tap_s, 0)
+tap_t = obj(560, 880, "s \\$0-tap-tempo")
+con(unet, 2, tap_t, 0)
+# u_tempo's BPM arrives by name, as its cord would bring it in u_root.
+tp_r = obj(820, 720, "r \\$0-tp")
+con(tp_r, 0, unet, 3)
 # c_synth's choice arrives by name, as its cord would bring it in u_root.
 sy_r = obj(560, 720, "r \\$0-sy")
 con(sy_r, 0, unet, 2)
@@ -87,7 +92,7 @@ tm_r = obj(20, 720, "r \\$0-tm")
 con(tm_r, 0, unet, 0)
 txt(560, 600,
     "The abstraction under test. Args: the phone's host and port \\, then this end's "
-    "inbound port. Its three outlets are the Volca \\, c_steps and c_synth \\, sent on by name so no "
+    "inbound port. Its three outlets are c_steps \\, c_synth and u_tempo \\, sent on by name so no "
     "cord runs the length of the canvas.", 40)
 
 # the mark path, and the driver's own socket
@@ -148,9 +153,10 @@ con(icp, 0, ict, 0)
 con(ict, 0, in_o, 0)
 
 # --------------------------------------------------------------------- the probes
-# re-wire leaves on the presence bus and a test note through a cord, so neither
-# reaches the wire. Each is tapped and re-sent to the analyzer's port under its
-# own /probe address, in order with the marks.
+# What u_net passes on leaves through a cord, and a report on err, so none of
+# it reaches the wire. Each is tapped and re-sent to the analyzer's port under
+# its own /probe address, in order with the marks. The presence bus is tapped
+# too: re-wire once put a message there, and must not now.
 def probe(x, y, name, src):
     rc = obj(x, y, src)
     la = obj(x, y + 50, "list append")
@@ -162,99 +168,104 @@ def probe(x, y, name, src):
 
 
 probe(20, 1900, "presence", "r presence")
-probe(400, 1900, "volca", "r \\$0-tap-volca")
+probe(400, 1900, "tempo", "r \\$0-tap-tempo")
 probe(400, 2700, "err", "r err")
 probe(700, 2700, "drums", "r \\$0-tap-drums")
 probe(1000, 2700, "synth", "r \\$0-tap-synth")
 txt(20, 2180,
-    "u_net is the only abstraction in this run \\, so a re-wire seen here came from the "
-    "inbound path. The two cords are the Volca and c_steps \\, wired per C-2 \\, hence the "
+    "u_net is the only abstraction in this run \\, so anything seen on presence came from the "
+    "inbound path. The three cords are c_steps \\, c_synth and u_tempo \\, hence the "
     "taps.", 70)
 
 # ------------------------------------------------------------------- the windows
 # (absolute_ms, mark, [action, ...])
-#   ("disp", "<message>")            one message onto disp
-#   ("sweep", (name, count, ms))     count+1 distinct values for one param name
-#   ("statussweep", (count, ms))     the same, as status <n>-bpm symbols
+#   ("disp", "<message>")            one message onto disp, which u_net must ignore
+#   ("sweep", (name, count, ms))     count+1 distinct values for one name on disp
+#   ("tpsweep", (count, ms))         count+1 BPMs into u_net's fourth inlet
 #   ("cmd", (root, "<text>"))        one OSC datagram INTO u_net's own port
 #   ("tm", None)                     a bang into u_net's inlet: flip test mode
-#   ("ds", "<41 numbers>")           c_steps' drum screen state, into u_net's second inlet
-#   ("sy", "synth <choice>")         c_synth's choice, into u_net's third inlet
+#   ("ds", "<42 numbers>")           c_steps' state, into u_net's second inlet
+#   ("sy", "synth <choice>")         c_synth's choice or velocity switch, into its third
+#   ("tp", "<bpm>")                  u_tempo's BPM, into its fourth
 #   ("bus", (name, "<message>"))     one message onto a bus, as the mode bus
 #
-# Every command window sits after idle2: clear-alert destroys the held alert,
-# and idle2 is where the alert is asserted to persist.
 # Playing, last step 12, track 2 selected, a sync pending, the sixteen last
-# steps, track 2's its own, then 7/8, drunk 30, and track 2's skip 20 and move 0.
-DRUM_STATE = "1 12 2 1 16 5 " + "16 " * 14 + "0 1 " + "0 " * 14 + "7 8 30 20 0"
+# steps, track 2's its own, then 7/8, drunk 30, track 2's skip 20 and move 0,
+# and swing 62.
+DRUM_STATE = "1 12 2 1 16 5 " + "16 " * 14 + "0 1 " + "0 " * 14 + "7 8 30 20 0 62"
 SEQ = [
     (3000,  "idle",     []),
-    (6000,  "sweep1",   [("sweep", ("grain", 400, 5))]),
-    (9000,  "sweep2",   [("sweep", ("grain", 400, 5)),
-                         ("sweep", ("speed", 400, 5))]),
-    (12000, "statussw", [("statussweep", (400, 5))]),
-    (15000, "alert",    [("disp", "alert fail u_bench boom")]),
-    (17000, "reserved", [("disp", "in-l 42 dB"), ("disp", "in-r 7 dB"),
-                         ("disp", "grid modal 45"), ("disp", "led running"),
-                         ("disp", "modal hello"), ("disp", "modal-off"),
-                         ("disp", "diag")]),
-    (19000, "idle2",    []),
-    # -- the inbound half, one command per window so a stray effect can't be
-    #    blamed on the wrong button.
-    (22000, "cmdwire",  [("cmd", ("cutit", "re-wire"))]),
-    (23400, "cmdvolca", [("cmd", ("cutit", "test-note m_volca"))]),
-    # The SP-404's own test note, from before it left the rig (2026-11-04): a
-    # device u_net no longer has, so it must reach nothing at all.
-    (24800, "cmd404",   [("cmd", ("cutit", "test-note m_404"))]),
-    # Five wrong commands, each of which must reach nothing; the heartbeat in
-    # this window is the witness that the link was live.
-    (26200, "cmdbogus", [("cmd", ("cutit", "panic")),
+    # -- the OLED's traffic: u_net mirrored it once (/cutit/param, /status,
+    #    /alert); it reads nothing on disp now (Brendan, 2026-11-04)
+    (5000,  "dispsweep", [("sweep", ("grain", 400, 5))]),
+    (8000,  "dispother", [("disp", "status 128-bpm"), ("disp", "alert fail u_bench boom"),
+                          ("disp", "chop-size 43 %"), ("disp", "in-l 42 dB"), ("disp", "diag")]),
+    # -- the tempo: one BPM, then a sweep, which is coalesced
+    (9500,  "tempo",    [("tp", "120")]),
+    (11000, "tpsweep",  [("tpsweep", (400, 5))]),
+    (14000, "idle2",    []),
+    # -- the diagnostic commands, gone with the remote screen: each must reach
+    #    nothing at all, one per window so a stray effect can't be blamed on
+    #    the wrong one
+    (16000, "cmdwire",  [("cmd", ("cutit", "re-wire"))]),
+    (17400, "cmdclear", [("cmd", ("cutit", "clear-alert"))]),
+    (18800, "cmdvolca", [("cmd", ("cutit", "test-note m_volca"))]),
+    # Six more wrong commands, each of which must reach nothing; the heartbeat
+    # in this window is the witness that the link was live.
+    (20200, "cmdbogus", [("cmd", ("cutit", "panic")),
                          ("cmd", ("cutit", "reload")),
                          ("cmd", ("cutit", "test-note m_launchpad")),
+                         ("cmd", ("cutit", "test-note m_404")),
                          ("cmd", ("cutit", "test-note 404")),
-                         ("cmd", ("other", "re-wire"))]),
-    (28000, "cmdclear", [("cmd", ("cutit", "clear-alert"))]),
+                         ("cmd", ("other", "tempo 99"))]),
     # -- send, a command no longer (Brendan, 2026-11-04: the line check sends
     #    nothing), with test mode off, on and off again; result; and test mode
     #    between them.
-    (29400, "sendoff",  [("cmd", ("cutit", "send disp chop-size 43 %"))]),
-    (30800, "tmon",     [("tm", None)]),
-    (32200, "sendon",   [("cmd", ("cutit", "send disp chop-size 43 %")),
+    (21600, "sendoff",  [("cmd", ("cutit", "send disp chop-size 43 %"))]),
+    (23000, "tmon",     [("tm", None)]),
+    (24400, "sendon",   [("cmd", ("cutit", "send disp chop-size 43 %")),
                          ("cmd", ("cutit", "send tempo 120"))]),
-    (33600, "result",   [("cmd", ("cutit", "result tempo-2-pass"))]),
-    (35000, "tmoff",    [("tm", None)]),
-    (36400, "sendoff2", [("cmd", ("cutit", "send disp grain 12"))]),
+    (25800, "result",   [("cmd", ("cutit", "result tempo-2-pass"))]),
+    (27200, "tmoff",    [("tm", None)]),
+    (28600, "sendoff2", [("cmd", ("cutit", "send disp grain 12"))]),
     # one press of the key can arrive twice, 5 ms apart: the second flip is
     # dropped, so two in one window leave test mode on, and one more turns it off
-    (37800, "tmtwice",  [("tm", None), ("tm", None)]),
-    (39200, "tmoff2",   [("tm", None)]),
-    # -- the two drum buttons, out the third outlet to c_steps
-    (40600, "cmdsync",  [("cmd", ("cutit", "drums sync"))]),
-    (42000, "cmdsnap",  [("cmd", ("cutit", "drums snap"))]),
-    (43400, "cmdselect", [("cmd", ("cutit", "drums select 3"))]),
-    # -- the time signature's minus and plus, and the three sliders, as the
-    #    drum screen sends them
-    (44800, "cmdnum",   [("cmd", ("cutit", "drums num 1"))]),
-    (46200, "cmdden",   [("cmd", ("cutit", "drums den -1"))]),
-    (47600, "cmddrunk", [("cmd", ("cutit", "drums drunk 30"))]),
-    (49000, "cmdskip",  [("cmd", ("cutit", "drums skip 20"))]),
-    (50400, "cmdmove",  [("cmd", ("cutit", "drums move 0"))]),
-    # -- what the drum screen shows: the mode, and c_steps' state, each sent at
-    #    once and again on every heartbeat
+    (30000, "tmtwice",  [("tm", None), ("tm", None)]),
+    (31400, "tmoff2",   [("tm", None)]),
+    # -- the drum screen's buttons and pad, out the first outlet to c_steps
+    (32800, "cmdsync",  [("cmd", ("cutit", "drums sync"))]),
+    (34200, "cmdsnap",  [("cmd", ("cutit", "drums snap"))]),
+    (35600, "cmdselect", [("cmd", ("cutit", "drums select 3"))]),
+    # -- the arrangement screen's time signature, drunkenness, swing and last
+    #    step, and the drum screen's two sliders, as the phone sends them
+    (37000, "cmdnum",   [("cmd", ("cutit", "drums num 1"))]),
+    (38400, "cmdden",   [("cmd", ("cutit", "drums den -1"))]),
+    (39800, "cmddrunk", [("cmd", ("cutit", "drums drunk 30"))]),
+    (41200, "cmdskip",  [("cmd", ("cutit", "drums skip 20"))]),
+    (42600, "cmdmove",  [("cmd", ("cutit", "drums move 0"))]),
+    (44000, "cmdswing", [("cmd", ("cutit", "drums set-swing 62"))]),
+    (45400, "cmdlast",  [("cmd", ("cutit", "drums set-last 12"))]),
     # A drums command u_net has never heard of still goes to c_steps, which
     # refuses what it doesn't know: u_net passes drums on whole.
-    (51800, "cmddrumsnew", [("cmd", ("cutit", "drums reload 2"))]),
-    # -- the synth choice, out the third outlet to c_synth, a known one and one
+    (46800, "cmddrumsnew", [("cmd", ("cutit", "drums reload 2"))]),
+    # -- the synth choice, out the second outlet to c_synth, a known one and one
     #    c_synth will refuse: u_net passes synth on whole, as it does drums
-    (53200, "cmdsynth", [("cmd", ("cutit", "synth strings"))]),
-    (53900, "cmdsynthnew", [("cmd", ("cutit", "synth organ"))]),
-    # -- a mode chosen in test mode ends it, so a mode button brings its screen
+    (48200, "cmdsynth", [("cmd", ("cutit", "synth strings"))]),
+    (48900, "cmdsynthnew", [("cmd", ("cutit", "synth organ"))]),
+    # -- the tempo, out the third outlet to u_tempo, and one it will refuse
+    (49600, "cmdtempo", [("cmd", ("cutit", "tempo 133"))]),
+    (50300, "cmdtemponew", [("cmd", ("cutit", "tempo fast"))]),
+    # -- the velocity switch, out the second outlet to c_synth, and one it
+    #    will refuse
+    (51000, "cmdvel",   [("cmd", ("cutit", "velocity off"))]),
+    (51700, "cmdvelnew", [("cmd", ("cutit", "velocity loud"))]),
+    # -- a mode chosen in test mode ends it, so a mode button brings its page
     #    back on the phone
-    (54600, "tmmodeon", [("tm", None)]),
-    (56000, "tmmode",   [("bus", ("mode", "mode-2"))]),
-    (57400, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "mode-2")),
-                          ("sy", "synth fm")]),
-    (58800, "done",     []),
+    (52400, "tmmodeon", [("tm", None)]),
+    (53800, "tmmode",   [("bus", ("mode", "mode-2"))]),
+    (55200, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "mode-2")),
+                          ("sy", "synth fm"), ("sy", "velocity off")]),
+    (56600, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940
@@ -291,8 +302,8 @@ for i, (when, mark, actions) in enumerate(SEQ):
             con(tr, outlet, ts, 0)
             bx += 240
             continue
-        if kind in ("ds", "sy", "bus"):
-            text, dest = ((item[1], "\\$0-" + kind) if kind in ("ds", "sy")
+        if kind in ("ds", "sy", "tp", "bus"):
+            text, dest = ((item[1], "\\$0-" + kind) if kind in ("ds", "sy", "tp")
                           else (item[1][1], item[1][0]))
             dm = msg(bx, by, text)
             dsn = obj(bx, by + 50, "s %s" % dest)
@@ -314,7 +325,8 @@ for i, (when, mark, actions) in enumerate(SEQ):
             con(cof, 0, csn, 0)
             bx += 300
             continue
-        # A ramp: a metro-driven counter, one value per tick, stopping at count.
+        # A ramp: a metro-driven counter, one value per tick, stopping at count:
+        # a name's values onto disp, or BPMs into u_net's fourth inlet.
         name, count, period = (item[1] if kind == "sweep"
                                else (None, item[1][0], item[1][1]))
         # The stop travels by name: a cord back up to the metro would cross the
@@ -334,16 +346,16 @@ for i, (when, mark, actions) in enumerate(SEQ):
         # rightmost first: bump the store, then emit the value, then test the end
         con(tf, 2, pl, 0)
         con(pl, 0, f, 1)
-        head = (obj(bx + 180, by + 200, "makefilename %g-bpm")
-                if name is None else None)
-        lp = obj(bx + 180, by + 250, "list prepend %s" % (name or "status"))
-        lt = obj(bx + 180, by + 300, "list trim")
-        sd = obj(bx + 180, by + 350, "s disp")
-        con(tf, 1, lp if head is None else head, 0)
-        if head is not None:
-            con(head, 0, lp, 0)
-        con(lp, 0, lt, 0)
-        con(lt, 0, sd, 0)
+        if name is None:
+            sd = obj(bx + 180, by + 250, "s \\$0-tp")
+            con(tf, 1, sd, 0)
+        else:
+            lp = obj(bx + 180, by + 250, "list prepend %s" % name)
+            lt = obj(bx + 180, by + 300, "list trim")
+            sd = obj(bx + 180, by + 350, "s disp")
+            con(tf, 1, lp, 0)
+            con(lp, 0, lt, 0)
+            con(lt, 0, sd, 0)
         sel = obj(bx, by + 250, "select %d" % count)
         off = msg(bx, by + 300, "0")
         sstop = obj(bx, by + 350, "s %s" % sid)

@@ -1,7 +1,7 @@
--- The phone's TouchOSC layout, its scripts run under lib_touchosc.lua's stand-in: the tabs and
--- the mode, test mode, the drum screen, the remote screen, the synths screen and the checklist
--- page. Run by
--- touchosc-assert.py, which unpacks the layout into a folder and writes expect.lua beside it:
+-- The phone's TouchOSC layout, its scripts run under lib_touchosc.lua's stand-in: the pages and
+-- the mode, test mode, the arrangement screen, the drum screen, the synths screen and the
+-- checklist page. Run by touchosc-assert.py, which unpacks the layout into a folder and writes
+-- expect.lua beside it:
 --
 --   lua test/gate/lua/touchosc_test.lua <folder> [-v]
 
@@ -10,62 +10,159 @@ local L = dofile("test/gate/lua/lib_touchosc.lua")
 local check, equal = T.check, T.equal
 local dir = arg[1]
 local E = dofile(dir .. "/expect.lua")
+local manifest = dofile(dir .. "/controls.lua")
 local w = L.load(dir)
 local C = w.controls
 local function hb(test) L.osc(w, "/cutit/hb", 1, test and 1 or 0) end
 local function mode(m) L.osc(w, "/cutit/mode", m) end
--- Where the phone is: the tab's name, its screen, and whether the checklists stand in for it.
+-- Where the phone is: the outer page showing, and the tab its own pager shows.
 local function where()
-  return { C.main.tabLabel, L.showing(w, { "drums", "remote", "synths" }),
-           (C.checkpager.visible and not C.pager.visible) and "checklists" or "tabs" }
+  local outer = L.page(w, "pages")
+  local inner = outer.children[1]
+  return { outer.name, L.page(w, inner.name).tabLabel }
 end
 local function teal(c) return c[2] > 0.7 and c[1] < 0.3 end
 local function red(c) return c[1] > 0.9 and c[2] < 0.2 end
+local function black(c) return c and c[1] < 0.1 and c[2] < 0.1 end
+-- The state c_steps sends: 42 numbers, from what differs.
+local function drumstate(t)
+  local st = { t.playing or 0, t.last or 16, t.track or 1, t.pending or 0 }
+  for n = 1, 16 do st[#st + 1] = (t.lasts or {})[n] or t.last or 16 end
+  for n = 1, 16 do st[#st + 1] = (t.owns or {})[n] or 0 end
+  for _, v in ipairs({ t.num or 4, t.den or 4, t.drunk or 0, t.skip or 0, t.move or 0,
+                       t.swing or 50 }) do st[#st + 1] = v end
+  return st
+end
 
-print("\n--- the tabs, the mode and test mode ---")
-equal("before any mode: the tab, the remote screen", where(), { "remote", "remote", "tabs" })
+print("\n--- the pages, the mode and test mode ---")
+local bar
+for _, m in ipairs(manifest) do if m.name == "pages" then bar = m.tabbar end end
+equal("the outer pager's tab bar is on in the file, the editor's way to each page", bar, true)
+equal("⛔ ... and the root's script hides it, so the phone shows the page's own tabs",
+      C.pages.tabbar, false)
+equal("before any mode: page 1, the arrangement, under its own tab", where(),
+      { "p1", "arrangement" })
 L.update(w)
-equal("no heartbeat yet: no link, on both screens and the checklists",
-      { L.text(w, "rlink"), L.text(w, "link"), L.text(w, "tmode") }, { "no link", "no link", "no link" })
+equal("no heartbeat yet: no link on every screen and the checklist page",
+      { L.text(w, "link"), L.text(w, "dlink"), L.text(w, "slink"), L.text(w, "tmode") },
+      { "no link", "no link", "no link", "no link" })
 hb(false)
 L.update(w)
 equal("a heartbeat: link, its lamps lit, and test mode off",
-      { L.text(w, "rlink"), C.rlinkled.values.x, C.linkled.values.x, L.text(w, "tmode") },
-      { "link", 1, 1, "test mode off" })
+      { L.text(w, "link"), C.linkled.values.x, C.dlinkled.values.x, C.slinkled.values.x,
+        L.text(w, "tmode") }, { "link", 1, 1, 1, "test mode off" })
+local TABS = { "arrangement", "drums", "synths", "page 4", "page 5", "page 6", "page 7", "songs" }
+for n, tab in ipairs(TABS) do
+  mode("mode-" .. n)
+  equal("page " .. n .. ": the Launchpad's page " .. n .. ", its one tab named " .. tab, where(),
+        { "p" .. n, tab })
+end
 mode("mode-2")
-equal("page 2: the tab holds the drum screen, and says drums", where(), { "drums", "drums", "tabs" })
-mode("mode-1")
-equal("page 1: the remote screen", where(), { "remote", "remote", "tabs" })
+w.sent = {}
+mode("mode-2")
+equal("the mode's repeat turns nothing and sends nothing", { where(), #w.sent },
+      { { "p2", "drums" }, 0 })
+equal("⛔ pages 4 to 7 and songs are blank", { #C.page4.children, #C.page7.children,
+      #C.songs.children }, { 0, 0, 0 })
 hb(true)
 L.update(w)
-equal("test mode on: the checklist page in place of the tabs, its lamp lit",
-      { where()[3], L.text(w, "tmode"), C.tled.values.x }, { "checklists", "test mode on", 1 })
-mode("mode-2")
-equal("... staying through a change of mode, which fills the tab behind it",
-      where(), { "drums", "drums", "checklists" })
+equal("test mode on: the checklist page in place of the Launchpad's, its lamp lit",
+      { where(), L.text(w, "tmode"), C.tled.values.x },
+      { { "pcheck", "line check" }, "test mode on", 1 })
+mode("mode-3")
+equal("... staying through a change of mode", where(), { "pcheck", "line check" })
 hb(true)
-equal("a heartbeat still saying test mode changes nothing", where()[3], "checklists")
+equal("a heartbeat still saying test mode changes nothing", where()[1], "pcheck")
 hb(false)
-equal("test mode off: the tabs again", where(), { "drums", "drums", "tabs" })
+equal("test mode off: the page of the mode chosen meanwhile", where(), { "p3", "synths" })
+mode("mode-9")
+equal("a mode off the Launchpad's eight is page 1", where()[1], "p1")
+mode("mode-1")
+
+print("\n--- the arrangement screen: the tempo ---")
+w.sent = {}
+L.osc(w, "/cutit/tempo", 120)
+equal("u_tempo's 120: the tempo, large, and nothing sent back", { L.text(w, "tempo"), #w.sent },
+      { "120", 0 })
+-- the state put 120 in the middle of its step, 115.5 / 596
+equal("a tempo dragged up two BPM sends tempo 122, once",
+      L.drag(w, "tempobox", 117.5 / 596), { { "/cutit", "tempo", 122 } })
+equal("... and nothing while the BPM shown does not change",
+      L.drag(w, "tempobox", 117.9 / 596), {})
+L.update(w, 500)
+L.osc(w, "/cutit/tempo", 120)
+equal("the old tempo half a second later leaves the box where the finger put it, and the "
+      .. "number says Cut It's", { #w.sent, L.text(w, "tempo") }, { 1, "120" })
+L.update(w, 1100)
+w.sent = {}
+L.osc(w, "/cutit/tempo", 117.5)
+equal("⛔ a tempo that is not whole shows as it is, and is not sent back rounded",
+      { L.text(w, "tempo"), #w.sent }, { "117.5", 0 })
+L.osc(w, "/cutit/tempo", 150)
+L.osc(w, "/cutit/tempo", 150)
+equal("⛔ the tempo set elsewhere, a tap or knob 1, and its repeat, send nothing back", #w.sent, 0)
+equal("the box drags a BPM at a time down to 5 and up to 600",
+      { L.drag(w, "tempobox", 0)[1][3], L.drag(w, "tempobox", 1)[1][3] }, { 5, 600 })
+L.update(w, 1100)
+L.osc(w, "/cutit/tempo")
+L.osc(w, "/cutit/tempo", "x")
+equal("an empty tempo, before the first, or a word, changes nothing", L.text(w, "tempo"), "150")
+
+print("\n--- the arrangement screen: the sequencer's settings ---")
+w.sent = {}
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ playing = 1, last = 12, num = 7, den = 8,
+                                                 drunk = 30, swing = 62 })))
+L.update(w)
+equal("c_steps' state: playing, its lamp lit, 7 / 8, the last step 12",
+      { L.text(w, "play"), C.playled.values.x, L.text(w, "num"), L.text(w, "den"),
+        L.text(w, "last") }, { "playing", 1, "7", "8", "12" })
+equal("the swing and drunk knobs take theirs, and say them",
+      { C.swing.values.x, L.text(w, "swingv"), C.drunk.values.x, L.text(w, "drunkv") },
+      { (62 - 25) / 50, "62%", 0.3, "30%" })
+equal("⛔ taking the state sends nothing back", #w.sent, 0)
+equal("a turn of swing sends set-swing in whole percents, 25 to 75",
+      L.drag(w, "swing", (70 - 25) / 50), { { "/cutit", "drums", "set-swing", 70 } })
+equal("a turn of drunk sends whole percents, once each", L.drag(w, "drunk", 0.501),
+      { { "/cutit", "drums", "drunk", 50 } })
+equal("... and nothing when the percent does not change", L.drag(w, "drunk", 0.504), {})
+equal("dragging the last step from 12 to 14 sends set-last 14",
+      L.drag(w, "lastbox", (13 + 0.5) / 32), { { "/cutit", "drums", "set-last", 14 } })
+L.update(w, 500)
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ playing = 1, last = 12, num = 7, den = 8,
+                                                 drunk = 30, swing = 62 })))
+equal("the old state half a second later leaves the knob where the finger put it",
+      C.drunk.values.x, 0.504)
+L.update(w, 1100)
+w.sent = {}
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ playing = 1, last = 14, num = 7, den = 8,
+                                                 drunk = 50, swing = 70 })))
+equal("... and once the state agrees, nothing more is sent", #w.sent, 0)
+-- the boxes: the state put 7 in the middle of its step, 6.5 / 32
+equal("dragging 7 up two steps sends num 1 twice", L.drag(w, "numbox", 8.5 / 32),
+      { { "/cutit", "drums", "num", 1 }, { "/cutit", "drums", "num", 1 } })
+equal("dragging 8 down one step, of 1 2 4 8 16, sends den -1", L.drag(w, "denbox", 2.5 / 5),
+      { { "/cutit", "drums", "den", -1 } })
+local short = drumstate({})
+table.remove(short)
+L.osc(w, "/cutit/drums", table.unpack(short))
+equal("fewer than 42 numbers draws nothing", L.text(w, "play"), "playing")
 
 print("\n--- the drum screen ---")
-local st = { 1, 12, 2, 1 }
-for t = 1, 16 do st[#st + 1] = (t == 3) and 5 or 12 end
-for t = 1, 16 do st[#st + 1] = (t == 3) and 1 or 0 end
-for _, v in ipairs({ 7, 8, 30, 20, 0 }) do st[#st + 1] = v end
+mode("mode-2")
+w.sent = {}
+local st = drumstate({ playing = 1, last = 12, track = 2, pending = 1, lasts = { [3] = 5 },
+                       owns = { [3] = 1 }, skip = 20 })
 L.osc(w, "/cutit/drums", table.unpack(st))
-L.osc(w, "/cutit/status", "120-bpm")
 L.update(w)
-equal("c_steps' state: playing, last 12, sync waits, 7 / 8, the tempo from the status",
-      { L.text(w, "play"), C.playled.values.x, L.text(w, "glob"), L.text(w, "pending"),
-        L.text(w, "num"), L.text(w, "den"), L.text(w, "tempo") },
-      { "playing", 1, "12", "sync waits for step 1", "7", "8", "120" })
+equal("a sync pending says so", L.text(w, "pending"), "sync waits for step 1")
 equal("each pad shows its last step; pad 3, with its own, a dot before it",
       { L.text(w, "pad1l"), L.text(w, "pad3l") }, { "12", "\u{2022} 5" })
 check("pad 3 is teal, pad 1 red", teal(C.pad3.color) and red(C.pad1.color),
       T.show({ C.pad3.color, C.pad1.color }))
 equal("pad 2, selected, is lit and the rest not",
       { C.pad2.values.x, C.pad1.values.x, C.pad3.values.x }, { 1, 0, 0 })
+equal("the selected track's skip and move take theirs", { C.skip.values.x, C.move.values.x },
+      { 0.2, 0 })
 equal("lighting the selected pad sends nothing", #w.sent, 0)
 -- four pads pressed at once: four states, a track each, as fast as they come
 for _, t in ipairs({ 11, 12, 15, 16 }) do
@@ -74,32 +171,10 @@ for _, t in ipairs({ 11, 12, 15, 16 }) do
 end
 equal("states selecting one track after another light each in turn and send nothing back",
       { C.pad16.values.x, C.pad11.values.x, #w.sent }, { 1, 0, 0 })
-st[3] = 2
-L.osc(w, "/cutit/drums", table.unpack(st))
-w.sent = {}
-equal("the knobs and boxes take the state, and send nothing back",
-      { C.drunk.values.x, C.skip.values.x, L.text(w, "drunkv"), #w.sent },
-      { 0.3, 0.2, "30%", 0 })
-equal("a turn of a knob sends whole percents, once each", L.drag(w, "drunk", 0.501),
-      { { "/cutit", "drums", "drunk", 50 } })
-equal("... and nothing when the percent does not change", L.drag(w, "drunk", 0.504), {})
-L.update(w, 500)
-L.osc(w, "/cutit/drums", table.unpack(st))
-equal("the old state half a second later leaves the knob where the finger put it",
-      C.drunk.values.x, 0.504)
-L.update(w, 1100)
-st[39] = 50
-L.osc(w, "/cutit/drums", table.unpack(st))
-equal("... and once the state agrees, nothing more is sent", #w.sent, 1)
-w.sent = {}
--- the boxes: the state put 7 in the middle of its step, 6.5 / 32
-equal("dragging 7 up two steps sends num 1 twice", L.drag(w, "numbox", 8.5 / 32),
-      { { "/cutit", "drums", "num", 1 }, { "/cutit", "drums", "num", 1 } })
-equal("dragging 8 down one step, of 1 2 4 8 16, sends den -1", L.drag(w, "denbox", 2.5 / 5),
-      { { "/cutit", "drums", "den", -1 } })
 equal("a pad tap selects its track", L.press(w, "pad5"), { { "/cutit", "drums", "select", 5 } })
 equal("sync and snap", { L.press(w, "sync")[1], L.press(w, "snap")[1] },
       { { "/cutit", "drums", "sync" }, { "/cutit", "drums", "snap" } })
+equal("skip's knob sends skip", L.drag(w, "skip", 0.4), { { "/cutit", "drums", "skip", 40 } })
 w.sent = {}
 L.osc(w, "/cutit/ack", "drums", "sync")
 L.update(w)
@@ -107,39 +182,19 @@ check("sync's answer flashes it teal", teal(C.sync.color), T.show(C.sync.color))
 equal("... by its color, so it sends nothing", #w.sent, 0)
 L.update(w, 400)
 check("... for a moment, then red again", red(C.sync.color), T.show(C.sync.color))
-
-print("\n--- the remote screen ---")
-mode("mode-3")
-L.osc(w, "/cutit/param", "bpm", 120, "(29)")
-equal("a parameter: its name, and its value with the unit",
-      { L.text(w, "pname"), L.text(w, "pvalue") }, { "bpm", "120 (29)" })
-L.osc(w, "/cutit/param", "volca-cc41", 64, "-")
-equal("... and no unit when it is a dash", L.text(w, "pvalue"), "64")
-equal("the tempo from the status", L.text(w, "rstatus"), "120 bpm")
-L.osc(w, "/cutit/alert", 1, "warn", "u_tempo", "bpm-out-of-range")
-equal("an alert: its level and text, its lamp lit, and the text on the drum screen too",
-      { L.text(w, "ralert"), C.ralertled.values.x, L.text(w, "alert") },
-      { "warn  bpm-out-of-range", 1, "bpm-out-of-range" })
-L.osc(w, "/cutit/alert", 0, "none", "-", "-")
-equal("... and none", { L.text(w, "ralert"), C.ralertled.values.x }, { "no alerts", 0 })
-equal("the three commands, and no test 404 since the SP-404 left the rig",
-      { L.press(w, "rewire")[1], L.press(w, "clear")[1], L.press(w, "tvolca")[1], C.t404 },
-      { { "/cutit", "re-wire" }, { "/cutit", "clear-alert" },
-        { "/cutit", "test-note", "m_volca" } })
-L.osc(w, "/cutit/ack", "test-note", "m_volca")
-L.update(w)
-check("test Volca's answer flashes it, and not re-wire or clear alert",
-      teal(C.tvolca.color) and red(C.rewire.color) and red(C.clear.color),
-      T.show({ C.tvolca.color, C.rewire.color, C.clear.color }))
+check("no tempo, drunkenness, time signature or alert on the drum screen (Brendan, 2026-11-04)",
+      (function()
+        for _, c in ipairs(C.drums.children) do
+          if ({ tempo = 1, drunk = 1, numbox = 1, alert = 1 })[c.name] then return false end
+        end
+        return true
+      end)(), "")
 
 print("\n--- the synths screen ---")
 mode("mode-3")
-equal("page 3: the tab holds the synths screen, and says synths", where(),
-      { "synths", "synths", "tabs" })
 local function lamps()
   return { C.sfm.values.x, C.sstrings.values.x, C.cfm.values.x, C.cstrings.values.x }
 end
-local function black(c) return c and c[1] < 0.1 and c[2] < 0.1 end
 w.sent = {}
 L.osc(w, "/cutit/synth", "fm")
 equal("c_synth's choice, fm: lit on the synths screen and the checklist page, strings not",
@@ -159,16 +214,33 @@ equal("⛔ the choice lit, and again on each heartbeat's repeat, sends nothing b
 equal("⛔ a tap on strings, lit, sends nothing", L.press(w, "sstrings"), {})
 L.osc(w, "/cutit/synth", "strings")
 equal("... and the repeat lights it again", lamps(), { 0, 1, 0, 1 })
-L.osc(w, "/cutit/alert", 1, "fail", "c_synth", "bad-synth")
-equal("an alert shows here too, its lamp lit", { L.text(w, "salert"), C.salertled.values.x },
-      { "fail  bad-synth", 1 })
-L.osc(w, "/cutit/alert", 0, "none", "-", "-")
-equal("... and none", { L.text(w, "salert"), C.salertled.values.x }, { "no alerts", 0 })
-hb(false)
+
+print("\n--- the velocity switch ---")
+w.sent = {}
+L.osc(w, "/cutit/velocity", "on")
+equal("velocity on: the switch lit, its label black, and nothing sent",
+      { C.svel.values.x, black(C.svell.textColor), #w.sent }, { 1, true, 0 })
+L.osc(w, "/cutit/velocity", "on")
+L.osc(w, "/cutit/velocity", "on")
+equal("⛔ its repeat on every heartbeat sends nothing back", #w.sent, 0)
+equal("⛔ a tap on it lit asks for off, once", L.press(w, "svel"),
+      { { "/cutit", "velocity", "off" } })
+L.osc(w, "/cutit/velocity", "off")
+equal("velocity off: the switch out, its label white", { C.svel.values.x, black(C.svell.textColor) },
+      { 0, false })
+equal("a tap on it out asks for on, once", L.press(w, "svel"), { { "/cutit", "velocity", "on" } })
+equal("⛔ a tap before the answer asks again for on, not off: the switch is the state's",
+      L.press(w, "svel"), { { "/cutit", "velocity", "on" } })
+w.sent = {}
+L.osc(w, "/cutit/velocity", "loud")
+equal("a setting that is neither changes nothing", C.svel.values.x, 0)
+L.osc(w, "/cutit/ack", "velocity", "on")
 L.update(w)
-equal("a heartbeat: the link, lit", { L.text(w, "slink"), C.slinkled.values.x }, { "link", 1 })
-mode("mode-4")
-equal("page 4: the remote screen again", where(), { "remote", "remote", "tabs" })
+check("its answer flashes it teal", teal(C.svel.color), T.show(C.svel.color))
+equal("... by its color, so it sends nothing", #w.sent, 0)
+L.update(w, 400)
+check("... for a moment, then red again", red(C.svel.color), T.show(C.svel.color))
+equal("not on the checklist page (Brendan, 2026-11-04)", C.cvel, nil)
 
 print("\n--- the checklist page ---")
 -- E is the checklist the gate built the page on, one with a step on several pages.
@@ -215,11 +287,21 @@ L.update(w)
 check("... and its answer flashes Fail", C.cfail.color[1] > 0.9 and C.cfail.color[2] > 0.9,
       T.show(C.cfail.color))
 
+print("\n--- what the phone no longer shows ---")
+w.sent = {}
+L.osc(w, "/cutit/param", "bpm", 120, "(29)")
+L.osc(w, "/cutit/status", "128-bpm")
+L.osc(w, "/cutit/alert", 1, "fail", "c_synth", "bad-synth")
+equal("⛔ a parameter, a status or an alert changes nothing and sends nothing: the OLED's",
+      { L.text(w, "tempo"), #w.sent }, { "150", 0 })
+equal("⛔ ... and nothing in the layout would show one", { C.pname, C.ralert, C.alert, C.salert },
+      {})
+
 print("\n--- the link ---")
 L.update(w, 2000)
 equal("two seconds with no heartbeat: no link everywhere, the lamps out",
-      { L.text(w, "rlink"), L.text(w, "link"), L.text(w, "slink"), L.text(w, "tmode"),
-        C.linkled.values.x, C.slinkled.values.x, C.tled.values.x },
-      { "no link", "no link", "no link", "no link", 0, 0, 0 })
+      { L.text(w, "link"), L.text(w, "dlink"), L.text(w, "slink"), L.text(w, "tmode"),
+        C.linkled.values.x, C.dlinkled.values.x, C.slinkled.values.x, C.tled.values.x },
+      { "no link", "no link", "no link", "no link", 0, 0, 0, 0 })
 
 os.exit(T.report() == 0)

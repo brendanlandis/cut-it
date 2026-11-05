@@ -14,7 +14,9 @@ then [threshold~ 0.5 0 0.1 0] for one bang per cycle. -noaudio leaves DSP
 running (item 280).
 
 The tap windows press page 1's tap pad, cell 21, as m_launchpad publishes it,
-param pad-21, a fixed time apart, and read what reaches the tempo bus.
+param pad-21, a fixed time apart, and read what reaches the tempo bus; the
+phone's tempo goes in as a datagram into u_net's own port, /cutit tempo <bpm>,
+as the phone sends it.
 """
 import os
 import sys
@@ -23,12 +25,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_drive as D                                          # noqa: E402
 
 GAP = 20
+# u_net's inbound port in this copy: lib_scratch's state_dir writes CUTIT_INPORT into
+# main-dev.pd's u_root box, or 9002 for a gate run by hand.
+INPORT = int(os.environ.get("CUTIT_INPORT") or 9002)
 
 
 def tap(at=0):
     """A press of page 1's tap pad and its release, at <at> ms into the window."""
     return [(at, "\\; param pad-21 127"), (at + 50, "\\; param pad-21 0")]
 
+
+def phone(bpm):
+    return "\\; tempo-cmd tempo %s" % bpm
 
 # BPM / 60 * 24 Hz is 48 Hz at 120 BPM, so a two-second window holds 96 pulses
 # per port.
@@ -63,6 +71,11 @@ SEQ = [
     # the next, 600 ms on, counts from it alone: 100 BPM.
     (18800, "TAP-GAP", tap(), GAP),
     (19400, "TAP-AFTER", tap(), GAP),
+    # The phone's tempo, through u_net: one, one past the range, one that is
+    # no number.
+    (20000, "PHONE", [phone(133)], GAP),
+    (20400, "PHONE-HIGH", [phone(900)], GAP),
+    (20800, "PHONE-BAD", [phone("fast")], GAP),
     # Page 2: cell 21 is a drum pad there, and taps on it set nothing.
     (21200, "PAGE-2", ["\\; mode mode-2"], GAP),
     (21400, "PAGE-2-TAPS", tap(0) + tap(400), GAP),
@@ -83,13 +96,33 @@ NOTES = [
 
     "The clock goes out on port 1 alone \\, for the Launchpad's animations: port 3 "
     "was the SP-404's \\, and the set of ports it reaches is asserted exactly.",
+
+    "tempo-cmd is a bare name outside the allowlist \\, and safe: it exists only in this "
+    "driver \\, in a gate's scratch copy. It carries a command to the socket below \\, which "
+    "sends it to u_net's inbound port as the phone would.",
 ]
 
+
+def socket(obj, msg, con):
+    """/cutit <command> into u_net's port. It connects at 2600 ms: u_net's listen arms at
+    2000, and a connect to a port with nothing bound survives one datagram (item 114)."""
+    lb = obj(3000, 1300, "loadbang")
+    dl = obj(3000, 1350, "del 2600")
+    cm = msg(3000, 1400, "connect 127.0.0.1 %d" % INPORT)
+    ns = obj(3000, 1600, "netsend -u -b")
+    rc = obj(3300, 1300, "r tempo-cmd")
+    la = obj(3300, 1350, "list append")
+    of = obj(3300, 1400, "oscformat cutit")
+    lp = obj(3300, 1450, "list prepend send")
+    lt = obj(3300, 1500, "list trim")
+    for a, b in ((lb, dl), (dl, cm), (cm, ns), (rc, la), (la, of), (of, lp), (lp, lt), (lt, ns)):
+        con(a, 0, b, 0)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit("usage: tempo-assert-drive-gen.py OUT.pd  "
                  "(run it through test/gate/tempo-assert.sh, which passes a scratch path)")
     w, b, c = D.build(sys.argv[1], SEQ, tag="CLK",
-                      taps=["err", "tempo"], quit_ms=QUIT_MS, blurb=BLURB, notes=NOTES)
+                      taps=["err", "tempo"], quit_ms=QUIT_MS, blurb=BLURB, notes=NOTES,
+                      extra=socket)
     print("%s  %d windows  %d boxes  %d connects" % (sys.argv[1], w, b, c))

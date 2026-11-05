@@ -29,33 +29,33 @@ were false.
 | `init-assert.sh` | 16 | `module/boot` |
 | `audio-assert.sh` | 12 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
-| `display-assert.sh` | 42 | `module/display` — the grid, page 3's synth pads included |
+| `display-assert.sh` | 46 | `module/display` — the grid, page 3's synth pads and page 1's tap pad included |
 | `oled-assert.sh` | 63 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
-| `tempo-assert.sh` | 19 | `module/tempo` — `u_tempo` |
+| `tempo-assert.sh` | 63: 33 in Lua, 30 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 170: 91 in Lua, 79 in Pd | `module/map` |
+| `map-assert.sh` | 174: 91 in Lua, 83 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 47 | `module/presence` |
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 64: 39 in Lua, 25 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 103 | `device/phone` |
+| `phone-assert.sh` | 99 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 81: 15 read, 66 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `touchosc-assert.sh` | 117: 23 read, 94 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 171: 115 in Lua, 56 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 185: 129 in Lua, 56 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 16 | `module/sequencer` — the kit, as a signal |
-| `synths-assert.sh` | 69: 48 in Lua, 21 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
+| `synths-assert.sh` | 91: 66 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1111 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one
+**1231 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1104**; the difference is
-that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh` and
-`synths-assert.sh` print two each, one per half: the Lua tests', then the analyzer's;
-`touchosc-assert.sh` two as well, the reading first.
+the total cannot be derived from a run by summing. Totaling the run gives **1224**; the difference is
+that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
+`synths-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
+analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
 Worth knowing before trusting an arithmetic check of this number against a log.
 
 ⚠️ **`presence-assert.sh`'s 47 come from TWO Pd runs and one tally**, which is the only entry here
@@ -94,6 +94,23 @@ the grid before the bus change (9), before eight lamps (9) and before the drum p
 a traceback in `lib_grid`'s message for an RGB cell, fixed); `touchosc-assert` on the phone's old
 handler (3) and old `MAIN` (4); `nano-assert`'s fader and `sequencer-assert` (34, its page 1
 among them) on the map before the drum page moved.
+
+✅ **The phone's pages, the arrangement screen, tap tempo and the velocity switch were each made to
+fail** (2026-11-04), against the code without the change or a mutation of it. `phone-assert`: the
+old `u_net` (46 failed: the mirror's three addresses, the diagnostics reaching things, no tempo or
+velocity), and the tempo's coalescer bypassed (5). `touchosc-assert`: the old layout (its hidden
+screens, then a crash on what it lacks), and six rebuilt with a fault each — the tempo handed back
+unrounded (Lua 2), the outer bar left showing (1), the switch answering its own value (3), the root
+lighting by value alone (2), a re-wire button left (read 2), the switch misspelling `off` (read 1,
+Lua 1), a blank page with a control (read 1, Lua 1), the switch in a hidden group (read 2), a ninth
+page (read 1, Lua 1) and no acknowledgment for the switch (read 1, Lua 1). `tempo-assert`'s Lua on
+four mutations (no window on the intervals 1, no gap 4, the knob's range 4, a zero interval
+counted 1), and its Pd half with `u_root`'s cords from the tap pad and the phone cut (6).
+`display-assert`: the tap pad's cord cut (1) and its region never painted (4). `map-assert`'s lint:
+the role misspelt and a page-2 row (5), and `u_tempo`'s route renamed (1). `c_steps_test.lua`: no
+swing in the phone's state and no re-arm (10), and the swing's re-arm alone (1).
+`c_synth_test.lua`: the switch ignored (4). `synths-assert`: `c_synth` deaf to the switch's restore
+(3) and `u_net` routing no `velocity` (6).
 
  ⚠️ Three pages name more than one gate, and that is the rule working rather than
 bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
@@ -173,7 +190,7 @@ and the verdict file in `results/` all went, and every step's text is in the che
 ## `display-assert.sh` and `launchpad-assert.sh` — no eyes and no hardware
 
 ```sh
-./test/gate/display-assert.sh          32 checks, ~46 s — the ARBITER
+./test/gate/display-assert.sh          46 checks, ~46 s — the ARBITER
 ./test/gate/launchpad-assert.sh        19 checks, ~15 s — the DEVICE
 ```
 
@@ -210,8 +227,9 @@ rewriting the box. **`Cut It/` is never touched**; the scratch copy is thrown aw
 The script counts the boxes it rewrote and **refuses to run if it found none** — otherwise every
 assertion would pass vacuously, which is worse than failing.
 
-**42 checks**: frame shape and the 1–108 span, the mode lamp index, page 2's drum page with the
-beat row giving way to it and page 1's beat row, page 3's synth pads above the beat row, the chosen
+**46 checks**: frame shape and the 1–108 span, the mode lamp index, page 2's drum page with the
+beat row giving way to it and page 1's beat row, page 1's tap pad dim beside it and full for a
+moment at a tap, read with its layout file, page 3's synth pads above the beat row, the chosen
 synth's bright and the other's dim, before and after STRINGS' pad, read with the layout file, the modal claiming all 108 specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
 underneath, the beat row never leaving 11–18, the grid SURVIVING a panic, and
 `m_launchpad`'s Programmer and Live SysEx.
@@ -234,8 +252,14 @@ driver never muting (1: the forget's witness).
 ## `tempo-assert.sh` — two kinds of check, because neither is enough
 
 ```sh
-./test/gate/tempo-assert.sh          17 checks, ~16 s
+./test/gate/tempo-assert.sh          33 + 30 checks, ~24 s — tap tempo's rules in Lua, then the clock, the taps and the phone's tempo
 ```
+
+**It runs tap tempo's Lua tests first**: `test/gate/lua/u_tempo_test.lua`, with no Pd, drives
+`Cut It/u_tempo.lua` (the first tap, the average of the last four intervals, the two-second gap,
+two taps in one instant, the clamp, the phone's tempo and `bad-tempo`) and `u_tempo-lua.pd_lua`
+through `lib_test.lua`'s stand-in for pdlua, and reads `[clip 5 600]` out of `u_tempo.pd` so the
+Lua's range cannot drift from the patch's. The gate fails if either half does.
 
 `u_tempo` is the instrument's interval timer: it publishes a beat on a bus that `g_grid`, every
 `c_clock` and every future effect stage subscribe to, and writes MIDI clock to the wire at 24 pulses
@@ -261,12 +285,16 @@ real-time scheduler entirely); ⛔ that the clock leaves on **port 1 alone**, an
 too, with panic's on 1 and 4 — exact sets, so nothing reaches port 3, the SP-404's until it left the
 rig; the clamp warning at both ends and *not* warning in range; start 250, stop 252, panic 252, and
 ⛔ that **Continue (251) is never sent**; and ⛔ that **stop does not halt the clock** — the transport
-pauses the subscribers, it does not clear the timer.
+pauses the subscribers, it does not clear the timer. Then **tap tempo through the running
+instrument**: page 1's tap pad pressed as `param pad-21`, 400 ms apart, puts 150 on the tempo bus
+from the second tap; 2.5 s later a tap sets nothing, and the next, 600 ms on, 100; the same pad on
+page 2, a drum pad there, sets nothing; and **the phone's tempo** as a datagram into `u_net`'s port,
+133 to the bus, 900 clamped to 600, and a word refused as `bad-tempo`.
 
 ## `map-assert.sh` and `volca-assert.sh` — the map and the output device
 
 ```sh
-./test/gate/map-assert.sh            86 + 70 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
+./test/gate/map-assert.sh            91 + 83 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
 
@@ -395,7 +423,7 @@ commands *into* 9994 to drive the inbound half. `Cut It/` is never touched.
 
 | Piece | |
 |---|---|
-| `phone-assert-drive-gen.py` | generates the driver into the scratch directory on every run — it instantiates `u_net` and pushes synthetic traffic onto `disp`. **Edit this**; no driver is committed |
+| `phone-assert-drive-gen.py` | generates the driver into the scratch directory on every run — it instantiates `u_net`, feeds its four inlets as `u_root`'s cords would, taps its three outlets, and puts the OLED's traffic on `disp` to prove `u_net` ignores it. **Edit this**; no driver is committed |
 | `phone-assert.py` | binds the port, launches Pd, decodes OSC, does the reasoning |
 
 ⚠️ **The analyzer owns the lifecycle, and that is not tidiness.** It binds the socket *before*
@@ -407,10 +435,16 @@ exactly like a broken rate limiter.
 A mark on stdout would have to be correlated with socket timestamps afterwards; a mark *in* the
 stream arrives in true order with the data around it.
 
-**28 checks**: the four OSC addresses and nothing else, a monotonic heartbeat, silence on both
-idle windows, the coalescer's rate ceiling, **a per-name trailing edge on two simultaneous
-sweeps**, `status` limited on its own address, the alert arriving as repeated state, and the
-reserved selectors never leaking onto `/cutit/param`.
+**99 checks**: the known addresses and nothing else; **no `[r disp]` in `u_net`, and no
+`/cutit/param`, `/cutit/status` or `/cutit/alert` ever on the wire**, with a sweep, a status, an
+alert, a meter and `diag` put on `disp` (Brendan, 2026-11-04: the phone stopped copying the OLED); a
+monotonic heartbeat at 2 Hz; the tempo from `u_tempo`'s cord at once, on every heartbeat, coalesced
+at 20 Hz with its trailing edge; `re-wire`, `clear-alert` and `test-note` reaching nothing, as six
+malformed commands do; test mode, `result` and the gone `send`; every drum and arrangement command
+out the first outlet as it came, acknowledged or not as the screens need; `synth` and `velocity`
+out the second, `tempo` out the third, each passing on what it does not know for its owner to
+refuse; and the mode, `c_steps`' 42 numbers, the choice and the velocity switch at once and on every
+heartbeat. Its rate-limit history, below, is the old mirror's, whose coalescer the tempo now uses.
 
 ✅ **It was proven to fail before it was trusted, and for free.** `u_net` was built plumbing-first
 with no coalescer, and that build failed exactly three checks — the three rate ceilings — at
@@ -430,13 +464,18 @@ branch became the reject and bogus commands reached `c_synth`; no heartbeat repe
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       15 + 66 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       23 + 94 checks, ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
 output; every control has a name of its own, since a script finds a control by name and TouchOSC
-returns the first of two; and what its buttons send equals what `u_net` routes and `c_steps` and
-`c_synth` take, **the inbound vocabulary read from both ends**: every synth button sends a synth
+returns the first of two; **every screen is a page of a pager and nothing is hidden**, so the
+editor, which runs no script, reaches each by its tab: the root holds one pager, its tab bar on in
+the file, whose pages are the Launchpad's eight, as many as `u_map.lua`'s `R.PAGES`, then the
+checklist page, each holding a pager of its own with one tab named for the page, and pages 4 to 7
+and songs blank (Brendan, 2026-11-04); no diagnostic command is left; and what its buttons send
+equals what `u_net` routes and `c_steps` and `c_synth` take, **the inbound vocabulary read from both
+ends**: the velocity switch asks for exactly the settings `u_net` acknowledges, and every synth button sends a synth
 `c_synth.lua`'s `R.SYNTHS` names, `u_net` acknowledges exactly those, and there is one on the synths
 screen and one on the checklist page for each. The phone is the only sender there is, and the
 layout and `u_net` deploy by different routes, `push.sh` and `tools/deploy.sh`, so their spellings
@@ -448,11 +487,13 @@ page, 3:1, and each tab's text and states, from the resting fill TouchOSC draws 
 
 Then the layout's own scripts, unpacked into the scratch directory and run by
 `test/gate/lua/touchosc_test.lua` under `test/gate/lua/lib_touchosc.lua`, a stand-in for TouchOSC as
-`lib_test.lua` is for pdlua: the tabs following the mode, test mode bringing up the checklists and
-sending them back, the drum screen's state and sliders (a value from Cut It never sent back), the
-remote screen's rows and buttons, the synths screen and the checklist page's FM and STRINGS lit by
-`/cutit/synth` and never sending when lit, the checklist page's Pass, Fail, Back and Next, and
-NO-LINK. The
+`lib_test.lua` is for pdlua: the outer bar hidden by the root's script, the pages following the
+mode and each tab's name, test mode turning to the checklist page and back, the arrangement
+screen's tempo, time signature, last step, swing and drunkenness (a value from Cut It never sent
+back, a tempo that is not whole never sent back rounded), the drum screen's pads, buttons and
+knobs, the synths screen and the checklist page's FM and STRINGS, and the velocity switch, lit by
+the state and never sending when lit, the checklist page's Pass, Fail, Back and Next, nothing drawn
+from a parameter, a status or an alert, and NO-LINK. The
 page is driven on a development checklist with a step on two pages, built for the run, since every
 line-check step may fit on one; the reading half holds the line check to having no Send line. **What it cannot judge is how TouchOSC draws**; the
 phone checklist is the oracle for that.
@@ -481,7 +522,7 @@ from a mode to the flip, a mode chosen in test mode left it on, failing 3.
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      115 + 56 checks, ~31 s — c_steps' rules in Lua, then the drum page and the pattern on disk
+./test/gate/sequencer-assert.sh      129 + 56 checks, ~31 s — c_steps' rules in Lua, then the drum page and the pattern on disk
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
@@ -526,23 +567,25 @@ and expects level 2, so a table that moves the button is caught.
 ## `synths-assert.sh` — the nanoKEY and the two synths
 
 ```sh
-./test/gate/synths-assert.sh         48 + 21 checks, ~11 s — c_synth's rules in Lua, then the nanoKEY through the instrument
+./test/gate/synths-assert.sh         66 + 25 checks, ~11 s — c_synth's rules in Lua, then the nanoKEY through the instrument
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_synth_test.lua`, with lua.org's Lua 5.4 and no
-Pd: the choice, where a key goes, a switch while keys are held, a key's numbers, the restore, and
+Pd: the choice, where a key goes, a switch while keys are held, a key's numbers, the velocity
+switch, the restores, and
 `c_synth-lua.pd_lua` through `lib_test.lua`'s stand-in for pdlua (its outlets, `bad-synth`,
 `bad-selector`, a throwing rule caught as `fail c_synth lua-list`). Then a running copy of the
-instrument, booted on page 3 with `synth strings` saved: the nanoKEY's keys go in through
+instrument, booted on page 3 with `synth strings` and `velocity off` saved: the nanoKEY's keys go in through
 `t-notein`, page 3's pads as `param pad-NN`, and the phone's `/cutit synth <choice>` as a datagram
 into `u_net`'s own port, from a socket the driver builds with `lib_drive`'s `extra`.
 
-**21 checks**: the saved choice restored and put back, the first key on the Streichfett's channel
-alone, FM's pad choosing once, any channel of the nanoKEY's port playing, a key held through the
+**25 checks**: the saved choice and switch restored and put back, the first key on the
+Streichfett's channel alone, at 127, the phone's `velocity on` and `off` put, FM's pad choosing once, any channel of the nanoKEY's port playing, a key held through the
 phone's switch releasing on the Volca, only a press choosing (two pads held), notes on four other
 ports playing nothing, the choice holding on page 1 where the pads mean nothing, `bad-synth` from
-the phone, panic's CC 123 on channel 33, nothing on another channel, nothing else on `err`, and
-`synth strings` in the state file at the end.
+the phone, and `bad-velocity`, a soft key at 127 with the switch off and its release at 0, panic's
+CC 123 on channel 33, nothing on another channel, nothing else on `err`, and `synth strings` and
+`velocity off` in the state file at the end.
 
 ✅ **Proven red** (2026-11-04), each against the code without the change: `c_synth` releasing on
 the synth chosen now (Lua 4, Pd 1); `m_nanokey`'s gate open above its port (1) and below it (1);

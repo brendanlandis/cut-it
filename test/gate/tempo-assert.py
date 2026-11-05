@@ -3,8 +3,8 @@
 
 It counts System Real-Time bytes (>= 248), which no SysEx byte can be, so the
 Launchpad's grid frames can share the capture. Not lib_grid.parse, which skips
-the bytes >= 248 this gate wants. Then tap tempo, from page 1's tap pad, read off
-the tempo bus.
+the bytes >= 248 this gate wants. Then tap tempo, from page 1's tap pad, and the
+phone's tempo, read off the tempo bus.
 """
 import os
 import re
@@ -77,7 +77,7 @@ def main():
 
     cap = A.require_capture(sys.stdin.read())
     print("\n=== B. the clock, measured on the wire ===")
-    order, by = A.windows(cap, "CLK", 20)
+    order, by = A.windows(cap, "CLK", 23)
     W = lambda k: by.get(k, [])
     # Report only the ERR traffic: a window also holds every grid repaint byte.
     errs = lambda k: [e for e in W(k) if e[0] == "ERR"]
@@ -180,16 +180,25 @@ def main():
     n = len(rt(W("TAP-AFTER"), byte=CLOCK, port=PORTS[0]))
     A.check("... and the clock follows it", 0 < n, "no pulses in that window")
 
+    print("\n--- the phone's tempo ---")
+    A.check("⛔ /cutit tempo 133 from the phone puts 133 on the tempo bus, through u_tempo",
+            bpms("PHONE") == [133.0], "the tempo bus carried %s" % bpms("PHONE"))
+    A.check("... 900 is 600, the legal range's top, before it reaches the bus",
+            bpms("PHONE-HIGH") == [600.0], bpms("PHONE-HIGH"))
+    A.check("... and a tempo that is no number sets nothing and is fail u_tempo bad-tempo",
+            bpms("PHONE-BAD") == [] and [e[1] for e in errs("PHONE-BAD")]
+            == [["fail", "u_tempo", "bad-tempo"]], "tempo %s err %s"
+            % (bpms("PHONE-BAD"), errs("PHONE-BAD")))
     A.check("⛔ on page 2 cell 21 is a drum pad: two taps there set nothing",
             bpms("PAGE-2-TAPS") == [], bpms("PAGE-2-TAPS"))
     # The presence layer's routine reports share err in every window; these are the
     # tap's and the phone's path.
-    other = [e for k in ("TAP-1", "TAP-2", "TAP-3", "TAP-GAP", "TAP-AFTER",
-                         "PAGE-2-TAPS") for e in errs(k)
+    other = [e for k in ("TAP-1", "TAP-2", "TAP-3", "TAP-GAP", "TAP-AFTER", "PHONE",
+                         "PHONE-HIGH", "PAGE-2-TAPS") for e in errs(k)
              if e[1][1:2] and e[1][1] in ("u_tempo", "u_map", "u_net", "g_grid")
              and "bpm-out-of-range" not in " ".join(e[1])]
-    A.check("nothing from u_map, u_tempo, u_net or g_grid reaches err while tapping",
-            not other, other)
+    A.check("nothing from u_map, u_tempo, u_net or g_grid reaches err while tapping and from "
+            "the phone", not other, other)
 
     return A.report()
 

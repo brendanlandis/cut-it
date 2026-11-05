@@ -463,10 +463,11 @@ def synths(g):
     print("\n   the patch, in Pd ...")
     s = g.copy()
     s.state_dir()
-    # Page 3 and strings saved, restored at about 3.5 s: fm is the boot default, so a
-    # restore that never landed plays the Volca in the first window.
+    # Page 3, strings and the velocity switch off saved, restored at about 3.5 s: fm and on
+    # are the boot defaults, so a restore that never landed plays the Volca at the key's own
+    # velocity in the first window.
     with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
-        fh.write("mode mode-3\nsynth strings\n")
+        fh.write("mode mode-3\nsynth strings\nvelocity off\n")
     g.rewrite(s)
     S.drive(GEN % "synths-assert", s.path("drive.pd"))
     cap = g.pd(s, 30, main_dev(s), s.path("drive.pd"))

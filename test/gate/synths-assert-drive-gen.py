@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Generates the timed driver for the synths gate, into the scratch path it is given.
 
-The copy boots on page 3 with strings saved, restored at about 3.5 s, so every window
-opens after the restore: the first key is the proof the choice came back. The nanoKEY's
+The copy boots on page 3 with strings and the velocity switch off saved, restored at about
+3.5 s, so every window opens after the restore: the first key is the proof both came back. The nanoKEY's
 keys go in through t-notein, as m_nanokey's [notein] hears them; the Launchpad's page-3 pads
 as param pad-NN, the names m_launchpad publishes (launchpad-assert holds the decode); the
 phone's command as a datagram into u_net's own port, /cutit synth <choice>, as the phone
@@ -32,10 +32,17 @@ def phone(choice):
     return "\\; synths-cmd synth %s" % choice
 
 
+def velocity(setting):
+    return "\\; synths-cmd velocity %s" % setting
+
+
 SEQ = [
-    # strings came back at the restore: a key plays the Streichfett, and nothing else
+    # strings and velocity off came back at the restore: a key plays the Streichfett at 127,
+    # and nothing else
     (4500, "KEY-RESTORED", [key(60, 100)], GAP),
     (4800, "KEY-RESTORED-OFF", [key(60, 0)], GAP),
+    # the phone's velocity switch on: keys keep their own velocity from here
+    (4950, "PHONE-VEL-ON", [velocity("on")], GAP),
     # FM's pad on page 3, a press and its release
     (5100, "PAD-FM", [(0, pad(22, 127)), (100, pad(22, 0))], GAP),
     # any channel of the nanoKEY's port: channel 2 of it, 50
@@ -46,6 +53,8 @@ SEQ = [
     (6300, "PHONE-STRINGS", [phone("strings")], GAP),
     (6600, "HOLD-OFF", [key(64, 0)], GAP),
     (6900, "KEY-STRINGS", [(0, key(65, 100)), (100, key(65, 0))], GAP),
+    # the phone's velocity switch off again, and saved: from here every note-on is 127
+    (7050, "PHONE-VEL-OFF", [velocity("off")], GAP),
     # strings' pad while strings is chosen: no change, nothing said
     (7200, "PAD-SAME", [(0, pad(26, 127)), (100, pad(26, 0))], GAP),
     # both pads held: FM down, STRINGS down, FM up, STRINGS up. Only presses choose, so
@@ -59,9 +68,9 @@ SEQ = [
     # page 1: the pads mean nothing there, and the nanoKEY still plays the choice
     (7800, "MODE-1", ["\\; mode mode-1"], GAP),
     (8000, "PAD-OFF-PAGE", [(0, pad(22, 127)), (100, pad(22, 0))], GAP),
-    (8300, "KEY-OFF-PAGE", [(0, key(69, 100)), (100, key(69, 0))], GAP),
+    (8300, "KEY-OFF-PAGE", [(0, key(69, 20)), (100, key(69, 0))], GAP),
     # a choice c_synth does not know, from the phone
-    (8600, "BAD", [phone("organ")], GAP),
+    (8600, "BAD", [phone("organ"), velocity("loud")], GAP),
     (8900, "PANIC", ["\\; panic 1"], GAP),
     # the auto flush is u_state's 2 s clock: the last change, at 6.3 s, is on disk by now
     (9200, "SETTLE", [], GAP),

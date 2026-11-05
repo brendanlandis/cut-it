@@ -48,13 +48,13 @@ session means opening one.
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
 | [tempo](tempo.md) | 13 | the transport, knob 1's pickup, the clamp |
 | [launchpad](launchpad.md) | 28 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |
-| [phone](phone.md) | 22 | what the phone shows, its tabs, the link dropping and coming back, its buttons, the checklist page and test mode |
+| [phone](phone.md) | 18 | the phone following the Launchpad's page, its tabs, the arrangement screen and its tempo, the tap pad, the link dropping and coming back, the checklist page and test mode |
 | [state](state.md) | 5 | the front-panel Save, a power cycle, the mode surviving it |
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
 | [midi](midi.md) | 10 | the map by mode, the Volca by ear, hot-swap |
 | [debug](debug.md) | 9 | the debug patch, with the instrument stopped |
 | [sequencer](sequencer.md) | 23 | page 2's drum page and the drums it plays |
-| [synths](synths.md) | 12 | the nanoKEY and the two synths it plays, page 3's pads, the phone's synths screen, a switch mid-chord, the Streichfett on the roster |
+| [synths](synths.md) | 13 | the nanoKEY and the two synths it plays, page 3's pads, the phone's synths screen and its velocity switch, a switch mid-chord, the Streichfett on the roster |
 
 ⚠️ **The Mac is not the device.** The Phase 6 gate passed 25/25 on the Mac twice and shipped three
 bugs; a checklist on the rig is the last word.

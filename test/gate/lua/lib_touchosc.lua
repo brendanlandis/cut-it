@@ -21,7 +21,7 @@ function L.load(dir)
   for _, m in ipairs(manifest) do
     local vals = { x = m.x or 0, page = 0, touch = false, text = m.text or "" }
     local c = { name = m.name, type = m.type, visible = m.visible, color = m.color,
-                tabLabel = m.tabLabel }
+                tabLabel = m.tabLabel, tabbar = m.tabbar, children = {} }
     c.values = setmetatable({}, {
       __index = vals,
       __newindex = function(_, k, v)
@@ -36,6 +36,10 @@ function L.load(dir)
     end
     function c:findByName(n) return w.controls[n] end
     w.controls[m.name] = c
+  end
+  -- Each control's children, by name, in the file's order: a pager's pages.
+  for _, m in ipairs(manifest) do
+    if m.parent then table.insert(w.controls[m.parent].children, w.controls[m.name]) end
   end
   _G.root = w.controls.root
   for _, m in ipairs(manifest) do
@@ -89,11 +93,10 @@ end
 function L.text(w, name) return w.controls[name].values.text end
 function L.visible(w, name) return w.controls[name].visible end
 
--- The one screen showing, of those named.
-function L.showing(w, names)
-  local on = {}
-  for _, n in ipairs(names) do if w.controls[n].visible then on[#on + 1] = n end end
-  return table.concat(on, " ")
+-- The page a pager shows: its child at its page value, 0 the first.
+function L.page(w, pager)
+  local c = w.controls[pager]
+  return c.children[c.values.page + 1]
 end
 
 return L

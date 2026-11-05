@@ -10,18 +10,25 @@ tab bar, black, with bright red the lead accent and teal the second, monospaced 
 value and TouchOSC's default font for every label, and every pairing at WCAG AA, which
 test/gate/touchosc-assert.py audits from this file.
 
-The tab bar holds the page's screen: the drum screen on page 2, the drum page, the synths screen on
-page 3, the remote screen on every other page, following the mode u_net sends. The checklist page is a page of its own, not a tab: test mode,
-a tap on the Launchpad's Setup, puts it in place of the tabs, and going off, or choosing a mode,
-takes it away (Brendan, 2026-11-04). It carries the line check alone, test/checklists/linecheck.md:
-the development checklists are run with the Mac at hand, which sends their Send lines.
+The phone controls the Launchpad's current page (Brendan, 2026-11-04): one page of an outer pager
+per Launchpad page, 1 the arrangement, 2 the drums, 3 the synths, 4 to 7 nothing yet, 8 the songs,
+each holding a pager of its own whose tabs are that page's (one tab each, for now). The root's
+script turns the outer pager to the page /cutit/mode names and hides its tab bar, so the phone
+shows the page's own tabs; the phone never turns the Launchpad's page. The outer bar is shown in the
+file, so TouchOSC's editor, where no script runs, reaches every page by its tab. The checklist page
+is the outer pager's last page: test mode, a tap on the Launchpad's Setup, turns to it, and going
+off, or choosing a mode, turns back (Brendan, 2026-11-04). It carries the line check alone,
+test/checklists/linecheck.md: the development checklists are run with the Mac at hand, which sends
+their Send lines.
 
 It speaks u_net's OSC (ref/device/phone.md): it sends /cutit <command> ... to the Organelle's 9001
 and shows what comes back to its 8000. Each control sends from a script of its own; the root's
 script takes everything that comes in, and the checklist page's buttons, which it answers itself.
 A button that the Organelle answers flashes teal by its color, never its value, so an answer can't
-send anything again; a knob or a time signature box takes a value from Cut It without sending it
-back, and a drum pad or a synth button is lit by Cut It's state, which a lit one never answers.
+send anything again; a knob or a box takes a value from Cut It without sending it back, and a drum
+pad, a synth button or the velocity switch is lit by Cut It's state, which a lit one never answers.
+The OLED is not copied here (Brendan, 2026-11-04): it has the alerts, the levels and the name of a
+control as it moves.
 
 A .tosc file is zlib-compressed XML (~/Sites/!reference/touchosc.md). The checklist page carries
 the line check as data, so an edit to it means a rebuild, and push.sh puts the result on the phone.
@@ -57,27 +64,26 @@ WHITE, GREY, BLACK = rgb(240, 240, 240), rgb(140, 140, 140), rgb(0, 0, 0)
 TABOFF = rgb(34, 34, 34)
 INK, BTN = BLACK, RED       # the XML's defaults
 
-# The first tab's screen on each page; every other page has the remote screen. Page 2 is the drums
-# and page 3 the synths (Brendan, 2026-11-04: 1 the arrangement, 2 the drums, 3 the synths, 8 the
-# songs).
-MAIN = {"mode-2": "drums", "mode-3": "synths"}
-SCREENS = ["drums", "remote", "synths"]
+# The Launchpad's pages, the mode bus's mode-1 to mode-8, in order: each one's tab label, and its
+# screen (Brendan, 2026-11-04: 1 the arrangement, 2 the drums, 3 the synths, 8 the songs, 4 to 7
+# nothing yet). A page with no screen is blank under its tab.
+LAUNCHPAD = [("arrangement", "arrangement"), ("drums", "drums"), ("synths", "synths"),
+         ("page4", "page 4"), ("page5", "page 5"), ("page6", "page 6"), ("page7", "page 7"),
+         ("songs", "songs")]
 
 # The synths c_synth chooses between, c_synth.lua's R.SYNTHS, and each one's button label: fm is
 # the Volca, strings the Streichfett. The synths screen and the checklist page each have a button
 # per synth, and the chosen one is lit (Brendan, 2026-11-04).
 SYNTHS = [("fm", "FM"), ("strings", "STRINGS")]
 
-# The remote screen's three commands: the button, its label, and what it sends after /cutit.
-# test 404 went with the SP-404 (Brendan, 2026-11-04).
-REMOTE = [("rewire", "re-wire", ["re-wire"]), ("clear", "clear alert", ["clear-alert"]),
-          ("tvolca", "test Volca", ["test-note", "m_volca"])]
 # What each acknowledgment u_net sends flashes: /cutit/ack <what> [<which>] -> the button, and
 # the color. result is the verdict just given, and flashes Pass or Fail, whichever it was.
-ACKS = {"re-wire": ("rewire", TEAL), "clear-alert": ("clear", TEAL),
-        "test-note m_volca": ("tvolca", TEAL),
-        "drums sync": ("sync", TEAL), "drums snap": ("snap", TEAL),
+ACKS = {"drums sync": ("sync", TEAL), "drums snap": ("snap", TEAL),
+        "velocity on": ("svel", TEAL), "velocity off": ("svel", TEAL),
         "result": ("verdict", WHITE)}
+TEMPO = (5, 600)            # u_tempo's legal range, its [clip 5 600]
+SWING = (25, 75)            # c_steps.lua's R.SWING_MIN and R.SWING_MAX
+STEPS = 32                  # c_steps.lua's R.STEPS, the last step's range from 1
 DENS = [1, 2, 4, 8, 16]     # c_steps.lua's R.DENS
 MAX_NUM = 32                # c_steps.lua's R.MAX_NUM
 
@@ -256,15 +262,16 @@ def node(kind, name, frame, children=(), text=None, x=0, **over):
 
 
 def y(v):
-    """A y on the screen as a page's own, since a page starts under the tab bar."""
+    """A y measured from the top of the screen under one tab bar, as a page's own: a page's
+    content starts at TOP, TAB under its own tabs. In the editor the outer bar is above those too,
+    and on the phone the root's script hides it."""
     return v - TAB
 
 
 # The labels that show a value, anything Cut It's state changes: monospaced. The rest, the
 # captions and button names, take TouchOSC's default font (Brendan, 2026-11-04).
-VALUES = {"tempo", "play", "glob", "link", "alert", "pending", "num", "den", "drunkv", "skipv",
-          "movev", "pname", "pvalue", "rstatus", "ralert", "rlink", "cpos", "tmode", "salert",
-          "slink"}
+VALUES = {"tempo", "play", "link", "dlink", "slink", "pending", "num", "den", "last", "drunkv",
+          "swingv", "skipv", "movev", "cpos", "tmode"}
 MONO = 1
 
 
@@ -348,20 +355,22 @@ KNOWS = ("local known\n"
          "end\n")
 
 
-def knob(name, cx, cy, d, caption):
-    """A ring knob, 0 to 100, its value in its middle and its name under it."""
-    script = (KNOWS % "value / 100") + (
+def knob(name, cx, cy, d, caption, lo=0, hi=100, cmd=None):
+    """A ring knob, lo to hi, its value in its middle and its name under it. It sends drums <cmd>
+    <value>, the knob's name unless told otherwise."""
+    span = hi - lo
+    script = (KNOWS % ("(value - %d) / %d" % (lo, span))) + (
         "function onValueChanged(key)\n"
         "  if key ~= 'x' then return end\n"
-        "  local v = math.floor(self.values.x * 100 + 0.5)\n"
+        "  local v = %d + math.floor(self.values.x * %d + 0.5)\n"
         "  if v == known then return end\n"
         "  known = v\n"
         "  sendOSC('/cutit', 'drums', '%s', v)\n"
         "  root:notify('touched', '%s')\n"
-        "end\n" % (name, name))
+        "end\n" % (lo, span, cmd or name, name))
     f = (cx - d / 2, cy - d / 2, d, d)
     return [node("RADIAL", name, f, color=RED, outlineStyle=0, script=script),
-            label(name + "v", f, "0%", 14),
+            label(name + "v", f, "%d%%" % lo, 14),
             label(name + "c", (cx - 60, cy + d / 2 + 2, 120, 20), caption, 14, GREY)]
 
 
@@ -387,33 +396,103 @@ def box(name, f, steps, cmd, factor):
                 response=1, responseFactor=factor, script=script)
 
 
-def group(name, kids, visible=True):
-    return node("GROUP", name, (0, 0, W, H - TAB), kids, background=False, visible=visible)
+def setbox(name, f, lo, hi, args, factor):
+    """A box for a value set as it stands, lo to hi, as the time signature's are dragged: the
+    tempo, a BPM at a time, and the global last step. It sends /cutit <args> <value> once the
+    value it shows moves off the one it knows, its own or the state's; the state hands it a
+    whole number, so a value from Cut It is never sent back."""
+    steps = hi - lo + 1
+    script = (KNOWS % ("(value - %d + 0.5) / %d" % (lo, steps))) + (
+        "function onValueChanged(key)\n"
+        "  if key ~= 'x' then return end\n"
+        "  local v = math.max(%d, math.min(%d, %d + math.floor(self.values.x * %d)))\n"
+        "  if known == nil then known = v return end\n"
+        "  if v == known then return end\n"
+        "  known = v\n"
+        "  sendOSC('/cutit', %s, v)\n"
+        "  root:notify('touched', '%s')\n"
+        "end\n" % (lo, hi, lo, steps, ", ".join(lua(a) for a in args), name))
+    return node("FADER", name, f, color=RED, outlineStyle=0, bar=False, cursor=False,
+                response=1, responseFactor=factor, script=script)
+
+
+def velocity_script():
+    """The velocity switch: lit by Cut It's /cutit/velocity through notify('lit'), never by its
+    own value, and a finger on it asks for the other setting: on when it is out, off when lit. So
+    the setting coming back, and its repeat on every heartbeat, cannot send it again."""
+    return ("local lit = 0\n"
+            "function onReceiveNotify(key, value)\n"
+            "  if key == 'lit' then\n"
+            "    lit = value\n"
+            "    self.values.x = value\n"
+            "  end\n"
+            "end\n"
+            "function onValueChanged(key)\n"
+            "  if key == 'touch' and self.values.touch then\n"
+            "    sendOSC('/cutit', 'velocity', lit == 1 and 'off' or 'on')\n"
+            "  end\n"
+            "end\n")
 
 
 def page(name, tab, kids):
+    """A pager's page, under its tab: a group the pager shows alone, named tab."""
     return node("GROUP", name, (0, TAB, W, H - TAB), kids, color=rgb(0, 0, 0, 0.0),
                 tabLabel=tab, tabColorOff=TABOFF, tabColorOn=RED, textColorOff=WHITE,
                 textColorOn=BLACK)
 
 
+def tabs(name, pages, frame=(0, 0, W, H - TAB), **over):
+    """A pager whose tab bar is the page's own tabs."""
+    style = dict(color=BLACK, background=False, tabbarSize=TAB, textSizeOff=22, textSizeOn=22)
+    style.update(over)
+    return node("PAGER", name, frame, pages, **style)
+
+
+# ------------------------------------------------------------------ the arrangement screen (page 1)
+def arrangement():
+    """The global controls (Brendan, 2026-11-04): the tempo, large, dragged a BPM at a time, which
+    lives on the phone alone; playing or stopped; the time signature, the global last step, the
+    swing and the drunkenness; and the link."""
+    k = []
+    # left: the tempo, playing or stopped, the link
+    lo, hi = TEMPO
+    k.append(setbox("tempobox", (L, y(TOP), 250, 110), lo, hi, ["tempo"], 2))
+    k.append(label("tempo", (L, y(TOP), 250, 110), "-", 72, RED))
+    k.append(label("tempoc", (L, y(TOP + 112), 250, 18), "bpm", 14, GREY))
+    k.append(led("playled", (L, y(TOP + 158), 18, 18), TEAL))
+    k.append(label("play", (L + 28, y(TOP + 154), 160, 26), "stopped", 18, WHITE, align=1))
+    k.append(led("linkled", (L, y(TOP + 280), 14, 14), TEAL))
+    k.append(label("link", (L + 24, y(TOP + 274), 160, 26), "no link", 16, GREY, align=1))
+    # right: the time signature as [n] / [d], each box dragged a step at a time (Brendan,
+    # 2026-11-04), about 20 points a step for the top number's 32, 26 for the bottom's 5; the
+    # global last step beside it; the swing and the drunkenness under them
+    rx, bw, bh, by = 330, 84, 64, TOP + 26
+    k.append(label("timec", (rx, y(TOP), 100, 18), "time", 14, GREY, align=1))
+    k.append(box("numbox", (rx + 20, y(by), bw, bh), MAX_NUM, "num", 10))
+    k.append(label("num", (rx + 20, y(by), bw, bh), "4", 32))
+    k.append(label("slash", (rx + 20 + bw, y(by), 56, bh), "/", 32, GREY))
+    k.append(box("denbox", (rx + 76 + bw, y(by), bw, bh), len(DENS), "den", 50))
+    k.append(label("den", (rx + 76 + bw, y(by), bw, bh), "4", 32))
+    lx = rx + 320
+    k.append(label("lastc", (lx, y(TOP), 120, 18), "last step", 14, GREY, align=1))
+    k.append(setbox("lastbox", (lx, y(by), bw, bh), 1, STEPS, ["drums", "set-last"], 10))
+    k.append(label("last", (lx, y(by), bw, bh), "16", 32))
+    d, ky = 90, TOP + 170
+    k += knob("swing", rx + 62, y(ky), d, "swing", SWING[0], SWING[1], "set-swing")
+    k += knob("drunk", rx + 202, y(ky), d, "drunk")
+    return k
+
+
 # ------------------------------------------------------------------ the drum screen (page 2)
 def drums():
+    """What is per track: the sixteen pads, sync first steps and snap to global, a track's skip
+    and move; and the link. The tempo, the time signature and the drunkenness are the
+    arrangement's (Brendan, 2026-11-04)."""
     k = []
-    # left: the tempo, the transport, the global last step, the link, the alert
-    k.append(label("tempo", (L, y(TOP), 190, 70), "-", 64, RED, align=1))
-    k.append(label("tempoc", (L + 2, y(TOP + 70), 190, 18), "bpm", 14, GREY, align=1))
-    k.append(led("playled", (L, y(TOP + 108), 18, 18), TEAL))
-    k.append(label("play", (L + 28, y(TOP + 104), 160, 26), "stopped", 18, WHITE, align=1))
-    k.append(label("glob", (L, y(TOP + 146), 190, 44), "16", 36, WHITE, align=1))
-    k.append(label("globc", (L + 2, y(TOP + 190), 190, 18), "last step", 14, GREY, align=1))
-    k.append(led("linkled", (L, y(TOP + 232), 14, 14), TEAL))
-    k.append(label("link", (L + 24, y(TOP + 226), 160, 26), "no link", 16, GREY, align=1))
-    k.append(label("alert", (L, y(TOP + 262), 190, 40), "no alerts", 14, GREY, align=1))
-    # middle: the sixteen pads where the drum page puts them on the Launchpad, pad 1 at the
+    # left: the sixteen pads where the drum page puts them on the Launchpad, pad 1 at the
     # bottom left (Brendan, 2026-11-04). Teal with a dot has its own last step; the selected
     # track is lit; each shows its last step.
-    size, gap, x0 = 68, 8, 214
+    size, gap, x0 = 68, 8, L
     cells = pad_cells()
     top, left = max(r for r, _ in cells.values()), min(c for _, c in cells.values())
     for n in range(1, 17):
@@ -421,63 +500,39 @@ def drums():
         f = (x0 + c * (size + gap), y(TOP + r * (size + gap)), size, size)
         k.append(button("pad%d" % n, f, RED, pad_script(n)))
         k.append(label("pad%dl" % n, f, "16", 20))
-    # right: sync and snap, the line saying one waits, three knobs, the time signature
-    rx, rw = 536, W - R - 536
+    # right: sync and snap, the line saying one waits, the selected track's two knobs, the link
+    rx = 340
+    rw = W - R - rx
     for i, (name, text) in enumerate((("sync", "sync first steps"), ("snap", "snap to global"))):
-        f = (rx + i * (rw / 2 + 4), y(TOP), rw / 2 - 4, 50)
+        f = (rx + i * (rw / 2 + 4), y(TOP), rw / 2 - 4, 60)
         k.append(button(name, f, RED, sends(["drums", name])))
         k.append(label(name + "l", f, text, 15))
-    k.append(label("pending", (rx, y(TOP + 54), rw, 18), "", 13, TEAL))
-    d = 78
-    for i, name in enumerate(("drunk", "skip", "move")):
-        k += knob(name, rx + rw / 6 + i * rw / 3, y(TOP + 84 + d / 2), d, name)
-    ty = TOP + 206
-    k.append(label("timec", (rx, y(ty), 100, 18), "time", 14, GREY, align=1))
-    bw, bh, by = 84, 64, ty + 26
-    k.append(box("numbox", (rx + 20, y(by), bw, bh), MAX_NUM, "num", 10))
-    k.append(label("num", (rx + 20, y(by), bw, bh), "4", 32))
-    k.append(label("slash", (rx + 20 + bw, y(by), 56, bh), "/", 32, GREY))
-    k.append(box("denbox", (rx + 76 + bw, y(by), bw, bh), len(DENS), "den", 50))
-    k.append(label("den", (rx + 76 + bw, y(by), bw, bh), "4", 32))
-    return group("drums", k, visible=False)
-
-
-# ------------------------------------------------------------------ the remote screen (other pages)
-def remote():
-    k = []
-    k.append(label("pname", (L, y(TOP), 470, 30), "ready", 22, GREY, align=1))
-    k.append(label("pvalue", (L, y(TOP + 30), 470, 110), "-", 96, RED, align=1))
-    k.append(label("rstatus", (L, y(TOP + 160), 220, 44), "-", 30, WHITE, align=1))
-    k.append(label("rstatusc", (L + 2, y(TOP + 204), 220, 18), "tempo", 14, GREY, align=1))
-    k.append(led("ralertled", (L, y(TOP + 248), 16, 16), RED))
-    k.append(label("ralert", (L + 26, y(TOP + 242), 440, 28), "no alerts", 18, GREY, align=1))
-    k.append(led("rlinkled", (L, y(TOP + 288), 14, 14), TEAL))
-    k.append(label("rlink", (L + 24, y(TOP + 282), 160, 26), "no link", 16, GREY, align=1))
-    rx, rw = 500, W - R - 500
-    bw, bh = rw / 2 - 6, 140
-    for i, (name, text, args) in enumerate(REMOTE):
-        r, c = i // 2, i % 2
-        f = (rx + c * (bw + 12), y(TOP + r * (bh + 12)), bw, bh)
-        k.append(button(name, f, RED, sends(args)))
-        k.append(label(name + "l", f, text, 20))
-    return group("remote", k)
+    k.append(label("pending", (rx, y(TOP + 64), rw, 18), "", 13, TEAL))
+    d = 90
+    for i, name in enumerate(("skip", "move")):
+        k += knob(name, rx + rw / 4 + i * rw / 2, y(TOP + 110 + d / 2), d, name)
+    k.append(led("dlinkled", (rx, y(TOP + 280), 14, 14), TEAL))
+    k.append(label("dlink", (rx + 24, y(TOP + 274), 160, 26), "no link", 16, GREY, align=1))
+    return k
 
 
 # ------------------------------------------------------------------ the synths screen (page 3)
 def synths():
-    """Two large buttons, a synth each, the chosen one lit; the alert and the link under them."""
+    """Two large buttons, a synth each, the chosen one lit; the velocity switch, lit when on,
+    under them (Brendan, 2026-11-04); and the link."""
     k = []
     gap = 16
-    bw, bh = (W - R - L - gap) / 2, 250
+    bw, bh = (W - R - L - gap) / 2, 220
     for i, (choice, text) in enumerate(SYNTHS):
         f = (L + i * (bw + gap), y(TOP), bw, bh)
         k.append(button("s" + choice, f, RED, synth_script(choice)))
         k.append(label("s" + choice + "l", f, text, 48))
-    k.append(led("salertled", (L, y(TOP + 288), 16, 16), RED))
-    k.append(label("salert", (L + 26, y(TOP + 282), 440, 28), "no alerts", 18, GREY, align=1))
+    f = (L, y(TOP + bh + 16), 240, 64)
+    k.append(button("svel", f, RED, velocity_script()))
+    k.append(label("svell", f, "velocity", 20))
     k.append(led("slinkled", (W - R - 180, y(TOP + 288), 14, 14), TEAL))
     k.append(label("slink", (W - R - 156, y(TOP + 282), 156, 26), "no link", 16, GREY, align=1))
-    return group("synths", k, visible=False)
+    return k
 
 
 # ------------------------------------------------------------------ the checklist page
@@ -492,31 +547,32 @@ def checks():
         f = (370 + i * 155, y(TOP), 145, 40)
         k.append(button("c" + choice, f, RED, synth_script(choice)))
         k.append(label("c" + choice + "l", f, text, 16))
-    k.append(label("ctitle", (L, y(TOP + 52), 600, 30), "-", 22, WHITE, align=1))
-    k.append(node("TEXT", "cbody", (L, y(TOP + 88), 600, 236), text="", background=False,
+    k.append(label("ctitle", (L, y(TOP + 48), 600, 30), "-", 22, WHITE, align=1))
+    k.append(node("TEXT", "cbody", (L, y(TOP + 82), 600, 232), text="", background=False,
                   textColor=rgb(210, 210, 210), textSize=16, textAlignH=1, textAlignV=1))
     rx, rw = 640, W - R - 640
     hw = rw / 2 - 5
     for i, (name, text, col) in enumerate((("cpass", "Pass", TEAL), ("cfail", "Fail", RED))):
-        f = (rx + i * (hw + 10), y(TOP + 52), hw, 140)
+        f = (rx + i * (hw + 10), y(TOP + 48), hw, 140)
         k.append(button(name, f, col, tells("press", name)))
         k.append(label(name + "l", f, text, 22))
     for i, (name, text) in enumerate((("cback", "Back"), ("cfwd", "Next"))):
-        f = (rx + i * (hw + 10), y(TOP + 204), hw, 102)
+        f = (rx + i * (hw + 10), y(TOP + 198), hw, 102)
         k.append(button(name, f, GREY, tells("press", name)))
         k.append(label(name + "l", f, text, 20))
     return k
 
 
 # ------------------------------------------------------------------ the root's script
-ROOT_LUA = r"""-- Cut It on the phone: the tabs, and what u_net sends, onto the screens
+ROOT_LUA = r"""-- Cut It on the phone: the Launchpad's page, and what u_net sends, onto the screens
 -- (ref/device/phone.md). Generated by tools/touchosc/build.py.
-local MAIN = %(main)s
-local SCREENS = %(screens)s
+local PAGES = %(pages)s
+local CHECKPAGE = %(npages)s
+local CHECK = %(check)s
 local SYNTHS = %(synths)s
 local ACKS = %(acks)s
-local CHECK = %(check)s
 local DENS = %(dens)s
+local SWING = %(swing)s
 local RED, TEAL, WHITE, GREY, BLACK = %(red)s, %(teal)s, %(white)s, %(grey)s, %(black)s
 
 local found, shown = {}, {}
@@ -542,31 +598,46 @@ end
 local function arg(a, i)
   return a[i] and a[i].value or 0
 end
+-- Light a pad or a button from the state, by notify('lit'), which it never answers: when what it
+-- was last told differs, or a finger let go of it since. A finger's release leaves a lit one out,
+-- and its own lit flag set, so comparing the value alone left a button that was lit once deaf to
+-- taps after the state had put it out.
+local told = {}
+local function light(name, want)
+  if told[name] ~= want or get(name).values.x ~= want then
+    told[name] = want
+    get(name):notify('lit', want)
+  end
+end
 
--- ---------------------------------------------------------------- the tabs and test mode
-local mode, testOn = nil, nil
+-- ---------------------------------------------------------------- the pages and test mode
+-- The outer pager holds a page per Launchpad page, then the checklist page. The mode turns it to
+-- the Launchpad's page, and test mode to the checklist page in its place; the phone never turns
+-- the Launchpad's.
+local mode, testOn = nil, false
 
--- A mode fills the tab with its screen, and names it.
+local function turn()
+  local want = testOn and CHECKPAGE or ((PAGES[mode] or 1) - 1)
+  local pages = get('pages')
+  if pages.values.page ~= want then pages.values.page = want end
+end
+
 local function setMode(m)
   if m == mode then return end
   mode = m
-  local main = MAIN[m] or 'remote'
-  for _, s in ipairs(SCREENS) do get(s).visible = main == s end
-  get('main').tabLabel = main
+  turn()
 end
 
--- Test mode puts the checklist page in place of the tabs, and going off takes it away.
+-- Test mode puts the checklist page in place of the Launchpad's, and going off takes it away.
 local function setTest(on)
   if on == testOn then return end
   testOn = on
-  get('pager').visible = not on
-  get('checkpager').visible = on
+  turn()
 end
 
 -- ---------------------------------------------------------------- flashes
 local flash = {}
-local BASE = { rewire = RED, clear = RED, tvolca = RED, sync = RED, snap = RED,
-               cpass = TEAL, cfail = RED }
+local BASE = { sync = RED, snap = RED, svel = RED, cpass = TEAL, cfail = RED }
 local verdict = 'cpass'
 
 local function ack(a)
@@ -577,7 +648,7 @@ local function ack(a)
   flash[name] = { getMillis() + 300, hit[2] }
 end
 
--- ---------------------------------------------------------------- the drum screen
+-- ---------------------------------------------------------------- the knobs and boxes
 local touchedAt = {}
 
 -- A value from the state, to a control that knows it, unless a finger was just on it.
@@ -587,22 +658,25 @@ local function hand(name, v)
   c:notify('state', v)
 end
 
--- c_steps' 41 numbers: playing, the global last step, the selected track, a pending sync or
+-- ---------------------------------------------------------------- the sequencer's state
+-- c_steps' 42 numbers: playing, the global last step, the selected track, a pending sync or
 -- snap (1, 2), the sixteen last steps, then 1 for each track with its own, then the time
--- signature, the drunkenness and the selected track's skip and move.
+-- signature, the drunkenness, the selected track's skip and move, and the swing. The drum
+-- screen shows what is per track, the arrangement screen the rest.
 local function drums(a)
-  if #a < 41 then return end
+  if #a < 42 then return end
   local playing, track, pending = arg(a, 1) == 1, math.floor(arg(a, 3)), arg(a, 4)
+  local last = math.floor(arg(a, 2))
   text('play', playing and 'playing' or 'stopped')
   lit('playled', playing)
-  text('glob', tostring(math.floor(arg(a, 2))))
+  text('last', tostring(last))
+  hand('lastbox', last)
   text('pending', pending == 2 and 'snap waits for step 1'
        or (pending == 1 and 'sync waits for step 1' or ''))
   for n = 1, 16 do
     local own, sel = arg(a, 20 + n) == 1, n == track
     color('pad' .. n, own and TEAL or RED)
-    local want = sel and 1 or 0
-    if get('pad' .. n).values.x ~= want then get('pad' .. n):notify('lit', want) end
+    light('pad' .. n, sel and 1 or 0)
     text('pad' .. n .. 'l', (own and '• ' or '') .. math.floor(arg(a, 4 + n)))
     ink('pad' .. n .. 'l', sel and BLACK or WHITE)
   end
@@ -614,20 +688,40 @@ local function drums(a)
   hand('drunk', math.floor(arg(a, 39)))
   hand('skip', math.floor(arg(a, 40)))
   hand('move', math.floor(arg(a, 41)))
+  hand('swing', math.floor(arg(a, 42)))
 end
 
--- ---------------------------------------------------------------- the synth choice
--- c_synth's choice lights its button on the synths screen and on the checklist page, by
--- notify('lit'), which a lit button never answers; its label goes black on the lit fill.
+-- ---------------------------------------------------------------- the tempo
+-- u_tempo's BPM, the one in force, whoever set it: knob 1, the tap pad or this phone. The box is
+-- handed it whole, so a value it was just given can't leave it again.
+local function tempo(a)
+  local v = a[1] and a[1].value
+  if type(v) ~= 'number' then return end
+  text('tempo', string.format('%%g', v))
+  hand('tempobox', math.floor(v + 0.5))
+end
+
+-- ---------------------------------------------------------------- the synths
+-- c_synth's choice lights its button on the synths screen and on the checklist page, and its
+-- velocity switch the switch, by notify('lit'), which a lit button never answers; a lit one's
+-- label goes black on its fill.
 local function synth(a)
   local choice = tostring(arg(a, 1))
   for _, s in ipairs(SYNTHS) do
     for _, name in ipairs({ 's' .. s, 'c' .. s }) do
       local want = s == choice and 1 or 0
-      if get(name).values.x ~= want then get(name):notify('lit', want) end
+      light(name, want)
       ink(name .. 'l', want == 1 and BLACK or WHITE)
     end
   end
+end
+
+local function velocity(a)
+  local v = tostring(arg(a, 1))
+  if v ~= 'on' and v ~= 'off' then return end
+  local want = v == 'on' and 1 or 0
+  light('svel', want)
+  ink('svell', want == 1 and BLACK or WHITE)
 end
 
 -- ---------------------------------------------------------------- the checklist page
@@ -667,21 +761,11 @@ end
 -- ---------------------------------------------------------------- what comes in
 local lastHb = -100000
 
+-- The outer pager's tab bar is the editor's way to every page, where no script runs; here it
+-- goes, and the page's own tabs are the bar the phone shows.
 function init()
+  get('pages').tabbar = false
   paintCheck()
-end
-
-local function alert(a)
-  local level, t = tostring(arg(a, 2)), tostring(arg(a, 4))
-  local none = level == 'none'
-  text('alert', none and 'no alerts' or t)
-  text('ralert', none and 'no alerts' or (level .. '  ' .. t))
-  text('salert', none and 'no alerts' or (level .. '  ' .. t))
-  ink('alert', none and GREY or RED)
-  ink('ralert', none and GREY or RED)
-  ink('salert', none and GREY or RED)
-  lit('ralertled', not none)
-  lit('salertled', not none)
 end
 
 function onReceiveOSC(message, connections)
@@ -693,22 +777,12 @@ function onReceiveOSC(message, connections)
     setTest(arg(a, 2) == 1)
   elseif path == '/cutit/mode' then
     setMode(tostring(arg(a, 1)))
+  elseif path == '/cutit/tempo' then
+    tempo(a)
   elseif path == '/cutit/synth' then
     synth(a)
-  elseif path == '/cutit/param' then
-    local unit = a[3] and tostring(a[3].value) or '-'
-    local v = arg(a, 2)
-    text('pname', tostring(arg(a, 1)))
-    text('pvalue', (type(v) == 'number' and string.format('%%g', v) or tostring(v))
-         .. ((unit ~= '-' and unit ~= '') and (' ' .. unit) or ''))
-  elseif path == '/cutit/status' then
-    -- u_tempo's status is <bpm>-bpm; anything else is shown as it came
-    local s = tostring(arg(a, 1))
-    local bpm = s:match('^([%%d.]+)%%-bpm$')
-    text('tempo', bpm or s)
-    text('rstatus', bpm and (bpm .. ' bpm') or s)
-  elseif path == '/cutit/alert' then
-    alert(a)
+  elseif path == '/cutit/velocity' then
+    velocity(a)
   elseif path == '/cutit/ack' then
     ack(a)
   end
@@ -726,16 +800,17 @@ end
 function update()
   local now = getMillis()
   local up = now - lastHb < 1500
-  for _, k in ipairs({ 'link', 'rlink', 'slink' }) do text(k, up and 'link' or 'no link') end
-  lit('linkled', up)
-  lit('rlinkled', up)
-  lit('slinkled', up)
+  for _, k in ipairs({ 'link', 'dlink', 'slink' }) do
+    text(k, up and 'link' or 'no link')
+    lit(k .. 'led', up)
+  end
   lit('tled', up and testOn)
   text('tmode', not up and 'no link' or (testOn and 'test mode on' or 'test mode off'))
   ink('tmode', (up and testOn) and TEAL or GREY)
   for _, k in ipairs({ 'drunk', 'skip', 'move' }) do
     text(k .. 'v', math.floor(get(k).values.x * 100 + 0.5) .. '%%')
   end
+  text('swingv', SWING[1] + math.floor(get('swing').values.x * (SWING[2] - SWING[1]) + 0.5) .. '%%')
   for name, base in pairs(BASE) do
     local f = flash[name]
     color(name, (f and now < f[1]) and f[2] or base)
@@ -752,10 +827,15 @@ def root_script(check):
     acks = "{ " + ", ".join("[%s] = { %s, %s }" % (lua(k), lua(v[0]), lua_color(v[1]))
                             for k, v in ACKS.items()) + " }"
     return ROOT_LUA % {
-        "main": lua(MAIN), "screens": lua(SCREENS), "synths": lua([c for c, _ in SYNTHS]),
-        "acks": acks, "check": lua(check), "dens": lua(DENS),
+        "pages": lua({"mode-%d" % (i + 1): i + 1 for i in range(len(LAUNCHPAD))}),
+        "npages": len(LAUNCHPAD),
+        "synths": lua([c for c, _ in SYNTHS]),
+        "acks": acks, "check": lua(check), "dens": lua(DENS), "swing": lua(list(SWING)),
         "red": lua_color(RED), "teal": lua_color(TEAL), "white": lua_color(WHITE),
         "grey": lua_color(GREY), "black": lua_color(BLACK)}
+
+
+SCREENS = {"arrangement": arrangement, "drums": drums, "synths": synths}
 
 
 def build(name=LIST):
@@ -764,14 +844,19 @@ def build(name=LIST):
     check, bad = checklist(name)
     if bad:
         sys.exit("build: %s doesn't fit the page:\n  " % (name + ".md") + "\n  ".join(bad))
-    tabs = dict(color=BLACK, background=False, tabbarSize=TAB, textSizeOff=22, textSizeOn=22)
-    pager = node("PAGER", "pager", (0, 0, W, H),
-                 [page("main", "remote", [drums(), remote(), synths()])], **tabs)
-    # the checklist page, under its own one-tab bar, over the tabs in test mode
-    checkpager = node("PAGER", "checkpager", (0, 0, W, H),
-                      [page("checks", "line check", checks())], visible=False, **tabs)
-    root = node("GROUP", "root", (0, 0, W, H), [pager, checkpager], color=BLACK,
-                script=root_script(check))
+    # A page per Launchpad page, each holding its own tabs (one each, for now: Brendan,
+    # 2026-11-04), then the checklist page under its own one-tab bar.
+    outer = []
+    for i, (screen, tab) in enumerate(LAUNCHPAD):
+        kids = SCREENS[screen]() if screen in SCREENS else []
+        inner = tabs("tabs%d" % (i + 1), [page(screen, tab, kids)])
+        outer.append(page("p%d" % (i + 1), tab, [inner]))
+    outer.append(page("pcheck", "line check", [tabs("checktabs", [page("checks", "line check",
+                                                                          checks())])]))
+    # The outer bar: the editor's tabs, small enough for nine; the root's script hides it.
+    pages = node("PAGER", "pages", (0, 0, W, H), outer, color=BLACK, background=False,
+                 tabbarSize=TAB, textSizeOff=14, textSizeOn=14)
+    root = node("GROUP", "root", (0, 0, W, H), [pages], color=BLACK, script=root_script(check))
     return '<?xml version="1.0" encoding="UTF-8"?><lexml version="6">' + root + "</lexml>"
 
 

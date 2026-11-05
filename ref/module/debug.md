@@ -64,7 +64,7 @@ keys are played, so the row is kept for it under the port's own name.
 |---|---|---|
 | **Selecting it stops the instrument.** Loading any patch restarts Pd | verified | — |
 | It forks `wire.sh` itself, ~1.5 s after load — `loadbang` fires before the ALSA connections exist | verified | 315 |
-| The probe is the phone's: `notes 60 100 200` at the Volca. `k15` sends nothing, so nothing leaves for port 3 | verified | 306 |
+| The probe is the one the phone's test-note sent until it went (2026-11-04): `notes 60 100 200` at the Volca, now this patch's alone. `k15` sends nothing, so nothing leaves for port 3 | verified | 306 |
 | What `u_state` wrote is untouched — it lives in `/sdcard/cut-it-state/`, outside both patch folders | verified | — |
 | It repaints the current screen at **3.3 Hz**, so the counters are live rather than frozen | verified | 315 |
 | `err-tail.sh` and `net-probe.sh` fork **once per selection**, never per repaint | verified | 315 |
@@ -114,8 +114,9 @@ go wrong at the far end — and only then conclude anything about the device you
 
 ### It must not ask the `presence` bus for a re-wire
 
-⛔ The bus gained a `re-wire` selector for the phone, and it is the wrong mechanism here: that bus
-lives inside Cut It's Pd instance, and **loading this patch is what killed that instance**.
+⛔ The bus has a `re-wire` selector, asked for from a Send line (the phone's button until
+2026-11-04), and it is the wrong mechanism here: that bus lives inside Cut It's Pd instance, and
+**loading this patch is what killed that instance**.
 
 **Fix:** fork `wire.sh` directly. Its own copy, not the instrument's — see below.
 

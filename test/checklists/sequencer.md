@@ -50,7 +50,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 - [ ] **11. The drum screen**
   - **Need:** TouchOSC open on the phone with Cut It's layout, linked.
   - **Do:** Look at the phone. Then tap the phone's pad in the second row from the bottom, first place.
-  - **Pass if:** The phone's first tab reads drums and shows the drum screen: the tempo, playing and the last step 16 down the left; sixteen pads in the middle labeled 16 but the bottom-left one, pad 1, teal and labeled • 3; on the right the two buttons, three knobs, drunk, skip and move, at 0%, and the time signature as 4 / 4. Nothing sits low enough to touch the home bar. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 lights.
+  - **Pass if:** The phone's tab reads drums and shows the drum screen: sixteen pads on the left labeled 16 but the bottom-left one, pad 1, teal and labeled • 3; on the right the two buttons, two knobs, skip and move, at 0%, and the link lit. No tempo, drunk knob or time signature is on it: they are the arrangement screen's. Nothing sits low enough to touch the home bar. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 lights.
 
 - [ ] **12. Sync first steps**
   - **Do:** Tap sync first steps on the phone and listen.
@@ -61,8 +61,8 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Pass if:** The button flashes teal and the line reads snap waits for step 1. At the next step 1 of the sixteen, pad 1 starts on step 1 with pad 13 and from then on plays all sixteen steps, and on the phone it turns red and reads 16, its dot gone.
 
 - [ ] **14. The time signature**
-  - **Do:** On the phone drag the bottom number's box up one step, then the top number's box up three.
-  - **Pass if:** The phone reads 4 / 8, then 7 / 8. With 7 over 8 the Launchpad's steps 1 and 15 are blue where they are not lit. The playing does not change.
+  - **Do:** Press the Launchpad's top button down the left column, page 1: the phone turns to the arrangement screen. On it drag the bottom number's box up one step, then the top number's box up three. Then press page 2, the second button down.
+  - **Pass if:** The phone reads 4 / 8, then 7 / 8. Back on page 2 the Launchpad's steps 1 and 15 are blue where they are not lit. The playing does not change.
 
 - [ ] **15. Swing on knob 4**
   - **Do:** Turn knob 4 a little either way without passing noon. Then turn it all the way right, all the way left, and back to noon.
@@ -77,7 +77,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Pass if:** The knob stays where you let go and reads what it shows. With skip about half of pad 13's hits drop out, different ones each bar. With move about half of them land a step early or late, and none drop out. The other pad shows 0% on both, and pad 13 its own again.
 
 - [ ] **18. Drunkenness**
-  - **Do:** Drag move back to 0%. Drag drunk to 100% and listen for a few bars, then drag it back to 0%.
+  - **Do:** Drag move back to 0%. Press page 1 on the Launchpad, drag the arrangement screen's drunk to 100% and listen for a few bars, then drag it back to 0% and press page 2.
   - **Pass if:** Most steps still land on time, but now and then one comes early or late, and the beat carries on from there rather than catching up. At 0% it is steady again.
 
 - [ ] **19. STOP**
@@ -98,11 +98,11 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 - [ ] **22. The pattern survives a reload**
   - **Need:** Steps lit on the drum page from the steps before.
   - **Send:** `stop bang`
-  - **Do:** On the phone select pad 13 and drag its skip to about 30% and drunk to about 20%. Look at which steps are lit. Wait two seconds, then load Cut It again from the Organelle menu, and select pad 13 on the phone.
-  - **Pass if:** After the reload the drum page shows the same steps lit as before it, steps 1 and 15 blue. The phone shows 7 / 8, drunk at what you left it, and pad 13's skip at what you left it. Knob 4's swing is back at 50%.
+  - **Do:** On the phone select pad 13 and drag its skip to about 30%. Press page 1, drag drunk to about 20%, and press page 2. Look at which steps are lit. Wait two seconds, then load Cut It again from the Organelle menu, press page 2 if the Launchpad is not on it, and select pad 13 on the phone.
+  - **Pass if:** After the reload the drum page shows the same steps lit as before it, steps 1 and 15 blue, and the phone pad 13's skip at what you left it. On page 1 the phone shows 7 / 8 and drunk at what you left it. Knob 4's swing is back at 50%, on the phone's swing knob too.
   - **Note:** `u_state` flushes within 2 seconds of a change, so the wait is part of the step.
 
 - [ ] **23. Other pages keep their grid**
   - **Send:** `mode mode-1`
   - **Do:** Press a pad in the top two rows.
-  - **Pass if:** The top lamp lights and the drum page gives way to the beat row along the bottom. A pad press draws a pad-NN row on the OLED again, and the phone goes back to the remote screen.
+  - **Pass if:** The top lamp lights and the drum page gives way to the beat row along the bottom and the tap pad, dim yellow, above its first cell. A pad press draws a pad-NN row on the OLED again, and the phone turns to the arrangement screen, its tab reading arrangement.

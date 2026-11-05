@@ -26,8 +26,10 @@ downstream of an `m_` learns which device it is talking to.
 ### The bus
 
 C-2's allowlist gained `presence` for this — one name, **six** selectors, disjoint by side so
-there is no loop. Five are the `m_` layers' and `u_present`'s own; the sixth is the phone's
-button, and it is the only one written by a file that owns no device.
+there is no loop. Five are the `m_` layers' and `u_present`'s own; the sixth, `re-wire`, is a
+person asking. It was the phone's button until that went with the phone's remote screen (Brendan,
+2026-11-04), and is a Send line now, `presence re-wire` from the Mac through `u_inject`
+([the checklists' README](../../test/checklists/README.md)): nothing in the patch writes it.
 
 | Selector | Sent by | Means | Evidence | Item |
 |---|---|---|---|---|
@@ -35,7 +37,7 @@ button, and it is the only one written by a file that owns no device.
 | `tick` | `u_present`, on the metro | age your clock | verified | 269 |
 | `lost <src>` / `back <src>` | a `c_presence`, on the transition only | the change | verified | 269 |
 | `seen <src>` | a **passive** `m_` on every decode, and an **active** one **once** — its device's first ever answer | last-heard | verified | 269, 302 |
-| `re-wire` | `u_net`, when the phone's button is pressed | run `wire.sh` now | verified | 306 |
+| `re-wire` | a Send line, through `u_inject`; `u_net`, for the phone's button, until 2026-11-04 | run `wire.sh` now | verified | 306 |
 
 ⚠️ **The poll is an outlet, not a bus message.** `c_presence`'s first outlet bangs *"send your
 inquiry now"* straight into the `m_` that contains it. A cord inside one abstraction is cheaper than
@@ -148,7 +150,7 @@ device (`~/Sites/!reference/pure-data.md`, *`[text read]` can't read procfs*).
 |---|---|---|---|
 | `info u_present rewire-try` | each of the eight **scheduled** attempts | verified | 289 |
 | `info u_present rewire-last` | the **single trailing** fork, when the last lost device answers | verified | 289 |
-| `info u_present rewire-phone` | the phone's button, once per press — [phone.md](../device/phone.md) | verified | 306 |
+| `info u_present rewire-phone` | a `re-wire` asked for, once per ask: named for the phone's button, which asked until 2026-11-04 | verified | 306 |
 | `fail u_present rewire-gaveup` | once, when the bound is spent | verified | 235 |
 
 ⛔ **A fork nothing records is a repair nobody can attribute.** A `[print]` is not a record: a
@@ -161,8 +163,8 @@ give-up already says `fail`, and eight alerts per episode on a 21-character scre
 
 ⛔ **The three names are separate because all three forks converge on one `sh wire.sh` message
 box.** A report tapped below that junction would name every scheduled attempt as the trailing one,
-and telling those two apart is exactly the question item 275 turned on. The phone's is the only one a
-person caused, which is the distinction most worth having in a log read afterwards.
+and telling those two apart is exactly the question item 275 turned on. The asked-for one is the only
+one a person caused, which is the distinction most worth having in a log read afterwards.
 
 Which puts the wall clock at, from load:
 
@@ -203,8 +205,8 @@ went missing.
 ⚠️ **The renumbering row is the phantom-control hazard NOT happening.** Wired by number, the SP-404
 would have landed on the Volca's channel block and the Volca on its. ⛔ **But a renumbering that happens while the
 bound is spent leaves the rig wired to nothing until something re-runs `wire.sh`** — the heartbeat
-hashes client *names*, which a renumbering does not change, so that something is the phone's
-`re-wire` button or a reload.
+hashes client *names*, which a renumbering does not change, so that something is a `presence
+re-wire` Send line or a reload.
 
 ⚠️ **The no-false-loss row is worth more than a gate can be.** Every headless gate here runs on a
 Mac, where every device is absent by definition and `[sysexin]` is a stub — so *"a device that is

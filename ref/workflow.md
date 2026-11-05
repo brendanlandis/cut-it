@@ -65,8 +65,8 @@ it from `DEST`.
 Neither needs a cable. See [device/phone.md](device/phone.md) for addresses and ports.
 
 **What the check cannot catch** is runtime behavior — wrong message types, silent OSC
-failures, logic errors. That is what the error bus (`C-12`) and the phone's remote screen are
-for — and the run-it-yourself trick immediately below, which is better than both.
+failures, logic errors. That is what the error bus (`C-12`) and the OLED's alerts are for —
+and the run-it-yourself trick immediately below, which is better than both.
 
 ## Small macOS gotchas
 

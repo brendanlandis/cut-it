@@ -30,8 +30,8 @@ bus, as the Launchpad and the nano are.
 | anything else | `fail m_streich bad-selector` on `err`: `c_synth` and this file disagree about the interface | unknown |
 
 **Only `note` has a caller today**, `c_synth`, for the nanoKEY's keys. `notes`, `cc` and `program`
-are there because the layer is the Volca's shape, so a map destination or a phone probe for the
-Streichfett costs a `route` argument elsewhere and nothing here.
+are there because the layer is the Volca's shape, so a map destination for the Streichfett
+costs a `route` argument elsewhere and nothing here.
 
 ⛔ **Panic is All Notes Off, CC 123, on its channel.** The `note` path bypasses `makenote`, so a
 key held while something goes wrong would drone; `[ctlout 123]` takes the channel on its second

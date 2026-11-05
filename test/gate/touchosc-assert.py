@@ -5,11 +5,12 @@
 
 Two halves, two tallies. First, by reading: the committed layout is build.py's output, every
 control has a name of its own (a script finds a control by its name, and TouchOSC returns the
-first of two), and what the layout's buttons send is what u_net routes and c_steps and c_synth
-take, the two ends of the inbound vocabulary, which deploy by different routes and can drift. Then the
-layout's own scripts, unpacked from it and run under test/gate/lua/lib_touchosc.lua's stand-in
-for TouchOSC by test/gate/lua/touchosc_test.lua: the tabs and the mode, test mode, and each
-screen, driven as u_net and a finger would.
+first of two), every screen is a page of a pager with nothing hidden, so TouchOSC's editor reaches
+each by its tab, and what the layout's buttons send is what u_net routes and c_steps, c_synth and
+u_tempo take, the two ends of the inbound vocabulary, which deploy by different routes and can
+drift. Then the layout's own scripts, unpacked from it and run under
+test/gate/lua/lib_touchosc.lua's stand-in for TouchOSC by test/gate/lua/touchosc_test.lua: the
+pages and the mode, test mode, and each screen, driven as u_net and a finger would.
 """
 import importlib.util
 import os
@@ -31,6 +32,10 @@ BUILD = os.path.join(ROOT, "tools", "touchosc", "build.py")
 UNET = os.path.join(ROOT, "Cut It", "u_net.pd")
 STEPS_LUA = os.path.join(ROOT, "Cut It", "c_steps.lua")
 SYNTH_LUA = os.path.join(ROOT, "Cut It", "c_synth.lua")
+MAP_LUA = os.path.join(ROOT, "Cut It", "u_map.lua")
+# The Launchpad's pages and what each is (Brendan, 2026-11-04, ref/module/map.md, The pages):
+# each one's tab on the phone, named for it.
+TABS = ["arrangement", "drums", "synths", "page 4", "page 5", "page 6", "page 7", "songs"]
 
 spec = importlib.util.spec_from_file_location("build_touchosc", BUILD)
 B = importlib.util.module_from_spec(spec)
@@ -188,9 +193,16 @@ def synths():
 
 
 def controls(doc):
-    """[(name, type, visible, script, text)] for every node, in the file's order."""
+    """[(name, type, visible, script, text, x, color, tabLabel, tabbar, parent)] for every node,
+    in the file's order."""
     out = []
     for n in doc.getElementsByTagName("node"):
+        parent = n.parentNode.parentNode if n.parentNode.nodeName == "children" else None
+        pname = None
+        if parent is not None:
+            for p in parent.getElementsByTagName("properties")[0].childNodes:
+                if p.getElementsByTagName("key")[0].firstChild.data == "name":
+                    pname = p.getElementsByTagName("value")[0].firstChild.data
         props = {}
         for p in n.getElementsByTagName("properties")[0].childNodes:
             k = p.getElementsByTagName("key")[0].firstChild.data
@@ -210,7 +222,8 @@ def controls(doc):
         color = (tuple(float(col[0].getElementsByTagName(c)[0].firstChild.data) for c in "rgba")
                  if col else None)
         out.append((props.get("name"), n.getAttribute("type"), props.get("visible") == "1",
-                    props.get("script"), text, x, color, props.get("tabLabel")))
+                    props.get("script"), text, x, color, props.get("tabLabel"),
+                    props.get("tabbar"), pname))
     return out
 
 
@@ -273,24 +286,73 @@ def main():
             "named twice: %s" % dupes)
     A.note("%d controls, %d with a script" % (len(nodes), sum(1 for x in nodes if x[3])))
 
+    # -- every screen a page, so the editor reaches it --------------------------
+    # The editor runs no script, so a screen a script shows is one Brendan can't open there
+    # (2026-11-04). Each Launchpad page is a page of the outer pager, its tab bar on in the
+    # file, each holding a pager of its own whose tabs are that page's.
+    kids = {}
+    for r in nodes:
+        kids.setdefault(r[9], []).append(r)
+    by_name = {r[0]: r for r in nodes}
+    hidden = [r[0] for r in nodes if not r[2]]
+    A.check("⛔ nothing in the file is hidden: every screen shows in the editor", not hidden,
+            "hidden: %s -- a screen a script has to show can't be opened in the editor" % hidden)
+    outer = by_name.get("pages")
+    A.check("⛔ the root holds one pager, its tab bar ON in the file: the editor's way to each page",
+            [r[0] for r in kids.get("root", [])] == ["pages"] and outer and outer[1] == "PAGER"
+            and outer[8] == "1", "root holds %s; pages: %s" % ([r[0] for r in kids.get("root", [])],
+                                                             outer and outer[8]))
+    m = re.search(r"^R\.PAGES = (\d+)$", open(MAP_LUA, encoding="utf-8").read(), re.M)
+    A.check("the Launchpad has as many pages as u_map.lua's R.PAGES takes, and each its name",
+            m is not None and int(m.group(1)) == len(TABS), "R.PAGES: %s" % (m and m.group(1)))
+    want = ["p%d" % (i + 1) for i in range(len(TABS))] + ["pcheck"]
+    tabs = TABS + ["line check"]
+    got = [r[0] for r in kids.get("pages", [])]
+    A.check("⛔ its pages are the Launchpad's eight, in order, then the checklist page",
+            got == want and [r[7] for r in kids.get("pages", [])] == tabs,
+            "pages %s, tabs %s" % (got, [r[7] for r in kids.get("pages", [])]))
+    inner, bad = [], []
+    for p, tab in zip(want, tabs):
+        held = kids.get(p, [])
+        if len(held) != 1 or held[0][1] != "PAGER" or held[0][8] != "1":
+            bad.append("%s holds %s" % (p, [(r[0], r[1]) for r in held]))
+            continue
+        pg = kids.get(held[0][0], [])
+        inner.append((p, [(r[0], r[7]) for r in pg]))
+        if len(pg) != 1 or pg[0][7] != tab:
+            bad.append("%s's tabs are %s" % (p, [r[7] for r in pg]))
+    A.check("⛔ each holds a pager of its own, its tabs shown: one tab, named for the page "
+            "(Brendan, 2026-11-04)", not bad, "; ".join(bad))
+    blank = [p for p, pg in inner[3:8] if pg and kids.get(pg[0][0])]
+    A.check("pages 4 to 7 and songs are blank under their tab", not blank,
+            "not blank: %s" % blank)
+    stray = [r[0] for r in nodes if r[1] == "GROUP" and r[0] != "root" and not r[7]]
+    A.check("every group is a pager's page: no screen is a group a script shows or hides",
+            not stray, "groups that are no page: %s" % stray)
+
     msgs = [m for r in nodes for m in sent(r[3])]
-    ucmd, udev = route_of(UNET, "re-wire"), route_of(UNET, "m_volca")
-    uacks, usynth = route_of(UNET, "sync"), route_of(UNET, "fm")
+    ucmd = route_of(UNET, "result")
+    uacks, usynth, uvel = route_of(UNET, "sync"), route_of(UNET, "fm"), route_of(UNET, "on")
     takes, chooses = steps_cmds(), synths()
     A.check("u_net's route boxes, c_steps' commands and c_synth's synths are all readable",
-            None not in (ucmd, udev, uacks, usynth, takes, chooses),
+            None not in (ucmd, uacks, usynth, uvel, takes, chooses),
             "u_net: %r / %r / %r / %r  c_steps: %r  c_synth: %r"
-            % (ucmd, udev, uacks, usynth, takes, chooses))
-    if None not in (ucmd, udev, uacks, usynth, takes, chooses):
+            % (ucmd, uacks, usynth, uvel, takes, chooses))
+    if None not in (ucmd, uacks, usynth, uvel, takes, chooses):
         lcmd = sorted({m.split()[0] for m in msgs})
-        ldev = sorted({m.split()[1] for m in msgs if m.split()[0] == "test-note"})
         ldrums = sorted({m.split()[1] for m in msgs if m.split()[0] == "drums"})
         A.check("⛔ the layout sends EXACTLY the commands u_net routes",
                 lcmd == sorted(ucmd),
                 "the layout sends %s, u_net routes %s -- whichever side is short is a button "
                 "that does nothing at all" % (" ".join(lcmd), " ".join(ucmd)))
-        A.check("⛔ it names EXACTLY the devices u_net routes", ldev == sorted(udev),
-                "the layout names %s, u_net routes %s" % (" ".join(ldev), " ".join(udev)))
+        gone = sorted({m.split()[0] for m in msgs} & {"re-wire", "clear-alert", "test-note"})
+        A.check("⛔ no diagnostic command is left on the phone (Brendan, 2026-11-04)", not gone,
+                "the layout still sends %s" % gone)
+        vel = by_name.get("svel")
+        said = sorted(set(re.findall(r"'(on|off)'", (vel and vel[3]) or "")))
+        A.check("⛔ the velocity switch asks for EXACTLY the settings u_net acknowledges",
+                said == sorted(uvel) == ["off", "on"],
+                "the switch says %s, u_net acknowledges %s" % (said, uvel))
         A.check("⛔ every drums action it sends is one c_steps takes",
                 ldrums and set(ldrums) <= set(takes),
                 "the layout sends drums %s, c_steps takes %s" % (" ".join(ldrums), takes))
@@ -310,11 +372,11 @@ def main():
                 sorted(m for m in msgs if m.startswith("drums select ")) ==
                 sorted("drums select %d" % n for n in range(1, 17)),
                 [m for m in msgs if m.startswith("drums select ")])
-        # Every acknowledgment u_net sends has a cell to light, but select's and synth's: a
-        # pad's selection and a synth's choice show in the state that comes back.
-        acked = ([c for c in ucmd if c not in ("test-note", "drums", "synth")]
-                 + ["test-note " + d for d in udev]
-                 + ["drums " + a for a in uacks if a != "select"])
+        # Every acknowledgment u_net sends has a cell to flash, but select's and synth's: a
+        # pad's selection and a synth's choice show in the state that comes back. tempo has
+        # none: the tempo that comes back says it.
+        acked = (["result"] + ["drums " + a for a in uacks if a != "select"]
+                 + ["velocity " + v for v in uvel])
         A.check("every acknowledgment u_net sends lights a cell",
                 sorted(acked) == sorted(B.ACKS),
                 "u_net acknowledges %s, the layout lights %s" % (sorted(acked), sorted(B.ACKS)))
@@ -359,11 +421,15 @@ def main():
     work = S.work_dir("touchosc")
     os.makedirs(work, exist_ok=True)
     rows = []
-    for n, t, v, s, text, x, color, tab in nodes:
+    for n, t, v, s, text, x, color, tab, bar, parent in nodes:
         if s:
             with open(os.path.join(work, n + ".lua"), "w", encoding="utf-8") as fh:
                 fh.write(s)
         row = {"name": n, "type": t, "visible": v, "script": bool(s), "text": text or ""}
+        if parent:
+            row["parent"] = parent
+        if bar is not None and t == "PAGER":
+            row["tabbar"] = bar == "1"
         if x is not None:
             row["x"] = x
         if color:

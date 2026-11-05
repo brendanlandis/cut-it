@@ -1,11 +1,11 @@
 <!-- schema: module -->
 # The display arbiter
 
-**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_led.pd`, `Cut It/u_net.pd` · **Gate:** `test/gate/display-assert.sh`, `test/gate/oled-assert.sh`, `test/gate/led-assert.sh` · **Checklist:** `test/checklists/display.md`, `test/checklists/nanokontrol.md`, `test/checklists/launchpad.md`
+**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_led.pd` · **Gate:** `test/gate/display-assert.sh`, `test/gate/oled-assert.sh`, `test/gate/led-assert.sh` · **Checklist:** `test/checklists/display.md`, `test/checklists/nanokontrol.md`, `test/checklists/launchpad.md`
 
 ## What it is
 
-**One bus, four surfaces, and an arbiter rather than a print function.** Most knob turns, fader
+**One bus, three surfaces, and an arbiter rather than a print function.** Most knob turns, fader
 moves and button presses want a display for as long as they are moving, so many sources contend for
 one screen. Nothing in Cut It draws: everything sends **semantics** to `disp` and does not know or
 care how — or whether — it is rendered.
@@ -18,19 +18,21 @@ Two of the surfaces run the **same arbiter shape** — `home < modal < alert`, e
 priority and a time to live, one winner per frame. `g_oled` runs five of them and `g_grid` three,
 and `g_grid` deviates in exactly one interesting way: its `home` is a **composite**.
 
-**The fourth surface, the phone, is a mirror rather than a surface with a vocabulary**, and that is
-why it cost nothing to add.
+**The phone is not one of them** (Brendan, 2026-11-04). It was the fourth, a mirror of this bus,
+until Brendan split the two: the OLED for alerts and warnings, levels and the name of a control as
+it moves, the phone for the Launchpad's current page, from each module's state on cords
+([phone.md](../device/phone.md)). `u_net` reads nothing on `disp`.
 
 ## Facts
 
-### The four surfaces, honestly rated
+### The surfaces, honestly rated
 
 | Surface | Plain English? | Owner | Verdict | Evidence | Item |
 |---------|----------------|-------|---------|----------|------|
 | Organelle OLED | yes | `g_oled` | The primary performance surface. 128×64 graphics, not five text lines | verified | — |
 | Organelle aux LED | no | `g_led` | One RGB LED, **seven colors and off**. The only state display that is not a screen | verified | — |
 | Launchpad Pro MK3 | no | `g_grid` | **96 button LEDs + the logo** = 97 addressable, painted across an index span of **1–108**. Spatial state only | verified | — |
-| iPhone / TouchOSC | yes | `u_net` | Unlimited size and color, over WiFi. Development and diagnostics, **not** performance | verified | — |
+| iPhone / TouchOSC | yes | `u_net` | Not on `disp` since 2026-11-04: it controls the Launchpad's current page, from state on cords ([phone.md](../device/phone.md)) | unknown | — |
 
 Two devices in the rig can display nothing at all: the nanoKONTROL mk1 has no host-controllable
 LEDs, and the Volca is receive-only. The SP-404, until it left the rig (2026-11-04), had **the best
@@ -303,18 +305,13 @@ already the right shape and needs nothing.
 branch falls out of the reject and is drawn as a nonsense parameter row. `led` had to be added to
 `g_oled`'s `route` and left unconnected; `grid` cost the same two lines.
 
-**Fix:** when adding a selector, visit every consumer with a fallthrough — today `g_oled` and
-`u_net`. **A second surface costs one route argument in the first one.** Cheap, but not free.
+**Fix:** when adding a selector, visit every consumer with a fallthrough — today `g_oled` alone,
+since `u_net` stopped reading `disp` (2026-11-04). **A second surface costs one route argument in
+the first one.** Cheap, but not free.
 
 ⛔ **And APPEND it, because the reject renumbers.** An argument slotted in beside the other layer
-names shifts every outlet after it — **including the reject**, which in both files is the entire
-parameter path. `diag` went on the end of both boxes and both rejects moved from outlet 8 to 9.
-
-⛔ **A selector carrying NO arguments does not leak, and that makes the trap worse rather than
-better.** `diag` alone reaches `u_net`'s reject as two atoms after the mandatory dash, dies on
-`[list split 3]`'s too-short outlet, and never reaches the wire — so a datagram-level check passes
-with the route argument missing. The property is asserted where it lives instead: the gate parses
-both `route` boxes and requires them to carry exactly the same selectors.
+names shifts every outlet after it — **including the reject**, which is the entire parameter path.
+`diag` went on the end of the box and the reject moved from outlet 8 to 9.
 
 ### `text get` errors if you ask for more fields than a line holds
 
@@ -436,13 +433,13 @@ exactly*).
 Each line is stored **whole**, so `chop-size 43 %` followed by `grain 12` cannot inherit the `%`.
 There is no longer an optional field being written separately (C-7).
 
-### The fourth surface cost nothing, and that is the shape to reach for
+### A mirror is free, and the phone stopped being one
 
-`u_net` **owns no selector on `disp`.** It subscribes, routes the reserved names into nothing, and
-forwards the rest — so `g_oled`'s `route` is untouched and no reject connection moved. **The flat
-two-line price is the cost of a surface with its own vocabulary, not the cost of a surface.** A
-consumer that *mirrors* the bus is free, and that is the cheaper shape when the thing being added is
-a readout rather than a device with commands of its own.
+A consumer that owns no selector on `disp` and forwards the rest costs `g_oled`'s `route` nothing:
+that was the phone until 2026-11-04, and it is the cheaper shape when the thing being added is a
+readout. **The phone became a device with commands of its own** — the Launchpad's page, the tempo,
+the sequencer's settings — and a mirror of the OLED's rows is the wrong vocabulary for that, so it
+reads each module's state on cords instead ([phone.md](../device/phone.md)).
 
 ### diag goes above `modal` and below `alert`, and both halves are load-bearing
 
@@ -461,7 +458,7 @@ of *stuck* is a screen you cannot get back on a device with no console.
 
 ### One bus for every surface, so the log reads as one sequence
 
-The dev panel's screen log records all four interleaved, stamped with **one** frame number — so an
+The dev panel's screen log records all three interleaved, stamped with **one** frame number — so an
 interaction spanning the OLED, the aux LED and the pads reads as a single sequence rather than three
 that have to be correlated.
 
@@ -489,22 +486,15 @@ does not change:
   design for a saving that does not matter is the wrong trade**, and it would make the alert the one
   layer that behaves differently from the other three.
 
-### The phone stays a MIRROR, and gets no arbiter — decided
+### The phone was a mirror, and Brendan's split reversed it
 
-**`u_net` subscribes to `disp` and forwards; the phone decides what to show.** The priority model
-therefore stops at the Organelle, and that is the answer rather than a gap.
-
-**An arbiter exists to resolve scarcity, and the phone has none.** 128×64 pixels can show one thing
-at a time, which is the whole reason `g_oled` has a cascade; the phone has a full screen and gives
-every OSC address **its own row**, so parameter, status, heartbeat and alert are all visible at once
-and none of them displaces another. Ordering them would be arbitration with nothing to arbitrate.
-
-⚠️ **The diag layer sharpens this rather than weakening it.** It is the first `disp` selector that is
-matched in `u_net` and deliberately **left unconnected** — the roster is a five-row screen for a
-128-pixel display, and a phone that wanted the same information would ask the presence bus directly
-rather than mirror a layout built for the OLED.
-
-**What would reopen it** is the phone gaining a vocabulary of its own — a screen it draws rather than
-mirrors, or state it owns. That is the case this decision does not cover.
+**Decided until 2026-11-04: `u_net` subscribed to `disp` and forwarded, and the phone decided what
+to show**, with no arbiter, since the phone had a row for every address and nothing to arbitrate.
+The case that decision said it did not cover — the phone gaining a vocabulary of its own, a screen
+it draws rather than mirrors, or state it owns — is what came: **Brendan split the two that day**,
+the OLED for alerts and warnings, levels and the name of a control as it moves, the phone for the
+Launchpad's current page. So the phone reads nothing on `disp`, the priority model still stops at
+the Organelle, and the phone's screens are its own ([phone.md](../device/phone.md), *The phone
+controls the page, and does not copy the OLED*).
 
 ## Open

@@ -92,8 +92,8 @@ phone use the legal range, and keep to it before anything reaches the bus.
 | On page 2 | Cell 21 is a drum pad, and taps there set nothing: the map's row is page 1's alone | unknown |
 | Knob 1 | Keeps working, and is not held after a tap or the phone moves the tempo: its next turn sets the tempo from where it sits | unknown |
 
-`tempo-assert` taps 400 ms apart through the running instrument and reads 150 on the bus, and
-waits 2.5 s and reads nothing;
+`tempo-assert` taps 400 ms apart through the running instrument and reads 150 on the bus, waits
+2.5 s and reads nothing, and sends the phone's tempo through `u_net`'s socket;
 `test/gate/lua/u_tempo_test.lua` holds the arithmetic, and reads the `[clip 5 600]` out of
 `u_tempo.pd` so the Lua's range cannot drift from it.
 

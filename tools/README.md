@@ -350,6 +350,26 @@ python3 tools/touchosc/watch.py
   `build.py` refuses to write over a `CutIt.tosc` saved from the editor until then (`--force`
   discards the change), so a tweak is never lost, and stops the watcher pushing.
 
+**Every screen is a page, and the editor reaches each by its tab** (Brendan, 2026-11-04). No script
+runs in the editor, so nothing in the layout is hidden for a script to show:
+
+- **The top tab bar is the Launchpad's pages**, the outer pager, `pages`: arrangement, drums,
+  synths, page 4 to page 7, songs, and line check last. Click a tab to open that page; on the phone
+  the root's script hides this bar and turns the pager to the Launchpad's page itself.
+- **Under it is the page's own tab bar**, its pager (`tabs1` to `tabs8`, `checktabs`): one tab each
+  for now, named for the page, and the page's controls under that. A second tab for a page is a
+  second page in that pager.
+- **To edit inside a page**, descend into the pager and then its page with Edit container (the
+  Edit context menu, or the toolbar), and come back with Exit container, as TouchOSC's manual has it
+  for any container; the controls' names are build.py's (`tempobox`, `pad5`, `svel`, …). The
+  editor's pager navigation must be on, its default (Preferences, Editor); with its Alt-key option
+  set, hold Alt to click a tab. The Document Tree selects any control by name.
+- **Pages 4 to 7 and songs are blank** under their tabs: nothing is on them yet.
+
+⚠️ **Judge spacing on the phone, not in the editor**: the editor shows both bars, and the phone
+hides the outer one. Whether its pages then move up a bar or keep its place empty is unseen
+([../ref/device/phone.md](../ref/device/phone.md), *Open*); the screens fit either way.
+
 **The phone's setup, once:** in TouchOSC, connect to the Mac as an editor client (port 6666), and set
 OSC connection 1: UDP, host `192.168.1.15`, send port 9001, receive port 8000.
 

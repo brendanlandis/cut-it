@@ -624,5 +624,8 @@ controls the page, and does not copy the OLED*).
 
 ## Open
 
-- ⬜ What a paint costs on the Organelle, under a full pattern, against the Pd boxes it replaced: at
-  15 to 20 times the Mac's 23 µs, about 0.35 to 0.5 ms a frame (`cut-it/drum-page-in-lua`).
+- ⬜ **Playing costs 3.6 points more of the Organelle's core since the painter moved to Lua**, and the
+  painter's own calls explain 0.2 of them (2026-11-05, `/proc` over 8 s, three plays each, old and
+  new alternated: 15.8% playing before, 19.5% after; stopped, 14.4% both). On the device a paint
+  takes about 240 µs, 8 a second at 120 BPM, and its rules 0.027 ms of that. What else the move
+  changed per step is not found yet (`cut-it/drum-page-in-lua`).

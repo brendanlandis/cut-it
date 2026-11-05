@@ -50,9 +50,9 @@ were false.
 | `kit-assert.sh` | 17 | `module/sequencer` — the kit, as a signal |
 | `synths-assert.sh` | 91: 66 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1242 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one
+**1281 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1235**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1274**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.

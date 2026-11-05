@@ -41,7 +41,7 @@
 #X obj 1200 340 r \$1-step;
 #X obj 1200 380 t b f;
 #X text 700 680 The time is its steps times a step's length \, which c_kit works out from the tempo bus \, so the echoes follow the tempo \, gliding there over 50 ms. The buffer holds 4 s: a dotted half \, twelve steps \, at 45 BPM or faster. The feedback tops out at 0.95 \, which never runs away \, and the send is squared \, as the level is in c_voice. The level is what goes into the delay \, so echoes already made ring out when it goes down. c_voice's throw reaches the catch~ a block late \, 64 samples \, 1.45 ms at 44.1 kHz \, since c_kit runs the delays before the voices \, so the read is that much shorter and an echo lands on its note value., f 50;
-#X text 20 1000 switch~: on while the level is above 0 \, and at 0 \, off once what goes into the delay has been below -80 dBFS for a delay's time and 100 ms: then every echo left in it has been heard \, and the buffer is cleared \, so a longer time later finds nothing old in it. A switch~ starts off. While it is off its voice throws it nothing but zeros \, since the level is 0 \, so the catch~ never fills up., f 60;
+#X text 20 1000 switch~: on while the level is above 0 \, and at 0 \, off once what goes into the delay has been below -80 dBFS for a delay's time and 100 ms: then every echo left in it has been heard \, and the buffer is cleared \, so a longer time later finds nothing old in it. A switch~ starts off. While it is off its voice throws it nothing but zeros \, since the level is 0 \, so the catch~ never fills up. It says each turn on \$1-delay-on as <pad> <1 or 0> \, so e_delays can switch all sixteen off together., f 60;
 #X connect 2 0 5 0;
 #X connect 9 0 5 1;
 #X connect 5 0 6 0;
@@ -90,3 +90,8 @@
 #X connect 26 1 18 0;
 #X connect 4 3 31 0;
 #X connect 31 0 11 1;
+#X obj 900 1000 list prepend \$2;
+#X obj 900 1040 s \$1-delay-on;
+#X connect 22 0 43 0;
+#X connect 28 0 43 0;
+#X connect 43 0 44 0;

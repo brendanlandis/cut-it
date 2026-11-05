@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The sequencer
 
-**Files:** `Cut It/c_steps.pd`, `Cut It/c_steps.lua`, `Cut It/c_steps-lua.pd_lua`, `Cut It/c_kit.pd`, `Cut It/c_voice.pd`, `Cut It/e_drive.pd`, `Cut It/e_delay.pd`, `Cut It/e_verb.pd`, `tools/samples.sh` · **Gate:** `test/gate/sequencer-assert.sh`, `test/gate/kit-assert.sh` · **Checklist:** `test/checklists/sequencer.md`
+**Files:** `Cut It/c_steps.pd`, `Cut It/c_steps.lua`, `Cut It/c_steps-lua.pd_lua`, `Cut It/c_kit.pd`, `Cut It/c_voice.pd`, `Cut It/e_drive.pd`, `Cut It/e_delay.pd`, `Cut It/e_delays.pd`, `Cut It/e_verb.pd`, `tools/samples.sh` · **Gate:** `test/gate/sequencer-assert.sh`, `test/gate/kit-assert.sh` · **Checklist:** `test/checklists/sequencer.md`
 
 ## What it is
 
@@ -92,7 +92,7 @@ each track's distortion and delay and the reverb they share (2026-11-05). *The k
 
 | | Is | Evidence |
 |---|---|---|
-| `c_kit` | Takes `pad <1..16> <velocity>` from `c_steps`' outlet 1, a pad past 16 ignored, and `vol <pad> <dB>` and `pitch <pad> <semitones>`, a track's volume and pitch, and its effects, and holds sixteen `c_voice`, one a pad, each with its `e_drive` inside it, sixteen `e_delay` and one `e_verb`, summed out its `outlet~`, which `u_root` adds to the left output where the OLED meters it ([audio.md](audio.md)) | unknown |
+| `c_kit` | Takes `pad <1..16> <velocity>` from `c_steps`' outlet 1, a pad past 16 ignored, and `vol <pad> <dB>` and `pitch <pad> <semitones>`, a track's volume and pitch, and its effects, and holds sixteen `c_voice`, one a pad, each with its `e_drive` inside it, sixteen `e_delay` inside one `e_delays`, whose own `switch~` is off while all sixteen are, so at rest they are skipped once a block rather than sixteen times (0.2–0.3% of the core; idle went from 15.3–16.0% to 15.3–15.6%, 2026-11-05), and one `e_verb`, summed out its `outlet~`, which `u_root` adds to the left output where the OLED meters it ([audio.md](audio.md)) | unknown |
 | A sample | `samples/drums/NN.wav` in the patch's own folder, NN its pad, `01` to `16`: mono 16-bit WAV at 44.1 kHz, as `tools/samples.sh` writes it. Read by `c_voice` at load into a table of its own | unknown |
 | A hit | Plays its pad's sample from the start. The level dips to 0 in 2 ms and the read restarts, so a hit cuts the one before, as a one-shot pad on the 404 did, without a click | unknown |
 | Velocity | 30 dB of range, even in dB: 127 is 0 dB, 95 (level 6) about −7.6, 16 (level 1) about −26. 0 plays nothing | unknown |
@@ -397,7 +397,5 @@ was, and reads as nothing to save; once one moves, the line is 711.
 - ⬜ **The effects have not played on the rig**: how the distortion, the delays and the reverb
   sound on Brendan's samples, their levels against the dry drums, and the instrument's CPU with
   them on, beside the second Pd's numbers above. See `cut-it/drum-timing`.
-- ⬜ **Sixteen switched-off `delwrite~`s cost 0.2–0.3% of the core at rest**; a `switch~` around
-  all sixteen delays, on while any is, would take that back. See `cut-it/drum-timing`.
 - ⬜ **The Lua version has not played on the rig**: its CPU beside the Pd version's 11.2% with the
   drum machine playing (`~/Sites/!reference/pure-data.md`, *Newer versions on the Organelle*) is unmeasured. See `cut-it/logic-as-text`.

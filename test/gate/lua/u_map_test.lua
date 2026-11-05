@@ -54,8 +54,8 @@ for n = 1, R.PAGES do
 end
 check("the shipped table parses: og-knob-1 is tempo on all " .. R.PAGES .. " pages",
       tempo_everywhere, T.show(shipped.map["mode-1"]["og-knob-1"]))
--- Knobs 2 and 4 are the drums' last step and swing on every page, knob 3 the selected track's
--- last step on page 2 alone (Brendan, 2026-11-04).
+-- Knob 2 is the drums' last step and knob 4 rush on every page, knob 3 the selected track's last
+-- step on page 2 alone (Brendan, 2026-11-04 and 2026-11-05).
 local knobs, want_knobs = {}, {}
 for n = 1, R.PAGES do
   local page = shipped.map["mode-" .. n]
@@ -65,9 +65,9 @@ for n = 1, R.PAGES do
   end
   want_knobs[#want_knobs + 1] = "drums last"
   want_knobs[#want_knobs + 1] = n == 2 and "drums track-last" or "none"
-  want_knobs[#want_knobs + 1] = "drums swing"
+  want_knobs[#want_knobs + 1] = "rush 0"
 end
-equal("... knobs 2 and 4 are the drums' last step and swing on every page, knob 3 on page 2 alone",
+equal("... knob 2 is the drums' last step and knob 4 rush on every page, knob 3 on page 2 alone",
       knobs, want_knobs)
 
 print("\n--- the lookup ---")
@@ -367,5 +367,23 @@ check("... with its text on the console", #broken.console == 1
       and broken.console[1]:find("a bug in control", 1, true) ~= nil, T.show(broken.console))
 equal("... and the object carries on: a mode still answers",
       T.send(broken, 2, "mode-2", {}), { { 2, "list", { "mode-2" } } })
+
+print("\n--- a knob mapped to rush ---")
+local RUSHING = "mode-1 og-knob-4 rush 0\nmode-1 og-knob-2 volca-cc 42\n"
+for _, unsaved in ipairs({ false, true }) do
+  local q = R.new(RUSHING, unsaved)
+  local live = function(x) return R.control(q, "og-knob-4", { x })[1][3][5] end
+  equal("⛔ held at load, Saved or not (" .. tostring(unsaved) .. "), and its value still leaves, for its row",
+        R.control(q, "og-knob-4", { 0.7 }), route("rush", 0, 0.7, 0, 0))
+  equal("⛔ its bottom inside the boot window may be knobs.txt's, so it stays held", live(0), 0)
+  R.internal["window-shut"](q)
+  equal("still held anywhere above its bottom", live(0.5), 0)
+  R.internal.live(q)
+  equal("⛔ a recover does not free it: left up it would race the moment it was touched", live(0.5), 0)
+  equal("⛔ at its bottom it lets go, a hair above 0 too, since a pot may stop short", live(R.RUSH_BOTTOM), 1)
+  equal("... and is live from then on", live(0.9), 1)
+end
+equal("another destination on that knob is not held for it",
+      R.new("mode-1 og-knob-4 volca-cc 44\n", true).knob[4].state, "live")
 
 os.exit(T.report() == 0)

@@ -37,7 +37,7 @@ UTEMPO = "Cut It/u_tempo.pd"
 ULUA = "Cut It/u_map.lua"
 # The rows every page has (map.md): <control> <dest> <arg>.
 EVERY_PAGE = [("og-knob-1", "tempo", "0"), ("og-knob-2", "drums", "last"),
-              ("og-knob-4", "drums", "swing"), ("xport-2", "start", "0"), ("xport-5", "stop", "0"),
+              ("og-knob-4", "rush", "0"), ("xport-2", "start", "0"), ("xport-5", "stop", "0"),
               ("lp-cc-90", "recover", "0"), ("og-shift-60", "diag", "0"),
               ("og-shift-61", "test-mode", "0"), ("lp-setup", "test-mode", "0"),
               ("og-shift-72", "stop", "0"), ("og-shift-84", "recover", "0")] + [
@@ -174,8 +174,8 @@ def static_lint():
             "; ".join("line %d names %r" % b for b in bad_dest))
     A.check("every row's mode is one of the %d pages" % len(modes), not bad_mode,
             "; ".join("line %d: %r" % b for b in bad_mode))
-    # What works on every page: the tempo, the drums' last step and swing (knobs
-    # 2 and 4, Brendan, 2026-11-04), the transport, recover, diag and test mode. A
+    # What works on every page: the tempo, the drums' last step and rush (knobs
+    # 2 and 4, Brendan, 2026-11-04 and 2026-11-05), the transport, recover, diag and test mode. A
     # page that lacked one would strand you there with no stop or recover but the
     # Launchpad's own, on a device that can be unplugged.
     missing = ["%s %s %s on %s" % (c, d, a, p) for c, d, a in EVERY_PAGE for p in modes

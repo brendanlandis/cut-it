@@ -111,21 +111,23 @@ SEQ = [
     (15500, "SNAP", ["\\; seqgate-osc drums snap"], GAP),
     (15700, "SNAP-PLAY", ["\\; start bang"], GAP),
     (16200, "SNAP-STOP", ["\\; stop bang"], GAP),
-    # Knob 4 is swing, 50% to 75%, held at 50% until turned to it: 0.6 is 65%,
-    # held; 0 is 50%, the knob's bottom, which releases it; 1 is 75%. PLAY, 20 ms
+    # The swing press, which no knob holds since knob 4 became rush but a map row
+    # could, sent as the phone's drums path passes it on: 50% to 75%, held at 50%
+    # until turned to it: 0.6 is 65%, held; 0 is 50%, its bottom, which releases
+    # it; 1 is 75%. PLAY, 20 ms
     # after its mark, then plays step 1 before SW-SOON, as REPLAY's does but with
     # threshold~ still to re-arm, since this PLAY lands early in a step, and puts
     # step 2 three quarters of the way through the pair: at 120 BPM, 187.5 ms
     # after step 1 rather than 125, so it paints in SW-LATE, not SW-GAP; step 3
     # lands on the beat, 250 ms after step 1, and paints in SW-ON.
-    (16300, "SWING", ["\\; param og-knob-4 0.6", "\\; param og-knob-4 0",
-                      "\\; param og-knob-4 1"], GAP),
+    (16300, "SWING", ["\\; seqgate-osc drums swing 0.6", "\\; seqgate-osc drums swing 0",
+                      "\\; seqgate-osc drums swing 1"], GAP),
     (16500, "SW-PLAY", ["\\; start bang"], GAP),
     (16525, "SW-SOON", [], GAP),
     (16600, "SW-GAP", [], GAP),
     (16690, "SW-LATE", [], GAP),
     (16760, "SW-ON", [], GAP),
-    (16900, "SW-STOP", ["\\; stop bang", "\\; param og-knob-4 0"], GAP),
+    (16900, "SW-STOP", ["\\; stop bang", "\\; seqgate-osc drums swing 0"], GAP),
     # Repeat pad 1, the top left of the right 4x4, held after step 3: the
     # playhead stays on 3 and track 1's step 3 plays on every step; let go, the
     # loop goes on from where it would have been, 2 then 3, not from 1. PLAY
@@ -225,6 +227,16 @@ SEQ = [
     (41730, "RX-PRESS", [P("pad-38")], GAP),
     (41755, "RX-SOON", [], GAP),
     (41900, "RX-OFF", [P("pad-38", 0), "\\; stop bang"], GAP),
+    # Rush, knob 4 (Brendan, 2026-11-05): held until its bottom, racing from 120, then past the
+    # handoff with the steps going, 0.5 on the curve from 120 being 403 Hz, and back at its bottom.
+    (42100, "RU-HELD", ["\\; param og-knob-4 0.5"], GAP),
+    (42200, "RU-BOTTOM", ["\\; param og-knob-4 0"], GAP),
+    (42300, "RU-RACE", ["\\; param og-knob-4 0.1"], GAP),
+    (42400, "RU-PLAY", ["\\; start bang"], GAP),
+    (42600, "RU-PAST", ["\\; param og-knob-4 0.5"], GAP),
+    (42700, "RU-LOOP", [], GAP),
+    (42900, "RU-DOWN", ["\\; param og-knob-4 0"], GAP),
+    (43100, "RU-STOP", ["\\; stop bang"], GAP),
     # u_song's draft goes out every 2 s, so past the last change's turn.
     (43700, "DONE", [], GAP),
 ]

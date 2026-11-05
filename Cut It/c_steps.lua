@@ -13,12 +13,15 @@
 --   {"note", <effect>, {pad, value} or {value}}               to c_kit, an effect's (R.FX)
 --   {"note", "tape", {span, units}} and {"note", "tape-off", {}}
 --                                                             to c_kit: a held repeat's tails (R.tape)
+--   {"note", "rush", {span, hz}}, "rush-rate" {hz}, "rush-off" {} and "tape-run" {1 or 0}
+--                                                             to c_kit: rush's loop (R.rush)
 --   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep" | "quiet" | "fast"
 --    | "recall", {...}}                                       to g_grid's third inlet
 --   {"save", "list", {581, 711, 743, 759, 760 or 776 numbers, R.save}}
 --                                                             to the state bus, put section <part>
 --   {"clock", "restart", {}}                                 to the start bus, the saved tempo's press
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
+--   {"clock", "ticks", {1 or 0}}                              whether its steps reach R.tick
 --   {"bar", "bar", {}}                                        to u_song: the pattern's loop ends
 --   {"song", "recall", {key}}                                 to u_song: a part's saved value
 --   {"tempo", "fast", {1 or 0}}                               to u_tempo: the 500 BPM repeat
@@ -32,7 +35,7 @@ R.TRACKS, R.STEPS, R.LEVELS = 16, 32, 8
 -- At load: level 6 (95), track 1, and a last step of 16 that both knobs are held at until they
 -- are turned through it (Brendan, 2026-11-03), so nothing jumps to where a knob happens to sit.
 R.BOOT_LEVEL, R.BOOT_TRACK, R.BOOT_LAST = 6, 1, 16
--- Swing, knob 4: 50% to 75%, straight at its bottom and swinging one way only (Brendan,
+-- Swing: 50% to 75%, straight at its bottom and swinging one way only (Brendan,
 -- 2026-11-05), starting at 50% held like knobs 2 and 3 (2026-11-03). The share of a pair of
 -- sixteenths the first one takes.
 R.SWING_MIN, R.SWING_MAX = 50, 75
@@ -75,6 +78,11 @@ R.REPEATS = 4
 -- less than e_tape's line: four steps at the legal tempo's slowest, 5 BPM. A longer repeat, only
 -- ever a very drunk one down there, plays the last R.TAPE_MAX in the time its steps take.
 R.TAPE_MAX = 12000
+-- Rush's loop (Brendan, 2026-11-05): e_rush records the kit's whole output, and past u_tempo's
+-- handoff freezes and loops the last steps of it. It holds a little more than this much, in ms: a
+-- step at 20 BPM, or four at 80, far more than the steps at 1000 BPM it is for, and enough for a knob
+-- thrown from the bottom. Its rate stops at R.RUSH_HZ, since above Nyquist it would fold back down.
+R.RUSH_MAX, R.RUSH_HZ = 3000, 22000
 -- Each track's own volume, in dB, and pitch, in semitones, played by its c_voice; and its
 -- randomness, 0 to 100 (Brendan, 2026-11-05).
 R.VOL_MIN, R.VOL_MAX = -30, 6
@@ -195,7 +203,7 @@ function R.new(bank)
                num = 4, den = 4, swing = R.BOOT_SWING, drunk = 0, rate = 1,
                randomness = {}, vol = {}, pitch = {}, heard = {}, rolled = {}, hist = {},
                rep = 0, rk = 0, win = {}, rand = math.random,
-               bpm = R.BOOT_BPM, pair = 0, pair_swing = R.BOOT_SWING, taping = false, fast = false,
+               bpm = R.BOOT_BPM, pair = 0, pair_swing = R.BOOT_SWING, taping = false, fast = false, ran = {},
                knob = { last = { held = true }, track = { held = true },
                         swing = { held = true } } }
   for i = 1, R.TRACKS * R.STEPS do st.pattern[i] = 0 end
@@ -654,7 +662,7 @@ function R.set_rolled(st, track, v)
   return { R.save(st) }
 end
 
-local take_window, tape_off, let_go
+local take_window, tape_off, let_go, rush_end
 
 -- A step's share of its pair of sixteenths, as the swing bends it: the first takes the swing's
 -- share of the pair and the second the rest, so at 50% each is one step's worth.
@@ -926,6 +934,9 @@ function R.tick(st)
     d = decide(st, pos)
     if st.rep > 0 then st.win[#st.win + 1] = d end
   end
+  local ran = st.ran
+  ran[#ran + 1] = d.len * pair_share(st.pair_swing, st.pair) * 15000 / st.bpm
+  if #ran > R.REPEATS then table.remove(ran, 1) end
   st.pair = 1 - st.pair
   local h = st.hist
   h[#h + 1] = d
@@ -972,7 +983,7 @@ end
 -- goes back.
 function R.start(st)
   st.master, st.sync, st.playing, st.rep = 0, false, true, 0
-  st.hist, st.win = {}, {}
+  st.hist, st.win, st.ran = {}, {}, {}
   st.pair = 0
   for t = 1, R.TRACKS do st.pos[t] = 0 end
   st.rate = 1
@@ -988,17 +999,86 @@ function R.start(st)
   if st.snap then
     for _, e in ipairs(land_snap(st)) do out[#out + 1] = e end
   end
+  if st.rush == "parked" then st.rush = nil end
   return out
 end
 
 -- STOP and panic: the playhead goes out, and a held repeat's tails stop looping, since its hits have
 -- stopped. The pad held still holds its repeat, and the 500 BPM repeat its tempo, until let go.
+-- Rush's loop stops too, and stays parked until the knob comes back or PLAY: silence is what they ask.
 function R.stop(st)
   st.playing = false
   local out = R.take_one(st)
   out[#out + 1] = { "page", "play", { 0 } }
   tape_off(st, out)
+  if st.rush == "on" then rush_end(st, out) end
+  if st.rush then st.rush = "parked" end
   return out
+end
+
+-- ---------------------------------------------------------------- rush
+-- Knob 4 past u_tempo's handoff (Brendan, 2026-11-05). st.rush is nil, "waiting" for the step that
+-- ends the loop, "on", or "parked" by STOP. The loop is the last steps as they ran, the repeat's
+-- window if one is held, pad-35's being one step, or one step; its rate the curve's steps a second
+-- over its steps, so the recording's speed is the curve's rate over the tempo it ran at, whatever
+-- its length. At the capture the sequencer stops: no hits, and the step clock's ticks shut off in
+-- c_steps.pd, since a Lua call and the phone's state 66 times a second would be for nothing. A tail
+-- loop stops too, under e_rush's mute, since the recording has it; it goes on where it was after.
+
+local function rush_steps(st)
+  return math.max(1, math.min(st.rep > 0 and st.rep or 1, #st.ran))
+end
+
+local function rush_row(hz)
+  return { "disp", "rush", { math.floor(hz + 0.5), "Hz" } }
+end
+
+local function rush_hz(st, bpm)
+  return math.min(bpm / 15 / (st.rush_n or rush_steps(st)), R.RUSH_HZ)
+end
+
+-- The step's boundary, or now if nothing is playing: the steps that just ran are the loop.
+local function rush_take(st)
+  local n = rush_steps(st)
+  local span = 0
+  for i = #st.ran - n + 1, #st.ran do
+    if i >= 1 then span = span + st.ran[i] end
+  end
+  if span <= 0 then span = 15 end
+  st.rush, st.rush_n = "on", n
+  local hz = rush_hz(st, st.rush_bpm)
+  local out = { { "note", "rush", { math.min(span, R.RUSH_MAX), hz } },
+                { "clock", "ticks", { 0 } }, rush_row(hz) }
+  if st.taping then out[#out + 1] = { "note", "tape-run", { 0 } } end
+  return out
+end
+
+-- The kit and the steps come back, from where they were.
+function rush_end(st, out)
+  st.rush_n = nil
+  out[#out + 1] = { "note", "rush-off", {} }
+  out[#out + 1] = { "clock", "ticks", { 1 } }
+  if st.taping then out[#out + 1] = { "note", "tape-run", { 1 } } end
+end
+
+-- rush <bpm>, from u_tempo: the curve's rate past the handoff, 0 below it.
+function R.rush(st, bpm)
+  bpm = num(bpm)
+  local out = {}
+  if bpm <= 0 then
+    if st.rush == "on" then rush_end(st, out) end
+    st.rush = nil
+    return out
+  end
+  st.rush_bpm = bpm
+  if st.rush == "on" then
+    local hz = rush_hz(st, bpm)
+    return { { "note", "rush-rate", { hz } }, rush_row(hz) }
+  end
+  if st.rush then return { rush_row(rush_hz(st, bpm)) } end
+  if not st.playing then return rush_take(st) end
+  st.rush = "waiting"
+  return { rush_row(rush_hz(st, bpm)) }
 end
 
 -- ---------------------------------------------------------------- the effects
@@ -1245,7 +1325,9 @@ end
 
 -- What arrives on the first inlet: u_map's drum-page presses and releases, <selector> <n>
 -- <velocity>, step, vel, pad and rep and the 500 BPM repeat's fast and the saved tempo's recall;
--- its knobs, last, track-last and swing with the knob's 0-1; the drum screen's sync,
+-- its knobs, last and track-last with the knob's 0-1, and swing, which no row of the table names
+-- since knob 4 became rush (Brendan, 2026-11-05) but a row could; rush <bpm>, u_tempo's; the drum
+-- screen's sync,
 -- snap and select, and its pads' vol, pitch, randomness and set-track-last <track> <value>,
 -- through u_net; and the arrangement screen's num and den (-1 or 1), drunk (0 to 100), set-swing
 -- (50 to 75) and set-last (1 to 32), through u_net too; and the drum screen's effects, drive,
@@ -1262,6 +1344,7 @@ R.presses = {
   last = function(st, a) return a[1] and R.knob_last(st, a[1]) or {} end,
   ["track-last"] = function(st, a) return a[1] and R.knob_track(st, a[1]) or {} end,
   swing = function(st, a) return a[1] and R.knob_swing(st, a[1]) or {} end,
+  rush = function(st, a) return R.rush(st, a[1]) end,
   sync = function(st) return R.sync(st) end,
   snap = function(st) return R.snap(st) end,
   select = function(st, a) return a[1] and R.select(st, a[1]) or {} end,
@@ -1296,6 +1379,7 @@ R.presses = {
 R.internal = {
   tick = function(st, a)
     if type(a[1]) == "number" then st.bpm = clip(a[1], 5, 1000) end
+    if st.rush == "waiting" then return rush_take(st) end
     return R.tick(st)
   end,
   start = function(st) return R.start(st) end,

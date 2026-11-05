@@ -28,6 +28,8 @@ Ten claims:
    10. a held repeat's tails: a hit under a hold sends nothing and the live sound is muted
        while its engine rings on; the last steps loop at their place and level, follow
        the tempo in speed and pitch, and no sample jumps at the seam or either crossing
+   11. rush: past the handoff the output is the frozen loop, at the rate asked, the live kit unheard,
+       and the kit comes back after
 
 Standard library only.
 """
@@ -593,6 +595,37 @@ def main():
     late = rms(span(held + 0.05 + 2 * G.TAIL_SPAN / 1000.0, held + 0.05 + 3 * G.TAIL_SPAN / 1000.0))
     A.check("TAIL: ... each time round", abs(late - rec) / rec < 0.15,
             "rms %.5f, two rounds on" % late)
+
+    # ---- 11. rush ------------------------------------------------------------
+    print("\n--- 11. rush: one cycle of pad 7's tone, frozen, at the rate asked ---")
+    t = G.hit_time(window("RUSH"), G.SET_MS) + G.RUSH_AT / 1000.0
+    for k, hz in enumerate(G.RUSH_RATES):
+        # past the crossing and the 20 ms ramp
+        turn = t + k * G.RUSH_TURN / 1000.0
+        seg = span(turn + 0.04, turn + G.RUSH_TURN / 1000.0)
+        got = freq(seg)
+        A.check("⛔ RUSH: looped at %d Hz, the output is at %d Hz, by its zero crossings" % (hz, hz),
+                abs(got - hz) / hz < 0.02, "%.1f Hz" % got)
+    first = span(t + 0.04, t + G.RUSH_HIT / 1000.0)
+    A.check("⛔ RUSH: the loop is the tone's level, read from before the recorder's fade",
+            abs(rms(first) - TONE_RMS) / TONE_RMS < 0.15, "rms %.5f, the tone's %.5f" % (rms(first), TONE_RMS))
+    under = span(t + G.RUSH_HIT / 1000.0 + 0.02, t + G.RUSH_TURN / 1000.0)
+    A.check("⛔ RUSH: a hit under it is unheard, the live kit muted",
+            abs(rms(under) - rms(first)) / rms(first) < 0.05, "rms %.5f, %.5f before the hit" % (rms(under), rms(first)))
+    end = t + len(G.RUSH_RATES) * G.RUSH_TURN / 1000.0
+    A.check("RUSH: let go, the loop stops", peak(span(end + 0.02, end + 0.2)) < SILENT * 30,
+            "peak %.5f" % peak(span(end + 0.02, end + 0.2)))
+    back = inside(window("RUSH-BACK"), G.SET_MS)
+    A.check("⛔ RUSH: and the kit is back, pad 7 at its own pitch and level",
+            abs(freq(back) - G.SAMPLES[7]) < 5 and abs(rms(back) - TONE_RMS) / TONE_RMS < 0.1,
+            "%.1f Hz, rms %.5f" % (freq(back), rms(back)))
+    # The echo is the second of tape's last 250 ms. Rushed over from 850 to 1050 ms after the hit, its
+    # player stopped 16 ms in, so it comes round that much later than 1500 ms: from 1684 to 1934.
+    t = G.hit_time(window("RUSH-TAPE"), G.SET_MS)
+    seg = span(t + 1.72, t + 1.90)
+    A.check("⛔ RUSH: a tail loop under it goes on where it was, after",
+            abs(freq(seg) - G.SAMPLES[7]) < 8 and abs(rms(seg) - TONE_RMS) / TONE_RMS < 0.3,
+            "%.1f Hz, rms %.5f" % (freq(seg), rms(seg)))
     return A.report()
 
 

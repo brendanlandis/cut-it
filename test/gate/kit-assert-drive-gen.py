@@ -27,7 +27,8 @@ freeverb while its tail rings, and a burst after; and a send of 0. Last, a held 
 c_steps tells them (Brendan, 2026-11-05): a hit under a hold, whose echo must never come; a tail
 ringing silently under a hold and heard again after it; a loop's bursts in their place at their
 level, a tempo moved under it each way; one tail that runs through a seam and both crossings; and a
-reverb's tail looped, recorded after the holds before it.
+reverb's tail looped, recorded after the holds before it. Then rush (Brendan, 2026-11-05): one cycle
+of a tone frozen and looped at rates up to 20 kHz, a hit under it unheard, and the kit back after.
 """
 import math
 import os
@@ -77,6 +78,13 @@ TAPE_HOLD_MS = 450
 RING_HOLD_S, RING_HOLD_FOR_S = 0.85, 0.45
 LOOP_S = 0.85
 SEAM_S, SEAM_SPAN, SEAM_UNITS = 1.4, 1000.4, 8.0032
+# Rush: from RUSH_S, after all that. When the loop starts after its hit, each rate's turn, and how far
+# into the first a hit comes, in ms; and when, in s, the next hit that should be heard.
+RUSH_S = TAPE_S + 17.0
+RUSH_AT, RUSH_TURN, RUSH_HIT = 100, 200, 50
+RUSH_RATES = [1000, 5000, 20000]
+RUSH_CYCLE_MS = 1000.0 / 660.0
+RUSH_BACK_S = 1.0
 # ... and held again soon after, over the place the recording stopped and started
 SEAM_AGAIN_S, SEAM_AGAIN_FOR_S, SEAM_AGAIN_SPAN, SEAM_AGAIN_UNITS = 0.15, 0.4, 300, 2.4
 TAIL_HOLD_S, TAIL_SPAN = 0.5, 300
@@ -130,6 +138,13 @@ HITS = [
     ("SEAM-OFF", TAPE_S + 11.0 + SEAM_S + 1.2 + SEAM_AGAIN_S + SEAM_AGAIN_FOR_S, []),
     # a reverb's tail, a loop of it, after all those holds
     ("TAIL", TAPE_S + 15.0, [(SET_MS, 10, 127)]),
+    # rush: pad 7's tone, one cycle of it frozen RUSH_AT in, at each rate in RUSH_RATES; a hit of
+    # pad 5 under the first; and after the rush-off, pad 7 as it was
+    ("RUSH", RUSH_S, [(SET_MS, 7, 127), (SET_MS + RUSH_AT + RUSH_HIT, 5, 127)]),
+    ("RUSH-BACK", RUSH_S + RUSH_BACK_S, [(SET_MS, 7, 127)]),
+    # a tail loop under it: pad 7's one echo, a second of tape with its first 250 ms last, rushed over
+    ("RUSH-TAPE", RUSH_S + RUSH_BACK_S + 1.0, [(SET_MS, 7, 127)]),
+    ("RUSH-TAPE-END", RUSH_S + RUSH_BACK_S + 4.0, []),
 ]
 # What a window sends c_kit before its hits, SET_MS before them: a track's volume
 # in dB, -30 to +6, and its pitch in semitones, -12 to +12, as c_steps sends them.
@@ -161,9 +176,10 @@ SETS = {"VOL": ["vol 1 -6"], "BOOST": ["vol 1 6"], "UP": ["pitch 7 12"], "DOWN":
         # echoes of its 0.3 s sample that start as the one before ends: 2.4 steps, feedback 100
         "SEAM": ["delay-time 7 2.4", "feedback 7 100"], "SEAM-OFF": ["feedback 7 0"],
         # a reverb's tail, at its size 20, and pad 7's delay off
-        "TAIL": ["delay 7 0", "send 10 100"]}
+        "TAIL": ["delay 7 0", "send 10 100"],
+        "RUSH-TAPE": ["delay-time 7 4", "feedback 7 0", "delay 7 100"], "RUSH-TAPE-END": ["delay 7 0"]}
 # What a window sends the tempo bus with its settings: 240 BPM, a step 62.5 ms.
-TEMPO = {"ECHO": 240, "HOLD-HIT": 120, "LOOP-240": 240, "LOOP-60": 60, "LOOP-END": 120}
+TEMPO = {"ECHO": 240, "HOLD-HIT": 120, "LOOP-240": 240, "LOOP-60": 60, "LOOP-END": 120, "RUSH-TAPE": 120}
 ECHO_BPM = 240
 # What a window sends after its hit, (ms after the window, message): pad 1's level to 0 once its
 # 0.3 s sample has gone into the delay, before the first echo.
@@ -180,9 +196,15 @@ AFTER = {"TAIL-1": [(SET_MS + 350, "delay 1 0")], "RING": [(SET_MS + RING_CHANGE
                   (SET_MS + int((SEAM_S + 1.2 + SEAM_AGAIN_S + SEAM_AGAIN_FOR_S) * 1000),
                    "tape-off")],
          "TAIL": [(SET_MS + int(TAIL_HOLD_S * 1000), "tape %d %g" % (TAIL_SPAN, TAIL_SPAN / 125.0)),
-                  (SET_MS + int((TAIL_HOLD_S + 1.0) * 1000), "tape-off")]}
-STOP_S = TAPE_S + 17.0
-DONE_S = TAPE_S + 17.5
+                  (SET_MS + int((TAIL_HOLD_S + 1.0) * 1000), "tape-off")],
+         "RUSH": [(SET_MS + RUSH_AT, "rush %.5f %d" % (RUSH_CYCLE_MS, RUSH_RATES[0]))]
+         + [(SET_MS + RUSH_AT + RUSH_TURN * k, "rush-rate %d" % hz)
+            for k, hz in enumerate(RUSH_RATES) if k]
+         + [(SET_MS + RUSH_AT + RUSH_TURN * len(RUSH_RATES), "rush-off")],
+         "RUSH-TAPE": [(SET_MS + 750, "tape 1000 8"), (SET_MS + 850, "rush 15 66"), (SET_MS + 850, "tape-run 0"),
+                       (SET_MS + 1050, "rush-off"), (SET_MS + 1050, "tape-run 1"), (SET_MS + 2500, "tape-off")]}
+STOP_S = RUSH_S + RUSH_BACK_S + 4.5
+DONE_S = RUSH_S + RUSH_BACK_S + 5.0
 
 
 def hit_time(at_s, off_ms=0):

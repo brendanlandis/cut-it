@@ -101,9 +101,24 @@ end
 -- curve puts 120. A knob not named here is live from its first value.
 R.UNSAVED = { [1] = 0.48 }
 
+-- Rush (Brendan, 2026-11-05): a knob the table maps to it starts held, Saved or not, and stays held
+-- until it has been turned down to its bottom, past the boot window, whose first value may be
+-- knobs.txt's and not where the knob sits. So one left up at load does nothing, and nothing jumps.
+-- Its bottom is a hair wide, about ten of the knob's 1024 places, so a pot that stops short of 0
+-- still reaches it: u_tempo.lua's R.RUSH_BOTTOM, u_tempo_test.lua checks the two agree.
+R.RUSH_BOTTOM = 0.01
+
+local function maps_to_rush(map, name)
+  for _, page in pairs(map) do
+    if page[name] and page[name].dest == "rush" then return true end
+  end
+  return false
+end
+
 -- A knob's pickup: "virgin" has never seen a value; "armed" has been restored, side unknown;
 -- "above" sat above (or on) its target and waits for a fall, "below" waits for a rise; "live"
--- passes everything. The window is the boot's first 1000 ms, when a first value is a restore.
+-- passes everything; "bottom" waits for its bottom (R.RUSH_BOTTOM). The window is the boot's first
+-- 1000 ms, when a first value is a restore.
 -- unsaved: the patch's folder holds no knobs.txt, so mother's boot push is where each knob
 -- physically sits, not a restore (item 239).
 function R.new(text, unsaved)
@@ -111,7 +126,9 @@ function R.new(text, unsaved)
   st.map, st.rows = R.parse(text)
   for k = 1, 4 do
     local at = R.UNSAVED[k]
-    if not unsaved then
+    if maps_to_rush(st.map, "og-knob-" .. k) then
+      st.knob[k] = { state = "bottom", target = 0 }
+    elseif not unsaved then
       st.knob[k] = { state = "virgin", target = 0 }
     elseif at then
       st.knob[k] = { state = "armed", target = at }
@@ -128,6 +145,10 @@ end
 function R.pickup(st, k, value)
   local p = st.knob[k]
   local above = p.target <= value
+  if p.state == "bottom" then
+    if not st.window and value <= R.RUSH_BOTTOM then p.state = "live" end
+    return p.target, p.state == "live" and 1 or 0
+  end
   if p.state == "virgin" then
     -- A first value passes either way; inside the window it is a restore, and arms. mother
     -- pushes a value with or without knobs.txt, which is why u_map.pd asks that file (item 239).
@@ -206,7 +227,8 @@ function R.mode(st, sel, atoms)
 end
 
 -- What u_map.pd itself sends: the load, the boot window shutting at 1000 ms, and every knob
--- straight to live when the boot follows a recover (item 299).
+-- straight to live when the boot follows a recover (item 299), but one held for rush: left up, it
+-- would race the tempo the moment it was touched.
 R.internal = {
   init = function(st)
     if st.rows == 0 then return { R.fail("map-empty") } end
@@ -217,7 +239,9 @@ R.internal = {
     return {}
   end,
   live = function(st)
-    for k = 1, 4 do st.knob[k].state = "live" end
+    for k = 1, 4 do
+      if st.knob[k].state ~= "bottom" then st.knob[k].state = "live" end
+    end
     return {}
   end,
 }

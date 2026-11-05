@@ -17,7 +17,7 @@
 #X obj 1300 560 r mode;
 #X obj 1300 610 t b;
 #X msg 1300 660 0;
-#X obj 20 1070 route tempo transport start stop panic volca-note volca-cc volca-prog volca-key recover diag drum-page test-mode drums synth arrangement section save revert song go;
+#X obj 20 1070 route tempo transport start stop panic volca-note volca-cc volca-prog volca-key recover diag drum-page test-mode drums synth arrangement section save revert song go rush;
 #X obj 20 1160 c_mapped bpm 990 10;
 #X obj 20 1220 unpack f f;
 #X obj 20 1430 s tempo;
@@ -332,7 +332,7 @@
 #X connect 152 0 153 0;
 #X connect 153 0 154 0;
 #X connect 154 0 155 0;
-#X connect 17 21 61 0;
+#X connect 17 22 61 0;
 #X connect 17 11 157 0;
 #X connect 157 1 158 0;
 #X connect 158 0 159 0;
@@ -520,3 +520,14 @@
 #X connect 259 0 260 0;
 #X connect 260 0 261 0;
 #X connect 261 0 250 0;
+#X obj 9000 1160 unpack f f f f;
+#X obj 9000 1220 pack f f;
+#X obj 9000 1280 list prepend rush;
+#X obj 9000 1340 list trim;
+#X connect 17 21 263 0;
+#X connect 263 3 264 1;
+#X connect 263 1 264 0;
+#X connect 264 0 265 0;
+#X connect 265 0 266 0;
+#X connect 266 0 228 0;
+#X text 9000 1420 rush: knob 4 on every page (Brendan \, 2026-11-05) \, to u_tempo out the fifth outlet as <value> <live> \, held or not: it draws the row. u_map.lua holds a knob mapped here until it has been turned down to its bottom. ref/module/map.md, f 40;

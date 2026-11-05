@@ -497,12 +497,100 @@ def synths(g):
     return rc or rc_lua
 
 
+def _drums(last, hits, own=None, sig=(4, 4), drunk=0, sectionless=False):
+    """A drum pattern as c_steps saves it: 512 velocities, the tracks' own last steps, their
+    randomness, volumes and pitches, the time signature and the drunkenness, then the swing and
+    the global last step, 581 numbers; or, sectionless, the 579 it saved before sections."""
+    pat = [0] * 581
+    for (track, step), v in hits.items():
+        pat[(track - 1) * 32 + step - 1] = v
+    for track, n in (own or {}).items():
+        pat[512 + track - 1] = n
+    pat[576], pat[577], pat[578] = sig[0], sig[1], drunk
+    pat[579], pat[580] = 50, last
+    return pat[:579] if sectionless else pat
+
+
+# The song the first run's state directory holds, saved and as the draft: intro, verse and
+# chorus, each every part a section has (ref/module/songs.md). Verse plays two loops of eight
+# steps and hands over; chorus's loop is 32 steps, long enough to watch a queued section blink.
+SONG_SEED = [
+    ("intro", 0, {"drums": _drums(8, {(1, 1): 95}), "programs": ["none", "none"],
+                  "synth": ["fm"], "tempo": [200], "velocity": ["on"]}),
+    ("verse", 2, {"drums": _drums(8, {(1, 1): 127, (2, 5): 79}), "programs": [20, 5],
+                  "synth": ["strings"], "tempo": [240], "velocity": ["off"]}),
+    ("chorus", 0, {"drums": _drums(32, {(1, 1): 111, (1, 17): 111}), "programs": [7, "none"],
+                   "synth": ["fm"], "tempo": [180], "velocity": ["on"]}),
+]
+
+
+def _song_text(sections):
+    out = ["song song 1"]
+    for i, (name, length, parts) in enumerate(sections, 1):
+        out.append("section %d %d %s" % (i, length, name))
+        out += ["%s %s" % (k, " ".join(str(a) for a in parts[k])) for k in sorted(parts)]
+    return "\n".join(out) + "\n"
+
+
+def song(g):
+    S.require("Cut It/u_song.pd", "Cut It/u_song.lua", "Cut It/u_song-lua.pd_lua",
+              "test/gate/lua/u_song_test.lua")
+    # The rules first, in Lua and without Pd: the sections, the top row, the bars, the draft
+    # against the saved song, the files. Then the Pd half: the store in the running instrument.
+    print("   the rules, in Lua ...")
+    rc_lua = S.lua("test/gate/lua/u_song_test.lua", *g.args)
+    print("\n   the patch, in Pd ...")
+    s = g.copy()
+    s.state_dir()
+    # Page 2, so the frames show the drum page's playhead, and a song saved.
+    with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
+        fh.write("mode mode-2\n")
+    text = _song_text(SONG_SEED)
+    for path in (os.path.join(s.state, "cut-it-song.txt"),
+                 os.path.join(s.state, "cut-it-song-draft.txt"), s.path("seed-song.txt")):
+        with open(path, "w") as fh:
+            fh.write(text)
+    g.rewrite(s)
+    for run in ("play", "reload"):
+        S.drive(GEN % "song-assert", s.path("drive-%s.pd" % run), run)
+    print("   running the song (about 15 s), then a reload of it (about 6) ...")
+    cap = s.path("capture-play.txt")
+    S.run(cap, 40, *FLAGS, "-path", s.patch, main_dev(s), s.path("drive-play.pd"))
+    after = s.path("after-play")
+    os.makedirs(after)
+    for name in ("cut-it-song.txt", "cut-it-song-draft.txt"):
+        if os.path.exists(os.path.join(s.state, name)):
+            shutil.copy(os.path.join(s.state, name), after)
+    cap2 = s.path("capture-reload.txt")
+    S.run(cap2, 30, *FLAGS, "-path", s.patch, main_dev(s), s.path("drive-reload.pd"))
+    # A state directory from before sections: the drum pattern and the synth choice in the auto
+    # file, as Cut It wrote them, and no song. Its own copy, booted once.
+    s3 = g.copy("song-legacy")
+    s3.state_dir()
+    old = _drums(16, {(1, 1): 111, (3, 9): 64}, own={16: 24}, sig=(3, 4), drunk=10,
+                 sectionless=True)
+    line = "section-1-drums %s" % " ".join(map(str, old))
+    with open(os.path.join(s3.state, "cut-it-auto.txt"), "w") as fh:
+        fh.write("mode mode-4\n%s\nsynth strings\nvelocity off\n" % line)
+    with open(s3.path("legacy-seed.txt"), "w") as fh:
+        fh.write(line + "\n")
+    g.rewrite(s3, out=[])
+    S.drive(GEN % "song-assert", s3.path("drive.pd"), "legacy")
+    print("   and a first load from a state directory before sections (about 6 s) ...")
+    S.run(s3.path("capture.txt"), 30, *FLAGS, "-path", s3.patch, main_dev(s3), s3.path("drive.pd"))
+    print()
+    rc = g.analyze("test/gate/song-assert.py", *g.args, "--seed", s.path("seed-song.txt"),
+                   "--state", s.state, "--after", after, "--reload", cap2,
+                   "--legacy", s3.state, "--legacy-seed", s3.path("legacy-seed.txt"), stdin=cap)
+    return rc or rc_lua
+
+
 RECIPES = {
     "init": init, "presence": presence, "audio": audio, "err": err,
     "display": display, "oled": oled, "led": led, "tempo": tempo,
     "clock": clock, "map": map_, "recover": recover, "launchpad": launchpad,
     "nano": nano, "organelle": organelle, "volca": volca,
-    "debug": debug, "sequencer": sequencer, "kit": kit, "synths": synths,
+    "debug": debug, "sequencer": sequencer, "kit": kit, "synths": synths, "song": song,
 }
 
 

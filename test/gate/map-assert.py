@@ -38,7 +38,11 @@ EVERY_PAGE = [("og-knob-1", "tempo", "0"), ("og-knob-2", "drums", "last"),
               ("og-knob-4", "drums", "swing"), ("xport-2", "start", "0"), ("xport-5", "stop", "0"),
               ("lp-cc-90", "recover", "0"), ("og-shift-60", "diag", "0"),
               ("og-shift-61", "test-mode", "0"), ("lp-setup", "test-mode", "0"),
-              ("og-shift-72", "stop", "0"), ("og-shift-84", "recover", "0")]
+              ("og-shift-72", "stop", "0"), ("og-shift-84", "recover", "0")] + [
+              # the top row, the two arrows then the six section buttons, and save and revert,
+              # the bottom rows' rightmost (ref/module/songs.md)
+              ("lp-cc-%d" % (90 + n), "section", "%d" % n) for n in range(1, 9)] + [
+              ("lp-cc-108", "save", "0"), ("lp-cc-8", "revert", "0")]
 # Both runs are counted against this one list, so neither passes a driver that
 # died early.
 WINDOWS = ["EARLY", "EARLY-2", "RAIL-ARM", "SUPPRESS", "MAPPED", "AWAY", "CROSS",
@@ -172,6 +176,13 @@ def static_lint():
                if [p, c, d, a] not in [f for _, f in rows]]
     A.check("⛔ every page carries the %d rows every page shares" % len(EVERY_PAGE),
             modes and not missing, "missing: %s" % missing[:6])
+    # The top row is the song's sections on every page, each button's arg its place on the
+    # row (u_song.lua's R.press): a row naming another place moves a lamp off its button.
+    sec = sorted((f[1], f[3]) for _, f in rows if len(f) == 4 and f[2] == "section")
+    A.check("⛔ the top row's eight are the section destination, CC 91 to 98 its buttons 1 to 8, "
+            "and nothing else names it", sec == sorted(("lp-cc-%d" % (90 + n), "%d" % n)
+                                                       for n in range(1, 9) for _p in modes),
+            "section rows: %s" % sorted(set(sec)))
     # Knob 3 is the selected track's own last step, and the selected track is the
     # drum page's: it stays page 2's (Brendan, 2026-11-04).
     knob3 = [f for _, f in rows if len(f) > 1 and f[1] == "og-knob-3"]
@@ -457,8 +468,8 @@ def run_asserts(cap):
     A.check("the top row's first button selects no mode any more",
             modes("TOP-ROW-FREE") == [],
             "mode in that window: %s" % modes("TOP-ROW-FREE"))
-    A.check("⛔ ... and, unmapped, it draws nothing -- no lp-cc-91 row",
-            not [d for d in umap_rows(W("TOP-ROW-FREE")) if d[:1] == ["lp-cc-91"]],
+    A.check("⛔ ... and, a button, it draws nothing -- no lp-cc-91 row and no section row",
+            not [d for d in umap_rows(W("TOP-ROW-FREE")) if d[:1] in (["lp-cc-91"], ["section"])],
             "u_map's rows in that window: %s" % umap_rows(W("TOP-ROW-FREE")))
 
     # The lint proves diag is on the route; this proves the row reaches it.

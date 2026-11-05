@@ -32,6 +32,36 @@ DIM, LAMP_ON, BEAT_ON, ALERT_RED = 1, 21, 3, 5
 
 MIDI_RE = re.compile(r"^MIDIOUT:\s+(-?\d+)\s+(-?\d+)\s*$")
 
+# The edges, on every page (ref/module/songs.md): the top row's eight, CC 91 to 98 -- the two
+# arrows, then the six section buttons -- from u_song's top <8 lamps>, and save and revert, CC
+# 108 and 8, from its unsaved. Read out of g_grid.pd's RGB table (entries 26, 27, 28 and 29) and
+# its palette: an arrow is palette 1, dim; a section dim green, the one playing full green, the
+# one queued full and dark by turns; save red and revert grey while anything is unsaved.
+TOP = tuple(range(91, 99))
+SAVE, REVERT = 108, 8
+SECTION_DIM, SECTION_ON = (0, 32, 8), (0, 127, 32)
+SAVE_ON, REVERT_ON = (127, 0, 0), (40, 40, 40)
+EDGES = TOP + (SAVE, REVERT)
+
+
+def edge_problem(idx, color):
+    """None if an edge cell is a color its lamp can take, else what is wrong."""
+    ok = {0}
+    if idx in TOP[:2]:
+        ok |= {1}
+    elif idx in TOP:
+        ok |= {SECTION_DIM, SECTION_ON}
+    elif idx == SAVE:
+        ok |= {SAVE_ON}
+    elif idx == REVERT:
+        ok |= {REVERT_ON}
+    return None if color in ok else "edge %d is color %s" % (idx, color)
+
+
+def edges(frame):
+    """-> {index: color} for the edge cells of a frame."""
+    return {i: frame.color(i) for i in EDGES}
+
 
 class Frame(object):
     def __init__(self, data, mark):
@@ -133,6 +163,9 @@ def home_shape(frame):
                 beat = idx
             elif color != DIM:
                 return ("beat cell %d is color %s" % (idx, color)), lamp, beat
+        elif idx in EDGES:
+            if edge_problem(idx, color):
+                return edge_problem(idx, color), lamp, beat
         elif color != 0:
             stray.append((idx, color))
     if stray:
@@ -216,6 +249,9 @@ def drum_page(frame, lay):
             if color not in allowed[role]:
                 return ("%s %d (index %d) is color %s" % (role, n, idx, color)), lamp, page
             page[role][n] = color
+        elif idx in EDGES:
+            if edge_problem(idx, color):
+                return edge_problem(idx, color), lamp, page
         elif color != 0:
             stray.append((idx, color))
     if stray:
@@ -286,6 +322,9 @@ def synth_page(frame, lay, chosen):
                 beat = idx
             elif color != DIM:
                 return ("beat cell %d is color %s" % (idx, color)), lamp, beat
+        elif idx in EDGES:
+            if edge_problem(idx, color):
+                return edge_problem(idx, color), lamp, beat
         elif color != 0:
             stray.append((idx, color))
     if stray:
@@ -341,6 +380,9 @@ def arrange_page(frame, lay, flashing=False):
                 beat = idx
             elif color != DIM:
                 return ("beat cell %d is color %s" % (idx, color)), lamp, beat
+        elif idx in EDGES:
+            if edge_problem(idx, color):
+                return edge_problem(idx, color), lamp, beat
         elif color != 0:
             stray.append((idx, color))
     if stray:

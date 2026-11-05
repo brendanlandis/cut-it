@@ -1,9 +1,9 @@
 #N canvas 20 20 2100 1050 12;
 #X text 20 20 c_kit -- the drums \, played in Pd: sixteen c_voice \, one a pad \, summed into its outlet~. It takes the pad messages c_steps sends \, so the sequencer and the drum page play it as they played the SP-404. ref/module/sequencer.md, f 70;
-#X text 20 130 creation args: none. inlet: pad <1..16> <velocity> \, a pad past 16 ignored. outlet~: the sixteen voices \, summed \, mono -- u_root adds them to the left output \, where the OLED's meter reads them with the mic (ref/module/audio.md). At load it reports on err how many of the sixteen samples it found (C-12)., f 70;
+#X text 20 130 creation args: none. inlet: pad <1..16> <velocity> \, a pad past 16 ignored \, and vol <pad> <dB> and pitch <pad> <semitones> \, a track's volume and pitch from c_steps \, which go to that pad's voice for its hits after them. outlet~: the sixteen voices \, summed \, mono -- u_root adds them to the left output \, where the OLED's meter reads them with the mic (ref/module/audio.md). At load it reports on err how many of the sixteen samples it found (C-12)., f 70;
 #X obj 20 300 inlet;
-#X obj 20 340 route pad;
-#X obj 20 380 route 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16;
+#X obj 20 340 route pad vol pitch;
+#X obj 20 420 route 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16;
 #X obj 20 460 c_voice 1 \$0;
 #X obj 170 460 c_voice 2 \$0;
 #X obj 320 460 c_voice 3 \$0;
@@ -35,6 +35,8 @@
 #X msg 1800 660 info c_kit samples-\$1;
 #X obj 1500 720 s err;
 #X text 1300 780 The count waits 2 s \, as a print does (C-9): u_err may log it \, and the deploy check fails on any output before about 735 ms. None found is info \, not warn: the Mac and the gates have no samples \, and a silent drum page says so on the rig. Some but not all is a warn \, drawn on every page., f 50;
+#X msg 200 380 \$1 vol \$2;
+#X msg 340 380 \$1 pitch \$2;
 #X connect 2 0 3 0;
 #X connect 3 0 4 0;
 #X connect 4 0 5 0;
@@ -84,3 +86,7 @@
 #X connect 30 0 34 0;
 #X connect 32 0 34 0;
 #X connect 33 0 34 0;
+#X connect 3 1 36 0;
+#X connect 3 2 37 0;
+#X connect 36 0 4 0;
+#X connect 37 0 4 0;

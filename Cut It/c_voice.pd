@@ -1,6 +1,6 @@
 #N canvas 20 20 1600 1300 12;
 #X text 20 20 c_voice -- one drum pad's sample \, played from memory. It loads samples/drums/NN.wav beside the patch at load \, NN its pad \, and plays it from the start on every hit \, so a hit cuts the one before as a one-shot pad on the 404 did. ref/module/sequencer.md, f 70;
-#X text 20 140 creation arg 1: its pad \, 1 to 16. arg 2: c_kit's \$0 \, for the count of samples loaded. inlet: a velocity \, 0 to 127 \, 0 ignored. outlet~: the sample \, mono., f 70;
+#X text 20 140 creation arg 1: its pad \, 1 to 16 \, and arg 2: c_kit's \$0 \, for the count of samples loaded. inlet: a velocity \, 0 to 127 \, 0 ignored \, and vol <dB> and pitch <semitones> \, its track's volume and pitch from c_steps \, for the hits after them. outlet~: the sample \, mono., f 70;
 #X obj 20 700 inlet;
 #X obj 700 240 loadbang;
 #X obj 700 280 t b b;
@@ -18,8 +18,8 @@
 #X obj 850 640 list append \$0-smp;
 #X msg 850 680 read -resize \$1 \$2;
 #X obj 850 720 soundfiler;
-#X obj 850 760 t f f;
-#X obj 1000 800 / 44.1;
+#X obj 850 760 t f f f;
+#X obj 1000 800 expr \$f1 / 44.1 / pow(2 \, \$f2 / 12);
 #X obj 1000 840 t f f f;
 #X obj 1150 880 + 10;
 #X obj 850 920 pack f f;
@@ -30,7 +30,7 @@
 #X obj 780 780 s \$2-loaded;
 #X obj 20 800 moses 1;
 #X obj 120 840 t b b f;
-#X obj 300 880 expr pow(10 \, 1.5 * (\$f1 / 127 - 1));
+#X obj 300 880 expr pow(10 \, 1.5 * (\$f1 / 127 - 1) + \$f2 / 20);
 #X obj 300 920 pack f f;
 #X msg 300 960 0 2 \, \$1 1 2 \, 0 3 \$2;
 #X msg 400 1020 0 0 2 \, \$1 \$2 2;
@@ -47,8 +47,15 @@
 #X obj 20 1040 switch~;
 #X obj 1200 240 array define \$0-smp;
 #X text 1100 380 The path is the patch's own folder's \, so the Mac's main-dev.pd and the device find the samples the same way. file isfile first: a missing sample is no error \, just a silent pad \, and nothing reaches the console the deploy check reads., f 50;
-#X text 520 840 A hit: the level ramps to 0 in 2 ms \, the read jumps to the start 2 ms in \, then the level comes back in 1 ms and falls to 0 over the last 3 ms. The 2 ms keeps a retrigger from clicking. Velocity is 30 dB of range \, even steps in dB: 127 is 0 dB and 16 about -26., f 50;
+#X text 600 1000 A hit: the level ramps to 0 in 2 ms \, the read jumps to the start 2 ms in \, then the level comes back in 1 ms and falls to 0 over the last 3 ms. The 2 ms keeps a retrigger from clicking. Velocity is 30 dB of range \, even steps in dB: 127 is 0 dB and 16 about -26 \, and the track's volume adds its own dB \, -30 to +6 \, to it. The track's pitch is the read's rate \, 2 to the power of semitones over 12: the read \, the level's fall and switch~ all take the sample's length over the rate \, so a pitch is worked out once \, when it arrives \, and both take effect at the next hit., f 50;
 #X text 20 1100 switch~ keeps a voice's DSP off except while it sounds: a voice costs about 0.65% of the Organelle's core while on (Reference \, Organelle page)., f 34;
+#X obj 20 730 route float vol pitch;
+#X obj 190 770 s \$0-vol;
+#X obj 300 770 s \$0-pitch;
+#X obj 640 845 r \$0-vol;
+#X obj 1150 640 r \$0-pitch;
+#X obj 1150 680 t b f;
+#X obj 1150 720 f;
 #X connect 3 0 4 0;
 #X connect 4 1 5 0;
 #X connect 5 0 45 0;
@@ -79,7 +86,6 @@
 #X connect 25 0 26 0;
 #X connect 26 1 28 0;
 #X connect 26 0 27 1;
-#X connect 2 0 27 0;
 #X connect 27 0 29 0;
 #X connect 29 1 30 0;
 #X connect 30 2 31 0;
@@ -100,3 +106,13 @@
 #X connect 42 0 43 0;
 #X connect 43 0 44 0;
 #X connect 44 0 45 0;
+#X connect 2 0 50 0;
+#X connect 50 0 27 0;
+#X connect 50 1 51 0;
+#X connect 50 2 52 0;
+#X connect 53 0 31 1;
+#X connect 54 0 55 0;
+#X connect 55 1 20 1;
+#X connect 55 0 56 0;
+#X connect 56 0 19 0;
+#X connect 19 2 56 1;

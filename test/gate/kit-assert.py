@@ -4,7 +4,7 @@ stdin and the recording.
 
     kit-assert.py OUT.wav [-v] < capture
 
-Five claims:
+Six claims:
 
     1. u_root sends the sequencer's pads to c_kit, and to nothing else, and
        c_kit's outlet~ to the left output
@@ -12,6 +12,8 @@ Five claims:
     3. a hit plays its pad's own sample, at its velocity's level
     4. no sample, a pad past 16 and velocity 0 are silent
     5. a hit cuts the one before: a retrigger restarts the sample, never doubles it
+    6. a track's volume and pitch reach its voice: the level in dB on top of the
+       velocity's, the pitch as the read's rate, its length over the rate
 
 Standard library only.
 """
@@ -203,6 +205,36 @@ def main():
             peak(late) < SILENT and rms(span(t2 + 0.02, t2 + G.SAMPLE_S - 0.03)) > TONE_RMS * 0.9,
             "peak after %.5f, rms of the second hit %.4f" %
             (peak(late), rms(span(t2 + 0.02, t2 + G.SAMPLE_S - 0.03))))
+
+    # ---- 6. a track's volume and pitch ---------------------------------------
+    print("\n--- 6. a track's volume and pitch reach its voice ---")
+    for name, db in (("VOL", -6.0), ("BOOST", 6.0)):
+        seg = inside(window(name), G.SET_MS)
+        want = TONE_RMS * 10 ** (db / 20.0)
+        got = rms(seg)
+        A.check("⛔ %s: vol 1 %+g, then pad 1 at 127, plays at %+g dB" % (name, db, db),
+                abs(got - want) / want < RMS_TOL,
+                "rms %.5f, wanted %.5f: the track's volume adds its dB to the velocity's"
+                % (got, want))
+    for name, st in (("UP", 12), ("DOWN", -12)):
+        t = G.hit_time(window(name), G.SET_MS)
+        length = G.SAMPLE_S / 2 ** (st / 12.0)
+        seg = span(t + 0.02, t + length - 0.03)
+        # the pitch over what both an unpitched and a pitched sample would cover, so a
+        # sample that stopped early cannot pass for a lower one
+        tone = span(t + 0.02, t + min(length, G.SAMPLE_S) - 0.05)
+        f = crossings(tone) / 2.0 / (len(tone) / float(rate)) if tone else 0
+        hz = G.SAMPLES[7] * 2 ** (st / 12.0)
+        A.check("⛔ %s: pitch 7 %+d, then pad 7, plays its sample an octave %s, %.0f Hz"
+                % (name, st, "up" if st > 0 else "down", hz),
+                abs(f - hz) / hz < FREQ_TOL, "measured %.1f Hz" % f)
+        A.check("%s: at its own level -- pad 1's volume is not pad 7's" % name,
+                abs(rms(seg) - TONE_RMS) / TONE_RMS < RMS_TOL,
+                "rms %.5f, wanted %.5f" % (rms(seg), TONE_RMS))
+        after = span(t + length + 0.02, t + length + 0.25)
+        A.check("⛔ %s: and it lasts the sample's length over the rate, %.2f s, then stops"
+                % (name, length), peak(after) < SILENT and rms(seg) > TONE_RMS * 0.9,
+                "peak %.5f after %.2f s" % (peak(after), length))
 
     return A.report()
 

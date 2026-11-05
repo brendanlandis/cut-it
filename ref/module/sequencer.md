@@ -82,10 +82,12 @@ kit*, below.
 
 | | Is | Evidence |
 |---|---|---|
-| `c_kit` | Takes `pad <1..16> <velocity>` from `c_steps`' outlet 1, a pad past 16 ignored, and holds sixteen `c_voice`, one a pad, summed out its `outlet~`, which `u_root` adds to the left output where the OLED meters it ([audio.md](audio.md)) | unknown |
+| `c_kit` | Takes `pad <1..16> <velocity>` from `c_steps`' outlet 1, a pad past 16 ignored, and `vol <pad> <dB>` and `pitch <pad> <semitones>`, a track's volume and pitch, and holds sixteen `c_voice`, one a pad, summed out its `outlet~`, which `u_root` adds to the left output where the OLED meters it ([audio.md](audio.md)) | unknown |
 | A sample | `samples/drums/NN.wav` in the patch's own folder, NN its pad, `01` to `16`: mono 16-bit WAV at 44.1 kHz, as `tools/samples.sh` writes it. Read by `c_voice` at load into a table of its own | unknown |
 | A hit | Plays its pad's sample from the start. The level dips to 0 in 2 ms and the read restarts, so a hit cuts the one before, as a one-shot pad on the 404 did, without a click | unknown |
 | Velocity | 30 dB of range, even in dB: 127 is 0 dB, 95 (level 6) about −7.6, 16 (level 1) about −26. 0 plays nothing | unknown |
+| A track's volume | −30 to +6 dB, added in that pad's `c_voice` to the velocity's own: at 0 dB the velocity's level is as it was, and +6 at 127 is twice the sample's amplitude. Taken at the next hit | unknown |
+| A track's pitch | −12 to +12 semitones, as the sample's playback rate, 2^(*st*/12): an octave up plays it twice as fast and half as long, an octave down half as fast and twice as long. Worked out when it arrives, and taken at the next hit | unknown |
 | A pad with no sample | Silent, and no error: `c_voice` checks the file is there before reading it | unknown |
 | The count | 2 s after load, on `err`: `info c_kit samples-16` with all sixteen, `warn c_kit samples-<n>` with some, `info c_kit no-samples` with none | unknown |
 | What it costs | About 0.65% of the Organelle's core for each voice while it sounds; `switch~` keeps a silent voice's DSP off (the Organelle's Reference page) | verified |

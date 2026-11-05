@@ -1,6 +1,6 @@
 -- The phone's TouchOSC layout, its scripts run under lib_touchosc.lua's stand-in: the pages and
 -- the mode, test mode, the arrangement screen, the drum screen, the synths screen, the sections
--- page and its name tab, and the checklist page. Run by touchosc-assert.py, which unpacks the layout into a folder and writes
+-- page and its name tab, the songs page, its setlists and its name tab, and the checklist page. Run by touchosc-assert.py, which unpacks the layout into a folder and writes
 -- expect.lua beside it:
 --
 --   lua test/gate/lua/touchosc_test.lua <folder> [-v]
@@ -70,8 +70,8 @@ w.sent = {}
 mode("mode-2")
 equal("the mode's repeat turns nothing and sends nothing", { where(), #w.sent },
       { { "p2", "drums" }, 0 })
-equal("⛔ pages 4 to 6 and songs are blank", { #C.page4.children, #C.page6.children,
-      #C.songs.children }, { 0, 0, 0 })
+equal("⛔ pages 4 to 6 are blank", { #C.page4.children, #C.page5.children, #C.page6.children },
+      { 0, 0, 0 })
 hb(true)
 L.update(w)
 equal("test mode on: the checklist page in place of the Launchpad's, its lamp lit",
@@ -584,6 +584,141 @@ L.press(w, "snkspace")
 equal("a leading space is not typed", L.text(w, "snfieldl"), "_")
 equal("... and done with nothing typed sends nothing", L.press(w, "sndone"), {})
 
+print("\n--- the songs page ---")
+mode("mode-8")
+equal("page 8: the songs page, under its songs tab, a setlists tab and a name tab beside it",
+      { where(), C.tabs8.children[2].tabLabel, C.tabs8.children[3].tabLabel },
+      { { "p8", "songs" }, "setlists", "name" })
+-- u_song's 47 atoms: the songs tab's five and six rows, then the setlists tab's nine and five.
+local function songsstate(t)
+  local a = { t.count or 3, t.sel or 2, t.page or 1, t.pages or 1, t.name or "hollow bell" }
+  local rows = t.rows or { { 1, "night drive", "loaded · unsaved" }, { 2, "hollow bell", "-" },
+                           { 3, "lantern", "for go" } }
+  for r = 1, 6 do
+    for _, v in ipairs(rows[r] or { 0, "-", "-" }) do a[#a + 1] = v end
+  end
+  for _, v in ipairs(t.set or { 1, 3, "friday at the bell", 1, 2, 7, 3, "hollow bell", "go" }) do
+    a[#a + 1] = v
+  end
+  local es = t.entries or { { 1, "lantern", "silence" }, { 2, "night drive", "next-bar" },
+                            { 3, "hollow bell", "go" }, { 4, "undertow", "next-bar" },
+                            { 5, "slow names", "silence" } }
+  for r = 1, 5 do
+    for _, v in ipairs(es[r] or { 0, "-", "-" }) do a[#a + 1] = v end
+  end
+  return a
+end
+w.sent = {}
+L.osc(w, "/cutit/songs", table.unpack(songsstate({})))
+equal("u_song's state: the selected song over the right column, the pager the page",
+      { L.text(w, "gsel"), L.text(w, "gpos") }, { "hollow bell", "1 / 1" })
+equal("... a row each, its number, name and what it is doing, nothing shown for none",
+      { L.text(w, "grow1nl"), L.text(w, "grow1l"), L.text(w, "grow1wl"), L.text(w, "grow2wl"),
+        L.text(w, "grow3wl"), C.grow4.visible, C.grow4l.visible },
+      { "1", "night drive", "loaded · unsaved", "", "for go", false, false })
+equal("⛔ the selected row is lit, by the state, and nothing goes back",
+      { C.grow2.values.x, C.grow1.values.x, #w.sent }, { 1, 0, 0 })
+equal("a row tapped selects the song it shows; the selected one, nothing",
+      { L.press(w, "grow3"), L.press(w, "grow2") }, { { { "/cutit", "songs", "select", 3 } }, {} })
+equal("load, new song and add to set, each its command; the pager's arrows a page each way",
+      { L.press(w, "gload"), L.press(w, "gnew"), L.press(w, "gadd"), L.press(w, "gprev"),
+        L.press(w, "gnext") },
+      { { { "/cutit", "songs", "load" } }, { { "/cutit", "songs", "new" } },
+        { { "/cutit", "songs", "add" } }, { { "/cutit", "songs", "page", -1 } },
+        { { "/cutit", "songs", "page", 1 } } })
+L.osc(w, "/cutit/ack", "songs", "load")
+L.update(w)
+check("an answer to load flashes it teal", teal(C.gload.color), T.show(C.gload.color))
+L.update(w, 400)
+check("... and it goes back to red", red(C.gload.color), T.show(C.gload.color))
+equal("⛔ delete asks first: the first tap sends nothing, and it reads sure?",
+      { L.press(w, "gdel"), (function() L.update(w) return L.text(w, "gdell") end)() },
+      { {}, "sure?" })
+equal("⛔ ... a second tap deletes", L.press(w, "gdel"), { { "/cutit", "songs", "delete" } })
+L.update(w)
+equal("... and it reads delete again", L.text(w, "gdell"), "delete")
+L.press(w, "gdel")
+L.update(w, 3100)
+equal("⛔ a first tap left alone three seconds lapses: delete again, and the next tap only asks",
+      { L.text(w, "gdell"), L.press(w, "gdel") }, { "delete", {} })
+L.update(w, 3100)
+
+print("\n--- the setlists tab ---")
+C.tabs8.values.page = 1
+L.update(w)
+w.sent = {}
+L.osc(w, "/cutit/songs", table.unpack(songsstate({})))
+equal("the setlist chosen: its name over the rows, the pager the setlist and its page",
+      { L.text(w, "lcap"), L.text(w, "lpos"), L.text(w, "lsel") },
+      { "friday at the bell", "set 1 / 3   page 1 / 2", "3  hollow bell" })
+equal("... each row its key, song and how it starts, in words",
+      { L.text(w, "lrow1nl"), L.text(w, "lrow1l"), L.text(w, "lrow1sl"), L.text(w, "lrow2sl"),
+        L.text(w, "lrow3sl") }, { "1", "lantern", "silence", "next bar", "go" })
+equal("⛔ the selected entry lit; the starts switch handed its go, the third, and nothing sent",
+      { C.lrow3.values.x, C.lrow1.values.x, C.lstarts.values.x, #w.sent }, { 1, 0, 2, 0 })
+check("... go's word black on its lit segment, the others white",
+      black(C.lstarts3l.textColor) and not black(C.lstarts1l.textColor),
+      T.show({ C.lstarts3l.textColor, C.lstarts1l.textColor }))
+equal("a row tapped selects the entry it shows", L.press(w, "lrow4"),
+      { { "/cutit", "songs", "entry", 4 } })
+equal("⛔ the switch dragged to next bar sends it, once", L.drag(w, "lstarts", 1),
+      { { "/cutit", "songs", "starts", "next-bar" } })
+L.update(w, 1100)
+equal("move up, move down, new set, remove and the arrows, each its command",
+      { L.press(w, "lup"), L.press(w, "ldown"), L.press(w, "lnewset"), L.press(w, "lrem"),
+        L.press(w, "lprev"), L.press(w, "lnext") },
+      { { { "/cutit", "songs", "up" } }, { { "/cutit", "songs", "down" } },
+        { { "/cutit", "songs", "new-set" } }, { { "/cutit", "songs", "remove" } },
+        { { "/cutit", "songs", "set", -1 } }, { { "/cutit", "songs", "set", 1 } } })
+w.sent = {}
+L.osc(w, "/cutit/songs", table.unpack(songsstate({ set = { 2, 3, "set 2", 1, 1, 0, 0, "-", "-" },
+                                                    entries = {} })))
+equal("⛔ an empty setlist: no rows, no entry, a one-page pager, and nothing sent",
+      { C.lrow1.visible, L.text(w, "lsel"), L.text(w, "lpos"), #w.sent },
+      { false, "no entry", "set 2 / 3", 0 })
+
+print("\n--- the songs page's name tab ---")
+C.tabs8.values.page = 2
+L.update(w)
+equal("opened from the setlists tab, it names the setlist chosen, from its name",
+      { L.text(w, "gnwhat"), L.text(w, "gnfieldl") }, { "name the setlist", "SET 2_" })
+for _ = 1, 5 do L.press(w, "gnback") end
+for _, k in ipairs({ "g", "i", "g" }) do L.press(w, "gnk" .. k) end
+equal("⛔ done sends songs set-name, and turns back to the setlists tab",
+      { L.press(w, "gndone"), where() }, { { { "/cutit", "songs", "set-name", "gig" } },
+      { "p8", "setlists" } })
+C.tabs8.values.page = 0
+L.update(w)
+L.osc(w, "/cutit/songs", table.unpack(songsstate({})))
+equal("the songs tab's name button opens it on the selected song",
+      { L.press(w, "gname"), where(), L.text(w, "gnwhat"), L.text(w, "gnfieldl") },
+      { {}, { "p8", "name" }, "name the song", "HOLLOW BELL_" })
+L.press(w, "gnback")
+L.press(w, "gnback")
+L.press(w, "gnkn")
+equal("⛔ done sends songs name, and turns back to the songs tab",
+      { L.press(w, "gndone"), where() }, { { { "/cutit", "songs", "name", "hollow ben" } },
+      { "p8", "songs" } })
+L.osc(w, "/cutit/ack", "songs", "name")
+L.update(w)
+check("... its answer flashes done", C.gndone.color[1] > 0.9 and C.gndone.color[2] > 0.9,
+      T.show(C.gndone.color))
+L.update(w, 400)
+C.tabs8.values.page = 2
+L.update(w)
+equal("opened from the songs tab's own tab bar, it names the song again",
+      L.text(w, "gnwhat"), "name the song")
+equal("... and done with the name unchanged sends nothing, and turns back",
+      { L.press(w, "gndone"), where() }, { {}, { "p8", "songs" } })
+mode("mode-7")
+C.tabs7.values.page = 1
+L.update(w)
+equal("⛔ the sections page's name tab still names the section", { L.text(w, "snwhat"),
+      L.text(w, "snfieldl") }, { "name the section", "CHORUS_" })
+L.press(w, "snkx")
+equal("... and its done still sends sections name", L.press(w, "sndone"),
+      { { "/cutit", "sections", "name", "chorusx" } })
+
 print("\n--- what the phone no longer shows ---")
 w.sent = {}
 L.osc(w, "/cutit/param", "bpm", 120, "(29)")
@@ -598,8 +733,10 @@ print("\n--- the link ---")
 L.update(w, 2000)
 equal("two seconds with no heartbeat: no link everywhere, the lamps out",
       { L.text(w, "link"), L.text(w, "dlink"), L.text(w, "slink"), L.text(w, "seclink"),
-        L.text(w, "tmode"), C.linkled.values.x, C.dlinkled.values.x, C.slinkled.values.x,
-        C.seclinkled.values.x, C.tled.values.x },
-      { "no link", "no link", "no link", "no link", "no link", 0, 0, 0, 0, 0 })
+        L.text(w, "glink"), L.text(w, "llink"), L.text(w, "tmode"), C.linkled.values.x,
+        C.dlinkled.values.x, C.slinkled.values.x, C.seclinkled.values.x, C.glinkled.values.x,
+        C.llinkled.values.x, C.tled.values.x },
+      { "no link", "no link", "no link", "no link", "no link", "no link", "no link", 0, 0, 0, 0,
+        0, 0, 0 })
 
 os.exit(T.report() == 0)

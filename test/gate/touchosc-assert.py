@@ -38,8 +38,9 @@ SONG_LUA = os.path.join(ROOT, "Cut It", "u_song.lua")
 # each one's tab on the phone, named for it.
 TABS = ["arrangement", "drums", "synths", "page 4", "page 5", "page 6", "sections", "songs"]
 # A page's own tabs: one, named for the page, but the sections page's two, its sections and the
-# name a section is given (Brendan, 2026-11-05).
-OWN_TABS = {"sections": ["sections", "name"]}
+# name a section is given, and the songs page's three, its songs, its setlists and the name
+# either is given (Brendan, 2026-11-05).
+OWN_TABS = {"sections": ["sections", "name"], "songs": ["songs", "setlists", "name"]}
 
 spec = importlib.util.spec_from_file_location("build_touchosc", BUILD)
 B = importlib.util.module_from_spec(spec)
@@ -357,11 +358,11 @@ def main():
         if [r[7] for r in pg] != OWN_TABS.get(tab, [tab]):
             bad.append("%s's tabs are %s" % (p, [r[7] for r in pg]))
     A.check("⛔ each holds a pager of its own, its tabs shown: one tab, named for the page "
-            "(Brendan, 2026-11-04), but the sections page's sections and name (2026-11-05)",
+            "(Brendan, 2026-11-04), but the sections page's sections and name and the songs page's "
+            "songs, setlists and name (2026-11-05)",
             not bad, "; ".join(bad))
-    blank = [p for p, pg in inner[3:6] + inner[7:8] if pg and kids.get(pg[0][0])]
-    A.check("pages 4 to 6 and songs are blank under their tab", not blank,
-            "not blank: %s" % blank)
+    blank = [p for p, pg in inner[3:6] if pg and kids.get(pg[0][0])]
+    A.check("pages 4 to 6 are blank under their tab", not blank, "not blank: %s" % blank)
     stray = [r[0] for r in nodes if r[1] == "GROUP" and r[0] != "root" and not r[7]]
     A.check("every group is a pager's page: no screen is a group a script shows or hides",
             not stray, "groups that are no page: %s" % stray)
@@ -377,8 +378,32 @@ def main():
             "the layout sends sections %s, u_song takes %s" % (" ".join(lsec), song_takes))
     A.check("⛔ ... and the name tab's done sends the name the sections page selected",
             "sections name" in msgs and "sections select" in msgs, sorted(set(msgs)))
+    # The songs page's, after songs: u_song's R.songs_cmds, a key a word or a quoted word.
+    m = re.search(r"^R\.songs_cmds = \{\n(.*?)^\}", open(SONG_LUA, encoding="utf-8").read(),
+                  re.M | re.S)
+    songs_takes = (sorted(a or b for a, b in re.findall(r'^  (?:\["([\w-]+)"\]|(\w+)) = function',
+                                                          m.group(1), re.M)) if m else None)
+    lsongs = sorted({x.split()[1] for x in msgs if x.split()[0] == "songs"})
+    A.check("⛔ every songs action the layout sends is one u_song takes, and it sends them all",
+            songs_takes is not None and lsongs == songs_takes,
+            "the layout sends songs %s, u_song takes %s" % (" ".join(lsongs), songs_takes))
+    A.check("⛔ ... the name tab's done names the song from the songs tab and the setlist from the "
+            "setlists tab", "songs name" in msgs and "songs set-name" in msgs,
+            sorted(m_ for m_ in set(msgs) if m_.startswith("songs")))
+    # The starts switch asks for the ways u_song knows an entry can start, in its order, a
+    # segment each: TouchOSC's own radio, horizontal, as the drum screen's is.
+    m = re.search(r"^R\.STARTS = \{([^}]*)\}", open(SONG_LUA, encoding="utf-8").read(), re.M)
+    starts = re.findall(r'"([\w-]+)"', m.group(1)) if m else None
+    sw = by_name.get("lstarts")
+    said = re.search(r"^local STARTS = \{([^}]*)\}", (sw and sw[3]) or "", re.M)
+    A.check("⛔ the starts switch is a radio, a segment for each of u_song's R.STARTS, and sends "
+            "exactly those, in order", starts and sw and sw[1] == "RADIO"
+            and said and re.findall(r'"([\w-]+)"', said.group(1)) == starts
+            and "sendOSC('/cutit', 'songs', 'starts', STARTS[v + 1])" in sw[3],
+            "u_song's %s; the switch %s" % (starts, said and said.group(1)))
     ucmd = route_of(UNET, "result")
     uacks, usynth, uvel = route_of(UNET, "sync"), route_of(UNET, "fm"), route_of(UNET, "on")
+    usongs = route_of(UNET, "load")
     takes, chooses = steps_cmds(), synths()
     A.check("u_net's route boxes, c_steps' commands and c_synth's synths are all readable",
             None not in (ucmd, uacks, usynth, uvel, takes, chooses),
@@ -431,7 +456,8 @@ def main():
         # pad's selection and a synth's choice show in the state that comes back. tempo has
         # none: the tempo that comes back says it.
         acked = (["result"] + ["drums " + a for a in uacks if a != "select"]
-                 + ["velocity " + v for v in uvel] + ["sections " + a for a in usec or []])
+                 + ["velocity " + v for v in uvel] + ["sections " + a for a in usec or []]
+                 + ["songs " + a for a in usongs or []])
         A.check("every acknowledgment u_net sends lights a cell",
                 sorted(acked) == sorted(B.ACKS),
                 "u_net acknowledges %s, the layout lights %s" % (sorted(acked), sorted(B.ACKS)))

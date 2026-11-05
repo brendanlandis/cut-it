@@ -395,8 +395,9 @@ runs in the editor, so nothing in the layout is hidden for a script to show:
   for any container; the controls' names are build.py's (`tempobox`, `pad5`, `svel`, …). The
   editor's pager navigation must be on, its default (Preferences, Editor); with its Alt-key option
   set, hold Alt to click a tab. The Document Tree selects any control by name.
-- **Pages 4 to 6 and songs are blank** under their tabs: nothing is on them yet. The sections
-  page, page 7, has two tabs, sections and name ([../ref/device/phone.md](../ref/device/phone.md)).
+- **Pages 4 to 6 are blank** under their tabs: nothing is on them yet. The sections page, page 7,
+  has two tabs, sections and name, and the songs page, page 8, three, songs, setlists and name
+  ([../ref/device/phone.md](../ref/device/phone.md)).
 
 ⚠️ **Judge spacing on the phone, not in the editor**: the editor shows both bars, and the phone
 hides the outer one. Whether its pages then move up a bar or keep its place empty is unseen

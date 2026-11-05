@@ -3,8 +3,8 @@
 -- tap tempo does is in u_tempo.lua. ref/module/tempo.md.
 --
 -- inlet 1: tap <ms since the last tap>, from u_tempo.pd's timer, tempo <bpm>, the phone's, from
--- u_net, restored <bpm> off the state bus, and fast <1 or 0>, the 500 BPM repeat, from c_steps.
--- inlet 2: u_tempo.pd's own -- init, and bpm <bpm>, what the bus carries.
+-- u_net, restored <bpm> off the state bus, and fast <1 or 0> <bpm>, the 500 BPM repeat, from
+-- c_steps with the BPM in force. inlet 2: u_tempo.pd's own -- init.
 -- outlet 1: a BPM, to the tempo bus. outlet 2: err. outlet 3: a bang on init, the proof the Lua
 -- loaded. outlet 4: 1 or 0, whether a BPM on the bus is put in the section.
 --

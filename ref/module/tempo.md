@@ -19,8 +19,8 @@ global `clock` is its clock**; that instance is the grid's, and the next consume
 `disp` and `err`, and out of **two** MIDI ports — port 1 carries the clock and the transport, and
 port 4 takes `panic`'s STOP alone. **Port 3 gets nothing**: it was the SP-404's, which left the rig
 on 2026-11-04 (Brendan). **Its inlet takes what sets the tempo from a pad or a screen** — `tap`,
-from `u_map`'s tap pad on page 1, and `tempo <bpm>`, the phone's, from `u_net` — and writes the bus
-itself; **its outlets** hand the master BPM, clamped, to `u_net` for the phone, `tap` to
+from `u_map`'s tap pad on page 1, `tempo <bpm>`, the phone's, from `u_net`, and `fast <1 or 0>`, the
+500 BPM repeat, from `c_steps` — and writes the bus itself; **its outlets** hand the master BPM, clamped, to `u_net` for the phone, `tap` to
 `g_grid` to flash the pad, and the BPM a tap or the phone set to `u_map`, which holds knob 1 there
 (Brendan, 2026-11-04). The tap's rules are Lua, `u_tempo.lua`; the
 timer between taps, the clock and the transport are Pd. **The tempo is a part of every section of
@@ -94,8 +94,9 @@ phone use the legal range, and keep to it before anything reaches the bus.
 | Outlet 1 | Every BPM the bus carries, clamped, from `$0-bpm`: knob 1's, a tap's, the phone's, a Send line's. `u_net` sends it to the phone as `/cutit/tempo`, the tempo's only display at rest (*Design*) | unknown |
 | On page 2 | Cell 21 is a drum pad, and taps there set nothing: the map's row is page 1's alone | unknown |
 | Knob 1 | **Held at the new tempo after a tap or the phone moves it**, until it is turned to or through that tempo (Brendan, 2026-11-04): until then a turn moves nothing and its row reads the tempo in force with the knob's own in brackets, `bpm 150 (105)`. Outlet 3 carries the BPM to `u_map`, whose pickup arms the knob at where its curve puts it (*Design*). A tempo past the knob's 10 to 500 holds it at the end of its turn, so its row reads that end, 10 or 500, not the tempo | unknown |
-| Outlet 3 | The BPM a tap, the phone or a section set, whole and clamped, after the Lua and before the bus: to `u_map`'s inlet. Knob 1's own tempo, a Send line's and the fallback 120 do not come out of it | unknown |
-| A section's tempo | `put section tempo <bpm>` for every BPM the bus carries, clamped; a section's `restore tempo <bpm>` goes to the Lua as the phone's does, so it reaches the bus whole and within 5 to 600, holds knob 1, and is put straight back. A restore of the tempo already in force is dropped by a spigot, so a section starting at the same tempo leaves knob 1 alone | unknown |
+| Outlet 3 | The BPM a tap, the phone, a section or the 500 BPM repeat set, whole and clamped, after the Lua and before the bus: to `u_map`'s inlet. Knob 1's own tempo, a Send line's and the fallback 120 do not come out of it | unknown |
+| The 500 BPM repeat | `fast 1`, `pad-35` pressed, through `c_steps`: the BPM in force, kept in a box beside the route and added to the message so no BPM of a sweep calls the Lua, is kept and 500 goes out of the Lua as a tap's does, so knob 1 is held at the end of its turn until it reaches 500. `fast 0`, let go: the BPM kept goes out the same way, knob 1 held there, whatever the knob or the phone set meanwhile (Brendan, 2026-11-05). In between nothing the bus carries is put in the section. A section's restore in between changes nothing heard, and becomes the BPM kept | verified |
+| A section's tempo | `put section tempo <bpm>` for every BPM the bus carries, clamped; a section's `restore tempo <bpm>`, or the saved tempo's from `pad-38` ([songs.md](songs.md)), goes to the Lua as `restored`, as the phone's tempo does, so it reaches the bus whole and within 5 to 600, holds knob 1, and is put straight back. A restore of the tempo already in force is dropped by a spigot, so a section starting at the same tempo leaves knob 1 alone | unknown |
 
 `tempo-assert` taps 400 ms apart through the running instrument and reads 150 on the bus, turns
 knob 1 short of 150 and reads nothing and `bpm 150 (105)`, then through it, waits 2.5 s and reads

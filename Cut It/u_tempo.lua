@@ -34,11 +34,10 @@ local function bpm(x)
   return math.floor(clip(x, R.MIN, R.MAX) + 0.5)
 end
 
--- taps: the last R.KEEP intervals, oldest first. armed: a tap has started the count. bpm: the master
--- BPM in force, as the bus carried it, u_tempo.pd's fallback until it says. before: while the 500
--- BPM repeat is held, the tempo it goes back to.
+-- taps: the last R.KEEP intervals, oldest first. armed: a tap has started the count. before: while
+-- the 500 BPM repeat is held, the tempo it goes back to.
 function R.new()
-  return { taps = {}, armed = false, bpm = 120 }
+  return { taps = {}, armed = false }
 end
 
 -- A tap, <ms> since the one before, from u_tempo.pd's [timer]. The first tap after load, and any
@@ -65,15 +64,15 @@ function R.set(st, v)
   return { { "tempo", "float", { bpm(v) } } }
 end
 
--- The 500 BPM repeat, pad-35, from c_steps (Brendan, 2026-11-05). fast 1: the tempo in force is kept
--- and 500 goes out, as a tap's would, so knob 1 is held there until it reaches it. fast 0: the tempo
+-- The 500 BPM repeat, pad-35, from c_steps (Brendan, 2026-11-05). fast 1 <bpm>: the tempo in force,
+-- which u_tempo.pd adds, is kept and 500 goes out, as a tap's would, so knob 1 is held there until it reaches it. fast 0: the tempo
 -- kept goes out the same way, so knob 1 is held there. It is a flourish and no change to the song:
 -- while it is held nothing on the bus is put in the section, so the section's tempo stands as it
 -- was, and what the knob or the phone set meanwhile is gone at the release.
-function R.fast(st, on)
+function R.fast(st, on, now)
   if on ~= 0 then
-    if st.before then return {} end
-    st.before = st.bpm
+    if st.before or type(now) ~= "number" then return {} end
+    st.before = now
     return { { "put", "float", { 0 } }, { "tempo", "float", { R.FAST } } }
   end
   if not st.before then return {} end
@@ -93,22 +92,17 @@ function R.restored(st, v)
 end
 
 -- What reaches the inlet: tap <ms>, the interval u_tempo.pd's timer measured, tempo <bpm> from
--- u_net, restored <bpm> off the state bus, and fast <1 or 0> from c_steps.
+-- u_net, restored <bpm> off the state bus, and fast <1 or 0> <bpm> from c_steps, by u_tempo.pd.
 R.inputs = {
   tap = function(st, a) return R.tap(st, a[1]) end,
   tempo = function(st, a) return R.set(st, a[1]) end,
   restored = function(st, a) return R.restored(st, a[1]) end,
-  fast = function(st, a) return R.fast(st, a[1]) end,
+  fast = function(st, a) return R.fast(st, a[1], a[2]) end,
 }
 
--- What u_tempo.pd itself sends: the load, answered with the proof bang alone, and bpm <bpm>, every
--- BPM the bus carries, clamped.
+-- What u_tempo.pd itself sends: the load, answered with the proof bang alone.
 R.internal = {
   init = function() return {} end,
-  bpm = function(st, a)
-    if type(a[1]) == "number" then st.bpm = a[1] end
-    return {}
-  end,
 }
 
 -- A report on err, C-12: one symbol of 21 characters or fewer.

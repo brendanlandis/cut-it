@@ -107,7 +107,7 @@ invisible to the poll alone. `m_launchpad` runs the heartbeat and the poll.
 **The heartbeat waits while anything is held.** Entering Programmer Mode makes the device let go
 of every held pad, a note off at once (Reference), so a repeat pad held across a tick stopped
 repeating within two seconds (Brendan, 2026-11-04); with the heartbeat waiting, one held five
-seconds and more kept repeating on the rig. `m_launchpad` keeps a table of what is down,
+seconds and more kept repeating on the rig, and `pad-35` holds the same way. `m_launchpad` keeps a table of what is down,
 notes and then CCs from 128, and skips a tick while any is. A pad unplugged while held stays held
 in it until it is pressed and let go again; on a Mac the heartbeat waits that long.
 
@@ -132,7 +132,10 @@ switching subdivision for a whole or part of a bar, for all tracks or only some.
 everything** ([architecture.md](../architecture.md)): a pattern in the Launchpad's own memory would
 be a second sequencer the patch cannot see, store per section, or keep in step with its own clocks.
 Page 2 is the drum page, drawn in Programmer Mode by `g_grid` and played by `c_steps`
-([sequencer.md](../module/sequencer.md)); its layout is on [display.md](../module/display.md).
+([sequencer.md](../module/sequencer.md)); its layout is on [display.md](../module/display.md). Its
+right 4×4, from the top: the four repeat pads, 45 to 48; `pad-35`, the 500 BPM repeat, and `pad-38`,
+the saved tempo, under the first and last of them, 36 and 37 between them dark (Brendan, 2026-11-05);
+and the eight velocity buttons.
 
 ### CC 90 is the panic button, and it has two tiers
 

@@ -178,27 +178,29 @@ addressed at all, so panic still never hands the surface back.
 
 **One layout table, `Cut It/cut-it-drum-page.txt`, says which cell is which**: a row per cell,
 `<index> <role> <n>`, read at load by `g_grid`'s painter, `g_grid-lua`, to paint and by `u_map`
-to know what a press means, so a press and its lamp cannot disagree. Its 60 rows:
+to know what a press means, so a press and its lamp cannot disagree. Its 62 rows:
 
 | Rows from the top | Cells | Role | Evidence |
 |---|---|---|---|
 | 1–4 | 81–88, 71–78, 61–68, 51–58 | `step` cells 1–8, 9–16, 17–24, 25–32 (Brendan, 2026-11-03: 32 steps), four rows of eight; which step each shows is the time signature's (*The rows of steps*, below) | unknown |
 | 5–8, left 4×4 | 41–44, 31–34, 21–24, 11–14 | `pad` 13–16, 9–12, 5–8, 1–4: counted from the bottom left, pad 1 there and four a row upward (Brendan, 2026-11-04) | unknown |
 | 5, right half | 45–48 | `rep` 1–4, the repeat pads (Brendan, 2026-11-03) | unknown |
-| 6, right half | — | in no row, so dark | unknown |
+| 6, right half | 35, 38 | `fast` 1, the 500 BPM repeat, and `recall` 1, the saved tempo, under repeat pads 1 and 4 (Brendan, 2026-11-05) | verified |
+| 6, right half | 36, 37 | in no row, so dark ("nothing in this slot", Brendan, 2026-11-05) | verified |
 | 7–8, right half | 25–28, 15–18 | `vel` 1–4, then 5–8 (Brendan, 2026-11-03) | unknown |
 
 **The caller is `c_steps`, on `g_grid`'s third inlet, and it sends meaning, never a cell** (C-5):
 `steps <32 levels>` for the selected track, 0 for off, `play <step>` (0 while stopped), `vel <level>`,
 `track <pad>` and `last <step>`, the selected track's, `bar <N> <row>`, the time signature as the
 page shows it, a blue step every *N* and *row* steps to a row, `rep <pad>`, the repeat pad
-held, 0 for none, and `quiet <16 flags>`, track 1 first, 1 for each track that won't play, muted or
+held, 0 for none, `fast` and `recall <1 or 0>`, the 500 BPM repeat and the saved tempo's pad held,
+and `quiet <16 flags>`, track 1 first, 1 for each track that won't play, muted or
 left out of a solo. Every message sets the dirty flag. Anything else is `fail g_grid bad-selector`.
 
 **The page is painted in Lua** (`cut-it/drum-page-in-lua`, 2026-11-05): `g_grid.lua` holds the
 rules, and `g_grid-lua.pd_lua` is the face, made at `g_grid`'s top level as `[g_grid-lua
 $0-surface]`. The third inlet's messages go straight to it, and on page 2 `pd regions` sends it
-`paint` in the slot the beat row has on the other pages; it works out the 60 cells and writes each
+`paint` in the slot the beat row has on the other pages; it works out the 62 cells and writes each
 into the frame buffer, `$0-surface`, through pdlua's `pd.Table`, looked up again every frame. The
 fill before it and the SysEx after it are Pd's, so a frame reaches the Launchpad exactly as before:
 three seeded runs of every input `g_grid` takes, 12,630 frames, were byte-for-byte those of the Pd
@@ -234,21 +236,23 @@ button is selected.
 | A velocity button | Its own level's color: full when selected, a quarter otherwise | verified |
 | The selected pad | Red: RGB 127, 0, 0 (Brendan, 2026-11-05) | unknown |
 | Every other pad | Bright pink: RGB 127, 20, 72 (Brendan, 2026-11-05). Near black, 6, 6, 6, they read too indistinct, and so did pink at a quarter beside the selected one at full; palette 1 before that read the same as the dimmest velocity button (2026-11-03). Pink is free on this page: the velocity ramp's pinks run white to red, green and blue equal, and pink leans to blue | unknown |
-| A repeat pad | Purple: RGB 20, 8, 32, and 80, 24, 127 while it is held (Brendan, from a mockup, 2026-11-04) | unknown |
+| A repeat pad, and the 500 BPM repeat | The brightest purple there is, RGB 127, 0, 127 (Brendan, 2026-11-05), and while it is held whiter, 127, 80, 127, since at rest it is already as bright as purple gets and held must not be dimmer | verified |
+| The saved tempo's pad | Its own blue: RGB 8, 20, 64, and bright while held, 40, 100, 127 (2026-11-05) | verified |
 | A pad whose track won't play, muted or left out of a solo | Dim: the pink at a quarter, RGB 32, 5, 18, and selected, the red at a quarter, 32, 0, 0 (Brendan, 2026-11-05) | unknown |
 
-**The beat row gives way**, and the right 4×4's second row stays dark. The mode lamps are drawn
+**The beat row gives way**, and the right 4×4's second row's two middle cells stay dark. The mode lamps are drawn
 as in every mode.
 
 ⚠️ **The levels' colors are RGB specs, not palette entries.** The palette is a color table with no
 even white-to-red ramp in it (Reference), so `g_grid`'s surface holds 128 + *k* for entry *k* of its
 own RGB table, and the paint loop sends those cells as type 3, red, green and blue: red 127, and
 green and blue 127, 109, 91, 73, 54, 36, 18, 0 for levels 1 to 8; the quarter is each over four;
-127, 20, 72 for a pad not selected; 16, 40, 127 for a blue step; 20, 8, 32 and 80, 24,
+127, 20, 72 for a pad not selected; 16, 40, 127 for a blue step; 127, 0, 127 and 127, 80,
 127 for a repeat pad and the one held; and 127, 0, 0 for the selected pad, entry 26, after the
 synth and tap entries; then the edges' three (*`g_grid`'s edges, on every page*, below); then 32,
 5, 18 and 32, 0, 0 for a pad whose track won't play and the same selected, entries 30 and 31,
-158 and 159 on the surface.
+158 and 159 on the surface; then 8, 20, 64 and 40, 100, 127 for the saved tempo's pad, entries 32
+and 33, 160 and 161.
 ✅ On the rig the eight read as eight, white to red (Brendan, 2026-11-03).
 
 ### `g_grid`'s synth pads, page 3
@@ -421,7 +425,7 @@ After that a replug will not recover the grid. See [launchpad.md](../device/laun
 
 ### A dark drum page under lit lamps is the Lua
 
-⛔ The mode lamps and the edges are Pd and keep drawing on page 2; the page's 60 cells are
+⛔ The mode lamps and the edges are Pd and keep drawing on page 2; the page's 62 cells are
 `g_grid-lua`'s, so when pdlua or the class did not load they stay dark, and the page looks empty
 rather than broken. The grid itself says nothing: `fail g_grid no-lua` is on `err` once, at load.
 
@@ -513,7 +517,7 @@ painter runs at most 50 times a second, not on a dense stream, and the page is d
 anyway, since `c_steps` is Lua. What must work without it stays Pd: the mode lamps, which say what
 page this is, the beat row, the other pages and the edges, save, revert and go among them.
 
-**The frame is handed over cell by cell, into the frame buffer.** The face writes its 60 cells into
+**The frame is handed over cell by cell, into the frame buffer.** The face writes its 62 cells into
 `$0-surface` with pdlua's `pd.Table` rather than sending a list out of an outlet: the cells are
 scattered across indices 11 to 88, around the mode lamps' column, so one list into `[array set]`
 would overwrite the lamps and tie the regions' order to it. The rules return the cells and their

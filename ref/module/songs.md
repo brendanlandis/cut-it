@@ -52,6 +52,7 @@ Each part puts at load and on every change, and takes its restore.
 | `programs` | `c_synth` | The Volca's program, then the Streichfett's: 0 to 127, or `none` ([synths.md](synths.md)) | unknown |
 | `synth` | `c_synth` | `fm` or `strings` | unknown |
 | `tempo` | `u_tempo` | The BPM, as the tempo bus carries it ([tempo.md](tempo.md)) | unknown |
+| A part asked back | `recall <key>` on the third inlet, from `c_steps`, `pad-38`'s `recall tempo` (Brendan, 2026-11-05): the part as the saved song holds it in the section playing, or for a section never saved, or a part its save didn't hold, the draft's, back out as `restore <key> <atoms...>`, the way a section starting sends it. It still knows nothing of what a key means. The part puts back what it restores, so the draft takes it like any change. A part nobody holds sends nothing | verified |
 | `velocity` | `c_synth` | `on` or `off` | unknown |
 
 ### The interface

@@ -80,12 +80,9 @@ equal("the phone leaves a count of taps alone: the next tap still averages with 
 
 print("\n--- the 500 BPM repeat and a section's tempo ---")
 st = R.new()
-R.internal.bpm(st, { 133 })
 equal("⛔ fast 1: the section's put shut first, then 500 on the bus, as a tap's, so knob 1 is held there",
-      R.inputs.fast(st, { 1 }), { { "put", "float", { 0 } }, { "tempo", "float", { 500 } } })
-equal("a second fast 1 changes nothing", R.inputs.fast(st, { 1 }), {})
-R.internal.bpm(st, { 500 })
-R.internal.bpm(st, { 77 })
+      R.inputs.fast(st, { 1, 133 }), { { "put", "float", { 0 } }, { "tempo", "float", { 500 } } })
+equal("a second fast 1 changes nothing", R.inputs.fast(st, { 1, 77 }), {})
 equal("⛔ fast 0: back to the tempo before the press, whatever the knob or the phone set since, then "
       .. "the put open again", R.inputs.fast(st, { 0 }),
       { { "tempo", "float", { 133 } }, { "put", "float", { 1 } } })
@@ -94,14 +91,12 @@ equal("restored <bpm> is the phone's tempo, while it is not held",
       R.inputs.restored(st, { 90.4 }), tempo(90))
 equal("... and a bad one is the phone's error", R.inputs.restored(st, { "x" }),
       { R.fail("bad-tempo") })
-R.internal.bpm(st, { 90 })
-R.inputs.fast(st, { 1 })
+R.inputs.fast(st, { 1, 90 })
 equal("⛔ held, a section's tempo changes nothing now ...", R.inputs.restored(st, { 140 }), {})
 equal("⛔ ... and is what it goes back to", R.inputs.fast(st, { 0 })[1], { "tempo", "float", { 140 } })
 equal("the phone's tempo under it reaches the bus, and is gone at the release",
       (function()
-        R.internal.bpm(st, { 140 })
-        R.inputs.fast(st, { 1 })
+        R.inputs.fast(st, { 1, 140 })
         local out = R.inputs.tempo(st, { 200 })
         return { out, R.inputs.fast(st, { 0 })[1] }
       end)(), { tempo(200), { "tempo", "float", { 140 } } })
@@ -123,10 +118,9 @@ equal("tempo <bpm> on inlet 1, from the phone, the same", T.send(o, 1, "tempo", 
 equal("a bad one leaves outlet 2 for err", T.send(o, 1, "tempo", { "x" }),
       { { 2, "fail", { "u_tempo", "bad-tempo" } } })
 equal("⛔ fast 1 on inlet 1 shuts the put on outlet 4, then 500 on outlet 1",
-      T.send(o, 1, "fast", { 1 }), { { 4, "float", { 0 } }, { 1, "float", { 500 } } })
-T.send(o, 2, "bpm", { 500 })
-equal("⛔ fast 0 the tempo before it, the phone's 140's, then the put open",
-      T.send(o, 1, "fast", { 0 }), { { 1, "float", { 120 } }, { 4, "float", { 1 } } })
+      T.send(o, 1, "fast", { 1, 140 }), { { 4, "float", { 0 } }, { 1, "float", { 500 } } })
+equal("⛔ fast 0 the tempo before it, then the put open",
+      T.send(o, 1, "fast", { 0 }), { { 1, "float", { 140 } }, { 4, "float", { 1 } } })
 for _, m in ipairs({ { 1, "bang", {} }, { 1, "float", { 3 } }, { 2, "tap", { 500 } } }) do
   equal(string.format("%s on inlet %d is fail u_tempo bad-selector on outlet 2", m[2], m[1]),
         T.send(o, m[1], m[2], m[3]), { { 2, "fail", { "u_tempo", "bad-selector" } } })

@@ -2,7 +2,7 @@
 
 Page 2's drum page on the Launchpad, the sequencer playing the drum samples from the Organelle, and the pattern surviving a reload. `sequencer-assert` proves the notes, the frames and the file; what is left is what only the rig can show — whether the page reads, and how the drums sound.
 
-46 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
+54 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
 
 - [ ] **1. The drum page**
   - **Need:** A fresh load of the patch with no saved pattern — the selection resets at every load and a saved step would be lit.
@@ -240,3 +240,46 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone's drum screen tap reverb, then freeverb. Press the third button, section 1, and let it start, then the fourth again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn.
   - **Pass if:** Section 2 plays freeverb and the phone shows it lit; section 1 plays the plate, plate lit; back in section 2, freeverb again. After the reload each section has the type it had when saved, and a section saved before the types plays the plate.
   - **Note:** The type is a section's, as size and damping are (Brendan, 2026-11-05). That a line without it loads as the plate is `sequencer-assert`'s.
+
+- [ ] **47. A held repeat replays its tails and makes no new ones**
+  - **Need:** Brendan's samples deployed, the phone linked, 4/4 at 120 BPM, nothing muted or soloed and every effect off. On page 2, light pad 1's steps 1, 5, 9 and 13. On the phone tap pad 1, then delay: 1/8, dotted, feedback about 60%, level about 70%. Then reverb: send about 50%, size about 50%.
+  - **Send:** `start bang; mode mode-2`
+  - **Do:** Listen for a few bars. Then hold the second repeat pad, the top row of the right 4×4, for about ten seconds, and let it go. Then the same with the fourth repeat pad.
+  - **Pass if:** Held, the echoes and the reverb you heard go round with the hits, in time and the same every pass, and don't build up, however long it is held. The sound doesn't get wetter, and no echo of a repeated hit is ever heard: not while it is held, and not after. Let go, the pattern plays on from where it would have been, its echoes and reverb coming back with it.
+  - **Note:** Two steps of a tail is what the second pad loops, so a short one is a stutter of it (Brendan, 2026-11-05). What the loop holds and when is `kit-assert`'s, read off the signal; how it sounds is this step's.
+
+- [ ] **48. No click going in, round or coming out**
+  - **Need:** Playing, from the step before.
+  - **Do:** Turn the reverb's size up to about 80%. Press and let go of each repeat pad in turn, holding some for a moment and some for a few seconds. Press one again right after letting go, a few times, quickly.
+  - **Pass if:** No click, pop or thump as a repeat starts, as its loop comes round, or as it is let go, on any pad, however quickly they come. A dip in the tail where a quick press reads back across the last one is fine; a click isn't.
+
+- [ ] **49. The tails follow the tempo**
+  - **Need:** Playing, from the step before.
+  - **Do:** Hold the fourth repeat pad. Turn knob 1 slowly up past where it is, well past, then back down, past where it was. Then, still holding, drag the tempo on the phone's arrangement screen up and down, or if the page is in the way, have the tempo already set by a tap before you hold.
+  - **Pass if:** As the tempo rises the tails go round faster and higher, as the hits do, and as it falls slower and lower, like tape, and they stay with the hits all the way. Let go at any tempo and the tempo stays where it was left.
+
+- [ ] **50. The new pads' lamps**
+  - **Do:** Look at the right 4×4 on page 2. Press and hold the first repeat pad, let go. Do the same with the pad under it, then with the pad under the fourth repeat pad.
+  - **Pass if:** The top row and the pad under the first of them are a full bright purple. The pad under the fourth is a dim blue. The two between those are dark, and nothing happens when pressed. Each purple pad held goes a whiter purple, never dimmer; the blue one goes a bright blue; each goes back when let go.
+
+- [ ] **51. The 500 BPM repeat**
+  - **Need:** Playing, from the step before, at a tempo you know, 120 on the phone. Note the Launchpad's save and revert lamps.
+  - **Do:** Hold the pad under the first repeat pad for a few seconds while watching the phone's tempo. Turn knob 1 through its range short of its top end. Let go. Turn knob 1 a little.
+  - **Pass if:** Held, one step machine-guns, the tempo reads 500 and the tails go round fast and high with it. Knob 1 changes nothing and the OLED's row reads `bpm 500 (…)`. Let go, the tempo reads what it was, the pattern plays on from the step it was pressed on, not back on the beat, and the knob changes nothing until it is turned through that tempo. Save and revert don't light for any of it.
+  - **Note:** That it does not keep the canonical beat is a judgment call: Brendan said there is no need to (2026-11-05). Say so if it should.
+
+- [ ] **52. Knob 1 through 500**
+  - **Need:** Playing, from the step before.
+  - **Do:** Hold the same pad and turn knob 1 all the way up to its end, then back down part way. Let go.
+  - **Pass if:** From its end, the knob moves the tempo, and the repeat and its tails follow it. Let go, the tempo snaps back to what it was before the press, and the knob is held again.
+
+- [ ] **53. The saved tempo**
+  - **Need:** On the phone, the tempo at 110. Press save, the upper bottom row's rightmost button, so it goes dark. Turn knob 1 through 110 and on to about 150: save and revert light.
+  - **Do:** Press the pad under the fourth repeat pad. Turn knob 1 a little. Press it again with the tempo where it is. Then on the sections page make a new section and start it, turn knob 1 to something else and press the pad.
+  - **Pass if:** The press snaps the tempo to 110, and the phone says so. Save and revert go dark if nothing else changed. The knob changes nothing until it is turned through 110. A press at that tempo does nothing. In a section that has never been saved, the pad snaps to the tempo its draft holds, which is where the knob just left it, so nothing moves.
+
+- [ ] **54. A track's random pitch**
+  - **Need:** Playing, 4/4 at 120 BPM, nothing muted or soloed, pad 1's steps 1, 5, 9 and 13 lit, its pitch at 0, the effects as you like.
+  - **Do:** On the phone tap pad 1. Tap random on the show radio and drag pad 1 up to about 50%. Listen for a few bars. Tap **rnd pitch**, under the radio. Listen. Tap the first repeat pad and hold it on a hit whose pitch has moved, a few seconds. Tap another pad on the phone, and pad 1 again. Tap **rnd pitch** off.
+  - **Pass if:** Before the tap some hits drop or move but all at the same pitch. With it on, the button is lit and hits the randomness adds or changes come at different pitches, up to an octave either way, while hits as written stay at pad 1's pitch. The repeat plays the same pitch every time. The button is out on the other pad and lit again back on pad 1, so it is that track's. Off, every hit is at its pitch again.
+  - **Note:** Saved with the section, and off in a section saved before it. That and the die's range are `c_steps_test`'s. Whether an octave either way is the right range is his call (Brendan, 2026-11-05: "up to ±12").

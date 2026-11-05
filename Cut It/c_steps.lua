@@ -841,7 +841,7 @@ local function chance(st, t, v)
   if st.rand() >= 0.5 then return 0 end
   local vel = R.velocity(math.min(R.LEVELS, math.floor(st.rand() * R.LEVELS) + 1))
   if st.rolled[t] == 0 then return vel end
-  local off = math.min(2 * R.ROLL_REACH, math.floor(st.rand() * (2 * R.ROLL_REACH + 1))) - R.ROLL_REACH
+  local off = math.floor(st.rand() * (2 * R.ROLL_REACH + 1)) - R.ROLL_REACH
   return vel, clip(st.pitch[t] + off, R.PITCH_MIN, R.PITCH_MAX)
 end
 
@@ -1236,21 +1236,17 @@ R.presses = {
   ["rnd-pitch"] = function(st, a) return R.set_rolled(st, a[1], a[2]) end,
 }
 
--- The tempo bus's BPM, kept with each step decided, for a held repeat's tails (R.tape).
-function R.tempo(st, bpm)
-  if type(bpm) == "number" then st.bpm = clip(bpm, 5, 600) end
-  return {}
-end
-
--- What c_steps.pd itself sends: the clock's step, PLAY, STOP, u_state's restore, the load and the
--- tempo bus.
+-- What c_steps.pd itself sends: the clock's step, with the tempo bus's BPM, which a step decided
+-- keeps for a held repeat's tails (R.tape); PLAY, STOP, u_state's restore, and the load.
 R.internal = {
-  tick = function(st) return R.tick(st) end,
+  tick = function(st, a)
+    if type(a[1]) == "number" then st.bpm = clip(a[1], 5, 600) end
+    return R.tick(st)
+  end,
   start = function(st) return R.start(st) end,
   stop = function(st) return R.stop(st) end,
   restore = function(st, a) return R.restore(st, a) end,
   init = function(st) return R.boot(st) end,
-  tempo = function(st, a) return R.tempo(st, a[1]) end,
 }
 
 -- A report on err, C-12: one symbol of 21 characters or fewer.

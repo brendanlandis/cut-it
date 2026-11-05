@@ -1087,7 +1087,7 @@ local function before_hit(out)
 end
 st = R.new(1)
 for k = 1, 8 do R.presses.step(st, { k, 100 }) end
-R.internal.tempo(st, { 120 })
+st.bpm = 120
 R.internal.start(st, {})
 run(st, 5)
 equal("pressed, nothing yet: the recording runs until the replay begins, at the next step",
@@ -1112,19 +1112,38 @@ equal("⛔ a repeat let go before its first step never began: nothing to stop",
       end)(), { { "page", "rep", { 0 } } })
 equal("the steps' lengths are as the tempo was then: pad 1 at 60 BPM is 250 ms, whatever is in force",
       (function()
-        R.internal.tempo(st, { 60 })
+        st.bpm = 60
         R.internal.tick(st, {})
-        R.internal.tempo(st, { 240 })
+        st.bpm = 240
         R.presses.rep(st, { 1, 127 })
         return tails(R.internal.tick(st, {}))
       end)(), { { "tape", 250, 1 } })
+equal("⛔ a tick brings the tempo bus's BPM, which the step it decides keeps: 100 BPM is 150 ms",
+      (function()
+        local q = R.new(1)
+        R.internal.start(q, {})
+        R.internal.tick(q, { 100 })
+        R.presses.rep(q, { 1, 127 })
+        return tails(R.internal.tick(q, { 100 }))
+      end)(), { { "tape", 150, 1 } })
+equal("⛔ pressed short of its length, no tails until its steps are there: then all four's",
+      (function()
+        local q = R.new(1)
+        q.bpm = 120
+        R.internal.start(q, {})
+        R.internal.tick(q, {})
+        R.presses.rep(q, { 4, 127 })
+        local got = {}
+        for k = 1, 4 do got[k] = tails(R.internal.tick(q, {})) end
+        return got
+      end)(), { {}, {}, {}, { { "tape", 500, 4 } } })
 equal("⛔ a second pad under a held repeat begins again, at its own length",
       (function()
         R.presses.rep(st, { 3, 127 })
         return tails(R.internal.tick(st, {}))
       end)()[1][1], "tape")
 equal("⛔ PLAY lets go, and the tails stop", tails(R.internal.start(st, {})), { { "tape-off" } })
-R.internal.tempo(st, { 120 })
+st.bpm = 120
 run(st, 2)
 R.presses.rep(st, { 1, 127 })
 R.internal.tick(st, {})
@@ -1141,7 +1160,7 @@ equal("⛔ a pad pressed short of its length under a held repeat plays fresh ste
 -- Swing bends a pair: at 75% the first of each pair runs 1.5 steps and the second 0.5.
 st = R.new(1)
 for k = 1, 8 do R.presses.step(st, { k, 100 }) end
-R.internal.tempo(st, { 120 })
+st.bpm = 120
 R.presses["set-swing"](st, { 75 })
 R.internal.start(st, {})
 run(st, 4)
@@ -1157,7 +1176,7 @@ equal("⛔ one step plays alternately long and short: 125 ms in 1 step, no swing
 equal("⛔ swing and drunk together, a pair of three steps and one: 1.5 x 3 and 0.5 x 1, five steps, "
       .. "as the pair ran, and comes round on it", (function()
   local q = R.new(1)
-  R.internal.tempo(q, { 120 })
+  q.bpm = 120
   R.presses["set-swing"](q, { 75 })
   R.internal.start(q, {})
   R.presses.drunk(q, { 100 })
@@ -1169,7 +1188,7 @@ end)(), { { "tape", 625, 5 } })
 -- Drunk: a step's own length, in steps, is its own.
 st = R.new(1)
 for k = 1, 8 do R.presses.step(st, { k, 100 }) end
-R.internal.tempo(st, { 120 })
+st.bpm = 120
 R.internal.start(st, {})
 R.presses.drunk(st, { 100 })
 st.rand = dice(0.5, 1, 0.5, 0.25, 0.5, 0.5)
@@ -1182,7 +1201,7 @@ end)(), { { { "tape", 515.625, 4.125 } }, 0.123 })
 equal("⛔ a repeat longer than the tape keeps to the tape: 4 steps at 5 BPM fit, 12000 ms ...",
       (function()
         local q = R.new(1)
-        R.internal.tempo(q, { 5 })
+        q.bpm = 5
         R.internal.start(q, {})
         run(q, 4)
         R.presses.rep(q, { 4, 127 })
@@ -1191,7 +1210,7 @@ equal("⛔ a repeat longer than the tape keeps to the tape: 4 steps at 5 BPM fit
 equal("... and the same four drunk, three steps each, play its last 12000 in 12 steps' time",
       (function()
         local q = R.new(1)
-        R.internal.tempo(q, { 5 })
+        q.bpm = 5
         R.internal.start(q, {})
         R.presses.drunk(q, { 100 })
         q.rand = dice(0, 1, 0, 1, 0, 1, 0, 1)
@@ -1205,13 +1224,13 @@ st = R.new(1)
 for k = 1, 8 do R.presses.step(st, { k, 100 }) end
 R.presses.last(st, { at(16) })
 R.presses.last(st, { at(4) })
-R.internal.tempo(st, { 120 })
+st.bpm = 120
 R.internal.start(st, {})
 run(st, 2)
 equal("⛔ pad-35 pressed: u_tempo holds 500, its lamp lights, and the last step repeats, no repeat "
       .. "pad's lamp lit", R.presses.fast(st, { 1, 127 }),
       { { "tempo", "fast", { 1 } }, { "page", "fast", { 1 } }, { "page", "rep", { 0 } } })
-R.internal.tempo(st, { 500 })
+st.bpm = 500
 local tick1 = R.internal.tick(st, {})
 equal("⛔ the replay begins at the next step, its tails told as any repeat's: one step at 120 BPM",
       tails(tick1), { { "tape", 125, 1 } })

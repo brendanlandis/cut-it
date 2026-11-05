@@ -70,7 +70,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key. ⚠️ **No shipped row names it** since the Organelle's keys left the map (2026-11-04) | verified | 293 |
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, on every page** | verified | 301 |
-| `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad; an index the layout lacks is `fail u_map layout-miss` | verified | — |
+| `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad, the 500 BPM repeat and the saved tempo's lamp; `pad-35` and `pad-38` are two of them (Brendan, 2026-11-05), and `pad-36` and `pad-37` between them no row at all; an index the layout lacks is `fail u_map layout-miss` | verified | — |
 | `test-mode` | unused | Non-zero flips `u_net`'s test mode, which puts the phone's line check up ([phone.md](../device/phone.md)). **`og-shift-61` and `lp-setup`, the Launchpad's Setup, on every page**; `lp-setup` has no release, and needs none; out `u_map`'s third outlet, a cord to `u_net`. Choosing a mode turns test mode off, in `u_net` | unknown | — |
 | `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1 to the time signature's reach**, 32 at 4/4 ([sequencer.md](sequencer.md)), **`og-knob-2`**, and `swing` the sequencer's, 50% to 75%, **`og-knob-4`**, both on every page; `track-last` the selected track's own, **`og-knob-3`**, on page 2 alone, where the track is selected (Brendan, 2026-11-04). A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
 | `synth` | The **grid index**, looked up in `cut-it-synth-page.txt` | Non-zero sends `synth <choice>`, the cell's synth, to `c_synth` out `u_map`'s fourth outlet; a release does nothing, so with both pads held the first let go cannot undo the second. Eight rows, `pad-21` to `pad-28`, page 3 alone; an index the layout lacks is `fail u_map layout-miss`, as for `drum-page` (Brendan, 2026-11-04) | unknown | — |
@@ -113,7 +113,7 @@ there and nowhere else.
 | `volca-prog` | `volca-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
 | `drums` | `last-step 12`, `pad2-last 6`, `swing 62 %`: drawn by `c_steps`, which holds the latch | `last-step 16 (7)`, `swing 50 (62)` | verified | — |
 | `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
-| `drum-page` | **nothing** — the grid is the feedback, and 56 pads in use would bury the screen | none | unknown | — |
+| `drum-page` | **nothing** — the grid is the feedback, and 62 pads in use would bury the screen | none | unknown | — |
 | `synth` | **nothing** — the pads and the phone show the choice | none | unknown | — |
 | `arrangement` | **nothing** — the pad flashes and the phone shows the tempo | none | unknown | — |
 | `section` `save` `revert` `song` `go` | **nothing** — the top row's lamps, save and revert's and the go lamp say it, and the phone's songs page | none | unknown | — |
@@ -156,8 +156,8 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 | Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Eight pages × 92
-controls is 736 possible rows and the shipped file has **447** — knobs 1, 2 and 4 on all eight; the
-tap pad on page 1; knob 3 and the drum page's 60 pads on page 2; slider 1 and the eight synth pads
+controls is 736 possible rows and the shipped file has **449** — knobs 1, 2 and 4 on all eight; the
+tap pad on page 1; knob 3 and the drum page's 62 pads on page 2; slider 1 and the eight synth pads
 on page 3; and CC 90, PLAY, STOP, the four shifted keys, Setup, the top row's eight, save and
 revert, the Organelle's 25 keys and go on all eight. **The Organelle's own keys load songs**, key
 N the Nth song of the setlist chosen, the lowest the opener, and play no note (Brendan,
@@ -457,7 +457,7 @@ its own; there is no compose and perform split, and every page draws every warni
 | Page | Is | Rows today, beside the forty-seven every page has |
 |------|----|------------|
 | 1 | The arrangement | The tap pad, cell 21, for `u_tempo` ([tempo.md](tempo.md)). The boot page, `R.BOOT_MODE` |
-| 2 | The drums | The drum page's 60 pads and knob 3, for `c_steps` |
+| 2 | The drums | The drum page's 62 pads and knob 3, for `c_steps` |
 | 3 | The synths | Fader 1, the Volca's CC 41, and the synth pads, cells 21 to 28, for `c_synth` ([synths.md](synths.md)) |
 | 4–6 | Nothing yet | None |
 | 7 | The sections: making and arranging the current song's sections, on the phone (Brendan, 2026-11-05) | None: its grid is the beat row ([songs.md](songs.md)) |
@@ -525,7 +525,7 @@ per control, so two faders moving are two rows rather than four (item 317).
 
 ### The drum page is one destination and a layout table
 
-Page 2's 60 drum-page pads are 60 rows, `mode-2 pad-81 drum-page 81`, and the arg is the grid
+Page 2's 62 drum-page pads are 62 rows, `mode-2 pad-81 drum-page 81`, and the arg is the grid
 index because the handler never sees the control's name — the `volca-key` precedent. The handler
 looks the index up in `cut-it-drum-page.txt`, the table `g_grid` paints the page from
 ([display.md](display.md)), so `c_steps` receives `step 1 100` and never a cell. **The map says

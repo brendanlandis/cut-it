@@ -10,8 +10,8 @@
 -- sync, snap, select, vol, pitch, randomness, set-track-last, num, den, drunk, set-swing and
 -- set-last, its effects, drive, tone, dist, char, delay-note, delay-feel, feedback, delay, send,
 -- size, damping and verb-type, and each track's mute, solo and rnd-pitch, from u_net.
--- inlet 2: c_steps.pd's own -- tick, start, stop, restore <the saved line>, init, tempo <bpm> off
--- the tempo bus, and sync off the state bus: put the pattern now if it is being held.
+-- inlet 2: c_steps.pd's own -- tick <bpm>, start, stop, restore <the saved line>, init, and sync
+-- off the state bus: put the pattern now if it is being held.
 -- outlet 1: pad <pad> <velocity>, and a track's vol <pad> <dB> and pitch <pad> <semitones> and
 -- its effects, drive, tone, dist, char, delay-time, feedback, delay and send <pad> <value>, and the
 -- reverb's size and damping <value> and verb-type <0-2>, and a held repeat's tape <span> <units>

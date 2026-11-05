@@ -54,8 +54,19 @@ def draw(kind, p, v, x, y, w, h):
             out.append('<rect x="%g" y="%g" width="%g" height="%g" rx="3" fill="%s" stroke="%s"/>'
                        % (x, y, w, h, fill, stroke))
     elif kind == "FADER":
+        fill = rgba(col, DIM) if p.get("background") != "0" else "none"
+        stroke = rgba(col) if p.get("outline") != "0" else "none"
         out.append('<rect x="%g" y="%g" width="%g" height="%g" rx="3" fill="%s" stroke="%s"/>'
-                   % (x, y, w, h, rgba(col, DIM), rgba(col)))
+                   % (x, y, w, h, fill, stroke))
+    elif kind == "RADIO":
+        # a segment each, the selected one at full strength, the rest at their resting fill
+        n, sel = int(p.get("steps") or 1), int(float(v.get("x") or 0))
+        across = p.get("orientation") == "1"
+        for i in range(n):
+            sx, sy, sw, sh = ((x + i * w / n, y, w / n, h) if across
+                              else (x, y + i * h / n, w, h / n))
+            out.append('<rect x="%g" y="%g" width="%g" height="%g" fill="%s" stroke="%s"/>'
+                       % (sx, sy, sw, sh, rgba(col) if i == sel else rgba(col, DIM), rgba(col)))
     elif kind == "RADIAL":
         r = min(w, h) / 2
         out.append('<circle cx="%g" cy="%g" r="%g" fill="%s" stroke="%s" stroke-width="2"/>'

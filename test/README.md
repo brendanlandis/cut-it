@@ -29,7 +29,7 @@ were false.
 | `init-assert.sh` | 17 | `module/boot` |
 | `audio-assert.sh` | 17 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
-| `display-assert.sh` | 108: 62 in Lua, 46 in Pd | `module/display` — the grid, its drum page's painter, page 3's synth pads and page 1's tap pad included |
+| `display-assert.sh` | 112: 66 in Lua, 46 in Pd | `module/display` — the grid, its drum page's painter, page 3's synth pads and page 1's tap pad included |
 | `oled-assert.sh` | 69 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 68: 33 in Lua, 35 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
@@ -44,16 +44,16 @@ were false.
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
 | `phone-assert.sh` | 140 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 237: 39 read, 198 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `touchosc-assert.sh` | 251: 42 read, 209 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 316: 237 in Lua, 79 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 345: 260 in Lua, 85 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 38 | `module/sequencer` — the kit and its effects, as a signal |
 | `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1933 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
+**1980 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1926**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1973**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh`, `song-assert.sh`, `tempo-assert.sh` and `display-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
@@ -219,6 +219,31 @@ swapped (read 2, Lua 2), the mix knob sending `mix` (read 2, Lua 1), the root ne
 effect (Lua 1), every effect knob sending for track 1 (Lua 2), the pads' last step unclipped (Lua
 1), and the contrast audit reading a vertical radio as one segment (read 1).
 
+✅ **Mute and solo were made to fail, check by check** (2026-11-05, Brendan's mute and solo per
+track), each against a mutation of the code, the file then restored from git. `c_steps_test.lua`:
+a muted track still playing (6 failed), a solo heeding the mutes (1), a muted track rolling no dice
+(1), the mutes and solos never saved (4), the restore never reading them (4), a short line keeping
+them (2), the page told every time (8), the phone's state without them (10), a press on a muted pad
+silent (1), `mute` taken as `solo` (10), the page told `mute` for `quiet` (8), a value kept as it
+came (1), track 1 starting muted (66), the same value saved again (2), the mute inverted (31), and
+the line's length a number short (1). `g_grid_test.lua`: the painter ignoring `quiet` (4), the two
+dim colors swapped (5), the RGB table without them (5), the pink at a third (4), the array defined
+too short (1), a short `quiet` clearing the rest (2), `quiet` a pad off (4), taking a symbol first
+(1), and answering (2). `sequencer-assert`'s Pd half: a muted track still playing (2), a solo
+heeding the mutes (2), the painter ignoring `quiet` (2, both frames), the mutes and solos never
+saved (3: both puts and the draft), the RGB table without the two entries (5), and the drunkenness
+never stopped (1: *STOP stops it again*, which reads the drag's window now that the mute and solo
+windows come before the drunkenness, for the draft's 2 s). `touchosc-assert`, each layout rebuilt
+with the fault: gaps of 15 (read 3: the 10-point step, the margin and the home bar), sync and snap
+10 points low (read 1: the 20-point grid still holds every other control), the block 10 low (read
+2), M teal and S red (read 1, Lua 1), every M and S for track 1 (read 1, Lua 3), a tap asking for
+what it shows (Lua 3), the root never lighting them (Lua 7) or reading them a block off (Lua 7), a
+98-number state putting them out (Lua 1), a pad's drag 25 points a step (read 1), M and S lit by
+what they were told alone, deaf after a finger let go (Lua 1), no M or S at all (read 3, then the
+Lua stopped), an M a step wide (read 1), the letters swapped (read 1), a lit letter left white (Lua
+1), M and S sending as the state lights them (Lua 6), a pad selecting the next track (read 1, Lua
+2), a pad's script on its old 100 steps (Lua 2), and an 88-number state drawing the effects (Lua 1).
+
  ⚠️ Three pages name more than one gate, and that is the rule working rather than
 bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
 master reference and the clock cut from it, and `device/organelle` covers a front panel and an LED.
@@ -299,7 +324,7 @@ and the verdict file in `results/` all went, and every step's text is in the che
 ## `display-assert.sh` and `launchpad-assert.sh` — no eyes and no hardware
 
 ```sh
-./test/gate/display-assert.sh          62 + 46 checks, ~46 s — the drum page's painter in Lua, then the ARBITER
+./test/gate/display-assert.sh          66 + 46 checks, ~46 s — the drum page's painter in Lua, then the ARBITER
 ./test/gate/launchpad-assert.sh        19 checks, ~15 s — the DEVICE
 ```
 
@@ -344,14 +369,15 @@ underneath, the beat row never leaving 11–18, the grid SURVIVING a panic, and
 `m_launchpad`'s Programmer and Live SysEx.
 
 **It runs the drum page's painter's Lua tests first** (2026-11-05): `test/gate/lua/g_grid_test.lua`,
-with no Pd, drives `g_grid.lua` and its face through `lib_test`'s stand-in for pdlua, which carries a
-`pd.Table` over arrays the test makes. **62 checks**: the colors read through `g_grid.pd`'s own RGB
-table and held to the page's, the layout's 60 cells in its order, every cell at load, the rows of
-steps at 4/4, 3/4, 9/8, 7/8, 5/4 and `bar 0`, the levels, a step past the last step dark, the
-playhead, the buttons, the pads and the repeat pads, what changes nothing, `init`, and the face: the
-writes into the frame buffer and nowhere else, a buffer made after it, `bad-selector`, `no-surface`,
-a missing layout, a throw, and `g_grid.pd` making it and no longer reading the layout itself. What
-reaches the Launchpad is the Pd half's, and `sequencer-assert`'s.
+with no Pd, drives `g_grid.lua` and its face through `lib_test`'s stand-in for pdlua, which carries
+a `pd.Table` over arrays the test makes. **66 checks**: the colors read through `g_grid.pd`'s own
+RGB table and held to the page's, the layout's 60 cells in its order, every cell at load, the rows
+of steps at 4/4, 3/4, 9/8, 7/8, 5/4 and `bar 0`, the levels, a step past the last step dark, the
+playhead, the buttons, the pads and the repeat pads, the pads whose tracks won't play, dim, what
+changes nothing, `init`, and the face: the writes into the frame buffer and nowhere else, a buffer
+made after it, `bad-selector`, `no-surface`, a missing layout, a throw, and `g_grid.pd` making it
+and no longer reading the layout itself. What reaches the Launchpad is the Pd half's, and
+`sequencer-assert`'s.
 
 ✅ **The drum page's painter was made to fail, check by check** (2026-11-05, when it moved from
 `pd regions` to Lua), each against a mutation, the file then restored, until every one of the 62
@@ -619,7 +645,7 @@ passes them; with its cord from `drums` to `c_steps` cut, all four failed with t
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       39 + 198 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       42 + 209 checks, ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
@@ -628,25 +654,28 @@ returns the first of two; **every screen is a page of a pager and nothing is hid
 editor, which runs no script, reaches each by its tab: the root holds one pager, its tab bar on in
 the file, whose pages are the Launchpad's eight, as many as `u_map.lua`'s `R.PAGES`, then the
 checklist page, each holding a pager of its own with one tab named for the page, but the sections
-page's two and the songs page's three, and pages 4 to 6 blank (Brendan, 2026-11-04 and
-2026-11-05); no diagnostic command is left; and what its buttons send
-equals what `u_net` routes and `c_steps` and `c_synth` take, **the inbound vocabulary read from both
-ends**: the velocity switch asks for exactly the settings `u_net` acknowledges, and every synth button sends a synth
-`c_synth.lua`'s `R.SYNTHS` names, `u_net` acknowledges exactly those, and there is one on the synths
-screen and one on the checklist page for each. The drum screen's sixteen pads each drag their own
-track's volume, pitch, last step and randomness, the four its radio chooses between; the radio is
-TouchOSC's own, vertical, its first segment on top, a word over each, and sends nothing, and so is
-the effect radio beside it, distortion, delay and reverb (Brendan, 2026-11-05), whose controls sit
-to its right and send exactly the effect commands `c_steps` takes; and a pad is a relative fader,
-about 20 points of drag a step. The songs page sends exactly the commands `u_song.lua`'s
-`R.songs_cmds` takes, its name tab both `name` and `set-name`, and its starts switch is a radio
-asking for exactly `R.STARTS`. The phone is the only sender there is, and the
-layout and `u_net` deploy by different routes, `push.sh` and `tools/deploy.sh`, so their spellings
-could drift apart with nothing failing until somebody is at the rig. Every acknowledgment `u_net`
-sends must light a button. **And every pairing meets WCAG AA contrast as TouchOSC draws it**: each
-label against what lies under it, 4.5:1 or 3:1 for large text, each control's outline against the
-page, 3:1, and each tab's text and states, from the resting fill TouchOSC draws at 26% of a color
-(measured, TouchOSC's Reference page).
+page's two and the songs page's three, and pages 4 to 6 blank (Brendan, 2026-11-04 and 2026-11-05);
+no diagnostic command is left; and what its buttons send equals what `u_net` routes and `c_steps`
+and `c_synth` take, **the inbound vocabulary read from both ends**: the velocity switch asks for
+exactly the settings `u_net` acknowledges, and every synth button sends a synth `c_synth.lua`'s
+`R.SYNTHS` names, `u_net` acknowledges exactly those, and there is one on the synths screen and one
+on the checklist page for each. The drum screen's sixteen pads each drag their own track's volume,
+pitch, last step and randomness, the four its radio chooses between; the radio is TouchOSC's own,
+vertical, its first segment on top, a word over each, and sends nothing, and so is the effect radio
+beside it, distortion, delay and reverb (Brendan, 2026-11-05), whose controls sit to its right and
+send exactly the effect commands `c_steps` takes; under each pad its M and S, 30 by 20, M red and S
+teal, each sending its own track's `mute` or `solo`; and a pad is a relative fader, about 20 points
+of drag a step. **Every control sits on the editor's 20-point grid**, inside the margins, **but the
+drum screen's pads and their M and S**, 112 controls named one by one, which step by 10 and reach 10
+points into the bottom margin, clear of the home bar (Brendan, 2026-11-05). The songs page sends
+exactly the commands `u_song.lua`'s `R.songs_cmds` takes, its name tab both `name` and `set-name`,
+and its starts switch is a radio asking for exactly `R.STARTS`. The phone is the only sender there
+is, and the layout and `u_net` deploy by different routes, `push.sh` and `tools/deploy.sh`, so their
+spellings could drift apart with nothing failing until somebody is at the rig. Every acknowledgment
+`u_net` sends must light a button. **And every pairing meets WCAG AA contrast as TouchOSC draws
+it**: each label against what lies under it, 4.5:1 or 3:1 for large text, each control's outline
+against the page, 3:1, and each tab's text and states, from the resting fill TouchOSC draws at 26%
+of a color (measured, TouchOSC's Reference page).
 
 Then the layout's own scripts, unpacked into the scratch directory and run by
 `test/gate/lua/touchosc_test.lua` under `test/gate/lua/lib_touchosc.lua`, a stand-in for TouchOSC as
@@ -656,7 +685,9 @@ screen's tempo, time signature, last step, swing and drunkenness (a value from C
 back, a tempo that is not whole never sent back rounded, the last step's box reaching exactly as
 far as `c_steps.lua`'s `R.reach` lets the last step for every top number, 1 to 32), the drum screen's pads (the number its
 radio chooses, a tap that selects, a drag that sends its track's value as it stands, and the state
-never sent back, a last step dragged no further than `R.reach`), its effects (the chosen
+never sent back, a last step dragged no further than `R.reach`), its M and S (lit by the state
+and never sending it back, a tap asking for the other setting, a 98-number state leaving them as
+they were), its effects (the chosen
 effect's controls shown and the others hidden, each handed the selected track's value and sending
 for that track, the reverb's size and damping for none) and buttons, the synths screen and the checklist page's FM and STRINGS, and the velocity switch, lit by
 the state and never sending when lit, the songs page (its rows lit by the state and a lit one
@@ -702,16 +733,18 @@ reach worked out wrong (Lua 9).
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      237 + 76 checks, ~40 s — c_steps' rules in Lua, then the drum page and the pattern in the song's draft
+./test/gate/sequencer-assert.sh      260 + 85 checks, ~40 s — c_steps' rules in Lua, then the drum page and the pattern in the song's draft
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
 Pd: the rules in `Cut It/c_steps.lua` press by press (the levels, the step rule's three cases, the
 selected track, which pads fire, swing, drunkenness's curve, randomness's coin with seeded dice, the
-drum screen's pads, the bar, the time signature's rows, a press landing on the step its row and
-column mean, the reach that clips every last step, the bottom number changing nothing but the
-save, a section's restore starting every loop again, the restore, lines saved
-before the randomness and before sections included), and `c_steps-lua.pd_lua` through
+drum screen's pads, mute and solo (a muted track's hits, its coins and its repeats silent, its dice
+still rolled, a solo winning over the mutes, the page told which pads won't play only when that
+changes, and the lines saved before them loading unmuted), the bar, the time signature's rows, a
+press landing on the step its row and column mean, the reach that clips every last step, the bottom
+number changing nothing but the save, a section's restore starting every loop again, the restore,
+lines saved before the randomness and before sections included), and `c_steps-lua.pd_lua` through
 `test/gate/lua/lib_test.lua`'s stand-in for pdlua (its inlets and outlets, `bad-selector`, a
 throwing rule caught as `fail c_steps lua-fire`). Then the Pd half below, on a running copy of the
 instrument, which is unchanged since the rules were Pd: **it is the proof the Lua port changed
@@ -737,7 +770,10 @@ The drum screen's pads come over OSC too: a track's volume and pitch reach `c_ki
 effects, four tracks' and the reverb's size, reach it at the restore too, those alone, since
 `c_kit` was told the rest at load, and come back whole in the song's draft; a track at full
 randomness plays a coin on every step, at a level's velocity, while the rest play as written; and
-at full drunkenness at most 60 of 96 sixteenths hold exactly one step.
+at full drunkenness at most 60 of 96 sixteenths hold exactly one step. Then track 1 is muted and
+then soloed as well, over OSC: muted, it is silent while track 2 plays, soloed, it plays though
+muted while track 2 is silent, each is put as a 743-number line, and the Launchpad shows the pads
+that won't play dim, pink or the selected red at a quarter; the song's draft ends with both.
 
 ✅ **Proven red before it was trusted**: with `c_steps` absent (the known exit 2), against the patch
 before the sequencer was wired (20 of 28), and on eight mutations — the step rule inverted, PLAY not

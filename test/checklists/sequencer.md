@@ -2,7 +2,7 @@
 
 Page 2's drum page on the Launchpad, the sequencer playing the drum samples from the Organelle, and the pattern surviving a reload. `sequencer-assert` proves the notes, the frames and the file; what is left is what only the rig can show — whether the page reads, and how the drums sound.
 
-29 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
+38 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
 
 - [ ] **1. The drum page**
   - **Need:** A fresh load of the patch with no saved pattern — the selection resets at every load and a saved step would be lit.
@@ -168,3 +168,26 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Do:** Press the top row's second pad, the second section, and let it start; on the phone tap pad 1, then delay, and turn its level to 0, then tap pad 2, reverb, and turn its send to 0. Press the top row's first pad and let it start, then the second again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY.
   - **Pass if:** In the second section the two drums are dry; going back to the first, pad 1 echoes and pad 2 has its reverb again, and the phone's controls for each show the first section's settings; back in the second, dry again. After the reload each section has the effects it had when saved.
   - **Note:** The effects are a section's, with its pattern, as volume and pitch are (Brendan, 2026-11-05). That every effect reaches `c_kit` at a restore, and the delay's time and levels, are `sequencer-assert`'s and `kit-assert`'s; this is how they sound.
+
+- [ ] **35. Mute a drum from the phone**
+  - **Need:** Brendan's samples deployed, the phone linked, 4/4 at 120 BPM, nothing muted or soloed and every effect off. On page 2, light pad 1's steps 1, 5, 9 and 13, pad 2's steps 3 and 11, and pad 3's steps 7 and 15, pads 1 to 3 being the bottom row's first three; then select pad 2.
+  - **Send:** `start bang; mode mode-2`
+  - **Do:** On the phone's drum screen tap the M under pad 1. Then press pad 1 on the Launchpad. Then tap the M under pad 1 again.
+  - **Pass if:** At the M pad 1 stops from its next hit while pads 2 and 3 play on; the M lights red, its letter black; on the Launchpad pad 1 turns dim pink and pad 2 stays red. Pressing pad 1 on the Launchpad still plays it, once, and it turns dim red, selected. Tapped again, the M goes out, pad 1 comes back in on its own beat, and the Launchpad's pad 1 is red again.
+  - **Note:** A press on a muted pad playing it is a judgment call, so a muted drum can be heard before it comes back in ([sequencer](../../ref/module/sequencer.md), *Mute and solo stop the hits, not the sound*). Which notes play, muted, soloed and both, is `sequencer-assert`'s; this is what the rig shows.
+
+- [ ] **36. A mute lets the tails ring out**
+  - **Need:** Playing, from the step before, nothing muted.
+  - **Do:** On the phone tap pad 1, then delay: tap 1/4 and straight, turn feedback to about 60% and level all the way up. Then reverb: turn send to about 70% and size to about 80%. Listen for a bar, then tap the M under pad 1 and listen. After the tails have gone, tap the M again, then turn pad 1's send and its delay's level back to 0.
+  - **Pass if:** At the M pad 1's hits stop at once, but the echoes and the reverb already sounding die away on their own over a few repeats rather than cutting off. Unmuted, it comes back with its echoes and its room.
+
+- [ ] **37. Solo**
+  - **Need:** Playing, from the step before, nothing muted or soloed, every effect off, pad 2 selected.
+  - **Do:** Tap the M under pad 1. Then tap the S under pad 2. Then tap the S under pad 1. Then tap both S again, and last the M under pad 1.
+  - **Pass if:** With pad 1 muted, pads 2 and 3 play. At the S under pad 2, lit teal, only pad 2 plays, and on the Launchpad every pad but pad 2 turns dim pink while pad 2 stays red. At the S under pad 1 pads 1 and 2 play, pad 1 though its M is still lit, and its Launchpad pad is bright pink again. With both S out, pads 2 and 3 play and pad 1 is silent and dim again; at the M, all three play and every pad is bright.
+
+- [ ] **38. Mute and solo are saved with a section**
+  - **Need:** The pattern from the steps before, playing, nothing muted or soloed, in section 1, and section 2 a copy of it: on the phone's sections page, page 7, select section 1 and tap **new, a copy of**.
+  - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone tap the M under pad 1 and the S under pad 3. Press the third button, section 1, and let it start, then the fourth again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn.
+  - **Pass if:** In section 2 only pad 3 plays, and the phone shows pad 1's M and pad 3's S lit and the Launchpad every pad but pad 3 dim. In section 1 all three play, every M and S out and every pad bright; back in section 2, pad 1's M and pad 3's S again. After the reload each section has what it had when saved.
+  - **Note:** Mute and solo are a section's, with its pattern (Brendan, 2026-11-05). That a section saved before them loads with nothing muted is `sequencer-assert`'s.

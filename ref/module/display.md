@@ -191,8 +191,9 @@ to know what a press means, so a press and its lamp cannot disagree. Its 60 rows
 **The caller is `c_steps`, on `g_grid`'s third inlet, and it sends meaning, never a cell** (C-5):
 `steps <32 levels>` for the selected track, 0 for off, `play <step>` (0 while stopped), `vel <level>`,
 `track <pad>` and `last <step>`, the selected track's, `bar <N> <row>`, the time signature as the
-page shows it, a blue step every *N* and *row* steps to a row, and `rep <pad>`, the repeat pad
-held, 0 for none. Every message sets the dirty flag. Anything else is `fail g_grid bad-selector`.
+page shows it, a blue step every *N* and *row* steps to a row, `rep <pad>`, the repeat pad
+held, 0 for none, and `quiet <16 flags>`, track 1 first, 1 for each track that won't play, muted or
+left out of a solo. Every message sets the dirty flag. Anything else is `fail g_grid bad-selector`.
 
 **The page is painted in Lua** (`cut-it/drum-page-in-lua`, 2026-11-05): `g_grid.lua` holds the
 rules, and `g_grid-lua.pd_lua` is the face, made at `g_grid`'s top level as `[g_grid-lua
@@ -234,6 +235,7 @@ button is selected.
 | The selected pad | Red: RGB 127, 0, 0 (Brendan, 2026-11-05) | unknown |
 | Every other pad | Bright pink: RGB 127, 20, 72 (Brendan, 2026-11-05). Near black, 6, 6, 6, they read too indistinct, and so did pink at a quarter beside the selected one at full; palette 1 before that read the same as the dimmest velocity button (2026-11-03). Pink is free on this page: the velocity ramp's pinks run white to red, green and blue equal, and pink leans to blue | unknown |
 | A repeat pad | Purple: RGB 20, 8, 32, and 80, 24, 127 while it is held (Brendan, from a mockup, 2026-11-04) | unknown |
+| A pad whose track won't play, muted or left out of a solo | Dim: the pink at a quarter, RGB 32, 5, 18, and selected, the red at a quarter, 32, 0, 0 (Brendan, 2026-11-05) | unknown |
 
 **The beat row gives way**, and the right 4×4's second row stays dark. The mode lamps are drawn
 as in every mode.
@@ -244,7 +246,9 @@ own RGB table, and the paint loop sends those cells as type 3, red, green and bl
 green and blue 127, 109, 91, 73, 54, 36, 18, 0 for levels 1 to 8; the quarter is each over four;
 127, 20, 72 for a pad not selected; 16, 40, 127 for a blue step; 20, 8, 32 and 80, 24,
 127 for a repeat pad and the one held; and 127, 0, 0 for the selected pad, entry 26, after the
-synth and tap entries; then the edges' three (*`g_grid`'s edges, on every page*, below).
+synth and tap entries; then the edges' three (*`g_grid`'s edges, on every page*, below); then 32,
+5, 18 and 32, 0, 0 for a pad whose track won't play and the same selected, entries 30 and 31,
+158 and 159 on the surface.
 ✅ On the rig the eight read as eight, white to red (Brendan, 2026-11-03).
 
 ### `g_grid`'s synth pads, page 3
@@ -624,8 +628,8 @@ controls the page, and does not copy the OLED*).
 
 ## Open
 
-- ⬜ **Playing costs 3.6 points more of the Organelle's core since the painter moved to Lua**, and the
-  painter's own calls explain 0.2 of them (2026-11-05, `/proc` over 8 s, three plays each, old and
-  new alternated: 15.8% playing before, 19.5% after; stopped, 14.4% both). On the device a paint
-  takes about 240 µs, 8 a second at 120 BPM, and its rules 0.027 ms of that. What else the move
-  changed per step is not found yet (`cut-it/drum-page-in-lua`).
+- ⬜ **Playing costs 3.6 points more of the Organelle's core since the painter moved to Lua**
+  (`cut-it/drum-page-in-lua`), and the painter's own calls explain 0.2 of them (2026-11-05, `/proc`
+  over 8 s, three plays each, old and new alternated: 15.8% playing before, 19.5% after; stopped,
+  14.4% both). On the device a paint takes about 240 µs, 8 a second at 120 BPM, and its rules
+  0.027 ms of that. What else the move changed per step is not found yet.

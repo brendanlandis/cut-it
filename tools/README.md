@@ -381,7 +381,7 @@ python3 tools/touchosc/watch.py
   the page's margins; captions flush left over their controls; values and button words centered;
   status on the bottom row. `ref/device/phone.md`, *The grid*, has the panels and columns. One
   exception (Brendan, 2026-11-05): the drum screen's pads and the M and S under each step by 10
-  points and run 10 into the bottom margin; `touchosc-assert` names them, and nothing else.
+  points and start 10 into the top margin, ending on the bottom one inside the page's 334-point frame; `touchosc-assert` names them, and nothing else.
 
 **Every screen is a page, and the editor reaches each by its tab** (Brendan, 2026-11-04). No script
 runs in the editor, so nothing in the layout is hidden for a script to show:

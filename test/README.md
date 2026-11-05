@@ -666,8 +666,9 @@ beside it, distortion, delay and reverb (Brendan, 2026-11-05), whose controls si
 send exactly the effect commands `c_steps` takes; under each pad its M and S, 30 by 20, M red and S
 teal, each sending its own track's `mute` or `solo`; and a pad is a relative fader, about 20 points
 of drag a step. **Every control sits on the editor's 20-point grid**, inside the margins, **but the
-drum screen's pads and their M and S**, 112 controls named one by one, which step by 10 and reach 10
-points into the bottom margin, clear of the home bar (Brendan, 2026-11-05). The songs page sends
+drum screen's pads and their M and S**, 112 controls named one by one, which step by 10 and start 10
+points into the top margin, ending on the bottom one inside the page's 334-point frame (Brendan,
+2026-11-05). The songs page sends
 exactly the commands `u_song.lua`'s `R.songs_cmds` takes, its name tab both `name` and `set-name`,
 and its starts switch is a radio asking for exactly `R.STARTS`. The phone is the only sender there
 is, and the layout and `u_net` deploy by different routes, `push.sh` and `tools/deploy.sh`, so their

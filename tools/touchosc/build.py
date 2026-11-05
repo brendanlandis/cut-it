@@ -816,15 +816,16 @@ def drums():
     # its track's mute and solo, M and S, lit by the state, M red and S teal (Brendan, 2026-11-05).
     # ⛔ This panel alone is off the 20-point grid, on a 10-point step of it: pads 60 wide and 50
     # tall, M and S 30 by 20 each directly under their pad, and 10 points between, Brendan's pick
-    # of three mockups (2026-11-05). Four rows of 50 + 20 and three gaps of 10 are 310, from Y0 to
-    # 10 points below Y1, clear of the home bar on the phone. touchosc-assert names every one of
-    # these controls as the grid's one exception.
+    # of three mockups (2026-11-05). Four rows of 50 + 20 and three gaps of 10 are 310, from 10
+    # points above Y0 to Y1: the page's frame is 334 points tall, so ending at Y1 keeps the bottom
+    # row of M and S whole. touchosc-assert names every one of these controls as the grid's one
+    # exception.
     pw, ph, fw, fh, gap = 60, 50, 30, 20, 10
     cells = pad_cells()
     top, left = max(r for r, _ in cells.values()), min(c for _, c in cells.values())
     for n in range(1, 17):
         r, c = top - cells[n][0], cells[n][1] - left
-        x, y = X0 + c * (pw + gap), Y0 + r * (ph + fh + gap)
+        x, y = X0 + c * (pw + gap), Y0 - gap + r * (ph + fh + gap)
         f = (x, y, pw, ph)
         k.append(node("BUTTON", "pad%df" % n, f, color=RED, interactive=False, outline=False))
         k.append(node("FADER", "pad%d" % n, f, color=RED, outlineStyle=0, background=False,

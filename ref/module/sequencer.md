@@ -338,7 +338,8 @@ tail has died, so turning one down never cuts what it is still sounding. Nothing
 thinner for being switched: a switched-off abstraction's output is silence, and the distortion adds
 to the dry sound only what it changes. The 0.6 the kit costs at rest more than it did is sixteen
 `delwrite~`s, which cost a little even switched off, and the voices' switched-off distortion and
-sends; `tools/display-cpu.sh`'s budget, the full rig's 15.2% plus a point, still holds it.
+sends. On the full rig's 15.2% that makes about 15.8%, inside `tools/display-cpu.sh`'s budget of
+16.2%: an estimate from the second Pd, until the instrument is measured with them deployed.
 
 **The distortion is in the voice, the delay beside it.** A distortion only ever sounds while its
 voice does, so in `c_voice` it costs nothing between hits; a delay's echoes outlive the hit, so it

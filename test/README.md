@@ -27,7 +27,7 @@ were false.
 |---|---|---|
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 17 | `module/boot` |
-| `audio-assert.sh` | 16 | `module/audio` |
+| `audio-assert.sh` | 17 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
 | `display-assert.sh` | 46 | `module/display` — the grid, page 3's synth pads and page 1's tap pad included |
 | `oled-assert.sh` | 69 | `module/display` — the OLED |
@@ -44,16 +44,16 @@ were false.
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
 | `phone-assert.sh` | 134 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 187: 32 read, 155 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `touchosc-assert.sh` | 205: 36 read, 169 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 288: 213 in Lua, 75 in Pd | `module/sequencer` |
-| `kit-assert.sh` | 25 | `module/sequencer` — the kit, as a signal |
+| `sequencer-assert.sh` | 313: 237 in Lua, 76 in Pd | `module/sequencer` |
+| `kit-assert.sh` | 38 | `module/sequencer` — the kit and its effects, as a signal |
 | `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1655 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
+**1712 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1648**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1705**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh`, `song-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
@@ -181,6 +181,22 @@ and `c_voice` together (6 failed: the levels at -6 and +6 dB, the octave up and 
 octave down's level and length), on the old `c_kit` alone, which passes neither on (the same 6),
 and on the old `c_voice` alone (7: the octave down's frequency too, once it was measured over
 what both an unpitched and a pitched sample cover).
+
+✅ **The drums' effects were made to fail, check by check** (2026-11-05, Brendan's Drums 3), each
+against a mutation of the code, the file then restored from git. `c_steps_test.lua`: the phone's
+effects never told to `c_kit` (7 failed), every effect told again at a restore (8), the line always
+711 (30), a short line leaving the effects as they were (4), a dotted note at 5/4 (2), the phone's
+state without the selected track's effects (9), and the load telling `c_kit` none (4).
+`sequencer-assert`: a restore telling `c_kit` no effect (Lua 4, Pd 1: the seeded effects never
+reach `t_kit`), and the line never holding them (Lua 4, Pd 8). `kit-assert`: the distortion adding
+the driven sound without taking the dry (3), the delay without its block's 64 samples (1: the echo
+64 samples late), deaf to the tempo bus (4), switched off at once at level 0 (1: the tail cut), the
+reverb catching nothing (1), and `e_verb` without its `switch~` (1). `audio-assert`: a voice
+throwing to a name nothing catches (1). `touchosc-assert`, each layout rebuilt with the fault: the
+show radio horizontal (read 2, the contrast audit among them), the effect radio's delay and reverb
+swapped (read 2, Lua 2), the mix knob sending `mix` (read 2, Lua 1), the root never hiding an
+effect (Lua 1), every effect knob sending for track 1 (Lua 2), the pads' last step unclipped (Lua
+1), and the contrast audit reading a vertical radio as one segment (read 1).
 
  ⚠️ Three pages name more than one gate, and that is the rule working rather than
 bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
@@ -542,7 +558,7 @@ passes them; with its cord from `drums` to `c_steps` cut, all four failed with t
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       32 + 155 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       36 + 169 checks, ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
@@ -557,8 +573,10 @@ ends**: the velocity switch asks for exactly the settings `u_net` acknowledges, 
 `c_synth.lua`'s `R.SYNTHS` names, `u_net` acknowledges exactly those, and there is one on the synths
 screen and one on the checklist page for each. The drum screen's sixteen pads each drag their own
 track's volume, pitch, last step and randomness, the four its radio chooses between; the radio is
-TouchOSC's own, horizontal, a segment and a centered word for each, and sends nothing; and a pad is a
-relative fader, about 20 points of drag a step. The phone is the only sender there is, and the
+TouchOSC's own, vertical, its first segment on top, a word over each, and sends nothing, and so is
+the effect radio beside it, distortion, delay and reverb (Brendan, 2026-11-05), whose controls sit
+to its right and send exactly the effect commands `c_steps` takes; and a pad is a relative fader,
+about 20 points of drag a step. The phone is the only sender there is, and the
 layout and `u_net` deploy by different routes, `push.sh` and `tools/deploy.sh`, so their spellings
 could drift apart with nothing failing until somebody is at the rig. Every acknowledgment `u_net`
 sends must light a button. **And every pairing meets WCAG AA contrast as TouchOSC draws it**: each
@@ -574,7 +592,9 @@ screen's tempo, time signature, last step, swing and drunkenness (a value from C
 back, a tempo that is not whole never sent back rounded, the last step's box reaching exactly as
 far as `c_steps.lua`'s `R.reach` lets the last step for every top number, 1 to 32), the drum screen's pads (the number its
 radio chooses, a tap that selects, a drag that sends its track's value as it stands, and the state
-never sent back) and buttons, the synths screen and the checklist page's FM and STRINGS, and the velocity switch, lit by
+never sent back, a last step dragged no further than `R.reach`), its effects (the chosen
+effect's controls shown and the others hidden, each handed the selected track's value and sending
+for that track, the reverb's size and damping for none) and buttons, the synths screen and the checklist page's FM and STRINGS, and the velocity switch, lit by
 the state and never sending when lit, the checklist page's Pass, Fail, Back and Next, nothing drawn
 from a parameter, a status or an alert, and NO-LINK. The
 page is driven on a development checklist with a step on two pages, built for the run, since every
@@ -614,7 +634,7 @@ reach worked out wrong (Lua 9).
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      213 + 75 checks, ~40 s — c_steps' rules in Lua, then the drum page and the pattern in the song's draft
+./test/gate/sequencer-assert.sh      237 + 76 checks, ~40 s — c_steps' rules in Lua, then the drum page and the pattern in the song's draft
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
@@ -645,7 +665,9 @@ by note. Then the drum screen's `snap` is sent as the phone sends it, OSC to `u_
 is held at 50% until turned all the way down, and at 75% puts step 2 three quarters through its pair;
 the global last step and the swing are put as they change, a section's.
 The drum screen's pads come over OSC too: a track's volume and pitch reach `c_kit`'s stand-in,
-`test/stubs/t_kit.pd`, which prints them, as every track's do at the restore; a track at full
+`test/stubs/t_kit.pd`, which prints them, as every track's do at the restore, and the seed's
+effects, four tracks' and the reverb's size, reach it at the restore too, those alone, since
+`c_kit` was told the rest at load, and come back whole in the song's draft; a track at full
 randomness plays a coin on every step, at a level's velocity, while the rest play as written; and
 at full drunkenness at most 60 of 96 sixteenths hold exactly one step.
 

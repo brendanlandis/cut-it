@@ -369,20 +369,41 @@ equal("... and the object carries on: a mode still answers",
       T.send(broken, 2, "mode-2", {}), { { 2, "list", { "mode-2" } } })
 
 print("\n--- a knob mapped to rush ---")
-local RUSHING = "mode-1 og-knob-4 rush 0\nmode-1 og-knob-2 volca-cc 42\n"
+local RUSHING = "mode-1 og-knob-4 rush 0\nmode-1 og-knob-1 tempo 0\nmode-1 og-knob-2 volca-cc 42\n"
+local AT_120 = R.rush_position(120)
 for _, unsaved in ipairs({ false, true }) do
   local q = R.new(RUSHING, unsaved)
   local live = function(x) return R.control(q, "og-knob-4", { x })[1][3][5] end
-  equal("⛔ held at load, Saved or not (" .. tostring(unsaved) .. "), and its value still leaves, for its row",
-        R.control(q, "og-knob-4", { 0.7 }), route("rush", 0, 0.7, 0, 0))
-  equal("⛔ its bottom inside the boot window may be knobs.txt's, so it stays held", live(0), 0)
+  equal("⛔ held at load at 120, Saved or not (" .. tostring(unsaved) .. "), and its value still leaves, for its row",
+        R.control(q, "og-knob-4", { 0.7 }), route("rush", 0, 0.7, AT_120, 0))
+  equal("⛔ inside the boot window a value may be knobs.txt's, so even past 120 it stays held", live(0.1), 0)
   R.internal["window-shut"](q)
-  equal("still held anywhere above its bottom", live(0.5), 0)
+  equal("still held on the side its first value finds", live(0.7), 0)
   R.internal.live(q)
-  equal("⛔ a recover does not free it: left up it would race the moment it was touched", live(0.5), 0)
-  equal("⛔ at its bottom it lets go, a hair above 0 too, since a pot may stop short", live(R.RUSH_BOTTOM), 1)
+  equal("⛔ a recover does not free it: left up it would jump the moment it was touched", live(0.7), 0)
+  equal("⛔ turned through the tempo in force it lets go", live(0.2), 1)
   equal("... and is live from then on", live(0.9), 1)
 end
+local q = R.new(RUSHING, true)
+R.internal["window-shut"](q)
+R.control(q, "og-knob-4", { 0.7 })
+R.control(q, "og-knob-4", { 0.2 })
+local at = R.tempo_position(330000 ^ 0.2)
+check("⛔ a knob 4 move holds knob 1 at that tempo", q.knob[1].state == "armed"
+      and math.abs(q.knob[1].target - at) < 1e-9, T.show(q.knob[1]))
+R.control(q, "og-knob-4", { 0.9 })
+check("⛔ ... at 1000, past the handoff, what the bus stays at", q.knob[1].target == R.tempo_position(1000), q.knob[1].target)
+R.control(q, "og-knob-1", { 1 })
+local moved = R.control(q, "og-knob-1", { 0.5 })
+equal("⛔ knob 1 turned through it: rush told first, then its tempo", moved[1], route("rush", 0, -1, 0, 1)[1])
+check("... once", #R.control(q, "og-knob-1", { 0.51 }) == 1)
+check("⛔ ... and knob 4 is held at knob 1's tempo", q.knob[4].state == "armed"
+      and math.abs(q.knob[4].target - R.rush_position(10 + 990 * R.tempo_curve(0.51))) < 1e-9, T.show(q.knob[4]))
+R.hold_tempo(q, "float", { 300 })
+check("⛔ a tempo from a tap, the phone, a section or a pad holds both", q.knob[4].target == R.rush_position(300)
+      and q.knob[1].target == R.tempo_position(300) and not q.rushing, T.show(q.knob))
+equal("⛔ a target of 1 BPM is a hair off the rail, so a pot that stops short still reaches it",
+      R.rush_position(1), 0.01)
 equal("another destination on that knob is not held for it",
       R.new("mode-1 og-knob-4 volca-cc 44\n", true).knob[4].state, "live")
 

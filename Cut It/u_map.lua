@@ -101,33 +101,43 @@ end
 -- curve puts 120. A knob not named here is live from its first value.
 R.UNSAVED = { [1] = 0.48 }
 
--- Rush (Brendan, 2026-11-05): a knob the table maps to it starts held, Saved or not, and stays held
--- until it has been turned down to its bottom, past the boot window, whose first value may be
--- knobs.txt's and not where the knob sits. So one left up at load does nothing, and nothing jumps.
--- Its bottom is a hair wide, about ten of the knob's 1024 places, so a pot that stops short of 0
--- still reaches it: u_tempo.lua's R.RUSH_BOTTOM, u_tempo_test.lua checks the two agree.
-R.RUSH_BOTTOM = 0.01
+-- Rush (Brendan, 2026-11-05): a knob the table maps to it is an absolute rate over its whole turn,
+-- R.RUSH_TOP ^ x BPM, and held as knob 1 is, until turned to or through where the tempo in force
+-- stands, so whichever knob moved last wins and the other does not jump. It starts held at u_tempo's
+-- own 120, Saved or not, through the boot window, whose first value may be knobs.txt's and not where
+-- the knob sits, and through a recover. u_tempo.lua has R.RUSH_TOP too.
+R.RUSH_TOP = 22000 * 15
+R.BOOT_BPM = 120
 
-local function maps_to_rush(map, name)
+-- Where the rush knob stands for a BPM: a hair off the bottom at most, so a pot that stops short of 0
+-- can still reach a target of 1 BPM.
+function R.rush_position(bpm)
+  return math.max(0.01, math.log(bpm) / math.log(R.RUSH_TOP))
+end
+
+-- Which knob the table maps to rush, on any page.
+local function rush_knob(map)
   for _, page in pairs(map) do
-    if page[name] and page[name].dest == "rush" then return true end
+    for name, k in pairs(R.KNOBS) do
+      if page[name] and page[name].dest == "rush" then return k end
+    end
   end
-  return false
+  return nil
 end
 
 -- A knob's pickup: "virgin" has never seen a value; "armed" has been restored, side unknown;
 -- "above" sat above (or on) its target and waits for a fall, "below" waits for a rise; "live"
--- passes everything; "bottom" waits for its bottom (R.RUSH_BOTTOM). The window is the boot's first
--- 1000 ms, when a first value is a restore.
+-- passes everything. The window is the boot's first 1000 ms, when a first value is a restore.
 -- unsaved: the patch's folder holds no knobs.txt, so mother's boot push is where each knob
 -- physically sits, not a restore (item 239).
 function R.new(text, unsaved)
   local st = { mode = R.BOOT_MODE, window = true, knob = {} }
   st.map, st.rows = R.parse(text)
+  st.rush_knob = rush_knob(st.map)
   for k = 1, 4 do
     local at = R.UNSAVED[k]
-    if maps_to_rush(st.map, "og-knob-" .. k) then
-      st.knob[k] = { state = "bottom", target = 0 }
+    if k == st.rush_knob then
+      st.knob[k] = { state = "armed", target = R.rush_position(R.BOOT_BPM) }
     elseif not unsaved then
       st.knob[k] = { state = "virgin", target = 0 }
     elseif at then
@@ -145,10 +155,7 @@ end
 function R.pickup(st, k, value)
   local p = st.knob[k]
   local above = p.target <= value
-  if p.state == "bottom" then
-    if not st.window and value <= R.RUSH_BOTTOM then p.state = "live" end
-    return p.target, p.state == "live" and 1 or 0
-  end
+  if k == st.rush_knob and st.window then return p.target, 0 end
   if p.state == "virgin" then
     -- A first value passes either way; inside the window it is a restore, and arms. mother
     -- pushes a value with or without knobs.txt, which is why u_map.pd asks that file (item 239).
@@ -182,13 +189,35 @@ function R.control(st, sel, atoms)
   if row then
     local curve = R.CURVES[row.dest]
     if curve then value, target = curve(value), curve(target) end
-    return { { "route", "list", { row.dest, row.arg, value, target, live } } }
+    local out = {}
+    if live == 1 then
+      if row.dest == "rush" then
+        -- Knob 4 has the tempo: knob 1 is held where that puts it, the bus at 1000 past the handoff.
+        st.rushing = true
+        local bpm = math.min(R.RUSH_TOP ^ value, 1000)
+        for n, kk in pairs(R.KNOBS) do
+          local r = (st.map[st.mode] or {})[n]
+          if r and r.dest == "tempo" then
+            st.knob[kk] = { state = "armed", target = R.tempo_position(bpm) }
+          end
+        end
+      elseif row.dest == "tempo" and st.rush_knob then
+        -- Knob 1 has it: rush is told it is over, before the BPM, and knob 4 is held at it.
+        if st.rushing then
+          st.rushing = false
+          out[1] = { "route", "list", { "rush", 0, -1, 0, 1 } }
+        end
+        st.knob[st.rush_knob] = { state = "armed", target = R.rush_position(10 + 990 * value) }
+      end
+    end
+    out[#out + 1] = { "route", "list", { row.dest, row.arg, value, target, live } }
+    return out
   end
   return {}
 end
 
 -- A tempo a tap or the phone set, from u_tempo (Brendan, 2026-11-04): every knob the page maps to
--- tempo is held again at where its curve puts that tempo, so its next turn waits to pass it
+-- tempo or rush is held again at where its curve puts that tempo, so its next turn waits to pass it
 -- rather than jumping back to wherever the knob sits, as c_steps holds knobs 2 and 4 when the
 -- phone sets the last step or the swing. Armed, so its first value decides the side it waits on.
 -- Nothing leaves: the tempo bus already carries the tempo, and the held row is drawn when the knob
@@ -201,8 +230,11 @@ function R.hold_tempo(st, sel, atoms)
     local row = page[name]
     if row and row.dest == "tempo" then
       st.knob[k] = { state = "armed", target = R.tempo_position(bpm) }
+    elseif row and row.dest == "rush" then
+      st.knob[k] = { state = "armed", target = R.rush_position(bpm) }
     end
   end
+  st.rushing = false
   return {}
 end
 
@@ -240,7 +272,7 @@ R.internal = {
   end,
   live = function(st)
     for k = 1, 4 do
-      if st.knob[k].state ~= "bottom" then st.knob[k].state = "live" end
+      if k ~= st.rush_knob then st.knob[k].state = "live" end
     end
     return {}
   end,

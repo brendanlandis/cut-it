@@ -1271,7 +1271,8 @@ equal("⛔ pressed before anything has played: the tempo and its lamp, and no re
 equal("⛔ pad-38 pressed, playing: its lamp lights, u_song is asked for the saved tempo, and the "
       .. "loops restart on the start bus",
       R.presses.recall(st, { 1, 127 }),
-      { { "page", "recall", { 1 } }, { "song", "recall", { "tempo" } }, { "clock", "restart", {} } })
+      { { "page", "recall", { 1 } }, { "tempo", "rush-home", {} }, { "song", "recall", { "tempo" } },
+        { "clock", "restart", {} } })
 equal("... and let go, only its lamp", R.presses.recall(st, { 1, 0 }),
       { { "page", "recall", { 0 } } })
 
@@ -1996,76 +1997,85 @@ st = R.new(1)
 R.internal.start(st, {})
 local press = R.presses.recall(st, { 127 })
 equal("⛔ a press while playing asks for the saved tempo, then restarts at once, on the start bus",
-      { press[2], press[3] }, { { "song", "recall", { "tempo" } }, { "clock", "restart", {} } })
+      { press[3], press[4] }, { { "song", "recall", { "tempo" } }, { "clock", "restart", {} } })
+equal("⛔ ... and first tells u_tempo, which ends rush whatever comes back", press[2], { "tempo", "rush-home", {} })
 R.presses.recall(st, { 0 })
 R.internal.stop(st, {})
-equal("⛔ stopped, it starts nothing", #R.presses.recall(st, { 127 }), 2)
+equal("⛔ stopped, it starts nothing", #R.presses.recall(st, { 127 }), 3)
 
 print("\n--- rush, knob 4 past the handoff ---")
--- A step at 1000 BPM. Nothing lit, so what a tick says is its playhead alone.
-st = R.new(1)
-local function going(q, steps)
+-- Steps at 1000 BPM. Nothing lit, so what a tick says is its playhead alone.
+local function going(q, steps, bpm)
   R.internal.start(q, {})
-  for _ = 1, steps do R.internal.tick(q, { 1000 }) end
+  for _ = 1, steps do R.internal.tick(q, { bpm or 1000 }) end
 end
 local function near(a, b) return math.abs(a - b) < 1e-6 * math.max(1, math.abs(b)) end
-going(st, 3)
+st = R.new(1)
+going(st, 20)
 local pos_before = st.pos[1]
-local rows = R.presses.rush(st, { 2000 })
-equal("⛔ past the handoff, playing, it waits for the step's boundary, its row in Hz: steps a second "
-      .. "over one step", rows, { { "disp", "rush", { 133, "Hz" } } })
+equal("⛔ playing, it waits for the step's boundary, and draws no row until the loop is real",
+      R.presses.rush(st, { 0 }), {})
 local cap = R.internal.tick(st, { 1000 })
-check("⛔ the step ends the loop: one step as it ran, 15 ms at 1000 BPM, at the curve's steps a second",
-      cap[1][1] == "note" and cap[1][2] == "rush" and near(cap[1][3][1], 15) and near(cap[1][3][2], 2000 / 15),
-      T.show(cap))
-equal("⛔ ... and the ticks are shut off then, with no hit and no step moved",
-      { cap[2], st.pos[1] }, { { "clock", "ticks", { 0 } }, pos_before })
-rows = R.presses.rush(st, { 15000 })
-check("the knob moves its rate, and its row", rows[1][2] == "rush-rate" and near(rows[1][3][1], 1000)
-      and rows[2][3][1] == 1000 and rows[2][3][2] == "Hz", T.show(rows))
-equal("⛔ its rate stops at 22 kHz, past which it would fold down", R.presses.rush(st, { 400000 })[1][3], { 22000 })
-equal("⛔ below the handoff the loop stops and the steps come back", R.presses.rush(st, { 0 }),
+check("⛔ the step ends the loop: with no repeat held the whole pattern, 16 steps as they ran, at speed 1",
+      cap[1][2] == "rush" and near(cap[1][3][1], 240) and near(cap[1][3][2], 1000 / 240), T.show(cap))
+equal("⛔ ... the ticks shut off then, no step moved, and the row is its real frequency",
+      { cap[2], cap[3], st.pos[1] }, { { "clock", "ticks", { 0 } }, { "disp", "rush", { 4.2, "Hz" } }, pos_before })
+local rate = R.presses.rush(st, { 1 })
+check("⛔ a sixteen-step loop reaches 22 kHz at the top of the turn", near(rate[1][3][1], 22000)
+      and rate[2][3][1] == 22000 and rate[2][3][2] == "Hz", T.show(rate))
+rate = R.presses.rush(st, { 0.5 })
+check("⛔ ... evenly in ratio: half way is the geometric mean", near(rate[1][3][1], (1000 / 240 * 22000) ^ 0.5),
+      T.show(rate))
+equal("⛔ rush-off: the loop stops and the steps come back", R.presses["rush-off"](st, {}),
       { { "note", "rush-off", {} }, { "clock", "ticks", { 1 } } })
-equal("... once", R.presses.rush(st, { 0 }), {})
+equal("... once", R.presses["rush-off"](st, {}), {})
 R.internal.tick(st, { 900 })
 check("⛔ ... carrying on from where they were", st.pos[1] == pos_before + 1, st.pos[1])
 
--- Four steps at 1000 BPM, so a repeat pad has its window.
 st = R.new(1)
-going(st, 4)
+going(st, 8, 300)
+R.presses.rush(st, { 0 })
+cap = R.internal.tick(st, { 1000 })
+check("⛔ thrown from slower, what ran ran longer, and speed 1 is still speed 1: 8 steps at 300 BPM",
+      near(cap[1][3][1], 400) and near(cap[1][3][2], 2.5), T.show(cap[1]))
+
+st = R.new(1)
+going(st, 5, 5)
+R.presses.rush(st, { 0 })
+cap = R.internal.tick(st, { 1000 })
+check("a loop longer than the recorder holds takes the last of what ran", near(cap[1][3][1], R.RUSH_MAX), T.show(cap[1]))
+
+st = R.new(1)
+going(st, 5)
 R.presses.rep(st, { 3, 127 })
 R.internal.tick(st, { 1000 })
-R.presses.rush(st, { 3000 })
+R.presses.rush(st, { 0 })
 cap = R.internal.tick(st, { 1000 })
-check("⛔ under a repeat pad: its steps as they ran, the rate over them", near(cap[1][3][1], 45)
-      and near(cap[1][3][2], 3000 / 15 / 3), T.show(cap[1]))
+check("⛔ under a repeat pad: its steps as they ran", near(cap[1][3][1], 45) and near(cap[1][3][2], 1000 / 45),
+      T.show(cap[1]))
 equal("⛔ a held repeat's tail loop stops under it", cap[#cap], { "note", "tape-run", { 0 } })
-local back = R.presses.rush(st, { 0 })
+local back = R.presses["rush-off"](st, {})
 equal("⛔ ... and goes on after it", back[#back], { "note", "tape-run", { 1 } })
 
 st = R.new(1)
-going(st, 4)
+going(st, 5)
 R.presses.fast(st, { 1, 127 })
 R.internal.tick(st, { 500 })
-R.presses.rush(st, { 3000 })
+R.presses.rush(st, { 0 })
 cap = R.internal.tick(st, { 1000 })
-check("⛔ under pad-35: one step, as it ran at 500 BPM", near(cap[1][3][1], 30) and near(cap[1][3][2], 200), T.show(cap[1]))
-equal("⛔ its release leaves the loop to the knob: no rush-off", (function()
-  for _, e in ipairs(R.presses.fast(st, { 1, 0 })) do
-    if e[2] == "rush-off" then return "off" end
-  end
-  return st.rush
-end)(), "on")
+check("⛔ under pad-35: one step, as it ran at 500 BPM", near(cap[1][3][1], 30) and near(cap[1][3][2], 1000 / 30),
+      T.show(cap[1]))
 
 st = R.new(1)
-local now = R.presses.rush(st, { 1500 })
+local now = R.presses.rush(st, { 0 })
 check("stopped, it takes at once, nothing having played: a short loop of what is in the recording",
       now[1][2] == "rush" and near(now[1][3][1], 15) and st.rush == "on", T.show(now))
 equal("⛔ STOP stops the loop too", (function()
   local o = R.internal.stop(st, {})
   return { o[#o - 1], o[#o] }
 end)(), { { "note", "rush-off", {} }, { "clock", "ticks", { 1 } } })
-equal("⛔ ... and the knob moving on does not bring it back", R.presses.rush(st, { 2000 })[1][1], "disp")
+equal("⛔ ... and the knob moving on neither brings it back nor shows a rate there is not",
+      R.presses.rush(st, { 0.5 }), {})
 check("... parked until the knob comes down or PLAY", st.rush == "parked", st.rush)
 R.internal.start(st, {})
 check("PLAY lets the next turn take again", st.rush == nil, st.rush)

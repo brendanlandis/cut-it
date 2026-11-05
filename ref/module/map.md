@@ -80,7 +80,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `revert` | unused | Non-zero sends `revert` to `u_song`, the sixth outlet. `lp-cc-8`, the lowest row's rightmost, on every page | unknown | — |
 | `song` | The Organelle's key, 1 the lowest | Non-zero sends `key <arg>` to `u_song`, the sixth outlet, which loads the setlist's song at that place; a release nothing. `og-key-60` to `og-key-84`, keys 1 to 25, on every page (Brendan, 2026-11-05; [songs.md](songs.md)) | unknown | — |
 | `go` | unused | Non-zero sends `go` to `u_song`, the sixth outlet: a song waiting for go starts at the next bar. `lp-cc-89`, the right column's top, on every page (Brendan, 2026-11-05) | unknown | — |
-| `rush` | unused | The knob's 0–1 and its live flag, held or not, `rush <0-1> <live>` to `u_tempo` out `u_map`'s fifth outlet, which draws its row: the tempo racing, then a loop of the kit climbing to 22 kHz ([sequencer.md](sequencer.md), *Rush*). **`og-knob-4`, on every page** (Brendan, 2026-11-05) | unknown | — |
+| `rush` | unused | The knob's 0–1 and its live flag, held or not, `rush <0-1> <live>` to `u_tempo` out `u_map`'s fifth outlet, which draws its row: an absolute rate, 1 BPM at the bottom, the tempo up to 1000 and then a loop of what is being repeated climbing to 22 kHz ([sequencer.md](sequencer.md), *Rush*); `rush -1 1` says knob 1 has gone live, which ends it. **`og-knob-4`, on every page** (Brendan, 2026-11-05) | unknown | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -113,7 +113,7 @@ there and nowhere else.
 | `volca-note` | `volca-note60 100` | same shape | verified | 316 |
 | `volca-prog` | `volca-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
 | `drums` | `last-step 12`, `pad2-last 6`, `swing 62 %`: drawn by `c_steps`, which holds the latch | `last-step 16 (7)`, `swing 50 (62)` | verified | — |
-| `rush` | `rush 420 bpm` below the handoff, `rush 8300 Hz` above it, drawn by `u_tempo` and `c_steps` | `rush 0 (57)`, the knob's place in percent | unknown | — |
+| `rush` | `rush 420 bpm` below the handoff, `rush 4.2 Hz`, the loop's real frequency, above it, drawn by `u_tempo` and `c_steps` | `rush 120 (574)`, `rush 120 (30k)`: the tempo in force with the knob's own rate in brackets | unknown | — |
 | `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
 | `drum-page` | **nothing** — the grid is the feedback, and 62 pads in use would bury the screen | none | unknown | — |
 | `synth` | **nothing** — the pads and the phone show the choice | none | unknown | — |
@@ -212,7 +212,7 @@ then hands it authority.
 | Whether the push is a restore at all | `[u_map-lua]` **asks whether `knobs.txt` is there** as it is made, before mother's push, beside the table it reads | verified | 239 |
 | With **no** `knobs.txt` | **Knob 1 is held at 120 BPM**, `u_tempo`'s own, until it is turned through 0.48, where the curve puts 120 (Brendan, 2026-11-04): its first push draws `bpm 120 (29)` and moves nothing. Every other knob is live from its first value | verified | — |
 | **After a `recover`** | the breadcrumb, read at 2000 ms, sends `live`, `knobs.txt` or not: every knob, knob 1 included, but one mapped to `rush` | verified | 299 |
-| **A knob mapped to `rush`** | Held at load, Saved or not, and after a `recover`, until a value at its bottom, 0.01 or under so a pot that stops short still gets there, past the boot window, whose first value may be `knobs.txt`'s. Left up at load it does nothing, so nothing jumps (Brendan, 2026-11-05) | unknown | — |
+| **A knob mapped to `rush`** | Held as knob 1 is, until turned to or through where the tempo in force stands on its curve. Armed at 120 at load, Saved or not, and its side not decided until the boot window shuts, since a value in it may be `knobs.txt`'s; and not freed by a `recover`. Held again at any tempo a tap, the phone, a section or a pad sets, and at knob 1's as knob 1 moves live, and a live move of it holds knob 1 in turn, so whichever moved last wins ([tempo.md](tempo.md), *Knob 4 races the tempo*) (Brendan, 2026-11-05) | unknown | — |
 | **After a tap or the phone sets the tempo** | every knob the page maps to `tempo` is armed again at where the curve puts that BPM (`R.hold_tempo`, `R.tempo_position`), so it is held until turned through it and draws `bpm <tempo> (<knob>)` meanwhile (Brendan, 2026-11-04; [tempo.md](tempo.md)) | unknown | — |
 | The held row is drawn by the **destination**, for any knob mapped to one that carries a value | `c_mapped` gets the latched target and the live flag with every message and draws `name <latched> (<knob>)` in its own units | verified | 316 |
 | **Reaching** the target releases, not only passing it | a target on a rail has no beyond: armed above a target of `0`, the flip test waits for `value < 0` | verified | 241 |

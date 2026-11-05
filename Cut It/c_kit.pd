@@ -75,7 +75,7 @@
 #X connect 36 0 4 0;
 #X connect 37 0 4 0;
 #X obj 1300 880 r tempo;
-#X obj 1300 920 clip 5 1000;
+#X obj 1300 920 clip 1 1000;
 #X obj 1300 960 expr 15000 / \$f1;
 #X obj 1300 1000 s \$0-step;
 #X obj 500 300 route drive tone dist send delay-time feedback delay size damping char verb-type tape tape-off rush rush-rate rush-off tape-run;

@@ -29,7 +29,7 @@ local fh = assert(io.open(DIR .. "u_tempo.pd"))
 local pd = fh:read("a")
 fh:close()
 local lo, hi = pd:match("\n#X obj %d+ %d+ clip (%d+) (%d+);")
-equal("its range is u_tempo's own [clip 5 1000], the legal range, read from the patch",
+equal("its range is u_tempo's own [clip 1 1000], the legal range, read from the patch",
       { R.MIN, R.MAX }, { tonumber(lo), tonumber(hi) })
 equal("a gap of two seconds starts over, and the last four intervals are averaged",
       { R.GAP, R.KEEP }, { 2000, 4 })
@@ -66,8 +66,8 @@ end)(), { {}, tempo(120) })
 print("\n--- the phone's tempo ---")
 st = R.new()
 equal("tempo 133 from the phone is 133", R.set(st, 133), tempo(133))
-equal("whole BPM, and within 5 to 1000", { R.set(st, 90.4), R.set(st, 2000), R.set(st, 1) },
-      { tempo(90), tempo(1000), tempo(5) })
+equal("whole BPM, and within 1 to 1000", { R.set(st, 90.4), R.set(st, 2000), R.set(st, 0) },
+      { tempo(90), tempo(1000), tempo(1) })
 equal("a tempo that is not a number is fail u_tempo bad-tempo", { R.set(st, "fast"), R.set(st, nil) },
       { { { "err", "fail", { "u_tempo", "bad-tempo" } } },
         { { "err", "fail", { "u_tempo", "bad-tempo" } } } })
@@ -103,75 +103,67 @@ equal("the phone's tempo under it reaches the bus, and is gone at the release",
 
 print("\n--- rush, knob 4 ---")
 local map_rules = dofile(DIR .. "u_map.lua")
-equal("its bottom is u_map's, where the hold lets go", R.RUSH_BOTTOM, map_rules.RUSH_BOTTOM)
+equal("its top is u_map's, where it holds the knob", R.RUSH_TOP, map_rules.RUSH_TOP)
 local near = function(a, b) return math.abs(a - b) < 1e-6 * b end
-check("⛔ one curve: the tempo at the knob's bottom, 22 kHz as a one-step loop's BPM at its top",
-      near(R.rush_bpm(120, R.RUSH_BOTTOM), 120) and near(R.rush_bpm(120, 1), 330000))
-local mid = (R.RUSH_BOTTOM + 1) / 2
-check("⛔ ... and even in ratio: half the turn is the geometric mean, wherever it starts",
-      near(R.rush_bpm(120, mid), (120 * 330000) ^ 0.5) and near(R.rush_bpm(60, mid), (60 * 330000) ^ 0.5))
--- Where the curve from 120 stands at a BPM.
-local function x_at(bpm)
-  return R.RUSH_BOTTOM + (1 - R.RUSH_BOTTOM) * math.log(bpm / 120) / math.log(R.RUSH_TOP / 120)
-end
+check("⛔ an absolute rate over the whole turn: 1 BPM at the bottom, 22 kHz as a one-step loop's BPM at the top",
+      near(R.rush_bpm(0), 1) and near(R.rush_bpm(1), 330000) and near(R.rush_bpm(0.5), 330000 ^ 0.5))
+local x_at = function(rate) return math.log(rate) / math.log(R.RUSH_TOP) end
+check("⛔ the rest of the turn past the handoff runs 0 to 1", near(R.rush_past(x_at(1000)) + 1, 1)
+      and near(R.rush_past(1), 1) and R.rush_past(0.1) == 0)
+st = R.new()
+equal("⛔ held by u_map: its row is the tempo in force with the knob's own rate in brackets, and nothing else",
+      R.inputs.rush(st, { 0.5, 0, 120 }), { { "disp", "rush", { 120, "(574)" } } })
+equal("... in thousands up there, so it fits the screen", R.inputs.rush(st, { 1, 0, 120 })[1][3][2], "(330k)")
+equal("⛔ live: the put shut first, then the rate on its own bus, and the row",
+      R.inputs.rush(st, { x_at(500), 1, 120 }),
+      { { "put", "float", { 0 } }, { "bus", "float", { 500 } }, { "disp", "rush", { 500, "bpm" } } })
+equal("⛔ ... down to 1 BPM", R.inputs.rush(st, { 0, 1, 500 }),
+      { { "bus", "float", { 1 } }, { "disp", "rush", { 1, "bpm" } } })
 local function sent(out, kind)
   for _, e in ipairs(out) do
     if e[1] == kind then return e[3][1] end
   end
 end
-st = R.new()
-equal("held by u_map, it draws its row with the knob's place in brackets, and does nothing else",
-      R.inputs.rush(st, { 0.57, 0, 120 }), { { "disp", "rush", { 0, "(57)" } } })
-equal("at its bottom, nothing to do: the row, the tempo in force", R.inputs.rush(st, { 0, 1, 120 }),
-      { { "disp", "rush", { 120, "bpm" } } })
-local out = R.inputs.rush(st, { x_at(500), 1, 120 })
-equal("⛔ leaving its bottom: the put shut first, then the curve's BPM on its own bus, never tempo, so "
-      .. "knob 1 is not held, and the row",
-      out, { { "put", "float", { 0 } }, { "bus", "float", { 500 } }, { "disp", "rush", { 500, "bpm" } } })
-out = R.inputs.rush(st, { x_at(900), 1, 500 })
-equal("⛔ the curve keeps the tempo it left its bottom at, not the one on the bus now",
-      out, { { "bus", "float", { 900 } }, { "disp", "rush", { 900, "bpm" } } })
-out = R.inputs.rush(st, { x_at(1500), 1, 900 })
-check("⛔ at the handoff: the bus at 1000 and no further, then the rate to c_steps, which draws the row",
-      #out == 2 and sent(out, "bus") == 1000 and near(sent(out, "steps"), 1500), T.show(out))
-out = R.inputs.rush(st, { x_at(20000), 1, 1000 })
-check("past it: the rate alone", #out == 1 and near(sent(out, "steps"), 20000), T.show(out))
+local out = R.inputs.rush(st, { x_at(1500), 1, 1 })
+check("⛔ at the handoff: the bus at 1000 and no further, then how far past to c_steps, which draws the row",
+      #out == 2 and sent(out, "bus") == 1000 and near(sent(out, "steps") + 1, R.rush_past(x_at(1500)) + 1), T.show(out))
+out = R.inputs.rush(st, { 1, 1, 1000 })
+check("past it: how far alone, 1 at the top", #out == 1 and sent(out, "steps") == 1, T.show(out))
 out = R.inputs.rush(st, { x_at(990), 1, 1000 })
 check("⛔ coming down it holds on a little under the handoff, so a knob at rest does not capture again",
-      #out == 1 and near(sent(out, "steps"), 990), T.show(out))
+      #out == 1 and sent(out, "steps") == 0, T.show(out))
 equal("⛔ below that: the tempo, and the loop told to stop", R.inputs.rush(st, { x_at(700), 1, 1000 }),
-      { { "bus", "float", { 700 } }, { "steps", "rush", { 0 } }, { "disp", "rush", { 700, "bpm" } } })
-equal("⛔ back at its bottom: the tempo it left, the row, and the put open, with nothing put by then",
-      R.inputs.rush(st, { 0, 1, 700 }),
-      { { "bus", "float", { 120 } }, { "disp", "rush", { 120, "bpm" } }, { "put", "float", { 1 } } })
-check("... and it is over", st.rush == nil)
-R.inputs.rush(st, { x_at(20000), 1, 120 })
-equal("⛔ straight from past the handoff to its bottom, the loop stops too",
-      R.inputs.rush(st, { 0, 1, 1000 }),
-      { { "bus", "float", { 120 } }, { "steps", "rush", { 0 } }, { "disp", "rush", { 120, "bpm" } },
-        { "put", "float", { 1 } } })
-R.inputs.rush(st, { x_at(300), 1, 120 })
-equal("⛔ a section's tempo under it changes nothing now ...", R.inputs.restored(st, { 90 }), {})
-equal("⛔ ... and is what it goes back to", R.inputs.rush(st, { 0, 1, 300 })[1], { "bus", "float", { 90 } })
-R.inputs.rush(st, { x_at(300), 1, 120 })
-equal("⛔ pad-35 under it: 500, as ever", R.inputs.fast(st, { 1, 300 })[2], { "tempo", "float", { 500 } })
-equal("⛔ ... its release snaps back to the tempo rush left from, with the put still shut",
-      R.inputs.fast(st, { 0 }), { { "tempo", "float", { 120 } } })
-equal("... and that is what rush goes back to, the put open at last", R.inputs.rush(st, { 0, 1, 120 }),
-      { { "bus", "float", { 120 } }, { "disp", "rush", { 120, "bpm" } }, { "put", "float", { 1 } } })
-R.inputs.fast(st, { 1, 120 })
-R.inputs.rush(st, { 0.02, 1, 500 })
-equal("⛔ rush under pad-35 starts from 500, and goes back there, the put shut for pad-35",
-      R.inputs.rush(st, { 0, 1, 800 }), { { "bus", "float", { 500 } }, { "disp", "rush", { 500, "bpm" } } })
-equal("⛔ ... and pad-35's release still snaps back", R.inputs.fast(st, { 0 }),
-      { { "tempo", "float", { 120 } }, { "put", "float", { 1 } } })
+      { { "bus", "float", { 700 } }, { "steps", "rush-off", {} }, { "disp", "rush", { 700, "bpm" } } })
+for _, c in ipairs({ { "a tap", function(q) R.tap(q, 5000); return R.tap(q, 500) end, 120 },
+                     { "the phone", function(q) return R.inputs.tempo(q, { 133 }) end, 133 },
+                     { "a section's restore", function(q) return R.inputs.restored(q, { 90 }) end, 90 } }) do
+  st = R.new()
+  R.inputs.rush(st, { 1, 1, 120 })
+  equal("⛔ " .. c[1] .. " ends rush: the loop stops, the put opens, then its tempo, as a tap's, so both knobs are held",
+        c[2](st), { { "steps", "rush-off", {} }, { "put", "float", { 1 } }, { "tempo", "float", { c[3] } } })
+  check("... and it is over", st.rush == nil)
+end
+st = R.new()
+R.inputs.rush(st, { 1, 1, 120 })
+equal("⛔ knob 1 going live ends it too, u_map saying so before the BPM, which it sends itself",
+      R.inputs.rush(st, { -1, 1, 1000 }), { { "steps", "rush-off", {} }, { "put", "float", { 1 } } })
+R.inputs.rush(st, { 1, 1, 120 })
+equal("⛔ pad-38: over at once, whatever comes back, the knobs held where the bus is",
+      R.inputs["rush-home"](st, {}), { { "steps", "rush-off", {} }, { "put", "float", { 1 } }, { "hold", "float", { 1000 } } })
+equal("... and with no rush it does nothing", R.inputs["rush-home"](st, {}), {})
+R.inputs.rush(st, { 1, 1, 120 })
+equal("⛔ pad-35 pressed ends it, the put stays shut, and the tempo it was at is what it goes back to",
+      R.inputs.fast(st, { 1, 1000 }), { { "steps", "rush-off", {} }, { "put", "float", { 0 } }, { "tempo", "float", { 500 } } })
+R.inputs.rush(st, { x_at(800), 1, 500 })
+equal("⛔ turned through 500 under it, rush again; its release ends that, with the put open only after",
+      R.inputs.fast(st, { 0 }), { { "tempo", "float", { 1000 } }, { "put", "float", { 1 } } })
 
 print("\n--- the Pd face ---")
 local class = T.load_class(DIR .. "u_tempo-lua.pd_lua", DIR)
 check("u_tempo-lua.pd_lua registers the class u_tempo-lua", class and class._name == "u_tempo-lua",
       class and class._name)
 local o = T.new(class, {})
-check("an object has two inlets and seven outlets", o and o.inlets == 2 and o.outlets == 7,
+check("an object has two inlets and eight outlets", o and o.inlets == 2 and o.outlets == 8,
       o and (o.inlets .. " " .. o.outlets))
 equal("init: the bang on outlet 3 that says it loaded, and nothing else",
       T.send(o, 2, "init", {}), { { 3, "bang", {} } })
@@ -190,8 +182,9 @@ local face = T.send(o, 1, "rush", { 0.2, 1, 120 })
 equal("⛔ rush on inlet 1: the put on outlet 4, its BPM on outlet 5, not 1, and its row on outlet 7",
       { face[1][1], face[2][1], face[3][1], face[3][2] }, { 4, 5, 7, "rush" })
 face = T.send(o, 1, "rush", { 1, 1, 120 })
-equal("⛔ past the handoff, rush <bpm> on outlet 6, for c_steps", { face[2][1], face[2][2] }, { 6, "rush" })
-T.send(o, 1, "rush", { 0, 1, 120 })
+equal("⛔ past the handoff, rush <0-1> on outlet 6, for c_steps", { face[2][1], face[2][2] }, { 6, "rush" })
+face = T.send(o, 1, "rush-home", {})
+equal("⛔ rush-home: rush-off on outlet 6, and the hold on outlet 8", { face[1][1], face[1][2], face[3][1] }, { 6, "rush-off", 8 })
 for _, m in ipairs({ { 1, "bang", {} }, { 1, "float", { 3 } }, { 2, "tap", { 500 } } }) do
   equal(string.format("%s on inlet %d is fail u_tempo bad-selector on outlet 2", m[2], m[1]),
         T.send(o, m[1], m[2], m[3]), { { 2, "fail", { "u_tempo", "bad-selector" } } })

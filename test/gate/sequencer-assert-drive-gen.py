@@ -227,18 +227,25 @@ SEQ = [
     (41730, "RX-PRESS", [P("pad-38")], GAP),
     (41755, "RX-SOON", [], GAP),
     (41900, "RX-OFF", [P("pad-38", 0), "\\; stop bang"], GAP),
-    # Rush, knob 4 (Brendan, 2026-11-05): held until its bottom, racing from 120, then past the
-    # handoff with the steps going, 0.5 on the curve from 120 being 403 Hz, and back at its bottom.
+    # Rush, knob 4 (Brendan, 2026-11-05): held at the tempo in force, 120, on the far side of it; through
+    # it, 45 BPM, and knob 1 held there; racing, 304 BPM a step of 49 ms, with the steps going; past the
+    # handoff; pad-38 home; and both knobs held at the saved 120. Then through it again, and knob 1
+    # through its own hold ends that.
     (42100, "RU-HELD", ["\\; param og-knob-4 0.5"], GAP),
-    (42200, "RU-BOTTOM", ["\\; param og-knob-4 0"], GAP),
-    (42300, "RU-RACE", ["\\; param og-knob-4 0.1"], GAP),
-    (42400, "RU-PLAY", ["\\; start bang"], GAP),
-    (42600, "RU-PAST", ["\\; param og-knob-4 0.5"], GAP),
-    (42700, "RU-LOOP", [], GAP),
-    (42900, "RU-DOWN", ["\\; param og-knob-4 0"], GAP),
-    (43100, "RU-STOP", ["\\; stop bang"], GAP),
+    (42200, "RU-LIVE", ["\\; param og-knob-4 0.3"], GAP),
+    (42300, "RU-K1", ["\\; param og-knob-1 0.2"], GAP),
+    (42400, "RU-RACE", ["\\; param og-knob-4 0.45"], GAP),
+    (42500, "RU-PLAY", ["\\; start bang"], GAP),
+    (42800, "RU-PAST", ["\\; param og-knob-4 0.8"], GAP),
+    (42900, "RU-LOOP", [], GAP),
+    (43000, "RU-HOME", [P("pad-38")], GAP),
+    (43200, "RU-AFTER", [P("pad-38", 0), "\\; param og-knob-4 0.81", "\\; param og-knob-1 0.99"], GAP),
+    (43300, "RU-STOP", ["\\; stop bang"], GAP),
+    (43400, "RU-AGAIN", ["\\; param og-knob-4 0.3"], GAP),
+    (43500, "RU-K1-ON", ["\\; param og-knob-1 0.1", "\\; param og-knob-1 0.3"], GAP),
+    (43700, "RU-K4", ["\\; param og-knob-4 0.81"], GAP),
     # u_song's draft goes out every 2 s, so past the last change's turn.
-    (43700, "DONE", [], GAP),
+    (45900, "DONE", [], GAP),
 ]
 
 # Every window but DRAG: each message, then state sync 15 ms after it (see the top).
@@ -248,7 +255,7 @@ SEQ = [(ms, mark, bodies if mark == "DRAG" else
          for off, text in [body if isinstance(body, tuple) else (j * gap, body)]
          for b in ((off, text), (off + SYNC_AFTER, "\\; state sync"))], gap)
        for ms, mark, bodies, gap in SEQ]
-QUIT_MS = 43900
+QUIT_MS = 46100
 
 # The phone's way in: OSC to u_net's own port, which the gate runner hands each
 # gate in CUTIT_INPORT (lib_scratch's state_dir does the same), connected after

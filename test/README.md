@@ -224,7 +224,7 @@ driver never muting (1: the forget's witness).
 **It runs tap tempo's Lua tests first**: `test/gate/lua/u_tempo_test.lua`, with no Pd, drives
 `Cut It/u_tempo.lua` (the first tap, the average of the last four intervals, the two-second gap,
 two taps in one instant, the clamp, the phone's tempo and `bad-tempo`) and `u_tempo-lua.pd_lua`
-through `lib_test.lua`'s stand-in for pdlua, and reads `[clip 5 600]` out of `u_tempo.pd` so the
+through `lib_test.lua`'s stand-in for pdlua, and reads `[clip 1 1000]` out of `u_tempo.pd` so the
 Lua's range cannot drift from the patch's. The gate fails if either half does.
 
 `u_tempo` is the instrument's interval timer: it publishes a beat on a bus that `g_grid`, every
@@ -233,7 +233,7 @@ per quarter note. **Nothing read those bytes back** until this existed.
 
 | Half | Owns |
 |---|---|
-| a **static lint** — reads `[clip 5 600]` and `[* 24]` out of `u_tempo.pd`, ~1 ms, no Pd | the **bounds** |
+| a **static lint** — reads `[clip 1 1000]` and `[* 24]` out of `u_tempo.pd`, ~1 ms, no Pd | the **bounds** |
 | a **rate count** — System Real-Time bytes over a known window | whether the clamp is in the **signal path** |
 
 ⛔ **Neither can do the other's job, and that was found by trying to break it.** The pulse ceiling is
@@ -506,7 +506,8 @@ by note. Then the drum screen's `snap` is sent as the phone sends it, OSC to `u_
 (`CUTIT_INPORT`), so the cord from `u_net` to `c_steps` in `u_root` is under test too. The swing press,
 which a map row could give a knob, is held at 50% until turned all the way down, and at 75% puts step 2 three quarters through its pair;
 the global last step and the swing are put as they change, a section's. Knob 4's rush runs through the
-running patch from its hold to the loop's rate and back, with nothing put in the section.
+running patch from its hold to the loop's rate, `pad-38` home and knob 1 taking over, with nothing of it
+put in the section.
 The drum screen's pads come over OSC too: a track's volume and pitch reach `c_kit`'s stand-in,
 `test/stubs/t_kit.pd`, which prints them, as every track's do at the restore, and the seed's
 effects, four tracks' and the reverb's size, reach it at the restore too, those alone, since

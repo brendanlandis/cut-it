@@ -112,7 +112,7 @@ each track's distortion and delay and the reverb they share (2026-11-05). *The k
 | A track's distortion | `e_drive`, inside its `c_voice`: the sound scaled to its sample's peak, which `c_voice` tells it once the sample is read, so a drive means the same on every pad, times a gain of g = 10^(drive/50) into `[clip~ lo hi] [-~ 0.25] [cos~] [*~ k] [clip~ lo2 hi2]`, a sine of it, the peak going in at an eighth of a cycle at drive 0 and g times that; then a makeup of 1/√g, but never below −8 dB, 0.4, times the peak again and the character's trim; `hip~ 15` against the DC a lopsided clip leaves; a one-pole low-pass at 300 Hz (tone 0) to 18 kHz (100), even in octaves; and mixed with the dry sound by `dist`, its mix: the voice sums the dry with mix × (driven − dry). At mix 100 a sine at drive 100 is a square at 0.36 of its peak, as loud as at drive 50; at mix 0 the dry passes untouched | verified |
 | Its characters | Brendan's (2026-11-05), the same chain's numbers, lo hi k lo2 hi2 and a trim: **soft**, −0.25 0.25 1 −1 1 and 0.9, a sine-shaped soft clip; **hard**, −0.25 0.25 3 −0.6 1 and 1, a hard knee, lopsided; **fold**, unclipped, 1 −1 1 and 1.1, the sine folding back past a quarter cycle; **crush**, −0.25 0.25 1.5 −1 1 and 0.8, its gain 0.175 × 10^(drive/100), a range of ten, its makeup down to −6 dB, then rounded to 6 bits, 32 steps either side of 0, and held at 22 kHz × 2^(−0.03 × drive), 22 kHz at drive 0 to 2.8 kHz at 100. Choosing one is numbers, and costs nothing: the crush's rounding and hold are a subpatch, `pd crush`, with a `switch~` of its own, on only for crush | verified |
 | A track's delay | `e_delay`, beside its `c_voice`: what the voice throws it at the delay's level, squared, `(level/100)²`, plus its own echoes at feedback × 0.95, into a 4 s buffer, read a note value later: the time in steps times a step's length, 15000 / BPM ms from the tempo bus, so it follows the tempo, gliding there over 50 ms. A half note at 240 BPM echoes 500 ms after its hit, to the sample. The level is what goes in, so echoes already made ring out when it goes down | verified |
-| Rush | `e_rush`, between all of the above and `c_kit`'s `outlet~`: `rush <span> <hz>`, `rush-rate <hz>` and `rush-off` from `c_steps` freeze the kit's whole output and loop it (*Rush*, below) | unknown |
+| Rush | `e_rush`, between all of the above and `c_kit`'s `outlet~`: `rush <span> <hz>`, `rush-rate <hz>` and `rush-off` from `c_steps` freeze the kit's whole output and loop what is being repeated of it (*Rush*, below) | unknown |
 | A held repeat's tails | `e_tape`, between `c_kit`'s `catch~` and its `outlet~`: everything on `$0-out`, the delays and the reverb, the voices' dry sound going round it. A 12.5 s delay line records it all the time, in an `e_rec` with a `switch~`, and a `pd play` with a `switch~` of its own reads it while a repeat is held. `tape <span> <units>` zeroes the sends, freezes the recording three blocks later, then plays *span* ms of it in *units* steps' time at the tempo in force. Off: the sends back, the live sound and the loop crossing back in 10 ms, the recording running on once the player is silent (*A held repeat's tails*, below) | verified |
 | The reverb | `e_verb`, one for the kit, since sixteen are more than the Organelle can afford, of three types the phone chooses between (Brendan, 2026-11-05): the **plate**, Dattorro's in vanilla boxes, `e_plate`, the one it starts on; **gigaverb**, ELSE's `giga.rev~`, `e_gigaverb`; and **freeverb**, Jezar's Freeverb in vanilla boxes, its eight combs and four allpasses, `e_freeverb`. Each takes what every voice and delay throws `e_verb` at its track's send, squared, behind the same controls: size is its decay, measured the same in each, 0.5 s at 0 to 10 s at 100, even in ratio, 2.2 s at 50; damping darkens each tail alike, none at 0; and their levels are matched, so a change of type does not jump. Mono: the plate's and gigaverb's two sides are summed. Its output is the reverb alone (*Three reverbs behind the same controls*, below) | verified |
 | Off when unused | Each effect has a `switch~`: a distortion is on while its mix is above 0; a delay while its level is, and at 0, once what goes into it has been below −80 dBFS for its time and 100 ms, its buffer then cleared; each of the reverb's engines while it is the type and any send is above 0, and once it is not, until its tail has been below −80 dBFS for 300 ms, so a type changed away from rings out first, and `e_verb` while any engine is. The voice's throws to its delay and the reverb are switched the same way, on while its level or its send is | verified |
@@ -342,7 +342,7 @@ the phase to 0; shifted, that reads as the last sliver of a step, low, so a `thr
 waiting to re-arm does so in that block and fires on the boundary in the next, and an armed one
 fires in the first. Unshifted, the reset reads as a step's start, high, and a PLAY in the first
 60% of a step would leave it waiting: step 1 a whole step late. A ten-thousandth is under a block
-at any tempo down to 5 BPM.
+down to about 2 BPM, and 3 ms at 1 BPM, where a step is 15 s.
 
 **Gear that follows the MIDI clock again would hear the drums half a pulse early**, plus its own
 lag: shift the phase back a twelfth of a step (1/24 of the pair, the `-~` in `c_steps.pd`) to land
@@ -594,7 +594,7 @@ first step sends nothing at all. The engines ring on, muted, with their own tail
 heard after a short hold is what would have been there. An echo going on into the reverb counts as
 its tail, and goes on. A voice sounding at a release sends what is left of it.
 
-**The loop's length is capped at 12 s**, four steps at the legal tempo's slowest, 5 BPM; the line holds
+**The loop's length is capped at 12 s**, four steps at 5 BPM; the line holds
 12.5 s for the seam and the recording's end, 2.2 MB. A repeat longer than that, only a very drunk one
 down there, plays its last 12 s in the time its steps take, slower and lower.
 
@@ -627,37 +627,44 @@ release goes back to.
 
 Brendan's (2026-11-05), of knob 4: "keep feeling faster and faster. At a certain point, we hit the audio
 range of repeats... After that point, it starts playing a recording of whatever's being repeated, and
-that recording keeps getting higher and higher pitched as the knob continues turning." `u_tempo` has the
-curve and races the tempo up to the handoff, 1000 BPM ([tempo.md](tempo.md)); past it `c_steps.lua`'s
-`R.rush` says when and how much, and `e_rush`, at the very end of `c_kit`, plays it.
+that recording keeps getting higher and higher pitched as the knob continues turning." Then, having heard
+it: one grabbed 15 ms step made a pattern hitting a few times a second suddenly a 66 Hz tone, so the loop is
+now what is being repeated. `u_tempo` has the knob's curve and the tempo up to the handoff, 1000 BPM
+([tempo.md](tempo.md)); past it `c_steps.lua`'s `R.rush` says when and how much, and `e_rush`, at the very
+end of `c_kit`, plays it.
 
 **The capture is the next step's boundary**, at most 15 ms off with the bus at 1000, or at once if nothing
 is playing. It tells `c_kit` `rush <span> <hz>`, and no hit plays. *span* is the last *N* steps as they
 ran, each worked out from the BPM, length and swing share at its tick as *A step's length is worked out*
-says, *N* being the repeat pad held, one under `pad-35`, one with neither. *hz*, the loop's rate, is the
-curve's steps a second over *N*, so the recording's speed is the curve's rate over the tempo it ran at,
-whatever *N* is, and a four-step loop's fundamental tops out at 5.5 kHz where one step's reaches 22 kHz (a
-judgment call: the same knob means the same speed). Clipped at 22 kHz, past which it would fold back down.
+says, *N* being the repeat pad held, one under `pad-35`, and with neither the whole pattern, the global
+loop's steps. 32 steps at 1000 BPM are 480 ms; the recorder keeps 3 s, and a knob thrown from a slow tempo
+loops the last 3 s of what ran.
+
+**The rest of the knob's turn is the loop's frequency**, from 1000 / *span* Hz, playback speed exactly 1, so
+nothing jumps, evenly up to 22 kHz at the top, whatever *N* is. With the steps at 1000 BPM that start is
+(1000/15) / *N* Hz, and a pattern of sixteen starts at 4.2 Hz; if they ran slower, since the knob was
+thrown, it starts lower, at speed 1 all the same (a judgment call, over a fixed (1000/15) / *N*). The row
+reads that frequency, and draws nothing until there is a loop to read.
 
 **While it plays** the step clock runs on and reaches nothing, by a second spigot in `c_steps.pd`: no Lua
 call and no phone state 66 times a second. The loops wait, as under `pad-35`, and carry on from where they
-were when the knob comes below the handoff; no bar ends, so a queued section waits too.
+were when the knob comes below the handoff; no bar ends, so a queued section waits too. **`pad-38` is the
+way home:** the loop stops, over the same 5 ms cross, the tempo goes to the section's saved BPM and step 1
+restarts, as ever while playing, and both knobs are held there.
 
 **A held repeat's tail loop stops under it**, 16 ms in, once the kit is muted, since the recording has the
 wet in it: `tape-run 0` stops `e_tape`'s player with its recorder still frozen, and `tape-run 1` carries on
-from there. A repeat let go meanwhile is a `tape-off` as ever. `pad-35`'s release snaps the tempo back and
-leaves the loop to the knob. **STOP and panic stop the loop too**, parked until the knob comes below the
-handoff or PLAY, since silence is what they ask for (judgment calls).
+from there. A repeat let go meanwhile is a `tape-off` as ever. `pad-35` pressed or let go ends rush as any
+tempo does. **STOP and panic stop the loop too**, parked until the knob comes below the handoff or PLAY,
+since silence is what they ask for (judgment calls).
 
 **`e_rush` is raw all the way up** (Brendan, 2026-11-05): no fade to a tone, no anti-aliasing, fold-back
-welcome. One read head and no seam, since the wrap's jump is part of the waveform, as a retrigger's is: a
-one-step repeat at 1000 BPM is a 66.7 Hz wave already, and the loop of it at that rate is the same chunk at
-the same rate. It takes the kit's whole output, dry and wet, in an `e_rec`, the recorder `e_tape` uses, its
-line 3.2 s, and crosses with the live kit over 5 ms. It reads the frozen line as `e_tape` does (*A held
-repeat's tails*), but asks for 64 samples more than the 192 the recorder ran on: a `delread4~` with no
-signal in sorts before its `delwrite~` and reads a block nearer than asked, which `e_tape`'s long loops
-don't feel, and a block of a 15 ms loop would be in the recorder's fade. The rate moves over 20 ms, so the
-knob's places do not zipper.
+welcome. One read head and no seam, since the wrap's jump is part of the waveform, as a retrigger's is. It
+takes the kit's whole output, dry and wet, in an `e_rec`, the recorder `e_tape` uses, its line 3.2 s, and
+crosses with the live kit over 5 ms. It reads the frozen line as `e_tape` does (*A held repeat's tails*),
+but asks for 64 samples more than the 192 the recorder ran on: a `delread4~` with no signal in sorts before
+its `delwrite~` and reads a block nearer than asked, which `e_tape`'s long loops don't feel, and a block of a
+15 ms loop would be in the recorder's fade. The rate moves over 20 ms, so the knob's places do not zipper.
 
 **What it costs**, on the Mac, least of five runs of `c_kit` alone under `-batch`, as above: 0.113% of real
 time before it, 0.125% at rest and 0.166% looping; a tenth more at rest and a third more looping. Scaled as

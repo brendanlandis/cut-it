@@ -18,7 +18,7 @@ UTEMPO = "Cut It/u_tempo.pd"
 CLOCK, START, CONTINUE, STOP = 248, 250, 251, 252
 PORTS = [1]                     # the Launchpad. Port 3 was the SP-404's, and gets nothing
 PPQN = 24
-BPM_LO, BPM_HI = 5, 1000        # the LEGAL range, wider than knob 1's 10..1000 at its low end
+BPM_LO, BPM_HI = 1, 1000        # the LEGAL range, wider than knob 1's 10..1000 at its low end
 TOLERANCE = 0.12                # +/- 12 % on a real-time count
 
 

@@ -44,6 +44,7 @@ step's notes and then its playhead in one logical instant, and the frame clock
 paints at most 20 ms later, six times inside a sixteenth at 120 BPM.
 """
 import argparse
+import math
 import os
 import re
 import sys
@@ -69,8 +70,9 @@ WINDOWS = ["EARLY", "RESTORE", "NINE", "THREE", "ROW-PRESS", "ROW-DARK", "SEVEN"
                                            "FAST-KNOB2", "FAST-STOP", "RC-SAVE", "RC-MOVE",
                                            "RC-PRESS", "RC-OFF", "RC-KNOB", "ROLL", "RO-PLAY",
                                            "RO-STOP", "RO-BACK", "RO-END", "RX-PLAY", "RX-PRESS",
-                                           "RX-SOON", "RX-OFF", "RU-HELD", "RU-BOTTOM", "RU-RACE",
-                                           "RU-PLAY", "RU-PAST", "RU-LOOP", "RU-DOWN", "RU-STOP", "DONE"]
+                                           "RX-SOON", "RX-OFF", "RU-HELD", "RU-LIVE", "RU-K1", "RU-RACE",
+                                           "RU-PLAY", "RU-PAST", "RU-LOOP", "RU-HOME", "RU-AFTER", "RU-STOP",
+                                           "RU-AGAIN", "RU-K1-ON", "RU-K4", "DONE"]
 EDITS = ["ROW-PRESS", "ROW-DARK", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
 
@@ -774,27 +776,42 @@ def main():
             "on disk: %s" % (disk if disk is None else "%d values" % len(disk)))
 
     print("\n--- rush, knob 4, through the running patch ---")
-    A.check("⛔ held at load: its row, and the tempo bus untouched",
-            knob_rows("RU-HELD", "rush") == [["rush", "0", "(50)"]] and not tempo("RU-HELD"),
-            "%s %s" % (knob_rows("RU-HELD", "rush"), tempo("RU-HELD")))
-    A.check("⛔ turned to its bottom, then up: the tempo bus races on the curve from 120, its row in BPM",
-            knob_rows("RU-BOTTOM", "rush") == [["rush", "120", "bpm"]] and tempo("RU-RACE") == [247.0]
-            and knob_rows("RU-RACE", "rush") == [["rush", "247", "bpm"]],
-            "%s %s %s" % (knob_rows("RU-BOTTOM", "rush"), tempo("RU-RACE"), knob_rows("RU-RACE", "rush")))
-    A.check("⛔ past the handoff: the bus at 1000 and its row in Hz",
-            tempo("RU-PAST") == [1000.0] and knob_rows("RU-PAST", "rush")[-1:] == [["rush", "403", "Hz"]],
-            "%s %s" % (tempo("RU-PAST"), knob_rows("RU-PAST", "rush")))
+    rush = lambda k: knob_rows(k, "rush")
+    A.check("⛔ held at load: the tempo in force with its own rate in brackets, and the bus untouched",
+            rush("RU-HELD") == [["rush", "120", "(574)"]] and not tempo("RU-HELD"),
+            "%s %s" % (rush("RU-HELD"), tempo("RU-HELD")))
+    A.check("⛔ through it, live: the bus at the knob's own rate, down below knob 1's reach too, its row in BPM",
+            tempo("RU-LIVE") == [45.0] and rush("RU-LIVE") == [["rush", "45", "bpm"]],
+            "%s %s" % (tempo("RU-LIVE"), rush("RU-LIVE")))
+    A.check("⛔ and knob 1 is held there: its row reads 45, and the bus is untouched",
+            knob_rows("RU-K1", "bpm") == [["bpm", "45", "(50)"]] and not tempo("RU-K1"),
+            "%s %s" % (knob_rows("RU-K1", "bpm"), tempo("RU-K1")))
+    A.check("⛔ past the handoff: the bus at 1000", tempo("RU-RACE", "RU-PAST") == [304.0, 1000.0],
+            tempo("RU-RACE", "RU-PAST"))
     ru = kitfx("RU-PAST")
-    A.check("⛔ ... c_kit told rush at the next step, the last step as it ran at 247 BPM, at the curve's "
-            "rate, and the playhead still from then on",
-            len(ru) == 1 and ru[0][0] == "rush" and abs(float(ru[0][1]) - 15000.0 / 247) < 0.1
-            and abs(float(ru[0][2]) - 403) < 1 and not moved("RU-LOOP"), "KITFX %s, the playhead %s" % (ru, moved("RU-LOOP")))
-    A.check("⛔ back at its bottom: the tempo it left, the loop off, and the steps again",
-            tempo("RU-DOWN") == [120.0] and kitfx("RU-DOWN") == [["rush-off"]] and moved("RU-DOWN"),
-            "%s %s %s" % (tempo("RU-DOWN"), kitfx("RU-DOWN"), moved("RU-DOWN")))
-    A.check("⛔ and none of it was put in the section",
-            not tempo_puts("RU-HELD", "RU-BOTTOM", "RU-RACE", "RU-PLAY", "RU-PAST", "RU-LOOP", "RU-DOWN"),
-            tempo_puts("RU-HELD", "RU-BOTTOM", "RU-RACE", "RU-PLAY", "RU-PAST", "RU-LOOP", "RU-DOWN"))
+    span3 = 3 * 15000.0 / 304
+    f0 = 1000.0 / span3
+    at = math.log(1000) / math.log(330000)
+    want_hz = f0 * (22000 / f0) ** ((0.8 - at) / (1 - at))
+    A.check("⛔ ... c_kit told rush at the next step: the whole pattern, last step 3, as it ran at 304 BPM, at the "
+            "knob's place between speed 1 and 22 kHz, and the row the same frequency, and the playhead still",
+            len(ru) == 1 and ru[0][0] == "rush" and abs(float(ru[0][1]) - span3) < 0.2
+            and abs(float(ru[0][2]) - want_hz) < 0.01 * want_hz
+            and rush("RU-PAST")[-1:] == [["rush", "%d" % (want_hz + 0.5), "Hz"]] and not moved("RU-LOOP"),
+            "KITFX %s, want %.1f; row %s; the playhead %s" % (ru, want_hz, rush("RU-PAST"), moved("RU-LOOP")))
+    A.check("⛔ pad-38: the loop off, the saved tempo, and the playhead moving again",
+            kitfx("RU-HOME") == [["rush-off"]] and tempo("RU-HOME") == [120.0] and moved("RU-HOME"),
+            "%s %s %s" % (kitfx("RU-HOME"), tempo("RU-HOME"), moved("RU-HOME")))
+    A.check("⛔ and both knobs held there, whichever way they are turned",
+            rush("RU-AFTER")[:1] == [["rush", "120", "(30k)"]] and knob_rows("RU-AFTER", "bpm")[:1] == [["bpm", "120", "(960)"]]
+            and not tempo("RU-AFTER"), "%s %s %s" % (rush("RU-AFTER"), knob_rows("RU-AFTER", "bpm"), tempo("RU-AFTER")))
+    A.check("⛔ none of rush was put in the section",
+            not tempo_puts("RU-HELD", "RU-LIVE", "RU-K1", "RU-RACE", "RU-PLAY", "RU-PAST", "RU-LOOP", "RU-AGAIN"),
+            tempo_puts("RU-HELD", "RU-LIVE", "RU-K1", "RU-RACE", "RU-PLAY", "RU-PAST", "RU-LOOP", "RU-AGAIN"))
+    A.check("⛔ knob 1 turned through its hold takes the tempo back, on the record, and knob 4 is held at it",
+            tempo("RU-K1-ON") == [75.0] and tempo_puts("RU-K1-ON") == [["75"]]
+            and rush("RU-K4")[:1] == [["rush", "75", "(30k)"]] and not tempo("RU-K4"),
+            "%s %s %s %s" % (tempo("RU-K1-ON"), tempo_puts("RU-K1-ON"), rush("RU-K4"), tempo("RU-K4")))
 
     errs = [e[1] for k in order for e in W(k) if e[0] == "ERR"
             and ("c_steps" in e[1] or "layout-miss" in e[1] or "g_grid" in e[1])]

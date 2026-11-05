@@ -6,8 +6,8 @@
 -- 1 to 16 (c_steps.pd).
 -- inlet 1: the presses and releases, from u_map -- step <n> <vel>, vel <level> <vel>, pad <n>
 -- <vel>, rep <n> <vel>, fast and recall <n> <vel>, the 500 BPM repeat and the saved tempo, and
--- knobs 2 and 3, last and track-last <0-1>, and swing, if a row of the table names it -- rush <bpm>,
--- knob 4's rate past the handoff, from u_tempo, and the phone's
+-- knobs 2 and 3, last and track-last <0-1>, and swing, if a row of the table names it -- rush <0-1> and
+-- rush-off, knob 4 past the handoff and back, from u_tempo, and the phone's
 -- sync, snap, select, vol, pitch, randomness, set-track-last, num, den, drunk, set-swing and
 -- set-last, its effects, drive, tone, dist, char, delay-note, delay-feel, feedback, delay, send,
 -- size, damping and verb-type, and each track's mute, solo and rnd-pitch, from u_net.
@@ -23,7 +23,7 @@
 -- outlet 8: the step clock's swing <0.5-0.75>, rate <x> and ticks <1 or 0>, to c_steps.pd's clock.
 -- outlet 9: bar, on the global loop's last step, to u_song: a bar is the pattern's loop, and a
 -- queued section starts as the loop comes round to its step 1; and recall <key>, a part's saved
--- value asked for. outlet 10: fast <1 or 0>, the 500 BPM repeat's tempo, to u_tempo.
+-- value asked for. outlet 10: fast <1 or 0>, the 500 BPM repeat's tempo, and rush-home, to u_tempo.
 --
 -- A Lua error leaves outlet 4 as fail c_steps lua-<selector>, and its text goes to Pd's console
 -- where there is one: the device has none (C-12).

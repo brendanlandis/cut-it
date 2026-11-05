@@ -93,7 +93,7 @@ stops the instrument**, because loading any patch restarts Pd. See
 |---|---|---|
 | `main` | Entry points. `main.pd` is the device's, `main-dev.pd` the Mac's | `main.pd` `main-dev.pd` `u_root.pd` |
 | `m_` | One physical device, publishing named controls, or told what to play | `m_nano` `m_launchpad` `m_organelle` `m_volca` `m_streich` `m_nanokey` |
-| `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_err` `u_net` `u_level` `u_present` `u_mother-stub` |
+| `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_err` `u_net` `u_present` `u_mother-stub` |
 | `g_` | One display surface, and its sole owner | `g_oled` `g_grid` `g_led` |
 | `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` `c_kit` `c_voice` `c_synth` |
 | `e_` | An effect stage — **v0.4, none yet** | — |
@@ -134,7 +134,7 @@ under `ref/`. Nothing in either is deployed.
 
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-four gates and 1281 checks**, and what each one protects is in
+**Twenty-four gates and 1274 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **Two of them read
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile and `kit-assert.sh` the drums; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.

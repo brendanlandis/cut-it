@@ -6,12 +6,12 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
 
 - [ ] **1. Resting display**
   - **Do:** Load Cut It from the Organelle's menu and wait for the boot's words to clear.
-  - **Pass if:** Two wide bars, one over the screen's top half and one over its bottom half, each with a small readout above it: out-l over the first and out-r over the second. Nothing else: no tempo, no version, no marks under the bars. With nothing playing both bars sit at their left edge.
-  - **Note:** The OLED is for alerts and warnings, the output's levels and the name of a control as it moves (Brendan, 2026-11-04): the tempo is the phone's, and a panic the LED's and the grid's ([display](../../ref/module/display.md)).
+  - **Pass if:** The info bar across the top, the Organelle's own: four meters, all at 0 with nothing playing, and the battery, power and wifi beside them. Under it nothing at all: no bars, no readouts, no tempo, no version.
+  - **Note:** The OLED is for alerts and warnings, the output's levels and the name of a control as it moves, and the levels are the info bar's, as the Organelle shows them by default (Brendan, 2026-11-04): the tempo is the phone's, and a panic the LED's and the grid's ([display](../../ref/module/display.md)).
 
 - [ ] **2. Parameter with a unit**
   - **Send:** `disp chop-size 43 %`
-  - **Pass if:** chop-size on the top line and a big 43 % under it. The bars shrink to a thin strip. About 1.2 s later the meters come back on their own.
+  - **Pass if:** chop-size on the line under the info bar and a big 43 % under it, the info bar still across the top. About 1.2 s later the row goes on its own and the screen under the bar is blank again.
 
 - [ ] **3. Parameter with no unit**
   - **Send:** `disp grain 12`
@@ -35,7 +35,7 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
 
 - [ ] **8. Modal**
   - **Send:** `disp modal recording`
-  - **Pass if:** recording in mid-size text with the bars as a thin strip. It stays and does not fade.
+  - **Pass if:** recording in mid-size text in the middle of the screen, under the info bar. It stays and does not fade.
 
 - [ ] **9. Parameter under a modal**
   - **Send:** `disp modal recording; disp chop-size 43 %`
@@ -52,7 +52,7 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
 
 - [ ] **12. Clearing the modal**
   - **Send:** `disp modal recording; disp modal-off`
-  - **Pass if:** recording disappears. You are back to the two meters and nothing else.
+  - **Pass if:** recording disappears. You are back to the info bar over a blank screen.
 
 - [ ] **13. Modal safety timeout**
   - **Send:** `disp modal stuck`
@@ -60,7 +60,7 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
 
 - [ ] **14. Modal safety timeout — the wait**
   - **Do:** Wait 30 seconds without touching anything.
-  - **Pass if:** The screen went back to the meters on its own with nothing touched.
+  - **Pass if:** The screen went back to the info bar over a blank screen on its own with nothing touched.
 
 - [ ] **15. Shifted stop with the nano unplugged**
   - **Need:** The nanoKONTROL unplugged. The clock running — press PLAY on the nano before unplugging it.
@@ -70,14 +70,14 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
 
 - [ ] **16. The diag roster**
   - **Do:** Hold the aux button and press the lowest key. Look hardest at the longest line: m_launchpad unchecked is exactly as wide as a row gets, so that is where clipping would show first. The word shift is on screen while aux is held and the roster draws over it.
-  - **Pass if:** Six small lines naming m_launchpad m_nano m_organelle m_volca m_streich and m_nanokey — each with here or gone or never or unchecked beside it — over two thin bars at the bottom that still move with the output. Every line is readable at arm reach, the sixth sits clear of the bars, and none is cut off at the right edge. About eight seconds later the meters come back on their own.
-  - **Note:** `oled-assert` proves the roster's words, their order and where the rows and bars are drawn; whether six 8px rows read at arm's length, the sixth just above the 4 px bars, and whether the 21-character `m_launchpad unchecked` line is clipped, is a person's call ([display](../../ref/module/display.md)). m_nanokey reads never until a key has been played since the load.
+  - **Pass if:** Six small lines naming m_launchpad m_nano m_organelle m_volca m_streich and m_nanokey — each with here or gone or never or unchecked beside it — under the info bar. Every line is readable at arm reach, the first clear of the info bar and the sixth of the bottom edge, and none is cut off at the right edge. About eight seconds later the roster goes on its own.
+  - **Note:** `oled-assert` proves the roster's words, their order and where the rows are drawn; whether six 8px rows read at arm's length between the info bar and the bottom edge, and whether the 21-character `m_launchpad unchecked` line is clipped, is a person's call ([display](../../ref/module/display.md)). m_nanokey reads never until a key has been played since the load.
 
-- [ ] **17. The meters are the output**
-  - **Need:** The SM58 in the Organelle's input, the drum samples deployed, and the mixer's channels 1 and 2 up.
-  - **Do:** Press page 2 and hit the bottom-left drum pad a few times. Then talk into the SM58. Then press nothing and wait.
-  - **Pass if:** out-l's bar jumps with each hit and moves with your voice, and out-r's stays at its left edge throughout. Silent, both bars sit at their left edge. Nothing under either bar marks a level.
-  - **Note:** The meters are what Cut It sends to its two outputs, read where `u_root` throws them: the mic passed through and, on the left, the drums (Brendan, 2026-11-04). A bar that never moves while the PA plays is the meter and not the sound; one that moves while the PA is silent is a cable or the mixer. `audio-assert` proves by the signal which side each reads ([audio](../../ref/module/audio.md)).
+- [ ] **17. The info bar's meters**
+  - **Need:** The SM58 in the Organelle's input, the drum samples deployed, the volume knob up, and the room quiet.
+  - **Do:** Press page 2 and hit the bottom-left drum pad a few times. Then talk into the SM58. Then press nothing and keep quiet for a few seconds.
+  - **Pass if:** With each hit one out meter jumps, out L, and the in meters stay at 0. Your voice moves in L and out L together. In R and out R stay at 0 throughout, and with everything quiet all four sit at 0.
+  - **Note:** The meters are mother's: in off the sound card, out off what Cut It sends, after the volume knob, so turned down the out pair read less (Brendan, 2026-11-04). The drums never reach the input, which is what tells out L apart. A segment lit when all is quiet is the mic's hiss, which should read 0: say so ([audio](../../ref/module/audio.md), *Open*).
 
 - [ ] **18. Only a mapped control names itself**
   - **Need:** The nanoKONTROL plugged in.

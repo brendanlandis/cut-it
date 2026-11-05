@@ -19,20 +19,20 @@ done, tap Setup again.
 
 - [ ] **2. Every device on the roster**
   - **Do:** Hold aux and press the Organelle's lowest key.
-  - **Pass if:** The OLED lists m_launchpad, m_nano and m_streich as here, m_volca as unchecked, and m_nanokey as never or here. About eight seconds later the meters come back.
+  - **Pass if:** The OLED lists m_launchpad, m_nano and m_streich as here, m_volca as unchecked, and m_nanokey as never or here. About eight seconds later the roster goes, and the info bar over a blank screen is left.
   - **Note:** m_volca always reads unchecked: it sends nothing, so nothing can tell it is there, and step 5 listens for it instead. m_streich is the Streichfett, which answers when asked. m_nanokey is never asked, and reads here only once a key has been played: steps 5 and 6 play it. gone or never on the others names the cable to look at ([display](../../ref/module/display.md)).
 
 - [ ] **3. A drum pad plays through the PA**
   - **Need:** The mixer's channel 1 up, and the PA on.
   - **Do:** Press the Launchpad's bottom-left drum pad, pad 1, a few times.
-  - **Pass if:** The PA plays pad 1's sample each time, as loud however hard you press. On the OLED, out-l jumps with each hit and out-r stays where it was.
-  - **Note:** The drums are Cut It's own, played on the Organelle and out its left output to the mixer's channel 1 (Brendan, 2026-11-04). The OLED's two meters are what Cut It sends out, left and right, so a hit that moves out-l and is silent in the PA is the cable or the mixer, and one that moves nothing is its sample missing: the deploy copies the sixteen from samples/drums/. At load Cut It warns when only some are there; with none, every pad is silent and nothing is drawn.
+  - **Pass if:** The PA plays pad 1's sample each time, as loud however hard you press. On the OLED's info bar one out meter jumps with each hit, out L, while the in meters and out R stay still.
+  - **Note:** The drums are Cut It's own, played on the Organelle and out its left output to the mixer's channel 1 (Brendan, 2026-11-04). The info bar's out meters are what Cut It sends out, after the volume knob, and the drums never reach the in meters, which is how out L tells itself apart. A hit that moves out L and is silent in the PA is the cable or the mixer, and one that moves nothing is its sample missing: the deploy copies the sixteen from samples/drums/. At load Cut It warns when only some are there; with none, every pad is silent and nothing is drawn.
 
 - [ ] **4. The mic**
   - **Need:** The SM58 in the Organelle's input.
   - **Do:** Sing or talk into the SM58.
-  - **Pass if:** The PA plays your voice. On the OLED, out-l moves with it and never reaches 100.
-  - **Note:** The mic goes in on the input's tip, and Cut It passes it straight to its left output beside the drums, so both come through the mixer's channel 1 and the same meter. 100 is full scale: out-l reaching it is the voice clipping in Cut It's output.
+  - **Pass if:** The PA plays your voice. On the info bar in L and out L move with it, and out L never reaches the end of its meter. Silent, every meter sits at 0.
+  - **Note:** The mic goes in on the input's tip, and Cut It passes it straight to its left output beside the drums, so both come through the mixer's channel 1 and the same meter. A meter at its end is the voice clipping. A segment lit with the mic silent and the room quiet is its hiss, which should read 0: say so ([audio](../../ref/module/audio.md)).
 
 - [ ] **5. The nanoKEY plays the Volca through the PA**
   - **Need:** The Volca on; the mixer's channels 3 and 4 up.

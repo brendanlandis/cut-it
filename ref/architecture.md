@@ -15,13 +15,13 @@ file decides what that means; and nothing below that file knows what hardware ex
                                 |
                               u_root
                                 |
-   ┌──────────┬──────────┬──────┴─────┬──────────┬──────────┬───────────┐
-   │          │          │            │          │          │           │
- u_init    u_tempo     u_err       u_state    u_net      u_level    u_present
- startup   clock +     errors      the data   the phone  meters     the tick +
- order     transport               store         │                  ONE re-wire
-   │          │          │            │          │          │           │
-   └──────────┴────┬─────┴────────────┴──────────┴──────────┴───────────┘
+   ┌──────────┬──────────┬──────┴─────┬──────────┬───────────┐
+   │          │          │            │          │           │
+ u_init    u_tempo     u_err       u_state    u_net       u_present
+ startup   clock +     errors      the data   the phone   the tick +
+ order     transport               store         │        ONE re-wire
+   │          │          │            │          │           │
+   └──────────┴────┬─────┴────────────┴──────────┴───────────┘
                    │
               global buses
   mode · tempo · clock · start/stop · panic · param · err · disp · state

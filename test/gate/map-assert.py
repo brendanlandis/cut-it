@@ -258,10 +258,10 @@ def static_lint():
     A.note("[s disp] per m_ file: %s" % " ".join("%s:%d" % kv for kv in sorted(found.items())))
 
 
-# Other modules share disp in every window (u_level's meters, g_led, u_init's
-# modal-off, u_err's alert), so "u_map drew nothing" is asked of u_map's rows
-# alone. No row is an unmapped control's since 2026-11-04, so a gk-* one counts.
-RESERVED = {"out-l", "out-r", "modal", "modal-off", "alert", "led", "grid", "diag"}
+# Other modules share disp in every window (g_led, u_init's modal-off, u_err's
+# alert), so "u_map drew nothing" is asked of u_map's rows alone. No row is an
+# unmapped control's since 2026-11-04, so a gk-* one counts.
+RESERVED = {"modal", "modal-off", "alert", "led", "grid", "diag"}
 
 
 def umap_rows(events):

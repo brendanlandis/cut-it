@@ -199,7 +199,7 @@ SEQ = [
     #    /alert); it reads nothing on disp now (Brendan, 2026-11-04)
     (5000,  "dispsweep", [("sweep", ("grain", 400, 5))]),
     (8000,  "dispother", [("disp", "alert fail u_bench boom"),
-                          ("disp", "chop-size 43 %"), ("disp", "out-l 42 dB"), ("disp", "diag")]),
+                          ("disp", "chop-size 43 %"), ("disp", "diag")]),
     # -- the tempo: one BPM, then a sweep, which is coalesced
     (9500,  "tempo",    [("tp", "120")]),
     (11000, "tpsweep",  [("tpsweep", (400, 5))]),

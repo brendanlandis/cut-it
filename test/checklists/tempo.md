@@ -9,7 +9,7 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
 - [ ] **1. Resting display at 120 BPM**
   - **Need:** The phone linked.
   - **Send:** `mode mode-1; tempo 120; stop bang`
-  - **Pass if:** The OLED shows the two meters, out-l over the first and out-r over the second, and nothing else: no tempo anywhere on it. The phone's arrangement screen reads 120. The aux LED is dark blue.
+  - **Pass if:** The OLED shows the info bar and nothing under it: no tempo anywhere on it. The phone's arrangement screen reads 120. The aux LED is dark blue.
 
 - [ ] **2. Knob pickup on the first touch**
   - **Send:** `mode mode-1; tempo 120; param og-knob-1 0`
@@ -18,7 +18,7 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
 
 - [ ] **3. Knob pickup crosses over**
   - **Send:** `mode mode-1; param og-knob-1 1`
-  - **Pass if:** The row reads bpm 500 and the phone's tempo 500. About a second later the row ages out to the two meters. The knob has crossed where it was saved and is live from here on.
+  - **Pass if:** The row reads bpm 500 and the phone's tempo 500. About a second later the row ages out to the blank screen under the info bar. The knob has crossed where it was saved and is live from here on.
 
 - [ ] **4. Knob tracking after pickup**
   - **Send:** `mode mode-1; param og-knob-1 0`
@@ -38,15 +38,15 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
 
 - [ ] **8. Start the transport**
   - **Send:** `start bang`
-  - **Pass if:** The aux LED turns green, and the OLED still shows the meters alone.
+  - **Pass if:** The aux LED turns green, and the OLED still shows the info bar alone.
 
 - [ ] **9. Stop the transport**
   - **Send:** `stop bang`
-  - **Pass if:** The aux LED goes dark blue, and the OLED still shows the meters alone.
+  - **Pass if:** The aux LED goes dark blue, and the OLED still shows the info bar alone.
 
 - [ ] **10. Panic**
   - **Send:** `panic bang`
-  - **Pass if:** The aux LED turns red, and the OLED shows the meters alone: panic is the LED's and the grid's to show (Brendan, 2026-11-04).
+  - **Pass if:** The aux LED turns red, and the OLED shows the info bar alone: panic is the LED's and the grid's to show (Brendan, 2026-11-04).
 
 - [ ] **11. Transport from PLAY and STOP**
   - **Do:** Press PLAY on the nanoKONTROL, then STOP.
@@ -60,7 +60,7 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
 
 - [ ] **13. Nothing Saved: knob 1 starts held at 120**
   - **Need:** No knobs.txt in Cut It's folder: no Save since the last `tools/deploy.sh --clean`. Knob 1 turned well down, toward 8 o'clock.
-  - **Do:** Load Cut It from the Organelle's menu, wait for the meters, then turn knob 1 slowly up past 12 o'clock.
+  - **Do:** Load Cut It from the Organelle's menu, wait for the boot's words to clear, then turn knob 1 slowly up past 12 o'clock.
   - **Pass if:** The phone's tempo reads 120 wherever knob 1 sits. Turning it, the row reads bpm 120 and the knob's own tempo in brackets until the knob passes just before 12 o'clock; from there the row follows the knob.
   - **Note:** 0.48 of the knob's turn is 120 on its curve ([map](../../ref/module/map.md), *Parameter pickup*). With a knobs.txt the saved position is restored instead, as in step 2.
 

@@ -40,7 +40,13 @@ PASSIVE = ["m_organelle", "m_nanokey"]
 ACTIVE = ["m_launchpad", "m_nano", "m_streich"]
 
 # The alert layer's border, read off g_oled.pd rather than guessed.
-BORDER = ["sendtyped", "/oled/gBox", "iiiiii", "3", "0", "0", "127", "63", "1"]
+BORDER = ["sendtyped", "/oled/gBox", "iiiiii", "3", "0", "8", "127", "55", "1"]
+
+# mother's info bar, on in every frame: the levels are its four meters (Brendan,
+# 2026-11-04), and it owns rows 0-7, so nothing Cut It draws starts above row 8.
+INFOBAR_ON = ["sendtyped", "/oled/gShowInfoBar", "ii", "3", "1"]
+INFOBAR = ["sendtyped", "/oled/gShowInfoBar"]
+TOP = 8
 
 _FLIP = ["sendtyped", "/oled/gFlip"]
 
@@ -87,6 +93,22 @@ def run_asserts(cap):
         fs = frames(mark)
         return fs[0] if fs else []
 
+    def drawn_at(frame):
+        """-> [(command, y)] for every command that draws, by its y."""
+        out = []
+        for v in frame:
+            if v[:2] in (["sendtyped", "/oled/gPrintln"], ["sendtyped", "/oled/gFillArea"],
+                         ["sendtyped", "/oled/gBox"]) and len(v) >= 6:
+                try:
+                    out.append((v[1], int(v[5])))
+                except ValueError:
+                    continue
+        return out
+
+    def blank(frame):
+        """Home: the info bar on, and nothing of Cut It's own drawn under it."""
+        return INFOBAR_ON in frame and not drawn_at(frame)
+
     def live(mark):
         """Every window's own liveness witness: the screen repainted at all."""
         return A.check("%s: the screen repainted" % mark, bool(frames(mark)),
@@ -95,39 +117,35 @@ def run_asserts(cap):
                        "died rather than that the layer was empty")
 
     # ---- home, which is never cleared and has no TTL ----------------------
-    print("--- home ---")
+    print("--- home, and mother's info bar ---")
+    # The levels are mother's info bar (Brendan, 2026-11-04): it goes on in
+    # every frame, since mother restores it after a load, and never off.
+    every = [f for m in order for f in frames(m)]
+    bars = sorted({" ".join(v[3:5]) for f in every for v in f if v[:2] == INFOBAR})
+    A.check("⛔ every frame turns mother's info bar ON, and none turns it off",
+            every and all(INFOBAR_ON in f for f in every) and bars == ["3 1"],
+            "%d frame(s), gShowInfoBar given %s" % (len(every), bars))
+    above = sorted({(c, y) for f in every for c, y in drawn_at(f) if y < TOP})
+    A.check("⛔ nothing Cut It draws starts in rows 0-7, which are the info bar's",
+            every and not above, "drawn above row %d: %s" % (TOP, above))
+    fills = [v for f in every for v in f if v[:2] == ["sendtyped", "/oled/gFillArea"]]
+    A.check("⛔ and Cut It draws no meters of its own: no gFillArea in any frame",
+            not fills, "%d gFillArea(s), the first %s" % (len(fills), fills[:1]))
     if live("HOME"):
-        # The readouts name what u_level reads, Cut It's output (2026-11-04).
-        heads = [ws[0] for y, sz, ws in rows(last("HOME")) if sz == 8 and ws and y < 50]
-        A.check("⛔ the meters' readouts are out-l and out-r, top to bottom",
-                heads == ["out-l", "out-r"],
-                "the 8px readouts drew %s. in-l and in-r were the input's" % heads)
-        # Home is the meters and nothing else: the OLED is for alerts, the
-        # output's levels and a moving control's name (Brendan, 2026-11-04).
-        A.check("⛔ home draws the two readouts, at y=0 and y=32, and no other text",
-                [(y, sz, ws[:1]) for y, sz, ws in rows(last("HOME"))]
-                == [(0, 8, ["out-l"]), (32, 8, ["out-r"])],
-                "drew %s. A third line is a footer, which went with the tempo at rest"
-                % rows(last("HOME")))
+        # Home at rest is the info bar over a blank screen: the OLED is for
+        # alerts, the levels and a moving control's name (Brendan, 2026-11-04).
+        A.check("⛔ home at rest draws nothing under the info bar",
+                blank(last("HOME")), "drew %s" % drawn_at(last("HOME")))
         A.check("⛔ no tempo at rest: 140 on the tempo bus draws nothing",
                 not [w for w in words(last("HOME")) if "140" in w],
                 "drew %s. The tempo is the phone's to show" % words(last("HOME")))
-        fills = sorted((int(v[5]), int(v[7])) for v in last("HOME")
-                       if v[:2] == ["sendtyped", "/oled/gFillArea"] and len(v) >= 9)
-        A.check("...and its two bars are 18 px tall at y=10 and y=42, under them",
-                fills == [(10, 18), (42, 18)], "gFillArea (y, height): %s" % fills)
-        # The gate marks were a gBox each under the meters: the input's noise
-        # floor and a gate window, which an output meter has neither of.
-        boxes = [v for v in last("HOME") if v[:2] == ["sendtyped", "/oled/gBox"]]
-        A.check("⛔ no gate marks: home draws no gBox at all",
-                not boxes, "drew %s" % boxes)
 
     # ---- a parameter, and its 1200 ms TTL ---------------------------------
     print("\n--- the param layer, and its TTL ---")
     # One mover is a two-line layout, not a row, so the geometry is asserted.
     if live("PARAM"):
-        A.check("a lone parameter draws name 8px at y=0 and value 24px at y=12",
-                rows(last("PARAM")) == [(0, 8, ["gate-p1"]), (12, 24, ["11"])],
+        A.check("a lone parameter draws name 8px at y=8 and value 24px at y=20, under the bar",
+                rows(last("PARAM")) == [(8, 8, ["gate-p1"]), (20, 24, ["11"])],
                 "drew %s" % rows(last("PARAM")))
     if live("PARAM-GONE"):
         A.check("⛔ ...and 1.2 s after the hands stop, it is gone",
@@ -135,8 +153,8 @@ def run_asserts(cap):
                 "still drawing %s. The TTL is one retriggered [delay], so a "
                 "parameter that never expires means the screen keeps a stale "
                 "value under a moving control" % words(last("PARAM-GONE")))
-        A.check("...and the home layer is showing again",
-                "out-l" in words(last("PARAM-GONE")),
+        A.check("...and the home layer is showing again, the info bar over nothing",
+                blank(last("PARAM-GONE")),
                 "drew %s -- home is priority 0 and is never cleared, so it must "
                 "be what is left" % words(last("PARAM-GONE")))
 
@@ -160,10 +178,10 @@ def run_asserts(cap):
         got = [ws[0] for _, _, ws in rows(last("FIVE")) if ws]
         A.check("five controls moving at once give five rows, in touch order",
                 got == FIVE, "drew %s" % got)
-        # The meter strip starts at y=54: a drifted pitch overlaps it, silently.
-        A.check("...at 8px, on the y=0 9 18 27 36 pitch, clear of the meters",
+        # The info bar ends at row 7: a pitch drifted up runs into it, silently.
+        A.check("...at 8px, on the y=8 17 26 35 44 pitch, under the info bar",
                 [(y, sz) for y, sz, _ in rows(last("FIVE"))]
-                == [(0, 8), (9, 8), (18, 8), (27, 8), (36, 8)],
+                == [(8, 8), (17, 8), (26, 8), (35, 8), (44, 8)],
                 "drew %s" % [(y, sz) for y, sz, _ in rows(last("FIVE"))])
     if live("SIXTH"):
         got = [ws[0] for _, _, ws in rows(last("SIXTH")) if ws]
@@ -245,7 +263,7 @@ def run_asserts(cap):
     if live("MODAL-OFF"):
         drawn = words(last("MODAL-OFF"))
         A.check("modal-off clears the modal and home comes back",
-                "gate-modal" not in drawn and "out-l" in drawn,
+                "gate-modal" not in drawn and blank(last("MODAL-OFF")),
                 "drew %s" % drawn)
 
     # led and grid are routed and thrown away: anything g_oled does not
@@ -258,8 +276,8 @@ def run_asserts(cap):
                 not strays,
                 "drew %s. They belong to g_led and g_grid; g_oled matches them "
                 "only to discard them" % strays)
-        A.check("...and the screen is still live while ignoring them",
-                "out-l" in drawn,
+        A.check("...and the screen is still live while ignoring them, home and blank",
+                blank(last("RESERVED")),
                 "drew %s -- without this, ignoring them is indistinguishable "
                 "from a dead screen" % drawn)
 
@@ -286,16 +304,10 @@ def run_asserts(cap):
                 "drew %s -- the roster is whatever `expect` published at load, "
                 "and every m_ layer publishes exactly one" % roster("DIAG"))
         # The five-row store's pitch, one row further: the sixth ends at y=52.
-        A.check("⛔ ...at 8px on the y=0 9 18 27 36 45 pitch, SIX rows",
+        A.check("⛔ ...at 8px on the y=8 17 26 35 44 53 pitch, SIX rows under the info bar",
                 [(y, sz) for y, sz, _ in roster("DIAG")]
-                == [(0, 8), (9, 8), (18, 8), (27, 8), (36, 8), (45, 8)],
+                == [(8, 8), (17, 8), (26, 8), (35, 8), (44, 8), (53, 8)],
                 "drew %s" % [(y, sz) for y, sz, _ in rows(last("DIAG"))])
-        # The strip went down to make room: two 4 px bars from y=54, clear of
-        # the sixth row's last line at 52, where a 5 px strip at 48 sat on it.
-        strip = sorted((int(v[5]), int(v[7])) for v in last("DIAG")
-                       if v[:2] == ["sendtyped", "/oled/gFillArea"] and len(v) >= 9)
-        A.check("⛔ ...with the meter strip below the sixth, 4 px at y=54 and y=59",
-                strip == [(54, 4), (59, 4)], "gFillArea (y, height): %s" % strip)
         A.check("...and the two passive layers, never polled, read `never` until they speak",
                 [state("DIAG").get(s) for s in PASSIVE] == ["never", "never"],
                 "drew %s" % state("DIAG"))
@@ -367,7 +379,7 @@ def run_asserts(cap):
         drawn = words(last("DIAG-TTL"))
         A.check("...and diag expires on its own TTL and gives home back",
                 not [s for s in DIAG_SOURCES if s in drawn]
-                and "out-l" in drawn and "out-r" in drawn,
+                and blank(last("DIAG-TTL")),
                 "drew %s. It is a summoned readout on a retriggered [delay], "
                 "not a modal: nothing clears it explicitly" % drawn)
 

@@ -14,8 +14,8 @@ can see one: both channels carry the same level.
 Then the drums, with the input silent: page 2's bottom-left pad, pad 1, plays a
 sample the generator writes into the scratch copy's samples/drums/, where c_kit
 reads it. What it proves is the output's, not the input's: c_kit's outlet~ is
-summed into the left output, and the meters read what goes out, so out-l moves
-with nothing on the input at all.
+summed into the left output, with nothing on the input at all. The disp tap is
+there to show nothing reports a level: the info bar is the meter.
 
 One recording, cut by time into segments, with 300 ms guard bands either side of
 each boundary, since a message-domain start is not sample-aligned.
@@ -45,8 +45,8 @@ SEGMENTS = [("silence", 0.0, 1.0), ("both", 1.0, 3.0),
 GUARD = 0.3
 
 # The drum: pad 1's sample, a tone the analyzer can tell from the two inputs'.
-# 1.8 s, longer than the segment's inside, so u_level's 10 Hz reports see it
-# steady. A press plays at full velocity (sequencer.md), 0 dB.
+# 1.8 s, longer than the segment's inside, so the analysis window holds nothing
+# but the tone. A press plays at full velocity (sequencer.md), 0 dB.
 DRUM_HZ = 550.0
 DRUM_S = 1.8
 RATE = 44100

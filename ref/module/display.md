@@ -40,13 +40,12 @@ screen in it and nothing known reached it** (Reference, `~/Sites/!reference/rola
 
 ### The `disp` message
 
-**`<name> <value> [unit]`, with the name as the SELECTOR.** `g_oled` routes eight selectors;
+**`<name> <value> [unit]`, with the name as the SELECTOR.** `g_oled` routes six selectors;
 **everything else is a parameter by definition** — there is no registration step, so a new control
 needs no change to any display.
 
 | Selector | Carries | Layer | Evidence | Item |
 |----------|---------|-------|----------|------|
-| `out-l` `out-r` | `<dB>` from `u_level`: what Cut It sends out, left and right ([audio.md](audio.md)) | home | verified | — |
 | `modal` | One symbol — **sticky** until cleared | modal | verified | — |
 | `modal-off` | Nothing | clears modal | verified | — |
 | `diag` | Nothing — it is a summons, not a value | diag | verified | 301 |
@@ -63,10 +62,10 @@ Write `launchpad-silent`, not `launchpad silent`.
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
-| `home` | 0 | Always active | Never | Two output meters and their 8px readouts, and nothing else | verified | — |
+| `home` | 0 | Always active | Never | **Nothing**: mother's info bar over a blank screen (*Design*) | unknown | — |
 | `param` | 1 | Any unreserved `disp` selector | `[del 1200]` | **Up to five rows that hold their positions** | verified | — |
-| `modal` | 2 | `disp` → `modal <word>` | `modal-off`, or a 30 s safety TTL | Word 16px + shrunk meters | verified | — |
-| `diag` | 3 | `disp` → `diag` | `[del 8000]` | **One 8px row per device, and the shrunk meters** | verified | 301 |
+| `modal` | 2 | `disp` → `modal <word>` | `modal-off`, or a 30 s safety TTL | Word 16px, mid-screen under the info bar | verified | — |
+| `diag` | 3 | `disp` → `diag` | `[del 8000]` | **One 8px row per device** | verified | 301 |
 | `alert` | 4 | `disp` → `alert …`, from `u_err` only | 2 s `warn`, 4 s `fail` | Border, level 16px, source and text 8px | verified | — |
 
 **Priority is a `[select 1]` cascade rather than arithmetic**, so it reads top to bottom in exactly
@@ -78,23 +77,23 @@ alive and the screen clears 1.2 s after your hands stop rather than after they s
 ```
 home                              param                    alert
 +------------------------+  +------------------------+  +------------------------+
-| out-l 43        y=0  8 |  | chop-size       y=0  8 |  |+----------------------+|
-| ==========      y=10 18|  |                        |  || fail        y=6   16 ||
-| ==========             |  |  43 %           y=12 24|  ||                      ||
-|                        |  |                        |  || u_init      y=30   8 ||
-| out-r 19        y=32 8 |  |                        |  || launchpad-x y=44   8 ||
-| ===             y=42 18|  | =========       y=54  4|  |+----------------------+|
-| ===                    |  | ====            y=59  4|  +------------------------+
-+------------------------+  +------------------------+
+|ii ii oo oo  info bar 0 |  |ii ii oo oo  info bar 0 |  |ii ii oo oo  info bar 0 |
+|                        |  | chop-size       y=8  8 |  |+----------------------+|
+|                        |  |  43 %           y=20 24|  || fail        y=14  16 ||
+|                        |  |                        |  ||                      ||
+|                        |  |                        |  || u_init      y=35   8 ||
+|                        |  |                        |  || launchpad-x y=47   8 ||
+|                        |  |                        |  |+----------------------+|
++------------------------+  +------------------------+  +------------------------+
 ```
 
 | | Evidence | Item |
 |---|----------|------|
-| `env~`'s 0–100 maps to pixels as **× 1.28**, clipped to **1–128** — a zero-width `gFillArea` is untested and silence is the common case | verified | — |
-| **No gate marks** since the meters read the output (Brendan, 2026-11-04): they marked the input's noise floor and a gate window over it, item 11, and an output meter has neither (*Design*) | unknown | 11 |
-| Home is two halves of 32 rows: a readout at y=0 and y=32, its bar 18 px tall at y=10 and y=42, and four blank rows after each bar. **No footer** since 2026-11-04 (*Design*) | unknown | — |
-| A moving knob shrinks the meters into a **full-width bottom strip**, not a corner. A corner meter here is ~40×4 px, and 24px text needs the full width anyway | verified | — |
-| The strip is two 4 px bars at y=54 and y=59, since 2026-11-04: 5 px at y=48 and 56 until the diag layer needed a sixth row (*Design*) | unknown | — |
+| **Rows 0 to 7 are mother's info bar**, on in every frame (`gShowInfoBar 3 1`): four 11-segment meters, in L and R and out L and R, then battery, power and wifi, drawn by mother over whatever is there (Reference). Every layer `g_oled` draws starts at row 8 | unknown | — |
+| **Home draws nothing**: at rest the screen is the info bar over 56 blank rows (Brendan, 2026-11-04; *Design*) | unknown | — |
+| **No meters of Cut It's own**, on home or as a strip under the param, modal or diag layers: the info bar shows the levels on every layer | unknown | — |
+| The alert's border is a `gBox` from row 8 to 63; its level at y=14, its source at 35 and its text at 47 | unknown | — |
+| The modal's word is 16px at y=28, the middle of rows 8 to 63 | unknown | — |
 
 ### The param layer is a list, and rows are STABLE
 
@@ -108,14 +107,13 @@ to five entries** in `[text define $0-params]`, one line of `<frame-stamp> <name
 | The scan walks from the **last index toward 0**, because deleting a line shifts everything below it and going downward makes that harmless. `until`'s own count bounds the loop | verified | — |
 | **13 and not 12 is deliberate** — `pd layers` clears `$0-a-param` on a 1200 ms delay, so the store is guaranteed to outlive the flag by a frame. Otherwise a rounding difference leaves the param layer winning with nothing to draw, which looks exactly like a dead patch | verified | — |
 
-**Type size follows how many are moving.** The param area is y=0…46; the meter strips at y=54/59 are
-untouched throughout.
+**Type size follows how many are moving.** The param area is y=8…54, under the info bar.
 
 | Moving | Layout | Evidence | Item |
 |--------|--------|----------|------|
-| 1 | Name 8px @ y=0, value+unit **24px** @ y=12 | verified — byte-identical to what Phase 3 shipped | — |
-| 2 | Name 8px @ y=0 / value **16px** @ y=8, then name 8px @ y=23 / value 16px @ y=31 | verified | — |
-| 3–5 | **8px** rows at y=0, 9, 18, 27, 36, in the order first touched | verified | — |
+| 1 | Name 8px @ y=8, value+unit **24px** @ y=20 | verified at y=0 and 12, eight rows higher; moved under the info bar on 2026-11-04 | — |
+| 2 | Name 8px @ y=8 / value **16px** @ y=16, then name 8px @ y=31 / value 16px @ y=39 | verified eight rows higher | — |
+| 3–5 | **8px** rows at y=8, 17, 26, 35, 44, in the order first touched | verified eight rows higher | — |
 
 ✅ **All three are legible at playing distance — item 258.** Read off the panel by eye at arm's
 length rather than judged from the geometry, one nano slider then two then four to raise each
@@ -130,7 +128,7 @@ against, and it would not be helped by a larger font.
 **When a controller stops working mid-set, this is what says which one.** The presence layer has
 always known; all it surfaced was a two-second `warn`. `diag` is the question *"what is the rig's
 state right now"* asked deliberately, and it reuses the 3–5-mover pitch, one row further: **8px rows
-at y = 0, 9, 18, 27, 36, 45**, one per source, over the shrunk meter strip.
+at y = 8, 17, 26, 35, 44, 53**, one per source, under the info bar.
 
 | | Evidence | Item |
 |---|----------|------|
@@ -138,7 +136,7 @@ at y = 0, 9, 18, 27, 36, 45**, one per source, over the shrunk meter strip.
 | **The two passive layers, `m_organelle` and `m_nanokey`, read `never` until they first speak**, and `here` from then on: never polled and never aged, so the row says *heard since load*, not *there now*. The nanoKEY speaks only when a key is played ([presence.md](presence.md)) | unknown | — |
 | ⛔ **`<src>` is the ABSTRACTION's name** — `m_nano`, never "nanoKONTROL". `g_oled` sits below the `m_` boundary, so this is the only name it has. See [presence.md](presence.md) | verified | 301 |
 | Four states: `here` · `gone` · `never` · `unchecked`. **`m_volca` registers `none` and reads `unchecked`** — it is never polled and can never be lost, so drawing it as healthy would be a claim nothing has tested | verified | 301 |
-| ⛔ **The loop is bounded at SIX rows, not at the roster size.** The sixth ends at y=52 and the strip starts at 54; a seventh would draw over it | unknown | 301 |
+| ⛔ **The loop is bounded at SIX rows, not at the roster size.** The sixth ends at y=60; a seventh would run off the bottom of the screen | unknown | 301 |
 | ⚠️ **`m_launchpad unchecked` is 21 characters** — the whole width of an 8px row. A longer state word or a longer abstraction name clips silently | verified | 301 |
 | Summoned by `disp` → `diag`, which carries nothing. Cleared by a retriggered `[del 8000]`, so pressing again while it is up buys another eight seconds | verified | 301 |
 | The control is **`og-shift-60` on every page** — hold `aux` and press the lowest key. One row of `cut-it-map.txt` per page | verified | 304 |
@@ -266,9 +264,10 @@ flash, raises to 153.
 
 ### Seeing it off-device
 
-`u_mother-stub`'s eight screen rows are `cnv` objects whose **label** is the drawn text.
-**The screen log** — `open-screen-log` on the dev panel — records every `disp` message except
-`out-l`/`out-r`, stamped with the frame number:
+`u_mother-stub`'s eight screen rows are `cnv` objects whose **label** is the drawn text. Its top
+row is the info bar's, and stays empty: the stub draws no meters, and Cut It nothing there.
+**The screen log** — `open-screen-log` on the dev panel — records every `disp` message, stamped
+with the frame number:
 
 ```
  0  modal booting      31  modal-off
@@ -278,10 +277,10 @@ flash, raises to 153.
 
 ✅ **The OSC rate has ample headroom, measured on the running device** (item 21): `pd` at **8.2%
 CPU**, load 0.16, **110 UDP datagrams/second** to `127.0.0.1:4001`. The home frame was ten OSC
-messages then, so 110/s was the frame clock keeping up with room to spare; it is seven since the
-footer and the gate marks went.
+messages then, so 110/s was the frame clock keeping up with room to spare; it is three since the
+meters went to the info bar: the bar on, the clear and the flip.
 
-⚠️ **Hands off the device, the OLED sits on the meters** — no `og-knob-*` rows persist,
+⚠️ **Hands off the device, the OLED sits on the info bar over a blank screen** — no `og-knob-*` rows persist,
 so nothing pins the param layer open (item 68). **This does not distinguish "mother does not stream
 knob positions" from "the `[change -1]` guard filters them"**, and it cannot without removing the
 guard. The outcome is right either way.
@@ -295,11 +294,11 @@ Each is a claim and its fix. How any of them was found is in the git history.
 
 ### `[route]` matches a SELECTOR, not a list's first element
 
-⛔ `[route out-l]` does not match a `list` whose first element is `out-l`, and `[list prepend out-l]`
+⛔ `[route modal]` does not match a `list` whose first element is `modal`, and `[list prepend modal]`
 produces exactly that. Without a trim **every `disp` message is silently rejected and the display
 just shows zero** (C-6).
 
-**Fix:** finish assembled `disp` messages with `[list trim]`. A message box typed `out-l 42 dB` is
+**Fix:** finish assembled `disp` messages with `[list trim]`. A message box typed `modal booting` is
 already the right shape and needs nothing.
 
 ### A new selector on `disp` costs one `route` argument in every consumer that has a fallthrough
@@ -315,7 +314,8 @@ the first one.** Cheap, but not free.
 ⛔ **And APPEND it, because the reject renumbers.** An argument slotted in beside the other layer
 names shifts every outlet after it — **including the reject**, which is the entire parameter path.
 `diag` went on the end of the box and the reject moved from outlet 8 to 9; taking `status` out of
-the middle (2026-11-04) moved it back to 8, and every layer's cord after it with it.
+the middle (2026-11-04) moved it back to 8, and `out-l` and `out-r` off the front the same day to
+6, and every layer's cord after them with it.
 
 ### `text get` errors if you ask for more fields than a line holds
 
@@ -363,17 +363,24 @@ After that a replug will not recover the grid. See [launchpad.md](../device/laun
 
 ## Design
 
-### The meters are the output, and nothing on them marks the input
+### The levels are mother's info bar, and Cut It draws no meter
 
 **The OLED is for alerts and warnings, the output's levels and the name of a control as it moves**
-(Brendan, 2026-11-04), so home's two meters are what Cut It sends out, left and right, read where
-`u_root` throws them ([audio.md](audio.md), *The output is summed in `u_root`, and metered there*).
-The readouts say so, `out-l` and `out-r`, and the screen log and the bus use the same names.
+(Brendan, 2026-11-04), and the levels are shown "the way the organelle usually shows it by default,
+on a single line, and with levels at 0 when nothing is playing" (Brendan, the same day): mother's
+info bar, rows 0 to 7, in L and R and out L and R, the out pair off her `catch~` after the volume
+knob ([audio.md](audio.md)). So `g_oled` turns the bar on in every frame, since mother repaints
+after a patch load ([organelle.md](../device/organelle.md)), and lays every layer out in rows 8 to
+63. **Home draws nothing**: at rest the screen is the bar over blank rows. Cut It's own two meters
+went, the home layer's halves and the strip under the param, modal and diag layers, and
+`out-l` and `out-r` left `disp` with `u_level`, which nothing else read.
 
-**The gate marks went with the input.** They were a box under each meter from the input's noise
-floor to where a noise gate on the input would sit — a guide to setting a gate on what came in. An
-output meter has no gate behind it and no fixed floor: what it shows is how near the output is to
-full scale, and full scale is the bar's right edge.
+**What it buys is the levels on every layer and at rest at 0.** Cut It's bars showed only on home
+and as a strip, read `env~` straight, so silence was a floor number and a 1 px sliver, not zero;
+mother's out meter starts some way above the input's hiss ([audio.md](audio.md), *Open*). What it
+costs is an eighth of the screen, and the bars' resolution: eleven segments for 128 pixels. The
+gate marks, the input's noise floor and a gate window under the input meters, had gone with the
+input that morning.
 
 ### Nothing at rest but the levels: the footer went
 
@@ -385,11 +392,10 @@ The footer's other two words went with it, judged against the same rule:
 |---|---|---|
 | The BPM, from `u_tempo` | The tempo lives on the phone | The phone; knob 1's row while it turns |
 | `panic`, from `u_init` | Neither an alert nor a warning: a person pressed it, and nothing is wrong | The aux LED, red until the transport moves, and the whole grid red for a second |
-| `v0.3-ready`, from `u_init`, for half a second before the BPM took over | A version is none of the three | The boot's last modal clearing to the meters ([boot.md](boot.md)) |
+| `v0.3-ready`, from `u_init`, for half a second before the BPM took over | A version is none of the three | The boot's last modal clearing to the info bar ([boot.md](boot.md)) |
 
-**So `status` left the bus**, and `g_oled`'s route lost it. Home is the two meters, given the whole
-screen in two equal halves, and the boot's modals are still the boot's: they are what a stuck boot
-shows. A `status` sent now is a parameter row by the fallthrough, which is the visible failure that
+**So `status` left the bus**, and `g_oled`'s route lost it. Home is the info bar over a blank screen,
+and the boot's modals are still the boot's: they are what a stuck boot shows. A `status` sent now is a parameter row by the fallthrough, which is the visible failure that
 rule chose.
 
 ### Callers send semantics, never layout
@@ -474,18 +480,13 @@ readout. **The phone became a device with commands of its own** — the Launchpa
 the sequencer's settings — and a mirror of the OLED's rows is the wrong vocabulary for that, so it
 reads each module's state on cords instead ([phone.md](../device/phone.md)).
 
-### Six diag rows: the strip went lower, the pitch stayed
+### Six diag rows, at the pitch item 258 read
 
 **The nanoKEY's row made the roster six** (2026-11-04), and the 9 px pitch item 258 read at arm's
-length puts a sixth row at y=45 to 52, where the 5 px strip at 48 sat. **The strip moved instead
-of the rows**: two 4 px bars at y=54 and 59, under every layer that shrinks the meters, so one
-geometry serves param, modal and diag as before, and the param area, y=0 to 46, never reaches it.
-The alternatives each gave up something the screen is for. An 8 px pitch fits six above 48, but
-rows with no blank line between them put one row's descenders on the next one's capitals, and
-nothing has measured that legible. Two columns halve the row, and `m_launchpad unchecked` already
-fills the whole of one. And no strip under diag leaves no output level on screen for its eight
-seconds, when the levels are one of the OLED's three jobs. Whether six rows and the thinner strip
-read at playing distance is the display checklist's.
+length fits six from row 8 down to row 60, under the info bar, with no meter strip to make room
+for: the bar shows the levels while the roster is up. An 8 px pitch was the alternative, and rows
+with no blank line between them put one row's descenders on the next one's capitals, which nothing
+has measured legible. Whether six rows read at playing distance is the display checklist's.
 
 ### diag goes above `modal` and below `alert`, and both halves are load-bearing
 

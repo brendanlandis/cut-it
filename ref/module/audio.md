@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The audio chain
 
-**Files:** `Cut It/u_root.pd`, `Cut It/u_level.pd`, `Cut It/codec-gain.sh` · **Gate:** `test/gate/audio-assert.sh` · **Checklist:** `test/checklists/linecheck.md`
+**Files:** `Cut It/u_root.pd`, `Cut It/codec-gain.sh` · **Gate:** `test/gate/audio-assert.sh` · **Checklist:** `test/checklists/linecheck.md`
 
 ## What it is
 
@@ -12,17 +12,14 @@ names — the opposite of how every control path in this patch works, and a deli
 ⛔ **`adc~` and `dac~` appear nowhere in Cut It and must not.** `mother.pd` owns the sound card; the
 patch reads `[r~ inL]` / `[r~ inR]` and writes `[throw~ outL]` / `[throw~ outR]` (C-4).
 
-Today the chain is the two inputs, a `[+~]` that sums the left with `c_kit`'s drums, the two
-outputs, and a `u_level` on each output. **The gap between the inputs and the sum is where v0.4
-goes** — `e_chop`, `e_pitch`, `e_trem`, `e_verb`.
+Today the chain is the two inputs, a `[+~]` that sums the left with `c_kit`'s drums, and the two
+outputs. **The gap between the inputs and the sum is where v0.4 goes** — `e_chop`, `e_pitch`,
+`e_trem`, `e_verb`.
 
-**The meters read what Cut It sends out, not the input** (Brendan, 2026-11-04). Everything the
-patch wants heard leaves through `u_root`'s two `throw~`, and each `u_level` is fed exactly what its
-`throw~` is, so the OLED's two meters are the output, left and right: the mic passed through, and on
-the left the drums.
-
-`u_level` reports the level of any signal onto the `disp` bus. Tap it off anything you want to
-watch: **it has no signal outlet and does not alter the audio.**
+**The levels are mother's** (Brendan, 2026-11-04): the OLED's info bar shows the input and the
+output, left and right, as the Organelle does by default, read by mother off the sound card and off
+her own `catch~` after the volume knob. Cut It meters nothing itself, and reports no level on
+`disp`.
 
 **The audio chip's own gains are Cut It's too.** The factory stages them backwards for noise and
 restores that at every boot, so `u_root` re-stages them at every load through `codec-gain.sh`: the
@@ -42,7 +39,8 @@ What `mother.pd` does on the other side of those names (its own `adc~` and `dac~
 square law, the limiter, turning DSP on, the VU meter) is on the Organelle's Reference page
 (`~/Sites/!reference/critter-guitari-organelle-1.md`, under *Audio*). Every `throw~` into one
 `catch~` is summed (Pure Data, in Reference), so a second stage could throw to `outL` from its own
-file with no mixer, but no meter in `u_root` would then see it (*Traps*).
+file with no mixer, and mother's meter would read it, but the chain would stop being one canvas
+(*Design*).
 
 ### The codec's gains
 
@@ -60,40 +58,22 @@ its dB scales, the factory's values and the hiss are on the Organelle's Referenc
 `Headphone` and `PCM` verified by ear on 2026-11-03, set by hand with `amixer`: the hiss goes, at
 the same overall level. `Capture` measured with the Mic Probe (`tools/stage-patches/Mic Probe/`).
 
-### `u_level`
+### At rest
 
-| | | Evidence | Item |
-|---|---|----------|------|
-| Creation arg 1 | The name to report under, e.g. `out-l`. **Required** — without it the bus carries `0` as the name | verified | — |
-| Inlet 1 | One signal | verified | — |
-| Outlets | **None** | verified | — |
-| Scale | `env~` reports **RMS on a 0–100 dB scale**, 100 being full scale | verified | 11 |
-| Input noise floor | **18–19** on that scale, at the factory's input gain | verified | 11 |
-| A passive bass | Reaches the **90s**, at the factory's input gain | verified | 11 |
-| Sampling rate | **10 Hz** — `[metro 100]` banging a stored value | verified | — |
-| `[change -1]` | A **steady signal stops reporting** | verified | — |
+What Cut It sends out with nothing playing, from the code and the Organelle's Reference page:
 
-Two instances in the deployed patch: `u_level out-l` and `u_level out-r`, fed what `throw~ outL`
-and `throw~ outR` are, so 100 is Cut It's output at full scale. The noise floor and the bass above
-are the input's, read before the meters moved to the output; the input passes through at unity, so
-a source on the input alone reads the same on the output's meter.
+| Out | At rest | Evidence |
+|---|---|---|
+| Left | The mic's tip passed through at unity: the input's own hiss, **−71 dBFS RMS** with `Capture` 15 and the attenuator off and the mic silent (Reference, measured 2026-11-04), and whatever sound reaches the open mic. `c_kit` adds nothing: each voice's `switch~` keeps its DSP off except while it sounds | verified |
+| Right | The input's ring, passed through: the noise floor of a contact a TS plug grounds (item 11, at the factory's gain; not measured at `Capture` 15) | unknown |
 
-`disp` carries them as `out-l <dB>` and `out-r <dB>`, on the **home** layer.
+Nothing else in the patch makes a sound: there is no oscillator, no stage and no synth inside it,
+and the Volca and the Streichfett reach the mixer on cables of their own ([rig.md](../rig.md)).
+Whether that hiss lights mother's output meter is *Open*.
 
 ## Traps
 
 Each is a claim and its fix. How any of them was found is in the git history.
-
-### A `throw~` outside `u_root` is out of the meters' sight
-
-⛔ mother's `catch~ outL` sums every `throw~ outL` in the patch, wherever it is, so a stage that
-throws from its own file is heard and never metered: `c_kit`'s drums did until 2026-11-04, and the
-OLED read the input beside them. A second `catch~` of the name to meter it is a load error, since
-the name is mother's.
-
-**Fix:** a stage gives its sound to `u_root` on an `outlet~`, as `c_kit` does, and `u_root` sums it
-before its one `throw~` per side, where the meter taps. `audio-assert.sh` counts the `throw~` boxes
-in every file and requires each meter's cords to equal its `throw~`'s.
 
 ### `dac~` is a real bug; `adc~` merely happens to work
 
@@ -101,22 +81,6 @@ in every file and requires each meter's cords to equal its `throw~`'s.
 (the Organelle, in Reference).
 
 **Fix:** `[throw~ outL]` / `[throw~ outR]`, always (C-4).
-
-### The `[list trim]` in `u_level` is load-bearing
-
-⛔ `[list prepend]` makes a **list**, and `route` with symbol arguments matches the **selector**, not
-a list's first element — so without the trim every `disp` message is silently rejected and **the
-display just shows zero** (C-6).
-
-**Fix:** `[list trim]` after the prepend.
-
-### `env~` is polled, never pushed
-
-⚠️ It reports on its own analysis window, which is both faster than anything can read and unrelated
-to when a display wants to redraw.
-
-**Fix:** store into a cold inlet and bang it at a fixed rate. **10 Hz here is the SAMPLING rate** —
-rate-limiting the *draw* is the display's job, not this one's.
 
 ### A patch must never enable DSP
 
@@ -152,35 +116,26 @@ the factory's `setup.sh` has finished before Pd starts, and a patch load leaves 
 (the Organelle, in Reference). It runs at every load because a reboot undoes it. `setup.sh` itself
 stays as the factory shipped it, on the read-only root and outside anything Cut It deploys.
 
-### The level taps need no `[trigger]`
+### The output is summed in `u_root`, on cords
 
-C-3 is about **messages**. A signal fan-out has no firing order to get wrong — signal connections
-all run every block — so tapping `u_level` off the sum alongside `throw~ outL` is safe as drawn.
+**Everything Cut It sends out passes `u_root`'s two `throw~`**: `c_kit` hands its drums up an
+`outlet~`, a `[+~]` sums them with the input's tip, and the sum feeds `throw~ outL`; on the right the
+input's ring is all there is. It keeps the audio path something read off one canvas, and
+`audio-assert.sh` counts the `throw~` boxes in every file. A private `catch~` of Cut It's own was
+the alternative: every stage would throw to it with no cords, at the cost of each one learning
+`u_root`'s `$0` as a creation argument, and of the chain no longer being visible as wires. A stage
+added later joins the sum the way the drums do, and a stage on the right gets a `[+~]` of its own.
 
-### The output is summed in `u_root`, and metered there
+### The levels are mother's info bar, and Cut It meters nothing
 
-The meters read Cut It's output (Brendan, 2026-11-04), so everything Cut It sends out has to pass
-one point a meter can tap before it reaches mother's `catch~`. **That point is `u_root`, on
-cords**: `c_kit` hands its drums up an `outlet~`, a `[+~]` sums them with the input's tip, and the
-sum feeds both `throw~ outL` and `u_level out-l`. On the right the input's ring is all there is, and
-it feeds `throw~ outR` and `u_level out-r` the same way. It keeps the audio path something read off
-one canvas. A private `catch~` of Cut It's own was the alternative: every stage would throw to it
-with no cords, at the cost of each one learning `u_root`'s `$0` as a creation argument, and of the
-chain no longer being visible as wires. A stage added later joins the sum the way the drums do, and
-a stage on the right gets a `[+~]` of its own.
-
-### The gate marks went with the input meters
-
-The marks were a box under each meter from the input's noise floor to where a noise gate on the
-input would sit, item 11's numbers, for setting a gate on what came in. **An output meter has
-neither**: nothing gates the output, and its floor is whatever the stages and the drums leave.
-What an output meter needs marked is full scale, and that is the bar's right edge. So they went
-([display.md](display.md)).
-
-### `u_level` alters nothing
-
-No signal outlet, by design. It is a probe you can attach anywhere without thinking about what it
-does to the sound, which is the only way a level meter is worth having mid-chain.
+**Brendan, 2026-11-04: "It should show the output the way the organelle usually shows it by
+default, on a single line, and with levels at 0 when nothing is playing."** So the info bar is on
+([display.md](display.md)), and its four meters are the levels: in L and R off the sound card, out L
+and R off mother's `catch~` after the volume knob, which hears every `throw~` there is. Cut It's
+own two bars went, and `u_level` with them, which nothing else used. They were the input's until
+that day and the output's for the rest of it, and the gate marks under them, the input's noise
+floor and a gate window over it, had gone with the input. **The out meters read after the volume
+knob**: turned down, they read less than Cut It sends, as the PA hears it.
 
 ### The mic goes straight in, and the drums are Pd's
 
@@ -198,8 +153,12 @@ deferred — item 264. The SP-404 has since left the rig altogether (Brendan, 20
 
 ## Open
 
-- ⬜ **There is no DSP yet.** The chain is input → the sum → output, metered there, and the four filter stages,
+- ⬜ **There is no DSP yet.** The chain is input → the sum → output, and the four filter stages,
   the drum mode and the sampler are v0.4. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **The input levels above were measured at the factory's input gain.** The noise floor and the
-  passive bass are item 11's, taken before `Capture` came down 12 dB. Re-measure with
-  `tools/audio-probe/`. `cut-it/inbox`.
+- ⬜ **Whether the mic's hiss lights mother's out L meter at rest has not been looked at on the
+  device** (`cut-it/inbox`): watch the info bar with the mic in and the room quiet. By
+  Organelle_OS's `fw_dir/mother.pd` at tag `v4.0` (2020-02-12, the date of this device's files),
+  each out meter is `env~ 8192 4096` less 40, over 60, times 11, as a whole number, so its first
+  segment needs −54.5 dBFS RMS, 16.5 dB above the hiss's −71: at rest it should read 0, and only
+  sound reaching the open mic lights it. That scale is a fact about mother for the Organelle's
+  Reference page, not yet read off the device.

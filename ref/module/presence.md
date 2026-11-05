@@ -314,7 +314,7 @@ this changes with it** — [boot.md](boot.md) holds the table both numbers answe
 
 ### `[change]` is bare here, where every other one in the patch carries `-1`
 
-A bare `[change]` starts life holding 0, which `m_organelle` and `u_level` both have to work around.
+A bare `[change]` starts life holding 0, which `m_organelle` has to work around.
 In `c_presence` that is exactly the wanted cold start, because **0 is not-lost**: the first tick
 computes 0, `change` swallows it, and nothing is published until something actually crosses.
 

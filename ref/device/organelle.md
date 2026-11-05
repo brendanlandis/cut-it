@@ -58,16 +58,24 @@ screen, so the confirmation exists for free.
 It remains the cheapest candidate if a *performable* commit is ever added — one row in the state
 table and nothing else, since a commit from a Launchpad pad would have no screen of its own.
 
-### `g_oled` repaints screen 3 at 10 Hz, the info bar is off, and `g_*` owns all 128×64
+### `g_oled` repaints screen 3 at 10 Hz under the info bar, which is on
 
-`g_oled` rebuilds screen 3 ten times a second from stored state, and sends `gShowInfoBar 3 0` on
-**every** redraw rather than once from `u_init`, because mother restores the info bar after a patch
-load (Reference).
+`g_oled` rebuilds screen 3 ten times a second from stored state, and sends `gShowInfoBar 3 1` on
+**every** redraw rather than once from `u_init`, because mother repaints after a patch load
+(Reference). Rows 0 to 7 are the bar's: mother draws it over whatever is there, so every layer
+`g_oled` draws starts at row 8 ([display.md](../module/display.md)).
 
-`gShowInfoBar` toggles mother's VU meters (Reference). **Cut It turns it off.** The four meters are
-only 11 segments each and Cut It shows its own output levels far more legibly; battery and wifi
-are not worth a permanent eighth of the screen on a device that mostly runs on mains. **The cost is
-that nothing shows signal presence when the display is doing something else — accepted.**
+`gShowInfoBar` toggles mother's VU meters (Reference). **Cut It shows them** (Brendan, 2026-11-04:
+"It should show the output the way the organelle usually shows it by default, on a single line,
+and with levels at 0 when nothing is playing"). Four 11-segment meters, in L and R and out L and
+R, read by mother off the input and off her own `catch~` after the volume knob, so they are the
+levels. Cut It's own two bars, the input's until 2026-11-04 and the output's for the rest of that
+day, are gone, and `u_level` with them. Battery, power and wifi come with the bar.
+
+This reverses the decision that turned the bar off: that its 11 segments were less legible than
+Cut It's own bars, and battery and wifi not worth an eighth of the screen. **What it buys is the
+levels on every layer**, a modal, a parameter row or the roster included, where Cut It's bars
+showed only on home and as a 5 px strip; and what it costs is rows 0 to 7.
 
 ### Anything rhythmic goes on the Launchpad, not the OLED
 

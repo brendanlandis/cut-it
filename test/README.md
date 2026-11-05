@@ -27,10 +27,10 @@ were false.
 |---|---|---|
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
-| `audio-assert.sh` | 22 | `module/audio` |
+| `audio-assert.sh` | 16 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
 | `display-assert.sh` | 46 | `module/display` — the grid, page 3's synth pads and page 1's tap pad included |
-| `oled-assert.sh` | 70 | `module/display` — the OLED |
+| `oled-assert.sh` | 69 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 68: 33 in Lua, 35 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
@@ -50,9 +50,9 @@ were false.
 | `kit-assert.sh` | 17 | `module/sequencer` — the kit, as a signal |
 | `synths-assert.sh` | 91: 66 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1281 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one
+**1274 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1274**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1267**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
@@ -123,6 +123,14 @@ after the phone's 133), and with only `u_root`'s cord from `u_tempo` to `u_map` 
 arming the knob at the wrong place (3). The log line a re-wire asked for writes, renamed `rewire-asked` from the
 phone's button it no longer comes from: `presence-assert` on the old `u_present` (1).
 
+✅ **The levels moved to mother's info bar and were made to fail** (Brendan, 2026-11-04: "the way
+the organelle usually shows it by default, on a single line, and with levels at 0 when nothing is
+playing"). `oled-assert` on the `g_oled` with Cut It's meters (12: the bar off in 300 frames, text
+and a box drawn in rows 0-7, 442 `gFillArea`s, home's readouts and bars, and every layer's rows
+eight higher), and with only the modal's word moved into row 4 (1: the rows-0-7 check alone);
+`audio-assert` on the `u_root` and `u_level` that metered (1: eight `out-l` and `out-r` reports on
+`disp`).
+
 ✅ **The phone's pages, the arrangement screen, tap tempo and the velocity switch were each made to
 fail** (2026-11-04), against the code without the change or a mutation of it. `phone-assert`: the
 old `u_net` (46 failed: the mirror's three addresses, the diagnostics reaching things, no tempo or
@@ -150,7 +158,7 @@ surfaces gets two gates for the same reason.
 `device/organelle` were the last three, and each has its own gate now. ⛔ **`audio-assert.sh` and
 `kit-assert.sh` are the two that read a SIGNAL back** — the first records `u_root`'s output to a
 soundfile and asserts the passthrough is not silent, not swapped and not attenuated, that a drum
-reaches the left alone, and that the meters read that output and not the input; the second
+reaches the left alone, and that nothing reports a level, since the info bar is the meter; the second
 records `c_kit`'s drums and asserts their levels, silences and retrigger. Every other gate here
 asserts on messages, which is what made the audio path invisible for as long as it was.
 

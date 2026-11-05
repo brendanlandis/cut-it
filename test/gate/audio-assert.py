@@ -10,9 +10,9 @@ Five claims:
        channels carry the same level, so only the frequencies can see a swap
     3. the passthrough is unity: u_root's audio path has no gain
     4. the drums reach the left output, and only the left, at their own level
-    5. the meters read the OUTPUT: everything Cut It sends out leaves through
-       u_root's two throw~, each u_level is fed exactly what its throw~ is, and
-       out-l moves with the drums while the input is silent
+    5. the chain is u_root's wires, and the levels are mother's: everything Cut
+       It sends out leaves through u_root's two throw~, and nothing reports a
+       level on disp, since the info bar meters what mother catches
 
 Standard library only: a WAV, a sum and a count of sign changes need no numpy.
 """
@@ -43,10 +43,6 @@ PATCH = os.path.join(ROOT, "Cut It")
 # The driver's windows, in order: AUDIO's MARKs.
 MARKS = ["DSP", "REC", "BOTH", "LEFT", "RIGHT", "PAGE-2", "DRUMS", "TAIL", "STOP", "DONE"]
 
-# u_level's scale is env~'s 0-100. The input's noise floor was 18-19 at the
-# factory's gain (item 11); a tone at AMP reads in the 80s. A meter that reads
-# the output clears 40 on the drums alone, and stays under 20 on a silent side.
-CLEAR, FLOOR = 40, 20
 
 # A sine of amplitude a has RMS a/sqrt(2).
 WANT_RMS = AMP / (2 ** 0.5)
@@ -118,8 +114,8 @@ def top_boxes(path):
 
 
 def lint():
-    """The meters read what is thrown, read off the patch rather than run."""
-    print("--- 5. the meters read the OUTPUT, by reading the patch ---")
+    """The chain is wires in u_root, read off the patch rather than run."""
+    print("--- 5. the chain is u_root's, and the levels are mother's ---")
     throws = {}
     for name in sorted(os.listdir(PATCH)):
         if not name.endswith(".pd"):
@@ -131,47 +127,17 @@ def lint():
     A.check("⛔ everything Cut It sends out leaves through u_root: one throw~ outL and one "
             "throw~ outR in the whole patch, both there",
             throws == {"outL": ["u_root.pd"], "outR": ["u_root.pd"]},
-            "throw~ by name: %s. A throw~ in another file reaches mother's catch~ "
-            "around u_root's, so no meter there can see it -- c_kit's drums did, "
-            "until 2026-11-04" % throws)
-
-    boxes, cons = top_boxes(os.path.join(PATCH, "u_root.pd"))
-
-    def named(cls, arg):
-        return [i for i, r in boxes.items() if r.startswith("#X obj")
-                and r[:-1].split()[4:] == [cls, arg]]
-
-    levels = sorted(" ".join(r[:-1].split()[5:]) for r in boxes.values()
-                    if r.startswith("#X obj") and r[:-1].split()[4:5] == ["u_level"])
-    A.check("u_root holds two u_level, out-l and out-r, and no other",
-            levels == ["out-l", "out-r"],
-            "u_level boxes: %s. in-l and in-r metered the input until 2026-11-04"
-            % levels)
-    for side, out, lvl in (("left", "outL", "out-l"), ("right", "outR", "out-r")):
-        t, m = named("throw~", out), named("u_level", lvl)
-        if len(t) != 1 or len(m) != 1:
-            A.check("u_level %s is fed what throw~ %s is" % (lvl, out), False,
-                    "throw~ %s %s, u_level %s %s" % (out, t, lvl, m))
-            continue
-        into = lambda b: sorted((a, o) for a, o, bb, i in cons if bb == b)
-        A.check("⛔ the %s meter, u_level %s, is fed exactly what throw~ %s is"
-                % (side, lvl, out),
-                into(t[0]) and into(t[0]) == into(m[0]),
-                "throw~ %s from %s, u_level %s from %s. A stage put in front of the "
-                "throw~ and not the meter makes the meter read something that is not "
-                "sent" % (out, into(t[0]), lvl, into(m[0])))
+            "throw~ by name: %s. A stage hands its sound up an outlet~ to u_root's "
+            "sum, as c_kit does, so the audio path stays wires on one canvas; a throw~ "
+            "of its own sums into mother's catch~ out of sight of it" % throws)
 
 
-def meters(path):
-    """-> {window: {name: [dB, ...]}} for u_level's reports, by AUDIO window."""
+def levels(path):
+    """-> every level report on disp, from any window: the meters' old names."""
     with open(path) as fh:
         order, by = A.windows(fh.read(), "AUDIO", len(MARKS))
-    out = {}
-    for w in order:
-        for kind, v in by.get(w, []):
-            if kind == "DISP" and len(v) >= 2 and v[0] in ("out-l", "out-r", "in-l", "in-r"):
-                out.setdefault(w, {}).setdefault(v[0], []).append(float(v[1]))
-    return order, out
+    return [v for w in order for kind, v in by.get(w, [])
+            if kind == "DISP" and v[:1] and v[0] in ("out-l", "out-r", "in-l", "in-r")]
 
 
 def main():
@@ -273,29 +239,14 @@ def main():
     A.check("...and the RIGHT stays silent", rms(r) < SILENT,
             "R rms %.4f with only the drums playing" % rms(r))
 
-    # ---- 5. the meters read what goes out ---------------------------------
+    # ---- 5. the chain, and the levels ------------------------------------
     lint()
     if len(args) > 1 and os.path.exists(args[1]):
-        print("\n--- 5. ...and by the signal, on the disp bus ---")
-        order, lv = meters(args[1])
-        both = lv.get("BOTH", {})
-        for name in ("out-l", "out-r"):
-            xs = both.get(name, [])
-            A.check("u_level reports %s, and both inputs put it clear of %d"
-                    % (name, CLEAR), bool(xs) and max(xs) > CLEAR,
-                    "saw %d report(s), peak %s in BOTH" % (len(xs), max(xs) if xs else "none"))
-        drums = lv.get("DRUMS", {})
-        xs = drums.get("out-l", [])
-        A.check("⛔ out-l moves with the DRUMS while the input is silent -- it reads "
-                "the output", bool(xs) and max(xs) > CLEAR,
-                "out-l in DRUMS: %s. A meter on the input reads nothing here: the "
-                "drums never reach the input" % xs)
-        last = None
-        for w in order[:order.index("DRUMS") + 1] if "DRUMS" in order else []:
-            last = (lv.get(w, {}).get("out-r") or [last])[-1]
-        A.check("...and out-r falls to silence beside it -- the meters are not swapped",
-                last is not None and last < FLOOR,
-                "out-r's last report by the end of DRUMS: %s" % last)
+        # The OLED's levels are mother's info bar since 2026-11-04 (Brendan), read
+        # off her catch~ after the volume knob: nothing of Cut It's meters them.
+        lv = levels(args[1])
+        A.check("⛔ nothing reports a level on disp: the info bar is the meter",
+                not lv, "%d level report(s), the first %s" % (len(lv), lv[:1]))
 
     return A.report()
 

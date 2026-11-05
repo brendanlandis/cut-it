@@ -82,6 +82,11 @@ ACKS = {"drums sync": ("sync", TEAL), "drums snap": ("snap", TEAL),
         "velocity on": ("svel", TEAL), "velocity off": ("svel", TEAL),
         "result": ("verdict", WHITE)}
 TEMPO = (5, 600)            # u_tempo's legal range, its [clip 5 600]
+# The tap rules, read from u_tempo.lua, so the phone's taps and page 1's pad can't disagree: the ms
+# after which tapping starts over, and how many intervals are averaged.
+_TEMPO_LUA = open(os.path.join(ROOT, "Cut It", "u_tempo.lua"), encoding="utf-8").read()
+TAP_RESET = int(re.search(r"^R\.GAP = (\d+)", _TEMPO_LUA, re.M).group(1))
+TAP_INTERVALS = int(re.search(r"^R\.KEEP = (\d+)", _TEMPO_LUA, re.M).group(1))
 SWING = (25, 75)            # c_steps.lua's R.SWING_MIN and R.SWING_MAX
 STEPS = 32                  # c_steps.lua's R.STEPS, the last step's range from 1
 DENS = [1, 2, 4, 8, 16]     # c_steps.lua's R.DENS
@@ -336,6 +341,28 @@ def synth_script(choice):
             "end\n" % lua(choice))
 
 
+def tap_script():
+    """The phone's tap tempo (Brendan, 2026-11-04). The phone times the taps itself, as the finger
+    lands, and sends the tempo they make: Cut It's own clock would time them as they arrive, and
+    WiFi delivers unevenly (ref/device/phone.md). The same rules as page 1's tap pad (u_tempo.lua):
+    the first tap only starts the count, a gap over two seconds starts over, the last four
+    intervals are averaged, a zero interval doesn't count, and the result is a whole BPM within
+    u_tempo's range, sent as the tempo box sends one."""
+    return ("local taps = {}\n"
+            "function onValueChanged(key)\n"
+            "  if key ~= 'x' or self.values.x ~= 1 then return end\n"
+            "  local now = getMillis()\n"
+            "  local last = taps[#taps]\n"
+            "  if last and now - last > %d then taps = {} end\n"
+            "  if last and now == last then return end\n"
+            "  taps[#taps + 1] = now\n"
+            "  while #taps > %d do table.remove(taps, 1) end\n"
+            "  if #taps < 2 then return end\n"
+            "  local bpm = math.floor(60000 * (#taps - 1) / (taps[#taps] - taps[1]) + 0.5)\n"
+            "  sendOSC('/cutit', 'tempo', math.max(%d, math.min(%d, bpm)))\n"
+            "end\n" % (TAP_RESET, TAP_INTERVALS + 1, TEMPO[0], TEMPO[1]))
+
+
 def tells(what, which):
     """The script of a button the root answers: root:notify(what, which) on its press."""
     return ("function onValueChanged(key)\n"
@@ -451,7 +478,7 @@ def tabs(name, pages, frame=(0, 0, W, H - TAB), **over):
 # ------------------------------------------------------------------ the arrangement screen (page 1)
 def arrangement():
     """The global controls (Brendan, 2026-11-04): the tempo, large, dragged a BPM at a time, which
-    lives on the phone alone; playing or stopped; the time signature, the global last step, the
+    lives on the phone alone, and tapped under it; playing or stopped; the time signature, the global last step, the
     swing and the drunkenness; and the link."""
     k = []
     # left: the tempo, playing or stopped, the link
@@ -459,6 +486,8 @@ def arrangement():
     k.append(setbox("tempobox", (L, y(TOP), 250, 110), lo, hi, ["tempo"], 2))
     k.append(label("tempo", (L, y(TOP), 250, 110), "-", 72, RED))
     k.append(label("tempoc", (L, y(TOP + 112), 250, 18), "bpm", 14, GREY))
+    k.append(button("tap", (L, y(TOP + 190), 250, 70), RED, tap_script()))
+    k.append(label("tapl", (L, y(TOP + 190), 250, 70), "tap", 22))
     k.append(led("playled", (L, y(TOP + 158), 18, 18), TEAL))
     k.append(label("play", (L + 28, y(TOP + 154), 160, 26), "stopped", 18, WHITE, align=1))
     k.append(led("linkled", (L, y(TOP + 280), 14, 14), TEAL))

@@ -108,6 +108,28 @@ L.osc(w, "/cutit/tempo")
 L.osc(w, "/cutit/tempo", "x")
 equal("an empty tempo, before the first, or a word, changes nothing", L.text(w, "tempo"), "150")
 
+print("\n--- the arrangement screen: tap tempo ---")
+-- The phone times its own taps, as the finger lands (WiFi delivers unevenly), and sends the tempo.
+L.update(w, 3000)
+w.sent = {}
+equal("the first tap only starts the count", L.press(w, "tap"), {})
+L.update(w, 500)
+equal("a second, half a second later: 120", L.press(w, "tap"), { { "/cutit", "tempo", 120 } })
+L.update(w, 400)
+equal("a third, 400 ms on: the average of the two intervals, 133",
+      L.press(w, "tap"), { { "/cutit", "tempo", 133 } })
+for _ = 1, 4 do L.update(w, 600); L.press(w, "tap") end
+equal("after four more at 600 ms, only the last four intervals count: 100",
+      w.sent[#w.sent], { "/cutit", "tempo", 100 })
+equal("two taps in one instant count nothing", L.press(w, "tap"), {})
+L.update(w, 2100)
+equal("over two seconds later, tapping starts over: nothing sent", L.press(w, "tap"), {})
+L.update(w, 2)
+equal("taps 2 ms apart give the most u_tempo takes, 600", L.press(w, "tap"),
+      { { "/cutit", "tempo", 600 } })
+L.update(w, 2100); L.press(w, "tap"); L.update(w, 1999)
+equal("and taps 1999 ms apart, 30", L.press(w, "tap"), { { "/cutit", "tempo", 30 } })
+
 print("\n--- the arrangement screen: the sequencer's settings ---")
 w.sent = {}
 L.osc(w, "/cutit/drums", table.unpack(drumstate({ playing = 1, last = 12, num = 7, den = 8,

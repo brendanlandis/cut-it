@@ -18,17 +18,22 @@ PIDFILE=/sdcard/wifi-watch.pid
 STAMP=/sdcard/wifi-watch.alive     # touched every poll; its mtime is the liveness check
 POLL=20
 HEARTBEAT=1800          # a liveness line every 30 min, so uptime-to-failure is readable
+RETRY=300               # while still down, the ladder again every 5 min (below)
 MODE=${1:-recover}
 
 ipv4() { ip -4 addr show wlan0 2>/dev/null | grep -o 'inet [0-9.]*' | cut -d' ' -f2; }
 # with its prefix, so the probe puts back exactly what was there
 ipv4cidr() { ip -4 addr show wlan0 2>/dev/null | grep -o 'inet [0-9.]*/[0-9]*' | cut -d' ' -f2; }
 gateway()  { ip route 2>/dev/null | awk '/^default/{print $3; exit}'; }
+# The dongle's USB device in sysfs (2-1 on the Organelle 1), for the reset rung: read while
+# wlan0 exists, since it goes with the driver.
+usbdev()   { d=$(readlink -f /sys/class/net/wlan0/device 2>/dev/null) && [ -n "$d" ] && dirname "$d"; }
 
 # last known good, refreshed on every healthy poll, for the probe to use once
 # the system no longer has them
 LASTCIDR=$(ipv4cidr)
 LASTGW=$(gateway)
+LASTUSB=$(usbdev)
 
 # When a rung recovers, LAST is re-read at the bottom of the loop, so no
 # `NONE -> ipv4` transition is logged and only this records how long the
@@ -244,6 +249,38 @@ try() {   # $1 = description, $2 = command, $3 = seconds to wait
     return 1
 }
 
+# The recovery ladder, strongest of the light rungs first, the weak ones kept as a discriminator
+# (tools/README.md), then the two that outlast a router restart. 90 s because 60 expired before a
+# recovery that worked landed (item 178), and an UNRECOVERED must mean it did not come back.
+#
+# A router restart (2026-11-04) left the dongle wedged: the ladder ran once while the router was
+# still down, every rung failed, and nothing tried again; an hour later even the front panel
+# couldn't connect, and only a reboot brought it back (the Organelle's Reference page, A router
+# restart leaves it offline until a reboot). So the ladder now runs again every RETRY seconds
+# while the address stays gone, and ends with the driver reloaded, then the dongle reset on USB,
+# each followed by the full reassociate.
+ladder() {
+    echo "  --- RECOVERY LADDER (most effective first) ---"
+    try "full reassociate"         "bash /sdcard/wifi-reassociate.sh"       90 ||
+    try "dhcpcd renew"             "dhcpcd -n wlan0"                        45 ||
+    try "dhcpcd EXIT+restart"      "dhcpcd -b -x wlan0; sleep 2; dhcpcd -b wlan0" 45 ||
+    try "driver reload (rt2800usb)" \
+        "dhcpcd -b -x wlan0; killall wpa_supplicant; sleep 1; modprobe -r rt2800usb; sleep 3; modprobe rt2800usb; sleep 8; bash /sdcard/wifi-reassociate.sh" 90 ||
+    usbreset ||
+    { echo "  >> UNRECOVERED -- every rung failed, the driver reload and USB reset too."
+      echo "     next try in ${RETRY}s"; ip link 2>&1 | sed 's/^/     /'; return 1; }
+}
+
+# The dongle off and on again on USB, through sysfs, as unplugging it would.
+usbreset() {
+    if [ -z "$LASTUSB" ] || [ ! -e "$LASTUSB/authorized" ]; then
+        echo "  >> SKIP: USB reset -- no USB device recorded for wlan0 (${LASTUSB:-none})"
+        return 1
+    fi
+    try "USB reset ($LASTUSB)" \
+        "dhcpcd -b -x wlan0; killall wpa_supplicant; echo 0 > $LASTUSB/authorized; sleep 3; echo 1 > $LASTUSB/authorized; sleep 10; bash /sdcard/wifi-reassociate.sh" 90
+}
+
 {
     echo
     echo "=================================================================="
@@ -275,15 +312,8 @@ while true; do
                 linkprobe
                 dhcpprobe
                 if [ "$MODE" = "recover" ]; then
-                    # Strongest first, the weak rungs kept as a discriminator
-                    # (tools/README.md). 90 s because 60 expired before a
-                    # recovery that worked landed (item 178), and an
-                    # UNRECOVERED must mean it did not come back.
-                    echo "  --- RECOVERY LADDER (most effective first) ---"
-                    try "full reassociate"         "bash /sdcard/wifi-reassociate.sh"       90 ||
-                    try "dhcpcd renew"             "dhcpcd -n wlan0"                        45 ||
-                    try "dhcpcd EXIT+restart"      "dhcpcd -b -x wlan0; sleep 2; dhcpcd -b wlan0" 45 ||
-                    echo "  >> UNRECOVERED -- every rung failed, INCLUDING the one the front panel uses."
+                    ladder
+                    TRIED=$(date +%s)
                 else
                     echo "  --- observe mode: changing nothing ---"
                 fi
@@ -295,6 +325,17 @@ while true; do
             fi
         } >> "$LOG" 2>&1
         LAST=$(ipv4); LAST=${LAST:-NONE}
+    elif [ "$NOW" = "NONE" ] && [ "$MODE" = "recover" ] &&
+         [ $(( $(date +%s) - ${TRIED:-0} )) -ge "$RETRY" ]; then
+        # Still down since the last ladder: again, until it comes back.
+        {
+            echo
+            echo "  ~~ STILL NO ipv4 at $(date '+%Y-%m-%d %H:%M:%S') -- the ladder again"
+            echo "  --- dmesg tail ---"; dmesg 2>/dev/null | tail -20 | sed 's/^/    /'
+            ladder
+        } >> "$LOG" 2>&1
+        TRIED=$(date +%s)
+        LAST=$(ipv4); LAST=${LAST:-NONE}
     fi
 
     # refresh the last-known-good values while they are readable
@@ -302,6 +343,7 @@ while true; do
         C=$(ipv4cidr); [ -n "$C" ] && LASTCIDR=$C
         G=$(gateway);  [ -n "$G" ] && LASTGW=$G
         P=$(pgrep -nx dhcpcd); [ -n "$P" ] && LASTDHCPPID=$P
+        U=$(usbdev); [ -n "$U" ] && LASTUSB=$U
 
         # On healthy ticks, and never in observe mode.
         [ "$MODE" = "recover" ] && prefer_router

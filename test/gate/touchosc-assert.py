@@ -33,9 +33,13 @@ UNET = os.path.join(ROOT, "Cut It", "u_net.pd")
 STEPS_LUA = os.path.join(ROOT, "Cut It", "c_steps.lua")
 SYNTH_LUA = os.path.join(ROOT, "Cut It", "c_synth.lua")
 MAP_LUA = os.path.join(ROOT, "Cut It", "u_map.lua")
+SONG_LUA = os.path.join(ROOT, "Cut It", "u_song.lua")
 # The Launchpad's pages and what each is (Brendan, 2026-11-04, ref/module/map.md, The pages):
 # each one's tab on the phone, named for it.
-TABS = ["arrangement", "drums", "synths", "page 4", "page 5", "page 6", "page 7", "songs"]
+TABS = ["arrangement", "drums", "synths", "page 4", "page 5", "page 6", "sections", "songs"]
+# A page's own tabs: one, named for the page, but the sections page's two, its sections and the
+# name a section is given (Brendan, 2026-11-05).
+OWN_TABS = {"sections": ["sections", "name"]}
 
 spec = importlib.util.spec_from_file_location("build_touchosc", BUILD)
 B = importlib.util.module_from_spec(spec)
@@ -340,18 +344,29 @@ def main():
             continue
         pg = kids.get(held[0][0], [])
         inner.append((p, [(r[0], r[7]) for r in pg]))
-        if len(pg) != 1 or pg[0][7] != tab:
+        if [r[7] for r in pg] != OWN_TABS.get(tab, [tab]):
             bad.append("%s's tabs are %s" % (p, [r[7] for r in pg]))
     A.check("⛔ each holds a pager of its own, its tabs shown: one tab, named for the page "
-            "(Brendan, 2026-11-04)", not bad, "; ".join(bad))
-    blank = [p for p, pg in inner[3:8] if pg and kids.get(pg[0][0])]
-    A.check("pages 4 to 7 and songs are blank under their tab", not blank,
+            "(Brendan, 2026-11-04), but the sections page's sections and name (2026-11-05)",
+            not bad, "; ".join(bad))
+    blank = [p for p, pg in inner[3:6] + inner[7:8] if pg and kids.get(pg[0][0])]
+    A.check("pages 4 to 6 and songs are blank under their tab", not blank,
             "not blank: %s" % blank)
     stray = [r[0] for r in nodes if r[1] == "GROUP" and r[0] != "root" and not r[7]]
     A.check("every group is a pager's page: no screen is a group a script shows or hides",
             not stray, "groups that are no page: %s" % stray)
 
     msgs = [m for r in nodes for m in sent(r[3])]
+    usec = route_of(UNET, "new")
+    m = re.search(r"^R\.phone_cmds = \{\n(.*?)^\}", open(SONG_LUA, encoding="utf-8").read(),
+                  re.M | re.S)
+    song_takes = sorted(re.findall(r"^  (\w+) = function", m.group(1), re.M)) if m else None
+    lsec = sorted({x.split()[1] for x in msgs if x.split()[0] == "sections"})
+    A.check("⛔ every sections action the layout sends is one u_song takes, and it sends them all",
+            song_takes is not None and lsec == song_takes,
+            "the layout sends sections %s, u_song takes %s" % (" ".join(lsec), song_takes))
+    A.check("⛔ ... and the name tab's done sends the name the sections page selected",
+            "sections name" in msgs and "sections select" in msgs, sorted(set(msgs)))
     ucmd = route_of(UNET, "result")
     uacks, usynth, uvel = route_of(UNET, "sync"), route_of(UNET, "fm"), route_of(UNET, "on")
     takes, chooses = steps_cmds(), synths()
@@ -406,7 +421,7 @@ def main():
         # pad's selection and a synth's choice show in the state that comes back. tempo has
         # none: the tempo that comes back says it.
         acked = (["result"] + ["drums " + a for a in uacks if a != "select"]
-                 + ["velocity " + v for v in uvel])
+                 + ["velocity " + v for v in uvel] + ["sections " + a for a in usec or []])
         A.check("every acknowledgment u_net sends lights a cell",
                 sorted(acked) == sorted(B.ACKS),
                 "u_net acknowledges %s, the layout lights %s" % (sorted(acked), sorted(B.ACKS)))

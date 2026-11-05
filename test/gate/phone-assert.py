@@ -42,11 +42,18 @@ LIMIT_HZ = 20.0
 HB_HZ = 2.0
 ADDRS = {"/cutit/hb", "/cutit/ack", "/mark",
          # what the phone shows: the mode, c_steps' state, c_synth's choice and
-         # velocity switch, and the tempo
+         # velocity switch, the tempo, and u_song's sections
          "/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
-         # the driver's taps for the inbound half: u_net's three outlets, err,
+         "/cutit/sections",
+         # the driver's taps for the inbound half: u_net's four outlets, err,
          # and the presence bus, which re-wire once wrote and must not now
-         "/probe/drums", "/probe/synth", "/probe/tempo", "/probe/err", "/probe/presence"}
+         "/probe/drums", "/probe/synth", "/probe/tempo", "/probe/sections", "/probe/err",
+         "/probe/presence"}
+# The state addresses, each sent on a change and again on every heartbeat.
+STATE = ("/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
+         "/cutit/sections")
+# The sections page's commands u_net acknowledges, a button's flash: the rest show in the state.
+SECTIONS_ACKED = ["new", "up", "down", "delete", "name"]
 # The OLED's mirror, gone (Brendan, 2026-11-04): u_net reads nothing on disp, so
 # none of these may ever leave it.
 GONE = ["/cutit/param", "/cutit/status", "/cutit/alert"]
@@ -59,7 +66,9 @@ WINDOWS = ["idle", "dispsweep", "dispother", "tempo", "tpsweep", "idle2", "cmdwi
            "cmdnum", "cmdden", "cmddrunk", "cmdvol", "cmdpitch", "cmdtracklast", "cmdrand",
            "cmdswing", "cmdlast",
            "cmddrumsnew", "cmdsynth", "cmdsynthnew", "cmdtempo", "cmdtemponew", "cmdvel",
-           "cmdvelnew", "tmmodeon", "tmmode", "drumstate", "done"]
+           "cmdvelnew", "tmmodeon", "tmmode", "drumstate", "cmdsecsel", "cmdsecpage", "cmdsecnew",
+           "cmdsecup", "cmdsecdown", "cmdseclen", "cmdsecdel", "cmdsecname", "cmdsecnew2",
+           "secstate", "done"]
 
 
 # ------------------------------------------------------------------- collection
@@ -204,9 +213,7 @@ def main():
 
     # -- what the OLED is told reaches nothing ---------------------------------
     for win in ("dispsweep", "dispother"):
-        extra = sorted({a for _, a, _ in rows(win)} - {"/cutit/hb", "/cutit/mode", "/cutit/drums",
-                                                       "/cutit/synth", "/cutit/velocity",
-                                                       "/cutit/tempo"})
+        extra = sorted({a for _, a, _ in rows(win)} - {"/cutit/hb"} - set(STATE))
         A.check("⛔ %s: disp traffic puts nothing on the wire but the heartbeat's repeats" % win,
                 not extra and all(g == [] for g in args(win, "/cutit/tempo")),
                 "saw %s, tempo %s" % (extra, args(win, "/cutit/tempo")[:3]))
@@ -244,7 +251,8 @@ def main():
         A.check("%s: %s" % (win, label), not any(got_.values()),
                 "; ".join("%s %s" % (a, v) for a, v in got_.items() if v) or "(silent)")
 
-    CMD = ["/probe/presence", "/probe/drums", "/probe/synth", "/probe/tempo", "/cutit/ack"]
+    CMD = ["/probe/presence", "/probe/drums", "/probe/synth", "/probe/tempo", "/probe/sections",
+           "/cutit/ack"]
 
     for win, cmd in (("cmdwire", "re-wire"), ("cmdclear", "clear-alert"),
                      ("cmdvolca", "test-note m_volca")):
@@ -343,16 +351,41 @@ def main():
     sent = args("drumstate", "/cutit/velocity")
     A.check("⛔ drumstate: its velocity switch leaves as /cutit/velocity off, at once and on the "
             "heartbeat", len(sent) >= 2 and all(g == ["off"] for g in sent), sent[:3])
-    A.check("done: all five still repeat, so a phone that comes back late catches up",
-            min(len(args("done", a)) for a in ("/cutit/drums", "/cutit/mode", "/cutit/synth",
-                                               "/cutit/velocity", "/cutit/tempo")) >= 2,
-            "%d, %d, %d, %d and %d" % tuple(len(args("done", a)) for a in
-                                            ("/cutit/drums", "/cutit/mode", "/cutit/synth",
-                                             "/cutit/velocity", "/cutit/tempo")))
+    A.check("done: all six still repeat, so a phone that comes back late catches up",
+            min(len(args("done", a)) for a in STATE) >= 2,
+            ", ".join("%d" % len(args("done", a)) for a in STATE))
     early = [g for w in ("idle", "cmdwire", "tmmode") for a in ("/cutit/synth", "/cutit/velocity")
              for g in args(w, a)]
     A.check("before c_synth says anything, the repeats carry no choice and no switch",
             early and all(g == [] for g in early), early[:3])
+
+    # -- the sections page (ref/module/songs.md) -------------------------------
+    sec = ["song 1", 3.0, 2.0, 1.0, 1.0, "verse 2", 8.0, 1.0, "intro", 0.0, 2.0, "verse 2", 8.0,
+           3.0, "chorus", 0.0, 0.0, "-", 0.0, 0.0, "-", 0.0]
+    sent = args("secstate", "/cutit/sections")
+    A.check("⛔ secstate: u_song's 22 atoms leave as /cutit/sections, at once and on the "
+            "heartbeat, a name with a space one string", len(sent) >= 2 and all(g == sec for g in sent),
+            "%d sent: %s" % (len(sent), sent[:1]))
+    early = [g for w in ("idle", "cmdwire", "drumstate") for g in args(w, "/cutit/sections")]
+    A.check("before u_song says anything, the repeats carry no sections",
+            early and all(g == [] for g in early), early[:3])
+    for win, cmd, rest in (("cmdsecsel", "select", [2.0]), ("cmdsecpage", "page", [1.0]),
+                           ("cmdsecnew", "new", []), ("cmdsecup", "up", []),
+                           ("cmdsecdown", "down", []), ("cmdseclen", "length", [8.0]),
+                           ("cmdsecdel", "delete", []), ("cmdsecname", "name", ["verse 2"]),
+                           ("cmdsecnew2", "shuffle", [])):
+        said = " ".join([cmd] + ["%s" % (("%g" % v) if isinstance(v, float) else v)
+                                 for v in rest])
+        one(win, "/probe/sections", [cmd] + rest,
+            "⛔ sections %s leaves for u_song as %s" % (said, said)
+            if cmd in ("name", "shuffle") else "sections %s leaves for u_song" % said)
+        if cmd in SECTIONS_ACKED:
+            one(win, "/cutit/ack", ["sections", cmd], "and is acknowledged")
+        else:
+            none_of(win, ["/cutit/ack"], "and is not acknowledged: the state says it, or u_song "
+                    "refuses it" if cmd == "shuffle" else "and is not acknowledged: the state says it")
+        none_of(win, ["/probe/drums", "/probe/synth", "/probe/tempo", "/probe/presence"],
+                "and reaches nothing else")
 
     one("cmdsynth", "/probe/synth", ["synth", "strings"], "synth strings leaves for c_synth")
     one("cmdsynth", "/cutit/ack", ["synth", "strings"], "and is acknowledged")

@@ -11,8 +11,9 @@ value and TouchOSC's default font for every label, and every pairing at WCAG AA,
 test/gate/touchosc-assert.py audits from this file.
 
 The phone controls the Launchpad's current page (Brendan, 2026-11-04): one page of an outer pager
-per Launchpad page, 1 the arrangement, 2 the drums, 3 the synths, 4 to 7 nothing yet, 8 the songs,
-each holding a pager of its own whose tabs are that page's (one tab each, for now). The root's
+per Launchpad page, 1 the arrangement, 2 the drums, 3 the synths, 4 to 6 nothing yet, 7 the
+sections, 8 the songs, each holding a pager of its own whose tabs are that page's: one tab each,
+but the sections page's two, its sections and the name a section is given (Brendan, 2026-11-05). The root's
 script turns the outer pager to the page /cutit/mode names and hides its tab bar, so the phone
 shows the page's own tabs; the phone never turns the Launchpad's page. The outer bar is shown in the
 file, so TouchOSC's editor, where no script runs, reaches every page by its tab. The checklist page
@@ -87,7 +88,7 @@ INK, BTN = BLACK, RED       # the XML's defaults
 # screen (Brendan, 2026-11-04: 1 the arrangement, 2 the drums, 3 the synths, 8 the songs, 4 to 7
 # nothing yet). A page with no screen is blank under its tab.
 LAUNCHPAD = [("arrangement", "arrangement"), ("drums", "drums"), ("synths", "synths"),
-         ("page4", "page 4"), ("page5", "page 5"), ("page6", "page 6"), ("page7", "page 7"),
+         ("page4", "page 4"), ("page5", "page 5"), ("page6", "page 6"), ("sections", "sections"),
          ("songs", "songs")]
 
 # The synths c_synth chooses between, c_synth.lua's R.SYNTHS, and each one's button label: fm is
@@ -99,6 +100,9 @@ SYNTHS = [("fm", "FM"), ("strings", "STRINGS")]
 # the color. result is the verdict just given, and flashes Pass or Fail, whichever it was.
 ACKS = {"drums sync": ("sync", TEAL), "drums snap": ("snap", TEAL),
         "velocity on": ("svel", TEAL), "velocity off": ("svel", TEAL),
+        "sections new": ("secnew", TEAL), "sections up": ("secup", TEAL),
+        "sections down": ("secdown", TEAL), "sections delete": ("secdel", TEAL),
+        "sections name": ("sndone", WHITE),
         "result": ("verdict", WHITE)}
 TEMPO = (5, 600)            # u_tempo's legal range, its [clip 5 600]
 # The tap rules, read from u_tempo.lua, so the phone's taps and page 1's pad can't disagree: the ms
@@ -128,6 +132,23 @@ SHOW = [("volume", "vol", VOL[0], VOL[1], 1), ("pitch", "pitch", PITCH[0], PITCH
 # A pad's drag: a relative fader whose whole travel is 2000 points at responseFactor 3 (a pad's
 # 60 points times 100 over 3), so 100 steps of 20 points from its middle to either end.
 PAD_FACTOR, PAD_STEPS = 3, 100
+
+# The sections page (Brendan, 2026-11-05): the song's sections down the left, five rows a page,
+# u_song.lua's R.ROWS; a section's length, 0 (loop) to R.MAX_LENGTH bars; a name, R.MAX_NAME
+# characters at most, typed on a keyboard of buttons: A to Z, space, - and ', 0 to 9.
+_SONG_LUA = open(os.path.join(ROOT, "Cut It", "u_song.lua"), encoding="utf-8").read()
+ROWS = int(re.search(r"^R\.ROWS = (\d+)", _SONG_LUA, re.M).group(1))
+MAX_LENGTH = int(re.search(r"^R\.MAX_LENGTH = (\d+)", _SONG_LUA, re.M).group(1))
+MAX_NAME = int(re.search(r"^R\.MAX_NAME = (\d+)", _SONG_LUA, re.M).group(1))
+# The keyboard's rows, each key its control's name and what it types; None is a gap.
+KEYS = [[(c, c) for c in "abcdefghij"], [(c, c) for c in "klmnopqrst"],
+        [(c, c) for c in "uvwxyz"] + [("space", " "), None, ("dash", "-"), ("apos", "'")],
+        [(c, c) for c in "1234567890"]]
+# The name tabs, each the name of something Cut It holds, typed here and sent when done: its
+# prefix, the pager it is a tab of, which tab, the command done sends, the tab done turns back
+# to. The sections page's names the selected section; the songs page will name songs and
+# setlists with one of its own.
+NAMERS = {"sn": {"pager": "tabs7", "tab": 1, "cmd": ["sections", "name"], "back": 0}}
 
 
 # ------------------------------------------------------------------ the checklists
@@ -306,12 +327,13 @@ def node(kind, name, frame, children=(), text=None, x=0, **over):
 # The labels that show a value, anything Cut It's state changes: monospaced. The rest, the
 # captions and button names, take TouchOSC's default font (Brendan, 2026-11-04).
 VALUES = {"tempo", "play", "link", "dlink", "slink", "pending", "num", "den", "last", "drunkv",
-          "swingv", "cpos", "tmode"}
+          "swingv", "cpos", "tmode", "seclink", "secpos", "seclen", "snfieldl"}
 MONO = 1
 
 
 def label(name, f, text, size, ink=WHITE, align=2):
-    mono = name in VALUES or re.fullmatch(r"pad\d+l", name) is not None
+    mono = (name in VALUES or re.fullmatch(r"pad\d+l|row\dnl|row\dlenl|snk\w+l", name)
+            is not None)
     return node("LABEL", name, f, text=text, background=False, textColor=ink, textSize=size,
                 textAlignH=align, font=MONO if mono else 0)
 
@@ -658,6 +680,99 @@ def synths():
     return k
 
 
+# ------------------------------------------------------------------ the sections page (7)
+R_COL = X0 + 26 * G                 # the right column, 548: past the list and a gutter
+R_HALF = (R_COL, R_COL + 8 * G)     # its two halves, 548 and 708, seven steps wide each
+
+
+def row_script(k):
+    """A row of the sections list: a tap selects the section it shows, which only the root knows,
+    so it tells the root; Cut It's /cutit/sections lights the one selected with notify('lit'),
+    which a lit row never answers, as a synth button does."""
+    return ("local lit = 0\n"
+            "function onReceiveNotify(key, value)\n"
+            "  if key == 'lit' then\n"
+            "    lit = value\n"
+            "    self.values.x = value\n"
+            "  end\n"
+            "end\n"
+            "function onValueChanged(key)\n"
+            "  if key == 'x' and self.values.x == 1 and lit ~= 1 then root:notify('row', %d) end\n"
+            "end\n" % k)
+
+
+def sections():
+    """The current song's sections (Brendan, 2026-11-05, approved from a mockup): down the left,
+    numbered, each with its name and length, five rows and a pager; a tap selects one for editing,
+    and playing one stays the Launchpad's top row. On the right, the selected section: new, a copy
+    of it, move up and down, its length, dragged, loop or bars, and delete; and the link."""
+    k = []
+    w = 25 * G
+    k.append(caption("secsong", X0, Y0, w, "sections"))
+    for r in range(1, ROWS + 1):
+        y_ = Y0 + G + (r - 1) * 2 * G
+        f = (X0, y_, w, 2 * G)
+        k.append(button("row%d" % r, f, RED, row_script(r)))
+        k.append(label("row%dnl" % r, (X0, y_, 3 * G, 2 * G), "", 18))
+        k.append(label("row%dl" % r, (X0 + 3 * G, y_, 15 * G, 2 * G), "", 18, align=LEFT))
+        k.append(label("row%dlenl" % r, (X0 + 15 * G, y_, 9 * G, 2 * G), "", 16, GREY, align=3))
+    y_ = Y0 + 12 * G
+    k.append(button("secprev", (X0, y_, 2 * G, 2 * G), RED, sends(["sections", "page", -1])))
+    k.append(label("secprevl", (X0, y_, 2 * G, 2 * G), "◀", 18))
+    k.append(label("secpos", (X0 + 3 * G, y_, 17 * G, 2 * G), "-", 16, GREY, align=LEFT))
+    k.append(button("secnext", (X0 + 23 * G, y_, 2 * G, 2 * G), RED, sends(["sections", "page", 1])))
+    k.append(label("secnextl", (X0 + 23 * G, y_, 2 * G, 2 * G), "▶", 18))
+    a, b = R_HALF
+    k.append(caption("secsel", a, Y0, X1 - a, "section"))
+    f = (a, Y0 + G, X1 - a, 3 * G)
+    k.append(button("secnew", f, RED, sends(["sections", "new"])))
+    k.append(label("secnewl", f, "new", 20))
+    for x, name, text, cmd in ((a, "secup", "move up", "up"), (b, "secdown", "move down", "down")):
+        f = (x, Y0 + 5 * G, 7 * G, 3 * G)
+        k.append(button(name, f, RED, sends(["sections", cmd])))
+        k.append(label(name + "l", f, text, 18))
+    k.append(caption("seclenc", a, Y0 + 9 * G, 7 * G, "length"))
+    f = (a, Y0 + 10 * G, 7 * G, 3 * G)
+    # dragged a step every 18 points or so, as the last step's box is: 65 steps, loop and 1 to 64
+    k.append(setbox("seclenbox", f, 0, MAX_LENGTH, ["sections", "length"], 5))
+    k.append(label("seclen", f, "loop", 28))
+    f = (b, Y0 + 10 * G, 7 * G, 3 * G)
+    k.append(button("secdel", f, GREY, sends(["sections", "delete"])))
+    k.append(label("secdell", f, "delete", 18))
+    k += status("seclinkled", "seclink", a, "no link", X1 - a - G)
+    return k
+
+
+def name_tab(prefix, what):
+    """A name being typed (Brendan, 2026-11-05, approved from a mockup): the name, as typed, over
+    a keyboard of buttons, A to Z, space, - and ', 0 to 9, with backspace and done. Each key tells
+    the root, which holds the name; done sends it, as NAMERS has it for prefix, and turns back to
+    the tab it came from. The sections page's names the selected section; the songs page will
+    build its own from this, for songs and setlists."""
+    k = []
+    w = 25 * G
+    k.append(caption(prefix + "what", X0, Y0, w, "name the " + what))
+    f = (X0, Y0 + G, w, 2 * G)
+    k.append(node("BUTTON", prefix + "field", f, color=GREY, interactive=False, outlineStyle=0))
+    k.append(label(prefix + "fieldl", f, "_", 24, align=LEFT))
+    a, b = R_HALF
+    for x, name, text, col, size in ((a, "back", "⌫", RED, 22), (b, "done", "done", TEAL, 20)):
+        f = (x, Y0 + G, 7 * G, 2 * G)
+        k.append(button(prefix + name, f, col, tells("type", "%s:%s" % (prefix, name))))
+        k.append(label(prefix + name + "l", f, text, size))
+    for r, keys in enumerate(KEYS):
+        for c, key in enumerate(keys):
+            if key is None:
+                continue
+            name, _ch = key
+            wide = 7 if name == "space" else 3
+            f = (X0 + c * 4 * G, Y0 + 4 * G + r * 3 * G, wide * G, 2 * G)
+            k.append(button(prefix + "k" + name, f, RED, tells("type", "%s:k%s" % (prefix, name))))
+            k.append(label(prefix + "k" + name + "l", f,
+                           name if name == "space" else _ch.upper(), 18))
+    return k
+
+
 # ------------------------------------------------------------------ the checklist page
 def checks():
     """The line check a step at a time: on the left where it is, the step's title and its text;
@@ -701,6 +816,11 @@ local ACKS = %(acks)s
 local DENS = %(dens)s
 local SWING = %(swing)s
 local SHOWN = %(shown)s
+local ROWS, MAX_NAME = %(rows)s, %(maxname)s
+local NAMERS = %(namers)s
+local CHARS = %(chars)s
+-- What each name tab's done sends: the command NAMERS names, and the name.
+%(send)s
 local RED, TEAL, WHITE, GREY, BLACK = %(red)s, %(teal)s, %(white)s, %(grey)s, %(black)s
 
 local found, shown = {}, {}
@@ -765,7 +885,8 @@ end
 
 -- ---------------------------------------------------------------- flashes
 local flash = {}
-local BASE = { sync = RED, snap = RED, svel = RED, cpass = TEAL, cfail = RED }
+local BASE = { sync = RED, snap = RED, svel = RED, cpass = TEAL, cfail = RED, secnew = RED,
+               secup = RED, secdown = RED, secdel = GREY, sndone = TEAL }
 local verdict = 'cpass'
 
 local function ack(a)
@@ -886,6 +1007,91 @@ local function velocity(a)
   ink('svell', want == 1 and BLACK or WHITE)
 end
 
+-- ---------------------------------------------------------------- the sections page
+-- u_song's 22 atoms: the song's name, how many sections, the one selected, the page and how
+-- many, the selected one's name and length; then five rows, each a section's number, name and
+-- length, 0 for a row with none, which is not shown. The selected row is lit by notify('lit'),
+-- which it never answers; a row tapped tells the root, which sends the section it shows.
+local secs = nil
+local function bars(n)
+  if n == 0 then return 'loop' end
+  return n .. (n == 1 and ' bar' or ' bars')
+end
+local function seen(name, on)
+  if shown[name .. ':v'] ~= on then shown[name .. ':v'] = on; get(name).visible = on end
+end
+
+local function sections(a)
+  if #a < 7 + 3 * ROWS then return end
+  secs = a
+  local sel = math.floor(arg(a, 3))
+  text('secsong', 'sections of ' .. tostring(arg(a, 1)))
+  text('secsel', 'section ' .. sel)
+  text('secnewl', 'new, a copy of ' .. sel)
+  text('secpos', math.floor(arg(a, 4)) .. ' / ' .. math.floor(arg(a, 5)))
+  local len = math.floor(arg(a, 7))
+  text('seclen', bars(len))
+  hand('seclenbox', len)
+  for r = 1, ROWS do
+    local n, row = math.floor(arg(a, 5 + 3 * r)), 'row' .. r
+    local on = n == sel
+    for _, part in ipairs({ '', 'nl', 'l', 'lenl' }) do seen(row .. part, n > 0) end
+    text(row .. 'nl', n > 0 and tostring(n) or '')
+    text(row .. 'l', n > 0 and tostring(arg(a, 6 + 3 * r)) or '')
+    text(row .. 'lenl', n > 0 and bars(math.floor(arg(a, 7 + 3 * r))) or '')
+    ink(row .. 'nl', on and BLACK or WHITE)
+    ink(row .. 'l', on and BLACK or WHITE)
+    ink(row .. 'lenl', on and BLACK or GREY)
+    light(row, on and 1 or 0)
+  end
+end
+
+local function rowTapped(r)
+  if not secs then return end
+  local n = math.floor(arg(secs, 5 + 3 * r))
+  if n > 0 and n ~= math.floor(arg(secs, 3)) then sendOSC('/cutit', 'sections', 'select', n) end
+end
+
+-- ---------------------------------------------------------------- a name being typed
+-- A name tab opens on the name it is giving, which done sends if it changed, then turns back.
+-- The name is lowercase, as Cut It keeps it, and shows in capitals, as the keys do.
+local typing, opened = {}, {}
+local function current(prefix)
+  if prefix == 'sn' and secs then return tostring(arg(secs, 6)) end
+  return ''
+end
+local function showName(prefix)
+  text(prefix .. 'fieldl', string.upper(typing[prefix].buf) .. '_')
+end
+local function openName(prefix)
+  local name = current(prefix)
+  typing[prefix] = { buf = name, was = name }
+  showName(prefix)
+end
+
+local function typed(value)
+  local prefix, what = string.match(tostring(value), '^(%%w+):(%%w+)$')
+  local nm = prefix and NAMERS[prefix]
+  if not nm then return end
+  if not typing[prefix] then openName(prefix) end
+  local t = typing[prefix]
+  if what == 'back' then
+    t.buf = string.sub(t.buf, 1, -2)
+  elseif what == 'done' then
+    local name = string.match(t.buf, '^ *(.-) *$')
+    if name ~= '' and name ~= t.was then SEND[prefix](name) end
+    t.was = name ~= '' and name or t.was
+    get(nm.pager).values.page = nm.back
+    return
+  else
+    local ch = CHARS[string.sub(what, 2)]
+    if ch and #t.buf < MAX_NAME and not (ch == ' ' and (t.buf == '' or string.sub(t.buf, -1) == ' ')) then
+      t.buf = t.buf .. ch
+    end
+  end
+  showName(prefix)
+end
+
 -- ---------------------------------------------------------------- the checklist page
 local si, pg = 1, 1
 local marks = {}
@@ -946,6 +1152,8 @@ function onReceiveOSC(message, connections)
     synth(a)
   elseif path == '/cutit/velocity' then
     velocity(a)
+  elseif path == '/cutit/sections' then
+    sections(a)
   elseif path == '/cutit/ack' then
     ack(a)
   end
@@ -956,6 +1164,10 @@ function onReceiveNotify(key, value)
     touchedAt[value] = getMillis()
   elseif key == 'show' then
     setShow(value)
+  elseif key == 'row' then
+    rowTapped(value)
+  elseif key == 'type' then
+    typed(value)
   elseif key == 'press' and PRESS[value] then
     PRESS[value]()
     paintCheck()
@@ -965,7 +1177,7 @@ end
 function update()
   local now = getMillis()
   local up = now - lastHb < 1500
-  for _, k in ipairs({ 'link', 'dlink', 'slink' }) do
+  for _, k in ipairs({ 'link', 'dlink', 'slink', 'seclink' }) do
     text(k, up and 'link' or 'no link')
     lit(k .. 'led', up)
   end
@@ -977,6 +1189,11 @@ function update()
   for name, base in pairs(BASE) do
     local f = flash[name]
     color(name, (f and now < f[1]) and f[2] or base)
+  end
+  for prefix, nm in pairs(NAMERS) do
+    local open = get(nm.pager).values.page == nm.tab
+    if open and not opened[prefix] then openName(prefix) end
+    opened[prefix] = open
   end
 end
 """
@@ -995,11 +1212,21 @@ def root_script(check):
         "synths": lua([c for c, _ in SYNTHS]),
         "acks": acks, "check": lua(check), "dens": lua(DENS), "swing": lua(list(SWING)),
         "shown": lua([w for w, _c, _lo, _hi, _st in SHOW]),
+        "rows": ROWS, "maxname": MAX_NAME,
+        "namers": lua({p: {"pager": n["pager"], "tab": n["tab"], "back": n["back"]}
+                       for p, n in NAMERS.items()}),
+        "chars": lua({name: ch for row in KEYS for key in row if key for name, ch in [key]}),
+        "send": "local SEND = {\n" + "".join(
+            "  %s = function(name) sendOSC('/cutit', %s, name) end,\n"
+            % (p, ", ".join(lua(a) for a in n["cmd"])) for p, n in NAMERS.items()) + "}",
         "red": lua_color(RED), "teal": lua_color(TEAL), "white": lua_color(WHITE),
         "grey": lua_color(GREY), "black": lua_color(BLACK)}
 
 
 SCREENS = {"arrangement": arrangement, "drums": drums, "synths": synths}
+# A Launchpad page with more than one tab: each tab's page name, its label and its controls.
+TABBED = {"sections": [("sections", "sections", sections),
+                       ("secname", "name", lambda: name_tab("sn", "section"))]}
 
 
 def build(name=LIST):
@@ -1012,8 +1239,11 @@ def build(name=LIST):
     # 2026-11-04), then the checklist page under its own one-tab bar.
     outer = []
     for i, (screen, tab) in enumerate(LAUNCHPAD):
-        kids = SCREENS[screen]() if screen in SCREENS else []
-        inner = tabs("tabs%d" % (i + 1), [page(screen, tab, kids, H - TAB)])
+        if screen in TABBED:
+            held = [page(name, label_, make(), H - TAB) for name, label_, make in TABBED[screen]]
+        else:
+            held = [page(screen, tab, SCREENS[screen]() if screen in SCREENS else [], H - TAB)]
+        inner = tabs("tabs%d" % (i + 1), held)
         outer.append(page("p%d" % (i + 1), tab, [inner]))
     outer.append(page("pcheck", "line check", [tabs("checktabs", [page("checks", "line check",
                                                                           checks(), H - TAB)])]))

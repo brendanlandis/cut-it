@@ -1,6 +1,6 @@
 -- The phone's TouchOSC layout, its scripts run under lib_touchosc.lua's stand-in: the pages and
--- the mode, test mode, the arrangement screen, the drum screen, the synths screen and the
--- checklist page. Run by touchosc-assert.py, which unpacks the layout into a folder and writes
+-- the mode, test mode, the arrangement screen, the drum screen, the synths screen, the sections
+-- page and its name tab, and the checklist page. Run by touchosc-assert.py, which unpacks the layout into a folder and writes
 -- expect.lua beside it:
 --
 --   lua test/gate/lua/touchosc_test.lua <folder> [-v]
@@ -48,17 +48,17 @@ equal("before any mode: page 1, the arrangement, under its own tab", where(),
       { "p1", "arrangement" })
 L.update(w)
 equal("no heartbeat yet: no link on every screen and the checklist page",
-      { L.text(w, "link"), L.text(w, "dlink"), L.text(w, "slink"), L.text(w, "tmode") },
-      { "no link", "no link", "no link", "no link" })
+      { L.text(w, "link"), L.text(w, "dlink"), L.text(w, "slink"), L.text(w, "seclink"),
+        L.text(w, "tmode") }, { "no link", "no link", "no link", "no link", "no link" })
 hb(false)
 L.update(w)
 equal("a heartbeat: link, its lamps lit, and test mode off",
       { L.text(w, "link"), C.linkled.values.x, C.dlinkled.values.x, C.slinkled.values.x,
-        L.text(w, "tmode") }, { "link", 1, 1, 1, "test mode off" })
-local TABS = { "arrangement", "drums", "synths", "page 4", "page 5", "page 6", "page 7", "songs" }
+        C.seclinkled.values.x, L.text(w, "tmode") }, { "link", 1, 1, 1, 1, "test mode off" })
+local TABS = { "arrangement", "drums", "synths", "page 4", "page 5", "page 6", "sections", "songs" }
 for n, tab in ipairs(TABS) do
   mode("mode-" .. n)
-  equal("page " .. n .. ": the Launchpad's page " .. n .. ", its one tab named " .. tab, where(),
+  equal("page " .. n .. ": the Launchpad's page " .. n .. ", its first tab named " .. tab, where(),
         { "p" .. n, tab })
 end
 mode("mode-2")
@@ -66,7 +66,7 @@ w.sent = {}
 mode("mode-2")
 equal("the mode's repeat turns nothing and sends nothing", { where(), #w.sent },
       { { "p2", "drums" }, 0 })
-equal("⛔ pages 4 to 7 and songs are blank", { #C.page4.children, #C.page7.children,
+equal("⛔ pages 4 to 6 and songs are blank", { #C.page4.children, #C.page6.children,
       #C.songs.children }, { 0, 0, 0 })
 hb(true)
 L.update(w)
@@ -375,6 +375,98 @@ L.update(w)
 check("... and its answer flashes Fail", C.cfail.color[1] > 0.9 and C.cfail.color[2] > 0.9,
       T.show(C.cfail.color))
 
+print("\n--- the sections page ---")
+mode("mode-7")
+equal("page 7: the sections page, under its sections tab, and a name tab beside it",
+      { where(), C.tabs7.children[2].tabLabel }, { { "p7", "sections" }, "name" })
+w.sent = {}
+-- u_song's 22 atoms: the song, how many, the selected, the page and pages, its name and length,
+-- then five rows of number, name and length.
+L.osc(w, "/cutit/sections", "song 1", 7, 3, 1, 2, "chorus", 0, 1, "intro", 8, 2, "verse", 1,
+      3, "chorus", 0, 4, "verse 2", 16, 5, "bridge", 8)
+equal("u_song's state: the caption names the song, the right column the selected section, the "
+      .. "pager the page", { L.text(w, "secsong"), L.text(w, "secsel"), L.text(w, "secnewl"),
+      L.text(w, "secpos"), L.text(w, "seclen") },
+      { "sections of song 1", "section 3", "new, a copy of 3", "1 / 2", "loop" })
+equal("... five rows, each its number, name and length: bars, a bar, or loop",
+      { L.text(w, "row1nl"), L.text(w, "row1l"), L.text(w, "row1lenl"), L.text(w, "row2lenl"),
+        L.text(w, "row3lenl"), L.text(w, "row4l") }, { "1", "intro", "8 bars", "1 bar", "loop",
+      "verse 2" })
+equal("⛔ the selected row is lit, by the state, and nothing goes back",
+      { C.row3.values.x, C.row1.values.x, #w.sent }, { 1, 0, 0 })
+check("... its words black on the lit fill, the others white and grey",
+      black(C.row3l.textColor) and black(C.row3lenl.textColor) and not black(C.row1l.textColor),
+      T.show({ C.row3l.textColor, C.row1l.textColor }))
+equal("a row tapped selects the section it shows", L.press(w, "row2"),
+      { { "/cutit", "sections", "select", 2 } })
+equal("⛔ the selected row tapped sends nothing", L.press(w, "row3"), {})
+L.osc(w, "/cutit/sections", "song 1", 7, 3, 2, 2, "chorus", 0, 6, "outro", 0, 7, "end", 4,
+      0, "-", 0, 0, "-", 0, 0, "-", 0)
+equal("the second page: two rows shown, the empty three hidden",
+      { C.row1.visible, C.row2.visible, C.row3.visible, C.row5l.visible, L.text(w, "row1nl"),
+        L.text(w, "row2l") }, { true, true, false, false, "6", "end" })
+equal("... and a row with no section sends nothing", L.press(w, "row4"), {})
+equal("the pager's arrows: a page back and a page on",
+      { L.press(w, "secprev"), L.press(w, "secnext") },
+      { { { "/cutit", "sections", "page", -1 } }, { { "/cutit", "sections", "page", 1 } } })
+equal("new, move up, move down and delete, each its command",
+      { L.press(w, "secnew"), L.press(w, "secup"), L.press(w, "secdown"), L.press(w, "secdel") },
+      { { { "/cutit", "sections", "new" } }, { { "/cutit", "sections", "up" } },
+        { { "/cutit", "sections", "down" } }, { { "/cutit", "sections", "delete" } } })
+L.osc(w, "/cutit/ack", "sections", "new")
+L.update(w)
+check("an answer to new flashes it teal", teal(C.secnew.color), T.show(C.secnew.color))
+L.update(w, 400)
+check("... and it goes back to red", red(C.secnew.color), T.show(C.secnew.color))
+L.update(w, 1100)
+-- The state handed the length box loop, 0, in the middle of its step: 0.5 / 65.
+equal("the length dragged up to 8 sends length 8, once", L.drag(w, "seclenbox", 8.5 / 65),
+      { { "/cutit", "sections", "length", 8 } })
+equal("... and down to loop sends length 0", L.drag(w, "seclenbox", 0.2 / 65),
+      { { "/cutit", "sections", "length", 0 } })
+L.update(w, 1100)
+w.sent = {}
+L.osc(w, "/cutit/sections", "song 1", 7, 3, 1, 2, "chorus", 12, 1, "intro", 8, 2, "verse", 1,
+      3, "chorus", 12, 4, "verse 2", 16, 5, "bridge", 8)
+equal("⛔ a length from the state shows, and is not sent back", { L.text(w, "seclen"), #w.sent },
+      { "12 bars", 0 })
+
+print("\n--- the name tab ---")
+C.tabs7.values.page = 1
+L.update(w)
+equal("the name tab opens on the selected section's name, in capitals as the keys are",
+      L.text(w, "snfieldl"), "CHORUS_")
+for _ = 1, 7 do L.press(w, "snback") end
+equal("backspace takes it back a character at a time, and no further than nothing",
+      L.text(w, "snfieldl"), "_")
+for _, k in ipairs({ "v", "e", "r", "s", "e", "space", "space", "2", "apos", "dash" }) do
+  L.press(w, "snk" .. k)
+end
+equal("a key types its letter, a space one space at most, a digit, ' and -",
+      L.text(w, "snfieldl"), "VERSE 2'-_")
+L.press(w, "snback")
+L.press(w, "snback")
+equal("⛔ done sends the name, lowercase, as one string, and turns back to the sections tab",
+      { L.press(w, "sndone"), where() },
+      { { { "/cutit", "sections", "name", "verse 2" } }, { "p7", "sections" } })
+L.osc(w, "/cutit/ack", "sections", "name")
+L.update(w)
+check("... its answer flashes done", C.sndone.color[1] > 0.9 and C.sndone.color[2] > 0.9,
+      T.show(C.sndone.color))
+C.tabs7.values.page = 1
+L.update(w)
+equal("opened again, it starts from the name in the state", L.text(w, "snfieldl"), "CHORUS_")
+equal("⛔ done with the name unchanged sends nothing back, and turns back",
+      { L.press(w, "sndone"), where() }, { {}, { "p7", "sections" } })
+C.tabs7.values.page = 1
+L.update(w)
+for _ = 1, 30 do L.press(w, "snka") end
+equal("a name is twenty characters at most", #L.text(w, "snfieldl"), 21)
+for _ = 1, 25 do L.press(w, "snback") end
+L.press(w, "snkspace")
+equal("a leading space is not typed", L.text(w, "snfieldl"), "_")
+equal("... and done with nothing typed sends nothing", L.press(w, "sndone"), {})
+
 print("\n--- what the phone no longer shows ---")
 w.sent = {}
 L.osc(w, "/cutit/param", "bpm", 120, "(29)")
@@ -388,8 +480,9 @@ equal("⛔ ... and nothing in the layout would show one", { C.pname, C.ralert, C
 print("\n--- the link ---")
 L.update(w, 2000)
 equal("two seconds with no heartbeat: no link everywhere, the lamps out",
-      { L.text(w, "link"), L.text(w, "dlink"), L.text(w, "slink"), L.text(w, "tmode"),
-        C.linkled.values.x, C.dlinkled.values.x, C.slinkled.values.x, C.tled.values.x },
-      { "no link", "no link", "no link", "no link", 0, 0, 0, 0 })
+      { L.text(w, "link"), L.text(w, "dlink"), L.text(w, "slink"), L.text(w, "seclink"),
+        L.text(w, "tmode"), C.linkled.values.x, C.dlinkled.values.x, C.slinkled.values.x,
+        C.seclinkled.values.x, C.tled.values.x },
+      { "no link", "no link", "no link", "no link", "no link", 0, 0, 0, 0, 0 })
 
 os.exit(T.report() == 0)

@@ -98,17 +98,20 @@ def draw(kind, p, v, x, y, w, h):
 
 
 def pages(xml):
-    """[(page name, tab label, [(kind, props, values, x, y, w, h)])] as the phone shows each."""
+    """[(page name, tab label, [(kind, props, values, x, y, w, h)], [its pager's tab labels])]
+    as the phone shows each: every tab of every Launchpad page."""
     c = D.controls(xml)
-    out = {}
+    out, tabs = {}, {}
     for path, (kind, p, v) in c.items():
         parts = path.split("/")
         # root/pages/<outer page>/<inner pager>/<page>[/<control>...]
         if len(parts) < 5 or parts[1] != "pages":
             continue
-        key = parts[2]
+        key = (parts[2], parts[4])
         if len(parts) == 5:
-            out[key] = (parts[4], p.get("tabLabel", parts[4]), [])
+            tab = p.get("tabLabel", parts[4])
+            tabs.setdefault(parts[2], []).append(tab)
+            out[key] = (parts[4], tab, [], tabs[parts[2]])
             continue
         # the control's own frame, plus every enclosing group's below the page
         x = y = 0
@@ -120,15 +123,21 @@ def pages(xml):
     return [out[k] for k in out]
 
 
-def svg(name, tab, items, grid=True):
+def svg(name, tab, items, grid=True, tabs=None):
     W, H, TAB = B.W, B.H, B.TAB
     s = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">'
          % (W, H, W, H), '<rect width="%d" height="%d" fill="#000"/>' % (W, H)]
-    # the page's own tab bar: one tab, active
-    s.append('<rect x="0" y="0" width="%d" height="%d" fill="%s"/>' % (W, TAB, rgba("255 31 63 1")))
-    s.append('<text x="%g" y="%g" font-family="Ubuntu, Helvetica, Arial, sans-serif" '
-             'font-size="22" fill="#000" text-anchor="middle" dominant-baseline="central">%s'
-             '</text>' % (W / 2, TAB / 2, html.escape(tab)))
+    # the page's own tab bar: its pager's tabs side by side, this one active
+    tabs = tabs or [tab]
+    tw = W / len(tabs)
+    for i, t in enumerate(tabs):
+        on = t == tab
+        s.append('<rect x="%g" y="0" width="%g" height="%d" fill="%s" stroke="#000"/>'
+                 % (i * tw, tw, TAB, rgba("255 31 63 1") if on else rgba("34 34 34 1")))
+        s.append('<text x="%g" y="%g" font-family="Ubuntu, Helvetica, Arial, sans-serif" '
+                 'font-size="22" fill="%s" text-anchor="middle" dominant-baseline="central">%s'
+                 '</text>' % (i * tw + tw / 2, TAB / 2, "#000" if on else "#f0f0f0",
+                              html.escape(t)))
     if grid:
         # the editor's grid is anchored at the document's center: B.OX and B.OY in a page's
         # coordinates, which start under the tab bar here
@@ -151,9 +160,9 @@ def main():
     os.makedirs(out, exist_ok=True)
     doc = ['<!doctype html><meta charset="utf-8"><title>Cut It phone preview</title>',
            '<body style="background:#222;color:#ddd;font:14px Helvetica;margin:16px">']
-    for name, tab, items in pages(B.build()):
+    for name, tab, items, tabs in pages(B.build()):
         with open(os.path.join(out, name + ".svg"), "w", encoding="utf-8") as fh:
-            fh.write(svg(name, tab, items))
+            fh.write(svg(name, tab, items, tabs=tabs))
         doc.append('<h3>%s</h3><img src="%s.svg" width="%d" style="max-width:100%%">'
                    % (html.escape(tab), name, B.W))
     with open(os.path.join(out, "index.html"), "w", encoding="utf-8") as fh:

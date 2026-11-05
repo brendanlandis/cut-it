@@ -52,7 +52,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 58600")
+qd = obj(20, 120, "del 64500")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -78,6 +78,11 @@ tap_s = obj(300, 880, "s \\$0-tap-synth")
 con(unet, 1, tap_s, 0)
 tap_t = obj(560, 880, "s \\$0-tap-tempo")
 con(unet, 2, tap_t, 0)
+tap_n = obj(820, 880, "s \\$0-tap-sections")
+con(unet, 3, tap_n, 0)
+# u_song's state for the sections page arrives by name, as its cord would bring it in u_root.
+ss_r = obj(1080, 720, "r \\$0-ss")
+con(ss_r, 0, unet, 4)
 # u_tempo's BPM arrives by name, as its cord would bring it in u_root.
 tp_r = obj(820, 720, "r \\$0-tp")
 con(tp_r, 0, unet, 3)
@@ -92,7 +97,7 @@ tm_r = obj(20, 720, "r \\$0-tm")
 con(tm_r, 0, unet, 0)
 txt(560, 600,
     "The abstraction under test. Args: the phone's host and port \\, then this end's "
-    "inbound port. Its three outlets are c_steps \\, c_synth and u_tempo \\, sent on by name so no "
+    "inbound port. Its four outlets are c_steps \\, c_synth \\, u_tempo and u_song \\, sent on by name so no "
     "cord runs the length of the canvas.", 40)
 
 # the mark path, and the driver's own socket
@@ -172,9 +177,10 @@ probe(400, 1900, "tempo", "r \\$0-tap-tempo")
 probe(400, 2700, "err", "r err")
 probe(700, 2700, "drums", "r \\$0-tap-drums")
 probe(1000, 2700, "synth", "r \\$0-tap-synth")
+probe(1300, 2700, "sections", "r \\$0-tap-sections")
 txt(20, 2180,
     "u_net is the only abstraction in this run \\, so anything seen on presence came from the "
-    "inbound path. The three cords are c_steps \\, c_synth and u_tempo \\, hence the "
+    "inbound path. The four cords are c_steps \\, c_synth \\, u_tempo and u_song \\, hence the "
     "taps.", 70)
 
 # ------------------------------------------------------------------- the windows
@@ -187,6 +193,7 @@ txt(20, 2180,
 #   ("ds", "<88 numbers>")           c_steps' state, into u_net's second inlet
 #   ("sy", "synth <choice>")         c_synth's choice or velocity switch, into its third
 #   ("tp", "<bpm>")                  u_tempo's BPM, into its fourth
+#   ("ss", "<22 atoms>")             u_song's sections page, into its fifth
 #   ("bus", (name, "<message>"))     one message onto a bus, as the mode bus
 #
 # Playing, last step 12, track 2 selected, a sync pending, the sixteen last
@@ -195,6 +202,10 @@ txt(20, 2180,
 DRUM_STATE = " ".join(str(v) for v in [1, 12, 2, 1, 16, 5] + [16] * 14 + [0, 1] + [0] * 14
                       + [7, 8, 30, 62] + [0, -6] + [0] * 14 + [0, 7] + [0] * 14
                       + [0, 40] + [0] * 14)
+# u_song's sections page: the song, three sections, the second selected, page 1 of 1, its name
+# and length, then the five rows, the last two empty.
+SECTION_STATE = ("song\\ 1 3 2 1 1 verse\\ 2 8 1 intro 0 2 verse\\ 2 8 3 chorus 0 "
+                 "0 - 0 0 - 0")
 SEQ = [
     (3000,  "idle",     []),
     # -- the OLED's traffic: u_net mirrored it once (/cutit/param, /status,
@@ -269,7 +280,20 @@ SEQ = [
     (53800, "tmmode",   [("bus", ("mode", "mode-2"))]),
     (55200, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "mode-2")),
                           ("sy", "synth fm"), ("sy", "velocity off")]),
-    (56600, "done",     []),
+    # -- the sections page, out the fourth outlet to u_song: each command passed on whole,
+    #    one u_song will refuse among them, and a name with a space, as the phone sends it,
+    #    one OSC string
+    (56600, "cmdsecsel", [("cmd", ("cutit", "sections select 2"))]),
+    (57100, "cmdsecpage", [("cmd", ("cutit", "sections page 1"))]),
+    (57600, "cmdsecnew", [("cmd", ("cutit", "sections new"))]),
+    (58100, "cmdsecup", [("cmd", ("cutit", "sections up"))]),
+    (58600, "cmdsecdown", [("cmd", ("cutit", "sections down"))]),
+    (59100, "cmdseclen", [("cmd", ("cutit", "sections length 8"))]),
+    (59600, "cmdsecdel", [("cmd", ("cutit", "sections delete"))]),
+    (60100, "cmdsecname", [("cmd", ("cutit", "sections name verse\\ 2"))]),
+    (60600, "cmdsecnew2", [("cmd", ("cutit", "sections shuffle"))]),
+    (61100, "secstate", [("ss", SECTION_STATE)]),
+    (62500, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940
@@ -306,8 +330,8 @@ for i, (when, mark, actions) in enumerate(SEQ):
             con(tr, outlet, ts, 0)
             bx += 240
             continue
-        if kind in ("ds", "sy", "tp", "bus"):
-            text, dest = ((item[1], "\\$0-" + kind) if kind in ("ds", "sy", "tp")
+        if kind in ("ds", "sy", "tp", "ss", "bus"):
+            text, dest = ((item[1], "\\$0-" + kind) if kind in ("ds", "sy", "tp", "ss")
                           else (item[1][1], item[1][0]))
             dm = msg(bx, by, text)
             dsn = obj(bx, by + 50, "s %s" % dest)

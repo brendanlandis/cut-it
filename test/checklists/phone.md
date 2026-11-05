@@ -87,7 +87,7 @@ The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast
 - [ ] **19. The page holds the line check**
   - **Need:** Test mode on, as step 18 left it.
   - **Do:** On the page, tap Back until it stops, then Next through every step.
-  - **Pass if:** Its tab reads line check. It starts at 1 of 7, The phone and the Launchpad, and ends at 7 of 7, each step's text whole on its page. No Send button shows on any step, and nothing picks another checklist.
+  - **Pass if:** Its tab reads line check. It starts at 1 of 8, The phone and the Launchpad, and ends at 8 of 8, each step's text whole on its page. FM and STRINGS sit beside the step's position on every step. No Send button shows on any step, and nothing picks another checklist.
   - **Note:** The page carries test/checklists/linecheck.md alone, and the phone sends nothing onto Cut It's buses (Brendan, 2026-11-04); that `send` is no command any more is `phone-assert`'s. Steps 17 to 22 here run from the Mac, like the rest.
 
 - [ ] **20. Pass is logged on the Organelle**
@@ -103,5 +103,5 @@ The rate limit is `phone-assert`'s: a checklist cannot flood, and step 12's fast
 - [ ] **22. A mode ends test mode, and the tab follows it**
   - **Need:** Test mode on, the phone's checklist page up.
   - **Do:** Press the Launchpad's page 2 button, the second down the left column. Then press page 3, the third.
-  - **Pass if:** At page 2 the checklist page gives way at once to the drum screen, its tab reading drums; at page 3 the tab reads remote and shows the remote screen.
+  - **Pass if:** At page 2 the checklist page gives way at once to the drum screen, its tab reading drums; at page 3 the tab reads synths and shows the synths screen, FM and STRINGS.
   - **Note:** That a mode turns test mode off is `phone-assert`'s too (Brendan, 2026-11-04: staying on the checklists after a mode press was the weird part).

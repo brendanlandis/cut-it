@@ -5,8 +5,8 @@
 
 Two halves, two tallies. First, by reading: the committed layout is build.py's output, every
 control has a name of its own (a script finds a control by its name, and TouchOSC returns the
-first of two), and what the layout's buttons send is what u_net routes and c_steps takes, the
-two ends of the inbound vocabulary, which deploy by different routes and can drift. Then the
+first of two), and what the layout's buttons send is what u_net routes and c_steps and c_synth
+take, the two ends of the inbound vocabulary, which deploy by different routes and can drift. Then the
 layout's own scripts, unpacked from it and run under test/gate/lua/lib_touchosc.lua's stand-in
 for TouchOSC by test/gate/lua/touchosc_test.lua: the tabs and the mode, test mode, and each
 screen, driven as u_net and a finger would.
@@ -30,6 +30,7 @@ LAYOUT = os.path.join(ROOT, "tools", "touchosc", "CutIt.tosc")
 BUILD = os.path.join(ROOT, "tools", "touchosc", "build.py")
 UNET = os.path.join(ROOT, "Cut It", "u_net.pd")
 STEPS_LUA = os.path.join(ROOT, "Cut It", "c_steps.lua")
+SYNTH_LUA = os.path.join(ROOT, "Cut It", "c_synth.lua")
 
 spec = importlib.util.spec_from_file_location("build_touchosc", BUILD)
 B = importlib.util.module_from_spec(spec)
@@ -180,6 +181,12 @@ def steps_cmds():
     return sorted(a or b for a, b in keys)
 
 
+def synths():
+    """The synths c_synth takes: c_synth.lua's R.SYNTHS, in order."""
+    m = re.search(r"^R\.SYNTHS = \{([^}]*)\}", open(SYNTH_LUA, encoding="utf-8").read(), re.M)
+    return re.findall(r'"([\w-]+)"', m.group(1)) if m else None
+
+
 def controls(doc):
     """[(name, type, visible, script, text)] for every node, in the file's order."""
     out = []
@@ -268,12 +275,13 @@ def main():
 
     msgs = [m for r in nodes for m in sent(r[3])]
     ucmd, udev = route_of(UNET, "re-wire"), route_of(UNET, "m_volca")
-    uacks = route_of(UNET, "sync")
-    takes = steps_cmds()
-    A.check("u_net's route boxes and c_steps' commands are all readable",
-            ucmd is not None and udev is not None and uacks is not None and takes is not None,
-            "u_net: %r / %r / %r  c_steps: %r" % (ucmd, udev, uacks, takes))
-    if ucmd and udev and uacks and takes:
+    uacks, usynth = route_of(UNET, "sync"), route_of(UNET, "fm")
+    takes, chooses = steps_cmds(), synths()
+    A.check("u_net's route boxes, c_steps' commands and c_synth's synths are all readable",
+            None not in (ucmd, udev, uacks, usynth, takes, chooses),
+            "u_net: %r / %r / %r / %r  c_steps: %r  c_synth: %r"
+            % (ucmd, udev, uacks, usynth, takes, chooses))
+    if None not in (ucmd, udev, uacks, usynth, takes, chooses):
         lcmd = sorted({m.split()[0] for m in msgs})
         ldev = sorted({m.split()[1] for m in msgs if m.split()[0] == "test-note"})
         ldrums = sorted({m.split()[1] for m in msgs if m.split()[0] == "drums"})
@@ -286,13 +294,25 @@ def main():
         A.check("⛔ every drums action it sends is one c_steps takes",
                 ldrums and set(ldrums) <= set(takes),
                 "the layout sends drums %s, c_steps takes %s" % (" ".join(ldrums), takes))
+        lsynth = sorted({m.split()[1] for m in msgs if m.split()[0] == "synth"})
+        A.check("⛔ it sends EXACTLY the synths c_synth takes",
+                lsynth == sorted(chooses),
+                "the layout sends synth %s, c_synth takes %s -- a synth with no button can't be "
+                "chosen from the phone, a button for none fails bad-synth"
+                % (" ".join(lsynth), " ".join(chooses)))
+        A.check("... and u_net acknowledges exactly those", sorted(usynth) == sorted(chooses),
+                "u_net acknowledges synth %s" % " ".join(usynth))
+        A.check("... from the synths screen and the checklist page, a button each",
+                sorted(m for m in msgs if m.startswith("synth ")) ==
+                sorted("synth %s" % c for c in chooses for _ in (0, 1)),
+                [m for m in msgs if m.startswith("synth ")])
         A.check("... and the drum screen's sixteen pads select tracks 1 to 16",
                 sorted(m for m in msgs if m.startswith("drums select ")) ==
                 sorted("drums select %d" % n for n in range(1, 17)),
                 [m for m in msgs if m.startswith("drums select ")])
-        # Every acknowledgment u_net sends has a cell to light, but select's: a pad's
-        # selection shows in the state that comes back.
-        acked = ([c for c in ucmd if c not in ("test-note", "drums")]
+        # Every acknowledgment u_net sends has a cell to light, but select's and synth's: a
+        # pad's selection and a synth's choice show in the state that comes back.
+        acked = ([c for c in ucmd if c not in ("test-note", "drums", "synth")]
                  + ["test-note " + d for d in udev]
                  + ["drums " + a for a in uacks if a != "select"])
         A.check("every acknowledgment u_net sends lights a cell",

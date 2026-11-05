@@ -10,8 +10,8 @@ tab bar, black, with bright red the lead accent and teal the second, monospaced 
 value and TouchOSC's default font for every label, and every pairing at WCAG AA, which
 test/gate/touchosc-assert.py audits from this file.
 
-The tab bar holds the page's screen: the drum screen on page 2, the drum page, the remote screen on
-every other page, following the mode u_net sends. The checklist page is a page of its own, not a tab: test mode,
+The tab bar holds the page's screen: the drum screen on page 2, the drum page, the synths screen on
+page 3, the remote screen on every other page, following the mode u_net sends. The checklist page is a page of its own, not a tab: test mode,
 a tap on the Launchpad's Setup, puts it in place of the tabs, and going off, or choosing a mode,
 takes it away (Brendan, 2026-11-04). It carries the line check alone, test/checklists/linecheck.md:
 the development checklists are run with the Mac at hand, which sends their Send lines.
@@ -21,7 +21,7 @@ and shows what comes back to its 8000. Each control sends from a script of its o
 script takes everything that comes in, and the checklist page's buttons, which it answers itself.
 A button that the Organelle answers flashes teal by its color, never its value, so an answer can't
 send anything again; a knob or a time signature box takes a value from Cut It without sending it
-back.
+back, and a drum pad or a synth button is lit by Cut It's state, which a lit one never answers.
 
 A .tosc file is zlib-compressed XML (~/Sites/!reference/touchosc.md). The checklist page carries
 the line check as data, so an edit to it means a rebuild, and push.sh puts the result on the phone.
@@ -58,8 +58,15 @@ TABOFF = rgb(34, 34, 34)
 INK, BTN = BLACK, RED       # the XML's defaults
 
 # The first tab's screen on each page; every other page has the remote screen. Page 2 is the drums
-# (Brendan, 2026-11-04: 1 the arrangement, 2 the drums, 3 the synths, 8 the songs).
-MAIN = {"mode-2": "drums"}
+# and page 3 the synths (Brendan, 2026-11-04: 1 the arrangement, 2 the drums, 3 the synths, 8 the
+# songs).
+MAIN = {"mode-2": "drums", "mode-3": "synths"}
+SCREENS = ["drums", "remote", "synths"]
+
+# The synths c_synth chooses between, c_synth.lua's R.SYNTHS, and each one's button label: fm is
+# the Volca, strings the Streichfett. The synths screen and the checklist page each have a button
+# per synth, and the chosen one is lit (Brendan, 2026-11-04).
+SYNTHS = [("fm", "FM"), ("strings", "STRINGS")]
 
 # The remote screen's three commands: the button, its label, and what it sends after /cutit.
 # test 404 went with the SP-404 (Brendan, 2026-11-04).
@@ -256,7 +263,8 @@ def y(v):
 # The labels that show a value, anything Cut It's state changes: monospaced. The rest, the
 # captions and button names, take TouchOSC's default font (Brendan, 2026-11-04).
 VALUES = {"tempo", "play", "glob", "link", "alert", "pending", "num", "den", "drunkv", "skipv",
-          "movev", "pname", "pvalue", "rstatus", "ralert", "rlink", "cpos", "tmode"}
+          "movev", "pname", "pvalue", "rstatus", "ralert", "rlink", "cpos", "tmode", "salert",
+          "slink"}
 MONO = 1
 
 
@@ -301,6 +309,24 @@ def pad_script(n):
             "    sendOSC('/cutit', 'drums', 'select', %d)\n"
             "  end\n"
             "end\n" % n)
+
+
+def synth_script(choice):
+    """A synth's button: a tap chooses it, and Cut It's /cutit/synth lights the one chosen with
+    notify('lit'), which a lit button never answers, as a drum pad does: so the state can't send
+    the choice again, and a tap on the chosen one sends nothing."""
+    return ("local lit = 0\n"
+            "function onReceiveNotify(key, value)\n"
+            "  if key == 'lit' then\n"
+            "    lit = value\n"
+            "    self.values.x = value\n"
+            "  end\n"
+            "end\n"
+            "function onValueChanged(key)\n"
+            "  if key == 'x' and self.values.x == 1 and lit ~= 1 then\n"
+            "    sendOSC('/cutit', 'synth', %s)\n"
+            "  end\n"
+            "end\n" % lua(choice))
 
 
 def tells(what, which):
@@ -437,12 +463,35 @@ def remote():
     return group("remote", k)
 
 
+# ------------------------------------------------------------------ the synths screen (page 3)
+def synths():
+    """Two large buttons, a synth each, the chosen one lit; the alert and the link under them."""
+    k = []
+    gap = 16
+    bw, bh = (W - R - L - gap) / 2, 250
+    for i, (choice, text) in enumerate(SYNTHS):
+        f = (L + i * (bw + gap), y(TOP), bw, bh)
+        k.append(button("s" + choice, f, RED, synth_script(choice)))
+        k.append(label("s" + choice + "l", f, text, 48))
+    k.append(led("salertled", (L, y(TOP + 288), 16, 16), RED))
+    k.append(label("salert", (L + 26, y(TOP + 282), 440, 28), "no alerts", 18, GREY, align=1))
+    k.append(led("slinkled", (W - R - 180, y(TOP + 288), 14, 14), TEAL))
+    k.append(label("slink", (W - R - 156, y(TOP + 282), 156, 26), "no link", 16, GREY, align=1))
+    return group("synths", k, visible=False)
+
+
 # ------------------------------------------------------------------ the checklist page
 def checks():
     k = []
     k.append(label("cpos", (L, y(TOP), 340, 40), "-", 16, GREY, align=1))
     k.append(led("tled", (W - R - 170, y(TOP + 13), 14, 14), TEAL))
     k.append(label("tmode", (W - R - 148, y(TOP), 148, 40), "no link", 16, GREY, align=1))
+    # the synth choice, as on the synths screen, so the line check plays either synth without
+    # leaving test mode (Brendan, 2026-11-04)
+    for i, (choice, text) in enumerate(SYNTHS):
+        f = (370 + i * 155, y(TOP), 145, 40)
+        k.append(button("c" + choice, f, RED, synth_script(choice)))
+        k.append(label("c" + choice + "l", f, text, 16))
     k.append(label("ctitle", (L, y(TOP + 52), 600, 30), "-", 22, WHITE, align=1))
     k.append(node("TEXT", "cbody", (L, y(TOP + 88), 600, 236), text="", background=False,
                   textColor=rgb(210, 210, 210), textSize=16, textAlignH=1, textAlignV=1))
@@ -463,6 +512,8 @@ def checks():
 ROOT_LUA = r"""-- Cut It on the phone: the tabs, and what u_net sends, onto the screens
 -- (ref/device/phone.md). Generated by tools/touchosc/build.py.
 local MAIN = %(main)s
+local SCREENS = %(screens)s
+local SYNTHS = %(synths)s
 local ACKS = %(acks)s
 local CHECK = %(check)s
 local DENS = %(dens)s
@@ -500,8 +551,7 @@ local function setMode(m)
   if m == mode then return end
   mode = m
   local main = MAIN[m] or 'remote'
-  get('drums').visible = main == 'drums'
-  get('remote').visible = main == 'remote'
+  for _, s in ipairs(SCREENS) do get(s).visible = main == s end
   get('main').tabLabel = main
 end
 
@@ -566,6 +616,20 @@ local function drums(a)
   hand('move', math.floor(arg(a, 41)))
 end
 
+-- ---------------------------------------------------------------- the synth choice
+-- c_synth's choice lights its button on the synths screen and on the checklist page, by
+-- notify('lit'), which a lit button never answers; its label goes black on the lit fill.
+local function synth(a)
+  local choice = tostring(arg(a, 1))
+  for _, s in ipairs(SYNTHS) do
+    for _, name in ipairs({ 's' .. s, 'c' .. s }) do
+      local want = s == choice and 1 or 0
+      if get(name).values.x ~= want then get(name):notify('lit', want) end
+      ink(name .. 'l', want == 1 and BLACK or WHITE)
+    end
+  end
+end
+
 -- ---------------------------------------------------------------- the checklist page
 local si, pg = 1, 1
 local marks = {}
@@ -612,9 +676,12 @@ local function alert(a)
   local none = level == 'none'
   text('alert', none and 'no alerts' or t)
   text('ralert', none and 'no alerts' or (level .. '  ' .. t))
+  text('salert', none and 'no alerts' or (level .. '  ' .. t))
   ink('alert', none and GREY or RED)
   ink('ralert', none and GREY or RED)
+  ink('salert', none and GREY or RED)
   lit('ralertled', not none)
+  lit('salertled', not none)
 end
 
 function onReceiveOSC(message, connections)
@@ -626,6 +693,8 @@ function onReceiveOSC(message, connections)
     setTest(arg(a, 2) == 1)
   elseif path == '/cutit/mode' then
     setMode(tostring(arg(a, 1)))
+  elseif path == '/cutit/synth' then
+    synth(a)
   elseif path == '/cutit/param' then
     local unit = a[3] and tostring(a[3].value) or '-'
     local v = arg(a, 2)
@@ -657,9 +726,10 @@ end
 function update()
   local now = getMillis()
   local up = now - lastHb < 1500
-  for _, k in ipairs({ 'link', 'rlink' }) do text(k, up and 'link' or 'no link') end
+  for _, k in ipairs({ 'link', 'rlink', 'slink' }) do text(k, up and 'link' or 'no link') end
   lit('linkled', up)
   lit('rlinkled', up)
+  lit('slinkled', up)
   lit('tled', up and testOn)
   text('tmode', not up and 'no link' or (testOn and 'test mode on' or 'test mode off'))
   ink('tmode', (up and testOn) and TEAL or GREY)
@@ -682,7 +752,8 @@ def root_script(check):
     acks = "{ " + ", ".join("[%s] = { %s, %s }" % (lua(k), lua(v[0]), lua_color(v[1]))
                             for k, v in ACKS.items()) + " }"
     return ROOT_LUA % {
-        "main": lua(MAIN), "acks": acks, "check": lua(check), "dens": lua(DENS),
+        "main": lua(MAIN), "screens": lua(SCREENS), "synths": lua([c for c, _ in SYNTHS]),
+        "acks": acks, "check": lua(check), "dens": lua(DENS),
         "red": lua_color(RED), "teal": lua_color(TEAL), "white": lua_color(WHITE),
         "grey": lua_color(GREY), "black": lua_color(BLACK)}
 
@@ -694,8 +765,8 @@ def build(name=LIST):
     if bad:
         sys.exit("build: %s doesn't fit the page:\n  " % (name + ".md") + "\n  ".join(bad))
     tabs = dict(color=BLACK, background=False, tabbarSize=TAB, textSizeOff=22, textSizeOn=22)
-    pager = node("PAGER", "pager", (0, 0, W, H), [page("main", "remote", [drums(), remote()])],
-                 **tabs)
+    pager = node("PAGER", "pager", (0, 0, W, H),
+                 [page("main", "remote", [drums(), remote(), synths()])], **tabs)
     # the checklist page, under its own one-tab bar, over the tabs in test mode
     checkpager = node("PAGER", "checkpager", (0, 0, W, H),
                       [page("checks", "line check", checks())], visible=False, **tabs)

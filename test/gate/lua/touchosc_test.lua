@@ -1,5 +1,6 @@
 -- The phone's TouchOSC layout, its scripts run under lib_touchosc.lua's stand-in: the tabs and
--- the mode, test mode, the drum screen, the remote screen and the checklist page. Run by
+-- the mode, test mode, the drum screen, the remote screen, the synths screen and the checklist
+-- page. Run by
 -- touchosc-assert.py, which unpacks the layout into a folder and writes expect.lua beside it:
 --
 --   lua test/gate/lua/touchosc_test.lua <folder> [-v]
@@ -15,7 +16,7 @@ local function hb(test) L.osc(w, "/cutit/hb", 1, test and 1 or 0) end
 local function mode(m) L.osc(w, "/cutit/mode", m) end
 -- Where the phone is: the tab's name, its screen, and whether the checklists stand in for it.
 local function where()
-  return { C.main.tabLabel, C.drums.visible and "drums" or "remote",
+  return { C.main.tabLabel, L.showing(w, { "drums", "remote", "synths" }),
            (C.checkpager.visible and not C.pager.visible) and "checklists" or "tabs" }
 end
 local function teal(c) return c[2] > 0.7 and c[1] < 0.3 end
@@ -131,12 +132,58 @@ check("test Volca's answer flashes it, and not re-wire or clear alert",
       teal(C.tvolca.color) and red(C.rewire.color) and red(C.clear.color),
       T.show({ C.tvolca.color, C.rewire.color, C.clear.color }))
 
+print("\n--- the synths screen ---")
+mode("mode-3")
+equal("page 3: the tab holds the synths screen, and says synths", where(),
+      { "synths", "synths", "tabs" })
+local function lamps()
+  return { C.sfm.values.x, C.sstrings.values.x, C.cfm.values.x, C.cstrings.values.x }
+end
+local function black(c) return c and c[1] < 0.1 and c[2] < 0.1 end
+w.sent = {}
+L.osc(w, "/cutit/synth", "fm")
+equal("c_synth's choice, fm: lit on the synths screen and the checklist page, strings not",
+      lamps(), { 1, 0, 1, 0 })
+check("... fm's labels black on the lit fill, strings' not",
+      black(C.sfml.textColor) and black(C.cfml.textColor) and not black(C.sstringsl.textColor),
+      T.show({ C.sfml.textColor, C.sstringsl.textColor }))
+equal("lighting them sends nothing", #w.sent, 0)
+equal("a tap on strings chooses it", L.press(w, "sstrings"), { { "/cutit", "synth", "strings" } })
+equal("⛔ a tap on fm, chosen, sends nothing", L.press(w, "sfm"), {})
+w.sent = {}
+L.osc(w, "/cutit/synth", "strings")
+equal("the answer, strings: strings lit, fm not, on both", lamps(), { 0, 1, 0, 1 })
+L.osc(w, "/cutit/synth", "strings")
+L.osc(w, "/cutit/synth", "strings")
+equal("⛔ the choice lit, and again on each heartbeat's repeat, sends nothing back", #w.sent, 0)
+equal("⛔ a tap on strings, lit, sends nothing", L.press(w, "sstrings"), {})
+L.osc(w, "/cutit/synth", "strings")
+equal("... and the repeat lights it again", lamps(), { 0, 1, 0, 1 })
+L.osc(w, "/cutit/alert", 1, "fail", "c_synth", "bad-synth")
+equal("an alert shows here too, its lamp lit", { L.text(w, "salert"), C.salertled.values.x },
+      { "fail  bad-synth", 1 })
+L.osc(w, "/cutit/alert", 0, "none", "-", "-")
+equal("... and none", { L.text(w, "salert"), C.salertled.values.x }, { "no alerts", 0 })
+hb(false)
+L.update(w)
+equal("a heartbeat: the link, lit", { L.text(w, "slink"), C.slinkled.values.x }, { "link", 1 })
+mode("mode-4")
+equal("page 4: the remote screen again", where(), { "remote", "remote", "tabs" })
+
 print("\n--- the checklist page ---")
 -- E is the checklist the gate built the page on, one with a step on several pages.
 equal("step 1 of the checklist, its title",
       { L.text(w, "cpos"), L.text(w, "ctitle") }, { "1 of " .. E.steps, E.title })
 equal("no Send button, and no checklist to pick: the page holds one, which sends nothing",
       { C.csend, C.cprev, C.cnext }, {})
+equal("the page's FM chooses fm, so the line check can play the Volca",
+      L.press(w, "cfm"), { { "/cutit", "synth", "fm" } })
+L.osc(w, "/cutit/synth", "fm")
+equal("... the answer lights it, here and on the synths screen", lamps(), { 1, 0, 1, 0 })
+equal("⛔ ... and a tap on it then sends nothing", L.press(w, "cfm"), {})
+equal("its STRINGS chooses strings, for the Streichfett", L.press(w, "cstrings"),
+      { { "/cutit", "synth", "strings" } })
+equal("none of them moved the step", L.text(w, "cpos"):find("^1 of ") ~= nil, true)
 equal("Pass: the verdict, and on to the next step", L.press(w, "cpass"),
       { { "/cutit", "result", E.pass } })
 check("... step 2", L.text(w, "cpos"):find("^2 of ") ~= nil, L.text(w, "cpos"))
@@ -171,8 +218,8 @@ check("... and its answer flashes Fail", C.cfail.color[1] > 0.9 and C.cfail.colo
 print("\n--- the link ---")
 L.update(w, 2000)
 equal("two seconds with no heartbeat: no link everywhere, the lamps out",
-      { L.text(w, "rlink"), L.text(w, "link"), L.text(w, "tmode"), C.linkled.values.x,
-        C.tled.values.x },
-      { "no link", "no link", "no link", 0, 0 })
+      { L.text(w, "rlink"), L.text(w, "link"), L.text(w, "slink"), L.text(w, "tmode"),
+        C.linkled.values.x, C.slinkled.values.x, C.tled.values.x },
+      { "no link", "no link", "no link", "no link", 0, 0, 0 })
 
 os.exit(T.report() == 0)

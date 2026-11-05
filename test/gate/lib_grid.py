@@ -190,7 +190,11 @@ LEVEL_DIM = ((32, 32, 32), (32, 27, 27), (32, 23, 23), (32, 18, 18),
 # too indistinct). The selected pad no longer takes the velocity's color. PAD_DIM keeps its name
 # for what every pad but one is.
 PAD_DIM, PAD_ON = (127, 20, 72), (127, 0, 0)
-BAR_START = (16, 40, 127)       # a bar's first step, off: blue
+BAR_START = (16, 40, 127)       # every Nth step, off, N the top number: blue
+# The step cells are four rows of eight, numbered 1 to 32 along them by the layout table, and the
+# time signature's top number says how many of a row's eight hold steps (c_steps.lua's R.row):
+# row r and column c, from 0, show step r x row + c + 1, and a cell past the row is dark.
+ROW = 8
 REP_DIM, REP_HELD = (20, 8, 32), (80, 24, 127)   # a repeat pad, and the one held: purple
 
 
@@ -212,24 +216,34 @@ def level_of(velocity):
     return (int(velocity) - 1) // 16 + 1
 
 
-def step_color(velocity, step=1, last=16, bar=16):
-    """The color a step at this velocity paints, off the playhead, in bars of
-    this many steps."""
+def step_color(velocity, step=1, last=16, every=4):
+    """The color a step at this velocity paints, off the playhead, a blue step every
+    this many from step 1, the time signature's top number."""
     if step > last:
         return OUT
     if velocity < 1:
-        return BAR_START if (step - 1) % bar == 0 else DIM
+        return BAR_START if (step - 1) % every == 0 else DIM
     return LEVEL_RGB[level_of(velocity) - 1]
 
 
-def drum_page(frame, lay):
-    """-> (problem_or_None, lit_lamp_index, page) for a page-2 HOME frame.
+def cell_step(n, row=ROW):
+    """The step the step cell n, 1 to 32, shows in rows of this many steps, or None past
+    the row: c_steps.lua's R.cell_step, a copy, so a change to that rule turns the
+    sequencer gate red until this follows it."""
+    r, c = (n - 1) // ROW, (n - 1) % ROW
+    return None if c >= row else r * row + c + 1
 
-    page is {"step": {n: color}, "vel": {n: color}, "pad": {n: color}, "rep": {n:
-    color}}. The
+
+def drum_page(frame, lay, row=ROW):
+    """-> (problem_or_None, lit_lamp_index, page) for a page-2 HOME frame, its rows
+    of steps this long.
+
+    page is {"step": {step: color}, "vel": {n: color}, "pad": {n: color}, "rep": {n:
+    color}}, a step cell keyed by the step it shows (cell_step). The
     page is: the eight mode lamps as home has them, every layout cell in a color
-    its role can take, and everything else dark -- the beat row included, since
-    it gives way here, and the bottom-right 4x4, which no row names.
+    its role can take, a step cell past its row dark, and everything else dark --
+    the beat row included, since it gives way here, and the bottom-right 4x4,
+    which no row names.
     """
     allowed = {"step": {DIM, OUT, PLAYHEAD, BAR_START} | set(LEVEL_RGB),
                "vel": set(LEVEL_RGB) | set(LEVEL_DIM), "pad": {PAD_DIM, PAD_ON},
@@ -248,6 +262,14 @@ def drum_page(frame, lay):
             role, n = lay[idx]
             if color not in allowed[role]:
                 return ("%s %d (index %d) is color %s" % (role, n, idx, color)), lamp, page
+            if role == "step":
+                step = cell_step(n, row)
+                if step is None:
+                    if color != OUT:
+                        return ("step cell %d (index %d), past a row of %d, is color %s"
+                                % (n, idx, row, color)), lamp, page
+                    continue
+                n = step
             page[role][n] = color
         elif idx in EDGES:
             if edge_problem(idx, color):

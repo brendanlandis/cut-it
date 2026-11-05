@@ -156,8 +156,9 @@ L.drag(w, "swing", (70 - 50) / 25)
 equal("a turn of drunk sends whole percents, once each", L.drag(w, "drunk", 0.501),
       { { "/cutit", "drums", "drunk", 50 } })
 equal("... and nothing when the percent does not change", L.drag(w, "drunk", 0.504), {})
+-- the box reaches 28 at the state's 7/8, and the state put 12 in the middle of its step
 equal("dragging the last step from 12 to 14 sends set-last 14",
-      L.drag(w, "lastbox", (13 + 0.5) / 32), { { "/cutit", "drums", "set-last", 14 } })
+      L.drag(w, "lastbox", (13 + 0.5) / 28), { { "/cutit", "drums", "set-last", 14 } })
 L.update(w, 500)
 L.osc(w, "/cutit/drums", table.unpack(drumstate({ playing = 1, last = 12, num = 7, den = 8,
                                                  drunk = 30, swing = 62 })))
@@ -177,6 +178,46 @@ local short = drumstate({})
 table.remove(short)
 L.osc(w, "/cutit/drums", table.unpack(short))
 equal("fewer than 88 numbers draws nothing", L.text(w, "play"), "playing")
+
+print("\n--- the arrangement screen: how far the last step reaches ---")
+-- The time signature's top number sets how far a last step reaches, four rows of the drum page
+-- (Brendan, 2026-11-05): c_steps.lua's R.reach, which clips the phone's set-last to it. The box
+-- reaches exactly that far: dragged to its top it sends the furthest step, and a step is a
+-- step of that range.
+local S = dofile("Cut It/c_steps.lua")
+local function at_num(num, last)
+  L.update(w, 1100)
+  L.osc(w, "/cutit/drums", table.unpack(drumstate({ last = last or 12, num = num })))
+end
+local function top(num)
+  at_num(num)
+  local out = L.drag(w, "lastbox", 1)
+  at_num(num)
+  return out[1] and out[1][4]
+end
+equal("⛔ dragged to its top the box sends the furthest step c_steps takes: 24 at 3/4, 20 at "
+      .. "5/4, 28 at 7/8, 32 at 4/4, 9/8 and 1/4",
+      { top(3), top(5), top(7), top(4), top(9), top(1) }, { 24, 20, 28, 32, 32, 32 })
+local off = {}
+for n = 1, 32 do
+  local st = S.new(1)
+  st.num = n
+  if top(n) ~= S.reach(st) then off[#off + 1] = n .. ": " .. tostring(top(n)) end
+end
+equal("⛔ ... for every top number, 1 to 32, as far as c_steps' own R.reach", off, {})
+at_num(3)
+equal("at 3/4 the state's 12 sits in the middle of its step of 24, and nothing is sent",
+      { C.lastbox.values.x, #L.drag(w, "lastbox", (12 - 0.5) / 24) }, { (12 - 0.5) / 24, 0 })
+at_num(3)
+equal("... and a drag one step of 24 up sends 13", L.drag(w, "lastbox", (13 - 0.5) / 24),
+      { { "/cutit", "drums", "set-last", 13 } })
+at_num(5, 20)
+w.sent = {}
+at_num(5, 20)
+equal("⛔ a time signature that moves the reach sends nothing back: 5/4 at its 20", #w.sent, 0)
+at_num(4, 20)
+equal("... and 4/4 then puts 20 lower in a box of 32, still sending nothing",
+      { C.lastbox.values.x, #w.sent }, { (20 - 0.5) / 32, 0 })
 
 print("\n--- the drum screen ---")
 mode("mode-2")

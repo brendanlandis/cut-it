@@ -182,7 +182,7 @@ press means, so a press and its lamp cannot disagree. Its 60 rows:
 
 | Rows from the top | Cells | Role | Evidence |
 |---|---|---|---|
-| 1–4 | 81–88, 71–78, 61–68, 51–58 | `step` 1–8, 9–16, 17–24, 25–32 (Brendan, 2026-11-03: 32 steps) | unknown |
+| 1–4 | 81–88, 71–78, 61–68, 51–58 | `step` cells 1–8, 9–16, 17–24, 25–32 (Brendan, 2026-11-03: 32 steps), four rows of eight; which step each shows is the time signature's (*The rows of steps*, below) | unknown |
 | 5–8, left 4×4 | 41–44, 31–34, 21–24, 11–14 | `pad` 13–16, 9–12, 5–8, 1–4: counted from the bottom left, pad 1 there and four a row upward (Brendan, 2026-11-04) | unknown |
 | 5, right half | 45–48 | `rep` 1–4, the repeat pads (Brendan, 2026-11-03) | unknown |
 | 6, right half | — | in no row, so dark | unknown |
@@ -190,8 +190,16 @@ press means, so a press and its lamp cannot disagree. Its 60 rows:
 
 **The caller is `c_steps`, on `g_grid`'s third inlet, and it sends meaning, never a cell** (C-5):
 `steps <32 levels>` for the selected track, 0 for off, `play <step>` (0 while stopped), `vel <level>`,
-`track <pad>` and `last <step>`, the selected track's, `bar <steps>`, a bar of the time signature,
-and `rep <pad>`, the repeat pad held, 0 for none. Every message sets the dirty flag.
+`track <pad>` and `last <step>`, the selected track's, `bar <N> <row>`, the time signature as the
+page shows it, a blue step every *N* and *row* steps to a row, and `rep <pad>`, the repeat pad
+held, 0 for none. Every message sets the dirty flag.
+
+**The rows of steps** (Brendan, 2026-11-05): the step cell *n*, row *r* and column *c* from 0 along
+the four rows of eight, shows step *r* × *row* + *c* + 1, and a cell whose column is *row* or more
+shows none and is dark. `g_grid` works it out with one `expr` per cell as it paints, and
+`c_steps.lua`'s `R.cell_step` with the same sum for a press, so at 3/4 the second row's first cell
+is step 7 to both ([sequencer.md](sequencer.md), *The rows of steps*). Until `c_steps` sends its
+first `bar`, *row* is 0 and every step cell is dark.
 
 **A velocity level is a color, and everything that means that level shows it** (Brendan,
 2026-11-03): a step lit at a velocity, the button that gives it, and the selected pad while that
@@ -200,7 +208,8 @@ button is selected.
 | A cell | Paints | Evidence |
 |---|---|---|
 | A step past the last step | 0, dark, lit or not: its note is kept, unplayed (Brendan, 2026-11-03) | unknown |
-| A step that is off | 1, dim; blue, RGB 16, 40, 127, if it starts a bar: step 1, then every `bar` steps (Brendan, from a mockup, 2026-11-04) | unknown |
+| A step cell past its row | 0, dark: no step is there, and a press does nothing (Brendan, 2026-11-05) | verified |
+| A step that is off | 1, dim; blue, RGB 16, 40, 127, every *N*th step from step 1, *N* the time signature's top number, wrapping across the rows when *N* is over 8 (Brendan, from a mockup, 2026-11-04; every *N*th, 2026-11-05) | unknown |
 | A step that is on | Its level, which `c_steps` works out from its velocity ([sequencer.md](sequencer.md)), in that level's RGB color: white for level 1, falling evenly to bright red for level 8 | unknown |
 | The playhead's step | 21, green, over whatever the step holds | unknown |
 | A velocity button | Its own level's color: full when selected, a quarter otherwise | verified |
@@ -215,7 +224,7 @@ as in every mode.
 even white-to-red ramp in it (Reference), so `g_grid`'s surface holds 128 + *k* for entry *k* of its
 own RGB table, and the paint loop sends those cells as type 3, red, green and blue: red 127, and
 green and blue 127, 109, 91, 73, 54, 36, 18, 0 for levels 1 to 8; the quarter is each over four;
-127, 20, 72 for a pad not selected; 16, 40, 127 for a bar's first step; 20, 8, 32 and 80, 24,
+127, 20, 72 for a pad not selected; 16, 40, 127 for a blue step; 20, 8, 32 and 80, 24,
 127 for a repeat pad and the one held; and 127, 0, 0 for the selected pad, entry 26, after the
 synth and tap entries; then the edges' three (*`g_grid`'s edges, on every page*, below).
 ✅ On the rig the eight read as eight, white to red (Brendan, 2026-11-03).
@@ -469,10 +478,11 @@ the one file that has the state, and the bus stays for requests a person would w
 
 ### The layout is a file both sides read
 
-**A press and its lamp come from one table.** `u_map` turns `pad-81` into *step 1* and `g_grid`
-lights step 1 at index 81 from the same row, so moving the velocity row is one edit and cannot
+**A press and its lamp come from one table.** `u_map` turns `pad-81` into *step cell 1* and
+`g_grid` lights cell 1 at index 81 from the same row, and both ends turn the cell into its step by
+the same sum, so moving the velocity row is one edit and cannot
 leave a button lit in one place and acting in another. `c_steps` never reads it: it knows steps,
-velocities and pads, never where they are.
+velocities, pads and that the step cells are four rows of eight, never where they are.
 
 ### A `warn` never reaches the grid
 

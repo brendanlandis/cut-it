@@ -7,6 +7,9 @@ It asserts on what leaves the patch: the drums sent to c_kit, the grid's frames,
 state bus and the song's draft, which u_song writes. Nothing inside c_steps is read.
 
   the restore    the seeded pattern comes back, is put straight back, and shows
+  the time sig.  the top number over OSC sets the page's rows and blue steps, 9/8
+                 and 3/4, a press lands on the step its row and column mean, and
+                 one past the row does nothing
   editing        a velocity, steps on two tracks, a pad that plays and selects,
                  the step rule's three cases, nothing on the free row, and nothing
                  at all in another mode
@@ -33,7 +36,7 @@ import lib_assert as A                                         # noqa: E402
 import lib_grid as G                                           # noqa: E402
 
 KEY = "drums"
-WINDOWS = ["EARLY", "RESTORE", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
+WINDOWS = ["EARLY", "RESTORE", "NINE", "THREE", "ROW-PRESS", "ROW-DARK", "SEVEN", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
            "RULE-ON", "RULE-SAME", "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER",
            "FREE-ROW", "PAGE-1", "OTHER-PAGE", "PAGE-2", "PLAY", "STOP", "STOPPED",
            "KNOB2-HELD", "LAST-3", "REPLAY", "PANIC", "AFTER-PANIC", "KNOB3",
@@ -42,7 +45,7 @@ WINDOWS = ["EARLY", "RESTORE", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
            "REP-PLAY", "REP-PRESS", "REP-HELD", "REP-OFF", "REP-STOP",
            "SOUND", "RAND", "RA-PLAY", "RA-STOP", "DRUNK", "DR-PLAY"] + \
     ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DRAG", "DONE"]
-EDITS = ["VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
+EDITS = ["ROW-PRESS", "ROW-DARK", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
 
 MARK = re.compile(r"^SEQ:\s+MARK\s+(\S+)$")
@@ -53,10 +56,17 @@ NOTE = re.compile(r"^KITOUT:\s+(-?[\d.]+)\s+(-?[\d.]+)$")
 CELLS = 16 * 32                 # then the 16 tracks' own last steps, their randomness, volumes
 LINE = CELLS + 16 * 4 + 5       # and pitches, the time signature, the drunkenness, the swing
                                 # and the global last step: 581
-DRUNK, SWING, LAST = LINE - 3, LINE - 2, LINE - 1
+NUM, DRUNK, SWING, LAST = LINE - 5, LINE - 3, LINE - 2, LINE - 1   # NUM, then the bottom
 RAND, VOL, PITCH = CELLS + 16, CELLS + 32, CELLS + 48    # where each track's are, track 1 first
 LEVEL_VELS = [round(127 * n / 8 + 1e-9) for n in range(1, 9)]   # 16 32 48 64 79 95 111 127
-BAR = 7 * 16 // 8               # the seed's 7/8: a bar of 14 steps
+# The seed's 7/8: rows of 7 steps on the page, a blue step every 7, each row's first. The windows
+# that change the time signature have their own (c_steps.lua's R.row, ref/module/display.md).
+EVERY, ROW = 7, 7
+SIGS = {"NINE": (9, 8), "THREE": (3, 6), "ROW-PRESS": (3, 6), "ROW-DARK": (3, 6)}
+
+
+def row_of(mark):
+    return SIGS.get(mark, (EVERY, ROW))[1]
 
 
 def idx(track, step):
@@ -128,7 +138,7 @@ def played(evs, marks, lay):
             if x[1] > 0:
                 pending.append(x)
             continue
-        _prob, _lamp, page = G.drum_page(x, lay)
+        _prob, _lamp, page = G.drum_page(x, lay, row_of(mark))
         heads = [n for n, c in page["step"].items() if c == G.PLAYHEAD]
         head = heads[0] if len(heads) == 1 else None
         if pending or not out or out[-1][0] != head:
@@ -139,19 +149,23 @@ def played(evs, marks, lay):
     return out
 
 
-def page_check(frame, lay, pat, track, lvl, head=None, last=16, rep=0):
+def page_check(frame, lay, pat, track, lvl, head=None, last=16, rep=0, sig=(EVERY, ROW)):
     """-> None if the frame is the drum page for this pattern, track, level and
     last step (and playhead and repeat pad held, if given), else what differs.
-    The seed's 7/8 makes a bar BAR steps, so steps 1, 15 and 29 are blue when off."""
-    problem, lamp, page = G.drum_page(frame, lay)
+    sig is a blue step every so many and the steps in a row: the seed's 7/8 makes
+    rows of 7, each row's first step blue when off, and each row's eighth cell
+    dark, which drum_page holds it to."""
+    every, row = sig
+    problem, lamp, page = G.drum_page(frame, lay, row)
     if problem:
         return problem
     if lamp != G.LAMPS[1]:
         return "lit mode lamp is %s, not page 2's %d" % (lamp, G.LAMPS[1])
-    want = [G.step_color(pat[idx(track, s)], s, last, BAR) for s in range(1, 33)]
+    steps = 4 * row
+    want = [G.step_color(pat[idx(track, s)], s, last, every) for s in range(1, steps + 1)]
     if head:
         want[head - 1] = G.PLAYHEAD
-    got = [page["step"].get(s) for s in range(1, 33)]
+    got = [page["step"].get(s) for s in range(1, steps + 1)]
     if got != want:
         return "track %d's steps: want %s got %s" % (track, want, got)
     vel = {n: c == G.LEVEL_RGB[n - 1] for n, c in page["vel"].items()}
@@ -192,18 +206,24 @@ def main():
     kits = lambda k, kind: [[int(v) for v in e[1]] for e in W(k) if e[0] == kind]
 
     # The pattern after each window, step by step through the driver's presses.
-    pat = {"RESTORE": list(seed)}
+    pat = {"RESTORE": list(seed), "NINE": list(seed), "THREE": list(seed)}
     p = list(seed)
-    for k, edits in (("VEL-2", {}), ("STEPS-T1", {(1, 1): 32, (1, 5): 32}), ("PAD-2", {}),
-                     ("STEP-T2", {(2, 1): 32}), ("VEL-6", {}), ("RULE-ON", {(2, 13): 95}),
-                     ("RULE-SAME", {(2, 13): 0}), ("RULE-ON-AGAIN", {(2, 13): 95}),
-                     ("VEL-2-AGAIN", {}), ("RULE-OTHER", {(2, 13): 0})):
+    for k, edits in (("ROW-PRESS", {(1, 7): 95}), ("ROW-DARK", {}), ("SEVEN", {}),
+                     ("VEL-2", {}), ("STEPS-T1", {(1, 1): 32, (1, 5): 32}), ("PAD-2", {}),
+                     ("STEP-T2", {(2, 1): 32}), ("VEL-6", {}), ("RULE-ON", {(2, 12): 95}),
+                     ("RULE-SAME", {(2, 12): 0}), ("RULE-ON-AGAIN", {(2, 12): 95}),
+                     ("VEL-2-AGAIN", {}), ("RULE-OTHER", {(2, 12): 0})):
         for (t, s), v in edits.items():
             p[idx(t, s)] = v
         pat[k] = list(p)
     final = pat["RULE-OTHER"]
-    track = {"RESTORE": 1, "VEL-2": 1, "STEPS-T1": 1}
-    lvl = {"RESTORE": 6, "VEL-2": 2, "STEPS-T1": 2, "PAD-2": 2, "STEP-T2": 2,
+    # The put at 3/4 holds that time signature; the pattern after it is the seed's 7/8 again.
+    at34 = list(pat["ROW-PRESS"])
+    at34[NUM], at34[NUM + 1] = 3, 4
+    track = {"RESTORE": 1, "NINE": 1, "THREE": 1, "ROW-PRESS": 1, "ROW-DARK": 1, "SEVEN": 1,
+             "VEL-2": 1, "STEPS-T1": 1}
+    lvl = {"RESTORE": 6, "NINE": 6, "THREE": 6, "ROW-PRESS": 6, "ROW-DARK": 6, "SEVEN": 6,
+           "VEL-2": 2, "STEPS-T1": 2, "PAD-2": 2, "STEP-T2": 2,
            "VEL-6": 6, "RULE-ON": 6, "RULE-SAME": 6, "RULE-ON-AGAIN": 6,
            "VEL-2-AGAIN": 2, "RULE-OTHER": 2}
 
@@ -211,7 +231,8 @@ def main():
         fs = frames(k)
         if not fs:
             return "no frame in the window"
-        return page_check(fs[-1], lay, pat[k], t or track.get(k, 2), lvl[k])
+        return page_check(fs[-1], lay, pat[k], t or track.get(k, 2), lvl[k],
+                          sig=SIGS.get(k, (EVERY, ROW)))
 
     print("\n--- before the restore ---")
     A.check("a pad plays at 300 ms, before anything is restored -- pad 1, the bottom-left, "
@@ -224,7 +245,8 @@ def main():
             "%d put(s) of %s; the first holds %s values" % (
                 len(puts("RESTORE")), KEY, len(puts("RESTORE")[0]) if puts("RESTORE") else 0))
     prob = page_in("RESTORE")
-    A.check("... and the page shows it: track 1's seeded steps, level 6 and pad 1 lit",
+    A.check("⛔ ... and the page shows it at its 7/8: rows of 7 steps, each row's first blue and "
+            "its eighth cell dark, track 1's seeded steps, level 6 and pad 1 lit",
             prob is None, prob)
     want = [[t, seed[VOL + t - 1]] for t in range(1, 17)]
     A.check("⛔ ... and c_kit hears every track's volume, track 16's seeded %d dB among them"
@@ -234,6 +256,35 @@ def main():
     A.check("⛔ ... and every track's pitch, track 3's seeded %+d semitones among them"
             % seed[PITCH + 2], kits("RESTORE", "KITPITCH") == want and seed[PITCH + 2] != 0,
             "KITPITCH %s, want %s" % (kits("RESTORE", "KITPITCH"), want))
+
+    print("\n--- the time signature ---")
+    sig = lambda k: [(l[NUM], l[NUM + 1]) for l in puts(k)]
+    A.check("the top number up two over OSC, as the phone sends it, is put each step: 8/8, "
+            "then 9/8", sig("NINE") == [(8, 8), (9, 8)], "time signatures put: %s" % sig("NINE"))
+    prob = page_in("NINE")
+    A.check("⛔ at 9/8 the rows are 8 steps and every 9th step is blue, wrapping across the rows: "
+            "steps 1 and 10, the second row's second cell, under the last step, 16",
+            prob is None, prob)
+    A.check("down six and the bottom number down one: 3/4, put each step",
+            len(sig("THREE")) == 7 and sig("THREE")[-2:] == [(3, 8), (3, 4)],
+            "time signatures put: %s" % sig("THREE"))
+    prob = page_in("THREE")
+    A.check("⛔ at 3/4 the rows are 6 steps, every 3rd step blue, each row's first and fourth "
+            "cells, and each row's last two cells dark", prob is None, prob)
+    A.check("⛔ at 3/4 the second row's first cell is step 7: put with track 1's step 7 at 95",
+            puts("ROW-PRESS") == [at34], "%d put(s); track 1's step 7 put as %s" % (
+                len(puts("ROW-PRESS")),
+                [l[idx(1, 7)] for l in puts("ROW-PRESS")]))
+    prob = page_in("ROW-PRESS")
+    A.check("... and the page lights it there", prob is None, prob)
+    A.check("⛔ the top row's seventh cell, past a row of 6, does nothing: no put, no note",
+            not puts("ROW-DARK") and not ons("ROW-DARK"),
+            "puts %d, note-ons %s" % (len(puts("ROW-DARK")), ons("ROW-DARK")))
+    A.check("back to 7/8, four up and the bottom number up one, put each step",
+            len(sig("SEVEN")) == 5 and sig("SEVEN")[-1:] == [(7, 8)],
+            "time signatures put: %s" % sig("SEVEN"))
+    prob = page_in("SEVEN")
+    A.check("... and the page is rows of 7 again", prob is None, prob)
 
     print("\n--- editing ---")
     prob = page_in("VEL-2")
@@ -258,10 +309,10 @@ def main():
                     ("RULE-SAME", "the selected velocity again turns it off -- 0"),
                     ("RULE-OTHER", "another velocity turns it off too -- 0, not 32")):
         prob = page_in(k)
-        got = puts(k)[-1][idx(2, 13)] if puts(k) else None
+        got = puts(k)[-1][idx(2, 12)] if puts(k) else None
         A.check("⛔ the step rule: %s" % what,
                 puts(k)[-1:] == [pat[k]] and prob is None,
-                prob or "track 2 step 13 put as %s, want %d" % (got, pat[k][idx(2, 13)]))
+                prob or "track 2 step 12 put as %s, want %d" % (got, pat[k][idx(2, 12)]))
 
     quiet = [(k, ons(k)) for k in EDITS if k != "PAD-2" and ons(k)]
     A.check("no step or velocity press plays a note", not quiet, quiet)
@@ -296,7 +347,7 @@ def main():
     bad = [(s, n, want.get(s)) for s, n in run if s not in want or n != want[s]]
     A.check("⛔ every step plays exactly its tracks -- pad and velocity, "
             "%d steps" % len(run), bool(run) and not bad, "wrong: %s" % bad[:4])
-    # PLAY at 7220 ms and STOP at 9820, at 120 BPM: eight sixteenths a second
+    # PLAY at 8420 ms and STOP at 11020, at 120 BPM: eight sixteenths a second
     # from about 10 ms in is 21 steps, with most of a step's margin either side.
     walk = [s for s, _n in run]
     A.check("⛔ sixteen steps to the bar, walking 1 to 16 and wrapping -- 21 in 2.6 s "
@@ -306,7 +357,7 @@ def main():
     # exactly one, over the pattern as it stands.
     shown, off = 0, []
     for f in frames("PLAY"):
-        _p, _l, page = G.drum_page(f, lay)
+        _p, _l, page = G.drum_page(f, lay, ROW)
         h = [n for n, c in page["step"].items() if c == G.PLAYHEAD]
         if h:
             shown += 1
@@ -323,8 +374,8 @@ def main():
             page_check(lit[0], lay, final, 2, 2) if lit else "no frame")
     print("\n--- the last step ---")
     rows = knob_rows("KNOB2-HELD", "last-step")
-    A.check("⛔ knob 2 starts HELD at 16: at step 7 it draws last-step 16 (7) and changes nothing",
-            rows == [["last-step", "16", "(7)"]] and not puts("KNOB2-HELD"), rows)
+    A.check("⛔ knob 2 starts HELD at 16: at step 6 of 7/8's 28 it draws last-step 16 (6) and "
+            "changes nothing", rows == [["last-step", "16", "(6)"]] and not puts("KNOB2-HELD"), rows)
     rows = knob_rows("LAST-3", "last-step")
     A.check("turned through 16 it is live -- last-step 17, then last-step 3",
             rows == [["last-step", "17"], ["last-step", "3"]], rows)
@@ -347,8 +398,8 @@ def main():
 
     print("\n--- knob 3, track 2's own last step ---")
     rows = knob_rows("KNOB3", "pad2-last")
-    A.check("⛔ held at track 2's last step, 3, then turned through it -- 3 (7), then 1, then 6",
-            rows == [["pad2-last", "3", "(7)"], ["pad2-last", "1"], ["pad2-last", "6"]], rows)
+    A.check("⛔ held at track 2's last step, 3, then turned through it -- 3 (6), then 1, then 6",
+            rows == [["pad2-last", "3", "(6)"], ["pad2-last", "1"], ["pad2-last", "6"]], rows)
     got = [own(l, 2) for l in puts("KNOB3")]
     A.check("... and saved with the pattern, each time it changed -- 1, then 6", got == [1, 6],
             "track 2's own last step in the puts: %s" % got)
@@ -392,7 +443,7 @@ def main():
     for mark, kind, x in evs:
         if kind != "FRAME":
             continue
-        _p, _l, page = G.drum_page(x, lay)
+        _p, _l, page = G.drum_page(x, lay, row_of(mark))
         h = [n for n, c in page["step"].items() if c == G.PLAYHEAD]
         h = h[0] if len(h) == 1 else None
         if h is not None and h != last_head:
@@ -423,10 +474,10 @@ def main():
             "steps %s, note-ons %s" % (moved("REP-HELD"), ons("REP-HELD")))
     A.check("⛔ let go, the loop goes on from where it would have been -- 2 then 3, not 1",
             moved("REP-OFF") == [2, 3], "steps %s" % moved("REP-OFF"))
-    held = [G.drum_page(f, lay)[2]["rep"] for f in frames("REP-HELD")[-1:]]
+    held = [G.drum_page(f, lay, ROW)[2]["rep"] for f in frames("REP-HELD")[-1:]]
     A.check("⛔ held, repeat pad 1 is bright purple and the other three dim",
             held == [{1: G.REP_HELD, 2: G.REP_DIM, 3: G.REP_DIM, 4: G.REP_DIM}], held)
-    gone = [G.drum_page(f, lay)[2]["rep"] for f in frames("REP-OFF")[-1:]]
+    gone = [G.drum_page(f, lay, ROW)[2]["rep"] for f in frames("REP-OFF")[-1:]]
     A.check("... and let go, all four dim", gone == [{k: G.REP_DIM for k in range(1, 5)}], gone)
 
     print("\n--- the drum screen's pads ---")

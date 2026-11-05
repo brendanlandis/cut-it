@@ -38,9 +38,9 @@ kit*, below.
 |---|---|---|
 | Creation arg 1 | Its bank, 1–10, 1 for A, **vestigial**: from when the SP-404 played the drums, which left the rig on 2026-11-04. Track *n* is pad (bank − 1) × 16 + *n*, and `c_kit` plays pads 1–16 only. It stays because dropping it would move arg 2 and the state key named for it | unknown |
 | Creation arg 2 | The part its pattern is stored as in a section: `drums` | unknown |
-| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, `rep <n> <vel>`, from `u_map`'s `drum-page` destination, presses and releases (velocity 0); `last`, `track-last` and `swing <0-1>`, knobs 2 to 4, from its `drums` destination, whose map rows name each: knobs 2 and 4 on every page, knob 3 on page 2 alone (Brendan, 2026-11-04); `sync`, `snap` and `select <n>`, the phone's drum screen, and `vol`, `pitch`, `randomness` and `set-track-last <track> <value>`, its pads dragged, and `num` and `den <-1 or 1>`, `drunk <0-100>`, `set-swing <50-75>` and `set-last <1-32>`, its arrangement screen, from `u_net`'s first outlet. Anything else is `fail c_steps bad-selector` | unknown |
+| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, `rep <n> <vel>`, from `u_map`'s `drum-page` destination, presses and releases (velocity 0), a `step`'s *n* the layout table's step cell, 1 to 32 (*The rows of steps*, below); `last`, `track-last` and `swing <0-1>`, knobs 2 to 4, from its `drums` destination, whose map rows name each: knobs 2 and 4 on every page, knob 3 on page 2 alone (Brendan, 2026-11-04); `sync`, `snap` and `select <n>`, the phone's drum screen, and `vol`, `pitch`, `randomness` and `set-track-last <track> <value>`, its pads dragged, and `num` and `den <-1 or 1>`, `drunk <0-100>`, `set-swing <50-75>` and `set-last <1-32>`, its arrangement screen, from `u_net`'s first outlet. Anything else is `fail c_steps bad-selector` | unknown |
 | Outlet 1 | `pad <1..160> <velocity>`, and a track's `vol <pad> <dB>` and `pitch <pad> <semitones>`, every track's at a restore and one when the phone changes it, to `c_kit` | unknown |
-| Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <32 levels>` for the selected track, each step's velocity level, 0 for off, `play <step>` (0 while stopped), `vel <level>`, `track <pad>`, `last <step>` for the selected track, `bar <steps>`, a bar of the time signature, and `rep <pad>`, the repeat pad held, 0 for none | unknown |
+| Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <32 levels>` for the selected track, each step's velocity level, 0 for off, `play <step>` (0 while stopped), `vel <level>`, `track <pad>`, `last <step>` for the selected track, `bar <N> <row>`, the time signature as the page shows it, a blue step every *N* and *row* steps to a row, and `rep <pad>`, the repeat pad held, 0 for none | unknown |
 | Outlet 3 | The phone's state, to `u_net`'s second inlet: 88 numbers, `R.phone`, sent by the Pd face only when they change, for the drum and arrangement screens ([phone.md](../device/phone.md)) | unknown |
 | Outlet 4 | `bar`, to `u_song`'s third inlet, on the step the global loop wraps after: a bar is the pattern's loop (Brendan, 2026-11-05), the time signature no part of it ([songs.md](songs.md)) | unknown |
 | `disp` | Knobs 2 to 4's rows: `last-step 12`, `pad2-last 6`, `swing 62 %`, and held, `last-step 16 (7)` | unknown |
@@ -52,27 +52,29 @@ kit*, below.
 | A step | Sixteen to a bar, cut from the sequencer's own phase, a pair of steps a cycle, which runs at `c_clock 1 4`'s rate times the Lua's: swung, then ×2, `wrap~`, and a `threshold~` on its fall, and sent to the Lua as `tick` (*One phase of its own*, below) | verified |
 | When it fires | Straight and sober, a twelfth of a step after the boundary, in the block of `u_tempo`'s MIDI pulse for that sixteenth: the offset every clock in the patch shares (*Start alignment*, [tempo.md](tempo.md)). Within a block, ±1.45 ms, at 120 BPM in a test Pd (2026-11-03) | verified |
 | Swing | Knob 4, on every page (Brendan, 2026-11-04), 50% to 75%, straight at its bottom and swinging one way only (Brendan, 2026-11-05): the share of each pair of sixteenths the first one takes, so above 50% every second sixteenth comes later. Taken at the next pair. Held at 50% at load, as knob 2 at 16, and since 50% is the knob's bottom, held until turned all the way down; saved, a section's. 66% at 120 BPM measured 165 and 85 ms | verified |
-| The phone's swing and last step | The arrangement screen sets each as it stands, `set-swing <50-75>` and `set-last <1-32>`, where knobs 4 and 2 send knob positions through their latch (Brendan, 2026-11-04). The knob is held again at the phone's value, so its next turn waits to pass it rather than jumping back; a selected track that follows the global last step holds knob 3 again too. Saved, a section's, as the knobs' are; a message with no number does nothing | unknown |
+| The phone's swing and last step | The arrangement screen sets each as it stands, `set-swing <50-75>` and `set-last <1-32>`, the last step clipped to the time signature's reach, where knobs 4 and 2 send knob positions through their latch (Brendan, 2026-11-04). The knob is held again at the phone's value, so its next turn waits to pass it rather than jumping back; a selected track that follows the global last step holds knob 3 again too. Saved, a section's, as the knobs' are; a message with no number does nothing | unknown |
 | Drunkenness | 0 to 100 from the phone's arrangement screen: at 100 every step strays, by up to two steps longer or shorter, and low settings stay subtle (Brendan, 2026-11-05). At *x*, the slider's 0 to 1, a step strays with the chance *x*/3 + 2*x*⁴/3, by up to *x* + *x*⁴ steps, at random either way: a line, which is most of it low, plus a steep fourth power that adds the rest near the top. At 20% one step in fifteen strays, by up to a fifth of a step; at 50% one in five, by up to 0.56; at 90% three in four, by up to 1.56. A step is never less than an eighth of a step. The error stays: its own drift becomes the clock, and only PLAY puts it back on `u_tempo`'s (Brendan, 2026-11-03). Saved | verified |
-| The time signature | Two numbers from the phone's arrangement screen, the top 1 to 32 and the bottom one of 1 2 4 8 16, 4/4 at first: a bar is top × 16 / bottom steps, which the page marks. Saved | verified |
+| The time signature | Two numbers from the phone's arrangement screen, the top 1 to 32 and the bottom one of 1 2 4 8 16, 4/4 at first, both saved (Brendan, 2026-11-05). **The top number *N*** says how often the page shows a blue step, every *N* steps from step 1, whatever the subdivision, and how long a row of steps is and how far a last step reaches (*The rows of steps*, below). A change of it that moves the reach holds knobs 2 and 3 again, since a turn of either then stands for another step. **The bottom number is a matter of record only**: it changes neither the page nor how fast the steps go, which only the tempo and drunkenness set | verified |
+| The rows of steps | The page's step cells are four rows of eight, and a row holds as many groups of *N* as fit in 8, or all 8 when *N* is over 8: rows of 6 at 3/4 and 6/8, blue at a row's cells 1 and 4, or 1; 8 at 4/4, blue at 1 and 5; 5 at 5/4; 7 at 7/8; 8 at 2/4 and at 1/*x*, where every step is blue. Over 8, the blue counts straight through the pattern and wraps across the rows: at 9/8, steps 1, 10, 19 and 28. A row's cells past its steps are dark, and a press there does nothing. The step cell *n*, row *r* and column *c* from 0, is step *r* × row + *c* + 1 | verified |
+| How far a last step reaches | Four rows' worth: 24 at 3/4, 32 at 4/4, 20 at 5/4, 28 at 7/8, 32 with *N* over 8. The global last step and every track's own are clipped to it where they are used, on the page, in the loops, the bar and the phone's state, and kept as set and saved, so a time signature passed through on the way to another does not cut them short for good: 32 at 4/4 is 24 at 3/4 and 32 again at 4/4. Knobs 2 and 3 turned all the way up and the phone's `set-last` and `set-track-last` reach exactly that far | verified |
 | The repeat pads | The top row of the right 4×4, 1 to 4 from the left: held, every track replays the last 1 to 4 steps it played, while the loops go on underneath unheard; let go, every track plays on from where it would have been (Brendan, 2026-11-03). PLAY lets go | verified |
 | A track's randomness | 0 to 100, each track its own, from its pad on the drum screen (Brendan, 2026-11-05, after the Arturia DrumBrute's Randomness): at *R*% each step it plays has an *R*% chance of ignoring what is written and flipping a coin instead, played or not, and played at one of the eight levels at random. So it drops hits from a busy track and adds them to a sparse one; at 100 every step is a coin, at 0 the pattern plays as written and nothing is rolled. Fresh on every pass, a repeat's steps too. Saved | verified |
 | A track's volume and pitch | −30 to +6 dB and −12 to +12 semitones, each track its own, 0 at first, from its pad on the drum screen: each is saved and goes to `c_kit` for that track's pad, which plays it from the next hit (*The kit*, below). A restore sends every track's | verified |
-| A track's last step from the phone | `set-track-last <track> <1-32>`, from its pad, as knob 3 sets the selected track's: the step a track already has changes nothing, so one that follows the global step goes on following; set for the selected track, it holds knob 3 again. Saved | verified |
+| A track's last step from the phone | `set-track-last <track> <1-32>`, from its pad, clipped to the reach, as knob 3 sets the selected track's: the step a track already has changes nothing, so one that follows the global step goes on following; set for the selected track, it holds knob 3 again. Saved | verified |
 | On a step | The global loop moves on, then every track moves on in its own loop, wrapping after its own last step; every track plays the step it is heard at (a repeat's, while one is held), its note at its velocity if 1 or more, or as its randomness flips it, track 1 first, all in one logical instant. Then the playhead moves, to the selected track's step, and the step's drunk length goes to the clock | verified |
 | PLAY (`start`) | Starts every loop at step 1, the phase on the beat at its own rate, and lets go of a held repeat | verified |
 | STOP (`stop`) and `panic` | Stop it, and put the playhead out | unknown |
 | A pad press | Plays that pad now, at full velocity however hard it is pressed (Brendan, 2026-11-04), and selects it as the track being edited | unknown |
 | A velocity press | Selects level *n*, velocity round(127·*n*/8): 16 32 48 64 79 95 111 127 | unknown |
 | A step's level, whose color it takes | (*v* − 1) div 16 + 1, 0 for off, so each level's own velocity is that level. Worked out here and sent to `g_grid`, the one place the rule is | verified |
-| A step press | Off takes the selected velocity; on, at any velocity, turns off (Brendan, 2026-11-03). Past the selected track's last step, nothing. A release of a step, a velocity or a pad does nothing | unknown |
-| The global last step | Knob 2, on every page (Brendan, 2026-11-04), 1–32, for every track that has no last step of its own (Brendan, 2026-11-03). Steps past it keep their notes, unplayed and dark. Saved, a section's | unknown |
-| A track's own last step | Knob 3, on page 2 alone, where the track is selected, 1–32, for the selected track, saved with the pattern. Released at the step a following track already has, it goes on following | unknown |
+| A step press | On the step its cell is in the rows (*The rows of steps*): off takes the selected velocity; on, at any velocity, turns off (Brendan, 2026-11-03). Past its row, or past the selected track's last step, nothing. A release of a step, a velocity or a pad does nothing | unknown |
+| The global last step | Knob 2, on every page (Brendan, 2026-11-04), 1 to the time signature's reach, 32 at 4/4, for every track that has no last step of its own (Brendan, 2026-11-03). Steps past it keep their notes, unplayed and dark. Saved, a section's | unknown |
+| A track's own last step | Knob 3, on page 2 alone, where the track is selected, 1 to the reach, for the selected track, saved with the pattern. Released at the step a following track already has, it goes on following | unknown |
 | The knobs' latch | At load knobs 2 and 3 are held at 16 and knob 4 at 50%, and knob 3 again whenever another track is selected, or the global last step moves while the selected track follows it: held until turned to or through the step it stands for, which for knob 4 at 50%, its bottom, is all the way down. A held knob changes nothing and draws its row with its own value in brackets | verified |
 | `sync` (the drum screen's "sync first steps") | When the global loop next comes round to its step 1, every track goes back to its own step 1 there, keeping its own last step | verified |
 | `snap` (its "snap to global") | The same, and at that step every track gives up its own last step, saved. Stopped, it lands at PLAY | verified |
 | At load | Track 1, level 6 (95), last step 16 with knobs 2 and 3 held there, swing 50% with knob 4 held there, stopped; every track at 0 dB, its own pitch and no randomness until the restore. The pattern is put at once, so the section playing holds the drums from the start | unknown |
-| A bar | Ends on the step after which the global loop comes round to its step 1, counted on the machine's own steps from PLAY: the 16th with the global last step at 16, the 12th at 12, however the time signature reads and however drunk. A global last step moved under the loop's place wraps into it with no bar there. `bar` is the step's last answer, after its notes | verified |
+| A bar | Ends on the step after which the global loop comes round to its step 1, counted on the machine's own steps from PLAY: the 16th with the global last step at 16, the 12th at 12, however the time signature reads and however drunk, but no further than its reach: a global last step of 32 at 3/4 ends a bar on the 24th. A global last step moved under the loop's place wraps into it with no bar there. `bar` is the step's last answer, after its notes | verified |
 | A section's restore | Starts every loop, the global one and each track's, again at step 1 on the next step, as PLAY does: so a section whose global last step differs from the one before starts on its own step 1, not the old loop's place plus one | verified |
 
 ### Where each part lives
@@ -209,9 +211,26 @@ object fails to create and the sequencer says `no-lua`.
 
 ### The layout table is not this file's
 
-`c_steps` never reads `cut-it-drum-page.txt`. `u_map` turns a pad into a step and `g_grid` turns a
-step into a cell, from the same table ([display.md](display.md)), so the sequencer's vocabulary is
-the table's roles and nothing about the surface.
+`c_steps` never reads `cut-it-drum-page.txt`. `u_map` turns a pad into a step cell and `g_grid`
+lights a cell, from the same table ([display.md](display.md)), so the sequencer's vocabulary is
+the table's roles and nothing about the surface. **What it does know is the step cells' shape**,
+four rows of eight numbered along the rows, since the time signature's top number sets how many
+of a row's cells hold steps (Brendan, 2026-11-05): `R.cell_step` turns a press's cell into its
+step, and `g_grid` does the same sum for each cell it paints, from the row length `c_steps` sends
+in `bar <N> <row>`. Where the cells sit is still only the table's.
+
+### The time signature shapes the page, not the clock
+
+A bar of *N* × 16 / *D* steps with only its first step blue had no bearing on the page Brendan
+could read: at 3/4, steps 1, 13 and 25, wherever they fell in rows of eight (he reported it as a
+bug, 2026-11-05). So *N* marks every *N*th step, and a row holds whole groups of *N*, so 3/4's
+beats line up down the columns; four rows is the pattern's reach, so a 32-step pattern fits only
+where a row is eight. The bottom number is
+kept for the record and the phone, and touches nothing else: the steps were never timed by it, and
+the bar a queued section waits for is the pattern's loop ([songs.md](songs.md)). **A last step past
+the reach is clipped where it is used and kept as set**, because the top number is stepped one at
+a time on the phone: 4/4 to 8/8 passes 5/4, whose 20 would otherwise cut a last step of 32 short
+for good.
 
 ### One phase of its own
 
@@ -304,6 +323,9 @@ loop's place means nothing in a loop of another length.
   Launchpad's heartbeat waited for it ([launchpad](../device/launchpad.md)).
 - ⬜ **Swing, drunkenness, randomness and the tracks' volume and pitch have not played on the
   rig**, nor have the phone's controls for them (the drum screen's radio and its pads' drags) or
-  the page's blue bars. See `cut-it/drum-timing`.
+  the page's rows and blue steps under the time signature. See `cut-it/drum-timing`.
+- ⬜ **The drum screen's pads, showing last steps, still drag 1 to 32**: `c_steps` clips a pad's
+  step to the time signature's reach, so past it a drag changes nothing until it comes back under.
+  The arrangement screen's box reaches exactly that far. See `cut-it/drum-timing`.
 - ⬜ **The Lua version has not played on the rig**: its CPU beside the Pd version's 11.2% with the
   drum machine playing (`~/Sites/!reference/pure-data.md`, *Newer versions on the Organelle*) is unmeasured. See `cut-it/logic-as-text`.

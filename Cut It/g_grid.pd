@@ -360,7 +360,6 @@
 #X obj 2100 1240 f 1;
 #X obj 2250 1190 - 1;
 #X obj 2250 1270 + 128;
-#X connect 63 0 66 0;
 #X connect 75 0 76 0;
 #X connect 76 0 77 0;
 #X connect 77 0 78 0;
@@ -394,7 +393,7 @@
 #X connect 88 0 89 0;
 #X connect 89 0 90 0;
 #X text 1300 170 C-8: select 2's reject carries the page itself \, so t b b turns it into the beat row's two bangs., f 40;
-#X text 2100 1420 Page 2 is the drum page: the beat row gives way \, and each row of the layout table paints one cell. A step is dim when off \, its velocity's color when on \, white for the softest to red for the loudest \, green under the playhead \, and dark past the selected track's last step. Each velocity button is its own color \, the selected pad the selected velocity's \, the other pads dimmer than any button. A bar's first step is blue \, unless it is lit \, and dark past the last step like the rest. The top row of the right 4x4 is the repeat pads \, dim purple \, the one held bright., f 60;
+#X text 2100 1420 Page 2 is the drum page: the beat row gives way \, and each row of the layout table paints one cell. The step cells are four rows of eight \, and c_steps' bar says how many of a row's eight hold steps: a cell is the step its row and column mean \, row r and column c from 0 being step r x row + c + 1 \, and a cell past the row is dark. A step is dim when off \, its velocity's color when on \, white for the softest to red for the loudest \, green under the playhead \, and dark past the selected track's last step. Each velocity button is its own color \, the selected pad red and the other pads bright pink. Every Nth step from step 1 is blue \, N the time signature's top number \, unless it is lit \, and dark past the last step like the rest. The top row of the right 4x4 is the repeat pads \, dim purple \, the one held bright., f 60;
 #X obj 2100 1000 t f f f;
 #X obj 2180 1100 <= 16;
 #X obj 2280 1060 r \$0-dlast;
@@ -403,7 +402,7 @@
 #X obj 2350 1060 +;
 #X obj 2350 1110 + 135;
 #X text 2620 1020 The selected pad is 154 \, red \, and the rest 144 \, bright pink (Brendan \, 2026-11-05): near black they read too indistinct \, and a dim pink with a bright one too faint., f 30;
-#X text 2100 1560 A step past the last step is dark \, lit or not: <= gives 1 inside and 0 past it \, which is the off color and gates the on one. A color of 128 or more is an RGB entry in paint's table: 128 + level - 1 at full brightness \, 136 + level - 1 at a quarter \, 144 for a pad not selected \, bright pink \, and 154 for the selected pad \, red (Brendan \, 2026-11-05). 145 is a bar's first step \, blue: the off color is inside x (1 + 144 x ((step - 1) mod bar == 0)) \, so 1 \, 145 or 0 \, dark. 146 is a repeat pad \, 147 the one held. A step is the level c_steps sends \, 0 for off \, and a velocity button its own level \, full when selected., f 60;
+#X text 2100 1560 A step past the last step is dark \, lit or not: <= gives 1 inside and 0 past it \, which is the off color and gates the on one. A cell past its row gets step 33 \, past every last step \, so it is dark the same way. A color of 128 or more is an RGB entry in paint's table: 128 + level - 1 at full brightness \, 136 + level - 1 at a quarter \, 144 for a pad not selected \, bright pink \, and 154 for the selected pad \, red (Brendan \, 2026-11-05). 145 is a blue step \, every Nth: the off color is inside x (1 + 144 x ((step - 1) mod N == 0)) \, so 1 \, 145 or 0 \, dark. 146 is a repeat pad \, 147 the one held. A step is the level c_steps sends \, 0 for off \, and a velocity button its own level \, full when selected., f 60;
 #X connect 66 1 93 0;
 #X connect 93 0 75 0;
 #X connect 93 2 94 0;
@@ -423,7 +422,7 @@
 #X obj 2850 1160 s \$0-dcol;
 #X connect 61 3 103 0;
 #X obj 2580 1080 - 1;
-#X obj 2580 1120 mod 16;
+#X obj 2580 1120 mod 4;
 #X obj 2660 1080 r \$0-dbar;
 #X obj 2580 1160 == 0;
 #X obj 2580 1200 * 144;
@@ -604,6 +603,12 @@
 #X connect 183 1 184 0;
 #X connect 184 0 175 1;
 #X connect 183 0 175 0;
+#X obj 1640 950 expr if((\$f1 - 1) % 8 < \$f2 \, int((\$f1 - 1) / 8) * \$f2 + (\$f1 - 1) % 8 + 1 \, 33);
+#X obj 2000 900 r \$0-drow;
+#X text 1300 1700 A step cell's number in the layout table is its place in four rows of eight \, and the expr turns it into the step it shows: row r and column c from 0 are step r x row + c + 1 \, row the steps in a row from c_steps' bar <N> <row> (ref/module/display.md). A cell past the row is 33 \, past every last step \, so dark. Until c_steps says \, row is 0 and every step cell dark., f 40;
+#X connect 63 0 186 0;
+#X connect 186 0 66 0;
+#X connect 187 0 186 1;
 #X restore 900 330 pd regions;
 #X text 900 430 The fill is the clear: every frame writes all 108 cells first. t b b f stores the color \, resets the counter \, then runs the loop., f 50;
 #X text 900 600 The counter reset goes into the cold inlet off the rightmost outlet \, so a loop never starts where the last one stopped., f 50;
@@ -780,12 +785,11 @@
 #X connect 51 0 52 0;
 #X connect 56 0 57 0;
 #X connect 57 0 58 0;
-#X text 2100 1100 inlet 2 carries meaning \, never a cell: steps and the selected track's 32 levels \, play and the playhead's step \, vel and the selected level \, track and the selected pad \, last and the last step. cut-it-drum-page.txt says which cell is which \, and u_map reads the same file \, so a press and its lamp cannot disagree. C-5, f 50;
+#X text 2100 1100 inlet 2 carries meaning \, never a cell: steps and the selected track's 32 levels \, play and the playhead's step \, vel and the selected level \, track and the selected pad \, last and the last step \, bar <N> <row> \, a blue step every N and the steps in a row of the page \, and rep and the repeat pad held. cut-it-drum-page.txt says which cell is which \, and u_map reads the same file \, so a press and its lamp cannot disagree. C-5, f 50;
 #X obj 1180 1000 s \$0-dlast;
 #X connect 45 4 60 0;
-#X obj 1300 1000 s \$0-dbar;
+#X obj 1340 1200 s \$0-dbar;
 #X obj 1420 960 s \$0-drep;
-#X connect 45 5 61 0;
 #X connect 45 6 62 0;
 #X obj 2700 720 inlet;
 #X obj 2700 780 route synth;
@@ -875,3 +879,8 @@
 #X connect 98 2 105 0;
 #X connect 105 0 106 0;
 #X connect 106 0 107 0;
+#X obj 1300 1000 unpack f f;
+#X obj 1440 1200 s \$0-drow;
+#X connect 110 0 61 0;
+#X connect 110 1 111 0;
+#X connect 45 5 110 0;

@@ -159,10 +159,11 @@ equal("a new sequencer holds 512 zeros, every track following the global last st
 equal("... and starts on track 1 at level 6, the last step 16", { st.track, st.level, st.last },
       { 1, 6, 16 })
 local BOOT = { { "page", "vel", { 6 } }, { "page", "track", { 1 } }, { "page", "last", { 16 } },
-               { "page", "steps", zeros(32) }, { "page", "bar", { 16 } }, { "page", "rep", { 0 } },
+               { "page", "steps", zeros(32) }, { "page", "bar", { 4, 8 } }, { "page", "rep", { 0 } },
                { "clock", "swing", { 0.5 } }, { "clock", "rate", { 1 } },
                { "save", "list", line(zeros(CELLS)) } }
-equal("init draws the selection -- vel 6, track 1, last 16, track 1's 32 steps, a bar of 16, no "
+equal("init draws the selection -- vel 6, track 1, last 16, track 1's 32 steps, a blue cell "
+      .. "every 4 in rows of 8, no "
       .. "repeat -- sets the step clock straight, and puts the pattern, so the section playing "
       .. "holds the drums from the start", R.internal.init(st, {}), BOOT)
 equal("the bank is clipped to 1..10, as [clip 1 10]",
@@ -349,7 +350,7 @@ equal("a restore takes the 512 and the 16 last steps, puts them straight back, r
       .. "tells c_kit every track's volume and pitch",
       R.internal.restore(st, line(pat, own)),
       cat({ { "save", "list", line(pat, own) }, { "page", "last", { 16 } },
-            { "page", "steps", row(pat, 1) }, { "page", "bar", { 16 } },
+            { "page", "steps", row(pat, 1) }, { "page", "bar", { 4, 8 } },
             { "clock", "swing", { 0.5 } } }, kit()))
 equal("... and the pattern and the last steps are the line's", { st.pattern, st.own }, { pat, own })
 local old = zeros(256)
@@ -498,26 +499,155 @@ equal("⛔ a section's restore at the end of a bar starts every loop at step 1 o
 equal("... and its bar is its own 32 steps: it ends 30 steps after those two", bars(st, 32), { 30 })
 
 print("\n--- the time signature ---")
+-- The top number N sets the page's rows and its blue cells, and how far a last step reaches; the
+-- bottom number is a matter of record only (Brendan, 2026-11-05).
 st = R.new(1)
 local function x(k, v) local t = {} t[k] = v return t end
-equal("the top number steps up by one: 5/4 is a bar of 20 steps, saved, and the page lights it",
+equal("⛔ the top number steps up by one: 5/4, saved, and the page gets a blue cell every 5 in "
+      .. "rows of 5, and the selected track's last step again",
       R.presses.num(st, { 1 }), { { "save", "list", line(zeros(CELLS), nil, x("num", 5)) },
-                                  { "page", "bar", { 20 } } })
-R.presses.num(st, { -1 })
-R.presses.num(st, { 1 })
-R.presses.num(st, { 1 })
-R.presses.num(st, { 1 })
-equal("the bottom number steps through 1 2 4 8 16: 7/8 is 14 steps",
-      R.presses.den(st, { 1 })[2], { "page", "bar", { 14 } })
-equal("... 7/16 is 7, and it stops at 16", { R.presses.den(st, { 1 })[2][3][1],
-                                             R.presses.den(st, { 1 })[2][3][1], st.den }, { 7, 7, 16 })
-for _ = 1, 6 do R.presses.den(st, { -1 }) end
-equal("... and at 1 at the other end: 7/1 is 112", { st.den, R.bar(st) }, { 1, 112 })
-for _ = 1, 40 do R.presses.num(st, { 1 }) end
-equal("the top number stops at 32 and at 1", { st.num, (function()
+                                  { "page", "bar", { 5, 5 } }, { "page", "last", { 16 } } })
+equal("the top number stops at 32 and at 1", { (function()
+  for _ = 1, 40 do R.presses.num(st, { 1 }) end
+  return st.num
+end)(), (function()
   for _ = 1, 40 do R.presses.num(st, { -1 }) end
   return st.num
 end)() }, { 32, 1 })
+local rows, reaches = {}, {}
+for n = 1, 12 do
+  st.num = n
+  rows[n], reaches[n] = R.row(st), R.reach(st)
+end
+equal("⛔ a row holds as many groups of N as fit in 8, and all 8 over 8: 1/x to 12/x",
+      rows, { 8, 8, 6, 8, 5, 6, 7, 8, 8, 8, 8, 8 })
+equal("⛔ ... and a last step reaches four rows: 24 at 3/4, 32 at 4/4, 20 at 5/4, 28 at 7/8",
+      reaches, { 32, 32, 24, 32, 20, 24, 28, 32, 32, 32, 32, 32 })
+st.num = 32
+equal("... and at 32/x, rows of 8 and 32 steps, a blue cell every 32", { R.row(st), R.reach(st),
+      R.page_bar(st) }, { 8, 32, { "page", "bar", { 32, 8 } } })
+st.num = 6
+equal("6/8 is rows of 6 with a blue cell every 6, and 9/8 rows of 8 with one every 9",
+      { R.page_bar(st), (function() st.num = 9 return R.page_bar(st) end)() },
+      { { "page", "bar", { 6, 6 } }, { "page", "bar", { 9, 8 } } })
+st = R.new(1)
+equal("⛔ the bottom number is a matter of record: saved, and nothing for the page or the step "
+      .. "clock", R.presses.den(st, { 1 }), { { "save", "list", line(zeros(CELLS), nil, x("den", 8)) } })
+equal("it steps through 1 2 4 8 16 and stops at 16, and at 1 at the other end",
+      { (R.presses.den(st, { 1 }) and st.den), (R.presses.den(st, { 1 }) and st.den),
+        (function() for _ = 1, 6 do R.presses.den(st, { -1 }) end return st.den end)() },
+      { 16, 16, 1 })
+R.internal.start(st, {})
+local clocked = {}
+for _ = 1, 32 do
+  for _, e in ipairs(R.internal.tick(st, {})) do
+    if e[1] == "clock" then clocked[#clocked + 1] = e end
+  end
+end
+for _ = 1, 4 do R.presses.den(st, { 1 }) end
+for _ = 1, 32 do
+  for _, e in ipairs(R.internal.tick(st, {})) do
+    if e[1] == "clock" then clocked[#clocked + 1] = e end
+  end
+end
+equal("⛔ ... so the steps go at the same rate at 4/1 and 4/16: sober, no tick changes the clock",
+      clocked, {})
+
+print("\n--- the rows of steps ---")
+-- A press on a step cell, 1 to 32 along the four rows of eight as the layout table numbers them,
+-- is the step its row and column mean: row r and column c, from 0, are step r x row + c + 1.
+-- -> the step of the selected track it turned on, which is then turned off again, or "nothing".
+local function lands(st, cell)
+  local before = {}
+  for s = 1, 32 do before[s] = st.pattern[R.index(st.track, s)] end
+  local out = R.presses.step(st, { cell, 100 })
+  for s = 1, 32 do
+    if st.pattern[R.index(st.track, s)] ~= before[s] then
+      st.pattern[R.index(st.track, s)] = before[s]
+      return s
+    end
+  end
+  return #out == 0 and "nothing" or "an answer and no step"
+end
+local function cells(st, list)
+  local got = {}
+  for i, c in ipairs(list) do got[i] = lands(st, c) end
+  return got
+end
+st = R.new(1)
+R.presses["set-last"](st, { 32 })
+equal("4/4, rows of 8: each cell is its own step, 1 to 32", cells(st, { 1, 8, 9, 25, 32 }),
+      { 1, 8, 9, 25, 32 })
+R.presses.num(st, { -1 })
+equal("⛔ 3/4, rows of 6: a row's first six cells are its steps, the next row goes on from 7, the "
+      .. "fourth ends at 24, and a row's seventh and eighth cells do nothing",
+      cells(st, { 1, 4, 6, 7, 8, 9, 14, 25, 30, 31, 32 }),
+      { 1, 4, 6, "nothing", "nothing", 7, 12, 19, 24, "nothing", "nothing" })
+for _ = 1, 2 do R.presses.num(st, { 1 }) end
+equal("5/4, rows of 5: the sixth cell does nothing, and the fourth row ends at 20",
+      cells(st, { 5, 6, 9, 29, 30 }), { 5, "nothing", 6, 20, "nothing" })
+for _ = 1, 4 do R.presses.num(st, { 1 }) end
+equal("9/8, rows of 8 again: each cell its own step", cells(st, { 8, 9, 32 }), { 8, 9, 32 })
+st = R.new(1)
+R.presses.num(st, { -1 })
+equal("⛔ a cell whose step is past the last step does nothing: at 3/4 with the last step 16, "
+      .. "cell 20 is step 16 and cell 21 step 17", cells(st, { 20, 21 }), { 16, "nothing" })
+equal("a press past the row answers nothing at all", R.presses.step(st, { 8, 100 }), {})
+
+print("\n--- the reach ---")
+st = R.new(1)
+R.presses["set-last"](st, { 32 })
+R.presses["set-track-last"](st, { 2, 30 })
+R.presses.num(st, { -1 })
+equal("⛔ at 3/4 the global last step, 32, and track 2's own, 30, are clipped to 24, on the phone "
+      .. "too", { R.global_last(st), R.last_of(st, 1), R.last_of(st, 2), R.phone(st)[2],
+                  R.phone(st)[5], R.phone(st)[6] }, { 24, 24, 24, 24, 24, 24 })
+R.internal.start(st, {})
+equal("⛔ ... so the pattern loops at 24: the bar ends on the 24th step and the 48th",
+      bars(st, 49), { 24, 48 })
+local held = R.save(st)[3]
+equal("... while what was set is kept and saved: 32 and 30", { held[CELLS + 69], held[CELLS + 2] },
+      { 32, 30 })
+R.presses.num(st, { 1 })
+equal("⛔ so at 4/4 again they come back: 32 and 30", { R.global_last(st), R.last_of(st, 2) },
+      { 32, 30 })
+st = R.new(1)
+R.presses.num(st, { 1 })
+equal("⛔ the phone's last steps reach exactly that far: at 5/4 a pad's 30 is 20, and set-last "
+      .. "30 too", { (R.presses["set-track-last"](st, { 3, 30 }) and st.own[3]),
+                     (R.presses["set-last"](st, { 30 }) and st.last) }, { 20, 20 })
+equal("... and 20 again, or a track's 20, changes nothing",
+      { R.presses["set-last"](st, { 20 }), R.presses["set-last"](st, { 25 }),
+        R.presses["set-track-last"](st, { 3, 26 }) }, { {}, {}, {} })
+equal("a knob's full turn is the reach: 24, 20, 28, and 32 unless given",
+      { R.knob_step(1, 24), R.knob_step(1, 20), R.knob_step(1, 28), R.knob_step(1),
+        R.knob_step(0, 20) }, { 24, 20, 28, 32, 1 })
+st = R.new(1)
+R.presses.num(st, { -1 })
+R.presses.last(st, { 0 })
+equal("⛔ at 3/4 knob 2 turned all the way up is last step 24, saved",
+      R.presses.last(st, { 1 }), { { "disp", "last-step", { 24 } },
+                                   { "save", "list", line(zeros(CELLS), nil,
+                                                          { num = 3, last = 24 }) },
+                                   { "page", "last", { 24 } } })
+R.presses.pad(st, { 2, 90 })
+R.presses["track-last"](st, { 0 })
+equal("⛔ ... and knob 3 all the way up is the selected track's 24",
+      R.presses["track-last"](st, { 1 })[1], { "disp", "pad2-last", { 24 } })
+st = R.new(1)
+R.presses.last(st, { at(16) })
+R.presses.den(st, { 1 })
+equal("knob 2 live, the bottom number moves nothing: still live",
+      R.presses.last(st, { at(10) })[1], { "disp", "last-step", { 10 } })
+for _ = 1, 4 do R.presses.num(st, { 1 }) end
+R.presses.last(st, { at(10) })
+equal("... nor does a top number with the same reach, 8 for 4", R.presses.last(st, { at(11) })[1],
+      { "disp", "last-step", { 11 } })
+R.presses.num(st, { -1 })
+equal("⛔ but a top number that moves the reach holds knobs 2 and 3 again, a turn of each now "
+      .. "standing for another step: 7/8, knob 2 at 0.9 is 25",
+      { R.presses.last(st, { 0.9 }), R.presses["track-last"](st, { 0.9 }) },
+      { { { "disp", "last-step", { 11, "(25)" } } }, { { "disp", "pad1-last", { 11, "(25)" } } } })
 
 print("\n--- the drum screen's pads ---")
 -- Each pad dragged, for its own track, selected or not (Brendan, 2026-11-05): a volume, a pitch,
@@ -757,11 +887,11 @@ local back = R.internal.restore(st, full)
 equal("a line of 581 brings back the randomness, the volumes, the pitches, the time signature, "
       .. "the drunkenness, the swing and the global last step",
       { back[4], st.randomness[2], st.vol[5], st.pitch[7], st.drunk, st.swing, st.last },
-      { { "page", "bar", { 14 } }, 30, -12, 5, 25, 60, 12 })
+      { { "page", "bar", { 7, 7 } }, 30, -12, 5, 25, 60, 12 })
 equal("⛔ ... the step clock takes the swing, and the page the last step", { back[5], back[2] },
       { { "clock", "swing", { 0.6 } }, { "page", "last", { 12 } } })
-equal("⛔ ... and knobs 2 and 4 are held at them, as at the phone's: a knob elsewhere waits",
-      { R.presses.last(st, { at(20) }), R.presses.swing(st, { 0.9 }) },
+equal("⛔ ... and knobs 2 and 4 are held at them, as at the phone's: a knob elsewhere waits, "
+      .. "knob 2's step 20 of 7/8's 28", { R.presses.last(st, { 19 / 27 }), R.presses.swing(st, { 0.9 }) },
       { { { "disp", "last-step", { 12, "(20)" } } }, { { "disp", "swing", { 60, "(73)" } } } })
 equal("⛔ ... and tells c_kit every track's volume and pitch, track 5's -12 and track 7's 5 among "
       .. "them", { #back, back[5 + 5], back[5 + 16 + 7] },
@@ -811,7 +941,7 @@ check("an object has two inlets and nine outlets", o and o.inlets == 2 and o.out
 equal("init: the page's selection on outlet 2, the drum screen's state on outlet 7, then the "
       .. "bang on outlet 5 that says it loaded",
       T.send(o, 2, "init", {}), { { 2, "vel", { 6 } }, { 2, "track", { 1 } }, { 2, "last", { 16 } },
-                                  { 2, "steps", zeros(32) }, { 2, "bar", { 16 } }, { 2, "rep", { 0 } },
+                                  { 2, "steps", zeros(32) }, { 2, "bar", { 4, 8 } }, { 2, "rep", { 0 } },
                                   { 8, "swing", { 0.5 } }, { 8, "rate", { 1 } },
                                   { 3, "list", line(zeros(CELLS)) },
                                   { 7, "list", phone(0, 16, 1, 0, {}, {}) }, { 5, "bang", {} } })

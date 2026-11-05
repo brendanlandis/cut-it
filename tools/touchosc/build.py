@@ -116,6 +116,11 @@ _STEPS_LUA = open(os.path.join(ROOT, "Cut It", "c_steps.lua"), encoding="utf-8")
 SWING = tuple(int(v) for v in re.search(r"^R\.SWING_MIN, R\.SWING_MAX = (\d+), (\d+)", _STEPS_LUA,
                                         re.M).groups())
 STEPS = 32                  # c_steps.lua's R.STEPS, the last step's range from 1
+# How far the global last step reaches, read from c_steps.lua as the swing is: four rows of the
+# drum page's eight cells, each row as many groups of the top number as fit, or all eight when it
+# is over 8 (R.ROW, R.ROWS and R.reach; Brendan, 2026-11-05). 24 at 3/4, 20 at 5/4, 32 at 4/4.
+ROW, ROWS_OF_STEPS = (int(v) for v in re.search(r"^R\.ROW, R\.ROWS = (\d+), (\d+)", _STEPS_LUA,
+                                                re.M).groups())
 DENS = [1, 2, 4, 8, 16]     # c_steps.lua's R.DENS
 MAX_NUM = 32                # c_steps.lua's R.MAX_NUM
 # A track's volume in dB and pitch in semitones, read from c_steps.lua as the swing is.
@@ -524,9 +529,9 @@ def box(name, f, steps, cmd, factor):
 
 def setbox(name, f, lo, hi, args, factor):
     """A box for a value set as it stands, lo to hi, as the time signature's are dragged: the
-    tempo, a BPM at a time, and the global last step. It sends /cutit <args> <value> once the
-    value it shows moves off the one it knows, its own or the state's; the state hands it a
-    whole number, so a value from Cut It is never sent back."""
+    tempo, a BPM at a time, and the global last step's, lastbox, the same with its hi moving. It
+    sends /cutit <args> <value> once the value it shows moves off the one it knows, its own or
+    the state's; the state hands it a whole number, so a value from Cut It is never sent back."""
     steps = hi - lo + 1
     script = (KNOWS % ("(value - %d + 0.5) / %d" % (lo, steps))) + (
         "function onValueChanged(key)\n"
@@ -538,6 +543,40 @@ def setbox(name, f, lo, hi, args, factor):
         "  sendOSC('/cutit', %s, v)\n"
         "  root:notify('touched', '%s')\n"
         "end\n" % (lo, hi, lo, steps, ", ".join(lua(a) for a in args), name))
+    return node("FADER", name, f, color=RED, outlineStyle=0, bar=False, cursor=False,
+                response=1, responseFactor=factor, script=script)
+
+
+def lastbox(name, f, args, factor):
+    """The global last step's box: a setbox from 1 to as far as the time signature lets the last
+    step reach, which c_steps clips it to (c_steps.lua's R.reach), so a drag to the box's top is
+    the furthest step and no drag goes past it. The root tells it the top number with every
+    state, as notify('num', n), before handing it the last step."""
+    script = (
+        "local known\n"
+        "local hi = %d\n"
+        "local function reach(n)\n"
+        "  if n > %d then return %d end\n"
+        "  return %d * math.floor(%d / n) * n\n"
+        "end\n"
+        "function onReceiveNotify(key, value)\n"
+        "  if key == 'num' then\n"
+        "    hi = reach(math.max(1, value))\n"
+        "  elseif key == 'state' then\n"
+        "    known = value\n"
+        "    self.values.x = (value - 0.5) / hi\n"
+        "  end\n"
+        "end\n"
+        "function onValueChanged(key)\n"
+        "  if key ~= 'x' then return end\n"
+        "  local v = math.max(1, math.min(hi, 1 + math.floor(self.values.x * hi)))\n"
+        "  if known == nil then known = v return end\n"
+        "  if v == known then return end\n"
+        "  known = v\n"
+        "  sendOSC('/cutit', %s, v)\n"
+        "  root:notify('touched', '%s')\n"
+        "end\n" % (ROWS_OF_STEPS * ROW, ROW, ROWS_OF_STEPS * ROW, ROWS_OF_STEPS, ROW,
+                    ", ".join(lua(a) for a in args), name))
     return node("FADER", name, f, color=RED, outlineStyle=0, bar=False, cursor=False,
                 response=1, responseFactor=factor, script=script)
 
@@ -603,8 +642,9 @@ def arrangement():
     k.append(label("tapl", (X0, Y0 + 8 * G, PANEL, 3 * G), "tap", 22))
     k += status("playled", "play", X0, "stopped", PANEL - G)
     # the right panel: the time signature as [n] / [d], each box dragged a step at a time
-    # (Brendan, 2026-11-04), about 21 points a step for the top number's 32 and the last step's,
-    # 24 for the bottom number's 5; the swing and the drunkenness under them; the link
+    # (Brendan, 2026-11-04), about 21 points a step for the top number's 32 and the last step's
+    # 32, more where the time signature lets it reach fewer, 24 for the bottom number's 5; the
+    # swing and the drunkenness under them; the link
     a, b = COL
     k.append(caption("timec", a, Y0, CW, "time"))
     k.append(box("numbox", (a, Y0 + G, 4 * G, 3 * G), MAX_NUM, "num", 9))
@@ -613,7 +653,7 @@ def arrangement():
     k.append(box("denbox", (a + 6 * G, Y0 + G, 4 * G, 3 * G), len(DENS), "den", 50))
     k.append(label("den", (a + 6 * G, Y0 + G, 4 * G, 3 * G), "4", 32))
     k.append(caption("lastc", b, Y0, CW, "last step"))
-    k.append(setbox("lastbox", (b, Y0 + G, 4 * G, 3 * G), 1, STEPS, ["drums", "set-last"], 9))
+    k.append(lastbox("lastbox", (b, Y0 + G, 4 * G, 3 * G), ["drums", "set-last"], 9))
     k.append(label("last", (b, Y0 + G, 4 * G, 3 * G), "16", 32))
     k += knob("swing", a, Y0 + 5 * G, "swing", SWING[0], SWING[1], "set-swing")
     k += knob("drunk", b, Y0 + 5 * G, "drunk")
@@ -960,6 +1000,7 @@ local function drums(a)
   text('play', playing and 'playing' or 'stopped')
   lit('playled', playing)
   text('last', tostring(last))
+  get('lastbox'):notify('num', math.floor(arg(a, 37)))
   hand('lastbox', last)
   text('pending', pending == 2 and 'snap waits for step 1'
        or (pending == 1 and 'sync waits for step 1' or ''))

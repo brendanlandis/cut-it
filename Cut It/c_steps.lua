@@ -29,9 +29,16 @@ R.BOOT_LEVEL, R.BOOT_TRACK, R.BOOT_LAST = 6, 1, 16
 -- sixteenths the first one takes.
 R.SWING_MIN, R.SWING_MAX = 50, 75
 R.BOOT_SWING = 50
--- The time signature's denominators: a bar is num x 16 / den steps, so den divides 16.
+-- The time signature's bottom numbers. The bottom number is a matter of record only: it changes
+-- neither the page nor how fast the steps go (Brendan, 2026-11-05).
 R.DENS = { 1, 2, 4, 8, 16 }
 R.MAX_NUM = 32
+-- The drum page's steps are four rows of eight cells, as the layout table numbers its step cells,
+-- 1 to 8 along the top row, 9 to 16 along the next. The top number N sets how many of a row's
+-- cells hold steps: as many groups of N as fit in 8, so 3/4 and 6/8 give rows of 6 and 5/4 rows
+-- of 5, and all 8 when N is over 8. The pattern reaches four rows' worth: 24 steps at 3/4, 32 at
+-- 4/4 (Brendan, 2026-11-05).
+R.ROW, R.ROWS = 8, 4
 -- Drunk, at the slider's top every step strays, by up to two steps longer or shorter, and low
 -- settings stay subtle (Brendan, 2026-11-05). At x, the slider's 0 to 1, a step strays with the
 -- chance x/3 + 2x^4/3, by up to x + x^4 steps: a line, a third of the steps by up to the slider's
@@ -99,15 +106,35 @@ function R.pad(st, track)
   return (st.bank - 1) * R.TRACKS + track
 end
 
--- A knob's 0-1 as a last step, 1 to 32: 16 sits just left of noon.
-function R.knob_step(v)
-  return math.floor(clip(num(v), 0, 1) * (R.STEPS - 1) + 0.5) + 1
+-- A row of the drum page, in steps: as many groups of the top number as fit in a row's 8
+-- cells, or all 8 when it is over 8.
+function R.row(st)
+  if st.num > R.ROW then return R.ROW end
+  return (R.ROW // st.num) * st.num
 end
 
--- A track's last step: its own, or the global one while it follows that (own is 0).
+-- The furthest a last step reaches: four rows' worth, 24 at 3/4, 32 at 4/4.
+function R.reach(st)
+  return R.ROWS * R.row(st)
+end
+
+-- A knob's 0-1 as a last step, 1 to top, 32 unless given: a full turn reaches the last step
+-- the time signature allows. At 32, 16 sits just left of noon.
+function R.knob_step(v, top)
+  return math.floor(clip(num(v), 0, 1) * ((top or R.STEPS) - 1) + 0.5) + 1
+end
+
+-- The global last step in force: as set, clipped to the reach. What is set is kept, and saved,
+-- so a time signature passed through on the way to another does not cut it short for good.
+function R.global_last(st)
+  return math.min(st.last, R.reach(st))
+end
+
+-- A track's last step: its own, or the global one while it follows that (own is 0), clipped
+-- to the reach as the global one is.
 function R.last_of(st, track)
   local own = st.own[track]
-  return own >= 1 and own or st.last
+  return math.min(own >= 1 and own or st.last, R.reach(st))
 end
 
 function R.new(bank)
@@ -139,14 +166,20 @@ function R.page_last(st)
   return { "page", "last", { R.last_of(st, st.track) } }
 end
 
--- A bar of the time signature, in steps: num x 16 / den.
-function R.bar(st)
-  return st.num * 16 // st.den
+-- The time signature as the page shows it, bar <N> <row>: a blue cell every N steps, N the top
+-- number, whatever the subdivision, lit unless a note is; and rows of R.row steps. Over 8, the
+-- blue counts straight through the pattern and wraps across the rows (Brendan, 2026-11-05).
+function R.page_bar(st)
+  return { "page", "bar", { st.num, R.row(st) } }
 end
 
--- The bar on the page: every bar's first step is lit blue there, unless a note is.
-function R.page_bar(st)
-  return { "page", "bar", { R.bar(st) } }
+-- A press on the step cell n, 1 to 32, as the layout table numbers them, eight a row: the step
+-- its row and column mean, row r and column c (from 0) being step r x R.row + c + 1, or nil
+-- for a cell past the row's last step, which is dark.
+function R.cell_step(st, n)
+  local r, c = (n - 1) // R.ROW, (n - 1) % R.ROW
+  if c >= R.row(st) then return nil end
+  return r * R.row(st) + c + 1
 end
 
 -- The whole pattern, zeros included: 512 velocities, then the 16 tracks' own last steps, 0 for
@@ -177,12 +210,12 @@ function R.boot(st)
            { "clock", "swing", { st.swing / 100 } }, { "clock", "rate", { st.rate } }, R.save(st) }
 end
 
--- A step press, on the selected track. The step rule: off takes the selected velocity; on, at
--- any velocity, turns off. A step past the track's last step is dark, and a press there does
--- nothing.
-function R.press_step(st, step)
-  local s = math.floor(clip(num(step), 1, R.STEPS))
-  if s > R.last_of(st, st.track) then return {} end
+-- A step press, on the selected track, on a step cell (R.cell_step). The step rule: off takes
+-- the selected velocity; on, at any velocity, turns off. A cell past its row's last step, or a
+-- step past the track's last step, is dark, and a press there does nothing.
+function R.press_step(st, cell)
+  local s = R.cell_step(st, math.floor(clip(num(cell), 1, R.STEPS)))
+  if not s or s > R.last_of(st, st.track) then return {} end
   local i = R.index(st.track, s)
   if st.pattern[i] >= 1 then st.pattern[i] = 0 else st.pattern[i] = R.velocity(st.level) end
   return { R.save(st), R.steps(st) }
@@ -242,16 +275,17 @@ function R.knob_swing(st, v)
   return out
 end
 
--- Knob 2: the global last step, 1 to 32, for every track that follows it. Saved, as a section's,
--- and it starts at 16 with the knob held there.
+-- Knob 2: the global last step, 1 to the time signature's reach (R.reach), for every track that
+-- follows it. Saved, as a section's, and it starts at 16 with the knob held there.
 function R.knob_last(st, v)
-  local n = R.knob_step(v)
-  local live = latch(st.knob.last, n, st.last)
-  if not live then return { row("last-step", false, st.last, n) } end
-  local was = st.last
-  st.last = n
+  local n, cur = R.knob_step(v, R.reach(st)), R.global_last(st)
+  local live = latch(st.knob.last, n, cur)
+  if not live then return { row("last-step", false, cur, n) } end
   local out = { row("last-step", true, n) }
-  if n ~= was then out[#out + 1] = R.save(st) end
+  if n ~= cur then
+    st.last = n
+    out[#out + 1] = R.save(st)
+  end
   if st.own[st.track] == 0 then
     rearm(st.knob.track)
     out[#out + 1] = R.page_last(st)
@@ -275,8 +309,8 @@ end
 
 function R.set_last(st, v)
   if type(v) ~= "number" then return {} end
-  local n = math.floor(clip(v, 1, R.STEPS) + 0.5)
-  if n == st.last then return {} end
+  local n = math.floor(clip(v, 1, R.reach(st)) + 0.5)
+  if n == R.global_last(st) then return {} end
   st.last = n
   rearm(st.knob.last)
   if st.own[st.track] ~= 0 then return { R.save(st) } end
@@ -288,7 +322,7 @@ end
 -- until turned through that track's last step, and it is saved with the pattern. Released at the
 -- step it already has, a track that follows the global one goes on following it.
 function R.knob_track(st, v)
-  local n, cur = R.knob_step(v), R.last_of(st, st.track)
+  local n, cur = R.knob_step(v, R.reach(st)), R.last_of(st, st.track)
   local live = latch(st.knob.track, n, cur)
   if not live then return { row(track_row(st), false, cur, n) } end
   local out = { row(track_row(st), true, n) }
@@ -324,18 +358,27 @@ local function land_snap(st)
 end
 
 -- The arrangement screen's time signature, two numbers, each stepped by its box (Brendan,
--- 2026-11-03): the top 1 to 32, the bottom through 1 2 4 8 16. Saved; the page lights each bar's
--- first step.
+-- 2026-11-03): the top 1 to 32, the bottom through 1 2 4 8 16, both saved. The top number sets
+-- the page's rows and its blue cells, and how far a last step reaches (R.row, R.reach): the
+-- selected track's last step goes to the page again, clipped to it, and when the reach moves,
+-- knobs 2 and 3 are held again, since a turn of either now stands for another step. The bottom
+-- number is a matter of record only: it changes neither the page nor the step clock's rate
+-- (Brendan, 2026-11-05).
 function R.time(st, which, dir)
   local d = num(dir) < 0 and -1 or 1
-  if which == "num" then
-    st.num = clip(st.num + d, 1, R.MAX_NUM)
-  else
+  if which ~= "num" then
     local k = 3
     for i, v in ipairs(R.DENS) do if v == st.den then k = i end end
     st.den = R.DENS[clip(k + d, 1, #R.DENS)]
+    return { R.save(st) }
   end
-  return { R.save(st), R.page_bar(st) }
+  local reach = R.reach(st)
+  st.num = clip(st.num + d, 1, R.MAX_NUM)
+  if R.reach(st) ~= reach then
+    rearm(st.knob.last)
+    rearm(st.knob.track)
+  end
+  return { R.save(st), R.page_bar(st), R.page_last(st) }
 end
 
 -- A value within its range, rounded: a percent, 0 to 100, a volume, a pitch, a last step.
@@ -388,13 +431,14 @@ function R.set_randomness(st, track, v)
   return { R.save(st) }
 end
 
--- A track's own last step, set from its pad as knob 3 sets the selected track's: the step it
--- already has changes nothing, so a track that follows the global one goes on following it.
--- Knob 3 is held again when the track is the selected one, as at a phone's value of knob 2's.
+-- A track's own last step, set from its pad as knob 3 sets the selected track's, as far as the
+-- time signature reaches: the step it already has changes nothing, so a track that follows the
+-- global one goes on following it. Knob 3 is held again when the track is the selected one, as
+-- at a phone's value of knob 2's.
 function R.set_track_last(st, track, v)
   local t = track_value(track, v)
   if not t then return {} end
-  local n = whole(v, 1, R.STEPS)
+  local n = whole(v, 1, R.reach(st))
   if n == R.last_of(st, t) then return {} end
   st.own[t] = n
   local out = { R.save(st) }
@@ -440,7 +484,8 @@ end
 -- randomness. 88 numbers.
 R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS
 function R.phone(st)
-  local out = { st.playing and 1 or 0, st.last, st.track, st.snap and 2 or (st.sync and 1 or 0) }
+  local out = { st.playing and 1 or 0, R.global_last(st), st.track,
+                st.snap and 2 or (st.sync and 1 or 0) }
   for t = 1, R.TRACKS do out[#out + 1] = R.last_of(st, t) end
   for t = 1, R.TRACKS do out[#out + 1] = st.own[t] >= 1 and 1 or 0 end
   for _, v in ipairs({ st.num, st.den, st.drunk, st.swing }) do out[#out + 1] = v end
@@ -465,12 +510,12 @@ end
 -- to its own step 1 a pending sync puts every track back before its step 1, and a pending snap
 -- puts every track on the global last step; then every track moves on in its own loop.
 local function advance(st)
-  local m = st.master % st.last + 1
+  local m = st.master % R.global_last(st) + 1
   local synced = st.sync and m == 1
   local pos = {}
   for t = 1, R.TRACKS do
     local p = synced and 0 or st.pos[t]
-    local last = (synced and st.snap) and st.last or R.last_of(st, t)
+    local last = (synced and st.snap) and R.global_last(st) or R.last_of(st, t)
     pos[t] = p % last + 1
   end
   return m, pos, synced
@@ -538,7 +583,7 @@ function R.tick(st)
   end
   -- The pattern's loop ends when the next step is the global loop's step 1, as advance() counts
   -- it: a global last step moved under the loop's place wraps into it, and no bar ends there.
-  if st.master % st.last == 0 then out[#out + 1] = { "bar", "bar", {} } end
+  if st.master % R.global_last(st) == 0 then out[#out + 1] = { "bar", "bar", {} } end
   return out
 end
 

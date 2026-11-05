@@ -2,12 +2,12 @@
 
 Page 2's drum page on the Launchpad, the sequencer playing the drum samples from the Organelle, and the pattern surviving a reload. `sequencer-assert` proves the notes, the frames and the file; what is left is what only the rig can show — whether the page reads, and how the drums sound.
 
-24 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
+29 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
 
 - [ ] **1. The drum page**
   - **Need:** A fresh load of the patch with no saved pattern — the selection resets at every load and a saved step would be lit.
   - **Send:** `stop bang; mode mode-2`
-  - **Pass if:** The left column has its second lamp down bright. The top four rows of pads are the steps: the top two dim but the first, which is blue as a bar's first step, and the two under them dark, since the last step is 16. The bottom-left four by four is bright pink, with its bottom-left pad red. The right halves of the bottom two rows are the eight velocity buttons — white at the top left to red at the bottom right, with the second one on the bottom row brighter than the rest. The top row of the right four by four is dim purple and the row under it dark, and nothing walks along the bottom row.
+  - **Pass if:** The left column has its second lamp down bright. The top four rows of pads are the steps: the top two dim but their first and fifth pads, which are blue, every fourth step at 4/4, and the two under them dark, since the last step is 16. The bottom-left four by four is bright pink, with its bottom-left pad red. The right halves of the bottom two rows are the eight velocity buttons — white at the top left to red at the bottom right, with the second one on the bottom row brighter than the rest. The top row of the right four by four is dim purple and the row under it dark, and nothing walks along the bottom row.
   - **Note:** Level 6 is the bottom row's second velocity button; track 1 is the bottom-left drum pad. Both reset at every load ([sequencer](../../ref/module/sequencer.md)).
 
 - [ ] **2. A drum pad plays and selects**
@@ -62,7 +62,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 
 - [ ] **14. The time signature**
   - **Do:** Press the Launchpad's top button down the left column, page 1: the phone turns to the arrangement screen. On it drag the bottom number's box up one step, then the top number's box up three. Then press page 2, the second button down.
-  - **Pass if:** The phone reads 4 / 8, then 7 / 8. Back on page 2 the Launchpad's steps 1 and 15 are blue where they are not lit. The playing does not change.
+  - **Pass if:** The phone reads 4 / 8, then 7 / 8. Back on page 2 the steps are rows of seven, each row's eighth pad dark, and each row's first pad is blue where it is not lit. The playing does not change, at 4 / 8 or at 7 / 8.
 
 - [ ] **15. Swing on knob 4**
   - **Do:** Turn knob 4 a little up, then all the way left. Then turn it all the way right, to noon, and back to all the way left.
@@ -100,7 +100,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Need:** Steps lit on the drum page from the steps before.
   - **Send:** `stop bang`
   - **Do:** On the phone tap volume and drag pad 13 to -6, then tap random and drag it to 30%. Press page 1, drag drunk to about 20%, and press page 2. Look at which steps are lit. Wait two seconds, then load Cut It again from the Organelle menu, press page 2 if the Launchpad is not on it, and on the phone tap volume, then random.
-  - **Pass if:** After the reload the drum page shows the same steps lit as before it, steps 1 and 15 blue, and the phone's pad 13 reads -6 on volume and 30% on random, and plays that much quieter. On page 1 the phone shows 7 / 8 and drunk at what you left it. Knob 4's swing is back at 50%, on the phone's swing knob too.
+  - **Pass if:** After the reload the drum page shows the same steps lit as before it, in rows of seven with each row's first pad blue, and the phone's pad 13 reads -6 on volume and 30% on random, and plays that much quieter. On page 1 the phone shows 7 / 8 and drunk at what you left it. Knob 4's swing is back at 50%, on the phone's swing knob too.
   - **Note:** `u_state` flushes within 2 seconds of a change, so the wait is part of the step.
 
 - [ ] **23. Other pages keep their grid**
@@ -114,3 +114,29 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Do:** Turn knob 2 a little either way, then through noon and on to last-step 8. Then turn knob 4 a little, then all the way right. Then turn knob 3.
   - **Pass if:** Knob 2 reads last-step with its own step in brackets until it passes 16, then last-step alone; at 8 the drums loop in half the time, and the phone's last step reads 8. Knob 4 reads swing the same way until it is all the way left, at 50, and all the way right every second step comes late, and the phone's swing knob follows. Knob 3 draws nothing and changes nothing. Put knob 2 back to 16 and knob 4 all the way left.
   - **Note:** Knobs 2 and 4 are the drums' last step and swing on every page, as knob 1 is the tempo; knob 3, the selected track's own last step, is the drum page's alone (Brendan, 2026-11-04). The brackets are `c_steps`' latch: a reload holds both knobs again, at 16 and 50%.
+
+- [ ] **25. Rows at 4/4 and 3/4**
+  - **Need:** The phone linked. The drum page stopped.
+  - **Send:** `stop bang; mode mode-2`
+  - **Do:** Press page 1 and on the arrangement screen drag the time signature to 4 / 4 and the last step all the way up. Press page 2, select the bottom-left drum pad, and light its step 9, the second row's first pad, if it is not lit. Look at the top four rows. Then press page 1, drag the top number down to 3, and press page 2.
+  - **Pass if:** At 4/4 the last step's box stops at 32, and all four rows are steps, eight a row, the first and fifth pad of every row blue where not lit. At 3/4 the phone's last step reads 24, each row is six steps with its last two pads dark, and each row's first and fourth pads are blue where not lit. Step 9 is now the second row's third pad, still lit.
+
+- [ ] **26. A press on a row at 3/4**
+  - **Need:** 3/4 from the step before, the bottom-left drum pad selected, on page 2.
+  - **Do:** Press the second row's first pad. Then press the top row's seventh pad. Then press PLAY on the nanoKONTROL and watch the green pad.
+  - **Pass if:** The second row's first pad lights and the seventh stays dark: nothing happens there. The green pad walks six pads of a row and drops to the next row's first, and pad 1 sounds when it lands on the pad you lit, the seventh step.
+
+- [ ] **27. 5/4 and 9/8**
+  - **Need:** Playing, from the step before.
+  - **Do:** Press page 1, drag the top number to 5 and press page 2. Then press page 1, drag the top number to 9 and the bottom number to 8, and press page 2.
+  - **Pass if:** At 5/4 the rows are five steps, each row's last three pads dark, each row's first pad blue where not lit, and the phone's last step reads 20. At 9/8 the rows are eight again and the last step reads 32 again, and the blue steps one pad to the right on each row down: the top row's first, the second row's second, the third row's third, the fourth row's fourth. The beat never changes speed.
+
+- [ ] **28. The last step reaches four rows**
+  - **Need:** Playing, from the step before.
+  - **Do:** Press page 1 and drag the top number to 3. Turn knob 2 all the way left, then all the way right. Then drag the phone's last step box all the way up. Press page 2, select the top-left drum pad and turn knob 3 all the way left, then all the way right.
+  - **Pass if:** Knob 2 reads last-step 24 at its right end, the brackets gone, and the walk covers all four rows of six. The phone's box stops at 24 however far it is dragged. Knob 3 reads pad13-last 24 at its right end.
+
+- [ ] **29. The bottom number changes nothing you hear**
+  - **Need:** Playing, from the step before.
+  - **Do:** Press page 1. Drag the bottom number from 4 up to 16, listening, then down to 1, then back to 4. Then drag the top number back to 4.
+  - **Pass if:** The drums keep exactly the same speed and pattern while the bottom number moves, and the Launchpad's page does not change with it: only the phone's bottom number moves. At 4/4 the rows are eight again.

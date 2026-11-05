@@ -44,16 +44,16 @@ were false.
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
 | `phone-assert.sh` | 134 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 181: 32 read, 149 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `touchosc-assert.sh` | 187: 32 read, 155 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 255: 189 in Lua, 66 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 288: 213 in Lua, 75 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 25 | `module/sequencer` — the kit, as a signal |
 | `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1616 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
+**1655 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1609**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1648**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh`, `song-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
@@ -542,7 +542,7 @@ passes them; with its cord from `drums` to `c_steps` cut, all four failed with t
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       32 + 149 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       32 + 155 checks, ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
@@ -571,7 +571,8 @@ Then the layout's own scripts, unpacked into the scratch directory and run by
 `lib_test.lua` is for pdlua: the outer bar hidden by the root's script, the pages following the
 mode and each tab's name, test mode turning to the checklist page and back, the arrangement
 screen's tempo, time signature, last step, swing and drunkenness (a value from Cut It never sent
-back, a tempo that is not whole never sent back rounded), the drum screen's pads (the number its
+back, a tempo that is not whole never sent back rounded, the last step's box reaching exactly as
+far as `c_steps.lua`'s `R.reach` lets the last step for every top number, 1 to 32), the drum screen's pads (the number its
 radio chooses, a tap that selects, a drag that sends its track's value as it stands, and the state
 never sent back) and buttons, the synths screen and the checklist page's FM and STRINGS, and the velocity switch, lit by
 the state and never sending when lit, the checklist page's Pass, Fail, Back and Next, nothing drawn
@@ -606,17 +607,22 @@ with a fault each: a drag that selects as well (Lua 10), the radio sending (read
 randomness in ones (Lua 3), a state handed back unguarded (Lua 1), the pads ignoring the radio
 (Lua 8), every pad dragging track 1 (read 1, Lua 6), the radio standing up (read 2) and two steps a
 pad's height (read 1). And the swing's range: the layout built at the old 25% (Lua 2).
+✅ **And for the last step's reach** (2026-11-05), three layouts rebuilt with a fault each: the
+old box of 1 to 32 (Lua 5), the root never telling the box the top number (Lua 5), and the box's
+reach worked out wrong (Lua 9).
 
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      184 + 65 checks, ~33 s — c_steps' rules in Lua, then the drum page and the pattern in the song's draft
+./test/gate/sequencer-assert.sh      213 + 75 checks, ~40 s — c_steps' rules in Lua, then the drum page and the pattern in the song's draft
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
 Pd: the rules in `Cut It/c_steps.lua` press by press (the levels, the step rule's three cases, the
 selected track, which pads fire, swing, drunkenness's curve, randomness's coin with seeded dice, the
-drum screen's pads, the bar, a section's restore starting every loop again, the restore, lines saved
+drum screen's pads, the bar, the time signature's rows, a press landing on the step its row and
+column mean, the reach that clips every last step, the bottom number changing nothing but the
+save, a section's restore starting every loop again, the restore, lines saved
 before the randomness and before sections included), and `c_steps-lua.pd_lua` through
 `test/gate/lua/lib_test.lua`'s stand-in for pdlua (its inlets and outlets, `bad-selector`, a
 throwing rule caught as `fail c_steps lua-fire`). Then the Pd half below, on a running copy of the
@@ -625,7 +631,10 @@ nothing.** The gate fails if either half does.
 
 It plays page 2's drum page on `param`, as `m_launchpad` publishes it, from a state directory
 seeded with a song whose one section holds a pattern, and reads only what leaves the patch: the pads
-for `c_kit`, the grid's frames, the state bus and the song's draft. **A note's step is the playhead of the frame painted after it** —
+for `c_kit`, the grid's frames, the state bus and the song's draft. First the time signature, over
+OSC as the phone sends it: 9/8 and 3/4 set the page's rows and blue steps, at 3/4 the second
+row's first cell is step 7 and the top row's seventh does nothing, and back to the seed's 7/8,
+whose rows of seven every later frame is read in. **A note's step is the playhead of the frame painted after it** —
 `c_steps` sends a step's notes and its playhead in one logical instant, and the frame clock paints
 within 20 ms, six times inside a sixteenth at 120 BPM — so every step's exact notes are asserted
 without a timestamp. The tempo is set by the driver, and PLAY to STOP is counted: 21 steps. Knob 2
@@ -664,6 +673,16 @@ setting the selected track's sound (8), and the coin playing the written velocit
 on the old rules failed 20, among them the 579-atom put, `c_kit`'s volumes and pitches at the
 restore and from the pads, the randomness and the swing, and then stopped on a line too short for
 the new layout; on the old swing and drunk curve, 2; and with randomness ignored, 2.
+✅ **And for the time signature's rows** (2026-11-05), each against the code without the change or
+a mutation of it, the file then restored. The old `c_steps.lua` with the new `g_grid`: the Lua half
+stopped at `R.row`, the Pd half failed 37. The old `g_grid` with the new rules: 17, among them each
+row's eighth cell lit at 7/8, 9/8's blue step 10 missing and the playhead lost past the first row.
+`c_steps_test.lua` on ten mutations: a cell pressed as its own step (3), rows of 8 whatever the top
+number (17), a track's last step unclipped (1), the global one unclipped (2), the bottom number
+setting the step clock's rate (1), a tick timed by it (1), no hold on knobs 2 and 3 when the reach
+moves (1), knob 2's full turn left at 32 (3), the phone's `set-last` unclipped (2), and the old bar
+of N × 16 / D (7). The Pd half with `g_grid` painting a cell as its own step (15), with a row's
+cells past it not dark (16), and with `c_steps` taking a press as its cell's number (Lua 3, Pd 12).
 
 ⚠️ **The layout table is read, not restated**, so a frame is decoded with the same table the patch
 paints from. The analyzer's expectations are what keeps that honest: the driver presses `pad-26`

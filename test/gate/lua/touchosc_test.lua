@@ -24,11 +24,12 @@ end
 local function teal(c) return c[2] > 0.7 and c[1] < 0.3 end
 local function red(c) return c[1] > 0.9 and c[2] < 0.2 end
 local function black(c) return c and c[1] < 0.1 and c[2] < 0.1 end
--- The state c_steps sends: 130 numbers, from what differs; after the first 88 the selected
--- track's effects and the reverb's, at their starting points unless t.fx gives them, then each
--- track's mute and each track's solo, 0 unless t.mute or t.solo gives them.
-local FX = { { "drive", 50 }, { "tone", 60 }, { "dist", 0 }, { "note", 3 }, { "feel", 1 },
-             { "feedback", 40 }, { "delay", 0 }, { "send", 0 }, { "size", 50 }, { "damping", 50 } }
+-- The state c_steps sends: 131 numbers, from what differs; after the first 88 the selected
+-- track's effects, its character last, and the reverb's, at their starting points unless t.fx
+-- gives them, then each track's mute and each track's solo, 0 unless t.mute or t.solo gives them.
+local FX = { { "drive", 50 }, { "tone", 100 }, { "dist", 0 }, { "note", 3 }, { "feel", 1 },
+             { "feedback", 40 }, { "delay", 0 }, { "send", 0 }, { "char", 1 }, { "size", 50 },
+             { "damping", 50 } }
 local function drumstate(t)
   local st = { t.playing or 0, t.last or 16, t.track or 1, t.pending or 0 }
   for n = 1, 16 do st[#st + 1] = (t.lasts or {})[n] or t.last or 16 end
@@ -319,15 +320,17 @@ local function shows(names)
   for _, n in ipairs(names) do out[#out + 1] = L.visible(w, n) end
   return out
 end
-equal("⛔ the effect radio starts on distortion: its drive, tone and mix show, the delay's and the "
-      .. "reverb's controls hide", { C.fx.values.x, shows({ "drive", "tone", "dist", "distc", "dnote",
-                                                             "dfeel1l", "feedback", "send", "size",
-                                                             "damping" }) },
-      { 0, { true, true, true, true, false, false, false, false, false, false } })
+equal("⛔ the effect radio starts on distortion: its character, drive, tone and mix show, the "
+      .. "delay's and the reverb's controls hide",
+      { C.fx.values.x, shows({ "char", "charc", "char4l", "drive", "tone", "dist", "distc", "dnote",
+                               "dfeel1l", "feedback", "send", "size", "damping" }) },
+      { 0, { true, true, true, true, true, true, true, false, false, false, false, false,
+             false } })
 equal("⛔ the radio sends nothing to Cut It", L.drag(w, "fx", 1), {})
 equal("on delay its time, a note over a feel, its feedback and its level show, and nothing else",
       shows({ "dnote", "dnote4l", "dfeel", "dtimec", "feedback", "delay", "delayc", "drive",
-              "send" }), { true, true, true, true, true, true, true, false, false })
+              "send", "char", "char1l" }),
+      { true, true, true, true, true, true, true, false, false, false, false })
 check("... the radio's delay black on its lit segment, distortion white again",
       black(C.fx2l.textColor) and not black(C.fx1l.textColor), "")
 L.drag(w, "fx", 2)
@@ -337,22 +340,28 @@ equal("on reverb the track's send and the reverb's size and damping",
 w.sent = {}
 L.update(w, 1100)
 st[3] = 16
-for i, v in ipairs({ 70, 20, 40, 2, 3, 55, 30, 60, 80, 10 }) do st[88 + i] = v end
+for i, v in ipairs({ 70, 20, 40, 2, 3, 55, 30, 60, 3, 80, 10 }) do st[88 + i] = v end
 L.osc(w, "/cutit/drums", table.unpack(st))
 L.update(w)
 equal("⛔ the state hands the selected track's effects to their controls, and nothing goes back",
       { C.drive.values.x, C.dist.values.x, C.dnote.values.x, C.dfeel.values.x, C.delay.values.x,
-        C.send.values.x, C.size.values.x, C.damping.values.x, #w.sent },
-      { 0.7, 0.4, 1, 2, 0.3, 0.6, 0.8, 0.1, 0 })
-equal("... each knob's value in its middle, the note value and the feel black on theirs",
-      { L.text(w, "distv"), L.text(w, "sizev"), black(C.dnote2l.textColor),
-        black(C.dnote3l.textColor), black(C.dfeel3l.textColor) }, { "40%", "80%", true, false, true })
+        C.send.values.x, C.char.values.x, C.size.values.x, C.damping.values.x, #w.sent },
+      { 0.7, 0.4, 1, 2, 0.3, 0.6, 2, 0.8, 0.1, 0 })
+equal("... each knob's value in its middle, the note value, the feel and the character black on "
+      .. "theirs", { L.text(w, "distv"), L.text(w, "sizev"), black(C.dnote2l.textColor),
+                     black(C.dnote3l.textColor), black(C.dfeel3l.textColor),
+                     black(C.char3l.textColor), black(C.char1l.textColor) },
+      { "40%", "80%", true, false, true, true, false })
 equal("⛔ a knob turned sends its effect for the selected track, as it stands",
       { L.drag(w, "send", 0.65), L.drag(w, "dist", 0.5) },
       { { { "/cutit", "drums", "send", 16, 65 } }, { { "/cutit", "drums", "dist", 16, 50 } } })
 equal("⛔ the delay's radios send its note value and its feel, 1 the first",
       { L.drag(w, "dnote", 3), L.drag(w, "dfeel", 1) },
       { { { "/cutit", "drums", "delay-note", 16, 4 } }, { { "/cutit", "drums", "delay-feel", 16, 2 } } })
+equal("⛔ the character radio sends the distortion's character for the selected track, 1 soft to "
+      .. "4 crush, and the one it was handed again sends nothing",
+      { L.drag(w, "char", 3), L.drag(w, "char", 0), L.drag(w, "char", 0) },
+      { { { "/cutit", "drums", "char", 16, 4 } }, { { "/cutit", "drums", "char", 16, 1 } }, {} })
 equal("the reverb's size and damping are the kit's: no track", L.drag(w, "size", 0.9),
       { { "/cutit", "drums", "size", 90 } })
 L.update(w, 1100)

@@ -125,12 +125,19 @@ def segment(f, p, x, y):
     return k if o == "2" else steps - 1 - k
 
 
-def under(nodes, i, x, y):
-    """The color drawn at (x, y) before node i: the last filled control there, over black."""
+def under(nodes, i, x, y, group_of=None):
+    """The color drawn at (x, y) before node i: the last filled control there, over black. An
+    effect's controls (group_of: name -> the effect radio's choice) are drawn only over their own
+    effect's or the screen's, since the root shows one effect's at a time, as a pager one page:
+    in the file every one shows, for the editor, and they share one place."""
     bg = (0.0, 0.0, 0.0)
     here = nodes[i][5]
+    group_of = group_of or {}
+    mine = group_of.get(nodes[i][1])
     for t, name, f, p, v, page in nodes[:i]:
         if page not in (None, here) or not inside(f, x, y) or p.get("visible") == "0":
+            continue
+        if mine is not None and group_of.get(name) not in (None, mine):
             continue
         col = p.get("color")
         if t == "BOX":
@@ -147,11 +154,13 @@ def under(nodes, i, x, y):
 
 def audit(doc):
     nodes = walk(doc.getElementsByTagName("node")[0])
+    group_of = {name: k for k, g in enumerate(B.fx_groups() if hasattr(B, "fx_groups") else [])
+                for name in g}
     bad, n = [], 0
     for i, (t, name, f, p, v, _page) in enumerate(nodes):
         if t in ("LABEL", "TEXT") and (v.get("text") or "").strip():
             cx, cy = f[0] + f[2] / 2, f[1] + f[3] / 2
-            bg = under(nodes, i, cx, cy)
+            bg = under(nodes, i, cx, cy, group_of)
             if p.get("background") == "1":
                 bg = over(p["color"], DIM * p["color"][3], bg)
             r = ratio(p["textColor"], bg)
@@ -160,7 +169,7 @@ def audit(doc):
             if r < need:
                 bad.append("text %-10s %-24r %.2f < %.1f" % (name, v.get("text")[:24], r, need))
         if t in ("BUTTON", "RADIO", "RADIAL", "FADER") and p.get("interactive") == "1":
-            bg = under(nodes, i, f[0] + 1, f[1] + 1)
+            bg = under(nodes, i, f[0] + 1, f[1] + 1, group_of)
             # the edge is the full color only where a whole outline is drawn; corner marks
             # leave the resting fill to show where the control ends
             full = p.get("outline") == "1" and p.get("outlineStyle") == "0"
@@ -599,6 +608,25 @@ def main():
             ok, why)
     A.check("... and it sends nothing", by_name.get("fx") is not None
             and not sent(by_name["fx"][3]), sent(by_name.get("fx", [None] * 4)[3]))
+    # The distortion's character (Brendan, 2026-11-05): a horizontal radio over its knobs, as the
+    # delay's time is over its, a segment for each of c_steps.lua's R.CHARS, its word over it.
+    m = re.search(r"^R\.CHARS = \{([^}]*)\}", open(STEPS_LUA, encoding="utf-8").read(), re.M)
+    chars = re.findall(r'"([\w-]+)"', m.group(1)) if m else None
+    radio = [(f, p) for pg, n, t, f, p in placed if pg == "drums" and n == "char" and t == "RADIO"]
+    words = sorted((f[0], f[1], by_name.get(n, [None] * 5)[4]) for pg, n, t, f, p in placed
+                   if pg == "drums" and re.fullmatch(r"char\d+l", n or ""))
+    seg = radio[0][0][2] / len(chars) if radio and chars else 0
+    knobs = [f for pg, n, t, f, p in placed if pg == "drums" and n in ("drive", "tone", "dist")]
+    A.check("⛔ the distortion's character is TouchOSC's own radio, HORIZONTAL, a segment each for "
+            "c_steps' R.CHARS, soft, hard, fold and crush, its word over it, above the knobs",
+            chars and len(radio) == 1 and radio[0][1].get("orientation") == "1"
+            and radio[0][1].get("steps") == str(len(chars))
+            and [w for _x, _y, w in words] == chars
+            and [(x, y) for x, y, _w in words] == [(radio[0][0][0] + i * seg, radio[0][0][1])
+                                                  for i in range(len(chars))]
+            and len(knobs) == 3 and all(k[1] > radio[0][0][1] + radio[0][0][3] for k in knobs),
+            "R.CHARS %s; radio %s, words %s, knobs %s"
+            % (chars, [(f, p.get("orientation"), p.get("steps")) for f, p in radio], words, knobs))
     # Each effect's controls (Brendan, 2026-11-05) sit to the right of the radios, every one in
     # the same place, shown in the file for the editor; the root shows the chosen effect's.
     groups = B.fx_groups() if hasattr(B, "fx_groups") else []
@@ -611,9 +639,9 @@ def main():
             % ([len(g) for g in groups], stray))
     sends_of = lambda names: sorted({m.split()[1] for n in names if n in by_name
                                      for m in sent(by_name[n][3])})
-    A.check("⛔ ... and send what each is: drive, tone, dist; delay-note, delay-feel, feedback, "
-            "delay; send, size, damping",
-            [sends_of(g) for g in groups] == [["dist", "drive", "tone"],
+    A.check("⛔ ... and send what each is: char, drive, tone, dist; delay-note, delay-feel, "
+            "feedback, delay; send, size, damping",
+            [sends_of(g) for g in groups] == [["char", "dist", "drive", "tone"],
                                               ["delay", "delay-feel", "delay-note", "feedback"],
                                               ["damping", "send", "size"]],
             [sends_of(g) for g in groups])

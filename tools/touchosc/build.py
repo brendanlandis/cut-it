@@ -145,8 +145,9 @@ SHOW = [("volume", "vol", VOL[0], VOL[1], 1), ("pitch", "pitch", PITCH[0], PITCH
 PAD_FACTOR, PAD_STEPS = 2, 125
 # Each track's effects and the reverb's (Brendan, 2026-11-05), read from c_steps.lua: R.FX's
 # fields in the order R.phone sends the selected track's, and R.VERB's. A field's control on the
-# drum screen has its name, but the delay's note and feel, radios named dnote and dfeel; the
-# command each sends is the field's, but those two's, delay-note and delay-feel.
+# drum screen is a knob with its name, but FX_CONTROL's, radios: the delay's note and feel, named
+# dnote and dfeel, and the distortion's character, char; the command each sends is the field's,
+# but the delay's two, delay-note and delay-feel.
 _FX = re.search(r"^R\.FX = \{(.*?)\}\n", _STEPS_LUA, re.M | re.S).group(1)
 FX_START = {n: int(v) for n, v in re.findall(r'\{ "(\w+)", \d+, \d+, (\d+) \}', _FX)}
 FX = list(FX_START)
@@ -156,10 +157,12 @@ NOTE_NAMES = re.findall(r'"([^"]+)"', re.search(r"^R\.NOTE_NAMES = \{(.*)\}$", _
                                                 re.M).group(1))
 FEEL_NAMES = re.findall(r'"([^"]+)"', re.search(r"^R\.FEEL_NAMES = \{(.*)\}$", _STEPS_LUA,
                                                 re.M).group(1))
-FX_CONTROL = {"note": "dnote", "feel": "dfeel"}
-FX_CMD = {"note": "delay-note", "feel": "delay-feel"}
+CHAR_NAMES = re.findall(r'"([^"]+)"', re.search(r"^R\.CHARS = \{(.*)\}$", _STEPS_LUA,
+                                                re.M).group(1))
+FX_CONTROL = {"note": "dnote", "feel": "dfeel", "char": "char"}
+FX_CMD = {"note": "delay-note", "feel": "delay-feel", "char": "char"}
 # The phone's state: c_steps' R.phone, 88 numbers before the effects, then the selected track's
-# and the reverb's, 98, then each track's mute and each track's solo, 130.
+# and the reverb's, 99, then each track's mute and each track's solo, 131.
 PHONE_BASE = 88
 # Where the pads show last steps, 1 from the first, the one a drag clips to the reach.
 LAST_SHOW = 1 + [c for _w, c, _lo, _hi, _st in SHOW].index("set-track-last")
@@ -866,15 +869,19 @@ def fx_controls():
     """Each effect's controls, all in the same place, to the right of the radios: the root shows
     the chosen effect's and hides the rest. In the file every one shows, so TouchOSC's editor,
     where no script runs, reaches each (ref/device/phone.md, In the editor). The delay's are last,
-    so its radios draw over the knobs under them in the editor, as nothing else's does.
-      distortion: drive, tone and mix, the track's
+    so in the editor its radios draw over the distortion's and the reverb's controls under them.
+      distortion: its character, soft, hard, fold or crush (Brendan, 2026-11-05), then drive,
+        tone and mix, the track's, a radio over knobs as the delay's are
       reverb: the track's send, and the reverb's size and damping, the kit's
       delay: its time, a note value over a feel, then its feedback and its level"""
     x, y, step = FX_X, FX_Y, 5 * G
     k = []
-    k += fxknob("drive", x, y, "drive")
-    k += fxknob("tone", x + step, y, "tone")
-    k += fxknob("dist", x + 2 * step, y, "mix")
+    k.append(caption("charc", x, y, 14 * G, "character"))
+    k += fxradio("char", (x, y + G, 3 * G * len(CHAR_NAMES), 2 * G), CHAR_NAMES, FX_CMD["char"],
+                 FX_START["char"] - 1)
+    k += fxknob("drive", x, y + 3 * G, "drive")
+    k += fxknob("tone", x + step, y + 3 * G, "tone")
+    k += fxknob("dist", x + 2 * step, y + 3 * G, "mix")
     k += fxknob("send", x, y, "send")
     k += knob("size", x + step, y, "size", d=4 * G)
     k += knob("damping", x + 2 * step, y, "damping", d=4 * G)
@@ -896,7 +903,7 @@ def fx_groups():
         name = re.search(r'<key><!\[CDATA\[name\]\]></key><value><!\[CDATA\[([\w-]+)\]\]>',
                          n).group(1)
         base = re.sub(r"(c|v|\dl)$", "", name)
-        if base in ("drive", "tone", "dist"):
+        if base in ("char", "drive", "tone", "dist"):
             groups["distortion"].append(name)
         elif base in ("send", "size", "damping"):
             groups["reverb"].append(name)
@@ -1359,12 +1366,12 @@ local function flags(a)
 end
 
 -- ---------------------------------------------------------------- the sequencer's state
--- c_steps' 130 numbers: playing, the global last step, the selected track, a pending sync or
+-- c_steps' 131 numbers: playing, the global last step, the selected track, a pending sync or
 -- snap (1, 2), the sixteen last steps, then 1 for each track with its own, then the time
 -- signature, the drunkenness and the swing, then the sixteen volumes, pitches and
 -- randomnesses, then the selected track's effects and the reverb's, then each track's mute and
 -- each track's solo. The drum screen shows what is per track, the arrangement screen the rest;
--- 88, without the effects, draws all but those, and 98, without mute and solo, all but those.
+-- 88, without the effects, draws all but those, and 99, without mute and solo, all but those.
 local function drums(a)
   if #a < 88 then return end
   local playing, pending = arg(a, 1) == 1, arg(a, 4)
@@ -1751,7 +1758,8 @@ def root_script(check):
         "fxcontrols": lua([FX_CONTROL.get(f, f) for f in FX]),
         "verbcontrols": lua(VERB),
         "fxknobs": lua([f for f in FX if f not in FX_CONTROL] + VERB),
-        "fxradios": lua({"dnote": len(NOTE_NAMES), "dfeel": len(FEEL_NAMES)}),
+        "fxradios": lua({"dnote": len(NOTE_NAMES), "dfeel": len(FEEL_NAMES),
+                         "char": len(CHAR_NAMES)}),
         "phonebase": PHONE_BASE, "fxend": FX_END, "phone": PHONE, "flags": lua(list(FLAGS)),
         "rows": ROWS, "maxname": MAX_NAME,
         "namers": lua({p: {"pager": n["pager"], "tab": n["tab"],

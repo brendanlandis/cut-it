@@ -244,8 +244,14 @@ SEQ = [
     (43400, "RU-AGAIN", ["\\; param og-knob-4 0.1"], GAP),
     (43500, "RU-K1-ON", ["\\; param og-knob-1 0", "\\; param og-knob-1 0.3"], GAP),
     (43700, "RU-K4", ["\\; param og-knob-4 0.81"], GAP),
+    # The way down: past the handoff with the steps going, and back below it. t_kit answers that the
+    # loop is a tenth of the way round, its first step of the three.
+    (43900, "RB-PLAY", ["\\; param og-knob-4 0.1", "\\; param og-knob-4 0.3", "\\; start bang"], GAP),
+    (44300, "RB-PAST", ["\\; param og-knob-4 0.8"], GAP),
+    (44400, "RB-BACK", ["\\; param og-knob-4 0.3"], GAP),
+    (44800, "RB-STOP", ["\\; stop bang"], GAP),
     # u_song's draft goes out every 2 s, so past the last change's turn.
-    (45900, "DONE", [], GAP),
+    (46900, "DONE", [], GAP),
 ]
 
 # Every window but DRAG: each message, then state sync 15 ms after it (see the top).
@@ -255,7 +261,7 @@ SEQ = [(ms, mark, bodies if mark == "DRAG" else
          for off, text in [body if isinstance(body, tuple) else (j * gap, body)]
          for b in ((off, text), (off + SYNC_AFTER, "\\; state sync"))], gap)
        for ms, mark, bodies, gap in SEQ]
-QUIT_MS = 46100
+QUIT_MS = 47100
 
 # The phone's way in: OSC to u_net's own port, which the gate runner hands each
 # gate in CUTIT_INPORT (lib_scratch's state_dir does the same), connected after

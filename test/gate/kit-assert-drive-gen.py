@@ -85,6 +85,11 @@ RUSH_AT, RUSH_TURN, RUSH_HIT = 100, 200, 50
 RUSH_RATES = [1000, 5000, 20000]
 RUSH_CYCLE_MS = 1000.0 / 660.0
 RUSH_BACK_S = 1.0
+# The way down, how long after the hit the loop is let go. A slow loop's rate and how long it plays.
+RUSH_DOWN_MS = 200
+WHERE_HZ, WHERE_MS = 2, 300
+# The top: each (rate, loop's gain, sine's gain), RUSH_TURN apart.
+RUSH_TOP = [(12000, 0.5, 0), (16000, 0, 1), (19000, 0, 0.4), (19000, 0, 0)]
 # ... and held again soon after, over the place the recording stopped and started
 SEAM_AGAIN_S, SEAM_AGAIN_FOR_S, SEAM_AGAIN_SPAN, SEAM_AGAIN_UNITS = 0.15, 0.4, 300, 2.4
 TAIL_HOLD_S, TAIL_SPAN = 0.5, 300
@@ -145,6 +150,11 @@ HITS = [
     # a tail loop under it: pad 7's one echo, a second of tape with its first 250 ms last, rushed over
     ("RUSH-TAPE", RUSH_S + RUSH_BACK_S + 1.0, [(SET_MS, 7, 127)]),
     ("RUSH-TAPE-END", RUSH_S + RUSH_BACK_S + 4.0, []),
+    # the way down: one cycle looped, let go slowly; then a slow loop, whose place can be read
+    ("RUSH-DOWN", RUSH_S + RUSH_BACK_S + 5.0, [(SET_MS, 7, 127)]),
+    ("RUSH-WHERE", RUSH_S + RUSH_BACK_S + 6.0, []),
+    # the top: last, since it leaves the mix at nothing, as c_steps never does at a new capture
+    ("RUSH-TOP", RUSH_S + RUSH_BACK_S + 7.0, [(SET_MS, 7, 127)]),
 ]
 # What a window sends c_kit before its hits, SET_MS before them: a track's volume
 # in dB, -30 to +6, and its pitch in semitones, -12 to +12, as c_steps sends them.
@@ -202,9 +212,16 @@ AFTER = {"TAIL-1": [(SET_MS + 350, "delay 1 0")], "RING": [(SET_MS + RING_CHANGE
             for k, hz in enumerate(RUSH_RATES) if k]
          + [(SET_MS + RUSH_AT + RUSH_TURN * len(RUSH_RATES), "rush-off")],
          "RUSH-TAPE": [(SET_MS + 750, "tape 1000 8"), (SET_MS + 850, "rush 15 66"), (SET_MS + 850, "tape-run 0"),
-                       (SET_MS + 1050, "rush-off"), (SET_MS + 1050, "tape-run 1"), (SET_MS + 2500, "tape-off")]}
-STOP_S = RUSH_S + RUSH_BACK_S + 4.5
-DONE_S = RUSH_S + RUSH_BACK_S + 5.0
+                       (SET_MS + 1050, "rush-off"), (SET_MS + 1050, "tape-run 1"), (SET_MS + 2500, "tape-off")],
+         "RUSH-DOWN": [(SET_MS + RUSH_AT, "rush %.5f 1000" % RUSH_CYCLE_MS),
+                       (SET_MS + RUSH_DOWN_MS, "rush-back")],
+         "RUSH-WHERE": [(SET_MS, "rush 100 %d" % WHERE_HZ), (SET_MS + WHERE_MS, "rush-back")],
+         "RUSH-TOP": [(SET_MS + RUSH_AT, "rush %.5f 1000" % RUSH_CYCLE_MS)]
+         + [(SET_MS + RUSH_AT + RUSH_TURN * (k + 1), m) for k, t in enumerate(RUSH_TOP)
+            for m in ("rush-rate %d" % t[0], "rush-mix %g %g" % t[1:])]
+         + [(SET_MS + RUSH_AT + RUSH_TURN * (len(RUSH_TOP) + 1), "rush-off")]}
+STOP_S = RUSH_S + RUSH_BACK_S + 8.5
+DONE_S = RUSH_S + RUSH_BACK_S + 9.0
 
 
 def hit_time(at_s, off_ms=0):
@@ -302,7 +319,8 @@ def write_harness(path):
     kit = obj(20, 300, "c_kit")
     cmd = obj(600, 260, "r kit-cmd")
     wsf = obj(400, 340, "writesf~ 1")
-    C += [(pad, 0, kit, 0), (kit, 0, wsf, 0), (cmd, 0, wsf, 0)]
+    at = obj(100, 340, "print RUSHAT")
+    C += [(pad, 0, kit, 0), (kit, 0, wsf, 0), (cmd, 0, wsf, 0), (kit, 1, at, 0)]
     out = ["#N canvas 20 20 1200 600 12;"] + B + ["#X connect %d %d %d %d;" % t for t in C]
     with open(path, "w") as fh:
         fh.write("\n".join(out) + "\n")

@@ -6,8 +6,9 @@
 -- 1 to 16 (c_steps.pd).
 -- inlet 1: the presses and releases, from u_map -- step <n> <vel>, vel <level> <vel>, pad <n>
 -- <vel>, rep <n> <vel>, fast and recall <n> <vel>, the 500 BPM repeat and the saved tempo, and
--- knobs 2 and 3, last and track-last <0-1>, and swing, if a row of the table names it -- rush <0-1> and
--- rush-off, knob 4 past the handoff and back, from u_tempo, and the phone's
+-- knobs 2 and 3, last and track-last <0-1>, and swing, if a row of the table names it -- rush <0-1>,
+-- rush-back <bpm> and rush-off, knob 4 past the handoff and back, from u_tempo, rush-at <0-1>, the
+-- loop's place, from c_kit, and the phone's
 -- sync, snap, select, vol, pitch, randomness, set-track-last, num, den, drunk, set-swing and
 -- set-last, its effects, drive, tone, dist, char, delay-note, delay-feel, feedback, delay, send,
 -- size, damping and verb-type, and each track's mute, solo and rnd-pitch, from u_net.
@@ -16,11 +17,11 @@
 -- outlet 1: pad <pad> <velocity>, and a track's vol <pad> <dB> and pitch <pad> <semitones> and
 -- its effects, drive, tone, dist, char, delay-time, feedback, delay and send <pad> <value>, and the
 -- reverb's size and damping <value> and verb-type <0-2>, and a held repeat's tape <span> <units>
--- and tape-off, and rush's rush <span> <hz>, rush-rate <hz>, rush-off and tape-run <1 or 0>, to c_kit. outlet 2: the page, to g_grid. outlet 3: the pattern to save, at most once every
+-- and tape-off, and rush's rush <span> <hz>, rush-rate <hz>, rush-mix <loop> <sine>, rush-back, rush-off and tape-run <1 or 0>, to c_kit. outlet 2: the page, to g_grid. outlet 3: the pattern to save, at most once every
 -- SAVE_EVERY ms (below). outlet 4: err. outlet 5: a
 -- bang on init, the proof the Lua loaded. outlet 6: a knob's row, to disp. outlet 7: the phone's
 -- state, R.phone's 148 numbers, whenever it changes.
--- outlet 8: the step clock's swing <0.5-0.75>, rate <x> and ticks <1 or 0>, to c_steps.pd's clock.
+-- outlet 8: the step clock's swing <0.5-0.75>, rate <x>, ticks <1 or 0> and place <phase>, to c_steps.pd's clock.
 -- outlet 9: bar, on the global loop's last step, to u_song: a bar is the pattern's loop, and a
 -- queued section starts as the loop comes round to its step 1; and recall <key>, a part's saved
 -- value asked for. outlet 10: fast <1 or 0>, the 500 BPM repeat's tempo, and rush-home, to u_tempo.

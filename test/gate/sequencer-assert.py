@@ -72,7 +72,7 @@ WINDOWS = ["EARLY", "RESTORE", "NINE", "THREE", "ROW-PRESS", "ROW-DARK", "SEVEN"
                                            "RO-STOP", "RO-BACK", "RO-END", "RX-PLAY", "RX-PRESS",
                                            "RX-SOON", "RX-OFF", "RU-HELD", "RU-LIVE", "RU-K1", "RU-RACE",
                                            "RU-PLAY", "RU-PAST", "RU-LOOP", "RU-HOME", "RU-AFTER", "RU-STOP",
-                                           "RU-AGAIN", "RU-K1-ON", "RU-K4", "DONE"]
+                                           "RU-AGAIN", "RU-K1-ON", "RU-K4", "RB-PLAY", "RB-PAST", "RB-BACK", "RB-STOP", "DONE"]
 EDITS = ["ROW-PRESS", "ROW-DARK", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
 
@@ -795,7 +795,7 @@ def main():
     want_hz = f0 * (22000 / f0) ** ((0.8 - at) / (1 - at))
     A.check("⛔ ... c_kit told rush at the next step: the whole pattern, last step 3, as it ran at 227 BPM, at the "
             "knob's place between speed 1 and 22 kHz, and the row the same frequency, and the playhead still",
-            len(ru) == 1 and ru[0][0] == "rush" and abs(float(ru[0][1]) - span3) < 0.2
+            ru[:1] and ru[0][0] == "rush" and ru[1:] == [["rush-mix", "1", "0"]] and abs(float(ru[0][1]) - span3) < 0.2
             and abs(float(ru[0][2]) - want_hz) < 0.01 * want_hz
             and rush("RU-PAST")[-1:] == [["rush", "%d" % (want_hz + 0.5), "Hz"]] and not moved("RU-LOOP"),
             "KITFX %s, want %.1f; row %s; the playhead %s" % (ru, want_hz, rush("RU-PAST"), moved("RU-LOOP")))
@@ -812,6 +812,12 @@ def main():
             tempo("RU-K1-ON") == [103.0] and tempo_puts("RU-K1-ON") == [["103"]]
             and rush("RU-K4")[:1] == [["rush", "103", "(46k)"]] and not tempo("RU-K4"),
             "%s %s %s %s" % (tempo("RU-K1-ON"), tempo_puts("RU-K1-ON"), rush("RU-K4"), tempo("RU-K4")))
+
+    was = moved("RB-PLAY", "RB-PAST")[-1:]
+    A.check("⛔ the way down: the loop is asked where it is, and the steps land there: a tenth of the way round "
+            "three steps is the first, so the next is the one before where they stopped",
+            kitfx("RB-BACK")[-1:] == [["rush-back"]] and was and moved("RB-BACK")[:1] == [(was[0] - 2) % 3 + 1],
+            "KITFX %s, stopped on %s, then %s" % (kitfx("RB-BACK"), was, moved("RB-BACK")))
 
     errs = [e[1] for k in order for e in W(k) if e[0] == "ERR"
             and ("c_steps" in e[1] or "layout-miss" in e[1] or "g_grid" in e[1])]

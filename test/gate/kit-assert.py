@@ -29,7 +29,8 @@ Ten claims:
        while its engine rings on; the last steps loop at their place and level, follow
        the tempo in speed and pitch, and no sample jumps at the seam or either crossing
    11. rush: past the handoff the output is the frozen loop, at the rate asked, the live kit unheard,
-       and the kit comes back after
+       and the kit comes back after; let go slowly on the way down, and it says where it was; and up at
+       the top it crosses to a sine at the rate asked, as loud, and fades to nothing
 
 Standard library only.
 """
@@ -165,7 +166,9 @@ def main():
                 out0 == [(steps[0], 0, kits[0], 0)], "its cords: %s" % out0)
         # The drums are a signal out of c_kit's outlet~ (2026-11-04), not a throw~
         # of its own: u_root sums them into the left output where the meter reads it.
-        sig = [(a, b, c, d) for a, b, c, d in cons if a == kits[0]]
+        sig = [(a, b, c, d) for a, b, c, d in cons if a == kits[0] and b == 0]
+        A.check("⛔ c_kit's second outlet, the loop's place, goes to c_steps",
+                (kits[0], 1, steps[0], 0) in cons, [c for c in cons if c[0] == kits[0]])
         throws = find(boxes, "throw~")
         to_l = [i for i in throws if boxes[i][:-1].split()[5:6] == ["outL"]]
         feeds = sig[0][2] if len(sig) == 1 else None
@@ -626,6 +629,29 @@ def main():
     A.check("⛔ RUSH: a tail loop under it goes on where it was, after",
             abs(freq(seg) - G.SAMPLES[7]) < 8 and abs(rms(seg) - TONE_RMS) / TONE_RMS < 0.3,
             "%.1f Hz, rms %.5f" % (freq(seg), rms(seg)))
+
+    print("\n--- 11. rush, the way down and the top ---")
+    t = G.hit_time(window("RUSH-DOWN"), G.SET_MS) + G.RUSH_DOWN_MS / 1000.0
+    still, kit = rms(span(t + 0.002, t + 0.012)), span(t + 0.06, t + 0.095)
+    A.check("⛔ DOWN: the loop plays on over the first 40 ms, where a let go is gone in 5, and then it is the "
+            "kit, pad 7 at its own pitch", still > TONE_RMS * 0.5 and abs(freq(kit) - G.SAMPLES[7]) < 60,
+            "rms %.5f at 2-12 ms, %.1f Hz after 60" % (still, freq(kit)))
+    at = [float(l.split()[-1]) for l in cap.splitlines() if l.startswith("RUSHAT:")]
+    want = (G.WHERE_HZ * G.WHERE_MS / 1000.0) % 1
+    A.check("⛔ DOWN: told back, it says where it is: %g Hz for %d ms is %.2f of the way round"
+            % (G.WHERE_HZ, G.WHERE_MS, want), len(at) == 2 and abs(at[1] - want) < 0.02, at)
+    t = G.hit_time(window("RUSH-TOP"), G.SET_MS) + G.RUSH_AT / 1000.0
+    turn = G.RUSH_TURN / 1000.0
+    seg = lambda k: span(t + turn * (k + 1) + 0.06, t + turn * (k + 2))
+    A.check("⛔ TOP: the sine alone is at the rate asked", abs(freq(seg(1)) - 16000) / 16000 < 0.02,
+            "%.1f Hz" % freq(seg(1)))
+    A.check("⛔ TOP: ... as loud as the loop it took over from", abs(rms(seg(1)) - TONE_RMS) / TONE_RMS < 0.2,
+            "rms %.5f, the tone's %.5f" % (rms(seg(1)), TONE_RMS))
+    A.check("⛔ TOP: the loop's level follows its gain", abs(rms(seg(0)) / TONE_RMS - 0.5) < 0.1,
+            "%.3f of the tone" % (rms(seg(0)) / TONE_RMS))
+    A.check("TOP: ... and the sine's its own", abs(rms(seg(2)) / rms(seg(1)) - 0.4) < 0.05,
+            "%.3f of it" % (rms(seg(2)) / rms(seg(1))))
+    A.check("⛔ TOP: and at the top, silence", peak(seg(3)) < SILENT, "peak %.5f" % peak(seg(3)))
     return A.report()
 
 

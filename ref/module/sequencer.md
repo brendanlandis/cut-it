@@ -647,8 +647,9 @@ thrown, it starts lower, at speed 1 all the same (a judgment call, over a fixed 
 reads that frequency, and draws nothing until there is a loop to read.
 
 **While it plays** the step clock runs on and reaches nothing, by a second spigot in `c_steps.pd`: no Lua
-call and no phone state 66 times a second. The loops wait, as under `pad-35`, and carry on from where they
-were when the knob comes below the handoff; no bar ends, so a queued section waits too. **`pad-38` is the
+call and no phone state 66 times a second. The loops wait, as under `pad-35`, and no bar ends, so a queued
+section waits too. Anything but the knob that ends it, a tap, the phone, a section, knob 1, lets the steps
+carry on from where they stopped, over a 5 ms cross. **`pad-38` is the
 way home:** the loop stops, over the same 5 ms cross, the tempo goes to the section's saved BPM and step 1
 restarts, as ever while playing, and both knobs are held there.
 
@@ -658,17 +659,34 @@ from there. A repeat let go meanwhile is a `tape-off` as ever. `pad-35` pressed 
 tempo does. **STOP and panic stop the loop too**, parked until the knob comes below the handoff or PLAY,
 since silence is what they ask for (judgment calls).
 
-**`e_rush` is raw all the way up** (Brendan, 2026-11-05): no fade to a tone, no anti-aliasing, fold-back
-welcome. One read head and no seam, since the wrap's jump is part of the waveform, as a retrigger's is. It
-takes the kit's whole output, dry and wet, in an `e_rec`, the recorder `e_tape` uses, its line 3.2 s, and
-crosses with the live kit over 5 ms. It reads the frozen line as `e_tape` does (*A held repeat's tails*),
-but asks for 64 samples more than the 192 the recorder ran on: a `delread4~` with no signal in sorts before
-its `delwrite~` and reads a block nearer than asked, which `e_tape`'s long loops don't feel, and a block of a
-15 ms loop would be in the recorder's fade. The rate moves over 20 ms, so the knob's places do not zipper.
+**The way down lands where the loop is** (Brendan, 2026-11-05: "It doesn't really skip on the way up, but
+it does on the way down."). Below the hand-back, `rush-back <bpm>`: the loop is brought to speed 1, in case
+the knob was thrown, and asked where it is. `e_rush` answers in that same instant, `rush-at <0-1>`, a
+`snapshot~` of the player's phase, out `c_kit`'s second outlet to `c_steps`. By how long each ran, that is one
+of the loop's steps, part way through, so many back from the last. A held repeat's next step goes back that
+far, or with none held the global loop's place and each track's in its own, and the pair's parity with them,
+and the step clock's phase is set so the next step comes when this one ends in the loop: `place <phase>`,
+two steps a cycle, swing ignored, an error under a step at these speeds. Setting a phase can fire
+`threshold~` at once, so the ticks come back 4 ms later, and the next step is kept 5 ms off. The kit and the
+loop cross over 40 ms, the loop playing on over the first hits. The way up stays 5 ms.
+
+**The loop is raw, and the top vanishes** (Brendan, 2026-11-05: "Shouldn't it be inaudible by the time it
+gets to 22khz? It still sounds really buzzy."). The buzz is aliasing: at 22 kHz there are two samples a cycle,
+and they drift through the recording. So: raw up to `R.RUSH_RAW`, 8 kHz, no fade, no anti-aliasing, fold-back
+welcome; from there to `R.RUSH_PURE`, 16 kHz, an equal-power cross to a plain `osc~` at the same frequency; and
+from there the sine alone, fading evenly up the turn to nothing at `R.RUSH_HZ`, 22 kHz. The three are named in
+`c_steps.lua`, to move by ear. The sine is as loud as the loop was, by an `env~` on the player, so a silent loop
+stays silent. Its canvas runs only while its gain is above 0, and the player's stops once it is fully crossed.
+A wrap's jump below that is part of the waveform, as a retrigger's is: one read head and no seam. `e_rush` takes
+the kit's whole output, dry and wet, in an `e_rec`, the recorder `e_tape` uses, its line 3.2 s. It reads the
+frozen line as `e_tape` does (*A held repeat's tails*), but asks for 64 samples more than the 192 the recorder
+ran on: a `delread4~` with no signal in sorts before its `delwrite~` and reads a block nearer than asked, which
+`e_tape`'s long loops don't feel, and a block of a 15 ms loop would be in the recorder's fade. The rate moves
+over 20 ms, so the knob's places do not zipper.
 
 **What it costs**, on the Mac, least of five runs of `c_kit` alone under `-batch`, as above: 0.113% of real
-time before it, 0.125% at rest and 0.166% looping; a tenth more at rest and a third more looping. Scaled as
-the kit's 1.7% on the device, about 0.2% and 0.8% of the Organelle's core, with the ticks' Lua saved while
+time before it, 0.129% at rest, 0.174% looping and 0.184% on the sine alone, the player off. Scaled as the
+kit's 1.7% on the device, about 0.2%, 0.8% and 1% of the Organelle's core, with the ticks' Lua saved while
 looping. Estimates until measured on the Organelle.
 
 ### The saved tempo

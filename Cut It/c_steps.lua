@@ -13,8 +13,8 @@
 --   {"note", <effect>, {pad, value} or {value}}               to c_kit, an effect's (R.FX)
 --   {"note", "tape", {span, units}} and {"note", "tape-off", {}}
 --                                                             to c_kit: a held repeat's tails (R.tape)
---   {"note", "rush", {span, hz}}, "rush-rate" {hz}, "rush-off" {} and "tape-run" {1 or 0}
---                                                             to c_kit: rush's loop (R.rush)
+--   {"note", "rush", {span, hz}}, "rush-rate" {hz}, "rush-mix" {loop, sine}, "rush-back" {},
+--   "rush-off" {} and "tape-run" {1 or 0}                     to c_kit: rush's loop (R.rush)
 --   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep" | "quiet" | "fast"
 --    | "recall", {...}}                                       to g_grid's third inlet
 --   {"save", "list", {581, 711, 743, 759, 760 or 776 numbers, R.save}}
@@ -22,6 +22,7 @@
 --   {"clock", "restart", {}}                                 to the start bus, the saved tempo's press
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
 --   {"clock", "ticks", {1 or 0}}                              whether its steps reach R.tick
+--   {"clock", "place", {phase}}                               its phase set, and its steps let through
 --   {"bar", "bar", {}}                                        to u_song: the pattern's loop ends
 --   {"song", "recall", {key}}                                 to u_song: a part's saved value
 --   {"tempo", "fast", {1 or 0}}                               to u_tempo: the 500 BPM repeat
@@ -83,6 +84,13 @@ R.TAPE_MAX = 12000
 -- steps at 640 BPM, far more than the 480 ms of them at 1000 BPM it is for; a knob thrown from a slow
 -- tempo gets the last of what ran. The rest of the turn takes the loop from speed 1 to R.RUSH_HZ.
 R.RUSH_MAX, R.RUSH_HZ = 3000, 22000
+-- How the top vanishes (Brendan, 2026-11-05: "Shouldn't it be inaudible by the time it gets to 22khz?
+-- It still sounds really buzzy."): the raw loop up to R.RUSH_RAW; from there to R.RUSH_PURE it crosses
+-- to a sine at its frequency, as loud as it was; from there to R.RUSH_HZ the sine fades to nothing.
+R.RUSH_RAW, R.RUSH_PURE = 8000, 16000
+-- A hand-back's next step is at least this far off, in ms, so the step clock's ticks are back on by
+-- then (c_steps.pd).
+R.RUSH_LAND = 5
 -- Each track's own volume, in dB, and pitch, in semitones, played by its c_voice; and its
 -- randomness, 0 to 100 (Brendan, 2026-11-05).
 R.VOL_MIN, R.VOL_MAX = -30, 6
@@ -1019,13 +1027,14 @@ end
 
 -- ---------------------------------------------------------------- rush
 -- Knob 4 past u_tempo's handoff (Brendan, 2026-11-05). st.rush is nil, "waiting" for the step that
--- ends the loop, "on", or "parked" by STOP. The loop is what is being repeated, as it ran: the steps
--- of the repeat pad held, pad-35's being one, or the whole pattern, the global loop. Its frequency
--- starts at 1000 / span, playback speed 1, so nothing jumps, which is (1000 / 15) / N if its steps
--- ran at 1000 BPM, and goes up evenly with the rest of the knob's turn to R.RUSH_HZ, whatever its
--- length. At the capture the sequencer stops: no hits, and the step clock's ticks shut off in
--- c_steps.pd, since a Lua call and the phone's state 66 times a second would be for nothing. A tail
--- loop stops too, under e_rush's mute, since the recording has it; it goes on where it was after.
+-- ends the loop, "on", "landing" while the loop says where it is, or "parked" by STOP. The loop is what
+-- is being repeated, as it ran: the steps of the repeat pad held, pad-35's being one, or the whole
+-- pattern, the global loop. Its frequency starts at 1000 / span, playback speed 1, so nothing jumps,
+-- which is (1000 / 15) / N if its steps ran at 1000 BPM, and goes up evenly with the rest of the knob's
+-- turn to R.RUSH_HZ, whatever its length. At the capture the sequencer stops: no hits, and the step
+-- clock's ticks shut off in c_steps.pd, since a Lua call and the phone's state 66 times a second would
+-- be for nothing. A tail loop stops too, under e_rush's mute, since the recording has it; it goes on
+-- where it was after.
 
 local function rush_hz(st)
   return st.rush_f0 * (R.RUSH_HZ / st.rush_f0) ^ st.rush_t
@@ -1037,16 +1046,43 @@ local function rush_row(hz)
   return { "disp", "rush", { shown, "Hz" } }
 end
 
+-- At hz, the loop's gain and the sine's: the loop alone, then an equal-power cross, as the two have
+-- nothing in common, then the sine alone, fading evenly up the turn to nothing at the top.
+function R.rush_mix(hz)
+  if hz <= R.RUSH_RAW then return 1, 0 end
+  if hz < R.RUSH_PURE then
+    local u = math.log(hz / R.RUSH_RAW) / math.log(R.RUSH_PURE / R.RUSH_RAW)
+    return math.cos(u * math.pi / 2), math.sin(u * math.pi / 2)
+  end
+  local fade = 1 - math.log(hz / R.RUSH_PURE) / math.log(R.RUSH_HZ / R.RUSH_PURE)
+  return 0, math.max(0, fade)
+end
+
+-- The two told when they change, which below R.RUSH_RAW is never.
+local function tell_mix(st, out, hz)
+  local loop, sine = R.rush_mix(hz)
+  if st.rush_loop == loop and st.rush_sine == sine then return end
+  st.rush_loop, st.rush_sine = loop, sine
+  out[#out + 1] = { "note", "rush-mix", { loop, sine } }
+end
+
 -- The step's boundary, or now if nothing is playing: the steps that just ran are the loop.
 local function rush_take(st)
   local n = math.min(st.rep > 0 and st.rep or R.global_last(st), #st.ran)
-  local span = 0
-  for i = #st.ran - n + 1, #st.ran do span = span + st.ran[i] end
+  local span, loop = 0, {}
+  for i = #st.ran - n + 1, #st.ran do
+    span = span + st.ran[i]
+    loop[#loop + 1] = st.ran[i]
+  end
   if span <= 0 then span = 15 end
   span = math.min(span, R.RUSH_MAX)
-  st.rush, st.rush_f0 = "on", 1000 / span
+  st.rush, st.rush_f0, st.rush_ran = "on", 1000 / span, loop
+  st.rush_loop, st.rush_sine = nil, nil
   local hz = rush_hz(st)
-  local out = { { "note", "rush", { span, hz } }, { "clock", "ticks", { 0 } }, rush_row(hz) }
+  local out = { { "note", "rush", { span, hz } } }
+  tell_mix(st, out, hz)
+  out[#out + 1] = { "clock", "ticks", { 0 } }
+  out[#out + 1] = rush_row(hz)
   if st.taping then out[#out + 1] = { "note", "tape-run", { 0 } } end
   return out
 end
@@ -1063,7 +1099,10 @@ function R.rush(st, t)
   st.rush_t = clip(num(t), 0, 1)
   if st.rush == "on" then
     local hz = rush_hz(st)
-    return { { "note", "rush-rate", { hz } }, rush_row(hz) }
+    local out = { { "note", "rush-rate", { hz } } }
+    tell_mix(st, out, hz)
+    out[#out + 1] = rush_row(hz)
+    return out
   end
   if st.rush then return {} end
   if not st.playing then return rush_take(st) end
@@ -1071,11 +1110,69 @@ function R.rush(st, t)
   return {}
 end
 
--- rush-off, from u_tempo: back below the handoff, or something else has set the tempo.
+-- rush-off, from u_tempo: something else has set the tempo.
 function R.rush_off(st)
   local out = {}
-  if st.rush == "on" then rush_end(st, out) end
+  if st.rush == "on" or st.rush == "landing" then rush_end(st, out) end
   st.rush = nil
+  return out
+end
+
+-- rush-back <bpm>, from u_tempo: the knob is back below the handoff (Brendan, 2026-11-05: "It doesn't
+-- really skip on the way up, but it does on the way down."). The steps must land where the loop is, not
+-- where they stopped, so the loop is asked: at speed 1, in case the knob was thrown, e_rush answers with
+-- its phase, rush-at, in this same instant, and crosses back over 40 ms, the loop playing on over
+-- the first hits.
+function R.rush_back(st, bpm)
+  if st.rush ~= "on" then
+    st.rush = nil
+    return {}
+  end
+  st.rush, st.rush_t, st.rush_land = "landing", 0, num(bpm)
+  local hz = rush_hz(st)
+  local out = { { "note", "rush-rate", { hz } } }
+  tell_mix(st, out, hz)
+  out[#out + 1] = { "note", "rush-back", {} }
+  return out
+end
+
+-- rush-at <phase>, from e_rush: 0 to 1 through the loop. It is on one of its steps, and part way
+-- through it, by how long each ran, and those are back steps from the last of them, where the sequencer
+-- stands. So: a held repeat's next step, or the global loop's place and each track's in its own, go back
+-- that far, and the parity of the pair with them; and the step clock's phase, two steps a cycle, is set
+-- so the next step comes when this one ends in the loop. Swing is ignored, an error under a step at
+-- these speeds. R.RUSH_LAND keeps that next step from coming before the ticks are back on.
+function R.rush_at(st, phase)
+  if st.rush ~= "landing" then return {} end
+  st.rush = nil
+  local loop = st.rush_ran
+  local total = 0
+  for _, ms in ipairs(loop) do total = total + ms end
+  local at, step, through = clip(num(phase), 0, 1) * total, #loop, 0
+  for k, ms in ipairs(loop) do
+    if at < ms then
+      step, through = k, at / ms
+      break
+    end
+    at = at - ms
+  end
+  local back = math.max(0, #loop - step)
+  if st.rep > 0 then
+    if #st.win >= st.rep then
+      local rk = (st.rk - back) % #st.win
+      -- 0 is the replay beginning, which would tell the tails again.
+      if rk == 0 and st.taping then rk = #st.win end
+      st.rk = rk
+    end
+  elseif st.playing and #loop > 0 then
+    st.master = (st.master - 1 - back) % R.global_last(st) + 1
+    for t = 1, R.TRACKS do st.pos[t] = (st.pos[t] - 1 - back) % R.last_of(st, t) + 1 end
+  end
+  st.pair = (st.pair + back) % 2
+  local step_ms = 15000 / math.max(1, st.rush_land)
+  through = math.min(through, 1 - R.RUSH_LAND / step_ms)
+  local out = { { "clock", "place", { (st.pair == 1 and 0 or 0.5) + through / 2 } } }
+  if st.taping then out[#out + 1] = { "note", "tape-run", { 1 } } end
   return out
 end
 
@@ -1324,7 +1421,7 @@ end
 -- What arrives on the first inlet: u_map's drum-page presses and releases, <selector> <n>
 -- <velocity>, step, vel, pad and rep and the 500 BPM repeat's fast and the saved tempo's recall;
 -- its knobs, last and track-last with the knob's 0-1, and swing, which no row of the table names
--- since knob 4 became rush (Brendan, 2026-11-05) but a row could; rush <0-1> and rush-off, u_tempo's; the drum
+-- since knob 4 became rush (Brendan, 2026-11-05) but a row could; rush <0-1>, rush-back <bpm> and rush-off, u_tempo's, and rush-at <0-1>, c_kit's; the drum
 -- screen's sync,
 -- snap and select, and its pads' vol, pitch, randomness and set-track-last <track> <value>,
 -- through u_net; and the arrangement screen's num and den (-1 or 1), drunk (0 to 100), set-swing
@@ -1344,6 +1441,8 @@ R.presses = {
   swing = function(st, a) return a[1] and R.knob_swing(st, a[1]) or {} end,
   rush = function(st, a) return R.rush(st, a[1]) end,
   ["rush-off"] = function(st) return R.rush_off(st) end,
+  ["rush-back"] = function(st, a) return R.rush_back(st, a[1]) end,
+  ["rush-at"] = function(st, a) return R.rush_at(st, a[1]) end,
   sync = function(st) return R.sync(st) end,
   snap = function(st) return R.snap(st) end,
   select = function(st, a) return a[1] and R.select(st, a[1]) or {} end,

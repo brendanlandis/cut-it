@@ -132,8 +132,8 @@ check("past it: how far alone, 1 at the top", #out == 1 and sent(out, "steps") =
 out = R.inputs.rush(st, { x_at(990), 1, 1000 })
 check("⛔ coming down it holds on a little under the handoff, so a knob at rest does not capture again",
       #out == 1 and sent(out, "steps") == 0, T.show(out))
-equal("⛔ below that: the tempo, and the loop told to stop", R.inputs.rush(st, { x_at(700), 1, 1000 }),
-      { { "bus", "float", { 700 } }, { "steps", "rush-off", {} }, { "disp", "rush", { 700, "bpm" } } })
+equal("⛔ below that: the tempo, then the loop told to hand back at it", R.inputs.rush(st, { x_at(700), 1, 1000 }),
+      { { "bus", "float", { 700 } }, { "steps", "rush-back", { 700 } }, { "disp", "rush", { 700, "bpm" } } })
 for _, c in ipairs({ { "a tap", function(q) R.tap(q, 5000); return R.tap(q, 500) end, 120 },
                      { "the phone", function(q) return R.inputs.tempo(q, { 133 }) end, 133 },
                      { "a section's restore", function(q) return R.inputs.restored(q, { 90 }) end, 90 } }) do

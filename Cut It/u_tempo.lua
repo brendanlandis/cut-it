@@ -10,7 +10,8 @@
 --   {"put", "float", {1 or 0}}           whether a BPM on the bus is put in the section
 --   {"err", "fail", {"u_tempo", text}}   to err (C-12)
 --   {"bus", "float", {bpm}}              to the tempo bus alone: rush's, whose knob holds knob 1 itself
---   {"steps", "rush", {t}} and "rush-off" {}   to c_steps: how far past the handoff, 0 to 1, and back
+--   {"steps", "rush", {t}}, "rush-back" {bpm} and "rush-off" {}   to c_steps: how far past the handoff,
+--                                        0 to 1; the knob back below it; and something else set the tempo
 --   {"disp", "rush", {value, unit}}      rush's row, to disp
 --   {"hold", "float", {bpm}}             to u_map alone: hold the knobs there, the bus staying as it is
 
@@ -177,7 +178,7 @@ function R.rush(st, x, live, now)
   out[#out + 1] = { "bus", "float", { r.bpm } }
   if r.looping then
     r.looping = false
-    out[#out + 1] = { "steps", "rush-off", {} }
+    out[#out + 1] = { "steps", "rush-back", { r.bpm } }
   end
   out[#out + 1] = rush_row(r.bpm, "bpm")
   return out

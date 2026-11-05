@@ -9,7 +9,7 @@
 -- u_tempo.pd's own -- init.
 -- outlet 1: a BPM, to the tempo bus. outlet 2: err. outlet 3: a bang on init, the proof the Lua
 -- loaded. outlet 4: 1 or 0, whether a BPM on the bus is put in the section. outlet 5: rush's BPM,
--- to the tempo bus alone. outlet 6: rush <0-1> and rush-off, to c_steps. outlet 7: rush's row, to
+-- to the tempo bus alone. outlet 6: rush <0-1>, rush-back <bpm> and rush-off, to c_steps. outlet 7: rush's row, to
 -- disp. outlet 8: a BPM to hold the knobs at, to u_map alone.
 --
 -- A Lua error leaves outlet 2 as fail u_tempo lua-<selector>, and its text goes to Pd's console

@@ -2019,10 +2019,10 @@ local cap = R.internal.tick(st, { 1000 })
 check("⛔ the step ends the loop: with no repeat held the whole pattern, 16 steps as they ran, at speed 1",
       cap[1][2] == "rush" and near(cap[1][3][1], 240) and near(cap[1][3][2], 1000 / 240), T.show(cap))
 equal("⛔ ... the ticks shut off then, no step moved, and the row is its real frequency",
-      { cap[2], cap[3], st.pos[1] }, { { "clock", "ticks", { 0 } }, { "disp", "rush", { 4.2, "Hz" } }, pos_before })
+      { cap[3], cap[4], st.pos[1] }, { { "clock", "ticks", { 0 } }, { "disp", "rush", { 4.2, "Hz" } }, pos_before })
 local rate = R.presses.rush(st, { 1 })
 check("⛔ a sixteen-step loop reaches 22 kHz at the top of the turn", near(rate[1][3][1], 22000)
-      and rate[2][3][1] == 22000 and rate[2][3][2] == "Hz", T.show(rate))
+      and rate[3][3][1] == 22000 and rate[3][3][2] == "Hz", T.show(rate))
 rate = R.presses.rush(st, { 0.5 })
 check("⛔ ... evenly in ratio: half way is the geometric mean", near(rate[1][3][1], (1000 / 240 * 22000) ^ 0.5),
       T.show(rate))
@@ -2079,5 +2079,75 @@ equal("⛔ ... and the knob moving on neither brings it back nor shows a rate th
 check("... parked until the knob comes down or PLAY", st.rush == "parked", st.rush)
 R.internal.start(st, {})
 check("PLAY lets the next turn take again", st.rush == nil, st.rush)
+
+print("\n--- rush, how the top vanishes ---")
+local function mix(hz) return { R.rush_mix(hz) } end
+equal("⛔ the raw loop alone up to the first frequency", { mix(100), mix(R.RUSH_RAW) }, { { 1, 0 }, { 1, 0 } })
+local mid_mix = mix((R.RUSH_RAW * R.RUSH_PURE) ^ 0.5)
+check("⛔ half way across, the two at equal power, since they have nothing in common",
+      near(mid_mix[1], 0.5 ^ 0.5) and near(mid_mix[2], 0.5 ^ 0.5), T.show(mid_mix))
+equal("⛔ from the second, the sine alone", mix(R.RUSH_PURE), { 0, 1 })
+equal("⛔ ... and nothing at all at the top", mix(R.RUSH_HZ), { 0, 0 })
+st = R.new(1)
+going(st, 16)
+R.presses.rush(st, { 0 })
+R.internal.tick(st, { 1000 })
+local same = R.presses.rush(st, { 0.1 })
+equal("the gains are told only when they change: nothing below the first frequency", #same, 2)
+same = R.presses.rush(st, { 0.9 })
+equal("⛔ ... and up there, with the rate", same[2][2], "rush-mix")
+
+print("\n--- rush, the way down ---")
+-- Sixteen steps at 1000 BPM, 240 ms, the last of them step 3 of the pattern's 16 wrapped: 19 ticks.
+st = R.new(1)
+R.internal.start(st, {})
+for _ = 1, 19 do R.internal.tick(st, { 1000 }) end
+local stood = { st.master, st.pos[1], st.pair }
+R.presses.rush(st, { 0 })
+R.internal.tick(st, { 1000 })
+R.presses.rush(st, { 0.9 })
+local down = R.presses["rush-back"](st, { 970 })
+equal("⛔ the loop is brought to speed 1, in case the knob was thrown, then asked where it is",
+      { down[1][2], near(down[1][3][1], 1000 / 240), down[2][3], down[3][2] },
+      { "rush-rate", true, { 1, 0 }, "rush-back" })
+equal("⛔ ... the steps staying shut until it answers", st.rush, "landing")
+-- 0.53 of the way through sixteen even steps is step 9, 0.48 of the way through it, 7 back from the last.
+local landed = R.presses["rush-at"](st, { 0.53 })
+equal("⛔ the global place goes back to the step the loop was on", st.master, (stood[1] - 1 - 7) % 16 + 1)
+equal("⛔ ... and each track's from it", st.pos[1], (stood[2] - 1 - 7) % 16 + 1)
+equal("⛔ ... and the pair's parity with it", st.pair, (stood[3] + 7) % 2)
+check("⛔ the next step comes when that step ends in the loop: the clock's phase, two steps a cycle",
+      landed[1][2] == "place" and near(landed[1][3][1], (st.pair == 1 and 0 or 0.5) + 0.48 / 2), T.show(landed))
+equal("... once", R.presses["rush-at"](st, { 0.5 }), {})
+local before_tick = st.pos[1]
+R.internal.tick(st, { 970 })
+equal("⛔ then the pattern carries on from there", st.pos[1], before_tick % 16 + 1)
+
+st = R.new(1)
+going(st, 5)
+R.presses.rep(st, { 3, 127 })
+R.internal.tick(st, { 1000 })
+R.internal.tick(st, { 1000 })
+R.presses.rush(st, { 0 })
+R.internal.tick(st, { 1000 })
+local rk = st.rk
+R.presses["rush-back"](st, { 970 })
+landed = R.presses["rush-at"](st, { 0.2 })
+equal("⛔ with a repeat held it is the window's place, two of its three steps back", st.rk, (rk - 2) % 3 + (((rk - 2) % 3 == 0) and 3 or 0))
+equal("⛔ ... and its tail loop goes on", landed[2], { "note", "tape-run", { 1 } })
+equal("⛔ the loop's place in a next step too near to catch is held off, so the ticks are back on first",
+      (function()
+        local q = R.new(1)
+        going(q, 16)
+        R.presses.rush(q, { 0 })
+        R.internal.tick(q, { 1000 })
+        R.presses["rush-back"](q, { 975 })
+        local o = R.presses["rush-at"](q, { 0.9999 })
+        return math.floor((o[1][3][1] % 0.5) * 2 * 1000) <= math.floor((1 - 5 / (15000 / 975)) * 1000)
+      end)(), true)
+equal("rush-back with no loop going does nothing", (function()
+  local q = R.new(1)
+  return R.presses["rush-back"](q, { 975 })
+end)(), {})
 
 os.exit(T.report() == 0)

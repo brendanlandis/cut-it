@@ -219,6 +219,12 @@ SEQ = [
     (40700, "RO-STOP", ["\\; stop bang", "\\; seqgate-osc drums randomness 1 0"], GAP),
     (40900, "RO-BACK", ["\\; start bang"], GAP),
     (41300, "RO-END", ["\\; stop bang"], GAP),
+    # The saved-tempo pad restarts at once: steps at 41420 and each 125 ms, so its press, at 41750,
+    # falls between 41670 and 41795, and a note before RX-SOON can only be the restart's step 1.
+    (41400, "RX-PLAY", ["\\; start bang"], GAP),
+    (41730, "RX-PRESS", [P("pad-38")], GAP),
+    (41755, "RX-SOON", [], GAP),
+    (41900, "RX-OFF", [P("pad-38", 0), "\\; stop bang"], GAP),
     # u_song's draft goes out every 2 s, so past the last change's turn.
     (43700, "DONE", [], GAP),
 ]

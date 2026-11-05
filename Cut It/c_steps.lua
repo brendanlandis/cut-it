@@ -17,6 +17,7 @@
 --    | "recall", {...}}                                       to g_grid's third inlet
 --   {"save", "list", {581, 711, 743, 759, 760 or 776 numbers, R.save}}
 --                                                             to the state bus, put section <part>
+--   {"clock", "restart", {}}                                 to the start bus, the saved tempo's press
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
 --   {"bar", "bar", {}}                                        to u_song: the pattern's loop ends
 --   {"song", "recall", {key}}                                 to u_song: a part's saved value
@@ -749,13 +750,15 @@ end
 
 -- The saved tempo, pad-38 (Brendan, 2026-11-05): a press asks u_song for the section's saved tempo,
 -- which comes back as a section starting's does, on the state bus to u_tempo. Its lamp lights while
--- it is held, and the release does nothing else. The press also starts every loop again at step 1
--- on the next step (Brendan, 2026-11-05), as a section starting does, the clock running on.
+-- it is held, and the release does nothing else. While playing, the press also starts every loop
+-- at step 1 that instant (Brendan, 2026-11-05: "it shouldn't wait for a new step"): the start bus,
+-- as a press of PLAY, sent after the tempo so step 1 lands at the saved BPM. Stopped, it starts
+-- nothing.
 function R.press_recall(st, velocity)
   if velocity == 0 then return { { "page", "recall", { 0 } } } end
-  st.master = 0
-  for t = 1, R.TRACKS do st.pos[t] = 0 end
-  return { { "page", "recall", { 1 } }, { "song", "recall", { "tempo" } } }
+  local out = { { "page", "recall", { 1 } }, { "song", "recall", { "tempo" } } }
+  if st.playing then out[3] = { "clock", "restart", {} } end
+  return out
 end
 
 -- The drum screen selects a track without playing it, as a pad press does otherwise.

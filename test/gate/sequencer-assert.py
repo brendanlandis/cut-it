@@ -68,7 +68,8 @@ WINDOWS = ["EARLY", "RESTORE", "NINE", "THREE", "ROW-PRESS", "ROW-DARK", "SEVEN"
                                            "FAST-PRESS", "FAST-HELD", "FAST-KNOB", "FAST-OFF",
                                            "FAST-KNOB2", "FAST-STOP", "RC-SAVE", "RC-MOVE",
                                            "RC-PRESS", "RC-OFF", "RC-KNOB", "ROLL", "RO-PLAY",
-                                           "RO-STOP", "RO-BACK", "RO-END", "DONE"]
+                                           "RO-STOP", "RO-BACK", "RO-END", "RX-PLAY", "RX-PRESS",
+                                           "RX-SOON", "RX-OFF", "DONE"]
 EDITS = ["ROW-PRESS", "ROW-DARK", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
 
@@ -712,6 +713,8 @@ def main():
             % (lamp("FAST-HELD", "fast"), lamp("FAST-STOP", "fast"), lamp("FAST-HELD", "rep")))
 
     print("\n--- the saved tempo, pad-38 ---")
+    A.check("⛔ pressed while playing, step 1 sounds at once, within 5 ms, between two steps due",
+            ons("RX-PRESS") != [], "before 5 ms: %s, after: %s" % (ons("RX-PRESS"), ons("RX-SOON")[:2]))
     edge = lambda k, i: G.edges(frames(k)[-1])[i] if frames(k) else "no frame"
     A.check("saved at 120 and moved to 200, the draft holds 200 and save lights",
             tempo_puts("RC-MOVE") == [["200"]] and edge("RC-MOVE", G.SAVE) == G.SAVE_ON,

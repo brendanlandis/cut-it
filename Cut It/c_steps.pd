@@ -124,7 +124,7 @@
 #X msg 300 1030 0;
 #X obj 160 1080 r \$0-swing;
 #X obj 160 1115 sig~ 0.5;
-#X obj 2550 1250 route swing rate;
+#X obj 2550 1250 route swing rate restart;
 #X obj 2550 1300 s \$0-swing;
 #X obj 2700 1300 s \$0-rate;
 #X connect 4 0 60 0;
@@ -172,3 +172,5 @@
 #X connect 88 0 89 1;
 #X connect 6 0 89 0;
 #X connect 89 0 57 0;
+#X obj 2800 1300 s start;
+#X connect 78 2 90 0;

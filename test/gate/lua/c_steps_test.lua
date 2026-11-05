@@ -1268,9 +1268,10 @@ equal("⛔ pressed before anything has played: the tempo and its lamp, and no re
         local q = R.new(1)
         return R.presses.fast(q, { 1, 127 })
       end)(), { { "tempo", "fast", { 1 } }, { "page", "fast", { 1 } } })
-equal("⛔ pad-38 pressed: its lamp lights, and u_song is asked for the saved tempo",
+equal("⛔ pad-38 pressed, playing: its lamp lights, u_song is asked for the saved tempo, and the "
+      .. "loops restart on the start bus",
       R.presses.recall(st, { 1, 127 }),
-      { { "page", "recall", { 1 } }, { "song", "recall", { "tempo" } } })
+      { { "page", "recall", { 1 } }, { "song", "recall", { "tempo" } }, { "clock", "restart", {} } })
 equal("... and let go, only its lamp", R.presses.recall(st, { 1, 0 }),
       { { "page", "recall", { 0 } } })
 
@@ -1960,14 +1961,12 @@ equal("⛔ a line saved in an older shape is put back, as today's", R.internal.r
 
 print("\n--- the saved-tempo pad ---")
 st = R.new(1)
-R.presses.last(st, { at(16) })
 R.internal.start(st, {})
-R.presses.step(st, { 1, 100 })
-for _ = 1, 5 do R.internal.tick(st, {}) end
-R.presses.recall(st, { 127 })
-local t1 = R.internal.tick(st, {})
-local at1
-for _, e in ipairs(t1) do if e[1] == "page" and e[2] == "play" then at1 = e[3][1] end end
-equal("⛔ a press starts every loop again: the next step is step 1", at1, 1)
+local press = R.presses.recall(st, { 127 })
+equal("⛔ a press while playing asks for the saved tempo, then restarts at once, on the start bus",
+      { press[2], press[3] }, { { "song", "recall", { "tempo" } }, { "clock", "restart", {} } })
+R.presses.recall(st, { 0 })
+R.internal.stop(st, {})
+equal("⛔ stopped, it starts nothing", #R.presses.recall(st, { 127 }), 2)
 
 os.exit(T.report() == 0)

@@ -9,7 +9,7 @@ The rate limit is `phone-assert`'s, and the page structure, what each control se
 - [ ] **1. The link is up, on page 1**
   - **Need:** TouchOSC open on the phone with Cut It's layout, on the same network. A no link here means nothing below can be judged.
   - **Send:** `mode mode-1`
-  - **Pass if:** The phone shows the arrangement screen: the tempo large and red on the left with bpm under it, playing or stopped with its lamp, and its link lamp lit teal beside the word link rather than no link; on the right the time signature as 4 / 4, the last step 16, and two knobs, swing at 50% and drunk at 0%.
+  - **Pass if:** The phone shows the arrangement screen: on the left the tempo, large and red, captioned tempo, the tap button under it, and playing or stopped with its lamp on the bottom row; on the right the time signature as 4 / 4, the last step 16, and two knobs, swing at 50% and drunk at 0%, each captioned in small grey words flush left above it, and the link lamp lit teal beside the word link rather than no link on the bottom row. Every edge lines up with the ones above and beside it, and nothing sits close to the notch.
 
 - [ ] **2. Only the page's own tabs**
   - **Need:** Page 1, as step 1 left it.

@@ -192,6 +192,27 @@ def synths():
     return re.findall(r'"([\w-]+)"', m.group(1)) if m else None
 
 
+def on_pages(doc):
+    """(page, name, type, frame, props) for every control on a page, its frame its own (relative
+    to the page): the children of each pager's page. Pagers and pages themselves are TouchOSC's
+    to size, from the phone's screen, and are left out."""
+    out = []
+    for pager in doc.getElementsByTagName("node"):
+        if pager.getAttribute("type") != "PAGER":
+            continue
+        for kids in [c for c in pager.childNodes if c.nodeName == "children"]:
+            for page in [k for k in kids.childNodes if k.nodeName == "node"]:
+                pname = props(page)[0].get("name")
+                for pk in [c for c in page.childNodes if c.nodeName == "children"]:
+                    for n in [k for k in pk.childNodes if k.nodeName == "node"]:
+                        t = n.getAttribute("type")
+                        if t in ("PAGER", "GROUP"):
+                            continue
+                        p, _v = props(n)
+                        out.append((pname, p.get("name"), t, p.get("frame", (0, 0, 0, 0)), p))
+    return out
+
+
 def controls(doc):
     """[(name, type, visible, script, text, x, color, tabLabel, tabbar, parent)] for every node,
     in the file's order."""
@@ -404,6 +425,28 @@ def main():
             len(pad) == 16 and phone == pad,
             "pad 1: phone row %s, Launchpad row %s (rows from the bottom)"
             % (phone.get(1, ("?",))[0], pad.get(1, ("?",))[0]))
+
+    # The grid (Brendan, 2026-11-04: "make use of the existing grid"): TouchOSC's editor snaps to
+    # 20 points, so a control off it moves the moment it is touched in the editor.
+    placed = on_pages(doc)
+    off = ["%s/%s %s" % (pg, n, " ".join("%g" % v for v in f)) for pg, n, t, f, p in placed
+           if any(v % B.G for v in f)]
+    A.check("⛔ every control on a page sits on TouchOSC's %d-point editor grid" % B.G,
+            len(placed) > 50 and not off, "%d placed; off the grid: %s" % (len(placed), off[:6]))
+    out = ["%s/%s" % (pg, n) for pg, n, t, f, p in placed
+           if f[0] < B.X0 or f[0] + f[2] > B.X1 or f[1] < B.Y0 or f[1] + f[3] > B.Y1]
+    A.check("every control is inside its page: a step from the left and the top, clear of the "
+            "notch on the right, above the bottom", not out, "outside: %s" % out[:6])
+    # A caption names the control under it: small, grey, flush left with it, just above it.
+    grey = tuple(round(c, 3) for c in B.GREY[:3])
+    caps = [(pg, n, f) for pg, n, t, f, p in placed if t == "LABEL" and p.get("textAlignH") == "1"
+            and float(p.get("textSize") or 0) == 14 and f[3] == B.G
+            and tuple(round(c, 3) for c in p.get("textColor", (0, 0, 0))[:3]) == grey]
+    loose = [(pg, n) for pg, n, f in caps
+             if not any(q == pg and t != "LABEL" and g[0] == f[0] and g[1] == f[1] + f[3]
+                        for q, m, t, g, p in placed)]
+    A.check("every caption sits flush left over the control it names, a step above it",
+            len(caps) >= 6 and not loose, "%d captions; not over a control: %s" % (len(caps), loose))
 
     lc = open(os.path.join(B.CHECKLISTS, B.LIST + ".md"), encoding="utf-8").read()
     A.check("⛔ the line check, the page's checklist, has no Send line: the phone sends none",

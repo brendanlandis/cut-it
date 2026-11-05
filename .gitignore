@@ -5,3 +5,5 @@ __pycache__/
 Cut It/samples/
 # What tools/touchosc/build.py last wrote, so it can tell a layout saved from TouchOSC.
 tools/touchosc/.built
+# tools/touchosc/preview.py draws the phone pages here.
+tools/touchosc/preview/

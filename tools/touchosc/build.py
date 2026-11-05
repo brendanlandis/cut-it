@@ -50,9 +50,20 @@ STAMP = os.path.join(HERE, ".built")   # what the last build wrote, untracked
 CHECKLISTS = os.path.join(ROOT, "test", "checklists")
 DRUM_PAGE = os.path.join(ROOT, "Cut It", "cut-it-drum-page.txt")
 
-W, H, TAB = 896, 414, 44    # an iPhone 11 in landscape, in points, and the tab bar
-L, R = 14, 44               # kept clear: the left edge, the notch on the right
-TOP = TAB + 10              # where a page's content starts, from the top of the screen
+W, H, TAB = 896, 414, 40    # an iPhone 11 in landscape, in points, and the tab bar, two steps
+R = 44                      # kept clear on the right: the notch
+
+# The grid. TouchOSC's editor grid is 20 points and snaps (editor.grid.step in its app.cfg), so
+# every control sits on it: its x, y, width and height are whole steps, and a control moved in
+# the editor lands where a build would put it (Brendan, 2026-11-04: "The TouchOSC designs should
+# make use of the existing grid"). A page's coordinates are its own, from under its tab bar.
+G = 20
+X0, X1 = G, 840             # content's left and right edges: a step in, and clear of the notch
+Y0, Y1 = G, 320             # its top, a step under the tab bar, and its bottom
+PANEL = 300                 # the left panel's width, X0 to 320
+COL = (340, 600)            # the right panel's two columns' left edges, a step after the panel
+CW = 240                    # a column's width, so the two meet at the gutter and end at X1
+STATUS = 300                # the bottom row: a lamp and its words, the same place on every page
 
 
 def rgb(r, g, b, a=1.0):
@@ -266,13 +277,6 @@ def node(kind, name, frame, children=(), text=None, x=0, **over):
     return "".join(out)
 
 
-def y(v):
-    """A y measured from the top of the screen under one tab bar, as a page's own: a page's
-    content starts at TOP, TAB under its own tabs. In the editor the outer bar is above those too,
-    and on the phone the root's script hides it."""
-    return v - TAB
-
-
 # The labels that show a value, anything Cut It's state changes: monospaced. The rest, the
 # captions and button names, take TouchOSC's default font (Brendan, 2026-11-04).
 VALUES = {"tempo", "play", "link", "dlink", "slink", "pending", "num", "den", "last", "drunkv",
@@ -382,8 +386,8 @@ KNOWS = ("local known\n"
          "end\n")
 
 
-def knob(name, cx, cy, d, caption, lo=0, hi=100, cmd=None):
-    """A ring knob, lo to hi, its value in its middle and its name under it. It sends drums <cmd>
+def knob(name, x, y_, text, lo=0, hi=100, cmd=None, d=5 * G):
+    """A ring knob, lo to hi, its value in its middle and its name over it, flush left. It sends drums <cmd>
     <value>, the knob's name unless told otherwise."""
     span = hi - lo
     script = (KNOWS % ("(value - %d) / %d" % (lo, span))) + (
@@ -395,10 +399,10 @@ def knob(name, cx, cy, d, caption, lo=0, hi=100, cmd=None):
         "  sendOSC('/cutit', 'drums', '%s', v)\n"
         "  root:notify('touched', '%s')\n"
         "end\n" % (lo, span, cmd or name, name))
-    f = (cx - d / 2, cy - d / 2, d, d)
-    return [node("RADIAL", name, f, color=RED, outlineStyle=0, script=script),
-            label(name + "v", f, "%d%%" % lo, 14),
-            label(name + "c", (cx - 60, cy + d / 2 + 2, 120, 20), caption, 14, GREY)]
+    f = (x, y_ + G, d, d)
+    return [caption(name + "c", x, y_, d, text),
+            node("RADIAL", name, f, color=RED, outlineStyle=0, script=script),
+            label(name + "v", f, "%d%%" % lo, 14)]
 
 
 def box(name, f, steps, cmd, factor):
@@ -477,40 +481,48 @@ def tabs(name, pages, frame=(0, 0, W, H - TAB), **over):
     return node("PAGER", name, frame, pages, **style)
 
 
+def caption(name, x, y_, w, text):
+    """A control's name: a step tall, grey and small, flush left, just above the control at x."""
+    return label(name, (x, y_, w, G), text, 14, GREY, align=1)
+
+
+def status(led_name, name, x, text, w=CW - G):
+    """A lamp and its words on the bottom row, the lamp first, the words flush left after it."""
+    return [led(led_name, (x, STATUS, G, G), TEAL),
+            label(name, (x + G, STATUS, w, G), text, 16, GREY, align=1)]
+
+
 # ------------------------------------------------------------------ the arrangement screen (page 1)
 def arrangement():
     """The global controls (Brendan, 2026-11-04): the tempo, large, dragged a BPM at a time, which
-    lives on the phone alone, and tapped under it; playing or stopped; the time signature, the global last step, the
-    swing and the drunkenness; and the link."""
+    lives on the phone alone, and tapped under it; playing or stopped; the time signature, the
+    global last step, the swing and the drunkenness; and the link."""
     k = []
-    # left: the tempo, playing or stopped, the link
+    # the left panel: the tempo, the tap under it, playing or stopped on the bottom row
     lo, hi = TEMPO
-    k.append(setbox("tempobox", (L, y(TOP), 250, 110), lo, hi, ["tempo"], 2))
-    k.append(label("tempo", (L, y(TOP), 250, 110), "-", 72, RED))
-    k.append(label("tempoc", (L, y(TOP + 112), 250, 18), "bpm", 14, GREY))
-    k.append(button("tap", (L, y(TOP + 190), 250, 70), RED, tap_script()))
-    k.append(label("tapl", (L, y(TOP + 190), 250, 70), "tap", 22))
-    k.append(led("playled", (L, y(TOP + 158), 18, 18), TEAL))
-    k.append(label("play", (L + 28, y(TOP + 154), 160, 26), "stopped", 18, WHITE, align=1))
-    k.append(led("linkled", (L, y(TOP + 280), 14, 14), TEAL))
-    k.append(label("link", (L + 24, y(TOP + 274), 160, 26), "no link", 16, GREY, align=1))
-    # right: the time signature as [n] / [d], each box dragged a step at a time (Brendan,
-    # 2026-11-04), about 20 points a step for the top number's 32, 26 for the bottom's 5; the
-    # global last step beside it; the swing and the drunkenness under them
-    rx, bw, bh, by = 330, 84, 64, TOP + 26
-    k.append(label("timec", (rx, y(TOP), 100, 18), "time", 14, GREY, align=1))
-    k.append(box("numbox", (rx + 20, y(by), bw, bh), MAX_NUM, "num", 10))
-    k.append(label("num", (rx + 20, y(by), bw, bh), "4", 32))
-    k.append(label("slash", (rx + 20 + bw, y(by), 56, bh), "/", 32, GREY))
-    k.append(box("denbox", (rx + 76 + bw, y(by), bw, bh), len(DENS), "den", 50))
-    k.append(label("den", (rx + 76 + bw, y(by), bw, bh), "4", 32))
-    lx = rx + 320
-    k.append(label("lastc", (lx, y(TOP), 120, 18), "last step", 14, GREY, align=1))
-    k.append(setbox("lastbox", (lx, y(by), bw, bh), 1, STEPS, ["drums", "set-last"], 10))
-    k.append(label("last", (lx, y(by), bw, bh), "16", 32))
-    d, ky = 90, TOP + 170
-    k += knob("swing", rx + 62, y(ky), d, "swing", SWING[0], SWING[1], "set-swing")
-    k += knob("drunk", rx + 202, y(ky), d, "drunk")
+    k.append(caption("tempoc", X0, Y0, PANEL, "tempo"))
+    k.append(setbox("tempobox", (X0, Y0 + G, PANEL, 6 * G), lo, hi, ["tempo"], 2))
+    k.append(label("tempo", (X0, Y0 + G, PANEL, 6 * G), "-", 72, RED))
+    # the tap's bottom edge is the knobs', across the gutter
+    k.append(button("tap", (X0, 9 * G, PANEL, 3 * G), RED, tap_script()))
+    k.append(label("tapl", (X0, 9 * G, PANEL, 3 * G), "tap", 22))
+    k += status("playled", "play", X0, "stopped", PANEL - G)
+    # the right panel: the time signature as [n] / [d], each box dragged a step at a time
+    # (Brendan, 2026-11-04), about 21 points a step for the top number's 32 and the last step's,
+    # 24 for the bottom number's 5; the swing and the drunkenness under them; the link
+    a, b = COL
+    k.append(caption("timec", a, Y0, CW, "time"))
+    k.append(box("numbox", (a, Y0 + G, 4 * G, 3 * G), MAX_NUM, "num", 9))
+    k.append(label("num", (a, Y0 + G, 4 * G, 3 * G), "4", 32))
+    k.append(label("slash", (a + 4 * G, Y0 + G, 2 * G, 3 * G), "/", 32, GREY))
+    k.append(box("denbox", (a + 6 * G, Y0 + G, 4 * G, 3 * G), len(DENS), "den", 50))
+    k.append(label("den", (a + 6 * G, Y0 + G, 4 * G, 3 * G), "4", 32))
+    k.append(caption("lastc", b, Y0, CW, "last step"))
+    k.append(setbox("lastbox", (b, Y0 + G, 4 * G, 3 * G), 1, STEPS, ["drums", "set-last"], 9))
+    k.append(label("last", (b, Y0 + G, 4 * G, 3 * G), "16", 32))
+    k += knob("swing", a, 6 * G, "swing", SWING[0], SWING[1], "set-swing")
+    k += knob("drunk", b, 6 * G, "drunk")
+    k += status("linkled", "link", b, "no link")
     return k
 
 
@@ -520,30 +532,29 @@ def drums():
     and move; and the link. The tempo, the time signature and the drunkenness are the
     arrangement's (Brendan, 2026-11-04)."""
     k = []
-    # left: the sixteen pads where the drum page puts them on the Launchpad, pad 1 at the
-    # bottom left (Brendan, 2026-11-04). Teal with a dot has its own last step; the selected
-    # track is lit; each shows its last step.
-    size, gap, x0 = 68, 8, L
+    # the left panel: the sixteen pads where the drum page puts them on the Launchpad, pad 1 at
+    # the bottom left (Brendan, 2026-11-04), three steps square and a step apart, so four fill
+    # the panel's width and the page's height. Teal with a dot has its own last step; the
+    # selected track is lit; each shows its last step.
+    size, pitch = 3 * G, 4 * G
     cells = pad_cells()
     top, left = max(r for r, _ in cells.values()), min(c for _, c in cells.values())
     for n in range(1, 17):
         r, c = top - cells[n][0], cells[n][1] - left
-        f = (x0 + c * (size + gap), y(TOP + r * (size + gap)), size, size)
+        f = (X0 + c * pitch, Y0 + r * pitch, size, size)
         k.append(button("pad%d" % n, f, RED, pad_script(n)))
         k.append(label("pad%dl" % n, f, "16", 20))
-    # right: sync and snap, the line saying one waits, the selected track's two knobs, the link
-    rx = 340
-    rw = W - R - rx
-    for i, (name, text) in enumerate((("sync", "sync first steps"), ("snap", "snap to global"))):
-        f = (rx + i * (rw / 2 + 4), y(TOP), rw / 2 - 4, 60)
+    # the right panel: sync and snap, the line saying one waits, the selected track's two
+    # knobs, the link
+    a, b = COL
+    for x, (name, text) in zip(COL, (("sync", "sync first steps"), ("snap", "snap to global"))):
+        f = (x, Y0, CW, 3 * G)
         k.append(button(name, f, RED, sends(["drums", name])))
-        k.append(label(name + "l", f, text, 15))
-    k.append(label("pending", (rx, y(TOP + 64), rw, 18), "", 13, TEAL))
-    d = 90
-    for i, name in enumerate(("skip", "move")):
-        k += knob(name, rx + rw / 4 + i * rw / 2, y(TOP + 110 + d / 2), d, name)
-    k.append(led("dlinkled", (rx, y(TOP + 280), 14, 14), TEAL))
-    k.append(label("dlink", (rx + 24, y(TOP + 274), 160, 26), "no link", 16, GREY, align=1))
+        k.append(label(name + "l", f, text, 16))
+    k.append(label("pending", (a, 5 * G, X1 - a, G), "", 14, TEAL, align=1))
+    k += knob("skip", a, 7 * G, "skip")
+    k += knob("move", b, 7 * G, "move")
+    k += status("dlinkled", "dlink", b, "no link")
     return k
 
 
@@ -552,45 +563,46 @@ def synths():
     """Two large buttons, a synth each, the chosen one lit; the velocity switch, lit when on,
     under them (Brendan, 2026-11-04); and the link."""
     k = []
-    gap = 16
-    bw, bh = (W - R - L - gap) / 2, 220
+    half = (X1 - X0 - G) / 2
     for i, (choice, text) in enumerate(SYNTHS):
-        f = (L + i * (bw + gap), y(TOP), bw, bh)
+        f = (X0 + i * (half + G), Y0, half, 10 * G)
         k.append(button("s" + choice, f, RED, synth_script(choice)))
         k.append(label("s" + choice + "l", f, text, 48))
-    f = (L, y(TOP + bh + 16), 240, 64)
+    f = (X0, 13 * G, CW, 3 * G)
     k.append(button("svel", f, RED, velocity_script()))
-    k.append(label("svell", f, "velocity", 20))
-    k.append(led("slinkled", (W - R - 180, y(TOP + 288), 14, 14), TEAL))
-    k.append(label("slink", (W - R - 156, y(TOP + 282), 156, 26), "no link", 16, GREY, align=1))
+    k.append(label("svell", f, "velocity", 22))
+    k += status("slinkled", "slink", COL[1], "no link")
     return k
 
 
 # ------------------------------------------------------------------ the checklist page
 def checks():
+    """The line check a step at a time: on the left where it is, the step's title and its text;
+    on the right test mode's lamp, the synth choice, Pass and Fail, Back and Next."""
     k = []
-    k.append(label("cpos", (L, y(TOP), 340, 40), "-", 16, GREY, align=1))
-    k.append(led("tled", (W - R - 170, y(TOP + 13), 14, 14), TEAL))
-    k.append(label("tmode", (W - R - 148, y(TOP), 148, 40), "no link", 16, GREY, align=1))
+    rx, half = 31 * G, 5 * G          # the right column, and a button's width in it
+    # the top row: where the page is, and test mode's lamp and words
+    k.append(label("cpos", (X0, Y0, rx - G - X0, G), "-", 16, GREY, align=1))
+    k.append(led("tled", (rx, Y0, G, G), TEAL))
+    k.append(label("tmode", (rx + G, Y0, X1 - rx - G, G), "no link", 16, GREY, align=1))
+    # the step: its title, then its text, a page of it at a time
+    k.append(label("ctitle", (X0, 3 * G, rx - G - X0, 2 * G), "-", 22, WHITE, align=1))
+    k.append(node("TEXT", "cbody", (X0, 5 * G, rx - G - X0, 11 * G), text="", background=False,
+                  textColor=rgb(210, 210, 210), textSize=16, textAlignH=1, textAlignV=1))
     # the synth choice, as on the synths screen, so the line check plays either synth without
     # leaving test mode (Brendan, 2026-11-04)
     for i, (choice, text) in enumerate(SYNTHS):
-        f = (370 + i * 155, y(TOP), 145, 40)
+        f = (rx + i * (half + G), 3 * G, half, 2 * G)
         k.append(button("c" + choice, f, RED, synth_script(choice)))
         k.append(label("c" + choice + "l", f, text, 16))
-    k.append(label("ctitle", (L, y(TOP + 48), 600, 30), "-", 22, WHITE, align=1))
-    k.append(node("TEXT", "cbody", (L, y(TOP + 82), 600, 232), text="", background=False,
-                  textColor=rgb(210, 210, 210), textSize=16, textAlignH=1, textAlignV=1))
-    rx, rw = 640, W - R - 640
-    hw = rw / 2 - 5
     for i, (name, text, col) in enumerate((("cpass", "Pass", TEAL), ("cfail", "Fail", RED))):
-        f = (rx + i * (hw + 10), y(TOP + 48), hw, 140)
+        f = (rx + i * (half + G), 6 * G, half, 5 * G)
         k.append(button(name, f, col, tells("press", name)))
         k.append(label(name + "l", f, text, 22))
     for i, (name, text) in enumerate((("cback", "Back"), ("cfwd", "Next"))):
-        f = (rx + i * (hw + 10), y(TOP + 198), hw, 102)
+        f = (rx + i * (half + G), 12 * G, half, 4 * G)
         k.append(button(name, f, GREY, tells("press", name)))
-        k.append(label(name + "l", f, text, 20))
+        k.append(label(name + "l", f, text, 22))
     return k
 
 

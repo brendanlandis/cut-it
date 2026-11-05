@@ -276,10 +276,11 @@ flash, raises to 153.
 
 **The caller is `u_song`, on `g_grid`'s sixth inlet**, with meaning, never a cell
 ([songs.md](songs.md)): `top <8 lamps>`, the top row's buttons left to right, each 0 dark, 1 a
-section, 2 the section playing, 3 the one queued or 4 an arrow with somewhere to go; and `unsaved
-<0 or 1>`. Each sets the dirty flag; anything else on the inlet is `fail g_grid bad-selector`.
-`pd regions` paints them on every page, after the other regions, from an array of eight and a
-float, so they start dark until `u_song` speaks.
+section, 2 the section playing, 3 the one queued or 4 an arrow with somewhere to go; `unsaved
+<0 or 1>`; and `go <0, 1 or 2>`, the go lamp: dark, a song waiting for go, or a song queued for the
+next bar. Each sets the dirty flag; anything else on the inlet is `fail g_grid bad-selector`.
+`pd regions` paints them on every page, after the other regions, from an array of eight and two
+floats, so they start dark until `u_song` speaks.
 
 | A cell | Paints | Evidence |
 |---|---|---|
@@ -289,10 +290,13 @@ float, so they start dark until `u_song` speaks.
 | The same, the section queued | Full green on the beat row's even beats and dark on its odd, so it blinks on the beat, at no cost: the beat row's change repaints anyway | unknown |
 | CC 108, save, with anything unsaved | Red, RGB 127, 0, 0, the selected drum pad's entry (Brendan, 2026-11-05) | unknown |
 | CC 8, revert, with anything unsaved | Gray, RGB 40, 40, 40 | unknown |
+| CC 89, go, the right column's top, a song waiting for go | Amber, RGB 127, 56, 0, the FM pads' full entry, on the even beats and dark on the odd (Brendan, 2026-11-05: the go lamp blinks while a song waits) | unknown |
+| The same, a song queued for the next bar, by its transition or after go | Full green, blinking as a queued section does | unknown |
 | Any of them otherwise | Dark | unknown |
 
 ⚠️ **They are RGB specs, 155 to 157 on the surface**: entries 27 to 29 of the RGB table, a section
-dim and full and revert's gray, after the selected pad's red, 154, which save shares.
+dim and full and revert's gray, after the selected pad's red, 154, which save shares; go waiting is
+148, entry 20, which page 3's FM pads share.
 
 ### Seeing it off-device
 

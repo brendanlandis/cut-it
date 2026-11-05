@@ -29,8 +29,8 @@ carries a sounding note — the Volca's, the one since the SP-404 left the rig (
 then one to `c_steps`, for what a press on page 2's drum page means ([sequencer.md](sequencer.md)),
 one to `u_net`, which flips test mode, one to `c_synth`, for a press of page 3's synth pads
 ([synths.md](synths.md)), one to `u_tempo`, for a press of page 1's tap pad
-([tempo.md](tempo.md)), and one to `u_song`, for the top row, save and revert
-([songs.md](songs.md)).
+([tempo.md](tempo.md)), and one to `u_song`, for the top row, save and revert, the Organelle's
+keys and go ([songs.md](songs.md)).
 
 ## Facts
 
@@ -47,7 +47,7 @@ mode-3 slider-1  volca-cc 41
 |-------|----|----------|------|
 | `<mode>` | The `mode` bus message, one atom: the page, `mode-1` to `mode-8` | verified | — |
 | `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `pad-43` | verified | — |
-| `<dest>` | One of the **nineteen** below, and **only** those | verified | 229 |
+| `<dest>` | One of the **twenty-one** below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
 
 **A row with any other width is a lint failure**, not a runtime one — `map-assert.py` reads the
@@ -78,6 +78,8 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `section` | The top-row button, 1 and 2 the arrows, 3 to 8 the six section buttons | Non-zero sends `top <arg>` to `u_song` out `u_map`'s sixth outlet; a release nothing. `lp-cc-91` to `lp-cc-98`, buttons 1 to 8, on every page ([songs.md](songs.md)) | unknown | — |
 | `save` | unused | Non-zero sends `save` to `u_song`, the sixth outlet. `lp-cc-108`, the upper bottom row's rightmost, on every page | unknown | — |
 | `revert` | unused | Non-zero sends `revert` to `u_song`, the sixth outlet. `lp-cc-8`, the lowest row's rightmost, on every page | unknown | — |
+| `song` | The Organelle's key, 1 the lowest | Non-zero sends `key <arg>` to `u_song`, the sixth outlet, which loads the setlist's song at that place; a release nothing. `og-key-60` to `og-key-84`, keys 1 to 25, on every page (Brendan, 2026-11-05; [songs.md](songs.md)) | unknown | — |
+| `go` | unused | Non-zero sends `go` to `u_song`, the sixth outlet: a song waiting for go starts at the next bar. `lp-cc-89`, the right column's top, on every page (Brendan, 2026-11-05) | unknown | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -114,7 +116,7 @@ there and nowhere else.
 | `drum-page` | **nothing** — the grid is the feedback, and 56 pads in use would bury the screen | none | unknown | — |
 | `synth` | **nothing** — the pads and the phone show the choice | none | unknown | — |
 | `arrangement` | **nothing** — the pad flashes and the phone shows the tempo | none | unknown | — |
-| `section` `save` `revert` | **nothing** — the top row's lamps and save and revert's say it | none | unknown | — |
+| `section` `save` `revert` `song` `go` | **nothing** — the top row's lamps, save and revert's and the go lamp say it, and the phone's songs page | none | unknown | — |
 | the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
 
 ⚠️ **The held row's second number rides in the UNIT field.** `g_oled` runs a row's value through
@@ -154,16 +156,18 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 | Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Eight pages × 92
-controls is 736 possible rows and the shipped file has **239** — knobs 1, 2 and 4 on all eight; the
+controls is 736 possible rows and the shipped file has **447** — knobs 1, 2 and 4 on all eight; the
 tap pad on page 1; knob 3 and the drum page's 60 pads on page 2; slider 1 and the eight synth pads
-on page 3; and CC 90, PLAY, STOP, the four shifted keys, Setup, the top row's eight and save and
-revert on all eight. **The Organelle's own keys have no row**: they will
-choose songs, and until then they play nothing (Brendan, 2026-11-04). ⛔ **Those twenty-one rows are on
-every page**: the three knobs so the tempo, the drums' last step and their swing are at hand
-whichever page is up (Brendan, 2026-11-04), the top row, save and revert so the song is played and
-kept from any page (Brendan, 2026-11-02 and 2026-11-04), the rest so no page strands you without a
-stop or a recover but the Launchpad's own. `map-assert.py` reads that off the file, that each
-top-row button names its own place, and that knob 3, the selected track's, is page 2's alone.
+on page 3; and CC 90, PLAY, STOP, the four shifted keys, Setup, the top row's eight, save and
+revert, the Organelle's 25 keys and go on all eight. **The Organelle's own keys load songs**, key
+N the Nth song of the setlist chosen, the lowest the opener, and play no note (Brendan,
+2026-11-05). ⛔ **Those forty-seven rows are on every page**: the three knobs so the tempo, the
+drums' last step and their swing are at hand whichever page is up (Brendan, 2026-11-04), the top
+row, save and revert, the keys and go so the song is played, kept and changed from any page
+(Brendan, 2026-11-02, 2026-11-04 and 2026-11-05), the rest so no page strands you without a stop
+or a recover but the Launchpad's own. `map-assert.py` reads that off the file, that each top-row
+button and each key names its own place, that go is CC 89 alone, and that knob 3, the selected
+track's, is page 2's alone.
 
 ### Where each part lives
 
@@ -450,14 +454,14 @@ the gate's Pd half* ([sequencer.md](sequencer.md)).
 its own; there is no compose and perform split, and every page draws every warning
 ([error.md](error.md)).
 
-| Page | Is | Rows today, beside the twenty-one every page has |
+| Page | Is | Rows today, beside the forty-seven every page has |
 |------|----|------------|
 | 1 | The arrangement | The tap pad, cell 21, for `u_tempo` ([tempo.md](tempo.md)). The boot page, `R.BOOT_MODE` |
 | 2 | The drums | The drum page's 60 pads and knob 3, for `c_steps` |
 | 3 | The synths | Fader 1, the Volca's CC 41, and the synth pads, cells 21 to 28, for `c_synth` ([synths.md](synths.md)) |
 | 4–6 | Nothing yet | None |
 | 7 | The sections: making and arranging the current song's sections, on the phone (Brendan, 2026-11-05) | None: its grid is the beat row ([songs.md](songs.md)) |
-| 8 | The songs | None |
+| 8 | The songs: making, loading and arranging them into setlists, on the phone (Brendan, 2026-11-05) | None: its grid is the beat row ([songs.md](songs.md)) |
 
 ### Why a table at all
 

@@ -193,10 +193,20 @@ them from `u_song`'s state, the playing section solid, a queued one blinking, sa
 gray while anything is unsaved ([display.md](../module/display.md)). They held the mode selector
 until it moved to the left column.
 
+### The right column's top button is go
+
+**CC 89 is go, on every page** (Brendan, 2026-11-05): a song whose setlist entry starts on go
+waits, the last song playing on, until it is pressed, and starts at the next bar after. The map
+binds it as `go` to `u_song`; `g_grid` lights it from `u_song`'s go, amber blinking while a song
+waits for go and green blinking once one is queued for the bar ([display.md](../module/display.md)).
+The column's other seven are not yet given anything (`cut-it/songs-and-sections`).
+
 ⚠️ **The objection above applies to everything on this surface**, `recover` on CC 90 included; the
 Organelle's keyboard is where the controls you reach for when a device has died belong. A Launchpad
 that goes leaves the section playing as it is and the draft on the SD card, so nothing is lost but
-the next press; choosing songs will be the Organelle's keys' (`cut-it/songs-and-sections`).
+the next press; and choosing songs is the Organelle's keys' (Brendan, 2026-11-05,
+[songs.md](../module/songs.md)), though a song that waits for go waits for this button or for
+STOP.
 
 ### A tap on Setup flips test mode
 

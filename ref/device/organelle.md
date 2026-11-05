@@ -133,8 +133,9 @@ per-key latch below guarantees. Without it the hold could never complete.
 Press a shifted key, let go of `aux`, then let go of the key: read live, the press published
 `og-shift-72` and the release would publish `og-key-72`. The shifted control never sees its
 note-off, and an unshifted one gets a note-off it never had a note-on for — **wherever the keys
-play notes, that is a stuck note, and nothing anywhere reports it.** They play nothing today: the
-map gives them no row until they choose songs (Brendan, 2026-11-04).
+play notes, that is a stuck note, and nothing anywhere reports it.** They play no note today: they
+load songs, key N the Nth song of the setlist chosen, and only a press counts (Brendan, 2026-11-05,
+[songs.md](../module/songs.md)).
 
 **One entry per key, in `m_organelle.lua`**, written only when the velocity is non-zero and read
 on **both** edges. A release then cannot disagree with its own press however the modifier moves

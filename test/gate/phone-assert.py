@@ -42,18 +42,21 @@ LIMIT_HZ = 20.0
 HB_HZ = 2.0
 ADDRS = {"/cutit/hb", "/cutit/ack", "/mark",
          # what the phone shows: the mode, c_steps' state, c_synth's choice and
-         # velocity switch, the tempo, and u_song's sections
+         # velocity switch, the tempo, and u_song's sections and songs
          "/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
-         "/cutit/sections",
+         "/cutit/sections", "/cutit/songs",
          # the driver's taps for the inbound half: u_net's four outlets, err,
          # and the presence bus, which re-wire once wrote and must not now
          "/probe/drums", "/probe/synth", "/probe/tempo", "/probe/sections", "/probe/err",
          "/probe/presence"}
 # The state addresses, each sent on a change and again on every heartbeat.
 STATE = ("/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
-         "/cutit/sections")
+         "/cutit/sections", "/cutit/songs")
 # The sections page's commands u_net acknowledges, a button's flash: the rest show in the state.
 SECTIONS_ACKED = ["new", "up", "down", "delete", "name"]
+# The songs page's, the same way: the rest show in the state, or u_song refuses them.
+SONGS_ACKED = ["load", "new", "add", "delete", "up", "down", "new-set", "remove", "name",
+               "set-name"]
 # The OLED's mirror, gone (Brendan, 2026-11-04): u_net reads nothing on disp, so
 # none of these may ever leave it.
 GONE = ["/cutit/param", "/cutit/status", "/cutit/alert"]
@@ -68,7 +71,7 @@ WINDOWS = ["idle", "dispsweep", "dispother", "tempo", "tpsweep", "idle2", "cmdwi
            "cmddrumsnew", "cmdsynth", "cmdsynthnew", "cmdtempo", "cmdtemponew", "cmdvel",
            "cmdvelnew", "tmmodeon", "tmmode", "drumstate", "cmdsecsel", "cmdsecpage", "cmdsecnew",
            "cmdsecup", "cmdsecdown", "cmdseclen", "cmdsecdel", "cmdsecname", "cmdsecnew2",
-           "secstate", "done"]
+           "secstate", "cmdsongs", "songstate", "done"]
 
 
 # ------------------------------------------------------------------- collection
@@ -351,7 +354,7 @@ def main():
     sent = args("drumstate", "/cutit/velocity")
     A.check("⛔ drumstate: its velocity switch leaves as /cutit/velocity off, at once and on the "
             "heartbeat", len(sent) >= 2 and all(g == ["off"] for g in sent), sent[:3])
-    A.check("done: all six still repeat, so a phone that comes back late catches up",
+    A.check("done: all seven still repeat, so a phone that comes back late catches up",
             min(len(args("done", a)) for a in STATE) >= 2,
             ", ".join("%d" % len(args("done", a)) for a in STATE))
     early = [g for w in ("idle", "cmdwire", "tmmode") for a in ("/cutit/synth", "/cutit/velocity")
@@ -386,6 +389,38 @@ def main():
                     "refuses it" if cmd == "shuffle" else "and is not acknowledged: the state says it")
         none_of(win, ["/probe/drums", "/probe/synth", "/probe/tempo", "/probe/presence"],
                 "and reaches nothing else")
+
+    # -- the songs page (ref/module/songs.md) ----------------------------------
+    cmds = [["songs", "select", 2.0], ["songs", "page", 1.0], ["songs", "load"], ["songs", "new"],
+            ["songs", "name", "hollow bell"], ["songs", "add"], ["songs", "delete"],
+            ["songs", "entry", 3.0], ["songs", "set", -1.0], ["songs", "up"], ["songs", "down"],
+            ["songs", "starts", "go"], ["songs", "new-set"], ["songs", "remove"],
+            ["songs", "set-name", "friday"], ["songs", "shuffle"]]
+    heard = args("cmdsongs", "/probe/sections")
+    A.check("⛔ cmdsongs: each songs command leaves for u_song as it came, songs in front, in "
+            "order, a name with a space one string", heard == cmds,
+            "wanted %d, got %d: %s" % (len(cmds), len(heard), heard[:4]))
+    acks = args("cmdsongs", "/cutit/ack")
+    A.check("⛔ ... and the ten a button shows are acknowledged, ack songs <action>, the rest not",
+            acks == [["songs", c[1]] for c in cmds if c[1] in SONGS_ACKED], acks)
+    none_of("cmdsongs", ["/probe/drums", "/probe/synth", "/probe/tempo", "/probe/presence"],
+            "and they reach nothing else")
+    songs_ = (["songs"] + [3.0, 1.0, 1.0, 1.0, "night drive", 1.0, "night drive", "loaded", 2.0,
+               "lantern", "-", 3.0, "hollow bell", "next bar", 0.0, "-", "-", 0.0, "-", "-", 0.0,
+               "-", "-", 1.0, 2.0, "gig", 1.0, 1.0, 3.0, 1.0, "lantern", "silence", 1.0,
+               "lantern", "silence", 2.0, "hollow bell", "next-bar", 3.0, "night drive", "go",
+               0.0, "-", "-", 0.0, "-", "-"])[1:]
+    sent = args("songstate", "/cutit/songs")
+    A.check("⛔ songstate: u_song's songs page, its 47 atoms, leaves as /cutit/songs, at once and "
+            "on the heartbeat", len(sent) >= 2 and all(g == songs_ for g in sent),
+            "%d sent: %s" % (len(sent), sent[:1]))
+    A.check("⛔ ... and /cutit/sections goes on saying the sections page, untouched by it",
+            args("songstate", "/cutit/sections") and
+            all(g == sec for g in args("songstate", "/cutit/sections")),
+            args("songstate", "/cutit/sections")[:1])
+    early = [g for w in ("idle", "secstate") for g in args(w, "/cutit/songs")]
+    A.check("before u_song says anything of its songs, the repeats carry none",
+            early and all(g == [] for g in early), early[:3])
 
     one("cmdsynth", "/probe/synth", ["synth", "strings"], "synth strings leaves for c_synth")
     one("cmdsynth", "/cutit/ack", ["synth", "strings"], "and is acknowledged")

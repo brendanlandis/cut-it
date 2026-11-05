@@ -52,7 +52,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 64500")
+qd = obj(20, 120, "del 65600")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -193,7 +193,8 @@ txt(20, 2180,
 #   ("ds", "<88 numbers>")           c_steps' state, into u_net's second inlet
 #   ("sy", "synth <choice>")         c_synth's choice or velocity switch, into its third
 #   ("tp", "<bpm>")                  u_tempo's BPM, into its fourth
-#   ("ss", "<22 atoms>")             u_song's sections page, into its fifth
+#   ("ss", "<22 atoms>")             u_song's sections page, into its fifth, and
+#   ("ss", "songs <47 atoms>")         its songs page, the same way
 #   ("bus", (name, "<message>"))     one message onto a bus, as the mode bus
 #
 # Playing, last step 12, track 2 selected, a sync pending, the sixteen last
@@ -206,6 +207,17 @@ DRUM_STATE = " ".join(str(v) for v in [1, 12, 2, 1, 16, 5] + [16] * 14 + [0, 1] 
 # and length, then the five rows, the last two empty.
 SECTION_STATE = ("song\\ 1 3 2 1 1 verse\\ 2 8 1 intro 0 2 verse\\ 2 8 3 chorus 0 "
                  "0 - 0 0 - 0")
+# u_song's songs page: three songs, night drive selected, page 1 of 1, then six rows of number,
+# name and words; then the setlist chosen, 1 of 2, gig, page 1 of 1, three entries, the first
+# selected, its song and how it starts, then five rows of key, song and starts.
+SONGS_STATE = ("songs 3 1 1 1 night\\ drive 1 night\\ drive loaded 2 lantern - 3 hollow\\ bell "
+               "next\\ bar 0 - - 0 - - 0 - - 1 2 gig 1 1 3 1 lantern silence 1 lantern silence "
+               "2 hollow\\ bell next-bar 3 night\\ drive go 0 - - 0 - -")
+# The songs page's commands as the phone sends them, all in one window, in order: its songs tab,
+# its setlists tab, and the name tab's done from each; one u_song will refuse among them.
+SONGS_CMDS = ["select 2", "page 1", "load", "new", "name hollow\\ bell", "add", "delete",
+              "entry 3", "set -1", "up", "down", "starts go", "new-set", "remove",
+              "set-name friday", "shuffle"]
 SEQ = [
     (3000,  "idle",     []),
     # -- the OLED's traffic: u_net mirrored it once (/cutit/param, /status,
@@ -293,7 +305,11 @@ SEQ = [
     (60100, "cmdsecname", [("cmd", ("cutit", "sections name verse\\ 2"))]),
     (60600, "cmdsecnew2", [("cmd", ("cutit", "sections shuffle"))]),
     (61100, "secstate", [("ss", SECTION_STATE)]),
-    (62500, "done",     []),
+    # -- the songs page: each command out the fourth outlet as it came, songs in front, and
+    #    its state as /cutit/songs, sections' left alone
+    (61600, "cmdsongs", [("cmd", ("cutit", "songs " + c)) for c in SONGS_CMDS]),
+    (62100, "songstate", [("ss", SONGS_STATE)]),
+    (63600, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940

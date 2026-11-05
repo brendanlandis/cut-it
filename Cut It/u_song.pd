@@ -1,7 +1,7 @@
 #N canvas 20 20 2700 1700 12;
 #X declare -lib pdlua;
-#X text 20 20 u_song -- the song: its sections \, which one plays and which is queued \, the draft and the saved song \, and their two files. It knows nothing about what a part's key means: a part puts its own on the state bus with the section policy \, put section <key> <atoms...> \, which lands in the section playing \, and a section starting sends every part it holds back \, restore <key> <atoms...>. ref/module/songs.md, f 72;
-#X text 20 190 creation arg 1: the state directory \, u_state's: the saved song is cut-it-song.txt there and the draft cut-it-song-draft.txt. inlet 1: u_map's top row and save and revert -- top <1-8> \, save \, revert. inlet 2: the phone's sections page \, from u_net. inlet 3: bar \, from c_steps \, on the global loop's last step: a bar is the pattern's loop (Brendan \, 2026-11-05). inlet 4: a bang meaning LOAD NOW \, from u_init after u_state's restore \, because startup order is u_init's. outlet 1: to g_grid -- top <8 lamps> and unsaved <0 or 1>. outlet 2: the phone's state \, to u_net., f 72;
+#X text 20 20 u_song -- the songs: each one's sections \, its draft and its saved copy \, the one loaded \, its section playing and the one queued \, the setlists and the song a key or the phone loads. It knows nothing about what a part's key means: a part puts its own on the state bus with the section policy \, put section <key> <atoms...> \, which lands in the section playing \, and a section starting sends every part it holds back \, restore <key> <atoms...>. ref/module/songs.md, f 72;
+#X text 700 20 creation arg 1: the state directory \, u_state's: the songs' list and the setlists are cut-it-songs.txt there \, and each song its saved song and its draft \, cut-it-song.txt and cut-it-song-draft.txt for song 1 \, cut-it-song-<id>.txt and cut-it-song-<id>-draft.txt for the rest. inlet 1: u_map's top row \, save \, revert \, the Organelle's keys and go -- top <1-8> \, save \, revert \, key <1-25> \, go. inlet 2: the phone's sections page \, and songs <command> from its songs page \, from u_net. inlet 3: bar \, from c_steps \, on the global loop's last step: a bar is the pattern's loop (Brendan \, 2026-11-05). inlet 4: a bang meaning LOAD NOW \, from u_init after u_state's restore \, because startup order is u_init's. outlet 1: to g_grid -- top <8 lamps> \, unsaved <0 or 1> and go <0 \, 1 or 2>. outlet 2: the phone's two states \, to u_net: the sections page's as a list \, the songs page's after songs., f 72;
 #X obj 20 420 inlet;
 #X obj 300 420 inlet;
 #X obj 600 420 inlet;
@@ -38,6 +38,8 @@
 #X text 900 700 Load \, then arm the draft's timer: t b b fires right to left. The draft is written every 2 s when it has changed \, and never before the load has read it \, which would write over the last session with this one's defaults (ref/module/state.md)., f 22;
 #X text 1550 520 PLAY counts the section's bars from the pattern's step 1. STOP and panic start a section queued at once: no bar is coming., f 30;
 #X text 2100 1200 At load the Lua answers init with a bang on its fifth outlet \, which shuts the spigot. No bang means it never loaded -- pdlua missing \, or an error in the Lua -- and fail u_song no-lua says so on the screen: the top row \, save and revert do nothing., f 40;
+#X obj 1200 1100 s stop;
+#X text 1200 1160 A song that starts from silence stops the transport here: the STOP comes back through r stop \, and loads it \, ready for PLAY (Brendan \, 2026-11-05). stop is on the allowlist (C-2)., f 40;
 #X connect 2 0 6 0;
 #X connect 3 0 6 1;
 #X connect 4 0 6 2;
@@ -69,3 +71,4 @@
 #X connect 6 1 8 0;
 #X connect 6 2 9 0;
 #X connect 6 3 10 0;
+#X connect 6 5 38 0;

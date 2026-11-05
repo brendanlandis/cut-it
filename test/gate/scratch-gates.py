@@ -534,8 +534,15 @@ SONG_SEED = [
 ]
 
 
-def _song_text(sections):
-    out = ["song song 1"]
+# The fourth run's songs, by id: each its name, its tempo and its drums' global last step, one
+# section; and its setlist, gig, each entry a song and how it starts. Night drive is loaded.
+SONGS = {1: ("night drive", 200, 8), 2: ("lantern", 240, 32), 3: ("hollow bell", 220, 32)}
+SONGS_INDEX = ("next 4\ncurrent 1\nchosen 1\nsong 1\nsong 2\nsong 3\nset gig\n"
+               "entry 2 silence\nentry 3 next-bar\nentry 1 go\n")
+
+
+def _song_text(sections, name="song 1"):
+    out = ["song " + name]
     for i, (name, length, parts) in enumerate(sections, 1):
         out.append("section %d %d %s" % (i, length, name))
         out += ["%s %s" % (k, " ".join(str(a) for a in parts[k])) for k in sorted(parts)]
@@ -588,10 +595,32 @@ def song(g):
     S.drive(GEN % "song-assert", s3.path("drive.pd"), "legacy")
     print("   and a first load from a state directory before sections (about 6 s) ...")
     S.run(s3.path("capture.txt"), 30, *FLAGS, "-path", s3.patch, main_dev(s3), s3.path("drive.pd"))
+    # Three songs and a setlist saved, on page 8, the songs: the keys and go, stopped and playing.
+    s4 = g.copy("song-songs")
+    s4.state_dir()
+    with open(os.path.join(s4.state, "cut-it-auto.txt"), "w") as fh:
+        fh.write("mode mode-8\n")
+    with open(os.path.join(s4.state, "cut-it-songs.txt"), "w") as fh:
+        fh.write(SONGS_INDEX)
+    for sid, (name, tempo, last) in SONGS.items():
+        text = _song_text([("section 1", 0, {"drums": _drums(last, {(1, 1): 100}),
+                                             "programs": ["none", "none"], "synth": ["fm"],
+                                             "tempo": [tempo], "velocity": ["on"]})], name)
+        names = ("cut-it-song.txt", "cut-it-song-draft.txt") if sid == 1 else (
+            "cut-it-song-%d.txt" % sid, "cut-it-song-%d-draft.txt" % sid)
+        for n in names:
+            with open(os.path.join(s4.state, n), "w") as fh:
+                fh.write(text)
+    g.rewrite(s4, out=[])
+    S.drive(GEN % "song-assert", s4.path("drive.pd"), "songs")
+    print("   and three songs, played from the Organelle's keys and go (about 14 s) ...")
+    cap4 = s4.path("capture.txt")
+    S.run(cap4, 40, *FLAGS, "-path", s4.patch, main_dev(s4), s4.path("drive.pd"))
     print()
     rc = g.analyze("test/gate/song-assert.py", *g.args, "--seed", s.path("seed-song.txt"),
                    "--state", s.state, "--after", after, "--reload", cap2,
-                   "--legacy", s3.state, "--legacy-seed", s3.path("legacy-seed.txt"), stdin=cap)
+                   "--legacy", s3.state, "--legacy-seed", s3.path("legacy-seed.txt"),
+                   "--songs", cap4, "--songs-state", s4.state, stdin=cap)
     return rc or rc_lua
 
 

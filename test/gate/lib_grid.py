@@ -33,15 +33,19 @@ DIM, LAMP_ON, BEAT_ON, ALERT_RED = 1, 21, 3, 5
 MIDI_RE = re.compile(r"^MIDIOUT:\s+(-?\d+)\s+(-?\d+)\s*$")
 
 # The edges, on every page (ref/module/songs.md): the top row's eight, CC 91 to 98 -- the two
-# arrows, then the six section buttons -- from u_song's top <8 lamps>, and save and revert, CC
-# 108 and 8, from its unsaved. Read out of g_grid.pd's RGB table (entries 26, 27, 28 and 29) and
+# arrows, then the six section buttons -- from u_song's top <8 lamps>, save and revert, CC
+# 108 and 8, from its unsaved, and go, CC 89, from its go. Read out of g_grid.pd's RGB table (entries 26, 27, 28 and 29) and
 # its palette: an arrow is palette 1, dim; a section dim green, the one playing full green, the
 # one queued full and dark by turns; save red and revert gray while anything is unsaved.
 TOP = tuple(range(91, 99))
 SAVE, REVERT = 108, 8
 SECTION_DIM, SECTION_ON = (0, 32, 8), (0, 127, 32)
 SAVE_ON, REVERT_ON = (127, 0, 0), (40, 40, 40)
-EDGES = TOP + (SAVE, REVERT)
+# The go lamp, CC 89, the right column's top: a song waiting for go blinks amber (RGB entry 20,
+# the FM pads' full color), one queued for the next bar full green, as a queued section.
+GO = 89
+GO_WAIT = (127, 56, 0)
+EDGES = TOP + (SAVE, REVERT, GO)
 
 
 def edge_problem(idx, color):
@@ -55,6 +59,8 @@ def edge_problem(idx, color):
         ok |= {SAVE_ON}
     elif idx == REVERT:
         ok |= {REVERT_ON}
+    elif idx == GO:
+        ok |= {GO_WAIT, SECTION_ON}
     return None if color in ok else "edge %d is color %s" % (idx, color)
 
 

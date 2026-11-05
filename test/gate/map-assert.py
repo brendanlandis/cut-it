@@ -42,7 +42,11 @@ EVERY_PAGE = [("og-knob-1", "tempo", "0"), ("og-knob-2", "drums", "last"),
               # the top row, the two arrows then the six section buttons, and save and revert,
               # the bottom rows' rightmost (ref/module/songs.md)
               ("lp-cc-%d" % (90 + n), "section", "%d" % n) for n in range(1, 9)] + [
-              ("lp-cc-108", "save", "0"), ("lp-cc-8", "revert", "0")]
+              ("lp-cc-108", "save", "0"), ("lp-cc-8", "revert", "0")] + [
+              # the Organelle's keys choose songs, key 1 the lowest, and CC 89 is go
+              # (Brendan, 2026-11-05)
+              ("og-key-%d" % (59 + k), "song", "%d" % k) for k in range(1, 26)] + [
+              ("lp-cc-89", "go", "0")]
 # Both runs are counted against this one list, so neither passes a driver that
 # died early.
 WINDOWS = ["EARLY", "EARLY-2", "RAIL-ARM", "SUPPRESS", "MAPPED", "AWAY", "CROSS",
@@ -183,6 +187,17 @@ def static_lint():
             "and nothing else names it", sec == sorted(("lp-cc-%d" % (90 + n), "%d" % n)
                                                        for n in range(1, 9) for _p in modes),
             "section rows: %s" % sorted(set(sec)))
+    # The Organelle's keys load songs on every page, each key's arg its place from the lowest,
+    # the nth song of the setlist chosen (u_song.lua's R.key), and go is CC 89 alone: a key
+    # naming another place loads another song than the one its place in the setlist shows.
+    keys = sorted((f[1], f[3]) for _, f in rows if len(f) == 4 and f[2] == "song")
+    A.check("⛔ the Organelle's 25 keys are the song destination, og-key-60 to 84 its keys 1 to 25, "
+            "and nothing else names it", keys == sorted(("og-key-%d" % (59 + k), "%d" % k)
+                                                        for k in range(1, 26) for _p in modes),
+            "song rows: %s" % sorted(set(keys))[:6])
+    go = sorted({f[1] for _, f in rows if len(f) == 4 and f[2] == "go"})
+    A.check("⛔ go is the right column's top button, CC 89, and nothing else", go == ["lp-cc-89"],
+            "go rows: %s" % go)
     # Knob 3 is the selected track's own last step, and the selected track is the
     # drum page's: it stays page 2's (Brendan, 2026-11-04).
     knob3 = [f for _, f in rows if len(f) > 1 and f[1] == "og-knob-3"]
@@ -523,8 +538,8 @@ def run_asserts(cap):
     notes = [e[1] for e in W("ROW-KEY") if e[0] == "NOTEOUT" and e[1][1:2] != [0]]
     A.check("⛔ ... and the Organelle's own key plays nothing -- one note, gk-key's",
             len(notes) == 1,
-            "note-ons in that window: %s. The keys have no row until they choose "
-            "songs (Brendan, 2026-11-04)" % notes)
+            "note-ons in that window: %s. The keys choose songs, and play no note "
+            "(Brendan, 2026-11-05)" % notes)
     # Pressure: an unmapped pad-NN-at draws no row (item 318), a stream per held
     # pad, and since 2026-11-04 nor does the pad's own unmapped press. gk-cc,
     # mapped on page 1, is the witness that the window drew at all.

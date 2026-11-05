@@ -29,7 +29,7 @@ local fh = assert(io.open(DIR .. "u_tempo.pd"))
 local pd = fh:read("a")
 fh:close()
 local lo, hi = pd:match("\n#X obj %d+ %d+ clip (%d+) (%d+);")
-equal("its range is u_tempo's own [clip 5 600], the legal range, read from the patch",
+equal("its range is u_tempo's own [clip 5 1000], the legal range, read from the patch",
       { R.MIN, R.MAX }, { tonumber(lo), tonumber(hi) })
 equal("a gap of two seconds starts over, and the last four intervals are averaged",
       { R.GAP, R.KEEP }, { 2000, 4 })
@@ -51,9 +51,9 @@ equal("a tap in the same instant as the one before counts nothing and keeps the 
       { R.tap(st, 0), R.tap(st, 1000) }, { {}, tempo(45) })
 
 print("\n--- the clamp ---")
-equal("⛔ taps 50 ms apart are 1200 BPM, clamped to 600", taps(R.new(), 50, 50), tempo(600))
-equal("... 99 ms is 606, still 600; 101 ms 594, whole", { taps(R.new(), 99), taps(R.new(), 101) },
-      { tempo(600), tempo(594) })
+equal("⛔ taps 50 ms apart are 1200 BPM, clamped to 1000", taps(R.new(), 50, 50), tempo(1000))
+equal("... 59 ms is 1017, still 1000; 61 ms 984, whole", { taps(R.new(), 59), taps(R.new(), 61) },
+      { tempo(1000), tempo(984) })
 equal("the slowest a tap can set is 2 s apart less a little: 31 BPM, never below 5",
       taps(R.new(), 1950), tempo(31))
 equal("a tap that is not a number starts over", (function()
@@ -66,8 +66,8 @@ end)(), { {}, tempo(120) })
 print("\n--- the phone's tempo ---")
 st = R.new()
 equal("tempo 133 from the phone is 133", R.set(st, 133), tempo(133))
-equal("whole BPM, and within 5 to 600", { R.set(st, 90.4), R.set(st, 1000), R.set(st, 1) },
-      { tempo(90), tempo(600), tempo(5) })
+equal("whole BPM, and within 5 to 1000", { R.set(st, 90.4), R.set(st, 2000), R.set(st, 1) },
+      { tempo(90), tempo(1000), tempo(5) })
 equal("a tempo that is not a number is fail u_tempo bad-tempo", { R.set(st, "fast"), R.set(st, nil) },
       { { { "err", "fail", { "u_tempo", "bad-tempo" } } },
         { { "err", "fail", { "u_tempo", "bad-tempo" } } } })

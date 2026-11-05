@@ -600,7 +600,7 @@
 #X msg 1120 190 0;
 #X obj 1120 240 s tempo;
 #X text 20 400 The aux tap is a press and a release 120 ms apart \, as mother sends them: aux is the keyboard's modifier and uses both edges. The panel's toggle takes two clicks to make one press., f 58;
-#X text 20 530 bpm-hi and bpm-lo are 5000 and 0 against a legal 5 to 600: each must clamp and raise its own alert \, and pressing one twice must be silent the second time., f 58;
+#X text 20 530 bpm-hi and bpm-lo are 5000 and 0 against a legal 5 to 1000: each must clamp and raise its own alert \, and pressing one twice must be silent the second time., f 58;
 #X text 20 660 start \, stop and panic: on a Mac with no rig \, nothing else sends them., f 58;
 #X obj 20 760 r led;
 #X obj 20 800 select 0 1 2 3 4 5 6 7;

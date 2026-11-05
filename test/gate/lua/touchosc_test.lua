@@ -106,9 +106,9 @@ equal("u_tempo's 120: the tempo, large, and nothing sent back", { L.text(w, "tem
       { "120", 0 })
 -- the state put 120 in the middle of its step, 115.5 / 596
 equal("a tempo dragged up two BPM sends tempo 122, once",
-      L.drag(w, "tempobox", 117.5 / 596), { { "/cutit", "tempo", 122 } })
+      L.drag(w, "tempobox", 117.5 / 996), { { "/cutit", "tempo", 122 } })
 equal("... and nothing while the BPM shown does not change",
-      L.drag(w, "tempobox", 117.9 / 596), {})
+      L.drag(w, "tempobox", 117.9 / 996), {})
 L.update(w, 500)
 L.osc(w, "/cutit/tempo", 120)
 equal("the old tempo half a second later leaves the box where the finger put it, and the "
@@ -121,8 +121,8 @@ equal("⛔ a tempo that is not whole shows as it is, and is not sent back rounde
 L.osc(w, "/cutit/tempo", 150)
 L.osc(w, "/cutit/tempo", 150)
 equal("⛔ the tempo set elsewhere, a tap or knob 1, and its repeat, send nothing back", #w.sent, 0)
-equal("the box drags a BPM at a time down to 5 and up to 600",
-      { L.drag(w, "tempobox", 0)[1][3], L.drag(w, "tempobox", 1)[1][3] }, { 5, 600 })
+equal("the box drags a BPM at a time down to 5 and up to 1000",
+      { L.drag(w, "tempobox", 0)[1][3], L.drag(w, "tempobox", 1)[1][3] }, { 5, 1000 })
 L.update(w, 1100)
 L.osc(w, "/cutit/tempo")
 L.osc(w, "/cutit/tempo", "x")
@@ -145,8 +145,8 @@ equal("two taps in one instant count nothing", L.press(w, "tap"), {})
 L.update(w, 2100)
 equal("over two seconds later, tapping starts over: nothing sent", L.press(w, "tap"), {})
 L.update(w, 2)
-equal("taps 2 ms apart give the most u_tempo takes, 600", L.press(w, "tap"),
-      { { "/cutit", "tempo", 600 } })
+equal("taps 2 ms apart give the most u_tempo takes, 1000", L.press(w, "tap"),
+      { { "/cutit", "tempo", 1000 } })
 L.update(w, 2100); L.press(w, "tap"); L.update(w, 1999)
 equal("and taps 1999 ms apart, 30", L.press(w, "tap"), { { "/cutit", "tempo", 30 } })
 

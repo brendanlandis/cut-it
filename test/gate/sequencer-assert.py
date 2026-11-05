@@ -6,7 +6,7 @@
 It asserts on what leaves the patch: the drums sent to c_kit, the grid's frames, the
 state bus and the song's draft, which u_song writes. Nothing inside c_steps is read.
 
-  the restore    the seeded pattern comes back, is put straight back, and shows
+  the restore    the seeded pattern comes back, isn't put back, and shows
   the time sig.  the top number over OSC sets the page's rows and blue steps, 9/8
                  and 3/4, a press lands on the step its row and column mean, and
                  one past the row does nothing
@@ -270,10 +270,9 @@ def main():
             ons("EARLY") == [(1, 127)], "note-ons: %s" % ons("EARLY"))
 
     print("\n--- the restore ---")
-    A.check("⛔ the restored pattern is put straight back -- once, the seeded 711 exactly",
-            puts("RESTORE") == [seed],
-            "%d put(s) of %s; the first holds %s values" % (
-                len(puts("RESTORE")), KEY, len(puts("RESTORE")[0]) if puts("RESTORE") else 0))
+    A.check("⛔ the restored pattern isn't put back: the song store holds it already, and a put "
+            "of the whole line at a section's start is work the beat can't spare",
+            not puts("RESTORE"), "%d put(s) of %s" % (len(puts("RESTORE")), KEY))
     prob = page_in("RESTORE")
     A.check("⛔ ... and the page shows it at its 7/8: rows of 7 steps, each row's first blue and "
             "its eighth cell dark, track 1's seeded steps, level 6 and pad 1 lit",

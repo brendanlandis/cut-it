@@ -51,7 +51,8 @@ SEQ = [
     # An in-range tempo must not warn. [change] sits on the value, not the
     # verdict: filtering the flag would make a 500 warn and a following 5 silent.
     (8400, "IN-RANGE", [], GAP),
-    # 5000 is clamped to 600 BPM, 240 Hz; unclamped it saturates at ~338.
+    # 5000 is clamped to 1000 BPM; the clock's own pulses top out near 284 Hz there, one in a block's
+    # re-arm, and unclamped saturate at ~338.
     (9000, "TOO-HIGH", ["\\; tempo 5000"], GAP),
     (10000, "TOO-LOW", ["\\; tempo 0"], GAP),
     (11000, "BACK", ["\\; tempo 120"], GAP),
@@ -84,7 +85,7 @@ SEQ = [
     (20000, "PHONE", [phone(133)], GAP),
     # ... and the phone's 133 holds it again, at 0.532: 0.7, 175 BPM, is above.
     (20200, "KNOB-PHONE", ["\\; param og-knob-1 0.7"], GAP),
-    (20400, "PHONE-HIGH", [phone(900)], GAP),
+    (20400, "PHONE-HIGH", [phone(2000)], GAP),
     (20800, "PHONE-BAD", [phone("fast")], GAP),
     # Page 2: cell 21 is a drum pad there, and taps on it set nothing.
     (21200, "PAGE-2", ["\\; mode mode-2"], GAP),

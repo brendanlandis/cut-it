@@ -18,7 +18,7 @@
 #X obj 1300 610 t b;
 #X msg 1300 660 0;
 #X obj 20 1070 route tempo transport start stop panic volca-note volca-cc volca-prog volca-key recover diag drum-page test-mode drums synth arrangement section save revert song go;
-#X obj 20 1160 c_mapped bpm 490 10;
+#X obj 20 1160 c_mapped bpm 990 10;
 #X obj 20 1220 unpack f f;
 #X obj 20 1430 s tempo;
 #X obj 320 1160 unpack f f;
@@ -83,7 +83,7 @@
 #X text 20 1930 At load the Lua answers init with a bang on its last outlet \, which shuts the spigot. No bang means it never loaded -- pdlua missing \, or an error in the Lua -- and fail u_map no-lua says so on the screen: every control is dead but the eight mode keys., f 62;
 #X text 1080 1930 Pickup's rules are the Lua's and its clock and files are here: the boot window shuts at 1000 ms \, and the breadcrumb at 2000 says live when the boot follows a recover. Whether a Save left a knobs.txt is the Lua's \, asked as it is made (items 236 \, 239 and 299)., f 62;
 #X text 1080 2160 Arg then value \, always: unpack fires right to left \, so the value is in a cold inlet or a gate before the arg triggers., f 62;
-#X text 2140 2160 Value destinations are c_mapped instances \, and the scaling lives there: tempo is c_mapped bpm 490 10 \, 0-1 over 10 to 500 BPM. Each draws its own row and passes arg and scaled value on only while live. The transport chain holds no state: it reads back r start and r stop., f 62;
+#X text 2140 2160 Value destinations are c_mapped instances \, and the scaling lives there: tempo is c_mapped bpm 990 10 \, 0-1 over 10 to 500 BPM. Each draws its own row and passes arg and scaled value on only while live. The transport chain holds no state: it reads back r start and r stop., f 62;
 #X text 20 2390 The spigot is the trigger test \, the same three boxes everywhere: a press is non-zero after normalizing and a release is 0 \, so one test serves every surface., f 62;
 #X text 1080 2390 The Volca handlers build the selector-prefixed message m_volca expects. C-6, f 62;
 #X text 2140 2390 volca-prog uses the value as a gate \, since the program number is the arg: a fader release cannot select a patch., f 62;

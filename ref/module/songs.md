@@ -18,7 +18,7 @@ into setlists (`cut-it/songs-and-sections`).
 as `u_state` knows nothing ([state.md](state.md)). A part stores itself per section by putting
 `put section <key> <atoms…>` on the `state` bus, which lands in the section playing, and a section
 starting sends every part it holds back as `restore <key> <atoms…>`, which the part takes as it
-takes any restore and puts straight back. A part added later is per section from its first version
+takes any restore, and puts back only what differs from what it holds. A part added later is per section from its first version
 with no change here.
 
 **The whole song is one draft** (Brendan, 2026-11-04). Edits play at once and stay with their
@@ -40,7 +40,7 @@ there, save and revert lit.
 |-----------|---------|---------|----------|
 | a part → `u_song` | `put section <key> <atoms…>` | The part as it is now, into the section playing. The same atoms again change nothing | unknown |
 | `u_song` → all | `restore <key> <atoms…>` | A section starting: every part it holds, in the keys' order, each once | unknown |
-| a part → `u_song` | `put section <key> <atoms…>` | The part put straight back, during the restore: it lands in the section now starting, unchanged | unknown |
+| a part → `u_song` | `put section <key> <atoms…>` | The part put back during the restore if it differs, a line in an older shape, say: it lands in the section now starting | unknown |
 
 ### The parts a section holds
 
@@ -205,7 +205,7 @@ rename is seen as one. A number is written whole, or with `%g` as Pd's own `[tex
 
 ### A part restored must land in the section starting
 
-⛔ A part puts straight back what it restores (*A contributor must put back what it restores*,
+⛔ A part may put back what it restores (*A contributor must put back what it restores*,
 [state.md](state.md)), and that put arrives during the restore, re-entrantly. Sent before the
 section changed, it would land in the section before.
 

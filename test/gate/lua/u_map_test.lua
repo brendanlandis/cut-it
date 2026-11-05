@@ -122,9 +122,9 @@ equal("every page from mode-1 to mode-" .. R.PAGES .. " is taken", every, want)
 
 print("\n--- the tempo curve ---")
 local C = R.tempo_curve
-local bpm = function(x) return math.floor(490 * C(x) + 10 + 0.5) end
-equal("knob 1: 10 BPM at the bottom, 50 at 9 o'clock, 125 at noon, 200 at 3 o'clock, 500 at the top",
-      { bpm(0), bpm(0.2), bpm(0.5), bpm(0.8), bpm(1) }, { 10, 50, 125, 200, 500 })
+local bpm = function(x) return math.floor(990 * C(x) + 10 + 0.5) end
+equal("knob 1: 10 BPM at the bottom, 50 at 9 o'clock, 125 at noon, 200 at 3 o'clock, 1000 at the top",
+      { bpm(0), bpm(0.2), bpm(0.5), bpm(0.8), bpm(1) }, { 10, 50, 125, 200, 1000 })
 check("... rising all the way, with no step back at the joins", (function()
   for i = 1, 1000 do if C(i / 1000) <= C((i - 1) / 1000) then return false end end
   return true
@@ -220,8 +220,8 @@ local P = R.tempo_position
 equal("the curve's inverse puts each BPM back where the knob sits for it",
       { bpm(P(10)), bpm(P(30)), bpm(P(50)), bpm(P(100)), bpm(P(150)), bpm(P(200)), bpm(P(350)),
         bpm(P(500)) }, { 10, 30, 50, 100, 150, 200, 350, 500 })
-equal("... a tempo past the knob's 10 to 500 holds it at the end of its turn",
-      { P(5), P(600) }, { 0, 1 })
+equal("... a tempo past the knob's 10 to 1000 holds it at the end of its turn",
+      { P(5), P(1200) }, { 0, 1 })
 check("... and 120 is R.UNSAVED's 0.48, the one hold the knob has with nothing Saved",
       math.abs(P(120) - R.UNSAVED[1]) < 1e-9, T.show({ P(120), R.UNSAVED[1] }))
 st = R.new(MAP)

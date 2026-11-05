@@ -12,9 +12,9 @@
 
 local R = {}
 
--- The legal range, u_tempo.pd's own [clip 5 600], wider than knob 1's so a tap is not limited by
+-- The legal range, u_tempo.pd's own [clip 5 1000], wider than knob 1's so a tap is not limited by
 -- what one knob chose (tempo.md): u_tempo_test.lua reads the box and checks the two agree.
-R.MIN, R.MAX = 5, 600
+R.MIN, R.MAX = 5, 1000
 -- A tap this long after the one before starts the count over (Brendan, 2026-11-04: two seconds).
 R.GAP = 2000
 -- How many of the last intervals are averaged: enough to steady a hand, few enough that a tempo

@@ -109,7 +109,7 @@ ACKS = {"drums sync": ("sync", TEAL), "drums snap": ("snap", TEAL),
         "songs new-set": ("lnewset", TEAL), "songs remove": ("lrem", TEAL),
         "songs name": ("gndone", WHITE), "songs set-name": ("gndone", WHITE),
         "result": ("verdict", WHITE)}
-TEMPO = (5, 600)            # u_tempo's legal range, its [clip 5 600]
+TEMPO = (5, 1000)           # u_tempo's legal range, its [clip 5 1000]
 # The tap rules, read from u_tempo.lua, so the phone's taps and page 1's pad can't disagree: the ms
 # after which tapping starts over, and how many intervals are averaged.
 _TEMPO_LUA = open(os.path.join(ROOT, "Cut It", "u_tempo.lua"), encoding="utf-8").read()
@@ -808,7 +808,7 @@ def arrangement():
     # the left panel: the tempo, the tap under it, playing or stopped on the bottom row
     lo, hi = TEMPO
     k.append(caption("tempoc", X0, Y0, PANEL, "tempo"))
-    k.append(setbox("tempobox", (X0, Y0 + G, PANEL, 6 * G), lo, hi, ["tempo"], 2))
+    k.append(setbox("tempobox", (X0, Y0 + G, PANEL, 6 * G), lo, hi, ["tempo"], 3))
     k.append(label("tempo", (X0, Y0 + G, PANEL, 6 * G), "-", 72, RED))
     # the tap's bottom edge is the knobs', across the gutter
     k.append(button("tap", (X0, Y0 + 8 * G, PANEL, 3 * G), RED, tap_script()))

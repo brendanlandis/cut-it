@@ -577,6 +577,7 @@ local function set_sound(st, which, lo, hi, track, v)
   if n == st[which][t] then return {} end
   st[which][t] = n
   if which == "pitch" then st.heard[t] = n end
+  st.told[which .. " " .. R.pad(st, t)] = n
   return { R.save(st), { "note", which, { R.pad(st, t), n } } }
 end
 
@@ -748,9 +749,12 @@ end
 
 -- The saved tempo, pad-38 (Brendan, 2026-11-05): a press asks u_song for the section's saved tempo,
 -- which comes back as a section starting's does, on the state bus to u_tempo. Its lamp lights while
--- it is held, and the release does nothing else.
+-- it is held, and the release does nothing else. The press also starts every loop again at step 1
+-- on the next step (Brendan, 2026-11-05), as a section starting does, the clock running on.
 function R.press_recall(st, velocity)
   if velocity == 0 then return { { "page", "recall", { 0 } } } end
+  st.master = 0
+  for t = 1, R.TRACKS do st.pos[t] = 0 end
   return { { "page", "recall", { 1 } }, { "song", "recall", { "tempo" } } }
 end
 
@@ -797,6 +801,7 @@ R.TAP = 127
 local function heard_pitch(st, t, p, out)
   if st.heard[t] == p then return end
   st.heard[t] = p
+  st.told["pitch " .. R.pad(st, t)] = p
   out[#out + 1] = { "note", "pitch", { R.pad(st, t), p } }
 end
 function R.press_pad(st, track, velocity)
@@ -1172,10 +1177,26 @@ function R.restore(st, values)
   restore_flags(st, values)
   restore_type(st, values)
   restore_rolled(st, values)
-  local out = { R.save(st), R.page_last(st), R.steps(st), R.page_bar(st),
-                { "clock", "swing", { st.swing / 100 } } }
+  -- A section change happens on the beat, and a burst of messages there stalls the audio: Pd runs
+  -- with a 6 ms buffer, and the beat dropped around a section's 1 (Brendan, 2026-11-05). So a line
+  -- that says what the sequencer would save isn't put back, since the store already holds it; one
+  -- saved before today's shape, or clipped here, is. And c_kit hears only the volumes and pitches
+  -- that differ from what it was last told.
+  local out, saved = {}, R.save(st)
+  local same = #saved[3] == #values
+  for i = 1, same and #values or 0 do
+    if saved[3][i] ~= values[i] then
+      same = false
+      break
+    end
+  end
+  if not same then out[1] = saved end
+  for _, e in ipairs({ R.page_last(st), R.steps(st), R.page_bar(st),
+                       { "clock", "swing", { st.swing / 100 } } }) do
+    out[#out + 1] = e
+  end
   for _, which in ipairs({ "vol", "pitch" }) do
-    for t = 1, R.TRACKS do out[#out + 1] = { "note", which, { R.pad(st, t), st[which][t] } } end
+    for t = 1, R.TRACKS do tell(st, out, which, R.pad(st, t), st[which][t]) end
   end
   for t = 1, R.TRACKS do st.heard[t] = st.pitch[t] end
   for _, e in ipairs(R.tell_fx(st)) do out[#out + 1] = e end
@@ -1240,7 +1261,7 @@ R.presses = {
 -- keeps for a held repeat's tails (R.tape); PLAY, STOP, u_state's restore, and the load.
 R.internal = {
   tick = function(st, a)
-    if type(a[1]) == "number" then st.bpm = clip(a[1], 5, 600) end
+    if type(a[1]) == "number" then st.bpm = clip(a[1], 5, 1000) end
     return R.tick(st)
   end,
   start = function(st) return R.start(st) end,

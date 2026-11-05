@@ -18,7 +18,7 @@ UTEMPO = "Cut It/u_tempo.pd"
 CLOCK, START, CONTINUE, STOP = 248, 250, 251, 252
 PORTS = [1]                     # the Launchpad. Port 3 was the SP-404's, and gets nothing
 PPQN = 24
-BPM_LO, BPM_HI = 5, 600         # the LEGAL range, wider than knob 1's 10..500
+BPM_LO, BPM_HI = 5, 1000        # the LEGAL range, wider than knob 1's 10..1000 at its low end
 TOLERANCE = 0.12                # +/- 12 % on a real-time count
 
 
@@ -113,7 +113,7 @@ def main():
     print("\n--- the clamp ---")
     # In the signal path; static_lint owns the bound.
     n = len(rt(W("TOO-HIGH"), byte=CLOCK, port=PORTS[0]))
-    want = nominal(BPM_HI, 1.0)
+    want = 284      # at 1000 BPM, 400 Hz asked for: threshold~ can't re-arm that fast, and tops out here
     A.check("⛔ 5000 BPM reaches the wire CLAMPED -- the clip is in the signal path",
             want * (1 - TOLERANCE) <= n <= want * (1 + TOLERANCE),
             "counted %d in 1 s, wanted about %.0f. Unclamped saturates at ~338" % (n, want))
@@ -201,8 +201,8 @@ def main():
     A.check("⛔ ...and holds knob 1 there too: 0.7 moves nothing, and reads bpm 133 (175)",
             bpms("KNOB-PHONE") == [] and rows("KNOB-PHONE") == [["bpm", "133", "(175)"]],
             "tempo %s, rows %s" % (bpms("KNOB-PHONE"), rows("KNOB-PHONE")))
-    A.check("... 900 is 600, the legal range's top, before it reaches the bus",
-            bpms("PHONE-HIGH") == [600.0], bpms("PHONE-HIGH"))
+    A.check("... 2000 is 1000, the legal range's top, before it reaches the bus",
+            bpms("PHONE-HIGH") == [1000.0], bpms("PHONE-HIGH"))
     A.check("... and a tempo that is no number sets nothing and is fail u_tempo bad-tempo",
             bpms("PHONE-BAD") == [] and [e[1] for e in errs("PHONE-BAD")]
             == [["fail", "u_tempo", "bad-tempo"]], "tempo %s err %s"

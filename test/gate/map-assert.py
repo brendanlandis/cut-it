@@ -337,7 +337,7 @@ def run_asserts(cap):
 
     # Item 234: mother pushes knobs.txt at boot, and the table and the lookup
     # key's mode must both be ready for it. Knob 1's tempo is u_map.lua's
-    # curve: 0.0958 is 29 bpm, 0.5 is 125, 0.9 is 350.
+    # curve: 0.0958 is 29 bpm, 0.5 is 125, 0.9 is 600.
     early = [e for e in W("EARLY") if e[0] == "TEMPO"]
     A.check("⛔ a control moved at 300 ms ALREADY MAPS -- table and mode key ready at load",
             any(abs(float(e[1][0]) - 29) < 1.5 for e in early if e[1]),
@@ -436,8 +436,8 @@ def run_asserts(cap):
     A.check("⛔ while HELD the row carries BOTH numbers -- bpm <latched> (<knob>)",
             any(d[:2] == ["bpm", "29"] and d[2:] == ["(125)"] for d in disp("SUPPRESS")),
             "disp in that window: %s" % disp("SUPPRESS"))
-    A.check("... and it follows the knob while still held -- 0.9 is 350",
-            any(d[:2] == ["bpm", "29"] and d[2:] == ["(350)"] for d in disp("AWAY")),
+    A.check("... and it follows the knob while still held -- 0.9 is 600",
+            any(d[:2] == ["bpm", "29"] and d[2:] == ["(600)"] for d in disp("AWAY")),
             "disp in that window: %s" % disp("AWAY"))
     A.check("⛔ once LIVE the row is the mapped value alone -- no raw og-knob-1",
             any(d == ["bpm", "75"] for d in disp("LIVE"))

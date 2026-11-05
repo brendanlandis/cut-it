@@ -26,7 +26,7 @@ R.KNOBS = { ["og-knob-1"] = 1, ["og-knob-2"] = 2, ["og-knob-3"] = 3, ["og-knob-4
 
 -- Knob 1's tempo curve (Brendan, 2026-11-03): 50 to 200 BPM, where most music sits, take the
 -- knob from about 9 o'clock to 3 o'clock, 0.2 to 0.8 of its turn; 10 to 50 BPM take the start and
--- 200 to 500 the end, for flourishes. Three straight pieces. -> the 0-1 that c_mapped bpm 490 10
+-- 200 to 1000 the end, for flourishes (Brendan, 2026-11-05). Three straight pieces. -> the 0-1 that c_mapped bpm 990 10
 -- scales into those BPM, so its held row reads the same curve.
 function R.tempo_curve(x)
   local bpm
@@ -35,13 +35,13 @@ function R.tempo_curve(x)
   elseif x <= 0.8 then
     bpm = 50 + 250 * (x - 0.2)
   else
-    bpm = 200 + 1500 * (x - 0.8)
+    bpm = 200 + 4000 * (x - 0.8)
   end
-  return (bpm - 10) / 490
+  return (bpm - 10) / 990
 end
 
 -- The curve's inverse: where knob 1 sits for a BPM, at the end of its turn for a BPM past its 10
--- to 500, so a knob held there is released by reaching its end.
+-- to 1000, so a knob held there is released by reaching its end.
 function R.tempo_position(bpm)
   local x
   if bpm <= 50 then
@@ -49,7 +49,7 @@ function R.tempo_position(bpm)
   elseif bpm <= 200 then
     x = 0.2 + (bpm - 50) / 250
   else
-    x = 0.8 + (bpm - 200) / 1500
+    x = 0.8 + (bpm - 200) / 4000
   end
   if x < 0 then return 0 end
   if x > 1 then return 1 end

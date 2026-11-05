@@ -72,8 +72,8 @@ at 60.
 
 | Property | Value | Evidence | Item |
 |----------|-------|----------|------|
-| Control range | **10–500 BPM** from knob 1, on a curve that gives 50–200 BPM the middle of its turn, 9 o'clock to 3 o'clock (`tempo` in [map.md](map.md)) | verified | — |
-| Legal range | **5–600 BPM**, clamped | verified | — |
+| Control range | **10–1000 BPM** from knob 1 (Brendan, 2026-11-05), on a curve that gives 50–200 BPM the middle of its turn, 9 o'clock to 3 o'clock (`tempo` in [map.md](map.md)) | verified | — |
+| Legal range | **5–1000 BPM**, clamped | verified | — |
 | Outgoing jitter | **~1.45 ms** — Pd emits on 64-sample block boundaries, about 7% of a pulse interval at 120 BPM. Not fixable in vanilla Pd | verified | — |
 | Start alignment | Within **half a pulse** — `threshold~` fires at phase 0.5, so the first pulse after a start arrives ~10.4 ms later at 120 BPM. A constant offset shared by every clock in the patch | verified | — |
 | The port | Set into `[midiout]`'s **cold inlet at load**, `u_init`'s proven pattern. A nonexistent port is silently dropped, so a port the Mac lacks costs nothing and prints nothing | verified | 63 |
@@ -90,7 +90,7 @@ phone use the legal range, and keep to it before anything reaches the bus.
 | A tap | `[timer]` measures the interval since the last, and `u_tempo.lua` takes it. The first tap after load, or one **two seconds** or more after the last, starts the count and sets nothing; every tap after it sets the tempo from the average of the last **four** intervals, whole BPM, clamped to 5–600 (Brendan, 2026-11-04) | unknown |
 | Two taps in one instant | Count nothing, and keep the count | unknown |
 | The flash | Every tap, the first included, lights the pad full for 120 ms; it sits dim otherwise | unknown |
-| The phone's `tempo <bpm>` | Whole BPM within 5–600 on the bus; anything but a number is `fail u_tempo bad-tempo` and sets nothing. It leaves a count of taps alone | unknown |
+| The phone's `tempo <bpm>` | Whole BPM within 5–1000 on the bus; anything but a number is `fail u_tempo bad-tempo` and sets nothing. It leaves a count of taps alone | unknown |
 | Outlet 1 | Every BPM the bus carries, clamped, from `$0-bpm`: knob 1's, a tap's, the phone's, a Send line's. `u_net` sends it to the phone as `/cutit/tempo`, the tempo's only display at rest (*Design*) | unknown |
 | On page 2 | Cell 21 is a drum pad, and taps there set nothing: the map's row is page 1's alone | unknown |
 | Knob 1 | **Held at the new tempo after a tap or the phone moves it**, until it is turned to or through that tempo (Brendan, 2026-11-04): until then a turn moves nothing and its row reads the tempo in force with the knob's own in brackets, `bpm 150 (105)`. Outlet 3 carries the BPM to `u_map`, whose pickup arms the knob at where its curve puts it (*Design*). A tempo past the knob's 10 to 500 holds it at the end of its turn, so its row reads that end, 10 or 500, not the tempo | unknown |
@@ -101,7 +101,7 @@ phone use the legal range, and keep to it before anything reaches the bus.
 `tempo-assert` taps 400 ms apart through the running instrument and reads 150 on the bus, turns
 knob 1 short of 150 and reads nothing and `bpm 150 (105)`, then through it, waits 2.5 s and reads
 nothing, and sends the phone's tempo through `u_net`'s socket and finds knob 1 held at it;
-`test/gate/lua/u_tempo_test.lua` holds the arithmetic, and reads the `[clip 5 600]` out of
+`test/gate/lua/u_tempo_test.lua` holds the arithmetic, and reads the `[clip 5 1000]` out of
 `u_tempo.pd` so the Lua's range cannot drift from it.
 
 ### `c_clock`
@@ -186,7 +186,7 @@ debounce burns a whole 1.45 ms block on every state change. With the obvious-loo
 anything for a debounce to protect against.
 
 ⚠️ **A `c_clock`'s ratio multiplies that ceiling** — `ratio × tempo` must stay under ~860 BPM
-equivalent, so at the 600 BPM clamp the highest safe ratio is about **1.4**.
+equivalent, so at 1 it holds to about 860 BPM. Above that, up to the 1000 BPM clamp, the MIDI clock's pulses drop (284 a second at 1000, 400 asked for): nothing follows them now, and the steps are cut from `c_steps`' own clock, which keeps up.
 
 ### The pulse counter resets to 23, not 0
 

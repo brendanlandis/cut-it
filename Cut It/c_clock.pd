@@ -69,7 +69,7 @@
 #X text 900 1660 The bar chain runs first \, off the right outlet \, so a consumer reading beat-in-bar on the beat gets this beat., f 44;
 #X text 1660 660 Bad arguments are corrected at load and reported 2 s later. C-9, f 44;
 #X text 1660 840 moses' left outlet carries the unmatched value \, harmless only because it feeds a message box. C-8, f 44;
-#X text 1660 1160 Debounces are 0: threshold~ counts dead time in blocks \, so any debounce loses pulses (item 58). The ratio multiplies the ceiling \, so at u_tempo's 600 clamp the highest safe ratio is about 1.4, f 44;
+#X text 1660 1160 Debounces are 0: threshold~ counts dead time in blocks \, so any debounce loses pulses (item 58). The ratio multiplies the ceiling \, so at 1 the pulses hold to about 860 BPM of u_tempo's 1000 clamp, f 44;
 #X obj 20 330 f 120;
 #X obj 400 290 loadbang;
 #X obj 400 330 del 300;

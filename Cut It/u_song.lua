@@ -254,6 +254,10 @@ function R.differs(a, b)
     for k, v in pairs(s.parts) do
       local w = t.parts[k]
       if not w or not same_atoms(v, w) then return true end
+      -- Equal, so they share one table from here on, and the next look is a glance. The draft and
+      -- the save come from two files, so nothing shared at load, and this ran on every message,
+      -- every number of every section (2026-11-05). Atoms are never changed in place.
+      s.parts[k] = w
     end
     for k in pairs(t.parts) do
       if not s.parts[k] then return true end

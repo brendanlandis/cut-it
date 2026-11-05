@@ -77,7 +77,7 @@ def main():
 
     cap = A.require_capture(sys.stdin.read())
     print("\n=== B. the clock, measured on the wire ===")
-    order, by = A.windows(cap, "CLK", 23)
+    order, by = A.windows(cap, "CLK", 27)
     W = lambda k: by.get(k, [])
     # Report only the ERR traffic: a window also holds every grid repaint byte.
     errs = lambda k: [e for e in W(k) if e[0] == "ERR"]
@@ -180,9 +180,27 @@ def main():
     n = len(rt(W("TAP-AFTER"), byte=CLOCK, port=PORTS[0]))
     A.check("... and the clock follows it", 0 < n, "no pulses in that window")
 
+    print("\n--- knob 1 is held at a tapped tempo ---")
+    # Brendan, 2026-11-04: a tap or the phone sets the tempo, and knob 1 waits to
+    # be turned through it, as c_steps' knobs 2 and 4 wait for the phone's.
+    rows = lambda k: [e[1] for e in W(k) if e[0] == "DISP" and e[1][:1] == ["bpm"]]
+    A.check("knob 1 is live before the taps -- turned through 120, 0.4 sets 100",
+            bpms("KNOB-LIVE")[-1:] == [100.0], "the tempo bus carried %s" % bpms("KNOB-LIVE"))
+    A.check("⛔ after the taps' 150, knob 1's next turn moves NOTHING -- it is held at 150",
+            bpms("KNOB-HELD") == [], "the tempo bus carried %s: the knob jumped the tempo "
+            "back to where it sits" % bpms("KNOB-HELD"))
+    A.check("⛔ ...and its row says so: bpm 150 (105), the tap's tempo and the knob's own",
+            rows("KNOB-HELD") == [["bpm", "150", "(105)"]], "bpm rows: %s" % rows("KNOB-HELD"))
+    A.check("... and turned through 150 it is live again: 0.68 sets 170",
+            bpms("KNOB-THROUGH") == [170.0] and rows("KNOB-THROUGH") == [["bpm", "170"]],
+            "tempo %s, rows %s" % (bpms("KNOB-THROUGH"), rows("KNOB-THROUGH")))
+
     print("\n--- the phone's tempo ---")
     A.check("⛔ /cutit tempo 133 from the phone puts 133 on the tempo bus, through u_tempo",
             bpms("PHONE") == [133.0], "the tempo bus carried %s" % bpms("PHONE"))
+    A.check("⛔ ...and holds knob 1 there too: 0.7 moves nothing, and reads bpm 133 (175)",
+            bpms("KNOB-PHONE") == [] and rows("KNOB-PHONE") == [["bpm", "133", "(175)"]],
+            "tempo %s, rows %s" % (bpms("KNOB-PHONE"), rows("KNOB-PHONE")))
     A.check("... 900 is 600, the legal range's top, before it reaches the bus",
             bpms("PHONE-HIGH") == [600.0], bpms("PHONE-HIGH"))
     A.check("... and a tempo that is no number sets nothing and is fail u_tempo bad-tempo",

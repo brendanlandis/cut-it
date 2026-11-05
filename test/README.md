@@ -32,9 +32,9 @@ were false.
 | `display-assert.sh` | 46 | `module/display` — the grid, page 3's synth pads and page 1's tap pad included |
 | `oled-assert.sh` | 70 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
-| `tempo-assert.sh` | 63: 33 in Lua, 30 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
+| `tempo-assert.sh` | 68: 33 in Lua, 35 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 175: 90 in Lua, 85 in Pd | `module/map` |
+| `map-assert.sh` | 188: 103 in Lua, 85 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 49 | `module/presence` |
@@ -115,7 +115,12 @@ names itself: against the `u_map.lua`, its face and `u_map.pd` with the raw row,
 (6: five rows, the strip at 48 and 56, the nanoKEY neither `never` nor `here`), on the old `g_oled`
 with the new `m_nanokey` (6: the bound at five dropped `m_streich`), and on the new `g_oled` with the
 old `m_nanokey` (5); `presence-assert` on the old `m_nanokey` (the roster of five in both runs),
-and on an `m_nanokey` registered `active` through a `c_presence` (2 of the new, among 5).
+and on an `m_nanokey` registered `active` through a `c_presence` (2 of the new, among 5). Knob 1
+held at a tapped or phoned tempo: `tempo-assert` against `u_map`, its Lua and face, `u_tempo` and
+`u_root` without the hold (3: 0.42 set 105 after the taps, its row read `bpm 105`, and 0.7 set 175
+after the phone's 133), and with only `u_root`'s cord from `u_tempo` to `u_map` cut (the same 3);
+`u_map_test.lua` against the old rules (no `R.tempo_position`: it stopped there) and with the hold
+arming the knob at the wrong place (3).
 
 ✅ **The phone's pages, the arrangement screen, tap tempo and the velocity switch were each made to
 fail** (2026-11-04), against the code without the change or a mutation of it. `phone-assert`: the
@@ -275,7 +280,7 @@ driver never muting (1: the forget's witness).
 ## `tempo-assert.sh` — two kinds of check, because neither is enough
 
 ```sh
-./test/gate/tempo-assert.sh          33 + 30 checks, ~24 s — tap tempo's rules in Lua, then the clock, the taps and the phone's tempo
+./test/gate/tempo-assert.sh          33 + 35 checks, ~24 s — tap tempo's rules in Lua, then the clock, the taps and the phone's tempo
 ```
 
 **It runs tap tempo's Lua tests first**: `test/gate/lua/u_tempo_test.lua`, with no Pd, drives
@@ -310,14 +315,16 @@ rig; the clamp warning at both ends and *not* warning in range; start 250, stop 
 ⛔ that **Continue (251) is never sent**; and ⛔ that **stop does not halt the clock** — the transport
 pauses the subscribers, it does not clear the timer. Then **tap tempo through the running
 instrument**: page 1's tap pad pressed as `param pad-21`, 400 ms apart, puts 150 on the tempo bus
-from the second tap; 2.5 s later a tap sets nothing, and the next, 600 ms on, 100; the same pad on
-page 2, a drum pad there, sets nothing; and **the phone's tempo** as a datagram into `u_net`'s port,
-133 to the bus, 900 clamped to 600, and a word refused as `bad-tempo`.
+from the second tap, and ⛔ **knob 1 held at it**: turned short of 150 it moves nothing and reads
+`bpm 150 (105)`, turned through it it sets 170; 2.5 s later a tap sets nothing, and the next, 600 ms
+on, 100; the same pad on page 2, a drum pad there, sets nothing; and **the phone's tempo** as a
+datagram into `u_net`'s port, 133 to the bus, knob 1 held at it too, 900 clamped to 600, and a word
+refused as `bad-tempo`.
 
 ## `map-assert.sh` and `volca-assert.sh` — the map and the output device
 
 ```sh
-./test/gate/map-assert.sh            90 + 85 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
+./test/gate/map-assert.sh            103 + 85 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
 

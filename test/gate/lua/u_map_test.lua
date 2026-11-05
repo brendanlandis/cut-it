@@ -215,6 +215,40 @@ R.internal.live(st)
 equal("a recover's live frees knob 1 too: after an emergency nothing is held",
       R.control(st, "og-knob-1", { 0.1 })[1][3][5], 1)
 
+print("\n--- a tempo a tap or the phone set holds knob 1 again ---")
+local P = R.tempo_position
+equal("the curve's inverse puts each BPM back where the knob sits for it",
+      { bpm(P(10)), bpm(P(30)), bpm(P(50)), bpm(P(100)), bpm(P(150)), bpm(P(200)), bpm(P(350)),
+        bpm(P(500)) }, { 10, 30, 50, 100, 150, 200, 350, 500 })
+equal("... a tempo past the knob's 10 to 500 holds it at the end of its turn",
+      { P(5), P(600) }, { 0, 1 })
+check("... and 120 is R.UNSAVED's 0.48, the one hold the knob has with nothing Saved",
+      math.abs(P(120) - R.UNSAVED[1]) < 1e-9, T.show({ P(120), R.UNSAVED[1] }))
+st = R.new(MAP)
+R.internal.live(st)
+R.control(st, "og-knob-1", { 0.3 })
+equal("a tap's 150 leaves nothing: the bus already has it", R.hold_tempo(st, "float", { 150 }), {})
+equal("... and knob 1's next turn is HELD at 150, the knob's own tempo in the value",
+      R.control(st, "og-knob-1", { 0.42 }), route("tempo", 0, C(0.42), C(P(150)), 0))
+equal("... held still, turned the same way", R.control(st, "og-knob-1", { 0.5 })[1][3][5], 0)
+equal("... and turned THROUGH 150 it is live, at the crossing value",
+      R.control(st, "og-knob-1", { 0.68 }), route("tempo", 0, C(0.68), C(P(150)), 1))
+R.hold_tempo(st, "float", { 100 })
+equal("the phone's tempo holds it again, from above this time",
+      { R.control(st, "og-knob-1", { 0.9 })[1][3][5], R.control(st, "og-knob-1", { 0.3 })[1][3][5] },
+      { 0, 1 })
+st = R.new(MAP)
+R.internal.live(st)
+R.mode(st, "mode-3", {})
+R.hold_tempo(st, "float", { 150 })
+equal("on a page whose knob 1 is no tempo, the hold leaves it alone", st.knob[1].state, "live")
+st = R.new(MAP)
+R.internal.live(st)
+R.hold_tempo(st, "symbol", { "fast" })
+equal("... and a tempo that is no number holds nothing", st.knob[1].state, "live")
+equal("... and no other knob is held by a tempo", { st.knob[2].state, st.knob[3].state, st.knob[4].state },
+      { "live", "live", "live" })
+
 st = R.new("mode-1 xport-2 start 0\n")
 equal("a button is never held: PLAY twice is live twice",
       { R.control(st, "xport-2", { 1 })[1][3][5], R.control(st, "xport-2", { 1 })[1][3][5] },
@@ -267,7 +301,7 @@ local class = T.load_class(DIR .. "u_map-lua.pd_lua", DIR)
 check("u_map-lua.pd_lua registers the class u_map-lua", class and class._name == "u_map-lua",
       class and class._name)
 local o = T.new(class, {}, tmp .. "-")
-check("an object has three inlets and four outlets", o and o.inlets == 3 and o.outlets == 4,
+check("an object has four inlets and four outlets", o and o.inlets == 4 and o.outlets == 4,
       o and (o.inlets .. " " .. o.outlets))
 equal("init: the bang on outlet 4 that says it loaded, and nothing else",
       T.send(o, 3, "init", {}), { { 4, "bang", {} } })
@@ -285,17 +319,21 @@ equal("window-shut on inlet 3: a knob's first value now goes straight to live",
       { 1, 1 })
 equal("anything else on inlet 3 is fail u_map bad-selector", T.send(o, 3, "beat", { 1 }),
       { { 3, "fail", { "u_map", "bad-selector" } } })
+T.send(o, 3, "live", {})
+T.send(o, 1, "og-knob-1", { 0.3 })
+equal("a BPM on inlet 4 leaves nothing", T.send(o, 4, "float", { 150 }), {})
+equal("... and holds knob 1 there: its next turn is held", T.send(o, 1, "og-knob-1", { 0.42 })[1][3][5], 0)
 -- pdlua hands every message to dispatch, which this class answers itself.
 local function dispatched(inlet, sel, atoms)
   o.sent = {}
   o:dispatch(inlet, sel, atoms)
   return o.sent
 end
-equal("dispatch takes each inlet's messages to its method: a control, a mode, init",
+equal("dispatch takes each inlet's messages to its method: a control, a mode, init, a tempo",
       { dispatched(1, "slider-1", { 127 }), dispatched(2, "mode-1", {}),
-        dispatched(3, "init", {}) },
+        dispatched(3, "init", {}), dispatched(4, "float", { 120 }) },
       { { { 1, "list", { "volca-cc", 41, 1, 1, 1 } } }, { { 2, "list", { "mode-1" } } },
-        { { 4, "bang", {} } } })
+        { { 4, "bang", {} } }, {} })
 equal("a knobs.txt where its patch is: mother's first push is a restore, and passes",
       T.send(T.new(class, {}, tmp .. "-"), 1, "og-knob-1", { 0.0958 }),
       { { 1, "list", { "tempo", 0, C(0.0958), C(0.0958), 1 } } })

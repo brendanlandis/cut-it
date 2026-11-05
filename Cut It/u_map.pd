@@ -73,7 +73,7 @@
 #X obj 700 3350 route mode;
 #X obj 700 3460 s mode;
 #X text 20 20 u_map -- the map \, and the only file in Cut It that says what a control means. Devices publish named controls on param \; this turns them into the buses and the output devices' cords \, so nothing in e_ or c_ learns that a nanoKONTROL exists. ref/module/map.md, f 58;
-#X text 20 165 creation arg 1: the state directory \, the \$3 u_state takes: the recover breadcrumb lives beside the state files. inlets: none. outlet 1: the Volca \, selector-prefixed -- notes <n> <v> <d> \, cc <c> <v> \, program <n> \, note <n> <v>. One outlet per output device \, wired in u_root (C-2): the SP-404's went when it left the rig (2026-11-04). outlet 2: c_steps \, what a press on the drum page means -- step \, vel or pad \, <n> <velocity> \, and a drum-page pad's release at velocity 0 -- and the drums destination's <arg> <0-1> \, knobs 2 to 4's last \, track-last and swing. outlet 3: u_net \, a bang that flips test mode. outlet 4: c_synth \, synth <choice> \, a page-3 pad's press. outlet 5: u_tempo \, what a press of a page-1 pad means \, its role in cut-it-arrangement-page.txt: tap., f 58;
+#X text 20 165 creation arg 1: the state directory \, the \$3 u_state takes: the recover breadcrumb lives beside the state files. inlet 1: a BPM a tap or the phone set \, from u_tempo: knob 1 is held there until turned through it. outlet 1: the Volca \, selector-prefixed -- notes <n> <v> <d> \, cc <c> <v> \, program <n> \, note <n> <v>. One outlet per output device \, wired in u_root (C-2): the SP-404's went when it left the rig (2026-11-04). outlet 2: c_steps \, what a press on the drum page means -- step \, vel or pad \, <n> <velocity> \, and a drum-page pad's release at velocity 0 -- and the drums destination's <arg> <0-1> \, knobs 2 to 4's last \, track-last and swing. outlet 3: u_net \, a bang that flips test mode. outlet 4: c_synth \, synth <choice> \, a page-3 pad's press. outlet 5: u_tempo \, what a press of a page-1 pad means \, its role in cut-it-arrangement-page.txt: tap., f 58;
 #X text 700 20 The map is a table \, and mode-dependent: cut-it-map.txt \, one row per mapping \, four atoms always -- <mode> <control> <dest> <arg>. u_map-lua reads it and looks each control up., f 76;
 #X text 1400 20 The allowlist guard is what makes a table acceptable: a row names a destination that must be a literal argument on the route below \, feeding a handler on this canvas \, and never a send. Skip it and nothing fails., f 76;
 #X text 2200 20 A row naming a destination not on the route is a real error \, unknown-dest on err. An unmapped control is normal: it is silent on every bus \, and draws nothing (Brendan \, 2026-11-04)., f 62;
@@ -440,6 +440,9 @@
 #X msg 8100 1210 read -c cut-it-arrangement-page.txt;
 #X obj 8100 1260 text define \$0-arrange;
 #X text 7600 1800 arrangement: the arg is a grid index \, looked up in cut-it-arrangement-page.txt \, the table g_grid paints page 1's pads from \, so a press and its lamp cannot disagree. A press sends the cell's role to u_tempo \, tap the one there is \, and a release nothing. A row the layout does not hold is layout-miss \, as on the drum page and the synth pads. C-8, f 50;
+#X obj 1500 600 inlet;
+#X text 1500 650 A BPM a tap or the phone set reaches the Lua's fourth inlet \, which holds every knob the page maps to tempo there \, as c_steps holds knobs 2 and 4 when the phone sets the last step or the swing (ref/module/tempo.md)., f 50;
+#X connect 233 0 175 3;
 #X connect 17 15 218 0;
 #X connect 218 1 219 0;
 #X connect 219 0 220 1;

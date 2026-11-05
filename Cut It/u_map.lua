@@ -40,6 +40,22 @@ function R.tempo_curve(x)
   return (bpm - 10) / 490
 end
 
+-- The curve's inverse: where knob 1 sits for a BPM, at the end of its turn for a BPM past its 10
+-- to 500, so a knob held there is released by reaching its end.
+function R.tempo_position(bpm)
+  local x
+  if bpm <= 50 then
+    x = (bpm - 10) / 200
+  elseif bpm <= 200 then
+    x = 0.2 + (bpm - 50) / 250
+  else
+    x = 0.8 + (bpm - 200) / 1500
+  end
+  if x < 0 then return 0 end
+  if x > 1 then return 1 end
+  return x
+end
+
 -- A destination's curve, applied to its value and target as they leave: pickup compares the
 -- knob's own positions, and the curve only changes what they mean.
 R.CURVES = { tempo = R.tempo_curve }
@@ -146,6 +162,25 @@ function R.control(st, sel, atoms)
     local curve = R.CURVES[row.dest]
     if curve then value, target = curve(value), curve(target) end
     return { { "route", "list", { row.dest, row.arg, value, target, live } } }
+  end
+  return {}
+end
+
+-- A tempo a tap or the phone set, from u_tempo (Brendan, 2026-11-04): every knob the page maps to
+-- tempo is held again at where its curve puts that tempo, so its next turn waits to pass it
+-- rather than jumping back to wherever the knob sits, as c_steps holds knobs 2 and 4 when the
+-- phone sets the last step or the swing. Armed, so its first value decides the side it waits on.
+-- Nothing leaves: the tempo bus already carries the tempo, and the held row is drawn when the knob
+-- next moves. Anything but a number does nothing.
+function R.hold_tempo(st, sel, atoms)
+  local bpm = as_list(sel, atoms)[1]
+  if type(bpm) ~= "number" then return {} end
+  local page = st.map[st.mode] or {}
+  for name, k in pairs(R.KNOBS) do
+    local row = page[name]
+    if row and row.dest == "tempo" then
+      st.knob[k] = { state = "armed", target = R.tempo_position(bpm) }
+    end
   end
   return {}
 end

@@ -103,8 +103,9 @@ carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`
 `g_grid`: told what a press means, it plays the drums and says what the drum page shows. And
 `c_synth` sits between `m_nanokey`, `u_map` and `u_net` on one side and the two synths, `u_net` and
 `g_grid` on the other: it plays the nanoKEY's keys on the chosen synth and says which that is. And
-`u_tempo` sits between `u_map`'s tap pad and `u_net`'s tempo on one side and `u_net` and `g_grid`
-on the other: it turns taps and the phone's drag into the tempo, and says what it is.
+`u_tempo` sits between `u_map`'s tap pad and `u_net`'s tempo on one side and `u_net`, `g_grid` and
+`u_map` on the other: it turns taps and the phone's drag into the tempo, says what it is, and hands
+`u_map` the tempo a tap or the phone set, so knob 1 waits there.
 
 ## Creation arguments — the contract between the two entry points
 

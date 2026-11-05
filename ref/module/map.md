@@ -23,7 +23,8 @@ the Lua through one pdlua object, `[u_map-lua]` (`cut-it/logic-as-text`).
 on a `route` box inside `u_map`, feeding a handler you can see on the canvas — the **allowlist
 guard**, and the whole of what makes a table acceptable here. See *Design*.
 
-`u_map` has no inlets. It has **one outlet per output device**, wired in `u_root`, because no bus
+`u_map` has **one inlet**, the BPM a tap or the phone set, from `u_tempo`, at which it holds knob 1
+([tempo.md](tempo.md)). It has **one outlet per output device**, wired in `u_root`, because no bus
 carries a sounding note — the Volca's, the one since the SP-404 left the rig (Brendan, 2026-11-04) —
 then one to `c_steps`, for what a press on page 2's drum page means ([sequencer.md](sequencer.md)),
 one to `u_net`, which flips test mode, one to `c_synth`, for a press of page 3's synth pads
@@ -162,7 +163,7 @@ selected track's, is page 2's alone.
 | | Lives in | Evidence |
 |---|---|---|
 | The table, the key's mode and its guard, the lookup, the divisor and pickup's five states | `u_map.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
-| Reading the table and asking whether a `knobs.txt` is there, turning messages into those calls and their answers into outlets | `u_map-lua.pd_lua`, the class `u_map-lua`: three inlets (every control the mode keys pass on; the `mode` bus; `u_map.pd`'s own `init`, `window-shut` and `live`), four outlets (the destination route, the mode to store, `err`, a bang on `init`) | verified |
+| Reading the table and asking whether a `knobs.txt` is there, turning messages into those calls and their answers into outlets | `u_map-lua.pd_lua`, the class `u_map-lua`: four inlets (every control the mode keys pass on; the `mode` bus; `u_map.pd`'s own `init`, `window-shut` and `live`; a BPM a tap or the phone set, from `u_tempo`), four outlets (the destination route, the mode to store, `err`, a bang on `init`) | verified |
 | The eight mode keys and their release gates, the 500 ms seed, the destination route and its handlers, `c_mapped`, the 1000 ms boot window, the recover breadcrumb at 2000 ms, `put auto mode` and the restore | `u_map.pd` | verified |
 | The Lua's answers | The Pd version's, exactly: 38 controls and modes through `u_map` printed the same 42 lines from the Pd version and the Lua, on the Mac and on the Organelle (2026-11-03) | verified |
 | What it costs in memory | About 0.1 MB more peak resident in a test Pd loading `main.pd` on the Organelle (3.31–3.42 MB before, 3.44–3.48 after), since `c_steps` loads pdlua already | verified |
@@ -198,6 +199,7 @@ then hands it authority.
 | Whether the push is a restore at all | `[u_map-lua]` **asks whether `knobs.txt` is there** as it is made, before mother's push, beside the table it reads | verified | 239 |
 | With **no** `knobs.txt` | **Knob 1 is held at 120 BPM**, `u_tempo`'s own, until it is turned through 0.48, where the curve puts 120 (Brendan, 2026-11-04): its first push draws `bpm 120 (29)` and moves nothing. Every other knob is live from its first value | verified | — |
 | **After a `recover`** | the breadcrumb, read at 2000 ms, sends `live`, `knobs.txt` or not: every knob, knob 1 included | verified | 299 |
+| **After a tap or the phone sets the tempo** | every knob the page maps to `tempo` is armed again at where the curve puts that BPM (`R.hold_tempo`, `R.tempo_position`), so it is held until turned through it and draws `bpm <tempo> (<knob>)` meanwhile (Brendan, 2026-11-04; [tempo.md](tempo.md)) | unknown | — |
 | The held row is drawn by the **destination**, for any knob mapped to one that carries a value | `c_mapped` gets the latched target and the live flag with every message and draws `name <latched> (<knob>)` in its own units | verified | 316 |
 | **Reaching** the target releases, not only passing it | a target on a rail has no beyond: armed above a target of `0`, the flip test waits for `value < 0` | verified | 241 |
 | An **unmapped** control draws nothing | The Lua's miss leaves by no outlet: silent on every bus and on the screen (Brendan, 2026-11-04) | verified | — |

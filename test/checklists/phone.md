@@ -34,7 +34,7 @@ The rate limit is `phone-assert`'s, and the page structure, what each control se
 - [ ] **6. The tempo, dragged on the phone**
   - **Do:** Put a finger on the tempo and drag up slowly, a BPM at a time, then down past where you started, then a long quick drag up. Let go.
   - **Pass if:** The number moves one BPM at a time under a slow finger, with no jumps, and the OLED shows nothing of it: the phone is the tempo's only display at rest. A long drag reaches far but stops at 600 at the top and 5 at the bottom. When you let go it stays. The Launchpad's beat row walks faster or slower to match.
-  - **Note:** About 9 points of drag to a BPM. Knob 1 is not held after the phone moves the tempo: its next turn sets the tempo from where it sits.
+  - **Note:** About 9 points of drag to a BPM. Knob 1 is held at the phone's tempo afterwards, as knobs 2 and 4 are at the phone's last step and swing: its next turn reads bpm and the phone's tempo with its own in brackets, and moves nothing until turned through it ([tempo](../../ref/module/tempo.md)).
 
 - [ ] **7. The global last step, and knob 2**
   - **Need:** Page 1, the drums playing, from the sequencer checklist's steps or `start bang`.

@@ -20,8 +20,9 @@ global `clock` is its clock**; that instance is the grid's, and the next consume
 port 4 takes `panic`'s STOP alone. **Port 3 gets nothing**: it was the SP-404's, which left the rig
 on 2026-11-04 (Brendan). **Its inlet takes what sets the tempo from a pad or a screen** — `tap`,
 from `u_map`'s tap pad on page 1, and `tempo <bpm>`, the phone's, from `u_net` — and writes the bus
-itself; **its outlets** hand the master BPM, clamped, to `u_net` for the phone, and `tap` to
-`g_grid` to flash the pad (Brendan, 2026-11-04). The tap's rules are Lua, `u_tempo.lua`; the
+itself; **its outlets** hand the master BPM, clamped, to `u_net` for the phone, `tap` to
+`g_grid` to flash the pad, and the BPM a tap or the phone set to `u_map`, which holds knob 1 there
+(Brendan, 2026-11-04). The tap's rules are Lua, `u_tempo.lua`; the
 timer between taps, the clock and the transport are Pd.
 
 ## Facts
@@ -90,10 +91,12 @@ phone use the legal range, and keep to it before anything reaches the bus.
 | The phone's `tempo <bpm>` | Whole BPM within 5–600 on the bus; anything but a number is `fail u_tempo bad-tempo` and sets nothing. It leaves a count of taps alone | unknown |
 | Outlet 1 | Every BPM the bus carries, clamped, from `$0-bpm`: knob 1's, a tap's, the phone's, a Send line's. `u_net` sends it to the phone as `/cutit/tempo`, the tempo's only display at rest (*Design*) | unknown |
 | On page 2 | Cell 21 is a drum pad, and taps there set nothing: the map's row is page 1's alone | unknown |
-| Knob 1 | Keeps working, and is not held after a tap or the phone moves the tempo: its next turn sets the tempo from where it sits | unknown |
+| Knob 1 | **Held at the new tempo after a tap or the phone moves it**, until it is turned to or through that tempo (Brendan, 2026-11-04): until then a turn moves nothing and its row reads the tempo in force with the knob's own in brackets, `bpm 150 (105)`. Outlet 3 carries the BPM to `u_map`, whose pickup arms the knob at where its curve puts it (*Design*). A tempo past the knob's 10 to 500 holds it at the end of its turn, so its row reads that end, 10 or 500, not the tempo | unknown |
+| Outlet 3 | The BPM a tap or the phone set, whole and clamped, after the Lua and before the bus: to `u_map`'s inlet. Knob 1's own tempo, a Send line's and the fallback 120 do not come out of it | unknown |
 
-`tempo-assert` taps 400 ms apart through the running instrument and reads 150 on the bus, waits
-2.5 s and reads nothing, and sends the phone's tempo through `u_net`'s socket;
+`tempo-assert` taps 400 ms apart through the running instrument and reads 150 on the bus, turns
+knob 1 short of 150 and reads nothing and `bpm 150 (105)`, then through it, waits 2.5 s and reads
+nothing, and sends the phone's tempo through `u_net`'s socket and finds knob 1 held at it;
 `test/gate/lua/u_tempo_test.lua` holds the arithmetic, and reads the `[clip 5 600]` out of
 `u_tempo.pd` so the Lua's range cannot drift from it.
 
@@ -252,6 +255,19 @@ clamp and the transport, which are Pd, run on.
 **The phone's tempo comes in on the same inlet** and goes out on the bus from `u_tempo`, so nothing
 from the phone writes a bus by itself ([phone.md](../device/phone.md)), and the one clamp the bus
 sees from a screen is the Lua's, the same as a tap's.
+
+### Knob 1 waits for a tapped or phoned tempo
+
+**A tap or the phone sets the tempo, and knob 1 is held there until it is turned through it**
+(Brendan, 2026-11-04), as `c_steps` holds knobs 2 and 4 when the phone sets the last step or the
+swing ([sequencer.md](sequencer.md)). Without it the knob's next turn jumped the tempo back to
+wherever the knob happened to sit. The hold is `u_map`'s pickup, which already holds a restored
+knob until it crosses: `u_tempo` hands the BPM out of its Lua, before the bus, on a cord to
+`u_map`, and the Lua arms every knob the page maps to `tempo` at the BPM's place on the curve
+(`R.tempo_position`, the curve's inverse). Armed, the knob's first value decides the side it waits
+on, and the held row is `c_mapped`'s, as for a restore. **It is a cord and not the bus** because
+the bus cannot say who wrote a tempo, and knob 1's own tempo must not hold knob 1; nothing on the
+cord reaches the bus, so there is no loop.
 
 ### `u_tempo` is a reference, `c_clock` is a clock
 

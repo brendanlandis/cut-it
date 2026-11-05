@@ -198,8 +198,8 @@ SEQ = [
     # -- the OLED's traffic: u_net mirrored it once (/cutit/param, /status,
     #    /alert); it reads nothing on disp now (Brendan, 2026-11-04)
     (5000,  "dispsweep", [("sweep", ("grain", 400, 5))]),
-    (8000,  "dispother", [("disp", "status 128-bpm"), ("disp", "alert fail u_bench boom"),
-                          ("disp", "chop-size 43 %"), ("disp", "in-l 42 dB"), ("disp", "diag")]),
+    (8000,  "dispother", [("disp", "alert fail u_bench boom"),
+                          ("disp", "chop-size 43 %"), ("disp", "out-l 42 dB"), ("disp", "diag")]),
     # -- the tempo: one BPM, then a sweep, which is coalesced
     (9500,  "tempo",    [("tp", "120")]),
     (11000, "tpsweep",  [("tpsweep", (400, 5))]),

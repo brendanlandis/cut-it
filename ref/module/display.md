@@ -134,7 +134,7 @@ at y = 0, 9, 18, 27, 36, 45**, one per source, over the shrunk meter strip.
 
 | | Evidence | Item |
 |---|----------|------|
-| One row per source on the presence bus, drawn as `<src> <state>`. The roster is whatever `expect` published at load — today **six**: `m_launchpad`, `m_nano`, `m_organelle`, `m_volca`, `m_streich` and `m_nanokey` (2026-11-04), the most the layer draws. `m_404` went with the SP-404 | verified | 301 |
+| One row per source on the presence bus, drawn as `<src> <state>`. The roster is whatever `expect` published at load — today **six**: `m_launchpad`, `m_nano`, `m_organelle`, `m_volca`, `m_streich` and `m_nanokey` (2026-11-04), the most the layer draws. `m_404` went with the SP-404. Verified on the rig with five; the sixth row has not been seen there | verified | 301 |
 | **The two passive layers, `m_organelle` and `m_nanokey`, read `never` until they first speak**, and `here` from then on: never polled and never aged, so the row says *heard since load*, not *there now*. The nanoKEY speaks only when a key is played ([presence.md](presence.md)) | unknown | — |
 | ⛔ **`<src>` is the ABSTRACTION's name** — `m_nano`, never "nanoKONTROL". `g_oled` sits below the `m_` boundary, so this is the only name it has. See [presence.md](presence.md) | verified | 301 |
 | Four states: `here` · `gone` · `never` · `unchecked`. **`m_volca` registers `none` and reads `unchecked`** — it is never polled and can never be lost, so drawing it as healthy would be a claim nothing has tested | verified | 301 |

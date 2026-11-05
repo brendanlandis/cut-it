@@ -190,7 +190,7 @@ and every text and control at **WCAG AA**, which `touchosc-assert` audits from t
 control as it moves; the phone for the Launchpad's current page. Until then `u_net` subscribed to
 `disp` and forwarded every parameter row, the footer's status and the held alert, and the phone
 drew a remote screen of them with three diagnostic buttons. All of it went: `u_net` holds no `[r
-disp]`, and `phone-assert` puts a sweep, a status, an alert and a meter on `disp` and requires
+disp]`, and `phone-assert` puts a sweep, a row, an alert and a meter on `disp` and requires
 nothing of them on the wire. What the phone shows now is each module's state, handed to `u_net` on a
 cord, which is what a control surface needs and a mirror never had.
 
@@ -199,8 +199,8 @@ cord, which is what a control surface needs and a mirror never had.
 The arrangement screen's tempo is the only place the BPM is shown as a number and set by a drag
 (Brendan, 2026-11-04). It is `u_tempo`'s, the clamped value whatever set it — knob 1, the tap pad,
 the phone itself, a Send line — on a cord out of `u_tempo` into `u_net`'s fourth inlet, so the phone
-shows the tempo in force, not one it asked for. The status string the footer carries was the wrong
-vehicle: one slot shared with every other status, and a word.
+shows the tempo in force, not one it asked for. The status string the footer carried, until the
+footer went too, was the wrong vehicle: one slot shared with every other status, and a word.
 
 The phone's drag goes to `u_tempo` by a cord, and `u_tempo` writes the bus, so nothing from the phone
 reaches a bus by itself (*The inbound vocabulary is closed*, below).

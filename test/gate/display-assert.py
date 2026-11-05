@@ -91,6 +91,11 @@ def main():
         problem, lamp, _page = G.drum_page(fs[-1], G.drum_layout())
         A.check("home-mode-2: the drum page, and nothing lit outside it and the lamps",
                 problem is None, problem or "")
+        A.check("⛔ home-mode-2: the repeat pads and pad-35 the brightest purple, pad-38 dim blue, "
+                "and pad-36 and pad-37 between them dark", [fs[-1].color(i) for i in (45, 48, 35, 38,
+                                                                                     36, 37)]
+                == [G.REP_DIM, G.REP_DIM, G.REP_DIM, G.RECALL_DIM, 0, 0],
+                "cells 45 48 35 38 36 37: %s" % [fs[-1].color(i) for i in (45, 48, 35, 38, 36, 37)])
         A.check("home-mode-2: the lit mode lamp is index %d" % G.LAMPS[1],
                 lamp == G.LAMPS[1], "lit lamp was %s" % lamp)
         beats = sorted({i for f in fs for i in range(G.BEAT_LO, G.BEAT_HI + 1)

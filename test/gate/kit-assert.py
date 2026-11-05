@@ -566,6 +566,7 @@ def main():
 
     t = G.hit_time(window("SEAM"), G.SET_MS)
     a, b = t + G.SEAM_S - 0.05, t + G.SEAM_S + 1.2 + 0.1
+    # (the second hold, below, is 150 ms after the first let go)
     seg = span(a, b)
     A.check("SEAM: a tone runs through the hold, so there is a seam to hear",
             min(rms(span(a + 0.03 + i * 0.1, a + 0.13 + i * 0.1)) for i in range(11)) > TONE_RMS * 0.3,
@@ -574,6 +575,13 @@ def main():
     own = biggest_step(span(t + 0.32, a))
     A.check("⛔ SEAM: going in, round the seam and coming out, no sample jumps further than the tone "
             "did before it: not a click", biggest_step(seg) < own * 1.1 and own < TONE_STEP * 1.4,
+            "the largest step %.5f, the tone's own %.5f" % (biggest_step(seg), own))
+    # Held again 150 ms after that, for 300 ms of tape: the loop runs over the place the recording
+    # stopped and started, 150 ms back, which fades out and in rather than meeting in a jump.
+    again = t + G.SEAM_S + 1.2 + G.SEAM_AGAIN_S
+    seg = span(again - 0.01, again + G.SEAM_AGAIN_FOR_S + 0.03)
+    A.check("⛔ SEAM: held again soon after, over where the recording stopped and started, no click "
+            "there either", biggest_step(seg) < own * 1.1,
             "the largest step %.5f, the tone's own %.5f" % (biggest_step(seg), own))
     t = G.hit_time(window("TAIL"), G.SET_MS)
     held = t + G.TAIL_HOLD_S

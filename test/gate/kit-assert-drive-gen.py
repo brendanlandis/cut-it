@@ -77,6 +77,8 @@ TAPE_HOLD_MS = 450
 RING_HOLD_S, RING_HOLD_FOR_S = 0.85, 0.45
 LOOP_S = 0.85
 SEAM_S, SEAM_SPAN, SEAM_UNITS = 1.4, 1000.4, 8.0032
+# ... and held again soon after, over the place the recording stopped and started
+SEAM_AGAIN_S, SEAM_AGAIN_FOR_S, SEAM_AGAIN_SPAN, SEAM_AGAIN_UNITS = 0.15, 0.4, 300, 2.4
 TAIL_HOLD_S, TAIL_SPAN = 0.5, 300
 HITS = [
     ("FULL", 0.5, [(0, 1, 127)]),
@@ -125,9 +127,9 @@ HITS = [
     ("LOOP-END", TAPE_S + 5.0 + LOOP_S + 5.0, []),
     # a tone with no gaps in it, echoes running on from each other, to look for a click in
     ("SEAM", TAPE_S + 11.0, [(SET_MS, 7, 127)]),
-    ("SEAM-OFF", TAPE_S + 11.0 + SEAM_S + 1.2 + 0.3, []),
+    ("SEAM-OFF", TAPE_S + 11.0 + SEAM_S + 1.2 + SEAM_AGAIN_S + SEAM_AGAIN_FOR_S, []),
     # a reverb's tail, a loop of it, after all those holds
-    ("TAIL", TAPE_S + 14.5, [(SET_MS, 10, 127)]),
+    ("TAIL", TAPE_S + 15.0, [(SET_MS, 10, 127)]),
 ]
 # What a window sends c_kit before its hits, SET_MS before them: a track's volume
 # in dB, -30 to +6, and its pitch in semitones, -12 to +12, as c_steps sends them.
@@ -172,11 +174,15 @@ AFTER = {"TAIL-1": [(SET_MS + 350, "delay 1 0")], "RING": [(SET_MS + RING_CHANGE
          "LOOP": [(SET_MS + int(LOOP_S * 1000), "tape 1000 8")],
          "LOOP-END": [(100, "tape-off")],
          "SEAM": [(SET_MS + int(SEAM_S * 1000), "tape %g %g" % (SEAM_SPAN, SEAM_UNITS)),
-                  (SET_MS + int((SEAM_S + 1.2) * 1000), "tape-off")],
+                  (SET_MS + int((SEAM_S + 1.2) * 1000), "tape-off"),
+                  (SET_MS + int((SEAM_S + 1.2 + SEAM_AGAIN_S) * 1000),
+                   "tape %g %g" % (SEAM_AGAIN_SPAN, SEAM_AGAIN_UNITS)),
+                  (SET_MS + int((SEAM_S + 1.2 + SEAM_AGAIN_S + SEAM_AGAIN_FOR_S) * 1000),
+                   "tape-off")],
          "TAIL": [(SET_MS + int(TAIL_HOLD_S * 1000), "tape %d %g" % (TAIL_SPAN, TAIL_SPAN / 125.0)),
                   (SET_MS + int((TAIL_HOLD_S + 1.0) * 1000), "tape-off")]}
-STOP_S = TAPE_S + 16.5
-DONE_S = TAPE_S + 17.0
+STOP_S = TAPE_S + 17.0
+DONE_S = TAPE_S + 17.5
 
 
 def hit_time(at_s, off_ms=0):

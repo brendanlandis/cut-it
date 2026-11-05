@@ -238,7 +238,7 @@ def kit(g):
     # hears these and nothing else.
     S.require("Cut It/c_kit.pd", "Cut It/c_voice.pd", "Cut It/u_root.pd")
     s, cap = _harness_gate(
-        g, 70, lambda s: s.patch, lambda s: s.path("out.wav"),
+        g, 72, lambda s: s.patch, lambda s: s.path("out.wav"),
         why=["      Without it nothing instantiates c_kit, nothing records, and",
              "      the gate would report a silent kit rather than a broken test."])
     return g.analyze("test/gate/kit-assert.py", s.path("out.wav"), *g.args, stdin=cap)
@@ -482,8 +482,8 @@ def sequencer(g):
     with open(root, "w") as fh:
         fh.write(text.replace(" c_kit;", " t_kit;"))
     S.drive(GEN % "sequencer-assert", s.path("drive.pd"))
-    print("   running (about 37 s -- DSP is on, the steps are cut from a phasor~) ...")
-    cap = g.pd(s, 47, main_dev(s), s.path("drive.pd"))
+    print("   running (about 45 s -- DSP is on, the steps are cut from a phasor~) ...")
+    cap = g.pd(s, 55, main_dev(s), s.path("drive.pd"))
     print()
     rc = g.analyze("test/gate/sequencer-assert.py", *g.args, "--seed", s.path("seed.txt"),
                    "--state", s.state, stdin=cap)

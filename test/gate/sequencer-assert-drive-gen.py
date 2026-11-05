@@ -13,7 +13,9 @@ as the phone sends it, landing at PLAY. Then swing, a repeat pad, the drum
 screen's pads (a track's volume, pitch and randomness, over OSC too), a repeat
 pad held over four tracks at full randomness, track 1 muted and then soloed as
 well, over OSC, track 4's distortion made fold, over OSC too, drunkenness, and
-the reverb made gigaverb, over OSC.
+the reverb made gigaverb, over OSC. Last a repeat pad as c_kit hears of it, the
+500 BPM repeat and the saved tempo, each with knob 1 turned after it, and a
+track's random pitch, over OSC.
 
 The state directory holds a seeded pattern (scratch-gates.py), so the restore at
 ~3.5 s is under test too. RESTORE opens a second before it and closes a second
@@ -183,7 +185,42 @@ SEQ = [
     # about 100 ms after the first, ending where it was, at 100.
     (35150, "DRAG", ["\\; seqgate-osc drums drunk 50", "\\; seqgate-osc drums drunk 70",
                      "\\; seqgate-osc drums drunk 100"], GAP),
-    (35450, "DONE", [], GAP),
+    # A held repeat's tails, as c_kit is told them, sober: repeat pad 1 after step 3 at 100 BPM, a
+    # tempo of its own, so one step's 150 ms is the tempo bus's and no default.
+    # PLAY at 35620 and a step every 150 ms: the press, at 35940, comes after step 3 at 35920, and
+    # the replay begins at 36070.
+    (35500, "TF-SOBER", ["\\; seqgate-osc drums drunk 0", "\\; tempo 100"], GAP),
+    (35600, "TF-PLAY", ["\\; start bang"], GAP),
+    (35920, "TF-PRESS", [P("pad-45")], GAP),
+    (36050, "TF-HELD", [], GAP),
+    (36300, "TF-OFF", [P("pad-45", 0)], GAP),
+    (36500, "TF-STOP", ["\\; stop bang", "\\; tempo 120"], GAP),
+    # The 500 BPM repeat, pad-35: PLAY at 36620, the press at 36900 after step 3 at 36870. Knob 1
+    # is held at 500 through it, and at 120 after it, and the loop of 3 goes on from step 3.
+    (36600, "FAST-PLAY", ["\\; start bang"], GAP),
+    (36880, "FAST-PRESS", [P("pad-35")], GAP),
+    (36960, "FAST-HELD", [], GAP),
+    (37100, "FAST-KNOB", ["\\; param og-knob-1 0.5"], GAP),
+    (37300, "FAST-OFF", [P("pad-35", 0)], GAP),
+    (37360, "FAST-KNOB2", ["\\; param og-knob-1 0.55"], GAP),
+    (37700, "FAST-STOP", ["\\; stop bang"], GAP),
+    # The saved tempo, pad-38: saved at 120, moved to 200, and back at the press.
+    (37800, "RC-SAVE", [P("lp-cc-108", 127), P("lp-cc-108", 0)], GAP),
+    (37900, "RC-MOVE", ["\\; tempo 200"], GAP),
+    (38000, "RC-PRESS", [P("pad-38")], GAP),
+    (38200, "RC-OFF", [P("pad-38", 0)], GAP),
+    (38300, "RC-KNOB", ["\\; param og-knob-1 0.6"], GAP),
+    # A track's random pitch, over OSC as the phone sends it: track 1, soloed since SOLO, at full
+    # randomness for sixteen steps, a coin on each, so no hit in them is about one run in 65,000;
+    # then with no randomness, every hit back at its set pitch. It stays on, for the draft.
+    (38500, "ROLL", ["\\; seqgate-osc drums rnd-pitch 1 1",
+                     "\\; seqgate-osc drums randomness 1 100"], GAP),
+    (38650, "RO-PLAY", ["\\; start bang"], GAP),
+    (40700, "RO-STOP", ["\\; stop bang", "\\; seqgate-osc drums randomness 1 0"], GAP),
+    (40900, "RO-BACK", ["\\; start bang"], GAP),
+    (41300, "RO-END", ["\\; stop bang"], GAP),
+    # u_song's draft goes out every 2 s, so past the last change's turn.
+    (43700, "DONE", [], GAP),
 ]
 
 # Every window but DRAG: each message, then state sync 15 ms after it (see the top).
@@ -193,7 +230,7 @@ SEQ = [(ms, mark, bodies if mark == "DRAG" else
          for off, text in [body if isinstance(body, tuple) else (j * gap, body)]
          for b in ((off, text), (off + SYNC_AFTER, "\\; state sync"))], gap)
        for ms, mark, bodies, gap in SEQ]
-QUIT_MS = 35800
+QUIT_MS = 43900
 
 # The phone's way in: OSC to u_net's own port, which the gate runner hands each
 # gate in CUTIT_INPORT (lib_scratch's state_dir does the same), connected after
@@ -233,7 +270,7 @@ if __name__ == "__main__":
         sys.exit("usage: sequencer-assert-drive-gen.py OUT.pd  "
                  "(run it through test/gate/sequencer-assert.sh, which passes a scratch path)")
     w, b, c = D.build(sys.argv[1], SEQ, tag="SEQ",
-                      taps=["state", "disp", "err", "mode"], quit_ms=QUIT_MS,
+                      taps=["state", "disp", "err", "mode", "tempo"], quit_ms=QUIT_MS,
                       blurb=BLURB, notes=NOTES)
     # The OSC sender, after the built boxes: index b is its first.
     with open(sys.argv[1]) as fh:

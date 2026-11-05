@@ -29,6 +29,14 @@ state bus and the song's draft, which u_song writes. Nothing inside c_steps is r
   the reverb     its type made gigaverb over OSC: put with the pattern, last, and
                  told to c_kit
                  after the mutes and solos, and told to c_kit
+  its tails      a repeat pad's replay, and its release, told to c_kit
+  the 500 BPM    pad-35: the tempo bus at 500 and back, nothing put in the section,
+                 knob 1 held at each, the last step repeating, its lamp, and the
+                 pattern going on from the step it was pressed on
+  the saved      pad-38: the saved tempo restored over a draft's, put, and knob 1
+  tempo          held there; its lamp, and save's
+  random pitch   a track's, over OSC: put last, rolled hits told their pitch, and
+                 back at the set pitch when nothing is rolled
   the disk       the pattern reaches the song's draft as one line, section 1's drums
 
 A note's step is the playhead in the frame painted after it: c_steps sends a
@@ -55,7 +63,12 @@ WINDOWS = ["EARLY", "RESTORE", "NINE", "THREE", "ROW-PRESS", "ROW-DARK", "SEVEN"
            "SOUND", "RAND", "RA-PLAY", "RA-STOP", "RR", "RR-PLAY",
            "RR-PRESS", "RR-HELD", "RR-OFF", "RR-STOP", "MUTE", "MU-PLAY", "MU-STOP", "SOLO",
            "SO-PLAY", "SO-STOP", "CHAR", "DRUNK", "VTYPE", "DR-PLAY"] + \
-    ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DRAG", "DONE"]
+    ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DRAG", "TF-SOBER", "TF-PLAY", "TF-PRESS",
+                                           "TF-HELD", "TF-OFF", "TF-STOP", "FAST-PLAY",
+                                           "FAST-PRESS", "FAST-HELD", "FAST-KNOB", "FAST-OFF",
+                                           "FAST-KNOB2", "FAST-STOP", "RC-SAVE", "RC-MOVE",
+                                           "RC-PRESS", "RC-OFF", "RC-KNOB", "ROLL", "RO-PLAY",
+                                           "RO-STOP", "RO-BACK", "RO-END", "DONE"]
 EDITS = ["ROW-PRESS", "ROW-DARK", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
 
@@ -71,6 +84,7 @@ LINE = FXLESS + 8 * 16 + 2      # then each track's eight effects and the reverb
 FLAGGED = LINE + 2 * 16         # then each track's mute and each track's solo: 743
 CHARRED = FLAGGED + 16          # then each track's character: 759
 TYPED = CHARRED + 1             # then the reverb's type, once it is not the plate: 760
+ROLLED = TYPED + 16             # then each track's random pitch, once any is on: 776
 NUM, DRUNK, SWING, LAST = FXLESS - 5, FXLESS - 3, FXLESS - 2, FXLESS - 1   # NUM, then the bottom
 RAND, VOL, PITCH = CELLS + 16, CELLS + 32, CELLS + 48    # where each track's are, track 1 first
 LEVEL_VELS = [round(127 * n / 8 + 1e-9) for n in range(1, 9)]   # 16 32 48 64 79 95 111 127
@@ -646,6 +660,97 @@ def main():
     A.check("⛔ a drag, three drunkenness values over OSC 20 ms apart, is put once, the last, "
             "when c_steps' clock comes", got == [100], "drunkenness in the puts: %s" % got)
 
+    print("\n--- a repeat's tails ---")
+    A.check("⛔ repeat pad 1 pressed: nothing yet, the replay begins at the next step",
+            kitfx("TF-PRESS") == [], "KITFX %s" % kitfx("TF-PRESS"))
+    A.check("⛔ ... where c_kit is told tape 150 1, one step at the tempo bus's 100 BPM, once",
+            kitfx("TF-HELD") == [["tape", "150", "1"]], "KITFX %s" % kitfx("TF-HELD"))
+    A.check("⛔ let go, tape-off, and nothing else", kitfx("TF-OFF") == [["tape-off"]],
+            "KITFX %s" % kitfx("TF-OFF"))
+
+    print("\n--- the 500 BPM repeat, pad-35 ---")
+    tempo = lambda *ks: [float(e[1][0]) for k in ks for e in W(k) if e[0] == "TEMPO"]
+    tempo_puts = lambda *ks: [e[1][3:] for k in ks for e in W(k)
+                              if e[0] == "STATE" and e[1][:3] == ["put", "section", "tempo"]]
+    A.check("⛔ pressed, the tempo bus carries 500 and nothing else",
+            tempo("FAST-PRESS", "FAST-HELD", "FAST-KNOB") == [500.0],
+            "the tempo bus: %s" % tempo("FAST-PRESS", "FAST-HELD", "FAST-KNOB"))
+    A.check("⛔ ... the last step, step 3, plays over and over, at 30 ms a step, in the steps' place",
+            moved("FAST-HELD", "FAST-KNOB") == [] and ons("FAST-HELD")[:1] == [(1, 20)]
+            and 3 <= len(ons("FAST-HELD")) <= 7, "steps %s, note-ons %s"
+            % (moved("FAST-HELD", "FAST-KNOB"), ons("FAST-HELD")))
+    A.check("⛔ ... and its tails with it: one step at 120 BPM, told to c_kit once",
+            [f for k in ("FAST-PRESS", "FAST-HELD", "FAST-KNOB") for f in kitfx(k)]
+            == [["tape", "125", "1"]], "KITFX %s" % [f for k in ("FAST-PRESS", "FAST-HELD",
+                                                                 "FAST-KNOB") for f in kitfx(k)])
+    rows = knob_rows("FAST-KNOB", "bpm")
+    A.check("⛔ knob 1 turned does nothing: it is held at 500, its row says so",
+            len(rows) == 1 and rows[0][1] == "500" and tempo("FAST-KNOB") == [],
+            "rows %s, the tempo bus %s" % (rows, tempo("FAST-KNOB")))
+    A.check("⛔ let go, the tempo bus carries what it was, 120, and nothing else",
+            tempo("FAST-OFF", "FAST-KNOB2", "FAST-STOP") == [120.0],
+            "the tempo bus: %s" % tempo("FAST-OFF", "FAST-KNOB2", "FAST-STOP"))
+    A.check("... and the tails stop", kitfx("FAST-OFF") == [["tape-off"]],
+            "KITFX %s" % kitfx("FAST-OFF"))
+    rows = knob_rows("FAST-KNOB2", "bpm")
+    A.check("⛔ knob 1 is held at 120 now: its turn moves nothing, its row says so",
+            len(rows) == 1 and rows[0][1] == "120", "rows %s" % rows)
+    A.check("⛔ nothing of it is put in the section: no draft of 500, and none of going back",
+            tempo_puts("FAST-PRESS", "FAST-HELD", "FAST-KNOB", "FAST-OFF", "FAST-KNOB2",
+                       "FAST-STOP") == [],
+            "puts: %s" % tempo_puts("FAST-PRESS", "FAST-HELD", "FAST-KNOB", "FAST-OFF",
+                                    "FAST-KNOB2", "FAST-STOP"))
+    A.check("⛔ ... and the pattern goes on from the step it was pressed on: 1 2 3 after step 3",
+            moved("FAST-OFF", "FAST-KNOB2")[:3] == [1, 2, 3],
+            "steps %s" % moved("FAST-OFF", "FAST-KNOB2"))
+    def lamp(k, role):
+        fs = frames(k)
+        return G.drum_page(fs[-1], lay, ROW)[2][role] if fs else "no frame"
+    A.check("⛔ its lamp the repeat's purple, whiter while it is held, and no repeat pad's with it",
+            (lamp("FAST-HELD", "fast"), lamp("FAST-STOP", "fast"), lamp("FAST-HELD", "rep"))
+            == ({1: G.REP_HELD}, {1: G.REP_DIM}, {k: G.REP_DIM for k in range(1, 5)}),
+            "held %s and let go %s; the repeat pads held %s"
+            % (lamp("FAST-HELD", "fast"), lamp("FAST-STOP", "fast"), lamp("FAST-HELD", "rep")))
+
+    print("\n--- the saved tempo, pad-38 ---")
+    edge = lambda k, i: G.edges(frames(k)[-1])[i] if frames(k) else "no frame"
+    A.check("saved at 120 and moved to 200, the draft holds 200 and save lights",
+            tempo_puts("RC-MOVE") == [["200"]] and edge("RC-MOVE", G.SAVE) == G.SAVE_ON,
+            "puts %s, save's lamp %s" % (tempo_puts("RC-MOVE"), edge("RC-MOVE", G.SAVE)))
+    got = [e[1] for e in W("RC-PRESS") if e[0] == "STATE" and e[1][:1] == ["restore"]]
+    A.check("⛔ pressed: u_song hands back the saved tempo as a section starting does, restore tempo "
+            "120, and no other part", got == [["restore", "tempo", "120"]], "restores %s" % got)
+    A.check("⛔ ... the tempo bus carries it", tempo("RC-PRESS") == [120.0],
+            "the tempo bus: %s" % tempo("RC-PRESS"))
+    A.check("⛔ ... the draft takes it as any tempo change, so save goes out, it being the save's",
+            tempo_puts("RC-PRESS") == [["120"]] and edge("RC-PRESS", G.SAVE) == 0,
+            "puts %s, save's lamp %s" % (tempo_puts("RC-PRESS"), edge("RC-PRESS", G.SAVE)))
+    rows = knob_rows("RC-KNOB", "bpm")
+    A.check("⛔ ... and knob 1 is held there: its turn moves nothing, its row says so",
+            len(rows) == 1 and rows[0][1] == "120" and tempo("RC-KNOB") == [],
+            "rows %s, the tempo bus %s" % (rows, tempo("RC-KNOB")))
+    A.check("⛔ its lamp its own blue, bright while it is held; the release acts on nothing else",
+            (lamp("RC-PRESS", "recall"), lamp("RC-OFF", "recall")) == ({1: G.RECALL_HELD},
+                                                                       {1: G.RECALL_DIM})
+            and tempo("RC-OFF") == [], "held %s and let go %s, the tempo bus %s"
+            % (lamp("RC-PRESS", "recall"), lamp("RC-OFF", "recall"), tempo("RC-OFF")))
+
+    print("\n--- a track's random pitch ---")
+    got = [(len(l), l[TYPED]) for l in puts("ROLL")]
+    A.check("⛔ rnd-pitch 1 1, sent to u_net over OSC as the phone sends it, is put with the "
+            "pattern: the line 776, track 1's flag after the type", got and got[0] == (ROLLED, 1),
+            "lengths and flags: %s" % got)
+    rolled = [p for pad, p in kits("RO-PLAY", "KITPITCH")]
+    A.check("⛔ sixteen coins: c_kit is told a pitch for the hits they play, within a track's range, "
+            "not always the same", rolled and all(-12 <= p <= 12 for p in rolled) and len(set(rolled)) > 1
+            and all(pad == 1 for pad, p in kits("RO-PLAY", "KITPITCH")),
+            "pitches told: %s" % rolled)
+    A.check("⛔ with no randomness every hit is back at its set pitch, 0: the last pitch told is it",
+            kits("RO-BACK", "KITPITCH")[-1:] in ([[1, 0]], []) and (kits("RO-BACK", "KITPITCH")
+                                                                    or [[1, rolled[-1]]])[-1][1] == 0
+            and ons("RO-BACK") != [], "told %s after %s, note-ons %s"
+            % (kits("RO-BACK", "KITPITCH"), rolled[-1:], ons("RO-BACK")))
+
     print("\n--- the disk ---")
     draft = os.path.join(opt.state, "cut-it-song-draft.txt")
     disk = read_key(draft)
@@ -654,14 +759,15 @@ def main():
     vol = list(seed[VOL:VOL + 16])
     pitch = list(seed[PITCH:PITCH + 16])
     vol[1], pitch[1] = -6, 7
-    # the swing back at 50% (SW-STOP), the global last step at 3 since LAST-3, track 1 muted
-    # and soloed since SOLO, track 4 fold since CHAR, and the reverb gigaverb since VTYPE
-    snapped = (final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 100, 50, 3] + seed[FXLESS:]
-               + one + one + [1, 1, 1, 3] + [1] * 12 + [1])
+    # the swing back at 50% (SW-STOP), sober again since TF-SOBER, the global last step at 3 since
+    # LAST-3, track 1 muted and soloed since SOLO, track 4 fold since CHAR, the reverb gigaverb
+    # since VTYPE, and track 1's random pitch on since ROLL
+    snapped = (final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 0, 50, 3] + seed[FXLESS:]
+               + one + one + [1, 1, 1, 3] + [1] * 12 + [1] + one)
     A.check("⛔ the pattern reaches the song's draft as section 1's ONE drums line, the final "
-            "760 exactly, its effects as seeded, track 1 muted and soloed, track 4 fold and the "
-            "reverb gigaverb",
-            disk == snapped and len(lines) == 1 and len(lines[0].split()) == TYPED + 1,
+            "776 exactly, its effects as seeded, track 1 muted and soloed, track 4 fold, the "
+            "reverb gigaverb and track 1's random pitch on",
+            disk == snapped and len(lines) == 1 and len(lines[0].split()) == ROLLED + 1,
             "on disk: %s" % (disk if disk is None else "%d values" % len(disk)))
 
     errs = [e[1] for k in order for e in W(k) if e[0] == "ERR"

@@ -31,6 +31,8 @@ DISP_EXPECT = {"m_launchpad": 0, "m_nano": 0, "m_organelle": 1, "m_volca": 0,
                "m_streich": 0, "m_nanokey": 0}
 SYNTH_PAGE = "Cut It/cut-it-synth-page.txt"
 ARRANGE_PAGE = "Cut It/cut-it-arrangement-page.txt"
+DRUM_PAGE = "Cut It/cut-it-drum-page.txt"
+CSTEPS = "Cut It/c_steps.lua"
 UTEMPO = "Cut It/u_tempo.pd"
 ULUA = "Cut It/u_map.lua"
 # The rows every page has (map.md): <control> <dest> <arg>.
@@ -243,6 +245,35 @@ def static_lint():
             "rows %s" % arr)
     A.check("the tap pad is cell 21, the second row's first pad, under the beat row's first",
             alay.get("21") == ["tap"], "the layout: %s" % alay)
+
+    # drum-page passes its arg to the layout g_grid paints from, whose role goes to c_steps: a row
+    # the layout lacks is layout-miss at the press, and a role c_steps lacks is bad-selector.
+    dlay = {}
+    for line in open(DRUM_PAGE, encoding="utf-8"):
+        f = line.split()
+        if f:
+            dlay[f[0]] = f[1:]
+    drum = [(n, f) for n, f in rows if len(f) == 4 and f[2] == "drum-page"]
+    A.check("⛔ every drum-page row's arg is a cell of %s, its own pad's, on page 2 alone, and every "
+            "cell has its row" % os.path.basename(DRUM_PAGE),
+            sorted(f[3] for _, f in drum) == sorted(dlay)
+            and all(f[0] == "mode-2" and f[1] == "pad-" + f[3] for _, f in drum),
+            "%d rows, %d cells" % (len(drum), len(dlay)))
+    with open(CSTEPS, encoding="utf-8") as fh:
+        steps = fh.read()
+    presses = re.search(r"^R\.presses = \{(.*?)^\}", steps, re.M | re.S).group(1)
+    takes = set(re.findall(r"^  \[?\"?([\w-]+)\"?\]? = function", presses, re.M))
+    roles = {v[0] for v in dlay.values()}
+    A.check("⛔ ... and every role there is one c_steps takes", roles <= takes and len(roles) == 6,
+            "roles %s, c_steps takes %s" % (sorted(roles), sorted(takes)))
+    A.check("⛔ the second row of the right 4x4: pad-35 the 500 BPM repeat and pad-38 the saved tempo, "
+            "under repeat pads 1 and 4", dlay.get("35") == ["fast", "1"]
+            and dlay.get("38") == ["recall", "1"] and dlay.get("45") == ["rep", "1"]
+            and dlay.get("48") == ["rep", "4"], "the layout's cells: %s"
+            % {k: dlay.get(k) for k in ("35", "38", "45", "48")})
+    named = [f for _, f in rows if len(f) >= 2 and f[1] in ("pad-36", "pad-37")]
+    A.check("⛔ and pad-36 and pad-37 between them are nothing: no row on any page, no cell",
+            not named and "36" not in dlay and "37" not in dlay, "rows %s" % named)
 
     seen, dupes = {}, []
     for n, f in rows:

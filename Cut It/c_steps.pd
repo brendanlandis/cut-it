@@ -34,7 +34,7 @@
 #X obj 1300 1400 s state;
 #X obj 1450 1250 s err;
 #X obj 1600 380 r state;
-#X obj 1600 430 route restore;
+#X obj 1600 430 route restore sync;
 #X obj 1600 480 route \$2 section-1-\$2;
 #X obj 1600 530 list prepend restore;
 #X obj 1600 580 list trim;
@@ -163,3 +163,6 @@
 #X connect 35 1 36 0;
 #X obj 2700 1750 outlet;
 #X connect 26 8 85 0;
+#X msg 1800 480 sync;
+#X connect 34 1 86 0;
+#X connect 86 0 26 1;

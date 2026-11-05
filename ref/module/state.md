@@ -30,6 +30,8 @@ outside it, so `tools/deploy.sh`, `tools/deploy.sh --clean` and a power cycle ca
 **One name, three selectors, disjoint per side**, so the whole protocol fits in one C-2 allowlist
 entry with no loop. Contributors `[route save restore]`; `u_state` routes `put` and rejects its own
 traffic into nothing, and a policy that is neither of its two, `section`, which `u_song` takes.
+`u_song` also sends `sync`, which a contributor holding a put back answers with it at once
+(`c_steps`, [sequencer.md](sequencer.md)); `u_state` and the rest route past it.
 
 | Direction | Message | Meaning | Evidence | Item |
 |-----------|---------|---------|----------|------|
@@ -39,6 +41,7 @@ traffic into nothing, and a policy that is neither of its two, `section`, which 
 | `u_state` → all | `restore <key> <atoms…>` | Replayed at load, one message per line | verified | — |
 | contributor → `u_song` | `put section <key> <atoms…>` | A part of the section playing, `u_song`'s: `u_state`'s route drops it ([songs.md](songs.md)) | unknown | — |
 | `u_song` → all | `restore <key> <atoms…>` | A section starting: its parts, after `u_state`'s restore at load and whenever a section starts | unknown | — |
+| `u_song` → all | `sync` | Before a press, a phone command, PLAY or STOP: a part holding a put back puts it now, so it lands in the section still playing ([songs.md](songs.md)) | verified | — |
 
 ### `u_state`
 

@@ -41,7 +41,7 @@ WINDOWS = ["EARLY", "RESTORE", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
            "SWING", "SW-PLAY", "SW-GAP", "SW-LATE", "SW-ON", "SW-STOP",
            "REP-PLAY", "REP-PRESS", "REP-HELD", "REP-OFF", "REP-STOP",
            "SOUND", "RAND", "RA-PLAY", "RA-STOP", "DRUNK", "DR-PLAY"] + \
-    ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DONE"]
+    ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DRAG", "DONE"]
 EDITS = ["VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
 
@@ -473,6 +473,13 @@ def main():
             "exactly one", counts.count(1) <= 60,
             "%d hold one: %s" % (counts.count(1), counts))
     A.check("STOP stops it again", not ons("DONE"), "note-ons: %s" % ons("DONE"))
+
+    print("\n--- a drag ---")
+    # c_steps holds a change's put back up to 100 ms (ref/module/sequencer.md); every other
+    # window is followed by sync, as u_song sends before it acts, but DRAG is not.
+    got = [l[DRUNK] for l in puts("DRAG")]
+    A.check("⛔ a drag, three drunkenness values over OSC 20 ms apart, is put once, the last, "
+            "when c_steps' clock comes", got == [100], "drunkenness in the puts: %s" % got)
 
     print("\n--- the disk ---")
     draft = os.path.join(opt.state, "cut-it-song-draft.txt")

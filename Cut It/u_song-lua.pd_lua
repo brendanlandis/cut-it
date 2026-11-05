@@ -12,7 +12,8 @@
 -- and stop, load at the restore, flush on the draft's timer, init.
 -- outlet 1: to g_grid -- top <8 lamps> and unsaved <0 or 1>, each when it changes.
 -- outlet 2: the phone's state, R.phone's 22 atoms, when it changes, to u_net.
--- outlet 3: restore <key> <atoms...>, a section starting, to the state bus.
+-- outlet 3: to the state bus: restore <key> <atoms...>, a section starting, and sync before a
+-- press, a phone command, start or stop, so a part holding back a put puts it first.
 -- outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded.
 --
 -- A Lua error leaves outlet 4 as fail u_song lua-<selector>, and its text goes to Pd's console
@@ -101,11 +102,21 @@ function SongLua:answered()
   end
 end
 
+-- A part may hold its put back while it changes fast: c_steps sends its pattern at most every
+-- 100 ms (ref/module/sequencer.md). Anything here that saves, reverts, copies or starts a
+-- section needs the latest, so it asks for it first: sync on the state bus, which a holding part
+-- answers with its put at once, landing here, in the section still playing, before the press.
+function SongLua:sync()
+  self:outlet(3, "sync", {})
+end
+
 function SongLua:in_1(sel, atoms)
+  self:sync()
   self:answer(sel, R.presses[sel], self.state, atoms)
 end
 
 function SongLua:in_2(sel, atoms)
+  self:sync()
   self:answer(sel, R.phone_cmds[sel], self.state, atoms)
 end
 
@@ -125,6 +136,7 @@ function SongLua:in_3(sel, atoms)
       if ok then self:write(SongLua.DRAFT, text) end
     end
   else
+    if sel == "start" or sel == "stop" then self:sync() end
     self:internal(sel, atoms)
   end
 end

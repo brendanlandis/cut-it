@@ -59,13 +59,6 @@ function R.fmt(x)
   return tostring(x)
 end
 
--- An atom as the store keeps it: a number read back from how it would be written, so a value
--- that came from Pd, a 32-bit float, compares equal to the same value read from a file.
-local function norm(x)
-  if type(x) == "number" then return tonumber(R.fmt(x)) end
-  return tostring(x)
-end
-
 local function same_atoms(a, b)
   if a == b then return true end
   if #a ~= #b then return false end
@@ -225,8 +218,26 @@ end
 function R.put(st, atoms)
   local key = atoms[1]
   if type(key) ~= "string" then return { R.fail("bad-put") } end
-  local a = {}
-  for i = 2, #atoms do a[#a + 1] = norm(atoms[i]) end
+  -- Each atom as the store keeps it: a number read back from how it would be written, so a value
+  -- that came from Pd, a 32-bit float, compares equal to the same value read from a file. A
+  -- whole number is written as itself, so it is kept as it came, without the round trip through
+  -- text: nearly every number in a drum pattern is whole, and formatting all 581 on every put
+  -- took about 5 ms on the Organelle, longer than its 6 ms audio buffer allows beside the rest,
+  -- so a drag on the phone crackled (2026-11-05). Written out, not a function per atom: the
+  -- calls cost 40% more there.
+  local a, k = {}, 0
+  for i = 2, #atoms do
+    local x = atoms[i]
+    if type(x) ~= "number" then
+      x = tostring(x)
+    elseif x % 1 ~= 0 or x >= 1e15 or x <= -1e15 then
+      x = tonumber(string.format("%g", x))
+    end
+    if x ~= nil then
+      k = k + 1
+      a[k] = x
+    end
+  end
   local cur = st.playing.parts[key]
   if cur and same_atoms(cur, a) then return {} end
   st.playing.parts[key] = a

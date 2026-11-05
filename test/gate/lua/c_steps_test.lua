@@ -820,19 +820,32 @@ equal("knob 2 held: its row on outlet 6", T.send(o, 1, "last", { at(9) }),
 local sent = T.send(o, 1, "step", { 1, 100 })
 want = zeros(CELLS)
 want[1] = 95
-equal("a step press: the pattern on outlet 3, then the page on outlet 2",
-      sent, { { 3, "list", line(want) }, { 2, "steps", row(want, 1) } })
+equal("a step press: the page on outlet 2, the pattern held back, its clock set for 100 ms",
+      { sent, o.save_clock.armed }, { { { 2, "steps", row(want, 1) } }, 100 })
+local sets = o.save_clock.sets
+T.send(o, 1, "drunk", { 0 })
+equal("⛔ a second change while it is held: the clock is not set again, so a drag still saves",
+      { o.save_clock.sets - sets, o.save_clock.armed }, { 0, 100 })
+equal("⛔ the clock: the pattern as it stands now, on outlet 3", T.fire(o, o.save_clock),
+      { { 3, "list", line(want) } })
+equal("... and once only", T.fire(o, o.save_clock), nil)
+-- the step off and on again, a press and a release each: held, the clock set
+for _ = 1, 2 do T.send(o, 1, "step", { 1, 0 }); T.send(o, 1, "step", { 1, 100 }) end
+equal("⛔ sync off the state bus puts a held pattern at once, and stops the clock",
+      { T.send(o, 2, "sync", {}), o.save_clock.armed }, { { { 3, "list", line(want) } }, nil })
+equal("... and with nothing held, sync sends nothing", T.send(o, 2, "sync", {}), {})
 equal("a restore: the pattern on outlet 3, the page on outlet 2, and every track's volume and pitch "
       .. "on outlet 1, for c_kit", (function()
   local got = T.send(T.new(class, { 1 }), 2, "restore", line(zeros(CELLS), nil, { vol = { [4] = -9 } }))
   return { got[5], got[6], got[5 + 4], got[5 + 32] }
 end)(), { { 8, "swing", { 0.5 } }, { 1, "vol", { 1, 0 } }, { 1, "vol", { 4, -9 } },
           { 1, "pitch", { 16, 0 } } })
-equal("a pad's volume from the drum screen: the pattern on outlet 3, the volume on outlet 1, and the "
-      .. "phone's state", (function()
+equal("a pad's volume from the drum screen: the volume on outlet 1, the phone's state, and the "
+      .. "pattern on outlet 3 when its clock comes", (function()
   local q = T.new(class, { 1 })
   local got = T.send(q, 1, "vol", { 2, -6 })
-  return { got[1][1], got[2], got[3][1], got[3][3][4 + 32 + 4 + 2] }
+  local saved = T.fire(q, q.save_clock)
+  return { saved[1][1], got[1], got[2][1], got[2][3][4 + 32 + 4 + 2] }
 end)(), { 3, { 1, "vol", { 2, -6 } }, 7, -6 })
 equal("PLAY: the step clock back at its own rate, no repeat, and the drum screen hears it is playing",
       T.send(o, 2, "start", {}), { { 8, "rate", { 1 } }, { 2, "rep", { 0 } },

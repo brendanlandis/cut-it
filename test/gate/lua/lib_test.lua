@@ -69,7 +69,17 @@ function T.load_class(path, prefix)
   end
   function Base:outlet(n, sel, atoms) table.insert(self.sent, { n, sel, atoms }) end
   function Base:error(msg) table.insert(self.console, msg) end
-  _G.pd = { Class = Base }
+  -- pd.Clock as pdlua has it, a clock that never runs by itself: T.fire runs it.
+  local Clock = {}
+  function Clock:new() return setmetatable({}, { __index = self }) end
+  function Clock:register(obj, method)
+    self.obj, self.method = obj, method
+    return self
+  end
+  function Clock:delay(ms) self.armed, self.sets = ms, (self.sets or 0) + 1 end
+  function Clock:unset() self.armed = nil end
+  function Clock:destruct() self.armed = nil end
+  _G.pd = { Class = Base, Clock = Clock }
   dofile(path)
   _G.pd = nil
   return registered
@@ -82,7 +92,17 @@ function T.new(class, args, canvas)
   local o = class:new()
   o.sent, o.console, o._canvaspath = {}, {}, canvas or class._loadpath
   if not o:initialize(class._name, args or {}) then return nil end
+  if o.postinitialize then o:postinitialize() end
   return o
+end
+-- A clock of an object's that is armed run as if its time had come: -> what left the object's
+-- outlets, in order, or nil if the clock was not armed.
+function T.fire(o, clock)
+  if not clock.armed then return nil end
+  o.sent = {}
+  clock.armed = nil
+  clock.obj[clock.method](clock.obj)
+  return o.sent
 end
 
 -- A message into an object's inlet, dispatched as pd.lua's pd.Class:dispatch does for these

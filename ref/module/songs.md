@@ -141,7 +141,7 @@ rename is seen as one. A number is written whole, or with `%g` as Pd's own `[tex
 | | Lives in | Evidence |
 |---|---|---|
 | The song, the sections, playing and queued, the window, the bars, the draft against the save, the files' text | `u_song.lua`: a state table and a function per rule, each returning what leaves | verified |
-| Reading and writing the files, the lamps and the phone's state sent when they change | `u_song-lua.pd_lua`, the class `u_song-lua`: three inlets (the top row, save and revert; the phone; `u_song.pd`'s own `put`, `bar`, `start`, `stop`, `load`, `flush` and `init`), five outlets (to `g_grid`, the phone, the state bus, `err`, a bang on `init`) | verified |
+| Reading and writing the files, the lamps and the phone's state sent when they change | `u_song-lua.pd_lua`, the class `u_song-lua`: three inlets (the top row, save and revert; the phone; `u_song.pd`'s own `put`, `bar`, `start`, `stop`, `load`, `flush` and `init`), five outlets (to `g_grid`, the phone, the state bus, `err`, a bang on `init`). Before a press, a phone command, `start` or `stop` it sends `sync` on the state bus, so a part holding its put back (`c_steps`, up to 100 ms, [sequencer.md](sequencer.md)) puts it first, into the section still playing | verified |
 | The cords, the state bus's section policy, the transport, the draft's 2 s timer armed by the load, the `no-lua` guard | `u_song.pd` | verified |
 
 ## Traps

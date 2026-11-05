@@ -37,7 +37,7 @@ were false.
 | `map-assert.sh` | 189: 103 in Lua, 86 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
-| `song-assert.sh` | 165: 121 in Lua, 44 in Pd | `module/songs` — the sections, the top row, save and revert, the files |
+| `song-assert.sh` | 168: 124 in Lua, 44 in Pd | `module/songs` — the sections, the top row, save and revert, the files |
 | `presence-assert.sh` | 49 | `module/presence` |
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 64: 39 in Lua, 25 in Pd | `device/nanokontrol` |
@@ -47,13 +47,13 @@ were false.
 | `touchosc-assert.sh` | 181: 32 read, 149 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 249: 184 in Lua, 65 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 255: 189 in Lua, 66 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 25 | `module/sequencer` — the kit, as a signal |
 | `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1607 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
+**1616 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1600**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1609**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh`, `song-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
@@ -116,6 +116,12 @@ that sends a name unchanged or empty (2), and a command misspelt with its flash 
 `sequencer-assert`, the pattern put as the old auto key and knob 4 unsaved (Lua 1, Pd 14);
 `synths-assert`, `c_synth` putting as `auto` (7). `u_tempo`'s spigot open to a tempo already in
 force held knob 1 at the load's restore: `map-assert` (2) and `recover-assert` (1).
+
+✅ **The held put was made to fail, check by check** (2026-11-05, the crackle while dragging on the
+phone), each against the code without the change, the file then restored. `c_steps_test.lua`: the
+clock set again on every change (1), no hold (stopped the run), `sync` ignored (1);
+`u_song_test.lua`: no `sync` before a press or a phone command (7), none before STOP (1), a Pd
+fraction kept as it came (1). `sequencer-assert`'s Pd half: no hold, a drag put three times (1).
 
 ✅ **The OLED's revision was made to fail, check by check** (Brendan's split, 2026-11-04: alerts and
 warnings, the output's levels and the name of a control as it moves), each against the code

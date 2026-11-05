@@ -407,12 +407,18 @@ equal("the draft's timer writes the draft, and the saved song stays",
       { "song song 1\nsection 1 0 section 1\ndrums 8\n",
         "song song 1\nsection 1 0 section 1\ndrums 7\n" })
 sent = T.send(o, 2, "new", {})
+equal("⛔ a phone command first asks the parts for what they hold back: sync on the state bus",
+      sent[1], { 3, "sync", {} })
+table.remove(sent, 1)
 local ph = phone(sent)
 equal("the phone's new: the phone's state, two sections, the copy selected, its row",
       { ph[2], ph[3], ph[11], ph[12] }, { 2, 2, 2, "section 2" })
 equal("... and the top row's second section, and the forward arrow", sent[1],
       { 1, "top", { D, A, P, S, D, D, D, D } })
 sent = T.send(o, 1, "top", { 4 })
+equal("⛔ a press first asks the parts for what they hold back, before section 2 starts",
+      sent[1], { 3, "sync", {} })
+table.remove(sent, 1)
 equal("the top row's button 4, stopped: section 2 starts", sent[1], { 3, "restore",
       { "drums", 8 } })
 sent = T.send(o, 1, "save", {})
@@ -437,8 +443,10 @@ equal("... and section 1 starts", sent[1], { 3, "restore", { "drums", 8 } })
 sent = T.send(o3, 1, "revert", {})
 equal("revert: back to the save, the lamps dark", { lamps(sent), o3.state.song.sections[2].parts.drums },
       { { { 1, "unsaved", { 0 } } }, { 8 } })
+equal("⛔ STOP first asks the parts for what they hold back, since it can start a queued section",
+      T.send(o3, 3, "stop", {})[1], { 3, "sync", {} })
 equal("a message the store does not know is fail u_song bad-selector",
-      T.send(o3, 2, "shuffle", {}), { { 4, "fail", { "u_song", "bad-selector" } } })
+      T.send(o3, 2, "shuffle", {}), { { 3, "sync", {} }, { 4, "fail", { "u_song", "bad-selector" } } })
 local lost = T.new(class, { tmp .. "/nowhere" })
 T.send(lost, 3, "init", {})
 sent = T.send(lost, 3, "load", {})
@@ -466,7 +474,7 @@ fw:write(face:read("a"))
 face:close()
 fw:close()
 local broken = T.new(T.load_class(DIR .. "u_song-lua.pd_lua", bad .. "-"), { "/nonexistent" })
-equal("a rule that throws is fail u_song lua-<selector>", T.send(broken, 2, "new", {})[1],
+equal("a rule that throws is fail u_song lua-<selector>", T.send(broken, 2, "new", {})[2],
       { 4, "fail", { "u_song", "lua-new" } })
 os.remove(bad .. "-u_song.lua")
 os.remove(bad .. "-lua-face.lua")

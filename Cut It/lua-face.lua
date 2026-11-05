@@ -19,7 +19,11 @@ function F.carry(class, R, outlets, inlets, proof)
       self:error(self._name .. ": " .. tostring(out))
       out = { R.fail("lua-" .. name) }
     end
-    for _, e in ipairs(out) do self:outlet(outlets[e[1]], e[2], e[3]) end
+    for _, e in ipairs(out) do
+      -- A class with a hold() may keep an answer back to send later, as c_steps-lua does its
+      -- pattern (ref/module/sequencer.md); it answers true for one it kept.
+      if not (self.hold and self:hold(e)) then self:outlet(outlets[e[1]], e[2], e[3]) end
+    end
     if self.answered then self:answered() end
   end
 

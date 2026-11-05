@@ -16,6 +16,13 @@ The state directory holds a seeded pattern (scratch-gates.py), so the restore at
 after; every edit comes after it, since a restore replaces the pattern.
 
 DSP goes on at 300 ms: the steps are cut from a phasor~.
+
+c_steps holds a change's put back for up to 100 ms, so a drag on the phone saves ten times a
+second rather than sixty (ref/module/sequencer.md), and u_song asks for it at once with sync on
+the state bus before anything that needs it. The driver does what u_song does: every message is
+followed 15 ms later by `state sync`, so each change's put lands in its own window, as each
+check expects. DRAG alone sends none: three drunkenness values over OSC, 20 ms apart, make one
+put, of the last, when the clock comes.
 """
 import os
 import sys
@@ -111,8 +118,20 @@ SEQ = [
     (18700, "DR-PLAY", ["\\; start bang"], GAP),
 ] + [(18780 + 125 * k, "DR-%d" % (k + 1), [], GAP) for k in range(96)] + [
     (30780, "DR-STOP", ["\\; stop bang"], GAP),
-    (31000, "DONE", [], GAP),
+    # A drag on the drum screen, as the phone sends one: no sync, so c_steps' clock puts once,
+    # about 100 ms after the first, ending where it was, at 100.
+    (30850, "DRAG", ["\\; seqgate-osc drums drunk 50", "\\; seqgate-osc drums drunk 70",
+                     "\\; seqgate-osc drums drunk 100"], GAP),
+    (31150, "DONE", [], GAP),
 ]
+
+# Every window but DRAG: each message, then state sync 15 ms after it (see the top).
+SYNC_AFTER = 15
+SEQ = [(ms, mark, bodies if mark == "DRAG" else
+        [b for j, body in enumerate(bodies)
+         for off, text in [body if isinstance(body, tuple) else (j * gap, body)]
+         for b in ((off, text), (off + SYNC_AFTER, "\\; state sync"))], gap)
+       for ms, mark, bodies, gap in SEQ]
 QUIT_MS = 31500
 
 # The phone's way in: OSC to u_net's own port, which the gate runner hands each

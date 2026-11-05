@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The display arbiter
 
-**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_led.pd` · **Gate:** `test/gate/display-assert.sh`, `test/gate/oled-assert.sh`, `test/gate/led-assert.sh` · **Checklist:** `test/checklists/display.md`, `test/checklists/nanokontrol.md`, `test/checklists/launchpad.md`
+**Files:** `Cut It/g_oled.pd`, `Cut It/g_grid.pd`, `Cut It/g_grid.lua`, `Cut It/g_grid-lua.pd_lua`, `Cut It/g_led.pd` · **Gate:** `test/gate/display-assert.sh`, `test/gate/oled-assert.sh`, `test/gate/led-assert.sh` · **Checklist:** `test/checklists/display.md`, `test/checklists/nanokontrol.md`, `test/checklists/launchpad.md`
 
 ## What it is
 
@@ -177,8 +177,8 @@ addressed at all, so panic still never hands the surface back.
 ### `g_grid`'s drum page, page 2
 
 **One layout table, `Cut It/cut-it-drum-page.txt`, says which cell is which**: a row per cell,
-`<index> <role> <n>`, read with `-c` at load by `g_grid` to paint and by `u_map` to know what a
-press means, so a press and its lamp cannot disagree. Its 60 rows:
+`<index> <role> <n>`, read at load by `g_grid`'s painter, `g_grid-lua`, to paint and by `u_map`
+to know what a press means, so a press and its lamp cannot disagree. Its 60 rows:
 
 | Rows from the top | Cells | Role | Evidence |
 |---|---|---|---|
@@ -192,11 +192,29 @@ press means, so a press and its lamp cannot disagree. Its 60 rows:
 `steps <32 levels>` for the selected track, 0 for off, `play <step>` (0 while stopped), `vel <level>`,
 `track <pad>` and `last <step>`, the selected track's, `bar <N> <row>`, the time signature as the
 page shows it, a blue step every *N* and *row* steps to a row, and `rep <pad>`, the repeat pad
-held, 0 for none. Every message sets the dirty flag.
+held, 0 for none. Every message sets the dirty flag. Anything else is `fail g_grid bad-selector`.
+
+**The page is painted in Lua** (`cut-it/drum-page-in-lua`, 2026-11-05): `g_grid.lua` holds the
+rules, and `g_grid-lua.pd_lua` is the face, made at `g_grid`'s top level as `[g_grid-lua
+$0-surface]`. The third inlet's messages go straight to it, and on page 2 `pd regions` sends it
+`paint` in the slot the beat row has on the other pages; it works out the 60 cells and writes each
+into the frame buffer, `$0-surface`, through pdlua's `pd.Table`, looked up again every frame. The
+fill before it and the SysEx after it are Pd's, so a frame reaches the Launchpad exactly as before:
+three seeded runs of every input `g_grid` takes, 12,630 frames, were byte-for-byte those of the Pd
+boxes it replaced. **Everything else `g_grid` draws stays Pd** — the mode lamps, the beat row,
+pages 1 and 3, the edges — so it all works if pdlua does not load; the drum page is dark then, and
+`g_grid` says `fail g_grid no-lua` at load, the proof bang every Lua face answers `init` with never
+having come. A Lua error is `fail g_grid lua-<selector>`, `lua-paint` for the paint; a layout with
+no cell `layout-empty` at `init`, and no frame buffer by the face's name `no-surface`.
+
+| What a paint costs | Measured | Evidence |
+|---|---|---|
+| The rules alone, `R.paint` | About 4 µs a frame on the Mac (`os.clock` over 200,000 frames), the step cells' shapes worked out once per `bar` rather than in every frame | unknown |
+| `paint` into `[g_grid-lua]` in Pd: the call, the rules and 60 writes | About 23 µs on the Mac, a state message about 3 µs: roughly half what the boxes it replaced cost a frame there | unknown |
 
 **The rows of steps** (Brendan, 2026-11-05): the step cell *n*, row *r* and column *c* from 0 along
 the four rows of eight, shows step *r* × *row* + *c* + 1, and a cell whose column is *row* or more
-shows none and is dark. `g_grid` works it out with one `expr` per cell as it paints, and
+shows none and is dark. `g_grid.lua` works it out each time the time signature changes, and
 `c_steps.lua`'s `R.cell_step` with the same sum for a press, so at 3/4 the second row's first cell
 is step 7 to both ([sequencer.md](sequencer.md), *The rows of steps*). Until `c_steps` sends its
 first `bar`, *row* is 0 and every step cell is dark.
@@ -397,6 +415,15 @@ red for a second and then returns to `home` (item 296).
 ⚠️ **The watchdog gives up at about 70 seconds** and writes `fail m_launchpad grid-lost` to `err`.
 After that a replug will not recover the grid. See [launchpad.md](../device/launchpad.md).
 
+### A dark drum page under lit lamps is the Lua
+
+⛔ The mode lamps and the edges are Pd and keep drawing on page 2; the page's 60 cells are
+`g_grid-lua`'s, so when pdlua or the class did not load they stay dark, and the page looks empty
+rather than broken. The grid itself says nothing: `fail g_grid no-lua` is on `err` once, at load.
+
+**Fix:** read the boot's failures on the OLED or in the error log, and check pdlua in
+`/sdcard/PdExtraLibs` (`device/README.md`, *Lua and ELSE*).
+
 ## Design
 
 ### The levels are mother's info bar, and Cut It draws no meter
@@ -473,6 +500,20 @@ idiom is *regions*. So the mode lamps and the beat row coexist inside the layer 
 while `modal` and `alert` still take everything. **The cascade is untouched; the composition happens
 below it.** The drum page is one more region, chosen by the mode, so a panic or a `fail` still takes
 the whole surface over it.
+
+### The drum page is painted in Lua, and only the drum page
+
+Every drum round hand-edited `pd regions` box by box, and more is planned on that page
+(`cut-it/drum-page-in-lua`). The `pd` skill's reasons to keep a thing Pd do not hold there: the
+painter runs at most 50 times a second, not on a dense stream, and the page is dead without Lua
+anyway, since `c_steps` is Lua. What must work without it stays Pd: the mode lamps, which say what
+page this is, the beat row, the other pages and the edges, save, revert and go among them.
+
+**The frame is handed over cell by cell, into the frame buffer.** The face writes its 60 cells into
+`$0-surface` with pdlua's `pd.Table` rather than sending a list out of an outlet: the cells are
+scattered across indices 11 to 88, around the mode lamps' column, so one list into `[array set]`
+would overwrite the lamps and tie the regions' order to it. The rules return the cells and their
+colors and never touch Pd, so `g_grid_test.lua` reads them without an array.
 
 ### The drum page's state rides a cord, not `disp`
 
@@ -582,3 +623,6 @@ the Organelle, and the phone's screens are its own ([phone.md](../device/phone.m
 controls the page, and does not copy the OLED*).
 
 ## Open
+
+- ⬜ What a paint costs on the Organelle, under a full pattern, against the Pd boxes it replaced: at
+  15 to 20 times the Mac's 23 µs, about 0.35 to 0.5 ms a frame (`cut-it/drum-page-in-lua`).

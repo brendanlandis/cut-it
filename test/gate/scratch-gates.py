@@ -143,9 +143,18 @@ def volca(g):
 
 
 def display(g):
-    S.require("Cut It/g_grid.pd", "Cut It/g_oled.pd", "Cut It/main-dev.pd")
-    return _stdin_gate(g, 90, blank=True, say="   running (about 46 s -- DSP is "
-                       "on, the beat row needs it) ...")
+    S.require("Cut It/g_grid.pd", "Cut It/g_grid.lua", "Cut It/g_grid-lua.pd_lua",
+              "Cut It/cut-it-drum-page.txt", "Cut It/g_oled.pd", "Cut It/main-dev.pd",
+              "test/gate/lua/g_grid_test.lua")
+    # The drum page's painter first, in Lua and without Pd: what each cell shows. Then the Pd
+    # half: the arbiter and every page, the drum page's frames included, through the running
+    # instrument.
+    print("   the drum page's painter, in Lua ...")
+    rc_lua = S.lua("test/gate/lua/g_grid_test.lua", *g.args)
+    print("\n   the patch, in Pd ...")
+    rc = _stdin_gate(g, 90, blank=True, say="   running (about 46 s -- DSP is "
+                     "on, the beat row needs it) ...")
+    return rc or rc_lua
 
 
 def launchpad(g):

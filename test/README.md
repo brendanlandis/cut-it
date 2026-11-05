@@ -29,7 +29,7 @@ were false.
 | `init-assert.sh` | 17 | `module/boot` |
 | `audio-assert.sh` | 17 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
-| `display-assert.sh` | 46 | `module/display` — the grid, page 3's synth pads and page 1's tap pad included |
+| `display-assert.sh` | 108: 62 in Lua, 46 in Pd | `module/display` — the grid, its drum page's painter, page 3's synth pads and page 1's tap pad included |
 | `oled-assert.sh` | 69 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 68: 33 in Lua, 35 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
@@ -51,11 +51,11 @@ were false.
 | `kit-assert.sh` | 38 | `module/sequencer` — the kit and its effects, as a signal |
 | `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1871 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
+**1933 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1864**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1926**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
-`synths-assert.sh`, `song-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
+`synths-assert.sh`, `song-assert.sh`, `tempo-assert.sh` and `display-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
 Worth knowing before trusting an arithmetic check of this number against a log.
 
@@ -299,7 +299,7 @@ and the verdict file in `results/` all went, and every step's text is in the che
 ## `display-assert.sh` and `launchpad-assert.sh` — no eyes and no hardware
 
 ```sh
-./test/gate/display-assert.sh          46 checks, ~46 s — the ARBITER
+./test/gate/display-assert.sh          62 + 46 checks, ~46 s — the drum page's painter in Lua, then the ARBITER
 ./test/gate/launchpad-assert.sh        19 checks, ~15 s — the DEVICE
 ```
 
@@ -342,6 +342,44 @@ moment at a tap, read with its layout file, page 3's synth pads above the beat r
 synth's bright and the other's dim, before and after STRINGS' pad, read with the layout file, the modal claiming all 108 specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
 underneath, the beat row never leaving 11–18, the grid SURVIVING a panic, and
 `m_launchpad`'s Programmer and Live SysEx.
+
+**It runs the drum page's painter's Lua tests first** (2026-11-05): `test/gate/lua/g_grid_test.lua`,
+with no Pd, drives `g_grid.lua` and its face through `lib_test`'s stand-in for pdlua, which carries a
+`pd.Table` over arrays the test makes. **62 checks**: the colors read through `g_grid.pd`'s own RGB
+table and held to the page's, the layout's 60 cells in its order, every cell at load, the rows of
+steps at 4/4, 3/4, 9/8, 7/8, 5/4 and `bar 0`, the levels, a step past the last step dark, the
+playhead, the buttons, the pads and the repeat pads, what changes nothing, `init`, and the face: the
+writes into the frame buffer and nowhere else, a buffer made after it, `bad-selector`, `no-surface`,
+a missing layout, a throw, and `g_grid.pd` making it and no longer reading the layout itself. What
+reaches the Launchpad is the Pd half's, and `sequencer-assert`'s.
+
+✅ **The drum page's painter was made to fail, check by check** (2026-11-05, when it moved from
+`pd regions` to Lua), each against a mutation, the file then restored, until every one of the 62
+had failed at least once. `g_grid_test.lua`: the blue step a step off (8 failed) or on the wrong
+remainder (11), a step past the last step lit (8), the pads swapped (5), the rows ignored (5), the
+velocity buttons' full and quarter swapped (4), a held repeat pad never shown (2), no playhead (3),
+the playhead counted from 0 (12), a time signature that does not re-shape the rows (17), a level a
+color off (7), a short `steps` clearing the rest (1), a row of another role painted (1), a symbol
+taken as the playhead (1), the cells in reverse (2), no `layout-empty` (2) or always (2), an input
+answering (2), a report not cut to 21 characters (1), the level, quarter and playhead entries a step
+off (10, 5, 4), and from the face: its paint outside `pcall` (stopped the run), `no-surface` silent
+(3), the layout read beside the class rather than the patch (3) or misspelt (6), the proof bang on
+the wrong outlet (2), the writes an index off (3), the buffer never synced (stopped the run) or
+synced only at creation (1), the class misnamed (1), three outlets (1), the page sent as internal
+messages (4), `paint` not answered (7), an unknown selector ignored (4), the page taken on the
+second inlet (1), the dispatch shortcut lost (1), the reports misnamed `lua-draw` (1) and `lua-page`
+(1), and `lua-face.lua` stopping an object after its first error (1). From the patch and the layout:
+`g_grid.pd` without `declare -lib pdlua` (1), reading the layout itself (1), its RGB table three
+short (23) or its pink a step off (4), and the layout's fourth repeat pad made a pad (4). The Pd
+halves, through the running instrument: the pads swapped (`display-assert` 1, `sequencer-assert`
+16), the blue step a step off (`sequencer-assert` 14), the rows ignored (16), `pd regions`' cord to
+the painter cut (`display-assert` 2, `sequencer-assert` 31), and the third inlet's cord to it cut
+(`sequencer-assert` 30). ⚠️ **The proof bang's cord cut, so `fail g_grid no-lua` at every load,
+passes every analyzer**, since the grid is not the patch's until after the alert's two seconds and
+no driver is loaded yet; *both entry points load in silence* fails on it, `u_err` printing the
+fail. With `g_grid-lua.pd_lua` gone the patch says `couldn't create` and `fail g_grid no-lua`. The
+move itself was checked once, by a harness kept out of the suite: `g_grid` alone, the old and the
+new, fed three seeded runs of everything it takes, 12,630 frames, byte-for-byte the same.
 
 ✅ **It has been proven to fail.** Reintroducing the one-based beat bug in a scratch copy — the
 beat-row offset back to `+ 11` — makes it report `lit outside every region: [(19, 3)]` and exit 1.

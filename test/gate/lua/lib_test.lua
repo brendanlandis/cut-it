@@ -79,10 +79,38 @@ function T.load_class(path, prefix)
   function Clock:delay(ms) self.armed, self.sets = ms, (self.sets or 0) + 1 end
   function Clock:unset() self.armed = nil end
   function Clock:destruct() self.armed = nil end
-  _G.pd = { Class = Base, Clock = Clock }
+  -- pd.Table as pdlua has it, over T.arrays: sync finds an array by name, or nil, and set
+  -- writes only a number at an index inside it, as pdlua's does.
+  local Table = {}
+  function Table:new() return setmetatable({}, { __index = self }) end
+  function Table:sync(name)
+    local a = T.arrays[name]
+    if not a then return nil end
+    self.name, self.a = name, a
+    return self
+  end
+  function Table:length() return self.a.length end
+  function Table:get(i)
+    if type(i) == "number" and 0 <= i and i < self.a.length then return self.a[i] end
+  end
+  function Table:set(i, f)
+    if type(i) == "number" and type(f) == "number" and 0 <= i and i < self.a.length then
+      self.a[i // 1] = f
+    end
+  end
+  _G.pd = { Class = Base, Clock = Clock, Table = Table }
   dofile(path)
   _G.pd = nil
   return registered
+end
+
+-- The Pd arrays a class's pd.Table can find, by name: T.array(n) makes one of n zeros, its
+-- indices from 0 as Pd's are.
+T.arrays = {}
+function T.array(n)
+  local a = { length = n }
+  for i = 0, n - 1 do a[i] = 0 end
+  return a
 end
 
 -- An object of a class from load_class, as pdlua makes one. `canvas` stands in for the folder

@@ -10,6 +10,10 @@ grid, anchored at the document's center as TouchOSC anchors it, is laid over the
 lines, and the notch's margin in a red one, so what is off the
 grid or too close to the edge shows at a glance.
 
+The drum screen is drawn once for each effect its effect radio chooses, the chosen effect's
+controls showing and the others' hidden, as the root's script shows them on the phone: in the file
+they all show, one over another, for the editor.
+
 It draws from build.py's output, not from CutIt.tosc, and approximates TouchOSC's drawing (fonts,
 corner radii, a knob's arc): the phone is the oracle for how it looks; this is for layout.
 """
@@ -60,11 +64,13 @@ def draw(kind, p, v, x, y, w, h):
                    % (x, y, w, h, fill, stroke))
     elif kind == "RADIO":
         # a segment each, the selected one at full strength, the rest at their resting fill
+        # vertical, 2 (south) runs down from the top and 0 (north) up from the bottom
         n, sel = int(p.get("steps") or 1), int(float(v.get("x") or 0))
         across = p.get("orientation") == "1"
         for i in range(n):
-            sx, sy, sw, sh = ((x + i * w / n, y, w / n, h) if across
-                              else (x, y + i * h / n, w, h / n))
+            k = i if across or p.get("orientation") == "2" else n - 1 - i
+            sx, sy, sw, sh = ((x + k * w / n, y, w / n, h) if across
+                              else (x, y + k * h / n, w, h / n))
             out.append('<rect x="%g" y="%g" width="%g" height="%g" fill="%s" stroke="%s"/>'
                        % (sx, sy, sw, sh, rgba(col) if i == sel else rgba(col, DIM), rgba(col)))
     elif kind == "RADIAL":
@@ -155,16 +161,40 @@ def svg(name, tab, items, grid=True, tabs=None):
     return "\n".join(s)
 
 
+def shown(pages):
+    """The pages as the phone shows them: the drum screen once for each effect, its controls
+    showing and the other effects' hidden, its effect radio on it."""
+    groups = B.fx_groups()
+    hidden = {n for g in groups for n in g}
+    for name, tab, items, tabs in pages:
+        if name != "drums":
+            yield name, tab, items, tabs
+            continue
+        for i, effect in enumerate(B.EFFECTS):
+            keep = []
+            for kind, p, v, x, y, w, h in items:
+                n = p.get("name")
+                if n in hidden and n not in groups[i]:
+                    continue
+                if n == "fx":
+                    v = dict(v, x=str(i))
+                elif n and n.startswith("fx") and n.endswith("l"):
+                    on = n == "fx%dl" % (i + 1)
+                    p = dict(p, textColor="0 0 0 1" if on else "240 240 240 1")
+                keep.append((kind, p, v, x, y, w, h))
+            yield "drums-" + effect, tab, keep, tabs
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "preview")
     os.makedirs(out, exist_ok=True)
     doc = ['<!doctype html><meta charset="utf-8"><title>Cut It phone preview</title>',
            '<body style="background:#222;color:#ddd;font:14px Helvetica;margin:16px">']
-    for name, tab, items, tabs in pages(B.build()):
+    for name, tab, items, tabs in shown(pages(B.build())):
         with open(os.path.join(out, name + ".svg"), "w", encoding="utf-8") as fh:
             fh.write(svg(name, tab, items, tabs=tabs))
         doc.append('<h3>%s</h3><img src="%s.svg" width="%d" style="max-width:100%%">'
-                   % (html.escape(tab), name, B.W))
+                   % (html.escape(name), name, B.W))
     with open(os.path.join(out, "index.html"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(doc))
     print("wrote %s" % os.path.join(out, "index.html"))

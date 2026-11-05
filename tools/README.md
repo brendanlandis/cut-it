@@ -373,7 +373,7 @@ python3 tools/touchosc/watch.py
   the editor and not saved is kept the same way: a push that would undo it refuses (exit 4), says
   what it is, and the watcher tells it; save it, or `push.sh --force` discards it.
 - **Look at a page without the phone**: `python3 tools/touchosc/preview.py` draws every page, and
-  each of a page's tabs under its own tab bar, as the phone shows it, with the editor's 20-point grid over it and the notch's margin marked, into
+  each of a page's tabs under its own tab bar, as the phone shows it, the drum screen once for each effect its effect radio shows, with the editor's 20-point grid over it and the notch's margin marked, into
   `tools/touchosc/preview/` (open its `index.html`). It approximates TouchOSC's drawing; the
   phone is the oracle for looks, this is for layout.
 - **The design rules** (Brendan, 2026-11-04): every control on the editor's 20-point grid

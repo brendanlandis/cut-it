@@ -24,7 +24,10 @@ end
 local function teal(c) return c[2] > 0.7 and c[1] < 0.3 end
 local function red(c) return c[1] > 0.9 and c[2] < 0.2 end
 local function black(c) return c and c[1] < 0.1 and c[2] < 0.1 end
--- The state c_steps sends: 88 numbers, from what differs.
+-- The state c_steps sends: 98 numbers, from what differs; the last ten the selected track's
+-- effects and the reverb's, at their starting points unless t.fx gives them.
+local FX = { { "drive", 50 }, { "tone", 60 }, { "dist", 0 }, { "note", 3 }, { "feel", 1 },
+             { "feedback", 40 }, { "delay", 0 }, { "send", 0 }, { "size", 50 }, { "damping", 50 } }
 local function drumstate(t)
   local st = { t.playing or 0, t.last or 16, t.track or 1, t.pending or 0 }
   for n = 1, 16 do st[#st + 1] = (t.lasts or {})[n] or t.last or 16 end
@@ -35,6 +38,7 @@ local function drumstate(t)
   for _, which in ipairs({ "vol", "pitch", "randomness" }) do
     for n = 1, 16 do st[#st + 1] = (t[which] or {})[n] or 0 end
   end
+  for _, f in ipairs(FX) do st[#st + 1] = (t.fx or {})[f[1]] or f[2] end
   return st
 end
 
@@ -175,7 +179,7 @@ equal("dragging 7 up two steps sends num 1 twice", L.drag(w, "numbox", 8.5 / 32)
 equal("dragging 8 down one step, of 1 2 4 8 16, sends den -1", L.drag(w, "denbox", 2.5 / 5),
       { { "/cutit", "drums", "den", -1 } })
 local short = drumstate({})
-table.remove(short)
+for _ = 88, #short do table.remove(short) end
 L.osc(w, "/cutit/drums", table.unpack(short))
 equal("fewer than 88 numbers draws nothing", L.text(w, "play"), "playing")
 
@@ -300,6 +304,78 @@ equal("from 33, set before the fives, a step up is 35 and a step down 30",
       { L.drag(w, "pad6", 0.5 + 1 / 100), L.drag(w, "pad6", 0.5 - 1 / 100) },
       { { { "/cutit", "drums", "randomness", 6, 35 } }, { { "/cutit", "drums", "randomness", 6, 30 } } })
 equal("... and no further than 100", L.drag(w, "pad6", 1), { { "/cutit", "drums", "randomness", 6, 100 } })
+print("\n--- the drum screen's effects ---")
+-- A second vertical radio picks the selected track's effect, and its controls show to the right
+-- of it (Brendan, 2026-11-05). The selected track is 16, from the presses above.
+local function shows(names)
+  local out = {}
+  for _, n in ipairs(names) do out[#out + 1] = L.visible(w, n) end
+  return out
+end
+equal("⛔ the effect radio starts on distortion: its drive, tone and mix show, the delay's and the "
+      .. "reverb's controls hide", { C.fx.values.x, shows({ "drive", "tone", "dist", "distc", "dnote",
+                                                             "dfeel1l", "feedback", "send", "size",
+                                                             "damping" }) },
+      { 0, { true, true, true, true, false, false, false, false, false, false } })
+equal("⛔ the radio sends nothing to Cut It", L.drag(w, "fx", 1), {})
+equal("on delay its time, a note over a feel, its feedback and its level show, and nothing else",
+      shows({ "dnote", "dnote4l", "dfeel", "dtimec", "feedback", "delay", "delayc", "drive",
+              "send" }), { true, true, true, true, true, true, true, false, false })
+check("... the radio's delay black on its lit segment, distortion white again",
+      black(C.fx2l.textColor) and not black(C.fx1l.textColor), "")
+L.drag(w, "fx", 2)
+equal("on reverb the track's send and the reverb's size and damping",
+      shows({ "send", "size", "damping", "sizec", "dnote", "drive" }),
+      { true, true, true, true, false, false })
+w.sent = {}
+L.update(w, 1100)
+st[3] = 16
+for i, v in ipairs({ 70, 20, 40, 2, 3, 55, 30, 60, 80, 10 }) do st[88 + i] = v end
+L.osc(w, "/cutit/drums", table.unpack(st))
+L.update(w)
+equal("⛔ the state hands the selected track's effects to their controls, and nothing goes back",
+      { C.drive.values.x, C.dist.values.x, C.dnote.values.x, C.dfeel.values.x, C.delay.values.x,
+        C.send.values.x, C.size.values.x, C.damping.values.x, #w.sent },
+      { 0.7, 0.4, 1, 2, 0.3, 0.6, 0.8, 0.1, 0 })
+equal("... each knob's value in its middle, the note value and the feel black on theirs",
+      { L.text(w, "distv"), L.text(w, "sizev"), black(C.dnote2l.textColor),
+        black(C.dnote3l.textColor), black(C.dfeel3l.textColor) }, { "40%", "80%", true, false, true })
+equal("⛔ a knob turned sends its effect for the selected track, as it stands",
+      { L.drag(w, "send", 0.65), L.drag(w, "dist", 0.5) },
+      { { { "/cutit", "drums", "send", 16, 65 } }, { { "/cutit", "drums", "dist", 16, 50 } } })
+equal("⛔ the delay's radios send its note value and its feel, 1 the first",
+      { L.drag(w, "dnote", 3), L.drag(w, "dfeel", 1) },
+      { { { "/cutit", "drums", "delay-note", 16, 4 } }, { { "/cutit", "drums", "delay-feel", 16, 2 } } })
+equal("the reverb's size and damping are the kit's: no track", L.drag(w, "size", 0.9),
+      { { "/cutit", "drums", "size", 90 } })
+L.update(w, 1100)
+st[3] = 5
+L.osc(w, "/cutit/drums", table.unpack(st))
+equal("⛔ another track selected, a knob sends for it", L.drag(w, "feedback", 0.25),
+      { { "/cutit", "drums", "feedback", 5, 25 } })
+w.sent = {}
+L.update(w, 1100)
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ track = 5 })))
+equal("an 88-number state, from before the effects, still draws the pads and leaves the "
+      .. "effects as they were", (function()
+        local old = drumstate({ track = 5, vol = { [5] = -3 } })
+        for _ = 89, 98 do table.remove(old) end
+        L.drag(w, "show", 0)
+        L.osc(w, "/cutit/drums", table.unpack(old))
+        return { L.text(w, "pad5l"), C.drive.values.x, #w.sent }
+      end)(), { "-3", 0.5, 0 })
+-- The pads' last step reaches only as far as the time signature lets it (c_steps.lua's R.reach):
+-- 24 at 3/4, four rows of six.
+L.drag(w, "show", 2)
+L.update(w, 1100)
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ num = 3, den = 4, last = 12, track = 5 })))
+equal("⛔ at 3/4 a pad dragged all the way up on last sends 24, the furthest a last step reaches",
+      L.drag(w, "pad7", 1), { { "/cutit", "drums", "set-track-last", 7, 24 } })
+L.update(w, 1100)
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ num = 4, den = 4, last = 12, track = 5 })))
+equal("... and 32 at 4/4", L.drag(w, "pad8", 1), { { "/cutit", "drums", "set-track-last", 8, 32 } })
+L.drag(w, "show", 0)
+L.drag(w, "fx", 0)
 equal("sync and snap", { L.press(w, "sync")[1], L.press(w, "snap")[1] },
       { { "/cutit", "drums", "sync" }, { "/cutit", "drums", "snap" } })
 w.sent = {}

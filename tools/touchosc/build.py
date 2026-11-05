@@ -137,6 +137,30 @@ SHOW = [("volume", "vol", VOL[0], VOL[1], 1), ("pitch", "pitch", PITCH[0], PITCH
 # A pad's drag: a relative fader whose whole travel is 2000 points at responseFactor 3 (a pad's
 # 60 points times 100 over 3), so 100 steps of 20 points from its middle to either end.
 PAD_FACTOR, PAD_STEPS = 3, 100
+# Each track's effects and the reverb's (Brendan, 2026-11-05), read from c_steps.lua: R.FX's
+# fields in the order R.phone sends the selected track's, and R.VERB's. A field's control on the
+# drum screen has its name, but the delay's note and feel, radios named dnote and dfeel; the
+# command each sends is the field's, but those two's, delay-note and delay-feel.
+_FX = re.search(r"^R\.FX = \{(.*?)\}\n", _STEPS_LUA, re.M | re.S).group(1)
+FX_START = {n: int(v) for n, v in re.findall(r'\{ "(\w+)", \d+, \d+, (\d+) \}', _FX)}
+FX = list(FX_START)
+VERB = re.findall(r'\{ "(\w+)", \d+, \d+, \d+ \}',
+                  re.search(r"^R\.VERB = \{(.*)\}$", _STEPS_LUA, re.M).group(1))
+NOTE_NAMES = re.findall(r'"([^"]+)"', re.search(r"^R\.NOTE_NAMES = \{(.*)\}$", _STEPS_LUA,
+                                                re.M).group(1))
+FEEL_NAMES = re.findall(r'"([^"]+)"', re.search(r"^R\.FEEL_NAMES = \{(.*)\}$", _STEPS_LUA,
+                                                re.M).group(1))
+FX_CONTROL = {"note": "dnote", "feel": "dfeel"}
+FX_CMD = {"note": "delay-note", "feel": "delay-feel"}
+# The phone's state: c_steps' R.phone, 88 numbers before the effects, then the selected track's
+# and the reverb's, 98.
+PHONE_BASE = 88
+# Where the pads show last steps, 1 from the first, the one a drag clips to the reach.
+LAST_SHOW = 1 + [c for _w, c, _lo, _hi, _st in SHOW].index("set-track-last")
+PHONE = PHONE_BASE + len(FX) + len(VERB)
+# The effect radio's three, in order, each with what shows when it is chosen: its controls by
+# name, captions and values too (fx_groups, below).
+EFFECTS = ["distortion", "delay", "reverb"]
 
 # The sections page (Brendan, 2026-11-05): the song's sections down the left, five rows a page,
 # u_song.lua's R.ROWS; a section's length, 0 (loop) to R.MAX_LENGTH bars; a name, R.MAX_NAME
@@ -298,6 +322,10 @@ def kind_of(v):
         return "c" if all(isinstance(c, float) and 0 <= c <= 1 for c in v) else "r"
     return "s"
 LEFT = 1    # textAlignH: 2, the editor's default, centers
+# A radio's orientation: 1 horizontal, its first segment on the left; vertical, 0 is north, its
+# first segment at the bottom, as a fader's 0 is, and 2 south, its first at the top (TouchOSC's
+# Reference page, The file).
+SOUTH = 2
 
 
 def node(kind, name, frame, children=(), text=None, x=0, **over):
@@ -332,6 +360,7 @@ def node(kind, name, frame, children=(), text=None, x=0, **over):
 # The labels that show a value, anything Cut It's state changes: monospaced. The rest, the
 # captions and button names, take TouchOSC's default font (Brendan, 2026-11-04).
 VALUES = {"tempo", "play", "link", "dlink", "slink", "pending", "num", "den", "last", "drunkv",
+          "drivev", "tonev", "distv", "feedbackv", "delayv", "sendv", "sizev", "dampingv",
           "swingv", "cpos", "tmode", "seclink", "secpos", "seclen", "snfieldl"}
 MONO = 1
 
@@ -370,15 +399,21 @@ def pad_script(n):
     fader back in its middle and sends nothing, and lights the fill behind it, never the pad
     itself: when a pad was lit by its value, four pads pressed at once lit in turn on the phone,
     each selecting itself again, and the selection bounced between Cut It and the phone for as
-    long as they were held (2026-11-04)."""
+    long as they were held (2026-11-04). On last steps a drag reaches no further than the time
+    signature lets a last step reach, which the root tells it with notify('reach') (c_steps.lua's
+    R.reach), so the number it shows is the one c_steps keeps."""
     sends_ = "\n".join("  %s show == %d then sendOSC('/cutit', 'drums', %s, %d, v)"
                        % ("if" if i == 0 else "elseif", i + 1, lua(cmd), n)
                        for i, (_w, cmd, _lo, _hi, _st) in enumerate(SHOW))
     return ("local SHOW = %s\n"
             "local show, base, known, lit, moved = 1, nil, nil, 0, false\n"
+            "-- how far a last step reaches at the time signature, which the root tells it\n"
+            "local REACH, reach = %d, SHOW[%d][2]\n"
             "function onReceiveNotify(key, value)\n"
             "  if key == 'lit' then\n"
             "    lit = value\n"
+            "  elseif key == 'reach' then\n"
+            "    reach = value\n"
             "  elseif key == 'show' then\n"
             "    show, base, known = value, nil, nil\n"
             "  elseif key == 'state' then\n"
@@ -395,7 +430,8 @@ def pad_script(n):
             "  local s = SHOW[show]\n"
             "  if k == 0 then return base end\n"
             "  local q = k > 0 and math.floor(base / s[3]) or math.ceil(base / s[3])\n"
-            "  return math.max(s[1], math.min(s[2], (q + k) * s[3]))\n"
+            "  local hi = show == REACH and math.min(s[2], reach) or s[2]\n"
+            "  return math.max(s[1], math.min(hi, (q + k) * s[3]))\n"
             "end\n"
             "function onValueChanged(key)\n"
             "  if key == 'touch' then\n"
@@ -415,8 +451,8 @@ def pad_script(n):
             "%s\n"
             "  end\n"
             "  root:notify('touched', 'pad%d')\n"
-            "end\n" % (lua([[lo, hi, st] for _w, _c, lo, hi, st in SHOW]), PAD_STEPS, n,
-                        sends_, n))
+            "end\n" % (lua([[lo, hi, st] for _w, _c, lo, hi, st in SHOW]), LAST_SHOW, LAST_SHOW,
+                        PAD_STEPS, n, sends_, n))
 
 
 def show_script():
@@ -425,6 +461,70 @@ def show_script():
     return ("function onValueChanged(key)\n"
             "  if key == 'x' then root:notify('show', self.values.x) end\n"
             "end\n")
+
+
+def fx_script():
+    """The drum screen's effect radio: which effect's controls show, for the selected track
+    (Brendan, 2026-11-05). It sends nothing to Cut It, and tells the root, which shows the chosen
+    effect's controls and hides the others'."""
+    return ("function onValueChanged(key)\n"
+            "  if key == 'x' then root:notify('fx', self.values.x) end\n"
+            "end\n")
+
+
+# A control for one of the selected track's effects: the root tells it the track with
+# notify('track', n) as the state names it, and hands it the track's value with notify('state',
+# v), which it knows, so the state is never sent back; a finger's value is sent for that track.
+TRACK_KNOWS = ("local known, track = nil, 1\n"
+               "function onReceiveNotify(key, value)\n"
+               "  if key == 'track' then\n"
+               "    track = value\n"
+               "  elseif key == 'state' then\n"
+               "    known = value\n"
+               "    self.values.x = %s\n"
+               "  end\n"
+               "end\n")
+
+
+def fxknob(name, x, y_, text, cmd=None, d=4 * G):
+    """A ring knob, 0 to 100, for one of the selected track's effects: its value in its middle
+    and its name over it, flush left, as knob()'s. It sends drums <cmd> <track> <value>."""
+    script = (TRACK_KNOWS % "value / 100") + (
+        "function onValueChanged(key)\n"
+        "  if key ~= 'x' then return end\n"
+        "  local v = math.floor(self.values.x * 100 + 0.5)\n"
+        "  if v == known then return end\n"
+        "  known = v\n"
+        "  sendOSC('/cutit', 'drums', '%s', track, v)\n"
+        "  root:notify('touched', '%s')\n"
+        "end\n" % (cmd or name, name))
+    f = (x, y_ + G, d, d)
+    return [caption(name + "c", x, y_, d, text),
+            node("RADIAL", name, f, color=RED, outlineStyle=0, script=script),
+            label(name + "v", f, "0%", 14)]
+
+
+def fxradio(name, f, words, cmd, at):
+    """A radio for one of the selected track's effects, a step each, 1 to the words' count: the
+    delay's note value or its feel. Its words sit over its segments, black on the chosen one. It
+    sends drums <cmd> <track> <n>, n from 1, as fxknob does its value; at is the segment the file
+    starts on."""
+    script = (TRACK_KNOWS % "value - 1") + (
+        "function onValueChanged(key)\n"
+        "  if key ~= 'x' then return end\n"
+        "  local v = math.floor(self.values.x + 0.5) + 1\n"
+        "  if v == known then return end\n"
+        "  known = v\n"
+        "  sendOSC('/cutit', 'drums', '%s', track, v)\n"
+        "  root:notify('touched', '%s')\n"
+        "end\n" % (cmd, name))
+    seg = f[2] // len(words)
+    out = [node("RADIO", name, f, color=RED, outlineStyle=0, orientation=1, steps=len(words),
+                x=at, script=script)]
+    for i, w in enumerate(words):
+        out.append(label("%s%dl" % (name, i + 1), (f[0] + i * seg, f[1], seg, f[3]), w, 14,
+                         BLACK if i == at else WHITE))
+    return out
 
 
 def synth_script(choice):
@@ -665,8 +765,10 @@ def arrangement():
 def drums():
     """What is per track: the sixteen pads, each showing its track's volume, pitch, last step or
     randomness as the radio chooses, tapped to select and dragged to change it (Brendan,
-    2026-11-05); sync first steps and snap to global; and the link. The tempo, the time
-    signature and the drunkenness are the arrangement's (Brendan, 2026-11-04)."""
+    2026-11-05); the selected track's effects, chosen by a second radio, distortion, delay or
+    reverb, its controls to the right of it (Brendan, 2026-11-05); sync first steps and snap to
+    global; and the link. The tempo, the time signature and the drunkenness are the
+    arrangement's (Brendan, 2026-11-04)."""
     k = []
     # the left panel: the sixteen pads where the drum page puts them on the Launchpad, pad 1 at
     # the bottom left (Brendan, 2026-11-04), three steps square and a step apart, so four fill
@@ -684,23 +786,79 @@ def drums():
                       bar=False, cursor=False, response=1, responseFactor=PAD_FACTOR, x=0.5,
                       script=pad_script(n)))
         k.append(label("pad%dl" % n, f, "0", 20))
-    # the right panel: sync and snap, the line saying one waits, the radio choosing what the
-    # pads show, a pad's size a segment and level with their third row, the link
+    # the right panel: sync and snap across the top; under them two vertical radios, what the
+    # pads show (Brendan, 2026-11-05: it became vertical) and which effect's controls show, two
+    # steps a segment; and the chosen effect's controls to their right. The line saying a sync
+    # or a snap waits and the link share the bottom row.
     a, b = COL
     for x, (name, text) in zip(COL, (("sync", "sync first steps"), ("snap", "snap to global"))):
         f = (x, Y0, CW, 3 * G)
         k.append(button(name, f, RED, sends(["drums", name])))
         k.append(label(name + "l", f, text, 16))
-    k.append(label("pending", (a, Y0 + 4 * G, X1 - a, G), "", 14, TEAL, align=1))
-    seg = CW // len(SHOW)
-    k.append(caption("showc", a, Y0 + 7 * G, CW, "show"))
-    k.append(node("RADIO", "show", (a, Y0 + 8 * G, CW, 3 * G), color=RED, outlineStyle=0,
-                  orientation=1, steps=len(SHOW), x=0, script=show_script()))
+    k.append(label("pending", (a, STATUS, CW, G), "", 14, TEAL, align=1))
+    k.append(caption("showc", a, Y0 + 4 * G, 4 * G, "show"))
+    k.append(node("RADIO", "show", (a, Y0 + 5 * G, 4 * G, 2 * G * len(SHOW)), color=RED,
+                  outlineStyle=0, orientation=SOUTH, steps=len(SHOW), x=0, script=show_script()))
     for i, (word, _c, _lo, _hi, _st) in enumerate(SHOW):
-        k.append(label("show%dl" % (i + 1), (a + i * seg, Y0 + 8 * G, seg, 3 * G), word, 14,
+        k.append(label("show%dl" % (i + 1), (a, Y0 + (5 + 2 * i) * G, 4 * G, 2 * G), word, 14,
                        BLACK if i == 0 else WHITE))
+    fx = a + 5 * G
+    k.append(caption("fxc", fx, Y0 + 4 * G, 5 * G, "effect"))
+    k.append(node("RADIO", "fx", (fx, Y0 + 5 * G, 5 * G, 2 * G * len(EFFECTS)), color=RED,
+                  outlineStyle=0, orientation=SOUTH, steps=len(EFFECTS), x=0, script=fx_script()))
+    for i, word in enumerate(EFFECTS):
+        k.append(label("fx%dl" % (i + 1), (fx, Y0 + (5 + 2 * i) * G, 5 * G, 2 * G), word, 14,
+                       BLACK if i == 0 else WHITE))
+    k += fx_controls()
     k += status("dlinkled", "dlink", b, "no link")
     return k
+
+
+FX_X = COL[0] + 11 * G      # the effects' controls: from 568 to the right edge, 14 steps
+FX_Y = Y0 + 4 * G           # their first captions, level with the radios'
+
+
+def fx_controls():
+    """Each effect's controls, all in the same place, to the right of the radios: the root shows
+    the chosen effect's and hides the rest. In the file every one shows, so TouchOSC's editor,
+    where no script runs, reaches each (ref/device/phone.md, In the editor). The delay's are last,
+    so its radios draw over the knobs under them in the editor, as nothing else's does.
+      distortion: drive, tone and mix, the track's
+      reverb: the track's send, and the reverb's size and damping, the kit's
+      delay: its time, a note value over a feel, then its feedback and its level"""
+    x, y, step = FX_X, FX_Y, 5 * G
+    k = []
+    k += fxknob("drive", x, y, "drive")
+    k += fxknob("tone", x + step, y, "tone")
+    k += fxknob("dist", x + 2 * step, y, "mix")
+    k += fxknob("send", x, y, "send")
+    k += knob("size", x + step, y, "size", d=4 * G)
+    k += knob("damping", x + 2 * step, y, "damping", d=4 * G)
+    k.append(caption("dtimec", x, y, 14 * G, "time"))
+    k += fxradio("dnote", (x, y + G, 2 * G * len(NOTE_NAMES), 2 * G), NOTE_NAMES, FX_CMD["note"],
+                 FX_START["note"] - 1)
+    k += fxradio("dfeel", (x, y + 3 * G, 4 * G * len(FEEL_NAMES), 2 * G), FEEL_NAMES,
+                 FX_CMD["feel"], FX_START["feel"] - 1)
+    k += fxknob("feedback", x, y + 5 * G, "feedback")
+    k += fxknob("delay", x + step, y + 5 * G, "level")
+    return k
+
+
+def fx_groups():
+    """The controls each effect shows, by name, in the effect radio's order: distortion, delay,
+    reverb. Every name a node of fx_controls."""
+    groups = {"distortion": [], "delay": [], "reverb": []}
+    for n in fx_controls():
+        name = re.search(r'<key><!\[CDATA\[name\]\]></key><value><!\[CDATA\[([\w-]+)\]\]>',
+                         n).group(1)
+        base = re.sub(r"(c|v|\dl)$", "", name)
+        if base in ("drive", "tone", "dist"):
+            groups["distortion"].append(name)
+        elif base in ("send", "size", "damping"):
+            groups["reverb"].append(name)
+        else:
+            groups["delay"].append(name)
+    return [groups[e] for e in EFFECTS]
 
 
 # ------------------------------------------------------------------ the synths screen (page 3)
@@ -856,6 +1014,16 @@ local ACKS = %(acks)s
 local DENS = %(dens)s
 local SWING = %(swing)s
 local SHOWN = %(shown)s
+local LASTSHOW, STEPROW, STEPROWS = %(lastshow)s, %(steprow)s, %(steprows)s
+-- The drum screen's effects: each effect's controls, by the effect radio's order; the selected
+-- track's controls in the order the state sends their values, after its first PHONE_BASE; the
+-- knobs whose value shows in their middle; the radios' segment counts.
+local FXGROUPS = %(fxgroups)s
+local FXCONTROLS = %(fxcontrols)s
+local VERBCONTROLS = %(verbcontrols)s
+local FXKNOBS = %(fxknobs)s
+local FXRADIOS = %(fxradios)s
+local PHONE_BASE, PHONE = %(phonebase)s, %(phone)s
 local ROWS, MAX_NAME = %(rows)s, %(maxname)s
 local NAMERS = %(namers)s
 local CHARS = %(chars)s
@@ -954,12 +1122,20 @@ end
 -- last, so a turn of the radio redraws the pads at once.
 local show, state = 1, nil
 local function signed(v) return v > 0 and ('+' .. v) or tostring(v) end
+-- How far a last step reaches at a top number: four rows of as many groups of it as fit in a
+-- row's eight cells, or all eight when it is over 8 (c_steps.lua's R.reach).
+local function reach(n)
+  if n > STEPROW then return STEPROWS * STEPROW end
+  return STEPROWS * math.floor(STEPROW / n) * n
+end
 local function pads()
   local a = state
   if not a then return end
   local track = math.floor(arg(a, 3))
+  local far = reach(math.max(1, math.floor(arg(a, 37))))
   for n = 1, 16 do
     local own, sel, pad = arg(a, 20 + n) == 1, n == track, 'pad' .. n
+    if told[pad .. ':r'] ~= far then told[pad .. ':r'] = far; get(pad):notify('reach', far) end
     local v, words, teal
     if show == 1 then
       v = math.floor(arg(a, 40 + n)); words = signed(v)
@@ -989,10 +1165,43 @@ local function setShow(x)
 end
 
 -- ---------------------------------------------------------------- the sequencer's state
--- c_steps' 88 numbers: playing, the global last step, the selected track, a pending sync or
+-- ---------------------------------------------------------------- the drum screen's effects
+-- The effect radio's choice, 1 to 3: distortion, delay, reverb. The chosen effect's controls
+-- show and the others' hide; in the file all of them show, for the editor.
+local fx = 1
+local function showing(name, on)
+  if shown[name .. ':v'] ~= on then shown[name .. ':v'] = on; get(name).visible = on end
+end
+local function setFx(x)
+  fx = math.max(1, math.min(#FXGROUPS, math.floor(x + 0.5) + 1))
+  for i = 1, #FXGROUPS do
+    ink('fx' .. i .. 'l', i == fx and BLACK or WHITE)
+    for _, name in ipairs(FXGROUPS[i]) do showing(name, i == fx) end
+  end
+end
+
+-- The selected track's effects, after the state's first PHONE_BASE numbers, and the reverb's: each
+-- control told the track when it changes, then handed its value, as a knob is.
+local fxtrack = nil
+local function effects(a)
+  if #a < PHONE then return end
+  local track = math.floor(arg(a, 3))
+  if track ~= fxtrack then
+    fxtrack = track
+    for _, name in ipairs(FXCONTROLS) do get(name):notify('track', track) end
+  end
+  for i, name in ipairs(FXCONTROLS) do hand(name, math.floor(arg(a, PHONE_BASE + i))) end
+  for i, name in ipairs(VERBCONTROLS) do
+    hand(name, math.floor(arg(a, PHONE_BASE + #FXCONTROLS + i)))
+  end
+end
+
+-- ---------------------------------------------------------------- the sequencer's state
+-- c_steps' 98 numbers: playing, the global last step, the selected track, a pending sync or
 -- snap (1, 2), the sixteen last steps, then 1 for each track with its own, then the time
 -- signature, the drunkenness and the swing, then the sixteen volumes, pitches and
--- randomnesses. The drum screen shows what is per track, the arrangement screen the rest.
+-- randomnesses, then the selected track's effects and the reverb's. The drum screen shows what
+-- is per track, the arrangement screen the rest; 88, without the effects, draws all but those.
 local function drums(a)
   if #a < 88 then return end
   local playing, pending = arg(a, 1) == 1, arg(a, 4)
@@ -1013,6 +1222,7 @@ local function drums(a)
   for i, d in ipairs(DENS) do if d == den then hand('denbox', i) end end
   hand('drunk', math.floor(arg(a, 39)))
   hand('swing', math.floor(arg(a, 40)))
+  effects(a)
 end
 
 -- ---------------------------------------------------------------- the tempo
@@ -1175,6 +1385,7 @@ local lastHb = -100000
 function init()
   get('pages').tabbar = false
   setShow(get('show').values.x)
+  setFx(get('fx').values.x)
   paintCheck()
 end
 
@@ -1205,6 +1416,8 @@ function onReceiveNotify(key, value)
     touchedAt[value] = getMillis()
   elseif key == 'show' then
     setShow(value)
+  elseif key == 'fx' then
+    setFx(value)
   elseif key == 'row' then
     rowTapped(value)
   elseif key == 'type' then
@@ -1227,6 +1440,13 @@ function update()
   ink('tmode', (up and testOn) and TEAL or GREY)
   text('drunkv', math.floor(get('drunk').values.x * 100 + 0.5) .. '%%')
   text('swingv', SWING[1] + math.floor(get('swing').values.x * (SWING[2] - SWING[1]) + 0.5) .. '%%')
+  for _, name in ipairs(FXKNOBS) do
+    text(name .. 'v', math.floor(get(name).values.x * 100 + 0.5) .. '%%')
+  end
+  for name, n in pairs(FXRADIOS) do
+    local x = math.floor(get(name).values.x + 0.5)
+    for i = 1, n do ink(name .. i .. 'l', i == x + 1 and BLACK or WHITE) end
+  end
   for name, base in pairs(BASE) do
     local f = flash[name]
     color(name, (f and now < f[1]) and f[2] or base)
@@ -1253,6 +1473,13 @@ def root_script(check):
         "synths": lua([c for c, _ in SYNTHS]),
         "acks": acks, "check": lua(check), "dens": lua(DENS), "swing": lua(list(SWING)),
         "shown": lua([w for w, _c, _lo, _hi, _st in SHOW]),
+        "lastshow": LAST_SHOW, "steprow": ROW, "steprows": ROWS_OF_STEPS,
+        "fxgroups": lua(fx_groups()),
+        "fxcontrols": lua([FX_CONTROL.get(f, f) for f in FX]),
+        "verbcontrols": lua(VERB),
+        "fxknobs": lua([f for f in FX if f not in FX_CONTROL] + VERB),
+        "fxradios": lua({"dnote": len(NOTE_NAMES), "dfeel": len(FEEL_NAMES)}),
+        "phonebase": PHONE_BASE, "phone": PHONE,
         "rows": ROWS, "maxname": MAX_NAME,
         "namers": lua({p: {"pager": n["pager"], "tab": n["tab"], "back": n["back"]}
                        for p, n in NAMERS.items()}),

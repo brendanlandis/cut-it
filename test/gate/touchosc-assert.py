@@ -112,6 +112,18 @@ def inside(f, x, y):
     return f[0] <= x <= f[0] + f[2] and f[1] <= y <= f[1] + f[3]
 
 
+def segment(f, p, x, y):
+    """The segment of a radio at (x, y), 0 the first: across from the left when horizontal
+    (orientation 1); down from the top when its orientation is 2, south, and up from the bottom
+    when 0, north, as a fader's value runs (~/Sites/!reference/touchosc.md, The file)."""
+    steps = int(p.get("steps") or 1)
+    o = p.get("orientation")
+    if o == "1":
+        return min(steps - 1, int((x - f[0]) / (f[2] / steps)))
+    k = min(steps - 1, int((y - f[1]) / (f[3] / steps)))
+    return k if o == "2" else steps - 1 - k
+
+
 def under(nodes, i, x, y):
     """The color drawn at (x, y) before node i: the last filled control there, over black."""
     bg = (0.0, 0.0, 0.0)
@@ -126,9 +138,7 @@ def under(nodes, i, x, y):
             on = float(v.get("x") or 0) >= 0.5
             bg = over(col, 1.0 if on else DIM * col[3], bg)
         elif t == "RADIO":
-            steps = int(p.get("steps") or 1)
-            seg = int((x - f[0]) / (f[2] / steps)) if p.get("orientation") == "1" else 0
-            bg = over(col, 1.0 if seg == int(float(v.get("x") or 0)) else DIM, bg)
+            bg = over(col, 1.0 if segment(f, p, x, y) == int(float(v.get("x") or 0)) else DIM, bg)
         elif t in ("LABEL", "TEXT") and p.get("background") == "1":
             bg = over(col, DIM * col[3], bg)
     return bg
@@ -475,23 +485,52 @@ def main():
     A.check("every caption sits flush left over the control it names, a step above it",
             len(caps) >= 6 and not loose, "%d captions; not over a control: %s" % (len(caps), loose))
 
-    # The drum screen's radio (Brendan, 2026-11-05): TouchOSC's own, horizontal, one segment for
-    # each of what the pads show, its word over it, and it sends nothing: the pads' drags do.
-    radio = [(f, p) for pg, n, t, f, p in placed if pg == "drums" and n == "show" and t == "RADIO"]
-    words = sorted((f[0], (p.get("name"), by_name.get(p.get("name"), [None] * 5)[4]))
-                   for pg, n, t, f, p in placed if pg == "drums" and re.fullmatch(r"show\d+l", n or ""))
+    # The drum screen's two radios (Brendan, 2026-11-05): TouchOSC's own, vertical, the first
+    # segment on top (orientation 2, south), one for each of what the pads show, and one for each
+    # effect whose controls show, each word over its segment, and neither sends anything: the
+    # pads' drags and the effects' controls do.
+    def vradio(name, want):
+        radio = [(f, p) for pg, n, t, f, p in placed if pg == "drums" and n == name
+                 and t == "RADIO"]
+        words = sorted((f[1], f[0], by_name.get(n, [None] * 5)[4]) for pg, n, t, f, p in placed
+                       if pg == "drums" and re.fullmatch(r"%s\d+l" % name, n or ""))
+        seg = radio[0][0][3] / len(want) if radio and want else 0
+        ok = (len(radio) == 1 and radio[0][1].get("orientation") == "2"
+              and radio[0][1].get("steps") == str(len(want))
+              and [w for _y, _x, w in words] == want
+              and [(y, x) for y, x, _w in words] == [(radio[0][0][1] + i * seg, radio[0][0][0])
+                                                    for i in range(len(want))])
+        return ok, "radio %s, words %s" % ([(f, p.get("orientation"), p.get("steps"))
+                                           for f, p in radio], words)
     show = getattr(B, "SHOW", [])
-    seg = radio[0][0][2] / len(show) if radio and show else 0
-    A.check("⛔ the drum screen's radio is TouchOSC's own, horizontal, a segment each for volume, "
-            "pitch, last step and randomness, its word centered over it",
-            len(radio) == 1 and radio[0][1].get("orientation") == "1"
-            and radio[0][1].get("steps") == str(len(show))
-            and [w for _x, (_n, w) in words] == [w for w, _c, _lo, _hi, _st in show]
-            and [x for x, _w in words] == [radio[0][0][0] + i * seg for i in range(len(show))],
-            "radio %s, words %s" % ([(f, p.get("orientation"), p.get("steps")) for f, p in radio],
-                                    words))
+    ok, why = vradio("show", [w for w, _c, _lo, _hi, _st in show])
+    A.check("⛔ the drum screen's radio is TouchOSC's own, VERTICAL, its first on top, a segment "
+            "each for volume, pitch, last step and randomness, its word over it", ok, why)
     A.check("... and it sends nothing", by_name.get("show") is not None
             and not sent(by_name["show"][3]), sent(by_name.get("show", [None] * 4)[3]))
+    ok, why = vradio("fx", ["distortion", "delay", "reverb"])
+    A.check("⛔ a second vertical radio beside it chooses an effect: distortion, delay, reverb",
+            ok, why)
+    A.check("... and it sends nothing", by_name.get("fx") is not None
+            and not sent(by_name["fx"][3]), sent(by_name.get("fx", [None] * 4)[3]))
+    # Each effect's controls (Brendan, 2026-11-05) sit to the right of the radios, every one in
+    # the same place, shown in the file for the editor; the root shows the chosen effect's.
+    groups = B.fx_groups() if hasattr(B, "fx_groups") else []
+    fr = [f for pg, n, t, f, p in placed if pg == "drums" and n == "fx"]
+    right = fr[0][0] + fr[0][2] if fr else 0
+    where = {n: f for pg, n, t, f, p in placed if pg == "drums"}
+    stray = [n for g in groups for n in g if n not in where or where[n][0] <= right]
+    A.check("⛔ every effect's controls are on the drum screen, to the right of the radios",
+            len(groups) == 3 and all(groups) and not stray, "groups %s; misplaced %s"
+            % ([len(g) for g in groups], stray))
+    sends_of = lambda names: sorted({m.split()[1] for n in names if n in by_name
+                                     for m in sent(by_name[n][3])})
+    A.check("⛔ ... and send what each is: drive, tone, dist; delay-note, delay-feel, feedback, "
+            "delay; send, size, damping",
+            [sends_of(g) for g in groups] == [["dist", "drive", "tone"],
+                                              ["delay", "delay-feel", "delay-note", "feedback"],
+                                              ["damping", "send", "size"]],
+            [sends_of(g) for g in groups])
     # A pad's drag, a step at a time as the time signature's boxes are, about 20 points a step:
     # a relative fader's whole travel is its height times 100 over its responseFactor.
     faders = [(n, f, p) for pg, n, t, f, p in placed if pg == "drums" and re.fullmatch(r"pad\d+", n)]

@@ -48,12 +48,12 @@ session means opening one.
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
 | [tempo](tempo.md) | 14 | the transport, knob 1's pickup, the clamp |
 | [launchpad](launchpad.md) | 28 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |
-| [phone](phone.md) | 18 | the phone following the Launchpad's page, its tabs, the arrangement screen and its tempo, the tap pad, the link dropping and coming back, the checklist page and test mode |
+| [phone](phone.md) | 21 | the phone following the Launchpad's page, its tabs, the arrangement screen and its tempo, the tap pad, the link dropping and coming back, the checklist page and test mode, the drum screen's pads and its effect controls |
 | [state](state.md) | 5 | the front-panel Save, a power cycle, the mode surviving it |
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
 | [midi](midi.md) | 10 | the map by mode, the Volca by ear, hot-swap |
 | [debug](debug.md) | 9 | the debug patch, with the instrument stopped |
-| [sequencer](sequencer.md) | 29 | page 2's drum page and the drums it plays, and the time signature's rows |
+| [sequencer](sequencer.md) | 34 | page 2's drum page and the drums it plays, the time signature's rows, and each drum's distortion, delay and reverb send |
 | [sections](sections.md) | 12 | the song's sections: the Launchpad's top row, a queue landing as the pattern comes round, a length handing over, save and revert and their lamps, a power cut, the phone's sections page and its name tab |
 | [synths](synths.md) | 13 | the nanoKEY and the two synths it plays, page 3's pads, the phone's synths screen and its velocity switch, a switch mid-chord, the Streichfett on the roster |
 

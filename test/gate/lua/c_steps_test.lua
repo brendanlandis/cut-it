@@ -1154,6 +1154,18 @@ R.presses.rep(st, { 1, 127 })
 equal("⛔ one step plays alternately long and short: 125 ms in 1 step, no swing, so the speed is 1 and "
       .. "it comes round on the hits every second time", tails(R.internal.tick(st, {})),
       { { "tape", 125, 1 } })
+equal("⛔ swing and drunk together, a pair of three steps and one: 1.5 x 3 and 0.5 x 1, five steps, "
+      .. "as the pair ran, and comes round on it", (function()
+  local q = R.new(1)
+  R.internal.tempo(q, { 120 })
+  R.presses["set-swing"](q, { 75 })
+  R.internal.start(q, {})
+  R.presses.drunk(q, { 100 })
+  q.rand = dice(0.5, 1, 0.5, 0.5)
+  run(q, 2)
+  R.presses.rep(q, { 2, 127 })
+  return tails(R.internal.tick(q, {}))
+end)(), { { "tape", 625, 5 } })
 -- Drunk: a step's own length, in steps, is its own.
 st = R.new(1)
 for k = 1, 8 do R.presses.step(st, { k, 100 }) end

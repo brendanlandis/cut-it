@@ -50,7 +50,7 @@
 #X obj 2100 1700 r \$0-page;
 #X obj 2100 1750 outlet;
 #X obj 2400 380 declare -lib pdlua;
-#X text 20 1820 Steps are cut from the sequencer's own phase \, never from c_clock's beat bang \, which tops out at 14.3 a second (ref/module/tempo.md). The phase runs at two steps a cycle \, at c_clock's rate times the Lua's rate: rzero~ and wrap~ read c_clock's phase as an increment per sample \, the expr~ drops the jump of a start \, and samplerate~ turns it back into a frequency. At rate 1 it is c_clock's beat phase times two \, so a step lands where it did. Drunk \, the Lua sets a rate for every step \, and the drift stays: nothing pulls the phase back but PLAY. Swing bends each pair: samphold~ takes the swing at the pair's start \, so a turn never moves a step already cut \, and the second expr~ gives the first step the swing's share of the pair and the second the rest. Then times two \, wrap~ \, and a threshold a twelfth of a step in \, where u_tempo's MIDI pulse falls at rate 1 and straight. Debounces 0 \, as in c_clock., f 58;
+#X text 20 1820 Steps are cut from the sequencer's own phase \, never from c_clock's beat bang \, which tops out at 14.3 a second (ref/module/tempo.md). The phase runs at two steps a cycle \, at c_clock's rate times the Lua's rate: rzero~ and wrap~ read c_clock's phase as an increment per sample \, the expr~ drops the jump of a start \, and samplerate~ turns it back into a frequency. At rate 1 it is c_clock's beat phase times two \, so a step lands where it did. Drunk \, the Lua sets a rate for every step \, and the drift stays: nothing pulls the phase back but PLAY. Swing bends each pair: samphold~ takes the swing at the pair's start \, so a turn never moves a step already cut \, and the second expr~ gives the first step the swing's share of the pair and the second the rest. Then times two \, wrap~ \, and a threshold at the boundary: the -~ shifts it back a ten-thousandth of a pair so PLAY's reset re-arms threshold~ \, and step 1 fires within two blocks (ref/module/sequencer.md). Debounces 0 \, as in c_clock., f 58;
 #X text 20 2010 Each track keeps its own place in its own loop \, in the Lua: a tick moves every one on \, and a track wraps after its own last step. Per-track subdivision would give a track its own multiplier on the same phase in place of the times four., f 58;
 #X text 300 670 PLAY starts every loop at step 1: start tells the Lua \, before the spigot shuts for one logical instant \, so a step cut before c_clock's phase reset cannot fire as step 1. STOP and panic shut it \, and stop tells the Lua \, which puts the playhead out., f 44;
 #X text 520 1100 On each step the Lua answers tick with every track not at 0 on its own step \, or as its randomness flips it \, in one logical instant \, and c_kit plays them all: a voice per pad. Then the playhead moves \, to the selected track's step., f 44;
@@ -148,7 +148,7 @@
 #X connect 26 7 78 0;
 #X connect 78 0 79 0;
 #X connect 78 1 80 0;
-#X obj 20 1085 -~ 0.0416667;
+#X obj 20 1085 -~ 0.0001;
 #X obj 20 1115 wrap~;
 #X obj 100 1340 *~ -1;
 #X connect 82 0 63 1;

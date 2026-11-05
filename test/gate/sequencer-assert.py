@@ -39,9 +39,9 @@ KEY = "drums"
 WINDOWS = ["EARLY", "RESTORE", "NINE", "THREE", "ROW-PRESS", "ROW-DARK", "SEVEN", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
            "RULE-ON", "RULE-SAME", "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER",
            "FREE-ROW", "PAGE-1", "OTHER-PAGE", "PAGE-2", "PLAY", "STOP", "STOPPED",
-           "KNOB2-HELD", "LAST-3", "REPLAY", "PANIC", "AFTER-PANIC", "KNOB3",
+           "KNOB2-HELD", "LAST-3", "REPLAY", "RE-SOON", "RE-STEP3", "RE-WALK", "PANIC", "AFTER-PANIC", "KNOB3",
            "PAST-LAST", "POLY", "POLY-STOP", "SNAP", "SNAP-PLAY", "SNAP-STOP",
-           "SWING", "SW-PLAY", "SW-GAP", "SW-LATE", "SW-ON", "SW-STOP",
+           "SWING", "SW-PLAY", "SW-SOON", "SW-GAP", "SW-LATE", "SW-ON", "SW-STOP",
            "REP-PLAY", "REP-PRESS", "REP-HELD", "REP-OFF", "REP-STOP",
            "SOUND", "RAND", "RA-PLAY", "RA-STOP", "DRUNK", "DR-PLAY"] + \
     ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DRAG", "DONE"]
@@ -396,13 +396,24 @@ def main():
     got = [l[LAST] for l in puts("LAST-3")]
     A.check("... and it is saved, a section's, each time it changes: 17, then 3", got == [17, 3],
             "the global last step in the puts: %s" % got)
-    again = [r for r in played(evs, {"REPLAY", "PANIC"}, lay) if r[0] is not None]
+    again = [r for r in played(evs, {"REPLAY", "RE-SOON", "RE-STEP3", "RE-WALK", "PANIC"}, lay)
+             if r[0] is not None]
     A.check("⛔ PLAY again starts at step 1, not where STOP left it",
             bool(again) and again[0] == (1, want[1]), "first: %s" % (again[:1],))
     walk = [s for s, _n in again]
     bad = [(s, n, want.get(s)) for s, n in again if n != want.get(s)]
     A.check("⛔ with the last step at 3 it walks 1 to 3 and wraps -- 1 2 3 1 2 in 0.6 s",
             walk == [1, 2, 3, 1, 2] and not bad, "steps %s, wrong %s" % (walk, bad[:3]))
+    # On its boundary, not a twelfth of a step after it: PLAY's step 1 within two blocks, and
+    # step 3 on the 250 ms it is due, to the block.
+    A.check("⛔ PLAY's step 1 is heard at once -- its chord within 5 ms of PLAY",
+            sorted(ons("REPLAY")) == want[1], "before 5 ms: %s, in the 240 after: %s"
+            % (ons("REPLAY"), ons("RE-SOON")))
+    A.check("⛔ ... and step 3 on its boundary, 250 ms after PLAY -- track 1's at 20, in the "
+            "10 ms from 246, and nothing before it", want[3] == [(1, 20)] and
+            sorted(ons("RE-STEP3")) == want[3] and not ons("RE-SOON"),
+            "246 to 256: %s, 5 to 246: %s, after: %s"
+            % (ons("RE-STEP3"), ons("RE-SOON"), ons("RE-WALK")[:2]))
     A.check("⛔ a panic stops it too -- no note-on after it",
             not ons("AFTER-PANIC"), "note-ons: %s" % ons("AFTER-PANIC"))
 
@@ -470,10 +481,13 @@ def main():
     A.check("... and it is saved, a section's, when it changes: 75 alone", got == [75],
             "the swing in the puts: %s" % got)
     A.check("⛔ at 75% step 2 waits three quarters of the pair: not painted by 190 ms, and "
-            "painted by 260", moved("SW-PLAY", "SW-GAP") == [1] and moved("SW-LATE") == [2],
+            "painted by 260", moved("SW-PLAY", "SW-SOON", "SW-GAP") == [1] and moved("SW-LATE") == [2],
             "by window: %s" % [(m, n) for m, n in heads if m.startswith("SW-")])
     A.check("... and step 3 lands on the beat after it", moved("SW-ON") == [3],
             "SW-ON: %s" % moved("SW-ON"))
+    A.check("⛔ PLAY's step 1 at once here too, early in a step, with threshold~ still to re-arm "
+            "-- its chord within 5 ms", sorted(ons("SW-PLAY")) == want[1],
+            "before 5 ms: %s, after: %s" % (ons("SW-PLAY"), ons("SW-SOON")[:2]))
 
     print("\n--- a repeat pad ---")
     A.check("PLAY walks 1 2 3 before the repeat pad", moved("REP-PLAY", "REP-PRESS") == [1, 2, 3],

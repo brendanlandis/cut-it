@@ -735,6 +735,13 @@ setting the step clock's rate (1), a tick timed by it (1), no hold on knobs 2 an
 moves (1), knob 2's full turn left at 32 (3), the phone's `set-last` unclipped (2), and the old bar
 of N × 16 / D (7). The Pd half with `g_grid` painting a cell as its own step (15), with a row's
 cells past it not dark (16), and with `c_steps` taking a press as its cell's number (Lua 3, Pd 12).
+✅ **And for a step on its boundary** (2026-11-05): with the phase shifted back a twelfth of a step
+again, where it landed in `u_tempo`'s MIDI pulse, PLAY's step 1 came 10 ms late, past `RE-SOON` and
+`SW-SOON`, and step 3 past `RE-STEP3` (3 failed). The windows bracket each against PLAY, which the
+driver sends 20 ms after its mark: step 1 within 5 ms, once with `threshold~` armed at PLAY and once
+still to re-arm, and step 3 between 246 and 256 ms. With no shift at all, the PLAYs landing early in
+a step lost step 1 to the next step (4 failed, the swing's and the snap's walks among them) and the
+armed one passed: the ten-thousandth is what re-arms it.
 
 ⚠️ **The layout table is read, not restated**, so a frame is decoded with the same table the patch
 paints from. The analyzer's expectations are what keeps that honest: the driver presses `pad-26`

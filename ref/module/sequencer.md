@@ -50,7 +50,7 @@ each track's distortion and delay and the reverb they share (2026-11-05). *The k
 | | | Evidence |
 |---|---|---|
 | A step | Sixteen to a bar, cut from the sequencer's own phase, a pair of steps a cycle, which runs at `c_clock 1 4`'s rate times the Lua's: swung, then ×2, `wrap~`, and a `threshold~` on its fall, and sent to the Lua as `tick` (*One phase of its own*, below) | verified |
-| When it fires | Straight and sober, a twelfth of a step after the boundary, in the block of `u_tempo`'s MIDI pulse for that sixteenth: the offset every clock in the patch shares (*Start alignment*, [tempo.md](tempo.md)). Within a block, ±1.45 ms, at 120 BPM in a test Pd (2026-11-03) | verified |
+| When it fires | Straight and sober, on the step's boundary, to the block (1.45 ms): PLAY's step 1 within two blocks of PLAY, whether or not `threshold~` was still to re-arm, and step 3 on the 250 ms it is due at 120 BPM, in the sequencer gate (2026-11-05). That is half a pulse before `u_tempo`'s MIDI pulse for the sixteenth, which every `c_clock` shares (*Start alignment*, [tempo.md](tempo.md)) and nothing in the rig follows (*A step fires on its boundary*, below) | verified |
 | Swing | Knob 4, on every page (Brendan, 2026-11-04), 50% to 75%, straight at its bottom and swinging one way only (Brendan, 2026-11-05): the share of each pair of sixteenths the first one takes, so above 50% every second sixteenth comes later. Taken at the next pair. Held at 50% at load, as knob 2 at 16, and since 50% is the knob's bottom, held until turned all the way down; saved, a section's. 66% at 120 BPM measured 165 and 85 ms | verified |
 | The phone's swing and last step | The arrangement screen sets each as it stands, `set-swing <50-75>` and `set-last <1-32>`, the last step clipped to the time signature's reach, where knobs 4 and 2 send knob positions through their latch (Brendan, 2026-11-04). The knob is held again at the phone's value, so its next turn waits to pass it rather than jumping back; a selected track that follows the global last step holds knob 3 again too. Saved, a section's, as the knobs' are; a message with no number does nothing | unknown |
 | Drunkenness | 0 to 100 from the phone's arrangement screen: at 100 every step strays, by up to two steps longer or shorter, and low settings stay subtle (Brendan, 2026-11-05). At *x*, the slider's 0 to 1, a step strays with the chance *x*/3 + 2*x*⁴/3, by up to *x* + *x*⁴ steps, at random either way: a line, which is most of it low, plus a steep fourth power that adds the rest near the top. At 20% one step in fifteen strays, by up to a fifth of a step; at 50% one in five, by up to 0.56; at 90% three in four, by up to 1.56. A step is never less than an eighth of a step. The error stays: its own drift becomes the clock, and only PLAY puts it back on `u_tempo`'s (Brendan, 2026-11-03). Saved | verified |
@@ -248,13 +248,12 @@ into a frequency for a `phasor~` at two steps a cycle, times the rate the Lua se
 is `c_clock`'s beat phase times two to within a sample, so the steps land where they did; PLAY
 resets both in the same block.
 
-**Swing bends each pair.** The phase is shifted back a twelfth of a step first, so the offset
-that lands a step in its MIDI pulse's block stays a fixed time and not a share of a swung step;
-`samphold~` takes the swing as the pair begins, so a turn never moves a step already cut; and an
-`expr~` gives the first step the swing's share of the pair and the second the rest. Then ×2,
-`wrap~`, and the threshold on `1 −` that: a step is the phase's fall from near 1 to 0. A
-threshold on a rising phase was not re-armed by a `start` landing mid-step, and PLAY's first step
-came a step late.
+**Swing bends each pair.** The phase is shifted back a ten-thousandth of a pair first, for PLAY
+(*A step fires on its boundary*, below); `samphold~` takes the swing as the pair begins, so a turn
+never moves a step already cut; and an `expr~` gives the first step the swing's share of the pair
+and the second the rest. Then ×2, `wrap~`, and the threshold on `1 −` that: a step is the phase's
+fall from near 1 to 0. A threshold on a rising phase was not re-armed by a `start` landing
+mid-step, and PLAY's first step came a step late.
 
 **Drunk, the rate changes once a step.** The Lua rolls on each `tick` whether the step coming
 strays and, if it does, its length, and sends `rate <1/length>` when that differs from the last; the phase runs at that rate until the next. The error is never paid back, so
@@ -284,6 +283,27 @@ their own rows. `u_map` passes them through untouched, held or not.
 instant. The run gate shuts for one logical instant (`[del 0]`): a step cut from the old phase in
 the block before PLAY can still be waiting in Pd's scheduler, and it would play as step 1 and push
 the downbeat to step 2.
+
+### A step fires on its boundary
+
+The drums play in Pd, and nothing in the rig follows `u_tempo`'s MIDI clock: it goes to the
+Launchpad alone, which ignores it in Programmer Mode ([tempo.md](tempo.md)). So a step fires on
+its boundary and not in that clock's pulse, half a pulse later, where it fired while the SP-404
+played the drums from it; waiting for the pulse only kept PLAY's step 1 a twelfth of a step late,
+10 ms at 120 BPM and 42 at 30 (`cut-it/drum-machine`, 2026-11-05). The beat row and a queued
+section's blink, which `c_clock`'s beat drives, light half a pulse after the step they mark.
+
+**The phase still goes back a ten-thousandth of a pair, for PLAY.** `threshold~` makes one change a
+block, and its input must fall below 0.4 to re-arm, which it does only late in a step. PLAY resets
+the phase to 0; shifted, that reads as the last sliver of a step, low, so a `threshold~` still
+waiting to re-arm does so in that block and fires on the boundary in the next, and an armed one
+fires in the first. Unshifted, the reset reads as a step's start, high, and a PLAY in the first
+60% of a step would leave it waiting: step 1 a whole step late. A ten-thousandth is under a block
+at any tempo down to 5 BPM.
+
+**Gear that follows the MIDI clock again would hear the drums half a pulse early**, plus its own
+lag: shift the phase back a twelfth of a step (1/24 of the pair, the `-~` in `c_steps.pd`) to land
+them in the pulse, as before.
 
 ### STOP and panic both stop it
 

@@ -83,6 +83,13 @@ SEQ = [
     (11600, "KNOB2-HELD", ["\\; param og-knob-2 0.2"], GAP),
     (11700, "LAST-3", ["\\; param og-knob-2 0.6", "\\; param og-knob-2 0.07"], GAP),
     (12000, "REPLAY", ["\\; start bang"], GAP),
+    # A step fires on its boundary: PLAY goes 20 ms after the mark, as every action does, and
+    # step 1 within two blocks of it, before RE-SOON; step 3, the next with a note, 250 ms after
+    # it, inside RE-STEP3. A twelfth of a step late, 10 ms at 120 BPM, puts each in the window
+    # after.
+    (12025, "RE-SOON", [], GAP),
+    (12266, "RE-STEP3", [], GAP),
+    (12276, "RE-WALK", [], GAP),
     (12600, "PANIC", ["\\; panic bang"], GAP),
     (12900, "AFTER-PANIC", [], GAP),
     # Knob 3 is track 2's own last step, held at its last step, 3: 0.2 is 6, held;
@@ -101,23 +108,28 @@ SEQ = [
     (15700, "SNAP-PLAY", ["\\; start bang"], GAP),
     (16200, "SNAP-STOP", ["\\; stop bang"], GAP),
     # Knob 4 is swing, 50% to 75%, held at 50% until turned to it: 0.6 is 65%,
-    # held; 0 is 50%, the knob's bottom, which releases it; 1 is 75%. PLAY then
-    # puts step 2 three quarters of the way through the pair: at 120 BPM, about
-    # 198 ms after step 1 rather than 125, so it paints in SW-LATE, not SW-GAP;
-    # step 3 lands on the beat, 260 ms in.
+    # held; 0 is 50%, the knob's bottom, which releases it; 1 is 75%. PLAY, 20 ms
+    # after its mark, then plays step 1 before SW-SOON, as REPLAY's does but with
+    # threshold~ still to re-arm, since this PLAY lands early in a step, and puts
+    # step 2 three quarters of the way through the pair: at 120 BPM, 187.5 ms
+    # after step 1 rather than 125, so it paints in SW-LATE, not SW-GAP; step 3
+    # lands on the beat, 250 ms after step 1, and paints in SW-ON.
     (16300, "SWING", ["\\; param og-knob-4 0.6", "\\; param og-knob-4 0",
                       "\\; param og-knob-4 1"], GAP),
     (16500, "SW-PLAY", ["\\; start bang"], GAP),
+    (16525, "SW-SOON", [], GAP),
     (16600, "SW-GAP", [], GAP),
     (16690, "SW-LATE", [], GAP),
     (16760, "SW-ON", [], GAP),
     (16900, "SW-STOP", ["\\; stop bang", "\\; param og-knob-4 0"], GAP),
     # Repeat pad 1, the top left of the right 4x4, held after step 3: the
     # playhead stays on 3 and track 1's step 3 plays on every step; let go, the
-    # loop goes on from where it would have been, 2 then 3, not from 1.
+    # loop goes on from where it would have been, 2 then 3, not from 1. PLAY
+    # goes at 17020, so a step every 125 ms from it: the press, at 17340, comes
+    # after step 3 at 17270, and REP-HELD holds the four from 17395 to 17770.
     (17000, "REP-PLAY", ["\\; start bang"], GAP),
     (17320, "REP-PRESS", [P("pad-45")], GAP),
-    (17400, "REP-HELD", [], GAP),
+    (17390, "REP-HELD", [], GAP),
     (17800, "REP-OFF", [P("pad-45", 0)], GAP),
     (18100, "REP-STOP", ["\\; stop bang"], GAP),
     # The drum screen's pads, over OSC as the phone sends them: track 2's

@@ -152,7 +152,7 @@ device (`~/Sites/!reference/pure-data.md`, *`[text read]` can't read procfs*).
 |---|---|---|---|
 | `info u_present rewire-try` | each of the eight **scheduled** attempts | verified | 289 |
 | `info u_present rewire-last` | the **single trailing** fork, when the last lost device answers | verified | 289 |
-| `info u_present rewire-phone` | a `re-wire` asked for, once per ask: named for the phone's button, which asked until 2026-11-04 | verified | 306 |
+| `info u_present rewire-asked` | a `re-wire` asked for, once per ask: a Send line's, through `u_inject`, since the phone's button went (2026-11-04). `rewire-phone` until it was renamed for what asks | verified | 306 |
 | `fail u_present rewire-gaveup` | once, when the bound is spent | verified | 235 |
 
 ⛔ **A fork nothing records is a repair nobody can attribute.** A `[print]` is not a record: a

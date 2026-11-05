@@ -67,9 +67,9 @@
 #X obj 1900 3120 print wire-watch;
 #X text 2400 2760 The heartbeat for a device nothing ever lost \, like the Volca's interface plugged in late (item 285). The count is taken after the increment \, so the first fork lands on tick 8 \, outside the boot window. wire-watch.sh hashes the client names and runs wire.sh only when they change (ref/module/presence.md)., f 62;
 #X obj 1000 2500 t b b;
-#X msg 1000 2620 info u_present rewire-phone;
+#X msg 1000 2620 info u_present rewire-asked;
 #X obj 1000 2680 s err;
-#X text 2500 1520 A third fork \, the only one a person asks for: re-wire is the phone's button \, into the same sh wire.sh box. One fork per press and no counter reset \, with its own name on err because all three converge on one box., f 62;
+#X text 2500 1520 A third fork \, the only one a person asks for: re-wire on the presence bus \, a Send line through u_inject since the phone's button went (2026-11-04) \, into the same sh wire.sh box. One fork per ask and no counter reset \, with its own name on err \, rewire-asked \, because all three converge on one box., f 62;
 #X connect 8 0 9 0;
 #X connect 9 0 10 0;
 #X connect 10 1 22 0;

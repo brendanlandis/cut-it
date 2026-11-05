@@ -120,7 +120,8 @@ held at a tapped or phoned tempo: `tempo-assert` against `u_map`, its Lua and fa
 `u_root` without the hold (3: 0.42 set 105 after the taps, its row read `bpm 105`, and 0.7 set 175
 after the phone's 133), and with only `u_root`'s cord from `u_tempo` to `u_map` cut (the same 3);
 `u_map_test.lua` against the old rules (no `R.tempo_position`: it stopped there) and with the hold
-arming the knob at the wrong place (3).
+arming the knob at the wrong place (3). The log line a re-wire asked for writes, renamed `rewire-asked` from the
+phone's button it no longer comes from: `presence-assert` on the old `u_present` (1).
 
 ✅ **The phone's pages, the arrangement screen, tap tempo and the velocity switch were each made to
 fail** (2026-11-04), against the code without the change or a mutation of it. `phone-assert`: the

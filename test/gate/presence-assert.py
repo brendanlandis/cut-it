@@ -28,7 +28,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 
 MARKS = ("BOOT", "BEFORE-LOSS", "AFTER-LOSS", "WAITING", "AFTER-REWIRE",
          "WALDORF", "FOREIGN", "STILL-LOST", "OWN-REPLY", "RECOVERED", "DROPPED",
-         "ALL-BACK", "PHONE-REWIRE", "SETTLED")
+         "ALL-BACK", "ASKED-REWIRE", "SETTLED")
 
 # The second run's windows; presence-bound-drive-gen.py has the schedule.
 BOUND_MARKS = ("EARLY", "LATE", "AFTER")
@@ -45,7 +45,7 @@ GAVEUP = "fail u_present rewire-gaveup"
 # fork as whichever cause it sat under.
 REWIRE_TRY = "info u_present rewire-try"
 REWIRE_LAST = "info u_present rewire-last"
-REWIRE_PHONE = "info u_present rewire-phone"
+REWIRE_ASKED = "info u_present rewire-asked"
 
 # Every m_ registers, m_organelle and m_nanokey (passive) and m_volca (none)
 # included, though none of them ages. The total is asserted because a layer that
@@ -359,36 +359,36 @@ def main_run(cap):
             "fact, which is the question item 275 turned on and which the "
             "hardware could not answer" % (REWIRE_LAST, last))
 
-    # --- the phone's re-wire ------------------------------------------------
+    # --- a re-wire asked for -----------------------------------------------
     # Every device answered in ALL-BACK, so nothing on the schedule is due: a
     # fork in this window came from the bus.
     A.check("⛔ re-wire on the presence bus forks wire.sh, exactly once",
-            wire_in(by, "PHONE-REWIRE") == 1,
-            "%d wire.sh fork(s) in PHONE-REWIRE, wanted exactly 1. Zero means "
-            "the phone's button reaches u_present and dies there; more than one "
+            wire_in(by, "ASKED-REWIRE") == 1,
+            "%d wire.sh fork(s) in ASKED-REWIRE, wanted exactly 1. Zero means "
+            "a Send line's re-wire reaches u_present and dies there; more than one "
             "means one press costs several forks, and a fork per event is the "
             "thing Phase 4's rule exists to prevent"
-            % wire_in(by, "PHONE-REWIRE"))
+            % wire_in(by, "ASKED-REWIRE"))
 
-    phone = raised_in(errs, REWIRE_PHONE, *MARKS)
+    asked = raised_in(errs, REWIRE_ASKED, *MARKS)
     A.check("⛔ ...and names ITSELF on err, once, in that window alone",
-            phone == ["PHONE-REWIRE"],
-            "`%s` reached err in %s, wanted exactly PHONE-REWIRE. A fork nothing "
+            asked == ["ASKED-REWIRE"],
+            "`%s` reached err in %s, wanted exactly ASKED-REWIRE. A fork nothing "
             "records is a repair nobody can attribute, and this is the only one "
-            "of the three that a person caused" % (REWIRE_PHONE, phone))
+            "of the three that a person caused" % (REWIRE_ASKED, asked))
 
     # The negatives catch a report tapped below the shared `sh wire.sh` box,
     # which would name every fork as each kind and still pass the checks above.
-    crossed = raised_in(errs, REWIRE_TRY, "PHONE-REWIRE") + \
-        raised_in(errs, REWIRE_LAST, "PHONE-REWIRE")
-    A.check("⛔ ...and the phone's fork is not ALSO reported as a scheduled one",
+    crossed = raised_in(errs, REWIRE_TRY, "ASKED-REWIRE") + \
+        raised_in(errs, REWIRE_LAST, "ASKED-REWIRE")
+    A.check("⛔ ...and the asked-for fork is not ALSO reported as a scheduled one",
             not crossed,
-            "a scheduled or trailing name appeared in PHONE-REWIRE: %s. The "
+            "a scheduled or trailing name appeared in ASKED-REWIRE: %s. The "
             "three causes share one `sh wire.sh` box, so telling them apart "
             "depends entirely on where each report is tapped" % crossed)
 
     stray = raised_in(errs, REWIRE_LAST, "WAITING", "STILL-LOST", "SETTLED",
-                      "PHONE-REWIRE")
+                      "ASKED-REWIRE")
     A.check("⛔ ...and a SCHEDULED fork is never reported as the trailing one",
             not stray,
             "`%s` also appeared in %s. Those windows hold regular attempts, so "
@@ -486,17 +486,17 @@ def main_run(cap):
 
     # --- one bound, not one per device --------------------------------------
     total = sum(v.count("wire.sh") for v in by.values())
-    # Six: u_init's boot fork, three scheduled, one trailing and the phone's.
+    # Six: u_init's boot fork, three scheduled, one trailing and the one asked for.
     A.check("⛔ %d sources lost together produce ONE re-wire per interval" % ACTIVE,
             total == 6,
             "saw %d wire.sh fork(s), wanted u_init's boot fork plus three "
-            "recoveries plus one trailing plus the phone's one. %d would be one "
+            "recoveries plus one trailing plus the one asked for. %d would be one "
             "per lost source per "
             "interval, which is "
             "what the recovery did before Phase 4 moved it out of m_launchpad "
             "and into u_present -- a copy of a bound per device is not a bound. Fewer "
             "than 6 means the interval, the loss test, the trailing fork or the "
-            "phone's request has gone"
+            "asked-for re-wire has gone"
             % (total, 1 + 3 * ACTIVE))
 
     A.note("wire.sh by window: %s"

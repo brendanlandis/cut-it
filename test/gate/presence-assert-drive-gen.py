@@ -96,11 +96,11 @@ SEQ = [
       "\\; t-sysexin 3 240 126 0 6 2 62 25 10 1 2 1 14 247",
       "\\; t-sysexin 4 240 126 16 6 2 65 8 4 0 0 0 3 0 0 247"], GAP),
 
-    # The phone's button, where nothing on the schedule is due. Not inside
+    # A re-wire asked for, as a Send line asks, where nothing on the schedule is due. Not inside
     # SETTLED, which asserts zero forks; not after it, since past 38000 the two
     # devices miss their third poll again and `device-lost` lands in windows
     # that must be quiet (tried at 38000: four checks went red).
-    (34500, "PHONE-REWIRE", ["\\; presence re-wire"], GAP),
+    (34500, "ASKED-REWIRE", ["\\; presence re-wire"], GAP),
 
     (36000, "SETTLED", [], GAP),
 ]

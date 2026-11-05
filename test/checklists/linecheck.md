@@ -25,14 +25,14 @@ done, tap Setup again.
 - [ ] **3. A drum pad plays through the PA**
   - **Need:** The mixer's channel 1 up, and the PA on.
   - **Do:** Press the Launchpad's bottom-left drum pad, pad 1, a few times.
-  - **Pass if:** The PA plays pad 1's sample each time, as loud however hard you press.
-  - **Note:** The drums are Cut It's own, played on the Organelle and out its left output to the mixer's channel 1 (Brendan, 2026-11-04). A silent pad is its sample missing: the deploy copies the sixteen from samples/drums/. At load Cut It warns when only some are there; with none, every pad is silent and nothing is drawn.
+  - **Pass if:** The PA plays pad 1's sample each time, as loud however hard you press. On the OLED, out-l jumps with each hit and out-r stays where it was.
+  - **Note:** The drums are Cut It's own, played on the Organelle and out its left output to the mixer's channel 1 (Brendan, 2026-11-04). The OLED's two meters are what Cut It sends out, left and right, so a hit that moves out-l and is silent in the PA is the cable or the mixer, and one that moves nothing is its sample missing: the deploy copies the sixteen from samples/drums/. At load Cut It warns when only some are there; with none, every pad is silent and nothing is drawn.
 
 - [ ] **4. The mic**
   - **Need:** The SM58 in the Organelle's input.
   - **Do:** Sing or talk into the SM58.
-  - **Pass if:** The PA plays your voice. On the OLED, in-l moves with it and never reaches 100.
-  - **Note:** The mic goes in on the input's tip, and Cut It passes it straight to its left output beside the drums, so both come through the mixer's channel 1.
+  - **Pass if:** The PA plays your voice. On the OLED, out-l moves with it and never reaches 100.
+  - **Note:** The mic goes in on the input's tip, and Cut It passes it straight to its left output beside the drums, so both come through the mixer's channel 1 and the same meter. 100 is full scale: out-l reaching it is the voice clipping in Cut It's output.
 
 - [ ] **5. The nanoKEY plays the Volca through the PA**
   - **Need:** The Volca on; the mixer's channels 3 and 4 up.

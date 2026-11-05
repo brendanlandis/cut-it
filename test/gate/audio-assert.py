@@ -3,12 +3,16 @@
 
     audio-assert.py OUT.wav [CAPTURE.txt] [-v]
 
-Three claims:
+Five claims:
 
     1. the output is not silent
     2. L and R are not swapped: L is the tip, the mic's (item 11). Both
        channels carry the same level, so only the frequencies can see a swap
     3. the passthrough is unity: u_root's audio path has no gain
+    4. the drums reach the left output, and only the left, at their own level
+    5. the meters read the OUTPUT: everything Cut It sends out leaves through
+       u_root's two throw~, each u_level is fed exactly what its throw~ is, and
+       out-l moves with the drums while the input is silent
 
 Standard library only: a WAV, a sum and a count of sign changes need no numpy.
 """
@@ -19,6 +23,7 @@ import wave
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
+import lib_pd                                                  # noqa: E402
 
 # The segment table is the generator's, never retyped. Loaded by path because a
 # hyphen is not legal in a module name.
@@ -30,6 +35,18 @@ _spec = importlib.util.spec_from_file_location("audio_drive_gen", _gen)
 _ns = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_ns)
 AMP, SEGMENTS, GUARD = _ns.AMP, _ns.SEGMENTS, _ns.GUARD
+DRUM_HZ = _ns.DRUM_HZ
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PATCH = os.path.join(ROOT, "Cut It")
+
+# The driver's windows, in order: AUDIO's MARKs.
+MARKS = ["DSP", "REC", "BOTH", "LEFT", "RIGHT", "PAGE-2", "DRUMS", "TAIL", "STOP", "DONE"]
+
+# u_level's scale is env~'s 0-100. The input's noise floor was 18-19 at the
+# factory's gain (item 11); a tone at AMP reads in the 80s. A meter that reads
+# the output clears 40 on the drums alone, and stays under 20 on a silent side.
+CLEAR, FLOOR = 40, 20
 
 # A sine of amplitude a has RMS a/sqrt(2).
 WANT_RMS = AMP / (2 ** 0.5)
@@ -77,6 +94,84 @@ def crossings(xs):
         if s:
             prev = s
     return n
+
+
+def top_boxes(path):
+    """{index: record} of a patch's top-level boxes, and its top-level cords."""
+    boxes, cons, depth, n = {}, [], 0, 0
+    for r in lib_pd.read(path):
+        if r.startswith("#N canvas"):
+            depth += 1
+            continue
+        if r.startswith("#X restore"):
+            depth -= 1
+            if depth == 1:
+                boxes[n] = r; n += 1
+            continue
+        if depth != 1:
+            continue
+        if r.startswith(("#X obj", "#X msg", "#X text", "#X floatatom", "#X symbolatom")):
+            boxes[n] = r; n += 1
+        elif r.startswith("#X connect"):
+            cons.append(tuple(int(x) for x in r[:-1].split()[2:6]))
+    return boxes, cons
+
+
+def lint():
+    """The meters read what is thrown, read off the patch rather than run."""
+    print("--- 5. the meters read the OUTPUT, by reading the patch ---")
+    throws = {}
+    for name in sorted(os.listdir(PATCH)):
+        if not name.endswith(".pd"):
+            continue
+        for r in lib_pd.read(os.path.join(PATCH, name)):
+            f = r[:-1].split()
+            if r.startswith("#X obj") and f[4:5] == ["throw~"]:
+                throws.setdefault(" ".join(f[5:]), []).append(name)
+    A.check("⛔ everything Cut It sends out leaves through u_root: one throw~ outL and one "
+            "throw~ outR in the whole patch, both there",
+            throws == {"outL": ["u_root.pd"], "outR": ["u_root.pd"]},
+            "throw~ by name: %s. A throw~ in another file reaches mother's catch~ "
+            "around u_root's, so no meter there can see it -- c_kit's drums did, "
+            "until 2026-11-04" % throws)
+
+    boxes, cons = top_boxes(os.path.join(PATCH, "u_root.pd"))
+
+    def named(cls, arg):
+        return [i for i, r in boxes.items() if r.startswith("#X obj")
+                and r[:-1].split()[4:] == [cls, arg]]
+
+    levels = sorted(" ".join(r[:-1].split()[5:]) for r in boxes.values()
+                    if r.startswith("#X obj") and r[:-1].split()[4:5] == ["u_level"])
+    A.check("u_root holds two u_level, out-l and out-r, and no other",
+            levels == ["out-l", "out-r"],
+            "u_level boxes: %s. in-l and in-r metered the input until 2026-11-04"
+            % levels)
+    for side, out, lvl in (("left", "outL", "out-l"), ("right", "outR", "out-r")):
+        t, m = named("throw~", out), named("u_level", lvl)
+        if len(t) != 1 or len(m) != 1:
+            A.check("u_level %s is fed what throw~ %s is" % (lvl, out), False,
+                    "throw~ %s %s, u_level %s %s" % (out, t, lvl, m))
+            continue
+        into = lambda b: sorted((a, o) for a, o, bb, i in cons if bb == b)
+        A.check("⛔ the %s meter, u_level %s, is fed exactly what throw~ %s is"
+                % (side, lvl, out),
+                into(t[0]) and into(t[0]) == into(m[0]),
+                "throw~ %s from %s, u_level %s from %s. A stage put in front of the "
+                "throw~ and not the meter makes the meter read something that is not "
+                "sent" % (out, into(t[0]), lvl, into(m[0])))
+
+
+def meters(path):
+    """-> {window: {name: [dB, ...]}} for u_level's reports, by AUDIO window."""
+    with open(path) as fh:
+        order, by = A.windows(fh.read(), "AUDIO", len(MARKS))
+    out = {}
+    for w in order:
+        for kind, v in by.get(w, []):
+            if kind == "DISP" and len(v) >= 2 and v[0] in ("out-l", "out-r", "in-l", "in-r"):
+                out.setdefault(w, {}).setdefault(v[0], []).append(float(v[1]))
+    return order, out
 
 
 def main():
@@ -163,26 +258,44 @@ def main():
                 rms(l) < SILENT and rms(r) < SILENT,
                 "L %.4f R %.4f -- something is generating on its own" % (rms(l), rms(r)))
 
-    # ---- u_level, which shares the page -----------------------------------
-    # u_level is the page's other file. Its noise floor is 18-19 on the 0-100
-    # scale (ref/module/audio.md), so a tone must clear it.
+    # ---- 4. the drums, with the input silent -------------------------------
+    print("\n--- 4. the drums reach the left output alone ---")
+    l, r, span = seg("drums")
+    f = crossings(l) / 2.0 / span
+    A.check("pad 1, pressed on page 2, comes out of the LEFT at %.0f Hz" % DRUM_HZ,
+            abs(f - DRUM_HZ) / DRUM_HZ < FREQ_TOL,
+            "measured %.1f Hz over %.2f s, L rms %.4f. Silence here means c_kit's "
+            "outlet~ reaches nothing that is thrown" % (f, span, rms(l)))
+    A.check("...at its own level, once -- rms %.4f" % WANT_RMS,
+            abs(rms(l) - WANT_RMS) < RMS_TOL,
+            "rms %.4f against %.4f. Double is the drums summed twice, by a second "
+            "cord or a second throw~" % (rms(l), WANT_RMS))
+    A.check("...and the RIGHT stays silent", rms(r) < SILENT,
+            "R rms %.4f with only the drums playing" % rms(r))
+
+    # ---- 5. the meters read what goes out ---------------------------------
+    lint()
     if len(args) > 1 and os.path.exists(args[1]):
-        print("\n--- u_level, on the disp bus ---")
-        with open(args[1]) as fh:
-            lines = [ln.strip() for ln in fh]
-        levels = {}
-        for ln in lines:
-            if not ln.startswith("DISP: in-"):
-                continue
-            bits = ln.split()
-            if len(bits) >= 3:
-                levels.setdefault(bits[1], []).append(float(bits[2]))
-        for name in ("in-l", "in-r"):
-            xs = levels.get(name, [])
-            A.check("u_level reports %s, and a tone puts it clear of the floor"
-                    % name, bool(xs) and max(xs) > 40,
-                    "saw %d report(s), peak %s. The measured noise floor is 18-19 "
-                    "(item 11)" % (len(xs), max(xs) if xs else "none"))
+        print("\n--- 5. ...and by the signal, on the disp bus ---")
+        order, lv = meters(args[1])
+        both = lv.get("BOTH", {})
+        for name in ("out-l", "out-r"):
+            xs = both.get(name, [])
+            A.check("u_level reports %s, and both inputs put it clear of %d"
+                    % (name, CLEAR), bool(xs) and max(xs) > CLEAR,
+                    "saw %d report(s), peak %s in BOTH" % (len(xs), max(xs) if xs else "none"))
+        drums = lv.get("DRUMS", {})
+        xs = drums.get("out-l", [])
+        A.check("⛔ out-l moves with the DRUMS while the input is silent -- it reads "
+                "the output", bool(xs) and max(xs) > CLEAR,
+                "out-l in DRUMS: %s. A meter on the input reads nothing here: the "
+                "drums never reach the input" % xs)
+        last = None
+        for w in order[:order.index("DRUMS") + 1] if "DRUMS" in order else []:
+            last = (lv.get(w, {}).get("out-r") or [last])[-1]
+        A.check("...and out-r falls to silence beside it -- the meters are not swapped",
+                last is not None and last < FLOOR,
+                "out-r's last report by the end of DRUMS: %s" % last)
 
     return A.report()
 

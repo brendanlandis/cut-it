@@ -446,10 +446,10 @@
 #N canvas 40 40 1980 800 bench 0;
 #X text 20 20 The display bench \, one button per case: levels \, a parameter with a unit and one without \, a modal \, both error levels \, and pages 1 and 2 \, which the Launchpad's left column chooses on the rig., f 58;
 #X obj 20 130 r \$0-b-lvl;
-#X msg 20 170 in-l 43 dB;
+#X msg 20 170 out-l 43 dB;
 #X obj 20 210 s disp;
 #X obj 330 130 r \$0-b-lvl2;
-#X msg 330 170 in-r 19 dB;
+#X msg 330 170 out-r 19 dB;
 #X obj 330 210 s disp;
 #X obj 640 130 r \$0-b-par;
 #X msg 640 170 chop-size 43 %;
@@ -545,7 +545,7 @@
 #N canvas 40 40 1500 900 log 0;
 #X text 20 20 The screen history: every disp message but the level reports \, stamped with the frame number \, in a text you can open afterwards \, so a four-second boot need not be watched., f 58;
 #X obj 20 150 r disp;
-#X obj 20 190 route in-l in-r;
+#X obj 20 190 route out-l out-r;
 #X obj 20 240 list append;
 #X obj 20 280 t l b b;
 #X obj 460 280 r \$0-frames;
@@ -558,7 +558,7 @@
 #X obj 1000 190 r \$0-openlog;
 #X msg 1000 230 click;
 #X obj 1000 290 text define \$0-log;
-#X text 20 560 in-l and in-r are filtered out: ten a second \, and they say nothing about what the screen is doing., f 46;
+#X text 20 560 out-l and out-r are filtered out: ten a second \, and they say nothing about what the screen is doing., f 46;
 #X text 420 560 Right to left: the frame number \, the next line number \, then the content \, since both are cold inlets., f 46;
 #X text 820 560 text set past the end appends \, so the log grows with nothing tracking its length (Reference \, pure-data)., f 46;
 #X text 820 700 Stamped with the frame number \, so gaps read as tenths of a second and line up with the screen., f 46;

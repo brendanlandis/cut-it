@@ -65,7 +65,7 @@ table and nothing else, since a commit from a Launchpad pad would have no screen
 load (Reference).
 
 `gShowInfoBar` toggles mother's VU meters (Reference). **Cut It turns it off.** The four meters are
-only 11 segments each and Cut It shows its own input levels far more legibly at 24 px; battery and wifi
+only 11 segments each and Cut It shows its own output levels far more legibly; battery and wifi
 are not worth a permanent eighth of the screen on a device that mostly runs on mains. **The cost is
 that nothing shows signal presence when the display is doing something else — accepted.**
 

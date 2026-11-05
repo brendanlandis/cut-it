@@ -46,7 +46,7 @@ needs no change to any display.
 
 | Selector | Carries | Layer | Evidence | Item |
 |----------|---------|-------|----------|------|
-| `in-l` `in-r` | `<dB>` from `u_level` | home | verified | — |
+| `out-l` `out-r` | `<dB>` from `u_level`: what Cut It sends out, left and right ([audio.md](audio.md)) | home | verified | — |
 | `status` | One symbol, the footer status | home | verified | — |
 | `modal` | One symbol — **sticky** until cleared | modal | verified | — |
 | `modal-off` | Nothing | clears modal | verified | — |
@@ -64,7 +64,7 @@ Write `launchpad-silent`, not `launchpad silent`.
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
-| `home` | 0 | Always active | Never | Two meters, 8px readouts, gate marks, footer | verified | — |
+| `home` | 0 | Always active | Never | Two output meters, 8px readouts, footer | verified | — |
 | `param` | 1 | Any unreserved `disp` selector | `[del 1200]` | **Up to five rows that hold their positions** | verified | — |
 | `modal` | 2 | `disp` → `modal <word>` | `modal-off`, or a 30 s safety TTL | Word 16px + shrunk meters | verified | — |
 | `diag` | 3 | `disp` → `diag` | `[del 8000]` | **One 8px row per device, and the shrunk meters** | verified | 301 |
@@ -79,12 +79,12 @@ alive and the screen clears 1.2 s after your hands stop rather than after they s
 ```
 home                              param                    alert
 +------------------------+  +------------------------+  +------------------------+
-| L 43            y=0  8 |  | chop-size       y=0  8 |  |+----------------------+|
+| out-l 43        y=0  8 |  | chop-size       y=0  8 |  |+----------------------+|
 | ==========      y=10 12|  |                        |  || fail        y=6   16 ||
-|      |==|       y=23  3|  |  43 %           y=12 24|  ||                      ||
-| R 19            y=27 8 |  |                        |  || u_init      y=30   8 ||
+|                        |  |  43 %           y=12 24|  ||                      ||
+| out-r 19        y=27 8 |  |                        |  || u_init      y=30   8 ||
 | ===             y=37 12|  |                        |  || launchpad-x y=44   8 ||
-|      |==|       y=50  3|  | =========       y=48  5|  |+----------------------+|
+|                        |  | =========       y=48  5|  |+----------------------+|
 | v0.3-ready      y=54  8|  | ====            y=56  5|  +------------------------+
 +------------------------+  +------------------------+
 ```
@@ -92,7 +92,7 @@ home                              param                    alert
 | | Evidence | Item |
 |---|----------|------|
 | `env~`'s 0–100 maps to pixels as **× 1.28**, clipped to **1–128** — a zero-width `gFillArea` is untested and silence is the common case | verified | — |
-| The gate marks are **one `gBox` per meter**, spanning the noise floor to the top of the gate window — x 23 to x 38. One message instead of two ticks, and it reads as a zone. The levels those pixels come from are item 11, on [audio.md](audio.md) | verified | 11 |
+| **No gate marks** since the meters read the output (Brendan, 2026-11-04): they marked the input's noise floor and a gate window over it, item 11, and an output meter has neither (*Design*) | verified | 11 |
 | A moving knob shrinks the meters into a **full-width 5 px bottom strip**, not a corner. A corner meter here is ~40×4 px, and 24px text needs the full width anyway | verified | — |
 
 ### The param layer is a list, and rows are STABLE
@@ -266,7 +266,7 @@ flash, raises to 153.
 
 `u_mother-stub`'s eight screen rows are `cnv` objects whose **label** is the drawn text.
 **The screen log** — `open-screen-log` on the dev panel — records every `disp` message except
-`in-l`/`in-r`, stamped with the frame number:
+`out-l`/`out-r`, stamped with the frame number:
 
 ```
  0  modal booting      31  modal-off
@@ -292,11 +292,11 @@ Each is a claim and its fix. How any of them was found is in the git history.
 
 ### `[route]` matches a SELECTOR, not a list's first element
 
-⛔ `[route in-l]` does not match a `list` whose first element is `in-l`, and `[list prepend in-l]`
+⛔ `[route out-l]` does not match a `list` whose first element is `out-l`, and `[list prepend out-l]`
 produces exactly that. Without a trim **every `disp` message is silently rejected and the display
 just shows zero** (C-6).
 
-**Fix:** finish assembled `disp` messages with `[list trim]`. A message box typed `in-l 42 dB` is
+**Fix:** finish assembled `disp` messages with `[list trim]`. A message box typed `out-l 42 dB` is
 already the right shape and needs nothing.
 
 ### A new selector on `disp` costs one `route` argument in every consumer that has a fallthrough
@@ -358,6 +358,18 @@ red for a second and then returns to `home` (item 296).
 After that a replug will not recover the grid. See [launchpad.md](../device/launchpad.md).
 
 ## Design
+
+### The meters are the output, and nothing on them marks the input
+
+**The OLED is for alerts and warnings, the output's levels and the name of a control as it moves**
+(Brendan, 2026-11-04), so home's two meters are what Cut It sends out, left and right, read where
+`u_root` throws them ([audio.md](audio.md), *The output is summed in `u_root`, and metered there*).
+The readouts say so, `out-l` and `out-r`, and the screen log and the bus use the same names.
+
+**The gate marks went with the input.** They were a box under each meter from the input's noise
+floor to where a noise gate on the input would sit — a guide to setting a gate on what came in. An
+output meter has no gate behind it and no fixed floor: what it shows is how near the output is to
+full scale, and full scale is the bar's right edge.
 
 ### Callers send semantics, never layout
 

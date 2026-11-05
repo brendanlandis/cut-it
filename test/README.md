@@ -27,10 +27,10 @@ were false.
 |---|---|---|
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 16 | `module/boot` |
-| `audio-assert.sh` | 12 | `module/audio` |
+| `audio-assert.sh` | 22 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
 | `display-assert.sh` | 46 | `module/display` — the grid, page 3's synth pads and page 1's tap pad included |
-| `oled-assert.sh` | 63 | `module/display` — the OLED |
+| `oled-assert.sh` | 65 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 63: 33 in Lua, 30 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
@@ -47,7 +47,7 @@ were false.
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 185: 129 in Lua, 56 in Pd | `module/sequencer` |
-| `kit-assert.sh` | 16 | `module/sequencer` — the kit, as a signal |
+| `kit-assert.sh` | 17 | `module/sequencer` — the kit, as a signal |
 | `synths-assert.sh` | 91: 66 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
 **1242 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one
@@ -95,6 +95,15 @@ a traceback in `lib_grid`'s message for an RGB cell, fixed); `touchosc-assert` o
 handler (3) and old `MAIN` (4); `nano-assert`'s fader and `sequencer-assert` (34, its page 1
 among them) on the map before the drum page moved.
 
+✅ **The OLED's revision was made to fail, check by check** (Brendan's split, 2026-11-04: alerts and
+warnings, the output's levels and the name of a control as it moves), each against the code
+before its step. The output meters: `audio-assert` on the old `u_root`, `c_kit` and `g_oled` (8
+failed: `c_kit`'s own `throw~ outL`, the meters named and fed from the input, and `out-l` still
+while a drum played and the input was silent), and with `out-l` renamed but left on the input (2:
+its cords, and the drum it never saw); `kit-assert` on the old `c_kit` (6: no `outlet~` to record
+or to cord into the sum); `oled-assert` on the old `g_oled` (3: the `L` and `R` readouts, the two
+gate marks' `gBox`es).
+
 ✅ **The phone's pages, the arrangement screen, tap tempo and the velocity switch were each made to
 fail** (2026-11-04), against the code without the change or a mutation of it. `phone-assert`: the
 old `u_net` (46 failed: the mirror's three addresses, the diagnostics reaching things, no tempo or
@@ -121,7 +130,8 @@ surfaces gets two gates for the same reason.
 **No page declares `Gate: none` any more.** `module/audio`, `device/nanokontrol` and
 `device/organelle` were the last three, and each has its own gate now. ⛔ **`audio-assert.sh` and
 `kit-assert.sh` are the two that read a SIGNAL back** — the first records `u_root`'s output to a
-soundfile and asserts the passthrough is not silent, not swapped and not attenuated; the second
+soundfile and asserts the passthrough is not silent, not swapped and not attenuated, that a drum
+reaches the left alone, and that the meters read that output and not the input; the second
 records `c_kit`'s drums and asserts their levels, silences and retrigger. Every other gate here
 asserts on messages, which is what made the audio path invisible for as long as it was.
 

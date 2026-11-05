@@ -1,6 +1,6 @@
 #N canvas 20 20 2100 1050 12;
-#X text 20 20 c_kit -- the drums \, played in Pd: sixteen c_voice \, one a pad \, into the drums' output. It takes the pad messages c_steps sends \, so the sequencer and the drum page play it as they played the SP-404. ref/module/sequencer.md, f 70;
-#X text 20 130 creation args: none. inlet: pad <1..16> <velocity> \, a pad past 16 ignored. outlets: none -- the voices go to throw~ outL \, the drums' side as the 404's were (C-4). At load it reports on err how many of the sixteen samples it found (C-12)., f 70;
+#X text 20 20 c_kit -- the drums \, played in Pd: sixteen c_voice \, one a pad \, summed into its outlet~. It takes the pad messages c_steps sends \, so the sequencer and the drum page play it as they played the SP-404. ref/module/sequencer.md, f 70;
+#X text 20 130 creation args: none. inlet: pad <1..16> <velocity> \, a pad past 16 ignored. outlet~: the sixteen voices \, summed \, mono -- u_root adds them to the left output \, where the OLED's meter reads them with the mic (ref/module/audio.md). At load it reports on err how many of the sixteen samples it found (C-12)., f 70;
 #X obj 20 300 inlet;
 #X obj 20 340 route pad;
 #X obj 20 380 route 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16;
@@ -20,7 +20,7 @@
 #X obj 770 520 c_voice 14 \$0;
 #X obj 920 520 c_voice 15 \$0;
 #X obj 1070 520 c_voice 16 \$0;
-#X obj 20 620 throw~ outL;
+#X obj 20 620 outlet~;
 #X obj 1300 300 r \$0-loaded;
 #X obj 1300 340 t b;
 #X obj 1300 380 f;

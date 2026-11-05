@@ -209,10 +209,13 @@ def audio(g):
     # A harness holding u_root alone, not main-dev.pd: catch~ must be unique and
     # u_mother-stub already holds catch~ outL and outR, so a second pair would
     # fail to create and record silence. The state directory is u_root's arg.
-    S.require("Cut It/u_root.pd", "Cut It/u_level.pd")
-    # Its u_root holds u_net, so its OSC goes to a sink here, not to the phone.
+    S.require("Cut It/u_root.pd", "Cut It/u_level.pd", "Cut It/c_kit.pd",
+              "Cut It/cut-it-drum-page.txt")
+    # Its u_root holds u_net, so its OSC goes to a sink here, not to the phone. The
+    # generator writes pad 1's sample into the copy's samples/drums, as kit's does.
     s, cap = _harness_gate(
-        g, 45, lambda s: s.state, lambda s: s.path("out.wav"), prep=lambda s: s.net_off(),
+        g, 45, lambda s: s.state, lambda s: s.path("out.wav"), lambda s: s.patch,
+        prep=lambda s: s.net_off(),
         why=["      Without it nothing instantiates u_root, nothing records, and",
              "      the gate would report a silent audio path rather than a",
              "      broken test."])

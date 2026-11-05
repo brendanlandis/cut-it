@@ -98,6 +98,16 @@ def run_asserts(cap):
         A.check("the footer carries the status it was given",
                 "gate-home" in words(last("HOME")),
                 "drew %s" % words(last("HOME")))
+        # The readouts name what u_level reads, Cut It's output (2026-11-04).
+        heads = [ws[0] for y, sz, ws in rows(last("HOME")) if sz == 8 and ws and y < 50]
+        A.check("⛔ the meters' readouts are out-l and out-r, top to bottom",
+                heads == ["out-l", "out-r"],
+                "the 8px readouts drew %s. in-l and in-r were the input's" % heads)
+        # The gate marks were a gBox each under the meters: the input's noise
+        # floor and a gate window, which an output meter has neither of.
+        boxes = [v for v in last("HOME") if v[:2] == ["sendtyped", "/oled/gBox"]]
+        A.check("⛔ no gate marks: home draws no gBox at all",
+                not boxes, "drew %s" % boxes)
 
     # ---- a parameter, and its 1200 ms TTL ---------------------------------
     print("\n--- the param layer, and its TTL ---")
@@ -332,7 +342,7 @@ def run_asserts(cap):
         drawn = words(last("DIAG-TTL"))
         A.check("...and diag expires on its own TTL and gives home back",
                 not [s for s in DIAG_SOURCES if s in drawn]
-                and "L" in drawn and "R" in drawn,
+                and "out-l" in drawn and "out-r" in drawn,
                 "drew %s. It is a summoned readout on a retriggered [delay], "
                 "not a modal: nothing clears it explicitly" % drawn)
 

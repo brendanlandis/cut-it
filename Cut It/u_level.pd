@@ -1,6 +1,6 @@
 #N canvas 40 40 1000 840 12;
 #X text 20 20 u_level -- reports the level of a signal onto the disp bus. Tap it off anything you want to watch: it has no signal outlet and does not alter the audio., f 58;
-#X text 20 95 creation arg 1: the name to report under \, e.g. in-l. REQUIRED -- without it the bus carries 0 as the name. inlets: one signal. outlets: none., f 58;
+#X text 20 95 creation arg 1: the name to report under \, e.g. out-l. REQUIRED -- without it the bus carries 0 as the name. inlets: one signal. outlets: none., f 58;
 #X obj 20 220 inlet~;
 #X obj 20 260 env~;
 #X obj 20 350 f;

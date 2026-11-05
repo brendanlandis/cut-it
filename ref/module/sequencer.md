@@ -82,7 +82,7 @@ kit*, below.
 
 | | Is | Evidence |
 |---|---|---|
-| `c_kit` | Takes `pad <1..16> <velocity>` from `c_steps`' outlet 1, a pad past 16 ignored, and holds sixteen `c_voice`, one a pad, thrown to `outL` | unknown |
+| `c_kit` | Takes `pad <1..16> <velocity>` from `c_steps`' outlet 1, a pad past 16 ignored, and holds sixteen `c_voice`, one a pad, summed out its `outlet~`, which `u_root` adds to the left output where the OLED meters it ([audio.md](audio.md)) | unknown |
 | A sample | `samples/drums/NN.wav` in the patch's own folder, NN its pad, `01` to `16`: mono 16-bit WAV at 44.1 kHz, as `tools/samples.sh` writes it. Read by `c_voice` at load into a table of its own | unknown |
 | A hit | Plays its pad's sample from the start. The level dips to 0 in 2 ms and the read restarts, so a hit cuts the one before, as a one-shot pad on the 404 did, without a click | unknown |
 | Velocity | 30 dB of range, even in dB: 127 is 0 dB, 95 (level 6) about −7.6, 16 (level 1) about −26. 0 plays nothing | unknown |

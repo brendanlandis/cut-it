@@ -394,7 +394,7 @@ equal("... five rows, each its number, name and length: bars, a bar, or loop",
       "verse 2" })
 equal("⛔ the selected row is lit, by the state, and nothing goes back",
       { C.row3.values.x, C.row1.values.x, #w.sent }, { 1, 0, 0 })
-check("... its words black on the lit fill, the others white and grey",
+check("... its words black on the lit fill, the others white and gray",
       black(C.row3l.textColor) and black(C.row3lenl.textColor) and not black(C.row1l.textColor),
       T.show({ C.row3l.textColor, C.row1l.textColor }))
 equal("a row tapped selects the section it shows", L.press(w, "row2"),

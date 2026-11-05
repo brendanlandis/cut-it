@@ -574,7 +574,7 @@
 #X obj 5000 430 * 154;
 #X obj 5000 490 t f b;
 #X msg 5140 550 108;
-#X text 4300 880 The edges \, on every page: the top row's eight \, CC 91 to 98 \, from u_song's top <8 lamps> \, and save and revert \, CC 108 and 8 \, from its unsaved. A lamp is 0 dark \, 1 a section \, 155 \, dim green \, 2 the section playing \, 156 \, full green \, 3 the one queued \, full on the even beats and dark on the odd \, so it blinks on the beat row's clock \, and 4 an arrow with somewhere to go \, palette 1 \, dim. Unsaved \, save is 154 \, red \, and revert 157 \, grey (Brendan \, 2026-11-05). Dark otherwise., f 58;
+#X text 4300 880 The edges \, on every page: the top row's eight \, CC 91 to 98 \, from u_song's top <8 lamps> \, and save and revert \, CC 108 and 8 \, from its unsaved. A lamp is 0 dark \, 1 a section \, 155 \, dim green \, 2 the section playing \, 156 \, full green \, 3 the one queued \, full on the even beats and dark on the odd \, so it blinks on the beat row's clock \, and 4 an arrow with somewhere to go \, palette 1 \, dim. Unsaved \, save is 154 \, red \, and revert 157 \, gray (Brendan \, 2026-11-05). Dark otherwise., f 58;
 #X connect 2 5 163 0;
 #X connect 163 2 176 0;
 #X connect 163 1 164 0;

@@ -104,7 +104,7 @@ written failing in silence (1), a copy named after the whole name, "verse 2 2" (
 section playing without starting another (1), STOP leaving a section queued (2). `c_steps_test.lua`:
 no `bar` (7), the bar counted on the time signature (4), a restore that leaves the loops where they
 were (2), the swing and the last step left out of the line (26); `c_synth_test.lua`: no program
-sent (4). `song-assert`'s Pd half: `g_grid` painting the section playing dim, save grey and a queued
+sent (4). `song-assert`'s Pd half: `g_grid` painting the section playing dim, save gray and a queued
 section solid (12); `c_synth` deaf to `restore programs`, `c_steps` restarting no loop and deaf to
 `section-1-drums`, together (16); the draft never flushed (Lua 3, Pd 4); a press while playing at
 once (Lua 12, Pd 4); a length ignored (Lua 3, Pd 8). `init-assert`, `u_root`'s trigger reversed so

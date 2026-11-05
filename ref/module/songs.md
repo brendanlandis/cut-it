@@ -95,7 +95,7 @@ Each part puts at load and on every change, and takes its restore.
 |---|---|---|
 | Save, CC 108 (the upper bottom row's rightmost) | The draft becomes the saved song, both files written at once, and `info u_song saved`. With nothing unsaved, nothing | unknown |
 | Revert, CC 8 (the lowest row's rightmost) | Every section back to the save, at once: the section playing starts again from it, or the one now in its place if it was new, and `info u_song reverted`. With nothing unsaved, nothing | unknown |
-| Their lamps | Lit only while the draft differs from the save: save red, RGB 127, 0, 0, revert grey, 40, 40, 40; dark otherwise (Brendan, 2026-11-05) | unknown |
+| Their lamps | Lit only while the draft differs from the save: save red, RGB 127, 0, 0, revert gray, 40, 40, 40; dark otherwise (Brendan, 2026-11-05) | unknown |
 | Unsaved | The song's name, its sections' order, or a section's name, length or any part differing from the save; a change put back to what was saved is saved again | unknown |
 
 ### The files

@@ -143,7 +143,7 @@ def main():
             top(e) == [ARROW, ARROW, SEC, ON, SEC, DARK, DARK, DARK], top(e))
 
     print("\n--- save and revert ---")
-    A.check("⛔ a change, the tempo 150, lights save red and revert grey",
+    A.check("⛔ a change, the tempo 150, lights save red and revert gray",
             lamps(edges(frames, "EDIT")) == (G.SAVE_ON, G.REVERT_ON), lamps(edges(frames, "EDIT")))
     A.check("⛔ revert: verse as saved, at once: its tempo 240 and its programs again",
             tempos(W("REVERT")) == [240.0] and programs(W("REVERT")) == [(21, FM), (6, STRINGS)],

@@ -279,11 +279,11 @@ float, so they start dark until `u_song` speaks.
 | The same, the section playing | Full green, RGB 0, 127, 32 | unknown |
 | The same, the section queued | Full green on the beat row's even beats and dark on its odd, so it blinks on the beat, at no cost: the beat row's change repaints anyway | unknown |
 | CC 108, save, with anything unsaved | Red, RGB 127, 0, 0, the selected drum pad's entry (Brendan, 2026-11-05) | unknown |
-| CC 8, revert, with anything unsaved | Grey, RGB 40, 40, 40 | unknown |
+| CC 8, revert, with anything unsaved | Gray, RGB 40, 40, 40 | unknown |
 | Any of them otherwise | Dark | unknown |
 
 ⚠️ **They are RGB specs, 155 to 157 on the surface**: entries 27 to 29 of the RGB table, a section
-dim and full and revert's grey, after the selected pad's red, 154, which save shares.
+dim and full and revert's gray, after the selected pad's red, 154, which save shares.
 
 ### Seeing it off-device
 

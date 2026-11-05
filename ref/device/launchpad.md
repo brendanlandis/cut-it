@@ -190,7 +190,7 @@ section when the pattern next comes round, and a press while it is stopped at on
 the lowest row's rightmost, reverts it** (Brendan, 2026-11-04). The map binds them on every page,
 as `section`, `save` and `revert`, to `u_song` ([songs.md](../module/songs.md)); `g_grid` lights
 them from `u_song`'s state, the playing section solid, a queued one blinking, save red and revert
-grey while anything is unsaved ([display.md](../module/display.md)). They held the mode selector
+gray while anything is unsaved ([display.md](../module/display.md)). They held the mode selector
 until it moved to the left column.
 
 ⚠️ **The objection above applies to everything on this surface**, `recover` on CC 90 included; the

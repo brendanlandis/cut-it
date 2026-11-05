@@ -45,11 +45,11 @@ each thing behaves as it does: [songs](../../ref/module/songs.md).
 - [ ] **6. A change lights save and revert**
   - **Need:** Nothing changed since the last save: both rightmost bottom buttons dark.
   - **Do:** On page 2, turn on one step of the playing section's drum pattern.
-  - **Pass if:** The upper bottom row's rightmost button lights red and the lowest row's rightmost grey, at once. Turning the step off again puts both out.
+  - **Pass if:** The upper bottom row's rightmost button lights red and the lowest row's rightmost gray, at once. Turning the step off again puts both out.
 
 - [ ] **7. Revert**
   - **Need:** A step turned on since the last save, both lamps lit.
-  - **Do:** Press the lowest row's rightmost button, the grey one.
+  - **Do:** Press the lowest row's rightmost button, the gray one.
   - **Pass if:** The step goes off on page 2 and the drums play the saved pattern, at once; both lamps go dark.
 
 - [ ] **8. Save, and a reload**

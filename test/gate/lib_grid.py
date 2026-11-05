@@ -36,7 +36,7 @@ MIDI_RE = re.compile(r"^MIDIOUT:\s+(-?\d+)\s+(-?\d+)\s*$")
 # arrows, then the six section buttons -- from u_song's top <8 lamps>, and save and revert, CC
 # 108 and 8, from its unsaved. Read out of g_grid.pd's RGB table (entries 26, 27, 28 and 29) and
 # its palette: an arrow is palette 1, dim; a section dim green, the one playing full green, the
-# one queued full and dark by turns; save red and revert grey while anything is unsaved.
+# one queued full and dark by turns; save red and revert gray while anything is unsaved.
 TOP = tuple(range(91, 99))
 SAVE, REVERT = 108, 8
 SECTION_DIM, SECTION_ON = (0, 32, 8), (0, 127, 32)

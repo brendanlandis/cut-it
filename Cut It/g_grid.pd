@@ -402,8 +402,8 @@
 #X obj 2420 1020 * -8;
 #X obj 2350 1060 +;
 #X obj 2350 1110 + 135;
-#X text 2620 1020 The selected pad is 154 \, pink at full \, and the rest 144 \, pink at a quarter: near black they read too indistinct (Brendan \, 2026-11-05)., f 30;
-#X text 2100 1560 A step past the last step is dark \, lit or not: <= gives 1 inside and 0 past it \, which is the off color and gates the on one. A color of 128 or more is an RGB entry in paint's table: 128 + level - 1 at full brightness \, 136 + level - 1 at a quarter \, 144 for a pad not selected \, pink at a quarter \, and 154 for the selected pad \, pink at full (Brendan \, 2026-11-05). 145 is a bar's first step \, blue: the off color is inside x (1 + 144 x ((step - 1) mod bar == 0)) \, so 1 \, 145 or 0 \, dark. 146 is a repeat pad \, 147 the one held. A step is the level c_steps sends \, 0 for off \, and a velocity button its own level \, full when selected., f 60;
+#X text 2620 1020 The selected pad is 154 \, red \, and the rest 144 \, bright pink (Brendan \, 2026-11-05): near black they read too indistinct \, and a dim pink with a bright one too faint., f 30;
+#X text 2100 1560 A step past the last step is dark \, lit or not: <= gives 1 inside and 0 past it \, which is the off color and gates the on one. A color of 128 or more is an RGB entry in paint's table: 128 + level - 1 at full brightness \, 136 + level - 1 at a quarter \, 144 for a pad not selected \, bright pink \, and 154 for the selected pad \, red (Brendan \, 2026-11-05). 145 is a bar's first step \, blue: the off color is inside x (1 + 144 x ((step - 1) mod bar == 0)) \, so 1 \, 145 or 0 \, dark. 146 is a repeat pad \, 147 the one held. A step is the level c_steps sends \, 0 for off \, and a velocity button its own level \, full when selected., f 60;
 #X connect 66 1 93 0;
 #X connect 93 0 75 0;
 #X connect 93 2 94 0;
@@ -610,10 +610,10 @@
 #X obj 1300 1300 tabread \$0-rgb;
 #X obj 1800 420 array define \$0-rgb 81;
 #X obj 1800 480 loadbang;
-#X msg 1800 540 127 127 127 127 109 109 127 91 91 127 73 73 127 54 54 127 36 36 127 18 18 127 0 0 32 32 32 32 27 27 32 23 23 32 18 18 32 14 14 32 9 9 32 4 4 32 0 0 32 5 18 16 40 127 20 8 32 80 24 127 127 56 0 32 14 0 0 96 127 0 24 32 32 24 0 127 96 0 127 20 72;
+#X msg 1800 540 127 127 127 127 109 109 127 91 91 127 73 73 127 54 54 127 36 36 127 18 18 127 0 0 32 32 32 32 27 27 32 23 23 32 18 18 32 14 14 32 9 9 32 4 4 32 0 0 127 20 72 16 40 127 20 8 32 80 24 127 127 56 0 32 14 0 0 96 127 0 24 32 32 24 0 127 96 0 127 0 0;
 #X obj 1800 640 array set \$0-rgb;
 #X text 20 1000 t f b b fires right to left: the type \, then the index \, then the color \, so a spec's bytes cannot swap. An RGB color reads its three bytes red first: t f f f fires right to left too., f 40;
-#X text 1800 760 The RGB entries \, three bytes each \, 0 to 127: the drum page's eight velocity levels at full brightness \, white for level 1 falling evenly to red for level 8 \, then the same eight at a quarter \, then a drum pad not selected \, pink at a quarter \, then a bar's first step \, blue \, and a repeat pad \, dim purple and bright purple when held \, then page 3's synth pads \, fm amber and strings cyan \, each full and at a quarter \, then page 1's tap pad \, yellow at a quarter and full while it flashes \, then the selected drum pad \, pink at full. g_grid writes 128 + k to the surface for entry k., f 50;
+#X text 1800 760 The RGB entries \, three bytes each \, 0 to 127: the drum page's eight velocity levels at full brightness \, white for level 1 falling evenly to red for level 8 \, then the same eight at a quarter \, then a drum pad not selected \, bright pink \, then a bar's first step \, blue \, and a repeat pad \, dim purple and bright purple when held \, then page 3's synth pads \, fm amber and strings cyan \, each full and at a quarter \, then page 1's tap pad \, yellow at a quarter and full while it flashes \, then the selected drum pad \, red. g_grid writes 128 + k to the surface for entry k., f 50;
 #X connect 2 0 3 0;
 #X connect 3 3 8 0;
 #X connect 3 2 6 0;

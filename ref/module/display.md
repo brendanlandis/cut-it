@@ -204,8 +204,8 @@ button is selected.
 | A step that is on | Its level, which `c_steps` works out from its velocity ([sequencer.md](sequencer.md)), in that level's RGB color: white for level 1, falling evenly to bright red for level 8 | unknown |
 | The playhead's step | 21, green, over whatever the step holds | unknown |
 | A velocity button | Its own level's color: full when selected, a quarter otherwise | verified |
-| The selected pad | Pink, full: RGB 127, 20, 72 (Brendan, 2026-11-05) | unknown |
-| Every other pad | Pink at a quarter: RGB 32, 5, 18. Near black, 6, 6, 6, they read too indistinct (Brendan, 2026-11-05); palette 1 before that read the same as the dimmest velocity button (2026-11-03). Pink is free on this page: the velocity ramp's pinks run white to red, green and blue equal, and pink leans to blue | unknown |
+| The selected pad | Red: RGB 127, 0, 0 (Brendan, 2026-11-05) | unknown |
+| Every other pad | Bright pink: RGB 127, 20, 72 (Brendan, 2026-11-05). Near black, 6, 6, 6, they read too indistinct, and so did pink at a quarter beside the selected one at full; palette 1 before that read the same as the dimmest velocity button (2026-11-03). Pink is free on this page: the velocity ramp's pinks run white to red, green and blue equal, and pink leans to blue | unknown |
 | A repeat pad | Purple: RGB 20, 8, 32, and 80, 24, 127 while it is held (Brendan, from a mockup, 2026-11-04) | unknown |
 
 **The beat row gives way**, and the right 4×4's second row stays dark. The mode lamps are drawn
@@ -215,8 +215,8 @@ as in every mode.
 even white-to-red ramp in it (Reference), so `g_grid`'s surface holds 128 + *k* for entry *k* of its
 own RGB table, and the paint loop sends those cells as type 3, red, green and blue: red 127, and
 green and blue 127, 109, 91, 73, 54, 36, 18, 0 for levels 1 to 8; the quarter is each over four;
-32, 5, 18 for a pad not selected; 16, 40, 127 for a bar's first step; 20, 8, 32 and 80, 24,
-127 for a repeat pad and the one held; and 127, 20, 72 for the selected pad, entry 26, after the
+127, 20, 72 for a pad not selected; 16, 40, 127 for a bar's first step; 20, 8, 32 and 80, 24,
+127 for a repeat pad and the one held; and 127, 0, 0 for the selected pad, entry 26, after the
 synth and tap entries.
 ✅ On the rig the eight read as eight, white to red (Brendan, 2026-11-03).
 

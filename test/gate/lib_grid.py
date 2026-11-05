@@ -153,9 +153,10 @@ LEVEL_RGB = ((127, 127, 127), (127, 109, 109), (127, 91, 91), (127, 73, 73),
              (127, 54, 54), (127, 36, 36), (127, 18, 18), (127, 0, 0))
 LEVEL_DIM = ((32, 32, 32), (32, 27, 27), (32, 23, 23), (32, 18, 18),
              (32, 14, 14), (32, 9, 9), (32, 4, 4), (32, 0, 0))
-# The drum pads, pink: at a quarter when not selected, full when selected (Brendan, 2026-11-05:
-# near black they read too indistinct). The selected pad no longer takes the velocity's color.
-PAD_DIM, PAD_ON = (32, 5, 18), (127, 20, 72)
+# The drum pads: bright pink, and the selected one red (Brendan, 2026-11-05: near black they read
+# too indistinct). The selected pad no longer takes the velocity's color. PAD_DIM keeps its name
+# for what every pad but one is.
+PAD_DIM, PAD_ON = (127, 20, 72), (127, 0, 0)
 BAR_START = (16, 40, 127)       # a bar's first step, off: blue
 REP_DIM, REP_HELD = (20, 8, 32), (80, 24, 127)   # a repeat pad, and the one held: purple
 

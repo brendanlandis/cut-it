@@ -158,7 +158,7 @@ def page_check(frame, lay, pat, track, lvl, head=None, last=16, rep=0):
             sorted(n for n, full in vel.items() if full), lvl)
     pads = {n: c for n, c in page["pad"].items() if c != G.PAD_DIM}
     if pads != {track: G.PAD_ON}:
-        return "pads lit %s, want pad %d lit pink, the rest pink at a quarter" % (pads, track)
+        return "pads lit %s, want pad %d red, the rest bright pink" % (pads, track)
     reps = {n: G.REP_HELD if n == rep else G.REP_DIM for n in range(1, 5)}
     if page["rep"] != reps:
         return "repeat pads %s, want %s" % (page["rep"], reps)

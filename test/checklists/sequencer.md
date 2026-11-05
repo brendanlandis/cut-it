@@ -7,13 +7,13 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 - [ ] **1. The drum page**
   - **Need:** A fresh load of the patch with no saved pattern — the selection resets at every load and a saved step would be lit.
   - **Send:** `stop bang; mode mode-2`
-  - **Pass if:** The left column has its second lamp down bright. The top four rows of pads are the steps: the top two dim but the first, which is blue as a bar's first step, and the two under them dark, since the last step is 16. The bottom-left four by four is pink, dim, with its bottom-left pad bright pink. The right halves of the bottom two rows are the eight velocity buttons — white at the top left to red at the bottom right, with the second one on the bottom row brighter than the rest. The top row of the right four by four is dim purple and the row under it dark, and nothing walks along the bottom row.
+  - **Pass if:** The left column has its second lamp down bright. The top four rows of pads are the steps: the top two dim but the first, which is blue as a bar's first step, and the two under them dark, since the last step is 16. The bottom-left four by four is bright pink, with its bottom-left pad red. The right halves of the bottom two rows are the eight velocity buttons — white at the top left to red at the bottom right, with the second one on the bottom row brighter than the rest. The top row of the right four by four is dim purple and the row under it dark, and nothing walks along the bottom row.
   - **Note:** Level 6 is the bottom row's second velocity button; track 1 is the bottom-left drum pad. Both reset at every load ([sequencer](../../ref/module/sequencer.md)).
 
 - [ ] **2. A drum pad plays and selects**
   - **Need:** Drum samples in `samples/drums/`, deployed with the patch (`tools/samples.sh`).
   - **Do:** Press the top-left drum pad.
-  - **Pass if:** Pad 13's sample plays at once through mixer channel 1, at full volume however hard it is pressed. That pad lights bright pink and the bottom-left one goes dim pink. The OLED draws no row for it.
+  - **Pass if:** Pad 13's sample plays at once through mixer channel 1, at full volume however hard it is pressed. That pad turns red and the bottom-left one goes back to pink. The OLED draws no row for it.
 
 - [ ] **3. Velocity buttons**
   - **Do:** Press the top-left velocity button, then the bottom-right one.

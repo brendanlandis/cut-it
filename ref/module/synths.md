@@ -15,6 +15,10 @@ everywhere ([nanokey.md](../device/nanokey.md)).
 switch while a chord is held leaves those notes on the synth that started them, and their releases
 follow them there, so nothing hangs; the next key plays the new choice.
 
+**It also holds the velocity switch** (Brendan, 2026-11-04): on, a key's velocity reaches the synth;
+off, every note-on goes out at 127, on either synth, and a release stays 0. The phone's synths screen
+flips it; the Launchpad has no control for it.
+
 **Its rules are Lua, and its cords are Pd**, as the sequencer's are: `c_synth.lua` holds the choice
 and which synth each held key went to, as plain Lua that runs on the Mac without Pd, and
 `c_synth.pd` keeps the cords and the state bus, asking the Lua through one pdlua object,
@@ -26,16 +30,17 @@ and which synth each held key went to, as plain Lua that runs on the Mac without
 
 | | Is | Evidence |
 |---|---|---|
-| Inlet | `<note> <velocity>` from `m_nanokey`, 0 a release; `synth <choice>` from `u_map`'s `synth` destination (a page-3 pad's press) and from `u_net` (the phone's `/cutit synth <choice>`) | unknown |
+| Inlet | `<note> <velocity>` from `m_nanokey`, 0 a release; `synth <choice>` from `u_map`'s `synth` destination (a page-3 pad's press) and from `u_net` (the phone's `/cutit synth <choice>`); `velocity <on or off>` from `u_net` (the phone's `/cutit velocity <on or off>`) | unknown |
 | Outlet 1 | `note <n> <v>` to `m_volca` | unknown |
 | Outlet 2 | `note <n> <v>` to `m_streich` | unknown |
 | Outlet 3 | `synth <choice>` to `u_net`'s third inlet, which sends `/cutit/synth <choice>` to the phone at once and on every heartbeat ([phone.md](../device/phone.md)) | unknown |
 | Outlet 4 | `synth <choice>` to `g_grid`'s fourth inlet, which paints page 3's pads ([display.md](display.md)) | unknown |
-| `state` | `put auto synth <choice>` on every change; `restore synth <choice>` at ~3.5 s | unknown |
-| `err` | `fail c_synth bad-synth` for a choice it does not know, `bad-selector` for a message, `lua-<selector>` for a throw, `no-lua` when the Lua never loaded (C-12) | unknown |
+| Outlet 5 | `velocity <on or off>` to `u_net`'s third inlet, which sends `/cutit/velocity` to the phone at once and on every heartbeat | unknown |
+| `state` | `put auto synth <choice>` and `put auto velocity <on or off>` on every change; `restore synth <choice>` and `restore velocity <setting>` at ~3.5 s | unknown |
+| `err` | `fail c_synth bad-synth` for a choice it does not know, `bad-velocity` for a setting, `bad-selector` for a message, `lua-<selector>` for a throw, `no-lua` when the Lua never loaded (C-12) | unknown |
 
-Outlets 3 and 4 carry the choice at load, at the restore and on every change, never on a choice
-that changes nothing.
+Outlets 3 and 4 carry the choice, and outlet 5 the velocity switch, at load, at the restore and on
+every change, never on a change that changes nothing.
 
 ### What it does
 
@@ -47,8 +52,10 @@ that changes nothing.
 | A release with no press on record | Goes to the synth chosen now: a note-off nothing holds is harmless, and one sent nowhere could leave a note hanging | unknown |
 | `synth <choice>` | Changes the choice and says so; the same choice again changes nothing and says nothing; a choice it does not know is `bad-synth` and changes nothing | unknown |
 | A value of 0 after the choice | A release, ignored; `u_map` sends presses alone and the phone no value | unknown |
-| At load | `fm`, sent to the pads, the phone and the store | unknown |
-| The restore | The saved choice comes back at ~3.5 s and is put straight back; one that names no synth keeps the one in force and is repaired by the same put ([state.md](state.md), *A contributor must put back what it restores*) | unknown |
+| `velocity off` | Every note-on from then goes out at 127, on either synth; a release stays 0, so a key held through the switch still lets go (Brendan, 2026-11-04) | unknown |
+| `velocity on` | A key's own velocity reaches the synth again. The same setting twice says nothing; anything else is `bad-velocity` | unknown |
+| At load | `fm` and velocity `on`, sent to the pads, the phone and the store | unknown |
+| The restore | The saved choice and switch come back at ~3.5 s and are put straight back; one that names no synth, or neither on nor off, keeps the one in force and is repaired by the same put ([state.md](state.md), *A contributor must put back what it restores*) | unknown |
 | Panic | Not heard here: each synth's layer sends its own All Notes Off, CC 123, on its own channel | unknown |
 
 ### Page 3 on the Launchpad
@@ -70,18 +77,18 @@ The beat row stays on row 1, as on every page but the drums. What each cell pain
 
 | | Lives in | Evidence |
 |---|---|---|
-| The choice, which synth each held key went to, the restore | `c_synth.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
-| Turning messages into those calls and their answers into outlets | `c_synth-lua.pd_lua`, the class `c_synth-lua`: two inlets (keys and choices; `c_synth.pd`'s own `restore` and `init`), six outlets (the Volca, the Streichfett, the choice, the choice to save, `err`, a bang on `init`) | verified |
-| The cords out, `put auto synth`, the restore off the `state` bus, the `no-lua` guard | `c_synth.pd` | verified |
+| The choice, which synth each held key went to, the velocity switch, the restores | `c_synth.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
+| Turning messages into those calls and their answers into outlets | `c_synth-lua.pd_lua`, the class `c_synth-lua`: two inlets (keys, choices and the switch; `c_synth.pd`'s own `restore`, `restore-velocity` and `init`), seven outlets (the Volca, the Streichfett, the choice, the key and value to save, `err`, a bang on `init`, the switch for the phone) | verified |
+| The cords out, `put auto` under the key the Lua names, the restores off the `state` bus, the `no-lua` guard | `c_synth.pd` | verified |
 | What a page-3 press means | `u_map`'s `synth` destination, which looks the cell up in the layout ([map.md](map.md)) | verified |
 
-### The choice in the state store
+### The choice and the switch in the state store
 
 | | | Evidence |
 |---|---|---|
-| Key | `synth`, an `auto` key in `cut-it-auto.txt` | unknown |
-| Line | `synth fm` or `synth strings`, written and read back by `synths-assert` | verified |
-| Written | `put auto synth` at load and on every change; `u_state` flushes within 2 s | unknown |
+| Keys | `synth` and `velocity`, two `auto` keys in `cut-it-auto.txt` | unknown |
+| Lines | `synth fm` or `synth strings`, and `velocity on` or `velocity off`, written and read back by `synths-assert`, which boots with `strings` and `off` saved | verified |
+| Written | `put auto synth` and `put auto velocity` at load and on every change; `u_state` flushes within 2 s | unknown |
 
 ## Traps
 
@@ -135,13 +142,22 @@ pressure stream.
 The phone and the pads are the two places that show the choice, and each gets it on a cord into a
 file that already shows `c_synth`'s neighbors' state: `u_net`'s third inlet beside `c_steps`' drum
 state, and `g_grid`'s fourth inlet beside the drum page's. A bus would be a new name on C-2's
-allowlist for something one file publishes and two files read.
+allowlist for something one file publishes and two files read. The velocity switch has an outlet
+of its own, into the same inlet of `u_net`, since only the phone shows it: on the choice's outlet
+it would reach `g_grid`, which would refuse it as `bad-selector`.
 
-### One auto key, for now
+### The velocity switch is the router's
 
-The choice is a running value, put whenever it changes, as the page is ([map.md](map.md), *`mode`
-is persisted; the table is not*). Sections will own it, each with its synth, when songs arrive
-(`cut-it/songs-and-sections`).
+Every note-on already passes through `c_synth` on its way to one synth or the other, so one line of
+the router covers both synths and every page; a switch in each synth's layer would be two to keep
+in step. Releases are left alone: a 0 forced to 127 would be a new note. The Launchpad has no
+control for it for now (Brendan, 2026-11-04).
+
+### Two auto keys, for now
+
+The choice and the switch are running values, put whenever they change, as the page is
+([map.md](map.md), *`mode` is persisted; the table is not*). Sections will own both, each with its
+synth, when songs arrive (`cut-it/songs-and-sections`).
 
 ### `c_`, because there can be more than one
 
@@ -151,6 +167,7 @@ second `c_synth` with its own cords. Not `u_`: nothing about it is one per instr
 ## Open
 
 - ⬜ **Not played on the rig**: each synth from the nanoKEY, a switch mid-chord, page 3's pads and
-  their colors, the phone's synths screen and the line check's toggle.
+  their colors, the phone's synths screen, its velocity switch, and the line check's toggle.
   `test/checklists/synths.md`, `cut-it/pages-and-displays`.
-- ⬜ **The choice is global until sections own it.** `cut-it/songs-and-sections`.
+- ⬜ **The choice and the velocity switch are global until sections own them.**
+  `cut-it/songs-and-sections`.

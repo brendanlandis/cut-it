@@ -1,5 +1,5 @@
--- c_synth.lua -- the synth choice and the router: which synth the nanoKEY plays, and which synth
--- each key it holds is sounding on. Plain Lua with no Pd in it, so test/gate/lua/c_synth_test.lua
+-- c_synth.lua -- the synth choice and the router: which synth the nanoKEY plays, which synth
+-- each key it holds is sounding on, and whether a key's velocity reaches it. Plain Lua with no Pd in it, so test/gate/lua/c_synth_test.lua
 -- runs it on the Mac with lua.org's interpreter. c_synth-lua.pd_lua is its Pd face, and
 -- c_synth.pd keeps the cords and the state bus. ref/module/synths.md.
 --
@@ -8,7 +8,8 @@
 -- {outlet, selector, atoms}:
 --   {"fm" | "strings", "note", {note, velocity}}   to that synth's device layer, 0 a release
 --   {"choice", "synth", {choice}}                  to u_net (the phone) and g_grid (the pads)
---   {"save", "list", {choice}}                     to u_state, as the auto key synth
+--   {"phone", "velocity", {"on" | "off"}}          to u_net (the phone) alone
+--   {"save", "synth" | "velocity", {value}}        to u_state, as the auto key it names
 --   {"err", "fail", {"c_synth", text}}             to err (C-12)
 
 local R = {}
@@ -17,6 +18,12 @@ local R = {}
 -- Streichfett. fm until something says otherwise (Brendan, 2026-11-04).
 R.SYNTHS = { "fm", "strings" }
 R.BOOT = "fm"
+
+-- The velocity switch, for both synths (Brendan, 2026-11-04): on, a key's velocity passes; off,
+-- every note-on goes out at R.FULL and a release stays 0. On until something says otherwise.
+R.VELOCITY = { on = true, off = true }
+R.BOOT_VELOCITY = "on"
+R.FULL = 127
 
 local KNOWN = {}
 for _, s in ipairs(R.SYNTHS) do KNOWN[s] = true end
@@ -36,12 +43,17 @@ end
 
 -- held[note] is the synth that note's note-on went to, while the key is down.
 function R.new()
-  return { choice = R.BOOT, held = {} }
+  return { choice = R.BOOT, held = {}, velocity = R.BOOT_VELOCITY }
 end
 
 -- The choice, out to the phone and the pads, and to u_state.
 local function tell(st)
-  return { { "choice", "synth", { st.choice } }, { "save", "list", { st.choice } } }
+  return { { "choice", "synth", { st.choice } }, { "save", "synth", { st.choice } } }
+end
+
+-- The velocity switch, out to the phone, and to u_state.
+local function tell_velocity(st)
+  return { { "phone", "velocity", { st.velocity } }, { "save", "velocity", { st.velocity } } }
 end
 
 -- A key: <note> <velocity>, 0 a release. A press goes to the synth chosen now and is remembered
@@ -59,8 +71,19 @@ function R.key(st, note, velocity)
   local out = {}
   if was and was ~= st.choice then out[#out + 1] = { was, "note", { n, 0 } } end
   st.held[n] = st.choice
+  if st.velocity == "off" then v = R.FULL end
   out[#out + 1] = { st.choice, "note", { n, v } }
   return out
+end
+
+-- velocity <on or off>, from the phone's synths screen. The same setting again changes nothing
+-- and says nothing; anything else is fail c_synth bad-velocity.
+function R.set_velocity(st, atoms)
+  local v = atoms[1]
+  if not R.VELOCITY[v] then return { R.fail("bad-velocity") } end
+  if v == st.velocity then return {} end
+  st.velocity = v
+  return tell_velocity(st)
 end
 
 -- synth <choice> [<value>], from the map (a page-3 pad) and from the phone. A value of 0 is a
@@ -82,21 +105,34 @@ function R.restore(st, atoms)
   return tell(st)
 end
 
--- At load: the choice, so the pads and the phone show it before anything is pressed.
-function R.boot(st)
-  return tell(st)
+-- u_state's restore of velocity, put straight back as the choice is; one that is neither on nor
+-- off keeps the one in force and puts that back.
+function R.restore_velocity(st, atoms)
+  if R.VELOCITY[atoms[1]] then st.velocity = atoms[1] end
+  return tell_velocity(st)
 end
 
--- What reaches the inlet: a key from m_nanokey, or synth <choice> from u_map or u_net.
+-- At load: the choice and the velocity switch, so the pads and the phone show them before
+-- anything is pressed.
+function R.boot(st)
+  local out = tell(st)
+  for _, e in ipairs(tell_velocity(st)) do out[#out + 1] = e end
+  return out
+end
+
+-- What reaches the inlet: a key from m_nanokey, synth <choice> from u_map or u_net, or
+-- velocity <on or off> from u_net.
 R.inputs = {
   list = function(st, a) return R.key(st, a[1], a[2]) end,
   float = function(st, a) return R.key(st, a[1], 0) end,
   synth = function(st, a) return R.choose(st, a) end,
+  velocity = function(st, a) return R.set_velocity(st, a) end,
 }
 
--- What c_synth.pd itself sends: u_state's restore, and the load.
+-- What c_synth.pd itself sends: u_state's restores of synth and velocity, and the load.
 R.internal = {
   restore = function(st, a) return R.restore(st, a) end,
+  ["restore-velocity"] = function(st, a) return R.restore_velocity(st, a) end,
   init = function(st) return R.boot(st) end,
 }
 

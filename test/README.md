@@ -34,26 +34,26 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 68: 33 in Lua, 35 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 189: 103 in Lua, 86 in Pd | `module/map` |
+| `map-assert.sh` | 191: 103 in Lua, 88 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
-| `song-assert.sh` | 168: 124 in Lua, 44 in Pd | `module/songs` — the sections, the top row, save and revert, the files |
+| `song-assert.sh` | 284: 217 in Lua, 67 in Pd | `module/songs` — the songs, the setlists, the keys and go, the sections, the top row, save and revert, the files |
 | `presence-assert.sh` | 49 | `module/presence` |
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 64: 39 in Lua, 25 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 134 | `device/phone` |
+| `phone-assert.sh` | 140 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 205: 36 read, 169 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `touchosc-assert.sh` | 237: 39 read, 198 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 313: 237 in Lua, 76 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 38 | `module/sequencer` — the kit and its effects, as a signal |
 | `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1712 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
+**1868 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1705**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1861**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh`, `song-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
@@ -122,6 +122,27 @@ phone), each against the code without the change, the file then restored. `c_ste
 clock set again on every change (1), no hold (stopped the run), `sync` ignored (1);
 `u_song_test.lua`: no `sync` before a press or a phone command (7), none before STOP (1), a Pd
 fraction kept as it came (1). `sequencer-assert`'s Pd half: no hold, a drag put three times (1).
+
+✅ **Several songs, the keys, go and the songs page were made to fail, check by check**
+(2026-11-05), each against a mutation of the code, the file then restored. `u_song_test.lua`: a
+song left losing its draft (6), a key while stopped waiting for its transition (9), silence
+sending no STOP (3), go doing nothing (6), the bar ignoring a song queued (8), STOP ignoring one
+(2), a key a place off (stopped the run), a rename reaching the draft alone (2), a song deleted
+left in its setlists (5), song 1's files named for its id (stopped the run), the index without the
+song loaded (5), the setlist's arrows skipping a long setlist's pages (1), no unsaved word (3), a
+new song empty (4), and the face writing no draft but the loaded song's (3), keeping a deleted
+song's files (1), sending no go lamp (4) and loading the first song over the one loaded last (2).
+`song-assert`'s Pd half: the go lamp's two colors swapped (3), its painter's cord cut (3),
+`u_song`'s cord to the stop bus cut (2), `u_map`'s song handler unwired (11), its go handler
+unwired (2), and a song left losing its draft (Lua 6, Pd 3). `map-assert`'s lint: a key naming
+another place (2), a page without go (1), go on CC 79 (2). `phone-assert`: `songs` cut from
+`u_net`'s route (9, its branch becoming the reject), the songs state's route cut (1), `delete`
+misspelt among the acknowledgments (1), and no heartbeat repeat of the songs state (3).
+`touchosc-assert`: delete sending at its first tap (Lua 2), the starts switch answering the state
+(Lua 1), the name tab naming a setlist as a song (read 2, Lua 1), load's acknowledgment lighting
+nothing (read 1, Lua 1), add misspelt (read 1, Lua 1), the setlist's page left off its pager (Lua
+1), and a lit row answering the state (Lua 2), but only with the root's check on the row gone too:
+either alone holds, by design, so taking one away passes.
 
 ✅ **The OLED's revision was made to fail, check by check** (Brendan's split, 2026-11-04: alerts and
 warnings, the output's levels and the name of a control as it moves), each against the code
@@ -525,7 +546,7 @@ exactly like a broken rate limiter.
 A mark on stdout would have to be correlated with socket timestamps afterwards; a mark *in* the
 stream arrives in true order with the data around it.
 
-**134 checks**: the known addresses and nothing else; **no `[r disp]` in `u_net`, and no
+**140 checks**: the known addresses and nothing else; **no `[r disp]` in `u_net`, and no
 `/cutit/param`, `/cutit/status` or `/cutit/alert` ever on the wire**, with a sweep, a status, an
 alert, a meter and `diag` put on `disp` (Brendan, 2026-11-04: the phone stopped copying the OLED); a
 monotonic heartbeat at 2 Hz; the tempo from `u_tempo`'s cord at once, on every heartbeat, coalesced
@@ -534,8 +555,10 @@ malformed commands do; test mode, `result` and the gone `send`; every drum and a
 out the first outlet as it came, acknowledged or not as the screens need; `synth` and `velocity`
 out the second, `tempo` out the third, each passing on what it does not know for its owner to
 refuse; `sections` out the fourth, each of the sections page's commands as it came, a name with a
-space as one string, the buttons' five acknowledged and the rest not; and the mode, `c_steps`' 88
-numbers, the choice, the velocity switch and `u_song`'s 22 atoms at once and on every heartbeat. Its rate-limit history, below, is the old mirror's, whose coalescer the tempo now uses.
+space as one string, the buttons' five acknowledged and the rest not; `songs` out the same fourth,
+`songs` kept in front, its sixteen commands in order, the buttons' ten acknowledged and the rest
+not; and the mode, `c_steps`' numbers, the choice, the velocity switch, `u_song`'s 22 atoms and its
+songs page's 47 at once and on every heartbeat, the two pages each on its own address. Its rate-limit history, below, is the old mirror's, whose coalescer the tempo now uses.
 
 ✅ **It was proven to fail before it was trusted, and for free.** `u_net` was built plumbing-first
 with no coalescer, and that build failed exactly three checks — the three rate ceilings — at
@@ -558,7 +581,7 @@ passes them; with its cord from `drums` to `c_steps` cut, all four failed with t
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       36 + 169 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       39 + 198 checks, ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
@@ -566,8 +589,9 @@ output; every control has a name of its own, since a script finds a control by n
 returns the first of two; **every screen is a page of a pager and nothing is hidden**, so the
 editor, which runs no script, reaches each by its tab: the root holds one pager, its tab bar on in
 the file, whose pages are the Launchpad's eight, as many as `u_map.lua`'s `R.PAGES`, then the
-checklist page, each holding a pager of its own with one tab named for the page, and pages 4 to 7
-and songs blank (Brendan, 2026-11-04); no diagnostic command is left; and what its buttons send
+checklist page, each holding a pager of its own with one tab named for the page, but the sections
+page's two and the songs page's three, and pages 4 to 6 blank (Brendan, 2026-11-04 and
+2026-11-05); no diagnostic command is left; and what its buttons send
 equals what `u_net` routes and `c_steps` and `c_synth` take, **the inbound vocabulary read from both
 ends**: the velocity switch asks for exactly the settings `u_net` acknowledges, and every synth button sends a synth
 `c_synth.lua`'s `R.SYNTHS` names, `u_net` acknowledges exactly those, and there is one on the synths
@@ -576,7 +600,9 @@ track's volume, pitch, last step and randomness, the four its radio chooses betw
 TouchOSC's own, vertical, its first segment on top, a word over each, and sends nothing, and so is
 the effect radio beside it, distortion, delay and reverb (Brendan, 2026-11-05), whose controls sit
 to its right and send exactly the effect commands `c_steps` takes; and a pad is a relative fader,
-about 20 points of drag a step. The phone is the only sender there is, and the
+about 20 points of drag a step. The songs page sends exactly the commands `u_song.lua`'s
+`R.songs_cmds` takes, its name tab both `name` and `set-name`, and its starts switch is a radio
+asking for exactly `R.STARTS`. The phone is the only sender there is, and the
 layout and `u_net` deploy by different routes, `push.sh` and `tools/deploy.sh`, so their spellings
 could drift apart with nothing failing until somebody is at the rig. Every acknowledgment `u_net`
 sends must light a button. **And every pairing meets WCAG AA contrast as TouchOSC draws it**: each
@@ -595,7 +621,11 @@ radio chooses, a tap that selects, a drag that sends its track's value as it sta
 never sent back, a last step dragged no further than `R.reach`), its effects (the chosen
 effect's controls shown and the others hidden, each handed the selected track's value and sending
 for that track, the reverb's size and damping for none) and buttons, the synths screen and the checklist page's FM and STRINGS, and the velocity switch, lit by
-the state and never sending when lit, the checklist page's Pass, Fail, Back and Next, nothing drawn
+the state and never sending when lit, the songs page (its rows lit by the state and a lit one
+sending nothing, load, new song, add to set, delete asking twice and lapsing after three seconds,
+the setlists tab's rows, pager and starts switch, the state's starts never sent back, and its name
+tab naming the song or the setlist by the tab it was opened from, the sections page's still
+naming a section), the checklist page's Pass, Fail, Back and Next, nothing drawn
 from a parameter, a status or an alert, and NO-LINK. The
 page is driven on a development checklist with a step on two pages, built for the run, since every
 line-check step may fit on one; the reading half holds the line check to having no Send line. **What it cannot judge is how TouchOSC draws**; the
@@ -772,16 +802,19 @@ run outside `pcall`, each died on its throwing rule.
 ## `song-assert.sh` — the song store, played from the Launchpad's edges
 
 ```sh
-./test/gate/song-assert.sh           121 + 44 checks, ~35 s — u_song's rules in Lua, then three runs of the instrument
+./test/gate/song-assert.sh           217 + 67 checks, ~50 s — u_song's rules in Lua, then four runs of the instrument
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/u_song_test.lua`, with lua.org's Lua 5.4 and no
 Pd: a fresh load, the files' text both ways, a load from the draft, the saved song or both, the top
 row stopped and playing, lengths and the last one with a length, the six buttons scrolling, the
-sections page's commands, names, save and revert, the phone's state, and `u_song-lua.pd_lua`
-through `lib_test.lua`'s stand-in for pdlua, reading and writing real files in a folder of its own,
-across reloads, a write that fails, and a throwing rule. Then **three runs of a scratch copy of the
-instrument**, one analyzer reading them all:
+sections page's commands, names, save and revert, the phone's state; several songs, the index both
+ways, a load with and without one, the songs tab's and the setlists tab's commands, the keys stopped
+and by each transition, go and its lamp, a song left keeping its draft, the songs page's state; and
+`u_song-lua.pd_lua` through `lib_test.lua`'s stand-in for pdlua, reading and writing real files in a
+folder of its own, across reloads, a song's own files made, flushed and deleted, a write that fails,
+and a throwing rule. Then **four runs of a scratch copy of the instrument**, one analyzer reading
+them all:
 
 - **The song**, booted on page 2 with three sections saved, intro, verse of two loops and chorus,
   each with every part: the top row pressed as the Launchpad sends it, the transport on its buses, a
@@ -793,7 +826,16 @@ instrument**, one analyzer reading them all:
 - **A reload** of what the first left: the draft comes back, unsaved, and revert takes it to the
   save.
 - **A first load from a state directory before sections**: the auto file's 579-number pattern, synth
-  and switch become section 1's, and the auto file lets the old keys go.
+  and switch become section 1's, and the auto file lets the old keys go. This run and the first
+  start with no index, as a state directory from before several songs, and both end with one: song
+  1, the opener of set 1.
+- **Three songs**, booted on page 8 with a setlist, gig, saved: the Organelle's keys pressed as
+  `m_organelle` publishes them, stopped, then playing by each entry's transition. Stopped, a key
+  loads at once whatever its entry says; a song changed and left keeps its change as its draft,
+  and comes back with it, unsaved; next bar waits while the go lamp blinks green and loads on the
+  step 1; go waits through the pattern coming round while the lamp blinks amber, go turns it green,
+  and the song loads at the next bar; silence puts STOP on the bus before the song loads; a key past
+  the setlist's end does nothing. The index and the songs' own files on disk after it.
 
 ⚠️ **The driver turns DSP on**: the steps are cut from a `phasor~`, and the queued lamp blinks on
 the beat row's clock, which is one too. Without it the transport plays nothing and no bar comes.

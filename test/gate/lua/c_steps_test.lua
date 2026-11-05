@@ -9,6 +9,10 @@
 
 local T = dofile("test/gate/lua/lib_test.lua")
 local DIR = "Cut It/"
+-- The checks that count what math.random does over thousands of steps hold to about four
+-- standard deviations, and Lua seeds it afresh on every run, so now and then one failed by
+-- chance (once in about forty runs, 2026-11-05). A fixed seed makes every run the same run.
+math.randomseed(20261105)
 local R = dofile(DIR .. "c_steps.lua")
 local check, equal = T.check, T.equal
 

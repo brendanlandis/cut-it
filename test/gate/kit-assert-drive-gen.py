@@ -23,7 +23,11 @@ pad 5 through each of its four characters; then the reverb, each of its three ty
 plate, gigaverb and freeverb (Brendan, 2026-11-05): pad 10's send into it, a burst of pink noise,
 whose tail is weighed as the research weighed the types' levels on Brendan's drums, then pad 9's,
 a click, whose reverb is heard alone, so when it starts tells the engine; then the plate left for
-freeverb while its tail rings, and a burst after; and last, a send of 0.
+freeverb while its tail rings, and a burst after; and a send of 0. Last, a held repeat's tails, as
+c_steps tells them (Brendan, 2026-11-05): a hit under a hold, whose echo must never come; a tail
+ringing silently under a hold and heard again after it; a loop's bursts in their place at their
+level, a tempo moved under it each way; one tail that runs through a seam and both crossings; and a
+reverb's tail looped, recorded after the holds before it.
 """
 import math
 import os
@@ -66,6 +70,14 @@ SET_MS = 10
 TYPES = ["PLATE", "GIGA", "FREE"]
 VERB_S = 20.0
 RING_CHANGE_MS, RING_AGAIN_MS = 400, 900
+# A held repeat's tails, from TAPE_S. How long after a hit each hold begins, and how long it is.
+TAPE_S = VERB_S + 15.0
+TAPE_HIT_MS = 50
+TAPE_HOLD_MS = 450
+RING_HOLD_S, RING_HOLD_FOR_S = 0.85, 0.45
+LOOP_S = 0.85
+SEAM_S, SEAM_SPAN, SEAM_UNITS = 1.4, 1000.4, 8.0032
+TAIL_HOLD_S, TAIL_SPAN = 0.5, 300
 HITS = [
     ("FULL", 0.5, [(0, 1, 127)]),
     ("SOFT", 1.5, [(0, 7, 16)]),
@@ -81,7 +93,7 @@ HITS = [
     ("DARK", 8.0, [(SET_MS, 1, 127)]),
     ("DRY", 8.5, [(SET_MS, 1, 127)]),
     ("ECHO", 9.0, [(SET_MS, 7, 127)]),
-    ("TAIL", 10.5, [(SET_MS, 1, 127)]),
+    ("TAIL-1", 10.5, [(SET_MS, 1, 127)]),
     ("HALF", 16.5, [(SET_MS, 1, 127)]),
     ("PEAK", 17.0, [(SET_MS, 5, 127)]),
     ("HARD", 17.5, [(SET_MS, 5, 127)]),
@@ -96,6 +108,26 @@ HITS = [
     ("RING", VERB_S + 6.0, [(SET_MS, 10, 127), (SET_MS + RING_AGAIN_MS, 10, 127)]),
     ("RING-REF", VERB_S + 11.0, [(SET_MS, 10, 127)]),
     ("VERB-OFF", VERB_S + 13.5, [(SET_MS, 10, 127)]),
+] + [
+    # e_tape: what a hit does under a hold. c_steps says tape with the first replayed hit; here
+    # the hold is told first, TAPE_HIT_MS before the hit, and let go before the echo would come.
+    ("HOLD-HIT", TAPE_S, [(SET_MS + TAPE_HIT_MS, 7, 127)]),
+    ("HOLD-AFTER", TAPE_S + 1.0, [(SET_MS, 7, 127)]),
+    # a hit whose tail rings under a hold: echoes every 500 ms; held from after the first until
+    # before the third
+    ("RING-TAIL", TAPE_S + 2.0, [(SET_MS, 7, 127)]),
+    ("RING-OFF", TAPE_S + 4.4, []),
+    # the loop: a hit's one echo, then 1000 ms of tape held for 1000 ms' worth of steps, twice
+    # round; then twice as fast for two rounds, then half as fast for one
+    ("LOOP", TAPE_S + 5.0, [(SET_MS, 7, 127)]),
+    ("LOOP-240", TAPE_S + 5.0 + LOOP_S + 2.0, []),
+    ("LOOP-60", TAPE_S + 5.0 + LOOP_S + 3.0, []),
+    ("LOOP-END", TAPE_S + 5.0 + LOOP_S + 5.0, []),
+    # a tone with no gaps in it, echoes running on from each other, to look for a click in
+    ("SEAM", TAPE_S + 11.0, [(SET_MS, 7, 127)]),
+    ("SEAM-OFF", TAPE_S + 11.0 + SEAM_S + 1.2 + 0.3, []),
+    # a reverb's tail, a loop of it, after all those holds
+    ("TAIL", TAPE_S + 14.5, [(SET_MS, 10, 127)]),
 ]
 # What a window sends c_kit before its hits, SET_MS before them: a track's volume
 # in dB, -30 to +6, and its pitch in semitones, -12 to +12, as c_steps sends them.
@@ -107,7 +139,7 @@ SETS = {"VOL": ["vol 1 -6"], "BOOST": ["vol 1 6"], "UP": ["pitch 7 12"], "DOWN":
         # pad 7's delay: a half note, eight steps, at 240 BPM is 500 ms, at full level, one echo
         "ECHO": ["pitch 7 0", "delay-time 7 8", "feedback 7 0", "delay 7 100"],
         # pad 1's: the same half note, feedback 50, an echo each 500 ms at 0.475 of the last
-        "TAIL": ["delay 7 0", "delay-time 1 8", "feedback 1 50", "delay 1 100"],
+        "TAIL-1": ["delay 7 0", "delay-time 1 8", "feedback 1 50", "delay 1 100"],
         # the distortion at half the drive on pad 1, its tone open again; then pad 5, a quarter
         # of pad 1's level, at the same drive and mix, soft as a track starts; then its
         # characters, as c_steps tells them: hard at drive 0, fold and crush at 50, and soft again
@@ -120,15 +152,31 @@ SETS = {"VOL": ["vol 1 -6"], "BOOST": ["vol 1 6"], "UP": ["pitch 7 12"], "DOWN":
         # the plate at size 50, 2.2 s, so it is still ringing when the type changes to freeverb;
         # then freeverb alone at size 50, the level a hit after the change should have
         "RING": ["verb-type 0", "size 50"], "RING-REF": ["verb-type 2"],
-        "VERB-OFF": ["send 9 0", "send 10 0", "size 20"]}
+        "VERB-OFF": ["send 9 0", "send 10 0", "size 20"],
+        # pad 7's delay, four steps at 120 BPM, 500 ms, one echo
+        "HOLD-HIT": ["delay-time 7 4", "feedback 7 0", "delay 7 100", "tape 1000 8"],
+        "RING-TAIL": ["feedback 7 50"], "RING-OFF": ["feedback 7 0"],
+        # echoes of its 0.3 s sample that start as the one before ends: 2.4 steps, feedback 100
+        "SEAM": ["delay-time 7 2.4", "feedback 7 100"], "SEAM-OFF": ["feedback 7 0"],
+        # a reverb's tail, at its size 20, and pad 7's delay off
+        "TAIL": ["delay 7 0", "send 10 100"]}
 # What a window sends the tempo bus with its settings: 240 BPM, a step 62.5 ms.
-TEMPO = {"ECHO": 240}
+TEMPO = {"ECHO": 240, "HOLD-HIT": 120, "LOOP-240": 240, "LOOP-60": 60, "LOOP-END": 120}
 ECHO_BPM = 240
 # What a window sends after its hit, (ms after the window, message): pad 1's level to 0 once its
 # 0.3 s sample has gone into the delay, before the first echo.
-AFTER = {"TAIL": [(SET_MS + 350, "delay 1 0")], "RING": [(SET_MS + RING_CHANGE_MS, "verb-type 2")]}
-STOP_S = VERB_S + 15.0
-DONE_S = VERB_S + 15.5
+AFTER = {"TAIL-1": [(SET_MS + 350, "delay 1 0")], "RING": [(SET_MS + RING_CHANGE_MS, "verb-type 2")],
+         "HOLD-HIT": [(SET_MS + TAPE_HOLD_MS, "tape-off")],
+         "RING-TAIL": [(SET_MS + int(RING_HOLD_S * 1000), "tape 1000 8"),
+                       (SET_MS + int((RING_HOLD_S + RING_HOLD_FOR_S) * 1000), "tape-off")],
+         "LOOP": [(SET_MS + int(LOOP_S * 1000), "tape 1000 8")],
+         "LOOP-END": [(100, "tape-off")],
+         "SEAM": [(SET_MS + int(SEAM_S * 1000), "tape %g %g" % (SEAM_SPAN, SEAM_UNITS)),
+                  (SET_MS + int((SEAM_S + 1.2) * 1000), "tape-off")],
+         "TAIL": [(SET_MS + int(TAIL_HOLD_S * 1000), "tape %d %g" % (TAIL_SPAN, TAIL_SPAN / 125.0)),
+                  (SET_MS + int((TAIL_HOLD_S + 1.0) * 1000), "tape-off")]}
+STOP_S = TAPE_S + 16.5
+DONE_S = TAPE_S + 17.0
 
 
 def hit_time(at_s, off_ms=0):

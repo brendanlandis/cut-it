@@ -327,6 +327,23 @@ function R.revert(st)
   return out
 end
 
+-- A part asked to go back to what the section playing holds as saved (Brendan, 2026-11-05: pad-38,
+-- for the tempo): the saved song's copy of it, or for a section never saved, or a part its save did
+-- not hold, the draft's. It goes back out as a section starting sends it, restore <key> <atoms...>,
+-- to whichever part it is: the store still knows nothing of what a key means, and the part puts
+-- back what it restores, as ever, so what comes back is in the draft like any change.
+function R.recall(st, key)
+  local a
+  for _, s in ipairs(st.saved and st.saved.sections or {}) do
+    if s.id == st.playing.id then a = s.parts[key] end
+  end
+  a = a or st.playing.parts[key]
+  if not a then return {} end
+  local m = { key }
+  for _, x in ipairs(a) do m[#m + 1] = x end
+  return { { "state", "restore", m } }
+end
+
 -- ------------------------------------------------------------------ the files
 -- One file per song, a line a record, as Pd's [text] writes with -c and as plain text anyone can
 -- read or edit:
@@ -1157,6 +1174,7 @@ R.songs_cmds = {
 -- face reads the files and hands their text to R.load).
 R.internal = {
   put = function(st, a) return R.put(st, a) end,
+  recall = function(st, a) return R.recall(st, a[1]) end,
   bar = function(st) return R.bar(st) end,
   start = function(st) return R.start(st) end,
   stop = function(st) return R.stop(st) end,

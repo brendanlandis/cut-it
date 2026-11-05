@@ -50,6 +50,8 @@
 46 rep 2
 47 rep 3
 48 rep 4
+35 fast 1
+38 recall 1
 25 vel 1
 26 vel 2
 27 vel 3

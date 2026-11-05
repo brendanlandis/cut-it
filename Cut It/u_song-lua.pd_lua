@@ -11,8 +11,8 @@
 -- revert, key <1-25>, go.
 -- inlet 2: the phone's sections page, through u_net -- select, page, new, up, down, length,
 -- delete, name; and its songs page, songs <command> ... (R.songs_cmds).
--- inlet 3: u_song.pd's own -- put <key> <atoms...> off the state bus, bar from c_steps, start
--- and stop, load at the restore, flush on the draft's timer, init.
+-- inlet 3: u_song.pd's own -- put <key> <atoms...> off the state bus, bar and recall <key> from
+-- c_steps, start and stop, load at the restore, flush on the draft's timer, init.
 -- outlet 1: to g_grid -- top <8 lamps>, unsaved <0 or 1> and go <0, 1 or 2>, each when it
 -- changes.
 -- outlet 2: to u_net, each when it changes: the sections page's state, R.phone's 22 atoms, as a

@@ -7,6 +7,7 @@
 -- The state is a plain table and every rule a function of it, so a live reload of the rules keeps
 -- a count of taps. Every rule returns what leaves, in order, as {outlet, selector, atoms}:
 --   {"tempo", "float", {bpm}}            to the tempo bus
+--   {"put", "float", {1 or 0}}           whether a BPM on the bus is put in the section
 --   {"err", "fail", {"u_tempo", text}}   to err (C-12)
 
 local R = {}
@@ -19,6 +20,8 @@ R.GAP = 2000
 -- How many of the last intervals are averaged: enough to steady a hand, few enough that a tempo
 -- tapped faster or slower follows within a bar.
 R.KEEP = 4
+-- The 500 BPM repeat's tempo (Brendan, 2026-11-05).
+R.FAST = 500
 
 local function clip(x, lo, hi)
   if x < lo then return lo end
@@ -31,9 +34,11 @@ local function bpm(x)
   return math.floor(clip(x, R.MIN, R.MAX) + 0.5)
 end
 
--- taps: the last R.KEEP intervals, oldest first. armed: a tap has started the count.
+-- taps: the last R.KEEP intervals, oldest first. armed: a tap has started the count. bpm: the master
+-- BPM in force, as the bus carried it, u_tempo.pd's fallback until it says. before: while the 500
+-- BPM repeat is held, the tempo it goes back to.
 function R.new()
-  return { taps = {}, armed = false }
+  return { taps = {}, armed = false, bpm = 120 }
 end
 
 -- A tap, <ms> since the one before, from u_tempo.pd's [timer]. The first tap after load, and any
@@ -60,16 +65,50 @@ function R.set(st, v)
   return { { "tempo", "float", { bpm(v) } } }
 end
 
--- What reaches the inlet: tap <ms>, the interval u_tempo.pd's timer measured, and tempo <bpm>
--- from u_net.
+-- The 500 BPM repeat, pad-35, from c_steps (Brendan, 2026-11-05). fast 1: the tempo in force is kept
+-- and 500 goes out, as a tap's would, so knob 1 is held there until it reaches it. fast 0: the tempo
+-- kept goes out the same way, so knob 1 is held there. It is a flourish and no change to the song:
+-- while it is held nothing on the bus is put in the section, so the section's tempo stands as it
+-- was, and what the knob or the phone set meanwhile is gone at the release.
+function R.fast(st, on)
+  if on ~= 0 then
+    if st.before then return {} end
+    st.before = st.bpm
+    return { { "put", "float", { 0 } }, { "tempo", "float", { R.FAST } } }
+  end
+  if not st.before then return {} end
+  local back = st.before
+  st.before = nil
+  return { { "tempo", "float", { back } }, { "put", "float", { 1 } } }
+end
+
+-- A section's restore of its tempo, or the saved tempo asked for, restored <bpm>: as the phone's
+-- tempo does, but under the 500 BPM repeat, the tempo it goes back to.
+function R.restored(st, v)
+  if st.before and type(v) == "number" then
+    st.before = bpm(v)
+    return {}
+  end
+  return R.set(st, v)
+end
+
+-- What reaches the inlet: tap <ms>, the interval u_tempo.pd's timer measured, tempo <bpm> from
+-- u_net, restored <bpm> off the state bus, and fast <1 or 0> from c_steps.
 R.inputs = {
   tap = function(st, a) return R.tap(st, a[1]) end,
   tempo = function(st, a) return R.set(st, a[1]) end,
+  restored = function(st, a) return R.restored(st, a[1]) end,
+  fast = function(st, a) return R.fast(st, a[1]) end,
 }
 
--- What u_tempo.pd itself sends: the load, answered with the proof bang alone.
+-- What u_tempo.pd itself sends: the load, answered with the proof bang alone, and bpm <bpm>, every
+-- BPM the bus carries, clamped.
 R.internal = {
   init = function() return {} end,
+  bpm = function(st, a)
+    if type(a[1]) == "number" then st.bpm = a[1] end
+    return {}
+  end,
 }
 
 -- A report on err, C-12: one symbol of 21 characters or fewer.

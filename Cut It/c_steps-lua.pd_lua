@@ -5,21 +5,24 @@
 -- creation arg: its bank, 1 for A: vestigial since the SP-404 left the rig, as c_kit plays pads
 -- 1 to 16 (c_steps.pd).
 -- inlet 1: the presses and releases, from u_map -- step <n> <vel>, vel <level> <vel>, pad <n>
--- <vel>, rep <n> <vel>, and knobs 2 to 4, last, track-last and swing <0-1> -- and the phone's
+-- <vel>, rep <n> <vel>, fast and recall <n> <vel>, the 500 BPM repeat and the saved tempo, and
+-- knobs 2 to 4, last, track-last and swing <0-1> -- and the phone's
 -- sync, snap, select, vol, pitch, randomness, set-track-last, num, den, drunk, set-swing and
 -- set-last, its effects, drive, tone, dist, char, delay-note, delay-feel, feedback, delay, send,
--- size, damping and verb-type, and each track's mute and solo, from u_net.
--- inlet 2: c_steps.pd's own -- tick, start, stop, restore <the saved line>, init, and sync off
--- the state bus: put the pattern now if it is being held.
+-- size, damping and verb-type, and each track's mute, solo and rnd-pitch, from u_net.
+-- inlet 2: c_steps.pd's own -- tick, start, stop, restore <the saved line>, init, tempo <bpm> off
+-- the tempo bus, and sync off the state bus: put the pattern now if it is being held.
 -- outlet 1: pad <pad> <velocity>, and a track's vol <pad> <dB> and pitch <pad> <semitones> and
 -- its effects, drive, tone, dist, char, delay-time, feedback, delay and send <pad> <value>, and the
--- reverb's size and damping <value> and verb-type <0-2>, to c_kit. outlet 2: the page, to g_grid. outlet 3: the pattern to save, at most once every
+-- reverb's size and damping <value> and verb-type <0-2>, and a held repeat's tape <span> <units>
+-- and tape-off, to c_kit. outlet 2: the page, to g_grid. outlet 3: the pattern to save, at most once every
 -- SAVE_EVERY ms (below). outlet 4: err. outlet 5: a
 -- bang on init, the proof the Lua loaded. outlet 6: a knob's row, to disp. outlet 7: the phone's
--- state, R.phone's 132 numbers, whenever it changes.
+-- state, R.phone's 148 numbers, whenever it changes.
 -- outlet 8: the step clock's swing <0.5-0.75> and rate <x>, to c_steps.pd's clock.
 -- outlet 9: bar, on the global loop's last step, to u_song: a bar is the pattern's loop, and a
--- queued section starts as the loop comes round to its step 1.
+-- queued section starts as the loop comes round to its step 1; and recall <key>, a part's saved
+-- value asked for. outlet 10: fast <1 or 0>, the 500 BPM repeat's tempo, to u_tempo.
 --
 -- A Lua error leaves outlet 4 as fail c_steps lua-<selector>, and its text goes to Pd's console
 -- where there is one: the device has none (C-12).
@@ -32,7 +35,8 @@ local Clock = pd.Clock
 -- (`; pdluax reload c_steps-lua`) reloads them too, and every object keeps its pattern.
 local R = dofile(StepsLua._loadpath .. "c_steps.lua")
 
-local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6, clock = 8, bar = 9 }
+local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6, clock = 8, bar = 9, song = 9,
+                 tempo = 10 }
 
 -- Answering under pcall, the proof bang on init and the dispatch shortcut are lua-face.lua's,
 -- shared by every class that carries rules into Pd.
@@ -40,13 +44,13 @@ local F = dofile(StepsLua._loadpath .. "lua-face.lua")
 F.carry(StepsLua, R, OUTLET, 2, 5)
 
 function StepsLua:initialize(_, atoms)
-  self.inlets, self.outlets = 2, 9
+  self.inlets, self.outlets = 2, 10
   self.state = R.new(atoms[1])
   return true
 end
 
 -- The pattern to save is 581 numbers, 711 once an effect is set, 743 once a track is muted or
--- soloed and 759 once a track's distortion is not soft, and carrying the 581 to u_song and storing them cost about 2.5 ms on the Organelle, so
+-- soloed, 759 once a track's distortion is not soft and 776 once a track's random pitch is on, and carrying the 581 to u_song and storing them cost about 2.5 ms on the Organelle, so
 -- a drag on the phone, a change 30 or 60 times a second, made the audio crackle (2026-11-05: Pd
 -- runs with a 6 ms audio buffer, and WiFi hands over two messages at once). So the pattern goes
 -- at most once every SAVE_EVERY ms: the first change starts the clock, later ones only mark it

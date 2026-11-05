@@ -11,12 +11,16 @@
 --   {"note", "pad", {pad, velocity}}                          to c_kit
 --   {"note", "vol" | "pitch", {pad, dB or semitones}}         to c_kit, a track's
 --   {"note", <effect>, {pad, value} or {value}}               to c_kit, an effect's (R.FX)
---   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep" | "quiet", {...}}
---                                                             to g_grid's third inlet
---   {"save", "list", {581, 711, 743, 759 or 760 numbers, R.save}}
+--   {"note", "tape", {span, units}} and {"note", "tape-off", {}}
+--                                                             to c_kit: a held repeat's tails (R.tape)
+--   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep" | "quiet" | "fast"
+--    | "recall", {...}}                                       to g_grid's third inlet
+--   {"save", "list", {581, 711, 743, 759, 760 or 776 numbers, R.save}}
 --                                                             to the state bus, put section <part>
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
 --   {"bar", "bar", {}}                                        to u_song: the pattern's loop ends
+--   {"song", "recall", {key}}                                 to u_song: a part's saved value
+--   {"tempo", "fast", {1 or 0}}                               to u_tempo: the 500 BPM repeat
 --   {"err", "fail", {"c_steps", text}}                        to err (C-12)
 --   {"disp", <row name>, {value[, unit]}}                     a knob's row, to disp
 -- and R.phone(st), the phone's state, which the Pd face sends to u_net when it changes.
@@ -32,6 +36,8 @@ R.BOOT_LEVEL, R.BOOT_TRACK, R.BOOT_LAST = 6, 1, 16
 -- sixteenths the first one takes.
 R.SWING_MIN, R.SWING_MAX = 50, 75
 R.BOOT_SWING = 50
+-- u_tempo's fallback, until the tempo bus says otherwise.
+R.BOOT_BPM = 120
 -- The time signature's bottom numbers. The bottom number is a matter of record only: it changes
 -- neither the page nor how fast the steps go (Brendan, 2026-11-05).
 R.DENS = { 1, 2, 4, 8, 16 }
@@ -63,6 +69,11 @@ R.MIN_DUR = 0.125
 -- The repeat pads, 1 to 4: each replays the last 1, 2, 3 or 4 steps (Brendan, 2026-11-03),
 -- exactly as they were played, randomness and drunkenness included (2026-11-05).
 R.REPEATS = 4
+-- A held repeat's tails (Brendan, 2026-11-05): c_kit's e_tape keeps the last while of the wet sound
+-- and loops the last N steps of it while a repeat is held. It holds this much, in ms, a little
+-- less than e_tape's line: four steps at the legal tempo's slowest, 5 BPM. A longer repeat, only
+-- ever a very drunk one down there, plays the last R.TAPE_MAX in the time its steps take.
+R.TAPE_MAX = 12000
 -- Each track's own volume, in dB, and pitch, in semitones, played by its c_voice; and its
 -- randomness, 0 to 100 (Brendan, 2026-11-05).
 R.VOL_MIN, R.VOL_MAX = -30, 6
@@ -106,6 +117,7 @@ R.SAVED_FX = R.SAVED_FXLESS + R.FX_BLOCK * R.TRACKS + #R.VERB
 R.SAVED_FLAGS = R.SAVED_FX + 2 * R.TRACKS
 R.SAVED = R.SAVED_FLAGS + (#R.FX - R.FX_BLOCK) * R.TRACKS
 R.SAVED_TYPED = R.SAVED + 1
+R.SAVED_ROLLED = R.SAVED_TYPED + R.TRACKS
 R.SAVED_SECTIONLESS = R.TRACKS * R.STEPS + 4 * R.TRACKS + 3
 R.SAVED_CHANCES = R.TRACKS * R.STEPS + 3 * R.TRACKS + 3
 
@@ -180,14 +192,16 @@ function R.new(bank)
                track = R.BOOT_TRACK, level = R.BOOT_LEVEL, last = R.BOOT_LAST,
                master = 0, sync = false, snap = false, playing = false,
                num = 4, den = 4, swing = R.BOOT_SWING, drunk = 0, rate = 1,
-               randomness = {}, vol = {}, pitch = {}, hist = {},
+               randomness = {}, vol = {}, pitch = {}, heard = {}, rolled = {}, hist = {},
                rep = 0, rk = 0, win = {}, rand = math.random,
+               bpm = R.BOOT_BPM, pair = 0, pair_swing = R.BOOT_SWING, taping = false, fast = false,
                knob = { last = { held = true }, track = { held = true },
                         swing = { held = true } } }
   for i = 1, R.TRACKS * R.STEPS do st.pattern[i] = 0 end
   for t = 1, R.TRACKS do
     st.own[t], st.pos[t] = 0, 0
     st.randomness[t], st.vol[t], st.pitch[t] = 0, 0, 0
+    st.heard[t], st.rolled[t] = 0, 0
   end
   -- the effects at their starting points, and what c_kit has been told of them: nothing yet
   st.fx, st.verb, st.told = {}, {}, {}
@@ -241,7 +255,8 @@ end
 -- 1 or 0, the effects written as they stand whether moved or not: 743; then, once any track's
 -- distortion is not soft, the sixteen characters, 1 to 4, the effects, the mutes and the solos
 -- written as they stand: 759; then, once the reverb's type is not the plate, the type, 0 to 2,
--- everything before it written as it stands: 760.
+-- everything before it written as it stands: 760; then, once any track's random pitch is on, the
+-- sixteen flags, 1 or 0, everything before them written as it stands: 776.
 -- While every effect is at its starting point and nothing is muted or soloed, the line stays 581,
 -- as it was saved before the effects, so a song saved before them restores and is put back as it
 -- was, not as a change to save, and an unused effect costs the put nothing; while nothing is
@@ -261,7 +276,8 @@ function R.save(st)
   local n = cells + 4 * R.TRACKS
   all[n + 1], all[n + 2], all[n + 3] = st.num, st.den, st.drunk
   all[n + 4], all[n + 5] = st.swing, st.last
-  local flagged, late, typed = R.flagged(st), R.late_moved(st), st.verb_type ~= 0
+  local rolled = R.any_rolled(st)
+  local flagged, late, typed = R.flagged(st), R.late_moved(st), st.verb_type ~= 0 or rolled
   if not flagged and not typed and not R.fx_moved(st) then return { "save", "list", all } end
   local k = R.SAVED_FXLESS
   for i = 1, R.FX_BLOCK do
@@ -277,7 +293,15 @@ function R.save(st)
   end
   if not typed then return { "save", "list", all } end
   all[R.SAVED_TYPED] = st.verb_type
+  if not rolled then return { "save", "list", all } end
+  for t = 1, R.TRACKS do all[R.SAVED_TYPED + t] = st.rolled[t] end
   return { "save", "list", all }
+end
+
+-- Whether any track's random pitch is on.
+function R.any_rolled(st)
+  for t = 1, R.TRACKS do if st.rolled[t] ~= 0 then return true end end
+  return false
 end
 
 -- Whether any of the effects saved after the mutes and solos, the characters, is off its
@@ -552,6 +576,7 @@ local function set_sound(st, which, lo, hi, track, v)
   local n = whole(v, lo, hi)
   if n == st[which][t] then return {} end
   st[which][t] = n
+  if which == "pitch" then st.heard[t] = n end
   return { R.save(st), { "note", which, { R.pad(st, t), n } } }
 end
 
@@ -614,6 +639,62 @@ function R.set_solo(st, track, v)
   return set_flag(st, "solo", track, v)
 end
 
+-- A track's random pitch from the drum screen, rnd-pitch <track> <0 or 1>, as it stands (Brendan,
+-- 2026-11-05): saved. A hit its randomness rolls then takes a pitch of its own (chance), and every
+-- other hit the track's set pitch. The same value again, or a message without a track and a
+-- number, does nothing.
+function R.set_rolled(st, track, v)
+  local t = track_value(track, v)
+  if not t then return {} end
+  local n = whole(v, 0, 1)
+  if n == st.rolled[t] then return {} end
+  st.rolled[t] = n
+  return { R.save(st) }
+end
+
+local take_window, tape_off, let_go
+
+-- A step's share of its pair of sixteenths, as the swing bends it: the first takes the swing's
+-- share of the pair and the second the rest, so at 50% each is one step's worth.
+local function pair_share(swing, pair)
+  local x = swing / 100
+  return 2 * (pair == 0 and x or 1 - x)
+end
+
+-- A held repeat's tails: what c_kit's e_tape is told as the replay begins, tape <span> <units>.
+-- span: how long, in ms, the window's steps ran, each at the tempo it was decided under, the last
+-- R.TAPE_MAX of it if longer. units: the same steps, in steps, as they run now. e_tape reads the span
+-- in the units' time at the tempo in force, so the tails follow the tempo, as the steps do. An even
+-- window keeps its pairs of sixteenths, so its swing is in both; an odd one plays alternately long
+-- and short (Swing is the clock's, ref/module/sequencer.md), so both leave the swing out, and it
+-- comes round in time with the hits every second time, at the speed they had.
+function R.tape(st)
+  local even, pair = #st.win % 2 == 0, st.pair
+  local span, units = 0, 0
+  for _, d in ipairs(st.win) do
+    span = span + d.len * (even and d.share or 1) * 15000 / d.bpm
+    units = units + d.len * (even and pair_share(st.swing, pair) or 1)
+    pair = 1 - pair
+  end
+  return math.min(span, R.TAPE_MAX), units
+end
+
+-- The tails loop no longer, if they were: what c_kit plays live comes back.
+function tape_off(st, out)
+  if st.taping then
+    st.taping = false
+    out[#out + 1] = { "note", "tape-off", {} }
+  end
+end
+
+-- A repeat let go. Every track plays from where it would have been.
+function let_go(st)
+  local out = { { "page", "rep", { 0 } } }
+  st.rep, st.win = 0, {}
+  tape_off(st, out)
+  return out
+end
+
 -- A repeat pad, 1 to 4, held: the last n steps, as they were decided (R.tick's st.hist), are
 -- played again over and over, while the loops go on underneath unheard; let go, and every track
 -- plays from where it would have been (Brendan, 2026-11-03). Exactly as they were played: each
@@ -623,17 +704,54 @@ end
 -- long as its pad says; pressed before anything has played, it waits for nothing: there is
 -- nothing to replay. Letting go of a pad that is not the one repeating changes nothing.
 function R.press_rep(st, n, velocity)
+  if st.fast then return {} end
   local k = math.floor(clip(num(n), 1, R.REPEATS))
   if velocity == 0 then
     if st.rep ~= k then return {} end
-    st.rep, st.win = 0, {}
-    return { { "page", "rep", { 0 } } }
+    return let_go(st)
   end
+  return take_window(st, k)
+end
+
+-- The window a repeat pad takes, the last k steps decided; nothing to take, nothing happens. One
+-- pressed short of its length under a held repeat plays fresh steps until it is full, so the tails
+-- of the one before stop looping for them.
+function take_window(st, k)
   if #st.hist == 0 then return {} end
   local w = {}
   for i = math.max(1, #st.hist - k + 1), #st.hist do w[#w + 1] = st.hist[i] end
   st.rep, st.rk, st.win = k, 0, w
-  return { { "page", "rep", { k } } }
+  local out = { { "page", "rep", { st.fast and 0 or k } } }
+  if #w < k then tape_off(st, out) end
+  return out
+end
+
+-- The 500 BPM repeat, pad-35 (Brendan, 2026-11-05): held, the last step decided plays over and over
+-- at 500 BPM, u_tempo holding the tempo and knob 1 there; let go, the tempo goes back to what it
+-- was, and the pattern carries on from the step it was pressed on, since the loops, and the bars
+-- counted from them, wait for it (R.tick). The repeat pads do nothing while it is held.
+function R.press_fast(st, velocity)
+  if velocity ~= 0 then
+    if st.fast then return {} end
+    st.fast = true
+    local out = { { "tempo", "fast", { 1 } }, { "page", "fast", { 1 } } }
+    for _, e in ipairs(take_window(st, 1)) do out[#out + 1] = e end
+    return out
+  end
+  if not st.fast then return {} end
+  st.fast = false
+  local out = let_go(st)
+  table.insert(out, 1, { "tempo", "fast", { 0 } })
+  table.insert(out, 2, { "page", "fast", { 0 } })
+  return out
+end
+
+-- The saved tempo, pad-38 (Brendan, 2026-11-05): a press asks u_song for the section's saved tempo,
+-- which comes back as a section starting's does, on the state bus to u_tempo. Its lamp lights while
+-- it is held, and the release does nothing else.
+function R.press_recall(st, velocity)
+  if velocity == 0 then return { { "page", "recall", { 0 } } } end
+  return { { "page", "recall", { 1 } }, { "song", "recall", { "tempo" } } }
 end
 
 -- The drum screen selects a track without playing it, as a pad press does otherwise.
@@ -649,8 +767,8 @@ end
 -- signature, the drunkenness and the swing, then each track's volume, its pitch and its
 -- randomness, then the selected track's effects, in R.FX's order, its character last, and the
 -- reverb's size and damping, then each track's mute and each track's solo, 1 or 0, then the
--- reverb's type, 0 to 2. 132 numbers.
-R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS + #R.FX + #R.VERB + 2 * R.TRACKS + 1
+-- reverb's type, 0 to 2, then each track's random pitch, 1 or 0. 148 numbers.
+R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS + #R.FX + #R.VERB + 2 * R.TRACKS + 1 + R.TRACKS
 function R.phone(st)
   local out = { st.playing and 1 or 0, R.global_last(st), st.track,
                 st.snap and 2 or (st.sync and 1 or 0) }
@@ -666,6 +784,7 @@ function R.phone(st)
     for t = 1, R.TRACKS do out[#out + 1] = st[which][t] end
   end
   out[#out + 1] = st.verb_type
+  for t = 1, R.TRACKS do out[#out + 1] = st.rolled[t] end
   return out
 end
 
@@ -673,11 +792,23 @@ end
 -- 2026-11-04), muted or left out of a solo or not, so a muted track can be heard before it comes
 -- back in; and selects its track; knob 3 is then held at that track's last step.
 R.TAP = 127
+-- The pitch a hit plays at, told to c_kit before the hit when it isn't what c_kit holds: a hit its
+-- randomness rolled plays at a pitch of its own, and the next at the set pitch again.
+local function heard_pitch(st, t, p, out)
+  if st.heard[t] == p then return end
+  st.heard[t] = p
+  out[#out + 1] = { "note", "pitch", { R.pad(st, t), p } }
+end
 function R.press_pad(st, track, velocity)
   st.track = math.floor(clip(num(track), 1, R.TRACKS))
   rearm(st.knob.track)
-  return { { "note", "pad", { R.pad(st, st.track), R.TAP } },
-           { "page", "track", { st.track } }, R.page_last(st), R.steps(st) }
+  local out = {}
+  heard_pitch(st, st.track, st.pitch[st.track], out)
+  out[#out + 1] = { "note", "pad", { R.pad(st, st.track), R.TAP } }
+  out[#out + 1] = { "page", "track", { st.track } }
+  out[#out + 1] = R.page_last(st)
+  out[#out + 1] = R.steps(st)
+  return out
 end
 
 -- What the next step does to the loops, without doing it: the global loop's step, every
@@ -700,75 +831,100 @@ end
 -- R%, each step has an R% chance of ignoring what is written and flipping a coin instead: played or
 -- not, and played at one of the eight levels, at random. So it drops hits from a busy track and
 -- adds them to a sparse one; at 100 it is chaos, at 0 the pattern as written. A track at 0 never
--- rolls.
+-- rolls. And with its random pitch on (Brendan, 2026-11-05), a hit the coin plays has a pitch of its
+-- own: up to R.ROLL_REACH semitones either way of the track's set pitch, at random, kept to a
+-- track's range, one more die the track rolls only with it on. -> the velocity, and that pitch.
+R.ROLL_REACH = 12
 local function chance(st, t, v)
   local r = st.randomness[t]
   if r <= 0 or st.rand() * 100 >= r then return v end
   if st.rand() >= 0.5 then return 0 end
-  return R.velocity(math.min(R.LEVELS, math.floor(st.rand() * R.LEVELS) + 1))
+  local vel = R.velocity(math.min(R.LEVELS, math.floor(st.rand() * R.LEVELS) + 1))
+  if st.rolled[t] == 0 then return vel end
+  local off = math.min(2 * R.ROLL_REACH, math.floor(st.rand() * (2 * R.ROLL_REACH + 1))) - R.ROLL_REACH
+  return vel, clip(st.pitch[t] + off, R.PITCH_MIN, R.PITCH_MAX)
 end
 
 -- What a step decides, before mute and solo: each track's step, at its place in its loop; the
--- velocity it plays at, as its randomness says (chance), 0 for none, track 1 first; and the step
--- clock's rate for the step's length: drunk, a step may last longer or shorter, the more often
--- and the further the drunker (R.drunk_chance, R.drunk_reach). Every die of the step is rolled
--- here, and a muted track's too, so muting one track changes no other's.
+-- velocity it plays at, as its randomness says (chance), 0 for none, track 1 first, and the pitch
+-- its randomness gave it, if any; and the step clock's rate for the step's length: drunk, a step
+-- may last longer or shorter, the more often and the further the drunker (R.drunk_chance,
+-- R.drunk_reach). Every die of the step is rolled here, and a muted track's too, so muting one
+-- track changes no other's. How long it runs is kept with it, for a held repeat's tails (R.tape):
+-- its length in steps, its share of its pair and the tempo.
 local function decide(st, pos)
-  local d = { step = {}, vel = {}, rate = 1 }
+  local d = { step = {}, vel = {}, pitch = {}, rate = 1 }
   for t = 1, R.TRACKS do
     d.step[t] = pos[t]
-    d.vel[t] = chance(st, t, st.pattern[R.index(t, pos[t])])
+    d.vel[t], d.pitch[t] = chance(st, t, st.pattern[R.index(t, pos[t])])
   end
   if st.drunk > 0 and st.rand() < R.drunk_chance(st.drunk) then
     local stray = (st.rand() * 2 - 1) * R.drunk_reach(st.drunk)
     d.rate = 1 / math.max(R.MIN_DUR, 1 + stray)
   end
+  d.len, d.share, d.bpm = 1 / d.rate, pair_share(st.pair_swing, st.pair), st.bpm
   return d
 end
 
 -- The step a held repeat plays next: the next of its window's decided steps, or nil while none is
--- held, or while one pressed short of its length since PLAY is still being filled (R.press_rep).
-local function replay(st)
+-- held, or while one pressed short of its length since PLAY is still being filled (R.press_rep). As
+-- it begins, the first of a window, c_kit hears of it first, on out.
+local function replay(st, out)
   if st.rep == 0 or #st.win < st.rep then return nil end
+  if st.rk == 0 then
+    st.taping = true
+    out[#out + 1] = { "note", "tape", { R.tape(st) } }
+  end
   local d = st.win[st.rk % #st.win + 1]
   st.rk = st.rk + 1
   return d
 end
 
--- A step of the clock. The loops move on (advance), and the step is decided (decide), or while a
--- repeat pad is held, one already decided is played again (replay): the same hits at the same
--- velocities and the same length, nothing rolled (Brendan, 2026-11-05). Either way it is kept, the
--- last four, for a repeat pad to take. Every track plays its hit, track 1 first, all in one
--- logical instant, but a track muted, or left out of a solo, plays nothing (R.sounds): not what is
--- written, not a coin its randomness adds, not a repeat's. Mute and solo are asked now, not when
--- the step was decided, so a track muted or soloed under a held repeat is silenced or soloed in
--- it; and its loop and its repeat go on, so it comes back in where it would have been. Then the
--- playhead, the selected track's step, and the step clock's rate for the step's length, drunk or
--- not, whose error stays -- its own drift becomes the clock (Brendan, 2026-11-03).
+-- A step of the clock. The loops move on (advance), but under the 500 BPM repeat (R.press_fast),
+-- and the step is decided (decide), or while a repeat pad is held, one already decided is played
+-- again (replay): the same hits at the same velocities and pitches and the same length, nothing
+-- rolled (Brendan, 2026-11-05). Either way it is kept, the last four, for a repeat pad to take. As
+-- the replay begins, c_kit is told, before the step's hits, so they send nothing to the delays or
+-- the reverb and the wet sound's last steps loop in time with them (R.tape). Every track plays its
+-- hit, track 1 first, all in one logical instant, its rolled pitch or its set pitch told first
+-- when c_kit holds another, but a track muted, or left out of a solo, plays nothing (R.sounds):
+-- not what is written, not a coin its randomness adds, not a repeat's. Mute and solo are asked
+-- now, not when the step was decided, so a track muted or soloed under a held repeat is silenced or
+-- soloed in it; and its loop and its repeat go on, so it comes back in where it would have been.
+-- Then the playhead, the selected track's step, and the step clock's rate for the step's length,
+-- drunk or not, whose error stays -- its own drift becomes the clock (Brendan, 2026-11-03).
 -- Last, on the global loop's last step, bar: a bar is the pattern's loop (Brendan, 2026-11-05),
 -- so the song store starts a queued section when the global loop next comes round to its step 1,
 -- the whole pattern played, and its restore reaches here before that step is cut
 -- (ref/module/songs.md).
 function R.tick(st)
-  local m, pos, synced = advance(st)
   local out = {}
-  st.master = m
-  if synced then
-    st.sync = false
-    if st.snap then out = land_snap(st) end
+  local waiting = st.fast and st.rep > 0
+  if st.pair == 0 then st.pair_swing = st.swing end
+  local pos = st.pos
+  if not waiting then
+    local m, moved, synced = advance(st)
+    pos = moved
+    st.master = m
+    if synced then
+      st.sync = false
+      if st.snap then out = land_snap(st) end
+    end
+    for t = 1, R.TRACKS do st.pos[t] = pos[t] end
   end
-  for t = 1, R.TRACKS do st.pos[t] = pos[t] end
-  local d = replay(st)
+  local d = replay(st, out)
   if not d then
     d = decide(st, pos)
     if st.rep > 0 then st.win[#st.win + 1] = d end
   end
+  st.pair = 1 - st.pair
   local h = st.hist
   h[#h + 1] = d
   if #h > R.REPEATS then table.remove(h, 1) end
   local solo = R.any_solo(st)
   for t = 1, R.TRACKS do
     if d.vel[t] >= 1 and R.sounds(st, t, solo) then
+      heard_pitch(st, t, d.pitch[t] or st.pitch[t], out)
       out[#out + 1] = { "note", "pad", { R.pad(st, t), d.vel[t] } }
     end
   end
@@ -779,30 +935,41 @@ function R.tick(st)
   end
   -- The pattern's loop ends when the next step is the global loop's step 1, as advance() counts
   -- it: a global last step moved under the loop's place wraps into it, and no bar ends there.
-  if st.master % R.global_last(st) == 0 then out[#out + 1] = { "bar", "bar", {} } end
+  if not waiting and st.master % R.global_last(st) == 0 then out[#out + 1] = { "bar", "bar", {} } end
   return out
 end
 
 -- PLAY: every loop, the global one included, starts again at step 1 on the next step, which is
 -- a sync already; a pending snap lands now. The step clock starts on the beat, at its own rate:
 -- PLAY is the one thing that puts a drunk machine back on the clock. A held repeat lets go, and
--- the steps decided before it are forgotten.
+-- the steps decided before it are forgotten; its tails stop looping, and the 500 BPM repeat's tempo
+-- goes back.
 function R.start(st)
   st.master, st.sync, st.playing, st.rep = 0, false, true, 0
   st.hist, st.win = {}, {}
+  st.pair = 0
   for t = 1, R.TRACKS do st.pos[t] = 0 end
   st.rate = 1
   local out = { { "clock", "rate", { 1 } }, { "page", "rep", { 0 } } }
+  tape_off(st, out)
+  if st.fast then
+    st.fast = false
+    out[#out + 1] = { "tempo", "fast", { 0 } }
+    out[#out + 1] = { "page", "fast", { 0 } }
+  end
   if st.snap then
     for _, e in ipairs(land_snap(st)) do out[#out + 1] = e end
   end
   return out
 end
 
--- STOP and panic: the playhead goes out.
+-- STOP and panic: the playhead goes out, and a held repeat's tails stop looping, since its hits have
+-- stopped. The pad held still holds its repeat, and the 500 BPM repeat its tempo, until let go.
 function R.stop(st)
   st.playing = false
-  return { { "page", "play", { 0 } } }
+  local out = { { "page", "play", { 0 } } }
+  tape_off(st, out)
+  return out
 end
 
 -- ---------------------------------------------------------------- the effects
@@ -920,6 +1087,16 @@ local function restore_type(st, values)
   st.verb_type = v ~= nil and whole(v, 0, #R.VERB_TYPES - 1) or 0
 end
 
+-- The random pitch flags from a saved line, past its first 760: each as far as the line holds it,
+-- 1 or 0, a symbol as 0, and what it does not hold 0. So a line saved before them comes back with
+-- every track's off.
+local function restore_rolled(st, values)
+  for t = 1, R.TRACKS do
+    local v = values[R.SAVED_TYPED + t]
+    st.rolled[t] = v ~= nil and whole(v, 0, 1) or 0
+  end
+end
+
 -- The mutes and solos from a saved line, past its first 711: each as far as the line holds it,
 -- 1 or 0, a symbol as 0, and what it does not hold 0. So a line saved before mute and solo, of
 -- any length R.restore takes, comes back with nothing muted or soloed.
@@ -936,6 +1113,7 @@ end
 -- also repairs a short or malformed line; and every track's volume and pitch to c_kit, and
 -- whichever effects changed (R.tell_fx), a line of fewer than 711 bringing them back off and one
 -- of fewer than 759 every track back soft and one of fewer than 760 the reverb back to the plate;
+-- a line of fewer than 776 every track's random pitch off;
 -- and last, the page's quiet pads when they changed, a line of fewer than 743 bringing every
 -- track back unmuted and unsoloed. A line of
 -- exactly 256 is the 16-step pattern this replaced, track by track: its steps go to each track's
@@ -993,11 +1171,13 @@ function R.restore(st, values)
   restore_fx(st, values)
   restore_flags(st, values)
   restore_type(st, values)
+  restore_rolled(st, values)
   local out = { R.save(st), R.page_last(st), R.steps(st), R.page_bar(st),
                 { "clock", "swing", { st.swing / 100 } } }
   for _, which in ipairs({ "vol", "pitch" }) do
     for t = 1, R.TRACKS do out[#out + 1] = { "note", which, { R.pad(st, t), st[which][t] } } end
   end
+  for t = 1, R.TRACKS do st.heard[t] = st.pitch[t] end
   for _, e in ipairs(R.tell_fx(st)) do out[#out + 1] = e end
   tell_quiet(st, out)
   return out
@@ -1009,18 +1189,21 @@ local function pressed(a)
 end
 
 -- What arrives on the first inlet: u_map's drum-page presses and releases, <selector> <n>
--- <velocity>; its knobs, last, track-last and swing with the knob's 0-1; the drum screen's sync,
+-- <velocity>, step, vel, pad and rep and the 500 BPM repeat's fast and the saved tempo's recall;
+-- its knobs, last, track-last and swing with the knob's 0-1; the drum screen's sync,
 -- snap and select, and its pads' vol, pitch, randomness and set-track-last <track> <value>,
 -- through u_net; and the arrangement screen's num and den (-1 or 1), drunk (0 to 100), set-swing
 -- (50 to 75) and set-last (1 to 32), through u_net too; and the drum screen's effects, drive,
 -- tone, dist, char, delay-note, delay-feel, feedback, delay and send <track> <value>, and size and
--- damping <value> and verb-type <0-2>; and its mute and solo <track> <0 or 1>. A press, a knob or a setting with no
--- number in it does nothing.
+-- damping <value> and verb-type <0-2>; and its mute, solo and rnd-pitch <track> <0 or 1>. A press,
+-- a knob or a setting with no number in it does nothing.
 R.presses = {
   step = function(st, a) return pressed(a) and R.press_step(st, a[1]) or {} end,
   vel = function(st, a) return pressed(a) and R.press_vel(st, a[1]) or {} end,
   pad = function(st, a) return pressed(a) and R.press_pad(st, a[1], a[2]) or {} end,
   rep = function(st, a) return a[1] and R.press_rep(st, a[1], a[2]) or {} end,
+  fast = function(st, a) return a[1] and R.press_fast(st, a[2]) or {} end,
+  recall = function(st, a) return a[1] and R.press_recall(st, a[2]) or {} end,
   last = function(st, a) return a[1] and R.knob_last(st, a[1]) or {} end,
   ["track-last"] = function(st, a) return a[1] and R.knob_track(st, a[1]) or {} end,
   swing = function(st, a) return a[1] and R.knob_swing(st, a[1]) or {} end,
@@ -1050,15 +1233,24 @@ R.presses = {
   ["set-last"] = function(st, a) return R.set_last(st, a[1]) end,
   mute = function(st, a) return R.set_mute(st, a[1], a[2]) end,
   solo = function(st, a) return R.set_solo(st, a[1], a[2]) end,
+  ["rnd-pitch"] = function(st, a) return R.set_rolled(st, a[1], a[2]) end,
 }
 
--- What c_steps.pd itself sends: the clock's step, PLAY, STOP, u_state's restore, and the load.
+-- The tempo bus's BPM, kept with each step decided, for a held repeat's tails (R.tape).
+function R.tempo(st, bpm)
+  if type(bpm) == "number" then st.bpm = clip(bpm, 5, 600) end
+  return {}
+end
+
+-- What c_steps.pd itself sends: the clock's step, PLAY, STOP, u_state's restore, the load and the
+-- tempo bus.
 R.internal = {
   tick = function(st) return R.tick(st) end,
   start = function(st) return R.start(st) end,
   stop = function(st) return R.stop(st) end,
   restore = function(st, a) return R.restore(st, a) end,
   init = function(st) return R.boot(st) end,
+  tempo = function(st, a) return R.tempo(st, a[1]) end,
 }
 
 -- A report on err, C-12: one symbol of 21 characters or fewer.

@@ -149,6 +149,8 @@ mode-2 pad-45 drum-page 45
 mode-2 pad-46 drum-page 46
 mode-2 pad-47 drum-page 47
 mode-2 pad-48 drum-page 48
+mode-2 pad-35 drum-page 35
+mode-2 pad-38 drum-page 38
 mode-2 pad-25 drum-page 25
 mode-2 pad-26 drum-page 26
 mode-2 pad-27 drum-page 27

@@ -58,9 +58,9 @@ end
 -- sixteen solos, the effects before them whether given or not: 743; then, when x gives any track
 -- a character, the sixteen characters, everything before them whether given or not: 759; then,
 -- when x gives the reverb a type other than the plate, 0, the type, everything before it as it
--- stands: 760. x holds what differs from a new sequencer's: randomness, vol and pitch by track,
--- num, den, drunk, swing, last, fx (fx.char among them) and verb, mute and solo by track, and
--- type.
+-- stands: 760; then, when x turns any track's random pitch on, the sixteen flags: 776. x holds what differs from a new sequencer's: randomness, vol and pitch by track,
+-- num, den, drunk, swing, last, fx (fx.char among them) and verb, mute and solo by track, type,
+-- and rolled by track.
 local function line(pat, own, x)
   x = x or {}
   local l = {}
@@ -73,7 +73,7 @@ local function line(pat, own, x)
   end
   l[CELLS + 65], l[CELLS + 66], l[CELLS + 67] = x.num or 4, x.den or 4, x.drunk or 0
   l[CELLS + 68], l[CELLS + 69] = x.swing or 50, x.last or 16
-  local late, typed = x.fx and x.fx.char, x.type and x.type ~= 0
+  local late, typed = x.fx and x.fx.char, (x.type and x.type ~= 0) or x.rolled
   local flagged = x.mute or x.solo or late or typed
   if not x.fx and not x.verb and not flagged then return l end
   for i = 1, BLOCK do
@@ -89,7 +89,9 @@ local function line(pat, own, x)
     for t = 1, 16 do l[#l + 1] = fx_of(x.fx, FX[i][1], t, FX[i][2]) end
   end
   if not typed then return l end
-  l[#l + 1] = x.type
+  l[#l + 1] = x.type or 0
+  if not x.rolled then return l end
+  for t = 1, 16 do l[#l + 1] = x.rolled[t] or 0 end
   return l
 end
 
@@ -165,11 +167,12 @@ end
 -- A knob position for a step: what R.knob_step reads back as n.
 local function at(n) return (n - 1) / 31 end
 
--- The phone's 132 numbers, from the few that differ: lasts and owns by track, then the time
+-- The phone's 148 numbers, from the few that differ: lasts and owns by track, then the time
 -- signature, the drunkenness and the swing (4 4 0 50 unless given), then every track's volume,
 -- pitch and randomness (per.vol, per.pitch and per.randomness by track, 0 unless given), then the
 -- selected track's effects and the reverb's (per.fx and per.verb, as line's x.fx and x.verb), then
--- every track's mute and every track's solo (per.mute and per.solo by track, 0 unless given).
+-- every track's mute and every track's solo (per.mute and per.solo by track, 0 unless given), then
+-- the reverb's type, then every track's random pitch (per.rolled by track, 0 unless given).
 local function phone(playing, last, track, pending, lasts, owns, tail, per)
   per = per or {}
   local p = { playing, last, track, pending }
@@ -185,6 +188,7 @@ local function phone(playing, last, track, pending, lasts, owns, tail, per)
     for t = 1, 16 do p[#p + 1] = (per[which] or {})[t] or 0 end
   end
   p[#p + 1] = per.type or 0
+  for t = 1, 16 do p[#p + 1] = (per.rolled or {})[t] or 0 end
   return p
 end
 
@@ -203,8 +207,8 @@ local function run(st, n)
   for _ = 1, n do
     local pads, head = {}, nil
     for _, e in ipairs(R.internal.tick(st, {})) do
-      if e[1] == "note" then pads[#pads + 1] = e[3][1] .. "@" .. e[3][2] end
-      if e[1] == "page" then head = e[3][1] end
+      if e[1] == "note" and e[2] == "pad" then pads[#pads + 1] = e[3][1] .. "@" .. e[3][2] end
+      if e[1] == "page" and e[2] == "play" then head = e[3][1] end
     end
     out[#out + 1] = head .. ":" .. table.concat(pads, ",")
   end
@@ -950,7 +954,7 @@ equal("⛔ pad 3 held after step 5: the page shows it, and every track replays s
 equal("letting go of another pad changes nothing", R.presses.rep(st, { 2, 0 }), {})
 equal("⛔ let go: the page clears, and every track plays from where it would have been -- six "
       .. "steps after 5 in a loop of 8, step 4", { R.presses.rep(st, { 3, 0 }), run(st, 2) },
-      { { { "page", "rep", { 0 } } }, "4:1@95 5:1@95" })
+      { { { "page", "rep", { 0 } }, { "note", "tape-off", {} } }, "4:1@95 5:1@95" })
 R.presses.rep(st, { 1, 127 })
 equal("pad 1 replays the last step heard", run(st, 3), "5:1@95 5:1@95 5:1@95")
 R.presses.rep(st, { 4, 127 })
@@ -1062,6 +1066,301 @@ R.presses.rep(st, { 2, 0 })
 equal("... and let go, the new section plays from where its loops would have been, steps 3 and "
       .. "4, empty", run(st, 2), "3: 4:")
 
+print("\n--- a held repeat's tails ---")
+-- What a tick tells c_kit of the tails: its tape and tape-off, and nothing else of its answers.
+local function tails(out)
+  local got = {}
+  for _, e in ipairs(out) do
+    if e[1] == "note" and (e[2] == "tape" or e[2] == "tape-off") then
+      got[#got + 1] = { e[2], table.unpack(e[3]) }
+    end
+  end
+  return got
+end
+-- The first of a tick's answers that is a hit, and where the tails' message comes against it.
+local function before_hit(out)
+  for _, e in ipairs(out) do
+    if e[1] == "note" and e[2] == "pad" then return false end
+    if e[1] == "note" and e[2] == "tape" then return true end
+  end
+  return false
+end
+st = R.new(1)
+for k = 1, 8 do R.presses.step(st, { k, 100 }) end
+R.internal.tempo(st, { 120 })
+R.internal.start(st, {})
+run(st, 5)
+equal("pressed, nothing yet: the recording runs until the replay begins, at the next step",
+      R.presses.rep(st, { 4, 127 }), { { "page", "rep", { 4 } } })
+local began = R.internal.tick(st, {})
+equal("⛔ the step the replay begins on tells c_kit: 4 steps at 120 BPM ran 500 ms, and take 4 steps",
+      tails(began), { { "tape", 500, 4 } })
+check("⛔ ... before the step's hits, so they send nothing", before_hit(began), T.show(began))
+equal("the replay's other steps tell it nothing, nor the next pass's first",
+      (function()
+        local n = {}
+        for _ = 1, 7 do for _, e in ipairs(tails(R.internal.tick(st, {}))) do n[#n + 1] = e end end
+        return n
+      end)(), {})
+equal("⛔ let go: the page clears, and c_kit hears the tails stop", R.presses.rep(st, { 4, 0 }),
+      { { "page", "rep", { 0 } }, { "note", "tape-off", {} } })
+equal("... once", R.presses.rep(st, { 4, 0 }), {})
+equal("⛔ a repeat let go before its first step never began: nothing to stop",
+      (function()
+        R.presses.rep(st, { 2, 127 })
+        return R.presses.rep(st, { 2, 0 })
+      end)(), { { "page", "rep", { 0 } } })
+equal("the steps' lengths are as the tempo was then: pad 1 at 60 BPM is 250 ms, whatever is in force",
+      (function()
+        R.internal.tempo(st, { 60 })
+        R.internal.tick(st, {})
+        R.internal.tempo(st, { 240 })
+        R.presses.rep(st, { 1, 127 })
+        return tails(R.internal.tick(st, {}))
+      end)(), { { "tape", 250, 1 } })
+equal("⛔ a second pad under a held repeat begins again, at its own length",
+      (function()
+        R.presses.rep(st, { 3, 127 })
+        return tails(R.internal.tick(st, {}))
+      end)()[1][1], "tape")
+equal("⛔ PLAY lets go, and the tails stop", tails(R.internal.start(st, {})), { { "tape-off" } })
+R.internal.tempo(st, { 120 })
+run(st, 2)
+R.presses.rep(st, { 1, 127 })
+R.internal.tick(st, {})
+equal("⛔ STOP stops the tails too, since the hits have stopped", tails(R.internal.stop(st, {})),
+      { { "tape-off" } })
+equal("... so letting go then says it once only", R.presses.rep(st, { 1, 0 }),
+      { { "page", "rep", { 0 } } })
+R.internal.start(st, {})
+run(st, 2)
+R.presses.rep(st, { 1, 127 })
+R.internal.tick(st, {})
+equal("⛔ a pad pressed short of its length under a held repeat plays fresh steps: the tails stop",
+      R.presses.rep(st, { 4, 127 }), { { "page", "rep", { 4 } }, { "note", "tape-off", {} } })
+-- Swing bends a pair: at 75% the first of each pair runs 1.5 steps and the second 0.5.
+st = R.new(1)
+for k = 1, 8 do R.presses.step(st, { k, 100 }) end
+R.internal.tempo(st, { 120 })
+R.presses["set-swing"](st, { 75 })
+R.internal.start(st, {})
+run(st, 4)
+R.presses.rep(st, { 2, 127 })
+equal("⛔ two steps at 75% keep their pair: 250 ms in 2 steps, the swing in both, so the speed is 1",
+      tails(R.internal.tick(st, {})), { { "tape", 250, 2 } })
+R.presses.rep(st, { 2, 0 })
+run(st, 1)
+R.presses.rep(st, { 1, 127 })
+equal("⛔ one step plays alternately long and short: 125 ms in 1 step, no swing, so the speed is 1 and "
+      .. "it comes round on the hits every second time", tails(R.internal.tick(st, {})),
+      { { "tape", 125, 1 } })
+-- Drunk: a step's own length, in steps, is its own.
+st = R.new(1)
+for k = 1, 8 do R.presses.step(st, { k, 100 }) end
+R.internal.tempo(st, { 120 })
+R.internal.start(st, {})
+R.presses.drunk(st, { 100 })
+st.rand = dice(0.5, 1, 0.5, 0.25, 0.5, 0.5)
+run(st, 3)
+equal("three drunk steps, three, an eighth and one steps long, as they ran", (function()
+  R.presses.rep(st, { 3, 127 })
+  st.rand = dice(0.123)
+  return { tails(R.internal.tick(st, {})), st.rand() }
+end)(), { { { "tape", 515.625, 4.125 } }, 0.123 })
+equal("⛔ a repeat longer than the tape keeps to the tape: 4 steps at 5 BPM fit, 12000 ms ...",
+      (function()
+        local q = R.new(1)
+        R.internal.tempo(q, { 5 })
+        R.internal.start(q, {})
+        run(q, 4)
+        R.presses.rep(q, { 4, 127 })
+        return tails(R.internal.tick(q, {}))
+      end)(), { { "tape", 12000, 4 } })
+equal("... and the same four drunk, three steps each, play its last 12000 in 12 steps' time",
+      (function()
+        local q = R.new(1)
+        R.internal.tempo(q, { 5 })
+        R.internal.start(q, {})
+        R.presses.drunk(q, { 100 })
+        q.rand = dice(0, 1, 0, 1, 0, 1, 0, 1)
+        run(q, 4)
+        R.presses.rep(q, { 4, 127 })
+        return tails(R.internal.tick(q, {}))
+      end)(), { { "tape", 12000, 12 } })
+
+print("\n--- the 500 BPM repeat and the saved tempo ---")
+st = R.new(1)
+for k = 1, 8 do R.presses.step(st, { k, 100 }) end
+R.presses.last(st, { at(16) })
+R.presses.last(st, { at(4) })
+R.internal.tempo(st, { 120 })
+R.internal.start(st, {})
+run(st, 2)
+equal("⛔ pad-35 pressed: u_tempo holds 500, its lamp lights, and the last step repeats, no repeat "
+      .. "pad's lamp lit", R.presses.fast(st, { 1, 127 }),
+      { { "tempo", "fast", { 1 } }, { "page", "fast", { 1 } }, { "page", "rep", { 0 } } })
+R.internal.tempo(st, { 500 })
+local tick1 = R.internal.tick(st, {})
+equal("⛔ the replay begins at the next step, its tails told as any repeat's: one step at 120 BPM",
+      tails(tick1), { { "tape", 125, 1 } })
+equal("⛔ held, step 2 plays over and over", run(st, 5), "2:1@95 2:1@95 2:1@95 2:1@95 2:1@95")
+equal("⛔ ... and the loops wait: no bar, in many times the loop of 4",
+      (function()
+        local n = 0
+        for _ = 1, 20 do
+          for _, e in ipairs(R.internal.tick(st, {})) do if e[1] == "bar" then n = n + 1 end end
+        end
+        return n
+      end)(), 0)
+equal("a repeat pad while it is held does nothing, press or release",
+      { R.presses.rep(st, { 3, 127 }), R.presses.rep(st, { 1, 0 }) }, { {}, {} })
+equal("⛔ let go: the tempo back first, its lamp out, the repeat let go and the tails stopped",
+      R.presses.fast(st, { 1, 0 }),
+      { { "tempo", "fast", { 0 } }, { "page", "fast", { 0 } }, { "page", "rep", { 0 } },
+        { "note", "tape-off", {} } })
+equal("⛔ ... and the pattern carries on from the step it was pressed on: 3, 4, then 1", run(st, 3),
+      "3:1@95 4:1@95 1:1@95")
+equal("... the release once only", R.presses.fast(st, { 1, 0 }), {})
+R.presses.fast(st, { 1, 127 })
+R.internal.tick(st, {})
+equal("⛔ PLAY lets go of it, the tempo back too", (function()
+  local e = R.internal.start(st, {})
+  local got = {}
+  for _, x in ipairs(e) do
+    if x[1] == "tempo" or x[2] == "fast" or x[2] == "tape-off" then got[#got + 1] = x[2] end
+  end
+  return got
+end)(), { "tape-off", "fast", "fast" })
+equal("... and its release after that says nothing", R.presses.fast(st, { 1, 0 }), {})
+equal("⛔ pressed before anything has played: the tempo and its lamp, and no repeat, as a repeat pad",
+      (function()
+        local q = R.new(1)
+        return R.presses.fast(q, { 1, 127 })
+      end)(), { { "tempo", "fast", { 1 } }, { "page", "fast", { 1 } } })
+equal("⛔ pad-38 pressed: its lamp lights, and u_song is asked for the saved tempo",
+      R.presses.recall(st, { 1, 127 }),
+      { { "page", "recall", { 1 } }, { "song", "recall", { "tempo" } } })
+equal("... and let go, only its lamp", R.presses.recall(st, { 1, 0 }),
+      { { "page", "recall", { 0 } } })
+
+print("\n--- a track's random pitch ---")
+-- The pitches told to c_kit on a tick, and whether each comes before its track's hit.
+local function pitched(out)
+  local got = {}
+  for _, e in ipairs(out) do
+    if e[1] == "note" and (e[2] == "pitch" or e[2] == "pad") then
+      got[#got + 1] = e[2] .. " " .. table.concat(e[3], " ")
+    end
+  end
+  return table.concat(got, ", ")
+end
+st = R.new(1)
+for k = 1, 8 do R.presses.step(st, { k, 100 }) end
+R.presses.last(st, { at(16) })
+R.presses.last(st, { at(4) })
+R.presses.randomness(st, { 1, 50 })
+R.internal.start(st, {})
+-- The dice: 0 fires the roll and 0.9 doesn't, the coin plays below 0.5, the level, then the pitch.
+st.rand = dice(0, 0.1, 0.99)
+equal("off: a rolled hit plays at its set pitch, and rolls three dice", pitched(R.internal.tick(st, {})),
+      "pad 1 127")
+equal("⛔ off, the next die is untouched: no fourth was rolled", st.rand(), 0.5)
+equal("rnd-pitch on is saved, 776 numbers, and tells c_kit nothing",
+      R.presses["rnd-pitch"](st, { 1, 1 }),
+      { { "save", "list", line((function()
+        local z = zeros(CELLS)
+        for k = 1, 8 do z[k] = 95 end
+        return z
+      end)(), nil, { randomness = { [1] = 50 }, last = 4, rolled = { [1] = 1 } }) } })
+equal("the same again does nothing", R.presses["rnd-pitch"](st, { 1, 1 }), {})
+equal("a message with no number does nothing", R.presses["rnd-pitch"](st, { 1 }), {})
+st.rand = dice(0, 0.1, 0.99, 1 / 25 * 19.5, 0.123)
+equal("⛔ on: a rolled hit takes a pitch of its own, die 0.78 of 25 places, +7, told before the hit",
+      pitched(R.internal.tick(st, {})), "pitch 1 7, pad 1 127")
+equal("⛔ ... rolling one more die, the fourth", st.rand(), 0.123)
+st.rand = dice(0.9)
+equal("⛔ a roll that does not fire leaves the written step: back at its set pitch, 0, before the hit",
+      pitched(R.internal.tick(st, {})), "pitch 1 0, pad 1 95")
+st.rand = dice(0.9)
+equal("... and the next, at its set pitch already, tells nothing", pitched(R.internal.tick(st, {})),
+      "pad 1 95")
+st.rand = dice(0, 0.9, 0.123)
+equal("⛔ a coin that silences the hit rolls no pitch and tells none", { pitched(R.internal.tick(st, {})),
+      st.rand() }, { "", 0.123 })
+st.rand = dice(0, 0.1, 0.99, 0)
+equal("the die at its bottom is -12", pitched(R.internal.tick(st, {})), "pitch 1 -12, pad 1 127")
+st.rand = dice(0, 0.1, 0.99, 0.9999999)
+equal("... and at its top +12", pitched(R.internal.tick(st, {})), "pitch 1 12, pad 1 127")
+R.presses.pitch(st, { 1, 6 })
+st.rand = dice(0, 0.1, 0.99, 0.9999999)
+equal("⛔ around the set pitch, kept to the range: 6 + 12 is +12", pitched(R.internal.tick(st, {})),
+      "pitch 1 12, pad 1 127")
+st.rand = dice(0, 0.1, 0.99, 0)
+equal("... and 6 - 12 is -6", pitched(R.internal.tick(st, {})), "pitch 1 -6, pad 1 127")
+R.presses.pitch(st, { 1, -6 })
+st.rand = dice(0, 0.1, 0.99, 0)
+equal("⛔ ... -6 - 12 kept to -12", pitched(R.internal.tick(st, {})), "pitch 1 -12, pad 1 127")
+R.presses.pitch(st, { 1, 0 })
+st.rand = dice(0, 0.1, 0.99, 0.75)
+equal("a set pitch dragged in between is what c_kit holds: told the pitch it rolled, die 0.75, +6",
+      pitched(R.internal.tick(st, {})), "pitch 1 6, pad 1 127")
+equal("⛔ a press on its pad plays at the set pitch: told first, then the hit",
+      pitched(R.presses.pad(st, { 1, 100 })), "pitch 1 0, pad 1 127")
+-- A repeat replays it: the rolled hit's pitch, then the unrolled hit's, as they fell.
+st = R.new(1)
+for k = 1, 8 do R.presses.step(st, { k, 100 }) end
+R.presses.last(st, { at(16) })
+R.presses.last(st, { at(4) })
+R.presses.randomness(st, { 1, 50 })
+R.presses["rnd-pitch"](st, { 1, 1 })
+R.internal.start(st, {})
+st.rand = dice(0, 0.1, 0.99, 0.75, 0.9)
+local a1, a2 = pitched(R.internal.tick(st, {})), pitched(R.internal.tick(st, {}))
+equal("two steps: a rolled hit at +6, then an unrolled one at its set pitch", { a1, a2 },
+      { "pitch 1 6, pad 1 127", "pitch 1 0, pad 1 95" })
+R.presses.rep(st, { 2, 127 })
+st.rand = dice(0.123)
+equal("⛔ a repeat replays them exactly, the pitch with the hit, every pass, rolling nothing",
+      { pitched(R.internal.tick(st, {})), pitched(R.internal.tick(st, {})),
+        pitched(R.internal.tick(st, {})), st.rand() },
+      { "pitch 1 6, pad 1 127", "pitch 1 0, pad 1 95", "pitch 1 6, pad 1 127", 0.123 })
+R.presses.rep(st, { 2, 0 })
+-- A section's restore: the line round trip, and older lines off.
+local saved = line(zeros(CELLS), nil, { rolled = { [3] = 1, [16] = 1 } })
+equal("⛔ a line of 776 numbers restores each track's random pitch, in the phone's last 16",
+      (function()
+        R.internal.restore(st, saved)
+        local p = R.phone(st)
+        return { #saved, p[132 + 3], p[132 + 16], p[132 + 1], R.save(st)[3][776] }
+      end)(), { 776, 1, 1, 0, 1 })
+equal("⛔ ... and goes back out as it came", R.save(st)[3], saved)
+equal("⛔ a line of 760, older, loads every track's off, and is put back the 760 it was",
+      (function()
+        local older = line(zeros(CELLS), nil, { type = 1 })
+        R.internal.restore(st, older)
+        local p = R.phone(st)
+        return { p[132 + 3], p[132 + 16], #R.save(st)[3], #older }
+      end)(), { 0, 0, 760, 760 })
+equal("a line of 581 the same", (function()
+  R.internal.restore(st, first(saved, 581))
+  return { R.phone(st)[132 + 3], #R.save(st)[3] }
+end)(), { 0, 581 })
+equal("⛔ a restore tells c_kit the set pitch: c_kit holds it, so the next hit tells none",
+      (function()
+        local q = R.new(1)
+        R.presses.step(q, { 1, 100 })
+        R.presses["rnd-pitch"](q, { 1, 1 })
+        R.presses.randomness(q, { 1, 100 })
+        R.internal.start(q, {})
+        q.rand = dice(0, 0.1, 0.99, 0.75)
+        R.internal.tick(q, {})
+        local l = line(zeros(CELLS))
+        l[1] = 95
+        R.internal.restore(q, l)
+        q.rand = dice(0.9)
+        return pitched(R.internal.tick(q, {}))
+      end)(), "pad 1 95")
+
 print("\n--- the settings in the restore ---")
 st = R.new(1)
 R.internal.init(st, {})
@@ -1171,7 +1470,7 @@ equal("⛔ the reverb's size and damping are the kit's, one each: saved, and to 
 local P = 4 + 32 + 4 + 48
 equal("⛔ the phone hears the selected track's effects and the reverb's, after the rest",
       { R.phone(st)[P + 1], R.phone(st)[P + 3], R.phone(st)[P + 10], R.phone(st)[P + 11],
-        #R.phone(st) }, { 100, 0, 80, 20, 132 })
+        #R.phone(st) }, { 100, 0, 80, 20, 148 })
 R.select(st, 7)
 equal("... and another track's once it is selected: track 7's 1/2 triplet",
       { R.phone(st)[P + 4], R.phone(st)[P + 5], R.phone(st)[P + 6] }, { 1, 2, 40 })
@@ -1299,7 +1598,7 @@ equal("⛔ the phone hears each track's mute, then each track's solo, after the 
         R.presses.solo(st, { 5, 1 })
         return { #R.phone(st), R.phone(st)[99 + 3], R.phone(st)[99 + 2], R.phone(st)[115 + 5],
                  R.phone(st)[115 + 3] }
-      end)(), { 132, 1, 0, 1, 0 })
+      end)(), { 148, 1, 0, 1, 0 })
 st = R.new(1)
 R.presses.dist(st, { 4, 30 })
 R.presses.solo(st, { 6, 1 })
@@ -1377,7 +1676,7 @@ R.select(st, 8)
 local Q = 4 + 32 + 4 + 48
 equal("⛔ the phone hears the selected track's character after its send, before the reverb's two",
       { R.phone(st)[Q + 8], R.phone(st)[Q + 9], R.phone(st)[Q + 10], #R.phone(st) },
-      { 0, 3, 50, 132 })
+      { 0, 3, 50, 148 })
 R.select(st, 1)
 equal("... and track 1's, soft, once it is selected", R.phone(st)[Q + 9], 1)
 
@@ -1444,8 +1743,8 @@ R.presses.mute(st, { 4, 1 })
 equal("⛔ ... and with a type and an effect and a mute, all of them in the 760",
       R.save(st)[3], line(zeros(CELLS), nil, { verb = { size = 30 }, mute = { [4] = 1 },
                                                type = 1 }))
-equal("⛔ the phone hears the type last, its 132nd number", { #R.phone(st), R.phone(st)[132] },
-      { 132, 1 })
+equal("⛔ the phone hears the type before the random pitches, its 132nd number",
+      { #R.phone(st), R.phone(st)[132] }, { 148, 1 })
 
 print("\n--- the reverb's type in the restore ---")
 st = R.new(1)
@@ -1486,7 +1785,7 @@ local class = T.load_class(DIR .. "c_steps-lua.pd_lua", DIR)
 check("c_steps-lua.pd_lua registers the class c_steps-lua", class and class._name == "c_steps-lua",
       class and class._name)
 local o = T.new(class, { 1 })
-check("an object has two inlets and nine outlets", o and o.inlets == 2 and o.outlets == 9,
+check("an object has two inlets and ten outlets", o and o.inlets == 2 and o.outlets == 10,
       o and (o.inlets .. " " .. o.outlets))
 equal("init: the page's selection on outlet 2, every effect on outlet 1, for c_kit, the drum "
       .. "screen's state on outlet 7, then the bang on outlet 5 that says it loaded",

@@ -205,7 +205,11 @@ BAR_START = (16, 40, 127)       # every Nth step, off, N the top number: blue
 # time signature's top number says how many of a row's eight hold steps (c_steps.lua's R.row):
 # row r and column c, from 0, show step r x row + c + 1, and a cell past the row is dark.
 ROW = 8
-REP_DIM, REP_HELD = (20, 8, 32), (80, 24, 127)   # a repeat pad, and the one held: purple
+# A repeat pad and the 500 BPM repeat, pad-35: the brightest purple there is, and whiter, never
+# dimmer, while held (Brendan, 2026-11-05). REP_DIM keeps its name for what a pad not held is.
+REP_DIM, REP_HELD = (127, 0, 127), (127, 80, 127)
+# The saved tempo, pad-38: dim blue, and bright while held. g_grid's RGB entries 32 and 33.
+RECALL_DIM, RECALL_HELD = (8, 20, 64), (40, 100, 127)
 
 
 def drum_layout(path=DRUM_PAGE):
@@ -249,16 +253,18 @@ def drum_page(frame, lay, row=ROW):
     of steps this long.
 
     page is {"step": {step: color}, "vel": {n: color}, "pad": {n: color}, "rep": {n:
-    color}}, a step cell keyed by the step it shows (cell_step). The
-    page is: the eight mode lamps as home has them, every layout cell in a color
-    its role can take, a step cell past its row dark, and everything else dark --
-    the beat row included, since it gives way here, and the bottom-right 4x4,
-    which no row names.
+    color}, "fast": {1: color}, "recall": {1: color}}, a step cell keyed by the step
+    it shows (cell_step). The page is: the eight mode lamps as home has them, every
+    layout cell in a color its role can take, a step cell past its row dark, and
+    everything else dark -- the beat row included, since it gives way here, and the
+    two cells between pad-35 and pad-38, which no row names.
     """
     allowed = {"step": {DIM, OUT, PLAYHEAD, BAR_START} | set(LEVEL_RGB),
                "vel": set(LEVEL_RGB) | set(LEVEL_DIM), "pad": set(PADS),
-               "rep": {REP_DIM, REP_HELD}}
-    lamp, page, stray = None, {"step": {}, "vel": {}, "pad": {}, "rep": {}}, []
+               "rep": {REP_DIM, REP_HELD}, "fast": {REP_DIM, REP_HELD},
+               "recall": {RECALL_DIM, RECALL_HELD}}
+    lamp, page, stray = None, {"step": {}, "vel": {}, "pad": {}, "rep": {}, "fast": {},
+                               "recall": {}}, []
     for k, color in enumerate(frame.colors()):
         idx = FIRST_INDEX + k
         if idx in LAMPS:

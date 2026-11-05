@@ -20,7 +20,7 @@ fh = assert(io.open(DIR .. "g_grid.pd"))
 local PATCH = fh:read("a")
 fh:close()
 
--- The RGB table in g_grid.pd's paint, the one message that sets it, 32 entries of three: a color
+-- The RGB table in g_grid.pd's paint, the one message that sets it, 34 entries of three: a color
 -- of 128 + k is entry k.
 local RGB = {}
 for body in PATCH:gmatch("\n#X msg %d+ %d+ ([%d ]+);\n#X obj %d+ %d+ array set \\%$0%-rgb;") do
@@ -42,7 +42,10 @@ local PINK, RED, BLUE = { 127, 20, 72 }, { 127, 0, 0 }, { 16, 40, 127 }
 -- A pad whose track won't play, muted or left out of a solo: the pink, or the selected pad's red,
 -- at a quarter (Brendan, 2026-11-05).
 local PINK_QUIET, RED_QUIET = { 32, 5, 18 }, { 32, 0, 0 }
-local REP, HELD = { 20, 8, 32 }, { 80, 24, 127 }
+-- A repeat pad and the 500 BPM repeat: the brightest purple there is, and whiter, never dimmer,
+-- while held (Brendan, 2026-11-05). The saved tempo: blue, dim, and bright while held.
+local REP, HELD = { 127, 0, 127 }, { 127, 80, 127 }
+local RECALL, RECALL_HELD = { 8, 20, 64 }, { 40, 100, 127 }
 local DARK, DIM, GREEN = 0, 1, 21
 
 -- A paint as {grid index: color}, the color as the Launchpad shows it.
@@ -54,7 +57,7 @@ local function frame(st)
 end
 
 -- The layout's cells by role: {role: {n: grid index}}.
-local CELL = { step = {}, vel = {}, pad = {}, rep = {} }
+local CELL = { step = {}, vel = {}, pad = {}, rep = {}, fast = {}, recall = {} }
 for line in LAYOUT:gmatch("[^\n]+") do
   local i, r, n = line:match("^(%d+) (%a+) (%d+)$")
   if i then CELL[r][tonumber(n)] = tonumber(i) end
@@ -81,8 +84,12 @@ local function rep(v, n)
 end
 
 print("\n--- the colors are g_grid's RGB table's ---")
-check("the table is g_grid.pd's 32 entries of three, the array defined to hold them",
-      #RGB == 96 and DEFINED == 96, T.show({ #RGB, DEFINED }))
+check("the table is g_grid.pd's 34 entries of three, the array defined to hold them",
+      #RGB == 102 and DEFINED == 102, T.show({ #RGB, DEFINED }))
+equal("⛔ a repeat at rest is as bright as purple gets, and held its red and blue stay full: whiter",
+      { rgb(R.REP)[1], rgb(R.REP)[3], rgb(R.REP_HELD)[1], rgb(R.REP_HELD)[3] }, { 127, 127, 127, 127 })
+equal("⛔ the saved tempo's pad, dim blue and bright while held", { rgb(R.RECALL), rgb(R.RECALL_HELD) },
+      { RECALL, RECALL_HELD })
 local lv, qt = {}, {}
 for v = 1, 8 do lv[v], qt[v] = rgb(R.LEVEL + v - 1), rgb(R.QUARTER + v - 1) end
 equal("a level's color, full: white for level 1 falling evenly to red for 8", lv, LEVEL)
@@ -97,13 +104,14 @@ equal("dark, dim and the playhead are palette 0, 1 and 21", { R.DARK, R.DIM, R.P
 
 print("\n--- the layout ---")
 local st = R.new(LAYOUT)
-local count = { step = 0, vel = 0, pad = 0, rep = 0 }
+local count = { step = 0, vel = 0, pad = 0, rep = 0, fast = 0, recall = 0 }
 for k in pairs(CELL) do for _ in pairs(CELL[k]) do count[k] = count[k] + 1 end end
-equal("cut-it-drum-page.txt: 32 step cells, 8 velocity buttons, 16 pads, 4 repeat pads", count,
-      { step = 32, vel = 8, pad = 16, rep = 4 })
+equal("cut-it-drum-page.txt: 32 step cells, 8 velocity buttons, 16 pads, 4 repeat pads, the 500 BPM "
+      .. "repeat and the saved tempo", count,
+      { step = 32, vel = 8, pad = 16, rep = 4, fast = 1, recall = 1 })
 local ORDER = {}
 for line in LAYOUT:gmatch("[^\n]+") do ORDER[#ORDER + 1] = tonumber(line:match("^(%d+)")) end
-equal("paint writes those 60 cells and no other, in the table's order", R.paint(st), ORDER)
+equal("paint writes those 62 cells and no other, in the table's order", R.paint(st), ORDER)
 equal("a row of another role, a blank line or a malformed one paints nothing",
       R.paint(R.new("11 pad 1\n\n12 mute 2\nx pad 3\n13 4 5\n14 rep\n15 rep 2\n")),
       { 11, 15 })
@@ -117,7 +125,7 @@ equal("every velocity button a quarter: none selected", (function()
   for v = 1, 8 do t[v] = f[CELL.vel[v]] end
   return t
 end)(), QUARTER)
-equal("every pad bright pink, every repeat pad dim purple", (function()
+equal("every pad bright pink, every repeat pad full purple", (function()
   local t = {}
   for n = 1, 16 do t[#t + 1] = f[CELL.pad[n]] end
   for n = 1, 4 do t[#t + 1] = f[CELL.rep[n]] end
@@ -231,12 +239,29 @@ equal("⛔ the selected pad red, the other fifteen bright pink", (function()
   end
   return { red, pink }
 end)(), { { 13 }, 15 })
-equal("the repeat pad held bright purple, the other three dim", { f[CELL.rep[1]], f[CELL.rep[2]],
+equal("the repeat pad held whiter purple, the other three full purple", { f[CELL.rep[1]], f[CELL.rep[2]],
       f[CELL.rep[3]], f[CELL.rep[4]] }, { REP, REP, HELD, REP })
+equal("⛔ the 500 BPM repeat, pad-35 under repeat pad 1, purple, and the saved tempo, pad-38 under repeat "
+      .. "pad 4, dim blue, at rest", { CELL.fast[1], CELL.recall[1], f[CELL.fast[1]], f[CELL.recall[1]] },
+      { 35, 38, REP, RECALL })
+check("⛔ the cells between them are in no row: pad-36 and pad-37 stay dark", not (function()
+  for _, role in pairs(CELL) do
+    for _, i in pairs(role) do if i == 36 or i == 37 then return true end end
+  end
+  return false
+end)())
+R.inputs.fast(st, { 1 })
+R.inputs.recall(st, { 1 })
+f = frame(st)
+equal("⛔ held, each brightens, and only it", { f[CELL.fast[1]], f[CELL.recall[1]], f[CELL.rep[1]] },
+      { HELD, RECALL_HELD, REP })
+R.inputs.fast(st, { 0 })
+R.inputs.recall(st, { 0 })
 R.inputs.rep(st, { 0 })
 R.inputs.track(st, { 1 })
 R.inputs.vel(st, { 1 })
 f = frame(st)
+equal("let go, each back", { f[CELL.fast[1]], f[CELL.recall[1]] }, { REP, RECALL })
 equal("rep 0 holds none; pad 1 and level 1 follow", { f[CELL.rep[3]], f[CELL.pad[1]],
       f[CELL.pad[13]], f[CELL.vel[1]], f[CELL.vel[6]] }, { REP, RED, PINK, LEVEL[1], QUARTER[6] })
 -- The pads in order, 1 to 16, as the Launchpad shows them.
@@ -295,7 +320,7 @@ local surface = T.arrays["1003-surface"]
 local o = T.new(class, { "1003-surface" })
 check("an object has two inlets and two outlets", o and o.inlets == 2 and o.outlets == 2,
       o and (o.inlets .. " " .. o.outlets))
-check("... and read the layout from its patch's folder, in silence", o and #o.state.index == 60
+check("... and read the layout from its patch's folder, in silence", o and #o.state.index == 62
       and #o.console == 0, o and T.show(o.console))
 equal("init: the bang on outlet 2 that says it loaded, and nothing else",
       T.send(o, 2, "init", {}), { { 2, "bang", {} } })
@@ -313,7 +338,7 @@ equal("... and writes the page into the frame buffer: step 1 level 8, step 3 the
   surface[CELL.step[17]], surface[CELL.pad[5]], surface[CELL.pad[6]], surface[CELL.pad[7]],
   surface[CELL.vel[2]], surface[CELL.vel[1]], surface[CELL.rep[4]], surface[CELL.rep[1]] },
   { 135, 1, 21, 129, 0, 159, 158, 144, 129, 136, 147, 146 })
-check("⛔ ... and nothing outside its 60 cells: the fill and the other regions are g_grid.pd's",
+check("⛔ ... and nothing outside its 62 cells: the fill and the other regions are g_grid.pd's",
       (function()
         local mine = {}
         for line in LAYOUT:gmatch("[^\n]+") do mine[tonumber(line:match("^(%d+)"))] = true end

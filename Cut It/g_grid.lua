@@ -20,11 +20,15 @@ R.LEVEL = 128        -- velocity level v at full brightness is R.LEVEL + v - 1, 
 R.QUARTER = 136      -- ... and at a quarter, R.QUARTER + v - 1: a velocity button not selected
 R.PAD = 144          -- a drum pad not selected, bright pink
 R.BLUE = 145         -- every Nth step, off: blue
-R.REP, R.REP_HELD = 146, 147   -- a repeat pad, dim purple, and the one held, bright
+-- A repeat pad and the 500 BPM repeat, pad-35: the brightest purple there is at rest, and whiter,
+-- not dimmer, while held (Brendan, 2026-11-05).
+R.REP, R.REP_HELD = 146, 147
 R.PAD_ON = 154       -- the selected pad, red
 -- A pad whose track won't play, muted or left out of a solo, dim: the pink, and the selected
 -- pad's red, at a quarter (Brendan, 2026-11-05).
 R.PAD_QUIET, R.PAD_ON_QUIET = 158, 159
+-- The saved tempo, pad-38: dim blue, and bright while held (Brendan, 2026-11-05).
+R.RECALL, R.RECALL_HELD = 160, 161
 
 -- The step cells are four rows of eight, numbered 1 to 32 along them by the layout table; the
 -- selected track's levels are 32 long.
@@ -34,7 +38,7 @@ R.PADS = 16
 -- The step a cell past its row shows: past every last step, so dark.
 R.PAST = 33
 
-local ROLE = { step = 1, vel = 2, pad = 3, rep = 4 }
+local ROLE = { step = 1, vel = 2, pad = 3, rep = 4, fast = 5, recall = 6 }
 
 -- A number made whole toward zero, as C's (int) makes it.
 local function whole(x)
@@ -68,15 +72,15 @@ end
 
 -- The page as c_steps last said it, starting where g_grid.pd's boxes started: every step off,
 -- no playhead, no velocity button or pad selected, last step 16, a blue step every 4 and no step
--- to a row until the first bar, so every step cell dark, and no repeat pad held; and every pad's
--- track playing, as c_steps' start with nothing muted or soloed.
+-- to a row until the first bar, so every step cell dark, and no repeat pad, 500 BPM repeat or saved
+-- tempo held; and every pad's track playing, as c_steps' start with nothing muted or soloed.
 -- text: the layout table.
 function R.new(text)
   local st = { steps = {}, play = 0, vel = 0, track = 0, last = 16, every = 4, row = 0, rep = 0,
-               quiet = {} }
+               fast = 0, recall = 0, quiet = {} }
   for i = 1, R.STEPS do st.steps[i] = 0 end
   for t = 1, R.PADS do st.quiet[t] = 0 end
-  -- The cells paint writes: a row whose role is none of the four paints nothing, as Pd's
+  -- The cells paint writes: a row whose role is none of these paints nothing, as Pd's
   -- [select step vel pad rep] passed it by, so it is left out here.
   local index, role, n = R.parse(text)
   st.index, st.kind, st.n, st.r, st.c, st.colors = {}, {}, {}, {}, {}, {}
@@ -161,6 +165,16 @@ R.inputs = {
     if type(a[1]) == "number" then st.rep = a[1] end
     return {}
   end,
+  -- fast <1 or 0>, the 500 BPM repeat held.
+  fast = function(st, a)
+    if type(a[1]) == "number" then st.fast = a[1] end
+    return {}
+  end,
+  -- recall <1 or 0>, the saved tempo's pad held.
+  recall = function(st, a)
+    if type(a[1]) == "number" then st.recall = a[1] end
+    return {}
+  end,
   -- quiet <16 flags>, track 1 first: 1 for a track that won't play, muted or left out of a solo,
   -- whose pad shows dim. A shorter list sets the pads it holds.
   quiet = function(st, a)
@@ -178,12 +192,14 @@ R.inputs = {
 --   a velocity button: its level's color, full when selected and a quarter otherwise.
 --   a pad: red when selected, bright pink otherwise; each at a quarter when its track won't
 --     play.
---   a repeat pad: bright purple while held, dim otherwise.
+--   a repeat pad: the brightest purple, and whiter while held.
+--   the 500 BPM repeat: the same, while it is held.
+--   the saved tempo: blue, dim, and bright while held.
 function R.paint(st)
   local kind, n, colors = st.kind, st.n, st.colors
   local shows, at, blue = st.shows, st.at, st.blue
   local steps, play, last = st.steps, st.play, st.last
-  local vel, track, rep, quiet = st.vel, st.track, st.rep, st.quiet
+  local vel, track, rep, quiet, fast, recall = st.vel, st.track, st.rep, st.quiet, st.fast, st.recall
   local DARK, DIM, PLAYHEAD, BLUE = R.DARK, R.DIM, R.PLAYHEAD, R.BLUE
   local LEVEL, QUARTER = R.LEVEL - 1, R.QUARTER - 1
   local PAD, PAD_ON, REP, REP_HELD = R.PAD, R.PAD_ON, R.REP, R.REP_HELD
@@ -213,8 +229,12 @@ function R.paint(st)
       else
         colors[k] = hushed and PAD_QUIET or PAD
       end
-    else
+    elseif role == 4 then
       colors[k] = n[k] == rep and REP_HELD or REP
+    elseif role == 5 then
+      colors[k] = fast ~= 0 and REP_HELD or REP
+    else
+      colors[k] = recall ~= 0 and R.RECALL_HELD or R.RECALL
     end
   end
   return st.index, colors

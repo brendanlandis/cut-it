@@ -4,7 +4,7 @@ stdin and the recording.
 
     kit-assert.py OUT.wav [-v] < capture
 
-Nine claims:
+Ten claims:
 
     1. u_root sends the sequencer's pads to c_kit, and to nothing else, and
        c_kit's outlet~ to the left output
@@ -25,6 +25,9 @@ Nine claims:
        one as hard as a loud one; and soft, hard, fold and crush each a shape of its own
     9. each effect's DSP has a switch~, the crush stage one of its own, and each of the
        reverb's engines one, run by e_tail
+   10. a held repeat's tails: a hit under a hold sends nothing and the live sound is muted
+       while its engine rings on; the last steps loop at their place and level, follow
+       the tempo in speed and pitch, and no sample jumps at the seam or either crossing
 
 Standard library only.
 """
@@ -320,7 +323,7 @@ def main():
     after = span(t + 0.5 + G.SAMPLE_S + 0.02, t + 1.4)
     A.check("ECHO: ... and once only, at feedback 0", peak(after) < SILENT,
             "peak %.5f after the echo" % peak(after))
-    t = G.hit_time(window("TAIL"), G.SET_MS)
+    t = G.hit_time(window("TAIL-1"), G.SET_MS)
     e1 = rms(span(t + 0.5 + 0.02, t + 0.5 + G.SAMPLE_S - 0.03))
     e2 = rms(span(t + 1.0 + 0.02, t + 1.0 + G.SAMPLE_S - 0.03))
     A.check("⛔ TAIL: pad 1's level set to 0 after its hit went in, its echoes ring out: the first "
@@ -471,6 +474,117 @@ def main():
             "character but crush, so the other three don't pay for it",
             "switch~" in crush_sub and "samphold~" in crush_sub,
             "pd crush's objects: %s" % crush_sub)
+
+    # ---- 10. a held repeat's tails ------------------------------------------
+    print("\n--- 10. a held repeat's tails: no new wet, a loop in time, following the tempo ---")
+
+    def freq(xs):
+        return crossings(xs) / 2.0 / (len(xs) / float(rate)) if xs else 0.0
+
+    def biggest_step(xs):
+        """The largest jump between two samples, as a share of full scale: a click is one."""
+        return max((abs(float(xs[i + 1]) - xs[i]) for i in range(len(xs) - 1)), default=0) / 32768.0
+
+    # pad 7's tone at full level: the sample's own largest step between two samples, a little more
+    # where a delay's echoes overlap by the block it takes off its time
+    TONE_STEP = 2 * math.pi * G.SAMPLES[7] / rate * G.AMP
+    FREEZE_S = 192.0 / rate
+    t0 = G.hit_time(window("HOLD-HIT"))
+    hit = t0 + G.SET_MS / 1000.0 + G.TAPE_HIT_MS / 1000.0
+    freed = t0 + (G.SET_MS + G.TAPE_HOLD_MS) / 1000.0
+    dry = span(hit + 0.02, hit + G.SAMPLE_S - 0.03)
+    A.check("HOLD-HIT: a hit under a hold plays its dry sound as ever", abs(rms(dry) - TONE_RMS)
+            / TONE_RMS < RMS_TOL, "rms %.5f, wanted %.5f" % (rms(dry), TONE_RMS))
+    echo = span(hit + 0.5 - 0.01, hit + 0.5 + G.SAMPLE_S + 0.02)
+    A.check("⛔ HOLD-HIT: and sends nothing: let go before its echo was due, no echo comes, ever",
+            peak(echo) < SILENT and hit + 0.5 > freed + 0.01, "peak %.5f where its echo would be"
+            % peak(echo))
+    t = G.hit_time(window("HOLD-AFTER"), G.SET_MS)
+    echo = span(t + 0.5 + 0.02, t + 0.5 + G.SAMPLE_S - 0.03)
+    A.check("⛔ HOLD-AFTER: let go, the sends are back: the next hit echoes, at its level",
+            abs(rms(echo) - TONE_RMS) / TONE_RMS < RMS_TOL, "rms %.5f, wanted %.5f"
+            % (rms(echo), TONE_RMS))
+
+    t = G.hit_time(window("RING-TAIL"), G.SET_MS)
+    second = span(t + 1.0 + 0.02, t + 1.0 + G.SAMPLE_S - 0.03)
+    A.check("⛔ RING-TAIL: held over the second echo, the live sound is muted: not a sample of it",
+            peak(span(t + G.RING_HOLD_S + FREEZE_S + 0.012, t + G.RING_HOLD_S + G.RING_HOLD_FOR_S
+                      - 0.002)) < SILENT and rms(second) < 0.001,
+            "peak %.5f through the hold, rms %.5f where the second echo was"
+            % (peak(span(t + G.RING_HOLD_S + FREEZE_S + 0.012, t + G.RING_HOLD_S
+                         + G.RING_HOLD_FOR_S - 0.002)), rms(second)))
+    third = rms(span(t + 1.5 + 0.02, t + 1.5 + G.SAMPLE_S - 0.03))
+    A.check("⛔ RING-TAIL: the engine rang on under it, its tail dying as usual: let go, the third "
+            "echo is 0.475 squared of the hit, no blast and no silence", abs(third / TONE_RMS
+            - 0.475 ** 2) < 0.02 and peak(span(t + G.RING_HOLD_S, t + 2.8)) <= G.AMP * 1.02,
+            "rms %.5f, %.3f of the hit, wanted %.3f; peak %.4f" % (third, third / TONE_RMS,
+                                                                   0.475 ** 2, peak(span(
+                t + G.RING_HOLD_S, t + 2.8))))
+
+    t0 = G.hit_time(window("LOOP"), G.SET_MS)
+    held = t0 + G.LOOP_S
+    # the echo, a 0.3 s tone at 500 ms, sits 0.65 s into the 1000 ms of tape before the hold
+
+    def burst(at, name, length, want_hz, level=TONE_RMS):
+        """The loop's burst, the echo as it is on the tape, at seconds at into the recording:
+        where it starts, and its level and its pitch inside it. Its place is good to 2 ms of tape,
+        so more at a slower speed."""
+        o = onset(at - 0.03, at + 0.03)
+        seg = span(at + 0.015 * length / G.SAMPLE_S, at + length - 0.03 * length / G.SAMPLE_S)
+        late = (o / float(rate) - at) * 1000 if o is not None else None
+        within = 2.0 * max(1, length / G.SAMPLE_S)
+        A.check("⛔ %s: the loop's burst comes %.3f s in, within %g ms" % (name, at - held, within),
+                o is not None and abs(late) < within,
+                "first sample over at %s ms from where it is due" % late)
+        A.check("⛔ %s: ... at the recording's level" % name, abs(rms(seg) - level) / level < RMS_TOL * 2,
+                "rms %.5f, wanted %.5f" % (rms(seg), level))
+        A.check("⛔ %s: ... at %.0f Hz" % (name, want_hz), abs(freq(seg) - want_hz) / want_hz < FREQ_TOL,
+                "measured %.1f Hz" % freq(seg))
+        return o
+
+    hz = G.SAMPLES[7]
+    first = burst(held + 0.65, "LOOP", G.SAMPLE_S, hz)
+    second = burst(held + 1.65, "LOOP, again", G.SAMPLE_S, hz)
+    A.check("⛔ LOOP: the loop is the tape's 1000 ms, to the sample's few", first and second
+            and abs(second - first - rate) <= 8, "%s samples from one to the next"
+            % (second - first if first and second else None))
+    quiet = span(held + 0.012 + FREEZE_S, held + 0.64)
+    A.check("LOOP: ... with nothing where the tape has nothing", peak(quiet) < SILENT,
+            "peak %.5f before the first burst" % peak(quiet))
+    moved = G.hit_time(window("LOOP-240"))
+    # 240 BPM: 500 ms a round. The tempo went at 1.99 s of tape, so 0.66 of a round to its burst.
+    at = moved + (1.65 - 0.99 - 0.0) / 2 + (held + 1.99 - moved) / 2
+    burst(at, "LOOP-240, the tempo doubled", G.SAMPLE_S / 2, hz * 2)
+    burst(at + 0.5, "LOOP-240, again", G.SAMPLE_S / 2, hz * 2)
+    moved = G.hit_time(window("LOOP-60"))
+    at = moved + (1.65 - 0.99) * 2
+    burst(at, "LOOP-60, the tempo halved", G.SAMPLE_S * 2, hz / 2)
+    ended = G.hit_time(window("LOOP-END"), 100)
+    after = span(ended + 0.012, G.hit_time(window("SEAM")) - 0.01)
+    A.check("⛔ LOOP-END: let go, the loop stops: nothing after it", peak(after) < SILENT,
+            "peak %.5f after the release" % peak(after))
+
+    t = G.hit_time(window("SEAM"), G.SET_MS)
+    a, b = t + G.SEAM_S - 0.05, t + G.SEAM_S + 1.2 + 0.1
+    seg = span(a, b)
+    A.check("SEAM: a tone runs through the hold, so there is a seam to hear",
+            min(rms(span(a + 0.03 + i * 0.1, a + 0.13 + i * 0.1)) for i in range(11)) > TONE_RMS * 0.3,
+            "the least rms of its 100 ms stretches is %.5f" % min(
+                rms(span(a + 0.03 + i * 0.1, a + 0.13 + i * 0.1)) for i in range(11)))
+    own = biggest_step(span(t + 0.32, a))
+    A.check("⛔ SEAM: going in, round the seam and coming out, no sample jumps further than the tone "
+            "did before it: not a click", biggest_step(seg) < own * 1.1 and own < TONE_STEP * 1.4,
+            "the largest step %.5f, the tone's own %.5f" % (biggest_step(seg), own))
+    t = G.hit_time(window("TAIL"), G.SET_MS)
+    held = t + G.TAIL_HOLD_S
+    rec = rms(span(held - G.TAIL_SPAN / 1000.0, held))
+    loop = rms(span(held + 0.05, held + 0.05 + G.TAIL_SPAN / 1000.0))
+    A.check("⛔ TAIL: a reverb's tail, recorded after all those holds, comes back as loud as it was, "
+            "where the live sound has moved on", rec > 0.005 and abs(loop - rec) / rec < 0.15,
+            "rms %.5f in the recording, %.5f in the loop" % (rec, loop))
+    late = rms(span(held + 0.05 + 2 * G.TAIL_SPAN / 1000.0, held + 0.05 + 3 * G.TAIL_SPAN / 1000.0))
+    A.check("TAIL: ... each time round", abs(late - rec) / rec < 0.15,
+            "rms %.5f, two rounds on" % late)
     return A.report()
 
 

@@ -532,12 +532,12 @@
 #X obj 1300 1230 + 2;
 #X obj 1400 1230 + 1;
 #X obj 1300 1300 tabread \$0-rgb;
-#X obj 1800 420 array define \$0-rgb 96;
+#X obj 1800 420 array define \$0-rgb 102;
 #X obj 1800 480 loadbang;
-#X msg 1800 540 127 127 127 127 109 109 127 91 91 127 73 73 127 54 54 127 36 36 127 18 18 127 0 0 32 32 32 32 27 27 32 23 23 32 18 18 32 14 14 32 9 9 32 4 4 32 0 0 127 20 72 16 40 127 20 8 32 80 24 127 127 56 0 32 14 0 0 96 127 0 24 32 32 24 0 127 96 0 127 0 0 0 32 8 0 127 32 40 40 40 32 5 18 32 0 0;
+#X msg 1800 540 127 127 127 127 109 109 127 91 91 127 73 73 127 54 54 127 36 36 127 18 18 127 0 0 32 32 32 32 27 27 32 23 23 32 18 18 32 14 14 32 9 9 32 4 4 32 0 0 127 20 72 16 40 127 127 0 127 127 80 127 127 56 0 32 14 0 0 96 127 0 24 32 32 24 0 127 96 0 127 0 0 0 32 8 0 127 32 40 40 40 32 5 18 32 0 0 8 20 64 40 100 127;
 #X obj 1800 640 array set \$0-rgb;
 #X text 20 1000 t f b b fires right to left: the type \, then the index \, then the color \, so a spec's bytes cannot swap. An RGB color reads its three bytes red first: t f f f fires right to left too., f 40;
-#X text 1800 760 The RGB entries \, three bytes each \, 0 to 127: the drum page's eight velocity levels at full brightness \, white for level 1 falling evenly to red for level 8 \, then the same eight at a quarter \, then a drum pad not selected \, bright pink \, then a bar's first step \, blue \, and a repeat pad \, dim purple and bright purple when held \, then page 3's synth pads \, fm amber and strings cyan \, each full and at a quarter \, then page 1's tap pad \, yellow at a quarter and full while it flashes \, then the selected drum pad \, red \, then the edges' section green \, dim and full \, and revert's gray \, then a drum pad whose track won't play \, muted or left out of a solo \, pink at a quarter \, and the same selected \, red at a quarter. g_grid writes 128 + k to the surface for entry k., f 50;
+#X text 1800 760 The RGB entries \, three bytes each \, 0 to 127: the drum page's eight velocity levels at full brightness \, white for level 1 falling evenly to red for level 8 \, then the same eight at a quarter \, then a drum pad not selected \, bright pink \, then a bar's first step \, blue \, and a repeat pad or the 500 BPM repeat \, the brightest purple \, and whiter when held \, then page 3's synth pads \, fm amber and strings cyan \, each full and at a quarter \, then page 1's tap pad \, yellow at a quarter and full while it flashes \, then the selected drum pad \, red \, then the edges' section green \, dim and full \, and revert's gray \, then a drum pad whose track won't play \, muted or left out of a solo \, pink at a quarter \, and the same selected \, red at a quarter \, then the saved tempo's pad \, dim blue and bright when held. g_grid writes 128 + k to the surface for entry k., f 50;
 #X connect 2 0 3 0;
 #X connect 3 3 8 0;
 #X connect 3 2 6 0;
@@ -630,7 +630,7 @@
 #X connect 43 0 44 0;
 #X connect 44 0 45 0;
 #X connect 45 0 46 0;
-#X text 2150 1100 inlet 2 is c_steps' drum page \, meaning and never a cell: steps <32 levels> \, play <step> \, vel <level> \, track <pad> \, last <step> \, bar <N> <row> and rep <pad> (ref/module/display.md). Each sets dirty and goes to g_grid-lua \, which keeps the page and paints it on page 2 when pd regions sends paint: g_grid.lua works out each cell of cut-it-drum-page.txt \, which u_map reads too \, so a press and its lamp cannot disagree. Anything else is fail g_grid bad-selector. At load the Lua answers init with a bang \, which shuts the spigot: no bang means it never loaded \, and fail g_grid no-lua says so. The drum page is dark then \, and everything else g_grid draws is Pd and still works. C-5, f 58;
+#X text 2150 1100 inlet 2 is c_steps' drum page \, meaning and never a cell: steps <32 levels> \, play <step> \, vel <level> \, track <pad> \, last <step> \, bar <N> <row> \, rep <pad> \, fast and recall <1 or 0> and quiet <16 flags> (ref/module/display.md). Each sets dirty and goes to g_grid-lua \, which keeps the page and paints it on page 2 when pd regions sends paint: g_grid.lua works out each cell of cut-it-drum-page.txt \, which u_map reads too \, so a press and its lamp cannot disagree. Anything else is fail g_grid bad-selector. At load the Lua answers init with a bang \, which shuts the spigot: no bang means it never loaded \, and fail g_grid no-lua says so. The drum page is dark then \, and everything else g_grid draws is Pd and still works. C-5, f 58;
 #X obj 2700 720 inlet;
 #X obj 2700 780 route synth;
 #X obj 2700 840 route fm strings;

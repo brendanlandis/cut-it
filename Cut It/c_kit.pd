@@ -1,6 +1,6 @@
-#N canvas 20 20 2100 1250 12;
+#N canvas 20 20 2100 1350 12;
 #X text 20 20 c_kit -- the drums \, played in Pd: sixteen c_voice \, one a pad \, each with its distortion inside it and an e_delay beside it \, and one e_verb they all send to \, summed into its outlet~. It takes the pad messages c_steps sends \, so the sequencer and the drum page play it as they played the SP-404. ref/module/sequencer.md, f 70;
-#X text 20 130 creation args: none. inlet: pad <1..16> <velocity> \, a pad past 16 ignored \, and from c_steps a track's vol <pad> <dB> and pitch <pad> <semitones> and its effects: drive \, tone and dist (the distortion's mix) <pad> <0-100> and char <pad> <1-4> \, its character \, to its voice \, delay-time <pad> <steps> and feedback <pad> <0-100> to its e_delay \, delay (the level) and send <pad> <0-100> to both \, send to e_verb too \, and size and damping <0-100> and verb-type <0-2>: plate \, gigaverb or freeverb \, as e_verb's type \, to e_verb. outlet~: the voices \, the delays and the reverb \, summed \, mono -- u_root adds them to the left output \, where the OLED's meter reads them with the mic (ref/module/audio.md). At load it reports on err how many of the sixteen samples it found (C-12)., f 70;
+#X text 20 130 creation args: none. inlet: pad <1..16> <velocity> \, a pad past 16 ignored \, and from c_steps a track's vol <pad> <dB> and pitch <pad> <semitones> and its effects: drive \, tone and dist (the distortion's mix) <pad> <0-100> and char <pad> <1-4> \, its character \, to its voice \, delay-time <pad> <steps> and feedback <pad> <0-100> to its e_delay \, delay (the level) and send <pad> <0-100> to both \, send to e_verb too \, and size and damping <0-100> and verb-type <0-2>: plate \, gigaverb or freeverb \, as e_verb's type \, to e_verb \, and a held repeat's tape <span> <units> and tape-off to e_tape. outlet~: the voices \, the delays and the reverb or its loop \, summed \, mono -- u_root adds them to the left output \, where the OLED's meter reads them with the mic (ref/module/audio.md). At load it reports on err how many of the sixteen samples it found (C-12)., f 70;
 #X obj 20 300 inlet;
 #X obj 20 340 route pad vol pitch;
 #X obj 20 420 route 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16;
@@ -94,7 +94,7 @@
 #X obj 1300 920 clip 5 600;
 #X obj 1300 960 expr 15000 / \$f1;
 #X obj 1300 1000 s \$0-step;
-#X obj 500 300 route drive tone dist send delay-time feedback delay size damping char verb-type;
+#X obj 500 300 route drive tone dist send delay-time feedback delay size damping char verb-type tape tape-off;
 #X msg 500 340 \$1 drive \$2;
 #X msg 620 340 \$1 tone \$2;
 #X msg 740 340 \$1 dist \$2;
@@ -145,10 +145,19 @@
 #X connect 55 0 58 0;
 #X connect 42 8 56 0;
 #X connect 56 0 58 0;
-#X connect 57 0 21 0;
 #X msg 1220 340 \$1 char \$2;
 #X connect 42 9 63 0;
 #X connect 63 0 4 0;
 #X msg 740 860 type \$1;
 #X connect 42 10 64 0;
 #X connect 64 0 58 0;
+#X obj 20 950 e_tape \$0;
+#X msg 860 860 tape \$1 \$2;
+#X msg 980 860 off;
+#X text 20 1140 e_tape takes everything on \$0-out \, the delays and the reverb \, and keeps the last while of it \, so a held repeat replays their tails and makes no new ones (Brendan \, 2026-11-05). The voices' dry sound goes round it \, on its own cords. The catch~ is never switched off: the sends are zeroed instead (ref/module/sequencer.md)., f 60;
+#X connect 57 0 65 0;
+#X connect 65 0 21 0;
+#X connect 42 11 66 0;
+#X connect 66 0 65 1;
+#X connect 42 12 67 0;
+#X connect 67 0 65 1;

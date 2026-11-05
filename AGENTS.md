@@ -134,7 +134,18 @@ under `ref/`. Nothing in either is deployed.
 
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-five gates and 2071 checks**, and what each one protects is in
+**How work ships** (Brendan, 2026-11-05: he asked why this project takes so long, and took all of
+this):
+
+- **Ear first.** Build it quickly, get it onto the rig within minutes, and add gates and proofs once
+  he likes what he hears. Things change once he hears them: a day's distortion and reverb were
+  fully proven, then replaced that day. Small changes are done directly, not by a background agent.
+- **One proof per behavior**, not one per check: break it once, see a gate go red, restore. Don't
+  write proofs down, and don't keep totals of checks in any document.
+- **Single gates take seconds**, under Pd's `-batch` (`test/README.md`, *Running everything*): run
+  the ones you touched as you go, and `./test/run.sh` once before merging.
+
+**Twenty-five gates**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **Two of them read
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile and `kit-assert.sh` the drums; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.

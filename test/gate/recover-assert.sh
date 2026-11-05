@@ -1,5 +1,5 @@
 #!/bin/sh
-# Panic's second tier -- ref/module/map.md and ref/module/boot.md. ~20 s.
+# Panic's second tier -- ref/module/map.md and ref/module/boot.md..
 #
 #   ./test/gate/recover-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/recover-assert.sh -v       and show the detail behind every check

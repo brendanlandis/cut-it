@@ -17,7 +17,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_scratch as S                                          # noqa: E402
 
 GEN = "test/gate/%s-drive-gen.py"
-FLAGS = ("-nogui", "-noaudio", "-nomidi")
+# -batch computes as fast as it can, so a 46-second driver takes under two seconds, and a busy
+# Mac can't make one miss its windows: Pd's logical time is all these gates read. It polls no
+# socket, so a driver reaches u_net through lib_scratch.net_direct. GATE_REALTIME=1 runs them on
+# the clock, to compare. phone-assert and inject-assert need real sockets and keep real time.
+FLAGS = ("-nogui", "-noaudio", "-nomidi") + (() if os.environ.get("GATE_REALTIME") else ("-batch",))
 
 
 class Gate:
@@ -152,7 +156,7 @@ def display(g):
     print("   the drum page's painter, in Lua ...")
     rc_lua = S.lua("test/gate/lua/g_grid_test.lua", *g.args)
     print("\n   the patch, in Pd ...")
-    rc = _stdin_gate(g, 90, blank=True, say="   running (about 46 s -- DSP is "
+    rc = _stdin_gate(g, 90, blank=True, say="   running (DSP is "
                      "on, the beat row needs it) ...")
     return rc or rc_lua
 
@@ -172,7 +176,7 @@ def tempo(g):
     print("   tap tempo's rules, in Lua ...")
     rc_lua = S.lua("test/gate/lua/u_tempo_test.lua", *g.args)
     print("\n   the patch, in Pd ...")
-    rc = _stdin_gate(g, 60, blank=True, say="   running (about 24 s -- DSP is "
+    rc = _stdin_gate(g, 60, blank=True, say="   running (DSP is "
                      "on, the clock is a phasor~) ...")
     return rc or rc_lua
 
@@ -390,7 +394,7 @@ def presence(g):
     s.shell_stub()
     g.rewrite(s)
     S.drive(GEN % "presence-assert", s.path("drive.pd"))
-    print("   running the schedule (about 38 s -- the three re-wires are at "
+    print("   running the schedule (the three re-wires are at "
           "14 s, 22 s and 30 s) ...")
     cap = g.pd(s, 60, main_dev(s), s.path("drive.pd"))
 
@@ -402,7 +406,7 @@ def presence(g):
     s2.shell_stub()
     g.rewrite(s2)
     S.drive("test/gate/presence-bound-drive-gen.py", s2.path("drive.pd"))
-    print("   running the bound (about 9 s -- the eighth fork is at 7 s and the "
+    print("   running the bound (the eighth fork is at 7 s and the "
           "give-up at 7.2) ...")
     cap2 = g.pd(s2, 30, main_dev(s2), s2.path("drive.pd"))
     print()
@@ -482,7 +486,7 @@ def sequencer(g):
     with open(root, "w") as fh:
         fh.write(text.replace(" c_kit;", " t_kit;"))
     S.drive(GEN % "sequencer-assert", s.path("drive.pd"))
-    print("   running (about 45 s -- DSP is on, the steps are cut from a phasor~) ...")
+    print("   running (DSP is on, the steps are cut from a phasor~) ...")
     cap = g.pd(s, 55, main_dev(s), s.path("drive.pd"))
     print()
     rc = g.analyze("test/gate/sequencer-assert.py", *g.args, "--seed", s.path("seed.txt"),
@@ -580,7 +584,7 @@ def song(g):
     g.rewrite(s)
     for run in ("play", "reload"):
         S.drive(GEN % "song-assert", s.path("drive-%s.pd" % run), run)
-    print("   running the song (about 15 s), then a reload of it (about 6) ...")
+    print("   running the song, then a reload of it (about 6) ...")
     cap = s.path("capture-play.txt")
     S.run(cap, 40, *FLAGS, "-path", s.patch, main_dev(s), s.path("drive-play.pd"))
     after = s.path("after-play")
@@ -603,7 +607,7 @@ def song(g):
         fh.write(line + "\n")
     g.rewrite(s3, out=[])
     S.drive(GEN % "song-assert", s3.path("drive.pd"), "legacy")
-    print("   and a first load from a state directory before sections (about 6 s) ...")
+    print("   and a first load from a state directory before sections ...")
     S.run(s3.path("capture.txt"), 30, *FLAGS, "-path", s3.patch, main_dev(s3), s3.path("drive.pd"))
     # Three songs and a setlist saved, on page 8, the songs: the keys and go, stopped and playing.
     s4 = g.copy("song-songs")
@@ -623,7 +627,7 @@ def song(g):
                 fh.write(text)
     g.rewrite(s4, out=[])
     S.drive(GEN % "song-assert", s4.path("drive.pd"), "songs")
-    print("   and three songs, played from the Organelle's keys and go (about 14 s) ...")
+    print("   and three songs, played from the Organelle's keys and go ...")
     cap4 = s4.path("capture.txt")
     S.run(cap4, 40, *FLAGS, "-path", s4.patch, main_dev(s4), s4.path("drive.pd"))
     print()

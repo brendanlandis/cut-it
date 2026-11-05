@@ -1,5 +1,5 @@
 #!/bin/sh
-# The aux LED's headless gate -- ref/device/organelle.md. No eyes, no hardware, ~11 s.
+# The aux LED's headless gate -- ref/device/organelle.md. No eyes, no hardware.
 #
 #   ./test/gate/led-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/led-assert.sh -v       and show the detail behind every check

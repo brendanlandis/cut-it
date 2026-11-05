@@ -1,6 +1,6 @@
 #!/bin/sh
 # The display arbiter's headless gate -- ref/module/display.md. No eyes, no
-# hardware, ~46 s.
+# hardware.
 #
 #     ./test/gate/display-assert.sh            # run it
 #     ./test/gate/display-assert.sh -v         # and show the detail behind every check

@@ -1,5 +1,5 @@
 #!/bin/sh
-# The map's headless gate -- ref/module/map.md. No eyes, no hardware, ~7 s.
+# The map's headless gate -- ref/module/map.md. No eyes, no hardware.
 #
 #   ./test/gate/map-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/map-assert.sh -v       and show the detail behind every check

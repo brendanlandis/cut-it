@@ -1,6 +1,6 @@
 #!/bin/sh
 # The Organelle front panel's headless gate -- ref/device/organelle.md.
-# No eyes, no hardware, ~12 s.
+# No eyes, no hardware.
 #
 #   ./test/gate/organelle-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/organelle-assert.sh -v       and show the detail behind every check

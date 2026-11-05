@@ -1,5 +1,5 @@
 #!/bin/sh
-# The phone's TouchOSC layout, headless -- ref/device/phone.md. No phone, ~1 s.
+# The phone's TouchOSC layout, headless -- ref/device/phone.md. No phone.
 #
 #   ./test/gate/touchosc-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/touchosc-assert.sh -v       and the detail behind every check

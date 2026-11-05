@@ -1,5 +1,5 @@
 #!/bin/sh
-# c_clock's headless gate -- ref/module/tempo.md. No eyes, no hardware, ~17 s.
+# c_clock's headless gate -- ref/module/tempo.md. No eyes, no hardware.
 #
 #   ./test/gate/clock-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/clock-assert.sh -v       and show the detail behind every check

@@ -1,5 +1,5 @@
 #!/bin/sh
-# The error bus's headless gate -- ref/module/error.md. No eyes, no hardware, ~12 s.
+# The error bus's headless gate -- ref/module/error.md. No eyes, no hardware.
 #
 #   ./test/gate/err-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/err-assert.sh -v       and show the detail behind every check

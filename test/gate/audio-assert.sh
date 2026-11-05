@@ -1,5 +1,5 @@
 #!/bin/sh
-# The audio path's headless gate -- ref/module/audio.md. No eyes, no hardware, ~12 s.
+# The audio path's headless gate -- ref/module/audio.md. No eyes, no hardware.
 #
 #   ./test/gate/audio-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/audio-assert.sh -v       and show the detail behind every check

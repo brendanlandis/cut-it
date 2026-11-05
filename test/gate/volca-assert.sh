@@ -1,5 +1,5 @@
 #!/bin/sh
-# The Volca's headless gate -- ref/device/volca.md. No eyes, no hardware, ~5 s.
+# The Volca's headless gate -- ref/device/volca.md. No eyes, no hardware.
 #
 #   ./test/gate/volca-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/volca-assert.sh -v       and show the detail behind every check

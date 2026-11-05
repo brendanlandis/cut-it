@@ -1,6 +1,6 @@
 #!/bin/sh
 # The sequencer's headless gate -- ref/module/sequencer.md. No eyes, no
-# hardware, ~14 s.
+# hardware.
 #
 #   ./test/gate/sequencer-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/sequencer-assert.sh -v       and show the detail behind every check

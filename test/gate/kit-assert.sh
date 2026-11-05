@@ -1,5 +1,5 @@
 #!/bin/sh
-# The drum kit's headless gate -- ref/module/sequencer.md, The kit. No eyes, no hardware, ~10 s.
+# The drum kit's headless gate -- ref/module/sequencer.md, The kit. No eyes, no hardware.
 #
 #   ./test/gate/kit-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/kit-assert.sh -v       and show the detail behind every check

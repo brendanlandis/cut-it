@@ -1,5 +1,5 @@
 #!/bin/sh
-# The boot sequence's headless gate -- ref/module/boot.md. No eyes, no hardware, ~10 s.
+# The boot sequence's headless gate -- ref/module/boot.md. No eyes, no hardware.
 #
 #   ./test/gate/init-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/init-assert.sh -v       and show the detail behind every check

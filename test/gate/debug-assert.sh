@@ -1,5 +1,5 @@
 #!/bin/sh
-# The debug patch's headless gate -- ref/module/debug.md. No eyes, no hardware, ~13 s.
+# The debug patch's headless gate -- ref/module/debug.md. No eyes, no hardware.
 #
 #   ./test/gate/debug-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/debug-assert.sh -v       and show the detail behind every check

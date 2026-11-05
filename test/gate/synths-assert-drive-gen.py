@@ -97,7 +97,10 @@ def socket(obj, msg, con):
     lb = obj(3000, 1300, "loadbang")
     dl = obj(3000, 1350, "del 2600")
     cm = msg(3000, 1400, "connect 127.0.0.1 %d" % INPORT)
-    ns = obj(3000, 1600, "netsend -u -b")
+    # Not a real netsend: gates run under -batch, which polls no socket (lib_scratch.net_direct).
+    ns = obj(3000, 1600, "route send")
+    gn = obj(3000, 1650, "s gate-net")
+    con(ns, 0, gn, 0)
     rc = obj(3300, 1300, "r synths-cmd")
     la = obj(3300, 1350, "list append")
     of = obj(3300, 1400, "oscformat cutit")

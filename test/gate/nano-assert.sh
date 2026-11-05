@@ -1,6 +1,6 @@
 #!/bin/sh
 # The nanoKONTROL's headless gate -- ref/device/nanokontrol.md. No eyes, no
-# hardware, ~17 s.
+# hardware.
 #
 #   ./test/gate/nano-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/nano-assert.sh -v       and show the detail behind every check

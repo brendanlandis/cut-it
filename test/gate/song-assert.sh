@@ -1,5 +1,5 @@
 #!/bin/sh
-# The song store's headless gate -- ref/module/songs.md. No eyes, no hardware, ~30 s.
+# The song store's headless gate -- ref/module/songs.md. No eyes, no hardware.
 #
 #   ./test/gate/song-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/song-assert.sh -v       and show the detail behind every check

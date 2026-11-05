@@ -1,6 +1,6 @@
 #!/bin/sh
 # The tempo reference's headless gate -- ref/module/tempo.md. No eyes, no
-# hardware, ~16 s.
+# hardware.
 #
 #     ./test/gate/tempo-assert.sh            # run it
 #     ./test/gate/tempo-assert.sh -v         # and show the detail behind every check

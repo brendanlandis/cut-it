@@ -1,6 +1,6 @@
 #!/bin/sh
 # The phone link's headless gate -- ref/device/phone.md. No eyes, no phone, no
-# hardware, ~35 s.
+# hardware, ~67 s.
 #
 #   ./test/gate/phone-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/phone-assert.sh -v       and the detail behind every check, and

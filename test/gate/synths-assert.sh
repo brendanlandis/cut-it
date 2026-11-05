@@ -1,5 +1,5 @@
 #!/bin/sh
-# The synths' headless gate -- ref/module/synths.md. No eyes, no hardware, ~12 s.
+# The synths' headless gate -- ref/module/synths.md. No eyes, no hardware.
 #
 #   ./test/gate/synths-assert.sh          run it, exit non-zero on any failure
 #   ./test/gate/synths-assert.sh -v       and show the detail behind every check

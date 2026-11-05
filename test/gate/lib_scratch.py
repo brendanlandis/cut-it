@@ -288,7 +288,24 @@ class Scratch:
              "      Without that, a previous run's saved mode changes what the map",
              "      does at 3.5 s and half the windows go silent -- item 232 --",
              "      and gates run side by side fight over one UDP port."])
+        self.net_direct()
         return self.net_off(port)
+
+    def net_direct(self):
+        """A way into u_net's OSC that needs no network: [r gate-net] beside its netreceive, into
+        the same oscparse. Gates run under Pd's -batch (scratch-gates.py's FLAGS), which computes
+        as fast as it can and never polls a socket, so a driver hands the bytes it would have
+        sent to gate-net instead (lib_drive.OSC_DIRECT). phone-assert and inject-assert keep the
+        real sockets, in real time."""
+        path = os.path.join(self.patch, "u_net.pd")
+        recs = lib_pd.read(path)
+        boxes = [r for r in recs if r.startswith(("#X obj", "#X msg", "#X text", "#X floatatom",
+                                                  "#X symbolatom", "#X restore", "#X array"))]
+        hit = [i for i, r in enumerate(boxes) if re.search(r" oscparse;?$", r)]
+        if len(hit) != 1 or sum(r.startswith("#N canvas") for r in recs) != 1:
+            fail("FAIL: expected one oscparse on one canvas in %s, found %d." % (path, len(hit)))
+        recs += ["#X obj 400 3250 r gate-net;", "#X connect %d 0 %d 0;" % (len(boxes), hit[0])]
+        _write(path, recs)
 
     def net_off(self, port=None):
         """Keep u_net's OSC off the house network (and the phone): send it to a

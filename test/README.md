@@ -10,7 +10,9 @@ who or what says pass:
 
 ⛔ **A gate is not trusted until it has FAILED.** Reintroduce the bug, watch it go red, revert. This
 project has shipped a gate that passed a broken patch 15/15, and one that had run its own driver
-generator exactly never. Both looked green. See the **`gate`** skill.
+generator exactly never. Both looked green. See the **`gate`** skill. **One proof per behavior, once
+Brendan likes what he hears** (`AGENTS.md`, *How work ships*): not one per check, and not written
+down here; git has the old lists.
 
 ⚠️ **The Mac is not the device.** The Phase 6 gate passed 25/25 on the Mac twice and shipped three
 bugs. These prove a change did not break what was working; hands on the hardware are still the last
@@ -23,274 +25,40 @@ phone's line check page, the checklists' guide. That is the whole organizing pri
 to name one whose entire subject is that page**, or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
 
-| Gate | Checks | Answers for |
-|---|---|---|
-| `midi-emitters-assert.sh` | 7 | **no page** — see below |
-| `init-assert.sh` | 17 | `module/boot` |
-| `audio-assert.sh` | 18 | `module/audio` |
-| `err-assert.sh` | 24 | `module/error` |
-| `display-assert.sh` | 112: 66 in Lua, 46 in Pd | `module/display` — the grid, its drum page's painter, page 3's synth pads and page 1's tap pad included |
-| `oled-assert.sh` | 69 | `module/display` — the OLED |
-| `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
-| `tempo-assert.sh` | 68: 33 in Lua, 35 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
-| `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 191: 103 in Lua, 88 in Pd | `module/map` |
-| `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
-| `state-assert.sh` | 15 | `module/state` |
-| `song-assert.sh` | 284: 217 in Lua, 67 in Pd | `module/songs` — the songs, the setlists, the keys and go, the sections, the top row, save and revert, the files |
-| `presence-assert.sh` | 49 | `module/presence` |
-| `launchpad-assert.sh` | 19 | `device/launchpad` |
-| `nano-assert.sh` | 64: 39 in Lua, 25 in Pd | `device/nanokontrol` |
-| `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 146 | `device/phone` |
-| `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 261: 44 read, 217 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
-| `volca-assert.sh` | 10 | `device/volca` |
-| `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 393: 302 in Lua, 91 in Pd | `module/sequencer` |
-| `kit-assert.sh` | 64 | `module/sequencer` — the kit and its effects, the reverb's three types among them, as a signal |
-| `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
+| Gate | Answers for |
+|---|---|
+| `midi-emitters-assert.sh` | **no page** — see below |
+| `init-assert.sh` | `module/boot` |
+| `audio-assert.sh` | `module/audio` |
+| `err-assert.sh` | `module/error` |
+| `display-assert.sh` | `module/display` — the grid, its drum page's painter, page 3's synth pads and page 1's tap pad included |
+| `oled-assert.sh` | `module/display` — the OLED |
+| `led-assert.sh` | `module/display` and `device/organelle` — the aux LED |
+| `tempo-assert.sh` | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
+| `clock-assert.sh` | `module/tempo` — `c_clock` |
+| `map-assert.sh` | `module/map` |
+| `recover-assert.sh` | `module/map` and `module/boot` — panic's second tier |
+| `state-assert.sh` | `module/state` |
+| `song-assert.sh` | `module/songs` — the songs, the setlists, the keys and go, the sections, the top row, save and revert, the files |
+| `presence-assert.sh` | `module/presence` |
+| `launchpad-assert.sh` | `device/launchpad` |
+| `nano-assert.sh` | `device/nanokontrol` |
+| `organelle-assert.sh` | `device/organelle` |
+| `phone-assert.sh` | `device/phone` |
+| `inject-assert.sh` | `test/checklists/README.md`, *Send lines* — `u_inject` |
+| `touchosc-assert.sh` | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `volca-assert.sh` | `device/volca` |
+| `debug-assert.sh` | `module/debug` — the SECOND deployable |
+| `sequencer-assert.sh` | `module/sequencer` |
+| `kit-assert.sh` | `module/sequencer` — the kit and its effects, the reverb's three types among them, as a signal |
+| `synths-assert.sh` | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**2071 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
-does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **2064**; the difference is
-that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
-`synths-assert.sh`, `song-assert.sh`, `tempo-assert.sh` and `display-assert.sh` print two each, one per half: the Lua tests', then the
-analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
-Worth knowing before trusting an arithmetic check of this number against a log.
-
-⚠️ **`presence-assert.sh`'s 49 come from TWO Pd runs and one tally**, which is the only entry here
+⚠️ **`presence-assert.sh` tallies TWO Pd runs as one**, which is the only entry here
 that does. The first run is the schedule at the shipped tick; the second scales `u_present`'s settle
 and tick by ten and leaves its **counts** exactly as shipped, so the eighth re-wire and the give-up
 actually happen — inside nine seconds rather than seventy-two. ⛔ **One analyzer reads both
 captures**, because two would print two `N checks` lines and this number is what proves no assertion
 went missing.
-
-✅ **The checks that keep the SP-404 out were each made to fail** when it left the rig (Brendan,
-2026-11-04), with `m_404` put back in the patch: `presence-assert`'s roster in both runs, and, with
-the roster let be five, the Roland reply's taker; `oled-assert`'s roster and its pitch, which had
-filtered the drawn rows to the known sources and passed a fifth line until they read every row shaped
-like one; `map-assert`'s `m_` file set; and `nano-assert`'s channel 33. `kit-assert`'s *to nothing
-else* failed on a second cord out of `c_steps`' pad outlet, and `presence-assert`'s first-reply check,
-with three others, on `c_presence` publishing `seen` on a poll. `debug-assert` failed five against the
-old debug patch, and its probe count with the velocity gate broken. The tempo, phone and layout
-checks are under their own gates below.
-
-✅ **The synths' checks were each made to fail** when the Streichfett, the nanoKEY and `c_synth`
-came in (2026-11-04). `presence-assert`: `m_streich` matching Korg's byte (8 failed), its inquiry on
-port 2 (1), and `m_nano` matching Waldorf's (3). `display-assert`: the synth not chosen lit (4),
-the pads painted on page 4 (7), the choice read backwards (4). `map-assert`'s lint: a row the
-layout lacks (2), a cell naming a synth `c_synth` lacks (1), a row off page 3 (1). `oled-assert`:
-the Streichfett registering under another name (4). The phone, the layout and the synths' own gate
-are under their sections below.
-
-✅ **The page checks were each made to fail** when the mode bus lost its class, the pages became
-eight and the drum page moved to page 2 (Brendan, 2026-11-04), each against the code before its
-step: `u_map_test.lua`'s mode bus on the old two-atom rule (15) and on a rule that counted the atom
-without naming a page (6); `err-assert` on the old `u_err` (3: no mode receive, the old `perform
-mode-6`, the info witness); `map-assert` with the class-dropping route bypassed (the old save came
-back as `compose mode-1`), `R.PAGES` one short, the six-key route (2), a page-8 row missing, and
-the map before the drum page moved (the Organelle's key played a second note); `display-assert` on
-the grid before the bus change (9), before eight lamps (9) and before the drum page moved (5, and
-a traceback in `lib_grid`'s message for an RGB cell, fixed); `touchosc-assert` on the phone's old
-handler (3) and old `MAIN` (4); `nano-assert`'s fader and `sequencer-assert` (34, its page 1
-among them) on the map before the drum page moved.
-
-✅ **The song store's checks were each made to fail** when sections came in (2026-11-05), each
-against the code without the change, the file then restored. `u_song_test.lua`: a press while
-playing starting its section at once (12), a section's length ignored (3), the draft never unsaved
-(15), a Pd float kept as it came (1), the six buttons never scrolling (4), a file that can't be
-written failing in silence (1), a copy named after the whole name, "verse 2 2" (5), deleting the
-section playing without starting another (1), STOP leaving a section queued (2). `c_steps_test.lua`:
-no `bar` (7), the bar counted on the time signature (4), a restore that leaves the loops where they
-were (2), the swing and the last step left out of the line (26); `c_synth_test.lua`: no program
-sent (4). `song-assert`'s Pd half: `g_grid` painting the section playing dim, save gray and a queued
-section solid (12); `c_synth` deaf to `restore programs`, `c_steps` restarting no loop and deaf to
-`section-1-drums`, together (16); the draft never flushed (Lua 3, Pd 4); a press while playing at
-once (Lua 12, Pd 4); a length ignored (Lua 3, Pd 8). `init-assert`, `u_root`'s trigger reversed so
-the song loads before `u_state` restores (1). `map-assert`, a section row naming the wrong button
-and a page without save (2). `display-assert`, the playing lamp in a color no edge takes (9).
-`phone-assert`, `sections` cut from `u_net`'s route and its state's inlet unwired (15), and `up`
-dropped from its acknowledgments (8). `touchosc-assert`, a row that answers the state (2), a done
-that sends a name unchanged or empty (2), and a command misspelt with its flash gone (3).
-`sequencer-assert`, the pattern put as the old auto key and knob 4 unsaved (Lua 1, Pd 14);
-`synths-assert`, `c_synth` putting as `auto` (7). `u_tempo`'s spigot open to a tempo already in
-force held knob 1 at the load's restore: `map-assert` (2) and `recover-assert` (1).
-
-✅ **A lit button's look was made to fail** (2026-11-05, Brendan: state buttons flickered on and off
-when pressed): with the shared script no longer putting a finger's value back, `touchosc_test.lua`
-failed on every one of the 53, pressed out and pressed lit (1).
-
-✅ **The held put was made to fail, check by check** (2026-11-05, the crackle while dragging on the
-phone), each against the code without the change, the file then restored. `c_steps_test.lua`: the
-clock set again on every change (1), no hold (stopped the run), `sync` ignored (1);
-`u_song_test.lua`: no `sync` before a press or a phone command (7), none before STOP (1), a Pd
-fraction kept as it came (1). `sequencer-assert`'s Pd half: no hold, a drag put three times (1).
-
-✅ **Several songs, the keys, go and the songs page were made to fail, check by check**
-(2026-11-05), each against a mutation of the code, the file then restored. `u_song_test.lua`: a
-song left losing its draft (6), a key while stopped waiting for its transition (9), silence
-sending no STOP (3), go doing nothing (6), the bar ignoring a song queued (8), STOP ignoring one
-(2), a key a place off (stopped the run), a rename reaching the draft alone (2), a song deleted
-left in its setlists (5), song 1's files named for its id (stopped the run), the index without the
-song loaded (5), the setlist's arrows skipping a long setlist's pages (1), no unsaved word (3), a
-new song empty (4), and the face writing no draft but the loaded song's (3), keeping a deleted
-song's files (1), sending no go lamp (4) and loading the first song over the one loaded last (2).
-`song-assert`'s Pd half: the go lamp's two colors swapped (3), its painter's cord cut (3),
-`u_song`'s cord to the stop bus cut (2), `u_map`'s song handler unwired (11), its go handler
-unwired (2), and a song left losing its draft (Lua 6, Pd 3). `map-assert`'s lint: a key naming
-another place (2), a page without go (1), go on CC 79 (2). `phone-assert`: `songs` cut from
-`u_net`'s route (9, its branch becoming the reject), the songs state's route cut (1), `delete`
-misspelt among the acknowledgments (1), and no heartbeat repeat of the songs state (3).
-`touchosc-assert`: delete sending at its first tap (Lua 2), the starts switch answering the state
-(Lua 1), the name tab naming a setlist as a song (read 2, Lua 1), load's acknowledgment lighting
-nothing (read 1, Lua 1), add misspelt (read 1, Lua 1), the setlist's page left off its pager (Lua
-1), and a lit row answering the state (Lua 2), but only with the root's check on the row gone too:
-either alone holds, by design, so taking one away passes.
-
-✅ **The OLED's revision was made to fail, check by check** (Brendan's split, 2026-11-04: alerts and
-warnings, the output's levels and the name of a control as it moves), each against the code
-before its step. The output meters: `audio-assert` on the old `u_root`, `c_kit` and `g_oled` (8
-failed: `c_kit`'s own `throw~ outL`, the meters named and fed from the input, and `out-l` still
-while a drum played and the input was silent), and with `out-l` renamed but left on the input (2:
-its cords, and the drum it never saw); `kit-assert` on the old `c_kit` (6: no `outlet~` to record
-or to cord into the sum); `oled-assert` on the old `g_oled` (3: the `L` and `R` readouts, the two
-gate marks' `gBox`es). No tempo at rest: `oled-assert` on the `g_oled`, `u_tempo` and `u_init` with
-the footer (3: a third line, `140-bpm`, at y=54, and the bars at the old 12 px), and `init-assert`
-on the `u_init` and `u_tempo` with it (1: `status v0.3-ready` and the BPM on `disp`). Knobs 2 and
-4 on every page: `map-assert` on the old map (Lua 1; Pd 2: the every-page rows, and knob 2 on page 4
-drawing a raw row where `c_steps`' held one belongs), on the map with page 4's knob 2 and page 6's
-knob 4 cut (Lua 1, Pd 2), and with knob 3 on page 5 too (Lua 1, Pd 1). Only a mapped control
-names itself: against the `u_map.lua`, its face and `u_map.pd` with the raw row, `map-assert`
-(Lua 14: the rows themselves, and the face's outlet numbers moving down one; Pd 4: `gk-cc`, `og-knob-3`,
-`lp-cc-91` and `pad-36` drawn), `nano-assert` (2: `slider-3` and `lp-cc-19`) and `sequencer-assert` (2:
-`pad-36` and `pad-81`). The roster's sixth row: `oled-assert` on the old `g_oled` and `m_nanokey`
-(6: five rows, the strip at 48 and 56, the nanoKEY neither `never` nor `here`), on the old `g_oled`
-with the new `m_nanokey` (6: the bound at five dropped `m_streich`), and on the new `g_oled` with the
-old `m_nanokey` (5); `presence-assert` on the old `m_nanokey` (the roster of five in both runs),
-and on an `m_nanokey` registered `active` through a `c_presence` (2 of the new, among 5). Knob 1
-held at a tapped or phoned tempo: `tempo-assert` against `u_map`, its Lua and face, `u_tempo` and
-`u_root` without the hold (3: 0.42 set 105 after the taps, its row read `bpm 105`, and 0.7 set 175
-after the phone's 133), and with only `u_root`'s cord from `u_tempo` to `u_map` cut (the same 3);
-`u_map_test.lua` against the old rules (no `R.tempo_position`: it stopped there) and with the hold
-arming the knob at the wrong place (3). The log line a re-wire asked for writes, renamed `rewire-asked` from the
-phone's button it no longer comes from: `presence-assert` on the old `u_present` (1).
-
-✅ **The levels moved to mother's info bar and were made to fail** (Brendan, 2026-11-04: "the way
-the organelle usually shows it by default, on a single line, and with levels at 0 when nothing is
-playing"). `oled-assert` on the `g_oled` with Cut It's meters (12: the bar off in 300 frames, text
-and a box drawn in rows 0-7, 442 `gFillArea`s, home's readouts and bars, and every layer's rows
-eight higher), and with only the modal's word moved into row 4 (1: the rows-0-7 check alone);
-`audio-assert` on the `u_root` and `u_level` that metered (1: eight `out-l` and `out-r` reports on
-`disp`).
-
-✅ **The phone's pages, the arrangement screen, tap tempo and the velocity switch were each made to
-fail** (2026-11-04), against the code without the change or a mutation of it. `phone-assert`: the
-old `u_net` (46 failed: the mirror's three addresses, the diagnostics reaching things, no tempo or
-velocity), and the tempo's coalescer bypassed (5). `touchosc-assert`: the old layout (its hidden
-screens, then a crash on what it lacks), and six rebuilt with a fault each — the tempo handed back
-unrounded (Lua 2), the outer bar left showing (1), the switch answering its own value (3), the root
-lighting by value alone (2), a re-wire button left (read 2), the switch misspelling `off` (read 1,
-Lua 1), a blank page with a control (read 1, Lua 1), the switch in a hidden group (read 2), a ninth
-page (read 1, Lua 1) and no acknowledgment for the switch (read 1, Lua 1). `tempo-assert`'s Lua on
-four mutations (no window on the intervals 1, no gap 4, the knob's range 4, a zero interval
-counted 1), and its Pd half with `u_root`'s cords from the tap pad and the phone cut (6).
-`display-assert`: the tap pad's cord cut (1) and its region never painted (4). `map-assert`'s lint:
-the role misspelt and a page-2 row (5), and `u_tempo`'s route renamed (1). `c_steps_test.lua`: no
-swing in the phone's state and no re-arm (10), and the swing's re-arm alone (1).
-`c_synth_test.lua`: the switch ignored (4). `synths-assert`: `c_synth` deaf to the switch's restore
-(3) and `u_net` routing no `velocity` (6).
-
-✅ **The kit's volume and pitch were made to fail** (2026-11-05): `kit-assert` on the old `c_kit`
-and `c_voice` together (6 failed: the levels at -6 and +6 dB, the octave up and its length, the
-octave down's level and length), on the old `c_kit` alone, which passes neither on (the same 6),
-and on the old `c_voice` alone (7: the octave down's frequency too, once it was measured over
-what both an unpitched and a pitched sample cover).
-
-✅ **The drums' effects were made to fail, check by check** (2026-11-05, Brendan's Drums 3), each
-against a mutation of the code, the file then restored from git. `c_steps_test.lua`: the phone's
-effects never told to `c_kit` (7 failed), every effect told again at a restore (8), the line always
-711 (30), a short line leaving the effects as they were (4), a dotted note at 5/4 (2), the phone's
-state without the selected track's effects (9), and the load telling `c_kit` none (4).
-`sequencer-assert`: a restore telling `c_kit` no effect (Lua 4, Pd 1: the seeded effects never
-reach `t_kit`), and the line never holding them (Lua 4, Pd 8). `kit-assert`: the distortion adding
-the driven sound without taking the dry (3), the delay without its block's 64 samples (1: the echo
-64 samples late), deaf to the tempo bus (4), switched off at once at level 0 (1: the tail cut), the
-reverb catching nothing (1), and `e_verb` without its `switch~` (1). `audio-assert`: a voice
-throwing to a name nothing catches (1). `touchosc-assert`, each layout rebuilt with the fault: the
-show radio horizontal (read 2, the contrast audit among them), the effect radio's delay and reverb
-swapped (read 2, Lua 2), the mix knob sending `mix` (read 2, Lua 1), the root never hiding an
-effect (Lua 1), every effect knob sending for track 1 (Lua 2), the pads' last step unclipped (Lua
-1), and the contrast audit reading a vertical radio as one segment (read 1).
-
-✅ **The distortion's characters were made to fail, check by check** (2026-11-05, Brendan's four
-characters, its makeup and its peak scaling), each against a mutation of the code, the file then
-restored. `kit-assert`: `c_voice` never telling `e_drive` its peak (6 failed: the level at drive
-100, the peak over the dry's, a quiet sample driven less and louder than its share, hard and fold
-unrecognized), the old makeup, 1/√g all the way (3: the level, drive 100 quieter than 50, and
-under the floor), `c_kit`'s cord for `char` cut (3: hard, fold, crush), the crush stage never
-switched on (1), soft crushing too (1: soft again), hard given soft's numbers (1), fold clipped as
-soft (1), `pd crush` without its `switch~` (3: every character crushed and the static check), and
-the old `e_drive` whole (9). `c_steps_test.lua`: `char` not taken (stopped the run), the tone
-starting at 60 (19), the characters never saved (4), saved in the effects' block (21), the
-restore never reading them (4), a short line keeping them (2), the line 759 with none moved (5),
-the phone's state without them (12), `c_kit` never told them at load or a restore (6), and the
-character clipped to 5 (3). `sequencer-assert`'s Pd half: the characters never saved (2: the put
-and the draft) and the phone's `char` never told to `c_kit` (1). `phone-assert`: `u_net`
-acknowledging `char` as a button (2) and the command misspelt on its way (1). `touchosc-assert`,
-each layout rebuilt with the fault: the radio vertical (read 2, the contrast audit among them), its
-words hard-coded with two swapped (read 1), sending `character` (read 2, Lua 1), the root never
-handing it its value (stopped the Lua), drive's knob over the radio inside its own effect (read 2,
-the contrast audit among them), and the radio left out of the distortion's controls (read 2, Lua 2).
-
-✅ **Mute and solo were made to fail, check by check** (2026-11-05, Brendan's mute and solo per
-track), each against a mutation of the code, the file then restored from git. `c_steps_test.lua`:
-a muted track still playing (6 failed), a solo heeding the mutes (1), a muted track rolling no dice
-(1), the mutes and solos never saved (4), the restore never reading them (4), a short line keeping
-them (2), the page told every time (8), the phone's state without them (10), a press on a muted pad
-silent (1), `mute` taken as `solo` (10), the page told `mute` for `quiet` (8), a value kept as it
-came (1), track 1 starting muted (66), the same value saved again (2), the mute inverted (31), and
-the line's length a number short (1). `g_grid_test.lua`: the painter ignoring `quiet` (4), the two
-dim colors swapped (5), the RGB table without them (5), the pink at a third (4), the array defined
-too short (1), a short `quiet` clearing the rest (2), `quiet` a pad off (4), taking a symbol first
-(1), and answering (2). `sequencer-assert`'s Pd half: a muted track still playing (2), a solo
-heeding the mutes (2), the painter ignoring `quiet` (2, both frames), the mutes and solos never
-saved (3: both puts and the draft), the RGB table without the two entries (5), and the drunkenness
-never stopped (1: *STOP stops it again*, which reads the drag's window now that the mute and solo
-windows come before the drunkenness, for the draft's 2 s). `touchosc-assert`, each layout rebuilt
-with the fault: gaps of 15 (read 3: the 10-point step, the margin and the home bar), sync and snap
-10 points low (read 1: the 20-point grid still holds every other control), the block 10 low (read
-2), M teal and S red (read 1, Lua 1), every M and S for track 1 (read 1, Lua 3), a tap asking for
-what it shows (Lua 3), the root never lighting them (Lua 7) or reading them a block off (Lua 7), a
-98-number state putting them out (Lua 1), a pad's drag 25 points a step (read 1), M and S lit by
-what they were told alone, deaf after a finger let go (Lua 1), no M or S at all (read 3, then the
-Lua stopped), an M a step wide (read 1), the letters swapped (read 1), a lit letter left white (Lua
-1), M and S sending as the state lights them (Lua 6), a pad selecting the next track (read 1, Lua
-2), a pad's script on its old 100 steps (Lua 2), and an 88-number state drawing the effects (Lua 1).
-
-✅ **The reverb's three types were made to fail, check by check** (2026-11-05, Brendan's choice of
-plate, gigaverb or freeverb), each against a mutation of the code, the file then restored from
-git, after the rebase onto the distortion's characters. `c_steps_test.lua`: the type never saved
-(3 failed), never restored (4), the drum screen's type never told to `c_kit` (2), the phone's
-state without it (11), the type unclipped (2), not told at load (6), a short line keeping it (2),
-never counted as off the plate (3), a sequencer starting on gigaverb (43), the type a place late
-in the line (7), the same type saved again (2), and told again at every restore (9).
-`sequencer-assert`'s Pd half: the press missing (4: the put, `c_kit` told, the draft, and
-`bad-selector` on err). `phone-assert`: `u_net` acknowledging `verb-type` (1). `touchosc-assert`,
-each layout rebuilt with the fault: the radio vertical (read 2, the contrast audit among them),
-its words reordered (read 1), sending 1 for the plate (Lua 5), the root never handing it the type
-(Lua 3), the radio outside the reverb's controls (read 2, Lua 2), and a 131-number state read as
-the plate (Lua 1). `kit-assert`: every type playing the plate (2: gigaverb's and freeverb's first
-reflections), `e_tail` turning an engine off 300 ms after it is left, tail or no tail (1: the ring
-out), the plate taking the sends after a change (4: both levels, freeverb's reflection and the
-burst after the change), freeverb 3.5 dB loud (1), gigaverb 4.8 dB loud (1), the plate never
-decaying (7), gigaverb without its `switch~` (1), the plate and freeverb swapped (2), a send of 0
-still sending (1), the sample count doubled (1), freeverb without its `e_tail` (5), and two plates
-in `e_verb` (2). `audio-assert`: freeverb throwing to the reverb's own `catch~` (1), and gigaverb's
-`receive~` renamed (1). Two checks passed their fault on the first try and were rebuilt before
-they were trusted: *RING*'s reference was taken while the plate still rang, so a plate that kept
-taking the sends was louder in both; and the phone's radio was first checked on the plate, where it
-starts in the file anyway.
 
  ⚠️ Three pages name more than one gate, and that is the rule working rather than
 bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
@@ -344,6 +112,13 @@ drifted and nothing noticed.
 ```sh
 ./test/run.sh                every gate in one command, ~1 min, exit non-zero on any failure
 ```
+
+**The gates in `scratch-gates.py` run under Pd's `-batch`**, which computes as fast as it can, so a
+gate that plays 46 seconds of logical time takes under 2, and a busy Mac can't make one miss its
+windows (2026-11-05). `GATE_REALTIME=1` runs them on the clock, to compare. `-batch` polls no socket,
+so a driver's OSC reaches `u_net` through `lib_scratch`'s `net_direct`, the same bytes into the same
+`oscparse`. `phone-assert` (about 67 s, and so the suite's floor), `inject-assert` and
+`state-assert` keep real time: real UDP is what the first two are for.
 
 **The gates run side by side**, all of them at once, each printed whole in table order, so the log
 reads as a serial run's did. `CUTIT_JOBS=1 ./test/run.sh`
@@ -413,7 +188,7 @@ rewriting the box. **`Cut It/` is never touched**; the scratch copy is thrown aw
 The script counts the boxes it rewrote and **refuses to run if it found none** — otherwise every
 assertion would pass vacuously, which is worse than failing.
 
-**46 checks**: frame shape and the 1–108 span, the mode lamp index, page 2's drum page with the
+**It checks:** frame shape and the 1–108 span, the mode lamp index, page 2's drum page with the
 beat row giving way to it and page 1's beat row, page 1's tap pad dim beside it and full for a
 moment at a tap, read with its layout file, page 3's synth pads above the beat row, the chosen
 synth's bright and the other's dim, before and after STRINGS' pad, read with the layout file, the modal claiming all 108 specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
@@ -430,40 +205,6 @@ changes nothing, `init`, and the face: the writes into the frame buffer and nowh
 made after it, `bad-selector`, `no-surface`, a missing layout, a throw, and `g_grid.pd` making it
 and no longer reading the layout itself. What reaches the Launchpad is the Pd half's, and
 `sequencer-assert`'s.
-
-✅ **The drum page's painter was made to fail, check by check** (2026-11-05, when it moved from
-`pd regions` to Lua), each against a mutation, the file then restored, until every one of the 62
-had failed at least once. `g_grid_test.lua`: the blue step a step off (8 failed) or on the wrong
-remainder (11), a step past the last step lit (8), the pads swapped (5), the rows ignored (5), the
-velocity buttons' full and quarter swapped (4), a held repeat pad never shown (2), no playhead (3),
-the playhead counted from 0 (12), a time signature that does not re-shape the rows (17), a level a
-color off (7), a short `steps` clearing the rest (1), a row of another role painted (1), a symbol
-taken as the playhead (1), the cells in reverse (2), no `layout-empty` (2) or always (2), an input
-answering (2), a report not cut to 21 characters (1), the level, quarter and playhead entries a step
-off (10, 5, 4), and from the face: its paint outside `pcall` (stopped the run), `no-surface` silent
-(3), the layout read beside the class rather than the patch (3) or misspelt (6), the proof bang on
-the wrong outlet (2), the writes an index off (3), the buffer never synced (stopped the run) or
-synced only at creation (1), the class misnamed (1), three outlets (1), the page sent as internal
-messages (4), `paint` not answered (7), an unknown selector ignored (4), the page taken on the
-second inlet (1), the dispatch shortcut lost (1), the reports misnamed `lua-draw` (1) and `lua-page`
-(1), and `lua-face.lua` stopping an object after its first error (1). From the patch and the layout:
-`g_grid.pd` without `declare -lib pdlua` (1), reading the layout itself (1), its RGB table three
-short (23) or its pink a step off (4), and the layout's fourth repeat pad made a pad (4). The Pd
-halves, through the running instrument: the pads swapped (`display-assert` 1, `sequencer-assert`
-16), the blue step a step off (`sequencer-assert` 14), the rows ignored (16), `pd regions`' cord to
-the painter cut (`display-assert` 2, `sequencer-assert` 31), and the third inlet's cord to it cut
-(`sequencer-assert` 30). ⚠️ **The proof bang's cord cut, so `fail g_grid no-lua` at every load,
-passes every analyzer**, since the grid is not the patch's until after the alert's two seconds and
-no driver is loaded yet; *both entry points load in silence* fails on it, `u_err` printing the
-fail. With `g_grid-lua.pd_lua` gone the patch says `couldn't create` and `fail g_grid no-lua`. The
-move itself was checked once, by a harness kept out of the suite: `g_grid` alone, the old and the
-new, fed three seeded runs of everything it takes, 12,630 frames, byte-for-byte the same.
-
-✅ **It has been proven to fail.** Reintroducing the one-based beat bug in a scratch copy — the
-beat-row offset back to `+ 11` — makes it report `lit outside every region: [(19, 3)]` and exit 1.
-⚠️ **The three `home-*` checks still passed under that mutation**, which is exactly why *seven
-beats out of eight looked perfect*: only the six-second beat-row window catches it. A gate that
-cannot fail is worth nothing, so re-run that mutation if you ever change the analyzer.
 
 **`launchpad-assert` plays the device for the Setup tap** (2026-11-04). Its driver watches
 `t-midiout` and answers every Programmer Mode entry 1 ms later with the announcement the Launchpad
@@ -590,17 +331,6 @@ again with `m_404.pd` put back after the SP-404 left the rig (2026-11-04).
 pressure tests swapped so the key test reopened the spigot, and — on the witness pad, then `pad-15` and now `pad-45` — with a
 test wide enough to silence every raw row.
 
-✅ **And again against the Lua**, both halves red on each of six mutations of `u_map.lua` (Lua
-failures, then Pd): the lookup reading mode 1's rows in every mode (3, 3), pickup arming on the wrong
-side (2, 2), the mode guard taking one atom (6, 5), pressure drawing a raw row (1, 1), no release on
-reaching a rail target (1, 1) and the boot window never shutting (2, 1); a `live` that sets nothing
-turned the Lua (3) and `recover-assert` (1) red. Knob 1 held at 120 with no `knobs.txt`
-(2026-11-04): the face never asking for the file turned the Lua (1) and the Pd half's no-`knobs.txt`
-run (5) red, and an empty `R.UNSAVED` the Lua (an error) and that run (2). The
-allowlist stayed a Pd `route`, so its mutations are there: the reject cut from `unknown-dest` turned
-the Pd half red (1), and a destination added to the route that nothing handles turned `docs-check`
-red, as the guard's three sides intend.
-
 ⛔ **It also HUNG once instead of failing** — the driver generator errored, its exit status was
 unchecked, Pd was handed a file that did not exist, and the `; pd quit` that lives *inside that file*
 never fired. **A gate that hangs is worse than one that fails.** The generator's status and the
@@ -662,7 +392,7 @@ exactly like a broken rate limiter.
 A mark on stdout would have to be correlated with socket timestamps afterwards; a mark *in* the
 stream arrives in true order with the data around it.
 
-**140 checks**: the known addresses and nothing else; **no `[r disp]` in `u_net`, and no
+**It checks:** the known addresses and nothing else; **no `[r disp]` in `u_net`, and no
 `/cutit/param`, `/cutit/status` or `/cutit/alert` ever on the wire**, with a sweep, a status, an
 alert, a meter and `diag` put on `disp` (Brendan, 2026-11-04: the phone stopped copying the OLED); a
 monotonic heartbeat at 2 Hz; the tempo from `u_tempo`'s cord at once, on every heartbeat, coalesced
@@ -675,24 +405,6 @@ space as one string, the buttons' five acknowledged and the rest not; `songs` ou
 `songs` kept in front, its sixteen commands in order, the buttons' ten acknowledged and the rest
 not; and the mode, `c_steps`' numbers, the choice, the velocity switch, `u_song`'s 22 atoms and its
 songs page's 47 at once and on every heartbeat, the two pages each on its own address. Its rate-limit history, below, is the old mirror's, whose coalescer the tempo now uses.
-
-✅ **It was proven to fail before it was trusted, and for free.** `u_net` was built plumbing-first
-with no coalescer, and that build failed exactly three checks — the three rate ceilings — at
-401, 802 and 401 packets, while every shape check passed. Adding the store took those to 42, 84
-and 42. No mutation had to be invented afterwards, which is the one weakness of Phase 6's
-equivalent.
-✅ **And for the drums lane** (2026-11-04): `u_net`'s cord from it to `c_steps` cut, 9 failed. In
-`map-assert` a drums row naming `lastt` failed its lint, and `u_map` dropping the knob's value
-(`list split 1`) failed `sequencer-assert`'s Pd half (14).
-✅ **And for the SP-404 leaving** (2026-11-04): the old `u_net`, its `test-note m_404` branch back,
-failed 10 — `cmd404`'s, which requires that command to reach nothing now, on an ack and a pad out
-the outlet `c_steps` has taken over, and nine for the drum outlet moving back up one.
-✅ **And for the synth choice** (2026-11-04): `synth` off the inbound route failed 7, since its
-branch became the reject and bogus commands reached `c_synth`; no heartbeat repeat of the choice,
-3; and the choice dropped on its way in, 1.
-✅ **And for the drum screen's pads** (2026-11-05): `vol`, `pitch`, `set-track-last` and
-`randomness` pass through `u_net` as every drum command does, by its design, so the old `u_net`
-passes them; with its cord from `drums` to `c_steps` cut, all four failed with the rest (13).
 
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
@@ -756,36 +468,6 @@ page is driven on a development checklist with a step on two pages, built for th
 line-check step may fit on one; the reading half holds the line check to having no Send line. **What it cannot judge is how TouchOSC draws**; the
 phone checklist is the oracle for that.
 
-✅ **Proven red** (2026-11-04): test mode never changing the tab (Lua 1 failed), a pad sending
-`drums selec` (read 2, Lua 1), and the checklist page sending a Send line's numbers as text (Lua 1).
-✅ **And again for the redesign**: grey text too dim for AA (read 1, Lua 1), a time signature box
-sending one step for a drag across two (Lua 1), and answers lighting a button by its value rather
-than its color, which sends its command again (Lua 9).
-✅ **And for test 404 going with the SP-404** (2026-11-04): the old layout, the button still on it,
-failed read 2 — the devices it names against `u_net`'s, and the acknowledgments it lights — and
-Lua 1, the remote screen's three commands.
-✅ **And for the line check** (2026-11-04): a Send line in it failed read 1, and the old `u_net`,
-still taking `send`, failed `phone-assert` 12 (three for the command, nine for the drum outlet
-moving down one). The phone's pads laid out with pad 1 top left, after the drum page put it
-bottom left, failed read 1.
-✅ **And for the pads** (2026-11-04): a pad sending when the state lights it, which bounced four
-selections between Cut It and the phone, failed 2; the old `u_net`, with no heartbeat on a flip of
-test mode, failed `phone-assert`'s two "at once" checks, 299 and 99 ms late; and with no cord
-from a mode to the flip, a mode chosen in test mode left it on, failing 3.
-✅ **And for the synths** (2026-11-04), each layout rebuilt with the fault: a synth button with no
-`lit` guard (Lua 2), the root lighting one by its value (Lua 2), page 3 with no synths screen (Lua
-1), a button for a synth `c_synth` lacks (read 2), the checklist page's buttons sending nothing
-(read 1, Lua 6), and `u_net` acknowledging `fm` alone (read 1).
-✅ **And for the drum screen's radio and its pads' drags** (2026-11-05): the new checks on the
-layout before them (read 5, then Lua 2 and a stop at the radio it lacks), and eight layouts rebuilt
-with a fault each: a drag that selects as well (Lua 10), the radio sending (read 2, Lua 3),
-randomness in ones (Lua 3), a state handed back unguarded (Lua 1), the pads ignoring the radio
-(Lua 8), every pad dragging track 1 (read 1, Lua 6), the radio standing up (read 2) and two steps a
-pad's height (read 1). And the swing's range: the layout built at the old 25% (Lua 2).
-✅ **And for the last step's reach** (2026-11-05), three layouts rebuilt with a fault each: the
-old box of 1 to 32 (Lua 5), the root never telling the box the top number (Lua 5), and the box's
-reach worked out wrong (Lua 9).
-
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
@@ -838,59 +520,6 @@ that won't play dim, pink or the selected red at a quarter. Then track 4's disto
 over OSC: it is put as a 759-number line, its character after the mutes and solos, and `c_kit`'s
 stand-in hears `char 4 3` and nothing else; the song's draft ends with all three.
 
-✅ **Proven red before it was trusted**: with `c_steps` absent (the known exit 2), against the patch
-before the sequencer was wired (20 of 28), and on eight mutations — the step rule inverted, PLAY not
-parking the counter, no put after a restore, panic ignored, eighths for sixteenths, `m_404`'s old
-5 ms gap, the brightness ramp one hue off, and two velocity rows swapped in the layout table.
-✅ **And again against the Lua**, both halves red on each of three mutations of `c_steps.lua`: the
-step rule inverted (Lua 6 failed, Pd 12), the velocity levels off by one (5, 9), and a step reading
-the next step's notes (5, 3). A rule that throws turns the Pd half red with `fail c_steps lua-fire`
-on `err`, and a syntax error with silence (18 failed); the Lua half dies on both with a traceback.
-✅ **And for the level `c_steps` sends** (2026-11-04): velocities sent to the page as they were
-before (Lua 5 failed, Pd 12), and every level one too high (3, 12).
-✅ **And for one velocity row** (2026-11-03), against the old step rule and the old color ramp
-together: Lua 1 failed, Pd 12; with the old map, a press on the freed row was a `layout-miss`.
-✅ **And for the last step**: PLAY parking the counter at 15, as it did, started PLAY again on step 2
-with the last step at 3 (4 failed). 3, not 4, because a last step that divides 16 hides it. Without
-`u_root`'s cord from `u_net` to `c_steps`, the snap never landed (3 failed).
-✅ **And for swing, drunkenness, randomness, volume and pitch** (2026-11-05). `c_steps_test.lua`
-on the old rules: the swing's 9 failed, and with the old curve given the new names, drunkenness's
-11; then on eight mutations of the new rules: randomness ignored (6), a line of 563 read as the new
-one (3), a restore telling `c_kit` nothing (3), a pad's sound kept from `c_kit` (5, then a stop), the
-phone's state without the per-track numbers (8), a pad's last step leaving knob 3 live (2), a pad
-setting the selected track's sound (8), and the coin playing the written velocity (3). The Pd half
-on the old rules failed 20, among them the 579-atom put, `c_kit`'s volumes and pitches at the
-restore and from the pads, the randomness and the swing, and then stopped on a line too short for
-the new layout; on the old swing and drunk curve, 2; and with randomness ignored, 2.
-✅ **And for the time signature's rows** (2026-11-05), each against the code without the change or
-a mutation of it, the file then restored. The old `c_steps.lua` with the new `g_grid`: the Lua half
-stopped at `R.row`, the Pd half failed 37. The old `g_grid` with the new rules: 17, among them each
-row's eighth cell lit at 7/8, 9/8's blue step 10 missing and the playhead lost past the first row.
-`c_steps_test.lua` on ten mutations: a cell pressed as its own step (3), rows of 8 whatever the top
-number (17), a track's last step unclipped (1), the global one unclipped (2), the bottom number
-setting the step clock's rate (1), a tick timed by it (1), no hold on knobs 2 and 3 when the reach
-moves (1), knob 2's full turn left at 32 (3), the phone's `set-last` unclipped (2), and the old bar
-of N × 16 / D (7). The Pd half with `g_grid` painting a cell as its own step (15), with a row's
-cells past it not dark (16), and with `c_steps` taking a press as its cell's number (Lua 3, Pd 12).
-✅ **And for a step on its boundary** (2026-11-05): with the phase shifted back a twelfth of a step
-again, where it landed in `u_tempo`'s MIDI pulse, PLAY's step 1 came 10 ms late, past `RE-SOON` and
-`SW-SOON`, and step 3 past `RE-STEP3` (3 failed). The windows bracket each against PLAY, which the
-driver sends 20 ms after its mark: step 1 within 5 ms, once with `threshold~` armed at PLAY and once
-still to re-arm, and step 3 between 246 and 256 ms. With no shift at all, the PLAYs landing early in
-a step lost step 1 to the next step (4 failed, the swing's and the snap's walks among them) and the
-armed one passed: the ten-thousandth is what re-arms it.
-✅ **And for a repeat playing exactly what was played** (2026-11-05, Brendan: a held repeat rolled
-randomness again on every step), each against a mutation of `c_steps.lua`, the file then restored.
-`c_steps_test.lua`: a repeat rolling its coins and its drunk lengths again, the bug as reported (9
-failed); its drunk lengths alone rolled again (2); mute and solo frozen into the step when it was
-decided (3: a mute or a solo under the repeat unheard, and a muted track's coins lost to the
-replay); let go, the window still playing (8); a window short of its length repeating at once (1);
-the replay reading the pattern as it now stands (7); a restore letting go of the repeat (1); and,
-for the dice the new checks set up, the coin inverted (11), a drunk step straying the other way
-(8), and a press short of its length refused (2). The Pd half: the bug as reported (1: the four
-random tracks' replay, the steps under it 2 3 2 and its hits re-rolled), and let go, the window
-still playing (2: pad 1's and pad 2's walks after the release).
-
 ⚠️ **The layout table is read, not restated**, so a frame is decoded with the same table the patch
 paints from. The analyzer's expectations are what keeps that honest: the driver presses `pad-26`
 and expects level 2, so a table that moves the button is caught.
@@ -910,22 +539,13 @@ instrument, booted on page 3 with a song whose one section holds `synth strings`
 `t-notein`, page 3's pads as `param pad-NN`, and the phone's `/cutit synth <choice>` as a datagram
 into `u_net`'s own port, from a socket the driver builds with `lib_drive`'s `extra`.
 
-**25 checks**: the saved choice and switch restored and put back, the first key on the
+**It checks:** the saved choice and switch restored and put back, the first key on the
 Streichfett's channel alone, at 127, the phone's `velocity on` and `off` put, FM's pad choosing once, any channel of the nanoKEY's port playing, a key held through the
 phone's switch releasing on the Volca, only a press choosing (two pads held), notes on four other
 ports playing nothing, the choice holding on page 1 where the pads mean nothing, `bad-synth` from
 the phone, and `bad-velocity`, a soft key at 127 with the switch off and its release at 0, panic's
 CC 123 on channel 33, nothing on another channel, nothing else on `err`, and `synth strings` and
 `velocity off` in the song's draft at the end.
-
-✅ **Proven red** (2026-11-04), each against the code without the change: `c_synth` releasing on
-the synth chosen now (Lua 4, Pd 1); `m_nanokey`'s gate open above its port (1) and below it (1);
-`u_net` routing no `synth` (4); `m_streich`'s panic channel on `ctlout`'s controller inlet (1);
-`c_synth` deaf to its restore (4) and storing under another key (4); `u_map` choosing on a release
-(1); the layout giving pad 22 to strings (6); a synth row on page 1 (3); `m_streich` given the
-nano's channel (6); the layout missing pad 26 (5). The Lua half alone: no `bad-synth` (5), a release
-that chooses (3), a restore that takes anything (2), `strings` at boot (15), no release before a
-repeated press (1), a repeated choice said again (1).
 
 ## The device layers' Lua halves
 
@@ -943,16 +563,6 @@ change of modifier. The SP-404's layer had a third, until it left the rig (2026-
 drives its face through `lib_test.lua`'s stand-in for pdlua: its
 inlets and outlets, `bad-selector`, and a throwing rule caught as `fail <layer> lua-<bus>`. Each Pd
 half is unchanged since its layer was Pd: **it is the proof the port changed nothing.**
-
-✅ **Both halves red on each of four mutations of `m_nano.lua`** (Lua failures, then Pd): a button's
-release passed (4, 1), the units digit off by one (18, 14), the transport row continuous (2, 2) and
-an unmapped CC silent (8, 1). **On each of three of `m_organelle.lua`**: no latch, the live
-modifier naming every edge (3, 1); the latch rewritten on the release (3, 1); and the release dropped
-(7, 3).
-
-✅ **And `lua-face.lua`, which all the faces share** (2026-11-04): with no bang on `init`, each of
-the five Lua tests there were then, the SP-404's among them, went red (1 to 3 failed); with a rule
-run outside `pcall`, each died on its throwing rule.
 
 ## `song-assert.sh` — the song store, played from the Launchpad's edges
 

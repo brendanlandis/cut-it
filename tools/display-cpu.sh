@@ -14,10 +14,10 @@ HOST=${HOST:-root@organelle.local}
 N=1
 [ "$1" = "-n" ] && N=$2
 
-# The newest full-rig row in ref/device-os.md (Phase 7, 11.7 %) plus one point.
+# The newest full-rig row in ref/device-os.md (2026-11-05, 15.2 %) plus one point.
 # When that table gains a row, move this and name the row.
-BUDGET=12.7
-BASELINE="Phase 7 full rig 11.7 % plus one point"
+BUDGET=16.2
+BASELINE="the 2026-11-05 full rig, 15.2 %, plus one point"
 
 echo "measuring $HOST -- five seconds a reading, $N reading(s)"
 echo "budget: ${BUDGET} % (${BASELINE}) -- ref/device-os.md has the table"

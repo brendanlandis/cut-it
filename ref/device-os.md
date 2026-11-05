@@ -82,6 +82,7 @@ ssh root@organelle.local '
 | Phase 6 — Launchpad grid | **11.7–12.0 %** | 120/s |
 | Phase 7 — phone status link | **11.7 %** | **122–126/s** |
 | Phase 8 — the data store | 10.4–10.7 % | 115–116/s | ⚠️ **not comparable** — see below |
+| 2026-11-05 — drums in Pd, the synths, the phone's pages, the info bar | **15.0–15.2 %** | 60–61/s |
 
 The datagram rate was the display alone and flat from Phase 3 to 6. **The Phase 5 CPU jump is the
 clock, and it is DSP cost, not MIDI cost** — toggling DSP off drops `pd` to under 5 % while the
@@ -93,12 +94,18 @@ was in a different state — **4 ALSA links rather than 5**, so a controller was
 phone was not up. It bounds the cost as small and nothing more. Item 156. **Compare rows only when
 the rig matches**; that is the whole reason each row names its phase rather than a date.
 
+**The 2026-11-05 row** is the full rig of that day, idle and stopped: Launchpad, nanoKONTROL,
+Streichfett, nanoKEY and the Volca's interface wired (11 ALSA links), the phone connected, the drum kit
+(sixteen voices, switched off while silent), `c_synth`, eight pages, and mother's info bar on. UDP out
+halved because the phone no longer mirrors the OLED. The four and a half points over Phase 7 are
+the whole of that day's growth, not measured piece by piece.
+
 **Phase 7 is the first phase to move the UDP number**, and by a knowable amount: heartbeat 2/s,
 repeated alert state 2/s, and the late-join repeat 1/s. ✅ **`u_net` costs about 0.2 CPU points.**
 Items 118 and 134.
 
 ⛔ **The budget belongs to the newest row that matches your rig, and `tools/display-cpu.sh` holds
-it: 12.7 %**, Phase 7's full-rig 11.7 % plus one point. A threshold that stays put while the patch
+it: 16.2 %**, the 2026-11-05 full rig's 15.2 % plus one point. A threshold that stays put while the patch
 grows says OVER BUDGET on every run and stops carrying information — **a threshold nobody moves is a
 threshold nobody reads. When this table gains a row, move that number and name the row it came from.**
 

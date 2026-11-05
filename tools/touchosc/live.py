@@ -280,9 +280,14 @@ def facts(root, doc=None, types=None):
         f[(k, "index", "")] = n.parent.children.index(n) if n.parent else 0
         props = dict(UNWRITTEN) if doc is None else {}
         props.update(n.props)
-        for p, (typ, v) in props.items():
-            f[(k, "p", p)] = [typ, norm(typ, v)]
         live = (types or {}).get(k)
+        for p, (typ, v) in props.items():
+            # A property the live control hasn't got at all, a knob's bar or cursor say, TouchOSC
+            # can't hold: settle() warns of each and leaves it out, as opening the file does, so
+            # it isn't a difference either (2026-11-05: the effect knobs failed every push).
+            if live is not None and p not in live.props and p not in UNWRITTEN:
+                continue
+            f[(k, "p", p)] = [typ, norm(typ, v)]
         for key, v in n.values.items():
             if doc is not None:
                 typ = v["type"]

@@ -384,8 +384,9 @@ def main():
 
     print("\n--- knob 4, swing ---")
     rows = knob_rows("SWING", "swing")
-    A.check("⛔ knob 4 starts HELD at 50%: at 25% it draws swing 50 (25), then turned through "
-            "it, swing 75 %", rows == [["swing", "50", "(25)"], ["swing", "75", "%"]], rows)
+    A.check("⛔ knob 4 starts HELD at 50%: at 65% it draws swing 50 (65); turned down to 50%, "
+            "its bottom, it is live, then swing 75 %",
+            rows == [["swing", "50", "(65)"], ["swing", "50", "%"], ["swing", "75", "%"]], rows)
     A.check("... and it is not saved: no put", not puts("SWING"), "puts: %d" % len(puts("SWING")))
     A.check("⛔ at 75% step 2 waits three quarters of the pair: not painted by 190 ms, and "
             "painted by 260", moved("SW-PLAY", "SW-GAP") == [1] and moved("SW-LATE") == [2],
@@ -416,6 +417,12 @@ def main():
     A.check("⛔ drunk, the steps leave the grid: sober, each of 96 windows a sixteenth "
             "wide holds one step", sum(counts) >= 24 and counts != [1] * 96,
             "steps per window: %s" % counts)
+    # At the top every step strays, by up to two steps (Brendan, 2026-11-05):
+    # simulated, 20 to 52 windows of the 96 hold one step; at a third straying
+    # by up to one, as it was, 68 to 91.
+    A.check("⛔ ... and at the top every step strays: at most 60 of the 96 windows hold "
+            "exactly one", counts.count(1) <= 60,
+            "%d hold one: %s" % (counts.count(1), counts))
     A.check("STOP stops it again", not ons("DONE"), "note-ons: %s" % ons("DONE"))
 
     print("\n--- the disk ---")

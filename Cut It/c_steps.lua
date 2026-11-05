@@ -21,17 +21,31 @@ R.TRACKS, R.STEPS, R.LEVELS = 16, 32, 8
 -- At load: level 6 (95), track 1, and a last step of 16 that both knobs are held at until they
 -- are turned through it (Brendan, 2026-11-03), so nothing jumps to where a knob happens to sit.
 R.BOOT_LEVEL, R.BOOT_TRACK, R.BOOT_LAST = 6, 1, 16
--- Swing, knob 4: 25% to 75%, straight at 50%, where it starts, held like knobs 2 and 3 (Brendan,
--- 2026-11-03). The share of a pair of sixteenths the first one takes.
-R.SWING_MIN, R.SWING_MAX, R.BOOT_SWING = 25, 75, 50
+-- Swing, knob 4: 50% to 75%, straight at its bottom and swinging one way only (Brendan,
+-- 2026-11-05), starting at 50% held like knobs 2 and 3 (2026-11-03). The share of a pair of
+-- sixteenths the first one takes.
+R.SWING_MIN, R.SWING_MAX = 50, 75
+R.BOOT_SWING = 50
 -- The time signature's denominators: a bar is num x 16 / den steps, so den divides 16.
 R.DENS = { 1, 2, 4, 8, 16 }
 R.MAX_NUM = 32
--- Drunk, most steps stay on time (Brendan, 2026-11-04): the slider's share of this is the chance
--- a step strays, so at its top a third of them do.
-R.DRUNK_CHANCE = 1 / 3
--- The shortest a drunk step gets, as a share of a step: at the slider's top a step strays up to
--- a whole step (Brendan, 2026-11-03), and a step of nothing would be two at once.
+-- Drunk, at the slider's top every step strays, by up to two steps longer or shorter, and low
+-- settings stay subtle (Brendan, 2026-11-05). At x, the slider's 0 to 1, a step strays with the
+-- chance x/3 + 2x^4/3, by up to x + x^4 steps: a line, a third of the steps by up to the slider's
+-- share of a step, which is most of it low, plus a steep x^4 that adds the rest near the top. At
+-- 20% one step in fifteen strays, by up to a fifth of a step; at 50% one in five, by up to 0.56;
+-- at 90% three in four, by up to 1.56.
+R.DRUNK_STEEP = 4
+function R.drunk_chance(drunk)
+  local x = drunk / 100
+  return x / 3 + 2 * x ^ R.DRUNK_STEEP / 3
+end
+function R.drunk_reach(drunk)
+  local x = drunk / 100
+  return x + x ^ R.DRUNK_STEEP
+end
+-- The shortest a drunk step gets, as a share of a step: a step two steps shorter would be less
+-- than nothing, and a step of nothing would be two at once.
 R.MIN_DUR = 0.125
 -- The repeat pads, 1 to 4: each replays the last 1, 2, 3 or 4 steps (Brendan, 2026-11-03).
 R.REPEATS = 4
@@ -193,10 +207,11 @@ local function track_row(st)
   return "pad" .. st.track .. "-last"
 end
 
--- Knob 4: swing, 25% to 75%, the share of each pair of sixteenths the first one takes, straight
--- at 50%: above it every second sixteenth comes later, below it earlier (Brendan, 2026-11-03).
--- Not saved; it starts at 50% with the knob held there, as knob 2 at 16. The step clock takes it
--- at the next pair, so a turn never moves a step already cut.
+-- Knob 4: swing, 50% to 75%, the share of each pair of sixteenths the first one takes, straight
+-- at 50%, its bottom: above it every second sixteenth comes later (Brendan, 2026-11-05). Not
+-- saved; it starts at 50% with the knob held there, as knob 2 at 16, and since 50% is the knob's
+-- bottom, it is held until turned all the way down. The step clock takes it at the next pair, so
+-- a turn never moves a step already cut.
 function R.knob_swing(st, v)
   local n = R.SWING_MIN + math.floor(clip(num(v), 0, 1) * (R.SWING_MAX - R.SWING_MIN) + 0.5)
   local live = latch(st.knob.swing, n, st.swing)
@@ -419,9 +434,9 @@ end
 -- at (heard), track 1 first, all in one logical instant: a note moved late from the last step,
 -- then its own note, as its fate says. Then each track's next note is rolled a step ahead, and
 -- one moved early plays now. Then the playhead, the selected track's step, and the step clock's
--- rate for the step coming: drunk, now and then a step lasts up to the drunkenness longer or
--- shorter, the more often the drunker, and the error stays -- its own drift becomes the clock
--- (Brendan, 2026-11-03).
+-- rate for the step coming: drunk, a step may last longer or shorter, the more often and the
+-- further the drunker (R.drunk_chance, R.drunk_reach), and the error stays -- its own drift
+-- becomes the clock (Brendan, 2026-11-03).
 function R.tick(st)
   local m, pos, synced = advance(st)
   local out = {}
@@ -466,8 +481,8 @@ function R.tick(st)
   end
   out[#out + 1] = { "page", "play", { play[st.track] } }
   local rate = 1
-  if st.drunk > 0 and st.rand() < R.DRUNK_CHANCE * st.drunk / 100 then
-    local stray = (st.rand() * 2 - 1) * st.drunk / 100
+  if st.drunk > 0 and st.rand() < R.drunk_chance(st.drunk) then
+    local stray = (st.rand() * 2 - 1) * R.drunk_reach(st.drunk)
     rate = 1 / math.max(R.MIN_DUR, 1 + stray)
   end
   if rate ~= st.rate then
@@ -538,7 +553,7 @@ end
 -- What arrives on the first inlet: u_map's drum-page presses and releases, <selector> <n>
 -- <velocity>; its knobs, last, track-last and swing with the knob's 0-1; and the drum screen's
 -- sync, snap, select, num and den (-1 or 1), and drunk, skip and move (0 to 100), through u_net;
--- and the arrangement screen's set-swing (25 to 75) and set-last (1 to 32), through u_net too.
+-- and the arrangement screen's set-swing (50 to 75) and set-last (1 to 32), through u_net too.
 -- A press, a knob or a setting with no number in it does nothing.
 R.presses = {
   step = function(st, a) return pressed(a) and R.press_step(st, a[1]) or {} end,

@@ -11,7 +11,7 @@
 -- outlet 1: pad <pad> <velocity>, to c_kit. outlet 2: the page, to g_grid. outlet 3: the pattern
 -- to save. outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded. outlet 6: a knob's
 -- row, to disp. outlet 7: the phone's state, R.phone's 42 numbers, whenever it changes.
--- outlet 8: the step clock's swing <0.25-0.75> and rate <x>, to c_steps.pd's clock.
+-- outlet 8: the step clock's swing <0.5-0.75> and rate <x>, to c_steps.pd's clock.
 --
 -- A Lua error leaves outlet 4 as fail c_steps lua-<selector>, and its text goes to Pd's console
 -- where there is one: the device has none (C-12).

@@ -334,16 +334,22 @@ equal("a release -- velocity 0 -- of a step, a velocity or a pad does nothing",
 equal("... and changes nothing", { st.pattern, st.level, st.track }, { zeros(CELLS), 6, 1 })
 
 print("\n--- knob 4, swing ---")
-local function sw(n) return (n - 25) / 50 end
+-- 50% to 75%, straight at the knob's bottom, swinging one way only (Brendan, 2026-11-05).
+local function sw(n) return (n - 50) / 25 end
 st = R.new(1)
 equal("⛔ at load it is HELD at 50%: a knob at 62% draws the held row and changes nothing",
       R.presses.swing(st, { sw(62) }), { { "disp", "swing", { 50, "(62)" } } })
-equal("passing 50% releases it: the row, and the step clock takes the swing as a share",
-      R.presses.swing(st, { sw(38) }), { { "disp", "swing", { 38, "%" } },
-                                        { "clock", "swing", { 0.38 } } })
-equal("its ends are 25% and 75%, and the knob between is rounded to whole percents",
+equal("... and still held all the way up: 50% is the knob's bottom, so nothing is past it",
+      R.presses.swing(st, { 1 }), { { "disp", "swing", { 50, "(75)" } } })
+equal("⛔ turned all the way down, to 50%, it is live: the row, and the step clock unchanged",
+      R.presses.swing(st, { 0 }), { { "disp", "swing", { 50, "%" } } })
+equal("... and from there the step clock takes the swing as a share",
+      R.presses.swing(st, { sw(62) }), { { "disp", "swing", { 62, "%" } },
+                                        { "clock", "swing", { 0.62 } } })
+equal("⛔ its ends are 50% and 75% -- straight at the bottom -- and the knob between is rounded "
+      .. "to whole percents",
       { R.presses.swing(st, { 0 })[2][3][1], R.presses.swing(st, { 1 })[2][3][1],
-        R.presses.swing(st, { 0.513 })[2][3][1] }, { 0.25, 0.75, 0.51 })
+        R.presses.swing(st, { 0.513 })[2][3][1] }, { 0.5, 0.75, 0.63 })
 check("swing is not saved: no put", (function()
   for _, e in ipairs(R.presses.swing(st, { 0.2 })) do if e[1] == "save" then return false end end
   return true
@@ -357,15 +363,15 @@ R.presses.swing(st, { sw(50) })
 equal("set-swing sets the swing at once, live knob or not, and the step clock takes it",
       R.presses["set-swing"](st, { 62 }), { { "clock", "swing", { 0.62 } } })
 equal("... and the phone hears it, last of its numbers", R.phone(st)[42], 62)
-equal("its ends are 25% and 75%, and it rounds to whole percents",
+equal("⛔ its ends are 50% and 75%, below 50 is 50, and it rounds to whole percents",
       { R.presses["set-swing"](st, { 10 })[1][3][1], R.presses["set-swing"](st, { 90 })[1][3][1],
-        R.presses["set-swing"](st, { 40.4 })[1][3][1] }, { 0.25, 0.75, 0.4 })
-equal("the same swing again says nothing", R.presses["set-swing"](st, { 40 }), {})
-equal("⛔ knob 4 is held again at the phone's 40%: a knob at 62% changes nothing",
-      R.presses.swing(st, { sw(62) }), { { "disp", "swing", { 40, "(62)" } } })
-equal("... until it passes 40", R.presses.swing(st, { sw(38) })[1], { "disp", "swing", { 38, "%" } })
+        R.presses["set-swing"](st, { 60.4 })[1][3][1] }, { 0.5, 0.75, 0.6 })
+equal("the same swing again says nothing", R.presses["set-swing"](st, { 60 }), {})
+equal("⛔ knob 4 is held again at the phone's 60%: a knob at 72% changes nothing",
+      R.presses.swing(st, { sw(72) }), { { "disp", "swing", { 60, "(72)" } } })
+equal("... until it passes 60", R.presses.swing(st, { sw(55) })[1], { "disp", "swing", { 55, "%" } })
 equal("set-swing with no number does nothing", { R.presses["set-swing"](st, {}),
-      R.presses["set-swing"](st, { "x" }), st.swing }, { {}, {}, 38 })
+      R.presses["set-swing"](st, { "x" }), st.swing }, { {}, {}, 55 })
 st = R.new(1)
 R.presses.last(st, { at(16) })
 equal("set-last sets the global last step at once, live knob or not, and the page shows it",
@@ -458,29 +464,58 @@ st.rand = dice(0.1, 0.9)
 equal("a note moved late plays at the next step, at its own velocity", run(st, 3), "1: 2: 3:1@95")
 
 print("\n--- drunkenness ---")
+-- At x, the slider's 0 to 1, a step strays with the chance x/3 + 2x^4/3, by up to x + x^4 steps
+-- (Brendan, 2026-11-05: every step at the top, by up to two; low settings subtle).
+local function near(a, b) return math.abs(a - b) < 1e-9 end
+check("⛔ at the top every step strays, by up to two steps: chance 1, reach 2",
+      near(R.drunk_chance(100), 1) and near(R.drunk_reach(100), 2),
+      T.show({ R.drunk_chance(100), R.drunk_reach(100) }))
+check("⛔ low it stays subtle: at 20% one step in fifteen, by up to a fifth of a step",
+      near(R.drunk_chance(20), 0.2 / 3 + 2 * 0.2 ^ 4 / 3) and R.drunk_chance(20) < 0.07
+      and near(R.drunk_reach(20), 0.2016),
+      T.show({ R.drunk_chance(20), R.drunk_reach(20) }))
+check("⛔ ... and it ramps steeply near the top: at 50% one in five by up to 0.56, at 90% three "
+      .. "in four by up to 1.56",
+      near(R.drunk_chance(50), 5 / 24) and near(R.drunk_reach(50), 0.5625)
+      and near(R.drunk_chance(90), 0.7374) and near(R.drunk_reach(90), 1.5561),
+      T.show({ R.drunk_chance(50), R.drunk_reach(50), R.drunk_chance(90), R.drunk_reach(90) }))
+check("... and it never falls as the slider rises", (function()
+  for k = 1, 100 do
+    if R.drunk_chance(k) < R.drunk_chance(k - 1) or R.drunk_reach(k) < R.drunk_reach(k - 1) then
+      return false
+    end
+  end
+  return true
+end)(), "")
+equal("sober, nothing strays: chance and reach 0", { R.drunk_chance(0), R.drunk_reach(0) }, { 0, 0 })
 st = R.new(1)
 R.internal.start(st, {})
 equal("sober, a step changes nothing of the clock's", #R.internal.tick(st, {}), 1)
 R.presses.drunk(st, { 50 })
 st.rand = dice(0, 1)
-equal("drunk 50: a step that strays can last half a step longer -- the clock's rate 1/1.5",
-      R.internal.tick(st, {})[2], { "clock", "rate", { 1 / 1.5 } })
+equal("drunk 50: a step that strays can last 0.56 of a step longer -- the clock's rate 1/1.5625",
+      R.internal.tick(st, {})[2], { "clock", "rate", { 1 / 1.5625 } })
 st.rand = dice(0, 0)
-equal("... or half a step shorter -- rate 2", R.internal.tick(st, {})[2], { "clock", "rate", { 2 } })
-st.rand = dice(0.17, 0)
-equal("drunk 50, a step strays one time in six: a roll of 0.17 plays on time -- rate 1, "
+equal("... or 0.56 shorter -- rate 1/0.4375", R.internal.tick(st, {})[2],
+      { "clock", "rate", { 1 / 0.4375 } })
+st.rand = dice(0.21, 0)
+equal("drunk 50, a step strays about one time in five: a roll of 0.21 plays on time -- rate 1, "
       .. "and no size is rolled", { R.internal.tick(st, {})[2], st.rand() },
       { { "clock", "rate", { 1 } }, 0 })
 R.presses.drunk(st, { 100 })
-st.rand = dice(0, 0)
-equal("drunk 100: a whole step shorter is held at an eighth of a step -- rate 8",
+st.rand = dice(0.999, 1)
+equal("⛔ drunk 100: every step strays -- a roll of 0.999 still does -- up to two steps longer, "
+      .. "rate 1/3", R.internal.tick(st, {})[2], { "clock", "rate", { 1 / 3 } })
+st.rand = dice(0.999, 0)
+equal("⛔ ... and two steps shorter is held at an eighth of a step, never nothing -- rate 8",
       R.internal.tick(st, {})[2], { "clock", "rate", { 8 } })
-st.rand = dice(0.34, 0)
-equal("drunk 100, most steps stay on time: a roll of 0.34 is past the third that strays -- rate 1",
-      R.internal.tick(st, {})[2], { "clock", "rate", { 1 } })
+st.rand = dice(0.5, 0.25)
+equal("... as is a whole step shorter -- rate 8 again, so nothing sent", #R.internal.tick(st, {}), 1)
+st.rand = dice(0.5, 0.75)
+equal("a whole step longer: rate 1/2", R.internal.tick(st, {})[2], { "clock", "rate", { 0.5 } })
 st.rand = dice(0, 0.5)
-equal("a stray of the middle is a step as written: no rate sent",
-      #R.internal.tick(st, {}), 1)
+equal("a stray of the middle is a step as written: rate 1",
+      R.internal.tick(st, {})[2], { "clock", "rate", { 1 } })
 -- On a sequencer of its own: the last roll leaves the rate wherever it fell.
 local strays, d = 0, R.new(1)
 R.internal.start(d, {})
@@ -490,8 +525,15 @@ for _ = 1, 3000 do
   R.internal.tick(d, {})
   if d.rate ~= 1 then strays = strays + 1 end
 end
-equal("drunk 100, over 3000 steps about a third stray: between 850 and 1150",
-      strays >= 850 and strays <= 1150 or strays, true)
+equal("⛔ drunk 100, over 3000 steps every one strays", strays, 3000)
+strays = 0
+R.presses.drunk(d, { 50 })
+for _ = 1, 12000 do
+  R.internal.tick(d, {})
+  if d.rate ~= 1 then strays = strays + 1 end
+end
+equal("drunk 50, over 12000 steps about one in five, 2500: between 2320 and 2680",
+      strays >= 2320 and strays <= 2680 or strays, true)
 R.presses.drunk(st, { 0 })
 st.rand = dice(0)
 equal("sober again, the rate is 1 and the drift is kept: nothing pulls it back",

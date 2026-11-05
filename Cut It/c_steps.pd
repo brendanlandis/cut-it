@@ -111,7 +111,7 @@
 #X obj 20 1000 *~ 88200;
 #X obj 20 1050 phasor~;
 #X obj 20 1150 samphold~;
-#X obj 20 1190 clip~ 0.25 0.75;
+#X obj 20 1190 clip~ 0.5 0.75;
 #X obj 20 1240 expr~ if(\$v1 < \$v2 \, \$v1 * 0.5 / \$v2 \, 0.5 + (\$v1 - \$v2) * 0.5 / (1 - \$v2));
 #X obj 20 1290 *~ 2;
 #X obj 20 1310 wrap~;

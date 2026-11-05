@@ -65,8 +65,8 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Pass if:** The phone reads 4 / 8, then 7 / 8. Back on page 2 the Launchpad's steps 1 and 15 are blue where they are not lit. The playing does not change.
 
 - [ ] **15. Swing on knob 4**
-  - **Do:** Turn knob 4 a little either way without passing noon. Then turn it all the way right, all the way left, and back to noon.
-  - **Pass if:** At first the screen reads swing 50 with the knob's own value in brackets, and nothing changes. All the way right every second step comes late, a long-short shuffle; all the way left the other way round, short-long. At noon it plays straight again.
+  - **Do:** Turn knob 4 a little up, then all the way left. Then turn it all the way right, to noon, and back to all the way left.
+  - **Pass if:** At first the screen reads swing 50 with the knob's own value in brackets, and nothing changes until the knob is all the way left; there the brackets go. All the way right every second step comes late, a long-short shuffle; at noon a gentler one, about 62; all the way left it plays straight again. Nothing turns it short-long.
 
 - [ ] **16. A repeat pad**
   - **Do:** While it plays hold the top-left pad of the right four by four for a few beats, then let go. Then hold the fourth pad in that row a few beats and let go.
@@ -77,8 +77,8 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Pass if:** The knob stays where you let go and reads what it shows. With skip about half of pad 13's hits drop out, different ones each bar. With move about half of them land a step early or late, and none drop out. The other pad shows 0% on both, and pad 13 its own again.
 
 - [ ] **18. Drunkenness**
-  - **Do:** Drag move back to 0%. Press page 1 on the Launchpad, drag the arrangement screen's drunk to 100% and listen for a few bars, then drag it back to 0% and press page 2.
-  - **Pass if:** Most steps still land on time, but now and then one comes early or late, and the beat carries on from there rather than catching up. At 0% it is steady again.
+  - **Do:** Drag move back to 0%. Press page 1 on the Launchpad, drag the arrangement screen's drunk to about 20% and listen for a few bars, then to 100% and listen again, then back to 0% and press page 2.
+  - **Pass if:** At 20% most steps land on time, and now and then one comes a little early or late. At 100% no step lands where it should: each one comes early or late, some by as much as two steps, and the beat lurches on from there rather than catching up. At 0% it is steady again.
 
 - [ ] **19. STOP**
   - **Send:** `stop bang`
@@ -111,5 +111,5 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Need:** The drums playing, from `start bang`, with steps lit. The phone linked.
   - **Send:** `mode mode-1`
   - **Do:** Turn knob 2 a little either way, then through noon and on to last-step 8. Then turn knob 4 a little, then all the way right. Then turn knob 3.
-  - **Pass if:** Knob 2 reads last-step with its own step in brackets until it passes 16, then last-step alone; at 8 the drums loop in half the time, and the phone's last step reads 8. Knob 4 reads swing the same way until it passes 50, and all the way right every second step comes late, and the phone's swing knob follows. Knob 3 draws nothing and changes nothing. Put knobs 2 and 4 back to 16 and noon.
+  - **Pass if:** Knob 2 reads last-step with its own step in brackets until it passes 16, then last-step alone; at 8 the drums loop in half the time, and the phone's last step reads 8. Knob 4 reads swing the same way until it is all the way left, at 50, and all the way right every second step comes late, and the phone's swing knob follows. Knob 3 draws nothing and changes nothing. Put knob 2 back to 16 and knob 4 all the way left.
   - **Note:** Knobs 2 and 4 are the drums' last step and swing on every page, as knob 1 is the tempo; knob 3, the selected track's own last step, is the drum page's alone (Brendan, 2026-11-04). The brackets are `c_steps`' latch: a reload holds both knobs again, at 16 and 50%.

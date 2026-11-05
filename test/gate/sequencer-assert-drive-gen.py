@@ -74,16 +74,18 @@ SEQ = [
     (14300, "SNAP", ["\\; seqgate-osc drums snap"], GAP),
     (14500, "SNAP-PLAY", ["\\; start bang"], GAP),
     (15000, "SNAP-STOP", ["\\; stop bang"], GAP),
-    # Knob 4 is swing, held at 50% until turned through it: 0 is 25%, held; 1 is
-    # 75%, through it. PLAY then puts step 2 three quarters of the way through
-    # the pair: at 120 BPM, about 198 ms after step 1 rather than 125, so it
-    # paints in SW-LATE, not SW-GAP; step 3 lands on the beat, 260 ms in.
-    (15100, "SWING", ["\\; param og-knob-4 0", "\\; param og-knob-4 1"], GAP),
+    # Knob 4 is swing, 50% to 75%, held at 50% until turned to it: 0.6 is 65%,
+    # held; 0 is 50%, the knob's bottom, which releases it; 1 is 75%. PLAY then
+    # puts step 2 three quarters of the way through the pair: at 120 BPM, about
+    # 198 ms after step 1 rather than 125, so it paints in SW-LATE, not SW-GAP;
+    # step 3 lands on the beat, 260 ms in.
+    (15100, "SWING", ["\\; param og-knob-4 0.6", "\\; param og-knob-4 0",
+                      "\\; param og-knob-4 1"], GAP),
     (15300, "SW-PLAY", ["\\; start bang"], GAP),
     (15400, "SW-GAP", [], GAP),
     (15490, "SW-LATE", [], GAP),
     (15560, "SW-ON", [], GAP),
-    (15700, "SW-STOP", ["\\; stop bang", "\\; param og-knob-4 0.5"], GAP),
+    (15700, "SW-STOP", ["\\; stop bang", "\\; param og-knob-4 0"], GAP),
     # Repeat pad 1, the top left of the right 4x4, held after step 3: the
     # playhead stays on 3 and track 1's step 3 plays on every step; let go, the
     # loop goes on from where it would have been, 2 then 3, not from 1.
@@ -93,9 +95,8 @@ SEQ = [
     (16600, "REP-OFF", [P("pad-45", 0)], GAP),
     (16900, "REP-STOP", ["\\; stop bang"], GAP),
     # Drunkenness at its top, from the drum screen over OSC, then 96 windows a
-    # sixteenth wide, each holding one step when sober. Drunk, a third of the
-    # steps stray, at random; one shift across a window's edge shows it, and
-    # 96 steps without one is less than one run in a million.
+    # sixteenth wide, each holding one step when sober. At the top every step
+    # strays, by up to two steps, so most windows hold none or two or more.
     (17000, "DRUNK", ["\\; seqgate-osc drums drunk 100"], GAP),
     (17100, "DR-PLAY", ["\\; start bang"], GAP),
 ] + [(17180 + 125 * k, "DR-%d" % (k + 1), [], GAP) for k in range(96)] + [

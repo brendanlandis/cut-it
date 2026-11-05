@@ -140,10 +140,15 @@ equal("c_steps' state: playing, its lamp lit, 7 / 8, the last step 12",
         L.text(w, "last") }, { "playing", 1, "7", "8", "12" })
 equal("the swing and drunk knobs take theirs, and say them",
       { C.swing.values.x, L.text(w, "swingv"), C.drunk.values.x, L.text(w, "drunkv") },
-      { (62 - 25) / 50, "62%", 0.3, "30%" })
+      { (62 - 50) / 25, "62%", 0.3, "30%" })
 equal("⛔ taking the state sends nothing back", #w.sent, 0)
-equal("a turn of swing sends set-swing in whole percents, 25 to 75",
-      L.drag(w, "swing", (70 - 25) / 50), { { "/cutit", "drums", "set-swing", 70 } })
+equal("⛔ a turn of swing sends set-swing in whole percents, 50 to 75, c_steps' range",
+      { L.drag(w, "swing", (70 - 50) / 25), L.drag(w, "swing", 0), L.drag(w, "swing", 1) },
+      { { { "/cutit", "drums", "set-swing", 70 } }, { { "/cutit", "drums", "set-swing", 50 } },
+        { { "/cutit", "drums", "set-swing", 75 } } })
+L.update(w)
+equal("... and says it", L.text(w, "swingv"), "75%")
+L.drag(w, "swing", (70 - 50) / 25)
 equal("a turn of drunk sends whole percents, once each", L.drag(w, "drunk", 0.501),
       { { "/cutit", "drums", "drunk", 50 } })
 equal("... and nothing when the percent does not change", L.drag(w, "drunk", 0.504), {})

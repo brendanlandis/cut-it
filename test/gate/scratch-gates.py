@@ -481,8 +481,8 @@ def sequencer(g):
     with open(root, "w") as fh:
         fh.write(text.replace(" c_kit;", " t_kit;"))
     S.drive(GEN % "sequencer-assert", s.path("drive.pd"))
-    print("   running (about 35 s -- DSP is on, the steps are cut from a phasor~) ...")
-    cap = g.pd(s, 45, main_dev(s), s.path("drive.pd"))
+    print("   running (about 37 s -- DSP is on, the steps are cut from a phasor~) ...")
+    cap = g.pd(s, 47, main_dev(s), s.path("drive.pd"))
     print()
     rc = g.analyze("test/gate/sequencer-assert.py", *g.args, "--seed", s.path("seed.txt"),
                    "--state", s.state, stdin=cap)

@@ -47,13 +47,13 @@ were false.
 | `touchosc-assert.sh` | 253: 42 read, 211 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 345: 260 in Lua, 85 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 362: 275 in Lua, 87 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 38 | `module/sequencer` — the kit and its effects, as a signal |
 | `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1982 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
+**1999 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1975**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1992**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh`, `song-assert.sh`, `tempo-assert.sh` and `display-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
@@ -738,7 +738,7 @@ reach worked out wrong (Lua 9).
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      260 + 85 checks, ~40 s — c_steps' rules in Lua, then the drum page and the pattern in the song's draft
+./test/gate/sequencer-assert.sh      275 + 87 checks, ~40 s — c_steps' rules in Lua, then the drum page and the pattern in the song's draft
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
@@ -746,7 +746,10 @@ Pd: the rules in `Cut It/c_steps.lua` press by press (the levels, the step rule'
 selected track, which pads fire, swing, drunkenness's curve, randomness's coin with seeded dice, the
 drum screen's pads, mute and solo (a muted track's hits, its coins and its repeats silent, its dice
 still rolled, a solo winning over the mutes, the page told which pads won't play only when that
-changes, and the lines saved before them loading unmuted), the bar, the time signature's rows, a
+changes, and the lines saved before them loading unmuted), the repeat pads (a held repeat playing
+exactly what was played, its coins and its drunk lengths, with no die rolled, mute and solo heard
+live in it, a pattern edit and a section's restore under it unheard until it is let go, one pressed
+short of its length since PLAY filled first, and let go, rolling again), the bar, the time signature's rows, a
 press landing on the step its row and column mean, the reach that clips every last step, the bottom
 number changing nothing but the save, a section's restore starting every loop again, the restore,
 lines saved before the randomness and before sections included), and `c_steps-lua.pd_lua` through
@@ -774,7 +777,9 @@ The drum screen's pads come over OSC too: a track's volume and pitch reach `c_ki
 `test/stubs/t_kit.pd`, which prints them, as every track's do at the restore, and the seed's
 effects, four tracks' and the reverb's size, reach it at the restore too, those alone, since
 `c_kit` was told the rest at load, and come back whole in the song's draft; a track at full
-randomness plays a coin on every step, at a level's velocity, while the rest play as written; and
+randomness plays a coin on every step, at a level's velocity, while the rest play as written; with
+four tracks at full randomness, repeat pad 2 held after step 3 replays steps 2, 3 and 2 with
+exactly the hits and velocities their coins fell to, and let go, the loop of 3 goes on at 1; and
 at full drunkenness at most 60 of 96 sixteenths hold exactly one step. Then track 1 is muted and
 then soloed as well, over OSC: muted, it is silent while track 2 plays, soloed, it plays though
 muted while track 2 is silent, each is put as a 743-number line, and the Launchpad shows the pads
@@ -821,6 +826,17 @@ driver sends 20 ms after its mark: step 1 within 5 ms, once with `threshold~` ar
 still to re-arm, and step 3 between 246 and 256 ms. With no shift at all, the PLAYs landing early in
 a step lost step 1 to the next step (4 failed, the swing's and the snap's walks among them) and the
 armed one passed: the ten-thousandth is what re-arms it.
+✅ **And for a repeat playing exactly what was played** (2026-11-05, Brendan: a held repeat rolled
+randomness again on every step), each against a mutation of `c_steps.lua`, the file then restored.
+`c_steps_test.lua`: a repeat rolling its coins and its drunk lengths again, the bug as reported (9
+failed); its drunk lengths alone rolled again (2); mute and solo frozen into the step when it was
+decided (3: a mute or a solo under the repeat unheard, and a muted track's coins lost to the
+replay); let go, the window still playing (8); a window short of its length repeating at once (1);
+the replay reading the pattern as it now stands (7); a restore letting go of the repeat (1); and,
+for the dice the new checks set up, the coin inverted (11), a drunk step straying the other way
+(8), and a press short of its length refused (2). The Pd half: the bug as reported (1: the four
+random tracks' replay, the steps under it 2 3 2 and its hits re-rolled), and let go, the window
+still playing (2: pad 1's and pad 2's walks after the release).
 
 ⚠️ **The layout table is read, not restated**, so a frame is decoded with the same table the patch
 paints from. The analyzer's expectations are what keeps that honest: the driver presses `pad-26`

@@ -20,6 +20,8 @@ state bus and the song's draft, which u_song writes. Nothing inside c_steps is r
                  screen's snap, over OSC through u_net, landing at PLAY
   the pads       a track's volume and pitch to c_kit, at the restore and from
                  the drum screen over OSC; a track at full randomness
+  a repeat       held over four tracks at full randomness, it replays the coins
+                 exactly as they fell
   mute and solo  a track muted and then soloed over OSC: its notes stop and
                  start, the others' do the opposite, the Launchpad dims the
                  pads that won't play, and both are put with the pattern
@@ -46,7 +48,8 @@ WINDOWS = ["EARLY", "RESTORE", "NINE", "THREE", "ROW-PRESS", "ROW-DARK", "SEVEN"
            "PAST-LAST", "POLY", "POLY-STOP", "SNAP", "SNAP-PLAY", "SNAP-STOP",
            "SWING", "SW-PLAY", "SW-SOON", "SW-GAP", "SW-LATE", "SW-ON", "SW-STOP",
            "REP-PLAY", "REP-PRESS", "REP-HELD", "REP-OFF", "REP-STOP",
-           "SOUND", "RAND", "RA-PLAY", "RA-STOP", "MUTE", "MU-PLAY", "MU-STOP", "SOLO",
+           "SOUND", "RAND", "RA-PLAY", "RA-STOP", "RR", "RR-PLAY",
+           "RR-PRESS", "RR-HELD", "RR-OFF", "RR-STOP", "MUTE", "MU-PLAY", "MU-STOP", "SOLO",
            "SO-PLAY", "SO-STOP", "DRUNK", "DR-PLAY"] + \
     ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DRAG", "DONE"]
 EDITS = ["ROW-PRESS", "ROW-DARK", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
@@ -537,6 +540,20 @@ def main():
             for s, _n in rand]
     A.check("⛔ ... and every other track plays as written beside it", rest == want,
             "got %s, want %s" % (rest, want))
+
+    print("\n--- a repeat over random tracks ---")
+    # Tracks 1 to 4 at full randomness, every step of theirs a coin, and repeat pad 2 held after
+    # step 3 of the global loop of 3 (Brendan, 2026-11-05: a repeat plays exactly what was
+    # played, what its randomness chose that time included).
+    rr = [r for r in played(evs, {"RR-PLAY", "RR-PRESS", "RR-HELD", "RR-OFF"}, lay)
+          if r[0] is not None]
+    A.check("⛔ held, repeat pad 2 replays steps 2 3 2, each with exactly the hits and velocities "
+            "its coins fell to when it was played", moved("RR-PLAY", "RR-PRESS") == [1, 2, 3]
+            and moved("RR-HELD") == [2, 3, 2] and len(rr) >= 6
+            and rr[3:6] == [rr[1], rr[2], rr[1]],
+            "steps %s then %s, played %s" % (moved("RR-PLAY", "RR-PRESS"), moved("RR-HELD"), rr))
+    A.check("⛔ let go, the loop goes on from where it would have been -- 1 then 2, not 3",
+            moved("RR-OFF") == [1, 2], "steps %s" % moved("RR-OFF"))
 
     print("\n--- mute and solo ---")
     # Track 1 muted, then soloed as well, over OSC as the phone sends them (Brendan, 2026-11-05).

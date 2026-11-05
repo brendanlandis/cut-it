@@ -942,6 +942,109 @@ equal("... and a second pad pressed takes over, from the steps heard: 5 5 5 5", 
       "5:1@95 5:1@95")
 equal("PLAY lets go of a held repeat", { R.internal.start(st, {})[2], run(st, 2) },
       { { "page", "rep", { 0 } }, "1:1@95 2:1@95" })
+-- A repeat plays exactly what was played: each track's hit and its velocity as its randomness
+-- chose them that time, and each step's drunk length, with nothing rolled (Brendan, 2026-11-05).
+-- The dice of a track at 100, step by step: 0 flips the coin, then the coin, then the level.
+st = R.new(1)
+for k = 1, 4 do R.presses.step(st, { k, 100 }) end
+R.presses.last(st, { at(16) })
+R.presses.last(st, { at(8) })
+R.presses.randomness(st, { 1, 100 })
+R.internal.start(st, {})
+st.rand = dice(0, 0.1, 0.99, 0, 0.9, 0, 0.2, 0, 0, 0.3, 0.5)
+equal("track 1 at 100: four coins, played at 127, silent, 16 and 79", run(st, 4),
+      "1:1@127 2: 3:1@16 4:1@79")
+R.presses.rep(st, { 3, 127 })
+st.rand = dice(0.123)
+equal("⛔ pad 3 held replays steps 2 3 4 exactly as their coins fell, on every pass, three "
+      .. "passes, and rolls no die", { run(st, 9), st.rand() },
+      { "2: 3:1@16 4:1@79 2: 3:1@16 4:1@79 2: 3:1@16 4:1@79", 0.123 })
+R.presses.rep(st, { 3, 0 })
+st.rand = dice(0, 0.1, 0.99, 0, 0.9)
+equal("⛔ let go, it plays on from where it would have been, thirteen steps in a loop of 8, step "
+      .. "6, and rolls again: a coin at 127, then silent", { run(st, 2), st.rand() },
+      { "6:1@127 7:", 0.5 })
+st = R.new(1)
+R.internal.start(st, {})
+R.presses.drunk(st, { 100 })
+st.rand = dice(0.5, 1, 0.5, 0, 0.5, 0.75)
+-- The step clock's rate sent on each of n ticks, "-" for none.
+local function lengths(q, n)
+  local out = {}
+  for _ = 1, n do
+    local sent = "-"
+    for _, e in ipairs(R.internal.tick(q, {})) do
+      if e[1] == "clock" then sent = e[3][1] end
+    end
+    out[#out + 1] = sent
+  end
+  return out
+end
+equal("drunk 100: three steps two longer, two shorter and one longer -- rates 1/3, 8, 1/2",
+      lengths(st, 3), { 1 / 3, 8, 0.5 })
+R.presses.rep(st, { 3, 127 })
+st.rand = dice(0.123)
+equal("⛔ pad 3 held replays each step's length as it was, on every pass, and rolls no die",
+      { lengths(st, 6), st.rand() }, { { 1 / 3, 8, 0.5, 1 / 3, 8, 0.5 }, 0.123 })
+st.rand = dice(0.5, 0.5)
+equal("... and let go, the next step's length is rolled again: on time, rate 1",
+      { R.presses.rep(st, { 3, 0 })[1], lengths(st, 1), st.rand() },
+      { { "page", "rep", { 0 } }, { 1 }, 0.5 })
+st = R.new(1)
+for _, t in ipairs({ 1, 2 }) do
+  R.presses.select(st, { t })
+  for k = 1, 4 do R.presses.step(st, { k, 100 }) end
+end
+R.presses.last(st, { at(16) })
+R.presses.last(st, { at(4) })
+R.presses.randomness(st, { 2, 100 })
+R.internal.start(st, {})
+st.rand = dice(0, 0.1, 0.99, 0, 0.1, 0)
+run(st, 2)
+R.presses.rep(st, { 2, 127 })
+st.rand = dice(0.123)
+equal("track 2's coins, 127 and 16, held by pad 2 beside track 1 as written", run(st, 2),
+      "1:1@95,2@127 2:1@95,2@16")
+R.presses.mute(st, { 2, 1 })
+equal("⛔ track 2 muted while the repeat is held is silent in it from the next step", run(st, 2),
+      "1:1@95 2:1@95")
+R.presses.solo(st, { 2, 1 })
+equal("⛔ ... and soloed, it alone plays the repeat, its coins as they fell, though muted",
+      { run(st, 2), st.rand() }, { "1:2@127 2:2@16", 0.123 })
+st = R.new(1)
+for k = 1, 4 do R.presses.step(st, { k, 100 }) end
+R.presses.last(st, { at(16) })
+R.presses.last(st, { at(8) })
+R.presses.randomness(st, { 1, 100 })
+R.internal.start(st, {})
+st.rand = dice(0, 0.1, 0.99)
+run(st, 1)
+equal("pad 4 pressed with one step played since PLAY: the page shows it at once",
+      R.presses.rep(st, { 4, 127 }), { { "page", "rep", { 4 } } })
+st.rand = dice(0, 0.9, 0, 0.2, 0, 0, 0.3, 0.5, 0.123)
+equal("⛔ ... and the next three are played and kept, coins rolled, until there are four; then "
+      .. "the four repeat as they fell", { run(st, 7), st.rand() },
+      { "2: 3:1@16 4:1@79 1:1@127 2: 3:1@16 4:1@79", 0.123 })
+st = R.new(1)
+for k = 1, 4 do R.presses.step(st, { k, 100 }) end
+R.presses.last(st, { at(16) })
+R.presses.last(st, { at(4) })
+R.internal.start(st, {})
+run(st, 2)
+R.presses.rep(st, { 2, 127 })
+R.presses.step(st, { 1, 100 })
+equal("⛔ a step turned off under a held repeat is still heard in it: it replays what was heard",
+      run(st, 2), "1:1@95 2:1@95")
+R.presses.rep(st, { 2, 0 })
+equal("... and let go, the loop plays on as the pattern now stands, step 1 off", run(st, 2),
+      "1: 2:1@95")
+R.presses.rep(st, { 2, 127 })
+R.internal.restore(st, line(zeros(CELLS)))
+equal("⛔ a section's restore under a held repeat: the repeat goes on, as it was heard",
+      run(st, 2), "1: 2:1@95")
+R.presses.rep(st, { 2, 0 })
+equal("... and let go, the new section plays from where its loops would have been, steps 3 and "
+      .. "4, empty", run(st, 2), "3: 4:")
 
 print("\n--- the settings in the restore ---")
 st = R.new(1)
@@ -1158,9 +1261,10 @@ equal("⛔ a repeat held replays the muted track's steps silently", (function()
   return run(st, 2)
 end)(), "1:1@95,3@95 2:1@95,3@95")
 R.presses.mute(st, { 2, 0 })
-equal("⛔ ... and unmuted while the repeat is held, it plays the repeat with the rest",
+equal("⛔ ... and unmuted while the repeat is held, it plays the repeat with the rest: the coins "
+      .. "its randomness flipped then, level 8, not the steps written since",
       { run(st, 2), R.presses.rep(st, { 2, 0 })[1] },
-      { "1:1@95,2@95,3@95 2:1@95,2@95,3@95", { "page", "rep", { 0 } } })
+      { "1:1@95,2@127,3@95 2:1@95,2@127,3@95", { "page", "rep", { 0 } } })
 R.internal.start(st, {})
 equal("⛔ solo 1: only track 1 plays, and every other pad is quiet",
       { R.presses.solo(st, { 1, 1 })[2], run(st, 1) },

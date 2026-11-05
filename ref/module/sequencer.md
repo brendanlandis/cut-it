@@ -58,12 +58,13 @@ each track's distortion and delay and the reverb they share (2026-11-05). *The k
 | The rows of steps | The page's step cells are four rows of eight, and a row holds as many groups of *N* as fit in 8, or all 8 when *N* is over 8: rows of 6 at 3/4 and 6/8, blue at a row's cells 1 and 4, or 1; 8 at 4/4, blue at 1 and 5; 5 at 5/4; 7 at 7/8; 8 at 2/4 and at 1/*x*, where every step is blue. Over 8, the blue counts straight through the pattern and wraps across the rows: at 9/8, steps 1, 10, 19 and 28. A row's cells past its steps are dark, and a press there does nothing. The step cell *n*, row *r* and column *c* from 0, is step *r* × row + *c* + 1 | verified |
 | How far a last step reaches | Four rows' worth: 24 at 3/4, 32 at 4/4, 20 at 5/4, 28 at 7/8, 32 with *N* over 8. The global last step and every track's own are clipped to it where they are used, on the page, in the loops, the bar and the phone's state, and kept as set and saved, so a time signature passed through on the way to another does not cut them short for good: 32 at 4/4 is 24 at 3/4 and 32 again at 4/4. Knobs 2 and 3 turned all the way up and the phone's `set-last` and `set-track-last` reach exactly that far | verified |
 | The repeat pads | The top row of the right 4×4, 1 to 4 from the left: held, every track replays the last 1 to 4 steps it played, while the loops go on underneath unheard; let go, every track plays on from where it would have been (Brendan, 2026-11-03). PLAY lets go | verified |
-| A track's randomness | 0 to 100, each track its own, from its pad on the drum screen (Brendan, 2026-11-05, after the Arturia DrumBrute's Randomness): at *R*% each step it plays has an *R*% chance of ignoring what is written and flipping a coin instead, played or not, and played at one of the eight levels at random. So it drops hits from a busy track and adds them to a sparse one; at 100 every step is a coin, at 0 the pattern plays as written and nothing is rolled. Fresh on every pass, a repeat's steps too. Saved | verified |
+| A repeat's steps | Played exactly as they were played the first time (Brendan, 2026-11-05): each track's hit and its velocity as its randomness chose them then, and each step's drunk length, so the loop sounds the same every time round, and no die is rolled until it is let go. Mute and solo are heard as they stand: a track muted under a held repeat is silent in it from the next step, one soloed plays it alone. A step edited, or a section restored, under a held repeat is heard once it is let go. Pressed with fewer steps played since PLAY than its number, the steps to come are played, rolled as usual, and kept until there are that many (*A repeat replays what was decided*, below) | verified |
+| A track's randomness | 0 to 100, each track its own, from its pad on the drum screen (Brendan, 2026-11-05, after the Arturia DrumBrute's Randomness): at *R*% each step it plays has an *R*% chance of ignoring what is written and flipping a coin instead, played or not, and played at one of the eight levels at random. So it drops hits from a busy track and adds them to a sparse one; at 100 every step is a coin, at 0 the pattern plays as written and nothing is rolled. Fresh on every pass, but a held repeat's, which plays the coins as they fell (*A repeat's steps*). Saved | verified |
 | A track's volume and pitch | −30 to +6 dB and −12 to +12 semitones, each track its own, 0 at first, from its pad on the drum screen: each is saved and goes to `c_kit` for that track's pad, which plays it from the next hit (*The kit*, below). A restore sends every track's | verified |
 | A track's effects | Its distortion's drive, tone and mix, its delay's time, a note value, 1/2 to 1/32, and a feel, straight, triplet or dotted, its feedback and its level, and its send to the reverb, and the reverb's size and damping, the kit's (Brendan, 2026-11-05): 0 to 100 but the note and the feel, from the drum screen for the selected track. Each is saved and told to `c_kit`, the note and the feel as the delay's time in steps, a step a sixteenth. Every track starts at drive 50, tone 60, mix 0, 1/8 straight, feedback 40, level 0 and send 0, and the reverb at size 50 and damping 50: a mix, a level or a send of 0 is off (*The effects*, below) | verified |
 | Mute and solo | Each track's own, from the M and S under its pad on the drum screen, `mute` and `solo <track> <0 or 1>` (Brendan, 2026-11-05): with any track soloed only the soloed tracks play and the mutes are ignored; otherwise a muted track doesn't. A track that won't play stops at its next step, while what `c_kit` is already sounding of it, its echoes and its reverb, rings out (*Mute and solo stop the hits, not the sound*, below). Its randomness still rolls and its loop and a held repeat go on, so it comes back in where it would have been. The Launchpad shows its pad dim ([display.md](display.md)). Saved, a section's | verified |
 | A track's last step from the phone | `set-track-last <track> <1-32>`, from its pad, clipped to the reach, as knob 3 sets the selected track's: the step a track already has changes nothing, so one that follows the global step goes on following; set for the selected track, it holds knob 3 again. Saved | verified |
-| On a step | The global loop moves on, then every track moves on in its own loop, wrapping after its own last step; every track plays the step it is heard at (a repeat's, while one is held), its note at its velocity if 1 or more, or as its randomness flips it, track 1 first, all in one logical instant, but a track muted or left out of a solo plays nothing. Then the playhead moves, to the selected track's step, and the step's drunk length goes to the clock | verified |
+| On a step | The global loop moves on, then every track moves on in its own loop, wrapping after its own last step; every track plays the step it is at, its note at its velocity if 1 or more, or as its randomness flips it, or while a repeat is held, what it played at the step repeated; track 1 first, all in one logical instant, but a track muted or left out of a solo plays nothing. Then the playhead moves, to the selected track's step, and the step's drunk length goes to the clock, or the repeated step's | verified |
 | PLAY (`start`) | Starts every loop at step 1, the phase on the beat at its own rate, and lets go of a held repeat | verified |
 | STOP (`stop`) and `panic` | Stop it, and put the playhead out | unknown |
 | A pad press | Plays that pad now, at full velocity however hard it is pressed (Brendan, 2026-11-04), muted or left out of a solo or not, so a muted track can be heard before it comes back in, and selects it as the track being edited | unknown |
@@ -271,6 +272,30 @@ loop moves on too, as the reference a sync and a snap wait for: they land on its
 tracks line up on its downbeat rather than wherever the button was pressed. Per-track subdivision
 would give a track its own multiplier on the same phase in place of the ×4, and its own ticks.
 
+### A repeat replays what was decided
+
+Brendan's (2026-11-05): a held repeat plays *exactly* what was played on the steps it covers,
+including what the randomness chose that time. So `R.tick` decides each step once, before mute
+and solo: every track's hit and its velocity after its randomness, and the step clock's rate for
+the step's length, drunk or not. It keeps the last four, and a repeat pad takes the last *n* and
+plays them again in a loop, rolling nothing. Mute and solo are asked as each step plays,
+repeated or not, so a track muted or soloed under a held repeat is heard so, and a muted track's
+coins, decided all the same, are heard if it is unmuted mid-repeat. A track's volume, pitch and
+effects are `c_kit`'s, live anyway. **Swing is the clock's, not a step's**: a repeat of 2 or 4
+keeps its pairs, but one of 1 or 3 at a swing above 50% plays its steps alternately long and
+short.
+
+Three judgment calls (2026-11-05):
+
+- **Pressed with fewer steps played since PLAY than its number**, the steps to come are played,
+  rolled as usual, and kept until there are that many, so a repeat is as long as its pad says:
+  pad 4 held on PLAY's second step loops steps 1 to 4. Pressed before anything has played since
+  load, it does nothing, as before; PLAY lets go of it anyway.
+- **A step edited under a held repeat** is heard once it is let go: the repeat is what was heard.
+- **A section restored under a held repeat** is the same: the repeat goes on with the old
+  section's steps while the new section's loops start underneath, and let go, the new section
+  plays from where they have got to.
+
 ### The knobs latch, because each knob means more than one value
 
 Knob 3 stands for whichever track is selected, so selecting another would make the next touch jump
@@ -446,6 +471,8 @@ back as it was, with nothing muted.
   them on, beside the second Pd's numbers above. See `cut-it/drum-timing`.
 - ⬜ **Mute and solo have not been used on the rig** (`cut-it/drum-timing`): the phone's M and S,
   the Launchpad's dim pads, and the tails ringing out after a mute. The sequencer checklist's
-  steps 35 to 38 judge them.
+  steps 36 to 39 judge them.
+- ⬜ **A held repeat replaying its coins and its drunk lengths has not played on the rig**: the
+  sequencer checklist's step 17 judges it. See `cut-it/drum-timing`.
 - ⬜ **The Lua version has not played on the rig**: its CPU beside the Pd version's 11.2% with the
   drum machine playing (`~/Sites/!reference/pure-data.md`, *Newer versions on the Organelle*) is unmeasured. See `cut-it/logic-as-text`.

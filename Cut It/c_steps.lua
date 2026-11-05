@@ -59,7 +59,8 @@ end
 -- The shortest a drunk step gets, as a share of a step: a step two steps shorter would be less
 -- than nothing, and a step of nothing would be two at once.
 R.MIN_DUR = 0.125
--- The repeat pads, 1 to 4: each replays the last 1, 2, 3 or 4 steps (Brendan, 2026-11-03).
+-- The repeat pads, 1 to 4: each replays the last 1, 2, 3 or 4 steps (Brendan, 2026-11-03),
+-- exactly as they were played, randomness and drunkenness included (2026-11-05).
 R.REPEATS = 4
 -- Each track's own volume, in dB, and pitch, in semitones, played by its c_voice; and its
 -- randomness, 0 to 100 (Brendan, 2026-11-05).
@@ -170,7 +171,7 @@ function R.new(bank)
                         swing = { held = true } } }
   for i = 1, R.TRACKS * R.STEPS do st.pattern[i] = 0 end
   for t = 1, R.TRACKS do
-    st.own[t], st.pos[t], st.hist[t] = 0, 0, {}
+    st.own[t], st.pos[t] = 0, 0
     st.randomness[t], st.vol[t], st.pitch[t] = 0, 0, 0
   end
   -- the effects at their starting points, and what c_kit has been told of them: nothing yet
@@ -576,24 +577,25 @@ function R.set_solo(st, track, v)
   return set_flag(st, "solo", track, v)
 end
 
--- A repeat pad, 1 to 4, held: every track replays the last n steps it played, over and over,
--- while the loops go on underneath unheard; let go, and every track plays from where it would
--- have been (Brendan, 2026-11-03). Pressed before anything has played, it waits for nothing:
--- there is nothing to replay. Letting go of a pad that is not the one repeating changes nothing.
+-- A repeat pad, 1 to 4, held: the last n steps, as they were decided (R.tick's st.hist), are
+-- played again over and over, while the loops go on underneath unheard; let go, and every track
+-- plays from where it would have been (Brendan, 2026-11-03). Exactly as they were played: each
+-- track's hit and its velocity as its randomness chose them that time, and each step's drunk
+-- length, with nothing rolled (Brendan, 2026-11-05). Pressed with fewer than n steps decided
+-- since PLAY, the steps to come are played and kept until there are n, so a repeat is always as
+-- long as its pad says; pressed before anything has played, it waits for nothing: there is
+-- nothing to replay. Letting go of a pad that is not the one repeating changes nothing.
 function R.press_rep(st, n, velocity)
   local k = math.floor(clip(num(n), 1, R.REPEATS))
   if velocity == 0 then
     if st.rep ~= k then return {} end
-    st.rep = 0
+    st.rep, st.win = 0, {}
     return { { "page", "rep", { 0 } } }
   end
-  if #st.hist[1] == 0 then return {} end
-  for t = 1, R.TRACKS do
-    local h, w = st.hist[t], {}
-    for i = math.max(1, #h - k + 1), #h do w[#w + 1] = h[i] end
-    st.win[t] = w
-  end
-  st.rep, st.rk = k, 0
+  if #st.hist == 0 then return {} end
+  local w = {}
+  for i = math.max(1, #st.hist - k + 1), #st.hist do w[#w + 1] = st.hist[i] end
+  st.rep, st.rk, st.win = k, 0, w
   return { { "page", "rep", { k } } }
 end
 
@@ -655,14 +657,6 @@ local function advance(st)
   return m, pos, synced
 end
 
--- The step a track plays at a place in its loop: that place, or while a repeat pad is held, the
--- next of the steps it is replaying.
-local function heard(st, t, p)
-  if st.rep == 0 then return p end
-  local w = st.win[t]
-  return w[st.rk % #w + 1]
-end
-
 -- A step's velocity under its track's randomness (Brendan, 2026-11-05, after the DrumBrute's): at
 -- R%, each step has an R% chance of ignoring what is written and flipping a coin instead: played or
 -- not, and played at one of the eight levels, at random. So it drops hits from a busy track and
@@ -675,14 +669,43 @@ local function chance(st, t, v)
   return R.velocity(math.min(R.LEVELS, math.floor(st.rand() * R.LEVELS) + 1))
 end
 
--- A step of the clock. The loops move on (advance), and every track plays the step it is heard
--- at (heard), as its randomness says, track 1 first, all in one logical instant, but a track
--- muted, or left out of a solo, plays nothing (R.sounds): not what is written, not a coin its
--- randomness adds, not a repeat's. It still rolls its dice, so muting one track changes no
--- other's, and its loop and its repeat go on, so it comes back in where it would have been. Then the
--- playhead, the selected track's step, and the step clock's rate for the step coming: drunk, a
--- step may last longer or shorter, the more often and the further the drunker (R.drunk_chance,
--- R.drunk_reach), and the error stays -- its own drift becomes the clock (Brendan, 2026-11-03).
+-- What a step decides, before mute and solo: each track's step, at its place in its loop; the
+-- velocity it plays at, as its randomness says (chance), 0 for none, track 1 first; and the step
+-- clock's rate for the step's length: drunk, a step may last longer or shorter, the more often
+-- and the further the drunker (R.drunk_chance, R.drunk_reach). Every die of the step is rolled
+-- here, and a muted track's too, so muting one track changes no other's.
+local function decide(st, pos)
+  local d = { step = {}, vel = {}, rate = 1 }
+  for t = 1, R.TRACKS do
+    d.step[t] = pos[t]
+    d.vel[t] = chance(st, t, st.pattern[R.index(t, pos[t])])
+  end
+  if st.drunk > 0 and st.rand() < R.drunk_chance(st.drunk) then
+    local stray = (st.rand() * 2 - 1) * R.drunk_reach(st.drunk)
+    d.rate = 1 / math.max(R.MIN_DUR, 1 + stray)
+  end
+  return d
+end
+
+-- The step a held repeat plays next: the next of its window's decided steps, or nil while none is
+-- held, or while one pressed short of its length since PLAY is still being filled (R.press_rep).
+local function replay(st)
+  if st.rep == 0 or #st.win < st.rep then return nil end
+  local d = st.win[st.rk % #st.win + 1]
+  st.rk = st.rk + 1
+  return d
+end
+
+-- A step of the clock. The loops move on (advance), and the step is decided (decide), or while a
+-- repeat pad is held, one already decided is played again (replay): the same hits at the same
+-- velocities and the same length, nothing rolled (Brendan, 2026-11-05). Either way it is kept, the
+-- last four, for a repeat pad to take. Every track plays its hit, track 1 first, all in one
+-- logical instant, but a track muted, or left out of a solo, plays nothing (R.sounds): not what is
+-- written, not a coin its randomness adds, not a repeat's. Mute and solo are asked now, not when
+-- the step was decided, so a track muted or soloed under a held repeat is silenced or soloed in
+-- it; and its loop and its repeat go on, so it comes back in where it would have been. Then the
+-- playhead, the selected track's step, and the step clock's rate for the step's length, drunk or
+-- not, whose error stays -- its own drift becomes the clock (Brendan, 2026-11-03).
 -- Last, on the global loop's last step, bar: a bar is the pattern's loop (Brendan, 2026-11-05),
 -- so the song store starts a queued section when the global loop next comes round to its step 1,
 -- the whole pattern played, and its restore reaches here before that step is cut
@@ -695,31 +718,25 @@ function R.tick(st)
     st.sync = false
     if st.snap then out = land_snap(st) end
   end
-  local play = {}
-  for t = 1, R.TRACKS do
-    st.pos[t] = pos[t]
-    play[t] = heard(st, t, pos[t])
-    local h = st.hist[t]
-    h[#h + 1] = play[t]
-    if #h > R.REPEATS then table.remove(h, 1) end
+  for t = 1, R.TRACKS do st.pos[t] = pos[t] end
+  local d = replay(st)
+  if not d then
+    d = decide(st, pos)
+    if st.rep > 0 then st.win[#st.win + 1] = d end
   end
-  if st.rep > 0 then st.rk = st.rk + 1 end
+  local h = st.hist
+  h[#h + 1] = d
+  if #h > R.REPEATS then table.remove(h, 1) end
   local solo = R.any_solo(st)
   for t = 1, R.TRACKS do
-    local v = chance(st, t, st.pattern[R.index(t, play[t])])
-    if v >= 1 and R.sounds(st, t, solo) then
-      out[#out + 1] = { "note", "pad", { R.pad(st, t), v } }
+    if d.vel[t] >= 1 and R.sounds(st, t, solo) then
+      out[#out + 1] = { "note", "pad", { R.pad(st, t), d.vel[t] } }
     end
   end
-  out[#out + 1] = { "page", "play", { play[st.track] } }
-  local rate = 1
-  if st.drunk > 0 and st.rand() < R.drunk_chance(st.drunk) then
-    local stray = (st.rand() * 2 - 1) * R.drunk_reach(st.drunk)
-    rate = 1 / math.max(R.MIN_DUR, 1 + stray)
-  end
-  if rate ~= st.rate then
-    st.rate = rate
-    out[#out + 1] = { "clock", "rate", { rate } }
+  out[#out + 1] = { "page", "play", { d.step[st.track] } }
+  if d.rate ~= st.rate then
+    st.rate = d.rate
+    out[#out + 1] = { "clock", "rate", { d.rate } }
   end
   -- The pattern's loop ends when the next step is the global loop's step 1, as advance() counts
   -- it: a global last step moved under the loop's place wraps into it, and no bar ends there.
@@ -729,10 +746,12 @@ end
 
 -- PLAY: every loop, the global one included, starts again at step 1 on the next step, which is
 -- a sync already; a pending snap lands now. The step clock starts on the beat, at its own rate:
--- PLAY is the one thing that puts a drunk machine back on the clock. A held repeat lets go.
+-- PLAY is the one thing that puts a drunk machine back on the clock. A held repeat lets go, and
+-- the steps decided before it are forgotten.
 function R.start(st)
   st.master, st.sync, st.playing, st.rep = 0, false, true, 0
-  for t = 1, R.TRACKS do st.pos[t], st.hist[t] = 0, {} end
+  st.hist, st.win = {}, {}
+  for t = 1, R.TRACKS do st.pos[t] = 0 end
   st.rate = 1
   local out = { { "clock", "rate", { 1 } }, { "page", "rep", { 0 } } }
   if st.snap then
@@ -863,7 +882,9 @@ end
 -- global last step restored holds its knob again, as the phone's does, and the step clock takes
 -- the swing. Every loop, the global one included, starts again at step 1 on the next step: a
 -- section starts on its own step 1, whatever its last step and the one before it had, as PLAY
--- starts the pattern (ref/module/songs.md).
+-- starts the pattern (ref/module/songs.md). A repeat held through it goes on playing the steps it
+-- holds, as they were heard, while the new section's loops go on underneath, as a pattern edit
+-- under a held repeat changes nothing heard until it is let go.
 function R.restore(st, values)
   local cells = R.TRACKS * R.STEPS
   st.master = 0

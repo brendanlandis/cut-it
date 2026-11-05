@@ -53,7 +53,7 @@ session means opening one.
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
 | [midi](midi.md) | 10 | the map by mode, the Volca by ear, hot-swap |
 | [debug](debug.md) | 9 | the debug patch, with the instrument stopped |
-| [sequencer](sequencer.md) | 38 | page 2's drum page and the drums it plays, the time signature's rows, each drum's distortion, delay and reverb send, and each drum's mute and solo |
+| [sequencer](sequencer.md) | 39 | page 2's drum page and the drums it plays, the time signature's rows, each drum's distortion, delay and reverb send, and each drum's mute and solo |
 | [sections](sections.md) | 12 | the song's sections: the Launchpad's top row, a queue landing as the pattern comes round, a length handing over, save and revert and their lamps, a power cut, the phone's sections page and its name tab |
 | [songs](songs.md) | 13 | several songs and the setlists: the phone's songs page, its setlists and its name tab, the Organelle's keys loading songs stopped and by each transition, go and its lamp, a song's own draft, delete asking twice, a power cut |
 | [synths](synths.md) | 13 | the nanoKEY and the two synths it plays, page 3's pads, the phone's synths screen and its velocity switch, a switch mid-chord, the Streichfett on the roster |

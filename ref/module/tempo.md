@@ -23,7 +23,9 @@ from `u_map`'s tap pad on page 1, and `tempo <bpm>`, the phone's, from `u_net` â
 itself; **its outlets** hand the master BPM, clamped, to `u_net` for the phone, `tap` to
 `g_grid` to flash the pad, and the BPM a tap or the phone set to `u_map`, which holds knob 1 there
 (Brendan, 2026-11-04). The tap's rules are Lua, `u_tempo.lua`; the
-timer between taps, the clock and the transport are Pd.
+timer between taps, the clock and the transport are Pd. **The tempo is a part of every section of
+the song** ([songs.md](songs.md)): `u_tempo` puts every BPM the bus carries with the section policy,
+and takes a section's restore as it takes the phone's tempo.
 
 ## Facts
 
@@ -92,7 +94,8 @@ phone use the legal range, and keep to it before anything reaches the bus.
 | Outlet 1 | Every BPM the bus carries, clamped, from `$0-bpm`: knob 1's, a tap's, the phone's, a Send line's. `u_net` sends it to the phone as `/cutit/tempo`, the tempo's only display at rest (*Design*) | unknown |
 | On page 2 | Cell 21 is a drum pad, and taps there set nothing: the map's row is page 1's alone | unknown |
 | Knob 1 | **Held at the new tempo after a tap or the phone moves it**, until it is turned to or through that tempo (Brendan, 2026-11-04): until then a turn moves nothing and its row reads the tempo in force with the knob's own in brackets, `bpm 150 (105)`. Outlet 3 carries the BPM to `u_map`, whose pickup arms the knob at where its curve puts it (*Design*). A tempo past the knob's 10 to 500 holds it at the end of its turn, so its row reads that end, 10 or 500, not the tempo | unknown |
-| Outlet 3 | The BPM a tap or the phone set, whole and clamped, after the Lua and before the bus: to `u_map`'s inlet. Knob 1's own tempo, a Send line's and the fallback 120 do not come out of it | unknown |
+| Outlet 3 | The BPM a tap, the phone or a section set, whole and clamped, after the Lua and before the bus: to `u_map`'s inlet. Knob 1's own tempo, a Send line's and the fallback 120 do not come out of it | unknown |
+| A section's tempo | `put section tempo <bpm>` for every BPM the bus carries, clamped; a section's `restore tempo <bpm>` goes to the Lua as the phone's does, so it reaches the bus whole and within 5 to 600, holds knob 1, and is put straight back. A restore of the tempo already in force is dropped by a spigot, so a section starting at the same tempo leaves knob 1 alone | unknown |
 
 `tempo-assert` taps 400 ms apart through the running instrument and reads 150 on the bus, turns
 knob 1 short of 150 and reads nothing and `bpm 150 (105)`, then through it, waits 2.5 s and reads

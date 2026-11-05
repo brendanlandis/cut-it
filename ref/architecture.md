@@ -15,13 +15,13 @@ file decides what that means; and nothing below that file knows what hardware ex
                                 |
                               u_root
                                 |
-   ┌──────────┬──────────┬──────┴─────┬──────────┬───────────┐
-   │          │          │            │          │           │
- u_init    u_tempo     u_err       u_state    u_net       u_present
- startup   clock +     errors      the data   the phone   the tick +
- order     transport               store         │        ONE re-wire
-   │          │          │            │          │           │
-   └──────────┴────┬─────┴────────────┴──────────┴───────────┘
+   ┌──────────┬──────────┬──────┴─────┬──────────┬──────────┬───────────┐
+   │          │          │            │          │          │           │
+ u_init    u_tempo     u_err       u_state    u_song     u_net       u_present
+ startup   clock +     errors      the data   the song,  the phone   the tick +
+ order     transport               store      sections      │        ONE re-wire
+   │          │          │            │          │          │           │
+   └──────────┴────┬─────┴────────────┴──────────┴──────────┴───────────┘
                    │
               global buses
   mode · tempo · clock · start/stop · panic · param · err · disp · state
@@ -75,8 +75,8 @@ file decides what that means; and nothing below that file knows what hardware ex
   choice to `u_net` and `g_grid`, and its velocity switch to `u_net`, by cords. Page 3's pads
   choose through `u_map`. See [synths.md](module/synths.md).
 - **The phone reads nothing on `disp`** (Brendan, 2026-11-04): `u_net` takes each module's state on
-  a cord — `c_steps`', `c_synth`'s and `u_tempo`'s BPM — and hands the phone's commands back out by
-  cords to `c_steps`, `c_synth` and `u_tempo`. Page 1's tap pad reaches `u_tempo` from `u_map` by a
+  a cord — `c_steps`', `c_synth`'s, `u_tempo`'s BPM and `u_song`'s sections — and hands the phone's
+  commands back out by cords to `c_steps`, `c_synth`, `u_tempo` and `u_song`. Page 1's tap pad reaches `u_tempo` from `u_map` by a
   cord too, and `u_tempo` flashes it through `g_grid`. See [phone.md](device/phone.md) and
   [tempo.md](module/tempo.md).
 - **`u_inject` takes the checklists' Send lines** and puts them on eight buses, so a rig check can
@@ -85,6 +85,11 @@ file decides what that means; and nothing below that file knows what hardware ex
   `test-mode` reaches `u_net` by a cord, and puts the phone's line check up. See [test/checklists/README.md](../test/checklists/README.md), *Send lines*.
 - **`u_state` owns two `u_store` instances**, one per persistence policy. See
   [state.md](module/state.md).
+- **`u_song` keeps the song on the same `state` bus, with a policy of its own**: each part puts
+  itself with `put section`, into the section playing, and a section starting restores every part
+  it holds. It knows no key's meaning, as `u_state` knows none; the top row, save and revert reach
+  it from `u_map`, the phone's sections page from `u_net`, and the bar from `c_steps`, by cords, and
+  its lamps leave for `g_grid` and its state for `u_net` by cords. See [songs.md](module/songs.md).
 - ⛔ **`c_presence` and `c_devid` are instantiated INSIDE the `m_` layers**, one pair per pollable
   device, and `u_present` holds no per-device state at all — only a count of how many sources are
   lost. Deciding *"my device is gone"* has to know about that device; doing something about it has
@@ -96,8 +101,8 @@ is the buses and the map; right is the display owners. **Where a file has cords,
 where it goes** — which is why `m_volca` sits under `u_map` rather than in the `m_` column. Everything without cords talks on the allowlisted buses alone.
 
 **Seven kinds of cord exist on that canvas, and each one is a seam worth seeing.** `u_init` reaches
-`m_launchpad` and `u_state`, because the boot *order* is `u_init`'s while the *action* belongs to the
-file at the other end. `u_map` reaches the output device, `m_volca`, because no bare global name
+`m_launchpad`, `u_state` and, after it through a trigger, `u_song`, because the boot *order* is
+`u_init`'s while the *action* belongs to the file at the other end. `u_map` reaches the output device, `m_volca`, because no bare global name
 carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`.
 `c_clock` feeds `g_grid`'s beat row. `c_steps` sits between `u_map` and both `c_kit` and
 `g_grid`: told what a press means, it plays the drums and says what the drum page shows. And
@@ -105,7 +110,10 @@ carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`
 `g_grid` on the other: it plays the nanoKEY's keys on the chosen synth and says which that is. And
 `u_tempo` sits between `u_map`'s tap pad and `u_net`'s tempo on one side and `u_net`, `g_grid` and
 `u_map` on the other: it turns taps and the phone's drag into the tempo, says what it is, and hands
-`u_map` the tempo a tap or the phone set, so knob 1 waits there.
+`u_map` the tempo a tap or the phone set, so knob 1 waits there. And `u_song` sits between
+`u_map`'s top row, save and revert, `u_net`'s sections page and `c_steps`' bar on one side and
+`g_grid` and `u_net` on the other: it plays the song's sections and says which is playing and what
+is unsaved.
 
 ## Creation arguments — the contract between the two entry points
 
@@ -227,7 +235,7 @@ The four that shape everything else.
 | **Grain timing must be audio-domain** | Pd's message clock is quantized to a 64-sample block (~1.45 ms), ~20% of a 256th note at 120 BPM. `phasor~` and `vline~`, never `metro`/`line~` at grain rate (C-11). Built that way from the first line — see [tempo.md](module/tempo.md) |
 | **Pd sequences everything** | Timing rides in note events, not MIDI clock. No external device runs its own sequencer during a performance |
 | **Two independent input channels** | `inL` = the tip, `inR` = the ring of the one input jack: the mic on the tip since 2026-11-04 — see [audio.md](module/audio.md) |
-| **Pages, not a compose and perform split** | The Launchpad's left column chooses one of eight pages, and `u_map` looks every control up per page, so one surface serves a different role on each: 1 the arrangement, 2 the drums, 3 the synths, 8 the songs, 4 to 7 nothing yet (Brendan, 2026-11-04). This shapes the top level of the patch |
+| **Pages, not a compose and perform split** | The Launchpad's left column chooses one of eight pages, and `u_map` looks every control up per page, so one surface serves a different role on each: 1 the arrangement, 2 the drums, 3 the synths, 7 the sections, 8 the songs, 4 to 6 nothing yet (Brendan, 2026-11-04 and 2026-11-05). This shapes the top level of the patch |
 
 ### Why the infrastructure was built before any DSP
 

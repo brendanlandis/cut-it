@@ -28,8 +28,9 @@ guard**, and the whole of what makes a table acceptable here. See *Design*.
 carries a sounding note — the Volca's, the one since the SP-404 left the rig (Brendan, 2026-11-04) —
 then one to `c_steps`, for what a press on page 2's drum page means ([sequencer.md](sequencer.md)),
 one to `u_net`, which flips test mode, one to `c_synth`, for a press of page 3's synth pads
-([synths.md](synths.md)), and one to `u_tempo`, for a press of page 1's tap pad
-([tempo.md](tempo.md)).
+([synths.md](synths.md)), one to `u_tempo`, for a press of page 1's tap pad
+([tempo.md](tempo.md)), and one to `u_song`, for the top row, save and revert
+([songs.md](songs.md)).
 
 ## Facts
 
@@ -46,7 +47,7 @@ mode-3 slider-1  volca-cc 41
 |-------|----|----------|------|
 | `<mode>` | The `mode` bus message, one atom: the page, `mode-1` to `mode-8` | verified | — |
 | `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `pad-43` | verified | — |
-| `<dest>` | One of the **sixteen** below, and **only** those | verified | 229 |
+| `<dest>` | One of the **nineteen** below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
 
 **A row with any other width is a lint failure**, not a runtime one — `map-assert.py` reads the
@@ -74,6 +75,9 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1–32**, **`og-knob-2`**, and `swing` the sequencer's, 50% to 75%, **`og-knob-4`**, both on every page; `track-last` the selected track's own, **`og-knob-3`**, on page 2 alone, where the track is selected (Brendan, 2026-11-04). A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
 | `synth` | The **grid index**, looked up in `cut-it-synth-page.txt` | Non-zero sends `synth <choice>`, the cell's synth, to `c_synth` out `u_map`'s fourth outlet; a release does nothing, so with both pads held the first let go cannot undo the second. Eight rows, `pad-21` to `pad-28`, page 3 alone; an index the layout lacks is `fail u_map layout-miss`, as for `drum-page` (Brendan, 2026-11-04) | unknown | — |
 | `arrangement` | The **grid index**, looked up in `cut-it-arrangement-page.txt` | Non-zero sends the cell's role to `u_tempo` out `u_map`'s fifth outlet — `tap`, the one there is — and a release nothing. One row, `mode-1 pad-21 arrangement 21`, page 1 alone; an index the layout lacks is `fail u_map layout-miss` (Brendan, 2026-11-04) | unknown | — |
+| `section` | The top-row button, 1 and 2 the arrows, 3 to 8 the six section buttons | Non-zero sends `top <arg>` to `u_song` out `u_map`'s sixth outlet; a release nothing. `lp-cc-91` to `lp-cc-98`, buttons 1 to 8, on every page ([songs.md](songs.md)) | unknown | — |
+| `save` | unused | Non-zero sends `save` to `u_song`, the sixth outlet. `lp-cc-108`, the upper bottom row's rightmost, on every page | unknown | — |
+| `revert` | unused | Non-zero sends `revert` to `u_song`, the sixth outlet. `lp-cc-8`, the lowest row's rightmost, on every page | unknown | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -110,6 +114,7 @@ there and nowhere else.
 | `drum-page` | **nothing** — the grid is the feedback, and 56 pads in use would bury the screen | none | unknown | — |
 | `synth` | **nothing** — the pads and the phone show the choice | none | unknown | — |
 | `arrangement` | **nothing** — the pad flashes and the phone shows the tempo | none | unknown | — |
+| `section` `save` `revert` | **nothing** — the top row's lamps and save and revert's say it | none | unknown | — |
 | the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
 
 ⚠️ **The held row's second number rides in the UNIT field.** `g_oled` runs a row's value through
@@ -149,14 +154,16 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 | Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Eight pages × 92
-controls is 736 possible rows and the shipped file has **159** — knobs 1, 2 and 4 on all eight; the
+controls is 736 possible rows and the shipped file has **239** — knobs 1, 2 and 4 on all eight; the
 tap pad on page 1; knob 3 and the drum page's 60 pads on page 2; slider 1 and the eight synth pads
-on page 3; and CC 90, PLAY, STOP, the four shifted keys and Setup on all eight. **The Organelle's own keys have no row**: they will
-choose songs, and until then they play nothing (Brendan, 2026-11-04). ⛔ **Those eleven rows are on
+on page 3; and CC 90, PLAY, STOP, the four shifted keys, Setup, the top row's eight and save and
+revert on all eight. **The Organelle's own keys have no row**: they will
+choose songs, and until then they play nothing (Brendan, 2026-11-04). ⛔ **Those twenty-one rows are on
 every page**: the three knobs so the tempo, the drums' last step and their swing are at hand
-whichever page is up (Brendan, 2026-11-04), the rest so no page strands you without a stop or a
-recover but the Launchpad's own. `map-assert.py` reads that off the file, and that knob 3, the
-selected track's, is page 2's alone.
+whichever page is up (Brendan, 2026-11-04), the top row, save and revert so the song is played and
+kept from any page (Brendan, 2026-11-02 and 2026-11-04), the rest so no page strands you without a
+stop or a recover but the Launchpad's own. `map-assert.py` reads that off the file, that each
+top-row button names its own place, and that knob 3, the selected track's, is page 2's alone.
 
 ### Where each part lives
 
@@ -443,12 +450,13 @@ the gate's Pd half* ([sequencer.md](sequencer.md)).
 its own; there is no compose and perform split, and every page draws every warning
 ([error.md](error.md)).
 
-| Page | Is | Rows today, beside the eleven every page has |
+| Page | Is | Rows today, beside the twenty-one every page has |
 |------|----|------------|
 | 1 | The arrangement | The tap pad, cell 21, for `u_tempo` ([tempo.md](tempo.md)). The boot page, `R.BOOT_MODE` |
 | 2 | The drums | The drum page's 60 pads and knob 3, for `c_steps` |
 | 3 | The synths | Fader 1, the Volca's CC 41, and the synth pads, cells 21 to 28, for `c_synth` ([synths.md](synths.md)) |
-| 4–7 | Nothing yet | None |
+| 4–6 | Nothing yet | None |
+| 7 | The sections: making and arranging the current song's sections, on the phone (Brendan, 2026-11-05) | None: its grid is the beat row ([songs.md](songs.md)) |
 | 8 | The songs | None |
 
 ### Why a table at all
@@ -485,7 +493,7 @@ console. Everything the mode `route` does not match falls out of its reject and 
 **They are the Launchpad's left column, `lp-cc-80` down to `lp-cc-10`**, page 1 at the top — eight
 pages (Brendan, 2026-11-04), the eight buttons `g_grid` lights as the mode lamps, so the thing you
 look at is the thing you press. `u_map.lua`'s `R.PAGES` takes the same eight, and `map-assert.py`
-checks the two agree. The top row, CC 91–98, is free. See
+checks the two agree. The top row, CC 91–98, is the song's sections ([songs.md](songs.md)). See
 [launchpad.md](../device/launchpad.md).
 
 ⛔ **Each of the eight branches carries a `[select 0]`, and that is not decoration.** A Launchpad CC
@@ -636,8 +644,8 @@ between a fifth and two fifths off a control's time there.
 
 - ⬜ **Live re-assignment — editing a mapping from the instrument rather than the file — is v0.4**,
   and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **The page names are placeholders, and pages 4 to 7 have no role yet.** `mode-1`…`mode-8` say
-  nothing about what each page is for, though four now have one (*The pages*, above),
+- ⬜ **The page names are placeholders, and pages 4 to 6 have no role yet.** `mode-1`…`mode-8` say
+  nothing about what each page is for, though five now have one (*The pages*, above),
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
   would jump once per change. Not reachable today — knobs 1, 2 and 4 mean the same on every page,

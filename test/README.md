@@ -18,7 +18,7 @@ word.
 
 ## One gate per module
 
-Twenty-four gates, and each answers for exactly one page: under `ref/`, or for `u_inject` and the
+Twenty-five gates, and each answers for exactly one page: under `ref/`, or for `u_inject` and the
 phone's line check page, the checklists' guide. That is the whole organizing principle: **a page that names a gate should be able
 to name one whose entire subject is that page**, or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
@@ -26,7 +26,7 @@ were false.
 | Gate | Checks | Answers for |
 |---|---|---|
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
-| `init-assert.sh` | 16 | `module/boot` |
+| `init-assert.sh` | 17 | `module/boot` |
 | `audio-assert.sh` | 16 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
 | `display-assert.sh` | 46 | `module/display` — the grid, page 3's synth pads and page 1's tap pad included |
@@ -34,27 +34,28 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 68: 33 in Lua, 35 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 188: 103 in Lua, 85 in Pd | `module/map` |
+| `map-assert.sh` | 189: 103 in Lua, 86 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
+| `song-assert.sh` | 165: 121 in Lua, 44 in Pd | `module/songs` — the sections, the top row, save and revert, the files |
 | `presence-assert.sh` | 49 | `module/presence` |
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 64: 39 in Lua, 25 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 105 | `device/phone` |
+| `phone-assert.sh` | 134 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 153: 30 read, 123 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `touchosc-assert.sh` | 181: 32 read, 149 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 228: 163 in Lua, 65 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 249: 184 in Lua, 65 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 25 | `module/sequencer` — the kit, as a signal |
-| `synths-assert.sh` | 91: 66 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
+| `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1356 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one
+**1607 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1349**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1600**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
-`synths-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
+`synths-assert.sh`, `song-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
 Worth knowing before trusting an arithmetic check of this number against a log.
 
@@ -94,6 +95,27 @@ the grid before the bus change (9), before eight lamps (9) and before the drum p
 a traceback in `lib_grid`'s message for an RGB cell, fixed); `touchosc-assert` on the phone's old
 handler (3) and old `MAIN` (4); `nano-assert`'s fader and `sequencer-assert` (34, its page 1
 among them) on the map before the drum page moved.
+
+✅ **The song store's checks were each made to fail** when sections came in (2026-11-05), each
+against the code without the change, the file then restored. `u_song_test.lua`: a press while
+playing starting its section at once (12), a section's length ignored (3), the draft never unsaved
+(15), a Pd float kept as it came (1), the six buttons never scrolling (4), a file that can't be
+written failing in silence (1), a copy named after the whole name, "verse 2 2" (5), deleting the
+section playing without starting another (1), STOP leaving a section queued (2). `c_steps_test.lua`:
+no `bar` (7), the bar counted on the time signature (4), a restore that leaves the loops where they
+were (2), the swing and the last step left out of the line (26); `c_synth_test.lua`: no program
+sent (4). `song-assert`'s Pd half: `g_grid` painting the section playing dim, save grey and a queued
+section solid (12); `c_synth` deaf to `restore programs`, `c_steps` restarting no loop and deaf to
+`section-1-drums`, together (16); the draft never flushed (Lua 3, Pd 4); a press while playing at
+once (Lua 12, Pd 4); a length ignored (Lua 3, Pd 8). `init-assert`, `u_root`'s trigger reversed so
+the song loads before `u_state` restores (1). `map-assert`, a section row naming the wrong button
+and a page without save (2). `display-assert`, the playing lamp in a color no edge takes (9).
+`phone-assert`, `sections` cut from `u_net`'s route and its state's inlet unwired (15), and `up`
+dropped from its acknowledgments (8). `touchosc-assert`, a row that answers the state (2), a done
+that sends a name unchanged or empty (2), and a command misspelt with its flash gone (3).
+`sequencer-assert`, the pattern put as the old auto key and knob 4 unsaved (Lua 1, Pd 14);
+`synths-assert`, `c_synth` putting as `auto` (7). `u_tempo`'s spigot open to a tempo already in
+force held knob 1 at the load's restore: `map-assert` (2) and `recover-assert` (1).
 
 ✅ **The OLED's revision was made to fail, check by check** (Brendan's split, 2026-11-04: alerts and
 warnings, the output's levels and the name of a control as it moves), each against the code
@@ -340,7 +362,7 @@ refused as `bad-tempo`.
 ## `map-assert.sh` and `volca-assert.sh` — the map and the output device
 
 ```sh
-./test/gate/map-assert.sh            103 + 85 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
+./test/gate/map-assert.sh            103 + 86 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
 
@@ -455,7 +477,7 @@ committed.
 ## `phone-assert.sh` — the same idea, and much cheaper
 
 ```sh
-./test/gate/phone-assert.sh            # ~60 s, exits non-zero on any failure
+./test/gate/phone-assert.sh            # ~65 s, exits non-zero on any failure
 ```
 
 **Phase 7's gate needs no scratch copy and rewrites nothing.** `[midiout]` is a built-in class
@@ -481,7 +503,7 @@ exactly like a broken rate limiter.
 A mark on stdout would have to be correlated with socket timestamps afterwards; a mark *in* the
 stream arrives in true order with the data around it.
 
-**99 checks**: the known addresses and nothing else; **no `[r disp]` in `u_net`, and no
+**134 checks**: the known addresses and nothing else; **no `[r disp]` in `u_net`, and no
 `/cutit/param`, `/cutit/status` or `/cutit/alert` ever on the wire**, with a sweep, a status, an
 alert, a meter and `diag` put on `disp` (Brendan, 2026-11-04: the phone stopped copying the OLED); a
 monotonic heartbeat at 2 Hz; the tempo from `u_tempo`'s cord at once, on every heartbeat, coalesced
@@ -489,8 +511,9 @@ at 20 Hz with its trailing edge; `re-wire`, `clear-alert` and `test-note` reachi
 malformed commands do; test mode, `result` and the gone `send`; every drum and arrangement command
 out the first outlet as it came, acknowledged or not as the screens need; `synth` and `velocity`
 out the second, `tempo` out the third, each passing on what it does not know for its owner to
-refuse; and the mode, `c_steps`' 88 numbers, the choice and the velocity switch at once and on every
-heartbeat. Its rate-limit history, below, is the old mirror's, whose coalescer the tempo now uses.
+refuse; `sections` out the fourth, each of the sections page's commands as it came, a name with a
+space as one string, the buttons' five acknowledged and the rest not; and the mode, `c_steps`' 88
+numbers, the choice, the velocity switch and `u_song`'s 22 atoms at once and on every heartbeat. Its rate-limit history, below, is the old mirror's, whose coalescer the tempo now uses.
 
 ✅ **It was proven to fail before it was trusted, and for free.** `u_net` was built plumbing-first
 with no coalescer, and that build failed exactly three checks — the three rate ceilings — at
@@ -513,7 +536,7 @@ passes them; with its cord from `drums` to `c_steps` cut, all four failed with t
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       30 + 123 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       32 + 149 checks, ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
@@ -581,21 +604,22 @@ pad's height (read 1). And the swing's range: the layout built at the old 25% (L
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      163 + 65 checks, ~33 s — c_steps' rules in Lua, then the drum page and the pattern on disk
+./test/gate/sequencer-assert.sh      184 + 65 checks, ~33 s — c_steps' rules in Lua, then the drum page and the pattern in the song's draft
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
 Pd: the rules in `Cut It/c_steps.lua` press by press (the levels, the step rule's three cases, the
 selected track, which pads fire, swing, drunkenness's curve, randomness's coin with seeded dice, the
-drum screen's pads, the restore, a line saved before the randomness included), and `c_steps-lua.pd_lua` through
+drum screen's pads, the bar, a section's restore starting every loop again, the restore, lines saved
+before the randomness and before sections included), and `c_steps-lua.pd_lua` through
 `test/gate/lua/lib_test.lua`'s stand-in for pdlua (its inlets and outlets, `bad-selector`, a
 throwing rule caught as `fail c_steps lua-fire`). Then the Pd half below, on a running copy of the
 instrument, which is unchanged since the rules were Pd: **it is the proof the Lua port changed
 nothing.** The gate fails if either half does.
 
 It plays page 2's drum page on `param`, as `m_launchpad` publishes it, from a state directory
-seeded with a pattern, and reads only what leaves the patch: the pads for `c_kit`, the grid's frames, the
-state bus and `cut-it-auto.txt`. **A note's step is the playhead of the frame painted after it** —
+seeded with a song whose one section holds a pattern, and reads only what leaves the patch: the pads
+for `c_kit`, the grid's frames, the state bus and the song's draft. **A note's step is the playhead of the frame painted after it** —
 `c_steps` sends a step's notes and its playhead in one logical instant, and the frame clock paints
 within 20 ms, six times inside a sixteenth at 120 BPM — so every step's exact notes are asserted
 without a timestamp. The tempo is set by the driver, and PLAY to STOP is counted: 21 steps. Knob 2
@@ -603,7 +627,8 @@ is held at 16 and then sets the last step to 3 before PLAY again, which must wal
 knob 3 gives track 2 a last step of 6, and nine steps are checked against two loops, 3 and 6, note
 by note. Then the drum screen's `snap` is sent as the phone sends it, OSC to `u_net`'s own port
 (`CUTIT_INPORT`), so the cord from `u_net` to `c_steps` in `u_root` is under test too. Knob 4's swing
-is held at 50% until turned all the way down, and at 75% puts step 2 three quarters through its pair.
+is held at 50% until turned all the way down, and at 75% puts step 2 three quarters through its pair;
+the global last step and the swing are put as they change, a section's.
 The drum screen's pads come over OSC too: a track's volume and pitch reach `c_kit`'s stand-in,
 `test/stubs/t_kit.pd`, which prints them, as every track's do at the restore; a track at full
 randomness plays a coin on every step, at a level's velocity, while the rest play as written; and
@@ -641,7 +666,7 @@ and expects level 2, so a table that moves the button is caught.
 ## `synths-assert.sh` — the nanoKEY and the two synths
 
 ```sh
-./test/gate/synths-assert.sh         66 + 25 checks, ~11 s — c_synth's rules in Lua, then the nanoKEY through the instrument
+./test/gate/synths-assert.sh         72 + 25 checks, ~11 s — c_synth's rules in Lua, then the nanoKEY through the instrument
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_synth_test.lua`, with lua.org's Lua 5.4 and no
@@ -649,7 +674,7 @@ Pd: the choice, where a key goes, a switch while keys are held, a key's numbers,
 switch, the restores, and
 `c_synth-lua.pd_lua` through `lib_test.lua`'s stand-in for pdlua (its outlets, `bad-synth`,
 `bad-selector`, a throwing rule caught as `fail c_synth lua-list`). Then a running copy of the
-instrument, booted on page 3 with `synth strings` and `velocity off` saved: the nanoKEY's keys go in through
+instrument, booted on page 3 with a song whose one section holds `synth strings` and `velocity off`: the nanoKEY's keys go in through
 `t-notein`, page 3's pads as `param pad-NN`, and the phone's `/cutit synth <choice>` as a datagram
 into `u_net`'s own port, from a socket the driver builds with `lib_drive`'s `extra`.
 
@@ -659,7 +684,7 @@ phone's switch releasing on the Volca, only a press choosing (two pads held), no
 ports playing nothing, the choice holding on page 1 where the pads mean nothing, `bad-synth` from
 the phone, and `bad-velocity`, a soft key at 127 with the switch off and its release at 0, panic's
 CC 123 on channel 33, nothing on another channel, nothing else on `err`, and `synth strings` and
-`velocity off` in the state file at the end.
+`velocity off` in the song's draft at the end.
 
 ✅ **Proven red** (2026-11-04), each against the code without the change: `c_synth` releasing on
 the synth chosen now (Lua 4, Pd 1); `m_nanokey`'s gate open above its port (1) and below it (1);
@@ -696,6 +721,35 @@ modifier naming every edge (3, 1); the latch rewritten on the release (3, 1); an
 ✅ **And `lua-face.lua`, which all the faces share** (2026-11-04): with no bang on `init`, each of
 the five Lua tests there were then, the SP-404's among them, went red (1 to 3 failed); with a rule
 run outside `pcall`, each died on its throwing rule.
+
+## `song-assert.sh` — the song store, played from the Launchpad's edges
+
+```sh
+./test/gate/song-assert.sh           121 + 44 checks, ~35 s — u_song's rules in Lua, then three runs of the instrument
+```
+
+**Two halves, two tallies.** First `test/gate/lua/u_song_test.lua`, with lua.org's Lua 5.4 and no
+Pd: a fresh load, the files' text both ways, a load from the draft, the saved song or both, the top
+row stopped and playing, lengths and the last one with a length, the six buttons scrolling, the
+sections page's commands, names, save and revert, the phone's state, and `u_song-lua.pd_lua`
+through `lib_test.lua`'s stand-in for pdlua, reading and writing real files in a folder of its own,
+across reloads, a write that fails, and a throwing rule. Then **three runs of a scratch copy of the
+instrument**, one analyzer reading them all:
+
+- **The song**, booted on page 2 with three sections saved, intro, verse of two loops and chorus,
+  each with every part: the top row pressed as the Launchpad sends it, the transport on its buses, a
+  change as a tempo on the bus. At load section 1 starts; stopped, a button starts its section at
+  once, its programs out to both synths; a change lights save and revert, revert and save put them
+  out; playing, verse hands over by itself on chorus's step 1, the drum page's playhead showing it;
+  a section pressed blinks on the beat and starts when the pattern comes round; the arrows; a button
+  with no section. Both files on disk after it.
+- **A reload** of what the first left: the draft comes back, unsaved, and revert takes it to the
+  save.
+- **A first load from a state directory before sections**: the auto file's 579-number pattern, synth
+  and switch become section 1's, and the auto file lets the old keys go.
+
+⚠️ **The driver turns DSP on**: the steps are cut from a `phasor~`, and the queued lamp blinks on
+the beat row's clock, which is one too. Without it the transport plays nothing and no bar comes.
 
 ## `stubs/` — stand-ins the gates need
 

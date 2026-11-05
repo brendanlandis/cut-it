@@ -155,7 +155,7 @@ and `recover`. See [organelle.md](../device/organelle.md).
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
-| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10, and the beat row on grid indices 11–18; on page 2 the **drum page** instead of the beat row, on page 3 the **synth pads** above it, and on page 1 the **tap pad** | unknown | — |
+| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10, and the beat row on grid indices 11–18; on page 2 the **drum page** instead of the beat row, on page 3 the **synth pads** above it, and on page 1 the **tap pad**; on every page **the edges**, the top row's sections and save and revert | unknown | — |
 | `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | The whole surface, one color | verified | — |
 | `alert` | 2 | `disp` → `alert …`, **`fail` only** | 2 s | The whole surface, red | verified | — |
 
@@ -217,7 +217,7 @@ own RGB table, and the paint loop sends those cells as type 3, red, green and bl
 green and blue 127, 109, 91, 73, 54, 36, 18, 0 for levels 1 to 8; the quarter is each over four;
 127, 20, 72 for a pad not selected; 16, 40, 127 for a bar's first step; 20, 8, 32 and 80, 24,
 127 for a repeat pad and the one held; and 127, 0, 0 for the selected pad, entry 26, after the
-synth and tap entries.
+synth and tap entries; then the edges' three (*`g_grid`'s edges, on every page*, below).
 ✅ On the rig the eight read as eight, white to red (Brendan, 2026-11-03).
 
 ### `g_grid`'s synth pads, page 3
@@ -262,6 +262,28 @@ Anything else on that inlet is `fail g_grid bad-selector`.
 ⚠️ **They are RGB specs, 152 and 153 on the surface**: entries 24 and 25 of the RGB table. `pd
 regions` paints each row of the layout whose role is `tap` from `[f 152]`, which `$0-tap`, the
 flash, raises to 153.
+
+### `g_grid`'s edges, on every page
+
+**The caller is `u_song`, on `g_grid`'s sixth inlet**, with meaning, never a cell
+([songs.md](songs.md)): `top <8 lamps>`, the top row's buttons left to right, each 0 dark, 1 a
+section, 2 the section playing, 3 the one queued or 4 an arrow with somewhere to go; and `unsaved
+<0 or 1>`. Each sets the dirty flag; anything else on the inlet is `fail g_grid bad-selector`.
+`pd regions` paints them on every page, after the other regions, from an array of eight and a
+float, so they start dark until `u_song` speaks.
+
+| A cell | Paints | Evidence |
+|---|---|---|
+| CC 91 and 92, the arrows, with somewhere to go | Palette 1, dim | unknown |
+| CC 93–98, a section | Dim green, RGB 0, 32, 8 | unknown |
+| The same, the section playing | Full green, RGB 0, 127, 32 | unknown |
+| The same, the section queued | Full green on the beat row's even beats and dark on its odd, so it blinks on the beat, at no cost: the beat row's change repaints anyway | unknown |
+| CC 108, save, with anything unsaved | Red, RGB 127, 0, 0, the selected drum pad's entry (Brendan, 2026-11-05) | unknown |
+| CC 8, revert, with anything unsaved | Grey, RGB 40, 40, 40 | unknown |
+| Any of them otherwise | Dark | unknown |
+
+⚠️ **They are RGB specs, 155 to 157 on the surface**: entries 27 to 29 of the RGB table, a section
+dim and full and revert's grey, after the selected pad's red, 154, which save shares.
 
 ### Seeing it off-device
 

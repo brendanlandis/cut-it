@@ -19,6 +19,11 @@ follow them there, so nothing hangs; the next key plays the new choice.
 off, every note-on goes out at 127, on either synth, and a release stays 0. The phone's synths screen
 flips it; the Launchpad has no control for it.
 
+**It holds each synth's sound for the section playing** (Brendan, 2026-11-04): a program number for
+the Volca and one for the Streichfett, sent to each as the section starts, or none, which sends
+nothing. The choice, the switch and the two programs are parts of every section of the song
+([songs.md](songs.md)).
+
 **Its rules are Lua, and its cords are Pd**, as the sequencer's are: `c_synth.lua` holds the choice
 and which synth each held key went to, as plain Lua that runs on the Mac without Pd, and
 `c_synth.pd` keeps the cords and the state bus, asking the Lua through one pdlua object,
@@ -31,12 +36,12 @@ and which synth each held key went to, as plain Lua that runs on the Mac without
 | | Is | Evidence |
 |---|---|---|
 | Inlet | `<note> <velocity>` from `m_nanokey`, 0 a release; `synth <choice>` from `u_map`'s `synth` destination (a page-3 pad's press) and from `u_net` (the phone's `/cutit synth <choice>`); `velocity <on or off>` from `u_net` (the phone's `/cutit velocity <on or off>`) | unknown |
-| Outlet 1 | `note <n> <v>` to `m_volca` | unknown |
-| Outlet 2 | `note <n> <v>` to `m_streich` | unknown |
+| Outlet 1 | `note <n> <v>` and `program <n>` to `m_volca` | unknown |
+| Outlet 2 | `note <n> <v>` and `program <n>` to `m_streich` | unknown |
 | Outlet 3 | `synth <choice>` to `u_net`'s third inlet, which sends `/cutit/synth <choice>` to the phone at once and on every heartbeat ([phone.md](../device/phone.md)) | unknown |
 | Outlet 4 | `synth <choice>` to `g_grid`'s fourth inlet, which paints page 3's pads ([display.md](display.md)) | unknown |
 | Outlet 5 | `velocity <on or off>` to `u_net`'s third inlet, which sends `/cutit/velocity` to the phone at once and on every heartbeat | unknown |
-| `state` | `put auto synth <choice>` and `put auto velocity <on or off>` on every change; `restore synth <choice>` and `restore velocity <setting>` at ~3.5 s | unknown |
+| `state` | `put section synth <choice>`, `put section velocity <on or off>` and `put section programs <volca> <streichfett>` at load and on every change; `restore synth`, `restore velocity` and `restore programs` as a section starts, the first at ~3.5 s | unknown |
 | `err` | `fail c_synth bad-synth` for a choice it does not know, `bad-velocity` for a setting, `bad-selector` for a message, `lua-<selector>` for a throw, `no-lua` when the Lua never loaded (C-12) | unknown |
 
 Outlets 3 and 4 carry the choice, and outlet 5 the velocity switch, at load, at the restore and on
@@ -57,6 +62,8 @@ every change, never on a change that changes nothing.
 | At load | `fm` and velocity `on`, sent to the pads, the phone and the store | unknown |
 | The restore | The saved choice and switch come back at ~3.5 s and are put straight back; one that names no synth, or neither on nor off, keeps the one in force and is repaired by the same put ([state.md](state.md), *A contributor must put back what it restores*) | unknown |
 | Panic | Not heard here: each synth's layer sends its own All Notes Off, CC 123, on its own channel | unknown |
+| A section's programs | `restore programs <volca> <streichfett>`, each 0 to 127, the program change on the wire, or `none`: each synth with a program is sent `program <n>`, the Volca first, and both are put straight back. A number off 0 to 127, or a word, is `none`; `none` sends nothing and leaves the synth on whatever sound it has | unknown |
+| At load, the programs | `none none`, put, so the section playing holds them; no control chooses one yet (`cut-it/songs-and-sections`) | unknown |
 
 ### Page 3 on the Launchpad
 
@@ -82,13 +89,14 @@ The beat row stays on row 1, as on every page but the drums. What each cell pain
 | The cords out, `put auto` under the key the Lua names, the restores off the `state` bus, the `no-lua` guard | `c_synth.pd` | verified |
 | What a page-3 press means | `u_map`'s `synth` destination, which looks the cell up in the layout ([map.md](map.md)) | verified |
 
-### The choice and the switch in the state store
+### The choice, the switch and the programs in a section
 
 | | | Evidence |
 |---|---|---|
-| Keys | `synth` and `velocity`, two `auto` keys in `cut-it-auto.txt` | unknown |
-| Lines | `synth fm` or `synth strings`, and `velocity on` or `velocity off`, written and read back by `synths-assert`, which boots with `strings` and `off` saved | verified |
-| Written | `put auto synth` and `put auto velocity` at load and on every change; `u_state` flushes within 2 s | unknown |
+| Parts | `synth`, `velocity` and `programs`, three parts of the section playing, kept by `u_song` ([songs.md](songs.md)) | unknown |
+| Lines | `synth fm` or `synth strings`, `velocity on` or `velocity off`, `programs none none` or two numbers, written and read back by `synths-assert`, which boots with a song whose one section holds `strings` and `off`; `song-assert` sends a section's programs as it starts | verified |
+| Written | `put section` at load and on every change; `u_song` writes the song's draft within 2 s | unknown |
+| Before sections | `synth` and `velocity` were `auto` keys; `u_state`'s restore of either, at the first load after the update, is taken the same way and put as the section's | verified |
 
 ## Traps
 
@@ -153,11 +161,12 @@ the router covers both synths and every page; a switch in each synth's layer wou
 in step. Releases are left alone: a 0 forced to 127 would be a new note. The Launchpad has no
 control for it for now (Brendan, 2026-11-04).
 
-### Two auto keys, for now
+### Three parts of a section
 
-The choice and the switch are running values, put whenever they change, as the page is
-([map.md](map.md), *`mode` is persisted; the table is not*). Sections will own both, each with its
-synth, when songs arrive (`cut-it/songs-and-sections`).
+The choice, the switch and the programs are put whenever they change, with the section policy, so
+each section of a song holds its own (`cut-it/songs-and-sections`). The programs are here because
+`c_synth` already reaches both synths' layers by cords, and a section starting is a restore the
+router takes like any other; each layer already takes `program <n>` from the map's `volca-prog`.
 
 ### `c_`, because there can be more than one
 
@@ -169,5 +178,5 @@ second `c_synth` with its own cords. Not `u_`: nothing about it is one per instr
 - ⬜ **Not played on the rig**: each synth from the nanoKEY, a switch mid-chord, page 3's pads and
   their colors, the phone's synths screen, its velocity switch, and the line check's toggle.
   `test/checklists/synths.md`, `cut-it/pages-and-displays`.
-- ⬜ **The choice and the velocity switch are global until sections own them.**
+- ⬜ **No control chooses a synth's program**: a section holds `none none` until its file is edited.
   `cut-it/songs-and-sections`.

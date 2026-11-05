@@ -350,8 +350,8 @@ python3 tools/touchosc/watch.py
   does the same by hand), it goes into `build.py`, and the next build writes the file again.
   `build.py` refuses to write over a `CutIt.tosc` saved from the editor until then (`--force`
   discards the change), so a tweak is never lost, and stops the watcher pushing.
-- **Look at a page without the phone**: `python3 tools/touchosc/preview.py` draws every page as the
-  phone shows it, with the editor's 20-point grid over it and the notch's margin marked, into
+- **Look at a page without the phone**: `python3 tools/touchosc/preview.py` draws every page, and
+  each of a page's tabs under its own tab bar, as the phone shows it, with the editor's 20-point grid over it and the notch's margin marked, into
   `tools/touchosc/preview/` (open its `index.html`). It approximates TouchOSC's drawing; the
   phone is the oracle for looks, this is for layout.
 - **The design rules** (Brendan, 2026-11-04): every control on the editor's 20-point grid
@@ -363,17 +363,18 @@ python3 tools/touchosc/watch.py
 runs in the editor, so nothing in the layout is hidden for a script to show:
 
 - **The top tab bar is the Launchpad's pages**, the outer pager, `pages`: arrangement, drums,
-  synths, page 4 to page 7, songs, and line check last. Click a tab to open that page; on the phone
+  synths, page 4 to page 6, sections, songs, and line check last. Click a tab to open that page; on the phone
   the root's script hides this bar and turns the pager to the Launchpad's page itself.
-- **Under it is the page's own tab bar**, its pager (`tabs1` to `tabs8`, `checktabs`): one tab each
-  for now, named for the page, and the page's controls under that. A second tab for a page is a
-  second page in that pager.
+- **Under it is the page's own tab bar**, its pager (`tabs1` to `tabs8`, `checktabs`): one tab each,
+  named for the page, and the page's controls under that, but the sections page's two. A second tab
+  for a page is a second page in that pager, `build.py`'s `TABBED`.
 - **To edit inside a page**, descend into the pager and then its page with Edit container (the
   Edit context menu, or the toolbar), and come back with Exit container, as TouchOSC's manual has it
   for any container; the controls' names are build.py's (`tempobox`, `pad5`, `svel`, …). The
   editor's pager navigation must be on, its default (Preferences, Editor); with its Alt-key option
   set, hold Alt to click a tab. The Document Tree selects any control by name.
-- **Pages 4 to 7 and songs are blank** under their tabs: nothing is on them yet.
+- **Pages 4 to 6 and songs are blank** under their tabs: nothing is on them yet. The sections
+  page, page 7, has two tabs, sections and name ([../ref/device/phone.md](../ref/device/phone.md)).
 
 ⚠️ **Judge spacing on the phone, not in the editor**: the editor shows both bars, and the phone
 hides the outer one. Whether its pages then move up a bar or keep its place empty is unseen

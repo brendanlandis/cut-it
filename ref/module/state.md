@@ -16,6 +16,8 @@ policy, about when to write, or about the bus.
 
 **Two policies, two stores, two files.** `auto` is a running value, flushed on a timer; `manual` is a
 committed take, written only when a commit is asked for and therefore abandonable by not saving.
+**A third policy on the same bus is not `u_state`'s**: `section` is a part of the song's section
+playing, which `u_song` keeps, writes and restores ([songs.md](songs.md)); `u_state` drops it.
 
 ⚠️ **The data does not live in the patch folder.** `u_state` writes to `/sdcard/cut-it-state/`,
 outside it, so `tools/deploy.sh`, `tools/deploy.sh --clean` and a power cycle cannot touch it.
@@ -27,7 +29,7 @@ outside it, so `tools/deploy.sh`, `tools/deploy.sh --clean` and a power cycle ca
 
 **One name, three selectors, disjoint per side**, so the whole protocol fits in one C-2 allowlist
 entry with no loop. Contributors `[route save restore]`; `u_state` routes `put` and rejects its own
-traffic into nothing.
+traffic into nothing, and a policy that is neither of its two, `section`, which `u_song` takes.
 
 | Direction | Message | Meaning | Evidence | Item |
 |-----------|---------|---------|----------|------|
@@ -35,6 +37,8 @@ traffic into nothing.
 | `u_state` → all | `save` | Broadcast at a commit — **answer now** | verified | — |
 | contributor → `u_state` | `put manual <key> <atoms…>` | The answer to a `save` | verified | — |
 | `u_state` → all | `restore <key> <atoms…>` | Replayed at load, one message per line | verified | — |
+| contributor → `u_song` | `put section <key> <atoms…>` | A part of the section playing, `u_song`'s: `u_state`'s route drops it ([songs.md](songs.md)) | unknown | — |
+| `u_song` → all | `restore <key> <atoms…>` | A section starting: its parts, after `u_state`'s restore at load and whenever a section starts | unknown | — |
 
 ### `u_state`
 
@@ -91,9 +95,12 @@ wrong** — the same class of noise as mother's own `knobs.txt: can't open`.
 | Key | Policy | Written by | Evidence | Item |
 |-----|--------|------------|----------|------|
 | `mode` | `auto` | `u_map` — a running value, pushed whenever it changes | verified | — |
-| `section-1-drums` | `auto` | `c_steps` — the drum pattern, 256 velocities, pushed on every change and put back on restore ([sequencer.md](sequencer.md)) | unknown | — |
-| `synth` | `auto` | `c_synth` — the synth the nanoKEY plays, `fm` or `strings`, pushed at load and on every change and put back on restore ([synths.md](synths.md)) | unknown | — |
-| `velocity` | `auto` | `c_synth` — the velocity switch, `on` or `off`, pushed at load and on every change and put back on restore ([synths.md](synths.md)) | unknown | — |
+| `drums`, `tempo`, `synth`, `velocity`, `programs` | `section` | `c_steps`, `u_tempo` and `c_synth`, the parts a section holds, kept by `u_song` ([songs.md](songs.md)) | unknown | — |
+
+**`section-1-drums`, `synth` and `velocity` were `auto` keys until sections** (2026-11-05). A file
+from before still holds them; `c_steps` and `c_synth` take their restore once, put them as the
+section's, and the next flush drops them, since nothing puts them again ([songs.md](songs.md), *The
+auto keys before sections are read once*).
 
 ## Traps
 
@@ -286,8 +293,8 @@ as decisions rather than left to whoever writes the capture.
 
 ## Open
 
-- ⬜ **Four keys are stored today**, all `auto`: `mode`, from `u_map`, `section-1-drums`, from
-  `c_steps`, and `synth` and `velocity`, from `c_synth`. The presets and the filter-stage parameters are v0.4, and
-  each brings its own key and its own policy. See [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **One key is stored here today**, `auto`: `mode`, from `u_map`; the parts a section holds are
+  `u_song`'s. The presets and the filter-stage parameters are v0.4, and each brings its own key and
+  its own policy. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **Nothing uses the `manual` policy yet.** It is proven by the gate and by a deliberately-late
   test contributor, not by a real one. See [plan-v04.md](../../plan-v04.md) §3.

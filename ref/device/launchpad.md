@@ -181,14 +181,22 @@ CC**, so a control here that named the missing device would be dead in exactly t
 exists for. `diag` lives on the Organelle's own keyboard, under the aux modifier — see
 [organelle.md](organelle.md).
 
-### The top row is free
+### The top row plays the song's sections, and two bottom buttons save and revert
 
-**CC 91–98 select nothing** and draw nothing, as every unmapped control does (Brendan,
-2026-11-04); they held the mode selector until it moved.
+**CC 91 and 92, the arrows, step back and forward a section; CC 93–98 are six section buttons**,
+which scroll a section at a time with the one playing; a press while the transport runs starts its
+section when the pattern next comes round, and a press while it is stopped at once (Brendan,
+2026-11-02 and 2026-11-05). **CC 108, the upper bottom row's rightmost, saves the song, and CC 8,
+the lowest row's rightmost, reverts it** (Brendan, 2026-11-04). The map binds them on every page,
+as `section`, `save` and `revert`, to `u_song` ([songs.md](../module/songs.md)); `g_grid` lights
+them from `u_song`'s state, the playing section solid, a queued one blinking, save red and revert
+grey while anything is unsaved ([display.md](../module/display.md)). They held the mode selector
+until it moved to the left column.
 
 ⚠️ **The objection above applies to everything on this surface**, `recover` on CC 90 included; the
-Organelle's keyboard is where the controls you reach for when a device has died belong. Anything put
-on a free button should be something you would not miss if the Launchpad were the thing that went.
+Organelle's keyboard is where the controls you reach for when a device has died belong. A Launchpad
+that goes leaves the section playing as it is and the draft on the SD card, so nothing is lost but
+the next press; choosing songs will be the Organelle's keys' (`cut-it/songs-and-sections`).
 
 ### A tap on Setup flips test mode
 

@@ -29,6 +29,7 @@ also **undoes mother's own autoconnect**, which is not ours and is actively wron
 | 2000 ms | | `midiInGate 0` and `midiOutGate 0` **again** — the second send is the one that works | verified | — |
 | 3000 ms | `modal launchpad` | **Outlet 1** bangs `m_launchpad`, which enters Programmer Mode | verified | — |
 | 3500 ms | | **Outlet 2** bangs `u_state` — restore the saved state, and it fires FIRST of the three at this stage | verified | — |
+| 3500 ms | | … and, through a trigger in `u_root`, `u_song` after it: the song's files read and section 1 started, after `u_state`'s restore so the auto keys from before sections are read first ([songs.md](songs.md)) | unknown | — |
 | 3500 ms | `modal-off` | home comes back, the info bar over a blank screen: nothing at rest says the boot is done but the modal going (2026-11-04, [display.md](display.md)) | verified | — |
 | 4000 ms | | `u_present`'s settle expires — the presence tick starts and every registered device is polled from here on | verified | 271 |
 

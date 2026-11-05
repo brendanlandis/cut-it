@@ -109,10 +109,11 @@ def run_asserts(cap):
             "reached the instrument. Got %s" % param("STALE-CONT"))
 
     # ---- one bus, and one row per control ---------------------------------
-    # What a control draws is u_map's alone (item 317). Rows are counted by
-    # name, exactly: g_oled redraws a row in place by name, so a duplicate is
-    # invisible on screen. Two lean on the shipped map, on page 3, which the
-    # EARLY window chooses: slider-3 has no row there, and slider-1 is volca-cc 41.
+    # What a control draws is u_map's alone (item 317), and only a mapped one
+    # draws (Brendan, 2026-11-04). Rows are counted by name, exactly: g_oled
+    # redraws a row in place by name, so a duplicate is invisible on screen. Two
+    # lean on the shipped map, on page 3, which the EARLY window chooses: slider-3
+    # has no row there, and slider-1 is volca-cc 41.
     print("\n--- param only, and ONE row per control ---")
     rows = lambda k, *names: [d for d in disp(k) if d[:1] and d[0] in names]
     kinds = [k for k, _ in W("SLIDER")]
@@ -120,11 +121,11 @@ def run_asserts(cap):
             kinds[:1] == ["PARAM"],
             "the window opens with %s -- nothing may reach disp before the control "
             "reaches param, which is where u_map hears it" % (kinds[:1] or "nothing"))
-    A.check("⛔ an UNMAPPED slider draws ONE row -- u_map's slider-3 21, and none from m_nano",
-            rows("SLIDER", "slider-3") == [["slider-3", "21"]],
-            "rows for slider-3: %s. Two identical rows means an m_ layer is posting "
-            "its own again (item 317); none means slider-3 gained a mode-3 row in "
-            "cut-it-map.txt" % rows("SLIDER", "slider-3"))
+    A.check("⛔ an UNMAPPED slider draws NO row -- no slider-3, from u_map or from m_nano",
+            rows("SLIDER", "slider-3") == [],
+            "rows for slider-3: %s. One is u_map drawing an unmapped control's raw "
+            "row again; two, an m_ layer posting its own as well (item 317)"
+            % rows("SLIDER", "slider-3"))
     A.check("⛔ a MAPPED fader draws ONE row, the destination's -- volca-cc41 64 and no slider-1",
             rows("EARLY", "slider-1", "volca-cc41") == [["volca-cc41", "64"]],
             "rows for slider-1 and volca-cc41 at 300 ms: %s. A slider-1 row is the "
@@ -133,8 +134,8 @@ def run_asserts(cap):
             % rows("EARLY", "slider-1", "volca-cc41"))
 
     # The other [ctlin] layer, through the same stub.
-    A.check("⛔ ... and so does a Launchpad ring button -- lp-cc-19 55",
-            rows("CH-LP", "lp-cc-19") == [["lp-cc-19", "55"]],
+    A.check("⛔ ... and neither does a Launchpad ring button, unmapped -- no lp-cc-19",
+            rows("CH-LP", "lp-cc-19") == [],
             "rows for lp-cc-19: %s" % rows("CH-LP", "lp-cc-19"))
 
     # ---- cross-talk between the channel blocks ----------------------------

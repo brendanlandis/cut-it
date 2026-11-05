@@ -25,7 +25,7 @@ Hot-swap for the Volca, which is `none`: it transmits nothing and can never be p
 
 - [ ] **4. Fader 1 on page 4**
   - **Do:** Press the fourth button down the Launchpad left column then move fader 1.
-  - **Pass if:** The Volca does not change — no change is the pass. The OLED shows slider-1 and its raw value because nothing maps it on page 4 and that is correct.
+  - **Pass if:** The Volca does not change, and the OLED shows nothing for the fader — no change is the pass. Nothing maps fader 1 on page 4, and only a mapped control names itself (Brendan, 2026-11-04).
 
 - [ ] **5. Fader 1 back on page 3**
   - **Do:** Press the third button down the Launchpad left column then move fader 1 again.

@@ -105,11 +105,11 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 - [ ] **23. Other pages keep their grid**
   - **Send:** `mode mode-1`
   - **Do:** Press a pad in the top two rows.
-  - **Pass if:** The top lamp lights and the drum page gives way to the beat row along the bottom and the tap pad, dim yellow, above its first cell. A pad press draws a pad-NN row on the OLED again, and the phone turns to the arrangement screen, its tab reading arrangement.
+  - **Pass if:** The top lamp lights and the drum page gives way to the beat row along the bottom and the tap pad, dim yellow, above its first cell. A pad press draws nothing on the OLED, since on page 1 only the tap pad is mapped and only a mapped control names itself, and the phone turns to the arrangement screen, its tab reading arrangement.
 
 - [ ] **24. Knobs 2 and 4 on any page**
   - **Need:** The drums playing, from `start bang`, with steps lit. The phone linked.
   - **Send:** `mode mode-1`
   - **Do:** Turn knob 2 a little either way, then through noon and on to last-step 8. Then turn knob 4 a little, then all the way right. Then turn knob 3.
-  - **Pass if:** Knob 2 reads last-step with its own step in brackets until it passes 16, then last-step alone; at 8 the drums loop in half the time, and the phone's last step reads 8. Knob 4 reads swing the same way until it passes 50, and all the way right every second step comes late, and the phone's swing knob follows. Knob 3 reads og-knob-3 and a raw number, and changes nothing. Put knobs 2 and 4 back to 16 and noon.
+  - **Pass if:** Knob 2 reads last-step with its own step in brackets until it passes 16, then last-step alone; at 8 the drums loop in half the time, and the phone's last step reads 8. Knob 4 reads swing the same way until it passes 50, and all the way right every second step comes late, and the phone's swing knob follows. Knob 3 draws nothing and changes nothing. Put knobs 2 and 4 back to 16 and noon.
   - **Note:** Knobs 2 and 4 are the drums' last step and swing on every page, as knob 1 is the tempo; knob 3, the selected track's own last step, is the drum page's alone (Brendan, 2026-11-04). The brackets are `c_steps`' latch: a reload holds both knobs again, at 16 and 50%.

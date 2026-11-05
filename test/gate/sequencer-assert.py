@@ -256,16 +256,16 @@ def main():
     A.check("the second row of the right 4x4 is not the drum page: no put and no note",
             not puts("FREE-ROW") and not ons("FREE-ROW"),
             "puts %d, note-ons %s" % (len(puts("FREE-ROW")), ons("FREE-ROW")))
-    A.check("... and it names itself, as an unmapped control does -- pad-36 100",
-            raw("FREE-ROW") == [["pad-36", "100"]], raw("FREE-ROW"))
+    A.check("... and, unmapped, it draws nothing (Brendan, 2026-11-04) -- no pad-36 row",
+            raw("FREE-ROW") == [], raw("FREE-ROW"))
 
     print("\n--- another page ---")
     A.check("⛔ on page 1, which held the drum page until 2026-11-04, a step pad is not "
             "the drum page: no put and no note",
             not puts("OTHER-PAGE") and not ons("OTHER-PAGE"),
             "puts %d, note-ons %s" % (len(puts("OTHER-PAGE")), ons("OTHER-PAGE")))
-    A.check("... and it names itself, as an unmapped control does -- pad-81 100",
-            raw("OTHER-PAGE") == [["pad-81", "100"]], raw("OTHER-PAGE"))
+    A.check("... and, unmapped there, it draws nothing -- no pad-81 row",
+            raw("OTHER-PAGE") == [], raw("OTHER-PAGE"))
 
     print("\n--- the transport ---")
     want = {s: sorted((t, final[idx(t, s)])

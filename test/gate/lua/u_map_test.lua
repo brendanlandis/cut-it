@@ -28,9 +28,6 @@ local function route(dest, arg, value, target, live)
   return { { "route", "list", { dest, arg, value, target, live } } }
 end
 
-local function raw(name, value)
-  return { { "disp", "list", { name, value } } }
-end
 
 print("\n--- the table ---")
 local map, rows = R.parse(MAP)
@@ -82,8 +79,8 @@ R.mode(st, "mode-2", {})
 equal("the same control in another mode means that mode's row -- volca-note 48",
       R.control(st, "slider-1", { 64 }), route("volca-note", 48, 64 / 127, 64 / 127, 1))
 R.mode(st, "mode-4", {})
-equal("a mode with no row for it: the control is unmapped, and draws its raw row",
-      R.control(st, "slider-1", { 64 }), raw("slider-1", 64))
+equal("a mode with no row for it: the control is unmapped, and leaves nothing -- no bus, no row",
+      R.control(st, "slider-1", { 64 }), {})
 st = R.new(MAP)
 equal("a row naming a destination the route lacks still leaves: the guard is the route's",
       R.control(st, "gk-bad", { 100 }), route("no-such-destination", 0, 100 / 127, 100 / 127, 1))
@@ -170,8 +167,8 @@ equal("pickup is per knob: knob 1 crossed and is live, knob 2 is still held",
       { R.control(st, "og-knob-1", { 0.4 })[1][3][5], R.control(st, "og-knob-2", { 0.9 })[1][3][5] },
       { 1, 0 })
 R.mode(st, "mode-4", {})
-equal("a HELD knob unmapped in this mode still draws its raw row",
-      R.control(st, "og-knob-2", { 0.75 }), raw("og-knob-2", 0.75))
+equal("a HELD knob unmapped in this mode leaves nothing either",
+      R.control(st, "og-knob-2", { 0.75 }), {})
 check("... and is still held", st.knob[2].state == "above", T.show(st.knob[2]))
 
 st = R.new(MAP)
@@ -223,23 +220,24 @@ equal("a button is never held: PLAY twice is live twice",
       { R.control(st, "xport-2", { 1 })[1][3][5], R.control(st, "xport-2", { 1 })[1][3][5] },
       { 1, 1 })
 
-print("\n--- the raw row ---")
+print("\n--- an unmapped control names nothing ---")
+-- Only a control the map binds names itself (Brendan, 2026-11-04).
 st = R.new(MAP)
-equal("an unmapped control draws <name> <raw>, the value before the divisor",
-      R.control(st, "gk-x", { 64 }), raw("gk-x", 64))
-equal("an unmapped key draws nothing -- og-key-61", R.control(st, "og-key-61", { 100 }), {})
-equal("... its release neither", R.control(st, "og-key-61", { 0 }), {})
-equal("... while a mapped key still leaves", R.control(st, "og-key-60", { 100 }),
+equal("an unmapped control leaves nothing: no <name> <raw> row, no bus",
+      R.control(st, "gk-x", { 64 }), {})
+equal("... a press of an unmapped pad neither", R.control(st, "pad-15", { 100 }), {})
+equal("... nor an unmapped key or its release", { R.control(st, "og-key-61", { 100 }),
+      R.control(st, "og-key-61", { 0 }) }, { {}, {} })
+equal("... nor unmapped pressure -- pad-11-at", R.control(st, "pad-11-at", { 64 }), {})
+equal("while a mapped key still leaves", R.control(st, "og-key-60", { 100 }),
       route("volca-key", 60, 100 / 127, 100 / 127, 1))
-equal("og-ke is not a key, and draws", R.control(st, "og-ke", { 1 }), raw("og-ke", 1))
-equal("unmapped pressure draws nothing -- pad-11-at", R.control(st, "pad-11-at", { 64 }), {})
-equal("... while the pad's own press draws", R.control(st, "pad-15", { 100 }), raw("pad-15", 100))
 equal("... and MAPPED pressure leaves for its destination", R.control(st, "pad-13-at", { 64 }),
       route("volca-cc", 45, 64 / 127, 64 / 127, 1))
-equal("a control with no value is 0, as [f] reads it", R.control(st, "gk-y", {}), raw("gk-y", 0))
-equal("... a symbol value too", R.control(st, "gk-y", { "x" }), raw("gk-y", 0))
-equal("a list of name and value is the same control", R.control(st, "list", { "gk-x", 5 }),
-      raw("gk-x", 5))
+equal("a control with no value is 0, as [f] reads it",
+      R.control(st, "slider-1", {}), route("volca-cc", 41, 0, 0, 1))
+equal("... a symbol value too", R.control(st, "slider-1", { "x" }), route("volca-cc", 41, 0, 0, 1))
+equal("a list of name and value is the same control", R.control(st, "list", { "slider-1", 127 }),
+      route("volca-cc", 41, 1, 1, 1))
 equal("a message with nothing in it does nothing", R.control(st, "bang", {}), {})
 
 print("\n--- at load ---")
@@ -269,25 +267,24 @@ local class = T.load_class(DIR .. "u_map-lua.pd_lua", DIR)
 check("u_map-lua.pd_lua registers the class u_map-lua", class and class._name == "u_map-lua",
       class and class._name)
 local o = T.new(class, {}, tmp .. "-")
-check("an object has three inlets and five outlets", o and o.inlets == 3 and o.outlets == 5,
+check("an object has three inlets and four outlets", o and o.inlets == 3 and o.outlets == 4,
       o and (o.inlets .. " " .. o.outlets))
-equal("init: the bang on outlet 5 that says it loaded, and nothing else",
-      T.send(o, 3, "init", {}), { { 5, "bang", {} } })
+equal("init: the bang on outlet 4 that says it loaded, and nothing else",
+      T.send(o, 3, "init", {}), { { 4, "bang", {} } })
 equal("it read the table from its patch's folder: slider-1 is volca-cc 41, on outlet 1",
       T.send(o, 1, "slider-1", { 64 }), { { 1, "list", { "volca-cc", 41, 64 / 127, 64 / 127, 1 } } })
-equal("an unmapped control's raw row on outlet 2", T.send(o, 1, "gk-x", { 64 }),
-      { { 2, "list", { "gk-x", 64 } } })
-equal("a mode on inlet 2: the store on outlet 3", T.send(o, 2, "mode-4", {}),
-      { { 3, "list", { "mode-4" } } })
-equal("a bad one: err on outlet 4", T.send(o, 2, "compose", { "mode-1" }),
-      { { 4, "fail", { "u_map", "bad-mode" } } })
+equal("an unmapped control leaves by no outlet at all", T.send(o, 1, "gk-x", { 64 }), {})
+equal("a mode on inlet 2: the store on outlet 2", T.send(o, 2, "mode-4", {}),
+      { { 2, "list", { "mode-4" } } })
+equal("a bad one: err on outlet 3", T.send(o, 2, "compose", { "mode-1" }),
+      { { 3, "fail", { "u_map", "bad-mode" } } })
 T.send(o, 2, "mode-1", {})
 T.send(o, 3, "window-shut", {})
 equal("window-shut on inlet 3: a knob's first value now goes straight to live",
       { T.send(o, 1, "og-knob-1", { 0.5 })[1][3][5], T.send(o, 1, "og-knob-1", { 0.9 })[1][3][5] },
       { 1, 1 })
 equal("anything else on inlet 3 is fail u_map bad-selector", T.send(o, 3, "beat", { 1 }),
-      { { 4, "fail", { "u_map", "bad-selector" } } })
+      { { 3, "fail", { "u_map", "bad-selector" } } })
 -- pdlua hands every message to dispatch, which this class answers itself.
 local function dispatched(inlet, sel, atoms)
   o.sent = {}
@@ -295,10 +292,10 @@ local function dispatched(inlet, sel, atoms)
   return o.sent
 end
 equal("dispatch takes each inlet's messages to its method: a control, a mode, init",
-      { dispatched(1, "gk-x", { 7 }), dispatched(2, "mode-1", {}),
+      { dispatched(1, "slider-1", { 127 }), dispatched(2, "mode-1", {}),
         dispatched(3, "init", {}) },
-      { { { 2, "list", { "gk-x", 7 } } }, { { 3, "list", { "mode-1" } } },
-        { { 5, "bang", {} } } })
+      { { { 1, "list", { "volca-cc", 41, 1, 1, 1 } } }, { { 2, "list", { "mode-1" } } },
+        { { 4, "bang", {} } } })
 equal("a knobs.txt where its patch is: mother's first push is a restore, and passes",
       T.send(T.new(class, {}, tmp .. "-"), 1, "og-knob-1", { 0.0958 }),
       { { 1, "list", { "tempo", 0, C(0.0958), C(0.0958), 1 } } })
@@ -310,7 +307,7 @@ check("no table where its patch is: an error on the console at load",
       #missing.console == 1 and missing.console[1]:find("cut-it-map.txt", 1, true) ~= nil,
       T.show(missing.console))
 equal("... and map-empty on err at init, before the bang",
-      T.send(missing, 3, "init", {}), { { 4, "fail", { "u_map", "map-empty" } }, { 5, "bang", {} } })
+      T.send(missing, 3, "init", {}), { { 3, "fail", { "u_map", "map-empty" } }, { 4, "bang", {} } })
 
 -- A Lua error, made by a copy of the rules whose control rule throws: the class reads its rules
 -- as prefix .. "u_map.lua", so the copy sits at a temporary prefix.
@@ -326,11 +323,11 @@ local broken = T.new(T.load_class(DIR .. "u_map-lua.pd_lua", tmp .. "-"), {}, DI
 os.remove(tmp .. "-u_map.lua")
 os.remove(tmp .. "-lua-face.lua")
 os.remove(tmp)
-equal("a Lua error leaves outlet 4 as fail u_map lua-param, for the error log",
-      T.send(broken, 1, "slider-1", { 64 }), { { 4, "fail", { "u_map", "lua-param" } } })
+equal("a Lua error leaves outlet 3 as fail u_map lua-param, for the error log",
+      T.send(broken, 1, "slider-1", { 64 }), { { 3, "fail", { "u_map", "lua-param" } } })
 check("... with its text on the console", #broken.console == 1
       and broken.console[1]:find("a bug in control", 1, true) ~= nil, T.show(broken.console))
 equal("... and the object carries on: a mode still answers",
-      T.send(broken, 2, "mode-2", {}), { { 3, "list", { "mode-2" } } })
+      T.send(broken, 2, "mode-2", {}), { { 2, "list", { "mode-2" } } })
 
 os.exit(T.report() == 0)

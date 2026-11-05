@@ -34,7 +34,7 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 63: 33 in Lua, 30 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 177: 92 in Lua, 85 in Pd | `module/map` |
+| `map-assert.sh` | 175: 90 in Lua, 85 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 47 | `module/presence` |
@@ -107,7 +107,11 @@ the footer (3: a third line, `140-bpm`, at y=54, and the bars at the old 12 px),
 on the `u_init` and `u_tempo` with it (1: `status v0.3-ready` and the BPM on `disp`). Knobs 2 and
 4 on every page: `map-assert` on the old map (Lua 1; Pd 2: the every-page rows, and knob 2 on page 4
 drawing a raw row where `c_steps`' held one belongs), on the map with page 4's knob 2 and page 6's
-knob 4 cut (Lua 1, Pd 2), and with knob 3 on page 5 too (Lua 1, Pd 1).
+knob 4 cut (Lua 1, Pd 2), and with knob 3 on page 5 too (Lua 1, Pd 1). Only a mapped control
+names itself: against the `u_map.lua`, its face and `u_map.pd` with the raw row, `map-assert`
+(Lua 14: the rows themselves, and the face's outlet numbers moving down one; Pd 4: `gk-cc`, `og-knob-3`,
+`lp-cc-91` and `pad-36` drawn), `nano-assert` (2: `slider-3` and `lp-cc-19`) and `sequencer-assert` (2:
+`pad-36` and `pad-81`).
 
 ✅ **The phone's pages, the arrangement screen, tap tempo and the velocity switch were each made to
 fail** (2026-11-04), against the code without the change or a mutation of it. `phone-assert`: the
@@ -309,7 +313,7 @@ page 2, a drum pad there, sets nothing; and **the phone's tempo** as a datagram 
 ## `map-assert.sh` and `volca-assert.sh` — the map and the output device
 
 ```sh
-./test/gate/map-assert.sh            92 + 85 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
+./test/gate/map-assert.sh            90 + 85 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
 
@@ -325,7 +329,7 @@ somewhere; what the destination then does with the value is the device gate's bu
 
 **`map-assert` runs the map's Lua tests first**: `test/gate/lua/u_map_test.lua`, with lua.org's Lua
 5.4 and no Pd, drives the rules in `Cut It/u_map.lua` (the table, the lookup per mode, the divisor,
-the mode guard, every pickup transition, the raw row and its two exemptions) and `u_map-lua.pd_lua`
+the mode guard, every pickup transition, an unmapped control leaving nothing) and `u_map-lua.pd_lua`
 through `test/gate/lua/lib_test.lua`'s stand-in for pdlua (reading the table from its patch's
 folder, `map-empty`, `bad-selector`, a throwing rule caught as `fail u_map lua-param`). The Pd half
 below is unchanged since the lookup was Pd: **it is the proof the Lua port changed nothing.** The
@@ -337,8 +341,8 @@ that route** — the allowlist guard, enforced by reading, exactly the way this 
 global sends. It also catches a **duplicate `(mode, control)` pair**, which the lookup resolves
 to the *first* row only, so a repeat is dead and silent. And it reads every `m_` file's `[s disp]`
 count, **exactly** — zero everywhere but `m_organelle`'s one, which carries aux's modal — because a
-device layer posting a control's row beside `u_map`'s draws that control twice, and a duplicate of an
-*unmapped* control's row is invisible on the screen (item 317). That half runs without Pd at all.
+device layer posting a control's row beside `u_map`'s draws that control twice, or names an unmapped
+one, which draws nothing since 2026-11-04 (item 317). That half runs without Pd at all.
 
 The other half of each gate rewrites the MIDI object boxes in a scratch copy — **all seven classes, from the one
 `MIDI_EXPECT` in `test/gate/lib_scratch.py`**, shared with every other gate that makes a copy. ⛔

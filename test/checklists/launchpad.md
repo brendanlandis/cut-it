@@ -85,14 +85,15 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
   - **Note:** A snap: the row follows `c_clock`, and a new tempo takes effect on the next tick. Only a device chasing an external clock slides.
 
 - [ ] **19. Pads and releases**
-  - **Do:** Press pads and release them. Press harder on one you are holding.
-  - **Pass if:** Every pad you press reports pad-NN on the OLED with its velocity. Releasing it reports the same name with a velocity of 0 instead. Numbering runs from 11 at the bottom left to 88 at the top right. Pressing harder on a held pad draws no row of its own — with aftertouch on or off — and that is correct.
-  - **Note:** Pressure arrives as `pad-NN-at`, and `u_map` draws no raw row for a name ending `-at`, as it draws none for the keys (item 318).
+  - **Send:** `mode mode-1`
+  - **Do:** Press pads and release them, all but the tap pad. Press harder on one you are holding.
+  - **Pass if:** Nothing appears on the OLED for any of them, pressed, released or pressed harder, with aftertouch on or off.
+  - **Note:** Only a control the map binds names itself (Brendan, 2026-11-04), and on page 1 only the tap pad is bound, which flashes rather than drawing. Which pad is which shows on the drum page, where a step lights where it is pressed (the sequencer checklist); pressure arrives as `pad-NN-at` and no row binds it (item 318).
 
 - [ ] **20. Ring buttons**
   - **Do:** Press the ring buttons, including the top left corner and the bottom row. Leave SETUP, the bottom left corner, for step 28.
-  - **Pass if:** Each ring button reports lp-cc-NN on the OLED except the nine the map binds — they draw no row. The top left corner raises panic and the left column's eight move the mode lamp. The bottom row runs from 101 to 108 in order. SETUP stays dark.
-  - **Note:** The rows are `u_map`'s (item 317), so the bound buttons draw none: CC 90 is `recover` and the eight mode keys are `u_map`'s own route. The top row is free.
+  - **Pass if:** No ring button draws a row on the OLED. The top left corner raises panic and the left column's eight move the mode lamp; the others do nothing. SETUP stays dark.
+  - **Note:** Only a control the map binds names itself, and these bound ones are buttons, which draw nothing: CC 90 is `recover` and the eight mode keys are `u_map`'s own route (Brendan, 2026-11-04; item 317). The top row and the bottom row are free.
 
 - [ ] **21. The left column changes mode**
   - **Do:** Press each of the eight buttons of the left column, top to bottom. Then press the top row.
@@ -121,13 +122,13 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
   - **Note:** Panic keeps the surface (item 250): handing it back left the grid dead until a reload, and Live Mode's clock flooded Midi-In 1. `display-assert` asserts the same.
 
 - [ ] **26. The grid still answers after a panic**
-  - **Send:** `mode mode-3`
-  - **Pass if:** The bright lamp moves to the third position — the panic silenced notes and did not surrender the surface.
-  - **Note:** Not page 2: there the pads are the drum page, so step 27's press would draw no row.
+  - **Send:** `mode mode-2`
+  - **Pass if:** The bright lamp moves to the second position and the drum page comes up — the panic silenced notes and did not surrender the surface.
+  - **Note:** Page 2, where a press shows on the grid itself: no pad names itself on the OLED (Brendan, 2026-11-04).
 
-- [ ] **27. Pads still reach the OLED after a panic**
-  - **Do:** Press a pad.
-  - **Pass if:** A pad press still reports pad-NN on the OLED.
+- [ ] **27. Pads still reach the instrument after a panic**
+  - **Do:** Press the first step pad, top left, then press it again.
+  - **Pass if:** It lights at the first press and goes dark at the second.
 
 - [ ] **28. A tap on SETUP flips test mode**
   - **Need:** Test mode off, as every load leaves it and no step before this one changes it. If in doubt, load Cut It again.

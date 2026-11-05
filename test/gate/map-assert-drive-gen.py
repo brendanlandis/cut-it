@@ -63,13 +63,16 @@ SEQ = [
     # The release must select nothing. A second selection is idempotent, so the
     # screen looks right while every mode message and state write doubles.
     (5100, "MODE-4-RELEASE", ["\\; param lp-cc-50 0"], GAP),
-    (5200, "MODE-DEP", ["\\; param gk-cc 64"], GAP),
+    # gk-cc is mapped on page 1 alone, so here it draws nothing; knob 1, tempo on
+    # every page and live since LIVE, is the window's witness: 0.3 is 75 bpm.
+    (5200, "MODE-DEP", ["\\; param gk-cc 64", "\\; param og-knob-1 0.3"], GAP),
     # The top row's first button selected mode 1 until the modes moved to the
-    # left column: it is free now, so it selects nothing and names itself.
+    # left column: it is free now, so it selects nothing and, unmapped, draws
+    # nothing (Brendan, 2026-11-04).
     (5300, "TOP-ROW-FREE", ["\\; param lp-cc-91 127"], GAP),
-    # Page 4: knob 3 is page 2's alone, so it maps to nothing here, while knob 2
-    # is the drums' last step on every page (Brendan, 2026-11-04) and reaches
-    # c_steps, whose latch holds it at 16.
+    # Page 4: knob 3 is page 2's alone, so it maps to nothing here and draws
+    # nothing, while knob 2 is the drums' last step on every page (Brendan,
+    # 2026-11-04) and reaches c_steps, whose latch holds it at 16: the witness.
     (5400, "UNMAPPED", ["\\; param og-knob-3 0.75", "\\; param og-knob-2 0.75"], GAP),
     # The left column's bottom key, press and release: page 8. What follows runs
     # there, on rows only the last page's own would answer.
@@ -104,10 +107,11 @@ SEQ = [
     # own keys play nothing until they choose songs (Brendan, 2026-11-04), so
     # og-key-60 beside it must add no note.
     (7800, "ROW-KEY", ["\\; param gk-key 100", "\\; param og-key-60 100"], GAP),
-    # Unmapped pressure draws no raw row (item 318); pad-36 is the witness and
-    # proves the test is not too wide. It sits in the drum page's free corner,
-    # and the drum page is page 2's.
-    (8000, "PRESSURE", ["\\; param pad-11-at 64", "\\; param pad-36 100"], GAP),
+    # Unmapped pressure draws no row (item 318), and neither does an unmapped
+    # press since 2026-11-04: pad-36 sits in the drum page's free corner, and the
+    # drum page is page 2's. gk-cc, mapped here, is the witness.
+    (8000, "PRESSURE", ["\\; param pad-11-at 64", "\\; param pad-36 100",
+                        "\\; param gk-cc 64"], GAP),
     # Mapped pressure still draws its row: a gate row maps pad-13-at to
     # volca-cc 45.
     (8200, "PRESSURE-MAPPED", ["\\; param pad-13-at 64"], GAP),

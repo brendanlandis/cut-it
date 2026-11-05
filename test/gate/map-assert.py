@@ -260,14 +260,13 @@ def static_lint():
 
 # Other modules share disp in every window (u_level's meters, g_led, u_init's
 # modal-off, u_err's alert), so "u_map drew nothing" is asked of u_map's rows
-# alone. A gk-* row is an unmapped gate control's raw report.
+# alone. No row is an unmapped control's since 2026-11-04, so a gk-* one counts.
 RESERVED = {"out-l", "out-r", "modal", "modal-off", "alert", "led", "grid", "diag"}
 
 
 def umap_rows(events):
     return [e[1] for e in events
-            if e[0] == "DISP" and e[1] and e[1][0] not in RESERVED
-            and not e[1][0].startswith("gk-")]
+            if e[0] == "DISP" and e[1] and e[1][0] not in RESERVED]
 
 
 # --------------------------------------------------------------- run assertions
@@ -295,11 +294,15 @@ def run_asserts(cap):
             "disp in that window: %s" % [e[1] for e in W("MAPPED") if e[0] == "DISP"])
     A.check("⛔ the SAME control in another mode does NOTHING (mode-dependence)",
             not midi("MODE-DEP"), repr(midi("MODE-DEP")))
-    # The negative's witness: an unmapped control reports its raw value.
-    A.check("... and it reports its RAW value on disp -- the witness for the line above",
-            any(d[:2] == ["gk-cc", "64"]
-                for d in [e[1] for e in W("MODE-DEP") if e[0] == "DISP"]),
-            "disp in that window: %s" % [e[1] for e in W("MODE-DEP") if e[0] == "DISP"])
+    # Only a control the map binds names itself (Brendan, 2026-11-04): an
+    # unmapped one draws no <name> <raw> row either.
+    A.check("⛔ ... and DRAWS nothing either -- no gk-cc row on page 4",
+            not [d for d in umap_rows(W("MODE-DEP")) if d[:1] == ["gk-cc"]],
+            "u_map's rows in that window: %s" % umap_rows(W("MODE-DEP")))
+    A.check("... and that window was live -- knob 1, tempo on every page, set 75 bpm",
+            any(e[0] == "TEMPO" and e[1] and abs(float(e[1][0]) - 75) < 1.5
+                for e in W("MODE-DEP")),
+            "tempo in that window: %s" % [e[1] for e in W("MODE-DEP") if e[0] == "TEMPO"])
     A.check("⛔ a row naming an unknown destination emits NO MIDI",
             not midi("BAD-DEST"), repr(midi("BAD-DEST")))
     A.check("⛔ ... and reports unknown-dest on err",
@@ -353,7 +356,7 @@ def run_asserts(cap):
     # Buttons never pick up: a button given a slot would latch on its repeat.
     A.check("⛔ PLAY reaches start", any(e[0] == "START" for e in W("PLAY-1")),
             repr(W("PLAY-1")))
-    # A button destination draws no row: the footer, LED and grid already say it.
+    # A button destination draws no row: the LED and the grid already say it.
     A.check("⛔ ... and a button destination draws NO row",
             not umap_rows(W("PLAY-1")),
             "u_map's disp in that window: %s" % umap_rows(W("PLAY-1")))
@@ -412,12 +415,11 @@ def run_asserts(cap):
     A.check("⛔ knob 2 works on page 4 too: c_steps draws its held row, last-step 16 (24)",
             ["last-step", "16", "(24)"] in disp("UNMAPPED"),
             "disp in that window: %s" % disp("UNMAPPED"))
-    # Knob 3 is page 2's alone, so on page 4 it is unmapped, and must still
-    # report (item 242).
-    A.check("⛔ an UNMAPPED knob still reports its raw value -- og-knob-3 on page 4",
-            any(d[:2] == ["og-knob-3", "0.75"] for d in disp("UNMAPPED")),
+    # Knob 3 is page 2's alone, so on page 4 it is unmapped: no row, no bus.
+    A.check("⛔ an UNMAPPED knob draws nothing -- og-knob-3 on page 4, beside knob 2's row",
+            not [d for d in disp("UNMAPPED") if d[:1] == ["og-knob-3"]],
             "disp in that window: %s" % disp("UNMAPPED"))
-    A.check("... and it is still silent on every bus -- the row above is the witness",
+    A.check("... and it is silent on every bus too",
             not midi("UNMAPPED"), repr(midi("UNMAPPED")))
 
     A.check("⛔ ... and RETURNING TO the target releases it -- a rail has no beyond",
@@ -455,8 +457,8 @@ def run_asserts(cap):
     A.check("the top row's first button selects no mode any more",
             modes("TOP-ROW-FREE") == [],
             "mode in that window: %s" % modes("TOP-ROW-FREE"))
-    A.check("... and, unmapped, it names itself -- lp-cc-91 127",
-            ["lp-cc-91", "127"] in umap_rows(W("TOP-ROW-FREE")),
+    A.check("⛔ ... and, unmapped, it draws nothing -- no lp-cc-91 row",
+            not [d for d in umap_rows(W("TOP-ROW-FREE")) if d[:1] == ["lp-cc-91"]],
             "u_map's rows in that window: %s" % umap_rows(W("TOP-ROW-FREE")))
 
     # The lint proves diag is on the route; this proves the row reaches it.
@@ -512,15 +514,12 @@ def run_asserts(cap):
             len(notes) == 1,
             "note-ons in that window: %s. The keys have no row until they choose "
             "songs (Brendan, 2026-11-04)" % notes)
-    # Pressure: an unmapped pad-NN-at draws no raw row, since a stream per held
-    # pad would fill the screen (item 318). pad-36 is the witness, and proves
-    # the test is not too wide.
-    A.check("⛔ an UNMAPPED pad's pressure draws NO row -- pad-11-at is exempt",
-            not [d for d in rows("PRESSURE") if d[:1] == ["pad-11-at"]],
-            "disp in that window: %s" % disp("PRESSURE"))
-    A.check("... while the pad's own press still draws its raw row -- pad-36 100",
-            [d for d in rows("PRESSURE") if d[:1] == ["pad-36"]] == [["pad-36", "100"]],
-            "disp in that window: %s" % disp("PRESSURE"))
+    # Pressure: an unmapped pad-NN-at draws no row (item 318), a stream per held
+    # pad, and since 2026-11-04 nor does the pad's own unmapped press. gk-cc,
+    # mapped on page 1, is the witness that the window drew at all.
+    A.check("⛔ neither an unmapped pad's pressure nor its press draws a row",
+            rows("PRESSURE") == [["volca-cc41", "64"]],
+            "u_map's rows in that window: %s -- volca-cc41 64 alone, gk-cc's" % rows("PRESSURE"))
     A.check("⛔ MAPPED pressure still draws its destination's row -- volca-cc45 64",
             rows("PRESSURE-MAPPED") == [["volca-cc45", "64"]],
             "disp in that window: %s" % disp("PRESSURE-MAPPED"))

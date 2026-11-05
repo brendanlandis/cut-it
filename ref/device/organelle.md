@@ -89,7 +89,7 @@ control does.** Same layer and the same silence about meaning as `m_nano`.
 | ⛔ **The `-1` is load-bearing.** A bare `[change]` starts life holding 0, so a knob parked at 0 would never publish at all and whatever it feeds would sit at its default. `-1` cannot be a real value, because mother's knobs are 0 to 1 | verified | 237 |
 | ⛔ **The knobs reach `param` and NOT `disp`.** A knob's raw 0-to-1 position is not a readable parameter row — `og-knob-1 0.245` where a BPM belongs. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
 | ⛔ **`aux` uses BOTH edges.** A modifier you cannot let go of is not a modifier | verified | 305 |
-| ⚠️ **An unmapped knob still reports**, via `u_map`'s raw-value row. A control that does nothing and says nothing cannot be told from a broken one | verified | 242 |
+| ⚠️ **An unmapped knob draws nothing**, as every unmapped control does (Brendan, 2026-11-04): knob 3 anywhere but page 2. Knobs 1, 2 and 4 are mapped on every page | verified | — |
 
 ### The aux button is a modifier, and the keyboard has two layers
 
@@ -115,7 +115,7 @@ per-key latch below guarantees. Without it the hold could never complete.
 
 | | Evidence | Item |
 |---|----------|------|
-| `aux` publishes **no control name**. A modifier is not a control: a name here could be bound in the map, and an unmapped one would draw a raw row on the OLED every time you reached for a shifted key | verified | 305 |
+| `aux` publishes **no control name**. A modifier is not a control: a name here could be bound in the map, and the button every shifted key needs would then do something of its own on the way | verified | 305 |
 | It sends `$0-shift` — **1 on the press, 0 on the release** — which the Lua keeps as the layer the next key goes down on | verified | 305 |
 | Holding it puts `shift` on the OLED as a **modal**, cleared on release. ⚠️ A missed release leaves the word up for the 30 s safety TTL, which is what that TTL is for | verified | 305 |
 | **A modal is priority 2 and `diag` is 3**, so a shifted key that summons the roster still draws over the word. See [display.md](../module/display.md) | verified | 305 |

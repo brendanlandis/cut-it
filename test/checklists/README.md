@@ -44,7 +44,7 @@ session means opening one.
 
 | Checklist | Steps | Judges |
 |---|---|---|
-| [display](display.md) | 17 | the OLED's layers, its output meters and the error bus |
+| [display](display.md) | 18 | the OLED's layers, its output meters, the map's rows and the error bus |
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
 | [tempo](tempo.md) | 13 | the transport, knob 1's pickup, the clamp |
 | [launchpad](launchpad.md) | 28 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |

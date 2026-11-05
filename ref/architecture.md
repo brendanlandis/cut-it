@@ -176,7 +176,8 @@ allowlist does not say is that **they are not all the same kind of thing.**
 **`param` is a control changing; `disp` is a request to show it**, and the distinction is the whole
 reason for a second bus. **A device layer publishes on `param` alone, and `u_map` makes the
 request**, because it is the only file that knows what a control means: the row it draws is the
-destination's — `volca-cc41 64`, `bpm 157` — or `<name> <raw>` for a control nothing maps. When the
+destination's — `volca-cc41 64`, `bpm 157` — and a control nothing maps draws none (Brendan,
+2026-11-04). When the
 `m_` layers posted their own row as well, a mapped fader drew two (item 317). `g_oled` still listens
 on `disp` alone, so no display file has had to learn that `param` exists.
 

@@ -183,8 +183,8 @@ exists for. `diag` lives on the Organelle's own keyboard, under the aux modifier
 
 ### The top row is free
 
-**CC 91–98 select nothing** and report a raw `lp-cc-NN` row, as every unmapped control does; they
-held the mode selector until it moved.
+**CC 91–98 select nothing** and draw nothing, as every unmapped control does (Brendan,
+2026-11-04); they held the mode selector until it moved.
 
 ⚠️ **The objection above applies to everything on this surface**, `recover` on CC 90 included; the
 Organelle's keyboard is where the controls you reach for when a device has died belong. Anything put

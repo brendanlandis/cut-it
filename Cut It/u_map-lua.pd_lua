@@ -5,11 +5,11 @@
 -- inlet 1: param, every control the mode keys pass on. inlet 2: the mode bus.
 -- inlet 3: u_map.pd's own -- init at load, window-shut at 1000 ms, live from the recover
 -- breadcrumb.
--- outlet 1: <dest> <arg> <value> <target> <live>, to the destination route. outlet 2: an
--- unmapped control's raw row, to disp. outlet 3: the mode, to the state store. outlet 4: err.
--- outlet 5: a bang on init, the proof the Lua loaded.
+-- outlet 1: <dest> <arg> <value> <target> <live>, to the destination route. outlet 2: the
+-- mode, to the state store. outlet 3: err. outlet 4: a bang on init, the proof the Lua loaded.
+-- An unmapped control leaves by no outlet at all (Brendan, 2026-11-04).
 --
--- A Lua error leaves outlet 4 as fail u_map lua-<rule> -- lua-param, lua-mode, lua-init -- and
+-- A Lua error leaves outlet 3 as fail u_map lua-<rule> -- lua-param, lua-mode, lua-init -- and
 -- its text goes to Pd's console where there is one: the device has none (C-12).
 
 local MapLua = pd.Class:new():register("u_map-lua")
@@ -18,12 +18,12 @@ local MapLua = pd.Class:new():register("u_map-lua")
 -- (`; pdluax reload u_map-lua`) reloads them too, and every object keeps its table and pickup.
 local R = dofile(MapLua._loadpath .. "u_map.lua")
 
-local OUTLET = { route = 1, disp = 2, store = 3, err = 4 }
+local OUTLET = { route = 1, store = 2, err = 3 }
 
 -- Answering under pcall, the proof bang on init and the dispatch shortcut are lua-face.lua's,
 -- shared by every class that carries rules into Pd.
 local F = dofile(MapLua._loadpath .. "lua-face.lua")
-F.carry(MapLua, R, OUTLET, 3, 5)
+F.carry(MapLua, R, OUTLET, 3, 4)
 
 -- The table is read when the object is made, before any loadbang, from the folder of the patch
 -- that holds it, as u_map.pd's `read -c cut-it-map.txt` was. A missing file is an error on the
@@ -31,7 +31,7 @@ F.carry(MapLua, R, OUTLET, 3, 5)
 -- knobs.txt there is asked then too, before mother's push: without one, knob 1 is held at 120
 -- (u_map.lua's R.UNSAVED). Its absence is silent, as it is on a machine never Saved.
 function MapLua:initialize()
-  self.inlets, self.outlets = 3, 5
+  self.inlets, self.outlets = 3, 4
   local fh, why = io.open(self._canvaspath .. "cut-it-map.txt", "r")
   local text = ""
   if fh then

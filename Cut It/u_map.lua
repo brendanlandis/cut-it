@@ -1,5 +1,5 @@
--- u_map.lua -- the map's rules: the table, the lookup key's mode, the lookup, the divisor,
--- parameter pickup and the raw row an unmapped control draws. Plain Lua with no Pd in it, so
+-- u_map.lua -- the map's rules: the table, the lookup key's mode, the lookup, the divisor and
+-- parameter pickup. Plain Lua with no Pd in it, so
 -- test/gate/lua/u_map_test.lua runs it on the Mac with lua.org's interpreter.
 -- u_map-lua.pd_lua is its Pd face, and u_map.pd keeps the mode keys, the destination route and
 -- its handlers, the boot timers and the files pickup reads. ref/module/map.md.
@@ -7,7 +7,6 @@
 -- The state is a plain table and every rule a function of it. Every rule returns what leaves,
 -- in order, as {outlet, selector, atoms}:
 --   {"route", "list", {dest, arg, value, target, live}}  to u_map.pd's destination route
---   {"disp", "list", {control, raw}}                     an unmapped control's row
 --   {"store", "list", {mode}}                            the page, to u_state as an auto key
 --   {"err", "fail", {"u_map", text}}                     to err (C-12)
 
@@ -129,17 +128,11 @@ function R.pickup(st, k, value)
   return p.target, p.state == "live" and 1 or 0
 end
 
--- An unmapped control that draws no raw row: the Organelle's keys, 25 of them reporting both
--- edges (item 293), and pressure, a stream per held pad (item 318).
-function R.quiet(name)
-  local s = tostring(name)
-  return s:sub(1, 6) == "og-key" or s:sub(-3) == "-at"
-end
-
 -- A control on param: <name> <value>. The value is divided into 0-1, pickup decides whether a
 -- knob is held, and then the lookup. A mapped control leaves for its destination with its
--- target and live flag, held or not, so c_mapped can draw a held row; an unmapped one draws its
--- raw value on the screen and is silent on every bus (item 242).
+-- target and live flag, held or not, so c_mapped can draw a held row. An unmapped one is silent
+-- on every bus and on the screen: only a control the map binds names itself (Brendan,
+-- 2026-11-04), so a page shows what its controls mean and nothing it does not use.
 function R.control(st, sel, atoms)
   local m = as_list(sel, atoms)
   if #m == 0 then return {} end
@@ -154,8 +147,7 @@ function R.control(st, sel, atoms)
     if curve then value, target = curve(value), curve(target) end
     return { { "route", "list", { row.dest, row.arg, value, target, live } } }
   end
-  if R.quiet(name) then return {} end
-  return { { "disp", "list", { name, raw } } }
+  return {}
 end
 
 -- A page's name, mode-1 to mode-<R.PAGES>, or nil for anything else.

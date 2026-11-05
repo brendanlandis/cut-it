@@ -12,7 +12,7 @@ on the Launchpad or the OLED.
 
 `m_nano.pd` takes its Pd channel block as a creation argument and decodes every control onto
 `param`. It posts no row of its own: what the OLED shows for a control is `u_map`'s — the
-destination's row when the mode maps it, the raw row when nothing does. See
+destination's row when the mode maps it, and nothing when nothing does (Brendan, 2026-11-04). See
 [map.md](../module/map.md), item 317.
 
 ## Design
@@ -42,9 +42,9 @@ toggle — and names them by physical position, because what a control *means* i
 page. The Organelle's `aux` is the keyboard's modifier, not a transport — see
 [organelle.md](organelle.md).
 
-⚠️ **The other four report a raw row on the OLED**, because they fall through to the table and miss
-it: item 242's rule, and correct, since a control that does nothing and says nothing cannot be told
-from a broken one. **REW, FF, LOOP and REC are four free controls for v0.4.**
+⚠️ **The other four draw nothing**, because they fall through to the table and miss it, and only a
+mapped control names itself (Brendan, 2026-11-04; [map.md](../module/map.md)). Which name each
+publishes is `nano-assert`'s. **REW, FF, LOOP and REC are four free controls for v0.4.**
 
 Because CC 41–46 give `div 10` = 4, `m_nano` folds the row in as a **fifth control kind** and reads
 both channels through one path.

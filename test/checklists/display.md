@@ -1,8 +1,8 @@
 # Display checklist
 
-The OLED's layers and the error bus, as a person sees them. `oled-assert` and `err-assert` prove the words, the order and the timeouts headlessly; this is whether the screen reads. Steps 2 to 13 put their picture on the buses with **Send** lines; 1 and 14 to 17 are hands on the rig.
+The OLED's layers and the error bus, as a person sees them. `oled-assert` and `err-assert` prove the words, the order and the timeouts headlessly; this is whether the screen reads. Steps 2 to 13 put their picture on the buses with **Send** lines; 1 and 14 to 18 are hands on the rig.
 
-17 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [display](../../ref/module/display.md), [error](../../ref/module/error.md).
+18 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [display](../../ref/module/display.md), [error](../../ref/module/error.md).
 
 - [ ] **1. Resting display**
   - **Do:** Load Cut It from the Organelle's menu and wait for the boot's words to clear.
@@ -78,3 +78,10 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
   - **Do:** Press page 2 and hit the bottom-left drum pad a few times. Then talk into the SM58. Then press nothing and wait.
   - **Pass if:** out-l's bar jumps with each hit and moves with your voice, and out-r's stays at its left edge throughout. Silent, both bars sit at their left edge. Nothing under either bar marks a level.
   - **Note:** The meters are what Cut It sends to its two outputs, read where `u_root` throws them: the mic passed through and, on the left, the drums (Brendan, 2026-11-04). A bar that never moves while the PA plays is the meter and not the sound; one that moves while the PA is silent is a cable or the mixer. `audio-assert` proves by the signal which side each reads ([audio](../../ref/module/audio.md)).
+
+- [ ] **18. Only a mapped control names itself**
+  - **Need:** The nanoKONTROL plugged in.
+  - **Send:** `mode mode-3`
+  - **Do:** Move fader 1, then fader 2. Then turn the Organelle's knob 2 a little, then knob 3.
+  - **Pass if:** Fader 1 draws volca-cc41 and its value, and knob 2 last-step and a step, with the knob's own in brackets while it is held. Fader 2 and knob 3 draw nothing. No row reads slider-1, slider-2 or og-knob anything.
+  - **Note:** A control names itself by its destination's name, and only when the page binds it (Brendan, 2026-11-04): fader 1 is the Volca's CC 41 on page 3, knob 2 the drums' last step on every page, and fader 2 and knob 3 are bound to nothing here ([map](../../ref/module/map.md)).

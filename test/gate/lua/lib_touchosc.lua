@@ -73,6 +73,21 @@ function L.press(w, name)
   return out
 end
 
+-- A finger down on a button and up again, as press does. -> its x after each step: touch down,
+-- x 1, x 0, touch up, so a button whose look is the state's shows the state's all through.
+function L.looks(w, name)
+  local c, xs = w.controls[name], {}
+  c.values.touch = true
+  xs[#xs + 1] = c.values.x
+  c.values.x = 1
+  xs[#xs + 1] = c.values.x
+  c.values.x = 0
+  xs[#xs + 1] = c.values.x
+  c.values.touch = false
+  xs[#xs + 1] = c.values.x
+  return xs
+end
+
 -- A finger down on a control and up again, without moving it: a tap on a fader. -> what it
 -- sent.
 function L.tap(w, name)

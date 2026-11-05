@@ -794,4 +794,35 @@ equal("two seconds with no heartbeat: no link everywhere, the lamps out",
       { "no link", "no link", "no link", "no link", "no link", "no link", "no link", 0, 0, 0, 0,
         0, 0, 0 })
 
+print("\n--- a lit button's look is the state's ---")
+-- Every button the state lights with notify('lit'), its script the shared one that keeps its look
+-- the state's: pressed, it showed the finger, let go it went dark, and the state lit it again a
+-- moment later, on, off, on (Brendan, 2026-11-05). Pressed now, out or lit, it shows what the
+-- state said at every step. Last in the file: a press here sends, and moves the root's selection.
+local lit = {}
+for _, m in ipairs(manifest) do
+  if m.script then
+    local fh = io.open(dir .. "/" .. m.name .. ".lua")
+    local src = fh and fh:read("a") or ""
+    if fh then fh:close() end
+    if src:find("local function show()", 1, true) then lit[#lit + 1] = m.name end
+  end
+end
+table.sort(lit)
+local flicker = {}
+for _, name in ipairs(lit) do
+  for _, v in ipairs({ 0, 1 }) do
+    C[name]:notify("lit", v)
+    local xs = L.looks(w, name)
+    for _, x in ipairs(xs) do
+      if x ~= v then flicker[#flicker + 1] = name .. " lit " .. v .. ": " .. table.concat(xs, " ") break end
+    end
+  end
+end
+check("the state's buttons: the M and S under every pad, both synths', the velocity switch's and "
+      .. "the rows of the sections and songs lists, " .. #lit .. " in all", #lit >= 32 + 4 + 1 + 5,
+      table.concat(lit, " "))
+check("⛔ ... and pressed, out or lit, each shows the state's look at every step, never the "
+      .. "finger's", #flicker == 0, table.concat(flicker, "; "))
+
 os.exit(T.report() == 0)

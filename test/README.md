@@ -44,16 +44,16 @@ were false.
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
 | `phone-assert.sh` | 140 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 251: 42 read, 209 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `touchosc-assert.sh` | 253: 42 read, 211 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | 345: 260 in Lua, 85 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 38 | `module/sequencer` — the kit and its effects, as a signal |
 | `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1980 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
+**1982 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1973**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1975**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh`, `song-assert.sh`, `tempo-assert.sh` and `display-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
@@ -116,6 +116,10 @@ that sends a name unchanged or empty (2), and a command misspelt with its flash 
 `sequencer-assert`, the pattern put as the old auto key and knob 4 unsaved (Lua 1, Pd 14);
 `synths-assert`, `c_synth` putting as `auto` (7). `u_tempo`'s spigot open to a tempo already in
 force held knob 1 at the load's restore: `map-assert` (2) and `recover-assert` (1).
+
+✅ **A lit button's look was made to fail** (2026-11-05, Brendan: state buttons flickered on and off
+when pressed): with the shared script no longer putting a finger's value back, `touchosc_test.lua`
+failed on every one of the 53, pressed out and pressed lit (1).
 
 ✅ **The held put was made to fail, check by check** (2026-11-05, the crackle while dragging on the
 phone), each against the code without the change, the file then restored. `c_steps_test.lua`: the

@@ -475,23 +475,39 @@ def pad_script(n):
                         PAD_STEPS, n, sends_, n))
 
 
+# A button that shows Cut It's state, lit with notify('lit'): its look is the state's alone. A
+# finger on a button sets its value, which TouchOSC draws, so pressed it lit, let go it went dark,
+# and the state lit it again a moment later: on, off, on (Brendan, 2026-11-05: "they flicker on
+# and off when I press them"). So every change of its value puts it straight back to what the
+# state last said, before TouchOSC draws it, and the finger acts through touch instead.
+LIT = ("local lit = 0\n"
+       "local function show()\n"
+       "  if self.values.x ~= lit then self.values.x = lit end\n"
+       "end\n"
+       "function onReceiveNotify(key, value)\n"
+       "  if key == 'lit' then\n"
+       "    lit = value\n"
+       "    show()\n"
+       "  end\n"
+       "end\n")
+
+
+def lit_script(act):
+    """A button lit by the state alone (LIT): act is the Lua run when a finger lands on it."""
+    return (LIT + "function onValueChanged(key)\n"
+            "  if key == 'x' then return show() end\n"
+            "  if key == 'touch' and self.values.touch then\n"
+            "    " + act + "\n"
+            "  end\n"
+            "end\n")
+
+
 def flag_script(which, n):
     """A track's mute or solo, under its pad (Brendan, 2026-11-05): lit by Cut It's state through
     notify('lit'), never by its own value, and a finger on it asks for the other setting, as the
     velocity switch does: drums <which> <track> 1 when it is out, 0 when lit. So the state coming
     back, and its repeat on every heartbeat, cannot send it again."""
-    return ("local lit = 0\n"
-            "function onReceiveNotify(key, value)\n"
-            "  if key == 'lit' then\n"
-            "    lit = value\n"
-            "    self.values.x = value\n"
-            "  end\n"
-            "end\n"
-            "function onValueChanged(key)\n"
-            "  if key == 'touch' and self.values.touch then\n"
-            "    sendOSC('/cutit', 'drums', %s, %d, lit == 1 and 0 or 1)\n"
-            "  end\n"
-            "end\n" % (lua(which), n))
+    return lit_script("sendOSC('/cutit', 'drums', %s, %d, lit == 1 and 0 or 1)" % (lua(which), n))
 
 
 def show_script():
@@ -570,18 +586,7 @@ def synth_script(choice):
     """A synth's button: a tap chooses it, and Cut It's /cutit/synth lights the one chosen with
     notify('lit'), which a lit button never answers, as a drum pad does: so the state can't send
     the choice again, and a tap on the chosen one sends nothing."""
-    return ("local lit = 0\n"
-            "function onReceiveNotify(key, value)\n"
-            "  if key == 'lit' then\n"
-            "    lit = value\n"
-            "    self.values.x = value\n"
-            "  end\n"
-            "end\n"
-            "function onValueChanged(key)\n"
-            "  if key == 'x' and self.values.x == 1 and lit ~= 1 then\n"
-            "    sendOSC('/cutit', 'synth', %s)\n"
-            "  end\n"
-            "end\n" % lua(choice))
+    return lit_script("if lit ~= 1 then sendOSC('/cutit', 'synth', %s) end" % lua(choice))
 
 
 def tap_script():
@@ -724,18 +729,7 @@ def velocity_script():
     """The velocity switch: lit by Cut It's /cutit/velocity through notify('lit'), never by its
     own value, and a finger on it asks for the other setting: on when it is out, off when lit. So
     the setting coming back, and its repeat on every heartbeat, cannot send it again."""
-    return ("local lit = 0\n"
-            "function onReceiveNotify(key, value)\n"
-            "  if key == 'lit' then\n"
-            "    lit = value\n"
-            "    self.values.x = value\n"
-            "  end\n"
-            "end\n"
-            "function onValueChanged(key)\n"
-            "  if key == 'touch' and self.values.touch then\n"
-            "    sendOSC('/cutit', 'velocity', lit == 1 and 'off' or 'on')\n"
-            "  end\n"
-            "end\n")
+    return lit_script("sendOSC('/cutit', 'velocity', lit == 1 and 'off' or 'on')")
 
 
 def page(name, tab, kids, h=H):
@@ -937,16 +931,7 @@ def row_script(k):
     """A row of the sections list: a tap selects the section it shows, which only the root knows,
     so it tells the root; Cut It's /cutit/sections lights the one selected with notify('lit'),
     which a lit row never answers, as a synth button does."""
-    return ("local lit = 0\n"
-            "function onReceiveNotify(key, value)\n"
-            "  if key == 'lit' then\n"
-            "    lit = value\n"
-            "    self.values.x = value\n"
-            "  end\n"
-            "end\n"
-            "function onValueChanged(key)\n"
-            "  if key == 'x' and self.values.x == 1 and lit ~= 1 then root:notify('row', %d) end\n"
-            "end\n" % k)
+    return lit_script("if lit ~= 1 then root:notify('row', %d) end" % k)
 
 
 def sections():
@@ -1027,16 +1012,7 @@ def list_row_script(what, k):
     """A row of a list on the songs page: a tap selects what it shows, which only the root knows,
     so it tells the root; Cut It's /cutit/songs lights the one selected with notify('lit'), which
     a lit row never answers, as a sections row does."""
-    return ("local lit = 0\n"
-            "function onReceiveNotify(key, value)\n"
-            "  if key == 'lit' then\n"
-            "    lit = value\n"
-            "    self.values.x = value\n"
-            "  end\n"
-            "end\n"
-            "function onValueChanged(key)\n"
-            "  if key == 'x' and self.values.x == 1 and lit ~= 1 then root:notify(%s, %d) end\n"
-            "end\n" % (lua(what), k))
+    return lit_script("if lit ~= 1 then root:notify(%s, %d) end" % (lua(what), k))
 
 
 def list_rows(prefix, n, right, size=16):

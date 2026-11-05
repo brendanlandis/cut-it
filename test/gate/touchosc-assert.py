@@ -298,10 +298,12 @@ def longest():
 
 def expect(check):
     """What the Lua test needs to know about the checklist the page carries, worked out here
-    from the same data: its first step, and a step on more than one page that is not its last."""
+    from the same data: its first step, and a step on more than one page that is not its last;
+    and how many steps a drum pad's whole travel holds, which this half holds to 20 points each."""
     si, s = next((i, s) for i, s in enumerate(check["steps"])
                  if len(s["pages"]) > 1 and i + 1 < len(check["steps"]))
     e = {"name": check["name"], "steps": len(check["steps"]), "title": check["steps"][0]["title"],
+         "pad_steps": B.PAD_STEPS,
          "pass": "%s-1-pass" % check["name"],
          "multi": {"si": si + 1, "pages": len(s["pages"]),
                    "verdict": "%s-%d-fail" % (check["name"], s["n"])}}
@@ -490,16 +492,71 @@ def main():
     # 20 points, anchored at the document's center, so a control off it moves the moment it is
     # touched in the editor. Its edges are on lines: x at OX and y at OY plus whole steps, and a
     # whole number of steps wide and tall.
+    #
+    # ⛔ ONE EXCEPTION, named control by control: the drum screen's sixteen pads and the M and S
+    # under each (Brendan, 2026-11-05, his pick of three mockups). An M and an S under every pad
+    # don't fit four rows of 20-point steps in the page's height, so this panel alone steps by
+    # 10: pads 60 by 50, M and S 30 by 20 each directly under their pad, 10 points apart, the
+    # block from the top margin to 10 points below the bottom one, 4 x (50 + 20) + 3 x 10 = 310.
+    # That is still clear of the home bar: the page as the phone shows it is 374 points tall, and
+    # the bottom 21 are the home bar's. Each pad is its fill, its fader and its number; each M
+    # and S its button and its letter. Nothing else on this page or any other is excused: a new
+    # control beside them is held to the 20-point grid and the margins like the rest.
+    fine = {("drums", "%s%d%s" % (w, n, x)) for n in range(1, 17)
+            for w, xs in (("pad", ("", "f", "l")), ("mute", ("", "l")), ("solo", ("", "l")))
+            for x in xs}
+    FINE_STEP, FINE_BELOW, HOME_BAR = 10, 10, 21
     placed = on_pages(doc)
     off = ["%s/%s %s" % (pg, n, " ".join("%g" % v for v in f)) for pg, n, t, f, p in placed
-           if (f[0] - B.OX) % B.G or (f[1] - B.OY) % B.G or f[2] % B.G or f[3] % B.G]
+           if (pg, n) not in fine
+           and ((f[0] - B.OX) % B.G or (f[1] - B.OY) % B.G or f[2] % B.G or f[3] % B.G)]
     A.check("⛔ every control on a page sits on TouchOSC's %d-point editor grid, anchored at the "
-            "document's center" % B.G,
+            "document's center, but the drum screen's pads and their M and S" % B.G,
             len(placed) > 50 and not off, "%d placed; off the grid: %s" % (len(placed), off[:6]))
+    excused = [(n, f) for pg, n, t, f, p in placed if (pg, n) in fine]
+    loose = ["%s %s" % (n, " ".join("%g" % v for v in f)) for n, f in excused
+             if (f[0] - B.OX) % FINE_STEP or (f[1] - B.OY) % FINE_STEP or f[2] % FINE_STEP
+             or f[3] % FINE_STEP]
+    A.check("⛔ ... and those %d, every one of them on the drum screen, sit on a %d-point step of "
+            "the same grid" % (len(fine), FINE_STEP),
+            len(excused) == len(fine) and not loose,
+            "%d of %d placed; off the %d-point step: %s"
+            % (len(excused), len(fine), FINE_STEP, loose[:6]))
     out = ["%s/%s" % (pg, n) for pg, n, t, f, p in placed
-           if f[0] < B.X0 or f[0] + f[2] > B.X1 or f[1] < B.Y0 or f[1] + f[3] > B.Y1]
+           if f[0] < B.X0 or f[0] + f[2] > B.X1 or f[1] < B.Y0
+           or f[1] + f[3] > B.Y1 + (FINE_BELOW if (pg, n) in fine else 0)]
     A.check("every control is inside its page: a step from the left and the top, clear of the "
-            "notch on the right, above the bottom", not out, "outside: %s" % out[:6])
+            "notch on the right, above the bottom, the drum screen's pads and M and S no more "
+            "than %d points below it" % FINE_BELOW, not out, "outside: %s" % out[:6])
+    low = max([f[1] + f[3] for _n, f in excused] or [0])
+    A.check("⛔ ... and those reach no further than %d points into the bottom margin, clear of the "
+            "home bar" % FINE_BELOW, low == B.Y1 + FINE_BELOW <= B.H - B.TAB - HOME_BAR,
+            "their bottom %g; the margin's %g; the home bar's top %g"
+            % (low, B.Y1, B.H - B.TAB - HOME_BAR))
+    # Under each pad its M and its S (Brendan, 2026-11-05): the pad 60 wide and 50 tall, M and S
+    # 30 by 20 each directly under it, M on the left, red, and S on the right, teal, each a
+    # button that sends its own track's mute or solo, as c_steps takes them.
+    where = {n: (t, f, p) for pg, n, t, f, p in placed if pg == "drums"}
+    bad = []
+    for n in range(1, 17):
+        pad = where.get("pad%d" % n)
+        if not pad or pad[1][2:] != (60, 50):
+            bad.append("pad%d %s" % (n, pad and pad[1]))
+            continue
+        x, y = pad[1][0], pad[1][1] + 50
+        for which, dx, col, letter in (("mute", 0, B.RED, "M"), ("solo", 30, B.TEAL, "S")):
+            got = where.get("%s%d" % (which, n))
+            word = by_name.get("%s%dl" % (which, n))
+            if (not got or got[0] != "BUTTON" or got[1] != (x + dx, y, 30, 20)
+                    or tuple(round(c, 3) for c in got[2]["color"][:3])
+                    != tuple(round(c, 3) for c in col[:3])
+                    or sent(by_name["%s%d" % (which, n)][3]) != ["drums %s %d" % (which, n)]
+                    or not word or word[4] != letter
+                    or where.get("%s%dl" % (which, n), (0, 0))[1] != got[1]):
+                bad.append("%s%d %s" % (which, n, got and got[1]))
+    A.check("⛔ under each pad, 60 by 50, its M and S, 30 by 20 each, M red on the left and S teal "
+            "on the right, each a button with its letter, sending its own track's drums mute or "
+            "solo", not bad, "wrong: %s" % bad[:6])
     # A caption names the control under it: small, grey, flush left with it, just above it.
     grey = tuple(round(c, 3) for c in B.GREY[:3])
     caps = [(pg, n, f) for pg, n, t, f, p in placed if t == "LABEL" and p.get("textAlignH") == "1"

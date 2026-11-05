@@ -24,8 +24,9 @@ end
 local function teal(c) return c[2] > 0.7 and c[1] < 0.3 end
 local function red(c) return c[1] > 0.9 and c[2] < 0.2 end
 local function black(c) return c and c[1] < 0.1 and c[2] < 0.1 end
--- The state c_steps sends: 98 numbers, from what differs; the last ten the selected track's
--- effects and the reverb's, at their starting points unless t.fx gives them.
+-- The state c_steps sends: 130 numbers, from what differs; after the first 88 the selected
+-- track's effects and the reverb's, at their starting points unless t.fx gives them, then each
+-- track's mute and each track's solo, 0 unless t.mute or t.solo gives them.
 local FX = { { "drive", 50 }, { "tone", 60 }, { "dist", 0 }, { "note", 3 }, { "feel", 1 },
              { "feedback", 40 }, { "delay", 0 }, { "send", 0 }, { "size", 50 }, { "damping", 50 } }
 local function drumstate(t)
@@ -39,8 +40,14 @@ local function drumstate(t)
     for n = 1, 16 do st[#st + 1] = (t[which] or {})[n] or 0 end
   end
   for _, f in ipairs(FX) do st[#st + 1] = (t.fx or {})[f[1]] or f[2] end
+  for _, which in ipairs({ "mute", "solo" }) do
+    for n = 1, 16 do st[#st + 1] = (t[which] or {})[n] or 0 end
+  end
   return st
 end
+-- A drum pad's step, as a share of its whole travel: the layout's, which the reading half holds
+-- to about 20 points.
+local STEP = 1 / E.pad_steps
 
 print("\n--- the pages, the mode and test mode ---")
 local bar
@@ -267,17 +274,17 @@ equal("states selecting one track after another light each in turn and send noth
 equal("⛔ a pad tapped, a finger down and up, selects its track", L.tap(w, "pad5"),
       { { "/cutit", "drums", "select", 5 } })
 equal("⛔ ... and the selected pad tapped sends nothing", L.tap(w, "pad16"), {})
--- A pad's drag: from its middle, where the state puts it, a step every 20 points, 1/100 of it.
+-- A pad's drag: from its middle, where the state puts it, a step every 20 points, STEP of it.
 L.drag(w, "show", 0)
 equal("⛔ on volume, pad 4 dragged up 40 points sends its volume as it stands, +5 dB, and selects "
-      .. "nothing", L.drag(w, "pad4", 0.5 + 2 / 100), { { "/cutit", "drums", "vol", 4, 5 } })
-equal("... half a step further is still +5: nothing", L.drag(w, "pad4", 0.5 + 2.4 / 100), {})
-equal("... and down past where it started, -1", L.drag(w, "pad4", 0.5 - 4 / 100),
+      .. "nothing", L.drag(w, "pad4", 0.5 + 2 * STEP), { { "/cutit", "drums", "vol", 4, 5 } })
+equal("... half a step further is still +5: nothing", L.drag(w, "pad4", 0.5 + 2.4 * STEP), {})
+equal("... and down past where it started, -1", L.drag(w, "pad4", 0.5 - 4 * STEP),
       { { "/cutit", "drums", "vol", 4, -1 } })
 L.update(w, 500)
 L.osc(w, "/cutit/drums", table.unpack(st))
 equal("the old state half a second later leaves the pad where the finger put it",
-      C.pad4.values.x, 0.5 - 4 / 100)
+      C.pad4.values.x, 0.5 - 4 * STEP)
 L.update(w, 1100)
 w.sent = {}
 st[40 + 4] = 6
@@ -287,21 +294,21 @@ equal("⛔ once a second has passed, the state, +6, puts the pad back in its mid
 equal("at +6, the top, a drag further up sends nothing, and selects nothing",
       L.drag(w, "pad4", 0.6), {})
 L.drag(w, "show", 1)
-equal("on pitch, pad 1 dragged down a step sends its pitch, +6", L.drag(w, "pad1", 0.5 - 1 / 100),
+equal("on pitch, pad 1 dragged down a step sends its pitch, +6", L.drag(w, "pad1", 0.5 - STEP),
       { { "/cutit", "drums", "pitch", 1, 6 } })
 equal("... and no further than -12 at the bottom", L.drag(w, "pad1", 0),
       { { "/cutit", "drums", "pitch", 1, -12 } })
 L.drag(w, "show", 2)
 equal("on last, pad 7 dragged up three steps sends set-track-last 7 15",
-      L.drag(w, "pad7", 0.5 + 3 / 100), { { "/cutit", "drums", "set-track-last", 7, 15 } })
+      L.drag(w, "pad7", 0.5 + 3 * STEP), { { "/cutit", "drums", "set-track-last", 7, 15 } })
 L.drag(w, "show", 3)
 equal("⛔ on random, a step is five: pad 6 dragged up a step, 40 to 45",
-      L.drag(w, "pad6", 0.5 + 1 / 100), { { "/cutit", "drums", "randomness", 6, 45 } })
+      L.drag(w, "pad6", 0.5 + STEP), { { "/cutit", "drums", "randomness", 6, 45 } })
 L.update(w, 1100)
 st[72 + 6] = 33
 L.osc(w, "/cutit/drums", table.unpack(st))
 equal("from 33, set before the fives, a step up is 35 and a step down 30",
-      { L.drag(w, "pad6", 0.5 + 1 / 100), L.drag(w, "pad6", 0.5 - 1 / 100) },
+      { L.drag(w, "pad6", 0.5 + STEP), L.drag(w, "pad6", 0.5 - STEP) },
       { { { "/cutit", "drums", "randomness", 6, 35 } }, { { "/cutit", "drums", "randomness", 6, 30 } } })
 equal("... and no further than 100", L.drag(w, "pad6", 1), { { "/cutit", "drums", "randomness", 6, 100 } })
 print("\n--- the drum screen's effects ---")
@@ -359,7 +366,7 @@ L.osc(w, "/cutit/drums", table.unpack(drumstate({ track = 5 })))
 equal("an 88-number state, from before the effects, still draws the pads and leaves the "
       .. "effects as they were", (function()
         local old = drumstate({ track = 5, vol = { [5] = -3 } })
-        for _ = 89, 98 do table.remove(old) end
+        while #old > 88 do table.remove(old) end
         L.drag(w, "show", 0)
         L.osc(w, "/cutit/drums", table.unpack(old))
         return { L.text(w, "pad5l"), C.drive.values.x, #w.sent }
@@ -374,6 +381,54 @@ equal("⛔ at 3/4 a pad dragged all the way up on last sends 24, the furthest a 
 L.update(w, 1100)
 L.osc(w, "/cutit/drums", table.unpack(drumstate({ num = 4, den = 4, last = 12, track = 5 })))
 equal("... and 32 at 4/4", L.drag(w, "pad8", 1), { { "/cutit", "drums", "set-track-last", 8, 32 } })
+print("\n--- the drum screen's mutes and solos ---")
+-- An M and an S under each pad (Brendan, 2026-11-05), lit by the state, never by a finger's own
+-- value, and a tap asks for the other setting, as the velocity switch does.
+local function flags(which)
+  local out = {}
+  for n = 1, 16 do out[n] = C[which .. n].values.x end
+  return out
+end
+local function lit_at(...)
+  local out = {}
+  for n = 1, 16 do out[n] = 0 end
+  for _, n in ipairs({ ... }) do out[n] = 1 end
+  return out
+end
+w.sent = {}
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ track = 5, mute = { [3] = 1, [9] = 1 },
+                                                 solo = { [5] = 1 } })))
+equal("⛔ the state lights each track's M and S: tracks 3 and 9 muted, track 5 soloed, the rest out",
+      { flags("mute"), flags("solo") }, { lit_at(3, 9), lit_at(5) })
+check("... a lit one's letter black on its fill, an out one's white",
+      black(C.mute3l.textColor) and black(C.solo5l.textColor) and not black(C.mute4l.textColor)
+      and not black(C.solo3l.textColor), T.show({ C.mute3l.textColor, C.mute4l.textColor }))
+check("... M red and S teal", red(C.mute4.color) and teal(C.solo4.color),
+      T.show({ C.mute4.color, C.solo4.color }))
+equal("⛔ lighting them sends nothing", #w.sent, 0)
+equal("⛔ a tap on M 4, out, asks to mute track 4; on M 3, lit, to unmute track 3",
+      { L.press(w, "mute4"), L.press(w, "mute3") },
+      { { { "/cutit", "drums", "mute", 4, 1 } }, { { "/cutit", "drums", "mute", 3, 0 } } })
+equal("⛔ ... and S the same: S 5, lit, asks for 0, S 16, out, for 1",
+      { L.press(w, "solo5"), L.press(w, "solo16") },
+      { { { "/cutit", "drums", "solo", 5, 0 } }, { { "/cutit", "drums", "solo", 16, 1 } } })
+equal("⛔ a tap before the answer asks again for the same, not the other: M and S are the state's",
+      L.press(w, "mute4"), { { "/cutit", "drums", "mute", 4, 1 } })
+w.sent = {}
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ track = 5, mute = { [3] = 1, [9] = 1 },
+                                                 solo = { [5] = 1 } })))
+equal("⛔ the state's repeat lights again the ones a finger let go of, and sends nothing back",
+      { flags("mute"), flags("solo"), #w.sent }, { lit_at(3, 9), lit_at(5), 0 })
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ track = 5, mute = { [4] = 1 } })))
+equal("the answer: track 4 muted, 3 and 9 not, nothing soloed", { flags("mute"), flags("solo") },
+      { lit_at(4), lit_at() })
+local old98 = drumstate({ track = 5 })
+while #old98 > 98 do table.remove(old98) end
+L.osc(w, "/cutit/drums", table.unpack(old98))
+equal("a 98-number state, from before mute and solo, leaves M and S as they were",
+      { flags("mute"), flags("solo"), #w.sent }, { lit_at(4), lit_at(), 0 })
+equal("⛔ a pad with its M and S under it still selects its track at a tap",
+      L.tap(w, "pad3"), { { "/cutit", "drums", "select", 3 } })
 L.drag(w, "show", 0)
 L.drag(w, "fx", 0)
 equal("sync and snap", { L.press(w, "sync")[1], L.press(w, "snap")[1] },

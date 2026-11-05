@@ -139,9 +139,10 @@ PITCH = tuple(int(v) for v in re.search(r"^R\.PITCH_MIN, R\.PITCH_MAX = (-?\d+),
 # range is twenty steps and not a hundred. The radio starts on the first.
 SHOW = [("volume", "vol", VOL[0], VOL[1], 1), ("pitch", "pitch", PITCH[0], PITCH[1], 1),
         ("last", "set-track-last", 1, STEPS, 1), ("random", "randomness", 0, 100, 5)]
-# A pad's drag: a relative fader whose whole travel is 2000 points at responseFactor 3 (a pad's
-# 60 points times 100 over 3), so 100 steps of 20 points from its middle to either end.
-PAD_FACTOR, PAD_STEPS = 3, 100
+# A pad's drag: a relative fader whose whole travel is 2500 points at responseFactor 2 (a pad's
+# 50 points times 100 over 2), so 125 steps of 20 points, 62 from its middle to either end, more
+# than any number the pads show needs from one end to the other.
+PAD_FACTOR, PAD_STEPS = 2, 125
 # Each track's effects and the reverb's (Brendan, 2026-11-05), read from c_steps.lua: R.FX's
 # fields in the order R.phone sends the selected track's, and R.VERB's. A field's control on the
 # drum screen has its name, but the delay's note and feel, radios named dnote and dfeel; the
@@ -158,11 +159,13 @@ FEEL_NAMES = re.findall(r'"([^"]+)"', re.search(r"^R\.FEEL_NAMES = \{(.*)\}$", _
 FX_CONTROL = {"note": "dnote", "feel": "dfeel"}
 FX_CMD = {"note": "delay-note", "feel": "delay-feel"}
 # The phone's state: c_steps' R.phone, 88 numbers before the effects, then the selected track's
-# and the reverb's, 98.
+# and the reverb's, 98, then each track's mute and each track's solo, 130.
 PHONE_BASE = 88
 # Where the pads show last steps, 1 from the first, the one a drag clips to the reach.
 LAST_SHOW = 1 + [c for _w, c, _lo, _hi, _st in SHOW].index("set-track-last")
-PHONE = PHONE_BASE + len(FX) + len(VERB)
+FX_END = PHONE_BASE + len(FX) + len(VERB)
+FLAGS = ("mute", "solo")    # each track's, under its pad, and in the state after the effects
+PHONE = FX_END + len(FLAGS) * 16
 # The effect radio's three, in order, each with what shows when it is chosen: its controls by
 # name, captions and values too (fx_groups, below).
 EFFECTS = ["distortion", "delay", "reverb"]
@@ -470,6 +473,25 @@ def pad_script(n):
             "  root:notify('touched', 'pad%d')\n"
             "end\n" % (lua([[lo, hi, st] for _w, _c, lo, hi, st in SHOW]), LAST_SHOW, LAST_SHOW,
                         PAD_STEPS, n, sends_, n))
+
+
+def flag_script(which, n):
+    """A track's mute or solo, under its pad (Brendan, 2026-11-05): lit by Cut It's state through
+    notify('lit'), never by its own value, and a finger on it asks for the other setting, as the
+    velocity switch does: drums <which> <track> 1 when it is out, 0 when lit. So the state coming
+    back, and its repeat on every heartbeat, cannot send it again."""
+    return ("local lit = 0\n"
+            "function onReceiveNotify(key, value)\n"
+            "  if key == 'lit' then\n"
+            "    lit = value\n"
+            "    self.values.x = value\n"
+            "  end\n"
+            "end\n"
+            "function onValueChanged(key)\n"
+            "  if key == 'touch' and self.values.touch then\n"
+            "    sendOSC('/cutit', 'drums', %s, %d, lit == 1 and 0 or 1)\n"
+            "  end\n"
+            "end\n" % (lua(which), n))
 
 
 def show_script():
@@ -782,27 +804,37 @@ def arrangement():
 def drums():
     """What is per track: the sixteen pads, each showing its track's volume, pitch, last step or
     randomness as the radio chooses, tapped to select and dragged to change it (Brendan,
-    2026-11-05); the selected track's effects, chosen by a second radio, distortion, delay or
-    reverb, its controls to the right of it (Brendan, 2026-11-05); sync first steps and snap to
-    global; and the link. The tempo, the time signature and the drunkenness are the
-    arrangement's (Brendan, 2026-11-04)."""
+    2026-11-05), each with its mute and its solo under it (Brendan, 2026-11-05); the selected
+    track's effects, chosen by a second radio, distortion, delay or reverb, its controls to the
+    right of it (Brendan, 2026-11-05); sync first steps and snap to global; and the link. The
+    tempo, the time signature and the drunkenness are the arrangement's (Brendan, 2026-11-04)."""
     k = []
     # the left panel: the sixteen pads where the drum page puts them on the Launchpad, pad 1 at
-    # the bottom left (Brendan, 2026-11-04), three steps square and a step apart, so four fill
-    # the panel's width and the page's height. Each is its fill, a lamp the state lights for the
+    # the bottom left (Brendan, 2026-11-04). Each is its fill, a lamp the state lights for the
     # selected track and colors teal for one with a last step of its own while the pads show last
-    # steps; the pad itself over it, a fader a finger taps or drags; and its number.
-    size, pitch = 3 * G, 4 * G
+    # steps; the pad itself over it, a fader a finger taps or drags; and its number. Under each,
+    # its track's mute and solo, M and S, lit by the state, M red and S teal (Brendan, 2026-11-05).
+    # ⛔ This panel alone is off the 20-point grid, on a 10-point step of it: pads 60 wide and 50
+    # tall, M and S 30 by 20 each directly under their pad, and 10 points between, Brendan's pick
+    # of three mockups (2026-11-05). Four rows of 50 + 20 and three gaps of 10 are 310, from Y0 to
+    # 10 points below Y1, clear of the home bar on the phone. touchosc-assert names every one of
+    # these controls as the grid's one exception.
+    pw, ph, fw, fh, gap = 60, 50, 30, 20, 10
     cells = pad_cells()
     top, left = max(r for r, _ in cells.values()), min(c for _, c in cells.values())
     for n in range(1, 17):
         r, c = top - cells[n][0], cells[n][1] - left
-        f = (X0 + c * pitch, Y0 + r * pitch, size, size)
+        x, y = X0 + c * (pw + gap), Y0 + r * (ph + fh + gap)
+        f = (x, y, pw, ph)
         k.append(node("BUTTON", "pad%df" % n, f, color=RED, interactive=False, outline=False))
         k.append(node("FADER", "pad%d" % n, f, color=RED, outlineStyle=0, background=False,
                       bar=False, cursor=False, response=1, responseFactor=PAD_FACTOR, x=0.5,
                       script=pad_script(n)))
         k.append(label("pad%dl" % n, f, "0", 20))
+        for i, (which, letter, col) in enumerate(zip(FLAGS, ("M", "S"), (RED, TEAL))):
+            g = (x + i * fw, y + ph, fw, fh)
+            k.append(button("%s%d" % (which, n), g, col, flag_script(which, n)))
+            k.append(label("%s%dl" % (which, n), g, letter, 14))
     # the right panel: sync and snap across the top; under them two vertical radios, what the
     # pads show (Brendan, 2026-11-05: it became vertical) and which effect's controls show, two
     # steps a segment; and the chosen effect's controls to their right. The line saying a sync
@@ -1156,7 +1188,8 @@ local FXCONTROLS = %(fxcontrols)s
 local VERBCONTROLS = %(verbcontrols)s
 local FXKNOBS = %(fxknobs)s
 local FXRADIOS = %(fxradios)s
-local PHONE_BASE, PHONE = %(phonebase)s, %(phone)s
+local PHONE_BASE, FX_END, PHONE = %(phonebase)s, %(fxend)s, %(phone)s
+local FLAGS = %(flags)s
 local ROWS, MAX_NAME = %(rows)s, %(maxname)s
 local NAMERS = %(namers)s
 local CHARS = %(chars)s
@@ -1323,7 +1356,7 @@ end
 -- control told the track when it changes, then handed its value, as a knob is.
 local fxtrack = nil
 local function effects(a)
-  if #a < PHONE then return end
+  if #a < FX_END then return end
   local track = math.floor(arg(a, 3))
   if track ~= fxtrack then
     fxtrack = track
@@ -1335,12 +1368,26 @@ local function effects(a)
   end
 end
 
+-- Each track's mute and solo, after the effects: M and S under its pad, lit by notify('lit'),
+-- which a lit one never answers, its letter black on the lit fill.
+local function flags(a)
+  if #a < PHONE then return end
+  for k, which in ipairs(FLAGS) do
+    for n = 1, 16 do
+      local name, want = which .. n, arg(a, FX_END + (k - 1) * 16 + n) == 1 and 1 or 0
+      light(name, want)
+      ink(name .. 'l', want == 1 and BLACK or WHITE)
+    end
+  end
+end
+
 -- ---------------------------------------------------------------- the sequencer's state
--- c_steps' 98 numbers: playing, the global last step, the selected track, a pending sync or
+-- c_steps' 130 numbers: playing, the global last step, the selected track, a pending sync or
 -- snap (1, 2), the sixteen last steps, then 1 for each track with its own, then the time
 -- signature, the drunkenness and the swing, then the sixteen volumes, pitches and
--- randomnesses, then the selected track's effects and the reverb's. The drum screen shows what
--- is per track, the arrangement screen the rest; 88, without the effects, draws all but those.
+-- randomnesses, then the selected track's effects and the reverb's, then each track's mute and
+-- each track's solo. The drum screen shows what is per track, the arrangement screen the rest;
+-- 88, without the effects, draws all but those, and 98, without mute and solo, all but those.
 local function drums(a)
   if #a < 88 then return end
   local playing, pending = arg(a, 1) == 1, arg(a, 4)
@@ -1362,6 +1409,7 @@ local function drums(a)
   hand('drunk', math.floor(arg(a, 39)))
   hand('swing', math.floor(arg(a, 40)))
   effects(a)
+  flags(a)
 end
 
 -- ---------------------------------------------------------------- the tempo
@@ -1727,7 +1775,7 @@ def root_script(check):
         "verbcontrols": lua(VERB),
         "fxknobs": lua([f for f in FX if f not in FX_CONTROL] + VERB),
         "fxradios": lua({"dnote": len(NOTE_NAMES), "dfeel": len(FEEL_NAMES)}),
-        "phonebase": PHONE_BASE, "phone": PHONE,
+        "phonebase": PHONE_BASE, "fxend": FX_END, "phone": PHONE, "flags": lua(list(FLAGS)),
         "rows": ROWS, "maxname": MAX_NAME,
         "namers": lua({p: {"pager": n["pager"], "tab": n["tab"],
                            "what": {t: w for t, (w, _c) in n["from"].items()}}

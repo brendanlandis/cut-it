@@ -68,7 +68,7 @@ kit*, below.
 | The knobs' latch | At load knobs 2 and 3 are held at 16 and knob 4 at 50%, and knob 3 again whenever another track is selected, or the global last step moves while the selected track follows it: held until turned to or through the step it stands for, which for knob 4 at 50%, its bottom, is all the way down. A held knob changes nothing and draws its row with its own value in brackets | verified |
 | `sync` (the drum screen's "sync first steps") | When the global loop next comes round to its step 1, every track goes back to its own step 1 there, keeping its own last step | verified |
 | `snap` (its "snap to global") | The same, and at that step every track gives up its own last step, saved. Stopped, it lands at PLAY | verified |
-| At load | Track 1, level 6 (95), last step 16 with knobs 2 and 3 held there, swing 50% with knob 4 held there, stopped | unknown |
+| At load | Track 1, level 6 (95), last step 16 with knobs 2 and 3 held there, swing 50% with knob 4 held there, stopped; every track at 0 dB, its own pitch and no randomness until the restore | unknown |
 
 ### Where each part lives
 

@@ -279,8 +279,9 @@ phone or the device during a stage session.
 Every message out carries the complete current value — the tempo is 133, never one more. A dropped
 packet then **self-corrects on the next send** instead of leaving the display permanently and
 silently wrong. UDP will drop packets; the protocol has to not care. The phone sends the tempo, the
-last step and the swing as they stand for the same reason; the time signature's boxes send steps,
-`c_steps`' own `num` and `den`, and the state that comes back corrects a lost one.
+last step, the swing and a pad's dragged value as they stand for the same reason; the time
+signature's boxes send steps, `c_steps`' own `num` and `den`, and the state that comes back
+corrects a lost one.
 
 ### Broadcast was tried and rejected, and the reason is latency not throughput
 

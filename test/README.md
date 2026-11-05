@@ -586,7 +586,8 @@ pad's height (read 1). And the swing's range: the layout built at the old 25% (L
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
 Pd: the rules in `Cut It/c_steps.lua` press by press (the levels, the step rule's three cases, the
-selected track, which pads fire, the restore), and `c_steps-lua.pd_lua` through
+selected track, which pads fire, swing, drunkenness's curve, randomness's coin with seeded dice, the
+drum screen's pads, the restore, a line saved before the randomness included), and `c_steps-lua.pd_lua` through
 `test/gate/lua/lib_test.lua`'s stand-in for pdlua (its inlets and outlets, `bad-selector`, a
 throwing rule caught as `fail c_steps lua-fire`). Then the Pd half below, on a running copy of the
 instrument, which is unchanged since the rules were Pd: **it is the proof the Lua port changed

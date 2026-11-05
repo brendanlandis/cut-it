@@ -55,8 +55,8 @@ there could only ever read zero; anything that does appear on the interface's DI
 `ch-` as a channel between 49 and 64.
 
 ⚠️ **Port 3's row reads zero for now, and stays.** It was `sp404-`, counting the SP-404, until the
-404 left the rig (Brendan, 2026-11-04); the port is held for the Streichfett, which transmits, so the
-row is kept for it under the port's own name.
+404 left the rig (Brendan, 2026-11-04); the port is the Streichfett's now, which transmits when its
+keys are played, so the row is kept for it under the port's own name.
 
 ### What it costs to run
 

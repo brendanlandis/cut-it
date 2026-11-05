@@ -131,7 +131,7 @@ y = 0, 9, 18, 27, 36**, one per source, plus the shrunk meter strip.
 
 | | Evidence | Item |
 |---|----------|------|
-| One row per source on the presence bus, drawn as `<src> <state>`. The roster is whatever `expect` published at load — today **four**: `m_launchpad`, `m_nano`, `m_organelle`, `m_volca`, since `m_404` went with the SP-404 (2026-11-04) | verified | 301 |
+| One row per source on the presence bus, drawn as `<src> <state>`. The roster is whatever `expect` published at load — today **five**: `m_launchpad`, `m_nano`, `m_organelle`, `m_volca` and `m_streich` (2026-11-04), the most the layer draws. `m_404` went with the SP-404, and `m_nanokey` publishes nothing, since its row would be the sixth ([nanokey.md](../device/nanokey.md)) | verified | 301 |
 | ⛔ **`<src>` is the ABSTRACTION's name** — `m_nano`, never "nanoKONTROL". `g_oled` sits below the `m_` boundary, so this is the only name it has. See [presence.md](presence.md) | verified | 301 |
 | Four states: `here` · `gone` · `never` · `unchecked`. **`m_volca` registers `none` and reads `unchecked`** — it is never polled and can never be lost, so drawing it as healthy would be a claim nothing has tested | verified | 301 |
 | ⛔ **The loop is bounded at FIVE rows, not at the roster size.** A sixth would draw at y=45 and run into the meter strip at y=48 | verified | 301 |
@@ -153,7 +153,7 @@ and `recover`. See [organelle.md](../device/organelle.md).
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
-| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10, and the beat row on grid indices 11–18; on page 2 the **drum page** instead of the beat row | unknown | — |
+| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10, and the beat row on grid indices 11–18; on page 2 the **drum page** instead of the beat row, and on page 3 the **synth pads** above it | unknown | — |
 | `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | The whole surface, one color | verified | — |
 | `alert` | 2 | `disp` → `alert …`, **`fail` only** | 2 s | The whole surface, red | verified | — |
 
@@ -216,6 +216,28 @@ green and blue 127, 109, 91, 73, 54, 36, 18, 0 for levels 1 to 8; the quarter is
 6, 6, 6 for a pad not selected; 16, 40, 127 for a bar's first step; and 20, 8, 32 and 80, 24,
 127 for a repeat pad and the one held.
 ✅ On the rig the eight read as eight, white to red (Brendan, 2026-11-03).
+
+### `g_grid`'s synth pads, page 3
+
+**`Cut It/cut-it-synth-page.txt` says which cell is which synth**, `<index> <synth>`, read with `-c`
+at load by `g_grid` to paint and by `u_map` to know what a press means, as the drum page's layout is
+([synths.md](synths.md)). Cells 21–24, the second row from the bottom on the left, are `fm`, and
+25–28 on the right are `strings` (Brendan, 2026-11-04). The beat row stays on row 1 below them, and
+the mode lamps are drawn as on every page.
+
+**The caller is `c_synth`, on `g_grid`'s fourth inlet**: `synth fm` or `synth strings`, which
+`g_grid` holds as 1 or 2 and which sets the dirty flag. It starts at `fm`, `c_synth`'s own, so the
+pads are right even before the first message. Anything else on that inlet is `fail g_grid
+bad-selector`.
+
+| A cell | Paints | Evidence |
+|---|---|---|
+| A synth's pad, that synth chosen | Its color, full: `fm` amber, RGB 127, 56, 0; `strings` cyan, RGB 0, 96, 127 | unknown |
+| A synth's pad, the other chosen | The same color at a quarter: 32, 14, 0 and 0, 24, 32, the drum page's full-and-quarter that read as two states on the rig | unknown |
+
+⚠️ **They are RGB specs, 148 to 151 on the surface**: entries 20 to 23 of the RGB table, each
+synth's full then its quarter. `pd regions` works a cell's out as 146 + 2*n* + (*n* is not the
+choice), *n* 1 for `fm` and 2 for `strings`, so a third synth is two more entries and nothing else.
 
 ### Seeing it off-device
 

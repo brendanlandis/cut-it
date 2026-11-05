@@ -152,7 +152,7 @@ selector goes straight to the same `[noteout]`, and the note-off comes from the 
 | | | Evidence | Item |
 |---|---|---|---|
 | `note <pitch> <velocity>` | a real note-on; velocity **0 is a real note-off** | verified | 293 |
-| It reuses the **same** `[noteout]` | one channel, one object, so `MIDI_EXPECT` stays at `noteout:1` | verified | 293 |
+| It reuses the **same** `[noteout]` | one channel, one object, so the layer adds one `noteout` to `MIDI_EXPECT`, as `m_streich`'s does | verified | 293 |
 | `panic` → **CC 123**, All Notes Off | `[ctlout 123]`, channel cold from the loadbang chain | verified | 293 |
 
 ⛔ **The panic belongs with the `note` inlet, not after it.** `makenote` owns the note-offs, which is

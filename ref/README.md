@@ -19,8 +19,8 @@ say — a topic-major layout spreads one device over four files, one session at 
 
 | Kind | Where | Pages |
 |------|-------|-------|
-| **Devices** — how Cut It uses one physical thing each | `ref/device/` | `launchpad` · `nanokontrol` · `organelle` · `phone` · `volca` |
-| **Modules** — one instrument concern each | `ref/module/` | `audio` · `boot` · `debug` · `display` · `error` · `map` · `presence` · `sequencer` · `state` · `tempo` |
+| **Devices** — how Cut It uses one physical thing each | `ref/device/` | `launchpad` · `nanokey` · `nanokontrol` · `organelle` · `phone` · `streichfett` · `volca` |
+| **Modules** — one instrument concern each | `ref/module/` | `audio` · `boot` · `debug` · `display` · `error` · `map` · `presence` · `sequencer` · `state` · `synths` · `tempo` |
 | **Cross-cutting** | `ref/` | `architecture` · `conventions` · `workflow` · `device-os` · `wifi` · `rig` · `README` |
 | **Parking** | `ref/` | `_unfiled` — must be empty |
 

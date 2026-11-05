@@ -92,6 +92,7 @@ wrong** — the same class of noise as mother's own `knobs.txt: can't open`.
 |-----|--------|------------|----------|------|
 | `mode` | `auto` | `u_map` — a running value, pushed whenever it changes | verified | — |
 | `section-1-drums` | `auto` | `c_steps` — the drum pattern, 256 velocities, pushed on every change and put back on restore ([sequencer.md](sequencer.md)) | unknown | — |
+| `synth` | `auto` | `c_synth` — the synth the nanoKEY plays, `fm` or `strings`, pushed at load and on every change and put back on restore ([synths.md](synths.md)) | unknown | — |
 
 ## Traps
 
@@ -284,8 +285,8 @@ as decisions rather than left to whoever writes the capture.
 
 ## Open
 
-- ⬜ **Only one key is stored today.** `mode`, from `u_map`. The pattern store, the presets and the
-  filter-stage parameters are v0.4, and each brings its own key and its own policy. See
-  [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **Three keys are stored today**, all `auto`: `mode`, from `u_map`, `section-1-drums`, from
+  `c_steps`, and `synth`, from `c_synth`. The presets and the filter-stage parameters are v0.4, and
+  each brings its own key and its own policy. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **Nothing uses the `manual` policy yet.** It is proven by the gate and by a deliberately-late
   test contributor, not by a real one. See [plan-v04.md](../../plan-v04.md) §3.

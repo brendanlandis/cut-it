@@ -66,11 +66,11 @@ sequence is still bringing it up. See [presence.md](presence.md).
 | `Pure Data:4` | `Launchpad Pro MK3:0` | LEDs and SysEx out | verified | — |
 | `nanoKONTROL:0` | `Pure Data:1` | Faders, knobs, transport, Pd channels 17–32 | verified | — |
 | `Pure Data:5` | `nanoKONTROL:0` | The device inquiry, and nothing else | verified | 274 |
-| `Streichfett:0` | `Pure Data:2` | Its replies and its panel, Pd channels 33–48; nothing reads them yet | unknown | — |
-| `Pure Data:6` | `Streichfett:0` | Notes, CC and SysEx out to the Streichfett | unknown | — |
+| `Streichfett:0` | `Pure Data:2` | Its replies and its panel, Pd channels 33–48: `m_streich`'s `c_devid 62` reads its identity reply, and nothing reads its panel | unknown | — |
+| `Pure Data:6` | `Streichfett:0` | `m_streich`'s notes, panic's All Notes Off and the identity request, out to the Streichfett | unknown | — |
 | `USB Uno MIDI Interface:0` | `Pure Data:3` | Nothing today — the DIN IN jack, for a future device. Pd channels 49–64 | verified | — |
 | `Pure Data:7` | `USB Uno MIDI Interface:0` | Notes and CC out to the Volca | verified | — |
-| `nanoKEY:0` | `Pure Data:3` | Its keys, Pd channels 49–64, sharing Midi-In 4 with the DIN IN, which carries nothing | unknown | — |
+| `nanoKEY:0` | `Pure Data:3` | Its keys, Pd channels 49–64, to `m_nanokey`, sharing Midi-In 4 with the DIN IN, which carries nothing | unknown | — |
 
 **The port map, from `/root/.pdsettings` — four in, four out:**
 
@@ -84,9 +84,11 @@ comes from.
 
 ⚠️ **Pd's port 3 is the Waldorf Streichfett's** — `Pure Data:2` in, channels 33–48, and `Pure Data:6`
 out — since 2026-11-04; it was the SP-404's until the 404 left the rig (Brendan, 2026-11-04). The
-nanoKEY came in with it and shares Midi-In 4. Nothing in Cut It sends to the Streichfett yet:
-`tempo-assert` holds the clock and the STOPs off its port, `debug-assert` the debug patch's keys,
-and `nano-assert` that nothing listens on channel 33.
+nanoKEY came in with it and shares Midi-In 4. **`m_streich` is the one file that sends there**: the
+nanoKEY's keys through `c_synth`, panic's All Notes Off and the identity request
+([streichfett.md](../device/streichfett.md)). `tempo-assert` holds the clock and the STOPs off its
+port, `debug-assert` the debug patch's keys, and `nano-assert` and `synths-assert` that nothing
+plays from channel 33.
 
 ### Undoing mother's autoconnect
 
@@ -112,8 +114,8 @@ for every device that is not the Launchpad. See *Traps*.
 | 1 | The Pd channel the nanoKONTROL's own channel 1 lands on | `17` | whatever slot it fills | verified | — |
 | 2 | The same for the Launchpad | `1` | `1` | verified | — |
 | 3 | `u_state`'s **data directory**, absolute, no trailing slash | `/sdcard/cut-it-state` | `/tmp` | verified | — |
-| 4 | **Unused**: the SP-404's, until it left the rig (2026-11-04). Still passed, since a position cannot be skipped (*Traps*) | `33` | `33` | verified | — |
-| 5 | The same for the Volca | `49` | `49` | verified | — |
+| 4 | The same for the Streichfett, the SP-404's until it left the rig (2026-11-04) | `33` | `33` | unknown | — |
+| 5 | The same for the Volca, and the first channel of the nanoKEY's port, which it shares | `49` | `49` | verified | — |
 | 6 | `u_net`'s inbound UDP port | `9001` | `9002` | verified | 307 |
 
 ⚠️ **Argument 3 is a real platform difference** — there is no `/sdcard` on a Mac. **Argument 6
@@ -171,8 +173,8 @@ init to `u_state`.
 
 ### Positional creation arguments cannot be skipped, and Pd does not warn
 
-⛔ An unused position still has to be passed: omitting argument 4 would silently deliver the Volca's
-channel as arg 4. **Pd does not warn about a missing or extra creation argument at all**, 0.49 or
+⛔ Every position has to be passed, even one a device has left: omitting argument 4 would silently
+deliver the Volca's channel as arg 4. **Pd does not warn about a missing or extra creation argument at all**, 0.49 or
 0.57, so a clean syntax check proves nothing about arity.
 
 **Fix:** pass every position, even the unused ones, and say in the comment that it is unused.

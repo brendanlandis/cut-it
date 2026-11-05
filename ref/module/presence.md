@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Device presence and the bounded re-wire
 
-**Files:** `Cut It/u_present.pd`, `Cut It/c_presence.pd`, `Cut It/c_devid.pd` · **Gate:** `test/gate/presence-assert.sh` · **Checklist:** `test/checklists/launchpad.md`, `test/checklists/nanokontrol.md`, `test/checklists/midi.md`
+**Files:** `Cut It/u_present.pd`, `Cut It/c_presence.pd`, `Cut It/c_devid.pd` · **Gate:** `test/gate/presence-assert.sh` · **Checklist:** `test/checklists/launchpad.md`, `test/checklists/nanokontrol.md`, `test/checklists/midi.md`, `test/checklists/synths.md`
 
 ## What it is
 
@@ -65,19 +65,21 @@ that a source which has answered nothing has published none.
 
 | Kind | Layers | Polled | Ages | Can be lost | Evidence | Item |
 |---|---|---|---|---|---|---|
-| `active` | `m_launchpad` `m_nano` | yes | yes | yes | verified | 270 |
+| `active` | `m_launchpad` `m_nano` `m_streich` | yes | yes | yes | verified | 270 |
 | `passive` | `m_organelle` | no | **no** | no | verified | 270 |
 | `none` | `m_volca` | no | no | no | verified | 270 |
 
 **Self-registration is `state`'s shape** — a contributor names its own key and declares its own
 policy — and it is what lets an `m_` written long after `u_present` be covered with no change to
-`u_present`. The roster is four, and `presence-assert.sh` asserts the number rather than printing it:
-`m_404` was the fifth, `active`, until the SP-404 left the rig (Brendan, 2026-11-04).
+`u_present`. The roster is five, and `presence-assert.sh` asserts the number rather than printing it:
+`m_streich` is the fifth (2026-11-04), in the slot `m_404` had, `active`, until the SP-404 left the
+rig. ⛔ **Five is also the most g_oled's diag layer draws**, so `m_nanokey` registers nothing, not
+even `none`: its row would be a sixth ([nanokey.md](../device/nanokey.md)).
 
 ### The manufacturer byte, which is what `c_devid` matches
 
-Both detectable devices answer a universal device inquiry — `F0 7E 7F 06 01 F7` — and byte 5 of the
-reply, the manufacturer, tells them apart. Each full reply is on its device's Reference page. The
+The three detectable devices answer a universal device inquiry — `F0 7E 7F 06 01 F7` — and byte 5 of
+the reply, the manufacturer, tells them apart. Each full reply is on its device's Reference page. The
 SP-404 answered too, with Roland's `41`; `presence-assert.sh` still sends that reply and requires that
 nothing take it.
 
@@ -85,6 +87,10 @@ nothing take it.
 |---|---|---|---|---|
 | Launchpad Pro MK3 | `00` | `0` | verified | 249 |
 | nanoKONTROL | `42` | `66` | verified | 249 |
+| Waldorf Streichfett | `3E` | `62` | verified | — |
+
+⛔ **The nanoKEY answers too, with Korg's `42`, and is not polled**: `[c_devid 66]` would take its
+reply as the nano's (Reference, `~/Sites/!reference/korg-nanokey.md`).
 
 ⛔ **The argument is decimal and the reply is hex.** `42` is 66. Passing `[c_devid 42]`
 for the nano matches manufacturer `0x2A`, which is nobody, and the device is then never detected —
@@ -99,7 +105,7 @@ silently, because a matcher that matches nothing looks exactly like a device tha
 | settle | 4000 ms | past `u_init`'s last stage — see [boot.md](boot.md) | verified | 271 |
 | tick | 2000 ms | one poll per device per 2 s | verified | 271 |
 | miss threshold | 3 ticks | `c_presence`'s second argument | verified | 271 |
-| stagger | 0 / 60 ms | `c_presence`'s third argument, one per instance | verified | 271 |
+| stagger | 0 / 60 / 120 ms | `c_presence`'s third argument, one per instance: the Launchpad, the nano, the Streichfett | verified | 271 |
 | fork interval | every 4th tick | `[mod 4]` in `u_present` | verified | 271 |
 | give-up | tick 33 | `[moses 33]`, so **8 forks** at ticks 4…32 | verified | 271 |
 | trailing fork | **one**, off the transition to nothing-lost | not on the interval — see *Design* | verified | 275 |
@@ -224,6 +230,7 @@ the channel, so each `m_` derives it from the channel block it already takes as 
 |---|---|---|---|---|---|
 | `m_launchpad` | literal `1` | 1 | 1 | verified | 272 |
 | `m_nano` | `(n-1)/16+1` | 17 | 2 | verified | 272 |
+| `m_streich` | `(n-1)/16+1` | 33 | 3 | unknown | — |
 
 ⚠️ **`m_launchpad` hardcodes its port and gets away with it only because its block and its port are
 both 1.** Do not copy that into a new layer.
@@ -283,8 +290,9 @@ the inquiries would leave together and the replies could come back interleaved b
 one stream. `c_devid`'s index would then be counting one device's frame with another device's bytes
 in it.
 
-**Fix:** `c_presence`'s third argument delays the poll — 0 and 60 ms (and 120 for the SP-404's, while
-it was in the rig). It costs nothing and makes the interleave impossible.
+**Fix:** `c_presence`'s third argument delays the poll — 0, 60 and 120 ms, the last the Streichfett's,
+as it was the SP-404's while that was in the rig. It costs nothing and makes the interleave
+impossible.
 
 ⚠️ **The Launchpad's heartbeat leaves on the same tick as its inquiry**, so its layout announcement
 comes back beside its reply: one device, two ports, one stream. An interleave there would cost one
@@ -342,8 +350,9 @@ harder rather than easier.
 
 **`c_presence`'s second outlet is connected in exactly one place.** `m_launchpad` uses it to drop
 ownership of the grid, because a surface the patch no longer owns must stop being painted. The other
-layer, `m_nano`, holds nothing that goes stale while its device is away, so it leaves it unconnected —
-the loss is reported by `c_presence` itself and the re-wire is `u_present`'s.
+two layers, `m_nano` and `m_streich`, hold nothing that goes stale while their devices are away, so
+they leave it unconnected — the loss is reported by `c_presence` itself and the re-wire is
+`u_present`'s.
 
 **The Programmer Mode heartbeat stayed in `m_launchpad`.** It re-asserts a *mode* rather than
 detecting anything, it rides `$0-want` rather than presence, and it is Mac-specific. It is not

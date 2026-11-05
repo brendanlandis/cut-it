@@ -41,12 +41,16 @@ file decides what that means; and nothing below that file knows what hardware ex
                    │        <mode> <control>          what a control MEANS.
                    │        <dest> <arg>              Table-driven, guarded by
                    │                                  a literal route box
-                   │  a CORD, not a bus            ← an output device is TOLD
-                m_volca                               what to play. No bus
-                ch 49                                 carries that. u_net has
-                notes/cc/program                      a cord to it too, for
-                   ↑                                  the phone's test note.
-                 u_net
+                   │  CORDS, not a bus             ← an output device is TOLD
+          ┌────────┴─────────┐                        what to play. No bus
+          │              c_synth ◄── m_nanokey        carries that. u_net has
+          │           fm │     │ strings   ch 49      cords too: the phone's
+          ▼              │     ▼                      test note, and the
+       m_volca ◄─────────┘   m_streich                synth choice
+       ch 49                 ch 33, polled:
+       notes/cc/program/note c_presence, c_devid 62
+          ↑
+        u_net
                    │
             (v0.4: e_chop, e_pitch, e_trem, e_verb)
                    │
@@ -64,6 +68,11 @@ file decides what that means; and nothing below that file knows what hardware ex
   what a drum-page press means — and its own two outlets reach `c_kit`, which plays the drums,
   and `g_grid` with the page. Its rules are Lua, in `c_steps.lua`, behind one pdlua object; its clock and cords
   are Pd. See [sequencer.md](module/sequencer.md).
+- **`c_synth` holds the synth choice on every page**, and the nanoKEY's keys reach it by a cord
+  from `m_nanokey`, not on `param`: a key means the chosen synth's note whichever page is up. It
+  sends each key to `m_volca` or `m_streich`, a release to the synth its press went to, and the
+  choice to `u_net` and `g_grid`, by cords. Page 3's pads choose through `u_map`. See
+  [synths.md](module/synths.md).
 - **`u_inject` takes the checklists' Send lines** and puts them on eight buses, so a rig check can
   fake what no control sends: from the device itself, on `127.0.0.1` alone, where `tools/send.sh`
   carries them over SSH. Nothing from the phone reaches it (Brendan, 2026-11-04). `u_map`'s
@@ -80,12 +89,14 @@ file decides what that means; and nothing below that file knows what hardware ex
 is the buses and the map; right is the display owners. **Where a file has cords, the cords decide
 where it goes** — which is why `m_volca` sits under `u_map` rather than in the `m_` column. Everything without cords talks on the allowlisted buses alone.
 
-**Five kinds of cord exist on that canvas, and each one is a seam worth seeing.** `u_init` reaches
+**Six kinds of cord exist on that canvas, and each one is a seam worth seeing.** `u_init` reaches
 `m_launchpad` and `u_state`, because the boot *order* is `u_init`'s while the *action* belongs to the
 file at the other end. `u_map` and `u_net` each reach the output device, `m_volca`, because no bare
 global name carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`.
-`c_clock` feeds `g_grid`'s beat row. And `c_steps` sits between `u_map` and both `c_kit` and
-`g_grid`: told what a press means, it plays the drums and says what the drum page shows.
+`c_clock` feeds `g_grid`'s beat row. `c_steps` sits between `u_map` and both `c_kit` and
+`g_grid`: told what a press means, it plays the drums and says what the drum page shows. And
+`c_synth` sits between `m_nanokey`, `u_map` and `u_net` on one side and the two synths, `u_net` and
+`g_grid` on the other: it plays the nanoKEY's keys on the chosen synth and says which that is.
 
 ## Creation arguments — the contract between the two entry points
 
@@ -97,8 +108,8 @@ and the device is absorbed by these six arguments to `u_root`.
 | 1 | Pd channel the **nanoKONTROL**'s own channel 1 lands on | `17` | whatever slot it fills |
 | 2 | The same for the **Launchpad** | `1` | " |
 | 3 | **`u_state`'s data directory** — absolute, no trailing slash | `/sdcard/cut-it-state` | `/tmp` |
-| 4 | **Unused** — the SP-404's channel block until it left the rig (Brendan, 2026-11-04), still passed because positions cannot be skipped | `33` | " |
-| 5 | Pd channel for the **Volca**'s channel 1 | `49` | " |
+| 4 | Pd channel for the **Streichfett**'s channel 1, the SP-404's block until it left the rig (Brendan, 2026-11-04) | `33` | " |
+| 5 | Pd channel for the **Volca**'s channel 1, and the first of the **nanoKEY**'s port, which it shares with the Volca's interface | `49` | " |
 | 6 | **`u_net`'s inbound UDP port** | `9001` | `9002` |
 
 **A Pd input slot maps to channels `(n-1)*16+1` upward**, so slot 2 begins at 17 and slot 3 at 33.
@@ -163,9 +174,11 @@ on `disp` alone, so no display file has had to learn that `param` exists.
 
 ## Output devices are WIRED, not given a bus
 
-`m_volca` is **told what to play**, as `m_404` was until the SP-404 left the rig (Brendan,
-2026-11-04). No bus carries a sounding note — `param` is device-to-map and `disp` is display, and a
-note is neither.
+`m_volca` and `m_streich` are **told what to play**, as `m_404` was until the SP-404 left the rig
+(Brendan, 2026-11-04). No bus carries a sounding note — `param` is device-to-map and `disp` is
+display, and a note is neither. `m_streich` is told by `c_synth`, which chooses between the two
+for the nanoKEY's keys ([synths.md](module/synths.md)); `u_map`'s cord to `c_synth` carries the
+choice, not a note.
 
 **`u_map` grows one outlet per output DEVICE**, wired in `u_root`, carrying a **selector-prefixed**
 message the device layer routes internally: `notes 48 100 200`, `cc 41 64`, `program 20`.
@@ -227,6 +240,7 @@ Nothing overlaps, and that is deliberate:
 | **Launchpad** | Pads, grid state, sequencing — page 2 is the drum page. Anything needing state you can *see* |
 | **nanoKONTROL** | Continuous control, with position visible on the panel. Momentary buttons only |
 | **Organelle keyboard** | Choosing songs, once there are songs: until then its keys play nothing (Brendan, 2026-11-04). Under aux, the four keys every page shares: diag, test mode, stop and recover |
+| **nanoKEY** | Playing the chosen synth, the Volca or the Streichfett, on every page (Brendan, 2026-11-04) |
 
 ⚠️ **The Launchpad mode conflict evaporates because of this split.** Authoring that needs Note or
 Chord mode uses them; everything Cut It draws, the drum page's sequencing included, is Programmer
@@ -247,10 +261,11 @@ filter logic exists, which is why `mode` and a page-dependent `u_map` exist befo
 | `c_` | **Instantiable** — there is more than one | Its creation arguments |
 | `e_` | An effect stage (v0.4) | Signal in, signal out |
 
-⛔ **A `c_` prefix means instances, and a `$0-` on everything inside it (C-1).** Five exist:
+⛔ **A `c_` prefix means instances, and a `$0-` on everything inside it (C-1).** Six exist:
 `c_clock`, `c_presence` and `c_devid` inside the `m_` layers, `c_mapped` inside `u_map`, one per
-destination that carries a value, and `c_steps`, the sequencer, whose bank (vestigial since the
-SP-404 left the rig) and stored part are its creation arguments. The v0.4 filter stages are the reason the prefix exists.
+destination that carries a value, `c_steps`, the sequencer, whose bank (vestigial since the
+SP-404 left the rig) and stored part are its creation arguments, and `c_synth`, the synth choice,
+one today, since a second keyboard would want its own. The v0.4 filter stages are the reason the prefix exists.
 
 ## Open
 

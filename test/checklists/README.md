@@ -19,7 +19,7 @@ is sent from anywhere.
 
 | Checklist | Steps | Judges |
 |---|---|---|
-| [linecheck](linecheck.md) | 7 | the phone's link, the roster, the drums, the mic and the Volca through the PA, the transport |
+| [linecheck](linecheck.md) | 8 | the phone's link, the roster, the drums, the mic and both synths through the PA from the nanoKEY, the transport |
 
 1. **Choose page 2, the drum page, then tap Setup**, the Launchpad's bottom-left button (or at the Organelle hold
    `aux` and press the second key from the bottom). That turns test mode on, and the phone's screens
@@ -54,6 +54,7 @@ session means opening one.
 | [midi](midi.md) | 10 | the map by mode, the Volca by ear, hot-swap |
 | [debug](debug.md) | 9 | the debug patch, with the instrument stopped |
 | [sequencer](sequencer.md) | 23 | page 2's drum page and the drums it plays |
+| [synths](synths.md) | 12 | the nanoKEY and the two synths it plays, page 3's pads, the phone's synths screen, a switch mid-chord, the Streichfett on the roster |
 
 ⚠️ **The Mac is not the device.** The Phase 6 gate passed 25/25 on the Mac twice and shipped three
 bugs; a checklist on the rig is the last word.

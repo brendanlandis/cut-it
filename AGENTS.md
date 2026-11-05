@@ -41,7 +41,7 @@ learn late:
 - **Vanilla objects, plus `[shell]` and two libraries we build: pdlua and ELSE** (from 2026-11-03).
   The Organelle ships only a dozen factory externals, of which Cut It uses `[shell]` (Reference,
   Organelle page, *Externals*). pdlua 0.12.24 (Lua 5.4.7) runs the sequencer's rules, the map's
-  lookup and the decoding in two device layers (the nano, the Organelle's keys), and
+  lookup, the synth choice and the decoding in two device layers (the nano, the Organelle's keys), and
   ELSE 1.0-0 rc14 may replace hand-built parts; both are built for 0.57 and live in
   `/sdcard/PdExtraLibs` on the device and `~/Library/Pd` on the Mac
   ([device/README.md](device/README.md), *Lua and ELSE*). The **`pd`** skill has how to use them.
@@ -64,9 +64,9 @@ shown on Back Office's /reference page); a `ref/device/` page links to it and ke
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
-| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo: `~/Sites/!reference/` — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `critter-guitari-organelle-1` `korg-volca-fm` `pure-data` `touchosc` (and `meeblip-cubit` `arturia-beatstep` `roland-sp-404mkii` `behringer-xenyx-q802usb`). Find a repo's with `grep -l "used_by:.*cut-it" ~/Sites/!reference/*.md` |
-| How Cut It **uses** one physical device | [ref/device/](ref/device/) — `launchpad` `nanokontrol` `organelle` `phone` `volca` |
-| One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `debug` `display` `error` `map` `presence` `sequencer` `state` `tempo` |
+| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo: `~/Sites/!reference/` — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `korg-nanokey` `critter-guitari-organelle-1` `korg-volca-fm` `waldorf-streichfett` `pure-data` `touchosc` (and `meeblip-cubit` `arturia-beatstep` `roland-sp-404mkii` `behringer-xenyx-q802usb`). Find a repo's with `grep -l "used_by:.*cut-it" ~/Sites/!reference/*.md` |
+| How Cut It **uses** one physical device | [ref/device/](ref/device/) — `launchpad` `nanokey` `nanokontrol` `organelle` `phone` `streichfett` `volca` |
+| One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `debug` `display` `error` `map` `presence` `sequencer` `state` `synths` `tempo` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
 | How Cut It lives on the Organelle as a **computer** — its data, measuring, deploying (the Organelle itself: Reference) | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
 | The wifi fault — Cut It's watchers and the stage procedure (the fault itself: Reference) | [ref/wifi.md](ref/wifi.md) ⚠️ background, not blocking |
@@ -92,14 +92,14 @@ stops the instrument**, because loading any patch restarts Pd. See
 | Prefix | Is | Files |
 |---|---|---|
 | `main` | Entry points. `main.pd` is the device's, `main-dev.pd` the Mac's | `main.pd` `main-dev.pd` `u_root.pd` |
-| `m_` | One physical device, publishing named controls | `m_nano` `m_launchpad` `m_organelle` `m_volca` |
+| `m_` | One physical device, publishing named controls, or told what to play | `m_nano` `m_launchpad` `m_organelle` `m_volca` `m_streich` `m_nanokey` |
 | `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_err` `u_net` `u_level` `u_present` `u_mother-stub` |
 | `g_` | One display surface, and its sole owner | `g_oled` `g_grid` `g_led` |
-| `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` `c_kit` `c_voice` |
+| `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` `c_kit` `c_voice` `c_synth` |
 | `e_` | An effect stage — **v0.4, none yet** | — |
 | `.sh` | Run through `[shell]` — the first five once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `codec-gain.sh` `recover.sh` |
-| `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` |
-| `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua`, and `lua-face.lua`, what every one of those classes shares |
+| `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` `cut-it-synth-page.txt` |
+| `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `c_synth.lua` `c_synth-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua`, and `lua-face.lua`, what every one of those classes shares |
 
 **The prefix table above is `Cut It/`'s.** `Cut It Debug/` is flat and has no prefixes — one
 `main.pd` and three scripts — because it is one screen deep and nothing in it is reused.
@@ -134,7 +134,7 @@ under `ref/`. Nothing in either is deployed.
 
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-three gates and 998 checks**, and what each one protects is in
+**Twenty-four gates and 1111 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **Two of them read
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile and `kit-assert.sh` the drums; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.
@@ -152,6 +152,7 @@ lua test/gate/lua/c_steps_test.lua   # the sequencer's rules alone: a second, no
 lua test/gate/lua/u_map_test.lua     # the map's, the same way
 lua test/gate/lua/m_nano_test.lua    # the nano's decode, the same way
 lua test/gate/lua/m_organelle_test.lua   # and the Organelle keyboard's
+lua test/gate/lua/c_synth_test.lua       # and the synth choice's
 ./tools/deploy.sh              # syntax check -> scp BOTH patches -> reload -> load Cut It
 ./tools/deploy.sh --debug      # the same push, but loads Cut It Debug instead
 ./tools/tidy.sh                # what has accumulated on the device. --delete to remove it

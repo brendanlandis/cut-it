@@ -7,8 +7,9 @@ Organelle is as a *computer* — SSH, paths, deploying, wifi — is in
 [device-os.md](device-os.md).
 
 The Organelle is the brains: it runs the patch, **plays the drums** (`c_kit`,
-[module/sequencer.md](module/sequencer.md)), hosts every controller over USB, and is **clock
-master** for the whole rig. **The mic goes straight into its one input jack**, on the tip, with no
+[module/sequencer.md](module/sequencer.md)), hosts every controller over USB, sends the nanoKEY's
+keys to whichever synth is chosen, the Volca or the Streichfett
+([module/synths.md](module/synths.md)), and is **clock master** for the whole rig. **The mic goes straight into its one input jack**, on the tip, with no
 preamp (2026-11-04). **The SP-404MK2 has left the rig** (Brendan, 2026-11-04) — see below.
 
 
@@ -32,7 +33,7 @@ preamp (2026-11-04). **The SP-404MK2 has left the rig** (Brendan, 2026-11-04) �
                     │   ch1  Organelle L (drums, mic)  │
                     │   ch2  Organelle R               │
                     │   ch3/4  Volca FM                │
-                    │   ch5/6  spare                   │
+                    │   ch5/6  Waldorf Streichfett     │
                     └────────────────┬─────────────────┘
                                      ▼  MAIN OUT
                                    [ PA ]
@@ -64,6 +65,29 @@ number out.
 
 ⛔ **A patch never touches `adc~` or `dac~`** (C-4). See [audio.md](module/audio.md).
 
+## Signal flow — MIDI
+
+```
+  POWERED USB HUB ──USB──► ORGANELLE: Pd, wired by wire.sh (module/boot.md)
+
+    Launchpad Pro MK3 ◄──► Pd port 1   Midi-In 1, ch 1–16   the pages, the grid
+    nanoKONTROL ───────► Pd port 2   Midi-In 2, ch 17–32  faders, knobs, transport
+                     ◄─── (port 2 out: the device inquiry only)
+    Streichfett ◄─────► Pd port 3   Midi-In 3, ch 33–48  notes and panic out; its reply in
+    nanoKEY ───────────► Pd Midi-In 4, ch 49–64          its keys, to c_synth
+    USB Uno interface ─► Pd Midi-In 4 too (its DIN IN: nothing on it)
+                     ◄─── Pd Midi-Out 4 ──DIN──► Volca FM: notes, fader 1's CC, panic
+
+  nanoKEY ─► m_nanokey ─► c_synth ─┬─► m_volca   ─► port 4 ─► Volca FM      (fm)
+                                   └─► m_streich ─► port 3 ─► Streichfett  (strings)
+```
+
+**Both synths are on their own channel 1**, each on its own port: Pd channel 49 for the Volca and
+33 for the Streichfett, `u_root`'s fifth and fourth arguments ([architecture.md](architecture.md),
+*Creation arguments*). The nanoKEY shares Midi-In 4 with the Volca's interface, whose DIN IN carries
+nothing. Which device is on which port is `wire.sh`'s, by name ([module/boot.md](module/boot.md),
+*The ALSA wiring*).
+
 ## Signal flow — power
 
 ```
@@ -73,6 +97,8 @@ number out.
     ├── POWERED USB HUB .. own PSU                       (comes with hub)
     │     ├── Launchpad Pro MK3
     │     ├── nanoKONTROL
+    │     ├── nanoKEY ........ bus powered
+    │     ├── Waldorf Streichfett (its MIDI; its power is under Open)
     │     └── USB→DIN MIDI interface
     └── VOLCA FM ......... Korg KA-350 9V (or 6×AA)
 ```
@@ -124,7 +150,9 @@ patch is the OLED.
 | Organelle (original) | Brains — Pd, USB MIDI host, clock master |
 | Powered USB hub | Connects the controllers, on its own supply (`~/Sites/!reference/powered-usb-hub.md`) |
 | Behringer Xenyx Q802USB | Mixer, and free session recording over USB (`~/Sites/!reference/behringer-xenyx-q802usb.md`) |
-| Korg Volca FM | Pitched voice (DIN MIDI in only) |
+| Korg Volca FM | Pitched voice (DIN MIDI in only): `fm`, played from the nanoKEY ([device/volca.md](device/volca.md)) |
+| Waldorf Streichfett | String synth, USB MIDI: `strings`, played from the nanoKEY, to mixer channels 5 and 6 ([device/streichfett.md](device/streichfett.md)) |
+| Korg nanoKEY (mk1) | 25 keys that play whichever synth is chosen, on every page ([device/nanokey.md](device/nanokey.md)) |
 | Korg nanoKONTROL (mk1) | Continuous control — 9 faders, 9 knobs, 18 buttons, transport |
 | Novation Launchpad Pro MK3 | Cut It interface (Programmer Mode): the pages, and the drum page's sequencing |
 | MeeBlip cubit (original) | Kept, unused — see below |
@@ -137,8 +165,8 @@ It is a thru box only with no USB data (Reference: `~/Sites/!reference/meeblip-c
 act as a USB MIDI interface for the Organelle.
 
 **Keep it.** It becomes useful the moment a second or third DIN-only synth arrives — put it
-downstream of the MIDI interface and fan out to four destinations. Today only the Volca needs DIN, so
-a 1×1 interface is enough.
+downstream of the MIDI interface and fan out to four destinations. Today only the Volca needs DIN
+(the Streichfett is on USB), so a 1×1 interface is enough.
 
 ### The SP-404 has left the rig
 
@@ -148,8 +176,8 @@ day the drums moved into Pd, `c_kit` playing the sequencer's samples
 in Cut It needs it. Its layer, `m_404`, went with it, along with its map destination, the phone's
 test 404 button and its presence on the diag roster. What it is: `~/Sites/!reference/roland-sp-404mkii.md`.
 
-**Its MIDI slot, Pd's port 3 (channels 33–48), is wired to nothing**, and reserved for the Waldorf
-Streichfett ([module/boot.md](module/boot.md), *The ALSA wiring*).
+**Its MIDI slot, Pd's port 3 (channels 33–48), is the Waldorf Streichfett's** since the same day
+([module/boot.md](module/boot.md), *The ALSA wiring*).
 
 ### The BeatStep is retired
 
@@ -184,6 +212,10 @@ Launchpad's cables and adapters, the nanoKONTROL's own cable.
 ⚠️ **Label the cables.** With this many identical 1/4" jacks it is worth the ten minutes.
 
 ## Open
+
+- ⬜ **How the Streichfett is powered**, its own supply or the hub's bus, is not recorded, nor its
+  draw: its Reference page, `~/Sites/!reference/waldorf-streichfett.md`, has no `MaxPower`.
+  `cut-it/pages-and-displays`.
 
 - ⬜ **Whether the wifi dongle's draw contributes to the wifi fault — item 255.** A step on
   `cut-it/wifi-roam-fault`, to be taken only if the fault recurs. It is the only thing on the

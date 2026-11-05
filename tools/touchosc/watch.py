@@ -61,6 +61,16 @@ def phone_connected():
     return any("TouchOSC" in line for line in r.stdout.splitlines()[1:])
 
 
+PHONE = "192.168.1.9"     # the phone at home, reserved on the house router (u_root's u_net)
+
+
+def on_network():
+    """Whether the phone answers on the house network at all: off the WiFi and only TouchOSC's
+    editor link gone want different fixes. A locked iPhone may not answer either."""
+    return subprocess.run(["ping", "-c", "1", "-t", "2", PHONE],
+                          capture_output=True).returncode == 0
+
+
 def push():
     r = subprocess.run([os.path.join(HERE, "push.sh")], capture_output=True, text=True)
     out = (r.stdout + r.stderr).strip()
@@ -108,9 +118,13 @@ def main():
             p = phone_connected()
             if p != phone:
                 phone = p
-                say("the phone is %s" % ("connected again" if p else
-                                         "no longer connected: reconnect it to the Mac's TouchOSC"),
-                    True)
+                if p:
+                    say("the phone is connected again", True)
+                elif on_network():
+                    say("the phone is no longer connected: reconnect it to the Mac's TouchOSC", True)
+                else:
+                    say("the phone is no longer connected, and nothing answers at %s: is it on "
+                        "the house WiFi, and unlocked?" % PHONE, True)
 
 
 if __name__ == "__main__":

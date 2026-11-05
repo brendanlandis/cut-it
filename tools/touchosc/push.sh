@@ -22,6 +22,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 APP=/Applications/TouchOSC.app
 BIN="$APP/Contents/MacOS/TouchOSC"
 TOSC="$HERE/CutIt.tosc"
+PHONE=192.168.1.9           # the phone at home, reserved on the house router (u_root's u_net)
 
 python3 "$HERE/build.py"
 
@@ -72,8 +73,16 @@ i=0
 while [ -z "$(phones "$p")" ]; do
     i=$((i + 1))
     if [ "$i" -gt 25 ]; then
-        echo "The phone is not connected, so it still has the old layout: in TouchOSC on the phone," >&2
-        echo "connect to this Mac's editor again, and it takes the new one at once." >&2
+        # Which of two causes: the phone off the WiFi altogether, or only TouchOSC's editor
+        # link gone (2026-11-04: both happened). Its address is the one the house router
+        # reserves for it, as u_root has it; a locked iPhone may not answer either.
+        if ! ping -c 1 -t 2 "$PHONE" >/dev/null 2>&1; then
+            echo "The phone is not connected, and nothing answers at $PHONE: check that it is on" >&2
+            echo "the house WiFi (Settings > Wi-Fi), unlocked, then connect TouchOSC to this Mac." >&2
+        else
+            echo "The phone is not connected, so it still has the old layout: in TouchOSC on the phone," >&2
+            echo "connect to this Mac's editor again, and it takes the new one at once." >&2
+        fi
         exit 3
     fi
     sleep 0.2

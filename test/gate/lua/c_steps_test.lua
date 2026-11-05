@@ -52,13 +52,14 @@ end
 -- A knob position for a step: what R.knob_step reads back as n.
 local function at(n) return (n - 1) / 31 end
 
--- The drum screen's 41 numbers, from the few that differ: lasts and owns by track, then the
--- time signature, the drunkenness and the selected track's chances (4 4 0 0 0 unless given).
+-- The phone's 42 numbers, from the few that differ: lasts and owns by track, then the time
+-- signature, the drunkenness, the selected track's chances and the swing (4 4 0 0 0 50 unless
+-- given).
 local function phone(playing, last, track, pending, lasts, owns, tail)
   local p = { playing, last, track, pending }
   for t = 1, 16 do p[#p + 1] = lasts[t] or last end
   for t = 1, 16 do p[#p + 1] = owns[t] or 0 end
-  for _, v in ipairs(tail or { 4, 4, 0, 0, 0 }) do p[#p + 1] = v end
+  for _, v in ipairs(tail or { 4, 4, 0, 0, 0, 50 }) do p[#p + 1] = v end
   return p
 end
 
@@ -348,6 +349,44 @@ check("swing is not saved: no put", (function()
   return true
 end)(), "")
 
+print("\n--- the phone's swing and global last step ---")
+-- The phone sets each as a value, not a knob position (Brendan, 2026-11-04): set-swing and
+-- set-last, since swing and last are the knobs' and pass their latch.
+st = R.new(1)
+R.presses.swing(st, { sw(50) })
+equal("set-swing sets the swing at once, live knob or not, and the step clock takes it",
+      R.presses["set-swing"](st, { 62 }), { { "clock", "swing", { 0.62 } } })
+equal("... and the phone hears it, last of its numbers", R.phone(st)[42], 62)
+equal("its ends are 25% and 75%, and it rounds to whole percents",
+      { R.presses["set-swing"](st, { 10 })[1][3][1], R.presses["set-swing"](st, { 90 })[1][3][1],
+        R.presses["set-swing"](st, { 40.4 })[1][3][1] }, { 0.25, 0.75, 0.4 })
+equal("the same swing again says nothing", R.presses["set-swing"](st, { 40 }), {})
+equal("⛔ knob 4 is held again at the phone's 40%: a knob at 62% changes nothing",
+      R.presses.swing(st, { sw(62) }), { { "disp", "swing", { 40, "(62)" } } })
+equal("... until it passes 40", R.presses.swing(st, { sw(38) })[1], { "disp", "swing", { 38, "%" } })
+equal("set-swing with no number does nothing", { R.presses["set-swing"](st, {}),
+      R.presses["set-swing"](st, { "x" }), st.swing }, { {}, {}, 38 })
+st = R.new(1)
+R.presses.last(st, { at(16) })
+equal("set-last sets the global last step at once, live knob or not, and the page shows it",
+      R.presses["set-last"](st, { 12 }), { { "page", "last", { 12 } } })
+equal("... for every track that follows it", { R.last_of(st, 1), R.phone(st)[2] }, { 12, 12 })
+equal("⛔ knob 2 is held again at the phone's 12: a knob at 20 changes nothing",
+      R.presses.last(st, { at(20) }), { { "disp", "last-step", { 12, "(20)" } } })
+equal("its ends are 1 and 32, rounded", { (R.presses["set-last"](st, { 0 }) and st.last),
+      (R.presses["set-last"](st, { 40 }) and st.last), (R.presses["set-last"](st, { 7.4 }) and st.last) },
+      { 1, 32, 7 })
+equal("the same step again says nothing", R.presses["set-last"](st, { 7 }), {})
+R.presses["track-last"](st, { at(7) })
+R.presses["track-last"](st, { at(9) })
+equal("a selected track with its own last step keeps it: no page change",
+      { R.presses["set-last"](st, { 20 }), R.last_of(st, 1), R.last_of(st, 2) }, { {}, 9, 20 })
+check("neither is saved: no put", (function()
+  for _, e in ipairs(R.presses["set-last"](st, { 3 })) do if e[1] == "save" then return false end end
+  for _, e in ipairs(R.presses["set-swing"](st, { 60 })) do if e[1] == "save" then return false end end
+  return true
+end)(), "")
+
 print("\n--- the time signature ---")
 st = R.new(1)
 local function x(k, v) local t = {} t[k] = v return t end
@@ -381,10 +420,10 @@ R.presses.move(st, { 70 })
 equal("skip and move are the SELECTED track's, saved", { st.skip[3], st.move[3], st.skip[1] },
       { 20, 70, 0 })
 equal("the drum screen shows the time signature, the drunkenness and the selected track's chances",
-      R.phone(st), phone(0, 16, 3, 0, {}, {}, { 4, 4, 100, 20, 70 }))
+      R.phone(st), phone(0, 16, 3, 0, {}, {}, { 4, 4, 100, 20, 70, 50 }))
 R.presses.select(st, { 1 })
 equal("... another track's when another is selected", R.phone(st),
-      phone(0, 16, 1, 0, {}, {}, { 4, 4, 100, 0, 0 }))
+      phone(0, 16, 1, 0, {}, {}, { 4, 4, 100, 0, 0, 50 }))
 
 print("\n--- the chances ---")
 st = R.new(1)

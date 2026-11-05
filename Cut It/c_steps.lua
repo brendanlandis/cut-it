@@ -13,7 +13,7 @@
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
 --   {"err", "fail", {"c_steps", text}}                        to err (C-12)
 --   {"disp", <row name>, {value[, unit]}}                     a knob's row, to disp
--- and R.phone(st), the drum screen's state, which the Pd face sends to u_net when it changes.
+-- and R.phone(st), the phone's state, which the Pd face sends to u_net when it changes.
 
 local R = {}
 
@@ -224,6 +224,31 @@ function R.knob_last(st, v)
   return out
 end
 
+-- The phone's swing and global last step, on the arrangement page (Brendan, 2026-11-04): each a
+-- value as it stands, since swing and last are the knobs' positions and pass their latch. The
+-- knob that sets the same value is held again at the phone's, so its next turn waits to pass it
+-- rather than jumping back to wherever it sits. Neither is saved, as the knobs' are not; a
+-- message with no number in it does nothing.
+function R.set_swing(st, v)
+  if type(v) ~= "number" then return {} end
+  local n = math.floor(clip(v, R.SWING_MIN, R.SWING_MAX) + 0.5)
+  if n == st.swing then return {} end
+  st.swing = n
+  rearm(st.knob.swing)
+  return { { "clock", "swing", { n / 100 } } }
+end
+
+function R.set_last(st, v)
+  if type(v) ~= "number" then return {} end
+  local n = math.floor(clip(v, 1, R.STEPS) + 0.5)
+  if n == st.last then return {} end
+  st.last = n
+  rearm(st.knob.last)
+  if st.own[st.track] ~= 0 then return {} end
+  rearm(st.knob.track)
+  return { R.page_last(st) }
+end
+
 -- Knob 3: the selected track's own last step. It is held whenever another track is selected,
 -- until turned through that track's last step, and it is saved with the pattern. Released at the
 -- step it already has, a track that follows the global one goes on following it.
@@ -263,7 +288,7 @@ local function land_snap(st)
   return { R.save(st), R.page_last(st) }
 end
 
--- The drum screen's time signature, two numbers, each stepped by its - and + (Brendan,
+-- The arrangement screen's time signature, two numbers, each stepped by its box (Brendan,
 -- 2026-11-03): the top 1 to 32, the bottom through 1 2 4 8 16. Saved; the page lights each bar's
 -- first step.
 function R.time(st, which, dir)
@@ -278,7 +303,7 @@ function R.time(st, which, dir)
   return { R.save(st), R.page_bar(st) }
 end
 
--- A setting of the drum screen's sliders, 0 to 100, rounded: drunkenness for the whole pattern,
+-- A setting of the phone's knobs, 0 to 100, rounded: drunkenness for the whole pattern,
 -- skip and move for the selected track. Saved.
 local function percent(v)
   return math.floor(clip(num(v), 0, 100) + 0.5)
@@ -322,15 +347,17 @@ function R.select(st, track)
   return { { "page", "track", { st.track } }, R.page_last(st), R.steps(st) }
 end
 
--- The drum screen's state, for the phone: playing (1 or 0), the global last step, the selected
--- track, a pending sync or snap (0 none, 1 sync, 2 snap), then each track's last step, then 1 for
--- each track with a last step of its own, then the time signature, the drunkenness, and the
--- selected track's skip and move chances. 41 numbers.
+-- The sequencer's state, for the phone's drum and arrangement screens: playing (1 or 0), the
+-- global last step, the selected track, a pending sync or snap (0 none, 1 sync, 2 snap), then
+-- each track's last step, then 1 for each track with a last step of its own, then the time
+-- signature, the drunkenness, the selected track's skip and move chances, and the swing. 42
+-- numbers.
 function R.phone(st)
   local out = { st.playing and 1 or 0, st.last, st.track, st.snap and 2 or (st.sync and 1 or 0) }
   for t = 1, R.TRACKS do out[#out + 1] = R.last_of(st, t) end
   for t = 1, R.TRACKS do out[#out + 1] = st.own[t] >= 1 and 1 or 0 end
-  for _, v in ipairs({ st.num, st.den, st.drunk, st.skip[st.track], st.move[st.track] }) do
+  for _, v in ipairs({ st.num, st.den, st.drunk, st.skip[st.track], st.move[st.track],
+                       st.swing }) do
     out[#out + 1] = v
   end
   return out
@@ -510,7 +537,8 @@ end
 
 -- What arrives on the first inlet: u_map's drum-page presses and releases, <selector> <n>
 -- <velocity>; its knobs, last, track-last and swing with the knob's 0-1; and the drum screen's
--- sync, snap, select, num and den (-1 or 1), and drunk, skip and move (0 to 100), through u_net.
+-- sync, snap, select, num and den (-1 or 1), and drunk, skip and move (0 to 100), through u_net;
+-- and the arrangement screen's set-swing (25 to 75) and set-last (1 to 32), through u_net too.
 -- A press, a knob or a setting with no number in it does nothing.
 R.presses = {
   step = function(st, a) return pressed(a) and R.press_step(st, a[1]) or {} end,
@@ -528,6 +556,8 @@ R.presses = {
   drunk = function(st, a) return a[1] and R.drunk(st, a[1]) or {} end,
   skip = function(st, a) return a[1] and R.chance(st, "skip", a[1]) or {} end,
   move = function(st, a) return a[1] and R.chance(st, "move", a[1]) or {} end,
+  ["set-swing"] = function(st, a) return R.set_swing(st, a[1]) end,
+  ["set-last"] = function(st, a) return R.set_last(st, a[1]) end,
 }
 
 -- What c_steps.pd itself sends: the clock's step, PLAY, STOP, u_state's restore, and the load.

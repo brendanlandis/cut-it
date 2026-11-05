@@ -5,12 +5,12 @@
 -- creation arg: its bank, 1 for A: vestigial since the SP-404 left the rig, as c_kit plays pads
 -- 1 to 16 (c_steps.pd).
 -- inlet 1: the presses and releases, from u_map -- step <n> <vel>, vel <level> <vel>, pad <n>
--- <vel>, rep <n> <vel>, and knobs 2 to 4, last, track-last and swing <0-1> -- and the drum
--- screen's sync, snap, select, num, den, drunk, skip and move, from u_net.
+-- <vel>, rep <n> <vel>, and knobs 2 to 4, last, track-last and swing <0-1> -- and the phone's
+-- sync, snap, select, num, den, drunk, skip, move, set-swing and set-last, from u_net.
 -- inlet 2: c_steps.pd's own -- tick, start, stop, restore <the saved line>, init.
 -- outlet 1: pad <pad> <velocity>, to c_kit. outlet 2: the page, to g_grid. outlet 3: the pattern
 -- to save. outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded. outlet 6: a knob's
--- row, to disp. outlet 7: the drum screen's state, R.phone's 41 numbers, whenever it changes.
+-- row, to disp. outlet 7: the phone's state, R.phone's 42 numbers, whenever it changes.
 -- outlet 8: the step clock's swing <0.25-0.75> and rate <x>, to c_steps.pd's clock.
 --
 -- A Lua error leaves outlet 4 as fail c_steps lua-<selector>, and its text goes to Pd's console
@@ -35,7 +35,7 @@ function StepsLua:initialize(_, atoms)
   return true
 end
 
--- After every answer, the drum screen's state, out the seventh outlet only when it differs from
+-- After every answer, the phone's state, out the seventh outlet only when it differs from
 -- the last one sent: a tick changes nothing the phone shows, eight times a second.
 function StepsLua:answered()
   local ok, now = pcall(R.phone, self.state)

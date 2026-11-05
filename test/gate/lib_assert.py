@@ -53,6 +53,8 @@ _MIDI = re.compile(r"^(NOTEOUT|CTLOUT|PGMOUT|MIDIOUT|KITOUT|KITVOL|KITPITCH):"
 # Built from lib_drive's labels, never typed: a label with no pattern here is a
 # bus whose lines are silently dropped.
 _BUS = re.compile(r"^(%s):\s+(.*)$" % lib_drive.TAP_LABEL_RE)
+# t_kit's effects, each a selector and its numbers, kept as atoms as a bus's are.
+_KITFX = re.compile(r"^(KITFX):\s+(.*)$")
 
 
 def parse(cap, tag):
@@ -77,7 +79,7 @@ def parse(cap, tag):
         if m:
             by[cur].append((m.group(1), [float(v) for v in m.group(2).split()]))
             continue
-        m = _BUS.match(line)
+        m = _BUS.match(line) or _KITFX.match(line)
         if m:
             by[cur].append((m.group(1), m.group(2).split()))
     return order, by

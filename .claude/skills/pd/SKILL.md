@@ -85,7 +85,7 @@ call each other that way, so the folder *holding* `else/` must be on the path, a
   and more: a sample in any other format works on the Mac and fails on the device. `sfload`
   loading an MP3 prints two FFmpeg warnings on stderr, which a load-time check takes as a failure.
 - ⚠️ **Too big for 495 MB:** `grain.live~`, `grain.sampler~` and `grain.synth~` take ~72 MB each.
-- ⚠️ **CPU on one core:** a reverb costs ~11–14%; `freeze~` at its defaults doesn't fit.
+- ⚠️ **CPU on one core:** an ELSE reverb costs ~11–14% (Cut It's own, in `e_verb`, 1.7%); `freeze~` at its defaults doesn't fit.
 - Every new ELSE object is a dependency the gates exercise only on the Mac's build; check it
   creates on the device too (`device/pd-libs/loadcheck.sh`).
 

@@ -277,7 +277,7 @@ filter logic exists, which is why `mode` and a page-dependent `u_map` exist befo
 | `u_` | One instrument-wide utility | Buses, and owns one of them |
 | `g_` | One display surface, and its sole owner | Consumes `disp` |
 | `c_` | **Instantiable** — there is more than one | Its creation arguments |
-| `e_` | An effect stage (v0.4) | Signal in, signal out |
+| `e_` | An effect stage: the drums' distortion, delay and reverb, inside `c_kit` (2026-11-05), and v0.4's filter stages | Signal in, signal out: the drums' by cords and by `c_kit`'s private `throw~` and `catch~` ([sequencer.md](module/sequencer.md), *The effects*) |
 
 ⛔ **A `c_` prefix means instances, and a `$0-` on everything inside it (C-1).** Six exist:
 `c_clock`, `c_presence` and `c_devid` inside the `m_` layers, `c_mapped` inside `u_map`, one per
@@ -287,8 +287,9 @@ one today, since a second keyboard would want its own. The v0.4 filter stages ar
 
 ## Open
 
-- ⬜ **`e_` has no members yet.** The four filter stages, the drum mode and the sampler are v0.4, and
-  they are the first thing to sit *between* `u_map` and the audio chain rather than beside it. See
+- ⬜ **The filter stages have no `e_` yet**: the only ones are the drums' effects, inside `c_kit`.
+  The four filter stages, the drum mode and the sampler are v0.4, and they are the first thing to
+  sit *between* `u_map` and the audio chain rather than beside it. See
   [plan-v04.md](../plan-v04.md) §3.
 - ⬜ **Nothing composes two `c_clock` instances yet.** Poly-tempo is built and has one consumer. See
   [plan-v04.md](../plan-v04.md) §3.

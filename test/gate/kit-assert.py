@@ -14,6 +14,10 @@ Six claims:
     5. a hit cuts the one before: a retrigger restarts the sample, never doubles it
     6. a track's volume and pitch reach its voice: the level in dB on top of the
        velocity's, the pitch as the read's rate, its length over the rate
+    7. a track's effects: its distortion squares a sine off and darkens with its tone,
+       and passes the dry sound untouched at mix 0; its delay echoes a note value later
+       at the tempo the bus carries, at its level, and rings out once its level goes to
+       0; and its send gives the reverb a tail, which a send of 0 gives no new hit
 
 Standard library only.
 """
@@ -236,6 +240,74 @@ def main():
                 % (name, length), peak(after) < SILENT and rms(seg) > TONE_RMS * 0.9,
                 "peak %.5f after %.2f s" % (peak(after), length))
 
+    # ---- 7. a track's effects ---------------------------------------------------
+    print("\n--- 7. a track's effects ---")
+
+    def crest(xs):
+        return peak(xs) / rms(xs) if rms(xs) else 0.0
+
+    seg = inside(window("DIST"), G.SET_MS)
+    # drive 100 is a gain of 100 into the clip, and the clip's output 1 over its root, 0.1
+    A.check("⛔ DIST: drive 100 mixed all the way in squares pad 1's sine off: its crest factor "
+            "near 1 where a sine's is 1.41", crest(seg) < 1.15,
+            "crest %.3f, rms %.4f, peak %.4f" % (crest(seg), rms(seg), peak(seg)))
+    A.check("DIST: ... at the clip's level, 1 over the root of the drive's gain of 100: 0.1",
+            abs(peak(seg) - 0.1) < 0.012, "peak %.4f" % peak(seg))
+    dark = inside(window("DARK"), G.SET_MS)
+    # a one-pole low-pass at 300 Hz passes 0.57 of a 440 Hz fundamental and little of the rest
+    A.check("DARK: tone 0, its low-pass at 300 Hz, rounds the square's edges off, a sine's crest "
+            "again, and takes nearly half its level", rms(dark) < rms(seg) * 0.6
+            and crest(dark) > 1.3, "rms %.4f against DIST's %.4f, crest %.3f"
+            % (rms(dark), rms(seg), crest(dark)))
+    dry = inside(window("DRY"), G.SET_MS)
+    A.check("⛔ DRY: dist 0 passes the sine untouched -- its level and a sine's crest again",
+            abs(rms(dry) - TONE_RMS) / TONE_RMS < RMS_TOL and abs(crest(dry) - 2 ** 0.5) < 0.05,
+            "rms %.5f, wanted %.5f; crest %.3f" % (rms(dry), TONE_RMS, crest(dry)))
+
+    def onset(a, b, thr=0.02):
+        for i in range(max(0, int(a * rate)), min(len(x), int(b * rate))):
+            if abs(x[i]) / 32768.0 > thr:
+                return i
+        return None
+
+    t = G.hit_time(window("ECHO"), G.SET_MS)
+    o1 = onset(t - 0.01, t + 0.05)
+    want = int(round(8 * 15.0 / G.ECHO_BPM * rate))     # a half note, eight steps, at 240
+    o2 = onset(t + G.SAMPLE_S + 0.02, t + 0.9)
+    A.check("⛔ ECHO: a half note's delay on pad 7, at the tempo bus's 240 BPM, echoes it %d "
+            "samples, 500 ms, after it, to the sample" % want,
+            o1 is not None and o2 is not None and abs((o2 - o1) - want) <= 2,
+            "dry at %s, echo at %s: %s samples apart" % (o1, o2, o2 - o1 if o1 and o2 else None))
+    echo = span(t + 0.5 + 0.02, t + 0.5 + G.SAMPLE_S - 0.03)
+    A.check("ECHO: ... at its level, 100, as loud as the hit", abs(rms(echo) - TONE_RMS) / TONE_RMS
+            < RMS_TOL, "rms %.5f, wanted %.5f" % (rms(echo), TONE_RMS))
+    after = span(t + 0.5 + G.SAMPLE_S + 0.02, t + 1.4)
+    A.check("ECHO: ... and once only, at feedback 0", peak(after) < SILENT,
+            "peak %.5f after the echo" % peak(after))
+    t = G.hit_time(window("TAIL"), G.SET_MS)
+    e1 = rms(span(t + 0.5 + 0.02, t + 0.5 + G.SAMPLE_S - 0.03))
+    e2 = rms(span(t + 1.0 + 0.02, t + 1.0 + G.SAMPLE_S - 0.03))
+    A.check("⛔ TAIL: pad 1's level set to 0 after its hit went in, its echoes ring out: the first "
+            "at the hit's level, the second at feedback 50's 0.475 of it",
+            abs(e1 - TONE_RMS) / TONE_RMS < RMS_TOL and abs(e2 / e1 - 0.475) < 0.03,
+            "echoes at rms %.5f and %.5f, a ratio of %.3f" % (e1, e2, e2 / e1 if e1 else 0))
+    t = G.hit_time(window("VERB"), G.SET_MS)
+    tail = span(t + G.SAMPLE_S + 0.02, t + G.SAMPLE_S + 0.12)
+    late = span(t + G.SAMPLE_S + 0.5, t + G.SAMPLE_S + 0.6)
+    A.check("⛔ VERB: pad 7's send at 100 leaves a reverb tail after its sample ends, dying away",
+            rms(tail) > 0.01 and rms(late) < rms(tail) / 3,
+            "rms %.5f just after the sample, %.5f half a second on" % (rms(tail), rms(late)))
+    t = G.hit_time(window("VERB-OFF"), G.SET_MS)
+    off = span(t + G.SAMPLE_S + 0.02, t + G.SAMPLE_S + 0.3)
+    A.check("VERB-OFF: at send 0 a hit leaves nothing after its sample ends",
+            peak(off) < SILENT, "peak %.5f after the sample" % peak(off))
+
+    # ---- 8. every effect switches itself off --------------------------------
+    print("\n--- 8. each effect's DSP has a switch~, so an effect unused costs nothing ---")
+    for name in ("e_drive", "e_delay", "e_verb"):
+        boxes, _cons = top_boxes(os.path.join(ROOT, "Cut It", name + ".pd"))
+        A.check("%s holds one switch~" % name, len(find(boxes, "switch~")) == 1,
+                "switch~ boxes: %s" % find(boxes, "switch~"))
     return A.report()
 
 

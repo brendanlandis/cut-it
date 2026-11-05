@@ -409,6 +409,13 @@ SEQ_OWN = {16: 24}
 SEQ_VOL = {16: -12}
 SEQ_PITCH = {3: 5}
 SEQ_SIG = (7, 8)
+# Effects off their starting points, so the seed is the 711-number line and the restore tells
+# c_kit them (c_steps.lua's R.FX, in its order, each with its starting point): track 2's
+# distortion mixed in at 40, track 5's delay a dotted quarter at 30, track 9's send at 60, and
+# the reverb's size 70.
+SEQ_FX = [("drive", 50, {}), ("tone", 60, {}), ("dist", 0, {2: 40}), ("note", 3, {5: 2}),
+          ("feel", 1, {5: 3}), ("feedback", 40, {}), ("delay", 0, {5: 30}), ("send", 0, {9: 60})]
+SEQ_VERB = [("size", 50, 70), ("damping", 50, 50)]
 
 
 def sequencer(g):
@@ -425,8 +432,8 @@ def sequencer(g):
     # A saved song whose one section holds a pattern, so the restore at ~3.5 s is under test
     # as well as the edits after it, and its last cells, track 16's own last step and volume,
     # track 3's pitch, a time signature of 7/8, the swing at 50% and the global last step at
-    # 16, prove the whole 581-atom line came back. No randomness and sober, so every note is
-    # where the pattern says. The knobs start held where the seed has them.
+    # 16, and its effects, prove the whole 711-atom line came back. No randomness and sober, so
+    # every note is where the pattern says. The knobs start held where the seed has them.
     pat = [0] * 581
     for (track, step), v in SEQ_SEED.items():
         pat[(track - 1) * 32 + step - 1] = v
@@ -438,6 +445,9 @@ def sequencer(g):
         pat[560 + track - 1] = st
     pat[576], pat[577] = SEQ_SIG
     pat[579], pat[580] = 50, 16
+    for _name, start, moved in SEQ_FX:
+        pat += [moved.get(t, start) for t in range(1, 17)]
+    pat += [v for _name, _start, v in SEQ_VERB]
     drums = "drums %s\n" % " ".join(map(str, pat))
     # Page 2, the drum page, restored at about 3.5 s by u_state, and the song by u_song after
     # it, before the first press.

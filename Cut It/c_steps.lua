@@ -1,7 +1,7 @@
 -- c_steps.lua -- the drum sequencer's rules: the pattern, the step rule, the velocity levels, the
 -- selected track and level, the last steps, each track's place in its loop, the time signature,
--- swing, drunkenness, the repeats, each track's randomness, volume and pitch, and which notes fire
--- on a step. Plain Lua with no Pd in it, so test/gate/lua/c_steps_test.lua runs it on the Mac with
+-- swing, drunkenness, the repeats, each track's randomness, volume and pitch, each track's
+-- effects and the reverb's, and which notes fire on a step. Plain Lua with no Pd in it, so test/gate/lua/c_steps_test.lua runs it on the Mac with
 -- lua.org's interpreter. c_steps-lua.pd_lua is its Pd face, and c_steps.pd keeps the clock, the
 -- transport and the cords to c_kit, g_grid and u_state. ref/module/sequencer.md.
 --
@@ -9,9 +9,10 @@
 -- the pattern. Every rule returns what leaves, in order, as {outlet, selector, atoms}:
 --   {"note", "pad", {pad, velocity}}                          to c_kit
 --   {"note", "vol" | "pitch", {pad, dB or semitones}}         to c_kit, a track's
+--   {"note", <effect>, {pad, value} or {value}}               to c_kit, an effect's (R.FX)
 --   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep", {...}}
 --                                                             to g_grid's third inlet
---   {"save", "list", {581 numbers, R.save}}                   to the state bus, put section <part>
+--   {"save", "list", {581 or 711 numbers, R.save}}                   to the state bus, put section <part>
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
 --   {"bar", "bar", {}}                                        to u_song: the pattern's loop ends
 --   {"err", "fail", {"c_steps", text}}                        to err (C-12)
@@ -63,11 +64,29 @@ R.REPEATS = 4
 -- randomness, 0 to 100 (Brendan, 2026-11-05).
 R.VOL_MIN, R.VOL_MAX = -30, 6
 R.PITCH_MIN, R.PITCH_MAX = -12, 12
--- What R.save writes, in order; what it wrote until the song store, without the swing and the
--- global last step, which a section holds since (cut-it/songs-and-sections); and what it wrote
--- until 2026-11-05, when each track had a skip and a move chance where its randomness and its
--- volume are now, and no pitch.
-R.SAVED = R.TRACKS * R.STEPS + 4 * R.TRACKS + 5
+-- Each track's effects (Brendan, 2026-11-05), c_kit's to play: a distortion, its drive, its tone
+-- and its mix; a delay, its time a note value and a feel, its feedback and its level; and its send
+-- to the one reverb, whose size and damping are the kit's. Each is 0 to 100 but the note and the
+-- feel, places in R.NOTES and R.FEELS. In the order R.save writes them, each with its range and
+-- what a track starts at: a mix, a level or a send of 0 is off, and c_kit switches that effect's
+-- DSP off, so a pattern saved before the effects loads with them off and costs nothing.
+R.FX = { { "drive", 0, 100, 50 }, { "tone", 0, 100, 60 }, { "dist", 0, 100, 0 },
+         { "note", 1, 5, 3 }, { "feel", 1, 3, 1 }, { "feedback", 0, 100, 40 },
+         { "delay", 0, 100, 0 }, { "send", 0, 100, 0 } }
+R.VERB = { { "size", 0, 100, 50 }, { "damping", 0, 100, 50 } }
+-- The delay's times, counted in note values with triplets and dotted ones (Brendan, 2026-11-05):
+-- each note value in steps, a step a sixteenth, so the delay follows the tempo; and each feel's
+-- share of it. The phone shows their names.
+R.NOTES = { 8, 4, 2, 1, 0.5 }
+R.NOTE_NAMES = { "1/2", "1/4", "1/8", "1/16", "1/32" }
+R.FEELS = { 1, 2 / 3, 3 / 2 }
+R.FEEL_NAMES = { "straight", "triplet", "dotted" }
+-- What R.save writes, in order; what it wrote before the effects; what it wrote until the song
+-- store, without the swing and the global last step, which a section holds since
+-- (cut-it/songs-and-sections); and what it wrote until 2026-11-05, when each track had a skip and
+-- a move chance where its randomness and its volume are now, and no pitch.
+R.SAVED_FXLESS = R.TRACKS * R.STEPS + 4 * R.TRACKS + 5
+R.SAVED = R.SAVED_FXLESS + #R.FX * R.TRACKS + #R.VERB
 R.SAVED_SECTIONLESS = R.TRACKS * R.STEPS + 4 * R.TRACKS + 3
 R.SAVED_CHANCES = R.TRACKS * R.STEPS + 3 * R.TRACKS + 3
 
@@ -151,6 +170,13 @@ function R.new(bank)
     st.own[t], st.pos[t], st.hist[t] = 0, 0, {}
     st.randomness[t], st.vol[t], st.pitch[t] = 0, 0, 0
   end
+  -- the effects at their starting points, and what c_kit has been told of them: nothing yet
+  st.fx, st.verb, st.told = {}, {}, {}
+  for _, f in ipairs(R.FX) do
+    st.fx[f[1]] = {}
+    for t = 1, R.TRACKS do st.fx[f[1]][t] = f[4] end
+  end
+  for _, f in ipairs(R.VERB) do st.verb[f[1]] = f[4] end
   return st
 end
 
@@ -185,8 +211,13 @@ end
 -- The whole pattern, zeros included: 512 velocities, then the 16 tracks' own last steps, 0 for
 -- one that follows the global last step, then their randomness, 0 to 100, their volumes in dB and
 -- their pitches in semitones, then the time signature, the drunkenness, 0 to 100, the swing, 50 to
--- 75, and the global last step: 581 numbers. What a section holds of the drums and the
--- arrangement page (Brendan, 2026-11-04), put as the section's <part> (ref/module/songs.md).
+-- 75, and the global last step, 581 numbers; then, once any effect is off its starting point,
+-- each effect of R.FX for every track, track 1 first, and the reverb's size and damping: 711.
+-- While every one is at its starting point the line stays 581, as it was saved before the
+-- effects, so a song saved before them restores and is put back as it was, not as a change to
+-- save, and an unused effect costs the put nothing. What a section holds of the drums and the
+-- arrangement page (Brendan, 2026-11-04), its effects with them (2026-11-05), put as the
+-- section's <part> (ref/module/songs.md).
 function R.save(st)
   local all, cells = {}, R.TRACKS * R.STEPS
   for i = 1, cells do all[i] = st.pattern[i] end
@@ -199,15 +230,34 @@ function R.save(st)
   local n = cells + 4 * R.TRACKS
   all[n + 1], all[n + 2], all[n + 3] = st.num, st.den, st.drunk
   all[n + 4], all[n + 5] = st.swing, st.last
+  if not R.fx_moved(st) then return { "save", "list", all } end
+  local k = R.SAVED_FXLESS
+  for _, f in ipairs(R.FX) do
+    for t = 1, R.TRACKS do k = k + 1; all[k] = st.fx[f[1]][t] end
+  end
+  for _, f in ipairs(R.VERB) do k = k + 1; all[k] = st.verb[f[1]] end
   return { "save", "list", all }
 end
 
--- At load: the page's selection, before anything is pressed, and the step clock straight; and
--- the pattern, put, so the section playing holds the drums from the start (ref/module/songs.md).
+-- Whether any effect, a track's or the reverb's, is off its starting point.
+function R.fx_moved(st)
+  for _, f in ipairs(R.FX) do
+    for t = 1, R.TRACKS do if st.fx[f[1]][t] ~= f[4] then return true end end
+  end
+  for _, f in ipairs(R.VERB) do if st.verb[f[1]] ~= f[4] then return true end end
+  return false
+end
+
+-- At load: the page's selection, before anything is pressed, and the step clock straight; the
+-- pattern, put, so the section playing holds the drums from the start (ref/module/songs.md); and
+-- every effect's value to c_kit, which sets none of its own at load (R.tell_fx).
 function R.boot(st)
-  return { { "page", "vel", { st.level } }, { "page", "track", { st.track } }, R.page_last(st),
-           R.steps(st), R.page_bar(st), { "page", "rep", { st.rep } },
-           { "clock", "swing", { st.swing / 100 } }, { "clock", "rate", { st.rate } }, R.save(st) }
+  local out = { { "page", "vel", { st.level } }, { "page", "track", { st.track } },
+                R.page_last(st), R.steps(st), R.page_bar(st), { "page", "rep", { st.rep } },
+                { "clock", "swing", { st.swing / 100 } }, { "clock", "rate", { st.rate } },
+                R.save(st) }
+  for _, e in ipairs(R.tell_fx(st)) do out[#out + 1] = e end
+  return out
 end
 
 -- A step press, on the selected track, on a step cell (R.cell_step). The step rule: off takes
@@ -481,8 +531,9 @@ end
 -- global last step, the selected track, a pending sync or snap (0 none, 1 sync, 2 snap), then
 -- each track's last step, then 1 for each track with a last step of its own, then the time
 -- signature, the drunkenness and the swing, then each track's volume, its pitch and its
--- randomness. 88 numbers.
-R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS
+-- randomness, then the selected track's effects, in R.FX's order, and the reverb's size and
+-- damping. 98 numbers.
+R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS + #R.FX + #R.VERB
 function R.phone(st)
   local out = { st.playing and 1 or 0, R.global_last(st), st.track,
                 st.snap and 2 or (st.sync and 1 or 0) }
@@ -492,6 +543,8 @@ function R.phone(st)
   for _, which in ipairs({ "vol", "pitch", "randomness" }) do
     for t = 1, R.TRACKS do out[#out + 1] = st[which][t] end
   end
+  for _, f in ipairs(R.FX) do out[#out + 1] = st.fx[f[1]][st.track] end
+  for _, f in ipairs(R.VERB) do out[#out + 1] = st.verb[f[1]] end
   return out
 end
 
@@ -607,9 +660,99 @@ function R.stop(st)
   return { { "page", "play", { 0 } } }
 end
 
+-- ---------------------------------------------------------------- the effects
+-- Each track's distortion, delay and send, and the reverb's size and damping (Brendan,
+-- 2026-11-05), played by c_kit: R.FX and R.VERB name them. c_kit sets none of its own at load,
+-- so it is told every value at load (R.boot), and after that each one as it changes.
+
+local FX_BY, VERB_BY = {}, {}
+for _, f in ipairs(R.FX) do FX_BY[f[1]] = f end
+for _, f in ipairs(R.VERB) do VERB_BY[f[1]] = f end
+
+-- What c_kit is told of a track's effect: its value, or for the note and the feel, the delay's
+-- time in steps, the one c_kit plays, delay-time <pad> <steps>.
+local function fx_said(st, t, field)
+  if field == "note" or field == "feel" then
+    return "delay-time", R.NOTES[st.fx.note[t]] * R.FEELS[st.fx.feel[t]]
+  end
+  return field, st.fx[field][t]
+end
+
+-- c_kit told a value, unless it is the one it was told last: so a section's restore, which lands
+-- on a step, sends only what changed, since every message out of the Lua costs about 0.025 ms on
+-- the Organelle and there are 114 values to tell (the Organelle's Reference page, pdlua).
+local function tell(st, out, sel, pad, v)
+  local key = pad and (sel .. " " .. pad) or sel
+  if st.told[key] == v then return end
+  st.told[key] = v
+  out[#out + 1] = { "note", sel, pad and { pad, v } or { v } }
+end
+
+-- Every effect's value c_kit has not been told: each track's in R.FX's order, track 1 first, the
+-- note and the feel as one delay-time, then the reverb's.
+function R.tell_fx(st)
+  local out = {}
+  for t = 1, R.TRACKS do
+    for _, f in ipairs(R.FX) do
+      local sel, v = fx_said(st, t, f[1])
+      tell(st, out, sel, R.pad(st, t), v)
+    end
+  end
+  for _, f in ipairs(R.VERB) do tell(st, out, f[1], nil, st.verb[f[1]]) end
+  return out
+end
+
+-- The drum screen's effect controls for the selected track, sent with the track (Brendan,
+-- 2026-11-05): drive, tone, dist (the distortion's mix), delay-note (1 to 5, 1/2 to 1/32),
+-- delay-feel (1 to 3, straight, triplet, dotted), feedback, delay (its level) and send, each
+-- <track> <value>. Saved, and told to c_kit. The same value again, or a message without a track
+-- and a number, does nothing.
+function R.set_fx(st, field, track, v)
+  local t = track_value(track, v)
+  if not t then return {} end
+  local f = FX_BY[field]
+  local n = whole(v, f[2], f[3])
+  if n == st.fx[field][t] then return {} end
+  st.fx[field][t] = n
+  local out = { R.save(st) }
+  local sel, x = fx_said(st, t, field)
+  tell(st, out, sel, R.pad(st, t), x)
+  return out
+end
+
+-- The reverb's size and damping, the kit's, as they stand. Saved, and told to c_kit.
+function R.set_verb(st, field, v)
+  if type(v) ~= "number" then return {} end
+  local f = VERB_BY[field]
+  local n = whole(v, f[2], f[3])
+  if n == st.verb[field] then return {} end
+  st.verb[field] = n
+  local out = { R.save(st) }
+  tell(st, out, field, nil, n)
+  return out
+end
+
+-- The effects from a saved line, past its first 581: each as far as the line holds it, a symbol
+-- as its range's bottom, and what it does not hold at its starting point, off. So a line saved
+-- before the effects, of any length R.restore takes, comes back with every effect off.
+local function restore_fx(st, values)
+  local k = R.SAVED_FXLESS
+  for _, f in ipairs(R.FX) do
+    for t = 1, R.TRACKS do
+      k = k + 1
+      st.fx[f[1]][t] = values[k] ~= nil and whole(values[k], f[2], f[3]) or f[4]
+    end
+  end
+  for _, f in ipairs(R.VERB) do
+    k = k + 1
+    st.verb[f[1]] = values[k] ~= nil and whole(values[k], f[2], f[3]) or f[4]
+  end
+end
+
 -- A section's restore of <part>, from the song store, or u_state's of section-1-<part>, the auto
 -- key the pattern had before sections, once, then put straight back (ref/module/state.md), which
--- also repairs a short or malformed line; and every track's volume and pitch to c_kit. A line of
+-- also repairs a short or malformed line; and every track's volume and pitch to c_kit, and
+-- whichever effects changed (R.tell_fx), a line of fewer than 711 bringing them back off. A line of
 -- exactly 256 is the 16-step pattern this replaced, track by track: its steps go to each track's
 -- first sixteen. A line of exactly 563 is from before the randomness (2026-11-05): its skip
 -- chances come back as each track's randomness, which took their place, its move chances are
@@ -660,11 +803,13 @@ function R.restore(st, values)
       if st.own[st.track] == 0 then rearm(st.knob.track) end
     end
   end
+  restore_fx(st, values)
   local out = { R.save(st), R.page_last(st), R.steps(st), R.page_bar(st),
                 { "clock", "swing", { st.swing / 100 } } }
   for _, which in ipairs({ "vol", "pitch" }) do
     for t = 1, R.TRACKS do out[#out + 1] = { "note", which, { R.pad(st, t), st[which][t] } } end
   end
+  for _, e in ipairs(R.tell_fx(st)) do out[#out + 1] = e end
   return out
 end
 
@@ -677,8 +822,9 @@ end
 -- <velocity>; its knobs, last, track-last and swing with the knob's 0-1; the drum screen's sync,
 -- snap and select, and its pads' vol, pitch, randomness and set-track-last <track> <value>,
 -- through u_net; and the arrangement screen's num and den (-1 or 1), drunk (0 to 100), set-swing
--- (50 to 75) and set-last (1 to 32), through u_net too. A press, a knob or a setting with no
--- number in it does nothing.
+-- (50 to 75) and set-last (1 to 32), through u_net too; and the drum screen's effects, drive,
+-- tone, dist, delay-note, delay-feel, feedback, delay and send <track> <value>, and size and
+-- damping <value>. A press, a knob or a setting with no number in it does nothing.
 R.presses = {
   step = function(st, a) return pressed(a) and R.press_step(st, a[1]) or {} end,
   vel = function(st, a) return pressed(a) and R.press_vel(st, a[1]) or {} end,
@@ -697,6 +843,16 @@ R.presses = {
   pitch = function(st, a) return R.set_pitch(st, a[1], a[2]) end,
   randomness = function(st, a) return R.set_randomness(st, a[1], a[2]) end,
   ["set-track-last"] = function(st, a) return R.set_track_last(st, a[1], a[2]) end,
+  drive = function(st, a) return R.set_fx(st, "drive", a[1], a[2]) end,
+  tone = function(st, a) return R.set_fx(st, "tone", a[1], a[2]) end,
+  dist = function(st, a) return R.set_fx(st, "dist", a[1], a[2]) end,
+  ["delay-note"] = function(st, a) return R.set_fx(st, "note", a[1], a[2]) end,
+  ["delay-feel"] = function(st, a) return R.set_fx(st, "feel", a[1], a[2]) end,
+  feedback = function(st, a) return R.set_fx(st, "feedback", a[1], a[2]) end,
+  delay = function(st, a) return R.set_fx(st, "delay", a[1], a[2]) end,
+  send = function(st, a) return R.set_fx(st, "send", a[1], a[2]) end,
+  size = function(st, a) return R.set_verb(st, "size", a[1]) end,
+  damping = function(st, a) return R.set_verb(st, "damping", a[1]) end,
   ["set-swing"] = function(st, a) return R.set_swing(st, a[1]) end,
   ["set-last"] = function(st, a) return R.set_last(st, a[1]) end,
 }

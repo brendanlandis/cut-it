@@ -28,10 +28,27 @@ local function row(pat, track)
   return r
 end
 
+-- The effects, as a new sequencer has them, written out here rather than read from R.FX, so a
+-- change to a starting point is a change this test sees (Brendan, 2026-11-05): every track's
+-- drive 50, tone 60, mix 0, note 3 (1/8), feel 1 (straight), feedback 40, level 0 and send 0, in
+-- the order R.save writes them, and the reverb's size and damping, 50 each.
+local FX = { { "drive", 50 }, { "tone", 60 }, { "dist", 0 }, { "note", 3 }, { "feel", 1 },
+             { "feedback", 40 }, { "delay", 0 }, { "send", 0 } }
+local VERB = { { "size", 50 }, { "damping", 50 } }
+-- A delay's time in steps: 1/2 to 1/32, straight, triplet or dotted.
+local NOTE_STEPS, FEEL_SHARE = { 8, 4, 2, 1, 0.5 }, { 1, 2 / 3, 3 / 2 }
+
+-- An effect's value for a track, from fx = { drive = { [3] = 70 }, ... }, its starting point unless
+-- given; and the reverb's, from verb = { size = 80 }.
+local function fx_of(fx, field, t, start)
+  return fx and fx[field] and fx[field][t] or start
+end
+
 -- The saved line: 512 velocities, then the 16 tracks' own last steps, their randomness, their
 -- volumes and their pitches, then the time signature, the drunkenness, the swing and the global
--- last step: 581 numbers. x holds what differs from a new sequencer's: randomness, vol and pitch
--- by track, num, den, drunk, swing, last.
+-- last step: 581 numbers; then, when x gives any effect, each effect of every track and the
+-- reverb's two: 711. x holds what differs from a new sequencer's: randomness, vol and pitch by
+-- track, num, den, drunk, swing, last, and fx and verb.
 local function line(pat, own, x)
   x = x or {}
   local l = {}
@@ -44,14 +61,24 @@ local function line(pat, own, x)
   end
   l[CELLS + 65], l[CELLS + 66], l[CELLS + 67] = x.num or 4, x.den or 4, x.drunk or 0
   l[CELLS + 68], l[CELLS + 69] = x.swing or 50, x.last or 16
+  if not x.fx and not x.verb then return l end
+  for _, f in ipairs(FX) do
+    for t = 1, 16 do l[#l + 1] = fx_of(x.fx, f[1], t, f[2]) end
+  end
+  for _, f in ipairs(VERB) do l[#l + 1] = (x.verb or {})[f[1]] or f[2] end
   return l
 end
 
--- The line saved before sections: the same without the swing and the global last step, 579.
+-- The first n numbers of a line: 581, saved before the effects; 579, before sections, without
+-- the swing and the global last step as well.
+local function first(l, n)
+  local out = {}
+  for i = 1, n do out[i] = l[i] end
+  return out
+end
+
 local function sectionless(pat, own, x)
-  local l = line(pat, own, x)
-  l[#l], l[#l - 1] = nil, nil
-  return l
+  return first(line(pat, own, x), 579)
 end
 
 -- The line saved until 2026-11-05: 563 numbers, each track's skip and move chance where its
@@ -78,6 +105,25 @@ local function kit(vol, pitch)
   return out
 end
 
+-- Every effect c_kit is told when it has been told none, at load or by a sequencer that never
+-- loaded: each track's drive, tone, dist, delay-time, feedback, delay and send, track 1 first,
+-- then the reverb's size and damping, at their starting points unless given (fx, verb).
+local function fx_all(fx, verb)
+  local out = {}
+  for t = 1, 16 do
+    for _, f in ipairs(FX) do
+      if f[1] == "note" then
+        out[#out + 1] = { "note", "delay-time", { t, NOTE_STEPS[fx_of(fx, "note", t, 3)]
+                                                     * FEEL_SHARE[fx_of(fx, "feel", t, 1)] } }
+      elseif f[1] ~= "feel" then
+        out[#out + 1] = { "note", f[1], { t, fx_of(fx, f[1], t, f[2]) } }
+      end
+    end
+  end
+  for _, f in ipairs(VERB) do out[#out + 1] = { "note", f[1], { (verb or {})[f[1]] or f[2] } } end
+  return out
+end
+
 -- Lists one after the other.
 local function cat(...)
   local out = {}
@@ -93,9 +139,10 @@ end
 -- A knob position for a step: what R.knob_step reads back as n.
 local function at(n) return (n - 1) / 31 end
 
--- The phone's 88 numbers, from the few that differ: lasts and owns by track, then the time
+-- The phone's 98 numbers, from the few that differ: lasts and owns by track, then the time
 -- signature, the drunkenness and the swing (4 4 0 50 unless given), then every track's volume,
--- pitch and randomness (per.vol, per.pitch and per.randomness by track, 0 unless given).
+-- pitch and randomness (per.vol, per.pitch and per.randomness by track, 0 unless given), then the
+-- selected track's effects and the reverb's (per.fx and per.verb, as line's x.fx and x.verb).
 local function phone(playing, last, track, pending, lasts, owns, tail, per)
   per = per or {}
   local p = { playing, last, track, pending }
@@ -105,6 +152,8 @@ local function phone(playing, last, track, pending, lasts, owns, tail, per)
   for _, which in ipairs({ "vol", "pitch", "randomness" }) do
     for t = 1, 16 do p[#p + 1] = (per[which] or {})[t] or 0 end
   end
+  for _, f in ipairs(FX) do p[#p + 1] = fx_of(per.fx, f[1], track, f[2]) end
+  for _, f in ipairs(VERB) do p[#p + 1] = (per.verb or {})[f[1]] or f[2] end
   return p
 end
 
@@ -164,8 +213,9 @@ local BOOT = { { "page", "vel", { 6 } }, { "page", "track", { 1 } }, { "page", "
                { "save", "list", line(zeros(CELLS)) } }
 equal("init draws the selection -- vel 6, track 1, last 16, track 1's 32 steps, a blue cell "
       .. "every 4 in rows of 8, no "
-      .. "repeat -- sets the step clock straight, and puts the pattern, so the section playing "
-      .. "holds the drums from the start", R.internal.init(st, {}), BOOT)
+      .. "repeat -- sets the step clock straight, puts the pattern, so the section playing "
+      .. "holds the drums from the start, and tells c_kit every effect, which sets none of its own",
+      R.internal.init(st, {}), cat(BOOT, fx_all()))
 equal("the bank is clipped to 1..10, as [clip 1 10]",
       { R.new(0).bank, R.new(11).bank, R.new(nil).bank, R.new(3).bank }, { 1, 10, 1, 3 })
 
@@ -351,7 +401,7 @@ equal("a restore takes the 512 and the 16 last steps, puts them straight back, r
       R.internal.restore(st, line(pat, own)),
       cat({ { "save", "list", line(pat, own) }, { "page", "last", { 16 } },
             { "page", "steps", row(pat, 1) }, { "page", "bar", { 4, 8 } },
-            { "clock", "swing", { 0.5 } } }, kit()))
+            { "clock", "swing", { 0.5 } } }, kit(), fx_all()))
 equal("... and the pattern and the last steps are the line's", { st.pattern, st.own }, { pat, own })
 local old = zeros(256)
 old[3], old[16], old[17], old[256] = 20, 99, 77, 127
@@ -880,9 +930,10 @@ equal("PLAY lets go of a held repeat", { R.internal.start(st, {})[2], run(st, 2)
 
 print("\n--- the settings in the restore ---")
 st = R.new(1)
-local full = line(zeros(CELLS), nil, { randomness = { [2] = 30 }, vol = { [5] = -12 },
-                                       pitch = { [7] = 5 }, num = 7, den = 8, drunk = 25,
-                                       swing = 60, last = 12 })
+R.internal.init(st, {})
+local full = first(line(zeros(CELLS), nil, { randomness = { [2] = 30 }, vol = { [5] = -12 },
+                                             pitch = { [7] = 5 }, num = 7, den = 8, drunk = 25,
+                                             swing = 60, last = 12 }), 581)
 local back = R.internal.restore(st, full)
 equal("a line of 581 brings back the randomness, the volumes, the pitches, the time signature, "
       .. "the drunkenness, the swing and the global last step",
@@ -894,7 +945,8 @@ equal("⛔ ... and knobs 2 and 4 are held at them, as at the phone's: a knob els
       .. "knob 2's step 20 of 7/8's 28", { R.presses.last(st, { 19 / 27 }), R.presses.swing(st, { 0.9 }) },
       { { { "disp", "last-step", { 12, "(20)" } } }, { { "disp", "swing", { 60, "(73)" } } } })
 equal("⛔ ... and tells c_kit every track's volume and pitch, track 5's -12 and track 7's 5 among "
-      .. "them", { #back, back[5 + 5], back[5 + 16 + 7] },
+      .. "them, and no effect, since a line of 581 brings them back off, as c_kit was told at load",
+      { #back, back[5 + 5], back[5 + 16 + 7] },
       { 5 + 32, { "note", "vol", { 5, -12 } }, { "note", "pitch", { 7, 5 } } })
 st = R.new(1)
 st.swing, st.last = 70, 20
@@ -931,6 +983,115 @@ R.internal.restore(st, full)
 equal("a volume or a pitch out of its range is clipped: -30 to +6 dB, -12 to +12 semitones",
       { st.vol[1], st.vol[2], st.pitch[1], st.pitch[2] }, { -30, 6, 12, -12 })
 
+print("\n--- the effects ---")
+-- Each track's distortion, delay and send, and the one reverb's size and damping (Brendan,
+-- 2026-11-05): saved with the pattern, told to c_kit, and on the phone for the selected track.
+st = R.new(1)
+equal("a new sequencer has every effect at its starting point, and every mix, level and send at 0, "
+      .. "off", { st.fx.drive[1], st.fx.tone[16], st.fx.dist[5], st.fx.note[2], st.fx.feel[2],
+                  st.fx.feedback[9], st.fx.delay[3], st.fx.send[16], st.verb.size,
+                  st.verb.damping }, { 50, 60, 0, 3, 1, 40, 0, 0, 50, 50 })
+equal("⛔ the line is 711 numbers, the effects after the 581 it held before them", R.SAVED, 711)
+R.internal.init(st, {})
+equal("⛔ a track's distortion mix from the drum screen, its own track's: saved, and to c_kit",
+      R.presses.dist(st, { 3, 40 }),
+      { { "save", "list", line(zeros(CELLS), nil, { fx = { dist = { [3] = 40 } } }) },
+        { "note", "dist", { 3, 40 } } })
+equal("... the same value again does nothing", R.presses.dist(st, { 3, 40 }), {})
+equal("... nor does one with no track or no number",
+      { R.presses.dist(st, { 3 }), R.presses.dist(st, {}), R.presses.drive(st, { "x", 20 }) },
+      { {}, {}, {} })
+equal("drive, tone, feedback, level and send, each its own track's, each to c_kit as it is",
+      { R.presses.drive(st, { 1, 80 })[2], R.presses.tone(st, { 2, 10 })[2],
+        R.presses.feedback(st, { 4, 70 })[2], R.presses.delay(st, { 5, 30 })[2],
+        R.presses.send(st, { 6, 55 })[2] },
+      { { "note", "drive", { 1, 80 } }, { "note", "tone", { 2, 10 } },
+        { "note", "feedback", { 4, 70 } }, { "note", "delay", { 5, 30 } },
+        { "note", "send", { 6, 55 } } })
+equal("⛔ each is clipped to 0 to 100 and rounded", { R.presses.drive(st, { 1, 150 })[2],
+                                                    R.presses.send(st, { 6, -5 })[2],
+                                                    R.presses.tone(st, { 2, 10.4 }) },
+      { { "note", "drive", { 1, 100 } }, { "note", "send", { 6, 0 } }, {} })
+equal("⛔ a delay's note value goes to c_kit as its time in steps: 1/16 is one step",
+      R.presses["delay-note"](st, { 7, 4 })[2], { "note", "delay-time", { 7, 1 } })
+equal("⛔ ... dotted, half again: 1.5 steps", R.presses["delay-feel"](st, { 7, 3 })[2],
+      { "note", "delay-time", { 7, 1.5 } })
+equal("⛔ ... a half note triplet, two thirds of eight steps", (function()
+  R.presses["delay-note"](st, { 7, 1 })
+  return R.presses["delay-feel"](st, { 7, 2 })[2]
+end)(), { "note", "delay-time", { 7, 16 / 3 } })
+equal("... and the notes run 1 to 5 and the feels 1 to 3, clipped", (function()
+  R.presses["delay-note"](st, { 8, 9 })
+  R.presses["delay-feel"](st, { 8, 0 })
+  return { st.fx.note[8], st.fx.feel[8], st.told["delay-time 8"] }
+end)(), { 5, 1, 0.5 })
+equal("⛔ the reverb's size and damping are the kit's, one each: saved, and to c_kit with no pad",
+      { R.presses.size(st, { 80 }), R.presses.damping(st, { 20 })[2], R.presses.size(st, {}) },
+      { { { "save", "list", line(zeros(CELLS), nil, {
+            fx = { dist = { [3] = 40 }, drive = { [1] = 100 }, tone = { [2] = 10 },
+                   feedback = { [4] = 70 }, delay = { [5] = 30 }, note = { [7] = 1, [8] = 5 },
+                   feel = { [7] = 2 } }, verb = { size = 80 } }) },
+          { "note", "size", { 80 } } }, { "note", "damping", { 20 } }, {} })
+local P = 4 + 32 + 4 + 48
+equal("⛔ the phone hears the selected track's effects and the reverb's, after the rest",
+      { R.phone(st)[P + 1], R.phone(st)[P + 3], R.phone(st)[P + 9], R.phone(st)[P + 10],
+        #R.phone(st) }, { 100, 0, 80, 20, 98 })
+R.select(st, 7)
+equal("... and another track's once it is selected: track 7's 1/2 triplet",
+      { R.phone(st)[P + 4], R.phone(st)[P + 5], R.phone(st)[P + 6] }, { 1, 2, 40 })
+equal("the effects play no note and change no step", { run(st, 1), st.pattern }, { "1:", zeros(CELLS) })
+
+print("\n--- the effects in the restore ---")
+st = R.new(1)
+R.internal.init(st, {})
+local fxl = line(zeros(CELLS), nil, { fx = { dist = { [2] = 60 }, delay = { [2] = 45 },
+                                             note = { [2] = 2 }, feel = { [2] = 3 },
+                                             send = { [9] = 70 } },
+                                      verb = { damping = 90 } })
+back = R.internal.restore(st, fxl)
+equal("⛔ a line of 711 brings every effect back, and is put straight back as it came",
+      { st.fx.dist[2], st.fx.delay[2], st.fx.note[2], st.fx.feel[2], st.fx.send[9],
+        st.verb.damping, back[1] }, { 60, 45, 2, 3, 70, 90, { "save", "list", fxl } })
+equal("⛔ ... and tells c_kit only the effects that changed, after the volumes and pitches",
+      { #back, back[5 + 32 + 1], back[5 + 32 + 2], back[5 + 32 + 3], back[5 + 32 + 4],
+        back[5 + 32 + 5] },
+      { 5 + 32 + 5, { "note", "dist", { 2, 60 } }, { "note", "delay-time", { 2, 6 } },
+        { "note", "delay", { 2, 45 } }, { "note", "send", { 9, 70 } },
+        { "note", "damping", { 90 } } })
+equal("⛔ the same line again tells c_kit no effect at all", #R.internal.restore(st, fxl), 5 + 32)
+back = R.internal.restore(st, first(fxl, 581))
+equal("⛔ a line of 581, saved before the effects, brings every one back off, and c_kit is told so",
+      { st.fx.dist[2], st.fx.delay[2], st.fx.send[9], st.verb.damping, #back, back[5 + 32 + 1],
+        back[5 + 32 + 4] },
+      { 0, 0, 0, 50, 5 + 32 + 5, { "note", "dist", { 2, 0 } }, { "note", "send", { 9, 0 } } })
+equal("⛔ ... and is put back as the 581 it came as, so a song saved before the effects is no "
+      .. "change to save", back[1], { "save", "list", first(fxl, 581) })
+st.fx.drive[4] = 51
+equal("⛔ the line is 711 once any effect is off its starting point, a drive among them, and 581 "
+      .. "again once none is", { #R.save(st)[3], (function() st.fx.drive[4] = 50
+                                                    return #R.save(st)[3] end)() }, { 711, 581 })
+R.internal.restore(st, fxl)
+R.internal.restore(st, sectionless(zeros(CELLS)))
+equal("⛔ so does a line of 579, and the old lines of 563 and 256", (function()
+  local got = { st.fx.dist[2] }
+  R.internal.restore(st, fxl)
+  R.internal.restore(st, old_line(zeros(CELLS)))
+  got[2] = st.fx.send[9]
+  R.internal.restore(st, fxl)
+  R.internal.restore(st, zeros(256))
+  got[3] = st.fx.delay[2]
+  return got
+end)(), { 0, 0, 0 })
+local odd = line(zeros(CELLS), nil, {})
+odd[582], odd[582 + 16 * 3] = 400, "x"
+odd[582 + 16 * 4 + 1] = 7
+R.internal.restore(st, odd)
+equal("a value out of its range is clipped, and a symbol is its range's bottom",
+      { st.fx.drive[1], st.fx.note[1], st.fx.feel[2] }, { 100, 1, 3 })
+st = R.new(1)
+equal("⛔ a sequencer that never loaded tells c_kit every effect at its first restore",
+      #R.internal.restore(st, fxl), 5 + 32 + 114)
+
 print("\n--- the Pd face ---")
 local class = T.load_class(DIR .. "c_steps-lua.pd_lua", DIR)
 check("c_steps-lua.pd_lua registers the class c_steps-lua", class and class._name == "c_steps-lua",
@@ -938,13 +1099,17 @@ check("c_steps-lua.pd_lua registers the class c_steps-lua", class and class._nam
 local o = T.new(class, { 1 })
 check("an object has two inlets and nine outlets", o and o.inlets == 2 and o.outlets == 9,
       o and (o.inlets .. " " .. o.outlets))
-equal("init: the page's selection on outlet 2, the drum screen's state on outlet 7, then the "
-      .. "bang on outlet 5 that says it loaded",
-      T.send(o, 2, "init", {}), { { 2, "vel", { 6 } }, { 2, "track", { 1 } }, { 2, "last", { 16 } },
+equal("init: the page's selection on outlet 2, every effect on outlet 1, for c_kit, the drum "
+      .. "screen's state on outlet 7, then the bang on outlet 5 that says it loaded",
+      T.send(o, 2, "init", {}), cat({ { 2, "vel", { 6 } }, { 2, "track", { 1 } }, { 2, "last", { 16 } },
                                   { 2, "steps", zeros(32) }, { 2, "bar", { 4, 8 } }, { 2, "rep", { 0 } },
                                   { 8, "swing", { 0.5 } }, { 8, "rate", { 1 } },
-                                  { 3, "list", line(zeros(CELLS)) },
-                                  { 7, "list", phone(0, 16, 1, 0, {}, {}) }, { 5, "bang", {} } })
+                                  { 3, "list", line(zeros(CELLS)) } },
+      (function()
+        local out = {}
+        for _, e in ipairs(fx_all()) do out[#out + 1] = { 1, e[2], e[3] } end
+        return out
+      end)(), { { 7, "list", phone(0, 16, 1, 0, {}, {}) }, { 5, "bang", {} } }))
 equal("knob 2 held: its row on outlet 6", T.send(o, 1, "last", { at(9) }),
       { { 6, "last-step", { 16, "(9)" } } })
 local sent = T.send(o, 1, "step", { 1, 100 })

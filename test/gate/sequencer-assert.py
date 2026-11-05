@@ -54,9 +54,10 @@ NOTE = re.compile(r"^KITOUT:\s+(-?[\d.]+)\s+(-?[\d.]+)$")
 
 
 CELLS = 16 * 32                 # then the 16 tracks' own last steps, their randomness, volumes
-LINE = CELLS + 16 * 4 + 5       # and pitches, the time signature, the drunkenness, the swing
+FXLESS = CELLS + 16 * 4 + 5     # and pitches, the time signature, the drunkenness, the swing
                                 # and the global last step: 581
-NUM, DRUNK, SWING, LAST = LINE - 5, LINE - 3, LINE - 2, LINE - 1   # NUM, then the bottom
+LINE = FXLESS + 8 * 16 + 2      # then each track's eight effects and the reverb's two: 711
+NUM, DRUNK, SWING, LAST = FXLESS - 5, FXLESS - 3, FXLESS - 2, FXLESS - 1   # NUM, then the bottom
 RAND, VOL, PITCH = CELLS + 16, CELLS + 32, CELLS + 48    # where each track's are, track 1 first
 LEVEL_VELS = [round(127 * n / 8 + 1e-9) for n in range(1, 9)]   # 16 32 48 64 79 95 111 127
 # The seed's 7/8: rows of 7 steps on the page, a blue step every 7, each row's first. The windows
@@ -187,7 +188,7 @@ def main():
     lay = G.drum_layout()
     seed = read_key(opt.seed)
     if not A.check("the seed holds %s, 512 velocities, 16 last steps, randomnesses, volumes "
-                   "and pitches, 7/8, sober, swing 50%% and the last step 16" % KEY, seed is not None and len(seed) == LINE,
+                   "and pitches, 7/8, sober, swing 50%% and the last step 16, and effects" % KEY, seed is not None and len(seed) == LINE,
                    "seed: %s" % seed):
         return A.report()
 
@@ -204,6 +205,7 @@ def main():
     knob_rows = lambda k, name: [e[1] for e in W(k)
                                  if e[0] == "DISP" and e[1][:1] == [name]]
     kits = lambda k, kind: [[int(v) for v in e[1]] for e in W(k) if e[0] == kind]
+    kitfx = lambda k: [e[1] for e in W(k) if e[0] == "KITFX"]
 
     # The pattern after each window, step by step through the driver's presses.
     pat = {"RESTORE": list(seed), "NINE": list(seed), "THREE": list(seed)}
@@ -240,7 +242,7 @@ def main():
             ons("EARLY") == [(1, 127)], "note-ons: %s" % ons("EARLY"))
 
     print("\n--- the restore ---")
-    A.check("⛔ the restored pattern is put straight back -- once, the seeded 581 exactly",
+    A.check("⛔ the restored pattern is put straight back -- once, the seeded 711 exactly",
             puts("RESTORE") == [seed],
             "%d put(s) of %s; the first holds %s values" % (
                 len(puts("RESTORE")), KEY, len(puts("RESTORE")[0]) if puts("RESTORE") else 0))
@@ -256,6 +258,14 @@ def main():
     A.check("⛔ ... and every track's pitch, track 3's seeded %+d semitones among them"
             % seed[PITCH + 2], kits("RESTORE", "KITPITCH") == want and seed[PITCH + 2] != 0,
             "KITPITCH %s, want %s" % (kits("RESTORE", "KITPITCH"), want))
+    # c_kit was told every effect at its starting point at load, so the restore tells it the
+    # seeded ones alone: track 2's mix, track 5's dotted quarter, six steps, and its level, track
+    # 9's send and the reverb's size (scratch-gates.py's SEQ_FX).
+    want = [["dist", "2", "40"], ["delay-time", "5", "6"], ["delay", "5", "30"],
+            ["send", "9", "60"], ["size", "70"]]
+    A.check("⛔ ... and the seeded effects, the ones that moved since load and no others: track 2's "
+            "distortion, track 5's delay, track 9's send and the reverb's size",
+            kitfx("RESTORE") == want, "KITFX %s, want %s" % (kitfx("RESTORE"), want))
 
     print("\n--- the time signature ---")
     sig = lambda k: [(l[NUM], l[NUM + 1]) for l in puts(k)]
@@ -541,9 +551,9 @@ def main():
     pitch = list(seed[PITCH:PITCH + 16])
     vol[1], pitch[1] = -6, 7
     # the swing back at 50% (SW-STOP), the global last step at 3 since LAST-3
-    snapped = final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 100, 50, 3]
+    snapped = final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 100, 50, 3] + seed[FXLESS:]
     A.check("⛔ the pattern reaches the song's draft as section 1's ONE drums line, the final "
-            "581 exactly", disk == snapped and len(lines) == 1 and len(lines[0].split()) == LINE + 1,
+            "711 exactly, its effects as seeded", disk == snapped and len(lines) == 1 and len(lines[0].split()) == LINE + 1,
             "on disk: %s" % (disk if disk is None else "%d values" % len(disk)))
 
     errs = [e[1] for k in order for e in W(k) if e[0] == "ERR"

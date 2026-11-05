@@ -140,3 +140,31 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Need:** Playing, from the step before.
   - **Do:** Press page 1. Drag the bottom number from 4 up to 16, listening, then down to 1, then back to 4. Then drag the top number back to 4.
   - **Pass if:** The drums keep exactly the same speed and pattern while the bottom number moves, and the Launchpad's page does not change with it: only the phone's bottom number moves. At 4/4 the rows are eight again.
+
+- [ ] **30. Distortion on one drum**
+  - **Need:** Brendan's samples deployed, the phone linked, 4/4 at 120 BPM. On page 2, the bottom-left drum pad, pad 1, with steps 1, 5, 9 and 13 lit and nothing else lit on any track.
+  - **Send:** `start bang; mode mode-2`
+  - **Do:** On the phone tap pad 1, then effect's distortion. Turn mix all the way up, then drive from all the way left to all the way right, listening, then tone from right to left. Then turn mix back to 0.
+  - **Pass if:** At drive 0 the drum sounds much as it did; turning drive up makes it fuzzier and more compressed, its tail louder against its attack, and at the top it is a hard square buzz. Tone turned left takes the fizz off until it is a dull thud. Back at mix 0 the drum is exactly as it was before the step, and no other drum changed throughout.
+
+- [ ] **31. Delays of different note values on two drums**
+  - **Need:** Playing, from the step before, with mix back at 0. Light the bottom row's second pad, pad 2's, steps 3 and 11.
+  - **Do:** On the phone tap pad 1, then delay. Tap 1/4 and straight, and turn feedback to about 30% and level all the way up. Then tap pad 2, tap 1/8 and dotted, feedback about 50%, level all the way up. Listen for a few bars, then on page 1 drag the tempo from 120 to 90 and back.
+  - **Pass if:** Pad 1 repeats a quarter note after each hit, a few times, quieter each time; pad 2 repeats a dotted eighth after its hits, more times, so the two drums echo on different grids at once. Dragging the tempo slows both delays with the beat, the echoes still on it, sliding in pitch while it moves. Switching pad 2 to triplet moves its echoes onto a triplet grid.
+
+- [ ] **32. A delay rings out when its level goes down**
+  - **Need:** Playing, from the step before.
+  - **Do:** On the phone tap pad 2, and with the delay showing turn its level all the way down in one move. Then press STOP on the nanoKONTROL and wait.
+  - **Pass if:** Pad 2 stops making new echoes at once, but the ones already sounding die away on their own over a few repeats rather than cutting off. After STOP pad 1's last echoes ring out the same way and then there is silence.
+
+- [ ] **33. The reverb send**
+  - **Need:** The pattern from the steps before, stopped.
+  - **Send:** `start bang`
+  - **Do:** On the phone tap pad 1, then reverb. Turn send to about 50%, then all the way up. Turn size from left to right, then damping from left to right. Tap pad 2 and turn its send up, then pad 1's back to 0.
+  - **Pass if:** Pad 1 gets a room around it that grows with the send, while pad 2 stays dry; size takes it from a short room to a long wash; damping takes the brightness out of the tail. Once pad 2's send is up it has the same reverb, and with pad 1's at 0, pad 1 is dry again while pad 2 keeps its tail. Size and damping are the same whichever pad is selected: there is one reverb.
+
+- [ ] **34. The effects are saved with a section**
+  - **Need:** The pattern and effects from the steps before: pad 1 with its quarter-note delay, pad 2 with its reverb send. The Launchpad's top row with two sections.
+  - **Do:** Press the top row's second pad, the second section, and let it start; on the phone tap pad 1, then delay, and turn its level to 0, then tap pad 2, reverb, and turn its send to 0. Press the top row's first pad and let it start, then the second again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY.
+  - **Pass if:** In the second section the two drums are dry; going back to the first, pad 1 echoes and pad 2 has its reverb again, and the phone's controls for each show the first section's settings; back in the second, dry again. After the reload each section has the effects it had when saved.
+  - **Note:** The effects are a section's, with its pattern, as volume and pitch are (Brendan, 2026-11-05). That every effect reaches `c_kit` at a restore, and the delay's time and levels, are `sequencer-assert`'s and `kit-assert`'s; this is how they sound.

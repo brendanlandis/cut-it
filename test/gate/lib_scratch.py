@@ -58,9 +58,12 @@ LUA = (os.environ.get("LUA") or shutil.which("lua5.4") or shutil.which("lua")
 # Two [sysexin]: c_devid's, every device's inquiry reply, and m_launchpad's, the
 # announcement a tap on Setup makes (launchpad-assert drives it). m_404's five
 # (notein, ctlin, noteout, ctlout and its inquiry's midiout) went with the
-# SP-404 (2026-11-04).
-MIDI_EXPECT = {"midiout": 7, "noteout": 1, "ctlout": 2, "pgmout": 1,
-               "notein": 1, "ctlin": 2, "sysexin": 2}
+# SP-404 (2026-11-04). The synths added six (2026-11-04): m_streich's noteout, its two
+# ctlout (cc and panic's CC 123), its pgmout and its inquiry's midiout, as m_volca has them
+# plus the inquiry, and m_nanokey's notein. c_devid 62, the Streichfett's, is the same
+# sysexin box as the others'.
+MIDI_EXPECT = {"midiout": 8, "noteout": 2, "ctlout": 4, "pgmout": 2,
+               "notein": 2, "ctlin": 2, "sysexin": 2}
 
 # The MIDI objects with no stub: counted, so a new one cannot appear unannounced,
 # and never rewritten. polytouchin's pressure path is uncovered

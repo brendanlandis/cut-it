@@ -23,7 +23,7 @@ import lib_grid as G                                           # noqa: E402
 import lib_drive as D                                          # noqa: E402
 
 MARKS = ("BOOT", "BEFORE-LOSS", "AFTER-LOSS", "WAITING", "AFTER-REWIRE",
-         "FOREIGN", "STILL-LOST", "OWN-REPLY", "RECOVERED", "DROPPED",
+         "WALDORF", "FOREIGN", "STILL-LOST", "OWN-REPLY", "RECOVERED", "DROPPED",
          "ALL-BACK", "PHONE-REWIRE", "SETTLED")
 
 # The second run's windows; presence-bound-drive-gen.py has the schedule.
@@ -47,8 +47,13 @@ REWIRE_PHONE = "info u_present rewire-phone"
 # neither ages. The total is asserted because a layer that stopped registering
 # would stop being watched, and every "nothing was lost" check would still pass;
 # exactly, so m_404, gone with the SP-404 (2026-11-04), cannot come back unnoticed.
-ROSTER = 4
-ACTIVE = 2
+# Five since m_streich (2026-11-04), the most g_oled's diag layer draws; m_nanokey
+# registers nothing, since a sixth row breaks that bound.
+ROSTER = 5
+ACTIVE = 3
+# The universal identity request, which every active layer sends on its own port.
+INQUIRY = [240, 126, 127, 6, 1, 247]
+STREICH_PORT = 3
 
 ROSTER_RE = re.compile(r"^u_present-sources:\s+(\d+)\s*$")
 ERR_RE = re.compile(r"^err:\s+(.*\S)\s*$")
@@ -205,6 +210,18 @@ def main_run(cap):
              "reply at all, so 'the Launchpad did not take it' proves nothing"
              % (foreign,)))
 
+    # The Streichfett's reply, Waldorf's byte 62, alone in WALDORF with the other two
+    # lost: m_streich takes it, and nobody else may.
+    waldorf = bus.get("WALDORF", [])
+    others = [m for m in waldorf if m.split()[:1] in (["back"], ["seen"])
+              and m.split()[1:2] != ["m_streich"]]
+    A.check("⛔ a Streichfett reply marks m_streich present, and NOBODY else",
+            "back m_streich" in waldorf and not others,
+            ("%s took the Waldorf reply (manufacturer byte 62), so a lost device reads as "
+             "present while the Streichfett answers" % others) if others else
+            ("no `back m_streich` in WALDORF, which held %s. [c_devid 62] matched "
+             "nothing, so 'nobody else took it' proves nothing" % waldorf))
+
     # m_nano is back but m_launchpad has not answered, so the fork due at 22000 comes.
     A.check("⛔ one device answering does not reset the shared recovery -- the "
             "second re-wire still comes",
@@ -227,6 +244,13 @@ def main_run(cap):
             "Launchpad's traffic too. Earlier than STILL-LOST means the warn is "
             "not armed by a reply and fires for a device that was merely absent"
             % (nano_lost,))
+
+    st_lost = lost_in(errs, "m_streich", *MARKS)
+    A.check("⛔ ...and m_streich, seen at 16000, is lost again with m_nano",
+            st_lost == ["STILL-LOST"],
+            "warn m_streich device-lost appeared in %s, wanted exactly STILL-LOST: its "
+            "warn is armed by its own reply, and three missed polls later it is lost"
+            % (st_lost,))
 
     lp_lost = lost_in(errs, "m_launchpad", *MARKS)
     A.check("⛔ ...and so is the Novation reply -- by m_launchpad, and only after ITS own",
@@ -363,24 +387,24 @@ def main_run(cap):
             "the report is tapped below the point where the two paths meet and "
             "the distinction it exists to draw is gone" % (REWIRE_LAST, stray))
 
-    # The trailing fork's positive control: three frames on one [sysexin] in
-    # one instant, two taken by their own matchers, or the count never hit zero.
-    for src in ("m_launchpad", "m_nano"):
+    # The trailing fork's positive control: four frames on one [sysexin] in
+    # one instant, three taken by their own matchers, or the count never hit zero.
+    for src in ("m_launchpad", "m_nano", "m_streich"):
         A.check("...because %s accepted its own reply in ALL-BACK" % src,
                 ("back %s" % src) in bus.get("ALL-BACK", []),
-                "no `back %s` on the presence bus in ALL-BACK -- saw %s. Three "
+                "no `back %s` on the presence bus in ALL-BACK -- saw %s. Four "
                 "frames went into one [sysexin] back to back and this one's "
                 "matcher did not take its own, so the lost count reaching zero "
                 "cannot be what fired the trailing re-wire"
                 % (src, bus.get("ALL-BACK", [])))
 
-    # The third frame is a Roland reply, byte 65: the SP-404's, which left the
+    # The fourth frame is a Roland reply, byte 65: the SP-404's, which left the
     # rig on 2026-11-04. No layer may take it -- a c_devid matching on anything
     # but its argument would, and so would an m_404 that came back. The negative
-    # control the two matchers' own replies cannot give.
+    # control the three matchers' own replies cannot give.
     stray = [m for m in bus.get("ALL-BACK", [])
              if m.split()[:1] in (["back"], ["seen"])
-             and m.split()[1:2] not in (["m_launchpad"], ["m_nano"])]
+             and m.split()[1:2] not in (["m_launchpad"], ["m_nano"], ["m_streich"])]
     A.check("⛔ ...and the Roland reply beside them is taken by NOBODY -- no SP-404 layer",
             not stray,
             "%s on the presence bus in ALL-BACK. Nothing in the rig answers with "
@@ -390,7 +414,7 @@ def main_run(cap):
     # --- `seen`, once per active source, ever (item 302) --------------------
     # Exactly one, not at least one: a publish per reply passes any non-zero test.
     allbus = [m for v in bus.values() for m in v]
-    for src in ("m_launchpad", "m_nano"):
+    for src in ("m_launchpad", "m_nano", "m_streich"):
         n = allbus.count("seen %s" % src)
         A.check("⛔ %s publishes `seen` EXACTLY ONCE across the whole run" % src,
                 n == 1,
@@ -401,12 +425,39 @@ def main_run(cap):
     # Each layer's first reply lands in a window of its own, so a `seen` in any
     # other window is published on a poll rather than on an answer.
     first = {src: [w for w in MARKS if ("seen %s" % src) in bus.get(w, [])]
-             for src in ("m_nano", "m_launchpad")}
+             for src in ("m_nano", "m_launchpad", "m_streich")}
     A.check("⛔ ...and a device says it on its FIRST reply, not before",
-            first == {"m_nano": ["FOREIGN"], "m_launchpad": ["OWN-REPLY"]},
-            "`seen` landed in %s, wanted m_nano's in FOREIGN and m_launchpad's in "
-            "OWN-REPLY, where each first answers. Earlier is a `seen` on a poll, and "
-            "every device on a Mac would then read as present" % first)
+            first == {"m_nano": ["FOREIGN"], "m_launchpad": ["OWN-REPLY"],
+                      "m_streich": ["WALDORF"]},
+            "`seen` landed in %s, wanted m_nano's in FOREIGN, m_launchpad's in "
+            "OWN-REPLY and m_streich's in WALDORF, where each first answers. Earlier is "
+            "a `seen` on a poll, and every device on a Mac would then read as present"
+            % first)
+
+    # --- the Streichfett is polled, on its own port ---------------------------
+    # The inquiry leaves m_streich's [midiout] on port 3, worked out from its
+    # channel block, once a tick: whole inquiries and nothing else, since nothing
+    # else in Cut It talks to that port in this run.
+    port3, cur = [], None
+    for line in cap.splitlines():
+        m = G.MIDI_RE.match(line.strip())
+        if not m or int(m.group(2)) != STREICH_PORT:
+            continue
+        b = int(m.group(1))
+        if b == 240:
+            cur = [b]
+        elif cur is not None:
+            cur.append(b)
+            if b == 247:
+                port3.append(cur)
+                cur = None
+    ticks = sum(v.count("tick") for v in bus.values())
+    A.check("⛔ the Streichfett is polled: the identity request leaves on port 3, one a tick",
+            port3 and all(f == INQUIRY for f in port3) and ticks - 1 <= len(port3) <= ticks,
+            "%d frame(s) on port 3 for %d ticks, %d of them the inquiry. None means "
+            "m_streich never asks, and its device would read as never seen while it "
+            "answers every request it gets" % (len(port3), ticks,
+                                               sum(1 for f in port3 if f == INQUIRY)))
 
     # --- one bound, not one per device --------------------------------------
     total = sum(v.count("wire.sh") for v in by.values())
@@ -427,7 +478,7 @@ def main_run(cap):
            % " ".join("%s=%d" % (m, wire_in(by, m)) for m in MARKS))
     A.note("device-lost warnings: %s"
            % " ".join("%s=%s" % (s, lost_in(errs, s, *MARKS) or "never")
-                      for s in ("m_launchpad", "m_nano")))
+                      for s in ("m_launchpad", "m_nano", "m_streich")))
     A.note("%d lighting frame(s), %d mode frame(s)"
            % (len([f for f in frames if f.is_lighting]),
               len([f for f in frames if f.is_mode])))

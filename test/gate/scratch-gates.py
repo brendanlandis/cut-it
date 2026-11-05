@@ -443,12 +443,35 @@ def sequencer(g):
     return rc or rc_lua
 
 
+def synths(g):
+    S.require("Cut It/c_synth.pd", "Cut It/c_synth.lua", "Cut It/c_synth-lua.pd_lua",
+              "Cut It/m_nanokey.pd", "Cut It/m_streich.pd", "Cut It/cut-it-synth-page.txt",
+              "Cut It/cut-it-map.txt", "test/gate/lua/c_synth_test.lua")
+    # The rules first, in Lua and without Pd: the choice, where each key goes, the restore.
+    # Then the Pd half: the nanoKEY, the pads and the phone through the running instrument.
+    print("   the rules, in Lua ...")
+    rc_lua = S.lua("test/gate/lua/c_synth_test.lua", *g.args)
+    print("\n   the patch, in Pd ...")
+    s = g.copy()
+    s.state_dir()
+    # Page 3 and strings saved, restored at about 3.5 s: fm is the boot default, so a
+    # restore that never landed plays the Volca in the first window.
+    with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
+        fh.write("mode mode-3\nsynth strings\n")
+    g.rewrite(s)
+    S.drive(GEN % "synths-assert", s.path("drive.pd"))
+    cap = g.pd(s, 30, main_dev(s), s.path("drive.pd"))
+    print()
+    rc = g.analyze("test/gate/synths-assert.py", *g.args, "--state", s.state, stdin=cap)
+    return rc or rc_lua
+
+
 RECIPES = {
     "init": init, "presence": presence, "audio": audio, "err": err,
     "display": display, "oled": oled, "led": led, "tempo": tempo,
     "clock": clock, "map": map_, "recover": recover, "launchpad": launchpad,
     "nano": nano, "organelle": organelle, "volca": volca,
-    "debug": debug, "sequencer": sequencer, "kit": kit,
+    "debug": debug, "sequencer": sequencer, "kit": kit, "synths": synths,
 }
 
 

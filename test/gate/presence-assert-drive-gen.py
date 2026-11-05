@@ -15,17 +15,21 @@ The schedule is u_present's own arithmetic:
               recovery counter starts in the same tick (the tick is broadcast
               before the recovery step reads the gate)
    14000 ms   counter 4: the first wire.sh fork
+   16000 ms   a Waldorf reply: m_streich is seen, armed, and publishes back,
+              and the other two, both lost, take nothing
    17000 ms   a KORG reply: m_nano is seen, armed, and publishes back
    22000 ms   counter 8: the second fork, since m_launchpad has not answered.
-              m_nano is lost again, armed this time, so its warn reaches err
+              m_nano and m_streich are lost again, armed this time, so their
+              warns reach err
    24000 ms   a Novation reply: m_launchpad is seen and armed
    30000 ms   counter 12: the third fork, since m_nano is still lost.
               m_launchpad is lost again, armed, so ownership drops
-   33000 ms   both devices answer, beside a Roland reply nobody may take (the
-              SP-404's, which left the rig): the trailing fork
+   33000 ms   all three devices answer, beside a Roland reply nobody may take
+              (the SP-404's, which left the rig): the trailing fork
 
 The windows straddle 8000 and 14000 rather than sitting after them, so "fires
-on the fourth tick" can be told from "fires on every tick". The give-up is
+on the fourth tick" can be told from "fires on every tick". The three active
+layers go lost together at 8000. The give-up is
 presence-bound-drive-gen.py's, in a second run at a tenth of the clock.
 """
 import os
@@ -54,6 +58,11 @@ SEQ = [
     # a frame here proves a detector that never saw a reply didn't drop it.
     (15000, "AFTER-REWIRE", ["\\; mode mode-3"], GAP),
 
+    # Cross-talk the other way: the Streichfett's reply (byte 62, Waldorf) with
+    # the Launchpad and the nano both lost. Only m_streich may take it.
+    (16000, "WALDORF",
+     ["\\; t-sysexin 3 240 126 0 6 2 62 25 10 1 2 1 14 247"], GAP),
+
     # Cross-talk: a KORG reply (byte 66, item 249) on the [sysexin] every layer
     # reads. Only m_nano may take it.
     (17000, "FOREIGN",
@@ -76,15 +85,16 @@ SEQ = [
     # at 30000, so ownership drops and this mode change must not paint.
     (31000, "DROPPED", ["\\; mode mode-1"], GAP),
 
-    # Both devices answer at once, the only way to a lost count of zero, which
+    # All three answer at once, the only way to a lost count of zero, which
     # fires the trailing fork (item 275). Counter 16 is not due until 38000, so
-    # a fork here can only be the trailing one. The third frame is a Roland
+    # a fork here can only be the trailing one. The fourth frame is a Roland
     # reply (byte 65), the SP-404's: it left the rig on 2026-11-04, and no
     # layer may take it.
     (33000, "ALL-BACK",
      ["\\; t-sysexin 1 240 126 0 6 2 0 32 41 35 1 0 0 0 4 6 5 247",
       "\\; t-sysexin 2 240 126 0 6 2 66 4 1 0 0 35 0 0 0 247",
-      "\\; t-sysexin 3 240 126 16 6 2 65 8 4 0 0 0 3 0 0 247"], GAP),
+      "\\; t-sysexin 3 240 126 0 6 2 62 25 10 1 2 1 14 247",
+      "\\; t-sysexin 4 240 126 16 6 2 65 8 4 0 0 0 3 0 0 247"], GAP),
 
     # The phone's button, where nothing on the schedule is due. Not inside
     # SETTLED, which asserts zero forks; not after it, since past 38000 the two

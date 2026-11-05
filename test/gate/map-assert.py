@@ -25,8 +25,11 @@ MAP = "Cut It/cut-it-map.txt"
 UMAP = "Cut It/u_map.pd"
 # Every m_ file and its exact [s disp] count. Only m_organelle has one, and it
 # carries aux's modal, never a control's row. The file set is exact too: m_404
-# went with the SP-404 (2026-11-04).
-DISP_EXPECT = {"m_launchpad": 0, "m_nano": 0, "m_organelle": 1, "m_volca": 0}
+# went with the SP-404, and m_streich and m_nanokey came with the synths
+# (2026-11-04).
+DISP_EXPECT = {"m_launchpad": 0, "m_nano": 0, "m_organelle": 1, "m_volca": 0,
+               "m_streich": 0, "m_nanokey": 0}
+SYNTH_PAGE = "Cut It/cut-it-synth-page.txt"
 ULUA = "Cut It/u_map.lua"
 # The rows every page has (map.md): <control> <dest> <arg>.
 EVERY_PAGE = [("og-knob-1", "tempo", "0"), ("xport-2", "start", "0"), ("xport-5", "stop", "0"),
@@ -77,6 +80,24 @@ def steps_cmds():
         return None
     keys = re.findall(r'^  (?:\["([\w-]+)"\]|(\w+)) = function', m.group(1), re.M)
     return sorted(a or b for a, b in keys)
+
+
+def synths():
+    """The synths c_synth takes: c_synth.lua's R.SYNTHS."""
+    src = open(os.path.join(os.path.dirname(UMAP), "c_synth.lua"), encoding="utf-8").read()
+    m = re.search(r"^R\.SYNTHS = \{([^}]*)\}", src, re.M)
+    return re.findall(r'"([\w-]+)"', m.group(1)) if m else None
+
+
+def synth_layout():
+    """{grid index: synth} from the synth page's layout, which u_map's synth handler and
+    g_grid both read."""
+    lay = {}
+    for line in open(SYNTH_PAGE, encoding="utf-8"):
+        f = line.split()
+        if f:
+            lay[f[0]] = f[1:]
+    return lay
 
 
 def static_lint():
@@ -134,6 +155,21 @@ def static_lint():
     A.check("⛔ every drums row names a command c_steps takes",
             takes is not None and drums and all(a in takes for _, a in drums),
             "rows %s, c_steps takes %s" % (drums, takes))
+
+    # synth passes its arg to the layout, which names the synth: a row the layout lacks
+    # is layout-miss on the screen at the press, and a synth c_synth lacks bad-synth.
+    lay, chooses = synth_layout(), synths()
+    synth = [(n, f[3]) for n, f in rows if len(f) == 4 and f[2] == "synth"]
+    A.check("⛔ every synth row's arg is a cell of %s" % os.path.basename(SYNTH_PAGE),
+            synth and all(a in lay for _, a in synth),
+            "rows %s, the layout holds %s" % (synth, sorted(lay)))
+    A.check("⛔ ... and every cell there names one synth c_synth takes",
+            chooses and lay and all(len(v) == 1 and v[0] in chooses for v in lay.values()),
+            "the layout %s, c_synth takes %s" % (lay, chooses))
+    A.check("... and every cell has its row on page 3, where the pads choose",
+            sorted(a for _, a in synth) == sorted(lay)
+            and all(f[0] == "mode-3" for _, f in rows if len(f) == 4 and f[2] == "synth"),
+            "rows %s" % synth)
 
     seen, dupes = {}, []
     for n, f in rows:

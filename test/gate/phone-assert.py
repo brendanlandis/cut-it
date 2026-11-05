@@ -51,7 +51,9 @@ ADDRS = {"/cutit/param", "/cutit/status", "/cutit/hb", "/cutit/alert",
          # and the two drum buttons: out a cord to c_steps.
          "/probe/drums",
          # and what the drum screen shows: the mode, and c_steps' state.
-         "/cutit/mode", "/cutit/drums"}
+         "/cutit/mode", "/cutit/drums",
+         # and the synth choice: in, out a cord to c_synth; out, what lights the phone.
+         "/probe/synth", "/cutit/synth"}
 # The drum screen's settings: u_net does not acknowledge them, since the state
 # the drum screen shows says each.
 DRUMS_QUIET = ["num", "den", "drunk", "skip", "move"]
@@ -211,7 +213,7 @@ def main():
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})
     A.check("shape: only known OSC addresses", all(a in ADDRS for a in seen),
             "saw " + ", ".join(seen))
-    A.check("shape: all thirty-three windows arrived",
+    A.check("shape: all thirty-five windows arrived",
             [n for n, _ in wins] == ["idle", "sweep1", "sweep2", "statussw",
                                      "alert", "reserved", "idle2", "cmdwire",
                                      "cmdvolca", "cmd404", "cmdbogus", "cmdclear",
@@ -219,7 +221,8 @@ def main():
                                      "sendoff2", "tmtwice", "tmoff2", "cmdsync",
                                      "cmdsnap", "cmdselect", "cmdnum", "cmdden",
                                      "cmddrunk", "cmdskip", "cmdmove", "cmddrumsnew",
-                                     "tmmodeon", "tmmode", "drumstate", "done"],
+                                     "cmdsynth", "cmdsynthnew", "tmmodeon", "tmmode",
+                                     "drumstate", "done"],
             ", ".join(n for n, _ in wins))
 
     hbs = [g[0] for _, rowset in wins for _, a, g in rowset
@@ -332,7 +335,7 @@ def main():
         A.check("%s: %s" % (win, label), not any(got.values()),
                 "; ".join("%s %s" % (a, v) for a, v in got.items() if v) or "(silent)")
 
-    CMD = ["/probe/presence", "/probe/volca", "/probe/drums", "/cutit/ack"]
+    CMD = ["/probe/presence", "/probe/volca", "/probe/drums", "/probe/synth", "/cutit/ack"]
 
     one("cmdwire", "/cutit/ack", ["re-wire"], "re-wire is acknowledged")
     one("cmdwire", "/probe/presence", ["re-wire"],
@@ -449,9 +452,24 @@ def main():
     sent = args("drumstate", "/cutit/mode")
     A.check("drumstate: the page leaves alone as /cutit/mode, at once and on the heartbeat",
             len(sent) >= 2 and all(g == ["mode-2"] for g in sent), sent[:3])
-    A.check("done: both still repeat, so a phone that comes back late catches up",
-            len(args("done", "/cutit/drums")) >= 2 and len(args("done", "/cutit/mode")) >= 2,
-            "%d and %d" % (len(args("done", "/cutit/drums")), len(args("done", "/cutit/mode"))))
+    sent = args("drumstate", "/cutit/synth")
+    A.check("⛔ drumstate: c_synth's choice leaves as /cutit/synth fm, at once and on the heartbeat",
+            len(sent) >= 2 and all(g == ["fm"] for g in sent), sent[:3])
+    A.check("done: all three still repeat, so a phone that comes back late catches up",
+            min(len(args("done", a)) for a in ("/cutit/drums", "/cutit/mode", "/cutit/synth")) >= 2,
+            "%d, %d and %d" % tuple(len(args("done", a))
+                                    for a in ("/cutit/drums", "/cutit/mode", "/cutit/synth")))
+    early = [g for w in ("idle", "cmdwire", "tmmode") for g in args(w, "/cutit/synth")]
+    A.check("before c_synth says anything, the repeat carries no choice, as the mode's",
+            early and all(g == [] for g in early), early[:3])
+
+    one("cmdsynth", "/probe/synth", ["synth", "strings"], "synth strings leaves for c_synth")
+    one("cmdsynth", "/cutit/ack", ["synth", "strings"], "and is acknowledged")
+    none_of("cmdsynth", ["/probe/volca", "/probe/drums", "/probe/presence"],
+            "and reaches nothing else")
+    one("cmdsynthnew", "/probe/synth", ["synth", "organ"],
+        "⛔ a synth u_net has never heard of goes to c_synth whole, to refuse")
+    none_of("cmdsynthnew", ["/cutit/ack"], "and is not acknowledged")
 
     for win, cmd, rest in (("cmdsync", "sync", []), ("cmdsnap", "snap", []),
                            ("cmdnum", "num", [1.0]), ("cmdden", "den", [-1.0]),

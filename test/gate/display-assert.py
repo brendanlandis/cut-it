@@ -20,7 +20,7 @@ MODAL = 45
 # The number of windows display-assert-drive-gen.py's SEQ opens. Frames are
 # grouped by mark with setdefault, so without this check a driver that died early
 # would answer the negative assertions below with an empty list.
-MARKS = 16
+MARKS = 18
 
 
 def main():
@@ -109,6 +109,23 @@ def main():
                 problem is None, problem or "")
         A.check("%s: the lit mode lamp is index %d" % (mark, expect_lamp),
                 lamp == expect_lamp, "lit lamp was %s" % lamp)
+
+    # Page 3: home, and the synth pads above the beat row, from the layout g_grid
+    # and u_map both read. fm is chosen at load; STRINGS' pad then chooses strings.
+    # synth_page holds the beat row to dim or lit, so a page that dropped it fails.
+    lay = G.synth_layout()
+    for mark, chosen in (("home-mode-3", "fm"), ("synths-strings", "strings")):
+        fs = window(mark)
+        if not A.check("%s: the grid repainted" % mark, bool(fs), "no frame in the window"):
+            continue
+        problem, lamp, _beat = G.synth_page(fs[-1], lay, chosen)
+        A.check("⛔ %s: the synth pads, %s bright and the other dim, and nothing else lit"
+                % (mark, chosen), problem is None, problem or "")
+        A.check("%s: the lit mode lamp is index %d" % (mark, G.LAMPS[2]),
+                lamp == G.LAMPS[2], "lit lamp was %s" % lamp)
+    A.check("the synth layout is the eight cells 21 to 28, fm then strings",
+            lay == {**{i: "fm" for i in range(21, 25)}, **{i: "strings" for i in range(25, 29)}},
+            lay)
 
     fs = window("modal-45")
     if A.check("modal-45: the grid repainted", bool(fs), "no frame in the window"):

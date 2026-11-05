@@ -33,6 +33,10 @@ SEQ = [
     # until then, has the beat row like every other page.
     (14000, "home-mode-2", ["\\; mode mode-2"], GAP),
     (15500, "home-mode-1", ["\\; mode mode-1"], GAP),
+    # Page 3 is the synths: the beat row stays, and the synth pads light above it,
+    # fm chosen at load (c_synth's default). Then STRINGS' pad chooses strings.
+    (16000, "home-mode-3", ["\\; mode mode-3"], GAP),
+    (16500, "synths-strings", [(0, "\\; param pad-26 127"), (60, "\\; param pad-26 0")], GAP),
     (17000, "home-mode-4", ["\\; mode mode-4"], GAP),
     (20000, "modal-45", ["\\; disp grid modal 45"], GAP),
     # u_err draws a warn on every page, so it reaches disp here: the grid must

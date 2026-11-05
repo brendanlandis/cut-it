@@ -23,7 +23,7 @@ import lib_scratch                                              # noqa: E402
 # ---------------------------------------------------------------------------
 # The table's length is asserted, since a gate dropped in an edit is otherwise
 # silent. Update it deliberately, never to make a red run green (as MIDI_EXPECT).
-EXPECT = 26
+EXPECT = 27
 
 # The gates all run side by side and print whole in table order, so the log
 # reads as a serial run's and has one RESULT: line. None waits for another: no
@@ -67,6 +67,7 @@ GATES = [
     ("the Volca", "./test/gate/volca-assert.sh"),
     ("the sequencer and its drum page", "./test/gate/sequencer-assert.sh"),
     ("the drum kit, as a SIGNAL", "./test/gate/kit-assert.sh"),
+    ("the synths: the nanoKEY, the choice and the Streichfett", "./test/gate/synths-assert.sh"),
     ("the debug patch", "./test/gate/debug-assert.sh"),
 ]
 

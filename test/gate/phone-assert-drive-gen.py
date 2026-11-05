@@ -51,7 +51,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 59400")
+qd = obj(20, 120, "del 60800")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -74,6 +74,11 @@ tap_v = obj(20, 880, "s \\$0-tap-volca")
 con(unet, 0, tap_v, 0)
 tap_d = obj(560, 880, "s \\$0-tap-drums")
 con(unet, 1, tap_d, 0)
+tap_s = obj(820, 880, "s \\$0-tap-synth")
+con(unet, 2, tap_s, 0)
+# c_synth's choice arrives by name, as its cord would bring it in u_root.
+sy_r = obj(560, 720, "r \\$0-sy")
+con(sy_r, 0, unet, 2)
 # c_steps' drum screen state arrives by name, as its cord would bring it in u_root.
 ds_r = obj(300, 720, "r \\$0-ds")
 con(ds_r, 0, unet, 1)
@@ -82,7 +87,7 @@ tm_r = obj(20, 720, "r \\$0-tm")
 con(tm_r, 0, unet, 0)
 txt(560, 600,
     "The abstraction under test. Args: the phone's host and port \\, then this end's "
-    "inbound port. Its two outlets are the Volca and c_steps \\, sent on by name so no "
+    "inbound port. Its three outlets are the Volca \\, c_steps and c_synth \\, sent on by name so no "
     "cord runs the length of the canvas.", 40)
 
 # the mark path, and the driver's own socket
@@ -160,6 +165,7 @@ probe(20, 1900, "presence", "r presence")
 probe(400, 1900, "volca", "r \\$0-tap-volca")
 probe(400, 2700, "err", "r err")
 probe(700, 2700, "drums", "r \\$0-tap-drums")
+probe(1000, 2700, "synth", "r \\$0-tap-synth")
 txt(20, 2180,
     "u_net is the only abstraction in this run \\, so a re-wire seen here came from the "
     "inbound path. The two cords are the Volca and c_steps \\, wired per C-2 \\, hence the "
@@ -173,6 +179,7 @@ txt(20, 2180,
 #   ("cmd", (root, "<text>"))        one OSC datagram INTO u_net's own port
 #   ("tm", None)                     a bang into u_net's inlet: flip test mode
 #   ("ds", "<41 numbers>")           c_steps' drum screen state, into u_net's second inlet
+#   ("sy", "synth <choice>")         c_synth's choice, into u_net's third inlet
 #   ("bus", (name, "<message>"))     one message onto a bus, as the mode bus
 #
 # Every command window sits after idle2: clear-alert destroys the held alert,
@@ -237,12 +244,17 @@ SEQ = [
     # A drums command u_net has never heard of still goes to c_steps, which
     # refuses what it doesn't know: u_net passes drums on whole.
     (51800, "cmddrumsnew", [("cmd", ("cutit", "drums reload 2"))]),
+    # -- the synth choice, out the third outlet to c_synth, a known one and one
+    #    c_synth will refuse: u_net passes synth on whole, as it does drums
+    (53200, "cmdsynth", [("cmd", ("cutit", "synth strings"))]),
+    (53900, "cmdsynthnew", [("cmd", ("cutit", "synth organ"))]),
     # -- a mode chosen in test mode ends it, so a mode button brings its screen
     #    back on the phone
-    (53200, "tmmodeon", [("tm", None)]),
-    (54600, "tmmode",   [("bus", ("mode", "mode-2"))]),
-    (56000, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "mode-2"))]),
-    (57400, "done",     []),
+    (54600, "tmmodeon", [("tm", None)]),
+    (56000, "tmmode",   [("bus", ("mode", "mode-2"))]),
+    (57400, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "mode-2")),
+                          ("sy", "synth fm")]),
+    (58800, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940
@@ -279,8 +291,9 @@ for i, (when, mark, actions) in enumerate(SEQ):
             con(tr, outlet, ts, 0)
             bx += 240
             continue
-        if kind in ("ds", "bus"):
-            text, dest = (item[1], "\\$0-ds") if kind == "ds" else (item[1][1], item[1][0])
+        if kind in ("ds", "sy", "bus"):
+            text, dest = ((item[1], "\\$0-" + kind) if kind in ("ds", "sy")
+                          else (item[1][1], item[1][0]))
             dm = msg(bx, by, text)
             dsn = obj(bx, by + 50, "s %s" % dest)
             con(tr, outlet, dm, 0)

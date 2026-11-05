@@ -45,12 +45,17 @@ TAP_LABELS = {"param": "PARAM", "disp": "DISP", "err": "ERR", "tempo": "TEMPO",
 TAP_LABEL_RE = "|".join(re.escape(label) for label in TAP_LABELS.values())
 
 
-def build(path, seq, tag, taps, quit_ms, blurb, burst=None, notes=()):
+def build(path, seq, tag, taps, quit_ms, blurb, burst=None, notes=(), extra=None):
     """Write the driver. Returns (windows, boxes, connects).
 
     burst, if given, is (ms, n, body) -- n triggers of one body inside a single
     logical instant, via [until]. ⚠️ That proves a limiter drops rather than
     queues and nothing about its interval (the gate skill, `[del 0]`).
+
+    extra, if given, is called as extra(obj, msg, con) once the windows are
+    built, for boxes a window's message reaches by name: a socket that sends
+    OSC into u_net, say (synths-assert). obj and msg return a box's index,
+    con(a, outlet, b, inlet) cords two.
     """
     B, C = [], []
 
@@ -102,6 +107,9 @@ def build(path, seq, tag, taps, quit_ms, blurb, burst=None, notes=()):
     qd = obj(x, 180, "del %d" % quit_ms)
     qm = msg(x, 230, "\\; pd quit")
     C.append((top, 0, qd, 0)); C.append((qd, 0, qm, 0))
+
+    if extra:
+        extra(obj, msg, lambda a, ao, b, bi: C.append((a, ao, b, bi)))
 
     for k, bus in enumerate(taps):
         r = obj(20 + k * 300, 1000, "r " + bus)

@@ -74,8 +74,9 @@ def driver():
 
 
 def bound():
-    """lsof's NAME for the port, polled until Pd binds it: '' if it never does."""
-    end = time.time() + 12
+    """lsof's NAME for the port, polled until Pd binds it: '' if it never does. Beside the whole
+    suite on a busy Mac the patch has been measured taking 14 s to load before it binds."""
+    end = time.time() + 30
     while time.time() < end:
         out = subprocess.run(["lsof", "-nP", "-iUDP:%d" % PORT], capture_output=True,
                              text=True).stdout
@@ -118,8 +119,8 @@ def main():
     th.start()
     print("u_inject on 127.0.0.1:%d, launching pd ..." % PORT)
     cap = os.path.join(WORK, "capture.txt")
-    S.run(cap, 30, "-nogui", "-noaudio", "-nomidi", "-path", "Cut It", DRIVE)
-    th.join(timeout=15)
+    S.run(cap, 50, "-nogui", "-noaudio", "-nomidi", "-path", "Cut It", DRIVE)
+    th.join(timeout=35)
     lines = [ln.strip() for ln in open(cap, encoding="utf-8", errors="replace")
              if ln.strip()]
     got = [ln for ln in lines if ln.startswith("got-")]

@@ -64,9 +64,9 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Do:** Press the Launchpad's top button down the left column, page 1: the phone turns to the arrangement screen. On it drag the bottom number's box up one step, then the top number's box up three. Then press page 2, the second button down.
   - **Pass if:** The phone reads 4 / 8, then 7 / 8. Back on page 2 the steps are rows of seven, each row's eighth pad dark, and each row's first pad is blue where it is not lit. The playing does not change, at 4 / 8 or at 7 / 8.
 
-- [ ] **15. Swing on knob 4**
-  - **Do:** Turn knob 4 a little up, then all the way left. Then turn it all the way right, to noon, and back to all the way left.
-  - **Pass if:** At first the screen reads swing 50 with the knob's own value in brackets, and nothing changes until the knob is all the way left; there the brackets go. All the way right every second step comes late, a long-short shuffle; at noon a gentler one, about 62; all the way left it plays straight again. Nothing turns it short-long.
+- [ ] **15. Swing on the phone**
+  - **Do:** On the phone's page 1 drag the swing knob all the way up, to about 62, and back to 50.
+  - **Pass if:** All the way up every second step comes late, a long-short shuffle; at about 62 a gentler one; at 50 it plays straight again. Nothing turns it short-long.
 
 - [ ] **16. A repeat pad**
   - **Do:** While it plays hold the top-left pad of the right four by four for a few beats, then let go. Then hold the fourth pad in that row a few beats and let go.
@@ -106,7 +106,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Need:** Steps lit on the drum page from the steps before.
   - **Send:** `stop bang`
   - **Do:** On the phone tap volume and drag pad 13 to -6, then tap random and drag it to 30%. Press page 1, drag drunk to about 20%, and press page 2. Look at which steps are lit. Wait two seconds, then load Cut It again from the Organelle menu, press page 2 if the Launchpad is not on it, and on the phone tap volume, then random.
-  - **Pass if:** After the reload the drum page shows the same steps lit as before it, in rows of seven with each row's first pad blue, and the phone's pad 13 reads -6 on volume and 30% on random, and plays that much quieter. On page 1 the phone shows 7 / 8 and drunk at what you left it. Knob 4's swing is back at 50%, on the phone's swing knob too.
+  - **Pass if:** After the reload the drum page shows the same steps lit as before it, in rows of seven with each row's first pad blue, and the phone's pad 13 reads -6 on volume and 30% on random, and plays that much quieter. On page 1 the phone shows 7 / 8 and drunk at what you left it. The phone's swing knob is back at 50%.
   - **Note:** `u_state` flushes within 2 seconds of a change, so the wait is part of the step.
 
 - [ ] **24. Other pages keep their grid**
@@ -114,12 +114,12 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Do:** Press a pad in the top two rows.
   - **Pass if:** The top lamp lights and the drum page gives way to the beat row along the bottom and the tap pad, dim yellow, above its first cell. A pad press draws nothing on the OLED, since on page 1 only the tap pad is mapped and only a mapped control names itself, and the phone turns to the arrangement screen, its tab reading arrangement.
 
-- [ ] **25. Knobs 2 and 4 on any page**
+- [ ] **25. Knob 2 on any page**
   - **Need:** The drums playing, from `start bang`, with steps lit. The phone linked.
   - **Send:** `mode mode-1`
-  - **Do:** Turn knob 2 a little either way, then through noon and on to last-step 8. Then turn knob 4 a little, then all the way right. Then turn knob 3.
-  - **Pass if:** Knob 2 reads last-step with its own step in brackets until it passes 16, then last-step alone; at 8 the drums loop in half the time, and the phone's last step reads 8. Knob 4 reads swing the same way until it is all the way left, at 50, and all the way right every second step comes late, and the phone's swing knob follows. Knob 3 draws nothing and changes nothing. Put knob 2 back to 16 and knob 4 all the way left.
-  - **Note:** Knobs 2 and 4 are the drums' last step and swing on every page, as knob 1 is the tempo; knob 3, the selected track's own last step, is the drum page's alone (Brendan, 2026-11-04). The brackets are `c_steps`' latch: a reload holds both knobs again, at 16 and 50%.
+  - **Do:** Turn knob 2 a little either way, then through noon and on to last-step 8. Then turn knob 3.
+  - **Pass if:** Knob 2 reads last-step with its own step in brackets until it passes 16, then last-step alone; at 8 the drums loop in half the time, and the phone's last step reads 8. Knob 3 draws nothing and changes nothing. Put knob 2 back to 16 and knob 4 all the way left.
+  - **Note:** Knob 2 is the drums' last step on every page, as knob 1 is the tempo; knob 3, the selected track's own last step, is the drum page's alone (Brendan, 2026-11-04). The brackets are `c_steps`' latch: a reload holds it again, at 16.
 
 - [ ] **26. Rows at 4/4 and 3/4**
   - **Need:** The phone linked. The drum page stopped.
@@ -283,3 +283,9 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Do:** On the phone tap pad 1. Tap random on the show radio and drag pad 1 up to about 50%. Listen for a few bars. Tap **rnd pitch**, under the radio. Listen. Tap the first repeat pad and hold it on a hit whose pitch has moved, a few seconds. Tap another pad on the phone, and pad 1 again. Tap **rnd pitch** off.
   - **Pass if:** Before the tap some hits drop or move but all at the same pitch. With it on, the button is lit and hits the randomness adds or changes come at different pitches, up to an octave either way, while hits as written stay at pad 1's pitch. The repeat plays the same pitch every time. The button is out on the other pad and lit again back on pad 1, so it is that track's. Off, every hit is at its pitch again.
   - **Note:** Saved with the section, and off in a section saved before it. That and the die's range are `c_steps_test`'s. Whether an octave either way is the right range is his call (Brendan, 2026-11-05: "up to ±12").
+
+- [ ] **55. Rush on knob 4**
+  - **Need:** Playing at about 120 BPM with a few steps lit and pad 1's sample loud. Knob 4 somewhere up, where it was left at load.
+  - **Do:** Turn knob 4 a little, staying off its bottom. Turn it all the way left. Then turn it slowly all the way right, and all the way back left. Then hold the third repeat pad and do it again, and hold the 500 BPM pad and do it again.
+  - **Pass if:** At first the screen reads rush 0 with the knob's place in brackets and nothing changes. Going up, the steps race and it keeps feeling faster at an even rate, the row in bpm, with no jump as it reads Hz and the recording takes over near 1000; it keeps climbing past hearing, harsh and folding back, with nothing tried to smooth it. Going down the same, and the steps come back on their own from where they were, at the tempo they left. The phone's tempo returns too, knob 1 is not held, and save and revert have not lit.
+  - **Note:** Under the third repeat pad the loop is three steps, so it pitches the same but cycles a third as often, and tops out at 7.3 kHz of fundamental. Letting go of the 500 BPM pad past the handoff snaps the tempo back and leaves the loop to the knob. How it feels, the even rate, the handoff's seam, and whether a four-step loop should reach 22 kHz too are his to judge ([sequencer](../../ref/module/sequencer.md), *Rush*).

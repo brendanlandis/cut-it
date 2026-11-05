@@ -34,17 +34,17 @@ The rate limit is `phone-assert`'s, and the page structure, what each control se
 - [ ] **6. The tempo, dragged on the phone**
   - **Do:** Put a finger on the tempo and drag up slowly, a BPM at a time, then down past where you started, then a long quick drag up. Let go.
   - **Pass if:** The number moves one BPM at a time under a slow finger, with no jumps, and the OLED shows nothing of it: the phone is the tempo's only display at rest. A long drag reaches far but stops at 600 at the top and 5 at the bottom. When you let go it stays. The Launchpad's beat row walks faster or slower to match.
-  - **Note:** About 9 points of drag to a BPM. Knob 1 is held at the phone's tempo afterwards, as knobs 2 and 4 are at the phone's last step and swing: its next turn reads bpm and the phone's tempo with its own in brackets, and moves nothing until turned through it ([tempo](../../ref/module/tempo.md)).
+  - **Note:** About 9 points of drag to a BPM. Knob 1 is held at the phone's tempo afterwards, as knob 2 is at the phone's last step: its next turn reads bpm and the phone's tempo with its own in brackets, and moves nothing until turned through it ([tempo](../../ref/module/tempo.md)).
 
 - [ ] **7. The global last step, and knob 2**
   - **Need:** Page 1, the drums playing, from the sequencer checklist's steps or `start bang`.
   - **Do:** Drag the last step's box down from 16 to 8. Then press page 2, and turn knob 2 a little either way.
   - **Pass if:** The box reads 8, and on page 2 the green pad walks steps 1 to 8 with the steps past them dark. Knob 2's first turn reads last-step 8 with the knob's own step in brackets on the OLED, and changes nothing until it is turned through 8, after which the phone's box follows it.
 
-- [ ] **8. The swing, and knob 4**
+- [ ] **8. The swing**
   - **Need:** The drums playing.
-  - **Do:** Press page 1 and drag the swing knob to 66%. Listen for a bar. Then press page 2 and turn knob 4 a little.
-  - **Pass if:** At 66% every second sixteenth comes late, a long-short shuffle. Knob 4's first turn reads swing 66 with its own value in brackets on the OLED and changes nothing until it is turned through 66; then the phone's knob follows it. Put it back to 50% before going on.
+  - **Do:** Press page 1 and drag the swing knob to 66%. Listen for a bar.
+  - **Pass if:** At 66% every second sixteenth comes late, a long-short shuffle. Put it back to 50% before going on.
 
 - [ ] **9. The tap pad**
   - **Need:** Page 1.

@@ -141,7 +141,7 @@ acknowledgments against the layout.
 | `mute` | A track's mute, `mute <track> <0 or 1>`, from the M under its pad: muted, its hits stop and its tails ring out ([sequencer.md](../module/sequencer.md)) (Brendan, 2026-11-05) | verified | — |
 | `solo` | Its solo, `solo <track> <0 or 1>`, from the S: with any track soloed only the soloed play, the mutes ignored | verified | — |
 | `rnd-pitch` | The selected track's random pitch, `rnd-pitch <track> <0 or 1>`, from the button under the show radio, asking for the opposite of what it shows: a hit its randomness rolls takes a pitch of its own (Brendan, 2026-11-05) ([sequencer.md](../module/sequencer.md)) | verified | — |
-| `set-swing` | The swing, `set-swing <50-75>`, as it stands: knob 4's own `swing` is a knob position that passes the knob's latch, so the phone has its own, and knob 4 is held again at the phone's value | unknown | — |
+| `set-swing` | The swing, `set-swing <50-75>`, as it stands. The swing is the phone's alone since knob 4 became rush (Brendan, 2026-11-05); `swing <0-1>`, a knob position that passes a latch, stays for a map row that wants it | unknown | — |
 | `set-last` | The global last step, `set-last <1-32>`, the same way beside knob 2's `last`, clipped to the time signature's reach ([sequencer.md](../module/sequencer.md)) | unknown | — |
 
 What the sections page sends after `sections`, each one `u_song`'s own (`R.phone_cmds` in

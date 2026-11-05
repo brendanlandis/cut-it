@@ -373,7 +373,7 @@
 #X connect 191 0 192 0;
 #X obj 6300 1160 list split 2;
 #X obj 6300 1340 list trim;
-#X text 6300 1420 drums: knobs 2 \, 3 and 4 on page 2 \, the drum page \, each map row's arg naming what it is to c_steps -- last \, track-last \, swing. The arg and the knob's 0-1 go on as <arg> <value> \, held or not: c_steps scales it \, holds it until it is turned through the step it stands for \, and draws its row \, since only it knows the selected track's last step and the swing it holds. A new drum control is a map row \, not a route argument here: c_steps refuses one it does not know as bad-selector., f 40;
+#X text 6300 1420 drums: knob 2 \, and knob 3 on page 2 \, the drum page \, each map row's arg naming what it is to c_steps -- last \, track-last \, or swing for a row that wants it. The arg and the knob's 0-1 go on as <arg> <value> \, held or not: c_steps scales it \, holds it until it is turned through the step it stands for \, and draws its row \, since only it knows the selected track's last step and the swing it holds. A new drum control is a map row \, not a route argument here: c_steps refuses one it does not know as bad-selector., f 40;
 #X connect 17 13 194 0;
 #X connect 195 0 167 0;
 #X connect 157 0 162 0;
@@ -441,7 +441,7 @@
 #X obj 8100 1260 text define \$0-arrange;
 #X text 7600 1800 arrangement: the arg is a grid index \, looked up in cut-it-arrangement-page.txt \, the table g_grid paints page 1's pads from \, so a press and its lamp cannot disagree. A press sends the cell's role to u_tempo \, tap the one there is \, and a release nothing. A row the layout does not hold is layout-miss \, as on the drum page and the synth pads. C-8, f 50;
 #X obj 1500 600 inlet;
-#X text 1500 650 A BPM a tap or the phone set reaches the Lua's fourth inlet \, which holds every knob the page maps to tempo there \, as c_steps holds knobs 2 and 4 when the phone sets the last step or the swing (ref/module/tempo.md)., f 50;
+#X text 1500 650 A BPM a tap or the phone set reaches the Lua's fourth inlet \, which holds every knob the page maps to tempo there \, as c_steps holds knob 2 when the phone sets the last step (ref/module/tempo.md)., f 50;
 #X connect 233 0 175 3;
 #X connect 17 15 218 0;
 #X connect 218 1 219 0;

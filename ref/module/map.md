@@ -72,7 +72,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, on every page** | verified | 301 |
 | `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad, the 500 BPM repeat and the saved tempo's lamp; `pad-35` and `pad-38` are two of them (Brendan, 2026-11-05), and `pad-36` and `pad-37` between them no row at all; an index the layout lacks is `fail u_map layout-miss` | verified | — |
 | `test-mode` | unused | Non-zero flips `u_net`'s test mode, which puts the phone's line check up ([phone.md](../device/phone.md)). **`og-shift-61` and `lp-setup`, the Launchpad's Setup, on every page**; `lp-setup` has no release, and needs none; out `u_map`'s third outlet, a cord to `u_net`. Choosing a mode turns test mode off, in `u_net` | unknown | — |
-| `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1 to the time signature's reach**, 32 at 4/4 ([sequencer.md](sequencer.md)), **`og-knob-2`**, and `swing` the sequencer's, 50% to 75%, **`og-knob-4`**, both on every page; `track-last` the selected track's own, **`og-knob-3`**, on page 2 alone, where the track is selected (Brendan, 2026-11-04). A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
+| `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1 to the time signature's reach**, 32 at 4/4 ([sequencer.md](sequencer.md)), **`og-knob-2`**, and `swing` the sequencer's, 50% to 75%, which no shipped row names since knob 4 became `rush` (the phone's stays), both on every page; `track-last` the selected track's own, **`og-knob-3`**, on page 2 alone, where the track is selected (Brendan, 2026-11-04). A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
 | `synth` | The **grid index**, looked up in `cut-it-synth-page.txt` | Non-zero sends `synth <choice>`, the cell's synth, to `c_synth` out `u_map`'s fourth outlet; a release does nothing, so with both pads held the first let go cannot undo the second. Eight rows, `pad-21` to `pad-28`, page 3 alone; an index the layout lacks is `fail u_map layout-miss`, as for `drum-page` (Brendan, 2026-11-04) | unknown | — |
 | `arrangement` | The **grid index**, looked up in `cut-it-arrangement-page.txt` | Non-zero sends the cell's role to `u_tempo` out `u_map`'s fifth outlet — `tap`, the one there is — and a release nothing. One row, `mode-1 pad-21 arrangement 21`, page 1 alone; an index the layout lacks is `fail u_map layout-miss` (Brendan, 2026-11-04) | unknown | — |
 | `section` | The top-row button, 1 and 2 the arrows, 3 to 8 the six section buttons | Non-zero sends `top <arg>` to `u_song` out `u_map`'s sixth outlet; a release nothing. `lp-cc-91` to `lp-cc-98`, buttons 1 to 8, on every page ([songs.md](songs.md)) | unknown | — |
@@ -80,6 +80,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `revert` | unused | Non-zero sends `revert` to `u_song`, the sixth outlet. `lp-cc-8`, the lowest row's rightmost, on every page | unknown | — |
 | `song` | The Organelle's key, 1 the lowest | Non-zero sends `key <arg>` to `u_song`, the sixth outlet, which loads the setlist's song at that place; a release nothing. `og-key-60` to `og-key-84`, keys 1 to 25, on every page (Brendan, 2026-11-05; [songs.md](songs.md)) | unknown | — |
 | `go` | unused | Non-zero sends `go` to `u_song`, the sixth outlet: a song waiting for go starts at the next bar. `lp-cc-89`, the right column's top, on every page (Brendan, 2026-11-05) | unknown | — |
+| `rush` | unused | The knob's 0–1 and its live flag, held or not, `rush <0-1> <live>` to `u_tempo` out `u_map`'s fifth outlet, which draws its row: the tempo racing, then a loop of the kit climbing to 22 kHz ([sequencer.md](sequencer.md), *Rush*). **`og-knob-4`, on every page** (Brendan, 2026-11-05) | unknown | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -112,6 +113,7 @@ there and nowhere else.
 | `volca-note` | `volca-note60 100` | same shape | verified | 316 |
 | `volca-prog` | `volca-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
 | `drums` | `last-step 12`, `pad2-last 6`, `swing 62 %`: drawn by `c_steps`, which holds the latch | `last-step 16 (7)`, `swing 50 (62)` | verified | — |
+| `rush` | `rush 420 bpm` below the handoff, `rush 8300 Hz` above it, drawn by `u_tempo` and `c_steps` | `rush 0 (57)`, the knob's place in percent | unknown | — |
 | `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
 | `drum-page` | **nothing** — the grid is the feedback, and 62 pads in use would bury the screen | none | unknown | — |
 | `synth` | **nothing** — the pads and the phone show the choice | none | unknown | — |
@@ -162,7 +164,7 @@ on page 3; and CC 90, PLAY, STOP, the four shifted keys, Setup, the top row's ei
 revert, the Organelle's 25 keys and go on all eight. **The Organelle's own keys load songs**, key
 N the Nth song of the setlist chosen, the lowest the opener, and play no note (Brendan,
 2026-11-05). ⛔ **Those forty-seven rows are on every page**: the three knobs so the tempo, the
-drums' last step and their swing are at hand whichever page is up (Brendan, 2026-11-04), the top
+drums' last step and rush are at hand whichever page is up (Brendan, 2026-11-04 and 2026-11-05), the top
 row, save and revert, the keys and go so the song is played, kept and changed from any page
 (Brendan, 2026-11-02, 2026-11-04 and 2026-11-05), the rest so no page strands you without a stop
 or a recover but the Launchpad's own. `map-assert.py` reads that off the file, that each top-row
@@ -209,7 +211,8 @@ then hands it authority.
 | Boot window | 1000 ms. A first value inside it is a restore and **arms**; after it, a hand, and goes straight to live | verified | 236 |
 | Whether the push is a restore at all | `[u_map-lua]` **asks whether `knobs.txt` is there** as it is made, before mother's push, beside the table it reads | verified | 239 |
 | With **no** `knobs.txt` | **Knob 1 is held at 120 BPM**, `u_tempo`'s own, until it is turned through 0.48, where the curve puts 120 (Brendan, 2026-11-04): its first push draws `bpm 120 (29)` and moves nothing. Every other knob is live from its first value | verified | — |
-| **After a `recover`** | the breadcrumb, read at 2000 ms, sends `live`, `knobs.txt` or not: every knob, knob 1 included | verified | 299 |
+| **After a `recover`** | the breadcrumb, read at 2000 ms, sends `live`, `knobs.txt` or not: every knob, knob 1 included, but one mapped to `rush` | verified | 299 |
+| **A knob mapped to `rush`** | Held at load, Saved or not, and after a `recover`, until a value at its bottom, 0.01 or under so a pot that stops short still gets there, past the boot window, whose first value may be `knobs.txt`'s. Left up at load it does nothing, so nothing jumps (Brendan, 2026-11-05) | unknown | — |
 | **After a tap or the phone sets the tempo** | every knob the page maps to `tempo` is armed again at where the curve puts that BPM (`R.hold_tempo`, `R.tempo_position`), so it is held until turned through it and draws `bpm <tempo> (<knob>)` meanwhile (Brendan, 2026-11-04; [tempo.md](tempo.md)) | unknown | — |
 | The held row is drawn by the **destination**, for any knob mapped to one that carries a value | `c_mapped` gets the latched target and the live flag with every message and draws `name <latched> (<knob>)` in its own units | verified | 316 |
 | **Reaching** the target releases, not only passing it | a target on a rail has no beyond: armed above a target of `0`, the flip test waits for `value < 0` | verified | 241 |

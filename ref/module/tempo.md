@@ -19,7 +19,7 @@ global `clock` is its clock**; that instance is the grid's, and the next consume
 `disp` and `err`, and out of **two** MIDI ports — port 1 carries the clock and the transport, and
 port 4 takes `panic`'s STOP alone. **Port 3 gets nothing**: it was the SP-404's, which left the rig
 on 2026-11-04 (Brendan). **Its inlet takes what sets the tempo from a pad or a screen** — `tap`,
-from `u_map`'s tap pad on page 1, `tempo <bpm>`, the phone's, from `u_net`, and `fast <1 or 0>`, the
+from `u_map`'s tap pad on page 1, `rush <x> <live>`, knob 4, from its `rush` destination, `tempo <bpm>`, the phone's, from `u_net`, and `fast <1 or 0>`, the
 500 BPM repeat, from `c_steps` — and writes the bus itself; **its outlets** hand the master BPM, clamped, to `u_net` for the phone, `tap` to
 `g_grid` to flash the pad, and the BPM a tap or the phone set to `u_map`, which holds knob 1 there
 (Brendan, 2026-11-04). The tap's rules are Lua, `u_tempo.lua`; the
@@ -93,6 +93,7 @@ phone use the legal range, and keep to it before anything reaches the bus.
 | The phone's `tempo <bpm>` | Whole BPM within 5–1000 on the bus; anything but a number is `fail u_tempo bad-tempo` and sets nothing. It leaves a count of taps alone | unknown |
 | Outlet 1 | Every BPM the bus carries, clamped, from `$0-bpm`: knob 1's, a tap's, the phone's, a Send line's. `u_net` sends it to the phone as `/cutit/tempo`, the tempo's only display at rest (*Design*) | unknown |
 | On page 2 | Cell 21 is a drum pad, and taps there set nothing: the map's row is page 1's alone | unknown |
+| Outlet 4 | `rush <bpm>`, knob 4's rate past the handoff, 0 below it: to `c_steps`'s inlet (*Knob 4 races the tempo*) | unknown |
 | Knob 1 | **Held at the new tempo after a tap or the phone moves it**, until it is turned to or through that tempo (Brendan, 2026-11-04): until then a turn moves nothing and its row reads the tempo in force with the knob's own in brackets, `bpm 150 (105)`. Outlet 3 carries the BPM to `u_map`, whose pickup arms the knob at where its curve puts it (*Design*). A tempo past the knob's 10 to 500 holds it at the end of its turn, so its row reads that end, 10 or 500, not the tempo | unknown |
 | Outlet 3 | The BPM a tap, the phone, a section or the 500 BPM repeat set, whole and clamped, after the Lua and before the bus: to `u_map`'s inlet. Knob 1's own tempo, a Send line's and the fallback 120 do not come out of it | unknown |
 | The 500 BPM repeat | `fast 1`, `pad-35` pressed, through `c_steps`: the BPM in force, kept in a box beside the route and added to the message so no BPM of a sweep calls the Lua, is kept and 500 goes out of the Lua as a tap's does, so knob 1 is held at the end of its turn until it reaches 500. `fast 0`, let go: the BPM kept goes out the same way, knob 1 held there, whatever the knob or the phone set meanwhile (Brendan, 2026-11-05). In between nothing the bus carries is put in the section. A section's restore in between changes nothing heard, and becomes the BPM kept | verified |
@@ -263,8 +264,8 @@ sees from a screen is the Lua's, the same as a tap's.
 ### Knob 1 waits for a tapped or phoned tempo
 
 **A tap or the phone sets the tempo, and knob 1 is held there until it is turned through it**
-(Brendan, 2026-11-04), as `c_steps` holds knobs 2 and 4 when the phone sets the last step or the
-swing ([sequencer.md](sequencer.md)). Without it the knob's next turn jumped the tempo back to
+(Brendan, 2026-11-04), as `c_steps` holds knob 2 when the phone sets the last step
+([sequencer.md](sequencer.md)). Without it the knob's next turn jumped the tempo back to
 wherever the knob happened to sit. The hold is `u_map`'s pickup, which already holds a restored
 knob until it crosses: `u_tempo` hands the BPM out of its Lua, before the bus, on a cord to
 `u_map`, and the Lua arms every knob the page maps to `tempo` at the BPM's place on the curve
@@ -272,6 +273,21 @@ knob until it crosses: `u_tempo` hands the BPM out of its Lua, before the bus, o
 on, and the held row is `c_mapped`'s, as for a restore. **It is a cord and not the bus** because
 the bus cannot say who wrote a tempo, and knob 1's own tempo must not hold knob 1; nothing on the
 cord reaches the bus, so there is no loop.
+
+### Knob 4 races the tempo, off the record
+
+**Rush** (Brendan, 2026-11-05) is `u_tempo.lua`'s `R.rush`: one curve over the knob's whole turn,
+`B * (330000 / B) ^ x`, *B* the BPM in force when the knob left its bottom, so it keeps feeling faster at
+an even rate, 330000 being 22 kHz as a one-step loop's BPM. **Below the handoff, 1000 BPM, it is the
+tempo**, as the 500 BPM repeat's is: not put in the section's draft, so the lamps stay as they are, but
+out a Lua outlet of its own straight to the bus, so knob 1 is not held there. Back at the bottom the tempo
+is *B*, or what a section's restore made it meanwhile. **Past the handoff** the bus stays at 1000, so the
+next step, which ends the loop, is at most 15 ms off, and the rate goes to `c_steps` instead
+([sequencer.md](sequencer.md), *Rush*). Coming back it hands over at 980, so a knob resting on the handoff
+does not capture over and over, a place on the knob being 0.8% of rate from 120 BPM.
+
+**With `pad-35`:** pressed under it, the tempo is 500 and that is what rush now goes back to, and released,
+the tempo snaps to what it kept, which rush then goes back to. Each keeps the put shut until both are done.
 
 ### `u_tempo` is a reference, `c_clock` is a clock
 

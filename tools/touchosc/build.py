@@ -115,7 +115,7 @@ TEMPO = (5, 1000)           # u_tempo's legal range, its [clip 5 1000]
 _TEMPO_LUA = open(os.path.join(ROOT, "Cut It", "u_tempo.lua"), encoding="utf-8").read()
 TAP_RESET = int(re.search(r"^R\.GAP = (\d+)", _TEMPO_LUA, re.M).group(1))
 TAP_INTERVALS = int(re.search(r"^R\.KEEP = (\d+)", _TEMPO_LUA, re.M).group(1))
-# The swing's range, read from c_steps.lua, so the phone's knob and knob 4 can't disagree: its
+# The swing's range, read from c_steps.lua, so the phone's knob and c_steps can't disagree: its
 # R.SWING_MIN and R.SWING_MAX, 50% to 75% (Brendan, 2026-11-05).
 _STEPS_LUA = open(os.path.join(ROOT, "Cut It", "c_steps.lua"), encoding="utf-8").read()
 SWING = tuple(int(v) for v in re.search(r"^R\.SWING_MIN, R\.SWING_MAX = (\d+), (\d+)", _STEPS_LUA,

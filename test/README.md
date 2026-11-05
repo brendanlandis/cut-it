@@ -503,9 +503,10 @@ without a timestamp. The tempo is set by the driver, and PLAY to STOP is counted
 is held at 16 and then sets the last step to 3 before PLAY again, which must walk 1 2 3 1 2. Then
 knob 3 gives track 2 a last step of 6, and nine steps are checked against two loops, 3 and 6, note
 by note. Then the drum screen's `snap` is sent as the phone sends it, OSC to `u_net`'s own port
-(`CUTIT_INPORT`), so the cord from `u_net` to `c_steps` in `u_root` is under test too. Knob 4's swing
-is held at 50% until turned all the way down, and at 75% puts step 2 three quarters through its pair;
-the global last step and the swing are put as they change, a section's.
+(`CUTIT_INPORT`), so the cord from `u_net` to `c_steps` in `u_root` is under test too. The swing press,
+which a map row could give a knob, is held at 50% until turned all the way down, and at 75% puts step 2 three quarters through its pair;
+the global last step and the swing are put as they change, a section's. Knob 4's rush runs through the
+running patch from its hold to the loop's rate and back, with nothing put in the section.
 The drum screen's pads come over OSC too: a track's volume and pitch reach `c_kit`'s stand-in,
 `test/stubs/t_kit.pd`, which prints them, as every track's do at the restore, and the seed's
 effects, four tracks' and the reverb's size, reach it at the restore too, those alone, since

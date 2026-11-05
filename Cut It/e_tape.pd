@@ -1,6 +1,6 @@
 #N canvas 20 20 2300 1300 12;
 #X text 20 20 e_tape -- a held repeat's tails \, in c_kit (Brendan \, 2026-11-05): everything on c_kit's \$1-out \, the delays and the reverb \, is recorded all the time. While a repeat is held the recording freezes \, the last N steps of it loop in time with the replayed hits \, at a speed that follows the tempo \, like tape \, and the live sound is muted \, its engines ringing silently underneath. c_steps says when. ref/module/sequencer.md, f 70;
-#X text 20 190 creation arg: c_kit's \$0 \, for a step's length \, \$1-step \, and the hits' sends \, \$1-gate. signal inlet: the wet sound \, c_kit's catch~. inlet: tape <span> <units> \, the replay begins: span ms of recording played in units steps' time \; and off \, it is let go. outlet~: the wet sound or its loop. The throws are never switched off: the voices' are zeroed at their own taps \, c_voice \, so no catch~ fills up., f 70;
+#X text 20 190 creation arg: c_kit's \$0 \, for a step's length \, \$1-step \, and the hits' sends \, \$1-gate. signal inlet: the wet sound \, c_kit's catch~. inlet: tape <span> <units> \, the replay begins: span ms of recording played in units steps' time \; off \, it is let go \; and run <1 or 0> \, rush's loop has it stop and go on. outlet~: the wet sound or its loop. The throws are never switched off: the voices' are zeroed at their own taps \, c_voice \, so no catch~ fills up., f 70;
 #X obj 20 340 inlet~;
 #X obj 900 340 inlet;
 #X obj 900 380 route tape off run;

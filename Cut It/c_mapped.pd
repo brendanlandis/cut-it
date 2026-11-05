@@ -4,7 +4,7 @@
 #X text 20 400 The action is gated on the assembled message: while pickup holds a knob the handler hears nothing at all. The row still draws (item 242)., f 84;
 #X text 20 560 The held row is name <latched> (<knob>) \, as in bpm 57 (120). The value must be a float for g_oled's makefilename %g \, so the second number rides in the unit field. The row lives here and not in u_map's pickup because only this knows what the knob maps to (item 240)., f 84;
 #X text 20 740 unpack gives the order: live \, target \, value \, and then arg names the row \, fires the action and picks which row to draw. Two stores hold the scaled value because each row bangs its own (C-3)., f 84;
-#X text 20 920 makefilename bpm \, with no % \, still takes the float and ignores it \, so a destination with no arg needs no special case. + 0.5 then i rounds \, so the footer cannot flicker between 119.7 and 120.1 either., f 84;
+#X text 20 920 makefilename bpm \, with no % \, still takes the float and ignores it \, so a destination with no arg needs no special case. + 0.5 then i rounds \, so the tempo cannot flicker between 119.7 and 120.1 either., f 84;
 #X obj 20 1100 inlet;
 #X obj 20 1160 unpack f f f f;
 #X obj 1500 1240 t f f;

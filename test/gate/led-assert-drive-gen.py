@@ -24,9 +24,9 @@ SEQ = [
 
     (7800, "UNKNOWN", ["\\; disp led flashing"], GAP),
 
-    # g_led shares disp with g_oled, g_grid and u_net, and each sees every
-    # message.
-    (8500, "NOT-LED", ["\\; disp status v0-test"], GAP),
+    # g_led shares disp with g_oled and g_grid, and each sees every message: a
+    # parameter row here, as u_map sends one.
+    (8500, "NOT-LED", ["\\; disp chop-size 43 %"], GAP),
 
     (9200, "DONE", [], GAP),
 ]

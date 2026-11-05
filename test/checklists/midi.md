@@ -11,7 +11,7 @@ Hot-swap for the Volca, which is `none`: it transmits nothing and can never be p
 10 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [map](../../ref/module/map.md), [volca](../../ref/device/volca.md).
 
 - [ ] **1. Restored tempo at boot**
-  - **Pass if:** The footer reads 57 BPM and not 120 BPM. The lit mode lamp is wherever you left it — note which one it is.
+  - **Pass if:** The phone's tempo reads 57 and not 120. The lit mode lamp is wherever you left it — note which one it is.
   - **Note:** Rig only: 57 comes from `knobs.txt`, which no Mac has.
 
 - [ ] **2. Get to page 3**
@@ -33,12 +33,12 @@ Hot-swap for the Volca, which is `none`: it transmits nothing and can never be p
 
 - [ ] **6. Tempo from knob 1**
   - **Do:** Sweep knob 1 all the way and back.
-  - **Pass if:** The footer BPM follows the knob over roughly 10 to 500 BPM once the knob has crossed the restored value. Nothing at all happens before it crosses.
+  - **Pass if:** Until the knob crosses the restored value the row reads bpm 57 with the knob's own tempo in brackets, and the phone's tempo stays 57. From there the row's one number and the phone's tempo follow the knob over roughly 10 to 500 BPM.
 
 - [ ] **7. Transport from PLAY and STOP**
   - **Do:** Press PLAY on the nanoKONTROL, then STOP.
   - **Pass if:** The aux LED goes green on PLAY and dark blue on STOP.
-  - **Note:** No footer claim: the rows from the steps above raise the param layer over it. The aux LED is the readout.
+  - **Note:** The aux LED is the readout: nothing on the OLED shows the transport.
 
 - [ ] **8. Panic is unbound**
   - **Do:** Press every transport key on the nanoKONTROL and every button on the Organelle. Turn the encoder. Nothing should ever go red.

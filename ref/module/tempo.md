@@ -88,7 +88,7 @@ phone use the legal range, and keep to it before anything reaches the bus.
 | Two taps in one instant | Count nothing, and keep the count | unknown |
 | The flash | Every tap, the first included, lights the pad full for 120 ms; it sits dim otherwise | unknown |
 | The phone's `tempo <bpm>` | Whole BPM within 5–600 on the bus; anything but a number is `fail u_tempo bad-tempo` and sets nothing. It leaves a count of taps alone | unknown |
-| Outlet 1 | Every BPM the bus carries, clamped, from the same `$0-bpm` the footer reads: knob 1's, a tap's, the phone's, a Send line's. `u_net` sends it to the phone as `/cutit/tempo` | unknown |
+| Outlet 1 | Every BPM the bus carries, clamped, from `$0-bpm`: knob 1's, a tap's, the phone's, a Send line's. `u_net` sends it to the phone as `/cutit/tempo`, the tempo's only display at rest (*Design*) | unknown |
 | On page 2 | Cell 21 is a drum pad, and taps there set nothing: the map's row is page 1's alone | unknown |
 | Knob 1 | Keeps working, and is not held after a tap or the phone moves the tempo: its next turn sets the tempo from where it sits | unknown |
 
@@ -307,11 +307,14 @@ owner owns its panic.
 ⚠️ **`u_tempo` owns the 252**, the realtime STOP, and nothing per-device. Which ports it reaches is
 counted under *Transport* above.
 
-### The footer is redrawn on every transport change
+### The tempo is the phone's to show
 
-`status` is **sticky**, so without a redraw `panic` would sit in the footer through a restart — LED
-green, the drums running, and the screen still reading PANIC. Redrawing on every transport change is
-not cosmetic.
+**The tempo lives on the phone** (Brendan, 2026-11-04): its arrangement screen draws outlet 1's BPM,
+and the OLED draws the tempo only as knob 1's row, `bpm 120`, while the knob moves
+([display.md](display.md), *Nothing at rest but the levels*). So `u_tempo` writes nothing on `disp`
+but the aux LED's states. It drew the BPM into `g_oled`'s footer until then, redrawn at every start
+and stop so a `panic` there would not outlive a restart, and handed over from `u_init`'s ready line
+by a 4000 ms delay coupled to the boot's stages; all three went with the footer.
 
 ### Clock is not decorative
 

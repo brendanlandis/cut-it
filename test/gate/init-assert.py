@@ -17,15 +17,14 @@ MARKS = 5
 
 # ref/module/boot.md, "The stage sequence", as the screen sees it: the one
 # thing every stage touches.
-STAGES = ["modal booting", "modal wiring", "modal launchpad", "modal-off",
-          "status v0.3-ready"]
+STAGES = ["modal booting", "modal wiring", "modal launchpad", "modal-off"]
 
 # What the gate seeds into the two state files. The restore replays manual
 # first: the trigger's right outlet fires first.
 SEEDED = [["restore", "init-mprobe", "7"], ["restore", "init-probe", "42"]]
 
 _STAGE = re.compile(r"^DISP:\s+(modal booting|modal wiring|modal launchpad"
-                    r"|modal-off|status v0\.3-ready)\s*$")
+                    r"|modal-off)\s*$")
 
 
 def run_asserts(cap):
@@ -44,9 +43,11 @@ def run_asserts(cap):
             stages == STAGES,
             "the screen saw %s\n            wanted %s" % (stages, STAGES))
 
-    A.check("the footer's version string is the one the patch actually sends",
-            "DISP: status v0.3-ready" in lines,
-            "no `status v0.3-ready` anywhere in the capture")
+    # The boot left v0.3-ready in a footer, and u_tempo the BPM after it, until
+    # 2026-11-04: nothing at rest is drawn now but the output's levels.
+    status = [ln for ln in lines if ln.startswith("DISP: status")]
+    A.check("⛔ the boot leaves nothing in a footer: no status on disp at all",
+            not status, "disp carried %s" % status)
 
     # ---- mother's MIDI mapping is shut off twice --------------------------
     # mother's binary pushes its own midiInGate 1 about half a second in,
@@ -146,7 +147,6 @@ def run_asserts(cap):
         ("Launchpad SysEx", i_sysex),
         ("state restore", i_restore),
         ("modal-off", i_off),
-        ("status", first_index(lambda ln: ln == "DISP: status v0.3-ready")),
     ]
     idx = [i for _, i in timeline]
     A.check("⛔ the whole boot, in one order, with nothing out of place",
@@ -155,8 +155,8 @@ def run_asserts(cap):
                                                       key=lambda t: (t[1] is None, t[1]))])
 
     # ---- and then it stops -------------------------------------------------
-    # u_tempo takes the footer at 4 s, so a stage still arriving at 7 s would be
-    # fighting it.
+    # The last stage is modal-off at 3.5 s, so a stage still arriving at 7 s is a
+    # sequence that never settled.
     print("\n--- and then the sequence is over ---")
     A.check("no boot stage arrives after the sequence has settled",
             not [v for v in kind("QUIET", "DISP") if v[:1] in (["modal"], ["modal-off"])],

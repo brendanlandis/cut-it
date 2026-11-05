@@ -64,8 +64,8 @@ def run_asserts(cap):
 
     print("\n--- a disp selector that is not its own ---")
     A.check("the driver's non-led message did reach the bus",
-            disp("NOT-LED") == [["status", "v0-test"]],
-            "wanted status v0-test on disp, got %s -- without this the next "
+            disp("NOT-LED") == [["chop-size", "43", "%"]],
+            "wanted chop-size 43 %% on disp, got %s -- without this the next "
             "check has no liveness witness" % disp("NOT-LED"))
     A.check("a disp message that is not led drives nothing and warns nothing",
             not led("NOT-LED") and not err("NOT-LED"),

@@ -307,7 +307,7 @@ Started at `loadbang`, the first re-wire lands inside `init-assert.sh`'s 8.6 s w
 requires **exactly one** `wire.sh` — so it goes red for a reason that has nothing to do with what it
 tests.
 
-**Fix:** the 4000 ms settle, the same way `u_tempo`'s 4000 is handled. **Change a stage timing and
+**Fix:** the 4000 ms settle, past `u_init`'s last stage. **Change a stage timing and
 this changes with it** — [boot.md](boot.md) holds the table both numbers answer to.
 
 ### `[change]` is bare here, where every other one in the patch carries `-1`

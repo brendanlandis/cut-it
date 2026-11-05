@@ -2,7 +2,7 @@
 #X text 20 20 u_present -- the shared half of device presence: the one tick every c_presence ages on \, and the one bounded wire.sh recovery for every device. It keeps no per-device state \, only a count of how many sources are lost. ref/module/presence.md, f 84;
 #X text 20 190 creation arg 1: the SETTLE delay in ms before the tick starts. creation arg 2: the TICK interval in ms. creation arg 3: the GIVE-UP count \, in ticks after the first loss. creation arg 4: the WATCH interval \, in ticks \, for the re-wire heartbeat that catches a device nothing ever lost. inlets: none. outlets: none. It talks on presence and err \, and forks wire.sh and wire-watch.sh through [shell]., f 84;
 #X declare -path ../mac-stubs;
-#X text 20 330 The settle is coupled to u_init's last stage \, like u_tempo's 4000 (ref/module/boot.md): change a stage timing and this changes with it., f 84;
+#X text 20 330 The settle is coupled to u_init's last stage (ref/module/boot.md): change a stage timing and this changes with it., f 84;
 #X text 20 520 One shared re-wire \, one shared bound: the counter runs while any source is lost and resets when none is \, so the rig gets eight attempts however many cables came out., f 84;
 #X text 20 700 It forks \, and the bound is what allows it: one fork every fourth tick while something is lost \, stopped at the give-up \, because nobody reseats a cable in twelve seconds. wire.sh costs about 247 ms and is idempotent (item 292)., f 84;
 #X text 20 930 The shared re-wire also fixes a device that enumerated late landing on the Launchpad's channel block (ref/module/presence.md)., f 84;

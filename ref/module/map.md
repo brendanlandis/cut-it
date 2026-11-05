@@ -109,7 +109,7 @@ there and nowhere else.
 | `drum-page` | **nothing** — the grid is the feedback, and 56 pads in use would bury the screen | none | unknown | — |
 | `synth` | **nothing** — the pads and the phone show the choice | none | unknown | — |
 | `arrangement` | **nothing** — the pad flashes and the phone shows the tempo | none | unknown | — |
-| the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the footer, the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
+| the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
 
 ⚠️ **The held row's second number rides in the UNIT field.** `g_oled` runs a row's value through
 `makefilename %g`, which refuses a symbol, so `(120)` cannot be the value — it is a free symbol in
@@ -239,8 +239,8 @@ with nothing Saved is silent on `tempo` by design: `u_tempo`'s fallback 120 is t
 ⛔ **The override lands at 2000 ms and the report must not.** After an emergency the knobs you are
 *holding* are the truth, so nothing may be held; the read waits for `[del 2000]` only because a
 missing file prints three lines (C-9). The **report** goes the other way: a `warn`
-raised during the boot stages is buried by `modal launchpad` at 3000 and the footer hand-over at
-4000, so it waits until 4500. One read, two deadlines.
+raised during the boot stages is buried by `modal launchpad` at 3000 and the rest of the boot,
+which ends at 3500, so it waits until 4500. One read, two deadlines.
 
 ⛔ **The file is cleared by OVERWRITING it, never by deleting it.** Vanilla Pd cannot delete a file;
 `[shell]` forks, is a do-nothing stub on the Mac, and would let a gate reach only one branch — the
@@ -337,9 +337,9 @@ unmapped *control* is expected, an unmapped *destination* is a bug.
 
 ### A knob's raw position is not a readable parameter row
 
-A knob reported to `disp` as well as `param` puts `og-knob-1 0.245` on screen — and ⛔ **`g_oled`'s
-param layer REPLACES the footer**, so the BPM it is mapped to disappears exactly while you are
-turning it. A 0–1 number where a BPM belongs is not feedback; it is arithmetic homework.
+A knob reported to `disp` as well as `param` puts `og-knob-1 0.245` on screen, beside or instead of
+the BPM it is mapped to. A 0–1 number where a BPM belongs is not feedback; it is arithmetic
+homework.
 
 **Fix:** the knobs do not report to `disp`. `u_map` reports the **mapped** value instead, because it
 is the only file that knows what a control means. ⚠️ **`og-aux` is not a control at all** — it is

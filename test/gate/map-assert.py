@@ -251,10 +251,10 @@ def static_lint():
     A.note("[s disp] per m_ file: %s" % " ".join("%s:%d" % kv for kv in sorted(found.items())))
 
 
-# Other modules share disp in every window (u_tempo's footer, g_led, u_init's
-# modal-off, u_net's alert), so "u_map drew nothing" is asked of u_map's rows
+# Other modules share disp in every window (u_level's meters, g_led, u_init's
+# modal-off, u_err's alert), so "u_map drew nothing" is asked of u_map's rows
 # alone. A gk-* row is an unmapped gate control's raw report.
-RESERVED = {"in-l", "in-r", "status", "modal", "modal-off", "alert", "led", "grid", "diag"}
+RESERVED = {"out-l", "out-r", "modal", "modal-off", "alert", "led", "grid", "diag"}
 
 
 def umap_rows(events):

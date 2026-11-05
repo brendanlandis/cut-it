@@ -20,8 +20,9 @@ GAP = 40
 
 SEQ = [
     # Nothing before 4500 ms: u_init's `booting` modal holds the screen until
-    # its modal-off at about 3500 ms.
-    (4500, "HOME", ["\\; disp status gate-home"], GAP),
+    # its modal-off at about 3500 ms. A tempo on the bus, which home drew in a
+    # footer until 2026-11-04: nothing at rest names it now.
+    (4500, "HOME", ["\\; tempo 140"], GAP),
 
     # --- a parameter, and its 1200 ms TTL ---------------------------------
     # The "it is up" window must be shorter than the TTL it asserts: up in

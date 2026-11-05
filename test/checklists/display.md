@@ -1,11 +1,13 @@
 # Display checklist
 
-The OLED's layers and the error bus, as a person sees them. `oled-assert` and `err-assert` prove the words, the order and the timeouts headlessly; this is whether the screen reads. Steps 2 to 13 put their picture on the buses with **Send** lines; 14 to 16 are hands on the rig.
+The OLED's layers and the error bus, as a person sees them. `oled-assert` and `err-assert` prove the words, the order and the timeouts headlessly; this is whether the screen reads. Steps 2 to 13 put their picture on the buses with **Send** lines; 1 and 14 to 17 are hands on the rig.
 
-16 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [display](../../ref/module/display.md), [error](../../ref/module/error.md).
+17 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [display](../../ref/module/display.md), [error](../../ref/module/error.md).
 
 - [ ] **1. Resting display**
-  - **Pass if:** Two bars with a small gate mark under each. A BPM at the bottom. The footer changes from v0.3-ready to the tempo about four seconds in.
+  - **Do:** Load Cut It from the Organelle's menu and wait for the boot's words to clear.
+  - **Pass if:** Two wide bars, one over the screen's top half and one over its bottom half, each with a small readout above it: out-l over the first and out-r over the second. Nothing else: no tempo, no version, no marks under the bars. With nothing playing both bars sit at their left edge.
+  - **Note:** The OLED is for alerts and warnings, the output's levels and the name of a control as it moves (Brendan, 2026-11-04): the tempo is the phone's, and a panic the LED's and the grid's ([display](../../ref/module/display.md)).
 
 - [ ] **2. Parameter with a unit**
   - **Send:** `disp chop-size 43 %`
@@ -50,7 +52,7 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
 
 - [ ] **12. Clearing the modal**
   - **Send:** `disp modal recording; disp modal-off`
-  - **Pass if:** recording disappears. You are back to the two meters and the BPM footer.
+  - **Pass if:** recording disappears. You are back to the two meters and nothing else.
 
 - [ ] **13. Modal safety timeout**
   - **Send:** `disp modal stuck`
@@ -70,3 +72,9 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
   - **Do:** Hold the aux button and press the lowest key. Look hardest at the longest line: m_launchpad unchecked is exactly as wide as a row gets, so that is where clipping would show first. The word shift is on screen while aux is held and the roster draws over it.
   - **Pass if:** Five small lines naming m_launchpad m_nano m_organelle m_volca and m_streich — each with here or gone or never or unchecked beside it. Every line is readable at arm reach and none is cut off at the right edge. About eight seconds later the meters come back on their own.
   - **Note:** `oled-assert` proves the roster's words and their order; whether five 8px rows read at arm's length, the fifth just above the meters, and whether the 21-character `m_launchpad unchecked` line is clipped, is a person's call ([display](../../ref/module/display.md)).
+
+- [ ] **17. The meters are the output**
+  - **Need:** The SM58 in the Organelle's input, the drum samples deployed, and the mixer's channels 1 and 2 up.
+  - **Do:** Press page 2 and hit the bottom-left drum pad a few times. Then talk into the SM58. Then press nothing and wait.
+  - **Pass if:** out-l's bar jumps with each hit and moves with your voice, and out-r's stays at its left edge throughout. Silent, both bars sit at their left edge. Nothing under either bar marks a level.
+  - **Note:** The meters are what Cut It sends to its two outputs, read where `u_root` throws them: the mic passed through and, on the left, the drums (Brendan, 2026-11-04). A bar that never moves while the PA plays is the meter and not the sound; one that moves while the PA is silent is a cable or the mixer. `audio-assert` proves by the signal which side each reads ([audio](../../ref/module/audio.md)).

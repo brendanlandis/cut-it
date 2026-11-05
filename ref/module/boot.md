@@ -29,8 +29,7 @@ also **undoes mother's own autoconnect**, which is not ours and is actively wron
 | 2000 ms | | `midiInGate 0` and `midiOutGate 0` **again** — the second send is the one that works | verified | — |
 | 3000 ms | `modal launchpad` | **Outlet 1** bangs `m_launchpad`, which enters Programmer Mode | verified | — |
 | 3500 ms | | **Outlet 2** bangs `u_state` — restore the saved state, and it fires FIRST of the three at this stage | verified | — |
-| 3500 ms | `modal-off` | `status v0.3-ready` into the footer | verified | — |
-| 4000 ms | | `u_tempo` drops the BPM into the footer, taking it over | verified | — |
+| 3500 ms | `modal-off` | home's two output meters come back: nothing at rest says the boot is done but them, since the footer went (2026-11-04, [display.md](display.md)) | verified | — |
 | 4000 ms | | `u_present`'s settle expires — the presence tick starts and every registered device is polled from here on | verified | 271 |
 
 ⚠️ **Both gates go out twice, not just `midiInGate`.** One message box feeds both sends and is
@@ -46,8 +45,9 @@ is up and init SysEx sent on `loadbang` goes nowhere, so every stage sits behind
 clear that — **1500 ms is enough** (item 266). **If the Launchpad ever comes up unlit, lengthen the
 second delay before suspecting the SysEx.**
 
-⛔ **TWO numbers outside this file are coupled to this sequence** — `u_tempo`'s 4000 and
-`u_present`'s. Change a stage timing and both change with it.
+⛔ **One number outside this file is coupled to this sequence** — `u_present`'s 4000 settle.
+Change a stage timing and it changes with it. `u_tempo`'s 4000 was the other, the footer's hand-over
+from the ready line to the BPM, and went with the footer (2026-11-04).
 
 ⚠️ **`u_present`'s settle exists because of a GATE, not because of the hardware.** Started at
 `loadbang` its first re-wire lands inside `init-assert.sh`'s 8.6 s window, and that gate requires
@@ -179,15 +179,6 @@ deliver the Volca's channel as arg 4. **Pd does not warn about a missing or extr
 
 **Fix:** pass every position, even the unused ones, and say in the comment that it is unused.
 
-### The footer is handed over, not shared
-
-⛔ `u_tempo` drops the BPM into the footer at 4 s, deliberately **after** the ready line lands at
-~3.5 s. The status is sticky and something else has to clear it — without the handover you could
-press PLAY, watch the LED go green and the drums start, and still be told PANIC.
-
-**Fix:** `u_tempo` bangs the stored BPM back out on every start and stop, so the footer always
-describes the state you are actually in.
-
 ### `[shell]` exists only on the Organelle
 
 ⚠️ `mac-stubs/shell.pd` stands in during the local syntax check and is **never deployed**. Nothing
@@ -243,14 +234,14 @@ and the safe exit live in `m_launchpad`; what lives here is the order. Putting a
 `[del]` inside `u_state` instead would mean two files owning the same sequence and neither one saying
 so.
 
-⚠️ **The stage timings are already coupled to `u_tempo`'s 4000.** Duplicating one of them into a
-second file is exactly how that coupling gets broken silently.
+⚠️ **The stage timings are already coupled to `u_present`'s 4000 settle.** Duplicating one of them
+into a second file is exactly how that coupling gets broken silently.
 
 ### The restore fires at the last stage, and first among the three
 
 ~3.5 s is **the earliest moment every `m_` layer and `u_map` exist to receive what comes back** —
-earlier and a restore would publish into nothing. It fires before `modal-off` and the footer, so the
-screen settles *after* the state does rather than during it.
+earlier and a restore would publish into nothing. It fires before `modal-off`, so the screen settles
+*after* the state does rather than during it.
 
 ### Connect by NAME, never by client number
 

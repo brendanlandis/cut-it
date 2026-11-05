@@ -40,14 +40,13 @@ screen in it and nothing known reached it** (Reference, `~/Sites/!reference/rola
 
 ### The `disp` message
 
-**`<name> <value> [unit]`, with the name as the SELECTOR.** `g_oled` routes nine selectors;
+**`<name> <value> [unit]`, with the name as the SELECTOR.** `g_oled` routes eight selectors;
 **everything else is a parameter by definition** — there is no registration step, so a new control
 needs no change to any display.
 
 | Selector | Carries | Layer | Evidence | Item |
 |----------|---------|-------|----------|------|
 | `out-l` `out-r` | `<dB>` from `u_level`: what Cut It sends out, left and right ([audio.md](audio.md)) | home | verified | — |
-| `status` | One symbol, the footer status | home | verified | — |
 | `modal` | One symbol — **sticky** until cleared | modal | verified | — |
 | `modal-off` | Nothing | clears modal | verified | — |
 | `diag` | Nothing — it is a summons, not a value | diag | verified | 301 |
@@ -64,7 +63,7 @@ Write `launchpad-silent`, not `launchpad silent`.
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
-| `home` | 0 | Always active | Never | Two output meters, 8px readouts, footer | verified | — |
+| `home` | 0 | Always active | Never | Two output meters and their 8px readouts, and nothing else | verified | — |
 | `param` | 1 | Any unreserved `disp` selector | `[del 1200]` | **Up to five rows that hold their positions** | verified | — |
 | `modal` | 2 | `disp` → `modal <word>` | `modal-off`, or a 30 s safety TTL | Word 16px + shrunk meters | verified | — |
 | `diag` | 3 | `disp` → `diag` | `[del 8000]` | **One 8px row per device, and the shrunk meters** | verified | 301 |
@@ -80,12 +79,12 @@ alive and the screen clears 1.2 s after your hands stop rather than after they s
 home                              param                    alert
 +------------------------+  +------------------------+  +------------------------+
 | out-l 43        y=0  8 |  | chop-size       y=0  8 |  |+----------------------+|
-| ==========      y=10 12|  |                        |  || fail        y=6   16 ||
-|                        |  |  43 %           y=12 24|  ||                      ||
-| out-r 19        y=27 8 |  |                        |  || u_init      y=30   8 ||
-| ===             y=37 12|  |                        |  || launchpad-x y=44   8 ||
-|                        |  | =========       y=48  5|  |+----------------------+|
-| v0.3-ready      y=54  8|  | ====            y=56  5|  +------------------------+
+| ==========      y=10 18|  |                        |  || fail        y=6   16 ||
+| ==========             |  |  43 %           y=12 24|  ||                      ||
+|                        |  |                        |  || u_init      y=30   8 ||
+| out-r 19        y=32 8 |  |                        |  || launchpad-x y=44   8 ||
+| ===             y=42 18|  | =========       y=48  5|  |+----------------------+|
+| ===                    |  | ====            y=56  5|  +------------------------+
 +------------------------+  +------------------------+
 ```
 
@@ -93,6 +92,7 @@ home                              param                    alert
 |---|----------|------|
 | `env~`'s 0–100 maps to pixels as **× 1.28**, clipped to **1–128** — a zero-width `gFillArea` is untested and silence is the common case | verified | — |
 | **No gate marks** since the meters read the output (Brendan, 2026-11-04): they marked the input's noise floor and a gate window over it, item 11, and an output meter has neither (*Design*) | verified | 11 |
+| Home is two halves of 32 rows: a readout at y=0 and y=32, its bar 18 px tall at y=10 and y=42, and four blank rows after each bar. **No footer** since 2026-11-04 (*Design*) | verified | — |
 | A moving knob shrinks the meters into a **full-width 5 px bottom strip**, not a corner. A corner meter here is ~40×4 px, and 24px text needs the full width anyway | verified | — |
 
 ### The param layer is a list, and rows are STABLE
@@ -270,15 +270,16 @@ flash, raises to 153.
 
 ```
  0  modal booting      31  modal-off
-11  modal wiring       31  status v0.3-ready
-26  modal launchpad    46  chop-size 43 %
+11  modal wiring       46  chop-size 43 %
+26  modal launchpad
 ```
 
 ✅ **The OSC rate has ample headroom, measured on the running device** (item 21): `pd` at **8.2%
-CPU**, load 0.16, **110 UDP datagrams/second** to `127.0.0.1:4001`. The home frame is ten OSC
-messages at 10 Hz, so 110/s is the frame clock keeping up with room to spare.
+CPU**, load 0.16, **110 UDP datagrams/second** to `127.0.0.1:4001`. The home frame was ten OSC
+messages then, so 110/s was the frame clock keeping up with room to spare; it is seven since the
+footer and the gate marks went.
 
-⚠️ **Hands off the device, the OLED sits on the meters and the footer** — no `og-knob-*` rows persist,
+⚠️ **Hands off the device, the OLED sits on the meters** — no `og-knob-*` rows persist,
 so nothing pins the param layer open (item 68). **This does not distinguish "mother does not stream
 knob positions" from "the `[change -1]` guard filters them"**, and it cannot without removing the
 guard. The outcome is right either way.
@@ -311,7 +312,8 @@ the first one.** Cheap, but not free.
 
 ⛔ **And APPEND it, because the reject renumbers.** An argument slotted in beside the other layer
 names shifts every outlet after it — **including the reject**, which is the entire parameter path.
-`diag` went on the end of the box and the reject moved from outlet 8 to 9.
+`diag` went on the end of the box and the reject moved from outlet 8 to 9; taking `status` out of
+the middle (2026-11-04) moved it back to 8, and every layer's cord after it with it.
 
 ### `text get` errors if you ask for more fields than a line holds
 
@@ -370,6 +372,23 @@ The readouts say so, `out-l` and `out-r`, and the screen log and the bus use the
 floor to where a noise gate on the input would sit — a guide to setting a gate on what came in. An
 output meter has no gate behind it and no fixed floor: what it shows is how near the output is to
 full scale, and full scale is the bar's right edge.
+
+### Nothing at rest but the levels: the footer went
+
+**The footer showed the tempo, and the tempo is the phone's** (Brendan, 2026-11-04): the phone's
+arrangement screen draws it, and on the OLED it is a control's name, `bpm 120`, while knob 1 moves.
+The footer's other two words went with it, judged against the same rule:
+
+| It carried | Why it went | What says it now |
+|---|---|---|
+| The BPM, from `u_tempo` | The tempo lives on the phone | The phone; knob 1's row while it turns |
+| `panic`, from `u_init` | Neither an alert nor a warning: a person pressed it, and nothing is wrong | The aux LED, red until the transport moves, and the whole grid red for a second |
+| `v0.3-ready`, from `u_init`, for half a second before the BPM took over | A version is none of the three | The boot's last modal clearing to the meters ([boot.md](boot.md)) |
+
+**So `status` left the bus**, and `g_oled`'s route lost it. Home is the two meters, given the whole
+screen in two equal halves, and the boot's modals are still the boot's: they are what a stuck boot
+shows. A `status` sent now is a parameter row by the fallthrough, which is the visible failure that
+rule chose.
 
 ### Callers send semantics, never layout
 

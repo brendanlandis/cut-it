@@ -142,7 +142,7 @@ is visible on the surface itself.
 
 | Gesture | Raises | What happens |
 |---------|--------|--------------|
-| **Short press** | `panic` | All Notes Off to the Volca; the drums stop; realtime STOP on ports 1 and 4; the aux LED goes red; the whole grid flashes red for a second; the OLED footer reads `panic` |
+| **Short press** | `panic` | All Notes Off to the Volca; the drums stop; realtime STOP on ports 1 and 4; the aux LED goes red; the whole grid flashes red for a second. Nothing on the OLED: panic is the LED's and the grid's to show (2026-11-04) |
 | **Held 2000 ms** | `recover` | `panic` again, then the patch **reloads** — every device re-enumerated and `wire.sh` run fresh |
 
 ⛔ **`panic` fires on the PRESS, not the release, and that is what makes the hold length free.** You

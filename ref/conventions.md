@@ -403,7 +403,7 @@ the same in 0.57: Reference, *Selectors, lists and `route`*.
 **1 — sending.** Without the `[list trim]`, every message assembled with `[list …]` leaves
 `route`'s rightmost outlet, usually into nothing, and the display just shows zero.
 
-**2 — receiving.** `status v0.3-ready` arrives as selector `v0.3-ready`. This is why every branch
+**2 — receiving.** `modal booting` arrives as selector `booting`. This is why every branch
 out of `g_oled`'s `route` begins with `[list append]`.
 
 **3 — the nasty one**, because nothing on the screen says anything went wrong. It is what made

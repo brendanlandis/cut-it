@@ -1,52 +1,52 @@
 # Tempo checklist
 
-The transport, knob 1's pickup and the clamp. Steps 1 to 10 set their tempo with **Send** lines; 11 to 13 are hands on the nanoKONTROL and knob 1.
+The transport, knob 1's pickup and the clamp. Steps 1 to 10 set their tempo with **Send** lines; 11 to 13 are hands on the nanoKONTROL and knob 1. The tempo is read off the phone's arrangement screen: the OLED draws it only as knob 1's row while the knob moves (Brendan, 2026-11-04).
 
 No beat-count steps: the `c_clock` ratio and the clock running on after a stop are `clock-assert`'s and `tempo-assert`'s, and the counts appear on no screen. One claim judged in two places reports more coverage than exists. No device follows the clock by ear since the SP-404 left the rig (2026-11-04), so no step listens for one.
 
 13 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [tempo](../../ref/module/tempo.md).
 
 - [ ] **1. Resting display at 120 BPM**
-  - **Send:** `tempo 120; stop bang`
-  - **Pass if:** Two meter bars each with a small gate mark under it and 120-bpm in the footer. The aux LED is dark blue.
+  - **Need:** The phone linked.
+  - **Send:** `mode mode-1; tempo 120; stop bang`
+  - **Pass if:** The OLED shows the two meters, out-l over the first and out-r over the second, and nothing else: no tempo anywhere on it. The phone's arrangement screen reads 120. The aux LED is dark blue.
 
 - [ ] **2. Knob pickup on the first touch**
-  - **Send:** `tempo 120; param og-knob-1 0`
-  - **Pass if:** The row reads bpm 57 (10) — the position knob 1 was saved at first and where the Send line has just put it in brackets — and the footer stays 120-bpm. The tempo is held until the real knob is turned back past where it was saved. If this rig has no knobs.txt the row reads bpm 120 (10) instead: knob 1 is held at 120 until it is turned through it. Either way the footer stays 120-bpm. The row must never read og-knob-1 and never a raw 0-to-1 decimal.
-  - **Note:** The first number is the saved knob position, not the tempo: `u_map` draws the held row from the pickup target with the incoming value in the unit field, so knob 1 saved at 57 BPM draws `bpm 57 (10)`. The held case needs a knob saved off the rail: with `0 0 0 0` pickup releases at once, and the row and the footer read as if there were no `knobs.txt`.
+  - **Send:** `mode mode-1; tempo 120; param og-knob-1 0`
+  - **Pass if:** The row reads bpm 57 (10) — the position knob 1 was saved at first and where the Send line has just put it in brackets — and the phone's tempo stays 120. The tempo is held until the real knob is turned back past where it was saved. If this rig has no knobs.txt the row reads bpm 120 (10) instead: knob 1 is held at 120 until it is turned through it. Either way the phone's tempo stays 120. The row must never read og-knob-1 and never a raw 0-to-1 decimal.
+  - **Note:** The first number is the saved knob position, not the tempo: `u_map` draws the held row from the pickup target with the incoming value in the unit field, so knob 1 saved at 57 BPM draws `bpm 57 (10)`. The held case needs a knob saved off the rail: with `0 0 0 0` pickup releases at once, and the row and the phone's tempo read as if there were no `knobs.txt`.
 
 - [ ] **3. Knob pickup crosses over**
-  - **Send:** `param og-knob-1 1`
-  - **Pass if:** The row reads bpm 500 and about a second later it ages out to show the footer underneath reading 500-bpm. The knob has crossed where it was saved and is live from here on.
-  - **Note:** The row covers the footer (the param layer replaces home), so the footer is read once the row ages out.
+  - **Send:** `mode mode-1; param og-knob-1 1`
+  - **Pass if:** The row reads bpm 500 and the phone's tempo 500. About a second later the row ages out to the two meters. The knob has crossed where it was saved and is live from here on.
 
 - [ ] **4. Knob tracking after pickup**
-  - **Send:** `param og-knob-1 0`
-  - **Pass if:** The row reads bpm 10 and the footer underneath reads 10-bpm once it ages out. A row still reading 500 means the knob is stuck.
+  - **Send:** `mode mode-1; param og-knob-1 0`
+  - **Pass if:** The row reads bpm 10 and the phone's tempo 10. A row still reading 500 means the knob is stuck.
 
 - [ ] **5. Tempo above range**
-  - **Send:** `tempo 5000; tempo 5000`
-  - **Pass if:** The footer reads 600-bpm and exactly one alert appears — a bordered box naming u_tempo. The second 5000 is silent.
+  - **Send:** `mode mode-1; tempo 5000; tempo 5000`
+  - **Pass if:** The phone's tempo reads 600 and exactly one alert appears on the OLED — a bordered box naming u_tempo. The second 5000 is silent.
 
 - [ ] **6. Tempo below range**
-  - **Send:** `tempo 0`
-  - **Pass if:** The footer reads 5-bpm and a second alert appears.
+  - **Send:** `mode mode-1; tempo 0`
+  - **Pass if:** The phone's tempo reads 5 and a second alert appears.
 
 - [ ] **7. Back in range**
-  - **Send:** `tempo 120`
-  - **Pass if:** The footer reads 120-bpm and no alert appears at all.
+  - **Send:** `mode mode-1; tempo 120`
+  - **Pass if:** The phone's tempo reads 120 and no alert appears at all.
 
 - [ ] **8. Start the transport**
   - **Send:** `start bang`
-  - **Pass if:** The aux LED turns green and the footer still reads 120-bpm.
+  - **Pass if:** The aux LED turns green, and the OLED still shows the meters alone.
 
 - [ ] **9. Stop the transport**
   - **Send:** `stop bang`
-  - **Pass if:** The aux LED goes dark blue and the footer reads 120-bpm.
+  - **Pass if:** The aux LED goes dark blue, and the OLED still shows the meters alone.
 
 - [ ] **10. Panic**
   - **Send:** `panic bang`
-  - **Pass if:** The aux LED turns red and the footer reads panic.
+  - **Pass if:** The aux LED turns red, and the OLED shows the meters alone: panic is the LED's and the grid's to show (Brendan, 2026-11-04).
 
 - [ ] **11. Transport from PLAY and STOP**
   - **Do:** Press PLAY on the nanoKONTROL, then STOP.
@@ -60,6 +60,6 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
 
 - [ ] **13. Nothing Saved: knob 1 starts held at 120**
   - **Need:** No knobs.txt in Cut It's folder: no Save since the last `tools/deploy.sh --clean`. Knob 1 turned well down, toward 8 o'clock.
-  - **Do:** Load Cut It from the Organelle's menu, wait for the footer, then turn knob 1 slowly up past 12 o'clock.
-  - **Pass if:** The footer reads 120-bpm wherever knob 1 sits. Turning it, the row reads bpm 120 and the knob's own tempo in brackets until the knob passes just before 12 o'clock; from there the row follows the knob.
+  - **Do:** Load Cut It from the Organelle's menu, wait for the meters, then turn knob 1 slowly up past 12 o'clock.
+  - **Pass if:** The phone's tempo reads 120 wherever knob 1 sits. Turning it, the row reads bpm 120 and the knob's own tempo in brackets until the knob passes just before 12 o'clock; from there the row follows the knob.
   - **Note:** 0.48 of the knob's turn is 120 on its curve ([map](../../ref/module/map.md), *Parameter pickup*). With a knobs.txt the saved position is restored instead, as in step 2.

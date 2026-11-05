@@ -30,7 +30,7 @@ were false.
 | `audio-assert.sh` | 22 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
 | `display-assert.sh` | 46 | `module/display` — the grid, page 3's synth pads and page 1's tap pad included |
-| `oled-assert.sh` | 65 | `module/display` — the OLED |
+| `oled-assert.sh` | 67 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 63: 33 in Lua, 30 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
@@ -102,7 +102,9 @@ failed: `c_kit`'s own `throw~ outL`, the meters named and fed from the input, an
 while a drum played and the input was silent), and with `out-l` renamed but left on the input (2:
 its cords, and the drum it never saw); `kit-assert` on the old `c_kit` (6: no `outlet~` to record
 or to cord into the sum); `oled-assert` on the old `g_oled` (3: the `L` and `R` readouts, the two
-gate marks' `gBox`es).
+gate marks' `gBox`es). No tempo at rest: `oled-assert` on the `g_oled`, `u_tempo` and `u_init` with
+the footer (3: a third line, `140-bpm`, at y=54, and the bars at the old 12 px), and `init-assert`
+on the `u_init` and `u_tempo` with it (1: `status v0.3-ready` and the BPM on `disp`).
 
 ✅ **The phone's pages, the arrangement screen, tap tempo and the velocity switch were each made to
 fail** (2026-11-04), against the code without the change or a mutation of it. `phone-assert`: the

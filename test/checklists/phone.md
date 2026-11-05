@@ -22,18 +22,18 @@ The rate limit is `phone-assert`'s, and the page structure, what each control se
 
 - [ ] **4. The OLED's rows and alerts stay on the OLED**
   - **Need:** Page 1.
-  - **Send:** `disp chop-size 43 %; err warn u_bench probe-warning; disp status 128-bpm`
+  - **Send:** `disp chop-size 43 %; err warn u_bench probe-warning`
   - **Pass if:** The OLED shows the chop-size row and a bordered warn box; nothing on the phone changes at all, its tempo included.
   - **Note:** The phone was the OLED's mirror until 2026-11-04; that it reads nothing on `disp` now is `phone-assert`'s.
 
 - [ ] **5. The tempo, from knob 1**
   - **Need:** Page 1. With nothing Saved knob 1 is held at 120 until turned through just left of noon, where its curve puts 120; turn it through first.
   - **Do:** Turn knob 1 slowly from about 9 o'clock to 3 o'clock, then quickly back.
-  - **Pass if:** The phone's tempo follows the knob, 50 to 200 over that turn, and settles on the same number as the OLED's footer, in bpm, when the knob stops.
+  - **Pass if:** The phone's tempo follows the knob, 50 to 200 over that turn, and settles on the same number as the OLED's bpm row when the knob stops.
 
 - [ ] **6. The tempo, dragged on the phone**
   - **Do:** Put a finger on the tempo and drag up slowly, a BPM at a time, then down past where you started, then a long quick drag up. Let go.
-  - **Pass if:** The number moves one BPM at a time under a slow finger, with no jumps, and the OLED's footer follows it; a long drag reaches far but stops at 600 at the top and 5 at the bottom. When you let go it stays. The Launchpad's beat row walks faster or slower to match.
+  - **Pass if:** The number moves one BPM at a time under a slow finger, with no jumps, and the OLED shows nothing of it: the phone is the tempo's only display at rest. A long drag reaches far but stops at 600 at the top and 5 at the bottom. When you let go it stays. The Launchpad's beat row walks faster or slower to match.
   - **Note:** About 9 points of drag to a BPM. Knob 1 is not held after the phone moves the tempo: its next turn sets the tempo from where it sits.
 
 - [ ] **7. The global last step, and knob 2**
@@ -49,7 +49,7 @@ The rate limit is `phone-assert`'s, and the page structure, what each control se
 - [ ] **9. The tap pad**
   - **Need:** Page 1.
   - **Do:** Look at the Launchpad's second row, then tap its first pad four times, evenly, about two a second.
-  - **Pass if:** The pad sits dim yellow above the beat row's first cell, and flashes bright yellow at each tap, the first included. From the second tap the phone's tempo and the OLED's footer read about 120, and the beat row walks at that rate.
+  - **Pass if:** The pad sits dim yellow above the beat row's first cell, and flashes bright yellow at each tap, the first included. From the second tap the phone's tempo reads about 120, and the beat row walks at that rate.
 
 - [ ] **10. A pause starts the count over**
   - **Do:** Wait three seconds. Tap the pad once. Then tap it three times quickly, about three a second.
@@ -57,7 +57,7 @@ The rate limit is `phone-assert`'s, and the page structure, what each control se
 
 - [ ] **11. The same pad on page 2 is a drum**
   - **Do:** Press page 2, then tap the same pad, the second row's first, three times.
-  - **Pass if:** It plays its drum each time, and the phone's tempo and the OLED's footer do not move. Press page 1 again: the pad is dim yellow there once more.
+  - **Pass if:** It plays its drum each time, and the phone's tempo does not move. Press page 1 again: the pad is dim yellow there once more.
 
 - [ ] **12. Link lost, and back**
   - **Do:** Load Cut It again from the Organelle menu, watching the phone. Touch nothing on the phone.

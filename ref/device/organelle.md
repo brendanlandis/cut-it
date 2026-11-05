@@ -71,8 +71,8 @@ that nothing shows signal presence when the display is doing something else — 
 
 ### Anything rhythmic goes on the Launchpad, not the OLED
 
-The OLED trails the audio by ~200 ms (Reference, *The OLED lags the audio by ~200 ms*); the audio,
-the Launchpad's beat row and the footer BPM all agree, and the OLED does not. So a playhead, a beat
+The OLED trails the audio by ~200 ms (Reference, *The OLED lags the audio by ~200 ms*); the audio
+and the Launchpad's beat row agree, and the OLED does not. So a playhead, a beat
 indicator or a step position belongs on **the Launchpad**, which `g_grid` repaints over ALSA MIDI at
 50 Hz when dirty. The OLED is for state, values and text.
 
@@ -87,7 +87,7 @@ control does.** Same layer and the same silence about meaning as `m_nano`.
 | **The `og-` prefix is not decoration** — `m_nano` already publishes `knob-1` to `knob-9`, and a single hyphen is not a distinction anyone can be trusted to read inside a `route` box | verified | — |
 | **Every knob goes through `[change -1]`**, because mother pushes the knobs once at load and then says nothing (Reference, item 237). Parameter pickup depends on that: if mother streamed, the first value would be spent on its own reading and pickup would never arm | verified | 237 |
 | ⛔ **The `-1` is load-bearing.** A bare `[change]` starts life holding 0, so a knob parked at 0 would never publish at all and whatever it feeds would sit at its default. `-1` cannot be a real value, because mother's knobs are 0 to 1 | verified | 237 |
-| ⛔ **The knobs reach `param` and NOT `disp`.** A knob's raw 0-to-1 position is not a readable parameter row — `og-knob-1 0.245` where a BPM belongs — and the param layer replaces the footer, so the tempo it maps to would vanish while you turned it. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
+| ⛔ **The knobs reach `param` and NOT `disp`.** A knob's raw 0-to-1 position is not a readable parameter row — `og-knob-1 0.245` where a BPM belongs. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
 | ⛔ **`aux` uses BOTH edges.** A modifier you cannot let go of is not a modifier | verified | 305 |
 | ⚠️ **An unmapped knob still reports**, via `u_map`'s raw-value row. A control that does nothing and says nothing cannot be told from a broken one | verified | 242 |
 

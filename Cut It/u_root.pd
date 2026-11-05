@@ -29,7 +29,7 @@
 #X obj 1450 180 u_state \$3;
 #X obj 1700 1150 m_volca \$5;
 #X obj 1450 900 u_present 4000 2000 33 8;
-#X text 2600 900 4000: the first tick must come after u_init's last stage has run wire.sh \, the same coupling as u_tempo's 4000 (ref/module/boot.md)., f 34;
+#X text 2600 900 4000: the first tick must come after u_init's last stage has run wire.sh \, the one number outside u_init coupled to its timings (ref/module/boot.md)., f 34;
 #X connect 18 0 28 0;
 #X connect 4 0 5 0;
 #X connect 4 0 7 0;

@@ -95,14 +95,25 @@ def run_asserts(cap):
     # ---- home, which is never cleared and has no TTL ----------------------
     print("--- home ---")
     if live("HOME"):
-        A.check("the footer carries the status it was given",
-                "gate-home" in words(last("HOME")),
-                "drew %s" % words(last("HOME")))
         # The readouts name what u_level reads, Cut It's output (2026-11-04).
         heads = [ws[0] for y, sz, ws in rows(last("HOME")) if sz == 8 and ws and y < 50]
         A.check("⛔ the meters' readouts are out-l and out-r, top to bottom",
                 heads == ["out-l", "out-r"],
                 "the 8px readouts drew %s. in-l and in-r were the input's" % heads)
+        # Home is the meters and nothing else: the OLED is for alerts, the
+        # output's levels and a moving control's name (Brendan, 2026-11-04).
+        A.check("⛔ home draws the two readouts, at y=0 and y=32, and no other text",
+                [(y, sz, ws[:1]) for y, sz, ws in rows(last("HOME"))]
+                == [(0, 8, ["out-l"]), (32, 8, ["out-r"])],
+                "drew %s. A third line is a footer, which went with the tempo at rest"
+                % rows(last("HOME")))
+        A.check("⛔ no tempo at rest: 140 on the tempo bus draws nothing",
+                not [w for w in words(last("HOME")) if "140" in w],
+                "drew %s. The tempo is the phone's to show" % words(last("HOME")))
+        fills = sorted((int(v[5]), int(v[7])) for v in last("HOME")
+                       if v[:2] == ["sendtyped", "/oled/gFillArea"] and len(v) >= 9)
+        A.check("...and its two bars are 18 px tall at y=10 and y=42, under them",
+                fills == [(10, 18), (42, 18)], "gFillArea (y, height): %s" % fills)
         # The gate marks were a gBox each under the meters: the input's noise
         # floor and a gate window, which an output meter has neither of.
         boxes = [v for v in last("HOME") if v[:2] == ["sendtyped", "/oled/gBox"]]
@@ -123,7 +134,7 @@ def run_asserts(cap):
                 "parameter that never expires means the screen keeps a stale "
                 "value under a moving control" % words(last("PARAM-GONE")))
         A.check("...and the home layer is showing again",
-                "gate-home" in words(last("PARAM-GONE")),
+                "out-l" in words(last("PARAM-GONE")),
                 "drew %s -- home is priority 0 and is never cleared, so it must "
                 "be what is left" % words(last("PARAM-GONE")))
 
@@ -232,7 +243,7 @@ def run_asserts(cap):
     if live("MODAL-OFF"):
         drawn = words(last("MODAL-OFF"))
         A.check("modal-off clears the modal and home comes back",
-                "gate-modal" not in drawn and "gate-home" in drawn,
+                "gate-modal" not in drawn and "out-l" in drawn,
                 "drew %s" % drawn)
 
     # led and grid are routed and thrown away: anything g_oled does not
@@ -246,7 +257,7 @@ def run_asserts(cap):
                 "drew %s. They belong to g_led and g_grid; g_oled matches them "
                 "only to discard them" % strays)
         A.check("...and the screen is still live while ignoring them",
-                "gate-home" in drawn,
+                "out-l" in drawn,
                 "drew %s -- without this, ignoring them is indistinguishable "
                 "from a dead screen" % drawn)
 
@@ -336,8 +347,7 @@ def run_asserts(cap):
                 "drew %s. The alert's TTL fired at 2 s and diag's own 8 s is "
                 "still running, so the screen must come back to the roster "
                 "rather than to home" % words(first("DIAG-BACK")))
-    # Home is recognized by its meters, not its footer: knob1 in DIAG-SEEN is
-    # master tempo, so u_tempo has since written a BPM over `gate-home`.
+    # Home is recognized by its meters' readouts.
     if live("DIAG-TTL"):
         drawn = words(last("DIAG-TTL"))
         A.check("...and diag expires on its own TTL and gives home back",

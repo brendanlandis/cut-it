@@ -4,7 +4,7 @@
     sequencer-assert.py --seed SEED --state DIR [-v]  < capture
 
 It asserts on what leaves the patch: the drums sent to c_kit, the grid's frames, the
-state bus and the file u_state writes. Nothing inside c_steps is read.
+state bus and the song's draft, which u_song writes. Nothing inside c_steps is read.
 
   the restore    the seeded pattern comes back, is put straight back, and shows
   editing        a velocity, steps on two tracks, a pad that plays and selects,
@@ -17,7 +17,7 @@ state bus and the file u_state writes. Nothing inside c_steps is read.
                  screen's snap, over OSC through u_net, landing at PLAY
   the pads       a track's volume and pitch to c_kit, at the restore and from
                  the drum screen over OSC; a track at full randomness
-  the disk       the pattern reaches cut-it-auto.txt as one line
+  the disk       the pattern reaches the song's draft as one line, section 1's drums
 
 A note's step is the playhead in the frame painted after it: c_steps sends a
 step's notes and then its playhead in one logical instant, and the frame clock
@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 import lib_grid as G                                           # noqa: E402
 
-KEY = "section-1-drums"
+KEY = "drums"
 WINDOWS = ["EARLY", "RESTORE", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
            "RULE-ON", "RULE-SAME", "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER",
            "FREE-ROW", "PAGE-1", "OTHER-PAGE", "PAGE-2", "PLAY", "STOP", "STOPPED",
@@ -51,7 +51,9 @@ NOTE = re.compile(r"^KITOUT:\s+(-?[\d.]+)\s+(-?[\d.]+)$")
 
 
 CELLS = 16 * 32                 # then the 16 tracks' own last steps, their randomness, volumes
-LINE = CELLS + 16 * 4 + 3       # and pitches, the time signature and the drunkenness: 579
+LINE = CELLS + 16 * 4 + 5       # and pitches, the time signature, the drunkenness, the swing
+                                # and the global last step: 581
+DRUNK, SWING, LAST = LINE - 3, LINE - 2, LINE - 1
 RAND, VOL, PITCH = CELLS + 16, CELLS + 32, CELLS + 48    # where each track's are, track 1 first
 LEVEL_VELS = [round(127 * n / 8 + 1e-9) for n in range(1, 9)]   # 16 32 48 64 79 95 111 127
 BAR = 7 * 16 // 8               # the seed's 7/8: a bar of 14 steps
@@ -74,7 +76,7 @@ def args():
 
 
 def read_key(path):
-    """The section-1-drums line of a state file, as ints, or None."""
+    """The drums line of a song file, or the seed, as ints, or None."""
     try:
         lines = open(path, encoding="utf-8").read().splitlines()
     except IOError:
@@ -171,7 +173,7 @@ def main():
     lay = G.drum_layout()
     seed = read_key(opt.seed)
     if not A.check("the seed holds %s, 512 velocities, 16 last steps, randomnesses, volumes "
-                   "and pitches, 7/8 and sober" % KEY, seed is not None and len(seed) == LINE,
+                   "and pitches, 7/8, sober, swing 50%% and the last step 16" % KEY, seed is not None and len(seed) == LINE,
                    "seed: %s" % seed):
         return A.report()
 
@@ -182,7 +184,7 @@ def main():
     ons = lambda k: [tuple(int(v) for v in e[1]) for e in W(k)
                      if e[0] == "KITOUT" and e[1][1] > 0]
     puts = lambda k: [[int(float(v)) for v in e[1][3:]] for e in W(k)
-                      if e[0] == "STATE" and e[1][:3] == ["put", "auto", KEY]]
+                      if e[0] == "STATE" and e[1][:3] == ["put", "section", KEY]]
     raw = lambda k: [e[1] for e in W(k)
                      if e[0] == "DISP" and e[1] and e[1][0].startswith("pad-")]
     knob_rows = lambda k, name: [e[1] for e in W(k)
@@ -217,7 +219,7 @@ def main():
             ons("EARLY") == [(1, 127)], "note-ons: %s" % ons("EARLY"))
 
     print("\n--- the restore ---")
-    A.check("⛔ the restored pattern is put straight back -- once, the seeded 579 exactly",
+    A.check("⛔ the restored pattern is put straight back -- once, the seeded 581 exactly",
             puts("RESTORE") == [seed],
             "%d put(s) of %s; the first holds %s values" % (
                 len(puts("RESTORE")), KEY, len(puts("RESTORE")[0]) if puts("RESTORE") else 0))
@@ -330,8 +332,9 @@ def main():
         else "no frame in the window"
     A.check("... the page darkens the empty steps past it, and the lit ones keep their color",
             prob is None, prob)
-    A.check("... and it is not saved: no put", not puts("LAST-3"),
-            "puts: %d" % len(puts("LAST-3")))
+    got = [l[LAST] for l in puts("LAST-3")]
+    A.check("... and it is saved, a section's, each time it changes: 17, then 3", got == [17, 3],
+            "the global last step in the puts: %s" % got)
     again = [r for r in played(evs, {"REPLAY", "PANIC"}, lay) if r[0] is not None]
     A.check("⛔ PLAY again starts at step 1, not where STOP left it",
             bool(again) and again[0] == (1, want[1]), "first: %s" % (again[:1],))
@@ -402,7 +405,9 @@ def main():
     A.check("⛔ knob 4 starts HELD at 50%: at 65% it draws swing 50 (65); turned down to 50%, "
             "its bottom, it is live, then swing 75 %",
             rows == [["swing", "50", "(65)"], ["swing", "50", "%"], ["swing", "75", "%"]], rows)
-    A.check("... and it is not saved: no put", not puts("SWING"), "puts: %d" % len(puts("SWING")))
+    got = [l[SWING] for l in puts("SWING")]
+    A.check("... and it is saved, a section's, when it changes: 75 alone", got == [75],
+            "the swing in the puts: %s" % got)
     A.check("⛔ at 75% step 2 waits three quarters of the pair: not painted by 190 ms, and "
             "painted by 260", moved("SW-PLAY", "SW-GAP") == [1] and moved("SW-LATE") == [2],
             "by window: %s" % [(m, n) for m, n in heads if m.startswith("SW-")])
@@ -454,7 +459,7 @@ def main():
             "got %s, want %s" % (rest, want))
 
     print("\n--- drunkenness ---")
-    got = [l[LINE - 1] for l in puts("DRUNK")]
+    got = [l[DRUNK] for l in puts("DRUNK")]
     A.check("drunk 100, sent to u_net over OSC as the phone sends it, is saved", got == [100],
             "drunkenness in the puts: %s" % got)
     counts = [len(moved("DR-%d" % k)) for k in range(1, 97)]
@@ -470,15 +475,17 @@ def main():
     A.check("STOP stops it again", not ons("DONE"), "note-ons: %s" % ons("DONE"))
 
     print("\n--- the disk ---")
-    disk = read_key(os.path.join(opt.state, "cut-it-auto.txt"))
-    with open(os.path.join(opt.state, "cut-it-auto.txt"), encoding="utf-8") as fh:
+    draft = os.path.join(opt.state, "cut-it-song-draft.txt")
+    disk = read_key(draft)
+    with open(draft, encoding="utf-8") as fh:
         lines = [l for l in fh.read().splitlines() if l.split()[:1] == [KEY]]
     vol = list(seed[VOL:VOL + 16])
     pitch = list(seed[PITCH:PITCH + 16])
     vol[1], pitch[1] = -6, 7
-    snapped = final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 100]
-    A.check("⛔ %s reaches cut-it-auto.txt as ONE line, the final 579 exactly" % KEY,
-            disk == snapped and len(lines) == 1 and len(lines[0].split()) == LINE + 1,
+    # the swing back at 50% (SW-STOP), the global last step at 3 since LAST-3
+    snapped = final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 100, 50, 3]
+    A.check("⛔ the pattern reaches the song's draft as section 1's ONE drums line, the final "
+            "581 exactly", disk == snapped and len(lines) == 1 and len(lines[0].split()) == LINE + 1,
             "on disk: %s" % (disk if disk is None else "%d values" % len(disk)))
 
     errs = [e[1] for k in order for e in W(k) if e[0] == "ERR"

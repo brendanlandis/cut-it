@@ -22,6 +22,9 @@ STAGES = ["modal booting", "modal wiring", "modal launchpad", "modal-off"]
 # What the gate seeds into the two state files. The restore replays manual
 # first: the trigger's right outlet fires first.
 SEEDED = [["restore", "init-mprobe", "7"], ["restore", "init-probe", "42"]]
+# What the playing section holds at a fresh load, each part's put since load: the keys u_song's
+# load restores, sorted (ref/module/songs.md).
+SECTION_PARTS = ["drums", "programs", "synth", "tempo", "velocity"]
 
 _STAGE = re.compile(r"^DISP:\s+(modal booting|modal wiring|modal launchpad"
                     r"|modal-off)\s*$")
@@ -112,9 +115,16 @@ def run_asserts(cap):
     # Filtered to `restore`: u_map puts its own mode on the same bus at load.
     restores = [v for k in ("PRE",) + tuple(order) for v in kind(k, "STATE")
                 if v[:1] == ["restore"]]
+    # The same bang loads the song store after u_state, through u_root's trigger, and its
+    # first section starts: every part it holds, in the keys' order (ref/module/songs.md).
+    seeded = [v for v in restores if v[1:2] in ([s[1]] for s in SEEDED)]
     A.check("⛔ the restore replays every saved line, manual first",
-            restores == SEEDED,
-            "the state bus carried %s, wanted %s" % (restores, SEEDED))
+            seeded == SEEDED,
+            "the state bus carried %s, wanted %s" % (seeded, SEEDED))
+    song = [v[1] for v in restores if v not in SEEDED]
+    A.check("⛔ ...and then the song store's first section starts: every part, in order",
+            song == SECTION_PARTS and restores[:len(SEEDED)] == SEEDED,
+            "after u_state's: %s, wanted %s after %s" % (song, SECTION_PARTS, SEEDED))
     i_restore = first_index(lambda ln: ln.startswith("STATE: restore "))
     i_off = first_index(lambda ln: ln == "DISP: modal-off")
     A.check("...after the launchpad stage, so the layers exist to receive it",

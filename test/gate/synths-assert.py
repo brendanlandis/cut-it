@@ -6,8 +6,8 @@
 The nanoKEY plays the chosen synth and only that one, whichever page is up; a switch while a
 key is held releases the key on the synth that started it; a page-3 pad and the phone's
 command both switch; the phone's velocity switch, off, sends every note-on at 127 on either
-synth and leaves releases at 0; the choice and the switch come back from the state store and go
-into it; and panic reaches the Streichfett's channel. The run boots with strings and velocity
+synth and leaves releases at 0; the choice and the switch come back from the song store, section 1's,
+and go into it; and panic reaches the Streichfett's channel. The run boots with strings and velocity
 off saved, so a default left in force by a restore that never landed would play the Volca at the
 key's own velocity and fail the first window.
 """
@@ -30,23 +30,23 @@ def run_asserts(cap, state):
     order, by = A.windows(cap, "SYNTHS", WINDOWS)
     W = lambda k: by.get(k, [])
     notes = lambda k: [tuple(int(x) for x in e[1]) for e in W(k) if e[0] == "NOTEOUT"]
-    puts = lambda k: [e[1] for e in W(k) if e[0] == "STATE" and e[1][:3] == ["put", "auto", "synth"]]
+    puts = lambda k: [e[1] for e in W(k) if e[0] == "STATE" and e[1][:3] == ["put", "section", "synth"]]
     vputs = lambda k: [e[1] for e in W(k) if e[0] == "STATE"
-                       and e[1][:3] == ["put", "auto", "velocity"]]
+                       and e[1][:3] == ["put", "section", "velocity"]]
     errs = lambda k: [e[1] for e in W(k) if e[0] == "ERR"]
 
     pre = [e[1] for e in W("PRE") if e[0] == "STATE" and "synth" in e[1][:3]]
     restored = ["restore", "synth", "strings"] in pre
     A.check("the saved choice is restored at load, and put straight back",
             restored and pre.index(["restore", "synth", "strings"]) < len(pre) - 1
-            and pre[-1] == ["put", "auto", "synth", "strings"],
+            and pre[-1] == ["put", "section", "synth", "strings"],
             "the state bus before the first window: %s" % pre)
 
     vpre = [e[1] for e in W("PRE") if e[0] == "STATE" and "velocity" in e[1][:3]]
     A.check("the saved velocity switch, off, is restored at load, and put straight back",
             ["restore", "velocity", "off"] in vpre
             and vpre.index(["restore", "velocity", "off"]) < len(vpre) - 1
-            and vpre[-1] == ["put", "auto", "velocity", "off"],
+            and vpre[-1] == ["put", "section", "velocity", "off"],
             "the state bus before the first window: %s" % vpre)
     A.check("⛔ strings and velocity off came back: the first key plays the Streichfett alone, "
             "at 127", notes("KEY-RESTORED") == [(60, 127, STRINGS)],
@@ -57,12 +57,12 @@ def run_asserts(cap, state):
             notes("KEY-RESTORED-OFF"))
 
     A.check("the phone's velocity on is put, and plays nothing",
-            vputs("PHONE-VEL-ON") == [["put", "auto", "velocity", "on"]]
+            vputs("PHONE-VEL-ON") == [["put", "section", "velocity", "on"]]
             and not notes("PHONE-VEL-ON") and not errs("PHONE-VEL-ON"),
             "state %s noteout %s err %s" % (vputs("PHONE-VEL-ON"), notes("PHONE-VEL-ON"),
                                             errs("PHONE-VEL-ON")))
     A.check("⛔ FM's page-3 pad chooses fm, once: a press, and its release says nothing",
-            puts("PAD-FM") == [["put", "auto", "synth", "fm"]] and not errs("PAD-FM"),
+            puts("PAD-FM") == [["put", "section", "synth", "fm"]] and not errs("PAD-FM"),
             "state %s err %s" % (puts("PAD-FM"), errs("PAD-FM")))
     A.check("a key on any channel of the nanoKEY's port, 50, plays the Volca alone",
             notes("KEY-FM") == [(62, 100, FM)], notes("KEY-FM"))
@@ -70,7 +70,7 @@ def run_asserts(cap, state):
 
     A.check("a key held on fm sounds on fm", notes("HOLD") == [(64, 100, FM)], notes("HOLD"))
     A.check("⛔ the phone's synth strings switches, and plays nothing itself",
-            puts("PHONE-STRINGS") == [["put", "auto", "synth", "strings"]]
+            puts("PHONE-STRINGS") == [["put", "section", "synth", "strings"]]
             and not notes("PHONE-STRINGS"),
             "state %s noteout %s -- without it the phone's buttons do nothing"
             % (puts("PHONE-STRINGS"), notes("PHONE-STRINGS")))
@@ -82,14 +82,14 @@ def run_asserts(cap, state):
             notes("KEY-STRINGS") == [(65, 100, STRINGS), (65, 0, STRINGS)], notes("KEY-STRINGS"))
 
     A.check("the phone's velocity off is put", vputs("PHONE-VEL-OFF") ==
-            [["put", "auto", "velocity", "off"]] and not notes("PHONE-VEL-OFF"),
+            [["put", "section", "velocity", "off"]] and not notes("PHONE-VEL-OFF"),
             "state %s noteout %s" % (vputs("PHONE-VEL-OFF"), notes("PHONE-VEL-OFF")))
     A.check("strings' pad with strings chosen changes nothing and says nothing",
             not puts("PAD-SAME") and not notes("PAD-SAME") and not errs("PAD-SAME"),
             W("PAD-SAME"))
     A.check("⛔ only a press chooses: FM down, STRINGS down, FM up, STRINGS up ends on strings",
-            puts("TWO-PADS") == [["put", "auto", "synth", "fm"],
-                                 ["put", "auto", "synth", "strings"]],
+            puts("TWO-PADS") == [["put", "section", "synth", "fm"],
+                                 ["put", "section", "synth", "strings"]],
             "wanted fm then strings, got %s -- a release that chose would put fm last, and a "
             "pad let go late would undo the one pressed after it" % puts("TWO-PADS"))
     A.check("⛔ notes on the nano's port, the Streichfett's own, port 3's last channel and a "
@@ -120,11 +120,12 @@ def run_asserts(cap, state):
     other = [e for k in order if k != "BAD" for e in errs(k)]
     A.check("nothing else reaches err", not other, other)
 
-    path = os.path.join(state, "cut-it-auto.txt")
+    # The song's draft, which u_song writes as it changes: section 1, the one song section.
+    path = os.path.join(state, "cut-it-song-draft.txt")
     lines = open(path).read().splitlines() if os.path.exists(path) else []
     saved = [ln.split() for ln in lines if ln.split()[:1] == ["synth"]]
-    A.check("⛔ the choice is in the state file, so a reload brings it back: synth strings",
-            saved == [["synth", "strings"]], "%s holds %s" % (path, lines))
+    A.check("⛔ the choice is the section's, in the song's draft, so a reload brings it back: "
+            "synth strings", saved == [["synth", "strings"]], "%s holds %s" % (path, lines))
     vsaved = [ln.split() for ln in lines if ln.split()[:1] == ["velocity"]]
     A.check("⛔ and the velocity switch, so a reload brings it back: velocity off",
             vsaved == [["velocity", "off"]], "%s holds %s" % (path, lines))

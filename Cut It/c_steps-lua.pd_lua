@@ -14,6 +14,8 @@
 -- bang on init, the proof the Lua loaded. outlet 6: a knob's row, to disp. outlet 7: the phone's
 -- state, R.phone's 88 numbers, whenever it changes.
 -- outlet 8: the step clock's swing <0.5-0.75> and rate <x>, to c_steps.pd's clock.
+-- outlet 9: bar, on the global loop's last step, to u_song: a bar is the pattern's loop, and a
+-- queued section starts as the loop comes round to its step 1.
 --
 -- A Lua error leaves outlet 4 as fail c_steps lua-<selector>, and its text goes to Pd's console
 -- where there is one: the device has none (C-12).
@@ -24,7 +26,7 @@ local StepsLua = pd.Class:new():register("c_steps-lua")
 -- (`; pdluax reload c_steps-lua`) reloads them too, and every object keeps its pattern.
 local R = dofile(StepsLua._loadpath .. "c_steps.lua")
 
-local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6, clock = 8 }
+local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6, clock = 8, bar = 9 }
 
 -- Answering under pcall, the proof bang on init and the dispatch shortcut are lua-face.lua's,
 -- shared by every class that carries rules into Pd.
@@ -32,7 +34,7 @@ local F = dofile(StepsLua._loadpath .. "lua-face.lua")
 F.carry(StepsLua, R, OUTLET, 2, 5)
 
 function StepsLua:initialize(_, atoms)
-  self.inlets, self.outlets = 2, 8
+  self.inlets, self.outlets = 2, 9
   self.state = R.new(atoms[1])
   return true
 end

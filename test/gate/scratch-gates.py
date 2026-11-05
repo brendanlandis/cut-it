@@ -422,11 +422,12 @@ def sequencer(g):
     print("\n   the patch, in Pd ...")
     s = g.copy()
     s.state_dir()
-    # A saved pattern, so the restore at ~3.5 s is under test as well as the
-    # edits after it, and its last cells, track 16's own last step and volume,
-    # track 3's pitch and a time signature of 7/8, prove the whole 580-atom line
-    # came back. No randomness and sober, so every note is where the pattern says.
-    pat = [0] * 579
+    # A saved song whose one section holds a pattern, so the restore at ~3.5 s is under test
+    # as well as the edits after it, and its last cells, track 16's own last step and volume,
+    # track 3's pitch, a time signature of 7/8, the swing at 50% and the global last step at
+    # 16, prove the whole 581-atom line came back. No randomness and sober, so every note is
+    # where the pattern says. The knobs start held where the seed has them.
+    pat = [0] * 581
     for (track, step), v in SEQ_SEED.items():
         pat[(track - 1) * 32 + step - 1] = v
     for track, n in SEQ_OWN.items():
@@ -436,11 +437,18 @@ def sequencer(g):
     for track, st in SEQ_PITCH.items():
         pat[560 + track - 1] = st
     pat[576], pat[577] = SEQ_SIG
-    # Page 2, the drum page, restored at about 3.5 s, before the first press.
-    body = "mode mode-2\nsection-1-drums %s\n" % " ".join(map(str, pat))
-    for path in (os.path.join(s.state, "cut-it-auto.txt"), s.path("seed.txt")):
-        with open(path, "w") as fh:
-            fh.write(body)
+    pat[579], pat[580] = 50, 16
+    drums = "drums %s\n" % " ".join(map(str, pat))
+    # Page 2, the drum page, restored at about 3.5 s by u_state, and the song by u_song after
+    # it, before the first press.
+    with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
+        fh.write("mode mode-2\n")
+    song = "song song 1\nsection 1 0 section 1\n" + drums
+    for name in ("cut-it-song.txt", "cut-it-song-draft.txt"):
+        with open(os.path.join(s.state, name), "w") as fh:
+            fh.write(song)
+    with open(s.path("seed.txt"), "w") as fh:
+        fh.write(drums)
     g.rewrite(s)
     # The drums go to c_kit, a signal no message tap sees: t_kit in its place
     # prints each pad and velocity c_steps sends, and each track's volume and
@@ -473,11 +481,14 @@ def synths(g):
     print("\n   the patch, in Pd ...")
     s = g.copy()
     s.state_dir()
-    # Page 3, strings and the velocity switch off saved, restored at about 3.5 s: fm and on
-    # are the boot defaults, so a restore that never landed plays the Volca at the key's own
-    # velocity in the first window.
+    # Page 3, and a song whose one section holds strings and the velocity switch off,
+    # restored at about 3.5 s: fm and on are the boot defaults, so a restore that never landed
+    # plays the Volca at the key's own velocity in the first window.
     with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
-        fh.write("mode mode-3\nsynth strings\nvelocity off\n")
+        fh.write("mode mode-3\n")
+    for name in ("cut-it-song.txt", "cut-it-song-draft.txt"):
+        with open(os.path.join(s.state, name), "w") as fh:
+            fh.write("song song 1\nsection 1 0 section 1\nsynth strings\nvelocity off\n")
     g.rewrite(s)
     S.drive(GEN % "synths-assert", s.path("drive.pd"))
     cap = g.pd(s, 30, main_dev(s), s.path("drive.pd"))

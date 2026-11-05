@@ -24,6 +24,7 @@ end
 local function both(choice, v)
   local out = told(choice)
   for _, e in ipairs(vel(v)) do out[#out + 1] = e end
+  out[#out + 1] = { "save", "programs", { "none", "none" } }
   return out
 end
 
@@ -31,7 +32,8 @@ print("\n--- the choice ---")
 local st = R.new()
 equal("fm until something says otherwise", st.choice, "fm")
 equal("the synths, in their outlets' order", R.SYNTHS, { "fm", "strings" })
-equal("load tells the pads, the phone and the store the choice, and the velocity switch on",
+equal("load tells the pads, the phone and the store the choice and the velocity switch on, and "
+      .. "puts no program for either synth, so the section playing holds them from the start",
       R.boot(st), both("fm", "on"))
 equal("synth strings changes it, and says so", R.choose(st, { "strings" }), told("strings"))
 equal("... the same choice again changes nothing and says nothing",
@@ -125,6 +127,23 @@ equal("... and is the setting", st.velocity, "off")
 equal("a saved velocity naming neither keeps the one in force and puts that back",
       R.internal["restore-velocity"](st, { 3 }), vel("off"))
 
+print("\n--- each synth's program, a section's ---")
+st = R.new()
+equal("a section's programs, the Volca's 20 and the Streichfett's 5: each sent to its synth, the "
+      .. "Volca first, and put straight back", R.internal["restore-programs"](st, { 20, 5 }),
+      { { "fm", "program", { 20 } }, { "strings", "program", { 5 } },
+        { "save", "programs", { 20, 5 } } })
+equal("⛔ none sends nothing, and is put back as none",
+      R.internal["restore-programs"](st, { "none", 7 }),
+      { { "strings", "program", { 7 } }, { "save", "programs", { "none", 7 } } })
+equal("... both none: nothing to either synth", R.internal["restore-programs"](st, { "none", "none" }),
+      { { "save", "programs", { "none", "none" } } })
+equal("a program past 0 to 127, or missing, is none; one in it is whole",
+      R.internal["restore-programs"](st, { 128, 3.6 }),
+      { { "strings", "program", { 4 } }, { "save", "programs", { "none", 4 } } })
+equal("... and none of it changes the choice or the switch", { st.choice, st.velocity },
+      { "fm", "on" })
+
 print("\n--- the Pd face ---")
 local class = T.load_class(DIR .. "c_synth-lua.pd_lua", DIR)
 check("c_synth-lua.pd_lua registers the class c_synth-lua",
@@ -132,10 +151,13 @@ check("c_synth-lua.pd_lua registers the class c_synth-lua",
 local o = T.new(class, {})
 check("an object is made, with 2 inlets and 7 outlets",
       o ~= nil and o.inlets == 2 and o.outlets == 7, o and (o.inlets .. " " .. o.outlets))
-equal("init answers with the choice on outlets 3 and 4, the velocity switch on 7 and 4, then a "
-      .. "bang on 6", T.send(o, 2, "init", {}),
+equal("init answers with the choice on outlets 3 and 4, the velocity switch on 7 and 4, the "
+      .. "programs on 4, then a bang on 6", T.send(o, 2, "init", {}),
       { { 3, "synth", { "fm" } }, { 4, "synth", { "fm" } }, { 7, "velocity", { "on" } },
-        { 4, "velocity", { "on" } }, { 6, "bang", {} } })
+        { 4, "velocity", { "on" } }, { 4, "programs", { "none", "none" } }, { 6, "bang", {} } })
+equal("a section's programs: the Volca's on outlet 1, the Streichfett's on 2, then the put on 4",
+      T.send(o, 2, "restore-programs", { 9, 12 }),
+      { { 1, "program", { 9 } }, { 2, "program", { 12 } }, { 4, "programs", { 9, 12 } } })
 equal("a key on inlet 1 leaves outlet 1, the Volca's, as note <n> <v>",
       T.send(o, 1, "list", { 60, 100 }), { { 1, "note", { 60, 100 } } })
 equal("synth strings leaves outlets 3 and 4", T.send(o, 1, "synth", { "strings" }),
@@ -184,7 +206,7 @@ check("... with its text on the console", #broken.console == 1
       and broken.console[1]:find("a bug in key", 1, true) ~= nil, T.show(broken.console))
 equal("... and the object carries on: init still answers", T.send(broken, 2, "init", {}),
       { { 3, "synth", { "fm" } }, { 4, "synth", { "fm" } }, { 7, "velocity", { "on" } },
-        { 4, "velocity", { "on" } }, { 6, "bang", {} } })
+        { 4, "velocity", { "on" } }, { 4, "programs", { "none", "none" } }, { 6, "bang", {} } })
 equal("a report is one symbol of 21 characters or fewer",
       R.fail("lua-" .. string.rep("x", 30))[3][2], "lua-" .. string.rep("x", 17))
 

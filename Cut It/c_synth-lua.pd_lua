@@ -4,10 +4,10 @@
 --
 -- inlet 1: <note> <velocity> from m_nanokey, 0 a release, synth <choice> from u_map and u_net,
 -- and velocity <on or off> from u_net. inlet 2: c_synth.pd's own -- restore <the saved choice>,
--- restore-velocity <the saved setting>, init.
--- outlet 1: note <n> <v>, to m_volca. outlet 2: note <n> <v>, to m_streich. outlet 3: synth
--- <choice>, on a change, to u_net and g_grid. outlet 4: synth <choice> or velocity <setting>,
--- to save under that key. outlet 5: err. outlet 6: a bang on init, the proof the Lua loaded.
+-- restore-velocity <the saved setting>, restore-programs <volca> <streichfett>, init.
+-- outlet 1: note <n> <v> and program <n>, to m_volca. outlet 2: the same, to m_streich. outlet
+-- 3: synth <choice>, on a change, to u_net and g_grid. outlet 4: synth <choice>, velocity
+-- <setting> or programs <volca> <streichfett>, to put under that key. outlet 5: err. outlet 6: a bang on init, the proof the Lua loaded.
 -- outlet 7: velocity <on or off>, on a change, to u_net.
 --
 -- A Lua error leaves outlet 5 as fail c_synth lua-<selector>, and its text goes to Pd's console

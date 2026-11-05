@@ -11,8 +11,9 @@
 --   {"note", "vol" | "pitch", {pad, dB or semitones}}         to c_kit, a track's
 --   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep", {...}}
 --                                                             to g_grid's third inlet
---   {"save", "list", {579 numbers, R.save}}                   to u_state, as section-1-<part>
+--   {"save", "list", {581 numbers, R.save}}                   to the state bus, put section <part>
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
+--   {"bar", "bar", {}}                                        to u_song: the pattern's loop ends
 --   {"err", "fail", {"c_steps", text}}                        to err (C-12)
 --   {"disp", <row name>, {value[, unit]}}                     a knob's row, to disp
 -- and R.phone(st), the phone's state, which the Pd face sends to u_net when it changes.
@@ -55,9 +56,12 @@ R.REPEATS = 4
 -- randomness, 0 to 100 (Brendan, 2026-11-05).
 R.VOL_MIN, R.VOL_MAX = -30, 6
 R.PITCH_MIN, R.PITCH_MAX = -12, 12
--- What R.save writes, in order; and what it wrote until 2026-11-05, when each track had a skip and
--- a move chance where its randomness and its volume are now, and no pitch.
-R.SAVED = R.TRACKS * R.STEPS + 4 * R.TRACKS + 3
+-- What R.save writes, in order; what it wrote until the song store, without the swing and the
+-- global last step, which a section holds since (cut-it/songs-and-sections); and what it wrote
+-- until 2026-11-05, when each track had a skip and a move chance where its randomness and its
+-- volume are now, and no pitch.
+R.SAVED = R.TRACKS * R.STEPS + 4 * R.TRACKS + 5
+R.SAVED_SECTIONLESS = R.TRACKS * R.STEPS + 4 * R.TRACKS + 3
 R.SAVED_CHANCES = R.TRACKS * R.STEPS + 3 * R.TRACKS + 3
 
 local function clip(x, lo, hi)
@@ -147,9 +151,9 @@ end
 
 -- The whole pattern, zeros included: 512 velocities, then the 16 tracks' own last steps, 0 for
 -- one that follows the global last step, then their randomness, 0 to 100, their volumes in dB and
--- their pitches in semitones, then the time signature and the drunkenness, 0 to 100: 579 numbers.
--- What section-1-<part> holds: the phone's settings with the pattern (Brendan, 2026-11-03), and
--- the knobs' not.
+-- their pitches in semitones, then the time signature, the drunkenness, 0 to 100, the swing, 50 to
+-- 75, and the global last step: 581 numbers. What a section holds of the drums and the
+-- arrangement page (Brendan, 2026-11-04), put as the section's <part> (ref/module/songs.md).
 function R.save(st)
   local all, cells = {}, R.TRACKS * R.STEPS
   for i = 1, cells do all[i] = st.pattern[i] end
@@ -161,14 +165,16 @@ function R.save(st)
   end
   local n = cells + 4 * R.TRACKS
   all[n + 1], all[n + 2], all[n + 3] = st.num, st.den, st.drunk
+  all[n + 4], all[n + 5] = st.swing, st.last
   return { "save", "list", all }
 end
 
--- At load: the page's selection, before anything is pressed, and the step clock straight.
+-- At load: the page's selection, before anything is pressed, and the step clock straight; and
+-- the pattern, put, so the section playing holds the drums from the start (ref/module/songs.md).
 function R.boot(st)
   return { { "page", "vel", { st.level } }, { "page", "track", { st.track } }, R.page_last(st),
            R.steps(st), R.page_bar(st), { "page", "rep", { st.rep } },
-           { "clock", "swing", { st.swing / 100 } }, { "clock", "rate", { st.rate } } }
+           { "clock", "swing", { st.swing / 100 } }, { "clock", "rate", { st.rate } }, R.save(st) }
 end
 
 -- A step press, on the selected track. The step rule: off takes the selected velocity; on, at
@@ -219,10 +225,10 @@ local function track_row(st)
 end
 
 -- Knob 4: swing, 50% to 75%, the share of each pair of sixteenths the first one takes, straight
--- at 50%, its bottom: above it every second sixteenth comes later (Brendan, 2026-11-05). Not
--- saved; it starts at 50% with the knob held there, as knob 2 at 16, and since 50% is the knob's
--- bottom, it is held until turned all the way down. The step clock takes it at the next pair, so
--- a turn never moves a step already cut.
+-- at 50%, its bottom: above it every second sixteenth comes later (Brendan, 2026-11-05). Saved,
+-- as a section's (Brendan, 2026-11-04); it starts at 50% with the knob held there, as knob 2 at
+-- 16, and since 50% is the knob's bottom, it is held until turned all the way down. The step
+-- clock takes it at the next pair, so a turn never moves a step already cut.
 function R.knob_swing(st, v)
   local n = R.SWING_MIN + math.floor(clip(num(v), 0, 1) * (R.SWING_MAX - R.SWING_MIN) + 0.5)
   local live = latch(st.knob.swing, n, st.swing)
@@ -231,18 +237,21 @@ function R.knob_swing(st, v)
   if n ~= st.swing then
     st.swing = n
     out[#out + 1] = { "clock", "swing", { n / 100 } }
+    out[#out + 1] = R.save(st)
   end
   return out
 end
 
--- Knob 2: the global last step, 1 to 32, for every track that follows it. It is not saved, and
--- starts at 16 with the knob held there.
+-- Knob 2: the global last step, 1 to 32, for every track that follows it. Saved, as a section's,
+-- and it starts at 16 with the knob held there.
 function R.knob_last(st, v)
   local n = R.knob_step(v)
   local live = latch(st.knob.last, n, st.last)
   if not live then return { row("last-step", false, st.last, n) } end
+  local was = st.last
   st.last = n
   local out = { row("last-step", true, n) }
+  if n ~= was then out[#out + 1] = R.save(st) end
   if st.own[st.track] == 0 then
     rearm(st.knob.track)
     out[#out + 1] = R.page_last(st)
@@ -253,15 +262,15 @@ end
 -- The phone's swing and global last step, on the arrangement page (Brendan, 2026-11-04): each a
 -- value as it stands, since swing and last are the knobs' positions and pass their latch. The
 -- knob that sets the same value is held again at the phone's, so its next turn waits to pass it
--- rather than jumping back to wherever it sits. Neither is saved, as the knobs' are not; a
--- message with no number in it does nothing.
+-- rather than jumping back to wherever it sits. Both are saved, as the knobs' are; a message
+-- with no number in it does nothing.
 function R.set_swing(st, v)
   if type(v) ~= "number" then return {} end
   local n = math.floor(clip(v, R.SWING_MIN, R.SWING_MAX) + 0.5)
   if n == st.swing then return {} end
   st.swing = n
   rearm(st.knob.swing)
-  return { { "clock", "swing", { n / 100 } } }
+  return { { "clock", "swing", { n / 100 } }, R.save(st) }
 end
 
 function R.set_last(st, v)
@@ -270,9 +279,9 @@ function R.set_last(st, v)
   if n == st.last then return {} end
   st.last = n
   rearm(st.knob.last)
-  if st.own[st.track] ~= 0 then return {} end
+  if st.own[st.track] ~= 0 then return { R.save(st) } end
   rearm(st.knob.track)
-  return { R.page_last(st) }
+  return { R.save(st), R.page_last(st) }
 end
 
 -- Knob 3: the selected track's own last step. It is held whenever another track is selected,
@@ -492,6 +501,10 @@ end
 -- playhead, the selected track's step, and the step clock's rate for the step coming: drunk, a
 -- step may last longer or shorter, the more often and the further the drunker (R.drunk_chance,
 -- R.drunk_reach), and the error stays -- its own drift becomes the clock (Brendan, 2026-11-03).
+-- Last, on the global loop's last step, bar: a bar is the pattern's loop (Brendan, 2026-11-05),
+-- so the song store starts a queued section when the global loop next comes round to its step 1,
+-- the whole pattern played, and its restore reaches here before that step is cut
+-- (ref/module/songs.md).
 function R.tick(st)
   local m, pos, synced = advance(st)
   local out = {}
@@ -523,6 +536,9 @@ function R.tick(st)
     st.rate = rate
     out[#out + 1] = { "clock", "rate", { rate } }
   end
+  -- The pattern's loop ends when the next step is the global loop's step 1, as advance() counts
+  -- it: a global last step moved under the loop's place wraps into it, and no bar ends there.
+  if st.master % st.last == 0 then out[#out + 1] = { "bar", "bar", {} } end
   return out
 end
 
@@ -546,17 +562,24 @@ function R.stop(st)
   return { { "page", "play", { 0 } } }
 end
 
--- u_state's restore of section-1-<part>, then put straight back (ref/module/state.md), which also
--- repairs a short or malformed line; and every track's volume and pitch to c_kit. A line of
+-- A section's restore of <part>, from the song store, or u_state's of section-1-<part>, the auto
+-- key the pattern had before sections, once, then put straight back (ref/module/state.md), which
+-- also repairs a short or malformed line; and every track's volume and pitch to c_kit. A line of
 -- exactly 256 is the 16-step pattern this replaced, track by track: its steps go to each track's
 -- first sixteen. A line of exactly 563 is from before the randomness (2026-11-05): its skip
 -- chances come back as each track's randomness, which took their place, its move chances are
 -- dropped, and the volumes and pitches stay 0. Anything else is read as this file saves it, as far
--- as it goes, a symbol as 0, the rest left as they were: a line of 528, from before the phone's
--- settings, keeps 4/4, sober, and no randomness. A bottom number that is not one of 1 2 4 8 16 is
--- 4.
+-- as it goes, a symbol as 0, the rest left as they were: a line of 579, from before sections, keeps
+-- the swing and the global last step in force, and one of 528, from before the phone's settings,
+-- 4/4, sober, and no randomness. A bottom number that is not one of 1 2 4 8 16 is 4. A swing or a
+-- global last step restored holds its knob again, as the phone's does, and the step clock takes
+-- the swing. Every loop, the global one included, starts again at step 1 on the next step: a
+-- section starts on its own step 1, whatever its last step and the one before it had, as PLAY
+-- starts the pattern (ref/module/songs.md).
 function R.restore(st, values)
   local cells = R.TRACKS * R.STEPS
+  st.master = 0
+  for t = 1, R.TRACKS do st.pos[t] = 0 end
   if #values == 256 then
     for t = 1, R.TRACKS do
       for s = 1, 16 do st.pattern[R.index(t, s)] = num(values[(t - 1) * 16 + s]) end
@@ -582,8 +605,18 @@ function R.restore(st, values)
       for _, v in ipairs(R.DENS) do if v == d then st.den = v end end
     end
     if values[n + 3] ~= nil then st.drunk = percent(values[n + 3]) end
+    if not chances and values[n + 4] ~= nil then
+      st.swing = whole(values[n + 4], R.SWING_MIN, R.SWING_MAX)
+      rearm(st.knob.swing)
+    end
+    if not chances and values[n + 5] ~= nil then
+      st.last = whole(values[n + 5], 1, R.STEPS)
+      rearm(st.knob.last)
+      if st.own[st.track] == 0 then rearm(st.knob.track) end
+    end
   end
-  local out = { R.save(st), R.page_last(st), R.steps(st), R.page_bar(st) }
+  local out = { R.save(st), R.page_last(st), R.steps(st), R.page_bar(st),
+                { "clock", "swing", { st.swing / 100 } } }
   for _, which in ipairs({ "vol", "pitch" }) do
     for t = 1, R.TRACKS do out[#out + 1] = { "note", which, { R.pad(st, t), st[which][t] } } end
   end

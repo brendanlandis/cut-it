@@ -1,15 +1,19 @@
 -- c_synth.lua -- the synth choice and the router: which synth the nanoKEY plays, which synth
--- each key it holds is sounding on, and whether a key's velocity reaches it. Plain Lua with no Pd in it, so test/gate/lua/c_synth_test.lua
--- runs it on the Mac with lua.org's interpreter. c_synth-lua.pd_lua is its Pd face, and
--- c_synth.pd keeps the cords and the state bus. ref/module/synths.md.
+-- each key it holds is sounding on, whether a key's velocity reaches it, and each synth's sound,
+-- a program number, sent as a section starts. Plain Lua with no Pd in it, so
+-- test/gate/lua/c_synth_test.lua runs it on the Mac with lua.org's interpreter.
+-- c_synth-lua.pd_lua is its Pd face, and c_synth.pd keeps the cords and the state bus.
+-- ref/module/synths.md.
 --
 -- The state is a plain table and every rule a function of it, so a live reload of the rules keeps
 -- the choice and the keys held. Every rule returns what leaves, in order, as
 -- {outlet, selector, atoms}:
 --   {"fm" | "strings", "note", {note, velocity}}   to that synth's device layer, 0 a release
+--   {"fm" | "strings", "program", {n}}             to that synth's device layer: its sound
 --   {"choice", "synth", {choice}}                  to u_net (the phone) and g_grid (the pads)
 --   {"phone", "velocity", {"on" | "off"}}          to u_net (the phone) alone
---   {"save", "synth" | "velocity", {value}}        to u_state, as the auto key it names
+--   {"save", "synth" | "velocity" | "programs", {value...}}
+--                                                  to the state bus, put section <key>
 --   {"err", "fail", {"c_synth", text}}             to err (C-12)
 
 local R = {}
@@ -24,6 +28,11 @@ R.BOOT = "fm"
 R.VELOCITY = { on = true, off = true }
 R.BOOT_VELOCITY = "on"
 R.FULL = 127
+
+-- Each synth's sound, a section's (Brendan, 2026-11-04): a program number, 0 to 127, the program
+-- change on the wire, which each synth's layer takes as `program <n>`; or none, which sends
+-- nothing. Nothing chooses one yet, so a section holds none until its file says otherwise.
+R.NONE = "none"
 
 local KNOWN = {}
 for _, s in ipairs(R.SYNTHS) do KNOWN[s] = true end
@@ -43,7 +52,8 @@ end
 
 -- held[note] is the synth that note's note-on went to, while the key is down.
 function R.new()
-  return { choice = R.BOOT, held = {}, velocity = R.BOOT_VELOCITY }
+  return { choice = R.BOOT, held = {}, velocity = R.BOOT_VELOCITY,
+           programs = { fm = R.NONE, strings = R.NONE } }
 end
 
 -- The choice, out to the phone and the pads, and to u_state.
@@ -98,25 +108,53 @@ function R.choose(st, atoms)
   return tell(st)
 end
 
--- u_state's restore of synth: the choice saved, put straight back (ref/module/state.md). One
+-- A section's restore of synth: the choice saved, put straight back (ref/module/state.md). One
 -- that names no synth keeps the one in force and puts that back, so the file is repaired.
 function R.restore(st, atoms)
   if KNOWN[atoms[1]] then st.choice = atoms[1] end
   return tell(st)
 end
 
--- u_state's restore of velocity, put straight back as the choice is; one that is neither on nor
+-- A section's restore of velocity, put straight back as the choice is; one that is neither on nor
 -- off keeps the one in force and puts that back.
 function R.restore_velocity(st, atoms)
   if R.VELOCITY[atoms[1]] then st.velocity = atoms[1] end
   return tell_velocity(st)
 end
 
--- At load: the choice and the velocity switch, so the pads and the phone show them before
--- anything is pressed.
+-- The programs as a section holds them: the Volca's, then the Streichfett's, in R.SYNTHS' order.
+local function tell_programs(st)
+  local p = {}
+  for i, s in ipairs(R.SYNTHS) do p[i] = st.programs[s] end
+  return { "save", "programs", p }
+end
+
+-- A program as the store keeps it: a whole number 0 to 127, or none for anything else.
+local function program(x)
+  if type(x) ~= "number" or x < 0 or x > 127 then return R.NONE end
+  return math.floor(x + 0.5)
+end
+
+-- A section's restore of programs, <volca> <streichfett>, as it starts (Brendan, 2026-11-04):
+-- each synth with a program is sent it, the Volca first, and the two are put straight back. None
+-- sends nothing, and leaves the synth on whatever sound it has.
+function R.restore_programs(st, atoms)
+  local out = {}
+  for i, s in ipairs(R.SYNTHS) do
+    local n = program(atoms[i])
+    st.programs[s] = n
+    if n ~= R.NONE then out[#out + 1] = { s, "program", { n } } end
+  end
+  out[#out + 1] = tell_programs(st)
+  return out
+end
+
+-- At load: the choice, the velocity switch and the programs, so the pads and the phone show
+-- them before anything is pressed and the section playing holds them from the start.
 function R.boot(st)
   local out = tell(st)
   for _, e in ipairs(tell_velocity(st)) do out[#out + 1] = e end
+  out[#out + 1] = tell_programs(st)
   return out
 end
 
@@ -129,10 +167,13 @@ R.inputs = {
   velocity = function(st, a) return R.set_velocity(st, a) end,
 }
 
--- What c_synth.pd itself sends: u_state's restores of synth and velocity, and the load.
+-- What c_synth.pd itself sends: a section's restores of synth, velocity and programs, from the
+-- song store (u_state's of synth and velocity too, the auto keys they were before sections,
+-- once), and the load.
 R.internal = {
   restore = function(st, a) return R.restore(st, a) end,
   ["restore-velocity"] = function(st, a) return R.restore_velocity(st, a) end,
+  ["restore-programs"] = function(st, a) return R.restore_programs(st, a) end,
   init = function(st) return R.boot(st) end,
 }
 

@@ -24,10 +24,11 @@ end
 local function teal(c) return c[2] > 0.7 and c[1] < 0.3 end
 local function red(c) return c[1] > 0.9 and c[2] < 0.2 end
 local function black(c) return c and c[1] < 0.1 and c[2] < 0.1 end
--- The state c_steps sends: 132 numbers, from what differs; after the first 88 the selected
+-- The state c_steps sends: 148 numbers, from what differs; after the first 88 the selected
 -- track's effects, its character last, and the reverb's, at their starting points unless t.fx
 -- gives them, then each track's mute and each track's solo, 0 unless t.mute or t.solo gives them,
--- then the reverb's type, 0, the plate, unless t.type gives it.
+-- then the reverb's type, 0, the plate, unless t.type gives it, then each track's random pitch, 0
+-- unless t.rolled gives it.
 local FX = { { "drive", 50 }, { "tone", 100 }, { "dist", 0 }, { "note", 3 }, { "feel", 1 },
              { "feedback", 40 }, { "delay", 0 }, { "send", 0 }, { "char", 1 }, { "size", 50 },
              { "damping", 50 } }
@@ -46,6 +47,7 @@ local function drumstate(t)
     for n = 1, 16 do st[#st + 1] = (t[which] or {})[n] or 0 end
   end
   st[#st + 1] = t.type or 0
+  for n = 1, 16 do st[#st + 1] = (t.rolled or {})[n] or 0 end
   return st
 end
 -- A drum pad's step, as a share of its whole travel: the layout's, which the reading half holds
@@ -375,20 +377,19 @@ equal("⛔ a tap on gigaverb sends drums verb-type 1, the kit's: no track",
 equal("... and on freeverb, 2", L.drag(w, "vtype", 2), { { "/cutit", "drums", "verb-type", 2 } })
 L.update(w, 1100)
 w.sent = {}
-st[#st] = 1
+st[132] = 1
 L.osc(w, "/cutit/drums", table.unpack(st))
 L.update(w)
 equal("⛔ the state's type, gigaverb, lights it, its word black, and nothing goes back",
       { C.vtype.values.x, black(C.vtype2l.textColor), black(C.vtype3l.textColor), #w.sent },
       { 1, true, false, 0 })
-local old131 = { table.unpack(st) }
-old131[#old131] = nil
+local old131 = { table.unpack(st, 1, 131) }
 old131[3] = 5
 L.update(w, 1100)
 L.osc(w, "/cutit/drums", table.unpack(old131))
 equal("a 131-number state, from before the type, leaves the radio as it was, and sends nothing",
       { C.vtype.values.x, #w.sent }, { 1, 0 })
-st[#st] = 0
+st[132] = 0
 L.osc(w, "/cutit/drums", table.unpack(st))
 L.update(w)
 equal("⛔ ... and the plate, 0, puts it back on its first segment, plate black, and sends nothing",
@@ -466,6 +467,30 @@ while #old98 > 98 do table.remove(old98) end
 L.osc(w, "/cutit/drums", table.unpack(old98))
 equal("a 98-number state, from before mute and solo, leaves M and S as they were",
       { flags("mute"), flags("solo"), #w.sent }, { lit_at(4), lit_at(), 0 })
+print("\n--- the drum screen's random pitch ---")
+-- A button under the show radio for the selected track (Brendan, 2026-11-05), lit by the state alone.
+w.sent = {}
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ track = 5, rolled = { [3] = 1 } })))
+equal("⛔ selected track 5's is off, though track 3's is on: out, its word white, and nothing sent",
+      { C.rndpitch.values.x, black(C.rndpitchl.textColor), #w.sent }, { 0, false, 0 })
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ track = 3, rolled = { [3] = 1 } })))
+equal("⛔ selected track 3's is on: lit, its word black on the fill, and nothing sent",
+      { C.rndpitch.values.x, black(C.rndpitchl.textColor), #w.sent }, { 1, true, 0 })
+equal("⛔ a tap on it lit asks for the opposite for the selected track: drums rnd-pitch 3 0",
+      L.press(w, "rndpitch"), { { "/cutit", "drums", "rnd-pitch", 3, 0 } })
+equal("⛔ ... and its look is the state's, never the finger's: still lit after the tap",
+      C.rndpitch.values.x, 1)
+w.sent = {}
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ track = 7 })))
+equal("⛔ a tap on it out, track 7 selected: drums rnd-pitch 7 1", L.press(w, "rndpitch"),
+      { { "/cutit", "drums", "rnd-pitch", 7, 1 } })
+equal("... and it stays out until the state says", C.rndpitch.values.x, 0)
+local old132 = drumstate({ track = 3 })
+while #old132 > 132 do table.remove(old132) end
+L.osc(w, "/cutit/drums", table.unpack(old132))
+equal("a 132-number state, from before it, leaves it as it was and sends nothing",
+      C.rndpitch.values.x, 0)
+L.osc(w, "/cutit/drums", table.unpack(drumstate({ track = 5, mute = { [4] = 1 } })))
 equal("⛔ a pad with its M and S under it still selects its track at a tap",
       L.tap(w, "pad3"), { { "/cutit", "drums", "select", 3 } })
 L.drag(w, "show", 0)

@@ -279,6 +279,8 @@ SEQ = [
     (46800, "cmddrumsnew", [("cmd", ("cutit", "drums reload 2"))]),
     # -- the drum screen's reverb type, as the phone sends it (Brendan, 2026-11-05)
     (47500, "cmdverbtype", [("cmd", ("cutit", "drums verb-type 2"))]),
+    # -- a track's random pitch, as the drum screen's button sends it (Brendan, 2026-11-05)
+    (47850, "cmdrolled", [("cmd", ("cutit", "drums rnd-pitch 3 1"))]),
     # -- the synth choice, out the second outlet to c_synth, a known one and one
     #    c_synth will refuse: u_net passes synth on whole, as it does drums
     (48200, "cmdsynth", [("cmd", ("cutit", "synth strings"))]),

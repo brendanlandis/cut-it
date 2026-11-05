@@ -674,6 +674,37 @@ def main():
             "R.VERB_TYPES %s; radio %s, words %s, knobs %s" % (
                 types, [(f, p.get("orientation"), p.get("steps")) for f, p in radio], words,
                 knobs))
+    # The selected track's random pitch (Brendan, 2026-11-05): a button right under the show radio,
+    # as wide as it and a segment tall, its word over it, lit by the state with the shared LIT, so
+    # it can't flicker; and the line a sync or a snap waits on, which sat there, on the grid
+    # under them.
+    show = where.get("show")
+    rnd = where.get("rndpitch")
+    word = where.get("rndpitchl")
+    pend = where.get("pending")
+    script = (by_name.get("rndpitch") or [None] * 4)[3] or ""
+    A.check("⛔ a button, rnd pitch, sits directly under the show radio, its width and a segment tall",
+            show and rnd and by_name["rndpitch"][1] == "BUTTON" and rnd[0] == show[0]
+            and rnd[1] == show[1] + show[3] and rnd[2] == show[2]
+            and rnd[3] == show[3] / len(B.SHOW) and word == rnd
+            and by_name["rndpitchl"][4] == "rnd pitch",
+            "show %s, rndpitch %s, its word %s, %s" % (show, rnd, word,
+                                                       (by_name.get("rndpitchl") or [None] * 5)[4]))
+    A.check("⛔ ... the show radio's last segment is random, which it adds to",
+            B.SHOW[-1][0] == "random", "%s" % [s_[0] for s_ in B.SHOW])
+    A.check("⛔ ... lit by the state with the shared script, so never by a finger, and asking the "
+            "root for the opposite of what it shows", B.LIT in script
+            and "root:notify('rolled', lit == 1 and 0 or 1)" in script, script[:200])
+    A.check("⛔ ... the root sends it for the selected track, as c_steps takes it, and lights it from "
+            "the state's last sixteen, 132 + the track",
+            "sendOSC('/cutit', 'drums', 'rnd-pitch', math.floor(arg(state, 3)), v)" in B.ROOT_LUA
+            and "arg(a, PHONE + math.floor(arg(a, 3)))" in B.ROOT_LUA
+            and B.PHONE_ALL == 148 and B.PHONE == 132,
+            "PHONE %s, PHONE_ALL %s" % (B.PHONE, B.PHONE_ALL))
+    A.check("⛔ the pending line clear of it, under sync and snap, and a step tall on the grid",
+            pend and pend[1] == B.Y0 + 3 * B.G and pend[3] == B.G and pend[0] == B.COL[0]
+            and pend[1] + pend[3] <= show[1] and pend[1] + pend[3] <= rnd[1],
+            "pending %s" % (pend,))
     # A pad's drag, a step at a time as the time signature's boxes are, about 20 points a step:
     # a relative fader's whole travel is its height times 100 over its responseFactor.
     faders = [(n, f, p) for pg, n, t, f, p in placed if pg == "drums" and re.fullmatch(r"pad\d+", n)]

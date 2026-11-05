@@ -167,14 +167,15 @@ FX_CONTROL = {"note": "dnote", "feel": "dfeel", "char": "char"}
 FX_CMD = {"note": "delay-note", "feel": "delay-feel", "char": "char"}
 # The phone's state: c_steps' R.phone, 88 numbers before the effects, then the selected track's
 # and the reverb's, 99, then each track's mute and each track's solo, 131, then the reverb's type,
-# 132.
+# 132, then each track's random pitch, 148.
 PHONE_BASE = 88
 # Where the pads show last steps, 1 from the first, the one a drag clips to the reach.
 LAST_SHOW = 1 + [c for _w, c, _lo, _hi, _st in SHOW].index("set-track-last")
 FX_END = PHONE_BASE + len(FX) + len(VERB)
 FLAGS = ("mute", "solo")    # each track's, under its pad, and in the state after the effects
 FLAGS_END = FX_END + len(FLAGS) * 16
-PHONE = FLAGS_END + 1       # the reverb's type, last
+PHONE = FLAGS_END + 1       # the reverb's type
+PHONE_ALL = PHONE + 16      # each track's random pitch, last
 # The effect radio's three, in order, each with what shows when it is chosen: its controls by
 # name, captions and values too (fx_groups, below).
 EFFECTS = ["distortion", "delay", "reverb"]
@@ -517,6 +518,13 @@ def flag_script(which, n):
     velocity switch does: drums <which> <track> 1 when it is out, 0 when lit. So the state coming
     back, and its repeat on every heartbeat, cannot send it again."""
     return lit_script("sendOSC('/cutit', 'drums', %s, %d, lit == 1 and 0 or 1)" % (lua(which), n))
+
+
+def rolled_script():
+    """The selected track's random pitch (Brendan, 2026-11-05): lit by Cut It's state through
+    notify('lit'), and a finger on it asks the root, which knows the track, for the other setting,
+    as a track's mute does its own."""
+    return lit_script("root:notify('rolled', lit == 1 and 0 or 1)")
 
 
 def show_script():
@@ -865,19 +873,24 @@ def drums():
     # the right panel: sync and snap across the top; under them two vertical radios, what the
     # pads show (Brendan, 2026-11-05: it became vertical) and which effect's controls show, two
     # steps a segment; and the chosen effect's controls to their right. The line saying a sync
-    # or a snap waits and the link share the bottom row.
+    # or a snap waits sits right under those two, on a row of its own, and the link on the bottom
+    # row. Under the show radio, as wide as it and a segment tall, the selected track's random
+    # pitch: that radio's last segment is the randomness it adds to (Brendan, 2026-11-05).
     a, b = COL
     for x, (name, text) in zip(COL, (("sync", "sync first steps"), ("snap", "snap to global"))):
         f = (x, Y0, CW, 3 * G)
         k.append(button(name, f, RED, sends(["drums", name])))
         k.append(label(name + "l", f, text, 16))
-    k.append(label("pending", (a, STATUS, CW, G), "", 14, TEAL, align=1))
+    k.append(label("pending", (a, Y0 + 3 * G, CW, G), "", 14, TEAL, align=1))
     k.append(caption("showc", a, Y0 + 4 * G, 4 * G, "show"))
     k.append(node("RADIO", "show", (a, Y0 + 5 * G, 4 * G, 2 * G * len(SHOW)), color=RED,
                   outlineStyle=0, orientation=SOUTH, steps=len(SHOW), x=0, script=show_script()))
     for i, (word, _c, _lo, _hi, _st) in enumerate(SHOW):
         k.append(label("show%dl" % (i + 1), (a, Y0 + (5 + 2 * i) * G, 4 * G, 2 * G), word, 14,
                        BLACK if i == 0 else WHITE))
+    f = (a, Y0 + (5 + 2 * len(SHOW)) * G, 4 * G, 2 * G)
+    k.append(button("rndpitch", f, RED, rolled_script()))
+    k.append(label("rndpitchl", f, "rnd pitch", 14))
     fx = a + 5 * G
     k.append(caption("fxc", fx, Y0 + 4 * G, 5 * G, "effect"))
     k.append(node("RADIO", "fx", (fx, Y0 + 5 * G, 5 * G, 2 * G * len(EFFECTS)), color=RED,
@@ -1207,6 +1220,7 @@ local VERBCONTROLS = %(verbcontrols)s
 local FXKNOBS = %(fxknobs)s
 local FXRADIOS = %(fxradios)s
 local PHONE_BASE, FX_END, FLAGS_END, PHONE = %(phonebase)s, %(fxend)s, %(flagsend)s, %(phone)s
+local PHONE_ALL = %(phoneall)s
 local FLAGS = %(flags)s
 local ROWS, MAX_NAME = %(rows)s, %(maxname)s
 local NAMERS = %(namers)s
@@ -1401,14 +1415,30 @@ local function flags(a)
   end
 end
 
+-- The selected track's random pitch, the state's last sixteen: its button under the show radio, lit
+-- by notify('lit'), which a lit one never answers, its word black on the lit fill. A tap asks the
+-- root for the other setting, since it is here that the track is known. A state from before them
+-- leaves it as it was.
+local function rolled(a)
+  if #a < PHONE_ALL then return end
+  local want = arg(a, PHONE + math.floor(arg(a, 3))) == 1 and 1 or 0
+  light('rndpitch', want)
+  ink('rndpitchl', want == 1 and BLACK or WHITE)
+end
+
+local function askRolled(v)
+  if state then sendOSC('/cutit', 'drums', 'rnd-pitch', math.floor(arg(state, 3)), v) end
+end
+
 -- ---------------------------------------------------------------- the sequencer's state
--- c_steps' 132 numbers: playing, the global last step, the selected track, a pending sync or
+-- c_steps' 148 numbers: playing, the global last step, the selected track, a pending sync or
 -- snap (1, 2), the sixteen last steps, then 1 for each track with its own, then the time
 -- signature, the drunkenness and the swing, then the sixteen volumes, pitches and
 -- randomnesses, then the selected track's effects and the reverb's, then each track's mute and
--- each track's solo, then the reverb's type. The drum screen shows what is per track, the
--- arrangement screen the rest; 88, without the effects, draws all but those, 99, without mute
--- and solo, all but those, and 131, without the type, all but that.
+-- each track's solo, then the reverb's type, then each track's random pitch. The drum screen
+-- shows what is per track, the arrangement screen the rest; 88, without the effects, draws all but
+-- those, 99, without mute and solo, all but those, 131, without the type, all but that, and 132,
+-- without the random pitches, all but those.
 local function drums(a)
   if #a < 88 then return end
   local playing, pending = arg(a, 1) == 1, arg(a, 4)
@@ -1431,6 +1461,7 @@ local function drums(a)
   hand('swing', math.floor(arg(a, 40)))
   effects(a)
   flags(a)
+  rolled(a)
 end
 
 -- ---------------------------------------------------------------- the tempo
@@ -1726,6 +1757,8 @@ function onReceiveNotify(key, value)
     setShow(value)
   elseif key == 'fx' then
     setFx(value)
+  elseif key == 'rolled' then
+    askRolled(value)
   elseif key == 'row' then
     rowTapped(value)
   elseif key == 'grow' or key == 'lrow' then
@@ -1798,6 +1831,7 @@ def root_script(check):
         "fxradios": lua({"dnote": len(NOTE_NAMES), "dfeel": len(FEEL_NAMES),
                          "char": len(CHAR_NAMES), "vtype": len(VERB_TYPES)}),
         "phonebase": PHONE_BASE, "fxend": FX_END, "flagsend": FLAGS_END, "phone": PHONE,
+        "phoneall": PHONE_ALL,
         "flags": lua(list(FLAGS)),
         "rows": ROWS, "maxname": MAX_NAME,
         "namers": lua({p: {"pager": n["pager"], "tab": n["tab"],

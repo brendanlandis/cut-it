@@ -47,13 +47,13 @@ were false.
 | `touchosc-assert.sh` | 237: 39 read, 198 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 313: 237 in Lua, 76 in Pd | `module/sequencer` |
+| `sequencer-assert.sh` | 316: 237 in Lua, 79 in Pd | `module/sequencer` |
 | `kit-assert.sh` | 38 | `module/sequencer` — the kit and its effects, as a signal |
 | `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1868 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
+**1871 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1861**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1864**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh`, `song-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.

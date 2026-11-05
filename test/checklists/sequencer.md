@@ -2,7 +2,7 @@
 
 Page 2's drum page on the Launchpad, the sequencer playing the drum samples from the Organelle, and the pattern surviving a reload. `sequencer-assert` proves the notes, the frames and the file; what is left is what only the rig can show — whether the page reads, and how the drums sound.
 
-39 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
+43 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
 
 - [ ] **1. The drum page**
   - **Need:** A fresh load of the patch with no saved pattern — the selection resets at every load and a saved step would be lit.
@@ -197,3 +197,28 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone tap the M under pad 1 and the S under pad 3. Press the third button, section 1, and let it start, then the fourth again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn.
   - **Pass if:** In section 2 only pad 3 plays, and the phone shows pad 1's M and pad 3's S lit and the Launchpad every pad but pad 3 dim. In section 1 all three play, every M and S out and every pad bright; back in section 2, pad 1's M and pad 3's S again. After the reload each section has what it had when saved.
   - **Note:** Mute and solo are a section's, with its pattern (Brendan, 2026-11-05). That a section saved before them loads with nothing muted is `sequencer-assert`'s.
+
+- [ ] **40. More drive is louder and dirtier, never quieter**
+  - **Need:** Brendan's samples deployed, the phone linked, 4/4 at 120 BPM, every effect off. On page 2, light pad 1's steps 1, 5, 9 and 13, pad 1 being the bottom-left drum pad, and nothing else on any track.
+  - **Send:** `start bang; mode mode-2`
+  - **Do:** On the phone tap pad 1, then effect's distortion. Leave character on soft and tone where it starts. Turn mix all the way up, then drive slowly from all the way left to all the way right, listening, then back to about three quarters.
+  - **Pass if:** Tone starts all the way right, and the drum is bright, not dulled. As drive goes up the drum gets fuzzier, fatter and a little louder, its tail coming up against its attack, and at no point does it get quieter or thinner than at drive 0. Its peaks never jump out louder than the dry drum's did.
+  - **Note:** The makeup stops at −8 dB, so drive keeps adding level instead of taking it away (Brendan, 2026-11-05). That drive 100 is no quieter than 50, and never past the dry's peak, is `kit-assert`'s; this is how it sounds.
+
+- [ ] **41. The four characters on one drum**
+  - **Need:** Playing, from the step before: pad 1 with its distortion's mix all the way up and drive at about three quarters, soft.
+  - **Do:** On the phone, above drive, tone and mix, tap each character in turn, hard, fold, crush, listening to a bar of each, then soft again. Then on crush, turn drive from all the way left to all the way right.
+  - **Pass if:** The radio is one row of four, soft, hard, fold and crush, the chosen one lit with its word black. Each is a different sound at the same drive: soft a round, thick fuzz; hard harsher and buzzier, with a gritty, lopsided edge; fold a metallic, ringing, almost pitched sound; crush grainy and lo-fi, with an aliased, digital fizz. Switching never clicks, drops out or stops the beat, and soft again sounds as it did at the start. On crush, more drive makes it coarser and lower-pitched in its grain.
+  - **Note:** A character is a handful of numbers to `e_drive`, so switching costs nothing; crush's rounding and hold run only while it is chosen ([sequencer](../../ref/module/sequencer.md), *The effects*). That each character is a shape of its own is `kit-assert`'s; whether each sounds right is this step's.
+
+- [ ] **42. A drive means the same on a quiet drum**
+  - **Need:** Playing, from the step before, pad 1 back on soft. Light steps 3, 7, 11 and 15 of the track whose sample is the quietest of the kit, a hat if there is one.
+  - **Do:** On the phone tap that track's pad, then distortion: mix all the way up, character soft, drive at about three quarters, the same as pad 1. Listen to both. Then turn the quiet track's mix back to 0.
+  - **Pass if:** The quiet drum is as plainly distorted as pad 1 at the same drive, not barely touched, and stays about as loud against pad 1 as it was dry. At mix 0 it is exactly as it was.
+  - **Note:** Each sample's own peak scales what goes into the distortion (Brendan, 2026-11-05): `c_voice` tells `e_drive` the peak once the sample is read.
+
+- [ ] **43. The character is saved with a section**
+  - **Need:** Pad 1's distortion from the steps before, soft, mix up. The Launchpad's top row with two sections, the second a copy of the first: on the phone's sections page, page 7, select section 1 and tap **new, a copy of**.
+  - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone tap pad 1, then distortion, and tap crush. Press the third button, section 1, and let it start, then the fourth again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn. Last, on the phone turn pad 1's mix back to 0 in each section and save.
+  - **Pass if:** In section 2 pad 1 is crushed and the phone's radio shows crush; in section 1 it is soft again and the radio shows soft; back in section 2, crush. After the reload each section has the character it had when saved.
+  - **Note:** A section saved before the characters loads every track soft, and keeps the tone it was saved with, so one saved with the old tone of 60 stays dull until its tone is turned up. That is `sequencer-assert`'s and the Lua's; this is the rig.

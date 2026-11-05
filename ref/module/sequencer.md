@@ -38,10 +38,10 @@ each track's distortion and delay and the reverb they share (2026-11-05). *The k
 |---|---|---|
 | Creation arg 1 | Its bank, 1–10, 1 for A, **vestigial**: from when the SP-404 played the drums, which left the rig on 2026-11-04. Track *n* is pad (bank − 1) × 16 + *n*, and `c_kit` plays pads 1–16 only. It stays because dropping it would move arg 2 and the state key named for it | unknown |
 | Creation arg 2 | The part its pattern is stored as in a section: `drums` | unknown |
-| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, `rep <n> <vel>`, from `u_map`'s `drum-page` destination, presses and releases (velocity 0), a `step`'s *n* the layout table's step cell, 1 to 32 (*The rows of steps*, below); `last`, `track-last` and `swing <0-1>`, knobs 2 to 4, from its `drums` destination, whose map rows name each: knobs 2 and 4 on every page, knob 3 on page 2 alone (Brendan, 2026-11-04); `sync`, `snap` and `select <n>`, the phone's drum screen, and `vol`, `pitch`, `randomness` and `set-track-last <track> <value>`, its pads dragged, and its effects, `drive`, `tone`, `dist`, `delay-note <1-5>`, `delay-feel <1-3>`, `feedback`, `delay` and `send <track> <value>` and `size` and `damping <value>` (*The effects*, below), and `mute` and `solo <track> <0 or 1>`, the M and S under its pads, and `num` and `den <-1 or 1>`, `drunk <0-100>`, `set-swing <50-75>` and `set-last <1-32>`, its arrangement screen, from `u_net`'s first outlet. Anything else is `fail c_steps bad-selector` | unknown |
-| Outlet 1 | `pad <1..160> <velocity>`, and a track's `vol <pad> <dB>` and `pitch <pad> <semitones>`, every track's at a restore and one when the phone changes it, and its effects, `drive`, `tone`, `dist`, `delay-time <pad> <steps>`, `feedback`, `delay` and `send <pad> <0-100>`, and the reverb's `size` and `damping <0-100>`: every one at load, then each as the phone changes it and whichever a restore changes, to `c_kit` | unknown |
+| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, `rep <n> <vel>`, from `u_map`'s `drum-page` destination, presses and releases (velocity 0), a `step`'s *n* the layout table's step cell, 1 to 32 (*The rows of steps*, below); `last`, `track-last` and `swing <0-1>`, knobs 2 to 4, from its `drums` destination, whose map rows name each: knobs 2 and 4 on every page, knob 3 on page 2 alone (Brendan, 2026-11-04); `sync`, `snap` and `select <n>`, the phone's drum screen, and `vol`, `pitch`, `randomness` and `set-track-last <track> <value>`, its pads dragged, and its effects, `drive`, `tone`, `dist`, `char <1-4>`, `delay-note <1-5>`, `delay-feel <1-3>`, `feedback`, `delay` and `send <track> <value>` and `size` and `damping <value>` (*The effects*, below), and `mute` and `solo <track> <0 or 1>`, the M and S under its pads, and `num` and `den <-1 or 1>`, `drunk <0-100>`, `set-swing <50-75>` and `set-last <1-32>`, its arrangement screen, from `u_net`'s first outlet. Anything else is `fail c_steps bad-selector` | unknown |
+| Outlet 1 | `pad <1..160> <velocity>`, and a track's `vol <pad> <dB>` and `pitch <pad> <semitones>`, every track's at a restore and one when the phone changes it, and its effects, `drive`, `tone`, `dist`, `char <pad> <1-4>`, `delay-time <pad> <steps>`, `feedback`, `delay` and `send <pad> <0-100>`, and the reverb's `size` and `damping <0-100>`: every one at load, then each as the phone changes it and whichever a restore changes, to `c_kit` | unknown |
 | Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <32 levels>` for the selected track, each step's velocity level, 0 for off, `play <step>` (0 while stopped), `vel <level>`, `track <pad>`, `last <step>` for the selected track, `bar <N> <row>`, the time signature as the page shows it, a blue step every *N* and *row* steps to a row, and `rep <pad>`, the repeat pad held, 0 for none, and `quiet <16 flags>`, track 1 first, 1 for each track that won't play, muted or left out of a solo, sent when that changes | unknown |
-| Outlet 3 | The phone's state, to `u_net`'s second inlet: 130 numbers, `R.phone`, after the first 88 the selected track's effects and the reverb's, then each track's mute and each track's solo, sent by the Pd face only when they change, for the drum and arrangement screens ([phone.md](../device/phone.md)) | unknown |
+| Outlet 3 | The phone's state, to `u_net`'s second inlet: 131 numbers, `R.phone`, after the first 88 the selected track's effects, its character last, and the reverb's, then each track's mute and each track's solo, sent by the Pd face only when they change, for the drum and arrangement screens ([phone.md](../device/phone.md)) | unknown |
 | Outlet 4 | `bar`, to `u_song`'s third inlet, on the step the global loop wraps after: a bar is the pattern's loop (Brendan, 2026-11-05), the time signature no part of it ([songs.md](songs.md)) | unknown |
 | `disp` | Knobs 2 to 4's rows: `last-step 12`, `pad2-last 6`, `swing 62 %`, and held, `last-step 16 (7)` | unknown |
 
@@ -61,7 +61,7 @@ each track's distortion and delay and the reverb they share (2026-11-05). *The k
 | A repeat's steps | Played exactly as they were played the first time (Brendan, 2026-11-05): each track's hit and its velocity as its randomness chose them then, and each step's drunk length, so the loop sounds the same every time round, and no die is rolled until it is let go. Mute and solo are heard as they stand: a track muted under a held repeat is silent in it from the next step, one soloed plays it alone. A step edited, or a section restored, under a held repeat is heard once it is let go. Pressed with fewer steps played since PLAY than its number, the steps to come are played, rolled as usual, and kept until there are that many (*A repeat replays what was decided*, below) | verified |
 | A track's randomness | 0 to 100, each track its own, from its pad on the drum screen (Brendan, 2026-11-05, after the Arturia DrumBrute's Randomness): at *R*% each step it plays has an *R*% chance of ignoring what is written and flipping a coin instead, played or not, and played at one of the eight levels at random. So it drops hits from a busy track and adds them to a sparse one; at 100 every step is a coin, at 0 the pattern plays as written and nothing is rolled. Fresh on every pass, but a held repeat's, which plays the coins as they fell (*A repeat's steps*). Saved | verified |
 | A track's volume and pitch | −30 to +6 dB and −12 to +12 semitones, each track its own, 0 at first, from its pad on the drum screen: each is saved and goes to `c_kit` for that track's pad, which plays it from the next hit (*The kit*, below). A restore sends every track's | verified |
-| A track's effects | Its distortion's drive, tone and mix, its delay's time, a note value, 1/2 to 1/32, and a feel, straight, triplet or dotted, its feedback and its level, and its send to the reverb, and the reverb's size and damping, the kit's (Brendan, 2026-11-05): 0 to 100 but the note and the feel, from the drum screen for the selected track. Each is saved and told to `c_kit`, the note and the feel as the delay's time in steps, a step a sixteenth. Every track starts at drive 50, tone 60, mix 0, 1/8 straight, feedback 40, level 0 and send 0, and the reverb at size 50 and damping 50: a mix, a level or a send of 0 is off (*The effects*, below) | verified |
+| A track's effects | Its distortion's drive, tone and mix and its character, soft, hard, fold or crush, its delay's time, a note value, 1/2 to 1/32, and a feel, straight, triplet or dotted, its feedback and its level, and its send to the reverb, and the reverb's size and damping, the kit's (Brendan, 2026-11-05): 0 to 100 but the character, the note and the feel, from the drum screen for the selected track. Each is saved and told to `c_kit`, the note and the feel as the delay's time in steps, a step a sixteenth. Every track starts at drive 50, tone 100, open (Brendan, 2026-11-05: 60, a 3.5 kHz low-pass, dulled every drum), mix 0, soft, 1/8 straight, feedback 40, level 0 and send 0, and the reverb at size 50 and damping 50: a mix, a level or a send of 0 is off (*The effects*, below) | verified |
 | Mute and solo | Each track's own, from the M and S under its pad on the drum screen, `mute` and `solo <track> <0 or 1>` (Brendan, 2026-11-05): with any track soloed only the soloed tracks play and the mutes are ignored; otherwise a muted track doesn't. A track that won't play stops at its next step, while what `c_kit` is already sounding of it, its echoes and its reverb, rings out (*Mute and solo stop the hits, not the sound*, below). Its randomness still rolls and its loop and a held repeat go on, so it comes back in where it would have been. The Launchpad shows its pad dim ([display.md](display.md)). Saved, a section's | verified |
 | A track's last step from the phone | `set-track-last <track> <1-32>`, from its pad, clipped to the reach, as knob 3 sets the selected track's: the step a track already has changes nothing, so one that follows the global step goes on following; set for the selected track, it holds knob 3 again. Saved | verified |
 | On a step | The global loop moves on, then every track moves on in its own loop, wrapping after its own last step; every track plays the step it is at, its note at its velocity if 1 or more, or as its randomness flips it, or while a repeat is held, what it played at the step repeated; track 1 first, all in one logical instant, but a track muted or left out of a solo plays nothing. Then the playhead moves, to the selected track's step, and the step's drunk length goes to the clock, or the repeated step's | verified |
@@ -103,7 +103,8 @@ each track's distortion and delay and the reverb they share (2026-11-05). *The k
 | A pad with no sample | Silent, and no error: `c_voice` checks the file is there before reading it | unknown |
 | The count | 2 s after load, on `err`: `info c_kit samples-16` with all sixteen, `warn c_kit samples-<n>` with some, `info c_kit no-samples` with none | unknown |
 | What it costs | About 0.65% of the Organelle's core for each voice while it sounds; `switch~` keeps a silent voice's DSP off (the Organelle's Reference page). With the effects in it, 0.74–0.78% while a voice sounds with none of its own on, and 0.6% more for the kit at rest (*The effects*, below) | verified |
-| A track's distortion | `e_drive`, inside its `c_voice`: the sound times a gain of 10^(drive/50), 1 to 100, into a cubic soft clip, c (1.5 − 0.5c²) of c = 2gx/3 clipped to ±1, scaled by 1/√g; a one-pole low-pass at 300 Hz (tone 0) to 18 kHz (100), even in octaves; and mixed with the dry sound by `dist`, its mix: the voice sums the dry with mix × (driven − dry). At mix 100 a sine at full drive is a square at 0.1; at mix 0 the dry passes untouched | verified |
+| A track's distortion | `e_drive`, inside its `c_voice`: the sound scaled to its sample's peak, which `c_voice` tells it once the sample is read, so a drive means the same on every pad, times a gain of g = 10^(drive/50) into `[clip~ lo hi] [-~ 0.25] [cos~] [*~ k] [clip~ lo2 hi2]`, a sine of it, the peak going in at an eighth of a cycle at drive 0 and g times that; then a makeup of 1/√g, but never below −8 dB, 0.4, times the peak again and the character's trim; `hip~ 15` against the DC a lopsided clip leaves; a one-pole low-pass at 300 Hz (tone 0) to 18 kHz (100), even in octaves; and mixed with the dry sound by `dist`, its mix: the voice sums the dry with mix × (driven − dry). At mix 100 a sine at drive 100 is a square at 0.36 of its peak, as loud as at drive 50; at mix 0 the dry passes untouched | verified |
+| Its characters | Brendan's (2026-11-05), the same chain's numbers, lo hi k lo2 hi2 and a trim: **soft**, −0.25 0.25 1 −1 1 and 0.9, a sine-shaped soft clip; **hard**, −0.25 0.25 3 −0.6 1 and 1, a hard knee, lopsided; **fold**, unclipped, 1 −1 1 and 1.1, the sine folding back past a quarter cycle; **crush**, −0.25 0.25 1.5 −1 1 and 0.8, its gain 0.175 × 10^(drive/100), a range of ten, its makeup down to −6 dB, then rounded to 6 bits, 32 steps either side of 0, and held at 22 kHz × 2^(−0.03 × drive), 22 kHz at drive 0 to 2.8 kHz at 100. Choosing one is numbers, and costs nothing: the crush's rounding and hold are a subpatch, `pd crush`, with a `switch~` of its own, on only for crush | verified |
 | A track's delay | `e_delay`, beside its `c_voice`: what the voice throws it at the delay's level, squared, `(level/100)²`, plus its own echoes at feedback × 0.95, into a 4 s buffer, read a note value later: the time in steps times a step's length, 15000 / BPM ms from the tempo bus, so it follows the tempo, gliding there over 50 ms. A half note at 240 BPM echoes 500 ms after its hit, to the sample. The level is what goes in, so echoes already made ring out when it goes down | verified |
 | The reverb | `e_verb`, one for the kit, since sixteen are more than the Organelle can afford: what every voice and delay throws it at its track's send, squared, through four of Freeverb's combs, 25 to 31 ms, each damped by a one-pole low-pass in its feedback, then two of its allpasses, mono. Size is the combs' feedback, 0.7 to 0.98, half a second to ten; damping their low-pass, none at 0 to about 2.1 kHz at 100. Its output is the reverb alone | verified |
 | Off when unused | Each effect has a `switch~`: a distortion is on while its mix is above 0; a delay while its level is, and at 0, once what goes into it has been below −80 dBFS for its time and 100 ms, its buffer then cleared; the reverb while any send is above 0, and when every one is 0, once it has been below −80 dBFS for 300 ms. The voice's throws to its delay and the reverb are switched the same way, on while its level or its send is | verified |
@@ -113,16 +114,18 @@ each track's distortion and delay and the reverb they share (2026-11-05). *The k
 | | | Evidence |
 |---|---|---|
 | Key | `<part>`, `drums`: a part of the section playing, put with the section policy, which `u_song` keeps ([songs.md](songs.md)) | unknown |
-| Line | The key, 512 velocities, track 1's 32 steps first, then the sixteen tracks' own last steps, 0 for one that follows the global one, their randomness, their volumes, their pitches, the time signature's two numbers, the drunkenness, the swing and the global last step: 582 atoms, zeros included. Once any effect is off its starting point, each track's eight effects follow, `R.FX`'s order, drive, tone, mix, note, feel, feedback, level and send, sixteen of each, then the reverb's size and damping: 712 (Brendan, 2026-11-05: saved per section, with the pattern). While none is, the line stays 582, so a song saved before the effects is put back as it was and nothing about it reads as a change to save. Once any track is muted or soloed, the sixteen mutes and the sixteen solos, 1 or 0, follow the effects, written whether any effect moved or not: 744 (Brendan, 2026-11-05: saved per section, with the pattern). Knob 3's last step is the selected track's own, in the line; knobs 2 and 4 are the global last step and the swing | verified |
+| Line | The key, 512 velocities, track 1's 32 steps first, then the sixteen tracks' own last steps, 0 for one that follows the global one, their randomness, their volumes, their pitches, the time signature's two numbers, the drunkenness, the swing and the global last step: 582 atoms, zeros included. Once any effect is off its starting point, each track's eight effects follow, `R.FX`'s order, drive, tone, mix, note, feel, feedback, level and send, sixteen of each, then the reverb's size and damping: 712 (Brendan, 2026-11-05: saved per section, with the pattern). While none is, the line stays 582, so a song saved before the effects is put back as it was and nothing about it reads as a change to save. Once any track is muted or soloed, the sixteen mutes and the sixteen solos, 1 or 0, follow the effects, written whether any effect moved or not: 744 (Brendan, 2026-11-05: saved per section, with the pattern). Once any track's distortion is not soft, the sixteen characters, 1 to 4, follow the mutes and solos, written whether anything before them moved or not: 760 (Brendan, 2026-11-05: saved per section). Knob 3's last step is the selected track's own, in the line; knobs 2 and 4 are the global last step and the swing | verified |
 | Written | `put section` at load and at once after the patch's own messages (a restore, init); after a press or the phone, **held up to 100 ms**: the first change sets a clock, later ones only mark it held, and the clock puts the pattern as it then stands. `bar`, and `sync` from `u_song` before it saves, reverts, copies or starts a section, put it at once. A put carries 581 numbers, and every change sending one, a drag on the phone 30 to 60 a second, cost 4 to 6 ms each on the Organelle and crackled the audio, which runs with a 6 ms buffer (2026-11-05): held, a drag costs 2 ms a change, the put ten times a second. `u_song` writes the song's draft within 2 s | verified |
 | Restored | When its section starts, the first at ~3.5 s, and put straight back | unknown |
 | A line without the effects | Of 581 numbers, or any length below 711 the Lua takes: every effect comes back off, at its starting point, and `c_kit` is told whichever changed. So an old section's drums play dry | verified |
 | A line without mute and solo | Of 711 numbers or fewer, any length the Lua takes: every track comes back unmuted and unsoloed, and the page is told when that changes its pads. So an old section plays every track | verified |
+| A line without the characters | Of 743 numbers or fewer, any length the Lua takes: every track comes back soft, and `c_kit` is told whichever changed. So an old section's distortion is soft. Its tone stays as it was saved: a section saved with an effect moved before the tone opened holds tone 60 | verified |
 | A line of exactly 579 | Saved before sections, without the swing and the global last step: those in force stay, and the put after it writes the new line | verified |
 | `section-1-<part>` | The `auto` key the pattern had before sections: a restore of it from `u_state`, at the first load after the update, is taken the same way and put as the section's, and the auto file drops it at its next flush | verified |
 | A line of exactly 256 | The 16-step pattern this replaced: each track's sixteen go to its first sixteen steps, and the put after it writes the new line | verified |
 | A line of exactly 563 | Saved before 2026-11-05, with a skip and a move chance per track where the randomness and the volumes are now: its skip chances come back as each track's randomness, which took their place, its move chances are dropped, and its time signature and drunkenness are read from where it kept them. The put after it writes the new line | verified |
 | A short or long line | The Lua takes what the line holds, as far as the drunkenness, a symbol as 0, and leaves the rest as they were; the put after it writes all of it. A line of 528, from before the drum screen's settings, comes back at 4/4, sober, with no randomness and every track at 0 dB and its own pitch | verified |
+| A 760-atom line | The sequencer gate makes track 4's distortion fold over OSC, as the phone sends it: it is put at once, its character after the mutes and solos, `c_kit` is told `char 4 3`, and the final pattern reaches the song's draft whole | verified |
 | A 744-atom line | The sequencer gate mutes and then solos track 1 over OSC, as the phone sends them: each is put at once, the final pattern reaches the song's draft whole, track 1 muted and soloed, and its notes stop and start as the rules say | verified |
 | A 712-atom line | Written and read whole by `u_song`'s Lua; the sequencer gate's seed, a song of one section, holds a last step of its own, a volume, a pitch, 7/8 and four tracks' effects and the reverb's size, which come back, and `c_kit` is told the effects that moved since load and no others, and the final pattern reaches the song's draft | verified |
 
@@ -375,10 +378,27 @@ beside the live one (its Reference page, *Cut It's drum effects*):
 |---|---|
 | The kit at rest, every effect off | 1.7%, 0.6 more than before the effects |
 | A voice sounding, no effect on | 0.74–0.78%, 0.1 more than before |
-| A distortion, while its voice sounds | 0.33% |
+| A distortion, while its voice sounds | 0.33%, before its characters (below) |
 | A delay | 1.05% |
 | The reverb | 1.7% |
-| All sixteen with every effect on, every voice sounding | 39–42%, sixteen voices alone 13.5–14.2% |
+| All sixteen with every effect on, every voice sounding | 39–42%, sixteen voices alone 13.5–14.2%, before the characters |
+
+⚠️ **The distortion's characters are estimates until measured on the Organelle** (2026-11-05):
+each character's `e_drive` and the one before them, 64 copies each fed a drum sample, 60 s of
+audio under `-batch` on the Mac, the least cycles of five runs less the sample players alone,
+scaled to the 0.33% the old one measured on the Organelle. The low figure is the cycles' ratio,
+the high one the instructions', which the Mac's Reference page counts the nearer guess where a
+box calls a function:
+
+| Character, while its voice sounds | Against the old distortion | Estimate on the Organelle |
+|---|---|---|
+| Soft, hard or fold | 2.0× the cycles, 2.55× the instructions | 0.65–0.85% |
+| Crush | 2.8× the cycles, 4.1× the instructions | 0.9–1.35% |
+
+So all sixteen with every effect on, every voice sounding, would be about 44–51% rather than
+39–42%. The crush stage computed for every character, rather than behind its own `switch~`, cost
+soft, hard and fold 2.6× the cycles. At rest nothing changes: the distortion is off at mix 0, its
+crush stage with it.
 
 **An effect unused costs nothing**, or as near as Pd allows: each has a `switch~`, off while its
 mix, its level or every send is 0, and a delay or the reverb stays on after that only until its
@@ -406,9 +426,18 @@ each catches its throws in the block they were made, and only a voice's throw to
 a block late, 64 samples, which `e_delay` takes off the time. `kit-assert` holds an echo to the
 sample, and `audio-assert` holds exactly these throws, all private to `c_kit`.
 
-**The distortion is a cubic soft clip, not `tanh`.** `expr~ tanh` cost 1.4% of the core a voice;
-the clip, five plain multiply and add objects, 0.33%, and at low levels and drive 0 it is the dry
-sound, as `tanh` is.
+**The distortion is one chain of plain boxes, four characters by its numbers** (Brendan,
+2026-11-05: it "should make the samples sound bigger, harsher, more distorted"). The cubic soft
+clip it replaced was weak more for its level and its tone than its curve: its makeup fell as
+1/√g all the way, so at drive 100 a hit's peaks sat 18 dB under the dry sample, and its tone
+started at 60, a 3.5 kHz low-pass. Now more drive is louder and dirtier, never quieter: the
+makeup stops at −8 dB, and at drive 75 the research measured a kick +2 dB, a snare +4 and a hat
++1 against the dry, by their level, their peaks never above the dry's. `[-~ 0.25] [cos~]` is a
+sine of its input, a soft clip below a quarter cycle and a fold past it, so soft, hard and fold
+are five numbers of one chain (`~/Sites/!reference/pure-data.md`, *Distortion*), and crush is
+soft's into a rounding and a hold. `expr~ tanh` cost 1.4% of the core a voice. There is no
+oversampling: a clipped drum's aliasing is part of its edge, and oversampling took it off and
+cost 5.6 times the old clip.
 
 **The delay's time is a note value**, 1/2 to 1/32, straight, triplet or dotted (Brendan,
 2026-11-05), since that is how he counts it: `c_steps` tells `c_kit` it in steps, and `c_kit`
@@ -419,12 +448,14 @@ not the drunkenness or the swing, which bend the steps alone.
 each that changes. Pd fires an abstraction's loadbangs before its parent's, `c_steps`' before
 `c_kit`'s, so a value `c_kit` set at load would land after `c_steps`' and undo it; each box holds
 its starting point instead. A restore tells `c_kit` only the effects that changed, since every
-message out of the Lua costs about 0.025 ms on the Organelle and there are 114 of them: a
+message out of the Lua costs about 0.025 ms on the Organelle and there are 130 of them: a
 section's restore lands on a step.
 
 **The line grows only when an effect is used.** It stays the 581 numbers it was while every effect
 is at its starting point, so a song saved before the effects restores, is put straight back as it
-was, and reads as nothing to save; once one moves, the line is 711.
+was, and reads as nothing to save; once one moves, the line is 711. The characters came after
+mute and solo, so they are saved after them, 759 once any track is not soft, and a line saved
+before them loads every track soft.
 
 ### Mute and solo stop the hits, not the sound
 
@@ -447,8 +478,8 @@ mutes as they were. The page is told which pads won't play, `quiet`, only when t
 mute under a solo and a restore that changes nothing send it nothing.
 
 **The line grows only when they are used**, as it did for the effects: 581 numbers with neither,
-711 with an effect moved, 743 once a track is muted or soloed, so an old section loads and is put
-back as it was, with nothing muted.
+711 with an effect moved, 743 once a track is muted or soloed, 759 once a track's distortion is not
+soft, so an old section loads and is put back as it was, with nothing muted.
 
 ## Open
 
@@ -469,6 +500,10 @@ back as it was, with nothing muted.
 - ⬜ **The effects have not played on the rig**: how the distortion, the delays and the reverb
   sound on Brendan's samples, their levels against the dry drums, and the instrument's CPU with
   them on, beside the second Pd's numbers above. See `cut-it/drum-timing`.
+- ⬜ **The distortion's four characters have not played on the rig** (`cut-it/drum-timing`): how
+  soft, hard, fold and crush sound on Brendan's samples, drive's level against the dry, and their
+  CPU on the Organelle beside the Mac's estimates above. The sequencer checklist's steps 40 to 43
+  judge the sound.
 - ⬜ **Mute and solo have not been used on the rig** (`cut-it/drum-timing`): the phone's M and S,
   the Launchpad's dim pads, and the tails ringing out after a mute. The sequencer checklist's
   steps 36 to 39 judge them.

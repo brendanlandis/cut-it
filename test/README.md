@@ -42,18 +42,18 @@ were false.
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 64: 39 in Lua, 25 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 140 | `device/phone` |
+| `phone-assert.sh` | 143 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 253: 42 read, 211 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `touchosc-assert.sh` | 255: 43 read, 212 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 362: 275 in Lua, 87 in Pd | `module/sequencer` |
-| `kit-assert.sh` | 38 | `module/sequencer` — the kit and its effects, as a signal |
+| `sequencer-assert.sh` | 377: 288 in Lua, 89 in Pd | `module/sequencer` |
+| `kit-assert.sh` | 48 | `module/sequencer` — the kit and its effects, as a signal |
 | `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1999 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
+**2029 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1992**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **2022**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh`, `song-assert.sh`, `tempo-assert.sh` and `display-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
@@ -223,6 +223,26 @@ swapped (read 2, Lua 2), the mix knob sending `mix` (read 2, Lua 1), the root ne
 effect (Lua 1), every effect knob sending for track 1 (Lua 2), the pads' last step unclipped (Lua
 1), and the contrast audit reading a vertical radio as one segment (read 1).
 
+✅ **The distortion's characters were made to fail, check by check** (2026-11-05, Brendan's four
+characters, its makeup and its peak scaling), each against a mutation of the code, the file then
+restored. `kit-assert`: `c_voice` never telling `e_drive` its peak (6 failed: the level at drive
+100, the peak over the dry's, a quiet sample driven less and louder than its share, hard and fold
+unrecognized), the old makeup, 1/√g all the way (3: the level, drive 100 quieter than 50, and
+under the floor), `c_kit`'s cord for `char` cut (3: hard, fold, crush), the crush stage never
+switched on (1), soft crushing too (1: soft again), hard given soft's numbers (1), fold clipped as
+soft (1), `pd crush` without its `switch~` (3: every character crushed and the static check), and
+the old `e_drive` whole (9). `c_steps_test.lua`: `char` not taken (stopped the run), the tone
+starting at 60 (19), the characters never saved (4), saved in the effects' block (21), the
+restore never reading them (4), a short line keeping them (2), the line 759 with none moved (5),
+the phone's state without them (12), `c_kit` never told them at load or a restore (6), and the
+character clipped to 5 (3). `sequencer-assert`'s Pd half: the characters never saved (2: the put
+and the draft) and the phone's `char` never told to `c_kit` (1). `phone-assert`: `u_net`
+acknowledging `char` as a button (2) and the command misspelt on its way (1). `touchosc-assert`,
+each layout rebuilt with the fault: the radio vertical (read 2, the contrast audit among them), its
+words hard-coded with two swapped (read 1), sending `character` (read 2, Lua 1), the root never
+handing it its value (stopped the Lua), drive's knob over the radio inside its own effect (read 2,
+the contrast audit among them), and the radio left out of the distortion's controls (read 2, Lua 2).
+
 ✅ **Mute and solo were made to fail, check by check** (2026-11-05, Brendan's mute and solo per
 track), each against a mutation of the code, the file then restored from git. `c_steps_test.lua`:
 a muted track still playing (6 failed), a solo heeding the mutes (1), a muted track rolling no dice
@@ -260,7 +280,10 @@ surfaces gets two gates for the same reason.
 soundfile and asserts the passthrough is not silent, not swapped and not attenuated, that a drum
 reaches the left alone, and that nothing reports a level, since the info bar is the meter; the second
 records `c_kit`'s drums and asserts their levels, silences and retrigger, and a track's volume and
-pitch, read back as a level, a frequency and a length. Every other gate here
+pitch, read back as a level, a frequency and a length, and the distortion's: more drive never
+quieter, a sample driven by its own peak, and soft, hard, fold and crush each a shape of its own,
+read back as a level, a crest, a lopsidedness, crossings a cycle and whether a 441 Hz sine still
+repeats every hundred samples. Every other gate here
 asserts on messages, which is what made the audio path invisible for as long as it was.
 
 **`midi-emitters-assert.sh` belongs to no device on purpose.** Its only claim is structural — *these
@@ -667,7 +690,8 @@ on the checklist page for each. The drum screen's sixteen pads each drag their o
 pitch, last step and randomness, the four its radio chooses between; the radio is TouchOSC's own,
 vertical, its first segment on top, a word over each, and sends nothing, and so is the effect radio
 beside it, distortion, delay and reverb (Brendan, 2026-11-05), whose controls sit to its right and
-send exactly the effect commands `c_steps` takes; under each pad its M and S, 30 by 20, M red and S
+send exactly the effect commands `c_steps` takes, the distortion's character a horizontal radio of
+`c_steps.lua`'s `R.CHARS` over its knobs; under each pad its M and S, 30 by 20, M red and S
 teal, each sending its own track's `mute` or `solo`; and a pad is a relative fader, about 20 points
 of drag a step. **Every control sits on the editor's 20-point grid**, inside the margins, **but the
 drum screen's pads and their M and S**, 112 controls named one by one, which step by 10 and start 10
@@ -680,7 +704,9 @@ spellings could drift apart with nothing failing until somebody is at the rig. E
 `u_net` sends must light a button. **And every pairing meets WCAG AA contrast as TouchOSC draws
 it**: each label against what lies under it, 4.5:1 or 3:1 for large text, each control's outline
 against the page, 3:1, and each tab's text and states, from the resting fill TouchOSC draws at 26%
-of a color (measured, TouchOSC's Reference page).
+of a color (measured, TouchOSC's Reference page). Each effect's controls are audited against their
+own effect's and the screen's alone, since the phone shows one effect's at a time, as a pager one
+page, where the file shows every one in the same place for the editor.
 
 Then the layout's own scripts, unpacked into the scratch directory and run by
 `test/gate/lua/touchosc_test.lua` under `test/gate/lua/lib_touchosc.lua`, a stand-in for TouchOSC as
@@ -783,7 +809,9 @@ exactly the hits and velocities their coins fell to, and let go, the loop of 3 g
 at full drunkenness at most 60 of 96 sixteenths hold exactly one step. Then track 1 is muted and
 then soloed as well, over OSC: muted, it is silent while track 2 plays, soloed, it plays though
 muted while track 2 is silent, each is put as a 743-number line, and the Launchpad shows the pads
-that won't play dim, pink or the selected red at a quarter; the song's draft ends with both.
+that won't play dim, pink or the selected red at a quarter. Then track 4's distortion is made fold,
+over OSC: it is put as a 759-number line, its character after the mutes and solos, and `c_kit`'s
+stand-in hears `char 4 3` and nothing else; the song's draft ends with all three.
 
 ✅ **Proven red before it was trusted**: with `c_steps` absent (the known exit 2), against the patch
 before the sequencer was wired (20 of 28), and on eight mutations — the step rule inverted, PLAY not

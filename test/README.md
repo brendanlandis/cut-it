@@ -27,7 +27,7 @@ were false.
 |---|---|---|
 | `midi-emitters-assert.sh` | 7 | **no page** — see below |
 | `init-assert.sh` | 17 | `module/boot` |
-| `audio-assert.sh` | 17 | `module/audio` |
+| `audio-assert.sh` | 18 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
 | `display-assert.sh` | 112: 66 in Lua, 46 in Pd | `module/display` — the grid, its drum page's painter, page 3's synth pads and page 1's tap pad included |
 | `oled-assert.sh` | 69 | `module/display` — the OLED |
@@ -42,18 +42,18 @@ were false.
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 64: 39 in Lua, 25 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 143 | `device/phone` |
+| `phone-assert.sh` | 146 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 255: 43 read, 212 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `touchosc-assert.sh` | 261: 44 read, 217 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 377: 288 in Lua, 89 in Pd | `module/sequencer` |
-| `kit-assert.sh` | 48 | `module/sequencer` — the kit and its effects, as a signal |
+| `sequencer-assert.sh` | 393: 302 in Lua, 91 in Pd | `module/sequencer` |
+| `kit-assert.sh` | 64 | `module/sequencer` — the kit and its effects, the reverb's three types among them, as a signal |
 | `synths-assert.sh` | 97: 72 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**2029 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
+**2071 checks.** ⚠️ **Twenty-four of the twenty-five gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **2022**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **2064**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh`, `song-assert.sh`, `tempo-assert.sh` and `display-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
@@ -268,6 +268,30 @@ Lua stopped), an M a step wide (read 1), the letters swapped (read 1), a lit let
 1), M and S sending as the state lights them (Lua 6), a pad selecting the next track (read 1, Lua
 2), a pad's script on its old 100 steps (Lua 2), and an 88-number state drawing the effects (Lua 1).
 
+✅ **The reverb's three types were made to fail, check by check** (2026-11-05, Brendan's choice of
+plate, gigaverb or freeverb), each against a mutation of the code, the file then restored from
+git, after the rebase onto the distortion's characters. `c_steps_test.lua`: the type never saved
+(3 failed), never restored (4), the drum screen's type never told to `c_kit` (2), the phone's
+state without it (11), the type unclipped (2), not told at load (6), a short line keeping it (2),
+never counted as off the plate (3), a sequencer starting on gigaverb (43), the type a place late
+in the line (7), the same type saved again (2), and told again at every restore (9).
+`sequencer-assert`'s Pd half: the press missing (4: the put, `c_kit` told, the draft, and
+`bad-selector` on err). `phone-assert`: `u_net` acknowledging `verb-type` (1). `touchosc-assert`,
+each layout rebuilt with the fault: the radio vertical (read 2, the contrast audit among them),
+its words reordered (read 1), sending 1 for the plate (Lua 5), the root never handing it the type
+(Lua 3), the radio outside the reverb's controls (read 2, Lua 2), and a 131-number state read as
+the plate (Lua 1). `kit-assert`: every type playing the plate (2: gigaverb's and freeverb's first
+reflections), `e_tail` turning an engine off 300 ms after it is left, tail or no tail (1: the ring
+out), the plate taking the sends after a change (4: both levels, freeverb's reflection and the
+burst after the change), freeverb 3.5 dB loud (1), gigaverb 4.8 dB loud (1), the plate never
+decaying (7), gigaverb without its `switch~` (1), the plate and freeverb swapped (2), a send of 0
+still sending (1), the sample count doubled (1), freeverb without its `e_tail` (5), and two plates
+in `e_verb` (2). `audio-assert`: freeverb throwing to the reverb's own `catch~` (1), and gigaverb's
+`receive~` renamed (1). Two checks passed their fault on the first try and were rebuilt before
+they were trusted: *RING*'s reference was taken while the plate still rang, so a plate that kept
+taking the sends was louder in both; and the phone's radio was first checked on the plate, where it
+starts in the file anyway.
+
  ⚠️ Three pages name more than one gate, and that is the rule working rather than
 bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
 master reference and the clock cut from it, and `device/organelle` covers a front panel and an LED.
@@ -283,7 +307,8 @@ records `c_kit`'s drums and asserts their levels, silences and retrigger, and a 
 pitch, read back as a level, a frequency and a length, and the distortion's: more drive never
 quieter, a sample driven by its own peak, and soft, hard, fold and crush each a shape of its own,
 read back as a level, a crest, a lopsidedness, crossings a cycle and whether a 441 Hz sine still
-repeats every hundred samples. Every other gate here
+repeats every hundred samples, and the reverb's three types, each told apart by when a click's
+reverb starts. Every other gate here
 asserts on messages, which is what made the audio path invisible for as long as it was.
 
 **`midi-emitters-assert.sh` belongs to no device on purpose.** Its only claim is structural — *these

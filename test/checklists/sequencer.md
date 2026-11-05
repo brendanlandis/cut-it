@@ -2,7 +2,7 @@
 
 Page 2's drum page on the Launchpad, the sequencer playing the drum samples from the Organelle, and the pattern surviving a reload. `sequencer-assert` proves the notes, the frames and the file; what is left is what only the rig can show — whether the page reads, and how the drums sound.
 
-43 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
+46 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [sequencer](../../ref/module/sequencer.md).
 
 - [ ] **1. The drum page**
   - **Need:** A fresh load of the patch with no saved pattern — the selection resets at every load and a saved step would be lit.
@@ -222,3 +222,21 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone tap pad 1, then distortion, and tap crush. Press the third button, section 1, and let it start, then the fourth again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn. Last, on the phone turn pad 1's mix back to 0 in each section and save.
   - **Pass if:** In section 2 pad 1 is crushed and the phone's radio shows crush; in section 1 it is soft again and the radio shows soft; back in section 2, crush. After the reload each section has the character it had when saved.
   - **Note:** A section saved before the characters loads every track soft, and keeps the tone it was saved with, so one saved with the old tone of 60 stays dull until its tone is turned up. That is `sequencer-assert`'s and the Lua's; this is the rig.
+
+- [ ] **44. The reverb's three types, on the drums**
+  - **Need:** Brendan's samples deployed, the phone linked, 4/4 at 120 BPM, nothing muted or soloed and every effect off. On page 2, light pad 1's steps 1, 9 and 11, pad 5's steps 5 and 13, and pad 4's every odd step: pad 1 the bottom row's first, pad 4 its fourth, pad 5 the second row's first, the kick, hat and snare of the research's renders.
+  - **Send:** `start bang; mode mode-2`
+  - **Do:** On the phone tap pad 5, then reverb: plate is lit under size and damping. Turn its send to about 70%, then tap pad 4 and turn its send to about 40%, and set size to about 30% and damping to about 50%. Listen for two bars, then tap gigaverb, two bars, then freeverb, two bars, then plate again. Then tap a type just after a snare, while its tail is sounding.
+  - **Pass if:** The snare and the hats each have a room around them in every type, and each type changes the room's character but not its loudness or its length: nothing jumps louder or quieter at a tap. A tail sounding at the tap dies away on its own rather than cutting off, and the next hits sound in the new type. No click, crackle or dropout at any tap.
+  - **Note:** Which of the three he wants is his call (Brendan, 2026-11-05: "a choice on the phone between all three"); tell the session, which can make it the starting point. That each type plays its own engine, rings out when changed away from, and matches the others' level is `kit-assert`'s ([sequencer](../../ref/module/sequencer.md), *Three reverbs behind the same controls*); this is how they sound on his drums.
+
+- [ ] **45. Size and damping mean the same in each type**
+  - **Need:** Playing, from the step before, plate lit.
+  - **Do:** Turn size all the way down, then to about 80%, then back to about 30%. Turn damping all the way left, then all the way right, then back to about 50%. Tap gigaverb and do both again, then freeverb.
+  - **Pass if:** In each type size takes the tail from about half a second to a long wash, about as long in all three at the same setting; damping takes the brightness out of each tail alike, none going dull or silent at its right end. Size and damping keep where they were set across a change of type: there is one reverb.
+
+- [ ] **46. The type is saved with a section**
+  - **Need:** The pattern from the steps before, playing, in section 1 with plate lit, and section 2 a copy of it: on the phone's sections page, page 7, select section 1 and tap **new, a copy of**.
+  - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone's drum screen tap reverb, then freeverb. Press the third button, section 1, and let it start, then the fourth again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn.
+  - **Pass if:** Section 2 plays freeverb and the phone shows it lit; section 1 plays the plate, plate lit; back in section 2, freeverb again. After the reload each section has the type it had when saved, and a section saved before the types plays the plate.
+  - **Note:** The type is a section's, as size and damping are (Brendan, 2026-11-05). That a line without it loads as the plate is `sequencer-assert`'s.

@@ -96,7 +96,7 @@ stops the instrument**, because loading any patch restarts Pd. See
 | `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_song` `u_err` `u_net` `u_present` `u_mother-stub` |
 | `g_` | One display surface, and its sole owner | `g_oled` `g_grid` `g_led` |
 | `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` `c_kit` `c_voice` `c_synth` |
-| `e_` | An effect stage: the drums' three, inside `c_kit` (2026-11-05); v0.4's filter stages to come | `e_drive` `e_delay` `e_verb` |
+| `e_` | An effect stage: the drums' three, inside `c_kit` (2026-11-05), the reverb's three engines and the switch they share inside `e_verb`; v0.4's filter stages to come | `e_drive` `e_delay` `e_verb` `e_plate` `e_gigaverb` `e_freeverb` `e_tail` |
 | `.sh` | Run through `[shell]` — the first five once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `codec-gain.sh` `recover.sh` |
 | `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` `cut-it-synth-page.txt` `cut-it-arrangement-page.txt` |
 | `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `c_synth.lua` `c_synth-lua.pd_lua` `g_grid.lua` `g_grid-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `u_tempo.lua` `u_tempo-lua.pd_lua` `u_song.lua` `u_song-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua`, and `lua-face.lua`, what every one of those classes shares |
@@ -134,7 +134,7 @@ under `ref/`. Nothing in either is deployed.
 
 ⛔ **A gate is not trusted until it has failed** — see the **`gate`** skill.
 
-**Twenty-five gates and 2029 checks**, and what each one protects is in
+**Twenty-five gates and 2071 checks**, and what each one protects is in
 [test/README.md](test/README.md). ✅ **No page declares `Gate: none` any more.** ⛔ **Two of them read
 a SIGNAL** — `audio-assert.sh` records `u_root`'s output to a soundfile and `kit-assert.sh` the drums; every other gate in the
 project asserts on messages, which is what kept the audio path invisible for so long.

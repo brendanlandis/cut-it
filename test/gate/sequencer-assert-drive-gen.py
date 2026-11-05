@@ -10,8 +10,8 @@ STOP, knob 2 held at 16 and then setting the last step to 3, PLAY again, panic.
 Then knob 3 giving track 2 its own last step of 6, a press past it, the two
 tracks looping on their own, and the drum screen's snap, sent to u_net over OSC
 as the phone sends it, landing at PLAY. Then swing, a repeat pad, the drum
-screen's pads (a track's volume, pitch and randomness, over OSC too) and
-drunkenness.
+screen's pads (a track's volume, pitch and randomness, over OSC too), track 1
+muted and then soloed as well, over OSC, and drunkenness.
 
 The state directory holds a seeded pattern (scratch-gates.py), so the restore at
 ~3.5 s is under test too. RESTORE opens a second before it and closes a second
@@ -140,18 +140,28 @@ SEQ = [
     (18400, "RAND", ["\\; seqgate-osc drums randomness 1 100"], GAP),
     (18500, "RA-PLAY", ["\\; start bang"], GAP),
     (19600, "RA-STOP", ["\\; stop bang", "\\; seqgate-osc drums randomness 1 0"], GAP),
+    # The drum screen's mute and solo, over OSC as the phone sends them (Brendan, 2026-11-05):
+    # track 1 muted for six steps, sober, of the global loop of 3, while track 2 plays its step
+    # 1; then track 1 soloed as well, mutes ignored, for six more, while track 2 plays nothing.
+    # Both stay, so the song's draft, written every 2 s, holds them at the end.
+    (19700, "MUTE", ["\\; seqgate-osc drums mute 1 1"], GAP),
+    (19850, "MU-PLAY", ["\\; start bang"], GAP),
+    (20550, "MU-STOP", ["\\; stop bang"], GAP),
+    (20650, "SOLO", ["\\; seqgate-osc drums solo 1 1"], GAP),
+    (20800, "SO-PLAY", ["\\; start bang"], GAP),
+    (21500, "SO-STOP", ["\\; stop bang"], GAP),
     # Drunkenness at its top, from the drum screen over OSC, then 96 windows a
     # sixteenth wide, each holding one step when sober. At the top every step
     # strays, by up to two steps, so most windows hold none or two or more.
-    (19800, "DRUNK", ["\\; seqgate-osc drums drunk 100"], GAP),
-    (19900, "DR-PLAY", ["\\; start bang"], GAP),
-] + [(19980 + 125 * k, "DR-%d" % (k + 1), [], GAP) for k in range(96)] + [
-    (31980, "DR-STOP", ["\\; stop bang"], GAP),
+    (21600, "DRUNK", ["\\; seqgate-osc drums drunk 100"], GAP),
+    (21700, "DR-PLAY", ["\\; start bang"], GAP),
+] + [(21780 + 125 * k, "DR-%d" % (k + 1), [], GAP) for k in range(96)] + [
+    (33780, "DR-STOP", ["\\; stop bang"], GAP),
     # A drag on the drum screen, as the phone sends one: no sync, so c_steps' clock puts once,
     # about 100 ms after the first, ending where it was, at 100.
-    (32050, "DRAG", ["\\; seqgate-osc drums drunk 50", "\\; seqgate-osc drums drunk 70",
+    (33850, "DRAG", ["\\; seqgate-osc drums drunk 50", "\\; seqgate-osc drums drunk 70",
                      "\\; seqgate-osc drums drunk 100"], GAP),
-    (32350, "DONE", [], GAP),
+    (34150, "DONE", [], GAP),
 ]
 
 # Every window but DRAG: each message, then state sync 15 ms after it (see the top).
@@ -161,7 +171,7 @@ SEQ = [(ms, mark, bodies if mark == "DRAG" else
          for off, text in [body if isinstance(body, tuple) else (j * gap, body)]
          for b in ((off, text), (off + SYNC_AFTER, "\\; state sync"))], gap)
        for ms, mark, bodies, gap in SEQ]
-QUIT_MS = 32700
+QUIT_MS = 34500
 
 # The phone's way in: OSC to u_net's own port, which the gate runner hands each
 # gate in CUTIT_INPORT (lib_scratch's state_dir does the same), connected after

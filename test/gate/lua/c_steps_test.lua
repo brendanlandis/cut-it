@@ -51,8 +51,10 @@ end
 -- The saved line: 512 velocities, then the 16 tracks' own last steps, their randomness, their
 -- volumes and their pitches, then the time signature, the drunkenness, the swing and the global
 -- last step: 581 numbers; then, when x gives any effect, each effect of every track and the
--- reverb's two: 711. x holds what differs from a new sequencer's: randomness, vol and pitch by
--- track, num, den, drunk, swing, last, and fx and verb.
+-- reverb's two: 711; then, when x mutes or solos any track, the sixteen mutes and the sixteen
+-- solos, the effects before them whether given or not: 743. x holds what differs from a new
+-- sequencer's: randomness, vol and pitch by track, num, den, drunk, swing, last, fx and verb, and
+-- mute and solo by track.
 local function line(pat, own, x)
   x = x or {}
   local l = {}
@@ -65,11 +67,16 @@ local function line(pat, own, x)
   end
   l[CELLS + 65], l[CELLS + 66], l[CELLS + 67] = x.num or 4, x.den or 4, x.drunk or 0
   l[CELLS + 68], l[CELLS + 69] = x.swing or 50, x.last or 16
-  if not x.fx and not x.verb then return l end
+  local flagged = x.mute or x.solo
+  if not x.fx and not x.verb and not flagged then return l end
   for _, f in ipairs(FX) do
     for t = 1, 16 do l[#l + 1] = fx_of(x.fx, f[1], t, f[2]) end
   end
   for _, f in ipairs(VERB) do l[#l + 1] = (x.verb or {})[f[1]] or f[2] end
+  if not flagged then return l end
+  for _, which in ipairs({ "mute", "solo" }) do
+    for t = 1, 16 do l[#l + 1] = (x[which] or {})[t] or 0 end
+  end
   return l
 end
 
@@ -143,10 +150,11 @@ end
 -- A knob position for a step: what R.knob_step reads back as n.
 local function at(n) return (n - 1) / 31 end
 
--- The phone's 98 numbers, from the few that differ: lasts and owns by track, then the time
+-- The phone's 130 numbers, from the few that differ: lasts and owns by track, then the time
 -- signature, the drunkenness and the swing (4 4 0 50 unless given), then every track's volume,
 -- pitch and randomness (per.vol, per.pitch and per.randomness by track, 0 unless given), then the
--- selected track's effects and the reverb's (per.fx and per.verb, as line's x.fx and x.verb).
+-- selected track's effects and the reverb's (per.fx and per.verb, as line's x.fx and x.verb), then
+-- every track's mute and every track's solo (per.mute and per.solo by track, 0 unless given).
 local function phone(playing, last, track, pending, lasts, owns, tail, per)
   per = per or {}
   local p = { playing, last, track, pending }
@@ -158,6 +166,9 @@ local function phone(playing, last, track, pending, lasts, owns, tail, per)
   end
   for _, f in ipairs(FX) do p[#p + 1] = fx_of(per.fx, f[1], track, f[2]) end
   for _, f in ipairs(VERB) do p[#p + 1] = (per.verb or {})[f[1]] or f[2] end
+  for _, which in ipairs({ "mute", "solo" }) do
+    for t = 1, 16 do p[#p + 1] = (per[which] or {})[t] or 0 end
+  end
   return p
 end
 
@@ -995,7 +1006,8 @@ equal("a new sequencer has every effect at its starting point, and every mix, le
       .. "off", { st.fx.drive[1], st.fx.tone[16], st.fx.dist[5], st.fx.note[2], st.fx.feel[2],
                   st.fx.feedback[9], st.fx.delay[3], st.fx.send[16], st.verb.size,
                   st.verb.damping }, { 50, 60, 0, 3, 1, 40, 0, 0, 50, 50 })
-equal("⛔ the line is 711 numbers, the effects after the 581 it held before them", R.SAVED, 711)
+equal("⛔ the line is 711 numbers with the effects, after the 581 it held before them, and 743 "
+      .. "with the mutes and solos after them", { R.SAVED_FX, R.SAVED }, { 711, 743 })
 R.internal.init(st, {})
 equal("⛔ a track's distortion mix from the drum screen, its own track's: saved, and to c_kit",
       R.presses.dist(st, { 3, 40 }),
@@ -1039,7 +1051,7 @@ equal("⛔ the reverb's size and damping are the kit's, one each: saved, and to 
 local P = 4 + 32 + 4 + 48
 equal("⛔ the phone hears the selected track's effects and the reverb's, after the rest",
       { R.phone(st)[P + 1], R.phone(st)[P + 3], R.phone(st)[P + 9], R.phone(st)[P + 10],
-        #R.phone(st) }, { 100, 0, 80, 20, 98 })
+        #R.phone(st) }, { 100, 0, 80, 20, 130 })
 R.select(st, 7)
 equal("... and another track's once it is selected: track 7's 1/2 triplet",
       { R.phone(st)[P + 4], R.phone(st)[P + 5], R.phone(st)[P + 6] }, { 1, 2, 40 })
@@ -1096,6 +1108,117 @@ st = R.new(1)
 equal("⛔ a sequencer that never loaded tells c_kit every effect at its first restore",
       #R.internal.restore(st, fxl), 5 + 32 + 114)
 
+print("\n--- mute and solo ---")
+-- Each track's mute and solo from the drum screen (Brendan, 2026-11-05): with any track soloed
+-- only the soloed play and the mutes are ignored; otherwise a muted track doesn't. A mute stops
+-- the track's hits in the rules, so what c_kit is already sounding rings out.
+-- The page's quiet pads: 1 for each track given, which won't play.
+local function quiet(...)
+  local q = zeros(16)
+  for _, t in ipairs({ ... }) do q[t] = 1 end
+  return { "page", "quiet", q }
+end
+st = R.new(1)
+equal("a new sequencer has nothing muted or soloed", { st.mute, st.solo }, { zeros(16), zeros(16) })
+equal("⛔ mute 3 1: saved, the line 743 with track 3's mute, and the page told track 3 is quiet",
+      R.presses.mute(st, { 3, 1 }),
+      { { "save", "list", line(zeros(CELLS), nil, { mute = { [3] = 1 } }) }, quiet(3) })
+equal("... the same again does nothing, nor does one without a track and a number",
+      { R.presses.mute(st, { 3, 1 }), R.presses.mute(st, { 3 }), R.presses.mute(st, {}),
+        R.presses.solo(st, { "x", 1 }), R.presses.solo(st, { 3, "x" }) }, { {}, {}, {}, {}, {} })
+equal("a track past 16 is 16, and a value is 0 or 1, rounded",
+      { R.presses.mute(st, { 40, 7 })[2], R.presses.mute(st, { 16, 0.4 })[2],
+        R.presses.mute(st, { 16, 0.6 })[2] }, { quiet(3, 16), quiet(3), quiet(3, 16) })
+R.presses.mute(st, { 16, 0 })
+st = R.new(1)
+for _, t in ipairs({ 1, 2, 3 }) do
+  R.presses.select(st, { t })
+  for k = 1, 4 do R.presses.step(st, { k, 100 }) end
+end
+R.presses.last(st, { at(16) })
+R.presses.last(st, { at(4) })
+R.internal.start(st, {})
+equal("three tracks playing every step", run(st, 2), "1:1@95,2@95,3@95 2:1@95,2@95,3@95")
+R.presses.mute(st, { 2, 1 })
+equal("⛔ track 2 muted plays nothing from the next step, and the rest play on",
+      run(st, 2), "3:1@95,3@95 4:1@95,3@95")
+equal("⛔ ... but a press on its pad still plays it, at full velocity, so it can be heard",
+      R.presses.pad(st, { 2, 90 })[1], { "note", "pad", { 2, 127 } })
+R.presses.randomness(st, { 2, 100 })
+R.presses.select(st, { 2 })
+for k = 1, 4 do R.presses.step(st, { k, 100 }) end
+st.rand = dice(0, 0.1, 0.99, 0, 0.1, 0.99, 0.123)
+equal("⛔ muted, its randomness adds no hit: two empty steps whose coins would play at level 8 "
+      .. "stay silent, and it still rolls its dice, so muting it changes no other track's",
+      { run(st, 2), st.rand() }, { "1:1@95,3@95 2:1@95,3@95", 0.123 })
+R.presses.randomness(st, { 2, 0 })
+for k = 1, 4 do R.presses.step(st, { k, 100 }) end
+equal("⛔ a repeat held replays the muted track's steps silently", (function()
+  R.presses.rep(st, { 2, 127 })
+  return run(st, 2)
+end)(), "1:1@95,3@95 2:1@95,3@95")
+R.presses.mute(st, { 2, 0 })
+equal("⛔ ... and unmuted while the repeat is held, it plays the repeat with the rest",
+      { run(st, 2), R.presses.rep(st, { 2, 0 })[1] },
+      { "1:1@95,2@95,3@95 2:1@95,2@95,3@95", { "page", "rep", { 0 } } })
+R.internal.start(st, {})
+equal("⛔ solo 1: only track 1 plays, and every other pad is quiet",
+      { R.presses.solo(st, { 1, 1 })[2], run(st, 1) },
+      { quiet(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), "1:1@95" })
+equal("⛔ a mute while another track is soloed changes no pad: saved, and the page told nothing",
+      { #R.presses.mute(st, { 3, 1 }), R.presses.mute(st, { 3, 1 }) }, { 1, {} })
+equal("⛔ with any solo the mutes are ignored: track 3 soloed though muted plays beside track 1",
+      { R.presses.solo(st, { 3, 1 })[2], run(st, 1) },
+      { quiet(2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), "2:1@95,3@95" })
+R.presses.solo(st, { 1, 0 })
+equal("⛔ no solo left, the mutes are heard again: track 3 muted, tracks 1 and 2 play",
+      { R.presses.solo(st, { 3, 0 })[2], run(st, 1) }, { quiet(3), "3:1@95,2@95" })
+equal("⛔ the phone hears each track's mute, then each track's solo, after the effects",
+      (function()
+        R.presses.solo(st, { 5, 1 })
+        return { #R.phone(st), R.phone(st)[98 + 3], R.phone(st)[98 + 2], R.phone(st)[114 + 5],
+                 R.phone(st)[114 + 3] }
+      end)(), { 130, 1, 0, 1, 0 })
+st = R.new(1)
+R.presses.dist(st, { 4, 30 })
+R.presses.solo(st, { 6, 1 })
+equal("⛔ the line is 743 while any track is muted or soloed, 711 again with an effect moved once "
+      .. "none is, and 581 with neither",
+      { #R.save(st)[3], (function() R.presses.solo(st, { 6, 0 }) return #R.save(st)[3] end)(),
+        (function() R.presses.dist(st, { 4, 0 }) return #R.save(st)[3] end)() }, { 743, 711, 581 })
+
+print("\n--- mute and solo in the restore ---")
+st = R.new(1)
+R.internal.init(st, {})
+local msl = line(zeros(CELLS), nil, { mute = { [2] = 1, [7] = 1 }, solo = { [9] = 1 } })
+back = R.internal.restore(st, msl)
+equal("⛔ a line of 743 brings the mutes and solos back, and is put straight back as it came",
+      { st.mute[2], st.mute[7], st.solo[9], st.mute[9], back[1] },
+      { 1, 1, 1, 0, { "save", "list", msl } })
+equal("⛔ ... and tells the page its quiet pads last, after c_kit", { #back, back[#back] },
+      { 5 + 32 + 1, quiet(1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16) })
+equal("⛔ the same line again tells the page nothing", #R.internal.restore(st, msl), 5 + 32)
+back = R.internal.restore(st, first(msl, 711))
+equal("⛔ a line of 711, saved before mute and solo, brings every track back unmuted and "
+      .. "unsoloed, tells the page, and is put back as the 581 it is",
+      { st.mute, st.solo, back[#back], back[1] },
+      { zeros(16), zeros(16), quiet(), { "save", "list", first(msl, 581) } })
+equal("⛔ so do lines of 581, 579, 563 and 256", (function()
+  local got = {}
+  for _, old in ipairs({ first(msl, 581), sectionless(zeros(CELLS)), old_line(zeros(CELLS)),
+                         zeros(256) }) do
+    R.internal.restore(st, msl)
+    R.internal.restore(st, old)
+    got[#got + 1] = R.flagged(st)
+  end
+  return got
+end)(), { false, false, false, false })
+local oddms = line(zeros(CELLS), nil, { mute = { [1] = 1 } })
+oddms[712], oddms[713], oddms[714 + 16] = 7, "x", -3
+R.internal.restore(st, oddms)
+equal("a mute or a solo is 1 or 0: a value over 1 is 1, a symbol or a value below 0 is 0",
+      { st.mute[1], st.mute[2], st.solo[3] }, { 1, 0, 0 })
+
 print("\n--- the Pd face ---")
 local class = T.load_class(DIR .. "c_steps-lua.pd_lua", DIR)
 check("c_steps-lua.pd_lua registers the class c_steps-lua", class and class._name == "c_steps-lua",
@@ -1146,6 +1269,15 @@ equal("a pad's volume from the drum screen: the volume on outlet 1, the phone's 
   local saved = T.fire(q, q.save_clock)
   return { saved[1][1], got[1], got[2][1], got[2][3][4 + 32 + 4 + 2] }
 end)(), { 3, { 1, "vol", { 2, -6 } }, 7, -6 })
+equal("⛔ a mute from the drum screen: the page's quiet pads on outlet 2 and the phone's state "
+      .. "on outlet 7, its put held as any press's, and the line its clock puts mutes track 4",
+      (function()
+        local q = T.new(class, { 1 })
+        local got = T.send(q, 1, "mute", { 4, 1 })
+        local armed = q.save_clock.armed
+        local saved = T.fire(q, q.save_clock)
+        return { got[1], got[2][1], got[2][3][98 + 4], armed, #saved[1][3], saved[1][3][711 + 4] }
+      end)(), { { 2, "quiet", quiet(4)[3] }, 7, 1, 100, 743, 1 })
 equal("PLAY: the step clock back at its own rate, no repeat, and the drum screen hears it is playing",
       T.send(o, 2, "start", {}), { { 8, "rate", { 1 } }, { 2, "rep", { 0 } },
                                    { 7, "list", phone(1, 16, 1, 0, {}, {}) } })

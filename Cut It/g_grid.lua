@@ -22,10 +22,15 @@ R.PAD = 144          -- a drum pad not selected, bright pink
 R.BLUE = 145         -- every Nth step, off: blue
 R.REP, R.REP_HELD = 146, 147   -- a repeat pad, dim purple, and the one held, bright
 R.PAD_ON = 154       -- the selected pad, red
+-- A pad whose track won't play, muted or left out of a solo, dim: the pink, and the selected
+-- pad's red, at a quarter (Brendan, 2026-11-05).
+R.PAD_QUIET, R.PAD_ON_QUIET = 158, 159
 
 -- The step cells are four rows of eight, numbered 1 to 32 along them by the layout table; the
 -- selected track's levels are 32 long.
 R.COLS, R.STEPS = 8, 32
+-- The pads, one a track.
+R.PADS = 16
 -- The step a cell past its row shows: past every last step, so dark.
 R.PAST = 33
 
@@ -63,11 +68,14 @@ end
 
 -- The page as c_steps last said it, starting where g_grid.pd's boxes started: every step off,
 -- no playhead, no velocity button or pad selected, last step 16, a blue step every 4 and no step
--- to a row until the first bar, so every step cell dark, and no repeat pad held.
+-- to a row until the first bar, so every step cell dark, and no repeat pad held; and every pad's
+-- track playing, as c_steps' start with nothing muted or soloed.
 -- text: the layout table.
 function R.new(text)
-  local st = { steps = {}, play = 0, vel = 0, track = 0, last = 16, every = 4, row = 0, rep = 0 }
+  local st = { steps = {}, play = 0, vel = 0, track = 0, last = 16, every = 4, row = 0, rep = 0,
+               quiet = {} }
   for i = 1, R.STEPS do st.steps[i] = 0 end
+  for t = 1, R.PADS do st.quiet[t] = 0 end
   -- The cells paint writes: a row whose role is none of the four paints nothing, as Pd's
   -- [select step vel pad rep] passed it by, so it is left out here.
   local index, role, n = R.parse(text)
@@ -153,6 +161,14 @@ R.inputs = {
     if type(a[1]) == "number" then st.rep = a[1] end
     return {}
   end,
+  -- quiet <16 flags>, track 1 first: 1 for a track that won't play, muted or left out of a solo,
+  -- whose pad shows dim. A shorter list sets the pads it holds.
+  quiet = function(st, a)
+    if type(a[1]) ~= "number" then return {} end
+    local q = st.quiet
+    for i = 1, math.min(#a, R.PADS) do q[i] = num(a[i]) end
+    return {}
+  end,
 }
 
 -- The frame's drum page, at most 50 times a second: -> the cells, grid indices, and the color
@@ -160,16 +176,18 @@ R.inputs = {
 --   a step cell: green under the playhead; else dark past the last step, lit or not; else its
 --     level's color if on, and if off dim, or blue every Nth from step 1 (R.shape).
 --   a velocity button: its level's color, full when selected and a quarter otherwise.
---   a pad: red when selected, bright pink otherwise.
+--   a pad: red when selected, bright pink otherwise; each at a quarter when its track won't
+--     play.
 --   a repeat pad: bright purple while held, dim otherwise.
 function R.paint(st)
   local kind, n, colors = st.kind, st.n, st.colors
   local shows, at, blue = st.shows, st.at, st.blue
   local steps, play, last = st.steps, st.play, st.last
-  local vel, track, rep = st.vel, st.track, st.rep
+  local vel, track, rep, quiet = st.vel, st.track, st.rep, st.quiet
   local DARK, DIM, PLAYHEAD, BLUE = R.DARK, R.DIM, R.PLAYHEAD, R.BLUE
   local LEVEL, QUARTER = R.LEVEL - 1, R.QUARTER - 1
   local PAD, PAD_ON, REP, REP_HELD = R.PAD, R.PAD_ON, R.REP, R.REP_HELD
+  local PAD_QUIET, PAD_ON_QUIET = R.PAD_QUIET, R.PAD_ON_QUIET
   for k = 1, #kind do
     local role = kind[k]
     if role == 1 then
@@ -189,7 +207,12 @@ function R.paint(st)
     elseif role == 2 then
       colors[k] = n[k] + (n[k] == vel and LEVEL or QUARTER)
     elseif role == 3 then
-      colors[k] = n[k] == track and PAD_ON or PAD
+      local hushed = (quiet[n[k]] or 0) ~= 0
+      if n[k] == track then
+        colors[k] = hushed and PAD_ON_QUIET or PAD_ON
+      else
+        colors[k] = hushed and PAD_QUIET or PAD
+      end
     else
       colors[k] = n[k] == rep and REP_HELD or REP
     end

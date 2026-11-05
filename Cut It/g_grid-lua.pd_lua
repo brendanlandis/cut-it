@@ -5,8 +5,8 @@
 --
 -- creation arg: the frame buffer's name, g_grid's $0-surface.
 -- inlet 1: the drum page's state, from c_steps -- steps <32 levels>, play <step>, vel <level>,
--- track <pad>, last <step>, bar <N> <row> and rep <pad>. inlet 2: g_grid.pd's own -- init at
--- load, and paint, from pd regions on page 2, before each frame's SysEx.
+-- track <pad>, last <step>, bar <N> <row>, rep <pad> and quiet <16 flags>. inlet 2: g_grid.pd's
+-- own -- init at load, and paint, from pd regions on page 2, before each frame's SysEx.
 -- outlet 1: err. outlet 2: a bang on init, the proof the Lua loaded.
 --
 -- A Lua error leaves outlet 1 as fail g_grid lua-<selector>, and its text goes to Pd's console

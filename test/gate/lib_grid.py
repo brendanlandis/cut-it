@@ -196,6 +196,10 @@ LEVEL_DIM = ((32, 32, 32), (32, 27, 27), (32, 23, 23), (32, 18, 18),
 # too indistinct). The selected pad no longer takes the velocity's color. PAD_DIM keeps its name
 # for what every pad but one is.
 PAD_DIM, PAD_ON = (127, 20, 72), (127, 0, 0)
+# A pad whose track won't play, muted or left out of a solo (Brendan, 2026-11-05): each of those
+# at a quarter, g_grid's RGB entries 30 and 31.
+PAD_QUIET, PAD_ON_QUIET = (32, 5, 18), (32, 0, 0)
+PADS = (PAD_DIM, PAD_ON, PAD_QUIET, PAD_ON_QUIET)
 BAR_START = (16, 40, 127)       # every Nth step, off, N the top number: blue
 # The step cells are four rows of eight, numbered 1 to 32 along them by the layout table, and the
 # time signature's top number says how many of a row's eight hold steps (c_steps.lua's R.row):
@@ -252,7 +256,7 @@ def drum_page(frame, lay, row=ROW):
     which no row names.
     """
     allowed = {"step": {DIM, OUT, PLAYHEAD, BAR_START} | set(LEVEL_RGB),
-               "vel": set(LEVEL_RGB) | set(LEVEL_DIM), "pad": {PAD_DIM, PAD_ON},
+               "vel": set(LEVEL_RGB) | set(LEVEL_DIM), "pad": set(PADS),
                "rep": {REP_DIM, REP_HELD}}
     lamp, page, stray = None, {"step": {}, "vel": {}, "pad": {}, "rep": {}}, []
     for k, color in enumerate(frame.colors()):
@@ -290,7 +294,7 @@ def drum_page(frame, lay, row=ROW):
         return ("velocity buttons %s are not their own level's color" % wrong), lamp, page
     if len(full) > 1:
         return ("%d velocity buttons selected: %s" % (len(full), sorted(full))), lamp, page
-    lit = [n for n, c in page["pad"].items() if c != PAD_DIM]
+    lit = [n for n, c in page["pad"].items() if c in (PAD_ON, PAD_ON_QUIET)]
     if len(lit) > 1:
         return ("%d pads lit: %s" % (len(lit), sorted(lit))), lamp, page
     held = [n for n, c in page["rep"].items() if c == REP_HELD]

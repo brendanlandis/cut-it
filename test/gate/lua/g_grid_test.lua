@@ -20,13 +20,13 @@ fh = assert(io.open(DIR .. "g_grid.pd"))
 local PATCH = fh:read("a")
 fh:close()
 
--- The RGB table in g_grid.pd's paint, 30 entries of three: a color of 128 + k is entry k.
+-- The RGB table in g_grid.pd's paint, the one message that sets it, 32 entries of three: a color
+-- of 128 + k is entry k.
 local RGB = {}
-for body in PATCH:gmatch("\n#X msg %d+ %d+ ([%d ]+);") do
-  local t = {}
-  for v in body:gmatch("%d+") do t[#t + 1] = tonumber(v) end
-  if #t == 90 then RGB = t end
+for body in PATCH:gmatch("\n#X msg %d+ %d+ ([%d ]+);\n#X obj %d+ %d+ array set \\%$0%-rgb;") do
+  for v in body:gmatch("%d+") do RGB[#RGB + 1] = tonumber(v) end
 end
+local DEFINED = tonumber(PATCH:match("\n#X obj %d+ %d+ array define \\%$0%-rgb (%d+);"))
 local function rgb(color)
   if color < 128 then return color end
   local k = (color - 128) * 3
@@ -39,6 +39,9 @@ local LEVEL = { { 127, 127, 127 }, { 127, 109, 109 }, { 127, 91, 91 }, { 127, 73
 local QUARTER = { { 32, 32, 32 }, { 32, 27, 27 }, { 32, 23, 23 }, { 32, 18, 18 },
                   { 32, 14, 14 }, { 32, 9, 9 }, { 32, 4, 4 }, { 32, 0, 0 } }
 local PINK, RED, BLUE = { 127, 20, 72 }, { 127, 0, 0 }, { 16, 40, 127 }
+-- A pad whose track won't play, muted or left out of a solo: the pink, or the selected pad's red,
+-- at a quarter (Brendan, 2026-11-05).
+local PINK_QUIET, RED_QUIET = { 32, 5, 18 }, { 32, 0, 0 }
 local REP, HELD = { 20, 8, 32 }, { 80, 24, 127 }
 local DARK, DIM, GREEN = 0, 1, 21
 
@@ -78,7 +81,8 @@ local function rep(v, n)
 end
 
 print("\n--- the colors are g_grid's RGB table's ---")
-check("the table is g_grid.pd's 30 entries of three", #RGB == 90, #RGB)
+check("the table is g_grid.pd's 32 entries of three, the array defined to hold them",
+      #RGB == 96 and DEFINED == 96, T.show({ #RGB, DEFINED }))
 local lv, qt = {}, {}
 for v = 1, 8 do lv[v], qt[v] = rgb(R.LEVEL + v - 1), rgb(R.QUARTER + v - 1) end
 equal("a level's color, full: white for level 1 falling evenly to red for 8", lv, LEVEL)
@@ -86,6 +90,8 @@ equal("... and at a quarter, for a velocity button not selected", qt, QUARTER)
 equal("a pad, the selected pad, a blue step, a repeat pad and the one held",
       { rgb(R.PAD), rgb(R.PAD_ON), rgb(R.BLUE), rgb(R.REP), rgb(R.REP_HELD) },
       { PINK, RED, BLUE, REP, HELD })
+equal("⛔ a pad whose track won't play: the pink at a quarter, and the selected pad's red",
+      { rgb(R.PAD_QUIET), rgb(R.PAD_ON_QUIET) }, { PINK_QUIET, RED_QUIET })
 equal("dark, dim and the playhead are palette 0, 1 and 21", { R.DARK, R.DIM, R.PLAYHEAD },
       { 0, 1, 21 })
 
@@ -233,6 +239,25 @@ R.inputs.vel(st, { 1 })
 f = frame(st)
 equal("rep 0 holds none; pad 1 and level 1 follow", { f[CELL.rep[3]], f[CELL.pad[1]],
       f[CELL.pad[13]], f[CELL.vel[1]], f[CELL.vel[6]] }, { REP, RED, PINK, LEVEL[1], QUARTER[6] })
+-- The pads in order, 1 to 16, as the Launchpad shows them.
+local function pads(fr)
+  local t = {}
+  for p = 1, 16 do t[p] = fr[CELL.pad[p]] end
+  return t
+end
+R.inputs.quiet(st, { 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 })
+local want_pads = rep(PINK, 16)
+want_pads[1], want_pads[3], want_pads[16] = RED_QUIET, PINK_QUIET, PINK_QUIET
+equal("⛔ quiet 1 0 1 ... 1: pad 1, selected, dim red, pads 3 and 16 dim pink, the rest as they were",
+      pads(frame(st)), want_pads)
+R.inputs.quiet(st, { 0, 1 })
+want_pads[1], want_pads[2] = RED, PINK_QUIET
+equal("... a shorter list sets the pads it holds: pad 1 red again, pad 2 dim, 3 and 16 still dim",
+      pads(frame(st)), want_pads)
+R.inputs.track(st, { 3 })
+want_pads[1], want_pads[3] = PINK, RED_QUIET
+equal("⛔ ... and a quiet pad selected is dim red, the one it left bright pink",
+      pads(frame(st)), want_pads)
 
 print("\n--- what changes nothing ---")
 st = page({ "bar", 4, 8 }, { "play", 2 }, { "vel", 3 })
@@ -242,6 +267,8 @@ R.inputs.play(st, { "x" })
 R.inputs.vel(st, { "x" })
 R.inputs.steps(st, { "x", 5, 5 })
 R.inputs.bar(st, { "x", 6 })
+R.inputs.quiet(st, { "x", 1, 1 })
+R.inputs.quiet(st, {})
 equal("a field left off, or one that is not a number, as in Pd", frame(st), before)
 R.inputs.bar(st, { 3 })
 equal("bar <N> without a row keeps the row: blue every 3rd in rows of eight", cells(frame(st))[4],
@@ -275,15 +302,17 @@ equal("init: the bang on outlet 2 that says it loaded, and nothing else",
 equal("c_steps' page on inlet 1 answers nothing", {
   T.send(o, 1, "bar", { 4, 8 }), T.send(o, 1, "steps", { 8, 0, 0, 0, 2 }),
   T.send(o, 1, "track", { 5 }), T.send(o, 1, "vel", { 2 }), T.send(o, 1, "play", { 3 }),
-  T.send(o, 1, "last", { 16 }), T.send(o, 1, "rep", { 4 }) }, { {}, {}, {}, {}, {}, {}, {} })
+  T.send(o, 1, "last", { 16 }), T.send(o, 1, "rep", { 4 }),
+  T.send(o, 1, "quiet", { 0, 0, 0, 0, 1, 1 }) }, { {}, {}, {}, {}, {}, {}, {}, {} })
 for i = 0, 108 do surface[i] = 7 end
 equal("paint on inlet 2 answers nothing", T.send(o, 2, "paint", {}), {})
 equal("... and writes the page into the frame buffer: step 1 level 8, step 3 the playhead, "
-      .. "step 5 blue and lit at 2, pad 5 red, level 2 full, repeat pad 4 held", {
+      .. "step 5 blue and lit at 2, pad 5 red and pad 6 pink, both quiet, so at a quarter, pad 7 "
+      .. "pink, level 2 full, repeat pad 4 held", {
   surface[CELL.step[1]], surface[CELL.step[2]], surface[CELL.step[3]], surface[CELL.step[5]],
-  surface[CELL.step[17]], surface[CELL.pad[5]], surface[CELL.pad[6]], surface[CELL.vel[2]],
-  surface[CELL.vel[1]], surface[CELL.rep[4]], surface[CELL.rep[1]] },
-  { 135, 1, 21, 129, 0, 154, 144, 129, 136, 147, 146 })
+  surface[CELL.step[17]], surface[CELL.pad[5]], surface[CELL.pad[6]], surface[CELL.pad[7]],
+  surface[CELL.vel[2]], surface[CELL.vel[1]], surface[CELL.rep[4]], surface[CELL.rep[1]] },
+  { 135, 1, 21, 129, 0, 159, 158, 144, 129, 136, 147, 146 })
 check("⛔ ... and nothing outside its 60 cells: the fill and the other regions are g_grid.pd's",
       (function()
         local mine = {}

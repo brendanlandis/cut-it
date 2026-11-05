@@ -20,6 +20,9 @@ state bus and the song's draft, which u_song writes. Nothing inside c_steps is r
                  screen's snap, over OSC through u_net, landing at PLAY
   the pads       a track's volume and pitch to c_kit, at the restore and from
                  the drum screen over OSC; a track at full randomness
+  mute and solo  a track muted and then soloed over OSC: its notes stop and
+                 start, the others' do the opposite, the Launchpad dims the
+                 pads that won't play, and both are put with the pattern
   the disk       the pattern reaches the song's draft as one line, section 1's drums
 
 A note's step is the playhead in the frame painted after it: c_steps sends a
@@ -43,7 +46,8 @@ WINDOWS = ["EARLY", "RESTORE", "NINE", "THREE", "ROW-PRESS", "ROW-DARK", "SEVEN"
            "PAST-LAST", "POLY", "POLY-STOP", "SNAP", "SNAP-PLAY", "SNAP-STOP",
            "SWING", "SW-PLAY", "SW-SOON", "SW-GAP", "SW-LATE", "SW-ON", "SW-STOP",
            "REP-PLAY", "REP-PRESS", "REP-HELD", "REP-OFF", "REP-STOP",
-           "SOUND", "RAND", "RA-PLAY", "RA-STOP", "DRUNK", "DR-PLAY"] + \
+           "SOUND", "RAND", "RA-PLAY", "RA-STOP", "MUTE", "MU-PLAY", "MU-STOP", "SOLO",
+           "SO-PLAY", "SO-STOP", "DRUNK", "DR-PLAY"] + \
     ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DRAG", "DONE"]
 EDITS = ["ROW-PRESS", "ROW-DARK", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
@@ -57,6 +61,7 @@ CELLS = 16 * 32                 # then the 16 tracks' own last steps, their rand
 FXLESS = CELLS + 16 * 4 + 5     # and pitches, the time signature, the drunkenness, the swing
                                 # and the global last step: 581
 LINE = FXLESS + 8 * 16 + 2      # then each track's eight effects and the reverb's two: 711
+FLAGGED = LINE + 2 * 16         # then each track's mute and each track's solo: 743
 NUM, DRUNK, SWING, LAST = FXLESS - 5, FXLESS - 3, FXLESS - 2, FXLESS - 1   # NUM, then the bottom
 RAND, VOL, PITCH = CELLS + 16, CELLS + 32, CELLS + 48    # where each track's are, track 1 first
 LEVEL_VELS = [round(127 * n / 8 + 1e-9) for n in range(1, 9)]   # 16 32 48 64 79 95 111 127
@@ -533,6 +538,47 @@ def main():
     A.check("⛔ ... and every other track plays as written beside it", rest == want,
             "got %s, want %s" % (rest, want))
 
+    print("\n--- mute and solo ---")
+    # Track 1 muted, then soloed as well, over OSC as the phone sends them (Brendan, 2026-11-05).
+    # The global loop is 3 since LAST-3 and every track follows it since the snap; track 2 is
+    # selected since PAD-2.
+    flags = lambda l: (l[LINE:LINE + 16], l[LINE + 16:FLAGGED])
+    one = [1] + [0] * 15
+    got = puts("MUTE")
+    A.check("⛔ mute 1 1, sent to u_net over OSC as the phone sends it, is put with the pattern: "
+            "the line 743, track 1 muted and nothing soloed",
+            [len(l) for l in got] == [FLAGGED] and flags(got[0]) == (one, [0] * 16),
+            "puts of %s values, flags %s" % ([len(l) for l in got], [flags(l) for l in got]))
+    pads = lambda k: (G.drum_page(frames(k)[-1], lay, ROW)[2]["pad"] if frames(k) else {})
+    want = {n: G.PAD_DIM for n in range(1, 17)}
+    want[1], want[2] = G.PAD_QUIET, G.PAD_ON
+    A.check("⛔ ... and the Launchpad shows pad 1 dim pink, pad 2, selected, red, and the rest "
+            "bright pink", pads("MUTE") == want, "pads %s" % pads("MUTE"))
+
+    def steps_of(tracks, n=6):
+        return [((k - 1) % 3 + 1, sorted((t, final[idx(t, (k - 1) % 3 + 1)]) for t in tracks
+                                         if final[idx(t, (k - 1) % 3 + 1)] > 0))
+                for k in range(1, n + 1)]
+    muted = [r for r in played(evs, {"MU-PLAY", "MU-STOP"}, lay) if r[0] is not None]
+    want = steps_of(range(2, 17))
+    A.check("⛔ muted, track 1 plays nothing for six steps, and track 2 beside it plays its step 1 "
+            "as written", muted[:6] == want and want[0][1] == [(2, 32)],
+            "got %s, want %s" % (muted[:6], want))
+    got = puts("SOLO")
+    A.check("solo 1 1 is put: track 1 muted and soloed",
+            [len(l) for l in got] == [FLAGGED] and flags(got[0]) == (one, one),
+            "puts of %s values, flags %s" % ([len(l) for l in got], [flags(l) for l in got]))
+    want = {n: G.PAD_QUIET for n in range(1, 17)}
+    want[1], want[2] = G.PAD_DIM, G.PAD_ON_QUIET
+    A.check("⛔ ... and the Launchpad shows pad 1 bright pink, since it plays, pad 2, selected and "
+            "left out, dim red, and the rest dim pink", pads("SOLO") == want,
+            "pads %s" % pads("SOLO"))
+    solo = [r for r in played(evs, {"SO-PLAY", "SO-STOP"}, lay) if r[0] is not None]
+    want = steps_of([1])
+    A.check("⛔ soloed, track 1 plays though it is muted, the mutes ignored, and track 2 nothing: "
+            "its steps 1 and 3", solo[:6] == want and want[0][1] == [(1, 32)]
+            and want[2][1] == [(1, 20)], "got %s, want %s" % (solo[:6], want))
+
     print("\n--- drunkenness ---")
     got = [l[DRUNK] for l in puts("DRUNK")]
     A.check("drunk 100, sent to u_net over OSC as the phone sends it, is saved", got == [100],
@@ -547,7 +593,7 @@ def main():
     A.check("⛔ ... and at the top every step strays: at most 60 of the 96 windows hold "
             "exactly one", counts.count(1) <= 60,
             "%d hold one: %s" % (counts.count(1), counts))
-    A.check("STOP stops it again", not ons("DONE"), "note-ons: %s" % ons("DONE"))
+    A.check("STOP stops it again", not ons("DRAG"), "note-ons: %s" % ons("DRAG"))
 
     print("\n--- a drag ---")
     # c_steps holds a change's put back up to 100 ms (ref/module/sequencer.md); every other
@@ -564,10 +610,13 @@ def main():
     vol = list(seed[VOL:VOL + 16])
     pitch = list(seed[PITCH:PITCH + 16])
     vol[1], pitch[1] = -6, 7
-    # the swing back at 50% (SW-STOP), the global last step at 3 since LAST-3
-    snapped = final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 100, 50, 3] + seed[FXLESS:]
+    # the swing back at 50% (SW-STOP), the global last step at 3 since LAST-3, and track 1 muted
+    # and soloed since SOLO
+    snapped = (final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 100, 50, 3] + seed[FXLESS:]
+               + one + one)
     A.check("⛔ the pattern reaches the song's draft as section 1's ONE drums line, the final "
-            "711 exactly, its effects as seeded", disk == snapped and len(lines) == 1 and len(lines[0].split()) == LINE + 1,
+            "743 exactly, its effects as seeded and track 1 muted and soloed",
+            disk == snapped and len(lines) == 1 and len(lines[0].split()) == FLAGGED + 1,
             "on disk: %s" % (disk if disk is None else "%d values" % len(disk)))
 
     errs = [e[1] for k in order for e in W(k) if e[0] == "ERR"

@@ -1,7 +1,8 @@
 -- c_steps.lua -- the drum sequencer's rules: the pattern, the step rule, the velocity levels, the
 -- selected track and level, the last steps, each track's place in its loop, the time signature,
 -- swing, drunkenness, the repeats, each track's randomness, volume and pitch, each track's
--- effects and the reverb's, and which notes fire on a step. Plain Lua with no Pd in it, so test/gate/lua/c_steps_test.lua runs it on the Mac with
+-- effects and the reverb's, each track's mute and solo, and which notes fire on a step. Plain
+-- Lua with no Pd in it, so test/gate/lua/c_steps_test.lua runs it on the Mac with
 -- lua.org's interpreter. c_steps-lua.pd_lua is its Pd face, and c_steps.pd keeps the clock, the
 -- transport and the cords to c_kit, g_grid and u_state. ref/module/sequencer.md.
 --
@@ -10,9 +11,9 @@
 --   {"note", "pad", {pad, velocity}}                          to c_kit
 --   {"note", "vol" | "pitch", {pad, dB or semitones}}         to c_kit, a track's
 --   {"note", <effect>, {pad, value} or {value}}               to c_kit, an effect's (R.FX)
---   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep", {...}}
+--   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep" | "quiet", {...}}
 --                                                             to g_grid's third inlet
---   {"save", "list", {581 or 711 numbers, R.save}}                   to the state bus, put section <part>
+--   {"save", "list", {581, 711 or 743 numbers, R.save}}       to the state bus, put section <part>
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
 --   {"bar", "bar", {}}                                        to u_song: the pattern's loop ends
 --   {"err", "fail", {"c_steps", text}}                        to err (C-12)
@@ -81,12 +82,14 @@ R.NOTES = { 8, 4, 2, 1, 0.5 }
 R.NOTE_NAMES = { "1/2", "1/4", "1/8", "1/16", "1/32" }
 R.FEELS = { 1, 2 / 3, 3 / 2 }
 R.FEEL_NAMES = { "straight", "triplet", "dotted" }
--- What R.save writes, in order; what it wrote before the effects; what it wrote until the song
+-- What R.save writes, in order, with each track's mute and solo; what it writes with the effects
+-- and without them, and with neither; what it wrote until the song
 -- store, without the swing and the global last step, which a section holds since
 -- (cut-it/songs-and-sections); and what it wrote until 2026-11-05, when each track had a skip and
 -- a move chance where its randomness and its volume are now, and no pitch.
 R.SAVED_FXLESS = R.TRACKS * R.STEPS + 4 * R.TRACKS + 5
-R.SAVED = R.SAVED_FXLESS + #R.FX * R.TRACKS + #R.VERB
+R.SAVED_FX = R.SAVED_FXLESS + #R.FX * R.TRACKS + #R.VERB
+R.SAVED = R.SAVED_FX + 2 * R.TRACKS
 R.SAVED_SECTIONLESS = R.TRACKS * R.STEPS + 4 * R.TRACKS + 3
 R.SAVED_CHANCES = R.TRACKS * R.STEPS + 3 * R.TRACKS + 3
 
@@ -177,6 +180,10 @@ function R.new(bank)
     for t = 1, R.TRACKS do st.fx[f[1]][t] = f[4] end
   end
   for _, f in ipairs(R.VERB) do st.verb[f[1]] = f[4] end
+  -- nothing muted or soloed, and the page told so: g_grid starts with every pad sounding
+  st.mute, st.solo = {}, {}
+  for t = 1, R.TRACKS do st.mute[t], st.solo[t] = 0, 0 end
+  st.quiet_told = table.concat(R.page_quiet(st)[3], " ")
   return st
 end
 
@@ -212,12 +219,15 @@ end
 -- one that follows the global last step, then their randomness, 0 to 100, their volumes in dB and
 -- their pitches in semitones, then the time signature, the drunkenness, 0 to 100, the swing, 50 to
 -- 75, and the global last step, 581 numbers; then, once any effect is off its starting point,
--- each effect of R.FX for every track, track 1 first, and the reverb's size and damping: 711.
--- While every one is at its starting point the line stays 581, as it was saved before the
--- effects, so a song saved before them restores and is put back as it was, not as a change to
--- save, and an unused effect costs the put nothing. What a section holds of the drums and the
--- arrangement page (Brendan, 2026-11-04), its effects with them (2026-11-05), put as the
--- section's <part> (ref/module/songs.md).
+-- each effect of R.FX for every track, track 1 first, and the reverb's size and damping: 711;
+-- then, once any track is muted or soloed, the sixteen mutes and the sixteen solos, 1 or 0, the
+-- effects written as they stand whether moved or not: 743.
+-- While every effect is at its starting point and nothing is muted or soloed, the line stays 581,
+-- as it was saved before the effects, so a song saved before them restores and is put back as it
+-- was, not as a change to save, and an unused effect costs the put nothing; and while nothing is
+-- muted or soloed, 711 or 581, so a song saved before mute and solo does the same. What a section
+-- holds of the drums and the arrangement page (Brendan, 2026-11-04), its effects with them, and
+-- its mutes and solos (2026-11-05), put as the section's <part> (ref/module/songs.md).
 function R.save(st)
   local all, cells = {}, R.TRACKS * R.STEPS
   for i = 1, cells do all[i] = st.pattern[i] end
@@ -230,13 +240,56 @@ function R.save(st)
   local n = cells + 4 * R.TRACKS
   all[n + 1], all[n + 2], all[n + 3] = st.num, st.den, st.drunk
   all[n + 4], all[n + 5] = st.swing, st.last
-  if not R.fx_moved(st) then return { "save", "list", all } end
+  local flagged = R.flagged(st)
+  if not flagged and not R.fx_moved(st) then return { "save", "list", all } end
   local k = R.SAVED_FXLESS
   for _, f in ipairs(R.FX) do
     for t = 1, R.TRACKS do k = k + 1; all[k] = st.fx[f[1]][t] end
   end
   for _, f in ipairs(R.VERB) do k = k + 1; all[k] = st.verb[f[1]] end
+  if not flagged then return { "save", "list", all } end
+  for t = 1, R.TRACKS do all[k + t], all[k + R.TRACKS + t] = st.mute[t], st.solo[t] end
   return { "save", "list", all }
+end
+
+-- Whether any track is muted or soloed.
+function R.flagged(st)
+  for t = 1, R.TRACKS do
+    if st.mute[t] ~= 0 or st.solo[t] ~= 0 then return true end
+  end
+  return false
+end
+
+-- Mute and solo (Brendan, 2026-11-05): with any track soloed, only the soloed tracks play and
+-- the mutes are ignored; otherwise a muted track doesn't play. A track that won't play is quiet.
+-- solo: whether any track is soloed, worked out once a step by the caller, or here if not given.
+function R.any_solo(st)
+  for t = 1, R.TRACKS do if st.solo[t] ~= 0 then return true end end
+  return false
+end
+
+function R.sounds(st, t, solo)
+  if solo == nil then solo = R.any_solo(st) end
+  if solo then return st.solo[t] ~= 0 end
+  return st.mute[t] == 0
+end
+
+-- The page's quiet pads, quiet <16 flags>, track 1 first: 1 for a track that won't play, which
+-- the Launchpad shows dim.
+function R.page_quiet(st)
+  local solo, q = R.any_solo(st), {}
+  for t = 1, R.TRACKS do q[t] = R.sounds(st, t, solo) and 0 or 1 end
+  return { "page", "quiet", q }
+end
+
+-- The page told its quiet pads, unless they are what it was told last: a mute while another
+-- track is soloed changes no pad, and a restore that changes no pad sends none.
+local function tell_quiet(st, out)
+  local e = R.page_quiet(st)
+  local key = table.concat(e[3], " ")
+  if key == st.quiet_told then return end
+  st.quiet_told = key
+  out[#out + 1] = e
 end
 
 -- Whether any effect, a track's or the reverb's, is off its starting point.
@@ -499,6 +552,30 @@ function R.set_track_last(st, track, v)
   return out
 end
 
+-- A track's mute or solo from the drum screen, mute or solo <track> <0 or 1>, each as it stands
+-- (Brendan, 2026-11-05): saved, and the page told which pads are quiet when that changes. A mute
+-- silences the track's hits from the next step, in R.tick, and nothing else: echoes and reverb
+-- already sounding ring out in c_kit, and a press on its pad still plays it, so it can be heard
+-- while muted. The same value again, or a message without a track and a number, does nothing.
+local function set_flag(st, which, track, v)
+  local t = track_value(track, v)
+  if not t then return {} end
+  local n = whole(v, 0, 1)
+  if n == st[which][t] then return {} end
+  st[which][t] = n
+  local out = { R.save(st) }
+  tell_quiet(st, out)
+  return out
+end
+
+function R.set_mute(st, track, v)
+  return set_flag(st, "mute", track, v)
+end
+
+function R.set_solo(st, track, v)
+  return set_flag(st, "solo", track, v)
+end
+
 -- A repeat pad, 1 to 4, held: every track replays the last n steps it played, over and over,
 -- while the loops go on underneath unheard; let go, and every track plays from where it would
 -- have been (Brendan, 2026-11-03). Pressed before anything has played, it waits for nothing:
@@ -532,8 +609,8 @@ end
 -- each track's last step, then 1 for each track with a last step of its own, then the time
 -- signature, the drunkenness and the swing, then each track's volume, its pitch and its
 -- randomness, then the selected track's effects, in R.FX's order, and the reverb's size and
--- damping. 98 numbers.
-R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS + #R.FX + #R.VERB
+-- damping, then each track's mute and each track's solo, 1 or 0. 130 numbers.
+R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS + #R.FX + #R.VERB + 2 * R.TRACKS
 function R.phone(st)
   local out = { st.playing and 1 or 0, R.global_last(st), st.track,
                 st.snap and 2 or (st.sync and 1 or 0) }
@@ -545,11 +622,15 @@ function R.phone(st)
   end
   for _, f in ipairs(R.FX) do out[#out + 1] = st.fx[f[1]][st.track] end
   for _, f in ipairs(R.VERB) do out[#out + 1] = st.verb[f[1]] end
+  for _, which in ipairs({ "mute", "solo" }) do
+    for t = 1, R.TRACKS do out[#out + 1] = st[which][t] end
+  end
   return out
 end
 
 -- A pad press plays the pad now, at full velocity however hard it is pressed (Brendan,
--- 2026-11-04), and selects its track; knob 3 is then held at that track's last step.
+-- 2026-11-04), muted or left out of a solo or not, so a muted track can be heard before it comes
+-- back in; and selects its track; knob 3 is then held at that track's last step.
 R.TAP = 127
 function R.press_pad(st, track, velocity)
   st.track = math.floor(clip(num(track), 1, R.TRACKS))
@@ -595,7 +676,10 @@ local function chance(st, t, v)
 end
 
 -- A step of the clock. The loops move on (advance), and every track plays the step it is heard
--- at (heard), as its randomness says, track 1 first, all in one logical instant. Then the
+-- at (heard), as its randomness says, track 1 first, all in one logical instant, but a track
+-- muted, or left out of a solo, plays nothing (R.sounds): not what is written, not a coin its
+-- randomness adds, not a repeat's. It still rolls its dice, so muting one track changes no
+-- other's, and its loop and its repeat go on, so it comes back in where it would have been. Then the
 -- playhead, the selected track's step, and the step clock's rate for the step coming: drunk, a
 -- step may last longer or shorter, the more often and the further the drunker (R.drunk_chance,
 -- R.drunk_reach), and the error stays -- its own drift becomes the clock (Brendan, 2026-11-03).
@@ -620,9 +704,12 @@ function R.tick(st)
     if #h > R.REPEATS then table.remove(h, 1) end
   end
   if st.rep > 0 then st.rk = st.rk + 1 end
+  local solo = R.any_solo(st)
   for t = 1, R.TRACKS do
     local v = chance(st, t, st.pattern[R.index(t, play[t])])
-    if v >= 1 then out[#out + 1] = { "note", "pad", { R.pad(st, t), v } } end
+    if v >= 1 and R.sounds(st, t, solo) then
+      out[#out + 1] = { "note", "pad", { R.pad(st, t), v } }
+    end
   end
   out[#out + 1] = { "page", "play", { play[st.track] } }
   local rate = 1
@@ -749,10 +836,23 @@ local function restore_fx(st, values)
   end
 end
 
+-- The mutes and solos from a saved line, past its first 711: each as far as the line holds it,
+-- 1 or 0, a symbol as 0, and what it does not hold 0. So a line saved before mute and solo, of
+-- any length R.restore takes, comes back with nothing muted or soloed.
+local function restore_flags(st, values)
+  for t = 1, R.TRACKS do
+    local m, s = values[R.SAVED_FX + t], values[R.SAVED_FX + R.TRACKS + t]
+    st.mute[t] = m ~= nil and whole(m, 0, 1) or 0
+    st.solo[t] = s ~= nil and whole(s, 0, 1) or 0
+  end
+end
+
 -- A section's restore of <part>, from the song store, or u_state's of section-1-<part>, the auto
 -- key the pattern had before sections, once, then put straight back (ref/module/state.md), which
 -- also repairs a short or malformed line; and every track's volume and pitch to c_kit, and
--- whichever effects changed (R.tell_fx), a line of fewer than 711 bringing them back off. A line of
+-- whichever effects changed (R.tell_fx), a line of fewer than 711 bringing them back off; and
+-- last, the page's quiet pads when they changed, a line of fewer than 743 bringing every track
+-- back unmuted and unsoloed. A line of
 -- exactly 256 is the 16-step pattern this replaced, track by track: its steps go to each track's
 -- first sixteen. A line of exactly 563 is from before the randomness (2026-11-05): its skip
 -- chances come back as each track's randomness, which took their place, its move chances are
@@ -804,12 +904,14 @@ function R.restore(st, values)
     end
   end
   restore_fx(st, values)
+  restore_flags(st, values)
   local out = { R.save(st), R.page_last(st), R.steps(st), R.page_bar(st),
                 { "clock", "swing", { st.swing / 100 } } }
   for _, which in ipairs({ "vol", "pitch" }) do
     for t = 1, R.TRACKS do out[#out + 1] = { "note", which, { R.pad(st, t), st[which][t] } } end
   end
   for _, e in ipairs(R.tell_fx(st)) do out[#out + 1] = e end
+  tell_quiet(st, out)
   return out
 end
 
@@ -824,7 +926,8 @@ end
 -- through u_net; and the arrangement screen's num and den (-1 or 1), drunk (0 to 100), set-swing
 -- (50 to 75) and set-last (1 to 32), through u_net too; and the drum screen's effects, drive,
 -- tone, dist, delay-note, delay-feel, feedback, delay and send <track> <value>, and size and
--- damping <value>. A press, a knob or a setting with no number in it does nothing.
+-- damping <value>; and its mute and solo <track> <0 or 1>. A press, a knob or a setting with no
+-- number in it does nothing.
 R.presses = {
   step = function(st, a) return pressed(a) and R.press_step(st, a[1]) or {} end,
   vel = function(st, a) return pressed(a) and R.press_vel(st, a[1]) or {} end,
@@ -855,6 +958,8 @@ R.presses = {
   damping = function(st, a) return R.set_verb(st, "damping", a[1]) end,
   ["set-swing"] = function(st, a) return R.set_swing(st, a[1]) end,
   ["set-last"] = function(st, a) return R.set_last(st, a[1]) end,
+  mute = function(st, a) return R.set_mute(st, a[1], a[2]) end,
+  solo = function(st, a) return R.set_solo(st, a[1], a[2]) end,
 }
 
 -- What c_steps.pd itself sends: the clock's step, PLAY, STOP, u_state's restore, and the load.

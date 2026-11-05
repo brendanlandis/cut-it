@@ -83,17 +83,18 @@ home                              param                    alert
 | ==========             |  |  43 %           y=12 24|  ||                      ||
 |                        |  |                        |  || u_init      y=30   8 ||
 | out-r 19        y=32 8 |  |                        |  || launchpad-x y=44   8 ||
-| ===             y=42 18|  | =========       y=48  5|  |+----------------------+|
-| ===                    |  | ====            y=56  5|  +------------------------+
+| ===             y=42 18|  | =========       y=54  4|  |+----------------------+|
+| ===                    |  | ====            y=59  4|  +------------------------+
 +------------------------+  +------------------------+
 ```
 
 | | Evidence | Item |
 |---|----------|------|
 | `env~`'s 0–100 maps to pixels as **× 1.28**, clipped to **1–128** — a zero-width `gFillArea` is untested and silence is the common case | verified | — |
-| **No gate marks** since the meters read the output (Brendan, 2026-11-04): they marked the input's noise floor and a gate window over it, item 11, and an output meter has neither (*Design*) | verified | 11 |
-| Home is two halves of 32 rows: a readout at y=0 and y=32, its bar 18 px tall at y=10 and y=42, and four blank rows after each bar. **No footer** since 2026-11-04 (*Design*) | verified | — |
-| A moving knob shrinks the meters into a **full-width 5 px bottom strip**, not a corner. A corner meter here is ~40×4 px, and 24px text needs the full width anyway | verified | — |
+| **No gate marks** since the meters read the output (Brendan, 2026-11-04): they marked the input's noise floor and a gate window over it, item 11, and an output meter has neither (*Design*) | unknown | 11 |
+| Home is two halves of 32 rows: a readout at y=0 and y=32, its bar 18 px tall at y=10 and y=42, and four blank rows after each bar. **No footer** since 2026-11-04 (*Design*) | unknown | — |
+| A moving knob shrinks the meters into a **full-width bottom strip**, not a corner. A corner meter here is ~40×4 px, and 24px text needs the full width anyway | verified | — |
+| The strip is two 4 px bars at y=54 and y=59, since 2026-11-04: 5 px at y=48 and 56 until the diag layer needed a sixth row (*Design*) | unknown | — |
 
 ### The param layer is a list, and rows are STABLE
 
@@ -107,7 +108,7 @@ to five entries** in `[text define $0-params]`, one line of `<frame-stamp> <name
 | The scan walks from the **last index toward 0**, because deleting a line shifts everything below it and going downward makes that harmless. `until`'s own count bounds the loop | verified | — |
 | **13 and not 12 is deliberate** — `pd layers` clears `$0-a-param` on a 1200 ms delay, so the store is guaranteed to outlive the flag by a frame. Otherwise a rounding difference leaves the param layer winning with nothing to draw, which looks exactly like a dead patch | verified | — |
 
-**Type size follows how many are moving.** The param area is y=0…46; the meter strips at y=48/56 are
+**Type size follows how many are moving.** The param area is y=0…46; the meter strips at y=54/59 are
 untouched throughout.
 
 | Moving | Layout | Evidence | Item |
@@ -128,15 +129,16 @@ against, and it would not be helped by a larger font.
 
 **When a controller stops working mid-set, this is what says which one.** The presence layer has
 always known; all it surfaced was a two-second `warn`. `diag` is the question *"what is the rig's
-state right now"* asked deliberately, and it reuses the 3–5-mover geometry exactly: **8px rows at
-y = 0, 9, 18, 27, 36**, one per source, plus the shrunk meter strip.
+state right now"* asked deliberately, and it reuses the 3–5-mover pitch, one row further: **8px rows
+at y = 0, 9, 18, 27, 36, 45**, one per source, over the shrunk meter strip.
 
 | | Evidence | Item |
 |---|----------|------|
-| One row per source on the presence bus, drawn as `<src> <state>`. The roster is whatever `expect` published at load — today **five**: `m_launchpad`, `m_nano`, `m_organelle`, `m_volca` and `m_streich` (2026-11-04), the most the layer draws. `m_404` went with the SP-404, and `m_nanokey` publishes nothing, since its row would be the sixth ([nanokey.md](../device/nanokey.md)) | verified | 301 |
+| One row per source on the presence bus, drawn as `<src> <state>`. The roster is whatever `expect` published at load — today **six**: `m_launchpad`, `m_nano`, `m_organelle`, `m_volca`, `m_streich` and `m_nanokey` (2026-11-04), the most the layer draws. `m_404` went with the SP-404 | verified | 301 |
+| **The two passive layers, `m_organelle` and `m_nanokey`, read `never` until they first speak**, and `here` from then on: never polled and never aged, so the row says *heard since load*, not *there now*. The nanoKEY speaks only when a key is played ([presence.md](presence.md)) | unknown | — |
 | ⛔ **`<src>` is the ABSTRACTION's name** — `m_nano`, never "nanoKONTROL". `g_oled` sits below the `m_` boundary, so this is the only name it has. See [presence.md](presence.md) | verified | 301 |
 | Four states: `here` · `gone` · `never` · `unchecked`. **`m_volca` registers `none` and reads `unchecked`** — it is never polled and can never be lost, so drawing it as healthy would be a claim nothing has tested | verified | 301 |
-| ⛔ **The loop is bounded at FIVE rows, not at the roster size.** A sixth would draw at y=45 and run into the meter strip at y=48 | verified | 301 |
+| ⛔ **The loop is bounded at SIX rows, not at the roster size.** The sixth ends at y=52 and the strip starts at 54; a seventh would draw over it | unknown | 301 |
 | ⚠️ **`m_launchpad unchecked` is 21 characters** — the whole width of an 8px row. A longer state word or a longer abstraction name clips silently | verified | 301 |
 | Summoned by `disp` → `diag`, which carries nothing. Cleared by a retriggered `[del 8000]`, so pressing again while it is up buys another eight seconds | verified | 301 |
 | The control is **`og-shift-60` on every page** — hold `aux` and press the lowest key. One row of `cut-it-map.txt` per page | verified | 304 |
@@ -471,6 +473,19 @@ that was the phone until 2026-11-04, and it is the cheaper shape when the thing 
 readout. **The phone became a device with commands of its own** — the Launchpad's page, the tempo,
 the sequencer's settings — and a mirror of the OLED's rows is the wrong vocabulary for that, so it
 reads each module's state on cords instead ([phone.md](../device/phone.md)).
+
+### Six diag rows: the strip went lower, the pitch stayed
+
+**The nanoKEY's row made the roster six** (2026-11-04), and the 9 px pitch item 258 read at arm's
+length puts a sixth row at y=45 to 52, where the 5 px strip at 48 sat. **The strip moved instead
+of the rows**: two 4 px bars at y=54 and 59, under every layer that shrinks the meters, so one
+geometry serves param, modal and diag as before, and the param area, y=0 to 46, never reaches it.
+The alternatives each gave up something the screen is for. An 8 px pitch fits six above 48, but
+rows with no blank line between them put one row's descenders on the next one's capitals, and
+nothing has measured that legible. Two columns halve the row, and `m_launchpad unchecked` already
+fills the whole of one. And no strip under diag leaves no output level on screen for its eight
+seconds, when the levels are one of the OLED's three jobs. Whether six rows and the thinner strip
+read at playing distance is the display checklist's.
 
 ### diag goes above `modal` and below `alert`, and both halves are load-bearing
 

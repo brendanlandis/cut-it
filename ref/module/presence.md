@@ -68,15 +68,17 @@ that a source which has answered nothing has published none.
 | Kind | Layers | Polled | Ages | Can be lost | Evidence | Item |
 |---|---|---|---|---|---|---|
 | `active` | `m_launchpad` `m_nano` `m_streich` | yes | yes | yes | verified | 270 |
-| `passive` | `m_organelle` | no | **no** | no | verified | 270 |
+| `passive` | `m_organelle` `m_nanokey` | no | **no** | no | verified | 270 |
 | `none` | `m_volca` | no | no | no | verified | 270 |
 
 **Self-registration is `state`'s shape** — a contributor names its own key and declares its own
 policy — and it is what lets an `m_` written long after `u_present` be covered with no change to
-`u_present`. The roster is five, and `presence-assert.sh` asserts the number rather than printing it:
+`u_present`. The roster is six, and `presence-assert.sh` asserts the number rather than printing it:
 `m_streich` is the fifth (2026-11-04), in the slot `m_404` had, `active`, until the SP-404 left the
-rig. ⛔ **Five is also the most g_oled's diag layer draws**, so `m_nanokey` registers nothing, not
-even `none`: its row would be a sixth ([nanokey.md](../device/nanokey.md)).
+rig, and `m_nanokey` the sixth, `passive` (2026-11-04): it says `seen` with every key it passes and
+is never polled ([nanokey.md](../device/nanokey.md)). Six is also the most g_oled's diag layer draws
+([display.md](display.md)). `presence-assert.sh` reads every `expect` box and every `c_presence` off
+the `m_` files, so the nanoKEY cannot turn active, or polled, unnoticed.
 
 ### The manufacturer byte, which is what `c_devid` matches
 

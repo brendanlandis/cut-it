@@ -77,8 +77,10 @@ SEQ = [
     # without a second summon, and the TTL windows at the end measure from here.
     (26600, "DIAG", ["\\; disp diag"], GAP),
 
-    # knob1 makes m_organelle, the passive layer, publish `seen`.
-    (27600, "DIAG-SEEN", ["\\; presence seen m_nano", "\\; knob1 0.5"], GAP),
+    # knob1 makes m_organelle, a passive layer, publish `seen`, and a key on the
+    # nanoKEY's channel block, 49, m_nanokey, the other (2026-11-04).
+    (27600, "DIAG-SEEN", ["\\; presence seen m_nano", "\\; knob1 0.5",
+                          "\\; t-notein 60 100 49", "\\; t-notein 60 0 49"], GAP),
     (28600, "DIAG-GONE", ["\\; presence lost m_nano"], GAP),
 
     # m_launchpad has never answered, so this `lost` must leave it `never`.

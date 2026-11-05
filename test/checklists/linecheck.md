@@ -19,8 +19,8 @@ done, tap Setup again.
 
 - [ ] **2. Every device on the roster**
   - **Do:** Hold aux and press the Organelle's lowest key.
-  - **Pass if:** The OLED lists m_launchpad, m_nano and m_streich as here, and m_volca as unchecked. About eight seconds later the meters come back.
-  - **Note:** m_volca always reads unchecked: it sends nothing, so nothing can tell it is there, and step 5 listens for it instead. m_streich is the Streichfett, which answers when asked. gone or never names the cable to look at ([display](../../ref/module/display.md)). The nanoKEY has no row: steps 5 and 6 play it.
+  - **Pass if:** The OLED lists m_launchpad, m_nano and m_streich as here, m_volca as unchecked, and m_nanokey as never or here. About eight seconds later the meters come back.
+  - **Note:** m_volca always reads unchecked: it sends nothing, so nothing can tell it is there, and step 5 listens for it instead. m_streich is the Streichfett, which answers when asked. m_nanokey is never asked, and reads here only once a key has been played: steps 5 and 6 play it. gone or never on the others names the cable to look at ([display](../../ref/module/display.md)).
 
 - [ ] **3. A drum pad plays through the PA**
   - **Need:** The mixer's channel 1 up, and the PA on.

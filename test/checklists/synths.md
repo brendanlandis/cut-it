@@ -76,8 +76,8 @@ each thing behaves as it does: [synths](../../ref/module/synths.md),
 
 - [ ] **12. The Streichfett on the roster**
   - **Do:** Hold aux and press the Organelle's lowest key.
-  - **Pass if:** The OLED lists five rows, m_streich among them as here. There is no row for the nanoKEY.
-  - **Note:** The nanoKEY registers nothing: a sixth row breaks the diag layer's five-row bound ([nanokey](../../ref/device/nanokey.md)).
+  - **Pass if:** The OLED lists six rows, m_streich among them as here, and m_nanokey as here once a key has been played since the load, never before.
+  - **Note:** The nanoKEY is passive: it is never polled, since its identity reply carries the nanoKONTROL's byte, so a key is what says it is there ([nanokey](../../ref/device/nanokey.md)).
 
 - [ ] **13. Hot-swap: the Streichfett unplugged and plugged back in**
   - **Do:** Pull the Streichfett's USB cable, and watch the OLED for up to eight seconds. Plug it back in, wait up to 30 seconds, choose STRINGS and play the nanoKEY.

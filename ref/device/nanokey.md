@@ -31,21 +31,22 @@ number as the Volca's output block, since the Volca's interface is port 4 both w
 The gate is `0 <= channel - block < 16`, the nano's shape for its two channels. `synths-assert`
 plays notes on channels 17, 33, 48 and 65 that must reach nothing, and one on 50 that must.
 
-### Not polled, and not on the roster
+### Passive on the roster, and never polled
 
-`m_nanokey` registers nothing on the presence bus, not even `none`, so the diag screen has no row
-for it. Two reasons, either enough:
+`m_nanokey` registers `passive`, as `m_organelle` does (2026-11-04): `expect m_nanokey passive` at
+load, and `seen m_nanokey` with every key it passes, ahead of the key. The diag screen's sixth row
+reads `never` until a key is played and `here` from then on; it never ages and is never declared
+lost ([display.md](../module/display.md)).
 
-- ⛔ **A sixth row breaks the diag layer's five-row bound**: g_oled draws the roster at y = 0, 9, 18,
-  27 and 36, and a sixth at 45 runs into the meter strip ([display.md](../module/display.md)). The
-  roster is five with `m_streich`. The OLED's revision lifts the bound
-  (`cut-it/pages-and-displays`), and then the nanoKEY can register.
-- ⛔ **Its identity reply carries Korg's byte, `42`, the nanoKONTROL's** (Reference). A poll would be
-  answered as the nano by `[c_devid 66]`, so a nano that is gone would read as present whenever the
-  nanoKEY answers. Telling them apart needs the family bytes, which `c_devid` does not read.
+- ⛔ **It must not be polled: its identity reply carries Korg's byte, `42`, the nanoKONTROL's**
+  (Reference). A poll would be answered as the nano by `[c_devid 66]`, so a nano that is gone would
+  read as present whenever the nanoKEY answers. Telling them apart needs the family bytes, which
+  `c_devid` does not read. So it holds no `c_presence`, and `presence-assert.sh` checks that it
+  does not.
 
-So a nanoKEY that comes unplugged is noticed by ear, and recovered by the re-wire heartbeat, which
-re-runs `wire.sh` when the ALSA client names change ([presence.md](../module/presence.md)).
+So a nanoKEY that comes unplugged still reads `here`, as an Organelle knob untouched does: last
+heard, not alive. It is noticed by ear, and recovered by the re-wire heartbeat, which re-runs
+`wire.sh` when the ALSA client names change ([presence.md](../module/presence.md)).
 
 ### Notes only
 

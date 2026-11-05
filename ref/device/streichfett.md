@@ -48,7 +48,7 @@ a wrong count of creation arguments loads in silence ([architecture.md](../archi
 | `c_devid` argument | **62**, Waldorf's manufacturer byte `3E`, which nothing else in the rig sends | unknown |
 | Stagger | **120 ms** after the tick, clear of the Launchpad's 0 and the nano's 60 | unknown |
 | The inquiry's port | **3**, worked out from the channel block as `m_nano` does: `(33 - 1) / 16 + 1` | unknown |
-| On the diag roster | `m_streich here`, `gone` or `never`, the fifth row of five ([display.md](../module/display.md)) | unknown |
+| On the diag roster | `m_streich here`, `gone` or `never`, the fifth row of six ([display.md](../module/display.md)) | unknown |
 
 ⛔ **The argument is decimal and the reply is hex**, as for the nano: `[c_devid 3E]` would never
 match, and an undetected device looks exactly like an absent one.

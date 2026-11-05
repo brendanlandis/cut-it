@@ -30,14 +30,14 @@ were false.
 | `audio-assert.sh` | 22 | `module/audio` |
 | `err-assert.sh` | 24 | `module/error` |
 | `display-assert.sh` | 46 | `module/display` — the grid, page 3's synth pads and page 1's tap pad included |
-| `oled-assert.sh` | 67 | `module/display` — the OLED |
+| `oled-assert.sh` | 70 | `module/display` — the OLED |
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 63: 33 in Lua, 30 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
 | `map-assert.sh` | 175: 90 in Lua, 85 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
-| `presence-assert.sh` | 47 | `module/presence` |
+| `presence-assert.sh` | 49 | `module/presence` |
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 64: 39 in Lua, 25 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
@@ -58,7 +58,7 @@ that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
 Worth knowing before trusting an arithmetic check of this number against a log.
 
-⚠️ **`presence-assert.sh`'s 47 come from TWO Pd runs and one tally**, which is the only entry here
+⚠️ **`presence-assert.sh`'s 49 come from TWO Pd runs and one tally**, which is the only entry here
 that does. The first run is the schedule at the shipped tick; the second scales `u_present`'s settle
 and tick by ten and leaves its **counts** exactly as shipped, so the eighth re-wire and the give-up
 actually happen — inside nine seconds rather than seventy-two. ⛔ **One analyzer reads both
@@ -111,7 +111,11 @@ knob 4 cut (Lua 1, Pd 2), and with knob 3 on page 5 too (Lua 1, Pd 1). Only a ma
 names itself: against the `u_map.lua`, its face and `u_map.pd` with the raw row, `map-assert`
 (Lua 14: the rows themselves, and the face's outlet numbers moving down one; Pd 4: `gk-cc`, `og-knob-3`,
 `lp-cc-91` and `pad-36` drawn), `nano-assert` (2: `slider-3` and `lp-cc-19`) and `sequencer-assert` (2:
-`pad-36` and `pad-81`).
+`pad-36` and `pad-81`). The roster's sixth row: `oled-assert` on the old `g_oled` and `m_nanokey`
+(6: five rows, the strip at 48 and 56, the nanoKEY neither `never` nor `here`), on the old `g_oled`
+with the new `m_nanokey` (6: the bound at five dropped `m_streich`), and on the new `g_oled` with the
+old `m_nanokey` (5); `presence-assert` on the old `m_nanokey` (the roster of five in both runs),
+and on an `m_nanokey` registered `active` through a `c_presence` (2 of the new, among 5).
 
 ✅ **The phone's pages, the arrangement screen, tap tempo and the velocity switch were each made to
 fail** (2026-11-04), against the code without the change or a mutation of it. `phone-assert`: the

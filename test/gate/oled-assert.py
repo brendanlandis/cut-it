@@ -29,10 +29,12 @@ FIVE = ["gate-a", "gate-b", "gate-c", "gate-d", "gate-e"]
 
 # Every source that publishes `expect`, exactly: a layer missing here is
 # invisible on the diag screen, and m_404's line went with the SP-404
-# (2026-11-04). Five since m_streich came (2026-11-04), the five rows the layer
-# holds; m_nanokey publishes none, since a sixth would break that bound.
-# presence-assert.sh asserts the same five.
-DIAG_SOURCES = ["m_launchpad", "m_nano", "m_organelle", "m_volca", "m_streich"]
+# (2026-11-04). Six since m_nanokey registered, passive (2026-11-04), the six
+# rows the layer holds. presence-assert.sh asserts the same six.
+DIAG_SOURCES = ["m_launchpad", "m_nano", "m_organelle", "m_volca", "m_streich", "m_nanokey"]
+
+# The two passive layers: never polled, so `never` until they first speak.
+PASSIVE = ["m_organelle", "m_nanokey"]
 
 # The three that are POLLED, and therefore the three a `lost` can name.
 ACTIVE = ["m_launchpad", "m_nano", "m_streich"]
@@ -158,7 +160,7 @@ def run_asserts(cap):
         got = [ws[0] for _, _, ws in rows(last("FIVE")) if ws]
         A.check("five controls moving at once give five rows, in touch order",
                 got == FIVE, "drew %s" % got)
-        # The meters start at y=48: a drifted pitch overlaps them, silently.
+        # The meter strip starts at y=54: a drifted pitch overlaps it, silently.
         A.check("...at 8px, on the y=0 9 18 27 36 pitch, clear of the meters",
                 [(y, sz) for y, sz, _ in rows(last("FIVE"))]
                 == [(0, 8), (9, 8), (18, 8), (27, 8), (36, 8)],
@@ -283,12 +285,20 @@ def run_asserts(cap):
                 sorted(s for _, _, s in roster("DIAG")) == sorted(DIAG_SOURCES),
                 "drew %s -- the roster is whatever `expect` published at load, "
                 "and every m_ layer publishes exactly one" % roster("DIAG"))
-        # The same pitch, and the same reason, as the five-row store.
-        A.check("...at 8px on the y=0 9 18 27 36 pitch, five rows, the last clear of the "
-                "meters",
+        # The five-row store's pitch, one row further: the sixth ends at y=52.
+        A.check("⛔ ...at 8px on the y=0 9 18 27 36 45 pitch, SIX rows",
                 [(y, sz) for y, sz, _ in roster("DIAG")]
-                == [(0, 8), (9, 8), (18, 8), (27, 8), (36, 8)],
+                == [(0, 8), (9, 8), (18, 8), (27, 8), (36, 8), (45, 8)],
                 "drew %s" % [(y, sz) for y, sz, _ in rows(last("DIAG"))])
+        # The strip went down to make room: two 4 px bars from y=54, clear of
+        # the sixth row's last line at 52, where a 5 px strip at 48 sat on it.
+        strip = sorted((int(v[5]), int(v[7])) for v in last("DIAG")
+                       if v[:2] == ["sendtyped", "/oled/gFillArea"] and len(v) >= 9)
+        A.check("⛔ ...with the meter strip below the sixth, 4 px at y=54 and y=59",
+                strip == [(54, 4), (59, 4)], "gFillArea (y, height): %s" % strip)
+        A.check("...and the two passive layers, never polled, read `never` until they speak",
+                [state("DIAG").get(s) for s in PASSIVE] == ["never", "never"],
+                "drew %s" % state("DIAG"))
         A.check("⛔ a device that has never answered reads `never`, not `gone`",
                 [state("DIAG").get(s) for s in ACTIVE] == ["never"] * len(ACTIVE),
                 "drew %s. c_presence publishes `lost` UNARMED because that is "
@@ -310,6 +320,11 @@ def run_asserts(cap):
                 "drew %s. m_organelle publishes `seen` on the bus rather than "
                 "through a c_presence, and this is the only consumer it has" %
                 state("DIAG-SEEN"))
+        A.check("⛔ ...and the nanoKEY's own `seen`, off one key on its channel block",
+                state("DIAG-SEEN").get("m_nanokey") == "here",
+                "drew %s. m_nanokey is passive: it is never polled, since its identity "
+                "reply carries the nanoKONTROL's byte, so a key is all that says it is "
+                "there" % state("DIAG-SEEN"))
         A.check("...and no other row moved with it",
                 [state("DIAG-SEEN").get(s) for s in ("m_launchpad", "m_volca", "m_streich")]
                 == ["never", "unchecked", "never"],

@@ -70,8 +70,8 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
 
 - [ ] **16. The diag roster**
   - **Do:** Hold the aux button and press the lowest key. Look hardest at the longest line: m_launchpad unchecked is exactly as wide as a row gets, so that is where clipping would show first. The word shift is on screen while aux is held and the roster draws over it.
-  - **Pass if:** Five small lines naming m_launchpad m_nano m_organelle m_volca and m_streich — each with here or gone or never or unchecked beside it. Every line is readable at arm reach and none is cut off at the right edge. About eight seconds later the meters come back on their own.
-  - **Note:** `oled-assert` proves the roster's words and their order; whether five 8px rows read at arm's length, the fifth just above the meters, and whether the 21-character `m_launchpad unchecked` line is clipped, is a person's call ([display](../../ref/module/display.md)).
+  - **Pass if:** Six small lines naming m_launchpad m_nano m_organelle m_volca m_streich and m_nanokey — each with here or gone or never or unchecked beside it — over two thin bars at the bottom that still move with the output. Every line is readable at arm reach, the sixth sits clear of the bars, and none is cut off at the right edge. About eight seconds later the meters come back on their own.
+  - **Note:** `oled-assert` proves the roster's words, their order and where the rows and bars are drawn; whether six 8px rows read at arm's length, the sixth just above the 4 px bars, and whether the 21-character `m_launchpad unchecked` line is clipped, is a person's call ([display](../../ref/module/display.md)). m_nanokey reads never until a key has been played since the load.
 
 - [ ] **17. The meters are the output**
   - **Need:** The SM58 in the Organelle's input, the drum samples deployed, and the mixer's channels 1 and 2 up.

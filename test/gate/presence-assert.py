@@ -21,6 +21,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 import lib_grid as G                                           # noqa: E402
 import lib_drive as D                                          # noqa: E402
+import lib_pd                                                  # noqa: E402
+import glob                                                    # noqa: E402
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 MARKS = ("BOOT", "BEFORE-LOSS", "AFTER-LOSS", "WAITING", "AFTER-REWIRE",
          "WALDORF", "FOREIGN", "STILL-LOST", "OWN-REPLY", "RECOVERED", "DROPPED",
@@ -43,13 +47,17 @@ REWIRE_TRY = "info u_present rewire-try"
 REWIRE_LAST = "info u_present rewire-last"
 REWIRE_PHONE = "info u_present rewire-phone"
 
-# Every m_ registers, m_organelle (passive) and m_volca (none) included, though
-# neither ages. The total is asserted because a layer that stopped registering
-# would stop being watched, and every "nothing was lost" check would still pass;
-# exactly, so m_404, gone with the SP-404 (2026-11-04), cannot come back unnoticed.
-# Five since m_streich (2026-11-04), the most g_oled's diag layer draws; m_nanokey
-# registers nothing, since a sixth row breaks that bound.
-ROSTER = 5
+# Every m_ registers, m_organelle and m_nanokey (passive) and m_volca (none)
+# included, though none of them ages. The total is asserted because a layer that
+# stopped registering would stop being watched, and every "nothing was lost" check
+# would still pass; exactly, so m_404, gone with the SP-404 (2026-11-04), cannot
+# come back unnoticed. Six since m_nanokey registered (2026-11-04), the six rows
+# g_oled's diag layer draws.
+ROSTER = 6
+# The layers that say their own kind in a message box, and the ones that hold a
+# c_presence, which says `active` for them and polls (ref/module/presence.md).
+KINDS = {"m_organelle": "passive", "m_nanokey": "passive", "m_volca": "none"}
+POLLED = ["m_launchpad", "m_nano", "m_streich"]
 ACTIVE = 3
 # The universal identity request, which every active layer sends on its own port.
 INQUIRY = [240, 126, 127, 6, 1, 247]
@@ -433,6 +441,23 @@ def main_run(cap):
             "OWN-REPLY and m_streich's in WALDORF, where each first answers. Earlier is "
             "a `seen` on a poll, and every device on a Mac would then read as present"
             % first)
+
+    # --- every layer says what it is, and the nanoKEY is never polled ---------
+    # Read off the files: `expect` goes out at loadbang, before this run's taps
+    # exist, and u_present prints only the count.
+    kinds, polled = {}, []
+    for path in sorted(glob.glob(os.path.join(ROOT, "Cut It", "m_*.pd"))):
+        for rec in lib_pd.read(path):
+            f = rec[:-1].split()
+            if rec.startswith("#X msg") and f[4:5] == ["expect"] and len(f) == 7:
+                kinds.setdefault(f[5], []).append(f[6])
+            if rec.startswith("#X obj") and f[4:5] == ["c_presence"]:
+                polled.append(os.path.basename(path)[:-3])
+    A.check("⛔ the nanoKEY registers passive, as the Organelle, and the Volca none -- once each",
+            kinds == {k: [v] for k, v in KINDS.items()},
+            "expect boxes in the m_ files: %s" % kinds)
+    A.check("⛔ ...and only the three active layers hold a c_presence: the nanoKEY is never polled",
+            sorted(polled) == POLLED, "c_presence in %s" % sorted(polled))
 
     # --- the Streichfett is polled, on its own port ---------------------------
     # The inquiry leaves m_streich's [midiout] on port 3, worked out from its

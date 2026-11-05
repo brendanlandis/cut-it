@@ -7,16 +7,16 @@
 -- inlet 1: the presses and releases, from u_map -- step <n> <vel>, vel <level> <vel>, pad <n>
 -- <vel>, rep <n> <vel>, and knobs 2 to 4, last, track-last and swing <0-1> -- and the phone's
 -- sync, snap, select, vol, pitch, randomness, set-track-last, num, den, drunk, set-swing and
--- set-last, its effects, drive, tone, dist, delay-note, delay-feel, feedback, delay, send,
+-- set-last, its effects, drive, tone, dist, char, delay-note, delay-feel, feedback, delay, send,
 -- size and damping, and each track's mute and solo, from u_net.
 -- inlet 2: c_steps.pd's own -- tick, start, stop, restore <the saved line>, init, and sync off
 -- the state bus: put the pattern now if it is being held.
 -- outlet 1: pad <pad> <velocity>, and a track's vol <pad> <dB> and pitch <pad> <semitones> and
--- its effects, drive, tone, dist, delay-time, feedback, delay and send <pad> <value>, and the
+-- its effects, drive, tone, dist, char, delay-time, feedback, delay and send <pad> <value>, and the
 -- reverb's size and damping <value>, to c_kit. outlet 2: the page, to g_grid. outlet 3: the pattern to save, at most once every
 -- SAVE_EVERY ms (below). outlet 4: err. outlet 5: a
 -- bang on init, the proof the Lua loaded. outlet 6: a knob's row, to disp. outlet 7: the phone's
--- state, R.phone's 130 numbers, whenever it changes.
+-- state, R.phone's 131 numbers, whenever it changes.
 -- outlet 8: the step clock's swing <0.5-0.75> and rate <x>, to c_steps.pd's clock.
 -- outlet 9: bar, on the global loop's last step, to u_song: a bar is the pattern's loop, and a
 -- queued section starts as the loop comes round to its step 1.
@@ -45,8 +45,8 @@ function StepsLua:initialize(_, atoms)
   return true
 end
 
--- The pattern to save is 581 numbers, 711 once an effect is set and 743 once a track is muted or
--- soloed, and carrying the 581 to u_song and storing them cost about 2.5 ms on the Organelle, so
+-- The pattern to save is 581 numbers, 711 once an effect is set, 743 once a track is muted or
+-- soloed and 759 once a track's distortion is not soft, and carrying the 581 to u_song and storing them cost about 2.5 ms on the Organelle, so
 -- a drag on the phone, a change 30 or 60 times a second, made the audio crackle (2026-11-05: Pd
 -- runs with a 6 ms audio buffer, and WiFi hands over two messages at once). So the pattern goes
 -- at most once every SAVE_EVERY ms: the first change starts the clock, later ones only mark it

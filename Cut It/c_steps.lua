@@ -13,7 +13,7 @@
 --   {"note", <effect>, {pad, value} or {value}}               to c_kit, an effect's (R.FX)
 --   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep" | "quiet", {...}}
 --                                                             to g_grid's third inlet
---   {"save", "list", {581, 711 or 743 numbers, R.save}}       to the state bus, put section <part>
+--   {"save", "list", {581, 711, 743 or 759 numbers, R.save}}  to the state bus, put section <part>
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
 --   {"bar", "bar", {}}                                        to u_song: the pattern's loop ends
 --   {"err", "fail", {"c_steps", text}}                        to err (C-12)
@@ -67,15 +67,24 @@ R.REPEATS = 4
 R.VOL_MIN, R.VOL_MAX = -30, 6
 R.PITCH_MIN, R.PITCH_MAX = -12, 12
 -- Each track's effects (Brendan, 2026-11-05), c_kit's to play: a distortion, its drive, its tone
--- and its mix; a delay, its time a note value and a feel, its feedback and its level; and its send
--- to the one reverb, whose size and damping are the kit's. Each is 0 to 100 but the note and the
--- feel, places in R.NOTES and R.FEELS. In the order R.save writes them, each with its range and
--- what a track starts at: a mix, a level or a send of 0 is off, and c_kit switches that effect's
--- DSP off, so a pattern saved before the effects loads with them off and costs nothing.
-R.FX = { { "drive", 0, 100, 50 }, { "tone", 0, 100, 60 }, { "dist", 0, 100, 0 },
+-- and its mix; a delay, its time a note value and a feel, its feedback and its level; its send
+-- to the one reverb, whose size and damping are the kit's; and the distortion's character. Each
+-- is 0 to 100 but the note, the feel and the character, places in R.NOTES, R.FEELS and R.CHARS.
+-- In the order the phone gets them, each with its range and what a track starts at: a mix, a
+-- level or a send of 0 is off, and c_kit switches that effect's DSP off, so a pattern saved
+-- before the effects loads with them off and costs nothing. The tone starts open (Brendan,
+-- 2026-11-05: 60, a 3.5 kHz low-pass, dulled every drum), and the character soft.
+R.FX = { { "drive", 0, 100, 50 }, { "tone", 0, 100, 100 }, { "dist", 0, 100, 0 },
          { "note", 1, 5, 3 }, { "feel", 1, 3, 1 }, { "feedback", 0, 100, 40 },
-         { "delay", 0, 100, 0 }, { "send", 0, 100, 0 } }
+         { "delay", 0, 100, 0 }, { "send", 0, 100, 0 }, { "char", 1, 4, 1 } }
 R.VERB = { { "size", 0, 100, 50 }, { "damping", 0, 100, 50 } }
+-- R.save writes the first R.FX_BLOCK of them after the pattern's 581 numbers, as it did before
+-- the distortion had a character; the rest, the character, after the mutes and solos, so a line
+-- saved before it loads as it was, every track soft.
+R.FX_BLOCK = 8
+-- The distortion's characters (Brendan, 2026-11-05): e_drive's curve at char 1 to 4. The phone
+-- shows their names.
+R.CHARS = { "soft", "hard", "fold", "crush" }
 -- The delay's times, counted in note values with triplets and dotted ones (Brendan, 2026-11-05):
 -- each note value in steps, a step a sixteenth, so the delay follows the tempo; and each feel's
 -- share of it. The phone shows their names.
@@ -83,14 +92,15 @@ R.NOTES = { 8, 4, 2, 1, 0.5 }
 R.NOTE_NAMES = { "1/2", "1/4", "1/8", "1/16", "1/32" }
 R.FEELS = { 1, 2 / 3, 3 / 2 }
 R.FEEL_NAMES = { "straight", "triplet", "dotted" }
--- What R.save writes, in order, with each track's mute and solo; what it writes with the effects
--- and without them, and with neither; what it wrote until the song
+-- What R.save writes, in order, with each track's character; what it writes with the mutes and
+-- solos, with the effects, and with none of them; what it wrote until the song
 -- store, without the swing and the global last step, which a section holds since
 -- (cut-it/songs-and-sections); and what it wrote until 2026-11-05, when each track had a skip and
 -- a move chance where its randomness and its volume are now, and no pitch.
 R.SAVED_FXLESS = R.TRACKS * R.STEPS + 4 * R.TRACKS + 5
-R.SAVED_FX = R.SAVED_FXLESS + #R.FX * R.TRACKS + #R.VERB
-R.SAVED = R.SAVED_FX + 2 * R.TRACKS
+R.SAVED_FX = R.SAVED_FXLESS + R.FX_BLOCK * R.TRACKS + #R.VERB
+R.SAVED_FLAGS = R.SAVED_FX + 2 * R.TRACKS
+R.SAVED = R.SAVED_FLAGS + (#R.FX - R.FX_BLOCK) * R.TRACKS
 R.SAVED_SECTIONLESS = R.TRACKS * R.STEPS + 4 * R.TRACKS + 3
 R.SAVED_CHANCES = R.TRACKS * R.STEPS + 3 * R.TRACKS + 3
 
@@ -220,15 +230,18 @@ end
 -- one that follows the global last step, then their randomness, 0 to 100, their volumes in dB and
 -- their pitches in semitones, then the time signature, the drunkenness, 0 to 100, the swing, 50 to
 -- 75, and the global last step, 581 numbers; then, once any effect is off its starting point,
--- each effect of R.FX for every track, track 1 first, and the reverb's size and damping: 711;
--- then, once any track is muted or soloed, the sixteen mutes and the sixteen solos, 1 or 0, the
--- effects written as they stand whether moved or not: 743.
+-- each of R.FX's first R.FX_BLOCK for every track, track 1 first, and the reverb's size and
+-- damping: 711; then, once any track is muted or soloed, the sixteen mutes and the sixteen solos,
+-- 1 or 0, the effects written as they stand whether moved or not: 743; then, once any track's
+-- distortion is not soft, the sixteen characters, 1 to 4, the effects, the mutes and the solos
+-- written as they stand: 759.
 -- While every effect is at its starting point and nothing is muted or soloed, the line stays 581,
 -- as it was saved before the effects, so a song saved before them restores and is put back as it
--- was, not as a change to save, and an unused effect costs the put nothing; and while nothing is
--- muted or soloed, 711 or 581, so a song saved before mute and solo does the same. What a section
--- holds of the drums and the arrangement page (Brendan, 2026-11-04), its effects with them, and
--- its mutes and solos (2026-11-05), put as the section's <part> (ref/module/songs.md).
+-- was, not as a change to save, and an unused effect costs the put nothing; while nothing is
+-- muted or soloed, 711 or 581, so a song saved before mute and solo does the same; and while every
+-- track is soft, 743, 711 or 581, as a song saved before the characters. What a section holds of
+-- the drums and the arrangement page (Brendan, 2026-11-04), its effects with them, and its mutes
+-- and solos and its characters (2026-11-05), put as the section's <part> (ref/module/songs.md).
 function R.save(st)
   local all, cells = {}, R.TRACKS * R.STEPS
   for i = 1, cells do all[i] = st.pattern[i] end
@@ -241,16 +254,31 @@ function R.save(st)
   local n = cells + 4 * R.TRACKS
   all[n + 1], all[n + 2], all[n + 3] = st.num, st.den, st.drunk
   all[n + 4], all[n + 5] = st.swing, st.last
-  local flagged = R.flagged(st)
+  local flagged, late = R.flagged(st), R.late_moved(st)
   if not flagged and not R.fx_moved(st) then return { "save", "list", all } end
   local k = R.SAVED_FXLESS
-  for _, f in ipairs(R.FX) do
-    for t = 1, R.TRACKS do k = k + 1; all[k] = st.fx[f[1]][t] end
+  for i = 1, R.FX_BLOCK do
+    for t = 1, R.TRACKS do k = k + 1; all[k] = st.fx[R.FX[i][1]][t] end
   end
   for _, f in ipairs(R.VERB) do k = k + 1; all[k] = st.verb[f[1]] end
-  if not flagged then return { "save", "list", all } end
+  if not flagged and not late then return { "save", "list", all } end
   for t = 1, R.TRACKS do all[k + t], all[k + R.TRACKS + t] = st.mute[t], st.solo[t] end
+  if not late then return { "save", "list", all } end
+  k = R.SAVED_FLAGS
+  for i = R.FX_BLOCK + 1, #R.FX do
+    for t = 1, R.TRACKS do k = k + 1; all[k] = st.fx[R.FX[i][1]][t] end
+  end
   return { "save", "list", all }
+end
+
+-- Whether any of the effects saved after the mutes and solos, the characters, is off its
+-- starting point.
+function R.late_moved(st)
+  for i = R.FX_BLOCK + 1, #R.FX do
+    local f = R.FX[i]
+    for t = 1, R.TRACKS do if st.fx[f[1]][t] ~= f[4] then return true end end
+  end
+  return false
 end
 
 -- Whether any track is muted or soloed.
@@ -610,8 +638,8 @@ end
 -- global last step, the selected track, a pending sync or snap (0 none, 1 sync, 2 snap), then
 -- each track's last step, then 1 for each track with a last step of its own, then the time
 -- signature, the drunkenness and the swing, then each track's volume, its pitch and its
--- randomness, then the selected track's effects, in R.FX's order, and the reverb's size and
--- damping, then each track's mute and each track's solo, 1 or 0. 130 numbers.
+-- randomness, then the selected track's effects, in R.FX's order, its character last, and the
+-- reverb's size and damping, then each track's mute and each track's solo, 1 or 0. 131 numbers.
 R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS + #R.FX + #R.VERB + 2 * R.TRACKS
 function R.phone(st)
   local out = { st.playing and 1 or 0, R.global_last(st), st.track,
@@ -786,7 +814,7 @@ end
 
 -- c_kit told a value, unless it is the one it was told last: so a section's restore, which lands
 -- on a step, sends only what changed, since every message out of the Lua costs about 0.025 ms on
--- the Organelle and there are 114 values to tell (the Organelle's Reference page, pdlua).
+-- the Organelle and there are 130 values to tell (the Organelle's Reference page, pdlua).
 local function tell(st, out, sel, pad, v)
   local key = pad and (sel .. " " .. pad) or sel
   if st.told[key] == v then return end
@@ -809,10 +837,10 @@ function R.tell_fx(st)
 end
 
 -- The drum screen's effect controls for the selected track, sent with the track (Brendan,
--- 2026-11-05): drive, tone, dist (the distortion's mix), delay-note (1 to 5, 1/2 to 1/32),
--- delay-feel (1 to 3, straight, triplet, dotted), feedback, delay (its level) and send, each
--- <track> <value>. Saved, and told to c_kit. The same value again, or a message without a track
--- and a number, does nothing.
+-- 2026-11-05): drive, tone, dist (the distortion's mix), char (its character, 1 to 4, soft, hard,
+-- fold, crush), delay-note (1 to 5, 1/2 to 1/32), delay-feel (1 to 3, straight, triplet,
+-- dotted), feedback, delay (its level) and send, each <track> <value>. Saved, and told to c_kit.
+-- The same value again, or a message without a track and a number, does nothing.
 function R.set_fx(st, field, track, v)
   local t = track_value(track, v)
   if not t then return {} end
@@ -838,20 +866,26 @@ function R.set_verb(st, field, v)
   return out
 end
 
--- The effects from a saved line, past its first 581: each as far as the line holds it, a symbol
--- as its range's bottom, and what it does not hold at its starting point, off. So a line saved
--- before the effects, of any length R.restore takes, comes back with every effect off.
+-- The effects from a saved line, past its first 581, and the characters past its first 743: each
+-- as far as the line holds it, a symbol as its range's bottom, and what it does not hold at its
+-- starting point, off. So a line saved before the effects, of any length R.restore takes, comes
+-- back with every effect off, and one saved before the characters with every track soft.
 local function restore_fx(st, values)
   local k = R.SAVED_FXLESS
-  for _, f in ipairs(R.FX) do
-    for t = 1, R.TRACKS do
-      k = k + 1
-      st.fx[f[1]][t] = values[k] ~= nil and whole(values[k], f[2], f[3]) or f[4]
-    end
+  local function take(f, t)
+    k = k + 1
+    st.fx[f[1]][t] = values[k] ~= nil and whole(values[k], f[2], f[3]) or f[4]
+  end
+  for i = 1, R.FX_BLOCK do
+    for t = 1, R.TRACKS do take(R.FX[i], t) end
   end
   for _, f in ipairs(R.VERB) do
     k = k + 1
     st.verb[f[1]] = values[k] ~= nil and whole(values[k], f[2], f[3]) or f[4]
+  end
+  k = R.SAVED_FLAGS
+  for i = R.FX_BLOCK + 1, #R.FX do
+    for t = 1, R.TRACKS do take(R.FX[i], t) end
   end
 end
 
@@ -869,9 +903,9 @@ end
 -- A section's restore of <part>, from the song store, or u_state's of section-1-<part>, the auto
 -- key the pattern had before sections, once, then put straight back (ref/module/state.md), which
 -- also repairs a short or malformed line; and every track's volume and pitch to c_kit, and
--- whichever effects changed (R.tell_fx), a line of fewer than 711 bringing them back off; and
--- last, the page's quiet pads when they changed, a line of fewer than 743 bringing every track
--- back unmuted and unsoloed. A line of
+-- whichever effects changed (R.tell_fx), a line of fewer than 711 bringing them back off and one
+-- of fewer than 759 every track back soft; and last, the page's quiet pads when they changed, a
+-- line of fewer than 743 bringing every track back unmuted and unsoloed. A line of
 -- exactly 256 is the 16-step pattern this replaced, track by track: its steps go to each track's
 -- first sixteen. A line of exactly 563 is from before the randomness (2026-11-05): its skip
 -- chances come back as each track's randomness, which took their place, its move chances are
@@ -946,7 +980,7 @@ end
 -- snap and select, and its pads' vol, pitch, randomness and set-track-last <track> <value>,
 -- through u_net; and the arrangement screen's num and den (-1 or 1), drunk (0 to 100), set-swing
 -- (50 to 75) and set-last (1 to 32), through u_net too; and the drum screen's effects, drive,
--- tone, dist, delay-note, delay-feel, feedback, delay and send <track> <value>, and size and
+-- tone, dist, char, delay-note, delay-feel, feedback, delay and send <track> <value>, and size and
 -- damping <value>; and its mute and solo <track> <0 or 1>. A press, a knob or a setting with no
 -- number in it does nothing.
 R.presses = {
@@ -970,6 +1004,7 @@ R.presses = {
   drive = function(st, a) return R.set_fx(st, "drive", a[1], a[2]) end,
   tone = function(st, a) return R.set_fx(st, "tone", a[1], a[2]) end,
   dist = function(st, a) return R.set_fx(st, "dist", a[1], a[2]) end,
+  char = function(st, a) return R.set_fx(st, "char", a[1], a[2]) end,
   ["delay-note"] = function(st, a) return R.set_fx(st, "note", a[1], a[2]) end,
   ["delay-feel"] = function(st, a) return R.set_fx(st, "feel", a[1], a[2]) end,
   feedback = function(st, a) return R.set_fx(st, "feedback", a[1], a[2]) end,

@@ -272,6 +272,8 @@ SEQ = [
     (43300, "cmdrand",  [("cmd", ("cutit", "drums randomness 3 40"))]),
     (44000, "cmdswing", [("cmd", ("cutit", "drums set-swing 62"))]),
     (45400, "cmdlast",  [("cmd", ("cutit", "drums set-last 12"))]),
+    # -- a track's distortion character, as the drum screen's radio sends it (Brendan, 2026-11-05)
+    (46100, "cmdchar",  [("cmd", ("cutit", "drums char 3 2"))]),
     # A drums command u_net has never heard of still goes to c_steps, which
     # refuses what it doesn't know: u_net passes drums on whole.
     (46800, "cmddrumsnew", [("cmd", ("cutit", "drums reload 2"))]),

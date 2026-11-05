@@ -12,7 +12,7 @@ tracks looping on their own, and the drum screen's snap, sent to u_net over OSC
 as the phone sends it, landing at PLAY. Then swing, a repeat pad, the drum
 screen's pads (a track's volume, pitch and randomness, over OSC too), a repeat
 pad held over four tracks at full randomness, track 1 muted and then soloed as
-well, over OSC, and drunkenness.
+well, over OSC, track 4's distortion made fold, over OSC too, and drunkenness.
 
 The state directory holds a seeded pattern (scratch-gates.py), so the restore at
 ~3.5 s is under test too. RESTORE opens a second before it and closes a second
@@ -166,6 +166,9 @@ SEQ = [
     (21950, "SOLO", ["\\; seqgate-osc drums solo 1 1"], GAP),
     (22100, "SO-PLAY", ["\\; start bang"], GAP),
     (22800, "SO-STOP", ["\\; stop bang"], GAP),
+    # Track 4's distortion made fold, over OSC as the phone sends it (Brendan, 2026-11-05): put
+    # with the pattern, its character after the mutes and solos, and told to c_kit.
+    (22850, "CHAR", ["\\; seqgate-osc drums char 4 3"], GAP),
     # Drunkenness at its top, from the drum screen over OSC, then 96 windows a
     # sixteenth wide, each holding one step when sober. At the top every step
     # strays, by up to two steps, so most windows hold none or two or more.

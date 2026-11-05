@@ -34,10 +34,13 @@ end
 
 -- The effects, as a new sequencer has them, written out here rather than read from R.FX, so a
 -- change to a starting point is a change this test sees (Brendan, 2026-11-05): every track's
--- drive 50, tone 60, mix 0, note 3 (1/8), feel 1 (straight), feedback 40, level 0 and send 0, in
--- the order R.save writes them, and the reverb's size and damping, 50 each.
-local FX = { { "drive", 50 }, { "tone", 60 }, { "dist", 0 }, { "note", 3 }, { "feel", 1 },
-             { "feedback", 40 }, { "delay", 0 }, { "send", 0 } }
+-- drive 50, tone 100 (60 until the characters), mix 0, note 3 (1/8), feel 1 (straight), feedback
+-- 40, level 0, send 0 and character 1 (soft), in the order the phone gets them, and the reverb's
+-- size and damping, 50 each. The line holds the first BLOCK after its 581, and the character
+-- after the mutes and solos.
+local FX = { { "drive", 50 }, { "tone", 100 }, { "dist", 0 }, { "note", 3 }, { "feel", 1 },
+             { "feedback", 40 }, { "delay", 0 }, { "send", 0 }, { "char", 1 } }
+local BLOCK = 8
 local VERB = { { "size", 50 }, { "damping", 50 } }
 -- A delay's time in steps: 1/2 to 1/32, straight, triplet or dotted.
 local NOTE_STEPS, FEEL_SHARE = { 8, 4, 2, 1, 0.5 }, { 1, 2 / 3, 3 / 2 }
@@ -50,11 +53,12 @@ end
 
 -- The saved line: 512 velocities, then the 16 tracks' own last steps, their randomness, their
 -- volumes and their pitches, then the time signature, the drunkenness, the swing and the global
--- last step: 581 numbers; then, when x gives any effect, each effect of every track and the
--- reverb's two: 711; then, when x mutes or solos any track, the sixteen mutes and the sixteen
--- solos, the effects before them whether given or not: 743. x holds what differs from a new
--- sequencer's: randomness, vol and pitch by track, num, den, drunk, swing, last, fx and verb, and
--- mute and solo by track.
+-- last step: 581 numbers; then, when x gives any effect, each of the first BLOCK effects of every
+-- track and the reverb's two: 711; then, when x mutes or solos any track, the sixteen mutes and the
+-- sixteen solos, the effects before them whether given or not: 743; then, when x gives any track
+-- a character, the sixteen characters, everything before them whether given or not: 759. x holds
+-- what differs from a new sequencer's: randomness, vol and pitch by track, num, den, drunk, swing,
+-- last, fx (fx.char among them) and verb, and mute and solo by track.
 local function line(pat, own, x)
   x = x or {}
   local l = {}
@@ -67,15 +71,20 @@ local function line(pat, own, x)
   end
   l[CELLS + 65], l[CELLS + 66], l[CELLS + 67] = x.num or 4, x.den or 4, x.drunk or 0
   l[CELLS + 68], l[CELLS + 69] = x.swing or 50, x.last or 16
-  local flagged = x.mute or x.solo
+  local late = x.fx and x.fx.char
+  local flagged = x.mute or x.solo or late
   if not x.fx and not x.verb and not flagged then return l end
-  for _, f in ipairs(FX) do
-    for t = 1, 16 do l[#l + 1] = fx_of(x.fx, f[1], t, f[2]) end
+  for i = 1, BLOCK do
+    for t = 1, 16 do l[#l + 1] = fx_of(x.fx, FX[i][1], t, FX[i][2]) end
   end
   for _, f in ipairs(VERB) do l[#l + 1] = (x.verb or {})[f[1]] or f[2] end
   if not flagged then return l end
   for _, which in ipairs({ "mute", "solo" }) do
     for t = 1, 16 do l[#l + 1] = (x[which] or {})[t] or 0 end
+  end
+  if not late then return l end
+  for i = BLOCK + 1, #FX do
+    for t = 1, 16 do l[#l + 1] = fx_of(x.fx, FX[i][1], t, FX[i][2]) end
   end
   return l
 end
@@ -117,7 +126,7 @@ local function kit(vol, pitch)
 end
 
 -- Every effect c_kit is told when it has been told none, at load or by a sequencer that never
--- loaded: each track's drive, tone, dist, delay-time, feedback, delay and send, track 1 first,
+-- loaded: each track's drive, tone, dist, delay-time, feedback, delay, send and char, track 1 first,
 -- then the reverb's size and damping, at their starting points unless given (fx, verb).
 local function fx_all(fx, verb)
   local out = {}
@@ -150,7 +159,7 @@ end
 -- A knob position for a step: what R.knob_step reads back as n.
 local function at(n) return (n - 1) / 31 end
 
--- The phone's 130 numbers, from the few that differ: lasts and owns by track, then the time
+-- The phone's 131 numbers, from the few that differ: lasts and owns by track, then the time
 -- signature, the drunkenness and the swing (4 4 0 50 unless given), then every track's volume,
 -- pitch and randomness (per.vol, per.pitch and per.randomness by track, 0 unless given), then the
 -- selected track's effects and the reverb's (per.fx and per.verb, as line's x.fx and x.verb), then
@@ -1108,9 +1117,10 @@ st = R.new(1)
 equal("a new sequencer has every effect at its starting point, and every mix, level and send at 0, "
       .. "off", { st.fx.drive[1], st.fx.tone[16], st.fx.dist[5], st.fx.note[2], st.fx.feel[2],
                   st.fx.feedback[9], st.fx.delay[3], st.fx.send[16], st.verb.size,
-                  st.verb.damping }, { 50, 60, 0, 3, 1, 40, 0, 0, 50, 50 })
-equal("⛔ the line is 711 numbers with the effects, after the 581 it held before them, and 743 "
-      .. "with the mutes and solos after them", { R.SAVED_FX, R.SAVED }, { 711, 743 })
+                  st.verb.damping, st.fx.char[4] }, { 50, 100, 0, 3, 1, 40, 0, 0, 50, 50, 1 })
+equal("⛔ the line is 711 numbers with the effects, after the 581 it held before them, 743 "
+      .. "with the mutes and solos after them, and 759 with the characters after those",
+      { R.SAVED_FX, R.SAVED_FLAGS, R.SAVED }, { 711, 743, 759 })
 R.internal.init(st, {})
 equal("⛔ a track's distortion mix from the drum screen, its own track's: saved, and to c_kit",
       R.presses.dist(st, { 3, 40 }),
@@ -1153,8 +1163,8 @@ equal("⛔ the reverb's size and damping are the kit's, one each: saved, and to 
           { "note", "size", { 80 } } }, { "note", "damping", { 20 } }, {} })
 local P = 4 + 32 + 4 + 48
 equal("⛔ the phone hears the selected track's effects and the reverb's, after the rest",
-      { R.phone(st)[P + 1], R.phone(st)[P + 3], R.phone(st)[P + 9], R.phone(st)[P + 10],
-        #R.phone(st) }, { 100, 0, 80, 20, 130 })
+      { R.phone(st)[P + 1], R.phone(st)[P + 3], R.phone(st)[P + 10], R.phone(st)[P + 11],
+        #R.phone(st) }, { 100, 0, 80, 20, 131 })
 R.select(st, 7)
 equal("... and another track's once it is selected: track 7's 1/2 triplet",
       { R.phone(st)[P + 4], R.phone(st)[P + 5], R.phone(st)[P + 6] }, { 1, 2, 40 })
@@ -1209,7 +1219,7 @@ equal("a value out of its range is clipped, and a symbol is its range's bottom",
       { st.fx.drive[1], st.fx.note[1], st.fx.feel[2] }, { 100, 1, 3 })
 st = R.new(1)
 equal("⛔ a sequencer that never loaded tells c_kit every effect at its first restore",
-      #R.internal.restore(st, fxl), 5 + 32 + 114)
+      #R.internal.restore(st, fxl), 5 + 32 + 130)
 
 print("\n--- mute and solo ---")
 -- Each track's mute and solo from the drum screen (Brendan, 2026-11-05): with any track soloed
@@ -1280,9 +1290,9 @@ equal("⛔ no solo left, the mutes are heard again: track 3 muted, tracks 1 and 
 equal("⛔ the phone hears each track's mute, then each track's solo, after the effects",
       (function()
         R.presses.solo(st, { 5, 1 })
-        return { #R.phone(st), R.phone(st)[98 + 3], R.phone(st)[98 + 2], R.phone(st)[114 + 5],
-                 R.phone(st)[114 + 3] }
-      end)(), { 130, 1, 0, 1, 0 })
+        return { #R.phone(st), R.phone(st)[99 + 3], R.phone(st)[99 + 2], R.phone(st)[115 + 5],
+                 R.phone(st)[115 + 3] }
+      end)(), { 131, 1, 0, 1, 0 })
 st = R.new(1)
 R.presses.dist(st, { 4, 30 })
 R.presses.solo(st, { 6, 1 })
@@ -1322,6 +1332,82 @@ oddms[712], oddms[713], oddms[714 + 16] = 7, "x", -3
 R.internal.restore(st, oddms)
 equal("a mute or a solo is 1 or 0: a value over 1 is 1, a symbol or a value below 0 is 0",
       { st.mute[1], st.mute[2], st.solo[3] }, { 1, 0, 0 })
+
+print("\n--- the distortion's character ---")
+-- Each track's distortion is soft, hard, fold or crush, 1 to 4 (Brendan, 2026-11-05): saved per
+-- section after the mutes and solos, told to c_kit, and on the phone after the track's send.
+st = R.new(1)
+R.internal.init(st, {})
+equal("a new sequencer has every track soft, and the phone's names are the four, in order",
+      { st.fx.char, R.CHARS }, { { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                                 { "soft", "hard", "fold", "crush" } })
+equal("⛔ char 3 2 from the drum screen: saved, the line 759 with track 3 hard, and to c_kit",
+      R.presses.char(st, { 3, 2 }),
+      { { "save", "list", line(zeros(CELLS), nil, { fx = { char = { [3] = 2 } } }) },
+        { "note", "char", { 3, 2 } } })
+equal("... the same value again does nothing, nor one with no track or no number",
+      { R.presses.char(st, { 3, 2 }), R.presses.char(st, { 3 }), R.presses.char(st, {}),
+        R.presses.char(st, { "x", 4 }) }, { {}, {}, {}, {} })
+equal("⛔ it is clipped to 1 to 4 and rounded: 9 is crush, 0 soft, 2.4 hard",
+      { R.presses.char(st, { 5, 9 })[2], R.presses.char(st, { 6, 0 }),
+        R.presses.char(st, { 6, 2.4 })[2] },
+      { { "note", "char", { 5, 4 } }, {}, { "note", "char", { 6, 2 } } })
+equal("⛔ the line is 759 while any track is not soft, the effects, mutes and solos before the "
+      .. "characters as they stand; 743 once every track is soft again with one muted, 711 with an "
+      .. "effect moved, 581 with neither",
+      { #R.save(st)[3], R.save(st)[3][743 + 3], R.save(st)[3][743 + 5], R.save(st)[3][711 + 1],
+        (function()
+          R.presses.mute(st, { 1, 1 })
+          for _, t in ipairs({ 3, 5, 6 }) do R.presses.char(st, { t, 1 }) end
+          return #R.save(st)[3]
+        end)(),
+        (function() R.presses.mute(st, { 1, 0 }) R.presses.dist(st, { 2, 30 })
+          return #R.save(st)[3] end)(),
+        (function() R.presses.dist(st, { 2, 0 }) return #R.save(st)[3] end)() },
+      { 759, 2, 4, 0, 743, 711, 581 })
+R.presses.char(st, { 8, 3 })
+R.select(st, 8)
+local Q = 4 + 32 + 4 + 48
+equal("⛔ the phone hears the selected track's character after its send, before the reverb's two",
+      { R.phone(st)[Q + 8], R.phone(st)[Q + 9], R.phone(st)[Q + 10], #R.phone(st) },
+      { 0, 3, 50, 131 })
+R.select(st, 1)
+equal("... and track 1's, soft, once it is selected", R.phone(st)[Q + 9], 1)
+
+print("\n--- the characters in the restore ---")
+st = R.new(1)
+R.internal.init(st, {})
+local chl = line(zeros(CELLS), nil, { fx = { char = { [2] = 3, [16] = 4 }, drive = { [2] = 80 } } })
+back = R.internal.restore(st, chl)
+equal("⛔ a line of 759 brings the characters back, and is put straight back as it came",
+      { st.fx.char[2], st.fx.char[16], st.fx.char[1], st.fx.drive[2], #chl, back[1] },
+      { 3, 4, 1, 80, 759, { "save", "list", chl } })
+equal("⛔ ... and tells c_kit the ones that changed, in the order the rest are told",
+      { #back, back[5 + 32 + 1], back[5 + 32 + 2], back[5 + 32 + 3] },
+      { 5 + 32 + 3, { "note", "drive", { 2, 80 } }, { "note", "char", { 2, 3 } },
+        { "note", "char", { 16, 4 } } })
+back = R.internal.restore(st, first(chl, 743))
+equal("⛔ a line of 743, saved before the characters, brings every track back soft, tells c_kit "
+      .. "so, and is put back as the line it is",
+      { st.fx.char, st.fx.drive[2], #back, back[5 + 32 + 1], back[5 + 32 + 2], back[1] },
+      { { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, 80, 5 + 32 + 2,
+        { "note", "char", { 2, 1 } }, { "note", "char", { 16, 1 } },
+        { "save", "list", first(chl, 711) } })
+equal("⛔ so do lines of 711, 581, 579, 563 and 256", (function()
+  local got = {}
+  for _, old in ipairs({ first(chl, 711), first(chl, 581), sectionless(zeros(CELLS)),
+                         old_line(zeros(CELLS)), zeros(256) }) do
+    R.internal.restore(st, chl)
+    R.internal.restore(st, old)
+    got[#got + 1] = R.late_moved(st)
+  end
+  return got
+end)(), { false, false, false, false, false })
+local oddch = line(zeros(CELLS), nil, { fx = { char = { [1] = 2 } } })
+oddch[744], oddch[745], oddch[746] = 7, "x", -3
+R.internal.restore(st, oddch)
+equal("a character is 1 to 4: a value over 4 is crush, a symbol or a value below 1 soft",
+      { st.fx.char[1], st.fx.char[2], st.fx.char[3] }, { 4, 1, 1 })
 
 print("\n--- the Pd face ---")
 local class = T.load_class(DIR .. "c_steps-lua.pd_lua", DIR)
@@ -1380,8 +1466,17 @@ equal("⛔ a mute from the drum screen: the page's quiet pads on outlet 2 and th
         local got = T.send(q, 1, "mute", { 4, 1 })
         local armed = q.save_clock.armed
         local saved = T.fire(q, q.save_clock)
-        return { got[1], got[2][1], got[2][3][98 + 4], armed, #saved[1][3], saved[1][3][711 + 4] }
+        return { got[1], got[2][1], got[2][3][99 + 4], armed, #saved[1][3], saved[1][3][711 + 4] }
       end)(), { { 2, "quiet", quiet(4)[3] }, 7, 1, 100, 743, 1 })
+equal("⛔ a character from the drum screen: char to c_kit on outlet 1 and the phone's state on "
+      .. "outlet 7, its put held as any press's, and the line its clock puts holds track 4 fold",
+      (function()
+        local q = T.new(class, { 1 })
+        local got = T.send(q, 1, "char", { 4, 3 })
+        local armed = q.save_clock.armed
+        local saved = T.fire(q, q.save_clock)
+        return { got[1], got[2][1], armed, #saved[1][3], saved[1][3][743 + 4] }
+      end)(), { { 1, "char", { 4, 3 } }, 7, 100, 759, 3 })
 equal("PLAY: the step clock back at its own rate, no repeat, and the drum screen hears it is playing",
       T.send(o, 2, "start", {}), { { 8, "rate", { 1 } }, { 2, "rep", { 0 } },
                                    { 7, "list", phone(1, 16, 1, 0, {}, {}) } })

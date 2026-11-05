@@ -233,12 +233,12 @@ def audio(g):
 
 
 def kit(g):
-    # A harness holding c_kit alone, with two samples the generator writes into
+    # A harness holding c_kit alone, with three samples the generator writes into
     # the copy's samples/drums: lib_scratch leaves the Mac's own out, so the run
     # hears these and nothing else.
     S.require("Cut It/c_kit.pd", "Cut It/c_voice.pd", "Cut It/u_root.pd")
     s, cap = _harness_gate(
-        g, 30, lambda s: s.patch, lambda s: s.path("out.wav"),
+        g, 40, lambda s: s.patch, lambda s: s.path("out.wav"),
         why=["      Without it nothing instantiates c_kit, nothing records, and",
              "      the gate would report a silent kit rather than a broken test."])
     return g.analyze("test/gate/kit-assert.py", s.path("out.wav"), *g.args, stdin=cap)
@@ -419,10 +419,11 @@ SEQ_VOL = {16: -12}
 SEQ_PITCH = {3: 5}
 SEQ_SIG = (7, 8)
 # Effects off their starting points, so the seed is the 711-number line and the restore tells
-# c_kit them (c_steps.lua's R.FX, in its order, each with its starting point): track 2's
+# c_kit them (c_steps.lua's R.FX, its first R.FX_BLOCK, those the 711 holds, in its order, each
+# with its starting point; every track soft, as a line saved before the characters): track 2's
 # distortion mixed in at 40, track 5's delay a dotted quarter at 30, track 9's send at 60, and
 # the reverb's size 70.
-SEQ_FX = [("drive", 50, {}), ("tone", 60, {}), ("dist", 0, {2: 40}), ("note", 3, {5: 2}),
+SEQ_FX = [("drive", 50, {}), ("tone", 100, {}), ("dist", 0, {2: 40}), ("note", 3, {5: 2}),
           ("feel", 1, {5: 3}), ("feedback", 40, {}), ("delay", 0, {5: 30}), ("send", 0, {9: 60})]
 SEQ_VERB = [("size", 50, 70), ("damping", 50, 50)]
 

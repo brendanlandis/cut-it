@@ -4,7 +4,7 @@ stdin and the recording.
 
     kit-assert.py OUT.wav [-v] < capture
 
-Six claims:
+Nine claims:
 
     1. u_root sends the sequencer's pads to c_kit, and to nothing else, and
        c_kit's outlet~ to the left output
@@ -18,6 +18,10 @@ Six claims:
        and passes the dry sound untouched at mix 0; its delay echoes a note value later
        at the tempo the bus carries, at its level, and rings out once its level goes to
        0; and its send gives the reverb a tail, which a send of 0 gives no new hit
+    8. the distortion's level and characters: more drive is never quieter, and never
+       louder at its peak than the dry; a sample is driven by its own peak, so a quiet
+       one as hard as a loud one; and soft, hard, fold and crush each a shape of its own
+    9. each effect's DSP has a switch~, and the crush stage one of its own
 
 Standard library only.
 """
@@ -140,9 +144,9 @@ def main():
     print("\n--- 2. c_kit reports the samples it found ---")
     order, by = A.windows(cap, "KIT", len(G._seq("x")))
     errs = [v for w in by.values() for k, v in w if k == "ERR" and v[1:2] == ["c_kit"]]
-    A.check("exactly one report, warn c_kit samples-2 (pads 1 and 7 of 16)",
-            errs == [["warn", "c_kit", "samples-2"]],
-            "c_kit's err lines: %s. Two samples is a count no other run gives, so "
+    A.check("exactly one report, warn c_kit samples-3 (pads 1, 5 and 7 of 16)",
+            errs == [["warn", "c_kit", "samples-3"]],
+            "c_kit's err lines: %s. Three samples is a count no other run gives, so "
             "a stale or a hard-coded count shows" % errs)
 
     # ---- the recording ------------------------------------------------------
@@ -247,12 +251,13 @@ def main():
         return peak(xs) / rms(xs) if rms(xs) else 0.0
 
     seg = inside(window("DIST"), G.SET_MS)
-    # drive 100 is a gain of 100 into the clip, and the clip's output 1 over its root, 0.1
+    # drive 100 drives the sample's peak a hundred times past the clip, soft as a track starts,
+    # and the makeup holds at -8 dB, 0.4, times the peak and soft's trim of 0.9: 0.09
     A.check("⛔ DIST: drive 100 mixed all the way in squares pad 1's sine off: its crest factor "
             "near 1 where a sine's is 1.41", crest(seg) < 1.15,
             "crest %.3f, rms %.4f, peak %.4f" % (crest(seg), rms(seg), peak(seg)))
-    A.check("DIST: ... at the clip's level, 1 over the root of the drive's gain of 100: 0.1",
-            abs(peak(seg) - 0.1) < 0.012, "peak %.4f" % peak(seg))
+    A.check("DIST: ... at the makeup's floor, -8 dB, times the sample's peak and soft's trim: "
+            "0.4 x 0.25 x 0.9, 0.09", abs(peak(seg) - 0.09) < 0.01, "peak %.4f" % peak(seg))
     dark = inside(window("DARK"), G.SET_MS)
     # a one-pole low-pass at 300 Hz passes 0.57 of a 440 Hz fundamental and little of the rest
     A.check("DARK: tone 0, its low-pass at 300 Hz, rounds the square's edges off, a sine's crest "
@@ -302,12 +307,83 @@ def main():
     A.check("VERB-OFF: at send 0 a hit leaves nothing after its sample ends",
             peak(off) < SILENT, "peak %.5f after the sample" % peak(off))
 
-    # ---- 8. every effect switches itself off --------------------------------
-    print("\n--- 8. each effect's DSP has a switch~, so an effect unused costs nothing ---")
+    # ---- 8. the distortion's level and characters ---------------------------
+    print("\n--- 8. the distortion: louder with drive, by its sample's peak, four characters ---")
+
+    def asym(xs):
+        hi, lo = max(xs) / 32768.0, min(xs) / 32768.0
+        return abs(hi + lo) / (hi - lo) if hi > lo else 0.0
+
+    def per_cycle(xs, hz):
+        return crossings(xs) / (len(xs) / float(rate) * hz)
+
+    # 441 Hz is 100 samples a cycle: a shape that repeats differs from itself 100 samples on
+    # by nothing; one held at a rate of its own does.
+    def repeats(xs, n=100):
+        d = [float(xs[i + n]) - xs[i] for i in range(len(xs) - n)]
+        return (sum(v * v for v in d) / len(d)) ** 0.5 / 32768.0 / rms(xs) if d and rms(xs) else 9
+
+    half = inside(window("HALF"), G.SET_MS)
+    A.check("⛔ HALF: more drive is never quieter: pad 1 at drive 100 is at least as loud as at 50",
+            rms(seg) >= rms(half) * 0.95, "rms %.4f at 100, %.4f at 50" % (rms(seg), rms(half)))
+    A.check("⛔ ... and neither is louder at its peak than the dry sample, 0.25",
+            max(peak(seg), peak(half)) <= G.AMP * 1.02,
+            "peaks %.4f at 100 and %.4f at 50" % (peak(seg), peak(half)))
+    A.check("... nor quieter than the dry by more than the makeup's floor and soft's trim allow",
+            min(rms(seg), rms(half)) >= TONE_RMS * 0.4 * 0.9 * 0.95,
+            "rms %.4f and %.4f against the dry's %.4f" % (rms(seg), rms(half), TONE_RMS))
+    pk = inside(window("PEAK"), G.SET_MS)
+    A.check("⛔ PEAK: pad 5's sample, a quarter of pad 1's level, is driven as hard at the same "
+            "drive: c_voice tells e_drive its sample's peak", crest(pk) < 1.2
+            and abs(crest(pk) - crest(half)) < 0.05,
+            "crest %.3f against pad 1's %.3f; a sine's is 1.41" % (crest(pk), crest(half)))
+    A.check("PEAK: ... and comes out a quarter as loud, its own peak's share",
+            abs(rms(pk) / rms(half) - 0.25) < 0.0125 if rms(half) else False,
+            "rms %.5f, pad 1's %.5f, a ratio of %.3f" % (rms(pk), rms(half),
+                                                         rms(pk) / rms(half) if rms(half) else 0))
+    hz = G.SAMPLES[5]
+    hard = inside(window("HARD"), G.SET_MS)
+    A.check("⛔ HARD: char 2 clips a sine lopsided, its two peaks apart, where soft's are level, "
+            "and squarer than soft at drive 0, whose crest is a sine's",
+            asym(hard) > 0.025 and asym(pk) < 0.01 and crest(hard) < 1.3,
+            "lopsided %.3f against soft's %.3f, crest %.3f" % (asym(hard), asym(pk), crest(hard)))
+    fold = inside(window("FOLD"), G.SET_MS)
+    A.check("⛔ FOLD: char 3 folds the sine back on itself: at drive 50 it crosses 0 ten times a "
+            "cycle, where soft and hard cross twice",
+            per_cycle(fold, hz) > 6 and per_cycle(pk, hz) < 2.5 and per_cycle(hard, hz) < 2.5,
+            "crossings a cycle: fold %.1f, soft %.1f, hard %.1f"
+            % (per_cycle(fold, hz), per_cycle(pk, hz), per_cycle(hard, hz)))
+    crush = inside(window("CRUSH"), G.SET_MS)
+    A.check("⛔ CRUSH: char 4 holds the sound at a rate of its own, so it no longer repeats every "
+            "cycle, where soft, hard and fold do",
+            repeats(crush) > 0.15 and max(repeats(pk), repeats(hard), repeats(fold)) < 0.03,
+            "off by %.3f a cycle, against soft %.3f, hard %.3f, fold %.3f"
+            % (repeats(crush), repeats(pk), repeats(hard), repeats(fold)))
+    again = inside(window("SOFT-AGAIN"), G.SET_MS)
+    A.check("⛔ SOFT-AGAIN: char 1 again takes the crush stage out: the sound repeats and is "
+            "soft's level again", repeats(again) < 0.03 and abs(rms(again) - rms(pk)) / rms(pk)
+            < RMS_TOL if rms(pk) else False,
+            "off by %.3f a cycle, rms %.5f against soft's %.5f" % (repeats(again), rms(again),
+                                                                  rms(pk)))
+
+    # ---- 9. every effect switches itself off --------------------------------
+    print("\n--- 9. each effect's DSP has a switch~, so an effect unused costs nothing ---")
     for name in ("e_drive", "e_delay", "e_verb"):
         boxes, _cons = top_boxes(os.path.join(ROOT, "Cut It", name + ".pd"))
         A.check("%s holds one switch~" % name, len(find(boxes, "switch~")) == 1,
                 "switch~ boxes: %s" % find(boxes, "switch~"))
+    crush_sub, inside_crush = [], False
+    for r in lib_pd.read(os.path.join(ROOT, "Cut It", "e_drive.pd")):
+        if r.startswith("#N canvas") and r[:-1].split()[-2:-1] == ["crush"]:
+            inside_crush = True
+        elif r.startswith("#X restore"):
+            inside_crush = False
+        elif inside_crush and r.startswith("#X obj"):
+            crush_sub.append(r[:-1].split()[4])
+    A.check("⛔ e_drive's crush stage is a subpatch with a switch~ of its own, off for every "
+            "character but crush, so the other three don't pay for it",
+            "switch~" in crush_sub and "samphold~" in crush_sub,
+            "pd crush's objects: %s" % crush_sub)
     return A.report()
 
 

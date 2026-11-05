@@ -1,6 +1,6 @@
 #N canvas 20 20 1600 1500 12;
 #X text 20 20 c_voice -- one drum pad's sample \, played from memory. It loads samples/drums/NN.wav beside the patch at load \, NN its pad \, and plays it from the start on every hit \, so a hit cuts the one before as a one-shot pad on the 404 did. ref/module/sequencer.md, f 70;
-#X text 20 140 creation arg 1: its pad \, 1 to 16 \, and arg 2: c_kit's \$0 \, for the count of samples loaded and the throws to its delay and the reverb. inlet: a velocity \, 0 to 127 \, 0 ignored \, and vol <dB> and pitch <semitones> \, its track's volume and pitch from c_steps \, for the hits after them \, and its effects: drive \, tone and dist (the mix) for its distortion \, delay (the level) and send <0-100>. outlet~: the sample \, mono \, its distortion mixed in. It throws the same at the delay's level to its e_delay \, \$2-d\$1 \, and at the send to e_verb \, \$2-verb., f 70;
+#X text 20 140 creation arg 1: its pad \, 1 to 16 \, and arg 2: c_kit's \$0 \, for the count of samples loaded and the throws to its delay and the reverb. inlet: a velocity \, 0 to 127 \, 0 ignored \, and vol <dB> and pitch <semitones> \, its track's volume and pitch from c_steps \, for the hits after them \, and its effects: drive \, tone \, dist (the mix) and char (the character \, 1 to 4) for its distortion \, delay (the level) and send <0-100>. outlet~: the sample \, mono \, its distortion mixed in. It throws the same at the delay's level to its e_delay \, \$2-d\$1 \, and at the send to e_verb \, \$2-verb. Once its sample is read \, it tells e_drive the sample's peak \, so a drive means the same on every pad., f 70;
 #X obj 20 700 inlet;
 #X obj 700 240 loadbang;
 #X obj 700 280 t b b;
@@ -18,7 +18,7 @@
 #X obj 850 640 list append \$0-smp;
 #X msg 850 680 read -resize \$1 \$2;
 #X obj 850 720 soundfiler;
-#X obj 850 760 t f f f;
+#X obj 850 760 t f f f b;
 #X obj 1000 800 expr \$f1 / 44.1 / pow(2 \, \$f2 / 12);
 #X obj 1000 840 t f f f;
 #X obj 1150 880 + 10;
@@ -163,3 +163,18 @@
 #X connect 63 0 64 0;
 #X connect 64 0 65 0;
 #X connect 65 0 66 3;
+#X obj 1150 1000 t b b;
+#X obj 1150 1040 array max \$0-smp;
+#X obj 1300 1040 array min \$0-smp;
+#X obj 1300 1080 * -1;
+#X obj 1150 1120 max;
+#X msg 1150 1160 peak \$1;
+#X text 1150 1200 The sample's peak \, the larger of its highest and its lowest \, to e_drive once the sample is read: its gain scales the sound to it \, so a drive means the same on a quiet hat as on a loud kick (Brendan \, 2026-11-05)., f 40;
+#X connect 19 3 68 0;
+#X connect 68 1 70 0;
+#X connect 70 0 71 0;
+#X connect 71 0 72 1;
+#X connect 68 0 69 0;
+#X connect 69 0 72 0;
+#X connect 72 0 73 0;
+#X connect 73 0 57 1;

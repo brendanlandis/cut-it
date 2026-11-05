@@ -25,6 +25,8 @@ state bus and the song's draft, which u_song writes. Nothing inside c_steps is r
   mute and solo  a track muted and then soloed over OSC: its notes stop and
                  start, the others' do the opposite, the Launchpad dims the
                  pads that won't play, and both are put with the pattern
+  a character    a track's distortion made fold over OSC: put with the pattern
+                 after the mutes and solos, and told to c_kit
   the disk       the pattern reaches the song's draft as one line, section 1's drums
 
 A note's step is the playhead in the frame painted after it: c_steps sends a
@@ -50,7 +52,7 @@ WINDOWS = ["EARLY", "RESTORE", "NINE", "THREE", "ROW-PRESS", "ROW-DARK", "SEVEN"
            "REP-PLAY", "REP-PRESS", "REP-HELD", "REP-OFF", "REP-STOP",
            "SOUND", "RAND", "RA-PLAY", "RA-STOP", "RR", "RR-PLAY",
            "RR-PRESS", "RR-HELD", "RR-OFF", "RR-STOP", "MUTE", "MU-PLAY", "MU-STOP", "SOLO",
-           "SO-PLAY", "SO-STOP", "DRUNK", "DR-PLAY"] + \
+           "SO-PLAY", "SO-STOP", "CHAR", "DRUNK", "DR-PLAY"] + \
     ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DRAG", "DONE"]
 EDITS = ["ROW-PRESS", "ROW-DARK", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
@@ -65,6 +67,7 @@ FXLESS = CELLS + 16 * 4 + 5     # and pitches, the time signature, the drunkenne
                                 # and the global last step: 581
 LINE = FXLESS + 8 * 16 + 2      # then each track's eight effects and the reverb's two: 711
 FLAGGED = LINE + 2 * 16         # then each track's mute and each track's solo: 743
+CHARRED = FLAGGED + 16          # then each track's character: 759
 NUM, DRUNK, SWING, LAST = FXLESS - 5, FXLESS - 3, FXLESS - 2, FXLESS - 1   # NUM, then the bottom
 RAND, VOL, PITCH = CELLS + 16, CELLS + 32, CELLS + 48    # where each track's are, track 1 first
 LEVEL_VELS = [round(127 * n / 8 + 1e-9) for n in range(1, 9)]   # 16 32 48 64 79 95 111 127
@@ -596,6 +599,17 @@ def main():
             "its steps 1 and 3", solo[:6] == want and want[0][1] == [(1, 32)]
             and want[2][1] == [(1, 20)], "got %s, want %s" % (solo[:6], want))
 
+    print("\n--- a character ---")
+    got = puts("CHAR")
+    A.check("⛔ char 4 3, sent to u_net over OSC as the phone sends it, is put with the pattern: "
+            "the line 759, track 4 fold after the mutes and solos, track 1 still muted and soloed",
+            [len(l) for l in got] == [CHARRED] and got[0][FLAGGED:] == [1, 1, 1, 3] + [1] * 12
+            and flags(got[0]) == (one, one),
+            "puts of %s values, characters %s" % ([len(l) for l in got],
+                                                  [l[FLAGGED:] for l in got]))
+    A.check("⛔ ... and c_kit is told track 4's character, and nothing else",
+            kitfx("CHAR") == [["char", "4", "3"]], "KITFX %s" % kitfx("CHAR"))
+
     print("\n--- drunkenness ---")
     got = [l[DRUNK] for l in puts("DRUNK")]
     A.check("drunk 100, sent to u_net over OSC as the phone sends it, is saved", got == [100],
@@ -630,10 +644,10 @@ def main():
     # the swing back at 50% (SW-STOP), the global last step at 3 since LAST-3, and track 1 muted
     # and soloed since SOLO
     snapped = (final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 100, 50, 3] + seed[FXLESS:]
-               + one + one)
+               + one + one + [1, 1, 1, 3] + [1] * 12)
     A.check("⛔ the pattern reaches the song's draft as section 1's ONE drums line, the final "
-            "743 exactly, its effects as seeded and track 1 muted and soloed",
-            disk == snapped and len(lines) == 1 and len(lines[0].split()) == FLAGGED + 1,
+            "759 exactly, its effects as seeded, track 1 muted and soloed and track 4 fold",
+            disk == snapped and len(lines) == 1 and len(lines[0].split()) == CHARRED + 1,
             "on disk: %s" % (disk if disk is None else "%d values" % len(disk)))
 
     errs = [e[1] for k in order for e in W(k) if e[0] == "ERR"

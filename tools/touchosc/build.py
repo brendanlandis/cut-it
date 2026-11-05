@@ -218,7 +218,7 @@ KINDS = {
               "tabbar": ("b", True), "tabbarDoubleTap": ("b", False), "tabbarSize": ("i", 40),
               "textSizeOff": ("i", 14), "textSizeOn": ("i", 14)},
 }
-KINDS["RADIAL"] = dict(KINDS["FADER"])
+KINDS["RADIAL"] = dict(KINDS["FADER"], inverted=("b", False))   # the editor writes it
 KINDS["TEXT"] = dict(KINDS["LABEL"], textWrap=("b", True))
 
 
@@ -461,9 +461,11 @@ def velocity_script():
             "end\n")
 
 
-def page(name, tab, kids):
-    """A pager's page, under its tab: a group the pager shows alone, named tab."""
-    return node("GROUP", name, (0, TAB, W, H - TAB), kids, color=rgb(0, 0, 0, 0.0),
+def page(name, tab, kids, h=H):
+    """A pager's page, under its tab: a group the pager shows alone, named tab. h is the pager's
+    height: TouchOSC sizes a page to its pager less the tab bar, and writes that size when the
+    editor saves, so a page built any other size shows as a change in diff.py (2026-11-04)."""
+    return node("GROUP", name, (0, TAB, W, h - TAB), kids, color=rgb(0, 0, 0, 0.0),
                 tabLabel=tab, tabColorOff=TABOFF, tabColorOn=RED, textColorOff=WHITE,
                 textColorOn=BLACK)
 
@@ -878,10 +880,10 @@ def build(name=LIST):
     outer = []
     for i, (screen, tab) in enumerate(LAUNCHPAD):
         kids = SCREENS[screen]() if screen in SCREENS else []
-        inner = tabs("tabs%d" % (i + 1), [page(screen, tab, kids)])
+        inner = tabs("tabs%d" % (i + 1), [page(screen, tab, kids, H - TAB)])
         outer.append(page("p%d" % (i + 1), tab, [inner]))
     outer.append(page("pcheck", "line check", [tabs("checktabs", [page("checks", "line check",
-                                                                          checks())])]))
+                                                                          checks(), H - TAB)])]))
     # The outer bar: the editor's tabs, small enough for nine; the root's script hides it.
     pages = node("PAGER", "pages", (0, 0, W, H), outer, color=BLACK, background=False,
                  tabbarSize=TAB, textSizeOff=14, textSizeOn=14)

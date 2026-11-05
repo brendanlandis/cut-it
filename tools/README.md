@@ -345,7 +345,8 @@ python3 tools/touchosc/watch.py
   `Cut It/cut-it-drum-page.txt` rebuilds the layout and pushes it.
 - **A dropped phone is told**, in a line and a Mac notification, as it happens and as it comes back.
 - **A change made in TouchOSC's editor comes back into the code.** Move, resize or recolor something
-  in the Mac's TouchOSC and save: the watcher lists the change (`python3 tools/touchosc/diff.py`
+  in the Mac's TouchOSC (the phone takes it live, before any save) and save with **File > Save from
+  the menu**; Cmd-S did nothing on 2026-11-04: the watcher lists the change (`python3 tools/touchosc/diff.py`
   does the same by hand), it goes into `build.py`, and the next build writes the file again.
   `build.py` refuses to write over a `CutIt.tosc` saved from the editor until then (`--force`
   discards the change), so a tweak is never lost, and stops the watcher pushing.

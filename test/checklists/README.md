@@ -53,7 +53,7 @@ session means opening one.
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
 | [midi](midi.md) | 10 | the map by mode, the Volca by ear, hot-swap |
 | [debug](debug.md) | 9 | the debug patch, with the instrument stopped |
-| [sequencer](sequencer.md) | 23 | page 2's drum page and the drums it plays |
+| [sequencer](sequencer.md) | 24 | page 2's drum page and the drums it plays |
 | [synths](synths.md) | 13 | the nanoKEY and the two synths it plays, page 3's pads, the phone's synths screen and its velocity switch, a switch mid-chord, the Streichfett on the roster |
 
 ⚠️ **The Mac is not the device.** The Phase 6 gate passed 25/25 on the Mac twice and shipped three

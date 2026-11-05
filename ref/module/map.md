@@ -71,7 +71,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, on every page** | verified | 301 |
 | `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad; an index the layout lacks is `fail u_map layout-miss` | verified | — |
 | `test-mode` | unused | Non-zero flips `u_net`'s test mode, which puts the phone's line check up ([phone.md](../device/phone.md)). **`og-shift-61` and `lp-setup`, the Launchpad's Setup, on every page**; `lp-setup` has no release, and needs none; out `u_map`'s third outlet, a cord to `u_net`. Choosing a mode turns test mode off, in `u_net` | unknown | — |
-| `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1–32**, **`og-knob-2`**; `track-last` the selected track's own, **`og-knob-3`**; `swing` the sequencer's, 25% to 75%, **`og-knob-4`**, all on page 2. A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
+| `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1–32**, **`og-knob-2`**, and `swing` the sequencer's, 25% to 75%, **`og-knob-4`**, both on every page; `track-last` the selected track's own, **`og-knob-3`**, on page 2 alone, where the track is selected (Brendan, 2026-11-04). A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
 | `synth` | The **grid index**, looked up in `cut-it-synth-page.txt` | Non-zero sends `synth <choice>`, the cell's synth, to `c_synth` out `u_map`'s fourth outlet; a release does nothing, so with both pads held the first let go cannot undo the second. Eight rows, `pad-21` to `pad-28`, page 3 alone; an index the layout lacks is `fail u_map layout-miss`, as for `drum-page` (Brendan, 2026-11-04) | unknown | — |
 | `arrangement` | The **grid index**, looked up in `cut-it-arrangement-page.txt` | Non-zero sends the cell's role to `u_tempo` out `u_map`'s fifth outlet — `tap`, the one there is — and a release nothing. One row, `mode-1 pad-21 arrangement 21`, page 1 alone; an index the layout lacks is `fail u_map layout-miss` (Brendan, 2026-11-04) | unknown | — |
 
@@ -148,12 +148,14 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 | Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Eight pages × 92
-controls is 736 possible rows and the shipped file has **145** — knob 1 on all eight; the tap
-pad on page 1; knobs 2 to 4 and the drum page's 60 pads on page 2; slider 1 and the eight synth
-pads on page 3; and CC 90, PLAY, STOP, the four shifted keys and Setup on all eight. **The Organelle's own keys have no row**: they will
-choose songs, and until then they play nothing (Brendan, 2026-11-04). ⛔ **Those nine rows are on
-every page**, so no page strands you without a stop or a recover but the Launchpad's own, and
-`map-assert.py` reads that off the file.
+controls is 736 possible rows and the shipped file has **159** — knobs 1, 2 and 4 on all eight; the
+tap pad on page 1; knob 3 and the drum page's 60 pads on page 2; slider 1 and the eight synth pads
+on page 3; and CC 90, PLAY, STOP, the four shifted keys and Setup on all eight. **The Organelle's own keys have no row**: they will
+choose songs, and until then they play nothing (Brendan, 2026-11-04). ⛔ **Those eleven rows are on
+every page**: the three knobs so the tempo, the drums' last step and their swing are at hand
+whichever page is up (Brendan, 2026-11-04), the rest so no page strands you without a stop or a
+recover but the Launchpad's own. `map-assert.py` reads that off the file, and that knob 3, the
+selected track's, is page 2's alone.
 
 ### Where each part lives
 
@@ -451,10 +453,10 @@ the gate's Pd half* ([sequencer.md](sequencer.md)).
 its own; there is no compose and perform split, and every page draws every warning
 ([error.md](error.md)).
 
-| Page | Is | Rows today, beside the nine every page has |
+| Page | Is | Rows today, beside the eleven every page has |
 |------|----|------------|
 | 1 | The arrangement | The tap pad, cell 21, for `u_tempo` ([tempo.md](tempo.md)). The boot page, `R.BOOT_MODE` |
-| 2 | The drums | The drum page's 60 pads and knobs 2 to 4, for `c_steps` |
+| 2 | The drums | The drum page's 60 pads and knob 3, for `c_steps` |
 | 3 | The synths | Fader 1, the Volca's CC 41, and the synth pads, cells 21 to 28, for `c_synth` ([synths.md](synths.md)) |
 | 4–7 | Nothing yet | None |
 | 8 | The songs | None |
@@ -641,7 +643,8 @@ between a fifth and two fifths off a control's time there.
   nothing about what each page is for, though four now have one (*The pages*, above),
   and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
 - ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
-  would jump once per change. Not reachable today — `og-knob-1` is `tempo` on every page. **It
+  would jump once per change. Not reachable today — knobs 1, 2 and 4 mean the same on every page,
+  and knob 3 nothing off page 2. **It
   closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.
   ⚠️ Doing it *cheaply* is worse than nothing — re-arming to the knob's last position puts the next
   move on the far side and suppresses until you turn back. Doing it right needs a per-`(mode, knob)`

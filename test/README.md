@@ -34,7 +34,7 @@ were false.
 | `led-assert.sh` | 12 | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | 63: 33 in Lua, 30 in Pd | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
 | `clock-assert.sh` | 22 | `module/tempo` — `c_clock` |
-| `map-assert.sh` | 174: 91 in Lua, 83 in Pd | `module/map` |
+| `map-assert.sh` | 177: 92 in Lua, 85 in Pd | `module/map` |
 | `recover-assert.sh` | 30 | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | 15 | `module/state` |
 | `presence-assert.sh` | 47 | `module/presence` |
@@ -104,7 +104,10 @@ its cords, and the drum it never saw); `kit-assert` on the old `c_kit` (6: no `o
 or to cord into the sum); `oled-assert` on the old `g_oled` (3: the `L` and `R` readouts, the two
 gate marks' `gBox`es). No tempo at rest: `oled-assert` on the `g_oled`, `u_tempo` and `u_init` with
 the footer (3: a third line, `140-bpm`, at y=54, and the bars at the old 12 px), and `init-assert`
-on the `u_init` and `u_tempo` with it (1: `status v0.3-ready` and the BPM on `disp`).
+on the `u_init` and `u_tempo` with it (1: `status v0.3-ready` and the BPM on `disp`). Knobs 2 and
+4 on every page: `map-assert` on the old map (Lua 1; Pd 2: the every-page rows, and knob 2 on page 4
+drawing a raw row where `c_steps`' held one belongs), on the map with page 4's knob 2 and page 6's
+knob 4 cut (Lua 1, Pd 2), and with knob 3 on page 5 too (Lua 1, Pd 1).
 
 ✅ **The phone's pages, the arrangement screen, tap tempo and the velocity switch were each made to
 fail** (2026-11-04), against the code without the change or a mutation of it. `phone-assert`: the
@@ -306,7 +309,7 @@ page 2, a drum pad there, sets nothing; and **the phone's tempo** as a datagram 
 ## `map-assert.sh` and `volca-assert.sh` — the map and the output device
 
 ```sh
-./test/gate/map-assert.sh            91 + 83 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
+./test/gate/map-assert.sh            92 + 85 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
 ./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
 ```
 

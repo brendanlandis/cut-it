@@ -57,6 +57,21 @@ for n = 1, R.PAGES do
 end
 check("the shipped table parses: og-knob-1 is tempo on all " .. R.PAGES .. " pages",
       tempo_everywhere, T.show(shipped.map["mode-1"]["og-knob-1"]))
+-- Knobs 2 and 4 are the drums' last step and swing on every page, knob 3 the selected track's
+-- last step on page 2 alone (Brendan, 2026-11-04).
+local knobs, want_knobs = {}, {}
+for n = 1, R.PAGES do
+  local page = shipped.map["mode-" .. n]
+  for k = 2, 4 do
+    local r = page["og-knob-" .. k]
+    knobs[#knobs + 1] = r and (r.dest .. " " .. r.arg) or "none"
+  end
+  want_knobs[#want_knobs + 1] = "drums last"
+  want_knobs[#want_knobs + 1] = n == 2 and "drums track-last" or "none"
+  want_knobs[#want_knobs + 1] = "drums swing"
+end
+equal("... knobs 2 and 4 are the drums' last step and swing on every page, knob 3 on page 2 alone",
+      knobs, want_knobs)
 
 print("\n--- the lookup ---")
 local st = R.new(MAP)

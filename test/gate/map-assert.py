@@ -34,7 +34,8 @@ ARRANGE_PAGE = "Cut It/cut-it-arrangement-page.txt"
 UTEMPO = "Cut It/u_tempo.pd"
 ULUA = "Cut It/u_map.lua"
 # The rows every page has (map.md): <control> <dest> <arg>.
-EVERY_PAGE = [("og-knob-1", "tempo", "0"), ("xport-2", "start", "0"), ("xport-5", "stop", "0"),
+EVERY_PAGE = [("og-knob-1", "tempo", "0"), ("og-knob-2", "drums", "last"),
+              ("og-knob-4", "drums", "swing"), ("xport-2", "start", "0"), ("xport-5", "stop", "0"),
               ("lp-cc-90", "recover", "0"), ("og-shift-60", "diag", "0"),
               ("og-shift-61", "test-mode", "0"), ("lp-setup", "test-mode", "0"),
               ("og-shift-72", "stop", "0"), ("og-shift-84", "recover", "0")]
@@ -163,13 +164,19 @@ def static_lint():
             "; ".join("line %d names %r" % b for b in bad_dest))
     A.check("every row's mode is one of the %d pages" % len(modes), not bad_mode,
             "; ".join("line %d: %r" % b for b in bad_mode))
-    # What works on every page: the tempo, the transport, recover, diag and test
-    # mode. A page that lacked one would strand you there with no stop or recover
-    # but the Launchpad's own, on a device that can be unplugged.
+    # What works on every page: the tempo, the drums' last step and swing (knobs
+    # 2 and 4, Brendan, 2026-11-04), the transport, recover, diag and test mode. A
+    # page that lacked one would strand you there with no stop or recover but the
+    # Launchpad's own, on a device that can be unplugged.
     missing = ["%s %s %s on %s" % (c, d, a, p) for c, d, a in EVERY_PAGE for p in modes
                if [p, c, d, a] not in [f for _, f in rows]]
     A.check("⛔ every page carries the %d rows every page shares" % len(EVERY_PAGE),
             modes and not missing, "missing: %s" % missing[:6])
+    # Knob 3 is the selected track's own last step, and the selected track is the
+    # drum page's: it stays page 2's (Brendan, 2026-11-04).
+    knob3 = [f for _, f in rows if len(f) > 1 and f[1] == "og-knob-3"]
+    A.check("⛔ knob 3 is the selected track's last step on page 2, and on no other page",
+            knob3 == [["mode-2", "og-knob-3", "drums", "track-last"]], "its rows: %s" % knob3)
     # drums passes its arg to c_steps as the command, so a misspelt one is a
     # knob that only says bad-selector when turned.
     takes = steps_cmds()
@@ -399,12 +406,17 @@ def run_asserts(cap):
             len(cc("RAIL-UP", 44)) == 0, "cc 44 in that window: %s" % cc("RAIL-UP", 44))
     A.check("... and that window was live too",
             len(cc("RAIL-UP", 41)) == 1, repr(W("RAIL-UP")))
-    # Held and unmapped at once: knob 2 is still armed and maps to nothing in
-    # mode-4, and must still report (item 242).
-    A.check("⛔ a HELD and UNMAPPED knob still reports its raw value",
-            any(d[:2] == ["og-knob-2", "0.75"]
-                for d in [e[1] for e in W("UNMAPPED") if e[0] == "DISP"]),
-            "disp in that window: %s" % [e[1] for e in W("UNMAPPED") if e[0] == "DISP"])
+    # Knob 2 is the drums' global last step on every page (Brendan, 2026-11-04):
+    # on page 4 it reaches c_steps, whose own latch holds it at 16 until it is
+    # turned through it, and draws that held row. 0.75 is step 24.
+    A.check("⛔ knob 2 works on page 4 too: c_steps draws its held row, last-step 16 (24)",
+            ["last-step", "16", "(24)"] in disp("UNMAPPED"),
+            "disp in that window: %s" % disp("UNMAPPED"))
+    # Knob 3 is page 2's alone, so on page 4 it is unmapped, and must still
+    # report (item 242).
+    A.check("⛔ an UNMAPPED knob still reports its raw value -- og-knob-3 on page 4",
+            any(d[:2] == ["og-knob-3", "0.75"] for d in disp("UNMAPPED")),
+            "disp in that window: %s" % disp("UNMAPPED"))
     A.check("... and it is still silent on every bus -- the row above is the witness",
             not midi("UNMAPPED"), repr(midi("UNMAPPED")))
 

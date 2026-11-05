@@ -67,9 +67,10 @@ SEQ = [
     # The top row's first button selected mode 1 until the modes moved to the
     # left column: it is free now, so it selects nothing and names itself.
     (5300, "TOP-ROW-FREE", ["\\; param lp-cc-91 127"], GAP),
-    # Held and unmapped at once: knob 2 has never crossed, and its row is keyed
-    # mode-1, so in mode-4 it maps to nothing and must still report (item 242).
-    (5400, "UNMAPPED", ["\\; param og-knob-2 0.75"], GAP),
+    # Page 4: knob 3 is page 2's alone, so it maps to nothing here, while knob 2
+    # is the drums' last step on every page (Brendan, 2026-11-04) and reaches
+    # c_steps, whose latch holds it at 16.
+    (5400, "UNMAPPED", ["\\; param og-knob-3 0.75", "\\; param og-knob-2 0.75"], GAP),
     # The left column's bottom key, press and release: page 8. What follows runs
     # there, on rows only the last page's own would answer.
     (5500, "MODE-8", ["\\; param lp-cc-10 127", "\\; param lp-cc-10 0"], GAP),

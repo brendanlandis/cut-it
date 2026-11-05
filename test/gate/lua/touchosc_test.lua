@@ -370,9 +370,6 @@ equal("the reverb's size and damping are the kit's: no track", L.drag(w, "size",
       { { "/cutit", "drums", "size", 90 } })
 -- The reverb's type (Brendan, 2026-11-05): plate, gigaverb or freeverb, the kit's, a horizontal
 -- radio under its size and damping, 0 the plate, the state's last number.
-equal("⛔ the state hands the type radio the plate, the state's last number, its word black on "
-      .. "its segment", { C.vtype.values.x, black(C.vtype1l.textColor),
-                          black(C.vtype2l.textColor) }, { 0, true, false })
 equal("⛔ a tap on gigaverb sends drums verb-type 1, the kit's: no track",
       L.drag(w, "vtype", 1), { { "/cutit", "drums", "verb-type", 1 } })
 equal("... and on freeverb, 2", L.drag(w, "vtype", 2), { { "/cutit", "drums", "verb-type", 2 } })
@@ -392,6 +389,11 @@ L.osc(w, "/cutit/drums", table.unpack(old131))
 equal("a 131-number state, from before the type, leaves the radio as it was, and sends nothing",
       { C.vtype.values.x, #w.sent }, { 1, 0 })
 st[#st] = 0
+L.osc(w, "/cutit/drums", table.unpack(st))
+L.update(w)
+equal("⛔ ... and the plate, 0, puts it back on its first segment, plate black, and sends nothing",
+      { C.vtype.values.x, black(C.vtype1l.textColor), black(C.vtype2l.textColor), #w.sent },
+      { 0, true, false, 0 })
 L.update(w, 1100)
 st[3] = 5
 L.osc(w, "/cutit/drums", table.unpack(st))

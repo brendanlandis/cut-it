@@ -29,7 +29,7 @@ local fh = assert(io.open(DIR .. "u_tempo.pd"))
 local pd = fh:read("a")
 fh:close()
 local lo, hi = pd:match("\n#X obj %d+ %d+ clip (%d+) (%d+);")
-equal("its range is u_tempo's own [clip 1 1000], the legal range, read from the patch",
+equal("its range is u_tempo's own [clip 5 1000], the legal range, read from the patch",
       { R.MIN, R.MAX }, { tonumber(lo), tonumber(hi) })
 equal("a gap of two seconds starts over, and the last four intervals are averaged",
       { R.GAP, R.KEEP }, { 2000, 4 })
@@ -66,8 +66,8 @@ end)(), { {}, tempo(120) })
 print("\n--- the phone's tempo ---")
 st = R.new()
 equal("tempo 133 from the phone is 133", R.set(st, 133), tempo(133))
-equal("whole BPM, and within 1 to 1000", { R.set(st, 90.4), R.set(st, 2000), R.set(st, 0) },
-      { tempo(90), tempo(1000), tempo(1) })
+equal("whole BPM, and within 5 to 1000", { R.set(st, 90.4), R.set(st, 2000), R.set(st, 1) },
+      { tempo(90), tempo(1000), tempo(5) })
 equal("a tempo that is not a number is fail u_tempo bad-tempo", { R.set(st, "fast"), R.set(st, nil) },
       { { { "err", "fail", { "u_tempo", "bad-tempo" } } },
         { { "err", "fail", { "u_tempo", "bad-tempo" } } } })
@@ -103,28 +103,28 @@ equal("the phone's tempo under it reaches the bus, and is gone at the release",
 
 print("\n--- rush, knob 4 ---")
 local map_rules = dofile(DIR .. "u_map.lua")
-equal("its top is u_map's, where it holds the knob", R.RUSH_TOP, map_rules.RUSH_TOP)
+equal("its two ends are u_map's, where it holds the knob", { R.RUSH_LOW, R.RUSH_TOP }, { map_rules.RUSH_LOW, map_rules.RUSH_TOP })
 local near = function(a, b) return math.abs(a - b) < 1e-6 * b end
-check("⛔ an absolute rate over the whole turn: 1 BPM at the bottom, 22 kHz as a one-step loop's BPM at the top",
-      near(R.rush_bpm(0), 1) and near(R.rush_bpm(1), 330000) and near(R.rush_bpm(0.5), 330000 ^ 0.5))
-local x_at = function(rate) return math.log(rate) / math.log(R.RUSH_TOP) end
+check("⛔ an absolute rate over the whole turn: 10 BPM at the bottom, 22 kHz as a one-step loop's BPM at the top",
+      near(R.rush_bpm(0), 10) and near(R.rush_bpm(1), 330000) and near(R.rush_bpm(0.5), (10 * 330000) ^ 0.5))
+local x_at = function(rate) return math.log(rate / 10) / math.log(R.RUSH_TOP / 10) end
 check("⛔ the rest of the turn past the handoff runs 0 to 1", near(R.rush_past(x_at(1000)) + 1, 1)
       and near(R.rush_past(1), 1) and R.rush_past(0.1) == 0)
 st = R.new()
 equal("⛔ held by u_map: its row is the tempo in force with the knob's own rate in brackets, and nothing else",
-      R.inputs.rush(st, { 0.5, 0, 120 }), { { "disp", "rush", { 120, "(574)" } } })
+      R.inputs.rush(st, { 0.5, 0, 120 }), { { "disp", "rush", { 120, "(1817)" } } })
 equal("... in thousands up there, so it fits the screen", R.inputs.rush(st, { 1, 0, 120 })[1][3][2], "(330k)")
 equal("⛔ live: the put shut first, then the rate on its own bus, and the row",
       R.inputs.rush(st, { x_at(500), 1, 120 }),
       { { "put", "float", { 0 } }, { "bus", "float", { 500 } }, { "disp", "rush", { 500, "bpm" } } })
-equal("⛔ ... down to 1 BPM", R.inputs.rush(st, { 0, 1, 500 }),
-      { { "bus", "float", { 1 } }, { "disp", "rush", { 1, "bpm" } } })
+equal("⛔ ... down to 10 BPM", R.inputs.rush(st, { 0, 1, 500 }),
+      { { "bus", "float", { 10 } }, { "disp", "rush", { 10, "bpm" } } })
 local function sent(out, kind)
   for _, e in ipairs(out) do
     if e[1] == kind then return e[3][1] end
   end
 end
-local out = R.inputs.rush(st, { x_at(1500), 1, 1 })
+local out = R.inputs.rush(st, { x_at(1500), 1, 10 })
 check("⛔ at the handoff: the bus at 1000 and no further, then how far past to c_steps, which draws the row",
       #out == 2 and sent(out, "bus") == 1000 and near(sent(out, "steps") + 1, R.rush_past(x_at(1500)) + 1), T.show(out))
 out = R.inputs.rush(st, { 1, 1, 1000 })

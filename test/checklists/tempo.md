@@ -13,16 +13,16 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
 
 - [ ] **2. Knob pickup on the first touch**
   - **Send:** `mode mode-1; tempo 120; param og-knob-1 0`
-  - **Pass if:** The row reads bpm 57 (10) — the position knob 1 was saved at first and where the Send line has just put it in brackets — and the phone's tempo stays 120. The tempo is held until the real knob is turned back past where it was saved. If this rig has no knobs.txt the row reads bpm 120 (10) instead: knob 1 is held at 120 until it is turned through it. Either way the phone's tempo stays 120. The row must never read og-knob-1 and never a raw 0-to-1 decimal.
-  - **Note:** The first number is the saved knob position, not the tempo: `u_map` draws the held row from the pickup target with the incoming value in the unit field, so knob 1 saved at 57 BPM draws `bpm 57 (10)`. The held case needs a knob saved off the rail: with `0 0 0 0` pickup releases at once, and the row and the phone's tempo read as if there were no `knobs.txt`.
+  - **Pass if:** The row reads bpm 57 (40) — the position knob 1 was saved at first and where the Send line has just put it in brackets — and the phone's tempo stays 120. The tempo is held until the real knob is turned back past where it was saved. If this rig has no knobs.txt the row reads bpm 120 (10) instead: knob 1 is held at 120 until it is turned through it. Either way the phone's tempo stays 120. The row must never read og-knob-1 and never a raw 0-to-1 decimal.
+  - **Note:** The first number is the saved knob position, not the tempo: `u_map` draws the held row from the pickup target with the incoming value in the unit field, so knob 1 saved at 57 BPM draws `bpm 57 (40)`. The held case needs a knob saved off the rail: with `0 0 0 0` pickup releases at once, and the row and the phone's tempo read as if there were no `knobs.txt`.
 
 - [ ] **3. Knob pickup crosses over**
   - **Send:** `mode mode-1; param og-knob-1 1`
-  - **Pass if:** The row reads bpm 500 and the phone's tempo 500. About a second later the row ages out to the blank screen under the info bar. The knob has crossed where it was saved and is live from here on.
+  - **Pass if:** The row reads bpm 250 and the phone's tempo 250. About a second later the row ages out to the blank screen under the info bar. The knob has crossed where it was saved and is live from here on.
 
 - [ ] **4. Knob tracking after pickup**
   - **Send:** `mode mode-1; param og-knob-1 0`
-  - **Pass if:** The row reads bpm 10 and the phone's tempo 10. A row still reading 500 means the knob is stuck.
+  - **Pass if:** The row reads bpm 40 and the phone's tempo 40. A row still reading 250 means the knob is stuck.
 
 - [ ] **5. Tempo above range**
   - **Send:** `mode mode-1; tempo 5000; tempo 5000`
@@ -55,14 +55,14 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
 
 - [ ] **12. Knob 1 tempo sweep**
   - **Do:** Sweep knob 1 all the way and back.
-  - **Pass if:** The row reads bpm and a number that tracks the knob between 10 and 500 BPM. It never reads og-knob-1 and never a raw 0-to-1 decimal.
+  - **Pass if:** The row reads bpm and a number that tracks the knob between 40 and 250 BPM. It never reads og-knob-1 and never a raw 0-to-1 decimal.
   - **Note:** No bracketed second number: the knob was released in step 3 and is live. The held format is step 2's.
 
 - [ ] **13. Nothing Saved: knob 1 starts held at 120**
   - **Need:** No knobs.txt in Cut It's folder: no Save since the last `tools/deploy.sh --clean`. Knob 1 turned well down, toward 8 o'clock.
   - **Do:** Load Cut It from the Organelle's menu, wait for the boot's words to clear, then turn knob 1 slowly up past 12 o'clock.
-  - **Pass if:** The phone's tempo reads 120 wherever knob 1 sits. Turning it, the row reads bpm 120 and the knob's own tempo in brackets until the knob passes just before 12 o'clock; from there the row follows the knob.
-  - **Note:** 0.48 of the knob's turn is 120 on its curve ([map](../../ref/module/map.md), *Parameter pickup*). With a knobs.txt the saved position is restored instead, as in step 2.
+  - **Pass if:** The phone's tempo reads 120 wherever knob 1 sits. Turning it, the row reads bpm 120 and the knob's own tempo in brackets until the knob passes about 11 o'clock; from there the row follows the knob.
+  - **Note:** 0.38 of the knob's turn is 120 on its line ([map](../../ref/module/map.md), *Parameter pickup*). With a knobs.txt the saved position is restored instead, as in step 2.
 
 - [ ] **14. Knob 1 waits for a tapped tempo, and for the phone's**
   - **Need:** Page 1 chosen on the Launchpad, the phone linked, and knob 1 live: turned through where it was held, as in step 3 or 13.

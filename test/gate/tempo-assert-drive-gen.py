@@ -62,17 +62,17 @@ SEQ = [
     # Stop does not halt the clock: halting is the consumer's business.
     (13500, "AFTER-STOP", [], GAP),
     (15000, "PANIC", ["\\; panic bang"], GAP),
-    # Knob 1 made live: with nothing Saved it is held at 120, 0.48 of its turn,
-    # until turned through it; 0.4 is 100 BPM, on its curve (u_map.lua).
-    (15200, "KNOB-LIVE", ["\\; param og-knob-1 0.5", "\\; param og-knob-1 0.4"], GAP),
+    # Knob 1 made live: with nothing Saved it is held at 120, 0.38 of its turn,
+    # until turned through it; 0.3 is 103 BPM, on its line (u_map.lua).
+    (15200, "KNOB-LIVE", ["\\; param og-knob-1 0.5", "\\; param og-knob-1 0.3"], GAP),
 
     # Tap tempo on page 1, the boot page: the first tap starts the count, and
     # each after it sets the tempo from the intervals, 400 ms apart, 150 BPM.
     (15500, "TAP-1", tap(), GAP),
     (15900, "TAP-2", tap(), GAP),
     (16300, "TAP-3", tap(), GAP),
-    # The tap's 150 holds knob 1 at 0.6, where its curve puts 150 (Brendan,
-    # 2026-11-04): 0.42, 105 BPM, is below it and moves nothing; 0.68, 170, is
+    # The tap's 150 holds knob 1 at 0.52, where its line puts 150 (Brendan,
+    # 2026-11-04): 0.42, 128 BPM, is below it and moves nothing; 0.68, 183, is
     # through it and sets the tempo. Neither is a tap, so the count is untouched.
     (16700, "KNOB-HELD", ["\\; param og-knob-1 0.42"], GAP),
     (17100, "KNOB-THROUGH", ["\\; param og-knob-1 0.68"], GAP),
@@ -83,7 +83,7 @@ SEQ = [
     # The phone's tempo, through u_net: one, one past the range, one that is
     # no number.
     (20000, "PHONE", [phone(133)], GAP),
-    # ... and the phone's 133 holds it again, at 0.532: 0.7, 175 BPM, is above.
+    # ... and the phone's 133 holds it again, at 0.44: 0.7, 187 BPM, is above.
     (20200, "KNOB-PHONE", ["\\; param og-knob-1 0.7"], GAP),
     (20400, "PHONE-HIGH", [phone(2000)], GAP),
     (20800, "PHONE-BAD", [phone("fast")], GAP),

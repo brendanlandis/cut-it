@@ -120,15 +120,14 @@ for n = 1, R.PAGES do
 end
 equal("every page from mode-1 to mode-" .. R.PAGES .. " is taken", every, want)
 
-print("\n--- the tempo curve ---")
+print("\n--- the tempo line ---")
 local C = R.tempo_curve
-local bpm = function(x) return math.floor(990 * C(x) + 10 + 0.5) end
-equal("knob 1: 10 BPM at the bottom, 50 at 9 o'clock, 125 at noon, 200 at 3 o'clock, 1000 at the top",
-      { bpm(0), bpm(0.2), bpm(0.5), bpm(0.8), bpm(1) }, { 10, 50, 125, 200, 1000 })
-check("... rising all the way, with no step back at the joins", (function()
-  for i = 1, 1000 do if C(i / 1000) <= C((i - 1) / 1000) then return false end end
-  return true
-end)(), "")
+local bpm = function(x) return math.floor(210 * C(x) + 40 + 0.5) end
+equal("knob 1: a straight line, 40 BPM at the bottom, 145 at noon, 250 at the top",
+      { bpm(0), bpm(0.5), bpm(1) }, { 40, 145, 250 })
+fh = assert(io.open(DIR .. "u_map.pd"))
+equal("... which is the patch's own c_mapped", fh:read("a"):match("c_mapped bpm (%d+ %d+);"), "210 40")
+fh:close()
 equal("... and only the tempo has a curve: a mapped CC passes its knob's value as it is",
       R.CURVES["volca-cc"], nil)
 
@@ -187,7 +186,8 @@ check("... every slot", st.knob[3].state == "live" and st.knob[4].state == "live
       T.show(st.knob))
 
 print("\n--- nothing Saved: knob 1 held at 120 ---")
-equal("0.48 is where the curve puts 120 BPM", { R.UNSAVED[1], bpm(R.UNSAVED[1]) }, { 0.48, 120 })
+local AT120 = R.UNSAVED[1]
+equal("it waits where the line puts 120 BPM", bpm(AT120), 120)
 fh = assert(io.open(DIR .. "u_tempo.pd"))
 local fallback = tonumber(fh:read("a"):match("#X msg %d+ %d+ (%d+);\n#X obj %d+ %d+ s tempo;"))
 fh:close()
@@ -196,16 +196,16 @@ equal("... and no other knob has a place to be held at", { R.UNSAVED[2], R.UNSAV
       {})
 st = R.new(MAP, true)
 equal("mother's push of where knob 1 sits is HELD, at 120: the tempo stays u_tempo's",
-      R.control(st, "og-knob-1", { 0.0958 }), route("tempo", 0, C(0.0958), C(0.48), 0))
+      R.control(st, "og-knob-1", { 0.0958 }), route("tempo", 0, C(0.0958), AT120, 0))
 equal("... moving it without reaching 120 is still held", R.control(st, "og-knob-1", { 0.3 }),
-      route("tempo", 0, C(0.3), C(0.48), 0))
+      route("tempo", 0, C(0.3), AT120, 0))
 equal("... and turning it THROUGH 120 releases it, at the crossing value",
-      R.control(st, "og-knob-1", { 0.5 }), route("tempo", 0, C(0.5), C(0.48), 1))
+      R.control(st, "og-knob-1", { 0.5 }), route("tempo", 0, C(0.5), AT120, 1))
 equal("... and it is live from then on", R.control(st, "og-knob-1", { 0.3 })[1][3][5], 1)
 st = R.new(MAP, true)
 equal("from above, it is held until it comes down through 120",
       { R.control(st, "og-knob-1", { 0.9 })[1][3][5], R.control(st, "og-knob-1", { 0.6 })[1][3][5],
-        R.control(st, "og-knob-1", { 0.4 })[1][3][5] }, { 0, 0, 1 })
+        R.control(st, "og-knob-1", { 0.3 })[1][3][5] }, { 0, 0, 1 })
 st = R.new(MAP, true)
 local function passed(out) return { out[1][3][3], out[1][3][5] } end
 equal("every other knob is live from its first value, inside the boot window or not",
@@ -217,12 +217,11 @@ equal("a recover's live frees knob 1 too: after an emergency nothing is held",
 
 print("\n--- a tempo a tap or the phone set holds knob 1 again ---")
 local P = R.tempo_position
-equal("the curve's inverse puts each BPM back where the knob sits for it",
-      { bpm(P(10)), bpm(P(30)), bpm(P(50)), bpm(P(100)), bpm(P(150)), bpm(P(200)), bpm(P(350)),
-        bpm(P(500)) }, { 10, 30, 50, 100, 150, 200, 350, 500 })
-equal("... a tempo past the knob's 10 to 1000 holds it at the end of its turn",
-      { P(5), P(1200) }, { 0, 1 })
-check("... and 120 is R.UNSAVED's 0.48, the one hold the knob has with nothing Saved",
+equal("the line's inverse puts each BPM back where the knob sits for it",
+      { bpm(P(50)), bpm(P(100)), bpm(P(150)), bpm(P(200)), bpm(P(240)) }, { 50, 100, 150, 200, 240 })
+equal("⛔ a tempo past the knob's 40 to 250 holds it at the nearer end, a hair off the rail, so a pot that "
+      .. "stops short still reaches it", { P(5), P(39), P(251), P(1000) }, { 0.01, 0.01, 0.99, 0.99 })
+check("... and 120 is R.UNSAVED's, the one hold the knob has with nothing Saved",
       math.abs(P(120) - R.UNSAVED[1]) < 1e-9, T.show({ P(120), R.UNSAVED[1] }))
 st = R.new(MAP)
 R.internal.live(st)
@@ -235,8 +234,13 @@ equal("... and turned THROUGH 150 it is live, at the crossing value",
       R.control(st, "og-knob-1", { 0.68 }), route("tempo", 0, C(0.68), C(P(150)), 1))
 R.hold_tempo(st, "float", { 100 })
 equal("the phone's tempo holds it again, from above this time",
-      { R.control(st, "og-knob-1", { 0.9 })[1][3][5], R.control(st, "og-knob-1", { 0.3 })[1][3][5] },
+      { R.control(st, "og-knob-1", { 0.9 })[1][3][5], R.control(st, "og-knob-1", { 0.2 })[1][3][5] },
       { 0, 1 })
+R.hold_tempo(st, "float", { 500 })
+equal("⛔ held at a tempo past its reach, its row still reads that tempo: 40 + 210 * target is 500",
+      R.control(st, "og-knob-1", { 0.5 }), route("tempo", 0, 0.5, 460 / 210, 0))
+equal("⛔ ... and it is released by reaching the top, a hair short of the rail",
+      R.control(st, "og-knob-1", { 0.995 })[1][3][5], 1)
 st = R.new(MAP)
 R.internal.live(st)
 R.mode(st, "mode-3", {})
@@ -292,7 +296,7 @@ local unsaved_class = T.load_class(DIR .. "u_map-lua.pd_lua", DIR)
 local fresh = T.new(unsaved_class, {}, tmp .. "-")
 equal("no knobs.txt where its patch is: knob 1 is held at 120 from mother's first push",
       T.send(fresh, 1, "og-knob-1", { 0.0958 }),
-      { { 1, "list", { "tempo", 0, C(0.0958), C(0.48), 0 } } })
+      { { 1, "list", { "tempo", 0, C(0.0958), AT120, 0 } } })
 check("... and that absence is silent on the console", #fresh.console == 0, T.show(fresh.console))
 fh = assert(io.open(tmp .. "-knobs.txt", "w"))
 fh:write("0.0957967 0.5 0.5 0.5;\n")
@@ -388,7 +392,7 @@ local q = R.new(RUSHING, true)
 R.internal["window-shut"](q)
 R.control(q, "og-knob-4", { 0.7 })
 R.control(q, "og-knob-4", { 0.2 })
-local at = R.tempo_position(330000 ^ 0.2)
+local at = R.tempo_position(R.rush_bpm(0.2))
 check("⛔ a knob 4 move holds knob 1 at that tempo", q.knob[1].state == "armed"
       and math.abs(q.knob[1].target - at) < 1e-9, T.show(q.knob[1]))
 R.control(q, "og-knob-4", { 0.9 })
@@ -398,12 +402,12 @@ local moved = R.control(q, "og-knob-1", { 0.5 })
 equal("⛔ knob 1 turned through it: rush told first, then its tempo", moved[1], route("rush", 0, -1, 0, 1)[1])
 check("... once", #R.control(q, "og-knob-1", { 0.51 }) == 1)
 check("⛔ ... and knob 4 is held at knob 1's tempo", q.knob[4].state == "armed"
-      and math.abs(q.knob[4].target - R.rush_position(10 + 990 * R.tempo_curve(0.51))) < 1e-9, T.show(q.knob[4]))
+      and math.abs(q.knob[4].target - R.rush_position(40 + 210 * 0.51)) < 1e-9, T.show(q.knob[4]))
 R.hold_tempo(q, "float", { 300 })
 check("⛔ a tempo from a tap, the phone, a section or a pad holds both", q.knob[4].target == R.rush_position(300)
       and q.knob[1].target == R.tempo_position(300) and not q.rushing, T.show(q.knob))
-equal("⛔ a target of 1 BPM is a hair off the rail, so a pot that stops short still reaches it",
-      R.rush_position(1), 0.01)
+equal("⛔ a tempo below its 10 BPM holds it at its bottom, a hair off the rail, so a pot that stops short still reaches it",
+      { R.rush_position(5), R.rush_position(10) }, { 0.01, 0.01 })
 equal("another destination on that knob is not held for it",
       R.new("mode-1 og-knob-4 volca-cc 44\n", true).knob[4].state, "live")
 

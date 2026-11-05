@@ -109,7 +109,7 @@ ACKS = {"drums sync": ("sync", TEAL), "drums snap": ("snap", TEAL),
         "songs new-set": ("lnewset", TEAL), "songs remove": ("lrem", TEAL),
         "songs name": ("gndone", WHITE), "songs set-name": ("gndone", WHITE),
         "result": ("verdict", WHITE)}
-TEMPO = (1, 1000)           # u_tempo's legal range, its [clip 1 1000]
+TEMPO = (5, 1000)           # u_tempo's legal range, its [clip 5 1000]
 # The tap rules, read from u_tempo.lua, so the phone's taps and page 1's pad can't disagree: the ms
 # after which tapping starts over, and how many intervals are averaged.
 _TEMPO_LUA = open(os.path.join(ROOT, "Cut It", "u_tempo.lua"), encoding="utf-8").read()

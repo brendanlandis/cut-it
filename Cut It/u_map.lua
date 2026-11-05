@@ -24,36 +24,29 @@ R.PAGES = 8
 -- the only ones pickup holds.
 R.KNOBS = { ["og-knob-1"] = 1, ["og-knob-2"] = 2, ["og-knob-3"] = 3, ["og-knob-4"] = 4 }
 
--- Knob 1's tempo curve (Brendan, 2026-11-03): 50 to 200 BPM, where most music sits, take the
--- knob from about 9 o'clock to 3 o'clock, 0.2 to 0.8 of its turn; 10 to 50 BPM take the start and
--- 200 to 1000 the end, for flourishes (Brendan, 2026-11-05). Three straight pieces. -> the 0-1 that c_mapped bpm 990 10
--- scales into those BPM, so its held row reads the same curve.
+-- Knob 1's tempo (Brendan, 2026-11-05): a straight line, 40 BPM at its bottom to 250 at its top, where
+-- music sits, now knob 4 has the flourishes. -> the 0-1 that c_mapped bpm 210 40 scales into those
+-- BPM, so its held row reads the same line.
+R.TEMPO_LOW, R.TEMPO_HIGH = 40, 250
 function R.tempo_curve(x)
-  local bpm
-  if x <= 0.2 then
-    bpm = 10 + 200 * x
-  elseif x <= 0.8 then
-    bpm = 50 + 250 * (x - 0.2)
-  else
-    bpm = 200 + 4000 * (x - 0.8)
-  end
-  return (bpm - 10) / 990
+  return x
 end
 
--- The curve's inverse: where knob 1 sits for a BPM, at the end of its turn for a BPM past its 10
--- to 1000, so a knob held there is released by reaching its end.
+-- The line's inverse: where knob 1 sits for a BPM, at the nearer end of its turn for a BPM past its 40
+-- to 250, so a knob held there is released by reaching that end, a hair off the rail, since a pot may
+-- stop short of it.
 function R.tempo_position(bpm)
-  local x
-  if bpm <= 50 then
-    x = (bpm - 10) / 200
-  elseif bpm <= 200 then
-    x = 0.2 + (bpm - 50) / 250
-  else
-    x = 0.8 + (bpm - 200) / 4000
-  end
-  if x < 0 then return 0 end
-  if x > 1 then return 1 end
+  local x = (bpm - R.TEMPO_LOW) / (R.TEMPO_HIGH - R.TEMPO_LOW)
+  if x < 0.01 then return 0.01 end
+  if x > 0.99 then return 0.99 end
   return x
+end
+
+-- Knob 1 held at a BPM: what its held row reads is that BPM, past its reach or not, by c_mapped's own
+-- scaling, where the knob waits for the place it can get to.
+local function hold_knob_1(st, k, bpm)
+  st.knob[k] = { state = "armed", target = R.tempo_position(bpm),
+                 shown = (bpm - R.TEMPO_LOW) / (R.TEMPO_HIGH - R.TEMPO_LOW) }
 end
 
 -- A destination's curve, applied to its value and target as they leave: pickup compares the
@@ -97,22 +90,27 @@ function R.parse(text)
 end
 
 -- Where a knob is held when nothing has been Saved (Brendan, 2026-11-04): knob 1 is tempo in
--- every mode, and stays at 120 BPM, u_tempo's own, until it is turned through 0.48, where the
--- curve puts 120. A knob not named here is live from its first value.
-R.UNSAVED = { [1] = 0.48 }
+-- every mode, and stays at 120 BPM, u_tempo's own, until it is turned through where its line puts
+-- 120. A knob not named here is live from its first value.
+R.UNSAVED = { [1] = R.tempo_position(120) }
 
 -- Rush (Brendan, 2026-11-05): a knob the table maps to it is an absolute rate over its whole turn,
--- R.RUSH_TOP ^ x BPM, and held as knob 1 is, until turned to or through where the tempo in force
+-- R.RUSH_LOW * (R.RUSH_TOP / R.RUSH_LOW) ^ x BPM, and held as knob 1 is, until turned to or through where the tempo in force
 -- stands, so whichever knob moved last wins and the other does not jump. It starts held at u_tempo's
 -- own 120, Saved or not, through the boot window, whose first value may be knobs.txt's and not where
--- the knob sits, and through a recover. u_tempo.lua has R.RUSH_TOP too.
-R.RUSH_TOP = 22000 * 15
+-- the knob sits, and through a recover. u_tempo.lua has the curve's two ends too.
+R.RUSH_LOW, R.RUSH_TOP = 10, 22000 * 15
 R.BOOT_BPM = 120
 
--- Where the rush knob stands for a BPM: a hair off the bottom at most, so a pot that stops short of 0
--- can still reach a target of 1 BPM.
+-- The rush knob's rate at x.
+function R.rush_bpm(x)
+  return R.RUSH_LOW * (R.RUSH_TOP / R.RUSH_LOW) ^ x
+end
+
+-- Where the rush knob stands for a BPM: at its bottom for a BPM below its reach, as knob 1 for one
+-- past its own, and that a hair off the rail, so a pot that stops short of 0 can still reach it.
 function R.rush_position(bpm)
-  return math.max(0.01, math.log(bpm) / math.log(R.RUSH_TOP))
+  return math.max(0.01, math.log(bpm / R.RUSH_LOW) / math.log(R.RUSH_TOP / R.RUSH_LOW))
 end
 
 -- Which knob the table maps to rush, on any page.
@@ -184,7 +182,10 @@ function R.control(st, sel, atoms)
   local k = R.KNOBS[name]
   local value = k and raw or raw / 127
   local target, live = value, 1
-  if k then target, live = R.pickup(st, k, value) end
+  if k then
+    target, live = R.pickup(st, k, value)
+    target = st.knob[k].shown or target
+  end
   local row = st.map[st.mode] and st.map[st.mode][name]
   if row then
     local curve = R.CURVES[row.dest]
@@ -194,12 +195,10 @@ function R.control(st, sel, atoms)
       if row.dest == "rush" then
         -- Knob 4 has the tempo: knob 1 is held where that puts it, the bus at 1000 past the handoff.
         st.rushing = true
-        local bpm = math.min(R.RUSH_TOP ^ value, 1000)
+        local bpm = math.min(R.rush_bpm(value), 1000)
         for n, kk in pairs(R.KNOBS) do
           local r = (st.map[st.mode] or {})[n]
-          if r and r.dest == "tempo" then
-            st.knob[kk] = { state = "armed", target = R.tempo_position(bpm) }
-          end
+          if r and r.dest == "tempo" then hold_knob_1(st, kk, bpm) end
         end
       elseif row.dest == "tempo" and st.rush_knob then
         -- Knob 1 has it: rush is told it is over, before the BPM, and knob 4 is held at it.
@@ -207,7 +206,7 @@ function R.control(st, sel, atoms)
           st.rushing = false
           out[1] = { "route", "list", { "rush", 0, -1, 0, 1 } }
         end
-        st.knob[st.rush_knob] = { state = "armed", target = R.rush_position(10 + 990 * value) }
+        st.knob[st.rush_knob] = { state = "armed", target = R.rush_position(R.TEMPO_LOW + (R.TEMPO_HIGH - R.TEMPO_LOW) * value) }
       end
     end
     out[#out + 1] = { "route", "list", { row.dest, row.arg, value, target, live } }
@@ -229,7 +228,7 @@ function R.hold_tempo(st, sel, atoms)
   for name, k in pairs(R.KNOBS) do
     local row = page[name]
     if row and row.dest == "tempo" then
-      st.knob[k] = { state = "armed", target = R.tempo_position(bpm) }
+      hold_knob_1(st, k, bpm)
     elseif row and row.dest == "rush" then
       st.knob[k] = { state = "armed", target = R.rush_position(bpm) }
     end

@@ -75,8 +75,8 @@ R.MIN_DUR = 0.125
 R.REPEATS = 4
 -- A held repeat's tails (Brendan, 2026-11-05): c_kit's e_tape keeps the last while of the wet sound
 -- and loops the last N steps of it while a repeat is held. It holds this much, in ms, a little
--- less than e_tape's line: four steps at 5 BPM. A longer repeat, at a tempo below that or a very
--- drunk one down there, plays the last R.TAPE_MAX in the time its steps take.
+-- less than e_tape's line: four steps at the legal tempo's slowest, 5 BPM. A longer repeat, only
+-- ever a very drunk one down there, plays the last R.TAPE_MAX in the time its steps take.
 R.TAPE_MAX = 12000
 -- Rush's loop (Brendan, 2026-11-05): e_rush records the kit's whole output, and past u_tempo's
 -- handoff freezes and loops the last steps of it. It holds a little more than this much, in ms: 32
@@ -1377,7 +1377,7 @@ R.presses = {
 -- keeps for a held repeat's tails (R.tape); PLAY, STOP, u_state's restore, and the load.
 R.internal = {
   tick = function(st, a)
-    if type(a[1]) == "number" then st.bpm = clip(a[1], 1, 1000) end
+    if type(a[1]) == "number" then st.bpm = clip(a[1], 5, 1000) end
     if st.rush == "waiting" then return rush_take(st) end
     return R.tick(st)
   end,

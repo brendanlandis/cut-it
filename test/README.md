@@ -224,7 +224,7 @@ driver never muting (1: the forget's witness).
 **It runs tap tempo's Lua tests first**: `test/gate/lua/u_tempo_test.lua`, with no Pd, drives
 `Cut It/u_tempo.lua` (the first tap, the average of the last four intervals, the two-second gap,
 two taps in one instant, the clamp, the phone's tempo and `bad-tempo`) and `u_tempo-lua.pd_lua`
-through `lib_test.lua`'s stand-in for pdlua, and reads `[clip 1 1000]` out of `u_tempo.pd` so the
+through `lib_test.lua`'s stand-in for pdlua, and reads `[clip 5 1000]` out of `u_tempo.pd` so the
 Lua's range cannot drift from the patch's. The gate fails if either half does.
 
 `u_tempo` is the instrument's interval timer: it publishes a beat on a bus that `g_grid`, every
@@ -233,7 +233,7 @@ per quarter note. **Nothing read those bytes back** until this existed.
 
 | Half | Owns |
 |---|---|
-| a **static lint** — reads `[clip 1 1000]` and `[* 24]` out of `u_tempo.pd`, ~1 ms, no Pd | the **bounds** |
+| a **static lint** — reads `[clip 5 1000]` and `[* 24]` out of `u_tempo.pd`, ~1 ms, no Pd | the **bounds** |
 | a **rate count** — System Real-Time bytes over a known window | whether the clamp is in the **signal path** |
 
 ⛔ **Neither can do the other's job, and that was found by trying to break it.** The pulse ceiling is

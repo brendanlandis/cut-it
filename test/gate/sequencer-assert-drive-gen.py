@@ -228,21 +228,21 @@ SEQ = [
     (41755, "RX-SOON", [], GAP),
     (41900, "RX-OFF", [P("pad-38", 0), "\\; stop bang"], GAP),
     # Rush, knob 4 (Brendan, 2026-11-05): held at the tempo in force, 120, on the far side of it; through
-    # it, 45 BPM, and knob 1 held there; racing, 304 BPM a step of 49 ms, with the steps going; past the
+    # it, 28 BPM, and knob 1 held there; racing, 227 BPM a step of 66 ms, with the steps going; past the
     # handoff; pad-38 home; and both knobs held at the saved 120. Then through it again, and knob 1
     # through its own hold ends that.
     (42100, "RU-HELD", ["\\; param og-knob-4 0.5"], GAP),
-    (42200, "RU-LIVE", ["\\; param og-knob-4 0.3"], GAP),
+    (42200, "RU-LIVE", ["\\; param og-knob-4 0.1"], GAP),
     (42300, "RU-K1", ["\\; param og-knob-1 0.2"], GAP),
-    (42400, "RU-RACE", ["\\; param og-knob-4 0.45"], GAP),
+    (42400, "RU-RACE", ["\\; param og-knob-4 0.3"], GAP),
     (42500, "RU-PLAY", ["\\; start bang"], GAP),
     (42800, "RU-PAST", ["\\; param og-knob-4 0.8"], GAP),
     (42900, "RU-LOOP", [], GAP),
     (43000, "RU-HOME", [P("pad-38")], GAP),
     (43200, "RU-AFTER", [P("pad-38", 0), "\\; param og-knob-4 0.81", "\\; param og-knob-1 0.99"], GAP),
     (43300, "RU-STOP", ["\\; stop bang"], GAP),
-    (43400, "RU-AGAIN", ["\\; param og-knob-4 0.3"], GAP),
-    (43500, "RU-K1-ON", ["\\; param og-knob-1 0.1", "\\; param og-knob-1 0.3"], GAP),
+    (43400, "RU-AGAIN", ["\\; param og-knob-4 0.1"], GAP),
+    (43500, "RU-K1-ON", ["\\; param og-knob-1 0", "\\; param og-knob-1 0.3"], GAP),
     (43700, "RU-K4", ["\\; param og-knob-4 0.81"], GAP),
     # u_song's draft goes out every 2 s, so past the last change's turn.
     (45900, "DONE", [], GAP),

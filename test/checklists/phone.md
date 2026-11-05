@@ -27,7 +27,7 @@ The rate limit is `phone-assert`'s, and the page structure, what each control se
   - **Note:** The phone was the OLED's mirror until 2026-11-04; that it reads nothing on `disp` now is `phone-assert`'s.
 
 - [ ] **5. The tempo, from knob 1**
-  - **Need:** Page 1. With nothing Saved knob 1 is held at 120 until turned through just left of noon, where its curve puts 120; turn it through first.
+  - **Need:** Page 1. With nothing Saved knob 1 is held at 120 until turned through about 11 o'clock, where its line puts 120; turn it through first.
   - **Do:** Turn knob 1 slowly from about 9 o'clock to 3 o'clock, then quickly back.
   - **Pass if:** The phone's tempo follows the knob, 50 to 200 over that turn, and settles on the same number as the OLED's bpm row when the knob stops.
 

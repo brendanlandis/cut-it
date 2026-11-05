@@ -33,7 +33,7 @@ Hot-swap for the Volca, which is `none`: it transmits nothing and can never be p
 
 - [ ] **6. Tempo from knob 1**
   - **Do:** Sweep knob 1 all the way and back.
-  - **Pass if:** Until the knob crosses the restored value the row reads bpm 57 with the knob's own tempo in brackets, and the phone's tempo stays 57. From there the row's one number and the phone's tempo follow the knob over roughly 10 to 500 BPM.
+  - **Pass if:** Until the knob crosses the restored value the row reads bpm 57 with the knob's own tempo in brackets, and the phone's tempo stays 57. From there the row's one number and the phone's tempo follow the knob over 40 to 250 BPM.
 
 - [ ] **7. Transport from PLAY and STOP**
   - **Do:** Press PLAY on the nanoKONTROL, then STOP.

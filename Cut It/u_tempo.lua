@@ -16,10 +16,9 @@
 
 local R = {}
 
--- The legal range, u_tempo.pd's own [clip 1 1000], wider than knob 1's so a tap is not limited by
--- what one knob chose, and down to where rush goes (tempo.md): u_tempo_test.lua reads the box and
--- checks the two agree.
-R.MIN, R.MAX = 1, 1000
+-- The legal range, u_tempo.pd's own [clip 5 1000], wider than knob 1's so a tap is not limited by
+-- what one knob chose (tempo.md): u_tempo_test.lua reads the box and checks the two agree.
+R.MIN, R.MAX = 5, 1000
 -- A tap this long after the one before starts the count over (Brendan, 2026-11-04: two seconds).
 R.GAP = 2000
 -- How many of the last intervals are averaged: enough to steady a hand, few enough that a tempo
@@ -27,13 +26,14 @@ R.GAP = 2000
 R.KEEP = 4
 -- The 500 BPM repeat's tempo (Brendan, 2026-11-05).
 R.FAST = 500
--- Rush, knob 4 (Brendan, 2026-11-05): an absolute rate over its whole turn, R.RUSH_TOP ^ x BPM, 1 BPM
--- at the bottom. Below R.HANDOFF it is the tempo, the steps racing. From there c_steps freezes a loop
+-- Rush, knob 4 (Brendan, 2026-11-05): an absolute rate over its whole turn, R.RUSH_LOW * (R.RUSH_TOP /
+-- R.RUSH_LOW) ^ x BPM, 10 BPM at the bottom. Below R.HANDOFF it is the tempo, the steps racing. From there c_steps freezes a loop
 -- of what is being repeated, and the rest of the turn is that loop's frequency, from playback speed 1
 -- up to 22 kHz, whatever its length. R.RUSH_TOP is 22 kHz as a one-step loop's BPM. Coming back it
 -- hands over at R.RUSH_BACK, a little lower, so a knob resting on the handoff, whose reading jitters
--- a place or two, a place being 1.2%, does not capture over and over. u_map.lua has R.RUSH_TOP too.
-R.HANDOFF, R.RUSH_BACK, R.RUSH_TOP = 1000, 980, 22000 * 15
+-- a place or two, a place being 1%, does not capture over and over. u_map.lua has the curve's two
+-- ends too.
+R.HANDOFF, R.RUSH_BACK, R.RUSH_LOW, R.RUSH_TOP = 1000, 980, 10, 22000 * 15
 
 local function clip(x, lo, hi)
   if x < lo then return lo end
@@ -119,12 +119,12 @@ end
 
 -- The rate at knob position x, in BPM.
 function R.rush_bpm(x)
-  return R.RUSH_TOP ^ clip(x, 0, 1)
+  return R.RUSH_LOW * (R.RUSH_TOP / R.RUSH_LOW) ^ clip(x, 0, 1)
 end
 
 -- How far through the turn past the handoff position x is, 0 to 1.
 function R.rush_past(x)
-  local at = math.log(R.HANDOFF) / math.log(R.RUSH_TOP)
+  local at = math.log(R.HANDOFF / R.RUSH_LOW) / math.log(R.RUSH_TOP / R.RUSH_LOW)
   return clip((x - at) / (1 - at), 0, 1)
 end
 

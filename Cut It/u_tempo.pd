@@ -4,7 +4,7 @@
 #X text 20 140 creation args: none. inlet: tap \, from u_map's tap pad on page 1 \, tempo <bpm> \, the phone's \, from u_net \, fast <1 or 0> \, the 500 BPM repeat \, from c_steps \, and rush <x> <live> \, knob 4 \, from u_map. outlet 1: the master BPM \, clamped \, whenever the tempo bus carries one \, to u_net. outlet 2: tap \, on each tap \, to g_grid. outlet 3: the BPM a tap \, the phone or a section set \, to u_map \, which holds knob 1 there. outlet 4: rush <bpm> \, knob 4 past the handoff \, to c_steps. It talks on tempo \, clock \, start \, stop \, panic \, disp \, err and state \, the tempo being the playing section's \, and out of two MIDI ports: port 1 carries the clock and the transport \, and port 4 takes panic's STOP alone. Port 3 gets nothing., f 80;
 #X obj 20 300 r tempo;
 #X obj 20 345 t f f;
-#X obj 20 400 clip 1 1000;
+#X obj 20 400 clip 5 1000;
 #X obj 20 445 t f f f;
 #X obj 450 470 s \$0-clamped;
 #X obj 250 505 s \$0-bpm;
@@ -223,7 +223,7 @@
 #X obj 2900 550 list prepend put section tempo;
 #X obj 2900 600 list trim;
 #X obj 2900 650 s state;
-#X text 2900 720 The tempo is a part of the playing section \, tempo (ref/module/songs.md): every BPM the bus carries is put with the section policy \, and a section's restore of it comes in as the phone's tempo does \, so it reaches the bus whole and within 1 to 1000 \, holds knob 1 there and is put straight back \, or under the 500 BPM repeat \, becomes the tempo it goes back to. A restore of the tempo already in force is dropped by the spigot: it would change nothing but hold knob 1 where it may stand live., f 36;
+#X text 2900 720 The tempo is a part of the playing section \, tempo (ref/module/songs.md): every BPM the bus carries is put with the section policy \, and a section's restore of it comes in as the phone's tempo does \, so it reaches the bus whole and within 5 to 1000 \, holds knob 1 there and is put straight back \, or under the 500 BPM repeat \, becomes the tempo it goes back to. A restore of the tempo already in force is dropped by the spigot: it would change nothing but hold knob 1 where it may stand live., f 36;
 #X connect 99 0 100 0;
 #X connect 100 0 101 0;
 #X connect 102 0 103 0;

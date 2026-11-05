@@ -212,7 +212,7 @@ def run_b(cap, crumb_path):
     # is map-assert's, against the same knobs.txt. Atoms are strings, hence the
     # float().
     bpm = [float(v[0]) for v in temps("KNOB") if v]
-    A.check("⛔ the knob is LIVE, not held -- 0.5 is 125 bpm on knob 1's curve", bpm == [125.0],
+    A.check("⛔ the knob is LIVE, not held -- 0.5 is 145 bpm on knob 1's line", bpm == [145.0],
             "tempo in KNOB: %s. Held, this window is empty" % temps("KNOB"))
 
     print("\n--- and the breadcrumb is cleared, so it reports once and never again ---")

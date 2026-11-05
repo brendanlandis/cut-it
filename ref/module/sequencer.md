@@ -62,7 +62,7 @@ each track's distortion and delay and the reverb they share (2026-11-05). *The k
 | The repeat pads | The top row of the right 4×4, 1 to 4 from the left: held, every track replays the last 1 to 4 steps it played, while the loops go on underneath unheard; let go, every track plays on from where it would have been (Brendan, 2026-11-03). PLAY lets go | verified |
 | A repeat's steps | Played exactly as they were played the first time (Brendan, 2026-11-05): each track's hit, its velocity and its random pitch as its randomness chose them then, and each step's drunk length, so the loop sounds the same every time round, and no die is rolled until it is let go. Mute and solo are heard as they stand: a track muted under a held repeat is silent in it from the next step, one soloed plays it alone. A step edited, or a section restored, under a held repeat is heard once it is let go. Pressed with fewer steps played since PLAY than its number, the steps to come are played, rolled as usual, and kept until there are that many (*A repeat replays what was decided*, below) | verified |
 | A repeat's tails | Held, no new delay or reverb, and the tails that were playing replay exactly (Brendan, 2026-11-05): the hits send nothing to the effects, the live sound of the effects is muted while they ring on silently, and the last N steps of what they played, as they ran, swing and drunk lengths included, loop in time with the hits. Move the tempo under it and the loop's speed follows, its pitch with it, like tape. Let go, the live sound comes back and the sends with it (*A held repeat's tails*, below) | verified |
-| The 500 BPM repeat | `pad-35`, under repeat pad 1 (Brendan, 2026-11-05): held, the last step plays over and over and the tempo snaps to 500, knob 1 held until it reaches 500. Its tails speed up with it, as any repeat's follow the tempo. Let go, the tempo snaps back to what it was before the press, knob 1 held there, and the pattern carries on from the step it was pressed on: the loops and the bars counted from them wait for it, so nothing keeps the canonical beat (a judgment call: *The 500 BPM repeat*, below). The repeat pads do nothing while it is held, and PLAY lets go of it, its tempo back. Nothing of it is put in the section | verified |
+| The 500 BPM repeat | `pad-35`, under repeat pad 1 (Brendan, 2026-11-05): held, the last step plays over and over and the tempo snaps to 500, knob 1 held at the top of its turn until it gets there. Its tails speed up with it, as any repeat's follow the tempo. Let go, the tempo snaps back to what it was before the press, knob 1 held there, and the pattern carries on from the step it was pressed on: the loops and the bars counted from them wait for it, so nothing keeps the canonical beat (a judgment call: *The 500 BPM repeat*, below). The repeat pads do nothing while it is held, and PLAY lets go of it, its tempo back. Nothing of it is put in the section | verified |
 | The saved tempo | `pad-38`, under repeat pad 4 (Brendan, 2026-11-05): a press snaps the tempo to the section's saved BPM and, while playing, starts every loop at step 1 that instant, on the start bus, as PLAY does (stopped, it starts nothing). The saved BPM is the saved song's and not the draft's, or for a section never saved, the draft's, knob 1 held there. A press alone: the release only puts its lamp out. The tempo is put in the draft as any change of it is, so save and revert show what that leaves (`u_tempo` and `u_song`: [tempo.md](tempo.md), [songs.md](songs.md)) | verified |
 | A track's random pitch | On or off, each track its own, from `rnd pitch` under the phone's show radio (Brendan, 2026-11-05): when the track's randomness flips a coin and the coin plays the hit, that hit has a pitch of its own, a whole number of semitones from 12 under to 12 over the track's set pitch, evenly, kept to the track's −12 to +12, so a set pitch off 0 piles the ones past the edge up on it. Any other hit plays at the set pitch. One more die, rolled only with it on, so a track with it off rolls as it always did. A repeat replays the pitch with the hit. Saved | verified |
 | A track's randomness | 0 to 100, each track its own, from its pad on the drum screen (Brendan, 2026-11-05, after the Arturia DrumBrute's Randomness): at *R*% each step it plays has an *R*% chance of ignoring what is written and flipping a coin instead, played or not, and played at one of the eight levels at random. So it drops hits from a busy track and adds them to a sparse one; at 100 every step is a coin, at 0 the pattern plays as written and nothing is rolled. Fresh on every pass, but a held repeat's, which plays the coins as they fell (*A repeat's steps*). Saved | verified |
@@ -342,7 +342,7 @@ the phase to 0; shifted, that reads as the last sliver of a step, low, so a `thr
 waiting to re-arm does so in that block and fires on the boundary in the next, and an armed one
 fires in the first. Unshifted, the reset reads as a step's start, high, and a PLAY in the first
 60% of a step would leave it waiting: step 1 a whole step late. A ten-thousandth is under a block
-down to about 2 BPM, and 3 ms at 1 BPM, where a step is 15 s.
+at any tempo down to 5 BPM.
 
 **Gear that follows the MIDI clock again would hear the drums half a pulse early**, plus its own
 lag: shift the phase back a twelfth of a step (1/24 of the pair, the `-~` in `c_steps.pd`) to land
@@ -594,7 +594,7 @@ first step sends nothing at all. The engines ring on, muted, with their own tail
 heard after a short hold is what would have been there. An echo going on into the reverb counts as
 its tail, and goes on. A voice sounding at a release sends what is left of it.
 
-**The loop's length is capped at 12 s**, four steps at 5 BPM; the line holds
+**The loop's length is capped at 12 s**, four steps at the legal tempo's slowest, 5 BPM; the line holds
 12.5 s for the seam and the recording's end, 2.2 MB. A repeat longer than that, only a very drunk one
 down there, plays its last 12 s in the time its steps take, slower and lower.
 
@@ -618,7 +618,7 @@ as stopping the pattern, playing a fill, and going on.
 **Its tempo is a flourish, not a change to the song.** `u_tempo` keeps the BPM in force, sends 500 the
 way a tap's goes, so `u_map` holds knob 1 at the end of its turn, and on release sends the kept BPM the
 same way, knob 1 held there. A spigot keeps every BPM in between out of the section, so the draft never
-reads 500 and save and revert don't flicker. The knob can be turned through 500 and go live, and the
+reads 500 and save and revert don't flicker. The knob can be turned to its end and go live, and the
 phone can move the tempo, both heard at once in the repeat and its tails, and both gone at the release.
 A section's tempo restored under it, which only a press of a section button can do, becomes what the
 release goes back to.

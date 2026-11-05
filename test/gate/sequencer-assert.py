@@ -26,6 +26,8 @@ state bus and the song's draft, which u_song writes. Nothing inside c_steps is r
                  start, the others' do the opposite, the Launchpad dims the
                  pads that won't play, and both are put with the pattern
   a character    a track's distortion made fold over OSC: put with the pattern
+  the reverb     its type made gigaverb over OSC: put with the pattern, last, and
+                 told to c_kit
                  after the mutes and solos, and told to c_kit
   the disk       the pattern reaches the song's draft as one line, section 1's drums
 
@@ -52,7 +54,7 @@ WINDOWS = ["EARLY", "RESTORE", "NINE", "THREE", "ROW-PRESS", "ROW-DARK", "SEVEN"
            "REP-PLAY", "REP-PRESS", "REP-HELD", "REP-OFF", "REP-STOP",
            "SOUND", "RAND", "RA-PLAY", "RA-STOP", "RR", "RR-PLAY",
            "RR-PRESS", "RR-HELD", "RR-OFF", "RR-STOP", "MUTE", "MU-PLAY", "MU-STOP", "SOLO",
-           "SO-PLAY", "SO-STOP", "CHAR", "DRUNK", "DR-PLAY"] + \
+           "SO-PLAY", "SO-STOP", "CHAR", "DRUNK", "VTYPE", "DR-PLAY"] + \
     ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DRAG", "DONE"]
 EDITS = ["ROW-PRESS", "ROW-DARK", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
@@ -68,6 +70,7 @@ FXLESS = CELLS + 16 * 4 + 5     # and pitches, the time signature, the drunkenne
 LINE = FXLESS + 8 * 16 + 2      # then each track's eight effects and the reverb's two: 711
 FLAGGED = LINE + 2 * 16         # then each track's mute and each track's solo: 743
 CHARRED = FLAGGED + 16          # then each track's character: 759
+TYPED = CHARRED + 1             # then the reverb's type, once it is not the plate: 760
 NUM, DRUNK, SWING, LAST = FXLESS - 5, FXLESS - 3, FXLESS - 2, FXLESS - 1   # NUM, then the bottom
 RAND, VOL, PITCH = CELLS + 16, CELLS + 32, CELLS + 48    # where each track's are, track 1 first
 LEVEL_VELS = [round(127 * n / 8 + 1e-9) for n in range(1, 9)]   # 16 32 48 64 79 95 111 127
@@ -610,6 +613,16 @@ def main():
     A.check("⛔ ... and c_kit is told track 4's character, and nothing else",
             kitfx("CHAR") == [["char", "4", "3"]], "KITFX %s" % kitfx("CHAR"))
 
+    print("\n--- the reverb's type ---")
+    # gigaverb, 1, over OSC as the phone sends it (Brendan, 2026-11-05), after the character: the
+    # line grows by the type alone, track 4 still fold and track 1 still muted and soloed.
+    got = [(len(l), l[FLAGGED:CHARRED], l[TYPED - 1]) for l in puts("VTYPE")]
+    A.check("⛔ verb-type 1, sent to u_net over OSC as the phone sends it, is put with the "
+            "pattern: the line 760, gigaverb last, the characters before it as they were",
+            got == [(TYPED, [1, 1, 1, 3] + [1] * 12, 1)], "length, characters and type: %s" % got)
+    A.check("⛔ ... and goes to c_kit as verb-type 1, and nothing else does",
+            kitfx("VTYPE") == [["verb-type", "1"]], "KITFX %s" % kitfx("VTYPE"))
+
     print("\n--- drunkenness ---")
     got = [l[DRUNK] for l in puts("DRUNK")]
     A.check("drunk 100, sent to u_net over OSC as the phone sends it, is saved", got == [100],
@@ -641,13 +654,14 @@ def main():
     vol = list(seed[VOL:VOL + 16])
     pitch = list(seed[PITCH:PITCH + 16])
     vol[1], pitch[1] = -6, 7
-    # the swing back at 50% (SW-STOP), the global last step at 3 since LAST-3, and track 1 muted
-    # and soloed since SOLO
+    # the swing back at 50% (SW-STOP), the global last step at 3 since LAST-3, track 1 muted
+    # and soloed since SOLO, track 4 fold since CHAR, and the reverb gigaverb since VTYPE
     snapped = (final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 100, 50, 3] + seed[FXLESS:]
-               + one + one + [1, 1, 1, 3] + [1] * 12)
+               + one + one + [1, 1, 1, 3] + [1] * 12 + [1])
     A.check("⛔ the pattern reaches the song's draft as section 1's ONE drums line, the final "
-            "759 exactly, its effects as seeded, track 1 muted and soloed and track 4 fold",
-            disk == snapped and len(lines) == 1 and len(lines[0].split()) == CHARRED + 1,
+            "760 exactly, its effects as seeded, track 1 muted and soloed, track 4 fold and the "
+            "reverb gigaverb",
+            disk == snapped and len(lines) == 1 and len(lines[0].split()) == TYPED + 1,
             "on disk: %s" % (disk if disk is None else "%d values" % len(disk)))
 
     errs = [e[1] for k in order for e in W(k) if e[0] == "ERR"

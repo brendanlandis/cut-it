@@ -13,7 +13,8 @@
 --   {"note", <effect>, {pad, value} or {value}}               to c_kit, an effect's (R.FX)
 --   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep" | "quiet", {...}}
 --                                                             to g_grid's third inlet
---   {"save", "list", {581, 711, 743 or 759 numbers, R.save}}  to the state bus, put section <part>
+--   {"save", "list", {581, 711, 743, 759 or 760 numbers, R.save}}
+--                                                             to the state bus, put section <part>
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
 --   {"bar", "bar", {}}                                        to u_song: the pattern's loop ends
 --   {"err", "fail", {"c_steps", text}}                        to err (C-12)
@@ -85,6 +86,9 @@ R.FX_BLOCK = 8
 -- The distortion's characters (Brendan, 2026-11-05): e_drive's curve at char 1 to 4. The phone
 -- shows their names.
 R.CHARS = { "soft", "hard", "fold", "crush" }
+-- The reverb's type (Brendan, 2026-11-05): which of its three engines plays, 0 to 2, the kit's, as
+-- its size and damping are. Plate, 0, at first, so a pattern saved before the type loads as one.
+R.VERB_TYPES = { "plate", "gigaverb", "freeverb" }
 -- The delay's times, counted in note values with triplets and dotted ones (Brendan, 2026-11-05):
 -- each note value in steps, a step a sixteenth, so the delay follows the tempo; and each feel's
 -- share of it. The phone shows their names.
@@ -101,6 +105,7 @@ R.SAVED_FXLESS = R.TRACKS * R.STEPS + 4 * R.TRACKS + 5
 R.SAVED_FX = R.SAVED_FXLESS + R.FX_BLOCK * R.TRACKS + #R.VERB
 R.SAVED_FLAGS = R.SAVED_FX + 2 * R.TRACKS
 R.SAVED = R.SAVED_FLAGS + (#R.FX - R.FX_BLOCK) * R.TRACKS
+R.SAVED_TYPED = R.SAVED + 1
 R.SAVED_SECTIONLESS = R.TRACKS * R.STEPS + 4 * R.TRACKS + 3
 R.SAVED_CHANCES = R.TRACKS * R.STEPS + 3 * R.TRACKS + 3
 
@@ -191,6 +196,7 @@ function R.new(bank)
     for t = 1, R.TRACKS do st.fx[f[1]][t] = f[4] end
   end
   for _, f in ipairs(R.VERB) do st.verb[f[1]] = f[4] end
+  st.verb_type = 0
   -- nothing muted or soloed, and the page told so: g_grid starts with every pad sounding
   st.mute, st.solo = {}, {}
   for t = 1, R.TRACKS do st.mute[t], st.solo[t] = 0, 0 end
@@ -234,7 +240,8 @@ end
 -- damping: 711; then, once any track is muted or soloed, the sixteen mutes and the sixteen solos,
 -- 1 or 0, the effects written as they stand whether moved or not: 743; then, once any track's
 -- distortion is not soft, the sixteen characters, 1 to 4, the effects, the mutes and the solos
--- written as they stand: 759.
+-- written as they stand: 759; then, once the reverb's type is not the plate, the type, 0 to 2,
+-- everything before it written as it stands: 760.
 -- While every effect is at its starting point and nothing is muted or soloed, the line stays 581,
 -- as it was saved before the effects, so a song saved before them restores and is put back as it
 -- was, not as a change to save, and an unused effect costs the put nothing; while nothing is
@@ -254,20 +261,22 @@ function R.save(st)
   local n = cells + 4 * R.TRACKS
   all[n + 1], all[n + 2], all[n + 3] = st.num, st.den, st.drunk
   all[n + 4], all[n + 5] = st.swing, st.last
-  local flagged, late = R.flagged(st), R.late_moved(st)
-  if not flagged and not R.fx_moved(st) then return { "save", "list", all } end
+  local flagged, late, typed = R.flagged(st), R.late_moved(st), st.verb_type ~= 0
+  if not flagged and not typed and not R.fx_moved(st) then return { "save", "list", all } end
   local k = R.SAVED_FXLESS
   for i = 1, R.FX_BLOCK do
     for t = 1, R.TRACKS do k = k + 1; all[k] = st.fx[R.FX[i][1]][t] end
   end
   for _, f in ipairs(R.VERB) do k = k + 1; all[k] = st.verb[f[1]] end
-  if not flagged and not late then return { "save", "list", all } end
+  if not flagged and not late and not typed then return { "save", "list", all } end
   for t = 1, R.TRACKS do all[k + t], all[k + R.TRACKS + t] = st.mute[t], st.solo[t] end
-  if not late then return { "save", "list", all } end
+  if not late and not typed then return { "save", "list", all } end
   k = R.SAVED_FLAGS
   for i = R.FX_BLOCK + 1, #R.FX do
     for t = 1, R.TRACKS do k = k + 1; all[k] = st.fx[R.FX[i][1]][t] end
   end
+  if not typed then return { "save", "list", all } end
+  all[R.SAVED_TYPED] = st.verb_type
   return { "save", "list", all }
 end
 
@@ -639,8 +648,9 @@ end
 -- each track's last step, then 1 for each track with a last step of its own, then the time
 -- signature, the drunkenness and the swing, then each track's volume, its pitch and its
 -- randomness, then the selected track's effects, in R.FX's order, its character last, and the
--- reverb's size and damping, then each track's mute and each track's solo, 1 or 0. 131 numbers.
-R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS + #R.FX + #R.VERB + 2 * R.TRACKS
+-- reverb's size and damping, then each track's mute and each track's solo, 1 or 0, then the
+-- reverb's type, 0 to 2. 132 numbers.
+R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS + #R.FX + #R.VERB + 2 * R.TRACKS + 1
 function R.phone(st)
   local out = { st.playing and 1 or 0, R.global_last(st), st.track,
                 st.snap and 2 or (st.sync and 1 or 0) }
@@ -655,6 +665,7 @@ function R.phone(st)
   for _, which in ipairs({ "mute", "solo" }) do
     for t = 1, R.TRACKS do out[#out + 1] = st[which][t] end
   end
+  out[#out + 1] = st.verb_type
   return out
 end
 
@@ -823,7 +834,7 @@ local function tell(st, out, sel, pad, v)
 end
 
 -- Every effect's value c_kit has not been told: each track's in R.FX's order, track 1 first, the
--- note and the feel as one delay-time, then the reverb's.
+-- note and the feel as one delay-time, then the reverb's, its type last, as verb-type.
 function R.tell_fx(st)
   local out = {}
   for t = 1, R.TRACKS do
@@ -833,6 +844,7 @@ function R.tell_fx(st)
     end
   end
   for _, f in ipairs(R.VERB) do tell(st, out, f[1], nil, st.verb[f[1]]) end
+  tell(st, out, "verb-type", nil, st.verb_type)
   return out
 end
 
@@ -866,6 +878,18 @@ function R.set_verb(st, field, v)
   return out
 end
 
+-- The reverb's type, 0 plate, 1 gigaverb, 2 freeverb, the kit's (Brendan, 2026-11-05): saved,
+-- and told to c_kit as verb-type. The same type again, or no number, does nothing.
+function R.set_verb_type(st, v)
+  if type(v) ~= "number" then return {} end
+  local n = whole(v, 0, #R.VERB_TYPES - 1)
+  if n == st.verb_type then return {} end
+  st.verb_type = n
+  local out = { R.save(st) }
+  tell(st, out, "verb-type", nil, n)
+  return out
+end
+
 -- The effects from a saved line, past its first 581, and the characters past its first 743: each
 -- as far as the line holds it, a symbol as its range's bottom, and what it does not hold at its
 -- starting point, off. So a line saved before the effects, of any length R.restore takes, comes
@@ -889,6 +913,13 @@ local function restore_fx(st, values)
   end
 end
 
+-- The reverb's type from a saved line, its 760th number, a symbol as 0, and plate, 0, when the line
+-- is shorter: so every line saved before the type comes back as the plate.
+local function restore_type(st, values)
+  local v = values[R.SAVED_TYPED]
+  st.verb_type = v ~= nil and whole(v, 0, #R.VERB_TYPES - 1) or 0
+end
+
 -- The mutes and solos from a saved line, past its first 711: each as far as the line holds it,
 -- 1 or 0, a symbol as 0, and what it does not hold 0. So a line saved before mute and solo, of
 -- any length R.restore takes, comes back with nothing muted or soloed.
@@ -904,8 +935,9 @@ end
 -- key the pattern had before sections, once, then put straight back (ref/module/state.md), which
 -- also repairs a short or malformed line; and every track's volume and pitch to c_kit, and
 -- whichever effects changed (R.tell_fx), a line of fewer than 711 bringing them back off and one
--- of fewer than 759 every track back soft; and last, the page's quiet pads when they changed, a
--- line of fewer than 743 bringing every track back unmuted and unsoloed. A line of
+-- of fewer than 759 every track back soft and one of fewer than 760 the reverb back to the plate;
+-- and last, the page's quiet pads when they changed, a line of fewer than 743 bringing every
+-- track back unmuted and unsoloed. A line of
 -- exactly 256 is the 16-step pattern this replaced, track by track: its steps go to each track's
 -- first sixteen. A line of exactly 563 is from before the randomness (2026-11-05): its skip
 -- chances come back as each track's randomness, which took their place, its move chances are
@@ -960,6 +992,7 @@ function R.restore(st, values)
   end
   restore_fx(st, values)
   restore_flags(st, values)
+  restore_type(st, values)
   local out = { R.save(st), R.page_last(st), R.steps(st), R.page_bar(st),
                 { "clock", "swing", { st.swing / 100 } } }
   for _, which in ipairs({ "vol", "pitch" }) do
@@ -981,7 +1014,7 @@ end
 -- through u_net; and the arrangement screen's num and den (-1 or 1), drunk (0 to 100), set-swing
 -- (50 to 75) and set-last (1 to 32), through u_net too; and the drum screen's effects, drive,
 -- tone, dist, char, delay-note, delay-feel, feedback, delay and send <track> <value>, and size and
--- damping <value>; and its mute and solo <track> <0 or 1>. A press, a knob or a setting with no
+-- damping <value> and verb-type <0-2>; and its mute and solo <track> <0 or 1>. A press, a knob or a setting with no
 -- number in it does nothing.
 R.presses = {
   step = function(st, a) return pressed(a) and R.press_step(st, a[1]) or {} end,
@@ -1012,6 +1045,7 @@ R.presses = {
   send = function(st, a) return R.set_fx(st, "send", a[1], a[2]) end,
   size = function(st, a) return R.set_verb(st, "size", a[1]) end,
   damping = function(st, a) return R.set_verb(st, "damping", a[1]) end,
+  ["verb-type"] = function(st, a) return R.set_verb_type(st, a[1]) end,
   ["set-swing"] = function(st, a) return R.set_swing(st, a[1]) end,
   ["set-last"] = function(st, a) return R.set_last(st, a[1]) end,
   mute = function(st, a) return R.set_mute(st, a[1], a[2]) end,

@@ -8,15 +8,15 @@
 -- <vel>, rep <n> <vel>, and knobs 2 to 4, last, track-last and swing <0-1> -- and the phone's
 -- sync, snap, select, vol, pitch, randomness, set-track-last, num, den, drunk, set-swing and
 -- set-last, its effects, drive, tone, dist, char, delay-note, delay-feel, feedback, delay, send,
--- size and damping, and each track's mute and solo, from u_net.
+-- size, damping and verb-type, and each track's mute and solo, from u_net.
 -- inlet 2: c_steps.pd's own -- tick, start, stop, restore <the saved line>, init, and sync off
 -- the state bus: put the pattern now if it is being held.
 -- outlet 1: pad <pad> <velocity>, and a track's vol <pad> <dB> and pitch <pad> <semitones> and
 -- its effects, drive, tone, dist, char, delay-time, feedback, delay and send <pad> <value>, and the
--- reverb's size and damping <value>, to c_kit. outlet 2: the page, to g_grid. outlet 3: the pattern to save, at most once every
+-- reverb's size and damping <value> and verb-type <0-2>, to c_kit. outlet 2: the page, to g_grid. outlet 3: the pattern to save, at most once every
 -- SAVE_EVERY ms (below). outlet 4: err. outlet 5: a
 -- bang on init, the proof the Lua loaded. outlet 6: a knob's row, to disp. outlet 7: the phone's
--- state, R.phone's 131 numbers, whenever it changes.
+-- state, R.phone's 132 numbers, whenever it changes.
 -- outlet 8: the step clock's swing <0.5-0.75> and rate <x>, to c_steps.pd's clock.
 -- outlet 9: bar, on the global loop's last step, to u_song: a bar is the pattern's loop, and a
 -- queued section starts as the loop comes round to its step 1.

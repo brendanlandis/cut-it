@@ -159,16 +159,22 @@ FEEL_NAMES = re.findall(r'"([^"]+)"', re.search(r"^R\.FEEL_NAMES = \{(.*)\}$", _
                                                 re.M).group(1))
 CHAR_NAMES = re.findall(r'"([^"]+)"', re.search(r"^R\.CHARS = \{(.*)\}$", _STEPS_LUA,
                                                 re.M).group(1))
+# The reverb's types, R.VERB_TYPES, in the order its radio shows them and c_steps numbers them
+# from 0: verb-type <0-2>, the kit's, as its size and damping are (Brendan, 2026-11-05).
+VERB_TYPES = re.findall(r'"([^"]+)"', re.search(r"^R\.VERB_TYPES = \{(.*)\}$", _STEPS_LUA,
+                                                re.M).group(1))
 FX_CONTROL = {"note": "dnote", "feel": "dfeel", "char": "char"}
 FX_CMD = {"note": "delay-note", "feel": "delay-feel", "char": "char"}
 # The phone's state: c_steps' R.phone, 88 numbers before the effects, then the selected track's
-# and the reverb's, 99, then each track's mute and each track's solo, 131.
+# and the reverb's, 99, then each track's mute and each track's solo, 131, then the reverb's type,
+# 132.
 PHONE_BASE = 88
 # Where the pads show last steps, 1 from the first, the one a drag clips to the reach.
 LAST_SHOW = 1 + [c for _w, c, _lo, _hi, _st in SHOW].index("set-track-last")
 FX_END = PHONE_BASE + len(FX) + len(VERB)
 FLAGS = ("mute", "solo")    # each track's, under its pad, and in the state after the effects
-PHONE = FX_END + len(FLAGS) * 16
+FLAGS_END = FX_END + len(FLAGS) * 16
+PHONE = FLAGS_END + 1       # the reverb's type, last
 # The effect radio's three, in order, each with what shows when it is chosen: its controls by
 # name, captions and values too (fx_groups, below).
 EFFECTS = ["distortion", "delay", "reverb"]
@@ -585,6 +591,29 @@ def fxradio(name, f, words, cmd, at):
     return out
 
 
+def kitradio(name, f, words, cmd, at):
+    """A radio for one of the kit's settings, not a track's: the reverb's type. Its words sit over
+    its segments, black on the chosen one, as fxradio's do. It sends drums <cmd> <n>, n from 0,
+    the segment, and the state hands it back as notify('state', n); at is the segment the file
+    starts on."""
+    script = (KNOWS % "value") + (
+        "function onValueChanged(key)\n"
+        "  if key ~= 'x' then return end\n"
+        "  local v = math.floor(self.values.x + 0.5)\n"
+        "  if v == known then return end\n"
+        "  known = v\n"
+        "  sendOSC('/cutit', 'drums', '%s', v)\n"
+        "  root:notify('touched', '%s')\n"
+        "end\n" % (cmd, name))
+    seg = f[2] // len(words)
+    out = [node("RADIO", name, f, color=RED, outlineStyle=0, orientation=1, steps=len(words),
+                x=at, script=script)]
+    for i, w in enumerate(words):
+        out.append(label("%s%dl" % (name, i + 1), (f[0] + i * seg, f[1], seg, f[3]), w, 14,
+                         BLACK if i == at else WHITE))
+    return out
+
+
 def synth_script(choice):
     """A synth's button: a tap chooses it, and Cut It's /cutit/synth lights the one chosen with
     notify('lit'), which a lit button never answers, as a drum pad does: so the state can't send
@@ -868,11 +897,13 @@ FX_Y = Y0 + 4 * G           # their first captions, level with the radios'
 def fx_controls():
     """Each effect's controls, all in the same place, to the right of the radios: the root shows
     the chosen effect's and hides the rest. In the file every one shows, so TouchOSC's editor,
-    where no script runs, reaches each (ref/device/phone.md, In the editor). The delay's are last,
-    so in the editor its radios draw over the distortion's and the reverb's controls under them.
+    where no script runs, reaches each (ref/device/phone.md, In the editor). The delay's come
+    after the distortion's and the reverb's knobs, so in the editor its radios draw over them, and
+    the reverb's type radio last, over the delay's knobs.
       distortion: its character, soft, hard, fold or crush (Brendan, 2026-11-05), then drive,
         tone and mix, the track's, a radio over knobs as the delay's are
-      reverb: the track's send, and the reverb's size and damping, the kit's
+      reverb: the track's send, and the reverb's size and damping, the kit's, and under them its
+        type, plate, gigaverb or freeverb, the kit's too (Brendan, 2026-11-05)
       delay: its time, a note value over a feel, then its feedback and its level"""
     x, y, step = FX_X, FX_Y, 5 * G
     k = []
@@ -892,6 +923,9 @@ def fx_controls():
                  FX_CMD["feel"], FX_START["feel"] - 1)
     k += fxknob("feedback", x, y + 5 * G, "feedback")
     k += fxknob("delay", x + step, y + 5 * G, "level")
+    k.append(caption("vtypec", x, y + 5 * G, 12 * G, "type"))
+    k += kitradio("vtype", (x, y + 6 * G, 4 * G * len(VERB_TYPES), 2 * G), VERB_TYPES,
+                  "verb-type", 0)
     return k
 
 
@@ -905,7 +939,7 @@ def fx_groups():
         base = re.sub(r"(c|v|\dl)$", "", name)
         if base in ("char", "drive", "tone", "dist"):
             groups["distortion"].append(name)
-        elif base in ("send", "size", "damping"):
+        elif base in ("send", "size", "damping", "vtype"):
             groups["reverb"].append(name)
         else:
             groups["delay"].append(name)
@@ -1172,7 +1206,7 @@ local FXCONTROLS = %(fxcontrols)s
 local VERBCONTROLS = %(verbcontrols)s
 local FXKNOBS = %(fxknobs)s
 local FXRADIOS = %(fxradios)s
-local PHONE_BASE, FX_END, PHONE = %(phonebase)s, %(fxend)s, %(phone)s
+local PHONE_BASE, FX_END, FLAGS_END, PHONE = %(phonebase)s, %(fxend)s, %(flagsend)s, %(phone)s
 local FLAGS = %(flags)s
 local ROWS, MAX_NAME = %(rows)s, %(maxname)s
 local NAMERS = %(namers)s
@@ -1337,7 +1371,8 @@ local function setFx(x)
 end
 
 -- The selected track's effects, after the state's first PHONE_BASE numbers, and the reverb's: each
--- control told the track when it changes, then handed its value, as a knob is.
+-- control told the track when it changes, then handed its value, as a knob is; and the reverb's
+-- type, the state's last, handed to its radio.
 local fxtrack = nil
 local function effects(a)
   if #a < FX_END then return end
@@ -1350,12 +1385,13 @@ local function effects(a)
   for i, name in ipairs(VERBCONTROLS) do
     hand(name, math.floor(arg(a, PHONE_BASE + #FXCONTROLS + i)))
   end
+  if #a >= PHONE then hand('vtype', math.floor(arg(a, PHONE))) end
 end
 
 -- Each track's mute and solo, after the effects: M and S under its pad, lit by notify('lit'),
 -- which a lit one never answers, its letter black on the lit fill.
 local function flags(a)
-  if #a < PHONE then return end
+  if #a < FLAGS_END then return end
   for k, which in ipairs(FLAGS) do
     for n = 1, 16 do
       local name, want = which .. n, arg(a, FX_END + (k - 1) * 16 + n) == 1 and 1 or 0
@@ -1366,12 +1402,13 @@ local function flags(a)
 end
 
 -- ---------------------------------------------------------------- the sequencer's state
--- c_steps' 131 numbers: playing, the global last step, the selected track, a pending sync or
+-- c_steps' 132 numbers: playing, the global last step, the selected track, a pending sync or
 -- snap (1, 2), the sixteen last steps, then 1 for each track with its own, then the time
 -- signature, the drunkenness and the swing, then the sixteen volumes, pitches and
 -- randomnesses, then the selected track's effects and the reverb's, then each track's mute and
--- each track's solo. The drum screen shows what is per track, the arrangement screen the rest;
--- 88, without the effects, draws all but those, and 99, without mute and solo, all but those.
+-- each track's solo, then the reverb's type. The drum screen shows what is per track, the
+-- arrangement screen the rest; 88, without the effects, draws all but those, 99, without mute
+-- and solo, all but those, and 131, without the type, all but that.
 local function drums(a)
   if #a < 88 then return end
   local playing, pending = arg(a, 1) == 1, arg(a, 4)
@@ -1759,8 +1796,9 @@ def root_script(check):
         "verbcontrols": lua(VERB),
         "fxknobs": lua([f for f in FX if f not in FX_CONTROL] + VERB),
         "fxradios": lua({"dnote": len(NOTE_NAMES), "dfeel": len(FEEL_NAMES),
-                         "char": len(CHAR_NAMES)}),
-        "phonebase": PHONE_BASE, "fxend": FX_END, "phone": PHONE, "flags": lua(list(FLAGS)),
+                         "char": len(CHAR_NAMES), "vtype": len(VERB_TYPES)}),
+        "phonebase": PHONE_BASE, "fxend": FX_END, "flagsend": FLAGS_END, "phone": PHONE,
+        "flags": lua(list(FLAGS)),
         "rows": ROWS, "maxname": MAX_NAME,
         "namers": lua({p: {"pager": n["pager"], "tab": n["tab"],
                            "what": {t: w for t, (w, _c) in n["from"].items()}}

@@ -640,11 +640,40 @@ def main():
     sends_of = lambda names: sorted({m.split()[1] for n in names if n in by_name
                                      for m in sent(by_name[n][3])})
     A.check("⛔ ... and send what each is: char, drive, tone, dist; delay-note, delay-feel, "
-            "feedback, delay; send, size, damping",
+            "feedback, delay; send, size, damping, verb-type",
             [sends_of(g) for g in groups] == [["char", "dist", "drive", "tone"],
                                               ["delay", "delay-feel", "delay-note", "feedback"],
-                                              ["damping", "send", "size"]],
+                                              ["damping", "send", "size", "verb-type"]],
             [sends_of(g) for g in groups])
+    # The reverb's type (Brendan, 2026-11-05): TouchOSC's own radio, horizontal, its first on the
+    # left, a segment for each of c_steps' R.VERB_TYPES in their order, each word over its
+    # segment, in the reverb's controls under its size and damping, a caption over it; it sends
+    # drums verb-type and the segment, 0 the first, as c_steps numbers them.
+    m = re.search(r"^R\.VERB_TYPES = \{(.*)\}$", open(STEPS_LUA, encoding="utf-8").read(), re.M)
+    types = re.findall(r'"([^"]+)"', m.group(1)) if m else None
+    radio = [(f, p) for pg, n, t, f, p in placed if pg == "drums" and n == "vtype"
+             and t == "RADIO"]
+    words = sorted((f[0], f[1], by_name.get(n, [None] * 5)[4]) for pg, n, t, f, p in placed
+                   if pg == "drums" and re.fullmatch(r"vtype\d+l", n or ""))
+    seg = radio[0][0][2] / len(types) if radio and types else 0
+    knobs = [where[n] for n in ("size", "damping") if n in where]
+    script = (by_name.get("vtype") or [None] * 4)[3] or ""
+    A.check("⛔ the reverb's type is a horizontal radio of c_steps' R.VERB_TYPES, %s, each word "
+            "over its segment, under the reverb's knobs, and sends drums verb-type with the "
+            "segment, 0 the first" % (types and ", ".join(types)),
+            types == ["plate", "gigaverb", "freeverb"] and len(radio) == 1
+            and radio[0][1].get("orientation") == "1"
+            and radio[0][1].get("steps") == str(len(types))
+            and [w for _x, _y, w in words] == types
+            and [(x, y) for x, y, _w in words] == [(radio[0][0][0] + i * seg, radio[0][0][1])
+                                                  for i in range(len(types))]
+            and len(knobs) == 2 and all(radio[0][0][1] >= k[1] + k[3] for k in knobs)
+            and "vtype" in (groups[2] if len(groups) == 3 else [])
+            and "sendOSC('/cutit', 'drums', 'verb-type', v)" in script
+            and "math.floor(self.values.x + 0.5)" in script,
+            "R.VERB_TYPES %s; radio %s, words %s, knobs %s" % (
+                types, [(f, p.get("orientation"), p.get("steps")) for f, p in radio], words,
+                knobs))
     # A pad's drag, a step at a time as the time signature's boxes are, about 20 points a step:
     # a relative fader's whole travel is its height times 100 over its responseFactor.
     faders = [(n, f, p) for pg, n, t, f, p in placed if pg == "drums" and re.fullmatch(r"pad\d+", n)]

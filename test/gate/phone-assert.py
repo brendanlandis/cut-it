@@ -62,13 +62,13 @@ SONGS_ACKED = ["load", "new", "add", "delete", "up", "down", "new-set", "remove"
 GONE = ["/cutit/param", "/cutit/status", "/cutit/alert"]
 # What u_net does not acknowledge: the screens' state shows each.
 DRUMS_QUIET = ["num", "den", "drunk", "vol", "pitch", "set-track-last", "randomness",
-               "set-swing", "set-last", "char"]
+               "set-swing", "set-last", "char", "verb-type"]
 WINDOWS = ["idle", "dispsweep", "dispother", "tempo", "tpsweep", "idle2", "cmdwire",
            "cmdclear", "cmdvolca", "cmdbogus", "sendoff", "tmon", "sendon", "result",
            "tmoff", "sendoff2", "tmtwice", "tmoff2", "cmdsync", "cmdsnap", "cmdselect",
            "cmdnum", "cmdden", "cmddrunk", "cmdvol", "cmdpitch", "cmdtracklast", "cmdrand",
            "cmdswing", "cmdlast", "cmdchar",
-           "cmddrumsnew", "cmdsynth", "cmdsynthnew", "cmdtempo", "cmdtemponew", "cmdvel",
+           "cmddrumsnew", "cmdverbtype", "cmdsynth", "cmdsynthnew", "cmdtempo", "cmdtemponew", "cmdvel",
            "cmdvelnew", "tmmodeon", "tmmode", "drumstate", "cmdsecsel", "cmdsecpage", "cmdsecnew",
            "cmdsecup", "cmdsecdown", "cmdseclen", "cmdsecdel", "cmdsecname", "cmdsecnew2",
            "secstate", "cmdsongs", "songstate", "done"]
@@ -454,7 +454,8 @@ def main():
                            ("cmdrand", "randomness", [3.0, 40.0]),
                            ("cmdswing", "set-swing", [62.0]),
                            ("cmdlast", "set-last", [12.0]),
-                           ("cmdchar", "char", [3.0, 2.0])):
+                           ("cmdchar", "char", [3.0, 2.0]),
+                           ("cmdverbtype", "verb-type", [2.0])):
         said = " ".join([cmd] + ["%g" % v for v in rest])
         one(win, "/probe/drums", [cmd] + rest, "drums %s leaves for c_steps as %s" % (said, said))
         if cmd in DRUMS_QUIET:

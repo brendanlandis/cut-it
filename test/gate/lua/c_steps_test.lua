@@ -56,9 +56,11 @@ end
 -- last step: 581 numbers; then, when x gives any effect, each of the first BLOCK effects of every
 -- track and the reverb's two: 711; then, when x mutes or solos any track, the sixteen mutes and the
 -- sixteen solos, the effects before them whether given or not: 743; then, when x gives any track
--- a character, the sixteen characters, everything before them whether given or not: 759. x holds
--- what differs from a new sequencer's: randomness, vol and pitch by track, num, den, drunk, swing,
--- last, fx (fx.char among them) and verb, and mute and solo by track.
+-- a character, the sixteen characters, everything before them whether given or not: 759; then,
+-- when x gives the reverb a type other than the plate, 0, the type, everything before it as it
+-- stands: 760. x holds what differs from a new sequencer's: randomness, vol and pitch by track,
+-- num, den, drunk, swing, last, fx (fx.char among them) and verb, mute and solo by track, and
+-- type.
 local function line(pat, own, x)
   x = x or {}
   local l = {}
@@ -71,8 +73,8 @@ local function line(pat, own, x)
   end
   l[CELLS + 65], l[CELLS + 66], l[CELLS + 67] = x.num or 4, x.den or 4, x.drunk or 0
   l[CELLS + 68], l[CELLS + 69] = x.swing or 50, x.last or 16
-  local late = x.fx and x.fx.char
-  local flagged = x.mute or x.solo or late
+  local late, typed = x.fx and x.fx.char, x.type and x.type ~= 0
+  local flagged = x.mute or x.solo or late or typed
   if not x.fx and not x.verb and not flagged then return l end
   for i = 1, BLOCK do
     for t = 1, 16 do l[#l + 1] = fx_of(x.fx, FX[i][1], t, FX[i][2]) end
@@ -82,10 +84,12 @@ local function line(pat, own, x)
   for _, which in ipairs({ "mute", "solo" }) do
     for t = 1, 16 do l[#l + 1] = (x[which] or {})[t] or 0 end
   end
-  if not late then return l end
+  if not late and not typed then return l end
   for i = BLOCK + 1, #FX do
     for t = 1, 16 do l[#l + 1] = fx_of(x.fx, FX[i][1], t, FX[i][2]) end
   end
+  if not typed then return l end
+  l[#l + 1] = x.type
   return l
 end
 
@@ -127,7 +131,8 @@ end
 
 -- Every effect c_kit is told when it has been told none, at load or by a sequencer that never
 -- loaded: each track's drive, tone, dist, delay-time, feedback, delay, send and char, track 1 first,
--- then the reverb's size and damping, at their starting points unless given (fx, verb).
+-- then the reverb's size and damping, at their starting points unless given (fx, verb), then
+-- its type, verb-type, 0 unless given (verb.type).
 local function fx_all(fx, verb)
   local out = {}
   for t = 1, 16 do
@@ -141,6 +146,7 @@ local function fx_all(fx, verb)
     end
   end
   for _, f in ipairs(VERB) do out[#out + 1] = { "note", f[1], { (verb or {})[f[1]] or f[2] } } end
+  out[#out + 1] = { "note", "verb-type", { (verb or {}).type or 0 } }
   return out
 end
 
@@ -159,7 +165,7 @@ end
 -- A knob position for a step: what R.knob_step reads back as n.
 local function at(n) return (n - 1) / 31 end
 
--- The phone's 131 numbers, from the few that differ: lasts and owns by track, then the time
+-- The phone's 132 numbers, from the few that differ: lasts and owns by track, then the time
 -- signature, the drunkenness and the swing (4 4 0 50 unless given), then every track's volume,
 -- pitch and randomness (per.vol, per.pitch and per.randomness by track, 0 unless given), then the
 -- selected track's effects and the reverb's (per.fx and per.verb, as line's x.fx and x.verb), then
@@ -178,6 +184,7 @@ local function phone(playing, last, track, pending, lasts, owns, tail, per)
   for _, which in ipairs({ "mute", "solo" }) do
     for t = 1, 16 do p[#p + 1] = (per[which] or {})[t] or 0 end
   end
+  p[#p + 1] = per.type or 0
   return p
 end
 
@@ -1164,7 +1171,7 @@ equal("⛔ the reverb's size and damping are the kit's, one each: saved, and to 
 local P = 4 + 32 + 4 + 48
 equal("⛔ the phone hears the selected track's effects and the reverb's, after the rest",
       { R.phone(st)[P + 1], R.phone(st)[P + 3], R.phone(st)[P + 10], R.phone(st)[P + 11],
-        #R.phone(st) }, { 100, 0, 80, 20, 131 })
+        #R.phone(st) }, { 100, 0, 80, 20, 132 })
 R.select(st, 7)
 equal("... and another track's once it is selected: track 7's 1/2 triplet",
       { R.phone(st)[P + 4], R.phone(st)[P + 5], R.phone(st)[P + 6] }, { 1, 2, 40 })
@@ -1219,7 +1226,7 @@ equal("a value out of its range is clipped, and a symbol is its range's bottom",
       { st.fx.drive[1], st.fx.note[1], st.fx.feel[2] }, { 100, 1, 3 })
 st = R.new(1)
 equal("⛔ a sequencer that never loaded tells c_kit every effect at its first restore",
-      #R.internal.restore(st, fxl), 5 + 32 + 130)
+      #R.internal.restore(st, fxl), 5 + 32 + 131)
 
 print("\n--- mute and solo ---")
 -- Each track's mute and solo from the drum screen (Brendan, 2026-11-05): with any track soloed
@@ -1292,7 +1299,7 @@ equal("⛔ the phone hears each track's mute, then each track's solo, after the 
         R.presses.solo(st, { 5, 1 })
         return { #R.phone(st), R.phone(st)[99 + 3], R.phone(st)[99 + 2], R.phone(st)[115 + 5],
                  R.phone(st)[115 + 3] }
-      end)(), { 131, 1, 0, 1, 0 })
+      end)(), { 132, 1, 0, 1, 0 })
 st = R.new(1)
 R.presses.dist(st, { 4, 30 })
 R.presses.solo(st, { 6, 1 })
@@ -1370,7 +1377,7 @@ R.select(st, 8)
 local Q = 4 + 32 + 4 + 48
 equal("⛔ the phone hears the selected track's character after its send, before the reverb's two",
       { R.phone(st)[Q + 8], R.phone(st)[Q + 9], R.phone(st)[Q + 10], #R.phone(st) },
-      { 0, 3, 50, 131 })
+      { 0, 3, 50, 132 })
 R.select(st, 1)
 equal("... and track 1's, soft, once it is selected", R.phone(st)[Q + 9], 1)
 
@@ -1408,6 +1415,71 @@ oddch[744], oddch[745], oddch[746] = 7, "x", -3
 R.internal.restore(st, oddch)
 equal("a character is 1 to 4: a value over 4 is crush, a symbol or a value below 1 soft",
       { st.fx.char[1], st.fx.char[2], st.fx.char[3] }, { 4, 1, 1 })
+
+print("\n--- the reverb's type ---")
+-- Which of the reverb's three engines plays, the kit's (Brendan, 2026-11-05): 0 plate, 1
+-- gigaverb, 2 freeverb, saved per section at the end of the line, after the characters, the
+-- plate when not.
+st = R.new(1)
+equal("a new sequencer is on the plate, the first of three", { st.verb_type, R.VERB_TYPES },
+      { 0, { "plate", "gigaverb", "freeverb" } })
+equal("⛔ the line is 760 with the type, after the 759", R.SAVED_TYPED, 760)
+R.internal.init(st, {})
+equal("⛔ verb-type 2 from the drum screen: saved, the line 760 ending in the type, the effects, "
+      .. "mutes, solos and characters before it as they stand, and to c_kit with no pad",
+      R.presses["verb-type"](st, { 2 }),
+      { { "save", "list", line(zeros(CELLS), nil, { type = 2 }) },
+        { "note", "verb-type", { 2 } } })
+equal("... the same type again does nothing, nor does one with no number",
+      { R.presses["verb-type"](st, { 2 }), R.presses["verb-type"](st, {}),
+        R.presses["verb-type"](st, { "x" }) }, { {}, {}, {} })
+equal("⛔ a type is 0 to 2, clipped and rounded", { R.presses["verb-type"](st, { 7 }),
+                                                   R.presses["verb-type"](st, { 0.6 })[2],
+                                                   R.presses["verb-type"](st, { -4 })[2] },
+      { {}, { "note", "verb-type", { 1 } }, { "note", "verb-type", { 0 } } })
+equal("⛔ back on the plate the line is 581 again, with nothing else moved", #R.save(st)[3], 581)
+R.presses["verb-type"](st, { 1 })
+R.presses.size(st, { 30 })
+R.presses.mute(st, { 4, 1 })
+equal("⛔ ... and with a type and an effect and a mute, all of them in the 760",
+      R.save(st)[3], line(zeros(CELLS), nil, { verb = { size = 30 }, mute = { [4] = 1 },
+                                               type = 1 }))
+equal("⛔ the phone hears the type last, its 132nd number", { #R.phone(st), R.phone(st)[132] },
+      { 132, 1 })
+
+print("\n--- the reverb's type in the restore ---")
+st = R.new(1)
+R.internal.init(st, {})
+local tyl = line(zeros(CELLS), nil, { type = 2 })
+back = R.internal.restore(st, tyl)
+equal("⛔ a line of 760 brings the type back, and is put straight back as it came",
+      { st.verb_type, back[1] }, { 2, { "save", "list", tyl } })
+equal("⛔ ... and tells c_kit the type, the one effect that changed", { #back, back[#back] },
+      { 5 + 32 + 1, { "note", "verb-type", { 2 } } })
+equal("⛔ the same line again tells c_kit nothing", #R.internal.restore(st, tyl), 5 + 32)
+back = R.internal.restore(st, first(tyl, 759))
+equal("⛔ a line of 759, saved before the type, brings the plate back, tells c_kit so, and is put "
+      .. "back as the 581 it is",
+      { st.verb_type, back[#back], back[1] },
+      { 0, { "note", "verb-type", { 0 } }, { "save", "list", first(tyl, 581) } })
+equal("⛔ so do lines of 743, 711, 581, 579, 563 and 256", (function()
+  local got = {}
+  for _, old in ipairs({ first(tyl, 743), first(tyl, 711), first(tyl, 581),
+                         sectionless(zeros(CELLS)), old_line(zeros(CELLS)), zeros(256) }) do
+    R.internal.restore(st, tyl)
+    R.internal.restore(st, old)
+    got[#got + 1] = st.verb_type
+  end
+  return got
+end)(), { 0, 0, 0, 0, 0, 0 })
+local oddty = line(zeros(CELLS), nil, { type = 1 })
+oddty[760] = 9
+R.internal.restore(st, oddty)
+local got = { st.verb_type }
+oddty[760] = "x"
+R.internal.restore(st, oddty)
+got[2] = st.verb_type
+equal("a type past 2 is 2, and a symbol is the plate", got, { 2, 0 })
 
 print("\n--- the Pd face ---")
 local class = T.load_class(DIR .. "c_steps-lua.pd_lua", DIR)

@@ -24,9 +24,10 @@ end
 local function teal(c) return c[2] > 0.7 and c[1] < 0.3 end
 local function red(c) return c[1] > 0.9 and c[2] < 0.2 end
 local function black(c) return c and c[1] < 0.1 and c[2] < 0.1 end
--- The state c_steps sends: 131 numbers, from what differs; after the first 88 the selected
+-- The state c_steps sends: 132 numbers, from what differs; after the first 88 the selected
 -- track's effects, its character last, and the reverb's, at their starting points unless t.fx
--- gives them, then each track's mute and each track's solo, 0 unless t.mute or t.solo gives them.
+-- gives them, then each track's mute and each track's solo, 0 unless t.mute or t.solo gives them,
+-- then the reverb's type, 0, the plate, unless t.type gives it.
 local FX = { { "drive", 50 }, { "tone", 100 }, { "dist", 0 }, { "note", 3 }, { "feel", 1 },
              { "feedback", 40 }, { "delay", 0 }, { "send", 0 }, { "char", 1 }, { "size", 50 },
              { "damping", 50 } }
@@ -44,6 +45,7 @@ local function drumstate(t)
   for _, which in ipairs({ "mute", "solo" }) do
     for n = 1, 16 do st[#st + 1] = (t[which] or {})[n] or 0 end
   end
+  st[#st + 1] = t.type or 0
   return st
 end
 -- A drum pad's step, as a share of its whole travel: the layout's, which the reading half holds
@@ -323,20 +325,22 @@ end
 equal("⛔ the effect radio starts on distortion: its character, drive, tone and mix show, the "
       .. "delay's and the reverb's controls hide",
       { C.fx.values.x, shows({ "char", "charc", "char4l", "drive", "tone", "dist", "distc", "dnote",
-                               "dfeel1l", "feedback", "send", "size", "damping" }) },
+                               "dfeel1l", "feedback", "send", "size", "damping", "vtype",
+                               "vtypec" }) },
       { 0, { true, true, true, true, true, true, true, false, false, false, false, false,
-             false } })
+             false, false, false } })
 equal("⛔ the radio sends nothing to Cut It", L.drag(w, "fx", 1), {})
 equal("on delay its time, a note over a feel, its feedback and its level show, and nothing else",
       shows({ "dnote", "dnote4l", "dfeel", "dtimec", "feedback", "delay", "delayc", "drive",
-              "send", "char", "char1l" }),
-      { true, true, true, true, true, true, true, false, false, false, false })
+              "send", "char", "char1l", "vtype", "vtype2l" }),
+      { true, true, true, true, true, true, true, false, false, false, false, false, false })
 check("... the radio's delay black on its lit segment, distortion white again",
       black(C.fx2l.textColor) and not black(C.fx1l.textColor), "")
 L.drag(w, "fx", 2)
-equal("on reverb the track's send and the reverb's size and damping",
-      shows({ "send", "size", "damping", "sizec", "dnote", "drive" }),
-      { true, true, true, true, false, false })
+equal("on reverb the track's send, the reverb's size and damping, and under them its type",
+      shows({ "send", "size", "damping", "sizec", "vtype", "vtypec", "vtype1l", "vtype3l", "dnote",
+              "drive", "feedback" }),
+      { true, true, true, true, true, true, true, true, false, false, false })
 w.sent = {}
 L.update(w, 1100)
 st[3] = 16
@@ -364,6 +368,30 @@ equal("⛔ the character radio sends the distortion's character for the selected
       { { { "/cutit", "drums", "char", 16, 4 } }, { { "/cutit", "drums", "char", 16, 1 } }, {} })
 equal("the reverb's size and damping are the kit's: no track", L.drag(w, "size", 0.9),
       { { "/cutit", "drums", "size", 90 } })
+-- The reverb's type (Brendan, 2026-11-05): plate, gigaverb or freeverb, the kit's, a horizontal
+-- radio under its size and damping, 0 the plate, the state's last number.
+equal("⛔ the state hands the type radio the plate, the state's last number, its word black on "
+      .. "its segment", { C.vtype.values.x, black(C.vtype1l.textColor),
+                          black(C.vtype2l.textColor) }, { 0, true, false })
+equal("⛔ a tap on gigaverb sends drums verb-type 1, the kit's: no track",
+      L.drag(w, "vtype", 1), { { "/cutit", "drums", "verb-type", 1 } })
+equal("... and on freeverb, 2", L.drag(w, "vtype", 2), { { "/cutit", "drums", "verb-type", 2 } })
+L.update(w, 1100)
+w.sent = {}
+st[#st] = 1
+L.osc(w, "/cutit/drums", table.unpack(st))
+L.update(w)
+equal("⛔ the state's type, gigaverb, lights it, its word black, and nothing goes back",
+      { C.vtype.values.x, black(C.vtype2l.textColor), black(C.vtype3l.textColor), #w.sent },
+      { 1, true, false, 0 })
+local old131 = { table.unpack(st) }
+old131[#old131] = nil
+old131[3] = 5
+L.update(w, 1100)
+L.osc(w, "/cutit/drums", table.unpack(old131))
+equal("a 131-number state, from before the type, leaves the radio as it was, and sends nothing",
+      { C.vtype.values.x, #w.sent }, { 1, 0 })
+st[#st] = 0
 L.update(w, 1100)
 st[3] = 5
 L.osc(w, "/cutit/drums", table.unpack(st))

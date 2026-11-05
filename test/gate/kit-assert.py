@@ -17,14 +17,18 @@ Nine claims:
     7. a track's effects: its distortion squares a sine off and darkens with its tone,
        and passes the dry sound untouched at mix 0; its delay echoes a note value later
        at the tempo the bus carries, at its level, and rings out once its level goes to
-       0; and its send gives the reverb a tail, which a send of 0 gives no new hit
+       0; and the reverb, each of its three types: a tail that dies away, as loud as the
+       plate's, the engine told apart by when a click's reverb starts; one changed away
+       from rings out and takes no more of the send; and a send of 0 gives no new hit
     8. the distortion's level and characters: more drive is never quieter, and never
        louder at its peak than the dry; a sample is driven by its own peak, so a quiet
        one as hard as a loud one; and soft, hard, fold and crush each a shape of its own
-    9. each effect's DSP has a switch~, and the crush stage one of its own
+    9. each effect's DSP has a switch~, the crush stage one of its own, and each of the
+       reverb's engines one, run by e_tail
 
 Standard library only.
 """
+import math
 import os
 import struct
 import sys
@@ -52,6 +56,20 @@ def level_db(v):
 RMS_TOL = 0.05
 SILENT = 0.001
 FREQ_TOL = 0.05
+# The reverb's engines, by the driver's names for e_verb's types 0 to 2, and their files.
+ENGINE = {"PLATE": "plate", "GIGA": "gigaverb", "FREE": "freeverb"}
+ENGINES = ("e_plate", "e_gigaverb", "e_freeverb")
+# How far apart the types' levels may be; and when each one's reverb starts after a click, the
+# first sample over REFLECTION, in samples: gigaverb at once, the plate after its shortest path,
+# the right half's first tap, 266 of the paper's samples at 29761 Hz, 394 here, and freeverb after
+# its shortest comb, 1116 (25.3 ms). The voice's throw reaches e_verb a block late, 64 samples, as
+# measured (ref/module/sequencer.md, The effects), and up to two blocks are allowed, so a change in
+# the order Pd runs c_kit in moves none of them into another's range.
+LEVEL_DB = 1.5
+RING_DB = 1.5
+REFLECTION = 0.002
+FIRST = {name: (max(4, own - 4), own + 128 + 4) for name, own in (("PLATE", 394), ("GIGA", 0),
+                                                           ("FREE", 1116))}
 
 
 def top_boxes(path):
@@ -93,6 +111,19 @@ def rms(xs):
 
 def peak(xs):
     return max((abs(x) for x in xs), default=0) / 32768.0
+
+
+def hp_rms(xs, fc=300.0):
+    """RMS after a one-pole high-pass at fc: the research's weighting of the reverb's types'
+    levels, so a low end does not decide how loud a reverb sounds."""
+    a = math.exp(-2 * math.pi * fc / 44100)
+    y = px = py = acc = 0.0
+    for v in xs:
+        v = v / 32768.0
+        y = a * (py + v - px)
+        px, py = v, y
+        acc += y * y
+    return (acc / len(xs)) ** 0.5 if xs else 0.0
 
 
 def crossings(xs):
@@ -144,9 +175,9 @@ def main():
     print("\n--- 2. c_kit reports the samples it found ---")
     order, by = A.windows(cap, "KIT", len(G._seq("x")))
     errs = [v for w in by.values() for k, v in w if k == "ERR" and v[1:2] == ["c_kit"]]
-    A.check("exactly one report, warn c_kit samples-3 (pads 1, 5 and 7 of 16)",
-            errs == [["warn", "c_kit", "samples-3"]],
-            "c_kit's err lines: %s. Three samples is a count no other run gives, so "
+    A.check("exactly one report, warn c_kit samples-5 (pads 1, 5, 7, 9 and 10 of 16)",
+            errs == [["warn", "c_kit", "samples-%d" % len(G.SAMPLES)]] and len(G.SAMPLES) == 5,
+            "c_kit's err lines: %s. Five samples is a count no other run gives, so "
             "a stale or a hard-coded count shows" % errs)
 
     # ---- the recording ------------------------------------------------------
@@ -296,16 +327,63 @@ def main():
             "at the hit's level, the second at feedback 50's 0.475 of it",
             abs(e1 - TONE_RMS) / TONE_RMS < RMS_TOL and abs(e2 / e1 - 0.475) < 0.03,
             "echoes at rms %.5f and %.5f, a ratio of %.3f" % (e1, e2, e2 / e1 if e1 else 0))
-    t = G.hit_time(window("VERB"), G.SET_MS)
-    tail = span(t + G.SAMPLE_S + 0.02, t + G.SAMPLE_S + 0.12)
-    late = span(t + G.SAMPLE_S + 0.5, t + G.SAMPLE_S + 0.6)
-    A.check("⛔ VERB: pad 7's send at 100 leaves a reverb tail after its sample ends, dying away",
-            rms(tail) > 0.01 and rms(late) < rms(tail) / 3,
-            "rms %.5f just after the sample, %.5f half a second on" % (rms(tail), rms(late)))
-    t = G.hit_time(window("VERB-OFF"), G.SET_MS)
-    off = span(t + G.SAMPLE_S + 0.02, t + G.SAMPLE_S + 0.3)
-    A.check("VERB-OFF: at send 0 a hit leaves nothing after its sample ends",
-            peak(off) < SILENT, "peak %.5f after the sample" % peak(off))
+    # The reverb, each of its three types (Brendan, 2026-11-05): a tail that dies away, as loud
+    # in each, and the engine's own first reflection after a click, which tells which one played.
+    def after_end(name, a, b, off_ms=G.SET_MS):
+        """From a to b seconds after the end of pad 10's burst, hit off_ms into the window."""
+        t = G.hit_time(window(name), off_ms) + G.CLICK_S + G.BURST_S
+        return span(t + a, t + b)
+
+    def db(a, b):
+        return 20 * math.log10(a / b) if a > 0 and b > 0 else float("-inf")
+
+    level = {}
+    for name in G.TYPES:
+        tail = after_end("VERB-" + name, 0.02, 0.12)
+        late = after_end("VERB-" + name, 0.5, 0.6)
+        level[name] = hp_rms(after_end("VERB-" + name, 0.02, 0.42))
+        A.check("⛔ VERB-%s: pad 10's send at 100 leaves the %s's tail after its burst ends, dying "
+                "away" % (name, ENGINE[name]), rms(tail) > 0.005 and rms(late) < rms(tail) / 3,
+                "rms %.5f just after the burst, %.5f half a second on" % (rms(tail), rms(late)))
+    for name in G.TYPES[1:]:
+        A.check("⛔ VERB-%s: ... as loud as the plate's, within %g dB, so changing the type does "
+                "not jump" % (name, LEVEL_DB), abs(db(level[name], level["PLATE"])) < LEVEL_DB,
+                "%+.2f dB: %.5f against the plate's %.5f, the tail's first 0.4 s high-passed at "
+                "300 Hz, as the research weighed them" % (db(level[name], level["PLATE"]),
+                                                          level[name], level["PLATE"]))
+    for name in G.TYPES:
+        t = G.hit_time(window("CLICK-" + name), G.SET_MS) + G.CLICK_S
+        click = max(range(int((t - 0.005) * rate), int((t + 0.01) * rate)), key=lambda i: abs(x[i]))
+        # past the click's own interpolation, three samples
+        got = next((i - click for i in range(click + 4, click + int(0.05 * rate))
+                    if abs(x[i]) / 32768.0 > REFLECTION), None)
+        lo, hi = FIRST[name]
+        A.check("⛔ CLICK-%s: its reverb starts %d to %d samples after the click, the %s's own first "
+                "reflection, so it is the %s that plays" % (name, lo, hi, ENGINE[name],
+                                                             ENGINE[name]),
+                got is not None and lo <= got <= hi,
+                "the click at sample %d, the reverb's first sample over %g %s later"
+                % (click, REFLECTION, got))
+    # The plate left for freeverb while its tail rings: it rings out, and a burst after the change
+    # is heard through freeverb alone.
+    t = G.hit_time(window("RING"), G.SET_MS) + G.CLICK_S + G.BURST_S
+    change = G.hit_time(window("RING"), G.SET_MS + G.RING_CHANGE_MS)
+    before = rms(span(t + 0.02, change - 0.01))
+    rung = rms(span(change + 0.35, change + 0.45))
+    A.check("⛔ RING: the type changed to freeverb while the plate rings, the plate rings out: its "
+            "tail goes on past 300 ms after the change, not cut", rung > 0.002
+            and rung > before / 10, "rms %.5f before the change, %.5f 0.35 to 0.45 s after it"
+            % (before, rung))
+    again = hp_rms(after_end("RING", 0.02, 0.22, G.SET_MS + G.RING_AGAIN_MS))
+    alone = hp_rms(after_end("RING-REF", 0.02, 0.22))
+    A.check("⛔ RING: a burst after the change is freeverb's alone, as loud as freeverb at the same "
+            "size with nothing before it, within %g dB: the plate no longer takes the send"
+            % RING_DB, abs(db(again, alone)) < RING_DB,
+            "%+.2f dB: %.5f after the second burst, %.5f in RING-REF"
+            % (db(again, alone), again, alone))
+    off = after_end("VERB-OFF", 0.02, 0.3)
+    A.check("VERB-OFF: at send 0 a hit leaves nothing after its burst ends",
+            peak(off) < SILENT, "peak %.5f after the burst" % peak(off))
 
     # ---- 8. the distortion's level and characters ---------------------------
     print("\n--- 8. the distortion: louder with drive, by its sample's peak, four characters ---")
@@ -368,10 +446,19 @@ def main():
 
     # ---- 9. every effect switches itself off --------------------------------
     print("\n--- 9. each effect's DSP has a switch~, so an effect unused costs nothing ---")
-    for name in ("e_drive", "e_delay", "e_verb"):
+    for name in ("e_drive", "e_delay", "e_verb") + ENGINES:
         boxes, _cons = top_boxes(os.path.join(ROOT, "Cut It", name + ".pd"))
         A.check("%s holds one switch~" % name, len(find(boxes, "switch~")) == 1,
                 "switch~ boxes: %s" % find(boxes, "switch~"))
+    # Each engine its own switch~, run by e_tail, so only the chosen one runs, and one left rings
+    # out first (Brendan, 2026-11-05).
+    boxes, _cons = top_boxes(os.path.join(ROOT, "Cut It", "e_verb.pd"))
+    A.check("e_verb holds each of its three engines once", [len(find(boxes, e)) for e in ENGINES]
+            == [1, 1, 1], "%s" % {e: find(boxes, e) for e in ENGINES})
+    for name in ENGINES:
+        boxes, _cons = top_boxes(os.path.join(ROOT, "Cut It", name + ".pd"))
+        A.check("%s's switch~ is run by one e_tail" % name, len(find(boxes, "e_tail")) == 1,
+                "e_tail boxes: %s" % find(boxes, "e_tail"))
     crush_sub, inside_crush = [], False
     for r in lib_pd.read(os.path.join(ROOT, "Cut It", "e_drive.pd")):
         if r.startswith("#N canvas") and r[:-1].split()[-2:-1] == ["crush"]:

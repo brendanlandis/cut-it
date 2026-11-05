@@ -116,12 +116,17 @@ def top_boxes(path):
 def lint():
     """The chain is wires in u_root, read off the patch rather than run."""
     print("--- 5. the chain is u_root's, and the levels are mother's ---")
-    throws, private, catches = {}, {}, {}
+    throws, private, catches, sends, receives = {}, {}, {}, {}, {}
     for name in sorted(os.listdir(PATCH)):
         if not name.endswith(".pd"):
             continue
         for r in lib_pd.read(os.path.join(PATCH, name)):
             f = r[:-1].split()
+            # a private send~ or receive~, as a private throw~: mother's inL and inR are global
+            if (r.startswith("#X obj") and f[4:5] in (["s~"], ["send~"], ["r~"], ["receive~"])
+                    and "$" in " ".join(f[5:])):
+                (sends if f[4] in ("s~", "send~") else receives).setdefault(
+                    " ".join(f[5:]), []).append(name)
             if r.startswith("#X obj") and f[4:5] in (["throw~"], ["catch~"]):
                 # a name with a $ in it is private to its abstraction and the ones it hands its
                 # $0 to (C-1); a bare one is global, as mother's outL and outR are
@@ -138,15 +143,22 @@ def lint():
             "of its own sums into mother's catch~ out of sight of it" % throws)
     # The drums' effects reach each other by throw~ and catch~ inside c_kit, under its $0
     # (ref/module/sequencer.md, The effects): voices to their delays and the reverb, the delays
-    # and the reverb to c_kit's own catch~, which is c_kit's outlet~. Exactly these, so a new
-    # throw~ is a decision and not a leak.
+    # and the reverb's three engines to c_kit's own catch~, which is c_kit's outlet~. Exactly
+    # these, so a new throw~ is a decision and not a leak.
     kit = {"\\$2-verb": ["c_voice.pd"], "\\$2-d\\$1": ["c_voice.pd"],
-           "\\$1-out": ["e_delay.pd", "e_verb.pd"], "\\$1-verb": ["e_delay.pd"]}
+           "\\$1-out": ["e_delay.pd", "e_freeverb.pd", "e_gigaverb.pd", "e_plate.pd"],
+           "\\$1-verb": ["e_delay.pd"]}
     kit_catch = {"\\$1-d\\$2": ["e_delay.pd"], "\\$1-verb": ["e_verb.pd"],
                  "\\$0-out": ["c_kit.pd"]}
     A.check("⛔ every other throw~ is the drums', private to c_kit's \\$0, each caught inside c_kit",
             private == kit and catches == kit_catch,
             "private throw~ %s, catch~ %s" % (private, catches))
+    # The reverb's sends reach its engines by one send~ in e_verb, under its \$0, which each of its
+    # three engines takes as its \$2 (Brendan, 2026-11-05: a choice of three). The only send~.
+    A.check("⛔ the reverb's sends reach its three engines by one send~ in e_verb, and no other "
+            "private send~ or receive~ is in the patch", sends == {"\\$0-in": ["e_verb.pd"]}
+            and receives == {"\\$2-in": ["e_freeverb.pd", "e_gigaverb.pd", "e_plate.pd"]},
+            "send~ %s, receive~ %s" % (sends, receives))
 
 
 def levels(path):

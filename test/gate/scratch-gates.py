@@ -233,12 +233,12 @@ def audio(g):
 
 
 def kit(g):
-    # A harness holding c_kit alone, with three samples the generator writes into
+    # A harness holding c_kit alone, with five samples the generator writes into
     # the copy's samples/drums: lib_scratch leaves the Mac's own out, so the run
     # hears these and nothing else.
     S.require("Cut It/c_kit.pd", "Cut It/c_voice.pd", "Cut It/u_root.pd")
     s, cap = _harness_gate(
-        g, 40, lambda s: s.patch, lambda s: s.path("out.wav"),
+        g, 50, lambda s: s.patch, lambda s: s.path("out.wav"),
         why=["      Without it nothing instantiates c_kit, nothing records, and",
              "      the gate would report a silent kit rather than a broken test."])
     return g.analyze("test/gate/kit-assert.py", s.path("out.wav"), *g.args, stdin=cap)

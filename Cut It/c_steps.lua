@@ -907,6 +907,7 @@ end
 -- (ref/module/songs.md).
 function R.tick(st)
   local out = {}
+  local first = R.take_one(st)
   local waiting = st.fast and st.rep > 0
   if st.pair == 0 then st.pair_swing = st.swing end
   local pos = st.pos
@@ -943,7 +944,24 @@ function R.tick(st)
   end
   -- The pattern's loop ends when the next step is the global loop's step 1, as advance() counts
   -- it: a global last step moved under the loop's place wraps into it, and no bar ends there.
-  if not waiting and st.master % R.global_last(st) == 0 then out[#out + 1] = { "bar", "bar", {} } end
+  if not waiting and st.master % R.global_last(st) == 0 then
+    out[#out + 1] = { "bar", "bar", {} }
+    st.bar_passed = true
+  end
+  for i = #first, 1, -1 do table.insert(out, 1, first[i]) end
+  return out
+end
+
+-- What waits for step 1: u_song asked, once a bar has passed, for the parts it holds for the 1, then
+-- what a restore held back (R.restore). PLAY and STOP take it too, since no step 1 may come.
+function R.take_one(st)
+  local out = {}
+  if st.bar_passed then
+    st.bar_passed = false
+    out[1] = { "one", "one", {} }
+  end
+  for _, e in ipairs(st.on_one or {}) do out[#out + 1] = e end
+  st.on_one = nil
   return out
 end
 
@@ -958,7 +976,9 @@ function R.start(st)
   st.pair = 0
   for t = 1, R.TRACKS do st.pos[t] = 0 end
   st.rate = 1
-  local out = { { "clock", "rate", { 1 } }, { "page", "rep", { 0 } } }
+  local out = R.take_one(st)
+  out[#out + 1] = { "clock", "rate", { 1 } }
+  out[#out + 1] = { "page", "rep", { 0 } }
   tape_off(st, out)
   if st.fast then
     st.fast = false
@@ -975,7 +995,8 @@ end
 -- stopped. The pad held still holds its repeat, and the 500 BPM repeat its tempo, until let go.
 function R.stop(st)
   st.playing = false
-  local out = { { "page", "play", { 0 } } }
+  local out = R.take_one(st)
+  out[#out + 1] = { "page", "play", { 0 } }
   tape_off(st, out)
   return out
 end
@@ -1193,7 +1214,7 @@ function R.restore(st, values)
       break
     end
   end
-  if not same then out[1] = saved end
+  local put = not same and saved or nil
   for _, e in ipairs({ R.page_last(st), R.steps(st), R.page_bar(st),
                        { "clock", "swing", { st.swing / 100 } } }) do
     out[#out + 1] = e
@@ -1204,6 +1225,16 @@ function R.restore(st, values)
   for t = 1, R.TRACKS do st.heard[t] = st.pitch[t] end
   for _, e in ipairs(R.tell_fx(st)) do out[#out + 1] = e end
   tell_quiet(st, out)
+  -- While playing, the section starts on the beat: bar comes on the old section's last step, and
+  -- all that can be heard or seen of the new one waits for the next tick, step 1, as the old
+  -- section's last step plays out as it was (Brendan, 2026-11-05: "the next section begins just a
+  -- fraction of a second too early"). Only the pattern's own numbers change now, unheard.
+  if st.playing then
+    st.on_one = st.on_one or {}
+    for _, e in ipairs(out) do st.on_one[#st.on_one + 1] = e end
+    return put and { put } or {}
+  end
+  if put then table.insert(out, 1, put) end
   return out
 end
 

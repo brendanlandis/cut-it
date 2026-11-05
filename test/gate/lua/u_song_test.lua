@@ -64,6 +64,12 @@ end
 
 print("\n--- a fresh load: one section, saved as it is ---")
 local st = R.new()
+
+-- A bar's answer and what it held for the next step 1, the tempo and the programs, together.
+local function at_one(out)
+  for _, e in ipairs(R.one(st)) do out[#out + 1] = e end
+  return out
+end
 equal("before the load: one section, section 1, playing and selected",
       { #st.song.sections, st.song.sections[1].name, st.playing == st.song.sections[1],
         st.selected == st.playing }, { 1, "section 1", true, true })
@@ -577,7 +583,7 @@ equal("⛔ ... and the STOP that comes back loads it, ready for PLAY", { restore
 R.start(st)
 equal("next bar: nothing at once", { R.key(st, 2), st.cur.id }, { {}, 3 })
 equal("... queued: the go lamp blinks as a queued section's", R.go_lamp(st), R.GO_QUEUED)
-out = R.bar(st)
+out = at_one(R.bar(st))
 equal("⛔ ... and it loads as the pattern comes round", { out[1], restores(out), st.cur.id },
       { { "err", "info", { "u_song", "loaded-song-1" } }, { "drums 1", "tempo 100" }, 1 })
 R.press(st, 4)
@@ -586,12 +592,12 @@ equal("go: nothing at once, a section queued as well", { st.cur.id, R.index(st, 
       { 1, 2 })
 equal("... the go lamp says it waits for go", R.go_lamp(st), R.GO_WAIT)
 equal("⛔ the bar starts the section queued, and the song waits on, the last song playing on",
-      { restores(R.bar(st)), st.cur.id, R.go_lamp(st) }, { { "drums 2", "tempo 100" }, 1,
+      { restores(at_one(R.bar(st))), st.cur.id, R.go_lamp(st) }, { { "drums 2", "tempo 100" }, 1,
       R.GO_WAIT })
 equal("go pressed: the song now waits for the bar", { R.go_button(st), R.go_lamp(st) },
       { {}, R.GO_QUEUED })
 R.press(st, 3)
-equal("⛔ the next bar loads it, ahead of a section queued since", { restores(R.bar(st)),
+equal("⛔ the next bar loads it, ahead of a section queued since", { restores(at_one(R.bar(st))),
       st.cur.id, st.queued }, { { "drums 1", "tempo 140" }, 7, nil })
 equal("go with no song waiting does nothing", { R.go_button(st), R.go_lamp(st) },
       { {}, R.GO_DARK })
@@ -605,7 +611,21 @@ R.start(st)
 R.key(st, 2)
 R.press(st, 4)
 equal("the song loaded asked for again starts again from its section 1, at the bar",
-      { restores(R.bar(st)), st.cur.id }, { { "drums 1", "tempo 100" }, 1 })
+      { restores(at_one(R.bar(st))), st.cur.id }, { { "drums 1", "tempo 100" }, 1 })
+
+print("\n--- a section starts on the 1 ---")
+-- The old section's last step plays out at its own tempo (Brendan, 2026-11-05): "the next section
+-- begins just a fraction of a second too early".
+st = R.new()
+st.song.sections[1].parts = { drums = { 1 }, tempo = { 100 }, programs = { "none" } }
+st.running, st.queued = true, st.song.sections[1]
+equal("⛔ the bar, running: the pattern now, and the tempo and programs held for step 1",
+      restores(R.bar(st)), { "drums 1" })
+equal("⛔ ... and step 1 lets them go", restores(R.one(st)), { "programs none", "tempo 100" })
+equal("... once", R.one(st), {})
+st.running, st.queued = false, st.song.sections[1]
+equal("⛔ stopped, everything at once", restores(R.stop(st)),
+      { "drums 1", "programs none", "tempo 100" })
 
 print("\n--- the songs tab's load ---")
 st = load3()

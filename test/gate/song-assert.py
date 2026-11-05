@@ -37,6 +37,8 @@ SONGS_WINDOWS = ["LOADED", "KEY-STOPPED", "EDIT", "KEY-BACK", "PLAY", "KEY-BAR",
                  "GO", "AT-GO-BAR", "KEY-SILENCE", "KEY-PAST", "FLUSHED"]
 FM, STRINGS = 49, 33            # the Volca's and the Streichfett's Pd channels, args 5 and 4
 PARTS = ["drums", "programs", "synth", "tempo", "velocity"]
+# While the transport runs the tempo and the programs wait for step 1, so they come after the rest.
+PARTS_RUNNING = ["drums", "synth", "velocity", "programs", "tempo"]
 # The top row's eight, as g_grid paints them: dark, an arrow (palette 1), a section, the one
 # playing.
 DARK, ARROW, SEC, ON = 0, 1, G.SECTION_DIM, G.SECTION_ON
@@ -172,7 +174,7 @@ def main():
     A.check("PLAY: verse plays its first loop, and nothing starts", not section_keys(W("PLAY")),
             section_keys(W("PLAY")))
     A.check("⛔ its length played, two loops, chorus starts by itself",
-            section_keys(W("HANDOVER")) == PARTS and tempos(W("HANDOVER")) == [180.0],
+            section_keys(W("HANDOVER")) == PARTS_RUNNING and tempos(W("HANDOVER")) == [180.0],
             "restores %s, tempo %s" % (section_keys(W("HANDOVER")), tempos(W("HANDOVER"))))
     A.check("... its program, the Volca's 7, and none for the Streichfett",
             programs(W("HANDOVER")) == [(8, FM)], programs(W("HANDOVER")))
@@ -200,7 +202,7 @@ def main():
             len(q) >= 3 and set(q) == {ON, DARK}, q)
     A.check("... while button 5, chorus, stays lit, playing", p and set(p) == {ON}, set(p))
     A.check("⛔ intro starts when the pattern comes round to its step 1: its parts and its tempo",
-            section_keys(W("AT-LOOP")) == PARTS and tempos(W("AT-LOOP")) == [200.0],
+            section_keys(W("AT-LOOP")) == PARTS_RUNNING and tempos(W("AT-LOOP")) == [200.0],
             "restores %s, tempo %s" % (section_keys(W("AT-LOOP")), tempos(W("AT-LOOP"))))
     e = edges(frames, "AT-LOOP")
     A.check("... and lit solid, chorus dim", top(e) == [DARK, ARROW, ON, SEC, SEC, DARK, DARK, DARK],
@@ -331,7 +333,7 @@ def songs(opt):
     A.check("⛔ ... the go lamp blinks green meanwhile, full and dark by turns, on the beat",
             len(g) >= 3 and set(g) == {G.SECTION_ON, 0}, g)
     A.check("⛔ it loads when the pattern comes round: hollow bell, its change kept as its draft, "
-            "230", section_keys(W("AT-BAR")) == PARTS and tempos(W("AT-BAR")) == [230.0],
+            "230", section_keys(W("AT-BAR")) == PARTS_RUNNING and tempos(W("AT-BAR")) == [230.0],
             "restores %s, tempo %s" % (section_keys(W("AT-BAR")), tempos(W("AT-BAR"))))
     A.check("⛔ ... still unsaved: save and revert lit, the go lamp dark",
             lamps(last_edges("AT-BAR")) == (G.SAVE_ON, G.REVERT_ON)
@@ -348,7 +350,7 @@ def songs(opt):
     A.check("... the go lamp blinks green now, queued for the bar",
             len(g) >= 3 and set(g) == {G.SECTION_ON, 0}, sorted(set(map(str, g))))
     A.check("⛔ night drive loads as it comes round, at 200",
-            section_keys(W("AT-GO-BAR")) == PARTS and tempos(W("AT-GO-BAR")) == [200.0],
+            section_keys(W("AT-GO-BAR")) == PARTS_RUNNING and tempos(W("AT-GO-BAR")) == [200.0],
             "restores %s, tempo %s" % (section_keys(W("AT-GO-BAR")), tempos(W("AT-GO-BAR"))))
     st = [i for i, e in enumerate(W("KEY-SILENCE")) if e[0] == "STOP"]
     rs = [i for i, e in enumerate(W("KEY-SILENCE")) if e[0] == "STATE" and e[1][:1] == ["restore"]]

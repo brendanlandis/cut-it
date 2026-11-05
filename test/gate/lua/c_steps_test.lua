@@ -404,7 +404,7 @@ R.presses.snap(st, {})
 equal("snap waits for the global loop's step 1 too", run(st, 2), "3:1@95 4:")
 local landed = R.internal.tick(st, {})
 equal("⛔ ... and there every track takes the global last step, saved, and plays from step 1",
-      { landed[1][1], landed[1][3][CELLS + 2], landed[2], landed[3], landed[4], landed[5] },
+      { landed[2][1], landed[2][3][CELLS + 2], landed[3], landed[4], landed[5], landed[6] },
       { "save", 0, { "page", "last", { 4 } }, { "note", "pad", { 1, 95 } },
         { "note", "pad", { 2, 95 } }, { "page", "play", { 1 } } })
 equal("... and goes round the global loop from then on", run(st, 4), "2: 3:1@95 4: 1:1@95,2@95")
@@ -1389,6 +1389,7 @@ equal("⛔ a restore tells c_kit the set pitch: c_kit holds it, so the next hit 
         local l = line(zeros(CELLS))
         l[1] = 95
         R.internal.restore(q, l)
+        R.take_one(q)
         q.rand = dice(0.9)
         return pitched(R.internal.tick(q, {}))
       end)(), "pad 1 95")
@@ -1958,6 +1959,37 @@ equal("⛔ a volume changed by hand since is told again when a section brings it
 local older = {}
 for i = 1, #now - 1 do older[i] = now[i] end
 equal("⛔ a line saved in an older shape is put back, as today's", R.internal.restore(st, older)[1][1], "save")
+
+print("\n--- a section starts on the 1 ---")
+-- bar comes on the old section's last step; all that can be heard or seen of the new one waits for
+-- the next tick, its step 1 (Brendan, 2026-11-05: "begins just a fraction of a second too early").
+st = R.new(1)
+R.internal.init(st, {})
+R.internal.restore(st, R.save(st)[3])
+R.presses.step(st, { 1, 100 })
+R.presses.last(st, { at(16) })
+R.presses.last(st, { at(2) })
+R.internal.start(st, {})
+R.take_one(st)
+local next_up = R.save(st)[3]
+next_up[R.TRACKS * R.STEPS + 2 * R.TRACKS + 1] = -6
+R.internal.tick(st, {})
+local last_tick = R.internal.tick(st, {})
+equal("the old section's last step ends with its bar", last_tick[#last_tick][1], "bar")
+local any_heard = false
+for _, e in ipairs(R.internal.restore(st, next_up)) do
+  if e[1] ~= "save" then any_heard = true end
+end
+equal("⛔ the restore, playing: nothing heard or seen yet", any_heard, false)
+local on_the_one, where = R.internal.tick(st, {}), {}
+for i, e in ipairs(on_the_one) do where[e[1] .. " " .. e[2]] = where[e[1] .. " " .. e[2]] or i end
+check("⛔ step 1 opens by telling u_song, then c_kit the new volume, then plays its hit",
+      where["one one"] == 1 and where["note vol"] and where["note pad"]
+        and where["note vol"] < where["note pad"], T.show(on_the_one[1]))
+equal("⛔ STOP lets go of what waits, since no step 1 is coming", (function()
+  R.internal.restore(st, R.save(st)[3])
+  return R.internal.stop(st, {})[1][1]
+end)(), "page")
 
 print("\n--- the saved-tempo pad ---")
 st = R.new(1)

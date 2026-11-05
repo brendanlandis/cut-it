@@ -35,7 +35,7 @@ local Clock = pd.Clock
 -- (`; pdluax reload c_steps-lua`) reloads them too, and every object keeps its pattern.
 local R = dofile(StepsLua._loadpath .. "c_steps.lua")
 
-local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6, clock = 8, bar = 9, song = 9,
+local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6, clock = 8, bar = 9, one = 9, song = 9,
                  tempo = 10 }
 
 -- Answering under pcall, the proof bang on init and the dispatch shortcut are lua-face.lua's,

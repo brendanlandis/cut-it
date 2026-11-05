@@ -214,18 +214,31 @@ end
 -- holds goes back out, in the keys' order, so each part plays what the section saved. A part
 -- puts straight back what it restores (ref/module/state.md), and that put lands here, in the
 -- section now playing.
+-- A part in R.ON_THE_ONE, while the transport runs, waits for the next step 1 (R.one), so it lands
+-- on the beat and the old section's last step plays out at its own tempo (Brendan, 2026-11-05).
+R.ON_THE_ONE = { tempo = true, programs = true }
+
 local function begin(st, s)
   st.playing, st.queued, st.bars = s, nil, 0
   follow(st)
   local keys = {}
   for k in pairs(s.parts) do keys[#keys + 1] = k end
   table.sort(keys)
-  local out = {}
+  local out, held = {}, {}
   for _, k in ipairs(keys) do
     local a = { k }
     for _, x in ipairs(s.parts[k]) do a[#a + 1] = x end
-    out[#out + 1] = { "state", "restore", a }
+    local e = { "state", "restore", a }
+    if st.running and R.ON_THE_ONE[k] then held[#held + 1] = e else out[#out + 1] = e end
   end
+  st.on_one = held
+  return out
+end
+
+-- The next step 1 after a bar, from c_steps: what begin held for it.
+function R.one(st)
+  local out = st.on_one or {}
+  st.on_one = nil
   return out
 end
 
@@ -664,7 +677,7 @@ end
 -- PLAY: the section playing counts its bars from the pattern's step 1.
 function R.start(st)
   st.running, st.bars = true, 0
-  return {}
+  return R.one(st)
 end
 
 -- STOP and panic: no next bar is coming, so a song queued loads now, whatever it waited for, and
@@ -673,7 +686,7 @@ function R.stop(st)
   st.running = false
   if st.pending then return R.load_now(st, st.pending.rec) end
   if st.queued then return begin(st, st.queued) end
-  return {}
+  return R.one(st)
 end
 
 -- The top row's eight lamps: the arrows, lit when there is a section that way from the one
@@ -1180,6 +1193,7 @@ R.internal = {
   put = function(st, a) return R.put(st, a) end,
   recall = function(st, a) return R.recall(st, a[1]) end,
   bar = function(st) return R.bar(st) end,
+  one = function(st) return R.one(st) end,
   start = function(st) return R.start(st) end,
   stop = function(st) return R.stop(st) end,
   init = function() return {} end,

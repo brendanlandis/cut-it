@@ -20,9 +20,18 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-spec = importlib.util.spec_from_file_location("build_touchosc", os.path.join(HERE, "build.py"))
-B = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(B)
+
+
+def load():
+    """build.py as it is now: the watcher runs for hours while build.py changes under it, and a
+    copy loaded at its start would judge a file against code that is no longer there."""
+    spec = importlib.util.spec_from_file_location("build_touchosc", os.path.join(HERE, "build.py"))
+    b = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(b)
+    return b
+
+
+B = load()
 
 SOURCES = [os.path.join(HERE, "build.py"), os.path.join(B.CHECKLISTS, B.LIST + ".md"),
            B.DRUM_PAGE]
@@ -91,7 +100,8 @@ def main():
             continue
         if mtimes([B.OUT]) != tosc:
             tosc = mtimes([B.OUT])
-            if B.saved_from_editor(B.build()):
+            b = load()
+            if b.saved_from_editor(b.build()):
                 editor_saved()
         if time.time() - last_phone >= PHONE_EVERY:
             last_phone = time.time()

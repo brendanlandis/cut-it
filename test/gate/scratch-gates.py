@@ -406,6 +406,8 @@ def presence(g):
 # seed.txt rather than holding a second copy.
 SEQ_SEED = {(1, 3): 20, (1, 9): 77, (2, 7): 50, (16, 32): 127}
 SEQ_OWN = {16: 24}
+SEQ_VOL = {16: -12}
+SEQ_PITCH = {3: 5}
 SEQ_SIG = (7, 8)
 
 
@@ -421,15 +423,19 @@ def sequencer(g):
     s = g.copy()
     s.state_dir()
     # A saved pattern, so the restore at ~3.5 s is under test as well as the
-    # edits after it, and its last cells, track 16's own last step and a time
-    # signature of 7/8, prove the whole 564-atom line came back. No chances and
-    # sober, so every note is where the pattern says.
-    pat = [0] * 563
+    # edits after it, and its last cells, track 16's own last step and volume,
+    # track 3's pitch and a time signature of 7/8, prove the whole 580-atom line
+    # came back. No randomness and sober, so every note is where the pattern says.
+    pat = [0] * 579
     for (track, step), v in SEQ_SEED.items():
         pat[(track - 1) * 32 + step - 1] = v
     for track, n in SEQ_OWN.items():
         pat[512 + track - 1] = n
-    pat[560], pat[561] = SEQ_SIG
+    for track, db in SEQ_VOL.items():
+        pat[544 + track - 1] = db
+    for track, st in SEQ_PITCH.items():
+        pat[560 + track - 1] = st
+    pat[576], pat[577] = SEQ_SIG
     # Page 2, the drum page, restored at about 3.5 s, before the first press.
     body = "mode mode-2\nsection-1-drums %s\n" % " ".join(map(str, pat))
     for path in (os.path.join(s.state, "cut-it-auto.txt"), s.path("seed.txt")):
@@ -437,7 +443,8 @@ def sequencer(g):
             fh.write(body)
     g.rewrite(s)
     # The drums go to c_kit, a signal no message tap sees: t_kit in its place
-    # prints each pad and velocity c_steps sends (test/stubs/t_kit.pd).
+    # prints each pad and velocity c_steps sends, and each track's volume and
+    # pitch (test/stubs/t_kit.pd).
     root = os.path.join(s.patch, "u_root.pd")
     with open(root) as fh:
         text = fh.read()

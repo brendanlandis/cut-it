@@ -393,6 +393,15 @@ def main():
                 sorted(m for m in msgs if m.startswith("drums select ")) ==
                 sorted("drums select %d" % n for n in range(1, 17)),
                 [m for m in msgs if m.startswith("drums select ")])
+        # Each pad, dragged, changes what the pads show for its own track (Brendan, 2026-11-05):
+        # the radio's four, each a command c_steps takes, which the check above holds.
+        shown = [c for _w, c, _lo, _hi, _st in getattr(B, "SHOW", [])]
+        dragged = sorted(m for m in msgs if len(m.split()) == 3 and m.split()[0] == "drums"
+                         and m.split()[1] in shown)
+        A.check("⛔ ... and each drags its own track's %s, the radio's four" % ", ".join(shown),
+                shown == ["vol", "pitch", "set-track-last", "randomness"]
+                and dragged == sorted("drums %s %d" % (c, n) for c in shown for n in range(1, 17)),
+                "the radio shows %s; the pads send %s" % (shown, dragged[:8]))
         # Every acknowledgment u_net sends has a cell to flash, but select's and synth's: a
         # pad's selection and a synth's choice show in the state that comes back. tempo has
         # none: the tempo that comes back says it.
@@ -450,6 +459,33 @@ def main():
                         for q, m, t, g, p in placed)]
     A.check("every caption sits flush left over the control it names, a step above it",
             len(caps) >= 6 and not loose, "%d captions; not over a control: %s" % (len(caps), loose))
+
+    # The drum screen's radio (Brendan, 2026-11-05): TouchOSC's own, horizontal, one segment for
+    # each of what the pads show, its word over it, and it sends nothing: the pads' drags do.
+    radio = [(f, p) for pg, n, t, f, p in placed if pg == "drums" and n == "show" and t == "RADIO"]
+    words = sorted((f[0], (p.get("name"), by_name.get(p.get("name"), [None] * 5)[4]))
+                   for pg, n, t, f, p in placed if pg == "drums" and re.fullmatch(r"show\d+l", n or ""))
+    show = getattr(B, "SHOW", [])
+    seg = radio[0][0][2] / len(show) if radio and show else 0
+    A.check("⛔ the drum screen's radio is TouchOSC's own, horizontal, a segment each for volume, "
+            "pitch, last step and randomness, its word centered over it",
+            len(radio) == 1 and radio[0][1].get("orientation") == "1"
+            and radio[0][1].get("steps") == str(len(show))
+            and [w for _x, (_n, w) in words] == [w for w, _c, _lo, _hi, _st in show]
+            and [x for x, _w in words] == [radio[0][0][0] + i * seg for i in range(len(show))],
+            "radio %s, words %s" % ([(f, p.get("orientation"), p.get("steps")) for f, p in radio],
+                                    words))
+    A.check("... and it sends nothing", by_name.get("show") is not None
+            and not sent(by_name["show"][3]), sent(by_name.get("show", [None] * 4)[3]))
+    # A pad's drag, a step at a time as the time signature's boxes are, about 20 points a step:
+    # a relative fader's whole travel is its height times 100 over its responseFactor.
+    faders = [(n, f, p) for pg, n, t, f, p in placed if pg == "drums" and re.fullmatch(r"pad\d+", n)]
+    per = sorted({round(f[3] * 100 / float(p.get("responseFactor") or 1)
+                        / getattr(B, "PAD_STEPS", 1), 1)
+                  for n, f, p in faders if p.get("response") == "1"})
+    A.check("⛔ the sixteen pads are relative faders, about 20 points of drag a step", len(faders) == 16
+            and all(t == "FADER" for t in [by_name[n][1] for n, _f, _p in faders])
+            and len(per) == 1 and 18 <= per[0] <= 22, "points a step: %s" % per)
 
     lc = open(os.path.join(B.CHECKLISTS, B.LIST + ".md"), encoding="utf-8").read()
     A.check("⛔ the line check, the page's checklist, has no Send line: the phone sends none",

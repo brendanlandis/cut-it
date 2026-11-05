@@ -6,11 +6,13 @@
 -- 1 to 16 (c_steps.pd).
 -- inlet 1: the presses and releases, from u_map -- step <n> <vel>, vel <level> <vel>, pad <n>
 -- <vel>, rep <n> <vel>, and knobs 2 to 4, last, track-last and swing <0-1> -- and the phone's
--- sync, snap, select, num, den, drunk, skip, move, set-swing and set-last, from u_net.
+-- sync, snap, select, vol, pitch, randomness, set-track-last, num, den, drunk, set-swing and
+-- set-last, from u_net.
 -- inlet 2: c_steps.pd's own -- tick, start, stop, restore <the saved line>, init.
--- outlet 1: pad <pad> <velocity>, to c_kit. outlet 2: the page, to g_grid. outlet 3: the pattern
--- to save. outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded. outlet 6: a knob's
--- row, to disp. outlet 7: the phone's state, R.phone's 42 numbers, whenever it changes.
+-- outlet 1: pad <pad> <velocity>, and a track's vol <pad> <dB> and pitch <pad> <semitones>, to
+-- c_kit. outlet 2: the page, to g_grid. outlet 3: the pattern to save. outlet 4: err. outlet 5: a
+-- bang on init, the proof the Lua loaded. outlet 6: a knob's row, to disp. outlet 7: the phone's
+-- state, R.phone's 88 numbers, whenever it changes.
 -- outlet 8: the step clock's swing <0.5-0.75> and rate <x>, to c_steps.pd's clock.
 --
 -- A Lua error leaves outlet 4 as fail c_steps lua-<selector>, and its text goes to Pd's console

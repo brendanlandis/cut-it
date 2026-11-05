@@ -15,6 +15,8 @@ state bus and the file u_state writes. Nothing inside c_steps is read.
   the last steps knob 2's, held at 16 until turned through it; knob 3's for the
                  selected track; two tracks looping on their own; the drum
                  screen's snap, over OSC through u_net, landing at PLAY
+  the pads       a track's volume and pitch to c_kit, at the restore and from
+                 the drum screen over OSC; a track at full randomness
   the disk       the pattern reaches cut-it-auto.txt as one line
 
 A note's step is the playhead in the frame painted after it: c_steps sends a
@@ -37,7 +39,8 @@ WINDOWS = ["EARLY", "RESTORE", "VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6",
            "KNOB2-HELD", "LAST-3", "REPLAY", "PANIC", "AFTER-PANIC", "KNOB3",
            "PAST-LAST", "POLY", "POLY-STOP", "SNAP", "SNAP-PLAY", "SNAP-STOP",
            "SWING", "SW-PLAY", "SW-GAP", "SW-LATE", "SW-ON", "SW-STOP",
-           "REP-PLAY", "REP-PRESS", "REP-HELD", "REP-OFF", "REP-STOP", "DRUNK", "DR-PLAY"] + \
+           "REP-PLAY", "REP-PRESS", "REP-HELD", "REP-OFF", "REP-STOP",
+           "SOUND", "RAND", "RA-PLAY", "RA-STOP", "DRUNK", "DR-PLAY"] + \
     ["DR-%d" % k for k in range(1, 97)] + ["DR-STOP", "DONE"]
 EDITS = ["VEL-2", "STEPS-T1", "PAD-2", "STEP-T2", "VEL-6", "RULE-ON", "RULE-SAME",
          "RULE-ON-AGAIN", "VEL-2-AGAIN", "RULE-OTHER"]
@@ -47,8 +50,10 @@ MARK = re.compile(r"^SEQ:\s+MARK\s+(\S+)$")
 NOTE = re.compile(r"^KITOUT:\s+(-?[\d.]+)\s+(-?[\d.]+)$")
 
 
-CELLS = 16 * 32                 # then the 16 tracks' own last steps, their skip and move
-LINE = CELLS + 16 * 3 + 3       # chances, the time signature and the drunkenness: 563
+CELLS = 16 * 32                 # then the 16 tracks' own last steps, their randomness, volumes
+LINE = CELLS + 16 * 4 + 3       # and pitches, the time signature and the drunkenness: 579
+RAND, VOL, PITCH = CELLS + 16, CELLS + 32, CELLS + 48    # where each track's are, track 1 first
+LEVEL_VELS = [round(127 * n / 8 + 1e-9) for n in range(1, 9)]   # 16 32 48 64 79 95 111 127
 BAR = 7 * 16 // 8               # the seed's 7/8: a bar of 14 steps
 
 
@@ -165,8 +170,9 @@ def main():
     cap = A.require_capture(sys.stdin.read())
     lay = G.drum_layout()
     seed = read_key(opt.seed)
-    if not A.check("the seed holds %s, 512 velocities, 16 last steps, 32 chances, 7/8 and "
-                   "sober" % KEY, seed is not None and len(seed) == LINE, "seed: %s" % seed):
+    if not A.check("the seed holds %s, 512 velocities, 16 last steps, randomnesses, volumes "
+                   "and pitches, 7/8 and sober" % KEY, seed is not None and len(seed) == LINE,
+                   "seed: %s" % seed):
         return A.report()
 
     order, by = A.windows(cap, "SEQ", len(WINDOWS))
@@ -181,6 +187,7 @@ def main():
                      if e[0] == "DISP" and e[1] and e[1][0].startswith("pad-")]
     knob_rows = lambda k, name: [e[1] for e in W(k)
                                  if e[0] == "DISP" and e[1][:1] == [name]]
+    kits = lambda k, kind: [[int(v) for v in e[1]] for e in W(k) if e[0] == kind]
 
     # The pattern after each window, step by step through the driver's presses.
     pat = {"RESTORE": list(seed)}
@@ -210,13 +217,21 @@ def main():
             ons("EARLY") == [(1, 127)], "note-ons: %s" % ons("EARLY"))
 
     print("\n--- the restore ---")
-    A.check("⛔ the restored pattern is put straight back -- once, the seeded 563 exactly",
+    A.check("⛔ the restored pattern is put straight back -- once, the seeded 579 exactly",
             puts("RESTORE") == [seed],
             "%d put(s) of %s; the first holds %s values" % (
                 len(puts("RESTORE")), KEY, len(puts("RESTORE")[0]) if puts("RESTORE") else 0))
     prob = page_in("RESTORE")
     A.check("... and the page shows it: track 1's seeded steps, level 6 and pad 1 lit",
             prob is None, prob)
+    want = [[t, seed[VOL + t - 1]] for t in range(1, 17)]
+    A.check("⛔ ... and c_kit hears every track's volume, track 16's seeded %d dB among them"
+            % seed[VOL + 15], kits("RESTORE", "KITVOL") == want and seed[VOL + 15] != 0,
+            "KITVOL %s, want %s" % (kits("RESTORE", "KITVOL"), want))
+    want = [[t, seed[PITCH + t - 1]] for t in range(1, 17)]
+    A.check("⛔ ... and every track's pitch, track 3's seeded %+d semitones among them"
+            % seed[PITCH + 2], kits("RESTORE", "KITPITCH") == want and seed[PITCH + 2] != 0,
+            "KITPITCH %s, want %s" % (kits("RESTORE", "KITPITCH"), want))
 
     print("\n--- editing ---")
     prob = page_in("VEL-2")
@@ -409,6 +424,35 @@ def main():
     gone = [G.drum_page(f, lay)[2]["rep"] for f in frames("REP-OFF")[-1:]]
     A.check("... and let go, all four dim", gone == [{k: G.REP_DIM for k in range(1, 5)}], gone)
 
+    print("\n--- the drum screen's pads ---")
+    A.check("⛔ track 2's volume and pitch, sent over OSC as the phone sends them, go to c_kit "
+            "for pad 2", kits("SOUND", "KITVOL") == [[2, -6]] and kits("SOUND", "KITPITCH") == [[2, 7]]
+            and not ons("SOUND"),
+            "KITVOL %s, KITPITCH %s, note-ons %s" % (kits("SOUND", "KITVOL"),
+                                                     kits("SOUND", "KITPITCH"), ons("SOUND")))
+    got = [(l[VOL + 1], l[PITCH + 1]) for l in puts("SOUND")]
+    A.check("... and are saved with the pattern, each as it came", got == [(-6, 0), (-6, 7)],
+            "track 2's volume and pitch in the puts: %s" % got)
+    got = [l[RAND] for l in puts("RAND")] + [l[RAND] for l in puts("RA-STOP")]
+    A.check("track 1's randomness, 100 and then 0 again, is saved", got == [100, 0],
+            "track 1's randomness in the puts: %s" % got)
+    # The global last step is 3 since LAST-3, and every track follows it since the snap.
+    rand = [r for r in played(evs, {"RA-PLAY", "RA-STOP"}, lay) if r[0] is not None]
+    t1 = [(s, sorted(v for p, v in n if p == 1)) for s, n in rand]
+    rest = [(s, [(p, v) for p, v in n if p != 1]) for s, n in rand]
+    written = [(s, [final[idx(1, s)]] if final[idx(1, s)] else []) for s, _n in rand]
+    A.check("⛔ at 100, track 1 plays its coin, not its pattern: over %d steps not as written, "
+            "and its step 3's 20, no level's, never" % len(rand),
+            len(rand) >= 6 and t1 != written and not any(s == 3 and v == [20] for s, v in t1),
+            "track 1 %s, written %s" % (t1, written))
+    off = [v for _s, n in t1 for v in n if v not in LEVEL_VELS]
+    A.check("... every hit it plays at one of the eight levels' velocities", not off,
+            "off the levels: %s" % off)
+    want = [(s, sorted((t, final[idx(t, s)]) for t in range(2, 17) if final[idx(t, s)] > 0))
+            for s, _n in rand]
+    A.check("⛔ ... and every other track plays as written beside it", rest == want,
+            "got %s, want %s" % (rest, want))
+
     print("\n--- drunkenness ---")
     got = [l[LINE - 1] for l in puts("DRUNK")]
     A.check("drunk 100, sent to u_net over OSC as the phone sends it, is saved", got == [100],
@@ -429,8 +473,11 @@ def main():
     disk = read_key(os.path.join(opt.state, "cut-it-auto.txt"))
     with open(os.path.join(opt.state, "cut-it-auto.txt"), encoding="utf-8") as fh:
         lines = [l for l in fh.read().splitlines() if l.split()[:1] == [KEY]]
-    snapped = final[:CELLS] + [0] * 48 + [7, 8, 100]
-    A.check("⛔ %s reaches cut-it-auto.txt as ONE line, the final 563 exactly" % KEY,
+    vol = list(seed[VOL:VOL + 16])
+    pitch = list(seed[PITCH:PITCH + 16])
+    vol[1], pitch[1] = -6, 7
+    snapped = final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 100]
+    A.check("⛔ %s reaches cut-it-auto.txt as ONE line, the final 579 exactly" % KEY,
             disk == snapped and len(lines) == 1 and len(lines[0].split()) == LINE + 1,
             "on disk: %s" % (disk if disk is None else "%d values" % len(disk)))
 

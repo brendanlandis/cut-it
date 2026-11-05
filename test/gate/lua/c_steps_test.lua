@@ -28,10 +28,26 @@ local function row(pat, track)
   return r
 end
 
--- The saved line: 512 velocities, then the 16 tracks' own last steps, their skip and move
--- chances, then the time signature and the drunkenness: 563 numbers. x holds what differs from
--- a new sequencer's: skip, move, num, den, drunk.
+-- The saved line: 512 velocities, then the 16 tracks' own last steps, their randomness, their
+-- volumes and their pitches, then the time signature and the drunkenness: 579 numbers. x holds
+-- what differs from a new sequencer's: randomness, vol and pitch by track, num, den, drunk.
 local function line(pat, own, x)
+  x = x or {}
+  local l = {}
+  for i = 1, CELLS do l[i] = pat[i] end
+  for t = 1, 16 do
+    l[CELLS + t] = own and own[t] or 0
+    l[CELLS + 16 + t] = x.randomness and x.randomness[t] or 0
+    l[CELLS + 32 + t] = x.vol and x.vol[t] or 0
+    l[CELLS + 48 + t] = x.pitch and x.pitch[t] or 0
+  end
+  l[CELLS + 65], l[CELLS + 66], l[CELLS + 67] = x.num or 4, x.den or 4, x.drunk or 0
+  return l
+end
+
+-- The line saved until 2026-11-05: 563 numbers, each track's skip and move chance where its
+-- randomness and its volume are now, no pitches, then the time signature and the drunkenness.
+local function old_line(pat, own, x)
   x = x or {}
   local l = {}
   for i = 1, CELLS do l[i] = pat[i] end
@@ -44,6 +60,22 @@ local function line(pat, own, x)
   return l
 end
 
+-- What a restore tells c_kit, after the line and the page: every track's volume, then every
+-- track's pitch, 0 unless given.
+local function kit(vol, pitch)
+  local out = {}
+  for t = 1, 16 do out[#out + 1] = { "note", "vol", { t, (vol or {})[t] or 0 } } end
+  for t = 1, 16 do out[#out + 1] = { "note", "pitch", { t, (pitch or {})[t] or 0 } } end
+  return out
+end
+
+-- Lists one after the other.
+local function cat(...)
+  local out = {}
+  for _, l in ipairs({ ... }) do for _, e in ipairs(l) do out[#out + 1] = e end end
+  return out
+end
+
 -- What a step press answers: the whole pattern to save, then the selected track's row.
 local function edited(pat, track, own)
   return { { "save", "list", line(pat, own) }, { "page", "steps", row(pat, track) } }
@@ -52,14 +84,18 @@ end
 -- A knob position for a step: what R.knob_step reads back as n.
 local function at(n) return (n - 1) / 31 end
 
--- The phone's 42 numbers, from the few that differ: lasts and owns by track, then the time
--- signature, the drunkenness, the selected track's chances and the swing (4 4 0 0 0 50 unless
--- given).
-local function phone(playing, last, track, pending, lasts, owns, tail)
+-- The phone's 88 numbers, from the few that differ: lasts and owns by track, then the time
+-- signature, the drunkenness and the swing (4 4 0 50 unless given), then every track's volume,
+-- pitch and randomness (per.vol, per.pitch and per.randomness by track, 0 unless given).
+local function phone(playing, last, track, pending, lasts, owns, tail, per)
+  per = per or {}
   local p = { playing, last, track, pending }
   for t = 1, 16 do p[#p + 1] = lasts[t] or last end
   for t = 1, 16 do p[#p + 1] = owns[t] or 0 end
-  for _, v in ipairs(tail or { 4, 4, 0, 0, 0, 50 }) do p[#p + 1] = v end
+  for _, v in ipairs(tail or { 4, 4, 0, 50 }) do p[#p + 1] = v end
+  for _, which in ipairs({ "vol", "pitch", "randomness" }) do
+    for t = 1, 16 do p[#p + 1] = (per[which] or {})[t] or 0 end
+  end
   return p
 end
 
@@ -299,10 +335,11 @@ local pat = zeros(CELLS)
 pat[3], pat[9], pat[39], pat[CELLS] = 20, 77, 50, 127
 local own = zeros(16)
 own[2], own[16] = 6, 24
-equal("a restore takes the 512 and the 16 last steps, puts them straight back and redraws",
+equal("a restore takes the 512 and the 16 last steps, puts them straight back, redraws, and "
+      .. "tells c_kit every track's volume and pitch",
       R.internal.restore(st, line(pat, own)),
-      { { "save", "list", line(pat, own) }, { "page", "last", { 16 } },
-        { "page", "steps", row(pat, 1) }, { "page", "bar", { 16 } } })
+      cat({ { "save", "list", line(pat, own) }, { "page", "last", { 16 } },
+            { "page", "steps", row(pat, 1) }, { "page", "bar", { 16 } } }, kit()))
 equal("... and the pattern and the last steps are the line's", { st.pattern, st.own }, { pat, own })
 local old = zeros(256)
 old[3], old[16], old[17], old[256] = 20, 99, 77, 127
@@ -362,7 +399,7 @@ st = R.new(1)
 R.presses.swing(st, { sw(50) })
 equal("set-swing sets the swing at once, live knob or not, and the step clock takes it",
       R.presses["set-swing"](st, { 62 }), { { "clock", "swing", { 0.62 } } })
-equal("... and the phone hears it, last of its numbers", R.phone(st)[42], 62)
+equal("... and the phone hears it, after the drunkenness", R.phone(st)[40], 62)
 equal("⛔ its ends are 50% and 75%, below 50 is 50, and it rounds to whole percents",
       { R.presses["set-swing"](st, { 10 })[1][3][1], R.presses["set-swing"](st, { 90 })[1][3][1],
         R.presses["set-swing"](st, { 60.4 })[1][3][1] }, { 0.5, 0.75, 0.6 })
@@ -415,53 +452,134 @@ equal("the top number stops at 32 and at 1", { st.num, (function()
   return st.num
 end)() }, { 32, 1 })
 
-print("\n--- the drum screen's sliders ---")
+print("\n--- the drum screen's pads ---")
+-- Each pad dragged, for its own track, selected or not (Brendan, 2026-11-05): a volume, a pitch,
+-- a randomness or a last step, each as it stands.
 st = R.new(1)
 equal("drunkenness, 0 to 100, rounded and saved",
-      { R.presses.drunk(st, { 33.4 }), R.presses.drunk(st, { 140 })[1][3][CELLS + 51] },
+      { R.presses.drunk(st, { 33.4 }), R.presses.drunk(st, { 140 })[1][3][CELLS + 67] },
       { { { "save", "list", line(zeros(CELLS), nil, x("drunk", 33)) } }, 100 })
+st = R.new(1)
+equal("⛔ a pad's volume is ITS track's, not the selected one's: saved, and to c_kit for its pad",
+      R.presses.vol(st, { 3, -6 }), { { "save", "list", line(zeros(CELLS), nil, { vol = { [3] = -6 } }) },
+                                      { "note", "vol", { 3, -6 } } })
+equal("... -30 to +6 dB, in whole dB",
+      { R.presses.vol(st, { 3, -50 })[2], R.presses.vol(st, { 3, 9 })[2],
+        R.presses.vol(st, { 3, 2.4 })[2] },
+      { { "note", "vol", { 3, -30 } }, { "note", "vol", { 3, 6 } }, { "note", "vol", { 3, 2 } } })
+equal("⛔ a pad's pitch: saved, and to c_kit", R.presses.pitch(st, { 5, 7 }),
+      { { "save", "list", line(zeros(CELLS), nil, { vol = { [3] = 2 }, pitch = { [5] = 7 } }) },
+        { "note", "pitch", { 5, 7 } } })
+equal("... -12 to +12 semitones, whole",
+      { R.presses.pitch(st, { 5, -20 })[2], R.presses.pitch(st, { 5, 13 })[2],
+        R.presses.pitch(st, { 5, -3.6 })[2] },
+      { { "note", "pitch", { 5, -12 } }, { "note", "pitch", { 5, 12 } },
+        { "note", "pitch", { 5, -4 } } })
+equal("⛔ a pad's randomness, 0 to 100: saved, and nothing for c_kit",
+      R.presses.randomness(st, { 2, 40.4 }),
+      { { "save", "list", line(zeros(CELLS), nil, { randomness = { [2] = 40 }, vol = { [3] = 2 },
+                                                    pitch = { [5] = -4 } }) } })
+equal("... clipped to 0 and 100", { (R.presses.randomness(st, { 2, -5 }) and st.randomness[2]),
+                                    (R.presses.randomness(st, { 2, 150 }) and st.randomness[2]) },
+      { 0, 100 })
+equal("the same value again says nothing",
+      { R.presses.vol(st, { 3, 2 }), R.presses.pitch(st, { 5, -4 }),
+        R.presses.randomness(st, { 2, 100 }) }, { {}, {}, {} })
+equal("without a track and a number, nothing",
+      { R.presses.vol(st, {}), R.presses.vol(st, { 3 }), R.presses.pitch(st, { "x", 4 }),
+        R.presses.randomness(st, { 2, "x" }), R.presses["set-track-last"](st, { 2 }) },
+      { {}, {}, {}, {}, {} })
+equal("a track past 16 is 16, and bank C's track 2 is pad 34 for c_kit",
+      { R.presses.vol(st, { 40, -3 })[2], R.presses.vol(R.new(3), { 2, -3 })[2] },
+      { { "note", "vol", { 16, -3 } }, { "note", "vol", { 34, -3 } } })
+equal("⛔ the drum screen hears every track's volume, pitch and randomness",
+      R.phone(st), phone(0, 16, 1, 0, {}, {}, nil, { vol = { [3] = 2, [16] = -3 },
+                                                     pitch = { [5] = -4 },
+                                                     randomness = { [2] = 100 } }))
+st = R.new(1)
 R.presses.select(st, { 3 })
-R.presses.skip(st, { 20 })
-R.presses.move(st, { 70 })
-equal("skip and move are the SELECTED track's, saved", { st.skip[3], st.move[3], st.skip[1] },
-      { 20, 70, 0 })
-equal("the drum screen shows the time signature, the drunkenness and the selected track's chances",
-      R.phone(st), phone(0, 16, 3, 0, {}, {}, { 4, 4, 100, 20, 70, 50 }))
-R.presses.select(st, { 1 })
-equal("... another track's when another is selected", R.phone(st),
-      phone(0, 16, 1, 0, {}, {}, { 4, 4, 100, 0, 0, 50 }))
+R.presses["track-last"](st, { at(16) })
+equal("⛔ a pad's last step, its own track's: saved, and the page's, the track being selected",
+      R.presses["set-track-last"](st, { 3, 9 }),
+      { { "save", "list", line(zeros(CELLS), { [3] = 9 }) }, { "page", "last", { 9 } } })
+equal("⛔ ... and knob 3 is held again at it",
+      R.presses["track-last"](st, { at(20) }), { { "disp", "pad3-last", { 9, "(20)" } } })
+equal("another track's: saved, and the page and knob 3 left alone",
+      { R.presses["set-track-last"](st, { 5, 4 }), R.presses["track-last"](st, { at(20) }) },
+      { { { "save", "list", line(zeros(CELLS), { [3] = 9, [5] = 4 }) } },
+        { { "disp", "pad3-last", { 9, "(20)" } } } })
+equal("the step a track already has says nothing, so one that follows the global step goes on "
+      .. "following", { R.presses["set-track-last"](st, { 7, 16 }), st.own[7] }, { {}, 0 })
+equal("1 to 32, whole", { (R.presses["set-track-last"](st, { 7, 0 }) and st.own[7]),
+                          (R.presses["set-track-last"](st, { 7, 40 }) and st.own[7]),
+                          (R.presses["set-track-last"](st, { 7, 6.4 }) and st.own[7]) },
+      { 1, 32, 6 })
+equal("... and the phone shows each track's last step and its dot",
+      { R.phone(st)[4 + 5], R.phone(st)[20 + 5], R.phone(st)[4 + 7], R.phone(st)[20 + 7] },
+      { 4, 1, 6, 1 })
 
-print("\n--- the chances ---")
+print("\n--- randomness ---")
+-- At R% each step has an R% chance of ignoring what is written and flipping a coin: played or
+-- not, and played at one of the eight levels (Brendan, 2026-11-05, after the DrumBrute's). The
+-- dice of a track that rolls, step by step: the chance, then the coin, then the level if played.
 st = R.new(1)
 R.presses.step(st, { 1, 100 })
 R.presses.step(st, { 3, 100 })
 R.presses.last(st, { at(16) })
 R.presses.last(st, { at(4) })
-R.presses.skip(st, { 100 })
-R.presses.move(st, { 100 })
 R.internal.start(st, {})
-equal("skip 100: no note plays", run(st, 8), "1: 2: 3: 4: 1: 2: 3: 4:")
+st.rand = dice(0.1, 0.2)
+equal("⛔ at 0 the pattern plays as written, and nothing is rolled",
+      { run(st, 4), st.rand(), st.rand() }, { "1:1@95 2: 3:1@95 4:", 0.1, 0.2 })
+R.presses.randomness(st, { 1, 100 })
+R.internal.start(st, {})
+st.rand = dice(0.99, 0.7, 0.99, 0.2, 0.5, 0.99, 0.3, 0.999, 0.99, 0.6, 0.123)
+equal("⛔ at 100 every step flips the coin, a roll of 0.99 too: step 1's hit dropped, empty step 2 "
+      .. "played at level 5 (79), step 3 at level 8 (127), step 4 silent",
+      { run(st, 4), st.rand() }, { "1: 2:1@79 3:1@127 4:", 0.123 })
+R.presses.randomness(st, { 1, 30 })
+R.internal.start(st, {})
+st.rand = dice(0.29, 0.7, 0.30, 0.31, 0.0, 0.1, 0.0, 0.123)
+equal("⛔ at 30 a roll under 0.3 flips the coin -- step 1 silent, step 4 played at level 1 (16) -- "
+      .. "and any other plays as written, with no coin", { run(st, 4), st.rand() },
+      { "1: 2: 3:1@95 4:1@16", 0.123 })
 st = R.new(1)
-R.presses.step(st, { 1, 100 })
-R.presses.step(st, { 5, 100 })
-R.presses.last(st, { at(16) })
-R.presses.last(st, { at(8) })
-R.presses.move(st, { 100 })
+for k = 1, 4 do R.presses.select(st, { 2 }) R.presses.step(st, { k, 100 }) end
+R.presses.randomness(st, { 1, 100 })
 R.internal.start(st, {})
-st.rand = dice(0.9, 0.2, 0.3, 0.2, 0.9)
-equal("⛔ move 100: the first step after PLAY can only go late; step 5, rolled a step ahead, plays "
-      .. "early, at 4; step 1 next time round, late, at 2", run(st, 10),
-      "1: 2:1@95 3: 4:1@95 5: 6: 7: 8: 1: 2:1@95")
-st.skip[1], st.move[1] = 0, 0
-R.internal.start(st, {})
-equal("... and with no chances a track rolls nothing and plays as written", run(st, 5),
-      "1:1@95 2: 3: 4: 5:1@95")
-st = R.new(1)
-R.presses.step(st, { 2, 100 })
-R.presses.move(st, { 100 })
-R.internal.start(st, {})
-st.rand = dice(0.1, 0.9)
-equal("a note moved late plays at the next step, at its own velocity", run(st, 3), "1: 2: 3:1@95")
+st.rand = dice(0, 0.9, 0, 0.9, 0, 0.9, 0, 0.9, 0.123)
+equal("it is a track's own: track 1 at 100, all silent coins, and track 2 beside it as written",
+      { run(st, 4), st.rand() }, { "1:2@95 2:2@95 3:2@95 4:2@95", 0.123 })
+-- On sequencers of their own, at 50: half the steps flip a coin, so a quarter of an empty
+-- track's steps play, and three quarters of a full one's.
+local function share(fill, r)
+  local q = R.new(1)
+  for k = 1, 32 do q.pattern[R.index(1, k)] = fill and 95 or 0 end
+  q.last, q.randomness[1], q.rand = 32, r, math.random
+  R.internal.start(q, {})
+  local played, levels = 0, {}
+  for _ = 1, 8000 do
+    for _, e in ipairs(R.internal.tick(q, {})) do
+      if e[1] == "note" then played, levels[e[3][2]] = played + 1, true end
+    end
+  end
+  local seen = {}
+  for v in pairs(levels) do seen[#seen + 1] = v end
+  table.sort(seen)
+  return played, seen
+end
+local sparse = share(false, 50)
+local busy = share(true, 50)
+equal("⛔ at 50 it adds hits to an empty track: a quarter of 8000 steps, between 1850 and 2150",
+      sparse >= 1850 and sparse <= 2150 or sparse, true)
+equal("⛔ ... and drops them from a full one: three quarters, between 5850 and 6150",
+      busy >= 5850 and busy <= 6150 or busy, true)
+local _, seen = share(true, 100)
+equal("at 100 a played step takes one of the eight levels, and every one comes up", seen, LEVELS)
+check("randomness is saved, as skip and move were", (function()
+  local q = R.new(1)
+  return R.presses.randomness(q, { 4, 25 })[1][3][CELLS + 16 + 4] == 25
+end)(), "")
 
 print("\n--- drunkenness ---")
 -- At x, the slider's 0 to 1, a step strays with the chance x/3 + 2x^4/3, by up to x + x^4 steps
@@ -565,20 +683,42 @@ equal("PLAY lets go of a held repeat", { R.internal.start(st, {})[2], run(st, 2)
 
 print("\n--- the settings in the restore ---")
 st = R.new(1)
-local full = line(zeros(CELLS), nil, { skip = { [2] = 30 }, move = { [5] = 60 }, num = 7, den = 8,
-                                       drunk = 25 })
-equal("a line of 563 brings back the chances, the time signature and the drunkenness",
-      { R.internal.restore(st, full)[4], st.skip[2], st.move[5], st.drunk },
-      { { "page", "bar", { 14 } }, 30, 60, 25 })
+local full = line(zeros(CELLS), nil, { randomness = { [2] = 30 }, vol = { [5] = -12 },
+                                       pitch = { [7] = 5 }, num = 7, den = 8, drunk = 25 })
+local back = R.internal.restore(st, full)
+equal("a line of 579 brings back the randomness, the volumes, the pitches, the time signature and "
+      .. "the drunkenness", { back[4], st.randomness[2], st.vol[5], st.pitch[7], st.drunk },
+      { { "page", "bar", { 14 } }, 30, -12, 5, 25 })
+equal("⛔ ... and tells c_kit every track's volume and pitch, track 5's -12 and track 7's 5 among "
+      .. "them", { #back, back[4 + 5], back[4 + 16 + 7] },
+      { 4 + 32, { "note", "vol", { 5, -12 } }, { "note", "pitch", { 7, 5 } } })
+st = R.new(1)
+back = R.internal.restore(st, old_line(zeros(CELLS), { [16] = 24 },
+                                       { skip = { [2] = 30 }, move = { [5] = 60 }, num = 7, den = 8,
+                                         drunk = 25 }))
+equal("⛔ a line of 563, saved before the randomness, still loads: its last steps, and 7/8 and the "
+      .. "drunkenness from where it kept them", { st.own[16], st.num, st.den, st.drunk },
+      { 24, 7, 8, 25 })
+equal("⛔ ... its skip chances come back as the randomness, which took their place, and its move "
+      .. "chances go, not read as volumes", { st.randomness[2], st.randomness[5], st.vol[5] },
+      { 30, 0, 0 })
+equal("⛔ ... and it is put straight back as the line of 579", back[1],
+      { "save", "list", line(zeros(CELLS), { [16] = 24 }, { randomness = { [2] = 30 }, num = 7,
+                                                           den = 8, drunk = 25 }) })
 st = R.new(1)
 local old528 = {}
 for i = 1, 528 do old528[i] = full[i] end
 R.internal.restore(st, old528)
-equal("a line of 528, from before them, keeps 4/4, sober, and no chances",
-      { st.num, st.den, st.drunk, st.skip[2] }, { 4, 4, 0, 0 })
-full[CELLS + 50] = 6
+equal("a line of 528, from before the phone's settings, keeps 4/4, sober, no randomness, and every "
+      .. "track at 0 dB and its own pitch", { st.num, st.den, st.drunk, st.randomness[2], st.vol[5],
+                                             st.pitch[7] }, { 4, 4, 0, 0, 0, 0 })
+full[CELLS + 66] = 6
 R.internal.restore(st, full)
 equal("a bottom number that is not 1 2 4 8 or 16 is 4", st.den, 4)
+full[CELLS + 33], full[CELLS + 34], full[CELLS + 49], full[CELLS + 50] = -99, 50, 30, -30
+R.internal.restore(st, full)
+equal("a volume or a pitch out of its range is clipped: -30 to +6 dB, -12 to +12 semitones",
+      { st.vol[1], st.vol[2], st.pitch[1], st.pitch[2] }, { -30, 6, 12, -12 })
 
 print("\n--- the Pd face ---")
 local class = T.load_class(DIR .. "c_steps-lua.pd_lua", DIR)
@@ -600,6 +740,17 @@ want = zeros(CELLS)
 want[1] = 95
 equal("a step press: the pattern on outlet 3, then the page on outlet 2",
       sent, { { 3, "list", line(want) }, { 2, "steps", row(want, 1) } })
+equal("a restore: the pattern on outlet 3, the page on outlet 2, and every track's volume and pitch "
+      .. "on outlet 1, for c_kit", (function()
+  local got = T.send(T.new(class, { 1 }), 2, "restore", line(zeros(CELLS), nil, { vol = { [4] = -9 } }))
+  return { got[5], got[4 + 4], got[4 + 32] }
+end)(), { { 1, "vol", { 1, 0 } }, { 1, "vol", { 4, -9 } }, { 1, "pitch", { 16, 0 } } })
+equal("a pad's volume from the drum screen: the pattern on outlet 3, the volume on outlet 1, and the "
+      .. "phone's state", (function()
+  local q = T.new(class, { 1 })
+  local got = T.send(q, 1, "vol", { 2, -6 })
+  return { got[1][1], got[2], got[3][1], got[3][3][4 + 32 + 4 + 2] }
+end)(), { 3, { 1, "vol", { 2, -6 } }, 7, -6 })
 equal("PLAY: the step clock back at its own rate, no repeat, and the drum screen hears it is playing",
       T.send(o, 2, "start", {}), { { 8, "rate", { 1 } }, { 2, "rep", { 0 } },
                                    { 7, "list", phone(1, 16, 1, 0, {}, {}) } })

@@ -73,7 +73,20 @@ function L.press(w, name)
   return out
 end
 
--- A finger dragging a fader to a value, 0 to 1. -> what it sent.
+-- A finger down on a control and up again, without moving it: a tap on a fader. -> what it
+-- sent.
+function L.tap(w, name)
+  local before = #w.sent
+  local c = w.controls[name]
+  c.values.touch = true
+  c.values.touch = false
+  local out = {}
+  for i = before + 1, #w.sent do out[#out + 1] = w.sent[i] end
+  return out
+end
+
+-- A finger dragging a fader to a value, 0 to 1, or a radio to a segment, 0 the first. -> what
+-- it sent.
 function L.drag(w, name, x)
   local before = #w.sent
   local c = w.controls[name]

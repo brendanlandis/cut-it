@@ -49,8 +49,8 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 
 - [ ] **11. The drum screen**
   - **Need:** TouchOSC open on the phone with Cut It's layout, linked.
-  - **Do:** Look at the phone. Then tap the phone's pad in the second row from the bottom, first place.
-  - **Pass if:** The phone's tab reads drums and shows the drum screen: sixteen pads on the left labeled 16 but the bottom-left one, pad 1, teal and labeled • 3; on the right the two buttons, two knobs, skip and move, at 0%, and the link lit. No tempo, drunk knob or time signature is on it: they are the arrangement screen's. Nothing sits low enough to touch the home bar. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 lights.
+  - **Do:** Look at the phone. Tap last on its show radio. Then tap the phone's pad in the second row from the bottom, first place.
+  - **Pass if:** The phone's tab reads drums and shows the drum screen: sixteen pads on the left, each reading 0; on the right the two buttons, under them the show radio of four, volume, pitch, last and random, with volume lit, and the link lit. No tempo, drunk knob or time signature is on it: they are the arrangement screen's. Nothing sits low enough to touch the home bar. On last the pads read 16 but the bottom-left one, pad 1, teal and reading • 3. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 lights.
 
 - [ ] **12. Sync first steps**
   - **Do:** Tap sync first steps on the phone and listen.
@@ -72,12 +72,13 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Do:** While it plays hold the top-left pad of the right four by four for a few beats, then let go. Then hold the fourth pad in that row a few beats and let go.
   - **Pass if:** The row's four pads are dim purple and the one held bright. Held, the first pad repeats one step on every step and the green pad stays put; let go, the pattern jumps on to where it would have been, not back to where it stopped. The fourth loops the last four steps.
 
-- [ ] **17. Skip and move**
-  - **Do:** Select pad 13. On the phone drag skip to about 50% and listen for a few bars. Drag it back to 0%, drag move to about 50% and listen. Then select another pad and pad 13 again.
-  - **Pass if:** The knob stays where you let go and reads what it shows. With skip about half of pad 13's hits drop out, different ones each bar. With move about half of them land a step early or late, and none drop out. The other pad shows 0% on both, and pad 13 its own again.
+- [ ] **17. A track's volume, pitch and randomness**
+  - **Do:** On the phone tap volume on the radio, then drag pad 13 down slowly to -12 and up to +6, listening. Tap pitch and drag pad 13 up to +12, down to -12 and back to 0. Tap random and drag pad 13 to 50%, then 100%, listening for a few bars at each, and back to 0%. Drag pad 1 to 50% too, and back. Put pad 13's volume back to 0.
+  - **Pass if:** Pad 13 gets quieter and louder from its next hit, and at +6 is clearly louder than before. At +12 it plays an octave higher and shorter, at -12 an octave lower and longer. At 50% randomness some of its hits drop out and others land on steps that are not lit, at other loudnesses, different ones each bar; at 100% no trace of its pattern is left; at 0% it plays as lit again. Pad 1, with fewer steps lit, gains hits at 50%. The other pads play as they did throughout, and the Launchpad's steps never change.
+  - **Note:** How a drag feels under a finger is the phone checklist's step 20; the numbers it sends, and that the levels, the octaves and the coin are right, are `touchosc-assert`'s, `kit-assert`'s and `sequencer-assert`'s. This is how they sound.
 
 - [ ] **18. Drunkenness**
-  - **Do:** Drag move back to 0%. Press page 1 on the Launchpad, drag the arrangement screen's drunk to about 20% and listen for a few bars, then to 100% and listen again, then back to 0% and press page 2.
+  - **Do:** Press page 1 on the Launchpad, drag the arrangement screen's drunk to about 20% and listen for a few bars, then to 100% and listen again, then back to 0% and press page 2.
   - **Pass if:** At 20% most steps land on time, and now and then one comes a little early or late. At 100% no step lands where it should: each one comes early or late, some by as much as two steps, and the beat lurches on from there rather than catching up. At 0% it is steady again.
 
 - [ ] **19. STOP**
@@ -98,8 +99,8 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 - [ ] **22. The pattern survives a reload**
   - **Need:** Steps lit on the drum page from the steps before.
   - **Send:** `stop bang`
-  - **Do:** On the phone select pad 13 and drag its skip to about 30%. Press page 1, drag drunk to about 20%, and press page 2. Look at which steps are lit. Wait two seconds, then load Cut It again from the Organelle menu, press page 2 if the Launchpad is not on it, and select pad 13 on the phone.
-  - **Pass if:** After the reload the drum page shows the same steps lit as before it, steps 1 and 15 blue, and the phone pad 13's skip at what you left it. On page 1 the phone shows 7 / 8 and drunk at what you left it. Knob 4's swing is back at 50%, on the phone's swing knob too.
+  - **Do:** On the phone tap volume and drag pad 13 to -6, then tap random and drag it to 30%. Press page 1, drag drunk to about 20%, and press page 2. Look at which steps are lit. Wait two seconds, then load Cut It again from the Organelle menu, press page 2 if the Launchpad is not on it, and on the phone tap volume, then random.
+  - **Pass if:** After the reload the drum page shows the same steps lit as before it, steps 1 and 15 blue, and the phone's pad 13 reads -6 on volume and 30% on random, and plays that much quieter. On page 1 the phone shows 7 / 8 and drunk at what you left it. Knob 4's swing is back at 50%, on the phone's swing knob too.
   - **Note:** `u_state` flushes within 2 seconds of a change, so the wait is part of the step.
 
 - [ ] **23. Other pages keep their grid**

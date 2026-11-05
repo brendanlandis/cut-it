@@ -51,11 +51,13 @@ ADDRS = {"/cutit/hb", "/cutit/ack", "/mark",
 # none of these may ever leave it.
 GONE = ["/cutit/param", "/cutit/status", "/cutit/alert"]
 # What u_net does not acknowledge: the screens' state shows each.
-DRUMS_QUIET = ["num", "den", "drunk", "skip", "move", "set-swing", "set-last"]
+DRUMS_QUIET = ["num", "den", "drunk", "vol", "pitch", "set-track-last", "randomness",
+               "set-swing", "set-last"]
 WINDOWS = ["idle", "dispsweep", "dispother", "tempo", "tpsweep", "idle2", "cmdwire",
            "cmdclear", "cmdvolca", "cmdbogus", "sendoff", "tmon", "sendon", "result",
            "tmoff", "sendoff2", "tmtwice", "tmoff2", "cmdsync", "cmdsnap", "cmdselect",
-           "cmdnum", "cmdden", "cmddrunk", "cmdskip", "cmdmove", "cmdswing", "cmdlast",
+           "cmdnum", "cmdden", "cmddrunk", "cmdvol", "cmdpitch", "cmdtracklast", "cmdrand",
+           "cmdswing", "cmdlast",
            "cmddrumsnew", "cmdsynth", "cmdsynthnew", "cmdtempo", "cmdtemponew", "cmdvel",
            "cmdvelnew", "tmmodeon", "tmmode", "drumstate", "done"]
 
@@ -326,10 +328,10 @@ def main():
 
     one("cmdselect", "/probe/drums", ["select", 3.0], "drums select 3 leaves for c_steps")
     one("cmdselect", "/cutit/ack", ["drums", "select"], "and is acknowledged")
-    state = [float(v) for v in ("1 12 2 1 16 5 " + "16 " * 14 + "0 1 " + "0 " * 14
-                                + "7 8 30 20 0 62").split()]
+    state = [float(v) for v in [1, 12, 2, 1, 16, 5] + [16] * 14 + [0, 1] + [0] * 14
+             + [7, 8, 30, 62] + [0, -6] + [0] * 14 + [0, 7] + [0] * 14 + [0, 40] + [0] * 14]
     sent = args("drumstate", "/cutit/drums")
-    A.check("drumstate: c_steps' 42 numbers leave as /cutit/drums, at once and on the heartbeat",
+    A.check("drumstate: c_steps' 88 numbers leave as /cutit/drums, at once and on the heartbeat",
             len(sent) >= 2 and all(g == state for g in sent),
             "%d sent: %s" % (len(sent), sent[:1]))
     sent = args("drumstate", "/cutit/mode")
@@ -378,8 +380,11 @@ def main():
 
     for win, cmd, rest in (("cmdsync", "sync", []), ("cmdsnap", "snap", []),
                            ("cmdnum", "num", [1.0]), ("cmdden", "den", [-1.0]),
-                           ("cmddrunk", "drunk", [30.0]), ("cmdskip", "skip", [20.0]),
-                           ("cmdmove", "move", [0.0]), ("cmdswing", "set-swing", [62.0]),
+                           ("cmddrunk", "drunk", [30.0]), ("cmdvol", "vol", [3.0, -6.0]),
+                           ("cmdpitch", "pitch", [3.0, 7.0]),
+                           ("cmdtracklast", "set-track-last", [3.0, 9.0]),
+                           ("cmdrand", "randomness", [3.0, 40.0]),
+                           ("cmdswing", "set-swing", [62.0]),
                            ("cmdlast", "set-last", [12.0])):
         said = " ".join([cmd] + ["%g" % v for v in rest])
         one(win, "/probe/drums", [cmd] + rest, "drums %s leaves for c_steps as %s" % (said, said))

@@ -2,9 +2,9 @@
 
 Every **Pass if** here describes the phone, not the Organelle, unless it says otherwise. The phone shows the Launchpad's current page and controls it, and leaves the OLED's alerts and rows to the OLED (Brendan, 2026-11-04): step 4 is the one whose correct result is that nothing happens on the phone, and step 11 the one where nothing happens to the tempo.
 
-The rate limit is `phone-assert`'s, and the page structure, what each control sends and that nothing is sent back are `touchosc-assert`'s: what is left is how the pages look and feel under a finger. Steps 1 to 12 judge the phone's pages, which the checklist page covers in test mode, so send their lines from the Mac with `tools/send.sh`, which needs no test mode. Steps 13 to 18 are the checklist page and test mode; step 19 is the arrangement page's tap button. The page holds the line check, not these steps, so run them from here like the rest.
+The rate limit is `phone-assert`'s, and the page structure, what each control sends and that nothing is sent back are `touchosc-assert`'s: what is left is how the pages look and feel under a finger. Steps 1 to 12 judge the phone's pages, which the checklist page covers in test mode, so send their lines from the Mac with `tools/send.sh`, which needs no test mode. Steps 13 to 18 are the checklist page and test mode; step 19 is the arrangement page's tap button, and step 20 the drum screen's pads. The page holds the line check, not these steps, so run them from here like the rest.
 
-19 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [phone](../../ref/device/phone.md), [tempo](../../ref/module/tempo.md).
+20 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [phone](../../ref/device/phone.md), [tempo](../../ref/module/tempo.md).
 
 - [ ] **1. The link is up, on page 1**
   - **Need:** TouchOSC open on the phone with Cut It's layout, on the same network. A no link here means nothing below can be judged.
@@ -103,3 +103,8 @@ The rate limit is `phone-assert`'s, and the page structure, what each control se
   - **Pass if:** After the second tap the tempo reads about 60 and stays near it as you go on. After the pause the first tap changes nothing, and the second sets it to about 120.
   - **Note:** The phone times the taps itself, as your finger lands, by the tap pad's rules: four intervals averaged, starting over after two seconds. That the numbers come out right is `touchosc-assert`'s; this is whether the button answers a finger and the tempo it gives feels like your taps.
 
+- [ ] **20. The drum screen's pads under a finger**
+  - **Need:** Page 2 on the Launchpad, so the phone shows the drum screen.
+  - **Do:** Tap each of the show radio's four in turn, then volume again. Tap a pad that is not lit, then the lit one. Put a finger on a pad and drag up slowly, then down past where you started, then a long quick drag up, and let go. Then tap a pad with a little wobble in the finger, and drag the first pad's volume back to 0.
+  - **Pass if:** The radio lights the one tapped, its word black on red, and every pad's number changes at once: dB, semitones, last steps, percent. A tap lights its pad and the Launchpad selects the same one; a tap on the lit pad changes nothing. A slow drag moves the number a step at a time, no jumps, and no drag selects its pad. The wobbly tap still selects.
+  - **Note:** About 20 points of drag a step, as for the time signature's boxes (Brendan, 2026-11-05). That the state lights only a pad's fill, and a drag sends its value as it stands and nothing comes back, is `touchosc-assert`'s.

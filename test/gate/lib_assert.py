@@ -46,8 +46,10 @@ def report():
 
 
 # ---------------------------------------------------------------------------
-# KITOUT is t_kit's: the drums c_steps sends c_kit, pad and velocity.
-_MIDI = re.compile(r"^(NOTEOUT|CTLOUT|PGMOUT|MIDIOUT|KITOUT):\s+(-?[\d.]+(?:\s+-?[\d.]+)*)$")
+# KITOUT, KITVOL and KITPITCH are t_kit's: the drums c_steps sends c_kit, pad and velocity, and
+# a track's volume and pitch.
+_MIDI = re.compile(r"^(NOTEOUT|CTLOUT|PGMOUT|MIDIOUT|KITOUT|KITVOL|KITPITCH):"
+                   r"\s+(-?[\d.]+(?:\s+-?[\d.]+)*)$")
 # Built from lib_drive's labels, never typed: a label with no pattern here is a
 # bus whose lines are silently dropped.
 _BUS = re.compile(r"^(%s):\s+(.*)$" % lib_drive.TAP_LABEL_RE)

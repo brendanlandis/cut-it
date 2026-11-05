@@ -8,15 +8,15 @@
 **`c_steps` knows steps, velocities and pads, and never where they are.** It is a 32-step
 sequencer — sixteen tracks of 32 steps, a velocity per step, 0 for off, and a last step for the
 whole pattern or for one track — that plays sixteen drum samples on its own `c_clock`, with swing,
-drunkenness, a time signature, four repeat pads, and a skip and a move chance per track
-(`cut-it/drum-timing`). What a press means arrives already translated from `u_map`
+drunkenness, a time signature, four repeat pads, and a randomness, a volume and a pitch per
+track (`cut-it/drum-timing`). What a press means arrives already translated from `u_map`
 (`step 5`, `vel 3`, `pad 13`), and what the page shows leaves as meaning for `g_grid` (`steps …`,
 `play 5`); the layout table that turns one into a cell is theirs, not its. That is the `m_`
 boundary, and it is why another surface could drive it unchanged.
 
 **Its rules are Lua, and its timing is Pd.** `c_steps.lua` holds the pattern, the step rule, the
 velocity levels, the selection, the last steps and the knobs' latch, each track's place in its
-loop, the repeats, the chances, each step's drunk length, and which pads fire on a step, as plain Lua that runs on the Mac without Pd; `c_steps.pd`
+loop, the repeats, each track's randomness, volume and pitch, each step's drunk length, and which pads fire on a step, as plain Lua that runs on the Mac without Pd; `c_steps.pd`
 keeps the clock, the transport and the cords to `c_kit`, `g_grid`, `u_state` and `disp`, and asks
 the Lua through one pdlua object, `[c_steps-lua $1]` (`cut-it/logic-as-text`).
 
@@ -36,10 +36,10 @@ kit*, below.
 |---|---|---|
 | Creation arg 1 | Its bank, 1–10, 1 for A, **vestigial**: from when the SP-404 played the drums, which left the rig on 2026-11-04. Track *n* is pad (bank − 1) × 16 + *n*, and `c_kit` plays pads 1–16 only. It stays because dropping it would move arg 2 and the state key named for it | unknown |
 | Creation arg 2 | The part its pattern is stored as: `drums` keys it `section-1-drums` | unknown |
-| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, `rep <n> <vel>`, from `u_map`'s `drum-page` destination, presses and releases (velocity 0); `last`, `track-last` and `swing <0-1>`, knobs 2 to 4, from its `drums` destination, whose map rows name each: knobs 2 and 4 on every page, knob 3 on page 2 alone (Brendan, 2026-11-04); `sync`, `snap`, `select <n>`, `skip` and `move <0-100>`, the phone's drum screen, and `num` and `den <-1 or 1>`, `drunk <0-100>`, `set-swing <50-75>` and `set-last <1-32>`, its arrangement screen, from `u_net`'s first outlet. Anything else is `fail c_steps bad-selector` | unknown |
-| Outlet 1 | `pad <1..160> <velocity>`, to `c_kit` | unknown |
+| Inlet | `step <n> <vel>`, `vel <level> <vel>`, `pad <n> <vel>`, `rep <n> <vel>`, from `u_map`'s `drum-page` destination, presses and releases (velocity 0); `last`, `track-last` and `swing <0-1>`, knobs 2 to 4, from its `drums` destination, whose map rows name each: knobs 2 and 4 on every page, knob 3 on page 2 alone (Brendan, 2026-11-04); `sync`, `snap` and `select <n>`, the phone's drum screen, and `vol`, `pitch`, `randomness` and `set-track-last <track> <value>`, its pads dragged, and `num` and `den <-1 or 1>`, `drunk <0-100>`, `set-swing <50-75>` and `set-last <1-32>`, its arrangement screen, from `u_net`'s first outlet. Anything else is `fail c_steps bad-selector` | unknown |
+| Outlet 1 | `pad <1..160> <velocity>`, and a track's `vol <pad> <dB>` and `pitch <pad> <semitones>`, every track's at a restore and one when the phone changes it, to `c_kit` | unknown |
 | Outlet 2 | The drum page's state, to `g_grid`'s third inlet: `steps <32 levels>` for the selected track, each step's velocity level, 0 for off, `play <step>` (0 while stopped), `vel <level>`, `track <pad>`, `last <step>` for the selected track, `bar <steps>`, a bar of the time signature, and `rep <pad>`, the repeat pad held, 0 for none | unknown |
-| Outlet 3 | The phone's state, to `u_net`'s second inlet: 42 numbers, `R.phone`, sent by the Pd face only when they change, for the drum and arrangement screens ([phone.md](../device/phone.md)) | unknown |
+| Outlet 3 | The phone's state, to `u_net`'s second inlet: 88 numbers, `R.phone`, sent by the Pd face only when they change, for the drum and arrangement screens ([phone.md](../device/phone.md)) | unknown |
 | `disp` | Knobs 2 to 4's rows: `last-step 12`, `pad2-last 6`, `swing 62 %`, and held, `last-step 16 (7)` | unknown |
 
 ### What it does
@@ -53,8 +53,10 @@ kit*, below.
 | Drunkenness | 0 to 100 from the phone's arrangement screen: at 100 every step strays, by up to two steps longer or shorter, and low settings stay subtle (Brendan, 2026-11-05). At *x*, the slider's 0 to 1, a step strays with the chance *x*/3 + 2*x*⁴/3, by up to *x* + *x*⁴ steps, at random either way: a line, which is most of it low, plus a steep fourth power that adds the rest near the top. At 20% one step in fifteen strays, by up to a fifth of a step; at 50% one in five, by up to 0.56; at 90% three in four, by up to 1.56. A step is never less than an eighth of a step. The error stays: its own drift becomes the clock, and only PLAY puts it back on `u_tempo`'s (Brendan, 2026-11-03). Saved | verified |
 | The time signature | Two numbers from the phone's arrangement screen, the top 1 to 32 and the bottom one of 1 2 4 8 16, 4/4 at first: a bar is top × 16 / bottom steps, which the page marks. Saved | verified |
 | The repeat pads | The top row of the right 4×4, 1 to 4 from the left: held, every track replays the last 1 to 4 steps it played, while the loops go on underneath unheard; let go, every track plays on from where it would have been (Brendan, 2026-11-03). PLAY lets go | verified |
-| A track's chances | Skip and move, 0 to 100 each, for the selected track from the drum screen: a note is skipped, or moved a step early or late at random, rolled a step ahead so it can go early, fresh on every pass. The first step after PLAY can only go late. Saved | verified |
-| On a step | The global loop moves on, then every track moves on in its own loop, wrapping after its own last step; every track plays the step it is heard at (a repeat's, while one is held): a note moved late from the step before, then its own note at its velocity if 1 or more, as its chances say, track 1 first, all in one logical instant. Then each track's next note is rolled, and one moved early plays now. Then the playhead moves, to the selected track's step, and the step's drunk length goes to the clock | verified |
+| A track's randomness | 0 to 100, each track its own, from its pad on the drum screen (Brendan, 2026-11-05, after the Arturia DrumBrute's Randomness): at *R*% each step it plays has an *R*% chance of ignoring what is written and flipping a coin instead, played or not, and played at one of the eight levels at random. So it drops hits from a busy track and adds them to a sparse one; at 100 every step is a coin, at 0 the pattern plays as written and nothing is rolled. Fresh on every pass, a repeat's steps too. Saved | verified |
+| A track's volume and pitch | −30 to +6 dB and −12 to +12 semitones, each track its own, 0 at first, from its pad on the drum screen: each is saved and goes to `c_kit` for that track's pad, which plays it from the next hit (*The kit*, below). A restore sends every track's | verified |
+| A track's last step from the phone | `set-track-last <track> <1-32>`, from its pad, as knob 3 sets the selected track's: the step a track already has changes nothing, so one that follows the global step goes on following; set for the selected track, it holds knob 3 again. Saved | verified |
+| On a step | The global loop moves on, then every track moves on in its own loop, wrapping after its own last step; every track plays the step it is heard at (a repeat's, while one is held), its note at its velocity if 1 or more, or as its randomness flips it, track 1 first, all in one logical instant. Then the playhead moves, to the selected track's step, and the step's drunk length goes to the clock | verified |
 | PLAY (`start`) | Starts every loop at step 1, the phase on the beat at its own rate, and lets go of a held repeat | verified |
 | STOP (`stop`) and `panic` | Stop it, and put the playhead out | unknown |
 | A pad press | Plays that pad now, at full velocity however hard it is pressed (Brendan, 2026-11-04), and selects it as the track being edited | unknown |
@@ -97,12 +99,13 @@ kit*, below.
 | | | Evidence |
 |---|---|---|
 | Key | `section-1-<part>`, an `auto` key in `cut-it-auto.txt` ([state.md](state.md)) | unknown |
-| Line | The key, 512 velocities, track 1's 32 steps first, then the sixteen tracks' own last steps, 0 for one that follows the global one, their skip chances, their move chances, the time signature's two numbers and the drunkenness: 564 atoms, zeros included. The knobs' values are not in it | verified |
+| Line | The key, 512 velocities, track 1's 32 steps first, then the sixteen tracks' own last steps, 0 for one that follows the global one, their randomness, their volumes, their pitches, the time signature's two numbers and the drunkenness: 580 atoms, zeros included. The knobs' values are not in it | verified |
 | Written | `put auto` on every change; `u_state` flushes it within 2 s | unknown |
 | Restored | At ~3.5 s by `u_state`, and put straight back | unknown |
 | A line of exactly 256 | The 16-step pattern this replaced: each track's sixteen go to its first sixteen steps, and the put after it writes the new line | verified |
-| A short or long line | The Lua takes what the line holds, as far as the drunkenness, a symbol as 0, and leaves the rest as they were; the put after it writes all of it. A line of 528, from before the drum screen's settings, comes back at 4/4, sober, with no chances | verified |
-| A 564-atom line | Written and read whole, since both sides use `-c` (`~/Sites/!reference/pure-data.md`, *`[text write]` writes Pd's own format unless told `-c`*); the sequencer gate's seed holds a last step of its own and 7/8, which come back | verified |
+| A line of exactly 563 | Saved before 2026-11-05, with a skip and a move chance per track where the randomness and the volumes are now: its skip chances come back as each track's randomness, which took their place, its move chances are dropped, and its time signature and drunkenness are read from where it kept them. The put after it writes the new line | verified |
+| A short or long line | The Lua takes what the line holds, as far as the drunkenness, a symbol as 0, and leaves the rest as they were; the put after it writes all of it. A line of 528, from before the drum screen's settings, comes back at 4/4, sober, with no randomness and every track at 0 dB and its own pitch | verified |
+| A 580-atom line | Written and read whole, since both sides use `-c` (`~/Sites/!reference/pure-data.md`, *`[text write]` writes Pd's own format unless told `-c`*); the sequencer gate's seed holds a last step of its own, a volume, a pitch and 7/8, which come back | verified |
 
 ## Traps
 
@@ -277,7 +280,8 @@ short or malformed line.
   See `cut-it/drum-machine`.
 - ✅ **On the rig, a repeat pad holds for as long as it is held** (Brendan, 2026-11-04), once the
   Launchpad's heartbeat waited for it ([launchpad](../device/launchpad.md)).
-- ⬜ **Swing, drunkenness and the chances have not played on the rig**, nor have the phone's
-  controls for them or the page's blue bars. See `cut-it/drum-timing`.
+- ⬜ **Swing, drunkenness, randomness and the tracks' volume and pitch have not played on the
+  rig**, nor have the phone's controls for them (the drum screen's radio and its pads' drags) or
+  the page's blue bars. See `cut-it/drum-timing`.
 - ⬜ **The Lua version has not played on the rig**: its CPU beside the Pd version's 11.2% with the
   drum machine playing (`~/Sites/!reference/pure-data.md`, *Newer versions on the Organelle*) is unmeasured. See `cut-it/logic-as-text`.

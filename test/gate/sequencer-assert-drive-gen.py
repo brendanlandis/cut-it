@@ -7,7 +7,9 @@ a press on the free corner, a press in another mode. Then the transport: PLAY,
 STOP, knob 2 held at 16 and then setting the last step to 3, PLAY again, panic.
 Then knob 3 giving track 2 its own last step of 6, a press past it, the two
 tracks looping on their own, and the drum screen's snap, sent to u_net over OSC
-as the phone sends it, landing at PLAY.
+as the phone sends it, landing at PLAY. Then swing, a repeat pad, the drum
+screen's pads (a track's volume, pitch and randomness, over OSC too) and
+drunkenness.
 
 The state directory holds a seeded pattern (scratch-gates.py), so the restore at
 ~3.5 s is under test too. RESTORE opens a second before it and closes a second
@@ -94,16 +96,24 @@ SEQ = [
     (16200, "REP-HELD", [], GAP),
     (16600, "REP-OFF", [P("pad-45", 0)], GAP),
     (16900, "REP-STOP", ["\\; stop bang"], GAP),
+    # The drum screen's pads, over OSC as the phone sends them: track 2's
+    # volume and pitch, which go to c_kit and are saved; then track 1 at full
+    # randomness for nine steps, every step a coin, and back to 0.
+    (17000, "SOUND", ["\\; seqgate-osc drums vol 2 -6", "\\; seqgate-osc drums pitch 2 7"],
+     GAP),
+    (17200, "RAND", ["\\; seqgate-osc drums randomness 1 100"], GAP),
+    (17300, "RA-PLAY", ["\\; start bang"], GAP),
+    (18400, "RA-STOP", ["\\; stop bang", "\\; seqgate-osc drums randomness 1 0"], GAP),
     # Drunkenness at its top, from the drum screen over OSC, then 96 windows a
     # sixteenth wide, each holding one step when sober. At the top every step
     # strays, by up to two steps, so most windows hold none or two or more.
-    (17000, "DRUNK", ["\\; seqgate-osc drums drunk 100"], GAP),
-    (17100, "DR-PLAY", ["\\; start bang"], GAP),
-] + [(17180 + 125 * k, "DR-%d" % (k + 1), [], GAP) for k in range(96)] + [
-    (29180, "DR-STOP", ["\\; stop bang"], GAP),
-    (29400, "DONE", [], GAP),
+    (18600, "DRUNK", ["\\; seqgate-osc drums drunk 100"], GAP),
+    (18700, "DR-PLAY", ["\\; start bang"], GAP),
+] + [(18780 + 125 * k, "DR-%d" % (k + 1), [], GAP) for k in range(96)] + [
+    (30780, "DR-STOP", ["\\; stop bang"], GAP),
+    (31000, "DONE", [], GAP),
 ]
-QUIT_MS = 29900
+QUIT_MS = 31500
 
 # The phone's way in: OSC to u_net's own port, which the gate runner hands each
 # gate in CUTIT_INPORT (lib_scratch's state_dir does the same), connected after

@@ -41,18 +41,18 @@ were false.
 | `launchpad-assert.sh` | 19 | `device/launchpad` |
 | `nano-assert.sh` | 64: 39 in Lua, 25 in Pd | `device/nanokontrol` |
 | `organelle-assert.sh` | 56: 35 in Lua, 21 in Pd | `device/organelle` |
-| `phone-assert.sh` | 99 | `device/phone` |
+| `phone-assert.sh` | 105 | `device/phone` |
 | `inject-assert.sh` | 9 | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | 128: 26 read, 102 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
+| `touchosc-assert.sh` | 153: 30 read, 123 in Lua | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | 10 | `device/volca` |
 | `debug-assert.sh` | 34 | `module/debug` — the SECOND deployable |
-| `sequencer-assert.sh` | 185: 129 in Lua, 56 in Pd | `module/sequencer` |
-| `kit-assert.sh` | 17 | `module/sequencer` — the kit, as a signal |
+| `sequencer-assert.sh` | 228: 163 in Lua, 65 in Pd | `module/sequencer` |
+| `kit-assert.sh` | 25 | `module/sequencer` — the kit, as a signal |
 | `synths-assert.sh` | 91: 66 in Lua, 25 in Pd | `module/synths`, and `device/streichfett` and `device/nanokey`, its two layers |
 
-**1274 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one
+**1356 checks.** ⚠️ **Twenty-three of the twenty-four gates print their own `N checks` line and one
 does not** — `midi-emitters-assert.sh` prints an inventory instead, so its 7 is hand-maintained and
-the total cannot be derived from a run by summing. Totaling the run gives **1267**; the difference is
+the total cannot be derived from a run by summing. Totaling the run gives **1349**; the difference is
 that gate. `sequencer-assert.sh`, `map-assert.sh`, `nano-assert.sh`, `organelle-assert.sh`,
 `synths-assert.sh` and `tempo-assert.sh` print two each, one per half: the Lua tests', then the
 analyzer's; `touchosc-assert.sh` two as well, its scripts' Lua tally printed before the reading's.
@@ -148,6 +148,12 @@ swing in the phone's state and no re-arm (10), and the swing's re-arm alone (1).
 `c_synth_test.lua`: the switch ignored (4). `synths-assert`: `c_synth` deaf to the switch's restore
 (3) and `u_net` routing no `velocity` (6).
 
+✅ **The kit's volume and pitch were made to fail** (2026-11-05): `kit-assert` on the old `c_kit`
+and `c_voice` together (6 failed: the levels at -6 and +6 dB, the octave up and its length, the
+octave down's level and length), on the old `c_kit` alone, which passes neither on (the same 6),
+and on the old `c_voice` alone (7: the octave down's frequency too, once it was measured over
+what both an unpitched and a pitched sample cover).
+
  ⚠️ Three pages name more than one gate, and that is the rule working rather than
 bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
 master reference and the clock cut from it, and `device/organelle` covers a front panel and an LED.
@@ -159,7 +165,8 @@ surfaces gets two gates for the same reason.
 `kit-assert.sh` are the two that read a SIGNAL back** — the first records `u_root`'s output to a
 soundfile and asserts the passthrough is not silent, not swapped and not attenuated, that a drum
 reaches the left alone, and that nothing reports a level, since the info bar is the meter; the second
-records `c_kit`'s drums and asserts their levels, silences and retrigger. Every other gate here
+records `c_kit`'s drums and asserts their levels, silences and retrigger, and a track's volume and
+pitch, read back as a level, a frequency and a length. Every other gate here
 asserts on messages, which is what made the audio path invisible for as long as it was.
 
 **`midi-emitters-assert.sh` belongs to no device on purpose.** Its only claim is structural — *these
@@ -482,7 +489,7 @@ at 20 Hz with its trailing edge; `re-wire`, `clear-alert` and `test-note` reachi
 malformed commands do; test mode, `result` and the gone `send`; every drum and arrangement command
 out the first outlet as it came, acknowledged or not as the screens need; `synth` and `velocity`
 out the second, `tempo` out the third, each passing on what it does not know for its owner to
-refuse; and the mode, `c_steps`' 42 numbers, the choice and the velocity switch at once and on every
+refuse; and the mode, `c_steps`' 88 numbers, the choice and the velocity switch at once and on every
 heartbeat. Its rate-limit history, below, is the old mirror's, whose coalescer the tempo now uses.
 
 ✅ **It was proven to fail before it was trusted, and for free.** `u_net` was built plumbing-first
@@ -499,11 +506,14 @@ the outlet `c_steps` has taken over, and nine for the drum outlet moving back up
 ✅ **And for the synth choice** (2026-11-04): `synth` off the inbound route failed 7, since its
 branch became the reject and bogus commands reached `c_synth`; no heartbeat repeat of the choice,
 3; and the choice dropped on its way in, 1.
+✅ **And for the drum screen's pads** (2026-11-05): `vol`, `pitch`, `set-track-last` and
+`randomness` pass through `u_net` as every drum command does, by its design, so the old `u_net`
+passes them; with its cord from `drums` to `c_steps` cut, all four failed with the rest (13).
 
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       26 + 102 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       30 + 123 checks, ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
@@ -516,7 +526,10 @@ and songs blank (Brendan, 2026-11-04); no diagnostic command is left; and what i
 equals what `u_net` routes and `c_steps` and `c_synth` take, **the inbound vocabulary read from both
 ends**: the velocity switch asks for exactly the settings `u_net` acknowledges, and every synth button sends a synth
 `c_synth.lua`'s `R.SYNTHS` names, `u_net` acknowledges exactly those, and there is one on the synths
-screen and one on the checklist page for each. The phone is the only sender there is, and the
+screen and one on the checklist page for each. The drum screen's sixteen pads each drag their own
+track's volume, pitch, last step and randomness, the four its radio chooses between; the radio is
+TouchOSC's own, horizontal, a segment and a centered word for each, and sends nothing; and a pad is a
+relative fader, about 20 points of drag a step. The phone is the only sender there is, and the
 layout and `u_net` deploy by different routes, `push.sh` and `tools/deploy.sh`, so their spellings
 could drift apart with nothing failing until somebody is at the rig. Every acknowledgment `u_net`
 sends must light a button. **And every pairing meets WCAG AA contrast as TouchOSC draws it**: each
@@ -529,8 +542,9 @@ Then the layout's own scripts, unpacked into the scratch directory and run by
 `lib_test.lua` is for pdlua: the outer bar hidden by the root's script, the pages following the
 mode and each tab's name, test mode turning to the checklist page and back, the arrangement
 screen's tempo, time signature, last step, swing and drunkenness (a value from Cut It never sent
-back, a tempo that is not whole never sent back rounded), the drum screen's pads, buttons and
-knobs, the synths screen and the checklist page's FM and STRINGS, and the velocity switch, lit by
+back, a tempo that is not whole never sent back rounded), the drum screen's pads (the number its
+radio chooses, a tap that selects, a drag that sends its track's value as it stands, and the state
+never sent back) and buttons, the synths screen and the checklist page's FM and STRINGS, and the velocity switch, lit by
 the state and never sending when lit, the checklist page's Pass, Fail, Back and Next, nothing drawn
 from a parameter, a status or an alert, and NO-LINK. The
 page is driven on a development checklist with a step on two pages, built for the run, since every
@@ -557,11 +571,17 @@ from a mode to the flip, a mode chosen in test mode left it on, failing 3.
 `lit` guard (Lua 2), the root lighting one by its value (Lua 2), page 3 with no synths screen (Lua
 1), a button for a synth `c_synth` lacks (read 2), the checklist page's buttons sending nothing
 (read 1, Lua 6), and `u_net` acknowledging `fm` alone (read 1).
+✅ **And for the drum screen's radio and its pads' drags** (2026-11-05): the new checks on the
+layout before them (read 5, then Lua 2 and a stop at the radio it lacks), and eight layouts rebuilt
+with a fault each: a drag that selects as well (Lua 10), the radio sending (read 2, Lua 3),
+randomness in ones (Lua 3), a state handed back unguarded (Lua 1), the pads ignoring the radio
+(Lua 8), every pad dragging track 1 (read 1, Lua 6), the radio standing up (read 2) and two steps a
+pad's height (read 1). And the swing's range: the layout built at the old 25% (Lua 2).
 
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      129 + 56 checks, ~31 s — c_steps' rules in Lua, then the drum page and the pattern on disk
+./test/gate/sequencer-assert.sh      163 + 65 checks, ~33 s — c_steps' rules in Lua, then the drum page and the pattern on disk
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
@@ -580,8 +600,13 @@ within 20 ms, six times inside a sixteenth at 120 BPM — so every step's exact 
 without a timestamp. The tempo is set by the driver, and PLAY to STOP is counted: 21 steps. Knob 2
 is held at 16 and then sets the last step to 3 before PLAY again, which must walk 1 2 3 1 2. Then
 knob 3 gives track 2 a last step of 6, and nine steps are checked against two loops, 3 and 6, note
-by note. Last, the drum screen's `snap` is sent as the phone sends it, OSC to `u_net`'s own port
-(`CUTIT_INPORT`), so the cord from `u_net` to `c_steps` in `u_root` is under test too.
+by note. Then the drum screen's `snap` is sent as the phone sends it, OSC to `u_net`'s own port
+(`CUTIT_INPORT`), so the cord from `u_net` to `c_steps` in `u_root` is under test too. Knob 4's swing
+is held at 50% until turned all the way down, and at 75% puts step 2 three quarters through its pair.
+The drum screen's pads come over OSC too: a track's volume and pitch reach `c_kit`'s stand-in,
+`test/stubs/t_kit.pd`, which prints them, as every track's do at the restore; a track at full
+randomness plays a coin on every step, at a level's velocity, while the rest play as written; and
+at full drunkenness at most 60 of 96 sixteenths hold exactly one step.
 
 ✅ **Proven red before it was trusted**: with `c_steps` absent (the known exit 2), against the patch
 before the sequencer was wired (20 of 28), and on eight mutations — the step rule inverted, PLAY not
@@ -598,6 +623,15 @@ together: Lua 1 failed, Pd 12; with the old map, a press on the freed row was a 
 ✅ **And for the last step**: PLAY parking the counter at 15, as it did, started PLAY again on step 2
 with the last step at 3 (4 failed). 3, not 4, because a last step that divides 16 hides it. Without
 `u_root`'s cord from `u_net` to `c_steps`, the snap never landed (3 failed).
+✅ **And for swing, drunkenness, randomness, volume and pitch** (2026-11-05). `c_steps_test.lua`
+on the old rules: the swing's 9 failed, and with the old curve given the new names, drunkenness's
+11; then on eight mutations of the new rules: randomness ignored (6), a line of 563 read as the new
+one (3), a restore telling `c_kit` nothing (3), a pad's sound kept from `c_kit` (5, then a stop), the
+phone's state without the per-track numbers (8), a pad's last step leaving knob 3 live (2), a pad
+setting the selected track's sound (8), and the coin playing the written velocity (3). The Pd half
+on the old rules failed 20, among them the 579-atom put, `c_kit`'s volumes and pitches at the
+restore and from the pads, the randomness and the swing, and then stopped on a line too short for
+the new layout; on the old swing and drunk curve, 2; and with randomness ignored, 2.
 
 ⚠️ **The layout table is read, not restated**, so a frame is decoded with the same table the patch
 paints from. The analyzer's expectations are what keeps that honest: the driver presses `pad-26`

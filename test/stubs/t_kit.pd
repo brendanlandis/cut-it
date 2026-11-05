@@ -1,7 +1,11 @@
 #N canvas 20 20 700 300 12;
-#X text 20 20 t_kit -- c_kit's stand-in in a gate's scratch copy: it prints each pad and velocity it is sent as KITOUT: <pad> <velocity> \, which is how sequencer-assert reads the drums c_steps plays. c_kit takes no creation arguments and has one inlet \, as this does., f 80;
+#X text 20 20 t_kit -- c_kit's stand-in in a gate's scratch copy: it prints each pad and velocity it is sent as KITOUT: <pad> <velocity> \, and each track's volume and pitch as KITVOL: <pad> <dB> and KITPITCH: <pad> <semitones> \, which is how sequencer-assert reads the drums c_steps plays. c_kit takes no creation arguments and has one inlet \, as this does., f 80;
 #X obj 20 120 inlet;
-#X obj 20 160 route pad;
+#X obj 20 160 route pad vol pitch;
 #X obj 20 200 print KITOUT;
+#X obj 150 230 print KITVOL;
+#X obj 280 200 print KITPITCH;
 #X connect 1 0 2 0;
 #X connect 2 0 3 0;
+#X connect 2 1 4 0;
+#X connect 2 2 5 0;

@@ -25,8 +25,9 @@ It speaks u_net's OSC (ref/device/phone.md): it sends /cutit <command> ... to th
 and shows what comes back to its 8000. Each control sends from a script of its own; the root's
 script takes everything that comes in, and the checklist page's buttons, which it answers itself.
 A button that the Organelle answers flashes teal by its color, never its value, so an answer can't
-send anything again; a knob or a box takes a value from Cut It without sending it back, and a drum
-pad, a synth button or the velocity switch is lit by Cut It's state, which a lit one never answers.
+send anything again; a knob, a box or a drum pad takes a value from Cut It without sending it back;
+and a synth button or the velocity switch is lit by Cut It's state, which a lit one never answers,
+as a drum pad's fill is, behind the pad a finger taps and drags.
 The OLED is not copied here (Brendan, 2026-11-04): it has the alerts, the levels and the name of a
 control as it moves.
 
@@ -113,6 +114,20 @@ SWING = tuple(int(v) for v in re.search(r"^R\.SWING_MIN, R\.SWING_MAX = (\d+), (
 STEPS = 32                  # c_steps.lua's R.STEPS, the last step's range from 1
 DENS = [1, 2, 4, 8, 16]     # c_steps.lua's R.DENS
 MAX_NUM = 32                # c_steps.lua's R.MAX_NUM
+# A track's volume in dB and pitch in semitones, read from c_steps.lua as the swing is.
+VOL = tuple(int(v) for v in re.search(r"^R\.VOL_MIN, R\.VOL_MAX = (-?\d+), (-?\d+)", _STEPS_LUA,
+                                      re.M).groups())
+PITCH = tuple(int(v) for v in re.search(r"^R\.PITCH_MIN, R\.PITCH_MAX = (-?\d+), (-?\d+)",
+                                        _STEPS_LUA, re.M).groups())
+# What the drum screen's pads show, the radio's four in order (Brendan, 2026-11-05): each one's
+# word on the radio, the command a pad's drag sends c_steps, its range, and its step. A step is
+# about 20 points of drag, as the time signature's are; the randomness goes in fives, so its whole
+# range is twenty steps and not a hundred. The radio starts on the first.
+SHOW = [("volume", "vol", VOL[0], VOL[1], 1), ("pitch", "pitch", PITCH[0], PITCH[1], 1),
+        ("last", "set-track-last", 1, STEPS, 1), ("random", "randomness", 0, 100, 5)]
+# A pad's drag: a relative fader whose whole travel is 2000 points at responseFactor 3 (a pad's
+# 60 points times 100 over 3), so 100 steps of 20 points from its middle to either end.
+PAD_FACTOR, PAD_STEPS = 3, 100
 
 
 # ------------------------------------------------------------------ the checklists
@@ -291,7 +306,7 @@ def node(kind, name, frame, children=(), text=None, x=0, **over):
 # The labels that show a value, anything Cut It's state changes: monospaced. The rest, the
 # captions and button names, take TouchOSC's default font (Brendan, 2026-11-04).
 VALUES = {"tempo", "play", "link", "dlink", "slink", "pending", "num", "den", "last", "drunkv",
-          "swingv", "skipv", "movev", "cpos", "tmode"}
+          "swingv", "cpos", "tmode"}
 MONO = 1
 
 
@@ -320,22 +335,69 @@ def sends(args):
 
 
 def pad_script(n):
-    """A drum pad: a press selects its track, and the state lights the one selected with
-    notify('lit'), which a lit pad never answers. When it did, four pads pressed at once lit in
-    turn on the phone, each selecting itself again, and the selection bounced between Cut It and
-    the phone for as long as they were held (Brendan, 2026-11-04)."""
-    return ("local lit = 0\n"
+    """A drum pad: a native fader with no bar over the pad's fill, tapped or dragged (Brendan,
+    2026-11-05). A tap, a finger down and up with no step between, selects its track, unless the
+    state says it is the selected one. A drag up or down changes the number the pads show, the
+    radio's choice, for this pad's track: a step every 20 points from where the finger landed,
+    sent as it stands. The state hands the pad its value with notify('state'), which puts the
+    fader back in its middle and sends nothing, and lights the fill behind it, never the pad
+    itself: when a pad was lit by its value, four pads pressed at once lit in turn on the phone,
+    each selecting itself again, and the selection bounced between Cut It and the phone for as
+    long as they were held (2026-11-04)."""
+    sends_ = "\n".join("  %s show == %d then sendOSC('/cutit', 'drums', %s, %d, v)"
+                       % ("if" if i == 0 else "elseif", i + 1, lua(cmd), n)
+                       for i, (_w, cmd, _lo, _hi, _st) in enumerate(SHOW))
+    return ("local SHOW = %s\n"
+            "local show, base, known, lit, moved = 1, nil, nil, 0, false\n"
             "function onReceiveNotify(key, value)\n"
             "  if key == 'lit' then\n"
             "    lit = value\n"
-            "    self.values.x = value\n"
+            "  elseif key == 'show' then\n"
+            "    show, base, known = value, nil, nil\n"
+            "  elseif key == 'state' then\n"
+            "    base, known = value, value\n"
+            "    self.values.x = 0.5\n"
             "  end\n"
             "end\n"
+            "-- The steps a finger has moved from the middle, and the value they reach: the\n"
+            "-- state's, a step on or back from it on the step's own grid, within the range.\n"
+            "local function steps()\n"
+            "  return math.floor((self.values.x - 0.5) * %d + 0.5)\n"
+            "end\n"
+            "local function reached(k)\n"
+            "  local s = SHOW[show]\n"
+            "  if k == 0 then return base end\n"
+            "  local q = k > 0 and math.floor(base / s[3]) or math.ceil(base / s[3])\n"
+            "  return math.max(s[1], math.min(s[2], (q + k) * s[3]))\n"
+            "end\n"
             "function onValueChanged(key)\n"
-            "  if key == 'x' and self.values.x == 1 and lit ~= 1 then\n"
-            "    sendOSC('/cutit', 'drums', 'select', %d)\n"
+            "  if key == 'touch' then\n"
+            "    if self.values.touch then\n"
+            "      moved = false\n"
+            "    elseif not moved and lit ~= 1 then\n"
+            "      sendOSC('/cutit', 'drums', 'select', %d)\n"
+            "    end\n"
+            "    return\n"
             "  end\n"
-            "end\n" % n)
+            "  if key ~= 'x' or base == nil then return end\n"
+            "  local k = steps()\n"
+            "  if k ~= 0 then moved = true end\n"
+            "  local v = reached(k)\n"
+            "  if v == known then return end\n"
+            "  known = v\n"
+            "%s\n"
+            "  end\n"
+            "  root:notify('touched', 'pad%d')\n"
+            "end\n" % (lua([[lo, hi, st] for _w, _c, lo, hi, st in SHOW]), PAD_STEPS, n,
+                        sends_, n))
+
+
+def show_script():
+    """The drum screen's radio: which number the pads show. It sends nothing to Cut It, and
+    tells the root, which draws the pads from the state it last had."""
+    return ("function onValueChanged(key)\n"
+            "  if key == 'x' then root:notify('show', self.values.x) end\n"
+            "end\n")
 
 
 def synth_script(choice):
@@ -539,32 +601,42 @@ def arrangement():
 
 # ------------------------------------------------------------------ the drum screen (page 2)
 def drums():
-    """What is per track: the sixteen pads, sync first steps and snap to global, a track's skip
-    and move; and the link. The tempo, the time signature and the drunkenness are the
-    arrangement's (Brendan, 2026-11-04)."""
+    """What is per track: the sixteen pads, each showing its track's volume, pitch, last step or
+    randomness as the radio chooses, tapped to select and dragged to change it (Brendan,
+    2026-11-05); sync first steps and snap to global; and the link. The tempo, the time
+    signature and the drunkenness are the arrangement's (Brendan, 2026-11-04)."""
     k = []
     # the left panel: the sixteen pads where the drum page puts them on the Launchpad, pad 1 at
     # the bottom left (Brendan, 2026-11-04), three steps square and a step apart, so four fill
-    # the panel's width and the page's height. Teal with a dot has its own last step; the
-    # selected track is lit; each shows its last step.
+    # the panel's width and the page's height. Each is its fill, a lamp the state lights for the
+    # selected track and colors teal for one with a last step of its own while the pads show last
+    # steps; the pad itself over it, a fader a finger taps or drags; and its number.
     size, pitch = 3 * G, 4 * G
     cells = pad_cells()
     top, left = max(r for r, _ in cells.values()), min(c for _, c in cells.values())
     for n in range(1, 17):
         r, c = top - cells[n][0], cells[n][1] - left
         f = (X0 + c * pitch, Y0 + r * pitch, size, size)
-        k.append(button("pad%d" % n, f, RED, pad_script(n)))
-        k.append(label("pad%dl" % n, f, "16", 20))
-    # the right panel: sync and snap, the line saying one waits, the selected track's two
-    # knobs, the link
+        k.append(node("BUTTON", "pad%df" % n, f, color=RED, interactive=False, outline=False))
+        k.append(node("FADER", "pad%d" % n, f, color=RED, outlineStyle=0, background=False,
+                      bar=False, cursor=False, response=1, responseFactor=PAD_FACTOR, x=0.5,
+                      script=pad_script(n)))
+        k.append(label("pad%dl" % n, f, "0", 20))
+    # the right panel: sync and snap, the line saying one waits, the radio choosing what the
+    # pads show, a pad's size a segment and level with their third row, the link
     a, b = COL
     for x, (name, text) in zip(COL, (("sync", "sync first steps"), ("snap", "snap to global"))):
         f = (x, Y0, CW, 3 * G)
         k.append(button(name, f, RED, sends(["drums", name])))
         k.append(label(name + "l", f, text, 16))
     k.append(label("pending", (a, Y0 + 4 * G, X1 - a, G), "", 14, TEAL, align=1))
-    k += knob("skip", a, Y0 + 6 * G, "skip")
-    k += knob("move", b, Y0 + 6 * G, "move")
+    seg = CW // len(SHOW)
+    k.append(caption("showc", a, Y0 + 7 * G, CW, "show"))
+    k.append(node("RADIO", "show", (a, Y0 + 8 * G, CW, 3 * G), color=RED, outlineStyle=0,
+                  orientation=1, steps=len(SHOW), x=0, script=show_script()))
+    for i, (word, _c, _lo, _hi, _st) in enumerate(SHOW):
+        k.append(label("show%dl" % (i + 1), (a + i * seg, Y0 + 8 * G, seg, 3 * G), word, 14,
+                       BLACK if i == 0 else WHITE))
     k += status("dlinkled", "dlink", b, "no link")
     return k
 
@@ -628,6 +700,7 @@ local SYNTHS = %(synths)s
 local ACKS = %(acks)s
 local DENS = %(dens)s
 local SWING = %(swing)s
+local SHOWN = %(shown)s
 local RED, TEAL, WHITE, GREY, BLACK = %(red)s, %(teal)s, %(white)s, %(grey)s, %(black)s
 
 local found, shown = {}, {}
@@ -653,10 +726,10 @@ end
 local function arg(a, i)
   return a[i] and a[i].value or 0
 end
--- Light a pad or a button from the state, by notify('lit'), which it never answers: when what it
--- was last told differs, or a finger let go of it since. A finger's release leaves a lit one out,
--- and its own lit flag set, so comparing the value alone left a button that was lit once deaf to
--- taps after the state had put it out.
+-- Light a button from the state, by notify('lit'), which it never answers: when what it was last
+-- told differs, or a finger let go of it since. A finger's release leaves a lit one out, and its
+-- own lit flag set, so comparing the value alone left a button that was lit once deaf to taps
+-- after the state had put it out.
 local told = {}
 local function light(name, want)
   if told[name] ~= want or get(name).values.x ~= want then
@@ -713,14 +786,55 @@ local function hand(name, v)
   c:notify('state', v)
 end
 
+-- ---------------------------------------------------------------- the drum screen's pads
+-- What the pads show, the radio's choice, 1 to 4: volume, pitch, last step, randomness. Each pad
+-- shows its track's, and is handed it to drag from; its fill is lit for the selected track, and
+-- teal for a track with its own last step while the pads show last steps. state is c_steps'
+-- last, so a turn of the radio redraws the pads at once.
+local show, state = 1, nil
+local function signed(v) return v > 0 and ('+' .. v) or tostring(v) end
+local function pads()
+  local a = state
+  if not a then return end
+  local track = math.floor(arg(a, 3))
+  for n = 1, 16 do
+    local own, sel, pad = arg(a, 20 + n) == 1, n == track, 'pad' .. n
+    local v, words, teal
+    if show == 1 then
+      v = math.floor(arg(a, 40 + n)); words = signed(v)
+    elseif show == 2 then
+      v = math.floor(arg(a, 56 + n)); words = signed(v)
+    elseif show == 3 then
+      v = math.floor(arg(a, 4 + n)); words = (own and '• ' or '') .. v; teal = own
+    else
+      v = math.floor(arg(a, 72 + n)); words = v .. '%%'
+    end
+    color(pad .. 'f', teal and TEAL or RED)
+    color(pad, teal and TEAL or RED)
+    lit(pad .. 'f', sel)
+    local want = sel and 1 or 0
+    if told[pad] ~= want then told[pad] = want; get(pad):notify('lit', want) end
+    text(pad .. 'l', words)
+    ink(pad .. 'l', sel and BLACK or WHITE)
+    hand(pad, v)
+  end
+end
+
+local function setShow(x)
+  show = math.max(1, math.min(#SHOWN, math.floor(x + 0.5) + 1))
+  for i = 1, #SHOWN do ink('show' .. i .. 'l', i == show and BLACK or WHITE) end
+  for n = 1, 16 do get('pad' .. n):notify('show', show) end
+  pads()
+end
+
 -- ---------------------------------------------------------------- the sequencer's state
--- c_steps' 42 numbers: playing, the global last step, the selected track, a pending sync or
+-- c_steps' 88 numbers: playing, the global last step, the selected track, a pending sync or
 -- snap (1, 2), the sixteen last steps, then 1 for each track with its own, then the time
--- signature, the drunkenness, the selected track's skip and move, and the swing. The drum
--- screen shows what is per track, the arrangement screen the rest.
+-- signature, the drunkenness and the swing, then the sixteen volumes, pitches and
+-- randomnesses. The drum screen shows what is per track, the arrangement screen the rest.
 local function drums(a)
-  if #a < 42 then return end
-  local playing, track, pending = arg(a, 1) == 1, math.floor(arg(a, 3)), arg(a, 4)
+  if #a < 88 then return end
+  local playing, pending = arg(a, 1) == 1, arg(a, 4)
   local last = math.floor(arg(a, 2))
   text('play', playing and 'playing' or 'stopped')
   lit('playled', playing)
@@ -728,22 +842,15 @@ local function drums(a)
   hand('lastbox', last)
   text('pending', pending == 2 and 'snap waits for step 1'
        or (pending == 1 and 'sync waits for step 1' or ''))
-  for n = 1, 16 do
-    local own, sel = arg(a, 20 + n) == 1, n == track
-    color('pad' .. n, own and TEAL or RED)
-    light('pad' .. n, sel and 1 or 0)
-    text('pad' .. n .. 'l', (own and '• ' or '') .. math.floor(arg(a, 4 + n)))
-    ink('pad' .. n .. 'l', sel and BLACK or WHITE)
-  end
+  state = a
+  pads()
   local num, den = math.floor(arg(a, 37)), math.floor(arg(a, 38))
   text('num', tostring(num))
   text('den', tostring(den))
   hand('numbox', num)
   for i, d in ipairs(DENS) do if d == den then hand('denbox', i) end end
   hand('drunk', math.floor(arg(a, 39)))
-  hand('skip', math.floor(arg(a, 40)))
-  hand('move', math.floor(arg(a, 41)))
-  hand('swing', math.floor(arg(a, 42)))
+  hand('swing', math.floor(arg(a, 40)))
 end
 
 -- ---------------------------------------------------------------- the tempo
@@ -820,6 +927,7 @@ local lastHb = -100000
 -- goes, and the page's own tabs are the bar the phone shows.
 function init()
   get('pages').tabbar = false
+  setShow(get('show').values.x)
   paintCheck()
 end
 
@@ -846,6 +954,8 @@ end
 function onReceiveNotify(key, value)
   if key == 'touched' then
     touchedAt[value] = getMillis()
+  elseif key == 'show' then
+    setShow(value)
   elseif key == 'press' and PRESS[value] then
     PRESS[value]()
     paintCheck()
@@ -862,9 +972,7 @@ function update()
   lit('tled', up and testOn)
   text('tmode', not up and 'no link' or (testOn and 'test mode on' or 'test mode off'))
   ink('tmode', (up and testOn) and TEAL or GREY)
-  for _, k in ipairs({ 'drunk', 'skip', 'move' }) do
-    text(k .. 'v', math.floor(get(k).values.x * 100 + 0.5) .. '%%')
-  end
+  text('drunkv', math.floor(get('drunk').values.x * 100 + 0.5) .. '%%')
   text('swingv', SWING[1] + math.floor(get('swing').values.x * (SWING[2] - SWING[1]) + 0.5) .. '%%')
   for name, base in pairs(BASE) do
     local f = flash[name]
@@ -886,6 +994,7 @@ def root_script(check):
         "npages": len(LAUNCHPAD),
         "synths": lua([c for c, _ in SYNTHS]),
         "acks": acks, "check": lua(check), "dens": lua(DENS), "swing": lua(list(SWING)),
+        "shown": lua([w for w, _c, _lo, _hi, _st in SHOW]),
         "red": lua_color(RED), "teal": lua_color(TEAL), "white": lua_color(WHITE),
         "grey": lua_color(GREY), "black": lua_color(BLACK)}
 

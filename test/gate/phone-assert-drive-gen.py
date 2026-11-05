@@ -184,15 +184,17 @@ txt(20, 2180,
 #   ("tpsweep", (count, ms))         count+1 BPMs into u_net's fourth inlet
 #   ("cmd", (root, "<text>"))        one OSC datagram INTO u_net's own port
 #   ("tm", None)                     a bang into u_net's inlet: flip test mode
-#   ("ds", "<42 numbers>")           c_steps' state, into u_net's second inlet
+#   ("ds", "<88 numbers>")           c_steps' state, into u_net's second inlet
 #   ("sy", "synth <choice>")         c_synth's choice or velocity switch, into its third
 #   ("tp", "<bpm>")                  u_tempo's BPM, into its fourth
 #   ("bus", (name, "<message>"))     one message onto a bus, as the mode bus
 #
 # Playing, last step 12, track 2 selected, a sync pending, the sixteen last
-# steps, track 2's its own, then 7/8, drunk 30, track 2's skip 20 and move 0,
-# and swing 62.
-DRUM_STATE = "1 12 2 1 16 5 " + "16 " * 14 + "0 1 " + "0 " * 14 + "7 8 30 20 0 62"
+# steps, track 2's its own, then 7/8, drunk 30 and swing 62, then the sixteen
+# volumes, pitches and randomnesses, track 2's -6 dB, 7 semitones and 40%.
+DRUM_STATE = " ".join(str(v) for v in [1, 12, 2, 1, 16, 5] + [16] * 14 + [0, 1] + [0] * 14
+                      + [7, 8, 30, 62] + [0, -6] + [0] * 14 + [0, 7] + [0] * 14
+                      + [0, 40] + [0] * 14)
 SEQ = [
     (3000,  "idle",     []),
     # -- the OLED's traffic: u_net mirrored it once (/cutit/param, /status,
@@ -237,12 +239,14 @@ SEQ = [
     (34200, "cmdsnap",  [("cmd", ("cutit", "drums snap"))]),
     (35600, "cmdselect", [("cmd", ("cutit", "drums select 3"))]),
     # -- the arrangement screen's time signature, drunkenness, swing and last
-    #    step, and the drum screen's two sliders, as the phone sends them
+    #    step, and the drum screen's pads dragged, as the phone sends them
     (37000, "cmdnum",   [("cmd", ("cutit", "drums num 1"))]),
     (38400, "cmdden",   [("cmd", ("cutit", "drums den -1"))]),
     (39800, "cmddrunk", [("cmd", ("cutit", "drums drunk 30"))]),
-    (41200, "cmdskip",  [("cmd", ("cutit", "drums skip 20"))]),
-    (42600, "cmdmove",  [("cmd", ("cutit", "drums move 0"))]),
+    (41200, "cmdvol",   [("cmd", ("cutit", "drums vol 3 -6"))]),
+    (41900, "cmdpitch", [("cmd", ("cutit", "drums pitch 3 7"))]),
+    (42600, "cmdtracklast", [("cmd", ("cutit", "drums set-track-last 3 9"))]),
+    (43300, "cmdrand",  [("cmd", ("cutit", "drums randomness 3 40"))]),
     (44000, "cmdswing", [("cmd", ("cutit", "drums set-swing 62"))]),
     (45400, "cmdlast",  [("cmd", ("cutit", "drums set-last 12"))]),
     # A drums command u_net has never heard of still goes to c_steps, which

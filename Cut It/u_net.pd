@@ -1,6 +1,6 @@
 #N canvas 20 20 5700 5200 12;
 #X text 20 20 u_net -- the phone link \, and the only file that talks to the phone: TouchOSC's layout shows the Launchpad's page and controls it (ref/device/phone.md). Outbound it sends the heartbeat \, the mode \, c_steps' state \, c_synth's choice and velocity switch \, and the tempo \; inbound it takes a closed vocabulary of five commands. It writes err \, and nothing else may learn a phone exists., f 58;
-#X text 700 20 creation arg 1: the phone's host \, the fallback when phone-ip.sh finds none. arg 2: its OSC receive port \, 8000 for TouchOSC \, never 9000 (its WebDAV) or 4001-4003 (mother's). arg 3: this end's inbound UDP port \, 9001 on the device and different on the Mac. inlet 1: a bang from u_map that flips test mode. inlet 2: c_steps' state \, 42 numbers. inlet 3: c_synth's choice and velocity switch. inlet 4: u_tempo's BPM. outlet 1: c_steps \, the drum and arrangement screens' sync \, snap \, select <n> \, num and den <-1 or 1> \, drunk \, skip and move <0-100> \, set-swing and set-last. outlet 2: c_synth \, synth <choice> and velocity <on or off>. outlet 3: u_tempo \, tempo <bpm>., f 58;
+#X text 700 20 creation arg 1: the phone's host \, the fallback when phone-ip.sh finds none. arg 2: its OSC receive port \, 8000 for TouchOSC \, never 9000 (its WebDAV) or 4001-4003 (mother's). arg 3: this end's inbound UDP port \, 9001 on the device and different on the Mac. inlet 1: a bang from u_map that flips test mode. inlet 2: c_steps' state \, 88 numbers. inlet 3: c_synth's choice and velocity switch. inlet 4: u_tempo's BPM. outlet 1: c_steps \, the drum screen's sync \, snap and select <n> and its pads' vol \, pitch \, randomness and set-track-last <track> <value> \, and the arrangement screen's num and den <-1 or 1> \, drunk <0-100> \, set-swing and set-last. outlet 2: c_synth \, synth <choice> and velocity <on or off>. outlet 3: u_tempo \, tempo <bpm>., f 58;
 #X text 1400 20 State \, never events: every message carries the whole value \, so a dropped datagram is corrected by the next., f 58;
 #X text 20 260 Fire and forget: no handshake and no retry \, so the instrument plays the same with no phone. Only the connection retries \, below., f 58;
 #X obj 560 660 list append;
@@ -242,7 +242,7 @@
 #X obj 2900 3900 outlet;
 #X msg 3300 3660 drums snap;
 #X obj 2900 3720 s \$0-ack;
-#X text 2900 3980 drums: whatever follows it goes to c_steps through outlet 1 as it came \, so a new drum control needs nothing here. sync \, snap and select <n> are acknowledged after they go: the drum screen's buttons and pads flash on the ack. The rest -- num and den <-1 or 1> \, drunk \, skip and move <0-100> \, set-swing and set-last -- are not \, since the screens' state shows each., f 50;
+#X text 2900 3980 drums: whatever follows it goes to c_steps through outlet 1 as it came \, so a new drum control needs nothing here. sync \, snap and select <n> are acknowledged after they go: the drum screen's buttons and pads flash on the ack. The rest -- the pads' vol \, pitch \, randomness and set-track-last <track> <value> \, num and den <-1 or 1> \, drunk <0-100> \, set-swing and set-last -- are not \, since the screens' state shows each., f 50;
 #X connect 133 0 136 0;
 #X connect 135 0 136 0;
 #X obj 3600 4300 inlet;

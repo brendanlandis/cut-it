@@ -1,15 +1,17 @@
 -- c_steps.lua -- the drum sequencer's rules: the pattern, the step rule, the velocity levels, the
 -- selected track and level, the last steps, each track's place in its loop, the time signature,
--- swing, drunkenness, the repeats, each track's chances, and which notes fire on a step. Plain Lua with no Pd in it, so test/gate/lua/c_steps_test.lua runs it on the Mac with
+-- swing, drunkenness, the repeats, each track's randomness, volume and pitch, and which notes fire
+-- on a step. Plain Lua with no Pd in it, so test/gate/lua/c_steps_test.lua runs it on the Mac with
 -- lua.org's interpreter. c_steps-lua.pd_lua is its Pd face, and c_steps.pd keeps the clock, the
 -- transport and the cords to c_kit, g_grid and u_state. ref/module/sequencer.md.
 --
 -- The state is a plain table and every rule a function of it, so a live reload of the rules keeps
 -- the pattern. Every rule returns what leaves, in order, as {outlet, selector, atoms}:
 --   {"note", "pad", {pad, velocity}}                          to c_kit
+--   {"note", "vol" | "pitch", {pad, dB or semitones}}         to c_kit, a track's
 --   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep", {...}}
 --                                                             to g_grid's third inlet
---   {"save", "list", {563 numbers, R.save}}                   to u_state, as section-1-<part>
+--   {"save", "list", {579 numbers, R.save}}                   to u_state, as section-1-<part>
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
 --   {"err", "fail", {"c_steps", text}}                        to err (C-12)
 --   {"disp", <row name>, {value[, unit]}}                     a knob's row, to disp
@@ -49,8 +51,14 @@ end
 R.MIN_DUR = 0.125
 -- The repeat pads, 1 to 4: each replays the last 1, 2, 3 or 4 steps (Brendan, 2026-11-03).
 R.REPEATS = 4
--- What R.save writes, in order.
-R.SAVED = R.TRACKS * R.STEPS + 3 * R.TRACKS + 3
+-- Each track's own volume, in dB, and pitch, in semitones, played by its c_voice; and its
+-- randomness, 0 to 100 (Brendan, 2026-11-05).
+R.VOL_MIN, R.VOL_MAX = -30, 6
+R.PITCH_MIN, R.PITCH_MAX = -12, 12
+-- What R.save writes, in order; and what it wrote until 2026-11-05, when each track had a skip and
+-- a move chance where its randomness and its volume are now, and no pitch.
+R.SAVED = R.TRACKS * R.STEPS + 4 * R.TRACKS + 3
+R.SAVED_CHANCES = R.TRACKS * R.STEPS + 3 * R.TRACKS + 3
 
 local function clip(x, lo, hi)
   if x < lo then return lo end
@@ -103,13 +111,14 @@ function R.new(bank)
                track = R.BOOT_TRACK, level = R.BOOT_LEVEL, last = R.BOOT_LAST,
                master = 0, sync = false, snap = false, playing = false,
                num = 4, den = 4, swing = R.BOOT_SWING, drunk = 0, rate = 1,
-               skip = {}, move = {}, late = {}, fate = {}, hist = {},
+               randomness = {}, vol = {}, pitch = {}, hist = {},
                rep = 0, rk = 0, win = {}, rand = math.random,
                knob = { last = { held = true }, track = { held = true },
                         swing = { held = true } } }
   for i = 1, R.TRACKS * R.STEPS do st.pattern[i] = 0 end
   for t = 1, R.TRACKS do
-    st.own[t], st.pos[t], st.skip[t], st.move[t], st.late[t], st.hist[t] = 0, 0, 0, 0, 0, {}
+    st.own[t], st.pos[t], st.hist[t] = 0, 0, {}
+    st.randomness[t], st.vol[t], st.pitch[t] = 0, 0, 0
   end
   return st
 end
@@ -137,18 +146,20 @@ function R.page_bar(st)
 end
 
 -- The whole pattern, zeros included: 512 velocities, then the 16 tracks' own last steps, 0 for
--- one that follows the global last step, then their skip chances and their move chances, 0 to
--- 100, then the time signature and the drunkenness, 0 to 100. What section-1-<part> holds:
--- the phone's settings with the pattern (Brendan, 2026-11-03), and the knobs' not.
+-- one that follows the global last step, then their randomness, 0 to 100, their volumes in dB and
+-- their pitches in semitones, then the time signature and the drunkenness, 0 to 100: 579 numbers.
+-- What section-1-<part> holds: the phone's settings with the pattern (Brendan, 2026-11-03), and
+-- the knobs' not.
 function R.save(st)
   local all, cells = {}, R.TRACKS * R.STEPS
   for i = 1, cells do all[i] = st.pattern[i] end
   for t = 1, R.TRACKS do
     all[cells + t] = st.own[t]
-    all[cells + R.TRACKS + t] = st.skip[t]
-    all[cells + 2 * R.TRACKS + t] = st.move[t]
+    all[cells + R.TRACKS + t] = st.randomness[t]
+    all[cells + 2 * R.TRACKS + t] = st.vol[t]
+    all[cells + 3 * R.TRACKS + t] = st.pitch[t]
   end
-  local n = cells + 3 * R.TRACKS
+  local n = cells + 4 * R.TRACKS
   all[n + 1], all[n + 2], all[n + 3] = st.num, st.den, st.drunk
   return { "save", "list", all }
 end
@@ -318,20 +329,71 @@ function R.time(st, which, dir)
   return { R.save(st), R.page_bar(st) }
 end
 
--- A setting of the phone's knobs, 0 to 100, rounded: drunkenness for the whole pattern,
--- skip and move for the selected track. Saved.
-local function percent(v)
-  return math.floor(clip(num(v), 0, 100) + 0.5)
+-- A value within its range, rounded: a percent, 0 to 100, a volume, a pitch, a last step.
+local function whole(v, lo, hi)
+  return math.floor(clip(num(v), lo, hi) + 0.5)
 end
 
+local function percent(v)
+  return whole(v, 0, 100)
+end
+
+-- The arrangement screen's drunkenness, 0 to 100. Saved.
 function R.drunk(st, v)
   st.drunk = percent(v)
   return { R.save(st) }
 end
 
-function R.chance(st, which, v)
-  st[which][st.track] = percent(v)
+-- The drum screen's pads, each dragged for its own track, selected or not (Brendan, 2026-11-05):
+-- a track's volume in dB, its pitch in semitones, its randomness, or its own last step, each as it
+-- stands. Saved; a volume or a pitch goes to c_kit too, for the track's next hits. The same value
+-- again, or a message without a track and a number, does nothing.
+local function track_value(track, v)
+  if type(track) ~= "number" or type(v) ~= "number" then return nil end
+  return math.floor(clip(track, 1, R.TRACKS))
+end
+
+local function set_sound(st, which, lo, hi, track, v)
+  local t = track_value(track, v)
+  if not t then return {} end
+  local n = whole(v, lo, hi)
+  if n == st[which][t] then return {} end
+  st[which][t] = n
+  return { R.save(st), { "note", which, { R.pad(st, t), n } } }
+end
+
+function R.set_vol(st, track, v)
+  return set_sound(st, "vol", R.VOL_MIN, R.VOL_MAX, track, v)
+end
+
+function R.set_pitch(st, track, v)
+  return set_sound(st, "pitch", R.PITCH_MIN, R.PITCH_MAX, track, v)
+end
+
+function R.set_randomness(st, track, v)
+  local t = track_value(track, v)
+  if not t then return {} end
+  local n = percent(v)
+  if n == st.randomness[t] then return {} end
+  st.randomness[t] = n
   return { R.save(st) }
+end
+
+-- A track's own last step, set from its pad as knob 3 sets the selected track's: the step it
+-- already has changes nothing, so a track that follows the global one goes on following it.
+-- Knob 3 is held again when the track is the selected one, as at a phone's value of knob 2's.
+function R.set_track_last(st, track, v)
+  local t = track_value(track, v)
+  if not t then return {} end
+  local n = whole(v, 1, R.STEPS)
+  if n == R.last_of(st, t) then return {} end
+  st.own[t] = n
+  local out = { R.save(st) }
+  if t == st.track then
+    rearm(st.knob.track)
+    out[#out + 1] = R.page_last(st)
+  end
+  return out
 end
 
 -- A repeat pad, 1 to 4, held: every track replays the last n steps it played, over and over,
@@ -365,15 +427,16 @@ end
 -- The sequencer's state, for the phone's drum and arrangement screens: playing (1 or 0), the
 -- global last step, the selected track, a pending sync or snap (0 none, 1 sync, 2 snap), then
 -- each track's last step, then 1 for each track with a last step of its own, then the time
--- signature, the drunkenness, the selected track's skip and move chances, and the swing. 42
--- numbers.
+-- signature, the drunkenness and the swing, then each track's volume, its pitch and its
+-- randomness. 88 numbers.
+R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS
 function R.phone(st)
   local out = { st.playing and 1 or 0, st.last, st.track, st.snap and 2 or (st.sync and 1 or 0) }
   for t = 1, R.TRACKS do out[#out + 1] = R.last_of(st, t) end
   for t = 1, R.TRACKS do out[#out + 1] = st.own[t] >= 1 and 1 or 0 end
-  for _, v in ipairs({ st.num, st.den, st.drunk, st.skip[st.track], st.move[st.track],
-                       st.swing }) do
-    out[#out + 1] = v
+  for _, v in ipairs({ st.num, st.den, st.drunk, st.swing }) do out[#out + 1] = v end
+  for _, which in ipairs({ "vol", "pitch", "randomness" }) do
+    for t = 1, R.TRACKS do out[#out + 1] = st[which][t] end
   end
   return out
 end
@@ -412,31 +475,23 @@ local function heard(st, t, p)
   return w[st.rk % #w + 1]
 end
 
--- A note's fate under its track's chances (Brendan, 2026-11-03): skipped, moved a step later,
--- moved a step earlier when it is rolled a step ahead, or played as written. A track with no
--- chances never rolls.
-local function roll(st, t, early)
-  local skip, move = st.skip[t], st.move[t]
-  if skip <= 0 and move <= 0 then return "now" end
-  if skip > 0 and st.rand() * 100 < skip then return "skip" end
-  if move > 0 and st.rand() * 100 < move then
-    if early and st.rand() < 0.5 then return "early" end
-    return "late"
-  end
-  return "now"
-end
-
-local function note(st, out, t, v)
-  out[#out + 1] = { "note", "pad", { R.pad(st, t), v } }
+-- A step's velocity under its track's randomness (Brendan, 2026-11-05, after the DrumBrute's): at
+-- R%, each step has an R% chance of ignoring what is written and flipping a coin instead: played or
+-- not, and played at one of the eight levels, at random. So it drops hits from a busy track and
+-- adds them to a sparse one; at 100 it is chaos, at 0 the pattern as written. A track at 0 never
+-- rolls.
+local function chance(st, t, v)
+  local r = st.randomness[t]
+  if r <= 0 or st.rand() * 100 >= r then return v end
+  if st.rand() >= 0.5 then return 0 end
+  return R.velocity(math.min(R.LEVELS, math.floor(st.rand() * R.LEVELS) + 1))
 end
 
 -- A step of the clock. The loops move on (advance), and every track plays the step it is heard
--- at (heard), track 1 first, all in one logical instant: a note moved late from the last step,
--- then its own note, as its fate says. Then each track's next note is rolled a step ahead, and
--- one moved early plays now. Then the playhead, the selected track's step, and the step clock's
--- rate for the step coming: drunk, a step may last longer or shorter, the more often and the
--- further the drunker (R.drunk_chance, R.drunk_reach), and the error stays -- its own drift
--- becomes the clock (Brendan, 2026-11-03).
+-- at (heard), as its randomness says, track 1 first, all in one logical instant. Then the
+-- playhead, the selected track's step, and the step clock's rate for the step coming: drunk, a
+-- step may last longer or shorter, the more often and the further the drunker (R.drunk_chance,
+-- R.drunk_reach), and the error stays -- its own drift becomes the clock (Brendan, 2026-11-03).
 function R.tick(st)
   local m, pos, synced = advance(st)
   local out = {}
@@ -455,29 +510,8 @@ function R.tick(st)
   end
   if st.rep > 0 then st.rk = st.rk + 1 end
   for t = 1, R.TRACKS do
-    if st.late[t] > 0 then
-      note(st, out, t, st.late[t])
-      st.late[t] = 0
-    end
-    local v = st.pattern[R.index(t, play[t])]
-    if v >= 1 then
-      local f = st.fate[t]
-      local fate = (f and f.step == play[t]) and f.fate or roll(st, t, false)
-      if fate == "now" then note(st, out, t, v) elseif fate == "late" then st.late[t] = v end
-    end
-    st.fate[t] = nil
-  end
-  local _, ahead = advance(st)
-  for t = 1, R.TRACKS do
-    if st.skip[t] > 0 or st.move[t] > 0 then
-      local q = heard(st, t, ahead[t])
-      local v = st.pattern[R.index(t, q)]
-      if v >= 1 then
-        local fate = roll(st, t, true)
-        if fate == "early" then note(st, out, t, v) end
-        st.fate[t] = { step = q, fate = fate }
-      end
-    end
+    local v = chance(st, t, st.pattern[R.index(t, play[t])])
+    if v >= 1 then out[#out + 1] = { "note", "pad", { R.pad(st, t), v } } end
   end
   out[#out + 1] = { "page", "play", { play[st.track] } }
   local rate = 1
@@ -497,7 +531,7 @@ end
 -- PLAY is the one thing that puts a drunk machine back on the clock. A held repeat lets go.
 function R.start(st)
   st.master, st.sync, st.playing, st.rep = 0, false, true, 0
-  for t = 1, R.TRACKS do st.pos[t], st.late[t], st.fate[t], st.hist[t] = 0, 0, nil, {} end
+  for t = 1, R.TRACKS do st.pos[t], st.hist[t] = 0, {} end
   st.rate = 1
   local out = { { "clock", "rate", { 1 } }, { "page", "rep", { 0 } } }
   if st.snap then
@@ -513,11 +547,14 @@ function R.stop(st)
 end
 
 -- u_state's restore of section-1-<part>, then put straight back (ref/module/state.md), which also
--- repairs a short or malformed line. A line of exactly 256 is the 16-step pattern this replaced,
--- track by track: its steps go to each track's first sixteen. Anything else is read as this
--- file saves it, as far as it goes, a symbol as 0, the rest left as they were: a line of 528,
--- from before the phone's settings, keeps 4/4, sober, and no chances. A bottom number that is
--- not one of 1 2 4 8 16 is 4.
+-- repairs a short or malformed line; and every track's volume and pitch to c_kit. A line of
+-- exactly 256 is the 16-step pattern this replaced, track by track: its steps go to each track's
+-- first sixteen. A line of exactly 563 is from before the randomness (2026-11-05): its skip
+-- chances come back as each track's randomness, which took their place, its move chances are
+-- dropped, and the volumes and pitches stay 0. Anything else is read as this file saves it, as far
+-- as it goes, a symbol as 0, the rest left as they were: a line of 528, from before the phone's
+-- settings, keeps 4/4, sober, and no randomness. A bottom number that is not one of 1 2 4 8 16 is
+-- 4.
 function R.restore(st, values)
   local cells = R.TRACKS * R.STEPS
   if #values == 256 then
@@ -525,15 +562,19 @@ function R.restore(st, values)
       for s = 1, 16 do st.pattern[R.index(t, s)] = num(values[(t - 1) * 16 + s]) end
     end
   else
+    local chances = #values == R.SAVED_CHANCES
     for i = 1, math.min(#values, cells) do st.pattern[i] = num(values[i]) end
     for t = 1, R.TRACKS do
-      local v, k, m = values[cells + t], values[cells + R.TRACKS + t],
-                      values[cells + 2 * R.TRACKS + t]
+      local v, k = values[cells + t], values[cells + R.TRACKS + t]
       if v ~= nil then st.own[t] = math.floor(clip(num(v), 0, R.STEPS)) end
-      if k ~= nil then st.skip[t] = percent(k) end
-      if m ~= nil then st.move[t] = percent(m) end
+      if k ~= nil then st.randomness[t] = percent(k) end
+      if not chances then
+        local db, p = values[cells + 2 * R.TRACKS + t], values[cells + 3 * R.TRACKS + t]
+        if db ~= nil then st.vol[t] = whole(db, R.VOL_MIN, R.VOL_MAX) end
+        if p ~= nil then st.pitch[t] = whole(p, R.PITCH_MIN, R.PITCH_MAX) end
+      end
     end
-    local n = cells + 3 * R.TRACKS
+    local n = cells + (chances and 3 or 4) * R.TRACKS
     if values[n + 1] ~= nil then st.num = math.floor(clip(num(values[n + 1]), 1, R.MAX_NUM)) end
     if values[n + 2] ~= nil then
       local d = num(values[n + 2])
@@ -542,7 +583,11 @@ function R.restore(st, values)
     end
     if values[n + 3] ~= nil then st.drunk = percent(values[n + 3]) end
   end
-  return { R.save(st), R.page_last(st), R.steps(st), R.page_bar(st) }
+  local out = { R.save(st), R.page_last(st), R.steps(st), R.page_bar(st) }
+  for _, which in ipairs({ "vol", "pitch" }) do
+    for t = 1, R.TRACKS do out[#out + 1] = { "note", which, { R.pad(st, t), st[which][t] } } end
+  end
+  return out
 end
 
 -- A press's velocity: 0 is a release, which only a repeat pad acts on.
@@ -551,10 +596,11 @@ local function pressed(a)
 end
 
 -- What arrives on the first inlet: u_map's drum-page presses and releases, <selector> <n>
--- <velocity>; its knobs, last, track-last and swing with the knob's 0-1; and the drum screen's
--- sync, snap, select, num and den (-1 or 1), and drunk, skip and move (0 to 100), through u_net;
--- and the arrangement screen's set-swing (50 to 75) and set-last (1 to 32), through u_net too.
--- A press, a knob or a setting with no number in it does nothing.
+-- <velocity>; its knobs, last, track-last and swing with the knob's 0-1; the drum screen's sync,
+-- snap and select, and its pads' vol, pitch, randomness and set-track-last <track> <value>,
+-- through u_net; and the arrangement screen's num and den (-1 or 1), drunk (0 to 100), set-swing
+-- (50 to 75) and set-last (1 to 32), through u_net too. A press, a knob or a setting with no
+-- number in it does nothing.
 R.presses = {
   step = function(st, a) return pressed(a) and R.press_step(st, a[1]) or {} end,
   vel = function(st, a) return pressed(a) and R.press_vel(st, a[1]) or {} end,
@@ -569,8 +615,10 @@ R.presses = {
   num = function(st, a) return a[1] and R.time(st, "num", a[1]) or {} end,
   den = function(st, a) return a[1] and R.time(st, "den", a[1]) or {} end,
   drunk = function(st, a) return a[1] and R.drunk(st, a[1]) or {} end,
-  skip = function(st, a) return a[1] and R.chance(st, "skip", a[1]) or {} end,
-  move = function(st, a) return a[1] and R.chance(st, "move", a[1]) or {} end,
+  vol = function(st, a) return R.set_vol(st, a[1], a[2]) end,
+  pitch = function(st, a) return R.set_pitch(st, a[1], a[2]) end,
+  randomness = function(st, a) return R.set_randomness(st, a[1], a[2]) end,
+  ["set-track-last"] = function(st, a) return R.set_track_last(st, a[1], a[2]) end,
   ["set-swing"] = function(st, a) return R.set_swing(st, a[1]) end,
   ["set-last"] = function(st, a) return R.set_last(st, a[1]) end,
 }

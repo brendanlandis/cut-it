@@ -24,13 +24,17 @@ end
 local function teal(c) return c[2] > 0.7 and c[1] < 0.3 end
 local function red(c) return c[1] > 0.9 and c[2] < 0.2 end
 local function black(c) return c and c[1] < 0.1 and c[2] < 0.1 end
--- The state c_steps sends: 42 numbers, from what differs.
+-- The state c_steps sends: 88 numbers, from what differs.
 local function drumstate(t)
   local st = { t.playing or 0, t.last or 16, t.track or 1, t.pending or 0 }
   for n = 1, 16 do st[#st + 1] = (t.lasts or {})[n] or t.last or 16 end
   for n = 1, 16 do st[#st + 1] = (t.owns or {})[n] or 0 end
-  for _, v in ipairs({ t.num or 4, t.den or 4, t.drunk or 0, t.skip or 0, t.move or 0,
-                       t.swing or 50 }) do st[#st + 1] = v end
+  for _, v in ipairs({ t.num or 4, t.den or 4, t.drunk or 0, t.swing or 50 }) do
+    st[#st + 1] = v
+  end
+  for _, which in ipairs({ "vol", "pitch", "randomness" }) do
+    for n = 1, 16 do st[#st + 1] = (t[which] or {})[n] or 0 end
+  end
   return st
 end
 
@@ -172,36 +176,91 @@ equal("dragging 8 down one step, of 1 2 4 8 16, sends den -1", L.drag(w, "denbox
 local short = drumstate({})
 table.remove(short)
 L.osc(w, "/cutit/drums", table.unpack(short))
-equal("fewer than 42 numbers draws nothing", L.text(w, "play"), "playing")
+equal("fewer than 88 numbers draws nothing", L.text(w, "play"), "playing")
 
 print("\n--- the drum screen ---")
 mode("mode-2")
 w.sent = {}
 local st = drumstate({ playing = 1, last = 12, track = 2, pending = 1, lasts = { [3] = 5 },
-                       owns = { [3] = 1 }, skip = 20 })
+                       owns = { [3] = 1 }, vol = { [1] = -6, [4] = 3 },
+                       pitch = { [1] = 7, [5] = -12 }, randomness = { [6] = 40 } })
 L.osc(w, "/cutit/drums", table.unpack(st))
 L.update(w)
 equal("a sync pending says so", L.text(w, "pending"), "sync waits for step 1")
-equal("each pad shows its last step; pad 3, with its own, a dot before it",
+equal("⛔ the radio starts on volume: each pad shows its track's in dB, signed",
+      { C.show.values.x, L.text(w, "pad1l"), L.text(w, "pad2l"), L.text(w, "pad4l") },
+      { 0, "-6", "0", "+3" })
+equal("pad 2, selected, has its fill lit and the rest not",
+      { C.pad2f.values.x, C.pad1f.values.x, C.pad3f.values.x }, { 1, 0, 0 })
+check("... its number black on the lit fill, the rest white",
+      black(C.pad2l.textColor) and not black(C.pad1l.textColor), T.show(C.pad2l.textColor))
+check("on volume every pad is red, pad 3 with its own last step too",
+      red(C.pad3f.color) and red(C.pad3.color), T.show({ C.pad3f.color, C.pad3.color }))
+equal("⛔ lighting the selected pad and handing every pad its number sends nothing", #w.sent, 0)
+equal("⛔ the radio sends nothing to Cut It", L.drag(w, "show", 1), {})
+equal("on pitch every pad shows its track's in semitones, signed",
+      { L.text(w, "pad1l"), L.text(w, "pad5l"), L.text(w, "pad2l") }, { "+7", "-12", "0" })
+check("... the radio's pitch black on its lit segment, volume white again",
+      black(C.show2l.textColor) and not black(C.show1l.textColor), "")
+L.drag(w, "show", 2)
+equal("on last each pad shows its last step; pad 3, with its own, a dot before it",
       { L.text(w, "pad1l"), L.text(w, "pad3l") }, { "12", "\u{2022} 5" })
-check("pad 3 is teal, pad 1 red", teal(C.pad3.color) and red(C.pad1.color),
-      T.show({ C.pad3.color, C.pad1.color }))
-equal("pad 2, selected, is lit and the rest not",
-      { C.pad2.values.x, C.pad1.values.x, C.pad3.values.x }, { 1, 0, 0 })
-equal("the selected track's skip and move take theirs", { C.skip.values.x, C.move.values.x },
-      { 0.2, 0 })
-equal("lighting the selected pad sends nothing", #w.sent, 0)
--- four pads pressed at once: four states, a track each, as fast as they come
+check("... and is teal, pad 1 red", teal(C.pad3f.color) and teal(C.pad3.color) and red(C.pad1f.color),
+      T.show({ C.pad3f.color, C.pad1f.color }))
+L.drag(w, "show", 3)
+equal("on random each pad shows its randomness in percent", { L.text(w, "pad6l"), L.text(w, "pad1l") },
+      { "40%", "0%" })
+check("... and pad 3 is red again", red(C.pad3f.color), T.show(C.pad3f.color))
+equal("still nothing sent", #w.sent, 0)
+-- four pads pressed at once on the Launchpad: four states, a track each, as fast as they come
 for _, t in ipairs({ 11, 12, 15, 16 }) do
   st[3] = t
   L.osc(w, "/cutit/drums", table.unpack(st))
 end
 equal("states selecting one track after another light each in turn and send nothing back",
-      { C.pad16.values.x, C.pad11.values.x, #w.sent }, { 1, 0, 0 })
-equal("a pad tap selects its track", L.press(w, "pad5"), { { "/cutit", "drums", "select", 5 } })
+      { C.pad16f.values.x, C.pad11f.values.x, #w.sent }, { 1, 0, 0 })
+equal("⛔ a pad tapped, a finger down and up, selects its track", L.tap(w, "pad5"),
+      { { "/cutit", "drums", "select", 5 } })
+equal("⛔ ... and the selected pad tapped sends nothing", L.tap(w, "pad16"), {})
+-- A pad's drag: from its middle, where the state puts it, a step every 20 points, 1/100 of it.
+L.drag(w, "show", 0)
+equal("⛔ on volume, pad 4 dragged up 40 points sends its volume as it stands, +5 dB, and selects "
+      .. "nothing", L.drag(w, "pad4", 0.5 + 2 / 100), { { "/cutit", "drums", "vol", 4, 5 } })
+equal("... half a step further is still +5: nothing", L.drag(w, "pad4", 0.5 + 2.4 / 100), {})
+equal("... and down past where it started, -1", L.drag(w, "pad4", 0.5 - 4 / 100),
+      { { "/cutit", "drums", "vol", 4, -1 } })
+L.update(w, 500)
+L.osc(w, "/cutit/drums", table.unpack(st))
+equal("the old state half a second later leaves the pad where the finger put it",
+      C.pad4.values.x, 0.5 - 4 / 100)
+L.update(w, 1100)
+w.sent = {}
+st[40 + 4] = 6
+L.osc(w, "/cutit/drums", table.unpack(st))
+equal("⛔ once a second has passed, the state, +6, puts the pad back in its middle and sends nothing",
+      { C.pad4.values.x, L.text(w, "pad4l"), #w.sent }, { 0.5, "+6", 0 })
+equal("at +6, the top, a drag further up sends nothing, and selects nothing",
+      L.drag(w, "pad4", 0.6), {})
+L.drag(w, "show", 1)
+equal("on pitch, pad 1 dragged down a step sends its pitch, +6", L.drag(w, "pad1", 0.5 - 1 / 100),
+      { { "/cutit", "drums", "pitch", 1, 6 } })
+equal("... and no further than -12 at the bottom", L.drag(w, "pad1", 0),
+      { { "/cutit", "drums", "pitch", 1, -12 } })
+L.drag(w, "show", 2)
+equal("on last, pad 7 dragged up three steps sends set-track-last 7 15",
+      L.drag(w, "pad7", 0.5 + 3 / 100), { { "/cutit", "drums", "set-track-last", 7, 15 } })
+L.drag(w, "show", 3)
+equal("⛔ on random, a step is five: pad 6 dragged up a step, 40 to 45",
+      L.drag(w, "pad6", 0.5 + 1 / 100), { { "/cutit", "drums", "randomness", 6, 45 } })
+L.update(w, 1100)
+st[72 + 6] = 33
+L.osc(w, "/cutit/drums", table.unpack(st))
+equal("from 33, set before the fives, a step up is 35 and a step down 30",
+      { L.drag(w, "pad6", 0.5 + 1 / 100), L.drag(w, "pad6", 0.5 - 1 / 100) },
+      { { { "/cutit", "drums", "randomness", 6, 35 } }, { { "/cutit", "drums", "randomness", 6, 30 } } })
+equal("... and no further than 100", L.drag(w, "pad6", 1), { { "/cutit", "drums", "randomness", 6, 100 } })
 equal("sync and snap", { L.press(w, "sync")[1], L.press(w, "snap")[1] },
       { { "/cutit", "drums", "sync" }, { "/cutit", "drums", "snap" } })
-equal("skip's knob sends skip", L.drag(w, "skip", 0.4), { { "/cutit", "drums", "skip", 40 } })
 w.sent = {}
 L.osc(w, "/cutit/ack", "drums", "sync")
 L.update(w)
@@ -209,10 +268,12 @@ check("sync's answer flashes it teal", teal(C.sync.color), T.show(C.sync.color))
 equal("... by its color, so it sends nothing", #w.sent, 0)
 L.update(w, 400)
 check("... for a moment, then red again", red(C.sync.color), T.show(C.sync.color))
-check("no tempo, drunkenness, time signature or alert on the drum screen (Brendan, 2026-11-04)",
-      (function()
+check("no tempo, drunkenness, time signature, alert, skip or move on the drum screen (Brendan, "
+      .. "2026-11-04 and 2026-11-05)", (function()
         for _, c in ipairs(C.drums.children) do
-          if ({ tempo = 1, drunk = 1, numbox = 1, alert = 1 })[c.name] then return false end
+          if ({ tempo = 1, drunk = 1, numbox = 1, alert = 1, skip = 1, move = 1 })[c.name] then
+            return false
+          end
         end
         return true
       end)(), "")

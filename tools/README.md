@@ -321,12 +321,32 @@ names it as a `Files:` entry, so it is live by definition.
 ./tools/touchosc/push.sh
 ```
 
-It rebuilds `touchosc/CutIt.tosc` and opens it in the Mac's TouchOSC, whose editor server pushes it
-to the phone live (TouchOSC's Reference page, *Editor network sync*). TouchOSC's server is off after
-every launch unless it is started with `--editor.network.state=SERVER`, so when it runs without it,
-`push.sh` quits and relaunches it with it, in the background. Then it checks the phone is still
-connected, and says so when it isn't (exit 3): a phone that dropped off keeps the old layout and
-shows nothing wrong.
+It rebuilds `touchosc/CutIt.tosc` and puts it into the Mac's TouchOSC, whose editor server pushes
+it to the phone live (TouchOSC's Reference page, *Editor network sync*). TouchOSC keeps one copy
+open (Brendan, 2026-11-05): `push.sh` edits the CutIt document it has open, through TouchOSC's MCP
+server, until it is the build (`touchosc/live.py`), rather than opening the file, which added a
+document every time. A small change takes about a second, all told.
+
+- **What a push sends**: only what differs, controls matched by name. A changed property or value
+  reaches the phone as a few hundred bytes; each control made, moved or deleted resends it the
+  whole document, so a new screen costs more (the 127 controls of the sections page: 437 edits in
+  1.1 s on the Mac, 18 MB to the phone, which stayed connected). Then `live.py` reads the document
+  back and says what still differs, if anything: `python3 tools/touchosc/live.py --diff` does that
+  alone, changing nothing.
+- **When it opens the file instead**: TouchOSC not running, its MCP server off, or no CutIt
+  document open. Both of TouchOSC's servers are off after every launch unless it is started with
+  `--editor.network.state=SERVER --mcp.enabled=true`, so `push.sh` launches it with both, in the
+  background, and when it runs without the editor server, quits and relaunches it with them. With
+  the editor server on and the MCP server off it opens the file and says so: Preferences > MCP
+  Server turns that on without a relaunch, which would drop the phone.
+- **More than one CutIt open**: `live.py` pushes to the active one and says so. Nothing it can
+  call closes a document: close the others in TouchOSC, or quit it and push.
+- **After a push that changed it, TouchOSC counts CutIt as modified**: it compares the document
+  with the file as it opened it, not as `build.py` has since written it. If quitting asks to save
+  it, Don't Save: the file is `build.py`'s, and one saved from the editor stops the next build.
+
+Then it checks the phone is still connected, and says so when it isn't (exit 3): a phone that
+dropped off keeps the old layout and shows nothing wrong.
 
 ### Working on the layout
 
@@ -349,7 +369,9 @@ python3 tools/touchosc/watch.py
   the menu**; Cmd-S did nothing on 2026-11-04: the watcher lists the change (`python3 tools/touchosc/diff.py`
   does the same by hand), it goes into `build.py`, and the next build writes the file again.
   `build.py` refuses to write over a `CutIt.tosc` saved from the editor until then (`--force`
-  discards the change), so a tweak is never lost, and stops the watcher pushing.
+  discards the change), so a tweak is never lost, and stops the watcher pushing. A change made in
+  the editor and not saved is kept the same way: a push that would undo it refuses (exit 4), says
+  what it is, and the watcher tells it; save it, or `push.sh --force` discards it.
 - **Look at a page without the phone**: `python3 tools/touchosc/preview.py` draws every page, and
   each of a page's tabs under its own tab bar, as the phone shows it, with the editor's 20-point grid over it and the notch's margin marked, into
   `tools/touchosc/preview/` (open its `index.html`). It approximates TouchOSC's drawing; the

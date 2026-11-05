@@ -7,11 +7,13 @@ Three things, each said in a line here and, for the ones he should see at the ri
 notification:
 
 - A save of anything the layout is built from (build.py, the line check, the drum page's
-  layout) rebuilds it and sends it to the phone through push.sh.
+  layout) rebuilds it and sends it to the phone through push.sh, which edits the document the
+  Mac's TouchOSC has open (live.py) rather than opening another.
 - The phone dropping off TouchOSC's editor connection, and coming back, are told as they happen,
   checked every few seconds: a dropped phone keeps the old layout and says nothing.
 - A CutIt.tosc saved from TouchOSC's editor is told with its changes (diff.py), and the watcher
-  stops pushing until they are in build.py: build.py refuses to write over them.
+  stops pushing until they are in build.py: build.py refuses to write over them. Changes made in
+  the editor and not saved stop it too, told the same way: live.py refuses to undo them.
 """
 import importlib.util
 import os
@@ -78,6 +80,10 @@ def push():
         say("pushed: the phone has it")
     elif r.returncode == 3:
         say("built, but the phone is not connected: reconnect it to the Mac's TouchOSC", True)
+    elif r.returncode == 4:
+        say("not pushed: TouchOSC's CutIt has changes made in its editor and not saved; File > "
+            "Save keeps them, push.sh --force discards them", True)
+        print("\n".join(l for l in out.splitlines() if l.startswith("  ")), flush=True)
     elif "saved from TouchOSC's editor" in out:
         editor_saved()
     else:

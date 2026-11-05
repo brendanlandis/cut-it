@@ -6,7 +6,8 @@
 Each page is drawn at the phone's size in points (an iPhone 11 in landscape): its own tab bar at
 the top, the outer bar hidden as the root's script hides it, then its controls where build.py puts
 them, a button's resting fill at 26% of its color as TouchOSC draws it. The editor's 20-point
-grid is laid over the page in faint lines, and the notch's margin in a red one, so what is off the
+grid, anchored at the document's center as TouchOSC anchors it, is laid over the page in faint
+lines, and the notch's margin in a red one, so what is off the
 grid or too close to the edge shows at a glance.
 
 It draws from build.py's output, not from CutIt.tosc, and approximates TouchOSC's drawing (fonts,
@@ -118,10 +119,12 @@ def svg(name, tab, items, grid=True):
              'font-size="22" fill="#000" text-anchor="middle" dominant-baseline="central">%s'
              '</text>' % (W / 2, TAB / 2, html.escape(tab)))
     if grid:
-        for gx in range(0, W + 1, GRID):
+        # the editor's grid is anchored at the document's center: B.OX and B.OY in a page's
+        # coordinates, which start under the tab bar here
+        for gx in range(B.OX, W + 1, GRID):
             s.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="rgba(255,255,255,0.07)"/>'
                      % (gx, TAB, gx, H))
-        for gy in range(0, H - TAB + 1, GRID):
+        for gy in range(B.OY, H - TAB + 1, GRID):
             s.append('<line x1="0" y1="%d" x2="%d" y2="%d" stroke="rgba(255,255,255,0.07)"/>'
                      % (TAB + gy, W, TAB + gy))
         s.append('<line x1="%d" y1="0" x2="%d" y2="%d" stroke="rgba(255,60,60,0.5)" '

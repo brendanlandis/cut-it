@@ -354,7 +354,8 @@ python3 tools/touchosc/watch.py
   phone shows it, with the editor's 20-point grid over it and the notch's margin marked, into
   `tools/touchosc/preview/` (open its `index.html`). It approximates TouchOSC's drawing; the
   phone is the oracle for looks, this is for layout.
-- **The design rules** (Brendan, 2026-11-04): every control on the editor's 20-point grid, inside
+- **The design rules** (Brendan, 2026-11-04): every control on the editor's 20-point grid
+  (anchored at the document's center, so its lines on a page run at 8 and 7 plus steps), inside
   the page's margins; captions flush left over their controls; values and button words centered;
   status on the bottom row. `ref/device/phone.md`, *The grid*, has the panels and columns.
 

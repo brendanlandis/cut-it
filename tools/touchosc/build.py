@@ -54,16 +54,23 @@ W, H, TAB = 896, 414, 40    # an iPhone 11 in landscape, in points, and the tab 
 R = 44                      # kept clear on the right: the notch
 
 # The grid. TouchOSC's editor grid is 20 points and snaps (editor.grid.step in its app.cfg), so
-# every control sits on it: its x, y, width and height are whole steps, and a control moved in
-# the editor lands where a build would put it (Brendan, 2026-11-04: "The TouchOSC designs should
-# make use of the existing grid"). A page's coordinates are its own, from under its tab bar.
+# every control sits on it, its edges on grid lines, and a control moved in the editor lands where
+# a build would put it (Brendan, 2026-11-04: "The TouchOSC designs should make use of the existing
+# grid"). ⛔ The grid is anchored at the DOCUMENT'S CENTER, not its corner: a control dragged in
+# the editor snapped to x 8, y 187 on its page, and the dots ran 8 and 7 points in from the page's
+# corner (2026-11-04). So in a page's own coordinates, under the editor's two tab bars, the lines
+# run at OX and OY plus whole steps.
 G = 20
-X0, X1 = G, 840             # content's left and right edges: a step in, and clear of the notch
-Y0, Y1 = G, 320             # its top, a step under the tab bar, and its bottom
-PANEL = 300                 # the left panel's width, X0 to 320
-COL = (340, 600)            # the right panel's two columns' left edges, a step after the panel
-CW = 240                    # a column's width, so the two meet at the gutter and end at X1
-STATUS = 300                # the bottom row: a lamp and its words, the same place on every page
+OX = (W // 2) % G           # 8: 448, the center, less whole steps
+OY = (H // 2 - 2 * TAB) % G  # 7: 207 less the two tab bars, less whole steps
+X0, X1 = OX + G, OX + 42 * G   # content's left and right edges, 28 and 848: a step in, and
+                               # clear of the notch
+Y0, Y1 = OY + G, OY + 16 * G   # its top, a step under the first line below the tab bar, and its
+                               # bottom, 27 and 327
+PANEL = 300                 # the left panel's width
+CW = 240                    # a right column's width, so the two meet at the gutter and end at X1
+COL = (X0 + PANEL + G, X0 + PANEL + G + CW + G)   # the right panel's two columns, 348 and 608
+STATUS = Y1 - G             # the bottom row: a lamp and its words, the same place on every page
 
 
 def rgb(r, g, b, a=1.0):
@@ -504,8 +511,8 @@ def arrangement():
     k.append(setbox("tempobox", (X0, Y0 + G, PANEL, 6 * G), lo, hi, ["tempo"], 2))
     k.append(label("tempo", (X0, Y0 + G, PANEL, 6 * G), "-", 72, RED))
     # the tap's bottom edge is the knobs', across the gutter
-    k.append(button("tap", (X0, 9 * G, PANEL, 3 * G), RED, tap_script()))
-    k.append(label("tapl", (X0, 9 * G, PANEL, 3 * G), "tap", 22))
+    k.append(button("tap", (X0, Y0 + 8 * G, PANEL, 3 * G), RED, tap_script()))
+    k.append(label("tapl", (X0, Y0 + 8 * G, PANEL, 3 * G), "tap", 22))
     k += status("playled", "play", X0, "stopped", PANEL - G)
     # the right panel: the time signature as [n] / [d], each box dragged a step at a time
     # (Brendan, 2026-11-04), about 21 points a step for the top number's 32 and the last step's,
@@ -520,8 +527,8 @@ def arrangement():
     k.append(caption("lastc", b, Y0, CW, "last step"))
     k.append(setbox("lastbox", (b, Y0 + G, 4 * G, 3 * G), 1, STEPS, ["drums", "set-last"], 9))
     k.append(label("last", (b, Y0 + G, 4 * G, 3 * G), "16", 32))
-    k += knob("swing", a, 6 * G, "swing", SWING[0], SWING[1], "set-swing")
-    k += knob("drunk", b, 6 * G, "drunk")
+    k += knob("swing", a, Y0 + 5 * G, "swing", SWING[0], SWING[1], "set-swing")
+    k += knob("drunk", b, Y0 + 5 * G, "drunk")
     k += status("linkled", "link", b, "no link")
     return k
 
@@ -551,9 +558,9 @@ def drums():
         f = (x, Y0, CW, 3 * G)
         k.append(button(name, f, RED, sends(["drums", name])))
         k.append(label(name + "l", f, text, 16))
-    k.append(label("pending", (a, 5 * G, X1 - a, G), "", 14, TEAL, align=1))
-    k += knob("skip", a, 7 * G, "skip")
-    k += knob("move", b, 7 * G, "move")
+    k.append(label("pending", (a, Y0 + 4 * G, X1 - a, G), "", 14, TEAL, align=1))
+    k += knob("skip", a, Y0 + 6 * G, "skip")
+    k += knob("move", b, Y0 + 6 * G, "move")
     k += status("dlinkled", "dlink", b, "no link")
     return k
 
@@ -568,7 +575,7 @@ def synths():
         f = (X0 + i * (half + G), Y0, half, 10 * G)
         k.append(button("s" + choice, f, RED, synth_script(choice)))
         k.append(label("s" + choice + "l", f, text, 48))
-    f = (X0, 13 * G, CW, 3 * G)
+    f = (X0, Y0 + 12 * G, CW, 3 * G)
     k.append(button("svel", f, RED, velocity_script()))
     k.append(label("svell", f, "velocity", 22))
     k += status("slinkled", "slink", COL[1], "no link")
@@ -580,27 +587,28 @@ def checks():
     """The line check a step at a time: on the left where it is, the step's title and its text;
     on the right test mode's lamp, the synth choice, Pass and Fail, Back and Next."""
     k = []
-    rx, half = 31 * G, 5 * G          # the right column, and a button's width in it
+    rx, half = X0 + 30 * G, 5 * G     # the right column, and a button's width in it
     # the top row: where the page is, and test mode's lamp and words
     k.append(label("cpos", (X0, Y0, rx - G - X0, G), "-", 16, GREY, align=1))
     k.append(led("tled", (rx, Y0, G, G), TEAL))
     k.append(label("tmode", (rx + G, Y0, X1 - rx - G, G), "no link", 16, GREY, align=1))
     # the step: its title, then its text, a page of it at a time
-    k.append(label("ctitle", (X0, 3 * G, rx - G - X0, 2 * G), "-", 22, WHITE, align=1))
-    k.append(node("TEXT", "cbody", (X0, 5 * G, rx - G - X0, 11 * G), text="", background=False,
+    k.append(label("ctitle", (X0, Y0 + 2 * G, rx - G - X0, 2 * G), "-", 22, WHITE, align=1))
+    k.append(node("TEXT", "cbody", (X0, Y0 + 4 * G, rx - G - X0, 11 * G), text="",
+                  background=False,
                   textColor=rgb(210, 210, 210), textSize=16, textAlignH=1, textAlignV=1))
     # the synth choice, as on the synths screen, so the line check plays either synth without
     # leaving test mode (Brendan, 2026-11-04)
     for i, (choice, text) in enumerate(SYNTHS):
-        f = (rx + i * (half + G), 3 * G, half, 2 * G)
+        f = (rx + i * (half + G), Y0 + 2 * G, half, 2 * G)
         k.append(button("c" + choice, f, RED, synth_script(choice)))
         k.append(label("c" + choice + "l", f, text, 16))
     for i, (name, text, col) in enumerate((("cpass", "Pass", TEAL), ("cfail", "Fail", RED))):
-        f = (rx + i * (half + G), 6 * G, half, 5 * G)
+        f = (rx + i * (half + G), Y0 + 5 * G, half, 5 * G)
         k.append(button(name, f, col, tells("press", name)))
         k.append(label(name + "l", f, text, 22))
     for i, (name, text) in enumerate((("cback", "Back"), ("cfwd", "Next"))):
-        f = (rx + i * (half + G), 12 * G, half, 4 * G)
+        f = (rx + i * (half + G), Y0 + 11 * G, half, 4 * G)
         k.append(button(name, f, GREY, tells("press", name)))
         k.append(label(name + "l", f, text, 22))
     return k

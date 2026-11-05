@@ -427,11 +427,14 @@ def main():
             % (phone.get(1, ("?",))[0], pad.get(1, ("?",))[0]))
 
     # The grid (Brendan, 2026-11-04: "make use of the existing grid"): TouchOSC's editor snaps to
-    # 20 points, so a control off it moves the moment it is touched in the editor.
+    # 20 points, anchored at the document's center, so a control off it moves the moment it is
+    # touched in the editor. Its edges are on lines: x at OX and y at OY plus whole steps, and a
+    # whole number of steps wide and tall.
     placed = on_pages(doc)
     off = ["%s/%s %s" % (pg, n, " ".join("%g" % v for v in f)) for pg, n, t, f, p in placed
-           if any(v % B.G for v in f)]
-    A.check("⛔ every control on a page sits on TouchOSC's %d-point editor grid" % B.G,
+           if (f[0] - B.OX) % B.G or (f[1] - B.OY) % B.G or f[2] % B.G or f[3] % B.G]
+    A.check("⛔ every control on a page sits on TouchOSC's %d-point editor grid, anchored at the "
+            "document's center" % B.G,
             len(placed) > 50 and not off, "%d placed; off the grid: %s" % (len(placed), off[:6]))
     out = ["%s/%s" % (pg, n) for pg, n, t, f, p in placed
            if f[0] < B.X0 or f[0] + f[2] > B.X1 or f[1] < B.Y0 or f[1] + f[3] > B.Y1]

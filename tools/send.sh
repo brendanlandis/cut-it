@@ -4,6 +4,11 @@
 #   ./tools/send.sh 'disp chop-size 43 %; disp grain 12'   the instrument on the Organelle
 #   HOST=mac ./tools/send.sh '...'                         main-dev.pd open on this Mac
 #   HOST=root@192.168.1.15 ./tools/send.sh '...'           target by IP if mDNS is flaky
+#   EVERY=3 ./tools/send.sh '...'                          again every 3 s, until Ctrl-C
+#
+# EVERY is for a step whose picture clears itself (a parameter row after 1.2 s, a warning
+# after 2 s): sent again and again, a person looking at the screen can't miss it. It ran
+# the display checklist on the rig that way (2026-11-04).
 #
 # u_inject listens on 127.0.0.1 only, so on the Organelle the line goes over SSH
 # to the device's own pdsend. Each message is sent as a datagram of its own: Pd's
@@ -27,10 +32,18 @@ lines=$(printf '%s\n' "$1" | tr ';' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]
 
 # u_inject listens 2000 above u_net's inbound port: 11001 on the device, 11002 from
 # main-dev.pd. PORT= overrides it.
-if [ "$HOST" = mac ]; then
-    printf '%s\n' "$lines" | "$PDSEND" "${PORT:-11002}" 127.0.0.1 udp 2>&1 >/dev/null \
-        | sed '/^connected to /d' >&2
-else
-    printf '%s\n' "$lines" | ssh "$HOST" "/sdcard/pd-0.57-0/bin/pdsend ${PORT:-11001} 127.0.0.1 udp 2>&1 >/dev/null \
-        | sed '/^connected to /d' >&2"
-fi
+send() {
+    if [ "$HOST" = mac ]; then
+        printf '%s\n' "$lines" | "$PDSEND" "${PORT:-11002}" 127.0.0.1 udp 2>&1 >/dev/null \
+            | sed '/^connected to /d' >&2
+    else
+        printf '%s\n' "$lines" | ssh "$HOST" "/sdcard/pd-0.57-0/bin/pdsend ${PORT:-11001} 127.0.0.1 udp 2>&1 >/dev/null \
+            | sed '/^connected to /d' >&2"
+    fi
+}
+
+send
+while [ -n "${EVERY:-}" ]; do
+    sleep "$EVERY"
+    send
+done

@@ -91,7 +91,9 @@ word is the bus, and a `;` separates messages. `disp chop-size 43 %` sends `chop
 ```
 
 In a walkthrough, Claude sends each step's line and you say what you see. `HOST=` targets the
-Organelle by IP, as for `tools/deploy.sh`.
+Organelle by IP, as for `tools/deploy.sh`. **A step whose picture clears itself** (a parameter row
+after 1.2 s, a warning after 2 s) is easy to miss with one send, so send it again and again while
+you look: `EVERY=3 ./tools/send.sh '…'` resends every 3 seconds until stopped.
 
 **`u_inject` takes it**, in the instrument. It listens on `127.0.0.1` only, at `u_net`'s inbound
 port plus 2000 (11001 on the device), so a line has to start on the device itself: `send.sh`

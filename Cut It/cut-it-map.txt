@@ -25,6 +25,7 @@ mode-5 xport-5 stop 0
 mode-6 xport-5 stop 0
 mode-7 xport-5 stop 0
 mode-8 xport-5 stop 0
+mode-1 pad-21 arrangement 21
 mode-3 slider-1 volca-cc 41
 mode-3 pad-21 synth 21
 mode-3 pad-22 synth 22

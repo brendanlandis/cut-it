@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The map
 
-**Files:** `Cut It/u_map.pd`, `Cut It/u_map.lua`, `Cut It/u_map-lua.pd_lua`, `Cut It/c_mapped.pd`, `Cut It/cut-it-map.txt` · **Gate:** `test/gate/map-assert.sh`, `test/gate/recover-assert.sh` · **Checklist:** `test/checklists/midi.md`, `test/checklists/recover.md`
+**Files:** `Cut It/u_map.pd`, `Cut It/u_map.lua`, `Cut It/u_map-lua.pd_lua`, `Cut It/c_mapped.pd`, `Cut It/cut-it-map.txt`, `Cut It/cut-it-arrangement-page.txt` · **Gate:** `test/gate/map-assert.sh`, `test/gate/recover-assert.sh` · **Checklist:** `test/checklists/midi.md`, `test/checklists/recover.md`
 
 ## What it is
 
@@ -27,8 +27,9 @@ guard**, and the whole of what makes a table acceptable here. See *Design*.
 `u_map` has no inlets. It has **one outlet per output device**, wired in `u_root`, because no bus
 carries a sounding note — the Volca's, the one since the SP-404 left the rig (Brendan, 2026-11-04) —
 then one to `c_steps`, for what a press on page 2's drum page means ([sequencer.md](sequencer.md)),
-one to `u_net`, which flips test mode, and one to `c_synth`, for a press of page 3's synth pads
-([synths.md](synths.md)).
+one to `u_net`, which flips test mode, one to `c_synth`, for a press of page 3's synth pads
+([synths.md](synths.md)), and one to `u_tempo`, for a press of page 1's tap pad
+([tempo.md](tempo.md)).
 
 ## Facts
 
@@ -45,7 +46,7 @@ mode-3 slider-1  volca-cc 41
 |-------|----|----------|------|
 | `<mode>` | The `mode` bus message, one atom: the page, `mode-1` to `mode-8` | verified | — |
 | `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `pad-43` | verified | — |
-| `<dest>` | One of the **fifteen** below, and **only** those | verified | 229 |
+| `<dest>` | One of the **sixteen** below, and **only** those | verified | 229 |
 | `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
 
 **A row with any other width is a lint failure**, not a runtime one — `map-assert.py` reads the
@@ -72,6 +73,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `test-mode` | unused | Non-zero flips `u_net`'s test mode, which puts the phone's line check up ([phone.md](../device/phone.md)). **`og-shift-61` and `lp-setup`, the Launchpad's Setup, on every page**; `lp-setup` has no release, and needs none; out `u_map`'s third outlet, a cord to `u_net`. Choosing a mode turns test mode off, in `u_net` | unknown | — |
 | `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1–32**, **`og-knob-2`**; `track-last` the selected track's own, **`og-knob-3`**; `swing` the sequencer's, 25% to 75%, **`og-knob-4`**, all on page 2. A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
 | `synth` | The **grid index**, looked up in `cut-it-synth-page.txt` | Non-zero sends `synth <choice>`, the cell's synth, to `c_synth` out `u_map`'s fourth outlet; a release does nothing, so with both pads held the first let go cannot undo the second. Eight rows, `pad-21` to `pad-28`, page 3 alone; an index the layout lacks is `fail u_map layout-miss`, as for `drum-page` (Brendan, 2026-11-04) | unknown | — |
+| `arrangement` | The **grid index**, looked up in `cut-it-arrangement-page.txt` | Non-zero sends the cell's role to `u_tempo` out `u_map`'s fifth outlet — `tap`, the one there is — and a release nothing. One row, `mode-1 pad-21 arrangement 21`, page 1 alone; an index the layout lacks is `fail u_map layout-miss` (Brendan, 2026-11-04) | unknown | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -106,6 +108,7 @@ there and nowhere else.
 | `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
 | `drum-page` | **nothing** — the grid is the feedback, and 56 pads in use would bury the screen | none | unknown | — |
 | `synth` | **nothing** — the pads and the phone show the choice | none | unknown | — |
+| `arrangement` | **nothing** — the pad flashes and the phone shows the tempo | none | unknown | — |
 | the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the footer, the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
 
 ⚠️ **The held row's second number rides in the UNIT field.** `g_oled` runs a row's value through
@@ -145,9 +148,9 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 | Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
 **An unmapped control is the normal state of most controls and must stay silent.** Eight pages × 92
-controls is 736 possible rows and the shipped file has **144** — knob 1 on all eight; knobs 2
-to 4 and the drum page's 60 pads on page 2; slider 1 and the eight synth pads on page 3; and CC 90, PLAY, STOP, the
-four shifted keys and Setup on all eight. **The Organelle's own keys have no row**: they will
+controls is 736 possible rows and the shipped file has **145** — knob 1 on all eight; the tap
+pad on page 1; knobs 2 to 4 and the drum page's 60 pads on page 2; slider 1 and the eight synth
+pads on page 3; and CC 90, PLAY, STOP, the four shifted keys and Setup on all eight. **The Organelle's own keys have no row**: they will
 choose songs, and until then they play nothing (Brendan, 2026-11-04). ⛔ **Those nine rows are on
 every page**, so no page strands you without a stop or a recover but the Launchpad's own, and
 `map-assert.py` reads that off the file.
@@ -450,7 +453,7 @@ its own; there is no compose and perform split, and every page draws every warni
 
 | Page | Is | Rows today, beside the nine every page has |
 |------|----|------------|
-| 1 | The arrangement | None. The boot page, `R.BOOT_MODE` |
+| 1 | The arrangement | The tap pad, cell 21, for `u_tempo` ([tempo.md](tempo.md)). The boot page, `R.BOOT_MODE` |
 | 2 | The drums | The drum page's 60 pads and knobs 2 to 4, for `c_steps` |
 | 3 | The synths | Fader 1, the Volca's CC 41, and the synth pads, cells 21 to 28, for `c_synth` ([synths.md](synths.md)) |
 | 4–7 | Nothing yet | None |
@@ -533,6 +536,16 @@ gets `synth fm` and never a cell. **The map says which pads choose on which page
 which synth each one is**, so the two halves of page 3's row cannot disagree, and `map-assert.py`
 reads both: every `synth` row's index is a cell of the layout, every cell has its row on page 3, and
 every cell names a synth `c_synth` takes.
+
+### The tap pad is one destination and a layout table, as the synth pads are
+
+Page 1's tap pad is a row, `mode-1 pad-21 arrangement 21`, the arg the grid index, and the handler
+looks it up in `cut-it-arrangement-page.txt`, the table `g_grid` paints page 1's pads from, so
+`u_tempo` gets `tap` and never a cell. The destination is named for the page, not the tap, so the
+arrangement's next pad is a row of the layout and a role `u_tempo`'s `[route tap]` takes, or a
+cord of its own for a role another file takes; `map-assert.py` reads the rows, the layout and that
+route: every row's index is a cell of the layout, every cell has its row on page 1 and no other,
+and every role is one `u_tempo` routes.
 
 ### Pressure draws no raw row, like the keys
 

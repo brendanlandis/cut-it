@@ -3,7 +3,8 @@
 
 It counts System Real-Time bytes (>= 248), which no SysEx byte can be, so the
 Launchpad's grid frames can share the capture. Not lib_grid.parse, which skips
-the bytes >= 248 this gate wants.
+the bytes >= 248 this gate wants. Then tap tempo, from page 1's tap pad, read off
+the tempo bus.
 """
 import os
 import re
@@ -76,7 +77,7 @@ def main():
 
     cap = A.require_capture(sys.stdin.read())
     print("\n=== B. the clock, measured on the wire ===")
-    order, by = A.windows(cap, "CLK", 13)
+    order, by = A.windows(cap, "CLK", 20)
     W = lambda k: by.get(k, [])
     # Report only the ERR traffic: a window also holds every grid repaint byte.
     errs = lambda k: [e for e in W(k) if e[0] == "ERR"]
@@ -163,6 +164,32 @@ def main():
     A.check("⛔ the clock KEEPS RUNNING after a stop",
             want * (1 - TOLERANCE) <= n <= want * (1 + TOLERANCE),
             "counted %d in the 1.5 s after the stop, wanted about %.0f" % (n, want))
+
+    print("\n--- tap tempo, from page 1's tap pad ---")
+    bpms = lambda k: [float(e[1][0]) for e in W(k) if e[0] == "TEMPO" and e[1]]
+    A.check("the first tap starts the count, and sets nothing", bpms("TAP-1") == [],
+            bpms("TAP-1"))
+    A.check("⛔ the second, 400 ms on, sets the tempo bus to 150", bpms("TAP-2") == [150.0],
+            "the tempo bus carried %s -- nothing means the pad never reached u_tempo's "
+            "timer through u_map's arrangement row" % bpms("TAP-2"))
+    A.check("... and the third, 400 ms on again, 150", bpms("TAP-3") == [150.0], bpms("TAP-3"))
+    A.check("⛔ a tap 2.5 s after the last starts over, and sets nothing",
+            bpms("TAP-GAP") == [], bpms("TAP-GAP"))
+    A.check("... the next, 600 ms on, counts from it alone: 100", bpms("TAP-AFTER") == [100.0],
+            bpms("TAP-AFTER"))
+    n = len(rt(W("TAP-AFTER"), byte=CLOCK, port=PORTS[0]))
+    A.check("... and the clock follows it", 0 < n, "no pulses in that window")
+
+    A.check("⛔ on page 2 cell 21 is a drum pad: two taps there set nothing",
+            bpms("PAGE-2-TAPS") == [], bpms("PAGE-2-TAPS"))
+    # The presence layer's routine reports share err in every window; these are the
+    # tap's and the phone's path.
+    other = [e for k in ("TAP-1", "TAP-2", "TAP-3", "TAP-GAP", "TAP-AFTER",
+                         "PAGE-2-TAPS") for e in errs(k)
+             if e[1][1:2] and e[1][1] in ("u_tempo", "u_map", "u_net", "g_grid")
+             and "bpm-out-of-range" not in " ".join(e[1])]
+    A.check("nothing from u_map, u_tempo, u_net or g_grid reaches err while tapping",
+            not other, other)
 
     return A.report()
 

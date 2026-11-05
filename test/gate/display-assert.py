@@ -20,7 +20,7 @@ MODAL = 45
 # The number of windows display-assert-drive-gen.py's SEQ opens. Frames are
 # grouped by mark with setdefault, so without this check a driver that died early
 # would answer the negative assertions below with an empty list.
-MARKS = 18
+MARKS = 19
 
 
 def main():
@@ -98,9 +98,26 @@ def main():
         A.check("⛔ home-mode-2: the beat row gives way -- no beat cell lit in %d frames"
                 % len(fs), not beats, "beat cells lit: %s" % beats)
 
-    # Page 1 held the drum page until 2026-11-04: home there is the beat row.
-    for mark, expect_lamp in (("home-mode-1", G.LAMPS[0]), ("home-mode-4", G.LAMPS[3]),
-                              ("home-again", G.LAMPS[3])):
+    # Page 1 held the drum page until 2026-11-04: home there is the beat row, and
+    # the tap pad beside it, from the layout g_grid and u_map both read.
+    alay = G.arrange_layout()
+    A.check("page 1's layout is the tap pad alone, cell 21", alay == {21: "tap"}, alay)
+    fs = window("home-mode-1")
+    if A.check("home-mode-1: the grid repainted", bool(fs), "no frame in the window"):
+        problem, lamp, _beat = G.arrange_page(fs[-1], alay)
+        A.check("⛔ home-mode-1: the tap pad dim, and nothing lit outside it, the lamp row and "
+                "the beat row", problem is None, problem or "")
+        A.check("home-mode-1: the lit mode lamp is index %d" % G.LAMPS[0],
+                lamp == G.LAMPS[0], "lit lamp was %s" % lamp)
+    fs = window("tap-flash")
+    if A.check("tap-flash: the grid repainted", bool(fs), "no frame in the window"):
+        flashed = [f for f in fs if G.arrange_page(f, alay, flashing=True)[0] is None]
+        A.check("⛔ tap-flash: a tap lights the pad full, and nothing else", bool(flashed),
+                "%d frames, cell 21 %s" % (len(fs), [f.color(21) for f in fs]))
+        problem, _lamp, _beat = G.arrange_page(fs[-1], alay)
+        A.check("⛔ tap-flash: and it goes back to dim by the window's end", problem is None,
+                problem or "")
+    for mark, expect_lamp in (("home-mode-4", G.LAMPS[3]), ("home-again", G.LAMPS[3])):
         fs = window(mark)
         if not A.check("%s: the grid repainted" % mark, bool(fs), "no frame in the window"):
             continue

@@ -8,12 +8,12 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
 
 - [ ] **1. Resting grid**
   - **Send:** `tempo 120; stop bang; mode mode-1`
-  - **Pass if:** The left column shows one bright green lamp at the top and seven dim ones below it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct — a frozen pad is the failure. Everything else on the surface is dark.
-  - **Note:** Page 1, not 2: page 2 is the drum page, where the beat row gives way.
+  - **Pass if:** The left column shows one bright green lamp at the top and seven dim ones below it. The bottom row of pads has a single white pad. Dim means faint and not off. The white pad is already walking and that is correct — a frozen pad is the failure. Above the bottom row's first pad sits the tap pad, dim yellow. Everything else on the surface is dark.
+  - **Note:** Page 1, not 2: page 2 is the drum page, where the beat row gives way. The tap pad is page 1's own; that it taps the tempo is the phone checklist's.
 
 - [ ] **2. Mode lamp 4**
   - **Send:** `mode mode-4`
-  - **Pass if:** The bright lamp moves to the fourth position down and the other seven go dim. Nothing else on the grid changes.
+  - **Pass if:** The bright lamp moves to the fourth position down and the other seven go dim, and the tap pad goes dark. Nothing else on the grid changes.
 
 - [ ] **3. Mode lamp 3**
   - **Send:** `mode mode-3`

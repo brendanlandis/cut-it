@@ -30,6 +30,8 @@ UMAP = "Cut It/u_map.pd"
 DISP_EXPECT = {"m_launchpad": 0, "m_nano": 0, "m_organelle": 1, "m_volca": 0,
                "m_streich": 0, "m_nanokey": 0}
 SYNTH_PAGE = "Cut It/cut-it-synth-page.txt"
+ARRANGE_PAGE = "Cut It/cut-it-arrangement-page.txt"
+UTEMPO = "Cut It/u_tempo.pd"
 ULUA = "Cut It/u_map.lua"
 # The rows every page has (map.md): <control> <dest> <arg>.
 EVERY_PAGE = [("og-knob-1", "tempo", "0"), ("xport-2", "start", "0"), ("xport-5", "stop", "0"),
@@ -98,6 +100,26 @@ def synth_layout():
         if f:
             lay[f[0]] = f[1:]
     return lay
+
+
+def arrange_layout():
+    """{grid index: [role]} from page 1's layout, which u_map's arrangement handler and g_grid
+    both read."""
+    lay = {}
+    for line in open(ARRANGE_PAGE, encoding="utf-8"):
+        f = line.split()
+        if f:
+            lay[f[0]] = f[1:]
+    return lay
+
+
+def tempo_roles():
+    """The roles u_tempo takes from the arrangement page: its literal [route tap ...] box."""
+    for line in lib_pd.read(UTEMPO):
+        m = re.match(r"^#X obj \d+ \d+ route (tap(?: [^;]*)?);$", line)
+        if m:
+            return m.group(1).split()
+    return None
 
 
 def static_lint():
@@ -170,6 +192,24 @@ def static_lint():
             sorted(a for _, a in synth) == sorted(lay)
             and all(f[0] == "mode-3" for _, f in rows if len(f) == 4 and f[2] == "synth"),
             "rows %s" % synth)
+
+    # arrangement passes its arg to page 1's layout, which names the cell's role, and the role
+    # goes to u_tempo: a row the layout lacks is layout-miss at the press, and a role u_tempo's
+    # route lacks reaches its Lua as bad-selector.
+    alay, roles = arrange_layout(), tempo_roles()
+    arr = [(n, f[3]) for n, f in rows if len(f) == 4 and f[2] == "arrangement"]
+    A.check("⛔ every arrangement row's arg is a cell of %s" % os.path.basename(ARRANGE_PAGE),
+            arr and all(a in alay for _, a in arr),
+            "rows %s, the layout holds %s" % (arr, sorted(alay)))
+    A.check("⛔ ... and every cell there names a role u_tempo's route takes",
+            roles and alay and all(len(v) == 1 and v[0] in roles for v in alay.values()),
+            "the layout %s, u_tempo routes %s" % (alay, roles))
+    A.check("... and every cell has its row on page 1, the arrangement, and no other",
+            sorted(a for _, a in arr) == sorted(alay)
+            and all(f[0] == "mode-1" for _, f in rows if len(f) == 4 and f[2] == "arrangement"),
+            "rows %s" % arr)
+    A.check("the tap pad is cell 21, the second row's first pad, under the beat row's first",
+            alay.get("21") == ["tap"], "the layout: %s" % alay)
 
     seen, dupes = {}, []
     for n, f in rows:

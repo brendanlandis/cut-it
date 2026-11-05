@@ -41,7 +41,7 @@ learn late:
 - **Vanilla objects, plus `[shell]` and two libraries we build: pdlua and ELSE** (from 2026-11-03).
   The Organelle ships only a dozen factory externals, of which Cut It uses `[shell]` (Reference,
   Organelle page, *Externals*). pdlua 0.12.24 (Lua 5.4.7) runs the sequencer's rules, the map's
-  lookup, the synth choice and the decoding in two device layers (the nano, the Organelle's keys), and
+  lookup, the synth choice, tap tempo and the decoding in two device layers (the nano, the Organelle's keys), and
   ELSE 1.0-0 rc14 may replace hand-built parts; both are built for 0.57 and live in
   `/sdcard/PdExtraLibs` on the device and `~/Library/Pd` on the Mac
   ([device/README.md](device/README.md), *Lua and ELSE*). The **`pd`** skill has how to use them.
@@ -98,8 +98,8 @@ stops the instrument**, because loading any patch restarts Pd. See
 | `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` `c_kit` `c_voice` `c_synth` |
 | `e_` | An effect stage — **v0.4, none yet** | — |
 | `.sh` | Run through `[shell]` — the first five once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `codec-gain.sh` `recover.sh` |
-| `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` `cut-it-synth-page.txt` |
-| `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `c_synth.lua` `c_synth-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua`, and `lua-face.lua`, what every one of those classes shares |
+| `.txt` | Read by Pd, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` `cut-it-synth-page.txt` `cut-it-arrangement-page.txt` |
+| `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `c_synth.lua` `c_synth-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `u_tempo.lua` `u_tempo-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua`, and `lua-face.lua`, what every one of those classes shares |
 
 **The prefix table above is `Cut It/`'s.** `Cut It Debug/` is flat and has no prefixes — one
 `main.pd` and three scripts — because it is one screen deep and nothing in it is reused.
@@ -153,6 +153,7 @@ lua test/gate/lua/u_map_test.lua     # the map's, the same way
 lua test/gate/lua/m_nano_test.lua    # the nano's decode, the same way
 lua test/gate/lua/m_organelle_test.lua   # and the Organelle keyboard's
 lua test/gate/lua/c_synth_test.lua       # and the synth choice's
+lua test/gate/lua/u_tempo_test.lua       # and tap tempo's
 ./tools/deploy.sh              # syntax check -> scp BOTH patches -> reload -> load Cut It
 ./tools/deploy.sh --debug      # the same push, but loads Cut It Debug instead
 ./tools/tidy.sh                # what has accumulated on the device. --delete to remove it

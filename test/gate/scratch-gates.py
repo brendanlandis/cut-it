@@ -154,9 +154,18 @@ def launchpad(g):
 
 
 def tempo(g):
-    S.require("Cut It/u_tempo.pd", "Cut It/main-dev.pd")
-    return _stdin_gate(g, 60, blank=True, say="   running (about 18 s -- DSP is "
-                       "on, the clock is a phasor~) ...")
+    S.require("Cut It/u_tempo.pd", "Cut It/u_tempo.lua", "Cut It/u_tempo-lua.pd_lua",
+              "Cut It/cut-it-arrangement-page.txt", "Cut It/main-dev.pd",
+              "test/gate/lua/u_tempo_test.lua")
+    # Tap tempo's rules first, in Lua and without Pd: the intervals, the gap, the clamp. Then
+    # the Pd half: the clock, the clamp and the transport, the tap pad and the phone's tempo
+    # through the running instrument.
+    print("   tap tempo's rules, in Lua ...")
+    rc_lua = S.lua("test/gate/lua/u_tempo_test.lua", *g.args)
+    print("\n   the patch, in Pd ...")
+    rc = _stdin_gate(g, 60, blank=True, say="   running (about 24 s -- DSP is "
+                     "on, the clock is a phasor~) ...")
+    return rc or rc_lua
 
 
 def init(g):

@@ -153,7 +153,7 @@ and `recover`. See [organelle.md](../device/organelle.md).
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
-| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10, and the beat row on grid indices 11–18; on page 2 the **drum page** instead of the beat row, and on page 3 the **synth pads** above it | unknown | — |
+| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10, and the beat row on grid indices 11–18; on page 2 the **drum page** instead of the beat row, on page 3 the **synth pads** above it, and on page 1 the **tap pad** | unknown | — |
 | `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | The whole surface, one color | verified | — |
 | `alert` | 2 | `disp` → `alert …`, **`fail` only** | 2 s | The whole surface, red | verified | — |
 
@@ -238,6 +238,27 @@ bad-selector`.
 ⚠️ **They are RGB specs, 148 to 151 on the surface**: entries 20 to 23 of the RGB table, each
 synth's full then its quarter. `pd regions` works a cell's out as 146 + 2*n* + (*n* is not the
 choice), *n* 1 for `fm` and 2 for `strings`, so a third synth is two more entries and nothing else.
+
+### `g_grid`'s tap pad, page 1
+
+**`Cut It/cut-it-arrangement-page.txt` says which cell does what on page 1**, `<index> <role>`,
+read with `-c` at load by `g_grid` to paint and by `u_map` to know what a press means, as the synth
+pads' layout is. Today it is one row, `21 tap`: the second row's first pad, above the beat row's
+first, which stays on row 1 as on every page but the drums (Brendan, 2026-11-04). A press taps the
+tempo ([tempo.md](tempo.md), *Tap tempo*).
+
+**The caller is `u_tempo`, on `g_grid`'s fifth inlet**: `tap`, on each tap, which lights the pad
+full for 120 ms, a `[del]` a tap inside it restarts, and sets the dirty flag as it goes on and off.
+Anything else on that inlet is `fail g_grid bad-selector`.
+
+| A cell | Paints | Evidence |
+|---|---|---|
+| A tap cell | Yellow at a quarter, RGB 32, 24, 0: lit dimly, as Brendan asked | unknown |
+| The same, for 120 ms after a tap | Yellow, full, RGB 127, 96, 0 | unknown |
+
+⚠️ **They are RGB specs, 152 and 153 on the surface**: entries 24 and 25 of the RGB table. `pd
+regions` paints each row of the layout whose role is `tap` from `[f 152]`, which `$0-tap`, the
+flash, raises to 153.
 
 ### Seeing it off-device
 

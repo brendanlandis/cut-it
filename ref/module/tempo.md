@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Tempo and clocks
 
-**Files:** `Cut It/u_tempo.pd`, `Cut It/c_clock.pd` · **Gate:** `test/gate/tempo-assert.sh`, `test/gate/clock-assert.sh` · **Checklist:** `test/checklists/tempo.md`
+**Files:** `Cut It/u_tempo.pd`, `Cut It/u_tempo.lua`, `Cut It/u_tempo-lua.pd_lua`, `Cut It/cut-it-arrangement-page.txt`, `Cut It/c_clock.pd` · **Gate:** `test/gate/tempo-assert.sh`, `test/gate/clock-assert.sh`, `test/gate/display-assert.sh` · **Checklist:** `test/checklists/tempo.md`, `test/checklists/phone.md`
 
 ## What it is
 
@@ -15,10 +15,14 @@ beat-number outlet indexes the grid's bottom row directly. **Nothing downstream 
 global `clock` is its clock**; that instance is the grid's, and the next consumer gets its own:
 `c_steps` holds `c_clock 1 4` and cuts its sixteenths from the phase ([sequencer.md](sequencer.md)).
 
-`u_tempo` has no creation arguments, no inlets and no outlets. It talks on `tempo`, `clock`, `start`,
-`stop`, `panic`, `disp` and `err`, and out of **two** MIDI ports — port 1 carries the clock and the
-transport, and port 4 takes `panic`'s STOP alone. **Port 3 gets nothing**: it was the SP-404's,
-which left the rig on 2026-11-04 (Brendan).
+`u_tempo` has no creation arguments. It talks on `tempo`, `clock`, `start`, `stop`, `panic`,
+`disp` and `err`, and out of **two** MIDI ports — port 1 carries the clock and the transport, and
+port 4 takes `panic`'s STOP alone. **Port 3 gets nothing**: it was the SP-404's, which left the rig
+on 2026-11-04 (Brendan). **Its inlet takes what sets the tempo from a pad or a screen** — `tap`,
+from `u_map`'s tap pad on page 1, and `tempo <bpm>`, the phone's, from `u_net` — and writes the bus
+itself; **its outlets** hand the master BPM, clamped, to `u_net` for the phone, and `tap` to
+`g_grid` to flash the pad (Brendan, 2026-11-04). The tap's rules are Lua, `u_tempo.lua`; the
+timer between taps, the clock and the transport are Pd.
 
 ## Facts
 
@@ -72,7 +76,26 @@ at 60.
 | The port | Set into `[midiout]`'s **cold inlet at load**, `u_init`'s proven pattern. A nonexistent port is silently dropped, so a port the Mac lacks costs nothing and prints nothing | verified | 63 |
 
 The control range and the legal range are **different decisions**, and the legal one is wider at both
-ends so a test, a tap tempo or an LFO is not limited by what one knob chose.
+ends so a test, a tap tempo or an LFO is not limited by what one knob chose. The tap pad and the
+phone use the legal range, and keep to it before anything reaches the bus.
+
+### Tap tempo, and the phone's tempo
+
+| | | Evidence |
+|---|---|---|
+| The tap pad | Page 1's cell 21, the second row's first pad, above the beat row's first (Brendan, 2026-11-04): `mode-1 pad-21 arrangement 21` in the map, and `21 tap` in `cut-it-arrangement-page.txt`, which `g_grid` paints from and `u_map` reads to know what a press means ([map.md](map.md), [display.md](display.md)). A press sends `tap` to `u_tempo`; a release nothing | unknown |
+| A tap | `[timer]` measures the interval since the last, and `u_tempo.lua` takes it. The first tap after load, or one **two seconds** or more after the last, starts the count and sets nothing; every tap after it sets the tempo from the average of the last **four** intervals, whole BPM, clamped to 5–600 (Brendan, 2026-11-04) | unknown |
+| Two taps in one instant | Count nothing, and keep the count | unknown |
+| The flash | Every tap, the first included, lights the pad full for 120 ms; it sits dim otherwise | unknown |
+| The phone's `tempo <bpm>` | Whole BPM within 5–600 on the bus; anything but a number is `fail u_tempo bad-tempo` and sets nothing. It leaves a count of taps alone | unknown |
+| Outlet 1 | Every BPM the bus carries, clamped, from the same `$0-bpm` the footer reads: knob 1's, a tap's, the phone's, a Send line's. `u_net` sends it to the phone as `/cutit/tempo` | unknown |
+| On page 2 | Cell 21 is a drum pad, and taps there set nothing: the map's row is page 1's alone | unknown |
+| Knob 1 | Keeps working, and is not held after a tap or the phone moves the tempo: its next turn sets the tempo from where it sits | unknown |
+
+`tempo-assert` taps 400 ms apart through the running instrument and reads 150 on the bus, and
+waits 2.5 s and reads nothing;
+`test/gate/lua/u_tempo_test.lua` holds the arithmetic, and reads the `[clip 5 600]` out of
+`u_tempo.pd` so the Lua's range cannot drift from it.
 
 ### `c_clock`
 
@@ -215,6 +238,21 @@ the question is not reopened.
 
 ## Design
 
+### Tap tempo is `u_tempo`'s, in Lua
+
+**The tempo's owner takes the taps**, the way it takes the bus: a pad's taps mean a tempo, and only
+`u_tempo` holds the legal range and writes what follows. `u_map` says which pad taps, from a layout
+file `g_grid` paints from, as the synth pads do; `u_tempo` turns the taps into a BPM. **The
+arithmetic is Lua** — the last four intervals, a gap that starts over, the clamp — a dozen lines
+tested without Pd, where Pd would need a list kept by hand; a tap is a few a second, so the 0.1 ms a
+call costs on the Organelle is nothing. The interval stays Pd, a `[timer]` on logical time, so the
+Lua never asks Pd the time. A Lua that never loads says `fail u_tempo no-lua`, and the clock, the
+clamp and the transport, which are Pd, run on.
+
+**The phone's tempo comes in on the same inlet** and goes out on the bus from `u_tempo`, so nothing
+from the phone writes a bus by itself ([phone.md](../device/phone.md)), and the one clamp the bus
+sees from a screen is the Lua's, the same as a tap's.
+
 ### `u_tempo` is a reference, `c_clock` is a clock
 
 The split exists so that poly-tempo is possible at all. `u_tempo` publishes one master BPM and one
@@ -222,7 +260,8 @@ pulse stream; anything needing a beat instantiates its own `c_clock` with its ow
 signature, and a `start` is the only thing aligning instances to each other.
 
 **It stores what it hears and never re-emits**, so there is no loop between `u_tempo` and the bus.
-Anything may write `tempo`; only `u_tempo` owns what happens next.
+Anything may write `tempo`; only `u_tempo` owns what happens next. What it writes itself is the
+fallback 120, a tap's BPM and the phone's, each once, and each heard back as any writer's is.
 
 **Cut It runs multiple simultaneous tempi**, and this is the page that says what that commits every
 other module to. Sequencers and samplers may deviate from master — a different BPM, or ms-based

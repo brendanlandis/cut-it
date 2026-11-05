@@ -289,3 +289,58 @@ def synth_page(frame, lay, chosen):
         return ("lit outside the lamps, the beat row and the synth pads: %s"
                 % stray[:6]), lamp, beat
     return None, lamp, beat
+
+
+# ---------------------------------------------------------------------------
+# The tap pad, page 1. Which cell is which role comes from the layout table
+# g_grid and u_map both read, never typed here; the colors are g_grid's RGB
+# entries 24 and 25: a tap cell yellow at a quarter, and full while it flashes.
+ARRANGE_PAGE = "Cut It/cut-it-arrangement-page.txt"
+ROLE_RGB = {"tap": ((32, 24, 0), (127, 96, 0))}            # dim, flashing
+
+
+def arrange_layout(path=ARRANGE_PAGE):
+    """-> {grid index: role} from the layout table."""
+    lay = {}
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            f = line.split()
+            if f:
+                lay[int(f[0])] = f[1]
+    return lay
+
+
+def arrange_page(frame, lay, flashing=False):
+    """-> (problem_or_None, lit_lamp_index, lit_beat_index) for a page-1 HOME frame.
+
+    Page 1 is home, the mode lamps and the beat row, with the arrangement page's
+    pads beside them: every layout cell its role's color, dim, or full while it
+    flashes, and everything else dark.
+    """
+    lamp, beat, stray = None, None, []
+    for k, color in enumerate(frame.colors()):
+        idx = FIRST_INDEX + k
+        if idx in lay:
+            dim, full = ROLE_RGB[lay[idx]]
+            want = full if flashing else dim
+            if color != want:
+                return ("pad %d, %s, is %s, wanted %s%s"
+                        % (idx, lay[idx], color, want, " flashing" if flashing else "")), lamp, beat
+        elif idx in LAMPS:
+            if color == LAMP_ON:
+                if lamp is not None:
+                    return ("two mode lamps lit: %d and %d" % (lamp, idx)), lamp, beat
+                lamp = idx
+            elif color != DIM:
+                return ("mode lamp %d is color %s" % (idx, color)), lamp, beat
+        elif BEAT_LO <= idx <= BEAT_HI:
+            if color == BEAT_ON:
+                beat = idx
+            elif color != DIM:
+                return ("beat cell %d is color %s" % (idx, color)), lamp, beat
+        elif color != 0:
+            stray.append((idx, color))
+    if stray:
+        return ("lit outside the lamps, the beat row and page 1's pads: %s"
+                % stray[:6]), lamp, beat
+    return None, lamp, beat

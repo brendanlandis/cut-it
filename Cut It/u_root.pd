@@ -20,7 +20,7 @@
 #X obj 1700 860 u_map \$3;
 #X obj 2300 340 g_oled;
 #X obj 2300 600 g_led;
-#X text 900 1300 The columns are ref/architecture.md's diagram: the m_ layers \, then the buses and the map \, then the display owners. A file with cords sits by its cords instead: u_init's to m_launchpad and u_state (u_init owns when \, they own what) \, u_map's and u_net's to the output devices \, m_volca and \, through c_synth \, m_streich (C-2: no bus carries a sounding note) \, u_map's test-mode to u_net \, g_grid's from m_launchpad (surface ownership) and c_clock (the beat) \, c_steps between u_map \, c_kit and g_grid (ref/module/sequencer.md) \, and c_synth between m_nanokey \, u_map and u_net and the two synths \, u_net and g_grid (ref/module/synths.md)., f 90;
+#X text 900 1300 The columns are ref/architecture.md's diagram: the m_ layers \, then the buses and the map \, then the display owners. A file with cords sits by its cords instead: u_init's to m_launchpad and u_state (u_init owns when \, they own what) \, u_map's and u_net's to the output devices \, m_volca and \, through c_synth \, m_streich (C-2: no bus carries a sounding note) \, u_map's test-mode to u_net \, g_grid's from m_launchpad (surface ownership) and c_clock (the beat) \, c_steps between u_map \, c_kit and g_grid (ref/module/sequencer.md) \, c_synth between m_nanokey \, u_map and u_net and the two synths \, u_net and g_grid (ref/module/synths.md) \, and u_tempo between u_map's tap pad and g_grid (ref/module/tempo.md)., f 90;
 #X obj 20 1200 c_clock 1 8;
 #X obj 20 1320 g_grid \$2;
 #X text 300 1200 The grid's own clock \, since nothing may assume the global clock is its own (poly-tempo \, ref/module/tempo.md). Ratio 1 and eight beats \, so its beat number indexes the grid's bottom row., f 58;
@@ -68,3 +68,5 @@
 #X connect 41 1 42 0;
 #X connect 41 2 25 2;
 #X connect 41 3 23 3;
+#X connect 18 4 17 0;
+#X connect 17 1 23 4;

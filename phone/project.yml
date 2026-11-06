@@ -1,0 +1,32 @@
+# The Cut It phone app: `xcodegen` makes CutIt.xcodeproj from this (not committed), and install.sh builds it and
+# puts it on the phone. A proof of concept (Brendan, 2026-11-06): the melody and rhythm grids and a long list,
+# over the same OSC messages TouchOSC's layout uses.
+name: CutIt
+options:
+  bundleIdPrefix: net.slownames
+  deploymentTarget:
+    iOS: "18.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: 6B24ZAPCS2
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+targets:
+  CutIt:
+    type: application
+    platform: iOS
+    sources: [CutIt]
+    settings:
+      base:
+        PRODUCT_NAME: Cut It
+        PRODUCT_BUNDLE_IDENTIFIER: net.slownames.cutit
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_KEY_CFBundleDisplayName: Cut It
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIRequiresFullScreen: YES
+        INFOPLIST_KEY_UIStatusBarHidden: YES
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: Cut It talks to the Organelle over the local network.

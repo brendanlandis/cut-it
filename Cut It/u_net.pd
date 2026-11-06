@@ -496,3 +496,14 @@
 #X connect 250 0 251 0;
 #X connect 251 0 252 0;
 #X connect 253 0 250 0;
+#X obj 7950 4700 route connect;
+#X obj 7950 4750 unpack s f;
+#X msg 7950 4800 connect \$1 8001;
+#X obj 7950 4850 netsend -u -b;
+#X text 7950 4900 The Cut It app listens on 8001 \, so TouchOSC can keep 8000 and both run while the app is a prototype (2026-11-06). The same messages go to each.;
+#X connect 35 0 254 0;
+#X connect 254 0 255 0;
+#X connect 255 0 256 0;
+#X connect 256 0 257 0;
+#X connect 254 1 257 0;
+#X connect 33 0 257 0;

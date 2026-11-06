@@ -128,3 +128,9 @@
 #X connect 58 0 59 0;
 #X connect 49 0 59 0;
 #X connect 2 8 38 0;
+#X obj 620 900 outlet~;
+#X connect 41 0 60 0;
+#X connect 44 0 60 0;
+#X connect 53 0 60 0;
+#X connect 56 0 60 0;
+#X connect 59 0 60 0;

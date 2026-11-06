@@ -1,5 +1,5 @@
 #N canvas 20 20 1200 1500 12;
-#X text 20 20 c_mono -- a basic Pd voice \, one note at a time: sine \, saw or square \, through a filter that opens with the envelope. Inlet: note <n> <v> \, 0 a release \, which only the note sounding answers \; wave <0 sine \, 1 saw \, 2 square> chooses \, wave -1 off. It comes out of the Fx channel \, the right output \, mixer channel 2 (Brendan \, 2026-11-05). To save CPU only the chosen wave runs \, and the whole voice only while a note sounds and rings out: switch~ ends it 220 ms after a release., f 70;
+#X text 20 20 c_mono -- a basic Pd voice \, one note at a time: sine \, saw or square \, through a filter that opens with the envelope. Inlet: note <n> <v> \, 0 a release \, which only the note sounding answers \; wave <0 sine \, 1 saw \, 2 square> chooses \, wave -1 off. Its outlet~ goes up to u_root \, into the Fx channel \, the right output \, mixer channel 2 (Brendan \, 2026-11-05). To save CPU only the chosen wave runs \, and the whole voice only while a note sounds and rings out: switch~ ends it 220 ms after a release., f 70;
 #X obj 20 160 inlet;
 #X obj 20 200 route note wave;
 #X obj 20 250 unpack f f;
@@ -77,7 +77,7 @@
 #X obj 400 1280 vcf~ 1.5;
 #X obj 400 1330 *~;
 #X obj 400 1370 *~ 0.7;
-#X obj 400 1410 throw~ outR;
+#X obj 400 1410 outlet~;
 #X connect 1 0 2 0;
 #X connect 2 0 3 0;
 #X connect 2 1 32 0;

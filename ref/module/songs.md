@@ -11,7 +11,7 @@ sections; a section is a name, a length in bars (0 loops) and **its parts**: wha
 instrument put while that section played, under the part's own key. The Launchpad's top row plays
 the loaded song's sections, its bottom rows' rightmost buttons save and revert, and the phone's
 page 7 makes, orders, names and sets them; **the Organelle's keys load songs** from the setlist
-chosen, each by how its entry starts, and the phone's page 8 makes, loads, names and arranges songs
+chosen, and the next arrow goes on to the next, and the phone's page 8 makes, loads, names and arranges songs
 into setlists (`cut-it/songs-and-sections`).
 
 **The one decision this page turns on: the store knows nothing about what a part's key means**,
@@ -61,13 +61,13 @@ Each part puts at load and on every change, and takes its restore.
 | | Is | Evidence |
 |---|---|---|
 | Creation arg 1 | The state directory, `u_state`'s: the songs' list and the setlists are `cut-it-songs.txt` there, and each song is two files (*The files*, below) | unknown |
-| Inlet 1 | From `u_map`'s sixth outlet: `top <1-8>`, a top-row button's press, `save` and `revert`, `key <1-25>`, an Organelle key's press, and `go` ([map.md](map.md)) | unknown |
+| Inlet 1 | From `u_map`'s sixth outlet: `top <1-8>`, a top-row button's press, `save` and `revert`, `key <1-25>`, an Organelle key's press ([map.md](map.md)) | unknown |
 | Inlet 2 | From `u_net`'s fourth outlet: the phone's sections page, `select <n>`, `page <-1 or 1>`, `new`, `saveas`, `up`, `down`, `length <bars>`, `delete`, `name <name>`; and its songs page, `songs <command> …` ([phone.md](../device/phone.md)) | unknown |
 | Inlet 3 | `bar`, from `c_steps`' fourth outlet, on the global loop's last step | unknown |
 | Inlet 4 | A bang meaning load now, from `u_init` after `u_state`'s restore, through a trigger in `u_root`: startup order is `u_init`'s | unknown |
-| Outlet 1 | To `g_grid`'s sixth inlet: `top <8 lamps>`, `unsaved <0 or 1>` and `go <0, 1 or 2>`, each when it changes ([display.md](display.md)) | unknown |
+| Outlet 1 | To `g_grid`'s sixth inlet: `top <8 lamps>` and `unsaved <0 or 1>`, each when it changes ([display.md](display.md)) | unknown |
 | Outlet 2 | To `u_net`'s fifth inlet, each when it changes: the sections page's state, 22 atoms as a list, and the songs page's, `songs <47 atoms>` | unknown |
-| Buses | Hears `state` (`put section`), `start`, `stop` and `panic`; says `restore` on `state`, a bang on `stop` for a song that starts from silence, and on `err` `info u_song saved`, `reverted` and `loaded-<name>`, `warn u_song last-section`, `last-song` and `set-full`, `fail u_song bad-button`, `bad-put`, `bad-selector`, `bad-starts`, `lua-<selector>`, `write-failed` and `no-lua` (C-12) | unknown |
+| Buses | Hears `state` (`put section`), `start`, `stop` and `panic`; says `restore` on `state`, and on `err` `info u_song saved`, `reverted` and `loaded-<name>`, `warn u_song last-section`, `last-song` and `set-full`, `fail u_song bad-button`, `bad-put`, `bad-selector`, `bad-starts`, `lua-<selector>`, `write-failed` and `no-lua` (C-12) | unknown |
 
 ### The top row
 
@@ -130,7 +130,7 @@ song 1                     the songs, in the songs tab's order
 song 3
 song 2
 set friday at the bell     a setlist, its name to the end of the line, then its entries in order:
-entry 2 silence            entry <song id> <silence, next-bar or go>
+entry 2                    entry <song id>
 entry 3 next-bar
 ```
 
@@ -167,16 +167,14 @@ rename is seen as one. A number is written whole, or with `%g` as Pd's own `[tex
 
 | | | Evidence |
 |---|---|---|
-| A setlist | A name and up to 25 entries, each a song and how it starts after the one before; the same song may be in it twice. One is chosen at a time, the one the setlists tab shows (Brendan, 2026-11-05) | unknown |
+| A setlist | A name and up to 25 entries, each a song; the same song may be in it twice. One is chosen at a time, the one the setlists tab shows (Brendan, 2026-11-05) | unknown |
 | The keys | Key N, from the lowest, `og-key-60`, is the Nth entry of the setlist chosen: moving an entry moves its song to another key. A key past the setlist's end does nothing; a press counts, a release nothing (Brendan, 2026-11-05) | unknown |
-| Stopped | A key loads its song at once, whatever its entry's transition: nothing is playing to start after. The song loaded, at its section 1 already, is nothing to do | unknown |
-| Playing, **silence** | `u_song` sends STOP, and the STOP coming back loads the song: the transport stopped, the new song at its section 1, ready for PLAY | unknown |
-| Playing, **next bar** | The song waits for the pattern to come round, as a queued section does, and loads on its step 1 | unknown |
-| Playing, **go** | The song waits, the last song playing on through its bars, until **go**, CC 89, is pressed; then it waits for the next bar | unknown |
+| Stopped | A key loads its song at once: nothing is playing to start after. The song loaded, at its section 1 already, is nothing to do | unknown |
+| Playing | The song waits for the pattern to come round, as a queued section does, and loads on its step 1 | unknown |
+| The next arrow | CC 92 on a song's last section is blue and asks for the setlist's next song, as its key would, whichever entry the song was loaded from; dark on the setlist's last, or for a song not in it. A song queued makes it blink on the beat, whatever asked, and CC 91 takes that song back (Brendan, 2026-11-06). A song to start from silence: STOP, the arrow, which loads at once, then PLAY ([display.md](display.md)) | unknown |
 | One queued at a time | A key asked while a song waits takes its place. At the bar a song queued goes before a section queued, which is dropped | unknown |
-| STOP or panic with a song waiting | No bar is coming, so it loads at once, whatever it waited for | unknown |
-| The song loaded, asked for again | Starts again from its section 1, by the same transition | unknown |
-| The go lamp | Dark with no song waiting; amber, blinking on the beat, while one waits for go; green, blinking, once one is queued for the bar ([display.md](display.md)) | unknown |
+| STOP or panic with a song waiting | No bar is coming, so it loads at once | unknown |
+| The song loaded, asked for again | Starts again from its section 1 | unknown |
 | A load | `info u_song loaded-<name>`, logged; nothing on the OLED, which is for alerts and warnings (Brendan, 2026-11-04) | unknown |
 
 ### The songs page, on the phone
@@ -184,14 +182,13 @@ rename is seen as one. A number is written whole, or with `%g` as Pd's own `[tex
 | | | Evidence |
 |---|---|---|
 | The state | `/cutit/songs`: the songs tab's how many songs, the one selected, the page and how many and the selected one's name, then six rows of number, name and words; then the setlists tab's setlist chosen and how many, its name, its page and how many, how many entries, the one selected, its song and how it starts, then five rows of key, song and starts, `0 - -` for a row with none; 47 atoms, sent when they change and on every heartbeat | unknown |
-| A song's words | `loaded`, `next bar` or `for go` while it waits, and `unsaved` while its draft differs from its save, joined by a middle dot; `-` for none | unknown |
-| The selections | The phone's, held here: the song selected for `load`, `name`, `add` and `delete`, the entry selected for `up`, `down`, `starts` and `remove` | unknown |
-| `load` | The selected song, by how the first entry naming it in the setlist chosen starts; a song in none of its entries starts from silence | unknown |
+| A song's words | `loaded`, `next bar` while it waits, and `unsaved` while its draft differs from its save, joined by a middle dot; `-` for none | unknown |
+| The selections | The phone's, held here: the song selected for `load`, `name`, `add` and `delete`, the entry selected for `up`, `down` and `remove` | unknown |
+| `load` | The selected song, as a key asks for it | unknown |
 | `new` | A song after the selected, "song 2", the first number from 2 no song has, of one section: a copy of the section playing, its name, length and parts. Saved as it is, selected, and not loaded | unknown |
 | `add` | The selected song, the setlist chosen's last entry, from silence, and selected; past 25, `warn u_song set-full` | unknown |
 | `delete` | The selected song goes, from every setlist too, its files with it, and the one now in its place is selected; the last song is `warn u_song last-song`; deleting the song loaded loads the one now in its place, at once. The phone asks twice (*Delete asks twice*, below) | unknown |
 | `entry`, `up`, `down`, `remove` | A row tapped selects an entry; move up and down move it and its key; remove takes it out, the one now in its place selected | unknown |
-| `starts` | How the selected entry starts: `silence`, `next-bar` or `go`; anything else `fail u_song bad-starts` | unknown |
 | `set` | The arrows: through the setlist chosen's own pages, then on to the next setlist, or back to the last page of the one before, which is then chosen, its first entry on the page selected | unknown |
 | `new-set` | An empty setlist after the one chosen, "set 2" the same way as songs, and chosen | unknown |
 | `name`, `set-name` | The name tab's done: the selected song, or the setlist chosen, renamed. A name is cleaned as a section's is | unknown |
@@ -338,7 +335,7 @@ still part of the draft, as the song's sections are.
 
 One section, as the section playing is now, name and all, named "song 2" as a copied section is
 "verse 2" (judgment call, 2026-11-05): what you are playing is the likeliest start of the next
-song. It is not loaded: **load** does that, by its transition.
+song. It is not loaded: **load** does that.
 
 ### Delete asks twice
 
@@ -348,14 +345,8 @@ the one `delete` it is sent.
 
 ### Stopped, a key loads at once
 
-A transition is how a song starts after the one before it, and stopped there is nothing playing to
-start after, so every key loads at once, as a section button starts its section at once.
-
-### Silence is a STOP
-
-A song that starts from silence sends STOP on the stop bus and loads when it hears it back, the way
-STOP starts a queued section: one path for a song waiting when the transport stops, whoever stopped
-it.
+Nothing is playing to start after, so every key loads at once, as a section button starts its
+section at once.
 
 ## Open
 
@@ -365,8 +356,8 @@ it.
 - ⬜ **Not played on the rig**: the top row's lamps and presses, a queue landing at the loop, a
   length handing over, save and revert and their lamps, the phone's sections page and name tab,
   and a power cut mid-session. `test/checklists/sections.md`, `cut-it/songs-and-sections`.
-- ⬜ **Several songs, the keys, the transitions and go have not been played on the rig**: a song
-  loading on the downbeat, the go lamp's blink, the phone's songs page. `test/checklists/songs.md`,
+- ⬜ **Several songs, the keys and the next arrow have not been played on the rig**: a song
+  loading on the downbeat, the arrow's blink, the phone's songs page. `test/checklists/songs.md`,
   `cut-it/songs-and-sections`.
 - ⬜ **A setlist cannot be deleted**: new set adds one, and nothing takes one away but editing the
   index. `cut-it/songs-and-sections`.

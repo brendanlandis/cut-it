@@ -30,7 +30,7 @@ then one to `c_steps`, for what a press on page 2's drum page means ([sequencer.
 one to `u_net`, which flips test mode, one to `c_synth`, for a press of page 3's synth pads
 ([synths.md](synths.md)), one to `u_tempo`, for a press of page 1's tap pad
 ([tempo.md](tempo.md)), one to `u_song`, for the top row, save and revert, the Organelle's
-keys and go ([songs.md](songs.md)), and one to `c_melody`, for page 3's generator controls
+keys ([songs.md](songs.md)), and one to `c_melody`, for page 3's generator controls
 ([synths.md](synths.md)).
 
 ## Facts
@@ -80,7 +80,6 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `save` | unused | Non-zero sends `save` to `u_song`, the sixth outlet. `lp-cc-108`, the upper bottom row's rightmost, on every page | unknown | — |
 | `revert` | unused | Non-zero sends `revert` to `u_song`, the sixth outlet. `lp-cc-8`, the lowest row's rightmost, on every page | unknown | — |
 | `song` | The Organelle's key, 1 the lowest | Non-zero sends `key <arg>` to `u_song`, the sixth outlet, which loads the setlist's song at that place; a release nothing. `og-key-60` to `og-key-84`, keys 1 to 25, on every page (Brendan, 2026-11-05; [songs.md](songs.md)) | unknown | — |
-| `go` | unused | Non-zero sends `go` to `u_song`, the sixth outlet: a song waiting for go starts at the next bar. `lp-cc-89`, the right column's top, on every page (Brendan, 2026-11-05) | unknown | — |
 | `rush` | unused | The knob's 0–1 and its live flag, held or not, `rush <0-1> <live>` to `u_tempo` out `u_map`'s fifth outlet, which draws its row: an absolute rate, 10 BPM at the bottom, the tempo up to 1000 and then a loop of what is being repeated, climbing and thinning to silence at 22 kHz ([sequencer.md](sequencer.md), *Rush*); `rush -1 1` says knob 1 has gone live, which ends it. **`og-knob-4`, on every page** (Brendan, 2026-11-05) | unknown | — |
 | `melody` | What the control is to `c_melody`, one of `c_melody.lua`'s `R.ORDER`, or a pad's `roll-melody`, `roll-chords`, `roll-rhythm`, `on-h` or `on-m` | The control's 0–1, as it is, or the pad's velocity, `<arg> <value>` to `c_melody` out `u_map`'s seventh outlet, which scales a control, draws its row and puts it, and takes a pad's press and leaves its release. Page 3 alone: faders, knobs and `pad-81` to `pad-85` ([synths.md](synths.md), *The generator*) (Brendan, 2026-11-05) | unknown | — |
 
@@ -120,7 +119,7 @@ there and nowhere else.
 | `drum-page` | **nothing** — the grid is the feedback, and 62 pads in use would bury the screen | none | unknown | — |
 | `synth` | **nothing** — the pads and the phone show the choice | none | unknown | — |
 | `arrangement` | **nothing** — the pad flashes and the phone shows the tempo | none | unknown | — |
-| `section` `save` `revert` `song` `go` | **nothing** — the top row's lamps, save and revert's and the go lamp say it, and the phone's songs page | none | unknown | — |
+| `section` `save` `revert` `song` | **nothing** — the top row's lamps and save and revert's say it, and the phone's songs page | none | unknown | — |
 | the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
 
 ⚠️ **The held row's second number rides in the UNIT field.** `g_oled` runs a row's value through
@@ -163,14 +162,14 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 controls is 736 possible rows and the shipped file has **449** — knobs 1, 2 and 4 on all eight; the
 tap pad on page 1; knob 3 and the drum page's 62 pads on page 2; slider 1 and the eight synth pads
 on page 3; and CC 90, PLAY, STOP, the four shifted keys, Setup, the top row's eight, save and
-revert, the Organelle's 25 keys and go on all eight. **The Organelle's own keys load songs**, key
+revert, the Organelle's 25 keys on all eight. **The Organelle's own keys load songs**, key
 N the Nth song of the setlist chosen, the lowest the opener, and play no note (Brendan,
 2026-11-05). ⛔ **Those forty-seven rows are on every page**: the three knobs so the tempo, the
 drums' last step and rush are at hand whichever page is up (Brendan, 2026-11-04 and 2026-11-05), the top
-row, save and revert, the keys and go so the song is played, kept and changed from any page
+row, save and revert and the keys so the song is played, kept and changed from any page
 (Brendan, 2026-11-02, 2026-11-04 and 2026-11-05), the rest so no page strands you without a stop
 or a recover but the Launchpad's own. `map-assert.py` reads that off the file, that each top-row
-button and each key names its own place, that go is CC 89 alone, and that knob 3, the selected
+button and each key names its own place, and that knob 3, the selected
 track's, is page 2's alone.
 
 ### Where each part lives

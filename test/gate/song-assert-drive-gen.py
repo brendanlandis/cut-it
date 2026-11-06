@@ -10,7 +10,7 @@ buses, and a change is a tempo on the tempo bus, which u_tempo puts as the secti
 second: the same state directory, what the first left on disk, loaded again, and reverted. legacy,
 the third: a state directory from before sections, the drum pattern and the synth choice in the
 auto file, loaded once. songs, the fourth: three songs and a setlist saved, the Organelle's keys
-pressed as m_organelle publishes them, param og-key-<n> <velocity>, and go, CC 89, stopped and
+pressed as m_organelle publishes them, param og-key-<n> <velocity>, stopped and
 playing, by each entry's transition.
 """
 import os
@@ -72,11 +72,11 @@ def key(n):
     return [(0, "\\; param og-key-%d 100" % (59 + n)), (100, "\\; param og-key-%d 0" % (59 + n))]
 
 
-# songs, the fourth run: three songs and a setlist saved, gig, its keys 1 lantern from silence,
-# 2 hollow bell at the next bar and 3 night drive on go; night drive loaded at load (song-assert.py's
-# SONGS). Lantern's and hollow bell's loops are 32 steps, about 2 s at their 240 and 230 BPM, so a
-# song waiting for the bar or for go waits long enough for its lamp to blink. PLAY at 5.1 s: the
-# pattern comes round at about 7.1 s and hollow bell takes over; its pattern at about 9.2, 11.3.
+# songs, the fourth run: three songs and a setlist saved, gig, its keys 1 lantern, 2 hollow bell and 3
+# night drive; night drive loaded at load (song-assert.py's SONGS). Lantern's and hollow bell's loops
+# are 32 steps, about 2 s at their 240 and 230 BPM, so a song queued waits long enough for the next
+# arrow to blink. PLAY at 5.1 s: the pattern comes round at about 7.1 s and hollow bell takes over; its
+# pattern at about 9.2, 11.3.
 SONGS = [
     (4000, "LOADED", ["\\; pd dsp 1"], GAP),
     (4200, "KEY-STOPPED", key(2), GAP),
@@ -85,10 +85,11 @@ SONGS = [
     (5100, "PLAY", ["\\; start bang"], GAP),
     (5300, "KEY-BAR", key(2), GAP),
     (6900, "AT-BAR", [], GAP),
-    (7600, "KEY-GO", key(3), GAP),
-    (9700, "GO", press(89), GAP),
-    (11000, "AT-GO-BAR", [], GAP),
-    (11900, "KEY-SILENCE", key(1), GAP),
+    (7600, "NEXT", press(92), GAP),
+    (8000, "BACK", press(91), GAP),
+    (9700, "NEXT-AGAIN", press(92), GAP),
+    (11000, "AT-NEXT-BAR", [], GAP),
+    (11900, "KEY-STOP", key(1) + [(150, "\\; stop bang")], GAP),
     (12400, "KEY-PAST", key(4), GAP),
     # the draft's timer is every 2 s from the load: the index is on disk by 13.5 s
     (13800, "FLUSHED", [], GAP),

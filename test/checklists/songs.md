@@ -1,9 +1,9 @@
 # Songs checklist
 
 Several songs and the setlists: the phone's page 8, which makes, loads, names and arranges them;
-the Organelle's keys, which load the setlist chosen's songs; and go, the Launchpad's right column's
-top button. `song-assert` proves what a key restores, by each transition, that a song left keeps
-its draft, the go lamp's colors and the files; `phone-assert` and `touchosc-assert` the phone's
+the Organelle's keys, which load the setlist chosen's songs; and the next arrow, the Launchpad's top
+row's second. `song-assert` proves what a key restores, that a song left keeps
+its draft, the arrow's colors and the files; `phone-assert` and `touchosc-assert` the phone's
 side. What is left is a song you can hear take over on the downbeat, a lamp you can see blink,
 the phone's page under a finger, and the SD card across a real power cut.
 
@@ -30,43 +30,43 @@ Why each thing behaves as it does: [songs](../../ref/module/songs.md).
 
 - [ ] **3. The setlist**
   - **Need:** A setlist of two songs or more.
-  - **Do:** Tap the setlists tab. Tap the second row, then **move up**, then each of the **starts** switch's three words in turn.
-  - **Pass if:** The caption names the setlist, the pager reads `set 1 / 1`, and each row shows its key, its song and how it starts: silence, next bar or go. The tapped row lights and the right column names it; **move up** moves it to row 1, renumbering both rows' keys; the switch lights the word tapped and the row's words follow it.
+  - **Do:** Tap the setlists tab. Tap the second row, then **move up**.
+  - **Pass if:** The caption names the setlist, the pager reads `set 1 / 1`, and each row shows its key and its song. Move up swaps the rows and their keys.
 
 - [ ] **4. Stopped, a key loads at once**
   - **Need:** The transport stopped, the setlist's first song not loaded.
   - **Do:** Press the Organelle's lowest key, then PLAY.
-  - **Pass if:** At the key, whatever the first entry's starts, the phone's songs tab moves `loaded` to that song and its tempo shows on page 1; the top row shows its sections, section 1 bright. PLAY plays its pattern. Nothing shows on the OLED.
+  - **Pass if:** At the key the phone's songs tab moves `loaded` to that song and its tempo shows on page 1; the top row shows its sections, section 1 bright. PLAY plays its pattern. Nothing shows on the OLED.
 
 - [ ] **5. A song keeps its own draft**
   - **Need:** Two songs in the setlist, the transport stopped, the first loaded and as saved.
   - **Do:** On page 2 turn on one step of its pattern. Press the second key from the bottom, then the lowest key again.
   - **Pass if:** The step lights save and revert. After the second key the other song plays and the lamps go dark, while the songs tab reads `unsaved` beside the first. After the lowest key the first song is back, the step still on, save and revert lit again. Revert takes the step off.
 
-- [ ] **6. Playing, next bar**
-  - **Need:** Playing, the setlist's first song loaded; the second entry's starts set to next bar.
+- [ ] **6. Playing, a key**
+  - **Need:** Playing, the setlist's first song loaded.
   - **Do:** Press the second key from the bottom mid-pattern, and listen.
-  - **Pass if:** The Launchpad's right column's top button blinks green in time with the beat row while the first song's pattern plays on to its end. The second song takes over on the pattern's step 1, its first step on that downbeat, and the button goes dark.
+  - **Pass if:** The Launchpad's next arrow blinks blue in time with the beat row while the first song's pattern plays on to its end. The second song takes over on the pattern's step 1, its first step on that downbeat, and the button goes dark.
 
-- [ ] **7. Playing, go**
-  - **Need:** Playing, the second song loaded; the first entry's starts set to go.
-  - **Do:** Press the lowest key. Let the pattern come round twice, then press the right column's top button.
-  - **Pass if:** At the key the top button blinks amber, and the second song plays on through its pattern coming round, twice. At go it blinks green, and the first song takes over on the next step 1; the button goes dark.
+- [ ] **7. The next arrow**
+  - **Need:** Playing, a song of the setlist on its last section, another song after it.
+  - **Do:** Press the top row's second button. Press the first. Press the second again, and let the pattern come round.
+  - **Pass if:** On the last section the arrow is blue. The first press makes it blink; the back arrow stops the blinking and nothing changes; the third blinks, and the next song starts as the pattern comes round.
 
-- [ ] **8. Playing, silence**
-  - **Need:** Playing, the first song loaded; the second entry's starts set to silence.
-  - **Do:** Press the second key from the bottom, then PLAY.
-  - **Pass if:** The transport stops at the key and the second song loads, the aux LED going from green to blue, its tempo on page 1. PLAY plays it from its first step.
+- [ ] **8. From silence**
+  - **Need:** Playing, a song on its last section, another after it.
+  - **Do:** Press STOP, then the next arrow, then PLAY.
+  - **Pass if:** The arrow loads the next song at once, the aux LED going from green to blue, its tempo showing. PLAY plays it from its first section.
 
 - [ ] **9. Nothing past the setlist's end**
   - **Need:** A setlist of fewer than 25 songs, playing.
   - **Do:** Press the Organelle's highest key.
-  - **Pass if:** Nothing changes: the same song plays on, the go lamp stays dark, the phone shows nothing new.
+  - **Pass if:** Nothing changes: the same song plays on, the arrow doesn't blink, the phone shows nothing new.
 
-- [ ] **10. STOP with a song waiting for go**
-  - **Need:** Playing, an entry starting on go.
-  - **Do:** Press its key, wait for the amber blink, then press STOP.
-  - **Pass if:** At STOP the song loads at once, ready for PLAY, and the top button goes dark.
+- [ ] **10. STOP with a song queued**
+  - **Need:** Playing.
+  - **Do:** Press a song's key, wait for the arrow's blink, then press STOP.
+  - **Pass if:** At STOP the song loads at once, ready for PLAY, and the blinking stops.
 
 - [ ] **11. Delete asks twice**
   - **Need:** Page 8's songs tab, three songs or more, one not loaded selected.

@@ -33,8 +33,8 @@ TAG = "SONG"
 WINDOWS = ["LOADED", "PRESS-STOPPED", "EDIT", "REVERT", "EDIT-2", "SAVE", "PLAY", "HANDOVER",
            "QUEUE", "AT-LOOP", "STOP", "FORWARD", "BACK", "EMPTY-BUTTON", "FINAL-EDIT", "FLUSHED"]
 RELOAD_WINDOWS = ["LOADED", "REVERT", "FLUSHED"]
-SONGS_WINDOWS = ["LOADED", "KEY-STOPPED", "EDIT", "KEY-BACK", "PLAY", "KEY-BAR", "AT-BAR", "KEY-GO",
-                 "GO", "AT-GO-BAR", "KEY-SILENCE", "KEY-PAST", "FLUSHED"]
+SONGS_WINDOWS = ["LOADED", "KEY-STOPPED", "EDIT", "KEY-BACK", "PLAY", "KEY-BAR", "AT-BAR", "NEXT",
+                 "BACK", "NEXT-AGAIN", "AT-NEXT-BAR", "KEY-STOP", "KEY-PAST", "FLUSHED"]
 FM, STRINGS = 49, 33            # the Volca's and the Streichfett's Pd channels, args 5 and 4
 PARTS = ["drums", "programs", "synth", "tempo", "velocity"]
 # While the transport runs the tempo and the programs wait for step 1, so they come after the rest.
@@ -276,7 +276,7 @@ def main():
     A.check("... and the auto file lets the old keys go: mode alone", auto == ["mode"], auto)
     ix = index(os.path.join(opt.legacy, "cut-it-songs.txt"))
     A.check("⛔ ... and the index: one song, song 1 in its files as they were, the opener of set 1",
-            ix == ["next 2", "current 1", "chosen 1", "song 1", "set set 1", "entry 1 silence"], ix)
+            ix == ["next 2", "current 1", "chosen 1", "song 1", "set set 1", "entry 1"], ix)
     A.check("... as after the first run, which began from one song's files too",
             index(os.path.join(opt.state, "cut-it-songs.txt")) == ix,
             index(os.path.join(opt.state, "cut-it-songs.txt")))
@@ -293,7 +293,7 @@ def index(path):
 
 
 def songs(opt):
-    print("\n--- several songs: the keys and go ---")
+    print("\n--- several songs: the keys and the next arrow ---")
     cap = open(opt.songs, encoding="utf-8", errors="replace").read()
     order, by = A.parse(cap, TAG)
     A.check("the songs run's driver reached every window", order == SONGS_WINDOWS, order)
@@ -313,9 +313,9 @@ def songs(opt):
     A.check("⛔ at load, night drive, the song loaded last: its section 1 restored, its tempo 200",
             section_keys(W("PRE")) == PARTS and tempos(W("PRE"))[-1:] == [200.0],
             "restores %s, tempo %s" % (section_keys(W("PRE")), tempos(W("PRE"))))
-    A.check("... the go lamp dark", last_edges("LOADED").get(G.GO) == 0,
-            last_edges("LOADED").get(G.GO))
-    A.check("⛔ key 2, stopped: hollow bell loads at once, though its entry starts at the next bar",
+    A.check("... night drive is the setlist's last: the next arrow dark", last_edges("LOADED").get(G.NEXT) == 0,
+            last_edges("LOADED").get(G.NEXT))
+    A.check("⛔ key 2, stopped: hollow bell loads at once",
             section_keys(W("KEY-STOPPED")) == PARTS and tempos(W("KEY-STOPPED")) == [220.0],
             "restores %s, tempo %s" % (section_keys(W("KEY-STOPPED")), tempos(W("KEY-STOPPED"))))
     A.check("... and the log says so, the OLED nothing: info alone",
@@ -329,35 +329,29 @@ def songs(opt):
     A.check("⛔ playing, key 2, at the next bar: nothing loads while lantern's pattern plays on",
             not section_keys(W("KEY-BAR")) and not stops("KEY-BAR"),
             section_keys(W("KEY-BAR")))
-    g = [f.color(G.GO) for f in frames_in("KEY-BAR")]
-    A.check("⛔ ... the go lamp blinks green meanwhile, full and dark by turns, on the beat",
-            len(g) >= 3 and set(g) == {G.SECTION_ON, 0}, g)
+    g = [f.color(G.NEXT) for f in frames_in("KEY-BAR")]
+    A.check("⛔ ... the next arrow blinks blue meanwhile, full and dark by turns, on the beat",
+            len(g) >= 3 and set(g) == {G.NEXT_SONG, 0}, g)
     A.check("⛔ it loads when the pattern comes round: hollow bell, its change kept as its draft, "
             "230", section_keys(W("AT-BAR")) == PARTS_RUNNING and tempos(W("AT-BAR")) == [230.0],
             "restores %s, tempo %s" % (section_keys(W("AT-BAR")), tempos(W("AT-BAR"))))
-    A.check("⛔ ... still unsaved: save and revert lit, the go lamp dark",
+    A.check("⛔ ... still unsaved: save and revert lit; its last section, so the next arrow blue, steady",
             lamps(last_edges("AT-BAR")) == (G.SAVE_ON, G.REVERT_ON)
-            and last_edges("AT-BAR").get(G.GO) == 0,
-            "lamps %s, go %s" % (lamps(last_edges("AT-BAR")), last_edges("AT-BAR").get(G.GO)))
-    A.check("⛔ key 3, on go: hollow bell plays on through its pattern coming round, nothing loads",
-            not section_keys(W("KEY-GO")), section_keys(W("KEY-GO")))
-    g = [f.color(G.GO) for f in frames_in("KEY-GO")]
-    A.check("⛔ ... the go lamp blinks amber: press go", len(g) >= 3 and set(g) == {G.GO_WAIT, 0},
-            sorted(set(map(str, g))))
-    A.check("go, CC 89: still nothing until the pattern comes round", not section_keys(W("GO")),
-            section_keys(W("GO")))
-    g = [f.color(G.GO) for f in frames_in("GO")]
-    A.check("... the go lamp blinks green now, queued for the bar",
-            len(g) >= 3 and set(g) == {G.SECTION_ON, 0}, sorted(set(map(str, g))))
+            and last_edges("AT-BAR").get(G.NEXT) == G.NEXT_SONG,
+            "lamps %s, next %s" % (lamps(last_edges("AT-BAR")), last_edges("AT-BAR").get(G.NEXT)))
+    A.check("⛔ the next arrow on the last section: nothing loads at once", not section_keys(W("NEXT")),
+            section_keys(W("NEXT")))
+    A.check("⛔ back takes it back: nothing loads through the pattern coming round, and it is steady",
+            not section_keys(W("BACK")) and last_edges("BACK").get(G.NEXT) == G.NEXT_SONG,
+            "%s, next %s" % (section_keys(W("BACK")), last_edges("BACK").get(G.NEXT)))
+    g = [f.color(G.NEXT) for f in frames_in("NEXT-AGAIN")]
+    A.check("... pressed again it blinks, queued for the bar",
+            len(g) >= 3 and set(g) == {G.NEXT_SONG, 0}, sorted(set(map(str, g))))
     A.check("⛔ night drive loads as it comes round, at 200",
-            section_keys(W("AT-GO-BAR")) == PARTS_RUNNING and tempos(W("AT-GO-BAR")) == [200.0],
-            "restores %s, tempo %s" % (section_keys(W("AT-GO-BAR")), tempos(W("AT-GO-BAR"))))
-    st = [i for i, e in enumerate(W("KEY-SILENCE")) if e[0] == "STOP"]
-    rs = [i for i, e in enumerate(W("KEY-SILENCE")) if e[0] == "STATE" and e[1][:1] == ["restore"]]
-    A.check("⛔ key 1, from silence, playing: the transport stopped, then lantern loaded, ready "
-            "for PLAY", len(st) == 1 and rs and st[0] < rs[0]
-            and tempos(W("KEY-SILENCE")) == [240.0],
-            "STOP at %s, restores at %s, tempo %s" % (st, rs[:2], tempos(W("KEY-SILENCE"))))
+            section_keys(W("AT-NEXT-BAR")) == PARTS_RUNNING and tempos(W("AT-NEXT-BAR")) == [200.0],
+            "restores %s, tempo %s" % (section_keys(W("AT-NEXT-BAR")), tempos(W("AT-NEXT-BAR"))))
+    A.check("⛔ key 1, playing, then STOP: no bar is coming, so lantern loads at once, ready for PLAY",
+            tempos(W("KEY-STOP")) == [240.0], tempos(W("KEY-STOP")))
     A.check("a key past the setlist's end does nothing", W("KEY-PAST") and not (
             restores(W("KEY-PAST")) or stops("KEY-PAST") or errs(W("KEY-PAST"))), W("KEY-PAST"))
     other = [x for k in order for x in errs(W(k)) if x[:1] != ["info"]]
@@ -365,7 +359,7 @@ def songs(opt):
     ix = index(os.path.join(opt.songs_state, "cut-it-songs.txt"))
     A.check("⛔ the index on disk: lantern loaded, the songs and the setlist as they were",
             ix == ["next 4", "current 2", "chosen 1", "song 1", "song 2", "song 3", "set gig",
-                   "entry 2 silence", "entry 3 next-bar", "entry 1 go"], ix)
+                   "entry 2", "entry 3", "entry 1"], ix)
     draft = song(os.path.join(opt.songs_state, "cut-it-song-3-draft.txt"))
     saved = song(os.path.join(opt.songs_state, "cut-it-song-3.txt"))
     A.check("⛔ hollow bell's own files: its draft at 230, its save at 220",

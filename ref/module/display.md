@@ -302,27 +302,26 @@ flash, raises to 153.
 
 **The caller is `u_song`, on `g_grid`'s sixth inlet**, with meaning, never a cell
 ([songs.md](songs.md)): `top <8 lamps>`, the top row's buttons left to right, each 0 dark, 1 a
-section, 2 the section playing, 3 the one queued or 4 an arrow with somewhere to go; `unsaved
-<0 or 1>`; and `go <0, 1 or 2>`, the go lamp: dark, a song waiting for go, or a song queued for the
-next bar. Each sets the dirty flag; anything else on the inlet is `fail g_grid bad-selector`.
+section, 2 the section playing, 3 the one queued, 4 an arrow with somewhere to go, 5 the next arrow for the next song or 6 that
+song queued; and `unsaved <0 or 1>`. Each sets the dirty flag; anything else on the inlet is `fail g_grid bad-selector`.
 `pd regions` paints them on every page, after the other regions, from an array of eight and two
 floats, so they start dark until `u_song` speaks.
 
 | A cell | Paints | Evidence |
 |---|---|---|
 | CC 91 and 92, the arrows, with somewhere to go | Palette 1, dim | unknown |
+| CC 92 on a song's last section, the next song | Blue, RGB 16, 40, 127, the drum page's (Brendan, 2026-11-06) | unknown |
+| The same, a song queued | Blue on the beat row's even beats and dark on its odd | unknown |
 | CC 93–98, a section | Dim green, RGB 0, 32, 8 | unknown |
 | The same, the section playing | Full green, RGB 0, 127, 32 | unknown |
 | The same, the section queued | Full green on the beat row's even beats and dark on its odd, so it blinks on the beat, at no cost: the beat row's change repaints anyway | unknown |
 | CC 108, save, with anything unsaved | Red, RGB 127, 0, 0, the selected drum pad's entry (Brendan, 2026-11-05) | unknown |
 | CC 8, revert, with anything unsaved | Gray, RGB 40, 40, 40 | unknown |
-| CC 89, go, the right column's top, a song waiting for go | Amber, RGB 127, 56, 0, the FM pads' full entry, on the even beats and dark on the odd (Brendan, 2026-11-05: the go lamp blinks while a song waits) | unknown |
-| The same, a song queued for the next bar, by its transition or after go | Full green, blinking as a queued section does | unknown |
 | Any of them otherwise | Dark | unknown |
 
 ⚠️ **They are RGB specs, 155 to 157 on the surface**: entries 27 to 29 of the RGB table, a section
-dim and full and revert's gray, after the selected pad's red, 154, which save shares; go waiting is
-148, entry 20, which page 3's FM pads share.
+dim and full and revert's gray, after the selected pad's red, 154, which save shares; the next arrow's
+blue is 145, entry 17, the drum page's.
 
 ### Seeing it off-device
 
@@ -515,7 +514,7 @@ Every drum round hand-edited `pd regions` box by box, and more is planned on tha
 (`cut-it/drum-page-in-lua`). The `pd` skill's reasons to keep a thing Pd do not hold there: the
 painter runs at most 50 times a second, not on a dense stream, and the page is dead without Lua
 anyway, since `c_steps` is Lua. What must work without it stays Pd: the mode lamps, which say what
-page this is, the beat row, the other pages and the edges, save, revert and go among them.
+page this is, the beat row, the other pages and the edges, save and revert among them.
 
 **The frame is handed over cell by cell, into the frame buffer.** The face writes its 62 cells into
 `$0-surface` with pdlua's `pd.Table` rather than sending a list out of an outlet: the cells are

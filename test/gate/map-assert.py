@@ -45,10 +45,8 @@ EVERY_PAGE = [("og-knob-1", "tempo", "0"), ("og-knob-2", "drums", "last"),
               # the bottom rows' rightmost (ref/module/songs.md)
               ("lp-cc-%d" % (90 + n), "section", "%d" % n) for n in range(1, 9)] + [
               ("lp-cc-108", "save", "0"), ("lp-cc-8", "revert", "0")] + [
-              # the Organelle's keys choose songs, key 1 the lowest, and CC 89 is go
-              # (Brendan, 2026-11-05)
-              ("og-key-%d" % (59 + k), "song", "%d" % k) for k in range(1, 26)] + [
-              ("lp-cc-89", "go", "0")]
+              # the Organelle's keys choose songs, key 1 the lowest (Brendan, 2026-11-05)
+              ("og-key-%d" % (59 + k), "song", "%d" % k) for k in range(1, 26)]
 # Both runs are counted against this one list, so neither passes a driver that
 # died early.
 WINDOWS = ["EARLY", "EARLY-2", "RAIL-ARM", "SUPPRESS", "MAPPED", "AWAY", "CROSS",
@@ -197,9 +195,6 @@ def static_lint():
             "and nothing else names it", keys == sorted(("og-key-%d" % (59 + k), "%d" % k)
                                                         for k in range(1, 26) for _p in modes),
             "song rows: %s" % sorted(set(keys))[:6])
-    go = sorted({f[1] for _, f in rows if len(f) == 4 and f[2] == "go"})
-    A.check("⛔ go is the right column's top button, CC 89, and nothing else", go == ["lp-cc-89"],
-            "go rows: %s" % go)
     # Knob 3 is the selected track's own last step, and the selected track is the
     # drum page's: it stays page 2's (Brendan, 2026-11-04).
     knob3 = [f for _, f in rows if len(f) > 1 and f[1] == "og-knob-3"]

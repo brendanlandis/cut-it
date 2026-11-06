@@ -7,19 +7,19 @@
 -- and the setlists are cut-it-songs.txt there, and each song is two files, its saved song and its
 -- draft, cut-it-song.txt and cut-it-song-draft.txt for song 1 and cut-it-song-<id>.txt and
 -- cut-it-song-<id>-draft.txt for the rest (R.files).
--- inlet 1: u_map's top row, save and revert, the Organelle's keys and go -- top <1-8>, save,
--- revert, key <1-25>, go.
+-- inlet 1: u_map's top row, save and revert, the Organelle's keys -- top <1-8>, save,
+-- revert, key <1-25>.
 -- inlet 2: the phone's sections page, through u_net -- select, page, new, up, down, length,
 -- delete, name; and its songs page, songs <command> ... (R.songs_cmds).
 -- inlet 3: u_song.pd's own -- put <key> <atoms...> off the state bus, bar and recall <key> from
 -- c_steps, start and stop, load at the restore, flush on the draft's timer, init.
--- outlet 1: to g_grid -- top <8 lamps>, unsaved <0 or 1> and go <0, 1 or 2>, each when it
+-- outlet 1: to g_grid -- top <8 lamps> and unsaved <0 or 1>, each when it
 -- changes.
 -- outlet 2: to u_net, each when it changes: the sections page's state, R.phone's 22 atoms, as a
 -- list, and the songs page's, songs <R.songs_phone's 47 atoms>.
 -- outlet 3: to the state bus: restore <key> <atoms...>, a section starting, and sync before a
 -- press, a phone command, start or stop, so a part holding back a put puts it first.
--- outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded. outlet 6: a bang to the stop
+-- outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded.
 -- bus, a song starting from silence.
 --
 -- A Lua error leaves outlet 4 as fail u_song lua-<selector>, and its text goes to Pd's console
@@ -32,7 +32,7 @@ local SongLua = pd.Class:new():register("u_song-lua")
 -- (`; pdluax reload u_song-lua`) reloads them too, and every object keeps its songs.
 local R = dofile(SongLua._loadpath .. "u_song.lua")
 
-local OUTLET = { state = 3, err = 4, stop = 6 }
+local OUTLET = { state = 3, err = 4 }
 
 -- Answering under pcall, the proof bang on init and the dispatch shortcut are lua-face.lua's,
 -- shared by every class that carries rules into Pd.
@@ -40,7 +40,7 @@ local F = dofile(SongLua._loadpath .. "lua-face.lua")
 F.carry(SongLua, R, OUTLET, 3, 5)
 
 function SongLua:initialize(_, atoms)
-  self.inlets, self.outlets = 3, 6
+  self.inlets, self.outlets = 3, 5
   self.dir = type(atoms[1]) == "string" and atoms[1] or "."
   self.state = R.new()
   return true
@@ -81,7 +81,7 @@ local function key(atoms)
   return table.concat(parts, "\1")
 end
 
--- After every answer: the top row's lamps, the save and revert lamps, the go lamp and the
+-- After every answer: the top row's lamps, the save and revert lamps and the
 -- phone's two states, each when it differs from the last sent; the saved song loaded, when a
 -- save or a rename asked for it, with the draft beside it, and a new or renamed song's two
 -- files; and the files of a song deleted, gone.
@@ -102,11 +102,6 @@ function SongLua:answered()
       self.unsaved_sent = v
       self:outlet(1, "unsaved", { v })
     end
-  end
-  local ok4, go = pcall(R.go_lamp, st)
-  if ok4 and go ~= self.go_sent then
-    self.go_sent = go
-    self:outlet(1, "go", { go })
   end
   local ok3, phone = pcall(R.phone, st)
   if ok3 then

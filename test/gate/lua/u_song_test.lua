@@ -444,17 +444,17 @@ local function snames(st)
 end
 local function entries(st)
   local n = {}
-  for i, e in ipairs(st.sets[st.set].entries) do n[i] = e.song.song.name .. " " .. e.starts end
+  for i, e in ipairs(st.sets[st.set].entries) do n[i] = e.song.song.name end
   return n
 end
 st = R.new()
 R.put(st, { "drums", 4 })
 R.load(st, nil, nil)
-equal("with no files: one song, song 1, and one setlist, set 1, song 1 its opener from silence",
+equal("with no files: one song, song 1, and one setlist, set 1, song 1 its opener",
       { snames(st), st.sets[1].name, entries(st), st.set, st.entry },
-      { { "song 1" }, "set 1", { "song 1 silence" }, 1, 1 })
+      { { "song 1" }, "set 1", { "song 1" }, 1, 1 })
 equal("... and the index to write", { st.index_dirty, R.index_text(st) },
-      { true, "next 2\ncurrent 1\nchosen 1\nsong 1\nset set 1\nentry 1 silence\n" })
+      { true, "next 2\ncurrent 1\nchosen 1\nsong 1\nset set 1\nentry 1\n" })
 equal("song 1's files keep the one song's names; another's are named for its id",
       { R.files(1), select(2, R.files(1)), R.files(12), select(2, R.files(12)), R.INDEX },
       { "cut-it-song.txt", "cut-it-song-draft.txt", "cut-it-song-12.txt",
@@ -464,9 +464,9 @@ local ixt = "next 9\ncurrent 3\nchosen 2\nsong 3\nsong 1\nsong 5\nsong 7\nsong 3
 local ix = R.parse_index(ixt)
 equal("the index read: next, current, chosen, the songs in order, each once",
       { ix.next, ix.current, ix.chosen, ix.songs }, { 9, 3, 2, { 3, 1, 5, 7 } })
-equal("... each set its name and entries; a starts it does not know is silence, a set with no "
-      .. "name set 1", { ix.sets[1].name, #ix.sets[1].entries, ix.sets[1].entries[4].starts,
-      ix.sets[2].name }, { "friday at the bell", 4, "silence", "set 1" })
+equal("... each set its name and entries, the words an entry once had after its id left; a set "
+      .. "with no name set 1", { ix.sets[1].name, #ix.sets[1].entries, ix.sets[1].entries[1].id,
+      ix.sets[2].name }, { "friday at the bell", 4, 7, "set 1" })
 equal("an index with no song in it, or none, is no index",
       { R.parse_index("next 2\nset a\n"), R.parse_index(nil) }, {})
 
@@ -485,10 +485,10 @@ equal("the songs in the index's order, a song it names with no files gone",
 equal("the song loaded last loads, its section 1 starting", { st.cur.id, restores(out) },
       { 3, { "drums 1", "tempo 90" } })
 equal("the setlist chosen, its entries whose songs are there, in order",
-      { st.set, st.sets[1].name, entries(st) }, { 2, "friday at the bell", { "song 1 silence" } })
+      { st.set, st.sets[1].name, entries(st) }, { 2, "friday at the bell", { "song 1" } })
 st.set = 1
 equal("... the other's: an entry naming a song that's gone is gone too",
-      entries(st), { "lantern go", "song 1 next-bar", "night drive silence" })
+      entries(st), { "lantern", "song 1", "night drive" })
 equal("each song its own draft against its save: lantern's differs", { st.songs[3].unsaved,
       st.songs[2].unsaved, R.unsaved(st) }, { true, false, false })
 equal("... nothing to write but the index, which lost a song", { st.index_dirty, st.dirty,
@@ -496,7 +496,7 @@ equal("... nothing to write but the index, which lost a song", { st.index_dirty,
 equal("the next new song is 9, past every id", st.next_song, 9)
 st = load3("next 2\ncurrent 5\nsong 7\nsong 3\n")
 equal("a current the index lacks: the first song loads; no set: set 1, empty but for its first song",
-      { st.cur.id, #st.sets, entries(st) }, { 7, 1, { "lantern silence" } })
+      { st.cur.id, #st.sets, entries(st) }, { 7, 1, { "lantern" } })
 st = R.new()
 R.put(st, { "drums", 4 })
 R.load(st, nil, nil, "next 3\ncurrent 2\nsong 2\n", {})
@@ -541,9 +541,9 @@ equal("... a name with nothing in it changes nothing", { R.song_rename(st, { "!"
 R.song_select(st, 2)
 st.set = 1
 R.song_add(st)
-equal("add to set: the selected song the setlist's last, from silence, and selected",
-      { entries(st), st.entry }, { { "lantern go", "song 1 next-bar", "night ride silence",
-      "hollow bell silence" }, 4 })
+equal("add to set: the selected song the setlist's last, and selected",
+      { entries(st), st.entry }, { { "lantern", "song 1", "night ride",
+      "hollow bell" }, 4 })
 for _ = 1, 21 do R.song_add(st) end
 equal("a setlist holds 25, a song a key", { #st.sets[1].entries, R.song_add(st) },
       { 25, { { "err", "warn", { "u_song", "set-full" } } } })
@@ -553,8 +553,8 @@ R.song_select(st, 4)
 out = R.song_delete(st)
 equal("delete: the selected song goes, from the list and every setlist, and the one in its "
       .. "place is selected", { out, snames(st), entries(st), st.sel_song.song.name },
-      { {}, { "night ride", "hollow bell", "song 3", "lantern" }, { "lantern go",
-      "night ride silence", "hollow bell silence" }, "lantern" })
+      { {}, { "night ride", "hollow bell", "song 3", "lantern" }, { "lantern",
+      "night ride", "hollow bell" }, "lantern" })
 equal("... its files to go", st.removed, { 1 })
 R.song_select(st, 1)
 out = R.song_delete(st)
@@ -589,49 +589,76 @@ equal("a key past the setlist's end does nothing", { R.key(st, 4), R.key(st, 25)
 equal("revert on night drive takes its change back", { restores(R.revert(st)), R.unsaved(st) },
       { { "drums 1", "tempo 90" }, false })
 
-print("\n--- the keys: playing, by each entry's transition ---")
+print("\n--- the keys, playing ---")
 st = load3()
 st.set = 1
 R.start(st)
-out = R.key(st, 3)
-equal("silence: the transport stopped, nothing loaded yet", { out, st.cur.id },
-      { { { "stop", "bang", {} } }, 3 })
-equal("... the song shows as queued, the go lamp too", R.go_lamp(st), R.GO_QUEUED)
-out = R.stop(st)
-equal("⛔ ... and the STOP that comes back loads it, ready for PLAY", { restores(out), st.cur.id,
-      st.running, R.go_lamp(st) }, { { "drums 1", "tempo 90" }, 3, false, R.GO_DARK })
-R.start(st)
-equal("next bar: nothing at once", { R.key(st, 2), st.cur.id }, { {}, 3 })
-equal("... queued: the go lamp blinks as a queued section's", R.go_lamp(st), R.GO_QUEUED)
+equal("a key: nothing at once", { R.key(st, 2), st.cur.id }, { {}, 3 })
+equal("... the next arrow blinks blue, and back lights to take it back", { R.top(st)[1], R.top(st)[2] },
+      { R.ARROW, R.NEXT_QUEUED })
 out = at_one(R.bar(st))
 equal("⛔ ... and it loads as the pattern comes round", { out[1], restores(out), st.cur.id },
       { { "err", "info", { "u_song", "loaded-song-1" } }, { "drums 1", "tempo 100" }, 1 })
 R.press(st, 4)
 R.key(st, 1)
-equal("go: nothing at once, a section queued as well", { st.cur.id, R.index(st, st.queued) },
+equal("a section queued as well: the song waits with it", { st.cur.id, R.index(st, st.queued) },
       { 1, 2 })
-equal("... the go lamp says it waits for go", R.go_lamp(st), R.GO_WAIT)
-equal("⛔ the bar starts the section queued, and the song waits on, the last song playing on",
-      { restores(at_one(R.bar(st))), st.cur.id, R.go_lamp(st) }, { { "drums 2", "tempo 100" }, 1,
-      R.GO_WAIT })
-equal("go pressed: the song now waits for the bar", { R.go_button(st), R.go_lamp(st) },
-      { {}, R.GO_QUEUED })
 R.press(st, 3)
-equal("⛔ the next bar loads it, ahead of a section queued since", { restores(at_one(R.bar(st))),
+equal("⛔ the next bar loads the song, ahead of a section queued", { restores(at_one(R.bar(st))),
       st.cur.id, st.queued }, { { "drums 1", "tempo 140" }, 7, nil })
-equal("go with no song waiting does nothing", { R.go_button(st), R.go_lamp(st) },
-      { {}, R.GO_DARK })
 R.key(st, 1)
 R.key(st, 2)
 equal("one song queued at a time: the next key takes the queue's place", st.pending.rec.id, 1)
-R.key(st, 1)
-equal("⛔ STOP with a song waiting for go: no bar is coming, so it loads now",
-      { restores(R.stop(st)), st.cur.id }, { { "drums 1", "tempo 140" }, 7 })
+equal("⛔ STOP with a song queued: no bar is coming, so it loads now",
+      { restores(R.stop(st)), st.cur.id }, { { "drums 1", "tempo 100" }, 1 })
 R.start(st)
 R.key(st, 2)
 R.press(st, 4)
 equal("the song loaded asked for again starts again from its section 1, at the bar",
       { restores(at_one(R.bar(st))), st.cur.id }, { { "drums 1", "tempo 100" }, 1 })
+
+print("\n--- the next arrow: the setlist's next song ---")
+st = load3()
+st.set = 1
+local function last_section(s)
+  s.playing, s.queued = s.song.sections[#s.song.sections], nil
+end
+R.key(st, 1)
+equal("on lantern's first section of three, the arrow is a section's", { #st.song.sections,
+      R.top(st)[2] }, { 3, R.ARROW })
+last_section(st)
+equal("⛔ on its last section, the arrow is blue, for the next song", R.top(st)[2], R.NEXT_SONG)
+out = R.press(st, 2)
+equal("... stopped, pressing it loads song 1 at once", { restores(out), st.cur.id, st.at_entry },
+      { { "drums 1", "tempo 100" }, 1, 2 })
+R.start(st)
+last_section(st)
+equal("playing, nothing at once", { R.press(st, 2), st.cur.id }, { {}, 1 })
+equal("⛔ ... it blinks until it starts", { st.pending.rec.id, R.top(st)[2] }, { 3, R.NEXT_QUEUED })
+equal("... pressing again changes nothing", { R.press(st, 2), st.pending.rec.id }, { {}, 3 })
+equal("⛔ back takes it back, and it is blue again", { R.press(st, 1), st.pending, R.top(st)[2] },
+      { {}, nil, R.NEXT_SONG })
+R.press(st, 2)
+equal("⛔ the bar loads it", { (at_one(R.bar(st)))[1], st.cur.id },
+      { { "err", "info", { "u_song", "loaded-night-drive" } }, 3 })
+last_section(st)
+equal("⛔ on the setlist's last song, the arrow is dark, and does nothing", { R.top(st)[2],
+      R.press(st, 2), st.pending }, { R.DARK, {}, nil })
+R.stop(st)
+st.set = 2
+st.at_entry = nil
+last_section(st)
+equal("a song not in the setlist chosen: dark", R.top(st)[2], R.DARK)
+
+print("\n--- a song in a setlist twice goes on from where it was ---")
+st = load3()
+st.set = 1
+st.sets[1].entries[#st.sets[1].entries + 1] = { song = st.sets[1].entries[1].song }
+st.sets[1].entries[#st.sets[1].entries + 1] = { song = st.sets[1].entries[2].song }
+R.key(st, 4)
+last_section(st)
+R.press(st, 2)
+equal("⛔ from the fourth entry, the fifth", st.at_entry, 5)
 
 print("\n--- a section starts on the 1 ---")
 -- The old section's last step plays out at its own tempo (Brendan, 2026-11-05): "the next section
@@ -652,35 +679,27 @@ st = load3()
 st.set = 1
 R.start(st)
 R.song_select(st, 3)
-equal("load: the selected song by its entry's transition in the setlist chosen: lantern, go",
-      { R.song_load(st), R.go_lamp(st) }, { {}, R.GO_WAIT })
-st.set = 2
-equal("... a song in no entry of the setlist chosen starts from silence", R.song_load(st),
-      { { "stop", "bang", {} } })
+equal("load: the selected song, queued for the bar", { R.song_load(st), st.pending.rec.id },
+      { {}, 7 })
 
 print("\n--- the setlists tab ---")
 st = load3()
 st.set = 1
 R.entry_select(st, 2)
-R.entry_starts(st, "go")
-equal("a row tapped selects the entry; starts sets how it starts", entries(st),
-      { "lantern go", "song 1 go", "night drive silence" })
-equal("... a starts it does not know is fail u_song bad-starts", R.entry_starts(st, "soon"),
-      { { "err", "fail", { "u_song", "bad-starts" } } })
 R.songs_cmds.up(st)
 equal("move up: the entry a place earlier, its key with it, still selected",
-      { entries(st), st.entry }, { { "song 1 go", "lantern go", "night drive silence" }, 1 })
+      { entries(st), st.entry }, { { "song 1", "lantern", "night drive" }, 1 })
 equal("... from the top, nothing", { R.songs_cmds.up(st), st.entry }, { {}, 1 })
 R.songs_cmds.down(st)
 R.songs_cmds.down(st)
-equal("move down, twice", { entries(st), st.entry }, { { "lantern go", "night drive silence",
-      "song 1 go" }, 3 })
+equal("move down, twice", { entries(st), st.entry }, { { "lantern", "night drive",
+      "song 1" }, 3 })
 equal("⛔ the keys follow the order: key 3 is song 1 now", (function()
   R.start(st); R.key(st, 3); return st.pending.rec.id end)(), 1)
 R.stop(st)
 R.entry_remove(st)
 equal("remove: the entry goes, and the one now in its place, here the last, is selected",
-      { entries(st), st.entry }, { { "lantern go", "night drive silence" }, 2 })
+      { entries(st), st.entry }, { { "lantern", "night drive" }, 2 })
 R.set_new(st)
 equal("new set: an empty setlist after the one chosen, set 2, chosen",
       { #st.sets, st.set, st.sets[2].name, entries(st), st.entry }, { 3, 2, "set 2", {}, 0 })
@@ -715,21 +734,17 @@ R.put(st, { "tempo", 91 })
 R.key(st, 2)
 R.entry_select(st, 3)
 local ph = R.songs_phone(st)
-equal("47 atoms", #ph, R.SONGS_PHONE)
+equal("41 atoms", #ph, R.SONGS_PHONE)
 equal("the songs tab: how many, the selected, the page and pages, the selected one's name",
       { ph[1], ph[2], ph[3], ph[4], ph[5] }, { 3, 1, 1, 1, "night drive" })
 equal("... each row its number, name and words: loaded and unsaved, queued, unsaved; then none",
       { table.unpack(ph, 6, 17) }, { 1, "night drive", "loaded · unsaved", 2, "song 1", "next bar",
       3, "lantern", "unsaved", 0, "-", "-" })
 equal("the setlists tab: the setlist chosen and how many, its name, the page and pages, how many "
-      .. "entries, the one selected, its song and how it starts",
-      { table.unpack(ph, 24, 32) }, { 1, 2, "friday at the bell", 1, 1, 3, 3, "night drive",
-      "silence" })
-equal("... five rows of key, song and starts", { table.unpack(ph, 33, 47) },
-      { 1, "lantern", "go", 2, "song 1", "next-bar", 3, "night drive", "silence", 0, "-", "-", 0,
-        "-", "-" })
-R.key(st, 1)
-equal("a song waiting for go says so", R.songs_phone(st)[14], "for go · unsaved")
+      .. "entries, the one selected and its song",
+      { table.unpack(ph, 24, 31) }, { 1, 2, "friday at the bell", 1, 1, 3, 3, "night drive" })
+equal("... five rows of key and song", { table.unpack(ph, 32, 41) },
+      { 1, "lantern", 2, "song 1", 3, "night drive", 0, "-", 0, "-" })
 for _ = 1, 5 do R.song_new(st) end
 R.song_turn(st, 1)
 ph = R.songs_phone(st)
@@ -758,10 +773,10 @@ local function file(name)
   return t
 end
 local sent = T.send(o, 3, "init", {})
-equal("init: the lamps, the go lamp and the phone's two states, once each, then the proof bang",
-      { sent[1], sent[2], sent[3], sent[4][1], sent[4][2], sent[5][2], sent[6], #sent },
-      { { 1, "top", { D, D, P, D, D, D, D, D } }, { 1, "unsaved", { 0 } }, { 1, "go", { 0 } }, 2,
-        "list", "songs", { 5, "bang", {} }, 6 })
+equal("init: the lamps and the phone's two states, once each, then the proof bang",
+      { sent[1], sent[2], sent[3][1], sent[3][2], sent[4][2], sent[5], #sent },
+      { { 1, "top", { D, D, P, D, D, D, D, D } }, { 1, "unsaved", { 0 } }, 2,
+        "list", "songs", { 5, "bang", {} }, 5 })
 equal("a put the lamps don't show sends nothing", T.send(o, 3, "put", { "drums", 7 }), {})
 sent = T.send(o, 3, "flush", {})
 equal("⛔ the draft's timer before the load writes nothing", { sent, file("cut-it-song-draft.txt") },
@@ -855,7 +870,7 @@ equal("⛔ a state directory from before several songs: its one song is song 1, 
       { 1, "song 1", 1 })
 T.send(o, 3, "flush", {})
 equal("... and the first flush writes the index, song 1 the first setlist's opener",
-      file("cut-it-songs.txt"), "next 2\ncurrent 1\nchosen 1\nsong 1\nset set 1\nentry 1 silence\n")
+      file("cut-it-songs.txt"), "next 2\ncurrent 1\nchosen 1\nsong 1\nset set 1\nentry 1\n")
 equal("... song 1's files as they were", { file("cut-it-song.txt"), file("cut-it-song-draft.txt") },
       { one, one })
 sent = T.send(o, 2, "songs", { "new" })
@@ -876,8 +891,8 @@ T.send(o, 3, "flush", {})
 equal("⛔ the flush writes song 1's draft, its change kept, and the index, song 2 loaded",
       { file("cut-it-song-draft.txt"), file("cut-it-song.txt"), file("cut-it-songs.txt") },
       { "song song 1\nsection 1 0 intro\ndrums 1\ntempo 120\n", one,
-        "next 3\ncurrent 2\nchosen 1\nsong 1\nsong 2\nset set 1\nentry 1 silence\n"
-        .. "entry 2 silence\n" })
+        "next 3\ncurrent 2\nchosen 1\nsong 1\nsong 2\nset set 1\nentry 1\n"
+        .. "entry 2\n" })
 o2 = T.new(class, { tmp })
 T.send(o2, 3, "init", {})
 sent = T.send(o2, 3, "load", {})
@@ -898,22 +913,13 @@ equal("an unknown songs command is fail u_song bad-selector",
 T.send(o2, 3, "start", {})
 T.send(o2, 2, "songs", { "new" })
 T.send(o2, 2, "songs", { "add" })
-T.send(o2, 2, "songs", { "starts", "go" })
 sent = T.send(o2, 1, "key", { 2 })
-equal("⛔ playing, a key whose entry starts on go: the go lamp waits, nothing loads",
-      { sent[2], o2.state.cur.id }, { { 1, "go", { 1 } }, 1 })
-sent = T.send(o2, 1, "go", {})
-equal("go: the lamp says queued for the bar", sent[2], { 1, "go", { 2 } })
+equal("⛔ playing, a key: the next arrow blinks blue, nothing loads",
+      { sent[2], o2.state.cur.id }, { { 1, "top", { R.ARROW, R.NEXT_QUEUED, P, D, D, D, D, D } }, 1 })
 sent = T.send(o2, 3, "bar", {})
-equal("⛔ the bar: the parts asked to sync, since it moves the song, then the song loads, the log says "
-      .. "which, and the lamp goes dark",
-      { sent[1], sent[2], o2.state.cur.id,
-      (function() for _, e in ipairs(sent) do if e[2] == "go" then return e[3][1] end end end)() },
-      { { 3, "sync", {} }, { 4, "info", { "u_song", "loaded-song-2" } }, 3, 0 })
-T.send(o2, 2, "songs", { "entry", 1 })
-sent = T.send(o2, 1, "key", { 1 })
-equal("⛔ a key whose entry starts from silence, playing: a bang to the stop bus, out the sixth",
-      { sent[2], o2.state.cur.id }, { { 6, "bang", {} }, 3 })
+equal("⛔ the bar: the parts asked to sync, since it moves the song, then the song loads, and the log "
+      .. "says which", { sent[1], sent[2], o2.state.cur.id },
+      { { 3, "sync", {} }, { 4, "info", { "u_song", "loaded-song-2" } }, 3 })
 os.execute("rm -rf " .. tmp)
 
 -- A broken copy of the rules, from a prefix of its own: a throw reaches err as lua-<selector>.

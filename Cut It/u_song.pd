@@ -38,8 +38,6 @@
 #X text 900 700 Load \, then arm the draft's timer: t b b fires right to left. The draft is written every 2 s when it has changed \, and never before the load has read it \, which would write over the last session with this one's defaults (ref/module/state.md)., f 22;
 #X text 1550 520 PLAY counts the section's bars from the pattern's step 1. STOP and panic start a section queued at once: no bar is coming., f 30;
 #X text 2100 1200 At load the Lua answers init with a bang on its fifth outlet \, which shuts the spigot. No bang means it never loaded -- pdlua missing \, or an error in the Lua -- and fail u_song no-lua says so on the screen: the top row \, save and revert do nothing., f 40;
-#X obj 1200 1100 s stop;
-#X text 1200 1160 A song that starts from silence stops the transport here: the STOP comes back through r stop \, and loads it \, ready for PLAY (Brendan \, 2026-11-05). stop is on the allowlist (C-2)., f 40;
 #X connect 2 0 6 0;
 #X connect 3 0 6 1;
 #X connect 4 0 6 2;
@@ -71,4 +69,3 @@
 #X connect 6 1 8 0;
 #X connect 6 2 9 0;
 #X connect 6 3 10 0;
-#X connect 6 5 38 0;

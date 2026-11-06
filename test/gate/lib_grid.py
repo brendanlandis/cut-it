@@ -41,17 +41,19 @@ TOP = tuple(range(91, 99))
 SAVE, REVERT = 108, 8
 SECTION_DIM, SECTION_ON = (0, 32, 8), (0, 127, 32)
 SAVE_ON, REVERT_ON = (127, 0, 0), (40, 40, 40)
-# The go lamp, CC 89, the right column's top: a song waiting for go blinks amber (RGB entry 20,
-# the FM pads' full color), one queued for the next bar full green, as a queued section.
-GO = 89
-GO_WAIT = (127, 56, 0)
-EDGES = TOP + (SAVE, REVERT, GO)
+# The next arrow, the top row's second: blue when it is the setlist's next song (RGB entry 17, the
+# drum page's blue), blinking while that song is queued.
+NEXT = TOP[1]
+NEXT_SONG = (16, 40, 127)
+EDGES = TOP + (SAVE, REVERT)
 
 
 def edge_problem(idx, color):
     """None if an edge cell is a color its lamp can take, else what is wrong."""
     ok = {0}
-    if idx in TOP[:2]:
+    if idx == NEXT:
+        ok |= {1, NEXT_SONG}
+    elif idx in TOP[:2]:
         ok |= {1}
     elif idx in TOP:
         ok |= {SECTION_DIM, SECTION_ON}
@@ -59,8 +61,6 @@ def edge_problem(idx, color):
         ok |= {SAVE_ON}
     elif idx == REVERT:
         ok |= {REVERT_ON}
-    elif idx == GO:
-        ok |= {GO_WAIT, SECTION_ON}
     return None if color in ok else "edge %d is color %s" % (idx, color)
 
 

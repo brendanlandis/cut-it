@@ -416,17 +416,6 @@ def main():
     A.check("⛔ ... the name tab's done names the song from the songs tab and the setlist from the "
             "setlists tab", "songs name" in msgs and "songs set-name" in msgs,
             sorted(m_ for m_ in set(msgs) if m_.startswith("songs")))
-    # The starts switch asks for the ways u_song knows an entry can start, in its order, a
-    # segment each: TouchOSC's own radio, horizontal, as the drum screen's is.
-    m = re.search(r"^R\.STARTS = \{([^}]*)\}", open(SONG_LUA, encoding="utf-8").read(), re.M)
-    starts = re.findall(r'"([\w-]+)"', m.group(1)) if m else None
-    sw = by_name.get("lstarts")
-    said = re.search(r"^local STARTS = \{([^}]*)\}", (sw and sw[3]) or "", re.M)
-    A.check("⛔ the starts switch is a radio, a segment for each of u_song's R.STARTS, and sends "
-            "exactly those, in order", starts and sw and sw[1] == "RADIO"
-            and said and re.findall(r'"([\w-]+)"', said.group(1)) == starts
-            and "sendOSC('/cutit', 'songs', 'starts', STARTS[v + 1])" in sw[3],
-            "u_song's %s; the switch %s" % (starts, said and said.group(1)))
     ucmd = route_of(UNET, "result")
     uacks, usynth, uvel = route_of(UNET, "sync"), route_of(UNET, "fm"), route_of(UNET, "on")
     usongs = route_of(UNET, "load")

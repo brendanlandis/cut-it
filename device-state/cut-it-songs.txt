@@ -1,0 +1,6 @@
+next 2
+current 1
+chosen 1
+song 1
+set first set
+entry 1 silence

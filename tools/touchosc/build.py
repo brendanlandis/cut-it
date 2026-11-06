@@ -200,12 +200,10 @@ NAMERS = {"sn": {"pager": "tabs7", "tab": 1, "from": {0: ("section", ["sections"
           "gn": {"pager": "tabs8", "tab": 2, "from": {0: ("song", ["songs", "name"]),
                                                        1: ("setlist", ["songs", "set-name"])}}}
 # The songs page (Brendan, 2026-11-05, approved from mockups): its songs tab six rows a page, its
-# setlists tab five, u_song.lua's R.SONG_ROWS and R.SET_ROWS; how an entry starts, R.STARTS, each
-# its word on the switch; and how long delete waits for its second tap.
+# setlists tab five, u_song.lua's R.SONG_ROWS and R.SET_ROWS; and how long delete waits for its
+# second tap.
 SONG_ROWS, SET_ROWS = (int(v) for v in re.search(r"^R\.SONG_ROWS, R\.SET_ROWS = (\d+), (\d+)",
                                                   _SONG_LUA, re.M).groups())
-STARTS = re.findall(r'"([\w-]+)"', re.search(r"^R\.STARTS = \{([^}]*)\}", _SONG_LUA, re.M).group(1))
-STARTS_WORDS = {"silence": "silence", "next-bar": "next bar", "go": "go"}
 SURE_MS = 3000
 
 
@@ -1306,8 +1304,8 @@ def list_row_script(what, k):
 
 
 def list_rows(prefix, n, right, size=16):
-    """n rows down the left, a page of a list: each a button and its number, name and, flush right
-    and grey, what the right says (a song's words, an entry's start)."""
+    """n rows down the left, a page of a list: each a button and its number, name and, when right
+    names one, flush right and grey, what it says (a song's words)."""
     k = []
     for r in range(1, n + 1):
         y_ = Y0 + G + (r - 1) * 2 * G
@@ -1315,8 +1313,9 @@ def list_rows(prefix, n, right, size=16):
         k.append(button("%s%d" % (prefix, r), f, RED, list_row_script(prefix, r)))
         k.append(label("%s%dnl" % (prefix, r), (X0, y_, 3 * G, 2 * G), "", 18))
         k.append(label("%s%dl" % (prefix, r), (X0 + 3 * G, y_, 15 * G, 2 * G), "", 18, align=LEFT))
-        k.append(label("%s%d%sl" % (prefix, r, right), (X0 + 15 * G, y_, 9 * G, 2 * G), "", size,
-                       GREY, align=3))
+        if right:
+            k.append(label("%s%d%sl" % (prefix, r, right), (X0 + 15 * G, y_, 9 * G, 2 * G), "", size,
+                           GREY, align=3))
     return k
 
 
@@ -1332,7 +1331,7 @@ def pager_row(prefix, y_, cmd):
 
 def songs_tab():
     """Every song (Brendan, 2026-11-05, approved from a mockup): down the left, six rows and a
-    pager, each its number, name and what it is doing, loaded, waiting for the next bar or for go,
+    pager, each its number, name and what it is doing, loaded or waiting for the next bar,
     unsaved; a tap selects one. On the right, the selected song's name over load, by its
     transition, new song, name, which opens the name tab, add to set, the setlist chosen, and
     delete, which reads sure? until a second tap; and the link."""
@@ -1356,30 +1355,13 @@ def songs_tab():
     return k
 
 
-def starts_script():
-    """The starts switch: TouchOSC's own radio, a segment for each way an entry starts. The state
-    hands it the selected entry's with notify('state'), which it never sends back; a finger's
-    choice sends songs starts <word>."""
-    return ((KNOWS % "value") +
-            "local STARTS = %s\n"
-            "function onValueChanged(key)\n"
-            "  if key ~= 'x' then return end\n"
-            "  local v = math.floor(self.values.x + 0.5)\n"
-            "  if known == nil or v == known then return end\n"
-            "  known = v\n"
-            "  sendOSC('/cutit', 'songs', 'starts', STARTS[v + 1])\n"
-            "  root:notify('touched', 'lstarts')\n"
-            "end\n" % lua(STARTS))
-
-
 def setlists_tab():
     """The setlist chosen (Brendan, 2026-11-05, approved from a mockup): its songs in order down
-    the left, five rows, each its Organelle key, its song and how it starts after the one before;
-    the arrows page between setlists, through a long one's own pages first. On the right, the
-    selected entry over move up and move down, the starts switch, silence, next bar or go, new
-    set and remove; and the link."""
+    the left, five rows, each its Organelle key and its song; the arrows page between setlists, through a long one's own
+    pages first. On the right, the selected entry over move up and move down, new set and remove;
+    and the link."""
     k = [caption("lcap", X0, Y0, 25 * G, "setlist")]
-    k += list_rows("lrow", SET_ROWS, "s")
+    k += list_rows("lrow", SET_ROWS, "")
     k += pager_row("l", Y0 + 13 * G, ["songs", "set"])
     a, b = R_HALF
     k.append(caption("lsel", a, Y0, X1 - a, "entry"))
@@ -1387,16 +1369,9 @@ def setlists_tab():
         f = (x, Y0 + G, 7 * G, 3 * G)
         k.append(button(name, f, RED, sends(["songs", cmd])))
         k.append(label(name + "l", f, text, 18))
-    k.append(caption("lstartsc", a, Y0 + 5 * G, X1 - a, "starts"))
-    seg = (X1 - a) // len(STARTS)
-    k.append(node("RADIO", "lstarts", (a, Y0 + 6 * G, X1 - a, 3 * G), color=RED, outlineStyle=0,
-                  orientation=1, steps=len(STARTS), x=0, script=starts_script()))
-    for i, word in enumerate(STARTS):
-        k.append(label("lstarts%dl" % (i + 1), (a + i * seg, Y0 + 6 * G, seg, 3 * G),
-                       STARTS_WORDS[word], 16, BLACK if i == 0 else WHITE))
     for x, name, text, col, cmd in ((a, "lnewset", "new set", RED, "new-set"),
                                     (b, "lrem", "remove", GREY, "remove")):
-        f = (x, Y0 + 10 * G, 7 * G, 3 * G)
+        f = (x, Y0 + 5 * G, 7 * G, 3 * G)
         k.append(button(name, f, col, sends(["songs", cmd])))
         k.append(label(name + "l", f, text, 18))
     k += status("llinkled", "llink", a, "no link", X1 - a - G)
@@ -1469,7 +1444,6 @@ local CHARS = %(chars)s
 -- the name.
 %(send)s
 local SONG_ROWS, SET_ROWS = %(songrows)s, %(setrows)s
-local STARTS, STARTWORDS = %(starts)s, %(startwords)s
 local SURE = %(sure)s
 local RED, TEAL, WHITE, GREY, BLACK = %(red)s, %(teal)s, %(white)s, %(grey)s, %(black)s
 
@@ -2158,14 +2132,14 @@ local function rowTapped(r)
 end
 
 -- ---------------------------------------------------------------- the songs page
--- u_song's 47 atoms: the songs tab, how many songs, the one selected, the page and how many, the
+-- u_song's 41 atoms: the songs tab, how many songs, the one selected, the page and how many, the
 -- selected one's name, then six rows of number, name and words; then the setlists tab, the
 -- setlist chosen and how many, its name, its page and how many, how many entries, the one
--- selected, its song and how it starts, then five rows of key, song and starts. 0 is a row with
+-- selected and its song, then five rows of key and song. 0 is a row with
 -- none, which is not shown. Selected rows are lit by notify('lit'), which they never answer.
 local songsst = nil
 local function songs(a)
-  if #a < 5 + 3 * SONG_ROWS + 9 + 3 * SET_ROWS then return end
+  if #a < 5 + 3 * SONG_ROWS + 8 + 2 * SET_ROWS then return end
   songsst = a
   local sel = math.floor(arg(a, 2))
   text('gsel', tostring(arg(a, 5)))
@@ -2191,23 +2165,15 @@ local function songs(a)
   text('lpos', pos)
   local entry = math.floor(arg(a, b + 7))
   text('lsel', entry > 0 and (entry .. '  ' .. tostring(arg(a, b + 8))) or 'no entry')
-  local starts = tostring(arg(a, b + 9))
-  for i, w in ipairs(STARTS) do
-    if w == starts then hand('lstarts', i - 1) end
-    ink('lstarts' .. i .. 'l', (w == starts) and BLACK or WHITE)
-  end
-  local c = b + 9
+  local c = b + 8
   for r = 1, SET_ROWS do
-    local n, row = math.floor(arg(a, c + 3 * r - 2)), 'lrow' .. r
+    local n, row = math.floor(arg(a, c + 2 * r - 1)), 'lrow' .. r
     local on = n == entry and n > 0
-    for _, part in ipairs({ '', 'nl', 'l', 'sl' }) do seen(row .. part, n > 0) end
-    local st = tostring(arg(a, c + 3 * r))
+    for _, part in ipairs({ '', 'nl', 'l' }) do seen(row .. part, n > 0) end
     text(row .. 'nl', n > 0 and tostring(n) or '')
-    text(row .. 'l', n > 0 and tostring(arg(a, c + 3 * r - 1)) or '')
-    text(row .. 'sl', n > 0 and (STARTWORDS[st] or st) or '')
+    text(row .. 'l', n > 0 and tostring(arg(a, c + 2 * r)) or '')
     ink(row .. 'nl', on and BLACK or WHITE)
     ink(row .. 'l', on and BLACK or WHITE)
-    ink(row .. 'sl', on and BLACK or GREY)
     light(row, on and 1 or 0)
   end
 end
@@ -2219,9 +2185,9 @@ local function listTapped(which, r)
     local n = math.floor(arg(songsst, 3 + 3 * r))
     if n > 0 and n ~= math.floor(arg(songsst, 2)) then sendOSC('/cutit', 'songs', 'select', n) end
   else
-    local c = 5 + 3 * SONG_ROWS + 9
-    local n = math.floor(arg(songsst, c + 3 * r - 2))
-    if n > 0 and n ~= math.floor(arg(songsst, c - 2)) then sendOSC('/cutit', 'songs', 'entry', n) end
+    local c = 5 + 3 * SONG_ROWS + 8
+    local n = math.floor(arg(songsst, c + 2 * r - 1))
+    if n > 0 and n ~= math.floor(arg(songsst, c - 1)) then sendOSC('/cutit', 'songs', 'entry', n) end
   end
 end
 
@@ -2512,7 +2478,7 @@ def root_script(check):
                 % (t, ", ".join(lua(a) for a in c)) for t, (_w, c) in sorted(n["from"].items())))
             for p, n in NAMERS.items()) + "}",
         "songrows": SONG_ROWS, "setrows": SET_ROWS,
-        "starts": lua(STARTS), "startwords": lua(STARTS_WORDS), "sure": SURE_MS,
+        "sure": SURE_MS,
         "red": lua_color(RED), "teal": lua_color(TEAL), "white": lua_color(WHITE),
         "grey": lua_color(GREY), "black": lua_color(BLACK)}
 

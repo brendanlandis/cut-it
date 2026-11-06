@@ -1,6 +1,6 @@
 -- u_song.lua -- the songs: each one's sections, its draft and its saved copy; the one loaded, its
--- section playing and the one queued; the setlists, the song a key or the phone loads and how it
--- starts; and the text of their files. Plain Lua with no Pd in it, so
+-- section playing and the one queued; the setlists, and the song a key, the next arrow or the phone
+-- loads; and the text of their files. Plain Lua with no Pd in it, so
 -- test/gate/lua/u_song_test.lua runs it on the Mac with lua.org's interpreter. u_song-lua.pd_lua
 -- is its Pd face, which reads and writes the files, and u_song.pd keeps the cords, the state bus,
 -- the transport and the draft's timer. ref/module/songs.md.
@@ -15,14 +15,13 @@
 -- Several songs (Brendan, 2026-11-05), each its own draft: the one loaded is st.song, its saved
 -- copy st.saved, and the rules for one song work on those; the rest wait in st.songs, each a
 -- record of its draft and its saved copy, until a key or the phone loads one. Setlists are songs
--- in order, each entry with how it starts after the one before: silence, next bar or go.
+-- in order.
 --
 -- The state is a plain table and every rule a function of it, so a live reload of the rules keeps
 -- the songs. Every rule returns what leaves, in order, as {outlet, selector, atoms}:
 --   {"state", "restore", {key, atoms...}}         to the state bus: a section starting
---   {"stop", "bang", {}}                          to the stop bus: a song that starts from silence
 --   {"err", "fail" | "warn" | "info", {"u_song", text}}   to err (C-12)
--- The top row's lamps (R.top), the save and revert lamps (R.unsaved), the go lamp (R.go_lamp)
+-- The top row's lamps (R.top), the save and revert lamps (R.unsaved)
 -- and the phone's two states (R.phone, R.songs_phone) are worked out from the state after every
 -- answer, by the face, and sent when they change; and the face writes the files the state asks
 -- for (st.dirty, st.write_saved, and a song's own dirty and write_saved, st.index_dirty,
@@ -34,8 +33,9 @@ local R = {}
 -- 3 to 8 the six section buttons, which scroll a section at a time with the one playing.
 R.BUTTONS = 6
 -- A top-row button's lamp, as g_grid paints it: dark, a section, the section playing, the
--- section queued (blinking), and an arrow that has somewhere to go.
-R.DARK, R.SECTION, R.PLAYING, R.QUEUED, R.ARROW = 0, 1, 2, 3, 4
+-- section queued (blinking), an arrow that has somewhere to go, the next arrow when that is the next
+-- song, blue, and that song queued (blinking) (Brendan, 2026-11-06).
+R.DARK, R.SECTION, R.PLAYING, R.QUEUED, R.ARROW, R.NEXT_SONG, R.NEXT_QUEUED = 0, 1, 2, 3, 4, 5, 6
 -- The phone's sections tab: five rows to a page (Brendan, 2026-11-05).
 R.ROWS = 5
 -- A section's length, in bars, each the pattern's loop, the global last step's steps (Brendan,
@@ -53,15 +53,6 @@ R.SET = "set 1"
 -- The Organelle's keys, og-key-60 to og-key-84: key N loads the Nth song of the setlist chosen,
 -- the lowest the opener, so a setlist holds at most this many.
 R.KEYS = 25
--- How an entry of a setlist starts after the one before (Brendan, 2026-11-05): silence, the
--- transport stopped and the song loaded, ready for PLAY; next bar, taking over as the pattern
--- comes round, as a queued section does; go, the last song playing on until go is pressed, the
--- new one starting at the next bar after.
-R.STARTS = { "silence", "next-bar", "go" }
--- The go lamp, CC 89, as g_grid paints it: dark, a song waiting for go, a song queued for the
--- next bar. Both blink.
-R.GO_DARK, R.GO_WAIT, R.GO_QUEUED = 0, 1, 2
-
 local function clip(x, lo, hi)
   if x < lo then return lo end
   if x > hi then return hi end
@@ -170,7 +161,7 @@ function R.new()
   st.playing, st.selected = s, s
   local rec = record(1, st.song, nil)
   st.songs, st.cur, st.sel_song = { rec }, rec, rec
-  st.sets = { { name = R.SET, entries = { { song = rec, starts = R.STARTS[1] } } } }
+  st.sets = { { name = R.SET, entries = { { song = rec } } } }
   return st
 end
 
@@ -490,29 +481,22 @@ end
 --   chosen <n>                the setlist chosen, the one the keys play, 1 the first
 --   song <id>                 a song, in the songs tab's order: its files are named for its id
 --   set <name>                a setlist, its name to the end of the line, then its entries:
---   entry <song id> <starts>  a song of it, in order, and how it starts after the one before
+--   entry <song id>           a song of it, in order
 function R.index_text(st)
   local out = { "next " .. st.next_song, "current " .. st.cur.id, "chosen " .. st.set }
   for _, rec in ipairs(st.songs) do out[#out + 1] = "song " .. rec.id end
   for _, set in ipairs(st.sets) do
     out[#out + 1] = "set " .. set.name
     for _, e in ipairs(set.entries) do
-      out[#out + 1] = "entry " .. e.song.id .. " " .. e.starts
+      out[#out + 1] = "entry " .. e.song.id
     end
   end
   return table.concat(out, "\n") .. "\n"
 end
 
-local function starts_of(word)
-  for _, s in ipairs(R.STARTS) do
-    if s == word then return s end
-  end
-  return nil
-end
-
 -- The index's text as { next, current, chosen, songs = {ids}, sets = {{name, entries}} }, or nil
--- when there is none: no song line. A song named twice is once; an entry's starts it does not
--- know is silence; a set with no name is set 1.
+-- when there is none: no song line. A song named twice is once; an entry's words after its id,
+-- how it once started, are left; a set with no name is set 1.
 function R.parse_index(text)
   if type(text) ~= "string" then return nil end
   local ix = { songs = {}, sets = {} }
@@ -531,7 +515,7 @@ function R.parse_index(text)
       ix.sets[#ix.sets + 1] = { name = name, entries = {} }
     elseif k == "entry" and n and #ix.sets > 0 then
       local es = ix.sets[#ix.sets].entries
-      es[#es + 1] = { id = n, starts = starts_of(words[3]) or R.STARTS[1] }
+      es[#es + 1] = { id = n }
     end
   end
   if #ix.songs == 0 then return nil end
@@ -603,12 +587,12 @@ function R.load(st, draft_text, saved_text, index_text, files)
   for _, set in ipairs(ix and ix.sets or {}) do
     local es = {}
     for _, e in ipairs(set.entries) do
-      if by[e.id] and #es < R.KEYS then es[#es + 1] = { song = by[e.id], starts = e.starts } end
+      if by[e.id] and #es < R.KEYS then es[#es + 1] = { song = by[e.id] } end
     end
     st.sets[#st.sets + 1] = { name = set.name, entries = es }
   end
   if #st.sets == 0 then
-    st.sets[1] = { name = R.SET, entries = { { song = recs[1], starts = R.STARTS[1] } } }
+    st.sets[1] = { name = R.SET, entries = { { song = recs[1] } } }
   end
   st.set = math.floor(clip(ix and ix.chosen or 1, 1, #st.sets))
   st.set_page, st.entry = 1, #st.sets[st.set].entries > 0 and 1 or 0
@@ -637,17 +621,47 @@ function R.go(st, s)
   return {}
 end
 
--- A top-row button, 1 to 8: back and forward one section from the one queued, or the one
--- playing; or the section a button shows. A button with no section does nothing.
+-- The entry of the setlist chosen after the song loaded, or nil on its last, or for a song not in
+-- it: the entry a key or the arrow loaded it from, else the first that names it, so a song in a
+-- setlist twice goes on from where it was.
+local function next_entry(st)
+  local es = st.sets[st.set].entries
+  local at = st.at_entry
+  if not (at and es[at] and es[at].song == st.cur) then
+    at = nil
+    for i, e in ipairs(es) do
+      if e.song == st.cur then
+        at = i
+        break
+      end
+    end
+  end
+  if not at or not es[at + 1] then return nil end
+  return at + 1
+end
+
+-- A top-row button, 1 to 8: back and forward one section from the one queued, or the one playing;
+-- or the section a button shows. A button with no section does nothing. Forward from the last
+-- section is the next song of the setlist (Brendan, 2026-11-06), and back takes back a song queued.
 function R.press(st, n)
   local b = math.floor(num(n))
   local count = #st.song.sections
   local at = R.index(st, st.queued or st.playing)
   local target
   if b == 1 then
+    if st.pending then
+      st.pending = nil
+      return {}
+    end
     target = at - 1
   elseif b == 2 then
     target = at + 1
+    if target > count then
+      local k = next_entry(st)
+      if not k or st.pending then return {} end
+      st.at_entry = k
+      return R.ask(st, st.sets[st.set].entries[k].song)
+    end
   elseif b >= 3 and b <= 2 + R.BUTTONS then
     target = st.first + b - 3
   else
@@ -665,14 +679,14 @@ end
 -- Whether this bar starts another section or song. c_melody puts its drifting loops only when asked,
 -- so the face asks before one does.
 function R.moves_at_bar(st)
-  if (st.pending and st.pending.wait == "bar") or st.queued then return true end
+  if st.pending or st.queued then return true end
   local len = st.playing.length
   return len > 0 and st.bars + 1 >= len and st.song.sections[R.index(st, st.playing) + 1] ~= nil
 end
 
 function R.bar(st)
   st.bars = st.bars + 1
-  if st.pending and st.pending.wait == "bar" then return R.load_now(st, st.pending.rec) end
+  if st.pending then return R.load_now(st, st.pending.rec) end
   if st.queued then return begin(st, st.queued) end
   local len = st.playing.length
   if len > 0 and st.bars >= len then
@@ -688,8 +702,8 @@ function R.start(st)
   return R.one(st)
 end
 
--- STOP and panic: no next bar is coming, so a song queued loads now, whatever it waited for, and
--- else a section queued starts now. A song that starts from silence sent the STOP itself.
+-- STOP and panic: no next bar is coming, so a song queued loads now, and else a section queued
+-- starts now.
 function R.stop(st)
   st.running = false
   if st.pending then return R.load_now(st, st.pending.rec) end
@@ -698,13 +712,22 @@ function R.stop(st)
 end
 
 -- The top row's eight lamps: the arrows, lit when there is a section that way from the one
--- queued, or the one playing; then the six buttons' sections.
+-- queued, or the one playing; forward, past the last section, blue for the setlist's next song, and
+-- blinking whenever a song is queued, which back takes back; then the six buttons' sections.
 function R.top(st)
   local n = #st.song.sections
   local p = R.index(st, st.playing)
   local q = st.queued and R.index(st, st.queued)
   local at = q or p
-  local out = { at > 1 and R.ARROW or R.DARK, at < n and R.ARROW or R.DARK }
+  local forward = R.DARK
+  if st.pending then
+    forward = R.NEXT_QUEUED
+  elseif at < n then
+    forward = R.ARROW
+  elseif next_entry(st) then
+    forward = R.NEXT_SONG
+  end
+  local out = { (at > 1 or st.pending) and R.ARROW or R.DARK, forward }
   for k = 1, R.BUTTONS do
     local i = st.first + k - 1
     local v = R.DARK
@@ -876,49 +899,27 @@ function R.load_now(st, rec)
   return begin(st, st.song.sections[1])
 end
 
--- A song asked for, by the way its entry starts (Brendan, 2026-11-05). Stopped, nothing is
--- playing to start after, so it loads at once, whatever its transition; the song loaded, at its
--- section 1 already, is nothing to do. Playing: silence stops the transport, and the STOP that
--- comes back loads it, ready for PLAY; next bar queues it for the pattern coming round, as a
--- queued section; go waits for go, CC 89, and then for the next bar. One song is queued at a
--- time: another asked for takes its place.
-function R.ask(st, rec, starts)
+-- A song asked for (Brendan, 2026-11-06). Stopped, it loads at once; the song loaded, at its section
+-- 1 already, is nothing to do. Playing, it waits for the pattern coming round, as a queued section,
+-- the last song playing until then. One song is queued at a time: another asked for takes its place.
+function R.ask(st, rec)
   if not st.running then
     st.pending = nil
     if rec == st.cur and st.playing == st.song.sections[1] and not st.queued then return {} end
     return R.load_now(st, rec)
   end
-  if starts == "go" then
-    st.pending = { rec = rec, wait = "go" }
-    return {}
-  elseif starts == "next-bar" then
-    st.pending = { rec = rec, wait = "bar" }
-    return {}
-  end
-  st.pending = { rec = rec, wait = "stop" }
-  return { { "stop", "bang", {} } }
-end
-
--- An Organelle key, key <n>, 1 the lowest (Brendan, 2026-11-05): the nth song of the setlist
--- chosen, by its entry's transition. A key past the setlist's end does nothing.
-function R.key(st, n)
-  local e = st.sets[st.set].entries[math.floor(num(n))]
-  if not e then return {} end
-  return R.ask(st, e.song, e.starts)
-end
-
--- Go, the right column's top button, CC 89, on every page: a song waiting for go now waits for
--- the next bar. With none waiting, nothing.
-function R.go_button(st)
-  if st.pending and st.pending.wait == "go" then st.pending.wait = "bar" end
+  st.pending = { rec = rec }
   return {}
 end
 
--- The go lamp: a song waiting for go, or one queued for the bar; dark with none.
-function R.go_lamp(st)
-  local p = st.pending
-  if not p then return R.GO_DARK end
-  return p.wait == "go" and R.GO_WAIT or R.GO_QUEUED
+-- An Organelle key, key <n>, 1 the lowest (Brendan, 2026-11-05): the nth song of the setlist
+-- chosen. A key past the setlist's end does nothing.
+function R.key(st, n)
+  local k = math.floor(num(n))
+  local e = st.sets[st.set].entries[k]
+  if not e then return {} end
+  st.at_entry = k
+  return R.ask(st, e.song)
 end
 
 -- ---- the songs tab
@@ -936,17 +937,9 @@ function R.song_turn(st, d)
   return {}
 end
 
--- load: the selected song, by its transition in the setlist chosen, the first entry that names
--- it; a song in no entry of it starts from silence.
+-- load: the selected song.
 function R.song_load(st)
-  local starts = R.STARTS[1]
-  for _, e in ipairs(st.sets[st.set].entries) do
-    if e.song == st.sel_song then
-      starts = e.starts
-      break
-    end
-  end
-  return R.ask(st, st.sel_song, starts)
+  return R.ask(st, st.sel_song)
 end
 
 -- new song: one section, a copy of the section playing, after the selected song, named "song
@@ -981,12 +974,12 @@ function R.song_rename(st, atoms)
   return {}
 end
 
--- add to set: the selected song, the setlist's last entry, starting from silence, and selected.
+-- add to set: the selected song, the setlist's last entry, and selected.
 -- A setlist holds as many songs as there are keys.
 function R.song_add(st)
   local set = st.sets[st.set]
   if #set.entries >= R.KEYS then return { report("warn", "set-full") } end
-  set.entries[#set.entries + 1] = { song = st.sel_song, starts = R.STARTS[1] }
+  set.entries[#set.entries + 1] = { song = st.sel_song }
   st.entry = #set.entries
   st.set_page = (st.entry - 1) // R.SET_ROWS + 1
   st.index_dirty = true
@@ -1028,7 +1021,7 @@ end
 
 -- ---- the setlists tab
 
--- A row tapped: the nth entry of the setlist selected, for move up, move down, starts and remove.
+-- A row tapped: the nth entry of the setlist selected, for move up, move down and remove.
 function R.entry_select(st, n)
   local k = math.floor(num(n))
   if st.sets[st.set].entries[k] then st.entry = k end
@@ -1076,17 +1069,6 @@ local function move_entry(st, d)
   return {}
 end
 
--- starts <silence | next-bar | go>: how the selected entry starts after the one before.
-function R.entry_starts(st, word)
-  local e = st.sets[st.set].entries[st.entry]
-  local w = starts_of(word)
-  if not w then return { R.fail("bad-starts") } end
-  if not e or e.starts == w then return {} end
-  e.starts = w
-  st.index_dirty = true
-  return {}
-end
-
 -- remove: the selected entry out of the setlist, and the one now in its place selected.
 function R.entry_remove(st)
   local es = st.sets[st.set].entries
@@ -1120,13 +1102,13 @@ end
 
 -- ---- the songs page's state, /cutit/songs
 
--- A song's row's words: queued for the next bar or waiting for go, or loaded; and unsaved when
+-- A song's row's words: queued for the next bar, or loaded; and unsaved when
 -- its draft differs from its save. - for none.
 local function status(st, rec, unsaved_now)
   local w = {}
   local p = st.pending
   if p and p.rec == rec then
-    w[1] = p.wait == "go" and "for go" or "next bar"
+    w[1] = "next bar"
   elseif rec == st.cur then
     w[1] = "loaded"
   end
@@ -1139,9 +1121,9 @@ end
 -- The songs page: first the songs tab, how many songs, the one selected, the page and how many,
 -- the selected one's name, then six rows of number, name and words, 0 - - for a row with none;
 -- then the setlists tab, the setlist chosen and how many, its name, its page and how many, how
--- many entries, the one selected, its song's name and how it starts, then five rows of key,
--- song and starts, 0 - - for a row with none. 47 atoms.
-R.SONGS_PHONE = 5 + 3 * R.SONG_ROWS + 9 + 3 * R.SET_ROWS
+-- many entries, the one selected and its song's name, then five rows of key and song, 0 - for a
+-- row with none. 41 atoms.
+R.SONGS_PHONE = 5 + 3 * R.SONG_ROWS + 8 + 2 * R.SET_ROWS
 function R.songs_phone(st, unsaved_now)
   if unsaved_now == nil then unsaved_now = R.unsaved(st) end
   local np = song_pages(st)
@@ -1159,26 +1141,25 @@ function R.songs_phone(st, unsaved_now)
   local spage = clip(st.set_page, 1, sp)
   local e = es[st.entry]
   for _, a in ipairs({ st.set, #st.sets, set.name, spage, sp, #es, e and st.entry or 0,
-                       e and e.song.song.name or "-", e and e.starts or "-" }) do
+                       e and e.song.song.name or "-" }) do
     out[#out + 1] = a
   end
   for r = 1, R.SET_ROWS do
     local j = (spage - 1) * R.SET_ROWS + r
     local en = es[j]
-    local row = en and { j, en.song.song.name, en.starts } or { 0, "-", "-" }
+    local row = en and { j, en.song.song.name } or { 0, "-" }
     for _, a in ipairs(row) do out[#out + 1] = a end
   end
   return out
 end
 
 -- What arrives on the first inlet: u_map's top row, top <1-8>, save and revert, the Organelle's
--- keys, key <1-25>, and go.
+-- keys, key <1-25>.
 R.presses = {
   top = function(st, a) return R.press(st, a[1]) end,
   save = function(st) return R.save(st) end,
   revert = function(st) return R.revert(st) end,
   key = function(st, a) return R.key(st, a[1]) end,
-  go = function(st) return R.go_button(st) end,
 }
 
 -- What arrives on the second: the phone's sections page, through u_net.
@@ -1208,7 +1189,6 @@ R.songs_cmds = {
   set = function(st, a) return R.set_turn(st, a[1]) end,
   up = function(st) return move_entry(st, -1) end,
   down = function(st) return move_entry(st, 1) end,
-  starts = function(st, a) return R.entry_starts(st, a[1]) end,
   ["new-set"] = function(st) return R.set_new(st) end,
   remove = function(st) return R.entry_remove(st) end,
   ["set-name"] = function(st, a) return R.set_rename(st, a) end,

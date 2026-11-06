@@ -460,11 +460,3 @@ mode-5 og-key-84 song 25
 mode-6 og-key-84 song 25
 mode-7 og-key-84 song 25
 mode-8 og-key-84 song 25
-mode-1 lp-cc-89 go 0
-mode-2 lp-cc-89 go 0
-mode-3 lp-cc-89 go 0
-mode-4 lp-cc-89 go 0
-mode-5 lp-cc-89 go 0
-mode-6 lp-cc-89 go 0
-mode-7 lp-cc-89 go 0
-mode-8 lp-cc-89 go 0

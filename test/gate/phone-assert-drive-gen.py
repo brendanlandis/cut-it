@@ -324,6 +324,9 @@ SEQ = [
     # -- the app's voices and controls in play: each out its own outlet, and each state back
     (63100, "cmdvoices", [("cmd", ("cutit", "voices left 2"))]),
     (63600, "cmdperform", [("cmd", ("cutit", "perform ctl 2 melody smooth 0.5"))]),
+    # A press sent once, and sent again as the app does until it hears: answered twice, through once.
+    (63750, "cmdonce", [("cmd", ("cutit", "once 7 perform ctl 2 melody smooth 0.25"))]),
+    (63900, "cmdonce2", [("cmd", ("cutit", "once 7 perform ctl 2 melody smooth 0.25"))]),
     (64100, "voicestate", [("sy", "voices drums voice 1"), ("sy", "perform 1")]),
     (65600, "done",     []),
 ]

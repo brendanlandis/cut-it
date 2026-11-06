@@ -47,7 +47,7 @@ ADDRS = {"/cutit/hb", "/cutit/ack", "/mark",
          # and u_perform's controls in play
          "/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
          "/cutit/sections", "/cutit/songs", "/cutit/melody", "/cutit/here", "/cutit/notes",
-         "/cutit/voices", "/cutit/perform", "/cutit/lists", "/cutit/sound",
+         "/cutit/voices", "/cutit/perform", "/cutit/lists", "/cutit/sound", "/cutit/once",
          # the driver's taps for the inbound half: u_net's outlets, err, and the presence
          # bus, which re-wire once wrote and must not now
          "/probe/drums", "/probe/synth", "/probe/tempo", "/probe/sections", "/probe/err",
@@ -75,7 +75,7 @@ WINDOWS = ["idle", "dispsweep", "dispother", "tempo", "tpsweep", "idle2", "cmdwi
            "cmddrumsnew", "cmdverbtype", "cmdrolled", "cmdsynth", "cmdsynthnew", "cmdtempo", "cmdtemponew", "cmdvel",
            "cmdvelnew", "tmmodeon", "tmmode", "drumstate", "cmdsecsel", "cmdsecpage", "cmdsecnew",
            "cmdsecup", "cmdsecdown", "cmdseclen", "cmdsecdel", "cmdsecname", "cmdsecnew2",
-           "secstate", "cmdsongs", "songstate", "cmdvoices", "cmdperform", "voicestate", "done"]
+           "secstate", "cmdsongs", "songstate", "cmdvoices", "cmdperform", "cmdonce", "cmdonce2", "voicestate", "done"]
 
 
 # ------------------------------------------------------------------- collection
@@ -355,6 +355,14 @@ def main():
     # The app's voices and controls in play: each command out its own outlet, whole, and each
     # state back, at once and on the heartbeat, as every other.
     one("cmdvoices", "/probe/voices", ["left", 2.0], "voices left 2 goes to u_voices, whole")
+    print("\n--- a press, once ---")
+    said = args("cmdonce", "/cutit/once")
+    A.check("⛔ a press sent as once: answered with its number", said == [[7.0]], said)
+    said = args("cmdonce", "/probe/perform")
+    A.check("⛔ ... and through, as if it had come plain", said == [["ctl", 2.0, "melody", "smooth", 0.25]], said)
+    A.check("⛔ sent again: answered again, and not through", args("cmdonce2", "/cutit/once") == [[7.0]]
+            and not args("cmdonce2", "/probe/perform"), (args("cmdonce2", "/cutit/once"),
+                                                         args("cmdonce2", "/probe/perform")))
     one("cmdperform", "/probe/perform", ["ctl", 2.0, "melody", "smooth", 0.5],
         "perform ctl goes to u_perform, whole")
     sent = args("voicestate", "/cutit/voices")

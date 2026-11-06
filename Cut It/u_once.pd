@@ -13,8 +13,9 @@
 #X msg 850 510 0;
 #X msg 700 610 fail u_once no-lua;
 #X obj 700 660 s err;
+#X obj 20 500 list trim;
+#X text 20 620 list trim: route matches a selector \, and the Lua hands on a list (C-6)., f 40;
 #X connect 1 0 2 0;
-#X connect 2 0 3 0;
 #X connect 2 1 4 0;
 #X connect 2 2 5 0;
 #X connect 6 0 7 0;
@@ -25,3 +26,5 @@
 #X connect 11 0 12 0;
 #X connect 2 3 10 0;
 #X connect 10 0 9 1;
+#X connect 2 0 13 0;
+#X connect 13 0 3 0;

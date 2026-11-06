@@ -9,7 +9,8 @@ whatever this section has taken into play, on every page.
 2. Move the control you want, on the phone or the Launchpad.
 3. Move the fader, knob or button that should move it.
 
-That lasts for this section, and a new section copies the list. Tempo and rush work the same way. To take one back out, tap
+That lasts for this section, and a new section copies the list. Tempo, rush, a drum track's volume, pitch and effects, and
+any parameter on a voice's setup page work the same way. To take one back out, tap
 its name on the phone's performance page. A button's name is on the button: hold it.
 
 ## What you see

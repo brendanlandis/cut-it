@@ -9,7 +9,7 @@ Press an unused row's right button. On the phone, give it a name, say what it **
 | drums | The kit | One, for now |
 | harmony | FM, strings, sine, saw or square | Two |
 | melody | FM, strings, sine, saw or square | Two |
-| keys | FM or strings | As many as you like |
+| keys | FM, strings, sine, saw or square | As many as you like |
 
 A melody follows the chords of the harmony voice in the same place: the first melody the first harmony, the second the
 second. Choosing a synth another voice has asks first, since it can only play one part.
@@ -25,6 +25,12 @@ A patch is a machine's saved sound.
 
 A synth is only told what you've actually set, so a voice taking up the Volca keeps whatever sound it has until you change
 something. Its own knobs still work, but Cut It can't see them, so they can't be saved.
+
+## Effects on a Pd voice
+
+A sine, saw or square voice's patch can hold **distortion** (drive and its type), **echo** (level, time and feedback) and
+**reverb** (level and room). Each is off until you turn it up. Distortion and echo cost almost nothing. A reverb costs about
+6% of the Organelle's CPU for as long as its level is up, even while stopped. A hardware synth's effects are its own.
 
 ## The setup page
 

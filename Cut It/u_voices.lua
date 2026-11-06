@@ -34,12 +34,12 @@ local FOR = { drums = { kit = true }, harmony = {}, melody = {}, keys = {} }
 for _, m in ipairs({ "fm", "strings", "sine", "saw", "square" }) do
   FOR.harmony[m], FOR.melody[m] = true, true
 end
--- The nanoKEY plays the hardware for now: a Pd voice takes a generator's line.
 FOR.keys.fm, FOR.keys.strings = true, true
+FOR.keys.sine, FOR.keys.saw, FOR.keys.square = true, true, true
 -- A machine a voice starts on: the first one no other voice has.
 local START = { drums = { "kit" }, harmony = { "strings", "fm", "sine", "saw", "square" },
                 melody = { "fm", "strings", "saw", "square", "sine" },
-                keys = { "fm", "strings" } }
+                keys = { "fm", "strings", "sine", "saw", "square" } }
 -- Hardware is one voice's; the phone warns before a second voice takes it (Brendan, 2026-11-06).
 R.HARDWARE = { fm = true, strings = true }
 
@@ -172,7 +172,7 @@ local function show(st, out)
   local v = st.voices[st.row]
   if v and (st.kind == "voice" or st.kind == "setup") then
     out[#out + 1] = { "engine", "active", { R.engine_of(st, st.row) or 0 } }
-    if R.HARDWARE[v.machine] then out[#out + 1] = { "synth", "machine", { v.machine } } end
+    if R.HARDWARE[v.machine] or v.method == "keys" then out[#out + 1] = { "synth", "machine", { v.machine } } end
   end
   out[#out + 1] = { "page", "page", { st.kind, st.row } }
   local open = st.kind == "songs"

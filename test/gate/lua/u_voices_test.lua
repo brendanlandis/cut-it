@@ -75,7 +75,7 @@ R.left(st, 2)
 equal("from its left page, its right button goes across", { page(R.right(st, 2)), st.kind }, { "sound", "setup" })
 out = R.right(st, 5)
 equal("⛔ an unused row's: a new voice on it, keys, on a machine no other has, and its setup page",
-      { st.voices[5], page(out), st.row }, { { name = "voice_5", method = "keys", machine = "fm" }, "sound", 5 })
+      { st.voices[5], page(out), st.row }, { { name = "voice_5", method = "keys", machine = "sine" }, "sound", 5 })
 equal("... and the song holds it", of(out, "save")[1][2], "voices")
 equal("a row off the eight does nothing", R.right(st, 9), {})
 
@@ -114,7 +114,7 @@ out = R.set_method(st, { 5, "melody" })
 equal("⛔ each line of each engine is told its voice's machine, by row order: row 3 and row 5 the melody's",
       { table.unpack(of(out, "engine"), 1, 4) },
       { { "engine", "assign", { 1, "h", "strings" } }, { "engine", "assign", { 1, "m", "fm" } },
-        { "engine", "assign", { 2, "h", "off" } }, { "engine", "assign", { 2, "m", "fm" } } })
+        { "engine", "assign", { 2, "h", "off" } }, { "engine", "assign", { 2, "m", "sine" } } })
 equal("⛔ a voice's page says which engine it is in", of(R.left(st, 5), "engine")[1],
       { "engine", "active", { 2 } })
 equal("... a keys voice in none", (function()
@@ -148,7 +148,7 @@ equal("⛔ a method that can't takes the first one free", (function()
   local s = seeded()
   R.set_method(s, { 1, "keys" })
   return s.voices[1].machine
-end)(), "fm")
+end)(), "sine")
 equal("a method it doesn't know fails", R.set_method(st, { 3, "dance" }), { { "err", "fail", { "u_voices", "bad-method" } } })
 equal("⛔ the page follows, if it's on this voice", (function()
   local s = seeded()

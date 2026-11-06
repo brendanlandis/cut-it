@@ -149,8 +149,8 @@ local class = T.load_class(DIR .. "c_synth-lua.pd_lua", DIR)
 check("c_synth-lua.pd_lua registers the class c_synth-lua",
       class and class._name == "c_synth-lua", class and class._name)
 local o = T.new(class, {})
-check("an object is made, with 2 inlets and 7 outlets",
-      o ~= nil and o.inlets == 2 and o.outlets == 7, o and (o.inlets .. " " .. o.outlets))
+check("an object is made, with 2 inlets and 8 outlets",
+      o ~= nil and o.inlets == 2 and o.outlets == 8, o and (o.inlets .. " " .. o.outlets))
 equal("init answers with the choice on outlets 3 and 4, the velocity switch on 7 and 4, the "
       .. "programs on 4, then a bang on 6", T.send(o, 2, "init", {}),
       { { 3, "synth", { "fm" } }, { 4, "synth", { "fm" } }, { 7, "velocity", { "on" } },
@@ -215,5 +215,18 @@ equal("... and the object carries on: init still answers", T.send(broken, 2, "in
         { 4, "velocity", { "on" } }, { 4, "programs", { "none", "none" } }, { 6, "bang", {} } })
 equal("a report is one symbol of 21 characters or fewer",
       R.fail("lua-" .. string.rep("x", 30))[3][2], "lua-" .. string.rep("x", 17))
+
+print("\n--- the nanoKEY on a Pd voice ---")
+do
+  local st = R.new()
+  equal("⛔ a Pd machine: c_keys told its wave", R.machine(st, { "saw" }), { { "pd", "wave", { 1 } } })
+  equal("⛔ a key takes the first of its four", R.key(st, 60, 90), { { "pd", "list", { 1, 60, 90 } } })
+  equal("... another the next", R.key(st, 64, 90), { { "pd", "list", { 2, 64, 90 } } })
+  equal("⛔ a release is that key's", R.key(st, 60, 0), { { "pd", "list", { 1, 60, 0 } } })
+  R.key(st, 61, 90); R.key(st, 62, 90); R.key(st, 63, 90)
+  equal("⛔ a fifth takes one of the four", #R.key(st, 65, 90), 1)
+  R.machine(st, { "fm" })
+  equal("⛔ back on a hardware machine, keys go to it", R.key(st, 70, 90)[1][1], "fm")
+end
 
 os.exit(T.report() == 0)

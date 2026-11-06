@@ -530,6 +530,8 @@ end
 local function diag(st)
   light(st, 81, R.SECTION_ON)
   light(st, 82, R.BLUE)
+  light(st, 83, voice_full(3))
+  light(st, 84, voice_full(3))
 end
 
 -- The frame, at most 50 times a second: -> the cells, grid indices, and the color each takes, two

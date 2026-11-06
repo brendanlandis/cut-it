@@ -102,6 +102,10 @@ flattens `/cutit/drums` and `/cutit` carrying the string `drums` to the same lis
 simply the cheaper of the two to build — one `[oscformat cutit]` on the phone rather than one per
 button.
 
+### A press, once
+
+**OSC here is UDP, and a press lost on stage is a press that didn't happen.** The app sends a one-time press as `once <seq> <words...>` to `/cutit`, again every 120 ms, up to eight more times, until it hears `/cutit/once <seq>` back. `u_once` answers every copy and lets through only the first, so a press whose answer was lost isn't doubled. A knob or a drag isn't sent this way: the next value follows. (`Cut It/u_once.pd`, `u_once.lua`.)
+
 ### The inbound vocabulary
 
 <!-- check: pd-route "Cut It/u_net.pd" result -->

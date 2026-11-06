@@ -56,7 +56,9 @@
 #X connect 3 6 29 0;
 #X obj 1450 740 list prepend restore-programs;
 #X obj 1450 790 list trim;
+#X obj 2400 1000 outlet;
 #X connect 13 2 30 0;
 #X connect 30 0 31 0;
 #X connect 31 0 3 1;
 #X connect 3 2 6 0;
+#X connect 3 7 32 0;

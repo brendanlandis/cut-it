@@ -505,8 +505,8 @@ print("\n--- the other pages ---")
 st = R.new(LAYOUT)
 R.inputs.page(st, { "diag" })
 f = frame(st)
-equal("the diagnostics page: its two pads top left, diag and test mode",
-      { f[81], f[82], #painted(st) }, { { 0, 127, 32 }, BLUE, 2 })
+equal("the diagnostics page: its pads top left, diag, test mode and the Volca's two test voices",
+      { f[81], f[82], #painted(st) }, { { 0, 127, 32 }, BLUE, 4 })
 for _, name in ipairs({ "songs", "keys" }) do
   st = R.new(LAYOUT)
   R.inputs.page(st, { name })

@@ -149,8 +149,8 @@ def main():
     # Setup: the diagnostics page, the same way.
     f = last("setup")
     if f:
-        problem, lamp = G.page_shape(f, (81, 82))
-        A.check("⛔ setup: the diagnostics page: its two pads lit, every lamp dim",
+        problem, lamp = G.page_shape(f, (81, 82, 83, 84))
+        A.check("⛔ setup: the diagnostics page: its pads lit, every lamp dim",
                 problem is None and lamp is None and f.color(81) and f.color(82),
                 problem or "cells %s %s" % (f.color(81), f.color(82)))
     f = last("setup-again")

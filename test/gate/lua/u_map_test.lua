@@ -106,7 +106,7 @@ for line in controls:gmatch("[^\n]+") do
     addresses = addresses + 1
     local takes = dest == "tempo" or dest == "rush"
     if dest == "melody" then takes = Melody.inputs[arg] ~= nil end
-    if dest == "drums" then takes = Steps.presses[arg] ~= nil end
+    if dest == "drums" then takes = Steps.presses[(arg:gsub("%*$", "1"))] ~= nil end
     if not takes then wrong[#wrong + 1] = dest .. " " .. arg end
   end
 end

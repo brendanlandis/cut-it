@@ -8,7 +8,7 @@
 -- outlet 1: note <n> <v> and program <n>, to m_volca. outlet 2: the same, to m_streich. outlet
 -- 3: synth <choice>, on a change, to u_net. outlet 4: synth <choice>, velocity
 -- <setting> or programs <volca> <streichfett>, to put under that key. outlet 5: err. outlet 6: a bang on init, the proof the Lua loaded.
--- outlet 7: velocity <on or off>, on a change, to u_net.
+-- outlet 7: velocity <on or off>, on a change, to u_net. outlet 8: to c_keys, <slot> <note> <velocity> and wave <n>.
 --
 -- A Lua error leaves outlet 5 as fail c_synth lua-<selector>, and its text goes to Pd's console
 -- where there is one: the device has none (C-12).
@@ -19,7 +19,7 @@ local SynthLua = pd.Class:new():register("c_synth-lua")
 -- (`; pdluax reload c_synth-lua`) reloads them too, and every object keeps its choice.
 local R = dofile(SynthLua._loadpath .. "c_synth.lua")
 
-local OUTLET = { fm = 1, strings = 2, choice = 3, save = 4, err = 5, phone = 7 }
+local OUTLET = { fm = 1, strings = 2, choice = 3, save = 4, err = 5, phone = 7, pd = 8 }
 
 -- Answering under pcall, the proof bang on init and the dispatch shortcut are lua-face.lua's,
 -- shared by every class that carries rules into Pd.
@@ -27,7 +27,7 @@ local F = dofile(SynthLua._loadpath .. "lua-face.lua")
 F.carry(SynthLua, R, OUTLET, 2, 6)
 
 function SynthLua:initialize()
-  self.inlets, self.outlets = 2, 7
+  self.inlets, self.outlets = 2, 8
   self.state = R.new()
   return true
 end

@@ -11,6 +11,8 @@
 --   {"save", "sounds" | "patches", {atoms}}       the state bus: put song
 --   {"heard", "list", {"machine", param, value}}  u_perform: a parameter moved on the Launchpad
 --   {"kit", "bang", {}}                           c_steps: the kit's sound as it stands is what it snaps back to
+--   {"keys", "tone" | "list", {...}}              c_keys: a keys voice on a Pd machine
+--   {"fm", "byte", {b}}                           m_volca: a whole voice a byte at a time, the diagnostics page's test
 --   {"err", "warn" | "fail", {"u_sound", text}}   err (C-12)
 -- The phone's state (R.phone) is worked out by the face, and sent when it changes.
 
@@ -97,6 +99,8 @@ local function say(st, r, row, param, value, out)
     out[#out + 1] = { row.machine, "program", { math.min(p.n - 1, math.floor(value * p.n)) } }
   elseif p.how == "pd" and row.engine and row.engine > 0 then
     out[#out + 1] = { "engine", "tone", { row.engine, row.line, param, value } }
+  elseif p.how == "pd" then
+    out[#out + 1] = { "keys", "tone", { param, value } }
   end
   return out
 end
@@ -367,7 +371,7 @@ function R.pad(st, nn, value)
     elseif row.engine and row.engine > 0 then
       return { { "engine", "hear", { row.engine, row.line, n, down and 1 or 0 } } }
     end
-    return {}
+    return { { "keys", "list", { 4, n, down and 90 or 0 } } }
   end
   if not down then return {} end
   if r == 2 then
@@ -414,10 +418,60 @@ end
 function R.mapped(st, sel, value)
   local nn = tostring(sel):match("^p(%d%d)$")
   if nn then return R.pad(st, tonumber(nn), value) end
+  local vox = tostring(sel):match("^vox(%d)$")
+  if vox then return num(value) > 0 and R.test_voice(st, tonumber(vox)) or {} end
   return R.param(st, sel, value)
 end
 
+-- A DX7 voice for the Volca (Brendan, 2026-11-06), to hear whether a one-voice dump only changes the sound in
+-- use: the one thing that decides whether its patches can be DX7 voices held in Pd. It has no MIDI out, so
+-- only ears can say. Six operators, OP6 first, 21 bytes each; then the pitch EG, the algorithm and the rest,
+-- and the name: 155 bytes, in a format 0 dump on MIDI channel 1, F0 43 00 00 01 1B <155> <checksum> F7.
+local function operator(level, coarse, fine, decay, sustain)
+  return { 99, decay, 40, 50,           -- EG rates
+           99, sustain, sustain // 2, 0,  -- EG levels
+           39, 0, 0, 0, 0,              -- keyboard scaling, its breakpoint, depths and curves
+           2, 0, 2,                     -- rate scaling, amp mod sensitivity, velocity sensitivity
+           level, 0, coarse, fine, 7 }  -- output level, ratio mode, coarse, fine, detune centered
+end
+
+local function voice_bytes(name, algorithm, feedback, ops)
+  local d = {}
+  for _, op in ipairs(ops) do
+    for _, b in ipairs(op) do d[#d + 1] = b end
+  end
+  for _, b in ipairs({ 99, 99, 99, 99, 50, 50, 50, 50 }) do d[#d + 1] = b end   -- pitch EG, flat
+  for _, b in ipairs({ algorithm - 1, feedback, 1, 35, 0, 0, 0, 0, 0, 3, 24 }) do d[#d + 1] = b end
+  for i = 1, 10 do d[#d + 1] = string.byte(name, i) or 32 end
+  local sum = 0
+  for _, b in ipairs(d) do sum = sum + b end
+  local out = { 0xF0, 0x43, 0x00, 0x00, 0x01, 0x1B }
+  for _, b in ipairs(d) do out[#out + 1] = b end
+  out[#out + 1] = (128 - (sum % 128)) % 128
+  out[#out + 1] = 0xF7
+  return out
+end
+
+-- Two voices nothing like each other or like its presets: a glassy bell, and a growling bass.
+R.TEST_VOICES = {
+  voice_bytes("CUTIT BELL", 5, 3, {
+    operator(0, 1, 0, 30, 0), operator(99, 1, 0, 40, 0), operator(70, 3, 50, 45, 0),
+    operator(92, 1, 0, 35, 0), operator(82, 7, 0, 50, 0), operator(99, 1, 0, 28, 0) }),
+  voice_bytes("CUTIT BASS", 1, 7, {
+    operator(50, 1, 0, 50, 40), operator(70, 1, 0, 60, 60), operator(80, 2, 0, 60, 50),
+    operator(85, 1, 0, 40, 50), operator(90, 1, 0, 45, 70), operator(99, 1, 0, 40, 90) }),
+}
+
+function R.test_voice(st, n)
+  local v = R.TEST_VOICES[math.floor(num(n))]
+  if not v then return {} end
+  local out = {}
+  for i, b in ipairs(v) do out[i] = { "fm", "byte", { b } } end
+  return out
+end
+
 R.phone_cmds = {
+  vox = function(st, a) return R.test_voice(st, a[1]) end,
   patch = function(st, a) return R.recall(st, a[1]) end,
   copy = function(st, a) return R.copy_factory(st, a[1]) end,
   save = function(st) return R.save(st, false) end,

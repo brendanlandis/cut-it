@@ -6,14 +6,14 @@
 -- u_sound.pd's own -- restore <key> <atoms...>, rows, init. outlet 1: to m_volca. outlet 2: to m_streich.
 -- outlet 3: tone, to the c_melody engines. outlet 4: sound <atoms>, to u_net. outlet 5: <key> <atoms>, to
 -- put song on the state bus. outlet 6: err. outlet 7: a bang on init, the proof the Lua loaded. outlet 8: heard, to u_perform.
--- outlet 9: a bang when the kit's sound is saved, to c_steps. outlet 10: sound <11 atoms>, to g_grid.
+-- outlet 9: a bang when the kit's sound is saved, to c_steps. outlet 10: sound <11 atoms>, to g_grid. outlet 11: to c_keys.
 
 local SoundLua = pd.Class:new():register("u_sound-lua")
 local Clock = pd.Clock
 
 local R = dofile(SoundLua._loadpath .. "u_sound.lua")
 
-local OUTLET = { fm = 1, strings = 2, engine = 3, save = 5, err = 6, heard = 8, kit = 9 }
+local OUTLET = { fm = 1, strings = 2, engine = 3, save = 5, err = 6, heard = 8, kit = 9, keys = 11 }
 
 local F = dofile(SoundLua._loadpath .. "lua-face.lua")
 F.carry(SoundLua, R, OUTLET, 3, 7)
@@ -32,7 +32,7 @@ local function read(self, name)
 end
 
 function SoundLua:initialize()
-  self.inlets, self.outlets = 3, 10
+  self.inlets, self.outlets = 3, 11
   self.state = R.new(read(self, "cut-it-machines.txt"), read(self, "cut-it-factory.txt"))
   return true
 end

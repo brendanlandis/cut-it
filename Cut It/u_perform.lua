@@ -52,7 +52,13 @@ end
 local function info_of(st, dest, arg)
   if type(arg) == "number" then arg = string.format("%g", arg) end
   if dest == "machine" then return { kind = "value", label = tostring(arg) } end
-  return st.controls[dest .. " " .. tostring(arg)]
+  local exact = st.controls[dest .. " " .. tostring(arg)]
+  if exact then return exact end
+  -- A row for every track's, its label with the track's number on.
+  local name, n = tostring(arg):match("^(.-)%-(%d+)$")
+  local row = name and st.controls[dest .. " " .. name .. "-*"]
+  if row then return { kind = row.kind, label = row.label .. "-" .. n } end
+  return nil
 end
 
 local function key_of(dest, arg)
@@ -81,7 +87,7 @@ function R.heard(st, row, dest, arg, value)
     st.armed = 2
   end
   for _, c in pairs(st.list) do
-    if c.dest == dest and c.arg == arg and (dest == "tempo" or dest == "rush" or c.row == row) then
+    if c.dest == dest and c.arg == arg and (dest == "tempo" or dest == "rush" or dest == "drums" or c.row == row) then
       if info and info.kind == "toggle" then
         if value ~= 0 then c.value = 1 - c.value end
       else

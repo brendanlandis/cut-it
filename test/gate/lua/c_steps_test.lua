@@ -1814,6 +1814,19 @@ R.internal.restore(st, oddty)
 got[2] = st.verb_type
 equal("a type past 2 is 2, and a symbol is the plate", got, { 2, 0 })
 
+print("\n--- the drum page's controls, 0 to 1, for a control in play ---")
+do
+  local st = R.new(1)
+  R.presses["vol-3"](st, { 1 })
+  equal("volume, -30 to +6", st.vol[3], R.VOL_MAX)
+  R.presses["pitch-3"](st, { 0 })
+  equal("pitch, -12 to +12", st.pitch[3], R.PITCH_MIN)
+  R.presses["drive-4"](st, { 0.5 })
+  equal("an effect, 0 to 100", st.fx.drive[4], 50)
+  R.presses["kit-swing"](st, { 0 })
+  equal("the swing", st.swing, R.SWING_MIN)
+end
+
 print("\n--- the kit's sound is the song's ---")
 do
   local st = R.new(1)

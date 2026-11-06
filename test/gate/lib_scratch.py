@@ -62,7 +62,7 @@ LUA = (os.environ.get("LUA") or shutil.which("lua5.4") or shutil.which("lua")
 # ctlout (cc and panic's CC 123), its pgmout and its inquiry's midiout, as m_volca has them
 # plus the inquiry, and m_nanokey's notein. c_devid 62, the Streichfett's, is the same
 # sysexin box as the others'.
-MIDI_EXPECT = {"midiout": 8, "noteout": 2, "ctlout": 4, "pgmout": 2,
+MIDI_EXPECT = {"midiout": 9, "noteout": 2, "ctlout": 4, "pgmout": 2,
                "notein": 2, "ctlin": 2, "sysexin": 2}
 
 # The MIDI objects with no stub: counted, so a new one cannot appear unannounced,

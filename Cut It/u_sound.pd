@@ -35,6 +35,7 @@
 #X obj 1300 1000 s perform-heard;
 #X obj 1500 1000 s kit-save;
 #X obj 1700 1100 outlet;
+#X obj 1900 1100 outlet;
 #X connect 2 0 4 0;
 #X connect 3 0 4 1;
 #X connect 5 0 6 0;
@@ -70,3 +71,4 @@
 #X connect 4 7 32 0;
 #X connect 4 8 33 0;
 #X connect 4 9 34 0;
+#X connect 4 10 35 0;

@@ -217,4 +217,18 @@ equal("restore on inlet 3 takes it all away", next(o.state.list), nil)
 equal("a phone command it doesn't know is bad-selector, on outlet 5", T.send(o, 2, "shuffle", {}),
       { { 5, "fail", { "u_perform", "bad-selector" } } })
 
+print("\n--- a drum control into play ---")
+do
+  local text = assert(io.open("Cut It/cut-it-controls.txt")):read("a")
+  local st = R.new(text)
+  R.arm(st, 1)
+  R.heard(st, 1, "drums", "drive-3", 0.5)
+  equal("⛔ a track's control is known by its table row, track and all", st.armed, 2)
+  R.control(st, "slider-2", 0.2)
+  equal("⛔ bound", st.list["slider-2"].arg, "drive-3")
+  equal("⛔ it moves that track's", R.control(st, "slider-2", 0.4),
+        { { "route", "list", { "drums", "drive-3", 0.4, 0.4, 1 } } })
+  equal("⛔ the phone names it with its track", R.phone(st)[1 + 14 + 4 + 1], "drive-3")
+end
+
 os.exit(T.report() == 0)

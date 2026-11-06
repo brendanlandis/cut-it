@@ -52,7 +52,7 @@ end
 
 -- held[note] is the synth that note's note-on went to, while the key is down.
 function R.new()
-  return { choice = R.BOOT, held = {}, velocity = R.BOOT_VELOCITY,
+  return { choice = R.BOOT, held = {}, velocity = R.BOOT_VELOCITY, pd_slots = {}, pd_next = 0,
            programs = { fm = R.NONE, strings = R.NONE } }
 end
 
@@ -66,6 +66,37 @@ local function tell_velocity(st)
   return { { "phone", "velocity", { st.velocity } }, { "save", "velocity", { st.velocity } } }
 end
 
+-- The nanoKEY on a Pd voice (Brendan, 2026-11-06), which c_keys plays, four notes at once: a wave for each
+-- machine, and which of its four each key is on. A press with all four down takes the oldest's.
+R.PD = { sine = 0, saw = 1, square = 2 }
+R.PD_SLOTS = 4
+local function pd_key(st, n, v)
+  local slots = st.pd_slots
+  if v == 0 then
+    for s = 1, R.PD_SLOTS do
+      if slots[s] == n then
+        slots[s] = nil
+        return { { "pd", "list", { s, n, 0 } } }
+      end
+    end
+    return {}
+  end
+  local s
+  for k = 1, R.PD_SLOTS do
+    if slots[k] == n or not slots[k] then
+      s = k
+      break
+    end
+  end
+  if not s then
+    st.pd_next = st.pd_next % R.PD_SLOTS + 1
+    s = st.pd_next
+  end
+  slots[s] = n
+  if st.velocity == "off" then v = R.FULL end
+  return { { "pd", "list", { s, n, v } } }
+end
+
 -- A key: <note> <velocity>, 0 a release. A press goes to the synth chosen now and is remembered
 -- there; its release goes to the synth that got the press, whatever the choice is by then, so a
 -- switch mid-chord leaves nothing hanging. A press of a key already down on another synth
@@ -73,6 +104,7 @@ end
 -- the patch, goes to the synth chosen now: a note-off nothing holds is harmless.
 function R.key(st, note, velocity)
   local n, v = byte(note), byte(velocity)
+  if st.pd_wave then return pd_key(st, n, v) end
   local was = st.held[n]
   if v == 0 then
     st.held[n] = nil
@@ -111,8 +143,17 @@ end
 -- hears, and it isn't put: looking at a voice's page changes nothing in the song.
 function R.machine(st, atoms)
   local choice = atoms[1]
+  if R.PD[choice] then
+    st.by_voice = true
+    st.pd_wave = R.PD[choice]
+    return { { "pd", "wave", { st.pd_wave } } }
+  end
   if not KNOWN[choice] then return { R.fail("bad-synth") } end
   st.by_voice = true
+  if st.pd_wave then
+    st.pd_wave = nil
+    st.pd_slots = {}
+  end
   if choice == st.choice then return {} end
   st.choice = choice
   return { { "choice", "synth", { choice } } }

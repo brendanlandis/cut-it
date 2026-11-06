@@ -184,3 +184,5 @@ perform lp-cc-8 perform btn-b-8
 diag pad-81 diag 0
 diag pad-82 test-mode 0
 sound pad-* machine p
+diag pad-83 machine vox1
+diag pad-84 machine vox2

@@ -27,9 +27,9 @@ struct NotesView: View {
                         .onEnded { _ in release() })
             }
             HStack(spacing: 8) {
-                Pad(title: "on", on: cut.onMelody) { cut.send("melody", "on-m", 1) }
-                Pad(title: "roll") { cut.send("melody", "roll-melody", 1) }
-                Pad(title: "clear pins", width: 110) { cut.send("melody", "pins-clear", 1) }
+                Pad(title: "on", on: cut.onMelody) { cut.press("melody", "on-m", 1) }
+                Pad(title: "roll") { cut.press("melody", "roll-melody", 1) }
+                Pad(title: "clear pins", width: 110) { cut.press("melody", "pins-clear", 1) }
                 Spacer()
             }
         }
@@ -135,16 +135,16 @@ struct NotesView: View {
             let pitch = on ? n : rows[row]
             drag = Drag(from: step, step: step, row: on ? rowOf(n) : row, pitch: pitch, made: !on)
             cut.holding = true
-            cut.send("melody", "note-hear", pitch, 1)
+            cut.press("melody", "note-hear", pitch, 1)
             Tick.down()
             return
         }
         guard step != d.step || row != d.row else { return }
         d.moved = true
         if row != d.row {
-            cut.send("melody", "note-hear", d.pitch, 0)
+            cut.press("melody", "note-hear", d.pitch, 0)
             d.pitch = rows[row]
-            cut.send("melody", "note-hear", d.pitch, 1)
+            cut.press("melody", "note-hear", d.pitch, 1)
         }
         d.step = step
         d.row = row
@@ -157,25 +157,25 @@ struct NotesView: View {
         guard let d = drag else { return }
         drag = nil
         cut.holding = false
-        cut.send("melody", "note-hear", d.pitch, 0)
+        cut.press("melody", "note-hear", d.pitch, 0)
     }
 
     private func release() {
         guard let d = drag else { return }
         drag = nil
         cut.holding = false
-        cut.send("melody", "note-hear", d.pitch, 0)
+        cut.press("melody", "note-hear", d.pitch, 0)
         if d.moved && d.step != d.from || (d.moved && !d.made) {
-            cut.send("melody", "note-move", d.from, d.step, d.pitch)
+            cut.press("melody", "note-move", d.from, d.step, d.pitch)
             cut.notes[d.from - 1] = 0
             cut.notes[d.step - 1] = d.pitch
             cut.codes[d.step - 1] = 4
         } else if d.made {
-            cut.send("melody", "note-set", d.step, d.pitch)
+            cut.press("melody", "note-set", d.step, d.pitch)
             cut.notes[d.step - 1] = d.pitch
             cut.codes[d.step - 1] = 4
         } else {
-            cut.send("melody", "note-rest", d.from)
+            cut.press("melody", "note-rest", d.from)
             cut.notes[d.from - 1] = 0
         }
     }

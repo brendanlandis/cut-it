@@ -93,6 +93,7 @@
 #X obj 2300 1640 u_voices;
 #X obj 2300 1760 u_perform;
 #X obj 2300 1880 u_sound;
+#X obj 1620 1780 c_keys;
 #X connect 4 0 45 0;
 #X connect 44 3 45 1;
 #X connect 45 0 5 0;
@@ -127,3 +128,6 @@
 #X connect 49 2 46 0;
 #X connect 49 3 23 2;
 #X connect 49 4 21 2;
+#X connect 39 4 50 0;
+#X connect 49 5 50 0;
+#X connect 50 0 45 1;

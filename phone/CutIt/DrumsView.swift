@@ -23,8 +23,8 @@ struct DrumsView: View {
                 }
                 .frame(maxHeight: .infinity)
                 HStack(spacing: 6) {
-                    Pad(title: "sync", width: 70) { cut.send("drums", "sync") }
-                    Pad(title: "snap", width: 70) { cut.send("drums", "snap") }
+                    Pad(title: "sync", width: 70) { cut.press("drums", "sync") }
+                    Pad(title: "snap", width: 70) { cut.press("drums", "snap") }
                     Spacer()
                 }
             }
@@ -45,31 +45,31 @@ struct DrumsView: View {
         switch effect {
         case .distortion:
             VStack(spacing: 10) {
-                segments(["soft", "hard", "fold", "crush"], Int(fx(Fx.char)) - 1) { cut.send("drums", "char", t, $0 + 1) }
+                segments(["soft", "hard", "fold", "crush"], Int(fx(Fx.char)) - 1) { cut.press("drums", "char", t, $0 + 1) }
                 HStack {
-                    knob("drive", fx(Fx.drive)) { cut.send("drums", "drive", t, $0) }
-                    knob("tone", fx(Fx.tone)) { cut.send("drums", "tone", t, $0) }
-                    knob("mix", fx(Fx.dist)) { cut.send("drums", "dist", t, $0) }
+                    knob("drive", fx(Fx.drive)) { cut.control("drums", "drive-\(t)", Double($0) / 100) }
+                    knob("tone", fx(Fx.tone)) { cut.control("drums", "tone-\(t)", Double($0) / 100) }
+                    knob("mix", fx(Fx.dist)) { cut.control("drums", "dist-\(t)", Double($0) / 100) }
                 }
                 Spacer(minLength: 0)
             }
         case .delay:
             VStack(spacing: 10) {
-                segments(["1/2", "1/4", "1/8", "1/16", "1/32"], Int(fx(Fx.delayNote)) - 1) { cut.send("drums", "delay-note", t, $0 + 1) }
-                segments(["straight", "triplet", "dotted"], Int(fx(Fx.delayFeel)) - 1) { cut.send("drums", "delay-feel", t, $0 + 1) }
+                segments(["1/2", "1/4", "1/8", "1/16", "1/32"], Int(fx(Fx.delayNote)) - 1) { cut.press("drums", "delay-note", t, $0 + 1) }
+                segments(["straight", "triplet", "dotted"], Int(fx(Fx.delayFeel)) - 1) { cut.press("drums", "delay-feel", t, $0 + 1) }
                 HStack {
-                    knob("feedback", fx(Fx.feedback)) { cut.send("drums", "feedback", t, $0) }
-                    knob("level", fx(Fx.delay)) { cut.send("drums", "delay", t, $0) }
+                    knob("feedback", fx(Fx.feedback)) { cut.control("drums", "feedback-\(t)", Double($0) / 100) }
+                    knob("level", fx(Fx.delay)) { cut.control("drums", "delay-\(t)", Double($0) / 100) }
                 }
                 Spacer(minLength: 0)
             }
         case .reverb:
             VStack(spacing: 10) {
-                segments(["plate", "giga", "free"], Int(cut.drum(verbTypeAt))) { cut.send("drums", "verb-type", $0) }
+                segments(["plate", "giga", "free"], Int(cut.drum(verbTypeAt))) { cut.press("drums", "verb-type", $0) }
                 HStack {
-                    knob("send", fx(Fx.send)) { cut.send("drums", "send", t, $0) }
-                    knob("size", cut.drum(fxOffset + Fx.count)) { cut.send("drums", "size", $0) }
-                    knob("damping", cut.drum(fxOffset + Fx.count + 1)) { cut.send("drums", "damping", $0) }
+                    knob("send", fx(Fx.send)) { cut.control("drums", "send-\(t)", Double($0) / 100) }
+                    knob("size", cut.drum(fxOffset + Fx.count)) { cut.control("drums", "kit-size", Double($0) / 100) }
+                    knob("damping", cut.drum(fxOffset + Fx.count + 1)) { cut.control("drums", "kit-damping", Double($0) / 100) }
                 }
                 Spacer(minLength: 0)
             }
@@ -122,14 +122,14 @@ struct TrackPad: View {
                     .onChanged { d in
                         if from == nil {
                             from = value
-                            if !sel { cut.send("drums", "select", track) }
+                            if !sel { cut.press("drums", "select", track) }
                         }
                         drag(d.translation.height)
                     }
                     .onEnded { _ in from = nil })
             HStack(spacing: 1) {
-                flag("M", muteOn) { cut.send("drums", "mute", track, muteOn ? 0 : 1) }
-                flag("S", soloOn) { cut.send("drums", "solo", track, soloOn ? 0 : 1) }
+                flag("M", muteOn) { cut.press("drums", "mute", track, muteOn ? 0 : 1) }
+                flag("S", soloOn) { cut.press("drums", "solo", track, soloOn ? 0 : 1) }
             }
         }
     }
@@ -169,13 +169,13 @@ struct TrackPad: View {
         guard let from else { return }
         switch show {
         case .volume:
-            cut.send("drums", "vol", track, max(-30, min(6, (from - dy / 5).rounded())))
+            cut.control("drums", "vol-\(track)", (max(-30, min(6, (from - dy / 5).rounded())) + 30) / 36)
         case .pitch:
-            cut.send("drums", "pitch", track, max(-12, min(12, (from - dy / 8).rounded())))
+            cut.control("drums", "pitch-\(track)", (max(-12, min(12, (from - dy / 8).rounded())) + 12) / 24)
         case .last:
             cut.send("drums", "set-track-last", track, Int(max(1, min(32, (from - dy / 6).rounded()))))
         case .random:
-            cut.send("drums", "randomness", track, Int(max(0, min(100, (from - dy) / 5).rounded() * 5)))
+            cut.control("drums", "randomness-\(track)", max(0, min(100, ((from - dy) / 5).rounded() * 5)) / 100)
         }
     }
 }

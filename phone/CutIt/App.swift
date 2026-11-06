@@ -101,7 +101,7 @@ struct Rail: View {
                 let lit = cut.pageRow == row && cut.pageKind == (side == .left ? "voice" : "setup")
                 Button {
                     Tick.down()
-                    cut.send("voices", side == .left ? "left" : "right", row)
+                    cut.press("voices", side == .left ? "left" : "right", row)
                 } label: {
                     Text(title(v, row))
                         .font(.system(size: 12, weight: lit ? .semibold : .regular))

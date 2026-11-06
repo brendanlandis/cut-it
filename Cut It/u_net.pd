@@ -203,7 +203,7 @@
 #X connect 88 0 89 0;
 #X connect 89 0 90 0;
 #X connect 90 0 91 0;
-#X connect 91 0 92 0;
+
 #X connect 93 0 94 0;
 #X connect 94 0 95 0;
 #X connect 95 0 96 0;
@@ -528,6 +528,11 @@
 #X obj 9800 4540 oscformat cutit lists;
 #X obj 9800 4600 s \$0-osc;
 #X obj 10000 4450 r \$0-hb-velocity;
+#X obj 40 3430 route once;
+#X obj 40 3460 u_once;
+#X obj 400 3520 oscformat cutit once;
+#X obj 400 3580 s \$0-osc;
+#X text 40 3350 once: a one-time press \, which the app sends until it hears it back. u_once passes it on the first time. Anything else goes straight on., f 40;
 #X connect 35 0 254 0;
 #X connect 254 0 255 0;
 #X connect 255 0 256 0;
@@ -564,3 +569,9 @@
 #X connect 282 0 283 0;
 #X connect 283 0 284 0;
 #X connect 285 0 282 0;
+#X connect 91 0 286 0;
+#X connect 286 0 287 0;
+#X connect 286 1 92 0;
+#X connect 287 0 92 0;
+#X connect 287 1 288 0;
+#X connect 288 0 289 0;

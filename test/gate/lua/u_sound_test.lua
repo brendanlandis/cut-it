@@ -80,6 +80,25 @@ equal("the patch, the song's patches for this machine, the factory's, the parame
 print("\n--- a Pd voice's default is said ---")
 st = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
 out = R.rows(st, rows(3, { [3] = { "saw", 2, "m" } }))
-equal("⛔ taken up, its four parameters go to its engine, so another patch's don't linger", #out, 4)
+equal("⛔ taken up, its parameters go to its engine, so another patch's don't linger", #out, 11)
+
+print("\n--- a keys voice on a Pd machine ---")
+st = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
+R.rows(st, rows(4, { [4] = { "saw", 0, "-" } }))
+equal("⛔ its parameter goes to c_keys", R.param(st, "4:reverb", 0.5), { { "keys", "tone", { "reverb", 0.5 } } })
+
+print("\n--- the Volca's test voices ---")
+for n, v in ipairs(R.TEST_VOICES) do
+  local sum = 0
+  for i = 7, 161 do sum = sum + v[i] end
+  equal("voice " .. n .. ": a format 0 dump, 155 bytes of data, its checksum right, ends F7",
+        { #v, v[1], v[2], v[4], v[5], v[6], (sum + v[162]) % 128, v[163] },
+        { 163, 0xF0, 0x43, 0, 1, 0x1B, 0, 0xF7 })
+  local ok = true
+  for i = 2, 162 do ok = ok and v[i] >= 0 and v[i] <= 127 end
+  equal("... every data byte below 128", ok, true)
+end
+equal("a test voice goes a byte at a time", #R.mapped(st, "vox1", 1), 163)
+equal("... on a press, not its release", R.mapped(st, "vox1", 0), {})
 
 os.exit(T.report() == 0)

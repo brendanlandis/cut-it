@@ -147,10 +147,10 @@ def lint():
     # these, so a new throw~ is a decision and not a leak.
     kit = {"\\$2-verb": ["c_voice.pd"], "\\$2-d\\$1": ["c_voice.pd"],
            "\\$1-out": ["e_delay.pd", "e_freeverb.pd", "e_gigaverb.pd", "e_plate.pd"],
-           "\\$1-verb": ["e_delay.pd"]}
+           "\\$1-verb": ["e_delay.pd"], "\\$0-verb": ["e_line.pd"]}
     kit_catch = {"\\$1-d\\$2": ["e_delay.pd"], "\\$1-verb": ["e_verb.pd"],
-                 "\\$0-out": ["c_kit.pd"]}
-    A.check("⛔ every other throw~ is the drums', private to c_kit's \\$0, each caught inside c_kit",
+                 "\\$0-out": ["c_kit.pd", "e_line.pd"]}
+    A.check("⛔ every other throw~ is private to a c_kit's or an e_line's \\$0, each caught inside it",
             private == kit and catches == kit_catch,
             "private throw~ %s, catch~ %s" % (private, catches))
     # The reverb's sends reach its engines by one send~ in e_verb, under its \$0, which each of its

@@ -16,7 +16,7 @@ struct PerformView: View {
                 }
                 Spacer()
                 Text(String(format: "%g", cut.tempo)).font(.system(size: 15, design: .monospaced))
-                Pad(title: armText, on: cut.armed > 0, width: 150, color: Theme.red) { cut.send("perform", "arm") }
+                Pad(title: armText, on: cut.armed > 0, width: 150, color: Theme.red) { cut.press("perform", "arm") }
                     .frame(height: 32).scaleEffect(y: 0.8)
             }
             .frame(height: 34)
@@ -78,7 +78,7 @@ struct StripView: View {
     }
 
     private func name(_ h: Cut.Held, _ what: String) -> some View {
-        Button { if h.inPlay { cut.send("perform", "remove", "\(what)-\(lane)") } } label: {
+        Button { if h.inPlay { cut.press("perform", "remove", "\(what)-\(lane)") } } label: {
             VStack(spacing: 0) {
                 Text(voiceName(h)).font(.system(size: 10)).foregroundStyle(Theme.voice(h.row))
                 Text(h.inPlay ? h.label : "").font(.system(size: 11))
@@ -98,7 +98,7 @@ struct StripView: View {
         Button {
             if h.inPlay {
                 Tick.down()
-                cut.send("perform", "press", "\(what)-\(lane)")
+                cut.press("perform", "press", "\(what)-\(lane)")
             }
         } label: {
             Text(h.inPlay ? h.label : "").font(.system(size: 11)).lineLimit(1).minimumScaleFactor(0.6)
@@ -109,7 +109,7 @@ struct StripView: View {
         }
         .buttonStyle(.plain)
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.6).onEnded { _ in
-            if h.inPlay { cut.send("perform", "remove", "\(what)-\(lane)") }
+            if h.inPlay { cut.press("perform", "remove", "\(what)-\(lane)") }
         })
     }
 }
@@ -138,16 +138,16 @@ struct HarmonyView: View {
     private var chordsPage: some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
-                Pad(title: "on", on: cut.onChords, width: 60, color: Theme.voice(cut.pageRow)) { cut.send("melody", "on-h", 1) }
-                Pad(title: "roll", width: 60) { cut.send("melody", "roll-chords", 1) }
+                Pad(title: "on", on: cut.onChords, width: 60, color: Theme.voice(cut.pageRow)) { cut.press("melody", "on-h", 1) }
+                Pad(title: "roll", width: 60) { cut.press("melody", "roll-chords", 1) }
                 Choice(label: "key", value: Self.keys[max(0, min(11, cut.key - 1))], options: Self.keys, width: 66) { i, _ in
-                    cut.send("melody", "set", "key", i + 1)
+                    cut.press("melody", "set", "key", i + 1)
                 }
                 Choice(label: "mode", value: Self.modes[max(0, min(8, cut.mode - 1))], options: Self.modes, width: 112) { i, _ in
-                    cut.send("melody", "set", "mode", i + 1)
+                    cut.press("melody", "set", "mode", i + 1)
                 }
-                Pad(title: cut.style == 2 ? "functional" : "modal", on: cut.style == 2, width: 84) { cut.send("melody", "style", 1) }
-                Pad(title: "bass", on: cut.bass == 1, width: 54) { cut.send("melody", "bass", 1) }
+                Pad(title: cut.style == 2 ? "functional" : "modal", on: cut.style == 2, width: 84) { cut.press("melody", "style", 1) }
+                Pad(title: "bass", on: cut.bass == 1, width: 54) { cut.press("melody", "bass", 1) }
                 Spacer(minLength: 0)
             }
             HStack(spacing: 4) {
@@ -197,7 +197,7 @@ struct ChordBox: View {
             .updating($down) { _, on, _ in on = true })
         .onChange(of: down) { _, on in
             if on { Tick.down() }
-            cut.send("melody", "audition", chord.id, on ? 1 : 0)
+            cut.press("melody", "audition", chord.id, on ? 1 : 0)
         }
     }
 }
@@ -223,9 +223,9 @@ struct MelodyView: View {
     private var shape: some View {
         VStack(spacing: 10) {
             HStack(spacing: 8) {
-                Pad(title: "on", on: cut.onMelody, width: 60, color: Theme.voice(cut.pageRow)) { cut.send("melody", "on-m", 1) }
-                Pad(title: "roll", width: 60) { cut.send("melody", "roll-melody", 1) }
-                Pad(title: "clear pins", width: 90) { cut.send("melody", "pins-clear", 1) }
+                Pad(title: "on", on: cut.onMelody, width: 60, color: Theme.voice(cut.pageRow)) { cut.press("melody", "on-m", 1) }
+                Pad(title: "roll", width: 60) { cut.press("melody", "roll-melody", 1) }
+                Pad(title: "clear pins", width: 90) { cut.press("melody", "pins-clear", 1) }
                 Spacer()
             }
             Spacer(minLength: 0)
@@ -269,7 +269,7 @@ struct KeysView: View {
                 Text(machine).font(.system(size: 18)).foregroundStyle(Theme.dim)
             }
             Pad(title: "velocity", on: cut.velocityOn, width: 120) {
-                cut.send("velocity", cut.velocityOn ? "off" : "on")
+                cut.press("velocity", cut.velocityOn ? "off" : "on")
             }
             Spacer()
         }
@@ -305,10 +305,10 @@ struct SoundView: View {
                         .focused($typing).submitLabel(.done)
                         .padding(.horizontal, 8).frame(width: 130, height: 32)
                         .background(Theme.field, in: .rect(cornerRadius: 5))
-                        .onSubmit { cut.send("voices", "name", cut.pageRow, name) }
+                        .onSubmit { cut.press("voices", "name", cut.pageRow, name) }
                 }
                 Choice(label: "does", value: voice?.method ?? "-", options: Self.methods, width: 96) { _, m in
-                    cut.send("voices", "method", cut.pageRow, m)
+                    cut.press("voices", "method", cut.pageRow, m)
                 }
                 if voice?.method != "drums" {
                     Choice(label: "machine", value: voice?.machine ?? "-", options: Self.machines, width: 96) { _, m in
@@ -317,9 +317,9 @@ struct SoundView: View {
                 }
                 Choice(label: "patch", value: cut.patch, options: cut.patches + cut.factory.map { "+ \($0)" }, width: 130) { _, p in
                     if p.hasPrefix("+ ") {
-                        cut.send("sound", "copy", String(p.dropFirst(2)))
+                        cut.press("sound", "copy", String(p.dropFirst(2)))
                     } else {
-                        cut.send("sound", "patch", p)
+                        cut.press("sound", "patch", p)
                     }
                 }
                 Spacer(minLength: 0)
@@ -327,18 +327,18 @@ struct SoundView: View {
             if let sure {
                 HStack(spacing: 8) {
                     Text("\(sure) is another voice's").font(.system(size: 14))
-                    Pad(title: "use it", width: 80) { cut.send("voices", "machine", cut.pageRow, sure); self.sure = nil }
+                    Pad(title: "use it", width: 80) { cut.press("voices", "machine", cut.pageRow, sure); self.sure = nil }
                     Pad(title: "cancel", width: 80, color: .gray) { self.sure = nil }
                     Spacer()
                 }
             }
             params.frame(maxHeight: .infinity)
             HStack(spacing: 8) {
-                Pad(title: "save to patch", width: 120) { cut.send("sound", "save") }
-                Pad(title: "save as new", width: 110) { cut.send("sound", "saveas") }
-                Pad(title: "perform", on: cut.armed > 0, width: 90) { cut.send("perform", "arm") }
+                Pad(title: "save to patch", width: 120) { cut.press("sound", "save") }
+                Pad(title: "save as new", width: 110) { cut.press("sound", "saveas") }
+                Pad(title: "perform", on: cut.armed > 0, width: 90) { cut.press("perform", "arm") }
                 Spacer()
-                Pad(title: "remove voice", width: 110, color: .gray) { cut.send("voices", "remove", cut.pageRow) }
+                Pad(title: "remove voice", width: 110, color: .gray) { cut.press("voices", "remove", cut.pageRow) }
             }
         }
         .onAppear { name = voice?.shown ?? "" }
@@ -370,7 +370,7 @@ struct SoundView: View {
         if taken && (m == "fm" || m == "strings") {
             sure = m
         } else {
-            cut.send("voices", "machine", cut.pageRow, m)
+            cut.press("voices", "machine", cut.pageRow, m)
         }
     }
 }
@@ -410,9 +410,9 @@ struct SongsView: View {
 
     private func name() {
         switch naming {
-        case .song: cut.send("songs", "name", typed)
-        case .section: cut.send("sections", "name", typed)
-        case .set: cut.send("songs", "set-name", typed)
+        case .song: cut.press("songs", "name", typed)
+        case .section: cut.press("sections", "name", typed)
+        case .set: cut.press("songs", "set-name", typed)
         default: break
         }
         naming = nil
@@ -427,10 +427,10 @@ struct SongsView: View {
         VStack(spacing: 4) {
             Menu {
                 ForEach(Array(cut.sets.enumerated()), id: \.offset) { i, s in
-                    Button(s) { showAll = false; cut.send("songs", "choose", i + 1) }
+                    Button(s) { showAll = false; cut.press("songs", "choose", i + 1) }
                 }
                 Button("all songs") { showAll = true }
-                Button("new setlist") { cut.send("songs", "new-set") }
+                Button("new setlist") { cut.press("songs", "new-set") }
                 Button("name this setlist") { ask(.set, setName) }
             } label: {
                 HStack {
@@ -448,29 +448,29 @@ struct SongsView: View {
                         ForEach(cut.allSongs) { s in
                             ListRow(number: nil, name: s.name, words: s.words, selected: s.id == cut.songSelected,
                                     playing: s.words.contains("loaded"), queued: s.words.contains("next")) {
-                                cut.send("songs", "select", s.id)
+                                cut.press("songs", "select", s.id)
                             }
                         }
                     } else {
                         ForEach(cut.setEntries) { e in
                             ListRow(number: e.id, name: e.name, words: e.words, selected: e.id == cut.entrySelected,
                                     playing: e.words.contains("loaded"), queued: e.words.contains("next")) {
-                                cut.send("songs", "entry", e.id)
+                                cut.press("songs", "entry", e.id)
                             }
                         }
                     }
                 }
             }
             HStack(spacing: 4) {
-                small("load") { cut.send("songs", "load") }
-                small("new") { cut.send("songs", "new") }
+                small("load") { cut.press("songs", "load") }
+                small("new") { cut.press("songs", "new") }
                 Menu {
                     Button("name") { ask(.song, cut.allSongs.first { $0.id == cut.songSelected }?.name ?? "") }
-                    Button("add to setlist") { cut.send("songs", "add") }
-                    Button("take off setlist") { cut.send("songs", "remove") }
-                    Button("move up") { cut.send("songs", "up") }
-                    Button("move down") { cut.send("songs", "down") }
-                    Button("delete song", role: .destructive) { cut.send("songs", "delete"); cut.send("songs", "delete") }
+                    Button("add to setlist") { cut.press("songs", "add") }
+                    Button("take off setlist") { cut.press("songs", "remove") }
+                    Button("move up") { cut.press("songs", "up") }
+                    Button("move down") { cut.press("songs", "down") }
+                    Button("delete song", role: .destructive) { cut.press("songs", "delete"); cut.press("songs", "delete") }
                 } label: {
                     Image(systemName: "ellipsis").frame(maxWidth: .infinity, minHeight: 36)
                         .foregroundStyle(.white).background(Theme.field, in: .rect(cornerRadius: 6))
@@ -496,19 +496,19 @@ struct SongsView: View {
                     ForEach(cut.sections) { s in
                         ListRow(number: s.id, name: s.name, words: s.words, selected: s.id == cut.sectionSelected,
                                 playing: s.id == cut.sectionPlaying, queued: s.id == cut.sectionQueued) {
-                            cut.send("sections", "select", s.id)
+                            cut.press("sections", "select", s.id)
                         }
                     }
                 }
             }
             HStack(spacing: 4) {
-                small("new") { cut.send("sections", "new") }
-                small("save as new") { cut.send("sections", "saveas") }
+                small("new") { cut.press("sections", "new") }
+                small("save as new") { cut.press("sections", "saveas") }
                 Menu {
                     Button("name") { ask(.section, selected?.name ?? "") }
-                    Button("move up") { cut.send("sections", "up") }
-                    Button("move down") { cut.send("sections", "down") }
-                    Button("delete section", role: .destructive) { cut.send("sections", "delete") }
+                    Button("move up") { cut.press("sections", "up") }
+                    Button("move down") { cut.press("sections", "down") }
+                    Button("delete section", role: .destructive) { cut.press("sections", "delete") }
                 } label: {
                     Image(systemName: "ellipsis").frame(width: 44, height: 36)
                         .foregroundStyle(.white).background(Theme.field, in: .rect(cornerRadius: 6))
@@ -529,28 +529,28 @@ struct SongsView: View {
             }
             .frame(height: 34)
             stepper("length", selected?.words ?? "loop",
-                    { cut.send("sections", "length", max(0, length - 1)) },
-                    { cut.send("sections", "length", min(64, length + 1)) })
+                    { cut.press("sections", "length", max(0, length - 1)) },
+                    { cut.press("sections", "length", min(64, length + 1)) })
             stepper("tempo", String(format: "%g", cut.tempo),
-                    { cut.send("tempo", (cut.tempo - 1).rounded()) },
-                    { cut.send("tempo", (cut.tempo + 1).rounded()) })
+                    { cut.press("tempo", (cut.tempo - 1).rounded()) },
+                    { cut.press("tempo", (cut.tempo + 1).rounded()) })
             stepper("last step", String(Int(cut.drum(1))),
-                    { cut.send("drums", "set-last", Int(cut.drum(1)) - 1) },
-                    { cut.send("drums", "set-last", Int(cut.drum(1)) + 1) })
+                    { cut.press("drums", "set-last", Int(cut.drum(1)) - 1) },
+                    { cut.press("drums", "set-last", Int(cut.drum(1)) + 1) })
             stepper("time", "\(Int(cut.drum(36)))/\(Int(cut.drum(37)))",
-                    { cut.send("drums", "num", -1) }, { cut.send("drums", "num", 1) })
+                    { cut.press("drums", "num", -1) }, { cut.press("drums", "num", 1) })
             stepper("swing", String(Int(cut.drum(39))),
-                    { cut.send("drums", "set-swing", max(50, Int(cut.drum(39)) - 1)) },
-                    { cut.send("drums", "set-swing", min(75, Int(cut.drum(39)) + 1)) })
+                    { cut.press("drums", "set-swing", max(50, Int(cut.drum(39)) - 1)) },
+                    { cut.press("drums", "set-swing", min(75, Int(cut.drum(39)) + 1)) })
             stepper("drunk", String(Int(cut.drum(38))),
-                    { cut.send("drums", "drunk", max(0, Int(cut.drum(38)) - 5)) },
-                    { cut.send("drums", "drunk", min(100, Int(cut.drum(38)) + 5)) })
+                    { cut.press("drums", "drunk", max(0, Int(cut.drum(38)) - 5)) },
+                    { cut.press("drums", "drunk", min(100, Int(cut.drum(38)) + 5)) })
             HStack {
                 Text("tweaks").font(.system(size: 13)).foregroundStyle(Theme.dim)
                 Spacer()
                 HStack(spacing: 0) {
-                    seg("snap back", cut.keepTweaks == 0) { cut.send("sections", "tweaks", 0) }
-                    seg("carry on", cut.keepTweaks == 1) { cut.send("sections", "tweaks", 1) }
+                    seg("snap back", cut.keepTweaks == 0) { cut.press("sections", "tweaks", 0) }
+                    seg("carry on", cut.keepTweaks == 1) { cut.press("sections", "tweaks", 1) }
                 }
             }
             .frame(height: 36)
@@ -646,8 +646,12 @@ struct DiagView: View {
         VStack(spacing: 12) {
             Spacer()
             HStack(spacing: 12) {
-                Pad(title: "diagnostics", width: 130, color: Theme.green) { cut.send("perform", "ctl", 0, "diag", 0, 1) }
-                Pad(title: "test mode", width: 130, color: Theme.blue) { cut.send("perform", "ctl", 0, "test-mode", 0, 1) }
+                Pad(title: "diagnostics", width: 130, color: Theme.green) { cut.press("perform", "ctl", 0, "diag", 0, 1) }
+                Pad(title: "test mode", width: 130, color: Theme.blue) { cut.press("perform", "ctl", 0, "test-mode", 0, 1) }
+            }
+            HStack(spacing: 12) {
+                Pad(title: "Volca voice 1", width: 130) { cut.press("sound", "vox", 1) }
+                Pad(title: "Volca voice 2", width: 130) { cut.press("sound", "vox", 2) }
             }
             Spacer()
         }

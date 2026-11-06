@@ -19,11 +19,11 @@ struct RhythmView: View {
                         .onEnded { _ in release() })
             }
             HStack(spacing: 8) {
-                Pad(title: "on", on: cut.onChords) { cut.send("melody", "on-h", 1) }
-                Pad(title: "roll rhythm", width: 110) { cut.send("melody", "roll-rhythm", 1) }
-                Pad(title: "\u{2212}", width: 44) { cut.send("melody", "set", "span", max(1, cut.span - 1)) }
+                Pad(title: "on", on: cut.onChords) { cut.press("melody", "on-h", 1) }
+                Pad(title: "roll rhythm", width: 110) { cut.press("melody", "roll-rhythm", 1) }
+                Pad(title: "\u{2212}", width: 44) { cut.press("melody", "set", "span", max(1, cut.span - 1)) }
                 Text("\u{00d7} last \(cut.span)").font(.system(size: 15, design: .monospaced)).frame(width: 90)
-                Pad(title: "+", width: 44) { cut.send("melody", "set", "span", min(8, cut.span + 1)) }
+                Pad(title: "+", width: 44) { cut.press("melody", "set", "span", min(8, cut.span + 1)) }
                 Spacer()
             }
         }
@@ -35,7 +35,7 @@ struct RhythmView: View {
         guard let d = drag else { return }
         drag = nil
         cut.holding = false
-        cut.send("melody", "audition", d.slot, 0)
+        cut.press("melody", "audition", d.slot, 0)
     }
 
     private var rowCount: Int { max(1, cut.total / max(1, cut.last)) }
@@ -93,7 +93,7 @@ struct RhythmView: View {
             guard let near, near.1 <= 1 else { return }
             drag = (near.0, cut.chords[near.0 - 1].start)
             cut.holding = true
-            cut.send("melody", "audition", near.0, 1)
+            cut.press("melody", "audition", near.0, 1)
             Tick.down()
             return
         }
@@ -107,10 +107,10 @@ struct RhythmView: View {
         guard let d = drag else { return }
         drag = nil
         cut.holding = false
-        cut.send("melody", "audition", d.slot, 0)
+        cut.press("melody", "audition", d.slot, 0)
         let was = cut.chords[d.slot - 1].start
         guard d.at != was else { return }
-        cut.send("melody", "move", d.slot, d.at)
+        cut.press("melody", "move", d.slot, d.at)
         for i in cut.chords.indices where cut.chords[i].start == d.at { cut.chords[i].start = was }
         cut.chords[d.slot - 1].start = d.at
     }

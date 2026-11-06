@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The voices and the controls in play
 
-**Files:** `Cut It/u_sound.pd`, `Cut It/u_sound.lua`, `Cut It/u_sound-lua.pd_lua`, `Cut It/cut-it-machines.txt`, `Cut It/cut-it-factory.txt`, `Cut It/u_voices.pd`, `Cut It/u_voices.lua`, `Cut It/u_voices-lua.pd_lua`, `Cut It/u_perform.pd`, `Cut It/u_perform.lua`, `Cut It/u_perform-lua.pd_lua`, `Cut It/cut-it-controls.txt` · **Gate:** `test/gate/voices-assert.sh`, `test/gate/display-assert.sh` · **Checklist:** `test/checklists/launchpad.md`, `test/checklists/nanokontrol.md`
+**Files:** `Cut It/e_line.pd`, `Cut It/e_echo.pd`, `Cut It/c_keys.pd`, `Cut It/u_sound.pd`, `Cut It/u_sound.lua`, `Cut It/u_sound-lua.pd_lua`, `Cut It/cut-it-machines.txt`, `Cut It/cut-it-factory.txt`, `Cut It/u_voices.pd`, `Cut It/u_voices.lua`, `Cut It/u_voices-lua.pd_lua`, `Cut It/u_perform.pd`, `Cut It/u_perform.lua`, `Cut It/u_perform-lua.pd_lua`, `Cut It/cut-it-controls.txt` · **Gate:** `test/gate/voices-assert.sh`, `test/gate/display-assert.sh` · **Checklist:** `test/checklists/launchpad.md`, `test/checklists/nanokontrol.md`
 
 ## What it is
 
@@ -123,6 +123,10 @@ depends on nothing after that. A song holds its patches (`put song patches`) and
 | A section starting, `tweaks` 1 | Carry on: as it stands (`sections tweaks <0 or 1>`, the section's own) | unknown |
 | The kit | `c_steps` holds its sound, each track's volume, pitch, effects and random pitch and the reverb, and puts it as `put song kit`; a section's `drums` line holds its pattern and a mute or solo. A song with no kit takes its first section's sound, which is no change to it | unknown |
 | A voice's save on the kit | What the kit snaps back to is what it sounds like now | unknown |
+
+| A Pd voice's effects | `e_line`, one a generator line and one for keys: `drive`, `drive-type`, `echo`, `echo-time`, `echo-fb`, `reverb` and `room`, each off until asked for, at its CPU cost then | unknown |
+| A keys voice on a Pd machine | `c_keys`, four notes at once, from `c_synth` | unknown |
+| The Volca's test | Pads 83 and 84 on the diagnostics page, or the phone's: a DX7 voice as a one-voice dump, a byte at a time, to hear whether it only changes the sound in use | unknown |
 
 **The Launchpad's sound page:** the machine's first eight parameters as columns on rows 3 to 8, tapped to set; row 2 its
 song patches, tapped to recall; row 1 eight notes to hear it with.

@@ -129,11 +129,6 @@
 #X connect 49 0 59 0;
 #X connect 2 8 38 0;
 #X obj 620 900 outlet~;
-#X connect 41 0 60 0;
-#X connect 44 0 60 0;
-#X connect 53 0 60 0;
-#X connect 56 0 60 0;
-#X connect 59 0 60 0;
 #X connect 2 9 38 0;
 #X obj 800 900 outlet;
 #X obj 2000 560 route 3 4;
@@ -141,6 +136,8 @@
 #X obj 2000 670 list trim;
 #X obj 2200 620 list prepend tone;
 #X obj 2200 670 list trim;
+#X obj 400 830 e_line;
+#X obj 1250 830 e_line;
 #X connect 2 10 61 0;
 #X connect 2 11 62 0;
 #X connect 62 0 63 0;
@@ -152,3 +149,12 @@
 #X connect 66 0 53 0;
 #X connect 66 0 56 0;
 #X connect 66 0 59 0;
+#X connect 41 0 67 0;
+#X connect 64 0 67 1;
+#X connect 67 0 60 0;
+#X connect 44 0 68 0;
+#X connect 53 0 68 0;
+#X connect 56 0 68 0;
+#X connect 59 0 68 0;
+#X connect 66 0 68 1;
+#X connect 68 0 60 0;

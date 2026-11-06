@@ -28,3 +28,16 @@ melody octave value octave
 melody on-m toggle on
 melody roll-melody hit roll
 melody pins-clear hit clear
+drums kit-size value room
+drums kit-damping value damping
+drums kit-drunk value drunk
+drums kit-swing value swing
+drums vol-* value vol
+drums pitch-* value pitch
+drums randomness-* value random
+drums drive-* value drive
+drums tone-* value tone
+drums dist-* value dist
+drums feedback-* value feedback
+drums delay-* value delay
+drums send-* value send

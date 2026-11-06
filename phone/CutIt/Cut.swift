@@ -112,6 +112,11 @@ final class Cut {
 
     private let link = Link()
     private var lastHeard = Date.distantPast
+    // Presses not yet heard. A start somewhere in the numbers a float holds exactly, so the app starting again
+    // doesn't repeat one still remembered.
+    private var seq = Int.random(in: 1...8_000_000)
+    private var waiting: [Int: (message: [OSCValue], tries: Int)] = [:]
+    private static let maxTries = 8
 
     func start() {
         link.onMessage = { [weak self] path, args in
@@ -126,20 +131,52 @@ final class Cut {
                 try? await Task.sleep(for: .milliseconds(250))
             }
         }
+        Task { @MainActor [weak self] in
+            while let self {
+                self.resend()
+                try? await Task.sleep(for: .milliseconds(120))
+            }
+        }
     }
 
     /// Coming back to the app: new sockets, and no finger is still down.
     func cameBack() {
         holding = false
+        waiting = [:]
         link.restart()
     }
 
-    func send(_ words: Any...) {
-        link.send(words.map {
+    private func values(_ words: [Any]) -> [OSCValue] {
+        words.map {
             if let s = $0 as? String { return .text(s) }
             if let i = $0 as? Int { return .number(Float(i)) }
             return .number(Float(($0 as? Double) ?? 0))
-        })
+        }
+    }
+
+    /// Something continuous, a knob or a drag: the next value will follow, so one lost doesn't matter.
+    func send(_ words: Any...) {
+        link.send(values(words))
+    }
+
+    /// A one-time press: sent until the Organelle says it heard. UDP can drop it, and a press lost on stage is a
+    /// press that didn't happen. u_once lets each through only once, so one whose answer was lost isn't doubled.
+    func press(_ words: Any...) {
+        seq = seq >= 16_000_000 ? 1 : seq + 1
+        let message: [OSCValue] = [.text("once"), .number(Float(seq))] + values(words)
+        waiting[seq] = (message, 0)
+        link.send(message)
+    }
+
+    private func resend() {
+        for (id, entry) in waiting {
+            if entry.tries >= Self.maxTries {
+                waiting[id] = nil
+            } else {
+                waiting[id] = (entry.message, entry.tries + 1)
+                link.send(entry.message)
+            }
+        }
     }
 
     /// A voice's control moved: through u_perform, so it can be taken into play.
@@ -152,6 +189,8 @@ final class Cut {
     private func heard(_ path: String, _ a: [OSCValue]) {
         switch path {
         case "/cutit/hb": lastHeard = Date()
+        case "/cutit/once":
+            if let id = a.first?.number { waiting[id] = nil }
         case "/cutit/here":
             guard a.count >= 2 else { return }
             gridStep = a[0].number

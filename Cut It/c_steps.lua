@@ -1565,6 +1565,27 @@ R.presses = {
 
 -- What c_steps.pd itself sends: the clock's step, with the tempo bus's BPM, which a step decided
 -- keeps for a held repeat's tails (R.tape); PLAY, STOP, u_state's restore, and the load.
+-- The drum page's controls as a control in play moves them, 0 to 1 (Brendan, 2026-11-06), each to what the
+-- phone's own command takes: <name>-<track>, or the kit's and the song's with no track.
+local function scale(v, lo, hi)
+  return lo + (hi - lo) * math.max(0, math.min(1, num(v)))
+end
+local function round_to(x)
+  return math.floor(x + 0.5)
+end
+for t = 1, R.TRACKS do
+  R.presses["vol-" .. t] = function(st, a) return R.set_vol(st, t, round_to(scale(a[1], R.VOL_MIN, R.VOL_MAX))) end
+  R.presses["pitch-" .. t] = function(st, a) return R.set_pitch(st, t, round_to(scale(a[1], R.PITCH_MIN, R.PITCH_MAX))) end
+  R.presses["randomness-" .. t] = function(st, a) return R.set_randomness(st, t, round_to(scale(a[1], 0, 100))) end
+  for _, f in ipairs({ "drive", "tone", "dist", "feedback", "delay", "send" }) do
+    R.presses[f .. "-" .. t] = function(st, a) return R.set_fx(st, f, t, round_to(scale(a[1], 0, 100))) end
+  end
+end
+R.presses["kit-size"] = function(st, a) return R.set_verb(st, "size", round_to(scale(a[1], 0, 100))) end
+R.presses["kit-damping"] = function(st, a) return R.set_verb(st, "damping", round_to(scale(a[1], 0, 100))) end
+R.presses["kit-drunk"] = function(st, a) return R.drunk(st, round_to(scale(a[1], 0, 100))) end
+R.presses["kit-swing"] = function(st, a) return R.set_swing(st, round_to(scale(a[1], R.SWING_MIN, R.SWING_MAX))) end
+
 R.internal = {
   ["restore-kit"] = function(st, a) return R.restore_kit(st, a) end,
   ["restore-tweaks"] = function(st, a) return R.restore_tweaks(st, a[1]) end,

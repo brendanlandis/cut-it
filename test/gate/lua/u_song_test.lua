@@ -885,10 +885,11 @@ equal("⛔ playing, a key whose entry starts on go: the go lamp waits, nothing l
 sent = T.send(o2, 1, "go", {})
 equal("go: the lamp says queued for the bar", sent[2], { 1, "go", { 2 } })
 sent = T.send(o2, 3, "bar", {})
-equal("the bar: the song loads, the log says which, and the lamp goes dark",
-      { sent[1], o2.state.cur.id,
+equal("⛔ the bar: the parts asked to sync, since it moves the song, then the song loads, the log says "
+      .. "which, and the lamp goes dark",
+      { sent[1], sent[2], o2.state.cur.id,
       (function() for _, e in ipairs(sent) do if e[2] == "go" then return e[3][1] end end end)() },
-      { { 4, "info", { "u_song", "loaded-song-2" } }, 3, 0 })
+      { { 3, "sync", {} }, { 4, "info", { "u_song", "loaded-song-2" } }, 3, 0 })
 T.send(o2, 2, "songs", { "entry", 1 })
 sent = T.send(o2, 1, "key", { 1 })
 equal("⛔ a key whose entry starts from silence, playing: a bang to the stop bus, out the sixth",

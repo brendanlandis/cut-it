@@ -37,10 +37,12 @@ SONG_LUA = os.path.join(ROOT, "Cut It", "u_song.lua")
 # The Launchpad's pages and what each is (Brendan, 2026-11-04, ref/module/map.md, The pages):
 # each one's tab on the phone, named for it.
 TABS = ["arrangement", "drums", "synths", "page 4", "page 5", "page 6", "sections", "songs"]
-# A page's own tabs: one, named for the page, but the sections page's two, its sections and the
-# name a section is given, and the songs page's three, its songs, its setlists and the name
-# either is given (Brendan, 2026-11-05).
-OWN_TABS = {"sections": ["sections", "name"], "songs": ["songs", "setlists", "name"]}
+# A page's own tabs: one, named for the page, but the synths page's four, the generator's harmony,
+# rhythm and melody and the nanoKEY's keyboard, the sections page's two, its sections and the name
+# a section is given, and the songs page's three, its songs, its setlists and the name either is
+# given (Brendan, 2026-11-05).
+OWN_TABS = {"synths": ["harmony", "rhythm", "melody", "keyboard"],
+            "sections": ["sections", "name"], "songs": ["songs", "setlists", "name"]}
 
 spec = importlib.util.spec_from_file_location("build_touchosc", BUILD)
 B = importlib.util.module_from_spec(spec)
@@ -52,6 +54,10 @@ spec.loader.exec_module(B)
 # control's resting fill at 26% of its color over black, its pressed or lit fill at full color.
 DIM = 66 / 255          # a resting fill's share of its color
 LARGE = 24              # text size, in points, from which 3:1 is enough
+# ⛔ ONE EXCEPTION, named control by control: the dash in an empty chord box on the harmony tab, gray
+# on the box's resting teal, 4.03:1. An empty box does nothing to a finger, the root finding no chord
+# for it, and WCAG excuses an inactive control's text. A chord's own words are white or black.
+EMPTY_BOX = {"cbox%d%s" % (n, part) for n in range(1, 9) for part in "nsr"}
 
 
 def lin(c):
@@ -144,7 +150,7 @@ def under(nodes, i, x, y, group_of=None):
             bg = over(col, col[3], bg)
         elif t == "BUTTON" and p.get("background") != "0":
             on = float(v.get("x") or 0) >= 0.5
-            bg = over(col, 1.0 if on else DIM * col[3], bg)
+            bg = over(col, (1.0 if on else DIM) * col[3], bg)
         elif t == "RADIO":
             bg = over(col, 1.0 if segment(f, p, x, y) == int(float(v.get("x") or 0)) else DIM, bg)
         elif t in ("LABEL", "TEXT") and p.get("background") == "1":
@@ -156,6 +162,14 @@ def audit(doc):
     nodes = walk(doc.getElementsByTagName("node")[0])
     group_of = {name: k for k, g in enumerate(B.fx_groups() if hasattr(B, "fx_groups") else [])
                 for name in g}
+    # The rhythm grid's cells: in the file every one sits at the grid's top left, for the editor, and
+    # the root moves each to its place. So a chord's cell and its word are drawn over one blue band
+    # at most, the first standing in for them all, and never over another chord's.
+    for k in range(2, 17):
+        group_of["rsub%d" % k] = "rsub%d" % k
+    for k in range(1, 9):
+        group_of["rmark%d" % k] = group_of["rmark%dl" % k] = "rmark%d" % k
+    group_of["rhere"] = "rhere"
     bad, n = [], 0
     for i, (t, name, f, p, v, _page) in enumerate(nodes):
         if t in ("LABEL", "TEXT") and (v.get("text") or "").strip():
@@ -166,7 +180,7 @@ def audit(doc):
             r = ratio(p["textColor"], bg)
             need = 3.0 if float(p.get("textSize") or 15) >= LARGE else 4.5
             n += 1
-            if r < need:
+            if r < need and not (name in EMPTY_BOX and v.get("text") == "-"):
                 bad.append("text %-10s %-24r %.2f < %.1f" % (name, v.get("text")[:24], r, need))
         if t in ("BUTTON", "RADIO", "RADIAL", "FADER") and p.get("interactive") == "1":
             bg = under(nodes, i, f[0] + 1, f[1] + 1, group_of)
@@ -369,8 +383,9 @@ def main():
         if [r[7] for r in pg] != OWN_TABS.get(tab, [tab]):
             bad.append("%s's tabs are %s" % (p, [r[7] for r in pg]))
     A.check("⛔ each holds a pager of its own, its tabs shown: one tab, named for the page "
-            "(Brendan, 2026-11-04), but the sections page's sections and name and the songs page's "
-            "songs, setlists and name (2026-11-05)",
+            "(Brendan, 2026-11-04), but the synths page's harmony, rhythm, melody and keyboard, the "
+            "sections page's sections and name and the songs page's songs, setlists and name "
+            "(2026-11-05)",
             not bad, "; ".join(bad))
     blank = [p for p, pg in inner[3:6] if pg and kids.get(pg[0][0])]
     A.check("pages 4 to 6 are blank under their tab", not blank, "not blank: %s" % blank)
@@ -446,7 +461,7 @@ def main():
                 % (" ".join(lsynth), " ".join(chooses)))
         A.check("... and u_net acknowledges exactly those", sorted(usynth) == sorted(chooses),
                 "u_net acknowledges synth %s" % " ".join(usynth))
-        A.check("... from the synths screen and the checklist page, a button each",
+        A.check("... from the keyboard tab and the checklist page, a button each",
                 sorted(m for m in msgs if m.startswith("synth ")) ==
                 sorted("synth %s" % c for c in chooses for _ in (0, 1)),
                 [m for m in msgs if m.startswith("synth ")])
@@ -474,7 +489,8 @@ def main():
                 "u_net acknowledges %s, the layout lights %s" % (sorted(acked), sorted(B.ACKS)))
 
     pairs, low = audit(doc)
-    A.check("⛔ every text and control meets WCAG AA contrast, as TouchOSC draws it",
+    A.check("⛔ every text and control meets WCAG AA contrast, as TouchOSC draws it, but an empty "
+            "chord box's dash",
             pairs > 50 and not low, "%d pairs; below AA:\n    %s" % (pairs, "\n    ".join(low)))
     A.note("%d pairs at AA" % pairs)
 
@@ -511,17 +527,33 @@ def main():
     # the bottom row of M and S would be cut. Each pad is its fill, its fader and its number; each M
     # and S its button and its letter. Nothing else on this page or any other is excused: a new
     # control beside them is held to the 20-point grid and the margins like the rest.
+    #
+    # ⛔ A SECOND EXCEPTION, named control by control: the harmony tab's (2026-11-05). A chord box holds
+    # three lines of words in its four steps; twelve keys, nine modes and five voices divide their
+    # widths into whole segments, not whole steps, and the modes sit 4 points under the keys; and
+    # four knobs across fourteen steps leave two of them on a half step.
     fine = {("drums", "%s%d%s" % (w, n, x)) for n in range(1, 17)
             for w, xs in (("pad", ("", "f", "l")), ("mute", ("", "l")), ("solo", ("", "l")))
             for x in xs}
+    words = (["cbox%d%s" % (n, part) for n in range(1, 9) for part in "nsr"]
+             + ["hkey", "hmode"] + ["hkey%dl" % n for n in range(1, 13)]
+             + ["hmode%dl" % n for n in range(1, 10)] + ["vharm%dl" % n for n in range(1, 6)]
+             + ["%s%s" % (knob, x) for knob in ("csmooth", "chome") for x in ("c", "", "v")])
+    harmony = {("harmony", n) for n in words}
     FINE_STEP, FINE_ABOVE = 10, 10
     placed = on_pages(doc)
+
+    def on_grid(f):
+        return not ((f[0] - B.OX) % B.G or (f[1] - B.OY) % B.G or f[2] % B.G or f[3] % B.G)
     off = ["%s/%s %s" % (pg, n, " ".join("%g" % v for v in f)) for pg, n, t, f, p in placed
-           if (pg, n) not in fine
-           and ((f[0] - B.OX) % B.G or (f[1] - B.OY) % B.G or f[2] % B.G or f[3] % B.G)]
+           if (pg, n) not in fine and (pg, n) not in harmony and not on_grid(f)]
     A.check("⛔ every control on a page sits on TouchOSC's %d-point editor grid, anchored at the "
-            "document's center, but the drum screen's pads and their M and S" % B.G,
+            "document's center, but the drum screen's pads and their M and S, and the harmony tab's "
+            "words, radios and two knobs" % B.G,
             len(placed) > 50 and not off, "%d placed; off the grid: %s" % (len(placed), off[:6]))
+    needless = sorted(harmony - {(pg, n) for pg, n, t, f, p in placed if not on_grid(f)})
+    A.check("⛔ ... and the harmony tab's %d all need it: each is there, and off the grid" % len(harmony),
+            not needless, "named but on the grid, or gone: %s" % needless[:6])
     excused = [(n, f) for pg, n, t, f, p in placed if (pg, n) in fine]
     loose = ["%s %s" % (n, " ".join("%g" % v for v in f)) for n, f in excused
              if (f[0] - B.OX) % FINE_STEP or (f[1] - B.OY) % FINE_STEP or f[2] % FINE_STEP
@@ -571,7 +603,9 @@ def main():
             "solo", not bad, "wrong: %s" % bad[:6])
     # A caption names the control under it: small, grey, flush left with it, just above it.
     grey = tuple(round(c, 3) for c in B.GREY[:3])
-    caps = [(pg, n, f) for pg, n, t, f, p in placed if t == "LABEL" and p.get("textAlignH") == "1"
+    # hlink, the harmony tab's link words beside their lamp, has a caption's size and is none.
+    caps = [(pg, n, f) for pg, n, t, f, p in placed if t == "LABEL" and n != "hlink"
+            and p.get("textAlignH") == "1"
             and float(p.get("textSize") or 0) == 14 and f[3] == B.G
             and tuple(round(c, 3) for c in p.get("textColor", (0, 0, 0))[:3]) == grey]
     loose = [(pg, n) for pg, n, f in caps
@@ -714,6 +748,13 @@ def main():
     A.check("⛔ the sixteen pads are relative faders, about 20 points of drag a step", len(faders) == 16
             and all(t == "FADER" for t in [by_name[n][1] for n, _f, _p in faders])
             and len(per) == 1 and 18 <= per[0] <= 22, "points a step: %s" % per)
+
+    # TouchOSC's Lua is 5.1 with parts removed (~/Sites/!reference/touchosc.md): `//` is a syntax error
+    # that stops a whole script loading, and pcall is nil. lua.org's 5.4 runs both, below, so a
+    # script holding either passes every check there and is dead on the phone.
+    unsafe = [r[0] for r in nodes if r[3] and ("//" in r[3] or "pcall" in r[3])]
+    A.check("⛔ no script holds // or pcall, which TouchOSC's Lua has not", not unsafe,
+            "in %s" % unsafe)
 
     lc = open(os.path.join(B.CHECKLISTS, B.LIST + ".md"), encoding="utf-8").read()
     A.check("⛔ the line check, the page's checklist, has no Send line: the phone sends none",

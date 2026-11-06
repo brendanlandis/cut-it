@@ -42,16 +42,17 @@ LIMIT_HZ = 20.0
 HB_HZ = 2.0
 ADDRS = {"/cutit/hb", "/cutit/ack", "/mark",
          # what the phone shows: the mode, c_steps' state, c_synth's choice and
-         # velocity switch, the tempo, and u_song's sections and songs
+         # velocity switch, the tempo, u_song's sections and songs, c_melody's state
+         # and its loop's place, the one state with no repeat
          "/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
-         "/cutit/sections", "/cutit/songs",
+         "/cutit/sections", "/cutit/songs", "/cutit/melody", "/cutit/here",
          # the driver's taps for the inbound half: u_net's four outlets, err,
          # and the presence bus, which re-wire once wrote and must not now
          "/probe/drums", "/probe/synth", "/probe/tempo", "/probe/sections", "/probe/err",
          "/probe/presence"}
 # The state addresses, each sent on a change and again on every heartbeat.
 STATE = ("/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
-         "/cutit/sections", "/cutit/songs")
+         "/cutit/sections", "/cutit/songs", "/cutit/melody")
 # The sections page's commands u_net acknowledges, a button's flash: the rest show in the state.
 SECTIONS_ACKED = ["new", "up", "down", "delete", "name"]
 # The songs page's, the same way: the rest show in the state, or u_song refuses them.

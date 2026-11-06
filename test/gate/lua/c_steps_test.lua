@@ -1819,10 +1819,11 @@ local class = T.load_class(DIR .. "c_steps-lua.pd_lua", DIR)
 check("c_steps-lua.pd_lua registers the class c_steps-lua", class and class._name == "c_steps-lua",
       class and class._name)
 local o = T.new(class, { 1 })
-check("an object has two inlets and ten outlets", o and o.inlets == 2 and o.outlets == 10,
+check("an object has two inlets and eleven outlets", o and o.inlets == 2 and o.outlets == 11,
       o and (o.inlets .. " " .. o.outlets))
-equal("init: the page's selection on outlet 2, every effect on outlet 1, for c_kit, the drum "
-      .. "screen's state on outlet 7, then the bang on outlet 5 that says it loaded",
+equal("init: the page's selection on outlet 2, every effect on outlet 1, for c_kit, the global last "
+      .. "step on outlet 11, for c_melody, the drum screen's state on outlet 7, then the bang on "
+      .. "outlet 5 that says it loaded",
       T.send(o, 2, "init", {}), cat({ { 2, "vel", { 6 } }, { 2, "track", { 1 } }, { 2, "last", { 16 } },
                                   { 2, "steps", zeros(32) }, { 2, "bar", { 4, 8 } }, { 2, "rep", { 0 } },
                                   { 8, "swing", { 0.5 } }, { 8, "rate", { 1 } },
@@ -1831,7 +1832,7 @@ equal("init: the page's selection on outlet 2, every effect on outlet 1, for c_k
         local out = {}
         for _, e in ipairs(fx_all()) do out[#out + 1] = { 1, e[2], e[3] } end
         return out
-      end)(), { { 7, "list", phone(0, 16, 1, 0, {}, {}) }, { 5, "bang", {} } }))
+      end)(), { { 11, "last", { 16 } }, { 7, "list", phone(0, 16, 1, 0, {}, {}) }, { 5, "bang", {} } }))
 equal("knob 2 held: its row on outlet 6", T.send(o, 1, "last", { at(9) }),
       { { 6, "last-step", { 16, "(9)" } } })
 local sent = T.send(o, 1, "step", { 1, 100 })
@@ -1860,6 +1861,7 @@ end)(), { { 8, "swing", { 0.5 } }, { 1, "vol", { 1, 0 } }, { 1, "vol", { 4, -9 }
 equal("a pad's volume from the drum screen: the volume on outlet 1, the phone's state, and the "
       .. "pattern on outlet 3 when its clock comes", (function()
   local q = T.new(class, { 1 })
+  T.send(q, 2, "init", {})
   local got = T.send(q, 1, "vol", { 2, -6 })
   local saved = T.fire(q, q.save_clock)
   return { saved[1][1], got[1], got[2][1], got[2][3][4 + 32 + 4 + 2] }
@@ -1868,25 +1870,40 @@ equal("⛔ a mute from the drum screen: the page's quiet pads on outlet 2 and th
       .. "on outlet 7, its put held as any press's, and the line its clock puts mutes track 4",
       (function()
         local q = T.new(class, { 1 })
+        T.send(q, 2, "init", {})
         local got = T.send(q, 1, "mute", { 4, 1 })
         local armed = q.save_clock.armed
         local saved = T.fire(q, q.save_clock)
         return { got[1], got[2][1], got[2][3][99 + 4], armed, #saved[1][3], saved[1][3][711 + 4] }
       end)(), { { 2, "quiet", quiet(4)[3] }, 7, 1, 100, 743, 1 })
-equal("⛔ a character from the drum screen: char to c_kit on outlet 1 and the phone's state on "
-      .. "outlet 7, its put held as any press's, and the line its clock puts holds track 4 fold",
+equal("⛔ a character from the drum screen, its track selected: char to c_kit on outlet 1 and the "
+      .. "phone's state on outlet 7, its put held as any press's, and the line its clock puts holds "
+      .. "track 4 fold",
       (function()
         local q = T.new(class, { 1 })
+        T.send(q, 2, "init", {})
+        T.send(q, 1, "select", { 4 })
         local got = T.send(q, 1, "char", { 4, 3 })
         local armed = q.save_clock.armed
         local saved = T.fire(q, q.save_clock)
         return { got[1], got[2][1], armed, #saved[1][3], saved[1][3][743 + 4] }
       end)(), { { 1, "char", { 4, 3 } }, 7, 100, 759, 3 })
+equal("the global last step moved: its new value on outlet 11, for c_melody", (function()
+  local q = T.new(class, { 1 })
+  T.send(q, 2, "init", {})
+  local out = {}
+  for _, e in ipairs(T.send(q, 1, "set-last", { 8 })) do
+    if e[1] == 11 then out[#out + 1] = e end
+  end
+  return out
+end)(), { { 11, "last", { 8 } } })
 equal("PLAY: the step clock back at its own rate, no repeat, and the drum screen hears it is playing",
       T.send(o, 2, "start", {}), { { 8, "rate", { 1 } }, { 2, "rep", { 0 } },
                                    { 7, "list", phone(1, 16, 1, 0, {}, {}) } })
-equal("a tick: its notes on outlet 1, then the playhead on outlet 2, and nothing for the phone",
-      T.send(o, 2, "tick", {}), { { 1, "pad", { 1, 95 } }, { 2, "play", { 1 } } })
+equal("a tick: its notes on outlet 1, then the playhead on outlet 2, nothing for the phone, and the "
+      .. "step on outlet 11, for c_melody: its number, its ms and its place in the pattern",
+      T.send(o, 2, "tick", {}), { { 1, "pad", { 1, 95 } }, { 2, "play", { 1 } },
+                                  { 11, "step", { 1, 125, 1 } } })
 equal("sync from the drum screen, on inlet 1: only the phone's state, a sync pending",
       T.send(o, 1, "sync", {}), { { 7, "list", phone(1, 16, 1, 1, {}, {}) } })
 equal("select from the drum screen: the track and its steps, and the phone's state, with no note",

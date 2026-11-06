@@ -1,5 +1,5 @@
 -- The phone's TouchOSC layout, its scripts run under lib_touchosc.lua's stand-in: the pages and
--- the mode, test mode, the arrangement screen, the drum screen, the synths screen, the sections
+-- the mode, test mode, the arrangement screen, the drum screen, the generator's tabs, the keyboard tab, the sections
 -- page and its name tab, the songs page, its setlists and its name tab, and the checklist page. Run by touchosc-assert.py, which unpacks the layout into a folder and writes
 -- expect.lua beside it:
 --
@@ -71,7 +71,7 @@ L.update(w)
 equal("a heartbeat: link, its lamps lit, and test mode off",
       { L.text(w, "link"), C.linkled.values.x, C.dlinkled.values.x, C.slinkled.values.x,
         C.seclinkled.values.x, L.text(w, "tmode") }, { "link", 1, 1, 1, 1, "test mode off" })
-local TABS = { "arrangement", "drums", "synths", "page 4", "page 5", "page 6", "sections", "songs" }
+local TABS = { "arrangement", "drums", "harmony", "page 4", "page 5", "page 6", "sections", "songs" }
 for n, tab in ipairs(TABS) do
   mode("mode-" .. n)
   equal("page " .. n .. ": the Launchpad's page " .. n .. ", its first tab named " .. tab, where(),
@@ -94,7 +94,7 @@ equal("... staying through a change of mode", where(), { "pcheck", "line check" 
 hb(true)
 equal("a heartbeat still saying test mode changes nothing", where()[1], "pcheck")
 hb(false)
-equal("test mode off: the page of the mode chosen meanwhile", where(), { "p3", "synths" })
+equal("test mode off: the page of the mode chosen meanwhile", where(), { "p3", "harmony" })
 mode("mode-9")
 equal("a mode off the Launchpad's eight is page 1", where()[1], "p1")
 mode("mode-1")
@@ -514,14 +514,41 @@ check("no tempo, drunkenness, time signature, alert, skip or move on the drum sc
         return true
       end)(), "")
 
-print("\n--- the synths screen ---")
+print("\n--- the generator's tabs ---")
+-- c_melody's own state, so the two ends of /cutit/melody are held to one shape. One error in the root's
+-- script ends it for good on the phone.
+local M = dofile("Cut It/c_melody.lua")
+local gen = M.new(function() return 0.5 end)
+gen.chords, gen.slot_start[1], gen.slot_start[2] = 2, 8, 0
+M.internal.init(gen)
+while #gen.to_roll > 0 do M.roll_next(gen) end
+local said = M.phone(gen)
+mode("mode-3")
+w.sent = {}
+L.osc(w, "/cutit/melody", table.unpack(said))
+equal("⛔ c_melody's state: each chord's name in a box, in the order they play, the rest a dash, and "
+      .. "nothing sent back", { L.text(w, "cbox1n"), L.text(w, "cbox2n"), L.text(w, "cbox3n"), #w.sent },
+      { said[14 + 4], said[14], "-", 0 })
+C.cbox1.values.touch = true
+equal("a finger on the first box sounds the chord that plays first", w.sent,
+      { { "/cutit", "melody", "audition", 2, 1 } })
+C.cbox1.values.touch = false
+L.osc(w, "/cutit/here", 0)
+local at = C.rhere.frame.x
+L.osc(w, "/cutit/here", 3)
+local moved = C.rhere.frame.x > at
+L.osc(w, "/cutit/here", -1)
+equal("the loop's place moves its cell along the rhythm grid, and stopped, the cell goes",
+      { moved, L.visible(w, "rhere") }, { true, false })
+
+print("\n--- the keyboard tab ---")
 mode("mode-3")
 local function lamps()
   return { C.sfm.values.x, C.sstrings.values.x, C.cfm.values.x, C.cstrings.values.x }
 end
 w.sent = {}
 L.osc(w, "/cutit/synth", "fm")
-equal("c_synth's choice, fm: lit on the synths screen and the checklist page, strings not",
+equal("c_synth's choice, fm: lit on the keyboard tab and the checklist page, strings not",
       lamps(), { 1, 0, 1, 0 })
 check("... fm's labels black on the lit fill, strings' not",
       black(C.sfml.textColor) and black(C.cfml.textColor) and not black(C.sstringsl.textColor),

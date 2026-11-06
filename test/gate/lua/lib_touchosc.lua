@@ -1,5 +1,5 @@
 -- A stand-in for TouchOSC, enough to run a layout's scripts with no phone: its controls, with
--- values that call onValueChanged when they change and properties a script sets, notify,
+-- values that call onValueChanged when they change, properties and a frame a script sets, notify,
 -- root:findByName, sendOSC and getMillis (~/Sites/!reference/touchosc.md, Scripting).
 --
 --   local L = dofile("test/gate/lua/lib_touchosc.lua")
@@ -21,7 +21,7 @@ function L.load(dir)
   for _, m in ipairs(manifest) do
     local vals = { x = m.x or 0, page = 0, touch = false, text = m.text or "" }
     local c = { name = m.name, type = m.type, visible = m.visible, color = m.color,
-                tabLabel = m.tabLabel, tabbar = m.tabbar, children = {} }
+                tabLabel = m.tabLabel, tabbar = m.tabbar, frame = {}, children = {} }
     c.values = setmetatable({}, {
       __index = vals,
       __newindex = function(_, k, v)

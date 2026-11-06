@@ -234,4 +234,42 @@ do
   equal("keys with no box held mean nothing here", #R.inputs.list(empty, { 60, 100 }), 0)
 end
 
+print("\n--- the Launchpad's pads ---")
+do
+  local st = R.new(function() return 0.5 end)
+  R.internal.init(st)
+  for _ = 1, 20 do R.roll_next(st) end
+  st.total, st.chords = 32, 4
+  st.slot_start[1], st.slot_start[2], st.slot_start[3], st.slot_start[4] = 0, 8, 16, 24
+  local h, m = R.inputs, R.inputs
+  h.h81(st, { 1 })
+  equal("⛔ the top row: a chord held sounds", st.audition, 1)
+  h.h71(st, { 1 })
+  equal("⛔ with a chord held, a step takes it: the top left of the rhythm, step 0, is held by no other", st.slot_start[1], 0)
+  h.h73(st, { 1 })
+  equal("⛔ ... pad 73 is step 2", st.slot_start[1], 2)
+  h.h81(st, { 0 })
+  equal("... let go", st.audition, nil)
+  h.h61(st, { 1 })
+  equal("⛔ a step a chord starts on holds that chord: row 6's first is step 8, chord 2", st.audition, 2)
+  h.h61(st, { 0 })
+  equal("... and lets it go", st.audition, nil)
+  local list = R.pitches(st)
+  st.loop = 32
+  m.m81(st, { 1 })
+  m.m11(st, { 1 })
+  equal("⛔ a step held and a pitch pressed: step 1 is the lowest note of the mode", st.note[1], list[1])
+  m.m11(st, { 0 })
+  m.m81(st, { 0 })
+  equal("⛔ ... and it stays on: the step wasn't tapped alone", st.note[1], list[1])
+  m.m81(st, { 1 })
+  m.m81(st, { 0 })
+  equal("⛔ tapped alone, it turns off", st.note[1], R.REST)
+  m.m88(st, { 1 })
+  m.m48(st, { 1 })
+  equal("⛔ the top right is step 8, the bottom four rows' top right the 32nd note", st.note[8], list[32])
+  m.m48(st, { 0 })
+  m.m88(st, { 0 })
+end
+
 os.exit(T.report() == 0)

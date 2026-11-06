@@ -71,6 +71,7 @@ shown on Back Office's /reference page); a `ref/device/` page links to it and ke
 | How Cut It lives on the Organelle as a **computer** — its data, measuring, deploying (the Organelle itself: Reference) | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
 | The wifi fault — Cut It's watchers and the stage procedure (the fault itself: Reference) | [ref/wifi.md](ref/wifi.md) ⚠️ background, not blocking |
 | A cited `item NNN` | `grep` it here **and in `~/Sites/!reference/`** — item numbers are **fact IDs**, not log entries; the device facts moved there |
+| The manual, shown on Back Office's /cut-it page: prose here, its tables made from the patch's own tables | [manual/](manual/) |
 | **Every test** — the headless gates, the hands-on checklists, the stubs | [test/README.md](test/README.md) |
 | What each operational tool and probe does | [tools/README.md](tools/README.md) |
 

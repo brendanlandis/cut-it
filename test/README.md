@@ -392,7 +392,7 @@ exactly like a broken rate limiter.
 A mark on stdout would have to be correlated with socket timestamps afterwards; a mark *in* the
 stream arrives in true order with the data around it.
 
-**It checks:** the known addresses and nothing else; **no `[r disp]` in `u_net`, and no
+**It checks:** the known addresses and nothing else, `/cutit/melody`, a heartbeat's repeat, and `/cutit/here` among them; **no `[r disp]` in `u_net`, and no
 `/cutit/param`, `/cutit/status` or `/cutit/alert` ever on the wire**, with a sweep, a status, an
 alert, a meter and `diag` put on `disp` (Brendan, 2026-11-04: the phone stopped copying the OLED); a
 monotonic heartbeat at 2 Hz; the tempo from `u_tempo`'s cord at once, on every heartbeat, coalesced
@@ -409,7 +409,7 @@ songs page's 47 at once and on every heartbeat, the two pages each on its own ad
 ## `touchosc-assert.sh` — the phone's layout, read and run
 
 ```sh
-./test/gate/touchosc-assert.sh       42 + 209 checks, ~1 s — the layout read, then its scripts run
+./test/gate/touchosc-assert.sh       ~1 s — the layout read, then its scripts run
 ```
 
 **Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
@@ -417,12 +417,13 @@ output; every control has a name of its own, since a script finds a control by n
 returns the first of two; **every screen is a page of a pager and nothing is hidden**, so the
 editor, which runs no script, reaches each by its tab: the root holds one pager, its tab bar on in
 the file, whose pages are the Launchpad's eight, as many as `u_map.lua`'s `R.PAGES`, then the
-checklist page, each holding a pager of its own with one tab named for the page, but the sections
-page's two and the songs page's three, and pages 4 to 6 blank (Brendan, 2026-11-04 and 2026-11-05);
+checklist page, each holding a pager of its own with one tab named for the page, but the synths
+page's four, the sections page's two and the songs page's three, and pages 4 to 6 blank (Brendan,
+2026-11-04 and 2026-11-05);
 no diagnostic command is left; and what its buttons send equals what `u_net` routes and `c_steps`
 and `c_synth` take, **the inbound vocabulary read from both ends**: the velocity switch asks for
 exactly the settings `u_net` acknowledges, and every synth button sends a synth `c_synth.lua`'s
-`R.SYNTHS` names, `u_net` acknowledges exactly those, and there is one on the synths screen and one
+`R.SYNTHS` names, `u_net` acknowledges exactly those, and there is one on the keyboard tab and one
 on the checklist page for each. The drum screen's sixteen pads each drag their own track's volume,
 pitch, last step and randomness, the four its radio chooses between; the radio is TouchOSC's own,
 vertical, its first segment on top, a word over each, and sends nothing, and so is the effect radio
@@ -433,7 +434,8 @@ teal, each sending its own track's `mute` or `solo`; and a pad is a relative fad
 of drag a step. **Every control sits on the editor's 20-point grid**, inside the margins, **but the
 drum screen's pads and their M and S**, 112 controls named one by one, which step by 10 and start 10
 points into the top margin, ending on the bottom one inside the page's 334-point frame (Brendan,
-2026-11-05). The songs page sends
+2026-11-05), **and the harmony tab's words, radios and two knobs**, named one by one too, each
+required to be there and off the grid, so the list can't outlive its reason. The songs page sends
 exactly the commands `u_song.lua`'s `R.songs_cmds` takes, its name tab both `name` and `set-name`,
 and its starts switch is a radio asking for exactly `R.STARTS`. The phone is the only sender there
 is, and the layout and `u_net` deploy by different routes, `push.sh` and `tools/deploy.sh`, so their
@@ -441,14 +443,19 @@ spellings could drift apart with nothing failing until somebody is at the rig. E
 `u_net` sends must light a button. **And every pairing meets WCAG AA contrast as TouchOSC draws
 it**: each label against what lies under it, 4.5:1 or 3:1 for large text, each control's outline
 against the page, 3:1, and each tab's text and states, from the resting fill TouchOSC draws at 26%
-of a color (measured, TouchOSC's Reference page). Each effect's controls are audited against their
+of a color (measured, TouchOSC's Reference page), but an empty chord box's dash, an inactive
+control. Each effect's controls are audited against their
 own effect's and the screen's alone, since the phone shows one effect's at a time, as a pager one
-page, where the file shows every one in the same place for the editor.
+page, where the file shows every one in the same place for the editor, and each of the rhythm grid's
+cells over one blue band at most, since the root moves them apart. **No script holds `//` or `pcall`**:
+TouchOSC's Lua lacks both, one stopping the script loading, and the stand-in's 5.4 runs both.
 
 Then the layout's own scripts, unpacked into the scratch directory and run by
 `test/gate/lua/touchosc_test.lua` under `test/gate/lua/lib_touchosc.lua`, a stand-in for TouchOSC as
 `lib_test.lua` is for pdlua: the outer bar hidden by the root's script, the pages following the
-mode and each tab's name, test mode turning to the checklist page and back, the arrangement
+mode and each tab's name, test mode turning to the checklist page and back, `c_melody`'s own state
+drawn on the generator's tabs, a chord box sounding the chord in its place, the loop's place moving
+its cell, the arrangement
 screen's tempo, time signature, last step, swing and drunkenness (a value from Cut It never sent
 back, a tempo that is not whole never sent back rounded, the last step's box reaching exactly as
 far as `c_steps.lua`'s `R.reach` lets the last step for every top number, 1 to 32), the drum screen's pads (the number its
@@ -457,7 +464,7 @@ never sent back, a last step dragged no further than `R.reach`), its M and S (li
 and never sending it back, a tap asking for the other setting, a 98-number state leaving them as
 they were), its effects (the chosen
 effect's controls shown and the others hidden, each handed the selected track's value and sending
-for that track, the reverb's size and damping for none) and buttons, the synths screen and the checklist page's FM and STRINGS, and the velocity switch, lit by
+for that track, the reverb's size and damping for none) and buttons, the keyboard tab and the checklist page's FM and STRINGS, and the velocity switch, lit by
 the state and never sending when lit, the songs page (its rows lit by the state and a lit one
 sending nothing, load, new song, add to set, delete asking twice and lapsing after three seconds,
 the setlists tab's rows, pager and starts switch, the state's starts never sent back, and its name
@@ -471,7 +478,7 @@ phone checklist is the oracle for that.
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh
-./test/gate/sequencer-assert.sh      275 + 87 checks, ~40 s — c_steps' rules in Lua, then the drum page and the pattern in the song's draft
+./test/gate/sequencer-assert.sh      ~40 s — c_steps' rules in Lua, then the drum page and the pattern in the song's draft
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/c_steps_test.lua`, with lua.org's Lua 5.4 and no
@@ -529,14 +536,18 @@ and expects level 2, so a table that moves the button is caught.
 ## `synths-assert.sh` — the nanoKEY and the two synths
 
 ```sh
-./test/gate/synths-assert.sh         72 + 25 checks, ~11 s — c_synth's rules in Lua, then the nanoKEY through the instrument
+./test/gate/synths-assert.sh         ~11 s — c_synth's and c_melody's rules in Lua, then the nanoKEY through the instrument
 ```
 
-**Two halves, two tallies.** First `test/gate/lua/c_synth_test.lua`, with lua.org's Lua 5.4 and no
+**Three tallies.** First `test/gate/lua/c_synth_test.lua`, with lua.org's Lua 5.4 and no
 Pd: the choice, where a key goes, a switch while keys are held, a key's numbers, the velocity
 switch, the restores, and
 `c_synth-lua.pd_lua` through `lib_test.lua`'s stand-in for pdlua (its outlets, `bad-synth`,
-`bad-selector`, a throwing rule caught as `fail c_synth lua-list`). Then a running copy of the
+`bad-selector`, a throwing rule caught as `fail c_synth lua-list`). Then
+`test/gate/lua/c_melody_test.lua`, the generator's rules, one proof per behavior: a restore from
+Pd's floats, a line saved before the later fields, the locks at 100 and 0, a chord changing on the
+step its start says, the loop's last chord before the first start, move and swap, a new span,
+bass only and a Pd voice per note. How a loop sounds is the ear's. Then a running copy of the
 instrument, booted on page 3 with a song whose one section holds `synth strings` and `velocity off`: the nanoKEY's keys go in through
 `t-notein`, page 3's pads as `param pad-NN`, and the phone's `/cutit synth <choice>` as a datagram
 into `u_net`'s own port, from a socket the driver builds with `lib_drive`'s `extra`.
@@ -569,7 +580,7 @@ half is unchanged since its layer was Pd: **it is the proof the port changed not
 ## `song-assert.sh` — the song store, played from the Launchpad's edges
 
 ```sh
-./test/gate/song-assert.sh           217 + 67 checks, ~50 s — u_song's rules in Lua, then four runs of the instrument
+./test/gate/song-assert.sh           ~50 s — u_song's rules in Lua, then four runs of the instrument
 ```
 
 **Two halves, two tallies.** First `test/gate/lua/u_song_test.lua`, with lua.org's Lua 5.4 and no

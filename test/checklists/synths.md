@@ -1,7 +1,7 @@
 # Synths checklist
 
 The nanoKEY, the two synths it plays and the choice between them: page 3's pads, the phone's
-synths screen and its velocity switch, and the Streichfett's place on the roster. `synths-assert` proves where every note
+keyboard tab and its velocity switch, and the Streichfett's place on the roster. `synths-assert` proves where every note
 and every release goes, the choice's store and panic's channel; `display-assert` what page 3
 paints; `phone-assert` and `touchosc-assert` the phone's side. What is left is two synths you can
 hear, colors you can see and a chord under real fingers.
@@ -52,13 +52,13 @@ each thing behaves as it does: [synths](../../ref/module/synths.md),
   - **Do:** Press the top button of the Launchpad's left column, page 1. Play the nanoKEY. Press the second row's second, third and fourth pads, then its right four, and play again.
   - **Pass if:** The Volca plays both times: the choice did not change. The second row is dark on page 1 but for its first pad, the tap pad, dim yellow, and the pads pressed do nothing.
 
-- [ ] **8. The phone's synths screen**
-  - **Need:** Page 3 on the Launchpad, the phone showing Cut It.
+- [ ] **8. The phone's keyboard tab**
+  - **Need:** Page 3 on the Launchpad, the phone showing Cut It, its keyboard tab chosen.
   - **Do:** Look at the phone, then tap STRINGS on it, then tap STRINGS again, then tap FM.
-  - **Pass if:** The phone's tab reads synths and shows two large buttons, FM and STRINGS, the chosen one lit with dark text, the same one bright on the Launchpad, and the velocity switch under them. Each tap of the unlit one lights it, swaps the Launchpad's blocks and changes the synth the nanoKEY plays. Tapping the lit one changes nothing.
+  - **Pass if:** The phone shows two large buttons, FM and STRINGS, the chosen one lit with dark text, the same one bright on the Launchpad, and the velocity switch under them. Each tap of the unlit one lights it, swaps the Launchpad's blocks and changes the synth the nanoKEY plays. Tapping the lit one changes nothing.
 
 - [ ] **9. The velocity switch**
-  - **Need:** Page 3 on the Launchpad, the phone showing its synths screen, FM chosen, the switch lit.
+  - **Need:** Page 3 on the Launchpad, the phone showing its keyboard tab, FM chosen, the switch lit.
   - **Do:** Play one key very softly on the nanoKEY and one hard. Tap velocity on the phone and play the same two. Tap STRINGS on the phone and play them again. Then tap velocity once more and play them.
   - **Pass if:** At first the soft key is clearly softer than the hard one. At the tap the switch flashes teal and goes out, its text light, and soft and hard presses sound the same on the Volca and then on the Streichfett. At the second tap it lights again, dark text on the fill, and the soft key is soft again. Every note stops when its key is let go.
   - **Note:** Off sends every note-on at 127 and leaves releases alone (Brendan, 2026-11-04). The Launchpad has no control for it, and the line check's page no switch.

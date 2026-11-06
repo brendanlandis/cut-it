@@ -74,9 +74,12 @@ file decides what that means; and nothing below that file knows what hardware ex
   sends each key to `m_volca` or `m_streich`, a release to the synth its press went to, and the
   choice to `u_net` and `g_grid`, and its velocity switch to `u_net`, by cords. Page 3's pads
   choose through `u_map`. See [synths.md](module/synths.md).
+- **`c_melody` generates chords and a melody**, on `c_steps`' clock, by cords from `c_steps`, `u_map`
+  and `u_net`, and plays them on `m_volca`, `m_streich` or its own Pd voices, whose signal goes up to
+  `u_root`. See [synths.md](module/synths.md), *The generator*.
 - **The phone reads nothing on `disp`** (Brendan, 2026-11-04): `u_net` takes each module's state on
-  a cord — `c_steps`', `c_synth`'s, `u_tempo`'s BPM and `u_song`'s sections — and hands the phone's
-  commands back out by cords to `c_steps`, `c_synth`, `u_tempo` and `u_song`. Page 1's tap pad reaches `u_tempo` from `u_map` by a
+  a cord — `c_steps`', `c_synth`'s, `c_melody`'s, `u_tempo`'s BPM and `u_song`'s sections — and hands the phone's
+  commands back out by cords to `c_steps`, `c_synth`, `c_melody`, `u_tempo` and `u_song`. Page 1's tap pad reaches `u_tempo` from `u_map` by a
   cord too, and `u_tempo` flashes it through `g_grid`. See [phone.md](device/phone.md) and
   [tempo.md](module/tempo.md).
 - **`u_inject` takes the checklists' Send lines** and puts them on eight buses, so a rig check can

@@ -33,7 +33,7 @@ DAC at full scale, the headphone amp down to match, the line input 12 dB quieter
 |------------|---------|----------|------|
 | `[r~ inL]` | Input, the **tip** of the input jack: the **mic**, an SM58 on an XLR-to-TS cable, since 2026-11-04 (the Organelle's Reference page) | verified | 11 |
 | `[r~ inR]` | Input, the ring: nothing, with a TS plug in the jack | verified | 11 |
-| `[throw~ outL]`, `[throw~ outR]` | Everything the patch wants heard, **once each, in `u_root`**: the input passed through, with `c_kit`'s drums summed into the left ([sequencer.md](sequencer.md), *The kit*) | verified | — |
+| `[throw~ outL]`, `[throw~ outR]` | Everything the patch wants heard, **once each, in `u_root`**: the input passed through, with `c_kit`'s drums summed into the left ([sequencer.md](sequencer.md), *The kit*) and `c_melody`'s Pd voices into the right ([synths.md](synths.md), *The generator*) | verified | — |
 
 What `mother.pd` does on the other side of those names (its own `adc~` and `dac~`, the volume knob's
 square law, the limiter, turning DSP on, the VU meter) is on the Organelle's Reference page

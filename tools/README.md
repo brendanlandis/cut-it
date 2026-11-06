@@ -390,7 +390,8 @@ runs in the editor, so nothing in the layout is hidden for a script to show:
   synths, page 4 to page 6, sections, songs, and line check last. Click a tab to open that page; on the phone
   the root's script hides this bar and turns the pager to the Launchpad's page itself.
 - **Under it is the page's own tab bar**, its pager (`tabs1` to `tabs8`, `checktabs`): one tab each,
-  named for the page, and the page's controls under that, but the sections page's two. A second tab
+  named for the page, and the page's controls under that, but the synths page's four, the sections
+  page's two and the songs page's three. A second tab
   for a page is a second page in that pager, `build.py`'s `TABBED`.
 - **To edit inside a page**, descend into the pager and then its page with Edit container (the
   Edit context menu, or the toolbar), and come back with Exit container, as TouchOSC's manual has it

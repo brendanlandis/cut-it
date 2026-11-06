@@ -41,7 +41,7 @@ traffic into nothing, and a policy that is neither of its two, `section`, which 
 | `u_state` → all | `restore <key> <atoms…>` | Replayed at load, one message per line | verified | — |
 | contributor → `u_song` | `put section <key> <atoms…>` | A part of the section playing, `u_song`'s: `u_state`'s route drops it ([songs.md](songs.md)) | unknown | — |
 | `u_song` → all | `restore <key> <atoms…>` | A section starting: its parts, after `u_state`'s restore at load and whenever a section starts | unknown | — |
-| `u_song` → all | `sync` | Before a press, a phone command, PLAY or STOP: a part holding a put back puts it now, so it lands in the section still playing ([songs.md](songs.md)) | verified | — |
+| `u_song` → all | `sync` | Before a press, a phone command, PLAY, STOP or a bar that moves the song: a part holding a put back puts it now, so it lands in the section still playing ([songs.md](songs.md)) | verified | — |
 
 ### `u_state`
 

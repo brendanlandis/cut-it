@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The synths
 
-**Files:** `Cut It/c_synth.pd`, `Cut It/c_synth.lua`, `Cut It/c_synth-lua.pd_lua`, `Cut It/cut-it-synth-page.txt` · **Gate:** `test/gate/synths-assert.sh`, `test/gate/display-assert.sh`, `test/gate/phone-assert.sh`, `test/gate/touchosc-assert.sh` · **Checklist:** `test/checklists/synths.md`, `test/checklists/linecheck.md`
+**Files:** `Cut It/c_synth.pd`, `Cut It/c_synth.lua`, `Cut It/c_synth-lua.pd_lua`, `Cut It/cut-it-synth-page.txt`, `Cut It/c_melody.pd`, `Cut It/c_melody.lua`, `Cut It/c_melody-lua.pd_lua`, `Cut It/c_mono.pd` · **Gate:** `test/gate/synths-assert.sh`, `test/gate/display-assert.sh`, `test/gate/phone-assert.sh`, `test/gate/touchosc-assert.sh` · **Checklist:** `test/checklists/synths.md`, `test/checklists/linecheck.md`
 
 ## What it is
 
@@ -16,7 +16,7 @@ switch while a chord is held leaves those notes on the synth that started them, 
 follow them there, so nothing hangs; the next key plays the new choice.
 
 **It also holds the velocity switch** (Brendan, 2026-11-04): on, a key's velocity reaches the synth;
-off, every note-on goes out at 127, on either synth, and a release stays 0. The phone's synths screen
+off, every note-on goes out at 127, on either synth, and a release stays 0. The phone's keyboard tab
 flips it; the Launchpad has no control for it.
 
 **It holds each synth's sound for the section playing** (Brendan, 2026-11-04): a program number for
@@ -80,6 +80,34 @@ layout is a file both sides read*).
 The beat row stays on row 1, as on every page but the drums. What each cell paints is on
 [display.md](display.md), *`g_grid`'s synth pads, page 3*.
 
+### The generator
+
+**`c_melody` rolls a loop of up to 8 chords and a loop of up to 32 notes in a key and mode, by
+weighted dice, and a lock on each keeps or drifts what it rolled** (Brendan, 2026-11-05). `c_steps`'
+clock drives it, each part plays on its own voice, and page 3's tabs on the phone and rows in the
+map control it. `c_melody.lua` holds the rules, and `c_melody.pd` the cords, the note timing and the
+state bus, as `c_synth`'s are.
+
+| | Is | Evidence |
+|---|---|---|
+| Inlet | `step <count> <ms> <place>` and `last <step>` from `c_steps`; a control or a pad from `u_map`'s `melody` destination ([map.md](map.md)); `set`, `audition`, `move` and the pads from the phone ([phone.md](../device/phone.md)); the nanoKEY's keys, which mean nothing to it yet | unknown |
+| Outlets | 1 `note <n> <v>` to `m_volca`; 2 the same to `m_streich`; 3 `melody <57 atoms>` and `here <step>` to `u_net`'s third inlet; 4 the Pd voices' signal to `u_root`, summed with the input's ring into the right output, the Fx channel, mixer channel 2 | unknown |
+| `state` | `put section melody <258 numbers>` at most every 100 ms under a drag; what a roll drifts only on `sync`, so a loop drifting writes nothing to the card; `restore melody` on the step 1 a section starts ([songs.md](songs.md)) | unknown |
+| Voices | Each part's own: `fm`, `strings`, or the Pd voices `sine`, `saw` and `square` | unknown |
+| A chord | A stack from the mode's notes, weighed by two families of chord tension picks, how little its notes move (`smooth`), how it sits with the tonic (`home`) and how its root moves, modal or functional. On the Volca its lowest three, on a Pd voice each note a voice of its own, four at most; bass only, its root alone, low, on any voice | unknown |
+| Where a chord sounds | Its start on a grid `span` times the pattern's last step long, placed by dice or dragged on the phone; dropped on another's start, the two swap. It sounds until the next start, and before the first start the loop's last chord rings on. A new span or last step keeps each in the same place along the grid | unknown |
+| A melody note | A rest or a note, weighed by how it sits with the chord and mode (`fit`), how far it is from the one before (`leap`), and what the loop did a phrase back (`echo`) | unknown |
+| A lock | Each time round, a chord or step is rolled again with a chance of (1 − lock / 100)²: 100 keeps it and 0 rewrites it | unknown |
+| On | A part's on button, a press; on, it starts a stopped transport, the one thing here that does | unknown |
+| A step seen before | A repeat pad replaying it: what played plays again, nothing moves on and nothing rolls | unknown |
+| A saved line | One without the later fields, `R.LATER`, still loads, those as they stand; any other length keeps what plays and puts that back | unknown |
+
+**`c_mono` is the Pd voice**, one note at a time: `note <n> <v>`, 0 a release only the note sounding
+answers, and `wave <0 sine, 1 saw, 2 square>`, -1 off, through a `vcf~` that opens with the envelope.
+Only the chosen wave runs, and the whole voice only while a note sounds and for 220 ms after.
+`c_melody` holds five: one for the melody, four for the chords, which share a wave. Their `outlet~`s go
+up through `c_melody` to `u_root`: everything Cut It sends out leaves there.
+
 ### Where each part lives
 
 | | Lives in | Evidence |
@@ -127,6 +155,15 @@ nowhere, in silence.
 as `c_steps` does; a throwing rule says `fail c_synth lua-<selector>`. The gates' side of it is the
 sequencer's trap, *A Lua that never loads is invisible to the gate's Pd half*
 ([sequencer.md](sequencer.md)).
+
+### A saved line comes back in floats
+
+⛔ Pd's numbers are all floats, and a float prints as `7.0`, so a name or a key built from one matches
+nothing, with no error: chord names were keyed on `7.0`.
+
+**Fix:** `num` in `c_melody.lua` makes a whole float an integer as a message arrives.
+`test/gate/lua/c_melody_test.lua` restores a line of floats and requires the phone's line back to
+the character.
 
 ## Design
 
@@ -176,7 +213,7 @@ second `c_synth` with its own cords. Not `u_`: nothing about it is one per instr
 ## Open
 
 - ⬜ **Not played on the rig**: each synth from the nanoKEY, a switch mid-chord, page 3's pads and
-  their colors, the phone's synths screen, its velocity switch, and the line check's toggle.
+  their colors, the phone's keyboard tab, its velocity switch, and the line check's toggle.
   `test/checklists/synths.md`, `cut-it/pages-and-displays`.
 - ⬜ **No control chooses a synth's program**: a section holds `none none` until its file is edited.
   `cut-it/songs-and-sections`.

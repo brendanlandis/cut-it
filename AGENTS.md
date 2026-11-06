@@ -41,7 +41,7 @@ learn late:
 - **Vanilla objects, plus `[shell]` and two libraries we build: pdlua and ELSE** (from 2026-11-03).
   The Organelle ships only a dozen factory externals, of which Cut It uses `[shell]` (Reference,
   Organelle page, *Externals*). pdlua 0.12.24 (Lua 5.4.7) runs the sequencer's rules, the map's
-  lookup, the synth choice, tap tempo, the song store, the drum page's painter and the decoding in two device layers (the nano, the Organelle's keys), and
+  lookup, the synth choice, the generator, tap tempo, the song store, the drum page's painter and the decoding in two device layers (the nano, the Organelle's keys), and
   ELSE 1.0-0 rc14 may replace hand-built parts; both are built for 0.57 and live in
   `/sdcard/PdExtraLibs` on the device and `~/Library/Pd` on the Mac
   ([device/README.md](device/README.md), *Lua and ELSE*). The **`pd`** skill has how to use them.
@@ -164,6 +164,7 @@ lua test/gate/lua/u_map_test.lua     # the map's, the same way
 lua test/gate/lua/m_nano_test.lua    # the nano's decode, the same way
 lua test/gate/lua/m_organelle_test.lua   # and the Organelle keyboard's
 lua test/gate/lua/c_synth_test.lua       # and the synth choice's
+lua test/gate/lua/c_melody_test.lua      # and the generator's
 lua test/gate/lua/u_tempo_test.lua       # and tap tempo's
 lua test/gate/lua/u_song_test.lua        # and the song store's
 lua test/gate/lua/g_grid_test.lua        # and the drum page's painter

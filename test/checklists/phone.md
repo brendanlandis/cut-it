@@ -94,7 +94,7 @@ The rate limit is `phone-assert`'s, and the page structure, what each control se
 - [ ] **18. A mode ends test mode, and the phone follows it**
   - **Need:** Test mode on, the phone's checklist page up.
   - **Do:** Press the Launchpad's page 2 button, the second down the left column. Then press page 3, the third.
-  - **Pass if:** At page 2 the checklist page gives way at once to the drum screen, its tab reading drums; at page 3 the tab reads synths and shows the synths screen, FM and STRINGS, with the velocity switch under them.
+  - **Pass if:** At page 2 the checklist page gives way at once to the drum screen, its tab reading drums; at page 3 the tab reads harmony, and the keyboard tab beside it shows FM and STRINGS, with the velocity switch under them.
   - **Note:** That a mode turns test mode off is `phone-assert`'s too (Brendan, 2026-11-04: staying on the checklists after a mode press was the weird part).
 
 - [ ] **19. Tap tempo on the phone**

@@ -49,6 +49,7 @@ Each part puts at load and on every change, and takes its restore.
 | Key | Part | Atoms | Evidence |
 |-----|------|-------|----------|
 | `drums` | `c_steps` | The pattern, 581 numbers: 512 velocities, each track's own last step, randomness, volume and pitch, the time signature, the drunkenness, the swing and the global last step ([sequencer.md](sequencer.md)) | unknown |
+| `melody` | `c_melody` | The generator, 258 numbers: its controls, the 32 steps, the 8 chords and the fields added later ([synths.md](synths.md), *The generator*). Its restore waits for step 1, as the tempo's and the programs' do | unknown |
 | `programs` | `c_synth` | The Volca's program, then the Streichfett's: 0 to 127, or `none` ([synths.md](synths.md)) | unknown |
 | `synth` | `c_synth` | `fm` or `strings` | unknown |
 | `tempo` | `u_tempo` | The BPM, as the tempo bus carries it ([tempo.md](tempo.md)) | unknown |
@@ -90,6 +91,7 @@ Each part puts at load and on every change, and takes its restore.
 |---|---|---|
 | A bar | **The pattern's loop** (Brendan, 2026-11-05): `c_steps` says `bar` on the step its global loop wraps after, so a queued section starts when the global last step comes round, the whole pattern played. The time signature has no part in it | unknown |
 | When a section starts on a bar | On the last step of the old loop, in the same logical instant, so its restore reaches `c_steps` before the next step is cut: the new section's step 1 | unknown |
+| A bar that moves the song | The face sends `sync` first, `R.moves_at_bar`, so what `c_melody` has drifted lands in the section ending | unknown |
 | A section's drums restored | Every loop, the global one and each track's, starts again at step 1 on the next step, as PLAY starts the pattern, whatever last step the section before had | unknown |
 | A length | Bars, each the section's own loop; 0 is loop, the phone drags 0 to 64. A section with a length counts its bars from its start, or from PLAY, and at the end of its last starts the next by itself | unknown |
 | The last section with a length | Has no next, and plays on as a loop until another is queued | unknown |

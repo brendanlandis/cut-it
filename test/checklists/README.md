@@ -56,7 +56,7 @@ session means opening one.
 | [sequencer](sequencer.md) | 46 | page 2's drum page and the drums it plays, the time signature's rows, each drum's distortion, delay and reverb send, each drum's mute and solo, its distortion's drive and four characters, and the reverb's three types |
 | [sections](sections.md) | 12 | the song's sections: the Launchpad's top row, a queue landing as the pattern comes round, a length handing over, save and revert and their lamps, a power cut, the phone's sections page and its name tab |
 | [songs](songs.md) | 13 | several songs and the setlists: the phone's songs page, its setlists and its name tab, the Organelle's keys loading songs stopped and by each transition, go and its lamp, a song's own draft, delete asking twice, a power cut |
-| [synths](synths.md) | 13 | the nanoKEY and the two synths it plays, page 3's pads, the phone's synths screen and its velocity switch, a switch mid-chord, the Streichfett on the roster |
+| [synths](synths.md) | 13 | the nanoKEY and the two synths it plays, page 3's pads, the phone's keyboard tab and its velocity switch, a switch mid-chord, the Streichfett on the roster |
 
 ⚠️ **The Mac is not the device.** The Phase 6 gate passed 25/25 on the Mac twice and shipped three
 bugs; a checklist on the rig is the last word.

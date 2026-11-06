@@ -365,6 +365,14 @@ def synth_page(frame, lay, chosen):
                 return edge_problem(idx, color), lamp, beat
         elif color != 0:
             stray.append((idx, color))
+    # Page 3's generator pads on the top row: new melody amber and new chords cyan, each dim; chords on and
+    # melody on, dim while off, as they are at load; and new rhythm, blue. What each does is the map's.
+    pads = {81: SYNTH_RGB["fm"][1], 82: SYNTH_RGB["strings"][1], 83: SYNTH_RGB["strings"][1],
+            84: SYNTH_RGB["fm"][1]}
+    for idx, color in stray:
+        if idx in pads and color != pads[idx]:
+            return ("generator pad %d is %s, wanted %s" % (idx, color, pads[idx])), lamp, beat
+    stray = [(idx, color) for idx, color in stray if idx not in pads and idx != 85]
     if stray:
         return ("lit outside the lamps, the beat row and the synth pads: %s"
                 % stray[:6]), lamp, beat

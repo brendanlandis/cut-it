@@ -478,10 +478,16 @@ local function roll_chord(st, i)
   st.dirty = true
 end
 
--- A slot's chord, as the mode knows it, or nil for an empty one.
+-- A slot's chord, as the mode knows it; for one played in that the mode has no name for, its notes as they
+-- stand; nil for an empty one.
+local FLATS = { [0] = "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B" }
 local function chord_of(st, i)
   local by = st.cand_by[st.slot_deg[i]]
-  return by and by[st.slot_shape[i]]
+  local c = by and by[st.slot_shape[i]]
+  if c or #st.slot[i] == 0 then return c end
+  local spell = {}
+  for j, n in ipairs(st.slot[i]) do spell[j] = FLATS[n % 12] end
+  return { name = spell[1] .. "*", spell = table.concat(spell, " "), roman = "?" }
 end
 
 -- Where the melody sounds now.
@@ -1094,6 +1100,7 @@ function R.phone(st)
                        "range", "style", "bass", "arrive", "octave" }) do
     a[#a + 1] = st[k]
   end
+  for i = 1, R.SLOTS do a[#a + 1] = st.slot_pin[i] end
   return a
 end
 
@@ -1165,9 +1172,51 @@ local function pins_clear(st, atoms)
   return { R.save(st) }
 end
 
--- Keys mean nothing here yet: playing a chord into a slot comes with hand edits.
-function R.key()
-  return {}
+-- A key from the nanoKEY. While a chord's box is held, the keys held together are that chord, sounding at
+-- once and pinned (2026-11-06): the first press with none down starts it. It is named if the mode knows it.
+-- With no box held, keys are c_synth's alone.
+function R.key(st, note, velocity)
+  if num(velocity) == 0 then
+    st.down = math.max(0, (st.down or 0) - 1)
+    return {}
+  end
+  local i = st.audition
+  if not i then return {} end
+  local list = (st.down or 0) == 0 and {} or st.slot[i]
+  st.down = (st.down or 0) + 1
+  if #list < R.MAX_NOTES then list[#list + 1] = math.floor(num(note)) end
+  table.sort(list)
+  st.slot[i], st.slot_pin[i], st.wrote = list, 1, true
+  st.slot_deg[i], st.slot_shape[i] = 0, 0
+  local have = {}
+  local count = 0
+  for _, n in ipairs(list) do
+    if not have[n % 12] then have[n % 12], count = true, count + 1 end
+  end
+  for _, c in ipairs(st.candidates) do
+    if #c.pcs == count then
+      local all = true
+      for _, pc in ipairs(c.pcs) do all = all and have[pc] end
+      if all and c.root == list[1] % 12 then
+        st.slot_deg[i], st.slot_shape[i] = c.deg, c.shape
+        break
+      end
+    end
+  end
+  local out = {}
+  change_to(st, list, out)
+  out[#out + 1] = R.save(st)
+  return out
+end
+
+-- chord-pin <slot>, a finger left on a box: pinned or unpinned, and left alone by drift and roll while
+-- pinned. Not after keys were played into it, which pinned it already.
+local function chord_pin(st, atoms)
+  local i = math.floor(num(atoms[1]))
+  if i < 1 or i > R.SLOTS then return { R.fail("bad-slot") } end
+  if st.wrote then return {} end
+  st.slot_pin[i] = 1 - st.slot_pin[i]
+  return { R.save(st) }
 end
 
 -- A part's on button, from the phone or a pad's press. On, it plays whenever the transport runs, and
@@ -1196,7 +1245,7 @@ local function audition(st, atoms)
   local out = {}
   if down > 0 then
     if #st.slot[i] == 0 then roll_chord(st, i) end
-    st.audition = i
+    st.audition, st.down, st.wrote = i, 0, false
     change_to(st, st.slot[i], out)
     return out
   end
@@ -1256,6 +1305,16 @@ end
 
 local function roll_chords(st, atoms)
   if num(atoms[1]) == 0 then return {} end
+  -- With a chord's box held, just that one: unpinned and rolled anew, and heard at once.
+  if st.audition then
+    local i = st.audition
+    st.slot_pin[i] = 0
+    roll_chord(st, i)
+    local out = {}
+    change_to(st, st.slot[i], out)
+    out[#out + 1] = R.save(st)
+    return out
+  end
   for i = 1, R.SLOTS do
     if st.slot_pin[i] == 0 then
       st.slot[i], st.slot_deg[i], st.slot_shape[i] = {}, 0, 0
@@ -1288,7 +1347,7 @@ local function flip_style(st, atoms)
 end
 
 R.inputs = {
-  list = function() return R.key() end,
+  list = function(st, a) return R.key(st, a[1], a[2]) end,
   step = R.step,
   set = set,
   audition = audition,
@@ -1300,6 +1359,7 @@ R.inputs = {
   ["note-rest"] = note_rest,
   ["note-hear"] = note_hear,
   ["pins-clear"] = pins_clear,
+  ["chord-pin"] = chord_pin,
   style = flip_style,
   bass = flip_bass,
   ["roll-melody"] = roll_melody,

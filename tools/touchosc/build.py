@@ -1443,6 +1443,7 @@ local CHECKPAGE = %(npages)s
 local CHECK = %(check)s
 local SYNTHS = %(synths)s
 local CHORDKNOBS = %(chordknobs)s
+local AMBER = Color(1, 0.66, 0.12)
 local G_X, G_Y, G_W, G_H = %(gx)s, %(gy)s, %(gw)s, %(gh)s
 local N_X, N_W, N_H, N_ROWS, N_GUTTER = %(nx)s, %(nw)s, %(nh)s, %(nrows)s, %(ngutter)s
 local ACKS = %(acks)s
@@ -1857,7 +1858,6 @@ end
 
 -- The melody grid. Rows are the mode's notes across what the loop uses, so what's drawn stays in key, a note
 -- outside the mode taking the nearest row. Rows don't change under a finger.
-local AMBER = Color(1, 0.66, 0.12)
 local LETTER = { [0] = 'C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B' }
 local mel = { loop = 16, tonic = 0, scale = {}, note = {}, code = {}, rows = {}, press = false, drag = nil }
 
@@ -2048,7 +2048,7 @@ end
 -- the key and mode, the grid's length and the last step, each slot's name, spelling, numeral and start,
 -- the slot sounding lit and those past how many hidden; then the two voices and the melody's controls.
 local function chords(a)
-  if #a < 59 then return end
+  if #a < 67 then return end
   hand('marrive', math.floor(arg(a, 58)))
   hand('moctave', math.floor(arg(a, 59)))
   local onm0 = arg(a, 9) == 1
@@ -2085,15 +2085,16 @@ local function chords(a)
     local i = grid.order[n]
     local on = i ~= nil and i == now
     lit('cbox' .. n, on)
+    local pinned = i and arg(a, 59 + i) == 1
     for j, part in ipairs({ 'n', 's', 'r' }) do
       text('cbox' .. n .. part, i and tostring(arg(a, 14 + (i - 1) * 4 + j - 1)) or '-')
-      ink('cbox' .. n .. part, on and BLACK or (i and WHITE or GREY))
+      ink('cbox' .. n .. part, on and BLACK or (pinned and AMBER or (i and WHITE or GREY)))
     end
   end
   for i = 1, 8 do
     lit('rmark' .. i, i == now)
     text('rmark' .. i .. 'l', tostring(arg(a, 14 + (i - 1) * 4 + 2)))
-    ink('rmark' .. i .. 'l', i == now and BLACK or WHITE)
+    ink('rmark' .. i .. 'l', i == now and BLACK or (arg(a, 59 + i) == 1 and AMBER or WHITE))
   end
   if not grid.drag then gridDraw() end
   hand('vharm', math.floor(arg(a, 46)))
@@ -2375,10 +2376,14 @@ function onReceiveNotify(key, value)
     touchedAt[value] = getMillis()
   elseif key == 'boxd' then
     local i = grid.order[value]
-    if i then sendOSC('/cutit', 'melody', 'audition', i, 1) end
+    if i then
+      grid.held = { i = i, at = getMillis() }
+      sendOSC('/cutit', 'melody', 'audition', i, 1)
+    end
   elseif key == 'boxu' then
-    local i = grid.order[value]
-    if i then sendOSC('/cutit', 'melody', 'audition', i, 0) end
+    local h = grid.held
+    grid.held = nil
+    if h then sendOSC('/cutit', 'melody', 'audition', h.i, 0) end
   elseif key == 'ndown' then
     mel.press = true
   elseif key == 'nmove' then
@@ -2427,6 +2432,11 @@ function update()
   if mel.press then
     mel.press = false
     melPick()
+  end
+  -- A finger left on a chord's box pins it, or unpins it.
+  if grid.held and not grid.held.done and now - grid.held.at > 700 then
+    grid.held.done = true
+    sendOSC('/cutit', 'melody', 'chord-pin', grid.held.i)
   end
   local up = now - lastHb < 1500
   for _, k in ipairs({ 'link', 'dlink', 'slink', 'hlink', 'rlink', 'mlink', 'nlink', 'seclink', 'glink', 'llink' }) do

@@ -90,6 +90,12 @@ jumps an octave off the line, which carries on where it was. The loop rolls ahea
 each hearing the chord it will meet first time round. Hand edits on the phone's notes tab are pinned, through
 drift and roll, until cleared.
 
+**Chords by hand.** With a chord's box held on the harmony tab, keys played on the nanoKEY are that chord, sounding
+at once, pinned, and named if the mode knows it. A finger left on a box for 700 ms pins or unpins it, a pinned
+chord's words amber. Roll leaves pinned chords, but with a box held rolls just that one, unpinned. The top row
+of Launchpad page 3: new melody, new chords, chords on, melody on, new rhythm, the two on buttons bright when
+on.
+
 **`c_melody` rolls a loop of up to 8 chords and a loop of up to 32 notes in a key and mode, by
 weighted dice, and a lock on each keeps or drifts what it rolled** (Brendan, 2026-11-05). `c_steps`'
 clock drives it, each part plays on its own voice, and page 3's tabs on the phone and rows in the

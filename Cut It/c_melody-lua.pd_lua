@@ -9,7 +9,7 @@
 -- outlet 6: melody <what the phone shows>, to u_net. outlet 7: <3 or 4> <wave, or -1 for off>, to the
 -- Pd voices, c_mono: 3 the melody's, 4 the chords' four. outlet 8: a bang to start the transport.
 -- outlet 9: here <step> <melody step>, the loops' places, to u_net. outlet 10: notes <what the melody grid
--- shows>, to u_net, at most every NOTES_EVERY ms.
+-- shows>, to u_net, at most every NOTES_EVERY ms. outlet 11: <chords on> <melody on>, to g_grid's pads.
 
 local MelodyLua = pd.Class:new():register("c_melody-lua")
 local Clock = pd.Clock
@@ -30,7 +30,7 @@ local ROLL_EVERY = 12
 local NOTES_EVERY = 250
 
 function MelodyLua:initialize()
-  self.inlets, self.outlets = 2, 10
+  self.inlets, self.outlets = 2, 11
   self.state = R.new()
   return true
 end
@@ -100,6 +100,11 @@ function MelodyLua:answered()
   self.state.show = false
   local ok, now = pcall(R.phone, self.state)
   if not ok then return end
+  local lamps = self.state["on-h"] .. " " .. self.state["on-m"]
+  if lamps ~= self.lamps_sent then
+    self.lamps_sent = lamps
+    self:outlet(11, "list", { self.state["on-h"], self.state["on-m"] })
+  end
   local key = table.concat(now, " ")
   if key ~= self.phone_sent then
     self.phone_sent = key

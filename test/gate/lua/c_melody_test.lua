@@ -205,4 +205,33 @@ do
         on_chord .. " of " .. seen)
 end
 
+do
+  -- Chords by hand: keys played with a box held write that chord, named if the mode knows it, and pinned; a
+  -- roll leaves it; a roll with the box held unpins it and rolls it anew; a finger left on a box pins it.
+  local st = R.new(dice(13))
+  R.internal.init(st)
+  while #st.to_roll + #st.to_roll_m > 0 do R.roll_next(st) end
+  R.inputs.audition(st, { 2, 1 })
+  for _, n in ipairs({ 60, 63, 67 }) do R.inputs.list(st, { n, 100 }) end
+  local p = R.phone(st)
+  equal("keys played with a box held are that chord, pinned, and named", { st.slot[2], st.slot_pin[2], p[18] },
+        { { 60, 63, 67 }, 1, "Cm" })
+  for _, n in ipairs({ 60, 63, 67 }) do R.inputs.list(st, { n, 0 }) end
+  R.inputs.audition(st, { 2, 0 })
+  R.inputs["roll-chords"](st, { 1 })
+  while #st.to_roll > 0 do R.roll_next(st) end
+  equal("a roll leaves it", st.slot[2], { 60, 63, 67 })
+  R.inputs.audition(st, { 2, 1 })
+  R.inputs["roll-chords"](st, { 1 })
+  check("with its box held, a roll unpins it and rolls it anew",
+        st.slot_pin[2] == 0 and #st.slot[2] > 0 and table.concat(st.slot[2], " ") ~= "60 63 67")
+  R.inputs.audition(st, { 2, 0 })
+  R.inputs.audition(st, { 1, 1 })
+  R.inputs["chord-pin"](st, { 1 })
+  equal("a finger left on a box pins it", st.slot_pin[1], 1)
+  R.inputs.audition(st, { 1, 0 })
+  local empty = R.new(dice(13))
+  equal("keys with no box held mean nothing here", #R.inputs.list(empty, { 60, 100 }), 0)
+end
+
 os.exit(T.report() == 0)

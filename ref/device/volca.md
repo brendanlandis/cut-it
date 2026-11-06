@@ -88,19 +88,12 @@ program; [tools/README.md](../../tools/README.md) says how the probe runs):
 | `pgmout 20` | **LilChorus** — i.e. wire 19 | verified | 228 |
 | `pgmout 21` | **Mouthlead**, and it held through three raw `0xC0 20` interleaves | verified | 228 |
 
-### `slider-1` is CC 41, and it can silence the device
+### CC 41 can silence the device
 
-`mode-3 slider-1 volca-cc 41`, on page 3, the synths page (Brendan, 2026-11-04), and CC 41 is
-Velocity, a global parameter (Reference, item 284). Leave
-the fader at the bottom and the Volca goes silent to its own keyboard, which looks exactly like a
-dead link. **Fix:** before diagnosing silence, **sweep `slider-1` to the top**. It is also the only
-mapping there is, so it is the only audible evidence of the link: the oracle is the fader changing the
-sound, never the sound existing. ⚠️ **A checklist step passing if the Volca sounds passes with the
-cable out.**
-
-| | Value | Evidence | Item |
-|---|---|---|---|
-| `slider-1` on page 3 | Volca **CC 41 — Velocity**, global, silences the device at 0 | verified | 284 |
+CC 41 is Velocity, a global parameter (Reference, item 284). Left at the bottom the Volca goes silent to its own
+keyboard, which looks exactly like a dead link. No shipped row sends it: the Volca is reached by a voice's machine and
+the nanoKEY ([voices.md](../module/voices.md)). So the oracle for the link is the nanoKEY sounding it, never the sound
+existing. ⚠️ **A checklist step passing if the Volca sounds passes with the cable out.**
 
 ### ⛔ Absent at load, only the heartbeat ever wires this device
 

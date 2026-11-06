@@ -162,6 +162,12 @@ equal("a key on inlet 1 leaves outlet 1, the Volca's, as note <n> <v>",
       T.send(o, 1, "list", { 60, 100 }), { { 1, "note", { 60, 100 } } })
 equal("synth strings leaves outlets 3 and 4", T.send(o, 1, "synth", { "strings" }),
       { { 3, "synth", { "strings" } }, { 4, "synth", { "strings" } } })
+equal("⛔ machine fm, from u_voices: outlet 3 alone, the phone's, since looking at a voice's page changes "
+      .. "nothing in the song", T.send(o, 1, "machine", { "fm" }), { { 3, "synth", { "fm" } } })
+equal("... the same machine again says nothing", T.send(o, 1, "machine", { "fm" }), {})
+equal("... one it doesn't know is bad-synth", T.send(o, 1, "machine", { "organ" }),
+      { { 5, "fail", { "c_synth", "bad-synth" } } })
+T.send(o, 1, "machine", { "strings" })
 equal("the held key releases on outlet 1", T.send(o, 1, "list", { 60, 0 }),
       { { 1, "note", { 60, 0 } } })
 equal("a new key leaves outlet 2, the Streichfett's", T.send(o, 1, "list", { 62, 90 }),

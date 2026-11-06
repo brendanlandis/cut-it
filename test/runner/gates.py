@@ -23,7 +23,7 @@ import lib_scratch                                              # noqa: E402
 # ---------------------------------------------------------------------------
 # The table's length is asserted, since a gate dropped in an edit is otherwise
 # silent. Update it deliberately, never to make a red run green (as MIDI_EXPECT).
-EXPECT = 28
+EXPECT = 29
 
 # The gates all run side by side and print whole in table order, so the log
 # reads as a serial run's and has one RESULT: line. None waits for another: no
@@ -59,6 +59,7 @@ GATES = [
     ("panic's second tier", "./test/gate/recover-assert.sh"),
     ("the data store", "./test/gate/state-assert.sh"),
     ("the song store: sections, save and revert", "./test/gate/song-assert.sh"),
+    ("the voices, and the controls in play", "./test/gate/voices-assert.sh"),
     ("the Launchpad", "./test/gate/launchpad-assert.sh"),
     ("the nanoKONTROL", "./test/gate/nano-assert.sh"),
     ("the Organelle's own front panel", "./test/gate/organelle-assert.sh"),

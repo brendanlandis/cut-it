@@ -112,8 +112,8 @@ def run_asserts(cap):
     # What a control draws is u_map's alone (item 317), and only a mapped one
     # draws (Brendan, 2026-11-04). Rows are counted by name, exactly: g_oled
     # redraws a row in place by name, so a duplicate is invisible on screen. Two
-    # lean on the shipped map, on page 3, which the EARLY window chooses: slider-3
-    # has no row there, and slider-1 is volca-cc 41.
+    # lean on the map: slider-3 has nothing in play, and the gate's own row makes
+    # slider-1 volca-cc 41.
     print("\n--- param only, and ONE row per control ---")
     rows = lambda k, *names: [d for d in disp(k) if d[:1] and d[0] in names]
     kinds = [k for k, _ in W("SLIDER")]
@@ -130,13 +130,13 @@ def run_asserts(cap):
             rows("EARLY", "slider-1", "volca-cc41") == [["volca-cc41", "64"]],
             "rows for slider-1 and volca-cc41 at 300 ms: %s. A slider-1 row is the "
             "double row this gate exists to keep out; no volca-cc41 row means the "
-            "shipped mode-3 slider-1 volca-cc 41 row moved"
+            "gate's own slider-1 volca-cc 41 row didn't land"
             % rows("EARLY", "slider-1", "volca-cc41"))
 
     # The other [ctlin] layer, through the same stub.
-    A.check("⛔ ... and neither does a Launchpad ring button, unmapped -- no lp-cc-19",
-            rows("CH-LP", "lp-cc-19") == [],
-            "rows for lp-cc-19: %s" % rows("CH-LP", "lp-cc-19"))
+    A.check("⛔ ... and neither does a Launchpad ring button, unmapped -- no lp-cc-99",
+            rows("CH-LP", "lp-cc-99") == [],
+            "rows for lp-cc-99: %s" % rows("CH-LP", "lp-cc-99"))
 
     # ---- cross-talk between the channel blocks ----------------------------
     # One t-ctlin reaches both rewritten [ctlin] boxes; the Launchpad's is the
@@ -151,8 +151,8 @@ def run_asserts(cap):
             "published sp-cc-20 77 here" % (param("CH-33"), disp("CH-33")))
     lp = [v for v in param("CH-LP") if v and v[0].startswith("lp-cc-")]
     A.check("the Launchpad's block admits its own channel",
-            len(lp) == 1 and lp[0][0] == "lp-cc-19",
-            "wanted one lp-cc-19 on channel 1, got %s" % param("CH-LP"))
+            len(lp) == 1 and lp[0][0] == "lp-cc-99",
+            "wanted one lp-cc-99 on channel 1, got %s" % param("CH-LP"))
 
     strays = [(m, v) for m in NANO_WINDOWS for v in param(m) + disp(m)
               if v and v[0].startswith(FOREIGN)]

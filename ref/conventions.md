@@ -20,7 +20,7 @@ If you read nothing else here, read this. Each links to its reasoning below.
 | ID | Rule | |
 |---|---|---|
 | **C-1** | **`$0-` every send, receive, table and array name** inside an abstraction | [→](#0--mandatory) |
-| **C-2** | **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `recover` `param` `err` `disp` `state` `presence`, plus mother's own | [→](#the-global-name-allowlist) |
+| **C-2** | **Bare global names only from the allowlist** — `mode` `tempo` `clock` `start`/`stop` `panic` `recover` `param` `err` `disp` `state` `presence` `map-route` `perform-heard` `voices-rows`, plus mother's own | [→](#the-global-name-allowlist) |
 | **C-3** | **`[trigger]` on every fan-out**, even when the current order happens to work | [→](#trigger-on-every-fan-out) |
 | **C-4** | **Never `adc~` / `dac~`** — `[r~ inL]`/`[r~ inR]` in, `[throw~ outL]`/`[throw~ outR]` out | [→](#audio-io--never-adc-never-dac) |
 | **C-5** | **One owner per display surface** — `oscOut` / `screenLine*` are `g_oled`'s, `led` is its own. Everything else asks via `disp` | [→](#the-display-bus-and-who-owns-the-screen) |
@@ -152,7 +152,7 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 
 | Name | Carries | Source |
 |---|---|---|
-| `mode` | **`<page>`**, one atom — `mode-1` to `mode-8` | `u_map`, from the Launchpad's left column |
+| `mode` | **`<page>`**, one atom: `perform`, `drums`, `harmony`, `melody`, `keys`, `sound`, `songs` or `diag` | `u_voices` |
 | `tempo` | **master reference** BPM, as a float | any → `u_tempo` |
 | `clock` | **master reference** beat bang | `u_tempo` |
 | `start` / `stop` | transport, carried as a **bang** | any → `u_tempo` |
@@ -163,6 +163,9 @@ exhaustive — adding to it is a deliberate change to this file, not a local dec
 | `disp` | display requests: `<name> <value> [unit]` | any → `g_oled`, `g_led`, `g_grid` |
 | `state` | persistence, **three selectors** — see below | any ↔ `u_state` |
 | `presence` | device presence, **six selectors** — see below | any ↔ `u_present` |
+| `map-route` | `<dest> <arg> <value> <target> <live>`, into `u_map`'s destination route | `u_perform` → `u_map` |
+| `perform-heard` | `<dest> <arg> <value>`, a live control moved | `u_map` → `u_perform` |
+| `voices-rows` | `rows <row> <8 engines>`, the row on show and each row's engine | `u_voices` → `u_perform` |
 
 **Four of these are request buses, not publications.** `tempo`, `start`/`stop`, `mode` and
 `param` are written by whoever has something to say and *consumed* by one owner, exactly as `err`
@@ -191,14 +194,11 @@ Two consequences bind whoever writes an `m_` layer, and both are deliberate:
   Everything else about the map — the row format, the destinations, the divisor, the boot races —
   is on [map.md](module/map.md).
 
-**`mode` is driven from the Launchpad's left column**, its eight buttons, CC 80 down to 10, which
-`g_grid` lights as the mode lamps — the only device Pd can light, so the state is visible rather
-than remembered. It carries
-**one atom, the page**, as its selector, so a reader's `route` matches it and its branches feed
+**`mode` is written by `u_voices` alone** ([voices.md](module/voices.md)), from the Launchpad's columns, aux and Setup,
+and `g_grid` lights the page's lamps — the only device Pd can light, so the state is visible rather than remembered. It
+carries **one atom, the page**, as its selector, so a reader's `route` matches it and its branches feed
 message boxes, which fire on anything. There is no compose and perform split (Brendan, 2026-11-04):
-a page is a page, and every one of them shows every warning. `u_map` seeds one at load behind a
-spigot that any real mode closes, so the seed fills a silence rather than setting a default. A mode
-saved before then as `<class> <page>` comes back as its page alone ([map.md](module/map.md)).
+a page is a page, and every one of them shows every warning.
 
 **`tempo` and `clock` are the master reference, not "the clock".** See *Poly-tempo* below —
 this distinction is load-bearing and easy to lose.

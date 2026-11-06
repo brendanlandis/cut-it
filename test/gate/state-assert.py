@@ -88,9 +88,9 @@ auto = auto or []
 manual = manual or []
 
 A.check("an auto put reaches auto.txt",
-        any(l.startswith("mode ") for l in auto), auto)
+        any(l.startswith("page ") for l in auto), auto)
 A.check("an auto put does NOT leak into manual.txt",
-        not any(l.startswith("mode ") for l in manual), manual)
+        not any(l.startswith("page ") for l in manual), manual)
 A.check("a save broadcast is answered and written to manual.txt",
         any(l.startswith("take-1 ") for l in manual), manual)
 A.check("a manual answer does NOT leak into auto.txt",
@@ -102,16 +102,16 @@ A.check("a contributor answering behind a [del] is ABSENT from the file",
         "manual=%s auto=%s" % (manual, auto))
 
 # A store that appended would pass everything above.
-mode_lines = [l for l in auto if l.startswith("mode ")]
+page_lines = [l for l in auto if l.startswith("page ")]
 A.check("re-putting a key REPLACES its line rather than appending",
-        len(mode_lines) == 1, mode_lines)
+        len(page_lines) == 1, page_lines)
 A.check("the surviving line is the LAST value put",
-        mode_lines == ["mode mode-4"], mode_lines)
+        page_lines == ["page songs"], page_lines)
 
 print("=== C. restore: order, and a key present in both files ===")
 fresh_dir()
 with open(AUTO, "w") as fh:
-    fh.write("mode mode-6\ndupe from-auto\n")
+    fh.write("page diag\ndupe from-auto\n")
 with open(MANUAL, "w") as fh:
     fh.write("take-1 kick 36 snare 38\ndupe from-manual\n")
 out2 = run_driver("c")
@@ -131,8 +131,8 @@ A.check("a manual line survives a restart and is replayed intact",
         any("take-1 kick 36 snare 38" in r for r in restores), restores)
 
 # The restore replays what was on disk at boot. A flush armed by a loadbang
-# writes the running values over the file first, and mode-6 never appears.
+# writes the running values over the file first, and page diag never appears.
 A.check("a boot does NOT overwrite saved state before reading it",
-        any("mode mode-6" in r for r in restores), restores)
+        any("page diag" in r for r in restores), restores)
 
 sys.exit(1 if A.report() else 0)

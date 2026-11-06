@@ -1,14 +1,14 @@
 <!-- schema: module -->
 # The synths
 
-**Files:** `Cut It/c_synth.pd`, `Cut It/c_synth.lua`, `Cut It/c_synth-lua.pd_lua`, `Cut It/cut-it-synth-page.txt`, `Cut It/c_melody.pd`, `Cut It/c_melody.lua`, `Cut It/c_melody-lua.pd_lua`, `Cut It/c_mono.pd` · **Gate:** `test/gate/synths-assert.sh`, `test/gate/display-assert.sh`, `test/gate/phone-assert.sh`, `test/gate/touchosc-assert.sh` · **Checklist:** `test/checklists/synths.md`, `test/checklists/linecheck.md`
+**Files:** `Cut It/c_synth.pd`, `Cut It/c_synth.lua`, `Cut It/c_synth-lua.pd_lua`, `Cut It/c_melody.pd`, `Cut It/c_melody.lua`, `Cut It/c_melody-lua.pd_lua`, `Cut It/c_mono.pd` · **Gate:** `test/gate/synths-assert.sh`, `test/gate/display-assert.sh`, `test/gate/phone-assert.sh`, `test/gate/touchosc-assert.sh` · **Checklist:** `test/checklists/synths.md`, `test/checklists/linecheck.md`
 
 ## What it is
 
 **`c_synth` holds which synth the nanoKEY plays, and holds it on every page.** There are two:
 `fm`, the Volca FM, and `strings`, the Waldorf Streichfett, and `fm` at a first load (Brendan,
-2026-11-04). The Launchpad's page 3 chooses with two pads, the phone with two buttons, and the
-choice stays put whichever page the Launchpad is on, so the nanoKEY plays the chosen synth
+2026-11-04). A voice's page chooses its machine, if that's one of these ([voices.md](voices.md)), and the
+phone with two buttons, and the choice stays put through a page with none, so the nanoKEY plays the chosen synth
 everywhere ([nanokey.md](../device/nanokey.md)).
 
 **The one decision that makes it legible: a key's release goes to the synth its press went to.** A
@@ -35,16 +35,15 @@ and which synth each held key went to, as plain Lua that runs on the Mac without
 
 | | Is | Evidence |
 |---|---|---|
-| Inlet | `<note> <velocity>` from `m_nanokey`, 0 a release; `synth <choice>` from `u_map`'s `synth` destination (a page-3 pad's press) and from `u_net` (the phone's `/cutit synth <choice>`); `velocity <on or off>` from `u_net` (the phone's `/cutit velocity <on or off>`) | unknown |
+| Inlet | `<note> <velocity>` from `m_nanokey`, 0 a release; `machine <choice>` from `u_voices`, the voice on show's; `synth <choice>` from `u_net` (the phone's `/cutit synth <choice>`); `velocity <on or off>` from `u_net` (the phone's `/cutit velocity <on or off>`) | unknown |
 | Outlet 1 | `note <n> <v>` and `program <n>` to `m_volca` | unknown |
 | Outlet 2 | `note <n> <v>` and `program <n>` to `m_streich` | unknown |
 | Outlet 3 | `synth <choice>` to `u_net`'s third inlet, which sends `/cutit/synth <choice>` to the phone at once and on every heartbeat ([phone.md](../device/phone.md)) | unknown |
-| Outlet 4 | `synth <choice>` to `g_grid`'s fourth inlet, which paints page 3's pads ([display.md](display.md)) | unknown |
-| Outlet 5 | `velocity <on or off>` to `u_net`'s third inlet, which sends `/cutit/velocity` to the phone at once and on every heartbeat | unknown |
+| Outlet 4 | `velocity <on or off>` to `u_net`'s third inlet, which sends `/cutit/velocity` to the phone at once and on every heartbeat | unknown |
 | `state` | `put section synth <choice>`, `put section velocity <on or off>` and `put section programs <volca> <streichfett>` at load and on every change; `restore synth`, `restore velocity` and `restore programs` as a section starts, the first at ~3.5 s | unknown |
 | `err` | `fail c_synth bad-synth` for a choice it does not know, `bad-velocity` for a setting, `bad-selector` for a message, `lua-<selector>` for a throw, `no-lua` when the Lua never loaded (C-12) | unknown |
 
-Outlets 3 and 4 carry the choice, and outlet 5 the velocity switch, at load, at the restore and on
+Outlet 3 carries the choice, and outlet 4 the velocity switch, at load, at the restore and on
 every change, never on a change that changes nothing.
 
 ### What it does
@@ -55,30 +54,16 @@ every change, never on a change that changes nothing.
 | Its release | Goes to the synth its press went to, whatever is chosen by then | unknown |
 | A press of a key held on the other synth | Releases it there first, then plays it on the choice: a nanoKEY never does this, a stray note-on can | unknown |
 | A release with no press on record | Goes to the synth chosen now: a note-off nothing holds is harmless, and one sent nowhere could leave a note hanging | unknown |
-| `synth <choice>` | Changes the choice and says so; the same choice again changes nothing and says nothing; a choice it does not know is `bad-synth` and changes nothing | unknown |
-| A value of 0 after the choice | A release, ignored; `u_map` sends presses alone and the phone no value | unknown |
+| `synth <choice>` | Changes the choice, says so and puts it; the same choice again changes nothing and says nothing; a choice it does not know is `bad-synth` and changes nothing | unknown |
+| `machine <choice>` | Changes the choice and tells the phone, and isn't put: looking at a voice's page changes nothing in the song, so save and revert stay dark. Otherwise as `synth` | unknown |
+| A value of 0 after the choice | A release, ignored; the phone sends no value | unknown |
 | `velocity off` | Every note-on from then goes out at 127, on either synth; a release stays 0, so a key held through the switch still lets go (Brendan, 2026-11-04) | unknown |
 | `velocity on` | A key's own velocity reaches the synth again. The same setting twice says nothing; anything else is `bad-velocity` | unknown |
-| At load | `fm` and velocity `on`, sent to the pads, the phone and the store | unknown |
+| At load | `fm` and velocity `on`, sent to the phone and the store | unknown |
 | The restore | The saved choice and switch come back at ~3.5 s and are put straight back; one that names no synth, or neither on nor off, keeps the one in force and is repaired by the same put ([state.md](state.md), *A contributor must put back what it restores*) | unknown |
 | Panic | Not heard here: each synth's layer sends its own All Notes Off, CC 123, on its own channel | unknown |
 | A section's programs | `restore programs <volca> <streichfett>`, each 0 to 127, the program change on the wire, or `none`: each synth with a program is sent `program <n>`, the Volca first, and both are put straight back. A number off 0 to 127, or a word, is `none`; `none` sends nothing and leaves the synth on whatever sound it has | unknown |
 | At load, the programs | `none none`, put, so the section playing holds them; no control chooses one yet (`cut-it/songs-and-sections`) | unknown |
-
-### Page 3 on the Launchpad
-
-**`Cut It/cut-it-synth-page.txt` says which cell is which synth**, a row per cell, `<index>
-<synth>`, read with `-c` at load by `u_map`, to know what a press means, and by `g_grid`, to paint
-it: a press and its lamp cannot disagree, as on the drum page ([display.md](display.md), *The
-layout is a file both sides read*).
-
-| Cells | Synth | Map rows | Evidence |
-|---|---|---|---|
-| 21–24, the second row from the bottom, left half | `fm` | `mode-3 pad-21 synth 21` … `pad-24` | unknown |
-| 25–28, the same row, right half | `strings` | `mode-3 pad-25 synth 25` … `pad-28` | unknown |
-
-The beat row stays on row 1, as on every page but the drums. What each cell paints is on
-[display.md](display.md), *`g_grid`'s synth pads, page 3*.
 
 ### The generator
 
@@ -92,13 +77,24 @@ drift and roll, until cleared.
 
 **Chords by hand.** With a chord's box held on the harmony tab, keys played on the nanoKEY are that chord, sounding
 at once, pinned, and named if the mode knows it. A finger left on a box for 700 ms pins or unpins it, a pinned
-chord's words amber. Roll leaves pinned chords, but with a box held rolls just that one, unpinned. The top row
-of Launchpad page 3: new melody, new chords, chords on, melody on, new rhythm, the two on buttons bright when
-on.
+chord's words amber. Roll leaves pinned chords, but with a box held rolls just that one, unpinned.
+
+**On the Launchpad** (Brendan, 2026-11-06), a voice's own page ([display.md](display.md)). The harmony page: a chord on
+the top row, held, sounds, the nanoKEY writes it and roll rolls just it; below, pressing a step with a chord held moves
+it there, and a step a chord starts on holds that chord. Its commands: on, roll chords, roll rhythm, bass only and modal
+or functional. The melody page: a step on the top four rows, held, takes its pitch from the four rows below, and
+tapped alone turns on or off; a note there alone sounds. Its commands: on, roll and clear pins. These are the map's
+`h<NN>` and `m<NN>`, from one `pad-*` row each ([map.md](map.md)).
+
+**There are two engines**, `[c_melody 1 melody]` and `[c_melody 2 melody-2]`, each a harmony line and a melody line,
+and `u_voices` says what each plays on: `assign <e> <h or m> <machine or off>`, `off` silencing that line. **Only the
+engine whose voice is on show hears the Launchpad, the phone and the nanoKEY and speaks to them**, told by `active
+<e>`; a message `e<n>-<name>`, from `u_perform`, is for engine n, on show or not. A section holds each under its own
+key, `melody` and `melody-2`. The section's own word for a machine is overruled by the voice's, which is the song's.
 
 **`c_melody` rolls a loop of up to 8 chords and a loop of up to 32 notes in a key and mode, by
 weighted dice, and a lock on each keeps or drifts what it rolled** (Brendan, 2026-11-05). `c_steps`'
-clock drives it, each part plays on its own voice, and page 3's tabs on the phone and rows in the
+clock drives it, each part plays on its own machine, and the phone's tabs and the voices' pages in the
 map control it. `c_melody.lua` holds the rules, and `c_melody.pd` the cords, the note timing and the
 state bus, as `c_synth`'s are.
 
@@ -129,7 +125,6 @@ up through `c_melody` to `u_root`: everything Cut It sends out leaves there.
 | The choice, which synth each held key went to, the velocity switch, the restores | `c_synth.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
 | Turning messages into those calls and their answers into outlets | `c_synth-lua.pd_lua`, the class `c_synth-lua`: two inlets (keys, choices and the switch; `c_synth.pd`'s own `restore`, `restore-velocity` and `init`), seven outlets (the Volca, the Streichfett, the choice, the key and value to save, `err`, a bang on `init`, the switch for the phone) | verified |
 | The cords out, `put auto` under the key the Lua names, the restores off the `state` bus, the `no-lua` guard | `c_synth.pd` | verified |
-| What a page-3 press means | `u_map`'s `synth` destination, which looks the cell up in the layout ([map.md](map.md)) | verified |
 
 ### The choice, the switch and the programs in a section
 
@@ -152,13 +147,13 @@ note-off on one is nothing on the other.
 `synths-assert` holds a key on fm, switches from the phone and requires the release on the Volca's
 channel.
 
-### A pad's release must not choose
+### Only a press chooses
 
-⛔ With both page-3 pads held, the first one let go would undo the choice the second one made, if
+⛔ With two voices' buttons held, the first one let go would undo the choice the second one made, if
 a release chose.
 
-**Fix:** `u_map`'s `synth` destination passes a press alone, as `diag` and `test-mode` do.
-`synths-assert` holds FM, presses STRINGS, lets FM go and requires strings.
+**Fix:** `u_voices` takes a press alone. `synths-assert` presses row 3's, row 2's, lets row 3's go and requires
+strings.
 
 ### A Lua that never loads leaves the nanoKEY playing nothing
 
@@ -186,7 +181,7 @@ the character.
 A device publishes on `param` and `u_map` decides what each control means per page
 ([architecture.md](../architecture.md)). The nanoKEY's keys mean one thing on every page, the
 chosen synth's note (Brendan, 2026-11-04), so `m_nanokey` hands them to `c_synth` by a cord. What
-the choice is stays a mapped thing: the pads reach it through `u_map`, page 3 only.
+the choice is follows the voice on show ([voices.md](voices.md)).
 
 ### Lua, as the sequencer's rules are
 
@@ -198,12 +193,10 @@ pressure stream.
 
 ### The choice leaves by cords, and no bus carries it
 
-The phone and the pads are the two places that show the choice, and each gets it on a cord into a
+The phone is the one place that shows the choice, and it gets it on a cord into a
 file that already shows `c_synth`'s neighbors' state: `u_net`'s third inlet beside `c_steps`' drum
-state, and `g_grid`'s fourth inlet beside the drum page's. A bus would be a new name on C-2's
-allowlist for something one file publishes and two files read. The velocity switch has an outlet
-of its own, into the same inlet of `u_net`, since only the phone shows it: on the choice's outlet
-it would reach `g_grid`, which would refuse it as `bad-selector`.
+state. A bus would be a new name on C-2's allowlist for something one file publishes and one file reads.
+The velocity switch has an outlet of its own, into the same inlet of `u_net`.
 
 ### The velocity switch is the router's
 
@@ -226,8 +219,8 @@ second `c_synth` with its own cords. Not `u_`: nothing about it is one per instr
 
 ## Open
 
-- ⬜ **Not played on the rig**: each synth from the nanoKEY, a switch mid-chord, page 3's pads and
-  their colors, the phone's keyboard tab, its velocity switch, and the line check's toggle.
+- ⬜ **Not played on the rig**: each synth from the nanoKEY, a switch mid-chord, the voices' buttons,
+  the phone's keyboard tab, its velocity switch, and the line check's toggle.
   `test/checklists/synths.md`, `cut-it/pages-and-displays`.
 - ⬜ **No control chooses a synth's program**: a section holds `none none` until its file is edited.
   `cut-it/songs-and-sections`.

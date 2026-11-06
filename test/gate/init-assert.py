@@ -122,9 +122,11 @@ def run_asserts(cap):
             seeded == SEEDED,
             "the state bus carried %s, wanted %s" % (seeded, SEEDED))
     song = [v[1] for v in restores if v not in SEEDED]
+    # A section with no controls in play says so first, and a song with no voices last.
+    want = ["perform"] + SECTION_PARTS + ["voices"]
     A.check("⛔ ...and then the song store's first section starts: every part, in order",
-            song == SECTION_PARTS and restores[:len(SEEDED)] == SEEDED,
-            "after u_state's: %s, wanted %s after %s" % (song, SECTION_PARTS, SEEDED))
+            song == want and restores[:len(SEEDED)] == SEEDED,
+            "after u_state's: %s, wanted %s after %s" % (song, want, SEEDED))
     i_restore = first_index(lambda ln: ln.startswith("STATE: restore "))
     i_off = first_index(lambda ln: ln == "DISP: modal-off")
     A.check("...after the launchpad stage, so the layers exist to receive it",

@@ -10,9 +10,10 @@ of its sections plays and which is queued; and the setlists.** A song is a name 
 sections; a section is a name, a length in bars (0 loops) and **its parts**: what each part of the
 instrument put while that section played, under the part's own key. The Launchpad's top row plays
 the loaded song's sections, its bottom rows' rightmost buttons save and revert, and the phone's
-page 7 makes, orders, names and sets them; **the Organelle's keys load songs** from the setlist
-chosen, and the next arrow goes on to the next, and the phone's page 8 makes, loads, names and arranges songs
-into setlists (`cut-it/songs-and-sections`).
+sections page makes, orders, names and sets them; **the Organelle's keys load songs** from the setlist
+chosen, and the next arrow goes on to the next, and the phone's songs page makes, loads, names and arranges songs
+into setlists (`cut-it/songs-and-sections`). **A song also holds what all its sections share, under each part's key**:
+its voices ([voices.md](voices.md)).
 
 **The one decision this page turns on: the store knows nothing about what a part's key means**,
 as `u_state` knows nothing ([state.md](state.md)). A part stores itself per section by putting
@@ -41,6 +42,8 @@ there, save and revert lit.
 | a part → `u_song` | `put section <key> <atoms…>` | The part as it is now, into the section playing. The same atoms again change nothing | unknown |
 | `u_song` → all | `restore <key> <atoms…>` | A section starting: every part it holds, in the keys' order, each once | unknown |
 | a part → `u_song` | `put section <key> <atoms…>` | The part put back during the restore if it differs, a line in an older shape, say: it lands in the section now starting | unknown |
+| a part → `u_song` | `put song <key> <atoms…>` | The part as it is now, into the song itself: every section shares it. It shows as unsaved, and save and revert keep it, as they do a section's. Restored as `restore <key> <atoms…>` when the song loads or reverts | unknown |
+| a part → `u_song` | `put seed <key> <atoms…>` | What a song that holds none starts as: into the song and what's saved of it together, so it shows as nothing unsaved | unknown |
 
 ### The parts a section holds
 
@@ -48,26 +51,35 @@ Each part puts at load and on every change, and takes its restore.
 
 | Key | Part | Atoms | Evidence |
 |-----|------|-------|----------|
+| `perform` | `u_perform` | The controls in play: each one's physical control, destination, arg, row and value, five atoms ([voices.md](voices.md)). A section with none is told so, `restore perform` with nothing after it, first of all, or the last section's would stay | unknown |
 | `drums` | `c_steps` | The pattern, 581 numbers: 512 velocities, each track's own last step, randomness, volume and pitch, the time signature, the drunkenness, the swing and the global last step ([sequencer.md](sequencer.md)) | unknown |
-| `melody` | `c_melody` | The generator, `R.save`'s numbers: its controls, the 32 steps, the 8 chords and the fields added later ([synths.md](synths.md), *The generator*). Its restore waits for step 1, as the tempo's and the programs' do | unknown |
+| `melody`, `melody-2` | `c_melody`, each engine's | The generator, `R.save`'s numbers: its controls, the 32 steps, the 8 chords and the fields added later ([synths.md](synths.md), *The generator*). Its restore waits for step 1, as the tempo's and the programs' do | unknown |
 | `programs` | `c_synth` | The Volca's program, then the Streichfett's: 0 to 127, or `none` ([synths.md](synths.md)) | unknown |
 | `synth` | `c_synth` | `fm` or `strings` | unknown |
 | `tempo` | `u_tempo` | The BPM, as the tempo bus carries it ([tempo.md](tempo.md)) | unknown |
 | A part asked back | `recall <key>` on the third inlet, from `c_steps`, `pad-38`'s `recall tempo` (Brendan, 2026-11-05): the part as the saved song holds it in the section playing, or for a section never saved, or a part its save didn't hold, the draft's, back out as `restore <key> <atoms...>`, the way a section starting sends it. It still knows nothing of what a key means. The part puts back what it restores, so the draft takes it like any change. A part nobody holds sends nothing | verified |
 | `velocity` | `c_synth` | `on` or `off` | unknown |
 
+### The parts a song holds
+
+Lines between `song` and the first `section` in its file. Sent on load and on revert, after the section's.
+
+| Key | Part | Atoms | Evidence |
+|-----|------|-------|----------|
+| `voices` | `u_voices` | The eight rows, name, method and machine each, `-` for one with none, 24 atoms ([voices.md](voices.md)). A song with none is told so, `restore voices` with nothing after it, and is given the seed's | unknown |
+
 ### The interface
 
 | | Is | Evidence |
 |---|---|---|
 | Creation arg 1 | The state directory, `u_state`'s: the songs' list and the setlists are `cut-it-songs.txt` there, and each song is two files (*The files*, below) | unknown |
-| Inlet 1 | From `u_map`'s sixth outlet: `top <1-8>`, a top-row button's press, `save` and `revert`, `key <1-25>`, an Organelle key's press ([map.md](map.md)) | unknown |
+| Inlet 1 | From `u_map`'s fifth outlet: `top <1-8>`, a top-row button's press, `save` and `revert`, `key <1-25>`, an Organelle key's press ([map.md](map.md)) | unknown |
 | Inlet 2 | From `u_net`'s fourth outlet: the phone's sections page, `select <n>`, `page <-1 or 1>`, `new`, `saveas`, `up`, `down`, `length <bars>`, `delete`, `name <name>`; and its songs page, `songs <command> …` ([phone.md](../device/phone.md)) | unknown |
 | Inlet 3 | `bar`, from `c_steps`' fourth outlet, on the global loop's last step | unknown |
 | Inlet 4 | A bang meaning load now, from `u_init` after `u_state`'s restore, through a trigger in `u_root`: startup order is `u_init`'s | unknown |
-| Outlet 1 | To `g_grid`'s sixth inlet: `top <8 lamps>` and `unsaved <0 or 1>`, each when it changes ([display.md](display.md)) | unknown |
+| Outlet 1 | To `g_grid`'s state inlet: `top <8 lamps>` and `unsaved <0 or 1>`, each when it changes ([display.md](display.md)) | unknown |
 | Outlet 2 | To `u_net`'s fifth inlet, each when it changes: the sections page's state, 22 atoms as a list, and the songs page's, `songs <47 atoms>` | unknown |
-| Buses | Hears `state` (`put section`), `start`, `stop` and `panic`; says `restore` on `state`, and on `err` `info u_song saved`, `reverted` and `loaded-<name>`, `warn u_song last-section`, `last-song` and `set-full`, `fail u_song bad-button`, `bad-put`, `bad-selector`, `bad-starts`, `lua-<selector>`, `write-failed` and `no-lua` (C-12) | unknown |
+| Buses | Hears `state` (`put section`, `put song`, `put seed`), `start`, `stop` and `panic`; says `restore` on `state`, and on `err` `info u_song saved`, `reverted` and `loaded-<name>`, `warn u_song last-section`, `last-song` and `set-full`, `fail u_song bad-button`, `bad-put`, `bad-selector`, `bad-starts`, `lua-<selector>`, `write-failed` and `no-lua` (C-12) | unknown |
 
 ### The top row
 
@@ -198,7 +210,7 @@ rename is seen as one. A number is written whole, or with `%g` as Pd's own `[tex
 | | Lives in | Evidence |
 |---|---|---|
 | The songs, the setlists, the song loaded and the one waiting, the sections, playing and queued, the window, the bars, the drafts against the saves, the files' text | `u_song.lua`: a state table and a function per rule, each returning what leaves | verified |
-| Reading and writing the files, the lamps and the phone's states sent when they change | `u_song-lua.pd_lua`, the class `u_song-lua`: three inlets (the top row, save, revert, the keys and go; the phone; `u_song.pd`'s own `put`, `bar`, `start`, `stop`, `load`, `flush` and `init`), six outlets (to `g_grid`, the phone, the state bus, `err`, a bang on `init`, the stop bus). Before a press, a key, go, a phone command, `start` or `stop` it sends `sync` on the state bus, so a part holding its put back (`c_steps`, up to 100 ms, [sequencer.md](sequencer.md)) puts it first, into the section still playing of the song still loaded | verified |
+| Reading and writing the files, the lamps and the phone's states sent when they change | `u_song-lua.pd_lua`, the class `u_song-lua`: three inlets (the top row, save, revert, the keys; the phone; `u_song.pd`'s own `put`, `put-song`, `seed-song`, `bar`, `start`, `stop`, `load`, `flush` and `init`), six outlets (to `g_grid`, the phone, the state bus, `err`, a bang on `init`, the stop bus). Before a press, a key, go, a phone command, `start` or `stop` it sends `sync` on the state bus, so a part holding its put back (`c_steps`, up to 100 ms, [sequencer.md](sequencer.md)) puts it first, into the section still playing of the song still loaded | verified |
 | The cords, the state bus's section policy, the transport and the STOP a silence sends, the draft's 2 s timer armed by the load, the `no-lua` guard | `u_song.pd` | verified |
 
 ## Traps
@@ -290,12 +302,12 @@ Organelle's keys load does.
 A queue waits for a bar, and a stopped transport has none coming; so a press while stopped starts
 its section at once, and STOP starts one already queued, which PLAY then plays.
 
-### The blink is the beat row's
+### The blink is the clock's
 
 The Launchpad flashes a pad itself, but at its own ≈118 BPM whatever the clock
 (`~/Sites/!reference/novation-launchpad-pro-mk3.md`, *Lighting, two ways*). `g_grid` paints a
-queued section full on the even beats of the grid's own `c_clock` and dark on the odd, a repaint the
-beat row already makes, so the blink keeps time with the music at no cost.
+queued section full on the even beats of the grid's own `c_clock` and dark on the odd, a repaint a
+beat already makes, so the blink keeps time with the music at no cost.
 
 ### Programs are numbers on the wire, and none until chosen
 
@@ -361,7 +373,7 @@ section at once.
   `cut-it/songs-and-sections`.
 - ⬜ **A setlist cannot be deleted**: new set adds one, and nothing takes one away but editing the
   index. `cut-it/songs-and-sections`.
-- ⬜ **The right column's other seven buttons and the bottom rows' other fourteen** have nothing
-  yet. `cut-it/songs-and-sections`.
+- ⬜ **The bottom rows' other fourteen, off the performance page,** have nothing yet.
+  `cut-it/songs-and-sections`.
 - ⬜ **The cost on the Organelle is unmeasured**: a pdlua call for each tempo a knob-1 sweep puts,
   and the draft's text built every 2 s while it changes. `cut-it/songs-and-sections`.

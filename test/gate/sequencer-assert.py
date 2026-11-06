@@ -192,8 +192,8 @@ def page_check(frame, lay, pat, track, lvl, head=None, last=16, rep=0, sig=(EVER
     problem, lamp, page = G.drum_page(frame, lay, row)
     if problem:
         return problem
-    if lamp != G.LAMPS[1]:
-        return "lit mode lamp is %s, not page 2's %d" % (lamp, G.LAMPS[1])
+    if lamp != G.LEFT[0]:
+        return "the lamp at full is %s, not row 1's left button, %d" % (lamp, G.LEFT[0])
     steps = 4 * row
     want = [G.step_color(pat[idx(track, s)], s, last, every) for s in range(1, steps + 1)]
     if head:
@@ -369,7 +369,7 @@ def main():
             raw("FREE-ROW") == [], raw("FREE-ROW"))
 
     print("\n--- another page ---")
-    A.check("⛔ on page 1, which held the drum page until 2026-11-04, a step pad is not "
+    A.check("⛔ on the performance page, with nothing in play, a step pad is not "
             "the drum page: no put and no note",
             not puts("OTHER-PAGE") and not ons("OTHER-PAGE"),
             "puts %d, note-ons %s" % (len(puts("OTHER-PAGE")), ons("OTHER-PAGE")))
@@ -799,6 +799,9 @@ def main():
             and abs(float(ru[0][2]) - want_hz) < 0.01 * want_hz
             and rush("RU-PAST")[-1:] == [["rush", "%d" % (want_hz + 0.5), "Hz"]] and not moved("RU-LOOP"),
             "KITFX %s, want %.1f; row %s; the playhead %s" % (ru, want_hz, rush("RU-PAST"), moved("RU-LOOP")))
+    pages = lambda *ks: [e[1] for k in ks for e in W(k) if e[0] == "MODE"]
+    A.check("⛔ pad-38 while playing restarts on the start bus, and that's no PLAY: the page stays",
+            pages("RX-PRESS", "RX-SOON", "RU-HOME") == [], pages("RX-PRESS", "RX-SOON", "RU-HOME"))
     A.check("⛔ pad-38: the loop off, the saved tempo, and the playhead moving again",
             kitfx("RU-HOME") == [["rush-off"]] and tempo("RU-HOME") == [120.0] and moved("RU-HOME"),
             "%s %s %s" % (kitfx("RU-HOME"), tempo("RU-HOME"), moved("RU-HOME")))

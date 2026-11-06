@@ -4,7 +4,7 @@
     python3 test/gate/synths-assert.py [-v] --state <dir> < capture.txt
 
 The nanoKEY plays the chosen synth and only that one, whichever page is up; a switch while a
-key is held releases the key on the synth that started it; a page-3 pad and the phone's
+key is held releases the key on the synth that started it; a voice's button and the phone's
 command both switch; the phone's velocity switch, off, sends every note-on at 127 on either
 synth and leaves releases at 0; the choice and the switch come back from the song store, section 1's,
 and go into it; and panic reaches the Streichfett's channel. The run boots with strings and velocity
@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 
 FM, STRINGS = 49, 33            # the Volca's and the Streichfett's Pd channels, args 5 and 4
-WINDOWS = 20
+WINDOWS = 19
 
 
 def arg(name):
@@ -61,9 +61,9 @@ def run_asserts(cap, state):
             and not notes("PHONE-VEL-ON") and not errs("PHONE-VEL-ON"),
             "state %s noteout %s err %s" % (vputs("PHONE-VEL-ON"), notes("PHONE-VEL-ON"),
                                             errs("PHONE-VEL-ON")))
-    A.check("⛔ FM's page-3 pad chooses fm, once: a press, and its release says nothing",
-            puts("PAD-FM") == [["put", "section", "synth", "fm"]] and not errs("PAD-FM"),
-            "state %s err %s" % (puts("PAD-FM"), errs("PAD-FM")))
+    A.check("⛔ a voice's button chooses its machine, and looking at its page changes nothing in the "
+            "song: no put, and nothing said", not puts("VOICE-FM") and not errs("VOICE-FM"),
+            "state %s err %s" % (puts("VOICE-FM"), errs("VOICE-FM")))
     A.check("a key on any channel of the nanoKEY's port, 50, plays the Volca alone",
             notes("KEY-FM") == [(62, 100, FM)], notes("KEY-FM"))
     A.check("... and its release", notes("KEY-FM-OFF") == [(62, 0, FM)], notes("KEY-FM-OFF"))
@@ -84,21 +84,15 @@ def run_asserts(cap, state):
     A.check("the phone's velocity off is put", vputs("PHONE-VEL-OFF") ==
             [["put", "section", "velocity", "off"]] and not notes("PHONE-VEL-OFF"),
             "state %s noteout %s" % (vputs("PHONE-VEL-OFF"), notes("PHONE-VEL-OFF")))
-    A.check("strings' pad with strings chosen changes nothing and says nothing",
-            not puts("PAD-SAME") and not notes("PAD-SAME") and not errs("PAD-SAME"),
-            W("PAD-SAME"))
-    A.check("⛔ only a press chooses: FM down, STRINGS down, FM up, STRINGS up ends on strings",
-            puts("TWO-PADS") == [["put", "section", "synth", "fm"],
-                                 ["put", "section", "synth", "strings"]],
-            "wanted fm then strings, got %s -- a release that chose would put fm last, and a "
-            "pad let go late would undo the one pressed after it" % puts("TWO-PADS"))
+    A.check("a voice on strings with strings chosen changes nothing and says nothing",
+            not puts("VOICE-SAME") and not notes("VOICE-SAME") and not errs("VOICE-SAME"),
+            W("VOICE-SAME"))
     A.check("⛔ notes on the nano's port, the Streichfett's own, port 3's last channel and a "
             "fifth port's first play nothing", not notes("OTHER-PORTS"), notes("OTHER-PORTS"))
 
-    A.check("on page 1 the synth pads mean nothing", not puts("PAD-OFF-PAGE"),
-            puts("PAD-OFF-PAGE"))
-    A.check("⛔ ... and the nanoKEY still plays the choice there, a soft key at 127 with the "
-            "velocity switch off, and its release at 0",
+    A.check("⛔ only a press chooses: row 3 down, row 2 down, row 3 up, row 2 up ends on strings, and "
+            "on the performance page the nanoKEY still plays the last voice's, a soft key at 127 with "
+            "the velocity switch off, and its release at 0",
             notes("KEY-OFF-PAGE") == [(69, 127, STRINGS), (69, 0, STRINGS)],
             "wanted 69 127 then 69 0 on %d, got %s -- 69 20 is the key's own velocity, the "
             "switch ignored" % (STRINGS, notes("KEY-OFF-PAGE")))

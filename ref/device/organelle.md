@@ -10,7 +10,7 @@ panel, OLED and aux LED. ([device-os.md](../device-os.md) is how Cut It lives on
 
 **The panel is not MIDI** (Reference), so all MIDI in this rig is Pd talking to the four attached
 controllers, and the panel is read like any other device: mother's reserved names in, named controls
-out. Three abstractions divide it: `m_organelle` reads the panel onto `param` and `disp`, `g_oled`
+out. Three abstractions divide it: `m_organelle` reads the panel onto `param`, `g_oled`
 owns the screen and is the only file allowed to send `oscOut` or `screenLine*`, and `g_led` owns the
 aux LED. The display *arbiter* they share with `g_grid` is instrument architecture, not device fact —
 see [display.md](../module/display.md). The reserved names mother uses are enumerated in
@@ -51,7 +51,7 @@ Recorded so it is not rediscovered as news.
 
 ### The LED was deliberately not claimed for mode or for saving
 
-Mode is on the Launchpad's left column — the surface with eight lamps rather than one. A "save in
+The page is on the Launchpad's columns — the surface with sixteen lamps rather than one. A "save in
 progress" state was rejected: `Storage → Save` already flips the OLED to mother's own "Saving…"
 screen, so the confirmation exists for free.
 
@@ -80,7 +80,7 @@ showed only on home and as a 5 px strip; and what it costs is rows 0 to 7.
 ### Anything rhythmic goes on the Launchpad, not the OLED
 
 The OLED trails the audio by ~200 ms (Reference, *The OLED lags the audio by ~200 ms*); the audio
-and the Launchpad's beat row agree, and the OLED does not. So a playhead, a beat
+and the Launchpad's playhead agree, and the OLED does not. So a playhead, a beat
 indicator or a step position belongs on **the Launchpad**, which `g_grid` repaints over ALSA MIDI at
 50 Hz when dirty. The OLED is for state, values and text.
 
@@ -91,56 +91,24 @@ control does.** Same layer and the same silence about meaning as `m_nano`.
 
 | Fact | Evidence | Item |
 |------|----------|------|
-| The four knobs publish `og-knob-1`…`og-knob-4`. ⛔ **The aux button publishes NO control at all** — it is the keyboard's modifier, and a modifier is not a control | verified | 305 |
+| The four knobs publish `og-knob-1`…`og-knob-4`, and aux `og-aux 1`, on its press | unknown | 305 |
 | **The `og-` prefix is not decoration** — `m_nano` already publishes `knob-1` to `knob-9`, and a single hyphen is not a distinction anyone can be trusted to read inside a `route` box | verified | — |
 | **Every knob goes through `[change -1]`**, because mother pushes the knobs once at load and then says nothing (Reference, item 237). Parameter pickup depends on that: if mother streamed, the first value would be spent on its own reading and pickup would never arm | verified | 237 |
 | ⛔ **The `-1` is load-bearing.** A bare `[change]` starts life holding 0, so a knob parked at 0 would never publish at all and whatever it feeds would sit at its default. `-1` cannot be a real value, because mother's knobs are 0 to 1 | verified | 237 |
 | ⛔ **The knobs reach `param` and NOT `disp`.** A knob's raw 0-to-1 position is not a readable parameter row — `og-knob-1 0.245` where a BPM belongs. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
-| ⛔ **`aux` uses BOTH edges.** A modifier you cannot let go of is not a modifier | verified | 305 |
-| ⚠️ **An unmapped knob draws nothing**, as every unmapped control does (Brendan, 2026-11-04): knob 3 anywhere but page 2. Knobs 1, 2 and 4 are mapped on every page | verified | — |
+| **`aux` is a press.** Its release publishes nothing | unknown | 305 |
+| **The four knobs are the same on every page** (Brendan, 2026-11-06): tempo, last step, track last step and rush ([map.md](../module/map.md)) | unknown | — |
 
-### The aux button is a modifier, and the keyboard has two layers
+### Aux opens the songs page
 
-**Hold `aux` and the 25 keys publish `og-shift-60`…`og-shift-84` instead of `og-key-60`…`og-key-84`.**
-That is 25 more controls, and — because the Organelle is bolted to the instrument — **the only
-controls on the rig that can never be the missing device.**
+**The table gives `og-aux` to `u_voices`, which opens the songs and sections page and closes it again** (Brendan,
+2026-11-06; [voices.md](../module/voices.md)). It is no shift: a key under it is the same key. The transport is the
+nano's PLAY and STOP, [nanokontrol.md](nanokontrol.md); the diagnostics and test mode are one place, the Launchpad's
+Setup, [launchpad.md](launchpad.md); and recover is CC 90 there.
 
-| Shifted key | Does | Why there | Evidence | Item |
-|---|---|---|---|---|
-| **lowest**, `og-shift-60` | `diag` | An end of the keyboard, findable by feel without looking | verified | 305 |
-| **second from the bottom**, `og-shift-61` | `test-mode` | The first black key, findable by feel beside `diag`. Flips test mode, which puts the phone's line check up ([phone.md](phone.md)) | unknown | — |
-| **middle**, `og-shift-72` | `stop` | ⛔ The panel keeps a way to silence the rig when the nano is unplugged, which is what moving the transport off `aux` cost | verified | 305 |
-| **highest**, `og-shift-84` | `recover` | The destructive one, as far from `diag` as the keyboard allows. It reloads the patch | verified | 305 |
-
-⛔ **`stop` and `recover` here are the point, not a bonus.** The transport lives on the nano and
-`recover` also lives on the Launchpad, so **both critical controls sit on devices that can be
-unplugged.** These three rows mean the panel alone can always ask what died, silence a runaway rig
-and force a reload, whichever controller has gone.
-
-⚠️ **`recover` reads the RELEASE** — item 298, two tiers on one control. A shifted key publishes both
-edges, so it works unchanged; **the release carries the latched name**, which is exactly what the
-per-key latch below guarantees. Without it the hold could never complete.
-
-| | Evidence | Item |
-|---|----------|------|
-| `aux` publishes **no control name**. A modifier is not a control: a name here could be bound in the map, and the button every shifted key needs would then do something of its own on the way | verified | 305 |
-| It sends `$0-shift` — **1 on the press, 0 on the release** — which the Lua keeps as the layer the next key goes down on | verified | 305 |
-| Holding it puts `shift` on the OLED as a **modal**, cleared on release. ⚠️ A missed release leaves the word up for the 30 s safety TTL, which is what that TTL is for | verified | 305 |
-| **A modal is priority 2 and `diag` is 3**, so a shifted key that summons the roster still draws over the word. See [display.md](../module/display.md) | verified | 305 |
-| It is not a transport — start and stop are the nano's PLAY and STOP, [nanokontrol.md](nanokontrol.md) | verified | 305 |
-
-⛔ **The layer is latched PER KEY, AT PRESS TIME, and that is the whole of what makes it safe.**
-Press a shifted key, let go of `aux`, then let go of the key: read live, the press published
-`og-shift-72` and the release would publish `og-key-72`. The shifted control never sees its
-note-off, and an unshifted one gets a note-off it never had a note-on for — **wherever the keys
-play notes, that is a stuck note, and nothing anywhere reports it.** They play no note today: they
-load songs, key N the Nth song of the setlist chosen, and only a press counts (Brendan, 2026-11-05,
-[songs.md](../module/songs.md)).
-
-**One entry per key, in `m_organelle.lua`**, written only when the velocity is non-zero and read
-on **both** edges. A release then cannot disagree with its own press however the modifier moves
-underneath it. ⚠️ **It is what makes a CHORD safe too**:
-two keys held across a change of modifier keep their own layers independently.
+⚠️ **So the panel alone can't ask what died, stop the rig or force a reload**, if the nano and the Launchpad are gone
+(Brendan, 2026-11-06). The debug patch, chosen from Organelle's own menu, does the asking
+([debug.md](../module/debug.md)).
 
 ### The keyboard — 25 controls, one per key
 
@@ -153,7 +121,7 @@ velocity is the value.
 | 25 keys, publishing `og-key-60` … `og-key-84` | verified | 293 |
 | The value is that key's **velocity** | verified | 293 |
 | ⛔ **A release publishes too, as velocity 0.** A note-off is a real event a destination must act on | verified | 293 |
-| **Held under `aux` the same 25 keys publish `og-shift-60`…`og-shift-84`** — a second layer, and the only controls on the rig that can never go missing | verified | 305 |
+| They load songs, key N the Nth song of the setlist chosen, and only a press counts (Brendan, 2026-11-05, [songs.md](../module/songs.md)) | unknown | — |
 | ⛔ **The keys reach `param` and NOT `disp`** — `g_oled` holds five parameter rows, so a two-handed chord would evict the screen twice per note | verified | 293 |
 | …and `u_map` does not report them raw either, which is a deliberate exception to item 242 | verified | 293 |
 
@@ -163,18 +131,17 @@ layer that owns the device is the file allowed to read them.
 
 ### The keys are Lua
 
-**`m_organelle.lua` names each key, and `m_organelle.pd` does everything else.** The Lua holds the
-per-key latch and answers a key with `og-key-NN` or `og-shift-NN` and its velocity, as plain Lua that
-runs on the Mac without Pd; the Pd keeps mother's names, the knobs and their `[change -1]`, `aux`'s
-modal and `$0-shift`, and presence. It is the same split as the sequencer's and the map's: the rules
+**`m_organelle.lua` names each key, and `m_organelle.pd` does everything else.** The Lua answers a key
+with `og-key-NN` and its velocity, as plain Lua that runs on the Mac without Pd; the Pd keeps mother's names, the
+knobs and their `[change -1]`, aux, and presence. It is the same split as the sequencer's and the map's: the rules
 in Lua, and I/O in Pd ([sequencer.md](../module/sequencer.md), *The rules in Lua, the timing in Pd*).
 
 | | Evidence |
 |---|---|
-| **The face**, `m_organelle-lua.pd_lua`: inlet 1 mother's `notes`, inlet 2 `shift 0` or `shift 1` from `aux` and `init` at load; outlet 1 `param`, outlet 2 `err`, outlet 3 a bang on `init` | verified |
+| **The face**, `m_organelle-lua.pd_lua`: inlet 1 mother's `notes`, inlet 2 `init` at load; outlet 1 `param`, outlet 2 `err`, outlet 3 a bang on `init` | verified |
 | **What it replaced:** the press and pitch stores, the 25-element array with its write and read, two `makefilename`s and the `pack` that met them — 25 boxes | verified |
 | **A Lua that never loads** says `fail m_organelle no-lua` on `err` at load, and the keys are dead while the knobs and `aux` are not. | verified |
-| **A rule that throws** says `fail m_organelle lua-notes` (or `lua-shift`, `lua-init`), and the object carries on | verified |
+| **A rule that throws** says `fail m_organelle lua-notes` (or `lua-init`), and the object carries on | verified |
 | **Load and memory:** the patch loads in silence in a test Pd on the Organelle, and its peak resident size went from 3512 to 3480 kB, three runs each (2026-11-03) | verified |
 | **Cost per key:** about 0.09 ms on the Organelle against the Pd version's 0.008 — 9000 keys in 0.80–0.90 s against 0.07 s, in a test Pd niced beside the live one (2026-11-03). Nothing at a hand's rate: fifty keys a second is under half a percent of the CPU | verified |
 

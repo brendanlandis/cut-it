@@ -7,7 +7,7 @@
 #
 # Python, not netcat, which sends nothing here (the Organelle's Reference page,
 # Sending the device a UDP datagram). With DSP off the patch is silent and the
-# beat row freezes: expected, not a fault (tools/README.md).
+# clock stops: expected, not a fault (tools/README.md).
 set -eu
 
 HOST=${HOST:-organelle.local}

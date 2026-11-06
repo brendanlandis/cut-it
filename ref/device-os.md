@@ -120,7 +120,7 @@ costs the same. That is the dirty-flag gating working on real hardware — `g_gr
 something changed, so with the transport stopped it sends nothing and adds nothing.
 `tools/display-cpu.sh`'s own budget check is exactly this test.
 
-⚠️ **The transport state was inferred, not read.** At 120 BPM a running beat row repaints twice a
+⚠️ **The transport state was inferred, not read.** At 120 BPM a running clock repaints the grid twice a
 second and lands on Phase 6's 11.7–12.0 % row; these readings sit a point and a half below it, which
 is why they are recorded as idle-and-stopped. **The 11.7 % readings are a different rig state, not a
 contradiction** — which is the rule this table already states.

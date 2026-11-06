@@ -3,7 +3,7 @@
 
     python3 test/gate/song-assert-drive-gen.py <out.pd> [play | reload | legacy | songs]
 
-play, the first run: the copy boots on page 2 with a song of three sections saved, intro,
+play, the first run: the copy boots on the drum page with a song of three sections saved, intro,
 verse and chorus, and the top row, save and revert are pressed as the Launchpad sends them, param
 lp-cc-<n> 127 then 0 (launchpad-assert holds the decode); the transport runs on the start and stop
 buses, and a change is a tempo on the tempo bus, which u_tempo puts as the section's. reload, the
@@ -11,7 +11,7 @@ second: the same state directory, what the first left on disk, loaded again, and
 the third: a state directory from before sections, the drum pattern and the synth choice in the
 auto file, loaded once. songs, the fourth: three songs and a setlist saved, the Organelle's keys
 pressed as m_organelle publishes them, param og-key-<n> <velocity>, stopped and
-playing, by each entry's transition.
+playing.
 """
 import os
 import sys
@@ -31,13 +31,18 @@ def press(n):
     return [(0, cc(n, 127)), (100, cc(n, 0))]
 
 
+# PLAY brings the performance page up, and row 1's left button takes it back to the drum page, in
+# one instant, so no frame the gate reads shows anything else.
+PLAY_DRUMS = "\\; start bang \\; param lp-cc-80 127 \\; param lp-cc-80 0"
+
+
 # Every window opens after u_song's load at about 3.5 s, u_init's restore. The song's tempos and
 # loops (song-assert.py's seed): intro 200 BPM, verse 240 with a length of two loops, chorus 180
 # with a loop of 32 steps; verse's tempo is 160 from SAVE on. At 160 verse's loop of 8 steps is
 # 0.75 s, so PLAY at 6.3 s plays two and hands over to chorus at about 7.8; chorus's loop is 2.67 s
 # at 180, so intro, queued at 8.3, starts at about 10.5.
 PLAY = [
-    # DSP on: the steps are cut from a phasor~, and the beat row's clock, which the queued
+    # DSP on: the steps are cut from a phasor~, and the grid's clock, which the queued
     # section's blink follows, is one too
     (4000, "LOADED", ["\\; pd dsp 1"], GAP),
     (4200, "PRESS-STOPPED", press(94), GAP),
@@ -45,7 +50,7 @@ PLAY = [
     (5100, "REVERT", press(8), GAP),
     (5500, "EDIT-2", ["\\; tempo 160"], GAP),
     (5900, "SAVE", press(108), GAP),
-    (6300, "PLAY", ["\\; start bang"], GAP),
+    (6300, "PLAY", [PLAY_DRUMS], GAP),
     (7600, "HANDOVER", [], GAP),
     (8300, "QUEUE", press(93), GAP),
     (10300, "AT-LOOP", [], GAP),

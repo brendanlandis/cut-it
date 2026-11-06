@@ -10,16 +10,15 @@ tab bar, black, with bright red the lead accent and teal the second, monospaced 
 value and TouchOSC's default font for every label, and every pairing at WCAG AA, which
 test/gate/touchosc-assert.py audits from this file.
 
-The phone controls the Launchpad's current page (Brendan, 2026-11-04): one page of an outer pager
-per Launchpad page, 1 the arrangement, 2 the drums, 3 the synths, 4 to 6 nothing yet, 7 the
-sections, 8 the songs, each holding a pager of its own whose tabs are that page's: one tab each,
-but the sections page's two, its sections and the name a section is given, and the songs page's
-three, its songs, its setlists and the name either is given (Brendan, 2026-11-05). The root's
-script turns the outer pager to the page /cutit/mode names and hides its tab bar, so the phone
-shows the page's own tabs; the phone never turns the Launchpad's page. The outer bar is shown in the
-file, so TouchOSC's editor, where no script runs, reaches every page by its tab. The checklist page
-is the outer pager's last page: test mode, a tap on the Launchpad's Setup, turns to it, and going
-off, or choosing a mode, turns back (Brendan, 2026-11-04). It carries the line check alone,
+The phone shows the Launchpad's current page (Brendan, 2026-11-04): an outer pager, 1 the arrangement,
+2 the drums, 3 the synths, 4 to 6 nothing, 7 the sections, 8 the songs, each holding a pager of its own
+whose tabs are that page's: one tab each, but the sections page's two, its sections and the name a
+section is given, and the songs page's three, its songs, its setlists and the name either is given
+(Brendan, 2026-11-05). The root's script turns the outer pager to the page /cutit/mode names, by
+MODE_PAGES, and hides its tab bar, so the phone shows the page's own tabs; the phone never turns the
+Launchpad's page. The outer bar is shown in the file, so TouchOSC's editor, where no script runs,
+reaches every page by its tab. The checklist page is the outer pager's last page: the diagnostics page,
+and test mode, turn to it, and going off, or choosing a page, turns back. It carries the line check alone,
 test/checklists/linecheck.md: the development checklists are run with the Mac at hand, which sends
 their Send lines.
 
@@ -85,12 +84,18 @@ WHITE, GREY, BLACK = rgb(240, 240, 240), rgb(140, 140, 140), rgb(0, 0, 0)
 TABOFF = rgb(34, 34, 34)
 INK, BTN = BLACK, RED       # the XML's defaults
 
-# The Launchpad's pages, the mode bus's mode-1 to mode-8, in order: each one's tab label, and its
-# screen (Brendan, 2026-11-04: 1 the arrangement, 2 the drums, 3 the synths, 8 the songs, 4 to 7
-# nothing yet). A page with no screen is blank under its tab.
+# The phone's pages, in order: each one's tab label, and its screen (Brendan, 2026-11-04: 1 the
+# arrangement, 2 the drums, 3 the synths, 7 the sections, 8 the songs, 4 to 6 nothing). A page with no
+# screen is blank under its tab.
 LAUNCHPAD = [("arrangement", "arrangement"), ("drums", "drums"), ("synths", "synths"),
          ("page4", "page 4"), ("page5", "page 5"), ("page6", "page 6"), ("sections", "sections"),
          ("songs", "songs")]
+
+# The outer page each of the mode bus's pages turns to, from 1: u_map.lua's R.PAGES, every one. Past
+# the Launchpad's is the checklist page, where Setup goes. TouchOSC is the fallback: the app has the
+# voices' pages of their own.
+MODE_PAGES = {"perform": 1, "drums": 2, "harmony": 3, "melody": 3, "keys": 3, "sound": 3, "songs": 8,
+              "diag": len(LAUNCHPAD) + 1}
 
 # The synths c_synth chooses between, c_synth.lua's R.SYNTHS, and each one's button label: fm is
 # the Volca, strings the Streichfett. The synths screen and the checklist page each have a button
@@ -2448,7 +2453,7 @@ def root_script(check):
     acks = "{ " + ", ".join("[%s] = { %s, %s }" % (lua(k), lua(v[0]), lua_color(v[1]))
                             for k, v in ACKS.items()) + " }"
     return ROOT_LUA % {
-        "pages": lua({"mode-%d" % (i + 1): i + 1 for i in range(len(LAUNCHPAD))}),
+        "pages": lua(MODE_PAGES),
         "npages": len(LAUNCHPAD),
         "synths": lua([c for c, _ in SYNTHS]),
         "chordknobs": lua([n for n, _, _ in CHORD_KNOBS + MELODY_KNOBS]),

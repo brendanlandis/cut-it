@@ -144,6 +144,9 @@ def main():
     def taps(m):
         return [v for k, v in by.get(m, []) if k == "PARAM" and v[:1] == ["lp-setup"]]
 
+    def pages(m):
+        return [v for k, v in by.get(m, []) if k == "MODE"]
+
     def test_mode(m):
         return [v for k, v in by.get(m, []) if k == "ERR" and v[1:2] == ["u_net"]
                 and v[2:3] in (["test-mode-on"], ["test-mode-off"])]
@@ -152,12 +155,15 @@ def main():
     A.check("⛔ an entry's echo is not a tap -- no lp-setup outside TAP and LOST",
             not stray,
             "lp-setup in %s: the announcement each Programmer Mode entry makes was "
-            "read as a tap on Setup, which flips test mode every two seconds" % stray)
+            "read as a tap on Setup, which opens and closes the diagnostics every two seconds"
+            % stray)
     A.check("a tap on Setup publishes lp-setup 127, once", taps("TAP") == [TAP],
             "TAP saw %s" % taps("TAP"))
-    A.check("... and through the map it flips test mode on",
+    A.check("... and through the map it opens the diagnostics page", pages("TAP") == [["diag"]],
+            "TAP saw %s on mode -- is the lp-setup row in cut-it-map.txt?" % pages("TAP"))
+    A.check("... whose second pad flips test mode on",
             test_mode("TAP") == [["warn", "u_net", "test-mode-on"]],
-            "TAP saw %s on err -- is the lp-setup row in cut-it-map.txt?" % test_mode("TAP"))
+            "TAP saw %s on err -- is the diag pad-82 row in cut-it-map.txt?" % test_mode("TAP"))
     A.check("⛔ only that frame is a tap -- another layout's, and it a byte short or "
             "long, are not", not taps("OTHER"),
             "OTHER saw %s: the match is looser than the whole frame" % taps("OTHER"))
@@ -170,9 +176,8 @@ def main():
             taps("LOST") == [TAP],
             "LOST saw %s: the unanswered entry still swallows a tap made long after "
             "it" % taps("LOST"))
-    A.check("... and flips test mode off again",
-            test_mode("LOST") == [["info", "u_net", "test-mode-off"]],
-            "LOST saw %s on err" % test_mode("LOST"))
+    A.check("... and closes the diagnostics page again, back to the performance page",
+            pages("LOST") == [["perform"]], "LOST saw %s on mode" % pages("LOST"))
 
     A.note("%d mode switch(es) in the run: %s"
            % (len(mode), " ".join("programmer" if f.data[7:8] == [PROGRAMMER] else "live"

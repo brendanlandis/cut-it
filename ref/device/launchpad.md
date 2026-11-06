@@ -21,7 +21,7 @@ LEDs and nothing else does.
 | Property | Value | Evidence | Item |
 |----------|-------|----------|------|
 | Pd channel block | 1–16 (input slot 1) | verified | — |
-| Ports wired | `wire.sh` connects **port 0 and port 2** (`MIDI 1` and `MIDI 3`), both to Midi-In 1: port 2 for the layout announcement a tap on Setup makes (*A tap on Setup flips test mode*, below). Port 1 is not wired | unknown | — |
+| Ports wired | `wire.sh` connects **port 0 and port 2** (`MIDI 1` and `MIDI 3`), both to Midi-In 1: port 2 for the layout announcement a tap on Setup makes (*A tap on Setup opens the diagnostics*, below). Port 1 is not wired | unknown | — |
 | What `g_grid` sends | 108 specs per message, indices 1–108 | verified | — |
 
 `g_grid` paints **indices 1–108**, CC 1–8 included: the whole span, which Reference shows is a
@@ -167,22 +167,26 @@ are the *handler's* business. The mechanism is on [map.md](../module/map.md), th
 on the way out because `/loadPatch` runs `killpatch.sh` first (item 252) — so the safe exit
 still returns the device to Live Mode. Item 251 stays closed.
 
-### The left column is the page selector, and it is the lamps
+### The two columns are the voices, and they are the lamps
 
-**CC 80 down to 10, page 1 at the top** (the up arrow), eight pages, and `g_grid` lights them as the
-mode lamps — so this is one surface rather than press-here-look-there. Pressing one selects that
-page; the lamp it paints is the confirmation. Decided 2026-11-02 (Brendan), when the top row was given
-to song sections (`cut-it/songs-and-sections`), and the column's bottom two joined on 2026-11-04.
+**A row is a voice** (Brendan, 2026-11-06): CC 80 down to 10 on the left, each row's button for what its voice does, and
+CC 89 down to 19 on the right, for its setup. `g_grid` lights them in that voice's color, full where the page is, dim
+elsewhere and dark with no voice, so this is one surface rather than press-here-look-there. The lit one again goes back
+to the performance page, and an unused row's right button starts a voice ([voices.md](../module/voices.md)).
 
-⛔ **`u_map` gates each of the eight on the press.** A CC button here sends **127 then 0**, where a
-nanoKONTROL button sends only the press — so an ungated branch would select the same mode twice per
-push. Idempotent, therefore invisible. The mechanism is on [map.md](../module/map.md).
+⛔ **A CC button here sends 127 then 0**, where a nanoKONTROL button sends only the press, so `u_voices` takes the press
+alone, or a press would choose the same page twice, and the lit button would undo itself.
 
-⚠️ **Mode selection is on a device that can be unplugged.** It is not a control you need in a hurry.
-It does not hold the diagnostic screen either: ⛔ **a Launchpad that has come unplugged sends no
-CC**, so a control here that named the missing device would be dead in exactly the case the screen
-exists for. `diag` lives on the Organelle's own keyboard, under the aux modifier — see
-[organelle.md](organelle.md).
+⚠️ **The page is on a device that can be unplugged.** It is not a control you need in a hurry, and PLAY brings the
+performance page up by itself from the nanoKONTROL.
+
+### A voice's pages, and the performance page
+
+**The grid is the page's** ([display.md](../module/display.md), [map.md](../module/map.md)): the drums page's 62 pads;
+the harmony page's chords and rhythm and five commands on the upper bottom row; the melody page's steps and notes and
+three commands. **On the performance page the first eight columns are the nanoKONTROL's first eight groups, and the
+sixteen bottom buttons its sixteen buttons** (Brendan, 2026-11-06): a tap in a column sets its fader, a press of a bottom
+button does the same as its own.
 
 ### The top row plays the song's sections, and two bottom buttons save and revert
 
@@ -190,11 +194,11 @@ exists for. `diag` lives on the Organelle's own keyboard, under the aux modifier
 which scroll a section at a time with the one playing; a press while the transport runs starts its
 section when the pattern next comes round, and a press while it is stopped at once (Brendan,
 2026-11-02 and 2026-11-05). **CC 108, the upper bottom row's rightmost, saves the song, and CC 8,
-the lowest row's rightmost, reverts it** (Brendan, 2026-11-04). The map binds them on every page,
+the lowest row's rightmost, reverts it** (Brendan, 2026-11-04). The map binds them on every page, but save and revert
+on the performance page, whose bottom rows are the nanoKONTROL's (Brendan, 2026-11-06),
 as `section`, `save` and `revert`, to `u_song` ([songs.md](../module/songs.md)); `g_grid` lights
 them from `u_song`'s state, the playing section solid, a queued one blinking, save red and revert
-gray while anything is unsaved ([display.md](../module/display.md)). They held the mode selector
-until it moved to the left column.
+gray while anything is unsaved ([display.md](../module/display.md)).
 
 ### The next arrow goes on to the next song
 
@@ -202,17 +206,16 @@ until it moved to the left column.
 on to the setlist's next song** (Brendan, 2026-11-06): queued for the next bar while playing, blinking
 until it starts, and CC 91 takes it back ([songs.md](../module/songs.md)).
 
-⚠️ **The objection above applies to everything on this surface**, `recover` on CC 90 included; the
-Organelle's keyboard is where the controls you reach for when a device has died belong. A Launchpad
+⚠️ **A Launchpad can be unplugged, and that applies to everything on this surface**, `recover` on CC 90 included. A Launchpad
 that goes leaves the section playing as it is and the draft on the SD card, so nothing is lost but
 the next press; and choosing songs is the Organelle's keys' (Brendan, 2026-11-05,
 [songs.md](../module/songs.md)).
 
-### A tap on Setup flips test mode
+### A tap on Setup opens the diagnostics
 
-**Setup, the bottom left corner, publishes `lp-setup`, and the map binds it to `test-mode` on
-every page**, beside `og-shift-61` ([map.md](../module/map.md)): asked for by Brendan, 2026-11-04.
-Test mode is on the Organelle's keyboard too, so it passes the test above. In Programmer Mode the
+**Setup, the bottom left corner, publishes `lp-setup`, and the map gives it to `u_voices`, which opens the diagnostics
+page and closes it again** (Brendan, 2026-11-06). That page's `pad-81` is the diagnostic layer and `pad-82` test mode,
+one place for both ([voices.md](../module/voices.md)). In Programmer Mode the
 button sends nothing on port 0; a tap makes the device announce its layout on port 2, and a hold
 sends nothing at all (Reference, *The Setup button in Programmer Mode*). So `wire.sh` joins port 2
 to Midi-In 1, and `m_launchpad`'s `setup` subpatch matches that announcement as a whole frame,
@@ -220,7 +223,7 @@ to Midi-In 1, and `m_launchpad`'s `setup` subpatch matches that announcement as 
 a ring button's press.
 
 ⛔ **Every Programmer Mode entry makes the same announcement**, within a millisecond, and the
-heartbeat enters it every two seconds. Read as taps, the echoes would flip test mode every two
+heartbeat enters it every two seconds. Read as taps, the echoes would open and close the page every two
 seconds. **So each entry `m_launchpad` sends, at init and on the heartbeat, first raises an
 expected echo**, and an announcement that arrives while one is expected is taken as that echo.
 Only an announcement nothing expected is a tap.
@@ -233,7 +236,7 @@ whichever arrives first is the echo.
 Other layouts' announcements, which port 2 carries in Live Mode (Reference, *Mode changes are
 announced*), never match, and `c_devid` never takes an announcement for an inquiry reply: its byte 5
 is `0E`. `launchpad-assert.sh` answers each entry as the device does and proves the echoes publish
-nothing, a tap publishes `lp-setup` and flips test mode through the map, other frames do not, and
+nothing, a tap publishes `lp-setup` and opens the page through the map, other frames do not, and
 an echo that never came is forgotten. The wiring and the device's timing are the checklist's.
 
 ### Pressure is the forgotten input
@@ -246,12 +249,9 @@ and costs no buttons.
 
 **`m_launchpad` keeps its decode in Pd** (2026-11-03), where the nano and the Organelle's keys
 moved theirs to Lua, as the SP-404's had before it left the rig ([nanokontrol.md](nanokontrol.md),
-*The decode is Lua*). Three
+*The decode is Lua*). Two
 reasons, each enough:
 
-- **The ring carries the mode keys**, which must work when the Lua does not: `u_map` keeps them in
-  Pd so a missing pdlua or a broken table cannot strand you ([map.md](../module/map.md)), and they
-  reach it as `lp-cc-80` to `lp-cc-10` from this file.
 - **Pressure is the densest stream on the rig**, a message per held pad as often as the device
   sends one, and it already crosses the map's Lua. A pdlua call costs about 0.1 ms on the Organelle,
   where `makefilename pad-%d-at` costs a few microseconds.

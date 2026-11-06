@@ -5,7 +5,8 @@
 -- is its Pd face, which reads and writes the files, and u_song.pd keeps the cords, the state bus,
 -- the transport and the draft's timer. ref/module/songs.md.
 --
--- A section is its name, its length in bars (0 loops until another is queued) and its parts: what
+-- A song holds what all its sections share, under each part's key, its voices (put song <key>). A
+-- section is its name, its length in bars (0 loops until another is queued) and its parts: what
 -- each part of the instrument put while it played, under the part's own key (drums, tempo, synth,
 -- velocity, programs), as the atoms it put. The store knows nothing about what a key means, as
 -- u_state knows nothing (ref/module/state.md): a part puts `put section <key> <atoms...>` on the
@@ -130,7 +131,7 @@ end
 
 -- A copy of a song, keeping its sections' ids: the saved song's sections are the draft's, by id.
 local function copy_song(song)
-  local out = { name = song.name, sections = {} }
+  local out = { name = song.name, parts = copy_parts(song.parts or {}), sections = {} }
   for i, s in ipairs(song.sections) do
     out.sections[i] = { id = s.id, name = s.name, length = s.length, parts = copy_parts(s.parts) }
   end
@@ -157,7 +158,7 @@ function R.new()
                dirty = false, write_saved = false, next_song = 2, song_page = 1, set = 1,
                set_page = 1, entry = 1, index_dirty = false, removed = {} }
   local s = section(st, R.FIRST, 0, {})
-  st.song = { name = R.SONG, sections = { s } }
+  st.song = { name = R.SONG, parts = {}, sections = { s } }
   st.playing, st.selected = s, s
   local rec = record(1, st.song, nil)
   st.songs, st.cur, st.sel_song = { rec }, rec, rec
@@ -207,7 +208,7 @@ end
 -- section now playing.
 -- A part in R.ON_THE_ONE, while the transport runs, waits for the next step 1 (R.one), so it lands
 -- on the beat and the old section's last step plays out at its own tempo (Brendan, 2026-11-05).
-R.ON_THE_ONE = { tempo = true, programs = true, melody = true }
+R.ON_THE_ONE = { tempo = true, programs = true, melody = true, ["melody-2"] = true }
 
 local function begin(st, s)
   st.playing, st.queued, st.bars = s, nil, 0
@@ -216,6 +217,8 @@ local function begin(st, s)
   for k in pairs(s.parts) do keys[#keys + 1] = k end
   table.sort(keys)
   local out, held = {}, {}
+  -- A section with no controls in play says so, or the last section's would stay.
+  if not s.parts.perform then out[1] = { "state", "restore", { "perform" } } end
   for _, k in ipairs(keys) do
     local a = { k }
     for _, x in ipairs(s.parts[k]) do a[#a + 1] = x end
@@ -223,6 +226,22 @@ local function begin(st, s)
     if st.running and R.ON_THE_ONE[k] then held[#held + 1] = e else out[#out + 1] = e end
   end
   st.on_one = held
+  return out
+end
+
+-- What the song holds for all its sections, as begin sends a section's: voices always, so a song
+-- that has none says so, and is given some.
+local function song_parts(st, out)
+  local parts = st.song.parts or {}
+  local keys = {}
+  for k in pairs(parts) do keys[#keys + 1] = k end
+  table.sort(keys)
+  if not parts.voices then out[#out + 1] = { "state", "restore", { "voices" } } end
+  for _, k in ipairs(keys) do
+    local a = { k }
+    for _, x in ipairs(parts[k]) do a[#a + 1] = x end
+    out[#out + 1] = { "state", "restore", a }
+  end
   return out
 end
 
@@ -252,6 +271,13 @@ end
 function R.differs(a, b)
   if not b then return false end
   if a.name ~= b.name or #a.sections ~= #b.sections then return true end
+  local ap, bp = a.parts or {}, b.parts or {}
+  for k, v in pairs(ap) do
+    if not bp[k] or not same_atoms(v, bp[k]) then return true end
+  end
+  for k in pairs(bp) do
+    if not ap[k] then return true end
+  end
   for i, s in ipairs(a.sections) do
     local t = b.sections[i]
     if s.id ~= t.id or s.name ~= t.name or s.length ~= t.length then return true end
@@ -268,6 +294,38 @@ function R.differs(a, b)
     end
   end
   return false
+end
+
+-- A part's put to the song itself, `put song <key> <atoms...>`: what every section shares.
+function R.put_song(st, atoms)
+  local key = atoms[1]
+  if type(key) ~= "string" then return { R.fail("bad-put") } end
+  local a = {}
+  for i = 2, #atoms do a[#a + 1] = atoms[i] end
+  st.song.parts = st.song.parts or {}
+  local cur = st.song.parts[key]
+  if cur and same_atoms(cur, a) then return {} end
+  st.song.parts[key] = a
+  st.dirty = true
+  return {}
+end
+
+-- `put seed <key> <atoms...>`: what a song that holds none starts as, a song's from before there were
+-- any. It is no change to the song, so it goes into what's saved too, and shows as nothing unsaved.
+function R.seed_song(st, atoms)
+  local key = atoms[1]
+  if type(key) ~= "string" then return { R.fail("bad-put") } end
+  local a = {}
+  for i = 2, #atoms do a[#a + 1] = atoms[i] end
+  st.song.parts = st.song.parts or {}
+  st.song.parts[key] = a
+  if st.saved then
+    st.saved.parts = st.saved.parts or {}
+    st.saved.parts[key] = { table.unpack(a) }
+    st.write_saved = true
+  end
+  st.dirty = true
+  return {}
 end
 
 -- A part's put, `put <key> <atoms...>`: into the playing section. The same atoms again change
@@ -331,6 +389,7 @@ function R.revert(st)
   st.page = page_of(R.index(st, st.selected))
   st.dirty = true
   local out = begin(st, find(p, pi))
+  song_parts(st, out)
   table.insert(out, 1, report("info", "reverted"))
   return out
 end
@@ -376,6 +435,10 @@ end
 
 function R.text(song)
   local out = { "song " .. song.name }
+  local shared = {}
+  for k in pairs(song.parts or {}) do shared[#shared + 1] = k end
+  table.sort(shared)
+  for _, k in ipairs(shared) do out[#out + 1] = part_line(k, song.parts[k]) end
   for _, s in ipairs(song.sections) do
     out[#out + 1] = string.format("section %d %d %s", s.id, s.length, s.name)
     local keys = {}
@@ -397,7 +460,7 @@ function R.parse(text)
     for w in line:gmatch("%S+") do words[#words + 1] = w end
     local k = words[1]
     if k == "song" then
-      song = { name = R.clean({ table.unpack(words, 2) }) or R.SONG, sections = {} }
+      song = { name = R.clean({ table.unpack(words, 2) }) or R.SONG, parts = {}, sections = {} }
       cur = nil
     elseif k == "section" and song then
       cur = { id = tonumber(words[2]), length = math.floor(clip(tonumber(words[3]) or 0, 0,
@@ -407,6 +470,10 @@ function R.parse(text)
       local a = {}
       for i = 2, #words do a[#a + 1] = tonumber(words[i]) or words[i] end
       cur.parts[k] = a
+    elseif k and song then
+      local a = {}
+      for i = 2, #words do a[#a + 1] = tonumber(words[i]) or words[i] end
+      song.parts[k] = a
     end
   end
   if not song or #song.sections == 0 then return nil end
@@ -604,7 +671,7 @@ function R.load(st, draft_text, saved_text, index_text, files)
   st.pending = nil
   st.loaded = true
   st.selected, st.page, st.first = st.song.sections[1], 1, 1
-  return begin(st, st.song.sections[1])
+  return song_parts(st, begin(st, st.song.sections[1]))
 end
 
 -- ------------------------------------------------------------------ playing the song
@@ -892,7 +959,7 @@ function R.load_now(st, rec)
     take(st, rec)
     st.index_dirty = true
     st.selected, st.page, st.first = st.song.sections[1], 1, 1
-    local out = begin(st, st.song.sections[1])
+    local out = song_parts(st, begin(st, st.song.sections[1]))
     table.insert(out, 1, loaded(rec))
     return out
   end
@@ -950,7 +1017,8 @@ function R.song_new(st)
   local s = { id = 1, name = p.name, length = p.length, parts = copy_parts(p.parts) }
   local names = {}
   for i, rec in ipairs(st.songs) do names[i] = rec.song.name end
-  local song = { name = R.next_name(names, "song"), sections = { s } }
+  local song = { name = R.next_name(names, "song"), parts = copy_parts(st.song.parts or {}),
+                 sections = { s } }
   local rec = record(st.next_song, song, copy_song(song))
   rec.next_id, rec.write_saved = 2, true
   st.next_song = st.next_song + 1
@@ -1198,6 +1266,8 @@ R.songs_cmds = {
 -- face reads the files and hands their text to R.load).
 R.internal = {
   put = function(st, a) return R.put(st, a) end,
+  ["put-song"] = function(st, a) return R.put_song(st, a) end,
+  ["seed-song"] = function(st, a) return R.seed_song(st, a) end,
   recall = function(st, a) return R.recall(st, a[1]) end,
   bar = function(st) return R.bar(st) end,
   one = function(st) return R.one(st) end,

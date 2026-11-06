@@ -62,25 +62,28 @@ file decides what that means; and nothing below that file knows what hardware ex
 
 **What the diagram cannot show, all of it load-bearing:**
 
-- ⛔ **`c_clock` is instantiated, not global.** `u_root` holds `c_clock 1 8` driving the grid's beat
-  row, `c_steps` holds its own `c_clock 1 4`, and **nothing downstream may assume the global `clock`
+- ⛔ **`c_clock` is instantiated, not global.** `u_root` holds `c_clock 1 8` driving what blinks on the grid,
+  `c_steps` holds its own `c_clock 1 4`, and **nothing downstream may assume the global `clock`
   is its clock** — Cut It runs poly-tempo. See [tempo.md](module/tempo.md).
-- **`c_steps`, page 2's drum machine, hangs off `u_map` by a cord** — its second outlet, carrying
+- **`c_steps`, the drums page's machine, hangs off `u_map` by a cord** — its second outlet, carrying
   what a drum-page press means — and its own two outlets reach `c_kit`, which plays the drums,
   and `g_grid` with the page. Its rules are Lua, in `c_steps.lua`, behind one pdlua object; its clock and cords
   are Pd. See [sequencer.md](module/sequencer.md).
 - **`c_synth` holds the synth choice on every page**, and the nanoKEY's keys reach it by a cord
   from `m_nanokey`, not on `param`: a key means the chosen synth's note whichever page is up. It
   sends each key to `m_volca` or `m_streich`, a release to the synth its press went to, and the
-  choice to `u_net` and `g_grid`, and its velocity switch to `u_net`, by cords. Page 3's pads
-  choose through `u_map`. See [synths.md](module/synths.md).
-- **`c_melody` generates chords and a melody**, on `c_steps`' clock, by cords from `c_steps`, `u_map`
+  choice and its velocity switch to `u_net`, by cords. `u_voices` chooses, with the voice on show's machine.
+  See [synths.md](module/synths.md).
+- **`u_voices` holds a song's voices and writes the page on the `mode` bus**, told by `u_map` and `u_net`, and `u_perform`
+  is what the nanoKONTROL means this section, its moves going back into `u_map`'s route on `map-route`; each hands its
+  state to `g_grid` and `u_net` by cords. See [voices.md](module/voices.md).
+- **`c_melody` generates chords and a melody**, twice over, one per engine, on `c_steps`' clock, by cords from `c_steps`, `u_map`
   and `u_net`, and plays them on `m_volca`, `m_streich` or its own Pd voices, whose signal goes up to
   `u_root`. See [synths.md](module/synths.md), *The generator*.
 - **The phone reads nothing on `disp`** (Brendan, 2026-11-04): `u_net` takes each module's state on
   a cord — `c_steps`', `c_synth`'s, `c_melody`'s, `u_tempo`'s BPM and `u_song`'s sections — and hands the phone's
-  commands back out by cords to `c_steps`, `c_synth`, `c_melody`, `u_tempo` and `u_song`. Page 1's tap pad reaches `u_tempo` from `u_map` by a
-  cord too, and `u_tempo` flashes it through `g_grid`. See [phone.md](device/phone.md) and
+  commands back out by cords to `c_steps`, `c_synth`, `c_melody`, `u_tempo`, `u_song`, `u_voices` and `u_perform`. The tap
+  button reaches `u_tempo` from `u_map` by a cord too. See [phone.md](device/phone.md) and
   [tempo.md](module/tempo.md).
 - **`u_inject` takes the checklists' Send lines** and puts them on eight buses, so a rig check can
   fake what no control sends: from the device itself, on `127.0.0.1` alone, where `tools/send.sh`
@@ -107,11 +110,11 @@ where it goes** — which is why `m_volca` sits under `u_map` rather than in the
 `m_launchpad`, `u_state` and, after it through a trigger, `u_song`, because the boot *order* is
 `u_init`'s while the *action* belongs to the file at the other end. `u_map` reaches the output device, `m_volca`, because no bare global name
 carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`.
-`c_clock` feeds `g_grid`'s beat row. `c_steps` sits between `u_map` and both `c_kit` and
+`c_clock` feeds `g_grid`'s beat. `c_steps` sits between `u_map` and both `c_kit` and
 `g_grid`: told what a press means, it plays the drums and says what the drum page shows. And
-`c_synth` sits between `m_nanokey`, `u_map` and `u_net` on one side and the two synths, `u_net` and
-`g_grid` on the other: it plays the nanoKEY's keys on the chosen synth and says which that is. And
-`u_tempo` sits between `u_map`'s tap pad and `u_net`'s tempo on one side and `u_net`, `g_grid` and
+`c_synth` sits between `m_nanokey`, `u_voices` and `u_net` on one side and the two synths and `u_net`
+on the other: it plays the nanoKEY's keys on the chosen synth and says which that is. And
+`u_tempo` sits between `u_map`'s tap button and `u_net`'s tempo on one side and `u_net` and
 `u_map` on the other: it turns taps and the phone's drag into the tempo, says what it is, and hands
 `u_map` the tempo a tap or the phone set, so knob 1 waits there. And `u_song` sits between
 `u_map`'s top row, save and revert, `u_net`'s sections page and `c_steps`' bar on one side and
@@ -238,7 +241,7 @@ The four that shape everything else.
 | **Grain timing must be audio-domain** | Pd's message clock is quantized to a 64-sample block (~1.45 ms), ~20% of a 256th note at 120 BPM. `phasor~` and `vline~`, never `metro`/`line~` at grain rate (C-11). Built that way from the first line — see [tempo.md](module/tempo.md) |
 | **Pd sequences everything** | Timing rides in note events, not MIDI clock. No external device runs its own sequencer during a performance |
 | **Two independent input channels** | `inL` = the tip, `inR` = the ring of the one input jack: the mic on the tip since 2026-11-04 — see [audio.md](module/audio.md) |
-| **Pages, not a compose and perform split** | The Launchpad's left column chooses one of eight pages, and `u_map` looks every control up per page, so one surface serves a different role on each: 1 the arrangement, 2 the drums, 3 the synths, 7 the sections, 8 the songs, 4 to 6 nothing yet (Brendan, 2026-11-04 and 2026-11-05). This shapes the top level of the patch |
+| **Pages, not a compose and perform split** | `u_voices` chooses a page, from a voice's two buttons, PLAY, aux or Setup, and `u_map` looks every control up per page, so one surface serves a different role on each ([voices.md](module/voices.md), [map.md](module/map.md)) |
 
 ### Why the infrastructure was built before any DSP
 
@@ -258,9 +261,9 @@ Nothing overlaps, and that is deliberate:
 
 | Surface | Role |
 |---|---|
-| **Launchpad** | Pads, grid state, sequencing — page 2 is the drum page. Anything needing state you can *see* |
-| **nanoKONTROL** | Continuous control, with position visible on the panel. Momentary buttons only |
-| **Organelle keyboard** | Choosing songs, once there are songs: until then its keys play nothing (Brendan, 2026-11-04). Under aux, the four keys every page shares: diag, test mode, stop and recover |
+| **Launchpad** | Move and hit: a row is a voice, and the grid is the page's: the drums, harmony and melody pages, and the performance page's columns. Anything needing state you can *see* |
+| **nanoKONTROL** | In play: the same on every page, whatever this section assigned. Momentary buttons only |
+| **Organelle keyboard** | Choosing songs: key N the Nth song of the setlist chosen. Its knobs the same on every page, and aux the songs page |
 | **nanoKEY** | Playing the chosen synth, the Volca or the Streichfett, on every page (Brendan, 2026-11-04) |
 
 ⚠️ **The Launchpad mode conflict evaporates because of this split.** Authoring that needs Note or
@@ -268,8 +271,8 @@ Chord mode uses them; everything Cut It draws, the drum page's sequencing includ
 Mode. They never coexist, so there is no mid-set SysEx flipping.
 
 ⛔ **Every surface is shared between pages, and that is what forces explicit pages.** A control
-means what the current page's row says, so the Launchpad's grid is the drum page on one page and a
-beat row on the rest. Designing that in from the start is much cheaper than retrofitting it once the
+means what the current page's row says, so the Launchpad's grid is the drum page on one page and the
+performance page's columns on another. Designing that in from the start is much cheaper than retrofitting it once the
 filter logic exists, which is why `mode` and a page-dependent `u_map` exist before any filter does.
 
 ## The naming, and what it tells you

@@ -2,7 +2,7 @@
 #X declare -lib pdlua;
 #X text 20 20 c_melody -- the melody and chord generator. It rolls a loop of up to 32 steps for the Volca and a loop of up to 8 chords for the Streichfett \, by weighted dice \, and a lock on each keeps or drifts what it rolled. The rules are in c_melody.lua. Here: the cords \, the note timing and the state bus. inlet: <note> <velocity> from m_nanokey \, <control> <0-1> \, the roll pads and the home pad from u_map \, step <count> <ms> from c_steps. outlet 1: note <n> <v> to m_volca. outlet 2: the same \, to m_streich., f 90;
 #X obj 20 200 inlet;
-#X obj 20 400 c_melody-lua;
+#X obj 20 400 c_melody-lua \$1;
 #X obj 20 470 pipe 0 0 0 0;
 #X obj 20 560 route 1 2 3 4 5 6 7;
 #X obj 20 620 list prepend note;
@@ -18,7 +18,7 @@
 #X obj 1000 500 s disp;
 #X obj 500 100 r state;
 #X obj 500 150 route restore sync;
-#X obj 500 200 route melody;
+#X obj 500 200 route \$2;
 #X obj 500 250 list prepend restore;
 #X obj 500 300 list trim;
 #X msg 700 250 sync;

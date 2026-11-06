@@ -20,7 +20,7 @@ word.
 
 ## One gate per module
 
-Twenty-five gates, and each answers for exactly one page: under `ref/`, or for `u_inject` and the
+Twenty-six gates, and each answers for exactly one page: under `ref/`, or for `u_inject` and the
 phone's line check page, the checklists' guide. That is the whole organizing principle: **a page that names a gate should be able
 to name one whose entire subject is that page**, or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
@@ -31,7 +31,7 @@ were false.
 | `init-assert.sh` | `module/boot` |
 | `audio-assert.sh` | `module/audio` |
 | `err-assert.sh` | `module/error` |
-| `display-assert.sh` | `module/display` — the grid, its drum page's painter, page 3's synth pads and page 1's tap pad included |
+| `display-assert.sh` | `module/display` — the grid and its painter, every page |
 | `oled-assert.sh` | `module/display` — the OLED |
 | `led-assert.sh` | `module/display` and `device/organelle` — the aux LED |
 | `tempo-assert.sh` | `module/tempo` — `u_tempo`, tap tempo and the phone's tempo |
@@ -39,7 +39,8 @@ were false.
 | `map-assert.sh` | `module/map` |
 | `recover-assert.sh` | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | `module/state` |
-| `song-assert.sh` | `module/songs` — the songs, the setlists, the keys and go, the sections, the top row, save and revert, the files |
+| `song-assert.sh` | `module/songs` — the songs, the setlists, the keys and the next arrow, the sections, the top row, save and revert, the files |
+| `voices-assert.sh` | `module/voices` — the song's voices, the page, and the controls in play |
 | `presence-assert.sh` | `module/presence` |
 | `launchpad-assert.sh` | `device/launchpad` |
 | `nano-assert.sh` | `device/nanokontrol` |
@@ -129,7 +130,7 @@ see `test/runner/gates.py`.
 Layout and graph structure, the documentation, all three entry points loading in silence, the MIDI
 inventory, and one gate per module — the boot sequence, the audio path, the error bus, the display
 arbiter, the OLED, the aux LED, the tempo reference, the clock, the map, panic's second tier, the
-data store, the Launchpad, the nanoKONTROL, the Organelle's own panel, the phone and its layout, the
+data store, the songs, the voices, the Launchpad, the nanoKONTROL, the Organelle's own panel, the phone and its layout, the
 Volca and the debug patch. **Mac
 only — it touches no device**, so it is safe to run at any time, including with the Organelle
 switched off.
@@ -164,8 +165,8 @@ own header that *"there is no way to read back what the LEDs are actually showin
 and it conflated three different things. Pd cannot ask the Launchpad what is lit, but **the bytes
 the patch sends are completely knowable**, and that is the right level to test our own code at.
 
-⚠️ **The split is not cosmetic — it is 46 seconds.** `display-assert` needs DSP, because the beat
-row hangs off `threshold~`; the two SysEx checks about the *device* need no clock at all and were
+⚠️ **The split is not cosmetic — it is 46 seconds.** `display-assert` needs DSP, because the beats repaint
+an idle page; the two SysEx checks about the *device* need no clock at all and were
 paying that bill for no reason. `launchpad-assert` now runs in four seconds and gained three checks
 it could not previously afford: the **order** of the mode switch against the first painted frame,
 which neither message existing implies. LED writes sent in Live Mode do not appear, so a patch that
@@ -188,11 +189,9 @@ rewriting the box. **`Cut It/` is never touched**; the scratch copy is thrown aw
 The script counts the boxes it rewrote and **refuses to run if it found none** — otherwise every
 assertion would pass vacuously, which is worse than failing.
 
-**It checks:** frame shape and the 1–108 span, the mode lamp index, page 2's drum page with the
-beat row giving way to it and page 1's beat row, page 1's tap pad dim beside it and full for a
-moment at a tap, read with its layout file, page 3's synth pads above the beat row, the chosen
-synth's bright and the other's dim, before and after STRINGS' pad, read with the layout file, the modal claiming all 108 specs, `fail` painting red and `warn` painting nothing, the alert expiring back to the modal
-underneath, the beat row never leaving 11–18, the grid SURVIVING a panic, and
+**It checks:** frame shape and the 1–108 span, a page saved at power-off being the first painted, the voices' lamps,
+each page through a press, the columns', aux's and Setup's, the modal claiming all 108 specs, `fail` painting red and
+`warn` painting nothing, the alert expiring back underneath, PLAY bringing up the performance page, the grid SURVIVING a panic, and
 `m_launchpad`'s Programmer and Live SysEx.
 
 **It runs the drum page's painter's Lua tests first** (2026-11-05): `test/gate/lua/g_grid_test.lua`,
@@ -211,7 +210,7 @@ and no longer reading the layout itself. What reaches the Launchpad is the Pd ha
 makes, until a window mutes it; between, it sends the announcement unasked, and three frames that
 are not it. ✅ **Red on each of eight mutations:** the heartbeat raising no expected echo (1
 failed: the echoes published), the init raising none (3), the 250 ms forget cut (2), the match
-waiting for another layout (4), a mismatch never clearing the match (2), mode 1's `lp-setup` row
+waiting for another layout (4), a mismatch never clearing the match (2), the `lp-setup` row
 gone from the map (2), `t_midiout` not sending on `t-midiout` (1: nothing was answered) and the
 driver never muting (1: the forget's witness).
 
@@ -252,10 +251,10 @@ too, with panic's on 1 and 4 — exact sets, so nothing reaches port 3, the SP-4
 rig; the clamp warning at both ends and *not* warning in range; start 250, stop 252, panic 252, and
 ⛔ that **Continue (251) is never sent**; and ⛔ that **stop does not halt the clock** — the transport
 pauses the subscribers, it does not clear the timer. Then **tap tempo through the running
-instrument**: page 1's tap pad pressed as `param pad-21`, 400 ms apart, puts 150 on the tempo bus
+instrument**: the nanoKONTROL's LOOP pressed as `param xport-4`, 400 ms apart, puts 150 on the tempo bus
 from the second tap, and ⛔ **knob 1 held at it**: turned short of 150 it moves nothing and reads
 `bpm 150 (105)`, turned through it it sets 170; 2.5 s later a tap sets nothing, and the next, 600 ms
-on, 100; the same pad on page 2, a drum pad there, sets nothing; and **the phone's tempo** as a
+on, 100; a pad on the drum page, cell 21, sets nothing; and **the phone's tempo** as a
 datagram into `u_net`'s port, 133 to the bus, knob 1 held at it too, 900 clamped to 600, and a word
 refused as `bad-tempo`.
 
@@ -277,8 +276,9 @@ had no window for. The third, `sp404-assert`, went with the SP-404 when it left 
 somewhere; what the destination then does with the value is the device gate's business.
 
 **`map-assert` runs the map's Lua tests first**: `test/gate/lua/u_map_test.lua`, with lua.org's Lua
-5.4 and no Pd, drives the rules in `Cut It/u_map.lua` (the table, the lookup per mode, the divisor,
-the mode guard, every pickup transition, an unmapped control leaving nothing) and `u_map-lua.pd_lua`
+5.4 and no Pd, drives the rules in `Cut It/u_map.lua` (the table, the lookup per page, an `all` row and `pad-*`, every
+row's arg against what its destination takes, the divisor, the page guard, every pickup transition, what `u_perform` hears, an
+unmapped control leaving nothing) and `u_map-lua.pd_lua`
 through `test/gate/lua/lib_test.lua`'s stand-in for pdlua (reading the table from its patch's
 folder, `map-empty`, `bad-selector`, a throwing rule caught as `fail u_map lua-param`). The Pd half
 below is unchanged since the lookup was Pd: **it is the proof the Lua port changed nothing.** The
@@ -287,9 +287,9 @@ gate fails if either half does.
 **Half of the Pd half is a STATIC LINT.** It parses the literal `route` box out of `u_map.pd` and the rows
 out of `cut-it-map.txt` and asserts that **every destination a row can name exists as an argument on
 that route** — the allowlist guard, enforced by reading, exactly the way this project audits its
-global sends. It also catches a **duplicate `(mode, control)` pair**, which the lookup resolves
+global sends. It also catches a **duplicate `(page, control)` pair**, which the lookup resolves
 to the *first* row only, so a repeat is dead and silent. And it reads every `m_` file's `[s disp]`
-count, **exactly** — zero everywhere but `m_organelle`'s one, which carries aux's modal — because a
+count, **exactly** — zero everywhere — because a
 device layer posting a control's row beside `u_map`'s draws that control twice, or names an unmapped
 one, which draws nothing since 2026-11-04 (item 317). That half runs without Pd at all.
 
@@ -313,7 +313,7 @@ device.
 
 ⚠️ **Each owns its state directory**, and every gate that loads `main-dev.pd` now does. `main-dev.pd`
 passes `/tmp`, shared by every run on the machine, and `u_init` restores saved state at ~3.5 s — so
-one test that changes mode silently rewrites the starting conditions of every test after it. That
+one test that changes the page silently rewrites the starting conditions of every test after it. That
 cost a wrong diagnosis once: item 232.
 
 **Proven to fail** — the shared gate was, on a `47 + n` pad map (12 of 16 pads, both directions), a row naming a
@@ -498,7 +498,7 @@ throwing rule caught as `fail c_steps lua-fire`). Then the Pd half below, on a r
 instrument, which is unchanged since the rules were Pd: **it is the proof the Lua port changed
 nothing.** The gate fails if either half does.
 
-It plays page 2's drum page on `param`, as `m_launchpad` publishes it, from a state directory
+It plays the drum page on `param`, as `m_launchpad` publishes it, from a state directory
 seeded with a song whose one section holds a pattern, and reads only what leaves the patch: the pads
 for `c_kit`, the grid's frames, the state bus and the song's draft. First the time signature, over
 OSC as the phone sends it: 9/8 and 3/4 set the page's rows and blue steps, at 3/4 the second
@@ -548,14 +548,14 @@ switch, the restores, and
 Pd's floats, a line saved before the later fields, the locks at 100 and 0, a chord changing on the
 step its start says, the loop's last chord before the first start, move and swap, a new span,
 bass only and a Pd voice per note. How a loop sounds is the ear's. Then a running copy of the
-instrument, booted on page 3 with a song whose one section holds `synth strings` and `velocity off`: the nanoKEY's keys go in through
-`t-notein`, page 3's pads as `param pad-NN`, and the phone's `/cutit synth <choice>` as a datagram
+instrument, with a song whose one section holds `synth strings` and `velocity off`: the nanoKEY's keys go in through
+`t-notein`, the voices' buttons as `param lp-cc-NN`, and the phone's `/cutit synth <choice>` as a datagram
 into `u_net`'s own port, from a socket the driver builds with `lib_drive`'s `extra`.
 
 **It checks:** the saved choice and switch restored and put back, the first key on the
-Streichfett's channel alone, at 127, the phone's `velocity on` and `off` put, FM's pad choosing once, any channel of the nanoKEY's port playing, a key held through the
-phone's switch releasing on the Volca, only a press choosing (two pads held), notes on four other
-ports playing nothing, the choice holding on page 1 where the pads mean nothing, `bad-synth` from
+Streichfett's channel alone, at 127, the phone's `velocity on` and `off` put, a voice's button choosing its machine and putting nothing, any channel of the nanoKEY's port playing, a key held through the
+phone's switch releasing on the Volca, only a press choosing (two buttons held), notes on four other
+ports playing nothing, the choice holding on the performance page, `bad-synth` from
 the phone, and `bad-velocity`, a soft key at 127 with the switch off and its release at 0, panic's
 CC 123 on channel 33, nothing on another channel, nothing else on `err`, and `synth strings` and
 `velocity off` in the song's draft at the end.
@@ -571,8 +571,7 @@ CC 123 on channel 33, nothing on another channel, nothing else on `err`, and `sy
 with lua.org's Lua 5.4 and no Pd. `test/gate/lua/m_nano_test.lua` drives `Cut It/m_nano.lua`: all
 fifty names by tens and units, a button's press as 1 and its release as nothing, the unmapped
 warning, and that no name outlives its message. `test/gate/lua/m_organelle_test.lua` drives
-`Cut It/m_organelle.lua`: each key's name, the layer `aux` held when it went down, a chord across a
-change of modifier. The SP-404's layer had a third, until it left the rig (2026-11-04). Each also
+`Cut It/m_organelle.lua`: each key's name. The SP-404's layer had a third, until it left the rig (2026-11-04). Each also
 drives its face through `lib_test.lua`'s stand-in for pdlua: its
 inlets and outlets, `bad-selector`, and a throwing rule caught as `fail <layer> lua-<bus>`. Each Pd
 half is unchanged since its layer was Pd: **it is the proof the port changed nothing.**
@@ -588,13 +587,13 @@ Pd: a fresh load, the files' text both ways, a load from the draft, the saved so
 row stopped and playing, lengths and the last one with a length, the six buttons scrolling, the
 sections page's commands, names, save and revert, the phone's state; several songs, the index both
 ways, a load with and without one, the songs tab's and the setlists tab's commands, the keys stopped
-and by each transition, go and its lamp, a song left keeping its draft, the songs page's state; and
+and playing, the next arrow, a song left keeping its draft, the songs page's state; and
 `u_song-lua.pd_lua` through `lib_test.lua`'s stand-in for pdlua, reading and writing real files in a
 folder of its own, across reloads, a song's own files made, flushed and deleted, a write that fails,
 and a throwing rule. Then **four runs of a scratch copy of the instrument**, one analyzer reading
 them all:
 
-- **The song**, booted on page 2 with three sections saved, intro, verse of two loops and chorus,
+- **The song**, booted on the drum page with three sections saved, intro, verse of two loops and chorus,
   each with every part: the top row pressed as the Launchpad sends it, the transport on its buses, a
   change as a tempo on the bus. At load section 1 starts; stopped, a button starts its section at
   once, its programs out to both synths; a change lights save and revert, revert and save put them
@@ -607,16 +606,24 @@ them all:
   and switch become section 1's, and the auto file lets the old keys go. This run and the first
   start with no index, as a state directory from before several songs, and both end with one: song
   1, the opener of set 1.
-- **Three songs**, booted on page 8 with a setlist, gig, saved: the Organelle's keys pressed as
-  `m_organelle` publishes them, stopped, then playing by each entry's transition. Stopped, a key
-  loads at once whatever its entry says; a song changed and left keeps its change as its draft,
-  and comes back with it, unsaved; next bar waits while the go lamp blinks green and loads on the
-  step 1; go waits through the pattern coming round while the lamp blinks amber, go turns it green,
-  and the song loads at the next bar; silence puts STOP on the bus before the song loads; a key past
-  the setlist's end does nothing. The index and the songs' own files on disk after it.
+- **Three songs**, booted on the songs page with a setlist, gig, saved: the Organelle's keys pressed as
+  `m_organelle` publishes them, stopped, then playing. Stopped, a key
+  loads at once; a song changed and left keeps its change as its draft,
+  and comes back with it, unsaved; playing, the next arrow blinks while the song waits and it loads on the
+  step 1; a key past the setlist's end does nothing. The index and the songs' own files on disk after it.
 
 ⚠️ **The driver turns DSP on**: the steps are cut from a `phasor~`, and the queued lamp blinks on
-the beat row's clock, which is one too. Without it the transport plays nothing and no bar comes.
+the grid's own clock, which is one too. Without it the transport plays nothing and no bar comes.
+
+## `voices-assert.sh` — the voices and the controls in play
+
+**It runs the rules' Lua tests first**, with lua.org's Lua 5.4 and no Pd: `test/gate/lua/u_voices_test.lua` the seed,
+every button's page, aux and Setup over each other, PLAY, the engines, too many of a method, the phone's voice page and a
+page waiting for its song; `test/gate/lua/u_perform_test.lua` arm, heard and bind, pickup, a section's list, toggle and hit,
+what a lane shows and the phone. Then **a scratch copy of the instrument with no song saved**, driven on `param` and over
+OSC, which proves the cords: a press through the map to the page on the `mode` bus, the song's voices into its draft,
+tempo taken into play and moved through `map-route`, a roll reaching its own engine by name from the performance page,
+the columns' colors, and a new section's list waiting, then caught.
 
 ## `stubs/` — stand-ins the gates need
 

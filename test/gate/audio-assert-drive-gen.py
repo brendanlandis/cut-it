@@ -11,7 +11,7 @@ own, since every mother name its children use is an ordinary receive.
 failure that matters (L is the tip, the mic's, item 11) and only the frequencies
 can see one: both channels carry the same level.
 
-Then the drums, with the input silent: page 2's bottom-left pad, pad 1, plays a
+Then the drums, with the input silent: the drum page's bottom-left pad, pad 1, plays a
 sample the generator writes into the scratch copy's samples/drums/, where c_kit
 reads it. What it proves is the output's, not the input's: c_kit's outlet~ is
 summed into the left output, with nothing on the input at all. The disp tap is
@@ -50,7 +50,7 @@ GUARD = 0.3
 DRUM_HZ = 550.0
 DRUM_S = 1.8
 RATE = 44100
-# Page 2's bottom-left pad is pad 1: `mode-2 pad-11 drum-page 11` in the map.
+# The drum page's bottom-left pad is pad 1: `drums pad-11 drum-page 11` in the map.
 DRUM_PAD = "pad-11"
 
 
@@ -76,8 +76,8 @@ def _seq(wav):
         (at(1.0), "BOTH", ["\\; aud-l %g" % AMP, "\\; aud-r %g" % AMP], GAP),
         (at(3.0), "LEFT", ["\\; aud-r 0"], GAP),
         (at(5.0), "RIGHT", ["\\; aud-l 0", "\\; aud-r %g" % AMP], GAP),
-        # Page 2, a second ahead: the drum page, where the pad is pad 1.
-        (at(6.0), "PAGE-2", ["\\; mode mode-2"], GAP),
+        # A second ahead, the drum page, where the pad is pad 1.
+        (at(6.0), "PAGE-2", ["\\; mode drums"], GAP),
         (at(7.0), "DRUMS", ["\\; aud-r 0", (50, "\\; param %s 127" % DRUM_PAD),
                             (100, "\\; param %s 0" % DRUM_PAD)], GAP),
         (at(9.0), "TAIL", [], GAP),

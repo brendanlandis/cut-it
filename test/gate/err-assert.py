@@ -181,10 +181,10 @@ def run_asserts(cap):
                     "got %s" % alerts(k))
 
     # ---- the old perform shape hides nothing -------------------------------
-    # u_map refuses `perform mode-6` as bad-mode, which is drawn too, so only
+    # u_map refuses `perform drums` as bad-mode, which is drawn too, so only
     # the gate's own alerts are read.
     mine_drawn = [a for a in alerts("OLD-PERFORM") if a[2:3] == ["u_gate"]]
-    A.check("⛔ the old `perform mode-6` hides nothing -- the warn draws",
+    A.check("⛔ the old `perform drums` hides nothing -- the warn draws",
             mine_drawn == [["alert", "warn", "u_gate", "old-perform"]],
             "got %s. The old filter read perform as a reason to drop a warn"
             % alerts("OLD-PERFORM"))

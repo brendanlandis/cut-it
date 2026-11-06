@@ -363,9 +363,12 @@ def main():
             [r[0] for r in kids.get("root", [])] == ["pages"] and outer and outer[1] == "PAGER"
             and outer[8] == "1", "root holds %s; pages: %s" % ([r[0] for r in kids.get("root", [])],
                                                              outer and outer[8]))
-    m = re.search(r"^R\.PAGES = (\d+)$", open(MAP_LUA, encoding="utf-8").read(), re.M)
-    A.check("the Launchpad has as many pages as u_map.lua's R.PAGES takes, and each its name",
-            m is not None and int(m.group(1)) == len(TABS), "R.PAGES: %s" % (m and m.group(1)))
+    m = re.search(r"^R\.PAGES = \{(.*?)\}", open(MAP_LUA, encoding="utf-8").read(), re.M | re.S)
+    names = re.findall(r"([\w-]+) = true", m.group(1)) if m else []
+    A.check("⛔ every page u_map.lua's R.PAGES takes off the bus turns the phone to a page of its own",
+            names and sorted(names) == sorted(B.MODE_PAGES)
+            and all(1 <= n <= len(TABS) + 1 for n in B.MODE_PAGES.values()),
+            "R.PAGES: %s; the layout's: %s" % (names, B.MODE_PAGES))
     want = ["p%d" % (i + 1) for i in range(len(TABS))] + ["pcheck"]
     tabs = TABS + ["line check"]
     got = [r[0] for r in kids.get("pages", [])]
@@ -427,10 +430,12 @@ def main():
     if None not in (ucmd, uacks, usynth, uvel, takes, chooses):
         lcmd = sorted({m.split()[0] for m in msgs})
         ldrums = sorted({m.split()[1] for m in msgs if m.split()[0] == "drums"})
-        A.check("⛔ the layout sends EXACTLY the commands u_net routes",
-                lcmd == sorted(ucmd),
+        # voices and perform are the app's: TouchOSC is the fallback, and isn't growing.
+        routed = sorted(set(ucmd) - {"voices", "perform"})
+        A.check("⛔ the layout sends EXACTLY the commands u_net routes, but the app's own",
+                lcmd == routed,
                 "the layout sends %s, u_net routes %s -- whichever side is short is a button "
-                "that does nothing at all" % (" ".join(lcmd), " ".join(ucmd)))
+                "that does nothing at all" % (" ".join(lcmd), " ".join(routed)))
         gone = sorted({m.split()[0] for m in msgs} & {"re-wire", "clear-alert", "test-note"})
         A.check("⛔ no diagnostic command is left on the phone (Brendan, 2026-11-04)", not gone,
                 "the layout still sends %s" % gone)

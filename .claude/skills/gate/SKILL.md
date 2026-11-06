@@ -108,7 +108,7 @@ checks and missed a boot-time race, because its windows started at 2400 ms *for 
 read its table at 2000*. **A test whose schedule is derived from the implementation cannot falsify
 it**, and item 234 was found by hardware instead. Every driver in `test/gate/` now opens a window
 **before** the thing it is assuming — `map-assert` at 300 ms, `nano-assert` at 300,
-`display-assert` at 300 with a mode nothing else in the run sets.
+`display-assert` from a page saved at the last power-off, so its boot's own restore is what's on trial.
 
 ⚠️ **`[del 0]` defers to the next tick but adds no logical time** (`~/Sites/!reference/pure-data.md`). A burst fired in one logical
 instant proves *drops-not-queues* and nothing about an interval. Test an interval with two events a

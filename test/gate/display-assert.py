@@ -20,7 +20,7 @@ MODAL = 45
 # The number of windows display-assert-drive-gen.py's SEQ opens. Frames are
 # grouped by mark with setdefault, so without this check a driver that died early
 # would answer the negative assertions below with an empty list.
-MARKS = 19
+MARKS = 22
 
 
 def main():
@@ -64,90 +64,102 @@ def main():
             "%d frames with no clock running -- the dirty flag is not gating"
             % len(idle))
 
-    boot = [f for f in ok_len if f.mark == "(none)"]
-    if boot:
-        problem, _lamp, _beat = G.home_shape(boot[0])
-        if problem:
-            A.note("the FIRST frame lights a cell outside every region: %s -- "
-                   "g_grid's beat store starts at 0 and 0+10 is LED index 10, a "
-                   "left-column ring button. Cosmetic and Mac-only: on the device "
-                   "mother enables DSP at 200 ms so beats are already flowing by "
-                   "the time ownership rises at ~3 s. Tracked in plan-v04.md"
-                   % problem)
-
-    # mode-8 was set at 300 ms and never again: a first painted frame without it
-    # means the mode was dropped or the grid painted a default of its own.
-    fs = window("home-early-mode")
-    if A.check("home-early-mode: the grid repainted", bool(fs), "no frame in the window"):
-        _problem, lamp, _beat = G.home_shape(fs[-1])
-        A.check("⛔ a mode set at 300 ms -- before the grid painted at all -- SURVIVES",
-                lamp == G.LAMPS[7], "lit lamp was %s, wanted %d (mode-8)"
-                % (lamp, G.LAMPS[7]))
-
-    # Page 2 is the drum page: the beat row gives way to it while the clock
-    # still runs, so every frame of the window is asked, not only the last.
-    fs = window("home-mode-2")
-    if A.check("home-mode-2: the grid repainted", bool(fs), "no frame in the window"):
-        problem, lamp, _page = G.drum_page(fs[-1], G.drum_layout())
-        A.check("home-mode-2: the drum page, and nothing lit outside it and the lamps",
+    # What was on show at the last power-off, row 1's left page, set at the boot and never again: a
+    # first painted frame without it means it was dropped, or the grid painted a default of its own.
+    lay = G.drum_layout()
+    painted = [f for f in ok_len if f.mark in ("(none)", "idle-dsp-off", "dsp-on", "settling")]
+    A.check("the grid painted before the first window that asks", bool(painted))
+    if painted:
+        problem, lamp, _page = G.drum_page(painted[-1], lay)
+        A.check("⛔ a page saved at power-off survives the boot: the frames before any press are its",
+                problem is None and lamp == G.LEFT[0], problem or "lamp %s, wanted %d" % (lamp, G.LEFT[0]))
+    fs = window("home-restored")
+    if A.check("home-restored: the grid repainted", bool(fs), "no frame in the window"):
+        problem, lamp, _page = G.drum_page(fs[-1], lay)
+        A.check("home-restored: the drum page, and nothing lit outside it and the lamps",
                 problem is None, problem or "")
-        A.check("⛔ home-mode-2: the repeat pads and pad-35 the brightest purple, pad-38 dim blue, "
+        A.check("⛔ home-restored: the repeat pads and pad-35 the brightest purple, pad-38 dim blue, "
                 "and pad-36 and pad-37 between them dark", [fs[-1].color(i) for i in (45, 48, 35, 38,
                                                                                      36, 37)]
                 == [G.REP_DIM, G.REP_DIM, G.REP_DIM, G.RECALL_DIM, 0, 0],
                 "cells 45 48 35 38 36 37: %s" % [fs[-1].color(i) for i in (45, 48, 35, 38, 36, 37)])
-        A.check("home-mode-2: the lit mode lamp is index %d" % G.LAMPS[1],
-                lamp == G.LAMPS[1], "lit lamp was %s" % lamp)
-        beats = sorted({i for f in fs for i in range(G.BEAT_LO, G.BEAT_HI + 1)
-                        if f.color(i) == G.BEAT_ON})
-        A.check("⛔ home-mode-2: the beat row gives way -- no beat cell lit in %d frames"
-                % len(fs), not beats, "beat cells lit: %s" % beats)
+        A.check("⛔ home-restored: its left button full, the seed's three rows dim, the others dark",
+                [fs[-1].color(i) for i in G.LEFT + G.RIGHT] == [
+                    G.VOICE_FULL[0], G.VOICE_DIM[1], G.VOICE_DIM[2], 0, 0, 0, 0, 0,
+                    G.VOICE_DIM[0], G.VOICE_DIM[1], G.VOICE_DIM[2], 0, 0, 0, 0, 0],
+                [fs[-1].color(i) for i in G.LEFT + G.RIGHT])
 
-    # Page 1 held the drum page until 2026-11-04: home there is the beat row, and
-    # the tap pad beside it, from the layout g_grid and u_map both read.
-    alay = G.arrange_layout()
-    A.check("page 1's layout is the tap pad alone, cell 21", alay == {21: "tap"}, alay)
-    fs = window("home-mode-1")
-    if A.check("home-mode-1: the grid repainted", bool(fs), "no frame in the window"):
-        problem, lamp, _beat = G.arrange_page(fs[-1], alay)
-        A.check("⛔ home-mode-1: the tap pad dim, and nothing lit outside it, the lamp row and "
-                "the beat row", problem is None, problem or "")
-        A.check("home-mode-1: the lit mode lamp is index %d" % G.LAMPS[0],
-                lamp == G.LAMPS[0], "lit lamp was %s" % lamp)
-    fs = window("tap-flash")
-    if A.check("tap-flash: the grid repainted", bool(fs), "no frame in the window"):
-        flashed = [f for f in fs if G.arrange_page(f, alay, flashing=True)[0] is None]
-        A.check("⛔ tap-flash: a tap lights the pad full, and nothing else", bool(flashed),
-                "%d frames, cell 21 %s" % (len(fs), [f.color(21) for f in fs]))
-        problem, _lamp, _beat = G.arrange_page(fs[-1], alay)
-        A.check("⛔ tap-flash: and it goes back to dim by the window's end", problem is None,
-                problem or "")
-    for mark, expect_lamp in (("home-mode-4", G.LAMPS[3]), ("home-again", G.LAMPS[3])):
+    # The other pages through the map, the voices and the frame clock, from a press. What each
+    # cell shows is g_grid_test.lua's; here, that the page came, and from where.
+    def last(mark):
         fs = window(mark)
-        if not A.check("%s: the grid repainted" % mark, bool(fs), "no frame in the window"):
-            continue
-        problem, lamp, _beat = G.home_shape(fs[-1])
-        A.check("%s: nothing lit outside the lamp row and the beat row" % mark,
-                problem is None, problem or "")
-        A.check("%s: the lit mode lamp is index %d" % (mark, expect_lamp),
-                lamp == expect_lamp, "lit lamp was %s" % lamp)
+        return fs[-1] if A.check("%s: the grid repainted" % mark, bool(fs), "no frame in the window") else None
 
-    # Page 3: home, and the synth pads above the beat row, from the layout g_grid
-    # and u_map both read. fm is chosen at load; STRINGS' pad then chooses strings.
-    # synth_page holds the beat row to dim or lit, so a page that dropped it fails.
-    lay = G.synth_layout()
-    for mark, chosen in (("home-mode-3", "fm"), ("synths-strings", "strings")):
-        fs = window(mark)
-        if not A.check("%s: the grid repainted" % mark, bool(fs), "no frame in the window"):
-            continue
-        problem, lamp, _beat = G.synth_page(fs[-1], lay, chosen)
-        A.check("⛔ %s: the synth pads, %s bright and the other dim, and nothing else lit"
-                % (mark, chosen), problem is None, problem or "")
-        A.check("%s: the lit mode lamp is index %d" % (mark, G.LAMPS[2]),
-                lamp == G.LAMPS[2], "lit lamp was %s" % lamp)
-    A.check("the synth layout is the eight cells 21 to 28, fm then strings",
-            lay == {**{i: "fm" for i in range(21, 25)}, **{i: "strings" for i in range(25, 29)}},
-            lay)
+    # Row 2's left button: the harmony page, in its color, the generator's state having reached it.
+    f = last("harmony")
+    if f:
+        cells = {10 * r + c for r in range(1, 9) for c in range(1, 9)} | set(range(101, 106))
+        problem, lamp = G.page_shape(f, cells)
+        A.check("⛔ harmony: row 2's left button full, nothing lit but the page and the edges",
+                problem is None and lamp == G.LEFT[1], problem or "lamp %s" % lamp)
+        rows = [f.color(80 + c) for c in range(1, 9)]
+        A.check("⛔ harmony: the top row its chords, c_melody's, in the voice's color",
+                rows[0] in (G.VOICE_FULL[1], G.VOICE_DIM[1]) and f.color(101) in (G.VOICE_FULL[1], G.VOICE_DIM[1]),
+                rows)
+    # The lit one again: back to the performance page, with nothing in play yet.
+    f = last("harmony-again")
+    if f:
+        problem, lamp = G.page_shape(f)
+        A.check("⛔ the lit button again: the performance page, every lamp dim and nothing else lit",
+                problem is None and lamp is None, problem or "lamp %s" % lamp)
+    # Row 3's: the melody page, its notes from the generator: the pitch pads light with no note.
+    f = last("melody")
+    if f:
+        cells = {10 * r + c for r in range(1, 9) for c in range(1, 9)} | set(range(101, 104))
+        problem, lamp = G.page_shape(f, cells)
+        A.check("⛔ melody: row 3's left button full, nothing lit but the page and the edges",
+                problem is None and lamp == G.LEFT[2], problem or "lamp %s" % lamp)
+        A.check("⛔ melody: the rows of pitch lit, from the generator's notes",
+                all(f.color(10 * r + c) != 0 for r in range(1, 5) for c in range(1, 9)),
+                [f.color(10 + c) for c in range(1, 9)])
+    # Row 3's right button: its setup page, all of whose cells are the phone's.
+    f = last("sound")
+    if f:
+        problem, lamp = G.page_shape(f)
+        A.check("⛔ sound: row 3's right button full, and nothing else lit",
+                problem is None and lamp == G.RIGHT[2], problem or "lamp %s" % lamp)
+    # An unused row's right button: a new voice, and its setup page.
+    f = last("new-voice")
+    if f:
+        problem, lamp = G.page_shape(f)
+        A.check("⛔ new-voice: row 5's right button starts a voice: it lights, full, and its left, dim",
+                problem is None and lamp == G.RIGHT[4] and f.color(G.LEFT[4]) == G.VOICE_DIM[4],
+                problem or "lamp %s, left %s" % (lamp, f.color(G.LEFT[4])))
+    # Aux: the songs page, from anywhere; and back to where it was.
+    f = last("aux")
+    if f:
+        problem, lamp = G.page_shape(f)
+        A.check("⛔ aux: the songs page: no cells of its own, every lamp dim",
+                problem is None and lamp is None, problem or "lamp %s" % lamp)
+    f = last("aux-again")
+    if f:
+        A.check("⛔ aux again: back where it was, row 5's setup page", G.page_shape(f) == (None, G.RIGHT[4]),
+                G.page_shape(f))
+    # Setup: the diagnostics page, the same way.
+    f = last("setup")
+    if f:
+        problem, lamp = G.page_shape(f, (81, 82))
+        A.check("⛔ setup: the diagnostics page: its two pads lit, every lamp dim",
+                problem is None and lamp is None and f.color(81) and f.color(82),
+                problem or "cells %s %s" % (f.color(81), f.color(82)))
+    f = last("setup-again")
+    if f:
+        A.check("⛔ setup again: back where it was", G.page_shape(f) == (None, G.RIGHT[4]), G.page_shape(f))
+    f = last("drums")
+    if f:
+        problem, lamp, _page = G.drum_page(f, lay)
+        A.check("⛔ row 1's left button: the drum page", problem is None and lamp == G.LEFT[0],
+                problem or "lamp %s" % lamp)
 
     fs = window("modal-45")
     if A.check("modal-45: the grid repainted", bool(fs), "no frame in the window"):
@@ -159,7 +171,7 @@ def main():
     # the window has to have repainted first.
     fs = window("warn-ignored")
     if A.check("warn-ignored: the grid repainted", bool(fs),
-               "no frame in the window -- the beat row should be driving a repaint "
+               "no frame in the window -- the beats should be driving a repaint "
                "here, so silence means the run died rather than that the warn was "
                "ignored"):
         A.check("a warn changes nothing -- the modal is still up",
@@ -184,20 +196,20 @@ def main():
                 "expected %d everywhere, got %s"
                 % (MODAL, sorted(set(fs[-1].colors()))[:6]))
 
-    fs = window("beat-row")
-    if A.check("beat-row: the grid repainted", bool(fs),
-               "no frames -- is DSP on? the beat row hangs off threshold~"):
-        seen, strays = set(), []
-        for f in fs:
-            problem, _lamp, beat = G.home_shape(f)
-            if problem:
-                strays.append(problem)
-            if beat is not None:
-                seen.add(beat)
-        A.check("beat-row: the lit cell never leaves index %d..%d"
-                % (G.BEAT_LO, G.BEAT_HI), not strays, strays[0] if strays else "")
-        A.check("beat-row: the beat walks -- at least 4 of the 8 cells were lit",
-                len(seen) >= 4, "only saw %s" % sorted(seen))
+    # Under the layers it was the drum page, and the modal's going brings it back.
+    f = last("home-again")
+    if f:
+        problem, lamp, _page = G.drum_page(f, lay)
+        A.check("⛔ home-again: the page under the modal comes back", problem is None
+                and lamp == G.LEFT[0], problem or "lamp %s" % lamp)
+
+    # PLAY: the performance page comes up by itself, and the clock keeps it repainted.
+    fs = window("play")
+    if A.check("play: the grid repainted", bool(fs), "no frames -- is DSP on?"):
+        bad = [G.page_shape(f) for f in fs[1:]]
+        bad = [b for b in bad if b[0] or b[1] is not None]
+        A.check("⛔ play: the performance page, every lamp dim, in every frame after the first",
+                not bad and len(fs) > 1, bad[:1] or len(fs))
 
     # The arbiter's side of panic (the device's is launchpad-assert's): g_grid
     # still owns the surface, so it keeps painting. A grid that gave the surface

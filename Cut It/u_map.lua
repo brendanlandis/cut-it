@@ -1,24 +1,26 @@
--- u_map.lua -- the map's rules: the table, the lookup key's mode, the lookup, the divisor and
+-- u_map.lua -- the map's rules: the table, the lookup key's page, the lookup, the divisor and
 -- parameter pickup. Plain Lua with no Pd in it, so
 -- test/gate/lua/u_map_test.lua runs it on the Mac with lua.org's interpreter.
--- u_map-lua.pd_lua is its Pd face, and u_map.pd keeps the mode keys, the destination route and
+-- u_map-lua.pd_lua is its Pd face, and u_map.pd keeps the destination route and
 -- its handlers, the boot timers and the files pickup reads. ref/module/map.md.
 --
 -- The state is a plain table and every rule a function of it. Every rule returns what leaves,
 -- in order, as {outlet, selector, atoms}:
 --   {"route", "list", {dest, arg, value, target, live}}  to u_map.pd's destination route
---   {"store", "list", {mode}}                            the page, to u_state as an auto key
+--   {"heard", "list", {dest, arg, value}}                to u_perform: a control moved
 --   {"err", "fail", {"u_map", text}}                     to err (C-12)
 
 local R = {}
 
--- The lookup key's mode until the mode bus says otherwise: set when the state is made, not by
--- the 500 ms seed, since mother pushes knobs.txt before that (item 234).
-R.BOOT_MODE = "mode-1"
+-- The lookup key's page until the mode bus says otherwise: set when the state is made, since mother
+-- pushes knobs.txt before anything else speaks (item 234).
+R.BOOT_MODE = "perform"
 
--- The pages, mode-1 to mode-8, one per key down the Launchpad's left column, CC 80 to 10
--- (Brendan, 2026-11-04; ref/module/map.md).
-R.PAGES = 8
+-- The pages u_voices can put on the mode bus (Brendan, 2026-11-06; ref/module/voices.md). A table row
+-- names one of these, or all: a row for the page on show comes first, so a page can take a control
+-- back, as the performance page does save and revert.
+R.PAGES = { perform = true, drums = true, harmony = true, melody = true, keys = true, sound = true,
+            songs = true, diag = true }
 
 -- The Organelle's knobs: the only controls that arrive 0-1 already (mother's own scale), and
 -- the only ones pickup holds.
@@ -59,7 +61,7 @@ local function num(x)
 end
 
 -- A message as Pd's list objects see it: its selector first, unless that is list, float or
--- symbol. `mode-1` is {mode-1}, `og-knob-1 0.5` is {og-knob-1, 0.5}; a bang is {}.
+-- symbol. `drums` is {drums}, `og-knob-1 0.5` is {og-knob-1, 0.5}; a bang is {}.
 local function as_list(sel, atoms)
   if sel == "list" then return atoms end
   if sel == "float" or sel == "symbol" then return { atoms[1] } end
@@ -70,9 +72,9 @@ local function as_list(sel, atoms)
 end
 
 -- cut-it-map.txt's text, read as `read -c` did: a line or a ; ends a row, and a row is
--- <mode> <control> <dest> <arg>. The first row for a mode and control wins, as [text search]
+-- <page> <control> <dest> <arg>. The first row for a page and control wins, as [text search]
 -- found only the first, so a duplicate is dead: map-assert's lint catches it, and a row of any
--- other width, which is skipped here. -> the table by mode and control, and the rows counted.
+-- other width, which is skipped here. -> the table by page and control, and the rows counted.
 function R.parse(text)
   local map, rows = {}, 0
   for line in (text or ""):gmatch("[^\n;]+") do
@@ -89,10 +91,25 @@ function R.parse(text)
   return map, rows
 end
 
--- Where a knob is held when nothing has been Saved (Brendan, 2026-11-04): knob 1 is tempo in
--- every mode, and stays at 120 BPM, u_tempo's own, until it is turned through where its line puts
+-- Where a knob is held when nothing has been Saved (Brendan, 2026-11-04): knob 1 is tempo on
+-- every page, and stays at 120 BPM, u_tempo's own, until it is turned through where its line puts
 -- 120. A knob not named here is live from its first value.
 R.UNSAVED = { [1] = R.tempo_position(120) }
+
+-- The row for a control on a page: the page's own, or all's. A pad on a page that has a pad-* row is
+-- that row, its number after its arg, so a page of pads is one row (h71, pad-71).
+local function lookup(map, mode, name)
+  local page, all = map[mode], map.all
+  local row = (page and page[name]) or (all and all[name])
+  if row then return row end
+  local any = page and page["pad-*"]
+  local n = any and name:match("^pad%-(%d+)$")
+  if n then
+    return { dest = any.dest, arg = any.arg .. n }
+  end
+  return nil
+end
+R.lookup = lookup
 
 -- Rush (Brendan, 2026-11-05): a knob the table maps to it is an absolute rate over its whole turn,
 -- R.RUSH_LOW * (R.RUSH_TOP / R.RUSH_LOW) ^ x BPM, and held as knob 1 is, until turned to or through where the tempo in force
@@ -170,6 +187,11 @@ function R.pickup(st, k, value)
   return p.target, p.state == "live" and 1 or 0
 end
 
+-- Destinations that are never a voice's control.
+R.UNHEARD = { perform = true, voices = true, section = true, song = true, save = true, revert = true,
+              ["drum-page"] = true, start = true, stop = true, recover = true, diag = true,
+              ["test-mode"] = true, arrangement = true }
+
 -- A control on param: <name> <value>. The value is divided into 0-1, pickup decides whether a
 -- knob is held, and then the lookup. A mapped control leaves for its destination with its
 -- target and live flag, held or not, so c_mapped can draw a held row. An unmapped one is silent
@@ -186,7 +208,7 @@ function R.control(st, sel, atoms)
     target, live = R.pickup(st, k, value)
     target = st.knob[k].shown or target
   end
-  local row = st.map[st.mode] and st.map[st.mode][name]
+  local row = lookup(st.map, st.mode, name)
   if row then
     local curve = R.CURVES[row.dest]
     if curve then value, target = curve(value), curve(target) end
@@ -197,7 +219,7 @@ function R.control(st, sel, atoms)
         st.rushing = true
         local bpm = math.min(R.rush_bpm(value), 1000)
         for n, kk in pairs(R.KNOBS) do
-          local r = (st.map[st.mode] or {})[n]
+          local r = lookup(st.map, st.mode, n)
           if r and r.dest == "tempo" then hold_knob_1(st, kk, bpm) end
         end
       elseif row.dest == "tempo" and st.rush_knob then
@@ -210,6 +232,10 @@ function R.control(st, sel, atoms)
       end
     end
     out[#out + 1] = { "route", "list", { row.dest, row.arg, value, target, live } }
+    -- A control moved that could be taken into play, or is: u_perform hears of it.
+    if live == 1 and not R.UNHEARD[row.dest] and not (type(row.arg) == "string" and row.arg:match("^[hm]%d%d$")) then
+      out[#out + 1] = { "heard", "list", { row.dest, row.arg, value } }
+    end
     return out
   end
   return {}
@@ -224,9 +250,8 @@ end
 function R.hold_tempo(st, sel, atoms)
   local bpm = as_list(sel, atoms)[1]
   if type(bpm) ~= "number" then return {} end
-  local page = st.map[st.mode] or {}
   for name, k in pairs(R.KNOBS) do
-    local row = page[name]
+    local row = lookup(st.map, st.mode, name)
     if row and row.dest == "tempo" then
       hold_knob_1(st, k, bpm)
     elseif row and row.dest == "rush" then
@@ -237,24 +262,17 @@ function R.hold_tempo(st, sel, atoms)
   return {}
 end
 
--- A page's name, mode-1 to mode-<R.PAGES>, or nil for anything else.
+-- A page's name, or nil for anything else.
 function R.page(x)
-  local n = type(x) == "string" and x:match("^mode%-(%d+)$")
-  n = n and tonumber(n)
-  if n and n >= 1 and n <= R.PAGES then return x end
-  return nil
+  return R.PAGES[x] and x or nil
 end
 
--- The mode bus: one atom, the page. Anything else is refused, and the atom must name a page:
--- a saved `compose` with its name missing once became the key, and every control missed (item
--- 294). The store gets only what the key took, so a bad mode is never saved to come back after
--- a power cycle (item 297). A mode the old code saved, <class> <page>, comes back as its page
--- alone: u_map.pd's restore drops the class before the bus.
+-- The mode bus: one atom, the page. Anything else is refused, and the atom must name a page.
 function R.mode(st, sel, atoms)
   local m = as_list(sel, atoms)
   if #m ~= 1 or not R.page(m[1]) then return { R.fail("bad-mode") } end
   st.mode = m[1]
-  return { { "store", "list", { m[1] } } }
+  return {}
 end
 
 -- What u_map.pd itself sends: the load, the boot window shutting at 1000 ms, and every knob

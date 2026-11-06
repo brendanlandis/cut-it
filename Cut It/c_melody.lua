@@ -233,8 +233,9 @@ local function num(x)
   return math.tointeger(x) or x
 end
 
-function R.new(rand)
-  local st = { rand = rand or math.random, pos = 0, hist = {}, running = false,
+function R.new(rand, engine)
+  local st = { rand = rand or math.random, engine = engine or 1, fixed = {}, pos = 0, hist = {},
+               running = false,
                note = {}, vel = {}, gate = {}, pin = {}, target = {}, flag = {}, disp = {},
                slot = {}, slot_start = {}, slot_pin = {}, slot_deg = {}, slot_shape = {},
                last = 16, bar = 0, ch_pos = 0, sounding = {}, pressed = {}, where = {}, to_roll = {}, to_roll_m = {}, dirty = false }
@@ -536,8 +537,8 @@ end
 -- What each Pd voice should be: its wave, or off when its part is elsewhere.
 local function waves(st, out)
   local m, h = st["voice-m"], st["voice-h"]
-  out[#out + 1] = { "mono", "list", { R.MONO_M, m >= R.FIRST_PD and m - R.FIRST_PD or -1 } }
-  out[#out + 1] = { "mono", "list", { R.MONO_H[1], h >= R.FIRST_PD and h - R.FIRST_PD or -1 } }
+  out[#out + 1] = { "mono", "list", { R.MONO_M, (m >= R.FIRST_PD and not st.off_m) and m - R.FIRST_PD or -1 } }
+  out[#out + 1] = { "mono", "list", { R.MONO_H[1], (h >= R.FIRST_PD and not st.off_h) and h - R.FIRST_PD or -1 } }
   return out
 end
 
@@ -562,7 +563,7 @@ end
 local function chord_step(st, pos, out)
   if pos == 1 or st.bar == 0 then st.bar = st.bar % st.span + 1 end
   local t = ((st.bar - 1) * st.last + pos - 1) % math.max(1, st.total)
-  if st["on-h"] == 0 then
+  if st["on-h"] == 0 or st.off_h then
     if #st.sounding > 0 and not st.audition then change_to(st, {}, out) end
     if st.ch_pos ~= 0 then st.ch_pos, st.show = 0, true end
     return t
@@ -885,10 +886,11 @@ function R.step(st, atoms)
   if seen then return sound(seen, ms, {}) end
   local out = {}
   local here = chord_step(st, pos, out)
+  st.here_t = here
   st.pos = st.pos % st.loop + 1
   local i = st.pos
   local e = { n = 0, v = 0, len = 0, to = melody_to(st) }
-  if st.notes > 0 and st["on-m"] == 1 then
+  if st.notes > 0 and st["on-m"] == 1 and not st.off_m then
     local free = 1 - st.lock / 100
     if st.note[i] == R.UNROLLED or (st.pin[i] == 0 and st.rand() < free * free) then roll(st, i) end
     if st.note[i] > 0 then
@@ -969,6 +971,7 @@ function R.restore(st, atoms)
     st.plan_due = true
   end
   st.pos, st.ch_pos, st.bar, st.dirty = 0, 0, 0, false
+  for name, v in pairs(st.fixed) do st[name] = v end
   tune(st)
   rescale(st)
   -- A section with empty slots has them rolled, so the phone has chords to show, without marking it changed.
@@ -1346,9 +1349,147 @@ local function flip_style(st, atoms)
   return out
 end
 
+-- What the voices say this engine plays (Brendan, 2026-11-06): assign <engine> <h or m> <machine or
+-- off>. A section's own word for the machine is overruled: a voice's machine is the song's.
+local function assign_line(st, a)
+  if num(a[1]) ~= st.engine then return {} end
+  local line, machine = a[2], a[3]
+  local name = line == "h" and "voice-h" or "voice-m"
+  local off = machine == "off"
+  local out = {}
+  if line == "h" then st.off_h = off else st.off_m = off end
+  if off then
+    st.fixed[name] = nil
+    if line == "h" and not st.audition then change_to(st, {}, out) end
+    waves(st, out)
+    return out
+  end
+  for i, v in ipairs(R.VOICES) do
+    if v == machine then
+      st.fixed[name] = i
+      if st[name] ~= i then
+        st[name] = i
+        waves(st, out)
+        if line == "h" and #st.sounding > 0 then change_to(st, st.sounding, out) end
+      else
+        waves(st, out)
+      end
+    end
+  end
+  return out
+end
+
+-- The melody page's pitch pads, low to high, as g_grid.lua's R.pitches has them.
+local function pitches(st)
+  local at = st.tonic
+  while at < 44 do at = at + 12 end
+  local order = {}
+  for d = 1, 7 do order[d] = (st.scale[d] - st.tonic) % 12 end
+  table.sort(order)
+  local out, k, n = {}, 0, at
+  while k < 32 do
+    for d = 1, 7 do
+      k = k + 1
+      out[k] = n + order[d]
+      if k == 32 then break end
+    end
+    n = n + 12
+  end
+  return out
+end
+R.pitches = pitches
+
+-- What a finger holds on the Launchpad's two pages, for g_grid.
+local function held(st, out)
+  out[#out + 1] = { "held", "held", { st.audition or 0, st.held_step or 0, st.held_note or 0 } }
+  return out
+end
+
+-- A pad on the harmony page: h<row><column> <1 or 0>. On the top row a chord: held, it sounds, the
+-- nanoKEY writes it and roll rolls just it. Below, the rhythm: pressing a step with a chord held
+-- moves it there; a step a chord starts on holds that chord.
+local function pad_h(st, nn, down)
+  local r, c = nn // 10, nn % 10
+  if r < 1 or r > 8 or c < 1 or c > 8 then return { R.fail("bad-pad") } end
+  local out
+  if r == 8 then
+    if c > st.chords then return {} end
+    out = audition(st, { c, down })
+    st.held_from = down > 0 and c or nil
+    st.show = true
+    return held(st, out)
+  end
+  local t = (st.here_t or -1) >= 0 and st.here_t // 56 * 56 or 0
+  t = t + (7 - r) * 8 + c - 1
+  if t >= st.total then return {} end
+  if down > 0 then
+    if st.audition then
+      out = move(st, { st.audition, t })
+      st.show = true
+      return out
+    end
+    for i = 1, st.chords do
+      if st.slot_start[i] == t then
+        out = audition(st, { i, 1 })
+        st.step_chord = i
+        return held(st, out)
+      end
+    end
+    return {}
+  end
+  if st.step_chord then
+    out = audition(st, { st.step_chord, 0 })
+    st.step_chord = nil
+    return held(st, out)
+  end
+  return {}
+end
+
+-- A pad on the melody page: m<row><column> <1 or 0>. The top four rows are its steps: held, a step's
+-- pitch comes from the pads below, and tapped alone it turns on or off. The bottom four are the mode's
+-- notes: with a step held they set its pitch, alone they sound.
+local function pad_m(st, nn, down)
+  local r, c = nn // 10, nn % 10
+  if r < 1 or r > 8 or c < 1 or c > 8 then return { R.fail("bad-pad") } end
+  local out = {}
+  if r >= 5 then
+    local s = (8 - r) * 8 + c
+    if down > 0 then
+      if s > st.loop then return {} end
+      st.held_step, st.step_used = s, false
+    elseif st.held_step == s then
+      if not st.step_used then
+        if st.note[s] > 0 then
+          out = note_rest(st, { s })
+        else
+          local n = st.target[s] and math.floor(st.target[s]) or st.center
+          out = note_set(st, { s, n })
+        end
+      end
+      st.held_step = nil
+    end
+    return held(st, out)
+  end
+  local n = pitches(st)[(r - 1) * 8 + c]
+  if down > 0 then
+    st.held_note = n
+    if st.held_step then
+      st.step_used = true
+      out = note_set(st, { st.held_step, n })
+    else
+      out = note_hear(st, { n, 1 })
+    end
+  else
+    st.held_note = nil
+    if not st.held_step then out = note_hear(st, { n, 0 }) end
+  end
+  return held(st, out)
+end
+
 R.inputs = {
   list = function(st, a) return R.key(st, a[1], a[2]) end,
   step = R.step,
+  assign = assign_line,
   set = set,
   audition = audition,
   move = move,
@@ -1368,6 +1509,13 @@ R.inputs = {
   ["on-m"] = toggle("on-m"),
 }
 R.inputs.arrive, R.inputs.octave = control("arrive"), control("octave")
+for row = 1, 8 do
+  for col = 1, 8 do
+    local nn = row * 10 + col
+    R.inputs["h" .. nn] = function(st, a) return pad_h(st, nn, num(a[1])) end
+    R.inputs["m" .. nn] = function(st, a) return pad_m(st, nn, num(a[1])) end
+  end
+end
 for _, name in ipairs(R.ORDER) do
   if not R.inputs[name] and name ~= "voice-h" and name ~= "voice-m" and name ~= "key"
      and name ~= "mode" and name ~= "total" then
@@ -1389,6 +1537,7 @@ local function stop(st)
   change_to(st, {}, out)
   start(st)
   st.running = false
+  st.here_t = -1
   out[#out + 1] = { "here", "here", { -1, -1 } }
   return out
 end

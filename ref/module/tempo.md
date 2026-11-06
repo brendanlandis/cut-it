@@ -19,9 +19,8 @@ global `clock` is its clock**; that instance is the grid's, and the next consume
 `disp` and `err`, and out of **two** MIDI ports — port 1 carries the clock and the transport, and
 port 4 takes `panic`'s STOP alone. **Port 3 gets nothing**: it was the SP-404's, which left the rig
 on 2026-11-04 (Brendan). **Its inlet takes what sets the tempo from a pad or a screen** — `tap`,
-from `u_map`'s tap pad on page 1, `rush <x> <live>`, knob 4, from its `rush` destination, `tempo <bpm>`, the phone's, from `u_net`, and `fast <1 or 0>`, the
-500 BPM repeat, from `c_steps` — and writes the bus itself; **its outlets** hand the master BPM, clamped, to `u_net` for the phone, `tap` to
-`g_grid` to flash the pad, and the BPM a tap or the phone set to `u_map`, which holds knob 1 there
+from `u_map`'s tap button, the nanoKONTROL's LOOP, `rush <x> <live>`, knob 4, from its `rush` destination, `tempo <bpm>`, the phone's, from `u_net`, and `fast <1 or 0>`, the
+500 BPM repeat, from `c_steps` — and writes the bus itself; **its outlets** hand the master BPM, clamped, to `u_net` for the phone, and the BPM a tap or the phone set to `u_map`, which holds knob 1 there
 (Brendan, 2026-11-04). The tap's rules are Lua, `u_tempo.lua`; the
 timer between taps, the clock and the transport are Pd. **The tempo is a part of every section of
 the song** ([songs.md](songs.md)): `u_tempo` puts every BPM the bus carries with the section policy,
@@ -79,20 +78,19 @@ at 60.
 | The port | Set into `[midiout]`'s **cold inlet at load**, `u_init`'s proven pattern. A nonexistent port is silently dropped, so a port the Mac lacks costs nothing and prints nothing | verified | 63 |
 
 The control range and the legal range are **different decisions**, and the legal one is wider at both
-ends so a test, a tap tempo or an LFO is not limited by what one knob chose. The tap pad and the
+ends so a test, a tap tempo or an LFO is not limited by what one knob chose. The tap button and the
 phone use the legal range, and keep to it before anything reaches the bus.
 
 ### Tap tempo, and the phone's tempo
 
 | | | Evidence |
 |---|---|---|
-| The tap pad | Page 1's cell 21, the second row's first pad, above the beat row's first (Brendan, 2026-11-04): `mode-1 pad-21 arrangement 21` in the map, and `21 tap` in `cut-it-arrangement-page.txt`, which `g_grid` paints from and `u_map` reads to know what a press means ([map.md](map.md), [display.md](display.md)). A press sends `tap` to `u_tempo`; a release nothing | unknown |
+| The tap button | The nanoKONTROL's LOOP, on every page (Brendan, 2026-11-06): `all xport-4 arrangement 21` in the map, and `21 tap` in `cut-it-arrangement-page.txt`, which `u_map` reads to know what a press means ([map.md](map.md)). A press sends `tap` to `u_tempo`'s inlet; it has no release | unknown |
 | A tap | `[timer]` measures the interval since the last, and `u_tempo.lua` takes it. The first tap after load, or one **two seconds** or more after the last, starts the count and sets nothing; every tap after it sets the tempo from the average of the last **four** intervals, whole BPM, clamped to 5–600 (Brendan, 2026-11-04) | unknown |
 | Two taps in one instant | Count nothing, and keep the count | unknown |
-| The flash | Every tap, the first included, lights the pad full for 120 ms; it sits dim otherwise | unknown |
 | The phone's `tempo <bpm>` | Whole BPM within 5–1000 on the bus; anything but a number is `fail u_tempo bad-tempo` and sets nothing. It leaves a count of taps alone | unknown |
 | Outlet 1 | Every BPM the bus carries, clamped, from `$0-bpm`: knob 1's, a tap's, the phone's, a Send line's. `u_net` sends it to the phone as `/cutit/tempo`, the tempo's only display at rest (*Design*) | unknown |
-| On page 2 | Cell 21 is a drum pad, and taps there set nothing: the map's row is page 1's alone | unknown |
+| On the drum page | Cell 21 is a drum pad, and presses there set nothing | unknown |
 | Outlet 4 | `rush <0-1>`, how far knob 4 is past the handoff, `rush-back <bpm>`, the knob back below it, and `rush-off`, something else set the tempo: to `c_steps`'s inlet (*Knob 4 races the tempo*) | unknown |
 | Knob 1 | **Held at the new tempo after a tap or the phone moves it**, until it is turned to or through that tempo (Brendan, 2026-11-04): until then a turn moves nothing and its row reads the tempo in force with the knob's own in brackets, `bpm 150 (128)`. Outlet 3 carries the BPM to `u_map`, whose pickup arms the knob at where its line puts it (*Design*). A tempo past the knob's 40 to 250 holds it at the nearer end of its turn, released by reaching that end, and its row reads the tempo all the same | unknown |
 | Outlet 3 | The BPM a tap, the phone, a section or the 500 BPM repeat set, whole and clamped, after the Lua and before the bus: to `u_map`'s inlet. Knob 1's own tempo, a Send line's and the fallback 120 do not come out of it | unknown |
@@ -249,9 +247,9 @@ the question is not reopened.
 
 ### Tap tempo is `u_tempo`'s, in Lua
 
-**The tempo's owner takes the taps**, the way it takes the bus: a pad's taps mean a tempo, and only
-`u_tempo` holds the legal range and writes what follows. `u_map` says which pad taps, from a layout
-file `g_grid` paints from, as the synth pads do; `u_tempo` turns the taps into a BPM. **The
+**The tempo's owner takes the taps**, the way it takes the bus: a button's taps mean a tempo, and only
+`u_tempo` holds the legal range and writes what follows. `u_map` says which control taps, from a layout
+file; `u_tempo` turns the taps into a BPM. **The
 arithmetic is Lua** — the last four intervals, a gap that starts over, the clamp — a dozen lines
 tested without Pd, where Pd would need a list kept by hand; a tap is a few a second, so the 0.1 ms a
 call costs on the Organelle is nothing. The interval stays Pd, a `[timer]` on logical time, so the

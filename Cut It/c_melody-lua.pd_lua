@@ -1,4 +1,4 @@
--- c_melody-lua -- c_melody.lua's Pd face, made inside c_melody.pd as [c_melody-lua]. It turns
+-- c_melody-lua -- c_melody.lua's Pd face, made inside c_melody.pd as [c_melody-lua <engine>]. It turns
 -- messages into calls on the rules and the rules' answers into outlets, and nothing else.
 --
 -- inlet 1: <note> <velocity> from m_nanokey, <control> <0-1>, the roll pads and the home pad from u_map, and
@@ -9,14 +9,18 @@
 -- outlet 6: melody <what the phone shows>, to u_net. outlet 7: <3 or 4> <wave, or -1 for off>, to the
 -- Pd voices, c_mono: 3 the melody's, 4 the chords' four. outlet 8: a bang to start the transport.
 -- outlet 9: here <step> <melody step>, the loops' places, to u_net. outlet 10: notes <what the melody grid
--- shows>, to u_net, at most every NOTES_EVERY ms. outlet 11: <chords on> <melody on>, to g_grid's pads.
+-- shows>, to u_net, at most every NOTES_EVERY ms. outlet 11: held <chord> <step> <note>, to g_grid.
+--
+-- There are as many of these as u_voices.lua's R.ENGINES. Only the one whose voice is on show hears the
+-- Launchpad, the phone and the nanoKEY, and speaks to them; a message e<n>-<name>, from u_perform, is for
+-- engine n, on show or not.
 
 local MelodyLua = pd.Class:new():register("c_melody-lua")
 local Clock = pd.Clock
 
 local R = dofile(MelodyLua._loadpath .. "c_melody.lua")
 
-local OUTLET = { play = 1, save = 2, err = 3, disp = 5, mono = 7, start = 8, here = 9 }
+local OUTLET = { play = 1, save = 2, err = 3, disp = 5, mono = 7, start = 8, here = 9, held = 11 }
 
 local F = dofile(MelodyLua._loadpath .. "lua-face.lua")
 F.carry(MelodyLua, R, OUTLET, 2, 4)
@@ -29,9 +33,12 @@ local ROLL_EVERY = 12
 -- The melody grid is 73 numbers, and at a low lock changes on every step, so it goes at most this often.
 local NOTES_EVERY = 250
 
-function MelodyLua:initialize()
+function MelodyLua:initialize(_, atoms)
   self.inlets, self.outlets = 2, 11
-  self.state = R.new()
+  self.engine = type(atoms[1]) == "number" and math.floor(atoms[1]) or 1
+  self.part = self.engine == 1 and "melody" or ("melody-" .. self.engine)
+  self.active = self.engine == 1
+  self.state = R.new(nil, self.engine)
   return true
 end
 
@@ -48,13 +55,18 @@ function MelodyLua:finalize()
 end
 
 function MelodyLua:hold(e)
-  if e[1] == "save" and self.holding then
-    if not self.save_held then
-      self.save_held = true
-      self.save_clock:delay(SAVE_EVERY)
+  if e[1] == "save" then
+    if self.holding then
+      if not self.save_held then
+        self.save_held = true
+        self.save_clock:delay(SAVE_EVERY)
+      end
+    else
+      self:outlet(2, self.part, e[3])
     end
     return true
   end
+  if (e[1] == "here" or e[1] == "disp" or e[1] == "held") and not self.active then return true end
   return false
 end
 
@@ -62,7 +74,7 @@ function MelodyLua:save_now()
   self.save_held = false
   self.save_clock:unset()
   local ok, e = pcall(R.save, self.state)
-  if ok then self:outlet(2, e[2], e[3]) end
+  if ok then self:outlet(2, self.part, e[3]) end
 end
 
 function MelodyLua:roll_due()
@@ -90,6 +102,10 @@ function MelodyLua:answered()
     self.rolling = true
     self.roll_clock:delay(ROLL_EVERY)
   end
+  if not self.active then
+    self.state.show, self.state.show_notes = false, false
+    return
+  end
   if self.state.show_notes and not self.notes_waiting then
     self.notes_waiting = true
     self.notes_clock:delay(self.notes_sent and NOTES_EVERY or 20)
@@ -100,11 +116,6 @@ function MelodyLua:answered()
   self.state.show = false
   local ok, now = pcall(R.phone, self.state)
   if not ok then return end
-  local lamps = self.state["on-h"] .. " " .. self.state["on-m"]
-  if lamps ~= self.lamps_sent then
-    self.lamps_sent = lamps
-    self:outlet(11, "list", { self.state["on-h"], self.state["on-m"] })
-  end
   local key = table.concat(now, " ")
   if key ~= self.phone_sent then
     self.phone_sent = key
@@ -113,7 +124,25 @@ function MelodyLua:answered()
 end
 
 function MelodyLua:in_1(sel, atoms)
-  if sel ~= "step" then self.state.show = true end
+  if sel == "active" then
+    local now = atoms[1] == self.engine
+    if now and not self.active then
+      self.phone_sent, self.state.show, self.state.show_notes = nil, true, true
+    end
+    self.active = now
+    if now then self:answered() end
+    return
+  end
+  if sel ~= "step" and sel ~= "assign" then
+    local e, name = tostring(sel):match("^e(%d+)%-(.+)$")
+    if e then
+      if tonumber(e) ~= self.engine then return end
+      sel = name
+    elseif not self.active then
+      return
+    end
+    self.state.show = true
+  end
   self.holding = true
   self:answer(sel, R.inputs[sel], self.state, atoms)
   self.holding = false

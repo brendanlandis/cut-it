@@ -1,5 +1,5 @@
 -- u_tempo.lua -- what reaches u_tempo's inlet and becomes the master BPM: tap tempo, from the
--- Launchpad's tap pad on page 1, and the phone's tempo, from the arrangement screen. Plain Lua
+-- nanoKONTROL's LOOP, by way of the map, and the phone's tempo, from the arrangement screen. Plain Lua
 -- with no Pd in it, so test/gate/lua/u_tempo_test.lua runs it on the Mac with lua.org's
 -- interpreter. u_tempo-lua.pd_lua is its Pd face, and u_tempo.pd keeps the timer between taps,
 -- the clock and the transport. ref/module/tempo.md.

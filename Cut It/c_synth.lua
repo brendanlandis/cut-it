@@ -10,7 +10,7 @@
 -- {outlet, selector, atoms}:
 --   {"fm" | "strings", "note", {note, velocity}}   to that synth's device layer, 0 a release
 --   {"fm" | "strings", "program", {n}}             to that synth's device layer: its sound
---   {"choice", "synth", {choice}}                  to u_net (the phone) and g_grid (the pads)
+--   {"choice", "synth", {choice}}                  to u_net (the phone)
 --   {"phone", "velocity", {"on" | "off"}}          to u_net (the phone) alone
 --   {"save", "synth" | "velocity" | "programs", {value...}}
 --                                                  to the state bus, put section <key>
@@ -56,7 +56,7 @@ function R.new()
            programs = { fm = R.NONE, strings = R.NONE } }
 end
 
--- The choice, out to the phone and the pads, and to u_state.
+-- The choice, out to the phone, and to the song store.
 local function tell(st)
   return { { "choice", "synth", { st.choice } }, { "save", "synth", { st.choice } } }
 end
@@ -96,9 +96,8 @@ function R.set_velocity(st, atoms)
   return tell_velocity(st)
 end
 
--- synth <choice> [<value>], from the map (a page-3 pad) and from the phone. A value of 0 is a
--- release and does nothing; the map passes only presses, and the phone sends none. The same
--- choice again changes nothing and says nothing.
+-- synth <choice> [<value>], from the phone. A value of 0 is a release and does nothing, and the
+-- phone sends none. The same choice again changes nothing and says nothing.
 function R.choose(st, atoms)
   local choice = atoms[1]
   if atoms[2] ~= nil and num(atoms[2]) == 0 then return {} end
@@ -106,6 +105,16 @@ function R.choose(st, atoms)
   if choice == st.choice then return {} end
   st.choice = choice
   return tell(st)
+end
+
+-- machine <choice>, from u_voices: the voice on show's machine, which the nanoKEY plays. The phone
+-- hears, and it isn't put: looking at a voice's page changes nothing in the song.
+function R.machine(st, atoms)
+  local choice = atoms[1]
+  if not KNOWN[choice] then return { R.fail("bad-synth") } end
+  if choice == st.choice then return {} end
+  st.choice = choice
+  return { { "choice", "synth", { choice } } }
 end
 
 -- A section's restore of synth: the choice saved, put straight back (ref/module/state.md). One
@@ -149,8 +158,7 @@ function R.restore_programs(st, atoms)
   return out
 end
 
--- At load: the choice, the velocity switch and the programs, so the pads and the phone show
--- them before anything is pressed and the section playing holds them from the start.
+-- At load: the choice, the velocity switch and the programs, so the phone shows them before anything is pressed and the section playing holds them from the start.
 function R.boot(st)
   local out = tell(st)
   for _, e in ipairs(tell_velocity(st)) do out[#out + 1] = e end
@@ -158,12 +166,13 @@ function R.boot(st)
   return out
 end
 
--- What reaches the inlet: a key from m_nanokey, synth <choice> from u_map or u_net, or
+-- What reaches the inlet: a key from m_nanokey, machine <choice> from u_voices, synth <choice> or
 -- velocity <on or off> from u_net.
 R.inputs = {
   list = function(st, a) return R.key(st, a[1], a[2]) end,
   float = function(st, a) return R.key(st, a[1], 0) end,
   synth = function(st, a) return R.choose(st, a) end,
+  machine = function(st, a) return R.machine(st, a) end,
   velocity = function(st, a) return R.set_velocity(st, a) end,
 }
 

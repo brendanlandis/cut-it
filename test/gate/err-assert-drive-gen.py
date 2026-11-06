@@ -8,7 +8,7 @@ symptom would be a venue.
 
 Each page window chooses a page and raises a warn in it; the fail after it does
 not choose again, testing the state the choice left. One window puts the old
-two-atom shape on the bus, `perform mode-6`, which is what used to hide a warn:
+two-atom shape on the bus, `perform drums`, which is what used to hide a warn:
 the old filter fails it, where a gate that only sent today's one-atom pages
 would have passed the old code.
 
@@ -28,26 +28,26 @@ SEQ = [
 
     # --- page 1 ------------------------------------------------------------
     (5000, "PAGE-1-WARN",
-     ["\\; mode mode-1", "\\; err warn u_gate page-1-warn"], GAP),
+     ["\\; mode perform", "\\; err warn u_gate page-1-warn"], GAP),
     (5700, "PAGE-1-FAIL", ["\\; err fail u_gate page-1-fail"], GAP),
 
-    # --- page 4, once a perform page ----------------------------------------
+    # --- another page ------------------------------------------------------
     (6400, "PAGE-4-WARN",
-     ["\\; mode mode-4", "\\; err warn u_gate page-4-warn"], GAP),
-    # Still on page 4: the page is not chosen again.
+     ["\\; mode songs", "\\; err warn u_gate page-4-warn"], GAP),
+    # Still on it: the page is not chosen again.
     (7100, "PAGE-4-FAIL", ["\\; err fail u_gate page-4-fail"], GAP),
 
     # --- the old shape, which the old filter read as perform ---------------
     # u_map refuses it as bad-mode, which is drawn too: the checks read
     # u_gate's own alerts.
     (7800, "OLD-PERFORM",
-     ["\\; mode perform mode-6", "\\; err warn u_gate old-perform"], GAP),
+     ["\\; mode perform drums", "\\; err warn u_gate old-perform"], GAP),
 
     # --- info: logged and never drawn -------------------------------------
     # info-witness is a warn that must draw in the same window, so "info drew
     # nothing" cannot be satisfied by a dead display.
     (8500, "INFO",
-     ["\\; mode mode-3", "\\; err warn u_gate info-witness",
+     ["\\; mode harmony", "\\; err warn u_gate info-witness",
       "\\; err info u_gate info-quiet"], GAP),
 
     # --- a level that is none of the three ---------------------------------

@@ -10,10 +10,11 @@ it — is in Reference: `~/Sites/!reference/touchosc.md`; what was measured with
 
 **The phone controls the Launchpad's current page, and the OLED is not copied to it** (Brendan,
 2026-11-04). The OLED has the alerts and warnings, the levels and the name of a control as it
-moves; the phone has a page for each of the Launchpad's eight, and shows the one the Launchpad is
-on: page 1's global controls (the tempo, which lives on the phone alone, the time signature, the
-global last step, the swing and the drunkenness), page 2's drum screen, page 3's generator and
-keyboard, page 7's sections, page 8's songs, and a blank page under its tab for each of the rest.
+moves; the phone shows what the page on the `mode` bus asks for: `perform`, page 1's global controls (the tempo, which
+lives on the phone alone, the time signature, the global last step, the swing and the drunkenness); `drums`, page 2's
+drum screen; `harmony`, `melody`, `keys` and `sound`, page 3's generator and keyboard; `songs`, page 8's songs; and
+`diag`, the checklist page, where Setup goes. Page 7's sections has no name on the bus, and pages 4 to 6 are blank
+under their tabs. **The TouchOSC layout is the fallback** (`cut-it/cut-it-app`), and the app has voices' pages of its own.
 Each page has tabs of its own: one each, but the synths page's four, harmony, rhythm, melody and
 keyboard, the sections page's two, its sections and the name tab, and the songs page's three, its
 songs, its setlists and the name tab (Brendan, 2026-11-05). It
@@ -115,6 +116,8 @@ button.
 | `sections` | The sections page and its name tab, passed on whole out `u_net`'s fourth outlet to `u_song`, which refuses one it does not know as `fail u_song bad-selector` ([songs.md](../module/songs.md)). The five below are answered `ack sections <action>`, a button's flash; `select`, `page` and `length` are not, since the state shows them | unknown | — |
 | `songs` | The songs page, its setlists tab and its name tab, passed on out the same fourth outlet with `songs` kept in front, so `u_song` tells them from the sections page's, and refuses one it does not know as `fail u_song bad-selector`. The ten below are answered `ack songs <action>`; `select`, `page`, `entry`, `set` and `starts` are not, since the state shows them | unknown | — |
 | `melody` | The harmony, rhythm and melody tabs, passed on whole out `u_net`'s fifth outlet to `c_melody`, which refuses one it does not know as `fail c_melody bad-selector`: `set <control> <value>`, `audition <slot> <1 or 0>`, `move <slot> <start>`, and `roll-chords`, `roll-melody`, `roll-rhythm`, `on-h`, `on-m`, `style` and `bass`, each with a 1 ([synths.md](../module/synths.md), *The generator*). Not answered: the state shows them | unknown | — |
+| `voices` | The app's rails and voice page, passed on out `u_net`'s sixth outlet to `u_voices` ([voices.md](../module/voices.md)) | unknown | — |
+| `perform` | The app's performance page, passed on out `u_net`'s seventh outlet to `u_perform` ([voices.md](../module/voices.md)) | unknown | — |
 
 `re-wire`, `clear-alert` and `test-note` went with the remote screen (Brendan, 2026-11-04), and
 `phone-assert` sends each and requires it to reach nothing: no answer, no bus, no outlet. The
@@ -210,7 +213,7 @@ checks the switch asks for exactly these.
 | Property | Value | Evidence | Item |
 |----------|-------|----------|------|
 | `hb` | Sent **unconditionally at 2 Hz**, and at once on a flip of test mode | verified | — |
-| The state | `mode`, `drums`, `synth`, `velocity`, `tempo`, `sections` and `songs` go again on every heartbeat **on top of** their sends on change | unknown | — |
+| The state | `mode`, `drums`, `synth`, `velocity`, `tempo`, `sections`, `songs`, `voices` and `perform` go again on every heartbeat **on top of** their sends on change | unknown | — |
 | Late or returning phone | Repopulates within half a second with nothing moving | unknown | — |
 | `tempo` | Coalesced into **one slot** at 20 Hz: `u_tempo` hands on every BPM the tempo bus carries, and one sweep of knob 1 is some 200 a second. `phone-assert` sweeps 401 and requires at most ~60 datagrams and the last BPM | unknown | — |
 | Socket recovery | `u_net` rebuilds within about five seconds of the phone coming back, nothing touched on the instrument | verified | 119 |
@@ -231,7 +234,7 @@ and every text and control at **WCAG AA**, which `touchosc-assert` audits from t
 |---|---|---|
 | The pages | An outer pager, one page per Launchpad page and the checklist page last, each holding a pager of its own whose tabs are that page's (Brendan, 2026-11-04: "Each page will potentially have more than one tab"); one tab each, named for the page: arrangement, drums, page 4 … page 6; the synths page's four, harmony, rhythm, melody and keyboard, the sections page's two, sections and name, and the songs page's three, songs, setlists and name (Brendan, 2026-11-05). The root's script turns the outer pager to the page `/cutit/mode` names, a mode off the eight to page 1, and hides its tab bar at `init`, so the phone shows the page's own tabs. The phone never turns the Launchpad's page | unknown |
 | In the editor | The outer pager's tab bar is on in the file, and no control is hidden, so TouchOSC's editor, where no script runs, reaches every page by its tab ([tools/README.md](../../tools/README.md), *Working on the layout*). `touchosc-assert` holds both: before 2026-11-04 the drum and synths screens were groups a script showed, and Brendan could not open them to edit | unknown |
-| Test mode | Coming on, the outer pager turns to the checklist page, under a tab bar of its own; going off turns it back to the Launchpad's page (Brendan, 2026-11-04). A mode chosen on the Launchpad turns it off, so the mode's page is what shows next. A flip sends a heartbeat at once, so the page turns with the tap rather than at the next of the 2 Hz beats | unknown |
+| Test mode | Coming on, the outer pager turns to the checklist page, under a tab bar of its own; going off turns it back to the Launchpad's page (Brendan, 2026-11-04). A page chosen on the Launchpad turns it off, so that page is what shows next. A flip sends a heartbeat at once, so the page turns with the tap rather than at the next of the 2 Hz beats | unknown |
 | The grid | Every control on a page sits on TouchOSC's 20-point editor grid, so one moved in the editor snaps to where a build puts it (Brendan, 2026-11-04). ⛔ The editor anchors its grid at the document's center, not its corner, so on a page, under the editor's two tab bars, its lines run at x 8 and y 7 plus whole steps (`build.py`'s `OX` and `OY`, worked out from the screen's size). A page is a left panel 300 wide and a right panel of two 240-point columns, a step apart, from 28 to 848 across, clear of the notch, and 27 to 327 down. ⛔ **One exception, the drum screen's pads and their M and S** (Brendan, 2026-11-05, his pick of three mockups): an M and an S under each pad don't fit four rows of 20-point steps, so that panel alone steps by 10, from 17 to 327: it starts 10 points into the top margin and ends on the bottom one, since the page's frame is 334 points tall and 10 lower would cut the last row of M and S; `touchosc-assert` names those 112 controls one by one and holds every other control to the grid. ⛔ **A second, the harmony tab's words, radios and two knobs** (2026-11-05): a chord box holds three lines in four steps, twelve keys, nine modes and five voices divide their widths into whole segments, and four knobs across fourteen steps leave two on a half step; named one by one too. A control's name is a caption a step tall, gray, flush left just above it; values and button words are centered in their controls; a lamp and its words share the bottom row, the link's in the same place on every page. `touchosc-assert` holds the grid, the margins and the captions | verified |
 | The arrangement screen, page 1 | Left: the tempo, large and red, a box dragged up and down a BPM at a time, 5 to 1000, about 7 points a BPM (Brendan, 2026-11-04: "Tempo should live on phone only, and should be editable on the phone as well"); under it a tap button: the phone times the taps itself as the finger lands, since WiFi delivers unevenly, by `u_tempo.lua`'s own rules (read from it at build time), and sends the tempo they make as the box does; playing or stopped with its lamp; the link. Right: the time signature as [n] / [d], each box dragged a step at a time (Brendan, 2026-11-04), about 21 points a step for the top number's 32, 24 for the bottom's 5; the global last step, a box beside it from 1 to as far as the time signature lets the last step reach, 24 at 3/4 and 32 at 4/4, which the root tells it from the state's top number before it hands it the step; ring knobs for the swing, 50% to 75%, read from `c_steps.lua`'s range at build time, and the drunkenness. Knob 1, the tap pad and knobs 2 and 4 keep working, and the phone shows the value whichever set it | unknown |
 | The drum screen, page 2 | What is per track (Brendan, 2026-11-04): the sixteen pads as the Launchpad lays them out, pad 1 at the bottom left, read from `cut-it-drum-page.txt`, each showing its track's number, lit when selected. A radio, TouchOSC's own, chooses which number every pad shows (Brendan, 2026-11-05): volume in dB (`-6`, `0`, `+3`), pitch in semitones (`-12` to `+12`), last step, red following the global one and teal with a dot (• 5) with its own, or randomness (`40%`). A tap on a pad selects its track; a drag up or down changes the number showing for that pad's track, a step every 20 points from where the finger lands, a step of randomness five, a last step no further than the time signature lets it reach (*The rows of steps*, [sequencer.md](../module/sequencer.md)), and sends it as it stands. Under each pad its track's mute and solo, M and S (Brendan, 2026-11-05): the pads 60 wide and 50 tall, M and S 30 by 20 each directly under their pad, M red and S teal, 10 points between, lit when on. Right: sync first steps and snap to global across the top; under them two vertical radios, two steps a segment, the first on top (Brendan, 2026-11-05): show, the pads' number, and effect, distortion, delay or reverb, whose controls for the selected track appear to the right of it, the others' hidden: distortion's character, a radio of four, soft, hard, fold and crush (Brendan, 2026-11-05), over its drive, tone and mix knobs; delay's time, a radio of note values, 1/2 to 1/32, over one of feels, straight, triplet or dotted, and its feedback and level knobs; reverb's send knob, and the reverb's size and damping, the kit's, and under them its type, a radio of plate, gigaverb and freeverb, the kit's too (Brendan, 2026-11-05). Each sends its command for the selected track as it moves, and is handed the track's value by the state. Directly under the show radio, its width and a segment tall, **rnd pitch** (Brendan, 2026-11-05): the selected track's random pitch, the radio's last segment being the randomness it adds to, lit when on. Right under sync and snap, a line while one waits for step 1 (it moved up when rnd pitch took its corner of the bottom row); on the bottom row, the link | unknown |
@@ -274,7 +277,7 @@ cord, which is what a control surface needs and a mirror never had.
 ### The tempo lives on the phone
 
 The arrangement screen's tempo is the only place the BPM is shown as a number and set by a drag
-(Brendan, 2026-11-04). It is `u_tempo`'s, the clamped value whatever set it — knob 1, the tap pad,
+(Brendan, 2026-11-04). It is `u_tempo`'s, the clamped value whatever set it — knob 1, the tap button,
 the phone itself, a Send line — on a cord out of `u_tempo` into `u_net`'s fourth inlet, so the phone
 shows the tempo in force, not one it asked for. The status string the footer carried, until the
 footer went too, was the wrong vehicle: one slot shared with every other status, and a word.
@@ -425,9 +428,9 @@ checklist alone; it went when the checklists split into two suites, since the li
 the phone carries, sends nothing, and the development checklists' lines go from the Mac. The tempo
 the phone sets goes to `u_tempo` by a cord, and `u_tempo`, which owns the tempo, writes it.
 
-**Test mode puts the line check up.** It is flipped with a tap on the Launchpad's Setup button
-(`lp-setup`) or at the Organelle itself (`aux` and the second key from the bottom, `og-shift-61`),
-starts off at every load, goes off when a mode is chosen, and rides on the heartbeat so the phone
+**Test mode puts the line check up.** It is flipped with the diagnostics page's second pad, `pad-82`, which the
+Launchpad's Setup button opens (`lp-setup`),
+starts off at every load, goes off when a page is chosen, and rides on the heartbeat so the phone
 shows the Organelle's own state; a flip sends a heartbeat at once rather than waiting for the next.
 Turning it on warns, so the OLED says so and the log keeps it.
 

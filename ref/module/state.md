@@ -141,12 +141,10 @@ defaults** — and the file looks entirely plausible throughout (item 152).
 ⛔ **The cost of that ordering is that a bad saved value cannot be corrected by a boot — unless the
 contributor refuses it.** A contributor's own put at load lands *before* the restore, so the restored
 value replaces it and the flush then writes the restored one back. A malformed line therefore
-survives every power cycle — a `mode` of `compose` with its name missing kills the map lookup on
-every boot (item 294, [map.md](map.md)).
+survives every power cycle: a contributor that takes a bad line back and puts it straight back keeps it for good
+(item 294, [map.md](map.md)).
 
-✅ **`u_map` refuses one** — item 297. A `mode` that is not one atom naming a page never reaches the store, so
-the store keeps the seed's good value and **the flush writes that back instead**, repairing the file
-on the next boot with no user action. ⚠️ **That is the contributor's job, not `u_state`'s**, which
+✅ **`u_voices` refuses one** (items 294 and 297). A `page` naming no kind it knows changes nothing and never reaches the store, so **the next change of page writes a good one**, with no user action. ⚠️ **That is the contributor's job, not `u_state`'s**, which
 knows nothing about what any key means; a contributor that does not validate still inherits the
 original trap.
 
@@ -174,7 +172,7 @@ namespace are the same namespace.
 **Fix:** `[list append]` between the bus and the store.
 
 ⚠️ The same trap one level down: `[text set]` and `[text search]` both answer a bare selector with
-"no method for `mode`". A message box typed `mode mode-1` carries `mode` as its **selector**,
+"no method for `page`". A message box typed `page perform` carries `page` as its **selector**,
 not as data.
 
 ### A `[text search]` miss reaches the wrong inlet as -1

@@ -5,8 +5,8 @@
 --
 --   lua test/gate/lua/u_tempo_test.lua [-v]
 --
--- What the patch does with these answers -- the timer between taps, the tempo bus, the pad's
--- flash -- is tempo-assert.py's and display-assert.py's, on a running copy of the instrument.
+-- What the patch does with these answers -- the timer between taps, the tempo bus -- is
+-- tempo-assert.py's, on a running copy of the instrument.
 -- ref/module/tempo.md.
 
 local T = dofile("test/gate/lua/lib_test.lua")

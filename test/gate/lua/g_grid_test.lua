@@ -1,4 +1,4 @@
--- The drum page's painter without Pd: "Cut It/g_grid.lua", and the Pd face that carries it,
+-- The Launchpad's home without Pd, every page's cells and the edges: "Cut It/g_grid.lua", and the Pd face that carries it,
 -- "Cut It/g_grid-lua.pd_lua", loaded through lib_test's stand-in for pdlua. The display gate runs
 -- this before its Pd half (test/gate/scratch-gates.py); by hand, from the repo root:
 --
@@ -6,7 +6,7 @@
 --
 -- What reaches the Launchpad -- the frame clock, the layers, the SysEx, the rest of the page --
 -- is display-assert.py's and sequencer-assert.py's, on a running copy of the instrument.
--- ref/module/display.md, g_grid's drum page.
+-- ref/module/display.md.
 
 local T = dofile("test/gate/lua/lib_test.lua")
 local DIR = "Cut It/"
@@ -20,7 +20,7 @@ fh = assert(io.open(DIR .. "g_grid.pd"))
 local PATCH = fh:read("a")
 fh:close()
 
--- The RGB table in g_grid.pd's paint, the one message that sets it, 34 entries of three: a color
+-- The RGB table in g_grid.pd's paint, the one message that sets it, 62 entries of three: a color
 -- of 128 + k is entry k.
 local RGB = {}
 for body in PATCH:gmatch("\n#X msg %d+ %d+ ([%d ]+);\n#X obj %d+ %d+ array set \\%$0%-rgb;") do
@@ -48,12 +48,19 @@ local REP, HELD = { 127, 0, 127 }, { 127, 80, 127 }
 local RECALL, RECALL_HELD = { 8, 20, 64 }, { 40, 100, 127 }
 local DARK, DIM, GREEN = 0, 1, 21
 
--- A paint as {grid index: color}, the color as the Launchpad shows it.
+-- A paint as {grid index: color}, the color as the Launchpad shows it. A cell paint didn't name is
+-- dark: g_grid.pd's fill.
 local function frame(st)
-  local index, colors = R.paint(st)
-  local f = {}
-  for k = 1, #index do f[index[k]] = rgb(colors[k]) end
+  local index, colors, n = R.paint(st)
+  local f = setmetatable({}, { __index = function() return DARK end })
+  for k = 1, n do f[index[k]] = rgb(colors[k]) end
   return f
+end
+
+-- The cells paint named, in order: a list of n, since its tables are the same every frame.
+local function painted(st)
+  local index, _, n = R.paint(st)
+  return { table.unpack(index, 1, n) }
 end
 
 -- The layout's cells by role: {role: {n: grid index}}.
@@ -70,9 +77,10 @@ local function cells(f)
   return out
 end
 
--- A fresh page with these messages sent, in order.
+-- A fresh drum page with these messages sent, in order.
 local function page(...)
   local st = R.new(LAYOUT)
+  R.inputs.page(st, { "drums" })
   for _, m in ipairs({ ... }) do R.inputs[m[1]](st, { table.unpack(m, 2) }) end
   return st
 end
@@ -84,8 +92,8 @@ local function rep(v, n)
 end
 
 print("\n--- the colors are g_grid's RGB table's ---")
-check("the table is g_grid.pd's 34 entries of three, the array defined to hold them",
-      #RGB == 102 and DEFINED == 102, T.show({ #RGB, DEFINED }))
+check("the table is g_grid.pd's 62 entries of three, the array defined to hold them",
+      #RGB == 186 and DEFINED == 186, T.show({ #RGB, DEFINED }))
 equal("⛔ a repeat at rest is as bright as purple gets, and held its red and blue stay full: whiter",
       { rgb(R.REP)[1], rgb(R.REP)[3], rgb(R.REP_HELD)[1], rgb(R.REP_HELD)[3] }, { 127, 127, 127, 127 })
 equal("⛔ the saved tempo's pad, dim blue and bright while held", { rgb(R.RECALL), rgb(R.RECALL_HELD) },
@@ -103,7 +111,7 @@ equal("dark, dim and the playhead are palette 0, 1 and 21", { R.DARK, R.DIM, R.P
       { 0, 1, 21 })
 
 print("\n--- the layout ---")
-local st = R.new(LAYOUT)
+local st = page()
 local count = { step = 0, vel = 0, pad = 0, rep = 0, fast = 0, recall = 0 }
 for k in pairs(CELL) do for _ in pairs(CELL[k]) do count[k] = count[k] + 1 end end
 equal("cut-it-drum-page.txt: 32 step cells, 8 velocity buttons, 16 pads, 4 repeat pads, the 500 BPM "
@@ -111,9 +119,11 @@ equal("cut-it-drum-page.txt: 32 step cells, 8 velocity buttons, 16 pads, 4 repea
       { step = 32, vel = 8, pad = 16, rep = 4, fast = 1, recall = 1 })
 local ORDER = {}
 for line in LAYOUT:gmatch("[^\n]+") do ORDER[#ORDER + 1] = tonumber(line:match("^(%d+)")) end
-equal("paint writes those 62 cells and no other, in the table's order", R.paint(st), ORDER)
-equal("a row of another role, a blank line or a malformed one paints nothing",
-      R.paint(R.new("11 pad 1\n\n12 mute 2\nx pad 3\n13 4 5\n14 rep\n15 rep 2\n")),
+equal("paint writes those 62 cells and no other, in the table's order, once they all show: a dark "
+      .. "one it leaves to the fill", painted(page({ "bar", 4, 8 }, { "last", 32 })), ORDER)
+local partial = R.new("11 pad 1\n\n12 mute 2\nx pad 3\n13 4 5\n14 rep\n15 rep 2\n")
+R.inputs.page(partial, { "drums" })
+equal("a row of another role, a blank line or a malformed one paints nothing", painted(partial),
       { 11, 15 })
 
 print("\n--- at load ---")
@@ -306,6 +316,224 @@ check("every input answers nothing: the page is painted, not sent", (function()
   return true
 end)())
 
+print("\n--- the voices' colors ---")
+local VOICES = { { 127, 20, 72 }, { 0, 96, 127 }, { 127, 56, 0 }, { 0, 127, 32 }, { 64, 20, 127 },
+                 { 127, 110, 0 }, { 127, 24, 8 }, { 90, 90, 90 } }
+local function quarter(c) return { c[1] // 4, c[2] // 4, c[3] // 4 } end
+local full, dim, want_full, want_dim = {}, {}, {}, {}
+for r = 1, 8 do
+  full[r], dim[r] = rgb(R.VOICE + 2 * (r - 1)), rgb(R.VOICE + 2 * (r - 1) + 1)
+  want_full[r], want_dim[r] = VOICES[r], quarter(VOICES[r])
+end
+equal("⛔ a color per row, the same on both columns, full", full, want_full)
+equal("... and at a quarter", dim, want_dim)
+local fader, fader_dim = {}, {}
+for l = 1, 8 do fader[l], fader_dim[l] = rgb(R.FADER + l - 1), rgb(R.FADER_DIM + l - 1) end
+equal("a fader's level, green at the bottom to red at the top",
+      { fader[1], fader[8] }, { { 0, 127, 32 }, RED })
+equal("... and at a quarter while held", { fader_dim[1], fader_dim[8] }, { { 0, 31, 8 }, { 31, 0, 0 } })
+equal("a knob blue, and dim while held", { rgb(R.KNOB), rgb(R.KNOB_DIM) }, { BLUE, { 4, 10, 32 } })
+
+print("\n--- the edges, on every page ---")
+local function voices(row, kind, ...)
+  local a = { row, kind, ... }
+  for k = #a + 1, 10 do a[k] = "-" end
+  return a
+end
+st = R.new(LAYOUT)
+equal("before any page or voice: the performance page, nothing lit", { st.page, painted(st) },
+      { "perform", {} })
+R.inputs.voices(st, voices(0, "perform", "drums", "harmony", "melody"))
+f = frame(st)
+equal("⛔ a row with a voice lights its two buttons dim, in its color, CC 80 and 89 at the top",
+      { f[80], f[89], f[70], f[79], f[60], f[69] },
+      { dim[1], dim[1], dim[2], dim[2], dim[3], dim[3] })
+equal("⛔ ... and a row with none is dark", { f[50], f[59], f[10], f[19] }, { DARK, DARK, DARK, DARK })
+R.inputs.voices(st, voices(2, "voice", "drums", "harmony", "melody"))
+f = frame(st)
+equal("⛔ a voice's page: its left button full, and only it", { f[70], f[79], f[80] },
+      { full[2], dim[2], dim[1] })
+R.inputs.voices(st, voices(2, "setup", "drums", "harmony", "melody"))
+f = frame(st)
+equal("⛔ its setup page: its right button full, and only it", { f[70], f[79] }, { dim[2], full[2] })
+st = R.new(LAYOUT)
+R.inputs.top(st, { 1, 2, 3, 4, 5, 6, 0, 0 })
+R.inputs.beat(st, { 0 })
+f = frame(st)
+equal("the top row, CC 91 to 98: a section dim and full, one queued and the next song's arrow on an even "
+      .. "beat, an arrow dim and the next song blue", { f[91], f[92], f[93], f[94], f[95], f[96], f[97] },
+      { { 0, 32, 8 }, { 0, 127, 32 }, { 0, 127, 32 }, DIM, BLUE, BLUE, DARK })
+R.inputs.beat(st, { 1 })
+f = frame(st)
+equal("⛔ ... and what blinks is dark on an odd one", { f[93], f[96], f[92], f[95] },
+      { DARK, DARK, { 0, 127, 32 }, BLUE })
+R.inputs.page(st, { "songs" })
+equal("save and revert dark with nothing unsaved", { frame(st)[108], frame(st)[8] }, { DARK, DARK })
+R.inputs.unsaved(st, { 1 })
+f = frame(st)
+equal("⛔ lit with something unsaved, save red and revert gray", { f[108], f[8] }, { RED, { 40, 40, 40 } })
+R.inputs.page(st, { "perform" })
+f = frame(st)
+equal("⛔ but not on the performance page, whose bottom rows are the nanoKONTROL's", { f[108], f[8] },
+      { DARK, DARK })
+
+print("\n--- the harmony page ---")
+-- What c_melody sends the phone: t's fields, over what doesn't show.
+local function melody_state(t)
+  local a = {}
+  for k = 1, 67 do a[k] = 0 end
+  a[1], a[7], a[8], a[9], a[12] = t.chords or 0, t.sounding or 0, t.on_h or 0, t.on_m or 0, t.total or 16
+  for k = 1, 8 do a[17 + (k - 1) * 4] = (t.starts or {})[k] or -1 end
+  a[56], a[57] = t.style or 1, t.bass or 0
+  return a
+end
+local function harmony(row, t)
+  st = R.new(LAYOUT)
+  R.inputs.page(st, { "harmony" })
+  R.inputs.voices(st, voices(row, "voice", "drums", "harmony"))
+  R.inputs.melody(st, melody_state(t))
+  R.inputs.bar(st, { 4, 8 })
+  return st
+end
+st = harmony(2, { chords = 3, sounding = 2, total = 16, starts = { 0, 6, 12 } })
+f = frame(st)
+equal("⛔ the chords on the top row, in the voice's color, dim, and full on the one sounding",
+      { f[81], f[82], f[83], f[84] }, { dim[2], full[2], dim[2], DARK })
+equal("⛔ under them the rhythm from the top left, a chord full where it starts, a blue step every N, the "
+      .. "rest dim", { f[71], f[72], f[75], f[77], f[61], f[65] }, { full[2], DIM, BLUE, full[2], BLUE, full[2] })
+equal("⛔ ... and past the rhythm's total, dark: its 16th the second row's last", { f[68], f[51], f[41] },
+      { DIM, DARK, DARK })
+R.inputs.here(st, { 1, 0 })
+equal("the loop's place is green", frame(st)[72], GREEN)
+R.inputs.held(st, { 2, 0, 0 })
+f = frame(st)
+equal("a chord held is white, its pad and where it starts", { f[82], f[77] }, { LEVEL[1], LEVEL[1] })
+st = harmony(2, { chords = 1, total = 64, starts = { 60 } })
+R.inputs.here(st, { 60, 0 })
+f = frame(st)
+equal("⛔ a rhythm longer than 56 shows the part playing: step 60 is the top row's fifth cell",
+      { f[75], f[71], f[73] }, { GREEN, BLUE, DIM })
+st = harmony(2, { chords = 1, on_h = 1, style = 2, bass = 1 })
+f = frame(st)
+equal("the commands on the upper bottom row: on, roll, the rhythm's roll, bass, modal",
+      { f[101], f[102], f[103], f[104], f[105] }, { full[2], dim[2], BLUE, full[2], full[2] })
+st = harmony(2, { chords = 1 })
+f = frame(st)
+equal("... on, bass and modal dim while off", { f[101], f[104], f[105] }, { dim[2], dim[2], dim[2] })
+
+print("\n--- the melody page ---")
+local function notes_state(t)
+  local a = { t.loop or 32, t.tonic or 0 }
+  for d = 1, 7 do a[#a + 1] = ({ 0, 2, 4, 5, 7, 9, 11 })[d] end
+  for k = 1, 32 do a[#a + 1] = (t.notes or {})[k] or 0 end
+  for k = 1, 32 do a[#a + 1] = (t.codes or {})[k] or 0 end
+  return a
+end
+local function melody(row, t)
+  st = R.new(LAYOUT)
+  R.inputs.page(st, { "melody" })
+  R.inputs.voices(st, voices(row, "voice", "drums", "harmony", "melody"))
+  R.inputs.melody(st, melody_state(t))
+  R.inputs.notes(st, notes_state(t))
+  return st
+end
+st = melody(3, { loop = 12, notes = { 62, 0, -1, 60 }, codes = { 0, 0, 0, 4 } })
+f = frame(st)
+equal("⛔ the steps on the top four rows, a note in the voice's color, a rest or one not rolled dim, a pinned "
+      .. "note white", { f[81], f[82], f[83], f[84] }, { full[3], DIM, DIM, LEVEL[1] })
+equal("⛔ ... and past the loop, dark, the second row's fifth step the 13th", { f[74], f[75], f[61] },
+      { DIM, DARK, DARK })
+local list = R.pitches(0, { 0, 2, 4, 5, 7, 9, 11 })
+equal("⛔ below, the mode's notes low to high from the bottom left, from the lowest tonic at or above "
+      .. R.PITCH_LOW, { list[1], list[2], list[8], list[32] }, { 48, 50, 60, 101 })
+equal("... the tonic marked in the voice's dim color, the rest dim", { f[11], f[12], f[18], f[21] },
+      { dim[3], DIM, dim[3], DIM })
+R.inputs.here(st, { -1, 1 })
+f = frame(st)
+equal("⛔ the step playing is green, and its note lights, in the voice's color",
+      { f[81], f[21] }, { GREEN, full[3] })
+R.inputs.held(st, { 0, 4, 0 })
+f = frame(st)
+equal("... a step held shows its note instead, over what is playing", { f[18], f[21] }, { full[3], DIM })
+R.inputs.held(st, { 0, 0, 62 })
+f = frame(st)
+equal("⛔ ... and a note held shows itself over either", { f[21], f[18] }, { full[3], dim[3] })
+R.inputs.here(st, { -1, -1 })
+R.inputs.held(st, { 0, 2, 0 })
+equal("a step held is white", frame(st)[82], LEVEL[1])
+st = melody(3, { on_m = 1 })
+equal("the commands: on, roll, clear pins", { frame(st)[101], frame(st)[102], frame(st)[103] },
+      { full[3], dim[3], dim[3] })
+
+print("\n--- the performance page ---")
+local function perform(cols, btns)
+  st = R.new(LAYOUT)
+  local a = {}
+  for k = 1, 24 do a[k] = (cols or {})[k] or 0 end
+  R.inputs.cols(st, a)
+  a = {}
+  for k = 1, 32 do a[k] = (btns or {})[k] or 0 end
+  R.inputs.btns(st, a)
+  return st
+end
+st = perform({ 1, 3, 0 })
+f = frame(st)
+equal("⛔ a fader's column, its level from the bottom, green up", { f[11], f[21], f[31], f[41] },
+      { fader[1], fader[2], fader[3], DARK })
+st = perform({ 1, 8, 1 })
+f = frame(st)
+equal("⛔ ... and dimmer while held at a value its control hasn't reached", { f[11], f[81] },
+      { fader_dim[1], fader_dim[8] })
+st = perform({ 0, 0, 0, 2, 2, 0, 0, 0, 0, 2, 1, 1 })
+f = frame(st)
+equal("⛔ a knob's blue, in its own column, dim while held",
+      { f[12], f[22], f[32], f[14], f[24] }, { BLUE, BLUE, DARK, rgb(R.KNOB_DIM), DARK })
+st = perform(nil, { 3, 0, 0, 0, 2, 1 })
+f = frame(st)
+equal("⛔ the buttons, top row CC 101 on: in their voices' colors, dim off and bright on, and dark with none",
+      { f[101], f[102], f[103] }, { dim[3], DARK, full[2] })
+local b = {}
+for k = 1, 32 do b[k] = 0 end
+b[17], b[18] = 4, 1
+b[31], b[32] = 5, 0
+st = perform(nil, b)
+f = frame(st)
+equal("⛔ ... the bottom row from CC 1, and save's and revert's cells are its", { f[1], f[8] },
+      { full[4], dim[5] })
+
+print("\n--- the other pages ---")
+st = R.new(LAYOUT)
+R.inputs.page(st, { "diag" })
+f = frame(st)
+equal("the diagnostics page: its two pads top left, diag and test mode",
+      { f[81], f[82], #painted(st) }, { { 0, 127, 32 }, BLUE, 2 })
+for _, name in ipairs({ "songs", "keys", "sound" }) do
+  st = R.new(LAYOUT)
+  R.inputs.page(st, { name })
+  equal("⛔ " .. name .. " has no cells of its own", painted(st), {})
+end
+st = page({ "bar", 4, 8 })
+R.inputs.page(st, { "perform" })
+equal("⛔ a page left leaves nothing behind", painted(st), {})
+
+print("\n--- the melody page's pitches are c_melody's ---")
+-- A press and its lamp cannot disagree: each file works the list out from the same mode.
+local C = dofile(DIR .. "c_melody.lua")
+local agree, tried = true, 0
+for _, sc in ipairs({ { 0, 2, 4, 5, 7, 9, 11 }, { 0, 2, 3, 5, 7, 8, 10 }, { 0, 1, 3, 5, 7, 8, 10 },
+                      { 0, 2, 3, 5, 7, 8, 11 } }) do
+  for tonic = 0, 11 do
+    local scale = {}
+    for d = 1, 7 do scale[d] = (sc[d] + tonic) % 12 end
+    local m = C.new()
+    m.tonic, m.scale = tonic, scale
+    local a, z = R.pitches(tonic, scale), C.pitches(m)
+    tried = tried + 1
+    if not T.same(a, z) then agree = false end
+  end
+end
+check("⛔ g_grid.lua's R.pitches and c_melody.lua's agree on every tonic of " .. tried .. " modes and keys", agree)
+
 print("\n--- init ---")
 equal("init with the layout answers nothing", R.internal.init(R.new(LAYOUT)), {})
 equal("⛔ init with no cell is fail g_grid layout-empty: the page would paint nothing",
@@ -324,6 +552,7 @@ check("... and read the layout from its patch's folder, in silence", o and #o.st
       and #o.console == 0, o and T.show(o.console))
 equal("init: the bang on outlet 2 that says it loaded, and nothing else",
       T.send(o, 2, "init", {}), { { 2, "bang", {} } })
+T.send(o, 1, "page", { "drums" })
 equal("c_steps' page on inlet 1 answers nothing", {
   T.send(o, 1, "bar", { 4, 8 }), T.send(o, 1, "steps", { 8, 0, 0, 0, 2 }),
   T.send(o, 1, "track", { 5 }), T.send(o, 1, "vel", { 2 }), T.send(o, 1, "play", { 3 }),
@@ -337,8 +566,8 @@ equal("... and writes the page into the frame buffer: step 1 level 8, step 3 the
   surface[CELL.step[1]], surface[CELL.step[2]], surface[CELL.step[3]], surface[CELL.step[5]],
   surface[CELL.step[17]], surface[CELL.pad[5]], surface[CELL.pad[6]], surface[CELL.pad[7]],
   surface[CELL.vel[2]], surface[CELL.vel[1]], surface[CELL.rep[4]], surface[CELL.rep[1]] },
-  { 135, 1, 21, 129, 0, 159, 158, 144, 129, 136, 147, 146 })
-check("⛔ ... and nothing outside its 62 cells: the fill and the other regions are g_grid.pd's",
+  { 135, 1, 21, 129, 7, 153, 152, 144, 129, 136, 147, 146 })
+check("⛔ ... and nothing outside its 62 cells, and a dark one not at all: the fill is g_grid.pd's",
       (function()
         local mine = {}
         for line in LAYOUT:gmatch("[^\n]+") do mine[tonumber(line:match("^(%d+)"))] = true end
@@ -361,6 +590,7 @@ equal("... nor with no name at all", T.send(T.new(class, {}), 2, "paint", {}),
 check("⛔ a frame buffer made after the object is found at its first paint after: it is looked "
       .. "up every frame", (function()
   local late = T.new(class, { "1005-surface" })
+  T.send(late, 1, "page", { "drums" })
   local none = T.send(late, 2, "paint", {})
   T.arrays["1005-surface"] = T.array(109)
   local now = T.send(late, 2, "paint", {})

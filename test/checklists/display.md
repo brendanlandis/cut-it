@@ -46,7 +46,7 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
   - **Pass if:** A bordered box reads warn then u_root then test-warn. About 2 s later it vanishes and recording is back underneath.
 
 - [ ] **11. A warning on any page**
-  - **Send:** `disp modal recording; mode mode-5; err warn u_root page-5`
+  - **Send:** `disp modal recording; mode keys; err warn u_root page-5`
   - **Pass if:** A bordered box reads warn then u_root then page-5. About 2 s later it vanishes and recording is back underneath. Nothing on the OLED names the page.
   - **Note:** Every page draws every warning and failure (Brendan, 2026-11-04); `err-assert` proves it on each kind of page, and this is the box reading on the rig.
 
@@ -62,26 +62,26 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
   - **Do:** Wait 30 seconds without touching anything.
   - **Pass if:** The screen went back to the info bar over a blank screen on its own with nothing touched.
 
-- [ ] **15. Shifted stop with the nano unplugged**
+- [ ] **15. Panic with the nano unplugged**
   - **Need:** The nanoKONTROL unplugged. The clock running — press PLAY on the nano before unplugging it.
-  - **Do:** Hold the aux button and press the middle key.
-  - **Pass if:** The clock stops. The beat row on the Launchpad stops walking.
-  - **Note:** Judged with a device actually gone: the Organelle's own panel can still stop the rig.
+  - **Do:** Tap the top left corner button on the Launchpad.
+  - **Pass if:** The clock stops, and the aux LED goes red.
+  - **Note:** Judged with a device actually gone: STOP is on the nano and nothing on the Organelle stops the rig (Brendan, 2026-11-06), so this is the one left.
 
 - [ ] **16. The diag roster**
-  - **Do:** Hold the aux button and press the lowest key. Look hardest at the longest line: m_launchpad unchecked is exactly as wide as a row gets, so that is where clipping would show first. The word shift is on screen while aux is held and the roster draws over it.
+  - **Do:** Tap SETUP, the Launchpad's bottom left corner, then press the top row's first pad, which lights green. Look hardest at the longest line: m_launchpad unchecked is exactly as wide as a row gets, so that is where clipping would show first.
   - **Pass if:** Six small lines naming m_launchpad m_nano m_organelle m_volca m_streich and m_nanokey — each with here or gone or never or unchecked beside it — under the info bar. Every line is readable at arm reach, the first clear of the info bar and the sixth of the bottom edge, and none is cut off at the right edge. About eight seconds later the roster goes on its own.
   - **Note:** `oled-assert` proves the roster's words, their order and where the rows are drawn; whether six 8px rows read at arm's length between the info bar and the bottom edge, and whether the 21-character `m_launchpad unchecked` line is clipped, is a person's call ([display](../../ref/module/display.md)). m_nanokey reads never until a key has been played since the load.
 
 - [ ] **17. The info bar's meters**
   - **Need:** The SM58 in the Organelle's input, the drum samples deployed, the volume knob up, and the room quiet.
-  - **Do:** Press page 2 and hit the bottom-left drum pad a few times. Then talk into the SM58. Then press nothing and keep quiet for a few seconds.
+  - **Do:** Tap SETUP to close the diagnostics page, press the top left-column button for the drum page, and hit the bottom-left drum pad a few times. Then talk into the SM58. Then press nothing and keep quiet for a few seconds.
   - **Pass if:** With each hit one out meter jumps, out L, and the in meters stay at 0. Your voice moves in L and out L together. In R and out R stay at 0 throughout, and with everything quiet all four sit at 0.
   - **Note:** The meters are mother's: in off the sound card, out off what Cut It sends, after the volume knob, so turned down the out pair read less (Brendan, 2026-11-04). The drums never reach the input, which is what tells out L apart. A segment lit when all is quiet is the mic's hiss, which should read 0: say so ([audio](../../ref/module/audio.md), *Open*).
 
 - [ ] **18. Only a mapped control names itself**
-  - **Need:** The nanoKONTROL plugged in.
-  - **Send:** `mode mode-3`
-  - **Do:** Move fader 1, then fader 2. Then turn the Organelle's knob 2 a little, then knob 3.
-  - **Pass if:** Fader 1 draws volca-cc41 and its value, and knob 2 last-step and a step, with the knob's own in brackets while it is held. Fader 2 and knob 3 draw nothing. No row reads slider-1, slider-2 or og-knob anything.
-  - **Note:** A control names itself by its destination's name, and only when the page binds it (Brendan, 2026-11-04): fader 1 is the Volca's CC 41 on page 3, knob 2 the drums' last step on every page, and fader 2 and knob 3 are bound to nothing here ([map](../../ref/module/map.md)).
+  - **Need:** The nanoKONTROL plugged in, with nothing in play in this section.
+  - **Send:** `mode perform`
+  - **Do:** Move fader 1, then fader 2. Then turn the Organelle's knob 2 a little.
+  - **Pass if:** Knob 2 draws last-step and a step, with the knob's own in brackets while it is held. Neither fader draws anything. No row reads slider-1, slider-2 or og-knob anything.
+  - **Note:** A control names itself by its destination's name, and only when something binds it (Brendan, 2026-11-04): knob 2 is the drums' last step on every page, and the faders are whatever this section has in play ([voices](../../ref/module/voices.md)).

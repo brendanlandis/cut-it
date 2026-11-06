@@ -21,8 +21,8 @@ is sent from anywhere.
 |---|---|---|
 | [linecheck](linecheck.md) | 8 | the phone's link, the roster, the drums, the mic and both synths through the PA from the nanoKEY, the transport |
 
-1. **Choose page 2, the drum page, then tap Setup**, the Launchpad's bottom-left button (or at the Organelle hold
-   `aux` and press the second key from the bottom). That turns test mode on, and the phone's screens
+1. **Tap Setup**, the Launchpad's bottom-left button, **then the top row's second pad**, on the diagnostics page it
+   opens. That turns test mode on, and the phone's screens
    give way to the checklist page, reading `test mode on` (the Organelle's own state, from the
    heartbeat); the OLED warns.
 2. Each step shows its title and, from the file, Need, Do, Check and Pass if; the Notes stay here. A
@@ -30,8 +30,8 @@ is sent from anywhere.
 3. **Pass** or **Fail** logs the verdict on the Organelle as `info phone linecheck-<n>-pass` (read it
    with `tools/fetch-errors.sh`), flashes, and goes on to the next step. **Back** and **Next** move
    without logging.
-4. **Tap Setup again when it's done.** Choosing a mode also turns test mode off and brings the
-   phone's screens back, as does every load of Cut It, so no step presses a mode button.
+4. **Tap Setup again when it's done.** Choosing a page also turns test mode off and brings the
+   phone's screens back, as does every load of Cut It, so no step presses a voice's button.
 
 The page is generated from linecheck.md by `tools/touchosc/build.py` and goes to the phone with
 `tools/touchosc/push.sh`; edit it, push. **Gate:** `test/gate/touchosc-assert.sh`, which also fails
@@ -47,16 +47,16 @@ session means opening one.
 | [display](display.md) | 18 | the OLED's layers under the info bar, its meters, the map's rows and the error bus |
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
 | [tempo](tempo.md) | 14 | the transport, knob 1's pickup, the clamp |
-| [launchpad](launchpad.md) | 28 | the grid, its layers, the mode lamps, the beat row, hot-swap, panic |
-| [phone](phone.md) | 21 | the phone following the Launchpad's page, its tabs, the arrangement screen and its tempo, the tap pad, the link dropping and coming back, the checklist page and test mode, the drum screen's pads and its effect controls |
-| [state](state.md) | 5 | the front-panel Save, a power cycle, the mode surviving it |
+| [launchpad](launchpad.md) | 28 | the grid, its layers, the voices' lamps, hot-swap, panic |
+| [phone](phone.md) | 21 | the phone following the Launchpad's page, its tabs, the arrangement screen and its tempo, the tap button, the link dropping and coming back, the checklist page and test mode, the drum screen's pads and its effect controls |
+| [state](state.md) | 5 | the front-panel Save, a power cycle, the page surviving it |
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
-| [midi](midi.md) | 10 | the map by mode, the Volca by ear, hot-swap |
+| [midi](midi.md) | 10 | the map by page, the Volca by ear, hot-swap |
 | [debug](debug.md) | 9 | the debug patch, with the instrument stopped |
-| [sequencer](sequencer.md) | 46 | page 2's drum page and the drums it plays, the time signature's rows, each drum's distortion, delay and reverb send, each drum's mute and solo, its distortion's drive and four characters, and the reverb's three types |
+| [sequencer](sequencer.md) | 46 | the drum page and the drums it plays, the time signature's rows, each drum's distortion, delay and reverb send, each drum's mute and solo, its distortion's drive and four characters, and the reverb's three types |
 | [sections](sections.md) | 12 | the song's sections: the Launchpad's top row, a queue landing as the pattern comes round, a length handing over, save and revert and their lamps, a power cut, the phone's sections page and its name tab |
-| [songs](songs.md) | 13 | several songs and the setlists: the phone's songs page, its setlists and its name tab, the Organelle's keys loading songs stopped and by each transition, go and its lamp, a song's own draft, delete asking twice, a power cut |
-| [synths](synths.md) | 13 | the nanoKEY and the two synths it plays, page 3's pads, the phone's keyboard tab and its velocity switch, a switch mid-chord, the Streichfett on the roster |
+| [songs](songs.md) | 13 | several songs and the setlists: the phone's songs page, its setlists and its name tab, the Organelle's keys loading songs, the next arrow, a song's own draft, delete asking twice, a power cut |
+| [synths](synths.md) | 13 | the nanoKEY and the two synths it plays, the voices' pages, the phone's keyboard tab and its velocity switch, a switch mid-chord, the Streichfett on the roster |
 
 ⚠️ **The Mac is not the device.** The Phase 6 gate passed 25/25 on the Mac twice and shipped three
 bugs; a checklist on the rig is the last word.
@@ -108,7 +108,7 @@ reaches it, the phone included.
 name are dropped, so a line can never quit or reload Pd. **Gate:** `test/gate/inject-assert.sh`.
 
 **On the Mac**, open `Cut It/main-dev.pd` in Pd 0.57 and tick **enable-DSP** on its dev panel
-(`c_clock` hangs off `threshold~`, so with DSP off the beat row never moves and every count reads
+(`c_clock` hangs off `threshold~`, so with DSP off the clock never moves and every count reads
 0). Then `HOST=mac ./tools/send.sh '…'`, or paste the line into Pd's *Send a Pd message* window
 (Cmd-Shift-M, or File > Message). `u_mother-stub` draws the OLED and the aux LED in the dev panel.
 
@@ -121,7 +121,7 @@ can be done by hand instead:
 
 | Send | On the rig |
 |---|---|
-| `mode mode-1` to `mode mode-8` | the first to eighth button down the Launchpad's left column |
+| `mode perform` · `mode drums`, `harmony`, `melody` | a lit left button again · that voice's left button, on the Launchpad. A line goes straight onto the bus, so the lamps don't move |
 | `start bang` · `stop bang` | PLAY · STOP on the nanoKONTROL |
 | `panic bang` | a short tap on the Launchpad's top-left corner button |
 
@@ -131,8 +131,8 @@ A step is a promise about one thing a person can see, hear or read, so the rules
 it honest:
 
 - **A step belongs to one suite.** The line check's judge a connection, a device or a setting, with
-  no code under test; they send nothing and press no mode button, since a mode ends test mode and
-  takes the page away. Whether Cut It does what it should goes in a development checklist.
+  no code under test; they send nothing and press no voice's button, since a page ends test mode and
+  takes the checklist page away. Whether Cut It does what it should goes in a development checklist.
 - **A step belongs to whatever it touches.** Before adding one, ask: could it run with the named
   device unplugged? Then it is not that device's step. The nanoKONTROL's checklist once carried
   fourteen steps that never touched the controller, nine of them display steps under another name,

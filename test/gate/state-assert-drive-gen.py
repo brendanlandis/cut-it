@@ -70,10 +70,10 @@ con(bm, 0, bs, 0)
 
 # (ms, message, bus), absolute times off one loadbang
 STEPS = [
-    (100, "put auto mode mode-1", "state"),
+    (100, "put auto page perform", "state"),
     (150, "put auto tempo 128", "state"),
     # the same key again: the replace case
-    (200, "put auto mode mode-4", "state"),
+    (200, "put auto page songs", "state"),
 ]
 x = 20
 for ms, m, bus in STEPS:

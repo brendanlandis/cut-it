@@ -21,7 +21,7 @@ loop, the repeats, each track's randomness, volume, pitch and effects, each step
 keeps the clock, the transport and the cords to `c_kit`, `g_grid`, `u_song` and `disp`, and asks
 the Lua through one pdlua object, `[c_steps-lua $1]` (`cut-it/logic-as-text`).
 
-It is page 2's drum machine (`cut-it/drum-machine`), and a part of every section of the song
+It is the drums page's drum machine (`cut-it/drum-machine`), and a part of every section of the song
 (`cut-it/songs-and-sections`): its pattern, with the arrangement page's settings, is the section
 playing's `drums`, kept by `u_song` ([songs.md](songs.md)), and it says where the pattern loops, the
 bar a queued section waits for. `u_root` holds one instance, `c_steps 1 drums` — bank A, stored as
@@ -79,7 +79,7 @@ each track's distortion and delay and the reverb they share (2026-11-05). *The k
 | A step's level, whose color it takes | (*v* − 1) div 16 + 1, 0 for off, so each level's own velocity is that level. Worked out here and sent to `g_grid`, the one place the rule is | verified |
 | A step press | On the step its cell is in the rows (*The rows of steps*): off takes the selected velocity; on, at any velocity, turns off (Brendan, 2026-11-03). Past its row, or past the selected track's last step, nothing. A release of a step, a velocity or a pad does nothing | unknown |
 | The global last step | Knob 2, on every page (Brendan, 2026-11-04), 1 to the time signature's reach, 32 at 4/4, for every track that has no last step of its own (Brendan, 2026-11-03). Steps past it keep their notes, unplayed and dark. Saved, a section's | unknown |
-| A track's own last step | Knob 3, on page 2 alone, where the track is selected, 1 to the reach, for the selected track, saved with the pattern. Released at the step a following track already has, it goes on following | unknown |
+| A track's own last step | Knob 3, on every page (Brendan, 2026-11-06), 1 to the reach, for the selected track, saved with the pattern. Released at the step a following track already has, it goes on following | unknown |
 | The knobs' latch | At load knobs 2 and 3 are held at 16, and knob 3 again whenever another track is selected, or the global last step moves while the selected track follows it: held until turned to or through the step it stands for. A held knob changes nothing and draws its row with its own value in brackets | verified |
 | `sync` (the drum screen's "sync first steps") | When the global loop next comes round to its step 1, every track goes back to its own step 1 there, keeping its own last step | verified |
 | `snap` (its "snap to global") | The same, and at that step every track gives up its own last step, saved. Stopped, it lands at PLAY | verified |
@@ -334,7 +334,7 @@ The drums play in Pd, and nothing in the rig follows `u_tempo`'s MIDI clock: it 
 Launchpad alone, which ignores it in Programmer Mode ([tempo.md](tempo.md)). So a step fires on
 its boundary and not in that clock's pulse, half a pulse later, where it fired while the SP-404
 played the drums from it; waiting for the pulse only kept PLAY's step 1 a twelfth of a step late,
-10 ms at 120 BPM and 42 at 30 (`cut-it/drum-machine`, 2026-11-05). The beat row and a queued
+10 ms at 120 BPM and 42 at 30 (`cut-it/drum-machine`, 2026-11-05). The clock's beat and a queued
 section's blink, which `c_clock`'s beat drives, light half a pulse after the step they mark.
 
 **The phase still goes back a ten-thousandth of a pair, for PLAY.** `threshold~` makes one change a

@@ -1,13 +1,13 @@
 -- g_grid-lua -- g_grid.lua's Pd face, made inside g_grid.pd as [g_grid-lua $0-surface]. It reads
--- the layout table, turns c_steps' messages into calls on the rules, and writes the drum page's
--- cells into g_grid's frame buffer when asked, and nothing else: what the page shows is in
--- g_grid.lua. ref/module/display.md, g_grid's drum page.
+-- the layout table, turns the instrument's messages into calls on the rules, and writes a frame's
+-- cells into g_grid's frame buffer when asked, and nothing else: what a page shows is in
+-- g_grid.lua. ref/module/display.md.
 --
 -- creation arg: the frame buffer's name, g_grid's $0-surface.
--- inlet 1: the drum page's state, from c_steps -- steps <32 levels>, play <step>, vel <level>,
--- track <pad>, last <step>, bar <N> <row>, rep <pad>, fast and recall <1 or 0> and quiet <16 flags>.
--- inlet 2: g_grid.pd's
--- own -- init at load, and paint, from pd regions on page 2, before each frame's SysEx.
+-- inlet 1: what the home shows: c_steps' drum page, u_song's top and unsaved, the mode bus as page,
+-- the beat, u_voices' voices, the generator's melody, notes, here and held, and u_perform's cols and
+-- btns (g_grid.lua's R.inputs).
+-- inlet 2: g_grid.pd's own -- init at load, and paint, from pd regions, before each frame's SysEx.
 -- outlet 1: err. outlet 2: a bang on init, the proof the Lua loaded.
 --
 -- A Lua error leaves outlet 1 as fail g_grid lua-<selector>, and its text goes to Pd's console
@@ -56,11 +56,11 @@ function GridLua:in_2(sel, atoms)
   self:internal(sel, atoms)
 end
 
--- One frame's drum page into the frame buffer, cell by cell, over the fill pd prepare wrote. The
+-- One frame's home into the frame buffer, cell by cell, over the fill pd prepare wrote. The
 -- array is found again every frame, as pdlua asks, so a buffer made after this object, or one
 -- redefined, is still the one written. No buffer is fail g_grid no-surface.
 function GridLua:paint()
-  local ok, index, colors = pcall(R.paint, self.state)
+  local ok, index, colors, n = pcall(R.paint, self.state)
   if not ok then
     self:error(self._name .. ": " .. tostring(index))
     return self:outlet(OUTLET.err, "fail", R.fail("lua-paint")[3])
@@ -69,5 +69,5 @@ function GridLua:paint()
   if not t then
     return self:outlet(OUTLET.err, "fail", R.fail("no-surface")[3])
   end
-  for k = 1, #index do t:set(index[k], colors[k]) end
+  for k = 1, n do t:set(index[k], colors[k]) end
 end

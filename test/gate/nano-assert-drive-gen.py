@@ -25,9 +25,8 @@ GAP = 40
 
 SEQ = [
     # --- before anything has settled ---------------------------------------
-    # Page 3 first, the synths page, where the shipped map binds slider 1
-    # (Brendan, 2026-11-04): the analyzer reads its row.
-    (300, "EARLY", ["\\; mode mode-3", "\\; t-ctlin 64 1 17"], GAP),
+    # The gate's own row binds slider 1 (scratch-gates.py): the analyzer reads its row.
+    (300, "EARLY", ["\\; t-ctlin 64 1 17"], GAP),
 
     # --- the channel gate: 17 and 18 in, everything else out ---------------
     # A distinct value each, so the analyzer can say which channel emitted.
@@ -62,8 +61,8 @@ SEQ = [
     # --- the other two channel blocks, through the same stub ---------------
     # 33 is Pd's port 3, the SP-404's until it left the rig: nothing listens.
     (14100, "CH-33", ["\\; t-ctlin 77 20 33"], GAP),
-    # CC 19, the bottom of the right column: the left column's are mode keys.
-    (14800, "CH-LP", ["\\; t-ctlin 55 19 1"], GAP),
+    # CC 99, the top row's far corner, past its eight: no row names it.
+    (14800, "CH-LP", ["\\; t-ctlin 55 99 1"], GAP),
 
     (15500, "DONE", [], GAP),
 ]

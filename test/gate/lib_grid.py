@@ -24,17 +24,22 @@ FIRST_INDEX = 1
 FRAME_LEN = len(HEADER) + NSPEC * 3 + 1          # 332, every cell a palette color
 SPEC_LEN = {0: 3, 1: 4, 2: 3, 3: 5}              # by type: static, flash, pulse, RGB
 
-# read out of g_grid.pd rather than guessed. The mode lamps are the left
-# column's eight, page 1 at the top: LAMPS[m - 1] is page m's.
-LAMPS = (80, 70, 60, 50, 40, 30, 20, 10)
-BEAT_LO, BEAT_HI = 11, 18
-DIM, LAMP_ON, BEAT_ON, ALERT_RED = 1, 21, 3, 5
+# The voices' lamps, read out of g_grid.lua: a row's left button and its right, row 1 at the top.
+# LEFT[r - 1] and RIGHT[r - 1] are row r's. Each is its voice's color, full where the page is, dim
+# elsewhere, and dark with no voice (g_grid.pd's RGB entries 28 to 43).
+LEFT = (80, 70, 60, 50, 40, 30, 20, 10)
+RIGHT = (89, 79, 69, 59, 49, 39, 29, 19)
+VOICE_FULL = ((127, 20, 72), (0, 96, 127), (127, 56, 0), (0, 127, 32),
+              (64, 20, 127), (127, 110, 0), (127, 24, 8), (90, 90, 90))
+VOICE_DIM = ((31, 5, 18), (0, 24, 31), (31, 14, 0), (0, 31, 8),
+             (16, 5, 31), (31, 27, 0), (31, 6, 2), (22, 22, 22))
+DIM, ALERT_RED = 1, 5
 
 MIDI_RE = re.compile(r"^MIDIOUT:\s+(-?\d+)\s+(-?\d+)\s*$")
 
 # The edges, on every page (ref/module/songs.md): the top row's eight, CC 91 to 98 -- the two
 # arrows, then the six section buttons -- from u_song's top <8 lamps>, save and revert, CC
-# 108 and 8, from its unsaved, and go, CC 89, from its go. Read out of g_grid.pd's RGB table (entries 26, 27, 28 and 29) and
+# 108 and 8, from its unsaved. Read out of g_grid.pd's RGB table (entries 20, 21, 22 and 23) and
 # its palette: an arrow is palette 1, dim; a section dim green, the one playing full green, the
 # one queued full and dark by turns; save red and revert gray while anything is unsaved.
 TOP = tuple(range(91, 99))
@@ -144,44 +149,48 @@ def parse(stream, tag):
     return frames
 
 
-def home_shape(frame):
-    """-> (problem_or_None, lit_lamp_index, lit_beat_index) for a HOME frame.
+def lamp_problem(idx, color):
+    """None if a cell of the two columns is a color its row's lamp can take, else what is wrong."""
+    row = (LEFT + RIGHT).index(idx) % 8
+    if color in (0, VOICE_FULL[row], VOICE_DIM[row]):
+        return None
+    return "row %d's lamp at %d is color %s" % (row + 1, idx, color)
 
-    Home is: everything dark, the eight mode lamps dim with one lit, the eight beat
-    cells dim with one lit. Anything else lit anywhere is the problem this
-    returns, so an off-by-one that lights a ring button once a bar is caught
-    though seven beats of eight look right.
-    """
-    lamp, beat, stray = None, None, []
+
+def page_shape(frame, lit=(), save_lamps=True):
+    """-> (problem_or_None, lit_lamp_index) for a frame: the lamps as voices have them, the edges a
+    color each can take, the cells in `lit` free, and everything else dark. An off-by-one that
+    lights a stray cell is the problem this returns. The lamp is the one lit at full, which is
+    where the page is, or None. save_lamps False: the performance page, whose bottom rows are the
+    nanoKONTROL's buttons, so save's and revert's cells are free too."""
+    lamp, stray = None, []
     for k, color in enumerate(frame.colors()):
         idx = FIRST_INDEX + k
-        if idx in LAMPS:
-            if color == LAMP_ON:
+        if idx in lit:
+            continue
+        if idx in LEFT or idx in RIGHT:
+            problem = lamp_problem(idx, color)
+            if problem:
+                return problem, lamp
+            if color and color in VOICE_FULL:
                 if lamp is not None:
-                    return ("two mode lamps lit: %d and %d" % (lamp, idx)), lamp, beat
+                    return "two lamps lit: %d and %d" % (lamp, idx), lamp
                 lamp = idx
-            elif color != DIM:
-                return ("mode lamp %d is color %s" % (idx, color)), lamp, beat
-        elif BEAT_LO <= idx <= BEAT_HI:
-            if color == BEAT_ON:
-                if beat is not None:
-                    return ("two beat cells lit: %d and %d" % (beat, idx)), lamp, beat
-                beat = idx
-            elif color != DIM:
-                return ("beat cell %d is color %s" % (idx, color)), lamp, beat
-        elif idx in EDGES:
+        elif idx in EDGES and (save_lamps or idx in TOP):
             if edge_problem(idx, color):
-                return edge_problem(idx, color), lamp, beat
+                return edge_problem(idx, color), lamp
+        elif idx in (SAVE, REVERT) and not save_lamps:
+            continue
         elif color != 0:
             stray.append((idx, color))
     if stray:
-        return ("lit outside every region: %s" % stray[:6]), lamp, beat
-    return None, lamp, beat
+        return "lit outside the page, the lamps and the edges: %s" % stray[:6], lamp
+    return None, lamp
 
 
 # ---------------------------------------------------------------------------
-# The drum page, page 2. Which cell is which comes from the layout table that
-# g_grid and u_map both read, never typed here; the colors are g_grid's.
+# The drum page. Which cell is which comes from the layout table that g_grid and
+# u_map both read, never typed here; the colors are g_grid's.
 DRUM_PAGE = "Cut It/cut-it-drum-page.txt"
 PLAYHEAD = 21                   # green, over whatever the step holds
 OUT = 0                         # a step past the last step, lit or not: dark
@@ -197,7 +206,7 @@ LEVEL_DIM = ((32, 32, 32), (32, 27, 27), (32, 23, 23), (32, 18, 18),
 # for what every pad but one is.
 PAD_DIM, PAD_ON = (127, 20, 72), (127, 0, 0)
 # A pad whose track won't play, muted or left out of a solo (Brendan, 2026-11-05): each of those
-# at a quarter, g_grid's RGB entries 30 and 31.
+# at a quarter, g_grid's RGB entries 24 and 25.
 PAD_QUIET, PAD_ON_QUIET = (32, 5, 18), (32, 0, 0)
 PADS = (PAD_DIM, PAD_ON, PAD_QUIET, PAD_ON_QUIET)
 BAR_START = (16, 40, 127)       # every Nth step, off, N the top number: blue
@@ -208,7 +217,7 @@ ROW = 8
 # A repeat pad and the 500 BPM repeat, pad-35: the brightest purple there is, and whiter, never
 # dimmer, while held (Brendan, 2026-11-05). REP_DIM keeps its name for what a pad not held is.
 REP_DIM, REP_HELD = (127, 0, 127), (127, 80, 127)
-# The saved tempo, pad-38: dim blue, and bright while held. g_grid's RGB entries 32 and 33.
+# The saved tempo, pad-38: dim blue, and bright while held. g_grid's RGB entries 26 and 27.
 RECALL_DIM, RECALL_HELD = (8, 20, 64), (40, 100, 127)
 
 
@@ -249,15 +258,14 @@ def cell_step(n, row=ROW):
 
 
 def drum_page(frame, lay, row=ROW):
-    """-> (problem_or_None, lit_lamp_index, page) for a page-2 HOME frame, its rows
-    of steps this long.
+    """-> (problem_or_None, lit_lamp_index, page) for a frame of the drum page, its rows of steps
+    this long.
 
     page is {"step": {step: color}, "vel": {n: color}, "pad": {n: color}, "rep": {n:
     color}, "fast": {1: color}, "recall": {1: color}}, a step cell keyed by the step
-    it shows (cell_step). The page is: the eight mode lamps as home has them, every
-    layout cell in a color its role can take, a step cell past its row dark, and
-    everything else dark -- the beat row included, since it gives way here, and the
-    two cells between pad-35 and pad-38, which no row names.
+    it shows (cell_step). The page is: the voices' lamps, every layout cell in a color
+    its role can take, a step cell past its row dark, and everything else dark -- the
+    two cells between pad-35 and pad-38 among them, which no row names.
     """
     allowed = {"step": {DIM, OUT, PLAYHEAD, BAR_START} | set(LEVEL_RGB),
                "vel": set(LEVEL_RGB) | set(LEVEL_DIM), "pad": set(PADS),
@@ -267,13 +275,14 @@ def drum_page(frame, lay, row=ROW):
                                "recall": {}}, []
     for k, color in enumerate(frame.colors()):
         idx = FIRST_INDEX + k
-        if idx in LAMPS:
-            if color == LAMP_ON:
+        if idx in LEFT or idx in RIGHT:
+            problem = lamp_problem(idx, color)
+            if problem:
+                return problem, lamp, page
+            if color and color in VOICE_FULL:
                 if lamp is not None:
-                    return ("two mode lamps lit: %d and %d" % (lamp, idx)), lamp, page
+                    return ("two lamps lit: %d and %d" % (lamp, idx)), lamp, page
                 lamp = idx
-            elif color != DIM:
-                return ("mode lamp %d is color %s" % (idx, color)), lamp, page
         elif idx in lay:
             role, n = lay[idx]
             if color not in allowed[role]:
@@ -310,128 +319,3 @@ def drum_page(frame, lay, row=ROW):
     if len(heads) > 1:
         return ("%d playheads: steps %s" % (len(heads), sorted(heads))), lamp, page
     return None, lamp, page
-
-
-# ---------------------------------------------------------------------------
-# The synth pads, page 3. Which cell is which synth comes from the layout table
-# g_grid and u_map both read, never typed here; the colors are g_grid's RGB
-# entries 20 to 23: each synth's, full when it is chosen and a quarter when not.
-SYNTH_PAGE = "Cut It/cut-it-synth-page.txt"
-SYNTH_RGB = {"fm": ((127, 56, 0), (32, 14, 0)),            # amber
-             "strings": ((0, 96, 127), (0, 24, 32))}       # cyan
-
-
-def synth_layout(path=SYNTH_PAGE):
-    """-> {grid index: synth} from the layout table."""
-    lay = {}
-    with open(path, encoding="utf-8") as fh:
-        for line in fh:
-            f = line.split()
-            if f:
-                lay[int(f[0])] = f[1]
-    return lay
-
-
-def synth_page(frame, lay, chosen):
-    """-> (problem_or_None, lit_lamp_index, lit_beat_index) for a page-3 HOME frame.
-
-    Page 3 is home, the mode lamps and the beat row, with the synth pads above the
-    beat row: every layout cell its synth's color, full for the synth chosen and a
-    quarter for the other, and everything else dark.
-    """
-    lamp, beat, stray = None, None, []
-    for k, color in enumerate(frame.colors()):
-        idx = FIRST_INDEX + k
-        if idx in lay:
-            full, quarter = SYNTH_RGB[lay[idx]]
-            want = full if lay[idx] == chosen else quarter
-            if color != want:
-                return ("synth pad %d, %s, is %s, wanted %s with %s chosen"
-                        % (idx, lay[idx], color, want, chosen)), lamp, beat
-        elif idx in LAMPS:
-            if color == LAMP_ON:
-                if lamp is not None:
-                    return ("two mode lamps lit: %d and %d" % (lamp, idx)), lamp, beat
-                lamp = idx
-            elif color != DIM:
-                return ("mode lamp %d is color %s" % (idx, color)), lamp, beat
-        elif BEAT_LO <= idx <= BEAT_HI:
-            if color == BEAT_ON:
-                beat = idx
-            elif color != DIM:
-                return ("beat cell %d is color %s" % (idx, color)), lamp, beat
-        elif idx in EDGES:
-            if edge_problem(idx, color):
-                return edge_problem(idx, color), lamp, beat
-        elif color != 0:
-            stray.append((idx, color))
-    # Page 3's generator pads on the top row: new melody amber and new chords cyan, each dim; chords on and
-    # melody on, dim while off, as they are at load; and new rhythm, blue. What each does is the map's.
-    pads = {81: SYNTH_RGB["fm"][1], 82: SYNTH_RGB["strings"][1], 83: SYNTH_RGB["strings"][1],
-            84: SYNTH_RGB["fm"][1]}
-    for idx, color in stray:
-        if idx in pads and color != pads[idx]:
-            return ("generator pad %d is %s, wanted %s" % (idx, color, pads[idx])), lamp, beat
-    stray = [(idx, color) for idx, color in stray if idx not in pads and idx != 85]
-    if stray:
-        return ("lit outside the lamps, the beat row and the synth pads: %s"
-                % stray[:6]), lamp, beat
-    return None, lamp, beat
-
-
-# ---------------------------------------------------------------------------
-# The tap pad, page 1. Which cell is which role comes from the layout table
-# g_grid and u_map both read, never typed here; the colors are g_grid's RGB
-# entries 24 and 25: a tap cell yellow at a quarter, and full while it flashes.
-ARRANGE_PAGE = "Cut It/cut-it-arrangement-page.txt"
-ROLE_RGB = {"tap": ((32, 24, 0), (127, 96, 0))}            # dim, flashing
-
-
-def arrange_layout(path=ARRANGE_PAGE):
-    """-> {grid index: role} from the layout table."""
-    lay = {}
-    with open(path, encoding="utf-8") as fh:
-        for line in fh:
-            f = line.split()
-            if f:
-                lay[int(f[0])] = f[1]
-    return lay
-
-
-def arrange_page(frame, lay, flashing=False):
-    """-> (problem_or_None, lit_lamp_index, lit_beat_index) for a page-1 HOME frame.
-
-    Page 1 is home, the mode lamps and the beat row, with the arrangement page's
-    pads beside them: every layout cell its role's color, dim, or full while it
-    flashes, and everything else dark.
-    """
-    lamp, beat, stray = None, None, []
-    for k, color in enumerate(frame.colors()):
-        idx = FIRST_INDEX + k
-        if idx in lay:
-            dim, full = ROLE_RGB[lay[idx]]
-            want = full if flashing else dim
-            if color != want:
-                return ("pad %d, %s, is %s, wanted %s%s"
-                        % (idx, lay[idx], color, want, " flashing" if flashing else "")), lamp, beat
-        elif idx in LAMPS:
-            if color == LAMP_ON:
-                if lamp is not None:
-                    return ("two mode lamps lit: %d and %d" % (lamp, idx)), lamp, beat
-                lamp = idx
-            elif color != DIM:
-                return ("mode lamp %d is color %s" % (idx, color)), lamp, beat
-        elif BEAT_LO <= idx <= BEAT_HI:
-            if color == BEAT_ON:
-                beat = idx
-            elif color != DIM:
-                return ("beat cell %d is color %s" % (idx, color)), lamp, beat
-        elif idx in EDGES:
-            if edge_problem(idx, color):
-                return edge_problem(idx, color), lamp, beat
-        elif color != 0:
-            stray.append((idx, color))
-    if stray:
-        return ("lit outside the lamps, the beat row and page 1's pads: %s"
-                % stray[:6]), lamp, beat
-    return None, lamp, beat

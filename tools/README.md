@@ -251,7 +251,7 @@ it overturned the conclusion — **the DSP is the budget, not the MIDI, and the 
 wrong by a factor of sixteen.** The three-way readings are on
 [../ref/module/tempo.md](../ref/module/tempo.md), item 75.
 
-⚠️ **With DSP off the patch is silent and the beat row freezes** — `c_clock` is cut from a phasor,
+⚠️ **With DSP off the patch is silent and the clock stops** — `c_clock` is cut from a phasor,
 so the grid stops walking and the transport stops counting. Expected, not a fault.
 
 ## Measuring, and probes still worth running
@@ -386,9 +386,9 @@ python3 tools/touchosc/watch.py
 **Every screen is a page, and the editor reaches each by its tab** (Brendan, 2026-11-04). No script
 runs in the editor, so nothing in the layout is hidden for a script to show:
 
-- **The top tab bar is the Launchpad's pages**, the outer pager, `pages`: arrangement, drums,
+- **The top tab bar is the phone's pages**, the outer pager, `pages`: arrangement, drums,
   synths, page 4 to page 6, sections, songs, and line check last. Click a tab to open that page; on the phone
-  the root's script hides this bar and turns the pager to the Launchpad's page itself.
+  the root's script hides this bar and turns the pager to the page the `mode` bus names, by `build.py`'s `MODE_PAGES`.
 - **Under it is the page's own tab bar**, its pager (`tabs1` to `tabs8`, `checktabs`): one tab each,
   named for the page, and the page's controls under that, but the synths page's four, the sections
   page's two and the songs page's three. A second tab

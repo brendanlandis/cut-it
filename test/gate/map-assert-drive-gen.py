@@ -48,7 +48,7 @@ SEQ = [
     # so it goes straight to live and both values pass. mother pushes knobs.txt
     # only after a Save, so this is a fresh install or tools/deploy.sh --clean.
     (4200, "LATE-KNOB", ["\\; param og-knob-3 0.5", "\\; param og-knob-3 0.9"], GAP),
-    # Before the mode switch: the bad row is keyed mode-1, and in mode-4 it would
+    # Before the page changes: the bad row is keyed perform, and on another page it would
     # be a lookup miss, silent for the wrong reason.
     (4400, "BAD-DEST", ["\\; param gk-bad 100"], GAP),
     # A target on a rail (item 241): the release test is a side flip, so a knob
@@ -56,46 +56,42 @@ SEQ = [
     # RAIL-BACK returns to the target exactly and must hand over.
     (4600, "RAIL-UP", ["\\; param og-knob-4 0.5", "\\; param gk-cc 64"], GAP),
     (4800, "RAIL-BACK", ["\\; param og-knob-4 0"], GAP),
-    # After 3.5 s: u_init's restore republishes mode then and would overwrite an
-    # earlier switch (item 232). 127, then 0 on release, is what a Launchpad CC
-    # button sends.
-    (5000, "MODE-4", ["\\; param lp-cc-50 127"], GAP),
+    # After 3.5 s: the song's load says the page then, and would overwrite an earlier
+    # switch. 127, then 0 on release, is what a Launchpad CC button sends. Row 2, the seed's
+    # harmony (u_voices.lua).
+    (5000, "LEFT-2", ["\\; param lp-cc-70 127"], GAP),
     # The release must select nothing. A second selection is idempotent, so the
     # screen looks right while every mode message and state write doubles.
-    (5100, "MODE-4-RELEASE", ["\\; param lp-cc-50 0"], GAP),
-    # gk-cc is mapped on page 1 alone, so here it draws nothing; knob 1, tempo on
-    # every page and live since LIVE, is the window's witness: 0.3 is 75 bpm.
-    (5200, "MODE-DEP", ["\\; param gk-cc 64", "\\; param og-knob-1 0.3"], GAP),
-    # The top row's first button selected mode 1 until the modes moved to the
-    # left column: it is free now, so it selects nothing and, unmapped, draws
-    # nothing (Brendan, 2026-11-04).
-    (5300, "TOP-ROW-FREE", ["\\; param lp-cc-91 127"], GAP),
-    # Page 4: knob 3 is page 2's alone, so it maps to nothing here and draws
-    # nothing, while knob 2 is the drums' last step on every page (Brendan,
-    # 2026-11-04) and reaches c_steps, whose latch holds it at 16: the witness.
-    (5400, "UNMAPPED", ["\\; param og-knob-3 0.75", "\\; param og-knob-2 0.75"], GAP),
-    # The left column's bottom key, press and release: page 8. What follows runs
-    # there, on rows only the last page's own would answer.
-    (5500, "MODE-8", ["\\; param lp-cc-10 127", "\\; param lp-cc-10 0"], GAP),
-    # A mode the key-setter cannot use, as u_state replays an old
-    # cut-it-auto.txt truncated to `mode compose`: one atom, but no page, and
-    # as the key it would miss every row, so every knob would draw its raw row
-    # (item 294, fixed by 297). The static lint cannot see a mode that arrives
-    # at runtime.
+    (5100, "LEFT-2-RELEASE", ["\\; param lp-cc-70 0"], GAP),
+    # gk-cc is mapped on the performance page alone, so here it draws nothing; knob 1, tempo
+    # on every page and live since LIVE, is the window's witness: 0.3 is 75 bpm.
+    (5200, "PAGE-DEP", ["\\; param gk-cc 64", "\\; param og-knob-1 0.3"], GAP),
+    # The top row's first button is the song's back arrow: it selects no page, and draws
+    # nothing.
+    (5300, "TOP-ROW", ["\\; param lp-cc-91 127"], GAP),
+    # Here knob 2 is the drums' last step, as on every page (Brendan, 2026-11-06) and reaches
+    # c_steps, whose latch holds it at 16: the witness that gk-none, on no row, drew nothing.
+    (5400, "UNMAPPED", ["\\; param gk-none 64", "\\; param og-knob-2 0.75"], GAP),
+    # Aux, on the panel that can't go missing: the songs page, opened with a press alone.
+    # What follows runs there, on rows every page shares.
+    (5500, "AUX", ["\\; param og-aux 1"], GAP),
+    # A mode the key-setter cannot use, as a truncated message would say it: one atom, but
+    # no page, and as the key it would miss every row, so every knob would draw its raw row
+    # (item 294, fixed by 297). The static lint cannot see a mode that arrives at runtime.
     (5600, "BAD-MODE", ["\\; mode compose"], GAP),
-    # The key must survive: og-knob-1 is tempo on every page, page 8 here, and
-    # long since live, so 0.6 must still reach tempo as 150 bpm.
+    # The key must survive: og-knob-1 is tempo on every page, songs here, and long since
+    # live, so 0.6 must still reach tempo as 150 bpm.
     (5800, "AFTER-BAD", ["\\; param og-knob-1 0.6"], GAP),
-    # The shipped rows on the Organelle's shifted keys (og-shift-60..84, aux
-    # held), the one panel that can never be the missing device, on page 8.
-    (6200, "DIAG-DEST", ["\\; param og-shift-60 100"], GAP),
-    # A shifted key publishes both edges; the release must not summon it again.
-    (6400, "DIAG-RELEASE", ["\\; param og-shift-60 0"], GAP),
-    # With the nano unplugged, this is the only stop left.
-    (6600, "SHIFT-STOP", ["\\; param og-shift-72 100"], GAP),
-    # Back to mode-1, since every gate row is keyed mode-1. Press and release,
-    # as the pad sends.
-    (6800, "MODE-1", ["\\; param lp-cc-80 127", "\\; param lp-cc-80 0"], GAP),
+    # Setup, on the Launchpad: the diagnostics page, whose first pad summons the OLED's
+    # diagnostic layer.
+    (6000, "SETUP", ["\\; param lp-setup 127"], GAP),
+    (6200, "DIAG-DEST", ["\\; param pad-81 100"], GAP),
+    # A Launchpad pad publishes both edges; the release must not summon it again.
+    (6400, "DIAG-RELEASE", ["\\; param pad-81 0"], GAP),
+    # Closed, in the order they were opened: back to the songs page, back to row 2's page, and
+    # the lit button again is the performance page, which every gate row is keyed to.
+    (6800, "PERFORM", ["\\; param lp-setup 127", "\\; param og-aux 1", "\\; param lp-cc-70 127",
+                       "\\; param lp-cc-70 0"], GAP),
     # Every value destination draws its mapped row. The shipped map reaches only
     # tempo and volca-cc, so note and program go through gate rows
     # (scratch-gates.py). 64 in is 64 out for a 0-127 control. 404-pad's window
@@ -108,8 +104,8 @@ SEQ = [
     # beside it must add no note.
     (7800, "ROW-KEY", ["\\; param gk-key 100", "\\; param og-key-60 100"], GAP),
     # Unmapped pressure draws no row (item 318), and neither does an unmapped
-    # press since 2026-11-04: pad-36 sits in the drum page's free corner, and the
-    # drum page is page 2's. gk-cc, mapped here, is the witness.
+    # press since 2026-11-04: pad-36 sits in the drum page's free corner, and on the
+    # performance page it's a column's: gk-cc, mapped here, is the witness.
     (8000, "PRESSURE", ["\\; param pad-11-at 64", "\\; param pad-36 100",
                         "\\; param gk-cc 64"], GAP),
     # Mapped pressure still draws its row: a gate row maps pad-13-at to
@@ -119,8 +115,8 @@ SEQ = [
 QUIT_MS = 8800
 
 BLURB = ("map-assert-drive -- GENERATED by map-assert-drive-gen.py. Do not edit this "
-         "file. It drives the mode table: the lookup at load \\, a mapped control "
-         "reaching its destination \\, the same control in another mode doing nothing \\, "
+         "file. It drives the table: the lookup at load \\, a mapped control "
+         "reaching its destination \\, the same control on another page doing nothing \\, "
          "and a row naming a destination that is not on u_map's route.")
 
 NOTES = [

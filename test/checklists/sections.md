@@ -1,7 +1,7 @@
 # Sections checklist
 
 The current song's sections: the Launchpad's top row, which plays them, save and revert on its
-bottom rows, and the phone's page 7, which makes, orders, names and sets them. `song-assert` proves
+bottom rows, and the phone's sections page, which makes, orders, names and sets them. `song-assert` proves
 what a press restores, the queue at the loop, a length handing over, the lamps' colors, the program
 changes and the files across a reload; `phone-assert` and `touchosc-assert` the phone's side. What
 is left is music you can hear change on the downbeat, lamps you can see blink, and the SD card
@@ -10,8 +10,8 @@ across a real power cut.
 **Before you start:**
 
 - The drums audible through the PA, the Volca and the Streichfett on, and the phone showing Cut It.
-- A song of at least two sections that sound different: on page 7, tap **new**, then on page 2
-  change the drum pattern while the new section plays (step 3 says how to play it), and on page 1
+- A song of at least two sections that sound different: on the phone's sections page, tap **new**, then on the drum page
+  change the drum pattern while the new section plays (step 3 says how to play it), and on the arrangement screen
   its tempo.
 
 12 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why
@@ -30,7 +30,7 @@ each thing behaves as it does: [songs](../../ref/module/songs.md).
 - [ ] **3. Playing, a press waits for the pattern to come round**
   - **Need:** Playing, section 2 playing, its global last step 16 or more.
   - **Do:** Press the third button mid-pattern, and listen.
-  - **Pass if:** The third button blinks in time with the beat row, full and dark, while section 2 plays on to the end of its pattern. On the pattern's step 1 section 1 takes over, its first step on that downbeat, and the third button goes solid and the fourth dim.
+  - **Pass if:** The third button blinks on the beat, full and dark, while section 2 plays on to the end of its pattern. On the pattern's step 1 section 1 takes over, its first step on that downbeat, and the third button goes solid and the fourth dim.
 
 - [ ] **4. The arrows**
   - **Need:** Playing, section 1 playing, two sections or more.
@@ -38,19 +38,19 @@ each thing behaves as it does: [songs](../../ref/module/songs.md).
   - **Pass if:** The right arrow queues section 2, blinking until the pattern comes round; the left arrow queues section 1 back the same way. Each arrow is dark when there is no section its way.
 
 - [ ] **5. A length hands over by itself**
-  - **Need:** Playing, two sections. On the phone's page 7, select section 1 and drag its length up to 2 bars.
+  - **Need:** Playing, two sections. On the phone's sections page, select section 1 and drag its length up to 2 bars.
   - **Do:** Press the third button to queue section 1, and count its patterns.
   - **Pass if:** Section 1 plays its pattern twice and section 2 starts on the next step 1 by itself, with nothing pressed. Section 2, a loop, plays on until a button is pressed.
 
 - [ ] **6. A change lights save and revert**
   - **Need:** Nothing changed since the last save: both rightmost bottom buttons dark.
-  - **Do:** On page 2, turn on one step of the playing section's drum pattern.
+  - **Do:** On the drum page, turn on one step of the playing section's drum pattern.
   - **Pass if:** The upper bottom row's rightmost button lights red and the lowest row's rightmost gray, at once. Turning the step off again puts both out.
 
 - [ ] **7. Revert**
   - **Need:** A step turned on since the last save, both lamps lit.
   - **Do:** Press the lowest row's rightmost button, the gray one.
-  - **Pass if:** The step goes off on page 2 and the drums play the saved pattern, at once; both lamps go dark.
+  - **Pass if:** The step goes off on the drum page and the drums play the saved pattern, at once; both lamps go dark.
 
 - [ ] **8. Save, and a reload**
   - **Need:** A change made, both lamps lit.

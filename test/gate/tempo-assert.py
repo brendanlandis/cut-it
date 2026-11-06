@@ -3,7 +3,7 @@
 
 It counts System Real-Time bytes (>= 248), which no SysEx byte can be, so the
 Launchpad's grid frames can share the capture. Not lib_grid.parse, which skips
-the bytes >= 248 this gate wants. Then tap tempo, from page 1's tap pad, and the
+the bytes >= 248 this gate wants. Then tap tempo, from the nanoKONTROL's LOOP, and the
 phone's tempo, read off the tempo bus.
 """
 import os
@@ -165,12 +165,12 @@ def main():
             want * (1 - TOLERANCE) <= n <= want * (1 + TOLERANCE),
             "counted %d in the 1.5 s after the stop, wanted about %.0f" % (n, want))
 
-    print("\n--- tap tempo, from page 1's tap pad ---")
+    print("\n--- tap tempo, from the nanoKONTROL's LOOP ---")
     bpms = lambda k: [float(e[1][0]) for e in W(k) if e[0] == "TEMPO" and e[1]]
     A.check("the first tap starts the count, and sets nothing", bpms("TAP-1") == [],
             bpms("TAP-1"))
     A.check("⛔ the second, 400 ms on, sets the tempo bus to 150", bpms("TAP-2") == [150.0],
-            "the tempo bus carried %s -- nothing means the pad never reached u_tempo's "
+            "the tempo bus carried %s -- nothing means the press never reached u_tempo's "
             "timer through u_map's arrangement row" % bpms("TAP-2"))
     A.check("... and the third, 400 ms on again, 150", bpms("TAP-3") == [150.0], bpms("TAP-3"))
     A.check("⛔ a tap 2.5 s after the last starts over, and sets nothing",
@@ -207,7 +207,7 @@ def main():
             bpms("PHONE-BAD") == [] and [e[1] for e in errs("PHONE-BAD")]
             == [["fail", "u_tempo", "bad-tempo"]], "tempo %s err %s"
             % (bpms("PHONE-BAD"), errs("PHONE-BAD")))
-    A.check("⛔ on page 2 cell 21 is a drum pad: two taps there set nothing",
+    A.check("⛔ on the drum page cell 21 is a drum pad: two presses there set nothing",
             bpms("PAGE-2-TAPS") == [], bpms("PAGE-2-TAPS"))
     # The presence layer's routine reports share err in every window; these are the
     # tap's and the phone's path.

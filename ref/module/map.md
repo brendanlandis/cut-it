@@ -10,14 +10,16 @@ named controls onto `param` and stops there; everything above the map is driven 
 file writes. Nothing in `e_` or `c_` may ever learn that a nanoKONTROL exists, and this is the layer
 that keeps that true.
 
-Since v0.3 the map is **table-driven and mode-dependent**. `Cut It/cut-it-map.txt` sits beside the
-patch, one row per mapping, and a control means whatever the row for the *current* mode says it
-means. Telling the instrument "in mode 2, this fader plays the Volca" is one row of a text file.
+The map is **table-driven, by page**. `Cut It/cut-it-map.txt` sits beside the patch, one row per
+mapping, and a control means whatever the row for the page on show says it means, or an `all` row
+says on every page. Telling the instrument "on the drum page, this fader plays the Volca" is one row
+of a text file. `u_voices` chooses the page and writes it on the `mode` bus ([voices.md](voices.md)).
 
 **Its lookup is Lua, and its destinations are Pd.** `u_map.lua` reads the table and holds the
-lookup key's mode, the lookup, the divisor and parameter pickup, as plain Lua that runs on the Mac without Pd; `u_map.pd` keeps the eight mode keys, the
-destination route and every handler behind it, the boot timers and the files pickup reads, and asks
-the Lua through one pdlua object, `[u_map-lua]` (`cut-it/logic-as-text`).
+lookup key's page, the lookup, the divisor and parameter pickup, as plain Lua that runs on the Mac
+without Pd; `u_map.pd` keeps the destination route and every handler behind it, the boot timers and
+the files pickup reads, and asks the Lua through one pdlua object, `[u_map-lua]`
+(`cut-it/logic-as-text`).
 
 ⛔ **The table never names a `[send]`.** It names a destination that must exist as a literal argument
 on a `route` box inside `u_map`, feeding a handler you can see on the canvas — the **allowlist
@@ -26,30 +28,30 @@ guard**, and the whole of what makes a table acceptable here. See *Design*.
 `u_map` has **one inlet**, the BPM a tap or the phone set, from `u_tempo`, at which it holds knob 1
 ([tempo.md](tempo.md)). It has **one outlet per output device**, wired in `u_root`, because no bus
 carries a sounding note — the Volca's, the one since the SP-404 left the rig (Brendan, 2026-11-04) —
-then one to `c_steps`, for what a press on page 2's drum page means ([sequencer.md](sequencer.md)),
-one to `u_net`, which flips test mode, one to `c_synth`, for a press of page 3's synth pads
-([synths.md](synths.md)), one to `u_tempo`, for a press of page 1's tap pad
+then one to `c_steps`, for what a press on the drum page means ([sequencer.md](sequencer.md)),
+one to `u_net`, which flips test mode, one to `u_tempo`, for the tap button and knob 4
 ([tempo.md](tempo.md)), one to `u_song`, for the top row, save and revert, the Organelle's
-keys ([songs.md](songs.md)), and one to `c_melody`, for page 3's generator controls
-([synths.md](synths.md)).
+keys ([songs.md](songs.md)), one to `c_melody`, for the generator's controls
+([synths.md](synths.md)), and one each to `u_voices` and `u_perform` ([voices.md](voices.md)).
 
 ## Facts
 
 ### A row is four atoms, always
 
 ```
-<mode> <control> <dest> <arg>
+<page> <control> <dest> <arg>
 
-mode-1 og-knob-1 tempo    0
-mode-3 slider-1  volca-cc 41
+all     og-knob-1 tempo    0
+drums   pad-81    drum-page 81
+harmony pad-*     melody   h
 ```
 
 | Field | Is | Evidence | Item |
 |-------|----|----------|------|
-| `<mode>` | The `mode` bus message, one atom: the page, `mode-1` to `mode-8` | verified | — |
-| `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `pad-43` | verified | — |
+| `<page>` | One of `u_map.lua`'s `R.PAGES`, a name on the `mode` bus: `perform`, `drums`, `harmony`, `melody`, `keys`, `sound`, `songs`, `diag`. Or `all`, every page's. **A page's own row beats an `all` row** | unknown | — |
+| `<control>` | A `param` name, physical and never functional — `og-knob-1`, `slider-1`, `pad-43`. Or `pad-*`: a page of pads as one row, each pad's number after the arg, so `harmony pad-* melody h` makes `pad-71` `melody h71` | unknown | — |
 | `<dest>` | One of the **twenty-three** below, and **only** those | verified | 229 |
-| `<arg>` | A float the handler interprets. `0` where the handler has no use for one | verified | — |
+| `<arg>` | A float or a word the handler interprets. `0` where the handler has no use for one | verified | — |
 
 **A row with any other width is a lint failure**, not a runtime one — `map-assert.py` reads the
 file and rejects it before Pd ever does, and the Lua skips it.
@@ -70,18 +72,19 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `volca-prog` | The program number | A **gate only** — it decides whether the press counts | verified | — |
 | `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key. ⚠️ **No shipped row names it** since the Organelle's keys left the map (2026-11-04) | verified | 293 |
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
-| `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`og-shift-60`, on every page** | verified | 301 |
+| `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`pad-81` on the diagnostics page**, which Setup opens ([voices.md](voices.md)) | unknown | 301 |
 | `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad, the 500 BPM repeat and the saved tempo's lamp; `pad-35` and `pad-38` are two of them (Brendan, 2026-11-05), and `pad-36` and `pad-37` between them no row at all; an index the layout lacks is `fail u_map layout-miss` | verified | — |
-| `test-mode` | unused | Non-zero flips `u_net`'s test mode, which puts the phone's line check up ([phone.md](../device/phone.md)). **`og-shift-61` and `lp-setup`, the Launchpad's Setup, on every page**; `lp-setup` has no release, and needs none; out `u_map`'s third outlet, a cord to `u_net`. Choosing a mode turns test mode off, in `u_net` | unknown | — |
-| `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1 to the time signature's reach**, 32 at 4/4 ([sequencer.md](sequencer.md)), **`og-knob-2`**, and `swing` the sequencer's, 50% to 75%, which no shipped row names since knob 4 became `rush` (the phone's stays), both on every page; `track-last` the selected track's own, **`og-knob-3`**, on page 2 alone, where the track is selected (Brendan, 2026-11-04). A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
-| `synth` | The **grid index**, looked up in `cut-it-synth-page.txt` | Non-zero sends `synth <choice>`, the cell's synth, to `c_synth` out `u_map`'s fourth outlet; a release does nothing, so with both pads held the first let go cannot undo the second. Eight rows, `pad-21` to `pad-28`, page 3 alone; an index the layout lacks is `fail u_map layout-miss`, as for `drum-page` (Brendan, 2026-11-04) | unknown | — |
-| `arrangement` | The **grid index**, looked up in `cut-it-arrangement-page.txt` | Non-zero sends the cell's role to `u_tempo` out `u_map`'s fifth outlet — `tap`, the one there is — and a release nothing. One row, `mode-1 pad-21 arrangement 21`, page 1 alone; an index the layout lacks is `fail u_map layout-miss` (Brendan, 2026-11-04) | unknown | — |
-| `section` | The top-row button, 1 and 2 the arrows, 3 to 8 the six section buttons | Non-zero sends `top <arg>` to `u_song` out `u_map`'s sixth outlet; a release nothing. `lp-cc-91` to `lp-cc-98`, buttons 1 to 8, on every page ([songs.md](songs.md)) | unknown | — |
-| `save` | unused | Non-zero sends `save` to `u_song`, the sixth outlet. `lp-cc-108`, the upper bottom row's rightmost, on every page | unknown | — |
-| `revert` | unused | Non-zero sends `revert` to `u_song`, the sixth outlet. `lp-cc-8`, the lowest row's rightmost, on every page | unknown | — |
-| `song` | The Organelle's key, 1 the lowest | Non-zero sends `key <arg>` to `u_song`, the sixth outlet, which loads the setlist's song at that place; a release nothing. `og-key-60` to `og-key-84`, keys 1 to 25, on every page (Brendan, 2026-11-05; [songs.md](songs.md)) | unknown | — |
-| `rush` | unused | The knob's 0–1 and its live flag, held or not, `rush <0-1> <live>` to `u_tempo` out `u_map`'s fifth outlet, which draws its row: an absolute rate, 10 BPM at the bottom, the tempo up to 1000 and then a loop of what is being repeated, climbing and thinning to silence at 22 kHz ([sequencer.md](sequencer.md), *Rush*); `rush -1 1` says knob 1 has gone live, which ends it. **`og-knob-4`, on every page** (Brendan, 2026-11-05) | unknown | — |
-| `melody` | What the control is to `c_melody`, one of `c_melody.lua`'s `R.ORDER`, or a pad's `roll-melody`, `roll-chords`, `roll-rhythm`, `on-h` or `on-m` | The control's 0–1, as it is, or the pad's velocity, `<arg> <value>` to `c_melody` out `u_map`'s seventh outlet, which scales a control, draws its row and puts it, and takes a pad's press and leaves its release. Page 3 alone: faders, knobs and `pad-81` to `pad-85` ([synths.md](synths.md), *The generator*) (Brendan, 2026-11-05) | unknown | — |
+| `test-mode` | unused | Non-zero flips `u_net`'s test mode, which puts the phone's line check up ([phone.md](../device/phone.md)). **`pad-82` on the diagnostics page**; out `u_map`'s third outlet, a cord to `u_net`. Choosing a page turns test mode off, in `u_net` | unknown | — |
+| `drums` | What the control is to `c_steps`: `last`, `track-last` or `swing` | The knob's 0–1, as it is, held or not: `<arg> <0-1>` to `c_steps` on the drum page's outlet, which scales it, latches it and draws its row. `last` is the global last step, **1 to the time signature's reach**, 32 at 4/4 ([sequencer.md](sequencer.md)), **`og-knob-2`**, and `swing` the sequencer's, 50% to 75%, which no shipped row names since knob 4 became `rush` (the phone's stays), and `track-last` the selected track's own, **`og-knob-3`**, all on every page (Brendan, 2026-11-06). A new drum control is a map row: `c_steps` refuses an arg it does not know as `bad-selector` (Brendan, 2026-11-04) | verified | — |
+| `arrangement` | A cell, looked up in `cut-it-arrangement-page.txt` | Non-zero sends the cell's role to `u_tempo` out `u_map`'s fourth outlet — `tap`, the one there is — and a release nothing. One row, `all xport-4 arrangement 21`, the nanoKONTROL's LOOP; a cell the layout lacks is `fail u_map layout-miss` | unknown | — |
+| `section` | The top-row button, 1 and 2 the arrows, 3 to 8 the six section buttons | Non-zero sends `top <arg>` to `u_song` out `u_map`'s fifth outlet; a release nothing. `lp-cc-91` to `lp-cc-98`, buttons 1 to 8, on every page ([songs.md](songs.md)) | unknown | — |
+| `save` | unused | Non-zero sends `save` to `u_song`, the fifth outlet. `lp-cc-108`, the upper bottom row's rightmost, on every page but the performance page, where it's a button of its own | unknown | — |
+| `revert` | unused | Non-zero sends `revert` to `u_song`, the fifth outlet. `lp-cc-8`, the lowest row's rightmost, on every page but the performance page | unknown | — |
+| `song` | The Organelle's key, 1 the lowest | Non-zero sends `key <arg>` to `u_song`, the fifth outlet, which loads the setlist's song at that place; a release nothing. `og-key-60` to `og-key-84`, keys 1 to 25, on every page (Brendan, 2026-11-05; [songs.md](songs.md)) | unknown | — |
+| `rush` | unused | The knob's 0–1 and its live flag, held or not, `rush <0-1> <live>` to `u_tempo` out `u_map`'s fourth outlet, which draws its row: an absolute rate, 10 BPM at the bottom, the tempo up to 1000 and then a loop of what is being repeated, climbing and thinning to silence at 22 kHz ([sequencer.md](sequencer.md), *Rush*); `rush -1 1` says knob 1 has gone live, which ends it. **`og-knob-4`, on every page** (Brendan, 2026-11-05) | unknown | — |
+| `melody` | What the control is to `c_melody`, one of `c_melody.lua`'s `R.ORDER`, or a page's `h<NN>` and `m<NN>` pads, `roll-melody`, `roll-chords`, `roll-rhythm`, `on-h`, `on-m`, `bass`, `style` or `pins-clear`, or any of those as `e<n>-<name>` for engine n | The control's 0–1, as it is, or the pad's velocity, `<arg> <value>` to the `c_melody`s out `u_map`'s sixth outlet: the one whose voice is on show takes it, or the one its `e<n>` names. It scales a control, draws its row and puts it, and takes a pad's press and leaves its release. The harmony and melody pages' pads and upper bottom rows ([synths.md](synths.md), *The generator*) | unknown | — |
+| `voices` | `left-<r>`, `right-<r>`, `aux` or `setup` | `<arg> <value>` to `u_voices` out `u_map`'s seventh outlet, which takes a press and leaves a release: the page ([voices.md](voices.md)). `lp-cc-80` to `lp-cc-10`, `lp-cc-89` to `lp-cc-19`, `og-aux` and `lp-setup`, on every page | unknown | — |
+| `perform` | A physical control's own name, `slider-<n>`, `knob-<n>`, `btn-a-<n>`, `btn-b-<n>`; `arm`; or a pad, `pad-<NN>` | `<arg> <value>` to `u_perform` out `u_map`'s eighth outlet: whatever this section has that control move ([voices.md](voices.md)). The nanoKONTROL's eight groups and REC on every page, the grid and the bottom rows on the performance page | unknown | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -117,8 +120,9 @@ there and nowhere else.
 | `rush` | `rush 420 bpm` below the handoff, `rush 4.2 Hz`, the loop's real frequency, above it, drawn by `u_tempo` and `c_steps` | `rush 120 (1817)`, `rush 120 (46k)`: the tempo in force with the knob's own rate in brackets | unknown | — |
 | `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
 | `drum-page` | **nothing** — the grid is the feedback, and 62 pads in use would bury the screen | none | unknown | — |
-| `synth` | **nothing** — the pads and the phone show the choice | none | unknown | — |
-| `arrangement` | **nothing** — the pad flashes and the phone shows the tempo | none | unknown | — |
+| `arrangement` | **nothing** — the phone shows the tempo | none | unknown | — |
+| `voices` | **nothing** — the columns' lamps say it | none | unknown | — |
+| `perform` | **nothing of its own**: a control in play draws its destination's row ([voices.md](voices.md)) | as its destination | unknown | — |
 | `section` `save` `revert` `song` | **nothing** — the top row's lamps and save and revert's say it, and the phone's songs page | none | unknown | — |
 | the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |
 
@@ -129,12 +133,12 @@ the third slot.
 | | Evidence | Item |
 |---|----------|------|
 | **A control draws exactly one row, and it is `u_map`'s.** No `m_` file sends a control's row to `disp` — `m_nano` and `m_launchpad` publish on `param` alone, as `m_organelle` always has, and as `m_404` did until the SP-404 left the rig (2026-11-04). A fader mapped to `volca-cc 41` draws `volca-cc41 64` and nothing beside it; an unmapped control draws nothing (*Design*); a mapped button draws nothing | verified | 317 |
-| `map-assert.py` reads every `m_` file's `[s disp]` count, exactly, and the set of `m_` files with it — `m_organelle`'s one carries aux's `modal shift`, never a control | verified | 317 |
+| `map-assert.py` reads every `m_` file's `[s disp]` count, exactly, and the set of `m_` files with it: none has one | verified | 317 |
 
 ### Values are normalized to 0–1, and the divisor is not uniform
 
 ⚠️ **`param` values are not one unit.** Every handler sees **0 to 1**, and everything is divided by
-127 *except* five controls that already arrive that way.
+127 *except* four controls that already arrive that way.
 
 | Source | Range on `param` | Divided by 127 | Evidence | Item |
 |--------|------------------|----------------|----------|------|
@@ -142,7 +146,7 @@ the third slot.
 | nano buttons | 1 | yes | verified | — |
 | Launchpad pads | 0 or 127 | yes | verified | — |
 | **Organelle knobs 1–4** | **0–1** — mother's own scale | **no** | verified | — |
-| **Organelle aux** | **0–1** | **no** | verified | — |
+| Organelle aux | `og-aux 1`, a press | yes | unknown | — |
 
 One destination fed from two surfaces would otherwise need two scalings. The four knobs are one
 table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
@@ -151,34 +155,31 @@ table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.
 
 | Step | Detail | Evidence | Item |
 |------|--------|----------|------|
-| Key | The key's mode and the control's name: `mode-1` and `og-knob-1` | verified | — |
-| Table | `u_map.lua`'s, by mode and then control, read from `cut-it-map.txt` when `[u_map-lua]` is made, before any `loadbang`. Relative to the folder of the patch that holds it, so the same on the Mac, on the device and inside the gate's scratch copy | verified | 234 |
-| Hit | `<dest> <arg>`, which leaves for the destination route as `<dest> <arg> <value> <target> <live>` | verified | — |
+| Key | The key's page and the control's name: `perform` and `og-knob-1` | verified | — |
+| Table | `u_map.lua`'s, by page and then control, read from `cut-it-map.txt` when `[u_map-lua]` is made, before any `loadbang`. Relative to the folder of the patch that holds it, so the same on the Mac, on the device and inside the gate's scratch copy | verified | 234 |
+| Hit | The page's own row, an `all` row, then the page's `pad-*` for a pad: `<dest> <arg>`, which leaves for the destination route as `<dest> <arg> <value> <target> <live>`. A live control that could be taken into play goes to `u_perform` too, on `perform-heard` ([voices.md](voices.md)) | unknown | — |
 | Miss | Nothing: no bus and no row (Brendan, 2026-11-04; *Design*) | verified | — |
-| A duplicate row | The first for a mode and control wins; the rest are dead | verified | — |
+| A duplicate row | The first for a page and control wins; the rest are dead | verified | — |
 | Empty table | `fail u_map map-empty` on `err` at load; a missing file is an error on the console too, which fails a deploy | verified | 234 |
 
-**An unmapped control is the normal state of most controls and must stay silent.** Eight pages × 92
-controls is 736 possible rows and the shipped file has **449** — knobs 1, 2 and 4 on all eight; the
-tap pad on page 1; knob 3 and the drum page's 62 pads on page 2; slider 1 and the eight synth pads
-on page 3; and CC 90, PLAY, STOP, the four shifted keys, Setup, the top row's eight, save and
-revert, the Organelle's 25 keys on all eight. **The Organelle's own keys load songs**, key
-N the Nth song of the setlist chosen, the lowest the opener, and play no note (Brendan,
-2026-11-05). ⛔ **Those forty-seven rows are on every page**: the three knobs so the tempo, the
-drums' last step and rush are at hand whichever page is up (Brendan, 2026-11-04 and 2026-11-05), the top
-row, save and revert and the keys so the song is played, kept and changed from any page
-(Brendan, 2026-11-02, 2026-11-04 and 2026-11-05), the rest so no page strands you without a stop
-or a recover but the Launchpad's own. `map-assert.py` reads that off the file, that each top-row
-button and each key names its own place, and that knob 3, the selected
-track's, is page 2's alone.
+**An unmapped control is the normal state of many controls and must stay silent.** The shipped file
+has **185** rows. **94 are `all` rows, every page's**: the Organelle's four knobs, the same on every
+page (Brendan, 2026-11-06), PLAY, STOP, LOOP and REC, CC 90, Setup and aux, the top row's eight, save
+and revert, the Organelle's 25 keys, key N the Nth song of the setlist chosen, the lowest the opener,
+and playing no note (Brendan, 2026-11-05), the columns' sixteen, and the nanoKONTROL's thirty-two. A
+page's own rows are its grid: the drum page's 62 pads, the harmony page's `pad-*` and five commands,
+the melody page's `pad-*` and three, the performance page's `pad-*` and sixteen buttons, and the
+diagnostics page's two pads. ⛔ **`map-assert.py` holds that no page takes a shared control back** but
+the performance page, save and revert's buttons (Brendan, 2026-11-06), so no page strands you without
+a stop or a recover but the Launchpad's own.
 
 ### Where each part lives
 
 | | Lives in | Evidence |
 |---|---|---|
-| The table, the key's mode and its guard, the lookup, the divisor and pickup's five states | `u_map.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
-| Reading the table and asking whether a `knobs.txt` is there, turning messages into those calls and their answers into outlets | `u_map-lua.pd_lua`, the class `u_map-lua`: four inlets (every control the mode keys pass on; the `mode` bus; `u_map.pd`'s own `init`, `window-shut` and `live`; a BPM a tap or the phone set, from `u_tempo`), four outlets (the destination route, the mode to store, `err`, a bang on `init`) | verified |
-| The eight mode keys and their release gates, the 500 ms seed, the destination route and its handlers, `c_mapped`, the 1000 ms boot window, the recover breadcrumb at 2000 ms, `put auto mode` and the restore | `u_map.pd` | verified |
+| The table, the key's page and its guard, the lookup, the divisor and pickup's five states | `u_map.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
+| Reading the table and asking whether a `knobs.txt` is there, turning messages into those calls and their answers into outlets | `u_map-lua.pd_lua`, the class `u_map-lua`: four inlets (every control; the `mode` bus; `u_map.pd`'s own `init`, `window-shut` and `live`; a BPM a tap or the phone set, from `u_tempo`), four outlets (the destination route, `err`, a bang on `init`, and `heard`, to `u_perform`) | unknown |
+| The destination route and its handlers, `map-route`, what `u_perform`'s controls come in on, `c_mapped`, the 1000 ms boot window and the recover breadcrumb at 2000 ms | `u_map.pd` | unknown |
 | The Lua's answers | The Pd version's, exactly: 38 controls and modes through `u_map` printed the same 42 lines from the Pd version and the Lua, on the Mac and on the Organelle (2026-11-03) | verified |
 | What it costs in memory | About 0.1 MB more peak resident in a test Pd loading `main.pd` on the Organelle (3.31–3.42 MB before, 3.44–3.48 after), since `c_steps` loads pdlua already | verified |
 | What it costs per control | About twice the Pd version's on the Organelle, in a test Pd niced beside the live one: 9000 mixed controls in 2.9–3.4 s against 1.35 s, and 9000 unmapped pressure messages in 1.6–1.8 s against 0.7–0.9 s (2026-11-03) | verified |
@@ -187,15 +188,14 @@ track's, is page 2's alone.
 
 | ~Time | Event | Evidence | Item |
 |-------|-------|----------|------|
-| 0 ms, as the patch is made | `[u_map-lua]` reads the table and asks whether a `knobs.txt` is there, and its lookup key's mode is `mode-1` | verified | 234, 239 |
+| 0 ms, as the patch is made | `[u_map-lua]` reads the table and asks whether a `knobs.txt` is there, and its lookup key's page is `perform` | verified | 234, 239 |
 | 0 ms, `loadbang` | `init`: `map-empty` if the table holds nothing, then the bang that proves the Lua loaded | verified | — |
 | before 500 ms | mother pushes `knobs.txt`, if a Save has ever happened | verified | 139, 200 |
-| 500 ms | The `mode` seed fires — `mode-1` — behind a spigot any real mode has already closed | verified | — |
 | 1000 ms | `window-shut`: from now on a knob's first value is a hand, not a restore | verified | 236 |
 | 2000 ms | The recover breadcrumb, which may say `live` | verified | 299 |
-| ~3500 ms | `u_state` restores, and a saved `mode` arrives as a real selection, its page alone | verified | — |
+| ~3500 ms | The song loads, and `u_voices` says the page on the `mode` bus ([voices.md](voices.md)) | unknown | — |
 
-⛔ **Both the read and the key's mode have to be there before mother's push.** See *Traps*.
+⛔ **Both the read and the key's page have to be there before mother's push.** See *Traps*.
 
 ### Parameter pickup — a restored control is held until it crosses
 
@@ -208,7 +208,7 @@ then hands it authority.
 |---|---|---|---|
 | The jump it replaces | 443 BPM on knob 1, which is master tempo | verified | 236 |
 | Applies to | `og-knob-1`…`og-knob-4` only | verified | 236 |
-| Never applies to | any control that is not an Organelle knob — the keys and the shifted keys included | verified | 236 |
+| Never applies to | any control that is not an Organelle knob — the keys included. The nanoKONTROL's in play are `u_perform`'s ([voices.md](voices.md)) | verified | 236 |
 | Boot window | 1000 ms. A first value inside it is a restore and **arms**; after it, a hand, and goes straight to live | verified | 236 |
 | Whether the push is a restore at all | `[u_map-lua]` **asks whether `knobs.txt` is there** as it is made, before mother's push, beside the table it reads | verified | 239 |
 | With **no** `knobs.txt` | **Knob 1 is held at 120 BPM**, `u_tempo`'s own, until it is turned through 0.38, where its line puts 120 (Brendan, 2026-11-04): its first push draws `bpm 120 (60)` and moves nothing. Every other knob is live from its first value | verified | — |
@@ -284,25 +284,19 @@ the saved value, and nothing reports it (item 234).
 *should* fail a deploy, so its console error is welcome rather than something to hide from — and an
 empty table is reported on `err` for the same reason.
 
-### The lookup key gets its mode at load, not from the seed
+### The lookup key has its page at load
 
-⛔ The same symptom, a second cause. The `mode` bus is seeded at 500 ms and mother's push arrives
-before that, so a key that waits for the seed has **no mode at all** and misses every row.
+⛔ The same symptom, a second cause. mother's push arrives before anything else speaks, so a key that
+waits for the `mode` bus has **no page at all** and misses every row.
 
-**Fix:** the key's mode is `mode-1` from the moment the Lua's state is made, so a lookup is never
-waiting on a clock. Any real mode still overwrites it, from the seed or from a restore.
+**Fix:** the key's page is `perform` from the moment the Lua's state is made, so a lookup is never
+waiting on a clock. Any real page overwrites it.
 
-### A restored `mode` carrying no name empties the key again, and a reboot does not clear it
+### A page carrying no name would empty the key
 
-⛔ The same symptom, a **third** cause, and the only one that survives a power cycle. `u_state`
-replays the saved `mode` at ~3500 ms; a stored value of `compose` with **no mode name** gives the
-key no mode, and every control falls to the unmapped branch — no tempo from knob 1, and nothing
-on the screen where a BPM belongs (item 294).
-
-⛔ **Fed from its own `[r mode]`, the store repairs it in the wrong direction.** Whatever reaches the
-bus goes straight back into the store, so the truncated value is re-saved; the auto flush is armed
-**by the restore**, so the correct `mode-1` the seed stored at 500 ms is replaced before it ever
-reaches the disk. Every boot reads the bad value, re-stores it and writes it back.
+⛔ The same symptom, a **third** cause. A `mode` naming no page, a lone `compose`, would give the key
+no page, and every control would fall to the unmapped branch — no tempo from knob 1, and nothing on
+the screen where a BPM belongs (item 294).
 
 ⚠️ **On screen it reads as every control falling silent** — nothing where `bpm 120` or
 `volca-cc41 64` belongs — because a control's only row is its destination's and a dead lookup sends
@@ -310,23 +304,7 @@ every control down the unmapped branch, which draws nothing. Nothing else report
 
 **Fix:** **the Lua refuses a `mode` that is not one atom naming a page, and says `fail u_map
 bad-mode`**, the way an unknown *destination* does — item 297. ⚠️ The name is checked as well as
-the count: a lone `compose` is one atom too.
-
-⛔ **And the store gets the mode from the Lua, only when the key took it**, never from its own
-`[r mode]`, which is what stops a bad value surviving a power cycle. The store never sees it, keeps
-the seed's `mode-1`, and **the auto flush repairs the file on its own** — measured on the device
-while the bus still carried a class: a `cut-it-auto.txt` holding `mode compose` came back whole
-after one boot, with the knobs mapping correctly throughout.
-
-### A mode saved before 2026-11-04 carries a class
-
-⛔ Until then the bus carried `<class> <page>`, and `cut-it-auto.txt` keeps what was saved: `mode
-compose mode-4`. A restore puts it on the bus as it stands, a selector no reader knows, so the grid
-keeps its old lamp, the phone its old screen and the Lua says `bad-mode`.
-
-**Fix:** `[route compose perform]` between the restore and `[s mode]` drops the class, so a mode
-saved either way comes back as its page alone, and the next flush writes it back that way.
-`map-assert.sh` restores one.
+the count: a lone `compose` is one atom too. The key survives it.
 
 ### The `[list trim]` before the destination `route` is load-bearing
 
@@ -336,9 +314,9 @@ mapped control takes the reject as `unknown-dest`.
 
 **Fix:** `[list trim]` between them.
 
-### A duplicate `<mode> <control>` pair silently loses
+### A duplicate `<page> <control>` pair silently loses
 
-⚠️ The Lua keeps the **first** row for a mode and control, as `[text search]` did before it, so a
+⚠️ The Lua keeps the **first** row for a page and control, as `[text search]` did before it, so a
 second row for the same pair is dead and nothing says so.
 
 **Fix:** none available in the patch — **the gate's static lint is what catches it**, because a
@@ -359,9 +337,7 @@ the BPM it is mapped to. A 0–1 number where a BPM belongs is not feedback; it 
 homework.
 
 **Fix:** the knobs do not report to `disp`. `u_map` reports the **mapped** value instead, because it
-is the only file that knows what a control means. ⚠️ **`og-aux` is not a control at all** — it is
-the keyboard's modifier, so there is nothing for the map to bind and nothing to draw. See
-[organelle.md](../device/organelle.md).
+is the only file that knows what a control means. See [organelle.md](../device/organelle.md).
 
 ### While pickup holds, one row carries both numbers
 
@@ -438,11 +414,10 @@ exercises the real path either way.
 lines, so it had to sit behind `[del 2000]` (C-9), long after mother's push: the push then set the
 tempo from wherever knob 1 sat until the answer came. Lua's `io.open` fails in silence.
 
-### A Lua that never loads leaves only the mode keys
+### A Lua that never loads leaves no control at all
 
-⛔ Without pdlua on the path, or with an error in the Lua,
-`[u_map-lua]` fails to create, and every control but the eight mode keys is dead: no tempo knob, no
-PLAY or STOP, no keyboard.
+⛔ Without pdlua on the path, or with an error in the Lua, `[u_map-lua]` fails to create, and every
+control is dead: no page, no tempo knob, no PLAY or STOP, no keyboard.
 
 **Fix:** `u_map.pd` sends `init` at load and says `fail u_map no-lua` on the screen when no bang
 comes back; a throwing rule says `fail u_map lua-<rule>` — `lua-param`, `lua-mode` — and the object
@@ -453,25 +428,25 @@ the gate's Pd half* ([sequencer.md](sequencer.md)).
 
 ### The pages
 
-**Eight pages, one per key down the Launchpad's left column, and what each is for** (Brendan,
-2026-11-04). A page is a set of rows in the map and, on the grid, either the beat row or a page of
-its own; there is no compose and perform split, and every page draws every warning
+**A page is a set of rows in the map and, on the grid, a painter of `g_grid`'s** ([display.md](display.md)).
+`u_voices` says which is on show ([voices.md](voices.md)); every page draws every warning
 ([error.md](error.md)).
 
-| Page | Is | Rows today, beside the forty-seven every page has |
+| Page | Is | Rows, beside the 94 `all` rows |
 |------|----|------------|
-| 1 | The arrangement | The tap pad, cell 21, for `u_tempo` ([tempo.md](tempo.md)). The boot page, `R.BOOT_MODE` |
-| 2 | The drums | The drum page's 62 pads and knob 3, for `c_steps` |
-| 3 | The synths | Fader 1, the Volca's CC 41, and the synth pads, cells 21 to 28, for `c_synth`; the other faders, knobs and `pad-81` to `pad-85` for `c_melody` ([synths.md](synths.md)) |
-| 4–6 | Nothing yet | None |
-| 7 | The sections: making and arranging the current song's sections, on the phone (Brendan, 2026-11-05) | None: its grid is the beat row ([songs.md](songs.md)) |
-| 8 | The songs: making, loading and arranging them into setlists, on the phone (Brendan, 2026-11-05) | None: its grid is the beat row ([songs.md](songs.md)) |
+| `perform` | The controls in play: the boot's, and PLAY's | The grid's columns and the bottom rows' sixteen buttons, for `u_perform` |
+| `drums` | A drum voice's behavior | The drum page's 62 pads, for `c_steps` |
+| `harmony` | A harmony voice's | Its pads and five commands, for `c_melody` |
+| `melody` | A melody voice's | Its pads and three commands, for `c_melody` |
+| `keys` | A voice that's only played from the nanoKEY | None |
+| `sound` | A voice's setup, on the phone | None |
+| `songs` | The songs and sections, on the phone, opened by aux | None |
+| `diag` | The diagnostics, opened by Setup | Its two pads, diag and test mode |
 
 ### Why a table at all
 
 The old rule was one `route` branch per mapping, with a written condition to revisit past about ten
-mappings. **42 controls × eight pages is far past it**, and the page dependency alone would have
-multiplied the branch count by eight.
+mappings. **185 rows is far past it.**
 
 ### The allowlist guard
 
@@ -492,27 +467,15 @@ destination to a handler you can see, so it is the allowlist and the dispatch at
 list of destinations and the handlers they reach would be two things to keep in step, and the lint
 and the docs gate would have to read the Lua instead of the box.
 
-### The eight mode keys stay hardcoded, and they come first
+### A release is the handler's to ignore
 
-They **are** the mode selector, so a mode change can never itself be mode-dependent — and if the
-table were empty or broken, or the Lua never loaded, you could still change mode on a device with no
-console. Everything the mode `route` does not match falls out of its reject and goes to the Lua.
+⛔ A Launchpad CC button sends **127 on the press and 0 on the release**, where a nanoKONTROL button
+sends only the press. Each button destination's handler opens on non-zero, or every press would fire
+**twice** — idempotent often enough that nothing on screen would look wrong. `voices` and `perform`
+carry the release to their Lua, which ignores it the same way.
 
-**They are the Launchpad's left column, `lp-cc-80` down to `lp-cc-10`**, page 1 at the top — eight
-pages (Brendan, 2026-11-04), the eight buttons `g_grid` lights as the mode lamps, so the thing you
-look at is the thing you press. `u_map.lua`'s `R.PAGES` takes the same eight, and `map-assert.py`
-checks the two agree. The top row, CC 91–98, is the song's sections ([songs.md](songs.md)). See
-[launchpad.md](../device/launchpad.md).
-
-⛔ **Each of the eight branches carries a `[select 0]`, and that is not decoration.** A Launchpad CC
-button sends **127 on the press and 0 on the release**, where a nanoKONTROL button sends only the
-press. Ungated, every mode selection fires **twice** — idempotent, so nothing on screen looks wrong,
-while every `mode` message, every state-store write and every `g_grid` repaint silently doubles.
-
-⛔ **The gate cannot go above the route.** That reject is the whole table path, and `og-key-*`
-releases are **real note-offs** `volca-key` must act on (item 293) — a value test up there would
-swallow every one and hang notes on the Volca. `[select 0]`'s reject carries anything that is not a
-release, which is the value the message box wanted anyway (C-8).
+⛔ **The gate cannot go above the route.** `og-key-*` releases are **real note-offs** `volca-key` must
+act on (item 293), and `recover` reads its release; a value test up there would swallow every one.
 
 ### Each scaling lives with its destination
 
@@ -529,31 +492,21 @@ per control, so two faders moving are two rows rather than four (item 317).
 
 ### The drum page is one destination and a layout table
 
-Page 2's 62 drum-page pads are 62 rows, `mode-2 pad-81 drum-page 81`, and the arg is the grid
+The drum page's 62 pads are 62 rows, `drums pad-81 drum-page 81`, and the arg is the grid
 index because the handler never sees the control's name — the `volca-key` precedent. The handler
 looks the index up in `cut-it-drum-page.txt`, the table `g_grid` paints the page from
 ([display.md](display.md)), so `c_steps` receives `step 1 100` and never a cell. **The map says
-which pads are the drum page in which mode; the layout says what each one is.** A row the layout
+which pads are the drum page; the layout says what each one is.** A row the layout
 lacks is a real error, `layout-miss`, as an unknown destination is.
 
-### The synth pads are one destination and a layout table, as the drum page is
+### Tap is one destination and a layout table
 
-Page 3's eight synth pads are eight rows, `mode-3 pad-21 synth 21`, the arg the grid index, and the
-handler looks it up in `cut-it-synth-page.txt`, the table `g_grid` paints them from, so `c_synth`
-gets `synth fm` and never a cell. **The map says which pads choose on which page; the layout says
-which synth each one is**, so the two halves of page 3's row cannot disagree, and `map-assert.py`
-reads both: every `synth` row's index is a cell of the layout, every cell has its row on page 3, and
-every cell names a synth `c_synth` takes.
-
-### The tap pad is one destination and a layout table, as the synth pads are
-
-Page 1's tap pad is a row, `mode-1 pad-21 arrangement 21`, the arg the grid index, and the handler
-looks it up in `cut-it-arrangement-page.txt`, the table `g_grid` paints page 1's pads from, so
-`u_tempo` gets `tap` and never a cell. The destination is named for the page, not the tap, so the
-arrangement's next pad is a row of the layout and a role `u_tempo`'s `[route tap]` takes, or a
-cord of its own for a role another file takes; `map-assert.py` reads the rows, the layout and that
-route: every row's index is a cell of the layout, every cell has its row on page 1 and no other,
-and every role is one `u_tempo` routes.
+The tap button is a row, `all xport-4 arrangement 21`, the nanoKONTROL's LOOP, and the handler looks
+its arg up in `cut-it-arrangement-page.txt`, so `u_tempo` gets `tap`. The destination is named for
+the arrangement, not the tap, so its next control is a row of the layout and a role `u_tempo`'s
+`[route tap]` takes, or a cord of its own for a role another file takes; `map-assert.py` reads the
+rows, the layout and that route: every row's cell is in the layout, every cell has its row, on every
+page, and every role is one `u_tempo` routes.
 
 ### Only a mapped control names itself
 
@@ -605,21 +558,13 @@ the device and inside the gate's scratch copy (item 229).
 Without it `m_volca`'s `route` would reject every one straight to `err` — loudly, at least, which is
 why that reject exists. See [volca.md](../device/volca.md).
 
-### `mode` is persisted; the table is not
+### The page is `u_voices'`; the table is not state
 
-`u_map` is the first contributor to the state store, and `mode` is an **auto** key: a running value
-rather than a committed take, pushed whenever it changes and flushed on `u_state`'s own clock. A
-restore arrives as `mode-1`, the page as its selector, which is exactly the shape `s mode` wants —
-so no `[list trim]` on that side. One saved as `<class> <page>` loses its class first (*Traps*).
+`u_map` writes nothing about the page: it hears the `mode` bus as `g_grid` and `u_net` do, and
+`u_voices` keeps the page across a power cycle ([voices.md](voices.md)).
 
 ⚠️ **The table is code, not state.** Nothing rewrites it at runtime, so persisting it would store a
 constant, and a restore could silently override the shipped file.
-
-### The seed fills a silence, it does not set a default
-
-Nothing else writes `mode` at load, so without the seed the grid boots with no mode to show. Any
-incoming mode closes the spigot, so a real selection always wins — including the seed's own send,
-harmlessly, because Pd is synchronous and the bang has already passed through.
 
 ### The lookup in Lua, the destinations in Pd
 
@@ -627,8 +572,7 @@ What moved is what was hardest to read as boxes: pickup's five states were two a
 boxes, and the divisor and the pickup slots were two routes that had to name the same four knobs.
 In `u_map.lua` they are a few dozen lines, tested without Pd: `test/gate/lua/u_map_test.lua` drives the rules, and the
 Pd face through a stand-in for pdlua, in the map gate before its Pd half. What stayed is I/O and
-timing, and the two things that must not depend on the Lua: the mode keys, and the route that is
-the allowlist (*The allowlist guard*, above).
+timing, and the route that is the allowlist (*The allowlist guard*, above).
 
 **`u_map.lua` never calls Pd**, and every rule takes the state and returns what leaves, as
 `c_steps.lua` does ([sequencer.md](sequencer.md), *The rules in Lua, the timing in Pd*). The face is
@@ -651,17 +595,10 @@ between a fifth and two fifths off a control's time there.
 ## Open
 
 - ⬜ **Live re-assignment — editing a mapping from the instrument rather than the file — is v0.4**,
-  and it brings its own persistence with it. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **The page names are placeholders, and pages 4 to 6 have no role yet.** `mode-1`…`mode-8` say
-  nothing about what each page is for, though five now have one (*The pages*, above),
-  and the sound work is what will name them. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **A mode change does not re-arm pickup**, so a knob mapped to different destinations per mode
-  would jump once per change. Not reachable today — knobs 1, 2 and 4 mean the same on every page,
-  and knob 3 nothing off page 2. **It
-  closes with live re-assignment above, or not at all**: see [plan-v04.md](../../plan-v04.md) §3.
-  ⚠️ Doing it *cheaply* is worse than nothing — re-arming to the knob's last position puts the next
-  move on the far side and suppresses until you turn back. Doing it right needs a per-`(mode, knob)`
-  value memory: pickup's state in `u_map.lua` keyed by mode as well as knob.
+  and it brings its own persistence with it. NO PLAN OWNS THIS.
+- ⬜ **A page change does not re-arm pickup**, so a knob mapped to different destinations per page
+  would jump once per change. Not reachable: the Organelle's knobs mean the same on every page
+  (Brendan, 2026-11-06). NO PLAN OWNS THIS.
 - ⬜ **The Lua map has not been played on the rig.** The gates and a test Pd prove it answers as the
   Pd version did and loads in silence; what it costs under four fingers of pressure, at the live
   Pd's priority, is unmeasured. `cut-it/logic-as-text`.

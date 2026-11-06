@@ -188,7 +188,7 @@ what carries over to the shipped tick is *counter 32* and *counter 33*, not the 
 
 | Claim | Evidence | Item |
 |---|---|---|
-| A device **absent at load** is recovered by the scheduled forks — and comes back **fully**: Programmer Mode re-asserted, ownership restored, the mode lamp repainted | verified | 235, 276 |
+| A device **absent at load** is recovered by the scheduled forks — and comes back **fully**: Programmer Mode re-asserted, ownership restored, the voices' lamps repainted | verified | 235, 276 |
 | An **absent** device raises no `warn`; the same device warns normally once seen and then lost | verified | 276 |
 | The give-up **reports** — `fail u_present rewire-gaveup` reaches `err` | verified | 235 |
 | **Coalescing** — two devices pulled together produce two `rewire:` lines, not four. One bound serves both | verified | 277 |

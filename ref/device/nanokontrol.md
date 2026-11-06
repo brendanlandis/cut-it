@@ -12,8 +12,13 @@ on the Launchpad or the OLED.
 
 `m_nano.pd` takes its Pd channel block as a creation argument and decodes every control onto
 `param`. It posts no row of its own: what the OLED shows for a control is `u_map`'s — the
-destination's row when the mode maps it, and nothing when nothing does (Brendan, 2026-11-04). See
+destination's row when the page maps it, and nothing when nothing does (Brendan, 2026-11-04). See
 [map.md](../module/map.md), item 317.
+
+**The faders, knobs and buttons are the same on every page: whatever this section has taken into play**
+(Brendan, 2026-11-06). The table gives the first eight groups to `u_perform`, and a moved control draws its
+destination's row. It can't show anything, so the Launchpad's columns and the phone do; a control waits to be turned
+through its value after a section changes ([voices.md](../module/voices.md)). **The ninth group is unused**, for now.
 
 ## Design
 
@@ -35,16 +40,13 @@ Through the real patch, slider 1 → CC 1 … PLAY → CC 42 and LOOP → CC 44 
 toggle — and names them by physical position, because what a control *means* is not knowable at the
 `m_` layer.
 
-**Mode selection is the Launchpad's left column**, where the lit lamp already is — see
-[map.md](../module/map.md).
-
 ✅ `xport-2` is **PLAY** and drives `start`; `xport-5` is **STOP** and drives `stop`, on every
-page. The Organelle's `aux` is the keyboard's modifier, not a transport — see
-[organelle.md](organelle.md).
+page. `xport-4` is **LOOP**, which taps the tempo ([tempo.md](../module/tempo.md)), and `xport-6` **REC**, which arms a
+control to take into play ([voices.md](../module/voices.md)).
 
-⚠️ **The other four draw nothing**, because they fall through to the table and miss it, and only a
+⚠️ **The other two, REW and FF, draw nothing**, because they fall through to the table and miss it, and only a
 mapped control names itself (Brendan, 2026-11-04; [map.md](../module/map.md)). Which name each
-publishes is `nano-assert`'s. **REW, FF, LOOP and REC are four free controls for v0.4.**
+publishes is `nano-assert`'s.
 
 Because CC 41–46 give `div 10` = 4, `m_nano` folds the row in as a **fifth control kind** and reads
 both channels through one path.

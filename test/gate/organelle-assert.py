@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 
 # The number of windows organelle-assert-drive-gen.py's SEQ opens.
-MARKS = 20
+MARKS = 15
 
 
 def run_asserts(cap):
@@ -23,12 +23,9 @@ def run_asserts(cap):
     disp = lambda k: [v for kind, v in W(k) if kind == "DISP"]
 
     print("\n--- before the boot sequence has finished ---")
-    A.check("⛔ the aux button publishes NO control name",
-            param("EARLY") == [],
-            "aux reached param as %s. A modifier is not a control: a name here "
-            "could be bound in the map, and an unmapped one would draw a raw "
-            "row on the OLED every time you reached for a shifted key"
-            % param("EARLY"))
+    A.check("⛔ aux is a press from the start: og-aux, the name the table gives to u_voices",
+            param("EARLY") == [["og-aux", "1"]],
+            "aux reached param as %s" % param("EARLY"))
 
     # og- because m_nano already publishes knob-1 to knob-9.
     print("\n--- the four knobs, and the og- prefix ---")
@@ -55,7 +52,7 @@ def run_asserts(cap):
 
     # "No og-knob row", not "no disp row": knob 1 is mapped to tempo, so u_map
     # does put its value on the screen.
-    print("\n--- item 242: the knobs do not report, and aux says shift ---")
+    print("\n--- item 242: the knobs do not report ---")
     A.check("a mapped knob does put something on the screen",
             bool(disp("KNOB1")),
             "nothing reached disp when knob 1 moved -- without this the next "
@@ -63,39 +60,18 @@ def run_asserts(cap):
     raw = [d for d in disp("KNOB1") if d and d[0].startswith("og-knob-")]
     A.check("⛔ ...but never the knob's RAW position", not raw,
             "the screen got %s where the mapped value belongs (item 242)" % raw)
-    A.check("⛔ holding aux says `shift` on the screen",
-            ["modal", "shift"] in disp("AUX-PRESS"),
-            "the screen got %s" % disp("AUX-PRESS"))
-    A.check("⛔ ...and letting go clears it",
-            ["modal-off"] in disp("AUX-RELEASE"),
-            "the screen got %s. A missed release leaves the word up for the "
-            "30 s safety TTL, which is what that TTL is for" % disp("AUX-RELEASE"))
-
-    print("\n--- the aux button publishes no control, on either edge ---")
-    A.check("neither edge puts a control on param",
-            not param("AUX-PRESS") and not param("AUX-RELEASE"),
-            "press %s, release %s" % (param("AUX-PRESS"), param("AUX-RELEASE")))
-
-    print("\n--- the shift layer ---")
-    A.check("⛔ a key held under aux publishes og-shift-NN, not og-key-NN",
-            param("SHIFT-KEY") == [["og-shift-72", "100"], ["og-shift-72", "0"]],
-            "got %s" % param("SHIFT-KEY"))
-    A.check("...and the layer drops the moment aux is let go",
-            param("AFTER-SHIFT") == [["og-key-72", "100"]],
-            "got %s" % param("AFTER-SHIFT"))
-
-    # The straddle: pressed under the modifier, released after it. A release
-    # read from the live modifier strands the shifted note (a stuck note,
-    # wherever the keys play one).
-    A.check("⛔ a shifted press publishes og-shift-NN",
-            param("STRADDLE-KEY") == [["og-shift-65", "100"]],
-            "got %s" % param("STRADDLE-KEY"))
-    A.check("⛔ ...and its release carries THE SAME NAME after aux is released",
-            param("STRADDLE-OFF") == [["og-shift-65", "0"]],
-            "got %s. The layer is latched per key AT PRESS TIME, in "
-            "m_organelle.lua -- a release read from the live modifier would "
-            "say og-key-65 here and hang the note it never turned off"
-            % param("STRADDLE-OFF"))
+    print("\n--- aux: a press, and no shift ---")
+    # The modal it used to raise would sit on the screen for its 30 s safety TTL.
+    A.check("⛔ aux's press publishes og-aux 1, once", param("AUX-PRESS") == [["og-aux", "1"]],
+            "got %s" % param("AUX-PRESS"))
+    A.check("⛔ ...and its release nothing", not param("AUX-RELEASE"), "got %s" % param("AUX-RELEASE"))
+    A.check("...and neither edge raises a modal on the screen",
+            not [d for k in ("AUX-PRESS", "AUX-RELEASE") for d in disp(k)
+                 if d[:1] in (["modal"], ["modal-off"])],
+            "the screen got %s and %s" % (disp("AUX-PRESS"), disp("AUX-RELEASE")))
+    A.check("⛔ a key under aux is the same key: og-key, press and release",
+            param("KEY-UNDER-AUX") == [["og-key-72", "100"], ["og-key-72", "0"]],
+            "got %s" % param("KEY-UNDER-AUX"))
 
     print("\n--- the keyboard: one control per key ---")
     A.check("a key press publishes og-key-<note> carrying its velocity",

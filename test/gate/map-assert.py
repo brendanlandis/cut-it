@@ -23,38 +23,45 @@ import lib_pd                                                  # noqa: E402
 
 MAP = "Cut It/cut-it-map.txt"
 UMAP = "Cut It/u_map.pd"
-# Every m_ file and its exact [s disp] count. Only m_organelle has one, and it
-# carries aux's modal, never a control's row. The file set is exact too: m_404
-# went with the SP-404, and m_streich and m_nanokey came with the synths
+# Every m_ file and its exact [s disp] count: none, since a control's row is u_map's. The file set
+# is exact too: m_404 went with the SP-404, and m_streich and m_nanokey came with the synths
 # (2026-11-04).
-DISP_EXPECT = {"m_launchpad": 0, "m_nano": 0, "m_organelle": 1, "m_volca": 0,
+DISP_EXPECT = {"m_launchpad": 0, "m_nano": 0, "m_organelle": 0, "m_volca": 0,
                "m_streich": 0, "m_nanokey": 0}
-SYNTH_PAGE = "Cut It/cut-it-synth-page.txt"
 ARRANGE_PAGE = "Cut It/cut-it-arrangement-page.txt"
 DRUM_PAGE = "Cut It/cut-it-drum-page.txt"
 CSTEPS = "Cut It/c_steps.lua"
 UTEMPO = "Cut It/u_tempo.pd"
 ULUA = "Cut It/u_map.lua"
-# The rows every page has (map.md): <control> <dest> <arg>.
+# The rows every page shares (ref/module/map.md): <control> <dest> <arg>. The Organelle's knobs are the
+# same on every page (Brendan, 2026-11-06).
 EVERY_PAGE = [("og-knob-1", "tempo", "0"), ("og-knob-2", "drums", "last"),
-              ("og-knob-4", "rush", "0"), ("xport-2", "start", "0"), ("xport-5", "stop", "0"),
-              ("lp-cc-90", "recover", "0"), ("og-shift-60", "diag", "0"),
-              ("og-shift-61", "test-mode", "0"), ("lp-setup", "test-mode", "0"),
-              ("og-shift-72", "stop", "0"), ("og-shift-84", "recover", "0")] + [
+              ("og-knob-3", "drums", "track-last"), ("og-knob-4", "rush", "0"),
+              ("xport-2", "start", "0"), ("xport-5", "stop", "0"), ("xport-4", "arrangement", "21"),
+              ("xport-6", "perform", "arm"), ("lp-cc-90", "recover", "0"),
+              ("lp-setup", "voices", "setup"), ("og-aux", "voices", "aux")] + [
               # the top row, the two arrows then the six section buttons, and save and revert,
               # the bottom rows' rightmost (ref/module/songs.md)
               ("lp-cc-%d" % (90 + n), "section", "%d" % n) for n in range(1, 9)] + [
               ("lp-cc-108", "save", "0"), ("lp-cc-8", "revert", "0")] + [
               # the Organelle's keys choose songs, key 1 the lowest (Brendan, 2026-11-05)
-              ("og-key-%d" % (59 + k), "song", "%d" % k) for k in range(1, 26)]
+              ("og-key-%d" % (59 + k), "song", "%d" % k) for k in range(1, 26)] + [
+              # a row of the Launchpad is a voice (ref/module/voices.md)
+              ("lp-cc-%d" % (90 - 10 * r), "voices", "left-%d" % r) for r in range(1, 9)] + [
+              ("lp-cc-%d" % (99 - 10 * r), "voices", "right-%d" % r) for r in range(1, 9)] + [
+              # the nanoKONTROL's eight groups are what this section assigned
+              (c % g, "perform", c % g) for g in range(1, 9)
+              for c in ("slider-%d", "knob-%d", "btn-a-%d", "btn-b-%d")]
+# What a page may take back from the rows every page shares: the performance page's bottom rows are
+# the nanoKONTROL's buttons, so save and revert aren't there (Brendan, 2026-11-06).
+SHADOWED = {("perform", "lp-cc-108"), ("perform", "lp-cc-8")}
 # Both runs are counted against this one list, so neither passes a driver that
 # died early.
 WINDOWS = ["EARLY", "EARLY-2", "RAIL-ARM", "SUPPRESS", "MAPPED", "AWAY", "CROSS",
            "LIVE", "PLAY-1", "STOP-1", "PLAY-2", "KNOB-2", "LATE-KNOB", "BAD-DEST",
-           "RAIL-UP", "RAIL-BACK", "MODE-4", "MODE-DEP", "MODE-4-RELEASE",
-           "TOP-ROW-FREE", "UNMAPPED", "MODE-8", "BAD-MODE", "AFTER-BAD", "DIAG-DEST",
-           "DIAG-RELEASE",
-           "SHIFT-STOP", "MODE-1", "ROW-CC", "ROW-NOTE", "ROW-PROG",
+           "RAIL-UP", "RAIL-BACK", "LEFT-2", "LEFT-2-RELEASE", "PAGE-DEP",
+           "TOP-ROW", "UNMAPPED", "AUX", "BAD-MODE", "AFTER-BAD", "SETUP", "DIAG-DEST",
+           "DIAG-RELEASE", "PERFORM", "ROW-CC", "ROW-NOTE", "ROW-PROG",
            "ROW-KEY", "PRESSURE", "PRESSURE-MAPPED"]
 
 
@@ -68,19 +75,10 @@ def route_destinations():
     return None
 
 
-def mode_keys():
-    """The mode keys: the arguments of u_map's first route, the Launchpad's left column."""
-    for line in lib_pd.read(UMAP):
-        m = re.match(r"^#X obj \d+ \d+ route (lp-cc-\d+(?: lp-cc-\d+)*);$", line)
-        if m:
-            return m.group(1).split()
-    return None
-
-
 def pages():
-    """R.PAGES in u_map.lua: how many pages the Lua takes, mode-1 to mode-<n>."""
-    m = re.search(r"^R\.PAGES = (\d+)$", open(ULUA, encoding="utf-8").read(), re.M)
-    return int(m.group(1)) if m else None
+    """R.PAGES in u_map.lua: the page names the Lua takes off the mode bus."""
+    m = re.search(r"^R\.PAGES = \{(.*?)\}", open(ULUA, encoding="utf-8").read(), re.M | re.S)
+    return re.findall(r"([\w-]+) = true", m.group(1)) if m else None
 
 
 def steps_cmds():
@@ -93,27 +91,8 @@ def steps_cmds():
     return sorted(a or b for a, b in keys)
 
 
-def synths():
-    """The synths c_synth takes: c_synth.lua's R.SYNTHS."""
-    src = open(os.path.join(os.path.dirname(UMAP), "c_synth.lua"), encoding="utf-8").read()
-    m = re.search(r"^R\.SYNTHS = \{([^}]*)\}", src, re.M)
-    return re.findall(r'"([\w-]+)"', m.group(1)) if m else None
-
-
-def synth_layout():
-    """{grid index: synth} from the synth page's layout, which u_map's synth handler and
-    g_grid both read."""
-    lay = {}
-    for line in open(SYNTH_PAGE, encoding="utf-8"):
-        f = line.split()
-        if f:
-            lay[f[0]] = f[1:]
-    return lay
-
-
 def arrange_layout():
-    """{grid index: [role]} from page 1's layout, which u_map's arrangement handler and g_grid
-    both read."""
+    """{cell: [role]} from the arrangement's layout, which u_map's arrangement handler reads."""
     lay = {}
     for line in open(ARRANGE_PAGE, encoding="utf-8"):
         f = line.split()
@@ -140,17 +119,14 @@ def static_lint():
         return
     A.note("allowlist is %d destinations: %s" % (len(dests), " ".join(dests)))
 
-    # The pages, counted twice: the keys that choose them and the Lua that
-    # takes them. A key the Lua refuses says bad-mode; a page with no key can
-    # never be chosen.
-    keys, n = mode_keys(), pages()
-    A.check("u_map's mode keys are the left column's eight, CC 80 down to 10",
-            keys == ["lp-cc-%d" % c for c in range(80, 0, -10)],
-            "route box: %s" % keys)
-    A.check("⛔ u_map.lua takes exactly the pages the keys choose -- R.PAGES is %s"
-            % len(keys or []), n is not None and keys and n == len(keys),
-            "R.PAGES = %s, %d keys" % (n, len(keys or [])))
-    modes = ["mode-%d" % k for k in range(1, (n or 0) + 1)]
+    # The pages the table can name are the ones the Lua takes off the bus: a row for any other is a
+    # row nothing can ever reach. all is every page's.
+    names = pages()
+    A.check("u_map.lua's R.PAGES names the eight pages u_voices can show",
+            names is not None and sorted(names) == sorted(["perform", "drums", "harmony", "melody", "keys",
+                                                           "sound", "songs", "diag"]),
+            "R.PAGES: %s" % names)
+    modes = (names or []) + ["all"]
     rows, bad_width, bad_dest, bad_mode = [], [], [], []
     for n, raw in enumerate(open(MAP), 1):
         line = raw.strip()
@@ -170,36 +146,33 @@ def static_lint():
             "; ".join("line %d: %r" % b for b in bad_width))
     A.check("⛔ every destination exists on u_map's route (THE GUARD)", not bad_dest,
             "; ".join("line %d names %r" % b for b in bad_dest))
-    A.check("every row's mode is one of the %d pages" % len(modes), not bad_mode,
+    A.check("every row's page is one of the %d pages, or all" % (len(modes) - 1), not bad_mode,
             "; ".join("line %d: %r" % b for b in bad_mode))
-    # What works on every page: the tempo, the drums' last step and rush (knobs
-    # 2 and 4, Brendan, 2026-11-04 and 2026-11-05), the transport, recover, diag and test mode. A
-    # page that lacked one would strand you there with no stop or recover but the
+    # What works on every page: the knobs, the transport, recover, the columns, the top row, save
+    # and revert. A page that took one back would strand you there with no stop or recover but the
     # Launchpad's own, on a device that can be unplugged.
-    missing = ["%s %s %s on %s" % (c, d, a, p) for c, d, a in EVERY_PAGE for p in modes
-               if [p, c, d, a] not in [f for _, f in rows]]
-    A.check("⛔ every page carries the %d rows every page shares" % len(EVERY_PAGE),
-            modes and not missing, "missing: %s" % missing[:6])
+    missing = ["%s %s %s" % r for r in EVERY_PAGE if ["all"] + list(r) not in [f for _, f in rows]]
+    A.check("⛔ the all rows are the %d rows every page shares" % len(EVERY_PAGE),
+            not missing, "missing: %s" % missing[:6])
+    shared = {r[0] for r in EVERY_PAGE}
+    taken = {(f[0], f[1]) for _, f in rows if len(f) == 4 and f[0] != "all" and f[1] in shared}
+    A.check("⛔ ... and only the performance page takes any back: save's and revert's buttons",
+            taken == SHADOWED, "pages' own rows for shared controls: %s" % sorted(taken))
     # The top row is the song's sections on every page, each button's arg its place on the
     # row (u_song.lua's R.press): a row naming another place moves a lamp off its button.
     sec = sorted((f[1], f[3]) for _, f in rows if len(f) == 4 and f[2] == "section")
     A.check("⛔ the top row's eight are the section destination, CC 91 to 98 its buttons 1 to 8, "
             "and nothing else names it", sec == sorted(("lp-cc-%d" % (90 + n), "%d" % n)
-                                                       for n in range(1, 9) for _p in modes),
+                                                       for n in range(1, 9)),
             "section rows: %s" % sorted(set(sec)))
     # The Organelle's keys load songs on every page, each key's arg its place from the lowest,
-    # the nth song of the setlist chosen (u_song.lua's R.key), and go is CC 89 alone: a key
-    # naming another place loads another song than the one its place in the setlist shows.
+    # the nth song of the setlist chosen (u_song.lua's R.key): a key naming another place loads
+    # another song than the one its place in the setlist shows.
     keys = sorted((f[1], f[3]) for _, f in rows if len(f) == 4 and f[2] == "song")
     A.check("⛔ the Organelle's 25 keys are the song destination, og-key-60 to 84 its keys 1 to 25, "
             "and nothing else names it", keys == sorted(("og-key-%d" % (59 + k), "%d" % k)
-                                                        for k in range(1, 26) for _p in modes),
+                                                        for k in range(1, 26)),
             "song rows: %s" % sorted(set(keys))[:6])
-    # Knob 3 is the selected track's own last step, and the selected track is the
-    # drum page's: it stays page 2's (Brendan, 2026-11-04).
-    knob3 = [f for _, f in rows if len(f) > 1 and f[1] == "og-knob-3"]
-    A.check("⛔ knob 3 is the selected track's last step on page 2, and on no other page",
-            knob3 == [["mode-2", "og-knob-3", "drums", "track-last"]], "its rows: %s" % knob3)
     # drums passes its arg to c_steps as the command, so a misspelt one is a
     # knob that only says bad-selector when turned.
     takes = steps_cmds()
@@ -208,22 +181,7 @@ def static_lint():
             takes is not None and drums and all(a in takes for _, a in drums),
             "rows %s, c_steps takes %s" % (drums, takes))
 
-    # synth passes its arg to the layout, which names the synth: a row the layout lacks
-    # is layout-miss on the screen at the press, and a synth c_synth lacks bad-synth.
-    lay, chooses = synth_layout(), synths()
-    synth = [(n, f[3]) for n, f in rows if len(f) == 4 and f[2] == "synth"]
-    A.check("⛔ every synth row's arg is a cell of %s" % os.path.basename(SYNTH_PAGE),
-            synth and all(a in lay for _, a in synth),
-            "rows %s, the layout holds %s" % (synth, sorted(lay)))
-    A.check("⛔ ... and every cell there names one synth c_synth takes",
-            chooses and lay and all(len(v) == 1 and v[0] in chooses for v in lay.values()),
-            "the layout %s, c_synth takes %s" % (lay, chooses))
-    A.check("... and every cell has its row on page 3, where the pads choose",
-            sorted(a for _, a in synth) == sorted(lay)
-            and all(f[0] == "mode-3" for _, f in rows if len(f) == 4 and f[2] == "synth"),
-            "rows %s" % synth)
-
-    # arrangement passes its arg to page 1's layout, which names the cell's role, and the role
+    # arrangement passes its arg to its layout, which names the cell's role, and the role
     # goes to u_tempo: a row the layout lacks is layout-miss at the press, and a role u_tempo's
     # route lacks reaches its Lua as bad-selector.
     alay, roles = arrange_layout(), tempo_roles()
@@ -234,12 +192,12 @@ def static_lint():
     A.check("⛔ ... and every cell there names a role u_tempo's route takes",
             roles and alay and all(len(v) == 1 and v[0] in roles for v in alay.values()),
             "the layout %s, u_tempo routes %s" % (alay, roles))
-    A.check("... and every cell has its row on page 1, the arrangement, and no other",
+    A.check("... and every cell has its row, on every page",
             sorted(a for _, a in arr) == sorted(alay)
-            and all(f[0] == "mode-1" for _, f in rows if len(f) == 4 and f[2] == "arrangement"),
+            and all(f[0] == "all" for _, f in rows if len(f) == 4 and f[2] == "arrangement"),
             "rows %s" % arr)
-    A.check("the tap pad is cell 21, the second row's first pad, under the beat row's first",
-            alay.get("21") == ["tap"], "the layout: %s" % alay)
+    A.check("tap is the layout's one cell, the nanoKONTROL's LOOP", alay == {"21": ["tap"]},
+            "the layout: %s" % alay)
 
     # drum-page passes its arg to the layout g_grid paints from, whose role goes to c_steps: a row
     # the layout lacks is layout-miss at the press, and a role c_steps lacks is bad-selector.
@@ -249,10 +207,10 @@ def static_lint():
         if f:
             dlay[f[0]] = f[1:]
     drum = [(n, f) for n, f in rows if len(f) == 4 and f[2] == "drum-page"]
-    A.check("⛔ every drum-page row's arg is a cell of %s, its own pad's, on page 2 alone, and every "
-            "cell has its row" % os.path.basename(DRUM_PAGE),
+    A.check("⛔ every drum-page row's arg is a cell of %s, its own pad's, on the drums page alone, and "
+            "every cell has its row" % os.path.basename(DRUM_PAGE),
             sorted(f[3] for _, f in drum) == sorted(dlay)
-            and all(f[0] == "mode-2" and f[1] == "pad-" + f[3] for _, f in drum),
+            and all(f[0] == "drums" and f[1] == "pad-" + f[3] for _, f in drum),
             "%d rows, %d cells" % (len(drum), len(dlay)))
     with open(CSTEPS, encoding="utf-8") as fh:
         steps = fh.read()
@@ -269,6 +227,13 @@ def static_lint():
     named = [f for _, f in rows if len(f) >= 2 and f[1] in ("pad-36", "pad-37")]
     A.check("⛔ and pad-36 and pad-37 between them are nothing: no row on any page, no cell",
             not named and "36" not in dlay and "37" not in dlay, "rows %s" % named)
+    # A page of pads is one row, its pad's number after its arg (u_map.lua's lookup): the harmony and
+    # melody pages' in c_melody's h and m, the performance page's in u_perform's. What each takes is
+    # u_map_test.lua's.
+    stars = sorted((f[0], f[2], f[3]) for _, f in rows if len(f) == 4 and f[1] == "pad-*")
+    A.check("⛔ pad-* is the harmony, melody and performance pages'",
+            stars == [("harmony", "melody", "h"), ("melody", "melody", "m"),
+                      ("perform", "perform", "pad-")], stars)
 
     seen, dupes = {}, []
     for n, f in rows:
@@ -279,7 +244,7 @@ def static_lint():
             dupes.append((n, key, seen[key]))
         else:
             seen[key] = n
-    A.check("no duplicate (mode, control) pair", not dupes,
+    A.check("no duplicate (page, control) pair", not dupes,
             "; ".join("line %d repeats %s from line %d" % (n, " ".join(k), o)
                       for n, k, o in dupes))
     if dupes:
@@ -331,10 +296,10 @@ def run_asserts(cap):
     midi = lambda k: [e for e in W(k) if e[0] in ("NOTEOUT", "CTLOUT", "PGMOUT")]
 
     # Item 234: mother pushes knobs.txt at boot, and the table and the lookup
-    # key's mode must both be ready for it. Knob 1's tempo is u_map.lua's
+    # key's page must both be ready for it. Knob 1's tempo is u_map.lua's
     # line: 0.0958 is 60 bpm, 0.5 is 145, 0.9 is 229.
     early = [e for e in W("EARLY") if e[0] == "TEMPO"]
-    A.check("⛔ a control moved at 300 ms ALREADY MAPS -- table and mode key ready at load",
+    A.check("⛔ a control moved at 300 ms ALREADY MAPS -- table and page key ready at load",
             any(abs(float(e[1][0]) - 60) < 1.5 for e in early if e[1]),
             "tempo in that window: %s" % [e[1] for e in early])
     A.check("a mapped control reaches its destination",
@@ -344,17 +309,17 @@ def run_asserts(cap):
     A.check("⛔ ... and draws its MAPPED row on disp -- volca-cc41 64",
             any(d == ["volca-cc41", "64"] for d in [e[1] for e in W("MAPPED") if e[0] == "DISP"]),
             "disp in that window: %s" % [e[1] for e in W("MAPPED") if e[0] == "DISP"])
-    A.check("⛔ the SAME control in another mode does NOTHING (mode-dependence)",
-            not midi("MODE-DEP"), repr(midi("MODE-DEP")))
+    A.check("⛔ the SAME control on another page does NOTHING (the table is by page)",
+            not midi("PAGE-DEP"), repr(midi("PAGE-DEP")))
     # Only a control the map binds names itself (Brendan, 2026-11-04): an
     # unmapped one draws no <name> <raw> row either.
-    A.check("⛔ ... and DRAWS nothing either -- no gk-cc row on page 4",
-            not [d for d in umap_rows(W("MODE-DEP")) if d[:1] == ["gk-cc"]],
-            "u_map's rows in that window: %s" % umap_rows(W("MODE-DEP")))
+    A.check("⛔ ... and DRAWS nothing either -- no gk-cc row on the harmony page",
+            not [d for d in umap_rows(W("PAGE-DEP")) if d[:1] == ["gk-cc"]],
+            "u_map's rows in that window: %s" % umap_rows(W("PAGE-DEP")))
     A.check("... and that window was live -- knob 1, tempo on every page, set 103 bpm",
             any(e[0] == "TEMPO" and e[1] and abs(float(e[1][0]) - 103) < 1.5
-                for e in W("MODE-DEP")),
-            "tempo in that window: %s" % [e[1] for e in W("MODE-DEP") if e[0] == "TEMPO"])
+                for e in W("PAGE-DEP")),
+            "tempo in that window: %s" % [e[1] for e in W("PAGE-DEP") if e[0] == "TEMPO"])
     A.check("⛔ a row naming an unknown destination emits NO MIDI",
             not midi("BAD-DEST"), repr(midi("BAD-DEST")))
     A.check("⛔ ... and reports unknown-dest on err",
@@ -368,7 +333,7 @@ def run_asserts(cap):
             any(e[0] == "ERR" and "bad-mode" in " ".join(e[1]) for e in W("BAD-MODE")),
             repr(W("BAD-MODE")))
     # The error alone would not catch it; the key must survive. og-knob-1 is
-    # tempo on every page, page 8 here.
+    # tempo on every page, songs here.
     A.check("⛔ ... and the lookup KEY SURVIVES IT -- 0.6 is still 166 bpm",
             any(e[0] == "TEMPO" and e[1] == ["166"] for e in W("AFTER-BAD")),
             "tempo in that window: %s -- a poisoned key sends nothing here and "
@@ -445,7 +410,7 @@ def run_asserts(cap):
             % cc("LATE-KNOB", 43))
 
     # The held row uses its destination's scaling (item 240): knob 2 is armed at
-    # 0.5 and mapped to volca-cc 42 in mode-1 by a gate row, so it never draws a bpm.
+    # 0.5 and mapped to volca-cc 42 on the performance page by a gate row, so it never draws a bpm.
     A.check("⛔ a held knob draws ITS OWN destination's row -- volca-cc42 64 (114)",
             any(d == ["volca-cc42", "64", "(114)"] for d in disp("KNOB-2")),
             "disp in that window: %s" % disp("KNOB-2"))
@@ -461,15 +426,14 @@ def run_asserts(cap):
             len(cc("RAIL-UP", 44)) == 0, "cc 44 in that window: %s" % cc("RAIL-UP", 44))
     A.check("... and that window was live too",
             len(cc("RAIL-UP", 41)) == 1, repr(W("RAIL-UP")))
-    # Knob 2 is the drums' global last step on every page (Brendan, 2026-11-04):
-    # on page 4 it reaches c_steps, whose own latch holds it at 16 until it is
+    # Knob 2 is the drums' global last step on every page (Brendan, 2026-11-06):
+    # on the harmony page it reaches c_steps, whose own latch holds it at 16 until it is
     # turned through it, and draws that held row. 0.75 is step 24.
-    A.check("⛔ knob 2 works on page 4 too: c_steps draws its held row, last-step 16 (24)",
+    A.check("⛔ knob 2 works on the harmony page too: c_steps draws its held row, last-step 16 (24)",
             ["last-step", "16", "(24)"] in disp("UNMAPPED"),
             "disp in that window: %s" % disp("UNMAPPED"))
-    # Knob 3 is page 2's alone, so on page 4 it is unmapped: no row, no bus.
-    A.check("⛔ an UNMAPPED knob draws nothing -- og-knob-3 on page 4, beside knob 2's row",
-            not [d for d in disp("UNMAPPED") if d[:1] == ["og-knob-3"]],
+    A.check("⛔ an UNMAPPED control draws nothing -- gk-none, beside knob 2's row",
+            not [d for d in disp("UNMAPPED") if d[:1] == ["gk-none"]],
             "disp in that window: %s" % disp("UNMAPPED"))
     A.check("... and it is silent on every bus too",
             not midi("UNMAPPED"), repr(midi("UNMAPPED")))
@@ -480,43 +444,39 @@ def run_asserts(cap):
             % cc("RAIL-BACK", 44))
 
     # The Launchpad's left column publishes both edges, so the release has to be
-    # gated out before the mode branches, which have no test of their own.
+    # gated out before u_voices' rule, which has no test of its own.
     modes = lambda k: [e[1] for e in W(k) if e[0] == "MODE"]
-    A.check("⛔ a lit left-column button selects its page, alone on the bus",
-            modes("MODE-4") == [["mode-4"]],
-            "mode in that window: %s" % modes("MODE-4"))
+    A.check("⛔ a left-column button selects its page, alone on the bus",
+            modes("LEFT-2") == [["harmony"]],
+            "mode in that window: %s" % modes("LEFT-2"))
     A.check("⛔ ... and its RELEASE selects nothing at all",
-            modes("MODE-4-RELEASE") == [],
+            modes("LEFT-2-RELEASE") == [],
             "mode in that window: %s -- a Launchpad CC button sends 127 then 0, "
-            "so an ungated branch fires the same mode twice per press. It is "
-            "idempotent, which is exactly why nothing would look wrong"
-            % modes("MODE-4-RELEASE"))
-    # A mode the old code saved, <class> <page>, restored at about 3.5 s:
-    # scratch-gates.py leaves `mode compose mode-1` in the auto file. The class
-    # goes before the bus, or every reader of it would take compose for a page.
+            "so an ungated branch fires the same page twice per press" % modes("LEFT-2-RELEASE"))
+    # A mode saved before pages had names, restored at about 3.5 s: scratch-gates.py leaves
+    # `mode compose mode-1` in the auto file. Nothing hears that key, so nothing can take compose
+    # for a page: the boot is on the performance page, and the song's load says so.
     restored = [m for k in ("LIVE", "PLAY-1", "STOP-1", "PLAY-2", "KNOB-2", "LATE-KNOB",
                             "BAD-DEST", "RAIL-UP", "RAIL-BACK") for m in modes(k)]
-    A.check("⛔ a mode the old code saved, compose mode-1, restores as mode-1 alone",
-            restored == [["mode-1"]],
+    A.check("⛔ a mode the old code saved means nothing now: the boot's page is the performance page",
+            restored == [["perform"]],
             "mode between 3.2 and 5 s: %s" % restored)
-    # The bottom key of the left column, a press and its release in one window:
-    # page 8, once. The windows after it run there, so the shipped rows every
-    # page shares are driven on the last page.
-    A.check("⛔ the left column's bottom key selects page 8, once for a press and release",
-            modes("MODE-8") == [["mode-8"]],
-            "mode in that window: %s" % modes("MODE-8"))
-    # The top row held the mode keys before they moved to the left column.
-    A.check("the top row's first button selects no mode any more",
-            modes("TOP-ROW-FREE") == [],
-            "mode in that window: %s" % modes("TOP-ROW-FREE"))
+    A.check("⛔ aux's press, through the table, opens the songs page, once",
+            modes("AUX") == [["songs"]],
+            "mode in that window: %s" % modes("AUX"))
+    # The top row is sections, and never held a page's key on this table.
+    A.check("the top row's first button selects no page",
+            modes("TOP-ROW") == [],
+            "mode in that window: %s" % modes("TOP-ROW"))
     A.check("⛔ ... and, a button, it draws nothing -- no lp-cc-91 row and no section row",
-            not [d for d in umap_rows(W("TOP-ROW-FREE")) if d[:1] in (["lp-cc-91"], ["section"])],
-            "u_map's rows in that window: %s" % umap_rows(W("TOP-ROW-FREE")))
+            not [d for d in umap_rows(W("TOP-ROW")) if d[:1] in (["lp-cc-91"], ["section"])],
+            "u_map's rows in that window: %s" % umap_rows(W("TOP-ROW")))
 
     # The lint proves diag is on the route; this proves the row reaches it.
-    # og-shift-60 is mapped to diag on every page, page 8 here.
+    A.check("⛔ Setup's press, through the table, opens the diagnostics page", modes("SETUP") == [["diag"]],
+            "mode in that window: %s" % modes("SETUP"))
     diag = lambda k: [e[1] for e in W(k) if e[0] == "DISP" and e[1][:1] == ["diag"]]
-    A.check("⛔ a row naming diag summons the diagnostic layer",
+    A.check("⛔ its first pad's row summons the diagnostic layer",
             len(diag("DIAG-DEST")) == 1,
             "disp in that window: %s" % [e[1] for e in W("DIAG-DEST")
                                          if e[0] == "DISP"])
@@ -524,14 +484,8 @@ def run_asserts(cap):
     # screen would outlive the button by its whole eight seconds.
     A.check("⛔ ... and the RELEASE does not summon it again",
             len(diag("DIAG-RELEASE")) == 0,
-            "disp in that window: %s. A shifted key publishes BOTH edges, so "
-            "every button destination's non-zero gate is load-bearing here in a "
-            "way it never was for a nano button that only sent the press"
-            % diag("DIAG-RELEASE"))
-    # The transport is on the nano, so with it unplugged this shifted key is the
-    # only stop left.
-    A.check("⛔ a shifted key reaches stop, on the panel that cannot go missing",
-            any(e[0] == "STOP" for e in W("SHIFT-STOP")), repr(W("SHIFT-STOP")))
+            "disp in that window: %s. A pad publishes BOTH edges, so every button "
+            "destination's non-zero gate is load-bearing" % diag("DIAG-RELEASE"))
 
     # ------------------------------------------------ every destination's row
     # One c_mapped per value destination, each drawing its own row in its own
@@ -539,9 +493,10 @@ def run_asserts(cap):
     # or the raw-row path fired for a mapped one.
     print("\n=== E. every value destination draws its mapped row ===")
     rows = lambda k: umap_rows(W(k))
-    A.check("mode-1 is back for the rows",
-            modes("MODE-1") == [["mode-1"]],
-            "mode in that window: %s" % modes("MODE-1"))
+    A.check("⛔ closed in the order they opened: the songs page, row 2's, and the lit button again the "
+            "performance page, back for the rows",
+            modes("PERFORM") == [["songs"], ["harmony"], ["perform"]],
+            "mode in that window: %s" % modes("PERFORM"))
     A.check("⛔ volca-cc draws volca-cc41 64", rows("ROW-CC") == [["volca-cc41", "64"]],
             "disp in that window: %s" % disp("ROW-CC"))
     A.check("⛔ volca-note draws volca-note60 100", rows("ROW-NOTE") == [["volca-note60", "100"]],
@@ -567,8 +522,8 @@ def run_asserts(cap):
             "note-ons in that window: %s. The keys choose songs, and play no note "
             "(Brendan, 2026-11-05)" % notes)
     # Pressure: an unmapped pad-NN-at draws no row (item 318), a stream per held
-    # pad, and since 2026-11-04 nor does the pad's own unmapped press. gk-cc,
-    # mapped on page 1, is the witness that the window drew at all.
+    # pad, and since 2026-11-04 nor does the pad's own press with nothing in play. gk-cc,
+    # mapped on the performance page, is the witness that the window drew at all.
     A.check("⛔ neither an unmapped pad's pressure nor its press draws a row",
             rows("PRESSURE") == [["volca-cc41", "64"]],
             "u_map's rows in that window: %s -- volca-cc41 64 alone, gk-cc's" % rows("PRESSURE"))

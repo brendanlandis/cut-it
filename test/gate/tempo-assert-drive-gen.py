@@ -13,8 +13,8 @@ DSP goes on at 300 ms and stays on: the pulse is BPM / 60 * 24 into a [phasor~],
 then [threshold~ 0.5 0 0.1 0] for one bang per cycle. -noaudio leaves DSP
 running (item 280).
 
-The tap windows press page 1's tap pad, cell 21, as m_launchpad publishes it,
-param pad-21, a fixed time apart, and read what reaches the tempo bus; the
+The tap windows press the nanoKONTROL's LOOP, as m_nano publishes it,
+param xport-4, a fixed time apart, and read what reaches the tempo bus; the
 phone's tempo goes in as a datagram into u_net's own port, /cutit tempo <bpm>,
 as the phone sends it.
 """
@@ -31,7 +31,13 @@ INPORT = int(os.environ.get("CUTIT_INPORT") or 9002)
 
 
 def tap(at=0):
-    """A press of page 1's tap pad and its release, at <at> ms into the window."""
+    """A press of the tap button, the nanoKONTROL's LOOP, which publishes its press alone, at <at>
+    ms into the window."""
+    return [(at, "\\; param xport-4 1")]
+
+
+def pad(at=0):
+    """A press of grid cell 21 and its release, at <at> ms into the window."""
     return [(at, "\\; param pad-21 127"), (at + 50, "\\; param pad-21 0")]
 
 
@@ -66,8 +72,8 @@ SEQ = [
     # until turned through it; 0.3 is 103 BPM, on its line (u_map.lua).
     (15200, "KNOB-LIVE", ["\\; param og-knob-1 0.5", "\\; param og-knob-1 0.3"], GAP),
 
-    # Tap tempo on page 1, the boot page: the first tap starts the count, and
-    # each after it sets the tempo from the intervals, 400 ms apart, 150 BPM.
+    # Tap tempo: the first tap starts the count, and each after it sets the
+    # tempo from the intervals, 400 ms apart, 150 BPM.
     (15500, "TAP-1", tap(), GAP),
     (15900, "TAP-2", tap(), GAP),
     (16300, "TAP-3", tap(), GAP),
@@ -87,9 +93,9 @@ SEQ = [
     (20200, "KNOB-PHONE", ["\\; param og-knob-1 0.7"], GAP),
     (20400, "PHONE-HIGH", [phone(2000)], GAP),
     (20800, "PHONE-BAD", [phone("fast")], GAP),
-    # Page 2: cell 21 is a drum pad there, and taps on it set nothing.
-    (21200, "PAGE-2", ["\\; mode mode-2"], GAP),
-    (21400, "PAGE-2-TAPS", tap(0) + tap(400), GAP),
+    # The drum page: cell 21 is a drum pad there, and presses on it set nothing.
+    (21200, "PAGE-2", ["\\; mode drums"], GAP),
+    (21400, "PAGE-2-TAPS", pad(0) + pad(400), GAP),
 ]
 QUIT_MS = 22400
 

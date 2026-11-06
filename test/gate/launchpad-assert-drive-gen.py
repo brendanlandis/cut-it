@@ -51,8 +51,8 @@ SEQ = [
     (9000, "LET-GO", ["\\; t-ctlin 0 91 1"], GAP),
     # A tap on Setup: the announcement with no entry before it. Every entry so
     # far was answered, so none is waiting, and it must reach param as lp-setup
-    # and, through the map, flip test mode on.
-    (10500, "TAP", [TAP], GAP),
+    # and, through the map, open the diagnostics page, whose second pad is test mode.
+    (10500, "TAP", [TAP, "\\; param pad-82 127", "\\; param pad-82 0"], GAP),
     # Frames that are not that announcement, with nothing waiting either: a
     # Live Mode layout's (02, seen on port 3 in Live Mode), and the announcement
     # a byte short and a byte long. None is a tap.
@@ -61,8 +61,8 @@ SEQ = [
                       frame(ANNOUNCE[:-1] + [0, 247])], GAP),
     # The device stops answering, and the next entry's echo never comes. A tap
     # well after it must still be a tap: an echo that was never sent is
-    # forgotten rather than waiting to swallow the next tap. It flips test mode
-    # back off.
+    # forgotten rather than waiting to swallow the next tap. It closes the
+    # diagnostics page again.
     (11000, "MUTE", ["\\; t-lp-echo 0"], GAP),
     (12600, "LOST", [TAP], GAP),
     # Quitting is the only thing that hands the surface back: this window is
@@ -179,7 +179,7 @@ if __name__ == "__main__":
         sys.exit("usage: launchpad-assert-drive-gen.py OUT.pd  "
                  "(run it through test/gate/launchpad-assert.sh, which passes a scratch path)")
     w, b, c = D.build(sys.argv[1], SEQ, tag="LP",
-                      taps=["param", "err"], quit_ms=QUIT_MS, blurb=BLURB, notes=NOTES)
+                      taps=["param", "err", "mode"], quit_ms=QUIT_MS, blurb=BLURB, notes=NOTES)
     # The device's boxes go after everything build wrote: a box is numbered by
     # its place among the boxes, so the connects after them still name the right ones.
     boxes, cords = device(b)

@@ -1,6 +1,6 @@
 # Songs checklist
 
-Several songs and the setlists: the phone's page 8, which makes, loads, names and arranges them;
+Several songs and the setlists: the phone's songs page, which makes, loads, names and arranges them;
 the Organelle's keys, which load the setlist chosen's songs; and the next arrow, the Launchpad's top
 row's second. `song-assert` proves what a key restores, that a song left keeps
 its draft, the arrow's colors and the files; `phone-assert` and `touchosc-assert` the phone's
@@ -10,8 +10,8 @@ the phone's page under a finger, and the SD card across a real power cut.
 **Before you start:**
 
 - The drums audible through the PA, the Volca and the Streichfett on, and the phone showing Cut It.
-- Two songs that sound different: on page 8's songs tab tap **new song**, **load** it, and on page
-  2 change its drum pattern and on page 1 its tempo; then press save, the upper bottom row's
+- Two songs that sound different: on the songs page, aux on the Organelle, its songs tab: tap **new song**,
+  **load** it, and on the drum page change its drum pattern and on the arrangement screen its tempo; then press save, the upper bottom row's
   rightmost button.
 - A setlist of both: on the songs tab select each in turn and tap **add to set**.
 
@@ -19,12 +19,12 @@ the phone's page under a finger, and the SD card across a real power cut.
 Why each thing behaves as it does: [songs](../../ref/module/songs.md).
 
 - [ ] **1. The songs page**
-  - **Need:** Page 8 on the Launchpad, the phone showing it.
+  - **Need:** The songs page, aux, the phone showing it.
   - **Do:** Look at the phone's songs tab, then tap the second row.
   - **Pass if:** The tab bar reads songs, setlists and name, songs lit. Each song is a row, its number, its name and, flush right in gray, `loaded` on the song playing. The tapped row lights and its name heads the right column, over load, new song, name, add to set and delete.
 
 - [ ] **2. A new song, and naming it**
-  - **Need:** Page 8's songs tab, the song loaded saved: the Launchpad's two rightmost bottom buttons dark.
+  - **Need:** The songs page's songs tab, the song loaded saved: the Launchpad's two rightmost bottom buttons dark.
   - **Do:** Tap **new song**, then **name**. Backspace the name away, type a new one, tap **done**.
   - **Pass if:** A row appears after the selected one, "song 2" or the next number free, selected. **name** opens the name tab, reading "name the song" over the new song's name in capitals. **done** turns back to the songs tab, where the row reads the new name in lowercase. The Launchpad's two rightmost bottom buttons stay dark throughout.
 
@@ -36,17 +36,17 @@ Why each thing behaves as it does: [songs](../../ref/module/songs.md).
 - [ ] **4. Stopped, a key loads at once**
   - **Need:** The transport stopped, the setlist's first song not loaded.
   - **Do:** Press the Organelle's lowest key, then PLAY.
-  - **Pass if:** At the key the phone's songs tab moves `loaded` to that song and its tempo shows on page 1; the top row shows its sections, section 1 bright. PLAY plays its pattern. Nothing shows on the OLED.
+  - **Pass if:** At the key the phone's songs tab moves `loaded` to that song and its tempo shows on the arrangement screen; the top row shows its sections, section 1 bright. PLAY plays its pattern. Nothing shows on the OLED.
 
 - [ ] **5. A song keeps its own draft**
   - **Need:** Two songs in the setlist, the transport stopped, the first loaded and as saved.
-  - **Do:** On page 2 turn on one step of its pattern. Press the second key from the bottom, then the lowest key again.
+  - **Do:** On the drum page turn on one step of its pattern. Press the second key from the bottom, then the lowest key again.
   - **Pass if:** The step lights save and revert. After the second key the other song plays and the lamps go dark, while the songs tab reads `unsaved` beside the first. After the lowest key the first song is back, the step still on, save and revert lit again. Revert takes the step off.
 
 - [ ] **6. Playing, a key**
   - **Need:** Playing, the setlist's first song loaded.
   - **Do:** Press the second key from the bottom mid-pattern, and listen.
-  - **Pass if:** The Launchpad's next arrow blinks blue in time with the beat row while the first song's pattern plays on to its end. The second song takes over on the pattern's step 1, its first step on that downbeat, and the button goes dark.
+  - **Pass if:** The Launchpad's next arrow blinks blue on the beat while the first song's pattern plays on to its end. The second song takes over on the pattern's step 1, its first step on that downbeat, and the button goes dark.
 
 - [ ] **7. The next arrow**
   - **Need:** Playing, a song of the setlist on its last section, another song after it.
@@ -69,7 +69,7 @@ Why each thing behaves as it does: [songs](../../ref/module/songs.md).
   - **Pass if:** At STOP the song loads at once, ready for PLAY, and the blinking stops.
 
 - [ ] **11. Delete asks twice**
-  - **Need:** Page 8's songs tab, three songs or more, one not loaded selected.
+  - **Need:** The songs page's songs tab, three songs or more, one not loaded selected.
   - **Do:** Tap **delete** once and wait four seconds. Then tap it twice, quickly.
   - **Pass if:** The first tap turns its word to sure?, and after three seconds it reads delete again with nothing deleted. The two quick taps delete the song: its row goes, the next one selected, and it is gone from the setlist too, the keys after it moving down one.
 

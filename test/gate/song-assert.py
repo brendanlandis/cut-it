@@ -6,10 +6,10 @@
 
 It asserts on what leaves the patch and what lands on disk: the state bus, where a section starting
 restores its parts; the tempo bus; the program changes, as the synths' layers send them; the
-Launchpad's frames, for the top row, the save and revert lamps and the go lamp; the stop bus; and
+Launchpad's frames, for the top row, the save and revert lamps and the next arrow; the stop bus; and
 the songs' files and their index.
 
-  the play run    a song of three sections saved, booted on page 2: section 1 starts at load;
+  the play run    a song of three sections saved, booted on the drum page: section 1 starts at load;
                   stopped, a top-row button starts its section at once, programs and all; a
                   change lights save and revert; revert and save; playing, a section with a
                   length hands over by itself on its own step 1; a section pressed is queued,
@@ -18,8 +18,8 @@ the songs' files and their index.
   the legacy run  a state directory from before sections: the auto file's pattern and synth
                   become section 1's, and the auto file lets the old keys go
   the songs run   three songs and a setlist saved: the Organelle's keys load songs, at once
-                  when stopped and by each entry's transition while playing, silence, the next
-                  bar, go; a song left keeps its draft; the go lamp blinks while one waits
+                  when stopped and at the next bar while playing; a song left keeps its draft;
+                  the next arrow blinks while one waits
 """
 import argparse
 import os
@@ -135,6 +135,13 @@ def main():
     bad = [f for f in page2 if G.drum_page(f, lay)[0]]
     A.check("every frame from the first window is the drum page with the edges' colors, nothing "
             "else lit", page2 and not bad, bad and G.drum_page(bad[0], lay)[0])
+    # The seed's voices go on the song as what it holds, not as a change to it.
+    voices = [ln.split() for ln in open(os.path.join(opt.after, "cut-it-song.txt"), encoding="utf-8")
+              if ln.split()[:1] == ["voices"]]
+    A.check("⛔ a song with no voices is seeded, and saved so: the seed's three, in the saved file, and "
+            "the lamps above stay dark", voices and voices[0][1:10] == [
+                "drums", "drums", "kit", "chords", "harmony", "strings", "melody", "melody", "fm"],
+            voices)
 
     print("\n--- stopped, a section starts at once ---")
     A.check("⛔ button 4, stopped: verse starts at once, every part restored",
@@ -273,7 +280,7 @@ def main():
             and fdraft == first, "%d section(s)" % len(first or []))
     auto = [ln.split()[0] for ln in open(os.path.join(opt.legacy, "cut-it-auto.txt"))
             if ln.split()]
-    A.check("... and the auto file lets the old keys go: mode alone", auto == ["mode"], auto)
+    A.check("... and the auto file lets the old keys go: the page alone", auto == ["page"], auto)
     ix = index(os.path.join(opt.legacy, "cut-it-songs.txt"))
     A.check("⛔ ... and the index: one song, song 1 in its files as they were, the opener of set 1",
             ix == ["next 2", "current 1", "chosen 1", "song 1", "set set 1", "entry 1"], ix)

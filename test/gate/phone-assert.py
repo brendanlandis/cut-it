@@ -43,16 +43,19 @@ HB_HZ = 2.0
 ADDRS = {"/cutit/hb", "/cutit/ack", "/mark",
          # what the phone shows: the mode, c_steps' state, c_synth's choice and
          # velocity switch, the tempo, u_song's sections and songs, c_melody's state
-         # and its loop's place, the one state with no repeat
+         # and its loop's place, the one state with no repeat, u_voices' page and voices,
+         # and u_perform's controls in play
          "/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
          "/cutit/sections", "/cutit/songs", "/cutit/melody", "/cutit/here", "/cutit/notes",
-         # the driver's taps for the inbound half: u_net's four outlets, err,
-         # and the presence bus, which re-wire once wrote and must not now
+         "/cutit/voices", "/cutit/perform",
+         # the driver's taps for the inbound half: u_net's outlets, err, and the presence
+         # bus, which re-wire once wrote and must not now
          "/probe/drums", "/probe/synth", "/probe/tempo", "/probe/sections", "/probe/err",
-         "/probe/presence"}
+         "/probe/presence", "/probe/voices", "/probe/perform"}
 # The state addresses, each sent on a change and again on every heartbeat.
 STATE = ("/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
-         "/cutit/sections", "/cutit/songs", "/cutit/melody", "/cutit/notes")
+         "/cutit/sections", "/cutit/songs", "/cutit/melody", "/cutit/notes", "/cutit/voices",
+         "/cutit/perform")
 # The sections page's commands u_net acknowledges, a button's flash: the rest show in the state.
 SECTIONS_ACKED = ["new", "up", "down", "delete", "name"]
 # The songs page's, the same way: the rest show in the state, or u_song refuses them.
@@ -72,7 +75,7 @@ WINDOWS = ["idle", "dispsweep", "dispother", "tempo", "tpsweep", "idle2", "cmdwi
            "cmddrumsnew", "cmdverbtype", "cmdrolled", "cmdsynth", "cmdsynthnew", "cmdtempo", "cmdtemponew", "cmdvel",
            "cmdvelnew", "tmmodeon", "tmmode", "drumstate", "cmdsecsel", "cmdsecpage", "cmdsecnew",
            "cmdsecup", "cmdsecdown", "cmdseclen", "cmdsecdel", "cmdsecname", "cmdsecnew2",
-           "secstate", "cmdsongs", "songstate", "done"]
+           "secstate", "cmdsongs", "songstate", "cmdvoices", "cmdperform", "voicestate", "done"]
 
 
 # ------------------------------------------------------------------- collection
@@ -348,7 +351,18 @@ def main():
             "%d sent: %s" % (len(sent), sent[:1]))
     sent = args("drumstate", "/cutit/mode")
     A.check("drumstate: the page leaves alone as /cutit/mode, at once and on the heartbeat",
-            len(sent) >= 2 and all(g == ["mode-2"] for g in sent), sent[:3])
+            len(sent) >= 2 and all(g == ["drums"] for g in sent), sent[:3])
+    # The app's voices and controls in play: each command out its own outlet, whole, and each
+    # state back, at once and on the heartbeat, as every other.
+    one("cmdvoices", "/probe/voices", ["left", 2.0], "voices left 2 goes to u_voices, whole")
+    one("cmdperform", "/probe/perform", ["ctl", 2.0, "melody", "smooth", 0.5],
+        "perform ctl goes to u_perform, whole")
+    sent = args("voicestate", "/cutit/voices")
+    A.check("⛔ voicestate: u_voices' state leaves as /cutit/voices, at once and on the heartbeat",
+            len(sent) >= 2 and all(g == ["drums", "voice", 1.0] for g in sent), sent[:3])
+    sent = args("voicestate", "/cutit/perform")
+    A.check("⛔ voicestate: u_perform's leaves as /cutit/perform, at once and on the heartbeat",
+            len(sent) >= 2 and all(g == [1.0] for g in sent), sent[:3])
     sent = args("drumstate", "/cutit/synth")
     A.check("⛔ drumstate: c_synth's choice leaves as /cutit/synth fm, at once and on the heartbeat",
             len(sent) >= 2 and all(g == ["fm"] for g in sent), sent[:3])

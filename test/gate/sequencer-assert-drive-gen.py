@@ -5,7 +5,7 @@ It plays the drum page the way a hand would, on param, as m_launchpad publishes
 it: first the time signature from the phone, over OSC, 9/8 and 3/4, which set
 the page's rows, a press on a row and one past it, and back to the seed's 7/8;
 then a velocity button, steps on two tracks, a pad, the step rule's three cases,
-a press on the free corner, a press in another mode. Then the transport: PLAY,
+a press on the free corner, a press on another page. Then the transport: PLAY,
 STOP, knob 2 held at 16 and then setting the last step to 3, PLAY again, panic.
 Then knob 3 giving track 2 its own last step of 6, a press past it, the two
 tracks looping on their own, and the drum screen's snap, sent to u_net over OSC
@@ -39,11 +39,14 @@ import lib_drive as D                                          # noqa: E402
 GAP = 20
 P = lambda name, v=100: "\\; param %s %d" % (name, v)
 
+# PLAY brings the performance page up, and row 1's left button takes it back to the drum page, in one
+# instant, so no frame the analyzer reads shows anything else. Every PLAY below is this.
+PLAY = "\\; start bang \\; param lp-cc-80 127 \\; param lp-cc-80 0"
+
 SEQ = [
-    # Before the restore, and before anything else in the run: page 2's key,
-    # since the boot page is page 1 and the drum page is page 2's, then a pad
-    # plays now.
-    (300, "EARLY", ["\\; pd dsp 1", P("lp-cc-70", 127), P("lp-cc-70", 0), P("pad-11", 90)], GAP),
+    # Before the restore, and before anything else in the run: the drum page's name on the
+    # mode bus, as u_voices will say it once there's a song, then a pad plays now.
+    (300, "EARLY", ["\\; pd dsp 1", "\\; mode drums", P("pad-11", 90)], GAP),
     (2500, "RESTORE", [], GAP),
     # The time signature over OSC, as the phone sends it, on the seed's pattern: 7/8 up two to
     # 9/8, rows of 8 and a blue step every 9, wrapping across the rows; then down six to 3/8 and
@@ -71,13 +74,13 @@ SEQ = [
     (7500, "RULE-OTHER", [P("pad-75")], GAP),                     # 95, another: off
     # The second row of the right 4x4 is in no row of the layout table.
     (7600, "FREE-ROW", [P("pad-36")], GAP),
-    # The drum page is page 2's: on page 1, which held it until 2026-11-04, a
-    # step pad is an unmapped control.
+    # The lit button again is the performance page, where a step pad is a column, with nothing in
+    # play.
     (7700, "PAGE-1", [P("lp-cc-80", 127), P("lp-cc-80", 0)], GAP),
     (7900, "OTHER-PAGE", [P("pad-81")], GAP),
     # The tempo is set, not assumed: the analyzer counts the steps in PLAY.
-    (8100, "PAGE-2", [P("lp-cc-70", 127), P("lp-cc-70", 0), "\\; tempo 120"], GAP),
-    (8400, "PLAY", ["\\; start bang"], GAP),
+    (8100, "PAGE-2", [P("lp-cc-80", 127), P("lp-cc-80", 0), "\\; tempo 120"], GAP),
+    (8400, "PLAY", [PLAY], GAP),
     (11000, "STOP", ["\\; stop bang"], GAP),
     (11500, "STOPPED", [], GAP),
     # Knob 2 is the last step, held at 16 until turned through it, and at the
@@ -86,7 +89,7 @@ SEQ = [
     # parked for sixteen steps would show.
     (11600, "KNOB2-HELD", ["\\; param og-knob-2 0.2"], GAP),
     (11700, "LAST-3", ["\\; param og-knob-2 0.6", "\\; param og-knob-2 0.07"], GAP),
-    (12000, "REPLAY", ["\\; start bang"], GAP),
+    (12000, "REPLAY", [PLAY], GAP),
     # A step fires on its boundary: PLAY goes 20 ms after the mark, as every action does, and
     # step 1 within two blocks of it, before RE-SOON; step 3, the next with a note, 250 ms after
     # it, inside RE-STEP3. A twelfth of a step late, 10 ms at 120 BPM, puts each in the window
@@ -104,12 +107,12 @@ SEQ = [
                       "\\; param og-knob-3 0.17"], GAP),
     (14000, "PAST-LAST", [P("pad-71")], GAP),
     # Track 1 loops every 3, track 2 every 6, for nine steps.
-    (14200, "POLY", ["\\; start bang"], GAP),
+    (14200, "POLY", [PLAY], GAP),
     (15300, "POLY-STOP", ["\\; stop bang"], GAP),
     # The drum screen's snap, as the phone sends it: stopped, it waits for PLAY.
     # DONE leaves u_state its two seconds to write the snap's put.
     (15500, "SNAP", ["\\; seqgate-osc drums snap"], GAP),
-    (15700, "SNAP-PLAY", ["\\; start bang"], GAP),
+    (15700, "SNAP-PLAY", [PLAY], GAP),
     (16200, "SNAP-STOP", ["\\; stop bang"], GAP),
     # The swing press, which no knob holds since knob 4 became rush but a map row
     # could, sent as the phone's drums path passes it on: 50% to 75%, held at 50%
@@ -122,7 +125,7 @@ SEQ = [
     # lands on the beat, 250 ms after step 1, and paints in SW-ON.
     (16300, "SWING", ["\\; seqgate-osc drums swing 0.6", "\\; seqgate-osc drums swing 0",
                       "\\; seqgate-osc drums swing 1"], GAP),
-    (16500, "SW-PLAY", ["\\; start bang"], GAP),
+    (16500, "SW-PLAY", [PLAY], GAP),
     (16525, "SW-SOON", [], GAP),
     (16600, "SW-GAP", [], GAP),
     (16690, "SW-LATE", [], GAP),
@@ -133,7 +136,7 @@ SEQ = [
     # loop goes on from where it would have been, 2 then 3, not from 1. PLAY
     # goes at 17020, so a step every 125 ms from it: the press, at 17340, comes
     # after step 3 at 17270, and REP-HELD holds the four from 17395 to 17770.
-    (17000, "REP-PLAY", ["\\; start bang"], GAP),
+    (17000, "REP-PLAY", [PLAY], GAP),
     (17320, "REP-PRESS", [P("pad-45")], GAP),
     (17390, "REP-HELD", [], GAP),
     (17800, "REP-OFF", [P("pad-45", 0)], GAP),
@@ -144,7 +147,7 @@ SEQ = [
     (18200, "SOUND", ["\\; seqgate-osc drums vol 2 -6", "\\; seqgate-osc drums pitch 2 7"],
      GAP),
     (18400, "RAND", ["\\; seqgate-osc drums randomness 1 100"], GAP),
-    (18500, "RA-PLAY", ["\\; start bang"], GAP),
+    (18500, "RA-PLAY", [PLAY], GAP),
     (19600, "RA-STOP", ["\\; stop bang", "\\; seqgate-osc drums randomness 1 0"], GAP),
     # A repeat over random tracks plays exactly what was played, the coins as they fell that
     # time (Brendan, 2026-11-05): tracks 1 to 4 at full randomness, every step of theirs a
@@ -155,7 +158,7 @@ SEQ = [
     # press, at 20220, comes after step 3 at 20170; RR-HELD holds 20295, 20420 and 20545; the
     # release, at 20600, comes before 20670; and STOP, at 20850, before 20920.
     (19700, "RR", ["\\; seqgate-osc drums randomness %d 100" % t for t in range(1, 5)], GAP),
-    (19900, "RR-PLAY", ["\\; start bang"], GAP),
+    (19900, "RR-PLAY", [PLAY], GAP),
     (20200, "RR-PRESS", [P("pad-46")], GAP),                      # repeat pad 2
     (20250, "RR-HELD", [], GAP),
     (20580, "RR-OFF", [P("pad-46", 0)], GAP),
@@ -166,10 +169,10 @@ SEQ = [
     # 1; then track 1 soloed as well, mutes ignored, for six more, while track 2 plays nothing.
     # Both stay, so the song's draft, written every 2 s, holds them at the end.
     (21000, "MUTE", ["\\; seqgate-osc drums mute 1 1"], GAP),
-    (21150, "MU-PLAY", ["\\; start bang"], GAP),
+    (21150, "MU-PLAY", [PLAY], GAP),
     (21850, "MU-STOP", ["\\; stop bang"], GAP),
     (21950, "SOLO", ["\\; seqgate-osc drums solo 1 1"], GAP),
-    (22100, "SO-PLAY", ["\\; start bang"], GAP),
+    (22100, "SO-PLAY", [PLAY], GAP),
     (22800, "SO-STOP", ["\\; stop bang"], GAP),
     # Track 4's distortion made fold, over OSC as the phone sends it (Brendan, 2026-11-05): put
     # with the pattern, its character after the mutes and solos, and told to c_kit.
@@ -180,7 +183,7 @@ SEQ = [
     (22900, "DRUNK", ["\\; seqgate-osc drums drunk 100"], GAP),
     # The reverb's type, over OSC as the phone sends it: gigaverb, 1, where the seed has the plate.
     (22950, "VTYPE", ["\\; seqgate-osc drums verb-type 1"], GAP),
-    (23000, "DR-PLAY", ["\\; start bang"], GAP),
+    (23000, "DR-PLAY", [PLAY], GAP),
 ] + [(23080 + 125 * k, "DR-%d" % (k + 1), [], GAP) for k in range(96)] + [
     (35080, "DR-STOP", ["\\; stop bang"], GAP),
     # A drag on the drum screen, as the phone sends one: no sync, so c_steps' clock puts once,
@@ -192,14 +195,14 @@ SEQ = [
     # PLAY at 35620 and a step every 150 ms: the press, at 35940, comes after step 3 at 35920, and
     # the replay begins at 36070.
     (35500, "TF-SOBER", ["\\; seqgate-osc drums drunk 0", "\\; tempo 100"], GAP),
-    (35600, "TF-PLAY", ["\\; start bang"], GAP),
+    (35600, "TF-PLAY", [PLAY], GAP),
     (35920, "TF-PRESS", [P("pad-45")], GAP),
     (36050, "TF-HELD", [], GAP),
     (36300, "TF-OFF", [P("pad-45", 0)], GAP),
     (36500, "TF-STOP", ["\\; stop bang", "\\; tempo 120"], GAP),
     # The 500 BPM repeat, pad-35: PLAY at 36620, the press at 36900 after step 3 at 36870. Knob 1
     # is held at 500 through it, and at 120 after it, and the loop of 3 goes on from step 3.
-    (36600, "FAST-PLAY", ["\\; start bang"], GAP),
+    (36600, "FAST-PLAY", [PLAY], GAP),
     (36880, "FAST-PRESS", [P("pad-35")], GAP),
     (36960, "FAST-HELD", [], GAP),
     (37100, "FAST-KNOB", ["\\; param og-knob-1 0.5"], GAP),
@@ -217,13 +220,13 @@ SEQ = [
     # then with no randomness, every hit back at its set pitch. It stays on, for the draft.
     (38500, "ROLL", ["\\; seqgate-osc drums rnd-pitch 1 1",
                      "\\; seqgate-osc drums randomness 1 100"], GAP),
-    (38650, "RO-PLAY", ["\\; start bang"], GAP),
+    (38650, "RO-PLAY", [PLAY], GAP),
     (40700, "RO-STOP", ["\\; stop bang", "\\; seqgate-osc drums randomness 1 0"], GAP),
-    (40900, "RO-BACK", ["\\; start bang"], GAP),
+    (40900, "RO-BACK", [PLAY], GAP),
     (41300, "RO-END", ["\\; stop bang"], GAP),
     # The saved-tempo pad restarts at once: steps at 41420 and each 125 ms, so its press, at 41750,
     # falls between 41670 and 41795, and a note before RX-SOON can only be the restart's step 1.
-    (41400, "RX-PLAY", ["\\; start bang"], GAP),
+    (41400, "RX-PLAY", [PLAY], GAP),
     (41730, "RX-PRESS", [P("pad-38")], GAP),
     (41755, "RX-SOON", [], GAP),
     (41900, "RX-OFF", [P("pad-38", 0), "\\; stop bang"], GAP),
@@ -235,7 +238,7 @@ SEQ = [
     (42200, "RU-LIVE", ["\\; param og-knob-4 0.1"], GAP),
     (42300, "RU-K1", ["\\; param og-knob-1 0.2"], GAP),
     (42400, "RU-RACE", ["\\; param og-knob-4 0.3"], GAP),
-    (42500, "RU-PLAY", ["\\; start bang"], GAP),
+    (42500, "RU-PLAY", [PLAY], GAP),
     (42800, "RU-PAST", ["\\; param og-knob-4 0.8"], GAP),
     (42900, "RU-LOOP", [], GAP),
     (43000, "RU-HOME", [P("pad-38")], GAP),
@@ -246,7 +249,7 @@ SEQ = [
     (43700, "RU-K4", ["\\; param og-knob-4 0.81"], GAP),
     # The way down: past the handoff with the steps going, and back below it. t_kit answers that the
     # loop is a tenth of the way round, its first step of the three.
-    (43900, "RB-PLAY", ["\\; param og-knob-4 0.1", "\\; param og-knob-4 0.3", "\\; start bang"], GAP),
+    (43900, "RB-PLAY", ["\\; param og-knob-4 0.1", "\\; param og-knob-4 0.3", PLAY], GAP),
     (44300, "RB-PAST", ["\\; param og-knob-4 0.8"], GAP),
     (44400, "RB-BACK", ["\\; param og-knob-4 0.3"], GAP),
     (44800, "RB-STOP", ["\\; stop bang"], GAP),
@@ -282,7 +285,7 @@ OSC = [
 ]
 
 BLURB = ("sequencer-assert-drive -- GENERATED by sequencer-assert-drive-gen.py. Do "
-         "not edit this file. It plays page 2's drum page on param: the time signature "
+         "not edit this file. It plays the drum page on param: the time signature "
          "over OSC and a press on a row \\, a velocity \\, "
          "steps on two tracks \\, a pad \\, the step rule's three cases \\, a press on "
          "the free corner \\, a press on another page \\, then PLAY \\, STOP \\, knob 2 "

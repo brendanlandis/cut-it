@@ -74,13 +74,17 @@ def main_dev(s):
 
 
 # ---------------------------------------------------------------------------
-def _instrument(g, dog, rows=(), say=None):
+def _instrument(g, dog, rows=(), say=None, auto=None):
     """The shape most gates share: main-dev.pd in a copy that owns its state and
-    port, every MIDI class rewritten, the gate's driver beside it. -> capture."""
+    port, every MIDI class rewritten, the gate's driver beside it. -> capture.
+    auto: what the auto file holds, a line, as a gate's power-off left it."""
     s = g.copy()
     s.state_dir()
     if rows:
         s.map_rows(rows)
+    if auto:
+        with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
+            fh.write(auto + "\n")
     g.rewrite(s)
     S.drive(GEN % (g.name + "-assert"), s.path("drive.pd"))
     if say:
@@ -135,29 +139,31 @@ def nano(g):
     print("   the decode, in Lua ...")
     rc_lua = S.lua("test/gate/lua/m_nano_test.lua", *g.args)
     print("\n   the patch, in Pd ...")
-    return _stdin_gate(g, 40) or rc_lua
+    # Slider 1 mapped straight to a destination that draws its row: what a fader draws in the
+    # shipped map depends on what's in play (test/gate/lua/u_perform_test.lua).
+    return _stdin_gate(g, 40, rows=["all slider-1 volca-cc 41"]) or rc_lua
 
 
 def volca(g):
     S.require("Cut It/m_volca.pd", "Cut It/cut-it-map.txt")
-    return _stdin_gate(g, 40, rows=["mode-1 gk-cc volca-cc 41",
-                                    "mode-1 gk-note volca-note 48",
-                                    "mode-1 gk-prog volca-prog 5",
-                                    "mode-1 gk-key volca-key 60"])
+    return _stdin_gate(g, 40, rows=["all gk-cc volca-cc 41",
+                                    "all gk-note volca-note 48",
+                                    "all gk-prog volca-prog 5",
+                                    "all gk-key volca-key 60"])
 
 
 def display(g):
     S.require("Cut It/g_grid.pd", "Cut It/g_grid.lua", "Cut It/g_grid-lua.pd_lua",
               "Cut It/cut-it-drum-page.txt", "Cut It/g_oled.pd", "Cut It/main-dev.pd",
               "test/gate/lua/g_grid_test.lua")
-    # The drum page's painter first, in Lua and without Pd: what each cell shows. Then the Pd
-    # half: the arbiter and every page, the drum page's frames included, through the running
-    # instrument.
-    print("   the drum page's painter, in Lua ...")
+    # The painter first, in Lua and without Pd: what each cell shows on each page. Then the Pd
+    # half: the arbiter and every page through the running instrument, from a page saved at the
+    # last power-off.
+    print("   the painter, in Lua ...")
     rc_lua = S.lua("test/gate/lua/g_grid_test.lua", *g.args)
     print("\n   the patch, in Pd ...")
-    rc = _stdin_gate(g, 90, blank=True, say="   running (DSP is "
-                     "on, the beat row needs it) ...")
+    rc = _stdin_gate(g, 90, blank=True, auto="page voice 1", say="   running (DSP is "
+                     "on, the beats repaint an idle page) ...")
     return rc or rc_lua
 
 
@@ -171,7 +177,7 @@ def tempo(g):
               "Cut It/cut-it-arrangement-page.txt", "Cut It/main-dev.pd",
               "test/gate/lua/u_tempo_test.lua")
     # Tap tempo's rules first, in Lua and without Pd: the intervals, the gap, the clamp. Then
-    # the Pd half: the clock, the clamp and the transport, the tap pad and the phone's tempo
+    # the Pd half: the clock, the clamp and the transport, the tap button and the phone's tempo
     # through the running instrument.
     print("   tap tempo's rules, in Lua ...")
     rc_lua = S.lua("test/gate/lua/u_tempo_test.lua", *g.args)
@@ -303,7 +309,7 @@ def map_(g):
     rc_lua = S.lua("test/gate/lua/u_map_test.lua", *g.args)
     print("\n   the patch, in Pd ...")
     # Put before the shipped rows, so each wins over a shipped row for the same
-    # mode and control. gk-bad names a
+    # page and control. gk-bad names a
     # destination that does not exist. The pickup knobs get distinct CCs, so a
     # leak between their windows shows as the wrong controller rather than a
     # duplicate. gk-note, gk-prog and gk-key exist for what the shipped map
@@ -311,15 +317,15 @@ def map_(g):
     # play nothing until they choose songs (Brendan, 2026-11-04).
     # pad-13-at is pressure, mapped: the raw-row exemption must not hide a
     # mapped destination's row.
-    rows = ["mode-1 gk-cc volca-cc 41",
-            "mode-1 gk-bad no-such-destination 0",
-            "mode-1 og-knob-2 volca-cc 42",
-            "mode-1 og-knob-3 volca-cc 43",
-            "mode-1 og-knob-4 volca-cc 44",
-            "mode-1 gk-note volca-note 60",
-            "mode-1 gk-prog volca-prog 20",
-            "mode-1 gk-key volca-key 60",
-            "mode-1 pad-13-at volca-cc 45"]
+    rows = ["perform gk-cc volca-cc 41",
+            "perform gk-bad no-such-destination 0",
+            "perform og-knob-2 volca-cc 42",
+            "perform og-knob-3 volca-cc 43",
+            "perform og-knob-4 volca-cc 44",
+            "perform gk-note volca-note 60",
+            "perform gk-prog volca-prog 20",
+            "perform gk-key volca-key 60",
+            "perform pad-13-at volca-cc 45"]
 
     # Twice, differing only in knobs.txt: u_map arms pickup for a saved knob
     # position and not for a live one, and tells them apart by that file (item
@@ -329,9 +335,9 @@ def map_(g):
         s = g.copy("map-" + which)
         s.state_dir()
         s.map_rows(rows)
-        # A mode the old code saved, <class> <page>: u_map's restore must put the
-        # page alone on the bus. Page 1, so the gate's rows, all keyed mode-1,
-        # still hold after it lands at about 3.5 s.
+        # A mode saved before pages had names: nothing hears that key now, so the
+        # boot comes up on the performance page, and the gate's rows, all keyed to
+        # it, hold.
         with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
             fh.write("mode compose mode-1\n")
         out = []
@@ -463,10 +469,10 @@ def sequencer(g):
         pat += [moved.get(t, start) for t in range(1, 17)]
     pat += [v for _name, _start, v in SEQ_VERB]
     drums = "drums %s\n" % " ".join(map(str, pat))
-    # Page 2, the drum page, restored at about 3.5 s by u_state, and the song by u_song after
-    # it, before the first press.
+    # The drum page, row 1's left page, restored at about 3.5 s by u_state, and the song by u_song
+    # after it, before the first press.
     with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
-        fh.write("mode mode-2\n")
+        fh.write("page voice 1\n")
     song = "song song 1\nsection 1 0 section 1\n" + drums
     for name in ("cut-it-song.txt", "cut-it-song-draft.txt"):
         with open(os.path.join(s.state, name), "w") as fh:
@@ -496,11 +502,10 @@ def sequencer(g):
 
 def synths(g):
     S.require("Cut It/c_synth.pd", "Cut It/c_synth.lua", "Cut It/c_synth-lua.pd_lua",
-              "Cut It/m_nanokey.pd", "Cut It/m_streich.pd", "Cut It/cut-it-synth-page.txt",
-              "Cut It/cut-it-map.txt", "Cut It/c_melody.lua", "test/gate/lua/c_synth_test.lua",
+              "Cut It/m_nanokey.pd", "Cut It/m_streich.pd", "Cut It/cut-it-map.txt", "Cut It/c_melody.lua", "test/gate/lua/c_synth_test.lua",
               "test/gate/lua/c_melody_test.lua")
     # The rules first, in Lua and without Pd: the choice, where each key goes, the restore.
-    # Then the Pd half: the nanoKEY, the pads and the phone through the running instrument.
+    # Then the Pd half: the nanoKEY, the voices' buttons and the phone through the running instrument.
     print("   the rules, in Lua ...")
     rc_lua = S.lua("test/gate/lua/c_synth_test.lua", *g.args)
     print("\n   the generator's rules, in Lua ...")
@@ -508,11 +513,9 @@ def synths(g):
     print("\n   the patch, in Pd ...")
     s = g.copy()
     s.state_dir()
-    # Page 3, and a song whose one section holds strings and the velocity switch off,
-    # restored at about 3.5 s: fm and on are the boot defaults, so a restore that never landed
-    # plays the Volca at the key's own velocity in the first window.
-    with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
-        fh.write("mode mode-3\n")
+    # A song whose one section holds strings and the velocity switch off, restored at about
+    # 3.5 s: fm and on are the boot defaults, so a restore that never landed plays the Volca at the
+    # key's own velocity in the first window.
     for name in ("cut-it-song.txt", "cut-it-song-draft.txt"):
         with open(os.path.join(s.state, name), "w") as fh:
             fh.write("song song 1\nsection 1 0 section 1\nsynth strings\nvelocity off\n")
@@ -522,6 +525,28 @@ def synths(g):
     print()
     rc = g.analyze("test/gate/synths-assert.py", *g.args, "--state", s.state, stdin=cap)
     return rc or rc_lua or rc_melody
+
+
+def voices(g):
+    S.require("Cut It/u_voices.pd", "Cut It/u_voices.lua", "Cut It/u_voices-lua.pd_lua",
+              "Cut It/u_perform.pd", "Cut It/u_perform.lua", "Cut It/u_perform-lua.pd_lua",
+              "Cut It/cut-it-controls.txt", "test/gate/lua/u_voices_test.lua",
+              "test/gate/lua/u_perform_test.lua")
+    # The rules first, in Lua and without Pd: the pages, the voices, what's in play. Then the Pd half:
+    # the cords between them through the running instrument.
+    print("   the voices' rules, in Lua ...")
+    rc_lua = S.lua("test/gate/lua/u_voices_test.lua", *g.args)
+    print("\n   the controls in play's rules, in Lua ...")
+    rc_perform = S.lua("test/gate/lua/u_perform_test.lua", *g.args)
+    print("\n   the patch, in Pd ...")
+    s = g.copy()
+    s.state_dir()
+    g.rewrite(s)
+    S.drive(GEN % "voices-assert", s.path("drive.pd"))
+    cap = g.pd(s, 40, main_dev(s), s.path("drive.pd"))
+    print()
+    rc = g.analyze("test/gate/voices-assert.py", *g.args, "--state", s.state, stdin=cap)
+    return rc or rc_lua or rc_perform
 
 
 def _drums(last, hits, own=None, sig=(4, 4), drunk=0, sectionless=False):
@@ -552,7 +577,7 @@ SONG_SEED = [
 
 
 # The fourth run's songs, by id: each its name, its tempo and its drums' global last step, one
-# section; and its setlist, gig, each entry a song and how it starts. Night drive is loaded.
+# section; and its setlist, gig, each entry a song. Night drive is loaded.
 SONGS = {1: ("night drive", 200, 8), 2: ("lantern", 240, 32), 3: ("hollow bell", 220, 32)}
 SONGS_INDEX = ("next 4\ncurrent 1\nchosen 1\nsong 1\nsong 2\nsong 3\nset gig\n"
                "entry 2 silence\nentry 3 next-bar\nentry 1 go\n")
@@ -576,9 +601,9 @@ def song(g):
     print("\n   the patch, in Pd ...")
     s = g.copy()
     s.state_dir()
-    # Page 2, so the frames show the drum page's playhead, and a song saved.
+    # The drum page, row 1's left page, so the frames show its playhead, and a song saved.
     with open(os.path.join(s.state, "cut-it-auto.txt"), "w") as fh:
-        fh.write("mode mode-2\n")
+        fh.write("page voice 1\n")
     text = _song_text(SONG_SEED)
     for path in (os.path.join(s.state, "cut-it-song.txt"),
                  os.path.join(s.state, "cut-it-song-draft.txt"), s.path("seed-song.txt")):
@@ -605,18 +630,19 @@ def song(g):
                  sectionless=True)
     line = "section-1-drums %s" % " ".join(map(str, old))
     with open(os.path.join(s3.state, "cut-it-auto.txt"), "w") as fh:
-        fh.write("mode mode-4\n%s\nsynth strings\nvelocity off\n" % line)
+        fh.write("%s\nsynth strings\nvelocity off\n" % line)
     with open(s3.path("legacy-seed.txt"), "w") as fh:
         fh.write(line + "\n")
     g.rewrite(s3, out=[])
     S.drive(GEN % "song-assert", s3.path("drive.pd"), "legacy")
     print("   and a first load from a state directory before sections ...")
     S.run(s3.path("capture.txt"), 30, *FLAGS, "-path", s3.patch, main_dev(s3), s3.path("drive.pd"))
-    # Three songs and a setlist saved, on page 8, the songs: the keys and go, stopped and playing.
+    # Three songs and a setlist saved, on the songs page: the keys and the next arrow, stopped and
+    # playing. PLAY leaves that page where it is.
     s4 = g.copy("song-songs")
     s4.state_dir()
     with open(os.path.join(s4.state, "cut-it-auto.txt"), "w") as fh:
-        fh.write("mode mode-8\n")
+        fh.write("page songs 0\n")
     with open(os.path.join(s4.state, "cut-it-songs.txt"), "w") as fh:
         fh.write(SONGS_INDEX)
     for sid, (name, tempo, last) in SONGS.items():
@@ -630,7 +656,7 @@ def song(g):
                 fh.write(text)
     g.rewrite(s4, out=[])
     S.drive(GEN % "song-assert", s4.path("drive.pd"), "songs")
-    print("   and three songs, played from the Organelle's keys and go ...")
+    print("   and three songs, played from the Organelle's keys and the next arrow ...")
     cap4 = s4.path("capture.txt")
     S.run(cap4, 40, *FLAGS, "-path", s4.patch, main_dev(s4), s4.path("drive.pd"))
     print()
@@ -647,6 +673,7 @@ RECIPES = {
     "clock": clock, "map": map_, "recover": recover, "launchpad": launchpad,
     "nano": nano, "organelle": organelle, "volca": volca,
     "debug": debug, "sequencer": sequencer, "kit": kit, "synths": synths, "song": song,
+    "voices": voices,
 }
 
 

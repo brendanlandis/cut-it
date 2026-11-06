@@ -44,16 +44,39 @@ local function song(names, lengths)
   return st
 end
 
+-- A section's own parts, as a start restores them. The controls in play and the song's voices go out
+-- whether or not the song holds any, so "a section starting" below is what it holds, and they have
+-- their own section.
+local function own(e)
+  return e[1] == "state" and e[3][1] ~= "voices" and e[3][1] ~= "perform"
+end
+
 local function restores(out)
   local r = {}
   for _, e in ipairs(out) do
-    if e[1] == "state" then r[#r + 1] = table.concat((function()
+    if own(e) then r[#r + 1] = table.concat((function()
       local w = {}
       for i, a in ipairs(e[3]) do w[i] = R.fmt(a) end
       return w
     end)(), " ") end
   end
   return r
+end
+
+-- The first of a section's own parts to go out.
+local function first_own(out)
+  for _, e in ipairs(out) do
+    if own(e) then return e end
+  end
+end
+
+-- The same off the Pd face, whose outlet 3 is the state bus: {3, "restore", {key, atoms...}}.
+local function first_restore(sent)
+  for _, m in ipairs(sent) do
+    if m[1] == 3 and m[2] == "restore" and m[3][1] ~= "voices" and m[3][1] ~= "perform" then
+      return m
+    end
+  end
 end
 
 local function names(st)
@@ -82,7 +105,7 @@ equal("a part's put lands in the section playing, under its key, as its atoms",
 local out = R.load(st, nil, nil)
 equal("with no files, the load starts section 1: every part it holds goes back out, in the "
       .. "keys' order", restores(out), { "drums 0 0 16", "synth fm", "tempo 120" })
-equal("... and its restores are restore <key> <atoms...> on the state bus", out[1],
+equal("... and its restores are restore <key> <atoms...> on the state bus", first_own(out),
       { "state", "restore", { "drums", 0, 0, 16 } })
 equal("... the song is saved as it is: nothing unsaved, both files to write",
       { R.unsaved(st), st.write_saved }, { false, true })
@@ -674,6 +697,47 @@ st.running, st.queued = false, st.song.sections[1]
 equal("⛔ stopped, everything at once", restores(R.stop(st)),
       { "drums 1", "programs none", "tempo 100" })
 
+print("\n--- what every start says, and a song's own parts ---")
+-- Every outgoing restore, its key first, in order.
+local function keys(out)
+  local k = {}
+  for _, e in ipairs(out) do if e[1] == "state" then k[#k + 1] = e[3][1] end end
+  return k
+end
+st = R.new()
+R.put(st, { "drums", 1 })
+out = R.load(st, nil, nil)
+equal("⛔ a song with no voices still says so, last, and a section with no controls in play says so, "
+      .. "first: without them the last song's and section's would stay",
+      { keys(out), out[1][3], out[#out][3] }, { { "perform", "drums", "voices" }, { "perform" }, { "voices" } })
+st = R.new()
+st.song.sections[1].parts = { drums = { 1 }, perform = { "slider-1", "tempo", 0, 0, 0.5 } }
+st.queued = st.song.sections[1]
+out = R.stop(st)
+equal("... a section that holds some says only that", keys(out), { "drums", "perform" })
+st = R.new()
+R.load(st, nil, nil)
+equal("nothing unsaved before a song part is put", R.unsaved(st), false)
+R.put_song(st, { "voices", "drums", "drums", "kit" })
+equal("⛔ put song voices: the song holds it, not the section playing, and it shows as unsaved",
+      { st.song.parts.voices, st.playing.parts.voices, R.unsaved(st) },
+      { { "drums", "drums", "kit" }, nil, true })
+local text = R.text(st.song)
+equal("⛔ ... and is saved between the song's name and its first section",
+      text, "song song 1\nvoices drums drums kit\nsection 1 0 section 1\n")
+equal("⛔ ... and reads back as the song's", R.parse(text).parts, { voices = { "drums", "drums", "kit" } })
+equal("... with its sections no different", R.parse(text).sections[1].parts, {})
+out = R.revert(st)
+equal("⛔ revert takes it back and says so: no voices in the saved song, so an empty restore",
+      { st.song.parts.voices, R.unsaved(st), keys(out) }, { nil, false, { "perform", "voices" } })
+R.put_song(st, { "voices", "a", "keys", "fm" })
+R.save(st)
+equal("once saved it is not unsaved, and the same atoms put back leave it that way",
+      { R.unsaved(st), R.put_song(st, { "voices", "a", "keys", "fm" }), R.unsaved(st) }, { false, {}, false })
+R.put_song(st, { "voices", "b", "keys", "fm" })
+out = R.revert(st)
+equal("... and a revert restores what was saved", out[#out][3], { "voices", "a", "keys", "fm" })
+
 print("\n--- the songs tab's load ---")
 st = load3()
 st.set = 1
@@ -783,7 +847,7 @@ equal("⛔ the draft's timer before the load writes nothing", { sent, file("cut-
       { {} })
 sent = T.send(o, 3, "load", {})
 equal("the load, with no files: section 1 starts, out the third outlet to the state bus",
-      sent[1], { 3, "restore", { "drums", 7 } })
+      first_restore(sent), { 3, "restore", { "drums", 7 } })
 equal("... and both files are written, the song as it is",
       { file("cut-it-song.txt"), file("cut-it-song-draft.txt") },
       { "song song 1\nsection 1 0 section 1\ndrums 7\n",
@@ -808,7 +872,7 @@ sent = T.send(o, 1, "top", { 4 })
 equal("⛔ a press first asks the parts for what they hold back, before section 2 starts",
       sent[1], { 3, "sync", {} })
 table.remove(sent, 1)
-equal("the top row's button 4, stopped: section 2 starts", sent[1], { 3, "restore",
+equal("the top row's button 4, stopped: section 2 starts", first_restore(sent), { 3, "restore",
       { "drums", 8 } })
 sent = T.send(o, 1, "save", {})
 equal("save: the lamps go dark", lamps(sent), { { 1, "unsaved", { 0 } } })
@@ -828,7 +892,7 @@ sent = T.send(o3, 3, "load", {})
 equal("⛔ after the flush, a reload has the draft, its change unsaved: save and revert lit",
       { o3.state.song.sections[2].parts.drums, lamps(sent)[1] },
       { { 9 }, { 1, "unsaved", { 1 } } })
-equal("... and section 1 starts", sent[1], { 3, "restore", { "drums", 8 } })
+equal("... and section 1 starts", first_restore(sent), { 3, "restore", { "drums", 8 } })
 sent = T.send(o3, 1, "revert", {})
 equal("revert: back to the save, the lamps dark", { lamps(sent), o3.state.song.sections[2].parts.drums },
       { { { 1, "unsaved", { 0 } } }, { 8 } })
@@ -884,7 +948,7 @@ equal("... its two files written at once, named for its id",
 T.send(o, 2, "songs", { "add" })
 T.send(o, 3, "put", { "tempo", 120 })
 sent = T.send(o, 1, "key", { 2 })
-equal("key 2, stopped: song 2 loads, its section 1 restored", sent[3], { 3, "restore",
+equal("key 2, stopped: song 2 loads, its section 1 restored", first_restore(sent), { 3, "restore",
       { "drums", 1 } })
 equal("... and the lamps: dark, since song 2 is as saved", lamps(sent), { { 1, "unsaved", { 0 } } })
 T.send(o, 3, "flush", {})

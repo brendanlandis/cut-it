@@ -13,7 +13,7 @@
 #X obj 900 1100 s err;
 #X obj 1200 420 r state;
 #X obj 1200 470 route put;
-#X obj 1200 520 route section;
+#X obj 1200 520 route section song seed;
 #X obj 1200 570 list prepend put;
 #X obj 1200 620 list trim;
 #X obj 1550 420 r start;
@@ -38,6 +38,8 @@
 #X text 900 700 Load \, then arm the draft's timer: t b b fires right to left. The draft is written every 2 s when it has changed \, and never before the load has read it \, which would write over the last session with this one's defaults (ref/module/state.md)., f 22;
 #X text 1550 520 PLAY counts the section's bars from the pattern's step 1. STOP and panic start a section queued at once: no bar is coming., f 30;
 #X text 2100 1200 At load the Lua answers init with a bang on its fifth outlet \, which shuts the spigot. No bang means it never loaded -- pdlua missing \, or an error in the Lua -- and fail u_song no-lua says so on the screen: the top row \, save and revert do nothing., f 40;
+#X obj 1400 570 list prepend put-song;
+#X obj 1400 620 list trim;
 #X connect 2 0 6 0;
 #X connect 3 0 6 1;
 #X connect 4 0 6 2;
@@ -69,3 +71,11 @@
 #X connect 6 1 8 0;
 #X connect 6 2 9 0;
 #X connect 6 3 10 0;
+#X connect 13 1 38 0;
+#X connect 38 0 39 0;
+#X connect 39 0 6 2;
+#X obj 1650 570 list prepend seed-song;
+#X obj 1650 620 list trim;
+#X connect 13 2 40 0;
+#X connect 40 0 41 0;
+#X connect 41 0 6 2;

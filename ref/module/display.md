@@ -139,23 +139,22 @@ at y = 8, 17, 26, 35, 44, 53**, one per source, under the info bar.
 | ⛔ **The loop is bounded at SIX rows, not at the roster size.** The sixth ends at y=60; a seventh would run off the bottom of the screen | unknown | 301 |
 | ⚠️ **`m_launchpad unchecked` is 21 characters** — the whole width of an 8px row. A longer state word or a longer abstraction name clips silently | verified | 301 |
 | Summoned by `disp` → `diag`, which carries nothing. Cleared by a retriggered `[del 8000]`, so pressing again while it is up buys another eight seconds | verified | 301 |
-| The control is **`og-shift-60` on every page** — hold `aux` and press the lowest key. One row of `cut-it-map.txt` per page | verified | 304 |
+| The control is **`pad-81` on the diagnostics page**, which the Launchpad's Setup opens from any page ([voices.md](voices.md)). One row of `cut-it-map.txt` | unknown | 304 |
 | The state lives in a `[text define $0-diag]` as `<src> <code>` — **numbers, not words**, so every transition is a comparison and the words are chosen once, where they are drawn | verified | 301 |
 
 ⚠️ **Presence is *last heard*, not *alive*, and the labels are chosen to say so.** A nanoKONTROL
 nobody has touched reads `here` and one on the floor reads `here` until the poll misses three times.
 No amount of code changes that — the operator supplies it.
 
-✅ **The summoning control is on the one panel that can never be the missing device.** On the
-Launchpad it would be dead in exactly the case the roster exists for — a Launchpad that has come
-unplugged sends no CC. The aux modifier and its 25 shifted keys are where it lives, beside `stop`
-and `recover`. See [organelle.md](../device/organelle.md).
+⚠️ **The summoning control is on the Launchpad** (Brendan, 2026-11-06: diagnostics and test mode moved
+to one place, Setup), **so a Launchpad that has come unplugged can't summon it.** The debug patch asks
+the same question from the Organelle's keys ([debug.md](debug.md)).
 
 ### `g_grid` — the same shape, one link shorter
 
 | Layer | Pri | Raised by | Cleared by | Draws | Evidence | Item |
 |-------|-----|-----------|------------|-------|----------|------|
-| `home` | 0 | Always active | Never | **Regions** — eight mode lamps down the left column, CC 80 to 10, and the beat row on grid indices 11–18; on page 2 the **drum page** instead of the beat row, on page 3 the **synth pads** above it, and on page 1 the **tap pad**; on every page **the edges**, the top row's sections and save and revert | unknown | — |
+| `home` | 0 | Always active | Never | **Every page's cells and the edges**, all `g_grid-lua`'s: the voices' lamps down both columns, the top row's sections, save and revert, and the page on show's own, on the `drums`, `harmony`, `melody`, `perform` and `diag` pages | unknown | — |
 | `modal` | 1 | `disp` → `grid modal <palette>` | `grid modal-off`, or a 30 s safety TTL | The whole surface, one color | verified | — |
 | `alert` | 2 | `disp` → `alert …`, **`fail` only** | 2 s | The whole surface, red | verified | — |
 
@@ -171,10 +170,32 @@ addressed at all, so panic still never hands the surface back.
 | The frame clock runs at **50 Hz** but paints only when a **dirty flag** is set — nothing at all when idle, about two frames a second at 120 BPM | verified | 94 |
 | Every repaint is one SysEx of **108 color specs covering indices 1–108**: 332 bytes when every spec is a palette color, two more for each RGB one (the drum page's, below) | verified | — |
 | The frame clock **costs nothing**: it checks the flag rather than painting. 10 Hz and 50 Hz measured identical on the device | verified | 94 |
-| Raised from 10 Hz because at 240 BPM a 250 ms beat does not divide into 100 ms, so the beat row swung **±50 ms** | verified | — |
+| Raised from 10 Hz because at 240 BPM a 250 ms beat does not divide into 100 ms, so what blinks on the beat swung **±50 ms** | verified | — |
 | **Every raise AND every expiry sets the dirty flag** — a layer falling away changes the frame as much as one arriving | verified | — |
 
-### `g_grid`'s drum page, page 2
+### The caller's half: what reaches `g_grid`
+
+**`g_grid` has three inlets: ownership, from `m_launchpad`; the beat, from `c_clock`; and the state, meaning and
+never a cell (C-5).** The state inlet takes `c_steps`' drum page, below; `u_song`'s `top` and `unsaved`;
+`u_voices`' `voices`; the voice on show's `melody`, `notes`, `here` and `held`, from its `c_melody`; and
+`u_perform`'s `cols` and `btns`. `page <name>` comes off the `mode` bus. Each sets the dirty flag and goes to
+`g_grid.lua`'s `R.inputs`, which keep what the next frame shows; anything else is `fail g_grid bad-selector`.
+
+### The voices' lamps, on every page
+
+**A row of the Launchpad is a voice, and its two buttons are that voice's lamps** ([voices.md](voices.md)): the
+left column's CC 80 down to 10, and the right's CC 89 down to 19.
+
+| A cell | Paints | Evidence |
+|---|---|---|
+| A row with a voice | Its row's color, at a quarter, on both columns | unknown |
+| The button whose page is on show | The same color, full: the left for what the voice does, the right for its setup | unknown |
+| A row with none | Dark | unknown |
+
+⚠️ **They are RGB specs, 156 to 171 on the surface**: entries 28 to 43 of the RGB table, each row's full then its
+quarter: pink, cyan, amber, green, violet, yellow, orange and gray, rows 1 to 8.
+
+### `g_grid`'s drum page
 
 **One layout table, `Cut It/cut-it-drum-page.txt`, says which cell is which**: a row per cell,
 `<index> <role> <n>`, read at load by `g_grid`'s painter, `g_grid-lua`, to paint and by `u_map`
@@ -189,7 +210,7 @@ to know what a press means, so a press and its lamp cannot disagree. Its 62 rows
 | 6, right half | 36, 37 | in no row, so dark ("nothing in this slot", Brendan, 2026-11-05) | verified |
 | 7–8, right half | 25–28, 15–18 | `vel` 1–4, then 5–8 (Brendan, 2026-11-03) | unknown |
 
-**The caller is `c_steps`, on `g_grid`'s third inlet, and it sends meaning, never a cell** (C-5):
+**The caller is `c_steps`, on `g_grid`'s state inlet, and it sends meaning, never a cell** (C-5):
 `steps <32 levels>` for the selected track, 0 for off, `play <step>` (0 while stopped), `vel <level>`,
 `track <pad>` and `last <step>`, the selected track's, `bar <N> <row>`, the time signature as the
 page shows it, a blue step every *N* and *row* steps to a row, `rep <pad>`, the repeat pad
@@ -197,18 +218,14 @@ held, 0 for none, `fast` and `recall <1 or 0>`, the 500 BPM repeat and the saved
 and `quiet <16 flags>`, track 1 first, 1 for each track that won't play, muted or
 left out of a solo. Every message sets the dirty flag. Anything else is `fail g_grid bad-selector`.
 
-**The page is painted in Lua** (`cut-it/drum-page-in-lua`, 2026-11-05): `g_grid.lua` holds the
-rules, and `g_grid-lua.pd_lua` is the face, made at `g_grid`'s top level as `[g_grid-lua
-$0-surface]`. The third inlet's messages go straight to it, and on page 2 `pd regions` sends it
-`paint` in the slot the beat row has on the other pages; it works out the 62 cells and writes each
-into the frame buffer, `$0-surface`, through pdlua's `pd.Table`, looked up again every frame. The
-fill before it and the SysEx after it are Pd's, so a frame reaches the Launchpad exactly as before:
-three seeded runs of every input `g_grid` takes, 12,630 frames, were byte-for-byte those of the Pd
-boxes it replaced. **Everything else `g_grid` draws stays Pd** — the mode lamps, the beat row,
-pages 1 and 3, the edges — so it all works if pdlua does not load; the drum page is dark then, and
-`g_grid` says `fail g_grid no-lua` at load, the proof bang every Lua face answers `init` with never
-having come. A Lua error is `fail g_grid lua-<selector>`, `lua-paint` for the paint; a layout with
-no cell `layout-empty` at `init`, and no frame buffer by the face's name `no-surface`.
+**The whole home is painted in Lua**: `g_grid.lua` holds the rules, and `g_grid-lua.pd_lua` is the face, made at
+`g_grid`'s top level as `[g_grid-lua $0-surface]`. The state inlet's messages go straight to it, and `pd regions`
+sends it `paint` before each frame; it works out the page's cells and the edges and writes each into the frame
+buffer, `$0-surface`, through pdlua's `pd.Table`, looked up again every frame. `R.paint` returns the cells, their
+colors and how many. The fill before it and the SysEx after it are Pd's, and a cell paint doesn't name is dark, the
+fill's. If pdlua does not load the home is dark, and `g_grid` says `fail g_grid no-lua` at load, the proof bang
+every Lua face answers `init` with never having come. A Lua error is `fail g_grid lua-<selector>`, `lua-paint` for
+the paint; a layout with no cell `layout-empty` at `init`, and no frame buffer by the face's name `no-surface`.
 
 | What a paint costs | Measured | Evidence |
 |---|---|---|
@@ -240,87 +257,84 @@ button is selected.
 | The saved tempo's pad | Its own blue: RGB 8, 20, 64, and bright while held, 40, 100, 127 (2026-11-05) | verified |
 | A pad whose track won't play, muted or left out of a solo | Dim: the pink at a quarter, RGB 32, 5, 18, and selected, the red at a quarter, 32, 0, 0 (Brendan, 2026-11-05) | unknown |
 
-**The beat row gives way**, and the right 4×4's second row's two middle cells stay dark. The mode lamps are drawn
-as in every mode.
+The right 4×4's second row's two middle cells stay dark.
 
 ⚠️ **The levels' colors are RGB specs, not palette entries.** The palette is a color table with no
 even white-to-red ramp in it (Reference), so `g_grid`'s surface holds 128 + *k* for entry *k* of its
 own RGB table, and the paint loop sends those cells as type 3, red, green and blue: red 127, and
 green and blue 127, 109, 91, 73, 54, 36, 18, 0 for levels 1 to 8; the quarter is each over four;
 127, 20, 72 for a pad not selected; 16, 40, 127 for a blue step; 127, 0, 127 and 127, 80,
-127 for a repeat pad and the one held; and 127, 0, 0 for the selected pad, entry 26, after the
-synth and tap entries; then the edges' three (*`g_grid`'s edges, on every page*, below); then 32,
-5, 18 and 32, 0, 0 for a pad whose track won't play and the same selected, entries 30 and 31,
-158 and 159 on the surface; then 8, 20, 64 and 40, 100, 127 for the saved tempo's pad, entries 32
-and 33, 160 and 161.
+127 for a repeat pad and the one held; and 127, 0, 0 for the selected pad, entry 20; then the edges'
+three (*`g_grid`'s edges, on every page*, below); then 32, 5, 18 and 32, 0, 0 for a pad whose track
+won't play and the same selected, entries 24 and 25, 152 and 153 on the surface; then 8, 20, 64 and
+40, 100, 127 for the saved tempo's pad, entries 26 and 27, 154 and 155.
 ✅ On the rig the eight read as eight, white to red (Brendan, 2026-11-03).
 
-### `g_grid`'s synth pads, page 3
+### `g_grid`'s harmony page
 
-**`Cut It/cut-it-synth-page.txt` says which cell is which synth**, `<index> <synth>`, read with `-c`
-at load by `g_grid` to paint and by `u_map` to know what a press means, as the drum page's layout is
-([synths.md](synths.md)). Cells 21–24, the second row from the bottom on the left, are `fm`, and
-25–28 on the right are `strings` (Brendan, 2026-11-04). The beat row stays on row 1 below them, and
-the mode lamps are drawn as on every page.
-
-**The caller is `c_synth`, on `g_grid`'s fourth inlet**: `synth fm` or `synth strings`, which
-`g_grid` holds as 1 or 2 and which sets the dirty flag. It starts at `fm`, `c_synth`'s own, so the
-pads are right even before the first message. Anything else on that inlet is `fail g_grid
-bad-selector`.
+**The chords on the top row, and up to 56 steps of rhythm under them** (Brendan, 2026-11-06). The caller is the voice
+on show's `c_melody`, with its `melody` state: how many chords, the one sounding, each one's start, the rhythm's length,
+`on`, bass and style; `here <t> <step>`, the loops' places; and `held <chord> <step> <note>`, what a finger holds.
 
 | A cell | Paints | Evidence |
 |---|---|---|
-| A synth's pad, that synth chosen | Its color, full: `fm` amber, RGB 127, 56, 0; `strings` cyan, RGB 0, 96, 127 | unknown |
-| A synth's pad, the other chosen | The same color at a quarter: 32, 14, 0 and 0, 24, 32, the drum page's full-and-quarter that read as two states on the rig | unknown |
+| CC 81 to 88, a chord, in its playing order | The voice's color, dim; full while it sounds; white while held | unknown |
+| A step of the rhythm, seven rows of eight from CC 71 | Full on a chord's start, white while that chord is held; a blue step every *N*, the time signature's top number; dim otherwise; green where the loop is; dark past the rhythm's length | unknown |
+| A rhythm over 56 steps | The 56 the loop is in | unknown |
+| CC 101 to 105, on, roll chords, roll rhythm, bass, modal | The voice's color, on full and off dim; roll chords dim, roll rhythm blue | unknown |
 
-⚠️ **They are RGB specs, 148 to 151 on the surface**: entries 20 to 23 of the RGB table, each
-synth's full then its quarter. `pd regions` works a cell's out as 146 + 2*n* + (*n* is not the
-choice), *n* 1 for `fm` and 2 for `strings`, so a third synth is two more entries and nothing else.
+### `g_grid`'s melody page
 
-### `g_grid`'s tap pad, page 1
-
-**`Cut It/cut-it-arrangement-page.txt` says which cell does what on page 1**, `<index> <role>`,
-read with `-c` at load by `g_grid` to paint and by `u_map` to know what a press means, as the synth
-pads' layout is. Today it is one row, `21 tap`: the second row's first pad, above the beat row's
-first, which stays on row 1 as on every page but the drums (Brendan, 2026-11-04). A press taps the
-tempo ([tempo.md](tempo.md), *Tap tempo*).
-
-**The caller is `u_tempo`, on `g_grid`'s fifth inlet**: `tap`, on each tap, which lights the pad
-full for 120 ms, a `[del]` a tap inside it restarts, and sets the dirty flag as it goes on and off.
-Anything else on that inlet is `fail g_grid bad-selector`.
+**32 steps on the top four rows, and four rows of the mode's notes under them, low to high** (Brendan, 2026-11-06). The
+caller is the same, with `notes <73 atoms>` beside `here` and `held`. `R.pitches`, here and in `c_melody.lua` alike, works
+the 32 notes out from the lowest tonic at or above 44, so a press and its lamp cannot disagree; `g_grid_test.lua`
+holds the two to the same list.
 
 | A cell | Paints | Evidence |
 |---|---|---|
-| A tap cell | Yellow at a quarter, RGB 32, 24, 0: lit dimly, as Brendan asked | unknown |
-| The same, for 120 ms after a tap | Yellow, full, RGB 127, 96, 0 | unknown |
+| A step, CC 81 down the rows | The voice's color with a note; white pinned or held; dim for a rest; green where the loop is; dark past the loop | unknown |
+| A note of the mode, CC 11 up the rows | Dim, the tonic in the voice's dim color; the voice's color, full, on the note held, the held step's, or the one playing, in that order | unknown |
+| CC 101 to 103, on, roll, clear pins | The voice's color, on full and off dim; the other two dim | unknown |
 
-⚠️ **They are RGB specs, 152 and 153 on the surface**: entries 24 and 25 of the RGB table. `pd
-regions` paints each row of the layout whose role is `tap` from `[f 152]`, which `$0-tap`, the
-flash, raises to 153.
+### `g_grid`'s performance page
+
+**The caller is `u_perform`** ([voices.md](voices.md)): `cols <8 of kind, level, held>` and `btns <16 of row, on>`.
+
+| A cell | Paints | Evidence |
+|---|---|---|
+| A column, CC 11 up to 8*k*, the *k*th group's control | A fader's level from the bottom, green to red; a knob's blue. Dimmer while it's held at a value its physical control hasn't reached. Whichever of the two moved last | unknown |
+| CC 101 to 108, the group's top button, and CC 1 to 8, its bottom one | In its voice's color, dim off and bright on, dark with nothing in play. Save and revert aren't here on this page: these are the nanoKONTROL's | unknown |
+
+⚠️ **They are RGB specs, 172 to 189 on the surface**: entries 44 to 61, a fader's eight levels, full then
+at a quarter, and a knob's blue, full then at a quarter.
+
+### The other pages
+
+`diag` paints its two pads, CC 81, green, the diagnostic layer, and CC 82, blue, test mode. `songs`, `sound` and
+`keys` have no cells of their own: they're the phone's.
 
 ### `g_grid`'s edges, on every page
 
-**The caller is `u_song`, on `g_grid`'s sixth inlet**, with meaning, never a cell
+**The caller is `u_song`, on `g_grid`'s state inlet**, with meaning, never a cell
 ([songs.md](songs.md)): `top <8 lamps>`, the top row's buttons left to right, each 0 dark, 1 a
 section, 2 the section playing, 3 the one queued, 4 an arrow with somewhere to go, 5 the next arrow for the next song or 6 that
-song queued; and `unsaved <0 or 1>`. Each sets the dirty flag; anything else on the inlet is `fail g_grid bad-selector`.
-`pd regions` paints them on every page, after the other regions, from an array of eight and two
-floats, so they start dark until `u_song` speaks.
+song queued; and `unsaved <0 or 1>`. `R.paint` paints them on every page, after the page's own cells, so
+they start dark until `u_song` speaks.
 
 | A cell | Paints | Evidence |
 |---|---|---|
 | CC 91 and 92, the arrows, with somewhere to go | Palette 1, dim | unknown |
 | CC 92 on a song's last section, the next song | Blue, RGB 16, 40, 127, the drum page's (Brendan, 2026-11-06) | unknown |
-| The same, a song queued | Blue on the beat row's even beats and dark on its odd | unknown |
+| The same, a song queued | Blue on the clock's even beats and dark on its odd | unknown |
 | CC 93–98, a section | Dim green, RGB 0, 32, 8 | unknown |
 | The same, the section playing | Full green, RGB 0, 127, 32 | unknown |
-| The same, the section queued | Full green on the beat row's even beats and dark on its odd, so it blinks on the beat, at no cost: the beat row's change repaints anyway | unknown |
-| CC 108, save, with anything unsaved | Red, RGB 127, 0, 0, the selected drum pad's entry (Brendan, 2026-11-05) | unknown |
-| CC 8, revert, with anything unsaved | Gray, RGB 40, 40, 40 | unknown |
+| The same, the section queued | Full green on the clock's even beats and dark on its odd, so it blinks on the beat, at no cost: a beat repaints anyway | unknown |
+| CC 108, save, with anything unsaved, but on the performance page | Red, RGB 127, 0, 0, the selected drum pad's entry (Brendan, 2026-11-05) | unknown |
+| CC 8, revert, the same | Gray, RGB 40, 40, 40 | unknown |
 | Any of them otherwise | Dark | unknown |
 
-⚠️ **They are RGB specs, 155 to 157 on the surface**: entries 27 to 29 of the RGB table, a section
-dim and full and revert's gray, after the selected pad's red, 154, which save shares; the next arrow's
+⚠️ **They are RGB specs, 149 to 151 on the surface**: entries 21 to 23 of the RGB table, a section
+dim and full and revert's gray, after the selected pad's red, 148, which save shares; the next arrow's
 blue is 145, entry 17, the drum page's.
 
 ### Seeing it off-device
@@ -422,11 +436,10 @@ red for a second and then returns to `home` (item 296).
 ⚠️ **The watchdog gives up at about 70 seconds** and writes `fail m_launchpad grid-lost` to `err`.
 After that a replug will not recover the grid. See [launchpad.md](../device/launchpad.md).
 
-### A dark drum page under lit lamps is the Lua
+### A dark grid is the Lua
 
-⛔ The mode lamps and the edges are Pd and keep drawing on page 2; the page's 62 cells are
-`g_grid-lua`'s, so when pdlua or the class did not load they stay dark, and the page looks empty
-rather than broken. The grid itself says nothing: `fail g_grid no-lua` is on `err` once, at load.
+⛔ All of `home` is `g_grid-lua`'s, so when pdlua or the class did not load the whole grid stays dark, and looks
+unplugged rather than broken. The grid itself says nothing: `fail g_grid no-lua` is on `err` once, at load.
 
 **Fix:** read the boot's failures on the OLED or in the error log, and check pdlua in
 `/sdcard/PdExtraLibs` (`device/README.md`, *Lua and ELSE*).
@@ -503,29 +516,26 @@ that is an event, needs a TTL, and is the case this decision does not cover.
 ### `g_grid`'s `home` is a composite, and that is the one deliberate deviation
 
 Whole-surface arbitration is right for a 128×64 screen and **wrong for a grid**, where the natural
-idiom is *regions*. So the mode lamps and the beat row coexist inside the layer that never expires,
+idiom is *regions*. So the lamps, the edges and the page on show coexist inside the layer that never expires,
 while `modal` and `alert` still take everything. **The cascade is untouched; the composition happens
-below it.** The drum page is one more region, chosen by the mode, so a panic or a `fail` still takes
-the whole surface over it.
+below it**, so a panic or a `fail` still takes the whole surface over any page.
 
-### The drum page is painted in Lua, and only the drum page
+### The home is painted in Lua
 
-Every drum round hand-edited `pd regions` box by box, and more is planned on that page
-(`cut-it/drum-page-in-lua`). The `pd` skill's reasons to keep a thing Pd do not hold there: the
-painter runs at most 50 times a second, not on a dense stream, and the page is dead without Lua
-anyway, since `c_steps` is Lua. What must work without it stays Pd: the mode lamps, which say what
-page this is, the beat row, the other pages and the edges, save and revert among them.
+The page changes with the voice on show, and every page's cells depend on a state its message carries: too much to
+hand-edit box by box. The `pd` skill's reasons to keep a thing Pd do not hold here: the painter runs at most 50 times
+a second, not on a dense stream, and the instrument is dead without Lua anyway. What stays Pd is what must run when it
+isn't: the frame clock, the layers, and so a `fail`'s red.
 
-**The frame is handed over cell by cell, into the frame buffer.** The face writes its 62 cells into
-`$0-surface` with pdlua's `pd.Table` rather than sending a list out of an outlet: the cells are
-scattered across indices 11 to 88, around the mode lamps' column, so one list into `[array set]`
-would overwrite the lamps and tie the regions' order to it. The rules return the cells and their
-colors and never touch Pd, so `g_grid_test.lua` reads them without an array.
+**The frame is handed over cell by cell, into the frame buffer.** The face writes the cells it names into
+`$0-surface` with pdlua's `pd.Table` rather than sending a list out of an outlet, so a page is the cells it lights and
+the fill the rest. The rules return the cells and their colors and never touch Pd, so `g_grid_test.lua` reads them
+without an array.
 
 ### The drum page's state rides a cord, not `disp`
 
 The playhead moves sixteen times a bar, and on `disp` every move would land in the dev panel's screen
-log, which records the whole bus. `c_clock`'s beat row is the precedent: a cord into `g_grid`, from
+log, which records the whole bus. `c_clock`'s beat is the precedent: a cord into `g_grid`, from
 the one file that has the state, and the bus stays for requests a person would want to read back.
 
 ### The layout is a file both sides read

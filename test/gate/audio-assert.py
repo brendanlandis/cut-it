@@ -257,7 +257,7 @@ def main():
     print("\n--- 4. the drums reach the left output alone ---")
     l, r, span = seg("drums")
     f = crossings(l) / 2.0 / span
-    A.check("pad 1, pressed on page 2, comes out of the LEFT at %.0f Hz" % DRUM_HZ,
+    A.check("pad 1, pressed on the drum page, comes out of the LEFT at %.0f Hz" % DRUM_HZ,
             abs(f - DRUM_HZ) / DRUM_HZ < FREQ_TOL,
             "measured %.1f Hz over %.2f s, L rms %.4f. Silence here means c_kit's "
             "outlet~ reaches nothing that is thrown" % (f, span, rms(l)))

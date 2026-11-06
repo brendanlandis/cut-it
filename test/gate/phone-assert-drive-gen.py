@@ -52,7 +52,7 @@ def con(a, ao, b, bi):
 
 # --------------------------------------------------- the band across the top
 lb = obj(20, 60, "loadbang")
-qd = obj(20, 120, "del 65600")
+qd = obj(20, 120, "del 67600")
 qm = msg(20, 170, "\\; pd quit")
 con(lb, 0, qd, 0)
 con(qd, 0, qm, 0)
@@ -80,6 +80,10 @@ tap_t = obj(560, 880, "s \\$0-tap-tempo")
 con(unet, 2, tap_t, 0)
 tap_n = obj(820, 880, "s \\$0-tap-sections")
 con(unet, 3, tap_n, 0)
+tap_v = obj(1080, 880, "s \\$0-tap-voices")
+con(unet, 5, tap_v, 0)
+tap_p = obj(1340, 880, "s \\$0-tap-perform")
+con(unet, 6, tap_p, 0)
 # u_song's state for the sections page arrives by name, as its cord would bring it in u_root.
 ss_r = obj(1080, 720, "r \\$0-ss")
 con(ss_r, 0, unet, 4)
@@ -97,8 +101,8 @@ tm_r = obj(20, 720, "r \\$0-tm")
 con(tm_r, 0, unet, 0)
 txt(560, 600,
     "The abstraction under test. Args: the phone's host and port \\, then this end's "
-    "inbound port. Its four outlets are c_steps \\, c_synth \\, u_tempo and u_song \\, sent on by name so no "
-    "cord runs the length of the canvas.", 40)
+    "inbound port. Its outlets are c_steps \\, c_synth \\, u_tempo \\, u_song \\, c_melody \\, u_voices and "
+    "u_perform \\, all but c_melody's sent on by name so no cord runs the length of the canvas.", 40)
 
 # the mark path, and the driver's own socket
 mark_r = obj(20, 960, "r \\$0-mark")
@@ -178,9 +182,11 @@ probe(400, 2700, "err", "r err")
 probe(700, 2700, "drums", "r \\$0-tap-drums")
 probe(1000, 2700, "synth", "r \\$0-tap-synth")
 probe(1300, 2700, "sections", "r \\$0-tap-sections")
+probe(1600, 2700, "voices", "r \\$0-tap-voices")
+probe(1900, 2700, "perform", "r \\$0-tap-perform")
 txt(20, 2180,
     "u_net is the only abstraction in this run \\, so anything seen on presence came from the "
-    "inbound path. The four cords are c_steps \\, c_synth \\, u_tempo and u_song \\, hence the "
+    "inbound path. The cords are c_steps \\, c_synth \\, u_tempo \\, u_song \\, u_voices and u_perform \\, hence the "
     "taps.", 70)
 
 # ------------------------------------------------------------------- the windows
@@ -295,8 +301,8 @@ SEQ = [
     # -- a mode chosen in test mode ends it, so a mode button brings its page
     #    back on the phone
     (52400, "tmmodeon", [("tm", None)]),
-    (53800, "tmmode",   [("bus", ("mode", "mode-2"))]),
-    (55200, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "mode-2")),
+    (53800, "tmmode",   [("bus", ("mode", "drums"))]),
+    (55200, "drumstate", [("ds", DRUM_STATE), ("bus", ("mode", "drums")),
                           ("sy", "synth fm"), ("sy", "velocity off")]),
     # -- the sections page, out the fourth outlet to u_song: each command passed on whole,
     #    one u_song will refuse among them, and a name with a space, as the phone sends it,
@@ -315,7 +321,11 @@ SEQ = [
     #    its state as /cutit/songs, sections' left alone
     (61600, "cmdsongs", [("cmd", ("cutit", "songs " + c)) for c in SONGS_CMDS]),
     (62100, "songstate", [("ss", SONGS_STATE)]),
-    (63600, "done",     []),
+    # -- the app's voices and controls in play: each out its own outlet, and each state back
+    (63100, "cmdvoices", [("cmd", ("cutit", "voices left 2"))]),
+    (63600, "cmdperform", [("cmd", ("cutit", "perform ctl 2 melody smooth 0.5"))]),
+    (64100, "voicestate", [("sy", "voices drums voice 1"), ("sy", "perform 1")]),
+    (65600, "done",     []),
 ]
 
 PITCH, TOP = 2000, 940

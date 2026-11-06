@@ -20,7 +20,7 @@ local OUTLET = { play = 1, save = 2, err = 3, disp = 5, mono = 7, start = 8, her
 local F = dofile(MelodyLua._loadpath .. "lua-face.lua")
 F.carry(MelodyLua, R, OUTLET, 2, 4)
 
--- The line is 258 numbers, so a fader's drag puts it at most this often. What a roll changes is
+-- The line is a few hundred numbers, so a fader's drag puts it at most this often. What a roll changes is
 -- not put at all until something needs it: sync, which u_song sends before it acts, so a loop
 -- drifting writes nothing to the card.
 local SAVE_EVERY = 100

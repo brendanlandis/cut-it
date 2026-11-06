@@ -82,7 +82,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `song` | The Organelle's key, 1 the lowest | Non-zero sends `key <arg>` to `u_song`, the sixth outlet, which loads the setlist's song at that place; a release nothing. `og-key-60` to `og-key-84`, keys 1 to 25, on every page (Brendan, 2026-11-05; [songs.md](songs.md)) | unknown | — |
 | `go` | unused | Non-zero sends `go` to `u_song`, the sixth outlet: a song waiting for go starts at the next bar. `lp-cc-89`, the right column's top, on every page (Brendan, 2026-11-05) | unknown | — |
 | `rush` | unused | The knob's 0–1 and its live flag, held or not, `rush <0-1> <live>` to `u_tempo` out `u_map`'s fifth outlet, which draws its row: an absolute rate, 10 BPM at the bottom, the tempo up to 1000 and then a loop of what is being repeated, climbing and thinning to silence at 22 kHz ([sequencer.md](sequencer.md), *Rush*); `rush -1 1` says knob 1 has gone live, which ends it. **`og-knob-4`, on every page** (Brendan, 2026-11-05) | unknown | — |
-| `melody` | What the control is to `c_melody`: `lock`, `fit`, `leap`, `notes`, `length`, `echo`, `loop`, `range`, `chord-lock`, `smooth`, `tension`, `home`, `span`, `chords`; or a pad's `roll-melody`, `roll-chords`, `roll-rhythm`, `on-h`, `on-m` | The control's 0–1, as it is, or the pad's velocity, `<arg> <value>` to `c_melody` out `u_map`'s seventh outlet, which scales a control, draws its row and puts it, and takes a pad's press and leaves its release. Page 3 alone: faders 2 to 8, knobs 1 to 6 and 9, `pad-81` to `pad-85` ([synths.md](synths.md), *The generator*) (Brendan, 2026-11-05) | unknown | — |
+| `melody` | What the control is to `c_melody`, one of `c_melody.lua`'s `R.ORDER`, or a pad's `roll-melody`, `roll-chords`, `roll-rhythm`, `on-h` or `on-m` | The control's 0–1, as it is, or the pad's velocity, `<arg> <value>` to `c_melody` out `u_map`'s seventh outlet, which scales a control, draws its row and puts it, and takes a pad's press and leaves its release. Page 3 alone: faders, knobs and `pad-81` to `pad-85` ([synths.md](synths.md), *The generator*) (Brendan, 2026-11-05) | unknown | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -463,7 +463,7 @@ its own; there is no compose and perform split, and every page draws every warni
 |------|----|------------|
 | 1 | The arrangement | The tap pad, cell 21, for `u_tempo` ([tempo.md](tempo.md)). The boot page, `R.BOOT_MODE` |
 | 2 | The drums | The drum page's 62 pads and knob 3, for `c_steps` |
-| 3 | The synths | Fader 1, the Volca's CC 41, and the synth pads, cells 21 to 28, for `c_synth`; faders 2 to 8, knobs 1 to 6 and 9 and `pad-81` to `pad-85` for `c_melody` ([synths.md](synths.md)) |
+| 3 | The synths | Fader 1, the Volca's CC 41, and the synth pads, cells 21 to 28, for `c_synth`; the other faders, knobs and `pad-81` to `pad-85` for `c_melody` ([synths.md](synths.md)) |
 | 4–6 | Nothing yet | None |
 | 7 | The sections: making and arranging the current song's sections, on the phone (Brendan, 2026-11-05) | None: its grid is the beat row ([songs.md](songs.md)) |
 | 8 | The songs: making, loading and arranging them into setlists, on the phone (Brendan, 2026-11-05) | None: its grid is the beat row ([songs.md](songs.md)) |

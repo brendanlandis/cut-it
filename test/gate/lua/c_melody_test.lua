@@ -75,8 +75,9 @@ R.restore(b, floats)
 equal("⛔ a restore from Pd's floats: the phone's line as it was saved, chord names and all",
       table.concat(R.phone(b), " "), table.concat(R.phone(a), " "))
 
+-- The line as first saved: the controls, the steps and the chords, none of what came after.
 local old = {}
-for i = 1, #line - #R.LATER do old[i] = line[i] end
+for i = 1, #R.ORDER + 4 * R.STEPS + (1 + R.MAX_NOTES + 4) * R.SLOTS do old[i] = line[i] end
 b = R.new(dice(2))
 b.style = 2
 R.restore(b, old)

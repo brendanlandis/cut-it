@@ -335,6 +335,11 @@ KINDS = {
               "textSizeOff": ("i", 14), "textSizeOn": ("i", 14)},
 }
 KINDS["RADIAL"] = dict(KINDS["FADER"], inverted=("b", False))   # the editor writes it
+KINDS["XY"] = {"cursor": ("b", True), "cursorDisplay": ("i", 0), "gridColor": ("c", rgb(0, 0, 0, 0.25)),
+               "gridX": ("b", False), "gridY": ("b", False), "gridStepsX": ("i", 10),
+               "gridStepsY": ("i", 10), "interactive": ("b", True), "lines": ("b", True),
+               "linesDisplay": ("i", 0), "lockX": ("b", False), "lockY": ("b", False),
+               "outline": ("b", True), "response": ("i", 0), "responseFactor": ("i", 100)}
 KINDS["TEXT"] = dict(KINDS["LABEL"], textWrap=("b", True))
 
 
@@ -365,8 +370,10 @@ def node(kind, name, frame, children=(), text=None, x=0, **over):
     for k, v in over.items():
         props[k] = (props[k][0] if k in props else kind_of(v), v)
     vals = []
-    if kind in ("BUTTON", "FADER", "RADIAL", "RADIO"):
+    if kind in ("BUTTON", "FADER", "RADIAL", "RADIO", "XY"):
         vals.append(value("x", x))
+    if kind == "XY":
+        vals.append(value("y", 0))
     if kind == "PAGER":
         vals.append(value("page", 0))
     if kind in ("LABEL", "TEXT"):
@@ -390,7 +397,8 @@ def node(kind, name, frame, children=(), text=None, x=0, **over):
 # captions and button names, take TouchOSC's default font (Brendan, 2026-11-04).
 VALUES = {"tempo", "play", "link", "dlink", "slink", "pending", "num", "den", "last", "drunkv",
           "drivev", "tonev", "distv", "feedbackv", "delayv", "sendv", "sizev", "dampingv",
-          "swingv", "cpos", "tmode", "seclink", "secpos", "seclen", "snfieldl", "glink", "llink",
+          "swingv", "clockv", "csmoothv", "ctensionv", "chomev", "ccount", "cspan", "rlink", "mlockv", "mfitv",
+          "mleapv", "mnotesv", "mlengthv", "mechov", "mloop", "mrange", "hlink", "mlink", "cpos", "tmode", "seclink", "secpos", "seclen", "snfieldl", "glink", "llink",
           "gpos", "lpos", "gnfieldl"}
 MONO = 1
 
@@ -960,9 +968,184 @@ def fx_groups():
 
 
 # ------------------------------------------------------------------ the synths screen (page 3)
-def synths():
-    """Two large buttons, a synth each, the chosen one lit; the velocity switch, lit when on,
-    under them (Brendan, 2026-11-04); and the link."""
+# The generator's knobs, each 0 to 100, which the root shows in their middles: name, caption, control.
+CHORD_KNOBS = (("clock", "lock", "chord-lock"), ("csmooth", "smooth", "smooth"),
+               ("ctension", "tension", "tension"), ("chome", "home", "home"))
+MELODY_KNOBS = (("mlock", "lock", "lock"), ("mfit", "chord fit", "fit"), ("mleap", "leap", "leap"),
+                ("mnotes", "notes", "notes"), ("mlength", "length", "length"), ("mecho", "echo", "echo"))
+CHORD_SLOTS = 8                     # c_melody.lua's R.SLOTS
+RHYTHM_H = 11 * G                   # the rhythm grid's height
+# c_melody.lua's R.VOICES, R.KEYS and R.MODES, as the radios say them.
+VOICES = ("FM", "strings", "sine", "saw", "square")
+KEY_NAMES = ("C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B")
+MODE_NAMES = ("ionian", "dorian", "phrygian", "lydian", "mixolydian", "aeolian", "locrian", "harm minor",
+         "mel minor")
+
+
+def gen_knob(name, x, y_, text, cmd, d=4 * G):
+    """A ring knob for the generator, as knob() is for the drums: it sends melody set <cmd> <value>."""
+    script = (KNOWS % "value / 100") + (
+        "function onValueChanged(key)\n"
+        "  if key ~= 'x' then return end\n"
+        "  local v = math.floor(self.values.x * 100 + 0.5)\n"
+        "  if v == known then return end\n"
+        "  known = v\n"
+        "  sendOSC('/cutit', 'melody', 'set', '%s', v)\n"
+        "  root:notify('touched', '%s')\n"
+        "end\n" % (cmd, name))
+    f = (x, y_ + G, d, d)
+    return [caption(name + "c", x, y_, d, text),
+            node("RADIAL", name, f, color=RED, outlineStyle=0, script=script),
+            label(name + "v", f, "0%", 14)]
+
+
+def gen_radio(name, f, words, cmd, at, size=14):
+    """A radio for the generator, its words over its segments, black on the chosen one. It sends melody
+    set <cmd> <n>, n from 1; at is the segment the file starts on."""
+    script = (KNOWS % "value - 1") + (
+        "function onValueChanged(key)\n"
+        "  if key ~= 'x' then return end\n"
+        "  local v = math.floor(self.values.x + 0.5) + 1\n"
+        "  if v == known then return end\n"
+        "  known = v\n"
+        "  sendOSC('/cutit', 'melody', 'set', '%s', v)\n"
+        "  root:notify('touched', '%s')\n"
+        "end\n" % (cmd, name))
+    seg = f[2] // len(words)
+    box_ = (f[0], f[1], seg * len(words), f[3])
+    out = [node("RADIO", name, box_, color=RED, outlineStyle=0, orientation=1, steps=len(words), x=at,
+                script=script)]
+    for i, w in enumerate(words):
+        out.append(label("%s%dl" % (name, i + 1), (f[0] + i * seg, f[1], seg, f[3]), w, size,
+                         BLACK if i == at else WHITE))
+    return out
+
+
+def on_button(name, f, cmd):
+    """A part's on button: lit by Cut It's state, and a finger on it flips it. It starts the transport
+    too, if that's stopped."""
+    return [button(name, f, RED, lit_script("sendOSC('/cutit', 'melody', '%s', 1)" % cmd)),
+            label(name + "l", f, "on", 22)]
+
+
+def box_script(n):
+    """A chord's box, the nth in the order they play: a finger on it sounds it. The root knows which chord
+    that is."""
+    return ("function onValueChanged(key)\n"
+            "  if key == 'touch' then\n"
+            "    root:notify(self.values.touch and 'boxd' or 'boxu', %d)\n"
+            "  end\n"
+            "end\n" % n)
+
+
+def rhythm_script():
+    """The rhythm grid's surface, a plain XY pad: the root reads where the finger is, and moves the chord."""
+    return ("function onValueChanged(key)\n"
+            "  if key == 'touch' then\n"
+            "    root:notify(self.values.touch and 'rdown' or 'rup', 0)\n"
+            "  elseif key == 'x' or key == 'y' then\n"
+            "    root:notify('rmove', 0)\n"
+            "  end\n"
+            "end\n")
+
+
+def boxed(name, x, y_, w, text, lo, hi, cmd, factor, start):
+    """A number dragged up or down, its caption over it, as the time signature's are."""
+    f = (x, y_ + G, w, 3 * G)
+    return [caption(name + "c", x, y_, w, text),
+            setbox(name + "box", f, lo, hi, ["melody", "set", cmd], factor),
+            label(name, f, start, 28)]
+
+
+def harmony():
+    """The chords along the top in the order they play, each its name, spelling and Roman numeral, lit while
+    it sounds and sounding while touched. The key and the mode under them; along the bottom on, roll, the
+    voice and the chord generator's controls (Brendan, 2026-11-05)."""
+    k = []
+    for i in range(CHORD_SLOTS):
+        n = i + 1
+        x = X0 + i * 5 * G + (G if i >= CHORD_SLOTS // 2 else 0)
+        k.append(node("BUTTON", "cbox%d" % n, (x, Y0, 5 * G, 4 * G), color=TEAL, x=0, outlineStyle=0,
+                      script=box_script(n)))
+        k.append(label("cbox%dn" % n, (x, Y0 + 4, 5 * G, 30), "-", 18, GREY))
+        k.append(label("cbox%ds" % n, (x, Y0 + 32, 5 * G, 20), "-", 12, GREY))
+        k.append(label("cbox%dr" % n, (x, Y0 + 52, 5 * G, 24), "-", 16, GREY))
+    k += gen_radio("hkey", (X0, Y0 + 5 * G, X1 - X0, 2 * G), KEY_NAMES, "key", 0)
+    k += gen_radio("hmode", (X0, Y0 + 7 * G + 4, X1 - X0, 2 * G), MODE_NAMES, "mode", 5)
+    y_ = Y0 + 10 * G
+    k.append(led("hlinkled", (X0, y_, G, G), TEAL))
+    k.append(label("hlink", (X0 + G, y_, 3 * G, G), "no link", 14, GREY, align=1))
+    k += on_button("hon", (X0, y_ + G, 4 * G, 2 * G), "on-h")
+    f = (X0, y_ + 3 * G, 4 * G, 2 * G)
+    k.append(button("cbass", f, RED, lit_script("sendOSC('/cutit', 'melody', 'bass', 1)")))
+    k.append(label("cbassl", f, "bass only", 14))
+    f = (X0 + 5 * G, y_ + G, 4 * G, 2 * G)
+    k.append(button("croll", f, RED, sends(["melody", "roll-chords", 1])))
+    k.append(label("crolll", f, "roll", 18))
+    f = (X0 + 5 * G, y_ + 3 * G, 4 * G, 2 * G)
+    k.append(button("cstyle", f, RED, sends(["melody", "style", 1])))
+    k.append(label("cstylel", f, "modal", 14))
+    k.append(caption("vharmc", X0 + 10 * G, y_, 12 * G, "voice"))
+    k += gen_radio("vharm", (X0 + 10 * G, y_ + G, 12 * G, 3 * G), VOICES, "voice-h", 1, 11)
+    k += boxed("ccount", X0 + 23 * G, y_, 3 * G, "chords", 1, CHORD_SLOTS, "chords", 9, "4")
+    for i, (name, text, cmd) in enumerate(CHORD_KNOBS):
+        k += gen_knob(name, X0 + 27 * G + i * 3.5 * G, y_, text, cmd, 3 * G)
+    return k
+
+
+def rhythm():
+    """Where the chords fall (Brendan, 2026-11-05): a grid, a row per time through the pattern's last step
+    and a cell per step, each chord a cell, which a finger drags. It sounds until the next chord. Under it
+    how many times through the last step, and a new rhythm."""
+    k = [node("XY", "rgrid", (X0, Y0, X1 - X0, RHYTHM_H), color=TEAL, cursor=False, lines=False,
+              gridX=True, gridY=True, gridColor=rgb(52, 200, 190, 0.5), outlineStyle=0,
+              script=rhythm_script())]
+    # Every Nth step, blue, as on the Launchpad's drum page: a column of cells, since every row is the
+    # same steps.
+    for i in range(16):
+        k.append(node("BUTTON", "rsub%d" % (i + 1), (X0, Y0, 3 * G, RHYTHM_H),
+                      color=rgb(40, 90, 255, 0.45), x=1, interactive=False, outline=False))
+    for i in range(CHORD_SLOTS):
+        n = i + 1
+        f = (X0, Y0, 3 * G, 3 * G)
+        k.append(node("BUTTON", "rmark%d" % n, f, color=TEAL, x=0, interactive=False, outlineStyle=0))
+        k.append(label("rmark%dl" % n, f, "-", 12))
+    # You are here: the step the loop is on, as on the Launchpad, over the chords and letting them show.
+    k.append(node("BUTTON", "rhere", (X0, Y0, 3 * G, 3 * G), color=rgb(255, 255, 255, 0.4), x=1,
+                  interactive=False, outline=False))
+    y_ = Y0 + RHYTHM_H
+    k += boxed("cspan", X0, y_, 5 * G, "\u00d7 last step", 1, 8, "span", 9, "2")
+    f = (X0 + 6 * G, y_ + G, 8 * G, 3 * G)
+    k.append(button("crhythm", f, RED, sends(["melody", "roll-rhythm", 1])))
+    k.append(label("crhythml", f, "roll rhythm", 20))
+    k += status("rlinkled", "rlink", COL[1], "no link")
+    return k
+
+
+def melody():
+    """On the left the voice, on and roll; on the right the melody generator's controls (Brendan,
+    2026-11-05)."""
+    k = [caption("vmelc", X0, Y0, PANEL, "voice")]
+    k += gen_radio("vmel", (X0, Y0 + G, PANEL, 3 * G), VOICES, "voice-m", 0)
+    half = (PANEL - G) // 2
+    k += on_button("mon", (X0, Y0 + 5 * G, half, 3 * G), "on-m")
+    f = (X0 + half + G, Y0 + 5 * G, half, 3 * G)
+    k.append(button("mroll", f, RED, sends(["melody", "roll-melody", 1])))
+    k.append(label("mrolll", f, "roll", 22))
+    k += status("mlinkled", "mlink", X0, "no link", PANEL - G)
+    a = COL[0]
+    for i, (name, text, cmd) in enumerate(MELODY_KNOBS[:4]):
+        k += gen_knob(name, a + i * 6 * G, Y0, text, cmd)
+    for i, (name, text, cmd) in enumerate(MELODY_KNOBS[4:]):
+        k += gen_knob(name, a + i * 6 * G, Y0 + 6 * G, text, cmd)
+    k += boxed("mloop", a + 12 * G, Y0 + 6 * G, 5 * G, "loop", 1, 32, "loop", 9, "16")
+    k += boxed("mrange", a + 18 * G, Y0 + 6 * G, 5 * G, "range", 5, 48, "range", 9, "24")
+    return k
+
+
+def keyboard():
+    """Which synth the keys play: two large buttons, a synth each, the chosen one lit; the velocity
+    switch, lit when on, under them (Brendan, 2026-11-04); and the link."""
     k = []
     half = (X1 - X0 - G) / 2
     for i, (choice, text) in enumerate(SYNTHS):
@@ -1206,6 +1389,8 @@ local PAGES = %(pages)s
 local CHECKPAGE = %(npages)s
 local CHECK = %(check)s
 local SYNTHS = %(synths)s
+local CHORDKNOBS = %(chordknobs)s
+local G_X, G_Y, G_W, G_H = %(gx)s, %(gy)s, %(gw)s, %(gh)s
 local ACKS = %(acks)s
 local DENS = %(dens)s
 local SWING = %(swing)s
@@ -1439,8 +1624,11 @@ end
 -- shows what is per track, the arrangement screen the rest; 88, without the effects, draws all but
 -- those, 99, without mute and solo, all but those, 131, without the type, all but that, and 132,
 -- without the random pitches, all but those.
+local gridEvery, gridBands = 4, nil
 local function drums(a)
   if #a < 88 then return end
+  gridEvery = math.max(1, math.floor(arg(a, 37)))
+  if gridBands then gridBands() end
   local playing, pending = arg(a, 1) == 1, arg(a, 4)
   local last = math.floor(arg(a, 2))
   text('play', playing and 'playing' or 'stopped')
@@ -1495,6 +1683,194 @@ local function velocity(a)
   local want = v == 'on' and 1 or 0
   light('svel', want)
   ink('svell', want == 1 and BLACK or WHITE)
+end
+
+-- ---------------------------------------------------------------- the chords
+-- The rhythm grid: each chord's start, as c_melody last said, the chord under a finger, and which
+-- chord each box on the harmony tab is showing, the order they play in.
+local grid = { total = 32, last = 16, start = {}, drag = nil, press = false, order = {} }
+
+local function gridSeen(name, on)
+  if shown[name .. ':v'] ~= on then shown[name .. ':v'] = on; get(name).visible = on end
+end
+
+local function gridOrder()
+  local list = {}
+  for i = 1, 8 do
+    if (grid.start[i] or -1) >= 0 then list[#list + 1] = i end
+  end
+  table.sort(list, function(a, b) return grid.start[a] < grid.start[b] end)
+  return list
+end
+
+-- A chord's cell: a row per time through the last step, a cell per step.
+local function gridCell(t)
+  local rows = math.max(1, math.floor(grid.total / grid.last))
+  local cw, rh = G_W / grid.last, G_H / rows
+  return G_X + (t %% grid.last) * cw, G_Y + math.floor(t / grid.last) * rh, math.max(10, cw), math.max(10, rh)
+end
+
+local function gridPlace(i, t)
+  local x, y, w, h = gridCell(t)
+  for _, name in ipairs({ 'rmark' .. i, 'rmark' .. i .. 'l' }) do
+    local c = get(name)
+    if shown[name .. ':f'] ~= x .. ' ' .. y .. ' ' .. w .. ' ' .. h then
+      shown[name .. ':f'] = x .. ' ' .. y .. ' ' .. w .. ' ' .. h
+      c.frame.x, c.frame.y, c.frame.w, c.frame.h = x, y, w, h
+    end
+  end
+end
+
+-- Every Nth step, blue, as the Launchpad's drum page marks them: N the time signature's top number, or
+-- as far apart as the sixteen columns can show.
+gridBands = function()
+  local cw = G_W / grid.last
+  local every = math.max(gridEvery, math.ceil(grid.last / 16))
+  for n = 1, 16 do
+    local col = (n - 1) * every
+    local name = 'rsub' .. n
+    gridSeen(name, col < grid.last)
+    if col < grid.last then
+      local key = col .. ' ' .. cw
+      if shown[name .. ':f'] ~= key then
+        shown[name .. ':f'] = key
+        local c = get(name)
+        c.frame.x, c.frame.w = G_X + col * cw, math.max(10, cw)
+      end
+    end
+  end
+end
+
+local function gridDraw()
+  gridBands()
+  local g = get('rgrid')
+  local rows = math.max(1, math.floor(grid.total / grid.last))
+  -- The grid's own lines, which only the pad can draw this thin.
+  if g.gridStepsX ~= grid.last then g.gridStepsX = grid.last end
+  if g.gridStepsY ~= rows then g.gridStepsY = rows end
+  for i = 1, 8 do
+    local on = (grid.start[i] or -1) >= 0
+    gridSeen('rmark' .. i, on)
+    gridSeen('rmark' .. i .. 'l', on)
+    if on then gridPlace(i, grid.start[i]) end
+  end
+end
+
+-- Where the finger is on the grid, as a step of the loop.
+local function gridTouch()
+  local g = get('rgrid')
+  local rows = math.max(1, math.floor(grid.total / grid.last))
+  local col = math.min(grid.last - 1, math.floor(g.values.x * grid.last))
+  local row = math.min(rows - 1, math.floor((1 - g.values.y) * rows))
+  return row * grid.last + col, col, row
+end
+
+-- A finger down on a chord, or the next cell to it, picks it up and sounds it; moved, the chord follows
+-- from cell to cell; let go, it stays there and stops sounding. Dropped on another chord, the two swap.
+local function gridPick()
+  local t, col, row = gridTouch()
+  local best, far = nil, 2
+  for i = 1, 8 do
+    local s = grid.start[i] or -1
+    if s >= 0 then
+      local d = math.max(math.abs((s %% grid.last) - col), math.abs(math.floor(s / grid.last) - row))
+      if d < far then best, far = i, d end
+    end
+  end
+  if not best then return end
+  grid.drag = { i = best, from = grid.start[best], at = grid.start[best] }
+  sendOSC('/cutit', 'melody', 'audition', best, 1)
+end
+
+local function gridMove()
+  local d = grid.drag
+  if not d then return end
+  local t = gridTouch()
+  if t ~= d.at then
+    d.at = t
+    gridPlace(d.i, t)
+  end
+end
+
+local function gridEnd()
+  grid.press = false
+  local d = grid.drag
+  grid.drag = nil
+  if not d then return end
+  sendOSC('/cutit', 'melody', 'audition', d.i, 0)
+  if d.at ~= d.from then sendOSC('/cutit', 'melody', 'move', d.i, d.at) end
+end
+
+-- The step the loop is on: a cell of its own over the grid, gone when stopped.
+local function here(a)
+  local t = math.floor(arg(a, 1))
+  gridSeen('rhere', t >= 0)
+  if t < 0 then return end
+  local x, y, w, h = gridCell(t)
+  local c = get('rhere')
+  c.frame.x, c.frame.y, c.frame.w, c.frame.h = x, y, w, h
+end
+
+-- c_melody's state: how many chords, the chord knobs, the span, the slot sounding, whether each part is on,
+-- the key and mode, the grid's length and the last step, each slot's name, spelling, numeral and start,
+-- the slot sounding lit and those past how many hidden; then the two voices and the melody's controls.
+local function chords(a)
+  if #a < 57 then return end
+  text('cstylel', arg(a, 56) == 2 and 'functional' or 'modal')
+  local bass = arg(a, 57) == 1
+  light('cbass', bass and 1 or 0)
+  ink('cbassl', bass and BLACK or WHITE)
+  local count = math.floor(arg(a, 1))
+  text('ccount', tostring(count))
+  hand('ccountbox', count)
+  hand('clock', math.floor(arg(a, 2)))
+  hand('csmooth', math.floor(arg(a, 3)))
+  hand('ctension', math.floor(arg(a, 4)))
+  hand('chome', math.floor(arg(a, 5)))
+  local span = math.floor(arg(a, 6))
+  text('cspan', tostring(span))
+  hand('cspanbox', span)
+  local now = math.floor(arg(a, 7))
+  local onh, onm = arg(a, 8) == 1, arg(a, 9) == 1
+  light('hon', onh and 1 or 0)
+  ink('honl', onh and BLACK or WHITE)
+  light('mon', onm and 1 or 0)
+  ink('monl', onm and BLACK or WHITE)
+  hand('hkey', math.floor(arg(a, 10)))
+  hand('hmode', math.floor(arg(a, 11)))
+  grid.total, grid.last = math.max(1, math.floor(arg(a, 12))), math.max(1, math.floor(arg(a, 13)))
+  for i = 1, 8 do
+    grid.start[i] = math.floor(arg(a, 14 + (i - 1) * 4 + 3))
+  end
+  grid.order = gridOrder()
+  for n = 1, 8 do
+    local i = grid.order[n]
+    local on = i ~= nil and i == now
+    lit('cbox' .. n, on)
+    for j, part in ipairs({ 'n', 's', 'r' }) do
+      text('cbox' .. n .. part, i and tostring(arg(a, 14 + (i - 1) * 4 + j - 1)) or '-')
+      ink('cbox' .. n .. part, on and BLACK or (i and WHITE or GREY))
+    end
+  end
+  for i = 1, 8 do
+    lit('rmark' .. i, i == now)
+    text('rmark' .. i .. 'l', tostring(arg(a, 14 + (i - 1) * 4 + 2)))
+    ink('rmark' .. i .. 'l', i == now and BLACK or WHITE)
+  end
+  if not grid.drag then gridDraw() end
+  hand('vharm', math.floor(arg(a, 46)))
+  hand('vmel', math.floor(arg(a, 47)))
+  hand('mlock', math.floor(arg(a, 48)))
+  hand('mfit', math.floor(arg(a, 49)))
+  hand('mleap', math.floor(arg(a, 50)))
+  hand('mnotes', math.floor(arg(a, 51)))
+  hand('mlength', math.floor(arg(a, 52)))
+  hand('mecho', math.floor(arg(a, 53)))
+  local loop, range = math.floor(arg(a, 54)), math.floor(arg(a, 55))
+  text('mloop', tostring(loop))
+  hand('mloopbox', loop)
+  text('mrange', tostring(range))
+  hand('mrangebox', range)
 end
 
 -- ---------------------------------------------------------------- the sections page
@@ -1741,6 +2117,10 @@ function onReceiveOSC(message, connections)
     synth(a)
   elseif path == '/cutit/velocity' then
     velocity(a)
+  elseif path == '/cutit/melody' then
+    chords(a)
+  elseif path == '/cutit/here' then
+    here(a)
   elseif path == '/cutit/sections' then
     sections(a)
   elseif path == '/cutit/songs' then
@@ -1753,6 +2133,18 @@ end
 function onReceiveNotify(key, value)
   if key == 'touched' then
     touchedAt[value] = getMillis()
+  elseif key == 'boxd' then
+    local i = grid.order[value]
+    if i then sendOSC('/cutit', 'melody', 'audition', i, 1) end
+  elseif key == 'boxu' then
+    local i = grid.order[value]
+    if i then sendOSC('/cutit', 'melody', 'audition', i, 0) end
+  elseif key == 'rdown' then
+    grid.press = true
+  elseif key == 'rmove' then
+    gridMove()
+  elseif key == 'rup' then
+    gridEnd()
   elseif key == 'show' then
     setShow(value)
   elseif key == 'fx' then
@@ -1777,8 +2169,17 @@ end
 
 function update()
   local now = getMillis()
+  -- An edit pushed from the Mac can put the outer tab bar back while this script runs on, so it is
+  -- hidden here as well as at init.
+  local pages = get('pages')
+  if pages.tabbar then pages.tabbar = false end
+  -- The frame after a finger lands, the pad's x and y are where it landed.
+  if grid.press then
+    grid.press = false
+    gridPick()
+  end
   local up = now - lastHb < 1500
-  for _, k in ipairs({ 'link', 'dlink', 'slink', 'seclink', 'glink', 'llink' }) do
+  for _, k in ipairs({ 'link', 'dlink', 'slink', 'hlink', 'rlink', 'mlink', 'seclink', 'glink', 'llink' }) do
     text(k, up and 'link' or 'no link')
     lit(k .. 'led', up)
   end
@@ -1787,6 +2188,9 @@ function update()
   ink('tmode', (up and testOn) and TEAL or GREY)
   text('drunkv', math.floor(get('drunk').values.x * 100 + 0.5) .. '%%')
   text('swingv', SWING[1] + math.floor(get('swing').values.x * (SWING[2] - SWING[1]) + 0.5) .. '%%')
+  for _, name in ipairs(CHORDKNOBS) do
+    text(name .. 'v', math.floor(get(name).values.x * 100 + 0.5) .. '%%')
+  end
   for _, name in ipairs(FXKNOBS) do
     text(name .. 'v', math.floor(get(name).values.x * 100 + 0.5) .. '%%')
   end
@@ -1821,6 +2225,8 @@ def root_script(check):
         "pages": lua({"mode-%d" % (i + 1): i + 1 for i in range(len(LAUNCHPAD))}),
         "npages": len(LAUNCHPAD),
         "synths": lua([c for c, _ in SYNTHS]),
+        "chordknobs": lua([n for n, _, _ in CHORD_KNOBS + MELODY_KNOBS]),
+        "gx": X0, "gy": Y0, "gw": X1 - X0, "gh": RHYTHM_H,
         "acks": acks, "check": lua(check), "dens": lua(DENS), "swing": lua(list(SWING)),
         "shown": lua([w for w, _c, _lo, _hi, _st in SHOW]),
         "lastshow": LAST_SHOW, "steprow": ROW, "steprows": ROWS_OF_STEPS,
@@ -1828,7 +2234,7 @@ def root_script(check):
         "fxcontrols": lua([FX_CONTROL.get(f, f) for f in FX]),
         "verbcontrols": lua(VERB),
         "fxknobs": lua([f for f in FX if f not in FX_CONTROL] + VERB),
-        "fxradios": lua({"dnote": len(NOTE_NAMES), "dfeel": len(FEEL_NAMES),
+        "fxradios": lua({"vharm": len(VOICES), "vmel": len(VOICES), "hkey": len(KEY_NAMES), "hmode": len(MODE_NAMES), "dnote": len(NOTE_NAMES), "dfeel": len(FEEL_NAMES),
                          "char": len(CHAR_NAMES), "vtype": len(VERB_TYPES)}),
         "phonebase": PHONE_BASE, "fxend": FX_END, "flagsend": FLAGS_END, "phone": PHONE,
         "phoneall": PHONE_ALL,
@@ -1849,9 +2255,11 @@ def root_script(check):
         "grey": lua_color(GREY), "black": lua_color(BLACK)}
 
 
-SCREENS = {"arrangement": arrangement, "drums": drums, "synths": synths}
+SCREENS = {"arrangement": arrangement, "drums": drums}
 # A Launchpad page with more than one tab: each tab's page name, its label and its controls.
-TABBED = {"sections": [("sections", "sections", sections),
+TABBED = {"synths": [("harmony", "harmony", harmony), ("rhythm", "rhythm", rhythm), ("melody", "melody", melody),
+                     ("keyboard", "keyboard", keyboard)],
+          "sections": [("sections", "sections", sections),
                        ("secname", "name", lambda: name_tab("sn", "section"))],
           "songs": [("songs", "songs", songs_tab), ("setlists", "setlists", setlists_tab),
                     ("songname", "name", lambda: name_tab("gn", "song"))]}

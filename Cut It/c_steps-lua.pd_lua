@@ -25,6 +25,8 @@
 -- outlet 9: bar, on the global loop's last step, to u_song: a bar is the pattern's loop, and a
 -- queued section starts as the loop comes round to its step 1; and recall <key>, a part's saved
 -- value asked for. outlet 10: fast <1 or 0>, the 500 BPM repeat's tempo, and rush-home, to u_tempo.
+-- outlet 11: step <count> <ms> <place in the pattern>, each step of the clock, and last <step>, the
+-- global last step when it changes, to c_melody.
 --
 -- A Lua error leaves outlet 4 as fail c_steps lua-<selector>, and its text goes to Pd's console
 -- where there is one: the device has none (C-12).
@@ -46,7 +48,7 @@ local F = dofile(StepsLua._loadpath .. "lua-face.lua")
 F.carry(StepsLua, R, OUTLET, 2, 5)
 
 function StepsLua:initialize(_, atoms)
-  self.inlets, self.outlets = 2, 10
+  self.inlets, self.outlets = 2, 11
   self.state = R.new(atoms[1])
   return true
 end
@@ -99,6 +101,11 @@ end
 -- After every answer, the phone's state, out the seventh outlet only when it differs from
 -- the last one sent: a tick changes nothing the phone shows, eight times a second.
 function StepsLua:answered()
+  local last = R.global_last(self.state)
+  if last ~= self.last_sent then
+    self.last_sent = last
+    self:outlet(11, "last", { last })
+  end
   local ok, now = pcall(R.phone, self.state)
   if not ok then return end
   local key = table.concat(now, " ")
@@ -122,4 +129,9 @@ function StepsLua:in_2(sel, atoms)
     self.save_clock:unset()
   end
   self:internal(sel, atoms)
+  -- After the step's hits and whatever waited for the 1, the same step to c_melody.
+  if sel == "tick" and self.state.last_count then
+    local st = self.state
+    self:outlet(11, "step", { st.last_count, st.last_ms, (st.master - 1) % R.global_last(st) + 1 })
+  end
 end

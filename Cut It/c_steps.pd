@@ -191,3 +191,5 @@
 #X connect 97 0 98 0;
 #X connect 95 0 62 1;
 #X text 20 2240 place <phase>: the hand-back of rush sets the phase so the next step comes when the loop's step ends \, and only then lets the ticks through: setting a phase can fire threshold~ at once \, in the next block \, and that is no step. 4 ms is two blocks and a bit \, and c_steps.lua keeps the next step 5 ms off (ref/module/sequencer.md \, Rush)., f 58;
+#X obj 3200 1750 outlet;
+#X connect 26 10 100 0;

@@ -216,7 +216,7 @@ end
 -- section now playing.
 -- A part in R.ON_THE_ONE, while the transport runs, waits for the next step 1 (R.one), so it lands
 -- on the beat and the old section's last step plays out at its own tempo (Brendan, 2026-11-05).
-R.ON_THE_ONE = { tempo = true, programs = true }
+R.ON_THE_ONE = { tempo = true, programs = true, melody = true }
 
 local function begin(st, s)
   st.playing, st.queued, st.bars = s, nil, 0
@@ -662,6 +662,14 @@ end
 -- pattern has played. A song queued for the next bar loads, its section 1 starting; else a queued
 -- section starts; else a section with a length that has played its bars hands over to the next. The last section with a length has no next, and plays on as a
 -- loop, until another is queued.
+-- Whether this bar starts another section or song. c_melody puts its drifting loops only when asked,
+-- so the face asks before one does.
+function R.moves_at_bar(st)
+  if (st.pending and st.pending.wait == "bar") or st.queued then return true end
+  local len = st.playing.length
+  return len > 0 and st.bars + 1 >= len and st.song.sections[R.index(st, st.playing) + 1] ~= nil
+end
+
 function R.bar(st)
   st.bars = st.bars + 1
   if st.pending and st.pending.wait == "bar" then return R.load_now(st, st.pending.rec) end

@@ -888,6 +888,9 @@ local function decide(st, pos)
     d.rate = 1 / math.max(R.MIN_DUR, 1 + stray)
   end
   d.len, d.share, d.bpm = 1 / d.rate, pair_share(st.pair_swing, st.pair), st.bpm
+  -- Numbered, so c_melody can tell a step a repeat pad plays again from a new one.
+  st.count = (st.count or 0) + 1
+  d.count = st.count
   return d
 end
 
@@ -945,6 +948,7 @@ function R.tick(st)
   end
   local ran = st.ran
   ran[#ran + 1] = d.len * pair_share(st.pair_swing, st.pair) * 15000 / st.bpm
+  st.last_count, st.last_ms = d.count, ran[#ran]
   if #ran > R.STEPS then table.remove(ran, 1) end
   st.pair = 1 - st.pair
   local h = st.hist

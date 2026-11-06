@@ -215,6 +215,7 @@ function SongLua:in_3(sel, atoms)
     end
   else
     if sel == "start" or sel == "stop" then self:sync() end
+    if sel == "bar" and R.moves_at_bar(st) then self:sync() end
     self.putting = sel == "put"
     self:internal(sel, atoms)
     self.putting = false

@@ -767,6 +767,24 @@ function R.add(st)
   return {}
 end
 
+-- save as new (Brendan, 2026-11-06): what is playing, as it stands now, becomes a new section after the
+-- one it was, which goes back to what it holds as saved, so playing around leaves it as it was. Nothing
+-- heard changes: the new section just takes over, and is selected. A section never saved has nothing to go
+-- back to, and keeps what it has.
+function R.save_new(st)
+  local src = st.playing
+  local i = R.index(st, src)
+  local s = section(st, R.copy_name(st.song, src.name), src.length, copy_parts(src.parts))
+  table.insert(st.song.sections, i + 1, s)
+  for _, t in ipairs(st.saved and st.saved.sections or {}) do
+    if t.id == src.id then src.parts = copy_parts(t.parts) end
+  end
+  st.playing, st.selected, st.page = s, s, page_of(i + 1)
+  follow(st)
+  st.dirty = true
+  return {}
+end
+
 -- move up and move down: the selected section a place earlier or later, still selected.
 local function move(st, d)
   local secs = st.song.sections
@@ -1168,6 +1186,7 @@ R.phone_cmds = {
   select = function(st, a) return R.select(st, a[1]) end,
   page = function(st, a) return R.turn(st, a[1]) end,
   new = function(st) return R.add(st) end,
+  saveas = function(st) return R.save_new(st) end,
   up = function(st) return R.up(st) end,
   down = function(st) return R.down(st) end,
   length = function(st, a) return R.length(st, a[1]) end,

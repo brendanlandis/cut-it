@@ -1224,7 +1224,8 @@ def sections():
     """The current song's sections (Brendan, 2026-11-05, approved from a mockup): down the left,
     numbered, each with its name and length, five rows and a pager; a tap selects one for editing,
     and playing one stays the Launchpad's top row. On the right, the selected section: new, a copy
-    of it, move up and down, its length, dragged, loop or bars, and delete; and the link."""
+    of it, save as new, what's playing as it stands, move up and down, its length, dragged, loop or bars, and
+    delete; and the link."""
     k = []
     w = 25 * G
     k.append(caption("secsong", X0, Y0, w, "sections"))
@@ -1243,9 +1244,12 @@ def sections():
     k.append(label("secnextl", (X0 + 23 * G, y_, 2 * G, 2 * G), "▶", 18))
     a, b = R_HALF
     k.append(caption("secsel", a, Y0, X1 - a, "section"))
-    f = (a, Y0 + G, X1 - a, 3 * G)
+    f = (a, Y0 + G, 7 * G, 3 * G)
     k.append(button("secnew", f, RED, sends(["sections", "new"])))
-    k.append(label("secnewl", f, "new", 20))
+    k.append(label("secnewl", f, "new", 18))
+    f = (b, Y0 + G, 7 * G, 3 * G)
+    k.append(button("secsaveas", f, RED, sends(["sections", "saveas"])))
+    k.append(label("secsaveasl", f, "save as new", 16))
     for x, name, text, cmd in ((a, "secup", "move up", "up"), (b, "secdown", "move down", "down")):
         f = (x, Y0 + 5 * G, 7 * G, 3 * G)
         k.append(button(name, f, RED, sends(["sections", cmd])))

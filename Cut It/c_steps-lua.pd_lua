@@ -26,7 +26,8 @@
 -- queued section starts as the loop comes round to its step 1; and recall <key>, a part's saved
 -- value asked for. outlet 10: fast <1 or 0>, the 500 BPM repeat's tempo, and rush-home, to u_tempo.
 -- outlet 11: step <count> <ms> <place in the pattern>, each step of the clock, and last <step>, the
--- global last step when it changes, to c_melody.
+-- global last step when it changes, to c_melody. outlet 12: song <the line>, the kit's sound, when it
+-- changes, or seed <the line>, what a song with no kit starts as, for put song kit and put seed kit.
 --
 -- A Lua error leaves outlet 4 as fail c_steps lua-<selector>, and its text goes to Pd's console
 -- where there is one: the device has none (C-12).
@@ -48,7 +49,7 @@ local F = dofile(StepsLua._loadpath .. "lua-face.lua")
 F.carry(StepsLua, R, OUTLET, 2, 5)
 
 function StepsLua:initialize(_, atoms)
-  self.inlets, self.outlets = 2, 11
+  self.inlets, self.outlets = 2, 12
   self.state = R.new(atoms[1])
   return true
 end
@@ -82,8 +83,24 @@ function StepsLua:hold(e)
     end
     return true
   end
+  if e[1] == "save" then self:kit_check() end
   if e[1] == "bar" then self:save_now() end
   return false
+end
+
+-- The kit's sound, put with the song when it has changed.
+function StepsLua:kit_check()
+  if not self.state.kit_on then return end
+  local ok, line = pcall(R.kit_line, self.state)
+  if not ok then return end
+  local k = table.concat(line, " ")
+  if k ~= self.kit_sent then
+    -- What a song with no kit starts as is no change to it, so it lights no save.
+    local first = self.state.kit_first
+    self.state.kit_first = false
+    self.kit_sent = k
+    self:outlet(12, first and "seed" or "song", line)
+  end
 end
 
 function StepsLua:save_now()
@@ -92,6 +109,7 @@ function StepsLua:save_now()
   self.save_clock:unset()
   local ok, e = pcall(R.save, self.state)
   if ok then self:outlet(3, e[2], e[3]) end
+  self:kit_check()
 end
 
 function StepsLua:save_due()
@@ -129,6 +147,7 @@ function StepsLua:in_2(sel, atoms)
     self.save_clock:unset()
   end
   self:internal(sel, atoms)
+  if sel == "restore" or sel == "restore-kit" then self:kit_check() end
   -- After the step's hits and whatever waited for the 1, the same step to c_melody.
   if sel == "tick" and self.state.last_count then
     local st = self.state

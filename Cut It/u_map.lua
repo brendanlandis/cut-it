@@ -233,7 +233,7 @@ function R.control(st, sel, atoms)
     end
     out[#out + 1] = { "route", "list", { row.dest, row.arg, value, target, live } }
     -- A control moved that could be taken into play, or is: u_perform hears of it.
-    if live == 1 and not R.UNHEARD[row.dest] and not (type(row.arg) == "string" and row.arg:match("^[hm]%d%d$")) then
+    if live == 1 and not R.UNHEARD[row.dest] and not (type(row.arg) == "string" and row.arg:match("^[hmp]%d%d$")) then
       out[#out + 1] = { "heard", "list", { row.dest, row.arg, value } }
     end
     return out

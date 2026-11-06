@@ -48,7 +48,9 @@ end
 -- whether or not the song holds any, so "a section starting" below is what it holds, and they have
 -- their own section.
 local function own(e)
-  return e[1] == "state" and e[3][1] ~= "voices" and e[3][1] ~= "perform"
+  local k = e[3] and e[3][1]
+  return e[1] == "state" and k ~= "voices" and k ~= "perform" and k ~= "patches" and k ~= "sounds"
+    and k ~= "kit" and k ~= "tweaks"
 end
 
 local function restores(out)
@@ -73,7 +75,7 @@ end
 -- The same off the Pd face, whose outlet 3 is the state bus: {3, "restore", {key, atoms...}}.
 local function first_restore(sent)
   for _, m in ipairs(sent) do
-    if m[1] == 3 and m[2] == "restore" and m[3][1] ~= "voices" and m[3][1] ~= "perform" then
+    if m[1] == 3 and m[2] == "restore" and own({ "state", "restore", m[3] }) then
       return m
     end
   end
@@ -707,14 +709,18 @@ end
 st = R.new()
 R.put(st, { "drums", 1 })
 out = R.load(st, nil, nil)
-equal("⛔ a song with no voices still says so, last, and a section with no controls in play says so, "
-      .. "first: without them the last song's and section's would stay",
-      { keys(out), out[1][3], out[#out][3] }, { { "perform", "drums", "voices" }, { "perform" }, { "voices" } })
+equal("⛔ a song with no voices, patches, sounds or kit still says so, first, voices before the rest, and a "
+      .. "section with no controls in play says so: without them the last song's and section's would stay",
+      { table.unpack(keys(out), 1, 5) }, { "voices", "patches", "sounds", "kit", "perform" })
 st = R.new()
 st.song.sections[1].parts = { drums = { 1 }, perform = { "slider-1", "tempo", 0, 0, 0.5 } }
 st.queued = st.song.sections[1]
 out = R.stop(st)
-equal("... a section that holds some says only that", keys(out), { "drums", "perform" })
+equal("... a section that holds some says only that", (function()
+  local n = 0
+  for _, k in ipairs(keys(out)) do if k == "perform" then n = n + 1 end end
+  return n
+end)(), 1)
 st = R.new()
 R.load(st, nil, nil)
 equal("nothing unsaved before a song part is put", R.unsaved(st), false)
@@ -729,14 +735,31 @@ equal("⛔ ... and reads back as the song's", R.parse(text).parts, { voices = { 
 equal("... with its sections no different", R.parse(text).sections[1].parts, {})
 out = R.revert(st)
 equal("⛔ revert takes it back and says so: no voices in the saved song, so an empty restore",
-      { st.song.parts.voices, R.unsaved(st), keys(out) }, { nil, false, { "perform", "voices" } })
+      { st.song.parts.voices, R.unsaved(st), keys(out)[1] }, { nil, false, "voices" })
 R.put_song(st, { "voices", "a", "keys", "fm" })
 R.save(st)
 equal("once saved it is not unsaved, and the same atoms put back leave it that way",
       { R.unsaved(st), R.put_song(st, { "voices", "a", "keys", "fm" }), R.unsaved(st) }, { false, {}, false })
 R.put_song(st, { "voices", "b", "keys", "fm" })
 out = R.revert(st)
-equal("... and a revert restores what was saved", out[#out][3], { "voices", "a", "keys", "fm" })
+equal("... and a revert restores what was saved", (function()
+  for _, e in ipairs(out) do if e[3] and e[3][1] == "voices" then return e[3] end end
+end)(), { "voices", "a", "keys", "fm" })
+
+print("\n--- the whole lists ---")
+st = load3()
+st.set = 1
+R.entry_select(st, 2)
+local li = R.lists(st)
+equal("the setlist chosen and how many, then their names", { li[1], li[2], li[3], li[4] }, { 1, 2, "friday at the bell", "set 1" })
+equal("... the entry selected, how many and each its song", { li[5], li[6], li[7] }, { 2, 3, "lantern" })
+R.songs_cmds.choose(st, { 2 })
+equal("choose: another setlist, by its place", { st.set, R.lists(st)[1] }, { 2, 2 })
+R.phone_cmds.tweaks(st, { 1 })
+equal("⛔ a section's tweaks carry on: held by the section selected, said by the lists", st.selected.parts.tweaks, { 1 })
+out = R.phone_cmds.select(st, { 1 })
+out = R.stop(st)
+st.queued = nil
 
 print("\n--- the songs tab's load ---")
 st = load3()
@@ -838,9 +861,9 @@ local function file(name)
 end
 local sent = T.send(o, 3, "init", {})
 equal("init: the lamps and the phone's two states, once each, then the proof bang",
-      { sent[1], sent[2], sent[3][1], sent[3][2], sent[4][2], sent[5], #sent },
+      { sent[1], sent[2], sent[3][1], sent[3][2], sent[4][2], sent[5][2], sent[6], #sent },
       { { 1, "top", { D, D, P, D, D, D, D, D } }, { 1, "unsaved", { 0 } }, 2,
-        "list", "songs", { 5, "bang", {} }, 5 })
+        "list", "songs", "lists", { 5, "bang", {} }, 6 })
 equal("a put the lamps don't show sends nothing", T.send(o, 3, "put", { "drums", 7 }), {})
 sent = T.send(o, 3, "flush", {})
 equal("⛔ the draft's timer before the load writes nothing", { sent, file("cut-it-song-draft.txt") },

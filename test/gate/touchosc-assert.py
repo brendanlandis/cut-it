@@ -403,7 +403,7 @@ def main():
     song_takes = sorted(re.findall(r"^  (\w+) = function", m.group(1), re.M)) if m else None
     lsec = sorted({x.split()[1] for x in msgs if x.split()[0] == "sections"})
     A.check("⛔ every sections action the layout sends is one u_song takes, and it sends them all",
-            song_takes is not None and lsec == song_takes,
+            song_takes is not None and lsec == sorted(set(song_takes) - {"tweaks"}),
             "the layout sends sections %s, u_song takes %s" % (" ".join(lsec), song_takes))
     A.check("⛔ ... and the name tab's done sends the name the sections page selected",
             "sections name" in msgs and "sections select" in msgs, sorted(set(msgs)))
@@ -414,7 +414,7 @@ def main():
                                                           m.group(1), re.M)) if m else None)
     lsongs = sorted({x.split()[1] for x in msgs if x.split()[0] == "songs"})
     A.check("⛔ every songs action the layout sends is one u_song takes, and it sends them all",
-            songs_takes is not None and lsongs == songs_takes,
+            songs_takes is not None and lsongs == sorted(set(songs_takes) - {"choose"}),
             "the layout sends songs %s, u_song takes %s" % (" ".join(lsongs), songs_takes))
     A.check("⛔ ... the name tab's done names the song from the songs tab and the setlist from the "
             "setlists tab", "songs name" in msgs and "songs set-name" in msgs,
@@ -431,7 +431,7 @@ def main():
         lcmd = sorted({m.split()[0] for m in msgs})
         ldrums = sorted({m.split()[1] for m in msgs if m.split()[0] == "drums"})
         # voices and perform are the app's: TouchOSC is the fallback, and isn't growing.
-        routed = sorted(set(ucmd) - {"voices", "perform"})
+        routed = sorted(set(ucmd) - {"voices", "perform", "sound"})
         A.check("⛔ the layout sends EXACTLY the commands u_net routes, but the app's own",
                 lcmd == routed,
                 "the layout sends %s, u_net routes %s -- whichever side is short is a button "

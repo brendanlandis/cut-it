@@ -1814,12 +1814,38 @@ R.internal.restore(st, oddty)
 got[2] = st.verb_type
 equal("a type past 2 is 2, and a symbol is the plate", got, { 2, 0 })
 
+print("\n--- the kit's sound is the song's ---")
+do
+  local st = R.new(1)
+  equal("a song with no kit yet says so", R.restore_kit(st, {}), {})
+  st.vol[3] = -6
+  R.restore(st, R.save(st)[3])
+  equal("⛔ the first section gives it one, and is then its pattern alone", { st.kit_on, R.save(st)[3][R.TRACKS * R.STEPS + 2 * R.TRACKS + 3] },
+        { true, 0 })
+  equal("... a kit is this long", #R.kit_line(st), R.KIT)
+  local line = R.kit_line(st)
+  st.vol[3] = 2
+  local again = R.save(st)
+  R.restore(st, again[3])
+  equal("⛔ a section's line changes nothing in the kit", st.vol[3], 2)
+  local out = R.restore_tweaks(st, 1)
+  equal("⛔ carry on leaves a tweak", { out, st.vol[3] }, { {}, 2 })
+  R.restore_tweaks(st, 0)
+  equal("⛔ snap back takes it to what it was saved as", st.vol[3], -6)
+  st.vol[3] = 1
+  R.internal["kit-save"](st)
+  R.restore_tweaks(st, 0)
+  equal("⛔ saved, that is what it snaps back to", st.vol[3], 1)
+  R.restore_kit(st, line)
+  equal("⛔ a song's kit restored", st.vol[3], -6)
+end
+
 print("\n--- the Pd face ---")
 local class = T.load_class(DIR .. "c_steps-lua.pd_lua", DIR)
 check("c_steps-lua.pd_lua registers the class c_steps-lua", class and class._name == "c_steps-lua",
       class and class._name)
 local o = T.new(class, { 1 })
-check("an object has two inlets and eleven outlets", o and o.inlets == 2 and o.outlets == 11,
+check("an object has two inlets and twelve outlets", o and o.inlets == 2 and o.outlets == 12,
       o and (o.inlets .. " " .. o.outlets))
 equal("init: the page's selection on outlet 2, every effect on outlet 1, for c_kit, the global last "
       .. "step on outlet 11, for c_melody, the drum screen's state on outlet 7, then the bang on "

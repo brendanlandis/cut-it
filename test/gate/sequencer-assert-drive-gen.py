@@ -41,7 +41,7 @@ P = lambda name, v=100: "\\; param %s %d" % (name, v)
 
 # PLAY brings the performance page up, and row 1's left button takes it back to the drum page, in one
 # instant, so no frame the analyzer reads shows anything else. Every PLAY below is this.
-PLAY = "\\; start bang \\; param lp-cc-80 127 \\; param lp-cc-80 0"
+PLAY = "\\; param xport-2 1 \\; param lp-cc-80 127 \\; param lp-cc-80 0"
 
 SEQ = [
     # Before the restore, and before anything else in the run: the drum page's name on the

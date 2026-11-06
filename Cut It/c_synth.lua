@@ -112,6 +112,7 @@ end
 function R.machine(st, atoms)
   local choice = atoms[1]
   if not KNOWN[choice] then return { R.fail("bad-synth") } end
+  st.by_voice = true
   if choice == st.choice then return {} end
   st.choice = choice
   return { { "choice", "synth", { choice } } }
@@ -120,7 +121,7 @@ end
 -- A section's restore of synth: the choice saved, put straight back (ref/module/state.md). One
 -- that names no synth keeps the one in force and puts that back, so the file is repaired.
 function R.restore(st, atoms)
-  if KNOWN[atoms[1]] then st.choice = atoms[1] end
+  if KNOWN[atoms[1]] and not st.by_voice then st.choice = atoms[1] end
   return tell(st)
 end
 

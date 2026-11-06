@@ -12,8 +12,8 @@
 #X obj 600 500 list trim;
 #X obj 800 450 list prepend restore page;
 #X obj 800 500 list trim;
-#X obj 1100 300 r start;
-#X msg 1100 350 start;
+#X obj 1100 300 r play-pressed;
+#X msg 1100 350 play;
 #X obj 1400 300 loadbang;
 #X obj 1400 350 t b b;
 #X msg 1500 400 init;
@@ -71,12 +71,10 @@
 #X connect 4 8 34 0;
 #X obj 860 1050 list prepend put seed voices;
 #X obj 860 1000 list trim;
+#X obj 1860 800 s voices-sound;
+#X obj 2060 800 s disp;
 #X connect 23 2 35 0;
 #X connect 35 0 36 0;
 #X connect 36 0 28 0;
-#X obj 1250 300 r stop;
-#X obj 1250 340 r panic;
-#X msg 1250 390 stop;
-#X connect 37 0 39 0;
-#X connect 38 0 39 0;
-#X connect 39 0 4 2;
+#X connect 4 9 37 0;
+#X connect 4 10 38 0;

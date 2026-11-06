@@ -1,7 +1,7 @@
-#N canvas 20 20 9700 6700 12;
+#N canvas 20 20 9900 6700 12;
 #X declare -lib pdlua;
 #X obj 20 300 r param;
-#X obj 20 1070 route tempo transport start stop panic volca-note volca-cc volca-prog volca-key recover diag drum-page test-mode drums arrangement section save revert song rush melody voices perform;
+#X obj 20 1070 route tempo transport start stop panic volca-note volca-cc volca-prog volca-key recover diag drum-page test-mode drums arrangement section save revert song rush melody voices perform machine;
 #X obj 20 1160 c_mapped bpm 210 40;
 #X obj 20 1220 unpack f f;
 #X obj 20 1430 s tempo;
@@ -273,7 +273,7 @@
 #X connect 123 0 124 0;
 #X connect 124 0 125 0;
 #X connect 125 0 126 0;
-#X connect 1 23 45 0;
+#X connect 1 24 45 0;
 #X connect 1 11 128 0;
 #X connect 128 1 129 0;
 #X connect 129 0 130 0;
@@ -437,3 +437,11 @@
 #X connect 217 0 122 0;
 #X connect 146 3 224 0;
 #X text 9300 1420 voices and perform: the columns \, aux and Setup to u_voices out the seventh outlet \, and the nanoKONTROL \, REC and the performance page's pads to u_perform out the eighth \, as <arg> <value> \, a press and a release alike: each decides what a release means (ref/module/voices.md)., f 40;
+#X obj 9700 1160 list split 2;
+#X obj 9700 1340 list trim;
+#X obj 9700 1730 outlet;
+#X obj 940 1450 s play-pressed;
+#X connect 1 23 226 0;
+#X connect 226 0 227 0;
+#X connect 227 0 228 0;
+#X connect 20 0 229 0;

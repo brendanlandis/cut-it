@@ -122,16 +122,17 @@ def main():
         A.check("⛔ melody: the rows of pitch lit, from the generator's notes",
                 all(f.color(10 * r + c) != 0 for r in range(1, 5) for c in range(1, 9)),
                 [f.color(10 + c) for c in range(1, 9)])
-    # Row 3's right button: its setup page, all of whose cells are the phone's.
+    # Row 3's right button: its setup page: its parameters on rows 3 to 8, its patches on 2, notes on 1.
+    SOUND_CELLS = [10 * r + c for r in range(1, 9) for c in range(1, 9)]
     f = last("sound")
     if f:
-        problem, lamp = G.page_shape(f)
+        problem, lamp = G.page_shape(f, lit=SOUND_CELLS)
         A.check("⛔ sound: row 3's right button full, and nothing else lit",
                 problem is None and lamp == G.RIGHT[2], problem or "lamp %s" % lamp)
     # An unused row's right button: a new voice, and its setup page.
     f = last("new-voice")
     if f:
-        problem, lamp = G.page_shape(f)
+        problem, lamp = G.page_shape(f, lit=SOUND_CELLS)
         A.check("⛔ new-voice: row 5's right button starts a voice: it lights, full, and its left, dim",
                 problem is None and lamp == G.RIGHT[4] and f.color(G.LEFT[4]) == G.VOICE_DIM[4],
                 problem or "lamp %s, left %s" % (lamp, f.color(G.LEFT[4])))
@@ -143,7 +144,7 @@ def main():
                 problem is None and lamp is None, problem or "lamp %s" % lamp)
     f = last("aux-again")
     if f:
-        A.check("⛔ aux again: back where it was, row 5's setup page", G.page_shape(f) == (None, G.RIGHT[4]),
+        A.check("⛔ aux again: back where it was, row 5's setup page", G.page_shape(f, lit=SOUND_CELLS) == (None, G.RIGHT[4]),
                 G.page_shape(f))
     # Setup: the diagnostics page, the same way.
     f = last("setup")
@@ -154,7 +155,7 @@ def main():
                 problem or "cells %s %s" % (f.color(81), f.color(82)))
     f = last("setup-again")
     if f:
-        A.check("⛔ setup again: back where it was", G.page_shape(f) == (None, G.RIGHT[4]), G.page_shape(f))
+        A.check("⛔ setup again: back where it was", G.page_shape(f, lit=SOUND_CELLS) == (None, G.RIGHT[4]), G.page_shape(f))
     f = last("drums")
     if f:
         problem, lamp, _page = G.drum_page(f, lay)

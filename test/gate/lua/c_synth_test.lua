@@ -172,13 +172,13 @@ equal("the held key releases on outlet 1", T.send(o, 1, "list", { 60, 0 }),
       { { 1, "note", { 60, 0 } } })
 equal("a new key leaves outlet 2, the Streichfett's", T.send(o, 1, "list", { 62, 90 }),
       { { 2, "note", { 62, 90 } } })
-equal("restore on inlet 2 takes the saved choice and puts it back",
-      T.send(o, 2, "restore", { "fm" }), { { 3, "synth", { "fm" } }, { 4, "synth", { "fm" } } })
+equal("⛔ once a voice says, a section's saved choice doesn't overrule it; it puts back what is in force",
+      T.send(o, 2, "restore", { "fm" }), { { 3, "synth", { "strings" } }, { 4, "synth", { "strings" } } })
 equal("velocity off on inlet 1 leaves outlet 7, for the phone, and 4, to save",
       T.send(o, 1, "velocity", { "off" }),
       { { 7, "velocity", { "off" } }, { 4, "velocity", { "off" } } })
 equal("... and a key then leaves at 127", T.send(o, 1, "list", { 64, 12 }),
-      { { 1, "note", { 64, 127 } } })
+      { { 2, "note", { 64, 127 } } })
 equal("restore-velocity on inlet 2 takes the saved setting and puts it back",
       T.send(o, 2, "restore-velocity", { "on" }),
       { { 7, "velocity", { "on" } }, { 4, "velocity", { "on" } } })

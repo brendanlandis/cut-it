@@ -93,13 +93,13 @@ stops the instrument**, because loading any patch restarts Pd. See
 |---|---|---|
 | `main` | Entry points. `main.pd` is the device's, `main-dev.pd` the Mac's | `main.pd` `main-dev.pd` `u_root.pd` |
 | `m_` | One physical device, publishing named controls, or told what to play | `m_nano` `m_launchpad` `m_organelle` `m_volca` `m_streich` `m_nanokey` |
-| `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_song` `u_voices` `u_perform` `u_err` `u_net` `u_present` `u_mother-stub` |
+| `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_song` `u_voices` `u_perform` `u_sound` `u_err` `u_net` `u_present` `u_mother-stub` |
 | `g_` | One display surface, and its sole owner | `g_oled` `g_grid` `g_led` |
 | `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` `c_kit` `c_voice` `c_synth` |
 | `e_` | An effect stage: the drums' three, inside `c_kit` (2026-11-05), the reverb's three engines and the switch they share inside `e_verb`, what a held repeat loops of them, and what knob 4 loops of the whole kit; v0.4's filter stages to come | `e_drive` `e_delay` `e_verb` `e_plate` `e_gigaverb` `e_freeverb` `e_tail` `e_tape` `e_rec` `e_rush` |
 | `.sh` | Run through `[shell]` — the first five once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `codec-gain.sh` `recover.sh` |
-| `.txt` | Read by Pd or its Lua, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` `cut-it-arrangement-page.txt` `cut-it-controls.txt` |
-| `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `c_synth.lua` `c_synth-lua.pd_lua` `g_grid.lua` `g_grid-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `u_tempo.lua` `u_tempo-lua.pd_lua` `u_song.lua` `u_song-lua.pd_lua` `u_voices.lua` `u_voices-lua.pd_lua` `u_perform.lua` `u_perform-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua`, and `lua-face.lua`, what every one of those classes shares |
+| `.txt` | Read by Pd or its Lua, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` `cut-it-arrangement-page.txt` `cut-it-controls.txt` `cut-it-machines.txt` `cut-it-factory.txt` |
+| `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `c_synth.lua` `c_synth-lua.pd_lua` `g_grid.lua` `g_grid-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `u_tempo.lua` `u_tempo-lua.pd_lua` `u_song.lua` `u_song-lua.pd_lua` `u_voices.lua` `u_voices-lua.pd_lua` `u_perform.lua` `u_perform-lua.pd_lua` `u_sound.lua` `u_sound-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua`, and `lua-face.lua`, what every one of those classes shares |
 
 **The prefix table above is `Cut It/`'s.** `Cut It Debug/` is flat and has no prefixes — one
 `main.pd` and three scripts — because it is one screen deep and nothing in it is reused.

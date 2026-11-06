@@ -1,4 +1,4 @@
-#N canvas 20 20 9400 5200 12;
+#N canvas 20 20 10200 5200 12;
 #X text 20 20 u_net -- the phone link \, and the only file that talks to the phone: TouchOSC's layout shows the Launchpad's page and controls it (ref/device/phone.md). Outbound it sends the heartbeat \, the page \, c_steps' state \, c_synth's choice and velocity switch \, the tempo \, u_song's sections and songs \, u_voices' voices and u_perform's controls \; inbound it takes a closed vocabulary of ten commands. It writes err \, and nothing else may learn a phone exists., f 58;
 #X text 700 20 creation arg 1: the phone's host \, the fallback when phone-ip.sh finds none. arg 2: its OSC receive port \, 8000 for TouchOSC \, never 9000 (its WebDAV) or 4001-4003 (mother's). arg 3: this end's inbound UDP port \, 9001 on the device and different on the Mac. inlet 1: a bang from u_map that flips test mode. inlet 2: c_steps' state \, 148 numbers. inlet 3: c_synth's choice and velocity switch \, c_melody's state and here <step> \, and u_voices' and u_perform's states. inlet 4: u_tempo's BPM. inlet 5: u_song's sections \, 22 atoms as a list \, and its songs \, songs <47 atoms>. outlet 1: c_steps \, the drum screen's sync \, snap and select <n> and its pads' vol \, pitch \, randomness and set-track-last <track> <value> \, and its mute \, solo and rnd-pitch <track> <0 or 1> \, and the arrangement screen's num and den <-1 or 1> \, drunk <0-100> \, set-swing and set-last. outlet 2: c_synth \, synth <choice> and velocity <on or off>. outlet 3: u_tempo \, tempo <bpm>. outlet 4: u_song \, the sections page's select \, page \, new \, up \, down \, length \, delete and name \, and the songs page's songs <command> .... outlet 5: c_melody \, whatever follows melody. outlet 6: u_voices \, whatever follows voices. outlet 7: u_perform \, whatever follows perform., f 58;
 #X text 1400 20 State \, never events: every message carries the whole value \, so a dropped datagram is corrected by the next., f 58;
@@ -91,7 +91,7 @@
 #X obj 240 3280 oscparse;
 #X obj 240 3340 list trim;
 #X obj 240 3400 route cutit;
-#X obj 240 3460 route result drums synth tempo velocity sections songs melody voices perform;
+#X obj 240 3460 route result drums synth tempo velocity sections songs melody voices perform sound;
 #X obj 2500 3540 r \$0-ack;
 #X obj 2500 3600 list append;
 #X obj 2500 3660 oscformat cutit ack;
@@ -304,7 +304,7 @@
 #X obj 4000 3820 s \$0-ack;
 #X text 4000 4000 synth: whatever follows it goes to c_synth through outlet 2 \, as drums goes to c_steps \, and c_synth refuses a synth it does not know as bad-synth. fm and strings are acknowledged after they go. The phone lights the chosen one from /cutit/synth \, not from the ack \, as a drum pad is lit by the state., f 40;
 #X obj 4800 4300 inlet;
-#X obj 4800 4360 route synth velocity melody here notes voices perform;
+#X obj 4800 4360 route synth velocity melody here notes voices perform sound;
 #X obj 4800 4420 t b a;
 #X obj 4800 4480 list append;
 #X obj 4800 4540 oscformat cutit synth;
@@ -425,7 +425,7 @@
 #X msg 7180 3740 songs set-name;
 #X obj 6700 3820 s \$0-ack;
 #X text 6700 4000 songs: whatever follows it goes to u_song out the fourth outlet \, songs in front \, which refuses what it does not know as fail u_song bad-selector. load \, new \, add \, delete \, up \, down \, new-set \, remove \, name and set-name are answered ack songs <action> \, a button's flash: select \, page \, entry \, set and starts show in the state that comes back (ref/module/songs.md)., f 50;
-#X obj 6000 4240 route songs;
+#X obj 6000 4240 route songs lists;
 #X obj 6600 4360 t b a;
 #X obj 6600 4420 list append;
 #X obj 6760 4380 r \$0-hb-songs;
@@ -457,7 +457,7 @@
 #X connect 228 0 231 0;
 #X connect 229 0 231 0;
 #X connect 230 0 231 0;
-#X connect 233 1 209 0;
+#X connect 233 2 209 0;
 #X connect 233 0 234 0;
 #X connect 234 1 235 1;
 #X connect 234 0 235 0;
@@ -516,6 +516,18 @@
 #X obj 9000 4600 s \$0-osc;
 #X obj 9200 4450 r \$0-hb-velocity;
 #X text 8600 4700 voices and perform: the page and the voices \, and the controls in play \, from u_voices and u_perform \, again on the heartbeat. Both ways \, as melody., f 58;
+#X obj 9000 3600 list trim;
+#X obj 9000 3900 outlet;
+#X obj 9400 4420 t b a;
+#X obj 9400 4480 list append;
+#X obj 9400 4540 oscformat cutit sound;
+#X obj 9400 4600 s \$0-osc;
+#X obj 9600 4450 r \$0-hb-velocity;
+#X obj 9800 4420 t b a;
+#X obj 9800 4480 list append;
+#X obj 9800 4540 oscformat cutit lists;
+#X obj 9800 4600 s \$0-osc;
+#X obj 10000 4450 r \$0-hb-velocity;
 #X connect 35 0 254 0;
 #X connect 254 0 255 0;
 #X connect 255 0 256 0;
@@ -538,3 +550,17 @@
 #X connect 269 0 270 0;
 #X connect 270 0 271 0;
 #X connect 272 0 269 0;
+#X connect 92 10 274 0;
+#X connect 274 0 275 0;
+#X connect 170 7 276 0;
+#X connect 276 1 277 1;
+#X connect 276 0 277 0;
+#X connect 277 0 278 0;
+#X connect 278 0 279 0;
+#X connect 280 0 277 0;
+#X connect 233 1 281 0;
+#X connect 281 1 282 1;
+#X connect 281 0 282 0;
+#X connect 282 0 283 0;
+#X connect 283 0 284 0;
+#X connect 285 0 282 0;

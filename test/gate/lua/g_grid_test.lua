@@ -507,7 +507,7 @@ R.inputs.page(st, { "diag" })
 f = frame(st)
 equal("the diagnostics page: its two pads top left, diag and test mode",
       { f[81], f[82], #painted(st) }, { { 0, 127, 32 }, BLUE, 2 })
-for _, name in ipairs({ "songs", "keys", "sound" }) do
+for _, name in ipairs({ "songs", "keys" }) do
   st = R.new(LAYOUT)
   R.inputs.page(st, { name })
   equal("⛔ " .. name .. " has no cells of its own", painted(st), {})

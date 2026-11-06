@@ -33,7 +33,7 @@ def press(n):
 
 # PLAY brings the performance page up, and row 1's left button takes it back to the drum page, in
 # one instant, so no frame the gate reads shows anything else.
-PLAY_DRUMS = "\\; start bang \\; param lp-cc-80 127 \\; param lp-cc-80 0"
+PLAY_DRUMS = "\\; param xport-2 1 \\; param lp-cc-80 127 \\; param lp-cc-80 0"
 
 
 # Every window opens after u_song's load at about 3.5 s, u_init's restore. The song's tempos and

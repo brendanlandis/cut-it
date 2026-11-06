@@ -1,0 +1,14 @@
+# Factory patches, good starting points outside any song: <machine> <name> <param> <value> ... A song
+# copies one and depends on nothing here after that.
+sine soft attack 0.25 release 0.4 bright 0.05 level 0.8
+sine bell attack 0 release 0.7 bright 0.5 level 0.7
+saw pluck attack 0 release 0.12 bright 0.6 level 0.6
+saw pad attack 0.6 release 0.7 bright 0.15 level 0.6
+saw brass attack 0.12 release 0.2 bright 0.8 level 0.6
+square hollow attack 0.05 release 0.2 bright 0.1 level 0.6
+square reed attack 0.12 release 0.3 bright 0.45 level 0.55
+strings wide registration 0.5 octaves 0.5 release 0.5 ensemble 0.8 reverb 0.5
+strings thin registration 0.1 octaves 0.2 release 0.15 ensemble 0.3 reverb 0.1
+strings solo balance 1 solo-tone 0.5 solo-attack 0.1 solo-decay 0.5 solo-sustain 0.6 tremolo 0.2 reverb 0.3
+fm slow-bloom mod-attack 0.8 mod-decay 0.7 car-attack 0.7 car-decay 0.8
+fm short mod-attack 0.1 mod-decay 0.2 car-attack 0 car-decay 0.15

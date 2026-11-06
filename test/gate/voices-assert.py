@@ -61,7 +61,7 @@ def run_asserts(cap, state):
     A.check("⛔ a left button with no voice does nothing", not pages("LEFT-EMPTY"), pages("LEFT-EMPTY"))
     A.check("⛔ an unused right button: a new voice the song holds, and its setup page",
             pages("RIGHT-5") == [["sound"]] and puts("RIGHT-5", "put", "song", "voices") ==
-            [["put", "song", "voices"] + SEED + ["-"] * 3 + ["voice_5", "keys", "sine"] + ["-"] * 9],
+            [["put", "song", "voices"] + SEED + ["-"] * 3 + ["voice_5", "keys", "fm"] + ["-"] * 9],
             "%s, %s" % (pages("RIGHT-5"), puts("RIGHT-5", "put", "song", "voices")))
     A.check("the lit one again: back", pages("RIGHT-5-AGAIN") == [["perform"]], pages("RIGHT-5-AGAIN"))
     A.check("⛔ aux, through the table: the songs page, and aux again back",
@@ -74,7 +74,7 @@ def run_asserts(cap, state):
     print("\n--- from the phone ---")
     v = puts("METHOD", "put", "song", "voices")
     A.check("⛔ a voice's method and name, through u_net: row 5 a harmony voice, second_chords",
-            v[-1:] == [["put", "song", "voices"] + SEED + ["-"] * 3 + ["second_chords", "harmony", "sine"]
+            v[-1:] == [["put", "song", "voices"] + SEED + ["-"] * 3 + ["second_chords", "harmony", "fm"]
                        + ["-"] * 9], v)
     A.check("⛔ a third harmony voice and a second drum voice warn, and change nothing",
             [e for e in errs("TOO-MANY") if e[:2] == ["warn", "u_voices"]]
@@ -136,9 +136,10 @@ def run_asserts(cap, state):
     print("\n--- what the song holds ---")
     path = os.path.join(state, "cut-it-song-draft.txt")
     lines = open(path).read().splitlines() if os.path.exists(path) else []
-    head = lines[1].split() if len(lines) > 1 else []
+    first = next((i for i, ln in enumerate(lines) if ln.startswith("section ")), len(lines))
+    heads = [ln.split() for ln in lines[1:first]]
     A.check("⛔ the song's voices, between its name and its first section, as the phone left them",
-            head[:1] == ["voices"] and "second_chords" in head, lines[:2])
+            any(h[:1] == ["voices"] and "second_chords" in h for h in heads), [h[:3] for h in heads])
     perform = [ln.split() for ln in lines if ln.split()[:1] == ["perform"]]
     A.check("⛔ and each section's list, the two of them", len(perform) == 2 and all("slider-1" in p for p in perform),
             perform)

@@ -15,7 +15,9 @@
 --   {"engine", "active", {e}}                the c_melody the page's voice is in, 0 for neither
 --   {"synth", "machine", {machine}}          c_synth: the machine the nanoKEY plays
 --   {"perform", "rows", {row, 8 engines}}    u_perform: the row on show and each row's engine
+--   {"sound", "rows", {row, 8 of machine, engine, line}}   u_sound: the same, and each row's machine
 --   {"phone", "voices", {atoms}}             u_net: /cutit/voices
+--   {"disp", "led", {state}}                 g_led: white while the songs page is open
 --   {"err", "fail" | "warn", {"u_voices", text}}   err (C-12)
 
 local R = {}
@@ -30,12 +32,14 @@ R.METHODS = { "drums", "harmony", "melody", "keys" }
 R.MACHINES = { "kit", "fm", "strings", "sine", "saw", "square" }
 local FOR = { drums = { kit = true }, harmony = {}, melody = {}, keys = {} }
 for _, m in ipairs({ "fm", "strings", "sine", "saw", "square" }) do
-  FOR.harmony[m], FOR.melody[m], FOR.keys[m] = true, true, true
+  FOR.harmony[m], FOR.melody[m] = true, true
 end
+-- The nanoKEY plays the hardware for now: a Pd voice takes a generator's line.
+FOR.keys.fm, FOR.keys.strings = true, true
 -- A machine a voice starts on: the first one no other voice has.
 local START = { drums = { "kit" }, harmony = { "strings", "fm", "sine", "saw", "square" },
                 melody = { "fm", "strings", "saw", "square", "sine" },
-                keys = { "fm", "strings", "sine", "saw", "square" } }
+                keys = { "fm", "strings" } }
 -- Hardware is one voice's; the phone warns before a second voice takes it (Brendan, 2026-11-06).
 R.HARDWARE = { fm = true, strings = true }
 
@@ -143,6 +147,22 @@ local function assign(st)
   return out
 end
 
+-- u_perform and u_sound: the row on show, and each row's engine and machine.
+local function tell_rows(st, out)
+  local rows = { (st.kind == "voice" or st.kind == "setup") and st.row or 0 }
+  for r = 1, R.ROWS do rows[r + 1] = R.engine_of(st, r) or 0 end
+  out[#out + 1] = { "perform", "rows", rows }
+  local sound = { rows[1] }
+  for r = 1, R.ROWS do
+    local v = st.voices[r]
+    sound[#sound + 1] = v and v.machine or "-"
+    sound[#sound + 1] = R.engine_of(st, r) or 0
+    sound[#sound + 1] = v and (v.method == "harmony" and "h" or (v.method == "melody" and "m" or "-")) or "-"
+  end
+  out[#out + 1] = { "sound", "rows", sound }
+  return out
+end
+
 -- Everything that follows the page: the mode bus, the grid, the engine the phone and the Launchpad
 -- talk to, the machine the nanoKEY plays. The perform page keeps the last of those.
 local function show(st, out)
@@ -155,10 +175,12 @@ local function show(st, out)
     if R.HARDWARE[v.machine] then out[#out + 1] = { "synth", "machine", { v.machine } } end
   end
   out[#out + 1] = { "page", "page", { st.kind, st.row } }
-  local rows = { (st.kind == "voice" or st.kind == "setup") and st.row or 0 }
-  for r = 1, R.ROWS do rows[r + 1] = R.engine_of(st, r) or 0 end
-  out[#out + 1] = { "perform", "rows", rows }
-  return out
+  local open = st.kind == "songs"
+  if open ~= (st.led_open or false) then
+    st.led_open = open
+    out[#out + 1] = { "disp", "led", { open and "songs" or "songs-off" } }
+  end
+  return tell_rows(st, out)
 end
 
 local function go(st, kind, row, out)
@@ -169,7 +191,7 @@ end
 local function changed(st, out)
   out[#out + 1] = { "save", "voices", R.line(st) }
   for _, e in ipairs(assign(st)) do out[#out + 1] = e end
-  return out
+  return tell_rows(st, out)
 end
 
 -- ------------------------------------------------------------------ the buttons
@@ -224,16 +246,10 @@ function R.setup(st) return toggle(st, "diag") end
 -- PLAY: the performance page comes up by itself (Brendan, 2026-11-06). A start while the transport
 -- runs is no PLAY: the saved tempo's pad restarts it by the same bus, under a finger on the drum page.
 function R.start(st)
-  local running = st.running
-  st.running = true
-  if running or st.kind == "perform" or st.kind == "songs" or st.kind == "diag" then return {} end
+  if st.kind == "perform" or st.kind == "songs" or st.kind == "diag" then return {} end
   return go(st, "perform", 0)
 end
 
-function R.stop(st)
-  st.running = false
-  return {}
-end
 
 -- ------------------------------------------------------------------ the phone's voice page
 
@@ -404,8 +420,7 @@ R.phone_cmds = {
 
 R.internal = {
   init = function() return {} end,
-  start = function(st) return R.start(st) end,
-  stop = function(st) return R.stop(st) end,
+  play = function(st) return R.start(st) end,
   restore = function(st, a)
     local key = a[1]
     if key == "voices" then return R.restore(st, { table.unpack(a, 2) }) end

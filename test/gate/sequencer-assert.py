@@ -232,6 +232,12 @@ def main():
                      if e[0] == "KITOUT" and e[1][1] > 0]
     puts = lambda k: [[int(float(v)) for v in e[1][3:]] for e in W(k)
                       if e[0] == "STATE" and e[1][:3] == ["put", "section", KEY]]
+    # A section's line is its pattern, and a mute or solo: the kit's sound is the song's, put song kit.
+    core = lambda l: l[:VOL] + [0] * 32 + l[PITCH + 16:FXLESS]
+    cores = lambda k: [core(l) for l in puts(k)]
+    kitputs = lambda k: [[int(float(v)) for v in e[1][3:]] for e in W(k)
+                         if e[0] == "STATE" and e[1][:3] == ["put", "song", "kit"]]
+    KITCHAR, KITSIZE, KITTYPE, KITROLLED = 32 + 16 * 8, 32 + 16 * 9, 32 + 16 * 9 + 2, 32 + 16 * 9 + 3
     raw = lambda k: [e[1] for e in W(k)
                      if e[0] == "DISP" and e[1] and e[1][0].startswith("pad-")]
     knob_rows = lambda k, name: [e[1] for e in W(k)
@@ -313,7 +319,7 @@ def main():
     A.check("⛔ at 3/4 the rows are 6 steps, every 3rd step blue, each row's first and fourth "
             "cells, and each row's last two cells dark", prob is None, prob)
     A.check("⛔ at 3/4 the second row's first cell is step 7: put with track 1's step 7 at 95",
-            puts("ROW-PRESS") == [at34], "%d put(s); track 1's step 7 put as %s" % (
+            cores("ROW-PRESS") == [core(at34)], "%d put(s); track 1's step 7 put as %s" % (
                 len(puts("ROW-PRESS")),
                 [l[idx(1, 7)] for l in puts("ROW-PRESS")]))
     prob = page_in("ROW-PRESS")
@@ -332,7 +338,7 @@ def main():
     A.check("a velocity button selects its level -- level 2 lit, the steps as they were",
             prob is None and not puts("VEL-2"), prob or "puts: %d" % len(puts("VEL-2")))
     A.check("two step presses put the pattern with track 1's steps 1 and 5 at 32",
-            puts("STEPS-T1")[-1:] == [pat["STEPS-T1"]] and len(puts("STEPS-T1")) == 2,
+            cores("STEPS-T1")[-1:] == [core(pat["STEPS-T1"])] and len(puts("STEPS-T1")) == 2,
             "%d put(s)" % len(puts("STEPS-T1")))
     prob = page_in("STEPS-T1")
     A.check("... and the page lights them in 32's color beside the seed's", prob is None, prob)
@@ -343,7 +349,7 @@ def main():
             prob is None and not puts("PAD-2"), prob or "puts: %d" % len(puts("PAD-2")))
     prob = page_in("STEP-T2")
     A.check("a step press edits the SELECTED track -- track 2's step 1, track 1 untouched",
-            puts("STEP-T2") == [pat["STEP-T2"]] and prob is None,
+            cores("STEP-T2") == [core(pat["STEP-T2"])] and prob is None,
             prob or "puts: %s" % len(puts("STEP-T2")))
 
     for k, what in (("RULE-ON", "an off step takes the selected velocity -- 95"),
@@ -352,7 +358,7 @@ def main():
         prob = page_in(k)
         got = puts(k)[-1][idx(2, 12)] if puts(k) else None
         A.check("⛔ the step rule: %s" % what,
-                puts(k)[-1:] == [pat[k]] and prob is None,
+                cores(k)[-1:] == [core(pat[k])] and prob is None,
                 prob or "track 2 step 12 put as %s, want %d" % (got, pat[k][idx(2, 12)]))
 
     quiet = [(k, ons(k)) for k in EDITS if k != "PAD-2" and ons(k)]
@@ -541,8 +547,8 @@ def main():
             and not ons("SOUND"),
             "KITVOL %s, KITPITCH %s, note-ons %s" % (kits("SOUND", "KITVOL"),
                                                      kits("SOUND", "KITPITCH"), ons("SOUND")))
-    got = [(l[VOL + 1], l[PITCH + 1]) for l in puts("SOUND")]
-    A.check("... and are saved with the pattern, each as it came", got == [(-6, 0), (-6, 7)],
+    got = [(l[1], l[17]) for l in kitputs("SOUND")]
+    A.check("... and are saved with the song's kit, each as it came", got == [(-6, 0), (-6, 7)],
             "track 2's volume and pitch in the puts: %s" % got)
     got = [l[RAND] for l in puts("RAND")] + [l[RAND] for l in puts("RA-STOP")]
     A.check("track 1's randomness, 100 and then 0 again, is saved", got == [100, 0],
@@ -620,23 +626,21 @@ def main():
             and want[2][1] == [(1, 20)], "got %s, want %s" % (solo[:6], want))
 
     print("\n--- a character ---")
-    got = puts("CHAR")
-    A.check("⛔ char 4 3, sent to u_net over OSC as the phone sends it, is put with the pattern: "
-            "the line 759, track 4 fold after the mutes and solos, track 1 still muted and soloed",
-            [len(l) for l in got] == [CHARRED] and got[0][FLAGGED:] == [1, 1, 1, 3] + [1] * 12
-            and flags(got[0]) == (one, one),
-            "puts of %s values, characters %s" % ([len(l) for l in got],
-                                                  [l[FLAGGED:] for l in got]))
+    got = [l[KITCHAR:KITCHAR + 16] for l in kitputs("CHAR")]
+    A.check("⛔ char 4 3, sent to u_net over OSC as the phone sends it, is put with the song's kit: "
+            "track 4 fold; and the section's line keeps track 1 muted and soloed",
+            got == [[1, 1, 1, 3] + [1] * 12] and flags(puts("CHAR")[-1]) == (one, one),
+            "characters %s" % got)
     A.check("⛔ ... and c_kit is told track 4's character, and nothing else",
             kitfx("CHAR") == [["char", "4", "3"]], "KITFX %s" % kitfx("CHAR"))
 
     print("\n--- the reverb's type ---")
     # gigaverb, 1, over OSC as the phone sends it (Brendan, 2026-11-05), after the character: the
     # line grows by the type alone, track 4 still fold and track 1 still muted and soloed.
-    got = [(len(l), l[FLAGGED:CHARRED], l[TYPED - 1]) for l in puts("VTYPE")]
-    A.check("⛔ verb-type 1, sent to u_net over OSC as the phone sends it, is put with the "
-            "pattern: the line 760, gigaverb last, the characters before it as they were",
-            got == [(TYPED, [1, 1, 1, 3] + [1] * 12, 1)], "length, characters and type: %s" % got)
+    got = [(l[KITCHAR:KITCHAR + 16], l[KITTYPE]) for l in kitputs("VTYPE")]
+    A.check("⛔ verb-type 1, sent to u_net over OSC as the phone sends it, is put with the song's "
+            "kit: gigaverb, the characters as they were",
+            got == [([1, 1, 1, 3] + [1] * 12, 1)], "characters and type: %s" % got)
     A.check("⛔ ... and goes to c_kit as verb-type 1, and nothing else does",
             kitfx("VTYPE") == [["verb-type", "1"]], "KITFX %s" % kitfx("VTYPE"))
 
@@ -741,10 +745,9 @@ def main():
             % (lamp("RC-PRESS", "recall"), lamp("RC-OFF", "recall"), tempo("RC-OFF")))
 
     print("\n--- a track's random pitch ---")
-    got = [(len(l), l[TYPED]) for l in puts("ROLL")]
-    A.check("⛔ rnd-pitch 1 1, sent to u_net over OSC as the phone sends it, is put with the "
-            "pattern: the line 776, track 1's flag after the type", got and got[0] == (ROLLED, 1),
-            "lengths and flags: %s" % got)
+    got = [l[KITROLLED] for l in kitputs("ROLL")]
+    A.check("⛔ rnd-pitch 1 1, sent to u_net over OSC as the phone sends it, is put with the song's kit",
+            got[:1] == [1], "flags: %s" % got)
     rolled = [p for pad, p in kits("RO-PLAY", "KITPITCH")]
     A.check("⛔ sixteen coins: c_kit is told a pitch for the hits they play, within a track's range, "
             "not always the same", rolled and all(-12 <= p <= 12 for p in rolled) and len(set(rolled)) > 1
@@ -760,20 +763,25 @@ def main():
     draft = os.path.join(opt.state, "cut-it-song-draft.txt")
     disk = read_key(draft)
     with open(draft, encoding="utf-8") as fh:
-        lines = [l for l in fh.read().splitlines() if l.split()[:1] == [KEY]]
+        whole = fh.read().splitlines()
+    lines = [l for l in whole if l.split()[:1] == [KEY]]
+    kit = next(([int(float(v)) for v in l.split()[1:]] for l in whole if l.split()[:1] == ["kit"]), None)
     vol = list(seed[VOL:VOL + 16])
     pitch = list(seed[PITCH:PITCH + 16])
     vol[1], pitch[1] = -6, 7
     # the swing back at 50% (SW-STOP), sober again since TF-SOBER, the global last step at 3 since
     # LAST-3, track 1 muted and soloed since SOLO, track 4 fold since CHAR, the reverb gigaverb
     # since VTYPE, and track 1's random pitch on since ROLL
-    snapped = (final[:CELLS] + [0] * 32 + vol + pitch + [7, 8, 0, 50, 3] + seed[FXLESS:]
-               + one + one + [1, 1, 1, 3] + [1] * 12 + [1] + one)
-    A.check("⛔ the pattern reaches the song's draft as section 1's ONE drums line, the final "
-            "776 exactly, its effects as seeded, track 1 muted and soloed, track 4 fold, the "
-            "reverb gigaverb and track 1's random pitch on",
-            disk == snapped and len(lines) == 1 and len(lines[0].split()) == ROLLED + 1,
-            "on disk: %s" % (disk if disk is None else "%d values" % len(disk)))
+    A.check("⛔ the pattern reaches the song's draft as section 1's ONE drums line, its pattern, the "
+            "tracks' last steps and the time signature as they ended, track 1 muted and soloed, and the "
+            "song's kit beside it, with its effects as seeded, track 4 fold, the reverb gigaverb and "
+            "track 1's random pitch on",
+            disk is not None and len(lines) == 1 and disk[:CELLS] == final[:CELLS]
+            and disk[LINE:FLAGGED] == one + one and kit is not None
+            and kit[KITCHAR:KITCHAR + 16] == [1, 1, 1, 3] + [1] * 12 and kit[KITTYPE] == 1
+            and kit[KITROLLED] == 1,
+            "on disk: %s, kit %s" % (disk if disk is None else "%d values" % len(disk),
+                                     kit if kit is None else "%d values" % len(kit)))
 
     print("\n--- rush, knob 4, through the running patch ---")
     rush = lambda k: knob_rows(k, "rush")

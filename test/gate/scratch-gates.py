@@ -531,13 +531,16 @@ def voices(g):
     S.require("Cut It/u_voices.pd", "Cut It/u_voices.lua", "Cut It/u_voices-lua.pd_lua",
               "Cut It/u_perform.pd", "Cut It/u_perform.lua", "Cut It/u_perform-lua.pd_lua",
               "Cut It/cut-it-controls.txt", "test/gate/lua/u_voices_test.lua",
-              "test/gate/lua/u_perform_test.lua")
+              "test/gate/lua/u_perform_test.lua", "test/gate/lua/u_sound_test.lua",
+              "Cut It/u_sound.lua", "Cut It/cut-it-machines.txt", "Cut It/cut-it-factory.txt")
     # The rules first, in Lua and without Pd: the pages, the voices, what's in play. Then the Pd half:
     # the cords between them through the running instrument.
     print("   the voices' rules, in Lua ...")
     rc_lua = S.lua("test/gate/lua/u_voices_test.lua", *g.args)
     print("\n   the controls in play's rules, in Lua ...")
     rc_perform = S.lua("test/gate/lua/u_perform_test.lua", *g.args)
+    print("\n   the voices' sound's rules, in Lua ...")
+    rc_sound = S.lua("test/gate/lua/u_sound_test.lua", *g.args)
     print("\n   the patch, in Pd ...")
     s = g.copy()
     s.state_dir()
@@ -546,7 +549,7 @@ def voices(g):
     cap = g.pd(s, 40, main_dev(s), s.path("drive.pd"))
     print()
     rc = g.analyze("test/gate/voices-assert.py", *g.args, "--state", s.state, stdin=cap)
-    return rc or rc_lua or rc_perform
+    return rc or rc_lua or rc_perform or rc_sound
 
 
 def _drums(last, hits, own=None, sig=(4, 4), drunk=0, sectionless=False):

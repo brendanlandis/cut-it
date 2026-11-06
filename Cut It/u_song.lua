@@ -208,7 +208,7 @@ end
 -- section now playing.
 -- A part in R.ON_THE_ONE, while the transport runs, waits for the next step 1 (R.one), so it lands
 -- on the beat and the old section's last step plays out at its own tempo (Brendan, 2026-11-05).
-R.ON_THE_ONE = { tempo = true, programs = true, melody = true, ["melody-2"] = true }
+R.ON_THE_ONE = { tempo = true, programs = true, melody = true, ["melody-2"] = true, tweaks = true }
 
 local function begin(st, s)
   st.playing, st.queued, st.bars = s, nil, 0
@@ -219,6 +219,12 @@ local function begin(st, s)
   local out, held = {}, {}
   -- A section with no controls in play says so, or the last section's would stay.
   if not s.parts.perform then out[1] = { "state", "restore", { "perform" } } end
+  -- And whether the voices' sounds snap back or carry on into it (Brendan, 2026-11-06), snap back unless
+  -- it says.
+  if not s.parts.tweaks then
+    local e = { "state", "restore", { "tweaks", 0 } }
+    if st.running then held[1] = e else out[#out + 1] = e end
+  end
   for _, k in ipairs(keys) do
     local a = { k }
     for _, x in ipairs(s.parts[k]) do a[#a + 1] = x end
@@ -229,19 +235,30 @@ local function begin(st, s)
   return out
 end
 
--- What the song holds for all its sections, as begin sends a section's: voices always, so a song
+-- What the song holds for all its sections, as begin sends a section's, and before it, so a section
+-- starts on its song's voices: the voices first, for what follows them; each of these always, so a song
 -- that has none says so, and is given some.
-local function song_parts(st, out)
+R.SONG_PARTS = { "voices", "patches", "sounds", "kit" }
+local function song_parts(st, after)
   local parts = st.song.parts or {}
+  local out, known = {}, {}
+  for _, k in ipairs(R.SONG_PARTS) do
+    known[k] = true
+    local a = { k }
+    for _, x in ipairs(parts[k] or {}) do a[#a + 1] = x end
+    out[#out + 1] = { "state", "restore", a }
+  end
   local keys = {}
-  for k in pairs(parts) do keys[#keys + 1] = k end
+  for k in pairs(parts) do
+    if not known[k] then keys[#keys + 1] = k end
+  end
   table.sort(keys)
-  if not parts.voices then out[#out + 1] = { "state", "restore", { "voices" } } end
   for _, k in ipairs(keys) do
     local a = { k }
     for _, x in ipairs(parts[k]) do a[#a + 1] = x end
     out[#out + 1] = { "state", "restore", a }
   end
+  for _, e in ipairs(after) do out[#out + 1] = e end
   return out
 end
 
@@ -388,8 +405,7 @@ function R.revert(st)
   st.selected = find(s, si)
   st.page = page_of(R.index(st, st.selected))
   st.dirty = true
-  local out = begin(st, find(p, pi))
-  song_parts(st, out)
+  local out = song_parts(st, begin(st, find(p, pi)))
   table.insert(out, 1, report("info", "reverted"))
   return out
 end
@@ -1221,6 +1237,43 @@ function R.songs_phone(st, unsaved_now)
   return out
 end
 
+-- The whole lists, for the app, which scrolls: the setlist chosen and how many, their names; the entry
+-- selected and how many, each its song's name and words; the song selected and how many, each its name
+-- and words; then the song loaded: its name, whether it's unsaved, the section playing, queued (0 for
+-- none) and selected, whether the selected one's tweaks carry on, and how many, each its name and length.
+function R.lists(st, unsaved_now)
+  if unsaved_now == nil then unsaved_now = R.unsaved(st) end
+  local a = { st.set, #st.sets }
+  for _, set in ipairs(st.sets) do a[#a + 1] = set.name end
+  local es = st.sets[st.set].entries
+  a[#a + 1] = st.entry
+  a[#a + 1] = #es
+  for _, e in ipairs(es) do
+    a[#a + 1] = e.song.song.name
+    a[#a + 1] = status(st, e.song, unsaved_now)
+  end
+  a[#a + 1] = find(st.songs, st.sel_song) or 0
+  a[#a + 1] = #st.songs
+  for _, rec in ipairs(st.songs) do
+    a[#a + 1] = rec.song.name
+    a[#a + 1] = status(st, rec, unsaved_now)
+  end
+  local secs = st.song.sections
+  a[#a + 1] = st.song.name
+  a[#a + 1] = unsaved_now and 1 or 0
+  a[#a + 1] = R.index(st, st.playing)
+  a[#a + 1] = st.queued and R.index(st, st.queued) or 0
+  a[#a + 1] = R.index(st, st.selected)
+  local t = st.selected.parts.tweaks
+  a[#a + 1] = t and t[1] or 0
+  a[#a + 1] = #secs
+  for _, s in ipairs(secs) do
+    a[#a + 1] = s.name
+    a[#a + 1] = s.length
+  end
+  return a
+end
+
 -- What arrives on the first inlet: u_map's top row, top <1-8>, save and revert, the Organelle's
 -- keys, key <1-25>.
 R.presses = {
@@ -1241,6 +1294,12 @@ R.phone_cmds = {
   length = function(st, a) return R.length(st, a[1]) end,
   delete = function(st) return R.delete(st) end,
   name = function(st, a) return R.rename(st, a) end,
+  tweaks = function(st, a)
+    local v = num(a[1]) == 1 and 1 or 0
+    st.selected.parts.tweaks = { v }
+    st.dirty = true
+    return {}
+  end,
 }
 
 -- What arrives on the second after songs: the phone's songs page, through u_net, its songs tab
@@ -1260,6 +1319,14 @@ R.songs_cmds = {
   ["new-set"] = function(st) return R.set_new(st) end,
   remove = function(st) return R.entry_remove(st) end,
   ["set-name"] = function(st, a) return R.set_rename(st, a) end,
+  choose = function(st, a)
+    local n = math.floor(num(a[1]))
+    if not st.sets[n] then return {} end
+    st.set, st.set_page, st.entry = n, 1, #st.sets[n].entries > 0 and 1 or 0
+    st.at_entry = nil
+    st.index_dirty = true
+    return {}
+  end,
 }
 
 -- What u_song.pd itself sends: a part's put, the end of a bar, PLAY and STOP, and the load (the

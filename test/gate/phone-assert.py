@@ -47,7 +47,7 @@ ADDRS = {"/cutit/hb", "/cutit/ack", "/mark",
          # and u_perform's controls in play
          "/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
          "/cutit/sections", "/cutit/songs", "/cutit/melody", "/cutit/here", "/cutit/notes",
-         "/cutit/voices", "/cutit/perform",
+         "/cutit/voices", "/cutit/perform", "/cutit/lists", "/cutit/sound",
          # the driver's taps for the inbound half: u_net's outlets, err, and the presence
          # bus, which re-wire once wrote and must not now
          "/probe/drums", "/probe/synth", "/probe/tempo", "/probe/sections", "/probe/err",
@@ -55,7 +55,7 @@ ADDRS = {"/cutit/hb", "/cutit/ack", "/mark",
 # The state addresses, each sent on a change and again on every heartbeat.
 STATE = ("/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
          "/cutit/sections", "/cutit/songs", "/cutit/melody", "/cutit/notes", "/cutit/voices",
-         "/cutit/perform")
+         "/cutit/perform", "/cutit/lists", "/cutit/sound")
 # The sections page's commands u_net acknowledges, a button's flash: the rest show in the state.
 SECTIONS_ACKED = ["new", "up", "down", "delete", "name"]
 # The songs page's, the same way: the rest show in the state, or u_song refuses them.

@@ -1486,10 +1486,27 @@ local function pad_m(st, nn, down)
   return held(st, out)
 end
 
+-- tone <engine> <h or m> <param> <value>, from u_sound: a Pd voice's parameter, for all of its line's.
+local function tone(st, a)
+  if num(a[1]) ~= st.engine then return {} end
+  return { { "tone", "list", { a[2] == "m" and R.MONO_M or R.MONO_H[1], a[3], num(a[4]) } } }
+end
+
+-- hear <engine> <h or m> <note> <1 or 0>, from u_sound: a note to hear a line's sound with.
+local function hear_tone(st, a)
+  if num(a[1]) ~= st.engine then return {} end
+  local v = a[2] == "m" and st["voice-m"] or st["voice-h"]
+  local slot = a[2] == "m" and R.MONO_M or R.MONO_H[1]
+  local to = v >= R.FIRST_PD and slot or v
+  return { { "play", "list", { to, math.floor(num(a[3])), num(a[4]) > 0 and 90 or 0, 0 } } }
+end
+
 R.inputs = {
   list = function(st, a) return R.key(st, a[1], a[2]) end,
   step = R.step,
   assign = assign_line,
+  tone = tone,
+  hear = hear_tone,
   set = set,
   audition = audition,
   move = move,

@@ -293,6 +293,20 @@ function R.save(st)
   local n = cells + 4 * R.TRACKS
   all[n + 1], all[n + 2], all[n + 3] = st.num, st.den, st.drunk
   all[n + 4], all[n + 5] = st.swing, st.last
+  -- The kit's sound is the song's (R.kit_line), so a section's line holds its pattern, and a mute or solo.
+  if st.kit_on then
+    for t = 1, R.TRACKS do
+      all[cells + 2 * R.TRACKS + t], all[cells + 3 * R.TRACKS + t] = 0, 0
+    end
+    if not R.flagged(st) then return { "save", "list", all } end
+    local k = R.SAVED_FXLESS
+    for i = 1, R.FX_BLOCK do
+      for _ = 1, R.TRACKS do k = k + 1; all[k] = R.FX[i][4] end
+    end
+    for _, f in ipairs(R.VERB) do k = k + 1; all[k] = f[4] end
+    for t = 1, R.TRACKS do all[k + t], all[k + R.TRACKS + t] = st.mute[t], st.solo[t] end
+    return { "save", "list", all }
+  end
   local rolled = R.any_rolled(st)
   local flagged, late, typed = R.flagged(st), R.late_moved(st), st.verb_type ~= 0 or rolled
   if not flagged and not typed and not R.fx_moved(st) then return { "save", "list", all } end
@@ -1337,6 +1351,71 @@ end
 -- starts the pattern (ref/module/songs.md). A repeat held through it goes on playing the steps it
 -- holds, as they were heard, while the new section's loops go on underneath, as a pattern edit
 -- under a held repeat changes nothing heard until it is let go.
+-- The kit's sound, what a song's sections share (Brendan, 2026-11-06): each track's volume and pitch, its
+-- effects in R.FX's order, the reverb's size and damping and its type, and each track's random pitch.
+R.KIT = 2 * R.TRACKS + #R.FX * R.TRACKS + #R.VERB + 1 + R.TRACKS
+function R.kit_line(st)
+  local a, k = {}, 0
+  for _, which in ipairs({ "vol", "pitch" }) do
+    for t = 1, R.TRACKS do k = k + 1; a[k] = st[which][t] end
+  end
+  for _, f in ipairs(R.FX) do
+    for t = 1, R.TRACKS do k = k + 1; a[k] = st.fx[f[1]][t] end
+  end
+  for _, f in ipairs(R.VERB) do k = k + 1; a[k] = st.verb[f[1]] end
+  k = k + 1; a[k] = st.verb_type
+  for t = 1, R.TRACKS do k = k + 1; a[k] = st.rolled[t] end
+  return a
+end
+
+-- The kit's sound as a list says, and everything that hears of it told what changed.
+local function take_kit(st, v)
+  local k = 0
+  local function next_atom() k = k + 1; return v[k] end
+  for t = 1, R.TRACKS do st.vol[t] = whole(next_atom(), R.VOL_MIN, R.VOL_MAX) end
+  for t = 1, R.TRACKS do st.pitch[t] = whole(next_atom(), R.PITCH_MIN, R.PITCH_MAX) end
+  for _, f in ipairs(R.FX) do
+    for t = 1, R.TRACKS do st.fx[f[1]][t] = whole(next_atom(), f[2], f[3]) end
+  end
+  for _, f in ipairs(R.VERB) do st.verb[f[1]] = whole(next_atom(), f[2], f[3]) end
+  st.verb_type = whole(next_atom(), 0, #R.VERB_TYPES - 1)
+  for t = 1, R.TRACKS do st.rolled[t] = whole(next_atom(), 0, 1) end
+  local out = {}
+  for _, which in ipairs({ "vol", "pitch" }) do
+    for t = 1, R.TRACKS do tell(st, out, which, R.pad(st, t), st[which][t]) end
+  end
+  for t = 1, R.TRACKS do st.heard[t] = st.pitch[t] end
+  for _, e in ipairs(R.tell_fx(st)) do out[#out + 1] = e end
+  return out
+end
+
+-- restore kit <the line>, as a song loads: this song's kit. None: it has none yet, and the first section
+-- it starts gives it one.
+function R.restore_kit(st, values)
+  if #values ~= R.KIT then
+    st.kit_on, st.kit_base, st.kit_wanted = false, nil, true
+    return {}
+  end
+  st.kit_on, st.kit_wanted = true, false
+  st.kit_base = values
+  return take_kit(st, values)
+end
+
+-- A section starting, snap back (0) or carry on (1): snap back takes the kit to what it was last saved as.
+function R.restore_tweaks(st, keep)
+  if num(keep) == 1 or not st.kit_on or not st.kit_base then return {} end
+  local now = R.kit_line(st)
+  local same = true
+  for i = 1, #now do
+    if now[i] ~= st.kit_base[i] then
+      same = false
+      break
+    end
+  end
+  if same then return {} end
+  return take_kit(st, st.kit_base)
+end
+
 function R.restore(st, values)
   local cells = R.TRACKS * R.STEPS
   st.master = 0
@@ -1352,7 +1431,7 @@ function R.restore(st, values)
       local v, k = values[cells + t], values[cells + R.TRACKS + t]
       if v ~= nil then st.own[t] = math.floor(clip(num(v), 0, R.STEPS)) end
       if k ~= nil then st.randomness[t] = percent(k) end
-      if not chances then
+      if not chances and not st.kit_on then
         local db, p = values[cells + 2 * R.TRACKS + t], values[cells + 3 * R.TRACKS + t]
         if db ~= nil then st.vol[t] = whole(db, R.VOL_MIN, R.VOL_MAX) end
         if p ~= nil then st.pitch[t] = whole(p, R.PITCH_MIN, R.PITCH_MAX) end
@@ -1376,10 +1455,17 @@ function R.restore(st, values)
       if st.own[st.track] == 0 then rearm(st.knob.track) end
     end
   end
-  restore_fx(st, values)
   restore_flags(st, values)
-  restore_type(st, values)
-  restore_rolled(st, values)
+  -- A song that has no kit of its own yet takes this section's sound as it.
+  if not st.kit_on then
+    restore_fx(st, values)
+    restore_type(st, values)
+    restore_rolled(st, values)
+    if st.kit_wanted then
+      st.kit_on, st.kit_wanted, st.kit_first = true, false, true
+      st.kit_base = R.kit_line(st)
+    end
+  end
   -- A section change happens on the beat, and a burst of messages there stalls the audio: Pd runs
   -- with a 6 ms buffer, and the beat dropped around a section's 1 (Brendan, 2026-11-05). So a line
   -- that says what the sequencer would save isn't put back, since the store already holds it; one
@@ -1393,7 +1479,8 @@ function R.restore(st, values)
       break
     end
   end
-  local put = not same and saved or nil
+  -- A section's line holds no sound once the song has a kit, and one from before that is left as it is.
+  local put = not same and not st.kit_on and saved or nil
   for _, e in ipairs({ R.page_last(st), R.steps(st), R.page_bar(st),
                        { "clock", "swing", { st.swing / 100 } } }) do
     out[#out + 1] = e
@@ -1479,6 +1566,12 @@ R.presses = {
 -- What c_steps.pd itself sends: the clock's step, with the tempo bus's BPM, which a step decided
 -- keeps for a held repeat's tails (R.tape); PLAY, STOP, u_state's restore, and the load.
 R.internal = {
+  ["restore-kit"] = function(st, a) return R.restore_kit(st, a) end,
+  ["restore-tweaks"] = function(st, a) return R.restore_tweaks(st, a[1]) end,
+  ["kit-save"] = function(st)
+    st.kit_base = R.kit_line(st)
+    return {}
+  end,
   tick = function(st, a)
     if type(a[1]) == "number" then st.bpm = clip(a[1], 5, 1000) end
     if st.rush == "waiting" then return rush_take(st) end

@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The voices and the controls in play
 
-**Files:** `Cut It/u_voices.pd`, `Cut It/u_voices.lua`, `Cut It/u_voices-lua.pd_lua`, `Cut It/u_perform.pd`, `Cut It/u_perform.lua`, `Cut It/u_perform-lua.pd_lua`, `Cut It/cut-it-controls.txt` · **Gate:** `test/gate/voices-assert.sh`, `test/gate/display-assert.sh` · **Checklist:** `test/checklists/launchpad.md`, `test/checklists/nanokontrol.md`
+**Files:** `Cut It/u_sound.pd`, `Cut It/u_sound.lua`, `Cut It/u_sound-lua.pd_lua`, `Cut It/cut-it-machines.txt`, `Cut It/cut-it-factory.txt`, `Cut It/u_voices.pd`, `Cut It/u_voices.lua`, `Cut It/u_voices-lua.pd_lua`, `Cut It/u_perform.pd`, `Cut It/u_perform.lua`, `Cut It/u_perform-lua.pd_lua`, `Cut It/cut-it-controls.txt` · **Gate:** `test/gate/voices-assert.sh`, `test/gate/display-assert.sh` · **Checklist:** `test/checklists/launchpad.md`, `test/checklists/nanokontrol.md`
 
 ## What it is
 
@@ -103,6 +103,30 @@ takes.
 | A section starting | `restore perform <atoms>`: the list, each waiting. A section with none says so, an empty restore, or the last one's would stay | unknown |
 | What the surfaces hear | `cols` and `btns` to `g_grid`, `perform <113 atoms>` to `u_net`, sent as `/cutit/perform`, each when it changes, at most every 40 ms | unknown |
 
+### Machines and patches
+
+**`u_sound` is what each voice sounds like** (Brendan, 2026-11-06). `cut-it-machines.txt` lists each machine's
+parameters and how each is said: a control change, a program change or a Pd voice's own. A **patch** is a machine's
+saved sound. `cut-it-factory.txt` holds factory patches, good starting points outside any song; a song copies one and
+depends on nothing after that. A song holds its patches (`put song patches`) and each voice's sound as it stands
+(`put song sounds`).
+
+| | | Evidence |
+|---|---|---|
+| A parameter moved | `<row>:<param> <value>`, 0 to 1, by way of the map's route: from the phone (`perform ctl <row> machine <param> <value>`), the Launchpad's sound page or a control in play | unknown |
+| A machine taken up | Starts from its defaults, said out at once | unknown |
+| `sound patch <name>` | The song's patch, recalled | unknown |
+| `sound copy <name>` | A factory patch copied into the song, under a name of its own, and recalled | unknown |
+| `sound save` | What the voice sounds like now is what its patch holds; with no patch yet, a new one | unknown |
+| `sound saveas` | The same, always a new one | unknown |
+| A section starting, `tweaks` 0 | Snap back: every voice's sound back to what it was saved as, what differs said out | unknown |
+| A section starting, `tweaks` 1 | Carry on: as it stands (`sections tweaks <0 or 1>`, the section's own) | unknown |
+| The kit | `c_steps` holds its sound, each track's volume, pitch, effects and random pitch and the reverb, and puts it as `put song kit`; a section's `drums` line holds its pattern and a mute or solo. A song with no kit takes its first section's sound, which is no change to it | unknown |
+| A voice's save on the kit | What the kit snaps back to is what it sounds like now | unknown |
+
+**The Launchpad's sound page:** the machine's first eight parameters as columns on rows 3 to 8, tapped to set; row 2 its
+song patches, tapped to recall; row 1 eight notes to hear it with.
+
 ## Traps
 
 ### Pd hands a number over as a float
@@ -158,9 +182,5 @@ be work a beat can't spare, so it's put on a clock of its own, as `c_melody`'s s
 
 - ⬜ **Not played on the rig**: voices, the pages, taking a control into play, a section's list.
   `test/checklists/launchpad.md`, `test/checklists/nanokontrol.md`, `cut-it/cut-it-app`.
-- ⬜ **The on buttons on the harmony and melody pages start the transport**, by the `start` bus, when it's
-  stopped, and so bring up the performance page as PLAY does, taking the page away from under the finger.
-  `cut-it/cut-it-app`.
-- ⬜ **A section's saved `synth` still sets `c_synth` as the section starts**, so the nanoKEY can play another machine
-  than the voice on show's, until the next page. `cut-it/machines-and-patches`.
-- ⬜ **Aux's LED isn't lit while the songs page is open**, as the card has it. `cut-it/cut-it-app`.
+
+

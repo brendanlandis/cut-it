@@ -118,6 +118,7 @@ button.
 | `melody` | The harmony, rhythm and melody tabs, passed on whole out `u_net`'s fifth outlet to `c_melody`, which refuses one it does not know as `fail c_melody bad-selector`: `set <control> <value>`, `audition <slot> <1 or 0>`, `move <slot> <start>`, and `roll-chords`, `roll-melody`, `roll-rhythm`, `on-h`, `on-m`, `style` and `bass`, each with a 1 ([synths.md](../module/synths.md), *The generator*). Not answered: the state shows them | unknown | — |
 | `voices` | The app's rails and voice page, passed on out `u_net`'s sixth outlet to `u_voices` ([voices.md](../module/voices.md)) | unknown | — |
 | `perform` | The app's performance page, passed on out `u_net`'s seventh outlet to `u_perform` ([voices.md](../module/voices.md)) | unknown | — |
+| `sound` | The app's voice setup page, passed on out `u_net`'s eighth outlet to `u_sound` ([voices.md](../module/voices.md)) | unknown | — |
 
 `re-wire`, `clear-alert` and `test-note` went with the remote screen (Brendan, 2026-11-04), and
 `phone-assert` sends each and requires it to reach nothing: no answer, no bus, no outlet. The

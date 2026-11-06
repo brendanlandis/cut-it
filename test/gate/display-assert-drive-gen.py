@@ -54,7 +54,7 @@ SEQ = [
     (28500, "alert-expired", [], GAP),
     (31000, "home-again", ["\\; disp grid modal-off"], GAP),
     # PLAY brings up the performance page by itself.
-    (34000, "play", ["\\; start bang"], GAP),
+    (34000, "play", ["\\; param xport-2 1"], GAP),
     (41000, "after-panic", ["\\; panic bang"], GAP),
     (45000, "done", [], GAP),
 ]

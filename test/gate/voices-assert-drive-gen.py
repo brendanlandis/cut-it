@@ -53,7 +53,7 @@ SEQ = [
     (6200, "TOO-MANY", [phone("voices method 3 harmony"), phone("voices method 3 drums")], GAP),
     # A voice's page, and PLAY.
     (6400, "ON-PAGE", press(70), GAP),
-    (6600, "PLAY", ["\\; start bang"], GAP),
+    (6600, "PLAY", ["\\; param xport-2 1"], GAP),
     (6800, "PLAY-AGAIN", press(70) + [(100, "\\; start bang")], GAP),
     (7000, "STOP", ["\\; stop bang", "\\; panic bang"], GAP),
     (7200, "BACK-PERFORM", press(70), GAP),

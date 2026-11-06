@@ -85,6 +85,7 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `melody` | What the control is to `c_melody`, one of `c_melody.lua`'s `R.ORDER`, or a page's `h<NN>` and `m<NN>` pads, `roll-melody`, `roll-chords`, `roll-rhythm`, `on-h`, `on-m`, `bass`, `style` or `pins-clear`, or any of those as `e<n>-<name>` for engine n | The control's 0–1, as it is, or the pad's velocity, `<arg> <value>` to the `c_melody`s out `u_map`'s sixth outlet: the one whose voice is on show takes it, or the one its `e<n>` names. It scales a control, draws its row and puts it, and takes a pad's press and leaves its release. The harmony and melody pages' pads and upper bottom rows ([synths.md](synths.md), *The generator*) | unknown | — |
 | `voices` | `left-<r>`, `right-<r>`, `aux` or `setup` | `<arg> <value>` to `u_voices` out `u_map`'s seventh outlet, which takes a press and leaves a release: the page ([voices.md](voices.md)). `lp-cc-80` to `lp-cc-10`, `lp-cc-89` to `lp-cc-19`, `og-aux` and `lp-setup`, on every page | unknown | — |
 | `perform` | A physical control's own name, `slider-<n>`, `knob-<n>`, `btn-a-<n>`, `btn-b-<n>`; `arm`; or a pad, `pad-<NN>` | `<arg> <value>` to `u_perform` out `u_map`'s eighth outlet: whatever this section has that control move ([voices.md](voices.md)). The nanoKONTROL's eight groups and REC on every page, the grid and the bottom rows on the performance page | unknown | — |
+| `machine` | `<row>:<param>`, or on the sound page a pad, `p<NN>` | `<arg> <value>` to `u_sound` out `u_map`'s ninth outlet ([voices.md](voices.md)) | unknown | — |
 
 This table is checked against the literal `route` box, so a destination added to the patch and not
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
@@ -122,6 +123,7 @@ there and nowhere else.
 | `drum-page` | **nothing** — the grid is the feedback, and 62 pads in use would bury the screen | none | unknown | — |
 | `arrangement` | **nothing** — the phone shows the tempo | none | unknown | — |
 | `voices` | **nothing** — the columns' lamps say it | none | unknown | — |
+| `machine` | **nothing** — the sound page and the phone say it | none | unknown | — |
 | `perform` | **nothing of its own**: a control in play draws its destination's row ([voices.md](voices.md)) | as its destination | unknown | — |
 | `section` `save` `revert` `song` | **nothing** — the top row's lamps and save and revert's say it, and the phone's songs page | none | unknown | — |
 | the buttons — `start` `stop` `transport` `panic` `recover` `diag` | **nothing** — the aux LED, the grid and the diag layer already say what happened | none | verified | 316 |

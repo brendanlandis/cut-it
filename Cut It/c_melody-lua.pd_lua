@@ -10,6 +10,7 @@
 -- Pd voices, c_mono: 3 the melody's, 4 the chords' four. outlet 8: a bang to start the transport.
 -- outlet 9: here <step> <melody step>, the loops' places, to u_net. outlet 10: notes <what the melody grid
 -- shows>, to u_net, at most every NOTES_EVERY ms. outlet 11: held <chord> <step> <note>, to g_grid.
+-- outlet 12: <3 or 4> <param> <value>, a Pd voice's parameter, to c_mono.
 --
 -- There are as many of these as u_voices.lua's R.ENGINES. Only the one whose voice is on show hears the
 -- Launchpad, the phone and the nanoKEY, and speaks to them; a message e<n>-<name>, from u_perform, is for
@@ -20,7 +21,7 @@ local Clock = pd.Clock
 
 local R = dofile(MelodyLua._loadpath .. "c_melody.lua")
 
-local OUTLET = { play = 1, save = 2, err = 3, disp = 5, mono = 7, start = 8, here = 9, held = 11 }
+local OUTLET = { play = 1, save = 2, err = 3, disp = 5, mono = 7, start = 8, here = 9, held = 11, tone = 12 }
 
 local F = dofile(MelodyLua._loadpath .. "lua-face.lua")
 F.carry(MelodyLua, R, OUTLET, 2, 4)
@@ -34,7 +35,7 @@ local ROLL_EVERY = 12
 local NOTES_EVERY = 250
 
 function MelodyLua:initialize(_, atoms)
-  self.inlets, self.outlets = 2, 11
+  self.inlets, self.outlets = 2, 12
   self.engine = type(atoms[1]) == "number" and math.floor(atoms[1]) or 1
   self.part = self.engine == 1 and "melody" or ("melody-" .. self.engine)
   self.active = self.engine == 1
@@ -133,7 +134,7 @@ function MelodyLua:in_1(sel, atoms)
     if now then self:answered() end
     return
   end
-  if sel ~= "step" and sel ~= "assign" then
+  if sel ~= "step" and sel ~= "assign" and sel ~= "tone" and sel ~= "hear" then
     local e, name = tostring(sel):match("^e(%d+)%-(.+)$")
     if e then
       if tonumber(e) ~= self.engine then return end

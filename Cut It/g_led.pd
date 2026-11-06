@@ -3,7 +3,7 @@
 #X text 20 130 creation args: none. inlets: none. outlets: none., f 58;
 #X obj 20 240 r disp;
 #X obj 20 290 route led;
-#X obj 20 360 route off stopped running panic;
+#X obj 20 360 route off stopped running panic songs songs-off;
 #X msg 20 440 0;
 #X msg 180 440 5;
 #X msg 340 440 3;
@@ -18,17 +18,33 @@
 #X text 760 240 No list append before the second route: running already arrives as the selector., f 44;
 #X text 760 640 The reject branch needs one: a reject carries a bare symbol \, which the trigger cannot convert. C-8, f 44;
 #X text 20 880 mother sets led 0 on quitting \, so the safe exit needs nothing here. No layers \, decided: ref/module/display.md., f 58;
+#X obj 20 480 t f f;
+#X obj 300 500 f 5;
+#X msg 660 440 7;
+#X obj 800 440 t b;
+#X text 660 500 songs: white while the songs page is open \, and what it was when it closes (Brendan \, 2026-11-06)., f 44;
 #X connect 2 0 3 0;
 #X connect 3 0 4 0;
 #X connect 4 0 5 0;
 #X connect 4 1 6 0;
 #X connect 4 2 7 0;
 #X connect 4 3 8 0;
-#X connect 4 4 10 0;
-#X connect 5 0 9 0;
-#X connect 6 0 9 0;
-#X connect 7 0 9 0;
-#X connect 8 0 9 0;
+#X connect 4 6 10 0;
+
+
+
+
 #X connect 10 0 11 0;
 #X connect 11 0 12 0;
 #X connect 12 0 13 0;
+#X connect 5 0 19 0;
+#X connect 6 0 19 0;
+#X connect 7 0 19 0;
+#X connect 8 0 19 0;
+#X connect 19 0 9 0;
+#X connect 19 1 20 1;
+#X connect 4 4 21 0;
+#X connect 21 0 9 0;
+#X connect 4 5 22 0;
+#X connect 22 0 20 0;
+#X connect 20 0 9 0;

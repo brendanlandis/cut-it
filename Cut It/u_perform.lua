@@ -48,6 +48,13 @@ local function name_of(what, n)
 end
 
 -- An address as the table writes it: Pd hands a number over as a float, and 0.0 isn't the table's 0.
+-- What's known of a control: the table's row, or for a machine's parameter a value named for itself.
+local function info_of(st, dest, arg)
+  if type(arg) == "number" then arg = string.format("%g", arg) end
+  if dest == "machine" then return { kind = "value", label = tostring(arg) } end
+  return st.controls[dest .. " " .. tostring(arg)]
+end
+
 local function key_of(dest, arg)
   if type(arg) == "number" then arg = string.format("%g", arg) end
   return dest .. " " .. tostring(arg)
@@ -59,6 +66,8 @@ local function route(st, c, value)
   local arg = c.arg
   if c.dest == "melody" then
     arg = "e" .. math.max(1, st.rows[c.row] or 1) .. "-" .. arg
+  elseif c.dest == "machine" then
+    arg = c.row .. ":" .. arg
   end
   return { "route", "list", { c.dest, arg, value, value, 1 } }
 end
@@ -66,14 +75,14 @@ end
 -- A control moved, whoever moved it: the phone (always), the Launchpad or the Organelle's knobs, by
 -- way of the map. Armed, it is the control to take into play. In play, its value follows.
 function R.heard(st, row, dest, arg, value)
-  local key = key_of(dest, arg)
-  if st.armed == 1 and st.controls[key] then
+  local info = info_of(st, dest, arg)
+  if st.armed == 1 and info then
     st.heard = { dest = dest, arg = arg, row = row, value = value }
     st.armed = 2
   end
   for _, c in pairs(st.list) do
-    if c.dest == dest and c.arg == arg and (dest ~= "melody" or c.row == row) then
-      if st.controls[key] and st.controls[key].kind == "toggle" then
+    if c.dest == dest and c.arg == arg and (dest == "tempo" or dest == "rush" or c.row == row) then
+      if info and info.kind == "toggle" then
         if value ~= 0 then c.value = 1 - c.value end
       else
         c.value = value
@@ -86,7 +95,7 @@ end
 
 -- What leaves when the physical control is live.
 local function hit(st, c, name, value)
-  local info = st.controls[key_of(c.dest, c.arg)] or {}
+  local info = info_of(st, c.dest, c.arg) or {}
   local button = name:match("^btn")
   if info.kind == "hit" then
     if button then return { route(st, c, 1) } end
@@ -162,7 +171,7 @@ function R.pad(st, nn, value)
   c.live, c.side = false, nil
   st.moved[col] = name
   st.dirty = true
-  local info = st.controls[key_of(c.dest, c.arg)] or {}
+  local info = info_of(st, c.dest, c.arg) or {}
   if info.kind and info.kind ~= "value" then return hit(st, c, "btn", 1) end
   c.value = row / 8
   return { route(st, c, c.value) }
@@ -231,7 +240,7 @@ end
 
 local function label(st, c)
   if not c then return "-" end
-  local info = st.controls[key_of(c.dest, c.arg)]
+  local info = info_of(st, c.dest, c.arg)
   return info and info.label or tostring(c.arg)
 end
 
@@ -291,6 +300,7 @@ R.phone_cmds = {
   end,
   arm = function(st) return R.arm(st, 1) end,
   remove = function(st, a) return R.remove(st, a[1]) end,
+  press = function(st, a) return R.control(st, a[1], 1) end,
 }
 
 R.internal = {

@@ -100,7 +100,9 @@ function R.new(text)
                starts = {}, loop = 32, tonic = 0, scale = { 0, 2, 4, 5, 7, 9, 11 }, notes = {},
                codes = {}, t = -1, m = -1, held_chord = 0, held_step = 0, held_note = 0,
                -- The performance page's.
-               cols = {}, btns = {}, cells = {}, ci = {}, cc = {} }
+               cols = {}, btns = {}, cells = {}, ci = {}, cc = {},
+               -- The sound page's.
+               levels = { 0, 0, 0, 0, 0, 0, 0, 0 }, n_patches = 0, patch_at = 0, note_at = 0 }
   for k = 1, 8 do st.top[k], st.methods[k], st.starts[k] = 0, "-", -1 end
   for k = 1, R.STEPS do st.notes[k], st.codes[k] = 0, 0 end
   for k = 1, 8 do st.cols[k] = { 0, 0, 0 } end
@@ -260,6 +262,12 @@ R.inputs = {
   -- held <chord> <step> <note>: what a finger holds on the harmony and melody pages.
   held = function(st, a)
     st.held_chord, st.held_step, st.held_note = num(a[1]), num(a[2]), num(a[3])
+    return {}
+  end,
+  -- sound <8 levels> <patches> <the one in use> <the note held>, from u_sound.
+  sound = function(st, a)
+    for k = 1, 8 do st.levels[k] = num(a[k]) end
+    st.n_patches, st.patch_at, st.note_at = num(a[9]), num(a[10]), num(a[11])
     return {}
   end,
   -- cols <8 of kind, level, held> and btns <16 of row, on>, from u_perform.
@@ -506,6 +514,18 @@ local function perform(st)
   end
 end
 
+-- A voice's sound page (Brendan, 2026-11-06): its first eight parameters as columns on rows 3 to 8; row 2
+-- its machine's song patches; row 1 eight notes to hear it with.
+local function sound(st)
+  local row = st.at_row > 0 and st.at_row or 1
+  local full, dim = voice_full(row), voice_dim(row)
+  for c = 1, 8 do
+    for l = 1, st.levels[c] do light(st, pad(l + 2, c), full) end
+    if c <= st.n_patches then light(st, pad(2, c), st.patch_at == c and full or dim) end
+    light(st, pad(1, c), st.note_at == c and R.WHITE or R.DIM)
+  end
+end
+
 -- The diagnostics page: its two pads, top left.
 local function diag(st)
   light(st, 81, R.SECTION_ON)
@@ -528,6 +548,7 @@ function R.paint(st)
   elseif page == "harmony" then harmony(st)
   elseif page == "melody" then melody(st)
   elseif page == "perform" then perform(st)
+  elseif page == "sound" then sound(st)
   elseif page == "diag" then diag(st)
   end
   edges(st)

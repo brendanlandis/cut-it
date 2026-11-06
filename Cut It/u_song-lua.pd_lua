@@ -123,6 +123,14 @@ function SongLua:answered()
         self:outlet(2, "songs", songs)
       end
     end
+    local ok6, lists = pcall(R.lists, st, ok2 and unsaved)
+    if ok6 then
+      local k = key(lists)
+      if k ~= self.lists_sent then
+        self.lists_sent = k
+        self:outlet(2, "lists", lists)
+      end
+    end
   end
   if st.write_saved then
     st.write_saved, st.dirty = false, false

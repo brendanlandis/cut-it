@@ -397,7 +397,7 @@ def node(kind, name, frame, children=(), text=None, x=0, **over):
 # captions and button names, take TouchOSC's default font (Brendan, 2026-11-04).
 VALUES = {"tempo", "play", "link", "dlink", "slink", "pending", "num", "den", "last", "drunkv",
           "drivev", "tonev", "distv", "feedbackv", "delayv", "sendv", "sizev", "dampingv",
-          "swingv", "clockv", "csmoothv", "ctensionv", "chomev", "ccount", "cspan", "rlink", "mlockv", "mfitv",
+          "swingv", "clockv", "csmoothv", "ctensionv", "chomev", "ccount", "cspan", "rlink", "nlink", "mlockv", "mfitv",
           "mleapv", "mnotesv", "mlengthv", "mechov", "marrivev", "moctavev", "mloop", "mrange", "hlink", "mlink", "cpos", "tmode", "seclink", "secpos", "seclen", "snfieldl", "glink", "llink",
           "gpos", "lpos", "gnfieldl"}
 MONO = 1
@@ -976,6 +976,9 @@ MELODY_KNOBS = (("mlock", "lock", "lock"), ("mfit", "chord fit", "fit"), ("mleap
                 ("marrive", "arrive", "arrive"), ("moctave", "octave", "octave"))
 CHORD_SLOTS = 8                     # c_melody.lua's R.SLOTS
 RHYTHM_H = 11 * G                   # the rhythm grid's height
+NOTES_H = 12 * G                    # the melody grid's height
+NOTES_GUTTER = 2 * G                # the pitch names beside it
+NOTE_ROWS = 28                      # the most rows of pitches it shows
 # c_melody.lua's R.VOICES, R.KEYS and R.MODES, as the radios say them.
 VOICES = ("FM", "strings", "sine", "saw", "square")
 KEY_NAMES = ("C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B")
@@ -1141,6 +1144,51 @@ def melody():
         k += gen_knob(name, a + i * 6 * G, Y0 + 5 * G, text, cmd)
     k += boxed("mloop", a, Y0 + 10 * G, 5 * G, "loop", 1, 32, "loop", 9, "16")
     k += boxed("mrange", a + 6 * G, Y0 + 10 * G, 5 * G, "range", 5, 48, "range", 9, "24")
+    return k
+
+
+def notes_script():
+    """The melody grid's surface, a plain XY pad, as the rhythm grid's: the root reads where the finger is."""
+    return ("function onValueChanged(key)\n"
+            "  if key == 'touch' then\n"
+            "    root:notify(self.values.touch and 'ndown' or 'nup', 0)\n"
+            "  elseif key == 'x' or key == 'y' then\n"
+            "    root:notify('nmove', 0)\n"
+            "  end\n"
+            "end\n")
+
+
+def notes():
+    """The melody on a grid (Brendan, 2026-11-06): a column per step and a row per note of the mode, each
+    note a cell, dim as rolled and bright once edited, arrivals amber. Blue columns mark the subdivisions,
+    and a moving column is where the loop is. A finger drags a note, taps it away or taps a new one in. Under
+    it on, roll, and clearing the pins."""
+    x = X0 + NOTES_GUTTER
+    w = X1 - x
+    k = [node("XY", "ngrid", (x, Y0, w, NOTES_H), color=TEAL, cursor=False, lines=False, gridX=True,
+              gridY=True, gridColor=rgb(52, 200, 190, 0.35), outlineStyle=0, script=notes_script())]
+    for i in range(16):
+        k.append(node("BUTTON", "nsub%d" % (i + 1), (x, Y0, 3 * G, NOTES_H), color=rgb(40, 90, 255, 0.35),
+                      x=1, interactive=False, outline=False))
+    for i in range(5):
+        k.append(node("BUTTON", "nroot%d" % (i + 1), (x, Y0, w, G), color=rgb(52, 200, 190, 0.18), x=1,
+                      interactive=False, outline=False))
+    for i in range(NOTE_ROWS):
+        k.append(label("nlab%d" % (i + 1), (X0, Y0, NOTES_GUTTER - 2, G), "", 11, GREY, align=1))
+    k.append(node("BUTTON", "nhere", (x, Y0, 3 * G, NOTES_H), color=rgb(255, 255, 255, 0.22), x=1,
+                  interactive=False, outline=False))
+    for i in range(32):
+        k.append(node("BUTTON", "nnote%d" % (i + 1), (x, Y0, 3 * G, G), color=TEAL, x=0, interactive=False,
+                      outlineStyle=0))
+    y_ = Y0 + NOTES_H
+    k += on_button("non", (X0, y_ + G // 2, 4 * G, 5 * G // 2), "on-m")
+    f = (X0 + 5 * G, y_ + G // 2, 4 * G, 5 * G // 2)
+    k.append(button("nroll", f, RED, sends(["melody", "roll-melody", 1])))
+    k.append(label("nrolll", f, "roll", 20))
+    f = (X0 + 10 * G, y_ + G // 2, 6 * G, 5 * G // 2)
+    k.append(button("nclear", f, RED, sends(["melody", "pins-clear", 1])))
+    k.append(label("nclearl", f, "clear pins", 18))
+    k += status("nlinkled", "nlink", COL[1], "no link")
     return k
 
 
@@ -1392,6 +1440,7 @@ local CHECK = %(check)s
 local SYNTHS = %(synths)s
 local CHORDKNOBS = %(chordknobs)s
 local G_X, G_Y, G_W, G_H = %(gx)s, %(gy)s, %(gw)s, %(gh)s
+local N_X, N_W, N_H, N_ROWS, N_GUTTER = %(nx)s, %(nw)s, %(nh)s, %(nrows)s, %(ngutter)s
 local ACKS = %(acks)s
 local DENS = %(dens)s
 local SWING = %(swing)s
@@ -1802,8 +1851,187 @@ local function gridEnd()
   if d.at ~= d.from then sendOSC('/cutit', 'melody', 'move', d.i, d.at) end
 end
 
+-- The melody grid. Rows are the mode's notes across what the loop uses, so what's drawn stays in key, a note
+-- outside the mode taking the nearest row. Rows don't change under a finger.
+local AMBER = Color(1, 0.66, 0.12)
+local LETTER = { [0] = 'C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B' }
+local mel = { loop = 16, tonic = 0, scale = {}, note = {}, code = {}, rows = {}, press = false, drag = nil }
+
+local function melRows()
+  local lo, hi = 999, -1
+  for i = 1, mel.loop do
+    local n = mel.note[i] or 0
+    if n > 0 then
+      if n < lo then lo = n end
+      if n > hi then hi = n end
+    end
+  end
+  if hi < 0 then lo, hi = 60, 76 end
+  lo, hi = lo - 3, hi + 3
+  while hi - lo < 24 do lo, hi = lo - 1, hi + 1 end
+  local rows = {}
+  for n = lo, hi do
+    if mel.scale[n %% 12] and #rows < N_ROWS then rows[#rows + 1] = n end
+  end
+  mel.rows = rows
+end
+
+-- Which row a note takes, counted from the bottom, 1 the lowest.
+local function melRowOf(n)
+  local best, far = 1, 999
+  for r, p in ipairs(mel.rows) do
+    if math.abs(p - n) < far then best, far = r, math.abs(p - n) end
+  end
+  return best
+end
+
+local function melCell(step, row)
+  local cw, rh = N_W / mel.loop, N_H / math.max(1, #mel.rows)
+  return N_X + (step - 1) * cw, G_Y + (#mel.rows - row) * rh, math.max(10, cw), math.max(10, rh)
+end
+
+local function melPlace(step, row)
+  local x, y, w, h = melCell(step, row)
+  local c = get('nnote' .. step)
+  c.frame.x, c.frame.y, c.frame.w, c.frame.h = x, y, w, h
+end
+
+local function melDraw()
+  local g = get('ngrid')
+  if g.gridStepsX ~= mel.loop then g.gridStepsX = mel.loop end
+  if g.gridStepsY ~= #mel.rows then g.gridStepsY = #mel.rows end
+  local rh = N_H / math.max(1, #mel.rows)
+  local roots = 0
+  for r = 1, N_ROWS do
+    local p = mel.rows[r]
+    local name = 'nlab' .. r
+    local tonic = p and p %% 12 == mel.tonic
+    gridSeen(name, p ~= nil and (rh >= 12 or tonic))
+    if p then
+      text(name, LETTER[p %% 12] .. (math.floor(p / 12) - 1))
+      ink(name, tonic and WHITE or GREY)
+      local c = get(name)
+      c.frame.y, c.frame.h = G_Y + (#mel.rows - r) * rh, math.max(10, rh)
+    end
+    if tonic and roots < 5 then
+      roots = roots + 1
+      local band = get('nroot' .. roots)
+      band.frame.y, band.frame.h = G_Y + (#mel.rows - r) * rh, math.max(10, rh)
+      gridSeen('nroot' .. roots, true)
+    end
+  end
+  for n = roots + 1, 5 do gridSeen('nroot' .. n, false) end
+  local cw = N_W / mel.loop
+  local every = math.max(gridEvery, math.ceil(mel.loop / 16))
+  for n = 1, 16 do
+    local col = (n - 1) * every
+    gridSeen('nsub' .. n, col < mel.loop)
+    if col < mel.loop then
+      local c = get('nsub' .. n)
+      c.frame.x, c.frame.w = N_X + col * cw, math.max(10, cw)
+    end
+  end
+  for i = 1, 32 do
+    local n = mel.note[i] or 0
+    local on = i <= mel.loop and n > 0
+    gridSeen('nnote' .. i, on)
+    if on then
+      melPlace(i, melRowOf(n))
+      local code = mel.code[i] or 0
+      color('nnote' .. i, code %% 4 == 1 and AMBER or TEAL)
+      lit('nnote' .. i, code >= 4)
+    end
+  end
+end
+
+-- c_melody's melody: the loop's length, the tonic, the mode's notes, each step's note, each step's flag and
+-- pin. Not while a finger is on the grid.
+local function notes(a)
+  if #a < 73 then return end
+  mel.loop, mel.tonic = math.max(1, math.floor(arg(a, 1))), math.floor(arg(a, 2))
+  mel.scale = {}
+  for d = 1, 7 do mel.scale[math.floor(arg(a, 2 + d)) %% 12] = true end
+  for i = 1, 32 do
+    mel.note[i] = math.floor(arg(a, 9 + i))
+    mel.code[i] = math.floor(arg(a, 41 + i))
+  end
+  if mel.drag then return end
+  melRows()
+  melDraw()
+end
+
+local function melTouch()
+  local g = get('ngrid')
+  local col = math.min(mel.loop - 1, math.floor(g.values.x * mel.loop))
+  local row = math.min(#mel.rows - 1, math.floor(g.values.y * #mel.rows))
+  return col + 1, row + 1
+end
+
+-- A finger down on a note, or a row away from it, picks it up, and elsewhere makes a new one there; either
+-- way it sounds. Dragged, it follows; let go, it stays, pinned. A note tapped and not moved goes away.
+local function melPick()
+  if #mel.rows == 0 then return end
+  local step, row = melTouch()
+  local n = mel.note[step] or 0
+  local made = not (n > 0 and math.abs(melRowOf(n) - row) <= 1)
+  local pitch = made and mel.rows[row] or n
+  if not made then row = melRowOf(n) end
+  mel.drag = { from = step, step = step, row = row, pitch = pitch, made = made, moved = false }
+  sendOSC('/cutit', 'melody', 'note-hear', pitch, 1)
+  if made then
+    mel.note[step], mel.code[step] = pitch, 4
+    gridSeen('nnote' .. step, true)
+    color('nnote' .. step, TEAL)
+    lit('nnote' .. step, true)
+    melPlace(step, row)
+  end
+end
+
+local function melMove()
+  local d = mel.drag
+  if not d then return end
+  local step, row = melTouch()
+  if step == d.step and row == d.row then return end
+  d.moved = true
+  if row ~= d.row then
+    sendOSC('/cutit', 'melody', 'note-hear', d.pitch, 0)
+    d.pitch = mel.rows[row]
+    sendOSC('/cutit', 'melody', 'note-hear', d.pitch, 1)
+  end
+  d.row = row
+  if step ~= d.step then
+    -- The cell keeps its own control while it travels, the one for the step it started on.
+    d.step = step
+  end
+  local x, y, w, h = melCell(step, row)
+  local c = get('nnote' .. d.from)
+  c.frame.x, c.frame.y, c.frame.w, c.frame.h = x, y, w, h
+end
+
+local function melEnd()
+  mel.press = false
+  local d = mel.drag
+  mel.drag = nil
+  if not d then return end
+  sendOSC('/cutit', 'melody', 'note-hear', d.pitch, 0)
+  if d.made and d.step == d.from then
+    sendOSC('/cutit', 'melody', 'note-set', d.step, d.pitch)
+  elseif d.moved then
+    sendOSC('/cutit', 'melody', 'note-move', d.from, d.step, d.pitch)
+  else
+    sendOSC('/cutit', 'melody', 'note-rest', d.from)
+  end
+end
+
 -- The step the loop is on: a cell of its own over the grid, gone when stopped.
 local function here(a)
+  local m = math.floor(arg(a, 2))
+  gridSeen('nhere', m >= 1)
+  if m >= 1 then
+    local cw = N_W / mel.loop
+    local c = get('nhere')
+    c.frame.x, c.frame.w = N_X + (m - 1) * cw, math.max(10, cw)
+  end
   local t = math.floor(arg(a, 1))
   gridSeen('rhere', t >= 0)
   if t < 0 then return end
@@ -1819,6 +2047,9 @@ local function chords(a)
   if #a < 59 then return end
   hand('marrive', math.floor(arg(a, 58)))
   hand('moctave', math.floor(arg(a, 59)))
+  local onm0 = arg(a, 9) == 1
+  light('non', onm0 and 1 or 0)
+  ink('nonl', onm0 and BLACK or WHITE)
   text('cstylel', arg(a, 56) == 2 and 'functional' or 'modal')
   local bass = arg(a, 57) == 1
   light('cbass', bass and 1 or 0)
@@ -2124,6 +2355,8 @@ function onReceiveOSC(message, connections)
     chords(a)
   elseif path == '/cutit/here' then
     here(a)
+  elseif path == '/cutit/notes' then
+    notes(a)
   elseif path == '/cutit/sections' then
     sections(a)
   elseif path == '/cutit/songs' then
@@ -2142,6 +2375,12 @@ function onReceiveNotify(key, value)
   elseif key == 'boxu' then
     local i = grid.order[value]
     if i then sendOSC('/cutit', 'melody', 'audition', i, 0) end
+  elseif key == 'ndown' then
+    mel.press = true
+  elseif key == 'nmove' then
+    melMove()
+  elseif key == 'nup' then
+    melEnd()
   elseif key == 'rdown' then
     grid.press = true
   elseif key == 'rmove' then
@@ -2181,8 +2420,12 @@ function update()
     grid.press = false
     gridPick()
   end
+  if mel.press then
+    mel.press = false
+    melPick()
+  end
   local up = now - lastHb < 1500
-  for _, k in ipairs({ 'link', 'dlink', 'slink', 'hlink', 'rlink', 'mlink', 'seclink', 'glink', 'llink' }) do
+  for _, k in ipairs({ 'link', 'dlink', 'slink', 'hlink', 'rlink', 'mlink', 'nlink', 'seclink', 'glink', 'llink' }) do
     text(k, up and 'link' or 'no link')
     lit(k .. 'led', up)
   end
@@ -2230,6 +2473,8 @@ def root_script(check):
         "synths": lua([c for c, _ in SYNTHS]),
         "chordknobs": lua([n for n, _, _ in CHORD_KNOBS + MELODY_KNOBS]),
         "gx": X0, "gy": Y0, "gw": X1 - X0, "gh": RHYTHM_H,
+        "nx": X0 + NOTES_GUTTER, "nw": X1 - X0 - NOTES_GUTTER, "nh": NOTES_H, "nrows": NOTE_ROWS,
+        "ngutter": NOTES_GUTTER,
         "acks": acks, "check": lua(check), "dens": lua(DENS), "swing": lua(list(SWING)),
         "shown": lua([w for w, _c, _lo, _hi, _st in SHOW]),
         "lastshow": LAST_SHOW, "steprow": ROW, "steprows": ROWS_OF_STEPS,
@@ -2260,7 +2505,7 @@ def root_script(check):
 
 SCREENS = {"arrangement": arrangement, "drums": drums}
 # A Launchpad page with more than one tab: each tab's page name, its label and its controls.
-TABBED = {"synths": [("harmony", "harmony", harmony), ("rhythm", "rhythm", rhythm), ("melody", "melody", melody),
+TABBED = {"synths": [("harmony", "harmony", harmony), ("rhythm", "rhythm", rhythm), ("melody", "melody", melody), ("notes", "notes", notes),
                      ("keyboard", "keyboard", keyboard)],
           "sections": [("sections", "sections", sections),
                        ("secname", "name", lambda: name_tab("sn", "section"))],

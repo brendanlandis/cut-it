@@ -13,7 +13,7 @@
 --   {"play", "list", {voice, note, velocity, ms}}  to the note timing
 --   {"mono", "list", {3 or 4, wave or -1}}         to the Pd voices
 --   {"start", "bang", {}}                          to the transport
---   {"here", "here", {step}}                       the loop's place, to the phone, -1 stopped
+--   {"here", "here", {step, melody step}}          the loops' places, to the phone, -1 stopped
 --   {"save", "melody", {numbers...}}               to the state bus, put section melody
 --   {"disp", <row name>, {value}}                  a control's row, to disp
 --   {"err", "fail", {"c_melody", text}}            to err (C-12)
@@ -237,7 +237,7 @@ function R.new(rand)
   local st = { rand = rand or math.random, pos = 0, hist = {}, running = false,
                note = {}, vel = {}, gate = {}, pin = {}, target = {}, flag = {}, disp = {},
                slot = {}, slot_start = {}, slot_pin = {}, slot_deg = {}, slot_shape = {},
-               last = 16, bar = 0, ch_pos = 0, sounding = {}, pressed = {}, where = {}, to_roll = {}, dirty = false }
+               last = 16, bar = 0, ch_pos = 0, sounding = {}, pressed = {}, where = {}, to_roll = {}, to_roll_m = {}, dirty = false }
   for k, v in pairs(R.BOOT) do st[k] = v end
   st.style, st["v-main"], st["v-color"], st.pedal, st.bass = 1, 1, 4, 0, 0
   st.arrive, st.octave = 75, 25
@@ -618,15 +618,43 @@ local function rescale(st)
   st.bar = math.min(st.bar, st.span)
 end
 
--- One queued slot rolled, from the face's clock.
+-- Queue the melody's unrolled steps. The face rolls a few at a time, each hearing the chord it will meet the
+-- first time round, so the phone's grid shows the whole loop at once.
+local function queue_melody(st)
+  st.to_roll_m = {}
+  for i = 1, st.loop do
+    if st.note[i] == R.UNROLLED then st.to_roll_m[#st.to_roll_m + 1] = i end
+  end
+end
+R.queue_melody = queue_melody
+
+R.ROLL_AT_ONCE = 4
+
+-- One queued slot rolled, or a few of the melody's steps, from the face's clock.
 function R.roll_next(st)
+  if #st.to_roll == 0 and #st.to_roll_m > 0 then
+    local was = st.dirty
+    for _ = 1, R.ROLL_AT_ONCE do
+      local i = table.remove(st.to_roll_m, 1)
+      if not i then break end
+      if st.note[i] == R.UNROLLED then
+        local c = active_at(st, (i - 1) % math.max(1, st.total))
+        hear(st, c and st.slot[c] or {})
+        R.roll_step(st, i)
+      end
+    end
+    hear(st, st.sounding)
+    if st.quiet then st.dirty = was end
+    if #st.to_roll_m == 0 then st.quiet = false end
+    return {}
+  end
   local i = table.remove(st.to_roll, 1)
   if i and #st.slot[i] == 0 then
     local was = st.dirty
     roll_chord(st, i)
     if st.quiet then st.dirty = was end
   end
-  if #st.to_roll == 0 then st.quiet = false end
+  if #st.to_roll == 0 and #st.to_roll_m == 0 then st.quiet = false end
   return {}
 end
 
@@ -798,7 +826,7 @@ end
 -- and then a note jumps an octave off the line, and the line carries on where it was, so the shape stays.
 -- An arrival is likelier to, and plays harder and long, into the breath.
 local function roll(st, i)
-  st.dirty, st.show = true, true
+  st.dirty, st.show_notes = true, true
   st.disp[i] = 0
   if not sounds(st, i) then
     st.note[i], st.vel[i], st.gate[i] = R.REST, 0, 0
@@ -820,6 +848,8 @@ local function roll(st, i)
   st.vel[i] = math.floor(math.max(20, math.min(127, v)) + 0.5)
   st.gate[i] = arriving and 800 or math.floor((0.25 + (st.length / 100) ^ 1.5 * r * r * 8) * 100 + 0.5)
 end
+
+R.roll_step = roll
 
 -- How many steps until the next sounding note, so a note lets go before the next one lands.
 local function room(st, i)
@@ -861,7 +891,7 @@ function R.step(st, atoms)
   st.hist[count] = e
   st.hist[count - 64] = nil
   -- Where the loop is, for the phone's grid, unless the steps come too fast for it to matter.
-  if ms >= R.HERE_MIN_MS then out[#out + 1] = { "here", "here", { here } } end
+  if ms >= R.HERE_MIN_MS then out[#out + 1] = { "here", "here", { here, i } } end
   return sound(e, ms, out)
 end
 
@@ -935,12 +965,14 @@ function R.restore(st, atoms)
   rescale(st)
   -- A section with empty slots has them rolled, so the phone has chords to show, without marking it changed.
   queue_empty(st)
-  st.quiet = #st.to_roll > 0
+  st.show_notes = true
   if #st.sounding == 0 then hear(st, {}) end
   if st.plan_due then
     st.plan_due = false
     plan_melody(st)
   end
+  queue_melody(st)
+  st.quiet, st.dirty = #st.to_roll + #st.to_roll_m > 0, false
   return waves(st, {})
 end
 
@@ -954,7 +986,11 @@ local function assign(st, name, v)
     if name == "chords" then queue_empty(st) end
     if name == "span" then rescale(st) end
     if name == "tension" then roll_vocab(st) end
-    if name == "leap" or name == "range" or name == "loop" then plan_melody(st) end
+    if name == "leap" or name == "range" or name == "loop" then
+      plan_melody(st)
+      queue_melody(st)
+      st.show_notes = true
+    end
     out[2] = R.save(st)
   end
   return out
@@ -996,6 +1032,7 @@ local function set_key(st, v)
   for i = 1, R.STEPS do
     if st.note[i] > 0 then st.note[i] = st.note[i] + delta end
   end
+  st.show_notes = true
   local out = { { "disp", "key", { R.KEYS[v] } } }
   local at = st.ch_pos > 0 and st.slot[st.ch_pos] or {}
   if #st.sounding > 0 then change_to(st, at, out) else hear(st, {}) end
@@ -1021,6 +1058,7 @@ local function set_mode(st, v)
   end
   queue_empty(st)
   hear(st, {})
+  st.show_notes = true
   return { { "disp", "mode", { R.MODES[v][1] } }, R.save(st) }
 end
 
@@ -1055,6 +1093,74 @@ function R.phone(st)
     a[#a + 1] = st[k]
   end
   return a
+end
+
+-- What the phone's melody grid shows: the loop's length, the tonic, the mode's notes, each step's note (0 a
+-- rest, -1 not rolled), and each step's flag plus 4 if it is pinned.
+function R.phone_notes(st)
+  local a = { st.loop, st.tonic }
+  for d = 1, 7 do a[#a + 1] = st.scale[d] end
+  for i = 1, R.STEPS do a[#a + 1] = st.note[i] end
+  for i = 1, R.STEPS do a[#a + 1] = st.flag[i] + 4 * st.pin[i] end
+  return a
+end
+
+-- Hand edits on the melody grid. A step edited is pinned: drift and roll leave it until pins are cleared
+-- (Brendan, 2026-11-05).
+local function step_at(atoms, k)
+  local i = math.floor(num(atoms[k]))
+  if i < 1 or i > R.STEPS then return nil end
+  return i
+end
+
+-- note-set <step> <note>: that step is this note.
+local function note_set(st, atoms)
+  local i, n = step_at(atoms, 1), math.floor(num(atoms[2]))
+  if not i then return { R.fail("bad-step") } end
+  st.note[i], st.disp[i], st.pin[i] = n, 0, 1
+  if st.vel[i] == 0 then st.vel[i], st.gate[i] = 90, 100 end
+  if st.flag[i] == R.BREATH then st.flag[i] = R.NORMAL end
+  st.show_notes = true
+  return { R.save(st) }
+end
+
+-- note-move <from> <to> <note>: a note dragged to another step, its velocity, length and whether it is an
+-- arrival going with it. The step it left is free to be rolled again as a rest.
+local function note_move(st, atoms)
+  local a, b, n = step_at(atoms, 1), step_at(atoms, 2), math.floor(num(atoms[3]))
+  if not a or not b then return { R.fail("bad-step") } end
+  st.note[b], st.vel[b], st.gate[b], st.flag[b] = n, st.vel[a], st.gate[a], st.flag[a]
+  st.disp[b], st.pin[b] = 0, 1
+  if st.vel[b] == 0 then st.vel[b], st.gate[b] = 90, 100 end
+  if a ~= b then
+    st.note[a], st.vel[a], st.gate[a], st.flag[a], st.disp[a], st.pin[a] = R.REST, 0, 0, R.NORMAL, 0, 0
+  end
+  st.show_notes = true
+  return { R.save(st) }
+end
+
+-- note-rest <step>: a note tapped away. The rest is pinned too, so nothing fills it.
+local function note_rest(st, atoms)
+  local i = step_at(atoms, 1)
+  if not i then return { R.fail("bad-step") } end
+  st.note[i], st.vel[i], st.gate[i], st.disp[i], st.pin[i] = R.REST, 0, 0, 0, 1
+  st.show_notes = true
+  return { R.save(st) }
+end
+
+-- note-hear <note> <1 or 0>: a note under a finger, on the melody's voice.
+local function note_hear(st, atoms)
+  local n, down = math.floor(num(atoms[1])), num(atoms[2])
+  local to = st["voice-m"] >= R.FIRST_PD and R.MONO_M or st["voice-m"]
+  return { { "play", "list", { to, n, down > 0 and 90 or 0, 0 } } }
+end
+
+-- pins-clear, a press: every step is free again.
+local function pins_clear(st, atoms)
+  if num(atoms[1]) == 0 then return {} end
+  for i = 1, R.STEPS do st.pin[i] = 0 end
+  st.show_notes = true
+  return { R.save(st) }
 end
 
 -- Keys mean nothing here yet: playing a chord into a slot comes with hand edits.
@@ -1141,7 +1247,8 @@ local function roll_melody(st, atoms)
     if st.pin[i] == 0 then st.note[i], st.disp[i] = R.UNROLLED, 0 end
   end
   plan_melody(st)
-  st.dirty = true
+  queue_melody(st)
+  st.dirty, st.show_notes = true, true
   return { { "disp", "roll", { "melody" } } }
 end
 
@@ -1186,6 +1293,11 @@ R.inputs = {
   move = move,
   last = set_last,
   ["roll-rhythm"] = roll_rhythm_pad,
+  ["note-set"] = note_set,
+  ["note-move"] = note_move,
+  ["note-rest"] = note_rest,
+  ["note-hear"] = note_hear,
+  ["pins-clear"] = pins_clear,
   style = flip_style,
   bass = flip_bass,
   ["roll-melody"] = roll_melody,
@@ -1215,15 +1327,16 @@ local function stop(st)
   change_to(st, {}, out)
   start(st)
   st.running = false
-  out[#out + 1] = { "here", "here", { -1 } }
+  out[#out + 1] = { "here", "here", { -1, -1 } }
   return out
 end
 
 -- At load the first chords are rolled, so the phone has them to show, without marking the song changed.
 local function boot(st)
   queue_empty(st)
-  st.quiet = true
   plan_melody(st)
+  queue_melody(st)
+  st.quiet, st.dirty, st.show_notes = true, false, true
   return waves(st, {})
 end
 

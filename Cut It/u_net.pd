@@ -304,7 +304,7 @@
 #X obj 4000 3820 s \$0-ack;
 #X text 4000 4000 synth: whatever follows it goes to c_synth through outlet 2 \, as drums goes to c_steps \, and c_synth refuses a synth it does not know as bad-synth. fm and strings are acknowledged after they go. The phone lights the chosen one from /cutit/synth \, not from the ack \, as a drum pad is lit by the state., f 40;
 #X obj 4800 4300 inlet;
-#X obj 4800 4360 route synth velocity melody here;
+#X obj 4800 4360 route synth velocity melody here notes;
 #X obj 4800 4420 t b a;
 #X obj 4800 4480 list append;
 #X obj 4800 4540 oscformat cutit synth;
@@ -485,3 +485,14 @@
 #X obj 7500 4600 s \$0-osc;
 #X connect 170 3 247 0;
 #X connect 247 0 248 0;
+#X obj 7700 4420 t b a;
+#X obj 7700 4480 list append;
+#X obj 7700 4540 oscformat cutit notes;
+#X obj 7700 4600 s \$0-osc;
+#X obj 7900 4450 r \$0-hb-velocity;
+#X connect 170 4 249 0;
+#X connect 249 1 250 1;
+#X connect 249 0 250 0;
+#X connect 250 0 251 0;
+#X connect 251 0 252 0;
+#X connect 253 0 250 0;

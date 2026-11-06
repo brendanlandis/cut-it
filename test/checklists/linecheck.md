@@ -44,7 +44,7 @@ done, tap Setup again.
   - **Need:** The Streichfett on; the mixer's channels 5 and 6 up.
   - **Do:** Tap STRINGS on this page, then play a few keys on the nanoKEY.
   - **Pass if:** STRINGS lights on this page. The PA plays the Streichfett for each key, and not the Volca.
-  - **Note:** The choice stays where this step leaves it, through the set, until FM or STRINGS is chosen again, here, on the phone's synths screen or on the Launchpad's page 3 ([synths](../../ref/module/synths.md)).
+  - **Note:** The choice stays where this step leaves it, through the set, until FM or STRINGS is chosen again, here, on the phone's keyboard tab or on the Launchpad's page 3 ([synths](../../ref/module/synths.md)).
 
 - [ ] **7. PLAY and STOP**
   - **Do:** Press PLAY on the nanoKONTROL. After a bar, press STOP.

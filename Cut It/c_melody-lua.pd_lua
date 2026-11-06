@@ -8,7 +8,8 @@
 -- put. outlet 3: err. outlet 4: a bang on init, the proof the Lua loaded. outlet 5: a control's row.
 -- outlet 6: melody <what the phone shows>, to u_net. outlet 7: <3 or 4> <wave, or -1 for off>, to the
 -- Pd voices, c_mono: 3 the melody's, 4 the chords' four. outlet 8: a bang to start the transport.
--- outlet 9: here <step>, the loop's place, to u_net.
+-- outlet 9: here <step> <melody step>, the loops' places, to u_net. outlet 10: notes <what the melody grid
+-- shows>, to u_net, at most every NOTES_EVERY ms.
 
 local MelodyLua = pd.Class:new():register("c_melody-lua")
 local Clock = pd.Clock
@@ -25,9 +26,11 @@ F.carry(MelodyLua, R, OUTLET, 2, 4)
 -- drifting writes nothing to the card.
 local SAVE_EVERY = 100
 local ROLL_EVERY = 12
+-- The melody grid is 73 numbers, and at a low lock changes on every step, so it goes at most this often.
+local NOTES_EVERY = 250
 
 function MelodyLua:initialize()
-  self.inlets, self.outlets = 2, 9
+  self.inlets, self.outlets = 2, 10
   self.state = R.new()
   return true
 end
@@ -35,11 +38,13 @@ end
 function MelodyLua:postinitialize()
   self.save_clock = Clock:new():register(self, "save_due")
   self.roll_clock = Clock:new():register(self, "roll_due")
+  self.notes_clock = Clock:new():register(self, "notes_due")
 end
 
 function MelodyLua:finalize()
   if self.save_clock then self.save_clock:destruct() end
   if self.roll_clock then self.roll_clock:destruct() end
+  if self.notes_clock then self.notes_clock:destruct() end
 end
 
 function MelodyLua:hold(e)
@@ -66,6 +71,13 @@ function MelodyLua:roll_due()
   self:answer("roll-next", R.roll_next, self.state)
 end
 
+function MelodyLua:notes_due()
+  self.notes_waiting = false
+  self.state.show_notes = false
+  local ok, now = pcall(R.phone_notes, self.state)
+  if ok then self:outlet(10, "notes", now) end
+end
+
 function MelodyLua:save_due()
   self:save_now()
 end
@@ -74,9 +86,14 @@ end
 -- one sent.
 function MelodyLua:answered()
   -- Chords queued to roll go one at a time, so a whole new loop is no burst of work in one audio block.
-  if #self.state.to_roll > 0 and not self.rolling then
+  if (#self.state.to_roll > 0 or #self.state.to_roll_m > 0) and not self.rolling then
     self.rolling = true
     self.roll_clock:delay(ROLL_EVERY)
+  end
+  if self.state.show_notes and not self.notes_waiting then
+    self.notes_waiting = true
+    self.notes_clock:delay(self.notes_sent and NOTES_EVERY or 20)
+    self.notes_sent = true
   end
   -- Only when something it shows may have changed, not on every step.
   if not self.state.show then return end

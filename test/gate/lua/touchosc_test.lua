@@ -744,22 +744,21 @@ mode("mode-8")
 equal("page 8: the songs page, under its songs tab, a setlists tab and a name tab beside it",
       { where(), C.tabs8.children[2].tabLabel, C.tabs8.children[3].tabLabel },
       { { "p8", "songs" }, "setlists", "name" })
--- u_song's 47 atoms: the songs tab's five and six rows, then the setlists tab's nine and five.
+-- u_song's 41 atoms: the songs tab's five and six rows, then the setlists tab's eight and five.
 local function songsstate(t)
   local a = { t.count or 3, t.sel or 2, t.page or 1, t.pages or 1, t.name or "hollow bell" }
   local rows = t.rows or { { 1, "night drive", "loaded · unsaved" }, { 2, "hollow bell", "-" },
-                           { 3, "lantern", "for go" } }
+                           { 3, "lantern", "next bar" } }
   for r = 1, 6 do
     for _, v in ipairs(rows[r] or { 0, "-", "-" }) do a[#a + 1] = v end
   end
-  for _, v in ipairs(t.set or { 1, 3, "friday at the bell", 1, 2, 7, 3, "hollow bell", "go" }) do
+  for _, v in ipairs(t.set or { 1, 3, "friday at the bell", 1, 2, 7, 3, "hollow bell" }) do
     a[#a + 1] = v
   end
-  local es = t.entries or { { 1, "lantern", "silence" }, { 2, "night drive", "next-bar" },
-                            { 3, "hollow bell", "go" }, { 4, "undertow", "next-bar" },
-                            { 5, "slow names", "silence" } }
+  local es = t.entries or { { 1, "lantern" }, { 2, "night drive" }, { 3, "hollow bell" },
+                            { 4, "undertow" }, { 5, "slow names" } }
   for r = 1, 5 do
-    for _, v in ipairs(es[r] or { 0, "-", "-" }) do a[#a + 1] = v end
+    for _, v in ipairs(es[r] or { 0, "-" }) do a[#a + 1] = v end
   end
   return a
 end
@@ -770,7 +769,7 @@ equal("u_song's state: the selected song over the right column, the pager the pa
 equal("... a row each, its number, name and what it is doing, nothing shown for none",
       { L.text(w, "grow1nl"), L.text(w, "grow1l"), L.text(w, "grow1wl"), L.text(w, "grow2wl"),
         L.text(w, "grow3wl"), C.grow4.visible, C.grow4l.visible },
-      { "1", "night drive", "loaded · unsaved", "", "for go", false, false })
+      { "1", "night drive", "loaded · unsaved", "", "next bar", false, false })
 equal("⛔ the selected row is lit, by the state, and nothing goes back",
       { C.grow2.values.x, C.grow1.values.x, #w.sent }, { 1, 0, 0 })
 equal("a row tapped selects the song it shows; the selected one, nothing",
@@ -806,18 +805,11 @@ L.osc(w, "/cutit/songs", table.unpack(songsstate({})))
 equal("the setlist chosen: its name over the rows, the pager the setlist and its page",
       { L.text(w, "lcap"), L.text(w, "lpos"), L.text(w, "lsel") },
       { "friday at the bell", "set 1 / 3   page 1 / 2", "3  hollow bell" })
-equal("... each row its key, song and how it starts, in words",
-      { L.text(w, "lrow1nl"), L.text(w, "lrow1l"), L.text(w, "lrow1sl"), L.text(w, "lrow2sl"),
-        L.text(w, "lrow3sl") }, { "1", "lantern", "silence", "next bar", "go" })
-equal("⛔ the selected entry lit; the starts switch handed its go, the third, and nothing sent",
-      { C.lrow3.values.x, C.lrow1.values.x, C.lstarts.values.x, #w.sent }, { 1, 0, 2, 0 })
-check("... go's word black on its lit segment, the others white",
-      black(C.lstarts3l.textColor) and not black(C.lstarts1l.textColor),
-      T.show({ C.lstarts3l.textColor, C.lstarts1l.textColor }))
+equal("... each row its key and song", { L.text(w, "lrow1nl"), L.text(w, "lrow1l") }, { "1", "lantern" })
+equal("⛔ the selected entry lit, and nothing sent",
+      { C.lrow3.values.x, C.lrow1.values.x, #w.sent }, { 1, 0, 0 })
 equal("a row tapped selects the entry it shows", L.press(w, "lrow4"),
       { { "/cutit", "songs", "entry", 4 } })
-equal("⛔ the switch dragged to next bar sends it, once", L.drag(w, "lstarts", 1),
-      { { "/cutit", "songs", "starts", "next-bar" } })
 L.update(w, 1100)
 equal("move up, move down, new set, remove and the arrows, each its command",
       { L.press(w, "lup"), L.press(w, "ldown"), L.press(w, "lnewset"), L.press(w, "lrem"),
@@ -826,7 +818,7 @@ equal("move up, move down, new set, remove and the arrows, each its command",
         { { "/cutit", "songs", "new-set" } }, { { "/cutit", "songs", "remove" } },
         { { "/cutit", "songs", "set", -1 } }, { { "/cutit", "songs", "set", 1 } } })
 w.sent = {}
-L.osc(w, "/cutit/songs", table.unpack(songsstate({ set = { 2, 3, "set 2", 1, 1, 0, 0, "-", "-" },
+L.osc(w, "/cutit/songs", table.unpack(songsstate({ set = { 2, 3, "set 2", 1, 1, 0, 0, "-" },
                                                     entries = {} })))
 equal("⛔ an empty setlist: no rows, no entry, a one-page pager, and nothing sent",
       { C.lrow1.visible, L.text(w, "lsel"), L.text(w, "lpos"), #w.sent },

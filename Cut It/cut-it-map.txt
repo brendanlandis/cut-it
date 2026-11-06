@@ -55,6 +55,8 @@ mode-3 knob-4 melody home
 mode-3 knob-5 melody span
 mode-3 knob-6 melody chords
 mode-3 knob-9 melody range
+mode-3 slider-9 melody arrive
+mode-3 knob-8 melody octave
 mode-3 pad-81 melody roll-melody
 mode-3 pad-82 melody roll-chords
 mode-3 pad-83 melody on-h

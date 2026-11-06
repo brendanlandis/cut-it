@@ -235,13 +235,15 @@ end
 
 function R.new(rand)
   local st = { rand = rand or math.random, pos = 0, hist = {}, running = false,
-               note = {}, vel = {}, gate = {}, pin = {},
+               note = {}, vel = {}, gate = {}, pin = {}, target = {}, flag = {}, disp = {},
                slot = {}, slot_start = {}, slot_pin = {}, slot_deg = {}, slot_shape = {},
                last = 16, bar = 0, ch_pos = 0, sounding = {}, pressed = {}, where = {}, to_roll = {}, dirty = false }
   for k, v in pairs(R.BOOT) do st[k] = v end
   st.style, st["v-main"], st["v-color"], st.pedal, st.bass = 1, 1, 4, 0, 0
+  st.arrive, st.octave = 75, 25
   for i = 1, R.STEPS do
     st.note[i], st.vel[i], st.gate[i], st.pin[i] = R.UNROLLED, 0, 0, 0
+    st.target[i], st.flag[i], st.disp[i] = R.MIDDLE + 12, 0, 0
   end
   for i = 1, R.SLOTS do
     st.slot[i], st.slot_start[i], st.slot_pin[i], st.slot_deg[i], st.slot_shape[i] = {}, -1, 0, 0, 0
@@ -630,11 +632,70 @@ end
 
 -- ---------------------------------------------------------------------- the melody
 
--- The sounding note before step i in the loop, and the step it is on; nil if there is none.
+-- A melody has shapes: it goes up and down and arrives somewhere (Brendan, 2026-11-06). So a loop is planned
+-- before its notes are rolled: it is cut into phrases, each with a shape, whose height at each step says
+-- about where the line should be, and each phrase ends on an arrival, a long note, on a tension if arrive
+-- is up, then a breath. The dice choose the actual notes around that plan, so a loop drifting under a low
+-- lock keeps its shape while its notes change.
+local CONTOURS = {
+  arch = function(x) return math.sin(x * math.pi) end,
+  rise = function(x) return x end,
+  fall = function(x) return 1 - x end,
+  valley = function(x) return 1 - math.sin(x * math.pi) end,
+  late = function(x) return x < 0.7 and x / 0.7 or (1 - x) / 0.3 end,
+}
+local FIRST_SHAPES = { "arch", "rise", "fall", "late", "valley", "rise", "late" }
+-- What answers a shape: a phrase that climbed tends to come back down, and so on.
+local ANSWERS = { rise = { "fall", "arch" }, fall = { "rise", "valley" }, arch = { "fall", "rise" },
+                  valley = { "rise", "arch" }, late = { "fall", "valley" } }
+R.NORMAL, R.ARRIVAL, R.BREATH = 0, 1, 2
+
+local function plan_melody(st)
+  local rand = st.rand
+  local n = st.loop
+  local count = n >= 24 and 3 or n >= 10 and 2 or 1
+  -- Where each phrase ends: about evenly along, on an even step, a little off so they aren't always so.
+  local ends = {}
+  for p = 1, count - 1 do
+    local at = math.floor(n * p / count + (rand() * 4 - 2) + 0.5)
+    at = at - at % 2
+    ends[p] = math.max(2, math.min(n - 2, at))
+  end
+  ends[count] = n
+  local amp = st.range * (0.3 + 0.7 * st.leap / 100)
+  local shape = FIRST_SHAPES[math.floor(rand() * #FIRST_SHAPES) + 1]
+  local from = 1
+  for p = 1, count do
+    local last = ends[p]
+    local len = math.max(1, last - from + 1)
+    -- The arrival, on a strong step if one is near, and after it a breath of up to three steps.
+    local breath = math.min(len - 1, math.floor(rand() * 4))
+    local arrive = last - breath
+    if arrive > from and (arrive - 1) % 2 == 1 then arrive = arrive - 1 end
+    local curve = CONTOURS[shape]
+    local top = arrive - from
+    for i = from, last do
+      local x = top > 0 and math.min(1, (i - from) / top) or 1
+      st.target[i] = math.floor(st.center + (curve(x) - 0.5) * amp + 0.5)
+      st.flag[i] = i == arrive and R.ARRIVAL or i > arrive and R.BREATH or R.NORMAL
+    end
+    local answers = ANSWERS[shape]
+    shape = answers[math.floor(rand() * #answers) + 1]
+    from = last + 1
+  end
+  for i = n + 1, R.STEPS do st.target[i], st.flag[i] = st.center, R.NORMAL end
+end
+
+-- The line a note is on: what it would be without its octave displacement.
+local function line_of(st, j)
+  return st.note[j] - st.disp[j]
+end
+
+-- The note before step i on the line, and the step it is on; nil if there is none.
 local function before(st, i)
   for back = 1, st.loop - 1 do
     local j = (i - back - 1) % st.loop + 1
-    if st.note[j] > 0 then return st.note[j], j end
+    if st.note[j] > 0 then return line_of(st, j), j end
   end
   return nil
 end
@@ -645,11 +706,13 @@ local function phrase_back(st, i)
   return (i - back - 1) % st.loop + 1
 end
 
--- Whether step i sounds. notes says how many of the loop's steps do, and a roll leans toward whichever
--- brings the loop back to it. A step after a note is likelier to sound than one after a rest, so rests
--- gather into breaths, and strong steps are likelier. echo may copy a phrase back instead, unless the
--- loop is well off what notes asks.
+-- Whether step i sounds. An arrival does, and a breath doesn't. Else notes says how many of the loop's steps
+-- do, and a roll leans toward whichever brings the loop back to it. A step after a note is likelier to
+-- sound than one after a rest, and strong steps are likelier. echo may copy a phrase back instead, unless
+-- the loop is well off what notes asks.
 local function sounds(st, i)
+  if st.flag[i] == R.ARRIVAL then return true end
+  if st.flag[i] == R.BREATH then return false end
   local d = st.notes / 100
   local rolled, sounding = 0, 0
   for j = 1, st.loop do
@@ -660,7 +723,8 @@ local function sounds(st, i)
   end
   local short = rolled >= 4 and d - sounding / rolled or 0
   local j = phrase_back(st, i)
-  if math.abs(short) < 0.15 and st.rand() < st.echo / 100 and st.note[j] ~= R.UNROLLED then
+  if math.abs(short) < 0.15 and st.rand() < st.echo / 100 and st.note[j] ~= R.UNROLLED
+     and st.flag[j] == R.NORMAL then
     return st.note[j] > 0
   end
   local last = st.note[(i - 2) % st.loop + 1]
@@ -668,47 +732,60 @@ local function sounds(st, i)
   return st.rand() < p * (0.8 + 0.76 * R.pulse(i)) + short
 end
 
--- The note of step i, by weighted dice over the range.
+-- How each pitch class serves as an arrival: arrive up, a tension, the mode's notes off the chord, and best
+-- a whole step or more above a chord tone; arrive down, the chord's own notes.
+local function arrival_weights(st)
+  local chord = {}
+  local notes = #st.sounding > 0 and st.sounding or st.tonic_pcs
+  for _, t in ipairs(notes) do chord[t % 12] = true end
+  local want = st.arrive / 100
+  local out = {}
+  for pc = 0, 11 do
+    if chord[pc] then
+      out[pc] = 1 - want + 0.02
+    elseif st.in_scale[pc] then
+      out[pc] = (0.05 + want) * (chord[(pc - 1) % 12] and 0.5 or 1)
+    else
+      out[pc] = 0
+    end
+  end
+  return out
+end
+
+-- The note of step i on the line, by weighted dice over the range: near the plan's height for this step,
+-- near the note before, sitting with the chord and mode; at an arrival, the arrival's own weights in place
+-- of the fit.
 local function pick(st, i)
   local rand = st.rand
-  local prev, at = before(st, i)
-  prev = prev or st.center
-  local prev2 = at and before(st, at) or prev
-  local moved = prev - prev2
-  -- A leap wants filling, back the other way; a small move wants to carry on.
-  local go, go_by = 0, 1
-  if moved >= 5 then go, go_by = -1, 3
-  elseif moved <= -5 then go, go_by = 1, 3
-  elseif moved > 0 then go, go_by = 1, 1.4
-  elseif moved < 0 then go, go_by = -1, 1.4 end
+  local prev = before(st, i) or st.target[i]
+  local arriving = st.flag[i] == R.ARRIVAL
   -- What the same place did a phrase back, from here.
-  local target
-  if rand() < st.echo / 100 then
+  local echoed
+  if not arriving and rand() < st.echo / 100 then
     local j = phrase_back(st, i)
     local was = before(st, j)
-    if st.note[j] > 0 and was then target = prev + st.note[j] - was end
+    if st.note[j] > 0 and was then echoed = prev + line_of(st, j) - was end
   end
-  -- fit at 25 doesn't care, below it avoids the chord, above it leans in; strong steps lean harder.
   local k = st.fit / 100 * 8 - 2 + (R.pulse(i) - 0.4) * 2
   local width = 1 + (st.leap / 100) ^ 1.5 * 12
-  local half = st.range / 2
+  local target = st.target[i]
+  local toward = arriving and 5 or 3
   local lo = math.max(12, st.center - st.range // 2)
   local hi = math.min(108, st.center + st.range // 2)
-  local heard = st.heard
+  local heard = arriving and arrival_weights(st) or st.heard
   local weights, total = {}, 0
   for c = lo, hi do
     local d = c - prev
-    local w = heard[c % 12] ^ k * math.exp(-math.abs(d) / width)
+    local w = arriving and heard[c % 12] or heard[c % 12] ^ k
+    w = w * math.exp(-math.abs(d) / width) * math.exp(-math.abs(c - target) / toward)
     if d == 0 then w = w * 0.2 end
-    if go ~= 0 and d * go > 0 then w = w * go_by end
-    local off = (c - st.center) / half
-    w = w * math.exp(-off * off)
-    if target then
-      if c == target then w = w * 8 elseif math.abs(c - target) == 1 then w = w * 2 end
+    if echoed then
+      if c == echoed then w = w * 8 elseif math.abs(c - echoed) == 1 then w = w * 2 end
     end
     weights[c - lo + 1] = w
     total = total + w
   end
+  if total <= 0 then return target end
   local roll = rand() * total
   for c = lo, hi do
     roll = roll - weights[c - lo + 1]
@@ -717,20 +794,31 @@ local function pick(st, i)
   return hi
 end
 
--- A step rolled: a rest, or a note with its velocity and length, whole numbers all. Higher notes
--- and stronger steps play harder. Length is mostly short with a few long.
+-- A step rolled: a rest, or a note with its velocity and length, whole numbers all. Octave displacement: now
+-- and then a note jumps an octave off the line, and the line carries on where it was, so the shape stays.
+-- An arrival is likelier to, and plays harder and long, into the breath.
 local function roll(st, i)
-  st.dirty = true
+  st.dirty, st.show = true, true
+  st.disp[i] = 0
   if not sounds(st, i) then
     st.note[i], st.vel[i], st.gate[i] = R.REST, 0, 0
     return
   end
   local n = pick(st, i)
-  local v = 70 + 40 * R.pulse(i) + 16 * (n - st.center) / (st.range / 2) + (st.rand() * 24 - 12)
+  local arriving = st.flag[i] == R.ARRIVAL
+  if st.rand() < st.octave / 100 * (arriving and 0.6 or 0.3) then
+    local by = st.rand() < 0.5 and 12 or -12
+    if n + by > 96 or n + by < 24 then by = -by end
+    st.disp[i] = by
+    n = n + by
+  end
+  local half = st.range / 2
+  local v = 70 + 40 * R.pulse(i) + 16 * (n - st.center) / half + (st.rand() * 24 - 12)
+  if arriving then v = v + 14 end
   local r = st.rand()
   st.note[i] = n
   st.vel[i] = math.floor(math.max(20, math.min(127, v)) + 0.5)
-  st.gate[i] = math.floor((0.25 + (st.length / 100) ^ 1.5 * r * r * 8) * 100 + 0.5)
+  st.gate[i] = arriving and 800 or math.floor((0.25 + (st.length / 100) ^ 1.5 * r * r * 8) * 100 + 0.5)
 end
 
 -- How many steps until the next sounding note, so a note lets go before the next one lands.
@@ -799,18 +887,23 @@ function R.save(st)
     a[#a + 1] = st.slot_shape[i]
   end
   for _, k in ipairs(R.LATER) do a[#a + 1] = st[k] end
+  for i = 1, R.STEPS do
+    a[#a + 1] = st.target[i]
+    a[#a + 1] = st.flag[i]
+    a[#a + 1] = st.disp[i]
+  end
   st.dirty = false
   return { "save", "melody", a }
 end
 
 -- Added after the first lines were saved: a line without them still loads, with these as they stand.
-R.LATER = { "style", "v-main", "v-color", "pedal", "bass" }
+R.LATER = { "style", "v-main", "v-color", "pedal", "bass", "arrive", "octave" }
 local LINE = #R.ORDER + 4 * R.STEPS + (1 + R.MAX_NOTES + 4) * R.SLOTS
 
 -- A section's melody and chords, on its step 1: both loops start again from there. A line that isn't
 -- this shape keeps what is playing, and puts that back.
 function R.restore(st, atoms)
-  if #atoms < LINE or #atoms > LINE + #R.LATER then return { R.save(st) } end
+  if #atoms < LINE or #atoms > LINE + #R.LATER + 3 * R.STEPS then return { R.save(st) } end
   local p = 0
   local function take()
     p = p + 1
@@ -832,6 +925,11 @@ function R.restore(st, atoms)
   for _, k in ipairs(R.LATER) do
     if p < #atoms then st[k] = take() end
   end
+  if p < #atoms then
+    for i = 1, R.STEPS do st.target[i], st.flag[i], st.disp[i] = take(), take(), take() end
+  else
+    st.plan_due = true
+  end
   st.pos, st.ch_pos, st.bar, st.dirty = 0, 0, 0, false
   tune(st)
   rescale(st)
@@ -839,6 +937,10 @@ function R.restore(st, atoms)
   queue_empty(st)
   st.quiet = #st.to_roll > 0
   if #st.sounding == 0 then hear(st, {}) end
+  if st.plan_due then
+    st.plan_due = false
+    plan_melody(st)
+  end
   return waves(st, {})
 end
 
@@ -852,6 +954,7 @@ local function assign(st, name, v)
     if name == "chords" then queue_empty(st) end
     if name == "span" then rescale(st) end
     if name == "tension" then roll_vocab(st) end
+    if name == "leap" or name == "range" or name == "loop" then plan_melody(st) end
     out[2] = R.save(st)
   end
   return out
@@ -922,7 +1025,7 @@ local function set_mode(st, v)
 end
 
 -- A control from the phone: set <name> <value>, as it stands.
-local KNOWN = {}
+local KNOWN = { arrive = true, octave = true }
 for _, name in ipairs(R.ORDER) do KNOWN[name] = true end
 
 local function set(st, atoms)
@@ -948,7 +1051,7 @@ function R.phone(st)
     a[#a + 1] = i <= st.chords and st.slot_start[i] or -1
   end
   for _, k in ipairs({ "voice-h", "voice-m", "lock", "fit", "leap", "notes", "length", "echo", "loop",
-                       "range", "style", "bass" }) do
+                       "range", "style", "bass", "arrive", "octave" }) do
     a[#a + 1] = st[k]
   end
   return a
@@ -1035,8 +1138,9 @@ end
 local function roll_melody(st, atoms)
   if num(atoms[1]) == 0 then return {} end
   for i = 1, R.STEPS do
-    if st.pin[i] == 0 then st.note[i] = R.UNROLLED end
+    if st.pin[i] == 0 then st.note[i], st.disp[i] = R.UNROLLED, 0 end
   end
+  plan_melody(st)
   st.dirty = true
   return { { "disp", "roll", { "melody" } } }
 end
@@ -1089,6 +1193,7 @@ R.inputs = {
   ["on-h"] = toggle("on-h"),
   ["on-m"] = toggle("on-m"),
 }
+R.inputs.arrive, R.inputs.octave = control("arrive"), control("octave")
 for _, name in ipairs(R.ORDER) do
   if not R.inputs[name] and name ~= "voice-h" and name ~= "voice-m" and name ~= "key"
      and name ~= "mode" and name ~= "total" then
@@ -1118,6 +1223,7 @@ end
 local function boot(st)
   queue_empty(st)
   st.quiet = true
+  plan_melody(st)
   return waves(st, {})
 end
 

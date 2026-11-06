@@ -398,7 +398,7 @@ def node(kind, name, frame, children=(), text=None, x=0, **over):
 VALUES = {"tempo", "play", "link", "dlink", "slink", "pending", "num", "den", "last", "drunkv",
           "drivev", "tonev", "distv", "feedbackv", "delayv", "sendv", "sizev", "dampingv",
           "swingv", "clockv", "csmoothv", "ctensionv", "chomev", "ccount", "cspan", "rlink", "mlockv", "mfitv",
-          "mleapv", "mnotesv", "mlengthv", "mechov", "mloop", "mrange", "hlink", "mlink", "cpos", "tmode", "seclink", "secpos", "seclen", "snfieldl", "glink", "llink",
+          "mleapv", "mnotesv", "mlengthv", "mechov", "marrivev", "moctavev", "mloop", "mrange", "hlink", "mlink", "cpos", "tmode", "seclink", "secpos", "seclen", "snfieldl", "glink", "llink",
           "gpos", "lpos", "gnfieldl"}
 MONO = 1
 
@@ -972,7 +972,8 @@ def fx_groups():
 CHORD_KNOBS = (("clock", "lock", "chord-lock"), ("csmooth", "smooth", "smooth"),
                ("ctension", "tension", "tension"), ("chome", "home", "home"))
 MELODY_KNOBS = (("mlock", "lock", "lock"), ("mfit", "chord fit", "fit"), ("mleap", "leap", "leap"),
-                ("mnotes", "notes", "notes"), ("mlength", "length", "length"), ("mecho", "echo", "echo"))
+                ("mnotes", "notes", "notes"), ("mlength", "length", "length"), ("mecho", "echo", "echo"),
+                ("marrive", "arrive", "arrive"), ("moctave", "octave", "octave"))
 CHORD_SLOTS = 8                     # c_melody.lua's R.SLOTS
 RHYTHM_H = 11 * G                   # the rhythm grid's height
 # c_melody.lua's R.VOICES, R.KEYS and R.MODES, as the radios say them.
@@ -1137,9 +1138,9 @@ def melody():
     for i, (name, text, cmd) in enumerate(MELODY_KNOBS[:4]):
         k += gen_knob(name, a + i * 6 * G, Y0, text, cmd)
     for i, (name, text, cmd) in enumerate(MELODY_KNOBS[4:]):
-        k += gen_knob(name, a + i * 6 * G, Y0 + 6 * G, text, cmd)
-    k += boxed("mloop", a + 12 * G, Y0 + 6 * G, 5 * G, "loop", 1, 32, "loop", 9, "16")
-    k += boxed("mrange", a + 18 * G, Y0 + 6 * G, 5 * G, "range", 5, 48, "range", 9, "24")
+        k += gen_knob(name, a + i * 6 * G, Y0 + 5 * G, text, cmd)
+    k += boxed("mloop", a, Y0 + 10 * G, 5 * G, "loop", 1, 32, "loop", 9, "16")
+    k += boxed("mrange", a + 6 * G, Y0 + 10 * G, 5 * G, "range", 5, 48, "range", 9, "24")
     return k
 
 
@@ -1815,7 +1816,9 @@ end
 -- the key and mode, the grid's length and the last step, each slot's name, spelling, numeral and start,
 -- the slot sounding lit and those past how many hidden; then the two voices and the melody's controls.
 local function chords(a)
-  if #a < 57 then return end
+  if #a < 59 then return end
+  hand('marrive', math.floor(arg(a, 58)))
+  hand('moctave', math.floor(arg(a, 59)))
   text('cstylel', arg(a, 56) == 2 and 'functional' or 'modal')
   local bass = arg(a, 57) == 1
   light('cbass', bass and 1 or 0)

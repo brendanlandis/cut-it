@@ -134,4 +134,75 @@ equal("on a Pd voice each note of a chord has a voice of its own, and lets go on
       { { 4, 45, 0 }, { 5, 57, 0 }, { 6, 60, 0 }, { 7, 64, 0 },
         { 4, 47, R.CHORD_VELOCITY_PD }, { 5, 59, R.CHORD_VELOCITY_PD } })
 
+do
+  -- The melody grid's hand edits: pinned, so a lock at 0 and a roll leave them, until pins are cleared.
+  local st = R.new(dice(9))
+  R.internal.init(st)
+  while #st.to_roll + #st.to_roll_m > 0 do R.roll_next(st) end
+  check("the whole melody is rolled ahead of playing, a note or a rest on every step",
+        (function()
+          for i = 1, st.loop do if st.note[i] == R.UNROLLED then return false end end
+          return true
+        end)())
+  R.inputs["note-set"](st, { 3, 70 })
+  R.inputs["note-move"](st, { 3, 5, 72 })
+  R.inputs["note-rest"](st, { 7 })
+  equal("a note moved leaves its step free, and lands pinned; one tapped away is a pinned rest",
+        { st.note[3], st.pin[3], st.note[5], st.pin[5], st.note[7], st.pin[7] }, { 0, 0, 72, 1, 0, 1 })
+  st["on-m"], st.notes, st.lock = 1, 100, 0
+  R.internal.start(st)
+  for c = 1, 32 do R.step(st, { c, 125, (c - 1) % st.last + 1 }) end
+  R.inputs["roll-melody"](st, { 1 })
+  equal("pinned steps stay through drift and a roll", { st.note[5], st.note[7] }, { 72, 0 })
+  R.inputs["pins-clear"](st, { 1 })
+  R.inputs["roll-melody"](st, { 1 })
+  equal("cleared, a roll takes them", st.note[5], R.UNROLLED)
+  equal("what the grid is sent: the loop, the tonic, seven notes of the mode, then each step's note and code",
+        #R.phone_notes(st), 2 + 7 + 2 * R.STEPS)
+end
+
+do
+  -- A melody has shapes and arrives somewhere: each phrase's arrival sounds, and its breath doesn't.
+  local st = R.new(dice(11))
+  R.internal.init(st)
+  while #st.to_roll + #st.to_roll_m > 0 do R.roll_next(st) end
+  local ok, arrivals = true, 0
+  for i = 1, st.loop do
+    if st.flag[i] == R.ARRIVAL then
+      arrivals = arrivals + 1
+      if st.note[i] <= 0 then ok = false end
+    elseif st.flag[i] == R.BREATH and st.note[i] > 0 then
+      ok = false
+    end
+  end
+  check("every arrival sounds and every breath is silent", ok and arrivals >= 1, arrivals)
+  -- Arrive all the way up: an arrival is a tension on the chord it will meet, not one of that chord's notes.
+  st.arrive = 100
+  local on_chord, seen = 0, 0
+  for _ = 1, 30 do
+    R.inputs["roll-melody"](st, { 1 })
+    while #st.to_roll_m > 0 do R.roll_next(st) end
+    for i = 1, st.loop do
+      if st.flag[i] == R.ARRIVAL and st.note[i] > 0 then
+        local best, at = nil, -1
+        for k = 1, st.chords do
+          local s = st.slot_start[k]
+          if s >= 0 and s <= i - 1 and s > at then best, at = k, s end
+        end
+        if not best then
+          for k = 1, st.chords do
+            if st.slot_start[k] > at then best, at = k, st.slot_start[k] end
+          end
+        end
+        seen = seen + 1
+        for _, n in ipairs(st.slot[best]) do
+          if n % 12 == st.note[i] % 12 then on_chord = on_chord + 1 end
+        end
+      end
+    end
+  end
+  check("arrive up: arrivals land off the chord they meet", seen > 20 and on_chord * 10 < seen,
+        on_chord .. " of " .. seen)
+end
+
 os.exit(T.report() == 0)

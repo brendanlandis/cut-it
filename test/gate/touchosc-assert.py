@@ -41,7 +41,7 @@ TABS = ["arrangement", "drums", "synths", "page 4", "page 5", "page 6", "section
 # rhythm and melody and the nanoKEY's keyboard, the sections page's two, its sections and the name
 # a section is given, and the songs page's three, its songs, its setlists and the name either is
 # given (Brendan, 2026-11-05).
-OWN_TABS = {"synths": ["harmony", "rhythm", "melody", "keyboard"],
+OWN_TABS = {"synths": ["harmony", "rhythm", "melody", "notes", "keyboard"],
             "sections": ["sections", "name"], "songs": ["songs", "setlists", "name"]}
 
 spec = importlib.util.spec_from_file_location("build_touchosc", BUILD)
@@ -383,7 +383,7 @@ def main():
         if [r[7] for r in pg] != OWN_TABS.get(tab, [tab]):
             bad.append("%s's tabs are %s" % (p, [r[7] for r in pg]))
     A.check("⛔ each holds a pager of its own, its tabs shown: one tab, named for the page "
-            "(Brendan, 2026-11-04), but the synths page's harmony, rhythm, melody and keyboard, the "
+            "(Brendan, 2026-11-04), but the synths page's harmony, rhythm, melody, notes and keyboard, the "
             "sections page's sections and name and the songs page's songs, setlists and name "
             "(2026-11-05)",
             not bad, "; ".join(bad))

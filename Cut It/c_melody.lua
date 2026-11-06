@@ -639,10 +639,12 @@ function R.roll_next(st)
       if not i then break end
       if st.note[i] == R.UNROLLED then
         local c = active_at(st, (i - 1) % math.max(1, st.total))
-        hear(st, c and st.slot[c] or {})
+        st.meeting = c and #st.slot[c] > 0 and st.slot[c] or nil
+        hear(st, st.meeting or {})
         R.roll_step(st, i)
       end
     end
+    st.meeting = nil
     hear(st, st.sounding)
     if st.quiet then st.dirty = was end
     if #st.to_roll_m == 0 then st.quiet = false end
@@ -764,7 +766,7 @@ end
 -- a whole step or more above a chord tone; arrive down, the chord's own notes.
 local function arrival_weights(st)
   local chord = {}
-  local notes = #st.sounding > 0 and st.sounding or st.tonic_pcs
+  local notes = st.meeting or (#st.sounding > 0 and st.sounding) or st.tonic_pcs
   for _, t in ipairs(notes) do chord[t % 12] = true end
   local want = st.arrive / 100
   local out = {}

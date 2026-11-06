@@ -316,6 +316,26 @@ R.rename(st, { "Bridge" })
 equal("the name tab's done renames the selected section", names(st), { "a", "bridge" })
 equal("... a name with nothing in it changes nothing", { R.rename(st, { "?" }), names(st)[2] },
       { {}, "bridge" })
+do
+  -- Save as new: what's playing becomes a section of its own, and takes over; the section it was goes back
+  -- to what it holds as saved. A section never saved keeps what it has.
+  local st = song({ "verse" })
+  R.put(st, { "melody", 1 })
+  R.save(st)
+  R.put(st, { "melody", 5 })
+  R.phone_cmds.saveas(st)
+  local a, b = st.song.sections[1], st.song.sections[2]
+  equal("save as new: the new one holds what was playing, the old one what it had saved, and the new one "
+        .. "plays, selected", { a.parts.melody[1], b.parts.melody[1], st.playing == b, st.selected == b },
+        { 1, 5, true, true })
+  local fresh = song({ "verse" })
+  R.add(fresh)
+  fresh.playing = fresh.song.sections[2]
+  R.put(fresh, { "melody", 5 })
+  R.phone_cmds.saveas(fresh)
+  equal("... and one never saved keeps what it has", fresh.song.sections[2].parts.melody[1], 5)
+end
+
 equal("a copy's name fits in 20, the number kept", R.copy_name({ sections = {} },
       "abcdefghijklmnopqrst"), "abcdefghijklmnopqr 2")
 equal("a copy of 2 is 2 2", R.copy_name({ sections = {} }, "2"), "2 2")

@@ -82,6 +82,14 @@ The beat row stays on row 1, as on every page but the drums. What each cell pain
 
 ### The generator
 
+**A melody has shapes (Brendan, 2026-11-06).** Before its notes, a loop is planned: phrases, each with a
+shape and a height for each step, and an arrival that ends each one, long, then a breath. The dice choose
+notes around that plan, so a loop drifting under a low lock keeps its shape. **arrive** chooses what an arrival
+lands on, up a tension on the chord it will meet, down that chord's own notes. **octave** is how often a note
+jumps an octave off the line, which carries on where it was. The loop rolls ahead, a few steps at a time,
+each hearing the chord it will meet first time round. Hand edits on the phone's notes tab are pinned, through
+drift and roll, until cleared.
+
 **`c_melody` rolls a loop of up to 8 chords and a loop of up to 32 notes in a key and mode, by
 weighted dice, and a lock on each keeps or drifts what it rolled** (Brendan, 2026-11-05). `c_steps`'
 clock drives it, each part plays on its own voice, and page 3's tabs on the phone and rows in the

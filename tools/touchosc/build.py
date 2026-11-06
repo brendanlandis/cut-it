@@ -1174,18 +1174,18 @@ def notes():
         k.append(node("BUTTON", "nroot%d" % (i + 1), (x, Y0, w, G), color=rgb(52, 200, 190, 0.18), x=1,
                       interactive=False, outline=False))
     for i in range(NOTE_ROWS):
-        k.append(label("nlab%d" % (i + 1), (X0, Y0, NOTES_GUTTER - 2, G), "", 11, GREY, align=1))
+        k.append(label("nlab%d" % (i + 1), (X0, Y0, NOTES_GUTTER, G), "", 11, GREY, align=1))
     k.append(node("BUTTON", "nhere", (x, Y0, 3 * G, NOTES_H), color=rgb(255, 255, 255, 0.22), x=1,
                   interactive=False, outline=False))
     for i in range(32):
         k.append(node("BUTTON", "nnote%d" % (i + 1), (x, Y0, 3 * G, G), color=TEAL, x=0, interactive=False,
                       outlineStyle=0))
     y_ = Y0 + NOTES_H
-    k += on_button("non", (X0, y_ + G // 2, 4 * G, 5 * G // 2), "on-m")
-    f = (X0 + 5 * G, y_ + G // 2, 4 * G, 5 * G // 2)
+    k += on_button("non", (X0, y_, 4 * G, 3 * G), "on-m")
+    f = (X0 + 5 * G, y_, 4 * G, 3 * G)
     k.append(button("nroll", f, RED, sends(["melody", "roll-melody", 1])))
     k.append(label("nrolll", f, "roll", 20))
-    f = (X0 + 10 * G, y_ + G // 2, 6 * G, 5 * G // 2)
+    f = (X0 + 10 * G, y_, 6 * G, 3 * G)
     k.append(button("nclear", f, RED, sends(["melody", "pins-clear", 1])))
     k.append(label("nclearl", f, "clear pins", 18))
     k += status("nlinkled", "nlink", COL[1], "no link")

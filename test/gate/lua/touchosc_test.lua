@@ -678,6 +678,15 @@ equal("new, move up, move down and delete, each its command",
         { { "/cutit", "sections", "down" } }, { { "/cutit", "sections", "delete" } } })
 L.osc(w, "/cutit/ack", "sections", "new")
 L.update(w)
+-- The melody grid, which only the root draws: a note a cell, and nothing else moved by the message.
+do
+  local m = { 16, 0, 0, 2, 3, 5, 7, 8, 10 }
+  for i = 1, 32 do m[#m + 1] = i == 1 and 60 or 0 end
+  for i = 1, 32 do m[#m + 1] = i == 1 and 5 or 0 end
+  L.osc(w, "/cutit/notes", table.unpack(m))
+  check("/cutit/notes draws a note's cell, lit as pinned, and hides the steps with none",
+        L.visible(w, "nnote1") and C.nnote1.values.x == 1 and not L.visible(w, "nnote2"))
+end
 check("an answer to new flashes it teal", teal(C.secnew.color), T.show(C.secnew.color))
 L.update(w, 400)
 check("... and it goes back to red", red(C.secnew.color), T.show(C.secnew.color))

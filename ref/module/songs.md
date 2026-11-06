@@ -62,7 +62,7 @@ Each part puts at load and on every change, and takes its restore.
 |---|---|---|
 | Creation arg 1 | The state directory, `u_state`'s: the songs' list and the setlists are `cut-it-songs.txt` there, and each song is two files (*The files*, below) | unknown |
 | Inlet 1 | From `u_map`'s sixth outlet: `top <1-8>`, a top-row button's press, `save` and `revert`, `key <1-25>`, an Organelle key's press, and `go` ([map.md](map.md)) | unknown |
-| Inlet 2 | From `u_net`'s fourth outlet: the phone's sections page, `select <n>`, `page <-1 or 1>`, `new`, `up`, `down`, `length <bars>`, `delete`, `name <name>`; and its songs page, `songs <command> …` ([phone.md](../device/phone.md)) | unknown |
+| Inlet 2 | From `u_net`'s fourth outlet: the phone's sections page, `select <n>`, `page <-1 or 1>`, `new`, `saveas`, `up`, `down`, `length <bars>`, `delete`, `name <name>`; and its songs page, `songs <command> …` ([phone.md](../device/phone.md)) | unknown |
 | Inlet 3 | `bar`, from `c_steps`' fourth outlet, on the global loop's last step | unknown |
 | Inlet 4 | A bang meaning load now, from `u_init` after `u_state`'s restore, through a trigger in `u_root`: startup order is `u_init`'s | unknown |
 | Outlet 1 | To `g_grid`'s sixth inlet: `top <8 lamps>`, `unsaved <0 or 1>` and `go <0, 1 or 2>`, each when it changes ([display.md](display.md)) | unknown |
@@ -158,6 +158,7 @@ rename is seen as one. A number is written whole, or with `%g` as Pd's own `[tex
 | The state | `/cutit/sections`: the song's name, how many sections, the one selected, the page and how many, the selected one's name and length, then five rows of number, name and length, `0 - 0` for a row with none; 22 atoms, sent when they change and on every heartbeat | unknown |
 | The selection | The phone's, held here: what `new`, `up`, `down`, `length`, `delete` and `name` act on. Playing a section stays the top row's | unknown |
 | `new` | A copy of the selected section, after it, named after it, "verse" to "verse 2", the first number from 2 the song does not have, and selected | unknown |
+| `saveas` | What's playing, as it stands, becomes a new section after it, named after it, playing and selected, and nothing heard changes. The section it was goes back to what it holds as saved, so playing around leaves it as it was; one never saved keeps what it has (Brendan, 2026-11-06) | verified |
 | `up` and `down` | The selected section a place earlier or later; the one playing and the one queued keep playing and queued | unknown |
 | `delete` | The selected section goes and the one now in its place is selected; a song keeps one section, so the last is `warn u_song last-section`; deleting the one playing starts the one now in its place, at once | unknown |
 | `name` | The name tab's done: the selected section renamed. A name is lowercase, A to Z, 0 to 9, space, - and ', single spaces, at most 20 characters | unknown |

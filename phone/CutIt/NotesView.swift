@@ -5,6 +5,7 @@ struct NotesView: View {
     @Environment(Cut.self) private var cut
     @State private var rows: [Int] = []
     @State private var drag: Drag?
+    @GestureState private var touching = false
     private let gutter: CGFloat = 34
 
     private struct Drag {
@@ -21,6 +22,7 @@ struct NotesView: View {
                 Canvas { ctx, _ in draw(&ctx, size) }
                     .contentShape(.rect)
                     .gesture(DragGesture(minimumDistance: 0)
+                        .updating($touching) { _, on, _ in on = true }
                         .onChanged { touch($0.location, size) }
                         .onEnded { _ in release() })
             }
@@ -34,6 +36,7 @@ struct NotesView: View {
         .onChange(of: cut.notes) { if drag == nil { rows = makeRows() } }
         .onChange(of: cut.scale) { if drag == nil { rows = makeRows() } }
         .onAppear { rows = makeRows() }
+        .onChange(of: touching) { _, on in if !on { cancel() } }
     }
 
     private func makeRows() -> [Int] {
@@ -147,6 +150,14 @@ struct NotesView: View {
         d.row = row
         drag = d
         Tick.cell()
+    }
+
+    /// A touch iOS took away, as when switching apps: the note goes back, and nothing changes.
+    private func cancel() {
+        guard let d = drag else { return }
+        drag = nil
+        cut.holding = false
+        cut.send("melody", "note-hear", d.pitch, 0)
     }
 
     private func release() {

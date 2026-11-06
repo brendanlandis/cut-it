@@ -5,6 +5,7 @@ import SwiftUI
 struct RhythmView: View {
     @Environment(Cut.self) private var cut
     @State private var drag: (slot: Int, at: Int)?
+    @GestureState private var touching = false
 
     var body: some View {
         VStack(spacing: 6) {
@@ -13,6 +14,7 @@ struct RhythmView: View {
                 Canvas { ctx, _ in draw(&ctx, size) }
                     .contentShape(.rect)
                     .gesture(DragGesture(minimumDistance: 0)
+                        .updating($touching) { _, on, _ in on = true }
                         .onChanged { touch($0.location, size) }
                         .onEnded { _ in release() })
             }
@@ -25,6 +27,15 @@ struct RhythmView: View {
                 Spacer()
             }
         }
+        .onChange(of: touching) { _, on in if !on { cancel() } }
+    }
+
+    /// A touch iOS took away, as when switching apps: the chord goes back, and nothing changes.
+    private func cancel() {
+        guard let d = drag else { return }
+        drag = nil
+        cut.holding = false
+        cut.send("melody", "audition", d.slot, 0)
     }
 
     private var rowCount: Int { max(1, cut.total / max(1, cut.last)) }

@@ -49,6 +49,12 @@ final class Cut {
         }
     }
 
+    /// Coming back to the app: new sockets, and no finger is still down.
+    func cameBack() {
+        holding = false
+        link.restart()
+    }
+
     func send(_ words: Any...) {
         link.send(words.map {
             if let s = $0 as? String { return .text(s) }

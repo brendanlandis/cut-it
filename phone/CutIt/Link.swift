@@ -2,7 +2,8 @@ import Foundation
 import Network
 
 /// OSC over UDP, the phone's side of u_net: messages to the Organelle's port, and whatever comes in on ours.
-/// UDP has no connection to lose, so there is nothing to reconnect: state flows again as soon as the network does.
+/// UDP has no connection to lose, but iOS closes an app's sockets while it is away, so coming back makes new ones
+/// (restart). After that, state flows again by itself.
 final class Link: @unchecked Sendable {
     static let host = "192.168.1.15"
     static let sendPort: NWEndpoint.Port = 9001
@@ -12,28 +13,48 @@ final class Link: @unchecked Sendable {
     private let queue = DispatchQueue(label: "cutit.link")
     private var out: NWConnection?
     private var listener: NWListener?
+    private var incoming: [NWConnection] = []
+    private var host = Link.host
     var onMessage: (@Sendable (String, [OSCValue]) -> Void)?
 
     func start(host: String = Link.host) {
-        let o = NWConnection(host: NWEndpoint.Host(host), port: Link.sendPort, using: .udp)
-        o.start(queue: queue)
-        out = o
-        listen()
+        self.host = host
+        restart()
+    }
+
+    /// New sockets both ways, dropping whatever iOS left of the old ones.
+    func restart() {
+        queue.async { [self] in
+            out?.cancel()
+            listener?.stateUpdateHandler = nil
+            listener?.cancel()
+            incoming.forEach { $0.cancel() }
+            incoming = []
+            let o = NWConnection(host: NWEndpoint.Host(host), port: Link.sendPort, using: .udp)
+            o.start(queue: queue)
+            out = o
+            listen()
+        }
     }
 
     private func listen() {
         let params = NWParameters.udp
         params.allowLocalEndpointReuse = true
-        guard let l = try? NWListener(using: params, on: Link.listenPort) else { return }
+        // The old listener's port can take a moment to come free.
+        guard let l = try? NWListener(using: params, on: Link.listenPort) else {
+            queue.asyncAfter(deadline: .now() + 1) { [weak self] in self?.restart() }
+            return
+        }
         l.newConnectionHandler = { [weak self] c in
             guard let self else { return }
+            self.incoming.append(c)
             c.start(queue: self.queue)
             self.receive(c)
         }
         l.stateUpdateHandler = { [weak self] state in
             // A failed listener, after the network moves or the app comes back, starts again.
             if case .failed = state {
-                self?.queue.asyncAfter(deadline: .now() + 1) { self?.listen() }
+                self?.queue.asyncAfter(deadline: .now() + 1) { self?.restart() }
             }
         }
         l.start(queue: queue)

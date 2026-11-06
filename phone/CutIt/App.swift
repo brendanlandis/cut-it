@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct CutItApp: App {
     @State private var cut = Cut()
+    @Environment(\.scenePhase) private var phase
 
     var body: some Scene {
         WindowGroup {
@@ -14,6 +15,9 @@ struct CutItApp: App {
                 .onAppear {
                     UIApplication.shared.isIdleTimerDisabled = true
                     cut.start()
+                }
+                .onChange(of: phase) { _, now in
+                    if now == .active { cut.cameBack() }
                 }
         }
     }

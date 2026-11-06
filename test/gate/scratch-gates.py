@@ -497,11 +497,14 @@ def sequencer(g):
 def synths(g):
     S.require("Cut It/c_synth.pd", "Cut It/c_synth.lua", "Cut It/c_synth-lua.pd_lua",
               "Cut It/m_nanokey.pd", "Cut It/m_streich.pd", "Cut It/cut-it-synth-page.txt",
-              "Cut It/cut-it-map.txt", "test/gate/lua/c_synth_test.lua")
+              "Cut It/cut-it-map.txt", "Cut It/c_melody.lua", "test/gate/lua/c_synth_test.lua",
+              "test/gate/lua/c_melody_test.lua")
     # The rules first, in Lua and without Pd: the choice, where each key goes, the restore.
     # Then the Pd half: the nanoKEY, the pads and the phone through the running instrument.
     print("   the rules, in Lua ...")
     rc_lua = S.lua("test/gate/lua/c_synth_test.lua", *g.args)
+    print("\n   the generator's rules, in Lua ...")
+    rc_melody = S.lua("test/gate/lua/c_melody_test.lua", *g.args)
     print("\n   the patch, in Pd ...")
     s = g.copy()
     s.state_dir()
@@ -518,7 +521,7 @@ def synths(g):
     cap = g.pd(s, 30, main_dev(s), s.path("drive.pd"))
     print()
     rc = g.analyze("test/gate/synths-assert.py", *g.args, "--state", s.state, stdin=cap)
-    return rc or rc_lua
+    return rc or rc_lua or rc_melody
 
 
 def _drums(last, hits, own=None, sig=(4, 4), drunk=0, sectionless=False):

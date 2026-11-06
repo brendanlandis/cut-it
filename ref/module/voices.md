@@ -114,7 +114,7 @@ depends on nothing after that. A song holds its patches (`put song patches`) and
 | | | Evidence |
 |---|---|---|
 | A parameter moved | `<row>:<param> <value>`, 0 to 1, by way of the map's route: from the phone (`perform ctl <row> machine <param> <value>`), the Launchpad's sound page or a control in play | unknown |
-| A machine taken up | Starts from its defaults, said out at once | unknown |
+| A machine taken up | A hardware synth is told nothing, so it keeps its own sound, and is told only what's then set; a Pd voice takes its defaults at once | unknown |
 | `sound patch <name>` | The song's patch, recalled | unknown |
 | `sound copy <name>` | A factory patch copied into the song, under a name of its own, and recalled | unknown |
 | `sound save` | What the voice sounds like now is what its patch holds; with no patch yet, a new one | unknown |

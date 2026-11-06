@@ -22,11 +22,10 @@ local function rows(at, list)
   return a
 end
 
-print("\n--- a machine taken up starts from its defaults, said out ---")
+print("\n--- a hardware synth taken up keeps its own sound ---")
 local out = R.rows(st, rows(2, { [2] = { "strings", 1, "h" } }))
-local first
-for _, e in ipairs(out) do if e[1] == "strings" and e[2] == "cc" and e[3][1] == 94 then first = e end end
-equal("the Streichfett's reverb default goes out as CC 94", first, { "strings", "cc", { 94, 25 } })
+equal("⛔ nothing is said to it, no program and no default", out, {})
+equal("... the phone shows the defaults all the same", R.phone(st)[1], "-")
 
 print("\n--- a parameter moved ---")
 equal("<row>:<param> <value> says its CC", R.param(st, "2:reverb", 1), { { "strings", "cc", { 94, 127 } } })
@@ -39,6 +38,7 @@ equal("save with no patch yet makes one, for the machine", st.rows[2].patch, "st
 R.param(st, "2:reverb", 0)
 out = R.recall(st, "strings-patch")
 equal("recalled, it has what was saved", st.rows[2].values.reverb, 1)
+equal("⛔ ... and says only what was set", #out, 2)
 out = R.copy_factory(st, "wide")
 equal("a factory patch copied in, and in use", st.rows[2].patch, "wide")
 equal("... its own copy in the song", st.patches.wide.values.ensemble, 0.8)
@@ -76,5 +76,10 @@ print("\n--- the phone ---")
 local ph = R.phone(st)
 equal("the patch, the song's patches for this machine, the factory's, the parameters",
       { ph[1], ph[2], ph[3], ph[4] }, { "pad", 1, "pad", 3 })
+
+print("\n--- a Pd voice's default is said ---")
+st = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
+out = R.rows(st, rows(3, { [3] = { "saw", 2, "m" } }))
+equal("⛔ taken up, its four parameters go to its engine, so another patch's don't linger", #out, 4)
 
 os.exit(T.report() == 0)

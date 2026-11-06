@@ -89,6 +89,8 @@ function SoundLua:in_1(sel, atoms)
 end
 
 function SoundLua:in_2(sel, atoms)
+  -- A command with no argument reaches here as a symbol.
+  if sel == "symbol" then sel, atoms = atoms[1], {} end
   self:answer(tostring(sel), R.phone_cmds[sel], self.state, atoms)
 end
 

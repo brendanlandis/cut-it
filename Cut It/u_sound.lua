@@ -71,13 +71,13 @@ function R.new(machines_text, factory_text)
   return st
 end
 
-local function defaults(st, machine)
-  local v = {}
-  local m = st.machines[machine]
-  if m then
-    for _, p in ipairs(m.list) do v[p] = m.by[p].default end
-  end
-  return v
+-- A parameter as it stands: what's been set, or else its default, which is only what the page shows.
+-- A hardware synth is told only what's been set, so taking one up leaves its own sound alone.
+local function value_of(st, row, p)
+  local v = row.values[p]
+  if v ~= nil then return v end
+  local m = st.machines[row.machine]
+  return m and m.by[p] and m.by[p].default or 0
 end
 
 local function copy(t)
@@ -107,7 +107,11 @@ local function say_all(st, r, out)
   local m = row and st.machines[row.machine]
   if not m then return out end
   for _, p in ipairs(m.list) do
-    if row.values[p] ~= nil then say(st, r, row, p, row.values[p], out) end
+    if m.by[p].how == "pd" then
+      say(st, r, row, p, value_of(st, row, p), out)
+    elseif row.values[p] ~= nil then
+      say(st, r, row, p, row.values[p], out)
+    end
   end
   return out
 end
@@ -120,11 +124,14 @@ local function sounds_line(st)
       a[#a + 1] = r
       a[#a + 1] = row.patch or "-"
       a[#a + 1] = row.machine
-      local list = st.machines[row.machine].list
+      local list = {}
+      for _, p in ipairs(st.machines[row.machine].list) do
+        if row.values[p] ~= nil then list[#list + 1] = p end
+      end
       a[#a + 1] = #list
       for _, p in ipairs(list) do
         a[#a + 1] = p
-        a[#a + 1] = tonumber(string.format("%.3f", row.values[p] or 0))
+        a[#a + 1] = tonumber(string.format("%.3f", row.values[p]))
       end
     end
   end
@@ -174,9 +181,7 @@ function R.rows(st, a)
     else
       local row = st.rows[r]
       if not row or row.machine ~= machine then
-        st.rows[r] = { machine = machine, engine = engine, line = line, patch = nil,
-                       values = defaults(st, machine) }
-        st.rows[r].base = copy(st.rows[r].values)
+        st.rows[r] = { machine = machine, engine = engine, line = line, patch = nil, values = {}, base = {} }
         say_all(st, r, out)
       else
         local moved = row.engine ~= engine or row.line ~= line
@@ -219,9 +224,7 @@ function R.recall(st, name)
   local p = st.patches[name]
   if not row or not p or p.machine ~= row.machine then return {} end
   row.patch = name
-  local v = defaults(st, row.machine)
-  for k, x in pairs(p.values) do v[k] = x end
-  row.values, row.base = v, copy(v)
+  row.values, row.base = copy(p.values), copy(p.values)
   local out = {}
   say_all(st, st.at_row, out)
   return saved(st, out)
@@ -340,7 +343,7 @@ function R.phone(st)
   a[#a + 1] = m and #m.list or 0
   for _, p in ipairs(m and m.list or {}) do
     a[#a + 1] = p
-    a[#a + 1] = row.values[p] or 0
+    a[#a + 1] = value_of(st, row, p)
   end
   return a
 end
@@ -391,7 +394,7 @@ function R.grid(st)
   local m = row and st.machines[row.machine]
   for c = 1, 8 do
     local p = m and m.list[c]
-    local v = p and (row.values[p] or 0) or 0
+    local v = p and value_of(st, row, p) or 0
     a[c] = p and math.max(v > 0 and 1 or 0, math.min(R.LEVELS, math.floor(v * R.LEVELS + 0.5))) or 0
   end
   local count, at = 0, 0

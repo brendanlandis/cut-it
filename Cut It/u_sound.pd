@@ -15,7 +15,7 @@
 #X obj 1000 450 list prepend restore tweaks;
 #X obj 1000 500 list trim;
 #X obj 1250 300 r voices-sound;
-#X obj 1250 350 list prepend rows;
+#X obj 1250 350 t a;
 #X obj 1250 400 list trim;
 #X obj 1500 300 loadbang;
 #X obj 1500 350 t b b;

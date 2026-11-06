@@ -78,6 +78,7 @@ enum OSCValue: Sendable {
     case text(String)
 
     var number: Int { if case .number(let f) = self { return Int(f.rounded()) }; return 0 }
+    var value: Double { if case .number(let f) = self { return Double(f) }; return 0 }
     var text: String {
         switch self {
         case .text(let s): return s

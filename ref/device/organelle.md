@@ -97,6 +97,7 @@ control does.** Same layer and the same silence about meaning as `m_nano`.
 | ⛔ **The `-1` is load-bearing.** A bare `[change]` starts life holding 0, so a knob parked at 0 would never publish at all and whatever it feeds would sit at its default. `-1` cannot be a real value, because mother's knobs are 0 to 1 | verified | 237 |
 | ⛔ **The knobs reach `param` and NOT `disp`.** A knob's raw 0-to-1 position is not a readable parameter row — `og-knob-1 0.245` where a BPM belongs. `u_map` reports the value instead, because it is the only file that knows what a control MEANS | verified | 242 |
 | **`aux` is a press.** Its release publishes nothing | unknown | 305 |
+| **The pedal jack publishes `og-pedal 127` going down and `og-pedal 0` coming up**, from mother's `fs`, for an on/off pedal. Nothing in the table uses it yet, so it's silent; a `<page\|all> og-pedal <dest> <arg>` row gives it a job. An expression pedal would be `exp`, which nothing reads | verified | — |
 | **The four knobs are the same on every page** (Brendan, 2026-11-06): tempo, last step, track last step and rush ([map.md](../module/map.md)) | unknown | — |
 
 ### Aux opens the songs page
@@ -150,10 +151,8 @@ runs it before its Pd half, which is unchanged since the keys were Pd. Edit the 
 `Cut It/m_organelle.lua`; `; pdluax reload m_organelle-lua` re-reads them in a running Pd, as for
 the sequencer.
 
-⚠️ **Not in the file, deliberately:** the encoder, `encbut` and the pedal jack. ⛔ **Taking the
-encoder costs the instrument its own way out** — item 314, in Reference — which is a bad trade mid-set, and
-neither of the others has anything to drive yet. They belong here when they do — it is one device,
-so it is one `m_` abstraction.
+⚠️ **Not in the file, deliberately:** the encoder and `encbut`. ⛔ **Taking the
+encoder costs the instrument its own way out** — item 314, in Reference — which is a bad trade mid-set.
 
 ### `u_init` sends `midiInGate 0` at load, and again at 2 s
 

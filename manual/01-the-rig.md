@@ -7,7 +7,7 @@ Five surfaces, each with one job. The same control does the same thing on every 
 | **Phone** | See and edit: lists, names, patches, detail. You need it to play a set. |
 | **Launchpad** | Move and hit: color only, no words. |
 | **nanoKONTROL** | What's in play in this section. The same on every page. |
-| **Organelle** | The master: tempo, last step, track last step and rush on its knobs. Its keys load songs. Its screen says what just moved. |
+| **Organelle** | The master: tempo, last step, track last step and rush on its knobs. Its keys load songs. Its screen says what just moved. An on/off foot pedal in its pedal jack is heard, but has no job yet. |
 | **nanoKEY** | Notes, on whichever voice is on show. |
 
 ## A row is a voice

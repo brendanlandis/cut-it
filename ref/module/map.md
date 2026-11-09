@@ -149,6 +149,7 @@ the third slot.
 | Launchpad pads | 0 or 127 | yes | verified | — |
 | **Organelle knobs 1–4** | **0–1** — mother's own scale | **no** | verified | — |
 | Organelle aux | `og-aux 1`, a press | yes | unknown | — |
+| Organelle pedal jack | `og-pedal` 127 down, 0 up | yes | verified | — |
 
 One destination fed from two surfaces would otherwise need two scalings. The four knobs are one
 table in `u_map.lua`, `R.KNOBS`, which also names the controls pickup holds.

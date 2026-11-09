@@ -23,7 +23,7 @@
 #X text 20 950 A message box needs no list trim: og-knob-1 \$1 already has the control as its selector., f 58;
 #X text 640 520 Each of the three sources (aux \, the knobs \, the keyboard) has its own presence outlet \, rightmost \, so seen goes out before the value., f 44;
 #X text 640 780 change -1: mother pushes the knobs once at load and then says nothing (item 237) \, which u_map's pickup depends on. A bare change holds 0 \, so a knob parked at 0 would never publish \, and -1 is never a knob value., f 60;
-#X text 640 1060 Not here: the encoder \, encbut and the pedal jack. Asking for the encoder takes its click too \, the instrument's way out (items 313 and 314). The pedal jack belongs in this file once it has something to drive., f 44;
+#X text 640 1060 Not here: the encoder and encbut. Asking for the encoder takes its click too \, the instrument's way out (items 313 and 314)., f 44;
 #X text 20 1250 The knobs go to param only: a raw 0-to-1 position is no readable row \, so u_map draws the mapped value \, or the raw one when nothing maps it (item 242)., f 62;
 #X msg 440 560 seen m_organelle;
 #X obj 440 620 s presence;
@@ -56,6 +56,10 @@
 #X obj 3500 300 declare -lib pdlua;
 #X text 2400 1020 The keys are Lua: m_organelle-lua names each key og-key-NN., f 58;
 #X text 2400 1300 At load the Lua answers init with a bang on its last outlet \, which shuts the spigot. No bang means it never loaded -- pdlua missing \, or an error in the Lua -- and fail m_organelle no-lua says so on the screen: the keys are dead \, the knobs and aux are not. A Lua error is fail m_organelle lua-<rule> (C-12)., f 62;
+#X obj 2700 300 r fs;
+#X obj 2700 360 * 127;
+#X msg 2700 420 og-pedal \$1;
+#X text 2700 500 The pedal jack: mother's fs is 1 while an on/off pedal is down. og-pedal 127 and 0 \, a press and a release \, as a Launchpad pad sends them \, and silent until the table gives it a row \, as every control is. An expression pedal would be exp \, which nothing reads., f 58;
 #X connect 3 0 8 0;
 #X connect 4 0 9 0;
 #X connect 5 0 10 0;
@@ -92,3 +96,6 @@
 #X connect 47 0 50 0;
 #X connect 50 0 51 0;
 #X connect 51 0 52 0;
+#X connect 56 0 57 0;
+#X connect 57 0 58 0;
+#X connect 58 0 39 0;

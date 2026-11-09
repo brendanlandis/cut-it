@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 
 # The number of windows organelle-assert-drive-gen.py's SEQ opens.
-MARKS = 15
+MARKS = 17
 
 
 def run_asserts(cap):
@@ -95,6 +95,11 @@ def run_asserts(cap):
              if r and str(r[0]).startswith("og-key")]
     A.check("⛔ the keys reach param and NOT disp", not stray,
             "a key wrote to disp: %s" % stray)
+
+    print("\n--- the pedal: a press and a release ---")
+    A.check("the pedal publishes og-pedal 127 going down and og-pedal 0 coming up",
+            param("PEDAL-DOWN") == [["og-pedal", "127"]] and param("PEDAL-UP") == [["og-pedal", "0"]],
+            "got %s and %s" % (param("PEDAL-DOWN"), param("PEDAL-UP")))
 
     A.note("windows reached: %s" % " ".join(order))
 

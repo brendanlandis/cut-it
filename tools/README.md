@@ -265,7 +265,7 @@ so the grid stops walking and the transport stops counting. Expected, not a faul
 item 94. Wraps the `/proc` arithmetic from [../ref/device-os.md](../ref/device-os.md)
 → *Measuring the running patch* and says WITHIN or OVER against a budget of one point above the
 newest baseline row on that page. ⛔ **The budget is stated there, not here** — it went stale once
-by being written in three places at once. ⚠️ `pgrep -nx pd`, never a bare `pgrep`
+by being written in three places at once. ⚠️ `pgrep -ox pd`, never a bare `pgrep`
 (Reference, `~/Sites/!reference/critter-guitari-organelle-1.md`, *Measuring the running patch*).
 
 ### `display-diag.pd` — a real console for the display arbiter

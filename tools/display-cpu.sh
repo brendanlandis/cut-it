@@ -25,9 +25,9 @@ echo
 
 i=1
 while [ "$i" -le "$N" ]; do
-    # -nx: a bare pgrep matches a kernel thread here (item 36).
+    # -ox, the oldest: a bare pgrep matches a kernel thread here (item 36), and -n a second pd that lives a moment.
     out=$(ssh "$HOST" '
-        P=$(pgrep -nx pd) || { echo "NOPD"; exit 0; }
+        P=$(pgrep -ox pd) || { echo "NOPD"; exit 0; }
         col() { awk "/^Udp:/{ if(h==\"\"){h=1; for(i=1;i<=NF;i++) if(\$i==\"OutDatagrams\") c=i; next} print \$c }" /proc/net/snmp; }
         T1=$(awk "{print \$14+\$15}" /proc/$P/stat)
         C1=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat)

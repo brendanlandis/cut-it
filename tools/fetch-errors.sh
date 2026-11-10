@@ -43,8 +43,8 @@ fi
 # So a stamp of ms since load can be placed against now.
 echo "── the device ────────────────────────────────────────────────"
 pdstat=$(ssh "$HOST" '
-    # -x: a bare pgrep matches a kernel thread here (item 36).
-    pid=$(pgrep -nx pd 2>/dev/null || true)
+    # -ox, the oldest: a bare pgrep matches a kernel thread here (item 36), and -n a second pd that lives a moment.
+    pid=$(pgrep -ox pd 2>/dev/null || true)
     if [ -z "$pid" ]; then
         echo "pd: NOT RUNNING"
     else

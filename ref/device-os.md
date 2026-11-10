@@ -56,11 +56,11 @@ absolute paths, which is also why it needs no Save at all.
 ### Measuring the running patch
 
 CPU, load and UDP datagram rate, **without disturbing what is running**. Reads `/proc` rather than
-using `top`, so it works on busybox (the `pgrep -nx pd` caution is in Reference):
+using `top`, so it works on busybox (the `pgrep -ox pd` caution is in Reference):
 
 ```sh
 ssh root@organelle.local '
-  P=$(pgrep -nx pd)
+  P=$(pgrep -ox pd)
   col() { awk "/^Udp:/{ if(h==\"\"){h=1; for(i=1;i<=NF;i++) if(\$i==\"OutDatagrams\") c=i; next} print \$c }" /proc/net/snmp; }
   T1=$(awk "{print \$14+\$15}" /proc/$P/stat); C1=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat); U1=$(col)
   sleep 5

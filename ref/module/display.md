@@ -231,6 +231,7 @@ the paint; a layout with no cell `layout-empty` at `init`, and no frame buffer b
 |---|---|---|
 | The rules alone, `R.paint` | About 4 µs a frame on the Mac (`os.clock` over 200,000 frames), the step cells' shapes worked out once per `bar` rather than in every frame | unknown |
 | `paint` into `[g_grid-lua]` in Pd: the call, the rules and 60 writes | About 23 µs on the Mac, a state message about 3 µs: roughly half what the boxes it replaced cost a frame there | unknown |
+| Everything `[g_grid-lua]` does on the Organelle, playing | About 0.4 points of the core: a paint 0.35 ms, about 7 a second at the song's tempo, a state message about 0.06 ms. With no message reaching it, playing on the drum page read 36.8% against 37.2%, stopped 30.1% against 30.4% (2026-11-10, `/proc` over 8 s, three plays each, alternated; each Lua call timed with `os.clock` in `lua-face.lua`'s dispatch). The 3.6 points measured old against new on 2026-11-05 don't show on this build | verified |
 
 **The rows of steps** (Brendan, 2026-11-05): the step cell *n*, row *r* and column *c* from 0 along
 the four rows of eight, shows step *r* × *row* + *c* + 1, and a cell whose column is *row* or more
@@ -641,8 +642,5 @@ controls the page, and does not copy the OLED*).
 
 ## Open
 
-- ⬜ **Playing costs 3.6 points more of the Organelle's core since the painter moved to Lua**
-  (`cut-it/drum-page-in-lua`), and the painter's own calls explain 0.2 of them (2026-11-05, `/proc`
-  over 8 s, three plays each, old and new alternated: 15.8% playing before, 19.5% after; stopped,
-  14.4% both). On the device a paint takes about 240 µs, 8 a second at 120 BPM, and its rules
-  0.027 ms of that. What else the move changed per step is not found yet.
+- ⬜ **The drum page painted from Lua has not been looked at on the rig**: nothing should look
+  different from the boxes it replaced (`cut-it/drum-page-in-lua`).

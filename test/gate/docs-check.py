@@ -632,7 +632,7 @@ def check_index(verbose):
 SKILLS = '.claude/skills'
 # Every directory the project keeps code in must be listed: a path in one that
 # is not is invisible, not unchecked. The -v count should only go up.
-DIRS = ('tools/', 'test/', 'Cut It/', 'Cut It Debug/', 'device/', 'mac-stubs/',
+DIRS = ('tools/', 'test/', 'Cut It/', 'Cut It Debug/', 'device/', 'mac-stubs/', 'manual/',
         r'\.claude/')
 PATHREF = re.compile(
     r'(?<![\w.-])\.?/?((?:' + '|'.join(DIRS) + r')[\w /.-]*?'

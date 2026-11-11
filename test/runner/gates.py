@@ -23,7 +23,7 @@ import lib_scratch                                              # noqa: E402
 # ---------------------------------------------------------------------------
 # The table's length is asserted, since a gate dropped in an edit is otherwise
 # silent. Update it deliberately, never to make a red run green (as MIDI_EXPECT).
-EXPECT = 29
+EXPECT = 30
 
 # The gates all run side by side and print whole in table order, so the log
 # reads as a serial run's and has one RESULT: line. None waits for another: no
@@ -38,6 +38,8 @@ GATES = [
     # --- 1b. the documentation ---------------------------------------------
     ("documentation matches the patch",
      "python3 test/gate/docs-check.py"),
+    ("the manual is built from its prose and the patch's tables",
+     "python3 test/gate/manual-check.py"),
 
     # --- 2. the deploy gate, _syntax below ---------------------------------
     ("both entry points load in silence (tools/deploy.sh's own gate)", None),

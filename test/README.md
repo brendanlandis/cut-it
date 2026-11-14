@@ -70,8 +70,8 @@ surfaces gets two gates for the same reason.
 **No page declares `Gate: none` any more.** `module/audio`, `device/nanokontrol` and
 `device/organelle` were the last three, and each has its own gate now. ⛔ **`audio-assert.sh` and
 `kit-assert.sh` are the two that read a SIGNAL back** — the first records `u_root`'s output to a
-soundfile and asserts the passthrough is not silent, not swapped and not attenuated, that a drum
-reaches the left alone, and that nothing reports a level, since the info bar is the meter; the second
+soundfile and asserts the input passes through on the right, each contact once and unattenuated,
+and none of it on the left, that a drum reaches the left alone, and that nothing reports a level, since the info bar is the meter; the second
 records `c_kit`'s drums and asserts their levels, silences and retrigger, and a track's volume and
 pitch, read back as a level, a frequency and a length, and the distortion's: more drive never
 quieter, a sample driven by its own peak, and soft, hard, fold and crush each a shape of its own,

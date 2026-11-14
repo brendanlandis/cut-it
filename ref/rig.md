@@ -23,15 +23,15 @@ preamp (2026-11-04). **The SP-404MK2 has left the rig** (Brendan, 2026-11-04) �
                     │    tip  = mic   → [r~ inL]    │
                     │    ring = none  → [r~ inR]    │
                     │  ─────── Cut It ───────       │
-                    │  input passed through         │
                     │  c_kit: the drums → outL      │
+                    │  input, Pd voices → outR      │
                     └───────┬───────────────┬───────┘
                 PHONES L (tip)│               │PHONES R (ring)
                             ▼               ▼
                     ┌──────────────────────────────────┐
                     │  XENYX Q802USB                   │
-                    │   ch1  Organelle L (drums, mic)  │
-                    │   ch2  Organelle R               │
+                    │   ch1  Organelle L (drums)       │
+                    │   ch2  Organelle R (mic, voices) │
                     │   ch3/4  Volca FM                │
                     │   ch5/6  Waldorf Streichfett     │
                     └────────────────┬─────────────────┘
@@ -40,7 +40,8 @@ preamp (2026-11-04). **The SP-404MK2 has left the rig** (Brendan, 2026-11-04) �
 ```
 
 **Organelle L/R go to the two MONO channels (1 and 2)**, not a stereo pair, so each gets its own
-3-band EQ and one-knob compressor. Today the drums and the mic share channel 1.
+3-band EQ and one-knob compressor. **The drums are alone on channel 1, and the mic is on channel 2
+with the Pd voices** (Brendan, 2026-11-14; [audio.md](module/audio.md)).
 
 ⛔ **They leave by the Organelle's ⅛" headphone jack, split to two TS plugs, not by its 1/4" outs.**
 Into the mixer's line input, the 1/4" L out sounded far thinner, with harsh transients when turned
@@ -201,7 +202,7 @@ are all covered.
 
 | Cable | Connects |
 |---|---|
-| **⅛" TRS male → 2× 1/4" TS male** | Organelle headphone jack → mixer ch1 (tip: the drums and the mic) and ch2 (ring). Not the 1/4" outs: see above |
+| **⅛" TRS male → 2× 1/4" TS male** | Organelle headphone jack → mixer ch1 (tip: the drums) and ch2 (ring: the mic and the Pd voices). Not the 1/4" outs: see above |
 | **3.5mm TRS → 2× 1/4" TS** | Volca FM → mixer ch3/4. ⚠️ Its output runs hot — start with channel gain low |
 | **XLR female → 1/4" TS** | The SM58 → the Organelle's input, on the tip. Unbalanced, so keep it short |
 | **2× 1/4" TS** | Mixer MAIN OUT → PA |

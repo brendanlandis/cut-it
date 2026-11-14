@@ -12,9 +12,11 @@ names — the opposite of how every control path in this patch works, and a deli
 ⛔ **`adc~` and `dac~` appear nowhere in Cut It and must not.** `mother.pd` owns the sound card; the
 patch reads `[r~ inL]` / `[r~ inR]` and writes `[throw~ outL]` / `[throw~ outR]` (C-4).
 
-Today the chain is the two inputs, a `[+~]` that sums the left with `c_kit`'s drums, and the two
-outputs. **The gap between the inputs and the sum is where v0.4 goes** — `e_chop`, `e_pitch`,
-`e_trem`, `e_verb`.
+**The drums are alone on one output, and the mic is with the synths and everything else on the
+other** (Brendan, 2026-11-14): `c_kit`'s drums on the left, the mixer's channel 1; on the right,
+its channel 2, the two inputs, a `[+~]` that sums them, and a second that adds the Pd voices.
+**The gap between the inputs and the sum is where v0.4 goes** — `e_chop`, `e_pitch`, `e_trem`,
+`e_verb`.
 
 **The levels are mother's** (Brendan, 2026-11-04): the OLED's info bar shows the input and the
 output, left and right, as the Organelle does by default, read by mother off the sound card and off
@@ -33,7 +35,7 @@ DAC at full scale, the headphone amp down to match, the line input 12 dB quieter
 |------------|---------|----------|------|
 | `[r~ inL]` | Input, the **tip** of the input jack: the **mic**, an SM58 on an XLR-to-TS cable, since 2026-11-04 (the Organelle's Reference page) | verified | 11 |
 | `[r~ inR]` | Input, the ring: nothing, with a TS plug in the jack | verified | 11 |
-| `[throw~ outL]`, `[throw~ outR]` | Everything the patch wants heard, **once each, in `u_root`**: the input passed through, with `c_kit`'s drums summed into the left ([sequencer.md](sequencer.md), *The kit*) and `c_melody`'s Pd voices into the right ([synths.md](synths.md), *The generator*) | verified | — |
+| `[throw~ outL]`, `[throw~ outR]` | Everything the patch wants heard, **once each, in `u_root`**: `c_kit`'s drums alone on the left ([sequencer.md](sequencer.md), *The kit*); on the right the input passed through, both contacts summed, with `c_melody`'s Pd voices ([synths.md](synths.md), *The generator*). Proven by `audio-assert.sh`, not yet heard on the rig | unknown | — |
 
 What `mother.pd` does on the other side of those names (its own `adc~` and `dac~`, the volume knob's
 square law, the limiter, turning DSP on, the VU meter) is on the Organelle's Reference page
@@ -64,8 +66,8 @@ What Cut It sends out with nothing playing, from the code and the Organelle's Re
 
 | Out | At rest | Evidence |
 |---|---|---|
-| Left | The mic's tip passed through at unity: the input's own hiss, **−71 dBFS RMS** with `Capture` 15 and the attenuator off and the mic silent (Reference, measured 2026-11-04), and whatever sound reaches the open mic. `c_kit` adds nothing: each voice's `switch~` keeps its DSP off except while it sounds | verified |
-| Right | The input's ring, passed through: the noise floor of a contact a TS plug grounds (item 11, at the factory's gain; not measured at `Capture` 15) | unknown |
+| Left | Nothing: `c_kit` adds nothing at rest, since each voice's `switch~` keeps its DSP off except while it sounds, and nothing else reaches the left | unknown |
+| Right | Both of the input's contacts passed through at unity: the mic's tip, the input's own hiss, **−71 dBFS RMS** with `Capture` 15 and the attenuator off and the mic silent (Reference, measured 2026-11-04), and whatever sound reaches the open mic; and the ring, the noise floor of a contact a TS plug grounds (item 11, at the factory's gain; not measured at `Capture` 15) | unknown |
 
 Nothing else in the patch makes a sound: there is no oscillator, no stage and no synth inside it,
 and the Volca and the Streichfett reach the mixer on cables of their own ([rig.md](../rig.md)).
@@ -119,12 +121,21 @@ stays as the factory shipped it, on the read-only root and outside anything Cut 
 ### The output is summed in `u_root`, on cords
 
 **Everything Cut It sends out passes `u_root`'s two `throw~`**: `c_kit` hands its drums up an
-`outlet~`, a `[+~]` sums them with the input's tip, and the sum feeds `throw~ outL`; on the right the
-input's ring is all there is. It keeps the audio path something read off one canvas, and
-`audio-assert.sh` counts the `throw~` boxes in every file. A private `catch~` of Cut It's own was
-the alternative: every stage would throw to it with no cords, at the cost of each one learning
-`u_root`'s `$0` as a creation argument, and of the chain no longer being visible as wires. A stage
-added later joins the sum the way the drums do, and a stage on the right gets a `[+~]` of its own.
+`outlet~` straight to `throw~ outL`, alone; on the right a `[+~]` sums the input's tip and ring, a
+second adds the Pd voices, and that feeds `throw~ outR`. It keeps the audio path something read off
+one canvas, and `audio-assert.sh` counts the `throw~` boxes in every file. A private `catch~` of Cut
+It's own was the alternative: every stage would throw to it with no cords, at the cost of each one
+learning `u_root`'s `$0` as a creation argument, and of the chain no longer being visible as wires.
+A stage added later joins the right's sum the way the Pd voices do; the left is the drums' alone.
+
+### The drums are alone on the left, and the mic is with the synths
+
+**Brendan, 2026-11-14: "Drums should be alone and vocals should be with synths and everything
+else."** The drums and the mic shared the left output and the mixer's channel 1 until then. Which
+side is which was a choice made without him, and his to overrule: the drums stay on the left and
+channel 1, where they already were, and the mic moved to the right and channel 2, the Fx channel,
+where the Pd voices already were. Each of the mixer's two mono channels has its own EQ and
+compressor ([rig.md](../rig.md)), so the drums and the voice now get one each.
 
 ### The levels are mother's info bar, and Cut It meters nothing
 
@@ -141,8 +152,8 @@ knob**: turned down, they read less than Cut It sends, as the PA hears it.
 
 The mic is the input's tip, with no preamp in front of it: the Organelle's own input gain, turned
 all the way up, is enough for a voice (the Organelle's Reference page). The drums no longer come
-in at all: `c_kit` plays them and `u_root` sums them into the left output, where the 404's
-hard-panned drums used to arrive ([sequencer.md](sequencer.md)). **No routing depends on a knob position**: cables carry the
+in at all: `c_kit` plays them and `u_root` sends them out the left output, where the 404's
+hard-panned drums used to arrive ([sequencer.md](sequencer.md)), and the mic out the right. **No routing depends on a knob position**: cables carry the
 paths, and the mixer's knobs only set levels.
 
 ### Organelle audio back into the 404 was scrapped
@@ -155,7 +166,7 @@ deferred — item 264. The SP-404 has since left the rig altogether (Brendan, 20
 
 - ⬜ **There is no DSP yet.** The chain is input → the sum → output, and the four filter stages,
   the drum mode and the sampler are v0.4. See [plan-v04.md](../../plan-v04.md) §3.
-- ⬜ **Whether the mic's hiss lights mother's out L meter at rest has not been looked at on the
+- ⬜ **Whether the mic's hiss lights mother's out R meter at rest has not been looked at on the
   device** (`cut-it/inbox`): watch the info bar with the mic in and the room quiet. By
   Organelle_OS's `fw_dir/mother.pd` at tag `v4.0` (2020-02-12, the date of this device's files),
   each out meter is `env~ 8192 4096` less 40, over 60, times 11, as a whole number, so its first

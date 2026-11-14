@@ -101,7 +101,7 @@ state bus, as `c_synth`'s are.
 | | Is | Evidence |
 |---|---|---|
 | Inlet | `step <count> <ms> <place>` and `last <step>` from `c_steps`; a control or a pad from `u_map`'s `melody` destination ([map.md](map.md)); `set`, `audition`, `move` and the pads from the phone ([phone.md](../device/phone.md)); the nanoKEY's keys, which mean nothing to it yet | unknown |
-| Outlets | 1 `note <n> <v>` to `m_volca`; 2 the same to `m_streich`; 3 `melody <R.phone's atoms>` and `here <step>` to `u_net`'s third inlet; 4 the Pd voices' signal to `u_root`, summed with the input's ring into the right output, the Fx channel, mixer channel 2 | unknown |
+| Outlets | 1 `note <n> <v>` to `m_volca`; 2 the same to `m_streich`; 3 `melody <R.phone's atoms>` and `here <step>` to `u_net`'s third inlet; 4 the Pd voices' signal to `u_root`, summed with the input, the mic, into the right output, the Fx channel, mixer channel 2 | unknown |
 | `state` | `put section melody <R.save's numbers>` at most every 100 ms under a drag; what a roll drifts only on `sync`, so a loop drifting writes nothing to the card; `restore melody` on the step 1 a section starts ([songs.md](songs.md)) | unknown |
 | Voices | Each part's own: `fm`, `strings`, or the Pd voices `sine`, `saw` and `square` | unknown |
 | A chord | A stack from the mode's notes, weighed by two families of chord tension picks, how little its notes move (`smooth`), how it sits with the tonic (`home`) and how its root moves, modal or functional. On the Volca its lowest three, on a Pd voice each note a voice of its own, four at most; bass only, its root alone, low, on any voice | unknown |

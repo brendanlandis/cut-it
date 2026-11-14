@@ -25,13 +25,13 @@ checklist page away. When it's done, tap Setup again.
   - **Need:** The mixer's channel 1 up, and the PA on, and a pattern in the song loaded.
   - **Do:** Press PLAY on the nanoKONTROL, listen for a bar, and press STOP.
   - **Pass if:** The PA plays the drums, and on the OLED's info bar one out meter jumps with each hit, out L, while the in meters and out R stay still.
-  - **Note:** The drums are Cut It's own, played on the Organelle and out its left output to the mixer's channel 1 (Brendan, 2026-11-04). The info bar's out meters are what Cut It sends out, after the volume knob, and the drums never reach the in meters, which is how out L tells itself apart. A hit that moves out L and is silent in the PA is the cable or the mixer, and one that moves nothing is its sample missing: the deploy copies the sixteen from samples/drums/. At load Cut It warns when only some are there; with none, every pad is silent and nothing is drawn.
+  - **Note:** The drums are Cut It's own, played on the Organelle and out its left output, alone, to the mixer's channel 1 (Brendan, 2026-11-04; alone since 2026-11-14). The info bar's out meters are what Cut It sends out, after the volume knob, and the drums never reach the in meters, which is how out L tells itself apart. A hit that moves out L and is silent in the PA is the cable or the mixer, and one that moves nothing is its sample missing: the deploy copies the sixteen from samples/drums/. At load Cut It warns when only some are there; with none, every pad is silent and nothing is drawn.
 
 - [ ] **4. The mic**
-  - **Need:** The SM58 in the Organelle's input.
+  - **Need:** The SM58 in the Organelle's input; the mixer's channel 2 up.
   - **Do:** Sing or talk into the SM58.
-  - **Pass if:** The PA plays your voice. On the info bar in L and out L move with it, and out L never reaches the end of its meter. Silent, every meter sits at 0.
-  - **Note:** The mic goes in on the input's tip, and Cut It passes it straight to its left output beside the drums, so both come through the mixer's channel 1 and the same meter. A meter at its end is the voice clipping. A segment lit with the mic silent and the room quiet is its hiss, which should read 0: say so ([audio](../../ref/module/audio.md)).
+  - **Pass if:** The PA plays your voice. On the info bar in L and out R move with it, out L stays still, and out R never reaches the end of its meter. Silent, every meter sits at 0.
+  - **Note:** The mic goes in on the input's tip, and Cut It passes it straight to its right output with the synths, so it comes through the mixer's channel 2 and the drums have channel 1 to themselves (Brendan, 2026-11-14). Out L moving with the voice is an older patch; the voice on channel 1 with out R moving is the headphone split's two plugs swapped. A meter at its end is the voice clipping. A segment lit with the mic silent and the room quiet is its hiss, which should read 0: say so ([audio](../../ref/module/audio.md)).
 
 - [ ] **5. The nanoKEY plays the Volca through the PA**
   - **Need:** The Volca on; the mixer's channels 3 and 4 up.

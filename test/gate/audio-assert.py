@@ -6,9 +6,11 @@
 Five claims:
 
     1. the output is not silent
-    2. L and R are not swapped: L is the tip, the mic's (item 11). Both
-       channels carry the same level, so only the frequencies can see a swap
-    3. the passthrough is unity: u_root's audio path has no gain
+    2. the input goes out on the right, and only the right (Brendan,
+       2026-11-14): the tip, the mic's (item 11), and the ring each reach it,
+       told apart by their frequencies, and the left carries none of either
+    3. the passthrough is unity: u_root's audio path has no gain, and the
+       right sums the two inputs once each
     4. the drums reach the left output, and only the left, at their own level
     5. the chain is u_root's wires, and the levels are mother's: everything Cut
        It sends out leaves through u_root's two throw~, and nothing reports a
@@ -41,11 +43,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 PATCH = os.path.join(ROOT, "Cut It")
 
 # The driver's windows, in order: AUDIO's MARKs.
-MARKS = ["DSP", "REC", "BOTH", "LEFT", "RIGHT", "PAGE-2", "DRUMS", "TAIL", "STOP", "DONE"]
+MARKS = ["DSP", "REC", "BOTH", "TIP", "RING", "PAGE-2", "DRUMS", "TAIL", "STOP", "DONE"]
 
 
-# A sine of amplitude a has RMS a/sqrt(2).
+# A sine of amplitude a has RMS a/sqrt(2). Two of different frequencies, each of
+# amplitude a, sum to RMS a: the right output with both inputs driven.
 WANT_RMS = AMP / (2 ** 0.5)
+WANT_BOTH_RMS = AMP
 
 # 2% on the level. Wide enough for 16-bit quantization and a partial cycle at
 # the window edges, far tighter than any gain error worth having.
@@ -208,41 +212,40 @@ def main():
     # ---- 1. the output is not silent --------------------------------------
     print("\n--- 1. the output is not silent ---")
     l, r, _ = seg("both")
-    A.check("both channels carry signal when both are driven",
-            rms(l) > SILENT and rms(r) > SILENT,
-            "L rms %.4f, R rms %.4f. u_root's audio path is four cords and no "
-            "gain; silence here means one of them is gone" % (rms(l), rms(r)))
+    A.check("the right carries signal when the input is driven", rms(r) > SILENT,
+            "R rms %.4f. u_root's input path is four cords and no gain; silence "
+            "here means one of them is gone" % rms(r))
 
-    # ---- 2. L and R are not swapped ---------------------------------------
-    print("\n--- 2. L and R are not swapped ---")
-    for name, chan, want in (("left", 0, 220.0), ("right", 1, 330.0)):
-        l, r, span = seg("both")
-        xs = (l, r)[chan]
-        f = crossings(xs) / 2.0 / span
-        A.check("the %s channel carries %.0f Hz" % (name, want),
+    # ---- 2. the input goes out on the right, and only the right -------------
+    # The tip is the mic (item 11); it goes out with the synths, the drums alone on
+    # the left (Brendan, 2026-11-14). Each input driven alone, the frequency on the
+    # right says which reached it, and a silent left that nothing crossed over.
+    print("\n--- 2. the input goes out on the right, and only the right ---")
+    for name, want in (("tip", 220.0), ("ring", 330.0)):
+        l, r, span = seg(name)
+        f = crossings(r) / 2.0 / span
+        A.check("with only the %s driven, the RIGHT carries its %.0f Hz" % (name, want),
                 abs(f - want) / want < FREQ_TOL,
-                "measured %.1f Hz over %.2f s. 220 goes in the left send and 330 "
-                "the right, so this is what a swapped pair looks like" % (f, span))
-
-    # ---- ...and there is no bleed between them ----------------------------
-    # Right frequencies with both driven do not prove the channels independent;
-    # only a silent channel proves the cords do not cross.
-    for name, silent_chan in (("left", 1), ("right", 0)):
+                "measured %.1f Hz over %.2f s, R rms %.4f. 220 goes in the tip and "
+                "330 the ring; the other's frequency, or none, means the cords "
+                "cross or one is gone" % (f, span, rms(r)))
+    for name in ("tip", "ring", "both"):
         l, r, _ = seg(name)
-        loud, quiet = ((l, r) if silent_chan else (r, l))
-        A.check("with only %s driven, the other channel is SILENT" % name,
-                rms(loud) > SILENT and rms(quiet) < SILENT,
-                "driven %.4f, other %.4f" % (rms(loud), rms(quiet)))
+        A.check("with the %s driven, the LEFT is SILENT: the drums are alone there"
+                % ("input" if name == "both" else name), rms(l) < SILENT,
+                "L rms %.4f, R rms %.4f. Anything of the input on the left is on "
+                "the drums' mixer channel" % (rms(l), rms(r)))
 
     # ---- 3. the passthrough is unity --------------------------------------
     print("\n--- 3. the passthrough is unity ---")
-    l, r, _ = seg("both")
-    for name, got in (("left", rms(l)), ("right", rms(r))):
-        A.check("the %s channel comes out at unity -- rms %.4f" % (name, WANT_RMS),
-                abs(got - WANT_RMS) < RMS_TOL,
+    for name, want in (("tip", WANT_RMS), ("ring", WANT_RMS), ("both", WANT_BOTH_RMS)):
+        l, r, _ = seg(name)
+        A.check("with %s driven, the right comes out at unity -- rms %.4f"
+                % ("both" if name == "both" else "only the " + name, want),
+                abs(rms(r) - want) < RMS_TOL,
                 "rms %.4f against %.4f. throw~/catch~ SUMS, so a doubled value "
                 "means something is throwing twice; a halved one means a gain "
-                "has appeared where there is meant to be none" % (got, WANT_RMS))
+                "has appeared where there is meant to be none" % (rms(r), want))
 
     # ---- silence in, silence out ------------------------------------------
     # Cannot pass on an empty file: everything above proved it is not.

@@ -7,7 +7,7 @@ stdin and the recording.
 Ten claims:
 
     1. u_root sends the sequencer's pads to c_kit, and to nothing else, and
-       c_kit's outlet~ to the left output
+       c_kit's outlet~ to the left output, alone there
     2. c_kit reports how many samples it found, exactly
     3. a hit plays its pad's own sample, at its velocity's level
     4. no sample, a pad past 16 and velocity 0 are silent
@@ -165,19 +165,22 @@ def main():
         A.check("⛔ and to nothing else, so no drum leaves the instrument",
                 out0 == [(steps[0], 0, kits[0], 0)], "its cords: %s" % out0)
         # The drums are a signal out of c_kit's outlet~ (2026-11-04), not a throw~
-        # of its own: u_root sums them into the left output where the meter reads it.
+        # of its own, and alone on the left output (Brendan, 2026-11-14): the mic and
+        # the Pd voices are on the right, so the drums get mixer channel 1 to themselves.
         sig = [(a, b, c, d) for a, b, c, d in cons if a == kits[0] and b == 0]
         A.check("⛔ c_kit's second outlet, the loop's place, goes to c_steps",
                 (kits[0], 1, steps[0], 0) in cons, [c for c in cons if c[0] == kits[0]])
         throws = find(boxes, "throw~")
         to_l = [i for i in throws if boxes[i][:-1].split()[5:6] == ["outL"]]
-        feeds = sig[0][2] if len(sig) == 1 else None
-        A.check("⛔ c_kit's outlet~ goes to ONE box, and that box feeds throw~ outL",
-                feeds is not None and len(to_l) == 1
-                and (feeds, 0, to_l[0], 0) in cons,
-                "c_kit's cords %s, throw~ outL %s. A second cord would play the drums "
-                "twice; none, or into a box the output does not come from, plays them "
-                "nowhere" % (sig, to_l))
+        into_l = [c for c in cons if len(to_l) == 1 and c[2] == to_l[0]]
+        A.check("⛔ c_kit's outlet~ goes by ONE cord straight to throw~ outL, and nothing "
+                "else reaches it: the drums are alone on the left",
+                len(to_l) == 1 and sig == [(kits[0], 0, to_l[0], 0)]
+                and into_l == sig,
+                "c_kit's cords %s, throw~ outL %s, the cords into it %s. A second cord "
+                "would play the drums twice; none plays them nowhere; another cord into "
+                "throw~ outL puts something beside them on mixer channel 1"
+                % (sig, to_l, into_l))
 
     # ---- 2. the count -------------------------------------------------------
     print("\n--- 2. c_kit reports the samples it found ---")

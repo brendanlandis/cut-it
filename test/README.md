@@ -123,7 +123,9 @@ so a driver's OSC reaches `u_net` through `lib_scratch`'s `net_direct`, the same
 
 **The gates run side by side**, all of them at once, each printed whole in table order, so the log
 reads as a serial run's did. `CUTIT_JOBS=1 ./test/run.sh`
-runs them one at a time. Each module gate's `main-dev.pd` copy gets its own inbound UDP port
+runs them one at a time. **On Crane, a four-core Intel Mac, run `CUTIT_JOBS=4`**: all thirty at
+once there left 15 gates with nothing captured from their Pd, and four at a time passed every one
+(2026-11-14). Each module gate's `main-dev.pd` copy gets its own inbound UDP port
 (`CUTIT_INPORT`), and each gate's Pd runs with an empty `HOME` so it skips the Mac's Pd preferences —
 see `test/runner/gates.py`.
 

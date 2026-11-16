@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>net.slownames.cutit-install</string>
+  <string>net.slownames.cutit-testflight</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/brendan/Sites/cut-it/phone/reinstall.sh</string>
+    <string>/Users/brendan/Sites/cut-it/phone/upload.sh</string>
   </array>
   <key>StartInterval</key>
-  <integer>900</integer>
+  <integer>3600</integer>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key>

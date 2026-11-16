@@ -1,5 +1,5 @@
 # The Cut It phone app: `xcodegen` makes CutIt.xcodeproj from this (not committed), and install.sh builds it and
-# puts it on the phone. A proof of concept (Brendan, 2026-11-06): the melody and rhythm grids and a long list,
+# puts it on the phone; testflight.sh sends it to TestFlight. A proof of concept (Brendan, 2026-11-06): the melody and rhythm grids and a long list,
 # over the same OSC messages TouchOSC's layout uses.
 name: CutIt
 options:
@@ -33,3 +33,5 @@ targets:
         INFOPLIST_KEY_UIRequiresFullScreen: YES
         INFOPLIST_KEY_UIStatusBarHidden: YES
         INFOPLIST_KEY_NSLocalNetworkUsageDescription: Cut It talks to the Organelle over the local network.
+        # The export question, answered, so no TestFlight build waits on it: it uses no encryption of its own.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO

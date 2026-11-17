@@ -48,7 +48,7 @@ LOG="$HOME/Library/Logs/cutit-testflight.log"
 # The commit's phone/ in a folder of its own, outside the repo, made exactly those files as a
 # checkout is: one unchanged since the last run keeps its time, so Xcode's derived data, kept
 # beside them, rebuilds only what changed.
-EXPORT="$HOME/Library/Caches/net.slownames.cutit/testflight"
+EXPORT="$HOME/Library/Caches/com.velellalabs.cutit/testflight"
 mkdir -p "$EXPORT"
 GIT_INDEX_FILE="$EXPORT.index" git --work-tree="$EXPORT" read-tree --reset -u "$COMMIT:phone"
 echo "$(date '+%Y-%m-%d %H:%M:%S') building $BUILD ($(git log -1 --format='%h %s' "$COMMIT"))" | tee -a "$LOG"

@@ -8,4 +8,4 @@ xcodebuild -project CutIt.xcodeproj -scheme CutIt -destination 'generic/platform
   -allowProvisioningUpdates -quiet build
 id=$(xcrun devicectl list devices 2>/dev/null | awk '/available/ {for (i=1;i<=NF;i++) if ($i ~ /^[0-9A-F-]{36}$/) print $i}' | head -1)
 xcrun devicectl device install app --device "$id" "build/Build/Products/Debug-iphoneos/Cut It.app"
-xcrun devicectl device process launch --device "$id" net.slownames.cutit
+xcrun devicectl device process launch --device "$id" com.velellalabs.cutit

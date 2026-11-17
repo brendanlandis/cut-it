@@ -3,7 +3,7 @@
 # over the same OSC messages TouchOSC's layout uses.
 name: CutIt
 options:
-  bundleIdPrefix: net.slownames
+  bundleIdPrefix: com.velellalabs
   deploymentTarget:
     iOS: "18.0"
 settings:
@@ -19,7 +19,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: Cut It
-        PRODUCT_BUNDLE_IDENTIFIER: net.slownames.cutit
+        PRODUCT_BUNDLE_IDENTIFIER: com.velellalabs.cutit
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
         MARKETING_VERSION: "0.1"

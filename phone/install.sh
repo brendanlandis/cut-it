@@ -1,6 +1,6 @@
 #!/bin/bash
 # Build the Cut It app from the working tree and put it on the phone over Wi-Fi, for a build that isn't pushed: it
-# stands in for TestFlight's copy until the next upload (upload.sh). The phone needs to be unlocked.
+# stands in for TestFlight's copy until the next upload (testflight.sh, run by hand). The phone needs to be unlocked.
 set -euo pipefail
 cd "$(dirname "$0")"
 xcodegen generate >/dev/null

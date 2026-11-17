@@ -1,5 +1,5 @@
 # The Cut It phone app: `xcodegen` makes CutIt.xcodeproj from this (not committed), and install.sh builds it and
-# puts it on the phone; testflight.sh sends it to TestFlight, hourly by upload.sh when master changes it. A proof of concept (Brendan, 2026-11-06): the melody and rhythm grids and a long list,
+# puts it on the phone; testflight.sh sends it to TestFlight, run by hand when there's something to send (Brendan, 2026-11-17). A proof of concept (Brendan, 2026-11-06): the melody and rhythm grids and a long list,
 # over the same OSC messages TouchOSC's layout uses.
 name: CutIt
 options:

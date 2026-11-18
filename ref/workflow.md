@@ -130,7 +130,7 @@ The shape every piece of multi-session work here takes:
 
 1. **The decisions first**, each with its *consequence* beside it — settled with Brendan before any
    code, because most of them change the shape of the work rather than its details. They live in
-   the work's file in `!projects` (`cut-it/<slug>`), as a `thought` until the shape-changing
+   the work's card on the board (`cut-it/<slug>`), as a `thought` until the shape-changing
    questions are closed and a `project` after.
 2. **A Step 0 of measurements.** Anything the rest of the phase rests on that is still unverified —
    manufacturer documentation, or nothing but an assumption — gets measured *before* anything is
@@ -155,8 +155,8 @@ The shape every piece of multi-session work here takes:
    in doubt.
 6. **Landing, and it is not optional.** What was measured goes onto the `ref/` page it belongs to,
    through the `docs` skill, with `test/gate/docs-check.py` green; superseded designs are replaced,
-   not annotated beside their replacement; the `!projects` file has its steps ticked and its `next:`
-   rewritten, or moves to `done/`; anything unresolved goes to that file or to `cut-it/inbox`, not
+   not annotated beside their replacement; the card has its steps ticked and its `next:`
+   rewritten, or moves to done; anything unresolved goes to that card or to `cut-it/inbox`, not
    to a page's *Open* section unless it is a genuine unknown about the thing. A fact about an
    outside device or program goes on its Reference page. ⛔ **Item numbers are frozen**
    (Brendan, 2026-11-02): the existing ones stay as IDs, cited bare across documents and from the

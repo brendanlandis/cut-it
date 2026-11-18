@@ -103,7 +103,7 @@ is the fixture, and it is a step there.
 
 ⛔ **What the fault is, what it is not, the evidence ledger, the reproduction and the wrong turns
 are under *Wifi* on the Organelle's Reference page (`~/Sites/!reference/critter-guitari-organelle-1.md`)**; the tools and the stage procedure are on
-[../ref/wifi.md](../ref/wifi.md); what to try next and the binding stopping rule are on `cut-it/wifi-roam-fault` in `!projects`. **This page is how to RUN the tools; the Reference page is the subject.** ⚠️ **Do not
+[../ref/wifi.md](../ref/wifi.md); what to try next and the binding stopping rule are on `cut-it/wifi-roam-fault`, on the board. **This page is how to RUN the tools; the Reference page is the subject.** ⚠️ **Do not
 restate any of it here.**
 
 | | |

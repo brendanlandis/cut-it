@@ -3,11 +3,11 @@
 
 **A module is either a physical device or one instrument concern.** Its page here holds how Cut It
 uses it and what Cut It chose. ⛔ **What is true of an outside device or program — what it is, its
-specs and MIDI, what was measured, what will bite you — lives in Reference** (`~/Sites/!reference/`,
-one Markdown page per thing, shown on Back Office's /reference page), and a `ref/device/` page links
+specs and MIDI, what was measured, what will bite you — lives in Reference** (Regular Notebook's,
+one Markdown page per thing), and a `ref/device/` page links
 to it and holds **only Cut It's side**: its design and its own unknowns. **A new device fact goes on
-its Reference page, not here.** `grep -l "used_by:.*cut-it"
-~/Sites/!reference/*.md` lists Cut It's.
+its Reference page, not here.** `robot pages --used-by cut-it` lists Cut It's
+(`~/Sites/app.regularnotebook.com/bin/robot`).
 
 **A device-major layout gives a fact exactly one place it can go**, which is the only thing that
 resists drift, because the docs are written by agents who cannot know what the other files already
@@ -54,7 +54,8 @@ python3 test/gate/docs-check.py -v
 | dangling | Every pointer to a document resolves |
 | `C-NN` | Every rule cited anywhere exists, and the `pd` skill's copy matches the doc |
 | ⬜ | Every open item sits under `Open`, on every page, whatever its schema, and names its owner |
-| `cut-it/<slug>` | Every `!projects` ref resolves to a file in that repo, which must sit beside this one |
+| `cut-it/<slug>` | Every card ref is a card of Cut It's on the board, active or done; read with one `robot export` a run, and red if robot can't reach the board |
+| Reference | Every `!reference/<slug>.md`, the old name for a Reference page, is one of `robot pages`, read once a run, and red the same way |
 
 ## The standard for v0.4
 
@@ -74,4 +75,4 @@ did.** v0.4 grows `ref/module/` — one page per filter stage, the drum mode, th
 ⚠️ **This standard is for NEW material only.** The module pages describe code that is mostly
 re-derivable; the hardware facts that cannot be re-derived from the code are in Reference, which an
 agent handed this project cold must read (`used_by: [cut-it]`). **Item numbers are carried over there
-unchanged:** `item NNN` resolves by `grep` in `ref/` and in `~/Sites/!reference/`.
+unchanged:** `item NNN` resolves by `grep` in `ref/` and in Cut It's Reference pages.

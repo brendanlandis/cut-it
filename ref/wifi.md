@@ -6,11 +6,11 @@
 fault and its reproduction, the evidence ledger by item number, and the Organelle as its own access
 point). It is narrowed, not solved. The fault matters because the phone display is the instrument's
 second screen — [device/phone.md](device/phone.md) — and a dead display mid-set is the failure being
-designed against. **Item numbers still resolve by `grep` — now in `~/Sites/!reference/`.**
+designed against. **Item numbers still resolve by `grep` — now in that Reference page.**
 
 **This page holds Cut It's side: the tools that watch it, what to do when it recurs, and the stage
 procedure.** What is still open, what to try when it recurs and when to stop is `cut-it/wifi-roam-fault`
-in `!projects` — closed 2026-10-10 after two months without a recurrence, and reopened (moved back to
+on the board — closed 2026-10-10 after two months without a recurrence, and reopened (moved back to
 `active/`) if it recurs. ⚠️ **Do not spend session time on this unless it recurs.**
 
 **The boot hang that used to look like a wifi fault is not one** — it is a USB mass-storage fault with
@@ -84,7 +84,7 @@ pressing Connect.
 
 ## If it recurs
 
-**Reopen `cut-it/wifi-roam-fault`** in `!projects` first: it holds what to try, in what order,
+**Reopen `cut-it/wifi-roam-fault`** on the board first: it holds what to try, in what order,
 and when to stop: two router-side changes, then a binding stopping rule that closes item 81 as won't-fix and lets AP
 mode be the answer. Verify against the repro (*The roam fault* on the Organelle's Reference page (`~/Sites/!reference/critter-guitari-organelle-1.md`)), not against a quiet spell.
 

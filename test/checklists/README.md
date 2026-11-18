@@ -75,7 +75,7 @@ bugs; a checklist on the rig is the last word.
 Capitals mean literally on a screen or a label (REW, PLAY, EXT, Programmer Mode), never emphasis.
 
 **Tick boxes in a copy.** The files here stay unticked so the next session starts clean, and what a
-run found goes where the work is tracked, in `!projects`.
+run found goes where the work is tracked, on Cut It's cards.
 
 **Loading Cut It again** means selecting it from the Organelle menu, which restarts Pd as a power-up
 does. Never `killall pd`: it skips `m_launchpad`'s safe exit and strands the Launchpad in Programmer
@@ -149,5 +149,5 @@ it honest:
   and eyes are on the cable.
 - **Say what a gate already proves, and leave it to the gate.** One claim judged in two places
   reports more coverage than exists.
-- **Append rather than renumber** where a step number is cited: `ref/` pages and `!projects` cite
+- **Append rather than renumber** where a step number is cited: `ref/` pages and cards cite
   steps by number (`recover` step 5).

@@ -2,7 +2,7 @@
 # The rig — boxes, cables and signal flow
 
 **The physical instrument.** What connects to what, why, and the handful of hardware facts that
-decide the shape. What each *device* can do is in Reference (`~/Sites/!reference/`); how Cut It uses it is on its page under [device/](device/); what the
+decide the shape. What each *device* can do is in Reference; how Cut It uses it is on its page under [device/](device/); what the
 Organelle is as a *computer* — SSH, paths, deploying, wifi — is in
 [device-os.md](device-os.md).
 

@@ -26,11 +26,11 @@ python3 test/gate/docs-check.py -v
 | Where | Holds | Schema |
 |-------|-------|--------|
 | `ref/device/` | How Cut It **uses** one physical thing each, and nothing else. **Fixed set** — the hardware decides it. What the thing *is* is in Reference, below | `device` |
-| `~/Sites/!reference/` | **What is true of an outside device, app, plugin or service, whoever uses it** — specs, MIDI, behavior, measurements, traps. One page per thing, `used_by: [cut-it]`. Not in this repo and not gated; save, never commit there. A new device fact goes here, never on a `ref/device/` page | frontmatter + free |
+| Reference | **What is true of an outside device, app, plugin or service, whoever uses it** — specs, MIDI, behavior, measurements, traps. One page per thing, `used_by: [cut-it]`, on Regular Notebook, through `robot` (the `projects` skill). Not in this repo, and only its page names are gated. A new device fact goes here, never on a `ref/device/` page | frontmatter + free |
 | `ref/module/` | One instrument concern each. **This is what v0.4 grows** | `module` |
 | `ref/` | Cross-cutting: `conventions`, `architecture`, `README` | `rules` / `freeform` |
-| `!projects/cut-it/` | Everything open. **`ref/` states what IS; `!projects` states what's OPEN.** The repo beside this one: one file per project under `active/`, loosies in `inbox.md`. A page cites one as `cut-it/<slug>` or `cut-it/inbox`, and the gate resolves it | — |
-| `plan-*.md` | The old home of what's open. `plan-v04.md` is the last one and is being moved into `!projects` by hand; do not add to it | — |
+| Cut It's cards | Everything open. **`ref/` states what IS; the board states what's OPEN.** Regular Notebook's board: a card per project, active or done, loosies in Cut It's inbox. A page cites one as `cut-it/<slug>` or `cut-it/inbox`, and the gate resolves it there | — |
+| `plan-*.md` | The old home of what's open. `plan-v04.md` is the last one and is being moved onto the board by hand; do not add to it | — |
 
 ⚠️ Adding a page means adding it to `ref/README.md`'s index. The gate asserts the index lists
 exactly what exists.
@@ -61,8 +61,9 @@ were being crammed into `Facts`.
 
 ⛔ **Decided 2026-11-02 (Brendan): a `ref/device/` page holds only how Cut It uses the device.** What
 the device *is* — its facts, its measurements, its traps — is on its Reference page
-(`~/Sites/!reference/<slug>.md`), which the page links by that path in backticks (a markdown link
-would fail the gate's dangling check). So a device page has no What it is, Facts or Traps:
+(`~/Sites/!reference/<slug>.md`), which the page names by that path in backticks: the path Reference
+had as a folder, which the gate still resolves against its pages (a markdown link would fail the
+gate's dangling check). So a device page has no What it is, Facts or Traps:
 
 ```markdown
 <!-- schema: device -->
@@ -87,7 +88,7 @@ not the clock"*, `state` opens *"it knows nothing about what any key MEANS"*, `m
 of parts.** This one is a form, not a gate — nothing can check that the right decision was chosen.
 
 ⚠️ **`Design` holds what is DECIDED, not what is planned.** A table of features that do not exist is
-intent, and belongs in a `!projects` file.
+intent, and belongs on a card.
 
 ⚠️ **Every path on that line must exist**, so a page cannot outlive the abstraction it documents.
 `none` is a legitimate answer to `Gate` or `Checklist`.
@@ -157,7 +158,7 @@ list (`lua-list`; the SP-404's pad map was the one, until the device left the ri
 
 `item 228` is not "the 228th thing measured" — it is the ID of the `pgmout` row (now in Reference,
 `~/Sites/!reference/pure-data.md`). About 180 citations across the project resolve by grep, in this repo
-and in `~/Sites/!reference/`; the device facts' item numbers moved there unchanged.
+and in Cut It's Reference pages; the device facts' item numbers moved there unchanged.
 
 ⛔ **Item numbers are frozen (Brendan, 2026-11-02).** The ones that exist stay as IDs and keep
 resolving; **a new fact takes no number** — it is cited by its page and heading. So the `Item`

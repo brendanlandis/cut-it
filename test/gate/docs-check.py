@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The documentation gate. No Pd, no device, ~200 ms.
+"""The documentation gate. No Pd, no device, a couple of seconds.
 
     python3 test/gate/docs-check.py           check, exit non-zero on any failure
     python3 test/gate/docs-check.py -v        and list every check that passed
@@ -7,8 +7,9 @@
 Where a fact exists twice in machine-readable form -- a markdown table and a
 patch's `text define`, `route` box, a Lua list or wire.sh's aconnect lines -- it parses both
 and compares them. It resolves every pointer the repo makes: *.md names, script
-and patch paths, C-NN rule IDs, `cut-it/<slug>` refs and Reference pages. And it
-holds each ref/ page to its schema and each ⬜ to an Open section and an owner.
+and patch paths, C-NN rule IDs, and `cut-it/<slug>` cards and Reference pages,
+which are on Regular Notebook's board. And it holds each ref/ page to its
+schema and each ⬜ to an Open section and an owner.
 The anchor syntax and the schemas are the `docs` skill's. A ⬜ must sit in an
 `Open` section, so open work keeps exactly one home: three documents pointed at
 `plan-v04.md` §4 for months while that section did not exist.
@@ -17,11 +18,15 @@ A check that cannot find what it is checking fails: an anchor naming a table or
 an array that is not there is a failure, so every lookup raises rather than
 returning empty.
 """
+import atexit
 import pathlib
 import pwd
 import os
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 
 import lib_pd
 
@@ -58,17 +63,25 @@ TEXT_SUFFIXES = ('.md', '.pd', '.sh', '.py', '.txt', '.lua', '.pd_lua')
 SKIP_DIRS = {'.git', '__pycache__', 'device-state', 'node_modules',
              '! v0.1 plans', '! v0.2 plans', 'plan-v04.md'}
 
-# Open work lives in !projects and Reference pages in !reference, both in
-# ~/Sites beside this repo. A missing directory fails the check rather than
-# finding nothing. From a worktree elsewhere the repo's parent is not ~/Sites,
-# so fall back to the account's home from the password database, not $HOME:
-# test/runner/gates.py runs every gate with HOME pointed at an empty directory.
-SITES = (ROOT.parent if (ROOT.parent / '!projects').is_dir()
-         else pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir) / 'Sites')
-PROJECTS = SITES / '!projects' / 'cut-it'
+# Open work is a card on Regular Notebook's board, and an outside thing's facts a
+# page of its Reference, since 2026-11-18, when the !projects and !reference
+# folders went. robot, the app's command, reads both, once a run: one
+# `robot export` of the board and one `robot pages`, started before the other
+# checks so they run alongside them (fetch_board()). A board robot can't reach
+# fails the check rather than finding nothing.
+# From a worktree elsewhere the repo's parent is not ~/Sites, so fall back to the
+# account's home from the password database, not $HOME: test/runner/gates.py runs
+# every gate with HOME pointed at an empty directory. robot gets that home back
+# as its HOME, since `security` finds the keychain holding its key by it.
+HOME = pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir)
+SITES = (ROOT.parent if (ROOT.parent / 'app.regularnotebook.com').is_dir()
+         else HOME / 'Sites')
+ROBOT = SITES / 'app.regularnotebook.com' / 'bin' / 'robot'
+ROBOT_TIMEOUT = 60
 PROJ_REF = re.compile(r'(?<![\w/.-])cut-it/([a-z0-9-]+)(?:#[a-z0-9-]+)?\b')
 
-REFERENCE = SITES / '!reference'
+# A Reference page as Cut It named it while Reference was a folder; the name is
+# still the page's slug.
 REF_PAGE = re.compile(r'!reference/([a-z0-9-]+)\.md')
 
 
@@ -544,7 +557,7 @@ def open_span(marked):
     return start, end
 
 
-# An owner is a plan file, a `!projects` ref (see PROJ_REF), or the literal
+# An owner is a plan file, a card's ref (see PROJ_REF), or the literal
 # escape hatch. The ref is resolved by check_project_refs; here it only has
 # to be named.
 OWNER = re.compile(r'\bplan-v[0-9.]+\.md|\bcut-it/[a-z0-9-]+|\bNO PLAN OWNS THIS\b')
@@ -804,74 +817,151 @@ def check_closers(verbose):
     return out
 
 
-def check_project_refs(verbose):
-    """Every `cut-it/<slug>` named anywhere resolves to a file in `!projects`.
+class Board:
+    """What the checks look up on the board, fetched once a run (board()).
 
-    Same walk and same rule as check_dangling_docs: in a .pd, .sh or .py a bare
-    mention IS the pointer, and in .md too, since the ref form has no link
-    syntax of its own. A slug resolves to active/<slug>.md or done/<slug>.md;
-    `inbox` is the loosie file, and resolves while that file exists.
-
-    Fails if `!projects` is not there: a ref that could not be looked up did
-    not resolve.
+    `cards` is the set of Cut It's card slugs, active or done, and `pages` the
+    set of Reference's page slugs. Either is a str instead when robot couldn't
+    get it: why, for the check that needed it to say.
     """
-    if not PROJECTS.is_dir():
-        return [f'{PROJECTS} is not a directory -- the !projects repo must sit '
-                f'beside this one for cut-it/<slug> refs to resolve']
-    out, seen = [], 0
+    def __init__(self, cards, inbox, pages):
+        self.cards, self.inbox, self.pages = cards, inbox, pages
+
+
+_BOARD = None
+_FETCHING = None
+
+
+def fetch_board():
+    """Start robot fetching the board, so it runs while the other checks do."""
+    global _FETCHING
+    if _FETCHING is None:
+        tmp = pathlib.Path(tempfile.mkdtemp(prefix='docs-check-'))
+        atexit.register(shutil.rmtree, tmp, True)
+        _FETCHING = tmp / 'board', _robot('export', str(tmp / 'board')), _robot('pages')
+
+
+def board():
+    """The board, from the one `robot export` and one `robot pages` fetch_board() started."""
+    global _BOARD
+    if _BOARD is None:
+        fetch_board()
+        out, export, pages = _FETCHING
+        why, _ = _finish(export)
+        cards, inbox = why, False
+        if why is None:
+            mine = out / 'cut-it'
+            if mine.is_dir():
+                cards = {f.stem for d in ('active', 'done') for f in (mine / d).glob('*.md')}
+                inbox = (mine / 'inbox').with_suffix('.md').is_file()
+            else:
+                cards = 'its export of the board holds no cut-it/'
+        why, listing = _finish(pages)
+        slugs = why if why is not None else {
+            ln.split('\t', 1)[0] for ln in listing.splitlines() if ln.strip()}
+        if not slugs:
+            slugs = '`robot pages` listed no pages'
+        _BOARD = Board(cards, inbox, slugs)
+    return _BOARD
+
+
+def _robot(*args):
+    """robot, started with HOME the account's own. -> a Popen, or why it couldn't start."""
+    try:
+        return subprocess.Popen([str(ROBOT), *args], env=dict(os.environ, HOME=str(HOME)),
+                                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, text=True)
+    except OSError as e:
+        return f'it would not start: {e.strerror}'
+
+
+def _finish(proc):
+    """-> (None, stdout) when robot succeeded, else (why, '')."""
+    if isinstance(proc, str):
+        return proc, ''
+    try:
+        stdout, stderr = proc.communicate(timeout=ROBOT_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.communicate()
+        return f'`robot {proc.args[1]}` gave no answer in {ROBOT_TIMEOUT} s', ''
+    if proc.returncode != 0:
+        said = [ln for ln in stderr.splitlines() if ln.strip()]
+        return (f'`robot {proc.args[1]}` exited {proc.returncode}'
+                + (f': {said[-1].strip()}' if said else '')), ''
+    return None, stdout
+
+
+def _texts():
+    """Every text file the ref checks walk, with its body. Same walk and same rule
+    as check_dangling_docs: in a .pd, .sh or .py a bare mention IS the pointer,
+    and in .md too, since neither ref form has link syntax of its own."""
     for src in sorted(ROOT.rglob('*')):
         if not src.is_file() or src.suffix not in TEXT_SUFFIXES:
             continue
         if any(p in SKIP_DIRS for p in src.relative_to(ROOT).parts):
             continue
         try:
-            body = src.read_text(encoding='utf-8')
+            yield src, src.read_text(encoding='utf-8')
         except UnicodeDecodeError:
             continue
+
+
+def check_project_refs(verbose):
+    """Every `cut-it/<slug>` named anywhere is a card of Cut It's on the board.
+
+    A slug resolves to a card, active or done; `inbox` is Cut It's loosies, and
+    resolves while it has an inbox.
+
+    Fails if robot couldn't reach the board: a ref that could not be looked up
+    did not resolve.
+    """
+    cards = board().cards
+    inbox = board().inbox
+    if isinstance(cards, str):
+        return [f'robot could not reach the board ({cards}), so no cut-it/<slug> '
+                f'ref could be looked up. robot is {ROBOT}']
+    out, seen = [], 0
+    for src, body in _texts():
         for slug in sorted(set(PROJ_REF.findall(body))):
             seen += 1
-            if slug == 'inbox' and (PROJECTS / slug).with_suffix('.md').exists():
+            if slug == 'inbox' and inbox:
                 continue
-            if any((PROJECTS / d / f'{slug}.md').exists() for d in ('active', 'done')):
+            if slug in cards:
                 continue
             out.append(f'{src.relative_to(ROOT)}  cites cut-it/{slug}, which is not '
-                       f'in {PROJECTS}/active or done')
+                       f'a card on the board, active or done')
     if verbose:
-        print(f'  {seen} project ref(s) resolved against {PROJECTS.name}/')
+        print(f'  {seen} project ref(s) resolved against the board\'s {len(cards)} cut-it card(s)')
     return out
 
 
 def check_reference_refs(verbose):
-    """Every `!reference/<slug>.md` named anywhere is a page that exists.
+    """Every `!reference/<slug>.md` named anywhere is a Reference page.
 
-    Same walk as check_project_refs, and it fails the same way when the
-    directory isn't there: a pointer that could not be looked up did not resolve.
+    Same walk as check_project_refs, and it fails the same way when robot
+    couldn't reach the board: a pointer that could not be looked up did not
+    resolve.
     """
-    if not REFERENCE.is_dir():
-        return [f'{REFERENCE} is not a directory -- the !reference folder must sit '
-                f'beside this repo for its pages to resolve']
+    pages = board().pages
+    if isinstance(pages, str):
+        return [f'robot could not reach the board ({pages}), so no Reference page '
+                f'could be looked up. robot is {ROBOT}']
     out, seen = [], 0
-    for src in sorted(ROOT.rglob('*')):
-        if not src.is_file() or src.suffix not in TEXT_SUFFIXES:
-            continue
-        if any(p in SKIP_DIRS for p in src.relative_to(ROOT).parts):
-            continue
-        try:
-            body = src.read_text(encoding='utf-8')
-        except UnicodeDecodeError:
-            continue
+    for src, body in _texts():
         for slug in sorted(set(REF_PAGE.findall(body))):
             seen += 1
-            if not (REFERENCE / f'{slug}.md').exists():
+            if slug not in pages:
                 out.append(f'{src.relative_to(ROOT)}  points at !reference/{slug}.md, '
                            f'which is not a Reference page')
     if verbose:
-        print(f'  {seen} Reference page(s) resolved')
+        print(f'  {seen} Reference page(s) resolved against the board\'s {len(pages)}')
     return out
 
 
 def main():
     verbose = '-v' in sys.argv
+    fetch_board()
     problems = (check_anchors(verbose) + check_dangling_docs(verbose)
                 + check_shape(verbose) + check_index(verbose)
                 + check_rule_ids(verbose) + check_skill_rules(verbose)

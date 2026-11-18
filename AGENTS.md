@@ -54,8 +54,9 @@ the actual device (Reference, Organelle page).
 
 **[ref/](ref/README.md) is one page per module**, and the directory is the kind. A page holds how Cut It
 uses its module and what Cut It chose. ⛔ **What is true of an outside device or program — what it is,
-what was measured, what will bite you — lives in Reference** (`~/Sites/!reference/`, one page per thing,
-shown on Back Office's /reference page); a `ref/device/` page links to it and keeps only Cut It's side.
+what was measured, what will bite you — lives in Reference** (Regular Notebook's, one page per thing,
+printed by `robot fetch page <slug>`; `robot` is `~/Sites/app.regularnotebook.com/bin/robot`); a
+`ref/device/` page links to it and keeps only Cut It's side.
 **One fact, one place:** a new device fact goes on its Reference page, not here.
 
 | Looking for | Go to |
@@ -64,13 +65,13 @@ shown on Back Office's /reference page); a `ref/device/` page links to it and ke
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
-| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo: `~/Sites/!reference/` — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `korg-nanokey` `critter-guitari-organelle-1` `korg-volca-fm` `waldorf-streichfett` `pure-data` `touchosc` (and `meeblip-cubit` `arturia-beatstep` `roland-sp-404mkii` `behringer-xenyx-q802usb`). Find a repo's with `grep -l "used_by:.*cut-it" ~/Sites/!reference/*.md` |
+| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `korg-nanokey` `critter-guitari-organelle-1` `korg-volca-fm` `waldorf-streichfett` `pure-data` `touchosc` (and `meeblip-cubit` `arturia-beatstep` `roland-sp-404mkii` `behringer-xenyx-q802usb`). List Cut It's with `robot pages --used-by cut-it` |
 | How Cut It **uses** one physical device | [ref/device/](ref/device/) — `launchpad` `nanokey` `nanokontrol` `organelle` `phone` `streichfett` `volca` |
 | One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `debug` `display` `error` `map` `presence` `sequencer` `songs` `state` `synths` `tempo` `voices` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
 | How Cut It lives on the Organelle as a **computer** — its data, measuring, deploying (the Organelle itself: Reference) | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
 | The wifi fault — Cut It's watchers and the stage procedure (the fault itself: Reference) | [ref/wifi.md](ref/wifi.md) ⚠️ background, not blocking |
-| A cited `item NNN` | `grep` it here **and in `~/Sites/!reference/`** — item numbers are **fact IDs**, not log entries; the device facts moved there |
+| A cited `item NNN` | `grep` it here **and in Cut It's Reference pages** — item numbers are **fact IDs**, not log entries; the device facts moved there |
 | The manual, read on GitHub as [MANUAL.md](MANUAL.md): its prose in `manual/`, its tables made from the patch's own by `manual/build.py`, which writes it. Edit the prose, never MANUAL.md; `test/gate/manual-check.py` fails when it falls behind | [manual/](manual/) |
 | **Every test** — the headless gates, the hands-on checklists, the stubs | [test/README.md](test/README.md) |
 | What each operational tool and probe does | [tools/README.md](tools/README.md) |
@@ -193,7 +194,7 @@ can actually tick, so the longest gate sets the floor. **A faster machine will n
   the window slows down, and the results stop meaning anything. Six were once stacked here by accident
   and two "failures" were nothing but the cleanup kill.
 - **Documentation-only changes do not need it.** `python3 test/gate/docs-check.py` covers those and
-  returns in under a second. Save the full suite for when a `.pd` actually changed.
+  returns in a couple of seconds. Save the full suite for when a `.pd` actually changed.
 - **It is cheap enough to run after each `.pd` change**, but it is still a gate, not a linter.
 
 **Nothing reports itself unless the patch reports it.** Two things make that survivable:
@@ -218,16 +219,16 @@ is master tempo. Nothing on the instrument can detect it. See
 
 ## How the documentation works
 
-**`ref/` states what IS. What is OPEN lives in `!projects/cut-it`, the repo beside this one, and
+**`ref/` states what IS. What is OPEN lives on Cut It's cards, on Regular Notebook's board, and
 in [plan-v04.md](plan-v04.md) until it is moved there.** If you find yourself writing "we should…"
-in a `ref/` page, it belongs in a project file or a loosie. If you find yourself writing "and it
+in a `ref/` page, it belongs on a card or in a loosie. If you find yourself writing "and it
 works" there, that step should have been ticked.
 
-**A page cites its owner by the form the `!projects` board produces**: `cut-it/<slug>` for a file
-under `active/` or `done/`, `cut-it/<slug>#<step>` for one step of it, `cut-it/inbox` for a
-loosie. ⚠️ **It works in a `.pd` comment too**, since it needs no link syntax, and
-`test/gate/docs-check.py` resolves every one against the filesystem — and fails if `!projects` is
-not beside this repo.
+**A page cites its owner by the form the board produces**: `cut-it/<slug>` for a card, active or
+done, `cut-it/<slug>#<step>` for one step of it, `cut-it/inbox` for a loosie. ⚠️ **It works in a
+`.pd` comment too**, since it needs no link syntax, and `test/gate/docs-check.py` resolves every one
+against the board, from one `robot export` a run, as it does every `!reference/<slug>.md` (the old
+name for a Reference page) against `robot pages` — and fails if robot can't reach the board.
 
 ⚠️ **A plan is scoped to one piece of work and is DELETED when the work lands** — `plan-v02` and
 `plan-v03` both went that way. [plan-v04.md](plan-v04.md) is the exception that persists, because it
@@ -244,7 +245,7 @@ plan-v0.3.4.1 are all gone** — the measurement session ran on 2026-08-08, `tes
 **all seven benches were run and judged on 2026-08-11**, and panic became `recover` the same day.
 The facts are on `ref/` pages and the reasoning is in `git log`.
 
-⛔ **Every ⬜ must name the plan, the `!projects` ref or the version that closes it**, and `check_closers`
+⛔ **Every ⬜ must name the plan, the `cut-it/<slug>` card or the version that closes it**, and `check_closers`
 enforces it unconditionally — it ran behind `--strict` only while the v0.3.5 batch was in flight.
 ⚠️ **An open item LEADS with the glyph**; a sentence that merely mentions ⬜ mid-line is read as prose
 about the marker, except inside an `## Open` section where the lead test is dropped. `NO PLAN OWNS
@@ -291,7 +292,7 @@ Links to paths containing spaces use the angle-bracket form:
   condition than a rig session, because nobody was perturbing it. **Before booking a measurement
   against a session with hands on the hardware, ask what it actually needs**: eyes, fingers, a
   cable, or only a reachable device.
-- ⛔ **Before diagnosing a hardware symptom, grep `ref/` and `~/Sites/!reference/` for its literal error string.** A Launchpad
+- ⛔ **Before diagnosing a hardware symptom, grep `ref/` and the device's Reference page for its literal error string.** A Launchpad
   that would not enumerate — `can't set config #1, error -32` — was diagnosed from scratch across
   five physical tests on 2026-08-08, and [ref/rig.md](ref/rig.md) had already written it up **with
   that exact code in the text**. Symptoms are as greppable as `item NNN`, and cost more to re-derive.

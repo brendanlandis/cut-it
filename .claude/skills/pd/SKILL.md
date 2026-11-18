@@ -180,10 +180,10 @@ on its first can-it-fail run. Reintroduce the bug, watch it go red, revert.
 | `~/Sites/!reference/pure-data.md` | What Pd itself does — the behavior and the traps the rules work around, measured in 0.49 and marked where 0.57 differs |
 | `ref/workflow.md` | How the loop is run — deploy, the by-hand SSH console, how a phase runs |
 | `ref/README.md` | How the documentation is organized, and the page schema |
-| `ref/device/<name>.md` | How Cut It uses one device; the device itself is on its page in `~/Sites/!reference/` |
+| `ref/device/<name>.md` | How Cut It uses one device; the device itself is on its Reference page |
 | `ref/module/<name>.md` | One instrument concern |
 | `AGENTS.md` | Repo layout, working notes, the device itself |
-| `!projects/cut-it/` | **What is open** — the repo beside this one. A comment cites a file as `cut-it/<slug>`, a loosie as `cut-it/inbox`; the docs gate resolves both. `plan-v04.md` is the last plan document and is being moved there by hand |
+| Cut It's cards | **What is open** — on Regular Notebook's board. A comment cites a card as `cut-it/<slug>`, a loosie as `cut-it/inbox`; the docs gate resolves both there. `plan-v04.md` is the last plan document and is being moved there by hand |
 
 **Off-device development is the default.** Open `Cut It/main-dev.pd` in Pd 0.57 on the Mac and the
 whole instrument is there — `u_mother-stub` draws the front panel inline and fakes the knobs, keys,

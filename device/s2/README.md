@@ -31,11 +31,12 @@ sudo nmcli connection modify hildegard ipv4.method manual ipv4.addresses 192.168
     ipv4.gateway 192.168.1.1 ipv4.dns 192.168.1.1
 ```
 
-The Orbi also reserves `.15` for its Wi-Fi stick (a D-Link 802.11ac, Realtek RTL8822BU,
-`C8:78:7D:94:F4:6D`, Brendan's own; the one that came with the S2 is a Ralink RT5572), which keeps
-the address free. The reservation alone didn't do it: the Orbi kept giving out the `.13` it had
-already leased that stick, even after a DHCP release. The connection lives on the card, in
-`/sdcard/system-connections`, so a reflash or **Forget Saved Nets** loses it.
+The Orbi also reserves `.15` for its Wi-Fi stick, which keeps the address free: the Organelle 1's
+Ralink RT5370, `70:F1:1C:26:BD:EE` (from 2026-11-19; the RT5572 that came with the S2 is set aside).
+The reservation alone didn't do it: the Orbi kept giving out the `.13` it had already leased an
+earlier stick, even after a DHCP release. The connection lives on the card, in
+`/sdcard/system-connections`, so a reflash or **Forget Saved Nets** loses it; it isn't tied to a
+stick, so a new one joins as `.15` at once.
 
 ## What `setup.sh` changes
 
@@ -43,13 +44,17 @@ already leased that stick, even after a DHCP release. The connection lives on th
 |---|---|---|
 | `pdsettings` | `/home/music/.pdsettings` | MIDI devices 2 to 4, in and out, which `wire.sh` connects by name. The factory's has one; ALSA MIDI (`midiapi: 1`) is already factory on the S2. |
 | `mount.sh` | `fw_dir/scripts/mount.sh` | The Organelle 1's guard: a write-protected volume (the Launchpad's) is never mounted on `/usbdrive`. The factory script has the same flaw; `../README.md` has the story. |
-| `wifi_setup.py` | `fw_dir/scripts/wifi_setup.py` | **Start AP** on the WiFi menu, which 5.1 dropped though its code stayed. The access point takes `192.168.1.15`, the address the house router reserves for the Organelle, so the phone sends to one address on both networks; its name and password are `/sdcard/ap.txt`'s, as on the Organelle 1. |
+| `wifi_setup.py` | `fw_dir/scripts/wifi_setup.py` | **Start AP** on the WiFi menu, which 5.1 dropped though its code stayed. The access point takes `192.168.1.15`, the address the house router reserves for the Organelle, so the phone sends to one address on both networks; its name and password are `/sdcard/ap.txt`'s, as on the Organelle 1. And it's plain WPA2 with AES, which the factory's isn't: an iPhone can't join that one (the S2's Reference page, *OS 5.1*). |
 | `usr-bin-pd` | `/usr/bin/pd` | Runs Pd 0.57 from `/sdcard/pd-0.57-0`; mother launches `/usr/bin/pd`. |
 | — | `systemd-timesyncd` enabled | The S2 has no clock that keeps time, and the read-only root keeps fake-hwclock from saving one, so each boot starts at the image's date (2026-03-17). Network time sets it on any network with the internet. |
 
 `Cut It/phone-ip.sh` knows the S2's access point by NetworkManager's `Hotspot` connection being
 up, where the Organelle 1's was create_ap's hostapd. `Cut It/codec-gain.sh` sets the S2's WM8731
 (the line input at its most gain), and the Organelle 1's SGTL5000 as before.
+
+⚠️ **The WiFi menu keeps running the copy of `wifi_setup.py` it started with** while its menu is
+open, so a new one takes effect the next time the menu opens. Don't kill the running one to hurry
+it: that froze the S2 until it was restarted.
 
 **To revert** any of the files, between the remounts: copy its `.orig` back. `/usr/bin/pd` was a
 link: `sudo ln -sfn /etc/alternatives/pd /usr/bin/pd` puts the Debian package's Pd 0.53 back,

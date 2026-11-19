@@ -109,7 +109,9 @@ Item 214 is why it stopped being trusted.
    address the house router reserves ([device/README.md](../device/README.md))
 3. Organelle: load **Cut It** — `phone-ip.sh` finds the phone's address from the DHCP lease
 
-✅ Verified end to end. Airplane mode is what makes this worth doing: a phone *hotspot* needs
+✅ Verified end to end, and again on the S2 (2026-11-19) with the Cut It app: the same three steps,
+the access point being `device/s2`'s **Start AP**. ⚠️ **The S2 rejoins `hildegard` by itself at
+boot**: its NetworkManager connects a saved network, unlike the Organelle 1. Airplane mode is what makes this worth doing: a phone *hotspot* needs
 cellular, an AP the Organelle hosts does not.
 
 ⛔ **NEITHER NETWORK CONNECTS AUTOMATICALLY, AND THAT IS A CHOICE RATHER THAN A GAP.** The house

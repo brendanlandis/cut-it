@@ -1,7 +1,7 @@
 <!-- Cut It's icon (Brendan's pick, 2026-11-15): a splice's cut, its two ends slipped apart, white
      leader and red tape, the wax pencil's mark in red. The whole square, for a phone, which rounds it itself.
-     Draft 14 of the studio repo's cut-it/drafts/icons; cut-it/assets/icons/make.py writes this file. -->
+     Draft 14 of the studio repo's cut-it/drafts/icons. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 824 824">
-  <rect x="100" y="100" width="824" height="824" rx="0" fill="#24272e"/>
+  <rect id="ground" x="100" y="100" width="824" height="824" rx="0" fill="#24272e"/>
   <g transform="rotate(-8 512 512)"><polygon points="-100,351 615,351 385,581 -100,581" fill="#f6f2e8"/><polygon points="639,443 1124,443 1124,673 409,673" fill="#ff1f40"/><line x1="474" y1="396" x2="334" y2="536" stroke="#ff1f40" stroke-width="18" stroke-linecap="round"/></g>
 </svg>

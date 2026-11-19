@@ -26,7 +26,7 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_KEY_CFBundleDisplayName: Cut It
         # The icon (Brendan's pick, 2026-11-15): a splice's cut, white leader and red tape. AppIcon.svg is a copy of
-        # square.svg in the design repo's cut-it/icon, from which its shared/icon/app-icon.cjs writes CutIt/Assets.xcassets.
+        # square.svg in the studio repo's cut-it/assets/icons, from which its shared/icon/app-icon.cjs writes CutIt/Assets.xcassets.
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UILaunchScreen_Generation: YES

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# testflight.sh: sends the phone app to TestFlight, as super-boring's bin/testflight sends its own
+# testflight.sh: sends the phone app to TestFlight, as small-thoughts' bin/testflight sends its own
 # (2026-11-15, !projects' cut-it/phone-through-testflight), where the TestFlight app on the phone,
 # with Automatic Updates on, installs it by itself.
 #

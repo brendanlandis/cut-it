@@ -388,8 +388,10 @@ Brendan's (2026-11-05): a distortion and a delay on each track, so different dru
 different delays, and a send from each to one reverb, since sixteen reverbs are more than the
 Organelle can afford. The phone's drum screen sets them for the selected track
 ([phone.md](../device/phone.md)), `c_steps` keeps and saves them with the pattern, as it does a
-track's volume and pitch, and `c_kit` plays them. Measured on the Organelle, each in a second Pd
-beside the live one (its Reference page, *Cut It's drum effects*):
+track's volume and pitch, and `c_kit` plays them. Measured on the Organelle 1's one core, each in a
+second Pd beside the live one (its Reference page, *Cut It's drum effects*). The S2 plays the whole
+patch at 8.8 % of one of its cores against the Organelle 1's 39–44 % ([device-os.md](../device-os.md)),
+so these shrink about four to five times there; none is measured there one by one:
 
 | | Its share of the core |
 |---|---|
@@ -408,7 +410,7 @@ scaled to the 0.33% the old one measured on the Organelle. The low figure is the
 the high one the instructions', which the Mac's Reference page counts the nearer guess where a
 box calls a function:
 
-| Character, while its voice sounds | Against the old distortion | Estimate on the Organelle |
+| Character, while its voice sounds | Against the old distortion | Estimate on the Organelle 1 |
 |---|---|---|
 | Soft, hard or fold | 2.0× the cycles, 2.55× the instructions | 0.65–0.85% |
 | Crush | 2.8× the cycles, 4.1× the instructions | 0.9–1.35% |
@@ -424,8 +426,8 @@ tail has died, so turning one down never cuts what it is still sounding. Nothing
 thinner for being switched: a switched-off abstraction's output is silence, and the distortion adds
 to the dry sound only what it changes. The 0.6 the kit costs at rest more than it did is sixteen
 `delwrite~`s, which cost a little even switched off, and the voices' switched-off distortion and
-sends. On the full rig's 15.2% that makes about 15.8%, inside `tools/display-cpu.sh`'s budget of
-16.2%: an estimate from the second Pd, until the instrument is measured with them deployed.
+sends. On the Organelle 1's full rig of 15.2% that made about 15.8%, inside its budget of 16.2%;
+the S2 idles with them deployed at 7.0–7.6 % ([device-os.md](../device-os.md)).
 
 **The distortion is in the voice, the delay beside it.** A distortion only ever sounds while its
 voice does, so in `c_voice` it costs nothing between hits; a delay's echoes outlive the hit, so it
@@ -602,9 +604,9 @@ down there, plays its last 12 s in the time its steps take, slower and lower.
 **What it costs**, measured on the Mac with `-batch` against a delay's cost (`-r 44100`, 120 s of audio,
 least of five runs of `c_kit` alone), and scaled to a delay's 1.05% on the device: at rest, recording,
 0.18–0.30% of the core more than before (0.17× a delay's cycles, 0.29× its instructions), which takes
-the kit from 1.7% to about 2%; held, 1.45–1.7% more (1.63× the cycles, 1.39× the instructions). Estimates
-until measured on the Organelle. `tools/display-cpu.sh`'s budget of 16.2% has about 0.1 left on the
-effects' estimate; an Organelle S2 is coming (Brendan, 2026-11-05), so this one is not worth more boxes.
+the kit from 1.7% to about 2%; held, 1.45–1.7% more (1.63× the cycles, 1.39× the instructions), all
+of the Organelle 1's core, where its budget had about 0.1 left. Unmeasured on the S2, where the whole
+patch idles at 7.0–7.6 % of one core.
 
 ### The 500 BPM repeat
 
@@ -687,8 +689,8 @@ over 20 ms, so the knob's places do not zipper.
 
 **What it costs**, on the Mac, least of five runs of `c_kit` alone under `-batch`, as above: 0.113% of real
 time before it, 0.129% at rest, 0.174% looping and 0.184% on the sine alone, the player off. Scaled as the
-kit's 1.7% on the device, about 0.2%, 0.8% and 1% of the Organelle's core, with the ticks' Lua saved while
-looping. Estimates until measured on the Organelle.
+kit's 1.7% on the Organelle 1, about 0.2%, 0.8% and 1% of its core, with the ticks' Lua saved while
+looping. Estimates, unmeasured on the S2.
 
 ### The saved tempo
 
@@ -771,5 +773,5 @@ loads and is put back as it was, with nothing muted.
 - ⬜ **A held repeat's tails, the 500 BPM repeat, the saved tempo and the random pitch have not played on
   the rig** (`cut-it/drum-timing`), nor been measured there: the sequencer checklist's steps 47 to 54
   judge them, and `e_tape`'s cost above is the Mac's estimate.
-- ⬜ **The Lua version has not played on the rig**: its CPU beside the Pd version's 11.2% with the
+- ⬜ **The Lua version has not played on the rig**: its CPU beside the Pd version's 11.2% on the Organelle 1 with the
   drum machine playing (`~/Sites/!reference/pure-data.md`, *Newer versions on the Organelle*) is unmeasured. See `cut-it/logic-as-text`.

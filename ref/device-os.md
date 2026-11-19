@@ -114,7 +114,7 @@ repeated alert state 2/s, and the late-join repeat 1/s. ✅ **`u_net` costs abou
 Items 118 and 134.
 
 ⛔ **The budget belongs to the newest row that matches your rig, and `tools/display-cpu.sh` holds
-it: 16.2 %**, the 2026-11-05 full rig's 15.2 % plus one point. A threshold that stays put while the patch
+it: 8.6 %**, the 2026-11-19 S2 row's 7.6 % plus one point. A threshold that stays put while the patch
 grows says OVER BUDGET on every run and stops carrying information — **a threshold nobody moves is a
 threshold nobody reads. When this table gains a row, move that number and name the row it came from.**
 
@@ -133,6 +133,22 @@ something changed, so with the transport stopped it sends nothing and adds nothi
 second and lands on Phase 6's 11.7–12.0 % row; these readings sit a point and a half below it, which
 is why they are recorded as idle-and-stopped. **The 11.7 % readings are a different rig state, not a
 contradiction** — which is the rule this table already states.
+
+### What an effect may cost
+
+⛔ **Every new effect is measured on the S2 as it is built**: `tools/display-cpu.sh` with it on and
+sounding, and a row in the table above. And each one is:
+
+- **Off while unused**: a `switch~`, off while its mix, its level or every send is 0, and on after
+  that only until its tail has died ([module/sequencer.md](module/sequencer.md)).
+- **Shared where it can be**: one reverb on sends, not one a track.
+- **Self-contained**: audio in, audio out, its parameters on one receive. Pd's DSP runs on one core,
+  and a second Pd on another (`pd~`) hears none of the named sends, so an effect built this way is
+  what can move there.
+
+**A quarter of the core stays free**, so the audio never drops out. **Spreading Cut It over the S2's
+other cores is shelved** (Brendan, 2026-11-19) until one core passes about half; the whole patch
+plays at 8.8 % of one.
 
 ### Deploying
 

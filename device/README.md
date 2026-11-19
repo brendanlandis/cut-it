@@ -4,6 +4,9 @@ Copies of configuration that otherwise **lives only on hardware and has no other
 Nothing here is deployed — these are restore sources, and a record of what was changed from
 factory.
 
+This folder is the Organelle 1's. The Organelle S2, which replaced it in November 2026, has its
+own in `s2/`, with these changes carried over.
+
 | File | Restores to | Notes |
 |---|---|---|
 | `pdsettings` | `/root/.pdsettings` on the Organelle | Governs MIDI. `/root` is read-only — run `/root/fw_dir/scripts/remount-rw.sh` first, `remount-ro.sh` after. |

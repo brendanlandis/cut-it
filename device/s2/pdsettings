@@ -1,0 +1,33 @@
+audioapi: 1
+noaudioin: False
+audioindev1: 4 2
+audioindevname1: audioinjector-pi-soundcard (hardware)
+noaudioout: False
+audiooutdev1: 4 2
+audiooutdevname1: audioinjector-pi-soundcard (hardware)
+audiobuf: 10
+rate: 44100
+callback: 0
+audioblocksize: 64
+midiapi: 1
+nomidiin: False
+midiindev1: 0
+midiindevname1: ALSA MIDI device #1
+midiindev2: 1
+midiindev3: 2
+midiindev4: 3
+nomidiout: False
+midioutdev1: 0
+midioutdevname1: ALSA MIDI device #1
+midioutdev2: 1
+midioutdev3: 2
+midioutdev4: 3
+path1: /home/music/Pd/externals
+npath: 1
+standardpath: 1
+verbose: 0
+nloadlib: 0
+defeatrt: 0
+flags: -alsamidi
+zoom: 1
+loading: no

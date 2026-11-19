@@ -5,7 +5,8 @@
 # By NAME, never by client number, because the numbers move between boots
 # (Reference, critter-guitari-organelle-1, mother's autoconnect).
 #
-# Pd port map (matches /root/.pdsettings, 4 in / 4 out):
+# Pd port map (matches .pdsettings, 4 in / 4 out; in /root on the Organelle 1,
+# /home/music on the S2):
 #   Pure Data:0..3  = Midi-In  1..4   -> Pd channels 1-16, 17-32, 33-48, 49-64
 #   Pure Data:4..7  = Midi-Out 1..4
 #

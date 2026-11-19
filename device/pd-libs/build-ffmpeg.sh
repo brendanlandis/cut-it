@@ -48,7 +48,7 @@ step ./configure \
     --disable-programs --disable-doc --disable-network \
     --disable-avdevice --disable-avfilter --disable-swscale --disable-postproc \
     --enable-static --disable-shared --enable-pic --disable-debug \
-    --cpu=cortex-a9 --extra-cflags=-mfpu=neon \
+    --arch=arm --cpu=${FF_CPU:-cortex-a9} --extra-cflags="${FF_CFLAGS:--mfpu=neon}" \
     --enable-protocol=file \
     --enable-demuxer=wav,aiff,mp3,flac \
     --enable-parser=mpegaudio,flac \

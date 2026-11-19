@@ -1,0 +1,568 @@
+import os
+import imp
+import sys
+import time
+import threading
+import subprocess
+
+# Setup environment
+user_dir = os.getenv("USER_DIR", "/sdcard")
+fw_dir = os.getenv("FW_DIR")
+
+# Import UI module
+current_dir = os.path.dirname(os.path.abspath(__file__))
+og = imp.load_source('og', current_dir + '/og.py')
+
+# WiFi connection states
+NOT_CONNECTED = 0
+CONNECTING = 1
+CONNECTED = 2
+DISCONNECTING = 3
+CONNECTION_ERROR = 4
+AP_MODE = 5
+
+# Cut It: the access point takes the address the house router reserves for this Organelle, so
+# the phone sends to one address on both networks (cut-it device/s2/README.md). Its name and
+# password are the two lines of ap.txt in USER_DIR, as on the Organelle 1; without it, the
+# factory's. Factory OS 5.1 has start_ap_mode() but no menu item that calls it.
+AP_ADDRESS = "192.168.1.15"
+
+# WiFi state variables
+state = NOT_CONNECTED
+connecting_timer = 0
+current_net = ''
+ip_address = ''
+
+# Web server states
+WEB_SERVER_STOPPED = 0
+WEB_SERVER_RUNNING = 1
+web_server_state = WEB_SERVER_STOPPED
+
+
+# Ethernet state
+ethernet_connected = False
+ethernet_ip = ''
+
+# UI elements
+menu = og.Menu()
+network_menu = og.Menu()
+
+# === WiFi Control Functions ===
+
+def run_cmd(cmd):
+    """Run command with sudo, return output or False"""
+    cmd = "sudo " + cmd
+    try:
+        return subprocess.check_output(['bash', '-c', cmd], close_fds=True, text=True)
+    except:
+        return False
+
+def run_cmd_check(cmd):
+    """Run command with sudo, return True/False on success/failure"""
+    cmd = "sudo " + cmd
+    try:
+        subprocess.check_output(['bash', '-c', cmd], close_fds=True, text=True)
+        return True
+    except:
+        return False
+
+def start_web_server():
+    """Start the web server"""
+    global web_server_state
+    run_cmd('systemctl start ogweb')
+    web_server_state = WEB_SERVER_RUNNING
+
+def stop_web_server():
+    """Stop the web server"""
+    global web_server_state
+    run_cmd('systemctl stop ogweb')
+    web_server_state = WEB_SERVER_STOPPED
+
+def wifi_connected():
+    """Check if WiFi is connected and update network info"""
+    global ip_address, current_net
+    try:
+        result = subprocess.run(['wpa_cli', '-i', 'wlan0', 'status'], 
+                              capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            wifi_info = result.stdout.splitlines()
+            if any("ip_address" in s for s in wifi_info):
+                update_network_info(wifi_info)
+                return True
+    except:
+        pass
+    return False
+
+def update_network_info(info):
+    """Update IP address and current network from wpa_cli output"""
+    global ip_address, current_net
+    try:
+        ip_address = [s for s in info if s.startswith('ip_address')][0][11:]
+    except:
+        pass
+    try:
+        current_net = [s for s in info if s.startswith('ssid')][0][5:]
+    except:
+        pass
+
+def check_ethernet():
+    """Check if Ethernet is connected and get IP"""
+    global ethernet_connected, ethernet_ip
+    try:
+        result = subprocess.check_output(
+            ['hostname', '-I'],
+            text=True, timeout=2).strip()
+        if result:
+            ethernet_ip = result.split()[0]
+            ethernet_connected = True
+            return True
+    except:
+        pass
+    ethernet_connected = False
+    ethernet_ip = ''
+    return False
+
+def has_wifi_adapter():
+    """Check if wlan0 interface exists"""
+    try:
+        result = subprocess.run(
+            ['ip', 'link', 'show', 'wlan0'],
+            capture_output=True, timeout=2)
+        return result.returncode == 0
+    except:
+        return False
+
+def ap_active():
+    """Cut It: whether the Hotspot connection is up"""
+    global current_net
+    try:
+        out = subprocess.check_output(
+            ['nmcli', '-t', '-f', 'NAME', 'connection', 'show', '--active'],
+            text=True, timeout=5)
+    except Exception:
+        return False
+    if 'Hotspot' not in out.splitlines():
+        return False
+    try:
+        current_net = subprocess.check_output(
+            ['nmcli', '-g', '802-11-wireless.ssid', 'connection', 'show', 'Hotspot'],
+            text=True, timeout=5).strip()
+    except Exception:
+        pass
+    return True
+
+def initialize_state():
+    """Initialize WiFi and web server states on startup"""
+    global state, web_server_state
+
+    # Check initial WiFi state
+    if ap_active():
+        state = AP_MODE
+    elif wifi_connected():
+        state = CONNECTED
+    else:
+        state = NOT_CONNECTED
+
+    # Check Ethernet state
+    check_ethernet()
+
+    # Check initial web server state
+    if run_cmd_check('systemctl status ogweb'):
+        web_server_state = WEB_SERVER_RUNNING
+    else:
+        web_server_state = WEB_SERVER_STOPPED
+
+def disconnect_all():
+    """Disconnect from WiFi and stop web server"""
+    global state, ip_address
+    state = DISCONNECTING
+    ip_address = ""  # Clear IP address
+    try:
+        subprocess.run(["sudo", "nmcli", "device", "disconnect", "wlan0"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error disconnecting WiFi: {e}")
+
+    stop_web_server()
+    state = NOT_CONNECTED
+
+def list_ssids():
+    """Get list of available WiFi networks with fresh scan"""
+    try:
+        # Force a fresh scan first
+        subprocess.run(
+            ["sudo", "nmcli", "device", "wifi", "rescan"],
+            capture_output=True, timeout=10
+        )
+        
+        # Get the fresh results
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "SSID", "dev", "wifi", "list"],
+            capture_output=True, text=True, check=True, timeout=15
+        )
+        ssids = {ssid.strip() for ssid in result.stdout.splitlines() if ssid.strip()}
+        return sorted(ssids)
+    except subprocess.CalledProcessError as e:
+        print(f"Error listing WiFi networks: {e}")
+        return []
+    except subprocess.TimeoutExpired:
+        print("Timed out waiting for nmcli to scan networks")
+        return []
+
+def connect_nopw(ssid):
+    """Connect to WiFi network without password"""
+    global state, connecting_timer, current_net
+    
+    state = CONNECTING
+    connecting_timer = 0
+    current_net = ssid
+
+    
+    cmd = ["sudo", "nmcli", "device", "wifi", "connect", ssid]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=20)
+        state = CONNECTED
+        print(f"Connected to {ssid}")
+        return True
+    except subprocess.CalledProcessError as e:
+        state = CONNECTION_ERROR
+        error_output = e.stderr if e.stderr else e.stdout
+        print(f"Error connecting to {ssid}: {error_output}")
+        return False
+
+def connect(ssid, password):
+    """Connect to WiFi network with password"""
+    global state, connecting_timer, current_net
+    
+    state = CONNECTING
+    connecting_timer = 0
+    current_net = ssid
+
+
+    cmd = ["sudo", "nmcli", "device", "wifi", "connect", ssid, "password", password]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=20)
+        state = CONNECTED
+        print(f"Connected to {ssid}")
+        return True
+    except subprocess.CalledProcessError as e:
+        state = CONNECTION_ERROR
+        error_output = e.stderr if e.stderr else e.stdout
+        print(f"Error connecting to {ssid}: {error_output}")
+        return False
+    except subprocess.TimeoutExpired:
+        state = CONNECTION_ERROR
+        print(f"Timeout connecting to {ssid}")
+        return False
+
+def start_ap_mode():
+    """Start WiFi Access Point mode"""
+    global state, connecting_timer, current_net
+
+    print("Starting AP mode...")
+    og.alert("Starting AP mode...")
+
+    # Disconnect first to be sure
+    try:
+        subprocess.run(["sudo", "nmcli", "device", "disconnect", "wlan0"],
+                      capture_output=True, timeout=10)
+    except:
+        pass  # Ignore errors if already disconnected
+
+    # Remove any previous hotspot profile
+    subprocess.run(["sudo", "nmcli", "connection", "delete", "Hotspot"],
+                   capture_output=True)
+
+    # Cut It: the name and password from ap.txt
+    ssid, psk = "ORGANELLE", "coolmusic"
+    try:
+        with open(os.path.join(user_dir, "ap.txt")) as f:
+            lines = [l.strip() for l in f if l.strip()]
+        if len(lines) >= 2:
+            ssid, psk = lines[0], lines[-1]
+    except OSError:
+        pass
+
+    # Start AP mode
+    try:
+        # Create a connection profile with PMF optional so both older and newer
+        # clients (e.g. recent macOS which negotiates WPA3/PMF) can connect.
+        subprocess.run([
+            "sudo", "nmcli", "connection", "add",
+            "type", "wifi", "ifname", "wlan0",
+            "con-name", "Hotspot", "autoconnect", "no",
+            "ssid", ssid,
+            "802-11-wireless.mode", "ap",
+            "802-11-wireless.band", "bg",
+            "802-11-wireless.channel", "6",
+            "802-11-wireless-security.key-mgmt", "wpa-psk",
+            "802-11-wireless-security.psk", psk,
+            "802-11-wireless-security.pmf", "2",  # optional — allows WPA2 and WPA3 clients
+            "ipv4.method", "shared",
+            "ipv4.addresses", AP_ADDRESS + "/24"
+        ], capture_output=True, text=True, check=True, timeout=15)
+
+        subprocess.run(["sudo", "nmcli", "connection", "up", "Hotspot"],
+                       capture_output=True, text=True, check=True, timeout=15)
+
+        state = AP_MODE
+        current_net = ssid
+        print("AP mode started successfully")
+        return True
+    except subprocess.CalledProcessError as e:
+        state = CONNECTION_ERROR
+        error_output = e.stderr if e.stderr else e.stdout
+        error_msg = f"{error_output[:50]}..." if len(error_output) > 50 else f"{error_output}"
+        print(f"Error starting AP mode: {error_output}")
+
+        og.alert_long(error_msg)
+        time.sleep(3)
+        return False
+    except subprocess.TimeoutExpired:
+        state = CONNECTION_ERROR
+        error_msg = "AP failed: Timeout"
+        print("Timeout starting AP mode")
+
+        og.alert_long(error_msg)
+        time.sleep(3)
+        return False
+
+# === UI Functions ===
+
+def quit():
+    """Exit the application"""
+    og.end_app()
+
+def disconnect():
+    """Disconnect from WiFi"""
+    print("WiFi disconnect all")
+    og.alert("Disconnecting...")
+    disconnect_all()
+    update_menu()
+
+def start_ap():
+    """Start AP mode"""
+    print("Starting AP mode")
+    start_ap_mode()
+    update_menu()
+
+def start_web():
+    """Start web server"""
+    print("Start web server")
+    start_web_server()
+    update_menu()
+
+def stop_web():
+    """Stop web server"""
+    print("Stop web server")
+    stop_web_server()
+    update_menu()
+
+def scan_and_connect():
+    """Scan for networks and let user select one to connect to"""
+    try:
+        og.alert("Scanning...")
+        ssids = list_ssids()
+       
+        network_menu.header = "Select Network"
+        network_menu.reset()
+        network_menu.items = []
+        
+        if not ssids or len(ssids) < 1:
+            network_menu.items.append(["No Networks Found", lambda: None])
+        else:
+            # Add each SSID as a menu item
+            for ssid in ssids:
+                network_menu.items.append([ssid, lambda s=ssid: connect_to_network(s)])
+            
+        # Add back option
+        network_menu.items.append(['< Back', network_menu.back])
+        
+        # Show the menu
+        network_menu.perform()
+            
+    except Exception as e:
+        print(f"Failed scan or connect: {str(e)}")
+
+def connect_to_network(ssid):
+    """Connect to a specific network, prompting for password if needed"""
+    
+    try:
+        print(f"Connecting to {ssid} attempting with no password...")
+        og.alert("Connecting...")
+        success = connect_nopw(ssid)
+        
+        if success:
+            print(f"Connected to {ssid}")
+            # make sure ip gets updated
+            wifi_connected()
+            network_menu.back()
+            update_menu()
+            return
+    except Exception as e:
+        print(f"Failed connect no password: {str(e)}")
+
+    try:
+        # Need password from user
+        pwd_entry = og.PasswordEntry(f"Password for {ssid}", max_length=64)
+        password = pwd_entry.perform()
+        
+        if (password is None) or (password == ""):
+            # User cancelled password entry
+            network_menu.back()
+            update_menu()
+            return
+        
+        print(f"Connecting to {ssid}...")
+        og.alert("Connecting...")
+        
+        # Attempt to connect
+        success = connect(ssid, password)
+        
+        if success:
+            print(f"Connected to {ssid}")
+        else:
+            print("Connection failed")
+            
+    except Exception as e:
+        print(f"Failed connect with password: {str(e)}")
+
+    network_menu.back()
+    update_menu()
+
+def network_menu_action():
+    """Handle network menu selection"""
+    if state != CONNECTED:
+        scan_and_connect()
+
+def forget_saved_networks():
+    """Function to handle forgetting all saved networks"""
+    import subprocess
+    import os
+    import glob
+    
+    try:
+        # Method 1: Use glob to expand the pattern first
+        connections_path = "/sdcard/system-connections/*"
+        files_to_remove = glob.glob(connections_path)
+        
+        if files_to_remove:
+            # Remove each file/directory found
+            for item in files_to_remove:
+                subprocess.run(["sudo", "rm", "-fr", item], check=True)
+            og.alert("Saved nets cleared")
+        else:
+            og.alert("No nets to clear")
+        time.sleep(2)
+        
+    except subprocess.CalledProcessError as e:
+        og.alert("Error clearing nets")
+        time.sleep(2)
+    except Exception as e:
+        og.alert("Failed to clear")
+        time.sleep(2)
+
+def show_forget_confirmation():
+    """Show confirmation menu for forgetting saved networks"""
+    forget_menu = og.Menu()
+    forget_menu.header = "Forget Saved Nets"
+    forget_menu.items = [
+        ("Yes", lambda: [forget_saved_networks(), forget_menu.back()]),
+        ("Cancel", lambda: forget_menu.back())
+    ]
+    forget_menu.enc_up() # set on Cancel by default
+    forget_menu.perform()
+
+def build_main_menu():
+    """Build the main menu based on current state"""
+    menu.items = []
+    menu.reset()
+    
+    print(f"Build menu state: {state} web server state: {web_server_state}")
+    
+    # Update menu based on WiFi state
+    if state == CONNECTING:
+        menu.header = 'Not Connected'
+    elif state == CONNECTED:
+        menu.header = 'Connected ' + current_net
+        
+        # Show IP address if available
+        if ip_address:
+            menu.items.append([f'IP: {ip_address}', lambda: None])
+        menu.items.append(['Disconnect', disconnect])
+        
+        # Web server control
+        if web_server_state == WEB_SERVER_RUNNING:
+            menu.items.append(['Stop Web Server', stop_web])
+        else:
+            menu.items.append(['Start Web Server', start_web])
+    elif state == AP_MODE:
+        # Cut It: as the Organelle 1 showed it
+        menu.header = 'AP Mode'
+        menu.items.append([f'AP: {current_net}', lambda: None])
+        menu.items.append([f'IP: {AP_ADDRESS}', lambda: None])
+        menu.items.append(['Stop AP', disconnect])
+        if web_server_state == WEB_SERVER_RUNNING:
+            menu.items.append(['Stop Web Server', stop_web])
+        else:
+            menu.items.append(['Start Web Server', start_web])
+    elif state == DISCONNECTING:
+        menu.header = 'Not Connected'
+    elif state == CONNECTION_ERROR:
+        menu.header = 'Problem Connecting'
+        if has_wifi_adapter():
+            menu.items.append(['Select Network   >', network_menu_action])
+            menu.items.append(['Start AP', start_ap])
+    else:
+        # Check for Ethernet connection
+        check_ethernet()
+        if ethernet_connected:
+            menu.header = 'Ethernet Connected'
+            menu.items.append([f'IP: {ethernet_ip}', lambda: None])
+            # Web server control for Ethernet
+            if web_server_state == WEB_SERVER_RUNNING:
+                menu.items.append(['Stop Web Server', stop_web])
+            else:
+                menu.items.append(['Start Web Server', start_web])
+        else:
+            menu.header = 'Not Connected'
+        # Only show WiFi options if adapter present
+        if has_wifi_adapter():
+            menu.items.append(['Select Network   >', network_menu_action])
+            menu.items.append(['Start AP', start_ap])
+
+    # Home/quit
+    menu.items.append(["Forget Saved Nets", show_forget_confirmation])
+    menu.items.append(['< Home', quit])
+
+def update_menu():
+    """Update menu based on connection status"""
+    try:
+        build_main_menu()
+        og.redraw_flag = True
+    except Exception as e:
+        print(f"Error: {str(e)}")
+
+def check_status():
+    """Background connection checker"""
+    while True:
+        time.sleep(1)
+        update_menu()
+
+# === Main Application ===
+
+def main():
+    """Main application entry point"""
+    # Start the UI
+    og.start_app()
+    
+    # Initialize WiFi state
+    initialize_state()
+    
+    # Build main menu
+    update_menu()
+     
+    # Enter menu
+    menu.perform()
+
+if __name__ == "__main__":
+    main()

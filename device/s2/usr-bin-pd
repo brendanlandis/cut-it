@@ -1,0 +1,5 @@
+#!/bin/sh
+# Cut It runs Pd 0.57, built on the card at /sdcard/pd-0.57-0 (device/s2/build.sh); mother has
+# this path compiled into its launch line. No fallback: without those files no patch starts. The
+# factory's /usr/bin/pd was a link to the Debian package's 0.53; device/s2/README.md has the rollback.
+exec /sdcard/pd-0.57-0/bin/pd "$@"

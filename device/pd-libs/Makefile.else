@@ -9,7 +9,7 @@ B     ?= /sdcard/libs-trial/build/obj
 FF    ?= /sdcard/libs-trial/build/ffmpeg-7.0.1
 EXT   := .pd_linux
 
-ARCH     := -mcpu=cortex-a9 -mfpu=neon
+ARCH     ?= -mcpu=cortex-a9 -mfpu=neon
 INC      := -I$(PDSRC) -I$(SRC)/Shared -I$(SRC)/Shared/aubio/src
 CFLAGS   := -D_FORTIFY_SOURCE=2 -O3 -DNDEBUG -fPIC -std=gnu11 $(ARCH) $(INC)
 CXXFLAGS := -D_FORTIFY_SOURCE=2 -O3 -DNDEBUG -fPIC -std=c++14 -D_GLIBCXX_USE_CXX11_ABI=0 $(ARCH) $(INC)

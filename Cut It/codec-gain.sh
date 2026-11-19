@@ -1,6 +1,7 @@
 #!/bin/sh
-# Re-stage the Organelle's audio chip (an SGTL5000) against its hiss. Run once
-# per load by u_root through [shell].
+# Set the Organelle's audio chip's gains: the Organelle 1's SGTL5000 re-staged
+# against its hiss, the S2's WM8731 as below. Run once per load by u_root
+# through [shell].
 #
 # The factory's setup.sh cuts the DAC digitally (PCM 170, -11 dB) and makes it
 # up in the headphone amp (127, +12 dB, its maximum), which turns the
@@ -12,7 +13,22 @@
 # Every line may fail: a missing control must not stop the boot. Their output
 # goes nowhere, since [shell] hands every line to Pd: one echo, at the end.
 
-# The on-board codec by its ALSA id, not the default card.
+# The S2's WM8731 has no digital volume to stage against: its one output level,
+# Master, is the factory's (-2 dB). The input is the line input with all the
+# gain the chip has, Capture 31, +12 dB, which is also the factory's; set rather
+# than assumed, as below. Mic Boost acts only on the Mic input, which the
+# Input Mux does not select.
+if amixer -c audioinjectorpi info >/dev/null 2>&1; then
+    CARD=audioinjectorpi
+    amixer -c $CARD set 'Input Mux' 'Line In' >/dev/null 2>&1 || true
+    amixer -c $CARD set Capture 31 >/dev/null 2>&1 || true
+    m=$(amixer -c $CARD sget Master 2>/dev/null | awk '/Front Left:/ {print $3; exit}')
+    c=$(amixer -c $CARD sget Capture 2>/dev/null | awk '/Front Left:/ {print $3; exit}')
+    echo "codec-gain: Master ${m:-?} Capture ${c:-?}"
+    exit 0
+fi
+
+# The Organelle 1's codec by its ALSA id, not the default card.
 CARD=Codec
 
 # PCM goes up only once Headphone has come down: raised alone it is 11 dB

@@ -284,8 +284,10 @@ def start_ap_mode():
 
     # Start AP mode
     try:
-        # Create a connection profile with PMF optional so both older and newer
-        # clients (e.g. recent macOS which negotiates WPA3/PMF) can connect.
+        # Cut It: plain WPA2 with AES. The factory's profile left the ciphers to
+        # wpa_supplicant, which advertised TKIP as the group cipher beside WPA3
+        # (SAE, which NetworkManager adds when PMF is on), and an iPhone saw the
+        # network but never tried to join it.
         subprocess.run([
             "sudo", "nmcli", "connection", "add",
             "type", "wifi", "ifname", "wlan0",
@@ -296,7 +298,10 @@ def start_ap_mode():
             "802-11-wireless.channel", "6",
             "802-11-wireless-security.key-mgmt", "wpa-psk",
             "802-11-wireless-security.psk", psk,
-            "802-11-wireless-security.pmf", "2",  # optional — allows WPA2 and WPA3 clients
+            "802-11-wireless-security.proto", "rsn",
+            "802-11-wireless-security.pairwise", "ccmp",
+            "802-11-wireless-security.group", "ccmp",
+            "802-11-wireless-security.pmf", "1",  # disabled, so no SAE
             "ipv4.method", "shared",
             "ipv4.addresses", AP_ADDRESS + "/24"
         ], capture_output=True, text=True, check=True, timeout=15)

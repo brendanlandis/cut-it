@@ -8,7 +8,7 @@ read by the patch — the instrument reads `/sdcard/cut-it-state/` on the device
 
 | | Holds | Written by | If it is lost |
 |---|---|---|---|
-| `device/` | Configuration that exists **only on hardware** — the nanoKONTROL scene, `/root/.pdsettings`, the patched `mount.sh` | A person, once, with an editor or a Korg utility | Unrecoverable. That is why the folder exists |
+| `device/` | Configuration that exists **only on hardware** — the nanoKONTROL scene, `.pdsettings`, the patched `mount.sh` | A person, once, with an editor or a Korg utility | Unrecoverable. That is why the folder exists |
 | `device-state/` | What the **instrument** wrote while running — currently the mode, later the working pattern and a sampler's takes | `u_state`, on the device, unattended | Recoverable by playing the instrument again |
 
 **Three files, and they are not the same kind of thing** — `cut-it-auto.txt` is running values,

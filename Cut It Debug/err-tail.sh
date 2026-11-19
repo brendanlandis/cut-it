@@ -6,7 +6,7 @@
 # the display does with several OSC arguments is not measured. 21 characters is
 # the screen's width, so lines are cut here (C-12).
 #
-# busybox, not GNU: ash, with busybox tail, tr and cut.
+# Plain sh, with tail, tr and cut.
 #
 # The log is u_err's, left by the instrument. Loading this patch rolls .cur into
 # .log, so the session that went wrong is already in .log. ref/module/error.md

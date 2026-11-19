@@ -1,5 +1,5 @@
 #!/bin/bash
-# FFmpeg 7.0.1, the version ELSE rc14 carries, built on the Organelle 1 as small as ELSE's three
+# FFmpeg 7.0.1, the version ELSE rc14 carries, built on the Organelle as small as ELSE's three
 # file readers need: play.file~, sfload and sfinfo open a local file, decode its audio and convert
 # it to float, and write nothing. So: libavformat, libavcodec, libavutil and libswresample, static
 # and position-independent for linking into Pd externals; the file protocol; WAV, AIFF, MP3 and

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Builds what Cut It needs beyond the Organelle S2's factory OS 5.1: Pd 0.57 at /sdcard/pd-0.57-0,
-# pdlua and ELSE in /sdcard/PdExtraLibs. The same sources and scripts as the Organelle 1's
-# (device/pd-libs, device/README.md "Lua and ELSE"), compiled for the S2's Cortex-A72 with NEON
+# pdlua and ELSE in /sdcard/PdExtraLibs, from device/pd-libs (device/README.md, "Lua and ELSE"),
+# compiled for the S2's Cortex-A72 with NEON
 # rather than Raspbian's ARMv6 default, on all four cores.
 #
 # On the S2, with /sdcard/build-s2 holding the five tarballs device/README.md lists and

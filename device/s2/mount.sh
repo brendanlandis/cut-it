@@ -51,8 +51,8 @@ fi
 # Cut It: refuse write-protected volumes. The Launchpad Pro MK3 presents a 192 KiB read-only
 # "Novation Onboarding Drive"; mounted on /usbdrive it moves USER_DIR onto a read-only
 # filesystem, which breaks Wi-Fi setup, Save and AP mode. USER_DIR exists to be written to, so a
-# read-only device is never a valid choice here. As on the Organelle 1 (cut-it device/README.md);
-# the factory's is mount.sh.orig.
+# read-only device is never a valid choice here (cut-it device/s2/README.md); the factory's is
+# mount.sh.orig.
 BASE=$(basename "$DEVICE" | sed 's/[0-9]*$//')
 if [ "$(cat /sys/block/$BASE/ro 2>/dev/null)" = "1" ]; then
     echo "skipping write-protected device ${DEVICE}"

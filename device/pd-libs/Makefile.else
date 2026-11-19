@@ -1,5 +1,6 @@
-# ELSE 1.0-0 rc14 for the Organelle 1 (armv7 hard-float, gcc 5.2, Pd 0.57-0), without CMake
-# (the device has none). Mirrors upstream's CMakeLists.txt target by target; run with -k so one
+# ELSE 1.0-0 rc14 for the Organelle (armv7 hard-float, Pd 0.57-0), without CMake, which the
+# Organelle 1 lacked. ARCH defaults to its Cortex-A9; device/s2/build.sh passes the S2's.
+# Mirrors upstream's CMakeLists.txt target by target; run with -k so one
 # object's failure doesn't stop the rest. Externals get .pd_linux, which every Linux Pd loads.
 TOP   ?= /sdcard/libs-trial/build/pd-else-v.1.0-rc14
 SRC   := $(TOP)/Source

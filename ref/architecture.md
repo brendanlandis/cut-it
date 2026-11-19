@@ -136,7 +136,7 @@ and the device is absorbed by these six arguments to `u_root`.
 | 6 | **`u_net`'s inbound UDP port** | `9001` | `9002` |
 
 **A Pd input slot maps to channels `(n-1)*16+1` upward**, so slot 2 begins at 17 and slot 3 at 33.
-On the device that ordering comes from `/root/.pdsettings`; set the Mac's MIDI inputs to the same
+On the device that ordering comes from `/home/music/.pdsettings`; set the Mac's MIDI inputs to the same
 order — Launchpad first, nano second — and both entry points pass the same two numbers, which is the
 point of doing it that way round.
 

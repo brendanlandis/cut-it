@@ -73,7 +73,7 @@ sequence is still bringing it up. See [presence.md](presence.md).
 | `Pure Data:7` | `USB Uno MIDI Interface:0` | Notes and CC out to the Volca | verified | — |
 | `nanoKEY:0` | `Pure Data:3` | Its keys, Pd channels 49–64, to `m_nanokey`, sharing Midi-In 4 with the DIN IN, which carries nothing | unknown | — |
 
-**The port map, from `/root/.pdsettings` — four in, four out:**
+**The port map, from `/home/music/.pdsettings` — four in, four out:**
 
 | Pd ALSA port | Is | Pd channels | Evidence | Item |
 |--------------|-----|-------------|----------|------|

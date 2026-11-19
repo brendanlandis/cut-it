@@ -50,7 +50,7 @@ vanish into tty1 on a device with no console.
 Launchpad attached mounts its write-protected onboarding drive as `USER_DIR` and breaks wifi config,
 Save and Save New (Reference, `~/Sites/!reference/critter-guitari-organelle-1.md`, *Booting with a
 Launchpad Pro MK3 attached*). The guard that stops it, and how to revert it, are in
-[device/README.md](../device/README.md).
+[device/s2/README.md](../device/s2/README.md).
 
 **The load step needs the category folder in the name**: `/loadPatch` resolves against mother's
 current patch directory, and a bare name loads nothing (Reference, *Loading a patch from the shell*).
@@ -109,7 +109,7 @@ ssh music@192.168.1.15
 ⚠️ **Single quotes around that path, not double.** The patch folder is `/sdcard/Patches/!/…`, and
 **`!` inside double quotes is a history event in interactive zsh** — pasting the block gives
 `zsh: event not found: /Cut` before anything reaches the device. Single quotes are literal in both
-zsh and the device's busybox `ash`, so one form works everywhere. `tools/deploy.sh` never hit this
+zsh and the device's shell, so one form works everywhere. `tools/deploy.sh` never hit this
 because a script is not an interactive shell.
 
 Loading `mother.pd` alongside `main.pd` gives the patch its real environment — `inL`/`inR` carry

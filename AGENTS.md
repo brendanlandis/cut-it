@@ -1,7 +1,7 @@
 # Cut It
 
-A cut-up / harsh noise instrument patch for the **original Critter & Guitari Organelle**
-(a.k.a. Organelle 1 — *not* the M, S, or S2). Pure Data.
+A cut-up / harsh noise instrument patch for the **Critter & Guitari Organelle S2** (from
+2026-11-19; the original Organelle, the Organelle 1, before it). Pure Data.
 
 **v0.3 — the blank slate — is complete and verified on hardware.** Every device is addressable and
 every control assignable: `u_map` looks a control's meaning up **per page** from a table, and both
@@ -28,11 +28,11 @@ They load on demand, so they cost nothing in a session that does none of those t
 **The three Pd constraints that are not negotiable**, repeated here because they are expensive to
 learn late:
 
-- **Pd vanilla 0.57, on the device and on the Mac** (from 2026-11-03). The Organelle 1's factory Pd
-  is 0.49 and its OS 4.0 is the end of the line for that hardware, so 0.57 is our own build, in
-  `/sdcard/pd-0.57-0`: `/usr/bin/pd`, which `mother` launches, is a script that runs it. There is
-  no fallback (Brendan, 2026-11-03): if those files go missing, no patch starts until they are
-  copied back ([device/README.md](device/README.md), with the rollback). Do not suggest any object
+- **Pd vanilla 0.57, on the device and on the Mac** (from 2026-11-03). The S2's factory Pd is 0.53,
+  which can't load pdlua, so 0.57 is our own build, in `/sdcard/pd-0.57-0`: `/usr/bin/pd`, which
+  `mother` launches, is a script that runs it. There is no fallback (Brendan, 2026-11-03): if those
+  files go missing, no patch starts until they are copied back
+  ([device/s2/README.md](device/s2/README.md), with the rollback). Do not suggest any object
   newer than 0.57.
 - **Never save an Organelle-bound patch from plugdata.** It rewrites `.pd` files into its newer
   format. Vanilla 0.57's own version of that format is native, but whether plugdata adds anything
@@ -46,8 +46,8 @@ learn late:
   `/sdcard/PdExtraLibs` on the device and `~/Library/Pd` on the Mac
   ([device/README.md](device/README.md), *Lua and ELSE*). The **`pd`** skill has how to use them.
 
-⚠️ **The public `Organelle_OS` repo documents the M and S2, not this device** — verify paths against
-the actual device (Reference, Organelle page).
+⚠️ **Verify paths against the actual device**, not the public `Organelle_OS` repo, which may not
+match the S2's installed OS 5.1 (Reference, `critter-guitari-organelle-s2`).
 
 
 ## Where everything is
@@ -65,7 +65,7 @@ printed by `robot fetch page <slug>`; `robot` is `~/Sites/app.regularnotebook.co
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
-| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `korg-nanokey` `critter-guitari-organelle-1` `korg-volca-fm` `waldorf-streichfett` `pure-data` `touchosc` (and `meeblip-cubit` `arturia-beatstep` `roland-sp-404mkii` `behringer-xenyx-q802usb`). List Cut It's with `robot pages --used-by cut-it` |
+| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `korg-nanokey` `critter-guitari-organelle-s2` `critter-guitari-organelle-1` `korg-volca-fm` `waldorf-streichfett` `pure-data` `touchosc` (and `meeblip-cubit` `arturia-beatstep` `roland-sp-404mkii` `behringer-xenyx-q802usb`). List Cut It's with `robot pages --used-by cut-it` |
 | How Cut It **uses** one physical device | [ref/device/](ref/device/) — `launchpad` `nanokey` `nanokontrol` `organelle` `phone` `streichfett` `volca` |
 | One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `debug` `display` `error` `map` `presence` `sequencer` `songs` `state` `synths` `tempo` `voices` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
@@ -297,7 +297,6 @@ Links to paths containing spaces use the angle-bracket form:
   five physical tests on 2026-08-08, and [ref/rig.md](ref/rig.md) had already written it up **with
   that exact code in the text**. Symptoms are as greppable as `item NNN`, and cost more to re-derive.
 - **Configuration that lives only on a device is one accident from being lost.** The nanoKONTROL
-  scene, `.pdsettings` and the `/usr/bin/pd` launcher are backed up in [device/](device/) (the S2's,
-  in `/home/music`, in [device/s2/](device/s2/)), and so is the recipe that builds Pd, pdlua and ELSE
-  into `/sdcard`. `.pdsettings` is load-bearing: `path1: /home/music/Pd/externals` is what makes `[shell]`,
+  scene is backed up in [device/](device/), the S2's `.pdsettings` and `/usr/bin/pd` launcher in
+  [device/s2/](device/s2/), and so is the recipe that builds Pd, pdlua and ELSE into `/sdcard`. `.pdsettings` is load-bearing: `path1: /home/music/Pd/externals` is what makes `[shell]`,
   `packOSC` and `routeOSC` resolve in the menu-launched patch.

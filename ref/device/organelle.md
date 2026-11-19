@@ -1,12 +1,13 @@
 <!-- schema: device -->
-# Organelle 1 — the panel, the OLED and the aux LED
+# Organelle — the panel, the OLED and the aux LED
 
 **Files:** `Cut It/m_organelle.pd`, `Cut It/m_organelle.lua`, `Cut It/m_organelle-lua.pd_lua`, `Cut It/g_oled.pd`, `Cut It/g_led.pd`, `Cut It/u_mother-stub.pd` · **Gate:** `test/gate/organelle-assert.sh`, `test/gate/led-assert.sh` · **Checklist:** `test/checklists/display.md`
 
-The host device and its own control surface. What the Organelle 1 is — its OS, paths, SSH, the
-`mother.pd` interface, the OLED and LED APIs, how it saves, its MIDI quirks and traps, and its wifi —
-is in Reference: `~/Sites/!reference/critter-guitari-organelle-1.md`. This page is how Cut It uses its
-panel, OLED and aux LED. ([device-os.md](../device-os.md) is how Cut It lives on the box as a computer.)
+The host device and its own control surface, an Organelle S2 since November 2026. What it is — its
+OS, paths, SSH, the `mother.pd` interface, the OLED and LED APIs, how it saves, its MIDI quirks and
+traps, and its wifi — is in Reference: `critter-guitari-organelle-s2`, and for what was learned on
+the Organelle 1 before it and holds on the S2's same `mother.pd`, `critter-guitari-organelle-1`.
+This page is how Cut It uses its panel, OLED and aux LED. ([device-os.md](../device-os.md) is how Cut It lives on the box as a computer.)
 
 **The panel is not MIDI** (Reference), so all MIDI in this rig is Pd talking to the four attached
 controllers, and the panel is read like any other device: mother's reserved names in, named controls

@@ -5,11 +5,11 @@
 #
 #   tools/s2-build.sh <dir holding the tarballs> [music@<s2's address>]
 #
-# The tarballs, and where each comes from: device/README.md, "Lua and ELSE", plus
-# pd-0.57-0.src.tar.gz from msp.ucsd.edu/Software. build.sh checks all five.
+# The tarballs, and where each comes from: device/README.md, "Lua and ELSE". build.sh checks
+# all five.
 set -eu
 SRC=${1:?usage: s2-build.sh <tarball dir> [host]}
-HOST=${2:-${S2_HOST:-music@192.168.1.11}}
+HOST=${2:-${S2_HOST:-music@192.168.1.15}}
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 
 ssh "$HOST" mkdir -p /sdcard/build-s2

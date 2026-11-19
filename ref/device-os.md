@@ -3,8 +3,9 @@
 
 **How Cut It lives on the Organelle: where it keeps its data, how it is measured and deployed.** What
 the Organelle *is* as a computer — SSH, paths, the read-only filesystem, how Pd launches, the clock,
-the OSS/ALSA MIDI question, the boot hang with a Launchpad attached, wifi — is in Reference:
-`~/Sites/!reference/critter-guitari-organelle-1.md`. The *boxes and cables* are on [rig.md](rig.md);
+the boot hang with a Launchpad attached, wifi — is in Reference: `critter-guitari-organelle-s2`, the
+Organelle S2 Cut It runs on since November 2026, and for what was learned on the Organelle 1 before
+it, `critter-guitari-organelle-1`. The *boxes and cables* are on [rig.md](rig.md);
 the Organelle's own **control surface** — panel, OLED, aux LED — is on
 [device/organelle.md](device/organelle.md).
 
@@ -20,7 +21,7 @@ own `aconnect` call**, or it measures silence (item 225).
 
 `.pdsettings` — the `midiapi: 1` and 4-in/4-out configuration the whole MIDI topology depends on —
 is `/home/music/.pdsettings` on the S2, backed up in [device/s2/](../device/s2/) beside the factory's
-`pdsettings.orig` (the Organelle 1's, in `/root`, in [device/](../device/)).
+`pdsettings.orig`.
 
 ## The device itself
 
@@ -56,7 +57,7 @@ absolute paths, which is also why it needs no Save at all.
 ### Measuring the running patch
 
 CPU, load and UDP datagram rate, **without disturbing what is running**. Reads `/proc` rather than
-using `top`, so it works on busybox (the `pgrep -ox pd` caution is in Reference):
+using `top` (the `pgrep -ox pd` caution is in Reference):
 
 ```sh
 ssh music@192.168.1.15 '
@@ -143,7 +144,7 @@ linger remotely: use `./tools/deploy.sh --clean` after renaming or removing an a
 
 **`tools/deploy.sh` verifies the RUN rather than the file.** A successful load restarts Pd, so the
 test is whether Pd is younger than the files just pushed — `/proc/<pid>`'s mtime is the process
-start time, which needs one `test -nt` and no `ps` flags that differ between busybox and procps.
+start time, which needs one `test -nt` and no `ps` flags.
 ⚠️ Both sides of that comparison are **device-side**, which is the only safe way to compare
 timestamps here — see *The clock* on the Organelle's Reference page (`~/Sites/!reference/critter-guitari-organelle-1.md`).
 
@@ -160,15 +161,14 @@ on [wifi.md](wifi.md).**
 `tools/deploy.sh` sends **`/reloadNoRemount`** rather than running `reload.sh`, which would run
 `mount.sh` on every single deploy. ✅ Verified: `/usbdrive` stays clear through a full deploy.
 
-⛔ **The patch itself, the three verifications, the revert and the recovery are in
-[device/README.md](../device/README.md)**, which is where the modified `mount.sh` and its factory
-original are both kept. Turning the drive off at the Launchpad was considered and declined (item 265,
+⛔ **The patch itself and the recovery are in [device/s2/README.md](../device/s2/README.md)**, which
+is where the modified `mount.sh` and its factory original are both kept. Turning the drive off at the Launchpad was considered and declined (item 265,
 [device/launchpad.md](device/launchpad.md)).
 
 ## Wifi
 
-⛔ **The Organelle's own wifi facts are in Reference; the tools, the stage procedure and the open
-questions are on [wifi.md](wifi.md).** ⚠️ **The boot hang above merely looked like a wifi fault and is
+⛔ **The Organelle's own wifi facts are in Reference; the stage procedure is on
+[wifi.md](wifi.md).** ⚠️ **The boot hang above merely looked like a wifi fault and is
 a different thing.**
 
 ## Device capabilities

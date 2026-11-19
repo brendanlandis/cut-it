@@ -3,7 +3,7 @@
 #
 #   ./tools/tidy.sh              survey only. Touches nothing. THE DEFAULT
 #   ./tools/tidy.sh --delete     the same list, then asks before removing it
-#   HOST=root@192.168.1.6 ./tools/tidy.sh
+#   HOST=music@<address> ./tools/tidy.sh
 #
 # Only loose files in /sdcard, never a patch folder. A candidate has to match a
 # pattern below and pass the KEEP guard; tools/README.md has why.
@@ -26,12 +26,10 @@ done
 cd "$(dirname "$0")/.."
 
 # ---------------------------------------------------------------------------
-# The KEEP guard: what the device holds and nothing here can regenerate. The
-# wifi watcher's log is the fault's evidence (ref/wifi.md).
-KEEP='wifi-watch.sh wifi-watch.log wifi-watch.pid wifi-watch.alive
-wifi-reassociate.sh wifi.txt wifi.txt.bak wifi_log.txt ap.txt
+# The KEEP guard: what the device holds and nothing here can regenerate.
+KEEP='wifi.txt wifi.txt.bak wifi_log.txt ap.txt
 cut-it-err.log cut-it-err.cur cut-it-state
-MIDI-Config.txt postfw.log Patches'
+MIDI-Config.txt postfw.log patch_loaded.sh Patches'
 
 # ⛔ KEEP splits on whitespace, and this sets IFS itself: its caller has IFS at
 # a newline, and inheriting that makes each line of KEEP one word, so the guard
@@ -73,8 +71,8 @@ done
 [ "$FOUND" = "1" ] || echo "   none"
 
 say "2. probe logs -- the findings are on ref/ pages, the logs are not"
-# A stage probe's console, once its answer has an item number: ap-probe.log is
-# item 129, inquiry-probe.log 249, anim-probe.log 77 and 257.
+# A stage probe's console, once its answer has an item number: inquiry-probe.log
+# is item 249, anim-probe.log 77 and 257.
 FOUND=0
 for f in $REMOTE_LS; do
     case "$f" in
@@ -123,10 +121,9 @@ done
 
 # ---------------------------------------------------------------------------
 say "what is being KEPT, and why"
-echo "   the wifi investigation:  wifi-watch.{sh,log,pid,alive}  wifi-reassociate.sh"
 echo "   credentials:             wifi.txt  wifi.txt.bak  ap.txt"
 echo "   the instrument's data:   cut-it-state/  cut-it-err.log  cut-it-err.cur"
-echo "   the vendor's:            MIDI-Config.txt  postfw.log  wifi_log.txt"
+echo "   the vendor's:            MIDI-Config.txt  postfw.log  wifi_log.txt  patch_loaded.sh"
 
 # ---------------------------------------------------------------------------
 N=0

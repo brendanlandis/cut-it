@@ -1,8 +1,8 @@
 # The Organelle S2
 
 Cut It's changes to a factory Organelle S2 on OS 5.1, which replaced the Organelle 1 in November
-2026. The changes are the Organelle 1's (`../README.md`), carried over; what the S2 is and how its
-OS behaves is on its Reference page, `critter-guitari-organelle-s2`.
+2026, most of them carried over from the Organelle 1; what the S2 is and how its OS behaves is on
+its Reference page, `critter-guitari-organelle-s2`.
 
 Getting in: SSH is off as it ships, and the page's *Getting in with SSH off* says how it was
 turned on. After that, `ssh music@<address>`: the user is `music`, with sudo, and the root
@@ -43,14 +43,26 @@ stick, so a new one joins as `.15` at once.
 | File here | On the S2 | Why |
 |---|---|---|
 | `pdsettings` | `/home/music/.pdsettings` | MIDI devices 2 to 4, in and out, which `wire.sh` connects by name. The factory's has one; ALSA MIDI (`midiapi: 1`) is already factory on the S2. |
-| `mount.sh` | `fw_dir/scripts/mount.sh` | The Organelle 1's guard: a write-protected volume (the Launchpad's) is never mounted on `/usbdrive`. The factory script has the same flaw; `../README.md` has the story. |
+| `mount.sh` | `fw_dir/scripts/mount.sh` | A write-protected volume (the Launchpad's) is never mounted on `/usbdrive`; below. |
 | `wifi_setup.py` | `fw_dir/scripts/wifi_setup.py` | **Start AP** on the WiFi menu, which 5.1 dropped though its code stayed. The access point takes `192.168.1.15`, the address the house router reserves for the Organelle, so the phone sends to one address on both networks; its name and password are `/sdcard/ap.txt`'s, as on the Organelle 1. And it's plain WPA2 with AES, which the factory's isn't: an iPhone can't join that one (the S2's Reference page, *OS 5.1*). |
 | `usr-bin-pd` | `/usr/bin/pd` | Runs Pd 0.57 from `/sdcard/pd-0.57-0`; mother launches `/usr/bin/pd`. |
 | — | `systemd-timesyncd` enabled | The S2 has no clock that keeps time, and the read-only root keeps fake-hwclock from saving one, so each boot starts at the image's date (2026-03-17). Network time sets it on any network with the internet. |
 
 `Cut It/phone-ip.sh` knows the S2's access point by NetworkManager's `Hotspot` connection being
-up, where the Organelle 1's was create_ap's hostapd. `Cut It/codec-gain.sh` sets the S2's WM8731
-(the line input at its most gain), and the Organelle 1's SGTL5000 as before.
+up. `Cut It/codec-gain.sh` sets the S2's WM8731: the line input, at its most gain.
+
+### The `mount.sh` change
+
+**Why:** the Launchpad Pro MK3 presents a 192 KiB write-protected vfat volume beside its MIDI
+interfaces. The factory `mount.sh` takes the *last* `/dev/sd*` and mounts it on `/usbdrive`, which
+then becomes `USER_DIR`, read-only: the WiFi menu, Save and the access point's `ap.txt` all hang off
+`USER_DIR`, and on the Organelle 1 the UI hung at boot opening a log there. The change refuses
+write-protected volumes, since `USER_DIR` exists to be written to. A genuinely write-protected USB
+stick no longer mounts as `/usbdrive` either.
+
+⛔ **`mount.sh` runs on every Reload, not only at boot**, so `tools/deploy.sh` sends
+`/reloadNoRemount` rather than a full reload. If it ever recurs, `sudo umount /usbdrive` clears it
+with no reboot.
 
 ⚠️ **The WiFi menu keeps running the copy of `wifi_setup.py` it started with** while its menu is
 open, so a new one takes effect the next time the menu opens. Don't kill the running one to hurry
@@ -62,8 +74,6 @@ which can't load pdlua, so Cut It starts but doesn't play.
 
 ## Built, not copied
 
-Pd, pdlua and ELSE are built from the same sources and scripts as the Organelle 1's (`../README.md`,
-*Lua and ELSE*; `../pd-libs`), for the S2's Cortex-A72 with NEON (`-mcpu=cortex-a72
--mfpu=neon-fp-armv8`) rather than Raspberry Pi OS's ARMv6 default, on all four cores. The OS is
-32-bit (armhf) on a 64-bit kernel, so the Organelle 1's armhf binaries would load, but built for
-the Cortex-A9.
+Pd, pdlua and ELSE are built from the sources and scripts in `../pd-libs` (`../README.md`, *Lua and
+ELSE*), for the S2's Cortex-A72 with NEON (`-mcpu=cortex-a72 -mfpu=neon-fp-armv8`) rather than
+Raspberry Pi OS's ARMv6 default, on all four cores. The OS is 32-bit (armhf) on a 64-bit kernel.

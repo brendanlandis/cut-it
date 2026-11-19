@@ -46,19 +46,16 @@ file with no mixer, and mother's meter would read it, but the chain would stop b
 
 ### The codec's gains
 
-`codec-gain.sh` sets four of the SGTL5000's controls and echoes what the chip reads back. The chip,
-its dB scales, the factory's values and the hiss are on the Organelle's Reference page
-(`~/Sites/!reference/critter-guitari-organelle-1.md`, *SGTL5000*).
+`codec-gain.sh` sets the S2's WM8731 at every load and echoes what the chip reads back. The chip and
+its controls are on the S2's Reference page (`critter-guitari-organelle-s2`).
 
 | Control | Cut It sets | Evidence |
 |---------|-------------|----------|
-| `Headphone` | 105, +1 dB | verified |
-| `PCM` | 192, 0 dB | verified |
-| `Capture Attenuate Switch (-6dB)` | off, so the mic gets the chip's whole gain | verified |
-| `Capture` | 15, its top: +22.5 dB with the attenuator off. A dynamic mic sung close peaks about 3 dB under full scale, against the input's hiss at −71 dBFS (2026-11-04) | verified |
+| `Master` | left at the factory's, -2 dB: the chip has no digital volume to stage against | verified |
+| `Input Mux` | `Line In`; `Mic Boost` acts only on the Mic input, which this doesn't select | verified |
+| `Capture` | 31, its top: +12 dB, the factory's too, set rather than assumed | verified |
 
-`Headphone` and `PCM` verified by ear on 2026-11-03, set by hand with `amixer`: the hiss goes, at
-the same overall level. `Capture` measured with the Mic Probe (`tools/stage-patches/Mic Probe/`).
+Whether a voice has enough level at +12 dB is *Open*.
 
 ### At rest
 
@@ -67,7 +64,7 @@ What Cut It sends out with nothing playing, from the code and the Organelle's Re
 | Out | At rest | Evidence |
 |---|---|---|
 | Left | Nothing: `c_kit` adds nothing at rest, since each voice's `switch~` keeps its DSP off except while it sounds, and nothing else reaches the left | unknown |
-| Right | Both of the input's contacts passed through at unity: the mic's tip, the input's own hiss, **−71 dBFS RMS** with `Capture` 15 and the attenuator off and the mic silent (Reference, measured 2026-11-04), and whatever sound reaches the open mic; and the ring, the noise floor of a contact a TS plug grounds (item 11, at the factory's gain; not measured at `Capture` 15) | unknown |
+| Right | Both of the input's contacts passed through at unity: the mic's tip, the input's own hiss (not measured on the S2), and whatever sound reaches the open mic; and the ring, the noise floor of a contact a TS plug grounds | unknown |
 
 Nothing else in the patch makes a sound: there is no oscillator, no stage and no synth inside it,
 and the Volca and the Streichfett reach the mixer on cables of their own ([rig.md](../rig.md)).
@@ -91,15 +88,6 @@ best redundant.
 
 **Fix:** leave it alone. `tools/dsp.sh` turns it off on a running patch, for measuring what the
 audio engine costs (item 75).
-
-### `PCM` raised before `Headphone` comes down is 11 dB louder
-
-⚠️ The factory's overall level is -11 dB at the DAC and +12 dB in the amp. Raise `PCM` first and,
-on the first load after a boot, the output is 11 dB louder than either end until `Headphone` follows,
-and for good if that second `amixer` fails.
-
-**Fix:** `Headphone` first, and `PCM` only if that succeeded (`&&`), so the step between them and
-any failure are quieter instead.
 
 ## Design
 
@@ -150,8 +138,9 @@ knob**: turned down, they read less than Cut It sends, as the PA hears it.
 
 ### The mic goes straight in, and the drums are Pd's
 
-The mic is the input's tip, with no preamp in front of it: the Organelle's own input gain, turned
-all the way up, is enough for a voice (the Organelle's Reference page). The drums no longer come
+The mic is the input's tip, with no preamp in front of it: the Organelle 1's own input gain, turned
+all the way up, was enough for a voice (its Reference page); on the S2 that is unmeasured (*The
+codec's gains*). The drums no longer come
 in at all: `c_kit` plays them and `u_root` sends them out the left output, where the 404's
 hard-panned drums used to arrive ([sequencer.md](sequencer.md)), and the mic out the right. **No routing depends on a knob position**: cables carry the
 paths, and the mixer's knobs only set levels.
@@ -166,10 +155,13 @@ deferred — item 264. The SP-404 has since left the rig altogether (Brendan, 20
 
 - ⬜ **There is no DSP yet.** The chain is input → the sum → output, and the four filter stages,
   the drum mode and the sampler are v0.4. See [plan-v04.md](../../plan-v04.md) §3.
+- ⬜ **Whether the mic straight in has enough level on the S2**
+  (`cut-it/inbox#check-the-mic-straight-into-the-s2`). On the Organelle 1 an SM58 sung close peaked
+  about 3 dB under full scale with +22.5 dB of gain (its Reference page,
+  `critter-guitari-organelle-1`, *SGTL5000*); the S2's line input tops out at +12 dB.
 - ⬜ **Whether the mic's hiss lights mother's out R meter at rest has not been looked at on the
-  device** (`cut-it/inbox`): watch the info bar with the mic in and the room quiet. By
-  Organelle_OS's `fw_dir/mother.pd` at tag `v4.0` (2020-02-12, the date of this device's files),
-  each out meter is `env~ 8192 4096` less 40, over 60, times 11, as a whole number, so its first
-  segment needs −54.5 dBFS RMS, 16.5 dB above the hiss's −71: at rest it should read 0, and only
-  sound reaching the open mic lights it. That scale is a fact about mother for the Organelle's
-  Reference page, not yet read off the device.
+  device** (`cut-it/inbox#check-the-mic-straight-into-the-s2`): watch the info bar with the mic in
+  and the room quiet. By Organelle_OS's `fw_dir/mother.pd` at tag `v4.0`, the Organelle 1's, each
+  out meter is `env~ 8192 4096` less 40, over 60, times 11, as a whole number, so its first segment
+  needs −54.5 dBFS RMS, 16.5 dB above the Organelle 1's hiss at −71: at rest it should have read 0
+  there, and only sound reaching the open mic lit it. The S2's `mother.pd` and its hiss are not read yet.

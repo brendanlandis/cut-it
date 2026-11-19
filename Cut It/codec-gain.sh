@@ -14,6 +14,9 @@
 CARD=audioinjectorpi
 amixer -c $CARD set 'Input Mux' 'Line In' >/dev/null 2>&1 || true
 amixer -c $CARD set Capture 31 >/dev/null 2>&1 || true
-m=$(amixer -c $CARD sget Master 2>/dev/null | awk '/Front Left:/ {print $3; exit}')
-c=$(amixer -c $CARD sget Capture 2>/dev/null | awk '/Front Left:/ {print $3; exit}')
+# "Front Left: Playback 119 [94%] [-2.00dB]": the step, and the dB without brackets.
+level() { amixer -c $CARD sget "$1" 2>/dev/null \
+          | awk '/Front Left:/ {gsub(/[][]/, "", $6); print $4 " " $6; exit}'; }
+m=$(level Master)
+c=$(level Capture)
 echo "codec-gain: Master ${m:-?} Capture ${c:-?}"

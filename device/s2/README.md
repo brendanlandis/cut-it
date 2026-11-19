@@ -19,6 +19,23 @@ From a factory 5.1 card with SSH on, from the Mac:
    It's safe to run again, and leaves the factory's files beside their replacements as `.orig`.
 3. Copy `/sdcard/ap.txt` (the access point's name, then its password) and `/sdcard/cut-it-state`
    from the old device, and deploy: `HOST=music@<address> tools/deploy.sh`.
+4. Give it `192.168.1.15` on the house network (below).
+
+## Its address
+
+**192.168.1.15 on both networks**, so the phone's send host is set once (`ref/device/phone.md`).
+On the house network the S2 sets it itself, in its saved `hildegard` connection:
+
+```sh
+sudo nmcli connection modify hildegard ipv4.method manual ipv4.addresses 192.168.1.15/24 \
+    ipv4.gateway 192.168.1.1 ipv4.dns 192.168.1.1
+```
+
+The Orbi also reserves `.15` for its Wi-Fi stick (a D-Link 802.11ac, Realtek RTL8822BU,
+`C8:78:7D:94:F4:6D`, Brendan's own; the one that came with the S2 is a Ralink RT5572), which keeps
+the address free. The reservation alone didn't do it: the Orbi kept giving out the `.13` it had
+already leased that stick, even after a DHCP release. The connection lives on the card, in
+`/sdcard/system-connections`, so a reflash or **Forget Saved Nets** loses it.
 
 ## What `setup.sh` changes
 

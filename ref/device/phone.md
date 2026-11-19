@@ -44,12 +44,13 @@ in one line is what makes the first one safe to reason about.
 
 | Device | Address | Notes | Evidence | Item |
 |--------|---------|-------|----------|------|
-| Organelle | `192.168.1.15` | Listens on **9001**. Reserved for it on the house router, and its own access point takes the same address (`device/start-ap.sh`), so the phone's send host is set once | verified | — |
+| Organelle | `192.168.1.15` | Listens on **9001**. The S2 (from 2026-11-19) sets it itself on the house network, the router reserves it, and its own access point takes the same address (`device/s2/README.md`), so the phone's send host is set once | verified | — |
 | iPhone | `192.168.1.9` | `u_net` sends to TouchOSC's OSC receive, **8000**. Reserved for it on the house router (Brendan, 2026-11-03); `192.168.1.5` until then, which turned out to be the printer | unknown | — |
 | Mac | `192.168.1.6` | Dev machine, by DHCP and not reserved (seen 2026-11-03; `192.168.1.16` earlier) | verified | — |
 
-**The Organelle is `192.168.1.15` on both networks**: the house router reserves it, and its own
-access point uses it too (from 2026-11-03; the factory AP was `192.168.12.1`). The phone's address is
+**The Organelle is `192.168.1.15` on both networks**: on the house network the S2 sets it in its
+saved `hildegard` connection and the router reserves it, and its own access point uses it too (from
+2026-11-03 on the Organelle 1, whose factory AP was `192.168.12.1`; on the S2 from 2026-11-19). The phone's address is
 the house network's at home and whatever the access point leases it at a gig.
 
 **Nothing in the patch is configured with either** — `phone-ip.sh` resolves it at load. See

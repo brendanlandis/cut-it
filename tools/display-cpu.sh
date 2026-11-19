@@ -6,7 +6,8 @@
 #     HOST=music@192.168.1.15 ./tools/display-cpu.sh
 #
 # The /proc arithmetic of ref/device-os.md, Measuring the running patch, over
-# five seconds. Over budget usually means g_grid's dirty flag is not gating:
+# five seconds, as a share of one core: /proc/stat's total line counts every
+# core, and Pd's DSP runs on one (the S2 has four, the Organelle 1 one). Over budget usually means g_grid's dirty flag is not gating:
 # idle, it repaints nothing.
 set -e
 
@@ -14,10 +15,10 @@ HOST=${HOST:-music@192.168.1.15}
 N=1
 [ "$1" = "-n" ] && N=$2
 
-# The newest full-rig row in ref/device-os.md (2026-11-05, 15.2 %) plus one point.
+# The newest full-rig row in ref/device-os.md (2026-11-19, the S2, 7.6 %) plus one point.
 # When that table gains a row, move this and name the row.
-BUDGET=16.2
-BASELINE="the 2026-11-05 full rig, 15.2 %, plus one point"
+BUDGET=8.6
+BASELINE="the 2026-11-19 full rig on the S2, 7.6 %, plus one point"
 
 echo "measuring $HOST -- five seconds a reading, $N reading(s)"
 echo "budget: ${BUDGET} % (${BASELINE}) -- ref/device-os.md has the table"
@@ -36,7 +37,8 @@ while [ "$i" -le "$N" ]; do
         T2=$(awk "{print \$14+\$15}" /proc/$P/stat)
         C2=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat)
         U2=$(col)
-        awk -v a=$T1 -v b=$T2 -v c=$C1 -v d=$C2 "BEGIN{printf \"%.1f\n\", 100*(b-a)/(d-c)}"
+        N=$(grep -c "^cpu[0-9]" /proc/stat)
+        awk -v a=$T1 -v b=$T2 -v c=$C1 -v d=$C2 -v n=$N "BEGIN{printf \"%.1f\n\", 100*n*(b-a)/(d-c)}"
         echo $(( (U2-U1)/5 ))
         cut -d" " -f1-3 /proc/loadavg
         aconnect -l | grep -c "Connecting To"
@@ -60,7 +62,7 @@ while [ "$i" -le "$N" ]; do
     echo "   pd CPU        ${cpu} %       ${verdict} (<= ${BUDGET} %)"
     echo "   UDP out       ${udp}/s        the display + u_net -- compare the table, not a memory"
     echo "   load          ${load}"
-    echo "   ALSA links    ${alsa}         expect 5 with three controllers wired both ways"
+    echo "   ALSA links    ${alsa}         expect 11 on the S2's full rig: five USB devices and ttymidi"
     echo
     i=$((i + 1))
 done

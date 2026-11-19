@@ -65,7 +65,8 @@ ssh music@192.168.1.15 '
   T1=$(awk "{print \$14+\$15}" /proc/$P/stat); C1=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat); U1=$(col)
   sleep 5
   T2=$(awk "{print \$14+\$15}" /proc/$P/stat); C2=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat); U2=$(col)
-  awk -v a=$T1 -v b=$T2 -v c=$C1 -v d=$C2 "BEGIN{printf \"pd CPU: %.1f %%\n\", 100*(b-a)/(d-c)}"
+  N=$(grep -c "^cpu[0-9]" /proc/stat)
+  awk -v a=$T1 -v b=$T2 -v c=$C1 -v d=$C2 -v n=$N "BEGIN{printf \"pd CPU: %.1f %% of one core\n\", 100*n*(b-a)/(d-c)}"
   echo "UDP out:  $(( (U2-U1)/5 )) datagrams/sec"
   echo "load:     $(cat /proc/loadavg)"
   aconnect -l | grep -c "Connecting To"
@@ -83,6 +84,13 @@ ssh music@192.168.1.15 '
 | Phase 7 — phone status link | **11.7 %** | **122–126/s** |
 | Phase 8 — the data store | 10.4–10.7 % | 115–116/s | ⚠️ **not comparable** — see below |
 | 2026-11-05 — drums in Pd, the synths, the phone's pages, the info bar | **15.0–15.2 %** | 60–61/s |
+| 2026-11-19 — the same patch on the **S2**, 11 ALSA links (five USB devices and ttymidi) | **7.0–7.6 %**; 8.8 % playing | 97/s |
+
+**CPU is a share of one core.** Pd's DSP runs on one, so on the S2 (four Cortex-A72 cores at
+1.8 GHz) the share of the whole machine that `/proc/stat`'s total line gives is multiplied by four
+(`tools/display-cpu.sh` does it); the Organelle 1 has one core, so its rows needed nothing. The
+Organelle 1 played at 39–44 % of its one 996 MHz core; the S2 plays the same patch at under 9 %
+of one of its four.
 
 The datagram rate was the display alone and flat from Phase 3 to 6. **The Phase 5 CPU jump is the
 clock, and it is DSP cost, not MIDI cost** — toggling DSP off drops `pd` to under 5 % while the

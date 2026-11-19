@@ -10,7 +10,7 @@
 # clock stops: expected, not a fault (tools/README.md).
 set -eu
 
-HOST=${HOST:-organelle.local}
+HOST=${HOST:-192.168.1.15}
 PORT=${PORT:-9997}
 STATE=${1:-}
 

@@ -19,7 +19,7 @@ Most of the data store is deliberately invisible: state is files, and `state-ass
 - [ ] **4. Front-panel Save**
   - **Need:** Knob 1 parked where its row and the phone's tempo read 57 BPM. Every Save rewrites knobs.txt from the physical knobs, and midi 1 and tempo 2 both assert that restored value.
   - **Do:** Press Storage then Save on the Organelle. Storage is a top-level menu, not a System submenu.
-  - **Check:** `ssh root@organelle.local date -r /sdcard/cut-it-state/cut-it-manual.txt` before the Save and again after it.
+  - **Check:** `ssh music@192.168.1.15 date -r /sdcard/cut-it-state/cut-it-manual.txt` before the Save and again after it.
   - **Pass if:** The screen shows Saving briefly and returns. Then cut-it-manual.txt has a new timestamp even though it is still empty. An unchanged timestamp is the failure.
   - **Note:** A timestamp, because `cut-it-manual.txt` is still empty (nothing uses the manual policy yet): unchanged means `saveState` never arrived. Every Save rewrites `knobs.txt` from the physical knobs (item 139), hence the need.
 

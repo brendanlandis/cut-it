@@ -2,7 +2,7 @@
 # Return the Launchpad to Live Mode WITHOUT Pd -- the rescue for a stranded grid.
 #
 #     ./tools/lp-live.sh                 # on the device, over ssh
-#     HOST=root@192.168.1.15 ./tools/lp-live.sh
+#     HOST=music@192.168.1.15 ./tools/lp-live.sh
 #     LOCAL=1 ./tools/lp-live.sh         # run it ON the device itself
 #
 # Any end of a session but mother's `quitting` (killall pd, a crash, power loss)
@@ -11,7 +11,7 @@
 # come and go.
 set -eu
 
-HOST=${HOST:-root@organelle.local}
+HOST=${HOST:-music@192.168.1.15}
 LIVE='F0 00 20 29 02 0E 0E 00 F7'      # Programmer Mode off = Live Mode
 
 run() {

@@ -4,14 +4,14 @@
 #   ./tools/fetch-errors.sh              summary, then detail, newest session first
 #   ./tools/fetch-errors.sh --follow     poll the live session every 2s
 #   ./tools/fetch-errors.sh --clear      read it, then truncate both files (asks first)
-#   HOST=root@192.168.1.15 ./tools/...   target by IP if mDNS is flaky
+#   HOST=music@192.168.1.15 ./tools/...   target by IP if mDNS is flaky
 #
 # Both files, because .cur reaches .log only when the patch is next loaded, and
 # a power cycle does not reload it (ref/module/error.md).
 
 set -eu
 
-HOST="${HOST:-root@organelle.local}"
+HOST="${HOST:-music@192.168.1.15}"
 DEST="${DEST:-/sdcard/Patches/!}"
 PATCH="Cut It"
 LOG=/sdcard/cut-it-err.log
@@ -35,7 +35,7 @@ trap 'rm -rf "$TMP"' EXIT INT TERM
 if ! ssh -o ConnectTimeout=5 -o BatchMode=no "$HOST" true 2>/dev/null; then
     echo "Cannot reach $HOST." >&2
     echo "The Organelle may be off, on a different network, or mDNS may be" >&2
-    echo "failing — try HOST=root@192.168.1.15 $0" >&2
+    echo "failing — try HOST=music@192.168.1.15 $0" >&2
     exit 1
 fi
 

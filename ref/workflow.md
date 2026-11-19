@@ -96,12 +96,12 @@ Pd's output port for itself** — a patch load drops the connections, which is w
 to undo. Keep this section's console for when you need `[print]` output *back*.
 
 ```sh
-ssh root@organelle.local
+ssh music@192.168.1.15
   killall pd; sleep 1        # ⚠️ then ./tools/lp-live.sh when you are done
   cd /tmp/patch
-  nohup pd -nogui -rt -audiobuf 6 -path /root/Pd/externals -path /sdcard/PdExtraLibs \
+  nohup pd -nogui -rt -audiobuf 6 -path /home/music/Pd/externals -path /sdcard/PdExtraLibs \
       -path '/sdcard/Patches/!/Cut It' \
-      /root/fw_dir/mother.pd main.pd /tmp/diag.pd > /tmp/diag.txt 2>&1 &
+      /home/music/fw_dir/mother.pd main.pd /tmp/diag.pd > /tmp/diag.txt 2>&1 &
   sleep 6; killall pd
   cat /tmp/diag.txt
 ```

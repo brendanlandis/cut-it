@@ -4,14 +4,14 @@
 #   ./tools/fetch-state.sh              copy the device's state into device-state/
 #   ./tools/fetch-state.sh --show       print it instead of copying
 #   ./tools/fetch-state.sh --diff       show what would change, copy nothing
-#   HOST=root@192.168.1.15 ./tools/...  target by IP if mDNS is flaky
+#   HOST=music@192.168.1.15 ./tools/...  target by IP if mDNS is flaky
 #
 # The data lives outside the patch folder, so a deploy cannot touch it, and so
 # only on the SD card until this copies it (ref/module/state.md). A `recover`
 # line in cut-it-recover.txt means a reload was attempted and never landed.
 set -eu
 
-HOST="${HOST:-root@organelle.local}"
+HOST="${HOST:-music@192.168.1.15}"
 REMOTE="${REMOTE:-/sdcard/cut-it-state}"
 LOCAL="${LOCAL:-device-state}"
 

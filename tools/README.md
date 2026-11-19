@@ -58,7 +58,7 @@ nothing — git is Brendan's.
 ./tools/fetch-errors.sh              # summary, then detail, newest session first
 ./tools/fetch-errors.sh --follow     # poll the live session
 ./tools/fetch-errors.sh --clear      # read it, then truncate (asks first)
-HOST=root@192.168.1.15 ./tools/fetch-errors.sh
+HOST=music@192.168.1.15 ./tools/fetch-errors.sh
 ```
 
 It reads **both** `/sdcard/cut-it-err.log` (every rolled session) and `/sdcard/cut-it-err.cur` (the
@@ -455,9 +455,9 @@ patch from the menu once before using Save New. Same caveat as `tools/deploy.sh`
 ### Running one of these by hand
 
 ```sh
-scp tools/lp-monitor.pd root@organelle.local:/tmp/
+scp tools/lp-monitor.pd music@192.168.1.15:/tmp/
 
-ssh root@organelle.local
+ssh music@192.168.1.15
   killall pd 2>/dev/null; sleep 1
   cd /tmp
   nohup pd -alsamidi -midiindev 1,2,3,4 -midioutdev 1,2,3,4 \
@@ -479,7 +479,7 @@ message box, useless on a device that runs Pd with `-nogui` and has no mouse. Se
 port **9996** and the device is handed back:
 
 ```sh
-python3 -c "import socket; socket.socket(socket.AF_INET, socket.SOCK_DGRAM).sendto(b'live;', ('organelle.local', 9996))"
+python3 -c "import socket; socket.socket(socket.AF_INET, socket.SOCK_DGRAM).sendto(b'live;', ('192.168.1.15', 9996))"
 ```
 
 ⛔ **Not `nc`**, which sends nothing and looks exactly like a dead patch (Reference, Organelle page,

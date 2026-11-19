@@ -175,7 +175,7 @@ lua test/gate/lua/u_perform_test.lua     # and the controls in play
 ./tools/deploy.sh              # syntax check -> scp BOTH patches -> reload -> load Cut It
 ./tools/deploy.sh --debug      # the same push, but loads Cut It Debug instead
 ./tools/tidy.sh                # what has accumulated on the device. --delete to remove it
-ssh root@organelle.local # password: organelle. Root fs is read-only -- remount-rw.sh first
+ssh music@192.168.1.15  # the S2 (device/s2): key auth, sudo. / is read-only -- sudo mount -o remount,rw / first
 ```
 
 ⚠️ **Read `run.sh`'s `RESULT:` line; do not grep for it.** `grep -E 'ALL|FAILED'` also matches
@@ -297,7 +297,7 @@ Links to paths containing spaces use the angle-bracket form:
   five physical tests on 2026-08-08, and [ref/rig.md](ref/rig.md) had already written it up **with
   that exact code in the text**. Symptoms are as greppable as `item NNN`, and cost more to re-derive.
 - **Configuration that lives only on a device is one accident from being lost.** The nanoKONTROL
-  scene, `/root/.pdsettings` and the `/usr/bin/pd` launcher are backed up in [device/](device/),
-  verified current against the hardware, and so is the recipe that builds pdlua and ELSE into
-  `/sdcard/PdExtraLibs`. `.pdsettings` is load-bearing: `path1: /root/Pd/externals` is what makes `[shell]`,
+  scene, `.pdsettings` and the `/usr/bin/pd` launcher are backed up in [device/](device/) (the S2's,
+  in `/home/music`, in [device/s2/](device/s2/)), and so is the recipe that builds Pd, pdlua and ELSE
+  into `/sdcard`. `.pdsettings` is load-bearing: `path1: /home/music/Pd/externals` is what makes `[shell]`,
   `packOSC` and `routeOSC` resolve in the menu-launched patch.

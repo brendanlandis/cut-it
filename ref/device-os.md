@@ -18,9 +18,9 @@ process outright, so re-wiring is not optional (item 252). ✅ **This is why `u_
 Cut It re-wires itself every load and so never notices. ⚠️ **Any patch that is not Cut It must make its
 own `aconnect` call**, or it measures silence (item 225).
 
-`/root/.pdsettings` — the `midiapi: 1` and 4-in/4-out configuration the whole MIDI topology depends on —
-is backed up in [device/](../device/), verified current against the hardware; the factory original is
-kept as [device/pdsettings.orig](../device/pdsettings.orig).
+`.pdsettings` — the `midiapi: 1` and 4-in/4-out configuration the whole MIDI topology depends on —
+is `/home/music/.pdsettings` on the S2, backed up in [device/s2/](../device/s2/) beside the factory's
+`pdsettings.orig` (the Organelle 1's, in `/root`, in [device/](../device/)).
 
 ## The device itself
 
@@ -59,7 +59,7 @@ CPU, load and UDP datagram rate, **without disturbing what is running**. Reads `
 using `top`, so it works on busybox (the `pgrep -ox pd` caution is in Reference):
 
 ```sh
-ssh root@organelle.local '
+ssh music@192.168.1.15 '
   P=$(pgrep -ox pd)
   col() { awk "/^Udp:/{ if(h==\"\"){h=1; for(i=1;i<=NF;i++) if(\$i==\"OutDatagrams\") c=i; next} print \$c }" /proc/net/snmp; }
   T1=$(awk "{print \$14+\$15}" /proc/$P/stat); C1=$(awk "/^cpu /{print \$2+\$3+\$4+\$5+\$6+\$7+\$8}" /proc/stat); U1=$(col)

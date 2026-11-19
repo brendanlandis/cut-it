@@ -9,7 +9,7 @@
 # pattern below and pass the KEEP guard; tools/README.md has why.
 set -eu
 
-HOST="${HOST:-root@organelle.local}"
+HOST="${HOST:-music@192.168.1.15}"
 DELETE=0
 for a in "$@"; do
     case "$a" in

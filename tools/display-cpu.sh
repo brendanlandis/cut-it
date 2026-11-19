@@ -3,14 +3,14 @@
 #
 #     ./tools/display-cpu.sh              # one reading
 #     ./tools/display-cpu.sh -n 3         # three, so you can see it settle
-#     HOST=root@192.168.1.15 ./tools/display-cpu.sh
+#     HOST=music@192.168.1.15 ./tools/display-cpu.sh
 #
 # The /proc arithmetic of ref/device-os.md, Measuring the running patch, over
 # five seconds. Over budget usually means g_grid's dirty flag is not gating:
 # idle, it repaints nothing.
 set -e
 
-HOST=${HOST:-root@organelle.local}
+HOST=${HOST:-music@192.168.1.15}
 N=1
 [ "$1" = "-n" ] && N=$2
 

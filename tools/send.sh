@@ -3,7 +3,7 @@
 #
 #   ./tools/send.sh 'disp chop-size 43 %; disp grain 12'   the instrument on the Organelle
 #   HOST=mac ./tools/send.sh '...'                         main-dev.pd open on this Mac
-#   HOST=root@192.168.1.15 ./tools/send.sh '...'           target by IP if mDNS is flaky
+#   HOST=music@192.168.1.15 ./tools/send.sh '...'           target by IP if mDNS is flaky
 #   EVERY=3 ./tools/send.sh '...'                          again every 3 s, until Ctrl-C
 #
 # EVERY is for a step whose picture clears itself (a parameter row after 1.2 s, a warning
@@ -18,7 +18,7 @@
 
 set -eu
 
-HOST="${HOST:-root@organelle.local}"
+HOST="${HOST:-music@192.168.1.15}"
 PDSEND="${PDSEND:-$HOME/Applications/Pd-0.57-0.app/Contents/Resources/bin/pdsend}"
 
 if [ $# -ne 1 ] || [ -z "$1" ]; then

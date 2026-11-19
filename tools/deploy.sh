@@ -4,7 +4,7 @@
 #   ./tools/deploy.sh                    check, push BOTH, reload, load the instrument
 #   ./tools/deploy.sh --debug            same, but load the debug patch
 #   ./tools/deploy.sh --clean            wipe the remote copy of the loaded one first
-#   HOST=root@192.168.1.15 ./tools/deploy.sh   target by IP if mDNS is flaky
+#   HOST=music@192.168.1.15 ./tools/deploy.sh   target by IP if mDNS is flaky
 #
 # --debug loads the debug patch, which stops the instrument; run it bare
 # afterwards to put Cut It back. The flags and the loop are on ref/workflow.md.
@@ -14,7 +14,7 @@
 
 set -eu
 
-HOST="${HOST:-root@organelle.local}"
+HOST="${HOST:-music@192.168.1.15}"
 PD="${PD:-$HOME/Applications/Pd-0.57-0.app/Contents/Resources/bin/pd}"
 # pdlua and ELSE, built for the Mac, as /sdcard/PdExtraLibs holds them on the device
 # (device/README.md, Lua and ELSE). CUTIT_PD_LIBS points at another folder.

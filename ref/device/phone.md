@@ -420,7 +420,8 @@ control for the time signature's bottom number:
   `/cutit/sections` and `/cutit/songs`, the layout's, which the app takes from `/cutit/voices` and
   `/cutit/lists` instead; and of `/cutit/ack` it reads only `ack result`, taking the rest from `once`.
   They still go on every heartbeat.
-- ⬜ **No choosing the nanoKEY's synth but by a voice's page** (`cut-it/cut-it-app`): the layout's
-  keyboard tab sent `synth fm` and `synth strings`, which `c_synth` puts in the section, so the
-  choice survived a reload. A voice's page sends `machine`, which isn't put, and the setup page's
-  machine changes the voice itself. The synths checklist's steps 8 to 10 use the keys page instead.
+- ⬜ **No choosing the nanoKEY's synth but by a voice's page** (`cut-it/cut-it-app`), outside the
+  line check, whose FM and STRINGS send `synth fm` and `synth strings` in test mode: the layout's
+  keyboard tab sent them too, which `c_synth` puts in the section, so the choice survived a reload.
+  A voice's page sends `machine`, which isn't put, and the setup page's machine changes the voice
+  itself. The synths checklist's steps 8 to 10 use the keys page instead.

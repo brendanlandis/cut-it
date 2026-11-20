@@ -21,7 +21,6 @@ matters because the Organelle launches Pd with `-nogui` and there is no console 
 | **Watching a device animate** — does it still track the clock | `stage-patches/Anim Probe/` |
 | **Trying a 404 flourish** — a pad stuttering slower while its pitch falls; the SP-404 has left the rig (2026-11-04) | `stage-patches/Flourish Probe/` |
 | **Worked examples** — a technique, kept as the proof | `audio-probe/` `oled-probe/` `osc-bridge/` `status-display/` |
-| **The phone side** | `touchosc/` — the phone's TouchOSC layout, every screen and the line check's page: `CutIt.tosc`, built by `build.py` from its own code and `test/checklists/linecheck.md`; `push.sh` puts it on the phone through the Mac's TouchOSC (below) |
 | **Menu patches** | `stage-patches/` — see below |
 | **Editing a patch's comments** — delete or rewrite them and keep every cord | `pd-comments.py` |
 
@@ -191,109 +190,6 @@ the quickest way to see what is arriving at the inputs.
 ⛔ **The test is "would you run it again", not "is it used".** A patch mentioned in no document is
 fine if you would reach for it; a patch nobody would open again is dead weight even if three pages
 cite it. That is what retired `self-wire.pd` and keeps these four.
-
-⚠️ **`touchosc/` was never part of that question** — [../ref/device/phone.md](../ref/device/phone.md)
-names it as a `Files:` entry, so it is live by definition.
-
-### Deploying the phone's layout
-
-```sh
-./tools/touchosc/push.sh
-```
-
-It rebuilds `touchosc/CutIt.tosc` and puts it into the Mac's TouchOSC, whose editor server pushes
-it to the phone live (TouchOSC's Reference page, *Editor network sync*). TouchOSC keeps one copy
-open (Brendan, 2026-11-05): `push.sh` edits the CutIt document it has open, through TouchOSC's MCP
-server, until it is the build (`touchosc/live.py`), rather than opening the file, which added a
-document every time. A small change takes about a second, all told.
-
-- **What a push sends**: only what differs, controls matched by name. A changed property or value
-  reaches the phone as a few hundred bytes; each control made, moved or deleted resends it the
-  whole document, so a new screen costs more (the 127 controls of the sections page: 437 edits in
-  1.1 s on the Mac, 18 MB to the phone, which stayed connected). Then `live.py` reads the document
-  back and says what still differs, if anything: `python3 tools/touchosc/live.py --diff` does that
-  alone, changing nothing.
-- **When it opens the file instead**: TouchOSC not running, its MCP server off, or no CutIt
-  document open. Both of TouchOSC's servers are off after every launch unless it is started with
-  `--editor.network.state=SERVER --mcp.enabled=true`, so `push.sh` launches it with both, in the
-  background, and when it runs without the editor server, quits and relaunches it with them. With
-  the editor server on and the MCP server off it opens the file and says so: Preferences > MCP
-  Server turns that on without a relaunch, which would drop the phone.
-- **More than one CutIt open**: `live.py` pushes to the active one and says so. Nothing it can
-  call closes a document: close the others in TouchOSC, or quit it and push.
-- **After a push that changed it, TouchOSC counts CutIt as modified**: it compares the document
-  with the file as it opened it, not as `build.py` has since written it. If quitting asks to save
-  it, Don't Save: the file is `build.py`'s, and one saved from the editor stops the next build.
-
-Then it checks the phone is still connected, and says so when it isn't (exit 3): a phone that
-dropped off keeps the old layout and shows nothing wrong.
-
-### Working on the layout
-
-**Two workflows** (Brendan, 2026-11-04). This one is for development, at home, with the Mac and
-the house WiFi. At a performance there is neither: the phone joins the Organelle's own access point
-and runs the layout saved on it before leaving ([../ref/wifi.md](../ref/wifi.md), *The stage
-procedure*).
-
-**The development workflow**, for while the phone's screens are being built:
-
-```sh
-python3 tools/touchosc/watch.py
-```
-
-- **The phone follows the code.** Every save of `build.py`, the line check or
-  `Cut It/cut-it-drum-page.txt` rebuilds the layout and pushes it.
-- **A dropped phone is told**, in a line and a Mac notification, as it happens and as it comes back.
-- **A change made in TouchOSC's editor comes back into the code.** Move, resize or recolor something
-  in the Mac's TouchOSC (the phone takes it live, before any save) and save with **File > Save from
-  the menu**; Cmd-S did nothing on 2026-11-04: the watcher lists the change (`python3 tools/touchosc/diff.py`
-  does the same by hand), it goes into `build.py`, and the next build writes the file again.
-  `build.py` refuses to write over a `CutIt.tosc` saved from the editor until then (`--force`
-  discards the change), so a tweak is never lost, and stops the watcher pushing. A change made in
-  the editor and not saved is kept the same way: a push that would undo it refuses (exit 4), says
-  what it is, and the watcher tells it; save it, or `push.sh --force` discards it.
-- **Look at a page without the phone**: `python3 tools/touchosc/preview.py` draws every page, and
-  each of a page's tabs under its own tab bar, as the phone shows it, the drum screen once for each effect its effect radio shows, with the editor's 20-point grid over it and the notch's margin marked, into
-  `tools/touchosc/preview/` (open its `index.html`). It approximates TouchOSC's drawing; the
-  phone is the oracle for looks, this is for layout.
-- **The design rules** (Brendan, 2026-11-04): every control on the editor's 20-point grid
-  (anchored at the document's center, so its lines on a page run at 8 and 7 plus steps), inside
-  the page's margins; captions flush left over their controls; values and button words centered;
-  status on the bottom row. `ref/device/phone.md`, *The grid*, has the panels and columns. One
-  exception (Brendan, 2026-11-05): the drum screen's pads and the M and S under each step by 10
-  points and start 10 into the top margin, ending on the bottom one inside the page's 334-point frame; `touchosc-assert` names them, and nothing else.
-
-**Every screen is a page, and the editor reaches each by its tab** (Brendan, 2026-11-04). No script
-runs in the editor, so nothing in the layout is hidden for a script to show:
-
-- **The top tab bar is the phone's pages**, the outer pager, `pages`: arrangement, drums,
-  synths, page 4 to page 6, sections, songs, and line check last. Click a tab to open that page; on the phone
-  the root's script hides this bar and turns the pager to the page the `mode` bus names, by `build.py`'s `MODE_PAGES`.
-- **Under it is the page's own tab bar**, its pager (`tabs1` to `tabs8`, `checktabs`): one tab each,
-  named for the page, and the page's controls under that, but the synths page's four, the sections
-  page's two and the songs page's three. A second tab
-  for a page is a second page in that pager, `build.py`'s `TABBED`.
-- **To edit inside a page**, descend into the pager and then its page with Edit container (the
-  Edit context menu, or the toolbar), and come back with Exit container, as TouchOSC's manual has it
-  for any container; the controls' names are build.py's (`tempobox`, `pad5`, `svel`, …). The
-  editor's pager navigation must be on, its default (Preferences, Editor); with its Alt-key option
-  set, hold Alt to click a tab. The Document Tree selects any control by name.
-- **Pages 4 to 6 are blank** under their tabs: nothing is on them yet. The sections page, page 7,
-  has two tabs, sections and name, and the songs page, page 8, three, songs, setlists and name
-  ([../ref/device/phone.md](../ref/device/phone.md)).
-
-⚠️ **Judge spacing on the phone, not in the editor**: the editor shows both bars, and the phone
-hides the outer one. Whether its pages then move up a bar or keep its place empty is unseen
-([../ref/device/phone.md](../ref/device/phone.md), *Open*); the screens fit either way.
-
-**The phone's setup, once:** in TouchOSC, connect to the Mac as an editor client (port 6666), and set
-OSC connection 1: UDP, host `192.168.1.15`, send port 9001, receive port 8000.
-
-⛔ **The send host must be right, and a wrong one fails silently while receiving still works**: the
-phone shows everything, so the link looks fine, and nothing it sends arrives (2026-11-04). It is
-`192.168.1.15` on both networks: the house router reserves it, and the Organelle's own access point
-uses it too (`device/s2/wifi_setup.py`). Item 312: PdParty would not resolve `organelle.local`, so the
-address has been literal since.
 
 ### `stage-patches/` — menu patches for the venue
 

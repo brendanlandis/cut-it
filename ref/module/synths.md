@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # The synths
 
-**Files:** `Cut It/c_synth.pd`, `Cut It/c_synth.lua`, `Cut It/c_synth-lua.pd_lua`, `Cut It/c_melody.pd`, `Cut It/c_melody.lua`, `Cut It/c_melody-lua.pd_lua`, `Cut It/c_mono.pd` · **Gate:** `test/gate/synths-assert.sh`, `test/gate/display-assert.sh`, `test/gate/phone-assert.sh`, `test/gate/touchosc-assert.sh` · **Checklist:** `test/checklists/synths.md`, `test/checklists/linecheck.md`
+**Files:** `Cut It/c_synth.pd`, `Cut It/c_synth.lua`, `Cut It/c_synth-lua.pd_lua`, `Cut It/c_melody.pd`, `Cut It/c_melody.lua`, `Cut It/c_melody-lua.pd_lua`, `Cut It/c_mono.pd` · **Gate:** `test/gate/synths-assert.sh`, `test/gate/display-assert.sh`, `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/synths.md`, `test/checklists/linecheck.md`
 
 ## What it is
 

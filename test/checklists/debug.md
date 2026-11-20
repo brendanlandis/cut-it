@@ -35,7 +35,7 @@ Every step runs with Cut It stopped — selecting any patch restarts Pd — so t
 
 - [ ] **6. The network screen shows the address you type into the phone**
   - **Do:** Press the fifth key from the bottom. Read the ip row and check it against what the phone is pointed at.
-  - **Pass if:** The screen reads 4-NETWORK and the row under it reads ip- followed by this Organelle's own address. That is the number the phone's TouchOSC sends to, set as a literal address, and reading it here is what removes the last reason this rig needs a laptop to fix the phone link.
+  - **Pass if:** The screen reads 4-NETWORK and the row under it reads ip- followed by this Organelle's own address. That is the number the Cut It app sends to, set as a literal address, and reading it here is what removes the last reason this rig needs a laptop to fix the phone link.
   - **Note:** Item 312: the phone is set to a literal address (PdParty could not resolve the name), and on the house network the lease moves (the addresses seen are on the Organelle's Reference page). On the access point it is always the same ([phone](../../ref/device/phone.md)).
 
 - [ ] **7. The Volca answers when you fire at it**

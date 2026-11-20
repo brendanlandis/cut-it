@@ -7,7 +7,7 @@ import Network
 final class Link: @unchecked Sendable {
     static let host = "192.168.1.15"
     static let sendPort: NWEndpoint.Port = 9001
-    /// TouchOSC holds 8000 on the phone, so u_net sends this app a copy on its own port, and both can run.
+    /// Where u_net sends (u_root's u_net, its second argument).
     static let listenPort: NWEndpoint.Port = 8001
 
     private let queue = DispatchQueue(label: "cutit.link")

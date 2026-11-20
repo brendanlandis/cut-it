@@ -1,36 +1,31 @@
 <!-- schema: device -->
-# The phone — TouchOSC and the link
+# The phone — the Cut It app and the link
 
-**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `tools/touchosc/build.py`, `tools/touchosc/push.sh`, `tools/touchosc/live.py` · **Gate:** `test/gate/phone-assert.sh`, `test/gate/touchosc-assert.sh` · **Checklist:** `test/checklists/phone.md`
+**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `phone/CutIt/Link.swift`, `phone/CutIt/Cut.swift` · **Gate:** `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/phone.md`
 
-An iPhone running TouchOSC on the same network (from 2026-11-04; PdParty until then). What TouchOSC
-is and does — its file, how it draws, its scripts, its connections, the editor sync that deploys to
-it — is in Reference: `~/Sites/!reference/touchosc.md`; what was measured with PdParty stays on
-`~/Sites/!reference/pdparty.md`. This page is the link Cut It builds on them.
+An iPhone running the Cut It app, `phone/` in this repo, on the same network (from 2026-11-19;
+TouchOSC from 2026-11-04, and PdParty before it). What was measured with those two stays on their
+Reference pages, `~/Sites/!reference/touchosc.md` and `~/Sites/!reference/pdparty.md`; the app's
+design is on its card (`cut-it/cut-it-app`). This page is the link Cut It builds on it.
 
 **The phone controls the Launchpad's current page, and the OLED is not copied to it** (Brendan,
 2026-11-04). The OLED has the alerts and warnings, the levels and the name of a control as it
-moves; the phone shows what the page on the `mode` bus asks for: `perform`, page 1's global controls (the tempo, which
-lives on the phone alone, the time signature, the global last step, the swing and the drunkenness); `drums`, page 2's
-drum screen; `harmony`, `melody`, `keys` and `sound`, page 3's generator and keyboard; `songs`, page 8's songs; and
-`diag`, the checklist page, where Setup goes. Page 7's sections has no name on the bus, and pages 4 to 6 are blank
-under their tabs. **The TouchOSC layout is the fallback** (`cut-it/cut-it-app`), and the app has voices' pages of its own.
-Each page has tabs of its own: one each, but the synths page's four, harmony, rhythm, melody and
-keyboard, the sections page's two, its sections and the name tab, and the songs page's three, its
-songs, its setlists and the name tab (Brendan, 2026-11-05). It
-was a mirror of `disp` until then, with a remote screen of diagnostic buttons, and both went with
-the split: that reverses the decision on [display.md](../module/display.md) that the phone stays a
-mirror, which was right for a readout and is not for a control surface.
+moves; the phone shows the page `u_voices` names on `/cutit/voices`: `perform`, the controls in
+play; `drums`, the drum screen; `harmony`, `melody`, `keys` and `sound`, a voice's pages; `songs`,
+the songs and the sections, where the tempo, the last step, the time signature, the swing and the
+drunkenness are set; and `diag`, which Setup opens. The Launchpad's two columns run down either
+side of it, and a press on either moves both (`cut-it/cut-it-app`). It was a mirror of `disp`
+until 2026-11-04, with a remote screen of diagnostic buttons, and both went with the split: that
+reverses the decision on [display.md](../module/display.md) that the phone stays a mirror, which
+was right for a readout and is not for a control surface.
 
 `u_net.pd` is the only file that talks to it, and it reads nothing on `disp`. Outbound it carries
 nine addresses — a heartbeat, the mode, the sequencer's state, the synth choice, the velocity
 switch, the tempo, the song's sections, the songs page and the generator — each sent when it changes
 and again on every heartbeat, and a tenth, the chord loop's place, on each step; and it rebuilds its
 own socket, which a phone leaving the network destroys
-outright. Inbound it takes **a closed vocabulary of eight commands** (one for the checklist page,
-one for the drum and arrangement screens' controls, two for the keyboard tab, one for the tempo,
-one for the sections page, one for the songs page, one for the generator's tabs), acknowledges the ones a button
-shows, and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
+outright. Inbound it takes **a closed vocabulary of commands**, each a literal on one `route`
+box (*The inbound vocabulary*, below), acknowledges some, and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
 the heartbeat counter and measured under *Broadcast* in Reference and below; that is the evidence
 anything time-critical would have to answer to.
 
@@ -45,7 +40,7 @@ in one line is what makes the first one safe to reason about.
 | Device | Address | Notes | Evidence | Item |
 |--------|---------|-------|----------|------|
 | Organelle | `192.168.1.15` | Listens on **9001**. The S2 (from 2026-11-19) sets it itself on the house network, the router reserves it, and its own access point takes the same address (`device/s2/README.md`), so the phone's send host is set once | verified | — |
-| iPhone | `192.168.1.9` | `u_net` sends to TouchOSC's OSC receive, **8000**. Reserved for it on the house router (Brendan, 2026-11-03); `192.168.1.5` until then, which turned out to be the printer | unknown | — |
+| iPhone | `192.168.1.9` | `u_net` sends to the Cut It app's OSC receive, **8001**. Reserved for it on the house router (Brendan, 2026-11-03); `192.168.1.5` until then, which turned out to be the printer | unknown | — |
 | Mac | `192.168.1.6` | Dev machine, by DHCP and not reserved (seen 2026-11-03; `192.168.1.16` earlier) | verified | — |
 
 **The Organelle is `192.168.1.15` on both networks**: on the house network the S2 sets it in its
@@ -59,17 +54,18 @@ the house network's at home and whatever the access point leases it at a gig.
 | Port | Status | Evidence | Item |
 |------|--------|----------|------|
 | 4001–4003 | **Do not use** — mother's (Reference, `~/Sites/!reference/critter-guitari-organelle-1.md`, *Ports*) | verified | — |
+| 8001 | The Cut It app's OSC receive, on the phone. `u_root` passes it to `u_net` as arg 2 | verified | — |
 | 9001 | The Organelle's OSC receive. `u_root` passes it to `u_net` as arg 3 | verified | — |
 | 9002 | **The Mac's**, so `main-dev.pd` and a suite run cannot fight over one socket | verified | 307 |
 
-TouchOSC's connections are set in the app, not in the layout (Reference): OSC connection 1, UDP,
-host `192.168.1.15`, send port 9001, receive port 8000. ⛔ **A wrong send host fails silently while
-receiving still works**: the phone shows everything, so the link looks fine, and nothing it sends
-arrives (2026-11-04).
+The app's two ends are fixed in `phone/CutIt/Link.swift`: it sends to `192.168.1.15`, port 9001,
+and listens on 8001; `-host <address>` at launch points it elsewhere, as the tests do. ⛔ **A wrong
+send host fails silently while receiving still works**: the phone shows everything, so the link
+looks fine, and nothing it sends arrives (seen with TouchOSC, 2026-11-04).
 
 **So the phone's send host is `192.168.1.15` everywhere**, set once. PdParty could not send to the
 broadcast address or resolve a name (Reference, item 312), so a fixed address was the only way to
-stop re-pointing it, and TouchOSC is set the same way; on the house network that took the router's
+stop re-pointing it, and the app is set the same way; on the house network that took the router's
 reservation (Brendan, 2026-11-03). The
 instrument still discovers the *phone* by itself, with `phone-ip.sh`, and this is the one direction
 that cannot be discovered — see *The phone cannot announce itself* under **Design**.
@@ -98,6 +94,11 @@ Each of the state addresses is empty, no arguments, until its first value arrive
 leaves its screen as it was on one. `/cutit/param`, `/cutit/status` and `/cutit/alert` are gone
 with the mirror (Brendan, 2026-11-04), and `phone-assert` requires that none of them ever leaves.
 
+| Address | Carries | Evidence |
+|---|---|---|
+| `/cutit/drums` | `c_steps`' `R.phone`: playing, the global last step, the selected track, pending (0, 1 sync, 2 snap), the sixteen last steps, then 1 for each track with its own, then the time signature's two numbers, the drunkenness and the swing, then the sixteen volumes, pitches and randomnesses, then the selected track's effects, drive, tone, mix, note, feel, feedback, level, send and character, and the reverb's size and damping, then each track's mute and each track's solo, then the reverb's type, 0 to 2, then each track's random pitch, 1 or 0: 148 numbers. Sent by `c_steps` when it changes, through `u_root`'s cord into `u_net`'s second inlet. | unknown |
+| `/cutit/melody` | `c_melody.lua`'s `R.phone`: the chords' controls, the slot sounding, whether each part is on, the key and mode, the grid's length and the pattern's last step, each of the eight slots' name, spelling, numeral and start, the two voices, then the melody's controls, modal or functional and bass only. | unknown |
+
 ⚠️ **The command travels as ARGUMENTS of `/cutit`, not as address components.** `[oscparse]`
 flattens `/cutit/drums` and `/cutit` carrying the string `drums` to the same list, so this is
 simply the cheaper of the two to build — one `[oscformat cutit]` on the phone rather than one per
@@ -113,7 +114,7 @@ button.
 
 | Command | Does | Evidence | Item |
 |---------|------|----------|------|
-| `result` | A step's verdict, `<checklist>-<n>-<pass or fail>`, logged as `info phone <verdict>`, in test mode or not; answered `ack result` | unknown | — |
+| `result` | A step's verdict, `<checklist>-<n>-<pass or fail>`, logged as `info phone <verdict>`, in test mode or not; answered `ack result`. Nothing has sent it since the line check left the phone with TouchOSC (2026-11-19) | unknown | — |
 | `drums` | A drum or arrangement screen control, passed on whole: whatever follows `drums` goes out `u_net`'s first outlet to `c_steps`, which refuses one it does not know as `fail c_steps bad-selector`, so a new control needs nothing in `u_net` (Brendan, 2026-11-04). `sync`, `snap` and `select` are answered `ack drums <action>`, the rest not, since the state shows them | verified | — |
 | `synth` | The synth choice, passed on whole: whatever follows `synth` goes out `u_net`'s second outlet to `c_synth`, which refuses a synth it does not know as `fail c_synth bad-synth`, so a new synth needs nothing in `u_net` but its acknowledgment. `fm` and `strings` are answered `ack synth <choice>`; the phone lights the chosen button from `/cutit/synth`, not from the answer ([synths.md](../module/synths.md)) | unknown | — |
 | `tempo` | The arrangement screen's tempo, `tempo <bpm>`, passed on whole out `u_net`'s third outlet to `u_tempo`, which puts it on the tempo bus, whole and within 5–1000 BPM, and refuses anything but a number as `fail u_tempo bad-tempo` ([tempo.md](../module/tempo.md)). Not answered: the tempo coming back says it | unknown | — |
@@ -129,9 +130,8 @@ button.
 `phone-assert` sends each and requires it to reach nothing: no answer, no bus, no outlet. The
 re-wire is still on the `presence` bus, from a Send line ([presence.md](../module/presence.md)).
 
-What the drum and arrangement screens send after `drums`, each one `c_steps`' own (`R.presses` in
-`c_steps.lua`). `touchosc-assert` checks the layout against that table, and `u_net`'s
-acknowledgments against the layout.
+What `drums` carries, each one `c_steps`' own (`R.presses` in `c_steps.lua`). The app sends
+neither `den` nor `rnd-pitch` (*Open*).
 
 | Drum action | Does | Evidence | Item |
 |-------------|------|----------|------|
@@ -158,46 +158,42 @@ acknowledgments against the layout.
 | `set-swing` | The swing, `set-swing <50-75>`, as it stands. The swing is the phone's alone since knob 4 became rush (Brendan, 2026-11-05); `swing <0-1>`, a knob position that passes a latch, stays for a map row that wants it | unknown | — |
 | `set-last` | The global last step, `set-last <1-32>`, the same way beside knob 2's `last`, clipped to the time signature's reach ([sequencer.md](../module/sequencer.md)) | unknown | — |
 
-What the sections page sends after `sections`, each one `u_song`'s own (`R.phone_cmds` in
-`u_song.lua`): `select <n>`, a row tapped, `page <-1 or 1>`, `new`, `up`, `down`, `length <0-64>`,
-`delete` and, from the name tab, `name <name>`, the name one OSC string, spaces and all.
-`touchosc-assert` checks the layout sends exactly those; these five are acknowledged, and it checks
-each lights a cell.
+What `sections` carries, each one `u_song`'s own (`R.phone_cmds` in `u_song.lua`): `select <n>`,
+a row tapped, `page <-1 or 1>`, `new`, `up`, `down`, `length <0-64>`, `delete` and `name <name>`,
+the name one OSC string, spaces and all. These five are acknowledged.
 
 <!-- check: pd-route "Cut It/u_net.pd" new -->
 
-| Action | A button's flash | Evidence | Item |
-|--------|------------------|----------|------|
-| `new` | **new, a copy of** the selected section | unknown | — |
-| `up` | **move up** | unknown | — |
-| `down` | **move down** | unknown | — |
-| `delete` | **delete** | unknown | — |
-| `name` | The name tab's **done** | unknown | — |
+| Action | Is | Evidence | Item |
+|--------|----|----------|------|
+| `new` | A copy of the selected section | unknown | — |
+| `up` | Move it up | unknown | — |
+| `down` | Move it down | unknown | — |
+| `delete` | Delete it | unknown | — |
+| `name` | Its new name | unknown | — |
 
-What the songs page sends after `songs`, each one `u_song`'s own (`R.songs_cmds` in `u_song.lua`):
-from its songs tab `select <n>`, a row tapped, `page <-1 or 1>`, `load`, `new`, `add` and `delete`;
-from its setlists tab `entry <n>`, a row tapped, `set <-1 or 1>`, the arrows, `up`, `down`,
-`new-set` and `remove`; and from the name tab `name <name>`
-opened from the songs tab, `set-name <name>` from the setlists tab. `touchosc-assert` checks the
-layout sends exactly those; these ten are acknowledged, and it checks each lights a cell.
+What `songs` carries, each one `u_song`'s own (`R.songs_cmds` in `u_song.lua`): for the songs
+`select <n>`, a row tapped, `page <-1 or 1>`, `load`, `new`, `add` and `delete`; for the setlists
+`entry <n>`, a row tapped, `set <-1 or 1>`, `up`, `down`, `new-set` and `remove`; and `name <name>`
+for a song, `set-name <name>` for a setlist. These ten are acknowledged.
 
 <!-- check: pd-route "Cut It/u_net.pd" load -->
 
-| Action | A button's flash | Evidence | Item |
-|--------|------------------|----------|------|
-| `load` | **load** | unknown | — |
-| `new` | **new song** | unknown | — |
-| `add` | **add to set** | unknown | — |
-| `delete` | **delete**, at its second tap | unknown | — |
-| `up` | **move up**, on the setlists tab | unknown | — |
-| `down` | **move down** | unknown | — |
-| `new-set` | **new set** | unknown | — |
-| `remove` | **remove** | unknown | — |
-| `name` | The name tab's **done** | unknown | — |
-| `set-name` | The name tab's **done** | unknown | — |
+| Action | Is | Evidence | Item |
+|--------|----|----------|------|
+| `load` | Load the selected song | unknown | — |
+| `new` | A new song | unknown | — |
+| `add` | Add it to the setlist | unknown | — |
+| `delete` | Delete it | unknown | — |
+| `up` | Move the selected entry up | unknown | — |
+| `down` | Move it down | unknown | — |
+| `new-set` | A new setlist | unknown | — |
+| `remove` | Take the entry out | unknown | — |
+| `name` | The song's new name | unknown | — |
+| `set-name` | The setlist's new name | unknown | — |
 
-What the keyboard tab and the checklist page send after `synth`, `c_synth.lua`'s `R.SYNTHS`, each
-acknowledged by `u_net`. `touchosc-assert` checks the layout and `u_net` against `c_synth`.
+What `synth` carries, `c_synth.lua`'s `R.SYNTHS`, each acknowledged by `u_net`. The app sends
+neither: a voice's machine chooses the synth (`voices`).
 
 <!-- check: pd-route "Cut It/u_net.pd" fm -->
 
@@ -206,8 +202,7 @@ acknowledged by `u_net`. `touchosc-assert` checks the layout and `u_net` against
 | `fm` | The Volca FM ([volca.md](volca.md)) | unknown | — |
 | `strings` | The Waldorf Streichfett ([streichfett.md](streichfett.md)) | unknown | — |
 
-What the velocity switch sends after `velocity`, each acknowledged by `u_net`. `touchosc-assert`
-checks the switch asks for exactly these.
+What the keys page's velocity button sends after `velocity`, each acknowledged by `u_net`.
 
 <!-- check: pd-route "Cut It/u_net.pd" on -->
 
@@ -223,52 +218,14 @@ checks the switch asks for exactly these.
 | Late or returning phone | Repopulates within half a second with nothing moving | unknown | — |
 | `tempo` | Coalesced into **one slot** at 20 Hz: `u_tempo` hands on every BPM the tempo bus carries, and one sweep of knob 1 is some 200 a second. `phone-assert` sweeps 401 and requires at most ~60 datagrams and the last BPM | unknown | — |
 | Socket recovery | `u_net` rebuilds within about five seconds of the phone coming back, nothing touched on the instrument | verified | 119 |
-| Backgrounding the phone's app | PdParty's cost the link nothing, only a full quit closed the port (Reference, item 120); TouchOSC's is untested | unknown | 120 |
+| Backgrounding the phone's app | PdParty's cost the link nothing, only a full quit closed the port (Reference, item 120). iOS closes the Cut It app's sockets while it is away, and the app makes new ones when it comes back (`phone/CutIt/Link.swift`): the prototype came back fine (Brendan, 2026-11-06), and the app is to be tried on the rig (`cut-it/cut-it-app`) | unknown | 120 |
 
-### The pages: one TouchOSC layout
+### The app
 
-**Every page is one layout**, `tools/touchosc/CutIt.tosc`, **generated** by `tools/touchosc/build.py`:
-edit that, never the file. Each control sends from a script of its own; the root's script takes
-everything that comes in.
-
-**The design is Brendan's** (2026-11-04, iterated from mockups): TouchOSC's own controls and its own
-tab bar, never a stack of shapes standing in for one; black, with bright red (`#FF1F3F`) the lead
-accent and teal the second; monospaced type for every value, TouchOSC's default font for every label;
-and every text and control at **WCAG AA**, which `touchosc-assert` audits from the file.
-
-| | | Evidence |
-|---|---|---|
-| The pages | An outer pager, one page per Launchpad page and the checklist page last, each holding a pager of its own whose tabs are that page's (Brendan, 2026-11-04: "Each page will potentially have more than one tab"); one tab each, named for the page: arrangement, drums, page 4 … page 6; the synths page's four, harmony, rhythm, melody and keyboard, the sections page's two, sections and name, and the songs page's three, songs, setlists and name (Brendan, 2026-11-05). The root's script turns the outer pager to the page `/cutit/mode` names, a mode off the eight to page 1, and hides its tab bar at `init`, so the phone shows the page's own tabs. The phone never turns the Launchpad's page | unknown |
-| In the editor | The outer pager's tab bar is on in the file, and no control is hidden, so TouchOSC's editor, where no script runs, reaches every page by its tab ([tools/README.md](../../tools/README.md), *Working on the layout*). `touchosc-assert` holds both: before 2026-11-04 the drum and synths screens were groups a script showed, and Brendan could not open them to edit | unknown |
-| Test mode | Coming on, the outer pager turns to the checklist page, under a tab bar of its own; going off turns it back to the Launchpad's page (Brendan, 2026-11-04). A page chosen on the Launchpad turns it off, so that page is what shows next. A flip sends a heartbeat at once, so the page turns with the tap rather than at the next of the 2 Hz beats | unknown |
-| The grid | Every control on a page sits on TouchOSC's 20-point editor grid, so one moved in the editor snaps to where a build puts it (Brendan, 2026-11-04). ⛔ The editor anchors its grid at the document's center, not its corner, so on a page, under the editor's two tab bars, its lines run at x 8 and y 7 plus whole steps (`build.py`'s `OX` and `OY`, worked out from the screen's size). A page is a left panel 300 wide and a right panel of two 240-point columns, a step apart, from 28 to 848 across, clear of the notch, and 27 to 327 down. ⛔ **One exception, the drum screen's pads and their M and S** (Brendan, 2026-11-05, his pick of three mockups): an M and an S under each pad don't fit four rows of 20-point steps, so that panel alone steps by 10, from 17 to 327: it starts 10 points into the top margin and ends on the bottom one, since the page's frame is 334 points tall and 10 lower would cut the last row of M and S; `touchosc-assert` names those 112 controls one by one and holds every other control to the grid. ⛔ **A second, the harmony tab's words, radios and two knobs** (2026-11-05): a chord box holds three lines in four steps, twelve keys, nine modes and five voices divide their widths into whole segments, and four knobs across fourteen steps leave two on a half step; named one by one too. A control's name is a caption a step tall, gray, flush left just above it; values and button words are centered in their controls; a lamp and its words share the bottom row, the link's in the same place on every page. `touchosc-assert` holds the grid, the margins and the captions | verified |
-| The arrangement screen, page 1 | Left: the tempo, large and red, a box dragged up and down a BPM at a time, 5 to 1000, about 7 points a BPM (Brendan, 2026-11-04: "Tempo should live on phone only, and should be editable on the phone as well"); under it a tap button: the phone times the taps itself as the finger lands, since WiFi delivers unevenly, by `u_tempo.lua`'s own rules (read from it at build time), and sends the tempo they make as the box does; playing or stopped with its lamp; the link. Right: the time signature as [n] / [d], each box dragged a step at a time (Brendan, 2026-11-04), about 21 points a step for the top number's 32, 24 for the bottom's 5; the global last step, a box beside it from 1 to as far as the time signature lets the last step reach, 24 at 3/4 and 32 at 4/4, which the root tells it from the state's top number before it hands it the step; ring knobs for the swing, 50% to 75%, read from `c_steps.lua`'s range at build time, and the drunkenness. Knob 1, the tap pad and knobs 2 and 4 keep working, and the phone shows the value whichever set it | unknown |
-| The drum screen, page 2 | What is per track (Brendan, 2026-11-04): the sixteen pads as the Launchpad lays them out, pad 1 at the bottom left, read from `cut-it-drum-page.txt`, each showing its track's number, lit when selected. A radio, TouchOSC's own, chooses which number every pad shows (Brendan, 2026-11-05): volume in dB (`-6`, `0`, `+3`), pitch in semitones (`-12` to `+12`), last step, red following the global one and teal with a dot (• 5) with its own, or randomness (`40%`). A tap on a pad selects its track; a drag up or down changes the number showing for that pad's track, a step every 20 points from where the finger lands, a step of randomness five, a last step no further than the time signature lets it reach (*The rows of steps*, [sequencer.md](../module/sequencer.md)), and sends it as it stands. Under each pad its track's mute and solo, M and S (Brendan, 2026-11-05): the pads 60 wide and 50 tall, M and S 30 by 20 each directly under their pad, M red and S teal, 10 points between, lit when on. Right: sync first steps and snap to global across the top; under them two vertical radios, two steps a segment, the first on top (Brendan, 2026-11-05): show, the pads' number, and effect, distortion, delay or reverb, whose controls for the selected track appear to the right of it, the others' hidden: distortion's character, a radio of four, soft, hard, fold and crush (Brendan, 2026-11-05), over its drive, tone and mix knobs; delay's time, a radio of note values, 1/2 to 1/32, over one of feels, straight, triplet or dotted, and its feedback and level knobs; reverb's send knob, and the reverb's size and damping, the kit's, and under them its type, a radio of plate, gigaverb and freeverb, the kit's too (Brendan, 2026-11-05). Each sends its command for the selected track as it moves, and is handed the track's value by the state. Directly under the show radio, its width and a segment tall, **rnd pitch** (Brendan, 2026-11-05): the selected track's random pitch, the radio's last segment being the randomness it adds to, lit when on. Right under sync and snap, a line while one waits for step 1 (it moved up when rnd pitch took its corner of the bottom row); on the bottom row, the link | unknown |
-| The effects' controls in the editor | All three effects' controls sit in the same place, each shown in the file so the editor reaches them, one over another; the root's script hides all but the chosen effect's at `init` and when the radio turns. A vertical radio is orientation 2, south, its first segment on top: inferred from orientation 1 filling from the left and a fader's 0, north, at its bottom, unseen on the phone (*Open*) | unknown |
-| The harmony tab, page 3 | The chords along the top in the order they play, each its name, spelling and Roman numeral, lit while it sounds and sounding while touched; under them the key and the mode; along the bottom on, roll, bass only, modal or functional, the voice, how many chords and the chord knobs (Brendan, 2026-11-05) | unknown |
-| The rhythm tab | Where the chords fall: a grid, a row per time through the pattern's last step and a cell per step, each chord a cell a finger drags and a cell of its own for the step the loop is on; the top number's steps in blue. Under it how many times through, and a new rhythm (Brendan, 2026-11-05) | unknown |
-| The notes tab | The melody on a grid: a column per step, a row per note of the mode across what the loop uses, each note a cell, dim as rolled, bright once edited, arrivals amber. Blue columns mark the subdivisions, and a moving column is where the loop is. A finger drags a note in pitch and step, taps it away or taps a new one in, on a plain XY pad, as the rhythm grid; `/cutit/notes` carries it, at most every 250 ms | unknown |
-| The melody tab | The voice, on and roll; the melody's knobs, `build.py`'s `MELODY_KNOBS`, the loop's length and the range (Brendan, 2026-11-05) | unknown |
-| The keyboard tab | Two large buttons, FM and STRINGS, the chosen one lit, its label black on the lit fill; under them the velocity switch, lit when on (Brendan, 2026-11-04); the link. A tap sends `/cutit synth fm` or `strings`, or `/cutit velocity` with the setting the switch is not showing | unknown |
-| A synth button or the switch | Lit by the state, through `notify('lit')`, never by its own value, and a lit one never sends what it shows: so the state coming back, and its repeat on every heartbeat, cannot send it again, and a tap on the chosen synth sends nothing. The switch acts on a finger's touch, asking for the other setting | unknown |
-| A button lit by the state | Every one, the M and S, rnd pitch, the synths', the velocity switch and the rows of the sections and songs lists, shows the state's look and never the finger's: TouchOSC sets a button's value when it is pressed and let go and draws it, so it lit, went dark, and lit again when the state came back (Brendan, 2026-11-05: "they flicker on and off"). One shared script (`build.py`'s `LIT`) puts any change of its value straight back to what the state last said before TouchOSC draws it, and acts on the finger's touch | unknown |
-| A drum pad | Three controls in one place: its fill, a lamp the state lights for the selected track and colors; the pad itself over it, a fader with no bar, no fill and a relative drag, which the finger touches; and its number. ⛔ The state never sets the pad: when a pad was lit by its value, four pads pressed at once on the Launchpad lit in turn on the phone, each selecting itself again, and the selection bounced between Cut It and the phone for as long as they were held (2026-11-04). A tap is a finger down and up with no step between, and on the selected pad it sends nothing | unknown |
-| An M or an S | Lit by the state, through `notify('lit')`, never by its own value, its letter black on the lit fill, and a touch asks for the other setting, `drums mute <track> 1` when it is out and `0` when lit, as the velocity switch does: so the state coming back, and its repeat on every heartbeat, cannot send it again. Not acknowledged: the state shows it | unknown |
-| The sections page, page 7 | As approved from a mockup (Brendan, 2026-11-05). Its sections tab: the current song's sections down the left, five rows a page, each its number, name and length, loop or bars, the selected one lit, rows with no section hidden; under them the pager's arrows and the page; the caption names the song. Right: the selected section's number over **new, a copy of** it, **move up** and **move down**, its **length**, a box dragged from loop through 64 bars, about 18 points a step, and **delete**, gray; the link. A tap on a row selects it for editing, and playing stays the Launchpad's top row ([songs.md](../module/songs.md)) | unknown |
-| A row, or the length box | Lit or handed its value by the state, as a synth button and a box are, never by a finger's own value: a lit row tapped sends nothing, and the state's length is never sent back. A row tells the root, which sends the section the row shows, `select <n>` | unknown |
-| The name tab | The name being typed, in capitals, over a keyboard of buttons: A to Z, space, - and ', 0 to 9, with backspace and done. It opens on the selected section's name; each key types into the root's copy of it, lowercase, one space at a time and twenty characters at most; done sends `sections name <name>` when it changed, and turns back to the sections tab. Built by `build.py`'s `name_tab` and its `NAMERS`, which the songs page's is built from too | unknown |
-| The songs page, page 8 | As approved from mockups (Brendan, 2026-11-05). Its songs tab: every song down the left, six rows a page, each its number, name and, gray and flush right, what it is doing, loaded, next bar or for go while it waits, and unsaved; the arrows page. Right: the selected song's name over **load**, by its transition, **new song**, **name**, which opens the name tab, **add to set** and **delete**, gray, which reads sure? at a first tap and deletes at a second within three seconds. Its setlists tab: the setlist chosen, its name the caption, its songs down the left, five rows, each its Organelle key, its song and how it starts after the one before; the arrows go through a long setlist's pages and on to the next setlist, which is then the one chosen, the pager reading `set 1 / 3` and the page where there are more. Right: the selected entry over **move up** and **move down**, the **starts** switch, TouchOSC's own radio, silence, next bar and go, and **new set** and **remove**, gray; the link on both ([songs.md](../module/songs.md)) | unknown |
-| A row | Lit by the state, as a sections row and the length box are; a row tells the root, which sends the song or entry it shows, `select <n>` or `entry <n>`; the switch, moved by a finger, sends `starts <word>` | unknown |
-| The songs page's name tab | The same keyboard: it names the selected song when opened from the songs tab or by **name**, and the setlist chosen when opened from the setlists tab, its caption saying which; done sends `songs name` or `songs set-name` and turns back to that tab | unknown |
-| Pages 4 to 6 | Blank under the tab named for the page: nothing is on them yet (Brendan, 2026-11-04) | unknown |
-| The checklist page | The line check a step at a time, from `test/checklists/linecheck.md` ([the checklists' README](../../test/checklists/README.md), *The line check*): its position and title, its text, Pass and Fail, Back and Next; and FM and STRINGS beside its position, the keyboard tab's two buttons small, so the line check plays either synth without leaving test mode (Brendan, 2026-11-04) | unknown |
-| An answer | `/cutit/ack` flashes its button teal for 300 ms, by its color, never its value, so it can't send the command again | unknown |
-| A knob, a box or a pad's drag | Sends when a finger moves it off the value it knows, its own or the one the state handed it, so the state is never sent back; for a second after a touch the state leaves it alone. A time signature box sends `num` or `den` once a step, as `c_steps` takes them; the tempo and last step boxes and a pad's drag send the value as it stands. A pad handed its value goes back to the middle of its travel, so a drag starts from the value the pad shows, and a randomness set elsewhere off the fives steps to the next five. The tempo box is handed the tempo whole, so a tempo that is not, set from elsewhere, is shown as it is and never sent back rounded | unknown |
-| `/cutit/drums` | `c_steps`' `R.phone`: playing, the global last step, the selected track, pending (0, 1 sync, 2 snap), the sixteen last steps, then 1 for each track with its own, then the time signature's two numbers, the drunkenness and the swing, then the sixteen volumes, pitches and randomnesses, then the selected track's effects, drive, tone, mix, note, feel, feedback, level, send and character, and the reverb's size and damping, then each track's mute and each track's solo, then the reverb's type, 0 to 2, then each track's random pitch, 1 or 0: 148 numbers. Sent by `c_steps` when it changes, through `u_root`'s cord into `u_net`'s second inlet. The drum screen shows what is per track, the arrangement screen the rest | unknown |
-| `/cutit/melody` | `c_melody.lua`'s `R.phone`: the chords' controls, the slot sounding, whether each part is on, the key and mode, the grid's length and the pattern's last step, each of the eight slots' name, spelling, numeral and start, the two voices, then the melody's controls, modal or functional and bass only. A shorter state draws nothing | unknown |
-| A short or empty state | Fewer than 88 numbers draws nothing, so the empty repeat before the first state leaves the screen as it was; 88, from before the effects, draws all but the effects' controls; 99, from before mute and solo, all but the M and S; 131, from before the reverb's type, all but its radio | unknown |
-| Deploying | `./tools/touchosc/push.sh` rebuilds the layout and edits the CutIt document the Mac's TouchOSC has open until it is the build, through TouchOSC's MCP server (`tools/touchosc/live.py`), so TouchOSC keeps one copy open (Brendan, 2026-11-05); it opens the file instead only when TouchOSC isn't running, its MCP server is off or no CutIt is open, and launches TouchOSC with its editor and MCP servers on, restarting it when its editor server is off; the phone, connected once as an editor client of the Mac, takes it live, and `push.sh` says when it has dropped off. While the screens are being built, `tools/touchosc/watch.py` pushes on every save and folds the editor's changes back ([tools/README.md](../../tools/README.md), *Working on the layout*) | verified |
-| The phone's setup, once | Editor network: a client of the Mac (port 6666). OSC connection 1 as above | verified |
+**`phone/`, a native iPhone app**, landscape and drawn for the iPhone 11 (`cut-it/cut-it-app`).
+`phone/install.sh` builds the working tree and puts it on the phone over Wi-Fi; `phone/testflight.sh`
+sends a pushed commit to TestFlight, which installs it on the phone by itself. What each page shows
+and sends is its own code, `phone/CutIt/Pages.swift` and the views beside it.
 
 ### The phone controls the page, and does not copy the OLED
 
@@ -282,13 +239,14 @@ cord, which is what a control surface needs and a mirror never had.
 
 ### The tempo lives on the phone
 
-The arrangement screen's tempo is the only place the BPM is shown as a number and set by a drag
-(Brendan, 2026-11-04). It is `u_tempo`'s, the clamped value whatever set it — knob 1, the tap button,
-the phone itself, a Send line — on a cord out of `u_tempo` into `u_net`'s fourth inlet, so the phone
+The phone shows the BPM as a number and sets it (Brendan, 2026-11-04: "Tempo should live on phone
+only, and should be editable on the phone as well"): the performance page's readout, and the songs
+page's tempo, a BPM a step. It is `u_tempo`'s, the clamped value whatever set it — knob 1, the tap
+pad, the phone itself, a Send line — on a cord out of `u_tempo` into `u_net`'s fourth inlet, so the phone
 shows the tempo in force, not one it asked for. The status string the footer carried, until the
 footer went too, was the wrong vehicle: one slot shared with every other status, and a word.
 
-The phone's drag goes to `u_tempo` by a cord, and `u_tempo` writes the bus, so nothing from the phone
+The phone's tempo goes to `u_tempo` by a cord, and `u_tempo` writes the bus, so nothing from the phone
 reaches a bus by itself (*The inbound vocabulary is closed*, below).
 
 ### Two instruments will fight over one phone
@@ -328,16 +286,6 @@ Data, in Reference), and the socket died. Under 0.57 it survives and delivers ag
 listens, on the Mac and on the device. `u_net` still reconnects on a timer until a connect first
 succeeds, for a phone that was not on the network at load.
 
-### A lit button a finger let go of went deaf
-
-⛔ A finger lifting off a lit button puts it out while the button's own lit flag stays set, so the
-root, comparing the button's value alone with what the state wanted, never told it again when the
-state put it out: the next tap on it sent nothing, or for the velocity switch the wrong setting.
-
-**Fix:** the root keeps what it last told each pad, synth button and the switch, and tells it again
-when that differs or the value does. `touchosc-assert` taps the lit switch, puts it out from the
-state and requires the next tap to ask for on.
-
 ### The inbound port is armed late, and the Mac has its own
 
 A second bind of the same UDP port prints a real line on stdout (Pure Data, in Reference, item 307),
@@ -348,7 +296,8 @@ bound at `loadbang` would turn every run red whenever a copy was already open in
 **2000 ms**, past the ~735 ms at which the deploy check quits, so neither it nor the syntax gate ever
 binds at all. And `main-dev.pd` takes **9002** where `main.pd` takes 9001, so a long-running gate
 cannot collide with the dev patch. ⚠️ **The phone's controls therefore drive the device, not the
-Mac** — point the phone's TouchOSC at 9002 if you want them to reach `main-dev.pd`.
+Mac**: the app sends to 9001 alone (`phone/CutIt/Link.swift`), so it reaches `main-dev.pd` only
+from a build changed to send to 9002.
 
 ### An AP session cannot be driven interactively
 
@@ -399,12 +348,11 @@ is the property worth protecting if this is ever changed.
 ### The display must show its own staleness
 
 **A frozen display looks exactly like a working one**, and mid-performance you will read it and act
-on it. The phone's script checks every frame how long it is since the last heartbeat; past 1500 ms
-every screen with a link lamp says `no link` rather than continuing to present a stale value as
-current.
+on it. The app checks how long it is since the last heartbeat; past 1500 ms a red `no link` bar
+tops every page rather than presenting a stale value as current (`phone/CutIt/Cut.swift`).
 
-⚠️ **The default label is `no link`, not `link`.** It must assume the worst until traffic proves
-otherwise, or a layout opened before the Organelle is running looks connected when it is not.
+⚠️ **The app starts unlinked.** It must assume the worst until traffic proves otherwise, or an app
+opened before the Organelle is running looks connected when it is not.
 
 The heartbeat keeps flowing even when nothing is happening, because it is the only thing
 distinguishing *idle* from *dead*.
@@ -431,14 +379,14 @@ needs nothing here but an acknowledgment (Brendan, 2026-11-04).
 ⛔ **Nothing from the phone reaches the buses by itself** (Brendan, 2026-11-04). A `send` command
 once carried a checklist's Send line to `u_inject`, in test mode only, so the phone could run any
 checklist alone; it went when the checklists split into two suites, since the line check, the one
-the phone carries, sends nothing, and the development checklists' lines go from the Mac. The tempo
+the phone carried, sends nothing, and the development checklists' lines go from the Mac. The tempo
 the phone sets goes to `u_tempo` by a cord, and `u_tempo`, which owns the tempo, writes it.
 
-**Test mode puts the line check up.** It is flipped with the diagnostics page's second pad, `pad-82`, which the
-Launchpad's Setup button opens (`lp-setup`),
-starts off at every load, goes off when a page is chosen, and rides on the heartbeat so the phone
-shows the Organelle's own state; a flip sends a heartbeat at once rather than waiting for the next.
-Turning it on warns, so the OLED says so and the log keeps it.
+**Test mode** is flipped with the diagnostics page's second pad, `pad-82`, which the Launchpad's
+Setup button opens (`lp-setup`), or the diag page's test mode button; it starts off at every load,
+goes off when a page is chosen, and rides on the heartbeat; a flip sends a heartbeat at once rather
+than waiting for the next. Turning it on warns, so the OLED says so and the log keeps it. It put the
+line check up on TouchOSC's screen, and nothing on the phone reads it now (*Open*).
 
 ⛔ **A full status dump was considered and rejected as a command.** Every state address repeats on
 the heartbeat, so a phone joining late repopulates on its own within half a second — item 121. It
@@ -452,17 +400,28 @@ state corrects, and none is needed to play.
 
 ## Open
 
-- ⬜ **The pages have not been seen in TouchOSC** (`cut-it/pages-and-displays`). That the root's
-  script hides the outer pager's tab bar on the phone, where the pages then sit, how a
-  9-point-a-BPM drag feels, that the velocity switch's touch reaches its script, and that a drum
-  pad, a relative fader, takes a tap without moving and a drag at about 20 points a step, are
-  judged by `test/checklists/phone.md` on the phone, and the editor's tabs by opening the layout
-  on the Mac.
-- ⬜ **The drum screen's M and S have not been seen on the phone** (`cut-it/drum-timing`): a tap
-  on each, the pads at 60 by 50 still taking a drag, and the block's bottom. ⚠️ The file's drum
-  page is 334 points tall, under the editor's two tab bars, and the bottom row's M and S end at
-  337, 3 points past it, so the editor may cut them. The phone hides the outer bar; whether its
-  page then has the 374 the preview draws, which the layout counted on, is unseen.
-- ⬜ **The drum screen's effects have not been seen on the phone** (`cut-it/drum-timing`): that a
-  vertical radio at orientation 2 puts its first segment on top, under its first word, and the
-  chosen effect's controls show alone. The phone checklist's drum screen step judges it.
+What the TouchOSC layout did that the app does not, as of 2026-11-19 when the layout went:
+
+- ⬜ **The line check left the phone** (`cut-it/cut-it-app`). The layout's checklist page showed
+  it a step at a time in test mode and logged each Pass and Fail on the Organelle (`result`); it is
+  run from `test/checklists/linecheck.md` now. Nothing on the phone reads the heartbeat's test mode
+  flag, so the diagnostics page's second pad and the app's test mode button only warn on the OLED.
+- ⬜ **No control for a drum's random pitch** (`cut-it/cut-it-app`): `drums rnd-pitch`, the drum
+  screen's rnd pitch button.
+- ⬜ **No control for the time signature's bottom number** (`cut-it/cut-it-app`): `drums den`. The
+  songs page steps the top number alone.
+- ⬜ **No pinning a chord by holding its box** (`cut-it/cut-it-app`): `melody chord-pin`. The app
+  shows a chord's pin but cannot set one.
+- ⬜ **No tap tempo on the phone** (`cut-it/cut-it-app`): the layout timed taps itself. The
+  Launchpad's tap pad and the nanoKONTROL's LOOP still tap.
+- ⬜ **No gate holds the app's commands to the patch's vocabulary** (`cut-it/cut-it-app`).
+  `touchosc-assert` read every control the layout had and checked what it sent against `c_steps`,
+  `c_synth`, `u_tempo` and `u_song`, and `u_net`'s acknowledgments against its buttons; the app's
+  Swift has no such check, so a misspelled command fails only on the rig, as `bad-selector`.
+- ⬜ **Five outbound addresses have no reader** (`cut-it/cut-it-app`): `/cutit/mode`,
+  `/cutit/synth`, `/cutit/sections`, `/cutit/songs` and `/cutit/ack`, the layout's, which the app
+  takes from `/cutit/voices`, `/cutit/lists` and `once` instead. They still go on every heartbeat.
+- ⬜ **The development checklists still describe the layout's screens** (`cut-it/cut-it-app`):
+  the arrangement screen, the tabs, the keyboard tab's FM and STRINGS, the show and effect radios,
+  in `sequencer`, `tempo`, `sections`, `songs` and `synths`. Their steps run against the app where
+  its page has the control, and are to be rewritten for its pages.

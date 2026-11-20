@@ -60,7 +60,7 @@ it from `DEST`.
 | Target | Deploy |
 |---|---|
 | Organelle | `./tools/deploy.sh` |
-| iPhone (TouchOSC) | `./tools/touchosc/push.sh`, through the Mac's TouchOSC ([device/phone.md](device/phone.md)) |
+| iPhone (the Cut It app) | `./phone/install.sh` over Wi-Fi, or `./phone/testflight.sh` once pushed ([device/phone.md](device/phone.md)) |
 
 Neither needs a cable. See [device/phone.md](device/phone.md) for addresses and ports.
 

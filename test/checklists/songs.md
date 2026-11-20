@@ -3,7 +3,7 @@
 Several songs and the setlists: the phone's songs page, which makes, loads, names and arranges them;
 the Organelle's keys, which load the setlist chosen's songs; and the next arrow, the Launchpad's top
 row's second. `song-assert` proves what a key restores, that a song left keeps
-its draft, the arrow's colors and the files; `phone-assert` and `touchosc-assert` the phone's
+its draft, the arrow's colors and the files; `phone-assert` the phone's
 side. What is left is a song you can hear take over on the downbeat, a lamp you can see blink,
 the phone's page under a finger, and the SD card across a real power cut.
 

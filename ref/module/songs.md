@@ -1,7 +1,7 @@
 <!-- schema: module -->
 # Songs and sections
 
-**Files:** `Cut It/u_song.pd`, `Cut It/u_song.lua`, `Cut It/u_song-lua.pd_lua` · **Gate:** `test/gate/song-assert.sh`, `test/gate/phone-assert.sh`, `test/gate/touchosc-assert.sh` · **Checklist:** `test/checklists/sections.md`, `test/checklists/songs.md`
+**Files:** `Cut It/u_song.pd`, `Cut It/u_song.lua`, `Cut It/u_song-lua.pd_lua` · **Gate:** `test/gate/song-assert.sh`, `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/sections.md`, `test/checklists/songs.md`
 
 ## What it is
 

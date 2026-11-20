@@ -32,7 +32,7 @@ it moves, the phone for the Launchpad's current page, from each module's state o
 | Organelle OLED | yes | `g_oled` | The primary performance surface. 128×64 graphics, not five text lines | verified | — |
 | Organelle aux LED | no | `g_led` | One RGB LED, **seven colors and off**. The only state display that is not a screen | verified | — |
 | Launchpad Pro MK3 | no | `g_grid` | **96 button LEDs + the logo** = 97 addressable, painted across an index span of **1–108**. Spatial state only | verified | — |
-| iPhone / TouchOSC | yes | `u_net` | Not on `disp` since 2026-11-04: it controls the Launchpad's current page, from state on cords ([phone.md](../device/phone.md)) | unknown | — |
+| iPhone / the Cut It app | yes | `u_net` | Not on `disp` since 2026-11-04: it controls the Launchpad's current page, from state on cords ([phone.md](../device/phone.md)) | unknown | — |
 
 Two devices in the rig can display nothing at all: the nanoKONTROL mk1 has no host-controllable
 LEDs, and the Volca is receive-only. The SP-404, until it left the rig (2026-11-04), had **the best

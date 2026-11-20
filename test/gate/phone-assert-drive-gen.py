@@ -376,7 +376,7 @@ for i, (when, mark, actions) in enumerate(SEQ):
             continue
         if kind == "cmd":
             # A command as the phone sends it: /cutit and its atoms, through
-            # oscformat. touchosc-assert holds the spellings to the layout's.
+            # oscformat.
             root, text = item[1]
             cm = msg(bx, by, text)
             cla = obj(bx, by + 50, "list append")

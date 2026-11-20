@@ -20,8 +20,8 @@ word.
 
 ## One gate per module
 
-Twenty-six gates, and each answers for exactly one page: under `ref/`, or for `u_inject` and the
-phone's line check page, the checklists' guide. That is the whole organizing principle: **a page that names a gate should be able
+Twenty-five gates, and each answers for exactly one page: under `ref/`, or for `u_inject`, the
+checklists' guide. That is the whole organizing principle: **a page that names a gate should be able
 to name one whose entire subject is that page**, or say `none` honestly. Five pages once named a single `phase6-assert.sh`, and two of those claims
 were false.
 
@@ -47,7 +47,6 @@ were false.
 | `organelle-assert.sh` | `device/organelle` |
 | `phone-assert.sh` | `device/phone` |
 | `inject-assert.sh` | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `touchosc-assert.sh` | `device/phone` — the phone's TouchOSC layout, the line check's page included |
 | `volca-assert.sh` | `device/volca` |
 | `debug-assert.sh` | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | `module/sequencer` |
@@ -132,7 +131,7 @@ see `test/runner/gates.py`.
 Layout and graph structure, the documentation, all three entry points loading in silence, the MIDI
 inventory, and one gate per module — the boot sequence, the audio path, the error bus, the display
 arbiter, the OLED, the aux LED, the tempo reference, the clock, the map, panic's second tier, the
-data store, the songs, the voices, the Launchpad, the nanoKONTROL, the Organelle's own panel, the phone and its layout, the
+data store, the songs, the voices, the Launchpad, the nanoKONTROL, the Organelle's own panel, the phone, the
 Volca and the debug patch. **Mac
 only — it touches no device**, so it is safe to run at any time, including with the Organelle
 switched off.
@@ -377,8 +376,9 @@ in a throwaway copy of the patch. **`u_net` already emits to a socket** — so t
 `127.0.0.1:9995`, instantiates `u_net 127.0.0.1 9995 9994` and reads the real datagrams, then sends
 commands *into* 9994 to drive the inbound half. `Cut It/` is never touched.
 
-**The other end of the inbound vocabulary, what the phone's buttons send, is `touchosc-assert`'s**
-(below): the layout and `u_net` deploy by different routes, and their spellings must not drift.
+**Nothing holds the other end of the inbound vocabulary, what the app sends** ([phone](../ref/device/phone.md),
+*Open*): the app and `u_net` deploy by different routes, and a spelling that drifts fails only on the
+rig. `touchosc-assert` held the TouchOSC layout's until the layout went, 2026-11-19.
 
 | Piece | |
 |---|---|
@@ -407,75 +407,6 @@ space as one string, the buttons' five acknowledged and the rest not; `songs` ou
 `songs` kept in front, its sixteen commands in order, the buttons' ten acknowledged and the rest
 not; and the mode, `c_steps`' numbers, the choice, the velocity switch, `u_song`'s 22 atoms and its
 songs page's 47 at once and on every heartbeat, the two pages each on its own address. Its rate-limit history, below, is the old mirror's, whose coalescer the tempo now uses.
-
-## `touchosc-assert.sh` — the phone's layout, read and run
-
-```sh
-./test/gate/touchosc-assert.sh       ~1 s — the layout read, then its scripts run
-```
-
-**Two halves, two tallies.** First, by reading `tools/touchosc/CutIt.tosc`: it is `build.py`'s
-output; every control has a name of its own, since a script finds a control by name and TouchOSC
-returns the first of two; **every screen is a page of a pager and nothing is hidden**, so the
-editor, which runs no script, reaches each by its tab: the root holds one pager, its tab bar on in
-the file, whose pages are the Launchpad's eight, as many as `u_map.lua`'s `R.PAGES`, then the
-checklist page, each holding a pager of its own with one tab named for the page, but the synths
-page's four, the sections page's two and the songs page's three, and pages 4 to 6 blank (Brendan,
-2026-11-04 and 2026-11-05);
-no diagnostic command is left; and what its buttons send equals what `u_net` routes and `c_steps`
-and `c_synth` take, **the inbound vocabulary read from both ends**: the velocity switch asks for
-exactly the settings `u_net` acknowledges, and every synth button sends a synth `c_synth.lua`'s
-`R.SYNTHS` names, `u_net` acknowledges exactly those, and there is one on the keyboard tab and one
-on the checklist page for each. The drum screen's sixteen pads each drag their own track's volume,
-pitch, last step and randomness, the four its radio chooses between; the radio is TouchOSC's own,
-vertical, its first segment on top, a word over each, and sends nothing, and so is the effect radio
-beside it, distortion, delay and reverb (Brendan, 2026-11-05), whose controls sit to its right and
-send exactly the effect commands `c_steps` takes, the distortion's character a horizontal radio of
-`c_steps.lua`'s `R.CHARS` over its knobs; under each pad its M and S, 30 by 20, M red and S
-teal, each sending its own track's `mute` or `solo`; and a pad is a relative fader, about 20 points
-of drag a step. **Every control sits on the editor's 20-point grid**, inside the margins, **but the
-drum screen's pads and their M and S**, 112 controls named one by one, which step by 10 and start 10
-points into the top margin, ending on the bottom one inside the page's 334-point frame (Brendan,
-2026-11-05), **and the harmony tab's words, radios and two knobs**, named one by one too, each
-required to be there and off the grid, so the list can't outlive its reason. The songs page sends
-exactly the commands `u_song.lua`'s `R.songs_cmds` takes, its name tab both `name` and `set-name`,
-and its starts switch is a radio asking for exactly `R.STARTS`. The phone is the only sender there
-is, and the layout and `u_net` deploy by different routes, `push.sh` and `tools/deploy.sh`, so their
-spellings could drift apart with nothing failing until somebody is at the rig. Every acknowledgment
-`u_net` sends must light a button. **And every pairing meets WCAG AA contrast as TouchOSC draws
-it**: each label against what lies under it, 4.5:1 or 3:1 for large text, each control's outline
-against the page, 3:1, and each tab's text and states, from the resting fill TouchOSC draws at 26%
-of a color (measured, TouchOSC's Reference page), but an empty chord box's dash, an inactive
-control. Each effect's controls are audited against their
-own effect's and the screen's alone, since the phone shows one effect's at a time, as a pager one
-page, where the file shows every one in the same place for the editor, and each of the rhythm grid's
-cells over one blue band at most, since the root moves them apart. **No script holds `//` or `pcall`**:
-TouchOSC's Lua lacks both, one stopping the script loading, and the stand-in's 5.4 runs both.
-
-Then the layout's own scripts, unpacked into the scratch directory and run by
-`test/gate/lua/touchosc_test.lua` under `test/gate/lua/lib_touchosc.lua`, a stand-in for TouchOSC as
-`lib_test.lua` is for pdlua: the outer bar hidden by the root's script, the pages following the
-mode and each tab's name, test mode turning to the checklist page and back, `c_melody`'s own state
-drawn on the generator's tabs, a chord box sounding the chord in its place, the loop's place moving
-its cell, the arrangement
-screen's tempo, time signature, last step, swing and drunkenness (a value from Cut It never sent
-back, a tempo that is not whole never sent back rounded, the last step's box reaching exactly as
-far as `c_steps.lua`'s `R.reach` lets the last step for every top number, 1 to 32), the drum screen's pads (the number its
-radio chooses, a tap that selects, a drag that sends its track's value as it stands, and the state
-never sent back, a last step dragged no further than `R.reach`), its M and S (lit by the state
-and never sending it back, a tap asking for the other setting, a 98-number state leaving them as
-they were), its effects (the chosen
-effect's controls shown and the others hidden, each handed the selected track's value and sending
-for that track, the reverb's size and damping for none) and buttons, the keyboard tab and the checklist page's FM and STRINGS, and the velocity switch, lit by
-the state and never sending when lit, the songs page (its rows lit by the state and a lit one
-sending nothing, load, new song, add to set, delete asking twice and lapsing after three seconds,
-the setlists tab's rows, pager and starts switch, the state's starts never sent back, and its name
-tab naming the song or the setlist by the tab it was opened from, the sections page's still
-naming a section), the checklist page's Pass, Fail, Back and Next, nothing drawn
-from a parameter, a status or an alert, and NO-LINK. The
-page is driven on a development checklist with a step on two pages, built for the run, since every
-line-check step may fit on one; the reading half holds the line check to having no Send line. **What it cannot judge is how TouchOSC draws**; the
-phone checklist is the oracle for that.
 
 ## `sequencer-assert.sh` — the drum machine, from the outside
 

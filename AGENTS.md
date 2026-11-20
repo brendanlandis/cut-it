@@ -65,7 +65,7 @@ printed by `robot fetch page <slug>`; `robot` is `~/Sites/app.regularnotebook.co
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
-| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `korg-nanokey` `critter-guitari-organelle-s2` `critter-guitari-organelle-1` `korg-volca-fm` `waldorf-streichfett` `pure-data` `touchosc` (and `meeblip-cubit` `arturia-beatstep` `roland-sp-404mkii` `behringer-xenyx-q802usb`). List Cut It's with `robot pages --used-by cut-it` |
+| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `korg-nanokey` `critter-guitari-organelle-s2` `critter-guitari-organelle-1` `korg-volca-fm` `waldorf-streichfett` `pure-data` (and `meeblip-cubit` `arturia-beatstep` `roland-sp-404mkii` `behringer-xenyx-q802usb`). List Cut It's with `robot pages --used-by cut-it` |
 | How Cut It **uses** one physical device | [ref/device/](ref/device/) — `launchpad` `nanokey` `nanokontrol` `organelle` `phone` `streichfett` `volca` |
 | One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `debug` `display` `error` `map` `presence` `sequencer` `songs` `state` `synths` `tempo` `voices` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |

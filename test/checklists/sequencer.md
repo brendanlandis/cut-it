@@ -49,7 +49,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Pass if:** Pad 1 now repeats every three steps against pad 13's sixteen, drifting against it. With pad 1 selected the steps past 3 are dark and the green pad walks 1 to 3. With pad 13 selected the grid shows its sixteen, and turning knob 3 a little reads pad13-last 16 with brackets: held until turned through 16.
 
 - [ ] **11. The drum screen**
-  - **Need:** TouchOSC open on the phone with Cut It's layout, linked.
+  - **Need:** The Cut It app open on the phone, linked.
   - **Do:** Look at the phone. Tap last on its show radio. Then tap the phone's pad in the second row from the bottom, first place.
   - **Pass if:** The phone's tab reads drums and shows the drum screen: sixteen pads on the left, each reading 0; on the right the two buttons, under them the show radio of four, volume, pitch, last and random, with volume lit, and the link lit. No tempo, drunk knob or time signature is on it: they are the arrangement screen's. Nothing sits low enough to touch the home bar. On last the pads read 16 but the bottom-left one, pad 1, teal and reading • 3. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 lights.
 
@@ -82,7 +82,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 - [ ] **18. A track's volume, pitch and randomness**
   - **Do:** On the phone tap volume on the radio, then drag pad 13 down slowly to -12 and up to +6, listening. Tap pitch and drag pad 13 up to +12, down to -12 and back to 0. Tap random and drag pad 13 to 50%, then 100%, listening for a few bars at each, and back to 0%. Drag pad 1 to 50% too, and back. Put pad 13's volume back to 0.
   - **Pass if:** Pad 13 gets quieter and louder from its next hit, and at +6 is clearly louder than before. At +12 it plays an octave higher and shorter, at -12 an octave lower and longer. At 50% randomness some of its hits drop out and others land on steps that are not lit, at other loudnesses, different ones each bar; at 100% no trace of its pattern is left; at 0% it plays as lit again. Pad 1, with fewer steps lit, gains hits at 50%. The other pads play as they did throughout, and the Launchpad's steps never change.
-  - **Note:** How a drag feels under a finger is the phone checklist's step 20; the numbers it sends, and that the levels, the octaves and the coin are right, are `touchosc-assert`'s, `kit-assert`'s and `sequencer-assert`'s. This is how they sound.
+  - **Note:** How a drag feels under a finger is the phone checklist's step 15; that the levels, the octaves and the coin are right is `kit-assert`'s and `sequencer-assert`'s. This is how they sound.
 
 - [ ] **19. Drunkenness**
   - **Do:** Go to the performance page on the Launchpad, drag the arrangement screen's drunk to about 20% and listen for a few bars, then to 100% and listen again, then back to 0% and go back to the drum page.

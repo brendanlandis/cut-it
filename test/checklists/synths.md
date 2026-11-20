@@ -2,7 +2,7 @@
 
 The nanoKEY, the two synths it plays and the choice between them: the voices' pages, the phone's
 keyboard tab and its velocity switch, and the Streichfett's place on the roster. `synths-assert` proves where every note
-and every release goes, the choice's store and panic's channel; `phone-assert` and `touchosc-assert` the phone's side.
+and every release goes, the choice's store and panic's channel; `phone-assert` the phone's side.
 What is left is two synths you can hear and a chord under real fingers.
 
 **Before you start:**

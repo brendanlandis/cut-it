@@ -3,7 +3,7 @@
 The current song's sections: the Launchpad's top row, which plays them, save and revert on its
 bottom rows, and the phone's sections page, which makes, orders, names and sets them. `song-assert` proves
 what a press restores, the queue at the loop, a length handing over, the lamps' colors, the program
-changes and the files across a reload; `phone-assert` and `touchosc-assert` the phone's side. What
+changes and the files across a reload; `phone-assert` the phone's side. What
 is left is music you can hear change on the downbeat, lamps you can see blink, and the SD card
 across a real power cut.
 

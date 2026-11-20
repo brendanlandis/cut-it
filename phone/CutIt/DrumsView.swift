@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The drum page's other half: what the Launchpad can't show. The sixteen pads, each what the show radio says,
-/// dragged; each pad's mute and solo; and the selected track's effects.
+/// dragged; each pad's mute and solo; and the selected track's random pitch and effects.
 struct DrumsView: View {
     enum Show: String, CaseIterable { case volume, pitch, last, random }
     enum Effect: String, CaseIterable { case distortion, delay, reverb }
@@ -26,6 +26,10 @@ struct DrumsView: View {
                     Pad(title: "sync", width: 70) { cut.press("drums", "sync") }
                     Pad(title: "snap", width: 70) { cut.press("drums", "snap") }
                     Spacer()
+                    // The selected track's random pitch, asking for the opposite of what it shows.
+                    Pad(title: "rnd pitch", on: rolled, width: 96) {
+                        cut.press("drums", "rnd-pitch", cut.drumTrack, rolled ? 0 : 1)
+                    }
                 }
             }
             .frame(maxWidth: .infinity)
@@ -77,6 +81,8 @@ struct DrumsView: View {
     }
 
     private var verbTypeAt: Int { fxOffset + Fx.count + 2 + 32 }
+    /// Each track's random pitch, 1 or 0, follows the reverb's type.
+    private var rolled: Bool { cut.drum(verbTypeAt + cut.drumTrack) == 1 }
 
     private func knob(_ label: String, _ v: Double, _ send: @escaping (Int) -> Void) -> some View {
         Knob(label: label, value: v / 100, text: String(Int(v)), color: Theme.voice(cut.pageRow)) { send(Int(($0 * 100).rounded())) }

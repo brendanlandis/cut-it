@@ -152,7 +152,7 @@ what it snaps back to.
 
 The Launchpad's drum page: steps above, velocity and pads below. Press a pad to select its track and hear it. The phone
 adds what the Launchpad can't show: each pad's volume, pitch, last step and randomness, its mute and solo, and the selected
-track's distortion, delay and reverb.
+track's random pitch, distortion, delay and reverb.
 
 ### Harmony
 

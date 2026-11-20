@@ -131,8 +131,8 @@ button.
 re-wire is still on the `presence` bus, from a Send line ([presence.md](../module/presence.md)).
 
 What `drums` carries, each one `c_steps`' own (`R.presses` in `c_steps.lua`). The app doesn't
-send `rnd-pitch` yet (*Open*), and won't send `den`: the bottom number changes nothing, so the
-app has no control for it (Brendan, 2026-11-19).
+send `den`: the bottom number changes nothing, so the app has no control for it (Brendan,
+2026-11-19).
 
 | Drum action | Does | Evidence | Item |
 |-------------|------|----------|------|
@@ -155,7 +155,7 @@ app has no control for it (Brendan, 2026-11-19).
 | `verb-type` | The reverb's type, `verb-type <0-2>`, the kit's, no track: 0 the plate, 1 gigaverb, 2 freeverb, from its radio (Brendan, 2026-11-05) ([sequencer.md](../module/sequencer.md)) | verified | — |
 | `mute` | A track's mute, `mute <track> <0 or 1>`, from the M under its pad: muted, its hits stop and its tails ring out ([sequencer.md](../module/sequencer.md)) (Brendan, 2026-11-05) | verified | — |
 | `solo` | Its solo, `solo <track> <0 or 1>`, from the S: with any track soloed only the soloed play, the mutes ignored | verified | — |
-| `rnd-pitch` | The selected track's random pitch, `rnd-pitch <track> <0 or 1>`, from the button under the show radio, asking for the opposite of what it shows: a hit its randomness rolls takes a pitch of its own (Brendan, 2026-11-05) ([sequencer.md](../module/sequencer.md)) | verified | — |
+| `rnd-pitch` | The selected track's random pitch, `rnd-pitch <track> <0 or 1>`, from **rnd pitch** beside sync and snap, lit while it's on and asking for the opposite of what it shows: a hit its randomness rolls takes a pitch of its own (Brendan, 2026-11-05) ([sequencer.md](../module/sequencer.md)) | verified | — |
 | `set-swing` | The swing, `set-swing <50-75>`, as it stands. The swing is the phone's alone since knob 4 became rush (Brendan, 2026-11-05); `swing <0-1>`, a knob position that passes a latch, stays for a map row that wants it | unknown | — |
 | `set-last` | The global last step, `set-last <1-32>`, the same way beside knob 2's `last`, clipped to the time signature's reach ([sequencer.md](../module/sequencer.md)) | unknown | — |
 
@@ -410,8 +410,6 @@ control for the time signature's bottom number:
   it a step at a time in test mode and logged each Pass and Fail on the Organelle (`result`); it is
   run from `test/checklists/linecheck.md` now. Nothing on the phone reads the heartbeat's test mode
   flag, so the diagnostics page's second pad and the app's test mode button only warn on the OLED.
-- ⬜ **No control for a drum's random pitch** (`cut-it/cut-it-app`): `drums rnd-pitch`, the drum
-  screen's rnd pitch button. The sequencer checklist's step 54 waits for one.
 - ⬜ **No pinning a chord by holding its box** (`cut-it/cut-it-app`): `melody chord-pin`. The app
   shows a chord's pin but cannot set one.
 - ⬜ **No gate holds the app's commands to the patch's vocabulary** (`cut-it/cut-it-app`).

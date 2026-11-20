@@ -51,7 +51,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 - [ ] **11. The drum screen**
   - **Need:** The Cut It app open on the phone, linked.
   - **Do:** Look at the phone. Tap last over its pads. Then tap the phone's pad in the second row from the bottom, first place.
-  - **Pass if:** The phone shows the drum screen: on the left sixteen pads, four by four, each reading +0, the selected one red, under volume, pitch, last and random, volume lit, and over sync and snap; on the right distortion, delay and reverb over the selected drum's effect controls. No tempo, drunk or time signature is on it: they are the songs page's. Nothing sits low enough to touch the home bar. On last the pads read 16 but the bottom-left one, pad 1, reading 3. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 turns red.
+  - **Pass if:** The phone shows the drum screen: on the left sixteen pads, four by four, each reading +0, the selected one red, under volume, pitch, last and random, volume lit, and over sync and snap, with rnd pitch at the right, dim; on the right distortion, delay and reverb over the selected drum's effect controls. No tempo, drunk or time signature is on it: they are the songs page's. Nothing sits low enough to touch the home bar. On last the pads read 16 but the bottom-left one, pad 1, reading 3. The tap selects pad 5 on the Launchpad without a sound: its pad lights and the grid shows its steps. On the phone pad 5 turns red.
 
 - [ ] **12. Sync**
   - **Do:** Tap sync, under the phone's pads, and listen.
@@ -281,8 +281,8 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Pass if:** The press snaps the tempo to 110, and the phone says so. Save and revert go dark if nothing else changed. The knob changes nothing until it is turned through 110. A press at that tempo does nothing. In a section that has never been saved, the pad snaps to the tempo its draft holds, which is where the knob just left it, so nothing moves.
 
 - [ ] **54. A track's random pitch**
-  - **Need:** Playing, 4/4 at 120 BPM, nothing muted or soloed, pad 1's steps 1, 5, 9 and 13 lit, its pitch at 0, the effects as you like; and a **rnd pitch** button for the selected drum, which the app doesn't have ([phone](../../ref/device/phone.md), *Open*): until it has one, skip this step.
-  - **Do:** On the phone tap pad 1. Tap random over the pads and drag pad 1 up to about 50. Listen for a few bars. Tap **rnd pitch**. Listen. Tap the first repeat pad and hold it on a hit whose pitch has moved, a few seconds. Tap another pad on the phone, and pad 1 again. Tap **rnd pitch** off.
+  - **Need:** Playing, 4/4 at 120 BPM, nothing muted or soloed, pad 1's steps 1, 5, 9 and 13 lit, its pitch at 0, the effects as you like.
+  - **Do:** On the phone tap pad 1. Tap random over the pads and drag pad 1 up to about 50. Listen for a few bars. Tap **rnd pitch**, at the right under the pads. Listen. Tap the first repeat pad and hold it on a hit whose pitch has moved, a few seconds. Tap another pad on the phone, and pad 1 again. Tap **rnd pitch** off.
   - **Pass if:** Before the tap some hits drop or move but all at the same pitch. With it on, the button is lit and hits the randomness adds or changes come at different pitches, up to an octave either way, while hits as written stay at pad 1's pitch. The repeat plays the same pitch every time. The button is out on the other pad and lit again back on pad 1, so it is that track's. Off, every hit is at its pitch again.
   - **Note:** Saved with the section, and off in a section saved before it. That and the die's range are `c_steps_test`'s. Whether an octave either way is the right range is his call (Brendan, 2026-11-05: "up to ±12").
 

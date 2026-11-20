@@ -45,7 +45,8 @@ were false.
 | `launchpad-assert.sh` | `device/launchpad` |
 | `nano-assert.sh` | `device/nanokontrol` |
 | `organelle-assert.sh` | `device/organelle` |
-| `phone-assert.sh` | `device/phone` |
+| `phone-assert.sh` | `device/phone` — `u_net`, the patch's end |
+| `app-assert.sh` | `device/phone` — the app's commands, read against the patch's |
 | `inject-assert.sh` | `test/checklists/README.md`, *Send lines* — `u_inject` |
 | `volca-assert.sh` | `device/volca` |
 | `debug-assert.sh` | `module/debug` — the SECOND deployable |
@@ -60,9 +61,10 @@ actually happen — inside nine seconds rather than seventy-two. ⛔ **One analy
 captures**, because two would print two `N checks` lines and this number is what proves no assertion
 went missing.
 
- ⚠️ Three pages name more than one gate, and that is the rule working rather than
+ ⚠️ Four pages name more than one gate, and that is the rule working rather than
 bending: `module/display` covers three surfaces with three different owners, `module/tempo` covers the
-master reference and the clock cut from it, and `device/organelle` covers a front panel and an LED.
+master reference and the clock cut from it, `device/organelle` covers a front panel and an LED, and
+`device/phone` covers `u_net` and the app's Swift, which deploy by different routes.
 **A gate whose subject is two abstractions is what the split was for**; a page whose subject is two
 surfaces gets two gates for the same reason.
 
@@ -376,9 +378,9 @@ in a throwaway copy of the patch. **`u_net` already emits to a socket** — so t
 `127.0.0.1:9995`, instantiates `u_net 127.0.0.1 9995 9994` and reads the real datagrams, then sends
 commands *into* 9994 to drive the inbound half. `Cut It/` is never touched.
 
-**Nothing holds the other end of the inbound vocabulary, what the app sends** ([phone](../ref/device/phone.md),
-*Open*): the app and `u_net` deploy by different routes, and a spelling that drifts fails only on the
-rig. `touchosc-assert` held the TouchOSC layout's until the layout went, 2026-11-19.
+**The other end of the inbound vocabulary, what the app sends, is `app-assert.sh`'s** (below): the
+app and `u_net` deploy by different routes, and a spelling that drifts would otherwise fail only on
+the rig.
 
 | Piece | |
 |---|---|
@@ -407,6 +409,30 @@ space as one string, the buttons' five acknowledged and the rest not; `songs` ou
 `songs` kept in front, its sixteen commands in order, the buttons' ten acknowledged and the rest
 not; and the mode, `c_steps`' numbers, the choice, the velocity switch, `u_song`'s 22 atoms and its
 songs page's 47 at once and on every heartbeat, the two pages each on its own address. Its rate-limit history, below, is the old mirror's, whose coalescer the tempo now uses.
+
+
+## `app-assert.sh` — what the app sends, by reading
+
+```sh
+./test/gate/app-assert.sh              # ~1 s, no Pd, exits non-zero on any failure
+```
+
+**The app's half of the inbound vocabulary**, as `touchosc-assert` was the TouchOSC layout's until
+the layout went (2026-11-19). It reads every `cut.press`, `cut.send` and `cut.control` in
+`phone/CutIt/` and checks each word in a command's place against what takes it: `u_net`'s route of
+commands (exactly: a command the app never sends is a route nothing uses), its acknowledgments of
+`synth` and `velocity`, and the Lua table behind each outlet, as each module's face looks it up;
+and a control moved through `u_perform`, `perform ctl <row> <dest> <arg> <value>`, against `u_map`'s
+destinations and the destination's own table. **The patch's side is loaded, not grepped**: the
+gate runs the modules' Lua under Lua 5.4 and lists their tables, so the keys `c_steps` makes in a
+loop (`vol-1` to `vol-16`, `drive-1`...) are there as Pd sees them.
+
+⛔ **An expression where a command's word goes fails until the gate can read it.** A literal, an
+interpolated string (its `\( )` parts any text, so `drive-\(t)` has to match a key), and a choice
+of two literals are read as they stand; an expression is read through `RESOLVE`, from the Swift that
+supplies it (the harmony page's `knob(...)` calls, the setup page's lists), or the gate says which.
+⛔ **Every call a plain search finds must be read**, so one the parser skips is a failure, not a
+smaller count. `cut.control` is inlined from `Cut.swift`'s own body, and the gate checks that body.
 
 ## `sequencer-assert.sh` — the drum machine, from the outside
 

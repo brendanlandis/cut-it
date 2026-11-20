@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # The phone — the Cut It app and the link
 
-**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `phone/CutIt/Link.swift`, `phone/CutIt/Cut.swift`, `phone/CutIt/LineCheck.swift` · **Gate:** `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/phone.md`
+**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `phone/CutIt/Link.swift`, `phone/CutIt/Cut.swift`, `phone/CutIt/LineCheck.swift` · **Gate:** `test/gate/phone-assert.sh`, `test/gate/app-assert.sh` · **Checklist:** `test/checklists/phone.md`
 
 An iPhone running the Cut It app, `phone/` in this repo, on the same network (from 2026-11-19;
 TouchOSC from 2026-11-04, and PdParty before it). What was measured with those two stays on their
@@ -125,6 +125,10 @@ button.
 | `voices` | The app's rails and voice page, passed on out `u_net`'s sixth outlet to `u_voices` ([voices.md](../module/voices.md)) | unknown | — |
 | `perform` | The app's performance page, passed on out `u_net`'s seventh outlet to `u_perform` ([voices.md](../module/voices.md)) | unknown | — |
 | `sound` | The app's voice setup page, passed on out `u_net`'s eighth outlet to `u_sound` ([voices.md](../module/voices.md)) | unknown | — |
+
+What the app sends of these, every word in a command's place, `app-assert` reads from its Swift and
+checks against `u_net`'s routes and the tables behind them, so a misspelling fails in the gates
+rather than on the rig as `bad-selector` ([test/README.md](../../test/README.md)).
 
 `re-wire`, `clear-alert` and `test-note` went with the remote screen (Brendan, 2026-11-04), and
 `phone-assert` sends each and requires it to reach nothing: no answer, no bus, no outlet. The
@@ -412,10 +416,6 @@ app is to take on its line check, random pitch, chord pins and command gate (Bre
 but not its tap tempo, since the Launchpad's tap pad and the nanoKONTROL's LOOP still tap, nor its
 control for the time signature's bottom number:
 
-- ⬜ **No gate holds the app's commands to the patch's vocabulary** (`cut-it/cut-it-app`).
-  `touchosc-assert` read every control the layout had and checked what it sent against `c_steps`,
-  `c_synth`, `u_tempo` and `u_song`, and `u_net`'s acknowledgments against its buttons; the app's
-  Swift has no such check, so a misspelled command fails only on the rig, as `bad-selector`.
 - ⬜ **Three outbound addresses have no reader** (`cut-it/cut-it-app`): `/cutit/mode`,
   `/cutit/sections` and `/cutit/songs`, the layout's, which the app takes from `/cutit/voices` and
   `/cutit/lists` instead; and of `/cutit/ack` it reads only `ack result`, taking the rest from `once`.

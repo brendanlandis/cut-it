@@ -1,0 +1,411 @@
+#!/usr/bin/env python3
+"""The Cut It app's commands, read against the patch's -- ref/device/phone.md. No Pd, no phone, ~1 s.
+
+    python3 test/gate/app-assert.py [-v]     (run it as app-assert.sh)
+
+Everything the app's Swift sends the patch, every cut.press, cut.send and cut.control in
+phone/CutIt/, is read from the source and checked, word by word, against what takes it: u_net's
+route of commands and its acknowledgments, then the Lua tables behind each outlet -- c_steps'
+presses, c_synth's synths and velocity, u_tempo's number, u_song's sections and songs, c_melody's
+inputs, u_voices', u_perform's and u_sound's phone commands -- and, for a control the app moves
+through u_perform, u_map's route of destinations and the destination's own table. The two ends
+deploy by different routes (TestFlight, tools/deploy.sh), so a misspelled command fails here, not
+on the rig as bad-selector. touchosc-assert did this for the TouchOSC layout until it went
+(2026-11-19).
+
+The patch's side is read by loading its Lua under lua.org's Lua 5.4, so a key made in a loop
+(c_steps' vol-1 to vol-16) is there as Pd sees it; the Swift's by reading, every argument a
+literal, an interpolated string (its \\( ) parts any text), a choice of two literals, or an
+expression. An expression where a command's word goes is read through RESOLVE below, from the
+Swift that supplies it, or fails: a new one can't pass unread.
+"""
+import os
+import re
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import lib_assert as A                                         # noqa: E402
+import lib_pd                                                   # noqa: E402
+import lib_scratch as S                                         # noqa: E402
+
+ROOT = S.ROOT
+SWIFT = os.path.join(ROOT, "phone", "CutIt")
+CUT = "Cut.swift"
+UNET = os.path.join(ROOT, "Cut It", "u_net.pd")
+UMAP = os.path.join(ROOT, "Cut It", "u_map.pd")
+
+# The Lua tables each command's words are looked up in, as each module's face does
+# (Cut It/*-lua.pd_lua's answer(sel, R.<table>[sel], ...)).
+LUA_DUMP = r"""
+local function dump(mod, name, t, list)
+  if type(t) ~= "table" then print(mod .. " " .. name .. " MISSING") return end
+  if list then
+    for _, v in ipairs(t) do print(mod .. " " .. name .. " " .. tostring(v)) end
+  else
+    for k in pairs(t) do print(mod .. " " .. name .. " " .. tostring(k)) end
+  end
+end
+local wanted = {
+  { "c_steps", { "presses" } }, { "c_synth", { "inputs", "VELOCITY", SYNTHS = true } },
+  { "u_tempo", { "inputs" } }, { "u_song", { "phone_cmds", "songs_cmds" } },
+  { "c_melody", { "inputs", ORDER = true } }, { "u_voices", { "phone_cmds", METHODS = true, MACHINES = true } },
+  { "u_perform", { "phone_cmds" } }, { "u_sound", { "phone_cmds" } },
+}
+for _, w in ipairs(wanted) do
+  local R = dofile("Cut It/" .. w[1] .. ".lua")
+  for k, v in pairs(w[2]) do
+    if type(k) == "number" then dump(w[1], v, R[v], false) else dump(w[1], k, R[k], true) end
+  end
+end
+"""
+
+
+def lua_tables():
+    """{(module, table): set of keys, or a list for an ordered one}, or None if Lua failed."""
+    try:
+        p = subprocess.run([S.LUA, "-e", LUA_DUMP], cwd=ROOT, stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT, timeout=30)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return None, str(e)
+    out = p.stdout.decode("utf-8", "replace")
+    if p.returncode != 0:
+        return None, out.strip()
+    t = {}
+    for line in out.splitlines():
+        mod, name, key = line.split(" ", 2)
+        if key == "MISSING":
+            return None, "%s.lua has no R.%s" % (mod, name)
+        t.setdefault((mod, name), []).append(key)
+    return t, ""
+
+
+def route_of(path, first):
+    """The arguments of the one `route <first> ...` box in a file, or None."""
+    want = re.compile(r"^#X obj -?\d+ -?\d+ route (" + re.escape(first) + r"(?: [^;,]*)?)(?:, f \d+)?;$")
+    hits = [m.group(1) for m in (want.match(r) for r in lib_pd.read(path)) if m]
+    return hits[0].split() if len(hits) == 1 else None
+
+
+# ------------------------------------------------------------------ reading the Swift
+# Where a call to the patch starts: cut.press( and its kin anywhere, and inside Cut.swift the bare
+# press( and send( that Cut's own methods make, but not their definitions or link.send(.
+CALL = re.compile(r"(?<![\w.])cut\.(press|send|control)\(")
+BARE = re.compile(r"(?<![\w.])(press|send)\(")
+
+
+def args_at(src, i):
+    """The arguments of the call whose ( is at src[i], split at top-level commas, and the index
+    after its ). Strings (with \\( ) interpolation in them) and brackets are stepped over whole."""
+    depth, j, start, out = 0, i, i + 1, []
+    while j < len(src):
+        c = src[j]
+        if c == '"':
+            j = string_end(src, j)
+            continue
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+            if depth == 0:
+                out.append(src[start:j].strip())
+                return [a for a in out if a], j + 1
+        elif c == "," and depth == 1:
+            out.append(src[start:j].strip())
+            start = j + 1
+        j += 1
+    return None, j
+
+
+def string_end(src, j):
+    """The index after the string literal opening at src[j]."""
+    j += 1
+    while j < len(src):
+        c = src[j]
+        if c == "\\" and src[j + 1] == "(":
+            depth, j = 1, j + 2
+            while depth:
+                if src[j] == '"':
+                    j = string_end(src, j)
+                    continue
+                depth += {"(": 1, ")": -1}.get(src[j], 0)
+                j += 1
+            continue
+        if c == "\\":
+            j += 2
+            continue
+        if c == '"':
+            return j + 1
+        j += 1
+    return j
+
+
+LIT = re.compile(r'"((?:[^"\\]|\\.)*)"')
+NUM = re.compile(r"-?\d+(?:\.\d+)?")
+
+
+def word(a):
+    """One argument as what it can be: [("lit", text)], [("pat", regex, text)], [("num", text)],
+    [("expr", text)], or a choice of two literals' both."""
+    t = re.fullmatch(r"(.+?) \? (.+) : (.+)", a)
+    if t and all(LIT.fullmatch(x.strip()) for x in t.groups()[1:]):
+        return [x for part in t.groups()[1:] for x in word(part.strip())]
+    m = LIT.fullmatch(a)
+    if m:
+        s = m.group(1)
+        if "\\(" not in s:
+            return [("lit", s)]
+        rx, k = "", 0
+        while k < len(s):
+            if s.startswith("\\(", k):
+                k = close_interp(s, k)
+                rx += ".+"
+            else:
+                rx += re.escape(s[k])
+                k += 1
+        return [("pat", rx, s)]
+    if NUM.fullmatch(a):
+        return [("num", a)]
+    return [("expr", a)]
+
+
+def close_interp(s, k):
+    """The index after the \\( ) starting at s[k]."""
+    depth, k = 1, k + 2
+    while depth and k < len(s):
+        depth += {"(": 1, ")": -1}.get(s[k], 0)
+        k += 1
+    return k
+
+
+def control_body(src):
+    """(params, call args) of Cut's func control: the one call it makes, which the gate inlines for
+    every cut.control(...)."""
+    m = re.search(r"func control\(([^)]*)\)\s*\{\s*send\(", src)
+    if not m:
+        return None
+    params = [p.split(":")[0].split()[-1] for p in m.group(1).split(",")]
+    a, _ = args_at(src, m.end() - 1)
+    return params, a
+
+
+def calls():
+    """[(file, line, kind, [argument text])] for every call to the patch, and how many such
+    calls a plain search finds, which the read ones must equal."""
+    found, plain, inline = [], 0, None
+    for f in sorted(os.listdir(SWIFT)):
+        if not f.endswith(".swift"):
+            continue
+        src = open(os.path.join(SWIFT, f), encoding="utf-8").read()
+        plain += len(CALL.findall(src))
+        hits = [(m, m.group(1)) for m in CALL.finditer(src)]
+        if f == CUT:
+            inline = control_body(src)
+            for m in BARE.finditer(src):
+                head = src[max(0, m.start() - 5):m.start()]
+                if head.endswith("func ") or in_func(src, m.start(), "control"):
+                    continue
+                plain += 1
+                hits.append((m, m.group(1)))
+        for m, kind in hits:
+            a, _ = args_at(src, m.end() - 1)
+            if a is not None:
+                found.append((f, src.count("\n", 0, m.start()) + 1, kind, a))
+    return found, plain, inline
+
+
+def in_func(src, i, name):
+    """Is src[i] inside the body of func <name>?"""
+    m = None
+    for m in re.finditer(r"func (\w+)\(", src[:i]):
+        pass
+    if not m or m.group(1) != name:
+        return False
+    body = src.index("{", m.end())
+    _, end = args_at(src, body)
+    return i < end
+
+
+# Expressions in a command word's place, and the Swift each is read from. Keyed by file, the
+# command's first two words, and the expression; each reads the source, so a value added there is
+# checked like a literal.
+def swift_list(f, pattern):
+    src = open(os.path.join(SWIFT, f), encoding="utf-8").read()
+    return [s for m in re.finditer(pattern, src) for s in LIT.findall(m.group(1))]
+
+
+RESOLVE = {
+    # The harmony page's knobs: knob(<label>, <arg>, ...), arg the generator's control.
+    ("Pages.swift", "perform ctl", "arg"): lambda: swift_list("Pages.swift", r'\bknob\("[^"]*", ("[^"]*")'),
+    # The melody page's rows of knobs: row([<control>, ...]).
+    ("Pages.swift", "perform ctl", "n"): lambda: swift_list("Pages.swift", r"\brow\(\[([^\]]*)\]\)"),
+    # The setup page's choices, from its own lists.
+    ("Pages.swift", "voices method", "m"): lambda: swift_list("Pages.swift", r"static let methods = \[([^\]]*)\]"),
+    ("Pages.swift", "voices machine", "m"): lambda: swift_list("Pages.swift", r"static let machines = \[([^\]]*)\]"),
+    ("Pages.swift", "voices machine", "sure"): lambda: swift_list("Pages.swift", r"static let machines = \[([^\]]*)\]"),
+}
+
+
+def main():
+    print("\n=== the app's commands, read against the patch's -- no Pd, no phone ===")
+    t, why = lua_tables()
+    top = route_of(UNET, "result")
+    usynth, uvel, uonce = route_of(UNET, "fm"), route_of(UNET, "on"), route_of(UNET, "once")
+    dests = route_of(UMAP, "tempo")
+    A.check("u_net's routes, u_map's destinations and the Lua's tables are all readable",
+            None not in (t, top, usynth, uvel, uonce, dests),
+            "lua: %s  u_net: %r / %r / %r / %r  u_map: %r" % (why or "ok", top, usynth, uvel, uonce,
+                                                             dests))
+    if None in (t, top, usynth, uvel, uonce, dests):
+        return A.report()
+
+    def keys(mod, name):
+        return set(t.get((mod, name), []))
+
+    found, plain, inline = calls()
+    per = {}
+    for f, *_ in found:
+        per[f] = per.get(f, 0) + 1
+    A.check("⛔ every call the app makes to the patch is read, none skipped",
+            found and len(found) == plain,
+            "%d read of %d found: %s" % (len(found), plain, per))
+    A.note("%d calls read, %s" % (len(found), ", ".join("%s %d" % kv for kv in sorted(per.items()))))
+
+    src = open(os.path.join(SWIFT, CUT), encoding="utf-8").read()
+    A.check("⛔ cut.press sends once <n> before its words, which u_net's route once takes",
+            re.search(r'let message: \[OSCValue\] = \[\.text\("once"\), \.number\(Float\(seq\)\)\] \+ '
+                      r"values\(words\)", src) is not None and uonce == ["once"],
+            "u_net: route %s" % uonce)
+    A.check("⛔ cut.control sends perform ctl <row> <dest> <arg> <value>, as u_perform's ctl takes it",
+            inline is not None and inline[0] == ["dest", "arg", "value"]
+            and inline[1][:2] == ['"perform"', '"ctl"'] and inline[1][3:] == inline[0],
+            "func control(%s) sends %s" % inline if inline else "no func control found in Cut.swift")
+    if inline is None:
+        return A.report()
+
+    # Every call as its words, each a list of what it can be; control's inlined.
+    sent = []
+    for f, line, kind, a in found:
+        if kind == "control":
+            sub = dict(zip(inline[0], a))
+            a = [sub.get(x, x) for x in inline[1]]
+        sent.append((f, line, [word(x) for x in a]))
+
+    bad = {}
+    unread = []
+
+    def fail(what, f, line, text):
+        bad.setdefault(what, []).append("%s:%d %s" % (f, line, text))
+
+    def literals(f, line, words, k):
+        """What words[k] can be, as literal text and patterns; an expression read through RESOLVE,
+        or reported unread."""
+        out = []
+        for w in words[k]:
+            if w[0] in ("lit", "num"):
+                out.append(("lit", w[1]))
+            elif w[0] == "pat":
+                out.append(w)
+            else:
+                head = " ".join(x[0][1] for x in words[:2] if x[0][0] == "lit")
+                r = RESOLVE.get((f, head, w[1]))
+                if r is None:
+                    unread.append("%s:%d %s ... %s" % (f, line, head, w[1]))
+                else:
+                    vals = r()
+                    if not vals:
+                        unread.append("%s:%d %s ... %s reads nothing" % (f, line, head, w[1]))
+                    out += [("lit", v) for v in vals]
+        return out
+
+    def takes(what, f, line, words, k, allowed):
+        """Check words[k] is in allowed: a literal exactly, a pattern by matching at least one."""
+        seen[what] = seen.get(what, 0) + 1
+        if k >= len(words):
+            fail(what, f, line, "(nothing at word %d)" % (k + 1))
+            return []
+        got = literals(f, line, words, k)
+        for g in got:
+            if g[0] == "lit" and g[1] not in allowed:
+                fail(what, f, line, g[1])
+            if g[0] == "pat" and not any(re.fullmatch(g[1], x) for x in allowed):
+                fail(what, f, line, g[2])
+        return [g[1] for g in got if g[0] == "lit"]
+
+    seen = {}
+    cmds = set()
+    for f, line, words in sent:
+        cmd = takes("top", f, line, words, 0, set(top))
+        cmds.update(cmd)
+        c = cmd[0] if len(cmd) == 1 else None
+        if c == "drums":
+            takes("drums", f, line, words, 1, keys("c_steps", "presses"))
+        elif c == "synth":
+            takes("synth", f, line, words, 1, keys("c_synth", "SYNTHS") & set(usynth))
+        elif c == "velocity":
+            takes("velocity", f, line, words, 1, keys("c_synth", "VELOCITY") & set(uvel))
+        elif c == "tempo":
+            seen["tempo"] = seen.get("tempo", 0) + 1
+            if len(words) < 2 or any(w[0] in ("lit", "pat") for w in words[1]):
+                fail("tempo", f, line, "tempo with no number")
+        elif c == "sections":
+            takes("sections", f, line, words, 1, keys("u_song", "phone_cmds"))
+        elif c == "songs":
+            takes("songs", f, line, words, 1, keys("u_song", "songs_cmds"))
+        elif c == "melody":
+            sub = takes("melody", f, line, words, 1, keys("c_melody", "inputs"))
+            if sub == ["set"]:
+                takes("melody set", f, line, words, 2, keys("c_melody", "ORDER") | {"arrive", "octave"})
+        elif c == "voices":
+            sub = takes("voices", f, line, words, 1, keys("u_voices", "phone_cmds"))
+            if sub == ["method"]:
+                takes("voices method", f, line, words, 3, keys("u_voices", "METHODS"))
+            elif sub == ["machine"]:
+                takes("voices machine", f, line, words, 3, keys("u_voices", "MACHINES"))
+        elif c == "perform":
+            sub = takes("perform", f, line, words, 1, keys("u_perform", "phone_cmds"))
+            if sub == ["ctl"]:
+                dest = takes("perform ctl", f, line, words, 3, set(dests))
+                # drums and melody: the destination's own table, as u_map hands the arg on (a
+                # melody arg as e<engine>-<arg>, which c_melody's face takes off). machine's are
+                # the machine's parameters, which the patch tells the app: data, not words.
+                if dest == ["drums"]:
+                    takes("perform ctl drums", f, line, words, 4, keys("c_steps", "presses"))
+                elif dest == ["melody"]:
+                    takes("perform ctl melody", f, line, words, 4, keys("c_melody", "inputs"))
+        elif c == "sound":
+            takes("sound", f, line, words, 1, keys("u_sound", "phone_cmds"))
+
+    A.check("⛔ every word in a command's place is one the gate can read",
+            not unread, "add how to read it to RESOLVE: %s" % "; ".join(unread))
+    A.check("⛔ the app sends EXACTLY the commands u_net routes",
+            not bad.get("top") and cmds == set(top),
+            "the app sends %s, u_net routes %s; unknown: %s -- whichever side is short is a button "
+            "that does nothing, or a route nothing uses"
+            % (" ".join(sorted(cmds)), " ".join(top), bad.get("top")))
+    for what, who in [
+            ("drums", "c_steps takes (R.presses)"),
+            ("synth", "c_synth takes (R.SYNTHS) and u_net acknowledges (route %s)" % " ".join(usynth)),
+            ("velocity", "c_synth takes (R.VELOCITY) and u_net acknowledges (route %s)" % " ".join(uvel)),
+            ("tempo", "u_tempo takes: a number"),
+            ("sections", "u_song takes (R.phone_cmds)"),
+            ("songs", "u_song takes after songs (R.songs_cmds)"),
+            ("melody", "c_melody takes (R.inputs)"),
+            ("melody set", "c_melody's set knows (R.ORDER, arrive and octave)"),
+            ("voices", "u_voices takes (R.phone_cmds)"),
+            ("voices method", "u_voices has (R.METHODS)"),
+            ("voices machine", "u_voices has (R.MACHINES)"),
+            ("perform", "u_perform takes (R.phone_cmds)"),
+            ("perform ctl", "u_map routes (its destination route)"),
+            ("perform ctl drums", "c_steps takes (R.presses)"),
+            ("perform ctl melody", "c_melody takes (R.inputs)"),
+            ("sound", "u_sound takes (R.phone_cmds)")]:
+        n = seen.get(what, 0)
+        A.check("⛔ every %s the app sends is one %s" % (what, who),
+                not bad.get(what) and n > 0,
+                "%d calls; not taken: %s" % (n, "; ".join(bad.get(what, [])) or "-"))
+    return A.report()
+
+
+if __name__ == "__main__":
+    sys.exit(1 if main() else 0)

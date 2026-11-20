@@ -381,6 +381,7 @@ struct SoundView: View {
 struct SongsView: View {
     @Environment(Cut.self) private var cut
     @State private var showAll = false
+    @State private var deleting = false
     @State private var naming: Naming?
     @State private var typed = ""
     enum Naming { case song, section, set }
@@ -470,13 +471,21 @@ struct SongsView: View {
                     Button("take off setlist") { cut.press("songs", "remove") }
                     Button("move up") { cut.press("songs", "up") }
                     Button("move down") { cut.press("songs", "down") }
-                    Button("delete song", role: .destructive) { cut.press("songs", "delete"); cut.press("songs", "delete") }
+                    Button("delete song", role: .destructive) { deleting = true }
                 } label: {
                     Image(systemName: "ellipsis").frame(maxWidth: .infinity, minHeight: 36)
                         .foregroundStyle(.white).background(Theme.field, in: .rect(cornerRadius: 6))
                 }
             }
         }
+        // The phone asks, since a song's files go with it; u_song deletes at every delete it's sent.
+        .confirmationDialog("delete \(selectedSong)?", isPresented: $deleting, titleVisibility: .visible) {
+            Button("delete", role: .destructive) { cut.press("songs", "delete") }
+        }
+    }
+
+    private var selectedSong: String {
+        cut.allSongs.first { $0.id == cut.songSelected }?.name ?? ""
     }
 
     private var setName: String {

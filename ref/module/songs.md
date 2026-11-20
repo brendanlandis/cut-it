@@ -199,7 +199,7 @@ rename is seen as one. A number is written whole, or with `%g` as Pd's own `[tex
 | `load` | The selected song, as a key asks for it | unknown |
 | `new` | A song after the selected, "song 2", the first number from 2 no song has, of one section: a copy of the section playing, its name, length and parts. Saved as it is, selected, and not loaded | unknown |
 | `add` | The selected song, the setlist chosen's last entry, from silence, and selected; past 25, `warn u_song set-full` | unknown |
-| `delete` | The selected song goes, from every setlist too, its files with it, and the one now in its place is selected; the last song is `warn u_song last-song`; deleting the song loaded loads the one now in its place, at once. The phone asks twice (*Delete asks twice*, below) | unknown |
+| `delete` | The selected song goes, from every setlist too, its files with it, and the one now in its place is selected; the last song is `warn u_song last-song`; deleting the song loaded loads the one now in its place, at once. The phone asks first (*Delete asks first*, below) | unknown |
 | `entry`, `up`, `down`, `remove` | A row tapped selects an entry; move up and down move it and its key; remove takes it out, the one now in its place selected | unknown |
 | `set` | The arrows: through the setlist chosen's own pages, then on to the next setlist, or back to the last page of the one before, which is then chosen, its first entry on the page selected | unknown |
 | `new-set` | An empty setlist after the one chosen, "set 2" the same way as songs, and chosen | unknown |
@@ -349,11 +349,12 @@ One section, as the section playing is now, name and all, named "song 2" as a co
 "verse 2" (judgment call, 2026-11-05): what you are playing is the likeliest start of the next
 song. It is not loaded: **load** does that.
 
-### Delete asks twice
+### Delete asks first
 
-On the phone, **delete** reads sure? at the first tap and deletes at a second within three
-seconds (judgment call, 2026-11-05). Its files go with it, so the phone asks; the store deletes at
-the one `delete` it is sent.
+On the phone, **delete song** asks, naming the song, and sends one `delete` at its yes (judgment
+call, 2026-11-05: asked twice in three seconds on TouchOSC's layout). Its files go with it, so the
+phone asks; the store deletes at every `delete` it is sent, so a phone that sent two would delete
+two songs.
 
 ### Stopped, a key loads at once
 

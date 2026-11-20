@@ -51,6 +51,10 @@ LOG="$HOME/Library/Logs/cutit-testflight.log"
 EXPORT="$HOME/Library/Caches/com.velellalabs.cutit/testflight"
 mkdir -p "$EXPORT"
 GIT_INDEX_FILE="$EXPORT.index" git --work-tree="$EXPORT" read-tree --reset -u "$COMMIT:phone"
+# What project.yml takes from beyond phone/ (its `path: ../` sources: the line check's checklist),
+# from the same commit, where its ../ reaches from the export.
+OUTSIDE=$(git show "$COMMIT:phone/project.yml" | sed -n 's|^ *- path: \.\./||p')
+[[ -z $OUTSIDE ]] || git archive "$COMMIT" $OUTSIDE | tar -x -C "$EXPORT/.."
 echo "$(date '+%Y-%m-%d %H:%M:%S') building $BUILD ($(git log -1 --format='%h %s' "$COMMIT"))" | tee -a "$LOG"
 
 (cd "$EXPORT" && xcodegen generate --quiet) >>"$LOG" 2>&1 || { echo "xcodegen failed (see $LOG)" >&2; exit 1; }

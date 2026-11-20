@@ -10,38 +10,38 @@ the phone's page under a finger, and the SD card across a real power cut.
 **Before you start:**
 
 - The drums audible through the PA, the Volca and the Streichfett on, and the phone showing Cut It.
-- Two songs that sound different: on the songs page, aux on the Organelle, its songs tab: tap **new song**,
-  **load** it, and on the drum page change its drum pattern and on the arrangement screen its tempo; then press save, the upper bottom row's
-  rightmost button.
-- A setlist of both: on the songs tab select each in turn and tap **add to set**.
+- Two songs that sound different: on the songs page, aux on the Organelle, choose **all songs** from the dropdown
+  atop its left column, tap **new** under the list, then **load**, and on the drum page change its drum pattern and
+  on the songs page its tempo; then press save, the upper bottom row's rightmost button.
+- A setlist of both: in all songs tap each in turn, then the **…** under the list and **add to setlist**.
 
 13 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md).
 Why each thing behaves as it does: [songs](../../ref/module/songs.md).
 
 - [ ] **1. The songs page**
-  - **Need:** The songs page, aux, the phone showing it.
-  - **Do:** Look at the phone's songs tab, then tap the second row.
-  - **Pass if:** The tab bar reads songs, setlists and name, songs lit. Each song is a row, its number, its name and, flush right in gray, `loaded` on the song playing. The tapped row lights and its name heads the right column, over load, new song, name, add to set and delete.
+  - **Need:** The songs page, aux, the phone showing it, the setlist chosen from the dropdown atop its left column.
+  - **Do:** Look at the phone's songs page, then tap the second row of its left column. Then open the dropdown, and the **…** under the list.
+  - **Pass if:** Three columns: on the left the setlist's name over its songs, each a row with its key's number and its name, the song loaded named in green with a green bar at its left, and load, new and **…** under them; in the middle the loaded song's name over its sections; on the right the selected section's name over length, tempo, last step, time, swing, drunk and tweaks. The tapped row lights. The dropdown lists the setlists, then all songs, new setlist and name this setlist; the **…** name, add to setlist, take off setlist, move up, move down and, in red, delete song.
 
 - [ ] **2. A new song, and naming it**
-  - **Need:** The songs page's songs tab, the song loaded saved: the Launchpad's two rightmost bottom buttons dark.
-  - **Do:** Tap **new song**, then **name**. Backspace the name away, type a new one, tap **done**.
-  - **Pass if:** A row appears after the selected one, "song 2" or the next number free, selected. **name** opens the name tab, reading "name the song" over the new song's name in capitals. **done** turns back to the songs tab, where the row reads the new name in lowercase. The Launchpad's two rightmost bottom buttons stay dark throughout.
+  - **Need:** The songs page, all songs chosen from the dropdown, the song loaded saved: the Launchpad's two rightmost bottom buttons dark.
+  - **Do:** Tap **new**, then the **…** and **name**. Delete the name, type a new one with a capital, tap **Done**.
+  - **Pass if:** A row appears after the selected one, "song 2" or the next number free, selected. **name** opens an alert reading song's name over a field holding the new song's name. **Done** closes it, and the row reads the new name in lowercase. The Launchpad's two rightmost bottom buttons stay dark throughout.
 
 - [ ] **3. The setlist**
   - **Need:** A setlist of two songs or more.
-  - **Do:** Tap the setlists tab. Tap the second row, then **move up**.
-  - **Pass if:** The caption names the setlist, the pager reads `set 1 / 1`, and each row shows its key and its song. Move up swaps the rows and their keys.
+  - **Do:** Choose the setlist from the dropdown. Tap the second row, then the **…** and **move up**.
+  - **Pass if:** The dropdown names the setlist, and each row shows its key and its song. Move up swaps the rows and their keys.
 
 - [ ] **4. Stopped, a key loads at once**
   - **Need:** The transport stopped, the setlist's first song not loaded.
   - **Do:** Press the Organelle's lowest key, then PLAY.
-  - **Pass if:** At the key the phone's songs tab moves `loaded` to that song and its tempo shows on the arrangement screen; the top row shows its sections, section 1 bright. PLAY plays its pattern. Nothing shows on the OLED.
+  - **Pass if:** At the key the phone's left column names that song in green, with the green bar, its name heads the middle column and its tempo shows in the right; the top row shows its sections, section 1 bright. PLAY plays its pattern. Nothing shows on the OLED.
 
 - [ ] **5. A song keeps its own draft**
   - **Need:** Two songs in the setlist, the transport stopped, the first loaded and as saved.
   - **Do:** On the drum page turn on one step of its pattern. Press the second key from the bottom, then the lowest key again.
-  - **Pass if:** The step lights save and revert. After the second key the other song plays and the lamps go dark, while the songs tab reads `unsaved` beside the first. After the lowest key the first song is back, the step still on, save and revert lit again. Revert takes the step off.
+  - **Pass if:** The step lights save and revert, and the middle column's heading shows unsaved in amber. After the second key the other song plays and the lamps go dark, while the left column reads unsaved, flush right in gray, beside the first. After the lowest key the first song is back, the step still on, save and revert lit again. Revert takes the step off.
 
 - [ ] **6. Playing, a key**
   - **Need:** Playing, the setlist's first song loaded.
@@ -68,17 +68,18 @@ Why each thing behaves as it does: [songs](../../ref/module/songs.md).
   - **Do:** Press a song's key, wait for the arrow's blink, then press STOP.
   - **Pass if:** At STOP the song loads at once, ready for PLAY, and the blinking stops.
 
-- [ ] **11. Delete asks twice**
-  - **Need:** The songs page's songs tab, three songs or more, one not loaded selected.
-  - **Do:** Tap **delete** once and wait four seconds. Then tap it twice, quickly.
-  - **Pass if:** The first tap turns its word to sure?, and after three seconds it reads delete again with nothing deleted. The two quick taps delete the song: its row goes, the next one selected, and it is gone from the setlist too, the keys after it moving down one.
+- [ ] **11. Delete asks first**
+  - **Need:** The songs page, all songs chosen from the dropdown, three songs or more, one not loaded selected.
+  - **Do:** Tap the **…** under the list, then **delete song**, then **Cancel**. Then the **…**, **delete song** and **delete**.
+  - **Pass if:** **delete song** asks, naming the selected song over delete in red and Cancel. **Cancel** deletes nothing. **delete** deletes that song and no other: its row goes, the next one selected and still there, and it is gone from the setlist too, the keys after it moving down one.
+  - **Note:** `u_song` deletes at every `delete` it is sent, so the asking is the phone's ([songs](../../ref/module/songs.md), *Delete asks first*).
 
 - [ ] **12. Setlists: a new one, and the arrows**
-  - **Need:** Page 8's setlists tab, one setlist.
-  - **Do:** Tap **new set**, press the lowest key, then tap the pager's left arrow and press the lowest key again. Tap the name tab, type a name, tap **done**.
-  - **Pass if:** **new set** shows an empty "set 2", `set 2 / 2`, and the lowest key does nothing. The left arrow shows set 1, `set 1 / 2`, and the lowest key loads its first song again. The name tab reads "name the setlist"; **done** turns back to the setlists tab, its caption the new name.
+  - **Need:** The songs page, one setlist, chosen from the dropdown.
+  - **Do:** Choose **new setlist** from the dropdown, and press the lowest key. Then choose set 1 from the dropdown and press the lowest key again. Choose **name this setlist**, type a name, tap **Done**.
+  - **Pass if:** **new setlist** shows an empty "set 2", named in the dropdown, and the lowest key does nothing. Set 1 shows its songs again, and the lowest key loads its first song again. The alert reads setlist's name over a field holding the setlist's name; **Done** closes it, and the dropdown reads the new name.
 
 - [ ] **13. A power cut keeps the songs**
   - **Need:** Two songs or more, one with an unsaved change, the other loaded; a setlist rearranged since the last load.
   - **Do:** Wait three seconds, then pull the Organelle's power. Power it on and load Cut It.
-  - **Pass if:** The song that was loaded loads again, at section 1. The songs tab lists every song in its order, `unsaved` beside the one changed, and the setlists tab shows the setlist as it was rearranged.
+  - **Pass if:** The song that was loaded loads again, at section 1. All songs lists every song in its order, unsaved beside the one changed, and the setlist shows as it was rearranged.

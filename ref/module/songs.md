@@ -367,7 +367,7 @@ section at once.
   is set only by editing the song's file. How a control numbers them, as each synth's own screen
   does, waits for it. `cut-it/songs-and-sections`.
 - ⬜ **Not played on the rig**: the top row's lamps and presses, a queue landing at the loop, a
-  length handing over, save and revert and their lamps, the phone's sections page and name tab,
+  length handing over, save and revert and their lamps, the phone's sections and naming them,
   and a power cut mid-session. `test/checklists/sections.md`, `cut-it/songs-and-sections`.
 - ⬜ **Several songs, the keys and the next arrow have not been played on the rig**: a song
   loading on the downbeat, the arrow's blink, the phone's songs page. `test/checklists/songs.md`,

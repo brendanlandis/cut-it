@@ -411,7 +411,7 @@ control for the time signature's bottom number:
   run from `test/checklists/linecheck.md` now. Nothing on the phone reads the heartbeat's test mode
   flag, so the diagnostics page's second pad and the app's test mode button only warn on the OLED.
 - ⬜ **No control for a drum's random pitch** (`cut-it/cut-it-app`): `drums rnd-pitch`, the drum
-  screen's rnd pitch button.
+  screen's rnd pitch button. The sequencer checklist's step 54 waits for one.
 - ⬜ **No pinning a chord by holding its box** (`cut-it/cut-it-app`): `melody chord-pin`. The app
   shows a chord's pin but cannot set one.
 - ⬜ **No gate holds the app's commands to the patch's vocabulary** (`cut-it/cut-it-app`).
@@ -421,7 +421,7 @@ control for the time signature's bottom number:
 - ⬜ **Five outbound addresses have no reader** (`cut-it/cut-it-app`): `/cutit/mode`,
   `/cutit/synth`, `/cutit/sections`, `/cutit/songs` and `/cutit/ack`, the layout's, which the app
   takes from `/cutit/voices`, `/cutit/lists` and `once` instead. They still go on every heartbeat.
-- ⬜ **The development checklists still describe the layout's screens** (`cut-it/cut-it-app`):
-  the arrangement screen, the tabs, the keyboard tab's FM and STRINGS, the show and effect radios,
-  in `sequencer`, `tempo`, `sections`, `songs` and `synths`. Their steps run against the app where
-  its page has the control, and are to be rewritten for its pages.
+- ⬜ **No choosing the nanoKEY's synth but by a voice's page** (`cut-it/cut-it-app`): the layout's
+  keyboard tab sent `synth fm` and `synth strings`, which `c_synth` puts in the section, so the
+  choice survived a reload. A voice's page sends `machine`, which isn't put, and the setup page's
+  machine changes the voice itself. The synths checklist's steps 8 to 10 use the keys page instead.

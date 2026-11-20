@@ -1,15 +1,15 @@
 # Tempo checklist
 
-The transport, knob 1's pickup and the clamp. Steps 1 to 10 set their tempo with **Send** lines; 11 to 14 are hands on the nanoKONTROL, knob 1, the tap button and the phone. The tempo is read off the phone's arrangement screen: the OLED draws it only as knob 1's row while the knob moves (Brendan, 2026-11-04).
+The transport, knob 1's pickup and the clamp. Steps 1 to 10 set their tempo with **Send** lines; 11 to 14 are hands on the nanoKONTROL, knob 1, the tap button and the phone. The tempo is read off the phone, at the top of its performance page: the OLED draws it only as knob 1's row while the knob moves (Brendan, 2026-11-04).
 
 No beat-count steps: the `c_clock` ratio and the clock running on after a stop are `clock-assert`'s and `tempo-assert`'s, and the counts appear on no screen. One claim judged in two places reports more coverage than exists. No device follows the clock by ear since the SP-404 left the rig (2026-11-04), so no step listens for one.
 
 14 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [tempo](../../ref/module/tempo.md).
 
 - [ ] **1. Resting display at 120 BPM**
-  - **Need:** The phone linked.
+  - **Need:** The phone linked, on the performance page: if a voice's page is on show, press its lit button on the Launchpad again. A Send line's `mode` doesn't turn the phone's page.
   - **Send:** `mode perform; tempo 120; stop bang`
-  - **Pass if:** The OLED shows the info bar and nothing under it: no tempo anywhere on it. The phone's arrangement screen reads 120. The aux LED is dark blue.
+  - **Pass if:** The OLED shows the info bar and nothing under it: no tempo anywhere on it. The tempo at the top of the phone's page reads 120. The aux LED is dark blue.
 
 - [ ] **2. Knob pickup on the first touch**
   - **Send:** `mode perform; tempo 120; param og-knob-1 0`
@@ -66,6 +66,6 @@ No beat-count steps: the `c_clock` ratio and the clock running on after a stop a
 
 - [ ] **14. Knob 1 waits for a tapped tempo, and for the phone's**
   - **Need:** The phone linked, and knob 1 live: turned through where it was held, as in step 3 or 13.
-  - **Do:** Tap the nanoKONTROL's LOOP four times, about two a second. Then turn knob 1 a little either way. Then drag the phone's tempo to 160 and turn knob 1 a little again.
-  - **Pass if:** From the second tap the phone's tempo reads about 120. Knob 1's first turn after the taps reads bpm and that tempo with the knob's own in brackets, and the phone's tempo does not move until the knob is turned through it; from there the row and the phone follow the knob. After the drag the same: bpm 160 with the knob's own in brackets, until it passes 160.
+  - **Do:** Tap the nanoKONTROL's LOOP four times, about two a second. Then turn knob 1 a little either way. Then press aux on the Organelle, the songs page, tap the plus beside tempo ten times, and turn knob 1 a little again. Press aux again after.
+  - **Pass if:** From the second tap the phone's tempo reads about 120. Knob 1's first turn after the taps reads bpm and that tempo with the knob's own in brackets, and the phone's tempo does not move until the knob is turned through it; from there the row and the phone follow the knob. After the plus the same: bpm and the phone's tempo, ten above where it stood, with the knob's own in brackets, until it passes it.
   - **Note:** A tap or the phone sets the tempo, and knob 1 is held there until turned through it, as knob 2 is held at the phone's last step (Brendan, 2026-11-04; [tempo](../../ref/module/tempo.md)). Without the hold its first turn would jump the tempo back to wherever the knob sits.

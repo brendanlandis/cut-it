@@ -1,7 +1,7 @@
 # Sections checklist
 
 The current song's sections: the Launchpad's top row, which plays them, save and revert on its
-bottom rows, and the phone's sections page, which makes, orders, names and sets them. `song-assert` proves
+bottom rows, and the phone's songs page, whose middle and right columns make, order, name and set them. `song-assert` proves
 what a press restores, the queue at the loop, a length handing over, the lamps' colors, the program
 changes and the files across a reload; `phone-assert` the phone's side. What
 is left is music you can hear change on the downbeat, lamps you can see blink, and the SD card
@@ -10,9 +10,9 @@ across a real power cut.
 **Before you start:**
 
 - The drums audible through the PA, the Volca and the Streichfett on, and the phone showing Cut It.
-- A song of at least two sections that sound different: on the phone's sections page, tap **new**, then on the drum page
-  change the drum pattern while the new section plays (step 3 says how to play it), and on the arrangement screen
-  its tempo.
+- A song of at least two sections that sound different: on the phone's songs page, aux on the Organelle, tap **new**
+  under the middle column, the sections; then on the drum page change the drum pattern while the new section plays
+  (step 3 says how to play it), and on the songs page its tempo, with the plus or minus beside tempo.
 
 12 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why
 each thing behaves as it does: [songs](../../ref/module/songs.md).
@@ -38,7 +38,7 @@ each thing behaves as it does: [songs](../../ref/module/songs.md).
   - **Pass if:** The right arrow queues section 2, blinking until the pattern comes round; the left arrow queues section 1 back the same way. Each arrow is dark when there is no section its way.
 
 - [ ] **5. A length hands over by itself**
-  - **Need:** Playing, two sections. On the phone's sections page, select section 1 and drag its length up to 2 bars.
+  - **Need:** Playing, two sections. On the phone's songs page, tap section 1 in the middle column and tap the plus beside length twice, to 2.
   - **Do:** Press the third button to queue section 1, and count its patterns.
   - **Pass if:** Section 1 plays its pattern twice and section 2 starts on the next step 1 by itself, with nothing pressed. Section 2, a loop, plays on until a button is pressed.
 
@@ -62,17 +62,17 @@ each thing behaves as it does: [songs](../../ref/module/songs.md).
   - **Do:** Wait three seconds, then pull the Organelle's power. Power it on and load Cut It.
   - **Pass if:** The change is there, section 1 playing, and both lamps are lit: it is still unsaved. Revert takes it back to the save.
 
-- [ ] **10. The phone's sections page**
-  - **Need:** Page 7 on the Launchpad, the phone showing it.
-  - **Do:** Tap the second row, then **new**, then **move up**, then drag **length** up, then **delete**.
-  - **Pass if:** The phone's tab reads sections, its caption names the song, and each row shows its number, name and length, loop or bars. A tapped row lights and the right column names it. **new** adds a copy after it, named after it, "section 2" giving "section 3", and selected; **move up** moves it a row up, still selected; the length box reads loop, then 1 bar, 2 bars, as it is dragged; **delete** takes it away. The top row follows each change: as many lit buttons as sections.
+- [ ] **10. The phone's sections**
+  - **Need:** The songs page, aux on the Organelle, the phone showing it.
+  - **Do:** In the middle column tap the second row, then **new** under the list, then the **…** beside it and **move up**, then the plus beside length, in the right column, twice. Then the **…** and **delete section**.
+  - **Pass if:** The middle column is headed by the song's name, and each row shows its number, its name and, flush right in gray, its length, loop or a number of bars; the section playing is named in green, with a green bar at its left. A tapped row lights and its name heads the right column. **new** adds a copy after it, named after it, "section 2" giving "section 3", and selected; **move up** moves it a row up, still selected; length reads loop, then 1, then 2, in the right column and on the row; **delete section** takes it away. The top row follows each change: as many lit buttons as sections.
 
-- [ ] **11. Paging, and the top row scrolling**
-  - **Need:** Page 7, the transport stopped.
-  - **Do:** Tap **new** until there are eight sections. Page through the phone's list with its arrows. Then press the top row's right arrow seven times, a second apart.
-  - **Pass if:** The list shows five rows a page, the page number with it, and the second page the rest. On the top row each press starts the next section at once, and from the seventh the six buttons scroll one section at a time, the playing one always lit on the row.
+- [ ] **11. Eight sections, and the top row scrolling**
+  - **Need:** The songs page, the transport stopped.
+  - **Do:** Tap **new** under the middle column until there are eight sections. Scroll the list to its end and back. Then press the top row's right arrow seven times, a second apart.
+  - **Pass if:** The list scrolls, and its last row comes clear of the buttons under it. On the top row each press starts the next section at once, and from the seventh the six buttons scroll one section at a time, the playing one always lit on the row, and on the phone its row named in green.
 
 - [ ] **12. Naming a section**
-  - **Need:** Page 7, a section selected.
-  - **Do:** Tap the **name** tab. Tap backspace until the name is gone, type a new one with letters, a space and a digit, and tap **done**.
-  - **Pass if:** The name tab opens on the selected section's name, in capitals. Each key types its character and backspace takes one off. **done** turns back to the sections tab, where the row reads the new name in lowercase.
+  - **Need:** The songs page, a section selected in the middle column.
+  - **Do:** Tap the **…** under the middle column, then **name**. Delete the name, type a new one with a capital, a space and a digit, and tap **Done**. Then do it again and tap **Cancel**.
+  - **Pass if:** An alert reads section's name over a field holding the selected section's name. **Done** closes it, and the row and the right column's heading read the new name in lowercase. **Cancel** leaves the name as it was.

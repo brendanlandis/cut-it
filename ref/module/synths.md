@@ -16,7 +16,7 @@ switch while a chord is held leaves those notes on the synth that started them, 
 follow them there, so nothing hangs; the next key plays the new choice.
 
 **It also holds the velocity switch** (Brendan, 2026-11-04): on, a key's velocity reaches the synth;
-off, every note-on goes out at 127, on either synth, and a release stays 0. The phone's keyboard tab
+off, every note-on goes out at 127, on either synth, and a release stays 0. The phone's keys page
 flips it; the Launchpad has no control for it.
 
 **It holds each synth's sound for the section playing** (Brendan, 2026-11-04): a program number for

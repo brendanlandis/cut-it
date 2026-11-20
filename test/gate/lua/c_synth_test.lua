@@ -227,6 +227,13 @@ do
   equal("⛔ a fifth takes one of the four", #R.key(st, 65, 90), 1)
   R.machine(st, { "fm" })
   equal("⛔ back on a hardware machine, keys go to it", R.key(st, 70, 90)[1][1], "fm")
+  R.key(st, 70, 0)
+  R.machine(st, { "square" })
+  equal("⛔ the phone's synth takes the nanoKEY off a Pd voice, the choice it already holds too, "
+        .. "and says so", R.choose(st, { "fm" }), told("fm"))
+  equal("... keys go to that synth", R.key(st, 72, 90), { note("fm", 72, 90) })
+  equal("... and the same choice again, with no Pd voice to leave, says nothing",
+        R.choose(st, { "fm" }), {})
 end
 
 os.exit(T.report() == 0)

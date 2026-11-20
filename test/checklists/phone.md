@@ -68,14 +68,14 @@ The rate limit and what `u_net` takes are `phone-assert`'s: what is left is the 
 - [ ] **13. Test mode on, from the diagnostics page**
   - **Do:** Tap Setup, then press the top row's second pad. Wait ten seconds.
   - **Check:** `./tools/fetch-errors.sh` on the Mac.
-  - **Pass if:** The OLED shows a bordered box reading warn then u_net then test-mode-on for about two seconds. The log's newest u_net line is warn u_net test-mode-on, with no test-mode-off after it.
-  - **Note:** One press can reach Cut It twice, 5 ms apart, which once turned test mode on and straight back off; a second flip within 300 ms is dropped (`phone-assert` holds it), and the ten seconds are this step's check that it held. Nothing on the phone shows test mode since its checklist page went with TouchOSC (2026-11-19).
+  - **Pass if:** The phone's diagnostics page gives way at once to the line check, its first step, reading test mode on beside a lit lamp, and stays there. The OLED shows a bordered box reading warn then u_net then test-mode-on for about two seconds. The log's newest u_net line is warn u_net test-mode-on, with no test-mode-off after it.
+  - **Note:** One press can reach Cut It twice, 5 ms apart, which once turned test mode on and straight back off; a second flip within 300 ms is dropped (`phone-assert` holds it), and the ten seconds are this step's check that it held.
 
 - [ ] **14. A page ends test mode, and the phone follows it**
-  - **Need:** Test mode on, as step 13 left it, the diagnostics page up.
+  - **Need:** Test mode on, as step 13 left it, the line check up.
   - **Do:** Press the drums' left-column button.
   - **Check:** `./tools/fetch-errors.sh` on the Mac.
-  - **Pass if:** The diagnostics page gives way at once to the drum screen, and the log's newest u_net line is info u_net test-mode-off.
+  - **Pass if:** The line check gives way at once to the drum screen, and the log's newest u_net line is info u_net test-mode-off.
   - **Note:** That a page turns test mode off is `phone-assert`'s too (Brendan, 2026-11-04: staying on the checklists after a mode press was the weird part).
 
 - [ ] **15. The drum screen's pads under a finger**

@@ -36,6 +36,17 @@ final class Cut {
     }
 
     var linked = false
+    /// Test mode, the Organelle's own, from the heartbeat: the line check stands in for the page while it's on.
+    var testMode = false
+    /// The synth the nanoKEY plays, c_synth's choice.
+    var synth = "fm"
+    /// The line check: the step on show, each step's verdict by its number, and how many verdicts the Organelle has
+    /// answered, which flashes the button that gave the last.
+    let lineCheck = LineCheck.bundled()
+    var checkAt = 0
+    var verdicts: [Int: String] = [:]
+    var lastVerdict = ""
+    var verdictsHeard = 0
 
     // The page and the voices.
     var pageName = "perform"
@@ -188,7 +199,13 @@ final class Cut {
 
     private func heard(_ path: String, _ a: [OSCValue]) {
         switch path {
-        case "/cutit/hb": lastHeard = Date()
+        case "/cutit/hb":
+            lastHeard = Date()
+            if a.count >= 2 { testMode = a[1].number == 1 }
+        case "/cutit/synth":
+            if let v = a.first?.text, !v.isEmpty { synth = v }
+        case "/cutit/ack":
+            if a.first?.text == "result" { verdictsHeard += 1 }
         case "/cutit/once":
             if let id = a.first?.number { waiting[id] = nil }
         case "/cutit/here":
@@ -327,4 +344,15 @@ final class Cut {
 
     /// While a finger holds something, what the Organelle says doesn't move it.
     var holding = false
+
+    /// A verdict on the line check's step on show: logged on the Organelle as `info phone linecheck-<n>-<verdict>`,
+    /// then on to the next step.
+    func verdict(_ v: String) {
+        guard checkAt < lineCheck.steps.count else { return }
+        let n = lineCheck.steps[checkAt].id
+        press("result", "\(lineCheck.name)-\(n)-\(v)")
+        verdicts[n] = v
+        lastVerdict = v
+        checkAt = min(checkAt + 1, lineCheck.steps.count - 1)
+    }
 }

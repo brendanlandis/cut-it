@@ -53,7 +53,8 @@ enum Tick {
     static func down() { press.impactOccurred() }
 }
 
-/// The Launchpad's two columns down each side, the page between them.
+/// The Launchpad's two columns down each side, the page between them, or the line check in its place while test
+/// mode is on. Choosing a page turns test mode off, which brings the page back.
 struct RootView: View {
     @Environment(Cut.self) private var cut
 
@@ -66,7 +67,10 @@ struct RootView: View {
                         .frame(maxWidth: .infinity, minHeight: 22)
                         .background(Theme.red, in: .rect(cornerRadius: 4))
                 }
-                page.frame(maxWidth: .infinity, maxHeight: .infinity)
+                Group {
+                    if cut.testMode { LineCheckView() } else { page }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             Rail(side: .right)
         }

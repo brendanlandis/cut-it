@@ -15,7 +15,11 @@ targets:
   CutIt:
     type: application
     platform: iOS
-    sources: [CutIt]
+    # The line check's page reads its checklist as it is in the repo, so an edit to it is a rebuild.
+    sources:
+      - CutIt
+      - path: ../test/checklists/linecheck.md
+        buildPhase: resources
     settings:
       base:
         PRODUCT_NAME: Cut It

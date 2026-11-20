@@ -14,22 +14,27 @@ second, at the code.
 
 ## The line check
 
-**Before a set, alone at the rig, from the file.** One short list, with every step hands-on: nothing
+**Before a set, from the phone, alone at the rig.** One short list, with every step hands-on: nothing
 is sent from anywhere.
 
 | Checklist | Steps | Judges |
 |---|---|---|
 | [linecheck](linecheck.md) | 8 | the phone's link, the roster, the drums, the mic and both synths through the PA from the nanoKEY, the transport |
 
-1. **Tap Setup**, the Launchpad's bottom-left button. It opens the diagnostics page, on the Launchpad
-   and on the phone, which steps 1 and 2 use.
-2. Go through `linecheck.md` in order, on the Mac or printed, judging each step by its Need, Do and
-   Pass if.
-3. **Choose a page when it's done.**
+1. **Tap Setup**, the Launchpad's bottom-left button, **then test mode**, on the phone's diagnostics
+   page or the Launchpad's top row's second pad. The phone's page gives way to the line check,
+   reading `test mode on` (the Organelle's own state, from the heartbeat); the OLED warns.
+2. Each step shows its title and, from the file, Need, Do, Check and Pass if; the Notes stay here. A
+   step too long for the screen scrolls.
+3. **Pass** or **Fail** logs the verdict on the Organelle as `info phone linecheck-<n>-pass` (read it
+   with `tools/fetch-errors.sh`), flashes when the Organelle answers, and goes on to the next step.
+   **Back** and **Next** move without logging. **FM** and **STRINGS** choose the synth the nanoKEY
+   plays, for steps 5 and 6.
+4. **Tap Setup again when it's done.** Choosing a page also turns test mode off and brings the
+   phone's page back, as does every load of Cut It, so no step presses a voice's button.
 
-The phone showed it a step at a time until 2026-11-19, on TouchOSC's checklist page in test mode,
-and logged each verdict on the Organelle; the Cut It app has no such page
-([phone](../../ref/device/phone.md), *Open*).
+The app carries `linecheck.md` as it is (`phone/project.yml`), so an edit to it reaches the phone with
+the app's next build (`phone/install.sh`, or TestFlight's).
 
 ## The development checklists
 
@@ -125,7 +130,8 @@ A step is a promise about one thing a person can see, hear or read, so the rules
 it honest:
 
 - **A step belongs to one suite.** The line check's judge a connection, a device or a setting, with
-  no code under test, and they send nothing. Whether Cut It does what it should goes in a development checklist.
+  no code under test; they send nothing and press no voice's button, since a page ends test mode and
+  takes the line check away. Whether Cut It does what it should goes in a development checklist.
 - **A step belongs to whatever it touches.** Before adding one, ask: could it run with the named
   device unplugged? Then it is not that device's step. The nanoKONTROL's checklist once carried
   fourteen steps that never touched the controller, nine of them display steps under another name,

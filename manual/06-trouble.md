@@ -2,7 +2,9 @@
 
 - **Launchpad's top-left corner button** is recover: a press stops everything. Pressed again quickly, it restarts Pd.
 - **Setup, on the Launchpad,** opens the diagnostics: its top-left pad shows the diagnostic screen on the Organelle, and the
-  one beside it turns test mode on.
+  one beside it, or test mode on the phone, turns test mode on, which puts the line check on the phone: a step at a time,
+  Pass or Fail logging each on the Organelle, and FM and STRINGS choosing the synth the nanoKEY plays. Setup again, or
+  any page, ends it.
 - **A press on the phone** is sent again until the Organelle answers, so a dropped WiFi packet doesn't lose it, and it's
   only acted on once.
 - **The phone says "no link"** when the Organelle's heartbeat stops. The instrument keeps playing without it. Coming back to

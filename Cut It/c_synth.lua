@@ -128,13 +128,20 @@ function R.set_velocity(st, atoms)
   return tell_velocity(st)
 end
 
--- synth <choice> [<value>], from the phone. A value of 0 is a release and does nothing, and the
--- phone sends none. The same choice again changes nothing and says nothing.
+-- synth <choice> [<value>], from the phone's line check. A value of 0 is a release and does nothing,
+-- and the phone sends none. It takes the nanoKEY off a Pd voice, so the synth tapped is the one
+-- heard, whatever page was shown last. The same choice again, with no Pd voice to leave, changes
+-- nothing and says nothing.
 function R.choose(st, atoms)
   local choice = atoms[1]
   if atoms[2] ~= nil and num(atoms[2]) == 0 then return {} end
   if not KNOWN[choice] then return { R.fail("bad-synth") } end
-  if choice == st.choice then return {} end
+  local left_pd = st.pd_wave ~= nil
+  if left_pd then
+    st.pd_wave = nil
+    st.pd_slots = {}
+  end
+  if choice == st.choice and not left_pd then return {} end
   st.choice = choice
   return tell(st)
 end

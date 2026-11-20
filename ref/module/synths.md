@@ -54,7 +54,7 @@ every change, never on a change that changes nothing.
 | Its release | Goes to the synth its press went to, whatever is chosen by then | unknown |
 | A press of a key held on the other synth | Releases it there first, then plays it on the choice: a nanoKEY never does this, a stray note-on can | unknown |
 | A release with no press on record | Goes to the synth chosen now: a note-off nothing holds is harmless, and one sent nowhere could leave a note hanging | unknown |
-| `synth <choice>` | Changes the choice, says so and puts it; the same choice again changes nothing and says nothing; a choice it does not know is `bad-synth` and changes nothing | unknown |
+| `synth <choice>` | Changes the choice, says so and puts it, and takes the nanoKEY off a Pd voice, so the line check's FM and STRINGS are heard whatever page was shown last; the same choice again, with no Pd voice to leave, changes nothing and says nothing; a choice it does not know is `bad-synth` and changes nothing | unknown |
 | `machine <choice>` | Changes the choice and tells the phone, and isn't put: looking at a voice's page changes nothing in the song, so save and revert stay dark. Otherwise as `synth` | unknown |
 | A value of 0 after the choice | A release, ignored; the phone sends no value | unknown |
 | `velocity off` | Every note-on from then goes out at 127, on either synth; a release stays 0, so a key held through the switch still lets go (Brendan, 2026-11-04) | unknown |
@@ -221,7 +221,7 @@ second `c_synth` with its own cords. Not `u_`: nothing about it is one per instr
 ## Open
 
 - ⬜ **Not played on the rig**: each synth from the nanoKEY, a switch mid-chord, the voices' buttons,
-  the phone's keyboard tab, its velocity switch, and the line check's toggle.
+  the phone's keyboard tab, its velocity switch, and the line check's FM and STRINGS.
   `test/checklists/synths.md`, `cut-it/pages-and-displays`.
 - ⬜ **No control chooses a synth's program**: a section holds `none none` until its file is edited.
   `cut-it/songs-and-sections`.

@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # The phone — the Cut It app and the link
 
-**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `phone/CutIt/Link.swift`, `phone/CutIt/Cut.swift` · **Gate:** `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/phone.md`
+**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `phone/CutIt/Link.swift`, `phone/CutIt/Cut.swift`, `phone/CutIt/LineCheck.swift` · **Gate:** `test/gate/phone-assert.sh` · **Checklist:** `test/checklists/phone.md`
 
 An iPhone running the Cut It app, `phone/` in this repo, on the same network (from 2026-11-19;
 TouchOSC from 2026-11-04, and PdParty before it). What was measured with those two stays on their
@@ -114,7 +114,7 @@ button.
 
 | Command | Does | Evidence | Item |
 |---------|------|----------|------|
-| `result` | A step's verdict, `<checklist>-<n>-<pass or fail>`, logged as `info phone <verdict>`, in test mode or not; answered `ack result`. Nothing has sent it since the line check left the phone with TouchOSC (2026-11-19) | unknown | — |
+| `result` | A step's verdict, `<checklist>-<n>-<pass or fail>`, logged as `info phone <verdict>`, in test mode or not; answered `ack result`. The app's line check sends it, as a press, from Pass and Fail (*Test mode*, below) | unknown | — |
 | `drums` | A drum or arrangement screen control, passed on whole: whatever follows `drums` goes out `u_net`'s first outlet to `c_steps`, which refuses one it does not know as `fail c_steps bad-selector`, so a new control needs nothing in `u_net` (Brendan, 2026-11-04). `sync`, `snap` and `select` are answered `ack drums <action>`, the rest not, since the state shows them | verified | — |
 | `synth` | The synth choice, passed on whole: whatever follows `synth` goes out `u_net`'s second outlet to `c_synth`, which refuses a synth it does not know as `fail c_synth bad-synth`, so a new synth needs nothing in `u_net` but its acknowledgment. `fm` and `strings` are answered `ack synth <choice>`; the phone lights the chosen button from `/cutit/synth`, not from the answer ([synths.md](../module/synths.md)) | unknown | — |
 | `tempo` | The arrangement screen's tempo, `tempo <bpm>`, passed on whole out `u_net`'s third outlet to `u_tempo`, which puts it on the tempo bus, whole and within 5–1000 BPM, and refuses anything but a number as `fail u_tempo bad-tempo` ([tempo.md](../module/tempo.md)). Not answered: the tempo coming back says it | unknown | — |
@@ -386,8 +386,14 @@ the phone sets goes to `u_tempo` by a cord, and `u_tempo`, which owns the tempo,
 **Test mode** is flipped with the diagnostics page's second pad, `pad-82`, which the Launchpad's
 Setup button opens (`lp-setup`), or the diag page's test mode button; it starts off at every load,
 goes off when a page is chosen, and rides on the heartbeat; a flip sends a heartbeat at once rather
-than waiting for the next. Turning it on warns, so the OLED says so and the log keeps it. It put the
-line check up on TouchOSC's screen, and nothing on the phone reads it now (*Open*).
+than waiting for the next. Turning it on warns, so the OLED says so and the log keeps it. The app
+reads it from the heartbeat and puts the line check in place of the page while it's on
+(`phone/CutIt/LineCheck.swift`), so a page chosen, which turns it off, brings the page back. The
+line check is `test/checklists/linecheck.md` as it is, carried in the app (`phone/project.yml`), a step
+at a time: its title and its Need, Do, Check and Pass if, the Notes left in the file. Pass and Fail
+send `result linecheck-<n>-<pass or fail>` and go on to the next step, the button flashing at
+`ack result`; FM and STRINGS send `synth fm` and `synth strings`, lit from `/cutit/synth`, so steps 5
+and 6 play either synth without a voice's page, which would end test mode.
 
 ⛔ **A full status dump was considered and rejected as a command.** Every state address repeats on
 the heartbeat, so a phone joining late repopulates on its own within half a second — item 121. It
@@ -406,17 +412,14 @@ app is to take on its line check, random pitch, chord pins and command gate (Bre
 but not its tap tempo, since the Launchpad's tap pad and the nanoKONTROL's LOOP still tap, nor its
 control for the time signature's bottom number:
 
-- ⬜ **The line check left the phone** (`cut-it/cut-it-app`). The layout's checklist page showed
-  it a step at a time in test mode and logged each Pass and Fail on the Organelle (`result`); it is
-  run from `test/checklists/linecheck.md` now. Nothing on the phone reads the heartbeat's test mode
-  flag, so the diagnostics page's second pad and the app's test mode button only warn on the OLED.
 - ⬜ **No gate holds the app's commands to the patch's vocabulary** (`cut-it/cut-it-app`).
   `touchosc-assert` read every control the layout had and checked what it sent against `c_steps`,
   `c_synth`, `u_tempo` and `u_song`, and `u_net`'s acknowledgments against its buttons; the app's
   Swift has no such check, so a misspelled command fails only on the rig, as `bad-selector`.
-- ⬜ **Five outbound addresses have no reader** (`cut-it/cut-it-app`): `/cutit/mode`,
-  `/cutit/synth`, `/cutit/sections`, `/cutit/songs` and `/cutit/ack`, the layout's, which the app
-  takes from `/cutit/voices`, `/cutit/lists` and `once` instead. They still go on every heartbeat.
+- ⬜ **Three outbound addresses have no reader** (`cut-it/cut-it-app`): `/cutit/mode`,
+  `/cutit/sections` and `/cutit/songs`, the layout's, which the app takes from `/cutit/voices` and
+  `/cutit/lists` instead; and of `/cutit/ack` it reads only `ack result`, taking the rest from `once`.
+  They still go on every heartbeat.
 - ⬜ **No choosing the nanoKEY's synth but by a voice's page** (`cut-it/cut-it-app`): the layout's
   keyboard tab sent `synth fm` and `synth strings`, which `c_synth` puts in the section, so the
   choice survived a reload. A voice's page sends `machine`, which isn't put, and the setup page's

@@ -32,7 +32,7 @@ sudo nmcli connection modify hildegard ipv4.method manual ipv4.addresses 192.168
 ```
 
 The Orbi also reserves `.15` for its Wi-Fi stick, which keeps the address free: the Organelle 1's
-Ralink RT5370, `70:F1:1C:26:BD:EE` (from 2026-11-19; the RT5572 that came with the S2 is set aside).
+Ralink RT5370, `70:F1:1C:26:BD:EE` (from 2026-11-19; the RT5572 that came with the S2 went with the Organelle 1 for its sale).
 The reservation alone didn't do it: the Orbi kept giving out the `.13` it had already leased an
 earlier stick, even after a DHCP release. The connection lives on the card, in
 `/sdcard/system-connections`, so a reflash or **Forget Saved Nets** loses it; it isn't tied to a

@@ -196,6 +196,9 @@ can actually tick, so the longest gate sets the floor. **A faster machine will n
 - **Documentation-only changes do not need it.** `python3 test/gate/docs-check.py` covers those and
   returns in a couple of seconds. Save the full suite for when a `.pd` actually changed.
 - **It is cheap enough to run after each `.pd` change**, but it is still a gate, not a linter.
+- ⛔ **On a four-core machine, run four at a time**: `CUTIT_JOBS=4 ./test/run.sh`. All 29 at once on
+  Crane's i5 (2026-11-19) starved Pd: the 40 s watchdog fired and 15 to 18 gates failed with no capture,
+  then all passed four at a time, in about two minutes.
 
 **Nothing reports itself unless the patch reports it.** Two things make that survivable:
 

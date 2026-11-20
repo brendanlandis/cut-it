@@ -64,7 +64,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 - [ ] **14. The time signature**
   - **Do:** Press aux on the Organelle, the songs page, and tap the plus beside time three times. Then press aux again, back to the drum page.
   - **Pass if:** The phone's time reads 5/4, 6/4, then 7/4. Back on the drum page the steps are rows of seven, each row's eighth pad dark, and each row's first pad is blue where it is not lit. The playing does not change, at any of them.
-  - **Note:** The app sets the top number alone: the bottom one has no control on it ([phone](../../ref/device/phone.md), *Open*), and step 30 waits for one.
+  - **Note:** The app sets the top number alone: the bottom one changes nothing, so it has no control (Brendan, 2026-11-19).
 
 - [ ] **15. Swing on the phone**
   - **Do:** Press aux, the songs page, and tap the plus beside swing up to 75, its top; then the minus down to 62, and on to 50. Press aux again.
@@ -143,10 +143,11 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Do:** Press aux and tap the minus beside time until it reads 3/4. Turn knob 2 all the way left, then all the way right. Then tap the plus beside last step a few times. Press aux, back to the drum page, select the top-left drum pad and turn knob 3 all the way left, then all the way right.
   - **Pass if:** Knob 2 reads last-step 24 at its right end, the brackets gone, and the walk covers all four rows of six. The phone's last step stops at 24 however many times its plus is tapped. Knob 3 reads pad13-last 24 at its right end.
 
-- [ ] **30. The bottom number changes nothing you hear**
-  - **Need:** Playing, from the step before, and a control for the bottom number, which the app doesn't have ([phone](../../ref/device/phone.md), *Open*): until it has one, skip this step.
-  - **Do:** Set the bottom number from 4 up to 16, listening, then down to 1, then back to 4. Then press aux, tap the minus beside time back to 4/4, and press aux again.
-  - **Pass if:** The drums keep exactly the same speed and pattern while the bottom number moves, and the Launchpad's page does not change with it: only the phone's bottom number moves. At 4/4 the rows are eight again.
+- [ ] **30. Back to 4/4, at the same speed**
+  - **Need:** Playing, from the step before, at 3/4.
+  - **Do:** Press aux, tap the plus beside time once, to 4/4, listening, and press aux again.
+  - **Pass if:** The drums keep exactly the same speed while the top number moves. At 4/4 the rows are eight again, the first and fifth pad of each row blue where not lit.
+  - **Note:** This step once moved the bottom number too, which changes nothing heard or shown; the app has no control for it (Brendan, 2026-11-19).
 
 - [ ] **31. Distortion on one drum**
   - **Need:** Brendan's samples deployed, the phone linked, 4/4 at 120 BPM. On the drum page, the bottom-left drum pad, pad 1, with steps 1, 5, 9 and 13 lit and nothing else lit on any track.

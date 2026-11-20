@@ -130,8 +130,9 @@ button.
 `phone-assert` sends each and requires it to reach nothing: no answer, no bus, no outlet. The
 re-wire is still on the `presence` bus, from a Send line ([presence.md](../module/presence.md)).
 
-What `drums` carries, each one `c_steps`' own (`R.presses` in `c_steps.lua`). The app sends
-neither `den` nor `rnd-pitch` (*Open*).
+What `drums` carries, each one `c_steps`' own (`R.presses` in `c_steps.lua`). The app doesn't
+send `rnd-pitch` yet (*Open*), and won't send `den`: the bottom number changes nothing, so the
+app has no control for it (Brendan, 2026-11-19).
 
 | Drum action | Does | Evidence | Item |
 |-------------|------|----------|------|
@@ -400,7 +401,10 @@ state corrects, and none is needed to play.
 
 ## Open
 
-What the TouchOSC layout did that the app does not, as of 2026-11-19 when the layout went:
+What the TouchOSC layout did that the app does not, as of 2026-11-19 when the layout went. The
+app is to take on its line check, random pitch, chord pins and command gate (Brendan, 2026-11-19),
+but not its tap tempo, since the Launchpad's tap pad and the nanoKONTROL's LOOP still tap, nor its
+control for the time signature's bottom number:
 
 - ⬜ **The line check left the phone** (`cut-it/cut-it-app`). The layout's checklist page showed
   it a step at a time in test mode and logged each Pass and Fail on the Organelle (`result`); it is
@@ -408,12 +412,8 @@ What the TouchOSC layout did that the app does not, as of 2026-11-19 when the la
   flag, so the diagnostics page's second pad and the app's test mode button only warn on the OLED.
 - ⬜ **No control for a drum's random pitch** (`cut-it/cut-it-app`): `drums rnd-pitch`, the drum
   screen's rnd pitch button.
-- ⬜ **No control for the time signature's bottom number** (`cut-it/cut-it-app`): `drums den`. The
-  songs page steps the top number alone.
 - ⬜ **No pinning a chord by holding its box** (`cut-it/cut-it-app`): `melody chord-pin`. The app
   shows a chord's pin but cannot set one.
-- ⬜ **No tap tempo on the phone** (`cut-it/cut-it-app`): the layout timed taps itself. The
-  Launchpad's tap pad and the nanoKONTROL's LOOP still tap.
 - ⬜ **No gate holds the app's commands to the patch's vocabulary** (`cut-it/cut-it-app`).
   `touchosc-assert` read every control the layout had and checked what it sent against `c_steps`,
   `c_synth`, `u_tempo` and `u_song`, and `u_net`'s acknowledgments against its buttons; the app's

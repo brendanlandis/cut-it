@@ -174,7 +174,9 @@ struct HarmonyView: View {
     }
 }
 
-/// A chord's box: its name, its spelling and its role. Held, it sounds, and the nanoKEY writes it.
+/// A chord's box: its name, its spelling and its role. Held, it sounds, and the nanoKEY writes it. Held 700 ms,
+/// it pins or unpins, as the TouchOSC layout's did; c_melody leaves it be when keys were played into it, which
+/// pinned it already.
 struct ChordBox: View {
     let chord: Cut.Chord
     @Environment(Cut.self) private var cut
@@ -198,6 +200,14 @@ struct ChordBox: View {
         .onChange(of: down) { _, on in
             if on { Tick.down() }
             cut.press("melody", "audition", chord.id, on ? 1 : 0)
+        }
+        // Lifted sooner, or taken away by iOS, the task is canceled and nothing is sent.
+        .task(id: down) {
+            guard down else { return }
+            try? await Task.sleep(for: .milliseconds(700))
+            guard !Task.isCancelled else { return }
+            Tick.down()
+            cut.press("melody", "chord-pin", chord.id)
         }
     }
 }

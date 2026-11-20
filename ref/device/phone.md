@@ -121,7 +121,7 @@ button.
 | `velocity` | The keyboard tab's velocity switch, passed on whole out `u_net`'s second outlet to `c_synth`, which refuses anything but the two below as `fail c_synth bad-velocity`; each of them is answered `ack velocity <setting>` | unknown | — |
 | `sections` | The sections page and its name tab, passed on whole out `u_net`'s fourth outlet to `u_song`, which refuses one it does not know as `fail u_song bad-selector` ([songs.md](../module/songs.md)). The five below are answered `ack sections <action>`, a button's flash; `select`, `page` and `length` are not, since the state shows them | unknown | — |
 | `songs` | The songs page, its setlists tab and its name tab, passed on out the same fourth outlet with `songs` kept in front, so `u_song` tells them from the sections page's, and refuses one it does not know as `fail u_song bad-selector`. The ten below are answered `ack songs <action>`; `select`, `page`, `entry`, `set` and `starts` are not, since the state shows them | unknown | — |
-| `melody` | The harmony, rhythm and melody tabs, passed on whole out `u_net`'s fifth outlet to `c_melody`, which refuses one it does not know as `fail c_melody bad-selector`: `set <control> <value>`, `audition <slot> <1 or 0>`, `move <slot> <start>`, and `roll-chords`, `roll-melody`, `roll-rhythm`, `on-h`, `on-m`, `style` and `bass`, each with a 1 ([synths.md](../module/synths.md), *The generator*). Not answered: the state shows them | unknown | — |
+| `melody` | The harmony, rhythm and melody tabs, passed on whole out `u_net`'s fifth outlet to `c_melody`, which refuses one it does not know as `fail c_melody bad-selector`: `set <control> <value>`, `audition <slot> <1 or 0>`, `move <slot> <start>`, `chord-pin <slot>` from a chord's box held 700 ms, and `roll-chords`, `roll-melody`, `roll-rhythm`, `on-h`, `on-m`, `style` and `bass`, each with a 1 ([synths.md](../module/synths.md), *The generator*). Not answered: the state shows them | unknown | — |
 | `voices` | The app's rails and voice page, passed on out `u_net`'s sixth outlet to `u_voices` ([voices.md](../module/voices.md)) | unknown | — |
 | `perform` | The app's performance page, passed on out `u_net`'s seventh outlet to `u_perform` ([voices.md](../module/voices.md)) | unknown | — |
 | `sound` | The app's voice setup page, passed on out `u_net`'s eighth outlet to `u_sound` ([voices.md](../module/voices.md)) | unknown | — |
@@ -410,8 +410,6 @@ control for the time signature's bottom number:
   it a step at a time in test mode and logged each Pass and Fail on the Organelle (`result`); it is
   run from `test/checklists/linecheck.md` now. Nothing on the phone reads the heartbeat's test mode
   flag, so the diagnostics page's second pad and the app's test mode button only warn on the OLED.
-- ⬜ **No pinning a chord by holding its box** (`cut-it/cut-it-app`): `melody chord-pin`. The app
-  shows a chord's pin but cannot set one.
 - ⬜ **No gate holds the app's commands to the patch's vocabulary** (`cut-it/cut-it-app`).
   `touchosc-assert` read every control the layout had and checked what it sent against `c_steps`,
   `c_synth`, `u_tempo` and `u_song`, and `u_net`'s acknowledgments against its buttons; the app's

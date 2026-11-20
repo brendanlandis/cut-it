@@ -166,7 +166,8 @@ track's random pitch, distortion, delay and reverb.
 
 **Phone**
 
-- **Chords tab:** key, mode, each chord's name, spelling and role, and the knobs. Lock is how much the chords stay put from
+- **Chords tab:** key, mode, each chord's name, spelling and role, and the knobs. Hold a chord to hear it, and play the
+  nanoKEY to write it; keep holding for a moment to pin or unpin it. Lock is how much the chords stay put from
   one loop to the next. Smooth favors chords near the last. Tension reaches for sourer ones. Home pulls toward the tonic.
 - **Rhythm tab:** the same grid to drag on, with how many times through the last step it spans.
 

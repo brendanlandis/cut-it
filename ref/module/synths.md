@@ -77,7 +77,8 @@ drift and roll, until cleared.
 
 **Chords by hand.** With a chord's box held on the harmony tab, keys played on the nanoKEY are that chord, sounding
 at once, pinned, and named if the mode knows it. A finger left on a box for 700 ms pins or unpins it, a pinned
-chord's words amber. Roll leaves pinned chords, but with a box held rolls just that one, unpinned.
+chord's box outlined, and its words amber on the rhythm tab. Roll leaves pinned chords, but with a box held rolls
+just that one, unpinned.
 
 **On the Launchpad** (Brendan, 2026-11-06), a voice's own page ([display.md](display.md)). The harmony page: a chord on
 the top row, held, sounds, the nanoKEY writes it and roll rolls just it; below, pressing a step with a chord held moves

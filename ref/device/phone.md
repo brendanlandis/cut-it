@@ -391,7 +391,8 @@ sends.** The `no link` bar reads the heartbeat alone, so it stays away: the stat
 and no press leaves the phone. So the app reports its presses too: one given up after its tries
 (*A press, once*) puts a red `not heard` bar where `no link` goes, until a press of its own is
 answered (`phone/CutIt/Cut.swift`). **Fix:** on the phone, in Settings, Privacy & Security, Local Network, switch Cut It off and on,
-then quit the app and open it. The switch can read on while it blocks (iOS, in Reference).
+then quit the app and open it. The switch can read on while it blocks (iOS, in Reference). With the
+switch off outright the bar is `not heard` too, the phone checklist's step 17.
 
 ### A socket that can't send keeps what it's given
 
@@ -400,7 +401,8 @@ and sends all of it once it can (iOS, in Reference): two presses tapped while th
 turned the page twice, at once, when the block lifted. **Fix:** `Link.send` gives the socket
 nothing unless it is ready and has a way out. A press is sent again by `resend` and, unanswered,
 given up (*The app can hear and not be heard*); a drag's next value follows. A sending socket that
-fails is made again by itself, the listener left hearing (`phone/CutIt/Link.swift`).
+fails is made again by itself, the listener left hearing (`phone/CutIt/Link.swift`). That nothing
+arrives late on the phone is the phone checklist's step 17.
 
 ### The Organelle never waits for the phone
 
@@ -464,6 +466,7 @@ control for the time signature's bottom number:
 
 And one of the app's own:
 
-- ⬜ **The phone checklist has no step for `not heard`** (*The app can hear and not be heard*). Not
-  measured: what the phone shows with Cut It's Local Network switch off outright, `not heard` or
-  `no link`, which is the step's **Pass if**. NO PLAN OWNS THIS.
+- ⬜ **The phone checklist's step 17 hasn't been run on a build with the fix** (`cut-it/cut-it-app`,
+  *A socket that can't send keeps what it's given*): `app-assert` holds the guard in the code, and
+  only the phone can block the app, so that a tap made while blocked never arrives isn't measured.
+

@@ -2,9 +2,9 @@
 
 Every **Pass if** here describes the phone, not the Organelle, unless it says otherwise. The phone shows the Launchpad's current page and controls it, and leaves the OLED's alerts and rows to the OLED (Brendan, 2026-11-04): step 3 is the one whose correct result is that nothing happens on the phone, and step 10 the one where nothing happens to the tempo.
 
-The rate limit and what `u_net` takes are `phone-assert`'s: what is left is the link, and the pages under a finger. Steps 1 to 11 are the pages and the link; steps 12 to 14 are Setup and test mode; steps 15 and 16 the drum screen. Send their lines from the Mac with `tools/send.sh`.
+The rate limit and what `u_net` takes are `phone-assert`'s: what is left is the link, and the pages under a finger. Steps 1 to 11 are the pages and the link; steps 12 to 14 are Setup and test mode; steps 15 and 16 the drum screen; step 17 the phone blocking the app. Send their lines from the Mac with `tools/send.sh`.
 
-16 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [phone](../../ref/device/phone.md), [tempo](../../ref/module/tempo.md).
+17 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [phone](../../ref/device/phone.md), [tempo](../../ref/module/tempo.md).
 
 - [ ] **1. The link is up, on the performance page**
   - **Need:** The Cut It app open on the phone, on the same network. A red no link bar along the top here means nothing below can be judged.
@@ -88,3 +88,9 @@ The rate limit and what `u_net` takes are `phone-assert`'s: what is left is the 
   - **Need:** The drum page on the Launchpad, so the phone shows the drum screen.
   - **Do:** Tap each of the effect tabs, distortion, delay and reverb, in turn, then distortion again. Tap a pad, then another, watching the knobs.
   - **Pass if:** The tab tapped turns white. Distortion shows soft, hard, fold and crush over drive, tone and mix; delay shows 1/2 to 1/32 over straight, triplet and dotted, then feedback and level; reverb shows plate, giga and free over send, size and damping. Only the chosen effect's controls show. Selecting another pad turns each knob to that drum's setting, and size, damping and the reverb's type stay put.
+
+- [ ] **17. The phone blocking the app shows, and its taps never arrive late**
+  - **Need:** The app open with no red bar, Cut It stopped on the performance page, and a voice on rows 1 and 2.
+  - **Do:** In the phone's Settings, Privacy & Security, Local Network, switch Cut It off. Back in the app, tap the top button of the left column and wait for the red bar. In Settings, switch Cut It on again, come back to the app and touch nothing for five seconds, watching the phone and the Launchpad. Then tap the left column's second button.
+  - **Pass if:** With the switch off the tap turns no page, and a red not heard bar tops the page within about a second. With it on again and nothing touched, neither the phone nor the Launchpad turns a page: the tap made while blocked never arrives. The last tap turns both to row 2's voice's page, and the bar goes.
+  - **Note:** A blocked app still hears the heartbeat, so the bar is not heard and never no link. What a blocked app hands iOS is sent when the block lifts, which is why the app hands it nothing ([phone](../../ref/device/phone.md), *A socket that can't send keeps what it's given*). If taps still do nothing with the switch on, quit the app and open it.

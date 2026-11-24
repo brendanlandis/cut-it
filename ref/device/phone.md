@@ -384,6 +384,14 @@ opened before the Organelle is running looks connected when it is not.
 The heartbeat keeps flowing even when nothing is happening, because it is the only thing
 distinguishing *idle* from *dead*.
 
+### The app can hear and not be heard
+
+⚠️ **A page that shows the instrument's state and ignores every press is iOS blocking what the app
+sends.** The `no link` bar reads the heartbeat alone, so it stays away: the state still arrives,
+no press leaves the phone, and a press given up after its tries (*A press, once*) says nothing.
+**Fix:** on the phone, in Settings, Privacy & Security, Local Network, switch Cut It off and on,
+then quit the app and open it. The switch can read on while it blocks (iOS, in Reference).
+
 ### The Organelle never waits for the phone
 
 Fire and forget over `[netsend -u]`. Phone off, phone crashed, WiFi gone — **the instrument plays

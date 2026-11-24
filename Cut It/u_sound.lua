@@ -214,7 +214,15 @@ function R.param(st, row_param, value)
   value = math.max(0, math.min(1, num(value)))
   row.values[p] = value
   st.dirty_sounds = true
-  return say(st, r, row, p, value, {})
+  local out = say(st, r, row, p, value, {})
+  -- A program brings that voice's own settings with it (the FM-1's effects: Reference, m-vave-fm-1),
+  -- so what's been set here is said again behind it, as a recall says it.
+  if m.by[p].how == "pc" then
+    for _, q in ipairs(m.list) do
+      if m.by[q].how == "cc" and row.values[q] ~= nil then say(st, r, row, q, row.values[q], out) end
+    end
+  end
+  return out
 end
 
 local function unique(st, name)

@@ -50,7 +50,8 @@ patches*).
 
 `u_sound` says a machine's parameters in `cut-it-machines.txt`'s order, the program first: a
 program change brings that voice's own effect settings with it (Reference), so what's set after it
-is what stands ([voices.md](../module/voices.md), *Machines and patches*).
+is what stands, and a program moved on its own says what's been set again behind it
+([voices.md](../module/voices.md), *Machines and patches*).
 
 ### Presence: `none`, and that is a fact rather than a gap
 
@@ -172,5 +173,7 @@ on the Organelle where these boxes cost a few microseconds.
 
 ## Open
 
-**Nothing.** What isn't known of the device itself is on its Reference page, under *Not known
-yet*.
+- ⬜ **A section's program reaches the FM-1 without its effects said again.** `c_synth` sends a
+  section's `programs` straight to `m_fm1` ([synths.md](../module/synths.md)), and `u_sound`, which
+  holds what's been set, doesn't hear of it: the voice arrives with its own effect settings until a
+  control moves. NO PLAN OWNS THIS.

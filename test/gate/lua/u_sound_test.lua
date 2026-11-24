@@ -96,6 +96,10 @@ equal("⛔ ... and at nothing its switch goes off", R.param(st, "3:reverb", 0),
       { { "fm", "cc", { 4, 0 } }, { "fm", "cc", { 7, 0 } } })
 equal("a top with no switch is the one CC, 0 to that top", R.param(st, "3:cutoff", 1),
       { { "fm", "cc", { 2, 107 } } })
+equal("⛔ a program moved says what's been set again behind it: the voice it brings has its own",
+      R.param(st, "3:program", 0.5),
+      { { "fm", "program", { 64 } }, { "fm", "cc", { 2, 107 } },
+        { "fm", "cc", { 4, 0 } }, { "fm", "cc", { 7, 0 } } })
 
 print("\n--- the fm synth's test voices ---")
 for n, v in ipairs(R.TEST_VOICES) do

@@ -43,14 +43,15 @@ audio).
 effect channel 2, as it ships. Change either on the device and the notes or the effects stop,
 with nothing in the patch to say so.
 
-So the `fm` machine's parameters are its program and its effects, nothing of the voice. Each effect's
+So the `fm` machine's parameters are its program, its effects and a DX7 voice of the library, sent
+whole (below, *`byte` is a whole voice*); nothing of a voice's own parameters. Each effect's
 amount carries that effect's own on-off, on above 0 and off at 0, and stops at the FM-1's top for
 it: 100, the cutoff's 107, the Q's 10, a type's 2 ([voices.md](../module/voices.md), *Machines and
 patches*).
 
 `u_sound` says a machine's parameters in `cut-it-machines.txt`'s order, the program first: a
 program change brings that voice's own effect settings with it (Reference), so what's set after it
-is what stands, and a program moved on its own says what's been set again behind it
+is what stands, and a program or a DX7 voice moved on its own says what's been set again behind it
 ([voices.md](../module/voices.md), *Machines and patches*).
 
 ### Presence: `none`, and that is a fact rather than a gap
@@ -102,15 +103,16 @@ answers, nothing is lost, the spigot stays shut, the counter never starts, and *
 switch it on. There is no warning, because nothing is wrong from the instrument's point of view.
 
 **Fix:** `u_present` forks **`wire-watch.sh`** on a heartbeat — every 8 ticks, so ~16 s. It hashes
-the ALSA **client names** and runs `wire.sh` only when they change, so a device appearing is wired
-whether or not anything was ever lost. ✅ **So the checklist steps pull the FM-1 ALONE** — pulling a
+the ALSA clients and their connections and runs `wire.sh` only when they change, so a device
+appearing is wired whether or not anything was ever lost, and so is one switched off and on between
+two heartbeats ([presence.md](../module/presence.md)). ✅ **So the checklist steps pull the FM-1 ALONE** — pulling a
 detectable device alongside it goes through the loss path and proves nothing about the heartbeat.
 
 | | Behavior | Evidence | Item |
 |---|---|---|---|
 | `none` device absent at load | enumerated, unsubscribed, never re-wired — 120 s observed, on the Volca's interface | verified | 285 |
 | The heartbeat closes it | `wire-watch.sh` fires while **nothing** is lost, which no other fork in `u_present` can do | verified | 292 |
-| On the FM-1 itself | Taken off the USB bus and put back three times, in software (its `authorized` file) and not by its cable: wired 1, 12 and 14 s after it came back, nothing lost meanwhile (2026-11-24) | verified | — |
+| On the FM-1 itself | Switched off and on by hand: wired 5.9 s after it came back. Taken off the USB bus and put back three times in software (its `authorized` file): 10.7, 11.7 and 9.1 s. Nothing lost meanwhile (2026-11-24) | verified | — |
 
 ### One selector-prefixed inlet, not one inlet per capability
 
@@ -155,12 +157,26 @@ held, sustained chord, and `aseqdump` on Pd's Midi-Out 4 shows a panic sending e
 to inlet 1 it sets the controller instead, and panic's sustain off silently does nothing.
 `fm1-assert.sh` asserts the channel.
 
-### `byte` is a whole voice, and it takes a slot
+### `byte` is a whole voice, into the one voice kept for it
 
-`byte <b>` sends one raw byte out the FM-1's own port, for a SysEx message a byte at a time: today
-the diagnostics page's two DX7 test voices ([voices.md](../module/voices.md)). ⚠️ **A voice sent this
-way takes the place of the one the FM-1 is on**, and stays through program changes (Reference), so a
-test voice sits in whichever slot was sounding.
+`byte <b>` sends one raw byte out the FM-1's own port. `u_sound` sends a DX7 voice that way, a byte
+at a time: one of the library's ([voices.md](../module/voices.md), *The DX7 library*) or one of the
+diagnostics page's two test voices.
+
+⛔ **A voice sent this way is written into the FM-1 for good**, over the voice it is on, and is
+still there after a power cycle (Reference). So every one goes into **the FM-1's voice 128**
+(program 127, the `dx7-voice` row's top in `cut-it-machines.txt`), which Cut It keeps for it: the
+program change first, then the voice. ✅ Voice 002 sounded the same before and after, and 128 took
+the voice (2026-11-24, recorded from the FM-1's USB audio).
+
+⛔ **That program change goes as bytes too, `C0 7F`, never through `program`.** Pd writes
+`[midiout]`'s bytes at once and queues `[pgmout]`'s (`~/Sites/!reference/pure-data.md`), so a
+`program 127` sent just ahead of a voice arrives behind it, and the voice lands on whichever voice
+the FM-1 was on. ✅ `aseqdump` on Pd's Midi-Out 4 showed the voice first that way; with the bytes,
+the program change, the voice, then the effects' controllers (2026-11-24).
+
+⚠️ **Each voice chosen is a write into the FM-1's memory**, so `u_sound` never sends the one it
+sent last. How many writes its memory takes is not known (Reference).
 
 ### The layer stays Pd
 
@@ -173,7 +189,8 @@ on the Organelle where these boxes cost a few microseconds.
 
 ## Open
 
-- ⬜ **A section's program reaches the FM-1 without its effects said again.** `c_synth` sends a
-  section's `programs` straight to `m_fm1` ([synths.md](../module/synths.md)), and `u_sound`, which
-  holds what's been set, doesn't hear of it: the voice arrives with its own effect settings until a
-  control moves. NO PLAN OWNS THIS.
+- ⬜ **A section's program reaches the FM-1 without its effects said again.** NO PLAN OWNS THIS.
+  `c_synth` sends a section's `programs` straight to `m_fm1` ([synths.md](../module/synths.md)), and
+  `u_sound`, which holds what's been set, doesn't hear of it: the voice arrives with its own effect
+  settings until a control moves, and a row on a DX7 voice is left on the section's program, its own
+  voice not sent again until another is chosen.

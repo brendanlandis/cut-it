@@ -26,6 +26,13 @@ A patch is a machine's saved sound.
 A synth is only told what you've actually set, so a voice taking up the FM-1 keeps whatever sound it has until you change
 something. Its own knobs still work, but Cut It can't see them, so they can't be saved.
 
+## DX7 voices on the FM-1
+
+An FM voice has two knobs past its effects, **dx7-bank** and **dx7-voice**: 32 banks of 32, the DX7's factory voices and
+Yamaha's cartridges. Turn either and that voice is sent to the FM-1, whose screen shows its name. It lands in the FM-1's
+voice 128, which Cut It keeps for this, so the other 127 stay as they are. A voice is its program or a DX7 voice, whichever
+you chose last, and a patch saves whichever it is.
+
 ## Effects on a Pd voice
 
 A sine, saw or square voice's patch can hold **distortion** (drive and its type), **echo** (level, time and feedback) and

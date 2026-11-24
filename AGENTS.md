@@ -100,7 +100,7 @@ stops the instrument**, because loading any patch restarts Pd. See
 | `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` `c_kit` `c_voice` `c_synth` |
 | `e_` | An effect stage: the drums' three, inside `c_kit` (2026-11-05), the reverb's three engines and the switch they share inside `e_verb`, what a held repeat loops of them, and what knob 4 loops of the whole kit; v0.4's filter stages to come | `e_drive` `e_delay` `e_verb` `e_plate` `e_gigaverb` `e_freeverb` `e_tail` `e_tape` `e_rec` `e_rush` |
 | `.sh` | Run through `[shell]` — the first five once at load, `recover.sh` only when panic's second tier fires | `wire.sh` `state-dir.sh` `logroll.sh` `phone-ip.sh` `codec-gain.sh` `recover.sh` |
-| `.txt` | Read by Pd or its Lua, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` `cut-it-arrangement-page.txt` `cut-it-controls.txt` `cut-it-machines.txt` `cut-it-factory.txt` |
+| `.txt` | Read by Pd or its Lua, so space-separated | `cut-it-map.txt` `cut-it-drum-page.txt` `cut-it-arrangement-page.txt` `cut-it-controls.txt` `cut-it-machines.txt` `cut-it-factory.txt` `cut-it-dx7.txt` |
 | `.lua` `.pd_lua` | An abstraction's rules in plain Lua, and the pdlua class that carries them into Pd, under its name ([ref/conventions.md](ref/conventions.md), *File naming*) | `c_steps.lua` `c_steps-lua.pd_lua` `c_synth.lua` `c_synth-lua.pd_lua` `g_grid.lua` `g_grid-lua.pd_lua` `u_map.lua` `u_map-lua.pd_lua` `u_tempo.lua` `u_tempo-lua.pd_lua` `u_song.lua` `u_song-lua.pd_lua` `u_voices.lua` `u_voices-lua.pd_lua` `u_perform.lua` `u_perform-lua.pd_lua` `u_sound.lua` `u_sound-lua.pd_lua` `u_once.lua` `u_once-lua.pd_lua` `m_nano.lua` `m_nano-lua.pd_lua` `m_organelle.lua` `m_organelle-lua.pd_lua`, and `lua-face.lua`, what every one of those classes shares |
 
 **The prefix table above is `Cut It/`'s.** `Cut It Debug/` is flat and has no prefixes — one
@@ -114,6 +114,10 @@ externals during the local syntax check and is never deployed.
 **The drum samples are not in git**, since this repo is public: `samples/drums/` holds Brendan's, one a
 pad, and `tools/samples.sh` converts them into `Cut It/samples/drums/`, which `tools/deploy.sh` runs and
 copies with the patch ([ref/module/sequencer.md](ref/module/sequencer.md), *The kit*).
+
+**Nor are the DX7 voice library's banks**, which are Yamaha's: `Cut It/dx7/` holds the 32 files
+`cut-it-dx7.txt` lists, and `tools/deploy.sh` copies them with the patch
+([ref/module/voices.md](ref/module/voices.md), *The DX7 library*).
 
 `device/` backs up config that lives only on hardware; `device-state/` backs up what the *instrument*
 wrote. Neither is deployed.

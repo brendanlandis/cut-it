@@ -3,3 +3,5 @@ stock/
 __pycache__/
 # The drum samples converted for the patch, from samples/drums (tools/samples.sh).
 Cut It/samples/
+# The DX7 voice library's bank files, Yamaha's (Cut It/cut-it-dx7.txt lists them).
+Cut It/dx7/

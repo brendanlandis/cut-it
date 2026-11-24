@@ -16,5 +16,5 @@
 ## Trying a whole voice on the FM-1
 
 The diagnostics page has two amber pads, and the phone has two buttons, that each send the FM-1 a whole DX7 voice: a glassy
-bell and a growling bass. Play the nanoKEY on an FM voice after each. The voice takes the place of the one the FM-1 is on,
-and stays there through program changes. Don't hold SAVE on the FM-1 afterwards, unless you want it kept in that slot.
+bell and a growling bass. Play the nanoKEY on an FM voice after each. Each lands in the FM-1's voice 128, the one Cut It
+keeps for DX7 voices, and the FM-1 switches to it.

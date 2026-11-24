@@ -50,7 +50,7 @@
 #X obj 2800 760 - 1;
 #X obj 2800 810 div 16;
 #X obj 2800 860 + 1;
-#X text 2400 1000 byte: a raw byte \, out the FM-1's own port. A SysEx dump comes a byte at a time. Its channel must be 1., f 50;
+#X text 2400 1000 byte: a raw byte \, out the FM-1's own port. A DX7 voice comes a byte at a time \, and so does the program change ahead of it: pgmout's is queued and would arrive behind the voice (ref/device/fm1.md). Its channel must be 1., f 50;
 #X obj 640 940 + 1;
 #X obj 2760 2060 t b b;
 #X msg 2760 2120 128;

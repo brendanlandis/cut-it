@@ -204,7 +204,7 @@ are all covered.
 | Cable | Connects |
 |---|---|
 | **⅛" TRS male → 2× 1/4" TS male** | Organelle headphone jack → mixer ch1 (tip: the drums) and ch2 (ring: the mic and the Pd voices). Not the 1/4" outs: see above |
-| **3.5mm TRS → 2× 1/4" TS** | FM-1 → mixer ch3/4, the Volca's cable. ⚠️ Its output runs hot — start with channel gain low |
+| **3.5mm TRS → 2× 1/4" TS** | FM-1 → mixer ch3/4, the Volca's cable. ✅ Heard through the mixer, more than three notes at once (Brendan, 2026-11-24). ⚠️ Its output runs hot — start with channel gain low |
 | **USB-C, one that carries data** | FM-1 → the hub. ⛔ The cable in its box only charges it: nothing enumerates (`~/Sites/!reference/m-vave-fm-1.md`) |
 | **XLR female → 1/4" TS** | The SM58 → the Organelle's input, on the tip. Unbalanced, so keep it short |
 | **2× 1/4" TS** | Mixer MAIN OUT → PA |
@@ -215,10 +215,6 @@ Launchpad's cables and adapters, the nanoKONTROL's own cable.
 ⚠️ **Label the cables.** With this many identical 1/4" jacks it is worth the ten minutes.
 
 ## Open
-
-- ⬜ **Whether the FM-1's audio is in mixer channels 3 and 4**, on the Volca's cable, is not
-  recorded: it was measured over its USB audio on 2026-11-24, not heard through the mixer.
-  NO PLAN OWNS THIS.
 
 - ⬜ **How the Streichfett is powered**, its own supply or the hub's bus, is not recorded, nor its
   draw: its Reference page, `~/Sites/!reference/waldorf-streichfett.md`, has no `MaxPower`.

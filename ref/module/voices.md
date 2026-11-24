@@ -106,8 +106,8 @@ takes.
 ### Machines and patches
 
 **`u_sound` is what each voice sounds like** (Brendan, 2026-11-06). `cut-it-machines.txt` lists each machine's
-parameters and how each is said: a control change, a program change or a Pd voice's own. A **patch** is a machine's
-saved sound. `cut-it-factory.txt` holds factory patches, good starting points outside any song; a song copies one and
+parameters and how each is said: a control change, a program change, a Pd voice's own or a DX7 voice of the library
+(below). A **patch** is a machine's saved sound. `cut-it-factory.txt` holds factory patches, good starting points outside any song; a song copies one and
 depends on nothing after that. A song holds its patches (`put song patches`) and each voice's sound as it stands
 (`put song sounds`).
 
@@ -128,7 +128,25 @@ depends on nothing after that. A song holds its patches (`put song patches`) and
 
 | A Pd voice's effects | `e_line`, one a generator line and one for keys: `drive`, `drive-type`, `echo`, `echo-time`, `echo-fb`, `reverb` and `room`, each off until asked for, at its CPU cost then | unknown |
 | A keys voice on a Pd machine | `c_keys`, four notes at once, from `c_synth` | unknown |
-| The fm synth's test | Pads 83 and 84 on the diagnostics page, or the phone's: a DX7 voice as a one-voice dump, a byte at a time. The FM-1 takes it in place of the voice it is on ([fm1.md](../device/fm1.md), *`byte` is a whole voice, and it takes a slot*) | verified |
+| The fm synth's test | Pads 83 and 84 on the diagnostics page, or the phone's: a DX7 voice built here, sent as the library's are, into the voice kept for them (below) | verified |
+
+### The DX7 library
+
+**The `fm` machine plays any of 1,024 DX7 voices** (Brendan, 2026-11-24): Yamaha's factory ROMs 1A to 4B and its
+VRC-101 to 112 cartridges, 32 banks of 32. `cut-it-dx7.txt` lists the bank files in order and `u_sound`'s face reads each
+from the patch's `dx7` folder at load; the files are Yamaha's and outside git, as the drum samples are. Two of the
+machine's parameters choose one, `dx7-bank` and `dx7-voice`.
+
+| | | Evidence |
+|---|---|---|
+| A bank file | 32 voices as a DX7 saves them, 4104 bytes. One that isn't is turned away and named in Pd's log (`test/gate/lua/u_sound_test.lua`) | verified |
+| A bank's number | Its place in `cut-it-dx7.txt`, and a song keeps a voice by it, so a new bank goes at the end | verified |
+| A voice chosen | Unpacked to a one-voice dump and sent whole, a byte at a time, into the FM-1's voice 128, which Cut It keeps for it, its program change ahead of it as bytes ([fm1.md](../device/fm1.md), *`byte` is a whole voice, into the one voice kept for it*). Every control change that's been set is said again behind it, as for a program | verified |
+| The same voice again | Sends nothing: each one sent is written into the FM-1's memory | verified |
+| A bank that isn't there | `warn u_sound no-dx7-bank-<n>`, and nothing is sent | verified |
+| A program or a DX7 voice | Whichever was chosen last: choosing one lets go of the other, in the voice's sound and so in its patch | verified |
+| A recall, a song loading, a section snapping back | The voice first, a program or a DX7 voice, then what's set | verified |
+| What a song keeps | The middle of the bank's, the voice's or the program's step, so the three decimals it writes bring the same one back | verified |
 
 **The Launchpad's sound page:** the machine's first eight parameters as columns on rows 3 to 8, tapped to set; row 2 its
 song patches, tapped to recall; row 1 eight notes to hear it with.

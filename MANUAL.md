@@ -111,6 +111,13 @@ A patch is a machine's saved sound.
 A synth is only told what you've actually set, so a voice taking up the FM-1 keeps whatever sound it has until you change
 something. Its own knobs still work, but Cut It can't see them, so they can't be saved.
 
+### DX7 voices on the FM-1
+
+An FM voice has two knobs past its effects, **dx7-bank** and **dx7-voice**: 32 banks of 32, the DX7's factory voices and
+Yamaha's cartridges. Turn either and that voice is sent to the FM-1, whose screen shows its name. It lands in the FM-1's
+voice 128, which Cut It keeps for this, so the other 127 stay as they are. A voice is its program or a DX7 voice, whichever
+you chose last, and a patch saves whichever it is.
+
 ### Effects on a Pd voice
 
 A sine, saw or square voice's patch can hold **distortion** (drive and its type), **echo** (level, time and feedback) and
@@ -130,7 +137,7 @@ what it snaps back to.
 
 | Machine | Parameters |
 |---|---|
-| FM (FM-1) | program, filter, cutoff, resonance, reverb, delay, drive, chorus, phaser, filter-type, reverb-type, reverb-decay, delay-time, delay-feedback, drive-tone, drive-level, chorus-rate, chorus-depth, phaser-rate, phaser-depth |
+| FM (FM-1) | program, filter, cutoff, resonance, reverb, delay, drive, chorus, phaser, filter-type, reverb-type, reverb-decay, delay-time, delay-feedback, drive-tone, drive-level, chorus-rate, chorus-depth, phaser-rate, phaser-depth, dx7-bank, dx7-voice |
 | strings (Streichfett) | program, registration, octaves, release, crescendo, ensemble-type, ensemble, solo-tone, tremolo, split, solo-sustain, solo-attack, solo-decay, balance, fx-type, animate, phaser, reverb |
 | sine | attack, release, bright, level, drive, echo, echo-time, reverb, echo-fb, room, drive-type |
 | saw | attack, release, bright, level, drive, echo, echo-time, reverb, echo-fb, room, drive-type |
@@ -290,8 +297,8 @@ Besides these, every parameter of a voice's machine.
 ### Trying a whole voice on the FM-1
 
 The diagnostics page has two amber pads, and the phone has two buttons, that each send the FM-1 a whole DX7 voice: a glassy
-bell and a growling bass. Play the nanoKEY on an FM voice after each. The voice takes the place of the one the FM-1 is on,
-and stays there through program changes. Don't hold SAVE on the FM-1 afterwards, unless you want it kept in that slot.
+bell and a growling bass. Play the nanoKEY on an FM voice after each. Each lands in the FM-1's voice 128, the one Cut It
+keeps for DX7 voices, and the FM-1 switches to it.
 
 ## Every control
 

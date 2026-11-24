@@ -12,7 +12,7 @@
 --   {"heard", "list", {"machine", param, value}}  u_perform: a parameter moved on the Launchpad
 --   {"kit", "bang", {}}                           c_steps: the kit's sound as it stands is what it snaps back to
 --   {"keys", "tone" | "list", {...}}              c_keys: a keys voice on a Pd machine
---   {"fm", "byte", {b}}                           m_fm1: a whole voice a byte at a time, the diagnostics page's test
+--   {"fm", "byte", {b}}                           m_fm1: a whole DX7 voice a byte at a time, from the library
 --   {"err", "warn" | "fail", {"u_sound", text}}   err (C-12)
 -- The phone's state (R.phone) is worked out by the face, and sent when it changes.
 
@@ -31,7 +31,8 @@ local function report(level, text)
 end
 function R.fail(text) return report("fail", text) end
 
--- cut-it-machines.txt: { machine = { list = {params in order}, by = {param = {how, n, default, top, switch}} } }.
+-- cut-it-machines.txt: { machine = { list = {params in order}, by = {param = {how, n, default, top, switch}},
+-- bank = its bank parameter, voice = its voice parameter } }.
 function R.parse_machines(text)
   local t = {}
   for line in (text or ""):gmatch("[^\r\n]+") do
@@ -43,6 +44,7 @@ function R.parse_machines(text)
         t[m].list[#t[m].list + 1] = p
         t[m].by[p] = { how = how, n = tonumber(n) or 0, default = tonumber(d) or 0,
                        top = tonumber(top), switch = tonumber(switch) }
+        if how == "bank" or how == "voice" then t[m][how] = p end
       end
     end
   end
@@ -71,8 +73,76 @@ end
 
 function R.new(machines_text, factory_text)
   local st = { machines = R.parse_machines(machines_text), factory = R.parse_factory(factory_text),
-               rows = {}, patches = {}, order = {}, at_row = 0, last_sent = {} }
+               rows = {}, patches = {}, order = {}, at_row = 0, last_sent = {}, library = {} }
   return st
+end
+
+-- The DX7 voice library (Brendan, 2026-11-24): bank files as a DX7 saves them, 32 voices each, in the
+-- patch's dx7 folder and outside git. cut-it-dx7.txt lists them, and a bank's place there is its number.
+function R.parse_library(text)
+  local t = {}
+  for line in (text or ""):gmatch("[^\r\n]+") do
+    local f = line:match("^%s*([^#%s]+)")
+    if f then t[#t + 1] = f end
+  end
+  return t
+end
+
+-- A bank file as read: a format 9 dump, F0 43 0n 09 20 00, 32 voices of 128 packed bytes, a checksum,
+-- F7. Kept as its 4096 bytes of voices; anything else is turned away.
+function R.bank(st, i, data)
+  if type(data) ~= "string" or #data ~= 4104 or data:byte(1) ~= 0xF0 or data:byte(2) ~= 0x43
+     or data:byte(4) ~= 0x09 or data:byte(4104) ~= 0xF7 then
+    return false
+  end
+  st.library[i] = data:sub(7, 4102)
+  return true
+end
+
+-- One of a bank's voices, v from 0, as the 155 bytes of a one-voice dump: a bank packs several
+-- parameters to a byte, and a one-voice dump has each in its own. Six operators, OP6 first, 17 bytes
+-- packed and 21 not; then the pitch EG, the algorithm and the rest, and the name.
+function R.unpacked(bank, v)
+  local at = v * 128
+  local function b(i) return bank:byte(at + i + 1) end
+  local d = {}
+  for op = 0, 5 do
+    local o = op * 17
+    for i = 0, 10 do d[#d + 1] = b(o + i) & 127 end   -- EG rates and levels, keyboard scaling's breakpoint and depths
+    d[#d + 1] = b(o + 11) & 3                         -- left curve
+    d[#d + 1] = (b(o + 11) >> 2) & 3                  -- right curve
+    d[#d + 1] = b(o + 12) & 7                         -- rate scaling
+    d[#d + 1] = b(o + 13) & 3                         -- amp mod sensitivity
+    d[#d + 1] = (b(o + 13) >> 2) & 7                  -- velocity sensitivity
+    d[#d + 1] = b(o + 14) & 127                       -- output level
+    d[#d + 1] = b(o + 15) & 1                         -- ratio or fixed
+    d[#d + 1] = (b(o + 15) >> 1) & 31                 -- coarse
+    d[#d + 1] = b(o + 16) & 127                       -- fine
+    d[#d + 1] = (b(o + 12) >> 3) & 15                 -- detune
+  end
+  for i = 102, 109 do d[#d + 1] = b(i) & 127 end      -- pitch EG
+  d[#d + 1] = b(110) & 31                             -- algorithm
+  d[#d + 1] = b(111) & 7                              -- feedback
+  d[#d + 1] = (b(111) >> 3) & 1                       -- oscillator sync
+  for i = 112, 115 do d[#d + 1] = b(i) & 127 end      -- LFO speed and delay, pitch and amp mod depth
+  d[#d + 1] = b(116) & 1                              -- LFO sync
+  d[#d + 1] = (b(116) >> 1) & 7                       -- LFO wave
+  d[#d + 1] = (b(116) >> 4) & 7                       -- pitch mod sensitivity
+  d[#d + 1] = b(117) & 127                            -- transpose
+  for i = 118, 127 do d[#d + 1] = b(i) & 127 end      -- name
+  return d
+end
+
+-- A voice's 155 bytes as a one-voice dump, format 0 on MIDI channel 1: F0 43 00 00 01 1B <155>
+-- <checksum> F7.
+local function dump(d)
+  local sum = 0
+  for _, b in ipairs(d) do sum = sum + b end
+  local out = { 0xF0, 0x43, 0x00, 0x00, 0x01, 0x1B }
+  for _, b in ipairs(d) do out[#out + 1] = b end
+  out[#out + 1] = (128 - (sum % 128)) % 128
+  out[#out + 1] = 0xF7
+  return out
 end
 
 -- A parameter as it stands: what's been set, or else its default, which is only what the page shows.
@@ -90,6 +160,46 @@ local function copy(t)
   return o
 end
 
+-- A parameter that counts in steps: which of its n a value is, from 0.
+local function index(value, n)
+  return math.max(0, math.min(n - 1, math.floor(value * n)))
+end
+
+-- The hows that choose the voice itself: a row's voice is a program or a DX7 voice, whichever was chosen
+-- last. Each counts in steps.
+local CHOOSES = { pc = true, bank = true, voice = true }
+
+-- A whole voice into the program the machine keeps for DX7 voices, the voice parameter's top. The FM-1
+-- takes a voice in place of the one it is on and keeps it for good (Reference, m-vave-fm-1), so its
+-- program change goes first, and as bytes like the voice: Pd sends a byte at once and queues a program
+-- change, so a [pgmout]'s would arrive behind the voice, which would land wherever the FM-1 was
+-- (ref/device/fm1.md). On MIDI channel 1, as the dump is.
+local function into_slot(machine, m, bytes, out)
+  out[#out + 1] = { machine, "byte", { 0xC0 } }
+  out[#out + 1] = { machine, "byte", { m.by[m.voice].top or 127 } }
+  for _, b in ipairs(bytes) do out[#out + 1] = { machine, "byte", { b } } end
+  return out
+end
+
+-- A DX7 voice from the library. The same voice isn't sent twice running, since each is written into the
+-- FM-1. again: send it whatever was last sent, as a recall does. True if it went.
+local function say_voice(st, row, out, again)
+  local m = st.machines[row.machine]
+  if not (m and m.bank and m.voice) then return false end
+  local bank = index(value_of(st, row, m.bank), m.by[m.bank].n)
+  local voice = index(value_of(st, row, m.voice), m.by[m.voice].n)
+  local key = bank * m.by[m.voice].n + voice
+  if row.voiced == key and not again then return false end
+  local data = st.library[bank + 1]
+  if not data then
+    out[#out + 1] = report("warn", "no-dx7-bank-" .. (bank + 1))
+    return false
+  end
+  row.voiced = key
+  into_slot(row.machine, m, dump(R.unpacked(data, voice)), out)
+  return true
+end
+
 -- What a parameter's value says to its machine.
 local function say(st, r, row, param, value, out)
   local m = st.machines[row.machine]
@@ -102,7 +212,9 @@ local function say(st, r, row, param, value, out)
     if p.switch then out[#out + 1] = { row.machine, "cc", { p.switch, v > 0 and 1 or 0 } } end
     out[#out + 1] = { row.machine, "cc", { p.n, v } }
   elseif p.how == "pc" then
-    out[#out + 1] = { row.machine, "program", { math.min(p.n - 1, math.floor(value * p.n)) } }
+    out[#out + 1] = { row.machine, "program", { index(value, p.n) } }
+  elseif p.how == "bank" or p.how == "voice" then
+    say_voice(st, row, out)
   elseif p.how == "pd" and row.engine and row.engine > 0 then
     out[#out + 1] = { "engine", "tone", { row.engine, row.line, param, value } }
   elseif p.how == "pd" then
@@ -116,10 +228,18 @@ local function say_all(st, r, out)
   local row = st.rows[r]
   local m = row and st.machines[row.machine]
   if not m then return out end
+  -- The voice itself first, a program or a DX7 voice, since it brings settings of its own; then the rest.
   for _, p in ipairs(m.list) do
-    if m.by[p].how == "pd" then
+    if m.by[p].how == "pc" and row.values[p] ~= nil then say(st, r, row, p, row.values[p], out) end
+  end
+  if m.bank and m.voice and (row.values[m.bank] ~= nil or row.values[m.voice] ~= nil) then
+    say_voice(st, row, out, true)
+  end
+  for _, p in ipairs(m.list) do
+    local how = m.by[p].how
+    if how == "pd" then
       say(st, r, row, p, value_of(st, row, p), out)
-    elseif row.values[p] ~= nil then
+    elseif not CHOOSES[how] and row.values[p] ~= nil then
       say(st, r, row, p, row.values[p], out)
     end
   end
@@ -212,12 +332,33 @@ function R.param(st, row_param, value)
   local m = st.machines[row.machine]
   if not (m and m.by[p]) then return { report("warn", "no-param-" .. tostring(p)) } end
   value = math.max(0, math.min(1, num(value)))
+  local how = m.by[p].how
+  local out = {}
+  if not CHOOSES[how] then
+    row.values[p] = value
+    st.dirty_sounds = true
+    return say(st, r, row, p, value, out)
+  end
+  -- Kept as the middle of its step: a song writes three decimals, and a value near a step's edge would
+  -- come back as the step beside it.
+  value = (index(value, m.by[p].n) + 0.5) / m.by[p].n
   row.values[p] = value
   st.dirty_sounds = true
-  local out = say(st, r, row, p, value, {})
-  -- A program brings that voice's own settings with it (the FM-1's effects: Reference, m-vave-fm-1),
-  -- so what's been set here is said again behind it, as a recall says it.
-  if m.by[p].how == "pc" then
+  -- A program or a DX7 voice, whichever was chosen last: choosing one lets go of the other.
+  for _, q in ipairs(m.list) do
+    local hq = m.by[q].how
+    if CHOOSES[hq] and (hq == "pc") ~= (how == "pc") then row.values[q] = nil end
+  end
+  local went = true
+  if how == "pc" then
+    row.voiced = nil
+    say(st, r, row, p, value, out)
+  else
+    went = say_voice(st, row, out)
+  end
+  -- A voice brings its own settings with it (the FM-1's effects: Reference, m-vave-fm-1), so what's
+  -- been set here is said again behind it, as a recall says it.
+  if went then
     for _, q in ipairs(m.list) do
       if m.by[q].how == "cc" and row.values[q] ~= nil then say(st, r, row, q, row.values[q], out) end
     end
@@ -284,16 +425,26 @@ function R.tweaks(st, keep)
   local out = {}
   for r = 1, R.ROWS do
     local row = st.rows[r]
-    if row and row.base then
-      local changed = false
+    local m = row and st.machines[row.machine]
+    if row and row.base and m then
+      local moved, chosen = {}, false
       for k, v in pairs(row.base) do
         if row.values[k] ~= v then
           row.values[k] = v
-          say(st, r, row, k, v, out)
-          changed = true
+          moved[#moved + 1] = k
+          chosen = chosen or CHOOSES[m.by[k] and m.by[k].how] or false
         end
       end
-      if changed then st.dirty_sounds = true end
+      if chosen then
+        -- Its voice went back: what it was saved with chooses it alone, and the rest is said behind it.
+        for _, q in ipairs(m.list) do
+          if CHOOSES[m.by[q].how] and row.base[q] == nil then row.values[q] = nil end
+        end
+        say_all(st, r, out)
+      else
+        for _, k in ipairs(moved) do say(st, r, row, k, row.values[k], out) end
+      end
+      if #moved > 0 then st.dirty_sounds = true end
     end
   end
   return out
@@ -437,11 +588,9 @@ function R.mapped(st, sel, value)
   return R.param(st, sel, value)
 end
 
--- A DX7 voice for the fm synth (Brendan, 2026-11-06), a one-voice dump a byte at a time: the diagnostics
--- page's test of whether its patches can be DX7 voices held in Pd. The FM-1 takes it in place of the voice
--- it is on, and keeps it there through program changes (Reference, m-vave-fm-1). Six operators, OP6 first,
--- 21 bytes each; then the pitch EG, the algorithm and the rest, and the name: 155 bytes, in a format 0 dump
--- on MIDI channel 1, F0 43 00 00 01 1B <155> <checksum> F7.
+-- A DX7 voice made here for the fm synth (Brendan, 2026-11-06), the diagnostics page's test that a whole
+-- voice reaches it: sent as the library's are, into the program kept for them. Six operators, OP6 first,
+-- 21 bytes each; then the pitch EG, the algorithm and the rest, and the name: 155 bytes.
 local function operator(level, coarse, fine, decay, sustain)
   return { 99, decay, 40, 50,           -- EG rates
            99, sustain, sustain // 2, 0,  -- EG levels
@@ -458,13 +607,7 @@ local function voice_bytes(name, algorithm, feedback, ops)
   for _, b in ipairs({ 99, 99, 99, 99, 50, 50, 50, 50 }) do d[#d + 1] = b end   -- pitch EG, flat
   for _, b in ipairs({ algorithm - 1, feedback, 1, 35, 0, 0, 0, 0, 0, 3, 24 }) do d[#d + 1] = b end
   for i = 1, 10 do d[#d + 1] = string.byte(name, i) or 32 end
-  local sum = 0
-  for _, b in ipairs(d) do sum = sum + b end
-  local out = { 0xF0, 0x43, 0x00, 0x00, 0x01, 0x1B }
-  for _, b in ipairs(d) do out[#out + 1] = b end
-  out[#out + 1] = (128 - (sum % 128)) % 128
-  out[#out + 1] = 0xF7
-  return out
+  return dump(d)
 end
 
 -- Two voices nothing like each other or like its presets: a glassy bell, and a growling bass.
@@ -479,9 +622,13 @@ R.TEST_VOICES = {
 
 function R.test_voice(st, n)
   local v = R.TEST_VOICES[math.floor(num(n))]
-  if not v then return {} end
-  local out = {}
-  for i, b in ipairs(v) do out[i] = { "fm", "byte", { b } } end
+  local m = st.machines.fm
+  if not (v and m and m.voice) then return {} end
+  local out = into_slot("fm", m, v, {})
+  -- Whatever row held a DX7 voice no longer has it there.
+  for r = 1, R.ROWS do
+    if st.rows[r] then st.rows[r].voiced = nil end
+  end
   return out
 end
 

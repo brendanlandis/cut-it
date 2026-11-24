@@ -36,6 +36,9 @@ final class Cut {
     }
 
     var linked = false
+    /// A press given up with no answer, until one is answered: the instrument's state can keep arriving while
+    /// nothing the phone sends does (ref/device/phone.md, The app can hear and not be heard).
+    var unheard = false
     /// Test mode, the Organelle's own, from the heartbeat: the line check stands in for the page while it's on.
     var testMode = false
     /// The synth the nanoKEY plays, c_synth's choice.
@@ -183,6 +186,7 @@ final class Cut {
         for (id, entry) in waiting {
             if entry.tries >= Self.maxTries {
                 waiting[id] = nil
+                unheard = true
             } else {
                 waiting[id] = (entry.message, entry.tries + 1)
                 link.send(entry.message)
@@ -213,7 +217,8 @@ final class Cut {
         case "/cutit/ack":
             if a.first?.text == "result" { verdictsHeard += 1 }
         case "/cutit/once":
-            if let id = a.first?.number { waiting[id] = nil }
+            // Only a press still being sent: an answer to someone else's says nothing of ours.
+            if let id = a.first?.number, waiting.removeValue(forKey: id) != nil { unheard = false }
         case "/cutit/here":
             guard a.count >= 2 else { return }
             gridStep = a[0].number

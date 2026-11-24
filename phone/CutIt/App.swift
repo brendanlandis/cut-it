@@ -62,8 +62,9 @@ struct RootView: View {
         HStack(spacing: 6) {
             Rail(side: .left)
             VStack(spacing: 4) {
-                if !cut.linked {
-                    Text("no link").font(.system(size: 14, weight: .semibold))
+                // Nothing heard from the instrument, or the instrument not hearing the phone.
+                if !cut.linked || cut.unheard {
+                    Text(cut.linked ? "not heard" : "no link").font(.system(size: 14, weight: .semibold))
                         .frame(maxWidth: .infinity, minHeight: 22)
                         .background(Theme.red, in: .rect(cornerRadius: 4))
                 }

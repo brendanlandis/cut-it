@@ -448,6 +448,11 @@ mid-list in `c_melody.lua` failed the first, `a[4]` and `cut.drum(DrumsAt.muted 
 other two. It reads the source and builds nothing, so a place renamed in the Lua fails here before
 Xcode says so.
 
+⛔ **A press given up unanswered has to show** ([the phone's page](../ref/device/phone.md), *The app
+can hear and not be heard*): the give-up in `Cut.swift`'s `resend` sets `unheard`, only an answer to a
+press still being sent clears it, and `App.swift`'s bar reads it beside `linked`. Taking the
+give-up's line out failed it. What the bar looks like is a look at the app, not this gate's.
+
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh

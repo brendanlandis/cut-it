@@ -388,8 +388,9 @@ distinguishing *idle* from *dead*.
 
 ⚠️ **A page that shows the instrument's state and ignores every press is iOS blocking what the app
 sends.** The `no link` bar reads the heartbeat alone, so it stays away: the state still arrives,
-no press leaves the phone, and a press given up after its tries (*A press, once*) says nothing.
-**Fix:** on the phone, in Settings, Privacy & Security, Local Network, switch Cut It off and on,
+and no press leaves the phone. So the app reports its presses too: one given up after its tries
+(*A press, once*) puts a red `not heard` bar where `no link` goes, until a press of its own is
+answered (`phone/CutIt/Cut.swift`). **Fix:** on the phone, in Settings, Privacy & Security, Local Network, switch Cut It off and on,
 then quit the app and open it. The switch can read on while it blocks (iOS, in Reference).
 
 ### The Organelle never waits for the phone

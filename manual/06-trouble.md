@@ -9,6 +9,9 @@
   only acted on once.
 - **The phone says "no link"** when the Organelle's heartbeat stops. The instrument keeps playing without it. Coming back to
   the app reconnects it.
+- **The phone says "not heard"** when a press got no answer from the Organelle, though its heartbeat still arrives. If
+  it stays, the phone is blocking what the app sends: in the phone's Settings, Privacy & Security, Local Network, switch
+  Cut It off and on, then quit the app and open it.
 - **The aux LED** is green while running and blue while stopped, so a stopped patch can't look like a dead one, and white
   while the songs page is open.
 - **A warning or failure** draws on the Organelle's screen, on every page.

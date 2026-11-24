@@ -374,6 +374,15 @@ def main():
             re.search(r'let message: \[OSCValue\] = \[\.text\("once"\), \.number\(Float\(seq\)\)\] \+ '
                       r"values\(words\)", src) is not None and uonce == ["once"],
             "u_net: route %s" % uonce)
+    # ref/device/phone.md, The app can hear and not be heard: the state can arrive while no press leaves.
+    gave_up = re.search(r"if entry\.tries >= Self\.maxTries \{[^}]*\bunheard = true\b", src)
+    answered = re.search(r'case "/cutit/once":[^}]*waiting\.removeValue\(forKey: id\) != nil \{ unheard = false \}', src)
+    app = open(os.path.join(SWIFT, "App.swift"), encoding="utf-8").read()
+    bar = re.search(r"if !cut\.linked \|\| cut\.unheard \{", app)
+    A.check("⛔ a press given up unanswered shows on the page, until a press of the app's own is answered",
+            None not in (gave_up, answered, bar),
+            "given up sets it: %s  an answer clears it: %s  the bar reads it: %s"
+            % (bool(gave_up), bool(answered), bool(bar)))
     A.check("⛔ cut.control sends perform ctl <row> <dest> <arg> <value>, as u_perform's ctl takes it",
             inline is not None and inline[0] == ["dest", "arg", "value"]
             and inline[1][:2] == ['"perform"', '"ctl"'] and inline[1][3:] == inline[0],

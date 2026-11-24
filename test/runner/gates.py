@@ -8,6 +8,7 @@ The commands are shell strings so `"Cut It"/*.pd` expands in the shell, in the
 order it always has.
 """
 import concurrent.futures
+import glob
 import os
 import shutil
 import subprocess
@@ -141,6 +142,23 @@ def report_one(label, ok, out):
     sys.stdout.flush()
 
 
+def lua_tests_unrun():
+    """The Lua test files no gate runs. -> their names.
+
+    A gate's recipe in scratch-gates.py names each Lua test it runs, by hand, so
+    a new test/gate/lua/*_test.lua that nobody adds to one never runs, and every
+    gate stays green.
+    """
+    root = lib_scratch.ROOT
+    with open(os.path.join(root, "test", "gate", "scratch-gates.py")) as f:
+        recipes = f.read()
+    names = sorted(os.path.basename(p) for p in
+                   glob.glob(os.path.join(root, "test", "gate", "lua", "*_test.lua")))
+    # lib_test.lua is what the tests share, not one of them.
+    return [n for n in names if n != "lib_test.lua"
+            and 'S.lua("test/gate/lua/%s"' % n not in recipes]
+
+
 def run_all():
     """Every gate, side by side. -> list of the labels that failed."""
     if len(GATES) != EXPECT:
@@ -148,6 +166,11 @@ def run_all():
         sys.exit("gates.py: EXPECT is %d but the table holds %d. Update it "
                  "deliberately -- a gate that vanishes is otherwise silent."
                  % (EXPECT, len(GATES)))
+    unrun = lua_tests_unrun()
+    if unrun:
+        sys.exit("gates.py: no gate runs %s. Name it in a recipe in "
+                 "test/gate/scratch-gates.py, as S.lua(\"test/gate/lua/<file>\") -- "
+                 "a Lua test nothing runs is otherwise silent." % ", ".join(unrun))
     failed = []
     home = tempfile.mkdtemp(prefix="cutit-home-")
     env = dict(os.environ, HOME=home, PYTHONUNBUFFERED="1")

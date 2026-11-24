@@ -176,6 +176,8 @@ lua test/gate/lua/u_song_test.lua        # and the song store's
 lua test/gate/lua/g_grid_test.lua        # and the Launchpad's painter
 lua test/gate/lua/u_voices_test.lua      # and the voices and the page
 lua test/gate/lua/u_perform_test.lua     # and the controls in play
+lua test/gate/lua/u_sound_test.lua       # and each voice's sound
+lua test/gate/lua/u_once_test.lua        # and the phone's presses, acted on once
 ./tools/deploy.sh              # syntax check -> scp BOTH patches -> reload -> load Cut It
 ./tools/deploy.sh --debug      # the same push, but loads Cut It Debug instead
 ./tools/tidy.sh                # what has accumulated on the device. --delete to remove it

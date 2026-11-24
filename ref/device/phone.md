@@ -452,3 +452,9 @@ control for the time signature's bottom number:
   keyboard tab sent them too, which `c_synth` puts in the section, so the choice survived a reload.
   A voice's page sends `machine`, which isn't put, and the setup page's machine changes the voice
   itself. The synths checklist's steps 8 to 10 use the keys page instead.
+
+And one of the app's own:
+
+- ⬜ **The phone checklist has no step for `not heard`** (*The app can hear and not be heard*). Not
+  measured: what the phone shows with Cut It's Local Network switch off outright, `not heard` or
+  `no link`, which is the step's **Pass if**. NO PLAN OWNS THIS.

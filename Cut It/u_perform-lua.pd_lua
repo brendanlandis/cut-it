@@ -9,7 +9,6 @@
 -- bang on init, the proof the Lua loaded.
 
 local PerformLua = pd.Class:new():register("u_perform-lua")
-local Clock = pd.Clock
 
 local R = dofile(PerformLua._loadpath .. "u_perform.lua")
 
@@ -17,6 +16,7 @@ local OUTLET = { route = 1, save = 4, err = 5 }
 
 local F = dofile(PerformLua._loadpath .. "lua-face.lua")
 F.carry(PerformLua, R, OUTLET, 3, 6)
+F.clocks(PerformLua, { "show", "save" })
 
 -- A sweep of a fader is a message every few ms: the surfaces hear of it at most this often, and the
 -- song store at most this often.
@@ -24,63 +24,19 @@ local SHOW_EVERY, SAVE_EVERY = 40, 300
 
 function PerformLua:initialize()
   self.inlets, self.outlets = 3, 6
-  local fh = io.open(self._canvaspath .. "cut-it-controls.txt", "r")
-  local text = ""
-  if fh then
-    text = fh:read("a")
-    fh:close()
-  else
-    self:error("u_perform-lua: no cut-it-controls.txt")
-  end
-  self.state = R.new(text)
+  self.state = R.new(F.read(self, "cut-it-controls.txt"))
   return true
 end
 
-function PerformLua:postinitialize()
-  self.show_clock = Clock:new():register(self, "show_due")
-  self.save_clock = Clock:new():register(self, "save_due")
-end
-
-function PerformLua:finalize()
-  if self.show_clock then self.show_clock:destruct() end
-  if self.save_clock then self.save_clock:destruct() end
-end
-
-local function key(a)
-  return table.concat(a, " ")
-end
-
+-- What the grid and the phone show, each when it differs from the last sent.
 function PerformLua:show_due()
-  self.show_waiting = false
   local st = self.state
-  local ok, c = pcall(R.cols, st)
-  if ok then
-    local k = key(c)
-    if k ~= self.cols_sent then
-      self.cols_sent = k
-      self:outlet(2, "cols", c)
-    end
-  end
-  local ok2, b = pcall(R.btns, st)
-  if ok2 then
-    local k = key(b)
-    if k ~= self.btns_sent then
-      self.btns_sent = k
-      self:outlet(2, "btns", b)
-    end
-  end
-  local ok3, p = pcall(R.phone, st)
-  if ok3 then
-    local k = key(p)
-    if k ~= self.phone_sent then
-      self.phone_sent = k
-      self:outlet(3, "perform", p)
-    end
-  end
+  F.changed(self, "cols", 2, "cols", R.cols, st)
+  F.changed(self, "btns", 2, "btns", R.btns, st)
+  F.changed(self, "phone", 3, "perform", R.phone, st)
 end
 
 function PerformLua:save_due()
-  self.save_waiting = false
   local st = self.state
   local names = {}
   for name in pairs(st.list) do names[#names + 1] = name end
@@ -98,15 +54,8 @@ function PerformLua:save_due()
 end
 
 function PerformLua:answered()
-  if not self.show_waiting then
-    self.show_waiting = true
-    self.show_clock:delay(SHOW_EVERY)
-  end
-  if self.state.dirty and not self.save_waiting then
-    self.state.dirty = false
-    self.save_waiting = true
-    self.save_clock:delay(SAVE_EVERY)
-  end
+  F.soon(self, "show", SHOW_EVERY)
+  if self.state.dirty and F.soon(self, "save", SAVE_EVERY) then self.state.dirty = false end
 end
 
 function PerformLua:in_1(sel, atoms)

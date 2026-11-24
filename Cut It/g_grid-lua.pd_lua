@@ -35,15 +35,7 @@ function GridLua:initialize(_, atoms)
   self.inlets, self.outlets = 2, 2
   self.surface = atoms[1]
   self.table = Table:new()
-  local fh, why = io.open(self._canvaspath .. "cut-it-drum-page.txt", "r")
-  local text = ""
-  if fh then
-    text = fh:read("a")
-    fh:close()
-  else
-    self:error("g_grid-lua: " .. tostring(why))
-  end
-  self.state = R.new(text)
+  self.state = R.new(F.read(self, "cut-it-drum-page.txt"))
   return true
 end
 

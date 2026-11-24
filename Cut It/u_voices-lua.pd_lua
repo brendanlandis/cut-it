@@ -23,28 +23,10 @@ function VoicesLua:initialize()
   return true
 end
 
-local function key(a)
-  return table.concat(a, " ")
-end
-
 -- After every answer: what the grid and the phone show, each when it differs from the last sent.
 function VoicesLua:answered()
-  local ok, g = pcall(R.grid, self.state)
-  if ok then
-    local k = key(g)
-    if k ~= self.grid_sent then
-      self.grid_sent = k
-      self:outlet(2, "voices", g)
-    end
-  end
-  local ok2, p = pcall(R.phone, self.state)
-  if ok2 then
-    local k = key(p)
-    if k ~= self.phone_sent then
-      self.phone_sent = k
-      self:outlet(6, "voices", p)
-    end
-  end
+  F.changed(self, "grid", 2, "voices", R.grid, self.state)
+  F.changed(self, "phone", 6, "voices", R.phone, self.state)
 end
 
 function VoicesLua:in_1(sel, atoms)

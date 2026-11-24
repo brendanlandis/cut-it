@@ -101,7 +101,9 @@ are `u_map.lua` and `u_map-lua.pd_lua`, and a device layer's decoding sits besid
 `<abstraction>.pd_lua`: pdlua's loader is asked before Pd looks for an abstraction, so it would
 replace the `.pd` everywhere it is used ([sequencer.md](module/sequencer.md)). What every such
 class shares, answering under `pcall`, the `init` bang and the `dispatch` shortcut, is
-`lua-face.lua`: it sits beside no abstraction, so it is named for what it is.
+`lua-face.lua`: it sits beside no abstraction, so it is named for what it is. It also holds what
+several faces need: a list sent only when it differs from the last one sent, the clocks that hold
+work back, and a file read from beside the patch.
 
 ---
 

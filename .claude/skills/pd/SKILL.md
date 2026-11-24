@@ -60,6 +60,17 @@ work when the Lua does not: the Launchpad's pressure and mode keys (`ref/device/
     selector first, a large share of a message's cost on the device (`ref/module/map.md`).
   - A test that loads a broken copy of the rules from a temp prefix needs the face there too
     (`test/gate/lua/u_map_test.lua`, the last section).
+- **A face doesn't write these again; `lua-face.lua` has them**:
+  - **A list that goes only when it differs from the last one sent**:
+    `F.changed(self, name, outlet, sel, rule, ...)`, the rule run under `pcall`; `F.differs(self,
+    name, atoms)` where something else rides on the change, and `F.forget(self, name)` to send
+    the next whatever it is.
+  - **A clock that holds work back**: `F.clocks(class, { "save", "show" })` gives each object
+    `self.save_clock` and calls `self:save_due()` when it fires; `F.soon(self, "save", ms)` starts
+    it unless it is waiting, `F.stop` stops it and `F.waiting` asks. No `postinitialize` or
+    `finalize` of the face's own for them.
+  - **A file beside the patch**: `F.read(self, name)`, `""` and an error on the console when it
+    isn't there, which fails a deploy; `F.read(self, name, true)` for one that may be missing.
 - **Test the rules without Pd**: a `test/gate/lua/<name>_test.lua` on `test/gate/lua/lib_test.lua`
   (its tally, and a stand-in for pdlua that loads the class), run by its module's gate through
   `lib_scratch.lua()` with lua.org's Lua 5.4 (`~/.local/bin/lua`; `LUA` overrides).

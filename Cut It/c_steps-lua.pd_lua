@@ -34,8 +34,6 @@
 -- where there is one: the device has none (C-12).
 
 local StepsLua = pd.Class:new():register("c_steps-lua")
--- pdlua's clock, taken while pd is in reach: the Lua tests stand pd in only while loading.
-local Clock = pd.Clock
 
 -- The rules, from the file beside this one, loaded when this file is: a reload of the class
 -- (`; pdluax reload c_steps-lua`) reloads them too, and every object keeps its pattern.
@@ -48,6 +46,7 @@ local OUTLET = { note = 1, page = 2, save = 3, err = 4, disp = 6, clock = 8, bar
 -- shared by every class that carries rules into Pd.
 local F = dofile(StepsLua._loadpath .. "lua-face.lua")
 F.carry(StepsLua, R, OUTLET, 2, 5)
+F.clocks(StepsLua, { "save" })
 
 function StepsLua:initialize(_, atoms)
   self.inlets, self.outlets = 2, 12
@@ -65,23 +64,12 @@ end
 -- here, and on sync, which u_song sends on the state bus before it acts (ref/module/songs.md).
 local SAVE_EVERY = 100
 
-function StepsLua:postinitialize()
-  self.save_clock = Clock:new():register(self, "save_due")
-end
-
-function StepsLua:finalize()
-  if self.save_clock then self.save_clock:destruct() end
-end
-
 -- lua-face.lua's hold: a press's or the phone's save is kept back; the patch's own messages'
 -- (init's, and restore-old's, the auto key's line put as the section's) go at once. A bar first
 -- puts whatever is held.
 function StepsLua:hold(e)
   if e[1] == "save" and self.holding then
-    if not self.save_held then
-      self.save_held = true
-      self.save_clock:delay(SAVE_EVERY)
-    end
+    F.soon(self, "save", SAVE_EVERY)
     return true
   end
   if e[1] == "save" then self:kit_check() end
@@ -94,27 +82,23 @@ function StepsLua:kit_check()
   if not self.state.kit_on then return end
   local ok, line = pcall(R.kit_line, self.state)
   if not ok then return end
-  local k = table.concat(line, " ")
-  if k ~= self.kit_sent then
+  if F.differs(self, "kit", line) then
     -- What a song with no kit starts as is no change to it, so it lights no save.
     local first = self.state.kit_first
     self.state.kit_first = false
-    self.kit_sent = k
     self:outlet(12, first and "seed" or "song", line)
   end
 end
 
+-- The pattern held, put now: nothing if none is.
 function StepsLua:save_now()
-  if not self.save_held then return end
-  self.save_held = false
-  self.save_clock:unset()
-  local ok, e = pcall(R.save, self.state)
-  if ok then self:outlet(3, e[2], e[3]) end
-  self:kit_check()
+  if F.stop(self, "save") then self:save_due() end
 end
 
 function StepsLua:save_due()
-  self:save_now()
+  local ok, e = pcall(R.save, self.state)
+  if ok then self:outlet(3, e[2], e[3]) end
+  self:kit_check()
 end
 
 -- After every answer, the phone's state, out the seventh outlet only when it differs from
@@ -125,13 +109,7 @@ function StepsLua:answered()
     self.last_sent = last
     self:outlet(11, "last", { last })
   end
-  local ok, now = pcall(R.phone, self.state)
-  if not ok then return end
-  local key = table.concat(now, " ")
-  if key ~= self.phone_sent then
-    self.phone_sent = key
-    self:outlet(7, "list", now)
-  end
+  F.changed(self, "phone", 7, "list", R.phone, self.state)
 end
 
 function StepsLua:in_1(sel, atoms)
@@ -144,8 +122,7 @@ function StepsLua:in_2(sel, atoms)
   if sel == "sync" then return self:save_now() end
   if sel == "restore" or sel == "restore-old" then
     -- the pattern is replaced: what was held is the old one's, and u_song's sync put it already
-    self.save_held = false
-    self.save_clock:unset()
+    F.stop(self, "save")
   end
   self:internal(sel, atoms)
   if sel == "restore" or sel == "restore-old" or sel == "restore-kit" then self:kit_check() end

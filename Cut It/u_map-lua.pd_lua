@@ -32,14 +32,7 @@ F.carry(MapLua, R, OUTLET, 4, 3)
 -- (u_map.lua's R.UNSAVED). Its absence is silent, as it is on a machine never Saved.
 function MapLua:initialize()
   self.inlets, self.outlets = 4, 4
-  local fh, why = io.open(self._canvaspath .. "cut-it-map.txt", "r")
-  local text = ""
-  if fh then
-    text = fh:read("a")
-    fh:close()
-  else
-    self:error("u_map-lua: " .. tostring(why))
-  end
+  local text = F.read(self, "cut-it-map.txt")
   local saved = io.open(self._canvaspath .. "knobs.txt", "r")
   if saved then saved:close() end
   self.state = R.new(text, not saved)

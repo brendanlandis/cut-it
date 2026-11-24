@@ -127,16 +127,23 @@ recovery's spigot.
 
 | | Value | Evidence | Item |
 |---|---|---|---|
-| What it hashes | the ALSA **client names** only, never the subscriptions | verified | 292 |
+| What it hashes | all of `aconnect -l`: the ALSA clients and what each is connected to | verified | — |
+| What it keeps | the hash taken **after** `wire.sh` ran, never the one that set it off | verified | 292 |
 | Cost of the probe | **~50 ms**, measured three times on the device | verified | 292 |
 | Cost of `wire.sh` itself | **~247 ms**, measured three times | verified | 292 |
 | `wire.sh` is idempotent | 9 connections, twice in a row, no change | verified | 292 |
 
-⛔ **Hashing the names and not the subscriptions is the whole trick.** `aconnect -l` prints
-`Connecting To:` under each client, so hashing all of it would change the moment `wire.sh` connected
-anything — the watcher would see its own work as a change and re-wire again on the next tick,
-forever. ✅ Measured both ways: with the filter the hash is **byte-identical** across a `wire.sh`
-run, so one device event costs one re-wire.
+⛔ **The connections have to be in the hash.** A device that goes and comes back between two
+heartbeats, an FM-1 switched off and on, returns under the same name and the same client number
+with its connections gone: the names alone read as no change, and it stays unwired. ✅ An FM-1
+switched off and on by hand was wired 5.9 s after it came back, and 10.7, 11.7 and 9.1 s after
+being taken off the bus and put back in software (2026-11-24).
+
+⛔ **And the hash kept is the one taken after `wire.sh` ran.** `aconnect -l` prints
+`Connecting To:` under each client, so `wire.sh`'s own work changes it: kept as it was found, the
+watcher would take that for a change and re-wire again on the next heartbeat, forever (item 292).
+✅ The kept hash is the same heartbeat after heartbeat once a device has been wired, so one device
+event costs one re-wire (2026-11-24).
 
 ⚠️ **This is a fork on a real event, not a fork on a timer**, which is the distinction Phase 4's
 one-fork-per-load rule is actually about. The heartbeat costs one 50 ms probe; the 247 ms re-wire

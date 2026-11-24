@@ -46,9 +46,9 @@ Hot-swap for the FM-1, which is `none`: nothing is wired back from it and it can
 
 - [ ] **9. Hot-swap — FM-1 unplugged and plugged back in**
   - **Need:** Row 3's voice on the FM-1, its page on show, so the nanoKEY plays it.
-  - **Do:** Unplug the FM-1's USB cable alone and count to fifteen, then plug it back in and wait up to 30 seconds before playing a key on the nanoKEY. Then unplug it again: the next step loads without it.
+  - **Do:** Unplug the FM-1's USB cable alone, plug it back in and wait up to 30 seconds before playing a key on the nanoKEY. Then unplug it again: the next step loads without it.
   - **Pass if:** The FM-1 plays the nanoKEY's key — by ear.
-  - **Note:** The oracle is the nanoKEY sounding it, never the FM-1 sounding: it plays from its own keys, on its battery, with nothing connected at all ([fm1](../../ref/device/fm1.md)). The FM-1 alone, because it registers `none` and comes back through `u_present`'s re-wire heartbeat (`wire-watch.sh` every eight ticks, re-wiring when the client names change); pulling a second device would go through the loss path instead (item 275). 30 seconds covers the heartbeat: `u_root` passes `[u_present 4000 2000 33 8]`, eight 2000 ms ticks, 16 seconds, plus enumeration.
+  - **Note:** The oracle is the nanoKEY sounding it, never the FM-1 sounding: it plays from its own keys, on its battery, with nothing connected at all ([fm1](../../ref/device/fm1.md)). The FM-1 alone, because it registers `none` and comes back through `u_present`'s re-wire heartbeat (`wire-watch.sh` every eight ticks, re-wiring when the clients or their connections change, however briefly it was gone); pulling a second device would go through the loss path instead (item 275). 30 seconds covers the heartbeat: `u_root` passes `[u_present 4000 2000 33 8]`, eight 2000 ms ticks, 16 seconds, plus enumeration.
 
 - [ ] **10. Hot-swap — FM-1 absent at load**
   - **Need:** The FM-1's USB cable still unplugged from the last step.

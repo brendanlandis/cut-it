@@ -65,7 +65,7 @@
 #X msg 1900 3000 sh wire-watch.sh;
 #X obj 1900 3060 shell;
 #X obj 1900 3120 print wire-watch;
-#X text 2400 2760 The heartbeat for a device nothing ever lost \, like the FM-1 plugged in late (item 285). The count is taken after the increment \, so the first fork lands on tick 8 \, outside the boot window. wire-watch.sh hashes the client names and runs wire.sh only when they change (ref/module/presence.md)., f 62;
+#X text 2400 2760 The heartbeat for a device nothing ever lost \, like the FM-1 plugged in late (item 285). The count is taken after the increment \, so the first fork lands on tick 8 \, outside the boot window. wire-watch.sh hashes the clients and their connections and runs wire.sh only when they change (ref/module/presence.md)., f 62;
 #X obj 1000 2500 t b b;
 #X msg 1000 2620 info u_present rewire-asked;
 #X obj 1000 2680 s err;
